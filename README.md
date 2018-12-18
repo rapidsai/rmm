@@ -1,4 +1,4 @@
-# Memory Management in RAPIDS with RMM
+# <div align="left"><img src="img/rapids_logo.png" width="90px"/>&nbsp;RMM: RAPIDS Memory</div>
 
 RAPIDS Memory Manager (RMM) is:
 
@@ -12,6 +12,73 @@ RMM is not:
    e.g. `cudaMallocManaged`). This may change in the future.
  - A replacement allocator for host memory (`malloc`, `new`, `cudaMallocHost`, 
    `cudaHostRegister`).
+
+## Install RMM
+
+RMM currently must be built from source.
+
+## Building from Source
+
+### Get RMM Dependencies
+
+Compiler requirements:
+
+* `gcc`     version 4.8 or higher recommended
+* `nvcc`    version 9.0 or higher recommended
+* `cmake`   version 3.12 or higher
+
+CUDA/GPU requirements:
+
+* CUDA 9.0+
+* NVIDIA driver 396.44+
+* Pascal architecture or better
+
+You can obtain CUDA from [https://developer.nvidia.com/cuda-downloads](https://developer.nvidia.com/cuda-downloads)
+
+### Script to build RMM from source
+
+To install RMM from source, ensure the dependencies are met and follow the steps below:
+
+- Clone the repository and submodules
+```bash
+$ git clone --recurse-submodules https://github.com/rapidsai/rmm.git
+$ cd rmm
+$ export RMM_HOME=`pwd`
+```
+
+Follow the instructions under "Create the conda development environment `cudf_dev`" in the [cuDF README](https://github.com/rapidsai/cudf#build-from-source).
+
+- Create the conda development environment `cudf_dev`
+```bash
+# create the conda environment (assuming in base `cudf` directory)
+$ conda env create --name cudf_dev --file conda/environments/dev_py35.yml
+# activate the environment
+$ source activate cudf_dev
+```
+
+- Build and install `librmm`. CMake depends on the `nvcc` executable being on your path or defined in `$CUDACXX`.
+```bash
+
+$ mkdir build                                       # make a build directory
+$ cd build                                          # enter the build directory
+$ cmake .. -DCMAKE_INSTALL_PREFIX=/install/path     # configure cmake ... use $CONDA_PREFIX if you're using Anaconda
+$ make -j                                           # compile the library librmm.so ... '-j' will start a parallel job using the number of physical cores available on your system
+$ make install                                      # install the library librmm.so to '/install/path'
+```
+
+- To run tests (Optional):
+```bash
+$ make test
+```
+
+- Build, install, and test cffi bindings:
+```bash
+$ make python_cffi                                  # build CFFI bindings for librmm.so
+$ make install_python                               # build & install CFFI python bindings. Depends on cffi package from PyPi or Conda
+$ cd python && py.test -v                           # optional, run python tests on low-level python bindings
+```
+
+Done! You are ready to develop for the RMM OSS project.
 
 ## Using RMM in C/C++ code
 
@@ -46,14 +113,13 @@ The macro versions use the preprocessor to automatically specify these params.
 
 ### Using RMM with Thrust
 
-libcudf makes heavy use of Thrust. Thrust uses CUDA device memory in two 
+RAPIDS and other CUDA libraries make heavy use of Thrust. Thrust uses CUDA device memory in two 
 situations:
 
  1. As the backing store for `thrust::device_vector`, and
  2. As temporary storage inside some algorithms, such as `thrust::sort`.
 
-libcudf now includes a custom Thrust allocator in the file 
-`thrust_rmm_allocator.h`. This defines the template class `rmm_allocator`, and 
+RMM includes a custom Thrust allocator in the file `thrust_rmm_allocator.h`. This defines the template class `rmm_allocator`, and 
 a custom Thrust CUDA device execution policy called `rmm::exec_policy(stream)`.
 This instructs Thrust to use RMM for temporary memory allocation and execute on 
 the specified `stream`.
