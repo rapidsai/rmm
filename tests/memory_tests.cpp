@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 #include "gtest/gtest.h"
-#include "tests/utilities/cudf_test_fixtures.h"
-#include <rmm/rmm.h>
+#include "test_fixtures.h"
+#include <rmm.h>
 
 // Helper macros to simplify testing for success or failure
 #define ASSERT_SUCCESS(res) ASSERT_EQ(RMM_SUCCESS, (res));
