@@ -1,14 +1,15 @@
-# RMM 0.1.0 (Date TBD)
+# RMM 0.5.0 (Date TBD)
 
 ## New Features
 
+- PR #1: Spun off RMM from cuDF into its own repository.
 
 ## Improvements
 
 - CUDF PR #472 RMM: Created centralized rmm::device_vector alias and rmm::exec_policy
 - CUDF PR #465 Added templated C++ API for RMM to avoid explicit cast to `void**`
 
-RMM was initially implemented as part of cuDF
+RMM was initially implemented as part of cuDF. The previous 
 
 # cuDF 0.4.0 (05 Dec 2018)
 
