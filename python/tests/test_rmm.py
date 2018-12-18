@@ -5,8 +5,6 @@ import numpy as np
 
 from librmm_cffi import librmm as rmm
 
-from .utils import gen_rand
-
 _dtypes = [np.int32]
 _nelems = [1, 2, 7, 8, 9, 32, 128]
 
@@ -14,8 +12,8 @@ _nelems = [1, 2, 7, 8, 9, 32, 128]
 @pytest.mark.parametrize('dtype,nelem', list(product(_dtypes, _nelems)))
 def test_rmm_alloc(dtype, nelem):
     # data
-    h_in = gen_rand(dtype, nelem)
-    h_result = gen_rand(dtype, nelem)
+    h_in = np.full(nelem, 3.2, dtype)
+    h_result = np.empty(nelem, dtype)
 
     d_in = rmm.to_device(h_in)
     d_result = rmm.device_array_like(d_in)
@@ -36,14 +34,14 @@ def test_rmm_csv_log():
     nelem = 1024
 
     # data
-    h_in = gen_rand(dtype, nelem)
-    gen_rand(dtype, nelem)
+    h_in = np.full(nelem, 3.2, dtype)
+    h_result = np.empty(nelem, dtype)
 
     d_in = rmm.to_device(h_in)
     d_result = rmm.device_array_like(d_in)
 
     d_result.copy_to_device(d_in)
-    d_result.copy_to_host()
+    h_result = d_result.copy_to_host()
 
     csv = rmm.csv_log()
 
