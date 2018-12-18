@@ -1,6 +1,36 @@
-*.i
-*.ii
-*.gpu
-*.ptx
-*.cubin
-*.fatbin
+## common
+__pycache__
+*.pyc
+*.a
+*.o
+*.so
+*.dylib
+.cache
+.coverage
+.vscode
+*.swp
+*.pytest_cache
+DartConfiguration.tcl
+.DS_Store
+
+##build
+htmlcov
+dist/
+cudf.egg-info/
+python/build
+python/bindings/*.cpp
+
+## Patching
+*.diff
+*.orig
+*.rej
+
+CMakeFiles/
+Debug
+build/
+python/librmm_cffi/librmm_cffi.py
+
+## Eclipse IDE
+.project
+.cproject
+.settings
