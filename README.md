@@ -43,7 +43,6 @@ To install RMM from source, ensure the dependencies are met and follow the steps
 ```bash
 $ git clone --recurse-submodules https://github.com/rapidsai/rmm.git
 $ cd rmm
-$ export RMM_HOME=`pwd`
 ```
 
 Follow the instructions under "Create the conda development environment `cudf_dev`" in the [cuDF README](https://github.com/rapidsai/cudf#build-from-source).
@@ -93,23 +92,20 @@ used. For example:
 
 ```
 // old
-CUDA_TRY( cudaMalloc(&myvar, size_in_bytes) );
+cudaError_t result = cudaMalloc(&myvar, size_in_bytes) );
 // ...
-CUDA_TRY( cudaFree(myvar) );
+cudaError_t result = cudaFree(myvar) );
 
 // new
-RMM_TRY( RMM_ALLOC((void**)&myvar, size_in_bytes, stream_id) );
+rmmError_t result = RMMM_ALLOC(&myvar, size_in_bytes, stream_id);
 // ...
-RMM_TRY( RMM_FREE(myvar, stream_id) );
+rmmError_t result = RMM_FREE(myvar, stream_id);
 ```
 
-`RMM_TRY` is a macro equivalent to `CUDA_TRY`. It returns a GDF error code if 
-the RMM function fails.
-
-Note that `RMM_ALLOC` and `RMM_FREE` are wrappers around `rmmAlloc()` and
-`rmmFree()`, respectively. The lower-level functions also take a file name and
+Note that `RMM_ALLOC` and `RMM_FREE` are wrappers around `rmm::alloc()` and
+`rmm::free()`, respectively. The lower-level functions also take a file name and
 a line number for tracking the location of RMM allocations and deallocations. 
-The macro versions use the preprocessor to automatically specify these params. 
+The macro versions use the C preprocessor to automatically specify these params. 
 
 ### Using RMM with Thrust
 
