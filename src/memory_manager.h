@@ -60,16 +60,27 @@ typedef struct CUstream_st *cudaStream_t;
 
 namespace rmm 
 {
+    /** ---------------------------------------------------------------------------*
+     * @brief An event logger for RMM
+     * 
+     * Calling record() records various data about a memory manager event, including
+     * the type of event (alloc, free, realloc), the start and end time, the device,
+     * the pointer, free and total available memory, the size (for alloc/realloc),
+     * the stream, and location (file and line).
+     * 
+     * The log can be retreived as a CSV stream using to_csv().
+     * 
+     * --------------------------------------------------------------------------**/
     class Logger
     {
     public:        
         Logger() { base_time = std::chrono::system_clock::now(); }
 
-        typedef enum {
+        enum MemEvent_t {
             Alloc = 0,
             Realloc,
             Free
-        } MemEvent_t;
+        };
 
         using TimePt = std::chrono::system_clock::time_point;
 
@@ -81,6 +92,7 @@ namespace rmm
                     std::string filename,
                     unsigned int line);
 
+        /// Clear the log
         void clear();
         
         /// Write the log to comma-separated value file
@@ -108,22 +120,54 @@ namespace rmm
         std::mutex log_mutex;
     };
 
+    /** ---------------------------------------------------------------------------*
+     * @brief RMM Manager class maintains the memory manager context, including
+     * the RMM event log, configuration options, and registered streams.
+     * 
+     * Manager is a singleton class, and should be accessed via getInstance(). 
+     * A number of static convenience methods are provided that wrap getInstance(),
+     * such as getLogger() and getOptions().
+     * --------------------------------------------------------------------------**/
     class Manager
     {
     public:
+        /** ---------------------------------------------------------------------------*
+         * @brief Get the Manager instance singleton object
+         * 
+         * @return Manager& the Manager singleton
+         * --------------------------------------------------------------------------**/
         static Manager& getInstance(){
             // Myers' singleton. Thread safe and unique. Note: C++11 required.
             static Manager instance;
             return instance;
         }
 
+        /** ---------------------------------------------------------------------------*
+         * @brief Get the RMM Logger object
+         * 
+         * @return Logger& the logger object
+         * --------------------------------------------------------------------------**/
         static Logger& getLogger() { return getInstance().logger; }
 
+        /** ---------------------------------------------------------------------------*
+         * @brief Set RMM options
+         * 
+         * @param options The options to set
+         * --------------------------------------------------------------------------**/
         static void setOptions(const rmmOptions_t &options) { 
             getInstance().options = options; 
         }
+        /** ---------------------------------------------------------------------------*
+         * @brief Get the Options object
+         * 
+         * @return rmmOptions_t the currently set RMM options
+         * --------------------------------------------------------------------------**/
         static rmmOptions_t getOptions() { return getInstance().options; }
 
+        /** ---------------------------------------------------------------------------*
+         * @brief Shut down the Manager (clears the context)
+         * 
+         * --------------------------------------------------------------------------**/
         void finalize() {
             std::lock_guard<std::mutex> guard(streams_mutex);
             registered_streams.clear();
