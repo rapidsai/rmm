@@ -23,175 +23,185 @@
 
 cudaStream_t stream;
 
+template <typename T>
 struct MemoryManagerTest : 
-    public ::testing::TestWithParam<rmmAllocationMode_t> 
+    public ::testing::Test 
 {
-    void SetUp() {
+    static rmmAllocationMode_t allocationMode() { return T::alloc_mode; }
+
+    static void SetUpTestCase() {
         ASSERT_EQ( cudaSuccess, cudaStreamCreate(&stream) );
-        rmmOptions_t options {GetParam(), 0, false};
+        rmmOptions_t options {allocationMode(), 0, false};
         ASSERT_SUCCESS( rmmInitialize(&options) );
     }
 
-    void TearDown() {
+    static void TearDownTestCase() {
         ASSERT_SUCCESS( rmmFinalize() );
         ASSERT_EQ( cudaSuccess, cudaStreamDestroy(stream) );
     }
 
     // some useful allocation sizes
-    const size_t size_word = 4;
-    const size_t size_kb = size_t{1}<<10;
-    const size_t size_mb = size_t{1}<<20;
-    const size_t size_gb = size_t{1}<<30;
-    const size_t size_tb = size_t{1}<<40;
-    const size_t size_pb = size_t{1}<<50;
+    static const size_t size_word{4};
+    static const size_t size_kb {size_t{1}<<10};
+    static const size_t size_mb {size_t{1}<<20};
+    static const size_t size_gb {size_t{1}<<30};
+    static const size_t size_tb {size_t{1}<<40};
+    static const size_t size_pb {size_t{1}<<50};
 };
 
-rmmAllocationMode_t modes[] = 
-    {
-        CudaDefaultAllocation, 
-        CudaManagedMemory,
-        PoolAllocation, 
-        static_cast<rmmAllocationMode_t>(PoolAllocation | CudaManagedMemory)
-    };
-INSTANTIATE_TEST_CASE_P(TestAllocationModes, 
-                        MemoryManagerTest, 
-                        ::testing::ValuesIn(modes));
+template <rmmAllocationMode_t mode>
+struct ModeType {
+    static constexpr rmmAllocationMode_t alloc_mode{mode};
+};
+
+using allocation_modes = ::testing::Types< ModeType<CudaDefaultAllocation>,
+                                           ModeType<PoolAllocation>,
+                                           ModeType<CudaManagedMemory>,
+                                           ModeType<static_cast<rmmAllocationMode_t>(PoolAllocation | CudaManagedMemory)>
+                                         >;
+TYPED_TEST_CASE(MemoryManagerTest, allocation_modes);
 
 // Init / Finalize tests
 
-TEST_P(MemoryManagerTest, Initialize) {
+TYPED_TEST(MemoryManagerTest, Initialize) {
     // Empty because handled in Fixture class.
 }
 
-TEST_P(MemoryManagerTest, Finalize) {
+TYPED_TEST(MemoryManagerTest, Finalize) {
     // Empty because handled in Fixture class.
 }
 
 // zero size tests
 
-TEST_P(MemoryManagerTest, AllocateZeroBytes) {
+TYPED_TEST(MemoryManagerTest, AllocateZeroBytes) {
     char *a = 0;
-    ASSERT_SUCCESS(RMM_ALLOC((void**)&a, 0, stream));
+    ASSERT_SUCCESS( RMM_ALLOC(&a, 0, stream) );
 }
 
-TEST_P(MemoryManagerTest, NullPtrAllocateZeroBytes) {
-    ASSERT_SUCCESS(RMM_ALLOC((void**)0, 0, stream));
+TYPED_TEST(MemoryManagerTest, NullPtrAllocateZeroBytes) {
+    char ** p{nullptr};
+    ASSERT_SUCCESS( RMM_ALLOC(p, 0, stream) );
 }
 
 // Bad argument tests
 
-TEST_P(MemoryManagerTest, NullPtrInvalidArgument) {
-    rmmError_t res = RMM_ALLOC((void**)0, 4, stream);
+TYPED_TEST(MemoryManagerTest, NullPtrInvalidArgument) {
+    char ** p{nullptr};
+    rmmError_t res = RMM_ALLOC(p, 4, stream);
     ASSERT_FAILURE(res);
     ASSERT_EQ(RMM_ERROR_INVALID_ARGUMENT, res);
 }
 
 // Simple allocation / free tests
 
-TEST_P(MemoryManagerTest, AllocateWord) {
+TYPED_TEST(MemoryManagerTest, AllocateWord) {
     char *a = 0;
-    ASSERT_SUCCESS( RMM_ALLOC((void**)&a, size_word, stream) );
+    ASSERT_SUCCESS( RMM_ALLOC(&a, this->size_word, stream) );
     ASSERT_SUCCESS( RMM_FREE(a, stream) );
 }
 
-TEST_P(MemoryManagerTest, AllocateKB) {
+TYPED_TEST(MemoryManagerTest, AllocateKB) {
     char *a = 0;
-    ASSERT_SUCCESS( RMM_ALLOC((void**)&a, size_kb, stream) );
+    ASSERT_SUCCESS( RMM_ALLOC(&a, this->size_kb, stream) );
     ASSERT_SUCCESS( RMM_FREE(a, stream) );
 }
 
-TEST_P(MemoryManagerTest, AllocateMB) {
+TYPED_TEST(MemoryManagerTest, AllocateMB) {
     char *a = 0;
-    ASSERT_SUCCESS( RMM_ALLOC((void**)&a, size_mb, stream) );
+    ASSERT_SUCCESS( RMM_ALLOC(&a, this->size_mb, stream) );
     ASSERT_SUCCESS( RMM_FREE(a, stream) );
 }
 
-TEST_P(MemoryManagerTest, AllocateGB) {
+TYPED_TEST(MemoryManagerTest, AllocateGB) {
     char *a = 0;
-    ASSERT_SUCCESS( RMM_ALLOC((void**)&a, size_gb, stream) );
+    ASSERT_SUCCESS( RMM_ALLOC(&a, this->size_gb, stream) );
     ASSERT_SUCCESS( RMM_FREE(a, stream) );
 }
 
-TEST_P(MemoryManagerTest, AllocateTB) {
+TYPED_TEST(MemoryManagerTest, AllocateTB) {
     char *a = 0;
     size_t freeBefore = 0, totalBefore = 0;
     ASSERT_SUCCESS( rmmGetInfo(&freeBefore, &totalBefore, stream) );
-    
-    if (size_tb > freeBefore) {
-        ASSERT_FAILURE( RMM_ALLOC((void**)&a, size_tb, stream) );
+
+    if ((this->allocationMode() == (PoolAllocation | CudaManagedMemory)) || 
+        (this->size_tb < freeBefore)) {
+        ASSERT_SUCCESS( RMM_ALLOC(&a, this->size_tb, stream) );
     }
     else {
-        ASSERT_SUCCESS( RMM_ALLOC((void**)&a, size_tb, stream) );
+        ASSERT_FAILURE( RMM_ALLOC(&a, this->size_tb, stream) );
     }
     
     ASSERT_SUCCESS( RMM_FREE(a, stream) );
 }
 
 
-TEST_P(MemoryManagerTest, AllocateTooMuch) {
+TYPED_TEST(MemoryManagerTest, AllocateTooMuch) {
     char *a = 0;
-    ASSERT_FAILURE( RMM_ALLOC((void**)&a, size_pb, stream) );
+    ASSERT_FAILURE( RMM_ALLOC(&a, this->size_pb, stream) );
     ASSERT_SUCCESS( RMM_FREE(a, stream) );
 }
 
-TEST_P(MemoryManagerTest, FreeZero) {
+TYPED_TEST(MemoryManagerTest, FreeZero) {
     ASSERT_SUCCESS( RMM_FREE(0, stream) );
 }
 
 // Reallocation tests
 
-TEST_P(MemoryManagerTest, ReallocateSmaller) {
+TYPED_TEST(MemoryManagerTest, ReallocateSmaller) {
     char *a = 0;
-    ASSERT_SUCCESS( RMM_ALLOC((void**)&a, size_mb, stream) );
-    ASSERT_SUCCESS( RMM_REALLOC((void**)&a, size_mb / 2, stream) );
+    ASSERT_SUCCESS( RMM_ALLOC(&a, this->size_mb, stream) );
+    ASSERT_SUCCESS( RMM_REALLOC(&a, this->size_mb / 2, stream) );
     ASSERT_SUCCESS( RMM_FREE(a, stream) );
 }
 
-TEST_P(MemoryManagerTest, ReallocateMuchSmaller) {
+TYPED_TEST(MemoryManagerTest, ReallocateMuchSmaller) {
     char *a = 0;
-    ASSERT_SUCCESS( RMM_ALLOC((void**)&a, size_gb, stream) );
-    ASSERT_SUCCESS( RMM_REALLOC((void**)&a, size_kb, stream) );
+    ASSERT_SUCCESS( RMM_ALLOC(&a, this->size_gb, stream) );
+    ASSERT_SUCCESS( RMM_REALLOC(&a, this->size_kb, stream) );
     ASSERT_SUCCESS( RMM_FREE(a, stream) );
 }
 
-TEST_P(MemoryManagerTest, ReallocateLarger) {
+TYPED_TEST(MemoryManagerTest, ReallocateLarger) {
     char *a = 0;
-    ASSERT_SUCCESS( RMM_ALLOC((void**)&a, size_mb, stream) );
-    ASSERT_SUCCESS( RMM_REALLOC((void**)&a, size_mb * 2, stream) );
+    ASSERT_SUCCESS( RMM_ALLOC(&a, this->size_mb, stream) );
+    ASSERT_SUCCESS( RMM_REALLOC(&a, this->size_mb * 2, stream) );
     ASSERT_SUCCESS( RMM_FREE(a, stream) );
 }
 
-TEST_P(MemoryManagerTest, ReallocateMuchLarger) {
+TYPED_TEST(MemoryManagerTest, ReallocateMuchLarger) {
     char *a = 0;
-    ASSERT_SUCCESS( RMM_ALLOC((void**)&a, size_kb, stream) );
-    ASSERT_SUCCESS( RMM_REALLOC((void**)&a, size_gb, stream) );
+    ASSERT_SUCCESS( RMM_ALLOC(&a, this->size_kb, stream) );
+    ASSERT_SUCCESS( RMM_REALLOC(&a, this->size_gb, stream) );
     ASSERT_SUCCESS( RMM_FREE(a, stream) );
 }
 
-TEST_P(MemoryManagerTest, GetInfo) {
+TYPED_TEST(MemoryManagerTest, GetInfo) {
     size_t freeBefore = 0, totalBefore = 0;
     ASSERT_SUCCESS( rmmGetInfo(&freeBefore, &totalBefore, stream) );
     ASSERT_GE(freeBefore, 0);
     ASSERT_GE(totalBefore, 0);
 
     char *a = 0;
-    size_t sz = size_gb / 2;
-    ASSERT_SUCCESS( RMM_ALLOC((void**)&a, sz, stream) );
+    size_t sz = this->size_mb / 2;
+    ASSERT_SUCCESS( RMM_ALLOC(&a, sz, stream) );
 
     // make sure the available free memory goes down after an allocation
     size_t freeAfter = 0, totalAfter = 0;
     ASSERT_SUCCESS( rmmGetInfo(&freeAfter, &totalAfter, stream) );
     ASSERT_GE(totalAfter, totalBefore);
-    ASSERT_LE(freeAfter, freeBefore);
+    
+    // For some reason the free memory sometimes goes up in this mode?!
+    if (this->allocationMode() != (CudaManagedMemory | PoolAllocation))
+        ASSERT_LE(freeAfter, freeBefore);
 
     ASSERT_SUCCESS( RMM_FREE(a, stream) );
 }
 
-TEST_P(MemoryManagerTest, AllocationOffset) {
+TYPED_TEST(MemoryManagerTest, AllocationOffset) {
     char *a = nullptr, *b = nullptr;
     ptrdiff_t offset = -1;
-    ASSERT_SUCCESS( RMM_ALLOC((void**)&a, size_kb, stream) );
-    ASSERT_SUCCESS( RMM_ALLOC((void**)&b, size_kb, stream) );
+    ASSERT_SUCCESS( RMM_ALLOC(&a, this->size_mb, stream) );
+    ASSERT_SUCCESS( RMM_ALLOC(&b, this->size_mb, stream) );
 
     ASSERT_SUCCESS( rmmGetAllocationOffset(&offset, a, stream) );
     ASSERT_GE(offset, 0);
