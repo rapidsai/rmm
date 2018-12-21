@@ -54,6 +54,12 @@ typedef enum
   CudaManagedMemory     = 2,  //< Use cudaMallocManaged rather than cudaMalloc
 } rmmAllocationMode_t;
 
+/** ---------------------------------------------------------------------------*
+ * @brief Options for initializing the memory manager
+ *
+ * If set to zero, `initial_pool_size` defaults to half of the total GPU memory
+ * for the current device.
+ * --------------------------------------------------------------------------**/
 typedef struct
 {
   rmmAllocationMode_t allocation_mode; //< Allocation strategy to use
