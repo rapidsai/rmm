@@ -33,7 +33,7 @@ _nelems = [1, 2, 7, 8, 9, 32, 128]
 def test_rmm_alloc(dtype, nelem):
     array_tester(dtype, nelem)
 
-
+# Test all combinations of default/managed and pooled/non-pooled allocation
 @pytest.mark.parametrize('managed, pool', 
                          list(product([False, True], [False, True])))
 def test_rmm_modes(managed, pool):
