@@ -128,9 +128,3 @@ add_custom_command(OUTPUT INSTALL_PYTHON_CFFI
                    VERBATIM)
 
 add_custom_target(install_python DEPENDS rmm PYTHON_CFFI INSTALL_PYTHON_CFFI)
-
-
-
-
-
-
