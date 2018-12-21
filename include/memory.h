@@ -41,10 +41,17 @@ typedef enum
   N_RMM_ERROR                 //< Count of error types
 } rmmError_t;
 
+/** ---------------------------------------------------------------------------*
+ * @brief RMM allocation mode settings
+ *
+ * These settings can be ORed together. For example to use a pool of managed
+ * memory, use `mode = PoolAllocation | CudaManagedMemory`.
+ * --------------------------------------------------------------------------**/
 typedef enum
 {
   CudaDefaultAllocation = 0,  //< Use cudaMalloc for allocation
-  PoolAllocation,             //< Use pool suballocation strategy
+  PoolAllocation        = 1,  //< Use pool suballocation strategy
+  CudaManagedMemory     = 2,  //< Use cudaMallocManaged rather than cudaMalloc
 } rmmAllocationMode_t;
 
 typedef struct

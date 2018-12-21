@@ -101,10 +101,6 @@ class LogIt {
   bool usageLogging;
 };
 
-inline bool usePoolAllocator() {
-  return Manager::getOptions().allocation_mode == PoolAllocation;
-}
-
 /** ---------------------------------------------------------------------------*
  * @brief Allocate memory and return a pointer to device memory.
  *
@@ -130,7 +126,7 @@ inline rmmError_t alloc(T** ptr, size_t size, cudaStream_t stream, const char* f
 
   if (!ptr) return RMM_ERROR_INVALID_ARGUMENT;
 
-  if (rmm::usePoolAllocator()) {
+  if (rmm::Manager::usePoolAllocator()) {
     RMM_CHECK(rmm::Manager::getInstance().registerStream(stream));
     RMM_CHECK_CNMEM(cnmemMalloc(reinterpret_cast<void**>(ptr), size, stream));
   } else
@@ -167,7 +163,7 @@ inline rmmError_t realloc(T** ptr, size_t new_size, cudaStream_t stream,
 
   if (!ptr) return RMM_ERROR_INVALID_ARGUMENT;
 
-  if (rmm::usePoolAllocator()) {
+  if (rmm::Manager::usePoolAllocator()) {
     RMM_CHECK(rmm::Manager::getInstance().registerStream(stream));
     RMM_CHECK_CNMEM(cnmemFree(*reinterpret_cast<void**>(ptr), stream));
     RMM_CHECK_CNMEM(
@@ -198,7 +194,7 @@ inline rmmError_t realloc(T** ptr, size_t new_size, cudaStream_t stream,
 inline rmmError_t free(void* ptr, cudaStream_t stream, const char* file,
                    unsigned int line) {
   rmm::LogIt log(rmm::Logger::Free, ptr, 0, stream, file, line);
-  if (rmm::usePoolAllocator())
+  if (rmm::Manager::usePoolAllocator())
     RMM_CHECK_CNMEM(cnmemFree(ptr, stream));
   else
     RMM_CHECK_CUDA(cudaFree(ptr));
