@@ -122,6 +122,9 @@ inline rmmError_t alloc(T** ptr, size_t size, cudaStream_t stream, const char* f
 
   if (!ptr && !size) {
     return RMM_SUCCESS;
+  } else if( !size ) {
+    ptr[0] = NULL;
+    return RMM_SUCCESS;
   }
 
   if (!ptr) return RMM_ERROR_INVALID_ARGUMENT;
@@ -129,6 +132,8 @@ inline rmmError_t alloc(T** ptr, size_t size, cudaStream_t stream, const char* f
   if (rmm::Manager::usePoolAllocator()) {
     RMM_CHECK(rmm::Manager::getInstance().registerStream(stream));
     RMM_CHECK_CNMEM(cnmemMalloc(reinterpret_cast<void**>(ptr), size, stream));
+  } else if (rmm::Manager::useManagedMemory()) {
+    RMM_CHECK_CUDA(cudaMallocManaged(reinterpret_cast<void**>(ptr), size));
   } else
     RMM_CHECK_CUDA(cudaMalloc(reinterpret_cast<void**>(ptr), size));
 
@@ -170,8 +175,14 @@ inline rmmError_t realloc(T** ptr, size_t new_size, cudaStream_t stream,
         cnmemMalloc(reinterpret_cast<void**>(ptr), new_size, stream));
   } else {
     RMM_CHECK_CUDA(cudaFree(*ptr));
-    RMM_CHECK_CUDA(cudaMalloc(reinterpret_cast<void**>(ptr), new_size));
+    if (!new_size)
+      ptr[0] = NULL;
+    else if (rmm::Manager::useManagedMemory())
+      RMM_CHECK_CUDA(cudaMallocManaged(reinterpret_cast<void**>(ptr), new_size));
+    else
+      RMM_CHECK_CUDA(cudaMalloc(reinterpret_cast<void**>(ptr), new_size));
   }
+  
   log.setPointer(*ptr);
   return RMM_SUCCESS;
 }
