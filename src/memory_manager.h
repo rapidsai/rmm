@@ -191,7 +191,7 @@ namespace rmm
          * @return false if CUDA default allocation is disabled
          * --------------------------------------------------------------------------**/
         inline bool useCudaDefaultAllocator() {
-            return 0 == Manager::getOptions().allocation_mode;
+            return CudaDefaultAllocation == Manager::getOptions().allocation_mode;
         }
 
         /** ---------------------------------------------------------------------------*
