@@ -123,7 +123,7 @@ TYPED_TEST(MemoryManagerTest, AllocateTB) {
     size_t freeBefore = 0, totalBefore = 0;
     ASSERT_SUCCESS( rmmGetInfo(&freeBefore, &totalBefore, stream) );
 
-    if ((this->allocationMode() == (PoolAllocation | CudaManagedMemory)) || 
+    if ((this->allocationMode() & CudaManagedMemory) || 
         (this->size_tb < freeBefore)) {
         ASSERT_SUCCESS( RMM_ALLOC(&a, this->size_tb, stream) );
     }
