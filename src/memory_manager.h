@@ -165,6 +165,36 @@ namespace rmm
         static rmmOptions_t getOptions() { return getInstance().options; }
 
         /** ---------------------------------------------------------------------------*
+         * @brief Returns true when pool allocation is enabled
+         * 
+         * @return true if pool allocation is enabled
+         * @return false if pool allocation is disabled
+         * --------------------------------------------------------------------------**/
+        static inline bool usePoolAllocator() {
+            return getOptions().allocation_mode & PoolAllocation;
+        }
+
+        /** ---------------------------------------------------------------------------*
+         * @brief Returns true if CUDA Managed Memory allocation is enabled
+         * 
+         * @return true if CUDA Managed Memory allocation is enabled
+         * @return false if CUDA Managed Memory allocation is disabled
+         * --------------------------------------------------------------------------**/
+        static inline bool useManagedMemory() {
+            return getOptions().allocation_mode & CudaManagedMemory;
+        }
+
+        /** ---------------------------------------------------------------------------*
+         * @brief Returns true when CUDA default allocation is enabled
+         *          * 
+         * @return true if CUDA default allocation is enabled
+         * @return false if CUDA default allocation is disabled
+         * --------------------------------------------------------------------------**/
+        inline bool useCudaDefaultAllocator() {
+            return CudaDefaultAllocation == getOptions().allocation_mode;
+        }
+
+        /** ---------------------------------------------------------------------------*
          * @brief Shut down the Manager (clears the context)
          * 
          * --------------------------------------------------------------------------**/
@@ -187,7 +217,7 @@ namespace rmm
             std::lock_guard<std::mutex> guard(streams_mutex);
             if (registered_streams.empty() || 0 == registered_streams.count(stream)) {
                 registered_streams.insert(stream);
-                if (stream && PoolAllocation == options.allocation_mode) // don't register the null stream with CNMem
+                if (stream && usePoolAllocator()) // don't register the null stream with CNMem
                     RMM_CHECK_CNMEM( cnmemRegisterStream(stream) );
             }
             return RMM_SUCCESS;
