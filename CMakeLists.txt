@@ -18,6 +18,21 @@ cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 project(RMM VERSION 0.4.0 LANGUAGES C CXX CUDA)
 
 ###################################################################################################
+# - build type ------------------------------------------------------------------------------------
+
+# Set a default build type if none was specified
+set(DEFAULT_BUILD_TYPE "Release")
+
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  message(STATUS "Setting build type to '${DEFAULT_BUILD_TYPE}' since none specified.")
+  set(CMAKE_BUILD_TYPE "${DEFAULT_BUILD_TYPE}" CACHE
+      STRING "Choose the type of build." FORCE)
+  # Set the possible values of build type for cmake-gui
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
+    "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+endif()
+
+###################################################################################################
 # - compiler options ------------------------------------------------------------------------------
 
 set(CMAKE_CXX_STANDARD 11)
@@ -31,9 +46,6 @@ endif(CMAKE_COMPILER_IS_GNUCXX)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
-
-# set default build type
-set(CMAKE_BUILD_TYPE "Release")
 
 option(BUILD_TESTS "Configure CMake to build tests"
        ON)
