@@ -123,7 +123,7 @@ inline rmmError_t alloc(T** ptr, size_t size, cudaStream_t stream, const char* f
   if (!ptr && !size) {
     return RMM_SUCCESS;
   } else if( !size ) {
-    ptr[0] = NULL;
+    ptr[0] = nullptr;
     return RMM_SUCCESS;
   }
 
@@ -176,7 +176,7 @@ inline rmmError_t realloc(T** ptr, size_t new_size, cudaStream_t stream,
   } else {
     RMM_CHECK_CUDA(cudaFree(*ptr));
     if (!new_size)
-      ptr[0] = NULL;
+      ptr[0] = nullptr;
     else if (rmm::Manager::useManagedMemory())
       RMM_CHECK_CUDA(cudaMallocManaged(reinterpret_cast<void**>(ptr), new_size));
     else
