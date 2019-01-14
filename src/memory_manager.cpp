@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "memory_manager.h"
+#include "rmm/detail/memory_manager.hpp"
 
 namespace rmm
 {
@@ -84,4 +84,14 @@ namespace rmm
         std::lock_guard<std::mutex> guard(log_mutex);
         events.clear();
     }
+
+    rmmError_t Manager::registerStream(cudaStream_t stream) { 
+            std::lock_guard<std::mutex> guard(streams_mutex);
+            if (registered_streams.empty() || 0 == registered_streams.count(stream)) {
+                registered_streams.insert(stream);
+                if (stream && PoolAllocation == options.allocation_mode) // don't register the null stream with CNMem
+                    RMM_CHECK_CNMEM( cnmemRegisterStream(stream) );
+            }
+            return RMM_SUCCESS;
+        }
 }
