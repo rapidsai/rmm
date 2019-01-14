@@ -25,7 +25,7 @@
 extern "C" {
 #include "memory.h"
 }
-#include "memory_manager.h"
+#include "rmm/detail/memory_manager.hpp"
 
 /** ---------------------------------------------------------------------------*
  * @brief Macro wrapper to check for error in RMM API calls.

@@ -15,7 +15,7 @@
  */
 #include "gtest/gtest.h"
 #include "test_fixtures.h"
-#include <rmm.h>
+#include "rmm/rmm.h"
 
 // Helper macros to simplify testing for success or failure
 #define ASSERT_SUCCESS(res) ASSERT_EQ(RMM_SUCCESS, (res));
