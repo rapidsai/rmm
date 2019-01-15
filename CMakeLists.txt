@@ -124,10 +124,20 @@ target_link_libraries(rmm cudart cuda)
 ###################################################################################################
 # - python cffi bindings --------------------------------------------------------------------------
 
+# To enable building RMM as a submodule, where the binary directory is not underneath the RMM
+# source directory.
+set(MEMORY_H_PATH "${CMAKE_CURRENT_SOURCE_DIR}/include/rmm/memory.h")
+# Input is a template which assigns MEMORY_H_PATH to a variable. This command replaces the variable with its value
+# and saves the file as librmm_build.py
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/python/librmm_cffi/librmm_build.py.in" 
+               "${CMAKE_CURRENT_SOURCE_DIR}/python/librmm_cffi/librmm_build.py")
+
 add_custom_command(OUTPUT RMM_PYTHON_CFFI
                    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-                   COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/../python ${CMAKE_BINARY_DIR}/python
-                   COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_BINARY_DIR}/python python setup.py build_ext --inplace
+                   COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/python/librmm_cffi ${CMAKE_BINARY_DIR}/python/librmm_cffi
+                   COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/python/tests ${CMAKE_BINARY_DIR}/python/tests
+                   COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/python/setup.py ${CMAKE_BINARY_DIR}/python/rmm_setup.py
+                   COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_BINARY_DIR}/python python rmm_setup.py build_ext --inplace
                    VERBATIM)
 
 add_custom_target(rmm_python_cffi DEPENDS rmm RMM_PYTHON_CFFI)
@@ -147,7 +157,7 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include
 
 add_custom_command(OUTPUT RMM_INSTALL_PYTHON_CFFI
                    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-                   COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_BINARY_DIR}/python python setup.py install --single-version-externally-managed --record=record.txt
+                   COMMAND ${CMAKE_COMMAND} -E chdir ${CMAKE_BINARY_DIR}/python python rmm_setup.py install --single-version-externally-managed --record=record.txt
                    VERBATIM)
 
 add_custom_target(rmm_install_python DEPENDS rmm RMM_PYTHON_CFFI RMM_INSTALL_PYTHON_CFFI)

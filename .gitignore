@@ -38,3 +38,6 @@ python/librmm_cffi/librmm_cffi.py
 
 # cnmem copy
 include/rmm/detail/cnmem.h
+
+# generated librmm_build.py
+python/librmm_cffi/librmm_build.py
