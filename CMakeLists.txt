@@ -152,7 +152,7 @@ install(TARGETS rmm
 install(EXPORT rmm
         DESTINATION lib)
 
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/rmm
         DESTINATION include)
 
 add_custom_command(OUTPUT RMM_INSTALL_PYTHON_CFFI
