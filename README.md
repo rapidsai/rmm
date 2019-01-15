@@ -72,9 +72,9 @@ $ make test
 
 - Build, install, and test cffi bindings:
 ```bash
-$ make python_cffi                                  # build CFFI bindings for librmm.so
-$ make install_python                               # build & install CFFI python bindings. Depends on cffi package from PyPi or Conda
-$ cd python && py.test -v                           # optional, run python tests on low-level python bindings
+$ make rmm_python_cffi                              # build CFFI bindings for librmm.so
+$ make rmm_install_python                           # build & install CFFI python bindings. Depends on cffi package from PyPi or Conda
+$ cd python && pytest -v                            # optional, run python tests on low-level python bindings
 ```
 
 Done! You are ready to develop for the RMM OSS project.
@@ -97,7 +97,7 @@ cudaError_t result = cudaMalloc(&myvar, size_in_bytes) );
 cudaError_t result = cudaFree(myvar) );
 
 // new
-rmmError_t result = RMMM_ALLOC(&myvar, size_in_bytes, stream_id);
+rmmError_t result = RMM_ALLOC(&myvar, size_in_bytes, stream_id);
 // ...
 rmmError_t result = RMM_FREE(myvar, stream_id);
 ```
