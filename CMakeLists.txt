@@ -137,6 +137,7 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/python/librmm_cffi/librmm_build.py.i
 
 add_custom_command(OUTPUT RMM_PYTHON_CFFI
                    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+                   COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/rmm/librmm.so ${CMAKE_BINARY_DIR}/librmm.so
                    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/python/librmm_cffi ${CMAKE_BINARY_DIR}/python/librmm_cffi
                    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/python/tests ${CMAKE_BINARY_DIR}/python/tests
                    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/python/setup.py ${CMAKE_BINARY_DIR}/python/rmm_setup.py
@@ -149,10 +150,6 @@ add_custom_target(rmm_python_cffi DEPENDS rmm RMM_PYTHON_CFFI)
 # - install targets -------------------------------------------------------------------------------
 
 install(TARGETS rmm
-        EXPORT rmm
-        DESTINATION lib)
-
-install(EXPORT rmm
         DESTINATION lib)
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/rmm
