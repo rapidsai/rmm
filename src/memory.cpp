@@ -169,4 +169,3 @@ rmmError_t rmmGetLog(char *buffer, size_t buffer_size)
     }
     return RMM_SUCCESS;
 }
-
