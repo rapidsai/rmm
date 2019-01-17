@@ -27,6 +27,8 @@ extern "C" {
 }
 #include "memory_manager.h"
 
+#include <cuda.h>
+
 /** ---------------------------------------------------------------------------*
  * @brief Macro wrapper to check for error in RMM API calls.
  * ---------------------------------------------------------------------------**/
@@ -167,20 +169,45 @@ inline rmmError_t realloc(T** ptr, size_t new_size, cudaStream_t stream,
   }
 
   if (!ptr) return RMM_ERROR_INVALID_ARGUMENT;
-
+     
   if (rmm::Manager::usePoolAllocator()) {
     RMM_CHECK(rmm::Manager::getInstance().registerStream(stream));
-    RMM_CHECK_CNMEM(cnmemFree(*reinterpret_cast<void**>(ptr), stream));
+    
+    T* new_ptr = nullptr;
+    // allocate new space
     RMM_CHECK_CNMEM(
-        cnmemMalloc(reinterpret_cast<void**>(ptr), new_size, stream));
+        cnmemMalloc(reinterpret_cast<void**>(&new_ptr), new_size, stream));
+
+    size_t old_size = 0; // todo fix this
+
+    // copy old data
+    RMM_CHECK_CUDA(cudaMemcpy(new_ptr, *ptr, std::min(new_size, old_size), cudaMemcpyDefault));
+    // free old pointer and reassign
+    RMM_CHECK_CNMEM(cnmemFree(*reinterpret_cast<void**>(ptr), stream));
+    *ptr = new_ptr;
+    
   } else {
-    RMM_CHECK_CUDA(cudaFree(*ptr));
-    if (!new_size)
-      ptr[0] = nullptr;
-    else if (rmm::Manager::useManagedMemory())
-      RMM_CHECK_CUDA(cudaMallocManaged(reinterpret_cast<void**>(ptr), new_size));
-    else
-      RMM_CHECK_CUDA(cudaMalloc(reinterpret_cast<void**>(ptr), new_size));
+    T* new_ptr = nullptr;
+
+    // allocate new space    
+    if (new_size > 0) {     
+      if (rmm::Manager::useManagedMemory())
+        RMM_CHECK_CUDA(cudaMallocManaged(reinterpret_cast<void**>(&new_ptr), new_size));
+      else
+        RMM_CHECK_CUDA(cudaMalloc(reinterpret_cast<void**>(&new_ptr), new_size));
+
+      size_t old_size = 0;
+      CUresult res = cuMemGetAddressRange(nullptr, &old_size, reinterpret_cast<CUdeviceptr>(*ptr));
+      if (res != CUDA_SUCCESS)
+        return RMM_ERROR_INVALID_ARGUMENT;
+
+      // copy old data
+      RMM_CHECK_CUDA(cudaMemcpy(new_ptr, *ptr, std::min(new_size, old_size), cudaMemcpyDefault));
+      // free old pointer
+      RMM_CHECK_CUDA(cudaFree(*ptr));
+    }
+
+    *ptr = new_ptr;
   }
   
   log.setPointer(*ptr);
@@ -203,7 +230,7 @@ inline rmmError_t realloc(T** ptr, size_t new_size, cudaStream_t stream,
  *                    error.
  * --------------------------------------------------------------------------**/
 inline rmmError_t free(void* ptr, cudaStream_t stream, const char* file,
-                   unsigned int line) {
+                       unsigned int line) {
   rmm::LogIt log(rmm::Logger::Free, ptr, 0, stream, file, line);
   if (rmm::Manager::usePoolAllocator())
     RMM_CHECK_CNMEM(cnmemFree(ptr, stream));
