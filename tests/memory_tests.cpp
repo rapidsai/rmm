@@ -17,6 +17,8 @@
 #include "test_fixtures.h"
 #include <rmm.h>
 
+#include <vector>
+
 // Helper macros to simplify testing for success or failure
 #define ASSERT_SUCCESS(res) ASSERT_EQ(RMM_SUCCESS, (res));
 #define ASSERT_FAILURE(res) ASSERT_NE(RMM_SUCCESS, (res));
@@ -173,6 +175,36 @@ TYPED_TEST(MemoryManagerTest, ReallocateMuchLarger) {
     ASSERT_SUCCESS( RMM_ALLOC(&a, this->size_kb, stream) );
     ASSERT_SUCCESS( RMM_REALLOC(&a, this->size_gb, stream) );
     ASSERT_SUCCESS( RMM_FREE(a, stream) );
+}
+
+void realloc_test(size_t start_size, size_t end_size)
+{
+    int *a = nullptr;
+    const int value = 1234;
+    const int input_bytes = start_size * sizeof(int);
+    const int output_bytes = end_size * sizeof(int);
+    std::vector<int> input(start_size, 1234);
+    ASSERT_SUCCESS( RMM_ALLOC(&a, input_bytes, stream) );
+    
+    cudaError_t err = cudaMemcpy(a, input.data(), input_bytes, cudaMemcpyHostToDevice);
+    ASSERT_EQ(err, cudaSuccess);
+    
+    ASSERT_SUCCESS( RMM_REALLOC(&a, output_bytes, stream) );
+
+    std::vector<int> output(end_size);
+    err = cudaMemcpy(output.data(), a, output_bytes, cudaMemcpyDeviceToHost);
+    ASSERT_EQ(err, cudaSuccess);
+    
+    for (size_t i = 0; i < std::min(start_size, end_size); i++) ASSERT_EQ(output[i], value);
+
+    ASSERT_SUCCESS( RMM_FREE(a, stream) );
+}
+
+TYPED_TEST(MemoryManagerTest, ReallocatePreservesData) {
+    // test that data is preserved when reallocated smaller
+    realloc_test(2000, 1000);
+    // test that data is preserved when reallocated larger    
+    realloc_test(1000, 2000);
 }
 
 TYPED_TEST(MemoryManagerTest, GetInfo) {
