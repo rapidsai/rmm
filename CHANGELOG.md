@@ -6,7 +6,7 @@
  
 ## Improvements
  
- - PR #7 Enable building RMM as a submodule
+ - PR #12 Enable building RMM as a submodule
 
 ## Bug Fixes
 
