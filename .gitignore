@@ -8,6 +8,7 @@ __pycache__
 .cache
 .coverage
 .vscode
+*.code-workspace
 *.swp
 *.pytest_cache
 DartConfiguration.tcl

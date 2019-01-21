@@ -165,6 +165,36 @@ namespace rmm
         static rmmOptions_t getOptions() { return getInstance().options; }
 
         /** ---------------------------------------------------------------------------*
+         * @brief Returns true when pool allocation is enabled
+         * 
+         * @return true if pool allocation is enabled
+         * @return false if pool allocation is disabled
+         * --------------------------------------------------------------------------**/
+        static inline bool usePoolAllocator() {
+            return getOptions().allocation_mode & PoolAllocation;
+        }
+
+        /** ---------------------------------------------------------------------------*
+         * @brief Returns true if CUDA Managed Memory allocation is enabled
+         * 
+         * @return true if CUDA Managed Memory allocation is enabled
+         * @return false if CUDA Managed Memory allocation is disabled
+         * --------------------------------------------------------------------------**/
+        static inline bool useManagedMemory() {
+            return getOptions().allocation_mode & CudaManagedMemory;
+        }
+
+        /** ---------------------------------------------------------------------------*
+         * @brief Returns true when CUDA default allocation is enabled
+         *          * 
+         * @return true if CUDA default allocation is enabled
+         * @return false if CUDA default allocation is disabled
+         * --------------------------------------------------------------------------**/
+        inline bool useCudaDefaultAllocator() {
+            return CudaDefaultAllocation == getOptions().allocation_mode;
+        }
+
+        /** ---------------------------------------------------------------------------*
          * @brief Shut down the Manager (clears the context)
          * 
          * --------------------------------------------------------------------------**/
