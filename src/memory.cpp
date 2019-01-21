@@ -21,9 +21,10 @@
  *
  */
 
-#include "rmm.h"
-#include "memory_manager.h"
-#include "memory.hpp"
+#include "rmm/rmm.h"
+#include "rmm/detail/memory_manager.hpp"
+#include "rmm/memory.hpp"
+
 #include <fstream>
 #include <sstream>
 #include <cstddef>
@@ -58,7 +59,7 @@ rmmError_t rmmInitialize(rmmOptions_t *options)
         rmm::Manager::setOptions(*options);
     }
 
-    if (rmm::usePoolAllocator())
+    if (rmm::Manager::usePoolAllocator())
     {
         cnmemDevice_t dev;
         RMM_CHECK_CUDA( cudaGetDevice(&(dev.device)) );
@@ -68,7 +69,8 @@ rmmError_t rmmInitialize(rmmOptions_t *options)
         cudaStream_t streams[1]; streams[0] = 0;
         dev.streams = streams;
         dev.streamSizes = 0;
-        RMM_CHECK_CNMEM( cnmemInit(1, &dev, 0) );
+        unsigned flags = rmm::Manager::useManagedMemory() ? CNMEM_FLAGS_MANAGED : 0;
+        RMM_CHECK_CNMEM( cnmemInit(1, &dev, flags) );
     }
     return RMM_SUCCESS;
 }
@@ -76,7 +78,7 @@ rmmError_t rmmInitialize(rmmOptions_t *options)
 // Shutdown memory manager.
 rmmError_t rmmFinalize()
 {
-    if (rmm::usePoolAllocator())
+    if (rmm::Manager::usePoolAllocator())
         RMM_CHECK_CNMEM( cnmemFinalize() );
     
     rmm::Manager::getInstance().finalize();
@@ -121,7 +123,7 @@ rmmError_t rmmGetAllocationOffset(ptrdiff_t *offset,
 // with the stream.
 rmmError_t rmmGetInfo(size_t *freeSize, size_t *totalSize, cudaStream_t stream)
 {
-    if (rmm::usePoolAllocator())
+    if (rmm::Manager::usePoolAllocator())
     {
         RMM_CHECK( rmm::Manager::getInstance().registerStream(stream) );
         RMM_CHECK_CNMEM( cnmemMemGetInfo(freeSize, totalSize, stream) );

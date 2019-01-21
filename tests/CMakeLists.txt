@@ -21,7 +21,7 @@ include_directories("${GTEST_INCLUDE_DIR}"
                     "${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
                     "${CMAKE_SOURCE_DIR}/include"
                     "${CMAKE_SOURCE_DIR}/src"
-                    "${CMAKE_SOURCE_DIR}/thirdparty/cnmem/include")
+                    "${CMAKE_CURRENT_SOURCE_DIR}/../include")
 
 ###################################################################################################
 # - library paths ---------------------------------------------------------------------------------
@@ -47,11 +47,3 @@ ConfigureTest(RMM_TEST "${RMM_TEST_SRC}")
 ###################################################################################################
 
 enable_testing()
-
-
-
-
-
-
-
-
