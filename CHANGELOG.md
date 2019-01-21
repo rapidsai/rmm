@@ -5,8 +5,12 @@
  - PR #2 Added CUDA Managed Memory allocation mode
  
 ## Improvements
+ 
+ - PR #7 Enable building RMM as a submodule
 
 ## Bug Fixes
+
+ - PR #10 Change cnmem submodule URL to use https
 
 # RMM 0.4.0 (20 Dec 2018)
 
