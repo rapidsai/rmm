@@ -13,16 +13,11 @@
 # limitations under the License.
 
 import cffi
-import os
-
-header = os.environ.get('RMM_HEADER', '${MEMORY_H_PATH}')
 
 ffibuilder = cffi.FFI()
 ffibuilder.set_source("librmm_cffi.librmm_cffi", None)
 
-
-
-with open(header, 'r') as fin:
+with open('../../include/memory.h', 'r') as fin:
     ffibuilder.cdef(fin.read())
 
 if __name__ == "__main__":
