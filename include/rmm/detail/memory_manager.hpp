@@ -31,8 +31,8 @@
 #include <set>
 #include <mutex>
 
-#include "memory.h"
-#include "cnmem.h"
+#include "rmm/memory.h"
+#include "rmm/detail/cnmem.h"
 
 /** ---------------------------------------------------------------------------*
  * @brief Macro wrapper for CNMEM API calls to return appropriate RMM errors.
@@ -213,15 +213,7 @@ namespace rmm
          * @return rmmError_t RMM_SUCCESS if all goes well, RMM_ERROR_INVALID_ARGUMENT
          *                    if the stream is invalid.
          * ---------------------------------------------------------------------------**/
-        rmmError_t registerStream(cudaStream_t stream) { 
-            std::lock_guard<std::mutex> guard(streams_mutex);
-            if (registered_streams.empty() || 0 == registered_streams.count(stream)) {
-                registered_streams.insert(stream);
-                if (stream && usePoolAllocator()) // don't register the null stream with CNMem
-                    RMM_CHECK_CNMEM( cnmemRegisterStream(stream) );
-            }
-            return RMM_SUCCESS;
-        }
+        rmmError_t registerStream(cudaStream_t stream);
 
     private:
         Manager() : options({ CudaDefaultAllocation, false, 0 }) {}

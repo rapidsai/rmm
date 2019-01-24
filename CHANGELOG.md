@@ -5,12 +5,15 @@
  - PR #2 Added CUDA Managed Memory allocation mode
  
 ## Improvements
+ 
+ - PR #12 Enable building RMM as a submodule
 
  - PR #13 CMake: Added CXX11ABI option and removed Travis references
 
 ## Bug Fixes
 
- - PR #15 Temporarily disable hanging AllocateTB test for managed memory.
+ - PR #10 Change cnmem submodule URL to use https
+ - PR #15 Temporarily disable hanging AllocateTB test for managed memory
 
 # RMM 0.4.0 (20 Dec 2018)
 
