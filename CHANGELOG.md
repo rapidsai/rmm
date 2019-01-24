@@ -10,6 +10,8 @@
 
 ## Bug Fixes
 
+ - PR #15 Temporarily disable hanging AllocateTB test for managed memory.
+
 # RMM 0.4.0 (20 Dec 2018)
 
 ## New Features
