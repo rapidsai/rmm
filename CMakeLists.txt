@@ -135,7 +135,7 @@ target_link_libraries(rmm cudart cuda)
 
 # To enable building RMM as a submodule, where the binary directory is not underneath the RMM
 # source directory.
-set(MEMORY_H_PATH "${CMAKE_CURRENT_SOURCE_DIR}/include/rmm/memory.h")
+set(RMM_API_H_PATH "${CMAKE_CURRENT_SOURCE_DIR}/include/rmm/rmm_api.h")
 # Input is a template which assigns MEMORY_H_PATH to a variable. This command replaces the variable with its value
 # and saves the file as librmm_build.py
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/python/librmm_cffi/librmm_build.py.in" 
@@ -143,7 +143,7 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/python/librmm_cffi/librmm_build.py.i
 
 add_custom_command(OUTPUT RMM_PYTHON_CFFI
                    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-                   COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/rmm/librmm.so ${CMAKE_BINARY_DIR}/librmm.so
+                   COMMAND test -e ${CMAKE_BINARY_DIR}/librmm.so || ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/rmm/librmm.so ${CMAKE_BINARY_DIR}/librmm.so
                    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/python/librmm_cffi ${CMAKE_BINARY_DIR}/python/librmm_cffi
                    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/python/tests ${CMAKE_BINARY_DIR}/python/tests
                    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/python/setup.py ${CMAKE_BINARY_DIR}/python/rmm_setup.py
