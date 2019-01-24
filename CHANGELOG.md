@@ -6,6 +6,8 @@
  
 ## Improvements
 
+ - PR #13 CMake: Added CXX11ABI option and removed Travis references
+
 ## Bug Fixes
 
 # RMM 0.4.0 (20 Dec 2018)
