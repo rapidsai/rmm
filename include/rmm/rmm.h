@@ -2,10 +2,10 @@
 #define RMM_H
 
 #include <cuda_runtime_api.h>
-#include "memory.hpp"
+#include "rmm.hpp"
 
 extern "C" {
-#include "memory.h"
+#include "rmm_api.h"
 }
 
 /** ---------------------------------------------------------------------------*

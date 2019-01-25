@@ -23,7 +23,7 @@
 #ifndef MEMORY_HPP
 #define MEMORY_HPP
 extern "C" {
-#include "memory.h"
+#include "rmm/rmm_api.h"
 }
 #include "rmm/detail/memory_manager.hpp"
 

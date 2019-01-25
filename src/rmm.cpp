@@ -23,7 +23,7 @@
 
 #include "rmm/rmm.h"
 #include "rmm/detail/memory_manager.hpp"
-#include "rmm/memory.hpp"
+
 
 #include <fstream>
 #include <sstream>

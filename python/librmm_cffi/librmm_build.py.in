@@ -15,7 +15,7 @@
 import cffi
 import os
 
-header = os.environ.get('RMM_HEADER', '${MEMORY_H_PATH}')
+header = os.environ.get('RMM_HEADER', '${RMM_API_H_PATH}')
 
 ffibuilder = cffi.FFI()
 ffibuilder.set_source("librmm_cffi.librmm_cffi", None)
