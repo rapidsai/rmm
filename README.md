@@ -2,20 +2,22 @@
 
 RAPIDS Memory Manager (RMM) is:
 
- - A replacement allocator for CUDA Device Memory.
+ - A replacement allocator for CUDA Device Memory (and CUDA Managed Memory).
  - A pool allocator to make CUDA device memory allocation / deallocation faster
    and asynchronous.
- - A central place for all device memory allocations in cuDF (C++ and Python).
+ - A central place for all device memory allocations in cuDF (C++ and Python) and
+   other [RAPIDS](https://rapids.ai) libraries.
 
 RMM is not:
- - A replacement allocator for CUDA managed memory (Unified Memory, 
-   e.g. `cudaMallocManaged`). This may change in the future.
+ 
  - A replacement allocator for host memory (`malloc`, `new`, `cudaMallocHost`, 
    `cudaHostRegister`).
 
 ## Install RMM
 
-RMM currently must be built from source.
+RMM currently must be built from source. This happens automatically in a 
+submodule when you build or install [cuDF](https://github.com/rapidsai/cudf) or
+[RAPIDS](https://rapids.ai) containers.
 
 ## Building from Source
 
@@ -209,9 +211,10 @@ experimental pool allocator using the `librmm_config` module.
 ```
 from librmm_cffi import librmm_config as rmm_cfg
 
-rmm_cfg.use_pool_allocator = True # default is False
-rmm_cfg.initial_pool_size = 2<<30 # set to 2GiB. Default is 1/2 total GPU memory
-rmm_cfg.enable_logging = True     # default is False -- has perf overhead
+rmm_cfg.use_pool_allocator = True  # default is False
+rmm_cfg.initial_pool_size = 2<<30  # set to 2GiB. Default is 1/2 total GPU memory
+rmm_cfg.use_managed_memory = False # default is false
+rmm_cfg.enable_logging = True      # default is False -- has perf overhead
 ```
 
 To configure RMM options to be used in cuDF before loading, simply do the above 
@@ -251,3 +254,21 @@ cuDF operations with device-memory-intensive computations that don't use RMM
 finalize RMM. The Mortgage E2E workflow notebook uses this technique. We are 
 working on better ways to reclaim memory, as well as making RAPIDS machine
 learning libraries use the same RMM memory pool.
+
+### CUDA Managed Memory
+
+RMM can be set to allocate all memory as managed memory (`cudaMallocManaged`
+underlying allocator). This is enabled in C++ by setting the `allocation_mode`
+member of the struct `rmmOptions_t` to include the flag `CudaManagedMemory`
+(the flags are ORed), and passing it to `rmmInitialize()`. If the flag
+`PoolAllocation` is also set, then RMM will allocate from a pool of managed
+memory. 
+
+In Python, use the `librmm_config.use_managed_memory` Boolean setting
+as shown previously. 
+
+When the allocation mode is both `CudaManagedMemory` and `PoolAllocation`, 
+RMM allocates the initial pool (and any expansion allocations) using 
+`cudaMallocManaged` and then prefetches the pool to the GPU using 
+`cudaMemPrefetchAsync` so all pool memory that will fit is initially located
+on the device.

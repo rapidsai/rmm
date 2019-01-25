@@ -9,6 +9,7 @@
  - PR #12 Enable building RMM as a submodule
  - PR #13 CMake: Added CXX11ABI option and removed Travis references
  - PR #16 CMake: Added PARALLEL_LEVEL environment variable handling for GTest build parallelism (matches cuDF)
+ - PR #17 Update README with v0.5 changes including Managed Memory support
 
 ## Bug Fixes
 
