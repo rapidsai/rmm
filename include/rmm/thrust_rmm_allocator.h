@@ -91,12 +91,16 @@ using device_vector = thrust::device_vector<T, rmm_allocator<T>>;
  */
 /* ----------------------------------------------------------------------------*/
 inline auto exec_policy(cudaStream_t stream = 0) {
-  rmm_allocator<char>* alloc = new rmm_allocator<char>(stream);
+
+  rmm_allocator<char> * alloc{nullptr};
+
+  alloc = new rmm_allocator<char>(stream);
+
   using T = decltype(thrust::cuda::par(*alloc));
 
   auto deleter = [&alloc](T* pointer) {
-    free(pointer);
     free(alloc);
+    free(pointer);
   };
 
   std::unique_ptr<T, decltype(deleter)> policy{new T(*alloc), deleter};
