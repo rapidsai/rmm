@@ -121,8 +121,7 @@ situations:
 
 RMM includes a custom Thrust allocator in the file `thrust_rmm_allocator.h`. This defines the template class `rmm_allocator`, and 
 a custom Thrust CUDA device execution policy called `rmm::exec_policy(stream)`.
-This instructs Thrust to use RMM for temporary memory allocation and execute on 
-the specified `stream`.
+```
 
 #### Thrust Device Vectors
 
@@ -144,13 +143,20 @@ For convenience, you can use the alias `rmm::device_vector<T>` defined in
 #### Thrust Algorithms
 
 To instruct Thrust to use RMM to allocate temporary storage, you can use the custom
-Thrust CUDA device execution policy: `rmm::exec_policy(stream)`. This instructs 
-Thrust to use RMM for temporary memory allocation and execute on the specified `stream`.
+Thrust CUDA device execution policy: `rmm::exec_policy(stream)`. 
+This instructs Thrust to use the `rmm_allocator` on the specified stream for temporary memory allocation. 
 
-Example usage:
+`rmm::exec_policy(stream)` returns a `std::unique_ptr` to a Thrust execution policy that uses `rmm_allocator` for temporary allocations.
+In order to specify that the Thrust algorithm be executed on a specific stream, the usage is:
+
 ```
-thrust::sort(rmm::exec_policy(stream), ...);
+thrust::sort(rmm::exec_policy(stream)->on(stream), ...);
 ```
+
+The first `stream` argument is the `stream` to use for `rmm_allocator`. 
+The second `stream` argument is what should be used to execute the Thrust algorithm.
+These two arguments must be identical.
+
 
 ## Using RMM in Python Code
 
