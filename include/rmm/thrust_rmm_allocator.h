@@ -90,10 +90,18 @@ using device_vector = thrust::device_vector<T, rmm_allocator<T>>;
  * that runs on the specified stream.
  */
 /* ----------------------------------------------------------------------------*/
-inline auto exec_policy(cudaStream_t stream = 0){
-  // par_t::operator() can't accept a r-value, so need to pass it an l-value
-  rmm_allocator<char> allocator(stream);
-  return thrust::cuda::par(allocator).on(stream);
+inline auto exec_policy(cudaStream_t stream = 0) {
+  rmm_allocator<char>* alloc = new rmm_allocator<char>(stream);
+  using T = decltype(thrust::cuda::par(*alloc));
+
+  auto deleter = [&alloc](T* pointer) {
+    free(pointer);
+    free(alloc);
+  };
+
+  std::unique_ptr<T, decltype(deleter)> policy{new T(*alloc), deleter};
+
+  return policy;
 }
 
 } // namespace rmm
