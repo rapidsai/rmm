@@ -13,6 +13,8 @@ RMM is not:
  - A replacement allocator for host memory (`malloc`, `new`, `cudaMallocHost`, 
    `cudaHostRegister`).
 
+**NOTE:** For the latest stable [README.md](https://github.com/rapidsai/rmm/blob/master/README.md) ensure you are on the `master` branch.
+
 ## Install RMM
 
 RMM currently must be built from source. This happens automatically in a 
