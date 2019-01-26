@@ -99,7 +99,12 @@ inline auto exec_policy(cudaStream_t stream = 0) {
   using T = decltype(thrust::cuda::par(*alloc));
 
   auto deleter = [&alloc](T* pointer) {
+
+// FIXME: Compiler warning for `alloc` being potentially uninitialized
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wuninitialized"
     free(alloc);
+#pragma GCC diagnostic pop
     free(pointer);
   };
 
