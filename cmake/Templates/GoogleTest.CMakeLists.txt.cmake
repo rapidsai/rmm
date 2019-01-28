@@ -10,10 +10,3 @@ ExternalProject_Add(GoogleTest
                     INSTALL_DIR		  "${GTEST_ROOT}/install"
                     CMAKE_ARGS        ${GTEST_CMAKE_ARGS} -DCMAKE_INSTALL_PREFIX=${GTEST_ROOT}/install)
 
-
-
-
-
-
-
-

@@ -1,24 +1,37 @@
-# RMM 0.5.0 (Date TBD)
+# RMM 0.5.0 (28 Jan 2019)
 
 ## New Features
 
-- PR #1: Spun off RMM from cuDF into its own repository.
+ - PR #2 Added CUDA Managed Memory allocation mode
+ 
+## Improvements
+ 
+ - PR #12 Enable building RMM as a submodule
+ - PR #13 CMake: Added CXX11ABI option and removed Travis references
+ - PR #16 CMake: Added PARALLEL_LEVEL environment variable handling for GTest build parallelism (matches cuDF)
+ - PR #17 Update README with v0.5 changes including Managed Memory support
+
+## Bug Fixes
+
+ - PR #10 Change cnmem submodule URL to use https
+ - PR #15 Temporarily disable hanging AllocateTB test for managed memory
+ - PR #28 Fix invalid reference to local stack variable in `rmm::exec_policy`
+
+# RMM 0.4.0 (20 Dec 2018)
+
+## New Features
+
+- PR #1 Spun off RMM from cuDF into its own repository.
 
 ## Improvements
 
 - CUDF PR #472 RMM: Created centralized rmm::device_vector alias and rmm::exec_policy
 - CUDF PR #465 Added templated C++ API for RMM to avoid explicit cast to `void**`
-
-RMM was initially implemented as part of cuDF, so we include the relevant changelog history below.
-
-# cuDF 0.4.0 (05 Dec 2018)
-
-## New Features
-
-## Improvements
  
 ## Bug Fixes
- 
+
+
+RMM was initially implemented as part of cuDF, so we include the relevant changelog history below. 
 
 # cuDF 0.3.0 (23 Nov 2018)
 
