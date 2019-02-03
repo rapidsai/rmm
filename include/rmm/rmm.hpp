@@ -26,6 +26,12 @@ extern "C" {
 #include "rmm/rmm_api.h"
 }
 #include "rmm/detail/memory_manager.hpp"
+#include "rmm/detail/exceptions.hpp"
+
+// forward decalaration
+namespace rmm{
+struct bad_alloc;
+}
 
 /** ---------------------------------------------------------------------------*
  * @brief Macro wrapper to check for error in RMM API calls.
@@ -43,9 +49,9 @@ extern "C" {
   do {                                          \
     cudaError_t cudaError = (call);             \
     if (cudaError == cudaErrorMemoryAllocation) \
-      return RMM_ERROR_OUT_OF_MEMORY;           \
+      throw rmm::bad_alloc();                   \
     else if (cudaError != cudaSuccess)          \
-      return RMM_ERROR_CUDA_ERROR;              \
+      throw std::runtime_error(std::string{"RMM allocation CUDA error. Code = " + std::to_string(cudaError)} ); \
   } while (0)
 
 namespace rmm {
@@ -100,6 +106,7 @@ class LogIt {
   unsigned int line;
   bool usageLogging;
 };
+
 
 /** ---------------------------------------------------------------------------*
  * @brief Allocate memory and return a pointer to device memory.
