@@ -168,10 +168,12 @@ struct cnmem_error : public std::exception {
 /** ---------------------------------------------------------------------------*
  * @brief Macro wrapper to check for error in RMM API calls.
  * ---------------------------------------------------------------------------**/
-#define RMM_CHECK(call, file, line)         \
-  do {                                      \
-    rmmError_t error = (call);              \
-    if (error != RMM_SUCCESS) return error; \
+#define RMM_CHECK(call, file, line)                \
+  do {                                             \
+    rmmError_t error = (call);                     \
+    if (error != RMM_SUCCESS) {                    \
+      throw rmm::exception(error, (file), (line)); \
+    }                                              \
   } while (0)
 
 /** ---------------------------------------------------------------------------*
@@ -189,24 +191,12 @@ struct cnmem_error : public std::exception {
 /** ---------------------------------------------------------------------------*
  * @brief Macro wrapper for CNMEM API calls to return appropriate RMM errors.
  * ---------------------------------------------------------------------------**/
-#define RMM_CHECK_CNMEM(call, file, line)     \
-  do {                                        \
-    cnmemStatus_t error = (call);             \
-    switch (error) {                          \
-      case CNMEM_STATUS_SUCCESS:              \
-        break; /* don't return on success! */ \
-      case CNMEM_STATUS_CUDA_ERROR:           \
-        return RMM_ERROR_CUDA_ERROR;          \
-      case CNMEM_STATUS_INVALID_ARGUMENT:     \
-        return RMM_ERROR_INVALID_ARGUMENT;    \
-      case CNMEM_STATUS_NOT_INITIALIZED:      \
-        return RMM_ERROR_NOT_INITIALIZED;     \
-      case CNMEM_STATUS_OUT_OF_MEMORY:        \
-        return RMM_ERROR_OUT_OF_MEMORY;       \
-      case CNMEM_STATUS_UNKNOWN_ERROR:        \
-      default:                                \
-        return RMM_ERROR_UNKNOWN;             \
-    }                                         \
+#define RMM_CHECK_CNMEM(call, file, line)        \
+  do {                                           \
+    cnmemStatus_t error = (call);                \
+    if (CNMEM_STATUS_SUCCESS != error) {         \
+      throw rmm::cnmem_error(error, file, line); \
+    }                                            \
   } while (0)
 
 #endif
