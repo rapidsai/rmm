@@ -113,7 +113,7 @@ extern "C" {
 
     if (rmm::Manager::usePoolAllocator()) {
       RMM_CHECK(rmm::Manager::getInstance().registerStream(stream));
-      RMM_CHECK_CNMEM(cnmemMalloc(reinterpret_cast<void**>(ptr), size, stream));
+      RMM_CHECK_CNMEM(cnmemMalloc(reinterpret_cast<void**>(ptr), size, stream), file, line);
     } else if (rmm::Manager::useManagedMemory()) {
       RMM_CHECK_CUDA(cudaMallocManaged(reinterpret_cast<void**>(ptr), size), file, line);
     } else
@@ -153,9 +153,11 @@ extern "C" {
 
     if (rmm::Manager::usePoolAllocator()) {
       RMM_CHECK(rmm::Manager::getInstance().registerStream(stream));
-      RMM_CHECK_CNMEM(cnmemFree(*reinterpret_cast<void**>(ptr), stream));
+      RMM_CHECK_CNMEM(cnmemFree(*reinterpret_cast<void**>(ptr), stream), file,
+                      line);
       RMM_CHECK_CNMEM(
-          cnmemMalloc(reinterpret_cast<void**>(ptr), new_size, stream));
+          cnmemMalloc(reinterpret_cast<void**>(ptr), new_size, stream), file,
+          line);
     } else {
       RMM_CHECK_CUDA(cudaFree(*ptr), file, line);
       if (!new_size)
@@ -194,7 +196,7 @@ extern "C" {
                          unsigned int line) {
     rmm::LogIt log(rmm::Logger::Free, ptr, 0, stream, file, line);
     if (rmm::Manager::usePoolAllocator())
-      RMM_CHECK_CNMEM(cnmemFree(ptr, stream));
+      RMM_CHECK_CNMEM(cnmemFree(ptr, stream), file, line);
     else
       RMM_CHECK_CUDA(cudaFree(ptr), file, line);
     return RMM_SUCCESS;

@@ -91,7 +91,7 @@ namespace rmm
             if (registered_streams.empty() || 0 == registered_streams.count(stream)) {
                 registered_streams.insert(stream);
                 if (stream && usePoolAllocator()) // don't register the null stream with CNMem
-                    RMM_CHECK_CNMEM( cnmemRegisterStream(stream) );
+                    RMM_CHECK_CNMEM( cnmemRegisterStream(stream), __FILE__, __LINE__);
             }
             return RMM_SUCCESS;
         }

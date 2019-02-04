@@ -168,7 +168,7 @@ struct cnmem_error : public std::exception {
 /** ---------------------------------------------------------------------------*
  * @brief Macro wrapper to check for error in RMM API calls.
  * ---------------------------------------------------------------------------**/
-#define RMM_CHECK(call)         \
+#define RMM_CHECK(call)                     \
   do {                                      \
     rmmError_t error = (call);              \
     if (error != RMM_SUCCESS) return error; \
@@ -185,27 +185,28 @@ struct cnmem_error : public std::exception {
     else if (cudaError != cudaSuccess)                  \
       throw rmm::cuda_error(cudaError, (file), (line)); \
   } while (0)
-  
+
 /** ---------------------------------------------------------------------------*
  * @brief Macro wrapper for CNMEM API calls to return appropriate RMM errors.
  * ---------------------------------------------------------------------------**/
-#define RMM_CHECK_CNMEM(call) do {            \
+#define RMM_CHECK_CNMEM(call, file, line)     \
+  do {                                        \
     cnmemStatus_t error = (call);             \
     switch (error) {                          \
-    case CNMEM_STATUS_SUCCESS:                \
+      case CNMEM_STATUS_SUCCESS:              \
         break; /* don't return on success! */ \
-    case CNMEM_STATUS_CUDA_ERROR:             \
+      case CNMEM_STATUS_CUDA_ERROR:           \
         return RMM_ERROR_CUDA_ERROR;          \
-    case CNMEM_STATUS_INVALID_ARGUMENT:       \
+      case CNMEM_STATUS_INVALID_ARGUMENT:     \
         return RMM_ERROR_INVALID_ARGUMENT;    \
-    case CNMEM_STATUS_NOT_INITIALIZED:        \
+      case CNMEM_STATUS_NOT_INITIALIZED:      \
         return RMM_ERROR_NOT_INITIALIZED;     \
-    case CNMEM_STATUS_OUT_OF_MEMORY:          \
+      case CNMEM_STATUS_OUT_OF_MEMORY:        \
         return RMM_ERROR_OUT_OF_MEMORY;       \
-    case CNMEM_STATUS_UNKNOWN_ERROR:          \
-    default:                                  \
+      case CNMEM_STATUS_UNKNOWN_ERROR:        \
+      default:                                \
         return RMM_ERROR_UNKNOWN;             \
     }                                         \
-} while(0)
+  } while (0)
 
 #endif

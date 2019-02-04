@@ -70,7 +70,7 @@ rmmError_t rmmInitialize(rmmOptions_t *options)
         dev.streams = streams;
         dev.streamSizes = 0;
         unsigned flags = rmm::Manager::useManagedMemory() ? CNMEM_FLAGS_MANAGED : 0;
-        RMM_CHECK_CNMEM(cnmemInit(1, &dev, flags));
+        RMM_CHECK_CNMEM(cnmemInit(1, &dev, flags), __FILE__, __LINE__);
     }
     return RMM_SUCCESS;
 }
@@ -79,8 +79,8 @@ rmmError_t rmmInitialize(rmmOptions_t *options)
 rmmError_t rmmFinalize()
 {
     if (rmm::Manager::usePoolAllocator())
-        RMM_CHECK_CNMEM( cnmemFinalize() );
-    
+      RMM_CHECK_CNMEM(cnmemFinalize(), __FILE__, __LINE__);
+
     rmm::Manager::getInstance().finalize();
     
     return RMM_SUCCESS;
@@ -126,10 +126,12 @@ rmmError_t rmmGetInfo(size_t *freeSize, size_t *totalSize, cudaStream_t stream)
     if (rmm::Manager::usePoolAllocator())
     {
         RMM_CHECK( rmm::Manager::getInstance().registerStream(stream) );
-        RMM_CHECK_CNMEM( cnmemMemGetInfo(freeSize, totalSize, stream) );
+        RMM_CHECK_CNMEM(cnmemMemGetInfo(freeSize, totalSize, stream), __FILE__,
+                        __LINE__);
     }
-    else
+    else{
         RMM_CHECK_CUDA(cudaMemGetInfo(freeSize, totalSize), __FILE__, __LINE__);
+    }
 	return RMM_SUCCESS;
 }
 
