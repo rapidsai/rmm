@@ -168,7 +168,7 @@ struct cnmem_error : public std::exception {
 /** ---------------------------------------------------------------------------*
  * @brief Macro wrapper to check for error in RMM API calls.
  * ---------------------------------------------------------------------------**/
-#define RMM_CHECK(call)                     \
+#define RMM_CHECK(call, file, line)         \
   do {                                      \
     rmmError_t error = (call);              \
     if (error != RMM_SUCCESS) return error; \
