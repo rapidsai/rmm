@@ -15,6 +15,7 @@
  */
 
 #include "rmm/detail/memory_manager.hpp"
+#include "rmm/detail/exceptions.hpp"
 
 namespace rmm
 {

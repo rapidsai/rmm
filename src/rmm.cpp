@@ -62,7 +62,7 @@ rmmError_t rmmInitialize(rmmOptions_t *options)
     if (rmm::Manager::usePoolAllocator())
     {
         cnmemDevice_t dev;
-        RMM_CHECK_CUDA( cudaGetDevice(&(dev.device)) );
+        RMM_CHECK_CUDA(cudaGetDevice(&(dev.device)), __FILE__, __LINE__);
         // Note: cnmem defaults to half GPU memory
         dev.size = rmm::Manager::getOptions().initial_pool_size; 
         dev.numStreams = 1;
@@ -70,7 +70,7 @@ rmmError_t rmmInitialize(rmmOptions_t *options)
         dev.streams = streams;
         dev.streamSizes = 0;
         unsigned flags = rmm::Manager::useManagedMemory() ? CNMEM_FLAGS_MANAGED : 0;
-        RMM_CHECK_CNMEM( cnmemInit(1, &dev, flags) );
+        RMM_CHECK_CNMEM(cnmemInit(1, &dev, flags));
     }
     return RMM_SUCCESS;
 }
@@ -129,7 +129,7 @@ rmmError_t rmmGetInfo(size_t *freeSize, size_t *totalSize, cudaStream_t stream)
         RMM_CHECK_CNMEM( cnmemMemGetInfo(freeSize, totalSize, stream) );
     }
     else
-        RMM_CHECK_CUDA(cudaMemGetInfo(freeSize, totalSize));
+        RMM_CHECK_CUDA(cudaMemGetInfo(freeSize, totalSize), __FILE__, __LINE__);
 	return RMM_SUCCESS;
 }
 

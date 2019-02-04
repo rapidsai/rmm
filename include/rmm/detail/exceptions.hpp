@@ -30,6 +30,24 @@
  * --------------------------------------------------------------------------**/
 namespace rmm {
 
+struct exception : public std::exception {
+  exception(rmmError_t err_, const char* file_ = nullptr,
+            unsigned int line_ = std::numeric_limits<unsigned int>::max())
+      : file{file_}, line{line_}, error{err_} {
+    if (not file.empty()) {
+      msg += " File: " + file + " line: " + std::to_string(line);
+    }
+  }
+
+  const char* what() const noexcept { return msg.c_str(); }
+
+ private:
+  std::string msg{"RMM Exception."};
+  std::string const file{};
+  unsigned int const line{};
+  rmmError_t const error{};
+};
+
 /**---------------------------------------------------------------------------*
  * @brief Exception thrown when an out of memory error occurs in RMM.
  *
@@ -146,4 +164,48 @@ struct cnmem_error : public std::exception {
                               ///< unsucessful CNMEM function
 };
 }  // namespace rmm
+
+/** ---------------------------------------------------------------------------*
+ * @brief Macro wrapper to check for error in RMM API calls.
+ * ---------------------------------------------------------------------------**/
+#define RMM_CHECK(call)         \
+  do {                                      \
+    rmmError_t error = (call);              \
+    if (error != RMM_SUCCESS) return error; \
+  } while (0)
+
+/** ---------------------------------------------------------------------------*
+ * @brief Macro wrapper for RMM API calls to return appropriate RMM errors.
+ * ---------------------------------------------------------------------------**/
+#define RMM_CHECK_CUDA(call, file, line)                \
+  do {                                                  \
+    cudaError_t cudaError = (call);                     \
+    if (cudaError == cudaErrorMemoryAllocation)         \
+      throw rmm::bad_alloc((file), (line));             \
+    else if (cudaError != cudaSuccess)                  \
+      throw rmm::cuda_error(cudaError, (file), (line)); \
+  } while (0)
+  
+/** ---------------------------------------------------------------------------*
+ * @brief Macro wrapper for CNMEM API calls to return appropriate RMM errors.
+ * ---------------------------------------------------------------------------**/
+#define RMM_CHECK_CNMEM(call) do {            \
+    cnmemStatus_t error = (call);             \
+    switch (error) {                          \
+    case CNMEM_STATUS_SUCCESS:                \
+        break; /* don't return on success! */ \
+    case CNMEM_STATUS_CUDA_ERROR:             \
+        return RMM_ERROR_CUDA_ERROR;          \
+    case CNMEM_STATUS_INVALID_ARGUMENT:       \
+        return RMM_ERROR_INVALID_ARGUMENT;    \
+    case CNMEM_STATUS_NOT_INITIALIZED:        \
+        return RMM_ERROR_NOT_INITIALIZED;     \
+    case CNMEM_STATUS_OUT_OF_MEMORY:          \
+        return RMM_ERROR_OUT_OF_MEMORY;       \
+    case CNMEM_STATUS_UNKNOWN_ERROR:          \
+    default:                                  \
+        return RMM_ERROR_UNKNOWN;             \
+    }                                         \
+} while(0)
+
 #endif
