@@ -21,6 +21,26 @@
 #include <exception>
 #include <limits>
 
+#ifndef GETNAME
+#define GETNAME(x) case x: return #x;
+#endif
+
+// Stringify RMM error code.
+inline const char * rmmGetErrorString(rmmError_t errcode) {
+  switch (errcode) {
+    GETNAME(RMM_SUCCESS)
+    GETNAME(RMM_ERROR_CUDA_ERROR)
+    GETNAME(RMM_ERROR_INVALID_ARGUMENT)
+    GETNAME(RMM_ERROR_NOT_INITIALIZED)
+    GETNAME(RMM_ERROR_OUT_OF_MEMORY)
+    GETNAME(RMM_ERROR_UNKNOWN)
+    GETNAME(RMM_ERROR_IO)
+    default:
+        // This means we are missing an entry above for a rmmError_t value.
+        return "Internal error. Unknown error code.";
+  }
+}
+
 /** ---------------------------------------------------------------------------*
  * @file exceptions.hpp
  * @brief Custom exceptions used by RMM.
@@ -37,6 +57,10 @@ struct exception : public std::exception {
     if (not file.empty()) {
       msg += " File: " + file + " line: " + std::to_string(line);
     }
+
+    std::string error_name{rmmGetErrorString(error)};
+
+    msg += " error: " + error_name;
   }
 
   const char* what() const noexcept { return msg.c_str(); }
