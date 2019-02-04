@@ -21,12 +21,27 @@
 #include <exception>
 #include <limits>
 
+/** ---------------------------------------------------------------------------*
+ * @file exceptions.hpp
+ * @brief Custom exceptions used by RMM.
+ *
+ * Exceptions for errors occuring due to out-of-memory, CUDA, and CNMEM errors.
+ *
+ * --------------------------------------------------------------------------**/
+
 #ifndef GETNAME
-#define GETNAME(x) case x: return #x;
+#define GETNAME(x) \
+  case x:          \
+    return #x;
 #endif
 
-// Stringify RMM error code.
-inline const char * rmmGetErrorString(rmmError_t errcode) {
+/**---------------------------------------------------------------------------*
+ * @brief Returns name of a specified RMM error code.
+ *
+ * @param errcode  The error code to return the name of.
+ * @return const char*  The name of the specified error code
+ *---------------------------------------------------------------------------**/
+inline const char* rmmGetErrorString(rmmError_t errcode) {
   switch (errcode) {
     GETNAME(RMM_SUCCESS)
     GETNAME(RMM_ERROR_CUDA_ERROR)
@@ -36,18 +51,11 @@ inline const char * rmmGetErrorString(rmmError_t errcode) {
     GETNAME(RMM_ERROR_UNKNOWN)
     GETNAME(RMM_ERROR_IO)
     default:
-        // This means we are missing an entry above for a rmmError_t value.
-        return "Internal error. Unknown error code.";
+      // This means we are missing an entry above for a rmmError_t value.
+      return "Internal error. Unknown error code.";
   }
 }
 
-/** ---------------------------------------------------------------------------*
- * @file exceptions.hpp
- * @brief Custom exceptions used by RMM.
- *
- * Exceptions for errors occuring due to out-of-memory, CUDA, and CNMEM errors.
- *
- * --------------------------------------------------------------------------**/
 namespace rmm {
 
 struct exception : public std::exception {
