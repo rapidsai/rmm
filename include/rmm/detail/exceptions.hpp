@@ -15,7 +15,7 @@
  */
 
 #ifndef EXCEPTIONS_HPP
-#define EXCEPTION_HPP
+#define EXCEPTIONS_HPP
 
 #include <cuda_runtime_api.h>
 #include <exception>
@@ -89,6 +89,8 @@ struct cuda_error : public std::exception {
            cudaGetErrorName(error) + " " + cudaGetErrorString(error);
   }
 
+  cuda_error() = delete;
+
   /**---------------------------------------------------------------------------*
    * @brief Returns explanatory string for this exception
    *
@@ -110,6 +112,7 @@ struct cuda_error : public std::exception {
 struct cnmem_error : public std::exception {
   /**---------------------------------------------------------------------------*
    * @brief Construct a new cnmem_error exception.
+   *
    * @param[in] err_ The CNMEM error code that resulted from the unsuccesfull
    * CNMEM function.
    * @param[in] file_ Optional filename where error occured (should be populated
@@ -126,6 +129,8 @@ struct cnmem_error : public std::exception {
 
     msg += " error code: " + std::to_string(error);
   }
+
+  cnmem_error() = delete;
 
   /**---------------------------------------------------------------------------*
    * @brief Returns explanatory string for this exception
