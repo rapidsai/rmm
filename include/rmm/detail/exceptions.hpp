@@ -17,110 +17,128 @@
 #ifndef EXCEPTIONS_HPP
 #define EXCEPTION_HPP
 
+#include <cuda_runtime_api.h>
 #include <exception>
+#include <limits>
 
 /** ---------------------------------------------------------------------------*
  * @file exceptions.hpp
  * @brief Custom exceptions used by RMM.
  *
  * Exceptions for errors occuring due to out-of-memory, CUDA, and CNMEM errors.
- * 
+ *
  * --------------------------------------------------------------------------**/
-namespace rmm{
-struct bad_alloc: public std::bad_alloc
-{
-  bad_alloc(const char* msg_, const char* file_, unsigned int line_) : msg{msg_}, file{file_}, line {line_}
-  { }
+namespace rmm {
 
-  bad_alloc(const char* file_, unsigned int line_) : file{file_}, line {line_}
-  { }
-
-  bad_alloc(const char* msg_) : msg{msg_}{}
-
-  bad_alloc(){} const char * what () const noexcept
-  {
-    std::string message{"RMM out of memory."};
-
-    if(not msg.empty())
-      message += msg;
-    
-    if(not file.empty())
-      message += " File: " + file + " line: " + std::to_string(line);
-
-    return message.c_str();
+/**---------------------------------------------------------------------------*
+ * @brief Exception thrown when an out of memory error occurs in RMM.
+ *
+ *---------------------------------------------------------------------------**/
+struct bad_alloc : public std::bad_alloc {
+  /**---------------------------------------------------------------------------*
+   * @brief Construct a new bad_alloc exception
+   *
+   * @param[in] file_ Optional filename where error occured (should be populated
+   * by __FILE__ macro)
+   * @param[in] line_ Optional line number where error occured (should be
+   * populated by __LINE__ macro)
+   *---------------------------------------------------------------------------**/
+  bad_alloc(const char* file_, unsigned int line_) : file{file_}, line{line_} {
+    if (not file.empty()) {
+      msg += " File: " + file + " line: " + std::to_string(line);
+    }
   }
 
-private:
-  std::string const msg;
-  std::string const file;
-  unsigned int line{};
+  bad_alloc() = default;
+
+  /**---------------------------------------------------------------------------*
+   * @brief Returns explanatory string for this exception
+   *
+   *---------------------------------------------------------------------------**/
+  const char* what() const noexcept { return msg.c_str(); }
+
+ private:
+  std::string msg{"RMM out of memory excpetion."};  ///< Explanatory string
+  std::string const file{};   ///< File name where exception occured
+  unsigned int const line{};  ///< Line number where exceptin occured
 };
 
-struct cuda_error: public std::runtime_error
-{
-  cuda_error(const char* msg_, const char* file_, unsigned int line_, cudaError_t err_) 
-    : msg{msg_}, file{file_}, line{line_}, error{err_} {}
+/**---------------------------------------------------------------------------*
+ * @brief Exception thrown when a CUDA error is encountered.
+ *
+ *---------------------------------------------------------------------------**/
+struct cuda_error : public std::exception {
+  /**---------------------------------------------------------------------------*
+   * @brief Construct a new cuda_error exception
+   *
+   * @param[in] err_ The CUDA error code that resulted from the unsuccesfull
+   *CUDA function
+   * @param[in] file_ Optional filename where error occured (should be populated
+   * by __FILE__ macro)
+   * @param[in] line_ Optional line number where error occured (should be
+   * populated by __LINE__ macro)
+   *---------------------------------------------------------------------------**/
+  cuda_error(cudaError_t err_, const char* file_ = nullptr,
+             unsigned int line_ = std::numeric_limits<unsigned int>::max())
+      : file{file_}, line{line_}, error{err_} {
+    if (not file.empty()) {
+      msg += " File: " + file + " line: " + std::to_string(line);
+    }
 
-  cuda_error(const char* file_, unsigned int line_, cudaError_t err_) 
-    : file{file_}, line{line_}, error{err_} {}
-
-  cuda_error(cudaError_t err_) : error{err_}{}
-
-  const char * what () const noexcept
-  {
-    std::string message{"RMM CUDA error."};
-
-    if(not msg.empty())
-      message += msg;
-    
-    if(not file.empty())
-      message += " File: " + file + " line: " + std::to_string(line);
-
-    if(error != cudaSuccess)
-      message += " error code: " + std::to_string(error);
-
-    return message.c_str();
+    msg += " error code: " + std::to_string(error) + " " +
+           cudaGetErrorName(error) + " " + cudaGetErrorString(error);
   }
 
-private:
-  std::string const msg;
-  std::string const file;
-  unsigned int line{};
-  cudaError_t error{cudaSuccess};
+  /**---------------------------------------------------------------------------*
+   * @brief Returns explanatory string for this exception
+   *
+   *---------------------------------------------------------------------------**/
+  const char* what() const noexcept { return msg.c_str(); }
+
+ private:
+  std::string msg{"RMM CUDA exception."};  ///< Explanatory string
+  std::string const file;     ///< File name where exception occured
+  unsigned int const line{};  ///< Line numeber where exception occured
+  cudaError_t const error;    ///< CUDA error code returned from the
+                              ///< unsuccesfull CUDA function
 };
 
-struct cnmem_error: public std::runtime_error
-{
-  cuda_error(const char* msg_, const char* file_, unsigned int line_, cnmemStatus_t err_) 
-    : msg{msg_}, file{file_}, line{line_}, error{err_} {}
+/**---------------------------------------------------------------------------*
+ * @brief Exception thrown when a CNMEM error is encountered.
+ *
+ *---------------------------------------------------------------------------**/
+struct cnmem_error : public std::exception {
+  /**---------------------------------------------------------------------------*
+   * @brief Construct a new cnmem_error exception.
+   * @param[in] err_ The CNMEM error code that resulted from the unsuccesfull
+   * CNMEM function.
+   * @param[in] file_ Optional filename where error occured (should be populated
+   * by __FILE__ macro)
+   * @param[in] line_ Optional line number where error occured (should be
+   * populated by __LINE__ macro)*
+   *---------------------------------------------------------------------------**/
+  cnmem_error(cnmemStatus_t err_, const char* file_ = nullptr,
+              unsigned int line_ = std::numeric_limits<unsigned int>::max())
+      : file{file_}, line{line_}, error{err_} {
+    if (not file.empty()) {
+      msg += " File: " + file + " line: " + std::to_string(line);
+    }
 
-  cuda_error(const char* file_, unsigned int line_, cnmemStatus_t err_) 
-    : file{file_}, line{line_}, error{err_} {}
-
-  cuda_error(cnmemStatus_t err_) : error{err_}{}
-
-  const char * what () const noexcept
-  {
-    std::string message{"RMM CNMEM error."};
-
-    if(not msg.empty())
-      message += msg;
-    
-    if(not file.empty())
-      message += " File: " + file + " line: " + std::to_string(line);
-
-    if(0 != error)
-      message += " error code: " + std::to_string(error);
-
-    return message.c_str();
+    msg += " error code: " + std::to_string(error);
   }
 
-private:
-  std::string const msg;
-  std::string const file;
-  unsigned int line{};
-  cnmemStatus_t error{0};
+  /**---------------------------------------------------------------------------*
+   * @brief Returns explanatory string for this exception
+   *
+   *---------------------------------------------------------------------------**/
+  const char* what() const noexcept { return msg.c_str(); }
+
+ private:
+  std::string msg{"RMM CNMEM exception."};  ///< Explanatory string
+  std::string const file;     ///< File name where exception occurred
+  unsigned int const line{};  ///< Line number where exception occurred
+  cnmemStatus_t const error;  ///< CNMEM error code returned from
+                              ///< unsucessful CNMEM function
 };
-} // namespace rmm
+}  // namespace rmm
 #endif
-
