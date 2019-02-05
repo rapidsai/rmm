@@ -129,7 +129,8 @@ TYPED_TEST(MemoryManagerTest, AllocateTB) {
         //ASSERT_SUCCESS( RMM_ALLOC(&a, this->size_tb, stream) );
     }
     else {
-        ASSERT_FAILURE( RMM_ALLOC(&a, this->size_tb, stream) );
+        //ASSERT_FAILURE( RMM_ALLOC(&a, this->size_tb, stream) );
+        ASSERT_THROW( RMM_ALLOC(&a, this->size_tb, stream), rmm::bad_alloc );
     }
     
     ASSERT_SUCCESS( RMM_FREE(a, stream) );
@@ -137,7 +138,7 @@ TYPED_TEST(MemoryManagerTest, AllocateTB) {
 
 TYPED_TEST(MemoryManagerTest, AllocateTooMuch) {
     char *a = 0;
-    ASSERT_FAILURE( RMM_ALLOC(&a, this->size_pb, stream) );
+    ASSERT_THROW( RMM_ALLOC(&a, this->size_pb, stream), rmm::bad_alloc );
     ASSERT_SUCCESS( RMM_FREE(a, stream) );
 }
 

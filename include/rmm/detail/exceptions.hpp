@@ -214,10 +214,11 @@ struct cnmem_error : public std::exception {
 #define RMM_CHECK_CUDA(call, file, line)                \
   do {                                                  \
     cudaError_t cudaError = (call);                     \
-    if (cudaError == cudaErrorMemoryAllocation)         \
+    if (cudaError == cudaErrorMemoryAllocation) {       \
       throw rmm::bad_alloc((file), (line));             \
-    else if (cudaError != cudaSuccess)                  \
+    } else if (cudaError != cudaSuccess) {              \
       throw rmm::cuda_error(cudaError, (file), (line)); \
+    }                                                   \
   } while (0)
 
 /** ---------------------------------------------------------------------------*
@@ -226,7 +227,9 @@ struct cnmem_error : public std::exception {
 #define RMM_CHECK_CNMEM(call, file, line)        \
   do {                                           \
     cnmemStatus_t error = (call);                \
-    if (CNMEM_STATUS_SUCCESS != error) {         \
+    if (CNMEM_STATUS_OUT_OF_MEMORY == error) {    \
+      throw rmm::bad_alloc((file), (line));      \
+    } else if (CNMEM_STATUS_SUCCESS != error) {  \
       throw rmm::cnmem_error(error, file, line); \
     }                                            \
   } while (0)
