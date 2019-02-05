@@ -34,7 +34,7 @@
 extern "C" {
 #include "rmm/rmm_api.h"
 }
-#include "rmm/detail/cnmem.h"
+#include "cnmem.h"
 
 /** ---------------------------------------------------------------------------*
  * @brief Macro wrapper for CNMEM API calls to return appropriate RMM errors.

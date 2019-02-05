@@ -1,3 +1,14 @@
+# RMM 0.6.0 (Date TBD)
+
+## New Features
+
+## Improvements
+
+## Bug Fixes
+
+ - PR #36 Fix non-cmake builds (make cnmem.h include path more flexible)
+
+
 # RMM 0.5.0 (28 Jan 2019)
 
 ## New Features
