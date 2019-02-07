@@ -1,3 +1,14 @@
+# RMM 0.6.0 (Date TBD)
+
+## New Features
+
+ - PR #44 Added API to query whether RMM is initialized and with what options.
+
+## Improvements
+
+## Bug Fixes
+
+
 # RMM 0.5.0 (28 Jan 2019)
 
 ## New Features
