@@ -86,7 +86,7 @@ rmmError_t rmmFinalize()
 // Query the initialization state of RMM.
 bool rmmIsInitialized(rmmOptions_t *options)
 {
-    if (options) {
+    if (nullptr != options) {
         *options = rmm::Manager::getOptions();
     }
     return rmm::Manager::getInstance().isInitialized();
