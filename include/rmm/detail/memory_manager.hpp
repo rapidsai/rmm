@@ -154,7 +154,11 @@ namespace rmm
         /** ---------------------------------------------------------------------------*
          * @brief Initialize RMM options
          * 
-         * @param[in] options The options to set
+         *  Accepts an optional rmmOptions_t struct that describes the settings used to initialize 
+         *  the memory manager.
+         *  If no `options` is passed, default options are used.
+         * 
+         * @param[in] options Optional options to set
          * --------------------------------------------------------------------------**/
         static void initialize(const rmmOptions_t *options = nullptr) { 
             if (nullptr != options) getInstance().options = *options; 
