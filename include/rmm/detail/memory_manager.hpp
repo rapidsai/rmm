@@ -152,13 +152,36 @@ namespace rmm
         static Logger& getLogger() { return getInstance().logger; }
 
         /** ---------------------------------------------------------------------------*
-         * @brief Set RMM options
+         * @brief Initialize RMM options
          * 
-         * @param options The options to set
+         * @param[in] options The options to set
          * --------------------------------------------------------------------------**/
-        static void setOptions(const rmmOptions_t &options) { 
-            getInstance().options = options; 
+        static void initialize(const rmmOptions_t *options = nullptr) { 
+            if (nullptr != options) getInstance().options = *options; 
+            getInstance().is_initialized = true;
         }
+
+        /** ---------------------------------------------------------------------------*
+         * @brief Shut down the Manager (clears the context)
+         * 
+         * --------------------------------------------------------------------------**/
+        void finalize() {
+            std::lock_guard<std::mutex> guard(streams_mutex);
+            registered_streams.clear();
+            logger.clear();
+            getInstance().is_initialized = false;
+        }
+        
+        /** --------------------------------------------------------------------------*
+         * @brief Check whether the Manager has been initialized.
+         * 
+         * @return true if Manager has been initialized.
+         * @return false if Manager has not been initialized.
+         * --------------------------------------------------------------------------**/
+        bool isInitialized() {
+            return getInstance().is_initialized;
+        }
+
         /** ---------------------------------------------------------------------------*
          * @brief Get the Options object
          * 
@@ -197,16 +220,6 @@ namespace rmm
         }
 
         /** ---------------------------------------------------------------------------*
-         * @brief Shut down the Manager (clears the context)
-         * 
-         * --------------------------------------------------------------------------**/
-        void finalize() {
-            std::lock_guard<std::mutex> guard(streams_mutex);
-            registered_streams.clear();
-            logger.clear();
-        }
-
-        /** ---------------------------------------------------------------------------*
          * @brief Register a new stream into the device memory manager.
          * 
          * Also returns success if the stream is already registered.
@@ -218,7 +231,8 @@ namespace rmm
         rmmError_t registerStream(cudaStream_t stream);
 
     private:
-        Manager() : options({ CudaDefaultAllocation, false, 0 }) {}
+        Manager() : options({ CudaDefaultAllocation, false, 0 }), 
+                    is_initialized(false) {}
         ~Manager() = default;
         Manager(const Manager&) = delete;
         Manager& operator=(const Manager&) = delete;
@@ -228,6 +242,7 @@ namespace rmm
         Logger logger;
 
         rmmOptions_t options;
+        bool is_initialized;
     };    
 }
 

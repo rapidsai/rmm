@@ -54,10 +54,7 @@ const char * rmmGetErrorString(rmmError_t errcode) {
 // Initialize memory manager state and storage.
 rmmError_t rmmInitialize(rmmOptions_t *options)
 {
-    if (0 != options)
-    {
-        rmm::Manager::setOptions(*options);
-    }
+    rmm::Manager::getInstance().initialize(options);
 
     if (rmm::Manager::usePoolAllocator())
     {
@@ -84,6 +81,15 @@ rmmError_t rmmFinalize()
     rmm::Manager::getInstance().finalize();
     
     return RMM_SUCCESS;
+}
+
+// Query the initialization state of RMM.
+bool rmmIsInitialized(rmmOptions_t *options)
+{
+    if (options) {
+        *options = rmm::Manager::getOptions();
+    }
+    return rmm::Manager::getInstance().isInitialized();
 }
  
 // Allocate memory and return a pointer to device memory. 
