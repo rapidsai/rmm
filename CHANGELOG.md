@@ -2,11 +2,11 @@
 
 ## New Features
 
+ - PR #44 Added API to query whether RMM is initialized and with what options.
+
 ## Improvements
 
 ## Bug Fixes
-
- - PR #36 Fix non-cmake builds (make cnmem.h include path more flexible)
 
 
 # RMM 0.5.0 (28 Jan 2019)

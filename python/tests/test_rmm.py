@@ -42,8 +42,14 @@ def test_rmm_modes(managed, pool):
     rmm_cfg.use_pool_allocator = pool
     rmm.initialize()
 
+    assert(rmm.is_initialized() == True)
+
     array_tester(np.int32, 128)
 
+def test_uninitialized():
+    rmm.finalize()
+    assert(rmm.is_initialized() == False)
+    rmm.initialize() # so further tests will pass
 
 def test_rmm_csv_log():
     dtype = np.int32
