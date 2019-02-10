@@ -6,6 +6,7 @@ import numpy as np
 from librmm_cffi import librmm as rmm
 from librmm_cffi import librmm_config as rmm_cfg
 
+
 def array_tester(dtype, nelem):
     # data
     h_in = np.full(nelem, 3.2, dtype)
@@ -33,8 +34,9 @@ _nelems = [1, 2, 7, 8, 9, 32, 128]
 def test_rmm_alloc(dtype, nelem):
     array_tester(dtype, nelem)
 
+
 # Test all combinations of default/managed and pooled/non-pooled allocation
-@pytest.mark.parametrize('managed, pool', 
+@pytest.mark.parametrize('managed, pool',
                          list(product([False, True], [False, True])))
 def test_rmm_modes(managed, pool):
     rmm.finalize()
@@ -42,14 +44,16 @@ def test_rmm_modes(managed, pool):
     rmm_cfg.use_pool_allocator = pool
     rmm.initialize()
 
-    assert(rmm.is_initialized() == True)
+    assert(rmm.is_initialized())
 
     array_tester(np.int32, 128)
 
+
 def test_uninitialized():
     rmm.finalize()
-    assert(rmm.is_initialized() == False)
-    rmm.initialize() # so further tests will pass
+    assert(not rmm.is_initialized())
+    rmm.initialize()  # so further tests will pass
+
 
 def test_rmm_csv_log():
     dtype = np.int32
@@ -57,13 +61,11 @@ def test_rmm_csv_log():
 
     # data
     h_in = np.full(nelem, 3.2, dtype)
-    h_result = np.empty(nelem, dtype)
 
     d_in = rmm.to_device(h_in)
     d_result = rmm.device_array_like(d_in)
 
     d_result.copy_to_device(d_in)
-    h_result = d_result.copy_to_host()
 
     csv = rmm.csv_log()
 
