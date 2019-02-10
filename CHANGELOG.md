@@ -8,6 +8,8 @@
 
 ## Bug Fixes
 
+ - PR #49 Fix pep8 style errors detected by flake8
+
 
 # RMM 0.5.0 (28 Jan 2019)
 
