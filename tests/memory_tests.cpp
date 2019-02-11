@@ -30,13 +30,22 @@ struct MemoryManagerTest :
     static rmmAllocationMode_t allocationMode() { return T::alloc_mode; }
 
     static void SetUpTestCase() {
+        ASSERT_FALSE(rmmIsInitialized(0));
         ASSERT_EQ( cudaSuccess, cudaStreamCreate(&stream) );
         rmmOptions_t options {allocationMode(), 0, false};
         ASSERT_SUCCESS( rmmInitialize(&options) );
+        rmmOptions_t options_set;
+        // verify initialized
+        ASSERT_TRUE(rmmIsInitialized(&options_set));
+        // verify initialized options
+        ASSERT_EQ(options_set.allocation_mode, options.allocation_mode);
+        ASSERT_EQ(options_set.initial_pool_size, options.initial_pool_size);
+        ASSERT_EQ(options_set.enable_logging, options.enable_logging);
     }
 
     static void TearDownTestCase() {
         ASSERT_SUCCESS( rmmFinalize() );
+        ASSERT_FALSE(rmmIsInitialized(0));
         ASSERT_EQ( cudaSuccess, cudaStreamDestroy(stream) );
     }
 
@@ -64,7 +73,10 @@ TYPED_TEST_CASE(MemoryManagerTest, allocation_modes);
 // Init / Finalize tests
 
 TYPED_TEST(MemoryManagerTest, Initialize) {
-    // Empty because handled in Fixture class.
+    
+    // Initialized in Fixture class.
+    rmmOptions_t options;
+    ASSERT_TRUE(rmmIsInitialized(&options));
 }
 
 TYPED_TEST(MemoryManagerTest, Finalize) {

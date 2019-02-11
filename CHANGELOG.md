@@ -2,13 +2,14 @@
 
 ## New Features
 
-- PR #43 Add gpuCI build & test scripts
+ - PR #43 Add gpuCI build & test scripts
+ - PR #44 Added API to query whether RMM is initialized and with what options.
 
 ## Improvements
 
 ## Bug Fixes
 
- - PR #36 Fix non-cmake builds (make cnmem.h include path more flexible)
+ - PR #49 Fix pep8 style errors detected by flake8
 
 
 # RMM 0.5.0 (28 Jan 2019)
