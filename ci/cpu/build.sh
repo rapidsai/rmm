@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Copyright (c) 2018, NVIDIA CORPORATION.
 ######################################
-# cuDF CPU conda build script for CI #
+# rmm CPU build script for CI        #
 ######################################
 set -e
 
@@ -39,28 +39,6 @@ python --version
 gcc --version
 g++ --version
 conda list
-
-# FIX Added to deal with Anancoda SSL verification issues during conda builds
-conda config --set ssl_verify False
-
-################################################################################
-# INSTALL - Install NVIDIA driver
-################################################################################
-
-if [ "$INSTALL_DRIVER" -ne "0" ]; then
-    logger "Install NVIDIA driver for CUDA $CUDA..."
-    apt-get update -q
-    DRIVER_VER="396.44-1"
-    LIBCUDA_VER="396"
-    if [ "$CUDA" == "10.0" ]; then
-      DRIVER_VER="410.72-1"
-      LIBCUDA_VER="410"
-    fi
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-      cuda-drivers=${DRIVER_VER} libcuda1-${LIBCUDA_VER}
-else
-    logger "Skipping driver install..."
-fi
 
 ################################################################################
 # BUILD - Build librmm

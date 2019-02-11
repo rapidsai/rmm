@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
+# Copyright (c) 2018, NVIDIA CORPORATION.
+######################################
+# rmm GPU build & testscript for CI  #
+######################################
 set -e
+
 source "$WORKSPACE/ci/cpu/build.sh"
 
 ################################################################################
