@@ -2,6 +2,8 @@
 
 ## New Features
 
+- PR #43 Add gpuCI build & test scripts
+
 ## Improvements
 
 ## Bug Fixes
