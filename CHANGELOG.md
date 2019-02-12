@@ -2,6 +2,7 @@
 
 ## New Features
 
+ - PR #43 Add gpuCI build & test scripts
  - PR #44 Added API to query whether RMM is initialized and with what options.
 
 ## Improvements
