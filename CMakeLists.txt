@@ -167,3 +167,13 @@ add_custom_command(OUTPUT RMM_INSTALL_PYTHON_CFFI
                    VERBATIM)
 
 add_custom_target(rmm_install_python DEPENDS rmm RMM_PYTHON_CFFI RMM_INSTALL_PYTHON_CFFI)
+
+###################################################################################################
+# - make documentation ----------------------------------------------------------------------------
+
+add_custom_command(OUTPUT RMM_DOXYGEN
+                   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/doxygen
+                   COMMAND doxygen Doxyfile
+                   VERBATIM)
+
+add_custom_target(rmm_doc DEPENDS RMM_DOXYGEN)
