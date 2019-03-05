@@ -1,3 +1,12 @@
+# RMM 0.7.0 (Date TBD)
+
+## New Features
+
+## Improvements
+
+## Bug Fixes
+
+
 # RMM 0.6.0 (Date TBD)
 
 ## New Features
@@ -17,9 +26,9 @@
 ## New Features
 
  - PR #2 Added CUDA Managed Memory allocation mode
- 
+
 ## Improvements
- 
+
  - PR #12 Enable building RMM as a submodule
  - PR #13 CMake: Added CXX11ABI option and removed Travis references
  - PR #16 CMake: Added PARALLEL_LEVEL environment variable handling for GTest build parallelism (matches cuDF)
@@ -41,11 +50,11 @@
 
 - CUDF PR #472 RMM: Created centralized rmm::device_vector alias and rmm::exec_policy
 - CUDF PR #465 Added templated C++ API for RMM to avoid explicit cast to `void**`
- 
+
 ## Bug Fixes
 
 
-RMM was initially implemented as part of cuDF, so we include the relevant changelog history below. 
+RMM was initially implemented as part of cuDF, so we include the relevant changelog history below.
 
 # cuDF 0.3.0 (23 Nov 2018)
 
@@ -54,7 +63,7 @@ RMM was initially implemented as part of cuDF, so we include the relevant change
  - PR #336 CSV Reader string support
 
 ## Improvements
- 
+
  - CUDF PR #333 Add Rapids Memory Manager documentation
  - CUDF PR #321 Rapids Memory Manager adds file/line location logging and convenience macros
 
