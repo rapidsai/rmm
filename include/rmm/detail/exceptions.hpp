@@ -108,7 +108,7 @@ struct bad_alloc : public std::bad_alloc {
   const char* what() const noexcept { return msg.c_str(); }
 
  private:
-  std::string msg{"RMM out of memory excpetion."};  ///< Explanatory string
+  std::string msg{"RMM out of memory exception."};  ///< Explanatory string
   std::string const file{};   ///< File name where exception occured
   unsigned int const line{};  ///< Line number where exceptin occured
 };
