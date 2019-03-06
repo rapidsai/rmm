@@ -29,7 +29,7 @@ extern "C" {
 #include "rmm/detail/exceptions.hpp"
 
 
-    namespace rmm {
+namespace rmm {
   // Set true to enable free/total memory logging at each RMM call (expensive)
   constexpr bool RMM_USAGE_LOGGING{false};
 
