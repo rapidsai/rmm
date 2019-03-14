@@ -9,6 +9,7 @@
 
 ## Bug Fixes
 
+ - PR #58 Eliminate unreliable check for change in available memory in test
  - PR #49 Fix pep8 style errors detected by flake8
 
 

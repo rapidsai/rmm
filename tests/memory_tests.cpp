@@ -192,21 +192,6 @@ TYPED_TEST(MemoryManagerTest, GetInfo) {
     ASSERT_SUCCESS( rmmGetInfo(&freeBefore, &totalBefore, stream) );
     ASSERT_GE(freeBefore, 0);
     ASSERT_GE(totalBefore, 0);
-
-    char *a = 0;
-    size_t sz = this->size_mb / 2;
-    ASSERT_SUCCESS( RMM_ALLOC(&a, sz, stream) );
-
-    // make sure the available free memory goes down after an allocation
-    size_t freeAfter = 0, totalAfter = 0;
-    ASSERT_SUCCESS( rmmGetInfo(&freeAfter, &totalAfter, stream) );
-    ASSERT_GE(totalAfter, totalBefore);
-    
-    // For some reason the free memory sometimes goes up in this mode?!
-    if (this->allocationMode() != (CudaManagedMemory | PoolAllocation))
-        ASSERT_LE(freeAfter, freeBefore);
-
-    ASSERT_SUCCESS( RMM_FREE(a, stream) );
 }
 
 TYPED_TEST(MemoryManagerTest, AllocationOffset) {
