@@ -7,7 +7,7 @@
 ## Bug Fixes
 
 
-# RMM 0.6.0 (Date TBD)
+# RMM 0.6.0 (18 Mar 2019)
 
 ## New Features
 
@@ -41,6 +41,7 @@
  - PR #10 Change cnmem submodule URL to use https
  - PR #15 Temporarily disable hanging AllocateTB test for managed memory
  - PR #28 Fix invalid reference to local stack variable in `rmm::exec_policy`
+
 
 # RMM 0.4.0 (20 Dec 2018)
 
