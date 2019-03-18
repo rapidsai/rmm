@@ -1,3 +1,19 @@
+# RMM 0.6.0 (18 Mar 2019)
+
+## New Features
+
+ - PR #43 Add gpuCI build & test scripts
+ - PR #44 Added API to query whether RMM is initialized and with what options.
+ - PR #60 Default to CXX11_ABI=ON
+
+## Improvements
+
+## Bug Fixes
+
+ - PR #58 Eliminate unreliable check for change in available memory in test
+ - PR #49 Fix pep8 style errors detected by flake8
+
+
 # RMM 0.5.0 (28 Jan 2019)
 
 ## New Features
@@ -16,6 +32,7 @@
  - PR #10 Change cnmem submodule URL to use https
  - PR #15 Temporarily disable hanging AllocateTB test for managed memory
  - PR #28 Fix invalid reference to local stack variable in `rmm::exec_policy`
+
 
 # RMM 0.4.0 (20 Dec 2018)
 

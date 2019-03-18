@@ -85,6 +85,17 @@ rmmError_t rmmInitialize(rmmOptions_t *options);
  * ---------------------------------------------------------------------------**/
 rmmError_t rmmFinalize(); 
 
+/** --------------------------------------------------------------------------*
+ * @brief Query the initialization state of RMM.
+ * 
+ * @param[out] options The options that were passed to rmmInitialize. If set to 
+ *                     NULL by caller it will not be assigned.
+ * 
+ * @return true if rmmInitialize has been called successfully.
+ * @return false if rmmInitialize has not been called successfully.
+ * --------------------------------------------------------------------------**/
+bool rmmIsInitialized(rmmOptions_t *options);
+
 /** ---------------------------------------------------------------------------*
  * @brief Stringify RMM error code.
  * 

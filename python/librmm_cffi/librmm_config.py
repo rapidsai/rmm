@@ -28,7 +28,7 @@ use_pool_allocator = False
 # Whether to use managed memory for base allocation
 # True means to use cudaMallocManaged
 # False means to use cudaMalloc
-# Can be combined with `use_pool_allocator` to 
+# Can be combined with `use_pool_allocator` to
 # create a managed memory pool allocator
 use_managed_memory = False
 

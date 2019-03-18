@@ -41,3 +41,6 @@ include/rmm/detail/cnmem.h
 
 # generated librmm_build.py
 python/librmm_cffi/librmm_build.py
+
+# Doxygen 
+doxygen/html/
