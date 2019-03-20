@@ -2,6 +2,8 @@
 
 ## New Features
 
+ - PR #67 Add random_allocate microbenchmark in tests/performance
+
 ## Improvements
 
 ## Bug Fixes
