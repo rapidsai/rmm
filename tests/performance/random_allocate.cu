@@ -15,16 +15,9 @@
  */
 #define _BSD_SOURCE
 #include <rmm/rmm.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include <time.h>
-#include <sys/time.h>
-#include <assert.h>
-
-#include <iostream>
 #include <cstdio>
+#include <cassert>
+#include <chrono>
 
 using namespace std;
 
@@ -93,10 +86,19 @@ void setAllocator(const std::string alloc) {
     }
 }
 
-int useconds() {
-    struct timeval t;
-    gettimeofday(&t, NULL);
-    return t.tv_sec*1000000+t.tv_usec;
+using timer = std::chrono::high_resolution_clock;
+
+// double precision time durations
+template <typename T>
+std::chrono::duration<double, std::micro>  microseconds(T&& t)
+{
+    return std::chrono::duration_cast<std::chrono::duration<double, std::micro>>(t);
+}
+
+template <typename T>
+std::chrono::duration<double, std::milli>  milliseconds(T&& t)
+{
+    return std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(t);
 }
 
 #define ALLOC_PROBABILITY 53
@@ -235,57 +237,70 @@ int main(int argc, char** argv) {
 
     printf("Allocation-free plan is created. Executing the plan.\n");
 
-    int this_time_malloc, this_time_free, start, aft, sum_time_malloc=0, sum_time_free=0, period_time_malloc=0, period_time_free=0;
+    //int this_time_malloc, this_time_free, sum_time_malloc=0, sum_time_free=0, period_time_malloc=0, period_time_free=0;
+    auto sum_time_malloc = std::chrono::duration<double>::zero();
+    auto sum_time_free = std::chrono::duration<double>::zero();
+    auto period_time_malloc = std::chrono::duration<double>::zero();
+    auto period_time_free = std::chrono::duration<double>::zero();
+
     int period_count_malloc = 0;
     int period_count_free = 0;
 
-    start = useconds();
+    auto start = timer::now(); 
     // Do the first allocation outside the for, since its index is 0
     cudaSucceeded(gpuAlloc(&buffers[allocFrees[0]], allocations[allocFrees[0]]));
-    aft = useconds();
+    auto end = timer::now();
 
-    this_time_malloc = aft-start;
     for (int i = 1; i < numAllocFree; i++) {
         if (allocFrees[i] > 0) {
-            start = useconds();
+            start = timer::now();
             if (gpuAlloc(&buffers[allocFrees[i]], allocations[allocFrees[i]]) != cudaSuccess) {
                 printf("failed to allocate %dth allocation with size %luKB\n", i, allocations[allocFrees[i]] / KB);
                 exit(1);
             }
-            aft = useconds();
-            this_time_malloc = aft-start;
-            sum_time_malloc += this_time_malloc;
+            end = timer::now();
+            std::chrono::duration<double> diff = end-start;
+            sum_time_malloc += diff;
 
             period_count_malloc ++;
-            period_time_malloc += this_time_malloc;
+            period_time_malloc += diff;
             if (period_count_malloc >= averagePerN) {
-                printf("Average malloc: %0.1f us\n", (double)period_time_malloc / (double)period_count_malloc);
+                printf("Average malloc: %0.2f us\n",
+                       (double)microseconds(period_time_malloc).count() / 
+                            period_count_malloc);
                 period_count_malloc = 0;
-                period_time_malloc = 0;
+                period_time_malloc = std::chrono::duration<double>::zero();
             }
         }
         else {
-            start = useconds();
+            start = timer::now();
             cudaSucceeded(gpuFree(buffers[allocFrees[i] * (-1)]));
-            aft = useconds();
-            this_time_free = aft-start;
-            sum_time_free += this_time_free;
+            end = timer::now();
+            std::chrono::duration<double> diff = end-start;
+            sum_time_free += diff;
 
             period_count_free ++;
-            period_time_free += this_time_free;
+            period_time_free += diff;
             if (period_count_free >= averagePerN) {
-                printf("Average free: %0.1f us\n", (double)period_time_free / (double)period_count_free);
+                printf("Average free: %0.2f us\n",
+                       (double)microseconds(period_time_free).count() / 
+                            period_count_free);
                 period_count_free = 0;
-                period_time_free = 0;
+                period_time_free = std::chrono::duration<double>::zero();
             }
         }
     }
 
     cudaSucceeded(cudaStreamSynchronize(st1));
     printf("sum allocation size: %llu MB\n", totalAllocatedSize / MB);
-    printf("Average allocation size: %llu KB\n", (totalAllocatedSize / numAllocations) / KB);
-    printf("sum malloc: %d ms (average: %0.1f us)\n", sum_time_malloc / 1000, (double)sum_time_malloc / (double)numAllocations);
-    printf("sum free: %d ms (average: %0.1f us)\n", sum_time_free / 1000, (double)sum_time_free / (double)numAllocations);
+    printf("Average allocation size: %llu KB\n", 
+           (totalAllocatedSize / numAllocations) / KB);
+    printf("sum malloc: %f ms (average: %0.2f us)\n",
+           (double)milliseconds(sum_time_malloc).count(),
+           (double)microseconds(sum_time_malloc).count() / numAllocations);
+    printf("sum free: %f ms (average: %0.2f us)\n",
+           (double)milliseconds(sum_time_free).count(),
+           (double)microseconds(sum_time_free).count() / numAllocations);
 
     return 0;
 }
