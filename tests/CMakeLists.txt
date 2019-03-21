@@ -20,8 +20,6 @@ project(RMM_TESTS LANGUAGES C CXX CUDA)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CUDA_STANDARD 11)
-set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
 ###################################################################################################
 # - compiler function -----------------------------------------------------------------------------
@@ -77,7 +75,7 @@ enable_testing()
 # - random_allocate microbenchmark ----------------------------------------------------------------
 
 set(RANDOM_ALLOCATE_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/performance/random_allocate.cu")
+    "${CMAKE_CURRENT_SOURCE_DIR}/performance/random_allocate.cpp")
 
 add_executable(random_allocate ${RANDOM_ALLOCATE_SRC})
 set_target_properties(random_allocate PROPERTIES POSITION_INDEPENDENT_CODE ON)
