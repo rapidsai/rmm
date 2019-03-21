@@ -8,6 +8,8 @@
 
 ## Bug Fixes
 
+ - PR #68 Fix signed/unsigned mismatch in random_allocate benchmark
+
 
 # RMM 0.6.0 (18 Mar 2019)
 

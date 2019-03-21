@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 #define _BSD_SOURCE
+#include <cuda_runtime_api.h>
 #include <rmm/rmm.h>
 #include <cstdio>
+#include <cstring>
 #include <cassert>
 #include <chrono>
 
@@ -176,7 +178,7 @@ int main(int argc, char** argv) {
 
     // Printing the bar for max size, so user knows how to measure the usage based on the bar length
     printf("[                       max size: (%8luMB)               ]  [", freeMem / MB);
-    for (int j = 0; j < ((maxSize / KB) * BAR_UNIT) / (maxSize / KB); j ++) {
+    for (size_t j = 0; j < ((maxSize / KB) * BAR_UNIT) / (maxSize / KB); j ++) {
         printf("-");
     }
     printf("]100.0%%\n");
@@ -208,7 +210,7 @@ int main(int argc, char** argv) {
             currentSize += allocations[allocFrees[i]];
             assert(currentSize < maxSize);
             printf("[%3d] Alloc index %4d with size %7luKB (current sum: %7luMB)[", i, allocFrees[i], allocations[allocFrees[i]] / KB, currentSize / MB);
-            for (int j = 0; j < ((currentSize / KB) * BAR_UNIT) / (maxSize / KB); j ++) {
+            for (size_t j = 0; j < ((currentSize / KB) * BAR_UNIT) / (maxSize / KB); j ++) {
                 printf("-");
             }
             double usage = (double)((currentSize / KB) * 100) / (double)(maxSize / KB);
@@ -226,7 +228,7 @@ int main(int argc, char** argv) {
             existingCounter --;
             currentSize -= allocations[allocFrees[i] * (-1)];
             printf("[%3d] Free  index %4d with size %7luKB (current sum: %7luMB)[", i, allocFrees[i], allocations[allocFrees[i] * (-1)] / KB, currentSize / MB);
-            for (int j = 0; j < (currentSize * BAR_UNIT) / maxSize; j ++) {
+            for (size_t j = 0; j < (currentSize * BAR_UNIT) / maxSize; j ++) {
                 printf("-");
             }
             double usage = (double)((currentSize / KB) * 100) / (double)(maxSize / KB);
