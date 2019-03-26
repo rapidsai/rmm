@@ -24,28 +24,16 @@ build:
     - BUILD_ABI
 
 requirements:
-  # use channel:
-  #   - nvidia
-  #   - rapidsai
-  #   - rapidsai-nightly
-  #   - conda-forge
-  #   - defaults
   build:
     - cmake >=3.12.4
-  host:
-    - 
-  run:
-    - 
 
 test:
   commands:
-    - test -f $PREFIX/include/cudf.h
-    - test -f $PREFIX/include/cudf/convert_types.h
-    - test -f $PREFIX/include/cudf/functions.h
-    - test -f $PREFIX/include/cudf/io_functions.h
-    - test -f $PREFIX/include/cudf/io_types.h
-    - test -f $PREFIX/include/cudf/types.h
-    - test -f $PREFIX/lib/libcudf.so
+    - test -f $PREFIX/include/rmm/rmm.h
+    - test -f $PREFIX/include/rmm/rmm.hpp
+    - test -f $PREFIX/include/rmm/rmm_api.h
+    - test -f $PREFIX/include/rmm/thrust_rmm_allocator.h
+    - test -f $PREFIX/include/rmm/detail/memory_manager.hpp
     - test -f $PREFIX/lib/librmm.so
 
 
