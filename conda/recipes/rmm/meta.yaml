@@ -1,0 +1,44 @@
+# Copyright (c) 2019, NVIDIA CORPORATION.
+
+# Usage:
+#   conda build -c nvidia -rapidsai -c conda-forge -c defaults .
+{% set version = environ.get('GIT_DESCRIBE_TAG', '0.0.0.dev').lstrip('v') %}
+{% set git_revision_count=environ.get('GIT_DESCRIBE_NUMBER', 0) %}
+package:
+  name: rmm
+  version: {{ version }}
+
+source:
+  path: ../../..
+
+build:
+  number: {{ git_revision_count }}
+  script_env:
+    - RMM_BUILD_NO_GPU_TEST
+    - BUILD_ABI
+
+requirements:
+  build:
+    - cmake >=3.12.4
+  host:
+    - python
+    - librmm {{ version }}
+    - numba >=0.41
+    - setuptools
+    - cffi
+  run:
+    - python
+    - {{ pin_compatible('librmm') }}
+    - numba >=0.41
+    - setuptools
+    - cffi
+
+test:
+  commands:
+    - python -c "from librmm_cffi import librmm as rmm"
+
+about:
+  home: http://rapids.ai/
+  license: Apache-2.0
+  # license_file: LICENSE
+  summary: rmm library

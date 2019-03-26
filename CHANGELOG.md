@@ -3,6 +3,7 @@
 ## New Features
 
  - PR #67 Add random_allocate microbenchmark in tests/performance
+ - PR #XXX Create conda environments and conda recipes
 
 ## Improvements
 

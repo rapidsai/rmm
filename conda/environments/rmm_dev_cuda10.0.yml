@@ -1,0 +1,21 @@
+name: rmm_dev
+channels:
+- rapidsai/label/cuda10.0
+- conda-forge
+dependencies:
+- cmake>=3.12
+- python>=3.6,<3.8
+- numba>=0.41
+- cffi>=1.10.0
+- cython>=0.29,<0.30
+- pytest
+- sphinx
+- sphinx_rtd_theme
+- sphinxcontrib-websupport
+- nbsphinx
+- numpydoc
+- ipython
+- recommonmark
+- pandoc=<2.0.0
+- pip:
+  - sphinx-markdown-tables
