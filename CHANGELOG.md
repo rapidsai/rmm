@@ -9,6 +9,7 @@
 ## Bug Fixes
 
  - PR #68 Fix signed/unsigned mismatch in random_allocate benchmark
+ - PR #72 Remove unnecessary _BSD_SOURCE define in random_allocate.cpp
 
 
 # RMM 0.6.0 (18 Mar 2019)

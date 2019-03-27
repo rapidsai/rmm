@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#define _BSD_SOURCE
 #include <cuda_runtime_api.h>
 #include <rmm/rmm.h>
 #include <cstdio>
