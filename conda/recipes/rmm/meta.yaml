@@ -15,7 +15,6 @@ build:
   number: {{ git_revision_count }}
   script_env:
     - RMM_BUILD_NO_GPU_TEST
-    - BUILD_ABI
 
 requirements:
   build:
