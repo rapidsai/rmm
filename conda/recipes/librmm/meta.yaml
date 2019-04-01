@@ -34,11 +34,11 @@ test:
     - test -f $PREFIX/include/rmm/rmm_api.h
     - test -f $PREFIX/include/rmm/thrust_rmm_allocator.h
     - test -f $PREFIX/include/rmm/detail/memory_manager.hpp
+    - test -f $PREFIX/include/rmm/detail/cnmem.h
     - test -f $PREFIX/lib/librmm.so
-
 
 about:
   home: http://rapids.ai/
   license: Apache-2.0
   # license_file: LICENSE
-  summary: libcudf library
+  summary: librmm library
