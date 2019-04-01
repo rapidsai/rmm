@@ -40,25 +40,40 @@ gcc --version
 g++ --version
 conda list
 
-################################################################################
-# BUILD - Build librmm
-################################################################################
-
-logger "Build librmm..."
-CMAKE_COMMON_VARIABLES=" -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX11_ABI=$BUILD_ABI"
-
-# Use CMake-based build procedure
-mkdir -p build
-cd build
-# configure
-cmake $CMAKE_COMMON_VARIABLES ..
-# build
-make -j${PARALLEL_LEVEL} VERBOSE=1 install
+# FIX Added to deal with Anancoda SSL verification issues during conda builds
+conda config --set ssl_verify False
 
 ################################################################################
-# BUILD - Build librmm_cffi
+# INSTALL - Install NVIDIA driver
 ################################################################################
 
-logger "Build librmm_cffi..."
-make rmm_python_cffi
-make rmm_install_python
+logger "Install NVIDIA driver for CUDA $CUDA..."
+apt-get update -q
+DRIVER_VER="396.44-1"
+LIBCUDA_VER="396"
+if [ "$CUDA" == "10.0" ]; then
+  DRIVER_VER="410.72-1"
+  LIBCUDA_VER="410"
+fi
+DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+  cuda-drivers=${DRIVER_VER} libcuda1-${LIBCUDA_VER}
+
+################################################################################
+# BUILD - Conda package builds (conda deps: librmm <- rmm)
+################################################################################
+
+logger "Build conda pkg for librmm..."
+source ci/cpu/librmm/build_librmm.sh
+
+logger "Build conda pkg for rmm..."
+source ci/cpu/rmm/build_rmm.sh
+
+################################################################################
+# UPLOAD - Conda packages
+################################################################################
+
+logger "Upload conda pkg for librmm..."
+source ci/cpu/librmm/upload-anaconda.sh
+
+logger "Upload conda pkg for rmm..."
+source ci/cpu/rmm/upload-anaconda.sh
