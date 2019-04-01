@@ -1,7 +1,5 @@
 # Copyright (c) 2019, NVIDIA CORPORATION.
 
-# Usage:
-#   conda build -c nvidia -c rapidsai -c conda-forge .
 {% set version = environ.get('GIT_DESCRIBE_TAG', '0.0.0.dev').lstrip('v') %}
 {% set git_revision_count=environ.get('GIT_DESCRIBE_NUMBER', 0) %}
 package:
@@ -22,7 +20,6 @@ requirements:
   host:
     - python
     - librmm {{ version }}
-    - numba >=0.41
     - setuptools
     - cffi
   run:
