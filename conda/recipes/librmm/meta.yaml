@@ -18,6 +18,8 @@ build:
     - CXX
     - CUDAHOSTCXX
     - PARALLEL_LEVEL
+  run_exports:
+    - {{ pin_subpackage("librmm", max_pin="x.x") }}
 
 requirements:
   build:
