@@ -10,6 +10,7 @@
 ## Bug Fixes
 
  - PR #68 Fix signed/unsigned mismatch in random_allocate benchmark
+ - PR #74 Fix rmm conda recipe librmm version pinning
 
 
 # RMM 0.6.0 (18 Mar 2019)
