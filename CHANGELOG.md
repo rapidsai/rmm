@@ -7,6 +7,8 @@
 
 ## Improvements
 
+- PR #76 Add cudatoolkit conda dependency
+
 ## Bug Fixes
 
  - PR #68 Fix signed/unsigned mismatch in random_allocate benchmark
