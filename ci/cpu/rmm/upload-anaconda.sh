@@ -9,15 +9,7 @@ if [ "$BUILD_RMM" == "1" ]; then
 
   SOURCE_BRANCH=master
 
-  # Have to label all CUDA versions due to the compatibility to work with any CUDA
-  if [ "$LABEL_MAIN" == "1" ]; then
-    LABEL_OPTION="--label main --label cuda9.2 --label cuda10.0"
-  elif [ "$LABEL_MAIN" == "0" ]; then
-    LABEL_OPTION="--label dev --label cuda9.2 --label cuda10.0"
-  else
-    echo "Unknown label configuration LABEL_MAIN='$LABEL_MAIN'"
-    exit 1
-  fi
+  LABEL_OPTION="--label main --label cuda9.2 --label cuda10.0"
   echo "LABEL_OPTION=${LABEL_OPTION}"
 
   test -e ${UPLOADFILE}
