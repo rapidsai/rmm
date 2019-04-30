@@ -16,14 +16,7 @@ if [ "$BUILD_LIBRMM" == '1' ]; then
 
   SOURCE_BRANCH=master
 
-  if [ "$LABEL_MAIN" == "1" ]; then
-    LABEL_OPTION="--label main --label cuda${CUDA_REL}"
-  elif [ "$LABEL_MAIN" == "0" ]; then
-    LABEL_OPTION="--label dev --label cuda${CUDA_REL}"
-  else
-    echo "Unknown label configuration LABEL_MAIN='$LABEL_MAIN'"
-    exit 1
-  fi
+  LABEL_OPTION="--label main --label cuda${CUDA_REL}"
   echo "LABEL_OPTION=${LABEL_OPTION}"
 
   # Restrict uploads to master branch
