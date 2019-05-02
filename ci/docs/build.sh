@@ -14,7 +14,15 @@ function logger() {
 export PATH=/conda/bin:/usr/local/cuda/bin:$PATH
 export PARALLEL_LEVEL=4
 export HOME=$WORKSPACE
+export DOCS_DIR=/data/docs/html
 
+while getopts "d" option; do
+    case ${option} in
+        d)
+            DOCS_DIR=${OPTARG}
+            ;;
+    esac
+done
 
 ################################################################################
 # SETUP - Check environment
@@ -57,10 +65,10 @@ make rmm_python_cffi
 make rmm_install_python
 
 ################################################################################
-# Test - librmm
+# Docs - Build RMM docs
 ################################################################################
 make rmm_doc
 
 cd $WORKSPACE
-rm -rf /data/docs/html/*
-mv doxygen/html/* /data/docs/html
+rm -rf ${DOCS_DIR}/*
+mv doxygen/html/* $DOCS_DIR
