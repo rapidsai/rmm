@@ -9,6 +9,7 @@
 ## Improvements
 
 - PR #76 Add cudatoolkit conda dependency
+- PR #84 Use latest release version in update-version CI script
 
 ## Bug Fixes
 
