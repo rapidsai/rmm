@@ -5,6 +5,7 @@
  - PR #67 Add random_allocate microbenchmark in tests/performance
  - PR #70 Create conda environments and conda recipes
  - PR #77 Add local build script to mimic gpuCI
+ - PR #80 Add build script for docs
 
 ## Improvements
 
