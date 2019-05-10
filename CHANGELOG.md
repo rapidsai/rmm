@@ -1,3 +1,24 @@
+# RMM 0.7.0 (10 May 2019)
+
+## New Features
+
+ - PR #67 Add random_allocate microbenchmark in tests/performance
+ - PR #70 Create conda environments and conda recipes
+ - PR #77 Add local build script to mimic gpuCI
+ - PR #80 Add build script for docs
+
+## Improvements
+
+- PR #76 Add cudatoolkit conda dependency
+- PR #84 Use latest release version in update-version CI script
+
+## Bug Fixes
+
+ - PR #68 Fix signed/unsigned mismatch in random_allocate benchmark
+ - PR #74 Fix rmm conda recipe librmm version pinning
+ - PR #72 Remove unnecessary _BSD_SOURCE define in random_allocate.cpp
+
+
 # RMM 0.6.0 (18 Mar 2019)
 
 ## New Features
@@ -19,9 +40,9 @@
 ## New Features
 
  - PR #2 Added CUDA Managed Memory allocation mode
- 
+
 ## Improvements
- 
+
  - PR #12 Enable building RMM as a submodule
  - PR #13 CMake: Added CXX11ABI option and removed Travis references
  - PR #16 CMake: Added PARALLEL_LEVEL environment variable handling for GTest build parallelism (matches cuDF)
@@ -44,11 +65,11 @@
 
 - CUDF PR #472 RMM: Created centralized rmm::device_vector alias and rmm::exec_policy
 - CUDF PR #465 Added templated C++ API for RMM to avoid explicit cast to `void**`
- 
+
 ## Bug Fixes
 
 
-RMM was initially implemented as part of cuDF, so we include the relevant changelog history below. 
+RMM was initially implemented as part of cuDF, so we include the relevant changelog history below.
 
 # cuDF 0.3.0 (23 Nov 2018)
 
@@ -57,7 +78,7 @@ RMM was initially implemented as part of cuDF, so we include the relevant change
  - PR #336 CSV Reader string support
 
 ## Improvements
- 
+
  - CUDF PR #333 Add Rapids Memory Manager documentation
  - CUDF PR #321 Rapids Memory Manager adds file/line location logging and convenience macros
 

@@ -1,9 +1,9 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # Copyright (c) 2018, NVIDIA CORPORATION.
 ######################################
 # rmm GPU build & testscript for CI  #
 ######################################
-set -e
+set -ex
 
 # Logger function for build status output
 function logger() {
@@ -13,16 +13,16 @@ function logger() {
 # Set path and build parallel level
 export PATH=/conda/bin:/usr/local/cuda/bin:$PATH
 export PARALLEL_LEVEL=4
-
-# Set home to the job's workspace
 export HOME=$WORKSPACE
+export DOCS_DIR=/data/docs/html
 
-# Switch to project root; also root of repo checkout
-cd $WORKSPACE
-
-# Get latest tag and number of commits since tag
-export GIT_DESCRIBE_TAG=`git describe --abbrev=0 --tags`
-export GIT_DESCRIBE_NUMBER=`git rev-list ${GIT_DESCRIBE_TAG}..HEAD --count`
+while getopts "d" option; do
+    case ${option} in
+        d)
+            DOCS_DIR=${OPTARG}
+            ;;
+    esac
+done
 
 ################################################################################
 # SETUP - Check environment
@@ -33,6 +33,7 @@ env
 
 logger "Activate conda env..."
 source activate gdf
+conda install -c conda-forge doxygen
 
 logger "Check versions..."
 python --version
@@ -44,11 +45,11 @@ conda list
 # BUILD - Build librmm
 ################################################################################
 
-logger "Build librmm..."
+#logger "Build librmm..."
 CMAKE_COMMON_VARIABLES=" -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX11_ABI=$BUILD_ABI"
 
 # Use CMake-based build procedure
-mkdir -p build
+mkdir -p $WORKSPACE/build
 cd build
 # configure
 cmake $CMAKE_COMMON_VARIABLES ..
@@ -64,16 +65,10 @@ make rmm_python_cffi
 make rmm_install_python
 
 ################################################################################
-# Test - librmm
+# Docs - Build RMM docs
 ################################################################################
+make rmm_doc
 
-logger "Check GPU usage..."
-nvidia-smi
-
-logger "Running googletests..."
-
-GTEST_OUTPUT="xml:${WORKSPACE}/test-results/" make -j${PARALLEL_LEVEL} test
-
-logger "Python py.test for librmm_cffi..."
-cd $WORKSPACE/python
-py.test --cache-clear --junitxml=${WORKSPACE}/test-results/junit-librmm_cffi.xml -v
+cd $WORKSPACE
+rm -rf ${DOCS_DIR}/*
+mv doxygen/html/* $DOCS_DIR
