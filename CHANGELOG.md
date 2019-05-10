@@ -1,4 +1,4 @@
-# RMM 0.7.0 (Date TBD)
+# RMM 0.7.0 (10 May 2019)
 
 ## New Features
 
