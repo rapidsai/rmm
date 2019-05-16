@@ -11,6 +11,7 @@
 
 - PR #76 Add cudatoolkit conda dependency
 - PR #84 Use latest release version in update-version CI script
+- PR #90 Avoid using c++14 auto return type for thrust_rmm_allocator.h 
 
 ## Bug Fixes
 

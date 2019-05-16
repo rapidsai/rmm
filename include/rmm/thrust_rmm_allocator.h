@@ -80,32 +80,30 @@ namespace rmm
 template <typename T>
 using device_vector = thrust::device_vector<T, rmm_allocator<T>>;
 
+using par_t = decltype(thrust::cuda::par(*(new rmm_allocator<char>(0))));
+using deleter_t = std::function<void(par_t *)>;
+using exec_policy_t = std::unique_ptr<par_t, deleter_t>;
+
 /* --------------------------------------------------------------------------*/
 /**
  * @brief Returns a unique_ptr to a Thrust CUDA execution policy that uses RMM
- * for temporary memory allocation. 
+ * for temporary memory allocation.
  *
  * @Param stream The stream that the allocator will use
  *
  * @Returns A Thrust execution policy that will use RMM for temporary memory
  * allocation.
  */
-/* ----------------------------------------------------------------------------*/
-inline auto exec_policy(cudaStream_t stream = 0) {
-
-  rmm_allocator<char> * alloc{nullptr};
-
+/* --------------------------------------------------------------------------*/
+inline exec_policy_t exec_policy(cudaStream_t stream = 0) {
+  rmm_allocator<char> *alloc{nullptr};
   alloc = new rmm_allocator<char>(stream);
-
-  using T = decltype(thrust::cuda::par(*alloc));
-
-  auto deleter = [alloc](T* pointer) {
+  auto deleter = [alloc](par_t *pointer) {
     delete alloc;
     delete pointer;
   };
 
-  std::unique_ptr<T, decltype(deleter)> policy{new T(*alloc), deleter};
-
+  exec_policy_t policy{new par_t(*alloc), deleter};
   return policy;
 }
 
