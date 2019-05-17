@@ -1,3 +1,18 @@
+# RMM 0.8.0 (Date TBD)
+
+## New Features
+
+    ...
+
+## Improvements
+
+    ...
+
+## Bug Fixes
+
+ - PR #92 Update docs version
+
+
 # RMM 0.7.0 (10 May 2019)
 
 ## New Features
