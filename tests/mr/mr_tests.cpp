@@ -22,6 +22,7 @@
 
 #include <cuda_runtime_api.h>
 #include <cstddef>
+#include <random>
 
 namespace {
 static constexpr std::size_t ALIGNMENT{256};
@@ -174,4 +175,28 @@ TYPED_TEST(MRTest, AllocateTooMuchStream) {
   void* p{nullptr};
   EXPECT_THROW(p = this->mr->allocate(size_pb, this->stream), std::bad_alloc);
   EXPECT_EQ(nullptr, p);
+}
+
+TYPED_TEST(MRTest, RandomAllocations) {
+  using allocation_t = std::pair<void*, std::size_t>;
+  constexpr std::size_t num_allocations{100};
+  std::vector<allocation_t> allocations(num_allocations);
+
+  std::default_random_engine generator;
+  std::uniform_int_distribution<int> distribution(0, 3 * size_mb);
+
+  // 100 allocations from [0,3MB)
+  std::for_each(allocations.begin(), allocations.end(),
+                [generator, distribution, this](allocation_t& allocation) {
+                  allocation.second = distribution(generator);
+                  EXPECT_NO_THROW(allocation.first =
+                                      this->mr->allocate(allocation.second));
+                  EXPECT_NE(nullptr, allocation.first);
+                });
+
+  std::for_each(allocations.begin(), allocations.end(),
+                [generator, distribution, this](allocation_t& allocation) {
+                  EXPECT_NO_THROW(this->mr->deallocate(allocation.first,
+                                                       allocation.second));
+                });
 }
