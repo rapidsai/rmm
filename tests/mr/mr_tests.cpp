@@ -25,8 +25,16 @@
 
 namespace {
 static constexpr std::size_t ALIGNMENT{256};
-constexpr bool is_aligned(void* p, std::size_t alignment = ALIGNMENT) {
+inline bool is_aligned(void* p, std::size_t alignment = ALIGNMENT) {
   return (0 == reinterpret_cast<uintptr_t>(p) % alignment);
+}
+
+inline bool is_device_memory(void* p) {
+  cudaPointerAttributes attributes{};
+  if (cudaSuccess != cudaPointerGetAttributes(&attributes, p)) {
+    return false;
+  }
+  return attributes.memoryType == cudaMemoryTypeDevice;
 }
 
 static constexpr std::size_t size_word{4};
@@ -81,6 +89,7 @@ TYPED_TEST(MRTest, AllocateWord) {
   EXPECT_NO_THROW(p = this->mr->allocate(size_word));
   EXPECT_NE(nullptr, p);
   EXPECT_TRUE(is_aligned(p));
+  EXPECT_TRUE(is_device_memory(p));
   EXPECT_NO_THROW(this->mr->deallocate(p, size_word));
 }
 
@@ -90,6 +99,7 @@ TYPED_TEST(MRTest, AllocateWordStream) {
   EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(this->stream));
   EXPECT_NE(nullptr, p);
   EXPECT_TRUE(is_aligned(p));
+  EXPECT_TRUE(is_device_memory(p));
   EXPECT_NO_THROW(this->mr->deallocate(p, size_word, this->stream));
   EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(this->stream));
 }
@@ -99,6 +109,7 @@ TYPED_TEST(MRTest, AllocateKB) {
   EXPECT_NO_THROW(p = this->mr->allocate(size_kb));
   EXPECT_NE(nullptr, p);
   EXPECT_TRUE(is_aligned(p));
+  EXPECT_TRUE(is_device_memory(p));
   EXPECT_NO_THROW(this->mr->deallocate(p, size_kb));
 }
 
@@ -108,6 +119,7 @@ TYPED_TEST(MRTest, AllocateKBStream) {
   EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(this->stream));
   EXPECT_NE(nullptr, p);
   EXPECT_TRUE(is_aligned(p));
+  EXPECT_TRUE(is_device_memory(p));
   EXPECT_NO_THROW(this->mr->deallocate(p, size_kb, this->stream));
   EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(this->stream));
 }
@@ -117,6 +129,7 @@ TYPED_TEST(MRTest, AllocateMB) {
   EXPECT_NO_THROW(p = this->mr->allocate(size_mb));
   EXPECT_NE(nullptr, p);
   EXPECT_TRUE(is_aligned(p));
+  EXPECT_TRUE(is_device_memory(p));
   EXPECT_NO_THROW(this->mr->deallocate(p, size_mb));
 }
 
@@ -126,6 +139,7 @@ TYPED_TEST(MRTest, AllocateMBStream) {
   EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(this->stream));
   EXPECT_NE(nullptr, p);
   EXPECT_TRUE(is_aligned(p));
+  EXPECT_TRUE(is_device_memory(p));
   EXPECT_NO_THROW(this->mr->deallocate(p, size_mb, this->stream));
   EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(this->stream));
 }
@@ -135,6 +149,7 @@ TYPED_TEST(MRTest, AllocateGB) {
   EXPECT_NO_THROW(p = this->mr->allocate(size_gb));
   EXPECT_NE(nullptr, p);
   EXPECT_TRUE(is_aligned(p));
+  EXPECT_TRUE(is_device_memory(p));
   EXPECT_NO_THROW(this->mr->deallocate(p, size_gb));
 }
 
@@ -144,6 +159,7 @@ TYPED_TEST(MRTest, AllocateGBStream) {
   EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(this->stream));
   EXPECT_NE(nullptr, p);
   EXPECT_TRUE(is_aligned(p));
+  EXPECT_TRUE(is_device_memory(p));
   EXPECT_NO_THROW(this->mr->deallocate(p, size_gb, this->stream));
   EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(this->stream));
 }
