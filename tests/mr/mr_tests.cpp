@@ -270,7 +270,7 @@ TYPED_TEST(MRTest, RandomAllocationsStream) {
 TYPED_TEST(MRTest, MixedRandomAllocationFree) {
   std::default_random_engine generator;
 
-  constexpr std::size_t MAX_ALLOCATION_SIZE{5 * size_mb};
+  constexpr std::size_t MAX_ALLOCATION_SIZE{10 * size_mb};
   std::uniform_int_distribution<std::size_t> size_distribution(
       1, MAX_ALLOCATION_SIZE);
 
@@ -289,6 +289,7 @@ TYPED_TEST(MRTest, MixedRandomAllocationFree) {
         this->mr->allocate(allocation_size), allocation_size));
     auto new_allocation = allocations.back();
     EXPECT_NE(nullptr, new_allocation.p);
+    EXPECT_TRUE(is_aligned(new_allocation.p));
 
     bool const free_front{free_distribution(generator) ==
                           free_distribution.max()};
@@ -302,6 +303,47 @@ TYPED_TEST(MRTest, MixedRandomAllocationFree) {
   // free any remaining allocations
   for (auto a : allocations) {
     EXPECT_NO_THROW(this->mr->deallocate(a.p, a.size));
+    allocations.pop_front();
+  }
+}
+
+TYPED_TEST(MRTest, MixedRandomAllocationFreeStream) {
+  std::default_random_engine generator;
+
+  constexpr std::size_t MAX_ALLOCATION_SIZE{10 * size_mb};
+  std::uniform_int_distribution<std::size_t> size_distribution(
+      1, MAX_ALLOCATION_SIZE);
+
+  // How often a free will occur. For example, if `1`, then every allocation
+  // will immediately be free'd. Or, if 4, on average, a free will occur after
+  // every 4th allocation
+  constexpr std::size_t FREE_FREQUENCY{4};
+  std::uniform_int_distribution<int> free_distribution(1, FREE_FREQUENCY);
+
+  std::deque<allocation> allocations;
+
+  constexpr std::size_t num_allocations{100};
+  for (std::size_t i = 0; i < num_allocations; ++i) {
+    std::size_t allocation_size = size_distribution(generator);
+    EXPECT_NO_THROW(allocations.emplace_back(
+        this->mr->allocate(allocation_size, this->stream), allocation_size));
+    EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(this->stream));
+    auto new_allocation = allocations.back();
+    EXPECT_NE(nullptr, new_allocation.p);
+    EXPECT_TRUE(is_aligned(new_allocation.p));
+
+    bool const free_front{free_distribution(generator) ==
+                          free_distribution.max()};
+
+    if (free_front) {
+      auto front = allocations.front();
+      EXPECT_NO_THROW(this->mr->deallocate(front.p, front.size, this->stream));
+      allocations.pop_front();
+    }
+  }
+  // free any remaining allocations
+  for (auto a : allocations) {
+    EXPECT_NO_THROW(this->mr->deallocate(a.p, a.size, this->stream));
     allocations.pop_front();
   }
 }
