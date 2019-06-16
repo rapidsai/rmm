@@ -19,6 +19,7 @@
 #include <rmm/mr/cuda_memory_resource.hpp>
 #include <rmm/mr/default_memory_resource.hpp>
 #include <rmm/mr/device_memory_resource.hpp>
+#include <rmm/mr/managed_memory_resource.hpp>
 
 #include <cuda_runtime_api.h>
 #include <cstddef>
@@ -72,7 +73,8 @@ struct MRTest : public ::testing::Test {
   ~MRTest() = default;
 };
 
-using resources = ::testing::Types<rmm::mr::cuda_memory_resource>;
+using resources = ::testing::Types<rmm::mr::cuda_memory_resource,
+                                   rmm::mr::managed_memory_resource>;
 
 TYPED_TEST_CASE(MRTest, resources);
 
