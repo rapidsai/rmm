@@ -29,6 +29,7 @@ namespace mr {
  * cudaMallocManaged/Free for allocation/deallocation.
  *---------------------------------------------------------------------------**/
 class managed_memory_resource final : public device_memory_resource {
+ public:
   bool supports_streams() const noexcept override { return false; }
 
  private:
@@ -75,8 +76,10 @@ class managed_memory_resource final : public device_memory_resource {
   void do_deallocate(void* p, std::size_t, cudaStream_t) override {
     cudaError_t const status = cudaFree(p);
 #ifndef NDEBUG
-    std::cerr << "cudaFree failed: " << cudaGetErrorName(status) << " "
-              << cudaGetErrorString(status) << "\n";
+    if (status != cudaSuccess) {
+      std::cerr << "cudaFree failed: " << cudaGetErrorName(status) << " "
+                << cudaGetErrorString(status) << "\n";
+    }
 #endif
   }
 };

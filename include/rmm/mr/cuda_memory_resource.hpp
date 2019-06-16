@@ -29,6 +29,7 @@ namespace mr {
  * allocation/deallocation.
  *---------------------------------------------------------------------------**/
 class cuda_memory_resource final : public device_memory_resource {
+ public:
   bool supports_streams() const noexcept override { return false; }
 
  private:
