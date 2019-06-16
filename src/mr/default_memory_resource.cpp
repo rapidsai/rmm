@@ -1,5 +1,5 @@
-#include <rmm/mr/default_memory_resource.hpp>
 #include <rmm/mr/cuda_memory_resource.hpp>
+#include <rmm/mr/default_memory_resource.hpp>
 #include <rmm/mr/device_memory_resource.hpp>
 
 #include <atomic>
@@ -23,10 +23,7 @@ device_memory_resource* get_default_resource() { return get_default().load(); }
 
 device_memory_resource* set_default_resource(
     device_memory_resource* new_resource) {
-  if (nullptr == new_resource) {
-    get_default().exchange(initial_resource());
-  }
-
+  new_resource = (new_resource == nullptr) ? initial_resource() : new_resource;
   return get_default().exchange(new_resource);
 }
 }  // namespace mr
