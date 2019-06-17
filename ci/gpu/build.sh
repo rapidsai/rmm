@@ -66,11 +66,6 @@ make -j${PARALLEL_LEVEL} VERBOSE=1 install
 # BUILD - Build librmm_cffi
 ################################################################################
 
-if hasArg --skip-tests; then
-    logger "Skipping Tests..."
-    exit 0
-fi
-
 logger "Build librmm_cffi..."
 make rmm_python_cffi
 make rmm_install_python
@@ -78,6 +73,11 @@ make rmm_install_python
 ################################################################################
 # Test - librmm
 ################################################################################
+
+if hasArg --skip-tests; then
+    logger "Skipping Tests..."
+    exit 0
+fi
 
 logger "Check GPU usage..."
 nvidia-smi
