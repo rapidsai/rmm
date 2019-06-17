@@ -15,7 +15,7 @@
 #=============================================================================
 cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 
-project(RMM VERSION 0.4.0 LANGUAGES C CXX CUDA)
+project(RMM VERSION 0.7.0 LANGUAGES C CXX CUDA)
 
 ###################################################################################################
 # - build type ------------------------------------------------------------------------------------
@@ -43,13 +43,14 @@ set(CMAKE_CXX_COMPILER $ENV{CXX})
 if(CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
 
-    option(CMAKE_CXX11_ABI "Enable the GLIBCXX11 ABI" OFF)
+    option(CMAKE_CXX11_ABI "Enable the GLIBCXX11 ABI" ON)
     if(CMAKE_CXX11_ABI)
-        message(STATUS "CUDF: Enabling the GLIBCXX11 ABI")
+        message(STATUS "RMM: Enabling the GLIBCXX11 ABI")
     else()
-        message(STATUS "CUDF: Disabling the GLIBCXX11 ABI")
+        message(STATUS "RMM: Disabling the GLIBCXX11 ABI")
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -D_GLIBCXX_USE_CXX11_ABI=0")
     endif(CMAKE_CXX11_ABI)
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
@@ -168,3 +169,13 @@ add_custom_command(OUTPUT RMM_INSTALL_PYTHON_CFFI
                    VERBATIM)
 
 add_custom_target(rmm_install_python DEPENDS rmm RMM_PYTHON_CFFI RMM_INSTALL_PYTHON_CFFI)
+
+###################################################################################################
+# - make documentation ----------------------------------------------------------------------------
+
+add_custom_command(OUTPUT RMM_DOXYGEN
+                   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/doxygen
+                   COMMAND doxygen Doxyfile
+                   VERBATIM)
+
+add_custom_target(rmm_doc DEPENDS RMM_DOXYGEN)

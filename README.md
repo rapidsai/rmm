@@ -121,7 +121,6 @@ situations:
 
 RMM includes a custom Thrust allocator in the file `thrust_rmm_allocator.h`. This defines the template class `rmm_allocator`, and 
 a custom Thrust CUDA device execution policy called `rmm::exec_policy(stream)`.
-```
 
 #### Thrust Device Vectors
 
