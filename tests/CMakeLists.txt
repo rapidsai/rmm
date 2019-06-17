@@ -15,7 +15,11 @@
 #=============================================================================
 cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 
-project(CUDF_TESTS LANGUAGES C CXX CUDA)
+
+project(RMM_TESTS LANGUAGES C CXX CUDA)
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 ###################################################################################################
 # - compiler function -----------------------------------------------------------------------------
@@ -80,3 +84,19 @@ ConfigureTest(DEVICE_BUFFER_TEST "${BUFFER_TEST_SRC}")
 ###################################################################################################
 
 enable_testing()
+
+###################################################################################################
+### Performance test sources ######################################################################
+###################################################################################################
+
+###################################################################################################
+# - random_allocate microbenchmark ----------------------------------------------------------------
+
+set(RANDOM_ALLOCATE_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/performance/random_allocate.cpp")
+
+add_executable(random_allocate ${RANDOM_ALLOCATE_SRC})
+set_target_properties(random_allocate PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(random_allocate rmm)
+set_target_properties(random_allocate PROPERTIES
+                      RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bench")

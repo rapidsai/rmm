@@ -30,13 +30,22 @@ struct MemoryManagerTest :
     static rmmAllocationMode_t allocationMode() { return T::alloc_mode; }
 
     static void SetUpTestCase() {
+        ASSERT_FALSE(rmmIsInitialized(0));
         ASSERT_EQ( cudaSuccess, cudaStreamCreate(&stream) );
         rmmOptions_t options {allocationMode(), 0, false};
         ASSERT_SUCCESS( rmmInitialize(&options) );
+        rmmOptions_t options_set;
+        // verify initialized
+        ASSERT_TRUE(rmmIsInitialized(&options_set));
+        // verify initialized options
+        ASSERT_EQ(options_set.allocation_mode, options.allocation_mode);
+        ASSERT_EQ(options_set.initial_pool_size, options.initial_pool_size);
+        ASSERT_EQ(options_set.enable_logging, options.enable_logging);
     }
 
     static void TearDownTestCase() {
         ASSERT_SUCCESS( rmmFinalize() );
+        ASSERT_FALSE(rmmIsInitialized(0));
         ASSERT_EQ( cudaSuccess, cudaStreamDestroy(stream) );
     }
 
@@ -64,7 +73,10 @@ TYPED_TEST_CASE(MemoryManagerTest, allocation_modes);
 // Init / Finalize tests
 
 TYPED_TEST(MemoryManagerTest, Initialize) {
-    // Empty because handled in Fixture class.
+    
+    // Initialized in Fixture class.
+    rmmOptions_t options;
+    ASSERT_TRUE(rmmIsInitialized(&options));
 }
 
 TYPED_TEST(MemoryManagerTest, Finalize) {
@@ -180,21 +192,6 @@ TYPED_TEST(MemoryManagerTest, GetInfo) {
     ASSERT_SUCCESS( rmmGetInfo(&freeBefore, &totalBefore, stream) );
     ASSERT_GE(freeBefore, 0);
     ASSERT_GE(totalBefore, 0);
-
-    char *a = 0;
-    size_t sz = this->size_mb / 2;
-    ASSERT_SUCCESS( RMM_ALLOC(&a, sz, stream) );
-
-    // make sure the available free memory goes down after an allocation
-    size_t freeAfter = 0, totalAfter = 0;
-    ASSERT_SUCCESS( rmmGetInfo(&freeAfter, &totalAfter, stream) );
-    ASSERT_GE(totalAfter, totalBefore);
-    
-    // For some reason the free memory sometimes goes up in this mode?!
-    if (this->allocationMode() != (CudaManagedMemory | PoolAllocation))
-        ASSERT_LE(freeAfter, freeBefore);
-
-    ASSERT_SUCCESS( RMM_FREE(a, stream) );
 }
 
 TYPED_TEST(MemoryManagerTest, AllocationOffset) {

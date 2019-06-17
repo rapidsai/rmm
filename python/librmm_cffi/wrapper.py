@@ -94,6 +94,12 @@ class _RMMWrapper(object):
         """
         return self.rmmFinalize()
 
+    def is_initialized(self):
+        """Returns true if RMM has been initialized, false otherwise
+        """
+        opts = self._ffi.new("rmmOptions_t *")
+        return self.rmmIsInitialized(opts)
+
     def _get_caller(self):
         """Finds the file and line number of the caller (first caller outside
            this file.)
