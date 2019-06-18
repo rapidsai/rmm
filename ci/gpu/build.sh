@@ -4,10 +4,17 @@
 # rmm GPU build & testscript for CI  #
 ######################################
 set -e
+NUMARGS=$#
+ARGS=$*
 
 # Logger function for build status output
 function logger() {
   echo -e "\n>>>> $@\n"
+}
+
+# Arg parsing function
+function hasArg {
+    (( ${NUMARGS} != 0 )) && (echo " ${ARGS} " | grep -q " $1 ")
 }
 
 # Set path and build parallel level
@@ -66,6 +73,11 @@ make rmm_install_python
 ################################################################################
 # Test - librmm
 ################################################################################
+
+if hasArg --skip-tests; then
+    logger "Skipping Tests..."
+    exit 0
+fi
 
 logger "Check GPU usage..."
 nvidia-smi

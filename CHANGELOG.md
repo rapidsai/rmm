@@ -2,7 +2,7 @@
 
 ## New Features
 
-    ...
+    - PR #95 Add skip test functionality to build.sh
 
 ## Improvements
 
