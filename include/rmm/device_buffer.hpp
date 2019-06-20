@@ -32,7 +32,7 @@ class device_buffer {
   device_buffer() = delete;
 
   /**---------------------------------------------------------------------------*
-   * @brief Constructs a new device buffer of `size` bytes
+   * @brief Constructs a new device buffer of `size` unitialized bytes
    *
    * @param size Size in bytes to allocate in device memory
    * @param stream CUDA stream on which memory may be allocated if the memory
