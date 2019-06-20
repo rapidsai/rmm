@@ -180,3 +180,23 @@ TYPED_TEST(DeviceBufferTest, MoveConstructorStream) {
   EXPECT_EQ(0, buff.stream());
   EXPECT_NE(nullptr, buff.memory_resource());
 }
+
+TYPED_TEST(DeviceBufferTest, ResizeSmaller) {
+  rmm::device_buffer buff(this->size, 0, &this->mr);
+  auto old_data = buff.data();
+  auto new_size = this->size - 1;
+  buff.resize(new_size);
+  EXPECT_EQ(new_size, buff.size());
+  // Resizing smaller means the existing allocation should remain unchanged
+  EXPECT_EQ(old_data, buff.data());
+}
+
+TYPED_TEST(DeviceBufferTest, ResizeBigger) {
+  rmm::device_buffer buff(this->size, 0, &this->mr);
+  auto old_data = buff.data();
+  auto new_size = this->size + 1;
+  buff.resize(new_size);
+  EXPECT_EQ(new_size, buff.size());
+  // Resizing bigger means the data should point to a new allocation
+  EXPECT_NE(old_data, buff.data());
+}

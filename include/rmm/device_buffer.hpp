@@ -130,6 +130,41 @@ class device_buffer {
   }
 
   /**---------------------------------------------------------------------------*
+   * @brief Resize the device memory allocation
+   *
+   * If the requested `new_size` is less than or equal to the current size, no
+   * action is taken other than updating the value that is returned from
+   * `size()`. I.e., no memory is allocated nor copied.
+   *
+   * If `new_size` is larger than the current size, a new allocation is made to
+   * satisfy `new_size`, and the contents of the old allocation are copied to
+   * the new allocation. The old allocation is then freed.
+   *
+   * The `stream` returned by `stream()` is used for the allocation and copying
+   * of the new memory.
+   *
+   * @param new_size The requested new size, in bytes
+   *---------------------------------------------------------------------------**/
+  void resize(std::size_t new_size) {
+    // If the requested size is smaller, just update the size without any
+    // allocations
+    if (new_size <= _size) {
+      _size = new_size;
+    } else {
+      void* const new_data = _mr->allocate(new_size, _stream);
+      auto status =
+          cudaMemcpyAsync(new_data, _data, _size, cudaMemcpyDefault, _stream);
+
+      if (cudaSuccess != status) {
+        throw std::runtime_error{"Device memory copy failed."};
+      }
+      _mr->deallocate(_data, _size, _stream);
+      _data = new_data;
+      _size = new_size;
+    }
+  }
+
+  /**---------------------------------------------------------------------------*
    * @brief Returns raw pointer to underlying device memory allocation
    *---------------------------------------------------------------------------**/
   void const* data() const { return _data; }
