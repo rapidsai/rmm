@@ -152,11 +152,13 @@ class device_buffer {
       _size = new_size;
     } else {
       void* const new_data = _mr->allocate(new_size, _stream);
-      auto status =
-          cudaMemcpyAsync(new_data, _data, _size, cudaMemcpyDefault, _stream);
+      if (_size > 0) {
+        auto status =
+            cudaMemcpyAsync(new_data, _data, _size, cudaMemcpyDefault, _stream);
 
-      if (cudaSuccess != status) {
-        throw std::runtime_error{"Device memory copy failed."};
+        if (cudaSuccess != status) {
+          throw std::runtime_error{"Device memory copy failed."};
+        }
       }
       _mr->deallocate(_data, _size, _stream);
       _data = new_data;
