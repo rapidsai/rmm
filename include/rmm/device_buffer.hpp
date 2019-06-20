@@ -54,8 +54,12 @@ class device_buffer {
   device_buffer(device_buffer const& other)
       : _size{other._size}, _stream{other._stream}, _mr{other._mr} {
     _data = _mr->allocate(_size, _stream);
-    assert(cudaSuccess == cudaMemcpyAsync(_data, other._data, _size,
-                                          cudaMemcpyDefault, _stream));
+    auto status =
+        cudaMemcpyAsync(_data, other._data, _size, cudaMemcpyDefault, _stream);
+
+    if (cudaSuccess != status) {
+      throw std::runtime_error{"Device memory copy failed."};
+    }
   }
 
   /**---------------------------------------------------------------------------*
@@ -86,8 +90,12 @@ class device_buffer {
       _stream = other._stream;
       _mr = other._mr;
       _data = _mr->allocate(_size, _stream);
-      assert(cudaSuccess == cudaMemcpyAsync(_data, other._data, _size,
-                                            cudaMemcpyDefault, _stream));
+      auto status = cudaMemcpyAsync(_data, other._data, _size,
+                                    cudaMemcpyDefault, _stream);
+
+      if (cudaSuccess != status) {
+        throw std::runtime_error{"Device memory copy failed."};
+      }
     }
     return *this;
   }
