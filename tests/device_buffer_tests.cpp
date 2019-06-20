@@ -27,6 +27,10 @@
 #include <cstddef>
 #include <random>
 
+void sync_stream(cudaStream_t stream) {
+  EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(stream));
+}
+
 template <typename MemoryResourceType>
 struct DeviceBufferTest : public ::testing::Test {
   cudaStream_t stream{};
@@ -62,7 +66,7 @@ TYPED_TEST(DeviceBufferTest, DefaultMemoryResource) {
 
 TYPED_TEST(DeviceBufferTest, DefaultMemoryResourceStream) {
   rmm::device_buffer buff(this->size, this->stream);
-  EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(this->stream));
+  sync_stream(this->stream);
   EXPECT_NE(nullptr, buff.data());
   EXPECT_EQ(this->size, buff.size());
   EXPECT_EQ(rmm::mr::get_default_resource(), buff.memory_resource());
@@ -80,7 +84,7 @@ TYPED_TEST(DeviceBufferTest, ExplicitMemoryResource) {
 
 TYPED_TEST(DeviceBufferTest, ExplicitMemoryResourceStream) {
   rmm::device_buffer buff(this->size, this->stream, &this->mr);
-  EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(this->stream));
+  sync_stream(this->stream);
   EXPECT_NE(nullptr, buff.data());
   EXPECT_EQ(this->size, buff.size());
   EXPECT_EQ(&this->mr, buff.memory_resource());
@@ -91,8 +95,9 @@ TYPED_TEST(DeviceBufferTest, ExplicitMemoryResourceStream) {
 TYPED_TEST(DeviceBufferTest, CopyConstructor) {
   rmm::device_buffer buff(this->size, 0, &this->mr);
   // Can't do this until RMM cmake is setup to build cuda files
-  //thrust::sequence(thrust::device, static_cast<signed char *>(buff.data()),
-  //                 static_cast<signed char *>(buffer.data()) + buff.size(), 0);
+  // thrust::sequence(thrust::device, static_cast<signed char *>(buff.data()),
+  //                 static_cast<signed char *>(buffer.data()) + buff.size(),
+  //                 0);
   rmm::device_buffer buff_copy(buff);
   EXPECT_NE(nullptr, buff_copy.data());
   EXPECT_NE(buff.data(), buff_copy.data());
@@ -101,8 +106,77 @@ TYPED_TEST(DeviceBufferTest, CopyConstructor) {
   EXPECT_TRUE(buff.memory_resource()->is_equal(*buff_copy.memory_resource()));
   EXPECT_EQ(buff.stream(), buff_copy.stream());
 
-  //EXPECT_TRUE(
+  // EXPECT_TRUE(
   //    thrust::equal(thrust::device, static_cast<signed char *>(buff.data()),
   //                  static_cast<signed char *>(buff.data()) + buff.size(),
   //                  static_cast<signed char *>(buff_copy.data())));
+}
+
+TYPED_TEST(DeviceBufferTest, CopyConstructorStream) {
+  rmm::device_buffer buff(this->size, this->stream, &this->mr);
+  sync_stream(this->stream);
+  // Can't do this until RMM cmake is setup to build cuda files
+  // thrust::sequence(thrust::device, static_cast<signed char *>(buff.data()),
+  //                 static_cast<signed char *>(buffer.data()) + buff.size(),
+  //                 0);
+  rmm::device_buffer buff_copy(buff);
+  sync_stream(this->stream);
+  EXPECT_NE(nullptr, buff_copy.data());
+  EXPECT_NE(buff.data(), buff_copy.data());
+  EXPECT_EQ(buff.size(), buff_copy.size());
+  EXPECT_EQ(buff.stream(), buff_copy.stream());
+  EXPECT_EQ(buff.memory_resource(), buff_copy.memory_resource());
+  EXPECT_TRUE(buff.memory_resource()->is_equal(*buff_copy.memory_resource()));
+  EXPECT_EQ(buff.stream(), buff_copy.stream());
+
+  // EXPECT_TRUE(
+  //    thrust::equal(thrust::device, static_cast<signed char *>(buff.data()),
+  //                  static_cast<signed char *>(buff.data()) + buff.size(),
+  //                  static_cast<signed char *>(buff_copy.data())));
+}
+
+TYPED_TEST(DeviceBufferTest, MoveConstructor) {
+  rmm::device_buffer buff(this->size, 0, &this->mr);
+  auto p = buff.data();
+  auto size = buff.size();
+  auto mr = buff.memory_resource();
+  auto stream = buff.stream();
+
+  // New buffer should have the same contents as the original
+  rmm::device_buffer buff_new(std::move(buff));
+  EXPECT_NE(nullptr, buff_new.data());
+  EXPECT_EQ(p, buff_new.data());
+  EXPECT_EQ(size, buff_new.size());
+  EXPECT_EQ(stream, buff_new.stream());
+  EXPECT_EQ(mr, buff_new.memory_resource());
+
+  // Original buffer should be empty
+  EXPECT_EQ(nullptr, buff.data());
+  EXPECT_EQ(0, buff.size());
+  EXPECT_EQ(0, buff.stream());
+  EXPECT_NE(nullptr, buff.memory_resource());
+}
+
+TYPED_TEST(DeviceBufferTest, MoveConstructorStream) {
+  rmm::device_buffer buff(this->size, this->stream, &this->mr);
+  sync_stream(this->stream);
+  auto p = buff.data();
+  auto size = buff.size();
+  auto mr = buff.memory_resource();
+  auto stream = buff.stream();
+
+  // New buffer should have the same contents as the original
+  rmm::device_buffer buff_new(std::move(buff));
+  sync_stream(this->stream);
+  EXPECT_NE(nullptr, buff_new.data());
+  EXPECT_EQ(p, buff_new.data());
+  EXPECT_EQ(size, buff_new.size());
+  EXPECT_EQ(stream, buff_new.stream());
+  EXPECT_EQ(mr, buff_new.memory_resource());
+
+  // Original buffer should be empty
+  EXPECT_EQ(nullptr, buff.data());
+  EXPECT_EQ(0, buff.size());
+  EXPECT_EQ(0, buff.stream());
+  EXPECT_NE(nullptr, buff.memory_resource());
 }
