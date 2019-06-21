@@ -72,10 +72,12 @@ class device_buffer {
   /**---------------------------------------------------------------------------*
    * @brief Constructs an empty `device_buffer` of size 0
    *---------------------------------------------------------------------------**/
-  device_buffer() = default;
+  device_buffer() noexcept = default;
 
   /**---------------------------------------------------------------------------*
    * @brief Constructs a new device buffer of `size` unitialized bytes
+   *
+   * @throws std::bad_alloc If creating the new allocation fails
    *
    * @param size Size in bytes to allocate in device memory
    * @param stream CUDA stream on which memory may be allocated if the memory
@@ -92,6 +94,9 @@ class device_buffer {
   /**---------------------------------------------------------------------------*
    * @brief Constructs a new `device_buffer` by deep copying the contents of
    * another `device_buffer`.
+   *
+   * @throws std::bad_alloc If creating the new allocation fails
+   * @throws std::runtime_error if copying from `other` fails
    *
    * @param other The other `device_buffer` to deep copy
    *---------------------------------------------------------------------------**/
@@ -113,10 +118,12 @@ class device_buffer {
    * After the new `device_buffer` is constructed, `other` is modified to be
    * empty, i.e., `data()` returns `nullptr`, and `size()` is zero.
    *
+   * @throws Nothing
+   *
    * @param other The `device_buffer` whose contents will be moved into the
    * newly constructed one
    *---------------------------------------------------------------------------**/
-  device_buffer(device_buffer&& other)
+  device_buffer(device_buffer&& other) noexcept
       : _data{other._data},
         _size{other._size},
         _stream{other._stream},
@@ -202,6 +209,9 @@ class device_buffer {
    * The `stream` returned by `stream()` is used for the allocation and copying
    * of the new memory.
    *
+   * @throws std::bad_alloc If creating the new allocation fails
+   * @throws std::runtime_error if the copy from the old to new allocation fails
+   *
    * @param new_size The requested new size, in bytes
    *---------------------------------------------------------------------------**/
   void resize(std::size_t new_size) {
@@ -228,28 +238,28 @@ class device_buffer {
   /**---------------------------------------------------------------------------*
    * @brief Returns raw pointer to underlying device memory allocation
    *---------------------------------------------------------------------------**/
-  void const* data() const { return _data; }
+  void const* data() const noexcept { return _data; }
 
   /**---------------------------------------------------------------------------*
    * @brief Returns raw pointer to underlying device memory allocation
    *---------------------------------------------------------------------------**/
-  void* data() { return _data; }
+  void* data() noexcept { return _data; }
 
   /**---------------------------------------------------------------------------*
    * @brief Returns size in bytes of device memory allocation
    *---------------------------------------------------------------------------**/
-  std::size_t size() const { return _size; }
+  std::size_t size() const noexcept { return _size; }
 
   /**---------------------------------------------------------------------------*
    * @brief Returns stream used for allocation/deallocation
    *---------------------------------------------------------------------------**/
-  cudaStream_t stream() const { return _stream; }
+  cudaStream_t stream() const noexcept { return _stream; }
 
   /**---------------------------------------------------------------------------*
    * @brief Returns pointer to the memory resource used to allocate and
    * deallocate the device memory
    *---------------------------------------------------------------------------**/
-  mr::device_memory_resource* memory_resource() const { return _mr; }
+  mr::device_memory_resource* memory_resource() const noexcept { return _mr; }
 
  private:
   void* _data{nullptr};     ///< Pointer to device memory allocation
