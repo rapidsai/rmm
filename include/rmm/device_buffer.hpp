@@ -47,9 +47,10 @@ class device_buffer {
   }
 
   /**---------------------------------------------------------------------------*
-   * @brief Copy constructor
+   * @brief Constructs a new `device_buffer` by deep copying the contents of
+   * another `device_buffer`.
    *
-   * @param other
+   * @param other The other `device_buffer` to deep copy
    *---------------------------------------------------------------------------**/
   device_buffer(device_buffer const& other)
       : _size{other._size}, _stream{other._stream}, _mr{other._mr} {
@@ -63,9 +64,14 @@ class device_buffer {
   }
 
   /**---------------------------------------------------------------------------*
-   * @brief Move constructor
+   * @brief Constructs a new `device_buffer` by moving the contents of another
+   * `device_buffer` into the newly constructed one.
    *
-   * @param other
+   * After the new `device_buffer` is constructed, `other` is modified to be
+   * empty, i.e., `data()` returns `nullptr`, and `size()` is zero.
+   *
+   * @param other The `device_buffer` whose contents will be moved into the
+   * newly constructed one
    *---------------------------------------------------------------------------**/
   device_buffer(device_buffer&& other)
       : _data{other._data},
@@ -80,33 +86,44 @@ class device_buffer {
   /**---------------------------------------------------------------------------*
    * @brief Copy assignment operator
    *
-   * @param other
-   * @return device_buffer&
-   *---------------------------------------------------------------------------**/
-  device_buffer& operator=(device_buffer const& other) {
-    if (&other != this) {
-      _mr->deallocate(_data, _size, _stream);
-      _size = other._size;
-      _stream = other._stream;
-      _mr = other._mr;
-      _data = _mr->allocate(_size, _stream);
-      auto status = cudaMemcpyAsync(_data, other._data, _size,
-                                    cudaMemcpyDefault, _stream);
-
-      if (cudaSuccess != status) {
-        throw std::runtime_error{"Device memory copy failed."};
-      }
-    }
-    return *this;
-  }
-
-  /**---------------------------------------------------------------------------*
-   * @brief Move assignment operator
+   * TODO: Decide if this should be deleted or not.
    *
    * @param other
    * @return device_buffer&
    *---------------------------------------------------------------------------**/
-  device_buffer& operator=(device_buffer&& other) {
+  device_buffer& operator=(device_buffer const& other) =
+      delete
+      /*
+      {
+        if (&other != this) {
+          _mr->deallocate(_data, _size, _stream);
+          _size = other._size;
+          _stream = other._stream;
+          _mr = other._mr;
+          _data = _mr->allocate(_size, _stream);
+          auto status = cudaMemcpyAsync(_data, other._data, _size,
+                                        cudaMemcpyDefault, _stream);
+
+          if (cudaSuccess != status) {
+            throw std::runtime_error{"Device memory copy failed."};
+          }
+        }
+        return *this;
+      }
+      */
+
+      /**---------------------------------------------------------------------------*
+       * @brief Move assignment operator
+       *
+       * TODO: Decide if this should be deleted or not.
+       *
+       * @param other
+       * @return device_buffer&
+       *---------------------------------------------------------------------------**/
+      device_buffer
+      & operator=(device_buffer&& other) = delete;
+  /*
+   {
     if (&other != this) {
       _mr->deallocate(_data, _size, _stream);
       _data = other._data;
@@ -120,6 +137,7 @@ class device_buffer {
     }
     return *this;
   }
+  */
 
   ~device_buffer() {
     _mr->deallocate(_data, _size, _stream);
@@ -190,7 +208,7 @@ class device_buffer {
    * @brief Returns pointer to the memory resource used to allocate and
    * deallocate the device memory
    *---------------------------------------------------------------------------**/
-  mr::device_memory_resource const* memory_resource() const { return _mr; }
+  mr::device_memory_resource* memory_resource() const { return _mr; }
 
  private:
   void* _data{nullptr};     ///< Pointer to device memory allocation
