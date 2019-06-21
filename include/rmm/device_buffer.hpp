@@ -25,10 +25,53 @@ namespace rmm {
 /**---------------------------------------------------------------------------*
  * @file device_buffer.hpp
  * @brief RAII construct for device memory allocation
+ *
+ * This class allocates untyped and *uninitialized* device memory using a
+ * `device_memory_resource`. If not explicitly specified, the memory resource
+ * returned from `get_default_resource()` is used.
+ *
+ * @note Unlike `std::vector` or `thrust::device_vector`, the device memory
+ * allocated by a `device_buffer` is unitialized. Therefore, it is undefined
+ * behavior to read the contents of `data()` before first initializing it.
+ *
+ * Examples:
+ * ```
+ * //Allocates at least 100 bytes of device memory using the default memory
+ * //resource
+ * device_buffer buff(100);
+ *
+ * // allocates at least 100 bytes using the custom memory resource
+ * custom_memory_resource mr;
+ * device_buffer custom_buff(100, &mr);
+ *
+ * // deep copies `buff` into a new device buffer
+ * device_buffer buff_copy(buff);
+ *
+ * // shallow copies `buff` into a new device_buffer, `buff` is now empty
+ * device_buffer buff_move(std::move(buff));
+ *
+ * // Default construction. Buffer is empty
+ * device_buffer buff_default{};
+ *
+ * // If the requested sized is larger than the current
+ * // size, resizes allocation to the new size and deep copies any previous
+ * // contents. Otherwise, simply updates the value of `size()` to the newly
+ * // requested size without any allocations or copies
+ * buff_default.resize(100);
+ *
+ * // Not allowed. Copy assignment is deleted
+ * buff_default = buff_copy;
+ *
+ * // Not allowed. Move assignment is deleted
+ * buff_default = std::move(buff_copy);
+ *```
  *---------------------------------------------------------------------------**/
 
 class device_buffer {
  public:
+  /**---------------------------------------------------------------------------*
+   * @brief Constructs an empty `device_buffer` of size 0
+   *---------------------------------------------------------------------------**/
   device_buffer() = default;
 
   /**---------------------------------------------------------------------------*
