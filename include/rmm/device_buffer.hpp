@@ -187,7 +187,7 @@ class device_buffer {
   }
   */
 
-  ~device_buffer() {
+  ~device_buffer() noexcept {
     _mr->deallocate(_data, _size, _stream);
     _data = nullptr;
     _size = 0;
