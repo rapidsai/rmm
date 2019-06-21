@@ -3,6 +3,7 @@
 
 
  - PR #96 Added `device_memory_resource` for beginning of overhaul of RMM design
+ - PR #99 Added `device_buffer` class
  - PR #95 Add skip test functionality to build.sh
 
 
