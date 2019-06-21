@@ -29,7 +29,7 @@ namespace rmm {
 
 class device_buffer {
  public:
-  device_buffer() = delete;
+  device_buffer() = default;
 
   /**---------------------------------------------------------------------------*
    * @brief Constructs a new device buffer of `size` unitialized bytes
@@ -91,37 +91,35 @@ class device_buffer {
    * @param other
    * @return device_buffer&
    *---------------------------------------------------------------------------**/
-  device_buffer& operator=(device_buffer const& other) =
-      delete
-      /*
-      {
-        if (&other != this) {
-          _mr->deallocate(_data, _size, _stream);
-          _size = other._size;
-          _stream = other._stream;
-          _mr = other._mr;
-          _data = _mr->allocate(_size, _stream);
-          auto status = cudaMemcpyAsync(_data, other._data, _size,
-                                        cudaMemcpyDefault, _stream);
+  device_buffer& operator=(device_buffer const& other) = delete;
+  /*
+  {
+    if (&other != this) {
+      _mr->deallocate(_data, _size, _stream);
+      _size = other._size;
+      _stream = other._stream;
+      _mr = other._mr;
+      _data = _mr->allocate(_size, _stream);
+      auto status = cudaMemcpyAsync(_data, other._data, _size,
+                                    cudaMemcpyDefault, _stream);
 
-          if (cudaSuccess != status) {
-            throw std::runtime_error{"Device memory copy failed."};
-          }
-        }
-        return *this;
+      if (cudaSuccess != status) {
+        throw std::runtime_error{"Device memory copy failed."};
       }
-      */
+    }
+    return *this;
+  }
+  */
 
-      /**---------------------------------------------------------------------------*
-       * @brief Move assignment operator
-       *
-       * TODO: Decide if this should be deleted or not.
-       *
-       * @param other
-       * @return device_buffer&
-       *---------------------------------------------------------------------------**/
-      device_buffer
-      & operator=(device_buffer&& other) = delete;
+  /**---------------------------------------------------------------------------*
+   * @brief Move assignment operator
+   *
+   * TODO: Decide if this should be deleted or not.
+   *
+   * @param other
+   * @return device_buffer&
+   *---------------------------------------------------------------------------**/
+  device_buffer& operator=(device_buffer&& other) = delete;
   /*
    {
     if (&other != this) {
