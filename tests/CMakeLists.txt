@@ -66,7 +66,9 @@ ConfigureTest(RMM_TEST "${RMM_TEST_SRC}")
 # - mr tests -------------------------------------------------------------------------------------
 
 set(MR_TEST_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/mr/mr_tests.cpp")
+    "${CMAKE_CURRENT_SOURCE_DIR}/mr/mr_tests.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mr/thrust_allocator_tests.cpp")
+    
 
 ConfigureTest(MR_TEST "${MR_TEST_SRC}")
 
