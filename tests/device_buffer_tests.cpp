@@ -60,6 +60,7 @@ TYPED_TEST(DeviceBufferTest, DefaultMemoryResource) {
   rmm::device_buffer buff(this->size);
   EXPECT_NE(nullptr, buff.data());
   EXPECT_EQ(this->size, buff.size());
+  EXPECT_EQ(this->size, buff.capacity());
   EXPECT_EQ(rmm::mr::get_default_resource(), buff.memory_resource());
   EXPECT_EQ(0, buff.stream());
 }
@@ -69,6 +70,7 @@ TYPED_TEST(DeviceBufferTest, DefaultMemoryResourceStream) {
   sync_stream(this->stream);
   EXPECT_NE(nullptr, buff.data());
   EXPECT_EQ(this->size, buff.size());
+  EXPECT_EQ(this->size, buff.capacity());
   EXPECT_EQ(rmm::mr::get_default_resource(), buff.memory_resource());
   EXPECT_EQ(this->stream, buff.stream());
 }
@@ -77,6 +79,7 @@ TYPED_TEST(DeviceBufferTest, ExplicitMemoryResource) {
   rmm::device_buffer buff(this->size, 0, &this->mr);
   EXPECT_NE(nullptr, buff.data());
   EXPECT_EQ(this->size, buff.size());
+  EXPECT_EQ(this->size, buff.capacity());
   EXPECT_EQ(&this->mr, buff.memory_resource());
   EXPECT_TRUE(this->mr.is_equal(*buff.memory_resource()));
   EXPECT_EQ(0, buff.stream());
@@ -87,6 +90,7 @@ TYPED_TEST(DeviceBufferTest, ExplicitMemoryResourceStream) {
   sync_stream(this->stream);
   EXPECT_NE(nullptr, buff.data());
   EXPECT_EQ(this->size, buff.size());
+  EXPECT_EQ(this->size, buff.capacity());
   EXPECT_EQ(&this->mr, buff.memory_resource());
   EXPECT_TRUE(this->mr.is_equal(*buff.memory_resource()));
   EXPECT_EQ(this->stream, buff.stream());
@@ -102,6 +106,7 @@ TYPED_TEST(DeviceBufferTest, CopyConstructor) {
   EXPECT_NE(nullptr, buff_copy.data());
   EXPECT_NE(buff.data(), buff_copy.data());
   EXPECT_EQ(buff.size(), buff_copy.size());
+  EXPECT_EQ(buff.capacity(), buff_copy.capacity());
   EXPECT_EQ(buff.memory_resource(), buff_copy.memory_resource());
   EXPECT_TRUE(buff.memory_resource()->is_equal(*buff_copy.memory_resource()));
   EXPECT_EQ(buff.stream(), buff_copy.stream());
@@ -124,6 +129,7 @@ TYPED_TEST(DeviceBufferTest, CopyConstructorStream) {
   EXPECT_NE(nullptr, buff_copy.data());
   EXPECT_NE(buff.data(), buff_copy.data());
   EXPECT_EQ(buff.size(), buff_copy.size());
+  EXPECT_EQ(buff.capacity(), buff_copy.capacity());
   EXPECT_EQ(buff.stream(), buff_copy.stream());
   EXPECT_EQ(buff.memory_resource(), buff_copy.memory_resource());
   EXPECT_TRUE(buff.memory_resource()->is_equal(*buff_copy.memory_resource()));
@@ -139,6 +145,7 @@ TYPED_TEST(DeviceBufferTest, MoveConstructor) {
   rmm::device_buffer buff(this->size, 0, &this->mr);
   auto p = buff.data();
   auto size = buff.size();
+  auto capacity = buff.capacity();
   auto mr = buff.memory_resource();
   auto stream = buff.stream();
 
@@ -147,12 +154,14 @@ TYPED_TEST(DeviceBufferTest, MoveConstructor) {
   EXPECT_NE(nullptr, buff_new.data());
   EXPECT_EQ(p, buff_new.data());
   EXPECT_EQ(size, buff_new.size());
+  EXPECT_EQ(capacity, buff_new.capacity());
   EXPECT_EQ(stream, buff_new.stream());
   EXPECT_EQ(mr, buff_new.memory_resource());
 
   // Original buffer should be empty
   EXPECT_EQ(nullptr, buff.data());
   EXPECT_EQ(0, buff.size());
+  EXPECT_EQ(0, buff.capacity());
   EXPECT_EQ(0, buff.stream());
   EXPECT_NE(nullptr, buff.memory_resource());
 }
@@ -162,6 +171,7 @@ TYPED_TEST(DeviceBufferTest, MoveConstructorStream) {
   sync_stream(this->stream);
   auto p = buff.data();
   auto size = buff.size();
+  auto capacity = buff.capacity();
   auto mr = buff.memory_resource();
   auto stream = buff.stream();
 
@@ -171,12 +181,14 @@ TYPED_TEST(DeviceBufferTest, MoveConstructorStream) {
   EXPECT_NE(nullptr, buff_new.data());
   EXPECT_EQ(p, buff_new.data());
   EXPECT_EQ(size, buff_new.size());
+  EXPECT_EQ(capacity, buff_new.capacity());
   EXPECT_EQ(stream, buff_new.stream());
   EXPECT_EQ(mr, buff_new.memory_resource());
 
   // Original buffer should be empty
   EXPECT_EQ(nullptr, buff.data());
   EXPECT_EQ(0, buff.size());
+  EXPECT_EQ(0, buff.capacity());
   EXPECT_EQ(0, buff.stream());
   EXPECT_NE(nullptr, buff.memory_resource());
 }
@@ -187,6 +199,7 @@ TYPED_TEST(DeviceBufferTest, ResizeSmaller) {
   auto new_size = this->size - 1;
   buff.resize(new_size);
   EXPECT_EQ(new_size, buff.size());
+  EXPECT_EQ(this->size, buff.capacity());  // Capacity should be unchanged
   // Resizing smaller means the existing allocation should remain unchanged
   EXPECT_EQ(old_data, buff.data());
 }
@@ -197,6 +210,7 @@ TYPED_TEST(DeviceBufferTest, ResizeBigger) {
   auto new_size = this->size + 1;
   buff.resize(new_size);
   EXPECT_EQ(new_size, buff.size());
+  EXPECT_EQ(new_size, buff.capacity());
   // Resizing bigger means the data should point to a new allocation
   EXPECT_NE(old_data, buff.data());
 }

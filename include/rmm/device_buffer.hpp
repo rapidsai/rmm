@@ -87,7 +87,7 @@ class device_buffer {
   explicit device_buffer(
       std::size_t size, cudaStream_t stream = 0,
       mr::device_memory_resource* mr = mr::get_default_resource())
-      : _size{size}, _stream{stream}, _mr{mr} {
+      : _size{size}, _capacity{size}, _stream{stream}, _mr{mr} {
     _data = _mr->allocate(size, stream);
   }
 
@@ -101,7 +101,10 @@ class device_buffer {
    * @param other The other `device_buffer` to deep copy
    *---------------------------------------------------------------------------**/
   device_buffer(device_buffer const& other)
-      : _size{other._size}, _stream{other._stream}, _mr{other._mr} {
+      : _size{other._size},
+        _capacity{other._capacity},
+        _stream{other._stream},
+        _mr{other._mr} {
     _data = _mr->allocate(_size, _stream);
     auto status =
         cudaMemcpyAsync(_data, other._data, _size, cudaMemcpyDefault, _stream);
@@ -126,10 +129,12 @@ class device_buffer {
   device_buffer(device_buffer&& other) noexcept
       : _data{other._data},
         _size{other._size},
+        _capacity{other._capacity},
         _stream{other._stream},
         _mr{other._mr} {
     other._data = nullptr;
     other._size = 0;
+    other._capacity = 0;
     other._stream = 0;
   }
 
@@ -188,9 +193,10 @@ class device_buffer {
   */
 
   ~device_buffer() noexcept {
-    _mr->deallocate(_data, _size, _stream);
+    _mr->deallocate(_data, _capacity, _stream);
     _data = nullptr;
     _size = 0;
+    _capacity = 0;
     _stream = 0;
     _mr = nullptr;
   }
@@ -232,6 +238,7 @@ class device_buffer {
       _mr->deallocate(_data, _size, _stream);
       _data = new_data;
       _size = new_size;
+      _capacity = new_size;
     }
   }
 
@@ -246,9 +253,15 @@ class device_buffer {
   void* data() noexcept { return _data; }
 
   /**---------------------------------------------------------------------------*
-   * @brief Returns size in bytes of device memory allocation
+   * @brief Returns size in bytes that was requested for the device memory
+   * allocation
    *---------------------------------------------------------------------------**/
   std::size_t size() const noexcept { return _size; }
+
+  /**---------------------------------------------------------------------------*
+   * @brief Returns actual size in bytes of device memory allocation
+   *---------------------------------------------------------------------------**/
+  std::size_t capacity() const noexcept { return _capacity; }
 
   /**---------------------------------------------------------------------------*
    * @brief Returns stream used for allocation/deallocation
@@ -263,8 +276,9 @@ class device_buffer {
 
  private:
   void* _data{nullptr};     ///< Pointer to device memory allocation
-  std::size_t _size{0};     ///< Size in bytes of device memory allocation
-  cudaStream_t _stream{0};  ///< Stream which may be used for
+  std::size_t _size{};      ///< Requested size of the device memory allocation
+  std::size_t _capacity{};  ///< The actual size of the device memory allocation
+  cudaStream_t _stream{};   ///< Stream which may be used for
                             ///< allocation/deallocation of device memory
   mr::device_memory_resource* _mr{
       mr::get_default_resource()};  ///< The memory resource used to
