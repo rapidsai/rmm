@@ -28,10 +28,9 @@ namespace mr {
  * This class serves as the interface that all custom device memory
  * implementations must satisfy.
  *
- * There are two private, pure virtual functions: `do_allocate` and
- * `do_deallocate` that must be implemented. Optionally, the `is_equal` virtual
- * function may be overriden from the default of simply performing an identity
- * comparison.
+ * There are two private, pure virtual functions that all derived classes must implement: `do_allocate` and
+ * `do_deallocate`. Optionally, derived classes may also override `is_equal`. By default, 
+ * `is_equal` simply performs an identity comparison.
  *
  * The public, non-virtual functions `allocate`, `deallocate`, and `is_equal`
  * simply call the private virtual functions. The reason for this is to allow

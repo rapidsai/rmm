@@ -28,7 +28,7 @@
 namespace rmm {
 namespace mr {
 /**---------------------------------------------------------------------------*
- * @brief `device_memory_resource` derived class that uses
+ * @brief Memory resource that allocates/deallocates using the cnmem pool sub-allocator 
  * the cnmem pool sub-allocator for allocation/deallocation.
  *---------------------------------------------------------------------------**/
 class cnmem_memory_resource final : public device_memory_resource {
