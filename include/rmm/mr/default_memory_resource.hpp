@@ -24,8 +24,6 @@ namespace mr {
  * is not supplied. The initial default memory resource is a
  * `cuda_memory_resource`.
  *
- * The default memory resource is used for all temporary memory allocation.
- *
  * This function is thread-safe.
  *
  * @return device_memory_resource* Pointer to the current default memory
