@@ -28,6 +28,7 @@ device_memory_resource* initial_resource() {
   return &resource;
 }
 
+// Use an atomic to guarantee thread safety
 std::atomic<device_memory_resource*>& get_default() {
   static std::atomic<device_memory_resource*> res{initial_resource()};
   return res;
