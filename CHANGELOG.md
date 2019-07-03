@@ -1,8 +1,23 @@
+# RMM 0.9.0 (Date TBD)
+
+## New Features
+
+ - PR #96 Added `device_memory_resource` for beginning of overhaul of RMM design
+
+## Improvements
+
+    ...
+
+## Bug Fixes
+
+    ...
+
+
 # RMM 0.8.0 (27 June 2019)
 
 ## New Features
 
-    - PR #95 Add skip test functionality to build.sh
+ - PR #95 Add skip test functionality to build.sh
 
 ## Improvements
 
