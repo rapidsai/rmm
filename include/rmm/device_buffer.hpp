@@ -72,7 +72,7 @@ class device_buffer {
   /**---------------------------------------------------------------------------*
    * @brief Constructs an empty `device_buffer` of size 0
    *---------------------------------------------------------------------------**/
-  device_buffer() noexcept = default;
+  device_buffer() = default;
 
   /**---------------------------------------------------------------------------*
    * @brief Constructs a new device buffer of `size` unitialized bytes
@@ -89,6 +89,30 @@ class device_buffer {
       mr::device_memory_resource* mr = mr::get_default_resource())
       : _size{size}, _capacity{size}, _stream{stream}, _mr{mr} {
     _data = _mr->allocate(size, stream);
+  }
+
+  /**---------------------------------------------------------------------------*
+   * @brief Construct a new device buffer by copying from a raw pointer to an
+   * existing host or device memory allocation.
+   *
+   * @throws std::bad_alloc If creating the new allocation fails
+   * @throws std::runtime_error if copying from the device memory fails
+   *
+   * @param source_data Pointer to the host or device memory to copy from
+   * @param size Size in bytes to copy
+   * @param stream CUDA stream on which memory may be allocated if the memory
+   * resource supports streams, else the null stream is used.
+   * @param mr Memory resource to use for the device memory allocation
+   *---------------------------------------------------------------------------**/
+  device_buffer(void const* source_data, std::size_t size, cudaStream_t stream = 0,
+                mr::device_memory_resource* mr = mr::get_default_resource())
+      : _size{size}, _capacity{size}, _stream{stream}, _mr{mr} {
+    _data = _mr->allocate(_size, stream);
+    auto status =
+        cudaMemcpyAsync(_data, source_data, _size, cudaMemcpyDefault, _stream);
+    if (cudaSuccess != status) {
+      throw std::runtime_error{"Copy failed."};
+    }
   }
 
   /**---------------------------------------------------------------------------*

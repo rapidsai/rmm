@@ -96,6 +96,29 @@ TYPED_TEST(DeviceBufferTest, ExplicitMemoryResourceStream) {
   EXPECT_EQ(this->stream, buff.stream());
 }
 
+TYPED_TEST(DeviceBufferTest, CopyFromRawDevicePointer) {
+  void* device_memory{nullptr};
+  EXPECT_EQ(cudaSuccess, cudaMalloc(&device_memory, this->size));
+  rmm::device_buffer buff(device_memory, this->size);
+  EXPECT_NE(nullptr, buff.data());
+  EXPECT_EQ(this->size, buff.size());
+  EXPECT_EQ(this->size, buff.capacity());
+  EXPECT_EQ(rmm::mr::get_default_resource(), buff.memory_resource());
+  EXPECT_EQ(0, buff.stream());
+  // TODO check for equality between the contents of the two allocations
+  EXPECT_EQ(cudaSuccess, cudaFree(device_memory));
+}
+TYPED_TEST(DeviceBufferTest, CopyFromRawHostPointer) {
+  std::vector<uint8_t> host_data(this->size);
+  rmm::device_buffer buff(static_cast<void*>(host_data.data()), this->size);
+  EXPECT_NE(nullptr, buff.data());
+  EXPECT_EQ(this->size, buff.size());
+  EXPECT_EQ(this->size, buff.capacity());
+  EXPECT_EQ(rmm::mr::get_default_resource(), buff.memory_resource());
+  EXPECT_EQ(0, buff.stream());
+  // TODO check for equality between the contents of the two allocations
+}
+
 TYPED_TEST(DeviceBufferTest, CopyConstructor) {
   rmm::device_buffer buff(this->size, 0, &this->mr);
   // Can't do this until RMM cmake is setup to build cuda files
