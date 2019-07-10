@@ -164,6 +164,34 @@ TYPED_TEST(DeviceBufferTest, CopyConstructorStream) {
   //                  static_cast<signed char *>(buff_copy.data())));
 }
 
+TYPED_TEST(DeviceBufferTest, CopyCapacityLargerThanSize) {
+  rmm::device_buffer buff(this->size, 0, &this->mr);
+
+  // Resizing smaller to make `size()` < `capacity()`
+  auto new_size = this->size - 1;
+  buff.resize(new_size);
+
+  // Can't do this until RMM cmake is setup to build cuda files
+  // thrust::sequence(thrust::device, static_cast<signed char *>(buff.data()),
+  //                 static_cast<signed char *>(buffer.data()) + buff.size(),
+  //                 0);
+  rmm::device_buffer buff_copy(buff);
+  EXPECT_NE(nullptr, buff_copy.data());
+  EXPECT_NE(buff.data(), buff_copy.data());
+  EXPECT_EQ(buff.size(), buff_copy.size());
+
+  // The capacity of the copy should be equal to the `size()` of the original
+  EXPECT_EQ(new_size, buff_copy.capacity());
+  EXPECT_EQ(buff.memory_resource(), buff_copy.memory_resource());
+  EXPECT_TRUE(buff.memory_resource()->is_equal(*buff_copy.memory_resource()));
+  EXPECT_EQ(buff.stream(), buff_copy.stream());
+
+  // EXPECT_TRUE(
+  //    thrust::equal(thrust::device, static_cast<signed char *>(buff.data()),
+  //                  static_cast<signed char *>(buff.data()) + buff.size(),
+  //                  static_cast<signed char *>(buff_copy.data())));
+}
+
 TYPED_TEST(DeviceBufferTest, MoveConstructor) {
   rmm::device_buffer buff(this->size, 0, &this->mr);
   auto p = buff.data();

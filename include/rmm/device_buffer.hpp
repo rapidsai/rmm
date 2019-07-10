@@ -110,7 +110,7 @@ class device_buffer {
                 mr::device_memory_resource* mr = mr::get_default_resource())
       : _size{size}, _capacity{size}, _stream{stream}, _mr{mr} {
     if (nullptr == source_data) {
-      throw std::runtime_error { "source_data is null." }
+      throw std::runtime_error{"source_data is null."};
     }
     _data = _mr->allocate(_size, stream);
     auto status =
