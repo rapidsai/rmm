@@ -96,6 +96,7 @@ class device_buffer {
    * existing host or device memory allocation.
    *
    * @throws std::bad_alloc If creating the new allocation fails
+   * @throws std::runtime_error If `source_data` is null
    * @throws std::runtime_error if copying from the device memory fails
    *
    * @param source_data Pointer to the host or device memory to copy from
@@ -104,9 +105,13 @@ class device_buffer {
    * resource supports streams, else the null stream is used.
    * @param mr Memory resource to use for the device memory allocation
    *---------------------------------------------------------------------------**/
-  device_buffer(void const* source_data, std::size_t size, cudaStream_t stream = 0,
+  device_buffer(void const* source_data, std::size_t size,
+                cudaStream_t stream = 0,
                 mr::device_memory_resource* mr = mr::get_default_resource())
       : _size{size}, _capacity{size}, _stream{stream}, _mr{mr} {
+    if (nullptr == source_data) {
+      throw std::runtime_error { "source_data is null." }
+    }
     _data = _mr->allocate(_size, stream);
     auto status =
         cudaMemcpyAsync(_data, source_data, _size, cudaMemcpyDefault, _stream);
@@ -119,6 +124,10 @@ class device_buffer {
    * @brief Constructs a new `device_buffer` by deep copying the contents of
    * another `device_buffer`.
    *
+   * @note Only copies `other.size()` bytes from `other`, i.e., if `other.size()
+   * != other.capacity()`, then the size and capacity of the newly constructed
+   *`device_buffer` will be equal to `other.size()`.
+   *
    * @throws std::bad_alloc If creating the new allocation fails
    * @throws std::runtime_error if copying from `other` fails
    *
@@ -126,7 +135,7 @@ class device_buffer {
    *---------------------------------------------------------------------------**/
   device_buffer(device_buffer const& other)
       : _size{other._size},
-        _capacity{other._capacity},
+        _capacity{other._size},
         _stream{other._stream},
         _mr{other._mr} {
     _data = _mr->allocate(_size, _stream);
@@ -283,7 +292,12 @@ class device_buffer {
   std::size_t size() const noexcept { return _size; }
 
   /**---------------------------------------------------------------------------*
-   * @brief Returns actual size in bytes of device memory allocation
+   * @brief Returns actual size in bytes of device memory allocation.
+   *
+   * The following invariant will always be true:
+   * ```
+   * size() <= capacity()
+   * ```
    *---------------------------------------------------------------------------**/
   std::size_t capacity() const noexcept { return _capacity; }
 
