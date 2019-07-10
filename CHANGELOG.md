@@ -3,6 +3,7 @@
 ## New Features
 
     - PR #95 Add skip test functionality to build.sh
+    - PR #103 force running tests, does branch-0.9 testing work
 
 ## Improvements
 

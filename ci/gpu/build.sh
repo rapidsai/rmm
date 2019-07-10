@@ -12,6 +12,7 @@ function logger() {
   echo -e "\n>>>> $@\n"
 }
 
+
 # Arg parsing function
 function hasArg {
     (( ${NUMARGS} != 0 )) && (echo " ${ARGS} " | grep -q " $1 ")

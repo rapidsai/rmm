@@ -1,5 +1,6 @@
 CMAKE_COMMON_VARIABLES=" -DCMAKE_INSTALL_PREFIX=$PREFIX -DCMAKE_BUILD_TYPE=Release"
 
+
 # show environment
 printenv
 # Cleanup local git
