@@ -253,6 +253,15 @@ TYPED_TEST(DeviceBufferTest, ResizeSmaller) {
   EXPECT_EQ(this->size, buff.capacity());  // Capacity should be unchanged
   // Resizing smaller means the existing allocation should remain unchanged
   EXPECT_EQ(old_data, buff.data());
+
+  EXPECT_NO_THROW(buff.shrink_to_fit());
+  EXPECT_NE(nullptr, buff.data());
+  // A reallocation should have occured
+  EXPECT_NE(old_data, buff.data());
+  EXPECT_EQ(new_size, buff.size());
+  EXPECT_EQ(buff.capacity(), buff.size());
+
+  // TODO Verify device memory contents are equal
 }
 
 TYPED_TEST(DeviceBufferTest, ResizeBigger) {

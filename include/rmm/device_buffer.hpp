@@ -239,11 +239,17 @@ class device_buffer {
    *
    * If the requested `new_size` is less than or equal to the current size, no
    * action is taken other than updating the value that is returned from
-   * `size()`. I.e., no memory is allocated nor copied.
+   * `size()`. I.e., no memory is allocated nor copied. The value `capacity()`
+   * will remain the actual size of the device memory allocation.
+   *
+   * @note `shrink_to_fit()` may be used to force the deallocation of unused
+   * `capacity()`.
    *
    * If `new_size` is larger than the current size, a new allocation is made to
    * satisfy `new_size`, and the contents of the old allocation are copied to
    * the new allocation. The old allocation is then freed.
+   *
+   * The invariant `size() <= capacity()` will always be true.
    *
    * The `stream` returned by `stream()` is used for the allocation and copying
    * of the new memory.
@@ -272,6 +278,34 @@ class device_buffer {
       _data = new_data;
       _size = new_size;
       _capacity = new_size;
+    }
+  }
+
+  /**---------------------------------------------------------------------------*
+   * @brief Forces the deallocation of unused memory.
+   *
+   * Reallocates and copies the contents of the device memory allocation to
+   * reduce `capacity()` to `size()`.
+   *
+   * If `size() == capacity()` this function has no effect.
+   *
+   * @throws std::bad_alloc If creating the new allocation fails
+   * @throws std::runtime_error If the copy from the old to new allocation fails
+   *
+   *---------------------------------------------------------------------------**/
+  void shrink_to_fit() {
+    if (size() != capacity()) {
+      void* const new_data = _mr->allocate(size(), stream());
+      if (size() > 0) {
+        auto status = cudaMemcpyAsync(new_data, _data, size(),
+                                      cudaMemcpyDefault, stream());
+        if (cudaSuccess != status) {
+          throw std::runtime_error{"Device memory copy failed."};
+        }
+      }
+      _mr->deallocate(_data, size(), stream());
+      _data = new_data;
+      _capacity = size();
     }
   }
 
