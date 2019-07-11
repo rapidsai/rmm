@@ -81,7 +81,7 @@ class device_buffer {
    *
    * @param size Size in bytes to allocate in device memory
    * @param stream CUDA stream on which memory may be allocated if the memory
-   * resource supports streams, else the null stream is used.
+   * resource supports streams, otherwise the default stream is used.
    * @param mr Memory resource to use for the device memory allocation
    *---------------------------------------------------------------------------**/
   explicit device_buffer(
@@ -102,7 +102,7 @@ class device_buffer {
    * @param source_data Pointer to the host or device memory to copy from
    * @param size Size in bytes to copy
    * @param stream CUDA stream on which memory may be allocated if the memory
-   * resource supports streams, else the null stream is used.
+   * resource supports streams, otherwise the default stream is used.
    * @param mr Memory resource to use for the device memory allocation
    *---------------------------------------------------------------------------**/
   device_buffer(void const* source_data, std::size_t size,
