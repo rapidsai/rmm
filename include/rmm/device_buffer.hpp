@@ -81,7 +81,7 @@ class device_buffer {
    *
    * @param size Size in bytes to allocate in device memory
    * @param stream CUDA stream on which memory may be allocated if the memory
-   * resource supports streams, else the null stream is used.
+   * resource supports streams, otherwise the default stream is used.
    * @param mr Memory resource to use for the device memory allocation
    *---------------------------------------------------------------------------**/
   explicit device_buffer(
