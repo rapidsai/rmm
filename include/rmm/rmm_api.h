@@ -56,16 +56,25 @@ typedef enum
 
 /** ---------------------------------------------------------------------------*
  * @brief Options for initializing the memory manager
+ * 
+ * By default, uses `CudaDefaultAllocation`, which uses `cudaMalloc/cudaFree`.
  *
  * If set to zero, `initial_pool_size` defaults to half of the total GPU memory
  * for the current device.
+ *
+ * Optionally accepts an array of device IDs that will be managed by RMM. If
+ * `nullptr`, assumes that only the device returned by `cudaGetDevice()` is
+ * used. These are only used when `allocation_mode == PoolAllocation`.
  * --------------------------------------------------------------------------**/
 typedef struct
 {
-  rmmAllocationMode_t allocation_mode; //< Allocation strategy to use
-  size_t initial_pool_size;            //< When pool suballocation is enabled, 
-                                       //< this is the initial pool size in bytes
-  bool enable_logging;                 //< Enable logging memory manager events
+  rmmAllocationMode_t allocation_mode{
+      CudaDefaultAllocation};  //< Allocation strategy to use
+  size_t initial_pool_size{};  //< When pool suballocation is enabled,
+                               //< this is the initial pool size in bytes
+  bool enable_logging{false};  //< Enable logging memory manager events
+  int *devices{};              ///< Array of device IDs that will be used
+  size_t num_devices{};        ///< The number of devices that will be used
 } rmmOptions_t;
 
 /** ---------------------------------------------------------------------------*

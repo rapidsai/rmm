@@ -52,24 +52,32 @@ const char * rmmGetErrorString(rmmError_t errcode) {
 }
 
 // Initialize memory manager state and storage.
-rmmError_t rmmInitialize(rmmOptions_t *options)
-{
-    rmm::Manager::getInstance().initialize(options);
+rmmError_t rmmInitialize(rmmOptions_t *options) {
+  rmm::Manager::getInstance().initialize(options);
 
-    if (rmm::Manager::usePoolAllocator())
-    {
-        cnmemDevice_t dev;
-        RMM_CHECK_CUDA( cudaGetDevice(&(dev.device)) );
-        // Note: cnmem defaults to half GPU memory
-        dev.size = rmm::Manager::getOptions().initial_pool_size; 
-        dev.numStreams = 1;
-        cudaStream_t streams[1]; streams[0] = 0;
-        dev.streams = streams;
-        dev.streamSizes = 0;
-        unsigned flags = rmm::Manager::useManagedMemory() ? CNMEM_FLAGS_MANAGED : 0;
-        RMM_CHECK_CNMEM( cnmemInit(1, &dev, flags) );
+  if (rmm::Manager::usePoolAllocator()) {
+    std::vector<cnmemDevice_t> devices;
+    auto options = rmm::Manager::getOptions();
+    if (nullptr == options.devices) {
+      cnmemDevice_t dev{};
+      RMM_CHECK_CUDA(cudaGetDevice(&(dev.device)));
+      dev.size = rmm::Manager::getOptions().initial_pool_size;
+      devices.push_back(dev);
+    } else {
+      if(options.num_devices == 0){
+          throw std::runtime_error{"Invalid number of devices."};
+      }
+      for (size_t i = 0; i < options.num_devices; ++i) {
+        cnmemDevice_t dev{};
+        dev.device = options.devices[i];
+        dev.size = rmm::Manager::getOptions().initial_pool_size;
+        devices.push_back(dev);
+      }
     }
-    return RMM_SUCCESS;
+    unsigned flags = rmm::Manager::useManagedMemory() ? CNMEM_FLAGS_MANAGED : 0;
+    RMM_CHECK_CNMEM(cnmemInit(devices.size(), devices.data(), flags));
+  }
+  return RMM_SUCCESS;
 }
 
 // Shutdown memory manager.
