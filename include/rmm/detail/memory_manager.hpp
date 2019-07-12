@@ -244,7 +244,7 @@ namespace rmm
         std::set<cudaStream_t> registered_streams;
         Logger logger;
 
-        rmmOptions_t options{};// {CudaDefaultAllocation, false, 0, nullptr, 0};
+        rmmOptions_t options{};
         bool is_initialized{false};
     };    
 }
