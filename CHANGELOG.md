@@ -3,6 +3,7 @@
 ## New Features
 
  - PR #96 Added `device_memory_resource` for beginning of overhaul of RMM design
+ - PR #103 Add and use unified build script
 
 ## Improvements
 
