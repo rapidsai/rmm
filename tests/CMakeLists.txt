@@ -13,13 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #=============================================================================
-cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
-
-
-project(RMM_TESTS LANGUAGES C CXX CUDA)
-
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 ###################################################################################################
 # - compiler function -----------------------------------------------------------------------------
@@ -68,7 +61,7 @@ ConfigureTest(RMM_TEST "${RMM_TEST_SRC}")
 set(MR_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/mr_tests.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/thrust_allocator_tests.cpp")
-    
+
 
 ConfigureTest(MR_TEST "${MR_TEST_SRC}")
 

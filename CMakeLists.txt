@@ -15,7 +15,10 @@
 #=============================================================================
 cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 
-project(RMM VERSION 0.9.0 LANGUAGES C CXX CUDA)
+project(RMM VERSION 0.9.0 LANGUAGES C CXX)
+# Workaround environment variables CC/CXX having no effect on `CUDA_HOST_COMPILER'.
+set(CMAKE_CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER})
+enable_language(CUDA)
 
 ###################################################################################################
 # - build type ------------------------------------------------------------------------------------
@@ -37,8 +40,6 @@ endif()
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_C_COMPILER $ENV{CC})
-set(CMAKE_CXX_COMPILER $ENV{CXX})
 
 if(CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
@@ -54,13 +55,12 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     endif(CMAKE_CXX11_ABI)
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
-option(BUILD_TESTS "Configure CMake to build tests"
-       ON)
+option(BUILD_TESTS "Configure CMake to build tests" ON)
 
 ###################################################################################################
 # - cnmem ---------------------------------------------------------------------------------
 # include cnmem.h in the include/detail directory
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cnmem/include/cnmem.h" 
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cnmem/include/cnmem.h"
                "${CMAKE_CURRENT_SOURCE_DIR}/include/rmm/detail/cnmem.h" COPYONLY)
 
 
@@ -77,16 +77,15 @@ include(CheckLibraryExists)
 # - add gtest -------------------------------------------------------------------------------------
 
 if(BUILD_TESTS)
-    include(CTest)
-    include(ConfigureGoogleTest)
-
-    if(GTEST_FOUND)
-        message(STATUS "Google C++ Testing Framework (Google Test) found in ${GTEST_ROOT}")
-        include_directories(${GTEST_INCLUDE_DIR})
-        add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
-    else()
-        message(AUTHOR_WARNING "Google C++ Testing Framework (Google Test) not found: automated tests are disabled.")
-    endif(GTEST_FOUND)
+  include(CTest)
+  include(ConfigureGoogleTest)
+  if(GTEST_FOUND)
+    message(STATUS "Google C++ Testing Framework (Google Test) found in ${GTEST_ROOT}")
+    include_directories(${GTEST_INCLUDE_DIR})
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
+  else()
+    message(AUTHOR_WARNING "Google C++ Testing Framework (Google Test) not found: automated tests are disabled.")
+  endif(GTEST_FOUND)
 endif(BUILD_TESTS)
 
 ###################################################################################################
@@ -140,7 +139,7 @@ target_link_libraries(rmm cudart cuda)
 set(RMM_API_H_PATH "${CMAKE_CURRENT_SOURCE_DIR}/include/rmm/rmm_api.h")
 # Input is a template which assigns MEMORY_H_PATH to a variable. This command replaces the variable with its value
 # and saves the file as librmm_build.py
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/python/librmm_cffi/librmm_build.py.in" 
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/python/librmm_cffi/librmm_build.py.in"
                "${CMAKE_CURRENT_SOURCE_DIR}/python/librmm_cffi/librmm_build.py")
 
 add_custom_command(OUTPUT RMM_PYTHON_CFFI
