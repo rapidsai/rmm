@@ -192,6 +192,67 @@ TYPED_TEST(DeviceBufferTest, CopyCapacityLargerThanSize) {
   //                  static_cast<signed char *>(buff_copy.data())));
 }
 
+TYPED_TEST(DeviceBufferTest, CopyAssignmentToDefault) {
+  rmm::device_buffer const from(this->size, 0, &this->mr);
+  rmm::device_buffer to{};
+  EXPECT_NO_THROW(to = from);
+  EXPECT_NE(nullptr, to.data());
+  EXPECT_NE(nullptr, from.data());
+  EXPECT_NE(from.data(), to.data());
+  EXPECT_EQ(from.size(), to.size());
+  EXPECT_EQ(from.capacity(), to.capacity());
+  EXPECT_EQ(from.stream(), to.stream());
+  EXPECT_EQ(from.memory_resource(), to.memory_resource());
+  // TODO Check contents of memory
+}
+
+TYPED_TEST(DeviceBufferTest, CopyAssignment) {
+  rmm::device_buffer from(this->size, 0, &this->mr);
+  rmm::device_buffer to(this->size - 1, 0, &this->mr);
+  EXPECT_NO_THROW(to = from);
+  EXPECT_NE(nullptr, to.data());
+  EXPECT_NE(nullptr, from.data());
+  EXPECT_NE(from.data(), to.data());
+  EXPECT_EQ(from.size(), to.size());
+  EXPECT_EQ(from.capacity(), to.capacity());
+  EXPECT_EQ(from.stream(), to.stream());
+  EXPECT_EQ(from.memory_resource(), to.memory_resource());
+  // TODO Check contents of memory
+}
+
+TYPED_TEST(DeviceBufferTest, CopyAssignmentCapacityLargerThanSize) {
+  rmm::device_buffer from(this->size, 0, &this->mr);
+  from.resize(from.size() - 1);
+  rmm::device_buffer to(42, 0, &this->mr);
+  EXPECT_NO_THROW(to = from);
+  EXPECT_NE(nullptr, to.data());
+  EXPECT_NE(nullptr, from.data());
+  EXPECT_NE(from.data(), to.data());
+  EXPECT_EQ(from.size(), to.size());
+  EXPECT_NE(from.capacity(),
+            to.capacity());  // copy doesn't copy the larger capacity
+  EXPECT_EQ(from.stream(), to.stream());
+  EXPECT_EQ(from.memory_resource(), to.memory_resource());
+  // TODO Check contents of memory
+}
+
+TYPED_TEST(DeviceBufferTest, SelfCopyAssignment) {
+  rmm::device_buffer buff(this->size, 0, &this->mr);
+  auto p = buff.data();
+  auto size = buff.size();
+  auto capacity = buff.capacity();
+  auto mr = buff.memory_resource();
+  auto stream = buff.stream();
+
+  buff = buff;  // self-assignment shouldn't modify the buffer
+  EXPECT_NE(nullptr, buff.data());
+  EXPECT_EQ(p, buff.data());
+  EXPECT_EQ(size, buff.size());
+  EXPECT_EQ(capacity, buff.capacity());
+  EXPECT_EQ(stream, buff.stream());
+  EXPECT_EQ(mr, buff.memory_resource());
+}
+
 TYPED_TEST(DeviceBufferTest, MoveConstructor) {
   rmm::device_buffer buff(this->size, 0, &this->mr);
   auto p = buff.data();
@@ -242,6 +303,77 @@ TYPED_TEST(DeviceBufferTest, MoveConstructorStream) {
   EXPECT_EQ(0, buff.capacity());
   EXPECT_EQ(0, buff.stream());
   EXPECT_NE(nullptr, buff.memory_resource());
+}
+
+TYPED_TEST(DeviceBufferTest, MoveAssignmentToDefault) {
+  rmm::device_buffer from(this->size, 0, &this->mr);
+  auto p = from.data();
+  auto size = from.size();
+  auto capacity = from.capacity();
+  auto mr = from.memory_resource();
+  auto stream = from.stream();
+
+  rmm::device_buffer to;
+  EXPECT_NO_THROW(to = std::move(from));
+
+  // contents of `from` should be in `to`
+  EXPECT_NE(nullptr, to.data());
+  EXPECT_EQ(p, to.data());
+  EXPECT_EQ(size, to.size());
+  EXPECT_EQ(capacity, to.capacity());
+  EXPECT_EQ(stream, to.stream());
+  EXPECT_EQ(mr, to.memory_resource());
+
+  // `from` should be empty
+  EXPECT_EQ(nullptr, from.data());
+  EXPECT_EQ(0, from.size());
+  EXPECT_EQ(0, from.capacity());
+  EXPECT_EQ(0, from.stream());
+  EXPECT_NE(nullptr, from.memory_resource());
+}
+
+TYPED_TEST(DeviceBufferTest, MoveAssignment) {
+  rmm::device_buffer from(this->size, 0, &this->mr);
+  auto p = from.data();
+  auto size = from.size();
+  auto capacity = from.capacity();
+  auto mr = from.memory_resource();
+  auto stream = from.stream();
+
+  rmm::device_buffer to(this->size - 1, 0, &this->mr);
+  EXPECT_NO_THROW(to = std::move(from));
+
+  // contents of `from` should be in `to`
+  EXPECT_NE(nullptr, to.data());
+  EXPECT_EQ(p, to.data());
+  EXPECT_EQ(size, to.size());
+  EXPECT_EQ(capacity, to.capacity());
+  EXPECT_EQ(stream, to.stream());
+  EXPECT_EQ(mr, to.memory_resource());
+
+  // `from` should be empty
+  EXPECT_EQ(nullptr, from.data());
+  EXPECT_EQ(0, from.size());
+  EXPECT_EQ(0, from.capacity());
+  EXPECT_EQ(0, from.stream());
+  EXPECT_NE(nullptr, from.memory_resource());
+}
+
+TYPED_TEST(DeviceBufferTest, SelfMoveAssignment) {
+  rmm::device_buffer buff(this->size, 0, &this->mr);
+  auto p = buff.data();
+  auto size = buff.size();
+  auto capacity = buff.capacity();
+  auto mr = buff.memory_resource();
+  auto stream = buff.stream();
+
+  buff = buff;  // self-assignment shouldn't modify the buffer
+  EXPECT_NE(nullptr, buff.data());
+  EXPECT_EQ(p, buff.data());
+  EXPECT_EQ(size, buff.size());
+  EXPECT_EQ(capacity, buff.capacity());
+  EXPECT_EQ(stream, buff.stream());
+  EXPECT_EQ(mr, buff.memory_resource());
 }
 
 TYPED_TEST(DeviceBufferTest, ResizeSmaller) {

@@ -165,6 +165,7 @@ class device_buffer {
         _capacity{other._capacity},
         _stream{other._stream},
         _mr{other._mr} {
+    std::cout << "move ctor\n";
     other._data = nullptr;
     other._size = 0;
     other._capacity = 0;
@@ -172,19 +173,15 @@ class device_buffer {
   }
 
   /**---------------------------------------------------------------------------*
-   * @brief Copy assignment operator
+   * @brief Copy assignment operator copies the contents of `other`
    *
-   * TODO: Decide if this should be deleted or not.
-   *
-   * @param other
-   * @return device_buffer&
+   * @param other The `device_buffer` to copy
    *---------------------------------------------------------------------------**/
-  device_buffer& operator=(device_buffer const& other) = delete;
-  /*
-  {
+  device_buffer& operator=(device_buffer const& other) {
     if (&other != this) {
-      _mr->deallocate(_data, _size, _stream);
+      _mr->deallocate(_data, _capacity, _stream);
       _size = other._size;
+      _capacity = other._size;  // only allocate _size bytes
       _stream = other._stream;
       _mr = other._mr;
       _data = _mr->allocate(_size, _stream);
@@ -197,33 +194,28 @@ class device_buffer {
     }
     return *this;
   }
-  */
 
   /**---------------------------------------------------------------------------*
-   * @brief Move assignment operator
+   * @brief Move assignment operator moves the contents from `other`
    *
-   * TODO: Decide if this should be deleted or not.
-   *
-   * @param other
-   * @return device_buffer&
+   * @param other The `device_buffer` whose contents will be moved
    *---------------------------------------------------------------------------**/
-  device_buffer& operator=(device_buffer&& other) = delete;
-  /*
-   {
+  device_buffer& operator=(device_buffer&& other) {
     if (&other != this) {
-      _mr->deallocate(_data, _size, _stream);
+      _mr->deallocate(_data, _capacity, _stream);
       _data = other._data;
       _size = other._size;
+      _capacity = other._capacity;
       _stream = other._stream;
       _mr = other._mr;
 
       other._data = nullptr;
       other._size = 0;
+      other._capacity = 0;
       other._stream = 0;
     }
     return *this;
   }
-  */
 
   ~device_buffer() noexcept {
     _mr->deallocate(_data, _capacity, _stream);
