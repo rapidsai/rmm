@@ -165,7 +165,6 @@ class device_buffer {
         _capacity{other._capacity},
         _stream{other._stream},
         _mr{other._mr} {
-    std::cout << "move ctor\n";
     other._data = nullptr;
     other._size = 0;
     other._capacity = 0;
