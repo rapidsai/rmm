@@ -20,6 +20,7 @@
 
 #include <cuda_runtime_api.h>
 #include <cassert>
+#include <stdexcept>
 
 namespace rmm {
 /**---------------------------------------------------------------------------*
@@ -96,7 +97,7 @@ class device_buffer {
    * existing host or device memory allocation.
    *
    * @throws std::bad_alloc If creating the new allocation fails
-   * @throws std::runtime_error If `source_data` is null
+   * @throws std::runtime_error If `source_data` is null, and `size != 0`
    * @throws std::runtime_error if copying from the device memory fails
    *
    * @param source_data Pointer to the host or device memory to copy from
@@ -109,14 +110,16 @@ class device_buffer {
                 cudaStream_t stream = 0,
                 mr::device_memory_resource* mr = mr::get_default_resource())
       : _size{size}, _capacity{size}, _stream{stream}, _mr{mr} {
-    if (nullptr == source_data) {
-      throw std::runtime_error{"source_data is null."};
+
+    if (nullptr == source_data and (0 != size)) {
+      throw std::runtime_error{"Invalid size."};
     }
+
     _data = _mr->allocate(_size, stream);
     auto status =
         cudaMemcpyAsync(_data, source_data, _size, cudaMemcpyDefault, _stream);
     if (cudaSuccess != status) {
-      throw std::runtime_error{"Copy failed."};
+      throw std::runtime_error{"Device memcopy failed."};
     }
   }
 
@@ -124,7 +127,8 @@ class device_buffer {
    * @brief Constructs a new `device_buffer` by deep copying the contents of
    * another `device_buffer`.
    *
-   * @note Only copies `other.size()` bytes from `other`, i.e., if `other.size()
+   * @note Only copies `other.size()` bytes from `other`, i.e., if
+   *`other.size()
    * != other.capacity()`, then the size and capacity of the newly constructed
    *`device_buffer` will be equal to `other.size()`.
    *
@@ -236,17 +240,18 @@ class device_buffer {
    * @note `shrink_to_fit()` may be used to force the deallocation of unused
    * `capacity()`.
    *
-   * If `new_size` is larger than the current size, a new allocation is made to
-   * satisfy `new_size`, and the contents of the old allocation are copied to
-   * the new allocation. The old allocation is then freed.
+   * If `new_size` is larger than the current size, a new allocation is made
+   *to satisfy `new_size`, and the contents of the old allocation are copied
+   *to the new allocation. The old allocation is then freed.
    *
    * The invariant `size() <= capacity()` will always be true.
    *
-   * The `stream` returned by `stream()` is used for the allocation and copying
-   * of the new memory.
+   * The `stream` returned by `stream()` is used for the allocation and
+   *copying of the new memory.
    *
    * @throws std::bad_alloc If creating the new allocation fails
-   * @throws std::runtime_error if the copy from the old to new allocation fails
+   * @throws std::runtime_error if the copy from the old to new allocation
+   *fails
    *
    * @param new_size The requested new size, in bytes
    *---------------------------------------------------------------------------**/
@@ -281,7 +286,8 @@ class device_buffer {
    * If `size() == capacity()` this function has no effect.
    *
    * @throws std::bad_alloc If creating the new allocation fails
-   * @throws std::runtime_error If the copy from the old to new allocation fails
+   * @throws std::runtime_error If the copy from the old to new allocation
+   *fails
    *
    *---------------------------------------------------------------------------**/
   void shrink_to_fit() {
@@ -346,5 +352,5 @@ class device_buffer {
   mr::device_memory_resource* _mr{
       mr::get_default_resource()};  ///< The memory resource used to
                                     ///< allocate/deallocate device memory
-};
+};                                  // namespace rmm
 }  // namespace rmm
