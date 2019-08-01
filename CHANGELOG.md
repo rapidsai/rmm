@@ -11,7 +11,7 @@
 
 ## Bug Fixes
 
-    ...
+- PR #110 Fix Skip Test Functionality
 
 
 # RMM 0.8.0 (27 June 2019)
