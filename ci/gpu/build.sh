@@ -60,17 +60,17 @@ logger "Build and install librmm and rmm..."
 
 if hasArg --skip-tests; then
     logger "Skipping Tests..."
-    exit 0
+else
+    logger "Check GPU usage..."
+    nvidia-smi
+
+    logger "Running googletests..."
+
+    cd "${WORKSPACE}/build"
+    GTEST_OUTPUT="xml:${WORKSPACE}/test-results/" make -j${PARALLEL_LEVEL} test
+
+    logger "Python py.test for librmm_cffi..."
+    cd $WORKSPACE/python
+    py.test --cache-clear --junitxml=${WORKSPACE}/test-results/junit-librmm_cffi.xml -v
 fi
 
-logger "Check GPU usage..."
-nvidia-smi
-
-logger "Running googletests..."
-
-cd "${WORKSPACE}/build"
-GTEST_OUTPUT="xml:${WORKSPACE}/test-results/" make -j${PARALLEL_LEVEL} test
-
-logger "Python py.test for librmm_cffi..."
-cd $WORKSPACE/python
-py.test --cache-clear --junitxml=${WORKSPACE}/test-results/junit-librmm_cffi.xml -v
