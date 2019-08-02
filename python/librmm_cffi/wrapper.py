@@ -253,6 +253,8 @@ class _RMMWrapper(object):
         """
         if cuda.driver.is_device_memory(obj):
             return obj, False
+        if hasattr(obj, '__cuda_array_interface__'):
+            return cuda.as_cuda_array(obj), False
         else:
             if isinstance(obj, np.void):
                 # raise NotImplementedError("DeviceRecord type not supported "
