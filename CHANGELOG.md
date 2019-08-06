@@ -10,8 +10,7 @@
 
 ## Bug Fixes
 
-    ...
-
+ - PR #116 Fix README.
 
 # RMM 0.8.0 (27 June 2019)
 
