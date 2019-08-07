@@ -7,7 +7,7 @@
 
 ## Improvements
 
-- PR #111 Add and use unified build script
+- PR #111 Streamline CUDA_REL environment variable
 
 ## Bug Fixes
 
