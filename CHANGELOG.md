@@ -7,7 +7,7 @@
 
 ## Improvements
 
-    ...
+- PR #111 Streamline CUDA_REL environment variable
 
 ## Bug Fixes
 
