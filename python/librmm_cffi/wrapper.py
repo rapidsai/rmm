@@ -255,8 +255,8 @@ class _RMMWrapper(object):
             return obj, False
         if hasattr(obj, '__cuda_array_interface__'):
             new_dev_array = cuda.as_cuda_array(obj)
-            # Allocate new output array using rmm and copy the numba device array
-            # to an rmm owned device array
+            # Allocate new output array using rmm and copy the numba device
+            # array to an rmm owned device array
             out_dev_array = self.device_array_like(new_dev_array)
             out_dev_array.copy_to_device(new_dev_array)
             return out_dev_array, False
