@@ -7,11 +7,12 @@
 
 ## Improvements
 
-- PR #111 Streamline CUDA_REL environment variable
+ - PR #111 Streamline CUDA_REL environment variable
+ - PR #113 Handle ucp.BufferRegion objects in auto_device
 
 ## Bug Fixes
 
-    ...
+   ...
 
 
 # RMM 0.8.0 (27 June 2019)
@@ -22,7 +23,7 @@
 
 ## Improvements
 
-  - PR #113 Handle ucp.BufferRegion objects in auto_device
+   ...
 
 ## Bug Fixes
 
