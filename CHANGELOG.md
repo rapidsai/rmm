@@ -3,14 +3,17 @@
 ## New Features
 
  - PR #96 Added `device_memory_resource` for beginning of overhaul of RMM design
+ - PR #103 Add and use unified build script
 
 ## Improvements
 
-    ...
+ - PR #111 Streamline CUDA_REL environment variable
+ - PR #113 Handle ucp.BufferRegion objects in auto_device
 
 ## Bug Fixes
 
  - PR #116 Fix README.
+
 
 # RMM 0.8.0 (27 June 2019)
 
@@ -20,7 +23,7 @@
 
 ## Improvements
 
-    ...
+   ...
 
 ## Bug Fixes
 
@@ -40,7 +43,7 @@
 
 - PR #76 Add cudatoolkit conda dependency
 - PR #84 Use latest release version in update-version CI script
-- PR #90 Avoid using c++14 auto return type for thrust_rmm_allocator.h 
+- PR #90 Avoid using c++14 auto return type for thrust_rmm_allocator.h
 
 ## Bug Fixes
 
