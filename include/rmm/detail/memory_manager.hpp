@@ -30,6 +30,7 @@
 #include <iostream>
 #include <set>
 #include <mutex>
+#include <unordered_map>
 
 extern "C" {
 #include "rmm/rmm_api.h"
@@ -214,6 +215,81 @@ namespace rmm
         }
 
         /** ---------------------------------------------------------------------------*
+         * @brief Returns true if CUDA Host Memory allocation is enabled
+         *
+         * @return true if CUDA Host Memory allocation is enabled
+         * @return false if CUDA Host Memory allocation is disabled
+         * --------------------------------------------------------------------------**/
+        static inline bool useHostMemory() {
+            return getOptions().allocation_mode & CudaHostAllocMemory;
+        }
+
+        /** ---------------------------------------------------------------------------*
+         * @brief Returns true if device memory usage limit is enabled
+         *
+         * @return true if device memory usage limit is enabled
+         * @return false if device memory usage limit is disabled
+         * --------------------------------------------------------------------------**/
+        static inline bool limitDeviceMemory() {
+            return getOptions().allocation_mode & DeviceMemoryLimit;
+        }
+
+        /** ---------------------------------------------------------------------------*
+         * @brief Returns true if a size of device memory can be allocated
+         *
+         * @param size Size of device memory user requested
+         * @return true if device memory does not exceed the limit
+         * @return false if device memory exceeds the limit
+         * --------------------------------------------------------------------------**/
+        static inline bool canAllocDeviceMemory(size_t size) {
+            Manager &mgr = getInstance();
+	    std::lock_guard<std::mutex> lock(mgr.map_mutex);
+            return mgr.used_device_memory_size + size <
+		    static_cast<size_t>(mgr.options.maximum_device_memory_size);
+        }
+
+        /** ---------------------------------------------------------------------------*
+         * @brief Registers a device pointer to track total device memory usage
+	 *
+         * @param ptr Device pointer to register
+         * @param size Size of device memory
+         * --------------------------------------------------------------------------**/
+        static inline void registerDeviceMemory(void * ptr, size_t size) {
+            if (ptr) {
+                Manager &mgr = getInstance();
+                std::lock_guard<std::mutex> lock(mgr.map_mutex);
+                mgr.map[ptr] = size;
+                mgr.used_device_memory_size += size;
+	    }
+        }
+
+        /** ---------------------------------------------------------------------------*
+         * @brief Returns true if the size of a device pointer is registered
+	 *
+         * @param ptr Device pointer to register
+         * --------------------------------------------------------------------------**/
+        static inline bool isRegisteredDeviceMemory(void * ptr) {
+            Manager &mgr = getInstance();
+	    std::lock_guard<std::mutex> lock(mgr.map_mutex);
+            std::unordered_map<void *, size_t> &m = mgr.map;
+            return ptr && m.find(ptr) != m.end();
+        }
+
+        /** ---------------------------------------------------------------------------*
+         * @brief Unregsiters a device pointer to track total device memory usage
+	 *
+         * @param ptr Device pointer to register
+         * --------------------------------------------------------------------------**/
+        static inline void unregisterDeviceMemory(void * ptr) {
+            Manager &mgr = getInstance();
+	    std::lock_guard<std::mutex> lock(mgr.map_mutex);
+            if (mgr.map.find(ptr) != mgr.map.end()) {
+                mgr.used_device_memory_size -= mgr.map[ptr];
+                mgr.map.erase(ptr);
+            }
+        }
+
+        /** ---------------------------------------------------------------------------*
          * @brief Returns true when CUDA default allocation is enabled
          *          * 
          * @return true if CUDA default allocation is enabled
@@ -235,8 +311,9 @@ namespace rmm
         rmmError_t registerStream(cudaStream_t stream);
 
     private:
-        Manager() : options({ CudaDefaultAllocation, false, 0 }), 
-                    is_initialized(false) {}
+        Manager() : options({ CudaDefaultAllocation, false, 0, 0 }),
+                    is_initialized(false),
+                    used_device_memory_size(0) {}
         ~Manager() = default;
         Manager(const Manager&) = delete;
         Manager& operator=(const Manager&) = delete;
@@ -247,6 +324,9 @@ namespace rmm
 
         rmmOptions_t options;
         bool is_initialized;
+        size_t used_device_memory_size;
+        std::unordered_map<void *, size_t> map;
+        std::mutex map_mutex;
     };    
 }
 

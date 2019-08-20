@@ -52,6 +52,8 @@ typedef enum
   CudaDefaultAllocation = 0,  //< Use cudaMalloc for allocation
   PoolAllocation        = 1,  //< Use pool suballocation strategy
   CudaManagedMemory     = 2,  //< Use cudaMallocManaged rather than cudaMalloc
+  CudaHostAllocMemory   = 4,  //< Use cudaHostAlloc rather than cudaMalloc
+  DeviceMemoryLimit     = 8,  //< Set an upper limit of Device memory usages
 } rmmAllocationMode_t;
 
 /** ---------------------------------------------------------------------------*
@@ -66,6 +68,7 @@ typedef struct
   size_t initial_pool_size;            //< When pool suballocation is enabled, 
                                        //< this is the initial pool size in bytes
   bool enable_logging;                 //< Enable logging memory manager events
+  long maximum_device_memory_size;    //< Set an upper limit of device memory usages
 } rmmOptions_t;
 
 /** ---------------------------------------------------------------------------*

@@ -32,6 +32,19 @@ use_pool_allocator = False
 # create a managed memory pool allocator
 use_managed_memory = False
 
+# Whether to limit device memory
+# True means to limit device memory
+# Can be combined with use_host_memory to
+# avoid OOM error with host memory
+limit_device_memory = False
+
+use_host_memory = False
+
+# When limit_device_memmory is true, this indicates the limit size.
+# Minus used to indicate the default size, which currently is 1/2 total GPU
+# memory.
+maximum_gpu_memory_size = -1
+
 # When `use_pool_allocator` is true, this indicates the initial pool size.
 # Zero is used to indicate the default size, which currently is 1/2 total GPU
 # memory.

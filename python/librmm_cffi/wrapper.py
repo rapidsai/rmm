@@ -82,11 +82,16 @@ class _RMMWrapper(object):
             allocation_mode = allocation_mode | self.PoolAllocation
         if rmm_cfg.use_managed_memory:
             allocation_mode = allocation_mode | self.CudaManagedMemory
+        if rmm_cfg.use_host_memory:
+            allocation_mode = allocation_mode | self.CudaHostAllocMemory
+        if rmm_cfg.limit_device_memory:
+            allocation_mode = allocation_mode | self.DeviceMemoryLimit
 
         opts = self._ffi.new("rmmOptions_t *",
                              [allocation_mode,
                               rmm_cfg.initial_pool_size,
-                              rmm_cfg.enable_logging])
+                              rmm_cfg.enable_logging,
+                              rmm_cfg.maximum_gpu_memory_size])
         return self.rmmInitialize(opts)
 
     def finalize(self):

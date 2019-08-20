@@ -54,6 +54,14 @@ const char * rmmGetErrorString(rmmError_t errcode) {
 // Initialize memory manager state and storage.
 rmmError_t rmmInitialize(rmmOptions_t *options)
 {
+    if ((options->allocation_mode & DeviceMemoryLimit) &&
+         options->maximum_device_memory_size < 0) {
+        int dev;
+        cudaDeviceProp prop;
+        RMM_CHECK_CUDA(cudaGetDevice(&dev));
+        RMM_CHECK_CUDA(cudaGetDeviceProperties(&prop, dev));
+        options->maximum_device_memory_size = prop.totalGlobalMem / 2;
+    }
     rmm::Manager::getInstance().initialize(options);
 
     if (rmm::Manager::usePoolAllocator())

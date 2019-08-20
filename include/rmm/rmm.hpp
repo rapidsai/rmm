@@ -129,7 +129,23 @@ inline rmmError_t alloc(T** ptr, size_t size, cudaStream_t stream, const char* f
 
   if (!ptr) return RMM_ERROR_INVALID_ARGUMENT;
 
-  if (rmm::Manager::usePoolAllocator()) {
+  if (rmm::Manager::limitDeviceMemory()) {
+    if (rmm::Manager::canAllocDeviceMemory(size)) {
+      if (rmm::Manager::usePoolAllocator()) {
+        RMM_CHECK(rmm::Manager::getInstance().registerStream(stream));
+        RMM_CHECK_CNMEM(cnmemMalloc(reinterpret_cast<void**>(ptr), size, stream));
+      } else if (rmm::Manager::useManagedMemory()) {
+        RMM_CHECK_CUDA(cudaMallocManaged(reinterpret_cast<void**>(ptr), size));
+      } else {
+        RMM_CHECK_CUDA(cudaMalloc(reinterpret_cast<void**>(ptr), size));
+      }
+      rmm::Manager::registerDeviceMemory(*reinterpret_cast<void**>(ptr), size);
+    } else if (rmm::Manager::useHostMemory()) {
+      RMM_CHECK_CUDA(cudaHostAlloc(reinterpret_cast<void**>(ptr), size, cudaHostAllocMapped));
+    } else {
+      return RMM_ERROR_OUT_OF_MEMORY;
+    }
+  } else if (rmm::Manager::usePoolAllocator()) {
     RMM_CHECK(rmm::Manager::getInstance().registerStream(stream));
     RMM_CHECK_CNMEM(cnmemMalloc(reinterpret_cast<void**>(ptr), size, stream));
   } else if (rmm::Manager::useManagedMemory()) {
@@ -168,7 +184,43 @@ inline rmmError_t realloc(T** ptr, size_t new_size, cudaStream_t stream,
 
   if (!ptr) return RMM_ERROR_INVALID_ARGUMENT;
 
-  if (rmm::Manager::usePoolAllocator()) {
+  if (rmm::Manager::limitDeviceMemory()) {
+    if (rmm::Manager::isRegisteredDeviceMemory(*reinterpret_cast<void **>(ptr))) {
+      if (rmm::Manager::usePoolAllocator()) {
+        RMM_CHECK(rmm::Manager::getInstance().registerStream(stream));
+        RMM_CHECK_CNMEM(cnmemFree(*reinterpret_cast<void**>(ptr), stream));
+      } else {
+        RMM_CHECK_CUDA(cudaFree(*ptr));
+      }
+      rmm::Manager::unregisterDeviceMemory(*reinterpret_cast<void **>(ptr));
+    } else {
+      RMM_CHECK_CUDA(cudaFreeHost(*ptr));
+    }
+
+    if (rmm::Manager::canAllocDeviceMemory(new_size)) {
+      if (rmm::Manager::usePoolAllocator()) {
+        RMM_CHECK(rmm::Manager::getInstance().registerStream(stream));
+        RMM_CHECK_CNMEM(cnmemFree(*reinterpret_cast<void**>(ptr), stream));
+        RMM_CHECK_CNMEM(
+            cnmemMalloc(reinterpret_cast<void**>(ptr), new_size, stream));
+      } else {
+        if (!new_size)
+          ptr[0] = nullptr;
+        else if (rmm::Manager::useManagedMemory())
+          RMM_CHECK_CUDA(cudaMallocManaged(reinterpret_cast<void**>(ptr), new_size));
+        else
+          RMM_CHECK_CUDA(cudaMalloc(reinterpret_cast<void**>(ptr), new_size));
+      }
+      rmm::Manager::registerDeviceMemory(*reinterpret_cast<void**>(ptr), new_size);
+    } else {
+      if (!new_size)
+          ptr[0] = nullptr;
+      else if (rmm::Manager::useHostMemory())
+          RMM_CHECK_CUDA(cudaHostAlloc(reinterpret_cast<void**>(ptr), new_size, cudaHostAllocMapped));
+      else
+          return RMM_ERROR_OUT_OF_MEMORY;
+    }
+  } else if (rmm::Manager::usePoolAllocator()) {
     RMM_CHECK(rmm::Manager::getInstance().registerStream(stream));
     RMM_CHECK_CNMEM(cnmemFree(*reinterpret_cast<void**>(ptr), stream));
     RMM_CHECK_CNMEM(
@@ -205,7 +257,18 @@ inline rmmError_t realloc(T** ptr, size_t new_size, cudaStream_t stream,
 inline rmmError_t free(void* ptr, cudaStream_t stream, const char* file,
                    unsigned int line) {
   rmm::LogIt log(rmm::Logger::Free, ptr, 0, stream, file, line);
-  if (rmm::Manager::usePoolAllocator())
+
+  if (rmm::Manager::limitDeviceMemory()) {
+    if (rmm::Manager::isRegisteredDeviceMemory(ptr)) {
+      if (rmm::Manager::usePoolAllocator())
+        RMM_CHECK_CNMEM(cnmemFree(ptr, stream));
+      else
+        RMM_CHECK_CUDA(cudaFree(ptr));
+      rmm::Manager::unregisterDeviceMemory(ptr);
+    } else {
+      RMM_CHECK_CUDA(cudaFreeHost(ptr));
+    }
+  } else if (rmm::Manager::usePoolAllocator())
     RMM_CHECK_CNMEM(cnmemFree(ptr, stream));
   else
     RMM_CHECK_CUDA(cudaFree(ptr));
