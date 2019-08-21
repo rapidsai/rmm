@@ -3,6 +3,7 @@
 ## New Features
 
 ## Improvements
+ - PR #123 Remove driver install from ci scripts
 
 ## Bug Fixes
 
