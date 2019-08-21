@@ -42,27 +42,10 @@ g++ --version
 conda list
 
 ################################################################################
-# BUILD - Build librmm
+# BUILD - Build and install librmm and rmm
 ################################################################################
-
-#logger "Build librmm..."
-CMAKE_COMMON_VARIABLES=" -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX11_ABI=$BUILD_ABI"
-
-# Use CMake-based build procedure
-mkdir -p $WORKSPACE/build
-cd build
-# configure
-cmake $CMAKE_COMMON_VARIABLES ..
-# build
-make -j${PARALLEL_LEVEL} VERBOSE=1 install
-
-################################################################################
-# BUILD - Build librmm_cffi
-################################################################################
-
-logger "Build librmm_cffi..."
-make rmm_python_cffi
-make rmm_install_python
+logger "Build and install librmm and rmm..."
+"$WORKSPACE/build.sh" -v clean librmm rmm
 
 ################################################################################
 # Docs - Build RMM docs
