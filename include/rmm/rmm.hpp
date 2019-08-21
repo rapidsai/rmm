@@ -200,7 +200,6 @@ inline rmmError_t realloc(T** ptr, size_t new_size, cudaStream_t stream,
     if (rmm::Manager::canAllocDeviceMemory(new_size)) {
       if (rmm::Manager::usePoolAllocator()) {
         RMM_CHECK(rmm::Manager::getInstance().registerStream(stream));
-        RMM_CHECK_CNMEM(cnmemFree(*reinterpret_cast<void**>(ptr), stream));
         RMM_CHECK_CNMEM(
             cnmemMalloc(reinterpret_cast<void**>(ptr), new_size, stream));
       } else {

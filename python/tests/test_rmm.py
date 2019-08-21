@@ -36,12 +36,15 @@ def test_rmm_alloc(dtype, nelem):
 
 
 # Test all combinations of default/managed and pooled/non-pooled allocation
-@pytest.mark.parametrize('managed, pool',
-                         list(product([False, True], [False, True])))
-def test_rmm_modes(managed, pool):
+@pytest.mark.parametrize('managed, pool, limit',
+                         list(product([False, True, False], [False, True, False], [False, True, True], [False, False, True])))
+def test_rmm_modes(managed, pool, limit):
     rmm.finalize()
     rmm_cfg.use_managed_memory = managed
     rmm_cfg.use_pool_allocator = pool
+    if limit:
+        rmm_cfg.use_host_memory = True
+        rmm_cfg.limit_device_memory = True
     rmm.initialize()
 
     assert(rmm.is_initialized())

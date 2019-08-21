@@ -79,6 +79,11 @@ void setAllocator(const std::string alloc) {
             options.allocation_mode = 
                 static_cast<rmmAllocationMode_t>(PoolAllocation | 
                                                  CudaManagedMemory);
+        else if (alloc == "rmmLimitDeviceMemory")
+            options.allocation_mode =
+                static_cast<rmmAllocationMode_t>(PoolAllocation |
+                                                 CudaHostAllocMemory |
+                                                 DeviceMemoryLimit);
         else assert(alloc == "rmmDefault");
         rmmInitialize(&options);
         gpuAlloc = _rmmAlloc;
@@ -122,7 +127,7 @@ int main(int argc, char** argv) {
 
     if (argc < 5) {
         printf("Usage: %s <allocator> <num allocations> <num unique sizes> <report average time every n allocations>\n", argv[0]);
-        printf("Allocator is one of: cudaDefault, rmmDefault, rmmManaged, rmmDefaultPool, or rmmManagedPool\n");
+        printf("Allocator is one of: cudaDefault, rmmDefault, rmmManaged, rmmDefaultPool, rmmManagedPool, or rmmLimitDeviceMemory\n");
         return 1;
     }
 

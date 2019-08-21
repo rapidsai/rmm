@@ -32,7 +32,7 @@ struct MemoryManagerTest :
     static void SetUpTestCase() {
         ASSERT_FALSE(rmmIsInitialized(0));
         ASSERT_EQ( cudaSuccess, cudaStreamCreate(&stream) );
-        rmmOptions_t options {allocationMode(), 0, false};
+        rmmOptions_t options {allocationMode(), 0, false, -1};
         ASSERT_SUCCESS( rmmInitialize(&options) );
         rmmOptions_t options_set;
         // verify initialized
@@ -41,6 +41,7 @@ struct MemoryManagerTest :
         ASSERT_EQ(options_set.allocation_mode, options.allocation_mode);
         ASSERT_EQ(options_set.initial_pool_size, options.initial_pool_size);
         ASSERT_EQ(options_set.enable_logging, options.enable_logging);
+        ASSERT_EQ(options_set.maximum_device_memory_size, options.maximum_device_memory_size);
     }
 
     static void TearDownTestCase() {
@@ -66,7 +67,8 @@ struct ModeType {
 using allocation_modes = ::testing::Types< ModeType<CudaDefaultAllocation>,
                                            ModeType<PoolAllocation>,
                                            ModeType<CudaManagedMemory>,
-                                           ModeType<static_cast<rmmAllocationMode_t>(PoolAllocation | CudaManagedMemory)>
+                                           ModeType<static_cast<rmmAllocationMode_t>(PoolAllocation | CudaManagedMemory)>,
+                                           ModeType<static_cast<rmmAllocationMode_t>(PoolAllocation | CudaHostAllocMemory | DeviceMemoryLimit)>
                                          >;
 TYPED_TEST_CASE(MemoryManagerTest, allocation_modes);
 
@@ -135,7 +137,8 @@ TYPED_TEST(MemoryManagerTest, AllocateTB) {
     size_t freeBefore = 0, totalBefore = 0;
     ASSERT_SUCCESS( rmmGetInfo(&freeBefore, &totalBefore, stream) );
 
-    if ((this->allocationMode() & CudaManagedMemory) || 
+    if ((this->allocationMode() & CudaManagedMemory) ||
+        (this->allocationMode() & CudaHostAllocMemory) ||
         (this->size_tb < freeBefore)) {
         // TODO investigate and fix this
         //ASSERT_SUCCESS( RMM_ALLOC(&a, this->size_tb, stream) );
