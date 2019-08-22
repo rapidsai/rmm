@@ -97,8 +97,8 @@ class LogIt {
   cudaStream_t stream;
   rmm::Logger::TimePt start;
   std::string file;
-  unsigned int line;
   bool usageLogging;
+  unsigned int line;
 };
 
 /** ---------------------------------------------------------------------------*
