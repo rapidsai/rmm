@@ -6,6 +6,7 @@
 
 ## Bug Fixes
 
+ - PR #125 Fixed order of private variables in LogIt
 
 # RMM 0.9.0 (Date TBD)
 

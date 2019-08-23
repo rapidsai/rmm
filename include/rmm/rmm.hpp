@@ -64,8 +64,8 @@ class LogIt {
         ptr(ptr),
         size(size),
         stream(stream),
-        usageLogging(usageLogging),
-        line(line) {
+        line(line),
+        usageLogging(usageLogging) {
     if (filename) file = filename;
     if (Manager::getOptions().enable_logging) {
       cudaGetDevice(&device);
