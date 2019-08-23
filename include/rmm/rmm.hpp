@@ -64,8 +64,8 @@ class LogIt {
         ptr(ptr),
         size(size),
         stream(stream),
-        usageLogging(usageLogging),
-        line(line) {
+        line(line),
+        usageLogging(usageLogging) {
     if (filename) file = filename;
     if (Manager::getOptions().enable_logging) {
       cudaGetDevice(&device);
@@ -97,8 +97,8 @@ class LogIt {
   cudaStream_t stream;
   rmm::Logger::TimePt start;
   std::string file;
-  bool usageLogging;
   unsigned int line;
+  bool usageLogging;
 };
 
 /** ---------------------------------------------------------------------------*
