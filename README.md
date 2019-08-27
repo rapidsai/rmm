@@ -111,7 +111,9 @@ used. For example:
 cudaError_t result = cudaMalloc(&myvar, size_in_bytes) );
 // ...
 cudaError_t result = cudaFree(myvar) );
+```
 
+```
 // new
 rmmError_t result = RMM_ALLOC(&myvar, size_in_bytes, stream_id);
 // ...
