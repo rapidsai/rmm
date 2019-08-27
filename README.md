@@ -105,6 +105,8 @@ deallocation; however, the default (also known as null) stream (or `0`) can be
 used. For example:
 
 ```
+
+```
 // old
 cudaError_t result = cudaMalloc(&myvar, size_in_bytes) );
 // ...
