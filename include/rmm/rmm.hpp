@@ -169,7 +169,7 @@ inline rmmError_t realloc(T** ptr, size_t new_size, cudaStream_t stream,
 
   if (!ptr) return RMM_ERROR_INVALID_ARGUMENT;
   rmm::mr::get_default_resource()->
-      deallocate(reinterpret_cast<void**>(ptr),0,stream);
+      deallocate(*ptr,0,stream);
 
       try{
         *ptr = static_cast<char *>(
@@ -202,8 +202,11 @@ inline rmmError_t realloc(T** ptr, size_t new_size, cudaStream_t stream,
 inline rmmError_t free(void* ptr, cudaStream_t stream, const char* file,
                    unsigned int line) {
   rmm::LogIt log(rmm::Logger::Free, ptr, 0, stream, file, line);
-  rmm::mr::get_default_resource()->
-      deallocate(reinterpret_cast<void**>(ptr),0,stream);
+  if(ptr != nullptr){
+    rmm::mr::get_default_resource()->
+        deallocate(ptr,0,stream);
+
+  }
 
   return RMM_SUCCESS;
 }
