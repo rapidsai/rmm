@@ -28,6 +28,7 @@
 #include "rmm/mr/cuda_memory_resource.hpp"
 
 
+
 #include <fstream>
 #include <sstream>
 #include <cstddef>
@@ -63,22 +64,15 @@ rmmError_t rmmInitialize(rmmOptions_t *options)
 
     if (rmm::Manager::usePoolAllocator())
     {
-        memory_resource = static_cast<rmm::mr::device_memory_resource *>(
-            new rmm::mr::cnmem_memory_resource(rmm::Manager::getOptions().initial_pool_size));
+        memory_resource = rmm::mr::pool_resource(rmm::Manager::getOptions().initial_pool_size);
 
     }else if(rmm::Manager::useManagedMemory()){
-      memory_resource = static_cast<rmm::mr::device_memory_resource *>(
-          new rmm::mr::managed_memory_resource());
+      memory_resource = rmm::mr::managed_resource();
 
     }else{
-        memory_resource =  static_cast<rmm::mr::device_memory_resource *>(
-            new rmm::mr::cuda_memory_resource());
+        memory_resource =  rmm::mr::initial_resource();
     }
-    rmm::mr::device_memory_resource * old_resource = rmm::mr::set_default_resource(memory_resource);
-    //TODO: Talk to Mark and Jake about how this is a bit weird and will have leaks
-    //if people set the default more than once
-    //that might be ok
-    // delete old_resource;
+    rmm::mr::set_default_resource(memory_resource);
 
     return RMM_SUCCESS;
 }

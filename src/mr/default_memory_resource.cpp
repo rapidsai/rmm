@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 #include <rmm/mr/cuda_memory_resource.hpp>
+#include <rmm/mr/cnmem_memory_resource.hpp>
+#include <rmm/mr/managed_memory_resource.hpp>
 #include <rmm/mr/default_memory_resource.hpp>
 #include <rmm/mr/device_memory_resource.hpp>
 
@@ -21,12 +23,28 @@
 
 namespace rmm {
 namespace mr {
-namespace {
-// The initial, default memory resource is a `cuda_memory_resource`
+
 device_memory_resource* initial_resource() {
   static cuda_memory_resource resource{};
   return &resource;
 }
+
+device_memory_resource* pool_resource(std::size_t pool_size){
+   static cnmem_memory_resource mr{pool_size};
+   return &mr;
+}
+
+
+device_memory_resource* managed_resource(){
+   static managed_memory_resource mr{};
+   return &mr;
+}
+
+namespace {
+
+
+
+
 
 // Use an atomic to guarantee thread safety
 std::atomic<device_memory_resource*>& get_default() {
