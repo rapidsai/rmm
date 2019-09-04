@@ -123,7 +123,9 @@ inline rmmError_t alloc(T** ptr, size_t size, cudaStream_t stream, const char* f
 
   if (!ptr && !size) {
     return RMM_SUCCESS;
-  } 
+  }
+
+  if (!ptr) return RMM_ERROR_INVALID_ARGUMENT;
   try{
      *ptr = static_cast<T*>(
       rmm::mr::get_default_resource()->allocate(size,stream));
