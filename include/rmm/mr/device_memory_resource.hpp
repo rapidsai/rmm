@@ -111,11 +111,10 @@ class device_memory_resource {
   /**---------------------------------------------------------------------------*
    * @brief Queries if the the amount of free and total memory for the resource.
    *
-   * @param freeSize the amount of free memory
-   * @param totalSize the total amount of memory
    * @param stream the stream whose memory manager we want to retrieve
    *
-   * @returns If the resource supports non-null streams
+   * @returns a std::pair<size_t,size_t> which contains free memory in bytes
+   * in .first and total amount of memory in .second
    *---------------------------------------------------------------------------**/
   std::pair<std::size_t, std::size_t> get_mem_info(cudaStream_t stream){
     return do_get_mem_info(stream);
