@@ -28,7 +28,7 @@
 namespace rmm {
 namespace mr {
 /**---------------------------------------------------------------------------*
- * @brief Memory resource that allocates/deallocates using the cnmem pool sub-allocator 
+ * @brief Memory resource that allocates/deallocates using the cnmem pool sub-allocator
  * the cnmem pool sub-allocator for allocation/deallocation.
  *---------------------------------------------------------------------------**/
 class cnmem_memory_resource final : public device_memory_resource {
@@ -131,6 +131,25 @@ class cnmem_memory_resource final : public device_memory_resource {
         }
       }
     }
+  }
+
+  /**---------------------------------------------------------------------------*
+   * @brief Get free and available memory for memory resource
+   *
+   * @throws std::runtime_error if we could not get cnmem free / total memory
+   *
+   * @param freeSize amount of currently free memory
+   * @param totalSize total memory available to resource
+   * @param stream the stream being executed on
+   *---------------------------------------------------------------------------**/
+  void do_get_mem_info(size_t *freeSize, size_t *totalSize, cudaStream_t stream){
+        auto status = cnmemMemGetInfo(freeSize, totalSize, stream);
+        if (CNMEM_STATUS_SUCCESS != status) {
+#ifndef NDEBUG
+          std::cerr << "cnmemMemGetInfo failed \n";
+#endif
+          throw std::runtime_error{"Falied to to call get_mem_info on memory resrouce"};
+        }
   }
 
   std::set<cudaStream_t> registered_streams{};

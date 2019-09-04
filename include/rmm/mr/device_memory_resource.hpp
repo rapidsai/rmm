@@ -29,7 +29,7 @@ namespace mr {
  * implementations must satisfy.
  *
  * There are two private, pure virtual functions that all derived classes must implement: `do_allocate` and
- * `do_deallocate`. Optionally, derived classes may also override `is_equal`. By default, 
+ * `do_deallocate`. Optionally, derived classes may also override `is_equal`. By default,
  * `is_equal` simply performs an identity comparison.
  *
  * The public, non-virtual functions `allocate`, `deallocate`, and `is_equal`
@@ -107,6 +107,18 @@ class device_memory_resource {
    *---------------------------------------------------------------------------**/
   virtual bool supports_streams() const noexcept = 0;
 
+  /**---------------------------------------------------------------------------*
+   * @brief Queries if the the amount of free and total memory for the resource.
+   *
+   * @param freeSize the amount of free memory
+   * @param totalSize the total amount of memory
+   * @param stream the stream whose memory manager we want to retrieve
+   *
+   * @returns If the resource supports non-null streams
+   *---------------------------------------------------------------------------**/
+  void get_mem_info(size_t *freeSize, size_t *totalSize, cudaStream_t stream){
+    do_get_mem_info(freeSize,totalSize,stream);
+  }
  private:
   /**---------------------------------------------------------------------------*
    * @brief Allocates memory of size at least \p bytes.
@@ -153,6 +165,17 @@ class device_memory_resource {
   virtual bool do_is_equal(device_memory_resource const& other) const noexcept {
     return this == &other;
   }
+
+  /**---------------------------------------------------------------------------*
+   * @brief Get free and available memory for memory resource
+   *
+   * @throws std::runtime_error if we could not get free / total memory
+   *
+   * @param freeSize amount of currently free memory
+   * @param totalSize total memory available to resource
+   * @param stream the stream being executed on
+   *---------------------------------------------------------------------------**/
+  virtual void do_get_mem_info(size_t *freeSize, size_t *totalSize, cudaStream_t stream) = 0;
 };
 }  // namespace mr
 }  // namespace rmm
