@@ -91,8 +91,9 @@ class managed_memory_resource final : public device_memory_resource {
    *
    * @param p Pointer to be deallocated
    *---------------------------------------------------------------------------**/
-  void do_get_mem_info(size_t *freeSize, size_t *totalSize, cudaStream_t stream){
-    auto status = cudaMemGetInfo(freeSize, totalSize);
+  std::pair<size_t,size_t> do_get_mem_info( cudaStream_t stream){
+    size_t freeSize,totalSize;
+    auto status = cudaMemGetInfo(&freeSize, &totalSize);
     if (cudaSuccess != status) {
 #ifndef NDEBUG
       std::cerr << "cudaMemGetInfo failed: " << cudaGetErrorName(status) << " "
@@ -100,6 +101,7 @@ class managed_memory_resource final : public device_memory_resource {
       throw std::runtime_error{"Falied to to call get_mem_info on memory resrouce"};
 #endif
     }
+    return std::make_pair(freeSize, totalSize);
   }
 };
 

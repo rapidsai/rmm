@@ -142,14 +142,16 @@ class cnmem_memory_resource final : public device_memory_resource {
    * @param totalSize total memory available to resource
    * @param stream the stream being executed on
    *---------------------------------------------------------------------------**/
-  void do_get_mem_info(size_t *freeSize, size_t *totalSize, cudaStream_t stream){
-        auto status = cnmemMemGetInfo(freeSize, totalSize, stream);
-        if (CNMEM_STATUS_SUCCESS != status) {
+  std::pair<size_t,size_t> do_get_mem_info( cudaStream_t stream){
+    size_t freeSize,totalSize;
+    auto status = cnmemMemGetInfo(&freeSize, &totalSize, stream);
+    if (CNMEM_STATUS_SUCCESS != status) {
 #ifndef NDEBUG
-          std::cerr << "cnmemMemGetInfo failed \n";
+      std::cerr << "cnmemMemGetInfo failed \n";
 #endif
-          throw std::runtime_error{"Falied to to call get_mem_info on memory resrouce"};
-        }
+      throw std::runtime_error{"Falied to to call get_mem_info on memory resrouce"};
+    }
+    return std::make_pair(freeSize, totalSize);
   }
 
   std::set<cudaStream_t> registered_streams{};

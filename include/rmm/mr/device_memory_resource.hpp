@@ -16,6 +16,7 @@
 #pragma once
 
 #include <cstddef>
+#include <utility>
 
 // forward decl
 using cudaStream_t = struct CUstream_st*;
@@ -116,8 +117,8 @@ class device_memory_resource {
    *
    * @returns If the resource supports non-null streams
    *---------------------------------------------------------------------------**/
-  void get_mem_info(size_t *freeSize, size_t *totalSize, cudaStream_t stream){
-    do_get_mem_info(freeSize,totalSize,stream);
+  std::pair<std::size_t, std::size_t> get_mem_info(cudaStream_t stream){
+    return do_get_mem_info(stream);
   }
  private:
   /**---------------------------------------------------------------------------*
@@ -175,7 +176,7 @@ class device_memory_resource {
    * @param totalSize total memory available to resource
    * @param stream the stream being executed on
    *---------------------------------------------------------------------------**/
-  virtual void do_get_mem_info(size_t *freeSize, size_t *totalSize, cudaStream_t stream) = 0;
+  virtual std::pair<std::size_t, std::size_t> do_get_mem_info( cudaStream_t stream) = 0;
 };
 }  // namespace mr
 }  // namespace rmm
