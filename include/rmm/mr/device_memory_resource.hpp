@@ -109,7 +109,7 @@ class device_memory_resource {
   virtual bool supports_streams() const noexcept = 0;
 
   /**---------------------------------------------------------------------------*
-   * @brief Queries if the the amount of free and total memory for the resource.
+   * @brief Queries the amount of free and total memory for the resource.
    *
    * @param stream the stream whose memory manager we want to retrieve
    *
