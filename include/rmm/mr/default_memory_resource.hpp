@@ -51,6 +51,19 @@ device_memory_resource* get_default_resource();
 device_memory_resource* set_default_resource(
     device_memory_resource* new_resource);
 
+namespace detail{
+
+
+/**---------------------------------------------------------------------------*
+ * @brief gets the default memory_resource when none is set
+ *
+ * A static function which will return a singleton cuda_memory_resource
+ *
+ *
+ * @return device_memory_resource* a pointer to the static
+ * cuda_memory_resource
+ *---------------------------------------------------------------------------**/
+device_memory_resource* initial_resource();
 
 /**---------------------------------------------------------------------------*
  * @brief gets a cuda_memory_resource
@@ -62,7 +75,7 @@ device_memory_resource* set_default_resource(
  * @return device_memory_resource* a pointer to the static
  * cuda_memory_resource
  *---------------------------------------------------------------------------**/
-device_memory_resource* initial_resource();
+device_memory_resource* cuda_resource();
 
 /**---------------------------------------------------------------------------*
  * @brief gets a cnmem_memory_resource
@@ -88,6 +101,6 @@ device_memory_resource* pool_resource(std::size_t pool_size = 0);
  * managed_memory_resource
  *---------------------------------------------------------------------------**/
 device_memory_resource* managed_resource();
-
+}  // namespace detail
 }  // namespace mr
 }  // namespace rmm

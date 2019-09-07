@@ -24,7 +24,12 @@
 namespace rmm {
 namespace mr {
 
+namespace detail{
 device_memory_resource* initial_resource() {
+  return cuda_resource();
+}
+
+device_memory_resource* cuda_resource() {
   static cuda_memory_resource resource{};
   return &resource;
 }
@@ -39,7 +44,7 @@ device_memory_resource* managed_resource(){
    static managed_memory_resource mr{};
    return &mr;
 }
-
+} //namespace detail
 namespace {
 
 
@@ -48,7 +53,7 @@ namespace {
 
 // Use an atomic to guarantee thread safety
 std::atomic<device_memory_resource*>& get_default() {
-  static std::atomic<device_memory_resource*> res{initial_resource()};
+  static std::atomic<device_memory_resource*> res{detail::initial_resource()};
   return res;
 }
 }  // namespace
@@ -57,7 +62,7 @@ device_memory_resource* get_default_resource() { return get_default().load(); }
 
 device_memory_resource* set_default_resource(
     device_memory_resource* new_resource) {
-  new_resource = (new_resource == nullptr) ? initial_resource() : new_resource;
+  new_resource = (new_resource == nullptr) ? detail::initial_resource() : new_resource;
   return get_default().exchange(new_resource);
 }
 }  // namespace mr

@@ -64,13 +64,13 @@ rmmError_t rmmInitialize(rmmOptions_t *options)
 
     if (rmm::Manager::usePoolAllocator())
     {
-        memory_resource = rmm::mr::pool_resource(rmm::Manager::getOptions().initial_pool_size);
+        memory_resource = rmm::mr::detail::pool_resource(rmm::Manager::getOptions().initial_pool_size);
 
     }else if(rmm::Manager::useManagedMemory()){
-      memory_resource = rmm::mr::managed_resource();
+      memory_resource = rmm::mr::detail::managed_resource();
 
     }else{
-        memory_resource =  rmm::mr::initial_resource();
+        memory_resource =  rmm::mr::detail::initial_resource();
     }
     rmm::mr::set_default_resource(memory_resource);
 
