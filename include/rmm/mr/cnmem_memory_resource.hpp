@@ -149,7 +149,7 @@ class cnmem_memory_resource final : public device_memory_resource {
 #ifndef NDEBUG
       std::cerr << "cnmemMemGetInfo failed \n";
 #endif
-      throw std::runtime_error{"Falied to to call get_mem_info on memory resrouce"};
+      throw std::runtime_error{"Failed to to call get_mem_info on memory resource"};
     }
     return std::make_pair(free_size, total_size);
   }

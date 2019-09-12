@@ -15,7 +15,7 @@
  */
 
 /**
- * @brief Device Memory Manager implementation.
+ * @brief RAPIDS Memory Manager implementation.
  *
  * Efficient allocation, deallocation and tracking of GPU memory.
  *
