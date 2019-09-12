@@ -100,10 +100,10 @@ rmmError_t rmmAlloc(void **ptr, size_t size, cudaStream_t stream, const char* fi
 }
 
 // Reallocate device memory block to new size and recycle any remaining memory.
-rmmError_t rmmRealloc(void **ptr, size_t new_size, cudaStream_t stream, const char* file, unsigned int line)
-{
-  return rmm::realloc(ptr, new_size, stream, file, line);
-}
+//rmmError_t rmmRealloc(void **ptr, size_t new_size, cudaStream_t stream, const char* file, unsigned int line)
+//{
+//  return rmm::realloc(ptr, new_size, stream, file, line);
+//}
 
 // Release device memory and recycle the associated memory.
 rmmError_t rmmFree(void *ptr, cudaStream_t stream, const char* file, unsigned int line)

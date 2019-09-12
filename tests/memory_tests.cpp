@@ -24,8 +24,8 @@
 cudaStream_t stream;
 
 template <typename T>
-struct MemoryManagerTest : 
-    public ::testing::Test 
+struct MemoryManagerTest :
+    public ::testing::Test
 {
     static rmmAllocationMode_t allocationMode() { return T::alloc_mode; }
 
@@ -73,7 +73,7 @@ TYPED_TEST_CASE(MemoryManagerTest, allocation_modes);
 // Init / Finalize tests
 
 TYPED_TEST(MemoryManagerTest, Initialize) {
-    
+
     // Initialized in Fixture class.
     rmmOptions_t options;
     ASSERT_TRUE(rmmIsInitialized(&options));
@@ -135,7 +135,7 @@ TYPED_TEST(MemoryManagerTest, AllocateTB) {
     size_t freeBefore = 0, totalBefore = 0;
     ASSERT_SUCCESS( rmmGetInfo(&freeBefore, &totalBefore, stream) );
 
-    if ((this->allocationMode() & CudaManagedMemory) || 
+    if ((this->allocationMode() & CudaManagedMemory) ||
         (this->size_tb < freeBefore)) {
         // TODO investigate and fix this
         //ASSERT_SUCCESS( RMM_ALLOC(&a, this->size_tb, stream) );
@@ -143,7 +143,7 @@ TYPED_TEST(MemoryManagerTest, AllocateTB) {
     else {
         ASSERT_FAILURE( RMM_ALLOC(&a, this->size_tb, stream) );
     }
-    
+
     ASSERT_SUCCESS( RMM_FREE(a, stream) );
 }
 
@@ -158,7 +158,7 @@ TYPED_TEST(MemoryManagerTest, FreeZero) {
 }
 
 // Reallocation tests
-
+/*
 TYPED_TEST(MemoryManagerTest, ReallocateSmaller) {
     char *a = 0;
     ASSERT_SUCCESS( RMM_ALLOC(&a, this->size_mb, stream) );
@@ -186,7 +186,7 @@ TYPED_TEST(MemoryManagerTest, ReallocateMuchLarger) {
     ASSERT_SUCCESS( RMM_REALLOC(&a, this->size_gb, stream) );
     ASSERT_SUCCESS( RMM_FREE(a, stream) );
 }
-
+*/
 TYPED_TEST(MemoryManagerTest, GetInfo) {
     size_t freeBefore = 0, totalBefore = 0;
     ASSERT_SUCCESS( rmmGetInfo(&freeBefore, &totalBefore, stream) );
