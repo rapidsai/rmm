@@ -29,10 +29,10 @@ namespace mr {
  * allocation/deallocation.
  *---------------------------------------------------------------------------**/
 class cuda_memory_resource final : public device_memory_resource {
- public:
-  bool supports_streams() const noexcept override { return false; }
+  public:
+    bool supports_streams() const noexcept override { return false; }
 
- private:
+  private:
   /**---------------------------------------------------------------------------*
    * @brief Allocates memory of size at least \p bytes using cudaMalloc.
    *
@@ -69,11 +69,36 @@ class cuda_memory_resource final : public device_memory_resource {
    *---------------------------------------------------------------------------**/
   void do_deallocate(void* p, std::size_t, cudaStream_t) override {
     cudaError_t const status = cudaFree(p);
+    if (cudaSuccess != status) {
 #ifndef NDEBUG
-    std::cerr << "cudaFree failed: " << cudaGetErrorName(status) << " "
+      std::cerr << "cudaFree failed: " << cudaGetErrorName(status) << " "
               << cudaGetErrorString(status) << "\n";
 #endif
+    }
   }
+
+  /**---------------------------------------------------------------------------*
+   * @brief Get free and available memory for memory resource
+   *
+   * @throws std::runtime_error if cudaMemGetInfo fails
+   *
+   * @param stream to execute on
+   * @return std::pair contaiing free_size and total_size of memory
+   *---------------------------------------------------------------------------**/
+  std::pair<size_t,size_t> do_get_mem_info( cudaStream_t stream){
+    std::size_t free_size;
+    std::size_t total_size;
+    auto status = cudaMemGetInfo(&free_size, &total_size);
+    if (cudaSuccess != status) {
+#ifndef NDEBUG
+      std::cerr << "cudaMemGetInfo failed: " << cudaGetErrorName(status) << " "
+          << cudaGetErrorString(status) << "\n";
+      throw std::runtime_error{"Falied to to call get_mem_info on memory resrouce"};
+#endif
+    }
+    return std::make_pair(free_size, total_size);
+  }
+
 };
 
 }  // namespace mr
