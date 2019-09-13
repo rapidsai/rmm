@@ -72,7 +72,6 @@ using allocation_modes = ::testing::Types< ModeType<CudaDefaultAllocation>,
                                          >;
 
 
-
 TYPED_TEST_CASE(MemoryManagerTest, allocation_modes);
 
 // Init / Finalize tests
