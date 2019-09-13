@@ -116,7 +116,7 @@ class device_memory_resource {
    * @returns a std::pair<size_t,size_t> which contains free memory in bytes
    * in .first and total amount of memory in .second
    *---------------------------------------------------------------------------**/
-  std::pair<std::size_t, std::size_t> get_mem_info(cudaStream_t stream){
+  std::pair<std::size_t, std::size_t> get_mem_info(cudaStream_t stream) const {
     return do_get_mem_info(stream);
   }
  private:
