@@ -174,7 +174,7 @@ class device_memory_resource {
    * @param stream the stream being executed on
    * @return std::pair with available and free memory for resource
    *---------------------------------------------------------------------------**/
-  virtual std::pair<std::size_t, std::size_t> do_get_mem_info( cudaStream_t stream) = 0;
+  virtual std::pair<std::size_t, std::size_t> do_get_mem_info( cudaStream_t stream) const = 0;
 };
 }  // namespace mr
 }  // namespace rmm
