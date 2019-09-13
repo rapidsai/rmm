@@ -199,10 +199,9 @@ inline rmmError_t realloc(T** ptr, size_t new_size, cudaStream_t stream,
 inline rmmError_t free(void* ptr, cudaStream_t stream, const char* file,
                    unsigned int line) {
   rmm::LogIt log(rmm::Logger::Free, ptr, 0, stream, file, line);
-  if(ptr != nullptr){
+
     rmm::mr::get_default_resource()->
         deallocate(ptr,0,stream);
-
 
   return RMM_SUCCESS;
 }

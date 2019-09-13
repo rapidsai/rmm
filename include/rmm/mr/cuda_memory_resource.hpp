@@ -85,7 +85,7 @@ class cuda_memory_resource final : public device_memory_resource {
    * @param stream to execute on
    * @return std::pair contaiing free_size and total_size of memory
    *---------------------------------------------------------------------------**/
-  std::pair<size_t,size_t> do_get_mem_info( cudaStream_t stream){
+  std::pair<size_t,size_t> do_get_mem_info( cudaStream_t stream) const{
     std::size_t free_size;
     std::size_t total_size;
     auto status = cudaMemGetInfo(&free_size, &total_size);
