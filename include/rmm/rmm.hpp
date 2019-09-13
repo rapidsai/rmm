@@ -203,7 +203,6 @@ inline rmmError_t free(void* ptr, cudaStream_t stream, const char* file,
     rmm::mr::get_default_resource()->
         deallocate(ptr,0,stream);
 
-  }
 
   return RMM_SUCCESS;
 }
