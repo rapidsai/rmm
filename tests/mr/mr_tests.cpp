@@ -293,7 +293,7 @@ TYPED_TEST(MRTest, MixedRandomAllocationFree) {
   // will immediately be free'd. Or, if 4, on average, a free will occur after
   // every 4th allocation
   constexpr std::size_t FREE_FREQUENCY{4};
-  std::uniform_int_distribution<int> free_distribution(1, FREE_FREQUENCY);
+  std::uniform_int_distribution<int> free_distribution(1, 2 * FREE_FREQUENCY);
 
   std::deque<allocation> allocations;
 
@@ -306,13 +306,21 @@ TYPED_TEST(MRTest, MixedRandomAllocationFree) {
     EXPECT_NE(nullptr, new_allocation.p);
     EXPECT_TRUE(is_aligned(new_allocation.p));
 
-    bool const free_front{free_distribution(generator) ==
-                          free_distribution.max()};
+    // sometimes either free the newest or the oldest allocation
+    int roll = free_distribution(generator);
+    bool const free_one{roll%FREE_FREQUENCY == 0};
 
-    if (free_front) {
-      auto front = allocations.front();
-      EXPECT_NO_THROW(this->mr->deallocate(front.p, front.size));
-      allocations.pop_front();
+    if (free_one) {
+      allocation to_free{};
+      if (roll == FREE_FREQUENCY) {
+        to_free =  allocations.front();
+        allocations.pop_front();
+      }
+      else {
+        to_free = allocations.back();
+        allocations.pop_back();
+      }
+      EXPECT_NO_THROW(this->mr->deallocate(to_free.p, to_free.size));
     }
   }
   // free any remaining allocations
