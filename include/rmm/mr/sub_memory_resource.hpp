@@ -77,9 +77,16 @@ class sub_memory_resource final : public device_memory_resource {
       if (maximum_pool_size == default_maximum_size)
         maximum_pool_size = props.totalGlobalMem;
     }
+    else {
+      initial_pool_size = detail::round_up_safe(initial_pool_size,
+                                                allocation_alignment);
+    }
 
     // Allocate initial block
+    // TODO: non-default stream?
     no_sync_blocks.insert(block_from_heap(initial_pool_size, 0));
+
+    // TODO thread safety
 
     // TODO device handling?
 
@@ -114,7 +121,7 @@ class sub_memory_resource final : public device_memory_resource {
     block dummy{0, size};
     auto iter = blocks.lower_bound(dummy);
 
-    if (iter != blocks.end())
+    if (iter != blocks.end() && iter->size >= size)
     {
       block found = *iter;
       blocks.erase(iter);
