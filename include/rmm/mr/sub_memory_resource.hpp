@@ -43,8 +43,7 @@ namespace detail {
 } // namespace detail
 
 /**---------------------------------------------------------------------------*
- * @brief Memory resource that allocates/deallocates using the cnmem pool sub-allocator
- * the cnmem pool sub-allocator for allocation/deallocation.
+ * @brief Memory resource that allocates/deallocates using a pool sub-allocator
  *---------------------------------------------------------------------------**/
 class sub_memory_resource final : public device_memory_resource {
  public:
@@ -54,13 +53,12 @@ class sub_memory_resource final : public device_memory_resource {
   static constexpr size_t allocation_alignment = 256;
 
   /**---------------------------------------------------------------------------*
-   * @brief Construct a cnmem memory resource and allocate the initial device
-   * memory pool
-
-   * TODO Add constructor arguments for other CNMEM options/flags
+   * @brief Construct a suballocator memory resource and allocate the initial
+   * device memory pool
    *
-   * @param initial_pool_size Size, in bytes, of the intial pool size. When
+   * @param initial_pool_size Size, in bytes, of the initial pool size. When
    * zero, an implementation defined pool size is used.
+   * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to.
    *---------------------------------------------------------------------------**/
   explicit sub_memory_resource(std::size_t initial_pool_size = default_initial_size, 
                                std::size_t maximum_pool_size = default_maximum_size)
@@ -72,7 +70,7 @@ class sub_memory_resource final : public device_memory_resource {
       int memsize{0};
       cudaDeviceProp props;
       cudaGetDeviceProperties(&props, device);
-      initial_pool_size = props.totalGlobalMem / 2;
+      initial_pool_size = 400 * (1 << 20);
 
       if (maximum_pool_size == default_maximum_size)
         maximum_pool_size = props.totalGlobalMem;
@@ -109,10 +107,14 @@ class sub_memory_resource final : public device_memory_resource {
     size_t size;
 
     bool operator<(const block& rhs) const { 
-      if (size < rhs.size) return ptr < rhs.ptr;
-      return false;
+      if (size == rhs.size) return ptr < rhs.ptr;
+      return (size < rhs.size);
     }
   };
+
+#ifndef NDEBUG
+  friend std::ostream& operator<<(std::ostream& os, const block& b);
+#endif
 
   using block_set = std::set<block>;
 
@@ -149,8 +151,10 @@ class sub_memory_resource final : public device_memory_resource {
             throw std::runtime_error{"cudaStreamSynchronize failure"};
 
           // insert all other blocks into the no_sync list
-          no_sync_blocks.insert(std::make_move_iterator(s.second.begin()),
-                                std::make_move_iterator(s.second.end()));
+          for (auto iter = s.second.begin(); iter != s.second.end(); ++iter) {
+            insert_and_merge_block(*iter, no_sync_blocks);
+          }
+          s.second.clear();
 
           // remove this stream from the freelist
           sync_blocks.erase(stream);
@@ -195,7 +199,7 @@ class sub_memory_resource final : public device_memory_resource {
   }
 
   // check if next / prev are in blocks and merge if so
-  inline void free_block(const block& b, block_set& blocks) {
+  inline void insert_and_merge_block(const block& b, block_set& blocks) {
     block_set::iterator prev{blocks.end()}, next{blocks.end()};
 
     // TODO this is a linear search since the set is ordered by size
@@ -229,7 +233,7 @@ class sub_memory_resource final : public device_memory_resource {
       b = i->second;
       assert(b.size == detail::round_up_safe(size, allocation_alignment));
       allocated_blocks.erase(i);
-      free_block(b, sync_blocks[stream]);
+      insert_and_merge_block(b, sync_blocks[stream]);
     }
     else {
       throw std::runtime_error("Pointer not allocated by this resource.");
@@ -251,21 +255,44 @@ class sub_memory_resource final : public device_memory_resource {
     heap_blocks.clear();
   }
 
+#ifndef NDEBUG
+  void print() {
+    std::cout << "allocated_blocks: " << allocated_blocks.size() << "\n";
+    for (auto b : allocated_blocks) { std::cout << b.second; }
+
+    std::cout << "no-sync free blocks: " << no_sync_blocks.size() << "\n";
+    for (auto b : no_sync_blocks) { std::cout << b; }
+
+    std::cout << "sync free blocks: " << sync_blocks.size() << "\n";
+    for (auto s : sync_blocks) { 
+      std::cout << "stream " << s.first << " " << s.second.size() << "\n";
+      for (auto b : s.second) { std::cout << b; }
+    }
+    std::cout << "\n";
+  }
+#endif // DEBUG
+
   /**---------------------------------------------------------------------------*
-   * @brief Allocates memory of size at least \p bytes using cnmem.
+   * @brief Allocates memory of size at least \p bytes.
    *
    * The returned pointer has at least 256B alignment.
    *
    * @throws `std::bad_alloc` if the requested allocation could not be fulfilled
    *
    * @param bytes The size, in bytes, of the allocation
+   * @param The stream to associate this allocation with
    * @return void* Pointer to the newly allocated memory
    *---------------------------------------------------------------------------**/
   void* do_allocate(std::size_t bytes, cudaStream_t stream) override {
     if (bytes <= 0) return nullptr;
     bytes = detail::round_up_safe(bytes, allocation_alignment);
     block b = available_larger_block(bytes, stream);
-    return allocate_from_block(b, bytes);
+    void* p = allocate_from_block(b, bytes);
+#ifndef NDEBUG
+    std::cout << "Allocate " << bytes << " B on stream " << stream << "\n";
+    print();
+#endif
+    return p;
   }
 
   /**---------------------------------------------------------------------------*
@@ -277,6 +304,11 @@ class sub_memory_resource final : public device_memory_resource {
    *---------------------------------------------------------------------------**/
   void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override {
     find_and_free_block(p, bytes, stream);
+#ifndef NDEBUG
+    std::cout << "Free " << bytes << " B on stream " << stream 
+              << " pointer: " << p << "\n";
+    print();
+#endif
   }
 
   /**---------------------------------------------------------------------------*
@@ -300,13 +332,11 @@ class sub_memory_resource final : public device_memory_resource {
 
   device_memory_resource *heap_resource;
 
-  // no_sync_free_list: list of unencumbered blocks
+  // no-sync free list: list of unencumbered blocks
   // no need to sync a stream to allocate from this list
-  // TODO: what container? Should be sorted by size? Locality? Binned?
-  // A free_list is likely to become a class
   block_set no_sync_blocks;
 
-  // sync_free_lists: map of [stream_id, free_list] pairs
+  // sync free lists: map of [stream_id, block_set] pairs
   // stream stream_id must be synced before allocating from this list
   std::map<cudaStream_t, block_set> sync_blocks;
 
@@ -316,6 +346,12 @@ class sub_memory_resource final : public device_memory_resource {
   // blocks allocated from heap: so they can be easily freed
   std::map<char*, block> heap_blocks;
 };
+
+#ifndef NDEBUG
+std::ostream& operator<<(std::ostream& os, const sub_memory_resource::block& b) {
+  return os << reinterpret_cast<void*>(b.ptr) << " " << b.size << "B\n";
+}
+#endif
 
 }  // namespace mr
 }  // namespace rmm
