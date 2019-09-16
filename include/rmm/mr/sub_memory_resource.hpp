@@ -70,7 +70,7 @@ class sub_memory_resource final : public device_memory_resource {
       int memsize{0};
       cudaDeviceProp props;
       cudaGetDeviceProperties(&props, device);
-      initial_pool_size = 400 * (1 << 20);
+      initial_pool_size = props.totalGlobalMem / 2;
 
       if (maximum_pool_size == default_maximum_size)
         maximum_pool_size = props.totalGlobalMem;
