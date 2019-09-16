@@ -133,40 +133,51 @@ class sub_memory_resource final : public device_memory_resource {
     return dummy;
   }
 
+  inline block block_from_sync_list(size_t size, cudaStream_t stream)
+  {
+    block_set blocks = sync_blocks.at(stream);
+    block b = next_larger_block(blocks, size);
+    if (b.ptr != nullptr) { // found one
+      cudaError_t result = cudaStreamSynchronize(stream);
+            
+      if (result != cudaErrorInvalidResourceHandle && // stream deleted
+          result != cudaSuccess)                      // stream synced
+        throw std::runtime_error{"cudaStreamSynchronize failure"};
+      
+      // insert all other blocks into the no_sync list
+      for (auto iter = blocks.begin(); iter != blocks.end(); ++iter) {
+        insert_and_merge_block(*iter, no_sync_blocks);
+      }
+      blocks.clear();
+      
+      // remove this stream from the freelist
+      sync_blocks.erase(stream);
+    }
+    return b;
+  }
+
   inline block available_larger_block(size_t size, cudaStream_t stream)
   {
     // Try to find a larger block that doesn't require syncing
     block b = next_larger_block(no_sync_blocks, size);
 
-    // Try to find a larger block in a different stream
+    // nothing in no-sync free list, look for one on a stream
     if (b.ptr == nullptr) {
+
+      // Try to find a larger block in a different stream
       for (auto s : sync_blocks) {
-        if (s.first != stream) b = next_larger_block(s.second, size);
-        if (b.ptr != nullptr) {
-          // synchronize the stream associated with this list
-          cudaError_t result = cudaStreamSynchronize(s.first);
-          
-          if (result != cudaErrorInvalidResourceHandle && // stream deleted
-              result != cudaSuccess)                      // stream synced
-            throw std::runtime_error{"cudaStreamSynchronize failure"};
+        if (s.first != stream) b = block_from_sync_list(size, s.first);
+      }
 
-          // insert all other blocks into the no_sync list
-          for (auto iter = s.second.begin(); iter != s.second.end(); ++iter) {
-            insert_and_merge_block(*iter, no_sync_blocks);
-          }
-          s.second.clear();
-
-          // remove this stream from the freelist
-          sync_blocks.erase(stream);
-          return b;
-        }
+      // nothing available in other streams, look in current stream's list
+      if (b.ptr == nullptr && (sync_blocks.find(stream) != sync_blocks.end())) {
+          b = block_from_sync_list(size, stream);
       }
 
       // no larger blocks waiting on other streams, so create one
-      b = block_from_heap(size, stream);
+      if (b.ptr == nullptr) b = block_from_heap(size, stream);
     }
 
-    
     return b;
   }
 
