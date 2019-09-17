@@ -1,6 +1,6 @@
 # Copyright (c) 2019, NVIDIA CORPORATION.
 
-{% set version = environ.get('GIT_DESCRIBE_TAG', '0.0.0.dev').lstrip('v') %}
+{% set version = environ.get('GIT_DESCRIBE_TAG', '0.0.0.dev').lstrip('v') + environ.get('VERSION_SUFFIX', '') %}
 {% set git_revision_count=environ.get('GIT_DESCRIBE_NUMBER', 0) %}
 {% set py_version=environ.get('CONDA_PY', 35) %}
 package:
@@ -15,6 +15,7 @@ build:
   string: py{{ py_version }}_{{ git_revision_count }}
   script_env:
     - RMM_BUILD_NO_GPU_TEST
+    - VERSION_SUFFIX
 
 requirements:
   build:
