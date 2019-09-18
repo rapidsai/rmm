@@ -23,6 +23,7 @@
 #include <iostream>
 #include <mutex>
 #include <set>
+#include <map>
 
 namespace rmm {
 namespace mr {

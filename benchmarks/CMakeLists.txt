@@ -47,3 +47,11 @@ set(TEST_BENCH_SRC
   "${CMAKE_CURRENT_SOURCE_DIR}/test/test_benchmark.cpp")
 
 ConfigureBench(TEST_BENCH "${TEST_BENCH_SRC}")
+
+###################################################################################################
+# - random allocations benchmark --------------------------------------------------------------------------------
+
+set(RANDOM_ALLOCATIONS_BENCH_SRC
+  "${CMAKE_CURRENT_SOURCE_DIR}/random_allocations/random_allocations.cpp")
+
+ConfigureBench(RANDOM_ALLOCATIONS_BENCH "${RANDOM_ALLOCATIONS_BENCH_SRC}")
