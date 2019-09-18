@@ -88,17 +88,18 @@ static void BM_RandomAllocationsCUDA(benchmark::State& state) {
 // Register the function as a benchmark
 BENCHMARK(BM_RandomAllocationsCUDA);
 
+static void BM_RandomAllocationsCnmem(benchmark::State& state) {
+  rmm::mr::cnmem_memory_resource mr;
 
-template <class Q> 
-void BM_Sequential(benchmark::State& state) {
-  Q q;
-  typename Q::value_type v(0);
-  for (auto _ : state) {
-    for (int i = state.range(0); i--; )
-      q.push_back(v);
-  }
-  // actually messages, not bytes:
-  state.SetBytesProcessed(
-      static_cast<int64_t>(state.iterations())*state.range(0));
+  for (auto _ : state)
+    mixed_random_allocation_free(mr);
 }
-BENCHMARK_TEMPLATE(BM_Sequential, std::vector<int>)->Range(1<<0, 1<<10);
+BENCHMARK(BM_RandomAllocationsCnmem);
+
+static void BM_RandomAllocationsSub(benchmark::State& state) {
+  rmm::mr::sub_memory_resource mr;
+
+  for (auto _ : state)
+    mixed_random_allocation_free(mr);
+}
+BENCHMARK(BM_RandomAllocationsSub);
