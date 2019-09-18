@@ -65,6 +65,8 @@ class sub_memory_resource final : public device_memory_resource {
                                std::size_t maximum_pool_size = default_maximum_size)
     : heap_resource{rmm::mr::get_default_resource()}
   {
+    cudaDeviceProp props;
+
     if (initial_pool_size == default_initial_size)  {
       int device{0};
       cudaGetDevice(&device);
@@ -72,14 +74,13 @@ class sub_memory_resource final : public device_memory_resource {
       cudaDeviceProp props;
       cudaGetDeviceProperties(&props, device);
       initial_pool_size = props.totalGlobalMem / 2;
+    }
 
-      if (maximum_pool_size == default_maximum_size)
+    initial_pool_size = detail::round_up_safe(initial_pool_size,
+                                              allocation_alignment);
+
+    if (maximum_pool_size == default_maximum_size)
         maximum_pool_size = props.totalGlobalMem;
-    }
-    else {
-      initial_pool_size = detail::round_up_safe(initial_pool_size,
-                                                allocation_alignment);
-    }
 
     // Allocate initial block
     // TODO: non-default stream?
@@ -107,9 +108,9 @@ class sub_memory_resource final : public device_memory_resource {
     char* ptr;
     size_t size;
 
+    // lexicographic total ordering based on size, then pointer
     bool operator<(const block& rhs) const { 
-      if (size == rhs.size) return ptr < rhs.ptr;
-      return (size < rhs.size);
+      return std::tie(size, ptr) < std::tie(rhs.size, rhs.ptr);
     }
   };
 
@@ -121,7 +122,7 @@ class sub_memory_resource final : public device_memory_resource {
 
   inline block next_larger_block(block_set &blocks, size_t size)
   {
-    block dummy{0, size};
+    block dummy{nullptr, size};
     auto iter = blocks.lower_bound(dummy);
 
     if (iter != blocks.end() && iter->size >= size)
@@ -239,7 +240,7 @@ class sub_memory_resource final : public device_memory_resource {
   {
     if (p == nullptr) return;
 
-    auto i = allocated_blocks.find(reinterpret_cast<char*>(p));
+    auto i = allocated_blocks.find(static_cast<char*>(p));
     block b{};
     if (i != allocated_blocks.end()) { // found
       b = i->second;
@@ -339,7 +340,6 @@ class sub_memory_resource final : public device_memory_resource {
   }
 
   size_t maximum_pool_size{default_maximum_size};
-  std::set<cudaStream_t> registered_streams{};
   std::mutex streams_mutex{};
 
   device_memory_resource *heap_resource;
