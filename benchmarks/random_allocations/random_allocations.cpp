@@ -35,10 +35,10 @@ void mixed_random_allocation_free(rmm::mr::device_memory_resource& mr,
                                   cudaStream_t stream = 0)
 {
   std::default_random_engine generator;
-  constexpr std::size_t num_allocations{100};
+  constexpr std::size_t num_allocations{1000};
 
   constexpr std::size_t size_mb{1 << 20};
-  constexpr std::size_t MAX_ALLOCATION_SIZE{10 * size_mb};
+  constexpr std::size_t MAX_ALLOCATION_SIZE{100 * size_mb};
   std::uniform_int_distribution<std::size_t> size_distribution(
     1, MAX_ALLOCATION_SIZE);
 
