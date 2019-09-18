@@ -86,7 +86,7 @@ static void BM_RandomAllocationsCUDA(benchmark::State& state) {
     mixed_random_allocation_free(mr);
 }
 // Register the function as a benchmark
-BENCHMARK(BM_RandomAllocationsCUDA);
+BENCHMARK(BM_RandomAllocationsCUDA)->Unit(benchmark::kMillisecond);
 
 static void BM_RandomAllocationsCnmem(benchmark::State& state) {
   rmm::mr::cnmem_memory_resource mr;
@@ -94,7 +94,7 @@ static void BM_RandomAllocationsCnmem(benchmark::State& state) {
   for (auto _ : state)
     mixed_random_allocation_free(mr);
 }
-BENCHMARK(BM_RandomAllocationsCnmem);
+BENCHMARK(BM_RandomAllocationsCnmem)->Unit(benchmark::kMillisecond);;
 
 static void BM_RandomAllocationsSub(benchmark::State& state) {
   rmm::mr::sub_memory_resource mr;
@@ -102,4 +102,4 @@ static void BM_RandomAllocationsSub(benchmark::State& state) {
   for (auto _ : state)
     mixed_random_allocation_free(mr);
 }
-BENCHMARK(BM_RandomAllocationsSub);
+BENCHMARK(BM_RandomAllocationsSub)->Unit(benchmark::kMillisecond);;
