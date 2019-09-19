@@ -32,15 +32,15 @@ struct allocation {
 };
 
 void mixed_random_allocation_free(rmm::mr::device_memory_resource& mr,
+                                  size_t num_allocations = 1000,
+                                  size_t max_allocation_size = 100, // in MiB
                                   cudaStream_t stream = 0)
 {
   std::default_random_engine generator;
-  constexpr std::size_t num_allocations{1000};
 
   constexpr std::size_t size_mb{1 << 20};
-  constexpr std::size_t MAX_ALLOCATION_SIZE{100 * size_mb};
   std::uniform_int_distribution<std::size_t> size_distribution(
-    1, MAX_ALLOCATION_SIZE);
+    1, max_allocation_size * size_mb);
 
   constexpr int allocation_probability = 53; // percent
   std::uniform_int_distribution<int> op_distribution(0, 99);
@@ -75,7 +75,8 @@ void mixed_random_allocation_free(rmm::mr::device_memory_resource& mr,
     }
   }
 
-  assert(active_allocations == allocations.size() == 0);
+  assert(active_allocations == 0);
+  assert(allocations.size() == 0);
 }
 }  // namespace
 
@@ -85,21 +86,32 @@ static void BM_RandomAllocationsCUDA(benchmark::State& state) {
   for (auto _ : state)
     mixed_random_allocation_free(mr);
 }
-// Register the function as a benchmark
 BENCHMARK(BM_RandomAllocationsCUDA)->Unit(benchmark::kMillisecond);
 
 static void BM_RandomAllocationsCnmem(benchmark::State& state) {
   rmm::mr::cnmem_memory_resource mr;
 
-  for (auto _ : state)
-    mixed_random_allocation_free(mr);
+  try {
+    for (auto _ : state)
+      mixed_random_allocation_free(mr);
+  } catch (std::exception const& e) {
+    std::cout << "Error: " << e.what() << "\n";
+  }
 }
 BENCHMARK(BM_RandomAllocationsCnmem)->Unit(benchmark::kMillisecond);;
 
 static void BM_RandomAllocationsSub(benchmark::State& state) {
+//int main(void) {
   rmm::mr::sub_memory_resource mr;
 
-  for (auto _ : state)
-    mixed_random_allocation_free(mr);
+  try {
+    //for (int i = 0; i < 100; i++)//(auto _ : state)
+    for (auto _ : state)
+      mixed_random_allocation_free(mr);
+  } catch (std::exception const& e) {
+    std::cout << "Error: " << e.what() << "\n";
+  }
+
+//  return 0;
 }
 BENCHMARK(BM_RandomAllocationsSub)->Unit(benchmark::kMillisecond);;
