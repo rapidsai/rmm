@@ -22,8 +22,9 @@
 #include <exception>
 #include <iostream>
 #include <mutex>
-#include <set>
+#include <list>
 #include <map>
+#include <algorithm>
 
 namespace rmm {
 namespace mr {
@@ -84,7 +85,7 @@ class sub_memory_resource final : public device_memory_resource {
 
     // Allocate initial block
     // TODO: non-default stream?
-    no_sync_blocks.insert(block_from_heap(initial_pool_size, 0));
+    insert_block(block_from_heap(initial_pool_size, 0), no_sync_blocks);
 
     // TODO thread safety
 
@@ -97,6 +98,11 @@ class sub_memory_resource final : public device_memory_resource {
 
   ~sub_memory_resource() {
     free_all();
+#ifndef NDEBUG
+    std::cout << "Statistics\n"
+              << "#inserts: " << num_inserts << "\n"
+              << "#erases: " << num_erases << "\n";
+#endif
   }
 
   bool supports_streams() const noexcept override { return true; }
@@ -114,21 +120,27 @@ class sub_memory_resource final : public device_memory_resource {
     }
   };
 
+  using block_set = std::list<block>;
+
 #ifndef NDEBUG
   friend std::ostream& operator<<(std::ostream& os, const block& b);
 #endif
 
-  using block_set = std::set<block>;
-
   inline block next_larger_block(block_set &blocks, size_t size)
   {
     block dummy{nullptr, size};
-    auto iter = blocks.lower_bound(dummy);
+    // find best fit block
+    auto iter = std::min_element(blocks.begin(), blocks.end(), [size](block lhs, block rhs) {
+      if (lhs.size < rhs.size)
+        return (lhs.size >= size);
+      else
+        return (lhs.size >= size) && (rhs.size < size);
+    });
 
-    if (iter != blocks.end() && iter->size >= size)
+    if (iter->size >= size)
     {
       block found = *iter;
-      blocks.erase(iter);
+      remove_block(iter, blocks);
       return found;
     }
     
@@ -188,7 +200,7 @@ class sub_memory_resource final : public device_memory_resource {
     if (b.size > size)
     {
       block rest{b.ptr + size, b.size - size};
-      no_sync_blocks.insert(rest);
+      insert_block(rest, no_sync_blocks);
       b.size = size;
     }
 
@@ -205,10 +217,27 @@ class sub_memory_resource final : public device_memory_resource {
 
   inline void* allocate_from_block(const block& b, size_t size)
   {
-    if (b.ptr == nullptr) throw std::bad_alloc{};
+    if (b.ptr == nullptr)
+      throw std::bad_alloc{};
     block split = split_block(b, size);
     allocated_blocks[split.ptr] = split;
     return reinterpret_cast<void*>(split.ptr);
+  }
+
+  inline void insert_block(block const& b, block_set& blocks) {
+    blocks.push_back(b);
+#ifndef NDEBUG
+    num_inserts++;
+    std::cout << "Inserted " << b.size << " set size: "
+              << blocks.size() << "\n";
+#endif
+  }
+
+  inline void remove_block(block_set::iterator const& b, block_set& blocks) {
+    blocks.erase(b);
+#ifndef NDEBUG
+    num_erases++;
+#endif
   }
 
   // check if next / prev are in blocks and merge if so
@@ -219,21 +248,21 @@ class sub_memory_resource final : public device_memory_resource {
     // would be nice to have a faster way
     for (auto iter = blocks.begin(); iter != blocks.end(); ++iter) {
       if (iter->ptr + iter->size == b.ptr) prev = iter;
-      else if (b.ptr + b.size == iter->ptr) { next = iter; break; }
+      else if (b.ptr + b.size == iter->ptr) { next = iter;}
     }
 
-    block merged = b;
+    block merged = b; 
     if (prev != blocks.end()) {
       merged = merge_blocks(*prev, merged);  
-      blocks.erase(prev);
+      remove_block(prev, blocks);
     }
 
     if (next != blocks.end()) {
       merged = merge_blocks(merged, *next);
-      blocks.erase(next);
+      remove_block(next, blocks);
     }
 
-    blocks.insert(merged);
+    insert_block(merged, blocks);
   }
 
   inline void find_and_free_block(void *p, size_t size, cudaStream_t stream)
@@ -256,7 +285,8 @@ class sub_memory_resource final : public device_memory_resource {
   inline block block_from_heap(size_t size, cudaStream_t stream)
   {
     void* p = heap_resource->allocate(size, stream);
-    if (p == nullptr) throw std::bad_alloc{};
+    if (p == nullptr)
+      throw std::bad_alloc{};
     block b{reinterpret_cast<char*>(p), size};
     heap_blocks[b.ptr] = b;
     return b;
@@ -357,6 +387,10 @@ class sub_memory_resource final : public device_memory_resource {
 
   // blocks allocated from heap: so they can be easily freed
   std::map<char*, block> heap_blocks;
+
+  // stats
+  size_t num_inserts{0};
+  size_t num_erases{0};
 };
 
 #ifndef NDEBUG
