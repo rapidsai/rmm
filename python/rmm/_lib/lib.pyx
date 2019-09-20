@@ -22,6 +22,7 @@ from libc.stdint cimport uintptr_t
 from libc.stdlib cimport malloc, free
 from libcpp.vector cimport vector
 
+
 # Global options, set on initialization, freed on finalization
 cdef rmmOptions_t *opts = NULL
 
@@ -59,7 +60,7 @@ def check_error(errcode):
         raise RMMError(errname, msg)
 
 
-def _get_caller():
+cdef caller_pair _get_caller():
     """
     Finds the file and line number of the caller (first caller outside this
     file)
@@ -80,13 +81,16 @@ def _get_caller():
         line_number = frame.f_lineno
         del frame
     else:
-        filename = ""
+        filename = None
         line_number = 0
 
-    file = filename.encode()
-    line = line_number
+    cdef const char* file = <const char*>NULL
+    if filename is not None:
+        filename = filename.encode()
+        file = filename
+    cdef unsigned int line = line_number
 
-    return file, line
+    return caller_pair(file, line)
 
 
 # API Functions
@@ -116,6 +120,7 @@ def finalize_rmm():
     """
     global opts
     free(opts)
+    opts = NULL
 
     with nogil:
         rmm_error = rmmFinalize()
@@ -130,6 +135,8 @@ def is_initialized_rmm():
     Returns True if RMM has been initialized, false otherwise by calling the
     librmm functions via Cython
     """
+    global opts
+
     with nogil:
         result = rmmIsInitialized(
             <rmmOptions_t *>opts
@@ -166,19 +173,14 @@ cdef uintptr_t c_alloc(
     Allocates size bytes using the RMM memory manager by calling the librmm
     functions via Cython
     """
-    py_file, py_line = _get_caller()
-    cdef const char* file = py_file
-    cdef unsigned int line = py_line
+    cdef caller_pair tmp_caller_pair = _get_caller()
+    cdef const char* file = tmp_caller_pair.first
+    cdef unsigned int line = tmp_caller_pair.second
 
-    cdef void **ptr = NULL
-    print(<uintptr_t>ptr)
-    print(size)
-    print(<uintptr_t>stream)
-    print(file)
-    print(line)
+    cdef void* ptr
     with nogil:
         rmm_error = rmmAlloc(
-            <void **>ptr,
+            <void **>&ptr,
             <size_t>size,
             <cudaStream_t>stream,
             <const char*>file,
@@ -187,7 +189,7 @@ cdef uintptr_t c_alloc(
 
     check_error(rmm_error)
 
-    return <uintptr_t>ptr[0]
+    return <uintptr_t>ptr
 
 
 def rmm_alloc(size, stream):
@@ -213,15 +215,15 @@ cdef uintptr_t c_realloc(
     Reallocates new_size bytes using the RMM memory manager by calling the
     librmm functions via Cython
     """
-    py_file, py_line = _get_caller()
-    cdef const char* file = py_file
-    cdef unsigned int line = py_line
+    cdef caller_pair tmp_caller_pair = _get_caller()
+    cdef const char* file = tmp_caller_pair.first
+    cdef unsigned int line = tmp_caller_pair.second
 
     # Call RMM to reaallocate
-    cdef void **ptr = NULL
+    cdef void *ptr
     with nogil:
         rmm_error = rmmRealloc(
-            <void **>ptr,
+            <void **>&ptr,
             <size_t>new_size,
             <cudaStream_t>stream,
             <const char*>file,
@@ -230,7 +232,7 @@ cdef uintptr_t c_realloc(
 
     check_error(rmm_error)
 
-    return <uintptr_t>ptr[0]
+    return <uintptr_t>ptr
 
 
 def rmm_realloc(new_size, stream):
@@ -254,9 +256,9 @@ cdef void c_free(void *ptr, cudaStream_t stream):
     Deallocates ptr, which was allocated using rmmAlloc by calling the librmm
     functions via Cython
     """
-    py_file, py_line = _get_caller()
-    cdef const char* file = py_file
-    cdef unsigned int line = py_line
+    cdef caller_pair tmp_caller_pair = _get_caller()
+    cdef const char* file = tmp_caller_pair.first
+    cdef unsigned int line = tmp_caller_pair.second
 
     # Call RMM to free
     with nogil:
@@ -285,12 +287,14 @@ def rmm_free(ptr, stream):
 
 
 cdef offset_t* c_getallocationoffset(
-    offset_t *offset, void *ptr, cudaStream_t stream
+    void *ptr, cudaStream_t stream
 ) except? <offset_t*>NULL:
     """
     Gets the offset of ptr from its base allocation by calling the librmm
     functions via Cython
     """
+    cdef offset_t * offset = <offset_t *>malloc(sizeof(offset_t))
+
     with nogil:
         rmm_error = rmmGetAllocationOffset(
             <offset_t *>offset,
@@ -308,15 +312,14 @@ def rmm_getallocationoffset(ptr, stream):
     Gets the offset of ptr from its base allocation by calling the librmm
     functions via Cython
     """
-    cdef offset_t * c_offset = NULL
-
     cdef void * c_ptr = <void *><uintptr_t>ptr
     cdef cudaStream_t c_stream = <cudaStream_t><size_t>stream
 
-    c_offset = c_getallocationoffset(
-        <offset_t *>c_offset,
+    cdef offset_t * c_offset = c_getallocationoffset(
         <void *>c_ptr,
         <cudaStream_t>c_stream
     )
 
-    return int(c_offset[0])
+    result = int(c_offset[0])
+    free(c_offset)
+    return result

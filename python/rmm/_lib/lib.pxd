@@ -17,10 +17,12 @@
 # cython: embedsignature = True
 # cython: language_level = 3
 
-from libcpp cimport bool
 from libc.stdint cimport uintptr_t
+from libcpp cimport bool
+from libcpp.utility cimport pair
 
 ctypedef long int offset_t
+ctypedef pair[const char*, unsigned int] caller_pair
 
 
 cdef extern from * nogil:
@@ -44,10 +46,11 @@ cdef void c_free(
 )
 
 cdef offset_t* c_getallocationoffset(
-    offset_t *offset,
     void *ptr,
     cudaStream_t stream
 ) except? <offset_t*>NULL
+
+cdef caller_pair _get_caller()
 
 
 cdef extern from "rmm/rmm.h" nogil:
