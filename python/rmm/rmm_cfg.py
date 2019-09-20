@@ -1,4 +1,4 @@
-# Copyright (c) 2018, NVIDIA CORPORATION.
+# Copyright (c) 2018-2019, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
 """Configuration module for librmm, the RAPIDS Memory Manager python interface.
 
    Usage example:
-    from librmm_cffi import librmm_config as rmm_cfg
-    rmm_cf.use_pool_allocator = True
+    from rmm import rmm_cfg
+    rmm_cfg.use_pool_allocator = True
     rmm_cfg.initial_pool_size = 2 ** 30 # one GB
     import cudf # When cuDF initializes RMM, these settings will be used
 """

@@ -23,20 +23,19 @@ requirements:
     - python
     - librmm {{ version }}
     - setuptools
-    - cffi
+    - cython >=0.29,<0.30
   run:
     - python
-    - {{ pin_compatible('librmm') }}
     - numba >=0.41
-    - setuptools
-    - cffi
+    - cython >=0.29,<0.30
 
 test:
   commands:
-    - python -c "from librmm_cffi import librmm as rmm"
+    - python -c "import rmm"
 
 about:
   home: http://rapids.ai/
   license: Apache-2.0
-  # license_file: LICENSE
+  license_family: Apache
+  license_file: LICENSE
   summary: rmm library
