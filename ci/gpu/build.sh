@@ -71,6 +71,6 @@ logger "Running googletests..."
 cd "${WORKSPACE}/build"
 GTEST_OUTPUT="xml:${WORKSPACE}/test-results/" make -j${PARALLEL_LEVEL} test
 
-logger "Python py.test for librmm_cffi..."
+logger "Python py.test for rmm..."
 cd $WORKSPACE/python
-py.test --cache-clear --junitxml=${WORKSPACE}/test-results/junit-librmm_cffi.xml -v
+py.test --cache-clear --junitxml=${WORKSPACE}/test-results/junit-rmm.xml -v --cov-config=.coveragerc --cov=rmm --cov-report=xml:${WORKSPACE}/python/rmm-coverage.xml --cov-report term
