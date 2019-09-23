@@ -59,12 +59,6 @@ namespace rmm {
  * // contents. Otherwise, simply updates the value of `size()` to the newly
  * // requested size without any allocations or copies
  * buff_default.resize(100);
- *
- * // Not allowed. Copy assignment is deleted
- * buff_default = buff_copy;
- *
- * // Not allowed. Move assignment is deleted
- * buff_default = std::move(buff_copy);
  *```
  *---------------------------------------------------------------------------**/
 
@@ -110,7 +104,6 @@ class device_buffer {
                 cudaStream_t stream = 0,
                 mr::device_memory_resource* mr = mr::get_default_resource())
       : _size{size}, _capacity{size}, _stream{stream}, _mr{mr} {
-
     if (nullptr == source_data and (0 != size)) {
       throw std::runtime_error{"Invalid size."};
     }
@@ -126,6 +119,8 @@ class device_buffer {
   /**---------------------------------------------------------------------------*
    * @brief Constructs a new `device_buffer` by deep copying the contents of
    * another `device_buffer`.
+   *
+   * Uses `other.stream()` and `other.memory_resource()` for allocation.
    *
    * @note Only copies `other.size()` bytes from `other`, i.e., if
    *`other.size()
@@ -145,6 +140,36 @@ class device_buffer {
     _data = _mr->allocate(_size, _stream);
     auto status =
         cudaMemcpyAsync(_data, other._data, _size, cudaMemcpyDefault, _stream);
+
+    if (cudaSuccess != status) {
+      throw std::runtime_error{"Device memory copy failed."};
+    }
+  }
+
+  /**---------------------------------------------------------------------------*
+   * @brief Construct a new `device_buffer` by deep copying the contents of
+   * another `device_buffer` using the specified stream and memory resource.
+   *
+   * @note Only copies `other.size()` bytes from `other`, i.e., if
+   *`other.size()
+   * != other.capacity()`, then the size and capacity of the newly constructed
+   *`device_buffer` will be equal to `other.size()`.
+
+   * @throws std::bad_alloc If creating the new allocation fails
+   * @throws std::runtime_error if copying from `other` fails
+   *
+   * @param other The `device_buffer` whose contents will be copied
+   * @param stream The stream to use for the allocation and copy
+   * @param mr The resource to use for allocating the new `device_buffer`
+   *---------------------------------------------------------------------------**/
+  device_buffer(
+      device_buffer const& other, cudaStream_t stream,
+      rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
+      : _size{other.size()}, _capacity{other.size()}, _stream{stream}, _mr{mr} {
+    _data = memory_resource()->allocate(size(), _stream);
+
+    auto status = cudaMemcpyAsync(data(), other.data(), size(),
+                                  cudaMemcpyDefault, _stream);
 
     if (cudaSuccess != status) {
       throw std::runtime_error{"Device memory copy failed."};
