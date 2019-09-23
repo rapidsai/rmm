@@ -111,13 +111,9 @@ class sub_memory_resource final : public device_memory_resource {
 
   struct block
   {
-    char* ptr;
-    size_t size;
-
-    // lexicographic total ordering based on size, then pointer
-    bool operator<(const block& rhs) const { 
-      return std::tie(size, ptr) < std::tie(rhs.size, rhs.ptr);
-    }
+    char* ptr;          ///< Raw memory pointer
+    size_t size;        ///< Size in bytes
+    bool is_head_block; ///< Indicates whether ptr was allocated from the heap
   };
 
   using block_set = std::list<block>;
@@ -128,7 +124,7 @@ class sub_memory_resource final : public device_memory_resource {
 
   inline block next_larger_block(block_set &blocks, size_t size)
   {
-    block dummy{nullptr, size};
+    block dummy{nullptr, size, false};
     // find best fit block
     auto iter = std::min_element(blocks.begin(), blocks.end(), [size](block lhs, block rhs) {
       if (lhs.size < rhs.size)
@@ -240,15 +236,21 @@ class sub_memory_resource final : public device_memory_resource {
 #endif
   }
 
+  inline bool is_head_block(block const& b) {
+    return b.is_head_block; //heap_blocks.count(b.ptr) > 0;
+  }
+
   // check if next / prev are in blocks and merge if so
-  inline void insert_and_merge_block(const block& b, block_set& blocks) {
+  inline void insert_and_merge_block(block const& b, block_set& blocks) {
     block_set::iterator prev{blocks.end()}, next{blocks.end()};
 
-    // TODO this is a linear search since the set is ordered by size
-    // would be nice to have a faster way
     for (auto iter = blocks.begin(); iter != blocks.end(); ++iter) {
-      if (iter->ptr + iter->size == b.ptr) prev = iter;
-      else if (b.ptr + b.size == iter->ptr) { next = iter;}
+      if (!is_head_block(b) && (iter->ptr + iter->size == b.ptr)) { 
+        prev = iter; 
+      }
+      else if (b.ptr + b.size == iter->ptr) { 
+        next = iter;
+      }
     }
 
     block merged = b; 
@@ -287,7 +289,7 @@ class sub_memory_resource final : public device_memory_resource {
     void* p = heap_resource->allocate(size, stream);
     if (p == nullptr)
       throw std::bad_alloc{};
-    block b{reinterpret_cast<char*>(p), size};
+    block b{reinterpret_cast<char*>(p), size, true};
     heap_blocks[b.ptr] = b;
     return b;
   }
