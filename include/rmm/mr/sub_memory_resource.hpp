@@ -23,7 +23,7 @@
 #include <iostream>
 #include <mutex>
 #include <list>
-#include <map>
+#include <unordered_map>
 #include <algorithm>
 
 namespace rmm {
@@ -380,13 +380,13 @@ class sub_memory_resource final : public device_memory_resource {
 
   // sync free lists: map of [stream_id, block_set] pairs
   // stream stream_id must be synced before allocating from this list
-  std::map<cudaStream_t, block_set> sync_blocks;
+  std::unordered_map<cudaStream_t, block_set> sync_blocks;
 
   // allocated_blocks: map of allocated [ptr, block] pairs
-  std::map<char*, block> allocated_blocks;
+  std::unordered_map<char*, block> allocated_blocks;
 
   // blocks allocated from heap: so they can be easily freed
-  std::map<char*, block> heap_blocks;
+  std::unordered_map<char*, block> heap_blocks;
 
   // stats
   size_t num_inserts{0};

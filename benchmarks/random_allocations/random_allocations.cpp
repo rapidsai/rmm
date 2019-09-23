@@ -88,6 +88,18 @@ static void BM_RandomAllocationsCUDA(benchmark::State& state) {
 }
 BENCHMARK(BM_RandomAllocationsCUDA)->Unit(benchmark::kMillisecond);
 
+static void BM_RandomAllocationsSub(benchmark::State& state) {
+  rmm::mr::sub_memory_resource mr;
+
+  try {
+    for (auto _ : state)
+      mixed_random_allocation_free(mr);
+  } catch (std::exception const& e) {
+    std::cout << "Error: " << e.what() << "\n";
+  }
+}
+BENCHMARK(BM_RandomAllocationsSub)->Unit(benchmark::kMillisecond);
+
 static void BM_RandomAllocationsCnmem(benchmark::State& state) {
   rmm::mr::cnmem_memory_resource mr;
 
@@ -98,20 +110,6 @@ static void BM_RandomAllocationsCnmem(benchmark::State& state) {
     std::cout << "Error: " << e.what() << "\n";
   }
 }
-BENCHMARK(BM_RandomAllocationsCnmem)->Unit(benchmark::kMillisecond);;
+BENCHMARK(BM_RandomAllocationsCnmem)->Unit(benchmark::kMillisecond);
 
-static void BM_RandomAllocationsSub(benchmark::State& state) {
-//int main(void) {
-  rmm::mr::sub_memory_resource mr;
 
-  try {
-    //for (int i = 0; i < 100; i++)//(auto _ : state)
-    for (auto _ : state)
-      mixed_random_allocation_free(mr);
-  } catch (std::exception const& e) {
-    std::cout << "Error: " << e.what() << "\n";
-  }
-
-//  return 0;
-}
-BENCHMARK(BM_RandomAllocationsSub)->Unit(benchmark::kMillisecond);;
