@@ -4,6 +4,7 @@
 
 ## Improvements
  - PR #123 Remove driver install from ci scripts
+ - PR #131 Use YYMMDD tag in nightly build
 
 ## Bug Fixes
 
