@@ -60,7 +60,7 @@ class device_scalar {
    *
    * @return T The value of the scalar after synchronizing its stream
    *---------------------------------------------------------------------------**/
-  T value() const noexcept {
+  T value() const {
     T host_value{};
     auto status = cudaStreamSynchronize(buff.stream());
     if (cudaSuccess != status) {
