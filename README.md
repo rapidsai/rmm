@@ -59,7 +59,7 @@ $ conda env create --name cudf_dev --file conda/environments/dev_py35.yml
 $ source activate cudf_dev
 ```
 
-- Build and install `librmm`. CMake depends on the `nvcc` executable being on your path or defined in `$CUDACXX`.
+- Build and install `librmm` using cmake & make. CMake depends on the `nvcc` executable being on your path or defined in `$CUDACXX`.
 ```bash
 
 $ mkdir build                                       # make a build directory
@@ -69,12 +69,23 @@ $ make -j                                           # compile the library librmm
 $ make install                                      # install the library librmm.so to '/install/path'
 ```
 
+- Building and installing `librmm` and `rmm` using build.sh. Build.sh creates build dir at root of git repository. build.sh depends on the `nvcc` executable being on your path or defined in `$CUDACXX`.
+```bash
+
+$ ./build.sh -h                                     # Display help and exit
+$ ./build.sh -n librmm                              # Build librmm without installing
+$ ./build.sh -n rmm                                 # Build rmm without installing
+$ ./build.sh -n librmm rmm                          # Build librmm and rmm without installing
+$ ./build.sh librmm rmm                             # Build and install librmm and rmm
+```
+
 - To run tests (Optional):
 ```bash
+$ cd build (if you are not already in build directory)
 $ make test
 ```
 
-- Build, install, and test cffi bindings:
+- Build, install, and test cffi bindings using make:
 ```bash
 $ make rmm_python_cffi                              # build CFFI bindings for librmm.so
 $ make rmm_install_python                           # build & install CFFI python bindings. Depends on cffi package from PyPi or Conda
