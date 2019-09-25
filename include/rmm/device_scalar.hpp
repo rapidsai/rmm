@@ -24,7 +24,7 @@ namespace rmm {
 
 /**---------------------------------------------------------------------------*
  * @brief Container for a single object of type `T` in device memory.
- * 
+ *
  * `T` must be trivially copyable.
  *
  * @tparam T The object's type
@@ -55,21 +55,20 @@ class device_scalar {
   }
 
   /**---------------------------------------------------------------------------*
-   * @brief Synchronizes the `device_scalar`'s stream and copies the value to
-   * the host.
+   * @brief Copies the value from device to host and returns the value.
    *
    * @return T The value of the scalar after synchronizing its stream
    *---------------------------------------------------------------------------**/
   T value() const {
     T host_value{};
-    auto status = cudaStreamSynchronize(buff.stream());
-    if (cudaSuccess != status) {
-      throw std::runtime_error{"Stream sync failed."};
-    }
     status = cudaMemcpyAsync(&host_value, buff.data(), sizeof(T),
                              cudaMemcpyDefault, buff.stream());
     if (cudaSuccess != status) {
       throw std::runtime_error{"Device memcpy failed."};
+    }
+    auto status = cudaStreamSynchronize(buff.stream());
+    if (cudaSuccess != status) {
+      throw std::runtime_error{"Stream sync failed."};
     }
     return host_value;
   }
