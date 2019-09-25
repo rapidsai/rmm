@@ -24,6 +24,7 @@
 #include "rmm/rmm.h"
 #include "rmm/detail/memory_manager.hpp"
 #include "rmm/mr/cnmem_memory_resource.hpp"
+#include "rmm/mr/cnmem_managed_memory_resource.hpp"
 #include "rmm/mr/managed_memory_resource.hpp"
 #include "rmm/mr/cuda_memory_resource.hpp"
 
@@ -69,8 +70,8 @@ rmmError_t rmmInitialize(rmmOptions_t *options)
     }else if(rmm::Manager::useManagedMemory()){
       memory_resource = rmm::mr::detail::managed_resource();
 
-    }else{
-        memory_resource =  rmm::mr::detail::initial_resource();
+    }else if(rmm::Manager::useManagedMemory() && rmm::Manager::usePoolAllocator()){
+        memory_resource =  rmm::mr::detail::managed_pool_resource(rmm::Manager::getOptions().initial_pool_size);
     }
     rmm::mr::set_default_resource(memory_resource);
 

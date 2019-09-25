@@ -17,7 +17,7 @@
 
 #include <rmm/detail/cnmem.h>
 #include "device_memory_resource.hpp"
-
+#include "cnmem_managed_memory_resource.hpp"
 #include <cuda_runtime_api.h>
 #include <cassert>
 #include <exception>
@@ -43,13 +43,10 @@ class cnmem_managed_memory_resource final : public cnmem_memory_resource {
    * zero, an implementation defined pool size is used.
    *---------------------------------------------------------------------------**/
   explicit cnmem_managed_memory_resource(std::size_t initial_pool_size = 0) :
-    cnmem_memory_resource(initial_pool_size,CNMEM_FLAGS_MANAGED) {
+    cnmem_memory_resource(initial_pool_size,pool_options::MANAGED) {
 
   }
 
-  ~cnmem_managed_memory_resource() {
-
-  }
 
 
 };

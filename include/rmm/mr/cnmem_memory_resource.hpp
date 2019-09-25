@@ -42,7 +42,31 @@ class cnmem_memory_resource : public device_memory_resource {
    * @param initial_pool_size Size, in bytes, of the intial pool size. When
    * zero, an implementation defined pool size is used.
    *---------------------------------------------------------------------------**/
-  explicit cnmem_memory_resource(std::size_t initial_pool_size = 0, unsigned flags = 0) {
+  explicit cnmem_memory_resource(std::size_t initial_pool_size = 0) : cnmem_memory_resource(initial_pool_size, pool_options::CUDA){
+
+  }
+
+  virtual ~cnmem_memory_resource() {
+    auto status = cnmemFinalize();
+#ifndef NDEBUG
+    if (status != CNMEM_STATUS_SUCCESS) {
+      std::cerr << "cnmemFinalize failed.\n";
+    }
+#endif
+  }
+
+  bool supports_streams() const noexcept override { return true; }
+ protected:
+   /**
+   * @brief Specifies Managed (UVM) allocations vs device memory
+   * for the memory pool
+   */
+  enum class pool_options : unsigned short {
+    MANAGED, ///< Uses managed memory for pool
+    CUDA ///< Uses CUDA device memory for pool
+  };
+
+  cnmem_memory_resource( std::size_t initial_pool_size, pool_options pool_type ){
     cnmemDevice_t dev;
     // TODO Update exception
     if (cudaSuccess != cudaGetDevice(&(dev.device))) {
@@ -56,25 +80,15 @@ class cnmem_memory_resource : public device_memory_resource {
     dev.streams = streams;
     dev.streamSizes = 0;
 
+    unsigned long flags = (pool_type == pool_options::MANAGED) ?
+      CNMEM_FLAGS_MANAGED : 0;
     // TODO Update exception
     auto status = cnmemInit(1, &dev, flags);
     if (CNMEM_STATUS_SUCCESS != status) {
       std::string msg = cnmemGetErrorString(status);
       throw std::runtime_error{"Failed to intialize cnmem: " + msg};
     }
-  }
-
-  ~cnmem_memory_resource() {
-    auto status = cnmemFinalize();
-#ifndef NDEBUG
-    if (status != CNMEM_STATUS_SUCCESS) {
-      std::cerr << "cnmemFinalize failed.\n";
-    }
-#endif
-  }
-
-  bool supports_streams() const noexcept override { return true; }
-
+}
  private:
   /**---------------------------------------------------------------------------*
    * @brief Allocates memory of size at least \p bytes using cnmem.
