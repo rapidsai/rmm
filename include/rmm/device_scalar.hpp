@@ -43,7 +43,7 @@ class device_scalar {
    * @param mr_ Optional, resource with which to allocate
    *---------------------------------------------------------------------------**/
   explicit device_scalar(
-      T initial_value, cudaStream_t stream_ = 0,
+      T const &initial_value, cudaStream_t stream_ = 0,
       rmm::mr::device_memory_resource *mr_ = rmm::mr::get_default_resource())
       : buff{sizeof(T), stream_, mr_} {
     auto status = cudaMemcpyAsync(buff.data(), &initial_value, sizeof(T),
