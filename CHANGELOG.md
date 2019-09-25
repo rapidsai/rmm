@@ -2,6 +2,8 @@
 
 ## New Features
 
+ - PR #99 Added `device_buffer` class
+
 ## Improvements
  - PR #123 Remove driver install from ci scripts
  - PR #131 Use YYMMDD tag in nightly build
@@ -20,7 +22,6 @@
  - PR #107 Fix local build generated file ownerships 
  - PR #133 Added `device_scalar` class
 
-
 ## Improvements
 
  - PR #111 Streamline CUDA_REL environment variable
@@ -28,7 +29,7 @@
 
 ## Bug Fixes
 
-   ...
+ - PR #107 Fix local build generated file ownerships
 
 
 # RMM 0.8.0 (27 June 2019)
