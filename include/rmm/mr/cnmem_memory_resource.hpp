@@ -31,7 +31,7 @@ namespace mr {
  * @brief Memory resource that allocates/deallocates using the cnmem pool sub-allocator
  * the cnmem pool sub-allocator for allocation/deallocation.
  *---------------------------------------------------------------------------**/
-class cnmem_memory_resource final : public device_memory_resource {
+class cnmem_memory_resource : public device_memory_resource {
  public:
   /**---------------------------------------------------------------------------*
    * @brief Construct a cnmem memory resource and allocate the initial device
@@ -42,7 +42,7 @@ class cnmem_memory_resource final : public device_memory_resource {
    * @param initial_pool_size Size, in bytes, of the intial pool size. When
    * zero, an implementation defined pool size is used.
    *---------------------------------------------------------------------------**/
-  explicit cnmem_memory_resource(std::size_t initial_pool_size = 0) {
+  explicit cnmem_memory_resource(std::size_t initial_pool_size = 0, unsigned flags = 0) {
     cnmemDevice_t dev;
     // TODO Update exception
     if (cudaSuccess != cudaGetDevice(&(dev.device))) {
@@ -55,7 +55,7 @@ class cnmem_memory_resource final : public device_memory_resource {
     streams[0] = 0;
     dev.streams = streams;
     dev.streamSizes = 0;
-    unsigned flags = 0;
+
     // TODO Update exception
     auto status = cnmemInit(1, &dev, flags);
     if (CNMEM_STATUS_SUCCESS != status) {
