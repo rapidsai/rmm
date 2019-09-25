@@ -90,6 +90,7 @@ $ make test
 $ make rmm_python_cffi                              # build CFFI bindings for librmm.so
 $ make rmm_install_python                           # build & install CFFI python bindings. Depends on cffi package from PyPi or Conda
 $ cd python && pytest -v                            # optional, run python tests on low-level python bindings
+```
 
 Done! You are ready to develop for the RMM OSS project.
 
