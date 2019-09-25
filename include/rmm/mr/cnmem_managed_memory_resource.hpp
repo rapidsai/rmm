@@ -17,7 +17,6 @@
 
 #include <rmm/detail/cnmem.h>
 #include "device_memory_resource.hpp"
-#include "cnmem_managed_memory_resource.hpp"
 #include <cuda_runtime_api.h>
 #include <cassert>
 #include <exception>
