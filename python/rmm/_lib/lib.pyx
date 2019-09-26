@@ -32,20 +32,9 @@ def _get_error_msg(errcode):
     """
     Get error message for the given error code.
     """
-    if errcode == RMM_ERROR_CUDA_ERROR:
-        # Need to move code from libcudf into librmm for this?
-        # See cpp/src/utilities/cuda_utils.cu
-        # cudaerr = self._api.gdf_cuda_last_error()
-        # errname = self._ffi_str(self._api.gdf_cuda_error_name(cudaerr))
-        # details = self._ffi_str(self._api.gdf_cuda_error_string(cudaerr))
-
-        errname = ""
-        details = ""
-        msg = "CUDA ERROR. {}: {}".format(errname, details)
-    else:
-        errname = rmmGetErrorString(<rmmError_t>errcode)
-        msg = errname
-    return errname, msg
+    msg = rmmGetErrorString(<rmmError_t>errcode)
+    cdef bytes py_msg = msg
+    return py_msg.decode("utf-8")
 
 
 def check_error(errcode):
@@ -56,8 +45,8 @@ def check_error(errcode):
     from rmm import RMMError
 
     if errcode != RMM_SUCCESS:
-        errname, msg = _get_error_msg(errcode)
-        raise RMMError(errname, msg)
+        msg = _get_error_msg(errcode)
+        raise RMMError(errcode, msg)
 
 
 cdef caller_pair _get_caller():
