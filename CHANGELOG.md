@@ -1,17 +1,36 @@
-# RMM 0.9.0 (Date TBD)
+# RMM 0.10.0 (Date TBD)
+
+## New Features
+
+ - PR #99 Added `device_buffer` class
+ - PR #133 Added `device_scalar` class
+
+## Improvements
+ - PR #123 Remove driver install from ci scripts
+ - PR #131 Use YYMMDD tag in nightly build
+
+## Bug Fixes
+
+ - PR #107 Fix local build generated file ownerships
+ - PR #110 Fix Skip Test Functionality
+ - PR #125 Fixed order of private variables in LogIt
+
+
+# RMM 0.9.0 (21 August 2019)
 
 ## New Features
 
  - PR #96 Added `device_memory_resource` for beginning of overhaul of RMM design
  - PR #103 Add and use unified build script
-
+ 
 ## Improvements
 
-    ...
+ - PR #111 Streamline CUDA_REL environment variable
+ - PR #113 Handle ucp.BufferRegion objects in auto_device
 
 ## Bug Fixes
 
-- PR #110 Fix Skip Test Functionality
+   ...
 
 
 # RMM 0.8.0 (27 June 2019)
@@ -22,7 +41,7 @@
 
 ## Improvements
 
-    ...
+   ...
 
 ## Bug Fixes
 
@@ -42,7 +61,7 @@
 
 - PR #76 Add cudatoolkit conda dependency
 - PR #84 Use latest release version in update-version CI script
-- PR #90 Avoid using c++14 auto return type for thrust_rmm_allocator.h 
+- PR #90 Avoid using c++14 auto return type for thrust_rmm_allocator.h
 
 ## Bug Fixes
 
