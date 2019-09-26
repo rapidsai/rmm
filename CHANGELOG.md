@@ -2,21 +2,27 @@
 
 ## New Features
 
+ - PR #99 Added `device_buffer` class
+ - PR #133 Added `device_scalar` class
+
 ## Improvements
  - PR #123 Remove driver install from ci scripts
+ - PR #131 Use YYMMDD tag in nightly build
 
 ## Bug Fixes
 
+ - PR #107 Fix local build generated file ownerships
+ - PR #110 Fix Skip Test Functionality
  - PR #125 Fixed order of private variables in LogIt
 
-# RMM 0.9.0 (Date TBD)
+
+# RMM 0.9.0 (21 August 2019)
 
 ## New Features
 
  - PR #96 Added `device_memory_resource` for beginning of overhaul of RMM design
  - PR #103 Add and use unified build script
- - PR #107 Fix local build generated file ownerships
-
+ 
 ## Improvements
 
  - PR #111 Streamline CUDA_REL environment variable
