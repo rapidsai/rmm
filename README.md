@@ -106,11 +106,15 @@ deallocation; however, the default (also known as null) stream (or `0`) can be
 used. For example:
 
 ```
+
+```
 // old
 cudaError_t result = cudaMalloc(&myvar, size_in_bytes) );
 // ...
 cudaError_t result = cudaFree(myvar) );
+```
 
+```
 // new
 rmmError_t result = RMM_ALLOC(&myvar, size_in_bytes, stream_id);
 // ...
