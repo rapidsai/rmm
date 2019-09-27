@@ -25,6 +25,7 @@
 #include <list>
 #include <unordered_map>
 #include <algorithm>
+#include <mutex>
 
 namespace rmm {
 namespace mr {
@@ -85,7 +86,7 @@ class sub_memory_resource final : public device_memory_resource {
 
     // Allocate initial block
     // TODO: non-default stream?
-    insert_block(block_from_heap(initial_pool_size, 0), no_sync_blocks);
+    no_sync_blocks.insert_and_merge(block_from_heap(initial_pool_size, 0));
 
     // TODO thread safety
 
@@ -116,37 +117,97 @@ class sub_memory_resource final : public device_memory_resource {
     bool is_head_block; ///< Indicates whether ptr was allocated from the heap
   };
 
-  using block_set = std::list<block>;
+  struct free_list {
+
+    inline block get_best_fit(size_t size) {
+      block dummy{nullptr, size, false};
+      // find best fit block
+      auto iter = std::min_element(blocks.begin(), blocks.end(), [size](block lhs, block rhs) {
+        if (lhs.size < rhs.size)
+          return (lhs.size >= size);
+        else
+          return (lhs.size >= size) && (rhs.size < size);
+      });
+
+      if (iter->size >= size)
+      {
+        block found = *iter;
+        remove_block(iter);
+        return found;
+      }
+      
+      return dummy;
+    }
+
+    inline void insert_and_merge(block const& b) {
+      block_list::iterator prev{blocks.end()}, next{blocks.end()};
+
+      for (auto iter = blocks.begin(); iter != blocks.end(); ++iter) {
+        if (!b.is_head_block && (iter->ptr + iter->size == b.ptr)) {
+          prev = iter; 
+        }
+        else if (b.ptr + b.size == iter->ptr) { 
+          next = iter;
+        }
+      }
+
+      block merged = b; 
+      if (prev != blocks.end()) {
+        merged = merge_blocks(*prev, merged);  
+        remove_block(prev);
+      }
+
+      if (next != blocks.end()) {
+        merged = merge_blocks(merged, *next);
+        remove_block(next);
+      }
+
+      insert_block(merged);
+    }
+
+    inline void merge(free_list&& other) {
+      for (auto iter = other.blocks.begin(); iter != other.blocks.end(); ++iter) {
+        insert_and_merge(*iter);
+      }
+      other.blocks.clear();
+    }
+
+  private:
+    using block_list = std::list<block>;
+
+    inline void insert_block(block const& b) {
+      blocks.push_back(b);
+#ifndef NDEBUG
+      num_inserts++;
+      std::cout << "Inserted " << b.size << " set size: "
+                << blocks.size() << "\n";
+#endif
+    }
+
+    inline void remove_block(block_list::iterator const& b) {
+      blocks.erase(b);
+#ifndef NDEBUG
+      num_erases++;
+#endif
+    }
+
+    block_list blocks;
+    //std::mutex blocks_mutex;
+
+    // stats
+    size_t num_inserts{0};
+    size_t num_erases{0};
+  };
+
 
 #ifndef NDEBUG
   friend std::ostream& operator<<(std::ostream& os, const block& b);
 #endif
 
-  inline block next_larger_block(block_set &blocks, size_t size)
-  {
-    block dummy{nullptr, size, false};
-    // find best fit block
-    auto iter = std::min_element(blocks.begin(), blocks.end(), [size](block lhs, block rhs) {
-      if (lhs.size < rhs.size)
-        return (lhs.size >= size);
-      else
-        return (lhs.size >= size) && (rhs.size < size);
-    });
-
-    if (iter->size >= size)
-    {
-      block found = *iter;
-      remove_block(iter, blocks);
-      return found;
-    }
-    
-    return dummy;
-  }
-
   inline block block_from_sync_list(size_t size, cudaStream_t stream)
   {
-    block_set blocks = sync_blocks.at(stream);
-    block b = next_larger_block(blocks, size);
+    free_list& blocks = sync_blocks.at(stream);
+    block b = blocks.get_best_fit(size);
     if (b.ptr != nullptr) { // found one
       cudaError_t result = cudaStreamSynchronize(stream);
             
@@ -155,10 +216,7 @@ class sub_memory_resource final : public device_memory_resource {
         throw std::runtime_error{"cudaStreamSynchronize failure"};
       
       // insert all other blocks into the no_sync list
-      for (auto iter = blocks.begin(); iter != blocks.end(); ++iter) {
-        insert_and_merge_block(*iter, no_sync_blocks);
-      }
-      blocks.clear();
+      no_sync_blocks.merge(std::move(blocks));
       
       // remove this stream from the freelist
       sync_blocks.erase(stream);
@@ -169,7 +227,7 @@ class sub_memory_resource final : public device_memory_resource {
   inline block available_larger_block(size_t size, cudaStream_t stream)
   {
     // Try to find a larger block that doesn't require syncing
-    block b = next_larger_block(no_sync_blocks, size);
+    block b = no_sync_blocks.get_best_fit(size);
 
     // nothing in no-sync free list, look for one on a stream
     if (b.ptr == nullptr) {
@@ -196,14 +254,14 @@ class sub_memory_resource final : public device_memory_resource {
     if (b.size > size)
     {
       block rest{b.ptr + size, b.size - size};
-      insert_block(rest, no_sync_blocks);
+      no_sync_blocks.insert_and_merge(rest);
       b.size = size;
     }
 
     return b;
   }
 
-  inline block merge_blocks(const block& a, const block& b)
+  static inline block merge_blocks(const block& a, const block& b)
   {
     if (a.ptr + a.size != b.ptr)
       throw std::logic_error("Invalid block merge");
@@ -220,51 +278,8 @@ class sub_memory_resource final : public device_memory_resource {
     return reinterpret_cast<void*>(split.ptr);
   }
 
-  inline void insert_block(block const& b, block_set& blocks) {
-    blocks.push_back(b);
-#ifndef NDEBUG
-    num_inserts++;
-    std::cout << "Inserted " << b.size << " set size: "
-              << blocks.size() << "\n";
-#endif
-  }
-
-  inline void remove_block(block_set::iterator const& b, block_set& blocks) {
-    blocks.erase(b);
-#ifndef NDEBUG
-    num_erases++;
-#endif
-  }
-
   inline bool is_head_block(block const& b) {
     return b.is_head_block; //heap_blocks.count(b.ptr) > 0;
-  }
-
-  // check if next / prev are in blocks and merge if so
-  inline void insert_and_merge_block(block const& b, block_set& blocks) {
-    block_set::iterator prev{blocks.end()}, next{blocks.end()};
-
-    for (auto iter = blocks.begin(); iter != blocks.end(); ++iter) {
-      if (!is_head_block(b) && (iter->ptr + iter->size == b.ptr)) { 
-        prev = iter; 
-      }
-      else if (b.ptr + b.size == iter->ptr) { 
-        next = iter;
-      }
-    }
-
-    block merged = b; 
-    if (prev != blocks.end()) {
-      merged = merge_blocks(*prev, merged);  
-      remove_block(prev, blocks);
-    }
-
-    if (next != blocks.end()) {
-      merged = merge_blocks(merged, *next);
-      remove_block(next, blocks);
-    }
-
-    insert_block(merged, blocks);
   }
 
   inline void find_and_free_block(void *p, size_t size, cudaStream_t stream)
@@ -277,7 +292,7 @@ class sub_memory_resource final : public device_memory_resource {
       b = i->second;
       assert(b.size == detail::round_up_safe(size, allocation_alignment));
       allocated_blocks.erase(i);
-      insert_and_merge_block(b, sync_blocks[stream]);
+      sync_blocks[stream].insert_and_merge(b);
     }
     else {
       throw std::runtime_error("Pointer not allocated by this resource.");
@@ -372,27 +387,22 @@ class sub_memory_resource final : public device_memory_resource {
   }
 
   size_t maximum_pool_size{default_maximum_size};
-  std::mutex streams_mutex{};
 
   device_memory_resource *heap_resource;
 
   // no-sync free list: list of unencumbered blocks
   // no need to sync a stream to allocate from this list
-  block_set no_sync_blocks;
+  free_list no_sync_blocks;
 
-  // sync free lists: map of [stream_id, block_set] pairs
+  // sync free lists: map of [stream_id, free_list] pairs
   // stream stream_id must be synced before allocating from this list
-  std::unordered_map<cudaStream_t, block_set> sync_blocks;
+  std::unordered_map<cudaStream_t, free_list> sync_blocks;
 
   // allocated_blocks: map of allocated [ptr, block] pairs
   std::unordered_map<char*, block> allocated_blocks;
 
   // blocks allocated from heap: so they can be easily freed
   std::unordered_map<char*, block> heap_blocks;
-
-  // stats
-  size_t num_inserts{0};
-  size_t num_erases{0};
 };
 
 #ifndef NDEBUG
