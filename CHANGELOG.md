@@ -8,6 +8,7 @@
 ## Improvements
  - PR #123 Remove driver install from ci scripts
  - PR #131 Use YYMMDD tag in nightly build
+ - PR #132 Move CFFI to Cython
 
 ## Bug Fixes
 
