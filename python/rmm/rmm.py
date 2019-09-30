@@ -18,7 +18,7 @@ import numpy as np
 from numba import cuda
 
 import rmm._lib as librmm
-from rmm import rmm_cfg
+from rmm import rmm_config
 
 
 # Utility Functions
@@ -44,13 +44,13 @@ def initialize():
     module
     """
     allocation_mode = 0
-    if rmm_cfg.use_pool_allocator:
+    if rmm_config.use_pool_allocator:
         allocation_mode = 1
-    if rmm_cfg.use_managed_memory:
+    if rmm_config.use_managed_memory:
         allocation_mode = 2
 
     return librmm.initialize_rmm(
-        allocation_mode, rmm_cfg.initial_pool_size, rmm_cfg.enable_logging
+        allocation_mode, rmm_config.initial_pool_size, rmm_config.enable_logging
     )
 
 

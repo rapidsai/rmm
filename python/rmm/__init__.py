@@ -14,7 +14,7 @@
 
 import atexit
 
-from rmm import rmm_cfg
+from rmm import rmm_config
 from rmm.rmm import (
     RMMError,
     auto_device,

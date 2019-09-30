@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 import rmm
-from rmm import rmm_cfg
+from rmm import rmm_config
 
 
 def array_tester(dtype, nelem):
@@ -36,8 +36,8 @@ def test_rmm_alloc(dtype, nelem):
 )
 def test_rmm_modes(managed, pool):
     rmm.finalize()
-    rmm_cfg.use_managed_memory = managed
-    rmm_cfg.use_pool_allocator = pool
+    rmm_config.use_managed_memory = managed
+    rmm_config.use_pool_allocator = pool
     rmm.initialize()
 
     assert rmm.is_initialized()

@@ -54,11 +54,11 @@ cdef caller_pair _get_caller():
     Finds the file and line number of the caller (first caller outside this
     file)
     """
-    from rmm import rmm_cfg
+    from rmm import rmm_config
     import inspect
 
     # Go up stack to find first caller outside this file (more useful)
-    if rmm_cfg.enable_logging:
+    if rmm_config.enable_logging:
         frame = inspect.currentframe().f_back
         while frame:
             filename = inspect.getfile(frame)

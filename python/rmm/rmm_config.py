@@ -15,9 +15,9 @@
 """Configuration module for librmm, the RAPIDS Memory Manager python interface.
 
    Usage example:
-    from rmm import rmm_cfg
-    rmm_cfg.use_pool_allocator = True
-    rmm_cfg.initial_pool_size = 2 ** 30 # one GB
+    from rmm import rmm_config
+    rmm_config.use_pool_allocator = True
+    rmm_config.initial_pool_size = 2 ** 30 # one GB
     import cudf # When cuDF initializes RMM, these settings will be used
 """
 
