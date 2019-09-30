@@ -83,7 +83,7 @@ cdef caller_pair _get_caller():
 
 
 # API Functions
-def initialize_rmm(allocation_mode, initial_pool_size, enable_logging):
+def rmm_initialize(allocation_mode, initial_pool_size, enable_logging):
     """
     Initializes the RMM library by calling the librmm functions via Cython
     """
@@ -103,7 +103,7 @@ def initialize_rmm(allocation_mode, initial_pool_size, enable_logging):
     return 0
 
 
-def finalize_rmm():
+def rmm_finalize():
     """
     Finalizes the RMM library by calling the librmm functions via Cython
     """
@@ -119,7 +119,7 @@ def finalize_rmm():
     return 0
 
 
-def is_initialized_rmm():
+def rmm_is_initialized():
     """
     Returns True if RMM has been initialized, false otherwise by calling the
     librmm functions via Cython
@@ -134,7 +134,7 @@ def is_initialized_rmm():
     return result
 
 
-def csv_log_rmm():
+def rmm_csv_log():
     """
     Returns a CSV log of all events logged by RMM, if logging is enabled by
     calling the librmm functions via Cython

@@ -52,6 +52,7 @@ def test_uninitialized():
     assert not rmm.is_initialized()
     rmm.initialize()  # so further tests will pass
 
+
 @pytest.mark.parametrize("dtype", _dtypes)
 @pytest.mark.parametrize("nelem", _nelems)
 def test_rmm_csv_log(dtype,  nelem):

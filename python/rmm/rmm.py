@@ -49,7 +49,7 @@ def initialize():
     if rmm_config.use_managed_memory:
         allocation_mode = 2
 
-    return librmm.initialize_rmm(
+    return librmm.rmm_initialize(
         allocation_mode, rmm_config.initial_pool_size, rmm_config.enable_logging
     )
 
@@ -58,21 +58,21 @@ def finalize():
     """
     Finalizes the RMM library, freeing all allocated memory
     """
-    return librmm.finalize_rmm()
+    return librmm.rmm_finalize()
 
 
 def is_initialized():
     """
     Returns true if RMM has been initialized, false otherwise
     """
-    return librmm.is_initialized_rmm()
+    return librmm.rmm_is_initialized()
 
 
 def csv_log():
     """
     Returns a CSV log of all events logged by RMM, if logging is enabled
     """
-    return librmm.csv_log_rmm()
+    return librmm.rmm_csv_log()
 
 
 def device_array_from_ptr(ptr, nelem, dtype=np.float, finalizer=None):
