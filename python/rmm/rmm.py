@@ -175,8 +175,6 @@ def auto_device(obj, stream=0, copy=True):
         return out_dev_array, False
     else:
         if isinstance(obj, np.void):
-            # raise NotImplementedError("DeviceRecord type not supported "
-            #                            "by RMM")
             devobj = cuda.devicearray.from_record_like(obj, stream=stream)
         else:
             if not isinstance(obj, np.ndarray):
