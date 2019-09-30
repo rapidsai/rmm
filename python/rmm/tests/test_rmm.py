@@ -21,7 +21,15 @@ def array_tester(dtype, nelem):
     np.testing.assert_array_equal(h_result, h_in)
 
 
-_dtypes = [np.int8, np.int16, np.int32, np.int64, np.float32, np.float64, np.bool_]
+_dtypes = [
+    np.int8,
+    np.int16,
+    np.int32,
+    np.int64,
+    np.float32,
+    np.float64,
+    np.bool_,
+]
 _nelems = [1, 2, 7, 8, 9, 32, 128]
 
 
@@ -55,7 +63,7 @@ def test_uninitialized():
 
 @pytest.mark.parametrize("dtype", _dtypes)
 @pytest.mark.parametrize("nelem", _nelems)
-def test_rmm_csv_log(dtype,  nelem):
+def test_rmm_csv_log(dtype, nelem):
     # data
     h_in = np.full(nelem, 3.2, dtype)
 

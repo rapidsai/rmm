@@ -50,7 +50,9 @@ def initialize():
         allocation_mode = 2
 
     return librmm.rmm_initialize(
-        allocation_mode, rmm_config.initial_pool_size, rmm_config.enable_logging
+        allocation_mode,
+        rmm_config.initial_pool_size,
+        rmm_config.enable_logging,
     )
 
 
