@@ -21,7 +21,7 @@ def array_tester(dtype, nelem):
     np.testing.assert_array_equal(h_result, h_in)
 
 
-_dtypes = [np.int32]
+_dtypes = [np.int8, np.int16, np.int32, np.int64, np.float32, np.float64, np.bool_]
 _nelems = [1, 2, 7, 8, 9, 32, 128]
 
 
@@ -31,10 +31,12 @@ def test_rmm_alloc(dtype, nelem):
 
 
 # Test all combinations of default/managed and pooled/non-pooled allocation
+@pytest.mark.parametrize("dtype", _dtypes)
+@pytest.mark.parametrize("nelem", _nelems)
 @pytest.mark.parametrize(
     "managed, pool", list(product([False, True], [False, True]))
 )
-def test_rmm_modes(managed, pool):
+def test_rmm_modes(dtype, nelem, managed, pool):
     rmm.finalize()
     rmm_config.use_managed_memory = managed
     rmm_config.use_pool_allocator = pool
@@ -42,7 +44,7 @@ def test_rmm_modes(managed, pool):
 
     assert rmm.is_initialized()
 
-    array_tester(np.int32, 128)
+    array_tester(dtype, nelem)
 
 
 def test_uninitialized():
@@ -50,11 +52,9 @@ def test_uninitialized():
     assert not rmm.is_initialized()
     rmm.initialize()  # so further tests will pass
 
-
-def test_rmm_csv_log():
-    dtype = np.int32
-    nelem = 1024
-
+@pytest.mark.parametrize("dtype", _dtypes)
+@pytest.mark.parametrize("nelem", _nelems)
+def test_rmm_csv_log(dtype,  nelem):
     # data
     h_in = np.full(nelem, 3.2, dtype)
 
