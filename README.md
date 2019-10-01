@@ -15,11 +15,40 @@ RMM is not:
 
 **NOTE:** For the latest stable [README.md](https://github.com/rapidsai/rmm/blob/master/README.md) ensure you are on the `master` branch.
 
-## Install RMM
+## Installation
 
-RMM currently must be built from source. This happens automatically in a
-submodule when you build or install [cuDF](https://github.com/rapidsai/cudf) or
-[RAPIDS](https://rapids.ai) containers.
+### Conda
+
+### Conda
+
+RMM can be installed with conda ([miniconda](https://conda.io/miniconda.html), or the full [Anaconda distribution](https://www.anaconda.com/download)) from the `rapidsai` channel:
+
+For `rmm version == 0.8` :
+```bash
+# for CUDA 9.2
+conda install -c nvidia -c rapidsai -c numba -c conda-forge -c defaults \
+    rmm=0.8 python=3.6 cudatoolkit=9.2
+
+# or, for CUDA 10.0
+conda install -c nvidia -c rapidsai -c numba -c conda-forge -c defaults \
+    rmm=0.8 python=3.6 cudatoolkit=10.0
+```
+
+For `rmm version == 0.7` :
+```bash
+# for CUDA 9.2
+conda install -c nvidia -c rapidsai -c numba -c conda-forge -c defaults \
+    rmm=0.7 python=3.6 cudatoolkit=9.2
+
+# or, for CUDA 10.0
+conda install -c nvidia -c rapidsai -c numba -c conda-forge -c defaults \
+    rmm=0.7 python=3.6 cudatoolkit=10.0
+```
+We also provide [nightly conda packages](https://anaconda.org/rapidsai-nightly) built from the tip of our latest development branch.
+
+Note: RMM is supported only on Linux, and with Python versions 3.6 or 3.7.
+
+See the [Get RAPIDS version picker](https://rapids.ai/start.html) for more OS and version info.
 
 ## Building from Source
 
