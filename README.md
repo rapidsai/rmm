@@ -19,8 +19,6 @@ RMM is not:
 
 ### Conda
 
-### Conda
-
 RMM can be installed with conda ([miniconda](https://conda.io/miniconda.html), or the full [Anaconda distribution](https://www.anaconda.com/download)) from the `rapidsai` channel:
 
 For `rmm version == 0.8` :
