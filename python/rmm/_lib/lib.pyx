@@ -197,7 +197,6 @@ def rmm_alloc(size, stream):
     return int(c_addr)
 
 
-
 cdef void c_free(void *ptr, cudaStream_t stream):
     """
     Deallocates ptr, which was allocated using rmmAlloc by calling the librmm
