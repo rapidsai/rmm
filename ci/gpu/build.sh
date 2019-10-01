@@ -71,6 +71,5 @@ else
 
     logger "Python py.test for librmm_cffi..."
     cd $WORKSPACE/python
-    py.test --cache-clear --junitxml=${WORKSPACE}/test-results/junit-librmm_cffi.xml -v
+    py.test --cache-clear --junitxml=${WORKSPACE}/test-results/junit-rmm.xml -v --cov-config=.coveragerc --cov=rmm --cov-report=xml:${WORKSPACE}/python/rmm-coverage.xml --cov-report term
 fi
-
