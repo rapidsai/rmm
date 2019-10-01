@@ -16,7 +16,7 @@
  - PR #107 Fix local build generated file ownerships
  - PR #110 Fix Skip Test Functionality
  - PR #125 Fixed order of private variables in LogIt
- - PR #XXX Expose `_make_finalizer` python API needed by cuDF
+ - PR #139 Expose `_make_finalizer` python API needed by cuDF
 
 
 # RMM 0.9.0 (21 August 2019)
