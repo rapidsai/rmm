@@ -15,7 +15,7 @@
  */
 
 /**
- * @brief Device Memory Manager implementation.
+ * @brief RAPIDS Memory Manager implementation.
  *
  * Efficient allocation, deallocation and tracking of GPU memory.
  *
@@ -24,6 +24,7 @@
 #include "rmm/rmm.h"
 #include "rmm/detail/memory_manager.hpp"
 #include "rmm/mr/cnmem_memory_resource.hpp"
+#include "rmm/mr/cnmem_managed_memory_resource.hpp"
 #include "rmm/mr/managed_memory_resource.hpp"
 #include "rmm/mr/cuda_memory_resource.hpp"
 
@@ -69,8 +70,8 @@ rmmError_t rmmInitialize(rmmOptions_t *options)
     }else if(rmm::Manager::useManagedMemory()){
       memory_resource = rmm::mr::detail::managed_resource();
 
-    }else{
-        memory_resource =  rmm::mr::detail::initial_resource();
+    }else if(rmm::Manager::useManagedMemory() && rmm::Manager::usePoolAllocator()){
+        memory_resource =  rmm::mr::detail::managed_pool_resource(rmm::Manager::getOptions().initial_pool_size);
     }
     rmm::mr::set_default_resource(memory_resource);
 
@@ -100,10 +101,10 @@ rmmError_t rmmAlloc(void **ptr, size_t size, cudaStream_t stream, const char* fi
 }
 
 // Reallocate device memory block to new size and recycle any remaining memory.
-rmmError_t rmmRealloc(void **ptr, size_t new_size, cudaStream_t stream, const char* file, unsigned int line)
-{
-  return rmm::realloc(ptr, new_size, stream, file, line);
-}
+//rmmError_t rmmRealloc(void **ptr, size_t new_size, cudaStream_t stream, const char* file, unsigned int line)
+//{
+//  return rmm::realloc(ptr, new_size, stream, file, line);
+//}
 
 // Release device memory and recycle the associated memory.
 rmmError_t rmmFree(void *ptr, cudaStream_t stream, const char* file, unsigned int line)

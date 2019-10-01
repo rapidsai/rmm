@@ -155,7 +155,7 @@ inline rmmError_t alloc(T** ptr, size_t size, cudaStream_t stream, const char* f
  *                    requested size, or RMM_ERROR_CUDA_ERROR on any other CUDA
  *                    error.
  * --------------------------------------------------------------------------**/
-template <typename T>
+/*template <typename T>
 inline rmmError_t realloc(T** ptr, size_t new_size, cudaStream_t stream,
                    const char* file, unsigned int line) {
   rmm::LogIt log(rmm::Logger::Realloc, ptr, new_size, stream, file, line);
@@ -180,7 +180,7 @@ inline rmmError_t realloc(T** ptr, size_t new_size, cudaStream_t stream,
   log.setPointer(*ptr);
   return RMM_SUCCESS;
 }
-
+*/
 /** ---------------------------------------------------------------------------*
  * @brief Release device memory and recycle the associated memory.
  *
@@ -199,11 +199,9 @@ inline rmmError_t realloc(T** ptr, size_t new_size, cudaStream_t stream,
 inline rmmError_t free(void* ptr, cudaStream_t stream, const char* file,
                    unsigned int line) {
   rmm::LogIt log(rmm::Logger::Free, ptr, 0, stream, file, line);
-  if(ptr != nullptr){
+
     rmm::mr::get_default_resource()->
         deallocate(ptr,0,stream);
-
-  }
 
   return RMM_SUCCESS;
 }
