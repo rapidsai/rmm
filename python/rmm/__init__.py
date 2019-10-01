@@ -17,6 +17,7 @@ import atexit
 from rmm import rmm_config
 from rmm.rmm import (
     RMMError,
+    _make_finalizer,
     auto_device,
     csv_log,
     device_array,
