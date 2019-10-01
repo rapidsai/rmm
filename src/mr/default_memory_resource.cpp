@@ -15,6 +15,7 @@
  */
 #include <rmm/mr/cuda_memory_resource.hpp>
 #include <rmm/mr/cnmem_memory_resource.hpp>
+#include <rmm/mr/cnmem_managed_memory_resource.hpp>
 #include <rmm/mr/managed_memory_resource.hpp>
 #include <rmm/mr/default_memory_resource.hpp>
 #include <rmm/mr/device_memory_resource.hpp>
@@ -39,6 +40,10 @@ device_memory_resource* pool_resource(std::size_t pool_size){
    return &mr;
 }
 
+device_memory_resource* managed_pool_resource(std::size_t pool_size){
+   static cnmem_managed_memory_resource mr{pool_size};
+   return &mr;
+}
 
 device_memory_resource* managed_resource(){
    static managed_memory_resource mr{};

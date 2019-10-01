@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#pragma once
+
 #include "device_memory_resource.hpp"
 namespace rmm {
 namespace mr {
@@ -89,6 +92,20 @@ device_memory_resource* cuda_resource();
  * cnmem_memory_resource
  *---------------------------------------------------------------------------**/
 device_memory_resource* pool_resource(std::size_t pool_size = 0);
+
+/**---------------------------------------------------------------------------*
+ * @brief gets a cnmem_managed_memory_resource
+ *
+ * A static function which will return a singleton cnmem_memory_resource which
+ * manages a pool of UVM memory
+ *
+ *
+ * @param pool_size The initial size of the pool
+ * @return device_memory_resource* a pointer to the static
+ * cnmem_managed_memory_resource
+ *---------------------------------------------------------------------------**/
+device_memory_resource* managed_pool_resource(std::size_t pool_size = 0);
+
 
 /**---------------------------------------------------------------------------*
  * @brief gets a managed_memory_resource
