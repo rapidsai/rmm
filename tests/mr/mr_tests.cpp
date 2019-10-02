@@ -85,7 +85,8 @@ struct MRTest : public ::testing::Test {
 
 using resources = ::testing::Types<rmm::mr::cuda_memory_resource,
                                    rmm::mr::managed_memory_resource,
-                                   rmm::mr::cnmem_memory_resource>;
+                                   rmm::mr::cnmem_memory_resource
+                                   rmm::mr::pinned_memory_resource>;
 
 TYPED_TEST_CASE(MRTest, resources);
 
