@@ -3,7 +3,6 @@
 ## New Features
 
  - PR #99 Added `device_buffer` class
- - PR #127 Use Memory Resource classes for allocations
  - PR #133 Added `device_scalar` class
 
 ## Improvements
@@ -11,6 +10,7 @@
  - PR #123 Remove driver install from ci scripts
  - PR #131 Use YYMMDD tag in nightly build
  - PR #137 Replace CFFI python bindings with Cython
+ - PR #127 Use Memory Resource classes for allocations
 
 ## Bug Fixes
 
@@ -26,8 +26,6 @@
 
  - PR #96 Added `device_memory_resource` for beginning of overhaul of RMM design
  - PR #103 Add and use unified build script
- - PR #127 Use Memory Resource classes for allocations
-
 
 ## Improvements
 

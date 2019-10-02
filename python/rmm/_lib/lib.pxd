@@ -92,14 +92,6 @@ cdef extern from "rmm/rmm.h" nogil:
         unsigned int line
     ) except +
 
-    cdef rmmError_t rmmRealloc(
-        void **ptr,
-        size_t new_size,
-        cudaStream_t stream,
-        const char* file,
-        unsigned int line
-    ) except +
-
     cdef rmmError_t rmmFree(
         void *ptr,
         cudaStream_t stream,
@@ -141,13 +133,6 @@ cdef extern from "rmm/rmm.hpp" namespace "rmm" nogil:
         unsigned int line
     ) except +
 
-    cdef rmmError_t realloc[T](
-        T** ptr,
-        size_t new_size,
-        cudaStream_t stream,
-        const char* file,
-        unsigned int line
-    ) except +
 
     cdef rmmError_t free(
         void* ptr,
