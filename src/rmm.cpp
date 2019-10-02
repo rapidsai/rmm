@@ -61,7 +61,7 @@ rmmError_t rmmInitialize(rmmOptions_t *options)
 {
 
     rmm::Manager::getInstance().initialize(options);
-    rmm::mr::device_memory_resource * memory_resource = rmm::mr::detail::cuda_resource();
+    rmm::mr::device_memory_resource * memory_resource = rmm::mr::detail::initial_resource();
 
     if (rmm::Manager::usePoolAllocator())
     {
