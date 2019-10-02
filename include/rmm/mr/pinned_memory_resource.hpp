@@ -28,13 +28,13 @@ namespace mr {
  * @brief `device_memory_resource` derived class that uses cudaMalloc/Free for
  * allocation/deallocation.
  *---------------------------------------------------------------------------**/
-class cuda_memory_resource final : public device_memory_resource {
+class pinned_memory_resource final : public device_memory_resource {
  public:
   bool supports_streams() const noexcept override { return false; }
 
  private:
   /**---------------------------------------------------------------------------*
-   * @brief Allocates memory of size at least \p bytes using cudaMalloc.
+   * @brief Allocates memory of size at least \p bytes using cudaHostAlloc.
    *
    * The returned pointer has at least 256B alignment.
    *
