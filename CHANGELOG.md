@@ -17,6 +17,7 @@
  - PR #110 Fix Skip Test Functionality
  - PR #125 Fixed order of private variables in LogIt
  - PR #139 Expose `_make_finalizer` python API needed by cuDF
+ - PR #142 Fix ignored exceptions in Cython
 
 
 # RMM 0.9.0 (21 August 2019)
