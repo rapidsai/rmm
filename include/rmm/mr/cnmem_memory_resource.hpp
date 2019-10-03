@@ -42,7 +42,8 @@ class cnmem_memory_resource : public device_memory_resource {
    * @param initial_pool_size Size, in bytes, of the intial pool size. When
    * zero, an implementation defined pool size is used.
    *---------------------------------------------------------------------------**/
-  explicit cnmem_memory_resource(std::size_t initial_pool_size = 0) : cnmem_memory_resource(initial_pool_size, pool_options::CUDA){
+  explicit cnmem_memory_resource(std::size_t initial_pool_size = 0) : 
+    cnmem_memory_resource(initial_pool_size, pool_options::CUDA){}
 
   }
 
