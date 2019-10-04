@@ -99,7 +99,6 @@ device_memory_resource* pool_resource(std::size_t pool_size = 0);
  * A static function which will return a singleton cnmem_memory_resource which
  * manages a pool of UVM memory
  *
- *
  * @param pool_size The initial size of the pool
  * @return device_memory_resource* a pointer to the static
  * cnmem_managed_memory_resource
