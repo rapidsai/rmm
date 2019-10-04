@@ -109,7 +109,7 @@ device_memory_resource* managed_pool_resource(std::size_t pool_size = 0);
 /**---------------------------------------------------------------------------*
  * @brief gets a managed_memory_resource
  *
- * A static function which will return a singleton managed_memory_resource
+ * A static function that returns a singleton managed_memory_resource.
  *
  *
  *
