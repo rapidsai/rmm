@@ -44,7 +44,6 @@ class cnmem_managed_memory_resource final : public cnmem_memory_resource {
    *---------------------------------------------------------------------------**/
   explicit cnmem_managed_memory_resource(std::size_t initial_pool_size = 0) :
     cnmem_memory_resource(initial_pool_size,pool_options::MANAGED) {
-
   }
 
 
