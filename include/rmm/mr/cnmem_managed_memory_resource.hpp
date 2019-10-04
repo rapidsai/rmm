@@ -27,7 +27,8 @@
 namespace rmm {
 namespace mr {
 /**---------------------------------------------------------------------------*
- * @brief Memory resource that allocates/deallocates using the cnmem pool sub-allocator
+ * @brief Memory resource that allocates/deallocates managed device memory
+    (CUDA Unified Memory) using the cnmem pool sub-allocator.
  * the cnmem pool sub-allocator for allocation/deallocation.
  *---------------------------------------------------------------------------**/
 class cnmem_managed_memory_resource final : public cnmem_memory_resource {
