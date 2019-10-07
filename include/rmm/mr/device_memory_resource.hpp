@@ -16,6 +16,7 @@
 #pragma once
 
 #include <cstddef>
+#include <utility>
 
 // forward decl
 using cudaStream_t = struct CUstream_st*;
@@ -29,7 +30,7 @@ namespace mr {
  * implementations must satisfy.
  *
  * There are two private, pure virtual functions that all derived classes must implement: `do_allocate` and
- * `do_deallocate`. Optionally, derived classes may also override `is_equal`. By default, 
+ * `do_deallocate`. Optionally, derived classes may also override `is_equal`. By default,
  * `is_equal` simply performs an identity comparison.
  *
  * The public, non-virtual functions `allocate`, `deallocate`, and `is_equal`
@@ -107,6 +108,17 @@ class device_memory_resource {
    *---------------------------------------------------------------------------**/
   virtual bool supports_streams() const noexcept = 0;
 
+  /**---------------------------------------------------------------------------*
+   * @brief Queries the amount of free and total memory for the resource.
+   *
+   * @param stream the stream whose memory manager we want to retrieve
+   *
+   * @returns a std::pair<size_t,size_t> which contains free memory in bytes
+   * in .first and total amount of memory in .second
+   *---------------------------------------------------------------------------**/
+  std::pair<std::size_t, std::size_t> get_mem_info(cudaStream_t stream) const {
+    return do_get_mem_info(stream);
+  }
  private:
   /**---------------------------------------------------------------------------*
    * @brief Allocates memory of size at least \p bytes.
@@ -153,6 +165,16 @@ class device_memory_resource {
   virtual bool do_is_equal(device_memory_resource const& other) const noexcept {
     return this == &other;
   }
+
+  /**---------------------------------------------------------------------------*
+   * @brief Get free and available memory for memory resource
+   *
+   * @throws std::runtime_error if we could not get free / total memory
+   *
+   * @param stream the stream being executed on
+   * @return std::pair with available and free memory for resource
+   *---------------------------------------------------------------------------**/
+  virtual std::pair<std::size_t, std::size_t> do_get_mem_info( cudaStream_t stream) const = 0;
 };
 }  // namespace mr
 }  // namespace rmm

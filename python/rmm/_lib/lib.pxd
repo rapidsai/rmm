@@ -35,22 +35,17 @@ cdef uintptr_t c_alloc(
     cudaStream_t stream
 ) except? <uintptr_t>NULL
 
-cdef uintptr_t c_realloc(
-    size_t new_size,
-    cudaStream_t stream
-) except? <uintptr_t>NULL
-
 cdef void c_free(
     void *ptr,
     cudaStream_t stream
-)
+) except *
 
 cdef offset_t* c_getallocationoffset(
     void *ptr,
     cudaStream_t stream
 ) except? <offset_t*>NULL
 
-cdef caller_pair _get_caller()
+cdef caller_pair _get_caller() except *
 
 
 cdef extern from "rmm/rmm.h" nogil:
@@ -97,14 +92,6 @@ cdef extern from "rmm/rmm.h" nogil:
         unsigned int line
     ) except +
 
-    cdef rmmError_t rmmRealloc(
-        void **ptr,
-        size_t new_size,
-        cudaStream_t stream,
-        const char* file,
-        unsigned int line
-    ) except +
-
     cdef rmmError_t rmmFree(
         void *ptr,
         cudaStream_t stream,
@@ -135,20 +122,11 @@ cdef extern from "rmm/rmm.h" nogil:
         size_t buffer_size
     ) except +
 
-
 cdef extern from "rmm/rmm.hpp" namespace "rmm" nogil:
 
     cdef rmmError_t alloc[T](
         T** ptr,
         size_t size,
-        cudaStream_t stream,
-        const char* file,
-        unsigned int line
-    ) except +
-
-    cdef rmmError_t realloc[T](
-        T** ptr,
-        size_t new_size,
         cudaStream_t stream,
         const char* file,
         unsigned int line

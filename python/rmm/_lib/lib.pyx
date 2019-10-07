@@ -49,7 +49,7 @@ def check_error(errcode):
         raise RMMError(errcode, msg)
 
 
-cdef caller_pair _get_caller():
+cdef caller_pair _get_caller() except *:
     """
     Finds the file and line number of the caller (first caller outside this
     file)
@@ -197,50 +197,7 @@ def rmm_alloc(size, stream):
     return int(c_addr)
 
 
-cdef uintptr_t c_realloc(
-    size_t new_size, cudaStream_t stream
-) except? <uintptr_t>NULL:
-    """
-    Reallocates new_size bytes using the RMM memory manager by calling the
-    librmm functions via Cython
-    """
-    cdef caller_pair tmp_caller_pair = _get_caller()
-    cdef const char* file = tmp_caller_pair.first
-    cdef unsigned int line = tmp_caller_pair.second
-
-    # Call RMM to reaallocate
-    cdef void *ptr
-    with nogil:
-        rmm_error = rmmRealloc(
-            <void **>&ptr,
-            <size_t>new_size,
-            <cudaStream_t>stream,
-            <const char*>file,
-            <unsigned int>line
-        )
-
-    check_error(rmm_error)
-
-    return <uintptr_t>ptr
-
-
-def rmm_realloc(new_size, stream):
-    """
-    Reallocates new_size bytes using the RMM memory manager by calling the
-    librmm functions via Cython
-    """
-    cdef size_t c_new_size = new_size
-    cdef cudaStream_t c_stream = <cudaStream_t><size_t>stream
-
-    cdef uintptr_t c_addr = c_realloc(
-        <size_t>c_new_size,
-        <cudaStream_t>c_stream
-    )
-
-    return int(c_addr)
-
-
-cdef void c_free(void *ptr, cudaStream_t stream):
+cdef void c_free(void *ptr, cudaStream_t stream) except *:
     """
     Deallocates ptr, which was allocated using rmmAlloc by calling the librmm
     functions via Cython
