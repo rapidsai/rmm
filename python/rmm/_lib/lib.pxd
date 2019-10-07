@@ -38,14 +38,14 @@ cdef uintptr_t c_alloc(
 cdef void c_free(
     void *ptr,
     cudaStream_t stream
-)
+) except *
 
 cdef offset_t* c_getallocationoffset(
     void *ptr,
     cudaStream_t stream
 ) except? <offset_t*>NULL
 
-cdef caller_pair _get_caller()
+cdef caller_pair _get_caller() except *
 
 
 cdef extern from "rmm/rmm.h" nogil:

@@ -49,7 +49,7 @@ def check_error(errcode):
         raise RMMError(errcode, msg)
 
 
-cdef caller_pair _get_caller():
+cdef caller_pair _get_caller() except *:
     """
     Finds the file and line number of the caller (first caller outside this
     file)
@@ -197,7 +197,7 @@ def rmm_alloc(size, stream):
     return int(c_addr)
 
 
-cdef void c_free(void *ptr, cudaStream_t stream):
+cdef void c_free(void *ptr, cudaStream_t stream) except *:
     """
     Deallocates ptr, which was allocated using rmmAlloc by calling the librmm
     functions via Cython
