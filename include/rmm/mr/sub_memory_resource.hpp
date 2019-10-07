@@ -130,10 +130,8 @@ class sub_memory_resource final : public device_memory_resource {
       // find best fit block
       auto iter = std::min_element(blocks.begin(), blocks.end(),
         [size](block lhs, block rhs) {
-          if (lhs.size < rhs.size)
-            return (lhs.size >= size);
-          else
-            return (lhs.size >= size) && (rhs.size < size);
+          return (lhs.size >= size) && 
+                 ((lhs.size < rhs.size) || (rhs.size < size));
         });
 
       if (iter->size >= size)
@@ -148,7 +146,8 @@ class sub_memory_resource final : public device_memory_resource {
 
     inline void insert_and_merge(block const& b) {
 
-      auto next = std::lower_bound(blocks.begin(), blocks.end(), b);
+      auto next = std::find_if(blocks.begin(), blocks.end(),
+        [b](block const& i) { return i.ptr > b.ptr; });
 
       auto previous = std::prev(next);
       bool merge_prev = !b.is_head_block && (previous->ptr + previous->size == b.ptr); 
@@ -381,7 +380,7 @@ class sub_memory_resource final : public device_memory_resource {
    * @param stream to execute on
    * @return std::pair contaiing free_size and total_size of memory
    *---------------------------------------------------------------------------**/
-  std::pair<size_t,size_t> do_get_mem_info( cudaStream_t stream){
+  std::pair<size_t,size_t> do_get_mem_info( cudaStream_t stream) const {
     std::size_t free_size{};
     std::size_t total_size{};
     // TODO implement this
