@@ -17,6 +17,7 @@
 #include "gtest/gtest.h"
 
 #include <rmm/mr/cnmem_memory_resource.hpp>
+#include <rmm/mr/cnmem_managed_memory_resource.hpp>
 #include <rmm/mr/cuda_memory_resource.hpp>
 #include <rmm/mr/default_memory_resource.hpp>
 #include <rmm/mr/device_memory_resource.hpp>
@@ -85,7 +86,8 @@ struct MRTest : public ::testing::Test {
 
 using resources = ::testing::Types<rmm::mr::cuda_memory_resource,
                                    rmm::mr::managed_memory_resource,
-                                   rmm::mr::cnmem_memory_resource>;
+                                   rmm::mr::cnmem_memory_resource,
+                                   rmm::mr::cnmem_managed_memory_resource>;
 
 TYPED_TEST_CASE(MRTest, resources);
 
@@ -359,4 +361,15 @@ TYPED_TEST(MRTest, MixedRandomAllocationFreeStream) {
     EXPECT_NO_THROW(this->mr->deallocate(a.p, a.size, this->stream));
     allocations.pop_front();
   }
+}
+
+TYPED_TEST(MRTest, GetMemInfo) {
+  std::pair<std::size_t,std::size_t> mem_info;
+  EXPECT_NO_THROW(mem_info = this->mr->get_mem_info(0));
+  std::size_t allocation_size = 16 * 256;
+  void * ptr;
+  EXPECT_NO_THROW(ptr = this->mr->allocate(allocation_size));
+  EXPECT_NO_THROW(mem_info = this->mr->get_mem_info(0));
+  EXPECT_TRUE(mem_info.first >= allocation_size);
+  EXPECT_NO_THROW(this->mr->deallocate(ptr,allocation_size));
 }
