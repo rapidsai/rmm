@@ -122,14 +122,13 @@ static void BM_RandomAllocationsCnmem(State& state) {
   rmm::mr::cnmem_memory_resource mr;
 
   try {
-    std::cout << "hello\n";
     for (auto _ : state)
       mixed_random_allocation_free(mr);
   } catch (std::exception const& e) {
     std::cout << "Error: " << e.what() << "\n";
   }
 }
-//BENCHMARK(BM_RandomAllocationsCnmem)->Unit(benchmark::kMillisecond);
+BENCHMARK(BM_RandomAllocationsCnmem)->Unit(benchmark::kMillisecond);
 
 /*int main(void) {
   std::vector<int> state(1000);
