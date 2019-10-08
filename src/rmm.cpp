@@ -59,23 +59,25 @@ const char * rmmGetErrorString(rmmError_t errcode) {
 // Initialize memory manager state and storage.
 rmmError_t rmmInitialize(rmmOptions_t *options)
 {
-  rmm::Manager::getInstance().initialize(options);
+  if (!rmm::Manager::getInstance().isInitialized()) {
+    rmm::Manager::getInstance().initialize(options);
 
-  rmm::mr::device_memory_resource * memory_resource = nullptr;
+    rmm::mr::device_memory_resource * memory_resource = nullptr;
 
-  if (rmm::Manager::usePoolAllocator()) {
-    if (rmm::Manager::useManagedMemory()) {
-      memory_resource = new rmm::mr::cnmem_managed_memory_resource{
-        rmm::Manager::getOptions().initial_pool_size};
-    } else {
-      memory_resource = new rmm::mr::cnmem_memory_resource{
-        rmm::Manager::getOptions().initial_pool_size};
-    } 
-  } else if (rmm::Manager::useManagedMemory()) {
-    memory_resource = new rmm::mr::managed_memory_resource();
+    if (rmm::Manager::usePoolAllocator()) {
+      if (rmm::Manager::useManagedMemory()) {
+        memory_resource = new rmm::mr::cnmem_managed_memory_resource{
+          rmm::Manager::getOptions().initial_pool_size};
+      } else {
+        memory_resource = new rmm::mr::cnmem_memory_resource{
+          rmm::Manager::getOptions().initial_pool_size};
+      } 
+    } else if (rmm::Manager::useManagedMemory()) {
+      memory_resource = new rmm::mr::managed_memory_resource();
+    }
+
+    rmm::mr::set_default_resource(memory_resource);
   }
-
-  rmm::mr::set_default_resource(memory_resource);
 
   return RMM_SUCCESS;
 }
@@ -83,14 +85,16 @@ rmmError_t rmmInitialize(rmmOptions_t *options)
 // Shutdown memory manager.
 rmmError_t rmmFinalize()
 {
-  // delete the current default resource to reset it, and replace with the 
-  // initial resource, so that subsequent calls to initialize will act 
-  // just like the first call to initialize
-  rmm::mr::device_memory_resource *mr = rmm::mr::get_default_resource();
-  rmm::mr::set_default_resource(nullptr);
-  delete mr;
+  if (rmm::Manager::getInstance().isInitialized()) {
+    // delete the current default resource to reset it, and replace with the 
+    // initial resource, so that subsequent calls to initialize will act 
+    // just like the first call to initialize
+    rmm::mr::device_memory_resource *mr = rmm::mr::get_default_resource();
+    rmm::mr::set_default_resource(nullptr);
+    delete mr;
 
-  rmm::Manager::getInstance().finalize();
+    rmm::Manager::getInstance().finalize();
+  }
   return RMM_SUCCESS;
 }
 
