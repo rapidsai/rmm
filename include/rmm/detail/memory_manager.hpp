@@ -31,9 +31,7 @@
 #include <set>
 #include <mutex>
 
-extern "C" {
 #include "rmm/rmm_api.h"
-}
 #include "cnmem.h"
 
 /** ---------------------------------------------------------------------------*
