@@ -22,6 +22,9 @@
 
 #pragma once
 
+#include <cstddef>
+#include <vector>
+
 typedef struct CUstream_st *cudaStream_t;
 typedef long int offset_t; // would prefer ptrdiff_t but can't #include <stddef.h>
                            // due to CFFI limitations
@@ -66,16 +69,14 @@ typedef enum
  * `nullptr`, assumes that only the device returned by `cudaGetDevice()` is
  * used. These are only used when `allocation_mode == PoolAllocation`.
  * --------------------------------------------------------------------------**/
-typedef struct
-{
+struct rmmOptions_t {
   rmmAllocationMode_t allocation_mode{
-      CudaDefaultAllocation};  //< Allocation strategy to use
-  size_t initial_pool_size{};  //< When pool suballocation is enabled,
-                               //< this is the initial pool size in bytes
-  bool enable_logging{false};  //< Enable logging memory manager events
-  int *devices{};              ///< Array of device IDs that will be used
-  size_t num_devices{};        ///< The number of devices that will be used
-} rmmOptions_t;
+      CudaDefaultAllocation};       //< Allocation strategy to use
+  std::size_t initial_pool_size{};  //< When pool suballocation is enabled,
+                                    //< this is the initial pool size in bytes
+  bool enable_logging{false};       //< Enable logging memory manager events
+  std::vector<int> devices{};       ///< List of GPU device IDs to register
+};
 
 /** ---------------------------------------------------------------------------*
  * @brief Initialize memory manager state and storage.
