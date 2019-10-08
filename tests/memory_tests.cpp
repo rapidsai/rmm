@@ -26,7 +26,6 @@
 cudaStream_t stream;
 
 template <typename T>
-<<<<<<< HEAD
 struct MemoryManagerTest : public ::testing::Test {
   static rmmAllocationMode_t allocationMode() { return T::alloc_mode; }
 
@@ -58,40 +57,6 @@ struct MemoryManagerTest : public ::testing::Test {
   static const size_t size_gb{size_t{1} << 30};
   static const size_t size_tb{size_t{1} << 40};
   static const size_t size_pb{size_t{1} << 50};
-=======
-struct MemoryManagerTest :
-    public ::testing::Test
-{
-    static rmmAllocationMode_t allocationMode() { return T::alloc_mode; }
-
-    static void SetUpTestCase() {
-        ASSERT_FALSE(rmmIsInitialized(0));
-        ASSERT_EQ( cudaSuccess, cudaStreamCreate(&stream) );
-        rmmOptions_t options {allocationMode(), 0, false};
-        ASSERT_SUCCESS( rmmInitialize(&options) );
-        rmmOptions_t options_set;
-        // verify initialized
-        ASSERT_TRUE(rmmIsInitialized(&options_set));
-        // verify initialized options
-        ASSERT_EQ(options_set.allocation_mode, options.allocation_mode);
-        ASSERT_EQ(options_set.initial_pool_size, options.initial_pool_size);
-        ASSERT_EQ(options_set.enable_logging, options.enable_logging);
-    }
-
-    static void TearDownTestCase() {
-        ASSERT_SUCCESS( rmmFinalize() );
-        ASSERT_FALSE(rmmIsInitialized(0));
-        ASSERT_EQ( cudaSuccess, cudaStreamDestroy(stream) );
-    }
-
-    // some useful allocation sizes
-    static const size_t size_word{4};
-    static const size_t size_kb {size_t{1}<<10};
-    static const size_t size_mb {size_t{1}<<20};
-    static const size_t size_gb {size_t{1}<<30};
-    static const size_t size_tb {size_t{1}<<40};
-    static const size_t size_pb {size_t{1}<<50};
->>>>>>> origin/branch-0.11
 };
 
 
@@ -249,7 +214,6 @@ TYPED_TEST(MemoryManagerTest, AllocationOffset) {
     ASSERT_SUCCESS( RMM_FREE(a, stream) );
     ASSERT_SUCCESS( RMM_FREE(b, stream) );
 }
-<<<<<<< HEAD
 
 template <typename T>
 struct MultiGPUMemoryManagerTest : public MemoryManagerTest<T> {
@@ -262,8 +226,7 @@ struct MultiGPUMemoryManagerTest : public MemoryManagerTest<T> {
         std::iota(begin(devices), end(devices),0);
         rmmOptions_t options{};
         options.allocation_mode = T::alloc_mode;
-        options.devices = devices.data();
-        options.num_devices = devices.size();
+        options.devices = devices;
         ASSERT_SUCCESS( rmmInitialize(&options) );
         rmmOptions_t options_set;
         // verify initialized
@@ -364,36 +327,6 @@ TYPED_TEST(MultiGPUMemoryManagerTest, FreeZero) {
     ASSERT_SUCCESS( RMM_FREE(0, stream) );
 }
 
-// Reallocation tests
-
-TYPED_TEST(MultiGPUMemoryManagerTest, ReallocateSmaller) {
-    char *a = 0;
-    ASSERT_SUCCESS( RMM_ALLOC(&a, this->size_mb, stream) );
-    ASSERT_SUCCESS( RMM_REALLOC(&a, this->size_mb / 2, stream) );
-    ASSERT_SUCCESS( RMM_FREE(a, stream) );
-}
-
-TYPED_TEST(MultiGPUMemoryManagerTest, ReallocateMuchSmaller) {
-    char *a = 0;
-    ASSERT_SUCCESS( RMM_ALLOC(&a, this->size_gb, stream) );
-    ASSERT_SUCCESS( RMM_REALLOC(&a, this->size_kb, stream) );
-    ASSERT_SUCCESS( RMM_FREE(a, stream) );
-}
-
-TYPED_TEST(MultiGPUMemoryManagerTest, ReallocateLarger) {
-    char *a = 0;
-    ASSERT_SUCCESS( RMM_ALLOC(&a, this->size_mb, stream) );
-    ASSERT_SUCCESS( RMM_REALLOC(&a, this->size_mb * 2, stream) );
-    ASSERT_SUCCESS( RMM_FREE(a, stream) );
-}
-
-TYPED_TEST(MultiGPUMemoryManagerTest, ReallocateMuchLarger) {
-    char *a = 0;
-    ASSERT_SUCCESS( RMM_ALLOC(&a, this->size_kb, stream) );
-    ASSERT_SUCCESS( RMM_REALLOC(&a, this->size_gb, stream) );
-    ASSERT_SUCCESS( RMM_FREE(a, stream) );
-}
-
 TYPED_TEST(MultiGPUMemoryManagerTest, GetInfo) {
     size_t freeBefore = 0, totalBefore = 0;
     ASSERT_SUCCESS( rmmGetInfo(&freeBefore, &totalBefore, stream) );
@@ -416,5 +349,3 @@ TYPED_TEST(MultiGPUMemoryManagerTest, AllocationOffset) {
     ASSERT_SUCCESS( RMM_FREE(a, stream) );
     ASSERT_SUCCESS( RMM_FREE(b, stream) );
 }
-=======
->>>>>>> origin/branch-0.11
