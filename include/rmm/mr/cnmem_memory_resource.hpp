@@ -28,10 +28,10 @@
 namespace rmm {
 namespace mr {
 /**---------------------------------------------------------------------------*
- * @brief Memory resource that allocates/deallocates using the cnmem pool sub-allocator 
+ * @brief Memory resource that allocates/deallocates using the cnmem pool sub-allocator
  * the cnmem pool sub-allocator for allocation/deallocation.
  *---------------------------------------------------------------------------**/
-class cnmem_memory_resource final : public device_memory_resource {
+class cnmem_memory_resource : public device_memory_resource {
  public:
   /**---------------------------------------------------------------------------*
    * @brief Construct a cnmem memory resource and allocate the initial device
@@ -42,7 +42,30 @@ class cnmem_memory_resource final : public device_memory_resource {
    * @param initial_pool_size Size, in bytes, of the intial pool size. When
    * zero, an implementation defined pool size is used.
    *---------------------------------------------------------------------------**/
-  explicit cnmem_memory_resource(std::size_t initial_pool_size = 0) {
+  explicit cnmem_memory_resource(std::size_t initial_pool_size = 0) : 
+    cnmem_memory_resource(initial_pool_size, pool_options::CUDA){}
+
+  virtual ~cnmem_memory_resource() {
+    auto status = cnmemFinalize();
+#ifndef NDEBUG
+    if (status != CNMEM_STATUS_SUCCESS) {
+      std::cerr << "cnmemFinalize failed.\n";
+    }
+#endif
+  }
+
+  bool supports_streams() const noexcept override { return true; }
+ protected:
+   /**
+   * @brief Specifies Managed (UVM) allocations vs device memory
+   * for the memory pool
+   */
+  enum class pool_options : unsigned short {
+    MANAGED, ///< Uses managed memory for pool
+    CUDA ///< Uses CUDA device memory for pool
+  };
+
+  cnmem_memory_resource( std::size_t initial_pool_size, pool_options pool_type ){
     cnmemDevice_t dev;
     // TODO Update exception
     if (cudaSuccess != cudaGetDevice(&(dev.device))) {
@@ -55,26 +78,16 @@ class cnmem_memory_resource final : public device_memory_resource {
     streams[0] = 0;
     dev.streams = streams;
     dev.streamSizes = 0;
-    unsigned flags = 0;
+
+    unsigned long flags = (pool_type == pool_options::MANAGED) ?
+      CNMEM_FLAGS_MANAGED : 0;
     // TODO Update exception
     auto status = cnmemInit(1, &dev, flags);
     if (CNMEM_STATUS_SUCCESS != status) {
       std::string msg = cnmemGetErrorString(status);
       throw std::runtime_error{"Failed to intialize cnmem: " + msg};
     }
-  }
-
-  ~cnmem_memory_resource() {
-    auto status = cnmemFinalize();
-#ifndef NDEBUG
-    if (status != CNMEM_STATUS_SUCCESS) {
-      std::cerr << "cnmemFinalize failed.\n";
-    }
-#endif
-  }
-
-  bool supports_streams() const noexcept override { return true; }
-
+}
  private:
   /**---------------------------------------------------------------------------*
    * @brief Allocates memory of size at least \p bytes using cnmem.
@@ -131,6 +144,27 @@ class cnmem_memory_resource final : public device_memory_resource {
         }
       }
     }
+  }
+
+  /**---------------------------------------------------------------------------*
+   * @brief Get free and available memory for memory resource
+   *
+   * @throws std::runtime_error if we could not get cnmem free / total memory
+   *
+   * @param stream to execute on
+   * @return std::pair contaiing free_size and total_size of memory
+   *---------------------------------------------------------------------------**/
+  std::pair<size_t,size_t> do_get_mem_info( cudaStream_t stream) const{
+    std::size_t free_size;
+    std::size_t total_size;
+    auto status = cnmemMemGetInfo(&free_size, &total_size, stream);
+    if (CNMEM_STATUS_SUCCESS != status) {
+#ifndef NDEBUG
+      std::cerr << "cnmemMemGetInfo failed \n";
+#endif
+      throw std::runtime_error{"Failed to to call get_mem_info on memory resource"};
+    }
+    return std::make_pair(free_size, total_size);
   }
 
   std::set<cudaStream_t> registered_streams{};

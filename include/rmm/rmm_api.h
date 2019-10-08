@@ -15,12 +15,12 @@
  */
 
 /** ---------------------------------------------------------------------------*
- * @brief Device Memory Manager public interface. 
- * 
+ * @brief Device Memory Manager public interface.
+ *
  * Efficient allocation, deallocation and tracking of GPU memory.
  * --------------------------------------------------------------------------**/
 
-#pragma once 
+#pragma once
 
 typedef struct CUstream_st *cudaStream_t;
 typedef long int offset_t; // would prefer ptrdiff_t but can't #include <stddef.h>
@@ -79,8 +79,8 @@ typedef struct
 
 /** ---------------------------------------------------------------------------*
  * @brief Initialize memory manager state and storage.
- * 
- * @param[in] options Structure of options for the memory manager. Defaults are 
+ *
+ * @param[in] options Structure of options for the memory manager. Defaults are
  *                    used if it is null.
  * @return rmmError_t RMM_SUCCESS or RMM_ERROR_CUDA_ERROR on any CUDA error.
  * --------------------------------------------------------------------------**/
@@ -88,18 +88,18 @@ rmmError_t rmmInitialize(rmmOptions_t *options);
 
 /** ---------------------------------------------------------------------------*
  * @brief Shutdown memory manager.
- * 
+ *
  * @return rmmError_t RMM_SUCCESS, or RMM_NOT_INITIALIZED if rmmInitialize() has
  *                    not been called, or RMM_ERROR_CUDA_ERROR on any CUDA error.
  * ---------------------------------------------------------------------------**/
-rmmError_t rmmFinalize(); 
+rmmError_t rmmFinalize();
 
 /** --------------------------------------------------------------------------*
  * @brief Query the initialization state of RMM.
- * 
- * @param[out] options The options that were passed to rmmInitialize. If set to 
+ *
+ * @param[out] options The options that were passed to rmmInitialize. If set to
  *                     NULL by caller it will not be assigned.
- * 
+ *
  * @return true if rmmInitialize has been called successfully.
  * @return false if rmmInitialize has not been called successfully.
  * --------------------------------------------------------------------------**/
@@ -107,15 +107,15 @@ bool rmmIsInitialized(rmmOptions_t *options);
 
 /** ---------------------------------------------------------------------------*
  * @brief Stringify RMM error code.
- * 
+ *
  * @param errcode The error returned by an RMM function
  * @return const char* The input error code in string form
  * --------------------------------------------------------------------------**/
 const char * rmmGetErrorString(rmmError_t errcode);
 
 /** ---------------------------------------------------------------------------*
- * @brief Allocate memory and return a pointer to device memory. 
- * 
+ * @brief Allocate memory and return a pointer to device memory.
+ *
  * @param[out] ptr Returned pointer
  * @param[in] size The size in bytes of the allocated memory region
  * @param[in] stream The stream in which to synchronize this command
@@ -132,7 +132,7 @@ rmmError_t rmmAlloc(void **ptr, size_t size, cudaStream_t stream,
 /** ---------------------------------------------------------------------------*
  * @brief Reallocate device memory block to new size and recycle any remaining
  *        memory.
- * 
+ *
  * @param[out] ptr Returned pointer
  * @param[in] new_size The size in bytes of the allocated memory region
  * @param[in] stream The stream in which to synchronize this command
@@ -144,12 +144,12 @@ rmmError_t rmmAlloc(void **ptr, size_t size, cudaStream_t stream,
  *                    requested size, or RMM_ERROR_CUDA_ERROR on any other CUDA
  *                    error.
  * --------------------------------------------------------------------------**/
-rmmError_t rmmRealloc(void **ptr, size_t new_size, cudaStream_t stream,
-                      const char* file, unsigned int line);
+//rmmError_t rmmRealloc(void **ptr, size_t new_size, cudaStream_t stream,
+//                      const char* file, unsigned int line);
 
 /** ---------------------------------------------------------------------------*
  * @brief Release device memory and recycle the associated memory.
- * 
+ *
  * @param[in] ptr The pointer to free
  * @param[in] stream The stream in which to synchronize this command
  * @param[in] file The filename location of the call to this function, for tracking
@@ -163,13 +163,13 @@ rmmError_t rmmFree(void *ptr, cudaStream_t stream,
 
 /** ---------------------------------------------------------------------------*
  * @brief Get the offset of ptr from its base allocation.
- * 
+ *
  * This offset is the difference between the address stored in ptr and the
  * base device memory allocation that it is a sub-allocation of within the pool.
  * This is useful for, e.g. IPC, where cudaIpcOpenMemHandle() returns a pointer
  * to the base  * allocation, so the user needs the offset of the sub-allocation
  * in order to correctly access its data.
- * 
+ *
  * @param[out] offset The difference between ptr and the base allocation that ptr
  *                    is sub-allocated from.
  * @param[in] ptr The ptr to find the base allocation of.
@@ -184,15 +184,15 @@ rmmError_t rmmGetAllocationOffset(offset_t *offset,
 /** ---------------------------------------------------------------------------*
  * @brief Get amounts of free and total memory managed by a manager associated
  *        with the stream.
- * 
+ *
  * Returns in *free and *total, respectively, the free and total amount of
  * memory available for allocation by the device in bytes.
- * 
+ *
  * @param[out] freeSize The free memory in bytes available to the manager
  *                      associated with stream
  * @param[out] totalSize The total memory managed by the manager associated with
  *                       stream
- * @param[in] stream 
+ * @param[in] stream
  * @return rmmError_t RMM_SUCCESS, or RMM_ERROR_NOT_INITIALIZED if rmmInitialize
  *                    has not been called, or RMM_ERROR_CUDA_ERROR on any CUDA
  *                    error
@@ -201,9 +201,9 @@ rmmError_t rmmGetInfo(size_t *freeSize, size_t *totalSize, cudaStream_t stream);
 
 /** ---------------------------------------------------------------------------*
  * @brief Write the memory event stats log to specified path/filename
- * 
+ *
  * Note: will overwrite the specified file.
- * 
+ *
  * @param filename The full path and filename to write.
  * @return rmmError_t RMM_SUCCESS or RMM_ERROR_IO on output failure.
  * --------------------------------------------------------------------------**/
@@ -211,14 +211,14 @@ rmmError_t rmmWriteLog(const char* filename);
 
 /** ---------------------------------------------------------------------------*
  * @brief Get the size of the CSV log string in memory.
- * 
+ *
  * @return size_t The size of the log (as a C string) in memory.
  * --------------------------------------------------------------------------**/
 size_t rmmLogSize();
 
 /** ---------------------------------------------------------------------------*
  * @brief Get the RMM log as CSV in a C string.
- * 
+ *
  * @param[out] buffer The buffer into which to store the CSV log string.
  * @param[in] buffer_size The size allocated for buffer.
  * @return rmmError_t RMM_SUCCESS, or RMM_IO_ERROR on any failure.

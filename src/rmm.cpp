@@ -15,7 +15,7 @@
  */
 
 /**
- * @brief Device Memory Manager implementation. 
+ * @brief RAPIDS Memory Manager implementation.
  *
  * Efficient allocation, deallocation and tracking of GPU memory.
  *
@@ -23,6 +23,11 @@
 
 #include "rmm/rmm.h"
 #include "rmm/detail/memory_manager.hpp"
+#include "rmm/mr/cnmem_memory_resource.hpp"
+#include "rmm/mr/cnmem_managed_memory_resource.hpp"
+#include "rmm/mr/managed_memory_resource.hpp"
+#include "rmm/mr/cuda_memory_resource.hpp"
+
 
 
 #include <fstream>
@@ -54,40 +59,32 @@ const char * rmmGetErrorString(rmmError_t errcode) {
 // Initialize memory manager state and storage.
 rmmError_t rmmInitialize(rmmOptions_t *options) {
   rmm::Manager::getInstance().initialize(options);
-
+  rmm::mr::device_memory_resource *memory_resource =
+      rmm::mr::detail::initial_resource();
   if (rmm::Manager::usePoolAllocator()) {
-    std::vector<cnmemDevice_t> devices;
-    auto options = rmm::Manager::getOptions();
-    if (nullptr == options.devices) {
-      cnmemDevice_t dev{};
-      RMM_CHECK_CUDA(cudaGetDevice(&(dev.device)));
-      dev.size = rmm::Manager::getOptions().initial_pool_size;
-      devices.push_back(dev);
+    if (rmm::Manager::useManagedMemory) {
+      memory_resource = rmm::mr::detail::managed_pool_resource(
+          rmm::Manager::getOptions().initial_pool_size,
+          rmm::Manager::getOptions().devices);
+
     } else {
-      if(options.num_devices == 0){
-          throw std::runtime_error{"Invalid number of devices."};
-      }
-      for (size_t i = 0; i < options.num_devices; ++i) {
-        cnmemDevice_t dev{};
-        dev.device = options.devices[i];
-        dev.size = rmm::Manager::getOptions().initial_pool_size;
-        devices.push_back(dev);
-      }
+      memory_resource = rmm::mr::detail::pool_resource(
+          rmm::Manager::getOptions().initial_pool_size,
+          rmm::Manager::getOptions().devices);
     }
-    unsigned flags = rmm::Manager::useManagedMemory() ? CNMEM_FLAGS_MANAGED : 0;
-    RMM_CHECK_CNMEM(cnmemInit(devices.size(), devices.data(), flags));
+  } else if (rmm::Manager::useManagedMemory()) {
+    memory_resource = rmm::mr::detail::managed_resource();
   }
+
+  rmm::mr::set_default_resource(memory_resource);
+
   return RMM_SUCCESS;
 }
 
 // Shutdown memory manager.
 rmmError_t rmmFinalize()
 {
-    if (rmm::Manager::usePoolAllocator())
-        RMM_CHECK_CNMEM( cnmemFinalize() );
-    
     rmm::Manager::getInstance().finalize();
-    
     return RMM_SUCCESS;
 }
 
@@ -99,18 +96,18 @@ bool rmmIsInitialized(rmmOptions_t *options)
     }
     return rmm::Manager::getInstance().isInitialized();
 }
- 
-// Allocate memory and return a pointer to device memory. 
+
+// Allocate memory and return a pointer to device memory.
 rmmError_t rmmAlloc(void **ptr, size_t size, cudaStream_t stream, const char* file, unsigned int line)
 {
   return rmm::alloc(ptr, size, stream, file, line);
 }
 
 // Reallocate device memory block to new size and recycle any remaining memory.
-rmmError_t rmmRealloc(void **ptr, size_t new_size, cudaStream_t stream, const char* file, unsigned int line)
-{
-  return rmm::realloc(ptr, new_size, stream, file, line);
-}
+//rmmError_t rmmRealloc(void **ptr, size_t new_size, cudaStream_t stream, const char* file, unsigned int line)
+//{
+//  return rmm::realloc(ptr, new_size, stream, file, line);
+//}
 
 // Release device memory and recycle the associated memory.
 rmmError_t rmmFree(void *ptr, cudaStream_t stream, const char* file, unsigned int line)
@@ -137,20 +134,20 @@ rmmError_t rmmGetAllocationOffset(ptrdiff_t *offset,
 // with the stream.
 rmmError_t rmmGetInfo(size_t *freeSize, size_t *totalSize, cudaStream_t stream)
 {
-    if (rmm::Manager::usePoolAllocator())
-    {
-        RMM_CHECK( rmm::Manager::getInstance().registerStream(stream) );
-        RMM_CHECK_CNMEM( cnmemMemGetInfo(freeSize, totalSize, stream) );
+    try{
+      std::pair<size_t,size_t> memInfo = rmm::mr::get_default_resource()->get_mem_info( stream);
+      *freeSize = memInfo.first;
+      *totalSize = memInfo.second;
+    }catch(std::runtime_error){
+      return RMM_ERROR_CUDA_ERROR;
     }
-    else
-        RMM_CHECK_CUDA(cudaMemGetInfo(freeSize, totalSize));
 	return RMM_SUCCESS;
 }
 
 // Write the memory event stats log to specified path/filename
 rmmError_t rmmWriteLog(const char* filename)
 {
-    try 
+    try
     {
         std::ofstream csv;
         csv.open(filename);
@@ -165,7 +162,7 @@ rmmError_t rmmWriteLog(const char* filename)
 // Get the size opf the CSV log
 size_t rmmLogSize()
 {
-    std::ostringstream csv; 
+    std::ostringstream csv;
     rmm::Manager::getLogger().to_csv(csv);
     return csv.str().size();
 }
@@ -173,9 +170,9 @@ size_t rmmLogSize()
 // Get the CSV log as a string
 rmmError_t rmmGetLog(char *buffer, size_t buffer_size)
 {
-    try 
+    try
     {
-        std::ostringstream csv; 
+        std::ostringstream csv;
         rmm::Manager::getLogger().to_csv(csv);
         csv.str().copy(buffer, std::min(buffer_size, csv.str().size()));
     }
@@ -184,4 +181,3 @@ rmmError_t rmmGetLog(char *buffer, size_t buffer_size)
     }
     return RMM_SUCCESS;
 }
-

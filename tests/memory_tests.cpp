@@ -26,6 +26,7 @@
 cudaStream_t stream;
 
 template <typename T>
+<<<<<<< HEAD
 struct MemoryManagerTest : public ::testing::Test {
   static rmmAllocationMode_t allocationMode() { return T::alloc_mode; }
 
@@ -57,6 +58,40 @@ struct MemoryManagerTest : public ::testing::Test {
   static const size_t size_gb{size_t{1} << 30};
   static const size_t size_tb{size_t{1} << 40};
   static const size_t size_pb{size_t{1} << 50};
+=======
+struct MemoryManagerTest :
+    public ::testing::Test
+{
+    static rmmAllocationMode_t allocationMode() { return T::alloc_mode; }
+
+    static void SetUpTestCase() {
+        ASSERT_FALSE(rmmIsInitialized(0));
+        ASSERT_EQ( cudaSuccess, cudaStreamCreate(&stream) );
+        rmmOptions_t options {allocationMode(), 0, false};
+        ASSERT_SUCCESS( rmmInitialize(&options) );
+        rmmOptions_t options_set;
+        // verify initialized
+        ASSERT_TRUE(rmmIsInitialized(&options_set));
+        // verify initialized options
+        ASSERT_EQ(options_set.allocation_mode, options.allocation_mode);
+        ASSERT_EQ(options_set.initial_pool_size, options.initial_pool_size);
+        ASSERT_EQ(options_set.enable_logging, options.enable_logging);
+    }
+
+    static void TearDownTestCase() {
+        ASSERT_SUCCESS( rmmFinalize() );
+        ASSERT_FALSE(rmmIsInitialized(0));
+        ASSERT_EQ( cudaSuccess, cudaStreamDestroy(stream) );
+    }
+
+    // some useful allocation sizes
+    static const size_t size_word{4};
+    static const size_t size_kb {size_t{1}<<10};
+    static const size_t size_mb {size_t{1}<<20};
+    static const size_t size_gb {size_t{1}<<30};
+    static const size_t size_tb {size_t{1}<<40};
+    static const size_t size_pb {size_t{1}<<50};
+>>>>>>> origin/branch-0.11
 };
 
 
@@ -78,7 +113,7 @@ TYPED_TEST_CASE(MemoryManagerTest, allocation_modes);
 // Init / Finalize tests
 
 TYPED_TEST(MemoryManagerTest, Initialize) {
-    
+
     // Initialized in Fixture class.
     rmmOptions_t options;
     ASSERT_TRUE(rmmIsInitialized(&options));
@@ -140,7 +175,7 @@ TYPED_TEST(MemoryManagerTest, AllocateTB) {
     size_t freeBefore = 0, totalBefore = 0;
     ASSERT_SUCCESS( rmmGetInfo(&freeBefore, &totalBefore, stream) );
 
-    if ((this->allocationMode() & CudaManagedMemory) || 
+    if ((this->allocationMode() & CudaManagedMemory) ||
         (this->size_tb < freeBefore)) {
         // TODO investigate and fix this
         //ASSERT_SUCCESS( RMM_ALLOC(&a, this->size_tb, stream) );
@@ -148,7 +183,7 @@ TYPED_TEST(MemoryManagerTest, AllocateTB) {
     else {
         ASSERT_FAILURE( RMM_ALLOC(&a, this->size_tb, stream) );
     }
-    
+
     ASSERT_SUCCESS( RMM_FREE(a, stream) );
 }
 
@@ -163,7 +198,7 @@ TYPED_TEST(MemoryManagerTest, FreeZero) {
 }
 
 // Reallocation tests
-
+/*
 TYPED_TEST(MemoryManagerTest, ReallocateSmaller) {
     char *a = 0;
     ASSERT_SUCCESS( RMM_ALLOC(&a, this->size_mb, stream) );
@@ -191,7 +226,7 @@ TYPED_TEST(MemoryManagerTest, ReallocateMuchLarger) {
     ASSERT_SUCCESS( RMM_REALLOC(&a, this->size_gb, stream) );
     ASSERT_SUCCESS( RMM_FREE(a, stream) );
 }
-
+*/
 TYPED_TEST(MemoryManagerTest, GetInfo) {
     size_t freeBefore = 0, totalBefore = 0;
     ASSERT_SUCCESS( rmmGetInfo(&freeBefore, &totalBefore, stream) );
@@ -214,6 +249,7 @@ TYPED_TEST(MemoryManagerTest, AllocationOffset) {
     ASSERT_SUCCESS( RMM_FREE(a, stream) );
     ASSERT_SUCCESS( RMM_FREE(b, stream) );
 }
+<<<<<<< HEAD
 
 template <typename T>
 struct MultiGPUMemoryManagerTest : public MemoryManagerTest<T> {
@@ -380,3 +416,5 @@ TYPED_TEST(MultiGPUMemoryManagerTest, AllocationOffset) {
     ASSERT_SUCCESS( RMM_FREE(a, stream) );
     ASSERT_SUCCESS( RMM_FREE(b, stream) );
 }
+=======
+>>>>>>> origin/branch-0.11

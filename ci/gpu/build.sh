@@ -48,27 +48,11 @@ g++ --version
 conda list
 
 ################################################################################
-# BUILD - Build librmm
+# BUILD - Build and install librmm and rmm
 ################################################################################
 
-logger "Build librmm..."
-CMAKE_COMMON_VARIABLES=" -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX11_ABI=$BUILD_ABI"
-
-# Use CMake-based build procedure
-mkdir -p build
-cd build
-# configure
-cmake $CMAKE_COMMON_VARIABLES ..
-# build
-make -j${PARALLEL_LEVEL} VERBOSE=1 install
-
-################################################################################
-# BUILD - Build librmm_cffi
-################################################################################
-
-logger "Build librmm_cffi..."
-make rmm_python_cffi
-make rmm_install_python
+logger "Build and install librmm and rmm..."
+"$WORKSPACE/build.sh" -v clean librmm rmm
 
 ################################################################################
 # Test - librmm
@@ -76,16 +60,16 @@ make rmm_install_python
 
 if hasArg --skip-tests; then
     logger "Skipping Tests..."
-    exit 0
+else
+    logger "Check GPU usage..."
+    nvidia-smi
+
+    logger "Running googletests..."
+
+    cd "${WORKSPACE}/build"
+    GTEST_OUTPUT="xml:${WORKSPACE}/test-results/" make -j${PARALLEL_LEVEL} test
+
+    logger "Python py.test for librmm_cffi..."
+    cd $WORKSPACE/python
+    py.test --cache-clear --junitxml=${WORKSPACE}/test-results/junit-rmm.xml -v --cov-config=.coveragerc --cov=rmm --cov-report=xml:${WORKSPACE}/python/rmm-coverage.xml --cov-report term
 fi
-
-logger "Check GPU usage..."
-nvidia-smi
-
-logger "Running googletests..."
-
-GTEST_OUTPUT="xml:${WORKSPACE}/test-results/" make -j${PARALLEL_LEVEL} test
-
-logger "Python py.test for librmm_cffi..."
-cd $WORKSPACE/python
-py.test --cache-clear --junitxml=${WORKSPACE}/test-results/junit-librmm_cffi.xml -v
