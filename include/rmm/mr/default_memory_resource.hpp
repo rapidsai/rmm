@@ -17,6 +17,8 @@
 #pragma once
 
 #include "device_memory_resource.hpp"
+
+#include <vector>
 namespace rmm {
 namespace mr {
 
@@ -54,8 +56,7 @@ device_memory_resource* get_default_resource();
 device_memory_resource* set_default_resource(
     device_memory_resource* new_resource);
 
-namespace detail{
-
+namespace detail {
 
 /**---------------------------------------------------------------------------*
  * @brief gets the default memory_resource when none is set
@@ -91,7 +92,8 @@ device_memory_resource* cuda_resource();
  * @return device_memory_resource* a pointer to the static
  * cnmem_memory_resource
  *---------------------------------------------------------------------------**/
-device_memory_resource* pool_resource(std::size_t pool_size = 0);
+device_memory_resource* pool_resource(std::size_t pool_size = 0,
+                                      std::vector<int> const& devices = {});
 
 /**---------------------------------------------------------------------------*
  * @brief gets a cnmem_managed_memory_resource
@@ -103,8 +105,8 @@ device_memory_resource* pool_resource(std::size_t pool_size = 0);
  * @return device_memory_resource* a pointer to the static
  * cnmem_managed_memory_resource
  *---------------------------------------------------------------------------**/
-device_memory_resource* managed_pool_resource(std::size_t pool_size = 0);
-
+device_memory_resource* managed_pool_resource(
+    std::size_t pool_size = 0, std::vector<int> const& devices = {});
 
 /**---------------------------------------------------------------------------*
  * @brief gets a managed_memory_resource
