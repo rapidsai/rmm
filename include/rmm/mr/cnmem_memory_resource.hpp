@@ -43,7 +43,7 @@ class cnmem_memory_resource : public device_memory_resource {
    * zero, an implementation defined pool size is used.
    *-------------------------------------------------------------------------**/
   explicit cnmem_memory_resource(std::size_t initial_pool_size = 0) : 
-    cnmem_memory_resource(initial_pool_size, pool_options::CUDA) {}
+    cnmem_memory_resource(initial_pool_size, memory_kind::CUDA) {}
 
   virtual ~cnmem_memory_resource() {
     auto status = cnmemFinalize();
