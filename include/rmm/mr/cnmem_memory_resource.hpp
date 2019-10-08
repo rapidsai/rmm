@@ -126,8 +126,9 @@ class cnmem_memory_resource : public device_memory_resource {
   void do_deallocate(void* p, std::size_t, cudaStream_t stream) override {
     auto status = cnmemFree(p, stream);
     if (CNMEM_STATUS_SUCCESS != status) {
-      std::string msg = cnmemGetErrorString(status);
-      throw std::runtime_error{"cnmemFree failed: " + msg};
+#ifndef NDEBUG
+      std::cerr << "cnmemFree failed: " << cnmemGetErrorString(status) << "\n";
+#endif
     }
   }
 
