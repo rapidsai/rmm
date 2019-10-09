@@ -17,7 +17,6 @@
 # cython: embedsignature = True
 # cython: language_level = 3
 
-from rmm._lib.lib cimport *
 from libc.stdint cimport uintptr_t
 from libc.stdlib cimport malloc, free
 from libcpp.vector cimport vector
