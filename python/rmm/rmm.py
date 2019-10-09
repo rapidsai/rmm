@@ -53,7 +53,7 @@ def initialize():
         allocation_mode,
         rmm_config.initial_pool_size,
         rmm_config.enable_logging,
-        rmm_config.devices
+        rmm_config.devices,
     )
 
 
