@@ -102,34 +102,36 @@ namespace rmm
   }
 
   // @brief Initialize RMM
-  void Manager::initialize(const rmmOptions_t *options)
+  void Manager::initialize(const rmmOptions_t *new_options)
   {
     std::lock_guard<std::mutex> guard(manager_mutex);
 
-    Manager& instance = getInstance();
-    if (nullptr != options)
-      instance.options = *options; 
+    // repeat initialization is a no-op
+    if (isInitialized()) return;
+
+    if (nullptr != new_options)
+      options = *new_options; 
 
     if (usePoolAllocator()) {
       auto pool_size = getOptions().initial_pool_size;
       if (useManagedMemory()) {
-        instance.memory_resource.reset(
+        initialized_resource.reset(
           new rmm::mr::cnmem_managed_memory_resource(pool_size)
         );
       } else {
-        instance.memory_resource.reset(
+        initialized_resource.reset(
           new rmm::mr::cnmem_memory_resource(pool_size)
         );
       } 
     } else if (rmm::Manager::useManagedMemory()) {
-      instance.memory_resource.reset(new rmm::mr::managed_memory_resource());
+      initialized_resource.reset(new rmm::mr::managed_memory_resource());
     } else {
-      instance.memory_resource.reset(new rmm::mr::cuda_memory_resource());
+      initialized_resource.reset(new rmm::mr::cuda_memory_resource());
     }
 
-    rmm::mr::set_default_resource(instance.memory_resource.get());
+    rmm::mr::set_default_resource(initialized_resource.get());
 
-    instance.is_initialized = true;
+    is_initialized = true;
   }
 
   /** -------------------------------------------------------------------------*
@@ -137,10 +139,13 @@ namespace rmm
    * 
    * ------------------------------------------------------------------------**/
   void Manager::finalize() {
-    std::lock_guard<std::mutex> guard(manager_mutex);
-    registered_streams.clear();
-    logger.clear();
-    memory_resource.reset();
-    getInstance().is_initialized = false;
+    // finalization before initialization is a
+    if (isInitialized()) {
+      std::lock_guard<std::mutex> guard(manager_mutex);
+      registered_streams.clear();
+      logger.clear();
+      initialized_resource.reset();
+      is_initialized = false;
+    }
   }
 }
