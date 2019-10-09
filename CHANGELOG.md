@@ -13,6 +13,7 @@
 
  - PR #99 Added `device_buffer` class
  - PR #133 Added `device_scalar` class
+ - PR #106 Added multi-GPU initialization
 
 ## Improvements
 
