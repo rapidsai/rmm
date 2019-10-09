@@ -57,26 +57,11 @@ const char * rmmGetErrorString(rmmError_t errcode) {
 }
 
 // Initialize memory manager state and storage.
-rmmError_t rmmInitialize(rmmOptions_t *options) {
-  rmm::Manager::getInstance().initialize(options);
-  rmm::mr::device_memory_resource *memory_resource =
-      rmm::mr::detail::initial_resource();
-  if (rmm::Manager::usePoolAllocator()) {
-    if (rmm::Manager::useManagedMemory) {
-      memory_resource = rmm::mr::detail::managed_pool_resource(
-          rmm::Manager::getOptions().initial_pool_size,
-          rmm::Manager::getOptions().devices);
-
-    } else {
-      memory_resource = rmm::mr::detail::pool_resource(
-          rmm::Manager::getOptions().initial_pool_size,
-          rmm::Manager::getOptions().devices);
-    }
-  } else if (rmm::Manager::useManagedMemory()) {
-    memory_resource = rmm::mr::detail::managed_resource();
+rmmError_t rmmInitialize(rmmOptions_t *options)
+{
+  if (!rmm::Manager::getInstance().isInitialized()) {
+    rmm::Manager::getInstance().initialize(options);
   }
-
-  rmm::mr::set_default_resource(memory_resource);
 
   return RMM_SUCCESS;
 }
@@ -84,17 +69,19 @@ rmmError_t rmmInitialize(rmmOptions_t *options) {
 // Shutdown memory manager.
 rmmError_t rmmFinalize()
 {
+  if (rmm::Manager::getInstance().isInitialized()) {
     rmm::Manager::getInstance().finalize();
-    return RMM_SUCCESS;
+  }
+  return RMM_SUCCESS;
 }
 
 // Query the initialization state of RMM.
 bool rmmIsInitialized(rmmOptions_t *options)
 {
-    if (nullptr != options) {
-        *options = rmm::Manager::getOptions();
-    }
-    return rmm::Manager::getInstance().isInitialized();
+  if (nullptr != options) {
+    *options = rmm::Manager::getOptions();
+  }
+  return rmm::Manager::getInstance().isInitialized();
 }
 
 // Allocate memory and return a pointer to device memory.
@@ -112,7 +99,7 @@ rmmError_t rmmAlloc(void **ptr, size_t size, cudaStream_t stream, const char* fi
 // Release device memory and recycle the associated memory.
 rmmError_t rmmFree(void *ptr, cudaStream_t stream, const char* file, unsigned int line)
 {
-    return rmm::free(ptr, stream, file, line);
+  return rmm::free(ptr, stream, file, line);
 }
 
 // Get the offset of ptr from its base allocation
@@ -120,64 +107,62 @@ rmmError_t rmmGetAllocationOffset(ptrdiff_t *offset,
                                   void *ptr,
                                   cudaStream_t stream)
 {
-    void *base = (void*)0xffffffff;
-    CUresult res = cuMemGetAddressRange((CUdeviceptr*)&base, nullptr,
-                                        (CUdeviceptr)ptr);
-    if (res != CUDA_SUCCESS)
-        return RMM_ERROR_INVALID_ARGUMENT;
-    *offset = reinterpret_cast<ptrdiff_t>(ptr) -
-              reinterpret_cast<ptrdiff_t>(base);
-    return RMM_SUCCESS;
+  void *base = (void*)0xffffffff;
+  CUresult res = cuMemGetAddressRange((CUdeviceptr*)&base, nullptr,
+                                      (CUdeviceptr)ptr);
+  if (res != CUDA_SUCCESS)
+    return RMM_ERROR_INVALID_ARGUMENT;
+  *offset = reinterpret_cast<ptrdiff_t>(ptr) -
+            reinterpret_cast<ptrdiff_t>(base);
+  return RMM_SUCCESS;
 }
 
 // Get amounts of free and total memory managed by a manager associated
 // with the stream.
 rmmError_t rmmGetInfo(size_t *freeSize, size_t *totalSize, cudaStream_t stream)
 {
-    try{
-      std::pair<size_t,size_t> memInfo = rmm::mr::get_default_resource()->get_mem_info( stream);
-      *freeSize = memInfo.first;
-      *totalSize = memInfo.second;
-    }catch(std::runtime_error){
-      return RMM_ERROR_CUDA_ERROR;
-    }
-	return RMM_SUCCESS;
+  try {
+    std::pair<size_t,size_t> memInfo = rmm::mr::get_default_resource()->get_mem_info( stream);
+    *freeSize = memInfo.first;
+    *totalSize = memInfo.second;
+  } catch(std::runtime_error){
+    return RMM_ERROR_CUDA_ERROR;
+  }
+  return RMM_SUCCESS;
 }
 
 // Write the memory event stats log to specified path/filename
 rmmError_t rmmWriteLog(const char* filename)
 {
-    try
-    {
-        std::ofstream csv;
-        csv.open(filename);
-        rmm::Manager::getLogger().to_csv(csv);
-    }
-    catch (const std::ofstream::failure& e) {
-        return RMM_ERROR_IO;
-    }
-    return RMM_SUCCESS;
+  try {
+    std::ofstream csv;
+    csv.open(filename);
+    rmm::Manager::getLogger().to_csv(csv);
+  }
+  catch (const std::ofstream::failure& e) {
+    return RMM_ERROR_IO;
+  }
+  return RMM_SUCCESS;
 }
 
 // Get the size opf the CSV log
 size_t rmmLogSize()
 {
-    std::ostringstream csv;
-    rmm::Manager::getLogger().to_csv(csv);
-    return csv.str().size();
+  std::ostringstream csv;
+  rmm::Manager::getLogger().to_csv(csv);
+  return csv.str().size();
 }
 
 // Get the CSV log as a string
 rmmError_t rmmGetLog(char *buffer, size_t buffer_size)
 {
-    try
-    {
-        std::ostringstream csv;
-        rmm::Manager::getLogger().to_csv(csv);
-        csv.str().copy(buffer, std::min(buffer_size, csv.str().size()));
-    }
-    catch (const std::ofstream::failure& e) {
-        return RMM_ERROR_IO;
-    }
-    return RMM_SUCCESS;
+  try {
+    std::ostringstream csv;
+    rmm::Manager::getLogger().to_csv(csv);
+    csv.str().copy(buffer, std::min(buffer_size, csv.str().size()));
+  }
+  catch (const std::ofstream::failure& e) {
+    return RMM_ERROR_IO;
+  }
+  return RMM_SUCCESS;
 }

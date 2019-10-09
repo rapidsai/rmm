@@ -102,7 +102,8 @@ TEST(DefaultTest, UseDefaultResource) {
 }
 
 TYPED_TEST(MRTest, SetDefaultResource) {
-  EXPECT_FALSE(this->mr->is_equal(*rmm::mr::get_default_resource()));
+  // Not necessarily false, since two cuda_memory_resources are always equal
+  //EXPECT_FALSE(this->mr->is_equal(*rmm::mr::get_default_resource()));
   rmm::mr::device_memory_resource* old{nullptr};
   EXPECT_NO_THROW(old = rmm::mr::set_default_resource(this->mr.get()));
   EXPECT_NE(nullptr, old);
@@ -116,7 +117,8 @@ TYPED_TEST(MRTest, SetDefaultResource) {
   // setting default resource w/ nullptr should reset to initial
   EXPECT_NO_THROW(rmm::mr::set_default_resource(nullptr));
   EXPECT_TRUE(old->is_equal(*rmm::mr::get_default_resource()));
-  EXPECT_FALSE(this->mr->is_equal(*rmm::mr::get_default_resource()));
+  // Not necessarily false, since two cuda_memory_resources are always equal
+  //EXPECT_FALSE(this->mr->is_equal(*rmm::mr::get_default_resource()));
 }
 
 TYPED_TEST(MRTest, SelfEquality) { EXPECT_TRUE(this->mr->is_equal(*this->mr)); }
