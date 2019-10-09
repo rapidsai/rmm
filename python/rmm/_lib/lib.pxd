@@ -22,7 +22,6 @@ from libcpp cimport bool
 from libcpp.utility cimport pair
 from libcpp.vector cimport vector
 
-ctypedef long int offset_t
 ctypedef pair[const char*, unsigned int] caller_pair
 
 
@@ -41,10 +40,10 @@ cdef void c_free(
     cudaStream_t stream
 ) except *
 
-cdef offset_t* c_getallocationoffset(
+cdef ptrdiff_t* c_getallocationoffset(
     void *ptr,
     cudaStream_t stream
-) except? <offset_t*>NULL
+) except? <ptrdiff_t*>NULL
 
 cdef caller_pair _get_caller() except *
 
@@ -102,7 +101,7 @@ cdef extern from "rmm/rmm.h" nogil:
     ) except +
 
     cdef rmmError_t rmmGetAllocationOffset(
-        offset_t *offset,
+        ptrdiff_t *offset,
         void *ptr,
         cudaStream_t stream
     ) except +

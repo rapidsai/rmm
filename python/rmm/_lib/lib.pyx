@@ -234,18 +234,18 @@ def rmm_free(ptr, stream):
     )
 
 
-cdef offset_t* c_getallocationoffset(
+cdef ptrdiff_t* c_getallocationoffset(
     void *ptr, cudaStream_t stream
-) except? <offset_t*>NULL:
+) except? <ptrdiff_t*>NULL:
     """
     Gets the offset of ptr from its base allocation by calling the librmm
     functions via Cython
     """
-    cdef offset_t * offset = <offset_t *>malloc(sizeof(offset_t))
+    cdef ptrdiff_t * offset = <ptrdiff_t *>malloc(sizeof(ptrdiff_t))
 
     with nogil:
         rmm_error = rmmGetAllocationOffset(
-            <offset_t *>offset,
+            <ptrdiff_t *>offset,
             <void *>ptr,
             <cudaStream_t>stream
         )
@@ -263,7 +263,7 @@ def rmm_getallocationoffset(ptr, stream):
     cdef void * c_ptr = <void *><uintptr_t>ptr
     cdef cudaStream_t c_stream = <cudaStream_t><size_t>stream
 
-    cdef offset_t * c_offset = c_getallocationoffset(
+    cdef ptrdiff_t * c_offset = c_getallocationoffset(
         <void *>c_ptr,
         <cudaStream_t>c_stream
     )

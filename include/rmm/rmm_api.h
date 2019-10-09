@@ -26,8 +26,6 @@
 #include <vector>
 
 typedef struct CUstream_st *cudaStream_t;
-typedef long int offset_t; // would prefer ptrdiff_t but can't #include <stddef.h>
-                           // due to CFFI limitations
 
 /** ---------------------------------------------------------------------------*
  * @brief RMM error codes
@@ -178,7 +176,7 @@ rmmError_t rmmFree(void *ptr, cudaStream_t stream,
  *                   ptr.
  * @return rmmError_t RMM_SUCCESS if all goes well
  * --------------------------------------------------------------------------**/
-rmmError_t rmmGetAllocationOffset(offset_t *offset,
+rmmError_t rmmGetAllocationOffset(ptrdiff_t *offset,
                                   void *ptr,
                                   cudaStream_t stream);
 
