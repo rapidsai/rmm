@@ -20,6 +20,7 @@
 from libc.stdint cimport uintptr_t
 from libcpp cimport bool
 from libcpp.utility cimport pair
+from libcpp.vector cimport vector
 
 ctypedef long int offset_t
 ctypedef pair[const char*, unsigned int] caller_pair
@@ -65,10 +66,11 @@ cdef extern from "rmm/rmm.h" nogil:
         PoolAllocation = 1,
         CudaManagedMemory = 2,
 
-    ctypedef struct rmmOptions_t:
+    cdef cppclass rmmOptions_t:
         rmmAllocationMode_t allocation_mode
         size_t initial_pool_size
         bool enable_logging
+        vector[int] devices
 
     cdef rmmError_t rmmInitialize(
         rmmOptions_t *options

@@ -39,3 +39,6 @@ initial_pool_size = 0
 
 # enable run-time logging of all memory events (alloc, free, realloc)
 enable_logging = False
+
+# list of GPU device  IDs to register.
+devices = [0]

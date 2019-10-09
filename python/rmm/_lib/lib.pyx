@@ -83,15 +83,16 @@ cdef caller_pair _get_caller() except *:
 
 
 # API Functions
-def rmm_initialize(allocation_mode, initial_pool_size, enable_logging):
+def rmm_initialize(allocation_mode, initial_pool_size, enable_logging, devices):
     """
     Initializes the RMM library by calling the librmm functions via Cython
     """
     global opts
-    opts = <rmmOptions_t*>malloc(sizeof(rmmOptions_t))
+    opts = new rmmOptions_t()
     opts.allocation_mode = <rmmAllocationMode_t>allocation_mode
     opts.initial_pool_size = <size_t>initial_pool_size
     opts.enable_logging = <bool>enable_logging
+    opts.devices = devices
 
     with nogil:
         rmm_error = rmmInitialize(
