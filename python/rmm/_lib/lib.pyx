@@ -109,7 +109,7 @@ def rmm_finalize():
     Finalizes the RMM library by calling the librmm functions via Cython
     """
     global opts
-    free(opts)
+    del opts
     opts = NULL
 
     with nogil:
