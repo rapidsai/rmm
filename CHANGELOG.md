@@ -28,6 +28,7 @@
  - PR #125 Fixed order of private variables in LogIt
  - PR #139 Expose `_make_finalizer` python API needed by cuDF
  - PR #142 Fix ignored exceptions in Cython
+ - PR #146 Fix rmmFinalize() not freeing memory pools
  - PR #149 Force finalization of RMM objects before RMM is finalized (Python)
 
 
