@@ -101,7 +101,7 @@ namespace rmm
     return RMM_SUCCESS;
   }
 
-  // @brief Initialize RMM
+  // Initialize the manager
   void Manager::initialize(const rmmOptions_t *new_options)
   {
     std::lock_guard<std::mutex> guard(manager_mutex);
@@ -134,14 +134,12 @@ namespace rmm
     is_initialized = true;
   }
 
-  /** -------------------------------------------------------------------------*
-   * @brief Shut down the Manager (clears the context)
-   * 
-   * ------------------------------------------------------------------------**/
+  // Shut down the Manager (clears the context)
   void Manager::finalize() {
-    // finalization before initialization is a
+    std::lock_guard<std::mutex> guard(manager_mutex);
+
+    // finalization before initialization is a no-op
     if (isInitialized()) {
-      std::lock_guard<std::mutex> guard(manager_mutex);
       registered_streams.clear();
       logger.clear();
       initialized_resource.reset();
