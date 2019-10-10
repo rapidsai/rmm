@@ -133,8 +133,6 @@ deallocation; however, the default (also known as null) stream (or `0`) can be
 used. For example:
 
 ```
-
-```
 // old
 cudaError_t result = cudaMalloc(&myvar, size_in_bytes) );
 // ...
@@ -308,3 +306,11 @@ RMM allocates the initial pool (and any expansion allocations) using
 `cudaMallocManaged` and then prefetches the pool to the GPU using
 `cudaMemPrefetchAsync` so all pool memory that will fit is initially located
 on the device.
+
+### Thread Safety
+
+RMM aims to be thread safe, and provides the following guarantees.
+
+1. `rmmInitialize()` and `rmmFinalize()` are thread-safe with respect to each other. In other words, `rmmFinalize()` cannot interrupt `rmmInitialize()` and vice versa.
+2. `rmmAlloc()` and `rmmFree()` calls are thread-safe with respect to each other. In other words, the state of the underlying allocator is thread safe.
+3. `rmmAlloc()` and `rmmFree()` are NOT thread-safe with respect to `rmmInitialize()` and `rmmFinalize()`. For example, a `rmmFinalize()` *could* interrupt an `rmmAlloc()` or `rmmFree()` in another thread. Therefore applications should ensure to protect calls to `rmmInitialize()` `rmmFinalize()`.
