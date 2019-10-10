@@ -102,7 +102,14 @@ TYPED_TEST(MemoryManagerTest, Finalize) {
 
 TYPED_TEST(MemoryManagerTest, FreeInvalidPointer) {
     char *a = (char*)100;
-    ASSERT_FAILURE(RMM_FREE(a, stream));
+    // TODO: no way to detect cnmem errors from RMM level,
+    // hence ASSERT_SUCCESS here
+    if (this->allocationMode() & PoolAllocation) {
+        ASSERT_SUCCESS(RMM_FREE(a, stream));
+    }
+    else {
+        ASSERT_FAILURE(RMM_FREE(a, stream));
+    }
 }
 
 // zero size tests
