@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import atexit
 import ctypes
 
 import numpy as np
@@ -60,6 +60,13 @@ def finalize():
     """
     Finalizes the RMM library, freeing all allocated memory
     """
+    from numba.utils import finalize as weakref_finalize
+
+    # Call finalize._exitfunc() to force finalization of
+    # any RMM objects *before* RMM is finalized.
+    # See https://github.com/rapidsai/rmm/issues/148
+    weakref_finalize._exitfunc()
+
     return librmm.rmm_finalize()
 
 
