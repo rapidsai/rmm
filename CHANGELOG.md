@@ -22,7 +22,7 @@
  - PR #146 Fix rmmFinalize() not freeing memory pools
  - PR #149 Force finalization of RMM objects before RMM is finalized (Python)
  - PR #154 Set ptr to 0 on rmm::alloc error
- - PR #XXX Check if initialized before freeing for Numba finalizer
+ - PR #157 Check if initialized before freeing for Numba finalizer
 
 
 # RMM 0.9.0 (21 August 2019)
