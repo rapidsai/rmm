@@ -30,5 +30,6 @@ from rmm.rmm import (
     to_device,
 )
 
+# Initialize RMM on import, finalize RMM on process exit
 initialize()
 atexit.register(finalize)
