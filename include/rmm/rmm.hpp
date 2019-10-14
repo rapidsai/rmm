@@ -119,7 +119,11 @@ class LogIt {
 template <typename T>
 inline rmmError_t alloc(T** ptr, size_t size, cudaStream_t stream, const char* file,
                  unsigned int line) {
-  if (!rmmIsInitialized(nullptr)) return RMM_ERROR_NOT_INITIALIZED;
+  if (!rmmIsInitialized(nullptr)) {
+    if (ptr)
+      *ptr = nullptr;
+    return RMM_ERROR_NOT_INITIALIZED;
+  }
 
   rmm::LogIt log(rmm::Logger::Alloc, 0, size, stream, file, line);
 
@@ -127,12 +131,14 @@ inline rmmError_t alloc(T** ptr, size_t size, cudaStream_t stream, const char* f
     return RMM_SUCCESS;
   }
 
-  if (!ptr) return RMM_ERROR_INVALID_ARGUMENT;
-  try{
-     *ptr = static_cast<T*>(
+  if (!ptr)
+    return RMM_ERROR_INVALID_ARGUMENT;
+
+  try {
+    *ptr = static_cast<T*>(
       rmm::mr::get_default_resource()->allocate(size,stream));
 
-  }catch(std::exception e){
+  } catch(std::exception e) {
     *ptr = nullptr;
     return RMM_ERROR_OUT_OF_MEMORY;
   }
