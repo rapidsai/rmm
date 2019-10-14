@@ -15,7 +15,7 @@ extern "C" {
 #define RMM_ALLOC(ptr, sz, stream) \
   rmm::alloc((ptr), (sz), (stream), __FILE__, __LINE__)
 
-//#define RMM_REALLOC(ptr, new_sz, stream) \
+//#define RMM_REALLOC(ptr, new_sz, stream) 
 //  rmm::realloc((ptr), (new_sz), (stream), __FILE__, __LINE__)
 
 #define RMM_FREE(ptr, stream) rmm::free((ptr), (stream), __FILE__, __LINE__)
