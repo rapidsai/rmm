@@ -27,7 +27,6 @@
 #include <algorithm>
 #include <mutex>
 #include <chrono>
-#include <map>
 
 namespace {
 
