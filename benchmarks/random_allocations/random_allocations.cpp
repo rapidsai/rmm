@@ -128,7 +128,7 @@ static void BM_RandomAllocationsCnmem(State& state) {
     std::cout << "Error: " << e.what() << "\n";
   }
 }
-BENCHMARK(BM_RandomAllocationsCnmem)->Unit(benchmark::kMillisecond);
+//BENCHMARK(BM_RandomAllocationsCnmem)->Unit(benchmark::kMillisecond);
 
 /*int main(void) {
   std::vector<int> state(1000);
