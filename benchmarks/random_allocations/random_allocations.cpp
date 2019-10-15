@@ -115,7 +115,7 @@ static void BM_RandomAllocationsSub(State& state) {
     std::cout << "Error: " << e.what() << "\n";
   }
 }
-//BENCHMARK(BM_RandomAllocationsSub)->Unit(benchmark::kMillisecond);
+BENCHMARK(BM_RandomAllocationsSub)->Unit(benchmark::kMillisecond);
 
 template <typename State>
 static void BM_RandomAllocationsCnmem(State& state) {
@@ -130,11 +130,11 @@ static void BM_RandomAllocationsCnmem(State& state) {
 }
 //BENCHMARK(BM_RandomAllocationsCnmem)->Unit(benchmark::kMillisecond);
 
-int main(void) {
+/*int main(void) {
   std::vector<int> state(1);
   BM_RandomAllocationsSub(state);
   return 0;
-}
+}*/
 
 
 

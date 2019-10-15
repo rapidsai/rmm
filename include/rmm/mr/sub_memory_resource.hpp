@@ -28,6 +28,7 @@
 #include <mutex>
 #include <chrono>
 
+//#define TIMING 1
 namespace {
 
 // double precision time durations
@@ -62,6 +63,7 @@ struct raii_timer {
 };
 
 void print_timers() {
+  #ifdef TIMING
   std::cout << "----  Timers  ----\n";
   double total = 0;
   for (int i = 0; i < timers.size(); i++) {
@@ -69,9 +71,16 @@ void print_timers() {
     total += timers[i];
   }
   std::cout << "TOTAL: " << total << "\n\n";
+  #endif
 }
 
 }
+
+#ifdef TIMING 
+#define TIMER(id) raii_timer((id))
+#else
+#define TIMER(id)
+#endif
 
 
 namespace rmm {
@@ -176,7 +185,7 @@ class sub_memory_resource final : public device_memory_resource {
   struct free_list {
 
     inline block get_best_fit(size_t size) {
-      raii_timer(3);
+      TIMER(3);
       block dummy{nullptr, size, false};
       // find best fit block
       auto iter = std::min_element(blocks.begin(), blocks.end(),
@@ -196,7 +205,7 @@ class sub_memory_resource final : public device_memory_resource {
     }
 
     inline void insert_and_merge(block const& b) {
-      raii_timer(4);
+      TIMER(4);
       auto next = std::find_if(blocks.begin(), blocks.end(),
         [b](block const& i) { return i.ptr > b.ptr; });
 
@@ -258,7 +267,7 @@ class sub_memory_resource final : public device_memory_resource {
 
   inline block block_from_sync_list(size_t size, cudaStream_t stream)
   {
-    raii_timer(1);
+    TIMER(1);
 
     free_list& blocks = sync_blocks.at(stream);
     block b = blocks.get_best_fit(size);
@@ -280,7 +289,7 @@ class sub_memory_resource final : public device_memory_resource {
 
   inline block available_larger_block(size_t size, cudaStream_t stream)
   {
-    raii_timer(0);
+    TIMER(0);
 
     // Try to find a larger block that doesn't require syncing
     block b = no_sync_blocks.get_best_fit(size);
@@ -340,7 +349,7 @@ class sub_memory_resource final : public device_memory_resource {
 
   inline void find_and_free_block(void *p, size_t size, cudaStream_t stream)
   {
-    raii_timer(2);
+    TIMER(2);
 
     if (p == nullptr) return;
 
