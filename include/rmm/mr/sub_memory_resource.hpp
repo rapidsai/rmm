@@ -173,7 +173,7 @@ class sub_memory_resource final : public device_memory_resource {
   {
     char* ptr;          ///< Raw memory pointer
     size_t size;        ///< Size in bytes
-    bool is_head_block; ///< Indicates whether ptr was allocated from the heap
+    bool is_head;       ///< Indicates whether ptr was allocated from the heap
 
     bool operator<(block const& rhs) const { return ptr < rhs.ptr; };
 
@@ -208,10 +208,10 @@ class sub_memory_resource final : public device_memory_resource {
       TIMER(4);
       auto next = std::find_if(blocks.begin(), blocks.end(),
         [b](block const& i) { return i.ptr > b.ptr; });
+      auto previous = (next == blocks.begin()) ? next : std::prev(next);
 
-      auto previous = std::prev(next);
-      bool merge_prev = !b.is_head_block && (previous->ptr + previous->size == b.ptr); 
-      bool merge_next = !next->is_head_block && (b.ptr + b.size == next->ptr);
+      bool merge_prev = !b.is_head && (previous->ptr + previous->size == b.ptr);
+      bool merge_next = (next != blocks.end()) && !next->is_head && (b.ptr + b.size == next->ptr);
 
       if (merge_prev) {
         *previous = merge_blocks(*previous, b);
@@ -318,7 +318,7 @@ class sub_memory_resource final : public device_memory_resource {
   {
     if (b.size > size)
     {
-      block rest{b.ptr + size, b.size - size};
+      block rest{b.ptr + size, b.size - size, false};
       no_sync_blocks.insert_and_merge(rest);
       b.size = size;
     }
@@ -328,7 +328,7 @@ class sub_memory_resource final : public device_memory_resource {
 
   static inline block merge_blocks(block const& a, block const& b)
   {
-    if (a.ptr + a.size != b.ptr || b.is_head_block)
+    if (a.ptr + a.size != b.ptr || b.is_head)
       throw std::logic_error("Invalid block merge");
     
     return block{a.ptr, a.size + b.size};
@@ -343,9 +343,6 @@ class sub_memory_resource final : public device_memory_resource {
     return reinterpret_cast<void*>(split.ptr);
   }
 
-  inline bool is_head_block(block const& b) {
-    return b.is_head_block; //heap_blocks.count(b.ptr) > 0;
-  }
 
   inline void find_and_free_block(void *p, size_t size, cudaStream_t stream)
   {
