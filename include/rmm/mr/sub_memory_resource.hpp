@@ -38,7 +38,9 @@ std::chrono::duration<double, std::micro>  microseconds(T&& t)
     return std::chrono::duration_cast<std::chrono::duration<double, std::micro>>(t);
 }
 
-std::map<int, double> counters;
+std::vector<double> timers{0, 0, 0, 0, 0};
+std::vector<int> counters{0, 0, 0, 0, 0};
+
 std::string TIMER_IDS[] = {"available_larger_block", 
                            "block_from_sync_list",
                            "find_and_free_block",
@@ -52,7 +54,8 @@ struct raii_timer {
     auto end = timer::now();
     auto diff = end - start;
 
-    counters[id] += (double)microseconds(diff).count();
+    counters[id]++;
+    timers[id] += (double)microseconds(diff).count();
   }
 
   int id;
@@ -61,10 +64,12 @@ struct raii_timer {
 
 void print_timers() {
   std::cout << "----  Timers  ----\n";
-  for (auto x : counters) {
-    std::cout << TIMER_IDS[x.first] << ": " << x.second << " us\n";
+  double total = 0;
+  for (int i = 0; i < timers.size(); i++) {
+    std::cout << TIMER_IDS[i] << ": " << timers[i] << " us " << "(" << counters[i] << ")\n";
+    total += timers[i];
   }
-  std::cout << "----  ------  ----\n\n";
+  std::cout << "TOTAL: " << total << "\n\n";
 }
 
 }
@@ -143,6 +148,7 @@ class sub_memory_resource final : public device_memory_resource {
   ~sub_memory_resource() {
     print_timers();
     counters.clear();
+    timers.clear();
     free_all();
 #ifndef NDEBUG
     /*std::cout << "Statistics\n"
