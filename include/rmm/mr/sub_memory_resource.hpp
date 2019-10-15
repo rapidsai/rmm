@@ -38,26 +38,31 @@ std::chrono::duration<double, std::micro>  microseconds(T&& t)
     return std::chrono::duration_cast<std::chrono::duration<double, std::micro>>(t);
 }
 
-std::map<std::string, double> counters;
+std::map<int, double> counters;
+std::string TIMER_IDS[] = {"available_larger_block", 
+                           "block_from_sync_list",
+                           "find_and_free_block",
+                           "get_best_fit",
+                           "insert_and_merge"};
 
 struct raii_timer {
   using timer = std::chrono::high_resolution_clock;
-  raii_timer(const char* name) : name(name), start(timer::now()) {}
+  raii_timer(int id) : id(id), start(timer::now()) {}
   ~raii_timer() {
     auto end = timer::now();
     auto diff = end - start;
 
-    counters[name] += (double)microseconds(diff).count();
+    counters[id] += (double)microseconds(diff).count();
   }
 
-  std::string name;
+  int id;
   std::chrono::time_point<std::chrono::high_resolution_clock> start;
 };
 
 void print_timers() {
   std::cout << "----  Timers  ----\n";
   for (auto x : counters) {
-    std::cout << x.first << ": " << x.second << " us\n";
+    std::cout << TIMER_IDS[x.first] << ": " << x.second << " us\n";
   }
   std::cout << "----  ------  ----\n\n";
 }
@@ -166,7 +171,7 @@ class sub_memory_resource final : public device_memory_resource {
   struct free_list {
 
     inline block get_best_fit(size_t size) {
-      raii_timer("get_best_fit");
+      raii_timer(3);
       block dummy{nullptr, size, false};
       // find best fit block
       auto iter = std::min_element(blocks.begin(), blocks.end(),
@@ -186,7 +191,7 @@ class sub_memory_resource final : public device_memory_resource {
     }
 
     inline void insert_and_merge(block const& b) {
-      raii_timer("insert_and_merge");
+      raii_timer(4);
       auto next = std::find_if(blocks.begin(), blocks.end(),
         [b](block const& i) { return i.ptr > b.ptr; });
 
@@ -248,7 +253,7 @@ class sub_memory_resource final : public device_memory_resource {
 
   inline block block_from_sync_list(size_t size, cudaStream_t stream)
   {
-    raii_timer("block_from_sync_list");
+    raii_timer(1);
 
     free_list& blocks = sync_blocks.at(stream);
     block b = blocks.get_best_fit(size);
@@ -270,7 +275,7 @@ class sub_memory_resource final : public device_memory_resource {
 
   inline block available_larger_block(size_t size, cudaStream_t stream)
   {
-    raii_timer("available_larger_block");
+    raii_timer(0);
 
     // Try to find a larger block that doesn't require syncing
     block b = no_sync_blocks.get_best_fit(size);
@@ -330,7 +335,7 @@ class sub_memory_resource final : public device_memory_resource {
 
   inline void find_and_free_block(void *p, size_t size, cudaStream_t stream)
   {
-    raii_timer("find_and_free_block");
+    raii_timer(2);
 
     if (p == nullptr) return;
 
