@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import atexit
+import weakref
 
 from rmm import rmm_config
 from rmm.rmm import (
@@ -32,4 +32,6 @@ from rmm.rmm import (
 
 # Initialize RMM on import, finalize RMM on process exit
 initialize()
-atexit.register(finalize)
+
+_rmm_dummy_object = lambda: None
+_rmm_atexit_func = weakref.finalize(_rmm_dummy_object, finalize)
