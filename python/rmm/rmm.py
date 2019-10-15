@@ -60,13 +60,6 @@ def finalize():
     """
     Finalizes the RMM library, freeing all allocated memory
     """
-    from numba.utils import finalize as weakref_finalize
-
-    # Call finalize._exitfunc() to force finalization of
-    # any RMM objects *before* RMM is finalized.
-    # See https://github.com/rapidsai/rmm/issues/148
-    weakref_finalize._exitfunc()
-
     return librmm.rmm_finalize()
 
 
@@ -223,6 +216,7 @@ def _make_finalizer(handle, stream):
         """
         Invoked when the MemoryPointer is freed
         """
-        return librmm.rmm_free(handle, stream)
+        if is_initialized():
+            librmm.rmm_free(handle, stream)
 
     return finalizer
