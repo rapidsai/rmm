@@ -4,6 +4,8 @@
 
 ## Improvements
 
+- PR #161 Use `std::atexit` to finalize RMM after Python interpreter shutdown
+
 ## Bug Fixes
 
 
