@@ -220,3 +220,7 @@ def _make_finalizer(handle, stream):
             librmm.rmm_free(handle, stream)
 
     return finalizer
+
+
+def _register_finalize():
+    librmm.register_finalize()
