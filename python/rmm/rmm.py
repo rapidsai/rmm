@@ -222,5 +222,8 @@ def _make_finalizer(handle, stream):
     return finalizer
 
 
-def _register_finalize():
-    librmm.register_finalize()
+def _register_atexit_finalize():
+    """
+    Registers rmmFinalize() with ``std::atexit``.
+    """
+    librmm.register_atexit_finalize()

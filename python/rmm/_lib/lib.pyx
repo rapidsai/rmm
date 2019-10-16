@@ -125,7 +125,7 @@ cdef void _rmmFinalizeWrapper ():
     rmmFinalize()
 
 
-def register_finalize():
+def register_atexit_finalize():
     atexit(&_rmmFinalizeWrapper)
 
 
