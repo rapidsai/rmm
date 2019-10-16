@@ -18,70 +18,12 @@
 #include "device_memory_resource.hpp"
 
 #include <cuda_runtime_api.h>
-//#include <cassert>
 #include <exception>
 #include <iostream>
-#include <mutex>
 #include <list>
 #include <unordered_map>
 #include <algorithm>
 #include <mutex>
-#include <chrono>
-
-//#define TIMING 1
-namespace {
-
-// double precision time durations
-template <typename T>
-std::chrono::duration<double, std::micro>  microseconds(T&& t)
-{
-    return std::chrono::duration_cast<std::chrono::duration<double, std::micro>>(t);
-}
-
-std::vector<double> timers{0, 0, 0, 0, 0};
-std::vector<int> counters{0, 0, 0, 0, 0};
-
-std::string TIMER_IDS[] = {"available_larger_block", 
-                           "block_from_sync_list",
-                           "find_and_free_block",
-                           "get_best_fit",
-                           "insert_and_merge"};
-
-struct raii_timer {
-  using timer = std::chrono::high_resolution_clock;
-  raii_timer(int id) : id(id), start(timer::now()) {}
-  ~raii_timer() {
-    auto end = timer::now();
-    auto diff = end - start;
-
-    counters[id]++;
-    timers[id] += (double)microseconds(diff).count();
-  }
-
-  int id;
-  std::chrono::time_point<std::chrono::high_resolution_clock> start;
-};
-
-void print_timers() {
-  #ifdef TIMING
-  std::cout << "----  Timers  ----\n";
-  double total = 0;
-  for (int i = 0; i < timers.size(); i++) {
-    std::cout << TIMER_IDS[i] << ": " << timers[i] << " us " << "(" << counters[i] << ")\n";
-    total += timers[i];
-  }
-  std::cout << "TOTAL: " << total << "\n\n";
-  #endif
-}
-
-}
-
-#ifdef TIMING 
-#define TIMER(id) raii_timer((id))
-#else
-#define TIMER(id)
-#endif
-
 
 namespace rmm {
 namespace mr {
@@ -154,9 +96,6 @@ class sub_memory_resource final : public device_memory_resource {
   }
 
   ~sub_memory_resource() {
-    print_timers();
-    counters.clear();
-    timers.clear();
     free_all();
 #ifndef NDEBUG
     /*std::cout << "Statistics\n"
@@ -185,7 +124,6 @@ class sub_memory_resource final : public device_memory_resource {
   struct free_list {
 
     inline block get_best_fit(size_t size) {
-      TIMER(3);
       block dummy{nullptr, size, false};
       // find best fit block
       auto iter = std::min_element(blocks.begin(), blocks.end(),
@@ -205,7 +143,11 @@ class sub_memory_resource final : public device_memory_resource {
     }
 
     inline void insert_and_merge(block const& b) {
-      TIMER(4);
+      if (blocks.empty()) { 
+        blocks.insert(blocks.end(), b);
+        return;
+      }
+
       auto next = std::find_if(blocks.begin(), blocks.end(),
         [b](block const& i) { return i.ptr > b.ptr; });
       auto previous = (next == blocks.begin()) ? next : std::prev(next);
@@ -267,8 +209,6 @@ class sub_memory_resource final : public device_memory_resource {
 
   inline block block_from_sync_list(size_t size, cudaStream_t stream)
   {
-    TIMER(1);
-
     free_list& blocks = sync_blocks.at(stream);
     block b = blocks.get_best_fit(size);
     if (b.ptr != nullptr) { // found one
@@ -287,10 +227,7 @@ class sub_memory_resource final : public device_memory_resource {
     return b;
   }
 
-  inline block available_larger_block(size_t size, cudaStream_t stream)
-  {
-    TIMER(0);
-
+  inline block available_larger_block(size_t size, cudaStream_t stream) {
     // Try to find a larger block that doesn't require syncing
     block b = no_sync_blocks.get_best_fit(size);
 
@@ -346,8 +283,6 @@ class sub_memory_resource final : public device_memory_resource {
 
   inline void find_and_free_block(void *p, size_t size, cudaStream_t stream)
   {
-    TIMER(2);
-
     if (p == nullptr) return;
 
     auto i = std::find_if(allocated_blocks.begin(), allocated_blocks.end(),
