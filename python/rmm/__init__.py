@@ -18,7 +18,7 @@ from rmm import rmm_config
 from rmm.rmm import (
     RMMError,
     _make_finalizer,
-    _register_finalize,
+    _register_atexit_finalize,
     auto_device,
     csv_log,
     device_array,
@@ -33,4 +33,4 @@ from rmm.rmm import (
 
 # Initialize RMM on import, finalize RMM on process exit
 initialize()
-_register_finalize()
+_register_atexit_finalize()

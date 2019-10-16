@@ -141,4 +141,4 @@ cdef extern from "rmm/rmm.hpp" namespace "rmm" nogil:
 
 
 cdef extern from "cstdlib":
-    int atexit( void (*func)() )
+    int atexit(void (*func)())
