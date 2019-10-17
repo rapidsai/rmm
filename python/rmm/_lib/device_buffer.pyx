@@ -13,13 +13,12 @@ cdef device_buffer buffer_from_array_interface(desc):
     Construct a device_buffer from an array_interface
     """
     ptr = <void*> <uintptr_t>desc['data'][0]
-    itemsize = int(desc['typestr'][2:])
+    itemsize = np.dtype(desc['typestr']).itemsize
     size = functools.reduce(operator.mul, desc['shape'])
     return device_buffer(ptr, size * itemsize)
 
 
 cdef class DeviceBuffer:
-    cdef device_buffer c_obj
 
     def __cinit__(self, data=None, size=None):
         """
