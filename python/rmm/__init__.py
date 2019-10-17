@@ -18,6 +18,7 @@ from rmm import rmm_config
 from rmm.rmm import (
     RMMError,
     _make_finalizer,
+    _register_atexit_finalize,
     auto_device,
     csv_log,
     device_array,
@@ -32,6 +33,4 @@ from rmm.rmm import (
 
 # Initialize RMM on import, finalize RMM on process exit
 initialize()
-
-_rmm_dummy_object = lambda: None
-_rmm_atexit_func = weakref.finalize(_rmm_dummy_object, finalize)
+_register_atexit_finalize()
