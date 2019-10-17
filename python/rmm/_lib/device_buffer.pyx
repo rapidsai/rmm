@@ -34,6 +34,8 @@ cdef class DeviceBuffer:
         size : int
             Size (in bytes) of the memory allocation required.
         """
+        if isinstance(data, memoryview):
+            self.c_obj = buffer_from_array_interface(np.array(data).__array_interface__)
         if hasattr(data, "__array_interface__"):
             self.c_obj = buffer_from_array_interface(data.__array_interface__)
         elif hasattr(data, "__cuda_array_interface__"):
