@@ -51,6 +51,10 @@ cdef class DeviceBuffer:
 
     cdef void* data(self):
         return self.c_obj.data()
+
+    @property
+    def data(self):
+        return int(<uintptr_t>self.c_obj.data())
     
     cpdef void resize(self, size_t new_size):
         self.c_obj.resize(new_size)
