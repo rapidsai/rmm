@@ -32,7 +32,7 @@ struct allocation {
 };
 
 void mixed_random_allocation_free(rmm::mr::device_memory_resource& mr,
-                                  size_t num_allocations = 10000,
+                                  size_t num_allocations = 1000,
                                   size_t max_allocation_size = 500, // in MiB
                                   cudaStream_t stream = 0)
 {
@@ -102,7 +102,7 @@ static void BM_RandomAllocationsCUDA(benchmark::State& state) {
     std::cout << "Error: " << e.what() << "\n";
   }
 }
-//BENCHMARK(BM_RandomAllocationsCUDA)->Unit(benchmark::kMillisecond);
+BENCHMARK(BM_RandomAllocationsCUDA)->Unit(benchmark::kMillisecond);
 
 template <typename State>
 static void BM_RandomAllocationsSub(State& state) {
