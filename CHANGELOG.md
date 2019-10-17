@@ -1,22 +1,45 @@
-# RMM 0.10.0 (Date TBD)
+# RMM 0.11.0 (Date TBD)
 
 ## New Features
 
 ## Improvements
- - PR #123 Remove driver install from ci scripts
 
 ## Bug Fixes
 
- - PR #125 Fixed order of private variables in LogIt
 
-# RMM 0.9.0 (Date TBD)
+# RMM 0.10.0 (Date TBD)
+
+## New Features
+
+ - PR #99 Added `device_buffer` class
+ - PR #133 Added `device_scalar` class
+
+## Improvements
+
+ - PR #123 Remove driver install from ci scripts
+ - PR #131 Use YYMMDD tag in nightly build
+ - PR #137 Replace CFFI python bindings with Cython
+ - PR #127 Use Memory Resource classes for allocations
+
+## Bug Fixes
+
+ - PR #107 Fix local build generated file ownerships
+ - PR #110 Fix Skip Test Functionality
+ - PR #125 Fixed order of private variables in LogIt
+ - PR #139 Expose `_make_finalizer` python API needed by cuDF
+ - PR #142 Fix ignored exceptions in Cython
+ - PR #146 Fix rmmFinalize() not freeing memory pools
+ - PR #149 Force finalization of RMM objects before RMM is finalized (Python)
+ - PR #154 Set ptr to 0 on rmm::alloc error
+ - PR #157 Check if initialized before freeing for Numba finalizer and use `weakref` instead of `atexit`
+
+
+# RMM 0.9.0 (21 August 2019)
 
 ## New Features
 
  - PR #96 Added `device_memory_resource` for beginning of overhaul of RMM design
  - PR #103 Add and use unified build script
- - PR #107 Fix local build generated file ownerships
- - PR #127 Use Memory Resource classes for allocations
 
 ## Improvements
 

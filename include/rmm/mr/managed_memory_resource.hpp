@@ -33,7 +33,7 @@ class managed_memory_resource final : public device_memory_resource {
   bool supports_streams() const noexcept override { return false; }
 
  private:
-  /**---------------------------------------------------------------------------*
+  /**--------------------------------------------------------------------------*
    * @brief Allocates memory of size at least \p bytes using cudaMallocManaged.
    *
    * The returned pointer has at least 256B alignment.
@@ -44,7 +44,7 @@ class managed_memory_resource final : public device_memory_resource {
    *
    * @param bytes The size, in bytes, of the allocation
    * @return void* Pointer to the newly allocated memory
-   *---------------------------------------------------------------------------**/
+   *-------------------------------------------------------------------------**/
   void* do_allocate(std::size_t bytes, cudaStream_t) override {
     // FIXME: Unlike cudaMalloc, cudaMallocManaged will throw an error for 0
     // size allocations.
@@ -64,7 +64,7 @@ class managed_memory_resource final : public device_memory_resource {
     return p;
   }
 
-  /**---------------------------------------------------------------------------*
+  /**--------------------------------------------------------------------------*
    * @brief Deallocate memory pointed to by \p p.
    *
    * @note Stream argument is ignored.
@@ -72,7 +72,7 @@ class managed_memory_resource final : public device_memory_resource {
    * @throws Nothing.
    *
    * @param p Pointer to be deallocated
-   *---------------------------------------------------------------------------**/
+   *-------------------------------------------------------------------------**/
   void do_deallocate(void* p, std::size_t, cudaStream_t) override {
     cudaError_t const status = cudaFree(p);
 #ifndef NDEBUG
@@ -83,16 +83,29 @@ class managed_memory_resource final : public device_memory_resource {
 #endif
   }
 
+  /**--------------------------------------------------------------------------*
+   * @brief Compare this resource to another.
+   *
+   * Two managed_memory_resources always compare equal, because they can each 
+   * deallocate memory allocated by the other.
+   *
+   * @param other The other resource to compare to
+   * @return true If the two resources are equivalent
+   * @return false If the two resources are not equal
+   *-------------------------------------------------------------------------**/
+  bool do_is_equal(device_memory_resource const& other) const noexcept {
+    return dynamic_cast<managed_memory_resource const*>(&other) != nullptr;
+  }
 
-  /**---------------------------------------------------------------------------*
+  /**--------------------------------------------------------------------------*
    * @brief Get free and available memory for memory resource
    *
    * @throws std::runtime_error if cudaMemGetInfo fails
    *
    * @param stream to execute on
    * @return std::pair contaiing free_size and total_size of memory
-   *---------------------------------------------------------------------------**/
-  std::pair<size_t,size_t> do_get_mem_info( cudaStream_t stream){
+   *-------------------------------------------------------------------------**/
+  std::pair<size_t,size_t> do_get_mem_info( cudaStream_t stream) const{
     std::size_t free_size;
     std::size_t total_size;
     auto status = cudaMemGetInfo(&free_size, &total_size);
@@ -100,7 +113,8 @@ class managed_memory_resource final : public device_memory_resource {
 #ifndef NDEBUG
       std::cerr << "cudaMemGetInfo failed: " << cudaGetErrorName(status) << " "
           << cudaGetErrorString(status) << "\n";
-      throw std::runtime_error{"Falied to to call get_mem_info on memory resrouce"};
+      throw std::runtime_error{
+        "Failed to to call get_mem_info on memory resource"};
 #endif
     }
     return std::make_pair(free_size, total_size);
