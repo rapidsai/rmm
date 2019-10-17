@@ -64,4 +64,9 @@ cdef class DeviceBuffer:
     
     cpdef size_t capacity(self):
         return self.c_obj.capacity()
-    
+
+    @classmethod
+    def from_ptr(cls, ptr, size):
+        cdef DeviceBuffer buf = DeviceBuffer.__new__(DeviceBuffer)
+        buf.c_obj = device_buffer(<void *> ptr, <size_t> size)
+        return buf
