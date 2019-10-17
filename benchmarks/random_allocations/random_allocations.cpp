@@ -9,7 +9,7 @@
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either ex  ess or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
@@ -32,8 +32,8 @@ struct allocation {
 };
 
 void mixed_random_allocation_free(rmm::mr::device_memory_resource& mr,
-                                  size_t num_allocations = 1000,
-                                  size_t max_allocation_size = 100, // in MiB
+                                  size_t num_allocations = 10000,
+                                  size_t max_allocation_size = 500, // in MiB
                                   cudaStream_t stream = 0)
 {
   std::default_random_engine generator;
@@ -50,21 +50,32 @@ void mixed_random_allocation_free(rmm::mr::device_memory_resource& mr,
   int allocation_count{0};
 
   std::vector<allocation> allocations;
+  size_t allocation_size{0};
+
+  size_t total_mem, free_mem;
+  cudaError_t res = cudaMemGetInfo(&free_mem, &total_mem);
+  assert(res == cudaSuccess);
+
+  const size_t MB{1 << 20};
+  const size_t MEM_USAGE_PERCENTAGE{8870};
+  size_t max_size = (((free_mem / MB) * MEM_USAGE_PERCENTAGE) / 10000) * MB;
 
   for (int i = 0; i < num_allocations * 2; ++i) {
     bool do_alloc = true;
+    size_t size = size_distribution(generator);
+    
     if (active_allocations > 0) {
       int chance = op_distribution(generator);
-      do_alloc = (chance < allocation_probability) && 
-                 (allocation_count < num_allocations);
+      do_alloc = (chance < allocation_probability) &&
+                 (allocation_count < num_allocations) &&
+                 (allocation_size + size < max_size);
     }
 
     if (do_alloc) {
-      size_t size = size_distribution(generator);
       active_allocations++;
       allocation_count++;
       allocations.emplace_back(mr.allocate(size, stream), size);
-      auto new_allocation = allocations.back();
+      allocation_size += size;
     }
     else {
       size_t index = index_distribution(generator) % active_allocations;
@@ -72,6 +83,7 @@ void mixed_random_allocation_free(rmm::mr::device_memory_resource& mr,
       allocation to_free = allocations[index];
       allocations.erase(std::next(allocations.begin(), index));
       mr.deallocate(to_free.p, to_free.size, stream);
+      allocation_size -= to_free.size;
     }
   }
 
@@ -83,12 +95,17 @@ void mixed_random_allocation_free(rmm::mr::device_memory_resource& mr,
 static void BM_RandomAllocationsCUDA(benchmark::State& state) {
   rmm::mr::cuda_memory_resource mr;
 
-  for (auto _ : state)
-    mixed_random_allocation_free(mr);
+  try {
+    for (auto _ : state)
+      mixed_random_allocation_free(mr);
+  } catch (std::exception const& e) {
+    std::cout << "Error: " << e.what() << "\n";
+  }
 }
-BENCHMARK(BM_RandomAllocationsCUDA)->Unit(benchmark::kMillisecond);
+//BENCHMARK(BM_RandomAllocationsCUDA)->Unit(benchmark::kMillisecond);
 
-static void BM_RandomAllocationsSub(benchmark::State& state) {
+template <typename State>
+static void BM_RandomAllocationsSub(State& state) {
   rmm::mr::sub_memory_resource mr;
 
   try {
@@ -100,7 +117,8 @@ static void BM_RandomAllocationsSub(benchmark::State& state) {
 }
 BENCHMARK(BM_RandomAllocationsSub)->Unit(benchmark::kMillisecond);
 
-static void BM_RandomAllocationsCnmem(benchmark::State& state) {
+template <typename State>
+static void BM_RandomAllocationsCnmem(State& state) {
   rmm::mr::cnmem_memory_resource mr;
 
   try {
@@ -111,5 +129,12 @@ static void BM_RandomAllocationsCnmem(benchmark::State& state) {
   }
 }
 BENCHMARK(BM_RandomAllocationsCnmem)->Unit(benchmark::kMillisecond);
+
+/*int main(void) {
+  std::vector<int> state(1);
+  BM_RandomAllocationsSub(state);
+  return 0;
+}*/
+
 
 

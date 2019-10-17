@@ -18,13 +18,12 @@
 #include "device_memory_resource.hpp"
 
 #include <cuda_runtime_api.h>
-#include <cassert>
 #include <exception>
 #include <iostream>
-#include <mutex>
 #include <list>
 #include <unordered_map>
 #include <algorithm>
+#include <mutex>
 
 namespace rmm {
 namespace mr {
@@ -85,7 +84,7 @@ class sub_memory_resource final : public device_memory_resource {
 
     // Allocate initial block
     // TODO: non-default stream?
-    insert_block(block_from_heap(initial_pool_size, 0), no_sync_blocks);
+    no_sync_blocks.insert_and_merge(block_from_heap(initial_pool_size, 0));
 
     // TODO thread safety
 
@@ -98,11 +97,6 @@ class sub_memory_resource final : public device_memory_resource {
 
   ~sub_memory_resource() {
     free_all();
-#ifndef NDEBUG
-    std::cout << "Statistics\n"
-              << "#inserts: " << num_inserts << "\n"
-              << "#erases: " << num_erases << "\n";
-#endif
   }
 
   bool supports_streams() const noexcept override { return true; }
@@ -113,63 +107,112 @@ class sub_memory_resource final : public device_memory_resource {
   {
     char* ptr;          ///< Raw memory pointer
     size_t size;        ///< Size in bytes
-    bool is_head_block; ///< Indicates whether ptr was allocated from the heap
+    bool is_head;       ///< Indicates whether ptr was allocated from the heap
+
+    bool operator<(block const& rhs) const { return ptr < rhs.ptr; };
+
+    void print() const {
+      std::cout << reinterpret_cast<void*>(ptr) << " " << size << "B\n";
+    }
   };
 
-  using block_set = std::list<block>;
+  struct free_list {
 
-#ifndef NDEBUG
-  friend std::ostream& operator<<(std::ostream& os, const block& b);
-#endif
+    block get_best_fit(size_t size) {
+      block dummy{nullptr, size, false};
+      // find best fit block
+      auto iter = std::min_element(blocks.begin(), blocks.end(),
+        [size](block lhs, block rhs) {
+          return (lhs.size >= size) && 
+                 ((lhs.size < rhs.size) || (rhs.size < size));
+        });
 
-  inline block next_larger_block(block_set &blocks, size_t size)
-  {
-    block dummy{nullptr, size, false};
-    // find best fit block
-    auto iter = std::min_element(blocks.begin(), blocks.end(), [size](block lhs, block rhs) {
-      if (lhs.size < rhs.size)
-        return (lhs.size >= size);
-      else
-        return (lhs.size >= size) && (rhs.size < size);
-    });
-
-    if (iter->size >= size)
-    {
-      block found = *iter;
-      remove_block(iter, blocks);
-      return found;
+      if (iter->size >= size)
+      {
+        block found = *iter;
+        erase(iter);
+        return found;
+      }
+      
+      return dummy;
     }
-    
-    return dummy;
-  }
 
-  inline block block_from_sync_list(size_t size, cudaStream_t stream)
+    void insert_and_merge(block const& b) {
+      if (blocks.empty()) { 
+        insert(blocks.end(), b);
+        return;
+      }
+
+      auto next = std::find_if(blocks.begin(), blocks.end(),
+        [b](block const& i) { return i.ptr > b.ptr; });
+      auto previous = (next == blocks.begin()) ? next : std::prev(next);
+
+      bool merge_prev = !b.is_head && (previous->ptr + previous->size == b.ptr);
+      bool merge_next = (next != blocks.end()) && !next->is_head && (b.ptr + b.size == next->ptr);
+
+      if (merge_prev) {
+        *previous = merge_blocks(*previous, b);
+        if (merge_next) {
+          *previous = merge_blocks(*previous, *next);
+          erase(next);
+        }
+      } else if (merge_next) {
+        *next = merge_blocks(b, *next);
+      } else {
+        insert(next, b);
+      }
+    }
+
+    void merge(free_list&& other) {
+      for (auto iter = other.blocks.begin(); iter != other.blocks.end(); ++iter) {
+        insert_and_merge(*iter);
+      }
+      other.blocks.clear();
+    }
+
+    void print() const {
+      std::cout << blocks.size() << "\n";
+      for (block const& b : blocks) { b.print(); }
+    }
+
+  private:
+    using block_list = std::list<block>;
+
+    void insert(block_list::iterator const& next, block const& b) {
+      blocks.insert(next, b);
+    }
+
+    void erase(block_list::iterator const& b) {
+      blocks.erase(b);
+    }
+
+    block_list blocks;
+    //std::mutex blocks_mutex;
+  };
+
+  block block_from_sync_list(size_t size, cudaStream_t stream)
   {
-    block_set blocks = sync_blocks.at(stream);
-    block b = next_larger_block(blocks, size);
+    free_list& blocks = sync_blocks.at(stream);
+    block b = blocks.get_best_fit(size);
     if (b.ptr != nullptr) { // found one
       cudaError_t result = cudaStreamSynchronize(stream);
-            
+
       if (result != cudaErrorInvalidResourceHandle && // stream deleted
           result != cudaSuccess)                      // stream synced
         throw std::runtime_error{"cudaStreamSynchronize failure"};
-      
+
       // insert all other blocks into the no_sync list
-      for (auto iter = blocks.begin(); iter != blocks.end(); ++iter) {
-        insert_and_merge_block(*iter, no_sync_blocks);
-      }
-      blocks.clear();
-      
+      no_sync_blocks.merge(std::move(blocks));
+
       // remove this stream from the freelist
       sync_blocks.erase(stream);
     }
     return b;
   }
 
-  inline block available_larger_block(size_t size, cudaStream_t stream)
-  {
+  block available_larger_block(size_t size, cudaStream_t stream) {
     // Try to find a larger block that doesn't require syncing
-    block b = next_larger_block(no_sync_blocks, size);
+    block b = no_sync_blocks.get_best_fit(size);
 
     // nothing in no-sync free list, look for one on a stream
     if (b.ptr == nullptr) {
@@ -191,100 +234,54 @@ class sub_memory_resource final : public device_memory_resource {
     return b;
   }
 
-  inline block split_block(block b, size_t size)
+  block split_block(block b, size_t size)
   {
     if (b.size > size)
     {
-      block rest{b.ptr + size, b.size - size};
-      insert_block(rest, no_sync_blocks);
+      block rest{b.ptr + size, b.size - size, false};
+      no_sync_blocks.insert_and_merge(rest);
       b.size = size;
     }
 
     return b;
   }
 
-  inline block merge_blocks(const block& a, const block& b)
+  static block merge_blocks(block const& a, block const& b)
   {
-    if (a.ptr + a.size != b.ptr)
+    if (a.ptr + a.size != b.ptr || b.is_head)
       throw std::logic_error("Invalid block merge");
     
     return block{a.ptr, a.size + b.size};
   }
 
-  inline void* allocate_from_block(const block& b, size_t size)
+  void* allocate_from_block(block const& b, size_t size)
   {
     if (b.ptr == nullptr)
       throw std::bad_alloc{};
     block split = split_block(b, size);
-    allocated_blocks[split.ptr] = split;
+    allocated_blocks.push_back(split);
     return reinterpret_cast<void*>(split.ptr);
   }
 
-  inline void insert_block(block const& b, block_set& blocks) {
-    blocks.push_back(b);
-#ifndef NDEBUG
-    num_inserts++;
-    std::cout << "Inserted " << b.size << " set size: "
-              << blocks.size() << "\n";
-#endif
-  }
 
-  inline void remove_block(block_set::iterator const& b, block_set& blocks) {
-    blocks.erase(b);
-#ifndef NDEBUG
-    num_erases++;
-#endif
-  }
-
-  inline bool is_head_block(block const& b) {
-    return b.is_head_block; //heap_blocks.count(b.ptr) > 0;
-  }
-
-  // check if next / prev are in blocks and merge if so
-  inline void insert_and_merge_block(block const& b, block_set& blocks) {
-    block_set::iterator prev{blocks.end()}, next{blocks.end()};
-
-    for (auto iter = blocks.begin(); iter != blocks.end(); ++iter) {
-      if (!is_head_block(b) && (iter->ptr + iter->size == b.ptr)) { 
-        prev = iter; 
-      }
-      else if (b.ptr + b.size == iter->ptr) { 
-        next = iter;
-      }
-    }
-
-    block merged = b; 
-    if (prev != blocks.end()) {
-      merged = merge_blocks(*prev, merged);  
-      remove_block(prev, blocks);
-    }
-
-    if (next != blocks.end()) {
-      merged = merge_blocks(merged, *next);
-      remove_block(next, blocks);
-    }
-
-    insert_block(merged, blocks);
-  }
-
-  inline void find_and_free_block(void *p, size_t size, cudaStream_t stream)
+  void find_and_free_block(void *p, size_t size, cudaStream_t stream)
   {
     if (p == nullptr) return;
 
-    auto i = allocated_blocks.find(static_cast<char*>(p));
-    block b{};
+    auto i = std::find_if(allocated_blocks.begin(), allocated_blocks.end(),
+                          [p](block const& b) { return b.ptr == p; });
+    
     if (i != allocated_blocks.end()) { // found
-      b = i->second;
-      assert(b.size == detail::round_up_safe(size, allocation_alignment));
+      //assert(i->size == detail::round_up_safe(size, allocation_alignment));
+      sync_blocks[stream].insert_and_merge(*i);
       allocated_blocks.erase(i);
-      insert_and_merge_block(b, sync_blocks[stream]);
     }
     else {
       throw std::runtime_error("Pointer not allocated by this resource.");
     }
   }
 
-  inline block block_from_heap(size_t size, cudaStream_t stream)
+  block block_from_heap(size_t size, cudaStream_t stream)
   {
     void* p = heap_resource->allocate(size, stream);
     if (p == nullptr)
@@ -294,7 +291,7 @@ class sub_memory_resource final : public device_memory_resource {
     return b;
   }
 
-  inline void free_all()
+  void free_all()
   {
     for (auto b : heap_blocks) heap_resource->deallocate(b.first, b.second.size);
     heap_blocks.clear();
@@ -303,15 +300,15 @@ class sub_memory_resource final : public device_memory_resource {
 #ifndef NDEBUG
   void print() {
     std::cout << "allocated_blocks: " << allocated_blocks.size() << "\n";
-    for (auto b : allocated_blocks) { std::cout << b.second; }
+    for (auto b : allocated_blocks) { b.print(); }
 
-    std::cout << "no-sync free blocks: " << no_sync_blocks.size() << "\n";
-    for (auto b : no_sync_blocks) { std::cout << b; }
+    std::cout << "no-sync free blocks: ";
+    no_sync_blocks.print();
 
-    std::cout << "sync free blocks: " << sync_blocks.size() << "\n";
+    std::cout << "sync free blocks: ";
     for (auto s : sync_blocks) { 
-      std::cout << "stream " << s.first << " " << s.second.size() << "\n";
-      for (auto b : s.second) { std::cout << b; }
+      std::cout << "stream " << s.first << " ";
+      s.second.print();
     }
     std::cout << "\n";
   }
@@ -334,8 +331,8 @@ class sub_memory_resource final : public device_memory_resource {
     block b = available_larger_block(bytes, stream);
     void* p = allocate_from_block(b, bytes);
 #ifndef NDEBUG
-    std::cout << "Allocate " << bytes << " B on stream " << stream << "\n";
-    print();
+    //std::cout << "Allocate " << bytes << " B on stream " << stream << "\n";
+    //print();
 #endif
     return p;
   }
@@ -350,9 +347,9 @@ class sub_memory_resource final : public device_memory_resource {
   void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override {
     find_and_free_block(p, bytes, stream);
 #ifndef NDEBUG
-    std::cout << "Free " << bytes << " B on stream " << stream 
-              << " pointer: " << p << "\n";
-    print();
+    //std::cout << "Free " << bytes << " B on stream " << stream 
+    //          << " pointer: " << p << "\n";
+    //print();
 #endif
   }
 
@@ -372,34 +369,23 @@ class sub_memory_resource final : public device_memory_resource {
   }
 
   size_t maximum_pool_size{default_maximum_size};
-  std::mutex streams_mutex{};
 
   device_memory_resource *heap_resource;
 
   // no-sync free list: list of unencumbered blocks
   // no need to sync a stream to allocate from this list
-  block_set no_sync_blocks;
+  free_list no_sync_blocks;
 
-  // sync free lists: map of [stream_id, block_set] pairs
+  // sync free lists: map of [stream_id, free_list] pairs
   // stream stream_id must be synced before allocating from this list
-  std::unordered_map<cudaStream_t, block_set> sync_blocks;
+  std::unordered_map<cudaStream_t, free_list> sync_blocks;
 
   // allocated_blocks: map of allocated [ptr, block] pairs
-  std::unordered_map<char*, block> allocated_blocks;
+  std::list<block> allocated_blocks;
 
   // blocks allocated from heap: so they can be easily freed
   std::unordered_map<char*, block> heap_blocks;
-
-  // stats
-  size_t num_inserts{0};
-  size_t num_erases{0};
 };
-
-#ifndef NDEBUG
-std::ostream& operator<<(std::ostream& os, const sub_memory_resource::block& b) {
-  return os << reinterpret_cast<void*>(b.ptr) << " " << b.size << "B\n";
-}
-#endif
 
 }  // namespace mr
 }  // namespace rmm
