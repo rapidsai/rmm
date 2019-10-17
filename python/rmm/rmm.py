@@ -216,8 +216,7 @@ def _make_finalizer(handle, stream):
         """
         Invoked when the MemoryPointer is freed
         """
-        if is_initialized():
-            librmm.rmm_free(handle, stream)
+        librmm.rmm_free(handle, stream)
 
     return finalizer
 
