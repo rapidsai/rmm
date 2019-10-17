@@ -1,4 +1,4 @@
-# Copyright (c) 2018, NVIDIA CORPORATION.
+# Copyright (c) 2018-2019, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,18 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import cffi
-import os
+import weakref
 
-header = os.environ.get('RMM_HEADER', '${RMM_API_H_PATH}')
+from rmm import rmm_config
+from rmm.rmm import (
+    RMMError,
+    _make_finalizer,
+    auto_device,
+    csv_log,
+    device_array,
+    device_array_from_ptr,
+    device_array_like,
+    finalize,
+    get_ipc_handle,
+    initialize,
+    is_initialized,
+    to_device,
+)
 
-ffibuilder = cffi.FFI()
-ffibuilder.set_source("librmm_cffi.librmm_cffi", None)
+# Initialize RMM on import, finalize RMM on process exit
+initialize()
 
-
-
-with open(header, 'r') as fin:
-    ffibuilder.cdef(fin.read())
-
-if __name__ == "__main__":
-    ffibuilder.compile()
+_rmm_dummy_object = lambda: None
+_rmm_atexit_func = weakref.finalize(_rmm_dummy_object, finalize)

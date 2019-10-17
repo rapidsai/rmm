@@ -26,6 +26,7 @@ extern "C" {
 #include "rmm/rmm_api.h"
 }
 #include "rmm/detail/memory_manager.hpp"
+#include "rmm/mr/default_memory_resource.hpp"
 
 /** ---------------------------------------------------------------------------*
  * @brief Macro wrapper to check for error in RMM API calls.
@@ -64,8 +65,8 @@ class LogIt {
         ptr(ptr),
         size(size),
         stream(stream),
-        usageLogging(usageLogging),
-        line(line) {
+        line(line),
+        usageLogging(usageLogging) {
     if (filename) file = filename;
     if (Manager::getOptions().enable_logging) {
       cudaGetDevice(&device);
@@ -118,24 +119,29 @@ class LogIt {
 template <typename T>
 inline rmmError_t alloc(T** ptr, size_t size, cudaStream_t stream, const char* file,
                  unsigned int line) {
+  if (!rmmIsInitialized(nullptr)) {
+    if (ptr)
+      *ptr = nullptr;
+    return RMM_ERROR_NOT_INITIALIZED;
+  }
+
   rmm::LogIt log(rmm::Logger::Alloc, 0, size, stream, file, line);
 
   if (!ptr && !size) {
     return RMM_SUCCESS;
-  } else if( !size ) {
-    ptr[0] = nullptr;
-    return RMM_SUCCESS;
   }
 
-  if (!ptr) return RMM_ERROR_INVALID_ARGUMENT;
+  if (!ptr)
+    return RMM_ERROR_INVALID_ARGUMENT;
 
-  if (rmm::Manager::usePoolAllocator()) {
-    RMM_CHECK(rmm::Manager::getInstance().registerStream(stream));
-    RMM_CHECK_CNMEM(cnmemMalloc(reinterpret_cast<void**>(ptr), size, stream));
-  } else if (rmm::Manager::useManagedMemory()) {
-    RMM_CHECK_CUDA(cudaMallocManaged(reinterpret_cast<void**>(ptr), size));
-  } else
-    RMM_CHECK_CUDA(cudaMalloc(reinterpret_cast<void**>(ptr), size));
+  try {
+    *ptr = static_cast<T*>(
+      rmm::mr::get_default_resource()->allocate(size,stream));
+
+  } catch(std::exception e) {
+    *ptr = nullptr;
+    return RMM_ERROR_OUT_OF_MEMORY;
+  }
 
   log.setPointer(*ptr);
   return RMM_SUCCESS;
@@ -157,7 +163,7 @@ inline rmmError_t alloc(T** ptr, size_t size, cudaStream_t stream, const char* f
  *                    requested size, or RMM_ERROR_CUDA_ERROR on any other CUDA
  *                    error.
  * --------------------------------------------------------------------------**/
-template <typename T>
+/*template <typename T>
 inline rmmError_t realloc(T** ptr, size_t new_size, cudaStream_t stream,
                    const char* file, unsigned int line) {
   rmm::LogIt log(rmm::Logger::Realloc, ptr, new_size, stream, file, line);
@@ -167,26 +173,22 @@ inline rmmError_t realloc(T** ptr, size_t new_size, cudaStream_t stream,
   }
 
   if (!ptr) return RMM_ERROR_INVALID_ARGUMENT;
+  rmm::mr::get_default_resource()->
+      deallocate(*ptr,0,stream);
 
-  if (rmm::Manager::usePoolAllocator()) {
-    RMM_CHECK(rmm::Manager::getInstance().registerStream(stream));
-    RMM_CHECK_CNMEM(cnmemFree(*reinterpret_cast<void**>(ptr), stream));
-    RMM_CHECK_CNMEM(
-        cnmemMalloc(reinterpret_cast<void**>(ptr), new_size, stream));
-  } else {
-    RMM_CHECK_CUDA(cudaFree(*ptr));
-    if (!new_size)
-      ptr[0] = nullptr;
-    else if (rmm::Manager::useManagedMemory())
-      RMM_CHECK_CUDA(cudaMallocManaged(reinterpret_cast<void**>(ptr), new_size));
-    else
-      RMM_CHECK_CUDA(cudaMalloc(reinterpret_cast<void**>(ptr), new_size));
-  }
-  
+      try{
+        *ptr = static_cast<char *>(
+          rmm::mr::get_default_resource()->allocate(new_size,stream));
+      }catch(std::exception e){
+        *ptr = nullptr;
+        return RMM_ERROR_OUT_OF_MEMORY;
+      }
+
+
   log.setPointer(*ptr);
   return RMM_SUCCESS;
 }
-
+*/
 /** ---------------------------------------------------------------------------*
  * @brief Release device memory and recycle the associated memory.
  *
@@ -204,11 +206,16 @@ inline rmmError_t realloc(T** ptr, size_t new_size, cudaStream_t stream,
  * --------------------------------------------------------------------------**/
 inline rmmError_t free(void* ptr, cudaStream_t stream, const char* file,
                    unsigned int line) {
+  if (!rmmIsInitialized(nullptr))
+    return RMM_ERROR_NOT_INITIALIZED;
+
   rmm::LogIt log(rmm::Logger::Free, ptr, 0, stream, file, line);
-  if (rmm::Manager::usePoolAllocator())
-    RMM_CHECK_CNMEM(cnmemFree(ptr, stream));
-  else
-    RMM_CHECK_CUDA(cudaFree(ptr));
+
+  rmm::mr::get_default_resource()->deallocate(ptr,0,stream);
+
+  if (cudaSuccess != cudaGetLastError())
+    return RMM_ERROR_CUDA_ERROR;
+
   return RMM_SUCCESS;
 }
 

@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#pragma once
+
 #include "device_memory_resource.hpp"
 namespace rmm {
 namespace mr {
@@ -51,5 +54,18 @@ device_memory_resource* get_default_resource();
 device_memory_resource* set_default_resource(
     device_memory_resource* new_resource);
 
+namespace detail{
+
+/**---------------------------------------------------------------------------*
+ * @brief gets the default memory_resource when none is set
+ *
+ * A static function which will return a singleton cuda_memory_resource
+ *
+ * @return device_memory_resource* a pointer to the static
+ * cuda_memory_resource
+ *---------------------------------------------------------------------------**/
+device_memory_resource* initial_resource();
+
+}  // namespace detail
 }  // namespace mr
 }  // namespace rmm

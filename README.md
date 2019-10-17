@@ -9,17 +9,44 @@ RAPIDS Memory Manager (RMM) is:
    other [RAPIDS](https://rapids.ai) libraries.
 
 RMM is not:
- 
- - A replacement allocator for host memory (`malloc`, `new`, `cudaMallocHost`, 
+
+ - A replacement allocator for host memory (`malloc`, `new`, `cudaMallocHost`,
    `cudaHostRegister`).
 
 **NOTE:** For the latest stable [README.md](https://github.com/rapidsai/rmm/blob/master/README.md) ensure you are on the `master` branch.
 
-## Install RMM
+## Installation
 
-RMM currently must be built from source. This happens automatically in a 
-submodule when you build or install [cuDF](https://github.com/rapidsai/cudf) or
-[RAPIDS](https://rapids.ai) containers.
+### Conda
+
+RMM can be installed with conda ([miniconda](https://conda.io/miniconda.html), or the full [Anaconda distribution](https://www.anaconda.com/download)) from the `rapidsai` channel:
+
+For `rmm version == 0.8` :
+```bash
+# for CUDA 9.2
+conda install -c nvidia -c rapidsai -c numba -c conda-forge -c defaults \
+    rmm=0.8 python=3.6 cudatoolkit=9.2
+
+# or, for CUDA 10.0
+conda install -c nvidia -c rapidsai -c numba -c conda-forge -c defaults \
+    rmm=0.8 python=3.6 cudatoolkit=10.0
+```
+
+For `rmm version == 0.7` :
+```bash
+# for CUDA 9.2
+conda install -c nvidia -c rapidsai -c numba -c conda-forge -c defaults \
+    rmm=0.7 python=3.6 cudatoolkit=9.2
+
+# or, for CUDA 10.0
+conda install -c nvidia -c rapidsai -c numba -c conda-forge -c defaults \
+    rmm=0.7 python=3.6 cudatoolkit=10.0
+```
+We also provide [nightly conda packages](https://anaconda.org/rapidsai-nightly) built from the tip of our latest development branch.
+
+Note: RMM is supported only on Linux, and with Python versions 3.6 or 3.7.
+
+See the [Get RAPIDS version picker](https://rapids.ai/start.html) for more OS and version info.
 
 ## Building from Source
 
@@ -85,22 +112,23 @@ $ cd build (if you are not already in build directory)
 $ make test
 ```
 
-- Build, install, and test cffi bindings using make:
+- Build, install, and test the `rmm` python package, in the `python` folder:
 ```bash
-$ make rmm_python_cffi                              # build CFFI bindings for librmm.so
-$ make rmm_install_python                           # build & install CFFI python bindings. Depends on cffi package from PyPi or Conda
-$ cd python && pytest -v                            # optional, run python tests on low-level python bindings
+$ python setup.py build_ext --inplace
+$ python setup.py install
+$ pytest -v
+```
 
 Done! You are ready to develop for the RMM OSS project.
 
 ## Using RMM in C/C++ code
 
 Using RMM in CUDA C++ code is straightforward. Include `rmm.h` and replace calls
-to `cudaMalloc()` and `cudaFree()` with calls to the `RMM_ALLOC()` and 
-`RMM_FREE()` macros, respectively. 
+to `cudaMalloc()` and `cudaFree()` with calls to the `RMM_ALLOC()` and
+`RMM_FREE()` macros, respectively.
 
-Note that `RMM_ALLOC` and `RMM_FREE` take an additional parameter, a stream 
-identifier. This is necessary to enable asynchronous allocation and 
+Note that `RMM_ALLOC` and `RMM_FREE` take an additional parameter, a stream
+identifier. This is necessary to enable asynchronous allocation and
 deallocation; however, the default (also known as null) stream (or `0`) can be
 used. For example:
 
@@ -109,7 +137,9 @@ used. For example:
 cudaError_t result = cudaMalloc(&myvar, size_in_bytes) );
 // ...
 cudaError_t result = cudaFree(myvar) );
+```
 
+```
 // new
 rmmError_t result = RMM_ALLOC(&myvar, size_in_bytes, stream_id);
 // ...
@@ -118,18 +148,18 @@ rmmError_t result = RMM_FREE(myvar, stream_id);
 
 Note that `RMM_ALLOC` and `RMM_FREE` are wrappers around `rmm::alloc()` and
 `rmm::free()`, respectively. The lower-level functions also take a file name and
-a line number for tracking the location of RMM allocations and deallocations. 
-The macro versions use the C preprocessor to automatically specify these params. 
+a line number for tracking the location of RMM allocations and deallocations.
+The macro versions use the C preprocessor to automatically specify these params.
 
 ### Using RMM with Thrust
 
-RAPIDS and other CUDA libraries make heavy use of Thrust. Thrust uses CUDA device memory in two 
+RAPIDS and other CUDA libraries make heavy use of Thrust. Thrust uses CUDA device memory in two
 situations:
 
  1. As the backing store for `thrust::device_vector`, and
  2. As temporary storage inside some algorithms, such as `thrust::sort`.
 
-RMM includes a custom Thrust allocator in the file `thrust_rmm_allocator.h`. This defines the template class `rmm_allocator`, and 
+RMM includes a custom Thrust allocator in the file `thrust_rmm_allocator.h`. This defines the template class `rmm_allocator`, and
 a custom Thrust CUDA device execution policy called `rmm::exec_policy(stream)`.
 
 #### Thrust Device Vectors
@@ -146,14 +176,14 @@ You can tell Thrust to use `rmm_allocator` like this:
 thrust::device_vector<size_type, rmm_allocator<T>> permuted_indices(column_length);
 ```
 
-For convenience, you can use the alias `rmm::device_vector<T>` defined in 
-`thrust_rmm_allocator.h` that can be used as if it were a `thrust::device_vector<T>`. 
+For convenience, you can use the alias `rmm::device_vector<T>` defined in
+`thrust_rmm_allocator.h` that can be used as if it were a `thrust::device_vector<T>`.
 
 #### Thrust Algorithms
 
 To instruct Thrust to use RMM to allocate temporary storage, you can use the custom
-Thrust CUDA device execution policy: `rmm::exec_policy(stream)`. 
-This instructs Thrust to use the `rmm_allocator` on the specified stream for temporary memory allocation. 
+Thrust CUDA device execution policy: `rmm::exec_policy(stream)`.
+This instructs Thrust to use the `rmm_allocator` on the specified stream for temporary memory allocation.
 
 `rmm::exec_policy(stream)` returns a `std::unique_ptr` to a Thrust execution policy that uses `rmm_allocator` for temporary allocations.
 In order to specify that the Thrust algorithm be executed on a specific stream, the usage is:
@@ -162,7 +192,7 @@ In order to specify that the Thrust algorithm be executed on a specific stream, 
 thrust::sort(rmm::exec_policy(stream)->on(stream), ...);
 ```
 
-The first `stream` argument is the `stream` to use for `rmm_allocator`. 
+The first `stream` argument is the `stream` to use for `rmm_allocator`.
 The second `stream` argument is what should be used to execute the Thrust algorithm.
 These two arguments must be identical.
 
@@ -172,21 +202,21 @@ These two arguments must be identical.
 cuDF and other Python libraries typically create arrays of CUDA device memory
 by using Numba's `cuda.device_array` interfaces. Until Numba provides a plugin
 interface for using an external memory manager, RMM provides an API compatible
-with `cuda.device_array` constructors that cuDF (also cuDF C++ API pytests) 
+with `cuda.device_array` constructors that cuDF (also cuDF C++ API pytests)
 should use to ensure all CUDA device memory is allocated via the memory manager.
 RMM provides:
 
-   - `librmm.device_array()`
-   - `librmm.device_array_like()`
-   - `librmm.to_device()`
-   - `librmm.auto_device()`
-   
-Which are compatible with their Numba `cuda.*` equivalents. They return a Numba 
+   - `rmm.device_array()`
+   - `rmm.device_array_like()`
+   - `rmm.to_device()`
+   - `rmm.auto_device()`
+
+Which are compatible with their Numba `cuda.*` equivalents. They return a Numba
 NDArray object whose memory is allocated in CUDA device memory using RMM.
 
-Following is an example from cuDF `groupby.py` that copies from a numpy array to 
-an equivalent CUDA `device_array` using `to_device()`, and creates a device 
-array using `device_array`, and then runs a Numba kernel (`group_mean`) to 
+Following is an example from cuDF `groupby.py` that copies from a numpy array to
+an equivalent CUDA `device_array` using `to_device()`, and creates a device
+array using `device_array`, and then runs a Numba kernel (`group_mean`) to
 compute the output values.
 
 ```
@@ -199,7 +229,7 @@ compute the output values.
                                 dev_out)
     values[newk] = dev_out
 ```
-In another example from cuDF `cudautils.py`, `fillna` uses `device_array_like` 
+In another example from cuDF `cudautils.py`, `fillna` uses `device_array_like`
 to construct a CUDA device array with the same shape and data type as another.
 
 ```
@@ -211,64 +241,51 @@ def fillna(data, mask, value):
     return out
 ```
 
-`librmm` also provides `get_ipc_handle()` for getting the IPC handle associated 
+`rmm` also provides `get_ipc_handle()` for getting the IPC handle associated
 with a Numba NDArray, which accounts for the case where the data for the NDArray
 is suballocated from some larger pool allocation by the memory manager.
 
-To use librmm NDArray functions you need to import librmm like this:
-
-`from librmm_cffi import librmm` or
-`from librmm_cffi import librmm as rmm`
-
 ### Handling RMM Options in Python Code
 
-RMM currently defaults to just calling cudaMalloc, but you can enable the 
-experimental pool allocator using the `librmm_config` module. 
+RMM currently defaults to just calling cudaMalloc, but you can enable the
+experimental pool allocator using the `rmm_config` module.
 
 ```
-from librmm_cffi import librmm_config as rmm_cfg
+from rmm import rmm_config
 
-rmm_cfg.use_pool_allocator = True  # default is False
-rmm_cfg.initial_pool_size = 2<<30  # set to 2GiB. Default is 1/2 total GPU memory
-rmm_cfg.use_managed_memory = False # default is false
-rmm_cfg.enable_logging = True      # default is False -- has perf overhead
+rmm_config.use_pool_allocator = True  # default is False
+rmm_config.initial_pool_size = 2<<30  # set to 2GiB. Default is 1/2 total GPU memory
+rmm_config.use_managed_memory = False # default is false
+rmm_config.enable_logging = True      # default is False -- has perf overhead
 ```
 
-To configure RMM options to be used in cuDF before loading, simply do the above 
-before you `import cudf`. You can re-initialize the memory manager with 
-different settings at run time by calling `librmm.finalize()`, then changing the
-above options, and then calling `librmm.initialize()`.
+To configure RMM options to be used in cuDF before loading, simply do the above
+before you `import cudf`. You can re-initialize the memory manager with
+different settings at run time by calling `rmm.finalize()`, then changing the
+above options, and then calling `rmm.initialize()`.
 
-You can also optionally use the internal functions in cuDF which call these 
-functions. Here are some example configuration functions that can be used in 
+You can also optionally use the internal functions in cuDF which call these
+functions. Here are some example configuration functions that can be used in
 a notebook to initialize the memory manager in each Dask worker.
 
-```
-from librmm_cffi import librmm_config as rmm_cfg
+```python
+import cudf
 
-def initialize_rmm_pool():
-    pygdf._gdf.rmm_finalize()
-    rmm_cfg.use_pool_allocator = True
-    return pygdf._gdf.rmm_initialize()
 
-def initialize_rmm_no_pool():
-    pygdf._gdf.rmm_finalize()
-    rmm_cfg.use_pool_allocator = False
-    return pygdf._gdf.rmm_initialize()
+# Default passthrough to cudaMalloc
+cudf.set_allocator()
 
-def finalize_rmm():
-    return pygdf._gdf.rmm_finalize()
+# Use the pool allocator
+cudf.set_allocator(pool=True)
+
+# Use the pool allocator with a 2GiB initial pool size
+cudf.set_allocator(pool=True, initial_pool_size=2<<30)
 ```
 
-Given the above, typically you would initialize RMM in the notebook process to
-not use the pool `initialize_rmm_no_pool()`, and then run 
-`client.run(initialize_rmm_pool) to initialize a memory pool in each worker
-process.
-
-Remember that while the pool is in use memory is not freed. So if you follow 
+Remember that while the pool is in use memory is not freed. So if you follow
 cuDF operations with device-memory-intensive computations that don't use RMM
-(such as XGBoost), you will need to move the data to the host and then 
-finalize RMM. The Mortgage E2E workflow notebook uses this technique. We are 
+(such as XGBoost), you will need to move the data to the host and then
+finalize RMM. The Mortgage E2E workflow notebook uses this technique. We are
 working on better ways to reclaim memory, as well as making RAPIDS machine
 learning libraries use the same RMM memory pool.
 
@@ -279,13 +296,21 @@ underlying allocator). This is enabled in C++ by setting the `allocation_mode`
 member of the struct `rmmOptions_t` to include the flag `CudaManagedMemory`
 (the flags are ORed), and passing it to `rmmInitialize()`. If the flag
 `PoolAllocation` is also set, then RMM will allocate from a pool of managed
-memory. 
+memory.
 
-In Python, use the `librmm_config.use_managed_memory` Boolean setting
-as shown previously. 
+In Python, use the `rmm_config.use_managed_memory` Boolean setting
+as shown previously.
 
-When the allocation mode is both `CudaManagedMemory` and `PoolAllocation`, 
-RMM allocates the initial pool (and any expansion allocations) using 
-`cudaMallocManaged` and then prefetches the pool to the GPU using 
+When the allocation mode is both `CudaManagedMemory` and `PoolAllocation`,
+RMM allocates the initial pool (and any expansion allocations) using
+`cudaMallocManaged` and then prefetches the pool to the GPU using
 `cudaMemPrefetchAsync` so all pool memory that will fit is initially located
 on the device.
+
+### Thread Safety
+
+RMM aims to be thread safe, and provides the following guarantees.
+
+1. `rmmInitialize()` and `rmmFinalize()` are thread-safe with respect to each other. In other words, `rmmFinalize()` cannot interrupt `rmmInitialize()` and vice versa.
+2. `rmmAlloc()` and `rmmFree()` calls are thread-safe with respect to each other. In other words, the state of the underlying allocator is thread safe.
+3. `rmmAlloc()` and `rmmFree()` are NOT thread-safe with respect to `rmmInitialize()` and `rmmFinalize()`. For example, a `rmmFinalize()` *could* interrupt an `rmmAlloc()` or `rmmFree()` in another thread. Therefore applications should ensure to protect calls to `rmmInitialize()` `rmmFinalize()`.
