@@ -31,6 +31,7 @@ from rmm.rmm import (
     to_device,
 )
 
+from rmm._lib.device_buffer import DeviceBuffer
 # Initialize RMM on import, finalize RMM on process exit
 initialize()
 _register_atexit_finalize()
