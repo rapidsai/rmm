@@ -22,6 +22,23 @@
 using cudaStream_t = struct CUstream_st*;
 
 namespace rmm {
+
+namespace detail {
+/**
+ * @brief Align up to a power of 2, align_bytes is expected to be a nonzero power of 2
+ *
+ * @param[in] v value to align
+ * @param[in] alignment amount, in bytes, must be a power of 2 
+ *
+ * @return Return the aligned value, as one would expect
+ */
+inline std::size_t align_up(std::size_t v, std::size_t align_bytes) noexcept
+{
+    return (v + (align_bytes - 1)) & ~(align_bytes - 1);
+}
+
+} // namespace detail
+
 namespace mr {
 /**---------------------------------------------------------------------------*
  * @brief Base class for all libcudf device memory allocation.
@@ -60,7 +77,7 @@ class device_memory_resource {
    * @return void* Pointer to the newly allocated memory
    *---------------------------------------------------------------------------**/
   void* allocate(std::size_t bytes, cudaStream_t stream = 0) {
-    return do_allocate(bytes, stream);
+    return do_allocate(detail::align_up(bytes, 8), stream);
   }
 
   /**---------------------------------------------------------------------------*
@@ -80,7 +97,7 @@ class device_memory_resource {
    * @param stream Stream on which to perform deallocation
    *---------------------------------------------------------------------------**/
   void deallocate(void* p, std::size_t bytes, cudaStream_t stream = 0) {
-    do_deallocate(p, bytes, stream);
+    do_deallocate(p, detail::align_up(bytes, 8), stream);
   }
 
   /**---------------------------------------------------------------------------*
