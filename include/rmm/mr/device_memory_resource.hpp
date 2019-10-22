@@ -25,7 +25,12 @@ namespace rmm {
 
 namespace detail {
 /**
- * Align up to a power of 2, align_bytes is expected to be a nonzero power of 2
+ * @brief Align up to a power of 2, align_bytes is expected to be a nonzero power of 2
+ *
+ * @param[in] v value to align
+ * @param[in] alignment amount, in bytes, must be a power of 2 
+ *
+ * @return Return the aligned value, as one would expect
  */
 inline std::size_t align_up(std::size_t v, std::size_t align_bytes) noexcept
 {
