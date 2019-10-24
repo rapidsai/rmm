@@ -2,6 +2,8 @@
 
 ## New Features
 
+ - PR #167 Added value setter to `device_scalar`
+
 ## Improvements
 
 - PR #161 Use `std::atexit` to finalize RMM after Python interpreter shutdown
