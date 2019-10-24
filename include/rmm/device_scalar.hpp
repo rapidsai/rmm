@@ -85,8 +85,6 @@ class device_scalar {
 
   /**---------------------------------------------------------------------------*
    * @brief Copies the value from host to device.
-   *
-   * @return T The value of the scalar after synchronizing its stream
    *---------------------------------------------------------------------------**/
   void value(T value) {
     auto status = cudaMemcpyAsync(buff.data(), &value, sizeof(T),
