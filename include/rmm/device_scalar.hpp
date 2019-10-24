@@ -62,7 +62,7 @@ class device_scalar {
   T value() const {
     T host_value{};
     auto status = cudaMemcpyAsync(&host_value, buff.data(), sizeof(T),
-                             cudaMemcpyDefault, buff.stream());
+                                  cudaMemcpyDefault, buff.stream());
     if (cudaSuccess != status) {
       throw std::runtime_error{"Device memcpy failed."};
     }
@@ -74,21 +74,13 @@ class device_scalar {
   }
 
   /**---------------------------------------------------------------------------*
-   * @brief Returns pointer to object in device memory.
+   * @brief Copies the value from hostto device.
+   *
+   * @param host_value The value of the scalar after synchronizing its stream
    *---------------------------------------------------------------------------**/
-  T *get() noexcept { return static_cast<T *>(buff.data()); }
-
-  /**---------------------------------------------------------------------------*
-   * @brief Returns pointer to object in device memory.
-   *---------------------------------------------------------------------------**/
-  T const *get() const noexcept { return static_cast<T const *>(buff.data()); }
-
-  /**---------------------------------------------------------------------------*
-   * @brief Copies the value from host to device.
-   *---------------------------------------------------------------------------**/
-  void value(T value) {
-    auto status = cudaMemcpyAsync(buff.data(), &value, sizeof(T),
-                             cudaMemcpyDefault, buff.stream());
+  void set_value(T host_value) {
+    auto status = cudaMemcpyAsync(buff.data(), &host_value, sizeof(T),
+                                  cudaMemcpyDefault, buff.stream());
     if (cudaSuccess != status) {
       throw std::runtime_error{"Device memcpy failed."};
     }
@@ -97,6 +89,16 @@ class device_scalar {
       throw std::runtime_error{"Stream sync failed."};
     }
   }
+
+  /**---------------------------------------------------------------------------*
+   * @brief Returns pointer to object in device memory.
+   *---------------------------------------------------------------------------**/
+  T *data() noexcept { return static_cast<T *>(buff.data()); }
+
+  /**---------------------------------------------------------------------------*
+   * @brief Returns pointer to object in device memory.
+   *---------------------------------------------------------------------------**/
+  T const *data() const noexcept { return static_cast<T const *>(buff.data()); }
 
   device_scalar() = default;
   ~device_scalar() = default;
