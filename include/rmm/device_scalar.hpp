@@ -74,7 +74,7 @@ class device_scalar {
   }
 
   /**---------------------------------------------------------------------------*
-   * @brief Copies the value from hostto device.
+   * @brief Copies the value from host to device.
    *
    * @param host_value The value of the scalar after synchronizing its stream
    *---------------------------------------------------------------------------**/
