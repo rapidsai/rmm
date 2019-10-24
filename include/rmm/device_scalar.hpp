@@ -83,6 +83,23 @@ class device_scalar {
    *---------------------------------------------------------------------------**/
   T const *get() const noexcept { return static_cast<T const *>(buff.data()); }
 
+  /**---------------------------------------------------------------------------*
+   * @brief Copies the value from host to device.
+   *
+   * @return T The value of the scalar after synchronizing its stream
+   *---------------------------------------------------------------------------**/
+  void value(T value) {
+    auto status = cudaMemcpyAsync(buff.data(), &value, sizeof(T),
+                             cudaMemcpyDefault, buff.stream());
+    if (cudaSuccess != status) {
+      throw std::runtime_error{"Device memcpy failed."};
+    }
+    status = cudaStreamSynchronize(buff.stream());
+    if (cudaSuccess != status) {
+      throw std::runtime_error{"Stream sync failed."};
+    }
+  }
+
   device_scalar() = default;
   ~device_scalar() = default;
   device_scalar(device_scalar const &) = default;

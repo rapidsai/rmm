@@ -87,3 +87,13 @@ TYPED_TEST(DeviceScalarTest, MoveCtor) {
   EXPECT_EQ(moved_to.value(), original_value);
   EXPECT_EQ(nullptr, scalar.get());
 }
+
+TYPED_TEST(DeviceScalarTest, SetValue) {
+  rmm::device_scalar<TypeParam> scalar{this->value, this->stream, this->mr};
+  EXPECT_NE(nullptr, scalar.get());
+
+  auto expected = this->distribution(this->generator);
+
+  scalar.value(expected);
+  EXPECT_EQ(expected, scalar.value());
+}
