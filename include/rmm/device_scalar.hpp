@@ -46,12 +46,8 @@ class device_scalar {
       T const &initial_value, cudaStream_t stream_ = 0,
       rmm::mr::device_memory_resource *mr_ = rmm::mr::get_default_resource())
       : buff{sizeof(T), stream_, mr_} {
-    auto status = cudaMemcpyAsync(buff.data(), &initial_value, sizeof(T),
-                                  cudaMemcpyDefault, buff.stream());
-
-    if (cudaSuccess != status) {
-      throw std::runtime_error{"Device memcpy failed."};
-    }
+    
+    _set_value<false>(initial_value, buff.stream());
   }
 
   /**---------------------------------------------------------------------------*
