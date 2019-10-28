@@ -16,6 +16,7 @@
 #pragma once
 
 #include "device_memory_resource.hpp"
+#include "detail/free_list.hpp"
 
 #include <cuda_runtime_api.h>
 #include <exception>
@@ -84,7 +85,8 @@ class sub_memory_resource final : public device_memory_resource {
 
     // Allocate initial block
     // TODO: non-default stream?
-    no_sync_blocks.insert_and_merge(block_from_heap(initial_pool_size, 0));
+    no_sync_blocks.insert(no_sync_blocks.end(), 
+                          block_from_heap(initial_pool_size, 0));
 
     // TODO thread safety
 
@@ -103,97 +105,13 @@ class sub_memory_resource final : public device_memory_resource {
 
  private:
 
-  struct block
-  {
-    char* ptr;          ///< Raw memory pointer
-    size_t size;        ///< Size in bytes
-    bool is_head;       ///< Indicates whether ptr was allocated from the heap
-
-    bool operator<(block const& rhs) const { return ptr < rhs.ptr; };
-
-    void print() const {
-      std::cout << reinterpret_cast<void*>(ptr) << " " << size << "B\n";
-    }
-  };
-
-  struct free_list {
-
-    block get_best_fit(size_t size) {
-      block dummy{nullptr, size, false};
-      // find best fit block
-      auto iter = std::min_element(blocks.begin(), blocks.end(),
-        [size](block lhs, block rhs) {
-          return (lhs.size >= size) && 
-                 ((lhs.size < rhs.size) || (rhs.size < size));
-        });
-
-      if (iter->size >= size)
-      {
-        block found = *iter;
-        erase(iter);
-        return found;
-      }
-      
-      return dummy;
-    }
-
-    void insert_and_merge(block const& b) {
-      if (blocks.empty()) { 
-        insert(blocks.end(), b);
-        return;
-      }
-
-      auto next = std::find_if(blocks.begin(), blocks.end(),
-        [b](block const& i) { return i.ptr > b.ptr; });
-      auto previous = (next == blocks.begin()) ? next : std::prev(next);
-
-      bool merge_prev = !b.is_head && (previous->ptr + previous->size == b.ptr);
-      bool merge_next = (next != blocks.end()) && !next->is_head && (b.ptr + b.size == next->ptr);
-
-      if (merge_prev) {
-        *previous = merge_blocks(*previous, b);
-        if (merge_next) {
-          *previous = merge_blocks(*previous, *next);
-          erase(next);
-        }
-      } else if (merge_next) {
-        *next = merge_blocks(b, *next);
-      } else {
-        insert(next, b);
-      }
-    }
-
-    void merge(free_list&& other) {
-      for (auto iter = other.blocks.begin(); iter != other.blocks.end(); ++iter) {
-        insert_and_merge(*iter);
-      }
-      other.blocks.clear();
-    }
-
-    void print() const {
-      std::cout << blocks.size() << "\n";
-      for (block const& b : blocks) { b.print(); }
-    }
-
-  private:
-    using block_list = std::list<block>;
-
-    void insert(block_list::iterator const& next, block const& b) {
-      blocks.insert(next, b);
-    }
-
-    void erase(block_list::iterator const& b) {
-      blocks.erase(b);
-    }
-
-    block_list blocks;
-    //std::mutex blocks_mutex;
-  };
+  using block = rmm::mr::detail::block;
+  using free_list = rmm::mr::detail::free_list<>;
 
   block block_from_sync_list(size_t size, cudaStream_t stream)
   {
     free_list& blocks = sync_blocks.at(stream);
-    block b = blocks.get_best_fit(size);
+    block b = blocks.best_fit(size);
     if (b.ptr != nullptr) { // found one
       cudaError_t result = cudaStreamSynchronize(stream);
 
@@ -202,7 +120,8 @@ class sub_memory_resource final : public device_memory_resource {
         throw std::runtime_error{"cudaStreamSynchronize failure"};
 
       // insert all other blocks into the no_sync list
-      no_sync_blocks.merge(std::move(blocks));
+      no_sync_blocks.insert(blocks.begin(), blocks.end());
+      blocks.clear();
 
       // remove this stream from the freelist
       sync_blocks.erase(stream);
@@ -212,7 +131,7 @@ class sub_memory_resource final : public device_memory_resource {
 
   block available_larger_block(size_t size, cudaStream_t stream) {
     // Try to find a larger block that doesn't require syncing
-    block b = no_sync_blocks.get_best_fit(size);
+    block b = no_sync_blocks.best_fit(size);
 
     // nothing in no-sync free list, look for one on a stream
     if (b.ptr == nullptr) {
@@ -234,33 +153,22 @@ class sub_memory_resource final : public device_memory_resource {
     return b;
   }
 
-  block split_block(block b, size_t size)
-  {
-    if (b.size > size)
-    {
-      block rest{b.ptr + size, b.size - size, false};
-      no_sync_blocks.insert_and_merge(rest);
-      b.size = size;
-    }
-
-    return b;
-  }
-
-  static block merge_blocks(block const& a, block const& b)
-  {
-    if (a.ptr + a.size != b.ptr || b.is_head)
-      throw std::logic_error("Invalid block merge");
-    
-    return block{a.ptr, a.size + b.size};
-  }
-
   void* allocate_from_block(block const& b, size_t size)
   {
     if (b.ptr == nullptr)
       throw std::bad_alloc{};
-    block split = split_block(b, size);
-    allocated_blocks.push_back(split);
-    return reinterpret_cast<void*>(split.ptr);
+
+    block alloc{b};
+
+    if (b.size > size)
+    {
+      block rest{b.ptr + size, b.size - size, false};
+      no_sync_blocks.insert(rest);
+      alloc.size = size;
+    }
+
+    allocated_blocks.push_back(alloc);
+    return reinterpret_cast<void*>(alloc.ptr);
   }
 
 
@@ -270,10 +178,10 @@ class sub_memory_resource final : public device_memory_resource {
 
     auto i = std::find_if(allocated_blocks.begin(), allocated_blocks.end(),
                           [p](block const& b) { return b.ptr == p; });
-    
+
     if (i != allocated_blocks.end()) { // found
       //assert(i->size == detail::round_up_safe(size, allocation_alignment));
-      sync_blocks[stream].insert_and_merge(*i);
+      sync_blocks[stream].insert(*i);
       allocated_blocks.erase(i);
     }
     else {
@@ -380,7 +288,6 @@ class sub_memory_resource final : public device_memory_resource {
   // stream stream_id must be synced before allocating from this list
   std::unordered_map<cudaStream_t, free_list> sync_blocks;
 
-  // allocated_blocks: map of allocated [ptr, block] pairs
   std::list<block> allocated_blocks;
 
   // blocks allocated from heap: so they can be easily freed
