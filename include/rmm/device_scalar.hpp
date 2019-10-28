@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <rmm/rmm.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/mr/default_memory_resource.hpp>
 #include <rmm/mr/device_memory_resource.hpp>
@@ -162,9 +161,9 @@ class device_scalar {
 
   template<bool synchronize>
   inline void _memcpy(void *dst, const void *src, size_t count, cudaStream_t stream) const {
-    auto status = _memcpy_copy(dst, src, count, stream);
+    auto status = cudaMemcpyAsync(dst, src, count, cudaMemcpyDefault, stream);
 
-    if (RMM_SUCCESS != status) {
+    if (cudaSuccess != status) {
       throw std::runtime_error{"Device memcpy failed."};
     }
 
@@ -172,21 +171,11 @@ class device_scalar {
       return;
     }
 
-    status = _memcpy_sync(stream);
+    status = cudaStreamSynchronize(stream);
 
-    if (RMM_SUCCESS != status) {
+    if (cudaSuccess != status) {
       throw std::runtime_error{"Stream sync failed."};
     }
-  }
-
-  inline rmmError_t _memcpy_copy(void *dst, const void *src, size_t count, cudaStream_t stream) const {
-    RMM_CHECK_CUDA(cudaMemcpyAsync(dst, src, count, cudaMemcpyDefault, stream));
-    return RMM_SUCCESS;
-  }
-
-  inline rmmError_t _memcpy_sync(cudaStream_t stream) const {
-    RMM_CHECK_CUDA(cudaStreamSynchronize(stream));
-    return RMM_SUCCESS;
   }
 };
 
