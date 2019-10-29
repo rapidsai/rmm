@@ -9,6 +9,8 @@
 
 ## Bug Fixes
 
+- PR #170 Always build librmm and rmm, but conditionally upload based on CUDA / Python version
+
 
 # RMM 0.10.0 (Date TBD)
 

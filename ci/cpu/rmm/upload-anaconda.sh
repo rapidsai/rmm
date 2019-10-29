@@ -4,12 +4,12 @@
 
 set -e
 
-if [ "$BUILD_RMM" == "1" ]; then
-  export UPLOADFILE=`conda build conda/recipes/rmm -c rapidsai -c rapidsai-nightly -c nvidia -c conda-forge --python=$PYTHON --output`
+if [ "$UPLOAD_RMM" == "1" ]; then
+  export UPLOADFILE=$(conda build conda/recipes/rmm --python=$PYTHON --output)
 
   SOURCE_BRANCH=master
 
-  LABEL_OPTION="--label main --label cuda9.2 --label cuda10.0"
+  LABEL_OPTION="--label main --label cuda9.2 --label cuda10.0 --label cuda10.1"
   echo "LABEL_OPTION=${LABEL_OPTION}"
 
   test -e ${UPLOADFILE}
