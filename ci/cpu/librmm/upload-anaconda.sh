@@ -4,8 +4,8 @@
 
 set -e
 
-if [ "$BUILD_LIBRMM" == '1' ]; then
-  export UPLOADFILE=`conda build conda/recipes/librmm -c rapidsai -c rapidsai-nightly -c nvidia -c conda-forge --python=$PYTHON --output`
+if [ "$UPLOAD_LIBRMM" == '1' ]; then
+  export UPLOADFILE=$(conda build conda/recipes/librmm --python=$PYTHON --output)
 
   SOURCE_BRANCH=master
   CUDA_REL=${CUDA_VERSION%.*}
@@ -22,8 +22,8 @@ if [ "$BUILD_LIBRMM" == '1' ]; then
   fi
 
   if [ -z "$MY_UPLOAD_KEY" ]; then
-      echo "No upload key"
-      return 0
+    echo "No upload key"
+    return 0
   fi
 
   echo "Upload"
