@@ -117,18 +117,26 @@ class LogIt {
 template <typename T>
 inline rmmError_t alloc(T** ptr, size_t size, cudaStream_t stream, const char* file,
                  unsigned int line) {
+  if (!rmmIsInitialized(nullptr)) {
+    if (ptr)
+      *ptr = nullptr;
+    return RMM_ERROR_NOT_INITIALIZED;
+  }
+
   rmm::LogIt log(rmm::Logger::Alloc, 0, size, stream, file, line);
 
   if (!ptr && !size) {
     return RMM_SUCCESS;
   }
 
-  if (!ptr) return RMM_ERROR_INVALID_ARGUMENT;
-  try{
-     *ptr = static_cast<T*>(
+  if (!ptr)
+    return RMM_ERROR_INVALID_ARGUMENT;
+
+  try {
+    *ptr = static_cast<T*>(
       rmm::mr::get_default_resource()->allocate(size,stream));
 
-  }catch(std::exception e){
+  } catch(std::exception e) {
     *ptr = nullptr;
     return RMM_ERROR_OUT_OF_MEMORY;
   }
@@ -196,10 +204,15 @@ inline rmmError_t realloc(T** ptr, size_t new_size, cudaStream_t stream,
  * --------------------------------------------------------------------------**/
 inline rmmError_t free(void* ptr, cudaStream_t stream, const char* file,
                    unsigned int line) {
+  if (!rmmIsInitialized(nullptr))
+    return RMM_ERROR_NOT_INITIALIZED;
+
   rmm::LogIt log(rmm::Logger::Free, ptr, 0, stream, file, line);
 
-    rmm::mr::get_default_resource()->
-        deallocate(ptr,0,stream);
+  rmm::mr::get_default_resource()->deallocate(ptr,0,stream);
+
+  if (cudaSuccess != cudaGetLastError())
+    return RMM_ERROR_CUDA_ERROR;
 
   return RMM_SUCCESS;
 }

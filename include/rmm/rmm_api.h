@@ -79,6 +79,10 @@ struct rmmOptions_t {
 /** ---------------------------------------------------------------------------*
  * @brief Initialize memory manager state and storage.
  *
+ * This function is thread-safe with respect to other calls to this function
+ * and calls to rmmFinalize(), but it is not thread-safe with respect to calls
+ * to rmmAlloc() and rmmFree().
+ * 
  * @param[in] options Structure of options for the memory manager. Defaults are
  *                    used if it is null.
  * @return rmmError_t RMM_SUCCESS or RMM_ERROR_CUDA_ERROR on any CUDA error.
@@ -87,6 +91,10 @@ rmmError_t rmmInitialize(rmmOptions_t *options);
 
 /** ---------------------------------------------------------------------------*
  * @brief Shutdown memory manager.
+ * 
+ * This function is thread-safe with respect to other calls to this function
+ * and calls to rmmInitialize(), but it is not thread-safe with respect to calls
+ * to rmmAlloc() and rmmFree().
  *
  * @return rmmError_t RMM_SUCCESS, or RMM_NOT_INITIALIZED if rmmInitialize() has
  *                    not been called, or RMM_ERROR_CUDA_ERROR on any CUDA error.
@@ -114,6 +122,10 @@ const char * rmmGetErrorString(rmmError_t errcode);
 
 /** ---------------------------------------------------------------------------*
  * @brief Allocate memory and return a pointer to device memory.
+ * 
+ * This function is thread-safe with respect to other calls to rmmAlloc()
+ * and rmmFree(), but it is not thread-safe with respect to calls
+ * to rmmInitialize() and rmmFinalize().
  *
  * @param[out] ptr Returned pointer
  * @param[in] size The size in bytes of the allocated memory region
@@ -149,6 +161,10 @@ rmmError_t rmmAlloc(void **ptr, size_t size, cudaStream_t stream,
 /** ---------------------------------------------------------------------------*
  * @brief Release device memory and recycle the associated memory.
  *
+ * This function is thread-safe with respect to other calls to rmmAlloc()
+ * and rmmFree(), but it is not thread-safe with respect to calls
+ * to rmmInitialize() and rmmFinalize().
+ * 
  * @param[in] ptr The pointer to free
  * @param[in] stream The stream in which to synchronize this command
  * @param[in] file The filename location of the call to this function, for tracking

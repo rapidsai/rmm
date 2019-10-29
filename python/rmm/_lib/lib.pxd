@@ -139,3 +139,7 @@ cdef extern from "rmm/rmm.hpp" namespace "rmm" nogil:
         const char* file,
         unsigned int line
     ) except +
+
+
+cdef extern from "cstdlib":
+    int atexit(void (*func)())

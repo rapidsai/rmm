@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import atexit
+import weakref
 
 from rmm import rmm_config
 from rmm.rmm import (
     RMMError,
     _make_finalizer,
+    _register_atexit_finalize,
     auto_device,
     csv_log,
     device_array,
@@ -30,5 +31,6 @@ from rmm.rmm import (
     to_device,
 )
 
+# Initialize RMM on import, finalize RMM on process exit
 initialize()
-atexit.register(finalize)
+_register_atexit_finalize()

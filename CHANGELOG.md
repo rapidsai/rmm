@@ -1,10 +1,23 @@
+# RMM 0.11.0 (Date TBD)
+
+## New Features
+
+ - PR #106 Added multi-GPU initialization
+
+## Improvements
+
+- PR #161 Use `std::atexit` to finalize RMM after Python interpreter shutdown
+- PR #165 Align memory resource allocation sizes to 8-byte
+
+## Bug Fixes
+
+
 # RMM 0.10.0 (Date TBD)
 
 ## New Features
 
  - PR #99 Added `device_buffer` class
  - PR #133 Added `device_scalar` class
- - PR #106 Added multi-GPU initialization
 
 ## Improvements
 
@@ -21,6 +34,9 @@
  - PR #139 Expose `_make_finalizer` python API needed by cuDF
  - PR #142 Fix ignored exceptions in Cython
  - PR #146 Fix rmmFinalize() not freeing memory pools
+ - PR #149 Force finalization of RMM objects before RMM is finalized (Python)
+ - PR #154 Set ptr to 0 on rmm::alloc error
+ - PR #157 Check if initialized before freeing for Numba finalizer and use `weakref` instead of `atexit`
 
 
 # RMM 0.9.0 (21 August 2019)

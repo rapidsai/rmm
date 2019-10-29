@@ -239,8 +239,7 @@ namespace rmm
     rmmOptions_t options{};
     bool is_initialized{false};
 
-    // unique pointers to all allocated resources
-    std::unique_ptr<rmm::mr::device_memory_resource> memory_resource{};
+    std::unique_ptr<rmm::mr::device_memory_resource> initialized_resource{};
   };
 }
 

@@ -21,7 +21,6 @@ from libc.stdint cimport uintptr_t
 from libc.stdlib cimport malloc, free
 from libcpp.vector cimport vector
 
-
 # Global options, set on initialization, freed on finalization
 cdef rmmOptions_t *opts = NULL
 
@@ -119,6 +118,17 @@ def rmm_finalize():
     check_error(rmm_error)
 
     return 0
+
+
+cdef void _rmmFinalizeWrapper ():
+    global opts
+    free(opts)
+    opts = NULL
+    rmmFinalize()
+
+
+def register_atexit_finalize():
+    atexit(&_rmmFinalizeWrapper)
 
 
 def rmm_is_initialized():

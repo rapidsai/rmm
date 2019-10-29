@@ -59,19 +59,14 @@ const char * rmmGetErrorString(rmmError_t errcode) {
 // Initialize memory manager state and storage.
 rmmError_t rmmInitialize(rmmOptions_t *options)
 {
-  if (!rmm::Manager::getInstance().isInitialized()) {
-    rmm::Manager::getInstance().initialize(options);
-  }
-
+  rmm::Manager::getInstance().initialize(options);
   return RMM_SUCCESS;
 }
 
 // Shutdown memory manager.
 rmmError_t rmmFinalize()
 {
-  if (rmm::Manager::getInstance().isInitialized()) {
-    rmm::Manager::getInstance().finalize();
-  }
+  rmm::Manager::getInstance().finalize();
   return RMM_SUCCESS;
 }
 
