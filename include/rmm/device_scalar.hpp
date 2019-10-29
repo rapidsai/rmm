@@ -54,18 +54,9 @@ class device_scalar {
    * @brief Copies the value from device to host and returns the value.
    *
    * @return T The value of the scalar after synchronizing its stream
-   *---------------------------------------------------------------------------**/
-  T value() const {
-    return _value<true>(buff.stream());
-  }
-
-  /**---------------------------------------------------------------------------*
-   * @brief Copies the value from device to host and returns the value.
-   *
-   * @return T The value of the scalar after synchronizing its stream
    * @param stream CUDA stream on which to perform the copy
    *---------------------------------------------------------------------------**/
-  T value(cudaStream_t stream) const {
+  T value(cudaStream_t stream = 0) const {
     return _value<true>(stream);
   }
 
@@ -73,30 +64,12 @@ class device_scalar {
    * @brief Copies the value from device to host and returns the value.
    *
    * @return T The value of the scalar
-   *---------------------------------------------------------------------------**/
-  T value_async() const {
-    return _value<false>(buff.stream());
-  }
-
-  /**---------------------------------------------------------------------------*
-   * @brief Copies the value from device to host and returns the value.
-   *
-   * @return T The value of the scalar
    * @param stream CUDA stream on which to perform the copy
    *---------------------------------------------------------------------------**/
-  T value_async(cudaStream_t stream) const {
+  T value_async(cudaStream_t stream = 0) const {
     return _value<false>(stream);
   }
 
-  /**---------------------------------------------------------------------------*
-   * @brief Copies the value from host to device and synchronizes.
-   *
-   * @param host_value The host value which will be copied to device
-   *---------------------------------------------------------------------------**/
-  void set_value(T host_value) {
-    _set_value<true>(host_value, buff.stream());
-  }
-
 
   /**---------------------------------------------------------------------------*
    * @brief Copies the value from host to device and synchronizes.
@@ -104,7 +77,7 @@ class device_scalar {
    * @param host_value The host value which will be copied to device
    * @param stream CUDA stream on which to perform the copy
    *---------------------------------------------------------------------------**/
-  void set_value(T host_value, cudaStream_t stream) {
+  void set_value(T host_value, cudaStream_t stream = 0) {
     _set_value<true>(host_value, stream);
   }
 
@@ -112,18 +85,9 @@ class device_scalar {
    * @brief Copies the value from host to device.
    *
    * @param host_value The host value which will be copied to device
-   *---------------------------------------------------------------------------**/
-  void set_value_async(T host_value) {
-    _set_value<false>(host_value, buff.stream());
-  }
-
-  /**---------------------------------------------------------------------------*
-   * @brief Copies the value from host to device.
-   *
-   * @param host_value The host value which will be copied to device
    * @param stream CUDA stream on which to perform the copy
    *---------------------------------------------------------------------------**/
-  void set_value_async(T host_value, cudaStream_t stream) {
+  void set_value_async(T host_value, cudaStream_t stream = 0) {
     _set_value<false>(host_value, stream);
   }
 
@@ -160,20 +124,13 @@ class device_scalar {
   }
 
   template<bool synchronize>
-  inline void _memcpy(void *dst, const void *src, size_t count, cudaStream_t stream) const {
+  inline void _memcpy(void *dst, const void *src, size_t count,
+                      cudaStream_t stream) const{
     auto status = cudaMemcpyAsync(dst, src, count, cudaMemcpyDefault, stream);
-
     if (cudaSuccess != status) {
       throw std::runtime_error{"Device memcpy failed."};
     }
-
-    if (false == synchronize) {
-      return;
-    }
-
-    status = cudaStreamSynchronize(stream);
-
-    if (cudaSuccess != status) {
+    if (cudaSuccess != cudaStreamSynchronize(stream)) {
       throw std::runtime_error{"Stream sync failed."};
     }
   }
