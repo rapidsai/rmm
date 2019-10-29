@@ -39,13 +39,13 @@ class device_scalar {
    * @brief Construct a new `device_scalar`
    *
    * @param initial_value The initial value of the object in device memory
-   * @param stream_ Optional, stream on which to perform allocation and copy
-   * @param mr_ Optional, resource with which to allocate
+   * @param stream Optional, stream on which to perform allocation and copy
+   * @param mr Optional, resource with which to allocate
    *---------------------------------------------------------------------------**/
   explicit device_scalar(
-      T const &initial_value, cudaStream_t stream_ = 0,
-      rmm::mr::device_memory_resource *mr_ = rmm::mr::get_default_resource())
-      : buff{sizeof(T), stream_, mr_} {
+      T const &initial_value, cudaStream_t stream = 0,
+      rmm::mr::device_memory_resource *mr = rmm::mr::get_default_resource())
+      : buff{sizeof(T), stream, mr} {
     
     _set_value<false>(initial_value, buff.stream());
   }
