@@ -18,7 +18,6 @@ import numpy as np
 from numba import cuda
 
 import rmm._lib as librmm
-from rmm import rmm_config
 
 
 # Utility Functions
@@ -38,29 +37,70 @@ def _array_helper(addr, datasize, shape, strides, dtype, finalizer=None):
 
 
 # API Functions
-def initialize():
+def _initialize(
+    pool_allocator=False,
+    managed_memory=False,
+    initial_pool_size=None,
+    logging=False,
+):
     """
-    Initializes the RMM library using the options set in the librmm_config
-    module
+    Initializes RMM library using the options passed
     """
     allocation_mode = 0
-    if rmm_config.use_pool_allocator:
+    if pool_allocator:
         allocation_mode = 1
-    if rmm_config.use_managed_memory:
+    if managed_memory:
         allocation_mode = 2
 
-    return librmm.rmm_initialize(
-        allocation_mode,
-        rmm_config.initial_pool_size,
-        rmm_config.enable_logging,
-    )
+    if pool_allocator is False:
+        initial_pool_size = 0
+    elif pool_allocator is True and initial_pool_size is None:
+        initial_pool_size = 1
+
+    return librmm.rmm_initialize(allocation_mode, initial_pool_size, logging)
 
 
-def finalize():
+def _finalize():
     """
     Finalizes the RMM library, freeing all allocated memory
     """
     return librmm.rmm_finalize()
+
+
+def reinitialize(
+    pool_allocator=False,
+    managed_memory=False,
+    initial_pool_size=None,
+    logging=False,
+):
+    """
+    Finalizes and then initializes RMM using the options passed. Using memory
+    from a previous initialization of RMM is undefined behavior and should be
+    avoided.
+
+    Parameters
+    ----------
+    pool_allocator : bool, default False
+        If True, use a pool allocation strategy which can greatly improve
+        performance.
+    managed_memory : bool, default False
+        If True, use managed memory for device memory allocation
+    initial_pool_size : int, default 0
+        When `pool_allocator` is True, this indicates the initial pool size in
+        bytes. Zero is used to indicate the default size of the underlying
+        memorypool implementation, which currently is 1/2 total GPU memory.
+    logging : bool, default False
+        If True, enable run-time logging of all memory events
+        (alloc, free, realloc).
+        This has significant performance impact.
+    """
+    _finalize()
+    return _initialize(
+        pool_allocator=pool_allocator,
+        managed_memory=managed_memory,
+        initial_pool_size=initial_pool_size,
+        logging=logging,
+    )
 
 
 def is_initialized():

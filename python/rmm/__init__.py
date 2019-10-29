@@ -14,9 +14,10 @@
 
 import weakref
 
-from rmm import rmm_config
 from rmm.rmm import (
     RMMError,
+    _finalize,
+    _initialize,
     _make_finalizer,
     _register_atexit_finalize,
     auto_device,
@@ -24,13 +25,12 @@ from rmm.rmm import (
     device_array,
     device_array_from_ptr,
     device_array_like,
-    finalize,
     get_ipc_handle,
-    initialize,
     is_initialized,
+    reinitialize,
     to_device,
 )
 
 # Initialize RMM on import, finalize RMM on process exit
-initialize()
+_initialize()
 _register_atexit_finalize()

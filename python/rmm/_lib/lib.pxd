@@ -122,6 +122,7 @@ cdef extern from "rmm/rmm.h" nogil:
         size_t buffer_size
     ) except +
 
+
 cdef extern from "rmm/rmm.hpp" namespace "rmm" nogil:
 
     cdef rmmError_t alloc[T](
@@ -138,6 +139,10 @@ cdef extern from "rmm/rmm.hpp" namespace "rmm" nogil:
         const char* file,
         unsigned int line
     ) except +
+
+    cdef cppclass Manager:
+        @staticmethod
+        rmmOptions_t getOptions() except +
 
 
 cdef extern from "cstdlib":

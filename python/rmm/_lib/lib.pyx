@@ -22,9 +22,6 @@ from libc.stdint cimport uintptr_t
 from libc.stdlib cimport malloc, free
 from libcpp.vector cimport vector
 
-# Global options, set on initialization, freed on finalization
-cdef rmmOptions_t *opts = NULL
-
 
 # Utility Functions
 def _get_error_msg(errcode):
@@ -53,11 +50,12 @@ cdef caller_pair _get_caller() except *:
     Finds the file and line number of the caller (first caller outside this
     file)
     """
-    from rmm import rmm_config
     import inspect
 
     # Go up stack to find first caller outside this file (more useful)
-    if rmm_config.enable_logging:
+    cdef rmmOptions_t opts = Manager.getOptions()
+
+    if opts.enable_logging:
         frame = inspect.currentframe().f_back
         while frame:
             filename = inspect.getfile(frame)
@@ -86,7 +84,6 @@ def rmm_initialize(allocation_mode, initial_pool_size, enable_logging):
     """
     Initializes the RMM library by calling the librmm functions via Cython
     """
-    global opts
     opts = <rmmOptions_t*>malloc(sizeof(rmmOptions_t))
     opts.allocation_mode = <rmmAllocationMode_t>allocation_mode
     opts.initial_pool_size = <size_t>initial_pool_size
@@ -99,6 +96,8 @@ def rmm_initialize(allocation_mode, initial_pool_size, enable_logging):
 
     check_error(rmm_error)
 
+    free(opts)
+
     return 0
 
 
@@ -106,10 +105,6 @@ def rmm_finalize():
     """
     Finalizes the RMM library by calling the librmm functions via Cython
     """
-    global opts
-    free(opts)
-    opts = NULL
-
     with nogil:
         rmm_error = rmmFinalize()
 
@@ -119,9 +114,6 @@ def rmm_finalize():
 
 
 cdef void _rmmFinalizeWrapper ():
-    global opts
-    free(opts)
-    opts = NULL
     rmmFinalize()
 
 
@@ -134,11 +126,9 @@ def rmm_is_initialized():
     Returns True if RMM has been initialized, false otherwise by calling the
     librmm functions via Cython
     """
-    global opts
-
     with nogil:
         result = rmmIsInitialized(
-            <rmmOptions_t *>opts
+            <rmmOptions_t *>NULL
         )
 
     return result
