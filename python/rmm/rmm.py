@@ -55,6 +55,8 @@ def _initialize(
     if pool_allocator is False:
         initial_pool_size = 0
     elif pool_allocator is True and initial_pool_size is None:
+        initial_pool_size = 0
+    elif pool_allocator is True and initial_pool_size == 0:
         initial_pool_size = 1
 
     return librmm.rmm_initialize(allocation_mode, initial_pool_size, logging)
@@ -85,9 +87,9 @@ def reinitialize(
         performance.
     managed_memory : bool, default False
         If True, use managed memory for device memory allocation
-    initial_pool_size : int, default 0
+    initial_pool_size : int, default None
         When `pool_allocator` is True, this indicates the initial pool size in
-        bytes. Zero is used to indicate the default size of the underlying
+        bytes. None is used to indicate the default size of the underlying
         memorypool implementation, which currently is 1/2 total GPU memory.
     logging : bool, default False
         If True, enable run-time logging of all memory events
