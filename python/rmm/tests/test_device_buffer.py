@@ -24,3 +24,12 @@ def test_device_buffer_from_array(dtype, nelems):
     buf = rmm.DeviceBuffer(expect)
     got = rmm.device_array_from_ptr(buf.data, len(expect), expect.dtype).copy_to_host()
     np.testing.assert_array_equal(expect, got)
+
+
+@pytest.mark.parametrize("dtype", _dtypes)
+@pytest.mark.parametrize("nelems", _nelems)
+def test_device_buffer_from_cuda_array(dtype, nelems):
+    expect = rmm.to_device(np.random.rand(nelems).astype(dtype))
+    buf = rmm.DeviceBuffer(expect)
+    got = rmm.device_array_from_ptr(buf.data, len(expect), expect.dtype)
+    np.testing.assert_array_equal(expect.copy_to_host(), got.copy_to_host())

@@ -13,8 +13,8 @@ cdef extern from "rmm/device_buffer.hpp" namespace "rmm" nogil:
         size_t capacity()
 
 cdef class DeviceBuffer:
-    cdef device_buffer c_obj
-    cdef void* data(self)
-    cpdef void resize(self, size_t new_size)
+    cdef device_buffer *c_obj
     cpdef size_t size(self)
+    cpdef void resize(self, size_t new_size)
     cpdef size_t capacity(self)
+    cdef void* data(self)
