@@ -345,15 +345,15 @@ TYPED_TEST(MultiGPUMemoryManagerTest, AllocateTB) {
     }
     else {
         ASSERT_FAILURE( RMM_ALLOC(&a, size_tb, stream) );
+        ASSERT_FAILURE( RMM_FREE(a, stream) );
     }
     
-    ASSERT_SUCCESS( RMM_FREE(a, stream) );
 }
 
 TYPED_TEST(MultiGPUMemoryManagerTest, AllocateTooMuch) {
     char *a = 0;
     ASSERT_FAILURE( RMM_ALLOC(&a, size_pb, stream) );
-    ASSERT_SUCCESS( RMM_FREE(a, stream) );
+    ASSERT_FAILURE( RMM_FREE(a, stream) );
 }
 
 TYPED_TEST(MultiGPUMemoryManagerTest, FreeZero) {
