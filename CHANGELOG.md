@@ -11,8 +11,10 @@
 
 ## Bug Fixes
 
+- PR #170 Always build librmm and rmm, but conditionally upload based on CUDA / Python version
 
-# RMM 0.10.0 (Date TBD)
+
+# RMM 0.10.0 (16 Oct 2019)
 
 ## New Features
 
@@ -39,7 +41,7 @@
  - PR #157 Check if initialized before freeing for Numba finalizer and use `weakref` instead of `atexit`
 
 
-# RMM 0.9.0 (21 August 2019)
+# RMM 0.9.0 (21 Aug 2019)
 
 ## New Features
 
