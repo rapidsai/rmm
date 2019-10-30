@@ -47,29 +47,30 @@ class device_scalar {
       rmm::mr::device_memory_resource *mr = rmm::mr::get_default_resource())
       : buff{sizeof(T), stream, mr} {
     
-    _memcpy(buff.data(), &initial_value, sizeof(T), stream);
+    _memcpy(buff.data(), &initial_value, stream);
   }
 
   /**---------------------------------------------------------------------------*
-   * @brief Copies the value from device to host and returns the value.
+   * @brief Copies the value from device to host synchronously and returns the
+   * value.
    *
-   * @return T The value of the scalar after synchronizing its stream
+   * @return T The value of the scalar
    * @param stream CUDA stream on which to perform the copy
    *---------------------------------------------------------------------------**/
   T value(cudaStream_t stream = 0) const {
     T host_value{};
-    _memcpy(&host_value, buff.data(), sizeof(T), stream);
+    _memcpy(&host_value, buff.data(), stream);
     return host_value;
   }
 
   /**---------------------------------------------------------------------------*
-   * @brief Copies the value from host to device and synchronizes.
+   * @brief Copies the value from host to device synchronously.
    *
    * @param host_value The host value which will be copied to device
    * @param stream CUDA stream on which to perform the copy
    *---------------------------------------------------------------------------**/
   void set_value(T host_value, cudaStream_t stream = 0) {
-    _memcpy(buff.data(), &host_value, sizeof(T), stream);
+    _memcpy(buff.data(), &host_value, stream);
   }
 
   /**---------------------------------------------------------------------------*
@@ -92,9 +93,9 @@ class device_scalar {
  private:
   rmm::device_buffer buff{sizeof(T)};
 
-  inline void _memcpy(void *dst, const void *src, size_t count,
-                      cudaStream_t stream) const{
-    auto status = cudaMemcpyAsync(dst, src, count, cudaMemcpyDefault, stream);
+  inline void _memcpy(void *dst, const void *src, cudaStream_t stream) const {
+    auto status = cudaMemcpyAsync(dst, src, sizeof(T), cudaMemcpyDefault,
+                                  stream);
     if (cudaSuccess != status) {
       throw std::runtime_error{"Device memcpy failed."};
     }
