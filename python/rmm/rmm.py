@@ -41,6 +41,7 @@ def _initialize(
     pool_allocator=False,
     managed_memory=False,
     initial_pool_size=None,
+    devices=0,
     logging=False,
 ):
     """
@@ -59,7 +60,14 @@ def _initialize(
     elif pool_allocator is True and initial_pool_size == 0:
         initial_pool_size = 1
 
-    return librmm.rmm_initialize(allocation_mode, initial_pool_size, logging)
+    if devices is None:
+        devices = [0]
+    elif isinstance(devices, int):
+        devices = [devices]
+
+    return librmm.rmm_initialize(
+        allocation_mode, initial_pool_size, devices, logging
+    )
 
 
 def _finalize():
@@ -73,6 +81,7 @@ def reinitialize(
     pool_allocator=False,
     managed_memory=False,
     initial_pool_size=None,
+    devices=0,
     logging=False,
 ):
     """
@@ -91,6 +100,8 @@ def reinitialize(
         When `pool_allocator` is True, this indicates the initial pool size in
         bytes. None is used to indicate the default size of the underlying
         memorypool implementation, which currently is 1/2 total GPU memory.
+    devices : int or List[int], default 0
+        GPU device  IDs to register. By default registers only GPU 0.
     logging : bool, default False
         If True, enable run-time logging of all memory events
         (alloc, free, realloc).
@@ -101,6 +112,7 @@ def reinitialize(
         pool_allocator=pool_allocator,
         managed_memory=managed_memory,
         initial_pool_size=initial_pool_size,
+        devices=devices,
         logging=logging,
     )
 
