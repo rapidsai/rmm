@@ -65,14 +65,9 @@ namespace rmm {
 class device_buffer {
  public:
   /**---------------------------------------------------------------------------*
-   * @brief Default constructor creates an empty `device_buffer`
+   * @brief Constructs an empty `device_buffer` of size 0
    *---------------------------------------------------------------------------**/
-  device_buffer()
-      : _data{nullptr},
-        _size{},
-        _capacity{},
-        _stream{},
-        _mr{rmm::mr::get_default_resource()} {}
+  device_buffer() = default;
 
   /**---------------------------------------------------------------------------*
    * @brief Constructs a new device buffer of `size` unitialized bytes
@@ -380,8 +375,7 @@ class device_buffer {
   cudaStream_t _stream{};   ///< Stream which may be used for
                             ///< allocation/deallocation of device memory
   mr::device_memory_resource* _mr{
-      mr::get_default_resource()};  //{ mr::get_default_resource()};  ///< The
-                                    //memory resource used to
+      mr::get_default_resource()};  ///< The memory resource used to
                                     ///< allocate/deallocate device memory
 };                                  // namespace rmm
 }  // namespace rmm
