@@ -9,7 +9,14 @@ import numpy as np
 cdef class DeviceBuffer:
 
     def __cinit__(self, ptr=None, size=None):
-        self.c_obj = new device_buffer(<void *> <uintptr_t> ptr, <size_t> size)
+        cdef void * data
+        if ptr is None:
+            data = NULL
+        else:
+            data = <void *> <uintptr_t> ptr
+        if size is None:
+            size = 0
+        self.c_obj = new device_buffer(data, size)
         
     @property
     def ptr(self):
@@ -19,6 +26,12 @@ cdef class DeviceBuffer:
     def size(self):
         return self.c_obj[0].size()
 
+    @staticmethod
+    cdef DeviceBuffer from_ptr(device_buffer *ptr):
+        cdef DeviceBuffer buf = DeviceBuffer.__new__(DeviceBuffer)
+        buf.c_obj = ptr
+        return buf
+    
     cpdef size_t size(self):
         return self.c_obj[0].size()
     

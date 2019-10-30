@@ -1,3 +1,5 @@
+from libcpp.memory cimport unique_ptr
+
 from rmm._lib.lib cimport cudaStream_t
 
 cdef extern from "rmm/device_buffer.hpp" namespace "rmm" nogil:
@@ -14,6 +16,10 @@ cdef extern from "rmm/device_buffer.hpp" namespace "rmm" nogil:
 
 cdef class DeviceBuffer:
     cdef device_buffer *c_obj
+    
+    @staticmethod
+    cdef DeviceBuffer from_ptr(device_buffer *ptr)
+    
     cpdef size_t size(self)
     cpdef void resize(self, size_t new_size)
     cpdef size_t capacity(self)
