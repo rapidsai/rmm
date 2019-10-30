@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <rmm/mr/cuda_memory_resource.hpp>
-#include <rmm/mr/cnmem_memory_resource.hpp>
 #include <rmm/mr/cnmem_managed_memory_resource.hpp>
-#include <rmm/mr/managed_memory_resource.hpp>
+#include <rmm/mr/cnmem_memory_resource.hpp>
+#include <rmm/mr/cuda_memory_resource.hpp>
 #include <rmm/mr/default_memory_resource.hpp>
 #include <rmm/mr/device_memory_resource.hpp>
+#include <rmm/mr/managed_memory_resource.hpp>
 
 #include <atomic>
 

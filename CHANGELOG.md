@@ -2,6 +2,8 @@
 
 ## New Features
 
+ - PR #106 Added multi-GPU initialization
+
 ## Improvements
 
 - PR #161 Use `std::atexit` to finalize RMM after Python interpreter shutdown

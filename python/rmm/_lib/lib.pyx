@@ -17,7 +17,6 @@
 # cython: embedsignature = True
 # cython: language_level = 3
 
-from rmm._lib.lib cimport *
 from libc.stdint cimport uintptr_t
 from libc.stdlib cimport malloc, free
 from libcpp.vector cimport vector
@@ -82,15 +81,18 @@ cdef caller_pair _get_caller() except *:
 
 
 # API Functions
-def rmm_initialize(allocation_mode, initial_pool_size, enable_logging):
+def rmm_initialize(
+        allocation_mode, initial_pool_size, enable_logging, devices
+):
     """
     Initializes the RMM library by calling the librmm functions via Cython
     """
     global opts
-    opts = <rmmOptions_t*>malloc(sizeof(rmmOptions_t))
+    opts = new rmmOptions_t()
     opts.allocation_mode = <rmmAllocationMode_t>allocation_mode
     opts.initial_pool_size = <size_t>initial_pool_size
     opts.enable_logging = <bool>enable_logging
+    opts.devices = devices
 
     with nogil:
         rmm_error = rmmInitialize(
@@ -107,7 +109,7 @@ def rmm_finalize():
     Finalizes the RMM library by calling the librmm functions via Cython
     """
     global opts
-    free(opts)
+    del opts
     opts = NULL
 
     with nogil:
@@ -242,18 +244,18 @@ def rmm_free(ptr, stream):
     )
 
 
-cdef offset_t* c_getallocationoffset(
+cdef ptrdiff_t* c_getallocationoffset(
     void *ptr, cudaStream_t stream
-) except? <offset_t*>NULL:
+) except? <ptrdiff_t*>NULL:
     """
     Gets the offset of ptr from its base allocation by calling the librmm
     functions via Cython
     """
-    cdef offset_t * offset = <offset_t *>malloc(sizeof(offset_t))
+    cdef ptrdiff_t * offset = <ptrdiff_t *>malloc(sizeof(ptrdiff_t))
 
     with nogil:
         rmm_error = rmmGetAllocationOffset(
-            <offset_t *>offset,
+            <ptrdiff_t *>offset,
             <void *>ptr,
             <cudaStream_t>stream
         )
@@ -271,7 +273,7 @@ def rmm_getallocationoffset(ptr, stream):
     cdef void * c_ptr = <void *><uintptr_t>ptr
     cdef cudaStream_t c_stream = <cudaStream_t><size_t>stream
 
-    cdef offset_t * c_offset = c_getallocationoffset(
+    cdef ptrdiff_t * c_offset = c_getallocationoffset(
         <void *>c_ptr,
         <cudaStream_t>c_stream
     )

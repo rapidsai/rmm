@@ -70,7 +70,7 @@ void setAllocator(const std::string alloc) {
         return;
     }
     else {
-        rmmOptions_t options{CudaDefaultAllocation, 0, false};
+        rmmOptions_t options{};
         if (alloc == "rmmManaged")
             options.allocation_mode = CudaManagedMemory;
         else if (alloc == "rmmDefaultPool")
