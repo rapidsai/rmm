@@ -76,7 +76,10 @@ class cnmem_memory_resource : public device_memory_resource {
     // If no devices were specified, use the current one
     if (devices.empty()) {
       int current_device{};
-      cudaGetDevice(&current_device);
+      auto status = cudaGetDevice(&current_device);
+      if(status != cudaSuccess){
+         throw std::runtime_error{"Failed to get current device."};
+      }
       cnmemDevice_t dev{};
       dev.device = current_device;
       dev.size = initial_pool_size;
