@@ -16,13 +16,16 @@
 #pragma once
 
 #include <rmm/detail/cnmem.h>
+#include "cnmem_memory_resource.hpp"
 #include "device_memory_resource.hpp"
+
 #include <cuda_runtime_api.h>
 #include <cassert>
 #include <exception>
 #include <iostream>
 #include <mutex>
 #include <set>
+#include <vector>
 
 namespace rmm {
 namespace mr {
@@ -42,9 +45,10 @@ class cnmem_managed_memory_resource final : public cnmem_memory_resource {
    * @param initial_pool_size Size, in bytes, of the intial pool size. When
    * zero, an implementation defined pool size is used.
    *-------------------------------------------------------------------------**/
-  explicit cnmem_managed_memory_resource(std::size_t initial_pool_size = 0) :
-    cnmem_memory_resource(initial_pool_size, memory_kind::MANAGED) {
-  }
+  explicit cnmem_managed_memory_resource(std::size_t initial_pool_size = 0,
+                                         std::vector<int> const& devices = {})
+      : cnmem_memory_resource(initial_pool_size, devices,
+                              memory_kind::MANAGED) {}
 };
 
 }  // namespace mr

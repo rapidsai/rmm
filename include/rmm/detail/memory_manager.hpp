@@ -228,8 +228,7 @@ namespace rmm
     rmmError_t registerStream(cudaStream_t stream);
 
   private:
-    Manager() : options({ CudaDefaultAllocation, false, 0 }), 
-                is_initialized(false) {}
+    Manager() = default;
     ~Manager() = default;
     Manager(const Manager&) = delete;
     Manager& operator=(const Manager&) = delete;
@@ -237,8 +236,8 @@ namespace rmm
     std::set<cudaStream_t> registered_streams;
     Logger logger;
 
-    rmmOptions_t options;
-    bool is_initialized;
+    rmmOptions_t options{};
+    bool is_initialized{false};
 
     std::unique_ptr<rmm::mr::device_memory_resource> initialized_resource{};
   };
