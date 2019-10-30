@@ -47,7 +47,7 @@ class device_scalar {
       rmm::mr::device_memory_resource *mr = rmm::mr::get_default_resource())
       : buff{sizeof(T), stream, mr} {
     
-    _set_value<false>(initial_value, buff.stream());
+    _memcpy(buff.data(), &initial_value, sizeof(T), stream);
   }
 
   /**---------------------------------------------------------------------------*
@@ -57,19 +57,10 @@ class device_scalar {
    * @param stream CUDA stream on which to perform the copy
    *---------------------------------------------------------------------------**/
   T value(cudaStream_t stream = 0) const {
-    return _value<true>(stream);
+    T host_value{};
+    _memcpy(&host_value, buff.data(), sizeof(T), stream);
+    return host_value;
   }
-
-  /**---------------------------------------------------------------------------*
-   * @brief Copies the value from device to host and returns the value.
-   *
-   * @return T The value of the scalar
-   * @param stream CUDA stream on which to perform the copy
-   *---------------------------------------------------------------------------**/
-  T value_async(cudaStream_t stream = 0) const {
-    return _value<false>(stream);
-  }
-
 
   /**---------------------------------------------------------------------------*
    * @brief Copies the value from host to device and synchronizes.
@@ -78,17 +69,7 @@ class device_scalar {
    * @param stream CUDA stream on which to perform the copy
    *---------------------------------------------------------------------------**/
   void set_value(T host_value, cudaStream_t stream = 0) {
-    _set_value<true>(host_value, stream);
-  }
-
-  /**---------------------------------------------------------------------------*
-   * @brief Copies the value from host to device.
-   *
-   * @param host_value The host value which will be copied to device
-   * @param stream CUDA stream on which to perform the copy
-   *---------------------------------------------------------------------------**/
-  void set_value_async(T host_value, cudaStream_t stream = 0) {
-    _set_value<false>(host_value, stream);
+    _memcpy(buff.data(), &host_value, sizeof(T), stream);
   }
 
   /**---------------------------------------------------------------------------*
@@ -111,27 +92,11 @@ class device_scalar {
  private:
   rmm::device_buffer buff{sizeof(T)};
 
-  template<bool synchronize>
-  inline T _value(cudaStream_t stream) const {
-    T host_value{};
-    _memcpy<synchronize>(&host_value, buff.data(), sizeof(T), stream);
-    return host_value;
-  }
-
-  template<bool synchronize>
-  inline void _set_value(T host_value, cudaStream_t stream) {
-    _memcpy<synchronize>(buff.data(), &host_value, sizeof(T), stream);
-  }
-
-  template<bool synchronize>
   inline void _memcpy(void *dst, const void *src, size_t count,
                       cudaStream_t stream) const{
     auto status = cudaMemcpyAsync(dst, src, count, cudaMemcpyDefault, stream);
     if (cudaSuccess != status) {
       throw std::runtime_error{"Device memcpy failed."};
-    }
-    if (cudaSuccess != cudaStreamSynchronize(stream)) {
-      throw std::runtime_error{"Stream sync failed."};
     }
   }
 };
