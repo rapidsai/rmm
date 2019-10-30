@@ -88,7 +88,7 @@ class device_buffer {
       std::size_t size, cudaStream_t stream = 0,
       mr::device_memory_resource* mr = mr::get_default_resource())
       : _size{size}, _capacity{size}, _stream{stream}, _mr{mr} {
-    _data = _mr->allocate(size, _stream);
+    _data = _mr->allocate(size, this->stream());
   }
 
   /**--------------------------------------------------------------------------*
@@ -113,9 +113,9 @@ class device_buffer {
       throw std::runtime_error{"Invalid size."};
     }
 
-    _data = _mr->allocate(_size, _stream);
+    _data = _mr->allocate(_size, this->stream());
     auto status =
-        cudaMemcpyAsync(_data, source_data, _size, cudaMemcpyDefault, _stream);
+        cudaMemcpyAsync(_data, source_data, _size, cudaMemcpyDefault, this->stream());
     if (cudaSuccess != status) {
       throw std::runtime_error{"Device memcopy failed."};
     }
@@ -141,10 +141,10 @@ class device_buffer {
       device_buffer const& other, cudaStream_t stream = 0,
       rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
       : _size{other.size()}, _capacity{other.size()}, _stream{stream}, _mr{mr} {
-    _data = memory_resource()->allocate(size(), _stream);
+    _data = memory_resource()->allocate(size(), this->stream());
 
     auto status = cudaMemcpyAsync(data(), other.data(), size(),
-                                  cudaMemcpyDefault, _stream);
+                                  cudaMemcpyDefault, this->stream());
 
     if (cudaSuccess != status) {
       throw std::runtime_error{"Device memory copy failed."};
@@ -177,6 +177,10 @@ class device_buffer {
 
   /**--------------------------------------------------------------------------*
    * @brief Copy assignment operator copies the contents of `other`
+   * 
+   * Any memory allocation / deallocation will use `other`'s stream if the 
+   * memory resource supports streams, as will memory copies. If you need these
+   * to use a different stream, call `set_stream()` on `other` before assignment.
    *
    * @param other The `device_buffer` to copy.
    *-------------------------------------------------------------------------**/
@@ -201,12 +205,16 @@ class device_buffer {
   /**--------------------------------------------------------------------------*
    * @brief Move assignment operator moves the contents from `other`.
    *
+   * Memory deallocation will use `other`'s stream if the memory resource 
+   * supports streams. If you need it to use a different stream, call
+   * `set_stream()` on `other` before assignment.
+   * 
    * @param other The `device_buffer` whose contents will be moved.
    *-------------------------------------------------------------------------**/
   device_buffer& operator=(device_buffer&& other) {
     if (&other != this) {
       set_stream(other.stream());
-      _mr->deallocate(_data, _capacity, _stream);
+      _mr->deallocate(_data, _capacity, stream());
       _data = other._data;
       _size = other._size;
       _capacity = other._capacity;
@@ -270,16 +278,17 @@ class device_buffer {
     if (new_size <= _size) {
       _size = new_size;
     } else {
-      void* const new_data = _mr->allocate(new_size, _stream);
+      void* const new_data = _mr->allocate(new_size, this->stream());
       if (_size > 0) {
         auto status =
-            cudaMemcpyAsync(new_data, _data, _size, cudaMemcpyDefault, _stream);
+            cudaMemcpyAsync(new_data, _data, _size, cudaMemcpyDefault,
+                            this->stream());
 
         if (cudaSuccess != status) {
           throw std::runtime_error{"Device memory copy failed."};
         }
       }
-      _mr->deallocate(_data, _size, _stream);
+      _mr->deallocate(_data, _size, this->stream());
       _data = new_data;
       _size = new_size;
       _capacity = new_size;
@@ -302,15 +311,15 @@ class device_buffer {
   void shrink_to_fit(cudaStream_t stream = 0) {
     set_stream(stream);
     if (size() != capacity()) {
-      void* const new_data = _mr->allocate(size(), _stream);
+      void* const new_data = _mr->allocate(size(), this->stream());
       if (size() > 0) {
         auto status = cudaMemcpyAsync(new_data, _data, size(),
-                                      cudaMemcpyDefault, _stream);
+                                      cudaMemcpyDefault, this->stream());
         if (cudaSuccess != status) {
           throw std::runtime_error{"Device memory copy failed."};
         }
       }
-      _mr->deallocate(_data, size(), _stream);
+      _mr->deallocate(_data, size(), this->stream());
       _data = new_data;
       _capacity = size();
     }
