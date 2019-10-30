@@ -85,20 +85,19 @@ def rmm_initialize(
     """
     Initializes the RMM library by calling the librmm functions via Cython
     """
-    opts = new rmmOptions_t()
-    opts.allocation_mode = <rmmAllocationMode_t>allocation_mode
-    opts.initial_pool_size = <size_t>initial_pool_size
-    opts.enable_logging = <bool>enable_logging
-    opts.devices = devices
+    cdef rmmOptions_t opts = rmmOptions_t(
+        <rmmAllocationMode_t>allocation_mode,
+        <size_t>initial_pool_size,
+        <bool>enable_logging,
+        <vector[int]>devices
+    )
 
     with nogil:
         rmm_error = rmmInitialize(
-            <rmmOptions_t *>opts
+            <rmmOptions_t *>&opts
         )
 
     check_error(rmm_error)
-
-    del opts
 
     return 0
 

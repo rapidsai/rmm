@@ -65,7 +65,7 @@ cdef extern from "rmm/rmm.h" nogil:
         PoolAllocation = 1,
         CudaManagedMemory = 2,
 
-    cdef cppclass rmmOptions_t:
+    ctypedef struct rmmOptions_t:
         rmmAllocationMode_t allocation_mode
         size_t initial_pool_size
         bool enable_logging
