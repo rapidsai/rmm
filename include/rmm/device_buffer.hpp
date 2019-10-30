@@ -178,26 +178,32 @@ class device_buffer {
   /**--------------------------------------------------------------------------*
    * @brief Copy assignment operator copies the contents of `other`
    * 
-   * Any memory allocation / deallocation will use `other`'s stream if the 
-   * memory resource supports streams, as will memory copies. If you need these
-   * to use a different stream, call `set_stream()` on `other` before assignment.
+   * Memory deallocation uses this instance's memory_resource and the last
+   * stream passed to a method on this instance. If a different stream is
+   * required for deallocation, call `set_stream()` on the instance before
+   * assignment.
+   * 
+   * Allocation and copy in this function uses the memory_resource and stream
+   * from `other`. If a different stream is required for allocation/copy, call
+   * `set_stream()` on `other` before assignment. After assignment, this
+   * instance's stream is replaced by the stream from `other`.
    *
    * @param other The `device_buffer` to copy.
    *-------------------------------------------------------------------------**/
   device_buffer& operator=(device_buffer const& other) {
     if (&other != this) {
-      set_stream(other.stream());
       _mr->deallocate(_data, _capacity, stream());
       _size = other._size;
       _capacity = other._size;  // only allocate _size bytes
       _mr = other._mr;
+      set_stream(other.stream());
       _data = _mr->allocate(_size, stream());
       auto status = cudaMemcpyAsync(_data, other._data, _size,
                                     cudaMemcpyDefault, stream());
 
       if (cudaSuccess != status) {
         throw std::runtime_error{"Device memory copy failed."};
-      }
+      }      
     }
     return *this;
   }
@@ -205,19 +211,20 @@ class device_buffer {
   /**--------------------------------------------------------------------------*
    * @brief Move assignment operator moves the contents from `other`.
    *
-   * Memory deallocation will use `other`'s stream if the memory resource 
-   * supports streams. If you need it to use a different stream, call
-   * `set_stream()` on `other` before assignment.
+   * Memory deallocation uses the last stream set in a device_buffer method
+   * on this instance. If a different stream is required, call `set_stream()` on
+   * the instance before assignment. After assignment, this instance's stream is
+   * replaced by the stream from `other`.
    * 
    * @param other The `device_buffer` whose contents will be moved.
    *-------------------------------------------------------------------------**/
   device_buffer& operator=(device_buffer&& other) {
     if (&other != this) {
-      set_stream(other.stream());
       _mr->deallocate(_data, _capacity, stream());
       _data = other._data;
       _size = other._size;
       _capacity = other._capacity;
+      set_stream(other.stream());
       _mr = other._mr;
 
       other._data = nullptr;
