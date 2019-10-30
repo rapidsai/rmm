@@ -380,8 +380,7 @@ class device_buffer {
   cudaStream_t _stream{};   ///< Stream which may be used for
                             ///< allocation/deallocation of device memory
   mr::device_memory_resource* _mr{
-      mr::get_default_resource()};  //{ mr::get_default_resource()};  ///< The
-                                    //memory resource used to
+      mr::get_default_resource()};  ///< The memory resource used to
                                     ///< allocate/deallocate device memory
 };                                  // namespace rmm
 }  // namespace rmm
