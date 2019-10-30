@@ -11,6 +11,8 @@
 
 ## Bug Fixes
 
+- PR #174 Make `device_buffer` default ctor explicit to work around type_dispatcher issue in libcudf.
+
 
 # RMM 0.10.0 (Date TBD)
 
