@@ -9,6 +9,7 @@
 - PR #161 Use `std::atexit` to finalize RMM after Python interpreter shutdown
 - PR #165 Align memory resource allocation sizes to 8-byte
 - PR #171 Change public API of RMM to only expose `reinitialize(...)`
+- PR #169 Explicit stream argument for device_buffer methods
 
 ## Bug Fixes
 
