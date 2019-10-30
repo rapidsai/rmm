@@ -17,8 +17,6 @@
 #pragma once
 
 #include "device_memory_resource.hpp"
-
-#include <vector>
 namespace rmm {
 namespace mr {
 
