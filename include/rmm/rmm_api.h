@@ -22,9 +22,10 @@
 
 #pragma once
 
+#include <cstddef>
+#include <vector>
+
 typedef struct CUstream_st *cudaStream_t;
-typedef long int offset_t; // would prefer ptrdiff_t but can't #include <stddef.h>
-                           // due to CFFI limitations
 
 /** ---------------------------------------------------------------------------*
  * @brief RMM error codes
@@ -56,17 +57,24 @@ typedef enum
 
 /** ---------------------------------------------------------------------------*
  * @brief Options for initializing the memory manager
+ * 
+ * By default, uses `CudaDefaultAllocation`, which uses `cudaMalloc/cudaFree`.
  *
  * If set to zero, `initial_pool_size` defaults to half of the total GPU memory
  * for the current device.
+ *
+ * Optionally accepts an array of device IDs that will be managed by RMM. If
+ * `nullptr`, assumes that only the device returned by `cudaGetDevice()` is
+ * used. These are only used when `allocation_mode == PoolAllocation`.
  * --------------------------------------------------------------------------**/
-typedef struct
-{
-  rmmAllocationMode_t allocation_mode; //< Allocation strategy to use
-  size_t initial_pool_size;            //< When pool suballocation is enabled,
-                                       //< this is the initial pool size in bytes
-  bool enable_logging;                 //< Enable logging memory manager events
-} rmmOptions_t;
+struct rmmOptions_t {
+  rmmAllocationMode_t allocation_mode{
+      CudaDefaultAllocation};       //< Allocation strategy to use
+  std::size_t initial_pool_size{};  //< When pool suballocation is enabled,
+                                    //< this is the initial pool size in bytes
+  bool enable_logging{false};       //< Enable logging memory manager events
+  std::vector<int> devices{};       ///< List of GPU device IDs to register
+};
 
 /** ---------------------------------------------------------------------------*
  * @brief Initialize memory manager state and storage.
@@ -184,7 +192,7 @@ rmmError_t rmmFree(void *ptr, cudaStream_t stream,
  *                   ptr.
  * @return rmmError_t RMM_SUCCESS if all goes well
  * --------------------------------------------------------------------------**/
-rmmError_t rmmGetAllocationOffset(offset_t *offset,
+rmmError_t rmmGetAllocationOffset(ptrdiff_t *offset,
                                   void *ptr,
                                   cudaStream_t stream);
 

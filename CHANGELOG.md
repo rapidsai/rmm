@@ -2,14 +2,22 @@
 
 ## New Features
 
+ - PR #106 Added multi-GPU initialization
+ - PR #167 Added value setter to `device_scalar`
+
 ## Improvements
 
 - PR #161 Use `std::atexit` to finalize RMM after Python interpreter shutdown
+- PR #165 Align memory resource allocation sizes to 8-byte
+- PR #169 Explicit stream argument for device_buffer methods
 
 ## Bug Fixes
 
+- PR #174 Make `device_buffer` default ctor explicit to work around type_dispatcher issue in libcudf.
+- PR #170 Always build librmm and rmm, but conditionally upload based on CUDA / Python version
 
-# RMM 0.10.0 (Date TBD)
+
+# RMM 0.10.0 (16 Oct 2019)
 
 ## New Features
 
@@ -36,7 +44,7 @@
  - PR #157 Check if initialized before freeing for Numba finalizer and use `weakref` instead of `atexit`
 
 
-# RMM 0.9.0 (21 August 2019)
+# RMM 0.9.0 (21 Aug 2019)
 
 ## New Features
 

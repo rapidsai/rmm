@@ -24,6 +24,7 @@
 #include <iostream>
 #include <mutex>
 #include <set>
+#include <vector>
 
 namespace rmm {
 namespace mr {
@@ -35,15 +36,17 @@ class cnmem_memory_resource : public device_memory_resource {
  public:
   /**--------------------------------------------------------------------------*
    * @brief Construct a cnmem memory resource and allocate the initial device
-   * memory pool
+   * memory pool.
 
    * TODO Add constructor arguments for other CNMEM options/flags
    *
-   * @param initial_pool_size Size, in bytes, of the intial pool size. When
+   * @param initial_pool_size Size, in bytes, of the initial pool size. When
    * zero, an implementation defined pool size is used.
-   *-------------------------------------------------------------------------**/
-  explicit cnmem_memory_resource(std::size_t initial_pool_size = 0) : 
-    cnmem_memory_resource(initial_pool_size, memory_kind::CUDA) {}
+   * @param devices List of GPU device IDs to register with CNMEM
+   *---------------------------------------------------------------------------**/
+  explicit cnmem_memory_resource(std::size_t initial_pool_size = 0,
+                                 std::vector<int> const& devices = {})
+      : cnmem_memory_resource(initial_pool_size, devices, memory_kind::CUDA) {}
 
   virtual ~cnmem_memory_resource() {
     auto status = cnmemFinalize();
@@ -55,41 +58,50 @@ class cnmem_memory_resource : public device_memory_resource {
   }
 
   bool supports_streams() const noexcept override { return true; }
+
  protected:
-   /**
+  /**
    * @brief The kind of device memory to use for a memory pool
    */
   enum class memory_kind : unsigned short {
-    MANAGED, ///< Uses CUDA managed memory (Unified Memory) for pool
-    CUDA     ///< Uses CUDA device memory for pool
+    MANAGED,  ///< Uses CUDA managed memory (Unified Memory) for pool
+    CUDA      ///< Uses CUDA device memory for pool
   };
 
-  cnmem_memory_resource(std::size_t initial_pool_size, memory_kind mem_kind)
-  {
-    cnmemDevice_t dev;
-    
-    // TODO Update exception
-    if (cudaSuccess != cudaGetDevice(&(dev.device))) {
-      throw std::runtime_error{"Failed to get CUDA device"};
-    }
-    // Note: cnmem defaults to half GPU memory
-    dev.size = initial_pool_size;
-    dev.numStreams = 1;
-    cudaStream_t streams[1];
-    streams[0] = 0;
-    dev.streams = streams;
-    dev.streamSizes = 0;
+  cnmem_memory_resource(std::size_t initial_pool_size,
+                        std::vector<int> const& devices,
+                        memory_kind pool_type) {
+    std::vector<cnmemDevice_t> cnmem_devices;
 
-    unsigned long flags = (mem_kind == memory_kind::MANAGED) ?
-      CNMEM_FLAGS_MANAGED : 0;
-    
+    // If no devices were specified, use the current one
+    if (devices.empty()) {
+      int current_device{};
+      auto status = cudaGetDevice(&current_device);
+      if(status != cudaSuccess){
+         throw std::runtime_error{"Failed to get current device."};
+      }
+      cnmemDevice_t dev{};
+      dev.device = current_device;
+      dev.size = initial_pool_size;
+      cnmem_devices.push_back(dev);
+    } else {
+      for (auto const& d : devices) {
+        cnmemDevice_t dev{};
+        dev.device = d;
+        dev.size = initial_pool_size;
+        cnmem_devices.push_back(dev);
+      }
+    }
+
+    unsigned long flags =
+        (pool_type == memory_kind::MANAGED) ? CNMEM_FLAGS_MANAGED : 0;
     // TODO Update exception
-    auto status = cnmemInit(1, &dev, flags);
+    auto status = cnmemInit(cnmem_devices.size(), cnmem_devices.data(), flags);
     if (CNMEM_STATUS_SUCCESS != status) {
       std::string msg = cnmemGetErrorString(status);
       throw std::runtime_error{"Failed to initialize cnmem: " + msg};
     }
-}
+  }
 
  private:
   /**--------------------------------------------------------------------------*
@@ -109,7 +121,8 @@ class cnmem_memory_resource : public device_memory_resource {
     auto status = cnmemMalloc(&p, bytes, stream);
     if (CNMEM_STATUS_SUCCESS != status) {
 #ifndef NDEBUG
-      std::cerr << "cnmemMalloc failed: " << cnmemGetErrorString(status) << "\n";
+      std::cerr << "cnmemMalloc failed: " << cnmemGetErrorString(status)
+                << "\n";
 #endif
       throw std::bad_alloc{};
     }
@@ -159,7 +172,7 @@ class cnmem_memory_resource : public device_memory_resource {
    * @param stream to execute on
    * @return std::pair contaiing free_size and total_size of memory
    *-------------------------------------------------------------------------**/
-  std::pair<size_t,size_t> do_get_mem_info( cudaStream_t stream) const{
+  std::pair<size_t, size_t> do_get_mem_info(cudaStream_t stream) const {
     std::size_t free_size;
     std::size_t total_size;
     auto status = cnmemMemGetInfo(&free_size, &total_size, stream);
