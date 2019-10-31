@@ -3,6 +3,7 @@
 ## New Features
 
  - PR #106 Added multi-GPU initialization
+ - PR #167 Added value setter to `device_scalar`
 
 ## Improvements
 
