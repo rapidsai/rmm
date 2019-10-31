@@ -93,9 +93,9 @@ class device_scalar {
  private:
   rmm::device_buffer buff{sizeof(T)};
 
-  inline void _memcpy(void *dst, const void *src, size_t count,
+  inline void _memcpy(void *dst, const void *src,
                       cudaStream_t stream) const{
-    auto status = cudaMemcpyAsync(dst, src, count, cudaMemcpyDefault, stream);
+    auto status = cudaMemcpyAsync(dst, src, sizeof(T), cudaMemcpyDefault, stream);
 
     if (cudaSuccess != status) {
       throw std::runtime_error{"Device memcpy failed."};
