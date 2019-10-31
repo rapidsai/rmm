@@ -69,10 +69,15 @@ namespace rmm {
  *---------------------------------------------------------------------------**/
 class device_buffer {
  public:
-  /**--------------------------------------------------------------------------*
-   * @brief Constructs an empty `device_buffer` of size 0
-   *-------------------------------------------------------------------------**/
-  device_buffer() = default;
+  /**---------------------------------------------------------------------------*
+   * @brief Default constructor creates an empty `device_buffer`
+   *---------------------------------------------------------------------------**/
+  device_buffer()
+      : _data{nullptr},
+        _size{},
+        _capacity{},
+        _stream{},
+        _mr{rmm::mr::get_default_resource()} {}
 
   /**--------------------------------------------------------------------------*
    * @brief Constructs a new device buffer of `size` uninitialized bytes
