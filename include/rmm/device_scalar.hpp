@@ -95,8 +95,13 @@ class device_scalar {
   inline void _memcpy(void *dst, const void *src, size_t count,
                       cudaStream_t stream) const{
     auto status = cudaMemcpyAsync(dst, src, count, cudaMemcpyDefault, stream);
+
     if (cudaSuccess != status) {
       throw std::runtime_error{"Device memcpy failed."};
+    }
+
+    if (cudaSuccess != cudaStreamSynchronize(stream)) {
+      throw std::runtime_error{"Stream sync failed."};
     }
   }
 };
