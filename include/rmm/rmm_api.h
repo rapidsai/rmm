@@ -44,15 +44,14 @@ typedef enum
 
 /** ---------------------------------------------------------------------------*
  * @brief RMM allocation mode settings
- *
- * These settings can be ORed together. For example to use a pool of managed
- * memory, use `mode = PoolAllocation | CudaManagedMemory`.
  * --------------------------------------------------------------------------**/
 typedef enum
 {
-  CudaDefaultAllocation = 0,  //< Use cudaMalloc for allocation
-  PoolAllocation        = 1,  //< Use pool suballocation strategy
-  CudaManagedMemory     = 2,  //< Use cudaMallocManaged rather than cudaMalloc
+  CudaDefaultAllocation = 0, //< Use cudaMalloc for allocation
+  PoolAllocation = 1,        //< Use pool suballocation strategy
+  CudaManagedMemory = 2,     //< Use cudaMallocManaged rather than cudaMalloc
+  ManagedPoolAllocation = 3, //< Use pool suballocation strategy with
+                             //< cudaMallocManaged memory
 } rmmAllocationMode_t;
 
 /** ---------------------------------------------------------------------------*
@@ -67,13 +66,14 @@ typedef enum
  * `nullptr`, assumes that only the device returned by `cudaGetDevice()` is
  * used. These are only used when `allocation_mode == PoolAllocation`.
  * --------------------------------------------------------------------------**/
-struct rmmOptions_t {
+struct rmmOptions_t
+{
   rmmAllocationMode_t allocation_mode{
-      CudaDefaultAllocation};       //< Allocation strategy to use
-  std::size_t initial_pool_size{};  //< When pool suballocation is enabled,
-                                    //< this is the initial pool size in bytes
-  bool enable_logging{false};       //< Enable logging memory manager events
-  std::vector<int> devices{};       ///< List of GPU device IDs to register
+      CudaDefaultAllocation};      //< Allocation strategy to use
+  std::size_t initial_pool_size{}; //< When pool suballocation is enabled,
+                                   //< this is the initial pool size in bytes
+  bool enable_logging{false};      //< Enable logging memory manager events
+  std::vector<int> devices{};      ///< List of GPU device IDs to register
 };
 
 /** ---------------------------------------------------------------------------*
@@ -118,7 +118,7 @@ bool rmmIsInitialized(rmmOptions_t *options);
  * @param errcode The error returned by an RMM function
  * @return const char* The input error code in string form
  * --------------------------------------------------------------------------**/
-const char * rmmGetErrorString(rmmError_t errcode);
+const char *rmmGetErrorString(rmmError_t errcode);
 
 /** ---------------------------------------------------------------------------*
  * @brief Allocate memory and return a pointer to device memory.
@@ -138,7 +138,7 @@ const char * rmmGetErrorString(rmmError_t errcode);
  *                    requested size, or RMM_CUDA_ERROR on any other CUDA error.
  * --------------------------------------------------------------------------**/
 rmmError_t rmmAlloc(void **ptr, size_t size, cudaStream_t stream,
-                    const char* file, unsigned int line);
+                    const char *file, unsigned int line);
 
 /** ---------------------------------------------------------------------------*
  * @brief Reallocate device memory block to new size and recycle any remaining
@@ -174,7 +174,7 @@ rmmError_t rmmAlloc(void **ptr, size_t size, cudaStream_t stream,
  *                    error.
  * --------------------------------------------------------------------------**/
 rmmError_t rmmFree(void *ptr, cudaStream_t stream,
-                   const char* file, unsigned int line);
+                   const char *file, unsigned int line);
 
 /** ---------------------------------------------------------------------------*
  * @brief Get the offset of ptr from its base allocation.
@@ -222,7 +222,7 @@ rmmError_t rmmGetInfo(size_t *freeSize, size_t *totalSize, cudaStream_t stream);
  * @param filename The full path and filename to write.
  * @return rmmError_t RMM_SUCCESS or RMM_ERROR_IO on output failure.
  * --------------------------------------------------------------------------**/
-rmmError_t rmmWriteLog(const char* filename);
+rmmError_t rmmWriteLog(const char *filename);
 
 /** ---------------------------------------------------------------------------*
  * @brief Get the size of the CSV log string in memory.
@@ -238,4 +238,4 @@ size_t rmmLogSize();
  * @param[in] buffer_size The size allocated for buffer.
  * @return rmmError_t RMM_SUCCESS, or RMM_IO_ERROR on any failure.
  * --------------------------------------------------------------------------**/
-rmmError_t rmmGetLog(char* buffer, size_t buffer_size);
+rmmError_t rmmGetLog(char *buffer, size_t buffer_size);

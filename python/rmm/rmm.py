@@ -48,16 +48,21 @@ def _initialize(
     Initializes RMM library using the options passed
     """
     allocation_mode = 0
-    if pool_allocator:
-        allocation_mode = 1
-    if managed_memory:
-        allocation_mode = 2
 
-    if pool_allocator is False:
+    if pool_allocator and managed_memory:
+        allocation_mode = 3
+    elif pool_allocator and not managed_memory:
+        allocation_mode = 1
+    elif not pool_allocator and managed_memory:
+        allocation_mode = 2
+    elif not pool_allocator and not managed_memory:
+        allocation_mode = 0
+
+    if not pool_allocator:
         initial_pool_size = 0
-    elif pool_allocator is True and initial_pool_size is None:
+    elif pool_allocator and initial_pool_size is None:
         initial_pool_size = 0
-    elif pool_allocator is True and initial_pool_size == 0:
+    elif pool_allocator and initial_pool_size == 0:
         initial_pool_size = 1
 
     if devices is None:
