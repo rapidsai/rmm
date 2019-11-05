@@ -32,7 +32,7 @@ cdef class DeviceBuffer:
         buf.c_obj = ptr
         return buf
     
-    cpdef size_t size(self):
+    cdef size_t size(self):
         return self.c_obj[0].size()
     
     cpdef void resize(self, size_t new_size):

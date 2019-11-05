@@ -20,7 +20,7 @@ cdef class DeviceBuffer:
     @staticmethod
     cdef DeviceBuffer from_ptr(device_buffer *ptr)
     
-    cpdef size_t size(self)
+    cdef size_t size(self)
     cpdef void resize(self, size_t new_size)
     cpdef size_t capacity(self)
     cdef void* data(self)
