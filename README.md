@@ -299,9 +299,6 @@ member of the struct `rmmOptions_t` to include the flag `CudaManagedMemory`
 `PoolAllocation` is also set, then RMM will allocate from a pool of managed
 memory.
 
-In Python, use the `rmm_config.use_managed_memory` Boolean setting
-as shown previously.
-
 When the allocation mode is both `CudaManagedMemory` and `PoolAllocation`,
 RMM allocates the initial pool (and any expansion allocations) using
 `cudaMallocManaged` and then prefetches the pool to the GPU using

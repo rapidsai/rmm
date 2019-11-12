@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import ctypes
+from enum import IntEnum
 
 import numpy as np
 from numba import cuda
@@ -36,6 +37,12 @@ def _array_helper(addr, datasize, shape, strides, dtype, finalizer=None):
     )
 
 
+class rmm_allocation_mode(IntEnum):
+    CudaDefaultAllocation = (0,)
+    PoolAllocation = (1,)
+    CudaManagedMemory = (2,)
+
+
 # API Functions
 def _initialize(
     pool_allocator=False,
@@ -49,14 +56,10 @@ def _initialize(
     """
     allocation_mode = 0
 
-    if pool_allocator and managed_memory:
-        allocation_mode = 3
-    elif pool_allocator and not managed_memory:
-        allocation_mode = 1
-    elif not pool_allocator and managed_memory:
-        allocation_mode = 2
-    elif not pool_allocator and not managed_memory:
-        allocation_mode = 0
+    if pool_allocator:
+        allocation_mode |= rmm_allocation_mode.PoolAllocation
+    if managed_memory:
+        allocation_mode |= rmm_allocation_mode.CudaManagedMemory
 
     if not pool_allocator:
         initial_pool_size = 0

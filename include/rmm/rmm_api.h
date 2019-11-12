@@ -53,8 +53,6 @@ typedef enum
   CudaDefaultAllocation = 0,  //< Use cudaMalloc for allocation
   PoolAllocation        = 1,  //< Use pool suballocation strategy
   CudaManagedMemory     = 2,  //< Use cudaMallocManaged rather than cudaMalloc
-  ManagedPoolAllocation = 3,  //< Use pool suballocation strategy with
-                              //< cudaMallocManaged memory
 } rmmAllocationMode_t;
 
 /** ---------------------------------------------------------------------------*
