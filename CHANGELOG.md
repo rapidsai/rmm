@@ -4,6 +4,7 @@
 
 - PR #106 Added multi-GPU initialization
 - PR #167 Added value setter to `device_scalar`
+- PR #163 Add Cython bindings to `device_buffer`
 
 ## Improvements
 
