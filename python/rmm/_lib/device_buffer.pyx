@@ -51,7 +51,3 @@ cdef class DeviceBuffer:
 
     cdef void* data(self):
         return self.c_obj.get()[0].data()
-
-
-def makeObj(obj_type, kwds):
-    return obj_type(**kwds)
