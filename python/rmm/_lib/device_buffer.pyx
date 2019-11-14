@@ -22,10 +22,10 @@ cdef class DeviceBuffer:
 
     def __init__(self, ptr=None, size=None):
         pass
-    
+
     def __reduce__(self):
         return DeviceBuffer, (self.ptr, self.size())
-    
+
     @property
     def ptr(self):
         return int(<uintptr_t>self.c_obj.get()[0].data())
@@ -39,13 +39,13 @@ cdef class DeviceBuffer:
         cdef DeviceBuffer buf = DeviceBuffer.__new__(DeviceBuffer)
         buf.c_obj = move(ptr)
         return buf
-    
+
     cdef size_t size(self):
         return self.c_obj.get()[0].size()
-    
+
     cpdef void resize(self, size_t new_size):
         self.c_obj.get()[0].resize(new_size)
-    
+
     cpdef size_t capacity(self):
         return self.c_obj.get()[0].capacity()
 

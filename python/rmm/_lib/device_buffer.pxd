@@ -16,10 +16,10 @@ cdef extern from "rmm/device_buffer.hpp" namespace "rmm" nogil:
 
 cdef class DeviceBuffer:
     cdef unique_ptr[device_buffer] c_obj
-    
+
     @staticmethod
     cdef DeviceBuffer from_unique_ptr(unique_ptr[device_buffer] ptr)
-    
+
     cdef size_t size(self)
     cpdef void resize(self, size_t new_size)
     cpdef size_t capacity(self)
