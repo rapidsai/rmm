@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 
 import rmm
-from rmm import rmm_config
 
 
 def array_tester(dtype, nelem):
@@ -45,10 +44,7 @@ def test_rmm_alloc(dtype, nelem):
     "managed, pool", list(product([False, True], [False, True]))
 )
 def test_rmm_modes(dtype, nelem, managed, pool):
-    rmm.finalize()
-    rmm_config.use_managed_memory = managed
-    rmm_config.use_pool_allocator = pool
-    rmm.initialize()
+    rmm.reinitialize(pool_allocator=pool, managed_memory=managed)
 
     assert rmm.is_initialized()
 
@@ -56,9 +52,9 @@ def test_rmm_modes(dtype, nelem, managed, pool):
 
 
 def test_uninitialized():
-    rmm.finalize()
+    rmm._finalize()
     assert not rmm.is_initialized()
-    rmm.initialize()  # so further tests will pass
+    rmm.reinitialize()  # so further tests will pass
 
 
 @pytest.mark.parametrize("dtype", _dtypes)
