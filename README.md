@@ -21,26 +21,26 @@ RMM is not:
 
 RMM can be installed with conda ([miniconda](https://conda.io/miniconda.html), or the full [Anaconda distribution](https://www.anaconda.com/download)) from the `rapidsai` channel:
 
-For `rmm version == 0.8` :
+For `rmm version == 0.11` :
 ```bash
-# for CUDA 9.2
-conda install -c nvidia -c rapidsai -c numba -c conda-forge -c defaults \
-    rmm=0.8 python=3.6 cudatoolkit=9.2
+# for CUDA 10.1
+conda install -c nvidia -c rapidsai -c conda-forge -c defaults \
+    rmm=0.11 python=3.6 cudatoolkit=10.1
 
 # or, for CUDA 10.0
-conda install -c nvidia -c rapidsai -c numba -c conda-forge -c defaults \
-    rmm=0.8 python=3.6 cudatoolkit=10.0
+conda install -c nvidia -c rapidsai -c conda-forge -c defaults \
+    rmm=0.11 python=3.6 cudatoolkit=10.0
 ```
 
-For `rmm version == 0.7` :
+For `rmm version == 0.10` :
 ```bash
-# for CUDA 9.2
-conda install -c nvidia -c rapidsai -c numba -c conda-forge -c defaults \
-    rmm=0.7 python=3.6 cudatoolkit=9.2
+# for CUDA 10.1
+conda install -c nvidia -c rapidsai -c conda-forge -c defaults \
+    rmm=0.10 python=3.6 cudatoolkit=10.1
 
 # or, for CUDA 10.0
-conda install -c nvidia -c rapidsai -c numba -c conda-forge -c defaults \
-    rmm=0.7 python=3.6 cudatoolkit=10.0
+conda install -c nvidia -c rapidsai -c conda-forge -c defaults \
+    rmm=0.10 python=3.6 cudatoolkit=10.0
 ```
 We also provide [nightly conda packages](https://anaconda.org/rapidsai-nightly) built from the tip of our latest development branch.
 
@@ -248,21 +248,22 @@ is suballocated from some larger pool allocation by the memory manager.
 ### Handling RMM Options in Python Code
 
 RMM currently defaults to just calling cudaMalloc, but you can enable the
-experimental pool allocator using the `rmm_config` module.
+experimental pool allocator by reinitializing RMM.
 
 ```
-from rmm import rmm_config
-
-rmm_config.use_pool_allocator = True  # default is False
-rmm_config.initial_pool_size = 2<<30  # set to 2GiB. Default is 1/2 total GPU memory
-rmm_config.use_managed_memory = False # default is false
-rmm_config.enable_logging = True      # default is False -- has perf overhead
+rmm.reinitialize(
+    pool_allocator=False, # default is False
+    managed_memory=False, # default is False
+    initial_pool_size=2<<30, # set to 2GiB. Default is 1/2 total GPU memory
+    devices=0, # GPU device  IDs to register. By default registers only GPU 0.
+    logging=True, # default is False -- has perf overhead
+)
 ```
 
 To configure RMM options to be used in cuDF before loading, simply do the above
 before you `import cudf`. You can re-initialize the memory manager with
-different settings at run time by calling `rmm.finalize()`, then changing the
-above options, and then calling `rmm.initialize()`.
+different settings at run time by calling `rmm.reinitialize()` with the above
+options.
 
 You can also optionally use the internal functions in cuDF which call these
 functions. Here are some example configuration functions that can be used in
@@ -297,9 +298,6 @@ member of the struct `rmmOptions_t` to include the flag `CudaManagedMemory`
 (the flags are ORed), and passing it to `rmmInitialize()`. If the flag
 `PoolAllocation` is also set, then RMM will allocate from a pool of managed
 memory.
-
-In Python, use the `rmm_config.use_managed_memory` Boolean setting
-as shown previously.
 
 When the allocation mode is both `CudaManagedMemory` and `PoolAllocation`,
 RMM allocates the initial pool (and any expansion allocations) using
