@@ -37,7 +37,7 @@ cdef class DeviceBuffer:
     @property
     def __cuda_array_interface__(self):
         cdef dict intf = {
-            "data": self.ptr,
+            "data": (self.ptr, False),
             "shape": (self.size,),
             "strides": (1,),
             "typestr": "|u1",
