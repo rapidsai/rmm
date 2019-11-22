@@ -41,7 +41,6 @@ cdef class DeviceBuffer:
             "shape": (self.size,),
             "strides": None,
             "typestr": "|u1",
-            "descr": [("", "|u1")],
             "version": 0
         }
         return intf
