@@ -39,7 +39,7 @@ cdef class DeviceBuffer:
         cdef dict intf = {
             "data": self.ptr,
             "shape": (self.size,),
-            "strides": None,
+            "strides": (1,),
             "typestr": "|u1",
             "version": 0
         }
