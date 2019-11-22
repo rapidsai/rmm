@@ -38,7 +38,7 @@ cdef class DeviceBuffer:
     def __cuda_array_interface__(self):
         cdef dict intf = {
             "data": self.data(),
-            "shape": (self.size(),),
+            "shape": (self.size,),
             "strides": None,
             "typestr": "|u1",
             "descr": [("", "|u1")],
