@@ -5,7 +5,7 @@
 - PR #106 Added multi-GPU initialization
 - PR #167 Added value setter to `device_scalar`
 - PR #163 Add Cython bindings to `device_buffer`
-- PR #177 Add __cuda_array_interface__ to DeviceBuffer
+- PR #177 Add `__cuda_array_interface__` to `DeviceBuffer`
 
 ## Improvements
 
@@ -19,6 +19,7 @@
 
 - PR #174 Make `device_buffer` default ctor explicit to work around type_dispatcher issue in libcudf.
 - PR #170 Always build librmm and rmm, but conditionally upload based on CUDA / Python version
+- PR #182 Prefix `DeviceBuffer`'s C functions
 
 
 # RMM 0.10.0 (16 Oct 2019)
