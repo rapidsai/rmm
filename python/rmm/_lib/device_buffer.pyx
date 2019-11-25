@@ -34,6 +34,17 @@ cdef class DeviceBuffer:
     def size(self):
         return self.c_obj.get()[0].size()
 
+    @property
+    def __cuda_array_interface__(self):
+        cdef dict intf = {
+            "data": (self.ptr, False),
+            "shape": (self.size,),
+            "strides": (1,),
+            "typestr": "|u1",
+            "version": 0
+        }
+        return intf
+
     @staticmethod
     cdef DeviceBuffer from_unique_ptr(unique_ptr[device_buffer] ptr):
         cdef DeviceBuffer buf = DeviceBuffer.__new__(DeviceBuffer)
