@@ -46,12 +46,12 @@ cdef class DeviceBuffer:
         return intf
 
     @staticmethod
-    cdef DeviceBuffer from_unique_ptr(unique_ptr[device_buffer] ptr):
+    cdef DeviceBuffer c_from_unique_ptr(unique_ptr[device_buffer] ptr):
         cdef DeviceBuffer buf = DeviceBuffer.__new__(DeviceBuffer)
         buf.c_obj = move(ptr)
         return buf
 
-    cdef size_t size(self):
+    cdef size_t c_size(self):
         return self.c_obj.get()[0].size()
 
     cpdef void resize(self, size_t new_size):
@@ -60,5 +60,5 @@ cdef class DeviceBuffer:
     cpdef size_t capacity(self):
         return self.c_obj.get()[0].capacity()
 
-    cdef void* data(self):
+    cdef void* c_data(self):
         return self.c_obj.get()[0].data()

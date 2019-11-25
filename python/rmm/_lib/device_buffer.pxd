@@ -18,12 +18,12 @@ cdef class DeviceBuffer:
     cdef unique_ptr[device_buffer] c_obj
 
     @staticmethod
-    cdef DeviceBuffer from_unique_ptr(unique_ptr[device_buffer] ptr)
+    cdef DeviceBuffer c_from_unique_ptr(unique_ptr[device_buffer] ptr)
 
-    cdef size_t size(self)
+    cdef size_t c_size(self)
     cpdef void resize(self, size_t new_size)
     cpdef size_t capacity(self)
-    cdef void* data(self)
+    cdef void* c_data(self)
 
 
 cdef extern from "<utility>" namespace "std" nogil:
