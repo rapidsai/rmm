@@ -23,6 +23,7 @@
 - PR #171 Change public API of RMM to only expose `reinitialize(...)`
 - PR #175 Drop `cython` from run requirements
 - PR #169 Explicit stream argument for device_buffer methods
+- PR #186 Add nbytes and len to DeviceBuffer
 
 ## Bug Fixes
 
