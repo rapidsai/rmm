@@ -26,6 +26,13 @@ cdef class DeviceBuffer:
     def __reduce__(self):
         return DeviceBuffer, (self.ptr, self.size())
 
+    def __len__(self):
+        return self.size
+
+    @property
+    def nbytes(self):
+        return self.size
+
     @property
     def ptr(self):
         return int(<uintptr_t>self.c_obj.get()[0].data())
