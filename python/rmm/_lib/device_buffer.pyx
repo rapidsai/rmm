@@ -23,9 +23,6 @@ cdef class DeviceBuffer:
     def __init__(self, ptr=None, size=None):
         pass
 
-    def __reduce__(self):
-        return DeviceBuffer, (self.ptr, self.size())
-
     def __len__(self):
         return self.size
 
