@@ -30,6 +30,7 @@
 - PR #174 Make `device_buffer` default ctor explicit to work around type_dispatcher issue in libcudf.
 - PR #170 Always build librmm and rmm, but conditionally upload based on CUDA / Python version
 - PR #182 Prefix `DeviceBuffer`'s C functions
+- PR #189 Drop `__reduce__` from `DeviceBuffer`
 
 
 # RMM 0.10.0 (16 Oct 2019)
