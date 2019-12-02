@@ -9,7 +9,7 @@ import numpy as np
 
 cdef class DeviceBuffer:
 
-    def __cinit__(self, ptr=None, size=None):
+    def __cinit__(self, *, ptr=None, size=None):
         if size is None:
             size = 0
 
@@ -20,7 +20,7 @@ cdef class DeviceBuffer:
             data = <void *> <uintptr_t> ptr
             self.c_obj.reset(new device_buffer(data, size))
 
-    def __init__(self, ptr=None, size=None):
+    def __init__(self, *, ptr=None, size=None):
         pass
 
     def __len__(self):
