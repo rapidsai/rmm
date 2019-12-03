@@ -1,11 +1,6 @@
-import cython
-import functools
-import operator
-
 from libcpp.memory cimport unique_ptr
 from libc.stdint cimport uintptr_t
 
-import numpy as np
 
 cdef class DeviceBuffer:
 
