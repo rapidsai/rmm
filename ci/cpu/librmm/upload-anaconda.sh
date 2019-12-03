@@ -12,7 +12,7 @@ if [ "$UPLOAD_LIBRMM" == '1' ]; then
 
   SOURCE_BRANCH=master
 
-  LABEL_OPTION="--label main --label cuda${CUDA_REL}"
+  LABEL_OPTION="--label main"
   echo "LABEL_OPTION=${LABEL_OPTION}"
 
   # Restrict uploads to master branch
