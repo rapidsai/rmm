@@ -17,6 +17,7 @@
 - PR #186 Add nbytes and len to DeviceBuffer
 - PR #188 Require kwargs in `DeviceBuffer`'s constructor
 - PR #194 Drop unused imports from `device_buffer.pyx`
+- PR #196 Remove unused CUDA conda labels
 
 ## Bug Fixes
 
