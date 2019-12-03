@@ -9,7 +9,7 @@ if [ "$UPLOAD_RMM" == "1" ]; then
 
   SOURCE_BRANCH=master
 
-  LABEL_OPTION="--label main --label cuda9.2 --label cuda10.0 --label cuda10.1"
+  LABEL_OPTION="--label main"
   echo "LABEL_OPTION=${LABEL_OPTION}"
 
   test -e ${UPLOADFILE}
