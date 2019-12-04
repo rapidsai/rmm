@@ -275,7 +275,7 @@ def make_cupy_use_rmm():
     import cupy
     from rmm._lib.device_buffer import DeviceBuffer
 
-    class RMMemory(cupy.cuda.memory.BaseMemory):
+    class RMMMemory(cupy.cuda.memory.BaseMemory):
         def __init__(self, size):
             self.size = size
             self.device_id = cupy.cuda.device.get_device_id()
@@ -287,7 +287,7 @@ def make_cupy_use_rmm():
                 self.ptr = 0
 
     def rmm_mem_allocator(bsize):
-        return cupy.cuda.memory.MemoryPointer(RMMemory(bsize), 0)
+        return cupy.cuda.memory.MemoryPointer(RMMMemory(bsize), 0)
 
     cupy.cuda.set_allocator(rmm_mem_allocator)
 
