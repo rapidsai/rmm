@@ -58,12 +58,7 @@ class rmm_allocator : public thrust::device_malloc_allocator<T>
   
     inline void deallocate(pointer ptr, size_t)
     {
-      rmmError_t error = RMM_FREE(thrust::raw_pointer_cast(ptr), stream);
-  
-      if(error != RMM_SUCCESS)
-      {
-        throw thrust::system_error(error, thrust::cuda_category(), "rmm_allocator::deallocate(): RMM_FREE");
-      }
+      RMM_FREE(thrust::raw_pointer_cast(ptr), stream);
     }
 
   private:
