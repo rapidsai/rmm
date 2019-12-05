@@ -292,6 +292,33 @@ def make_cupy_use_rmm():
     cupy.cuda.set_allocator(rmm_mem_allocator)
 
 
+def rmm_cupy_allocator(nbytes):
+    """
+    A CuPy allocator that make use of RMM.
+
+    Examples
+    --------
+    >>> import rmm
+    >>> import cupy
+    >>> cupy.cuda.set_allocator(rmm.rmm_cupy_allocator)
+    """
+    import cupy
+    from rmm._lib.device_buffer import DeviceBuffer
+
+    class RMMMemory(cupy.cuda.memory.BaseMemory):
+        def __init__(self, size):
+            self.size = size
+            self.device_id = cupy.cuda.device.get_device_id()
+            if size > 0:
+                self.rmm_array = DeviceBuffer(size=size)
+                self.ptr = self.rmm_array.ptr
+            else:
+                self.rmm_array = None
+                self.ptr = 0
+
+    return cupy.cuda.memory.MemoryPointer(RMMMemory(nbytes), 0)
+
+
 def _make_finalizer(handle, stream):
     """
     Factory to make the finalizer function.
