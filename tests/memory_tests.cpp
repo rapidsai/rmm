@@ -104,18 +104,6 @@ TYPED_TEST(MemoryManagerTest, Finalize) {
     // Empty because handled in Fixture class.
 }
 
-TYPED_TEST(MemoryManagerTest, FreeInvalidPointer) {
-    char *a = (char*)100;
-    // TODO: no way to detect cnmem errors from RMM level,
-    // hence ASSERT_SUCCESS here
-    if (this->allocationMode() & PoolAllocation) {
-        ASSERT_SUCCESS(RMM_FREE(a, stream));
-    }
-    else {
-        ASSERT_FAILURE(RMM_FREE(a, stream));
-    }
-}
-
 // zero size tests
 
 TYPED_TEST(MemoryManagerTest, AllocateZeroBytes) {
@@ -181,14 +169,14 @@ TYPED_TEST(MemoryManagerTest, AllocateTB) {
     }
     else {
         ASSERT_FAILURE( RMM_ALLOC(&a, size_tb, stream) );
-        ASSERT_FAILURE( RMM_FREE(a, stream) );
+        RMM_FREE(a, stream);
     }
 }
 
 TYPED_TEST(MemoryManagerTest, AllocateTooMuch) {
     char *a = 0;
     ASSERT_FAILURE( RMM_ALLOC(&a, size_pb, stream) );
-    ASSERT_FAILURE( RMM_FREE(a, stream) );
+    RMM_FREE(a, stream);
 }
 
 TYPED_TEST(MemoryManagerTest, FreeZero) {
@@ -345,7 +333,7 @@ TYPED_TEST(MultiGPUMemoryManagerTest, AllocateTB) {
     }
     else {
         ASSERT_FAILURE( RMM_ALLOC(&a, size_tb, stream) );
-        ASSERT_FAILURE( RMM_FREE(a, stream) );
+        RMM_FREE(a, stream);
     }
     
 }
@@ -353,7 +341,7 @@ TYPED_TEST(MultiGPUMemoryManagerTest, AllocateTB) {
 TYPED_TEST(MultiGPUMemoryManagerTest, AllocateTooMuch) {
     char *a = 0;
     ASSERT_FAILURE( RMM_ALLOC(&a, size_pb, stream) );
-    ASSERT_FAILURE( RMM_FREE(a, stream) );
+    RMM_FREE(a, stream);
 }
 
 TYPED_TEST(MultiGPUMemoryManagerTest, FreeZero) {

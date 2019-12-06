@@ -18,6 +18,7 @@
 - PR #188 Require kwargs in `DeviceBuffer`'s constructor
 - PR #194 Drop unused imports from `device_buffer.pyx`
 - PR #196 Remove unused CUDA conda labels
+- PR #200 Simplify DeviceBuffer methods
 
 ## Bug Fixes
 
@@ -25,6 +26,7 @@
 - PR #170 Always build librmm and rmm, but conditionally upload based on CUDA / Python version
 - PR #182 Prefix `DeviceBuffer`'s C functions
 - PR #189 Drop `__reduce__` from `DeviceBuffer`
+- PR #193 Remove thrown exception from `rmm_allocator::deallocate`
 
 
 # RMM 0.10.0 (16 Oct 2019)

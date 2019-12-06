@@ -27,11 +27,11 @@ cdef class DeviceBuffer:
 
     @property
     def ptr(self):
-        return int(<uintptr_t>self.c_obj.get()[0].data())
+        return int(<uintptr_t>self.c_data())
 
     @property
     def size(self):
-        return self.c_obj.get()[0].size()
+        return self.c_size()
 
     @property
     def __cuda_array_interface__(self):
