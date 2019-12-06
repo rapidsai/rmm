@@ -267,31 +267,6 @@ def get_ipc_handle(ary, stream=0):
     )
 
 
-def make_cupy_use_rmm():
-    """
-    Make CuPy use RMM.
-    Requires the cupy module.
-    """
-    import cupy
-    from rmm._lib.device_buffer import DeviceBuffer
-
-    class RMMMemory(cupy.cuda.memory.BaseMemory):
-        def __init__(self, size):
-            self.size = size
-            self.device_id = cupy.cuda.device.get_device_id()
-            if size > 0:
-                self.rmm_array = DeviceBuffer(size=size)
-                self.ptr = self.rmm_array.ptr
-            else:
-                self.rmm_array = None
-                self.ptr = 0
-
-    def rmm_mem_allocator(bsize):
-        return cupy.cuda.memory.MemoryPointer(RMMMemory(bsize), 0)
-
-    cupy.cuda.set_allocator(rmm_mem_allocator)
-
-
 def rmm_cupy_allocator(nbytes):
     """
     A CuPy allocator that make use of RMM.
@@ -303,14 +278,13 @@ def rmm_cupy_allocator(nbytes):
     >>> cupy.cuda.set_allocator(rmm.rmm_cupy_allocator)
     """
     import cupy
-    from rmm._lib.device_buffer import DeviceBuffer
 
     class RMMMemory(cupy.cuda.memory.BaseMemory):
         def __init__(self, size):
             self.size = size
             self.device_id = cupy.cuda.device.get_device_id()
             if size > 0:
-                self.rmm_array = DeviceBuffer(size=size)
+                self.rmm_array = librmm.device_buffer.DeviceBuffer(size=size)
                 self.ptr = self.rmm_array.ptr
             else:
                 self.rmm_array = None
