@@ -283,6 +283,7 @@ try:
                 self.rmm_array = None
                 self.ptr = 0
                 self.device_id = cupy.cuda.device.get_device_id()
+            self.device = cupy.cuda.device.Device(self.device_id)
 
 
 except ImportError:
