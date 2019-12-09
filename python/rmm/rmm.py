@@ -273,13 +273,16 @@ try:
     class RMMCuPyMemory(cupy.cuda.memory.BaseMemory):
         def __init__(self, size):
             self.size = size
-            self.device_id = cupy.cuda.device.get_device_id()
             if size > 0:
                 self.rmm_array = librmm.device_buffer.DeviceBuffer(size=size)
                 self.ptr = self.rmm_array.ptr
+                self.device_id = cupy.cuda.runtime.pointerGetAttributes(
+                    self.ptr
+                ).device
             else:
                 self.rmm_array = None
                 self.ptr = 0
+                self.device_id = cupy.cuda.device.get_device_id()
 
 
 except ImportError:
