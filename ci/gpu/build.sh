@@ -61,6 +61,9 @@ logger "Build and install librmm and rmm..."
 if hasArg --skip-tests; then
     logger "Skipping Tests..."
 else
+    logger "Installing extra test dependencies..."
+    conda install "cupy>=6.0.0"
+
     logger "Check GPU usage..."
     nvidia-smi
 
