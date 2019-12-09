@@ -269,6 +269,10 @@ def get_ipc_handle(ary, stream=0):
 
 try:
     import cupy
+except ImportError:
+    cupy = None
+
+if cupy:
 
     class RMMCuPyMemory(cupy.cuda.memory.BaseMemory):
         def __init__(self, size):
@@ -283,10 +287,6 @@ try:
                 self.rmm_array = None
                 self.ptr = 0
                 self.device_id = cupy.cuda.device.get_device_id()
-
-
-except ImportError:
-    pass
 
 
 def rmm_cupy_allocator(nbytes):
