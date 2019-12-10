@@ -2,6 +2,8 @@
 
 ## New Features
 
+- PR #207 Add `shape` property to `DeviceBuffer`
+
 ## Improvements
 
 ## Bug Fixes
