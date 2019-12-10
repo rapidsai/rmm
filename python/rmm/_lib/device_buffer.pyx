@@ -32,6 +32,10 @@ cdef class DeviceBuffer:
         return self.size
 
     @property
+    def ndim(self):
+        return 1
+
+    @property
     def ptr(self):
         return int(<uintptr_t>self.c_data())
 
