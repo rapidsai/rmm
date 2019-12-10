@@ -2,6 +2,8 @@
 
 ## New Features
 
+- PR #212 Add array-like properties to `DeviceBuffer`
+
 ## Improvements
 
 ## Bug Fixes
