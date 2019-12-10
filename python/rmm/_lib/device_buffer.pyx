@@ -1,6 +1,8 @@
 from libcpp.memory cimport unique_ptr
 from libc.stdint cimport uintptr_t
 
+import numpy as np
+
 
 cdef class DeviceBuffer:
 
@@ -20,6 +22,10 @@ cdef class DeviceBuffer:
 
     def __len__(self):
         return self.size
+
+    @property
+    def dtype(self):
+        return np.dtype("|u1")
 
     @property
     def nbytes(self):
