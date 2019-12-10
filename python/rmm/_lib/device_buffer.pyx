@@ -40,6 +40,10 @@ cdef class DeviceBuffer:
         return int(<uintptr_t>self.c_data())
 
     @property
+    def shape(self):
+        return (self.size,)
+
+    @property
     def size(self):
         return self.c_size()
 
