@@ -57,7 +57,7 @@ cdef class DeviceBuffer:
             "data": (self.ptr, False),
             "shape": (self.size,),
             "strides": (1,),
-            "typestr": "|u1",
+            "typestr": self.dtype.str,
             "version": 0
         }
         return intf
