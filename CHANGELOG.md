@@ -2,6 +2,8 @@
 
 ## New Features
 
+- PR #208 Add `strides` property to `DeviceBuffer`
+
 ## Improvements
 
 ## Bug Fixes
