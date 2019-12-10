@@ -2,6 +2,8 @@
 
 ## New Features
 
+- PR #206 Add `ndim` property to `DeviceBuffer`
+
 ## Improvements
 
 ## Bug Fixes
