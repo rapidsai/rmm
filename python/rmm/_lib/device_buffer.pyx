@@ -48,6 +48,10 @@ cdef class DeviceBuffer:
         return self.c_size()
 
     @property
+    def strides(self):
+        return (1,)
+
+    @property
     def __cuda_array_interface__(self):
         cdef dict intf = {
             "data": (self.ptr, False),
