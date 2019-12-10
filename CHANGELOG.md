@@ -2,6 +2,8 @@
 
 ## New Features
 
+- PR #209 Add `dtype` property to `DeviceBuffer`
+
 ## Improvements
 
 ## Bug Fixes
