@@ -39,7 +39,7 @@ extensions = [
 
 setup(
     name="rmm",
-    version=versioneer.get_version(),
+    version="0.11.0",
     description="rmm - RAPIDS Memory Manager",
     url="https://github.com/rapidsai/rmm",
     author="NVIDIA Corporation",
