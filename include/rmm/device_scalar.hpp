@@ -39,49 +39,49 @@ class device_scalar {
    * @brief Construct a new `device_scalar`
    *
    * @param initial_value The initial value of the object in device memory
-   * @param stream_ Optional, stream on which to perform allocation and copy
-   * @param mr_ Optional, resource with which to allocate
+   * @param stream Optional, stream on which to perform allocation and copy
+   * @param mr Optional, resource with which to allocate
    *---------------------------------------------------------------------------**/
   explicit device_scalar(
-      T const &initial_value, cudaStream_t stream_ = 0,
-      rmm::mr::device_memory_resource *mr_ = rmm::mr::get_default_resource())
-      : buff{sizeof(T), stream_, mr_} {
-    auto status = cudaMemcpyAsync(buff.data(), &initial_value, sizeof(T),
-                                  cudaMemcpyDefault, buff.stream());
-
-    if (cudaSuccess != status) {
-      throw std::runtime_error{"Device memcpy failed."};
-    }
+      T const &initial_value, cudaStream_t stream = 0,
+      rmm::mr::device_memory_resource *mr = rmm::mr::get_default_resource())
+      : buff{sizeof(T), stream, mr} {
+    
+    _memcpy(buff.data(), &initial_value, stream);
   }
 
   /**---------------------------------------------------------------------------*
-   * @brief Copies the value from device to host and returns the value.
+   * @brief Copies the value from device to host, synchronizes, and returns the
+   * value.
    *
-   * @return T The value of the scalar after synchronizing its stream
+   * @return T The value of the scalar after synchronizing the stream
+   * @param stream CUDA stream on which to perform the copy
    *---------------------------------------------------------------------------**/
-  T value() const {
+  T value(cudaStream_t stream = 0) const {
     T host_value{};
-    auto status = cudaMemcpyAsync(&host_value, buff.data(), sizeof(T),
-                             cudaMemcpyDefault, buff.stream());
-    if (cudaSuccess != status) {
-      throw std::runtime_error{"Device memcpy failed."};
-    }
-    status = cudaStreamSynchronize(buff.stream());
-    if (cudaSuccess != status) {
-      throw std::runtime_error{"Stream sync failed."};
-    }
+    _memcpy(&host_value, buff.data(), stream);
     return host_value;
   }
 
   /**---------------------------------------------------------------------------*
-   * @brief Returns pointer to object in device memory.
+   * @brief Copies the value from host to device and synchronizes the stream.
+   *
+   * @param host_value The host value which will be copied to device
+   * @param stream CUDA stream on which to perform the copy
    *---------------------------------------------------------------------------**/
-  T *get() noexcept { return static_cast<T *>(buff.data()); }
+  void set_value(T host_value, cudaStream_t stream = 0) {
+    _memcpy(buff.data(), &host_value, stream);
+  }
 
   /**---------------------------------------------------------------------------*
    * @brief Returns pointer to object in device memory.
    *---------------------------------------------------------------------------**/
-  T const *get() const noexcept { return static_cast<T const *>(buff.data()); }
+  T *data() noexcept { return static_cast<T *>(buff.data()); }
+
+  /**---------------------------------------------------------------------------*
+   * @brief Returns pointer to object in device memory.
+   *---------------------------------------------------------------------------**/
+  T const *data() const noexcept { return static_cast<T const *>(buff.data()); }
 
   device_scalar() = default;
   ~device_scalar() = default;
@@ -92,6 +92,19 @@ class device_scalar {
 
  private:
   rmm::device_buffer buff{sizeof(T)};
+
+  inline void _memcpy(void *dst, const void *src,
+                      cudaStream_t stream) const{
+    auto status = cudaMemcpyAsync(dst, src, sizeof(T), cudaMemcpyDefault, stream);
+
+    if (cudaSuccess != status) {
+      throw std::runtime_error{"Device memcpy failed."};
+    }
+
+    if (cudaSuccess != cudaStreamSynchronize(stream)) {
+      throw std::runtime_error{"Stream sync failed."};
+    }
+  }
 };
 
 }  // namespace rmm

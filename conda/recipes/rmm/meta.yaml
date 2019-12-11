@@ -28,7 +28,6 @@ requirements:
   run:
     - python
     - numba >=0.41
-    - cython >=0.29,<0.30
 
 test:
   commands:

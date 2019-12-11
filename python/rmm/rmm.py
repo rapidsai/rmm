@@ -13,12 +13,12 @@
 # limitations under the License.
 
 import ctypes
+from enum import IntEnum
 
 import numpy as np
 from numba import cuda
 
 import rmm._lib as librmm
-from rmm import rmm_config
 
 
 # Utility Functions
@@ -37,30 +37,92 @@ def _array_helper(addr, datasize, shape, strides, dtype, finalizer=None):
     )
 
 
+class rmm_allocation_mode(IntEnum):
+    CudaDefaultAllocation = (0,)
+    PoolAllocation = (1,)
+    CudaManagedMemory = (2,)
+
+
 # API Functions
-def initialize():
+def _initialize(
+    pool_allocator=False,
+    managed_memory=False,
+    initial_pool_size=None,
+    devices=0,
+    logging=False,
+):
     """
-    Initializes the RMM library using the options set in the librmm_config
-    module
+    Initializes RMM library using the options passed
     """
     allocation_mode = 0
-    if rmm_config.use_pool_allocator:
-        allocation_mode = 1
-    if rmm_config.use_managed_memory:
-        allocation_mode = 2
+
+    if pool_allocator:
+        allocation_mode |= rmm_allocation_mode.PoolAllocation
+    if managed_memory:
+        allocation_mode |= rmm_allocation_mode.CudaManagedMemory
+
+    if not pool_allocator:
+        initial_pool_size = 0
+    elif pool_allocator and initial_pool_size is None:
+        initial_pool_size = 0
+    elif pool_allocator and initial_pool_size == 0:
+        initial_pool_size = 1
+
+    if devices is None:
+        devices = [0]
+    elif isinstance(devices, int):
+        devices = [devices]
 
     return librmm.rmm_initialize(
-        allocation_mode,
-        rmm_config.initial_pool_size,
-        rmm_config.enable_logging,
+        allocation_mode, initial_pool_size, devices, logging
     )
 
 
-def finalize():
+def _finalize():
     """
     Finalizes the RMM library, freeing all allocated memory
     """
     return librmm.rmm_finalize()
+
+
+def reinitialize(
+    pool_allocator=False,
+    managed_memory=False,
+    initial_pool_size=None,
+    devices=0,
+    logging=False,
+):
+    """
+    Finalizes and then initializes RMM using the options passed. Using memory
+    from a previous initialization of RMM is undefined behavior and should be
+    avoided.
+
+    Parameters
+    ----------
+    pool_allocator : bool, default False
+        If True, use a pool allocation strategy which can greatly improve
+        performance.
+    managed_memory : bool, default False
+        If True, use managed memory for device memory allocation
+    initial_pool_size : int, default None
+        When `pool_allocator` is True, this indicates the initial pool size in
+        bytes. None is used to indicate the default size of the underlying
+        memorypool implementation, which currently is 1/2 total GPU memory.
+    devices : int or List[int], default 0
+        GPU device  IDs to register. By default registers only GPU 0.
+    logging : bool, default False
+        If True, enable run-time logging of all memory events
+        (alloc, free, realloc).
+        This has significant performance impact.
+    """
+    _finalize()
+    return _initialize(
+        pool_allocator=pool_allocator,
+        managed_memory=managed_memory,
+        initial_pool_size=initial_pool_size,
+        devices=devices,
+        logging=logging,
+    )
 
 
 def is_initialized():
@@ -216,7 +278,13 @@ def _make_finalizer(handle, stream):
         """
         Invoked when the MemoryPointer is freed
         """
-        if is_initialized():
-            librmm.rmm_free(handle, stream)
+        librmm.rmm_free(handle, stream)
 
     return finalizer
+
+
+def _register_atexit_finalize():
+    """
+    Registers rmmFinalize() with ``std::atexit``.
+    """
+    librmm.register_atexit_finalize()

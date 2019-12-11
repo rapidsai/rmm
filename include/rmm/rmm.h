@@ -4,9 +4,7 @@
 #include <cuda_runtime_api.h>
 #include "rmm.hpp"
 
-extern "C" {
 #include "rmm_api.h"
-}
 
 /** ---------------------------------------------------------------------------*
  * @brief Device memory alloc / realloc / free macros that pass the calling file

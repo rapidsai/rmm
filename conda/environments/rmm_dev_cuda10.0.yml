@@ -1,6 +1,6 @@
 name: rmm_dev
 channels:
-- rapidsai/label/cuda10.0
+- rapidsai
 - conda-forge
 dependencies:
 - cmake>=3.12

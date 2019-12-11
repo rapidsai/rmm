@@ -22,9 +22,7 @@
 
 #ifndef MEMORY_HPP
 #define MEMORY_HPP
-extern "C" {
 #include "rmm/rmm_api.h"
-}
 #include "rmm/detail/memory_manager.hpp"
 #include "rmm/mr/default_memory_resource.hpp"
 
@@ -212,9 +210,6 @@ inline rmmError_t free(void* ptr, cudaStream_t stream, const char* file,
   rmm::LogIt log(rmm::Logger::Free, ptr, 0, stream, file, line);
 
   rmm::mr::get_default_resource()->deallocate(ptr,0,stream);
-
-  if (cudaSuccess != cudaGetLastError())
-    return RMM_ERROR_CUDA_ERROR;
 
   return RMM_SUCCESS;
 }
