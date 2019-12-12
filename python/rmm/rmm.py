@@ -269,7 +269,7 @@ def get_ipc_handle(ary, stream=0):
 
 try:
     import cupy
-except ImportError:
+except Exception:
     cupy = None
 
 if cupy:
