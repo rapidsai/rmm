@@ -177,7 +177,7 @@ inline rmmError_t realloc(T** ptr, size_t new_size, cudaStream_t stream,
       try{
         *ptr = static_cast<char *>(
           rmm::mr::get_default_resource()->allocate(new_size,stream));
-      }catch(std::exception e){
+      }catch(std::exception const& e){
         *ptr = nullptr;
         return RMM_ERROR_OUT_OF_MEMORY;
       }
