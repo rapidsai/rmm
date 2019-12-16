@@ -136,7 +136,7 @@ inline rmmError_t alloc(T** ptr, size_t size, cudaStream_t stream, const char* f
     *ptr = static_cast<T*>(
       rmm::mr::get_default_resource()->allocate(size,stream));
 
-  } catch(std::exception e) {
+  } catch(std::exception const& e) {
     *ptr = nullptr;
     return RMM_ERROR_OUT_OF_MEMORY;
   }
