@@ -29,6 +29,7 @@ from rmm.rmm import (
     is_initialized,
     reinitialize,
     to_device,
+    rmm_cupy_allocator,
 )
 
 from rmm._lib.device_buffer import DeviceBuffer

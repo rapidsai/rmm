@@ -78,3 +78,21 @@ def test_rmm_csv_log(dtype, nelem):
         )
         >= 0
     )
+
+
+def test_rmm_cupy_allocator():
+    cupy = pytest.importorskip("cupy")
+
+    m = rmm.rmm_cupy_allocator(42)
+    assert m.mem.size == 42
+    assert m.mem.ptr != 0
+    assert m.mem.rmm_array is not None
+
+    m = rmm.rmm_cupy_allocator(0)
+    assert m.mem.size == 0
+    assert m.mem.ptr == 0
+    assert m.mem.rmm_array is None
+
+    cupy.cuda.set_allocator(rmm.rmm_cupy_allocator)
+    a = cupy.arange(10)
+    assert hasattr(a.data.mem, "rmm_array")

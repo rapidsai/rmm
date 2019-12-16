@@ -18,6 +18,7 @@
 - PR #167 Added value setter to `device_scalar`
 - PR #163 Add Cython bindings to `device_buffer`
 - PR #177 Add `__cuda_array_interface__` to `DeviceBuffer`
+- PR #198 Add `rmm.rmm_cupy_allocator()`
 
 ## Improvements
 
