@@ -254,7 +254,7 @@ experimental pool allocator by reinitializing RMM.
 rmm.reinitialize(
     pool_allocator=False, # default is False
     managed_memory=False, # default is False
-    initial_pool_size=2<<30, # set to 2GiB. Default is 1/2 total GPU memory
+    initial_pool_size=int(2**31), # set to 2GiB. Default is 1/2 total GPU memory
     devices=0, # GPU device  IDs to register. By default registers only GPU 0.
     logging=True, # default is False -- has perf overhead
 )
