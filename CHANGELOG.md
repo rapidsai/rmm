@@ -2,6 +2,8 @@
 
 ## New Features
 
+- PR #218 Add _DevicePointer
+
 ## Improvements
 
 - PR #214 Add codeowners
