@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <rmm/rmm.hpp>
+#include <rmm/rmm.h>
 
 #include <cuda_runtime_api.h>
 
@@ -42,22 +42,17 @@ class device_pointer {
    * @param stream CUDA stream on which memory may be allocated if the memory
    * resource supports streams.
    *-------------------------------------------------------------------------**/
-  device_pointer(void const* ptr, cudaStream_t stream = 0)
+  device_pointer(void* ptr, cudaStream_t stream = 0)
       : _ptr{ptr}, _stream{stream} {}
 
   /**--------------------------------------------------------------------------*
    * @brief Destroy the `device_pointer` object and free the underlying memory.
    *-------------------------------------------------------------------------**/
   ~device_pointer() noexcept {
-    free(_data, _stream)
-    _data = nullptr;
+    RMM_FREE(_ptr, _stream);
+    _ptr = nullptr;
     _stream = 0;
   }
-
-  /**--------------------------------------------------------------------------*
-   * @brief Returns pointer being managed
-   *-------------------------------------------------------------------------**/
-  void const* ptr() const noexcept { return _ptr; }
 
   /**--------------------------------------------------------------------------*
    * @brief Returns pointer being managed
