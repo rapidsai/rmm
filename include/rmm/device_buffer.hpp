@@ -383,6 +383,19 @@ class device_buffer {
    *-------------------------------------------------------------------------**/
   mr::device_memory_resource* memory_resource() const noexcept { return _mr; }
 
+  /**--------------------------------------------------------------------------*
+   * @brief Copies rmm::device_buffer to a preallocated host buffer.
+   *-------------------------------------------------------------------------**/
+  void copy_to_host(void* host_buffer) const {
+    cudaError_t err = cudaMemcpy(host_buf,
+                                 this->data(),
+                                 this->size(),
+                                 cudaMemcpyDeviceToHost);
+    if (status != cudaSuccess) {
+      throw std::runtime_error{"Failed to copy to host."};
+    }
+  }
+
  private:
   void* _data{nullptr};     ///< Pointer to device memory allocation
   std::size_t _size{};      ///< Requested size of the device memory allocation
