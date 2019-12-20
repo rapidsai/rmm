@@ -17,16 +17,20 @@ cdef class DevicePointer:
         stream : int, optional
             CUDA stream to use for the deallocation
         """
-        self.c_ptr = <void*><uintptr_t>(ptr)
-        self.c_stream = <cudaStream_t><uintptr_t>(stream)
+        cdef void* c_ptr = <void*><uintptr_t>(ptr)
+        cdef cudaStream_t c_stream = <cudaStream_t><uintptr_t>(stream)
+        self.c_obj.reset(new device_pointer(c_ptr, c_stream))
+
+    cdef void* c_ptr(self):
+        return self.c_obj.get()[0].ptr()
+
+    cdef cudaStream_t c_stream(self):
+        return self.c_obj.get()[0].stream()
 
     @property
     def ptr(self):
-        return int(<uintptr_t>(self.c_ptr))
+        return int(<uintptr_t>(self.c_ptr()))
 
     @property
     def stream(self):
-        return int(<uintptr_t>(self.c_stream))
-
-    def __dealloc__(self):
-        c_free(self.c_ptr, self.c_stream)
+        return int(<uintptr_t>(self.c_stream()))
