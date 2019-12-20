@@ -1,4 +1,5 @@
 from rmm._lib.lib cimport c_free, cudaStream_t
+from libc.stdint cimport uintptr_t
 
 cdef class DevicePointer:
     def __cinit__(self, ptr, stream=0):
