@@ -383,24 +383,6 @@ class device_buffer {
    *-------------------------------------------------------------------------**/
   mr::device_memory_resource* memory_resource() const noexcept { return _mr; }
 
-  /**--------------------------------------------------------------------------*
-   * @brief Copies rmm::device_buffer to a preallocated host buffer.
-   *-------------------------------------------------------------------------**/
-  void copy_to_host(void* host_buffer, cudaStream_t stream = 0) const {
-    if (host_buffer == nullptr) {
-      throw std::runtime_error{"Cannot copy to `nullptr`."};
-    }
-    set_stream(stream);
-    cudaError_t err = cudaMemcpyAsync(host_buffer,
-                                      _data,
-                                      _size,
-                                      cudaMemcpyDeviceToHost,
-                                      this->stream());
-    if (err != cudaSuccess) {
-      throw std::runtime_error{"Failed to copy to host."};
-    }
-  }
-
  private:
   void* _data{nullptr};     ///< Pointer to device memory allocation
   std::size_t _size{};      ///< Requested size of the device memory allocation
@@ -410,4 +392,22 @@ class device_buffer {
       mr::get_default_resource()};  ///< The memory resource used to
                                     ///< allocate/deallocate device memory
 };
+
+/**--------------------------------------------------------------------------*
+ * @brief Copies rmm::device_buffer to a preallocated host buffer.
+ *-------------------------------------------------------------------------**/
+void copy_to_host(device_buffer& db, void* hb, cudaStream_t stream = 0) {
+  if (hb == nullptr) {
+    throw std::runtime_error{"Cannot copy to `nullptr`."};
+  }
+  db.set_stream(stream);
+  cudaError_t err = cudaMemcpyAsync(hb,
+                                    db.data(),
+                                    db.size(),
+                                    cudaMemcpyDeviceToHost,
+                                    db.stream());
+  if (err != cudaSuccess) {
+    throw std::runtime_error{"Failed to copy to host."};
+  }
+}
 }  // namespace rmm
