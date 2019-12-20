@@ -2,7 +2,7 @@ from rmm._lib.lib cimport c_free, cudaStream_t
 
 cdef class DevicePointer:
     def __cinit__(self, ptr, stream=0):
-        self.c_ptr = <void*><size_t>(ptr)
+        self.c_ptr = <void*><uintptr_t>(ptr)
         self.c_stream = <cudaStream_t><size_t>(stream)
 
     def __init__(self, ptr, stream=0):
