@@ -387,7 +387,7 @@ class device_buffer {
    * @brief Copies rmm::device_buffer to a preallocated host buffer.
    *-------------------------------------------------------------------------**/
   void copy_to_host(void* host_buffer) const {
-    cudaError_t err = cudaMemcpy(host_buf,
+    cudaError_t err = cudaMemcpy(host_buffer,
                                  this->data(),
                                  this->size(),
                                  cudaMemcpyDeviceToHost);
