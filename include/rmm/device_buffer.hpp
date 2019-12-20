@@ -388,8 +388,8 @@ class device_buffer {
    *-------------------------------------------------------------------------**/
   void copy_to_host(void* host_buffer) const {
     cudaError_t err = cudaMemcpy(host_buffer,
-                                 this->data(),
-                                 this->size(),
+                                 _data,
+                                 _size,
                                  cudaMemcpyDeviceToHost);
     if (status != cudaSuccess) {
       throw std::runtime_error{"Failed to copy to host."};
