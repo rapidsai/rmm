@@ -13,6 +13,7 @@ cdef extern from "rmm/device_buffer.hpp" namespace "rmm" nogil:
         void* data()
         size_t size()
         size_t capacity()
+        void copy_to_host(void* host_buffer) except *
 
 cdef class DeviceBuffer:
     cdef unique_ptr[device_buffer] c_obj
