@@ -1,6 +1,8 @@
 from libcpp.memory cimport unique_ptr
 from libc.stdint cimport uintptr_t
 
+from cpython.bytes cimport PyBytes_FromStringAndSize, PyBytes_AS_STRING
+
 
 cdef class DeviceBuffer:
 
@@ -49,6 +51,14 @@ cdef class DeviceBuffer:
         cdef DeviceBuffer buf = DeviceBuffer.__new__(DeviceBuffer)
         buf.c_obj = move(ptr)
         return buf
+
+    cpdef bytes tobytes(self):
+        cdef bytes b = PyBytes_FromStringAndSize(NULL, self.c_size())
+        cdef void* p = <void*>PyBytes_AS_STRING(b)
+
+        self.c_obj.get()[0].copy_to_host(p)
+
+        return b
 
     cdef size_t c_size(self):
         return self.c_obj.get()[0].size()
