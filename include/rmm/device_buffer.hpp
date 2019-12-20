@@ -396,7 +396,7 @@ class device_buffer {
                                       _size,
                                       cudaMemcpyDeviceToHost,
                                       this->stream());
-    if (status != cudaSuccess) {
+    if (err != cudaSuccess) {
       throw std::runtime_error{"Failed to copy to host."};
     }
   }
