@@ -16,7 +16,7 @@ cdef class DevicePointer:
             Pointer to device memory
         stream : int, optional
             CUDA stream to use for the deallocation
-            """
+        """
         self.c_ptr = <void*><uintptr_t>(ptr)
         self.c_stream = <cudaStream_t><uintptr_t>(stream)
 
