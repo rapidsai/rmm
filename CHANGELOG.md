@@ -2,7 +2,7 @@
 
 ## New Features
 
-- PR #218 Add _DevicePointer
+- PR #218 Add `_DevicePointer`
 
 ## Improvements
 
@@ -194,4 +194,3 @@ RMM was initially implemented as part of cuDF, so we include the relevant change
 # cuDF 0.2.0 and cuDF 0.1.0
 
 These were initial releases of cuDF based on previously separate pyGDF and libGDF libraries. RMM was initially implemented as part of libGDF.
-
