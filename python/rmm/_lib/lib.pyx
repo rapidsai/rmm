@@ -269,3 +269,37 @@ def rmm_getallocationoffset(ptr, stream):
     result = int(c_offset[0])
     free(c_offset)
     return result
+
+
+cdef memory_pair c_getinfo(
+    cudaStream_t stream
+) except *:
+    """Get total and free memory sizes using the RMM memory manager by calling
+    the librmm functions via Cython
+    """
+    cdef size_t free
+    cdef size_t total
+
+    with nogil:
+        rmm_error = rmmGetInfo(
+            <size_t*>&free,
+            <size_t*>&total,
+            <cudaStream_t>stream
+        )
+
+    check_error(rmm_error)
+
+    return memory_pair(free, total)
+
+
+def rmm_getinfo(stream):
+    """Get total and free memory sizes using the RMM memory manager by calling
+    the librmm functions via Cython
+    """
+    cdef cudaStream_t c_stream = <cudaStream_t><size_t>stream
+
+    cdef memory_pair memory_info = c_getinfo(
+        <cudaStream_t>c_stream
+    )
+
+    return int(memory_info.first), int(memory_info.second)

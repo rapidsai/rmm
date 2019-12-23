@@ -23,6 +23,7 @@ from libcpp.utility cimport pair
 from libcpp.vector cimport vector
 
 ctypedef pair[const char*, unsigned int] caller_pair
+ctypedef pair[size_t, size_t] memory_pair
 
 
 cdef extern from * nogil:
@@ -46,6 +47,10 @@ cdef ptrdiff_t* c_getallocationoffset(
 ) except? <ptrdiff_t*>NULL
 
 cdef caller_pair _get_caller() except *
+
+cdef memory_pair c_getinfo(
+    cudaStream_t stream
+) except *
 
 
 cdef extern from "rmm/rmm.h" nogil:

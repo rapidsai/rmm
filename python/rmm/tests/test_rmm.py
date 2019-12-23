@@ -96,3 +96,20 @@ def test_rmm_cupy_allocator():
     cupy.cuda.set_allocator(rmm.rmm_cupy_allocator)
     a = cupy.arange(10)
     assert hasattr(a.data.mem, "rmm_array")
+
+
+def test_rmm_getinfo():
+    free, total = rmm.get_info()
+    # Basic sanity checks of returned values
+    assert free >= 0
+    assert total >= 0
+    assert free <= total
+
+
+def test_rmm_getinfo_uninitialized():
+    rmm._finalize()
+
+    with pytest.raises(rmm.RMMError):
+        rmm.get_info()
+
+    rmm.reinitialize()
