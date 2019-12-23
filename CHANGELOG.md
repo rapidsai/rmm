@@ -10,7 +10,7 @@
 
 ## Bug Fixes
 - PR #215 Catch polymorphic exceptions by reference instead of by value
-
+- PR #221 Fix segfault calling rmmGetInfo when uninitialized
 
 # RMM 0.11.0 (Date TBD)
 
