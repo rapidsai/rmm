@@ -16,20 +16,17 @@ import weakref
 
 from rmm.rmm import (
     RMMError,
+    RMMNumbaManager,
     _finalize,
     _initialize,
-    _make_finalizer,
     _register_atexit_finalize,
+    _numba_memory_manager,
     csv_log,
-    device_array,
-    device_array_from_ptr,
-    device_array_like,
-    get_ipc_handle,
     get_info,
     is_initialized,
     reinitialize,
-    to_device,
     rmm_cupy_allocator,
+    use_rmm_for_numba,
 )
 
 from rmm._lib.device_buffer import DeviceBuffer

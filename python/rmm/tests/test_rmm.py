@@ -1,11 +1,13 @@
 import pickle
 import sys
 from itertools import product
+from numba import cuda
 
 import numpy as np
 import pytest
 
 import rmm
+rmm.use_rmm_for_numba()
 
 
 def array_tester(dtype, nelem):
@@ -13,8 +15,8 @@ def array_tester(dtype, nelem):
     h_in = np.full(nelem, 3.2, dtype)
     h_result = np.empty(nelem, dtype)
 
-    d_in = rmm.to_device(h_in)
-    d_result = rmm.device_array_like(d_in)
+    d_in = cuda.to_device(h_in)
+    d_result = cuda.device_array_like(d_in)
 
     d_result.copy_to_device(d_in)
     h_result = d_result.copy_to_host()
@@ -65,8 +67,8 @@ def test_rmm_csv_log(dtype, nelem):
     # data
     h_in = np.full(nelem, 3.2, dtype)
 
-    d_in = rmm.to_device(h_in)
-    d_result = rmm.device_array_like(d_in)
+    d_in = cuda.to_device(h_in)
+    d_result = cuda.device_array_like(d_in)
 
     d_result.copy_to_device(d_in)
 
@@ -220,7 +222,7 @@ def test_rmm_device_buffer_copy_from_host(hb):
     "cuda_ary",
     [
         lambda: rmm.DeviceBuffer.to_device(b"abc"),
-        lambda: rmm.to_device(np.array([97, 98, 99], dtype="u1")),
+        lambda: cuda.to_device(np.array([97, 98, 99], dtype="u1")),
     ],
 )
 def test_rmm_device_buffer_copy_from_device(cuda_ary):

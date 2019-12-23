@@ -13,11 +13,11 @@
 # limitations under the License.
 
 import ctypes
+from contextlib import contextmanager
 from enum import IntEnum
 
-import numpy as np
 from numba import cuda
-
+from numba.cuda.cudadrv.memory import HostOnlyCUDAMemoryManager, MemoryPointer
 import rmm._lib as librmm
 
 
@@ -130,107 +130,85 @@ def csv_log():
     return librmm.rmm_csv_log()
 
 
-def device_array_from_ptr(ptr, nelem, dtype=np.float, finalizer=None):
-    """
-    device_array_from_ptr(ptr, size, dtype=np.float, stream=0)
-
-    Create a Numba device array from a ptr, size, and dtype.
-    """
-    # Handle Datetime Column
-    if dtype == np.datetime64:
-        dtype = np.dtype("datetime64[ms]")
-    else:
-        dtype = np.dtype(dtype)
-
-    elemsize = dtype.itemsize
-    datasize = elemsize * nelem
-    shape = (nelem,)
-    strides = (elemsize,)
-    # note no finalizer -- freed externally!
-    ctx = cuda.current_context()
-    ptr = ctypes.c_uint64(int(ptr))
-    mem = cuda.driver.MemoryPointer(ctx, ptr, datasize, finalizer=finalizer)
-    return cuda.cudadrv.devicearray.DeviceNDArray(
-        shape, strides, dtype, gpu_data=mem
-    )
-
-
-def device_array(shape, dtype=np.float, strides=None, order="C", stream=0):
-    """
-    device_array(shape, dtype=np.float, strides=None, order='C',
-                 stream=0)
-
-    Allocate an empty Numba device array. Clone of Numba `cuda.device_array`,
-    but uses RMM for device memory management.
-    """
-    shape, strides, dtype = cuda.api._prepare_shape_strides_dtype(
-        shape, strides, dtype, order
-    )
-    datasize = cuda.driver.memory_size_from_info(
-        shape, strides, dtype.itemsize
-    )
-
-    buf = librmm.DeviceBuffer(size=datasize, stream=stream)
-
-    ctx = cuda.current_context()
-    ptr = ctypes.c_uint64(int(buf.ptr))
-    mem = cuda.driver.MemoryPointer(ctx, ptr, datasize, owner=buf)
-    return cuda.cudadrv.devicearray.DeviceNDArray(
-        shape, strides, dtype, gpu_data=mem
-    )
-
-
-def device_array_like(ary, stream=0):
-    """
-    device_array_like(ary, stream=0)
-
-    Call rmmlib.device_array with information from `ary`. Clone of Numba
-    `cuda.device_array_like`, but uses RMM for device memory management.
-    """
-    if ary.ndim == 0:
-        ary = ary.reshape(1)
-
-    return device_array(ary.shape, ary.dtype, ary.strides, stream=stream)
-
-
-def to_device(ary, stream=0, copy=True, to=None):
-    """
-    to_device(ary, stream=0, copy=True, to=None)
-
-    Allocate and transfer a numpy ndarray or structured scalar to the device.
-    Clone of Numba `cuda.to_device`, but uses RMM for device memory management.
-    """
-    if to is None:
-        to = device_array_like(ary, stream=stream)
-        to.copy_to_device(ary, stream=stream)
-        return to
-    if copy:
-        to.copy_to_device(ary, stream=stream)
-    return to
-
-
-def get_ipc_handle(ary, stream=0):
-    """
-    Get an IPC handle from the DeviceArray ary with offset modified by
-    the RMM memory pool.
-    """
-    ipch = cuda.devices.get_context().get_ipc_handle(ary.gpu_data)
-    ptr = ary.device_ctypes_pointer.value
-    offset = librmm.rmm_getallocationoffset(ptr, stream)
-    # replace offset with RMM's offset
-    ipch.offset = offset
-    desc = dict(shape=ary.shape, strides=ary.strides, dtype=ary.dtype)
-    return cuda.cudadrv.devicearray.IpcArrayHandle(
-        ipc_handle=ipch, array_desc=desc
-    )
-
-
 def get_info(stream=0):
     """
     Get the free and total bytes of memory managed by a manager associated with
     the stream as a namedtuple with members `free` and `total`.
     """
     return librmm.rmm_getinfo(stream)
+
+
+try:
+    import numba
+except Exception:
+    numba = None
+    _numba_memory_manager = None
+
+if numba:
+    class RMMNumbaManager(HostOnlyCUDAMemoryManager):
+        def __init__(self, logging=False):
+            super().__init__()
+            self._initialized = False
+            self._logging = logging
+
+        def memalloc(self, nbytes, stream=0):
+            addr = librmm.rmm_alloc(nbytes, stream)
+            ctx = cuda.current_context()
+            ptr = ctypes.c_uint64(int(addr))
+            finalizer = _make_finalizer(addr, stream)
+            mem = MemoryPointer(ctx, ptr, nbytes, finalizer=finalizer)
+            return mem
+
+        def get_ipc_handle(self, memory, stream=0):
+            """
+            Get an IPC handle from the DeviceArray ary with offset modified by
+            the RMM memory pool.
+            """
+            # Not a very clean implementation - may want to implement something
+            # at the C++ layer for this, and also not rely on borrowing bits of
+            # Numba internals to initialise ipchandle.
+            ipchandle = (ctypes.c_byte * 64)()  # IPC handle is 64 bytes
+            cuda.cudadrv.memory.driver_funcs.cuIpcGetMemHandle(
+                ctypes.byref(ipchandle),
+                memory.owner.handle,
+            )
+            source_info = cuda.current_context().device.get_device_identity()
+            ptr = memory.device_ctypes_pointer.value
+            offset = librmm.rmm_getallocationoffset(ptr, stream)
+            from numba.cuda.cudadrv.driver import IpcHandle
+            return IpcHandle(memory, ipchandle, memory.size, source_info,
+                             offset=offset)
+
+        def get_memory_info(self):
+            return get_info()
+
+        def initialize(self):
+            super().initialize()
+            if not self._initialized:
+                reinitialize(logging=self._logging)
+                self._initialized = True
+
+        def reset(self):
+            super().reset()
+            reinitialize(logging=self._logging)
+
+        @contextmanager
+        def defer_cleanup(self):
+            with super().defer_cleanup():
+                yield
+
+        @property
+        def interface_version(self):
+            return 1
+
+    _numba_memory_manager = RMMNumbaManager
+
+
+def use_rmm_for_numba():
+    if numba:
+        cuda.cudadrv.driver.set_memory_manager(RMMNumbaManager)
+    else:
+        raise RuntimeError("Numba is not available")
 
 
 try:
