@@ -3,6 +3,7 @@
 ## New Features
 
 - PR #218 Add `_DevicePointer`
+- PR #222 Expose free and total memory in Python interface
 
 ## Improvements
 
@@ -11,6 +12,7 @@
 ## Bug Fixes
 - PR #215 Catch polymorphic exceptions by reference instead of by value
 - PR #221 Fix segfault calling rmmGetInfo when uninitialized
+
 
 # RMM 0.11.0 (Date TBD)
 
