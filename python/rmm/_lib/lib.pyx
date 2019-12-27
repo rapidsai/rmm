@@ -150,7 +150,7 @@ def rmm_csv_log():
 
     check_error(rmm_error)
 
-    cdef bytes py_buf = buf
+    cdef bytes py_buf = buf[:logsize]
     free(buf)
     return py_buf.decode("utf-8")
 

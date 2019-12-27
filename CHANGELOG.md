@@ -42,6 +42,7 @@
 - PR #182 Prefix `DeviceBuffer`'s C functions
 - PR #189 Drop `__reduce__` from `DeviceBuffer`
 - PR #193 Remove thrown exception from `rmm_allocator::deallocate`
+- PR #224 Slice the CSV log before converting to bytes
 
 
 # RMM 0.10.0 (16 Oct 2019)
