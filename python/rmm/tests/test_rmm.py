@@ -99,11 +99,11 @@ def test_rmm_cupy_allocator():
 
 
 def test_rmm_getinfo():
-    free, total = rmm.get_info()
+    meminfo = rmm.get_info()
     # Basic sanity checks of returned values
-    assert free >= 0
-    assert total >= 0
-    assert free <= total
+    assert meminfo.free >= 0
+    assert meminfo.total >= 0
+    assert meminfo.free <= meminfo.total
 
 
 def test_rmm_getinfo_uninitialized():

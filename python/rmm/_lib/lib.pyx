@@ -17,6 +17,8 @@
 # cython: embedsignature = True
 # cython: language_level = 3
 
+from collections import namedtuple
+
 from libc.stdint cimport uintptr_t
 from libc.stdlib cimport malloc, free
 from libcpp.vector cimport vector
@@ -296,10 +298,11 @@ def rmm_getinfo(stream):
     """Get total and free memory sizes using the RMM memory manager by calling
     the librmm functions via Cython
     """
-    cdef cudaStream_t c_stream = <cudaStream_t><size_t>stream
+    cdef cudaStream_t c_stream = <cudaStream_t><uintptr_t>stream
 
     cdef memory_pair memory_info = c_getinfo(
         <cudaStream_t>c_stream
     )
 
-    return int(memory_info.first), int(memory_info.second)
+    MemoryInfo = namedtuple("MemoryInfo", ['free', 'total'])
+    return MemoryInfo(int(memory_info.first), int(memory_info.second))
