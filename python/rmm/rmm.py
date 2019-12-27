@@ -270,7 +270,7 @@ def get_ipc_handle(ary, stream=0):
 def get_info(stream=0):
     """
     Get the free and total bytes of memory managed by a manager associated with
-    the stream as a tuple of (free, total)
+    the stream as a namedtuple with members `free` and `total`.
     """
     return librmm.rmm_getinfo(stream)
 
