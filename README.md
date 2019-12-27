@@ -296,8 +296,9 @@ The amount of free and total memory managed by RMM associated with a particular
 stream can be obtained with the `get_info` function:
 
 ```python
-# Returns e.g. (16046292992, 16914055168)
-rmm.get_info()
+meminfo = rmm.get_info()
+print(meminfo.free)  # E.g. "16046292992"
+print(meminfo.total) # E.g. "16914055168"
 ```
 
 ### CUDA Managed Memory
