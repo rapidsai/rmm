@@ -396,16 +396,15 @@ class device_buffer {
 /**--------------------------------------------------------------------------*
  * @brief Copies rmm::device_buffer to a preallocated host buffer.
  *-------------------------------------------------------------------------**/
-void copy_to_host(device_buffer& db, void* hb, cudaStream_t stream = 0) {
+void copy_to_host(const device_buffer& db, void* hb, cudaStream_t stream = 0) {
   if (hb == nullptr) {
     throw std::runtime_error{"Cannot copy to `nullptr`."};
   }
-  db.set_stream(stream);
   cudaError_t err = cudaMemcpyAsync(hb,
                                     db.data(),
                                     db.size(),
                                     cudaMemcpyDeviceToHost,
-                                    db.stream());
+                                    stream);
   if (err != cudaSuccess) {
     throw std::runtime_error{"Failed to copy to host."};
   }
