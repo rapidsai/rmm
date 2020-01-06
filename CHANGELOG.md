@@ -8,6 +8,7 @@
 ## Improvements
 
 - PR #214 Add codeowners
+- PR #226 Add some tests of the Python `DeviceBuffer`
 
 ## Bug Fixes
 

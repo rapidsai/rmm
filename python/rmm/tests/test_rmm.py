@@ -80,6 +80,24 @@ def test_rmm_csv_log(dtype, nelem):
     )
 
 
+@pytest.mark.parametrize("size", [None, 0, 5])
+def test_rmm_device_buffer(size):
+    keyset = {"data", "shape", "strides", "typestr", "version"}
+
+    b = rmm.DeviceBuffer(size=size)
+    assert b.ptr == 0
+    assert len(b) == 0
+    assert b.nbytes == 0
+    assert b.size == 0
+    assert isinstance(b.__cuda_array_interface__, dict)
+    assert set(b.__cuda_array_interface__) == keyset
+    assert b["data"] == (b.ptr, False)
+    assert b["shape"] == (b.size,)
+    assert b["strides"] == (1,)
+    assert b["typestr"] == "|u1"
+    assert b["version"] == 0
+
+
 def test_rmm_cupy_allocator():
     cupy = pytest.importorskip("cupy")
 
