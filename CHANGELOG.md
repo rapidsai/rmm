@@ -2,7 +2,7 @@
 
 ## New Features
 
-- PR #218 Add _DevicePointer
+- PR #218 Add `_DevicePointer`
 
 ## Improvements
 
