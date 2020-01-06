@@ -35,10 +35,12 @@ cdef uintptr_t c_alloc(
     cudaStream_t stream
 ) except? <uintptr_t>NULL
 
-cdef void c_free(
-    void *ptr,
-    cudaStream_t stream
-) except *
+cdef rmmError_t c_free(
+        void *ptr,
+        cudaStream_t stream,
+        const char* file=*,
+        unsigned int line=*
+    ) except *
 
 cdef ptrdiff_t* c_getallocationoffset(
     void *ptr,
