@@ -94,11 +94,11 @@ def test_rmm_device_buffer(size):
     assert b.size == 0
     assert isinstance(b.__cuda_array_interface__, dict)
     assert set(b.__cuda_array_interface__) == keyset
-    assert b["data"] == (b.ptr, False)
-    assert b["shape"] == (b.size,)
-    assert b["strides"] == (1,)
-    assert b["typestr"] == "|u1"
-    assert b["version"] == 0
+    assert b.__cuda_array_interface__["data"] == (b.ptr, False)
+    assert b.__cuda_array_interface__["shape"] == (b.size,)
+    assert b.__cuda_array_interface__["strides"] == (1,)
+    assert b.__cuda_array_interface__["typestr"] == "|u1"
+    assert b.__cuda_array_interface__["version"] == 0
 
 
 def test_rmm_cupy_allocator():
