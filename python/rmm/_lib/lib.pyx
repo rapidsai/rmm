@@ -152,7 +152,7 @@ def rmm_csv_log():
 
     check_error(rmm_error)
 
-    cdef bytes py_buf = buf
+    cdef bytes py_buf = buf[:logsize]
     free(buf)
     return py_buf.decode("utf-8")
 
@@ -199,25 +199,24 @@ def rmm_alloc(size, stream):
     return int(c_addr)
 
 
-cdef void c_free(void *ptr, cudaStream_t stream) except *:
+cdef rmmError_t c_free(void *ptr, cudaStream_t stream,
+                       const char* file=NULL, unsigned int line=0) except *:
     """
     Deallocates ptr, which was allocated using rmmAlloc by calling the librmm
     functions via Cython
     """
-    cdef caller_pair tmp_caller_pair = _get_caller()
-    cdef const char* file = tmp_caller_pair.first
-    cdef unsigned int line = tmp_caller_pair.second
+    cdef rmmError_t rmm_error
 
     # Call RMM to free
     with nogil:
         rmm_error = rmmFree(
-            <void *>ptr,
-            <cudaStream_t>stream,
-            <const char*>file,
-            <unsigned int>line
+            ptr,
+            stream,
+            file,
+            line
         )
 
-    check_error(rmm_error)
+    return rmm_error
 
 
 def rmm_free(ptr, stream):
@@ -228,9 +227,15 @@ def rmm_free(ptr, stream):
     cdef void * c_ptr = <void *><uintptr_t>ptr
     cdef cudaStream_t c_stream = <cudaStream_t><size_t>stream
 
-    c_free(
-        <void *>c_ptr,
-        <cudaStream_t>c_stream
+    cdef caller_pair tmp_caller_pair = _get_caller()
+    cdef const char* file = tmp_caller_pair.first
+    cdef unsigned int line = tmp_caller_pair.second
+
+    rmm_error = c_free(
+        c_ptr,
+        c_stream,
+        file,
+        line
     )
 
 

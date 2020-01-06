@@ -10,8 +10,11 @@
 - PR #214 Add codeowners
 
 ## Bug Fixes
+
 - PR #215 Catch polymorphic exceptions by reference instead of by value
 - PR #221 Fix segfault calling rmmGetInfo when uninitialized
+- PR #225 Avoid invoking Python operations in c_free
+
 
 
 # RMM 0.11.0 (Date TBD)
@@ -44,6 +47,7 @@
 - PR #182 Prefix `DeviceBuffer`'s C functions
 - PR #189 Drop `__reduce__` from `DeviceBuffer`
 - PR #193 Remove thrown exception from `rmm_allocator::deallocate`
+- PR #224 Slice the CSV log before converting to bytes
 
 
 # RMM 0.10.0 (16 Oct 2019)
