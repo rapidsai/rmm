@@ -9,7 +9,9 @@
 - PR #214 Add codeowners
 
 ## Bug Fixes
+
 - PR #215 Catch polymorphic exceptions by reference instead of by value
+- PR #225 Avoid invoking Python operations in c_free
 
 
 # RMM 0.11.0 (Date TBD)
