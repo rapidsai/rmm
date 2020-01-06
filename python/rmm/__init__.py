@@ -26,6 +26,7 @@ from rmm.rmm import (
     device_array_from_ptr,
     device_array_like,
     get_ipc_handle,
+    get_info,
     is_initialized,
     reinitialize,
     to_device,

@@ -290,6 +290,17 @@ finalize RMM. The Mortgage E2E workflow notebook uses this technique. We are
 working on better ways to reclaim memory, as well as making RAPIDS machine
 learning libraries use the same RMM memory pool.
 
+### Memory info
+
+The amount of free and total memory managed by RMM associated with a particular
+stream can be obtained with the `get_info` function:
+
+```python
+meminfo = rmm.get_info()
+print(meminfo.free)  # E.g. "16046292992"
+print(meminfo.total) # E.g. "16914055168"
+```
+
 ### CUDA Managed Memory
 
 RMM can be set to allocate all memory as managed memory (`cudaMallocManaged`
