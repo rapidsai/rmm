@@ -208,8 +208,8 @@ cdef rmmError_t c_free(void *ptr, cudaStream_t stream,
     # Call RMM to free
     with nogil:
         rmm_error = rmmFree(
-            <void *>ptr,
-            <cudaStream_t>stream,
+            ptr,
+            stream,
             file,
             line
         )
@@ -230,8 +230,8 @@ def rmm_free(ptr, stream):
     cdef unsigned int line = tmp_caller_pair.second
 
     rmm_error = c_free(
-        <void *>c_ptr,
-        <cudaStream_t>c_stream,
+        c_ptr,
+        c_stream,
         file,
         line
     )
