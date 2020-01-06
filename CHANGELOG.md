@@ -2,6 +2,8 @@
 
 ## New Features
 
+- PR #219 Add method to copy `device_buffer` back to host memory
+
 ## Improvements
 
 - PR #214 Add codeowners
