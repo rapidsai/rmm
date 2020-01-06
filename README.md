@@ -254,7 +254,7 @@ experimental pool allocator by reinitializing RMM.
 rmm.reinitialize(
     pool_allocator=False, # default is False
     managed_memory=False, # default is False
-    initial_pool_size=2<<30, # set to 2GiB. Default is 1/2 total GPU memory
+    initial_pool_size=int(2**31), # set to 2GiB. Default is 1/2 total GPU memory
     devices=0, # GPU device  IDs to register. By default registers only GPU 0.
     logging=True, # default is False -- has perf overhead
 )
@@ -289,6 +289,17 @@ cuDF operations with device-memory-intensive computations that don't use RMM
 finalize RMM. The Mortgage E2E workflow notebook uses this technique. We are
 working on better ways to reclaim memory, as well as making RAPIDS machine
 learning libraries use the same RMM memory pool.
+
+### Memory info
+
+The amount of free and total memory managed by RMM associated with a particular
+stream can be obtained with the `get_info` function:
+
+```python
+meminfo = rmm.get_info()
+print(meminfo.free)  # E.g. "16046292992"
+print(meminfo.total) # E.g. "16914055168"
+```
 
 ### CUDA Managed Memory
 

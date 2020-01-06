@@ -2,14 +2,20 @@
 
 ## New Features
 
+- PR #218 Add `_DevicePointer`
 - PR #219 Add method to copy `device_buffer` back to host memory
+- PR #222 Expose free and total memory in Python interface
 
 ## Improvements
 
 - PR #214 Add codeowners
 
 ## Bug Fixes
+
 - PR #215 Catch polymorphic exceptions by reference instead of by value
+- PR #221 Fix segfault calling rmmGetInfo when uninitialized
+- PR #225 Avoid invoking Python operations in c_free
+
 
 
 # RMM 0.11.0 (Date TBD)
@@ -42,6 +48,7 @@
 - PR #182 Prefix `DeviceBuffer`'s C functions
 - PR #189 Drop `__reduce__` from `DeviceBuffer`
 - PR #193 Remove thrown exception from `rmm_allocator::deallocate`
+- PR #224 Slice the CSV log before converting to bytes
 
 
 # RMM 0.10.0 (16 Oct 2019)
@@ -194,4 +201,3 @@ RMM was initially implemented as part of cuDF, so we include the relevant change
 # cuDF 0.2.0 and cuDF 0.1.0
 
 These were initial releases of cuDF based on previously separate pyGDF and libGDF libraries. RMM was initially implemented as part of libGDF.
-
