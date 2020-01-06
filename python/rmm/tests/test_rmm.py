@@ -85,7 +85,10 @@ def test_rmm_device_buffer(size):
     keyset = {"data", "shape", "strides", "typestr", "version"}
 
     b = rmm.DeviceBuffer(size=size)
-    assert b.ptr == 0
+    if size:
+        assert b.ptr != 0
+    else:
+        assert b.ptr == 0
     assert len(b) == 0
     assert b.nbytes == 0
     assert b.size == 0
