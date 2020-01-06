@@ -395,6 +395,8 @@ class device_buffer {
 
 /**--------------------------------------------------------------------------*
  * @brief Copies rmm::device_buffer to a preallocated host buffer.
+ *
+ * Copies device memory asynchronously on the specified stream
  *-------------------------------------------------------------------------**/
 void copy_to_host(const device_buffer& db, void* hb, cudaStream_t stream = 0) {
   if (hb == nullptr) {
