@@ -11,6 +11,7 @@
 ## Bug Fixes
 
 - PR #215 Catch polymorphic exceptions by reference instead of by value
+- PR #221 Fix segfault calling rmmGetInfo when uninitialized
 - PR #225 Avoid invoking Python operations in c_free
 
 
