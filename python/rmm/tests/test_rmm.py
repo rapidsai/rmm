@@ -85,6 +85,8 @@ def test_rmm_device_buffer(size):
     keyset = {"data", "shape", "strides", "typestr", "version"}
 
     b = rmm.DeviceBuffer(size=size)
+
+    # Test some properties
     if size:
         assert b.ptr != 0
         assert b.size == size
@@ -94,6 +96,8 @@ def test_rmm_device_buffer(size):
     assert len(b) == b.size
     assert b.nbytes == b.size
     assert b.capacity() >= b.size
+
+    # Test `__cuda_array_interface__`
     assert isinstance(b.__cuda_array_interface__, dict)
     assert set(b.__cuda_array_interface__) == keyset
     assert b.__cuda_array_interface__["data"] == (b.ptr, False)
