@@ -53,10 +53,11 @@ cdef class DeviceBuffer:
         return buf
 
     cpdef bytes tobytes(self):
+        cdef const device_buffer* dbp = self.c_obj.get()
         cdef bytes b = PyBytes_FromStringAndSize(NULL, self.c_size())
         cdef char* p = PyBytes_AS_STRING(b)
 
-        copy_to_host(self.c_obj.get()[0], <void*>p)
+        copy_to_host(dbp[0], <void*>p)
 
         return b
 
