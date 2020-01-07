@@ -410,8 +410,5 @@ void copy_to_host(const device_buffer& db, void* hb, cudaStream_t stream = 0) {
   if (err != cudaSuccess) {
     throw std::runtime_error{"Failed to copy to host."};
   }
-  if (cudaSuccess != cudaStreamSynchronize(stream)) {
-    throw std::runtime_error{"Stream sync failed."};
-  }
 }
 }  // namespace rmm
