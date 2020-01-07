@@ -111,6 +111,15 @@ TYPED_TEST(DeviceBufferTest, CopyFromRawDevicePointer) {
   EXPECT_EQ(cudaSuccess, cudaFree(device_memory));
 }
 
+TYPED_TEST(DeviceBufferTest, CopyToRawHostPointer) {
+  rmm::device_buffer buff(this->size);
+  std::vector<uint8_t> host_data(this->size);
+  uint8_t* host_data_ptr = host_data.data();
+  rmm::copy_to_host(buff, host_data_ptr);
+  EXPECT_EQ(0, buff.stream());
+  // TODO check for equality between the contents of the two allocations
+}
+
 TYPED_TEST(DeviceBufferTest, CopyFromRawHostPointer) {
   std::vector<uint8_t> host_data(this->size);
   rmm::device_buffer buff(static_cast<void*>(host_data.data()), this->size);
