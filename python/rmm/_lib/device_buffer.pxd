@@ -1,4 +1,5 @@
 from libcpp.memory cimport unique_ptr
+from libc.stdint cimport uintptr_t
 
 from rmm._lib.lib cimport cudaStream_t
 
