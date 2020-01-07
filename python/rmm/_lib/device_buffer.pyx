@@ -54,15 +54,15 @@ cdef class DeviceBuffer:
         buf.c_obj = move(ptr)
         return buf
 
-    cpdef bytes tobytes(self, cudaStream_t stream=0):
+    cpdef bytes tobytes(self, uintptr_t stream=0):
         cdef const device_buffer* dbp = self.c_obj.get()
         cdef bytes b = PyBytes_FromStringAndSize(NULL, self.c_size())
         cdef char* p = PyBytes_AS_STRING(b)
         cdef cudaError_t err
 
         with nogil:
-            copy_to_host(dbp[0], <void*>p, stream)
-            err = cudaStreamSynchronize(stream)
+            copy_to_host(dbp[0], <void*>p, <cudaStream_t>stream)
+            err = cudaStreamSynchronize(<cudaStream_t>stream)
         if err != cudaSuccess:
             raise RuntimeError("Stream sync failed.")
 
