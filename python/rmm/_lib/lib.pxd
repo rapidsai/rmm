@@ -33,6 +33,8 @@ cdef extern from * nogil:
 
     ctypedef void* cudaStream_t "cudaStream_t"
 
+    ctypedef cudaError_t cudaStreamSynchronize(cudaStream_t stream)
+
 
 cdef uintptr_t c_alloc(
     size_t size,
