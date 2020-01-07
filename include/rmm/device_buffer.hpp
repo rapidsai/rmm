@@ -398,6 +398,8 @@ class device_buffer {
  *
  * Copies device memory asynchronously on the specified stream
  *
+ * @throws std::runtime_error if `hb` is `nullptr` or copy fails
+ *
  * @param db `rmm::device_buffer` to copy to host
  * @param hb host allocated buffer to copy data to
  * @param stream CUDA stream on which memory may be allocated if the memory
