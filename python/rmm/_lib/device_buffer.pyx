@@ -65,7 +65,7 @@ cdef class DeviceBuffer:
             copy_to_host(dbp[0], <void*>p, <cudaStream_t>stream)
             err = cudaStreamSynchronize(<cudaStream_t>stream)
         if err != cudaSuccess:
-            raise RuntimeError("Stream sync failed.")
+            raise RuntimeError(f"Stream sync failed with error: {err}")
 
         return b
 
