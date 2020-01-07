@@ -28,7 +28,12 @@ ctypedef pair[size_t, size_t] memory_pair
 
 cdef extern from * nogil:
 
+    ctypedef enum cudaError_t "cudaError_t":
+        cudaSuccess = 0
+
     ctypedef void* cudaStream_t "cudaStream_t"
+
+    cudaError_t cudaStreamSynchronize(cudaStream_t stream)
 
 
 cdef uintptr_t c_alloc(

@@ -1,6 +1,11 @@
 from libcpp.memory cimport unique_ptr
 from libc.stdint cimport uintptr_t
 
+from cpython.bytes cimport PyBytes_FromStringAndSize, PyBytes_AS_STRING
+
+from rmm._lib.lib cimport (cudaError_t, cudaSuccess,
+                           cudaStream_t, cudaStreamSynchronize)
+
 
 cdef class DeviceBuffer:
 
@@ -49,6 +54,20 @@ cdef class DeviceBuffer:
         cdef DeviceBuffer buf = DeviceBuffer.__new__(DeviceBuffer)
         buf.c_obj = move(ptr)
         return buf
+
+    cpdef bytes tobytes(self, uintptr_t stream=0):
+        cdef const device_buffer* dbp = self.c_obj.get()
+        cdef bytes b = PyBytes_FromStringAndSize(NULL, self.c_size())
+        cdef char* p = PyBytes_AS_STRING(b)
+        cdef cudaError_t err
+
+        with nogil:
+            copy_to_host(dbp[0], <void*>p, <cudaStream_t>stream)
+            err = cudaStreamSynchronize(<cudaStream_t>stream)
+        if err != cudaSuccess:
+            raise RuntimeError(f"Stream sync failed with error: {err}")
+
+        return b
 
     cdef size_t c_size(self):
         return self.c_obj.get()[0].size()

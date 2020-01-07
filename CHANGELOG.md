@@ -3,6 +3,7 @@
 ## New Features
 
 - PR #218 Add `_DevicePointer`
+- PR #219 Add method to copy `device_buffer` back to host memory
 - PR #222 Expose free and total memory in Python interface
 
 ## Improvements
