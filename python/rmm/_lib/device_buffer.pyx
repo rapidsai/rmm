@@ -3,6 +3,8 @@ from libc.stdint cimport uintptr_t
 
 from cpython.bytes cimport PyBytes_FromStringAndSize, PyBytes_AS_STRING
 
+from rmm._lib.lib cimport cudaStream_t
+
 
 cdef class DeviceBuffer:
 
@@ -52,13 +54,13 @@ cdef class DeviceBuffer:
         buf.c_obj = move(ptr)
         return buf
 
-    cpdef bytes tobytes(self):
+    cpdef bytes tobytes(self, cudaStream_t stream=0):
         cdef const device_buffer* dbp = self.c_obj.get()
         cdef bytes b = PyBytes_FromStringAndSize(NULL, self.c_size())
         cdef char* p = PyBytes_AS_STRING(b)
 
         with nogil:
-            copy_to_host(dbp[0], <void*>p)
+            copy_to_host(dbp[0], <void*>p, stream)
 
         return b
 

@@ -25,7 +25,7 @@ cdef class DeviceBuffer:
     @staticmethod
     cdef DeviceBuffer c_from_unique_ptr(unique_ptr[device_buffer] ptr)
 
-    cpdef bytes tobytes(self)
+    cpdef bytes tobytes(self, cudaStream_t stream=*)
 
     cdef size_t c_size(self)
     cpdef void resize(self, size_t new_size)
