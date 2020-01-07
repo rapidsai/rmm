@@ -3,7 +3,7 @@ from libc.stdint cimport uintptr_t
 
 from cpython.bytes cimport PyBytes_FromStringAndSize, PyBytes_AS_STRING
 
-from rmm._lib.lib cimport cudaStream_t
+from rmm._lib.lib cimport cudaError_t, cudaStream_t, cudaStreamSynchronize
 
 
 cdef class DeviceBuffer:
@@ -58,9 +58,13 @@ cdef class DeviceBuffer:
         cdef const device_buffer* dbp = self.c_obj.get()
         cdef bytes b = PyBytes_FromStringAndSize(NULL, self.c_size())
         cdef char* p = PyBytes_AS_STRING(b)
+        cdef cudaError_t err
 
         with nogil:
             copy_to_host(dbp[0], <void*>p, stream)
+            err = cudaStreamSynchronize(stream)
+        if err != cudaSuccess:
+            raise RuntimeError("Stream sync failed.")
 
         return b
 
