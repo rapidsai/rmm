@@ -82,8 +82,6 @@ def test_rmm_csv_log(dtype, nelem):
 
 @pytest.mark.parametrize("size", [None, 0, 5])
 def test_rmm_device_buffer(size):
-    keyset = {"data", "shape", "strides", "typestr", "version"}
-
     b = rmm.DeviceBuffer(size=size)
 
     # Test some properties
@@ -98,6 +96,7 @@ def test_rmm_device_buffer(size):
     assert b.capacity() >= b.size
 
     # Test `__cuda_array_interface__`
+    keyset = {"data", "shape", "strides", "typestr", "version"}
     assert isinstance(b.__cuda_array_interface__, dict)
     assert set(b.__cuda_array_interface__) == keyset
     assert b.__cuda_array_interface__["data"] == (b.ptr, False)
