@@ -105,6 +105,11 @@ def test_rmm_device_buffer(size):
     assert b.__cuda_array_interface__["typestr"] == "|u1"
     assert b.__cuda_array_interface__["version"] == 0
 
+    # Test conversion to bytes
+    s = b.tobytes()
+    assert isinstance(s, bytes)
+    assert len(s) == len(b)
+
     # Test resizing
     b.resize(2)
     assert b.size == 2
