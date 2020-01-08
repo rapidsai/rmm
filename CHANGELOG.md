@@ -17,6 +17,7 @@
 - PR #221 Fix segfault calling rmmGetInfo when uninitialized
 - PR #225 Avoid invoking Python operations in c_free
 - PR #230 Fix duplicate symbol issues with `copy_to_host`
+- PR #232 Move `copy_to_host` doc back to header file
 
 
 
