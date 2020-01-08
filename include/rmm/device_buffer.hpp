@@ -404,7 +404,9 @@ class device_buffer {
  * @param hb host allocated buffer to copy data to
  * @param stream CUDA stream on which the device to host copy will be performed
  *-------------------------------------------------------------------------**/
-void copy_to_host(const device_buffer& db, void* hb, cudaStream_t stream = 0) {
+inline void copy_to_host(const device_buffer& db,
+                         void* hb,
+                         cudaStream_t stream = 0) {
   if (hb == nullptr) {
     throw std::runtime_error{"Cannot copy to `nullptr`."};
   }
