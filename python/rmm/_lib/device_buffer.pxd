@@ -15,7 +15,6 @@ cdef extern from "rmm/device_buffer.hpp" namespace "rmm" nogil:
         size_t size()
         size_t capacity()
 
-    void copy_to_host(const device_buffer& db, void* hb) except *
     void copy_to_host(const device_buffer& db,
                       void* hb,
                       cudaStream_t stream) except *
