@@ -10,6 +10,7 @@
 
 - PR #214 Add codeowners
 - PR #226 Add some tests of the Python `DeviceBuffer`
+- PR #233 Reuse the same `CUDA_HOME` logic from cuDF
 
 ## Bug Fixes
 
