@@ -9,18 +9,25 @@ from rmm._lib.lib cimport (cudaError_t, cudaSuccess,
 
 cdef class DeviceBuffer:
 
-    def __cinit__(self, *, ptr=None, size=None):
+    def __cinit__(self, *, ptr=None, size=None, stream=None):
         if size is None:
             size = 0
 
+        if stream is None:
+            stream = 0
+
         cdef void * data
         if ptr is None:
-            self.c_obj.reset(new device_buffer(<size_t>size))
+            self.c_obj.reset(
+                new device_buffer(<size_t>size, <cudaStream_t>stream)
+            )
         else:
             data = <void *> <uintptr_t> ptr
-            self.c_obj.reset(new device_buffer(data, size))
+            self.c_obj.reset(
+                new device_buffer(data, <size_t>size, <cudaStream_t>stream)
+            )
 
-    def __init__(self, *, ptr=None, size=None):
+    def __init__(self, *, ptr=None, size=None, stream=None):
         pass
 
     def __len__(self):
