@@ -12,19 +12,19 @@ cdef class DeviceBuffer:
     def __cinit__(self, *, ptr=None, size=None, stream=None):
         cdef size_t c_size
         if size is None:
-            c_size = 0
+            c_size = <size_t>0
         else:
             c_size = <size_t>size
 
         cdef cudaStream_t c_stream
         if stream is None:
-            c_stream = 0
+            c_stream = <cudaStream_t><uintptr_t>0
         else:
             c_stream = <cudaStream_t><uintptr_t>stream
 
         cdef void * c_ptr
         if ptr is None:
-            c_ptr = NULL
+            c_ptr = <void *>NULL
         else:
             c_ptr = <void *> <uintptr_t> ptr
 
