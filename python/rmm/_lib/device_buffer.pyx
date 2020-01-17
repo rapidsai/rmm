@@ -16,7 +16,7 @@ cdef class DeviceBuffer:
         if stream is None:
             stream = 0
 
-        cdef void * data
+        cdef void * c_ptr
         if ptr is None:
             self.c_obj.reset(
                 new device_buffer(
@@ -24,10 +24,10 @@ cdef class DeviceBuffer:
                 )
             )
         else:
-            data = <void *> <uintptr_t> ptr
+            c_ptr = <void *> <uintptr_t> ptr
             self.c_obj.reset(
                 new device_buffer(
-                    data, <size_t>size, <cudaStream_t><uintptr_t>stream
+                    c_ptr, <size_t>size, <cudaStream_t><uintptr_t>stream
                 )
             )
 
