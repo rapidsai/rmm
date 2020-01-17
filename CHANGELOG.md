@@ -11,6 +11,7 @@
 - PR #214 Add codeowners
 - PR #226 Add some tests of the Python `DeviceBuffer`
 - PR #233 Reuse the same `CUDA_HOME` logic from cuDF
+- PR #234 Add missing `size_t` in `DeviceBuffer`
 
 ## Bug Fixes
 
@@ -21,8 +22,7 @@
 - PR #232 Move `copy_to_host` doc back to header file
 
 
-
-# RMM 0.11.0 (Date TBD)
+# RMM 0.11.0 (11 Dec 2019)
 
 ## New Features
 
