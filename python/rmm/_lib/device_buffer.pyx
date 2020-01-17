@@ -28,10 +28,11 @@ cdef class DeviceBuffer:
         else:
             c_ptr = <void *> <uintptr_t> ptr
 
-        if c_ptr == NULL:
-            self.c_obj.reset(new device_buffer(c_size, c_stream))
-        else:
-            self.c_obj.reset(new device_buffer(c_ptr, c_size, c_stream))
+        with nogil:
+            if c_ptr == NULL:
+                self.c_obj.reset(new device_buffer(c_size, c_stream))
+            else:
+                self.c_obj.reset(new device_buffer(c_ptr, c_size, c_stream))
 
     def __init__(self, *, ptr=None, size=None, stream=None):
         pass
