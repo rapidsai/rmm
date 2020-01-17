@@ -24,13 +24,17 @@ cdef class DeviceBuffer:
 
         cdef void * c_ptr
         if ptr is None:
+            c_ptr = NULL
+        else:
+            c_ptr = <void *> <uintptr_t> ptr
+
+        if c_ptr == NULL:
             self.c_obj.reset(
                 new device_buffer(
                     c_size, c_stream
                 )
             )
         else:
-            c_ptr = <void *> <uintptr_t> ptr
             self.c_obj.reset(
                 new device_buffer(
                     c_ptr, c_size, c_stream
