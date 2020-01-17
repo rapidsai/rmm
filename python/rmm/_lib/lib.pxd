@@ -33,6 +33,14 @@ cdef extern from * nogil:
 
     ctypedef void* cudaStream_t "cudaStream_t"
 
+    cdef const unsigned int cudaHostAllocDefault
+    cdef const unsigned int cudaHostAllocPortable
+    cdef const unsigned int cudaHostAllocMapped
+    cdef const unsigned int cudaHostAllocWriteCombined
+
+    cudaError_t cudaHostAlloc(void** pHost, size_t size, unsigned int flags)
+    cudaError_t cudaFreeHost(void* ptr)
+
     cudaError_t cudaStreamSynchronize(cudaStream_t stream)
 
 
