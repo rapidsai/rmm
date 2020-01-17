@@ -41,6 +41,16 @@ cdef extern from * nogil:
     cudaError_t cudaHostAlloc(void** pHost, size_t size, unsigned int flags)
     cudaError_t cudaFreeHost(void* ptr)
 
+    ctypedef enum cudaMemcpyKind "cudaMemcpyKind":
+        cudaMemcpyHostToHost
+        cudaMemcpyHostToDevice
+        cudaMemcpyDeviceToHost
+        cudaMemcpyDeviceToDevice
+        cudaMemcpyDefault
+
+    cudaError_t cudaMemcpy(void* dst, const void* src,
+                           size_t count, cudaMemcpyKind kind)
+
     cudaError_t cudaStreamSynchronize(cudaStream_t stream)
 
 
