@@ -69,10 +69,12 @@ cdef class DeviceBuffer:
     cpdef bytes tobytes(self, uintptr_t stream=0):
         cdef const device_buffer* dbp = self.c_obj.get()
         cdef size_t s = dbp.size()
+        if s == 0:
+            return b""
+
         cdef bytes b = PyBytes_FromStringAndSize(NULL, s)
         cdef char* p = PyBytes_AS_STRING(b)
         cdef cudaError_t err
-
         with nogil:
             copy_to_host(dbp[0], <void*>p, <cudaStream_t>stream)
             err = cudaStreamSynchronize(<cudaStream_t>stream)
