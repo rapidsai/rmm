@@ -13,6 +13,7 @@
 - PR #226 Add some tests of the Python `DeviceBuffer`
 - PR #233 Reuse the same `CUDA_HOME` logic from cuDF
 - PR #234 Add missing `size_t` in `DeviceBuffer`
+- PR #239 Cleanup `DeviceBuffer`'s `__cinit__`
 
 ## Bug Fixes
 
