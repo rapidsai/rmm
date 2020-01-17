@@ -19,12 +19,16 @@ cdef class DeviceBuffer:
         cdef void * data
         if ptr is None:
             self.c_obj.reset(
-                new device_buffer(<size_t>size, <cudaStream_t><uintptr_t>stream)
+                new device_buffer(
+                    <size_t>size, <cudaStream_t><uintptr_t>stream
+                )
             )
         else:
             data = <void *> <uintptr_t> ptr
             self.c_obj.reset(
-                new device_buffer(data, <size_t>size, <cudaStream_t><uintptr_t>stream)
+                new device_buffer(
+                    data, <size_t>size, <cudaStream_t><uintptr_t>stream
+                )
             )
 
     def __init__(self, *, ptr=None, size=None, stream=None):
