@@ -34,9 +34,6 @@ cdef class DeviceBuffer:
             else:
                 self.c_obj.reset(new device_buffer(c_ptr, c_size, c_stream))
 
-    def __init__(self, *, ptr=None, size=None, stream=None):
-        pass
-
     def __len__(self):
         return self.size
 
