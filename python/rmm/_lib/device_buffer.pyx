@@ -18,7 +18,7 @@ cdef class DeviceBuffer:
             self.c_obj.reset(new device_buffer(<size_t>size))
         else:
             data = <void *> <uintptr_t> ptr
-            self.c_obj.reset(new device_buffer(data, size))
+            self.c_obj.reset(new device_buffer(data, <size_t>size))
 
     def __init__(self, *, ptr=None, size=None):
         pass
