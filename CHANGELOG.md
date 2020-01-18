@@ -23,6 +23,7 @@
 - PR #233 Reuse the same `CUDA_HOME` logic from cuDF
 - PR #234 Add missing `size_t` in `DeviceBuffer`
 - PR #239 Cleanup `DeviceBuffer`'s `__cinit__`
+- PR #242 Special case 0-size `DeviceBuffer` in `tobytes`
 
 ## Bug Fixes
 
