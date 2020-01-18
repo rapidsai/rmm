@@ -47,7 +47,7 @@ cdef class DeviceBuffer:
 
     @property
     def size(self):
-        return self.c_size()
+        return int(self.c_size())
 
     @property
     def __cuda_array_interface__(self):
