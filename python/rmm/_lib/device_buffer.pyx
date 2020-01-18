@@ -1,6 +1,5 @@
 from libcpp.memory cimport unique_ptr
 from libc.stdint cimport uintptr_t
-from libc.string cimport memcpy
 
 from cpython.bytes cimport PyBytes_FromStringAndSize, PyBytes_AS_STRING
 
