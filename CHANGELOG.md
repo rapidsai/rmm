@@ -15,6 +15,7 @@
 - PR #234 Add missing `size_t` in `DeviceBuffer`
 - PR #239 Cleanup `DeviceBuffer`'s `__cinit__`
 - PR #242 Special case 0-size `DeviceBuffer` in `tobytes`
+- PR #244 Explicitly force `DeviceBuffer.size` to an `int`
 
 ## Bug Fixes
 
