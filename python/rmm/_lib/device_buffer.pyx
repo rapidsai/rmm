@@ -1,12 +1,12 @@
 from libcpp.memory cimport unique_ptr
 from libc.stdint cimport uintptr_t
+from libc.string cimport memcpy
 
 from cpython.bytes cimport PyBytes_FromStringAndSize, PyBytes_AS_STRING
 
 from rmm._lib.lib cimport (cudaError_t, cudaSuccess,
                            cudaHostAllocDefault,
                            cudaHostAlloc, cudaFreeHost,
-                           cudaMemcpy, cudaMemcpyHostToHost,
                            cudaStream_t, cudaStreamSynchronize)
 
 
@@ -78,21 +78,19 @@ cdef class DeviceBuffer:
         cdef bytes b = PyBytes_FromStringAndSize(NULL, s)
         cdef char* bp = PyBytes_AS_STRING(b)
         cdef void *hp = NULL
-        cdef cudaError_t alloc_err, memcpy_err, stream_err, free_err
+        cdef cudaError_t alloc_err, stream_err, free_err
         with nogil:
             alloc_err = cudaHostAlloc(&hp, s, cudaHostAllocDefault)
             if alloc_err == cudaSuccess:
                 copy_to_host(dbp[0], hp, <cudaStream_t>stream)
                 stream_err = cudaStreamSynchronize(<cudaStream_t>stream)
                 if stream_err == cudaSuccess:
-                    memcpy_err = cudaMemcpy(bp, hp, s, cudaMemcpyHostToHost)
+                    memcpy(bp, hp, s)
                 free_err = cudaFreeHost(hp)
         if alloc_err != cudaSuccess:
             raise RuntimeError(f"Host alloc failed with error: {alloc_err}")
         if stream_err != cudaSuccess:
             raise RuntimeError(f"Stream sync failed with error: {stream_err}")
-        if memcpy_err != cudaSuccess:
-            raise RuntimeError(f"Memcpy failed with error: {memcpy_err}")
         if free_err != cudaSuccess:
             raise RuntimeError(f"Host free failed with error: {free_err}")
 
