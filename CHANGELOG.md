@@ -16,6 +16,7 @@
 - PR #239 Cleanup `DeviceBuffer`'s `__cinit__`
 - PR #242 Special case 0-size `DeviceBuffer` in `tobytes`
 - PR #244 Explicitly force `DeviceBuffer.size` to an `int`
+- PR #248 Drop conda recipe 'host' reqirement of cudatoolkit
 
 ## Bug Fixes
 
