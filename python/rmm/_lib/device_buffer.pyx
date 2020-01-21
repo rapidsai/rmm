@@ -22,11 +22,11 @@ cdef class DeviceBuffer:
         else:
             c_stream = <cudaStream_t><uintptr_t>stream
 
-        cdef void * c_ptr
+        cdef void* c_ptr
         if ptr is None:
-            c_ptr = <void *>NULL
+            c_ptr = <void*>NULL
         else:
-            c_ptr = <void *> <uintptr_t> ptr
+            c_ptr = <void*> <uintptr_t> ptr
 
         with nogil:
             if c_ptr == NULL:
