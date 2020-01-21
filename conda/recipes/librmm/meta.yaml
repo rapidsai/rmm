@@ -25,8 +25,6 @@ build:
 requirements:
   build:
     - cmake >=3.12.4
-  host:
-    - cudatoolkit {{ cuda_version }}.*
   run:
     - {{ pin_compatible('cudatoolkit', max_pin='x.x') }}
 
