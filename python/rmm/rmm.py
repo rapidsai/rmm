@@ -28,15 +28,6 @@ class RMMError(Exception):
         super(RMMError, self).__init__(msg)
 
 
-def _array_helper(addr, datasize, shape, strides, dtype, finalizer=None):
-    ctx = cuda.current_context()
-    ptr = ctypes.c_uint64(int(addr))
-    mem = cuda.driver.MemoryPointer(ctx, ptr, datasize, finalizer=finalizer)
-    return cuda.cudadrv.devicearray.DeviceNDArray(
-        shape, strides, dtype, gpu_data=mem
-    )
-
-
 class rmm_allocation_mode(IntEnum):
     CudaDefaultAllocation = (0,)
     PoolAllocation = (1,)
