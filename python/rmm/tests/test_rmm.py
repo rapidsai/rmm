@@ -80,7 +80,7 @@ def test_rmm_csv_log(dtype, nelem):
     )
 
 
-@pytest.mark.parametrize("size", [None, 0, 5])
+@pytest.mark.parametrize("size", [0, 5])
 def test_rmm_device_buffer(size):
     b = rmm.DeviceBuffer(size=size)
 
