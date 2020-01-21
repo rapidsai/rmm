@@ -26,7 +26,7 @@ cdef class DeviceBuffer:
         if ptr is None:
             c_ptr = <void*>NULL
         else:
-            c_ptr = <void*> <uintptr_t> ptr
+            c_ptr = <void*><uintptr_t>ptr
 
         with nogil:
             if c_ptr == NULL:
