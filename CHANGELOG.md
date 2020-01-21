@@ -16,6 +16,7 @@
 - PR #239 Cleanup `DeviceBuffer`'s `__cinit__`
 - PR #242 Special case 0-size `DeviceBuffer` in `tobytes`
 - PR #244 Explicitly force `DeviceBuffer.size` to an `int`
+- PR #247 Simplify casting in `tobytes` and other cleanup
 
 ## Bug Fixes
 

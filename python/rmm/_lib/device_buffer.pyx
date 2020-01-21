@@ -10,6 +10,12 @@ from rmm._lib.lib cimport (cudaError_t, cudaSuccess,
 cdef class DeviceBuffer:
 
     def __cinit__(self, *, ptr=None, size=None, stream=None):
+        cdef void* c_ptr
+        if ptr is None:
+            c_ptr = <void*>NULL
+        else:
+            c_ptr = <void*><uintptr_t>ptr
+
         cdef size_t c_size
         if size is None:
             c_size = <size_t>0
@@ -21,12 +27,6 @@ cdef class DeviceBuffer:
             c_stream = <cudaStream_t><uintptr_t>0
         else:
             c_stream = <cudaStream_t><uintptr_t>stream
-
-        cdef void * c_ptr
-        if ptr is None:
-            c_ptr = <void *>NULL
-        else:
-            c_ptr = <void *> <uintptr_t> ptr
 
         with nogil:
             if c_ptr == NULL:
@@ -72,12 +72,13 @@ cdef class DeviceBuffer:
         if s == 0:
             return b""
 
+        cdef cudaStream_t c_stream = <cudaStream_t>stream
         cdef bytes b = PyBytes_FromStringAndSize(NULL, s)
-        cdef char* p = PyBytes_AS_STRING(b)
+        cdef void* p = <void*>PyBytes_AS_STRING(b)
         cdef cudaError_t err
         with nogil:
-            copy_to_host(dbp[0], <void*>p, <cudaStream_t>stream)
-            err = cudaStreamSynchronize(<cudaStream_t>stream)
+            copy_to_host(dbp[0], p, c_stream)
+            err = cudaStreamSynchronize(c_stream)
         if err != cudaSuccess:
             raise RuntimeError(f"Stream sync failed with error: {err}")
 
