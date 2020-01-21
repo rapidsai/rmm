@@ -14,18 +14,16 @@ cdef class DeviceBuffer:
                   size_t size=0,
                   uintptr_t stream=0):
         cdef void* c_ptr
-        cdef size_t c_size
         cdef cudaStream_t c_stream
 
         with nogil:
             c_ptr = <void*>ptr
-            c_size = size
             c_stream = <cudaStream_t>stream
 
             if c_ptr == NULL:
-                self.c_obj.reset(new device_buffer(c_size, c_stream))
+                self.c_obj.reset(new device_buffer(size, c_stream))
             else:
-                self.c_obj.reset(new device_buffer(c_ptr, c_size, c_stream))
+                self.c_obj.reset(new device_buffer(c_ptr, size, c_stream))
 
     def __len__(self):
         return self.size
