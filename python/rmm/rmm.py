@@ -179,17 +179,15 @@ def device_array(shape, dtype=np.float, strides=None, order="C", stream=0):
         shape, strides, dtype.itemsize
     )
 
-    addr = librmm.rmm_alloc(datasize, stream)
+    buf = librmm.DeviceBuffer(size=datasize, stream=stream)
 
     # Note Numba will call the finalizer to free the device memory
     # allocated above
-    return _array_helper(
-        addr=addr,
-        datasize=datasize,
-        shape=shape,
-        strides=strides,
-        dtype=dtype,
-        finalizer=_make_finalizer(addr, stream),
+    ctx = cuda.current_context()
+    ptr = ctypes.c_uint64(int(buf.ptr))
+    mem = cuda.driver.MemoryPointer(ctx, ptr, datasize, owner=buf)
+    return cuda.cudadrv.devicearray.DeviceNDArray(
+        shape, strides, dtype, gpu_data=mem
     )
 
 
