@@ -153,14 +153,14 @@ def device_array_from_ptr(ptr, nelem, dtype=np.float, finalizer=None):
 
     elemsize = dtype.itemsize
     datasize = elemsize * nelem
+    shape = (nelem,)
+    strides = (elemsize,)
     # note no finalizer -- freed externally!
-    return _array_helper(
-        addr=ptr,
-        datasize=datasize,
-        shape=(nelem,),
-        strides=(elemsize,),
-        dtype=dtype,
-        finalizer=finalizer,
+    ctx = cuda.current_context()
+    ptr = ctypes.c_uint64(int(ptr))
+    mem = cuda.driver.MemoryPointer(ctx, ptr, datasize, finalizer=finalizer)
+    return cuda.cudadrv.devicearray.DeviceNDArray(
+        shape, strides, dtype, gpu_data=mem
     )
 
 
