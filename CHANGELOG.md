@@ -4,6 +4,8 @@
 
 ## Improvements
 
+- PR #246 Type `DeviceBuffer` arguments to `__cinit__`
+
 ## Bug Fixes
 
 
