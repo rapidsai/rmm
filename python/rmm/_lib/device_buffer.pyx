@@ -9,30 +9,21 @@ from rmm._lib.lib cimport (cudaError_t, cudaSuccess,
 
 cdef class DeviceBuffer:
 
-    def __cinit__(self, *, ptr=None, size=None, stream=None):
-        cdef size_t c_size
-        if size is None:
-            c_size = <size_t>0
-        else:
-            c_size = <size_t>size
-
+    def __cinit__(self, *,
+                  uintptr_t ptr=0,
+                  size_t size=0,
+                  uintptr_t stream=0):
+        cdef void* c_ptr
         cdef cudaStream_t c_stream
-        if stream is None:
-            c_stream = <cudaStream_t><uintptr_t>0
-        else:
-            c_stream = <cudaStream_t><uintptr_t>stream
-
-        cdef void * c_ptr
-        if ptr is None:
-            c_ptr = <void *>NULL
-        else:
-            c_ptr = <void *> <uintptr_t> ptr
 
         with nogil:
+            c_ptr = <void*>ptr
+            c_stream = <cudaStream_t>stream
+
             if c_ptr == NULL:
-                self.c_obj.reset(new device_buffer(c_size, c_stream))
+                self.c_obj.reset(new device_buffer(size, c_stream))
             else:
-                self.c_obj.reset(new device_buffer(c_ptr, c_size, c_stream))
+                self.c_obj.reset(new device_buffer(c_ptr, size, c_stream))
 
     def __len__(self):
         return self.size
@@ -72,12 +63,13 @@ cdef class DeviceBuffer:
         if s == 0:
             return b""
 
+        cdef cudaStream_t c_stream = <cudaStream_t>stream
         cdef bytes b = PyBytes_FromStringAndSize(NULL, s)
-        cdef char* p = PyBytes_AS_STRING(b)
+        cdef void* p = <void*>PyBytes_AS_STRING(b)
         cdef cudaError_t err
         with nogil:
-            copy_to_host(dbp[0], <void*>p, <cudaStream_t>stream)
-            err = cudaStreamSynchronize(<cudaStream_t>stream)
+            copy_to_host(dbp[0], p, c_stream)
+            err = cudaStreamSynchronize(c_stream)
         if err != cudaSuccess:
             raise RuntimeError(f"Stream sync failed with error: {err}")
 
