@@ -172,8 +172,6 @@ def device_array(shape, dtype=np.float, strides=None, order="C", stream=0):
 
     buf = librmm.DeviceBuffer(size=datasize, stream=stream)
 
-    # Note Numba will call the finalizer to free the device memory
-    # allocated above
     ctx = cuda.current_context()
     ptr = ctypes.c_uint64(int(buf.ptr))
     mem = cuda.driver.MemoryPointer(ctx, ptr, datasize, owner=buf)
