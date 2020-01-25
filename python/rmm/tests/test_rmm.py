@@ -1,5 +1,5 @@
-from itertools import product
 import sys
+from itertools import product
 
 import numpy as np
 import pytest
