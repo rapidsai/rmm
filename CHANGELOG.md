@@ -6,6 +6,7 @@
 
 - PR #246 Type `DeviceBuffer` arguments to `__cinit__`
 - PR #249 Use `DeviceBuffer` in `device_array`
+- PR #255 Add standard header to all Cython files
 
 ## Bug Fixes
 
