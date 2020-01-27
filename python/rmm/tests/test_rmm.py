@@ -1,3 +1,4 @@
+import pickle
 import sys
 from itertools import product
 
@@ -161,6 +162,16 @@ def test_rmm_device_buffer_bytes_roundtrip(hb):
             hb2 = db.tobytes()
             mv2 = memoryview(hb2)
             assert mv == mv2
+
+
+@pytest.mark.parametrize("hb", [b"", b"123", b"abc"])
+def test_rmm_device_buffer_pickle_roundtrip(hb):
+    db = rmm.DeviceBuffer.frombytes(hb)
+    pb = pickle.dumps(db)
+    del db
+    db2 = pickle.loads(pb)
+    hb2 = db2.tobytes()
+    assert hb == hb2
 
 
 def test_rmm_cupy_allocator():
