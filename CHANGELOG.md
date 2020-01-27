@@ -2,6 +2,8 @@
 
 ## New Features
 
+- PR #253 Add `frombytes` to convert `bytes`-like to `DeviceBuffer`
+
 ## Improvements
 
 - PR #246 Type `DeviceBuffer` arguments to `__cinit__`
