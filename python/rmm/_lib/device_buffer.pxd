@@ -29,6 +29,8 @@ cdef class DeviceBuffer:
     @staticmethod
     cdef DeviceBuffer c_from_unique_ptr(unique_ptr[device_buffer] ptr)
 
+    @staticmethod
+    cpdef DeviceBuffer frombytes(bytes b, uintptr_t stream=*)
     cpdef bytes tobytes(self, uintptr_t stream=*)
 
     cdef size_t c_size(self)
