@@ -63,9 +63,9 @@ cdef class DeviceBuffer:
         if s == 0:
             return b""
 
-        cdef cudaStream_t c_stream = <cudaStream_t>stream
         cdef bytes b = PyBytes_FromStringAndSize(NULL, s)
         cdef void* p = <void*>PyBytes_AS_STRING(b)
+        cdef cudaStream_t c_stream = <cudaStream_t>stream
         cdef cudaError_t err
         with nogil:
             copy_to_host(dbp[0], p, c_stream)
