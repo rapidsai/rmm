@@ -1,5 +1,3 @@
-cimport cython
-
 from libcpp.memory cimport unique_ptr
 from libc.stdint cimport uintptr_t
 
@@ -7,6 +5,8 @@ from cpython.bytes cimport PyBytes_FromStringAndSize, PyBytes_AS_STRING
 
 from rmm._lib.lib cimport (cudaError_t, cudaSuccess,
                            cudaStream_t, cudaStreamSynchronize)
+
+cimport cython
 
 
 cdef class DeviceBuffer:
