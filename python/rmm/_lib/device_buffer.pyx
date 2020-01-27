@@ -58,10 +58,14 @@ cdef class DeviceBuffer:
         return buf
 
     @staticmethod
-    cpdef DeviceBuffer frombytes(bytes b, uintptr_t stream=0):
+    cdef DeviceBuffer c_frombytes(bytes b, uintptr_t stream=0):
         cdef uintptr_t p = <uintptr_t><const char*>b
         cdef size_t s = len(b)
         return DeviceBuffer(ptr=p, size=s, stream=stream)
+
+    @staticmethod
+    def frombytes(bytes b, uintptr_t stream=0):
+        return DeviceBuffer.c_frombytes(b, stream)
 
     cpdef bytes tobytes(self, uintptr_t stream=0):
         cdef const device_buffer* dbp = self.c_obj.get()
