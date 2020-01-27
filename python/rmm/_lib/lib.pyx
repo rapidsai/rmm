@@ -189,7 +189,7 @@ def rmm_alloc(size, stream):
     functions via Cython
     """
     cdef size_t c_size = size
-    cdef cudaStream_t c_stream = <cudaStream_t><size_t>stream
+    cdef cudaStream_t c_stream = <cudaStream_t><uintptr_t>stream
 
     cdef uintptr_t c_addr = c_alloc(
         <size_t>c_size,
@@ -225,7 +225,7 @@ def rmm_free(ptr, stream):
     functions via Cython
     """
     cdef void * c_ptr = <void *><uintptr_t>ptr
-    cdef cudaStream_t c_stream = <cudaStream_t><size_t>stream
+    cdef cudaStream_t c_stream = <cudaStream_t><uintptr_t>stream
 
     cdef caller_pair tmp_caller_pair = _get_caller()
     cdef const char* file = tmp_caller_pair.first
@@ -266,7 +266,7 @@ def rmm_getallocationoffset(ptr, stream):
     functions via Cython
     """
     cdef void * c_ptr = <void *><uintptr_t>ptr
-    cdef cudaStream_t c_stream = <cudaStream_t><size_t>stream
+    cdef cudaStream_t c_stream = <cudaStream_t><uintptr_t>stream
 
     cdef ptrdiff_t * c_offset = c_getallocationoffset(
         <void *>c_ptr,

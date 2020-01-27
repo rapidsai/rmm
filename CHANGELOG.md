@@ -9,6 +9,7 @@
 - PR #246 Type `DeviceBuffer` arguments to `__cinit__`
 - PR #249 Use `DeviceBuffer` in `device_array`
 - PR #255 Add standard header to all Cython files
+- PR #256 Cast through `uintptr_t` to `cudaStream_t`
 - PR #254 Use `const void*` in `DeviceBuffer.__cinit__`
 
 ## Bug Fixes
