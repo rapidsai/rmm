@@ -64,6 +64,13 @@ cdef class DeviceBuffer:
     def size(self):
         return int(self.c_size())
 
+    def __getstate__(self):
+        return self.tobytes()
+
+    def __setstate__(self, state):
+        cdef DeviceBuffer other = DeviceBuffer.c_frombytes(state)
+        self.c_obj = move(other.c_obj)
+
     @property
     def __cuda_array_interface__(self):
         cdef dict intf = {
