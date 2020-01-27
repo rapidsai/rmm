@@ -1,3 +1,5 @@
+cimport cython
+
 from libcpp.memory cimport unique_ptr
 from libc.stdint cimport uintptr_t
 
@@ -58,13 +60,21 @@ cdef class DeviceBuffer:
         return buf
 
     @staticmethod
-    cdef DeviceBuffer c_frombytes(bytes b, uintptr_t stream=0):
-        cdef uintptr_t p = <uintptr_t><const char*>b
+    @cython.boundscheck(False)
+    cdef DeviceBuffer c_frombytes(const unsigned char[::1] b,
+                                  uintptr_t stream=0):
+        if b is None:
+            raise TypeError(
+                "Argument 'b' has incorrect type"
+                " (expected bytes, got NoneType)"
+            )
+
+        cdef uintptr_t p = <uintptr_t>&b[0]
         cdef size_t s = len(b)
         return DeviceBuffer(ptr=p, size=s, stream=stream)
 
     @staticmethod
-    def frombytes(bytes b, uintptr_t stream=0):
+    def frombytes(const unsigned char[::1] b, uintptr_t stream=0):
         return DeviceBuffer.c_frombytes(b, stream)
 
     cpdef bytes tobytes(self, uintptr_t stream=0):
