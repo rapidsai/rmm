@@ -25,22 +25,22 @@ from rmm._lib.lib cimport cudaStream_t
 cdef extern from "rmm/device_buffer.hpp" namespace "rmm" nogil:
     cdef cppclass device_buffer:
         device_buffer()
-        device_buffer(size_t size)
-        device_buffer(size_t size, cudaStream_t stream)
-        device_buffer(const void* source_data, size_t size)
+        device_buffer(size_t size) except +
+        device_buffer(size_t size, cudaStream_t stream) except +
+        device_buffer(const void* source_data, size_t size) except +
         device_buffer(const void* source_data,
-                      size_t size, cudaStream_t stream)
-        device_buffer(const device_buffer& other)
-        void resize(size_t new_size)
-        void shrink_to_fit()
+                      size_t size, cudaStream_t stream) except +
+        device_buffer(const device_buffer& other) except +
+        void resize(size_t new_size) except +
+        void shrink_to_fit() except +
         void* data()
         size_t size()
         size_t capacity()
 
-    void copy_to_host(const device_buffer& db, void* hb) except *
+    void copy_to_host(const device_buffer& db, void* hb) except +
     void copy_to_host(const device_buffer& db,
                       void* hb,
-                      cudaStream_t stream) except *
+                      cudaStream_t stream) except +
 
 cdef class DeviceBuffer:
     cdef unique_ptr[device_buffer] c_obj
