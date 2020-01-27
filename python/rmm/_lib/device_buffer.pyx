@@ -25,6 +25,8 @@ from cpython.bytes cimport PyBytes_FromStringAndSize, PyBytes_AS_STRING
 from rmm._lib.lib cimport (cudaError_t, cudaSuccess,
                            cudaStream_t, cudaStreamSynchronize)
 
+cimport cython
+
 
 cdef class DeviceBuffer:
 
@@ -79,17 +81,36 @@ cdef class DeviceBuffer:
         buf.c_obj = move(ptr)
         return buf
 
+    @staticmethod
+    @cython.boundscheck(False)
+    cdef DeviceBuffer c_frombytes(const unsigned char[::1] b,
+                                  uintptr_t stream=0):
+        if b is None:
+            raise TypeError(
+                "Argument 'b' has incorrect type"
+                " (expected bytes, got NoneType)"
+            )
+
+        cdef uintptr_t p = <uintptr_t>&b[0]
+        cdef size_t s = len(b)
+        return DeviceBuffer(ptr=p, size=s, stream=stream)
+
+    @staticmethod
+    def frombytes(const unsigned char[::1] b, uintptr_t stream=0):
+        return DeviceBuffer.c_frombytes(b, stream)
+
     cpdef bytes tobytes(self, uintptr_t stream=0):
         cdef const device_buffer* dbp = self.c_obj.get()
         cdef size_t s = dbp.size()
         if s == 0:
             return b""
 
-        cdef cudaStream_t c_stream = <cudaStream_t>stream
         cdef bytes b = PyBytes_FromStringAndSize(NULL, s)
         cdef void* p = <void*>PyBytes_AS_STRING(b)
+        cdef cudaStream_t c_stream
         cdef cudaError_t err
         with nogil:
+            c_stream = <cudaStream_t>stream
             copy_to_host(dbp[0], p, c_stream)
             err = cudaStreamSynchronize(c_stream)
         if err != cudaSuccess:

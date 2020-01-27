@@ -112,10 +112,55 @@ def test_rmm_device_buffer(size):
     assert isinstance(s, bytes)
     assert len(s) == len(b)
 
+    # Test conversion from bytes
+    b2 = rmm.DeviceBuffer.frombytes(s)
+    assert isinstance(b2, rmm.DeviceBuffer)
+    assert len(b2) == len(s)
+
     # Test resizing
     b.resize(2)
     assert b.size == 2
     assert b.capacity() >= b.size
+
+
+@pytest.mark.parametrize(
+    "hb",
+    [
+        None,
+        "abc",
+        123,
+        b"",
+        np.ones((2,), "u2"),
+        np.ones((2, 2), "u1"),
+        np.ones(4, "u1")[::2],
+        b"abc",
+        bytearray(b"abc"),
+        memoryview(b"abc"),
+        np.asarray(memoryview(b"abc")),
+        np.arange(3, dtype="u1"),
+    ],
+)
+def test_rmm_device_buffer_bytes_roundtrip(hb):
+    try:
+        mv = memoryview(hb)
+    except TypeError:
+        with pytest.raises(TypeError):
+            rmm.DeviceBuffer.frombytes(hb)
+    else:
+        if mv.format != "B":
+            with pytest.raises(ValueError):
+                rmm.DeviceBuffer.frombytes(hb)
+        elif len(mv.strides) != 1:
+            with pytest.raises(ValueError):
+                rmm.DeviceBuffer.frombytes(hb)
+        elif mv.strides[0] != 1:
+            with pytest.raises(ValueError):
+                rmm.DeviceBuffer.frombytes(hb)
+        else:
+            db = rmm.DeviceBuffer.frombytes(hb)
+            hb2 = db.tobytes()
+            mv2 = memoryview(hb2)
+            assert mv == mv2
 
 
 def test_rmm_cupy_allocator():

@@ -2,6 +2,7 @@
 
 ## New Features
 
+- PR #253 Add `frombytes` to convert `bytes`-like to `DeviceBuffer`
 - PR #252 Add `__sizeof__` method to `DeviceBuffer`
 
 ## Improvements
