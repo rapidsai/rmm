@@ -65,9 +65,10 @@ cdef class DeviceBuffer:
 
         cdef bytes b = PyBytes_FromStringAndSize(NULL, s)
         cdef void* p = <void*>PyBytes_AS_STRING(b)
-        cdef cudaStream_t c_stream = <cudaStream_t>stream
+        cdef cudaStream_t c_stream
         cdef cudaError_t err
         with nogil:
+            c_stream = <cudaStream_t>stream
             copy_to_host(dbp[0], p, c_stream)
             err = cudaStreamSynchronize(c_stream)
         if err != cudaSuccess:
