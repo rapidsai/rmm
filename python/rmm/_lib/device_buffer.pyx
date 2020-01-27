@@ -13,11 +13,11 @@ cdef class DeviceBuffer:
                   uintptr_t ptr=0,
                   size_t size=0,
                   uintptr_t stream=0):
-        cdef void* c_ptr
+        cdef const void* c_ptr
         cdef cudaStream_t c_stream
 
         with nogil:
-            c_ptr = <void*>ptr
+            c_ptr = <const void*>ptr
             c_stream = <cudaStream_t>stream
 
             if c_ptr == NULL:
