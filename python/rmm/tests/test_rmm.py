@@ -110,6 +110,11 @@ def test_rmm_device_buffer(size):
     assert isinstance(s, bytes)
     assert len(s) == len(b)
 
+    # Test conversion from bytes
+    b2 = rmm.DeviceBuffer.frombytes(s)
+    assert isinstance(b2, rmm.DeviceBuffer)
+    assert len(b2) == len(s)
+
     # Test resizing
     b.resize(2)
     assert b.size == 2
