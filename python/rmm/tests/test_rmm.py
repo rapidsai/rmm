@@ -121,11 +121,22 @@ def test_rmm_device_buffer(size):
     assert b.capacity() >= b.size
 
 
-@pytest.mark.parametrize("hb", [
-    None, "abc", 123, b"",
-    np.ones((2,), "u2"), np.ones((2, 2), "u1"), np.ones(4, "u1")[::2],
-    b"abc", bytearray(b"abc"), memoryview(b"abc"), np.arange(3, dtype="u1")
-])
+@pytest.mark.parametrize(
+    "hb",
+    [
+        None,
+        "abc",
+        123,
+        b"",
+        np.ones((2,), "u2"),
+        np.ones((2, 2), "u1"),
+        np.ones(4, "u1")[::2],
+        b"abc",
+        bytearray(b"abc"),
+        memoryview(b"abc"),
+        np.arange(3, dtype="u1"),
+    ],
+)
 def test_rmm_device_buffer_bytes_roundtrip(hb):
     try:
         mv = memoryview(hb)
