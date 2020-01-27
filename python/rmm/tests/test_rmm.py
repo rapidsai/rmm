@@ -136,6 +136,7 @@ def test_rmm_device_buffer(size):
         b"abc",
         bytearray(b"abc"),
         memoryview(b"abc"),
+        np.asarray(memoryview(b"abc")),
         np.arange(3, dtype="u1"),
     ],
 )
