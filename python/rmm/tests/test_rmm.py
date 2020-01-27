@@ -121,6 +121,17 @@ def test_rmm_device_buffer(size):
     assert b.capacity() >= b.size
 
 
+@pytest.mark.parametrize("hb", [None, u"abc", 123, b"", b"abc"])
+def test_rmm_device_buffer_bytes_roundtrip(hb):
+    if isinstance(hb, bytes):
+        db = rmm.DeviceBuffer.frombytes(hb)
+        hb2 = db.tobytes()
+        assert hb == hb2
+    else:
+        with pytest.raises(TypeError):
+            rmm.DeviceBuffer.frombytes(hb)
+
+
 def test_rmm_cupy_allocator():
     cupy = pytest.importorskip("cupy")
 
