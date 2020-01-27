@@ -2,6 +2,8 @@
 
 ## New Features
 
+- PR #252 Add `__sizeof__` method to `DeviceBuffer`
+
 ## Improvements
 
 - PR #246 Type `DeviceBuffer` arguments to `__cinit__`
