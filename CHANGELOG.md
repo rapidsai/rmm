@@ -17,6 +17,7 @@
 
 ## Bug Fixes
 
+- PR #259 Skip copy `rmm::device_buffer` when it is trivial
 
 # RMM 0.12.0 (Date TBD)
 
