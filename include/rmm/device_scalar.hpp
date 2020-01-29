@@ -17,8 +17,8 @@
 #pragma once
 
 #include <rmm/device_buffer.hpp>
-#include <rmm/mr/default_memory_resource.hpp>
-#include <rmm/mr/device_memory_resource.hpp>
+#include <rmm/mr/device/default_memory_resource.hpp>
+#include <rmm/mr/device/device_memory_resource.hpp>
 
 namespace rmm {
 
