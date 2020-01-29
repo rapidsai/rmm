@@ -52,6 +52,9 @@ cdef class DeviceBuffer:
     def __sizeof__(self):
         return self.size
 
+    def __bytes__(self):
+        return self.tobytes()
+
     @property
     def nbytes(self):
         return self.size

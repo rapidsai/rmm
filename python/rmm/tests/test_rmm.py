@@ -162,6 +162,9 @@ def test_rmm_device_buffer_bytes_roundtrip(hb):
             hb2 = db.tobytes()
             mv2 = memoryview(hb2)
             assert mv == mv2
+            hb3 = bytes(db)
+            mv3 = memoryview(hb3)
+            assert mv == mv3
 
 
 @pytest.mark.parametrize("hb", [b"", b"123", b"abc"])
