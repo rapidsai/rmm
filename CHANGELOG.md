@@ -6,6 +6,7 @@
 - PR #252 Add `__sizeof__` method to `DeviceBuffer`
 - PR #258 Define pickling behavior for `DeviceBuffer`
 - PR #261 Add `__bytes__` method to `DeviceBuffer`
+- PR #262 Moved device memory resource files to `mr/device` directory
 
 ## Improvements
 
