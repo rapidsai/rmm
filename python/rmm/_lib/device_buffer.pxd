@@ -45,7 +45,7 @@ cdef class DeviceBuffer:
     cdef DeviceBuffer c_from_unique_ptr(unique_ptr[device_buffer] ptr)
 
     @staticmethod
-    cdef DeviceBuffer c_frombytes(const unsigned char[::1] b,
+    cdef DeviceBuffer c_to_device(const unsigned char[::1] b,
                                   uintptr_t stream=*)
     cpdef copy_to_host(self, unsigned char[::1] hb=*, uintptr_t stream=*)
     cpdef bytes tobytes(self, uintptr_t stream=*)

@@ -114,7 +114,7 @@ def test_rmm_device_buffer(size):
     assert len(s) == len(b)
 
     # Test conversion from bytes
-    b2 = rmm.DeviceBuffer.frombytes(s)
+    b2 = rmm.DeviceBuffer.to_device(s)
     assert isinstance(b2, rmm.DeviceBuffer)
     assert len(b2) == len(s)
 
@@ -136,7 +136,7 @@ def test_rmm_device_buffer(size):
 )
 def test_rmm_device_buffer_memoryview_roundtrip(hb):
     mv = memoryview(hb)
-    db = rmm.DeviceBuffer.frombytes(hb)
+    db = rmm.DeviceBuffer.to_device(hb)
     hb2 = db.copy_to_host()
     mv2 = memoryview(hb2)
     assert mv == mv2
@@ -172,19 +172,19 @@ def test_rmm_device_buffer_bytes_roundtrip(hb):
         mv = memoryview(hb)
     except TypeError:
         with pytest.raises(TypeError):
-            rmm.DeviceBuffer.frombytes(hb)
+            rmm.DeviceBuffer.to_device(hb)
     else:
         if mv.format != "B":
             with pytest.raises(ValueError):
-                rmm.DeviceBuffer.frombytes(hb)
+                rmm.DeviceBuffer.to_device(hb)
         elif len(mv.strides) != 1:
             with pytest.raises(ValueError):
-                rmm.DeviceBuffer.frombytes(hb)
+                rmm.DeviceBuffer.to_device(hb)
         elif mv.strides[0] != 1:
             with pytest.raises(ValueError):
-                rmm.DeviceBuffer.frombytes(hb)
+                rmm.DeviceBuffer.to_device(hb)
         else:
-            db = rmm.DeviceBuffer.frombytes(hb)
+            db = rmm.DeviceBuffer.to_device(hb)
             hb2 = db.tobytes()
             mv2 = memoryview(hb2)
             assert mv == mv2
@@ -195,7 +195,7 @@ def test_rmm_device_buffer_bytes_roundtrip(hb):
 
 @pytest.mark.parametrize("hb", [b"", b"123", b"abc"])
 def test_rmm_device_buffer_pickle_roundtrip(hb):
-    db = rmm.DeviceBuffer.frombytes(hb)
+    db = rmm.DeviceBuffer.to_device(hb)
     pb = pickle.dumps(db)
     del db
     db2 = pickle.loads(pb)

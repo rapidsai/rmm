@@ -76,7 +76,7 @@ cdef class DeviceBuffer:
         return self.tobytes()
 
     def __setstate__(self, state):
-        cdef DeviceBuffer other = DeviceBuffer.c_frombytes(state)
+        cdef DeviceBuffer other = DeviceBuffer.c_to_device(state)
         self.c_obj = move(other.c_obj)
 
     @property
@@ -98,7 +98,7 @@ cdef class DeviceBuffer:
 
     @staticmethod
     @cython.boundscheck(False)
-    cdef DeviceBuffer c_frombytes(const unsigned char[::1] b,
+    cdef DeviceBuffer c_to_device(const unsigned char[::1] b,
                                   uintptr_t stream=0):
         if b is None:
             raise TypeError(
@@ -111,8 +111,8 @@ cdef class DeviceBuffer:
         return DeviceBuffer(ptr=p, size=s, stream=stream)
 
     @staticmethod
-    def frombytes(const unsigned char[::1] b, uintptr_t stream=0):
-        return DeviceBuffer.c_frombytes(b, stream)
+    def to_device(const unsigned char[::1] b, uintptr_t stream=0):
+        return DeviceBuffer.c_to_device(b, stream)
 
     cpdef copy_to_host(self, unsigned char[::1] hb=None, uintptr_t stream=0):
         cdef const device_buffer* dbp = self.c_obj.get()
