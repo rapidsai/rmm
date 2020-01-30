@@ -201,8 +201,12 @@ def to_device(ary, stream=0, copy=True, to=None):
     Clone of Numba `cuda.to_device`, but uses RMM for device memory management.
     """
     if to is None:
-        to = device_array_like(ary, stream=stream)
-        to.copy_to_device(ary, stream=stream)
+        if ary.flags.c_contiguous and ary.flags.f_contiguous:
+            to = librmm.DeviceBuffer.frombytes(ary.view("u1"), stream=stream)
+            to = cuda.as_cuda_array(to).view(ary.dtype)
+        else:
+            to = device_array_like(ary, stream=stream)
+            to.copy_to_device(ary, stream=stream)
         return to
     if copy:
         to.copy_to_device(ary, stream=stream)

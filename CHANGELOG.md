@@ -15,6 +15,7 @@
 - PR #256 Cast through `uintptr_t` to `cudaStream_t`
 - PR #254 Use `const void*` in `DeviceBuffer.__cinit__`
 - PR #257 Mark Cython-exposed C++ functions that raise
+- PR #264 Copy 1D contiguous data to `DeviceBuffer` directly
 
 ## Bug Fixes
 
