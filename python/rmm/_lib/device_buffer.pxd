@@ -56,6 +56,7 @@ cdef class DeviceBuffer:
     cdef void* c_data(self)
 
 
+cpdef DeviceBuffer to_device(const unsigned char[::1] b, uintptr_t stream=*)
 cpdef void copy_to_host(uintptr_t db,
                         unsigned char[::1] hb,
                         uintptr_t stream=*) nogil except *

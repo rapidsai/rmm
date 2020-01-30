@@ -96,22 +96,13 @@ cdef class DeviceBuffer:
         return buf
 
     @staticmethod
-    @cython.boundscheck(False)
     cdef DeviceBuffer c_to_device(const unsigned char[::1] b,
                                   uintptr_t stream=0):
-        if b is None:
-            raise TypeError(
-                "Argument 'b' has incorrect type"
-                " (expected bytes, got NoneType)"
-            )
-
-        cdef uintptr_t p = <uintptr_t>&b[0]
-        cdef size_t s = len(b)
-        return DeviceBuffer(ptr=p, size=s, stream=stream)
+        return to_device(b, stream)
 
     @staticmethod
     def to_device(const unsigned char[::1] b, uintptr_t stream=0):
-        return DeviceBuffer.c_to_device(b, stream)
+        return to_device(b, stream)
 
     cpdef copy_to_host(self, unsigned char[::1] hb=None, uintptr_t stream=0):
         cdef const device_buffer* dbp = self.c_obj.get()
@@ -158,6 +149,19 @@ cdef class DeviceBuffer:
 
     cdef void* c_data(self):
         return self.c_obj.get()[0].data()
+
+
+@cython.boundscheck(False)
+cpdef DeviceBuffer to_device(const unsigned char[::1] b, uintptr_t stream=0):
+    if b is None:
+        raise TypeError(
+            "Argument 'b' has incorrect type"
+            " (expected bytes, got NoneType)"
+        )
+
+    cdef uintptr_t p = <uintptr_t>&b[0]
+    cdef size_t s = len(b)
+    return DeviceBuffer(ptr=p, size=s, stream=stream)
 
 
 @cython.boundscheck(False)
