@@ -122,7 +122,7 @@ cdef class DeviceBuffer:
             hb = np.empty((s,), dtype="u1")
         elif len(hb) < s:
             raise ValueError(
-                "Argument `hb` is to small. Need space for %i bytes." % s
+                "Argument `hb` is too small. Need space for %i bytes." % s
             )
         elif len(hb) > s:
             hb = hb[:s]
