@@ -115,7 +115,7 @@ TYPED_TEST(DeviceBufferTest, CopyToRawHostPointer) {
   rmm::device_buffer buff(this->size);
   std::vector<uint8_t> host_data(this->size);
   uint8_t* host_data_ptr = host_data.data();
-  rmm::copy_to_host(buff, host_data_ptr);
+  rmm::copy_to_host(buff.data(), host_data_ptr, buff.size());
   EXPECT_EQ(0, buff.stream());
   // TODO check for equality between the contents of the two allocations
 }

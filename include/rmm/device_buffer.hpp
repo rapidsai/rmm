@@ -400,9 +400,10 @@ class device_buffer {
  *
  * @throws std::runtime_error if `hb` is `nullptr` or copy fails
  *
- * @param db `rmm::device_buffer` to copy to host
+ * @param db device allocated buffer to copy to host
  * @param hb host allocated buffer to copy data to
+ * @param s number of bytes to copy
  * @param stream CUDA stream on which the device to host copy will be performed
  *-------------------------------------------------------------------------**/
-void copy_to_host(const device_buffer& db, void* hb, cudaStream_t stream = 0);
+void copy_to_host(const void* db, void* hb, size_t s, cudaStream_t stream = 0);
 }  // namespace rmm

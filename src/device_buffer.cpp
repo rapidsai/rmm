@@ -17,13 +17,16 @@
 #include <rmm/device_buffer.hpp>
 
 namespace rmm {
-void copy_to_host(const device_buffer& db, void* hb, cudaStream_t stream) {
+void copy_to_host(const void* db, void* hb, size_t s, cudaStream_t stream) {
+  if (db == nullptr) {
+    throw std::runtime_error{"Cannot copy from `nullptr`."};
+  }
   if (hb == nullptr) {
     throw std::runtime_error{"Cannot copy to `nullptr`."};
   }
   cudaError_t err = cudaMemcpyAsync(hb,
-                                    db.data(),
-                                    db.size(),
+                                    db,
+                                    s,
                                     cudaMemcpyDeviceToHost,
                                     stream);
   if (err != cudaSuccess) {
