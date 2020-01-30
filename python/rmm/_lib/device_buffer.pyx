@@ -27,8 +27,6 @@ from rmm._lib.lib cimport (cudaError_t, cudaSuccess,
 
 cimport cython
 
-import warnings
-
 
 cdef class DeviceBuffer:
 
