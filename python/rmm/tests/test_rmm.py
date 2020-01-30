@@ -98,6 +98,9 @@ def test_rmm_device_buffer(size):
     assert b.capacity() >= b.size
     assert sys.getsizeof(b) == b.size
 
+    # Test __cuda_memory__
+    assert b.__cuda_memory__ is True
+
     # Test `__cuda_array_interface__`
     keyset = {"data", "shape", "strides", "typestr", "version"}
     assert isinstance(b.__cuda_array_interface__, dict)
