@@ -43,7 +43,7 @@ cdef extern from "rmm/device_buffer.hpp" namespace "rmm" nogil:
                       cudaStream_t stream) except +
 
 cdef class DeviceBuffer:
-    cdef readonly bint __cuda_memory__ = True
+    cdef readonly bint __cuda_memory__
     cdef unique_ptr[device_buffer] c_obj
 
     @staticmethod

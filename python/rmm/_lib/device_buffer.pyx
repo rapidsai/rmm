@@ -46,6 +46,8 @@ cdef class DeviceBuffer:
             else:
                 self.c_obj.reset(new device_buffer(c_ptr, size, c_stream))
 
+            self.__cuda_memory__ = True
+
     def __len__(self):
         return self.size
 
