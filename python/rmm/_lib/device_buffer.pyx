@@ -121,7 +121,7 @@ cdef class DeviceBuffer:
         cdef cudaError_t err
         with nogil:
             c_stream = <cudaStream_t>stream
-            copy_to_host(dbp.data(), p, s, c_stream)
+            cpp_copy_to_host(dbp.data(), p, s, c_stream)
             err = cudaStreamSynchronize(c_stream)
         if err != cudaSuccess:
             raise RuntimeError(f"Stream sync failed with error: {err}")
