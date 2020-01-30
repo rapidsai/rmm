@@ -27,6 +27,8 @@ from rmm._lib.lib cimport (cudaError_t, cudaSuccess,
 
 cimport cython
 
+import warnings
+
 
 cdef class DeviceBuffer:
 
@@ -139,3 +141,22 @@ cdef class DeviceBuffer:
 
     cdef void* c_data(self):
         return self.c_obj.get()[0].data()
+
+
+@cython.boundscheck(False)
+cpdef void copy_to_host(uintptr_t db,
+                        unsigned char[::1] hb,
+                        uintptr_t stream) nogil except *:
+    if hb is None:
+        with gil:
+            raise TypeError(
+                "Argument `hb` has incorrect type"
+                " (expected bytes-like, got NoneType)"
+            )
+
+    cpp_copy_to_host(<void*>db, <void*>&hb[0], len(hb), <cudaStream_t>stream)
+
+    cdef cudaError_t err = cudaStreamSynchronize(<cudaStream_t>stream)
+    if err != cudaSuccess:
+        with gil:
+            raise RuntimeError(f"Stream sync failed with error: {err}")

@@ -62,5 +62,10 @@ cdef class DeviceBuffer:
     cdef void* c_data(self)
 
 
+cpdef void copy_to_host(uintptr_t db,
+                        unsigned char[::1] hb,
+                        uintptr_t stream) nogil except *
+
+
 cdef extern from "<utility>" namespace "std" nogil:
     cdef unique_ptr[device_buffer] move(unique_ptr[device_buffer])
