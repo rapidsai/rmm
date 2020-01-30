@@ -118,15 +118,10 @@ cdef class DeviceBuffer:
             return b""
 
         cdef bytes b = PyBytes_FromStringAndSize(NULL, s)
-        cdef void* p = <void*>PyBytes_AS_STRING(b)
-        cdef cudaStream_t c_stream
-        cdef cudaError_t err
+        cdef unsigned char* p = <unsigned char*>PyBytes_AS_STRING(b)
+        cdef unsigned char[::1] mv = <unsigned char[:s:1]>p
         with nogil:
-            c_stream = <cudaStream_t>stream
-            cpp_copy_to_host(dbp.data(), p, s, c_stream)
-            err = cudaStreamSynchronize(c_stream)
-        if err != cudaSuccess:
-            raise RuntimeError(f"Stream sync failed with error: {err}")
+            copy_to_host(<uintptr_t>dbp.data(), mv, stream)
 
         return b
 
