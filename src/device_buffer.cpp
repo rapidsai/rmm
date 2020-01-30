@@ -18,6 +18,9 @@
 
 namespace rmm {
 void copy_to_host(const void* db, void* hb, size_t s, cudaStream_t stream) {
+  if (s == 0) {
+    return;
+  }
   if (db == nullptr) {
     throw std::runtime_error{"Cannot copy from `nullptr`."};
   }
