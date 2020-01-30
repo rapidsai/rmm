@@ -17,6 +17,11 @@
 # cython: embedsignature = True
 # cython: language_level = 3
 
+
+import warnings
+
+import numpy as np
+
 from libcpp.memory cimport unique_ptr
 from libc.stdint cimport uintptr_t
 
@@ -108,6 +113,27 @@ cdef class DeviceBuffer:
     @staticmethod
     def frombytes(const unsigned char[::1] b, uintptr_t stream=0):
         return DeviceBuffer.c_frombytes(b, stream)
+
+    cpdef copy_to_host(self, unsigned char[::1] hb, uintptr_t stream=0):
+        cdef const device_buffer* dbp = self.c_obj.get()
+        cdef size_t s = dbp.size()
+
+        if hb is None:
+            hb = np.empty((s,), dtype="u1")
+        elif len(hb) < s:
+            raise ValueError(
+                "Argument `hb` is to small. Need space for %i bytes." % s
+            )
+        elif len(hb) > s:
+            hb = hb[:s]
+            warnings.warn(
+                "Argument `hb` larger than needed."
+                " Will fill only first %i bytes." % s,
+                RuntimeWarning
+            )
+
+        with nogil:
+            copy_to_host(<uintptr_t>dbp.data(), hb, stream)
 
     cpdef bytes tobytes(self, uintptr_t stream=0):
         cdef const device_buffer* dbp = self.c_obj.get()
