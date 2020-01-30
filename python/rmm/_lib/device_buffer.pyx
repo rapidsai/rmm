@@ -114,7 +114,7 @@ cdef class DeviceBuffer:
     def frombytes(const unsigned char[::1] b, uintptr_t stream=0):
         return DeviceBuffer.c_frombytes(b, stream)
 
-    cpdef copy_to_host(self, unsigned char[::1] hb, uintptr_t stream=0):
+    cpdef copy_to_host(self, unsigned char[::1] hb=None, uintptr_t stream=0):
         cdef const device_buffer* dbp = self.c_obj.get()
         cdef size_t s = dbp.size()
 
@@ -135,6 +135,8 @@ cdef class DeviceBuffer:
         with nogil:
             copy_to_host(<uintptr_t>dbp.data(), hb, stream)
 
+        return hb
+
     cpdef bytes tobytes(self, uintptr_t stream=0):
         cdef const device_buffer* dbp = self.c_obj.get()
         cdef size_t s = dbp.size()
@@ -142,8 +144,7 @@ cdef class DeviceBuffer:
         cdef bytes b = PyBytes_FromStringAndSize(NULL, s)
         cdef unsigned char* p = <unsigned char*>PyBytes_AS_STRING(b)
         cdef unsigned char[::1] mv = (<unsigned char[:(s + 1):1]>p)[:s]
-        with nogil:
-            copy_to_host(<uintptr_t>dbp.data(), mv, stream)
+        self.copy_to_host(mv, stream)
 
         return b
 
