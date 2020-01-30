@@ -109,7 +109,6 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
 
 add_library(rmm SHARED
             src/rmm.cpp
-            src/device_buffer.cpp
             src/memory_manager.cpp
             thirdparty/cnmem/src/cnmem.cpp
             src/mr/default_memory_resource.cpp)

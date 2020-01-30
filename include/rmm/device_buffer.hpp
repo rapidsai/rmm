@@ -392,18 +392,4 @@ class device_buffer {
       mr::get_default_resource()};  ///< The memory resource used to
                                     ///< allocate/deallocate device memory
 };
-
-/**--------------------------------------------------------------------------*
- * @brief Copies rmm::device_buffer to a preallocated host buffer.
- *
- * Copies device memory asynchronously on the specified stream
- *
- * @throws std::runtime_error if `hb` is `nullptr` or copy fails
- *
- * @param db device allocated buffer to copy to host
- * @param hb host allocated buffer to copy data to
- * @param s number of bytes to copy
- * @param stream CUDA stream on which the device to host copy will be performed
- *-------------------------------------------------------------------------**/
-void copy_to_host(const void* db, void* hb, size_t s, cudaStream_t stream = 0);
 }  // namespace rmm
