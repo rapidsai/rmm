@@ -114,12 +114,10 @@ cdef class DeviceBuffer:
     cpdef bytes tobytes(self, uintptr_t stream=0):
         cdef const device_buffer* dbp = self.c_obj.get()
         cdef size_t s = dbp.size()
-        if s == 0:
-            return b""
 
         cdef bytes b = PyBytes_FromStringAndSize(NULL, s)
         cdef unsigned char* p = <unsigned char*>PyBytes_AS_STRING(b)
-        cdef unsigned char[::1] mv = <unsigned char[:s:1]>p
+        cdef unsigned char[::1] mv = (<unsigned char[:(s + 1):1]>p)[:s]
         with nogil:
             copy_to_host(<uintptr_t>dbp.data(), mv, stream)
 
