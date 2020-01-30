@@ -147,9 +147,15 @@ cpdef void copy_to_host(uintptr_t db,
                 " (expected bytes-like, got NoneType)"
             )
 
-    cpp_copy_to_host(<void*>db, <void*>&hb[0], len(hb), <cudaStream_t>stream)
+    cdef cudaError_t err
 
-    cdef cudaError_t err = cudaStreamSynchronize(<cudaStream_t>stream)
+    err = cudaMemcpyAsync(<void*>&hb[0], <const void*>db, len(hb),
+                          cudaMemcpyDeviceToHost, <cudaStream_t>stream)
+    if err != cudaSuccess:
+        with gil:
+            raise RuntimeError(f"Memcpy failed with error: {err}")
+
+    err = cudaStreamSynchronize(<cudaStream_t>stream)
     if err != cudaSuccess:
         with gil:
             raise RuntimeError(f"Stream sync failed with error: {err}")

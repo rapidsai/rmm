@@ -20,7 +20,7 @@
 from libcpp.memory cimport unique_ptr
 from libc.stdint cimport uintptr_t
 
-from rmm._lib.lib cimport cudaStream_t
+from rmm._lib.lib cimport cudaStream_t, cudaMemcpyAsync, cudaMemcpyDeviceToHost
 
 cdef extern from "rmm/device_buffer.hpp" namespace "rmm" nogil:
     cdef cppclass device_buffer:
