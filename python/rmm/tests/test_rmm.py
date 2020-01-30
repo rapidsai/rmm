@@ -127,6 +127,32 @@ def test_rmm_device_buffer(size):
 @pytest.mark.parametrize(
     "hb",
     [
+        b"abc",
+        bytearray(b"abc"),
+        memoryview(b"abc"),
+        np.asarray(memoryview(b"abc")),
+        np.arange(3, dtype="u1"),
+    ],
+)
+def test_rmm_device_buffer_memoryview_roundtrip(hb):
+        mv = memoryview(hb)
+        db = rmm.DeviceBuffer.frombytes(hb)
+        hb2 = db.copy_to_host()
+        mv2 = memoryview(hb2)
+        assert mv == mv2
+        hb3 = bytearray(mv.nbytes)
+        hb3 = db.copy_to_host(hb3)
+        mv3 = memoryview(hb3)
+        assert mv == mv3
+        hb4 = np.empty_like(mv)
+        hb4 = db.copy_to_host(hb4)
+        mv4 = memoryview(hb4)
+        assert mv == mv4
+
+
+@pytest.mark.parametrize(
+    "hb",
+    [
         None,
         "abc",
         123,
