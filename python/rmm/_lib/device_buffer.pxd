@@ -58,7 +58,7 @@ cdef class DeviceBuffer:
 
 cpdef void copy_to_host(uintptr_t db,
                         unsigned char[::1] hb,
-                        uintptr_t stream) nogil except *
+                        uintptr_t stream=*) nogil except *
 
 
 cdef extern from "<utility>" namespace "std" nogil:

@@ -164,7 +164,7 @@ cdef class DeviceBuffer:
 @cython.boundscheck(False)
 cpdef void copy_to_host(uintptr_t db,
                         unsigned char[::1] hb,
-                        uintptr_t stream) nogil except *:
+                        uintptr_t stream=0) nogil except *:
     if hb is None:
         with gil:
             raise TypeError(
