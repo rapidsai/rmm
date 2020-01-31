@@ -109,6 +109,8 @@ cdef class DeviceBuffer:
         cdef size_t s = dbp.size()
 
         if hb is None:
+            # NumPy leverages huge pages under-the-hood,
+            # which speeds up the copy from device to host.
             hb = np.empty((s,), dtype="u1")
         elif len(hb) < s:
             raise ValueError(
