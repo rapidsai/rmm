@@ -209,35 +209,6 @@ def to_device(ary, stream=0, copy=True, to=None):
     return to
 
 
-def auto_device(obj, stream=0, copy=True):
-    """
-    Create a DeviceRecord or DeviceArray like obj and optionally copy data from
-    host to device. If obj already represents device memory, it is returned and
-    no copy is made. Uses RMM for device memory allocation if necessary.
-    """
-    if cuda.driver.is_device_memory(obj):
-        return obj, False
-    if hasattr(obj, "__cuda_array_interface__"):
-        new_dev_array = cuda.as_cuda_array(obj)
-        # Allocate new output array using rmm and copy the numba device
-        # array to an rmm owned device array
-        out_dev_array = device_array_like(new_dev_array)
-        out_dev_array.copy_to_device(new_dev_array)
-        return out_dev_array, False
-    else:
-        if isinstance(obj, np.void):
-            devobj = cuda.devicearray.from_record_like(obj, stream=stream)
-        else:
-            if not isinstance(obj, np.ndarray):
-                obj = np.asarray(obj)
-            cuda.devicearray.sentry_contiguous(obj)
-            devobj = device_array_like(obj, stream=stream)
-
-        if copy:
-            devobj.copy_to_device(obj, stream=stream)
-        return devobj, True
-
-
 def get_ipc_handle(ary, stream=0):
     """
     Get an IPC handle from the DeviceArray ary with offset modified by

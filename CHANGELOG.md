@@ -6,6 +6,7 @@
 - PR #252 Add `__sizeof__` method to `DeviceBuffer`
 - PR #258 Define pickling behavior for `DeviceBuffer`
 - PR #261 Add `__bytes__` method to `DeviceBuffer`
+- PR #266 Drop `rmm.auto_device`
 - PR #268 Add Cython/Python `copy_to_host` and `to_device`
 
 ## Improvements
