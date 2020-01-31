@@ -119,7 +119,7 @@ cdef class DeviceBuffer:
             hb = hb[:s]
 
         with nogil:
-            copy_to_host(<uintptr_t>dbp.data(), hb, stream)
+            copy_ptr_to_host(<uintptr_t>dbp.data(), hb, stream)
 
         return hb
 
@@ -161,9 +161,9 @@ cpdef DeviceBuffer to_device(const unsigned char[::1] b, uintptr_t stream=0):
 
 
 @cython.boundscheck(False)
-cpdef void copy_to_host(uintptr_t db,
-                        unsigned char[::1] hb,
-                        uintptr_t stream=0) nogil except *:
+cpdef void copy_ptr_to_host(uintptr_t db,
+                            unsigned char[::1] hb,
+                            uintptr_t stream=0) nogil except *:
     if hb is None:
         with gil:
             raise TypeError(
