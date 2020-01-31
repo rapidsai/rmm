@@ -115,11 +115,9 @@ cdef class DeviceBuffer:
             raise ValueError(
                 "Argument `hb` is too small. Need space for %i bytes." % s
             )
-        elif len(hb) > s:
-            hb = hb[:s]
 
         with nogil:
-            copy_ptr_to_host(<uintptr_t>dbp.data(), hb, stream)
+            copy_ptr_to_host(<uintptr_t>dbp.data(), hb[:s], stream)
 
         return hb
 
