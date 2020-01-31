@@ -27,7 +27,8 @@ from libc.stdint cimport uintptr_t
 
 from cpython.bytes cimport PyBytes_FromStringAndSize, PyBytes_AS_STRING
 
-from rmm._lib.lib cimport cudaError_t, cudaSuccess, cudaStream_t
+from rmm._lib.lib cimport (cudaError_t, cudaSuccess,
+                           cudaStream_t, cudaStreamSynchronize)
 
 cimport cython
 
@@ -184,3 +185,9 @@ cpdef void copy_to_host(uintptr_t db,
     if err != cudaSuccess:
         with gil:
             raise RuntimeError(f"Memcpy failed with error: {err}")
+
+    if stream == 0:
+        err = cudaStreamSynchronize(<cudaStream_t>stream)
+        if err != cudaSuccess:
+            with gil:
+                raise RuntimeError(f"Stream sync failed with error: {err}")
