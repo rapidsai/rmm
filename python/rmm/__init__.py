@@ -20,7 +20,6 @@ from rmm.rmm import (
     _initialize,
     _make_finalizer,
     _register_atexit_finalize,
-    auto_device,
     csv_log,
     device_array,
     device_array_from_ptr,

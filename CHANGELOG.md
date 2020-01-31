@@ -7,6 +7,7 @@
 - PR #258 Define pickling behavior for `DeviceBuffer`
 - PR #261 Add `__bytes__` method to `DeviceBuffer`
 - PR #262 Moved device memory resource files to `mr/device` directory
+- PR #266 Drop `rmm.auto_device`
 
 ## Improvements
 
