@@ -18,8 +18,6 @@
 # cython: language_level = 3
 
 
-import warnings
-
 import numpy as np
 
 from libcpp.memory cimport unique_ptr
@@ -119,11 +117,6 @@ cdef class DeviceBuffer:
             )
         elif len(hb) > s:
             hb = hb[:s]
-            warnings.warn(
-                "Argument `hb` larger than needed."
-                " Will fill only first %i bytes." % s,
-                RuntimeWarning
-            )
 
         with nogil:
             copy_to_host(<uintptr_t>dbp.data(), hb, stream)
