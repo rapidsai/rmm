@@ -159,7 +159,7 @@ cpdef DeviceBuffer to_device(const unsigned char[::1] b, uintptr_t stream=0):
     if b is None:
         raise TypeError(
             "Argument 'b' has incorrect type"
-            " (expected bytes, got NoneType)"
+            " (expected bytes-like, got NoneType)"
         )
 
     cdef uintptr_t p = <uintptr_t>&b[0]
