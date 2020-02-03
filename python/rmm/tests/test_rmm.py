@@ -138,15 +138,18 @@ def test_rmm_device_buffer_memoryview_roundtrip(hb):
     mv = memoryview(hb)
     db = rmm.DeviceBuffer.to_device(hb)
     hb2 = db.copy_to_host()
+    assert isinstance(hb2, np.ndarray)
     mv2 = memoryview(hb2)
     assert mv == mv2
-    hb3 = bytearray(mv.nbytes)
-    hb3 = db.copy_to_host(hb3)
-    mv3 = memoryview(hb3)
+    hb3a = bytearray(mv.nbytes)
+    hb3b = db.copy_to_host(hb3a)
+    assert hb3a is hb3b
+    mv3 = memoryview(hb3b)
     assert mv == mv3
-    hb4 = np.empty_like(mv)
-    hb4 = db.copy_to_host(hb4)
-    mv4 = memoryview(hb4)
+    hb4a = np.empty_like(mv)
+    hb4b = db.copy_to_host(hb4a)
+    assert hb4a is hb4b
+    mv4 = memoryview(hb4b)
     assert mv == mv4
 
 
