@@ -15,11 +15,11 @@
  */
 
 #include <rmm/detail/memory_manager.hpp>
-#include <rmm/mr/cnmem_managed_memory_resource.hpp>
-#include <rmm/mr/cnmem_memory_resource.hpp>
-#include <rmm/mr/cuda_memory_resource.hpp>
-#include <rmm/mr/default_memory_resource.hpp>
-#include <rmm/mr/managed_memory_resource.hpp>
+#include <rmm/mr/device/cnmem_managed_memory_resource.hpp>
+#include <rmm/mr/device/cnmem_memory_resource.hpp>
+#include <rmm/mr/device/cuda_memory_resource.hpp>
+#include <rmm/mr/device/default_memory_resource.hpp>
+#include <rmm/mr/device/managed_memory_resource.hpp>
 
 namespace rmm {
 /** -------------------------------------------------------------------------*
