@@ -97,13 +97,34 @@ cdef class DeviceBuffer:
     @staticmethod
     cdef DeviceBuffer c_to_device(const unsigned char[::1] b,
                                   uintptr_t stream=0):
+        """Calls ``to_device`` function on arguments provided"""
         return to_device(b, stream)
 
     @staticmethod
     def to_device(const unsigned char[::1] b, uintptr_t stream=0):
+        """Calls ``to_device`` function on arguments provided"""
         return to_device(b, stream)
 
     cpdef copy_to_host(self, unsigned char[::1] hb=None, uintptr_t stream=0):
+        """Copy from a ``DeviceBuffer`` to a buffer on host
+
+        Parameters
+        ----------
+        hb : ``bytes``-like buffer to write into
+        stream : CUDA stream to use for copying, default 0
+
+        Examples
+        --------
+        >>> import rmm
+        >>> db = rmm.DeviceBuffer.to_device(b"abc")
+        >>> hb = bytearray(db.nbytes)
+        >>> db.copy_to_host(hb)
+        >>> print(hb)
+        bytearray(b'abc')
+        >>> hb = db.copy_to_host()
+        >>> print(hb)
+        bytearray(b'abc')
+        """
         cdef const device_buffer* dbp = self.c_obj.get()
         cdef size_t s = dbp.size()
 
@@ -147,6 +168,25 @@ cdef class DeviceBuffer:
 
 @cython.boundscheck(False)
 cpdef DeviceBuffer to_device(const unsigned char[::1] b, uintptr_t stream=0):
+    """Return a new ``DeviceBuffer`` with a copy of the data
+
+    Parameters
+    ----------
+    b : ``bytes``-like data on host to copy to device
+    stream : CUDA stream to use for copying, default 0
+
+    Returns
+    -------
+    ``DeviceBuffer`` with copy of data from host
+
+    Examples
+    --------
+    >>> import rmm
+    >>> db = rmm._lib.device_buffer.to_device(b"abc")
+    >>> print(bytes(db))
+    b'abc'
+    """
+
     if b is None:
         raise TypeError(
             "Argument 'b' has incorrect type"
@@ -162,6 +202,24 @@ cpdef DeviceBuffer to_device(const unsigned char[::1] b, uintptr_t stream=0):
 cpdef void copy_ptr_to_host(uintptr_t db,
                             unsigned char[::1] hb,
                             uintptr_t stream=0) nogil except *:
+    """Copy from a device pointer to a buffer on host
+
+    Parameters
+    ----------
+    db : pointer to data on device to copy
+    hb : ``bytes``-like buffer to write into
+    stream : CUDA stream to use for copying, default 0
+
+    Examples
+    --------
+    >>> import rmm
+    >>> db = rmm.DeviceBuffer.to_device(b"abc")
+    >>> hb = bytearray(db.nbytes)
+    >>> rmm._lib.device_buffer.copy_ptr_to_host(db.ptr, hb)
+    >>> print(hb)
+    bytearray(b'abc')
+    """
+
     if hb is None:
         with gil:
             raise TypeError(
