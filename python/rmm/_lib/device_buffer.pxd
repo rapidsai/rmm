@@ -47,7 +47,7 @@ cdef class DeviceBuffer:
     @staticmethod
     cdef DeviceBuffer c_to_device(const unsigned char[::1] b,
                                   uintptr_t stream=*)
-    cpdef copy_to_host(self, unsigned char[::1] hb=*, uintptr_t stream=*)
+    cpdef copy_to_host(self, ary=*, uintptr_t stream=*)
     cpdef bytes tobytes(self, uintptr_t stream=*)
 
     cdef size_t c_size(self)

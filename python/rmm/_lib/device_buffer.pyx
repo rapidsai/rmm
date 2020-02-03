@@ -105,7 +105,7 @@ cdef class DeviceBuffer:
         """Calls ``to_device`` function on arguments provided"""
         return to_device(b, stream)
 
-    cpdef copy_to_host(self, unsigned char[::1] hb=None, uintptr_t stream=0):
+    cpdef copy_to_host(self, ary=None, uintptr_t stream=0):
         """Copy from a ``DeviceBuffer`` to a buffer on host
 
         Parameters
@@ -128,10 +128,11 @@ cdef class DeviceBuffer:
         cdef const device_buffer* dbp = self.c_obj.get()
         cdef size_t s = dbp.size()
 
+        cdef unsigned char[::1] hb = ary
         if hb is None:
             # NumPy leverages huge pages under-the-hood,
             # which speeds up the copy from device to host.
-            hb = np.empty((s,), dtype="u1")
+            hb = ary = np.empty((s,), dtype="u1")
         elif len(hb) < s:
             raise ValueError(
                 "Argument `hb` is too small. Need space for %i bytes." % s
@@ -140,7 +141,7 @@ cdef class DeviceBuffer:
         with nogil:
             copy_ptr_to_host(<uintptr_t>dbp.data(), hb[:s], stream)
 
-        return hb
+        return ary
 
     cpdef bytes tobytes(self, uintptr_t stream=0):
         cdef const device_buffer* dbp = self.c_obj.get()
