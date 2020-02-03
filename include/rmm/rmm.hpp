@@ -24,7 +24,7 @@
 #define MEMORY_HPP
 #include "rmm/rmm_api.h"
 #include "rmm/detail/memory_manager.hpp"
-#include "rmm/mr/default_memory_resource.hpp"
+#include "rmm/mr/device/default_memory_resource.hpp"
 
 /** ---------------------------------------------------------------------------*
  * @brief Macro wrapper to check for error in RMM API calls.

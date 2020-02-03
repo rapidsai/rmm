@@ -111,7 +111,7 @@ add_library(rmm SHARED
             src/rmm.cpp
             src/memory_manager.cpp
             thirdparty/cnmem/src/cnmem.cpp
-            src/mr/default_memory_resource.cpp)
+            src/mr/device/default_memory_resource.cpp)
 
 # override rpath for rmm
 SET_TARGET_PROPERTIES(rmm PROPERTIES BUILD_RPATH "\$ORIGIN")
