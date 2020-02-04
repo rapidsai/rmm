@@ -214,8 +214,8 @@ cpdef void copy_ptr_to_host(uintptr_t db,
     Note
     ----
 
-    If ``stream`` is the default stream, we synchronize on it.
-    However if a non-default ``stream`` is provided, we leave
+    If ``stream`` is the default stream, it is synchronized after the copy.
+    However if a non-default ``stream`` is provided, leave
     it up to the user to synchronize.
 
     Examples
