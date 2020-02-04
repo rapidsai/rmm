@@ -78,3 +78,74 @@ def test_rmm_csv_log(dtype, nelem):
         )
         >= 0
     )
+
+
+@pytest.mark.parametrize("size", [None, 0, 5])
+def test_rmm_device_buffer(size):
+    b = rmm.DeviceBuffer(size=size)
+
+    # Test some properties
+    if size:
+        assert b.ptr != 0
+        assert b.size == size
+    else:
+        assert b.ptr == 0
+        assert b.size == 0
+    assert len(b) == b.size
+    assert b.nbytes == b.size
+    assert b.capacity() >= b.size
+
+    # Test `__cuda_array_interface__`
+    keyset = {"data", "shape", "strides", "typestr", "version"}
+    assert isinstance(b.__cuda_array_interface__, dict)
+    assert set(b.__cuda_array_interface__) == keyset
+    assert b.__cuda_array_interface__["data"] == (b.ptr, False)
+    assert b.__cuda_array_interface__["shape"] == (b.size,)
+    assert b.__cuda_array_interface__["strides"] == (1,)
+    assert b.__cuda_array_interface__["typestr"] == "|u1"
+    assert b.__cuda_array_interface__["version"] == 0
+
+    # Test conversion to bytes
+    s = b.tobytes()
+    assert isinstance(s, bytes)
+    assert len(s) == len(b)
+
+    # Test resizing
+    b.resize(2)
+    assert b.size == 2
+    assert b.capacity() >= b.size
+
+
+def test_rmm_cupy_allocator():
+    cupy = pytest.importorskip("cupy")
+
+    m = rmm.rmm_cupy_allocator(42)
+    assert m.mem.size == 42
+    assert m.mem.ptr != 0
+    assert m.mem.rmm_array is not None
+
+    m = rmm.rmm_cupy_allocator(0)
+    assert m.mem.size == 0
+    assert m.mem.ptr == 0
+    assert m.mem.rmm_array is None
+
+    cupy.cuda.set_allocator(rmm.rmm_cupy_allocator)
+    a = cupy.arange(10)
+    assert hasattr(a.data.mem, "rmm_array")
+
+
+def test_rmm_getinfo():
+    meminfo = rmm.get_info()
+    # Basic sanity checks of returned values
+    assert meminfo.free >= 0
+    assert meminfo.total >= 0
+    assert meminfo.free <= meminfo.total
+
+
+def test_rmm_getinfo_uninitialized():
+    rmm._finalize()
+
+    with pytest.raises(rmm.RMMError):
+        rmm.get_info()
+
+    rmm.reinitialize()

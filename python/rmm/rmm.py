@@ -267,6 +267,52 @@ def get_ipc_handle(ary, stream=0):
     )
 
 
+def get_info(stream=0):
+    """
+    Get the free and total bytes of memory managed by a manager associated with
+    the stream as a namedtuple with members `free` and `total`.
+    """
+    return librmm.rmm_getinfo(stream)
+
+
+try:
+    import cupy
+except Exception:
+    cupy = None
+
+if cupy:
+
+    class RMMCuPyMemory(cupy.cuda.memory.BaseMemory):
+        def __init__(self, size):
+            self.size = size
+            if size > 0:
+                self.rmm_array = librmm.device_buffer.DeviceBuffer(size=size)
+                self.ptr = self.rmm_array.ptr
+                self.device_id = cupy.cuda.runtime.pointerGetAttributes(
+                    self.ptr
+                ).device
+            else:
+                self.rmm_array = None
+                self.ptr = 0
+                self.device_id = cupy.cuda.device.get_device_id()
+
+
+def rmm_cupy_allocator(nbytes):
+    """
+    A CuPy allocator that make use of RMM.
+
+    Examples
+    --------
+    >>> import rmm
+    >>> import cupy
+    >>> cupy.cuda.set_allocator(rmm.rmm_cupy_allocator)
+    """
+    if cupy is None:
+        raise ModuleNotFoundError("No module named 'cupy'")
+
+    return cupy.cuda.memory.MemoryPointer(RMMCuPyMemory(nbytes), 0)
+
+
 def _make_finalizer(handle, stream):
     """
     Factory to make the finalizer function.

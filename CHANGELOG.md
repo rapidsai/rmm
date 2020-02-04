@@ -1,3 +1,32 @@
+# RMM 0.12.0 (04 Feb 2020)
+
+## New Features
+
+- PR #218 Add `_DevicePointer`
+- PR #219 Add method to copy `device_buffer` back to host memory
+- PR #222 Expose free and total memory in Python interface
+- PR #235 Allow construction of `DeviceBuffer` with a `stream`
+
+## Improvements
+
+- PR #214 Add codeowners
+- PR #226 Add some tests of the Python `DeviceBuffer`
+- PR #233 Reuse the same `CUDA_HOME` logic from cuDF
+- PR #234 Add missing `size_t` in `DeviceBuffer`
+- PR #239 Cleanup `DeviceBuffer`'s `__cinit__`
+- PR #242 Special case 0-size `DeviceBuffer` in `tobytes`
+- PR #244 Explicitly force `DeviceBuffer.size` to an `int`
+- PR #247 Simplify casting in `tobytes` and other cleanup
+
+## Bug Fixes
+
+- PR #215 Catch polymorphic exceptions by reference instead of by value
+- PR #221 Fix segfault calling rmmGetInfo when uninitialized
+- PR #225 Avoid invoking Python operations in c_free
+- PR #230 Fix duplicate symbol issues with `copy_to_host`
+- PR #232 Move `copy_to_host` doc back to header file
+
+
 # RMM 0.11.0 (11 Dec 2019)
 
 ## New Features
@@ -6,6 +35,7 @@
 - PR #167 Added value setter to `device_scalar`
 - PR #163 Add Cython bindings to `device_buffer`
 - PR #177 Add `__cuda_array_interface__` to `DeviceBuffer`
+- PR #198 Add `rmm.rmm_cupy_allocator()`
 
 ## Improvements
 
@@ -27,6 +57,7 @@
 - PR #182 Prefix `DeviceBuffer`'s C functions
 - PR #189 Drop `__reduce__` from `DeviceBuffer`
 - PR #193 Remove thrown exception from `rmm_allocator::deallocate`
+- PR #224 Slice the CSV log before converting to bytes
 
 
 # RMM 0.10.0 (16 Oct 2019)
@@ -179,4 +210,3 @@ RMM was initially implemented as part of cuDF, so we include the relevant change
 # cuDF 0.2.0 and cuDF 0.1.0
 
 These were initial releases of cuDF based on previously separate pyGDF and libGDF libraries. RMM was initially implemented as part of libGDF.
-

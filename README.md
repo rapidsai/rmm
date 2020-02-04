@@ -21,6 +21,17 @@ RMM is not:
 
 RMM can be installed with conda ([miniconda](https://conda.io/miniconda.html), or the full [Anaconda distribution](https://www.anaconda.com/download)) from the `rapidsai` channel:
 
+For `rmm version == 0.12` :
+```bash
+# for CUDA 10.1
+conda install -c nvidia -c rapidsai-nightly -c conda-forge -c defaults \
+    rmm=0.12 python=3.6 cudatoolkit=10.1
+
+# or, for CUDA 10.0
+conda install -c nvidia -c rapidsai-nightly -c conda-forge -c defaults \
+    rmm=0.12 python=3.6 cudatoolkit=10.0
+```
+
 For `rmm version == 0.11` :
 ```bash
 # for CUDA 10.1
@@ -30,17 +41,6 @@ conda install -c nvidia -c rapidsai -c conda-forge -c defaults \
 # or, for CUDA 10.0
 conda install -c nvidia -c rapidsai -c conda-forge -c defaults \
     rmm=0.11 python=3.6 cudatoolkit=10.0
-```
-
-For `rmm version == 0.10` :
-```bash
-# for CUDA 10.1
-conda install -c nvidia -c rapidsai -c conda-forge -c defaults \
-    rmm=0.10 python=3.6 cudatoolkit=10.1
-
-# or, for CUDA 10.0
-conda install -c nvidia -c rapidsai -c conda-forge -c defaults \
-    rmm=0.10 python=3.6 cudatoolkit=10.0
 ```
 We also provide [nightly conda packages](https://anaconda.org/rapidsai-nightly) built from the tip of our latest development branch.
 
@@ -254,7 +254,7 @@ experimental pool allocator by reinitializing RMM.
 rmm.reinitialize(
     pool_allocator=False, # default is False
     managed_memory=False, # default is False
-    initial_pool_size=2<<30, # set to 2GiB. Default is 1/2 total GPU memory
+    initial_pool_size=int(2**31), # set to 2GiB. Default is 1/2 total GPU memory
     devices=0, # GPU device  IDs to register. By default registers only GPU 0.
     logging=True, # default is False -- has perf overhead
 )
@@ -289,6 +289,17 @@ cuDF operations with device-memory-intensive computations that don't use RMM
 finalize RMM. The Mortgage E2E workflow notebook uses this technique. We are
 working on better ways to reclaim memory, as well as making RAPIDS machine
 learning libraries use the same RMM memory pool.
+
+### Memory info
+
+The amount of free and total memory managed by RMM associated with a particular
+stream can be obtained with the `get_info` function:
+
+```python
+meminfo = rmm.get_info()
+print(meminfo.free)  # E.g. "16046292992"
+print(meminfo.total) # E.g. "16914055168"
+```
 
 ### CUDA Managed Memory
 

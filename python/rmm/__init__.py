@@ -26,12 +26,15 @@ from rmm.rmm import (
     device_array_from_ptr,
     device_array_like,
     get_ipc_handle,
+    get_info,
     is_initialized,
     reinitialize,
     to_device,
+    rmm_cupy_allocator,
 )
 
 from rmm._lib.device_buffer import DeviceBuffer
+from rmm._lib.device_pointer import DevicePointer as _DevicePointer
 
 # Initialize RMM on import, finalize RMM on process exit
 _initialize()

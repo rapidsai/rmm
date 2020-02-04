@@ -15,7 +15,7 @@
 #=============================================================================
 cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 
-project(RMM VERSION 0.11.0 LANGUAGES C CXX CUDA)
+project(RMM VERSION 0.12.0 LANGUAGES C CXX CUDA)
 
 ###################################################################################################
 # - build type ------------------------------------------------------------------------------------
@@ -109,6 +109,7 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
 
 add_library(rmm SHARED
             src/rmm.cpp
+            src/device_buffer.cpp
             src/memory_manager.cpp
             thirdparty/cnmem/src/cnmem.cpp
             src/mr/default_memory_resource.cpp)

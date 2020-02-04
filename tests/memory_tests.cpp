@@ -86,6 +86,11 @@ TYPED_TEST(MemoryManagerUninitializedTest, UninitializedAllocateFree) {
     ASSERT_FAILURE(RMM_FREE(a, stream));
 }
 
+TYPED_TEST(MemoryManagerUninitializedTest, GetInfoUninitialized) {
+    size_t free, total;
+    ASSERT_FAILURE(rmmGetInfo(&free, &total, stream));
+}
+
 
 // Init / Finalize tests
 

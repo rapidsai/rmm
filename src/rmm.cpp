@@ -116,11 +116,13 @@ rmmError_t rmmGetAllocationOffset(ptrdiff_t *offset,
 // with the stream.
 rmmError_t rmmGetInfo(size_t *freeSize, size_t *totalSize, cudaStream_t stream)
 {
+  if (!rmmIsInitialized(nullptr))
+    return RMM_ERROR_NOT_INITIALIZED;
   try {
     std::pair<size_t,size_t> memInfo = rmm::mr::get_default_resource()->get_mem_info( stream);
     *freeSize = memInfo.first;
     *totalSize = memInfo.second;
-  } catch(std::runtime_error){
+  } catch(std::runtime_error const&){
     return RMM_ERROR_CUDA_ERROR;
   }
   return RMM_SUCCESS;
