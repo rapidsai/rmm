@@ -211,6 +211,13 @@ cpdef void copy_ptr_to_host(uintptr_t db,
     hb : ``bytes``-like buffer to write into
     stream : CUDA stream to use for copying, default 0
 
+    Note
+    ----
+
+    If ``stream`` is the default stream, it is synchronized after the copy.
+    However if a non-default ``stream`` is provided, this function is fully
+    asynchronous.
+
     Examples
     --------
     >>> import rmm

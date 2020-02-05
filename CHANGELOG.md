@@ -18,6 +18,7 @@
 - PR #256 Cast through `uintptr_t` to `cudaStream_t`
 - PR #254 Use `const void*` in `DeviceBuffer.__cinit__`
 - PR #257 Mark Cython-exposed C++ functions that raise
+- PR #269 Doc sync behavior in `copy_ptr_to_host`
 
 ## Bug Fixes
 
