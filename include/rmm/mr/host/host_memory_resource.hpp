@@ -29,7 +29,7 @@ namespace mr {
  * When C++17 is available for use in RMM, `rmm::host_memory_resource` should
  * inherit from `std::pmr::memory_resource`.
  *
- * This class serves as the interface that all host device memory resource
+ * This class serves as the interface that all host memory resource
  * implementations must satisfy.
  *
  * There are two private, pure virtual functions that all derived classes must
