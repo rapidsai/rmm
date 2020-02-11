@@ -10,7 +10,7 @@
 - PR #266 Drop `rmm.auto_device`
 - PR #268 Add Cython/Python `copy_to_host` and `to_device`
 - PR #273 Moved device memory resource tests to `device/` directory.
-- PR #XXX Add `copy_from_host` method to `DeviceBuffer`
+- PR #274 Add `copy_from_host` method to `DeviceBuffer`
 
 ## Improvements
 
