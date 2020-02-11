@@ -48,6 +48,17 @@ inline bool is_device_memory(void* p) {
 #endif
 }
 
+/**
+ * @brief Returns if a pointer `p` points to pinned host memory.
+ */
+inline bool is_pinned_memory(void* p) {
+  cudaPointerAttributes attributes{};
+  if (cudaSuccess != cudaPointerGetAttributes(&attributes, p)) {
+    return false;
+  }
+  return attributes.type == cudaMemoryTypeHost;
+}
+
 static constexpr std::size_t size_word{4};
 static constexpr std::size_t size_kb{std::size_t{1} << 10};
 static constexpr std::size_t size_mb{std::size_t{1} << 20};
@@ -217,4 +228,12 @@ TYPED_TEST(MRTest, AlignmentTest) {
       EXPECT_NO_THROW(this->mr->deallocate(ptr, allocation_size, alignment));
     }
   }
+}
+
+TEST(PinnedResource, isPinned) {
+  rmm::mr::pinned_memory_resource mr;
+  void* p{nullptr};
+  EXPECT_NO_THROW(p = mr.allocate(100));
+  EXPECT_TRUE(is_pinned_memory(p));
+  EXPECT_NO_THROW(mr.deallocate(p, 100));
 }
