@@ -22,6 +22,73 @@
 
 namespace rmm {
 namespace mr {
+/**
+ * @brief Allocates sufficient memory to satisfy the requested size `bytes` with
+ * alignment `alignment` using the unary callable `alloc` to allocate memory.
+ *
+ * Given a pointer `p` to an allocation of size `n` returned from the unary
+ * callable `alloc`, the pointer `q` returned from `aligned_alloc` points to the
+ * first location within the `n` bytes that satisfies `alignment`.
+ *
+ * In order to retrieve the original allocation pointer `p`, the difference
+ * between `p` and `q` is stored in the `sizeof(std::size_t)` bytes at location
+ * `q + bytes`.
+ *
+ * @param bytes The desired size of the allocation
+ * @param alignment Desired alignment of allocation
+ * @param alloc Unary callable given a size `n` will allocate at least `n` bytes
+ * of host memory.
+ * @return void* Pointer into allocation of at least `bytes` with desired
+ * `alignment`.
+ */
+template <typename A>
+void *aligned_allocate(std::size_t bytes, std::size_t alignment, A alloc) {
+  // don't allocate anything if the user requested zero bytes
+  if (0 == bytes) {
+    return nullptr;
+  }
+
+  // allocate memory for bytes, plus potential alignment correction,
+  // plus store of the correction offset
+  void *p = alloc(bytes + alignment + sizeof(std::size_t));
+
+  std::size_t ptr_int = reinterpret_cast<std::size_t>(p);
+
+  // calculate the offset, i.e. how many bytes of correction were necessary
+  // to get an aligned pointer
+  std::size_t offset =
+      (ptr_int % alignment) ? (alignment - ptr_int % alignment) : 0;
+  // calculate the return pointer
+  char *ptr = static_cast<char *>(p) + offset;
+  // store the offset right after the actually returned value
+  std::size_t *offset_store = reinterpret_cast<std::size_t *>(ptr + bytes);
+  *offset_store = offset;
+  return static_cast<void *>(ptr);
+}
+
+/**
+ * @brief
+ *
+ * @tparam D
+ * @param p
+ * @param bytes
+ * @param alignment
+ * @param dealloc
+ */
+template <typename D>
+void aligned_deallocate(void *p, std::size_t bytes, std::size_t alignment,
+                        D dealloc) {
+  (void)alignment;
+  if (nullptr == p) {
+    return;
+  }
+  char *ptr = static_cast<char *>(p);
+  // calculate where the offset is stored
+  std::size_t *offset = reinterpret_cast<std::size_t *>(ptr + bytes);
+  // calculate the original pointer
+  p = static_cast<void *>(ptr - *offset);
+  dealloc(p);
+}
 
 /**---------------------------------------------------------------------------*
  * @brief A `host_memory_resource` that uses the global `operator new` and
@@ -42,29 +109,14 @@ class new_delete_resource final : public host_memory_resource {
    * @param alignment Alignment of the allocation
    * @return void* Pointer to the newly allocated memory
    *---------------------------------------------------------------------------**/
-  void* do_allocate(std::size_t bytes, std::size_t alignment =
+  void *do_allocate(std::size_t bytes, std::size_t alignment =
                                            alignof(std::max_align_t)) override {
 #if __cplusplus >= 201703L
     return ::operator new(bytes, std::align_val_t(alignment));
 #else
-    // don't allocate anything if the user requested zero bytes
-    if (0 == bytes) {
-      return nullptr;
-    }
-    // allocate memory for bytes, plus potential alignment correction,
-    // plus store of the correction offset
-    void *p = ::operator new(bytes + alignment + sizeof(std::size_t));
-    std::size_t ptr_int = reinterpret_cast<std::size_t>(p);
-    // calculate the offset, i.e. how many bytes of correction were necessary
-    // to get an aligned pointer
-    std::size_t offset =
-        (ptr_int % alignment) ? (alignment - ptr_int % alignment) : 0;
-    // calculate the return pointer
-    char *ptr = static_cast<char *>(p) + offset;
-    // store the offset right after the actually returned value
-    std::size_t *offset_store = reinterpret_cast<std::size_t *>(ptr + bytes);
-    *offset_store = offset;
-    return static_cast<void *>(ptr);
+    return aligned_allocate(bytes, alignment, [](std::size_t size) {
+      return ::operator new(size);
+    });
 #endif
   }
 
@@ -87,21 +139,13 @@ class new_delete_resource final : public host_memory_resource {
    * @param stream Stream on which to perform deallocation
    *---------------------------------------------------------------------------**/
   void do_deallocate(
-      void* p, std::size_t bytes,
+      void *p, std::size_t bytes,
       std::size_t alignment = alignof(std::max_align_t)) override {
 #if __cplusplus >= 201703L
     ::operator delete(p, bytes, std::align_val_t(alignment));
 #else
-    (void)alignment;
-    if(nullptr == p){
-        return;
-    }
-    char *ptr = static_cast<char *>(p);
-    // calculate where the offset is stored
-    std::size_t *offset = reinterpret_cast<std::size_t *>(ptr + bytes);
-    // calculate the original pointer
-    p = static_cast<void *>(ptr - *offset);
-    ::operator delete(p);
+    aligned_deallocate(p, bytes, alignment,
+                       [](void *p) { ::operator delete(p); });
 #endif
   }
 };
