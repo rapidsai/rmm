@@ -93,6 +93,9 @@ class new_delete_resource final : public host_memory_resource {
     ::operator delete(p, bytes, std::align_val_t(alignment));
 #else
     (void)alignment;
+    if(nullptr == p){
+        return;
+    }
     char *ptr = static_cast<char *>(p);
     // calculate where the offset is stored
     std::size_t *offset = reinterpret_cast<std::size_t *>(ptr + bytes);
