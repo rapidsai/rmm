@@ -25,7 +25,8 @@
 #include <random>
 
 namespace {
-inline bool is_aligned(void* p, std::size_t alignment = alignof(std::max_align_t)) {
+inline bool is_aligned(void* p,
+                       std::size_t alignment = alignof(std::max_align_t)) {
   return (0 == reinterpret_cast<uintptr_t>(p) % alignment);
 }
 
@@ -186,5 +187,25 @@ TYPED_TEST(MRTest, MixedRandomAllocationFree) {
   for (auto a : allocations) {
     EXPECT_NO_THROW(this->mr->deallocate(a.p, a.size));
     allocations.pop_front();
+  }
+}
+
+static constexpr std::size_t MinTestedSize = 32;
+static constexpr std::size_t MaxTestedSize = 8 * 1024;
+static constexpr std::size_t TestedSizeStep = 1;
+static constexpr std::size_t MinTestedAlignment = 16;
+static constexpr std::size_t MaxTestedAlignment = 4 * 1024;
+static constexpr std::size_t TestedAlignmentShift = 1;
+
+TYPED_TEST(MRTest, AlignmentTest) {
+  for (std::size_t size = MinTestedSize; size <= MaxTestedSize;
+       size += TestedSizeStep) {
+    for (std::size_t alignment = MinTestedAlignment;
+         alignment <= MaxTestedAlignment; alignment <<= TestedAlignmentShift) {
+      void* ptr{nullptr};
+      EXPECT_NO_THROW(ptr = this->mr->allocate(size, alignment));
+      EXPECT_TRUE(is_aligned(ptr, alignment));
+      EXPECT_NO_THROW(this->mr->deallocate(ptr, size, alignment));
+    }
   }
 }
