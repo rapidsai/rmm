@@ -197,17 +197,24 @@ static constexpr std::size_t MaxTestedSize = 8 * 1024;
 static constexpr std::size_t TestedSizeStep = 1;
 static constexpr std::size_t MinTestedAlignment = 16;
 static constexpr std::size_t MaxTestedAlignment = 4 * 1024;
-static constexpr std::size_t TestedAlignmentShift = 1;
+static constexpr std::size_t TestedAlignmentMultiplier = 2;
+static constexpr std::size_t NUM_TRIALS{100};
 
 TYPED_TEST(MRTest, AlignmentTest) {
-  for (std::size_t size = MinTestedSize; size <= MaxTestedSize;
-       size += TestedSizeStep) {
+  std::default_random_engine generator(0);
+  constexpr std::size_t MAX_ALLOCATION_SIZE{10 * size_mb};
+  std::uniform_int_distribution<std::size_t> size_distribution(
+      1, MAX_ALLOCATION_SIZE);
+
+  for (std::size_t num_trials = 0; num_trials < NUM_TRIALS; ++num_trials) {
     for (std::size_t alignment = MinTestedAlignment;
-         alignment <= MaxTestedAlignment; alignment <<= TestedAlignmentShift) {
+         alignment <= MaxTestedAlignment;
+         alignment *= TestedAlignmentMultiplier) {
+      auto allocation_size = size_distribution(generator);
       void* ptr{nullptr};
-      EXPECT_NO_THROW(ptr = this->mr->allocate(size, alignment));
+      EXPECT_NO_THROW(ptr = this->mr->allocate(allocation_size, alignment));
       EXPECT_TRUE(is_aligned(ptr, alignment));
-      EXPECT_NO_THROW(this->mr->deallocate(ptr, size, alignment));
+      EXPECT_NO_THROW(this->mr->deallocate(ptr, allocation_size, alignment));
     }
   }
 }
