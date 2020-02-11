@@ -18,6 +18,7 @@
 
 #include <rmm/mr/host/host_memory_resource.hpp>
 #include <rmm/mr/host/new_delete_resource.hpp>
+#include <rmm/mr/host/pinned_memory_resource.hpp>
 
 #include <cuda_runtime_api.h>
 #include <cstddef>
@@ -70,7 +71,8 @@ struct MRTest : public ::testing::Test {
   ~MRTest() = default;
 };
 
-using resources = ::testing::Types<rmm::mr::new_delete_resource>;
+using resources = ::testing::Types<rmm::mr::new_delete_resource,
+                                   rmm::mr::pinned_memory_resource>;
 
 TYPED_TEST_CASE(MRTest, resources);
 
