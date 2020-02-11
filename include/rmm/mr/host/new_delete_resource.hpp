@@ -55,7 +55,7 @@ class new_delete_resource final : public host_memory_resource {
     // plus store of the correction offset
     void *p = ::operator new(bytes + alignment + sizeof(std::size_t));
     std::size_t ptr_int = reinterpret_cast<std::size_t>(p);
-    // calculate the offset, i.e. how many bytes of correction was necessary
+    // calculate the offset, i.e. how many bytes of correction were necessary
     // to get an aligned pointer
     std::size_t offset =
         (ptr_int % alignment) ? (alignment - ptr_int % alignment) : 0;
