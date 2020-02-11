@@ -48,6 +48,7 @@ cdef class DeviceBuffer:
     cdef DeviceBuffer c_to_device(const unsigned char[::1] b,
                                   uintptr_t stream=*)
     cpdef copy_to_host(self, ary=*, uintptr_t stream=*)
+    cpdef copy_from_host(self, ary, uintptr_t stream=*)
     cpdef bytes tobytes(self, uintptr_t stream=*)
 
     cdef size_t c_size(self)
@@ -59,6 +60,10 @@ cdef class DeviceBuffer:
 cpdef DeviceBuffer to_device(const unsigned char[::1] b, uintptr_t stream=*)
 cpdef void copy_ptr_to_host(uintptr_t db,
                             unsigned char[::1] hb,
+                            uintptr_t stream=*) nogil except *
+
+cpdef void copy_host_to_ptr(const unsigned char[::1] hb,
+                            uintptr_t db,
                             uintptr_t stream=*) nogil except *
 
 

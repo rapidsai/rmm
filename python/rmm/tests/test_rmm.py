@@ -196,6 +196,26 @@ def test_rmm_device_buffer_bytes_roundtrip(hb):
             assert mv == mv3
 
 
+@pytest.mark.parametrize(
+    "hb",
+    [
+        b"abc",
+        bytearray(b"abc"),
+        memoryview(b"abc"),
+        np.asarray(memoryview(b"abc")),
+        np.array([97, 98, 99], dtype="u1"),
+    ],
+)
+def test_rmm_device_buffer_copy_from_host(hb):
+    db = rmm.DeviceBuffer.to_device(np.zeros(10, dtype="u1"))
+    db.copy_from_host(hb)
+
+    expected = np.array([97, 98, 99, 0, 0, 0, 0, 0, 0, 0], dtype="u1")
+    result = db.copy_to_host()
+
+    np.testing.assert_equal(expected, result)
+
+
 @pytest.mark.parametrize("hb", [b"", b"123", b"abc"])
 def test_rmm_device_buffer_pickle_roundtrip(hb):
     db = rmm.DeviceBuffer.to_device(hb)
