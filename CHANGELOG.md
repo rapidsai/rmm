@@ -9,6 +9,7 @@
 - PR #262 Moved device memory resource files to `mr/device` directory
 - PR #266 Drop `rmm.auto_device`
 - PR #268 Add Cython/Python `copy_to_host` and `to_device`
+- PR #272 Add `host_memory_resource`.
 
 ## Improvements
 
