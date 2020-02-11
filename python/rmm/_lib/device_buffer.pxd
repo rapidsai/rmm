@@ -20,7 +20,7 @@
 from libcpp.memory cimport unique_ptr
 from libc.stdint cimport uintptr_t
 
-from rmm._lib.lib cimport cudaStream_t
+from rmm._lib.lib cimport cudaStream_t, cudaMemcpyAsync, cudaMemcpyDeviceToHost
 
 cdef extern from "rmm/device_buffer.hpp" namespace "rmm" nogil:
     cdef cppclass device_buffer:
@@ -37,10 +37,6 @@ cdef extern from "rmm/device_buffer.hpp" namespace "rmm" nogil:
         size_t size()
         size_t capacity()
 
-    void copy_to_host(const device_buffer& db, void* hb) except +
-    void copy_to_host(const device_buffer& db,
-                      void* hb,
-                      cudaStream_t stream) except +
 
 cdef class DeviceBuffer:
     cdef unique_ptr[device_buffer] c_obj
@@ -49,14 +45,21 @@ cdef class DeviceBuffer:
     cdef DeviceBuffer c_from_unique_ptr(unique_ptr[device_buffer] ptr)
 
     @staticmethod
-    cdef DeviceBuffer c_frombytes(const unsigned char[::1] b,
+    cdef DeviceBuffer c_to_device(const unsigned char[::1] b,
                                   uintptr_t stream=*)
+    cpdef copy_to_host(self, ary=*, uintptr_t stream=*)
     cpdef bytes tobytes(self, uintptr_t stream=*)
 
     cdef size_t c_size(self)
     cpdef void resize(self, size_t new_size)
     cpdef size_t capacity(self)
     cdef void* c_data(self)
+
+
+cpdef DeviceBuffer to_device(const unsigned char[::1] b, uintptr_t stream=*)
+cpdef void copy_ptr_to_host(uintptr_t db,
+                            unsigned char[::1] hb,
+                            uintptr_t stream=*) nogil except *
 
 
 cdef extern from "<utility>" namespace "std" nogil:

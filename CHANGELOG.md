@@ -7,6 +7,8 @@
 - PR #258 Define pickling behavior for `DeviceBuffer`
 - PR #261 Add `__bytes__` method to `DeviceBuffer`
 - PR #262 Moved device memory resource files to `mr/device` directory
+- PR #266 Drop `rmm.auto_device`
+- PR #268 Add Cython/Python `copy_to_host` and `to_device`
 
 ## Improvements
 
@@ -16,6 +18,7 @@
 - PR #256 Cast through `uintptr_t` to `cudaStream_t`
 - PR #254 Use `const void*` in `DeviceBuffer.__cinit__`
 - PR #257 Mark Cython-exposed C++ functions that raise
+- PR #269 Doc sync behavior in `copy_ptr_to_host`
 
 ## Bug Fixes
 
