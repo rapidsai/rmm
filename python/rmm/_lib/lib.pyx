@@ -145,10 +145,7 @@ def rmm_csv_log():
     cdef char* buf = <char*>malloc(logsize)
 
     with nogil:
-        rmm_error = rmmGetLog(
-            <char*>buf,
-            <size_t>logsize
-        )
+        rmm_error = rmmGetLog(buf, logsize)
 
     check_error(rmm_error)
 
