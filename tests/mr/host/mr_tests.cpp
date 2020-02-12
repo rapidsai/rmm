@@ -96,7 +96,6 @@ TYPED_TEST(MRTest, SelfEquality) { EXPECT_TRUE(this->mr->is_equal(*this->mr)); }
 TYPED_TEST(MRTest, AllocateZeroBytes) {
   void* p{nullptr};
   EXPECT_NO_THROW(p = this->mr->allocate(0));
-  EXPECT_EQ(nullptr, p);
   EXPECT_NO_THROW(this->mr->deallocate(p, 0));
 }
 
