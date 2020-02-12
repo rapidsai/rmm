@@ -1,3 +1,6 @@
 [submodule "thirdparty/cnmem"]
 	path = thirdparty/cnmem
 	url = https://github.com/NVIDIA/cnmem.git
+[submodule "thirdparty/thrust"]
+	path = thirdparty/thrust
+	url = https://github.com/thrust/thrust.git
