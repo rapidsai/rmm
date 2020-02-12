@@ -17,6 +17,8 @@
 
 #include "device_memory_resource.hpp"
 
+#include <thrust/mr/disjoint_sync_pool.h>
+
 #include <stdexcept>
 
 namespace rmm {
