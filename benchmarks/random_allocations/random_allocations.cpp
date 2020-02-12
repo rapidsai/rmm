@@ -22,6 +22,8 @@
 
 #include <benchmark/benchmark.h>
 
+#include <random>
+
 namespace {
 
 struct allocation {
