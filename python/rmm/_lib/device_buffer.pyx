@@ -217,7 +217,7 @@ cdef class DeviceBuffer:
 
         if strides is not None:
             if strides[0] != dtype.itemsize:
-                raise RuntimeError(
+                raise ValueError(
                     "Only 1-D contiguous arrays are supported, got a "
                     "non-contiguous array"
                 )
