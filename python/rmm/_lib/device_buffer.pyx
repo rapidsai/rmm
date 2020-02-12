@@ -18,6 +18,9 @@
 # cython: language_level = 3
 
 
+from functools import reduce
+from operator import mul
+
 import numpy as np
 
 from libcpp.memory cimport unique_ptr
@@ -27,6 +30,7 @@ from cpython.bytes cimport PyBytes_FromStringAndSize, PyBytes_AS_STRING
 
 from rmm._lib.lib cimport (
     cudaError_t,
+    cudaMemcpyDeviceToDevice,
     cudaMemcpyDeviceToHost,
     cudaMemcpyHostToDevice,
     cudaSuccess,
@@ -179,6 +183,51 @@ cdef class DeviceBuffer:
         with nogil:
             copy_host_to_ptr(hb[:s], <uintptr_t>dbp.data(), stream)
 
+    cpdef copy_from_device(self, cuda_ary, uintptr_t stream=0):
+        """Copy from a buffer on host to ``self``
+
+        Parameters
+        ----------
+        cuda_ary : object to copy from that has ``__cuda_array_interface__``
+        stream : CUDA stream to use for copying, default 0
+
+        Examples
+        --------
+        >>> import rmm
+        >>> db = rmm.DeviceBuffer(size=5)
+        >>> db2 = rmm.DeviceBuffer.to_device(b"abc")
+        >>> db.copy_from_device(db2)
+        >>> hb = db.copy_to_host()
+        >>> print(hb)
+        array([97, 98, 99,  0,  0], dtype=uint8)
+        """
+        if not hasattr(cuda_ary, "__cuda_array_interface__"):
+            raise RuntimeError(
+                "Expected object to support `__cuda_array_interface__` "
+                "protocol"
+            )
+
+        cdef device_buffer* dbp = self.c_obj.get()
+
+        cuda_ary_interface = cuda_ary.__cuda_array_interface__
+        cdef uintptr_t src_ptr = cuda_ary_interface["data"][0]
+        cdef size_t s = (
+            reduce(mul, cuda_ary_interface["shape"])
+            * np.dtype(cuda_ary_interface["typestr"]).itemsize
+        )
+        if s > self.size:
+            raise ValueError(
+                "Argument `hb` is too large. Need space for %i bytes." % s
+            )
+
+        with nogil:
+            copy_device_to_ptr(
+                <uintptr_t>src_ptr,
+                <uintptr_t>dbp.data(),
+                s,
+                stream
+            )
+
     cpdef bytes tobytes(self, uintptr_t stream=0):
         cdef const device_buffer* dbp = self.c_obj.get()
         cdef size_t s = dbp.size()
@@ -327,6 +376,52 @@ cpdef void copy_host_to_ptr(const unsigned char[::1] hb,
 
     err = cudaMemcpyAsync(<void*>db, <const void*>&hb[0], len(hb),
                           cudaMemcpyHostToDevice, <cudaStream_t>stream)
+    if err != cudaSuccess:
+        with gil:
+            raise RuntimeError(f"Memcpy failed with error: {err}")
+
+    if stream == 0:
+        err = cudaStreamSynchronize(<cudaStream_t>stream)
+        if err != cudaSuccess:
+            with gil:
+                raise RuntimeError(f"Stream sync failed with error: {err}")
+
+
+@cython.boundscheck(False)
+cpdef void copy_device_to_ptr(uintptr_t d_src,
+                              uintptr_t d_dst,
+                              size_t count,
+                              uintptr_t stream=0) nogil except *:
+    """Copy from a host pointer to a device pointer
+
+    Parameters
+    ----------
+    d_src : pointer to data on device to copy from
+    d_dst : pointer to data on device to write into
+    stream : CUDA stream to use for copying, default 0
+
+    Note
+    ----
+
+    If ``stream`` is the default stream, it is synchronized after the copy.
+    However if a non-default ``stream`` is provided, this function is fully
+    asynchronous.
+
+    Examples
+    --------
+    >>> import rmm
+    >>> import numpy as np
+    >>> db = rmm.DeviceBuffer(size=5)
+    >>> db2 = rmm.DeviceBuffer.to_device(b"abc")
+    >>> rmm._lib.device_buffer.copy_device_to_ptr(db2.ptr, db.ptr, db2.size)
+    >>> hb = db.copy_to_host()
+    >>> print(hb)
+    array([10, 11, 12,  0,  0], dtype=uint8)
+    """
+    cdef cudaError_t err
+
+    err = cudaMemcpyAsync(<void*>d_dst, <const void*>d_src, count,
+                          cudaMemcpyDeviceToDevice, <cudaStream_t>stream)
     if err != cudaSuccess:
         with gil:
             raise RuntimeError(f"Memcpy failed with error: {err}")

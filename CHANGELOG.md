@@ -11,6 +11,7 @@
 - PR #268 Add Cython/Python `copy_to_host` and `to_device`
 - PR #273 Moved device memory resource tests to `device/` directory.
 - PR #274 Add `copy_from_host` method to `DeviceBuffer`
+- PR #XXX Add `copy_from_device` method to `DeviceBuffer`
 
 ## Improvements
 

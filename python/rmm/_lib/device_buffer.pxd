@@ -49,6 +49,7 @@ cdef class DeviceBuffer:
                                   uintptr_t stream=*)
     cpdef copy_to_host(self, ary=*, uintptr_t stream=*)
     cpdef copy_from_host(self, ary, uintptr_t stream=*)
+    cpdef copy_from_device(self, cuda_ary, uintptr_t stream=*)
     cpdef bytes tobytes(self, uintptr_t stream=*)
 
     cdef size_t c_size(self)
@@ -65,6 +66,11 @@ cpdef void copy_ptr_to_host(uintptr_t db,
 cpdef void copy_host_to_ptr(const unsigned char[::1] hb,
                             uintptr_t db,
                             uintptr_t stream=*) nogil except *
+
+cpdef void copy_device_to_ptr(uintptr_t d_src,
+                              uintptr_t d_dst,
+                              size_t count,
+                              uintptr_t stream=*) nogil except *
 
 
 cdef extern from "<utility>" namespace "std" nogil:
