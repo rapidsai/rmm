@@ -69,7 +69,7 @@ void *aligned_allocate(std::size_t bytes, std::size_t alignment, A alloc) {
 
   char *const original = static_cast<char *>(alloc(padded_allocation_size));
 
-  // account for storage of offset immediate prior to the aligned pointer
+  // account for storage of offset immediately prior to the aligned pointer
   void *aligned{original + sizeof(std::ptrdiff_t)};
 
   // std::align modifies `aligned` to point to the first aligned location
