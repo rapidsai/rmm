@@ -22,6 +22,7 @@
 - PR #254 Use `const void*` in `DeviceBuffer.__cinit__`
 - PR #257 Mark Cython-exposed C++ functions that raise
 - PR #269 Doc sync behavior in `copy_ptr_to_host`
+- PR #278 Allocate a `bytes` object to fill up with RMM log data
 
 ## Bug Fixes
 
