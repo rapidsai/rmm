@@ -51,25 +51,20 @@ class pinned_memory_resource final : public host_memory_resource {
     if (0 == bytes) {
       return nullptr;
     }
-    // allocate memory for bytes, plus potential alignment correction,
-    // plus store of the correction offset
-    void *p{nullptr};
-    auto status = cudaMallocHost(&p, (bytes + alignment + sizeof(std::size_t)));
-    if (cudaSuccess != status) {
-      throw std::bad_alloc{};
-    }
 
-    std::size_t ptr_int = reinterpret_cast<std::size_t>(p);
-    // calculate the offset, i.e. how many bytes of correction was necessary
-    // to get an aligned pointer
-    std::size_t offset =
-        (ptr_int % alignment) ? (alignment - ptr_int % alignment) : 0;
-    // calculate the return pointer
-    char *ptr = static_cast<char *>(p) + offset;
-    // store the offset right after the actually returned value
-    std::size_t *offset_store = reinterpret_cast<std::size_t *>(ptr + bytes);
-    *offset_store = offset;
-    return static_cast<void *>(ptr);
+    // If the requested alignment isn't supported, use default
+    alignment = (detail::is_supported_alignment(alignment))
+                    ? alignment
+                    : detail::RMM_DEFAULT_HOST_ALIGNMENT;
+
+    return detail::aligned_allocate(bytes, alignment, [](std::size_t size) {
+      void *p{nullptr};
+      auto status = cudaMallocHost(&p, size);
+      if (cudaSuccess != status) {
+        throw std::bad_alloc{};
+      }
+      return p;
+    });
   }
 
   /**---------------------------------------------------------------------------*
@@ -97,13 +92,10 @@ class pinned_memory_resource final : public host_memory_resource {
     if (nullptr == p) {
       return;
     }
-    char *ptr = static_cast<char *>(p);
-    // calculate where the offset is stored
-    std::size_t *offset = reinterpret_cast<std::size_t *>(ptr + bytes);
-    // calculate the original pointer
-    p = static_cast<void *>(ptr - *offset);
-    auto status = cudaFreeHost(p);
-    assert(status == cudaSuccess);
+    detail::aligned_deallocate(p, bytes, alignment, [](void *p) {
+      auto status = cudaFreeHost(p);
+      assert(status == cudaSuccess);
+    });
   }
 };
 }  // namespace mr
