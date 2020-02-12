@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <rmm/mr/cnmem_memory_resource.hpp>
-#include <rmm/mr/cuda_memory_resource.hpp>
-#include <rmm/mr/default_memory_resource.hpp>
-#include <rmm/mr/device_memory_resource.hpp>
-#include <rmm/mr/managed_memory_resource.hpp>
-#include <rmm/mr/sub_memory_resource.hpp>
+#include <rmm/mr/device/cnmem_memory_resource.hpp>
+#include <rmm/mr/device/cuda_memory_resource.hpp>
+#include <rmm/mr/device/default_memory_resource.hpp>
+#include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/mr/device/managed_memory_resource.hpp>
+#include <rmm/mr/device/sub_memory_resource.hpp>
+#include <rmm/mr/device/thrust_sync_pool.hpp>
 
 #include <benchmark/benchmark.h>
 
@@ -33,7 +34,7 @@ struct allocation {
 
 void mixed_random_allocation_free(rmm::mr::device_memory_resource& mr,
                                   size_t num_allocations = 1000,
-                                  size_t max_allocation_size = 500, // in MiB
+                                  size_t max_allocation_size = 300, // in MiB
                                   cudaStream_t stream = 0)
 {
   std::default_random_engine generator;
@@ -92,6 +93,19 @@ void mixed_random_allocation_free(rmm::mr::device_memory_resource& mr,
 }
 }  // namespace
 
+template <typename State>
+static void BM_RandomAllocationsThrust(State& state) {
+  rmm::mr::thrust_sync_pool<> mr;
+
+  try {
+    for (auto _ : state)
+      mixed_random_allocation_free(mr);
+  } catch (std::exception const& e) {
+    std::cout << "Error: " << e.what() << "\n";
+  }
+}
+BENCHMARK(BM_RandomAllocationsThrust)->Unit(benchmark::kMillisecond);
+
 static void BM_RandomAllocationsCUDA(benchmark::State& state) {
   rmm::mr::cuda_memory_resource mr;
 
@@ -129,6 +143,7 @@ static void BM_RandomAllocationsCnmem(State& state) {
   }
 }
 BENCHMARK(BM_RandomAllocationsCnmem)->Unit(benchmark::kMillisecond);
+
 
 /*int main(void) {
   std::vector<int> state(1);

@@ -23,7 +23,7 @@
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
 #include <rmm/mr/device/thrust_sync_pool.hpp>
-#include <rmm/mr/sub_memory_resource.hpp>
+#include <rmm/mr/device/sub_memory_resource.hpp>
 
 
 #include <cuda_runtime_api.h>
