@@ -95,8 +95,7 @@ endif(BUILD_TESTS)
 include_directories("${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/include"
                     "${CMAKE_CURRENT_SOURCE_DIR}/src"
-                    "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cnmem/include"
-                    "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/thrust/thrust")
+                    "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cnmem/include")
 
 ###################################################################################################
 # - library paths ---------------------------------------------------------------------------------
