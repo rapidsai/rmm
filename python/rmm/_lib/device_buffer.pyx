@@ -202,7 +202,7 @@ cdef class DeviceBuffer:
         array([97, 98, 99,  0,  0], dtype=uint8)
         """
         if not hasattr(cuda_ary, "__cuda_array_interface__"):
-            raise RuntimeError(
+            raise ValueError(
                 "Expected object to support `__cuda_array_interface__` "
                 "protocol"
             )
