@@ -23,6 +23,8 @@
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
 #include <rmm/mr/device/thrust_sync_pool.hpp>
+#include <rmm/mr/sub_memory_resource.hpp>
+
 
 #include <cuda_runtime_api.h>
 #include <cstddef>
@@ -88,7 +90,7 @@ struct MRTest : public ::testing::Test {
 using resources = ::testing::Types<
     rmm::mr::cuda_memory_resource, rmm::mr::managed_memory_resource,
     rmm::mr::cnmem_memory_resource, rmm::mr::cnmem_managed_memory_resource,
-    rmm::mr::thrust_sync_pool<>>;
+    rmm::mr::thrust_sync_pool<>, rmm::mr::sub_memory_resource>;
 
 TYPED_TEST_CASE(MRTest, resources);
 
@@ -279,91 +281,69 @@ TYPED_TEST(MRTest, RandomAllocationsStream) {
 
   std::for_each(
       allocations.begin(), allocations.end(),
-      [generator, distribution, this](allocation& a) {
+       [generator, distribution, this](allocation& a) {
         EXPECT_NO_THROW(this->mr->deallocate(a.p, a.size, this->stream));
         EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(this->stream));
       });
 }
 
-TYPED_TEST(MRTest, MixedRandomAllocationFree) {
+void mixed_random_allocation_free(std::unique_ptr<rmm::mr::device_memory_resource>& mr,
+                                  cudaStream_t stream = 0)
+{
   std::default_random_engine generator;
+  constexpr std::size_t num_allocations{100};
 
   constexpr std::size_t MAX_ALLOCATION_SIZE{10 * size_mb};
   std::uniform_int_distribution<std::size_t> size_distribution(
-      1, MAX_ALLOCATION_SIZE);
+    1, MAX_ALLOCATION_SIZE);
 
-  // How often a free will occur. For example, if `1`, then every allocation
-  // will immediately be free'd. Or, if 4, on average, a free will occur after
-  // every 4th allocation
-  constexpr std::size_t FREE_FREQUENCY{4};
-  std::uniform_int_distribution<int> free_distribution(1, FREE_FREQUENCY);
+  constexpr int allocation_probability = 53; // percent
+  std::uniform_int_distribution<int> op_distribution(0, 99);
+  std::uniform_int_distribution<int> index_distribution(0, num_allocations-1);
 
-  std::deque<allocation> allocations;
+  int active_allocations{0};
+  int allocation_count{0};
 
-  constexpr std::size_t num_allocations{100};
-  for (std::size_t i = 0; i < num_allocations; ++i) {
-    std::size_t allocation_size = size_distribution(generator);
-    EXPECT_NO_THROW(allocations.emplace_back(
-        this->mr->allocate(allocation_size), allocation_size));
-    auto new_allocation = allocations.back();
-    EXPECT_NE(nullptr, new_allocation.p);
-    EXPECT_TRUE(is_aligned(new_allocation.p));
+  std::vector<allocation> allocations;
 
-    bool const free_front{free_distribution(generator) ==
-                          free_distribution.max()};
+  for (int i = 0; i < num_allocations * 2; ++i) {
+    bool do_alloc = true;
+    if (active_allocations > 0) {
+      int chance = op_distribution(generator);
+      do_alloc = (chance < allocation_probability) && 
+                 (allocation_count < num_allocations);
+    }
 
-    if (free_front) {
-      auto front = allocations.front();
-      EXPECT_NO_THROW(this->mr->deallocate(front.p, front.size));
-      allocations.pop_front();
+    if (do_alloc) {
+      size_t size = size_distribution(generator);
+      active_allocations++;
+      allocation_count++;
+      EXPECT_NO_THROW(allocations.emplace_back(mr->allocate(size, stream), size));
+      auto new_allocation = allocations.back();
+      EXPECT_NE(nullptr, new_allocation.p);
+      EXPECT_TRUE(is_aligned(new_allocation.p));
+    }
+    else {
+      size_t index = index_distribution(generator) % active_allocations;
+      active_allocations--;
+      allocation to_free = allocations[index];
+      allocations.erase(std::next(allocations.begin(), index));
+      EXPECT_NO_THROW(mr->deallocate(to_free.p, to_free.size, stream));
     }
   }
-  // free any remaining allocations
-  for (auto a : allocations) {
-    EXPECT_NO_THROW(this->mr->deallocate(a.p, a.size));
-    allocations.pop_front();
-  }
+
+  EXPECT_EQ(active_allocations, 0);
+  EXPECT_EQ(allocations.size(), active_allocations);
 }
 
-TYPED_TEST(MRTest, MixedRandomAllocationFreeStream) {
-  std::default_random_engine generator;
+TYPED_TEST(MRTest, MixedRandomAllocationFree)
+{
+  mixed_random_allocation_free(this->mr);
+}
 
-  constexpr std::size_t MAX_ALLOCATION_SIZE{10 * size_mb};
-  std::uniform_int_distribution<std::size_t> size_distribution(
-      1, MAX_ALLOCATION_SIZE);
-
-  // How often a free will occur. For example, if `1`, then every allocation
-  // will immediately be free'd. Or, if 4, on average, a free will occur after
-  // every 4th allocation
-  constexpr std::size_t FREE_FREQUENCY{4};
-  std::uniform_int_distribution<int> free_distribution(1, FREE_FREQUENCY);
-
-  std::deque<allocation> allocations;
-
-  constexpr std::size_t num_allocations{100};
-  for (std::size_t i = 0; i < num_allocations; ++i) {
-    std::size_t allocation_size = size_distribution(generator);
-    EXPECT_NO_THROW(allocations.emplace_back(
-        this->mr->allocate(allocation_size, this->stream), allocation_size));
-    EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(this->stream));
-    auto new_allocation = allocations.back();
-    EXPECT_NE(nullptr, new_allocation.p);
-    EXPECT_TRUE(is_aligned(new_allocation.p));
-
-    bool const free_front{free_distribution(generator) ==
-                          free_distribution.max()};
-
-    if (free_front) {
-      auto front = allocations.front();
-      EXPECT_NO_THROW(this->mr->deallocate(front.p, front.size, this->stream));
-      allocations.pop_front();
-    }
-  }
-  // free any remaining allocations
-  for (auto a : allocations) {
-    EXPECT_NO_THROW(this->mr->deallocate(a.p, a.size, this->stream));
-    allocations.pop_front();
-  }
+TYPED_TEST(MRTest, MixedRandomAllocationFreeStream)
+{
+  mixed_random_allocation_free(this->mr, this->stream);
 }
 
 TYPED_TEST(MRTest, GetMemInfo) {

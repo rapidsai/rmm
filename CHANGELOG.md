@@ -94,6 +94,10 @@
 
 - PR #99 Added `device_buffer` class
 - PR #133 Added `device_scalar` class
+- PR #96 Added `device_memory_resource` for beginning of overhaul of RMM design
+- PR #103 Add and use unified build script
+- PR #107 Fix local build generated file ownerships
+
 
 ## Improvements
 
