@@ -174,7 +174,7 @@ cdef class DeviceBuffer:
         cdef device_buffer* dbp = self.c_obj.get()
 
         cdef const unsigned char[::1] hb = ary
-        cdef size_t s = len(ary)
+        cdef size_t s = len(hb)
         if s > self.size:
             raise ValueError(
                 "Argument `hb` is too large. Need space for %i bytes." % s
