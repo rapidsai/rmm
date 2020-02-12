@@ -24,10 +24,23 @@
 namespace rmm {
 namespace detail {
 
-constexpr std::size_t RMM_DEFAULT_HOST_ALIGNMENT{alignof(std::max_align_t)};
+/**
+ * @brief Default alignment used for host memory allocated by RMM.
+ *
+ */
+static constexpr std::size_t RMM_DEFAULT_HOST_ALIGNMENT{
+    alignof(std::max_align_t)};
 
+/**
+ * @brief Returns whether or not `n` is a power of 2.
+ *
+ */
 constexpr bool is_pow2(std::size_t n) { return (0 == (n & (n - 1))); }
 
+/**
+ * @brief Returns whether or not `alignment` is a valid memory alignment.
+ *
+ */
 constexpr bool is_supported_alignment(std::size_t alignment) {
   return is_pow2(alignment);
 }
