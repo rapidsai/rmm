@@ -31,6 +31,10 @@ inline bool is_aligned(void* p,
   return (0 == reinterpret_cast<uintptr_t>(p) % alignment);
 }
 
+inline bool expect_aligned(void* p, std::size_t alignment) {
+  EXPECT_EQ(0, reinterpret_cast<uintptr_t>(p) % alignment);
+}
+
 /**---------------------------------------------------------------------------*
  * @brief Returns if a pointer points to a device memory or managed memory
  * allocation.
@@ -226,6 +230,29 @@ TYPED_TEST(MRTest, AlignmentTest) {
       EXPECT_NO_THROW(ptr = this->mr->allocate(allocation_size, alignment));
       EXPECT_TRUE(is_aligned(ptr, alignment));
       EXPECT_NO_THROW(this->mr->deallocate(ptr, allocation_size, alignment));
+    }
+  }
+}
+
+TYPED_TEST(MRTest, UnsupportedAlignmentTest) {
+  std::default_random_engine generator(0);
+  constexpr std::size_t MAX_ALLOCATION_SIZE{10 * size_mb};
+  std::uniform_int_distribution<std::size_t> size_distribution(
+      1, MAX_ALLOCATION_SIZE);
+
+  for (std::size_t num_trials = 0; num_trials < NUM_TRIALS; ++num_trials) {
+    for (std::size_t alignment = MinTestedAlignment;
+         alignment <= MaxTestedAlignment;
+         alignment *= TestedAlignmentMultiplier) {
+      auto allocation_size = size_distribution(generator);
+      void* ptr{nullptr};
+      // An unsupported alignment (like an odd number) should result in an
+      // alignment of `alignof(std::max_align_t)`
+      auto const bad_alignment = alignment + 1;
+      EXPECT_NO_THROW(ptr = this->mr->allocate(allocation_size, bad_alignment));
+      expect_aligned(ptr, alignof(std::max_align_t));
+      EXPECT_NO_THROW(
+          this->mr->deallocate(ptr, allocation_size, bad_alignment));
     }
   }
 }
