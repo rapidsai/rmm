@@ -20,7 +20,6 @@
 from collections import namedtuple
 
 from libc.stdint cimport uintptr_t
-from libc.stdlib cimport malloc, free
 from libcpp.vector cimport vector
 
 from cpython.bytes cimport PyBytes_FromStringAndSize, PyBytes_AS_STRING
