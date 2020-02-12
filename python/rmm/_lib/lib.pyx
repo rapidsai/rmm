@@ -23,6 +23,8 @@ from libc.stdint cimport uintptr_t
 from libc.stdlib cimport malloc, free
 from libcpp.vector cimport vector
 
+from cpython.bytes cimport PyBytes_FromStringAndSize, PyBytes_AS_STRING
+
 
 # Utility Functions
 def _get_error_msg(errcode):
@@ -142,18 +144,14 @@ def rmm_csv_log():
     calling the librmm functions via Cython
     """
     cdef size_t logsize = rmmLogSize()
-    cdef char* buf = <char*>malloc(logsize)
+    cdef bytes py_buf = PyBytes_FromStringAndSize(NULL, logsize)
+    cdef char* buf = PyBytes_AS_STRING(py_buf)
 
     with nogil:
-        rmm_error = rmmGetLog(
-            <char*>buf,
-            <size_t>logsize
-        )
+        rmm_error = rmmGetLog(buf, logsize)
 
     check_error(rmm_error)
 
-    cdef bytes py_buf = buf[:logsize]
-    free(buf)
     return py_buf.decode("utf-8")
 
 
