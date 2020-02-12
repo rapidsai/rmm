@@ -18,9 +18,6 @@
 # cython: language_level = 3
 
 
-from functools import reduce
-from operator import mul
-
 import numpy as np
 
 from libcpp.memory cimport unique_ptr
