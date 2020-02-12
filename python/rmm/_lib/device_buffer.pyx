@@ -210,7 +210,7 @@ cdef class DeviceBuffer:
         dtype = np.dtype(cuda_ary_interface["typestr"])
 
         if len(shape) > 1:
-            raise RuntimeError(
+            raise ValueError(
                 "Only 1-D contiguous arrays are supported, got {}-D "
                 "array".format(str(len(shape)))
             )
