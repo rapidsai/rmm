@@ -32,6 +32,7 @@ static std::size_t RMM_DEFAULT_DEVICE_ALIGNMENT{256};
  * @brief Memory resource that allocates/deallocates using Thrust's
  * `disjoint_synchronized_pool_resource` sub-allocator.
  */
+// Need to use `detail` resource to specify `void*` as the `Pointer` type
 template <typename Upstream = thrust::system::cuda::detail::
               cuda_memory_resource<cudaMalloc, cudaFree, void*>,
           typename Bookkeeper = thrust::mr::new_delete_resource>
