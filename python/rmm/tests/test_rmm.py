@@ -216,17 +216,15 @@ def test_rmm_device_buffer_copy_from_host(hb):
     np.testing.assert_equal(expected, result)
 
 
-def test_rmm_device_buffer_copy_from_device():
-    cuda_ary = rmm.DeviceBuffer.to_device(b"abc")
-    db = rmm.DeviceBuffer.to_device(np.zeros(10, dtype="u1"))
-    db.copy_from_device(cuda_ary)
-
-    expected = np.array([97, 98, 99, 0, 0, 0, 0, 0, 0, 0], dtype="u1")
-    result = db.copy_to_host()
-
-    np.testing.assert_equal(expected, result)
-
-    cuda_ary = rmm.to_device(np.array([97, 98, 99], dtype="u1"))
+@pytest.mark.parametrize(
+    "cuda_ary",
+    [
+        lambda: rmm.DeviceBuffer.to_device(b"abc"),
+        lambda: rmm.to_device(np.array([97, 98, 99], dtype="u1")),
+    ],
+)
+def test_rmm_device_buffer_copy_from_device(cuda_ary):
+    cuda_ary = cuda_ary()
     db = rmm.DeviceBuffer.to_device(np.zeros(10, dtype="u1"))
     db.copy_from_device(cuda_ary)
 

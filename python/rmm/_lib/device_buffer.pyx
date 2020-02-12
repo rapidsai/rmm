@@ -207,18 +207,32 @@ cdef class DeviceBuffer:
                 "protocol"
             )
 
-        cdef device_buffer* dbp = self.c_obj.get()
-
         cuda_ary_interface = cuda_ary.__cuda_array_interface__
+        shape = cuda_ary_interface["shape"]
+        strides = cuda_ary_interface.get("strides")
+        dtype = np.dtype(cuda_ary_interface["typestr"])
+
+        if len(shape) > 1:
+            raise RuntimeError(
+                "Only 1-D contiguous arrays are supported, got {}-D "
+                "array".format(str(len(shape)))
+            )
+
+        if strides is not None:
+            if strides[0] != dtype.itemsize:
+                raise RuntimeError(
+                    "Only 1-D contiguous arrays are supported, got a "
+                    "non-contiguous array"
+                )
+
         cdef uintptr_t src_ptr = cuda_ary_interface["data"][0]
-        cdef size_t s = (
-            reduce(mul, cuda_ary_interface["shape"])
-            * np.dtype(cuda_ary_interface["typestr"]).itemsize
-        )
+        cdef size_t s = shape[0] * dtype.itemsize
         if s > self.size:
             raise ValueError(
                 "Argument `hb` is too large. Need space for %i bytes." % s
             )
+
+        cdef device_buffer* dbp = self.c_obj.get()
 
         with nogil:
             copy_device_to_ptr(
