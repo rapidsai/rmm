@@ -26,7 +26,7 @@
 namespace rmm {
 namespace mr {
 
-static std::size_t RMM_DEFAULT_DEVICE_ALIGNMENT{256};
+static constexpr std::size_t RMM_DEFAULT_DEVICE_ALIGNMENT{256};
 
 /**
  * @brief Memory resource that allocates/deallocates using Thrust's
