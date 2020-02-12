@@ -246,11 +246,7 @@ cdef ptrdiff_t c_getallocationoffset(
     cdef ptrdiff_t offset
 
     with nogil:
-        rmm_error = rmmGetAllocationOffset(
-            <ptrdiff_t *>&offset,
-            <void *>ptr,
-            <cudaStream_t>stream
-        )
+        rmm_error = rmmGetAllocationOffset(&offset, ptr, stream)
 
     check_error(rmm_error)
 
@@ -265,10 +261,7 @@ def rmm_getallocationoffset(ptr, stream):
     cdef void * c_ptr = <void *><uintptr_t>ptr
     cdef cudaStream_t c_stream = <cudaStream_t><uintptr_t>stream
 
-    cdef ptrdiff_t c_offset = c_getallocationoffset(
-        <void *>c_ptr,
-        <cudaStream_t>c_stream
-    )
+    cdef ptrdiff_t c_offset = c_getallocationoffset(c_ptr, c_stream)
 
     result = int(c_offset)
     return result
