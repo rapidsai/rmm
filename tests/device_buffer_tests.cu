@@ -192,14 +192,12 @@ TYPED_TEST(DeviceBufferTest, CopyConstructor) {
 }
 
 TYPED_TEST(DeviceBufferTest, CopyCapacityLargerThanSize) {
-  rmm::device_buffer buff(this->size, 0, this->mr.get());
+  auto buff = sequence_buffer(this->size, 0, this->mr.get());
 
   // Resizing smaller to make `size()` < `capacity()`
   auto new_size = this->size - 1;
   buff.resize(new_size);
 
-  thrust::sequence(thrust::device, static_cast<signed char *>(buff.data()),
-                   static_cast<signed char *>(buff.data()) + buff.size(), 0);
   rmm::device_buffer buff_copy(buff);
   EXPECT_NE(nullptr, buff_copy.data());
   EXPECT_NE(buff.data(), buff_copy.data());
@@ -230,14 +228,11 @@ TYPED_TEST(DeviceBufferTest, CopyConstructorExplicitMr) {
 }
 
 TYPED_TEST(DeviceBufferTest, CopyCapacityLargerThanSizeExplicitMr) {
-  rmm::device_buffer buff(this->size, 0, this->mr.get());
+  auto buff = sequence_buffer(this->size, 0, this->mr.get());
 
   // Resizing smaller to make `size()` < `capacity()`
   auto new_size = this->size - 1;
   buff.resize(new_size);
-
-  thrust::sequence(thrust::device, static_cast<signed char *>(buff.data()),
-                   static_cast<signed char *>(buff.data()) + buff.size(), 0);
 
   rmm::device_buffer buff_copy(buff, this->stream, this->mr.get());
   EXPECT_NE(nullptr, buff_copy.data());
@@ -255,7 +250,7 @@ TYPED_TEST(DeviceBufferTest, CopyCapacityLargerThanSizeExplicitMr) {
 }
 
 TYPED_TEST(DeviceBufferTest, CopyAssignmentToDefault) {
-  rmm::device_buffer const from(this->size, 0, this->mr.get());
+  auto const from = sequence_buffer(this->size, 0, this->mr.get());
   rmm::device_buffer to{};
   EXPECT_NO_THROW(to = from);
   EXPECT_NE(nullptr, to.data());
@@ -269,8 +264,8 @@ TYPED_TEST(DeviceBufferTest, CopyAssignmentToDefault) {
 }
 
 TYPED_TEST(DeviceBufferTest, CopyAssignment) {
-  rmm::device_buffer from(this->size, 0, this->mr.get());
-  rmm::device_buffer to(this->size - 1, 0, this->mr.get());
+  auto from = sequence_buffer(this->size, 0, this->mr.get());
+  auto to = sequence_buffer(this->size - 1, 0, this->mr.get());
   EXPECT_NO_THROW(to = from);
   EXPECT_NE(nullptr, to.data());
   EXPECT_NE(nullptr, from.data());
@@ -283,9 +278,9 @@ TYPED_TEST(DeviceBufferTest, CopyAssignment) {
 }
 
 TYPED_TEST(DeviceBufferTest, CopyAssignmentCapacityLargerThanSize) {
-  rmm::device_buffer from(this->size, 0, this->mr.get());
+  auto from = sequence_buffer(this->size, 0, this->mr.get());
   from.resize(from.size() - 1);
-  rmm::device_buffer to(42, 0, this->mr.get());
+  auto to = sequence_buffer(42, 0, this->mr.get());
   EXPECT_NO_THROW(to = from);
   EXPECT_NE(nullptr, to.data());
   EXPECT_NE(nullptr, from.data());
@@ -439,7 +434,7 @@ TYPED_TEST(DeviceBufferTest, SelfMoveAssignment) {
 }
 
 TYPED_TEST(DeviceBufferTest, ResizeSmaller) {
-  rmm::device_buffer buff(this->size, 0, this->mr.get());
+  auto buff = sequence_buffer(this->size, 0, this->mr.get());
   auto old_data = buff.data();
   auto new_size = this->size - 1;
   buff.resize(new_size);
@@ -453,7 +448,7 @@ TYPED_TEST(DeviceBufferTest, ResizeSmaller) {
 
   EXPECT_NO_THROW(buff.shrink_to_fit());
   EXPECT_NE(nullptr, buff.data());
-  // A reallocation should have occured
+  // A reallocation should have occurred
   EXPECT_NE(old_data, buff.data());
   EXPECT_EQ(new_size, buff.size());
   EXPECT_EQ(buff.capacity(), buff.size());
@@ -462,14 +457,19 @@ TYPED_TEST(DeviceBufferTest, ResizeSmaller) {
 }
 
 TYPED_TEST(DeviceBufferTest, ResizeBigger) {
-  rmm::device_buffer buff(this->size, 0, this->mr.get());
+  auto buff = sequence_buffer(this->size, 0, this->mr.get());
   auto old_data = buff.data();
   auto new_size = this->size + 1;
+
+  rmm::device_buffer original{buff};
+
   buff.resize(new_size);
   EXPECT_EQ(new_size, buff.size());
   EXPECT_EQ(new_size, buff.capacity());
   // Resizing bigger means the data should point to a new allocation
   EXPECT_NE(old_data, buff.data());
+
+  expect_equal_buffers(original.data(), buff.data(), buff.size());
 }
 
 TYPED_TEST(DeviceBufferTest, MultipleBuffers) {
