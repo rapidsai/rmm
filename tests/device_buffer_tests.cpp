@@ -17,12 +17,13 @@
 #include "gtest/gtest.h"
 
 #include <rmm/device_buffer.hpp>
-#include <rmm/mr/device/cnmem_memory_resource.hpp>
 #include <rmm/mr/device/cnmem_managed_memory_resource.hpp>
+#include <rmm/mr/device/cnmem_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
+#include <rmm/mr/device/thrust_sync_pool.hpp>
 
 #include <cuda_runtime_api.h>
 #include <cstddef>
@@ -51,10 +52,10 @@ struct DeviceBufferTest : public ::testing::Test {
   };
 };
 
-using resources = ::testing::Types<rmm::mr::cuda_memory_resource,
-                                   rmm::mr::managed_memory_resource,
-                                   rmm::mr::cnmem_memory_resource,
-                                   rmm::mr::cnmem_managed_memory_resource>;
+using resources = ::testing::Types<
+    rmm::mr::cuda_memory_resource, rmm::mr::managed_memory_resource,
+    rmm::mr::cnmem_memory_resource, rmm::mr::cnmem_managed_memory_resource,
+    rmm::mr::thrust_sync_pool<>>;
 
 TYPED_TEST_CASE(DeviceBufferTest, resources);
 
@@ -143,14 +144,14 @@ TYPED_TEST(DeviceBufferTest, CopyConstructor) {
   // thrust::sequence(thrust::device, static_cast<signed char *>(buff.data()),
   //                 static_cast<signed char *>(buffer.data()) + buff.size(),
   //                 0);
-  rmm::device_buffer buff_copy(buff); // uses default stream and MR
+  rmm::device_buffer buff_copy(buff);  // uses default stream and MR
   EXPECT_NE(nullptr, buff_copy.data());
   EXPECT_NE(buff.data(), buff_copy.data());
   EXPECT_EQ(buff.size(), buff_copy.size());
   EXPECT_EQ(buff.capacity(), buff_copy.capacity());
   EXPECT_EQ(buff_copy.memory_resource(), rmm::mr::get_default_resource());
-  EXPECT_TRUE(buff_copy.memory_resource()->
-                is_equal(*rmm::mr::get_default_resource()));
+  EXPECT_TRUE(
+      buff_copy.memory_resource()->is_equal(*rmm::mr::get_default_resource()));
   EXPECT_EQ(buff_copy.stream(), cudaStream_t{0});
 
   // now use buff's stream and MR
@@ -184,8 +185,8 @@ TYPED_TEST(DeviceBufferTest, CopyCapacityLargerThanSize) {
   // The capacity of the copy should be equal to the `size()` of the original
   EXPECT_EQ(new_size, buff_copy.capacity());
   EXPECT_EQ(buff_copy.memory_resource(), rmm::mr::get_default_resource());
-  EXPECT_TRUE(buff_copy.memory_resource()->
-                is_equal(*rmm::mr::get_default_resource()));
+  EXPECT_TRUE(
+      buff_copy.memory_resource()->is_equal(*rmm::mr::get_default_resource()));
   EXPECT_EQ(buff_copy.stream(), cudaStream_t{0});
 
   // EXPECT_TRUE(
