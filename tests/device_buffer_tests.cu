@@ -478,7 +478,5 @@ TYPED_TEST(DeviceBufferTest, MultipleBuffers) {
   std::for_each(buffers.begin(), buffers.end(), [](rmm::device_buffer &b) {
     b = rmm::device_buffer(10000000);
   });
-  EXPECT_EQ(cudaSuccess, cudaDeviceSynchronize());
-  buffers.clear();
-  EXPECT_EQ(cudaSuccess, cudaDeviceSynchronize());
+  EXPECT_NO_THROW(buffers.clear());
 }
