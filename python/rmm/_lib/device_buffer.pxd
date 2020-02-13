@@ -36,6 +36,7 @@ cdef extern from "rmm/device_buffer.hpp" namespace "rmm" nogil:
         void* data()
         size_t size()
         size_t capacity()
+        cudaStream_t stream()
 
 
 cdef class DeviceBuffer:

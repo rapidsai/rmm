@@ -37,6 +37,33 @@ from rmm._lib.lib cimport (
 
 cimport cython
 
+import logging
+import os
+import uuid
+
+
+cdef size_t num_bufs = 0
+
+log_dir = "/datasets/jkirkham/rmm_dask_logs"
+if not os.path.exists(log_dir):
+    os.makedirs(log_dir)
+
+log_id = uuid.uuid4().hex
+log_name = f"{__name__}_{log_id}"
+logger = logging.getLogger(log_name)
+logger.setLevel(logging.INFO)
+fh = logging.FileHandler(
+    os.path.join(log_dir, f"{log_name}.txt"),
+    mode="a",
+    encoding=None,
+    delay=False
+)
+logger.addHandler(fh)
+logger.info(
+    "Event Type,Address,Size (bytes),Allocs (#)"
+)
+
+
 
 cdef class DeviceBuffer:
 
@@ -55,6 +82,26 @@ cdef class DeviceBuffer:
                 self.c_obj.reset(new device_buffer(size, c_stream))
             else:
                 self.c_obj.reset(new device_buffer(c_ptr, size, c_stream))
+
+        cdef uintptr_t dptr = <uintptr_t>self.c_obj.get().data()
+        global num_bufs
+        if size > 0:
+            num_bufs += 1
+            logger.info(
+                f"Alloc,{dptr},{size},{num_bufs}"
+            )
+
+    def __dealloc__(self):
+        cdef const device_buffer* dbp = self.c_obj.get()
+        cdef uintptr_t dptr = <uintptr_t>dbp.data()
+        cdef size_t size = dbp.size()
+        cdef uintptr_t stream = <uintptr_t>dbp.stream()
+        global num_bufs
+        if size > 0:
+            num_bufs -= 1
+            logger.info(
+                f"Free,{dptr},{size},{num_bufs}"
+            )
 
     def __len__(self):
         return self.size
