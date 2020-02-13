@@ -46,6 +46,22 @@ void expect_equal_buffers(void const *lhs, void const *rhs,
                             typed_rhs));
 }
 
+/**
+ * @brief Creates a `device_buffer` of the requested `size_bytes` and
+ * initializes each byte with the sequence `0,1,2,...255` and then repeats.
+ *
+ */
+rmm::device_buffer sequence_buffer(std::size_t size_bytes, cudaStream_t stream,
+                                   rmm::mr::device_memory_resource *mr) {
+  rmm::device_buffer buff(size_bytes, stream, mr);
+
+  // Initialize buffer
+  thrust::sequence(thrust::device, static_cast<char *>(buff.data()),
+                   static_cast<char *>(buff.data()) + buff.size(), 0);
+
+  return buff;
+}
+
 template <typename MemoryResourceType>
 struct DeviceBufferTest : public ::testing::Test {
   cudaStream_t stream{};
@@ -154,11 +170,7 @@ TYPED_TEST(DeviceBufferTest, CopyFromNullptrNonZero) {
 }
 
 TYPED_TEST(DeviceBufferTest, CopyConstructor) {
-  rmm::device_buffer buff(this->size, 0, this->mr.get());
-
-  // Initialize buffer
-  thrust::sequence(thrust::device, static_cast<char *>(buff.data()),
-                   static_cast<char *>(buff.data()) + buff.size(), 0);
+  auto buff = sequence_buffer(this->size, 0, this->mr.get());
 
   rmm::device_buffer buff_copy(buff);  // uses default stream and MR
   EXPECT_NE(nullptr, buff_copy.data());
@@ -204,9 +216,7 @@ TYPED_TEST(DeviceBufferTest, CopyCapacityLargerThanSize) {
 }
 
 TYPED_TEST(DeviceBufferTest, CopyConstructorExplicitMr) {
-  rmm::device_buffer buff(this->size, 0, this->mr.get());
-  thrust::sequence(thrust::device, static_cast<signed char *>(buff.data()),
-                   static_cast<signed char *>(buff.data()) + buff.size(), 0);
+  auto buff = sequence_buffer(this->size, 0, this->mr.get());
   rmm::device_buffer buff_copy(buff, this->stream, this->mr.get());
   EXPECT_NE(nullptr, buff_copy.data());
   EXPECT_NE(buff.data(), buff_copy.data());
@@ -228,6 +238,7 @@ TYPED_TEST(DeviceBufferTest, CopyCapacityLargerThanSizeExplicitMr) {
 
   thrust::sequence(thrust::device, static_cast<signed char *>(buff.data()),
                    static_cast<signed char *>(buff.data()) + buff.size(), 0);
+
   rmm::device_buffer buff_copy(buff, this->stream, this->mr.get());
   EXPECT_NE(nullptr, buff_copy.data());
   EXPECT_NE(buff.data(), buff_copy.data());
@@ -254,7 +265,7 @@ TYPED_TEST(DeviceBufferTest, CopyAssignmentToDefault) {
   EXPECT_EQ(from.capacity(), to.capacity());
   EXPECT_EQ(from.stream(), to.stream());
   EXPECT_EQ(from.memory_resource(), to.memory_resource());
-  // TODO Check contents of memory
+  expect_equal_buffers(from.data(), to.data(), from.size());
 }
 
 TYPED_TEST(DeviceBufferTest, CopyAssignment) {
@@ -268,7 +279,7 @@ TYPED_TEST(DeviceBufferTest, CopyAssignment) {
   EXPECT_EQ(from.capacity(), to.capacity());
   EXPECT_EQ(from.stream(), to.stream());
   EXPECT_EQ(from.memory_resource(), to.memory_resource());
-  // TODO Check contents of memory
+  expect_equal_buffers(from.data(), to.data(), from.size());
 }
 
 TYPED_TEST(DeviceBufferTest, CopyAssignmentCapacityLargerThanSize) {
@@ -284,7 +295,7 @@ TYPED_TEST(DeviceBufferTest, CopyAssignmentCapacityLargerThanSize) {
             to.capacity());  // copy doesn't copy the larger capacity
   EXPECT_EQ(from.stream(), to.stream());
   EXPECT_EQ(from.memory_resource(), to.memory_resource());
-  // TODO Check contents of memory
+  expect_equal_buffers(from.data(), to.data(), from.size());
 }
 
 TYPED_TEST(DeviceBufferTest, SelfCopyAssignment) {
@@ -437,6 +448,9 @@ TYPED_TEST(DeviceBufferTest, ResizeSmaller) {
   // Resizing smaller means the existing allocation should remain unchanged
   EXPECT_EQ(old_data, buff.data());
 
+  // Make copy before shrinking to verify shrinking doesn't modify contents
+  rmm::device_buffer original{buff};
+
   EXPECT_NO_THROW(buff.shrink_to_fit());
   EXPECT_NE(nullptr, buff.data());
   // A reallocation should have occured
@@ -444,7 +458,7 @@ TYPED_TEST(DeviceBufferTest, ResizeSmaller) {
   EXPECT_EQ(new_size, buff.size());
   EXPECT_EQ(buff.capacity(), buff.size());
 
-  // TODO Verify device memory contents are equal
+  expect_equal_buffers(original.data(), buff.data(), original.size());
 }
 
 TYPED_TEST(DeviceBufferTest, ResizeBigger) {
