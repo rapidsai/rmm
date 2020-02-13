@@ -48,7 +48,7 @@ struct allocation {
  * `std::distance(sizes_begin, sizes_end)` used for tracking each allocation.
  */
 template <typename SizeIterator>
-void alloc_then_free(rmm::mr::device_memory_resource* mr,
+void bulk_alloc_free(rmm::mr::device_memory_resource* mr,
                      SizeIterator sizes_begin, SizeIterator sizes_end,
                      std::vector<allocation>& scratch) {
   // Do all allocations
@@ -72,7 +72,7 @@ static void BM_test(benchmark::State& state) {
 
   try {
     for (auto _ : state) {
-      alloc_then_free(&mr, sizes.begin(), sizes.end(), allocation_scratch);
+      bulk_alloc_free(&mr, sizes.begin(), sizes.end(), allocation_scratch);
     }
   } catch (std::exception const& e) {
     std::cout << "Error: " << e.what() << "\n";
