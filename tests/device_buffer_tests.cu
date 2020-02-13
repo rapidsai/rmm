@@ -25,6 +25,8 @@
 #include <rmm/mr/device/managed_memory_resource.hpp>
 #include <rmm/mr/device/thrust_sync_pool.hpp>
 
+#include <thrust/sequence.h>
+#include <thrust/equal.h>
 #include <cstddef>
 #include <random>
 
