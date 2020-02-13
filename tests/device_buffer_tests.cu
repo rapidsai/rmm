@@ -198,10 +198,8 @@ TYPED_TEST(DeviceBufferTest, CopyCapacityLargerThanSize) {
 
 TYPED_TEST(DeviceBufferTest, CopyConstructorExplicitMr) {
   rmm::device_buffer buff(this->size, 0, this->mr.get());
-  // Can't do this until RMM cmake is setup to build cuda files
-  // thrust::sequence(thrust::device, static_cast<signed char *>(buff.data()),
-  //                 static_cast<signed char *>(buffer.data()) + buff.size(),
-  //                 0);
+  thrust::sequence(thrust::device, static_cast<signed char *>(buff.data()),
+                   static_cast<signed char *>(buff.data()) + buff.size(), 0);
   rmm::device_buffer buff_copy(buff, this->stream, this->mr.get());
   EXPECT_NE(nullptr, buff_copy.data());
   EXPECT_NE(buff.data(), buff_copy.data());
@@ -211,10 +209,10 @@ TYPED_TEST(DeviceBufferTest, CopyConstructorExplicitMr) {
   EXPECT_TRUE(buff.memory_resource()->is_equal(*buff_copy.memory_resource()));
   EXPECT_NE(buff.stream(), buff_copy.stream());
 
-  // EXPECT_TRUE(
-  //    thrust::equal(thrust::device, static_cast<signed char *>(buff.data()),
-  //                  static_cast<signed char *>(buff.data()) + buff.size(),
-  //                  static_cast<signed char *>(buff_copy.data())));
+  EXPECT_TRUE(
+      thrust::equal(thrust::device, static_cast<signed char *>(buff.data()),
+                    static_cast<signed char *>(buff.data()) + buff.size(),
+                    static_cast<signed char *>(buff_copy.data())));
 }
 
 TYPED_TEST(DeviceBufferTest, CopyCapacityLargerThanSizeExplicitMr) {
@@ -224,10 +222,8 @@ TYPED_TEST(DeviceBufferTest, CopyCapacityLargerThanSizeExplicitMr) {
   auto new_size = this->size - 1;
   buff.resize(new_size);
 
-  // Can't do this until RMM cmake is setup to build cuda files
-  // thrust::sequence(thrust::device, static_cast<signed char *>(buff.data()),
-  //                 static_cast<signed char *>(buffer.data()) + buff.size(),
-  //                 0);
+  thrust::sequence(thrust::device, static_cast<signed char *>(buff.data()),
+                   static_cast<signed char *>(buff.data()) + buff.size(), 0);
   rmm::device_buffer buff_copy(buff, this->stream, this->mr.get());
   EXPECT_NE(nullptr, buff_copy.data());
   EXPECT_NE(buff.data(), buff_copy.data());
@@ -240,10 +236,10 @@ TYPED_TEST(DeviceBufferTest, CopyCapacityLargerThanSizeExplicitMr) {
   EXPECT_TRUE(buff.memory_resource()->is_equal(*buff_copy.memory_resource()));
   EXPECT_NE(buff.stream(), buff_copy.stream());
 
-  // EXPECT_TRUE(
-  //    thrust::equal(thrust::device, static_cast<signed char *>(buff.data()),
-  //                  static_cast<signed char *>(buff.data()) + buff.size(),
-  //                  static_cast<signed char *>(buff_copy.data())));
+  EXPECT_TRUE(
+      thrust::equal(thrust::device, static_cast<signed char *>(buff.data()),
+                    static_cast<signed char *>(buff.data()) + buff.size(),
+                    static_cast<signed char *>(buff_copy.data())));
 }
 
 TYPED_TEST(DeviceBufferTest, CopyAssignmentToDefault) {
