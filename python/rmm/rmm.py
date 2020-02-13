@@ -13,12 +13,12 @@
 # limitations under the License.
 
 import ctypes
+from enum import IntEnum
 
 import numpy as np
 from numba import cuda
 
 import rmm._lib as librmm
-from rmm import rmm_config
 
 
 # Utility Functions
@@ -28,39 +28,92 @@ class RMMError(Exception):
         super(RMMError, self).__init__(msg)
 
 
-def _array_helper(addr, datasize, shape, strides, dtype, finalizer=None):
-    ctx = cuda.current_context()
-    ptr = ctypes.c_uint64(int(addr))
-    mem = cuda.driver.MemoryPointer(ctx, ptr, datasize, finalizer=finalizer)
-    return cuda.cudadrv.devicearray.DeviceNDArray(
-        shape, strides, dtype, gpu_data=mem
-    )
+class rmm_allocation_mode(IntEnum):
+    CudaDefaultAllocation = (0,)
+    PoolAllocation = (1,)
+    CudaManagedMemory = (2,)
 
 
 # API Functions
-def initialize():
+def _initialize(
+    pool_allocator=False,
+    managed_memory=False,
+    initial_pool_size=None,
+    devices=0,
+    logging=False,
+):
     """
-    Initializes the RMM library using the options set in the librmm_config
-    module
+    Initializes RMM library using the options passed
     """
     allocation_mode = 0
-    if rmm_config.use_pool_allocator:
-        allocation_mode = 1
-    if rmm_config.use_managed_memory:
-        allocation_mode = 2
+
+    if pool_allocator:
+        allocation_mode |= rmm_allocation_mode.PoolAllocation
+    if managed_memory:
+        allocation_mode |= rmm_allocation_mode.CudaManagedMemory
+
+    if not pool_allocator:
+        initial_pool_size = 0
+    elif pool_allocator and initial_pool_size is None:
+        initial_pool_size = 0
+    elif pool_allocator and initial_pool_size == 0:
+        initial_pool_size = 1
+
+    if devices is None:
+        devices = [0]
+    elif isinstance(devices, int):
+        devices = [devices]
 
     return librmm.rmm_initialize(
-        allocation_mode,
-        rmm_config.initial_pool_size,
-        rmm_config.enable_logging,
+        allocation_mode, initial_pool_size, devices, logging
     )
 
 
-def finalize():
+def _finalize():
     """
     Finalizes the RMM library, freeing all allocated memory
     """
     return librmm.rmm_finalize()
+
+
+def reinitialize(
+    pool_allocator=False,
+    managed_memory=False,
+    initial_pool_size=None,
+    devices=0,
+    logging=False,
+):
+    """
+    Finalizes and then initializes RMM using the options passed. Using memory
+    from a previous initialization of RMM is undefined behavior and should be
+    avoided.
+
+    Parameters
+    ----------
+    pool_allocator : bool, default False
+        If True, use a pool allocation strategy which can greatly improve
+        performance.
+    managed_memory : bool, default False
+        If True, use managed memory for device memory allocation
+    initial_pool_size : int, default None
+        When `pool_allocator` is True, this indicates the initial pool size in
+        bytes. None is used to indicate the default size of the underlying
+        memorypool implementation, which currently is 1/2 total GPU memory.
+    devices : int or List[int], default 0
+        GPU device  IDs to register. By default registers only GPU 0.
+    logging : bool, default False
+        If True, enable run-time logging of all memory events
+        (alloc, free, realloc).
+        This has significant performance impact.
+    """
+    _finalize()
+    return _initialize(
+        pool_allocator=pool_allocator,
+        managed_memory=managed_memory,
+        initial_pool_size=initial_pool_size,
+        devices=devices,
+        logging=logging,
+    )
 
 
 def is_initialized():
@@ -91,14 +144,14 @@ def device_array_from_ptr(ptr, nelem, dtype=np.float, finalizer=None):
 
     elemsize = dtype.itemsize
     datasize = elemsize * nelem
+    shape = (nelem,)
+    strides = (elemsize,)
     # note no finalizer -- freed externally!
-    return _array_helper(
-        addr=ptr,
-        datasize=datasize,
-        shape=(nelem,),
-        strides=(elemsize,),
-        dtype=dtype,
-        finalizer=finalizer,
+    ctx = cuda.current_context()
+    ptr = ctypes.c_uint64(int(ptr))
+    mem = cuda.driver.MemoryPointer(ctx, ptr, datasize, finalizer=finalizer)
+    return cuda.cudadrv.devicearray.DeviceNDArray(
+        shape, strides, dtype, gpu_data=mem
     )
 
 
@@ -117,17 +170,13 @@ def device_array(shape, dtype=np.float, strides=None, order="C", stream=0):
         shape, strides, dtype.itemsize
     )
 
-    addr = librmm.rmm_alloc(datasize, stream)
+    buf = librmm.DeviceBuffer(size=datasize, stream=stream)
 
-    # Note Numba will call the finalizer to free the device memory
-    # allocated above
-    return _array_helper(
-        addr=addr,
-        datasize=datasize,
-        shape=shape,
-        strides=strides,
-        dtype=dtype,
-        finalizer=_make_finalizer(addr, stream),
+    ctx = cuda.current_context()
+    ptr = ctypes.c_uint64(int(buf.ptr))
+    mem = cuda.driver.MemoryPointer(ctx, ptr, datasize, owner=buf)
+    return cuda.cudadrv.devicearray.DeviceNDArray(
+        shape, strides, dtype, gpu_data=mem
     )
 
 
@@ -160,35 +209,6 @@ def to_device(ary, stream=0, copy=True, to=None):
     return to
 
 
-def auto_device(obj, stream=0, copy=True):
-    """
-    Create a DeviceRecord or DeviceArray like obj and optionally copy data from
-    host to device. If obj already represents device memory, it is returned and
-    no copy is made. Uses RMM for device memory allocation if necessary.
-    """
-    if cuda.driver.is_device_memory(obj):
-        return obj, False
-    if hasattr(obj, "__cuda_array_interface__"):
-        new_dev_array = cuda.as_cuda_array(obj)
-        # Allocate new output array using rmm and copy the numba device
-        # array to an rmm owned device array
-        out_dev_array = device_array_like(new_dev_array)
-        out_dev_array.copy_to_device(new_dev_array)
-        return out_dev_array, False
-    else:
-        if isinstance(obj, np.void):
-            devobj = cuda.devicearray.from_record_like(obj, stream=stream)
-        else:
-            if not isinstance(obj, np.ndarray):
-                obj = np.asarray(obj)
-            cuda.devicearray.sentry_contiguous(obj)
-            devobj = device_array_like(obj, stream=stream)
-
-        if copy:
-            devobj.copy_to_device(obj, stream=stream)
-        return devobj, True
-
-
 def get_ipc_handle(ary, stream=0):
     """
     Get an IPC handle from the DeviceArray ary with offset modified by
@@ -205,6 +225,52 @@ def get_ipc_handle(ary, stream=0):
     )
 
 
+def get_info(stream=0):
+    """
+    Get the free and total bytes of memory managed by a manager associated with
+    the stream as a namedtuple with members `free` and `total`.
+    """
+    return librmm.rmm_getinfo(stream)
+
+
+try:
+    import cupy
+except Exception:
+    cupy = None
+
+if cupy:
+
+    class RMMCuPyMemory(cupy.cuda.memory.BaseMemory):
+        def __init__(self, size):
+            self.size = size
+            if size > 0:
+                self.rmm_array = librmm.device_buffer.DeviceBuffer(size=size)
+                self.ptr = self.rmm_array.ptr
+                self.device_id = cupy.cuda.runtime.pointerGetAttributes(
+                    self.ptr
+                ).device
+            else:
+                self.rmm_array = None
+                self.ptr = 0
+                self.device_id = cupy.cuda.device.get_device_id()
+
+
+def rmm_cupy_allocator(nbytes):
+    """
+    A CuPy allocator that make use of RMM.
+
+    Examples
+    --------
+    >>> import rmm
+    >>> import cupy
+    >>> cupy.cuda.set_allocator(rmm.rmm_cupy_allocator)
+    """
+    if cupy is None:
+        raise ModuleNotFoundError("No module named 'cupy'")
+
+    return cupy.cuda.memory.MemoryPointer(RMMCuPyMemory(nbytes), 0)
+
+
 def _make_finalizer(handle, stream):
     """
     Factory to make the finalizer function.
@@ -216,7 +282,13 @@ def _make_finalizer(handle, stream):
         """
         Invoked when the MemoryPointer is freed
         """
-        if is_initialized():
-            librmm.rmm_free(handle, stream)
+        librmm.rmm_free(handle, stream)
 
     return finalizer
+
+
+def _register_atexit_finalize():
+    """
+    Registers rmmFinalize() with ``std::atexit``.
+    """
+    librmm.register_atexit_finalize()

@@ -1,4 +1,4 @@
-# Copyright (c) 2019, NVIDIA CORPORATION.
+# Copyright (c) 2019-2020, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# cython: profile=False
+# cython: profile = False
 # distutils: language = c++
 # cython: embedsignature = True
 # cython: language_level = 3
@@ -20,14 +20,31 @@
 from libc.stdint cimport uintptr_t
 from libcpp cimport bool
 from libcpp.utility cimport pair
+from libcpp.vector cimport vector
 
-ctypedef long int offset_t
 ctypedef pair[const char*, unsigned int] caller_pair
+ctypedef pair[size_t, size_t] memory_pair
 
 
 cdef extern from * nogil:
 
+    ctypedef enum cudaError_t "cudaError_t":
+        cudaSuccess = 0
+
     ctypedef void* cudaStream_t "cudaStream_t"
+
+    ctypedef enum cudaMemcpyKind "cudaMemcpyKind":
+        cudaMemcpyHostToHost = 0
+        cudaMemcpyHostToDevice = 1
+        cudaMemcpyDeviceToHost = 2
+        cudaMemcpyDeviceToDevice = 3
+        cudaMemcpyDefault = 4
+
+    cudaError_t cudaMemcpyAsync(void* dst, const void* src, size_t count,
+                                cudaMemcpyKind kind)
+    cudaError_t cudaMemcpyAsync(void* dst, const void* src, size_t count,
+                                cudaMemcpyKind kind, cudaStream_t stream)
+    cudaError_t cudaStreamSynchronize(cudaStream_t stream)
 
 
 cdef uintptr_t c_alloc(
@@ -35,17 +52,23 @@ cdef uintptr_t c_alloc(
     cudaStream_t stream
 ) except? <uintptr_t>NULL
 
-cdef void c_free(
+cdef rmmError_t c_free(
     void *ptr,
-    cudaStream_t stream
+    cudaStream_t stream,
+    const char* file=*,
+    unsigned int line=*
 ) except *
 
-cdef offset_t* c_getallocationoffset(
+cdef ptrdiff_t c_getallocationoffset(
     void *ptr,
     cudaStream_t stream
-) except? <offset_t*>NULL
+)
 
 cdef caller_pair _get_caller() except *
+
+cdef memory_pair c_getinfo(
+    cudaStream_t stream
+) except *
 
 
 cdef extern from "rmm/rmm.h" nogil:
@@ -65,10 +88,12 @@ cdef extern from "rmm/rmm.h" nogil:
         PoolAllocation = 1,
         CudaManagedMemory = 2,
 
-    ctypedef struct rmmOptions_t:
+    cdef cppclass rmmOptions_t:
+        rmmOptions_t() except +
         rmmAllocationMode_t allocation_mode
         size_t initial_pool_size
         bool enable_logging
+        vector[int] devices
 
     cdef rmmError_t rmmInitialize(
         rmmOptions_t *options
@@ -100,7 +125,7 @@ cdef extern from "rmm/rmm.h" nogil:
     ) except +
 
     cdef rmmError_t rmmGetAllocationOffset(
-        offset_t *offset,
+        ptrdiff_t *offset,
         void *ptr,
         cudaStream_t stream
     ) except +
@@ -122,6 +147,7 @@ cdef extern from "rmm/rmm.h" nogil:
         size_t buffer_size
     ) except +
 
+
 cdef extern from "rmm/rmm.hpp" namespace "rmm" nogil:
 
     cdef rmmError_t alloc[T](
@@ -138,3 +164,11 @@ cdef extern from "rmm/rmm.hpp" namespace "rmm" nogil:
         const char* file,
         unsigned int line
     ) except +
+
+    cdef cppclass Manager:
+        @staticmethod
+        rmmOptions_t getOptions() except +
+
+
+cdef extern from "cstdlib":
+    int atexit(void (*func)())

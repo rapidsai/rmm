@@ -22,11 +22,9 @@
 
 #ifndef MEMORY_HPP
 #define MEMORY_HPP
-extern "C" {
 #include "rmm/rmm_api.h"
-}
 #include "rmm/detail/memory_manager.hpp"
-#include "rmm/mr/default_memory_resource.hpp"
+#include "rmm/mr/device/default_memory_resource.hpp"
 
 /** ---------------------------------------------------------------------------*
  * @brief Macro wrapper to check for error in RMM API calls.
@@ -138,7 +136,7 @@ inline rmmError_t alloc(T** ptr, size_t size, cudaStream_t stream, const char* f
     *ptr = static_cast<T*>(
       rmm::mr::get_default_resource()->allocate(size,stream));
 
-  } catch(std::exception e) {
+  } catch(std::exception const& e) {
     *ptr = nullptr;
     return RMM_ERROR_OUT_OF_MEMORY;
   }
@@ -179,7 +177,7 @@ inline rmmError_t realloc(T** ptr, size_t new_size, cudaStream_t stream,
       try{
         *ptr = static_cast<char *>(
           rmm::mr::get_default_resource()->allocate(new_size,stream));
-      }catch(std::exception e){
+      }catch(std::exception const& e){
         *ptr = nullptr;
         return RMM_ERROR_OUT_OF_MEMORY;
       }
@@ -212,9 +210,6 @@ inline rmmError_t free(void* ptr, cudaStream_t stream, const char* file,
   rmm::LogIt log(rmm::Logger::Free, ptr, 0, stream, file, line);
 
   rmm::mr::get_default_resource()->deallocate(ptr,0,stream);
-
-  if (cudaSuccess != cudaGetLastError())
-    return RMM_ERROR_CUDA_ERROR;
 
   return RMM_SUCCESS;
 }

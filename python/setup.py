@@ -1,6 +1,7 @@
 # Copyright (c) 2019, NVIDIA CORPORATION.
 
 import os
+import shutil
 import sysconfig
 from distutils.sysconfig import get_python_lib
 
@@ -14,9 +15,21 @@ cython_files = ["rmm/_lib/**/*.pyx"]
 
 CUDA_HOME = os.environ.get("CUDA_HOME", False)
 if not CUDA_HOME:
-    CUDA_HOME = (
-        os.popen('echo "$(dirname $(dirname $(which nvcc)))"').read().strip()
+    path_to_cuda_gdb = shutil.which("cuda-gdb")
+    if path_to_cuda_gdb is None:
+        raise OSError(
+            "Could not locate CUDA. "
+            "Please set the environment variable "
+            "CUDA_HOME to the path to the CUDA installation "
+            "and try again."
+        )
+    CUDA_HOME = os.path.dirname(os.path.dirname(path_to_cuda_gdb))
+
+if not os.path.isdir(CUDA_HOME):
+    raise OSError(
+        f"Invalid CUDA_HOME: " "directory does not exist: {CUDA_HOME}"
     )
+
 cuda_include_dir = os.path.join(CUDA_HOME, "include")
 
 extensions = [
@@ -39,7 +52,7 @@ extensions = [
 
 setup(
     name="rmm",
-    version=versioneer.get_version(),
+    version="0.13.0",
     description="rmm - RAPIDS Memory Manager",
     url="https://github.com/rapidsai/rmm",
     author="NVIDIA Corporation",

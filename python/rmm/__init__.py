@@ -14,24 +14,27 @@
 
 import weakref
 
-from rmm import rmm_config
 from rmm.rmm import (
     RMMError,
+    _finalize,
+    _initialize,
     _make_finalizer,
-    auto_device,
+    _register_atexit_finalize,
     csv_log,
     device_array,
     device_array_from_ptr,
     device_array_like,
-    finalize,
     get_ipc_handle,
-    initialize,
+    get_info,
     is_initialized,
+    reinitialize,
     to_device,
+    rmm_cupy_allocator,
 )
 
-# Initialize RMM on import, finalize RMM on process exit
-initialize()
+from rmm._lib.device_buffer import DeviceBuffer
+from rmm._lib.device_pointer import DevicePointer as _DevicePointer
 
-_rmm_dummy_object = lambda: None
-_rmm_atexit_func = weakref.finalize(_rmm_dummy_object, finalize)
+# Initialize RMM on import, finalize RMM on process exit
+_initialize()
+_register_atexit_finalize()

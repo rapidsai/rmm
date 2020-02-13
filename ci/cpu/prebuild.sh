@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 
 #Build rmm once per PYTHON
-if [[ "$CUDA" == "9.2" ]]; then
-    export BUILD_RMM=1
+if [[ "$CUDA" == "10.0" ]]; then
+    export UPLOAD_RMM=1
 else
-    export BUILD_RMM=0
+    export UPLOAD_RMM=0
 fi
 
 #Build librmm once per CUDA
 if [[ "$PYTHON" == "3.6" ]]; then
-    export BUILD_LIBRMM=1
+    export UPLOAD_LIBRMM=1
 else
-    export BUILD_LIBRMM=0
+    export UPLOAD_LIBRMM=0
 fi
