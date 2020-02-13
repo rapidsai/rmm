@@ -18,6 +18,7 @@
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
+#include <rmm/mr/device/thrust_sync_pool.hpp>
 
 #include <benchmark/benchmark.h>
 
@@ -170,6 +171,19 @@ static void BM_RandomAllocationsCnmem(State& state) {
   }
 }
 BENCHMARK(BM_RandomAllocationsCnmem)->Unit(benchmark::kMillisecond);
+
+template <typename State>
+static void BM_RandomAllocationsThrust(State& state) {
+  rmm::mr::thrust_sync_pool<> mr;
+
+  try {
+    for (auto _ : state)
+      uniform_random_allocations(mr, num_allocations, max_size, max_usage);
+  } catch (std::exception const& e) {
+    std::cout << "Error: " << e.what() << "\n";
+  }
+}
+BENCHMARK(BM_RandomAllocationsThrust)->Unit(benchmark::kMillisecond);
 
 /*int main(void) {
   std::vector<int> state(1);
