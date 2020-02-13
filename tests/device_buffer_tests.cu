@@ -34,6 +34,18 @@ void sync_stream(cudaStream_t stream) {
   EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(stream));
 }
 
+void expect_equal_buffers(void const *lhs, void const *rhs,
+                          std::size_t size_bytes) {
+  if (size_bytes > 0) {
+    EXPECT_NE(nullptr, lhs);
+    EXPECT_NE(nullptr, rhs);
+  }
+  auto typed_lhs = static_cast<char const *>(lhs);
+  auto typed_rhs = static_cast<char const *>(rhs);
+  EXPECT_TRUE(thrust::equal(thrust::device, typed_lhs, typed_lhs + size_bytes,
+                            typed_rhs));
+}
+
 template <typename MemoryResourceType>
 struct DeviceBufferTest : public ::testing::Test {
   cudaStream_t stream{};
@@ -158,9 +170,7 @@ TYPED_TEST(DeviceBufferTest, CopyConstructor) {
       buff_copy.memory_resource()->is_equal(*rmm::mr::get_default_resource()));
   EXPECT_EQ(buff_copy.stream(), cudaStream_t{0});
 
-  EXPECT_TRUE(thrust::equal(thrust::device, static_cast<char *>(buff.data()),
-                            static_cast<char *>(buff.data()) + buff.size(),
-                            static_cast<char *>(buff_copy.data())));
+  expect_equal_buffers(buff.data(), buff_copy.data(), buff.size());
 
   // now use buff's stream and MR
   rmm::device_buffer buff_copy2(buff, buff.stream(), buff.memory_resource());
@@ -190,10 +200,7 @@ TYPED_TEST(DeviceBufferTest, CopyCapacityLargerThanSize) {
       buff_copy.memory_resource()->is_equal(*rmm::mr::get_default_resource()));
   EXPECT_EQ(buff_copy.stream(), cudaStream_t{0});
 
-  EXPECT_TRUE(
-      thrust::equal(thrust::device, static_cast<signed char *>(buff.data()),
-                    static_cast<signed char *>(buff.data()) + buff.size(),
-                    static_cast<signed char *>(buff_copy.data())));
+  expect_equal_buffers(buff.data(), buff_copy.data(), buff.size());
 }
 
 TYPED_TEST(DeviceBufferTest, CopyConstructorExplicitMr) {
@@ -209,10 +216,7 @@ TYPED_TEST(DeviceBufferTest, CopyConstructorExplicitMr) {
   EXPECT_TRUE(buff.memory_resource()->is_equal(*buff_copy.memory_resource()));
   EXPECT_NE(buff.stream(), buff_copy.stream());
 
-  EXPECT_TRUE(
-      thrust::equal(thrust::device, static_cast<signed char *>(buff.data()),
-                    static_cast<signed char *>(buff.data()) + buff.size(),
-                    static_cast<signed char *>(buff_copy.data())));
+  expect_equal_buffers(buff.data(), buff_copy.data(), buff.size());
 }
 
 TYPED_TEST(DeviceBufferTest, CopyCapacityLargerThanSizeExplicitMr) {
@@ -236,10 +240,7 @@ TYPED_TEST(DeviceBufferTest, CopyCapacityLargerThanSizeExplicitMr) {
   EXPECT_TRUE(buff.memory_resource()->is_equal(*buff_copy.memory_resource()));
   EXPECT_NE(buff.stream(), buff_copy.stream());
 
-  EXPECT_TRUE(
-      thrust::equal(thrust::device, static_cast<signed char *>(buff.data()),
-                    static_cast<signed char *>(buff.data()) + buff.size(),
-                    static_cast<signed char *>(buff_copy.data())));
+  expect_equal_buffers(buff.data(), buff_copy.data(), buff.size());
 }
 
 TYPED_TEST(DeviceBufferTest, CopyAssignmentToDefault) {
