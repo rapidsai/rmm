@@ -138,20 +138,23 @@ TYPED_TEST(DeviceBufferTest, CopyFromNullptrNonZero) {
 }
 
 TYPED_TEST(DeviceBufferTest, CopyConstructor) {
-  rmm::device_buffer buff(this->size, 0, &this->mr);
-  // Can't do this until RMM cmake is setup to build cuda files
-  // thrust::sequence(thrust::device, static_cast<signed char *>(buff.data()),
-  //                 static_cast<signed char *>(buffer.data()) + buff.size(),
-  //                 0);
-  rmm::device_buffer buff_copy(buff); // uses default stream and MR
+  // Initialize buffer
+  thrust::sequence(thrust::device, static_cast<char *>(buff.data()),
+                   static_cast<char *>(buff.data()) + buff.size(), 0);
+
+  rmm::device_buffer buff_copy(buff);  // uses default stream and MR
   EXPECT_NE(nullptr, buff_copy.data());
   EXPECT_NE(buff.data(), buff_copy.data());
   EXPECT_EQ(buff.size(), buff_copy.size());
   EXPECT_EQ(buff.capacity(), buff_copy.capacity());
   EXPECT_EQ(buff_copy.memory_resource(), rmm::mr::get_default_resource());
-  EXPECT_TRUE(buff_copy.memory_resource()->
-                is_equal(*rmm::mr::get_default_resource()));
+  EXPECT_TRUE(
+      buff_copy.memory_resource()->is_equal(*rmm::mr::get_default_resource()));
   EXPECT_EQ(buff_copy.stream(), cudaStream_t{0});
+
+  EXPECT_TRUE(thrust::equal(thrust::device, static_cast<char *>(buff.data()),
+                            static_cast<char *>(buff.data()) + buff.size(),
+                            static_cast<char *>(buff_copy.data())));
 
   // now use buff's stream and MR
   rmm::device_buffer buff_copy2(buff, buff.stream(), buff.memory_resource());
