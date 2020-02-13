@@ -54,6 +54,10 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     endif(CMAKE_CXX11_ABI)
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
+# To apply RUNPATH to transitive dependencies (this is a temporary solution)
+set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--disable-new-dtags")
+set(CMAKE_EXE_LINKER_FLAGS "-Wl,--disable-new-dtags")
+
 option(BUILD_TESTS "Configure CMake to build tests"
        ON)
 
