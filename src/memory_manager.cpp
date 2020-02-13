@@ -20,6 +20,7 @@
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
+#include <rmm/mr/device/thrust_sync_pool.hpp>
 
 namespace rmm {
 /** -------------------------------------------------------------------------*
@@ -106,11 +107,9 @@ void Manager::initialize(const rmmOptions_t* new_options) {
     auto pool_size = getOptions().initial_pool_size;
     auto const& devices = getOptions().devices;
     if (useManagedMemory()) {
-      initialized_resource.reset(
-          new rmm::mr::cnmem_managed_memory_resource(pool_size, devices));
+      throw std::runtime_error{"Managed pool not supported."};
     } else {
-      initialized_resource.reset(
-          new rmm::mr::cnmem_memory_resource(pool_size, devices));
+      initialized_resource.reset(new rmm::mr::thrust_sync_pool<>{});
     }
   } else if (rmm::Manager::useManagedMemory()) {
     initialized_resource.reset(new rmm::mr::managed_memory_resource());
