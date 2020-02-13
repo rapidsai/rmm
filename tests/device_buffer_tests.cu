@@ -17,13 +17,16 @@
 #include "gtest/gtest.h"
 
 #include <rmm/device_buffer.hpp>
-#include <rmm/mr/device/cnmem_memory_resource.hpp>
 #include <rmm/mr/device/cnmem_managed_memory_resource.hpp>
+#include <rmm/mr/device/cnmem_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
 
+
+#include <thrust/sequence.h>
+#include <thrust/equal.h>
 #include <cuda_runtime_api.h>
 #include <cstddef>
 #include <random>
@@ -51,10 +54,9 @@ struct DeviceBufferTest : public ::testing::Test {
   };
 };
 
-using resources = ::testing::Types<rmm::mr::cuda_memory_resource,
-                                   rmm::mr::managed_memory_resource,
-                                   rmm::mr::cnmem_memory_resource,
-                                   rmm::mr::cnmem_managed_memory_resource>;
+using resources = ::testing::Types<
+    rmm::mr::cuda_memory_resource, rmm::mr::managed_memory_resource,
+    rmm::mr::cnmem_memory_resource, rmm::mr::cnmem_managed_memory_resource>;
 
 TYPED_TEST_CASE(DeviceBufferTest, resources);
 
@@ -99,7 +101,7 @@ TYPED_TEST(DeviceBufferTest, ExplicitMemoryResourceStream) {
 }
 
 TYPED_TEST(DeviceBufferTest, CopyFromRawDevicePointer) {
-  void* device_memory{nullptr};
+  void *device_memory{nullptr};
   EXPECT_EQ(cudaSuccess, cudaMalloc(&device_memory, this->size));
   rmm::device_buffer buff(device_memory, this->size);
   EXPECT_NE(nullptr, buff.data());
@@ -113,7 +115,7 @@ TYPED_TEST(DeviceBufferTest, CopyFromRawDevicePointer) {
 
 TYPED_TEST(DeviceBufferTest, CopyFromRawHostPointer) {
   std::vector<uint8_t> host_data(this->size);
-  rmm::device_buffer buff(static_cast<void*>(host_data.data()), this->size);
+  rmm::device_buffer buff(static_cast<void *>(host_data.data()), this->size);
   EXPECT_NE(nullptr, buff.data());
   EXPECT_EQ(this->size, buff.size());
   EXPECT_EQ(this->size, buff.capacity());
@@ -189,8 +191,8 @@ TYPED_TEST(DeviceBufferTest, CopyCapacityLargerThanSize) {
   // The capacity of the copy should be equal to the `size()` of the original
   EXPECT_EQ(new_size, buff_copy.capacity());
   EXPECT_EQ(buff_copy.memory_resource(), rmm::mr::get_default_resource());
-  EXPECT_TRUE(buff_copy.memory_resource()->
-                is_equal(*rmm::mr::get_default_resource()));
+  EXPECT_TRUE(
+      buff_copy.memory_resource()->is_equal(*rmm::mr::get_default_resource()));
   EXPECT_EQ(buff_copy.stream(), cudaStream_t{0});
 
   // EXPECT_TRUE(
