@@ -19,6 +19,7 @@
 
 #include <thrust/mr/disjoint_sync_pool.h>
 #include <thrust/mr/new.h>
+#include <thrust/mr/pool_options.h>
 #include <thrust/system/cuda/memory_resource.h>
 
 #include <stdexcept>
@@ -37,16 +38,38 @@ template <typename Upstream = thrust::system::cuda::detail::
               cuda_memory_resource<cudaMalloc, cudaFree, void*>,
           typename Bookkeeper = thrust::mr::new_delete_resource>
 class thrust_sync_pool final : public device_memory_resource {
+  using Pool =
+      thrust::mr::disjoint_synchronized_pool_resource<Upstream, Bookkeeper>;
+
  public:
   /**
    * @brief Construct a `thrust_sync_pool` memory resource.
    */
   explicit thrust_sync_pool() = default;
 
+  /**
+   * @brief Construct a new thrust sync pool object
+   *
+   * @param options
+   */
+  explicit thrust_sync_pool(thrust::mr::pool_options options)
+      : _pool(options) {}
+
+  /**
+   * @brief Construct a new thrust sync pool object
+   *
+   * @param upstream
+   * @param bookkeeper
+   */
+  thrust_sync_pool(
+      Upstream* upstream, Bookkeeper* bookkeeper,
+      thrust::mr::pool_options options = Pool::get_default_options())
+      : _pool(upstream, bookkeeper) {}
+
   bool supports_streams() const noexcept override { return false; }
 
  private:
-  thrust::mr::disjoint_synchronized_pool_resource<Upstream, Bookkeeper> _pool;
+  Pool _pool;
 
   /**
    * @brief Allocates memory of size at least `bytes`.
