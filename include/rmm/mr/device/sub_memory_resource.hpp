@@ -15,8 +15,8 @@
  */
 #pragma once
 
-#include "device_memory_resource.hpp"
-#include "detail/free_list.hpp"
+#include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/mr/device/detail/free_list.hpp>
 
 #include <cuda_runtime_api.h>
 #include <exception>
