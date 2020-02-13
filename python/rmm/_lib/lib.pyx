@@ -20,8 +20,9 @@
 from collections import namedtuple
 
 from libc.stdint cimport uintptr_t
-from libc.stdlib cimport malloc, free
 from libcpp.vector cimport vector
+
+from cpython.bytes cimport PyBytes_FromStringAndSize, PyBytes_AS_STRING
 
 
 # Utility Functions
@@ -142,18 +143,14 @@ def rmm_csv_log():
     calling the librmm functions via Cython
     """
     cdef size_t logsize = rmmLogSize()
-    cdef char* buf = <char*>malloc(logsize)
+    cdef bytes py_buf = PyBytes_FromStringAndSize(NULL, logsize)
+    cdef char* buf = PyBytes_AS_STRING(py_buf)
 
     with nogil:
-        rmm_error = rmmGetLog(
-            <char*>buf,
-            <size_t>logsize
-        )
+        rmm_error = rmmGetLog(buf, logsize)
 
     check_error(rmm_error)
 
-    cdef bytes py_buf = buf[:logsize]
-    free(buf)
     return py_buf.decode("utf-8")
 
 
@@ -239,21 +236,17 @@ def rmm_free(ptr, stream):
     )
 
 
-cdef ptrdiff_t* c_getallocationoffset(
+cdef ptrdiff_t c_getallocationoffset(
     void *ptr, cudaStream_t stream
-) except? <ptrdiff_t*>NULL:
+):
     """
     Gets the offset of ptr from its base allocation by calling the librmm
     functions via Cython
     """
-    cdef ptrdiff_t * offset = <ptrdiff_t *>malloc(sizeof(ptrdiff_t))
+    cdef ptrdiff_t offset
 
     with nogil:
-        rmm_error = rmmGetAllocationOffset(
-            <ptrdiff_t *>offset,
-            <void *>ptr,
-            <cudaStream_t>stream
-        )
+        rmm_error = rmmGetAllocationOffset(&offset, ptr, stream)
 
     check_error(rmm_error)
 
@@ -268,13 +261,9 @@ def rmm_getallocationoffset(ptr, stream):
     cdef void * c_ptr = <void *><uintptr_t>ptr
     cdef cudaStream_t c_stream = <cudaStream_t><uintptr_t>stream
 
-    cdef ptrdiff_t * c_offset = c_getallocationoffset(
-        <void *>c_ptr,
-        <cudaStream_t>c_stream
-    )
+    cdef ptrdiff_t c_offset = c_getallocationoffset(c_ptr, c_stream)
 
-    result = int(c_offset[0])
-    free(c_offset)
+    result = int(c_offset)
     return result
 
 

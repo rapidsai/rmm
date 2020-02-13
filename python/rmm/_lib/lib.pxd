@@ -59,10 +59,10 @@ cdef rmmError_t c_free(
     unsigned int line=*
 ) except *
 
-cdef ptrdiff_t* c_getallocationoffset(
+cdef ptrdiff_t c_getallocationoffset(
     void *ptr,
     cudaStream_t stream
-) except? <ptrdiff_t*>NULL
+)
 
 cdef caller_pair _get_caller() except *
 
