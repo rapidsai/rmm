@@ -24,6 +24,7 @@
 - PR #269 Doc sync behavior in `copy_ptr_to_host`
 - PR #278 Allocate a `bytes` object to fill up with RMM log data
 - PR #280 Drop allocation/deallocation of `offset`
+- PR #282 `DeviceBuffer` use default constructor for size=0
 
 ## Bug Fixes
 
