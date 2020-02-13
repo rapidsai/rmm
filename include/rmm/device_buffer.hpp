@@ -32,7 +32,7 @@ namespace rmm {
  * returned from `get_default_resource()` is used.
  *
  * @note Unlike `std::vector` or `thrust::device_vector`, the device memory
- * allocated by a `device_buffer` is unitialized. Therefore, it is undefined
+ * allocated by a `device_buffer` is uninitialized. Therefore, it is undefined
  * behavior to read the contents of `data()` before first initializing it.
  *
  * Examples:
