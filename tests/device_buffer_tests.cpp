@@ -37,9 +37,10 @@ template <typename MemoryResourceType>
 struct DeviceBufferTest : public ::testing::Test {
   cudaStream_t stream{};
   std::size_t size{};
-  MemoryResourceType mr{};
+  std::unique_ptr<MemoryResourceType> mr{nullptr};
 
   DeviceBufferTest() {
+    EXPECT_NO_THROW(mr.reset(new MemoryResourceType));
     std::default_random_engine generator;
     std::uniform_int_distribution<std::size_t> distribution(1000, 100000);
     size = distribution(generator);
@@ -49,12 +50,13 @@ struct DeviceBufferTest : public ::testing::Test {
 
   void TearDown() override {
     EXPECT_EQ(cudaSuccess, cudaStreamDestroy(stream));
+    EXPECT_NO_THROW(mr.reset());
   };
 };
 
 using resources = ::testing::Types<
-    rmm::mr::cuda_memory_resource, rmm::mr::managed_memory_resource,
-    rmm::mr::cnmem_memory_resource, rmm::mr::cnmem_managed_memory_resource,
+    rmm::mr::cuda_memory_resource, /*rmm::mr::managed_memory_resource,*/
+    /*rmm::mr::cnmem_memory_resource, rmm::mr::cnmem_managed_memory_resource,*/
     rmm::mr::thrust_sync_pool<>>;
 
 TYPED_TEST_CASE(DeviceBufferTest, resources);
@@ -79,23 +81,23 @@ TYPED_TEST(DeviceBufferTest, DefaultMemoryResourceStream) {
 }
 
 TYPED_TEST(DeviceBufferTest, ExplicitMemoryResource) {
-  rmm::device_buffer buff(this->size, 0, &this->mr);
+  rmm::device_buffer buff(this->size, 0, this->mr.get());
   EXPECT_NE(nullptr, buff.data());
   EXPECT_EQ(this->size, buff.size());
   EXPECT_EQ(this->size, buff.capacity());
-  EXPECT_EQ(&this->mr, buff.memory_resource());
-  EXPECT_TRUE(this->mr.is_equal(*buff.memory_resource()));
+  EXPECT_EQ(this->mr.get(), buff.memory_resource());
+  EXPECT_TRUE(this->mr->is_equal(*buff.memory_resource()));
   EXPECT_EQ(0, buff.stream());
 }
 
 TYPED_TEST(DeviceBufferTest, ExplicitMemoryResourceStream) {
-  rmm::device_buffer buff(this->size, this->stream, &this->mr);
+  rmm::device_buffer buff(this->size, this->stream, this->mr.get());
   sync_stream(this->stream);
   EXPECT_NE(nullptr, buff.data());
   EXPECT_EQ(this->size, buff.size());
   EXPECT_EQ(this->size, buff.capacity());
-  EXPECT_EQ(&this->mr, buff.memory_resource());
-  EXPECT_TRUE(this->mr.is_equal(*buff.memory_resource()));
+  EXPECT_EQ(this->mr.get(), buff.memory_resource());
+  EXPECT_TRUE(this->mr->is_equal(*buff.memory_resource()));
   EXPECT_EQ(this->stream, buff.stream());
 }
 
@@ -139,7 +141,7 @@ TYPED_TEST(DeviceBufferTest, CopyFromNullptrNonZero) {
 }
 
 TYPED_TEST(DeviceBufferTest, CopyConstructor) {
-  rmm::device_buffer buff(this->size, 0, &this->mr);
+  rmm::device_buffer buff(this->size, 0, this->mr.get());
   // Can't do this until RMM cmake is setup to build cuda files
   // thrust::sequence(thrust::device, static_cast<signed char *>(buff.data()),
   //                 static_cast<signed char *>(buffer.data()) + buff.size(),
@@ -167,7 +169,7 @@ TYPED_TEST(DeviceBufferTest, CopyConstructor) {
 }
 
 TYPED_TEST(DeviceBufferTest, CopyCapacityLargerThanSize) {
-  rmm::device_buffer buff(this->size, 0, &this->mr);
+  rmm::device_buffer buff(this->size, 0, this->mr.get());
 
   // Resizing smaller to make `size()` < `capacity()`
   auto new_size = this->size - 1;
@@ -196,12 +198,12 @@ TYPED_TEST(DeviceBufferTest, CopyCapacityLargerThanSize) {
 }
 
 TYPED_TEST(DeviceBufferTest, CopyConstructorExplicitMr) {
-  rmm::device_buffer buff(this->size, 0, &this->mr);
+  rmm::device_buffer buff(this->size, 0, this->mr.get());
   // Can't do this until RMM cmake is setup to build cuda files
   // thrust::sequence(thrust::device, static_cast<signed char *>(buff.data()),
   //                 static_cast<signed char *>(buffer.data()) + buff.size(),
   //                 0);
-  rmm::device_buffer buff_copy(buff, this->stream, &this->mr);
+  rmm::device_buffer buff_copy(buff, this->stream, this->mr.get());
   EXPECT_NE(nullptr, buff_copy.data());
   EXPECT_NE(buff.data(), buff_copy.data());
   EXPECT_EQ(buff.size(), buff_copy.size());
@@ -217,7 +219,7 @@ TYPED_TEST(DeviceBufferTest, CopyConstructorExplicitMr) {
 }
 
 TYPED_TEST(DeviceBufferTest, CopyCapacityLargerThanSizeExplicitMr) {
-  rmm::device_buffer buff(this->size, 0, &this->mr);
+  rmm::device_buffer buff(this->size, 0, this->mr.get());
 
   // Resizing smaller to make `size()` < `capacity()`
   auto new_size = this->size - 1;
@@ -227,7 +229,7 @@ TYPED_TEST(DeviceBufferTest, CopyCapacityLargerThanSizeExplicitMr) {
   // thrust::sequence(thrust::device, static_cast<signed char *>(buff.data()),
   //                 static_cast<signed char *>(buffer.data()) + buff.size(),
   //                 0);
-  rmm::device_buffer buff_copy(buff, this->stream, &this->mr);
+  rmm::device_buffer buff_copy(buff, this->stream, this->mr.get());
   EXPECT_NE(nullptr, buff_copy.data());
   EXPECT_NE(buff.data(), buff_copy.data());
   EXPECT_EQ(buff.size(), buff_copy.size());
@@ -246,7 +248,7 @@ TYPED_TEST(DeviceBufferTest, CopyCapacityLargerThanSizeExplicitMr) {
 }
 
 TYPED_TEST(DeviceBufferTest, CopyAssignmentToDefault) {
-  rmm::device_buffer const from(this->size, 0, &this->mr);
+  rmm::device_buffer const from(this->size, 0, this->mr.get());
   rmm::device_buffer to{};
   EXPECT_NO_THROW(to = from);
   EXPECT_NE(nullptr, to.data());
@@ -260,8 +262,8 @@ TYPED_TEST(DeviceBufferTest, CopyAssignmentToDefault) {
 }
 
 TYPED_TEST(DeviceBufferTest, CopyAssignment) {
-  rmm::device_buffer from(this->size, 0, &this->mr);
-  rmm::device_buffer to(this->size - 1, 0, &this->mr);
+  rmm::device_buffer from(this->size, 0, this->mr.get());
+  rmm::device_buffer to(this->size - 1, 0, this->mr.get());
   EXPECT_NO_THROW(to = from);
   EXPECT_NE(nullptr, to.data());
   EXPECT_NE(nullptr, from.data());
@@ -274,9 +276,9 @@ TYPED_TEST(DeviceBufferTest, CopyAssignment) {
 }
 
 TYPED_TEST(DeviceBufferTest, CopyAssignmentCapacityLargerThanSize) {
-  rmm::device_buffer from(this->size, 0, &this->mr);
+  rmm::device_buffer from(this->size, 0, this->mr.get());
   from.resize(from.size() - 1);
-  rmm::device_buffer to(42, 0, &this->mr);
+  rmm::device_buffer to(42, 0, this->mr.get());
   EXPECT_NO_THROW(to = from);
   EXPECT_NE(nullptr, to.data());
   EXPECT_NE(nullptr, from.data());
@@ -290,7 +292,7 @@ TYPED_TEST(DeviceBufferTest, CopyAssignmentCapacityLargerThanSize) {
 }
 
 TYPED_TEST(DeviceBufferTest, SelfCopyAssignment) {
-  rmm::device_buffer buff(this->size, 0, &this->mr);
+  rmm::device_buffer buff(this->size, 0, this->mr.get());
   auto p = buff.data();
   auto size = buff.size();
   auto capacity = buff.capacity();
@@ -307,7 +309,7 @@ TYPED_TEST(DeviceBufferTest, SelfCopyAssignment) {
 }
 
 TYPED_TEST(DeviceBufferTest, MoveConstructor) {
-  rmm::device_buffer buff(this->size, 0, &this->mr);
+  rmm::device_buffer buff(this->size, 0, this->mr.get());
   auto p = buff.data();
   auto size = buff.size();
   auto capacity = buff.capacity();
@@ -332,7 +334,7 @@ TYPED_TEST(DeviceBufferTest, MoveConstructor) {
 }
 
 TYPED_TEST(DeviceBufferTest, MoveConstructorStream) {
-  rmm::device_buffer buff(this->size, this->stream, &this->mr);
+  rmm::device_buffer buff(this->size, this->stream, this->mr.get());
   sync_stream(this->stream);
   auto p = buff.data();
   auto size = buff.size();
@@ -359,7 +361,7 @@ TYPED_TEST(DeviceBufferTest, MoveConstructorStream) {
 }
 
 TYPED_TEST(DeviceBufferTest, MoveAssignmentToDefault) {
-  rmm::device_buffer from(this->size, 0, &this->mr);
+  rmm::device_buffer from(this->size, 0, this->mr.get());
   auto p = from.data();
   auto size = from.size();
   auto capacity = from.capacity();
@@ -386,14 +388,14 @@ TYPED_TEST(DeviceBufferTest, MoveAssignmentToDefault) {
 }
 
 TYPED_TEST(DeviceBufferTest, MoveAssignment) {
-  rmm::device_buffer from(this->size, 0, &this->mr);
+  rmm::device_buffer from(this->size, 0, this->mr.get());
   auto p = from.data();
   auto size = from.size();
   auto capacity = from.capacity();
   auto mr = from.memory_resource();
   auto stream = from.stream();
 
-  rmm::device_buffer to(this->size - 1, 0, &this->mr);
+  rmm::device_buffer to(this->size - 1, 0, this->mr.get());
   EXPECT_NO_THROW(to = std::move(from));
 
   // contents of `from` should be in `to`
@@ -413,7 +415,7 @@ TYPED_TEST(DeviceBufferTest, MoveAssignment) {
 }
 
 TYPED_TEST(DeviceBufferTest, SelfMoveAssignment) {
-  rmm::device_buffer buff(this->size, 0, &this->mr);
+  rmm::device_buffer buff(this->size, 0, this->mr.get());
   auto p = buff.data();
   auto size = buff.size();
   auto capacity = buff.capacity();
@@ -430,7 +432,7 @@ TYPED_TEST(DeviceBufferTest, SelfMoveAssignment) {
 }
 
 TYPED_TEST(DeviceBufferTest, ResizeSmaller) {
-  rmm::device_buffer buff(this->size, 0, &this->mr);
+  rmm::device_buffer buff(this->size, 0, this->mr.get());
   auto old_data = buff.data();
   auto new_size = this->size - 1;
   buff.resize(new_size);
@@ -450,7 +452,7 @@ TYPED_TEST(DeviceBufferTest, ResizeSmaller) {
 }
 
 TYPED_TEST(DeviceBufferTest, ResizeBigger) {
-  rmm::device_buffer buff(this->size, 0, &this->mr);
+  rmm::device_buffer buff(this->size, 0, this->mr.get());
   auto old_data = buff.data();
   auto new_size = this->size + 1;
   buff.resize(new_size);
@@ -458,4 +460,15 @@ TYPED_TEST(DeviceBufferTest, ResizeBigger) {
   EXPECT_EQ(new_size, buff.capacity());
   // Resizing bigger means the data should point to a new allocation
   EXPECT_NE(old_data, buff.data());
+}
+
+TYPED_TEST(DeviceBufferTest, MultipleBuffers) {
+  std::vector<rmm::device_buffer> buffers(1000);
+
+  std::for_each(buffers.begin(), buffers.end(), [](rmm::device_buffer& b) {
+    b = rmm::device_buffer(10000000);
+  });
+  EXPECT_EQ(cudaSuccess, cudaDeviceSynchronize());
+  buffers.clear();
+  EXPECT_EQ(cudaSuccess, cudaDeviceSynchronize());
 }
