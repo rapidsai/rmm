@@ -25,7 +25,6 @@
 #include <rmm/mr/device/managed_memory_resource.hpp>
 #include <rmm/mr/device/thrust_sync_pool.hpp>
 
-#include <cuda_runtime_api.h>
 #include <cstddef>
 #include <random>
 
