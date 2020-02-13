@@ -51,7 +51,9 @@ cdef class DeviceBuffer:
             c_ptr = <const void*>ptr
             c_stream = <cudaStream_t>stream
 
-            if c_ptr == NULL:
+            if size == 0:
+                self.c_obj.reset(new device_buffer())
+            elif c_ptr == NULL:
                 self.c_obj.reset(new device_buffer(size, c_stream))
             else:
                 self.c_obj.reset(new device_buffer(c_ptr, size, c_stream))
