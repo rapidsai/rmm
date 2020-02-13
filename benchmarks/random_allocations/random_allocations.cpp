@@ -18,7 +18,6 @@
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
-#include <rmm/mr/device/sub_memory_resource.hpp>
 
 #include <benchmark/benchmark.h>
 
@@ -157,20 +156,7 @@ static void BM_RandomAllocationsCUDA(benchmark::State& state) {
     std::cout << "Error: " << e.what() << "\n";
   }
 }
-//BENCHMARK(BM_RandomAllocationsCUDA)->Unit(benchmark::kMillisecond);
-
-template <typename State>
-static void BM_RandomAllocationsSub(State& state) {
-  rmm::mr::sub_memory_resource mr;
-
-  try {
-    for (auto _ : state)
-      uniform_random_allocations(mr, num_allocations, max_size, max_usage);
-  } catch (std::exception const& e) {
-    std::cout << "Error: " << e.what() << "\n";
-  }
-}
-BENCHMARK(BM_RandomAllocationsSub)->Unit(benchmark::kMillisecond);
+BENCHMARK(BM_RandomAllocationsCUDA)->Unit(benchmark::kMillisecond);
 
 template <typename State>
 static void BM_RandomAllocationsCnmem(State& state) {
