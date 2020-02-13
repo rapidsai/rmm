@@ -138,6 +138,8 @@ TYPED_TEST(DeviceBufferTest, CopyFromNullptrNonZero) {
 }
 
 TYPED_TEST(DeviceBufferTest, CopyConstructor) {
+  rmm::device_buffer buff(this->size, 0, &this->mr);
+
   // Initialize buffer
   thrust::sequence(thrust::device, static_cast<char *>(buff.data()),
                    static_cast<char *>(buff.data()) + buff.size(), 0);
