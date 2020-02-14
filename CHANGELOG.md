@@ -12,6 +12,8 @@
 - PR #273 Moved device memory resource tests to `device/` directory.
 - PR #274 Add `copy_from_host` method to `DeviceBuffer`
 - PR #275 Add `copy_from_device` method to `DeviceBuffer`
+- PR #283 Add random allocation benchmark.
+- PR #287 Enabled CUDA CXX11 for unit tests.
 
 ## Improvements
 
@@ -24,6 +26,7 @@
 - PR #269 Doc sync behavior in `copy_ptr_to_host`
 - PR #278 Allocate a `bytes` object to fill up with RMM log data
 - PR #280 Drop allocation/deallocation of `offset`
+- PR #282 `DeviceBuffer` use default constructor for size=0
 
 ## Bug Fixes
 

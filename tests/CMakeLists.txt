@@ -21,6 +21,9 @@ project(RMM_TESTS LANGUAGES C CXX CUDA)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(CMAKE_CUDA_STANDARD 11)
+set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+
 ###################################################################################################
 # - compiler function -----------------------------------------------------------------------------
 
@@ -77,7 +80,7 @@ ConfigureTest(DEVICE_MR_TEST "${DEVICE_MR_TEST_SRC}")
 # - device buffer tests -------------------------------------------------------------------------------------
 
 set(BUFFER_TEST_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/device_buffer_tests.cpp")
+    "${CMAKE_CURRENT_SOURCE_DIR}/device_buffer_tests.cu")
 
 ConfigureTest(DEVICE_BUFFER_TEST "${BUFFER_TEST_SRC}")
 
