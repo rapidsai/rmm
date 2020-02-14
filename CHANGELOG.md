@@ -13,6 +13,7 @@
 - PR #274 Add `copy_from_host` method to `DeviceBuffer`
 - PR #275 Add `copy_from_device` method to `DeviceBuffer`
 - PR #283 Add random allocation benchmark.
+- PR #287 Enabled CUDA CXX11 for unit tests.
 
 ## Improvements
 
