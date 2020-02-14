@@ -23,6 +23,7 @@
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
 #include <rmm/mr/device/thrust_sync_pool.hpp>
+#include <rmm/mr/device/cub_memory_resource.hpp>
 
 #include <cuda_runtime_api.h>
 #include <cstddef>
@@ -88,7 +89,7 @@ struct MRTest : public ::testing::Test {
 using resources = ::testing::Types<
     rmm::mr::cuda_memory_resource, rmm::mr::managed_memory_resource,
     rmm::mr::cnmem_memory_resource, rmm::mr::cnmem_managed_memory_resource,
-    rmm::mr::thrust_sync_pool<>>;
+    rmm::mr::thrust_sync_pool<>, rmm::mr::cub_memory_resource>;
 
 TYPED_TEST_CASE(MRTest, resources);
 
