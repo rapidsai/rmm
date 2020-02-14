@@ -175,8 +175,7 @@ class sub_memory_resource final : public device_memory_resource {
   {
     if (p == nullptr) return;
 
-    auto i = allocated_blocks.find(block{static_cast<char*>(p)});//std::find_if(allocated_blocks.begin(), allocated_blocks.end(),
-             //             [p](block const& b) { return b.ptr == p; });
+    auto i = allocated_blocks.find(block{static_cast<char*>(p)});
 
     if (i != allocated_blocks.end()) { // found
       //assert(i->size == detail::round_up_safe(size, allocation_alignment));
