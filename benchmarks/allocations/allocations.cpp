@@ -20,6 +20,8 @@
 #include <rmm/mr/device/managed_memory_resource.hpp>
 
 #include <benchmark/benchmark.h>
+#include <thrust/iterator/discard_iterator.h>
+#include <thrust/transform.h>
 
 #include <chrono>
 #include <iostream>
@@ -62,6 +64,52 @@ void bulk_alloc_free(rmm::mr::device_memory_resource* mr,
   std::for_each(scratch.begin(), scratch.end(),
                 [mr](allocation a) { mr->deallocate(a.p, a.size); });
 }
+
+enum class action : bool { ALLOCATE, FREE };
+
+template <typename ActionIterator, typename SizeIterator, typename Deallocator,
+          typename Container>
+void generic(rmm::mr::device_memory_resource* mr, ActionIterator action_begin,
+             ActionIterator action_end, SizeIterator size_begin,
+             Container& allocations, Deallocator f) {
+  // Perform allocation/free pattern
+  std::transform(action_begin, action_end, size_begin,
+                 thrust::make_discard_iterator(),
+                 [&allocations, mr, &f](action a, std::size_t size) {
+                   if (a == action::ALLOCATE) {
+                     allocations.emplace_back(mr->allocate(size), size);
+                   } else {
+                     f(mr, allocations);
+                   }
+                   return 0;  // Won't compile w/o this
+                 });
+
+  // Free any remaining allocations
+  std::for_each(std::begin(allocations), std::end(allocations),
+                [mr](allocation a) { mr->deallocate(a.p, a.size); });
+
+  allocations.clear();
+}
+
+static void BM_generic_test(benchmark::State& state) {
+  rmm::mr::cuda_memory_resource mr;
+
+  std::vector<action> actions(100, action::ALLOCATE);
+  std::vector<std::size_t> sizes(actions.size());
+  std::iota(sizes.begin(), sizes.end(), 1);
+  std::vector<allocation> allocations;
+  allocations.reserve(actions.size());
+
+  for (auto _ : state) {
+    generic(&mr, actions.begin(), actions.end(), sizes.begin(), allocations,
+            [](rmm::mr::device_memory_resource* mr,
+               std::vector<allocation>& allocations) {
+              auto last = allocations.back();
+              mr->deallocate(last.p, last.size);
+            });
+  }
+}
+BENCHMARK(BM_generic_test)->Unit(benchmark::kMillisecond);
 
 static void BM_test(benchmark::State& state) {
   rmm::mr::cuda_memory_resource mr;
