@@ -134,35 +134,36 @@ inline void throw_cuda_error(cudaError_t error, const char* file,
  * @brief Error checking macro for CUDA runtime API functions.
  *
  * Invokes a CUDA runtime API function call, if the call does not return
- * cudaSuccess, invokes cudaGetLastError() to clear the error and throws an
+ * `cudaSuccess`, invokes cudaGetLastError() to clear the error and throws an
  * exception detailing the CUDA error that occurred
  *
+ * Defaults to throwing `rmm::cuda_error`, but a custom exception may also be
+ * specified.
+ *
+ * Example:
+ * ```c++
+ *
+ * // Throws `rmm::cuda_error` if `cudaMalloc` fails
+ * CUDA_TRY(cudaMalloc(&p, 100));
+ *
+ * // Throws `std::runtime_error` if `cudaMalloc` fails
+ * CUDA_TRY(cudaMalloc(&p, 100), std::runtime_error);
+ * ```
+ *
  */
-#define CUDA_TRY(call)                                           \
-  do {                                                           \
-    cudaError_t const status = (call);                           \
-    if (cudaSuccess != status) {                                 \
-      cudaGetLastError();                                        \
-      rmm::detail::throw_cuda_error(status, __FILE__, __LINE__); \
-    }                                                            \
+#define CUDA_TRY(...)                                     \
+  GET_CUDA_TRY_MACRO(__VA_ARGS__, CUDA_TRY_2, CUDA_TRY_1) \
+  (__VA_ARGS__)
+#define GET_CUDA_TRY_MACRO(_1, _2, NAME, ...) NAME
+#define CUDA_TRY_2(_call, _exception_type)                              \
+  do {                                                                  \
+    cudaError_t const error = (_call);                                  \
+    if (cudaSuccess != error) {                                         \
+      cudaGetLastError();                                               \
+      throw _exception_type{std::string{"CUDA error at: "} + __FILE__ + \
+                            std::to_string(__LINE__) + ": " +           \
+                            cudaGetErrorName(error) + " " +             \
+                            cudaGetErrorString(error)};                 \
+    }                                                                   \
   } while (0);
-
-/**
- * @brief Debug macro to check for CUDA errors
- *
- * In a non-release build, this macro will synchronize the specified stream
- * before error checking. In both release and non-release builds, this macro
- * checks for any pending CUDA errors from previous calls. If an error is
- * reported, an exception is thrown detailing the CUDA error that occurred.
- *
- * The intent of this macro is to provide a mechanism for synchronous and
- * deterministic execution for debugging asynchronous CUDA execution. It should
- * be used after any asynchronous CUDA call, e.g., cudaMemcpyAsync, or an
- * asynchronous kernel launch.
- *
- */
-#ifndef NDEBUG
-#define CHECK_CUDA(stream) CUDA_TRY(cudaStreamSynchronize(stream));
-#else
-#define CHECK_CUDA(stream) CUDA_TRY(cudaPeekAtLastError());
-#endif
+#define CUDA_TRY_1(_call) CUDA_TRY_2(_call, rmm::cuda_error)
