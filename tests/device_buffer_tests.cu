@@ -24,6 +24,8 @@
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
 #include <rmm/mr/device/thrust_sync_pool.hpp>
+#include <rmm/detail/error.hpp>
+
 
 
 #include <thrust/sequence.h>
@@ -138,7 +140,7 @@ TYPED_TEST(DeviceBufferTest, CopyFromNullptr) {
 
 TYPED_TEST(DeviceBufferTest, CopyFromNullptrNonZero) {
   // can  copy from a nullptr only if size == 0
-  EXPECT_THROW(rmm::device_buffer buff(nullptr, 1), std::runtime_error);
+  EXPECT_THROW(rmm::device_buffer buff(nullptr, 1), rmm::logic_error);
 }
 
 TYPED_TEST(DeviceBufferTest, CopyConstructor) {
