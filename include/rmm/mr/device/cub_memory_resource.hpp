@@ -30,10 +30,48 @@ namespace mr {
  */
 class cub_memory_resource final : public device_memory_resource {
  public:
+  static constexpr uint32_t NO_MAX_BIN{
+      cub::CachingDeviceAllocator::INVALID_BIN};
+  static constexpr std::size_t NO_BYTE_LIMIT{
+      cub::CachingDeviceAllocator::INVALID_SIZE};
+
   /**
    * @brief Construct a `cub_memory_resource` memory resource.
    */
   explicit cub_memory_resource() = default;
+
+  /**
+   * @brief Construct a new CUB memory resource with customized bins.
+   *
+   * Allocations are categorized and cached by bin size.
+   *
+   * A new allocation request of a given size will only consider cached
+   * allocations within the corresponding bin.
+   *
+   * Bin limits progress geometrically in accordance with the growth factor
+   * `bin_growth` provided during construction. Unused device allocations within
+   * a larger bin cache are not reused for allocation requests that categorize
+   * to smaller bin sizes.
+   *
+   * Allocation requests below `(bin_growth ^ min_bin)` are  rounded up to
+   * `(bin_growth ^ min_bin)`. Allocations above `(bin_growth ^ max_bin)` are
+   * not rounded up to the nearest bin and are simply freed when they are
+   * deallocated instead of being returned to a bin-cache.
+   *
+   * If the total storage of cached allocations on a given device will exceed
+   * `max_cached_bytes`, allocations for that device are simply freed when they
+   * are deallocated instead of being returned to their bin-cache.
+   *
+   * @param bin_growth Geometric growth factor
+   * @param min_bin Minimum bin exponent (size == bin_growth ^ min_bin).
+   * Defaults to 1.
+   * @param max_bin Maximum bin exponent (size == bin_growth ^ max_bin).
+   * Defaults to no maximum bin size.
+   */
+  cub_memory_resource(uint32_t bin_growth, uint32_t min_bin = 1,
+                      uint32_t max_bin = NO_MAX_BIN,
+                      std::size_t max_cached_bytes = NO_BYTE_LIMIT)
+      : _allocator{bin_growth, min_bin, max_bin, max_cached_bytes} {}
 
   bool supports_streams() const noexcept override { return true; }
 
