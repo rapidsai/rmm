@@ -174,7 +174,7 @@ BENCHMARK(BM_RandomAllocationsCnmem)->Unit(benchmark::kMillisecond);
 
 template <typename State>
 static void BM_RandomAllocationsCUB(State& state) {
-  rmm::mr::cub_memory_resource mr;
+  rmm::mr::cub_memory_resource mr{8};
 
   try {
     for (auto _ : state)
