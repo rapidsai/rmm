@@ -17,6 +17,8 @@
 
 #include "device_memory_resource.hpp"
 
+#include <rmm/detail/error.hpp>
+
 #include <cuda_runtime_api.h>
 #include <cassert>
 #include <exception>
@@ -29,10 +31,10 @@ namespace mr {
  * allocation/deallocation.
  *---------------------------------------------------------------------------**/
 class cuda_memory_resource final : public device_memory_resource {
-  public:
-    bool supports_streams() const noexcept override { return false; }
+ public:
+  bool supports_streams() const noexcept override { return false; }
 
-  private:
+ private:
   /**--------------------------------------------------------------------------*
    * @brief Allocates memory of size at least \p bytes using cudaMalloc.
    *
@@ -40,21 +42,14 @@ class cuda_memory_resource final : public device_memory_resource {
    *
    * @note Stream argument is ignored
    *
-   * @throws `std::bad_alloc` if the requested allocation could not be fulfilled
+   * @throws `rmm::bad_alloc` if the requested allocation could not be fulfilled
    *
    * @param bytes The size, in bytes, of the allocation
    * @return void* Pointer to the newly allocated memory
    *-------------------------------------------------------------------------**/
   void* do_allocate(std::size_t bytes, cudaStream_t) override {
     void* p{nullptr};
-    cudaError_t const status = cudaMalloc(&p, bytes);
-    if (cudaSuccess != status) {
-#ifndef NDEBUG
-      std::cerr << "cudaMalloc failed: " << cudaGetErrorName(status) << " "
-                << cudaGetErrorString(status) << "\n";
-#endif
-      throw std::bad_alloc{};
-    }
+    CUDA_TRY(cudaMalloc(&p, bytes), rmm::bad_alloc);
     return p;
   }
 
@@ -69,18 +64,13 @@ class cuda_memory_resource final : public device_memory_resource {
    *-------------------------------------------------------------------------**/
   void do_deallocate(void* p, std::size_t, cudaStream_t) override {
     cudaError_t const status = cudaFree(p);
-    if (cudaSuccess != status) {
-#ifndef NDEBUG
-      std::cerr << "cudaFree failed: " << cudaGetErrorName(status) << " "
-              << cudaGetErrorString(status) << "\n";
-#endif
-    }
+    assert(cudaSuccess == status);
   }
 
   /**--------------------------------------------------------------------------*
    * @brief Compare this resource to another.
    *
-   * Two cuda_memory_resources always compare equal, because they can each 
+   * Two cuda_memory_resources always compare equal, because they can each
    * deallocate memory allocated by the other.
    *
    * @param other The other resource to compare to
@@ -94,25 +84,16 @@ class cuda_memory_resource final : public device_memory_resource {
   /**--------------------------------------------------------------------------*
    * @brief Get free and available memory for memory resource
    *
-   * @throws std::runtime_error if cudaMemGetInfo fails
+   * @throws `rmm::cuda_error` if unable to retrieve memory info.
    *
-   * @param stream to execute on
    * @return std::pair contaiing free_size and total_size of memory
    *-------------------------------------------------------------------------**/
-  std::pair<size_t,size_t> do_get_mem_info( cudaStream_t stream) const{
+  std::pair<size_t, size_t> do_get_mem_info(cudaStream_t) const {
     std::size_t free_size;
     std::size_t total_size;
-    auto status = cudaMemGetInfo(&free_size, &total_size);
-    if (cudaSuccess != status) {
-#ifndef NDEBUG
-      std::cerr << "cudaMemGetInfo failed: " << cudaGetErrorName(status) << " "
-          << cudaGetErrorString(status) << "\n";
-      throw std::runtime_error{"Falied to to call get_mem_info on memory resrouce"};
-#endif
-    }
+    CUDA_TRY(cudaMemGetInfo(&free_size, &total_size));
     return std::make_pair(free_size, total_size);
   }
-
 };
 
 }  // namespace mr
