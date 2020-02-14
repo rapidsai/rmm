@@ -34,10 +34,10 @@ inline bool is_aligned(void* p, std::size_t alignment = ALIGNMENT) {
   return (0 == reinterpret_cast<uintptr_t>(p) % alignment);
 }
 
-/**---------------------------------------------------------------------------*
+/**
  * @brief Returns if a pointer points to a device memory or managed memory
  * allocation.
- *---------------------------------------------------------------------------**/
+ */
 inline bool is_device_memory(void* p) {
   cudaPointerAttributes attributes{};
   if (cudaSuccess != cudaPointerGetAttributes(&attributes, p)) {
