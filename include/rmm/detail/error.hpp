@@ -22,13 +22,13 @@
 
 namespace rmm {
 
-/**---------------------------------------------------------------------------*
+/**
  * @brief Exception thrown when logical precondition is violated.
  *
  * This exception should not be thrown directly and is instead thrown by the
  * RMM_EXPECTS macro.
  *
- *---------------------------------------------------------------------------**/
+ */
 struct logic_error : public std::logic_error {
   logic_error(char const* const message) : std::logic_error(message) {}
 
@@ -37,10 +37,10 @@ struct logic_error : public std::logic_error {
   // TODO Add an error code member? This would be useful for translating an
   // exception to an error code in a pure-C API
 };
-/**---------------------------------------------------------------------------*
+/**
  * @brief Exception thrown when a CUDA error is encountered.
  *
- *---------------------------------------------------------------------------**/
+ */
 struct cuda_error : public std::runtime_error {
   cuda_error(std::string const& message) : std::runtime_error(message) {}
 };
@@ -84,7 +84,7 @@ struct cuda_error : public std::runtime_error {
 #define RMM_EXPECTS_2(_condition, _reason) \
   RMM_EXPECTS_3(_condition, rmm::logic_error, _reason)
 
-/**---------------------------------------------------------------------------*
+/**
  * @brief Indicates that an erroneous code path has been taken.
  *
  * @throws `rmm::logic_error` always
@@ -95,7 +95,7 @@ struct cuda_error : public std::runtime_error {
  * ```
  *
  * @param[in] reason String literal description of the reason
- *---------------------------------------------------------------------------**/
+ */
 #define RMM_FAIL(reason)                             \
   throw rmm::logic_error("RMM failure at: " __FILE__ \
                          ":" RMM_STRINGIFY(__LINE__) ": " reason)
@@ -112,14 +112,14 @@ inline void throw_cuda_error(cudaError_t error, const char* file,
 }  // namespace detail
 }  // namespace rmm
 
-/**---------------------------------------------------------------------------*
+/**
  * @brief Error checking macro for CUDA runtime API functions.
  *
  * Invokes a CUDA runtime API function call, if the call does not return
  * cudaSuccess, invokes cudaGetLastError() to clear the error and throws an
  * exception detailing the CUDA error that occurred
  *
- *---------------------------------------------------------------------------**/
+ */
 #define CUDA_TRY(call)                                           \
   do {                                                           \
     cudaError_t const status = (call);                           \
@@ -129,7 +129,7 @@ inline void throw_cuda_error(cudaError_t error, const char* file,
     }                                                            \
   } while (0);
 
-/**---------------------------------------------------------------------------*
+/**
  * @brief Debug macro to check for CUDA errors
  *
  * In a non-release build, this macro will synchronize the specified stream
@@ -142,7 +142,7 @@ inline void throw_cuda_error(cudaError_t error, const char* file,
  * be used after any asynchronous CUDA call, e.g., cudaMemcpyAsync, or an
  * asynchronous kernel launch.
  *
- *---------------------------------------------------------------------------**/
+ */
 #ifndef NDEBUG
 #define CHECK_CUDA(stream) CUDA_TRY(cudaStreamSynchronize(stream));
 #else
