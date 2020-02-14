@@ -22,9 +22,10 @@
 
 #ifndef MEMORY_HPP
 #define MEMORY_HPP
-#include "rmm/rmm_api.h"
-#include "rmm/detail/memory_manager.hpp"
-#include "rmm/mr/device/default_memory_resource.hpp"
+#include <rmm/rmm_api.h>
+#include <rmm/detail/memory_manager.hpp>
+#include <rmm/mr/device/default_memory_resource.hpp>
+#include <rmm/detail/error.hpp>
 
 /** ---------------------------------------------------------------------------*
  * @brief Macro wrapper to check for error in RMM API calls.
@@ -33,18 +34,6 @@
   do {                                      \
     rmmError_t error = (call);              \
     if (error != RMM_SUCCESS) return error; \
-  } while (0)
-
-/** ---------------------------------------------------------------------------*
- * @brief Macro wrapper for RMM API calls to return appropriate RMM errors.
- * ---------------------------------------------------------------------------**/
-#define RMM_CHECK_CUDA(call)                    \
-  do {                                          \
-    cudaError_t cudaError = (call);             \
-    if (cudaError == cudaErrorMemoryAllocation) \
-      return RMM_ERROR_OUT_OF_MEMORY;           \
-    else if (cudaError != cudaSuccess)          \
-      return RMM_ERROR_CUDA_ERROR;              \
   } while (0)
 
 namespace rmm {
@@ -67,7 +56,7 @@ class LogIt {
         usageLogging(usageLogging) {
     if (filename) file = filename;
     if (Manager::getOptions().enable_logging) {
-      cudaGetDevice(&device);
+      CUDA_TRY(cudaGetDevice(&device));
       start = std::chrono::system_clock::now();
     }
   }
