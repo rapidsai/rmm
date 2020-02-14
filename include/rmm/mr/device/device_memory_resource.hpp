@@ -25,19 +25,19 @@ namespace rmm {
 
 namespace detail {
 /**
- * @brief Align up to a power of 2, align_bytes is expected to be a nonzero power of 2
+ * @brief Align up to a power of 2, align_bytes is expected to be a nonzero
+ * power of 2
  *
  * @param[in] v value to align
- * @param[in] alignment amount, in bytes, must be a power of 2 
+ * @param[in] alignment amount, in bytes, must be a power of 2
  *
  * @return Return the aligned value, as one would expect
  */
-inline std::size_t align_up(std::size_t v, std::size_t align_bytes) noexcept
-{
-    return (v + (align_bytes - 1)) & ~(align_bytes - 1);
+inline std::size_t align_up(std::size_t v, std::size_t align_bytes) noexcept {
+  return (v + (align_bytes - 1)) & ~(align_bytes - 1);
 }
 
-} // namespace detail
+}  // namespace detail
 
 namespace mr {
 /**---------------------------------------------------------------------------*
@@ -46,9 +46,10 @@ namespace mr {
  * This class serves as the interface that all custom device memory
  * implementations must satisfy.
  *
- * There are two private, pure virtual functions that all derived classes must implement: `do_allocate` and
- * `do_deallocate`. Optionally, derived classes may also override `is_equal`. By default,
- * `is_equal` simply performs an identity comparison.
+ * There are two private, pure virtual functions that all derived classes must
+ *implement: `do_allocate` and `do_deallocate`. Optionally, derived classes may
+ *also override `is_equal`. By default, `is_equal` simply performs an identity
+ *comparison.
  *
  * The public, non-virtual functions `allocate`, `deallocate`, and `is_equal`
  * simply call the private virtual functions. The reason for this is to allow
@@ -70,7 +71,8 @@ class device_memory_resource {
    * If supported, this operation may optionally be executed on a stream.
    * Otherwise, the stream is ignored and the null stream is used.
    *
-   * @throws std::bad_alloc When the requested size cannot be allocated.
+   * @throws `rmm::bad_alloc` When the requested `bytes` cannot be allocated on
+   * the specified `stream`.
    *
    * @param bytes The size of the allocation
    * @param stream Stream on which to perform allocation
@@ -90,6 +92,8 @@ class device_memory_resource {
    *
    * If supported, this operation may optionally be executed on a stream.
    * Otherwise, the stream is ignored and the null stream is used.
+   * 
+   * @throws Nothing.
    *
    * @param p Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the
@@ -136,6 +140,7 @@ class device_memory_resource {
   std::pair<std::size_t, std::size_t> get_mem_info(cudaStream_t stream) const {
     return do_get_mem_info(stream);
   }
+
  private:
   /**---------------------------------------------------------------------------*
    * @brief Allocates memory of size at least \p bytes.
@@ -191,7 +196,8 @@ class device_memory_resource {
    * @param stream the stream being executed on
    * @return std::pair with available and free memory for resource
    *---------------------------------------------------------------------------**/
-  virtual std::pair<std::size_t, std::size_t> do_get_mem_info( cudaStream_t stream) const = 0;
+  virtual std::pair<std::size_t, std::size_t> do_get_mem_info(
+      cudaStream_t stream) const = 0;
 };
 }  // namespace mr
 }  // namespace rmm
