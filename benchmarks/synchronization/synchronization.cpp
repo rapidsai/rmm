@@ -17,14 +17,6 @@
 #include "synchronization.hpp"
 #include "rmm/rmm.h"
 
-#define RMM_CUDA_TRY(call)                                            \
-  do {                                                            \
-    cudaError_t const status = (call);                            \
-    if (cudaSuccess != status) {                                  \
-      throw std::runtime_error("CUDA error");                     \
-    }                                                             \
-  } while (0);
-
 #define RMM_TRY(call)                                             \
   do {                                                            \
     rmmError_t const status = (call);                             \
