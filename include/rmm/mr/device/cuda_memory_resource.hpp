@@ -36,7 +36,7 @@ class cuda_memory_resource final : public device_memory_resource {
 
  private:
   /**--------------------------------------------------------------------------*
-   * @brief Allocates memory of size at least \p bytes using cudaMalloc.
+   * @brief Allocates memory of size at least `bytes` using cudaMalloc.
    *
    * The returned pointer has at least 256B alignment.
    *
@@ -72,6 +72,8 @@ class cuda_memory_resource final : public device_memory_resource {
    *
    * Two cuda_memory_resources always compare equal, because they can each
    * deallocate memory allocated by the other.
+   *
+   * @throws Nothing.
    *
    * @param other The other resource to compare to
    * @return true If the two resources are equivalent
