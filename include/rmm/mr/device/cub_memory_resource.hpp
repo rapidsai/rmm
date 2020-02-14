@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include <rmm/detail/error.hpp>
 #include "device_memory_resource.hpp"
 
 #include <cub/util_allocator.cuh>
@@ -44,7 +45,7 @@ class cub_memory_resource final : public device_memory_resource {
    *
    * The returned pointer has at least 256B alignment.
    *
-   * @throws `std::bad_alloc` if the requested allocation could not be
+   * @throws `rmm::bad_alloc` if the requested allocation could not be
    * fulfilled
    *
    * @param bytes The size, in bytes, of the allocation
@@ -52,9 +53,7 @@ class cub_memory_resource final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cudaStream_t stream) override {
     void* p{};
-    if (cudaSuccess != _allocator.DeviceAllocate(&p, bytes, stream)) {
-      throw std::bad_alloc{};
-    }
+    CUDA_TRY(_allocator.DeviceAllocate(&p, bytes, stream), rmm::bad_alloc);
     return p;
   }
 
@@ -66,9 +65,8 @@ class cub_memory_resource final : public device_memory_resource {
    * @param p Pointer to be deallocated
    */
   void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override {
-    if (cudaSuccess != _allocator.DeviceFree(&p)) {
-      throw std::bad_alloc{};
-    }
+    auto const status = _allocator.DeviceFree(&p);
+    assert(cudaSuccess == status);
   }
 
   /**
