@@ -25,7 +25,8 @@ include_directories("${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
                     "${CMAKE_SOURCE_DIR}/src"
                     "${GTEST_INCLUDE_DIR}"
                     "${GBENCH_INCLUDE_DIR}"
-                    "${CMAKE_CURRENT_SOURCE_DIR}")
+                    "${CMAKE_CURRENT_SOURCE_DIR}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/cub")
 
 ###################################################################################################
 # - library paths ---------------------------------------------------------------------------------
