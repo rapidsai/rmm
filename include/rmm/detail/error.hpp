@@ -31,11 +31,7 @@ namespace rmm {
  */
 struct logic_error : public std::logic_error {
   logic_error(char const* const message) : std::logic_error(message) {}
-
-  logic_error(std::string const& message) : std::logic_error(message) {}
-
-  // TODO Add an error code member? This would be useful for translating an
-  // exception to an error code in a pure-C API
+  logic_error(std::string const& message) : logic_error{message.c_str()} {}
 };
 
 /**
@@ -43,7 +39,8 @@ struct logic_error : public std::logic_error {
  *
  */
 struct cuda_error : public std::runtime_error {
-  cuda_error(std::string const& message) : std::runtime_error(message) {}
+  cuda_error(const char* message) : std::runtime_error(message) {}
+  cuda_error(std::string const& message) : cuda_error{message.c_str()} {}
 };
 
 /**
