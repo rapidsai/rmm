@@ -85,8 +85,7 @@ class sub_memory_resource final : public device_memory_resource {
 
     // Allocate initial block
     // TODO: non-default stream?
-    no_sync_blocks.insert(no_sync_blocks.end(), 
-                          block_from_heap(initial_pool_size, 0));
+    no_sync_blocks.insert(block_from_heap(initial_pool_size, 0));
 
     // TODO thread safety
 
@@ -167,7 +166,7 @@ class sub_memory_resource final : public device_memory_resource {
       alloc.size = size;
     }
 
-    allocated_blocks.push_back(alloc);
+    allocated_blocks.insert(alloc);
     return reinterpret_cast<void*>(alloc.ptr);
   }
 
@@ -176,8 +175,8 @@ class sub_memory_resource final : public device_memory_resource {
   {
     if (p == nullptr) return;
 
-    auto i = std::find_if(allocated_blocks.begin(), allocated_blocks.end(),
-                          [p](block const& b) { return b.ptr == p; });
+    auto i = allocated_blocks.find(block{static_cast<char*>(p)});//std::find_if(allocated_blocks.begin(), allocated_blocks.end(),
+             //             [p](block const& b) { return b.ptr == p; });
 
     if (i != allocated_blocks.end()) { // found
       //assert(i->size == detail::round_up_safe(size, allocation_alignment));
@@ -288,7 +287,9 @@ class sub_memory_resource final : public device_memory_resource {
   // stream stream_id must be synced before allocating from this list
   std::unordered_map<cudaStream_t, free_list> sync_blocks;
 
-  std::list<block> allocated_blocks;
+  //std::list<block> allocated_blocks;
+  std::set<block> allocated_blocks;
+
 
   // blocks allocated from heap: so they can be easily freed
   std::unordered_map<char*, block> heap_blocks;
