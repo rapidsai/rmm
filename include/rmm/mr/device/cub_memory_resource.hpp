@@ -17,7 +17,6 @@
 
 #include "device_memory_resource.hpp"
 
-
 #include <cub/util_allocator.cuh>
 #include <stdexcept>
 
@@ -67,6 +66,9 @@ class cub_memory_resource final : public device_memory_resource {
    * @param p Pointer to be deallocated
    */
   void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override {
+    if (cudaSuccess != _allocator.DeviceFree(&p)) {
+      throw std::bad_alloc{};
+    }
   }
 
   /**
