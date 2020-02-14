@@ -53,7 +53,7 @@ class cub_memory_resource final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cudaStream_t stream) override {
     void* p{};
-    CUDA_TRY(_allocator.DeviceAllocate(&p, bytes, stream), rmm::bad_alloc);
+    RMM_CUDA_TRY(_allocator.DeviceAllocate(&p, bytes, stream), rmm::bad_alloc);
     return p;
   }
 
