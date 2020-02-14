@@ -58,6 +58,14 @@ class cub_memory_resource final : public device_memory_resource {
    * not rounded up to the nearest bin and are simply freed when they are
    * deallocated instead of being returned to a bin-cache.
    *
+   * Example:
+   * ```
+   * bin_growth = 8
+   * min_bin = 3
+   * max_bin = 7
+   * ```
+   * Delineates five bin-sizes: 512B, 4KB, 32KB, 256KB, and 2MB
+   *
    * If the total storage of cached allocations on a given device will exceed
    * `max_cached_bytes`, allocations for that device are simply freed when they
    * are deallocated instead of being returned to their bin-cache.
