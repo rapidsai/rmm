@@ -1,3 +1,6 @@
 [submodule "thirdparty/cnmem"]
 	path = thirdparty/cnmem
 	url = https://github.com/NVIDIA/cnmem.git
+[submodule "thirdparty/cub"]
+	path = thirdparty/cub
+	url = https://github.com/NVlabs/cub.git
