@@ -118,18 +118,6 @@ class bad_alloc : public std::bad_alloc {
   throw rmm::logic_error("RMM failure at: " __FILE__ \
                          ":" RMM_STRINGIFY(__LINE__) ": " reason)
 
-namespace rmm {
-namespace detail {
-inline void throw_cuda_error(cudaError_t error, const char* file,
-                             unsigned int line) {
-  throw rmm::cuda_error(
-      std::string{"CUDA error encountered at: " + std::string{file} + ":" +
-                  std::to_string(line) + ": " + std::to_string(error) + " " +
-                  cudaGetErrorName(error) + " " + cudaGetErrorString(error)});
-}
-}  // namespace detail
-}  // namespace rmm
-
 /**
  * @brief Error checking macro for CUDA runtime API functions.
  *
