@@ -220,13 +220,13 @@ TYPED_TEST(MRTest, AllocateGBStream) {
 
 TYPED_TEST(MRTest, AllocateTooMuch) {
   void* p{nullptr};
-  EXPECT_THROW(p = this->mr->allocate(size_pb), std::bad_alloc);
+  EXPECT_THROW(p = this->mr->allocate(size_pb), rmm::bad_alloc);
   EXPECT_EQ(nullptr, p);
 }
 
 TYPED_TEST(MRTest, AllocateTooMuchStream) {
   void* p{nullptr};
-  EXPECT_THROW(p = this->mr->allocate(size_pb, this->stream), std::bad_alloc);
+  EXPECT_THROW(p = this->mr->allocate(size_pb, this->stream), rmm::bad_alloc);
   EXPECT_EQ(nullptr, p);
 }
 
