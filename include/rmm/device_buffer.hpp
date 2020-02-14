@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include <rmm/detail/error.hpp>
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
@@ -41,7 +42,7 @@ namespace rmm {
  * //resource and default stream.
  * device_buffer buff(100);
  *
- * // allocates at least 100 bytes using the custom memory resource and 
+ * // allocates at least 100 bytes using the custom memory resource and
  * // specified stream
  * custom_memory_resource mr;
  * cudaStream_t stream = 0;
@@ -49,7 +50,7 @@ namespace rmm {
  *
  * // deep copies `buff` into a new device buffer using the default stream
  * device_buffer buff_copy(buff);
- * 
+ *
  * // deep copies `buff` into a new device buffer using the specified stream
  * device_buffer buff_copy(buff, stream);
  *
@@ -119,11 +120,8 @@ class device_buffer {
     }
 
     _data = _mr->allocate(_size, this->stream());
-    auto status =
-        cudaMemcpyAsync(_data, source_data, _size, cudaMemcpyDefault, this->stream());
-    if (cudaSuccess != status) {
-      throw std::runtime_error{"Device memcopy failed."};
-    }
+    CUDA_TRY(cudaMemcpyAsync(_data, source_data, _size, cudaMemcpyDefault,
+                             this->stream()));
   }
 
   /**--------------------------------------------------------------------------*
@@ -148,12 +146,8 @@ class device_buffer {
       : _size{other.size()}, _capacity{other.size()}, _stream{stream}, _mr{mr} {
     _data = memory_resource()->allocate(size(), this->stream());
 
-    auto status = cudaMemcpyAsync(data(), other.data(), size(),
-                                  cudaMemcpyDefault, this->stream());
-
-    if (cudaSuccess != status) {
-      throw std::runtime_error{"Device memory copy failed."};
-    }
+    CUDA_TRY(cudaMemcpyAsync(data(), other.data(), size(), cudaMemcpyDefault,
+                             this->stream()));
   }
 
   /**--------------------------------------------------------------------------*
@@ -182,12 +176,12 @@ class device_buffer {
 
   /**--------------------------------------------------------------------------*
    * @brief Copy assignment operator copies the contents of `other`
-   * 
+   *
    * Memory deallocation uses this instance's memory_resource and the last
    * stream passed to a method on this instance. If a different stream is
    * required for deallocation, call `set_stream()` on the instance before
    * assignment.
-   * 
+   *
    * Allocation and copy in this function uses the memory_resource and stream
    * from `other`. If a different stream is required for allocation/copy, call
    * `set_stream()` on `other` before assignment. After assignment, this
@@ -203,12 +197,8 @@ class device_buffer {
       _mr = other._mr;
       set_stream(other.stream());
       _data = _mr->allocate(_size, stream());
-      auto status = cudaMemcpyAsync(_data, other._data, _size,
-                                    cudaMemcpyDefault, stream());
-
-      if (cudaSuccess != status) {
-        throw std::runtime_error{"Device memory copy failed."};
-      }      
+      CUDA_TRY(cudaMemcpyAsync(_data, other._data, _size, cudaMemcpyDefault,
+                               stream()));
     }
     return *this;
   }
@@ -220,7 +210,7 @@ class device_buffer {
    * on this instance. If a different stream is required, call `set_stream()` on
    * the instance before assignment. After assignment, this instance's stream is
    * replaced by the stream from `other`.
-   * 
+   *
    * @param other The `device_buffer` whose contents will be moved.
    *-------------------------------------------------------------------------**/
   device_buffer& operator=(device_buffer&& other) {
@@ -245,7 +235,7 @@ class device_buffer {
    *
    * @note If the memory resource supports streams, this destructor deallocates
    * using the stream most recently passed to any of this device buffer's
-   * methods. 
+   * methods.
    *-------------------------------------------------------------------------**/
   ~device_buffer() noexcept {
     _mr->deallocate(_data, _capacity, stream());
@@ -273,8 +263,8 @@ class device_buffer {
    *
    * The invariant `size() <= capacity()` holds.
    *
-   * The specified @p stream is used for allocating and copying the new memory if
-   * the memory resource supports streams.
+   * The specified @p stream is used for allocating and copying the new memory
+   *if the memory resource supports streams.
    *
    * @throws std::bad_alloc If creating the new allocation fails
    * @throws std::runtime_error if the copy from the old to new allocation
@@ -292,13 +282,8 @@ class device_buffer {
     } else {
       void* const new_data = _mr->allocate(new_size, this->stream());
       if (_size > 0) {
-        auto status =
-            cudaMemcpyAsync(new_data, _data, _size, cudaMemcpyDefault,
-                            this->stream());
-
-        if (cudaSuccess != status) {
-          throw std::runtime_error{"Device memory copy failed."};
-        }
+        CUDA_TRY(cudaMemcpyAsync(new_data, _data, _size, cudaMemcpyDefault,
+                                 this->stream()));
       }
       _mr->deallocate(_data, _size, this->stream());
       _data = new_data;
@@ -317,7 +302,7 @@ class device_buffer {
    *
    * @throws std::bad_alloc If creating the new allocation fails
    * @throws std::runtime_error If the copy from the old to new allocation fails
-   * 
+   *
    * @param stream The stream to use for allocation and copy
    *-------------------------------------------------------------------------**/
   void shrink_to_fit(cudaStream_t stream = 0) {
@@ -325,11 +310,8 @@ class device_buffer {
     if (size() != capacity()) {
       void* const new_data = _mr->allocate(size(), this->stream());
       if (size() > 0) {
-        auto status = cudaMemcpyAsync(new_data, _data, size(),
-                                      cudaMemcpyDefault, this->stream());
-        if (cudaSuccess != status) {
-          throw std::runtime_error{"Device memory copy failed."};
-        }
+        CUDA_TRY(cudaMemcpyAsync(new_data, _data, size(), cudaMemcpyDefault,
+                                 this->stream()));
       }
       _mr->deallocate(_data, size(), this->stream());
       _data = new_data;
@@ -367,10 +349,10 @@ class device_buffer {
 
   /**--------------------------------------------------------------------------*
    * @brief Sets the stream to be used for deallocation
-   * 
+   *
    * If no other rmm::device_buffer method that allocates or copies memory is
    * called after this call with a different stream argument, then @p stream
-   * will be used for deallocation in the `rmm::device_buffer destructor. 
+   * will be used for deallocation in the `rmm::device_buffer destructor.
    * Otherwise, if another rmm::device_buffer method with a stream parameter is
    * called after this, the later stream parameter will be stored and used in
    * the destructor.
