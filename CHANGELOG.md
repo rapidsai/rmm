@@ -14,6 +14,7 @@
 - PR #275 Add `copy_from_device` method to `DeviceBuffer`
 - PR #283 Add random allocation benchmark.
 - PR #287 Enabled CUDA CXX11 for unit tests.
+- PR #162 Experimental new suballocator memory_resource
 
 ## Improvements
 
@@ -97,9 +98,6 @@
 
 ## New Features
 
-- PR #96 Added `device_memory_resource` for beginning of overhaul of RMM design
-- PR #103 Add and use unified build script
-- PR #107 Fix local build generated file ownerships
 - PR #99 Added `device_buffer` class
 - PR #133 Added `device_scalar` class
 
