@@ -24,7 +24,7 @@
 #include <stdexcept>
 
 namespace rmm {
-/**----------------------------------------------------------------------------*
+/**
  * @file device_buffer.hpp
  * @brief RAII construct for device memory allocation
  *
@@ -67,12 +67,12 @@ namespace rmm {
  * // stream if none specified.
  * buff_default.resize(100, stream);
  *```
- *---------------------------------------------------------------------------**/
+ */
 class device_buffer {
  public:
-  /**---------------------------------------------------------------------------*
+  /**
    * @brief Default constructor creates an empty `device_buffer`
-   *---------------------------------------------------------------------------**/
+   */
   device_buffer()
       : _data{nullptr},
         _size{},
@@ -80,7 +80,7 @@ class device_buffer {
         _stream{},
         _mr{rmm::mr::get_default_resource()} {}
 
-  /**--------------------------------------------------------------------------*
+  /**
    * @brief Constructs a new device buffer of `size` uninitialized bytes
    *
    * @throws rmm::bad_alloc If allocation fails.
@@ -89,7 +89,7 @@ class device_buffer {
    * @param stream CUDA stream on which memory may be allocated if the memory
    * resource supports streams.
    * @param mr Memory resource to use for the device memory allocation.
-   *-------------------------------------------------------------------------**/
+   */
   explicit device_buffer(
       std::size_t size, cudaStream_t stream = 0,
       mr::device_memory_resource* mr = mr::get_default_resource())
@@ -97,7 +97,7 @@ class device_buffer {
     _data = _mr->allocate(size, this->stream());
   }
 
-  /**--------------------------------------------------------------------------*
+  /**
    * @brief Construct a new device buffer by copying from a raw pointer to an
    * existing host or device memory allocation.
    *
@@ -110,7 +110,7 @@ class device_buffer {
    * @param stream CUDA stream on which memory may be allocated if the memory
    * resource supports streams.
    * @param mr Memory resource to use for the device memory allocation
-   *-------------------------------------------------------------------------**/
+   */
   device_buffer(void const* source_data, std::size_t size,
                 cudaStream_t stream = 0,
                 mr::device_memory_resource* mr = mr::get_default_resource())
@@ -124,7 +124,7 @@ class device_buffer {
     }
   }
 
-  /**--------------------------------------------------------------------------*
+  /**
    * @brief Construct a new `device_buffer` by deep copying the contents of
    * another `device_buffer`, optionally using the specified stream and memory
    * resource.
@@ -139,7 +139,7 @@ class device_buffer {
    * @param other The `device_buffer` whose contents will be copied
    * @param stream The stream to use for the allocation and copy
    * @param mr The resource to use for allocating the new `device_buffer`
-   *-------------------------------------------------------------------------**/
+   */
   device_buffer(
       device_buffer const& other, cudaStream_t stream = 0,
       rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
@@ -150,7 +150,7 @@ class device_buffer {
                              this->stream()));
   }
 
-  /**--------------------------------------------------------------------------*
+  /**
    * @brief Constructs a new `device_buffer` by moving the contents of another
    * `device_buffer` into the newly constructed one.
    *
@@ -161,7 +161,7 @@ class device_buffer {
    *
    * @param other The `device_buffer` whose contents will be moved into the
    * newly constructed one.
-   *-------------------------------------------------------------------------**/
+   */
   device_buffer(device_buffer&& other) noexcept
       : _data{other._data},
         _size{other._size},
@@ -174,7 +174,7 @@ class device_buffer {
     other.set_stream(0);
   }
 
-  /**--------------------------------------------------------------------------*
+  /**
    * @brief Copy assignment operator copies the contents of `other`
    *
    * Memory deallocation uses this instance's memory_resource and the last
@@ -191,7 +191,7 @@ class device_buffer {
    * @throws rmm::cuda_error if the copy from `other` fails
    *
    * @param other The `device_buffer` to copy.
-   *-------------------------------------------------------------------------**/
+   */
   device_buffer& operator=(device_buffer const& other) {
     if (&other != this) {
       _mr->deallocate(_data, _capacity, stream());
@@ -206,7 +206,7 @@ class device_buffer {
     return *this;
   }
 
-  /**--------------------------------------------------------------------------*
+  /**
    * @brief Move assignment operator moves the contents from `other`.
    *
    * Memory deallocation uses the last stream set in a device_buffer method
@@ -215,7 +215,7 @@ class device_buffer {
    * replaced by the stream from `other`.
    *
    * @param other The `device_buffer` whose contents will be moved.
-   *-------------------------------------------------------------------------**/
+   */
   device_buffer& operator=(device_buffer&& other) {
     if (&other != this) {
       _mr->deallocate(_data, _capacity, stream());
@@ -233,13 +233,13 @@ class device_buffer {
     return *this;
   }
 
-  /**--------------------------------------------------------------------------*
+  /**
    * @brief Destroy the device buffer object
    *
    * @note If the memory resource supports streams, this destructor deallocates
    * using the stream most recently passed to any of this device buffer's
    * methods.
-   *-------------------------------------------------------------------------**/
+   */
   ~device_buffer() noexcept {
     _mr->deallocate(_data, _capacity, stream());
     _data = nullptr;
@@ -249,7 +249,7 @@ class device_buffer {
     _mr = nullptr;
   }
 
-  /**--------------------------------------------------------------------------*
+  /**
    * @brief Resize the device memory allocation
    *
    * If the requested `new_size` is less than or equal to the current size, no
@@ -275,7 +275,7 @@ class device_buffer {
    *
    * @param new_size The requested new size, in bytes
    * @param stream The stream to use for allocation and copy
-   *-------------------------------------------------------------------------**/
+   */
   void resize(std::size_t new_size, cudaStream_t stream = 0) {
     set_stream(stream);
     // If the requested size is smaller, just update the size without any
@@ -295,7 +295,7 @@ class device_buffer {
     }
   }
 
-  /**--------------------------------------------------------------------------*
+  /**
    * @brief Forces the deallocation of unused memory.
    *
    * Reallocates and copies the contents of the device memory allocation to
@@ -307,7 +307,7 @@ class device_buffer {
    * @throws rmm::cuda_error If the copy from the old to new allocation fails
    *
    * @param stream The stream to use for allocation and copy
-   *-------------------------------------------------------------------------**/
+   */
   void shrink_to_fit(cudaStream_t stream = 0) {
     set_stream(stream);
     if (size() != capacity()) {
@@ -322,35 +322,35 @@ class device_buffer {
     }
   }
 
-  /**--------------------------------------------------------------------------*
+  /**
    * @brief Returns raw pointer to underlying device memory allocation
-   *-------------------------------------------------------------------------**/
+   */
   void const* data() const noexcept { return _data; }
 
-  /**--------------------------------------------------------------------------*
+  /**
    * @brief Returns raw pointer to underlying device memory allocation
-   *-------------------------------------------------------------------------**/
+   */
   void* data() noexcept { return _data; }
 
-  /**--------------------------------------------------------------------------*
+  /**
    * @brief Returns size in bytes that was requested for the device memory
    * allocation
-   *-------------------------------------------------------------------------**/
+   */
   std::size_t size() const noexcept { return _size; }
 
-  /**--------------------------------------------------------------------------*
+  /**
    * @brief Returns actual size in bytes of device memory allocation.
    *
    * The invariant `size() <= capacity()` holds.
-   *-------------------------------------------------------------------------**/
+   */
   std::size_t capacity() const noexcept { return _capacity; }
 
-  /**--------------------------------------------------------------------------*
+  /**
    * @brief Returns stream most recently specified for allocation/deallocation
-   *-------------------------------------------------------------------------**/
+   */
   cudaStream_t stream() const noexcept { return _stream; }
 
-  /**--------------------------------------------------------------------------*
+  /**
    * @brief Sets the stream to be used for deallocation
    *
    * If no other rmm::device_buffer method that allocates or copies memory is
@@ -359,13 +359,13 @@ class device_buffer {
    * Otherwise, if another rmm::device_buffer method with a stream parameter is
    * called after this, the later stream parameter will be stored and used in
    * the destructor.
-   *-------------------------------------------------------------------------**/
+   */
   void set_stream(cudaStream_t stream) noexcept { _stream = stream; }
 
-  /**--------------------------------------------------------------------------*
+  /**
    * @brief Returns pointer to the memory resource used to allocate and
    * deallocate the device memory
-   *-------------------------------------------------------------------------**/
+   */
   mr::device_memory_resource* memory_resource() const noexcept { return _mr; }
 
  private:
