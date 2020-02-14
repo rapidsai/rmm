@@ -27,6 +27,32 @@
 #include <vector>
 
 namespace rmm {
+/**
+ * @brief Exception thrown when a CNMEM error is encountered.
+ *
+ */
+struct cnmem_error : public std::runtime_error {
+  cnmem_error(const char* message) : std::runtime_error(message) {}
+  cnmem_error(std::string const& message) : cnmem_error{message.c_str()} {}
+};
+}  // namespace rmm
+
+#define CNMEM_TRY(...)                                       \
+  GET_CNMEM_TRY_MACRO(__VA_ARGS__, CNMEM_TRY_2, CNMEM_TRY_1) \
+  (__VA_ARGS__)
+#define GET_CNMEM_TRY_MACRO(_1, _2, NAME, ...) NAME
+#define CNMEM_TRY_2(_call, _exception_type)                              \
+  do {                                                                   \
+    cnmemStatus_t const error = (_call);                                 \
+    if (CNMEM_STATUS_SUCCESS != error) {                                 \
+      throw _exception_type{std::string{"CNMEM error at: "} + __FILE__ + \
+                            RMM_STRINGIFY(__LINE__) + ": " +             \
+                            cnmemGetErrorString(error)};                 \
+    }                                                                    \
+  } while (0);
+#define CNMEM_TRY_1(_call) CNMEM_TRY_2(_call, rmm::cnmem_error)
+
+namespace rmm {
 namespace mr {
 /**---------------------------------------------------------------------------*
  * @brief Memory resource that allocates/deallocates using the cnmem pool
