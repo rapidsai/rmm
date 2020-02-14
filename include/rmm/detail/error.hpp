@@ -137,18 +137,18 @@ class bad_alloc : public std::bad_alloc {
  * ```c++
  *
  * // Throws `rmm::cuda_error` if `cudaMalloc` fails
- * CUDA_TRY(cudaMalloc(&p, 100));
+ * RMM_CUDA_TRY(cudaMalloc(&p, 100));
  *
  * // Throws `std::runtime_error` if `cudaMalloc` fails
- * CUDA_TRY(cudaMalloc(&p, 100), std::runtime_error);
+ * RMM_CUDA_TRY(cudaMalloc(&p, 100), std::runtime_error);
  * ```
  *
  */
-#define CUDA_TRY(...)                                     \
-  GET_CUDA_TRY_MACRO(__VA_ARGS__, CUDA_TRY_2, CUDA_TRY_1) \
+#define RMM_CUDA_TRY(...)                                     \
+  GET_RMM_CUDA_TRY_MACRO(__VA_ARGS__, RMM_CUDA_TRY_2, RMM_CUDA_TRY_1) \
   (__VA_ARGS__)
-#define GET_CUDA_TRY_MACRO(_1, _2, NAME, ...) NAME
-#define CUDA_TRY_2(_call, _exception_type)                              \
+#define GET_RMM_CUDA_TRY_MACRO(_1, _2, NAME, ...) NAME
+#define RMM_CUDA_TRY_2(_call, _exception_type)                              \
   do {                                                                  \
     cudaError_t const error = (_call);                                  \
     if (cudaSuccess != error) {                                         \
@@ -159,4 +159,4 @@ class bad_alloc : public std::bad_alloc {
                             cudaGetErrorString(error)};                 \
     }                                                                   \
   } while (0);
-#define CUDA_TRY_1(_call) CUDA_TRY_2(_call, rmm::cuda_error)
+#define RMM_CUDA_TRY_1(_call) RMM_CUDA_TRY_2(_call, rmm::cuda_error)

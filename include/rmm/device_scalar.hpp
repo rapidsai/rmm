@@ -103,8 +103,8 @@ class device_scalar {
   rmm::device_buffer buff{sizeof(T)};
 
   inline void _memcpy(void *dst, const void *src, cudaStream_t stream) const {
-    CUDA_TRY(cudaMemcpyAsync(dst, src, sizeof(T), cudaMemcpyDefault, stream));
-    CUDA_TRY(cudaStreamSynchronize(stream));
+    RMM_CUDA_TRY(cudaMemcpyAsync(dst, src, sizeof(T), cudaMemcpyDefault, stream));
+    RMM_CUDA_TRY(cudaStreamSynchronize(stream));
   }
 };
 }  // namespace rmm

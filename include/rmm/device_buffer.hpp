@@ -119,7 +119,7 @@ class device_buffer {
       RMM_EXPECTS((nullptr != source_data), "Attempt to copy from nullptr.");
 
       _data = _mr->allocate(_size, this->stream());
-      CUDA_TRY(cudaMemcpyAsync(_data, source_data, _size, cudaMemcpyDefault,
+      RMM_CUDA_TRY(cudaMemcpyAsync(_data, source_data, _size, cudaMemcpyDefault,
                                this->stream()));
     }
   }
@@ -146,7 +146,7 @@ class device_buffer {
       : _size{other.size()}, _capacity{other.size()}, _stream{stream}, _mr{mr} {
     _data = memory_resource()->allocate(size(), this->stream());
 
-    CUDA_TRY(cudaMemcpyAsync(data(), other.data(), size(), cudaMemcpyDefault,
+    RMM_CUDA_TRY(cudaMemcpyAsync(data(), other.data(), size(), cudaMemcpyDefault,
                              this->stream()));
   }
 
@@ -200,7 +200,7 @@ class device_buffer {
       _mr = other._mr;
       set_stream(other.stream());
       _data = _mr->allocate(_size, stream());
-      CUDA_TRY(cudaMemcpyAsync(_data, other._data, _size, cudaMemcpyDefault,
+      RMM_CUDA_TRY(cudaMemcpyAsync(_data, other._data, _size, cudaMemcpyDefault,
                                stream()));
     }
     return *this;
@@ -285,7 +285,7 @@ class device_buffer {
     } else {
       void* const new_data = _mr->allocate(new_size, this->stream());
       if (_size > 0) {
-        CUDA_TRY(cudaMemcpyAsync(new_data, _data, _size, cudaMemcpyDefault,
+        RMM_CUDA_TRY(cudaMemcpyAsync(new_data, _data, _size, cudaMemcpyDefault,
                                  this->stream()));
       }
       _mr->deallocate(_data, _size, this->stream());
@@ -313,7 +313,7 @@ class device_buffer {
     if (size() != capacity()) {
       void* const new_data = _mr->allocate(size(), this->stream());
       if (size() > 0) {
-        CUDA_TRY(cudaMemcpyAsync(new_data, _data, size(), cudaMemcpyDefault,
+        RMM_CUDA_TRY(cudaMemcpyAsync(new_data, _data, size(), cudaMemcpyDefault,
                                  this->stream()));
       }
       _mr->deallocate(_data, size(), this->stream());
