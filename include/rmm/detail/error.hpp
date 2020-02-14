@@ -21,7 +21,6 @@
 #include <string>
 
 namespace rmm {
-namespace detail {
 
 /**---------------------------------------------------------------------------*
  * @brief Exception thrown when logical precondition is violated.
@@ -45,7 +44,6 @@ struct logic_error : public std::logic_error {
 struct cuda_error : public std::runtime_error {
   cuda_error(std::string const& message) : std::runtime_error(message) {}
 };
-}  // namespace detail
 }  // namespace rmm
 
 #define STRINGIFY_DETAIL(x) #x
@@ -91,7 +89,7 @@ namespace rmm {
 namespace detail {
 inline void throw_cuda_error(cudaError_t error, const char* file,
                              unsigned int line) {
-  throw rmm::detail::cuda_error(
+  throw rmm::cuda_error(
       std::string{"CUDA error encountered at: " + std::string{file} + ":" +
                   std::to_string(line) + ": " + std::to_string(error) + " " +
                   cudaGetErrorName(error) + " " + cudaGetErrorString(error)});
