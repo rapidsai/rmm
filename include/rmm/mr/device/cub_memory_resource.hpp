@@ -63,8 +63,13 @@ class cub_memory_resource final : public device_memory_resource {
    * bin_growth = 8
    * min_bin = 3
    * max_bin = 7
+   * 
+   * bin 0: 8^3 == 512B
+   * bin 1: 8^4 == 4KB
+   * bin 2: 8^5 == 32KB
+   * bin 3: 8^6 == 256KB
+   * bin 4: 8^7 == 2MB
    * ```
-   * Delineates five bin-sizes: 512B, 4KB, 32KB, 256KB, and 2MB
    *
    * If the total storage of cached allocations on a given device will exceed
    * `max_cached_bytes`, allocations for that device are simply freed when they
