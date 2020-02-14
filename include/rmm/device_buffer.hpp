@@ -83,7 +83,7 @@ class device_buffer {
   /**--------------------------------------------------------------------------*
    * @brief Constructs a new device buffer of `size` uninitialized bytes
    *
-   * @throws std::bad_alloc If allocation fails.
+   * @throws rmm::bad_alloc If allocation fails.
    *
    * @param size Size in bytes to allocate in device memory.
    * @param stream CUDA stream on which memory may be allocated if the memory
@@ -101,7 +101,7 @@ class device_buffer {
    * @brief Construct a new device buffer by copying from a raw pointer to an
    * existing host or device memory allocation.
    *
-   * @throws std::bad_alloc If creating the new allocation fails.
+   * @throws rmm::bad_alloc If creating the new allocation fails.
    * @throws rmm::logic_error If `source_data` is null, and `size != 0`.
    * @throws rmm::cuda_error if copying from the device memory fails.
    *
@@ -133,7 +133,7 @@ class device_buffer {
    *`other.size() != other.capacity()`, then the size and capacity of the newly
    * constructed `device_buffer` will be equal to `other.size()`.
    *
-   * @throws std::bad_alloc If creating the new allocation fails.
+   * @throws rmm::bad_alloc If creating the new allocation fails.
    * @throws rmm::cuda_error if copying from `other` fails.
    *
    * @param other The `device_buffer` whose contents will be copied
@@ -187,7 +187,7 @@ class device_buffer {
    * `set_stream()` on `other` before assignment. After assignment, this
    * instance's stream is replaced by the stream from `other`.
    *
-   * @throws std::bad_alloc if allocation fails
+   * @throws rmm::bad_alloc if allocation fails
    * @throws rmm::cuda_error if the copy from `other` fails
    *
    * @param other The `device_buffer` to copy.
@@ -269,7 +269,7 @@ class device_buffer {
    * The specified @p stream is used for allocating and copying the new memory
    *if the memory resource supports streams.
    *
-   * @throws std::bad_alloc If creating the new allocation fails
+   * @throws rmm::bad_alloc If creating the new allocation fails
    * @throws rmm::cuda_error if the copy from the old to new allocation
    *fails
    *
@@ -303,7 +303,7 @@ class device_buffer {
    *
    * If `size() == capacity()` this function has no effect.
    *
-   * @throws std::bad_alloc If creating the new allocation fails
+   * @throws rmm::bad_alloc If creating the new allocation fails
    * @throws rmm::cuda_error If the copy from the old to new allocation fails
    *
    * @param stream The stream to use for allocation and copy
