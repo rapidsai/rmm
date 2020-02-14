@@ -23,6 +23,7 @@
 #include <benchmark/benchmark.h>
 
 #include <random>
+#include <cstdlib>
 
 #define VERBOSE 0
 
@@ -143,12 +144,14 @@ void uniform_random_allocations(rmm::mr::device_memory_resource& mr,
   std::normal_distribution<std::size_t> size_distribution(, max_allocation_size * size_mb);
 }*/
 
-constexpr size_t num_allocations = 100000;
-constexpr size_t max_size = 2;
 constexpr size_t max_usage = 16000;
 
-static void BM_RandomAllocationsCUDA(benchmark::State& state) {
-  rmm::mr::cuda_memory_resource mr;
+template <typename MemoryResource>
+static void BM_RandomAllocations(benchmark::State& state) {
+  MemoryResource mr;
+
+  size_t num_allocations = state.range(0);
+  size_t max_size = state.range(1);
 
   try {
     for (auto _ : state)
@@ -157,33 +160,44 @@ static void BM_RandomAllocationsCUDA(benchmark::State& state) {
     std::cout << "Error: " << e.what() << "\n";
   }
 }
-//BENCHMARK(BM_RandomAllocationsCUDA)->Unit(benchmark::kMillisecond);
 
-template <typename State>
-static void BM_RandomAllocationsSub(State& state) {
-  rmm::mr::sub_memory_resource mr;
-
-  try {
-    for (auto _ : state)
-      uniform_random_allocations(mr, num_allocations, max_size, max_usage);
-  } catch (std::exception const& e) {
-    std::cout << "Error: " << e.what() << "\n";
-  }
+static void allocation_range(benchmark::internal::Benchmark* b) {
+  for (int num_allocations : std::vector<int>{1000, 10000, 100000})
+    for (int max_size : std::vector<int>{1, 4, 64, 256, 1024, 4096})
+      b->Args({num_allocations, max_size})->Unit(benchmark::kMillisecond);
 }
-BENCHMARK(BM_RandomAllocationsSub)->Unit(benchmark::kMillisecond);
 
-template <typename State>
-static void BM_RandomAllocationsCnmem(State& state) {
-  rmm::mr::cnmem_memory_resource mr;
+int num_allocations = 10000;
+int max_size = 200;
 
-  try {
-    for (auto _ : state)
-      uniform_random_allocations(mr, num_allocations, max_size, max_usage);
-  } catch (std::exception const& e) {
-    std::cout << "Error: " << e.what() << "\n";
-  }
+void declare_benchmark(std::string name, int num, int size) {
+  if (name == "cuda")
+    BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::cuda_memory_resource)->Args({num, size})->Unit(benchmark::kMillisecond);
+  else if (name == "sub")
+    BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::sub_memory_resource)->Args({num, size})->Unit(benchmark::kMillisecond);
+  else if (name == "cnmem")
+    BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::cnmem_memory_resource)->Args({num, size})->Unit(benchmark::kMillisecond);
+  else
+    std::cout << "Error: invalid allocator name: " << name << "\n";
 }
-BENCHMARK(BM_RandomAllocationsCnmem)->Unit(benchmark::kMillisecond);
+
+int main(int argc, char** argv)
+{
+  ::benchmark::Initialize(&argc, argv);
+  if (argc > 1) {
+    std::string mr_name = argv[1];
+    if (argc > 2) num_allocations = atoi(argv[2]);
+    if (argc > 3) max_size = atoi(argv[3]);
+    declare_benchmark(mr_name, num_allocations, max_size);
+  }
+  else {
+    BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::sub_memory_resource)->Apply(allocation_range);
+    BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::cnmem_memory_resource)->Apply(allocation_range);
+    BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::cuda_memory_resource)->Apply(allocation_range);
+  }
+
+  ::benchmark::RunSpecifiedBenchmarks();
+}
 
 /*int main(void) {
   std::vector<int> state(1);
