@@ -105,18 +105,25 @@ class bad_alloc : public std::bad_alloc {
 /**
  * @brief Indicates that an erroneous code path has been taken.
  *
- * @throws `rmm::logic_error` always
- *
  * Example usage:
- * ```
+ * ```c++
+ * // Throws `rmm::logic_error`
  * RMM_FAIL("Unsupported code path");
+ *
+ * // Throws `std::runtime_error`
+ * RMM_FAIL(std::runtime_error, "Unsupported code path");
  * ```
  *
  * @param[in] reason String literal description of the reason
  */
-#define RMM_FAIL(reason)                             \
-  throw rmm::logic_error("RMM failure at: " __FILE__ \
-                         ":" RMM_STRINGIFY(__LINE__) ": " reason)
+#define RMM_FAIL(...)                                     \
+  GET_RMM_FAIL_MACRO(__VA_ARGS__, RMM_FAIL_2, RMM_FAIL_1) \
+  (__VA_ARGS__)
+#define GET_RMM_FAIL_MACRO(_1, _2, NAME, ...) NAME
+#define RMM_FAIL_2(_what, _exception_type)         \
+  throw _exception_type{"RMM failure at:" __FILE__ \
+                        ":" RMM_STRINGIFY(__LINE__) ": " _what};
+#define RMM_FAIL_1(_what) RMM_FAIL_2(_call, rmm::logic_error)
 
 /**
  * @brief Error checking macro for CUDA runtime API functions.
@@ -149,7 +156,7 @@ class bad_alloc : public std::bad_alloc {
     if (cudaSuccess != error) {                                         \
       cudaGetLastError();                                               \
       throw _exception_type{std::string{"CUDA error at: "} + __FILE__ + \
-                            std::to_string(__LINE__) + ": " +           \
+                            RMM_STRINGIFY(__LINE__) + ": " +            \
                             cudaGetErrorName(error) + " " +             \
                             cudaGetErrorString(error)};                 \
     }                                                                   \
