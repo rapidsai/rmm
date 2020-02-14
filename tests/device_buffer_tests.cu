@@ -23,6 +23,7 @@
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
+#include <rmm/mr/device/thrust_sync_pool.hpp>
 
 
 #include <thrust/sequence.h>
@@ -56,7 +57,8 @@ struct DeviceBufferTest : public ::testing::Test {
 
 using resources = ::testing::Types<
     rmm::mr::cuda_memory_resource, rmm::mr::managed_memory_resource,
-    rmm::mr::cnmem_memory_resource, rmm::mr::cnmem_managed_memory_resource>;
+    rmm::mr::cnmem_memory_resource, rmm::mr::cnmem_managed_memory_resource,
+    rmm::mr::thrust_sync_pool<>>;
 
 TYPED_TEST_CASE(DeviceBufferTest, resources);
 
@@ -141,11 +143,9 @@ TYPED_TEST(DeviceBufferTest, CopyFromNullptrNonZero) {
 
 TYPED_TEST(DeviceBufferTest, CopyConstructor) {
   rmm::device_buffer buff(this->size, 0, &this->mr);
-
   // Initialize buffer
   thrust::sequence(thrust::device, static_cast<char *>(buff.data()),
                    static_cast<char *>(buff.data()) + buff.size(), 0);
-
   rmm::device_buffer buff_copy(buff);  // uses default stream and MR
   EXPECT_NE(nullptr, buff_copy.data());
   EXPECT_NE(buff.data(), buff_copy.data());

@@ -16,12 +16,13 @@
 
 #include "gtest/gtest.h"
 
-#include <rmm/mr/device/cnmem_memory_resource.hpp>
 #include <rmm/mr/device/cnmem_managed_memory_resource.hpp>
+#include <rmm/mr/device/cnmem_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
+#include <rmm/mr/device/thrust_sync_pool.hpp>
 
 #include <cuda_runtime_api.h>
 #include <cstddef>
@@ -84,10 +85,10 @@ struct MRTest : public ::testing::Test {
   ~MRTest() = default;
 };
 
-using resources = ::testing::Types<rmm::mr::cuda_memory_resource,
-                                   rmm::mr::managed_memory_resource,
-                                   rmm::mr::cnmem_memory_resource,
-                                   rmm::mr::cnmem_managed_memory_resource>;
+using resources = ::testing::Types<
+    rmm::mr::cuda_memory_resource, rmm::mr::managed_memory_resource,
+    rmm::mr::cnmem_memory_resource, rmm::mr::cnmem_managed_memory_resource,
+    rmm::mr::thrust_sync_pool<>>;
 
 TYPED_TEST_CASE(MRTest, resources);
 
@@ -103,7 +104,7 @@ TEST(DefaultTest, UseDefaultResource) {
 
 TYPED_TEST(MRTest, SetDefaultResource) {
   // Not necessarily false, since two cuda_memory_resources are always equal
-  //EXPECT_FALSE(this->mr->is_equal(*rmm::mr::get_default_resource()));
+  // EXPECT_FALSE(this->mr->is_equal(*rmm::mr::get_default_resource()));
   rmm::mr::device_memory_resource* old{nullptr};
   EXPECT_NO_THROW(old = rmm::mr::set_default_resource(this->mr.get()));
   EXPECT_NE(nullptr, old);
@@ -118,7 +119,7 @@ TYPED_TEST(MRTest, SetDefaultResource) {
   EXPECT_NO_THROW(rmm::mr::set_default_resource(nullptr));
   EXPECT_TRUE(old->is_equal(*rmm::mr::get_default_resource()));
   // Not necessarily false, since two cuda_memory_resources are always equal
-  //EXPECT_FALSE(this->mr->is_equal(*rmm::mr::get_default_resource()));
+  // EXPECT_FALSE(this->mr->is_equal(*rmm::mr::get_default_resource()));
 }
 
 TYPED_TEST(MRTest, SelfEquality) { EXPECT_TRUE(this->mr->is_equal(*this->mr)); }
@@ -366,12 +367,12 @@ TYPED_TEST(MRTest, MixedRandomAllocationFreeStream) {
 }
 
 TYPED_TEST(MRTest, GetMemInfo) {
-  std::pair<std::size_t,std::size_t> mem_info;
+  std::pair<std::size_t, std::size_t> mem_info;
   EXPECT_NO_THROW(mem_info = this->mr->get_mem_info(0));
   std::size_t allocation_size = 16 * 256;
-  void * ptr;
+  void* ptr;
   EXPECT_NO_THROW(ptr = this->mr->allocate(allocation_size));
   EXPECT_NO_THROW(mem_info = this->mr->get_mem_info(0));
   EXPECT_TRUE(mem_info.first >= allocation_size);
-  EXPECT_NO_THROW(this->mr->deallocate(ptr,allocation_size));
+  EXPECT_NO_THROW(this->mr->deallocate(ptr, allocation_size));
 }
