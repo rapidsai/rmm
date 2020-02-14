@@ -44,7 +44,7 @@ include_directories("${GTEST_INCLUDE_DIR}"
                     "${CMAKE_SOURCE_DIR}/include"
                     "${CMAKE_SOURCE_DIR}/src"
                     "${CMAKE_CURRENT_SOURCE_DIR}/../include"
-                    "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cub/cub")
+                    "${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/cub")
 
 ###################################################################################################
 # - library paths ---------------------------------------------------------------------------------
