@@ -37,12 +37,33 @@ struct logic_error : public std::logic_error {
   // TODO Add an error code member? This would be useful for translating an
   // exception to an error code in a pure-C API
 };
+
 /**
  * @brief Exception thrown when a CUDA error is encountered.
  *
  */
 struct cuda_error : public std::runtime_error {
   cuda_error(std::string const& message) : std::runtime_error(message) {}
+};
+
+/**
+ * @brief Exception thrown when an RMM allocation fails
+ *
+ */
+class bad_alloc : public std::bad_alloc {
+ public:
+  bad_alloc(const char* w)
+      : std::bad_alloc{},
+        _what{std::string{std::bad_alloc::what()} + ": " + w} {}
+
+  bad_alloc(std::string const& w) : bad_alloc(w.c_str()) {}
+
+  virtual ~bad_alloc() = default;
+
+  virtual const char* what() const noexcept { return _what.c_str(); }
+
+ private:
+  std::string _what;
 };
 }  // namespace rmm
 
