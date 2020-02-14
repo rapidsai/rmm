@@ -49,25 +49,40 @@ struct cuda_error : public std::runtime_error {
 #define STRINGIFY_DETAIL(x) #x
 #define RMM_STRINGIFY(x) STRINGIFY_DETAIL(x)
 
-/**---------------------------------------------------------------------------*
+/**
  * @brief Macro for checking (pre-)conditions that throws an exception when
  * a condition is violated.
  *
+ * Defaults to throwing `rmm::logic_error`, but a custom exception may also be
+ * specified.
+ *
  * Example usage:
  * ```
+ * // throws rmm::logic_error
  * RMM_EXPECTS(p != nullptr, "Unexpected null pointer");
+ *
+ * // throws std::runtime_error
+ * RMM_EXPECTS(p != nullptr, std::runtime_error, "Unexpected nullptr");
  * ```
- *
- * @throw rmm::logic_error if the condition evaluates to false.
- *
- * @param[in] cond Expression that evaluates to true or false
- * @param[in] reason String literal description of the reason that cond is
- * expected to be true
- *---------------------------------------------------------------------------**/
-#define RMM_EXPECTS(cond, reason)                                 \
-  (!!(cond)) ? static_cast<void>(0)                               \
-             : throw rmm::logic_error("RMM failure at: " __FILE__ \
-                                      ":" RMM_STRINGIFY(__LINE__) ": " reason)
+ * @param[in] _condition Expression that evaluates to true or false
+ * @param[in] _expection_type The exception type to throw; must inherit
+ *     `std::exception`. If not specified (i.e. if only two macro
+ *     arguments are provided), defaults to `cudf::logic_error`
+ * @param[in] _what  String literal description of why the exception was
+ *     thrown, i.e. why `_condition` was expected to be true.
+ * @throw `_exception_type` if the condition evaluates to 0 (false).
+ */
+#define RMM_EXPECTS(...)                                           \
+  GET_RMM_EXPECTS_MACRO(__VA_ARGS__, RMM_EXPECTS_3, RMM_EXPECTS_2) \
+  (__VA_ARGS__)
+#define GET_RMM_EXPECTS_MACRO(_1, _2, _3, NAME, ...) NAME
+#define RMM_EXPECTS_3(_condition, _exception_type, _what) \
+  (!!(_condition))                                        \
+      ? static_cast<void>(0)                              \
+      : throw _exception_type("RMM failure at: " __FILE__ \
+                              ":" RMM_STRINGIFY(__LINE__) ": " _what)
+#define RMM_EXPECTS_2(_condition, _reason) \
+  RMM_EXPECTS_3(_condition, rmm::logic_error, _reason)
 
 /**---------------------------------------------------------------------------*
  * @brief Indicates that an erroneous code path has been taken.
