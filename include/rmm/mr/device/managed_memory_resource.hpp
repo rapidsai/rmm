@@ -55,7 +55,7 @@ class managed_memory_resource final : public device_memory_resource {
     }
 
     void* p{nullptr};
-    CUDA_TRY(cudaMallocManaged(&p, bytes), rmm::bad_alloc);
+    RMM_CUDA_TRY(cudaMallocManaged(&p, bytes), rmm::bad_alloc);
     return p;
   }
 
@@ -100,7 +100,7 @@ class managed_memory_resource final : public device_memory_resource {
   std::pair<size_t, size_t> do_get_mem_info(cudaStream_t stream) const {
     std::size_t free_size{};
     std::size_t total_size{};
-    CUDA_TRY(cudaMemGetInfo(&free_size, &total_size));
+    RMM_CUDA_TRY(cudaMemGetInfo(&free_size, &total_size));
     return std::make_pair(free_size, total_size);
   }
 };

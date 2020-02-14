@@ -56,7 +56,7 @@ class LogIt {
         usageLogging(usageLogging) {
     if (filename) file = filename;
     if (Manager::getOptions().enable_logging) {
-      CUDA_TRY(cudaGetDevice(&device));
+      RMM_CUDA_TRY(cudaGetDevice(&device));
       start = std::chrono::system_clock::now();
     }
   }
