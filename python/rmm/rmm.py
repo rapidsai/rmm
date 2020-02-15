@@ -268,7 +268,8 @@ def rmm_cupy_allocator(nbytes):
     if cupy is None:
         raise ModuleNotFoundError("No module named 'cupy'")
 
-    return cupy.cuda.memory.MemoryPointer(RMMCuPyMemory(nbytes), 0)
+    ptr = cupy.cuda.memory.MemoryPointer(RMMCuPyMemory(nbytes), 0)
+    return ptr
 
 
 def _make_finalizer(handle, stream):
