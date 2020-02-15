@@ -238,22 +238,6 @@ try:
 except Exception:
     cupy = None
 
-if cupy:
-
-    class RMMCuPyMemory(cupy.cuda.memory.BaseMemory):
-        def __init__(self, size):
-            self.size = size
-            if size > 0:
-                self.rmm_array = librmm.device_buffer.DeviceBuffer(size=size)
-                self.ptr = self.rmm_array.ptr
-                self.device_id = cupy.cuda.runtime.pointerGetAttributes(
-                    self.ptr
-                ).device
-            else:
-                self.rmm_array = None
-                self.ptr = 0
-                self.device_id = cupy.cuda.device.get_device_id()
-
 
 def rmm_cupy_allocator(nbytes):
     """
@@ -268,7 +252,10 @@ def rmm_cupy_allocator(nbytes):
     if cupy is None:
         raise ModuleNotFoundError("No module named 'cupy'")
 
-    ptr = cupy.cuda.memory.MemoryPointer(RMMCuPyMemory(nbytes), 0)
+    buf = librmm.device_buffer.DeviceBuffer(size=nbytes)
+    mem = cupy.cuda.UnownedMemory(ptr=buf.ptr, size=buf.size, owner=buf)
+    ptr = cupy.cuda.memory.MemoryPointer(mem, 0)
+
     return ptr
 
 
