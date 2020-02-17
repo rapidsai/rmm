@@ -87,7 +87,7 @@ class cuda_memory_resource final : public device_memory_resource {
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equal
    *-------------------------------------------------------------------------**/
-  bool do_is_equal(device_memory_resource const& other) const noexcept {
+  bool do_is_equal(device_memory_resource const& other) const noexcept override {
     return dynamic_cast<cuda_memory_resource const*>(&other) != nullptr;
   }
 
@@ -99,7 +99,7 @@ class cuda_memory_resource final : public device_memory_resource {
    * @param stream to execute on
    * @return std::pair contaiing free_size and total_size of memory
    *-------------------------------------------------------------------------**/
-  std::pair<size_t,size_t> do_get_mem_info( cudaStream_t stream) const{
+  std::pair<size_t,size_t> do_get_mem_info( cudaStream_t stream) const override{
     std::size_t free_size;
     std::size_t total_size;
     auto status = cudaMemGetInfo(&free_size, &total_size);
@@ -107,7 +107,7 @@ class cuda_memory_resource final : public device_memory_resource {
 #ifndef NDEBUG
       std::cerr << "cudaMemGetInfo failed: " << cudaGetErrorName(status) << " "
           << cudaGetErrorString(status) << "\n";
-      throw std::runtime_error{"Falied to to call get_mem_info on memory resrouce"};
+      throw std::runtime_error{"Failed to to call get_mem_info on memory resource"};
 #endif
     }
     return std::make_pair(free_size, total_size);
