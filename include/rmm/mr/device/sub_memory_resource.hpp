@@ -29,21 +29,6 @@
 namespace rmm {
 namespace mr {
 
-namespace detail {
-  
-  template <typename T>
-  inline T round_up_safe(T number_to_round, T modulus) {
-    T remainder = number_to_round % modulus;
-    if (remainder == 0) { return number_to_round; }
-    T rounded_up = number_to_round - remainder + modulus;
-    if (rounded_up < number_to_round) {
-      throw std::invalid_argument("Attempt to round up beyond the type's maximum value");
-    }
-    return rounded_up;
-  }
-
-} // namespace detail
-
 /**---------------------------------------------------------------------------*
  * @brief Memory resource that allocates/deallocates using a pool sub-allocator
  *---------------------------------------------------------------------------**/
@@ -62,7 +47,7 @@ class sub_memory_resource final : public device_memory_resource {
    * zero, an implementation defined pool size is used.
    * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to.
    *---------------------------------------------------------------------------**/
-  explicit sub_memory_resource(std::size_t initial_pool_size = default_initial_size, 
+  explicit sub_memory_resource(std::size_t initial_pool_size = default_initial_size,
                                std::size_t maximum_pool_size = default_maximum_size)
     : heap_resource{rmm::mr::get_default_resource()}
   {
@@ -77,8 +62,7 @@ class sub_memory_resource final : public device_memory_resource {
       initial_pool_size = props.totalGlobalMem / 2;
     }
 
-    initial_pool_size = detail::round_up_safe(initial_pool_size,
-                                              allocation_alignment);
+    initial_pool_size = rmm::detail::align_up(initial_pool_size, allocation_alignment);
 
     if (maximum_pool_size == default_maximum_size)
         maximum_pool_size = props.totalGlobalMem;
@@ -178,7 +162,7 @@ class sub_memory_resource final : public device_memory_resource {
     auto i = allocated_blocks.find(block{static_cast<char*>(p)});
 
     if (i != allocated_blocks.end()) { // found
-      //assert(i->size == detail::round_up_safe(size, allocation_alignment));
+      //assert(i->size == rmm::detail::align_up(size, allocation_alignment));
       sync_blocks[stream].insert(*i);
       allocated_blocks.erase(i);
     }
@@ -233,7 +217,7 @@ class sub_memory_resource final : public device_memory_resource {
    *---------------------------------------------------------------------------**/
   void* do_allocate(std::size_t bytes, cudaStream_t stream) override {
     if (bytes <= 0) return nullptr;
-    bytes = detail::round_up_safe(bytes, allocation_alignment);
+    bytes = rmm::detail::align_up(bytes, allocation_alignment);
     block b = available_larger_block(bytes, stream);
     void* p = allocate_from_block(b, bytes);
 #ifndef NDEBUG
