@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
+#pragma once
+
 #include <list>
 #include <set>
 #include <algorithm>
+#include <iostream>
 
 namespace rmm {
 namespace mr {
@@ -36,7 +39,7 @@ struct block
 };
 
 // combine contiguous blocks
-block merge_blocks(block const& a, block const& b)
+inline block merge_blocks(block const& a, block const& b)
 {
   if (a.ptr + a.size != b.ptr || b.is_head)
     throw std::logic_error("Invalid block merge");
