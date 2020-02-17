@@ -102,8 +102,7 @@ class fixed_size_memory_resource : public device_memory_resource {
   /**---------------------------------------------------------------------------*
    * @brief Deallocate memory pointed to by \p p.
    *
-   * If supported, this operation may optionally be executed on a stream.
-   * Otherwise, the stream is ignored and the null stream is used.
+   * @throws std::bad_alloc if size > block_size (constructor parameter)
    *
    * @param p Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the
@@ -111,7 +110,10 @@ class fixed_size_memory_resource : public device_memory_resource {
    * @param stream Stream on which to perform deallocation
    *---------------------------------------------------------------------------**/
   void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override {
-    assert(bytes < block_size_);
+    bytes = rmm::detail::align_up(bytes, allocation_alignment);
+    if (bytes > block_size_)
+      throw std::bad_alloc();
+
     sync_blocks_[stream].push_back(p);
   }
 
@@ -127,6 +129,8 @@ class fixed_size_memory_resource : public device_memory_resource {
     return std::make_pair(0, 0);  
   }
 
+  // return a block from the free list associated with the specified stream, and move all other 
+  // blocks in the list to the no-sync free list.
   void* block_from_sync_list(cudaStream_t stream) {
     free_list& blocks = sync_blocks_.at(stream);
     void* p = nullptr;
@@ -152,6 +156,9 @@ class fixed_size_memory_resource : public device_memory_resource {
     return p;
   }
 
+  // Returns a pointer to a free block. Attempts to return a block that is not associated with
+  // a stream first, and if there are none, returns a block from a sync free list. If no blocks 
+  // are available, allocates from the upstream heap resource
   void* get_block(cudaStream_t stream) {
     // Try to find a larger block that doesn't require syncing
     void* p = nullptr;
@@ -183,6 +190,7 @@ class fixed_size_memory_resource : public device_memory_resource {
     return p;
   }
 
+  // Allocate new blocks from the heap memory resource into the free list
   void new_blocks_from_heap(cudaStream_t stream) {
     void* p = heap_resource_->allocate(heap_chunk_size_, stream);
     if (!p) throw std::bad_alloc();
@@ -197,10 +205,13 @@ class fixed_size_memory_resource : public device_memory_resource {
     no_sync_blocks_.insert(no_sync_blocks_.cend(), first, last);
   }
 
+  // free all allocated memory
   void free_all()
   {
     for (auto b : heap_blocks_) heap_resource_->deallocate(b.first, b.second);
     heap_blocks_.clear();
+    no_sync_blocks_.clear();
+    sync_blocks_.clear();
   }
 
   device_memory_resource *heap_resource_;
