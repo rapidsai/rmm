@@ -23,6 +23,7 @@
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
 #include <rmm/mr/device/sub_memory_resource.hpp>
+#include <rmm/mr/device/fixed_size_memory_resource.hpp>
 
 #include <cuda_runtime_api.h>
 #include <cstddef>
@@ -52,6 +53,7 @@ inline bool is_device_memory(void* p) {
 #endif
 }
 
+// some useful allocation sizes
 static constexpr std::size_t size_word{4};
 static constexpr std::size_t size_kb{std::size_t{1} << 10};
 static constexpr std::size_t size_mb{std::size_t{1} << 20};
@@ -69,8 +71,6 @@ struct allocation {
 
 template <typename MemoryResourceType>
 struct MRTest : public ::testing::Test {
-  // some useful allocation sizes
-
   std::unique_ptr<rmm::mr::device_memory_resource> mr;
   cudaStream_t stream;
 
@@ -83,14 +83,166 @@ struct MRTest : public ::testing::Test {
   };
 
   ~MRTest() = default;
+
+  void test_allocate(std::size_t bytes, cudaStream_t stream = 0);
+  void test_random_allocations_base(std::size_t num_allocations = 100,
+                                    std::size_t max_size = 5 * size_mb,
+                                    cudaStream_t stream = 0);
+  void test_random_allocations(std::size_t num_allocations = 100,
+                                          cudaStream_t stream = 0);
+  void test_mixed_random_allocation_free_base(std::size_t max_size = 5 * size_mb,
+                                              cudaStream_t stream = 0);
+  void test_mixed_random_allocation_free(cudaStream_t stream = 0);
 };
 
+// Specialize constructor to pass arguments
+template <>
+MRTest<rmm::mr::fixed_size_memory_resource>::MRTest() : 
+  mr{new rmm::mr::fixed_size_memory_resource(1<<20, 32<<20)} {}
+
+template <typename MemoryResourceType>
+void MRTest<MemoryResourceType>::test_allocate(std::size_t bytes,
+                                               cudaStream_t stream) {
+  void* p{nullptr};
+  EXPECT_NO_THROW(p = this->mr->allocate(bytes));
+  if (stream != 0)
+    EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(this->stream));
+  EXPECT_NE(nullptr, p);
+  EXPECT_TRUE(is_aligned(p));
+  EXPECT_TRUE(is_device_memory(p));
+  EXPECT_NO_THROW(this->mr->deallocate(p, bytes));
+  if (stream != 0)
+    EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(this->stream));
+}
+
+template <>
+void MRTest<rmm::mr::fixed_size_memory_resource>::test_allocate(std::size_t bytes,
+                                                                cudaStream_t stream) {
+  void* p{nullptr};
+  auto mr = reinterpret_cast<rmm::mr::fixed_size_memory_resource*>(this->mr.get());
+  if (bytes > mr->get_block_size()) {
+    EXPECT_THROW(p = this->mr->allocate(bytes), std::bad_alloc);
+  }
+  else {
+    EXPECT_NO_THROW(p = mr->allocate(bytes));
+    if (stream != 0)
+      EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(this->stream));
+    EXPECT_NE(nullptr, p);
+    EXPECT_TRUE(is_aligned(p));
+    EXPECT_TRUE(is_device_memory(p));
+    EXPECT_NO_THROW(mr->deallocate(p, bytes));
+    if (stream != 0)
+      EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(this->stream));
+  }
+}
+
+template <typename MemoryResourceType>
+void MRTest<MemoryResourceType>::test_random_allocations_base(std::size_t num_allocations,
+                                                              std::size_t max_size,
+                                                              cudaStream_t stream) {
+  std::vector<allocation> allocations(num_allocations);
+
+  std::default_random_engine generator;
+  std::uniform_int_distribution<std::size_t> distribution(1, max_size);
+
+  // 100 allocations from [0,5MB)
+  std::for_each(
+      allocations.begin(), allocations.end(),
+      [&generator, &distribution, stream, this](allocation& a) {
+        a.size = distribution(generator);
+        EXPECT_NO_THROW(a.p = this->mr->allocate(a.size, stream));
+        if (stream != 0)
+          EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(stream));
+        EXPECT_NE(nullptr, a.p);
+        EXPECT_TRUE(is_aligned(a.p));
+      });
+
+  std::for_each(
+      allocations.begin(), allocations.end(),
+       [generator, distribution, stream, this](allocation& a) {
+        EXPECT_NO_THROW(this->mr->deallocate(a.p, a.size, stream));
+        if (stream != 0)
+          EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(stream));
+      });
+}
+
+template <typename MemoryResourceType>
+void MRTest<MemoryResourceType>::test_random_allocations(std::size_t num_allocations,
+                                                         cudaStream_t stream) {
+  return test_random_allocations_base(num_allocations, 5 * size_mb, stream);
+}
+
+template <>
+void MRTest<rmm::mr::fixed_size_memory_resource>::test_random_allocations(std::size_t num_allocations,
+                                                                          cudaStream_t stream) {
+  return test_random_allocations_base(num_allocations, 1 * size_mb, stream);
+}
+
+template <typename MemoryResourceType>
+void MRTest<MemoryResourceType>::test_mixed_random_allocation_free_base(std::size_t max_size,
+                                                                        cudaStream_t stream)
+{
+  std::default_random_engine generator;
+  constexpr std::size_t num_allocations{100};
+
+  std::uniform_int_distribution<std::size_t> size_distribution(1, max_size);
+
+  constexpr int allocation_probability = 53; // percent
+  std::uniform_int_distribution<int> op_distribution(0, 99);
+  std::uniform_int_distribution<int> index_distribution(0, num_allocations-1);
+
+  int active_allocations{0};
+  int allocation_count{0};
+
+  std::vector<allocation> allocations;
+
+  for (int i = 0; i < num_allocations * 2; ++i) {
+    bool do_alloc = true;
+    if (active_allocations > 0) {
+      int chance = op_distribution(generator);
+      do_alloc = (chance < allocation_probability) && 
+                 (allocation_count < num_allocations);
+    }
+
+    if (do_alloc) {
+      size_t size = size_distribution(generator);
+      active_allocations++;
+      allocation_count++;
+      EXPECT_NO_THROW(allocations.emplace_back(this->mr->allocate(size, stream), size));
+      auto new_allocation = allocations.back();
+      EXPECT_NE(nullptr, new_allocation.p);
+      EXPECT_TRUE(is_aligned(new_allocation.p));
+    }
+    else {
+      size_t index = index_distribution(generator) % active_allocations;
+      active_allocations--;
+      allocation to_free = allocations[index];
+      allocations.erase(std::next(allocations.begin(), index));
+      EXPECT_NO_THROW(this->mr->deallocate(to_free.p, to_free.size, stream));
+    }
+  }
+
+  EXPECT_EQ(active_allocations, 0);
+  EXPECT_EQ(allocations.size(), active_allocations);
+}
+
+template <typename MemoryResourceType>
+void MRTest<MemoryResourceType>::test_mixed_random_allocation_free(cudaStream_t stream) {
+  test_mixed_random_allocation_free_base(5 * size_mb, stream); 
+}
+
+template <>
+void MRTest<rmm::mr::fixed_size_memory_resource>::test_mixed_random_allocation_free(cudaStream_t stream) {
+  test_mixed_random_allocation_free_base(size_mb, stream);
+}
+
+// Test on all memory resource classes
 using resources = ::testing::Types<rmm::mr::cuda_memory_resource,
                                    rmm::mr::managed_memory_resource,
                                    rmm::mr::cnmem_memory_resource,
                                    rmm::mr::cnmem_managed_memory_resource,
-                                   rmm::mr::sub_memory_resource>;
-
+                                   rmm::mr::sub_memory_resource,
+                                   rmm::mr::fixed_size_memory_resource>;
 
 TYPED_TEST_CASE(MRTest, resources);
 
@@ -141,84 +293,37 @@ TYPED_TEST(MRTest, AllocateZeroBytesStream) {
   EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(this->stream));
 }
 
+
 TYPED_TEST(MRTest, AllocateWord) {
-  void* p{nullptr};
-  EXPECT_NO_THROW(p = this->mr->allocate(size_word));
-  EXPECT_NE(nullptr, p);
-  EXPECT_TRUE(is_aligned(p));
-  EXPECT_TRUE(is_device_memory(p));
-  EXPECT_NO_THROW(this->mr->deallocate(p, size_word));
+  this->test_allocate(size_word);
 }
 
 TYPED_TEST(MRTest, AllocateWordStream) {
-  void* p{nullptr};
-  EXPECT_NO_THROW(p = this->mr->allocate(size_word, this->stream));
-  EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(this->stream));
-  EXPECT_NE(nullptr, p);
-  EXPECT_TRUE(is_aligned(p));
-  EXPECT_TRUE(is_device_memory(p));
-  EXPECT_NO_THROW(this->mr->deallocate(p, size_word, this->stream));
-  EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(this->stream));
+  this->test_allocate(size_word, this->stream);
 }
 
 TYPED_TEST(MRTest, AllocateKB) {
-  void* p{nullptr};
-  EXPECT_NO_THROW(p = this->mr->allocate(size_kb));
-  EXPECT_NE(nullptr, p);
-  EXPECT_TRUE(is_aligned(p));
-  EXPECT_TRUE(is_device_memory(p));
-  EXPECT_NO_THROW(this->mr->deallocate(p, size_kb));
+  this->test_allocate(size_kb);
 }
 
 TYPED_TEST(MRTest, AllocateKBStream) {
-  void* p{nullptr};
-  EXPECT_NO_THROW(p = this->mr->allocate(size_kb, this->stream));
-  EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(this->stream));
-  EXPECT_NE(nullptr, p);
-  EXPECT_TRUE(is_aligned(p));
-  EXPECT_TRUE(is_device_memory(p));
-  EXPECT_NO_THROW(this->mr->deallocate(p, size_kb, this->stream));
-  EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(this->stream));
+  this->test_allocate(size_kb, this->stream);
 }
 
 TYPED_TEST(MRTest, AllocateMB) {
-  void* p{nullptr};
-  EXPECT_NO_THROW(p = this->mr->allocate(size_mb));
-  EXPECT_NE(nullptr, p);
-  EXPECT_TRUE(is_aligned(p));
-  EXPECT_TRUE(is_device_memory(p));
-  EXPECT_NO_THROW(this->mr->deallocate(p, size_mb));
+  this->test_allocate(size_mb);
 }
 
 TYPED_TEST(MRTest, AllocateMBStream) {
-  void* p{nullptr};
-  EXPECT_NO_THROW(p = this->mr->allocate(size_mb, this->stream));
-  EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(this->stream));
-  EXPECT_NE(nullptr, p);
-  EXPECT_TRUE(is_aligned(p));
-  EXPECT_TRUE(is_device_memory(p));
-  EXPECT_NO_THROW(this->mr->deallocate(p, size_mb, this->stream));
-  EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(this->stream));
+  this->test_allocate(size_mb, this->stream);
 }
 
 TYPED_TEST(MRTest, AllocateGB) {
-  void* p{nullptr};
-  EXPECT_NO_THROW(p = this->mr->allocate(size_gb));
-  EXPECT_NE(nullptr, p);
-  EXPECT_TRUE(is_aligned(p));
-  EXPECT_TRUE(is_device_memory(p));
-  EXPECT_NO_THROW(this->mr->deallocate(p, size_gb));
+  this->test_allocate(size_gb);
 }
 
 TYPED_TEST(MRTest, AllocateGBStream) {
-  void* p{nullptr};
-  EXPECT_NO_THROW(p = this->mr->allocate(size_gb, this->stream));
-  EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(this->stream));
-  EXPECT_NE(nullptr, p);
-  EXPECT_TRUE(is_aligned(p));
-  EXPECT_TRUE(is_device_memory(p));
-  EXPECT_NO_THROW(this->mr->deallocate(p, size_gb, this->stream));
-  EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(this->stream));
+  this->test_allocate(size_gb, this->stream);
 }
 
 TYPED_TEST(MRTest, AllocateTooMuch) {
@@ -234,116 +339,21 @@ TYPED_TEST(MRTest, AllocateTooMuchStream) {
 }
 
 TYPED_TEST(MRTest, RandomAllocations) {
-  constexpr std::size_t num_allocations{100};
-  std::vector<allocation> allocations(num_allocations);
-
-  constexpr std::size_t MAX_ALLOCATION_SIZE{5 * size_mb};
-
-  std::default_random_engine generator;
-  std::uniform_int_distribution<std::size_t> distribution(1,
-                                                          MAX_ALLOCATION_SIZE);
-
-  // 100 allocations from [0,5MB)
-  std::for_each(allocations.begin(), allocations.end(),
-                [&generator, &distribution, this](allocation& a) {
-                  a.size = distribution(generator);
-                  EXPECT_NO_THROW(a.p = this->mr->allocate(a.size));
-                  EXPECT_NE(nullptr, a.p);
-                  EXPECT_TRUE(is_aligned(a.p));
-                });
-
-  std::for_each(allocations.begin(), allocations.end(),
-                [generator, distribution, this](allocation& a) {
-                  EXPECT_NO_THROW(this->mr->deallocate(a.p, a.size));
-                });
+  this->test_random_allocations();
 }
 
 TYPED_TEST(MRTest, RandomAllocationsStream) {
-  constexpr std::size_t num_allocations{100};
-  std::vector<allocation> allocations(num_allocations);
-
-  constexpr std::size_t MAX_ALLOCATION_SIZE{5 * size_mb};
-
-  std::default_random_engine generator;
-  std::uniform_int_distribution<std::size_t> distribution(1,
-                                                          MAX_ALLOCATION_SIZE);
-
-  // 100 allocations from [0,5MB)
-  std::for_each(
-      allocations.begin(), allocations.end(),
-      [&generator, &distribution, this](allocation& a) {
-        a.size = distribution(generator);
-        EXPECT_NO_THROW(a.p = this->mr->allocate(a.size, this->stream));
-        EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(this->stream));
-        EXPECT_NE(nullptr, a.p);
-        EXPECT_TRUE(is_aligned(a.p));
-      });
-
-  std::for_each(
-      allocations.begin(), allocations.end(),
-       [generator, distribution, this](allocation& a) {
-        EXPECT_NO_THROW(this->mr->deallocate(a.p, a.size, this->stream));
-        EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(this->stream));
-      });
-}
-
-void mixed_random_allocation_free(std::unique_ptr<rmm::mr::device_memory_resource>& mr,
-                                  cudaStream_t stream = 0)
-{
-  std::default_random_engine generator;
-  constexpr std::size_t num_allocations{100};
-
-  constexpr std::size_t MAX_ALLOCATION_SIZE{10 * size_mb};
-  std::uniform_int_distribution<std::size_t> size_distribution(
-    1, MAX_ALLOCATION_SIZE);
-
-  constexpr int allocation_probability = 53; // percent
-  std::uniform_int_distribution<int> op_distribution(0, 99);
-  std::uniform_int_distribution<int> index_distribution(0, num_allocations-1);
-
-  int active_allocations{0};
-  int allocation_count{0};
-
-  std::vector<allocation> allocations;
-
-  for (int i = 0; i < num_allocations * 2; ++i) {
-    bool do_alloc = true;
-    if (active_allocations > 0) {
-      int chance = op_distribution(generator);
-      do_alloc = (chance < allocation_probability) && 
-                 (allocation_count < num_allocations);
-    }
-
-    if (do_alloc) {
-      size_t size = size_distribution(generator);
-      active_allocations++;
-      allocation_count++;
-      EXPECT_NO_THROW(allocations.emplace_back(mr->allocate(size, stream), size));
-      auto new_allocation = allocations.back();
-      EXPECT_NE(nullptr, new_allocation.p);
-      EXPECT_TRUE(is_aligned(new_allocation.p));
-    }
-    else {
-      size_t index = index_distribution(generator) % active_allocations;
-      active_allocations--;
-      allocation to_free = allocations[index];
-      allocations.erase(std::next(allocations.begin(), index));
-      EXPECT_NO_THROW(mr->deallocate(to_free.p, to_free.size, stream));
-    }
-  }
-
-  EXPECT_EQ(active_allocations, 0);
-  EXPECT_EQ(allocations.size(), active_allocations);
+  this->test_random_allocations(100, this->stream);
 }
 
 TYPED_TEST(MRTest, MixedRandomAllocationFree)
 {
-  mixed_random_allocation_free(this->mr);
+  this->test_mixed_random_allocation_free();
 }
-
+  
 TYPED_TEST(MRTest, MixedRandomAllocationFreeStream)
 {
-  mixed_random_allocation_free(this->mr, this->stream);
+  this->test_mixed_random_allocation_free(this->stream);
 }
 
 TYPED_TEST(MRTest, GetMemInfo) {
