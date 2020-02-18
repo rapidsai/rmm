@@ -250,7 +250,7 @@ def test_rmm_cupy_allocator():
     m = rmm.rmm_cupy_allocator(42)
     assert m.mem.size == 42
     assert m.mem.ptr != 0
-    assert isintance(a.data.mem._owner, rmm.DeviceBuffer)
+    assert isinstance(a.data.mem._owner, rmm.DeviceBuffer)
 
     m = rmm.rmm_cupy_allocator(0)
     assert m.mem.size == 0
