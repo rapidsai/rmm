@@ -101,6 +101,13 @@ set(SCALAR_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/device_scalar_tests.cpp")
 
 ConfigureTest(DEVICE_SCALAR_TEST "${SCALAR_TEST_SRC}")
+###################################################################################################
+# - logger tests -------------------------------------------------------------------------------------
+
+set(LOGGER_TEST_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/logger_tests.cpp")
+
+ConfigureTest(LOGGER_TEST "${LOGGER_TEST_SRC}")
 
 ###################################################################################################
 ### enable testing ################################################################################
