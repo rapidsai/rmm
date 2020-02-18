@@ -17,6 +17,8 @@
 
 #include "device_memory_resource.hpp"
 
+#include <rmm/detail/error.hpp>
+
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/spdlog.h>
 
@@ -31,6 +33,27 @@ namespace mr {
  */
 template <typename Upstream>
 class logging_resource_adaptor final : public device_memory_resource {
+ public:
+  /**
+   * @brief Construct a new logging resource adaptor using `upstream` to satisfy
+   * allocation requests and logging information about each allocation/free to
+   * the file specified by `filename`.
+   *
+   * If the directories specified in `filename` do not exist, they will be
+   * created.
+   *
+   * @throws `rmm::logic_error` if `upstream == nullptr`
+   * @throws `spdlog::spdlog_ex` if opening `filename` failed
+   *
+   * @param upstream The resource used for allocating/deallocating device memory
+   * @param filename Name of file to write log info
+   */
+  logging_resource_adaptor(Upstream* upstream, std::string const& filename)
+      : upstream_{upstream}, logger_{spdlog::basic_logger_mt("RMM", filename)} {
+    RMM_EXPECTS(nullptr != upstream,
+                "Unexpected null upstream resource pointer.");
+  }
+
  private:
   /**
    * @brief Allocates memory of size at least `bytes` using the upstream
@@ -86,6 +109,8 @@ class logging_resource_adaptor final : public device_memory_resource {
   std::pair<size_t, size_t> do_get_mem_info(cudaStream_t stream) const {
     return upstream_->get_mem_info(stream);
   }
+
+  std::shared_ptr<spdlog::logger> logger_;  ///< spdlog logger object
 
   Upstream* upstream_;  ///< The upstream resource used for satisfying
                         ///< allocation requests
