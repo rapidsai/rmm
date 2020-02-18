@@ -76,6 +76,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @return void* Pointer to the newly allocated memory
    */
   void* do_allocate(std::size_t bytes, cudaStream_t stream) override {
+    logger_->info(std::string{"allocation, "} + std::to_string(bytes));
     return upstream_->allocate(bytes, stream);
   }
 
@@ -90,6 +91,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @param stream Stream on which to perform the deallocation
    */
   void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override {
+    logger_->info(std::string{"free, "} + std::to_string(bytes));
     upstream_->deallocate(p, bytes, stream);
   }
 
