@@ -16,6 +16,7 @@
 
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/spdlog.h>
+#include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/logging_resource_adaptor.hpp>
 
 #include <gtest/gtest.h>
@@ -25,4 +26,14 @@ TEST(First, first) {
   spdlog::set_default_logger(file_logger);
   spdlog::info("Welcome to spdlog version {}.{}.{}  !", SPDLOG_VER_MAJOR,
                SPDLOG_VER_MINOR, SPDLOG_VER_PATCH);
+}
+
+TEST(Adaptor, first) {
+  rmm::mr::cuda_memory_resource upstream;
+
+  rmm::mr::logging_resource_adaptor<rmm::mr::cuda_memory_resource> log_mr{
+      &upstream, "logs/test.txt"};
+
+  auto p = log_mr.allocate(100);
+  log_mr.deallocate(p, 100);
 }
