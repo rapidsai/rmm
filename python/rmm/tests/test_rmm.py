@@ -250,16 +250,16 @@ def test_rmm_cupy_allocator():
     m = rmm.rmm_cupy_allocator(42)
     assert m.mem.size == 42
     assert m.mem.ptr != 0
-    assert m.mem.rmm_array is not None
+    assert isinstance(m.mem._owner, rmm.DeviceBuffer)
 
     m = rmm.rmm_cupy_allocator(0)
     assert m.mem.size == 0
     assert m.mem.ptr == 0
-    assert m.mem.rmm_array is None
+    assert isinstance(m.mem._owner, rmm.DeviceBuffer)
 
     cupy.cuda.set_allocator(rmm.rmm_cupy_allocator)
     a = cupy.arange(10)
-    assert hasattr(a.data.mem, "rmm_array")
+    assert isinstance(a.data.mem._owner, rmm.DeviceBuffer)
 
 
 def test_rmm_getinfo():
