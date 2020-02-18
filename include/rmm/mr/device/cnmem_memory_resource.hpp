@@ -166,7 +166,7 @@ class cnmem_memory_resource : public device_memory_resource {
    * If a stream equal to `stream` has already been registered, this function
    * has no effect.
    *
-   * This function is threadsafe.
+   * This function is thread safe.
    *
    * @throws `rmm::cnmem_error` if registering the stream with cnmem fails.
    *
