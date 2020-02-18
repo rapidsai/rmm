@@ -29,6 +29,7 @@
 - PR #278 Allocate a `bytes` object to fill up with RMM log data
 - PR #280 Drop allocation/deallocation of `offset`
 - PR #282 `DeviceBuffer` use default constructor for size=0
+- PR #296 Use CuPy's `UnownedMemory` for RMM-backed allocations
 
 ## Bug Fixes
 
