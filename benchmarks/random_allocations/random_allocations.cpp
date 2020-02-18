@@ -19,6 +19,7 @@
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
 #include <rmm/mr/device/sub_memory_resource.hpp>
+#include <rmm/mr/device/hybrid_memory_resource.hpp>
 
 #include <benchmark/benchmark.h>
 
@@ -173,6 +174,8 @@ int max_size = 200;
 void declare_benchmark(std::string name, int num, int size) {
   if (name == "cuda")
     BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::cuda_memory_resource)->Args({num, size})->Unit(benchmark::kMillisecond);
+  if (name == "hybrid")
+    BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::hybrid_memory_resource)->Args({num, size})->Unit(benchmark::kMillisecond);
   else if (name == "sub")
     BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::sub_memory_resource)->Args({num, size})->Unit(benchmark::kMillisecond);
   else if (name == "cnmem")
@@ -192,6 +195,7 @@ int main(int argc, char** argv)
   }
   else {
     BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::sub_memory_resource)->Apply(allocation_range);
+    BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::hybrid_memory_resource)->Apply(allocation_range);
     BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::cnmem_memory_resource)->Apply(allocation_range);
     BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::cuda_memory_resource)->Apply(allocation_range);
   }

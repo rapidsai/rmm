@@ -24,6 +24,7 @@
 #include <rmm/mr/device/managed_memory_resource.hpp>
 #include <rmm/mr/device/sub_memory_resource.hpp>
 #include <rmm/mr/device/fixed_size_memory_resource.hpp>
+#include <rmm/mr/device/hybrid_memory_resource.hpp>
 
 #include <cuda_runtime_api.h>
 #include <cstddef>
@@ -242,7 +243,8 @@ using resources = ::testing::Types<rmm::mr::cuda_memory_resource,
                                    rmm::mr::cnmem_memory_resource,
                                    rmm::mr::cnmem_managed_memory_resource,
                                    rmm::mr::sub_memory_resource,
-                                   rmm::mr::fixed_size_memory_resource>;
+                                   rmm::mr::fixed_size_memory_resource,
+                                   rmm::mr::hybrid_memory_resource>;
 
 TYPED_TEST_CASE(MRTest, resources);
 
