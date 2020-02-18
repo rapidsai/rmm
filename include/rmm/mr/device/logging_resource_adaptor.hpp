@@ -28,6 +28,10 @@ namespace mr {
  * @brief Resource that uses `Upstream` to allocate memory and logs information
  * about the requested allocation/deallocations.
  *
+ * An instance of this resource can be constructured with an existing, upstream
+ * resource in order to satisfy allocation requests and log
+ * allocation/deallocation activity.
+ *
  * @tparam Upstream Type of the upstream resource used for
  * allocation/deallocation.
  */
