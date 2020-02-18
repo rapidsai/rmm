@@ -253,7 +253,10 @@ def rmm_cupy_allocator(nbytes):
         raise ModuleNotFoundError("No module named 'cupy'")
 
     buf = librmm.device_buffer.DeviceBuffer(size=nbytes)
-    mem = cupy.cuda.UnownedMemory(ptr=buf.ptr, size=buf.size, owner=buf)
+    dev_id = -1 if buf.ptr else cupy.cuda.device.get_device_id()
+    mem = cupy.cuda.UnownedMemory(
+        ptr=buf.ptr, size=buf.size, owner=buf, device_id=dev_id
+    )
     ptr = cupy.cuda.memory.MemoryPointer(mem, 0)
 
     return ptr
