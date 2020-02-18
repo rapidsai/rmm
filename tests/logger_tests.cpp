@@ -37,3 +37,12 @@ TEST(Adaptor, first) {
   auto p = log_mr.allocate(100);
   log_mr.deallocate(p, 100);
 }
+
+TEST(Adaptor, factory) {
+  rmm::mr::cuda_memory_resource upstream;
+
+  auto log_mr = rmm::mr::make_logging_adaptor(&upstream, "logs/test.txt");
+
+  auto p = log_mr.allocate(100);
+  log_mr.deallocate(p, 100);
+}

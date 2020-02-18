@@ -125,5 +125,20 @@ class logging_resource_adaptor final : public device_memory_resource {
   Upstream* upstream_;  ///< The upstream resource used for satisfying
                         ///< allocation requests
 };
+
+/**
+ * @brief Convenience factory to return a `logging_resource_adaptor` around the
+ * upstream resource `upstream`.
+ *
+ * @tparam Upstream Type of the upstream `device_memory_resource`.
+ * @param upstream Pointer to the upstream resource
+ * @param filename Name of the file to write log info
+ */
+template <typename Upstream>
+logging_resource_adaptor<Upstream> make_logging_adaptor(
+    Upstream* upstream, std::string const& filename) {
+  return logging_resource_adaptor<Upstream>{upstream, filename};
+}
+
 }  // namespace mr
 }  // namespace rmm
