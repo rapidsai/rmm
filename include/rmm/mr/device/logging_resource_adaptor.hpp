@@ -17,6 +17,9 @@
 
 #include "device_memory_resource.hpp"
 
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/spdlog.h>
+
 namespace rmm {
 namespace mr {
 /**
