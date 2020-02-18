@@ -126,7 +126,7 @@ class bad_alloc : public std::bad_alloc {
 /**
  * @brief Error checking macro for CUDA runtime API functions.
  *
- * Invokes a CUDA runtime API function call, if the call does not return
+ * Invokes a CUDA runtime API function call. If the call does not return
  * `cudaSuccess`, invokes cudaGetLastError() to clear the error and throws an
  * exception detailing the CUDA error that occurred
  *
