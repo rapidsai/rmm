@@ -170,7 +170,6 @@ class cnmem_memory_resource : public device_memory_resource {
    *
    * @throws `rmm::cnmem_error` if registering the stream with cnmem fails.
    *
-   *
    * @param stream The stream to register
    */
   void register_stream(cudaStream_t stream) {
