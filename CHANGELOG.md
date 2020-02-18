@@ -9,11 +9,13 @@
 - PR #262 Moved device memory resource files to `mr/device` directory
 - PR #266 Drop `rmm.auto_device`
 - PR #268 Add Cython/Python `copy_to_host` and `to_device`
+- PR #272 Add `host_memory_resource`.
 - PR #273 Moved device memory resource tests to `device/` directory.
 - PR #274 Add `copy_from_host` method to `DeviceBuffer`
 - PR #275 Add `copy_from_device` method to `DeviceBuffer`
 - PR #283 Add random allocation benchmark.
 - PR #287 Enabled CUDA CXX11 for unit tests.
+- PR #292 Revamped RMM exceptions.
 
 ## Improvements
 
