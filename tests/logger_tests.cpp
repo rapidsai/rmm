@@ -19,7 +19,9 @@
 
 #include <gtest/gtest.h>
 
-TEST(First, first){
-
+TEST(First, first) {
+  auto file_logger = spdlog::basic_logger_mt("rmm_logger", "logs/basic.txt");
+  spdlog::set_default_logger(file_logger);
+  spdlog::info("Welcome to spdlog version {}.{}.{}  !", SPDLOG_VER_MAJOR,
+               SPDLOG_VER_MINOR, SPDLOG_VER_PATCH);
 }
-
