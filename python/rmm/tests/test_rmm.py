@@ -259,7 +259,7 @@ def test_rmm_cupy_allocator():
 
     cupy.cuda.set_allocator(rmm.rmm_cupy_allocator)
     a = cupy.arange(10)
-    assert isintance(a.data.mem._owner, rmm.DeviceBuffer)
+    assert isinstance(a.data.mem._owner, rmm.DeviceBuffer)
 
 
 def test_rmm_getinfo():
