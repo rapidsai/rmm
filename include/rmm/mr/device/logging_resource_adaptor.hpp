@@ -80,6 +80,12 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @brief Allocates memory of size at least `bytes` using the upstream
    * resource and logs the allocation.
    *
+   * Every invocation of `logging_resource_adaptor::do_allocate` will write the
+   * following CSV formatted line to the file specified at construction:
+   * ```
+   * *TIMESTAMP*,"allocate",*bytes*,*stream*
+   * ```
+   *
    * The returned pointer has at least 256B alignment.
    *
    * @throws `rmm::bad_alloc` if the requested allocation could not be fulfilled
@@ -100,6 +106,12 @@ class logging_resource_adaptor final : public device_memory_resource {
   /**
    * @brief Free allocation of size `bytes` pointed to to by `p` and log the
    * deallocation.
+   *
+   * Every invocation of `logging_resource_adaptor::do_deallocate` will write
+   * the following CSV formatted line to the file specified at construction:
+   * ```
+   * *TIMESTAMP*,"free",*bytes*,*stream*
+   * ```
    *
    * @throws Nothing.
    *
