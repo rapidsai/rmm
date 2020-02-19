@@ -60,8 +60,8 @@ class logging_resource_adaptor final : public device_memory_resource {
   logging_resource_adaptor(Upstream* upstream, std::string const& filename)
       : upstream_{upstream},
         logger_{std::make_shared<spdlog::logger>(
-            "RMM", std::make_shared<spdlog::sinks::basic_file_sink_mt>(filename,
-                                                                       true))} {
+            "RMM", std::make_shared<spdlog::sinks::basic_file_sink_mt>(
+                       filename, true /*truncate file*/))} {
     RMM_EXPECTS(nullptr != upstream,
                 "Unexpected null upstream resource pointer.");
   }
