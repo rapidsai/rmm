@@ -32,6 +32,7 @@
 - PR #296 Use CuPy's `UnownedMemory` for RMM-backed allocations
 
 ## Bug Fixes
+- PR #299 Fix assert condition blocking debug builds
 
 
 # RMM 0.12.0 (Date TBD)
