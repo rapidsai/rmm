@@ -52,13 +52,13 @@ cuda_event_timer::cuda_event_timer(benchmark::State& state,
 }
 
 cuda_event_timer::~cuda_event_timer() {
-  RMM_CUDA_TRY(cudaEventRecord(stop, stream));
-  RMM_CUDA_TRY(cudaEventSynchronize(stop));
+  if (cudaEventRecord(stop, stream) != cudaSuccess) return;
+  if (cudaEventSynchronize(stop) != cudaSuccess) return;
  
   float milliseconds = 0.0f;
-  RMM_CUDA_TRY(cudaEventElapsedTime(&milliseconds, start, stop));
+  if (cudaEventElapsedTime(&milliseconds, start, stop) != cudaSuccess) return;
   p_state->SetIterationTime(milliseconds/(1000.0f));
-  RMM_CUDA_TRY(cudaEventDestroy(start));
-  RMM_CUDA_TRY(cudaEventDestroy(stop));
+  if (cudaEventDestroy(start) != cudaSuccess) return;
+  if (cudaEventDestroy(stop) != cudaSuccess) return;
 }
 
