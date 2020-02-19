@@ -21,18 +21,11 @@
 
 #include <gtest/gtest.h>
 
-TEST(First, first) {
-  auto file_logger = spdlog::basic_logger_mt("rmm_logger", "logs/basic.txt");
-  spdlog::set_default_logger(file_logger);
-  spdlog::info("Welcome to spdlog version {}.{}.{}  !", SPDLOG_VER_MAJOR,
-               SPDLOG_VER_MINOR, SPDLOG_VER_PATCH);
-}
-
 TEST(Adaptor, first) {
   rmm::mr::cuda_memory_resource upstream;
 
   rmm::mr::logging_resource_adaptor<rmm::mr::cuda_memory_resource> log_mr{
-      &upstream, "logs/test.txt"};
+      &upstream, "logs/test1.txt"};
 
   auto p = log_mr.allocate(100);
   log_mr.deallocate(p, 100);
@@ -41,7 +34,7 @@ TEST(Adaptor, first) {
 TEST(Adaptor, factory) {
   rmm::mr::cuda_memory_resource upstream;
 
-  auto log_mr = rmm::mr::make_logging_adaptor(&upstream, "logs/test.txt");
+  auto log_mr = rmm::mr::make_logging_adaptor(&upstream, "logs/test2.txt");
 
   auto p = log_mr.allocate(100);
   log_mr.deallocate(p, 100);
