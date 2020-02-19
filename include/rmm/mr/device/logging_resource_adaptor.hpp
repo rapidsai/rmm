@@ -64,6 +64,10 @@ class logging_resource_adaptor final : public device_memory_resource {
                        filename, true /*truncate file*/))} {
     RMM_EXPECTS(nullptr != upstream,
                 "Unexpected null upstream resource pointer.");
+
+    auto const csv_header{"Action,Size,Stream"};
+    logger_->set_pattern("%v");
+    logger_->info(csv_header);
   }
 
   bool supports_streams() const noexcept override {
@@ -84,7 +88,11 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @return void* Pointer to the newly allocated memory
    */
   void* do_allocate(std::size_t bytes, cudaStream_t stream) override {
-    logger_->info(std::string{"allocation, "} + std::to_string(bytes));
+    std::string msg{"allocate,"};
+    msg += std::to_string(bytes);
+    msg += ",";
+    msg += std::to_string(reinterpret_cast<uintptr_t>(stream));
+    logger_->info(msg);
     return upstream_->allocate(bytes, stream);
   }
 
@@ -99,7 +107,11 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @param stream Stream on which to perform the deallocation
    */
   void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override {
-    logger_->info(std::string{"free, "} + std::to_string(bytes));
+    std::string msg{"free,"};
+    msg += std::to_string(bytes);
+    msg += ",";
+    msg += std::to_string(reinterpret_cast<uintptr_t>(stream));
+    logger_->info(msg);
     upstream_->deallocate(p, bytes, stream);
   }
 
