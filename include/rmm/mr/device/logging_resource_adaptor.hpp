@@ -46,6 +46,11 @@ class logging_resource_adaptor final : public device_memory_resource {
    * If the directories specified in `filename` do not exist, they will be
    * created.
    *
+   * Truncates `filename` if it already exists.
+   *
+   * Creating multiple `logging_resource_adaptor`s with the same `filename` will
+   * result in undefined behavior.
+   *
    * @throws `rmm::logic_error` if `upstream == nullptr`
    * @throws `spdlog::spdlog_ex` if opening `filename` failed
    *
@@ -53,7 +58,10 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @param filename Name of file to write log info
    */
   logging_resource_adaptor(Upstream* upstream, std::string const& filename)
-      : upstream_{upstream}, logger_{spdlog::basic_logger_mt("RMM", filename)} {
+      : upstream_{upstream},
+        logger_{std::make_shared<spdlog::logger>(
+            "RMM", std::make_shared<spdlog::sinks::basic_file_sink_mt>(filename,
+                                                                       true))} {
     RMM_EXPECTS(nullptr != upstream,
                 "Unexpected null upstream resource pointer.");
   }
