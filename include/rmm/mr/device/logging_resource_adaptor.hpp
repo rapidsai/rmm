@@ -65,9 +65,10 @@ class logging_resource_adaptor final : public device_memory_resource {
     RMM_EXPECTS(nullptr != upstream,
                 "Unexpected null upstream resource pointer.");
 
-    auto const csv_header{"Action,Size,Stream"};
+    auto const csv_header{"Time,Action,Size,Stream"};
     logger_->set_pattern("%v");
     logger_->info(csv_header);
+    logger_->set_pattern("%H:%M:%S:%f,%v");
   }
 
   bool supports_streams() const noexcept override {
