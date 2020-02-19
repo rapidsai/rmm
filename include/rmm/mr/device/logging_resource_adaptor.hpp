@@ -42,6 +42,8 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @brief Construct a new logging resource adaptor using `upstream` to satisfy
    * allocation requests and logging information about each allocation/free to
    * the file specified by `filename`.
+   * 
+   * The logfile will be written using CSV formatting.
    *
    * If the directories specified in `filename` do not exist, they will be
    * created.
