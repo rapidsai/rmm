@@ -25,6 +25,12 @@
     }                                                             \
   } while (0);
 
+#define RMM_CUDA_ASSERT_OK(expr)                                  \
+  do {                                                            \
+    cudaError_t const status = (expr);                            \
+    assert(cudaSuccess == status);                                \
+  } while (0);
+
 cuda_event_timer::cuda_event_timer(benchmark::State& state,
                                    bool flush_l2_cache,
                                    cudaStream_t stream):
@@ -52,13 +58,13 @@ cuda_event_timer::cuda_event_timer(benchmark::State& state,
 }
 
 cuda_event_timer::~cuda_event_timer() {
-  if (cudaEventRecord(stop, stream) != cudaSuccess) return;
-  if (cudaEventSynchronize(stop) != cudaSuccess) return;
+  RMM_CUDA_ASSERT_OK(cudaEventRecord(stop, stream));
+  RMM_CUDA_ASSERT_OK(cudaEventSynchronize(stop));
  
   float milliseconds = 0.0f;
-  if (cudaEventElapsedTime(&milliseconds, start, stop) != cudaSuccess) return;
+  RMM_CUDA_ASSERT_OK(cudaEventElapsedTime(&milliseconds, start, stop));
   p_state->SetIterationTime(milliseconds/(1000.0f));
-  if (cudaEventDestroy(start) != cudaSuccess) return;
-  if (cudaEventDestroy(stop) != cudaSuccess) return;
+  RMM_CUDA_ASSERT_OK(cudaEventDestroy(start));
+  RMM_CUDA_ASSERT_OK(cudaEventDestroy(stop));
 }
 
