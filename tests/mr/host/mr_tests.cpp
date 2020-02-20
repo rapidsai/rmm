@@ -31,7 +31,7 @@ inline bool is_aligned(void* p,
   return (0 == reinterpret_cast<uintptr_t>(p) % alignment);
 }
 
-inline bool expect_aligned(void* p, std::size_t alignment) {
+inline void expect_aligned(void* p, std::size_t alignment) {
   EXPECT_EQ(0, reinterpret_cast<uintptr_t>(p) % alignment);
 }
 
