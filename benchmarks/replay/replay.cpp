@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "cxxopts.hpp"
 #include "rapidcsv.h"
 
 #include <benchmark/benchmark.h>
@@ -32,13 +33,24 @@ static void BM_StringCopy(benchmark::State& state) {
 BENCHMARK(BM_StringCopy);
 
 int main(int argc, char** argv) {
-
-  ::benchmark::Initialize(&argc, argv);
-
   // benchmark::Initialize will remove command line arguments it recognizes and
   // leave any remaining arguments
+  ::benchmark::Initialize(&argc, argv);
 
   // Parse for replay arguments:
+  cxxopts::Options options(
+      "RMM Replay Benchmark",
+      "Replays and benchmarks allocation activity captured from RMM logging.");
+
+  options.add_options()("f,file", "Name of RMM log file.",
+                        cxxopts::value<std::string>());
+
+  auto result = options.parse(argc, argv);
+  if (result.count("file")) {
+    auto filename = result["file"].as<std::string>();
+  } else {
+    throw std::runtime_error{"No log filename specified."};
+  }
 
   ::benchmark::RunSpecifiedBenchmarks();
 }
