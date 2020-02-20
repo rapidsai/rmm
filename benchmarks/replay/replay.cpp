@@ -40,8 +40,8 @@ void parse_csv(std::string const& filename) {
 }
 
 int main(int argc, char** argv) {
-  // benchmark::Initialize will remove command line arguments it recognizes and
-  // leave any remaining arguments
+  // benchmark::Initialize will remove GBench command line arguments it
+  // recognizes and leave any remaining arguments
   ::benchmark::Initialize(&argc, argv);
 
   // Parse for replay arguments:
