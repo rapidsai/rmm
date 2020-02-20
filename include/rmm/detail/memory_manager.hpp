@@ -32,7 +32,6 @@
 #include <mutex>
 
 #include <rmm/mr/device/device_memory_resource.hpp>
-#include <rmm/mr/device/logging_resource_adaptor.hpp>
 
 #include <rmm/rmm_api.h>
 #include <rmm/detail/cnmem.h>

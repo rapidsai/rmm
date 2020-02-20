@@ -20,6 +20,7 @@
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
+#include <rmm/mr/device/logging_resource_adaptor.hpp>
 
 namespace rmm {
 /**
