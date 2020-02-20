@@ -32,6 +32,7 @@
 #include <mutex>
 
 #include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/mr/device/logging_resource_adaptor.hpp>
 
 #include <rmm/rmm_api.h>
 #include <rmm/detail/cnmem.h>
@@ -240,6 +241,8 @@ namespace rmm
     bool is_initialized{false};
 
     std::unique_ptr<rmm::mr::device_memory_resource> initialized_resource{};
+
+    std::unique_ptr<rmm::mr::device_memory_resource> log_mr{};
   };
 }
 

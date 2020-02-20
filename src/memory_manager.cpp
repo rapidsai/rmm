@@ -118,7 +118,11 @@ void Manager::initialize(const rmmOptions_t* new_options) {
     initialized_resource.reset(new rmm::mr::cuda_memory_resource());
   }
 
-  rmm::mr::set_default_resource(initialized_resource.get());
+  log_mr.reset(
+      new rmm::mr::logging_resource_adaptor<rmm::mr::device_memory_resource>{
+          initialized_resource.get()});
+
+  rmm::mr::set_default_resource(log_mr.get());
 
   is_initialized = true;
 }
@@ -131,6 +135,7 @@ void Manager::finalize() {
   if (isInitialized()) {
     registered_streams.clear();
     logger.clear();
+    log_mr.reset();
     initialized_resource.reset();
     is_initialized = false;
   }
