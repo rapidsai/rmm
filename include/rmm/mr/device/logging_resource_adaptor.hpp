@@ -42,7 +42,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @brief Construct a new logging resource adaptor using `upstream` to satisfy
    * allocation requests and logging information about each allocation/free to
    * the file specified by `filename`.
-   * 
+   *
    * The logfile will be written using CSV formatting.
    *
    * If the directories specified in `filename` do not exist, they will be
@@ -82,7 +82,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @brief Allocates memory of size at least `bytes` using the upstream
    * resource and logs the allocation.
    *
-   * Every invocation of `logging_resource_adaptor::do_allocate` will write the
+   * If the upstream allocation is successful logs the
    * following CSV formatted line to the file specified at construction:
    * ```
    * *TIMESTAMP*,"allocate",*bytes*,*stream*
@@ -91,18 +91,20 @@ class logging_resource_adaptor final : public device_memory_resource {
    * The returned pointer has at least 256B alignment.
    *
    * @throws `rmm::bad_alloc` if the requested allocation could not be fulfilled
+   * by the upstream resource.
    *
    * @param bytes The size, in bytes, of the allocation
    * @param stream Stream on which to perform the allocation
    * @return void* Pointer to the newly allocated memory
    */
   void* do_allocate(std::size_t bytes, cudaStream_t stream) override {
+    auto const p = upstream_->allocate(bytes, stream);
     std::string msg{"allocate,"};
     msg += std::to_string(bytes);
     msg += ",";
     msg += std::to_string(reinterpret_cast<uintptr_t>(stream));
     logger_->info(msg);
-    return upstream_->allocate(bytes, stream);
+    return p;
   }
 
   /**
