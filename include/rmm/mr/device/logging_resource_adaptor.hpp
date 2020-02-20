@@ -57,9 +57,11 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @throws `spdlog::spdlog_ex` if opening `filename` failed
    *
    * @param upstream The resource used for allocating/deallocating device memory
-   * @param filename Name of file to write log info
+   * @param filename Name of file to write log info. If not specified, retrieves
+   * the file name from the environment variable "RMM_LOG_FILE".
    */
-  logging_resource_adaptor(Upstream* upstream, std::string const& filename)
+  logging_resource_adaptor(Upstream* upstream, std::string const& filename =
+                                                   std::getenv("RMM_LOG_FILE"))
       : upstream_{upstream},
         logger_{std::make_shared<spdlog::logger>(
             "RMM", std::make_shared<spdlog::sinks::basic_file_sink_mt>(
@@ -100,6 +102,8 @@ class logging_resource_adaptor final : public device_memory_resource {
   void* do_allocate(std::size_t bytes, cudaStream_t stream) override {
     auto const p = upstream_->allocate(bytes, stream);
     std::string msg{"allocate,"};
+    // msg += std::to_string(p);
+    msg += ",";
     msg += std::to_string(bytes);
     msg += ",";
     msg += std::to_string(reinterpret_cast<uintptr_t>(stream));
@@ -169,11 +173,13 @@ class logging_resource_adaptor final : public device_memory_resource {
  *
  * @tparam Upstream Type of the upstream `device_memory_resource`.
  * @param upstream Pointer to the upstream resource
- * @param filename Name of the file to write log info
+ * @param filename Name of the file to write log info. If not specified,
+ * retrieves the log file name from the environment variable "RMM_LOG_FILE".
  */
 template <typename Upstream>
 logging_resource_adaptor<Upstream> make_logging_adaptor(
-    Upstream* upstream, std::string const& filename) {
+    Upstream* upstream,
+    std::string const& filename = std::getenv("RMM_LOG_FILE")) {
   return logging_resource_adaptor<Upstream>{upstream, filename};
 }
 
