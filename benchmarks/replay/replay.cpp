@@ -32,6 +32,13 @@ static void BM_StringCopy(benchmark::State& state) {
 }
 BENCHMARK(BM_StringCopy);
 
+void parse_csv(std::string const& filename) {
+  rapidcsv::Document csv(filename);
+
+  std::vector<std::string> actions = csv.GetColumn<std::string>("Action");
+  std::vector<std::size_t> sizes = csv.GetColumn<std::size_t>("Size");
+}
+
 int main(int argc, char** argv) {
   // benchmark::Initialize will remove command line arguments it recognizes and
   // leave any remaining arguments
@@ -46,10 +53,12 @@ int main(int argc, char** argv) {
                         cxxopts::value<std::string>());
 
   auto result = options.parse(argc, argv);
+
   if (result.count("file")) {
     auto filename = result["file"].as<std::string>();
+    parse_csv(filename);
   } else {
-    throw std::runtime_error{"No log filename specified."};
+    // throw std::runtime_error{"No log filename specified."};
   }
 
   ::benchmark::RunSpecifiedBenchmarks();
