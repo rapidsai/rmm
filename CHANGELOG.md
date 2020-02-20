@@ -32,6 +32,7 @@
 - PR #296 Use CuPy's `UnownedMemory` for RMM-backed allocations
 
 ## Bug Fixes
+- PR #298 Remove RMM_CUDA_TRY from cuda_event_timer destructor
 - PR #299 Fix assert condition blocking debug builds
 
 
