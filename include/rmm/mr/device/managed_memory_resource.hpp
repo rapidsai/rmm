@@ -70,7 +70,7 @@ class managed_memory_resource final : public device_memory_resource {
    */
   void do_deallocate(void* p, std::size_t, cudaStream_t) override {
     cudaError_t const status = cudaFree(p);
-    assert(cudaSuccess = status);
+    assert(cudaSuccess == status);
   }
 
   /**
