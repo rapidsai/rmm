@@ -40,7 +40,7 @@ TEST(Adaptor, factory) {
   log_mr.deallocate(p, 100);
 }
 
-TEST(Adaptor, EnviromentPath) {
+TEST(Adaptor, EnvironmentPath) {
   rmm::mr::cuda_memory_resource upstream;
 
   setenv("RMM_LOG_FILE", "envtest.txt", 1);
