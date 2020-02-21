@@ -69,10 +69,7 @@ class sub_memory_resource final : public device_memory_resource {
         maximum_pool_size = props.totalGlobalMem;
 
     // Allocate initial block
-    // TODO: non-default stream?
-    no_sync_blocks.insert(block_from_heap(initial_pool_size, 0));
-
-    // TODO thread safety
+    stream_blocks[0].insert(block_from_heap(initial_pool_size, 0));
 
     // TODO device handling?
 
@@ -92,62 +89,67 @@ class sub_memory_resource final : public device_memory_resource {
   using block = rmm::mr::detail::block;
   using free_list = rmm::mr::detail::free_list<>;
 
-  block block_from_sync_list(size_t size, cudaStream_t stream)
+  block block_from_sync_list(size_t size, cudaStream_t list_stream, cudaStream_t stream)
   {
-    free_list& blocks = sync_blocks.at(stream);
-    block b = blocks.best_fit(size);
-    if (b.ptr != nullptr) { // found one
-      cudaError_t result = cudaStreamSynchronize(stream);
+    block b{nullptr, 0, false};
+    auto iter = stream_blocks.find(list_stream);
 
-      if (result != cudaErrorInvalidResourceHandle && // stream deleted
-          result != cudaSuccess)                      // stream synced
-        throw std::runtime_error{"cudaStreamSynchronize failure"};
+    if (iter != stream_blocks.end()) {
+      free_list& blocks = iter->second;
+      b = blocks.best_fit(size);
+      if (b.ptr != nullptr) { // found one
+        if (list_stream != stream) {
+          cudaError_t result = cudaStreamSynchronize(list_stream);
 
-      // insert all other blocks into the no_sync list
-      no_sync_blocks.insert(blocks.begin(), blocks.end());
-      blocks.clear();
+          if (result != cudaErrorInvalidResourceHandle && // stream deleted
+              result != cudaSuccess)                      // stream synced
+            throw std::runtime_error{"cudaStreamSynchronize failure"};
 
-      // remove this stream from the freelist
-      sync_blocks.erase(stream);
+          // insert all other blocks into this stream's list
+          // TODO: Should we do this? This could cause thrashing between two 
+          // streams. On the other hand, this can also reduce fragmentation.
+          stream_blocks[stream].insert(blocks.begin(), blocks.end());
+          blocks.clear();
+
+          // remove this stream from the freelist
+          stream_blocks.erase(list_stream);
+        }
+      }
     }
     return b;
   }
 
   block available_larger_block(size_t size, cudaStream_t stream) {
-    // Try to find a larger block that doesn't require syncing
-    block b = no_sync_blocks.best_fit(size);
 
-    // nothing in no-sync free list, look for one on a stream
-    if (b.ptr == nullptr) {
+    // Try to find a larger block in the same stream
+    block b = block_from_sync_list(size, stream, stream);
 
-      // Try to find a larger block in a different stream
-      for (auto s : sync_blocks) {
-        if (s.first != stream) b = block_from_sync_list(size, s.first);
-      }
-
-      // nothing available in other streams, look in current stream's list
-      if (b.ptr == nullptr && (sync_blocks.find(stream) != sync_blocks.end())) {
-          b = block_from_sync_list(size, stream);
-      }
-
-      // no larger blocks waiting on other streams, so create one
-      if (b.ptr == nullptr) b = block_from_heap(size, stream);
+    // Try to find a larger block in a different stream
+    auto s = stream_blocks.begin();
+    while (b.ptr == nullptr && s != stream_blocks.end()) {
+      if (s->first != stream) 
+        b = block_from_sync_list(size, s->first, stream);
+      s++;
     }
+
+    // no larger blocks waiting on other streams, so create one
+    if (b.ptr == nullptr) b = block_from_heap(size, stream);
 
     return b;
   }
 
-  void* allocate_from_block(block const& b, size_t size)
+  void* allocate_from_block(block const& b, size_t size, cudaStream_t stream)
   {
-    if (b.ptr == nullptr)
+    if (b.ptr == nullptr) {
       throw std::bad_alloc{};
+    }
 
     block alloc{b};
 
     if (b.size > size)
     {
       block rest{b.ptr + size, b.size - size, false};
-      no_sync_blocks.insert(rest);
+      stream_blocks[stream].insert(rest);
       alloc.size = size;
     }
 
@@ -164,7 +166,7 @@ class sub_memory_resource final : public device_memory_resource {
 
     if (i != allocated_blocks.end()) { // found
       //assert(i->size == rmm::detail::align_up(size, allocation_alignment));
-      sync_blocks[stream].insert(*i);
+      stream_blocks[stream].insert(*i);
       allocated_blocks.erase(i);
     }
     else {
@@ -175,8 +177,6 @@ class sub_memory_resource final : public device_memory_resource {
   block block_from_heap(size_t size, cudaStream_t stream)
   {
     void* p = heap_resource->allocate(size, stream);
-    if (p == nullptr)
-      throw std::bad_alloc{};
     block b{reinterpret_cast<char*>(p), size, true};
     heap_blocks[b.ptr] = b;
     return b;
@@ -190,14 +190,24 @@ class sub_memory_resource final : public device_memory_resource {
 
 #ifndef NDEBUG
   void print() {
+    std::size_t free, total;
+    std::tie(free, total) = heap_resource->get_mem_info(0);
+    std::cout << "GPU free memory: " << free << "total: " << total << "\n";
+
+    std::cout << "heap_blocks: " << heap_blocks.size() << "\n";
+    std::size_t heap_total{0};
+
+    for (auto h : heap_blocks) { 
+      h.second.print();
+      heap_total += h.second.size;
+    }
+    std::cout << "total heap: " << heap_total << " B\n";
+
     std::cout << "allocated_blocks: " << allocated_blocks.size() << "\n";
     for (auto b : allocated_blocks) { b.print(); }
 
-    std::cout << "no-sync free blocks: ";
-    no_sync_blocks.print();
-
     std::cout << "sync free blocks: ";
-    for (auto s : sync_blocks) { 
+    for (auto s : stream_blocks) { 
       std::cout << "stream " << s.first << " ";
       s.second.print();
     }
@@ -220,7 +230,7 @@ class sub_memory_resource final : public device_memory_resource {
     if (bytes <= 0) return nullptr;
     bytes = rmm::detail::align_up(bytes, allocation_alignment);
     block b = available_larger_block(bytes, stream);
-    void* p = allocate_from_block(b, bytes);
+    void* p = allocate_from_block(b, bytes, stream);
 #ifndef NDEBUG
     //std::cout << "Allocate " << bytes << " B on stream " << stream << "\n";
     //print();
@@ -263,17 +273,12 @@ class sub_memory_resource final : public device_memory_resource {
 
   device_memory_resource *heap_resource;
 
-  // no-sync free list: list of unencumbered blocks
-  // no need to sync a stream to allocate from this list
-  free_list no_sync_blocks;
-
-  // sync free lists: map of [stream_id, free_list] pairs
-  // stream stream_id must be synced before allocating from this list
-  std::unordered_map<cudaStream_t, free_list> sync_blocks;
+  // map of [stream_id, free_list] pairs
+  // stream stream_id must be synced before allocating from this list to a different stream
+  std::unordered_map<cudaStream_t, free_list> stream_blocks;
 
   //std::list<block> allocated_blocks;
   std::set<block> allocated_blocks;
-
 
   // blocks allocated from heap: so they can be easily freed
   std::unordered_map<char*, block> heap_blocks;
