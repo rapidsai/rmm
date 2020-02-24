@@ -18,6 +18,7 @@
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/fixed_size_memory_resource.hpp>
 #include <rmm/mr/device/default_memory_resource.hpp>
+#include <rmm/detail/error.hpp>
 
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
@@ -57,14 +58,25 @@ class fixed_multisize_memory_resource : public device_memory_resource {
   static constexpr std::size_t default_min_size = 1 << 18; // 256 KiB
   static constexpr std::size_t default_max_size = 1 << 22; // 4 MiB
 
+  /**
+   * @brief Construct a new fixed multisize memory resource object
+   * 
+   * @throws rmm::logic_error if min_size or max_size is not a power of two.
+   *
+   * @param upstream_resource The upstream memory resource used to allocate pools of blocks
+   * @param min_size The minimum fixed block size to allocate
+   * @param max_size The maximum fixed block size to allocate
+   * @param initial_blocks_per_size The number of blocks to preallocate from the upstream memory
+   *        resource
+   */
   explicit fixed_multisize_memory_resource(UpstreamResource *upstream_resource,
                                            std::size_t min_size = default_min_size,
                                            std::size_t max_size = default_max_size,
                                            std::size_t initial_blocks_per_size = 128)
   : upstream_resource_{upstream_resource}, min_size_{min_size}, max_size_{max_size} {
-    if (!detail::is_pow2(min_size) || !detail::is_pow2(max_size)) 
-      throw std::logic_error("Only power of two fixed sizes supported");
-
+    RMM_EXPECTS(detail::is_pow2(min_size), "Minimum size must be a power of two");
+    RMM_EXPECTS(detail::is_pow2(max_size), "Maximum size must be a power of two");
+    
     // allocate initial blocks and insert into free list
     for (std::size_t i = min_size; i <= max_size; i *= 2) {
       fixed_size_mr_.emplace_back(
@@ -77,12 +89,12 @@ class fixed_multisize_memory_resource : public device_memory_resource {
     fixed_size_mr_.clear(); // must be deleted first since fixed_size_mrs use large_size_mr_
   }
 
-  /**---------------------------------------------------------------------------*
+  /**
    * @brief Queries whether the resource supports use of non-null streams for
    * allocation/deallocation.
    *
    * @returns true
-   *---------------------------------------------------------------------------**/
+   */
   bool supports_streams() const noexcept override { return true; }
 
   std::size_t get_min_size() const noexcept { return min_size_; }
@@ -90,7 +102,15 @@ class fixed_multisize_memory_resource : public device_memory_resource {
 
  private:
 
-  rmm::mr::device_memory_resource& get_allocator(std::size_t bytes) {
+  /**
+   * @brief Get the memory resource for the requested size
+   *
+   * @throws rmm::bad_alloc if the size is larger than the maximum block size.
+   *
+   * @param bytes Requested allocation size in bytes
+   * @return rmm::mr::device_memory_resource& memory_resource that can allocate the requested size.
+   */
+  rmm::mr::device_memory_resource& get_resource(std::size_t bytes) {
     if (bytes < max_size_) {
       auto iter = fixed_size_mr_.begin();
       while (bytes > iter->get()->get_block_size())
@@ -99,26 +119,26 @@ class fixed_multisize_memory_resource : public device_memory_resource {
         return *iter->get();
     }
 
-    throw std::bad_alloc();
+    RMM_FAIL("bytes must be < max_size", rmm::bad_alloc);
   }
 
-  /**---------------------------------------------------------------------------*
+  /**
    * @brief Allocates memory of size at least \p bytes.
    *
    * The returned pointer will have at minimum 256 byte alignment.
    *
-   * @throws std::bad_alloc if size > block_size (constructor parameter)
+   * @throws rmm::bad_alloc if size > block_size (constructor parameter)
    *
    * @param bytes The size of the allocation
    * @param stream Stream on which to perform allocation
    * @return void* Pointer to the newly allocated memory
-   *---------------------------------------------------------------------------**/
+   */
   void* do_allocate(std::size_t bytes, cudaStream_t stream) override {
     if (bytes <= 0) return nullptr;
-    return get_allocator(bytes).allocate(bytes, stream);
+    return get_resource(bytes).allocate(bytes, stream);
   }
 
-  /**---------------------------------------------------------------------------*
+  /**
    * @brief Deallocate memory pointed to by \p p.
    *
    * @throws std::bad_alloc if size > block_size (constructor parameter)
@@ -127,19 +147,19 @@ class fixed_multisize_memory_resource : public device_memory_resource {
    * @param bytes The size in bytes of the allocation. This must be equal to the
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param stream Stream on which to perform deallocation
-   *---------------------------------------------------------------------------**/
+   */
   void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override {
-    get_allocator(bytes).deallocate(p, bytes, stream);
+    get_resource(bytes).deallocate(p, bytes, stream);
   }
 
-  /**---------------------------------------------------------------------------*
+  /**
    * @brief Get free and available memory for memory resource
    *
    * @throws std::runtime_error if we could not get free / total memory
    *
    * @param stream the stream being executed on
    * @return std::pair with available and free memory for resource
-   *---------------------------------------------------------------------------**/
+   */
   std::pair<std::size_t, std::size_t> do_get_mem_info( cudaStream_t stream) const override {
     return std::make_pair(0, 0);  
   }

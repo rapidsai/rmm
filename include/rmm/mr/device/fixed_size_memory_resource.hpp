@@ -36,11 +36,11 @@ using cudaStream_t = struct CUstream_st*;
 namespace rmm {
 
 namespace mr {
-/**---------------------------------------------------------------------------*
+/**
  * @brief Allocates fixed-size memory blocks.
  * 
  * Supports only allocations of size smaller than the configured block_size.
- *---------------------------------------------------------------------------**/
+ */
 class fixed_size_memory_resource : public device_memory_resource {
  public:
 
@@ -65,12 +65,12 @@ class fixed_size_memory_resource : public device_memory_resource {
     free_all();
   }
 
-  /**---------------------------------------------------------------------------*
+  /**
    * @brief Queries whether the resource supports use of non-null streams for
    * allocation/deallocation.
    *
    * @returns true
-   *---------------------------------------------------------------------------**/
+   */
   bool supports_streams() const noexcept override { return true; }
 
   std::size_t get_block_size() const noexcept { return block_size_; }
@@ -79,52 +79,50 @@ class fixed_size_memory_resource : public device_memory_resource {
 
   using free_list = std::list<void*>;
 
-  /**---------------------------------------------------------------------------*
-   * @brief Allocates memory of size at least \p bytes.
+  /**
+   * @brief Allocates memory of size at least `bytes`.
    *
    * The returned pointer will have at minimum 256 byte alignment.
    *
-   * @throws std::bad_alloc if size > block_size (constructor parameter)
+   * @throws rmm::bad_alloc if `bytes` > `block_size` (constructor parameter)
    *
    * @param bytes The size of the allocation
    * @param stream Stream on which to perform allocation
    * @return void* Pointer to the newly allocated memory
-   *---------------------------------------------------------------------------**/
+   */
   void* do_allocate(std::size_t bytes, cudaStream_t stream) override {
     if (bytes <= 0) return nullptr;
     bytes = rmm::detail::align_up(bytes, allocation_alignment);
-    if (bytes > block_size_)
-      throw std::bad_alloc();
-    
+    RMM_EXPECTS(bytes <= block_size_, rmm::bad_alloc, "bytes must be <= block_size");
+
     return get_block(stream);
   }
 
-  /**---------------------------------------------------------------------------*
-   * @brief Deallocate memory pointed to by \p p.
+  /**
+   * @brief Deallocate memory pointed to by `p`.
    *
-   * @throws std::bad_alloc if size > block_size (constructor parameter)
+   * @throws rmm::bad_alloc if `bytes` > `block_size` (constructor parameter)
    *
    * @param p Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param stream Stream on which to perform deallocation
-   *---------------------------------------------------------------------------**/
+   */
   void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override {
     bytes = rmm::detail::align_up(bytes, allocation_alignment);
-    if (bytes > block_size_)
-      throw std::bad_alloc();
+    RMM_EXPECTS(bytes <= block_size_, rmm::bad_alloc, "bytes must be <= block_size");
 
     sync_blocks_[stream].push_back(p);
   }
 
-  /**---------------------------------------------------------------------------*
+  /**
    * @brief Get free and available memory for memory resource
    *
    * @throws std::runtime_error if we could not get free / total memory
    *
    * @param stream the stream being executed on
    * @return std::pair with available and free memory for resource
-   *---------------------------------------------------------------------------**/
+   */
   std::pair<std::size_t, std::size_t> do_get_mem_info( cudaStream_t stream) const override {
     return std::make_pair(0, 0);  
   }
@@ -193,7 +191,6 @@ class fixed_size_memory_resource : public device_memory_resource {
   // Allocate new blocks from the heap memory resource into the free list
   void new_blocks_from_heap(cudaStream_t stream) {
     void* p = heap_resource_->allocate(heap_chunk_size_, stream);
-    if (!p) throw std::bad_alloc();
     heap_blocks_[p] = heap_chunk_size_;
 
     auto num_blocks = heap_chunk_size_ / block_size_;
@@ -219,6 +216,9 @@ class fixed_size_memory_resource : public device_memory_resource {
   std::size_t block_size_;      // size of blocks this MR allocates
   std::size_t heap_chunk_size_; // size of chunks allocated from heap MR
 
+  // TODO I tried removing this and just using the stream_blocks as in sub_memory_resource
+  // but it was much slower, presumably because of the lookup overhead on every alloc, which is 
+  // otherwise very cheap.
   // no-sync free list: list of unencumbered blocks
   // no need to sync a stream to allocate from this list
   free_list no_sync_blocks_;
