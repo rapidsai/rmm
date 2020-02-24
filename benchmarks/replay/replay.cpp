@@ -20,11 +20,6 @@
 #include <benchmark/benchmark.h>
 #include <string>
 
-static void BM_Replay(benchmark::State& state) {
-}
-BENCHMARK(BM_Replay);
-
-
 enum class action : bool { ALLOCATE, FREE };
 
 /**
@@ -80,6 +75,11 @@ parsed_log parse_csv(std::string const& filename) {
   return parsed_log{std::move(actions), std::move(sizes), std::move(pointers)};
 }
 
+void BM_takes_args(benchmark::State& state, std::string const& filename) {
+  for (auto _ : state) {
+  }
+}
+
 int main(int argc, char** argv) {
   // benchmark::Initialize will remove GBench command line arguments it
   // recognizes and leave any remaining arguments
@@ -99,6 +99,9 @@ int main(int argc, char** argv) {
   if (result.count("file")) {
     auto filename = result["file"].as<std::string>();
     auto parsed_log = parse_csv(filename);
+
+    auto func = BM_takes_args;
+    benchmark::RegisterBenchmark("test", func, filename);
   } else {
     throw std::runtime_error{"No log filename specified."};
   }
