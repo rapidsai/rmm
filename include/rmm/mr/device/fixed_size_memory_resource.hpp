@@ -73,7 +73,7 @@ class fixed_size_memory_resource : public device_memory_resource {
    *---------------------------------------------------------------------------**/
   bool supports_streams() const noexcept override { return true; }
 
-  std::size_t get_block_size() { return block_size_; }
+  std::size_t get_block_size() const noexcept { return block_size_; }
 
  private:
 
