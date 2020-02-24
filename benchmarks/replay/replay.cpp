@@ -18,6 +18,7 @@
 #include "rapidcsv.h"
 
 #include <benchmark/benchmark.h>
+#include <string>
 
 static void BM_StringCreation(benchmark::State& state) {
   for (auto _ : state) std::string empty_string;
@@ -32,11 +33,51 @@ static void BM_StringCopy(benchmark::State& state) {
 }
 BENCHMARK(BM_StringCopy);
 
-void parse_csv(std::string const& filename) {
+enum class action : bool { ALLOCATE, FREE };
+
+/**
+ * @brief Stores the contents of a parsed log
+ *
+ * Holds 3 vectors of length `n`, where `n` is the number of actions in the log
+ * - actions: Indicates if action `i` is an allocation or a deallocation
+ * - sizes: Indicates the size of the action `i`
+ * - pointers: For an allocation, the pointer returned, for a free, the pointer
+ *   freed
+ */
+struct parsed_log {
+  parsed_log(std::vector<action>&& a, std::vector<std::size_t>&& s,
+             std::vector<uintptr_t>&& p)
+      : actions{std::move(a)}, sizes{std::move(s)}, pointers{std::move(p)} {}
+  std::vector<action> actions{};
+  std::vector<std::size_t> sizes{};
+  std::vector<uintptr_t> pointers{};
+};
+
+parsed_log parse_csv(std::string const& filename) {
   rapidcsv::Document csv(filename);
 
-  std::vector<std::string> actions = csv.GetColumn<std::string>("Action");
   std::vector<std::size_t> sizes = csv.GetColumn<std::size_t>("Size");
+
+  // Convert action strings to enum to reduce overhead of processing actions in
+  // benchmark
+  std::vector<std::string> actions_as_string =
+      csv.GetColumn<std::string>("Action");
+  std::vector<action> actions(actions_as_string.size());
+  std::transform(actions_as_string.begin(), actions_as_string.end(),
+                 actions.begin(), [](std::string const& s) {
+                   return (s == "allocate") ? action::ALLOCATE : action::FREE;
+                 });
+
+  // Convert address string to uintptr_t
+  // E.g., 0x7fb3c446f000 -> 140410068856832
+  std::vector<std::string> pointers_as_string =
+      csv.GetColumn<std::string>("Pointer");
+  std::vector<uintptr_t> pointers(pointers_as_string.size());
+  std::transform(
+      pointers_as_string.begin(), pointers_as_string.end(), pointers.begin(),
+      [](std::string const& s) { return std::stoll(s, nullptr, 16); });
+
+  return parsed_log{std::move(actions), std::move(sizes), std::move(pointers)};
 }
 
 int main(int argc, char** argv) {
@@ -56,7 +97,7 @@ int main(int argc, char** argv) {
 
   if (result.count("file")) {
     auto filename = result["file"].as<std::string>();
-    parse_csv(filename);
+    auto parsed_log = parse_csv(filename);
   } else {
     // throw std::runtime_error{"No log filename specified."};
   }
