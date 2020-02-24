@@ -53,6 +53,14 @@ struct parsed_log {
   std::vector<uintptr_t> pointers{};
 };
 
+/**
+ * @brief Parses the RMM log file specifed by `filename` for consumption by the
+ * replay benchmark.
+ *
+ * @param filename Name of the RMM log file
+ * @return parsed_log The logfile parsed into a set of actions that can be
+ * consumed by the replay benchmark.
+ */
 parsed_log parse_csv(std::string const& filename) {
   rapidcsv::Document csv(filename);
 
@@ -95,11 +103,12 @@ int main(int argc, char** argv) {
 
   auto result = options.parse(argc, argv);
 
+  // Parse the log file
   if (result.count("file")) {
     auto filename = result["file"].as<std::string>();
     auto parsed_log = parse_csv(filename);
   } else {
-    // throw std::runtime_error{"No log filename specified."};
+    throw std::runtime_error{"No log filename specified."};
   }
 
   ::benchmark::RunSpecifiedBenchmarks();
