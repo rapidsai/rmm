@@ -80,7 +80,8 @@ class fixed_multisize_memory_resource : public device_memory_resource {
     // allocate initial blocks and insert into free list
     for (std::size_t i = min_size; i <= max_size; i *= 2) {
       fixed_size_mr_.emplace_back(
-        new fixed_size_memory_resource(i, initial_blocks_per_size * i, upstream_resource_)
+        new fixed_size_memory_resource<UpstreamResource>(upstream_resource, i, 
+                                                         initial_blocks_per_size * i)
       );
     }
   }
@@ -170,7 +171,7 @@ class fixed_multisize_memory_resource : public device_memory_resource {
   std::size_t max_size_; // size of largest blocks allocated
 
   // allocators for fixed-size blocks <= max_fixed_size_
-  std::vector<std::unique_ptr<fixed_size_memory_resource>> fixed_size_mr_;
+  std::vector<std::unique_ptr<fixed_size_memory_resource<UpstreamResource>>> fixed_size_mr_;
 };
 }  // namespace mr
 }  // namespace rmm

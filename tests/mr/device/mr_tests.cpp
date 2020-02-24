@@ -73,6 +73,7 @@ struct allocation {
 
 // nested MR type names can get long...
 using sub_mr = rmm::mr::sub_memory_resource<rmm::mr::cuda_memory_resource>;
+using fixed_size_mr = rmm::mr::fixed_size_memory_resource<rmm::mr::device_memory_resource>;
 using fixed_multisize_mr = rmm::mr::fixed_multisize_memory_resource<rmm::mr::device_memory_resource>;
 using fixed_multisize_sub_mr = rmm::mr::fixed_multisize_memory_resource<sub_mr>;
 using hybrid_mr = rmm::mr::hybrid_memory_resource<fixed_multisize_sub_mr, sub_mr>;
@@ -105,8 +106,8 @@ struct MRTest : public ::testing::Test {
 
 // Specialize constructor to pass arguments
 template <>
-MRTest<rmm::mr::fixed_size_memory_resource>::MRTest() : 
-  mr{new rmm::mr::fixed_size_memory_resource} {}
+MRTest<fixed_size_mr>::MRTest() : 
+  mr{new fixed_size_mr{rmm::mr::get_default_resource()}} {}
 
 template <>
 MRTest<fixed_multisize_mr>::MRTest() : 
@@ -152,7 +153,7 @@ template <typename MemoryResourceType>
 std::size_t get_max_size(MemoryResourceType *mr) { return std::numeric_limits<std::size_t>::max(); }
 
 template <>
-std::size_t get_max_size(rmm::mr::fixed_size_memory_resource *mr) {
+std::size_t get_max_size(fixed_size_mr *mr) {
   return mr->get_block_size();
 }
 
@@ -217,7 +218,7 @@ void MRTest<MemoryResourceType>::test_random_allocations(std::size_t num_allocat
 }
 
 template <>
-void MRTest<rmm::mr::fixed_size_memory_resource>::test_random_allocations(std::size_t num_allocations,
+void MRTest<fixed_size_mr>::test_random_allocations(std::size_t num_allocations,
                                                                           cudaStream_t stream) {
   return test_random_allocations_base(num_allocations, 1 * size_mb, stream);
 }
@@ -282,7 +283,7 @@ void MRTest<MemoryResourceType>::test_mixed_random_allocation_free(cudaStream_t 
 }
 
 template <>
-void MRTest<rmm::mr::fixed_size_memory_resource>::test_mixed_random_allocation_free(cudaStream_t stream) {
+void MRTest<fixed_size_mr>::test_mixed_random_allocation_free(cudaStream_t stream) {
   test_mixed_random_allocation_free_base(size_mb, stream);
 }
 
@@ -297,7 +298,7 @@ using resources = ::testing::Types<rmm::mr::cuda_memory_resource,
                                    rmm::mr::cnmem_memory_resource,
                                    rmm::mr::cnmem_managed_memory_resource,
                                    sub_mr,
-                                   rmm::mr::fixed_size_memory_resource,
+                                   fixed_size_mr,
                                    fixed_multisize_mr,
                                    hybrid_mr>;
 

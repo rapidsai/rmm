@@ -17,6 +17,7 @@
 
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/default_memory_resource.hpp>
+#include <rmm/detail/error.hpp>
 
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
@@ -41,24 +42,27 @@ namespace mr {
  * 
  * Supports only allocations of size smaller than the configured block_size.
  */
+template <typename UpstreamResource>
 class fixed_size_memory_resource : public device_memory_resource {
  public:
 
-  
+  // A block is the fixed size this resource alloates
   static constexpr std::size_t default_block_size = 1<<20; // 1 MiB
-  static constexpr std::size_t default_heap_chunk_size = 128 * default_block_size;
+  // This is the number of blocks that the pool starts out with, and also the number of 
+  // blocks by which the pool grows when all of its current blocks are allocated
+  static constexpr std::size_t default_blocks_to_preallocate = 128;
+  // The required alignment of this allocator
   static constexpr std::size_t allocation_alignment = 256;
 
-  explicit fixed_size_memory_resource(std::size_t block_size = default_block_size,
-                                      std::size_t heap_chunk_size = default_heap_chunk_size,
-                                      rmm::mr::device_memory_resource *heap_resource =
-                                        rmm::mr::get_default_resource()) 
-  : heap_resource_{heap_resource} {
+  explicit fixed_size_memory_resource(UpstreamResource *upstream_resource,
+                                      std::size_t block_size = default_block_size,
+                                      std::size_t blocks_to_preallocate = default_blocks_to_preallocate)
+  : upstream_resource_{upstream_resource} {
     block_size_ = rmm::detail::align_up(block_size, allocation_alignment); 
-    heap_chunk_size_ = rmm::detail::align_up(heap_chunk_size, block_size);
+    upstream_chunk_size_ = block_size * default_blocks_to_preallocate;
 
     // allocate initial blocks and insert into free list
-    new_blocks_from_heap(0);
+    new_blocks_from_upstream(0);
   }
 
   virtual ~fixed_size_memory_resource() {
@@ -180,7 +184,7 @@ class fixed_size_memory_resource : public device_memory_resource {
 
       // no blocks available, so create more
       if (p == nullptr) {
-        new_blocks_from_heap(stream);
+        new_blocks_from_upstream(stream);
         p = get_block(stream);
       }
     }
@@ -188,12 +192,12 @@ class fixed_size_memory_resource : public device_memory_resource {
     return p;
   }
 
-  // Allocate new blocks from the heap memory resource into the free list
-  void new_blocks_from_heap(cudaStream_t stream) {
-    void* p = heap_resource_->allocate(heap_chunk_size_, stream);
-    heap_blocks_[p] = heap_chunk_size_;
+  // Allocate new blocks from the upstream memory resource into the free list
+  void new_blocks_from_upstream(cudaStream_t stream) {
+    void* p = upstream_resource_->allocate(upstream_chunk_size_, stream);
+    upstream_blocks_[p] = upstream_chunk_size_;
 
-    auto num_blocks = heap_chunk_size_ / block_size_;
+    auto num_blocks = upstream_chunk_size_ / block_size_;
 
     auto g = [p, this](int i) { return static_cast<char*>(p) + i * block_size_; };
 
@@ -205,16 +209,16 @@ class fixed_size_memory_resource : public device_memory_resource {
   // free all allocated memory
   void free_all()
   {
-    for (auto b : heap_blocks_) heap_resource_->deallocate(b.first, b.second);
-    heap_blocks_.clear();
+    for (auto b : upstream_blocks_) upstream_resource_->deallocate(b.first, b.second);
+    upstream_blocks_.clear();
     no_sync_blocks_.clear();
     sync_blocks_.clear();
   }
 
-  device_memory_resource *heap_resource_;
+  UpstreamResource *upstream_resource_; // The resource from which to allocate new blocks
 
   std::size_t block_size_;      // size of blocks this MR allocates
-  std::size_t heap_chunk_size_; // size of chunks allocated from heap MR
+  std::size_t upstream_chunk_size_; // size of chunks allocated from heap MR
 
   // TODO I tried removing this and just using the stream_blocks as in sub_memory_resource
   // but it was much slower, presumably because of the lookup overhead on every alloc, which is 
@@ -229,7 +233,7 @@ class fixed_size_memory_resource : public device_memory_resource {
 
   // blocks allocated from heap: so they can be easily freed
   // blocks are ptr/size pairs
-  std::unordered_map<void*, size_t> heap_blocks_;
+  std::unordered_map<void*, size_t> upstream_blocks_;
 };
 }  // namespace mr
 }  // namespace rmm
