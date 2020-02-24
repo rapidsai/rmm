@@ -33,6 +33,7 @@ namespace mr {
 /**---------------------------------------------------------------------------*
  * @brief Memory resource that allocates/deallocates using a pool sub-allocator
  *---------------------------------------------------------------------------**/
+ template <typename UpstreamMemoryResource>
 class sub_memory_resource final : public device_memory_resource {
  public:
 
@@ -48,9 +49,11 @@ class sub_memory_resource final : public device_memory_resource {
    * zero, an implementation defined pool size is used.
    * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to.
    *---------------------------------------------------------------------------**/
-  explicit sub_memory_resource(std::size_t initial_pool_size = default_initial_size,
+  
+  explicit sub_memory_resource(UpstreamMemoryResource *upstream_mr,
+                               std::size_t initial_pool_size = default_initial_size,
                                std::size_t maximum_pool_size = default_maximum_size)
-    : heap_resource{rmm::mr::get_default_resource()}
+    : upstream_mr_{upstream_mr}
   {
     cudaDeviceProp props;
 
@@ -69,7 +72,7 @@ class sub_memory_resource final : public device_memory_resource {
         maximum_pool_size = props.totalGlobalMem;
 
     // Allocate initial block
-    stream_blocks[0].insert(block_from_heap(initial_pool_size, 0));
+    stream_blocks[0].insert(block_from_upstream(initial_pool_size, 0));
 
     // TODO device handling?
 
@@ -83,6 +86,8 @@ class sub_memory_resource final : public device_memory_resource {
   }
 
   bool supports_streams() const noexcept override { return true; }
+
+  UpstreamMemoryResource* get_upstream() const noexcept { return upstream_mr_; }
 
  private:
 
@@ -125,15 +130,17 @@ class sub_memory_resource final : public device_memory_resource {
     block b = block_from_sync_list(size, stream, stream);
 
     // Try to find a larger block in a different stream
-    auto s = stream_blocks.begin();
-    while (b.ptr == nullptr && s != stream_blocks.end()) {
-      if (s->first != stream) 
-        b = block_from_sync_list(size, s->first, stream);
-      s++;
+    if (b.ptr == nullptr) {
+      auto s = stream_blocks.begin();
+      while (b.ptr == nullptr && s != stream_blocks.end()) {
+        if (s->first != stream) 
+          b = block_from_sync_list(size, s->first, stream);
+        s++;
+      }
     }
 
     // no larger blocks waiting on other streams, so create one
-    if (b.ptr == nullptr) b = block_from_heap(size, stream);
+    if (b.ptr == nullptr) b = block_from_upstream(size, stream);
 
     return b;
   }
@@ -174,34 +181,34 @@ class sub_memory_resource final : public device_memory_resource {
     }
   }
 
-  block block_from_heap(size_t size, cudaStream_t stream)
+  block block_from_upstream(size_t size, cudaStream_t stream)
   {
-    void* p = heap_resource->allocate(size, stream);
+    void* p = upstream_mr_->allocate(size, stream);
     block b{reinterpret_cast<char*>(p), size, true};
-    heap_blocks[b.ptr] = b;
+    upstream_blocks[b.ptr] = b;
     return b;
   }
 
   void free_all()
   {
-    for (auto b : heap_blocks) heap_resource->deallocate(b.first, b.second.size);
-    heap_blocks.clear();
+    for (auto b : upstream_blocks) upstream_mr_->deallocate(b.first, b.second.size);
+    upstream_blocks.clear();
   }
 
 #ifndef NDEBUG
   void print() {
     std::size_t free, total;
-    std::tie(free, total) = heap_resource->get_mem_info(0);
+    std::tie(free, total) = upstream_mr_->get_mem_info(0);
     std::cout << "GPU free memory: " << free << "total: " << total << "\n";
 
-    std::cout << "heap_blocks: " << heap_blocks.size() << "\n";
-    std::size_t heap_total{0};
+    std::cout << "upstream_blocks: " << upstream_blocks.size() << "\n";
+    std::size_t upstream_total{0};
 
-    for (auto h : heap_blocks) { 
+    for (auto h : upstream_blocks) { 
       h.second.print();
-      heap_total += h.second.size;
+      upstream_total += h.second.size;
     }
-    std::cout << "total heap: " << heap_total << " B\n";
+    std::cout << "total upstream: " << upstream_total << " B\n";
 
     std::cout << "allocated_blocks: " << allocated_blocks.size() << "\n";
     for (auto b : allocated_blocks) { b.print(); }
@@ -271,7 +278,7 @@ class sub_memory_resource final : public device_memory_resource {
 
   size_t maximum_pool_size{default_maximum_size};
 
-  device_memory_resource *heap_resource;
+  UpstreamMemoryResource *upstream_mr_;
 
   // map of [stream_id, free_list] pairs
   // stream stream_id must be synced before allocating from this list to a different stream
@@ -280,8 +287,8 @@ class sub_memory_resource final : public device_memory_resource {
   //std::list<block> allocated_blocks;
   std::set<block> allocated_blocks;
 
-  // blocks allocated from heap: so they can be easily freed
-  std::unordered_map<char*, block> heap_blocks;
+  // blocks allocated from upstream heap: so they can be easily freed
+  std::unordered_map<char*, block> upstream_blocks;
 };
 
 }  // namespace mr
