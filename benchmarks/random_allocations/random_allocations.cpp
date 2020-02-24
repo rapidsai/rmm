@@ -96,7 +96,7 @@ void random_allocation_free(rmm::mr::device_memory_resource& mr,
     if (do_alloc) { // try to allocate
       try {
         ptr = mr.allocate(size, stream);
-      } catch(std::bad_alloc) {
+      } catch(rmm::bad_alloc const&) {
         do_alloc = false;
         #if VERBOSE
           std::cout << "FAILED to allocate " << size << "\n";

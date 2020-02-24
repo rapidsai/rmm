@@ -9,12 +9,14 @@
 - PR #262 Moved device memory resource files to `mr/device` directory
 - PR #266 Drop `rmm.auto_device`
 - PR #268 Add Cython/Python `copy_to_host` and `to_device`
+- PR #272 Add `host_memory_resource`.
 - PR #273 Moved device memory resource tests to `device/` directory.
 - PR #274 Add `copy_from_host` method to `DeviceBuffer`
 - PR #275 Add `copy_from_device` method to `DeviceBuffer`
 - PR #283 Add random allocation benchmark.
 - PR #287 Enabled CUDA CXX11 for unit tests.
-- PR #162 Experimental new suballocator memory_resource
+- PR #292 Revamped RMM exceptions.
+- PR #162 New suballocator memory_resources.
 
 ## Improvements
 
@@ -28,8 +30,12 @@
 - PR #278 Allocate a `bytes` object to fill up with RMM log data
 - PR #280 Drop allocation/deallocation of `offset`
 - PR #282 `DeviceBuffer` use default constructor for size=0
+- PR #296 Use CuPy's `UnownedMemory` for RMM-backed allocations
 
 ## Bug Fixes
+- PR #298 Remove RMM_CUDA_TRY from cuda_event_timer destructor
+- PR #299 Fix assert condition blocking debug builds
+- PR #300 Fix host mr_tests compile error
 
 
 # RMM 0.12.0 (Date TBD)
