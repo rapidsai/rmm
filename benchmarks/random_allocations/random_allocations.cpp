@@ -19,6 +19,7 @@
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
 #include <rmm/mr/device/sub_memory_resource.hpp>
+#include <rmm/mr/device/fixed_multisize_memory_resource.hpp>
 #include <rmm/mr/device/hybrid_memory_resource.hpp>
 
 #include <benchmark/benchmark.h>
@@ -52,6 +53,11 @@ allocation remove_at(allocation_vector& allocs, std::size_t index) {
 
   return removed;
 }
+
+// nested MR type names can get long...
+using sub_mr = rmm::mr::sub_memory_resource<rmm::mr::cuda_memory_resource>;
+using fixed_multisize_mr = rmm::mr::fixed_multisize_memory_resource<sub_mr>;
+using hybrid_mr = rmm::mr::hybrid_memory_resource<fixed_multisize_mr, sub_mr>;
 
 template <typename SizeDistribution>
 void random_allocation_free(rmm::mr::device_memory_resource& mr,
@@ -151,21 +157,64 @@ void uniform_random_allocations(rmm::mr::device_memory_resource& mr,
   std::normal_distribution<std::size_t> size_distribution(, max_allocation_size * size_mb);
 }*/
 
+template<typename MemoryResource>
+MemoryResource* create_memory_resource() {
+  return new MemoryResource{};
+}
+
+template<>
+sub_mr* create_memory_resource() {
+  rmm::mr::cuda_memory_resource *cuda_mr = new rmm::mr::cuda_memory_resource();
+  return new sub_mr(cuda_mr);
+}
+
+template<>
+hybrid_mr* create_memory_resource() {
+  rmm::mr::cuda_memory_resource *cuda_mr = new rmm::mr::cuda_memory_resource();
+  sub_mr *sub = new sub_mr(cuda_mr);
+  return new hybrid_mr(new fixed_multisize_mr(sub), sub);
+}
+
+template<typename MemoryResource>
+void destroy_memory_resource(MemoryResource* mr) {
+  delete mr;
+}
+
+template<>
+void destroy_memory_resource(hybrid_mr* mr) {
+  auto small = mr->get_small_mr();
+  auto large = mr->get_large_mr();
+  auto cuda = large->get_upstream();
+  delete mr;
+  delete small;
+  delete large;
+  delete cuda;
+}
+
+template<>
+void destroy_memory_resource(sub_mr* mr) {
+  auto cuda = mr->get_upstream();
+  delete mr;
+  delete cuda;  
+}
+
 constexpr size_t max_usage = 16000;
 
 template <typename MemoryResource>
 static void BM_RandomAllocations(benchmark::State& state) {
-  MemoryResource mr;
+  MemoryResource *mr = create_memory_resource<MemoryResource>();
 
   size_t num_allocations = state.range(0);
   size_t max_size = state.range(1);
 
   try {
     for (auto _ : state)
-      uniform_random_allocations(mr, num_allocations, max_size, max_usage);
+      uniform_random_allocations(*mr, num_allocations, max_size, max_usage);
   } catch (std::exception const& e) {
     std::cout << "Error: " << e.what() << "\n";
   }
+
+  destroy_memory_resource(mr);
 }
 
 static void num_range(benchmark::internal::Benchmark* b, int size) {
@@ -206,9 +255,9 @@ void declare_benchmark(std::string name) {
   if (name == "cuda")
     BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::cuda_memory_resource)->Apply(benchmark_range);
   if (name == "hybrid")
-    BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::hybrid_memory_resource)->Apply(benchmark_range);
+    BENCHMARK_TEMPLATE(BM_RandomAllocations, hybrid_mr)->Apply(benchmark_range);
   else if (name == "sub")
-    BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::sub_memory_resource)->Apply(benchmark_range);
+    BENCHMARK_TEMPLATE(BM_RandomAllocations, sub_mr)->Apply(benchmark_range);
   else if (name == "cnmem")
     BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::cnmem_memory_resource)->Apply(benchmark_range);
   else
@@ -225,8 +274,8 @@ int main(int argc, char** argv)
     declare_benchmark(mr_name);
   }
   else {
-    BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::sub_memory_resource)->Apply(benchmark_range);
-    BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::hybrid_memory_resource)->Apply(benchmark_range);
+    BENCHMARK_TEMPLATE(BM_RandomAllocations, sub_mr)->Apply(benchmark_range);
+    BENCHMARK_TEMPLATE(BM_RandomAllocations, hybrid_mr)->Apply(benchmark_range);
     BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::cnmem_memory_resource)->Apply(benchmark_range);
     BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::cuda_memory_resource)->Apply(benchmark_range);
   }

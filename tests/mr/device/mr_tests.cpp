@@ -24,6 +24,7 @@
 #include <rmm/mr/device/managed_memory_resource.hpp>
 #include <rmm/mr/device/sub_memory_resource.hpp>
 #include <rmm/mr/device/fixed_size_memory_resource.hpp>
+#include <rmm/mr/device/fixed_multisize_memory_resource.hpp>
 #include <rmm/mr/device/hybrid_memory_resource.hpp>
 
 #include <cuda_runtime_api.h>
@@ -70,9 +71,15 @@ struct allocation {
 };
 }  // namespace
 
+// nested MR type names can get long...
+using sub_mr = rmm::mr::sub_memory_resource<rmm::mr::cuda_memory_resource>;
+using fixed_multisize_mr = rmm::mr::fixed_multisize_memory_resource<rmm::mr::device_memory_resource>;
+using fixed_multisize_sub_mr = rmm::mr::fixed_multisize_memory_resource<sub_mr>;
+using hybrid_mr = rmm::mr::hybrid_memory_resource<fixed_multisize_sub_mr, sub_mr>;
+
 template <typename MemoryResourceType>
 struct MRTest : public ::testing::Test {
-  std::unique_ptr<rmm::mr::device_memory_resource> mr;
+  std::unique_ptr<MemoryResourceType> mr;
   cudaStream_t stream;
 
   MRTest() : mr{new MemoryResourceType} {}
@@ -83,7 +90,7 @@ struct MRTest : public ::testing::Test {
     EXPECT_EQ(cudaSuccess, cudaStreamDestroy(stream));
   };
 
-  ~MRTest() = default;
+  ~MRTest() {}
 
   void test_allocate(std::size_t bytes, cudaStream_t stream = 0);
   void test_random_allocations_base(std::size_t num_allocations = 100,
@@ -99,39 +106,75 @@ struct MRTest : public ::testing::Test {
 // Specialize constructor to pass arguments
 template <>
 MRTest<rmm::mr::fixed_size_memory_resource>::MRTest() : 
-  mr{new rmm::mr::fixed_size_memory_resource(1<<20, 32<<20)} {}
+  mr{new rmm::mr::fixed_size_memory_resource} {}
 
-template <typename MemoryResourceType>
-void MRTest<MemoryResourceType>::test_allocate(std::size_t bytes,
-                                               cudaStream_t stream) {
-  void* p{nullptr};
-  EXPECT_NO_THROW(p = this->mr->allocate(bytes));
-  if (stream != 0)
-    EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(this->stream));
-  EXPECT_NE(nullptr, p);
-  EXPECT_TRUE(is_aligned(p));
-  EXPECT_TRUE(is_device_memory(p));
-  EXPECT_NO_THROW(this->mr->deallocate(p, bytes));
-  if (stream != 0)
-    EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(this->stream));
+template <>
+MRTest<fixed_multisize_mr>::MRTest() : 
+  mr{new fixed_multisize_mr(rmm::mr::get_default_resource())}
+{}
+
+template <>
+MRTest<sub_mr>::MRTest()
+{
+  rmm::mr::cuda_memory_resource *cuda = new rmm::mr::cuda_memory_resource{};
+  this->mr.reset(new sub_mr(cuda));
 }
 
 template <>
-void MRTest<rmm::mr::fixed_size_memory_resource>::test_allocate(std::size_t bytes,
-                                                                cudaStream_t stream) {
+MRTest<hybrid_mr>::MRTest()
+{
+  rmm::mr::cuda_memory_resource *cuda = new rmm::mr::cuda_memory_resource{};
+  sub_mr *sub = new sub_mr(cuda);
+  this->mr.reset(new hybrid_mr(new fixed_multisize_sub_mr(sub), sub));
+}
+
+
+template <>
+MRTest<sub_mr>::~MRTest()
+{
+  auto upstream = this->mr->get_upstream();
+  this->mr.reset();
+  delete upstream;
+}
+
+template <>
+MRTest<hybrid_mr>::~MRTest()
+{
+  auto small = this->mr->get_small_mr();
+  auto large = this->mr->get_large_mr();
+  this->mr.reset();
+  delete small;
+  delete large;
+}
+
+
+template <typename MemoryResourceType>
+std::size_t get_max_size(MemoryResourceType *mr) { return std::numeric_limits<std::size_t>::max(); }
+
+template <>
+std::size_t get_max_size(rmm::mr::fixed_size_memory_resource *mr) {
+  return mr->get_block_size();
+}
+
+template <>
+std::size_t get_max_size(fixed_multisize_mr *mr) {
+  return mr->get_max_size();
+}
+
+template <typename MemoryResourceType>
+void MRTest<MemoryResourceType>::test_allocate(std::size_t bytes, cudaStream_t stream) {
   void* p{nullptr};
-  auto mr = reinterpret_cast<rmm::mr::fixed_size_memory_resource*>(this->mr.get());
-  if (bytes > mr->get_block_size()) {
+  if (bytes > get_max_size(this->mr.get())) {
     EXPECT_THROW(p = this->mr->allocate(bytes), std::bad_alloc);
   }
   else {
-    EXPECT_NO_THROW(p = mr->allocate(bytes));
+    EXPECT_NO_THROW(p = this->mr->allocate(bytes));
     if (stream != 0)
       EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(this->stream));
     EXPECT_NE(nullptr, p);
     EXPECT_TRUE(is_aligned(p));
     EXPECT_TRUE(is_device_memory(p));
-    EXPECT_NO_THROW(mr->deallocate(p, bytes));
+    EXPECT_NO_THROW(this->mr->deallocate(p, bytes));
     if (stream != 0)
       EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(this->stream));
   }
@@ -177,6 +220,12 @@ template <>
 void MRTest<rmm::mr::fixed_size_memory_resource>::test_random_allocations(std::size_t num_allocations,
                                                                           cudaStream_t stream) {
   return test_random_allocations_base(num_allocations, 1 * size_mb, stream);
+}
+
+template <>
+void MRTest<fixed_multisize_mr>::test_random_allocations(std::size_t num_allocations,
+                                                         cudaStream_t stream) {
+  return test_random_allocations_base(num_allocations, 4 * size_mb, stream);
 }
 
 template <typename MemoryResourceType>
@@ -237,14 +286,20 @@ void MRTest<rmm::mr::fixed_size_memory_resource>::test_mixed_random_allocation_f
   test_mixed_random_allocation_free_base(size_mb, stream);
 }
 
+template <>
+void MRTest<fixed_multisize_mr>::test_mixed_random_allocation_free(cudaStream_t stream) {
+  test_mixed_random_allocation_free_base(4 * size_mb, stream);
+}
+
 // Test on all memory resource classes
 using resources = ::testing::Types<rmm::mr::cuda_memory_resource,
                                    rmm::mr::managed_memory_resource,
                                    rmm::mr::cnmem_memory_resource,
                                    rmm::mr::cnmem_managed_memory_resource,
-                                   rmm::mr::sub_memory_resource,
+                                   sub_mr,
                                    rmm::mr::fixed_size_memory_resource,
-                                   rmm::mr::hybrid_memory_resource>;
+                                   fixed_multisize_mr,
+                                   hybrid_mr>;
 
 TYPED_TEST_CASE(MRTest, resources);
 
