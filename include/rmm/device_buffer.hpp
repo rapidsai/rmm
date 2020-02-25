@@ -343,6 +343,13 @@ class device_buffer {
   std::size_t size() const noexcept { return _size; }
 
   /**
+   * @brief Returns if the `device_buffer` is empty and does not hold a device
+   * memory allocation.
+   *
+   */
+  bool is_empty() const noexcept { return 0 == size(); }
+
+  /**
    * @brief Returns actual size in bytes of device memory allocation.
    *
    * The invariant `size() <= capacity()` holds.
