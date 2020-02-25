@@ -266,6 +266,11 @@ class device_buffer {
    *
    * The specified `stream` is used for allocating and copying the new memory
    *if the memory resource supports streams.
+
+   * TODO: Need to clarify stream behavior here. Since we are potentially
+   * deallocating this buffer's memory, the user needs to guarantee
+   * that it is no longer being used. Should the user be responsible for syncing
+   * `stream()` beforehand? Or should we sync here?
    *
    * @throws rmm::bad_alloc If creating the new allocation fails
    * @throws rmm::cuda_error if the copy from the old to new allocation
@@ -300,6 +305,11 @@ class device_buffer {
    * reduce `capacity()` to `size()`.
    *
    * If `size() == capacity()`, no allocations nor copies occur.
+   * 
+   * TODO: Need to clarify stream behavior here. Since we are potentially
+   * deallocating this buffer's memory, the user needs to guarantee
+   * that it is no longer being used. Should the user be responsible for syncing
+   * `stream()` beforehand? Or should we sync here?
    *
    * @throws rmm::bad_alloc If creating the new allocation fails
    * @throws rmm::cuda_error If the copy from the old to new allocation fails
