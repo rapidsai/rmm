@@ -113,11 +113,12 @@ class fixed_multisize_memory_resource : public device_memory_resource {
    * @param bytes Requested allocation size in bytes
    * @return rmm::mr::device_memory_resource& memory_resource that can allocate the requested size.
    */
-  rmm::mr::device_memory_resource& get_resource(std::size_t bytes) {
+  device_memory_resource& get_resource(std::size_t bytes) {
     if (bytes < max_size_) {
-      auto iter = fixed_size_mr_.begin();
-      while (bytes > iter->get()->get_block_size())
-        iter = std::next(iter);
+      auto iter = std::find_if(fixed_size_mr_.begin(), fixed_size_mr_.end(),
+                   [bytes](std::unique_ptr<fixed_size_memory_resource<UpstreamResource>>& res) { 
+                     return bytes <= res.get()->get_block_size();
+                    });
       if (iter != fixed_size_mr_.end())
         return *iter->get();
     }
