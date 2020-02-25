@@ -133,9 +133,8 @@ class device_buffer {
   device_buffer(
       device_buffer const& other, cudaStream_t stream = 0,
       rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
-      : _stream{stream}, _mr{mr} {
-    allocate_and_copy(other.data(), other.size());
-  }
+      : device_buffer{other.data(), other.size(), stream, mr}{}
+      
 
   /**
    * @brief Constructs a new `device_buffer` by moving the contents of another
