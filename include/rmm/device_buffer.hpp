@@ -242,11 +242,12 @@ class device_buffer {
    *
    * If `new_size` is larger than the current size, a new allocation is made
    * to satisfy `new_size`, and the contents of the old allocation are copied
-   * to the new allocation. The old allocation is then freed.
+   * to the new allocation. The old allocation is then freed. The bytes from
+   *`[old_size, new_size)` are uninitialized.
    *
    * The invariant `size() <= capacity()` holds.
    *
-   * The specified @p stream is used for allocating and copying the new memory
+   * The specified `stream` is used for allocating and copying the new memory
    *if the memory resource supports streams.
    *
    * @throws rmm::bad_alloc If creating the new allocation fails
