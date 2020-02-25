@@ -114,14 +114,9 @@ class device_buffer {
   device_buffer(void const* source_data, std::size_t size,
                 cudaStream_t stream = 0,
                 mr::device_memory_resource* mr = mr::get_default_resource())
-      : _size{size}, _capacity{size}, _stream{stream}, _mr{mr} {
-    if (size > 0) {
-      RMM_EXPECTS((nullptr != source_data), "Attempt to copy from nullptr.");
-
-      _data = _mr->allocate(_size, this->stream());
-      RMM_CUDA_TRY(cudaMemcpyAsync(_data, source_data, _size, cudaMemcpyDefault,
-                                   this->stream()));
-    }
+      : _stream{stream}, _mr{mr} {
+    allocate(size);
+    copy(source_data, size);
   }
 
   /**
@@ -413,6 +408,15 @@ class device_buffer {
     _size = 0;
     _capacity = 0;
     _data = nullptr;
+  }
+
+  void copy(void* source, std::size_t bytes) {
+    if (bytes > 0) {
+      RMM_EXPECTS(nullptr != source, "Invalid copy from nullptr.");
+
+      RMM_CUDA_TRY(
+          cudaMemcpyAsync(_data, source, bytes, cudaMemcpyDefault, stream()));
+    }
   }
 };
 }  // namespace rmm
