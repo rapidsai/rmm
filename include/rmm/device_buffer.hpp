@@ -205,7 +205,8 @@ class device_buffer {
    */
   device_buffer& operator=(device_buffer&& other) {
     if (&other != this) {
-      _mr->deallocate(_data, _capacity, stream());
+      deallocate();
+
       _data = other._data;
       _size = other._size;
       _capacity = other._capacity;
