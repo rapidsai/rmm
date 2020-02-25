@@ -39,3 +39,15 @@ TEST(Adaptor, factory) {
   auto p = log_mr.allocate(100);
   log_mr.deallocate(p, 100);
 }
+
+TEST(Adaptor, EnviromentPath) {
+  rmm::mr::cuda_memory_resource upstream;
+
+  setenv("RMM_LOG_FILE", "envtest.txt", 1);
+
+  // use log file location specified in environment variable RMM_LOG_FILE
+  auto log_mr = rmm::mr::make_logging_adaptor(&upstream);
+
+  auto p = log_mr.allocate(100);
+  log_mr.deallocate(p, 100);
+}

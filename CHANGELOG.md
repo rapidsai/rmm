@@ -17,6 +17,7 @@
 - PR #287 Enabled CUDA CXX11 for unit tests.
 - PR #292 Revamped RMM exceptions.
 - PR #303 Added replay benchmark.
+- PR #297 Use spdlog to implement `logging_resource_adaptor`
 
 ## Improvements
 
@@ -33,6 +34,9 @@
 - PR #296 Use CuPy's `UnownedMemory` for RMM-backed allocations
 
 ## Bug Fixes
+- PR #298 Remove RMM_CUDA_TRY from cuda_event_timer destructor
+- PR #299 Fix assert condition blocking debug builds
+- PR #300 Fix host mr_tests compile error
 
 
 # RMM 0.12.0 (Date TBD)
