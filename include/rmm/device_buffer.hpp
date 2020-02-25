@@ -387,5 +387,15 @@ class device_buffer {
   mr::device_memory_resource* _mr{
       mr::get_default_resource()};  ///< The memory resource used to
                                     ///< allocate/deallocate device memory
+
+  /**
+   * @brief If the `device_buffer` holds any memory, deallocate it.
+   *
+   */
+  void deallocate() noexcept {
+    if (capacity() > 0) {
+      _mr->deallocate(data(), capacity());
+    }
+  }
 };
 }  // namespace rmm
