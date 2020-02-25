@@ -202,14 +202,12 @@ class device_buffer {
   /**
    * @brief Move assignment operator moves the contents from `other`.
    *
-   * Memory deallocation uses the last stream set in a device_buffer method
-   * on this instance. If a different stream is required, call `set_stream()` on
-   * the instance before assignment. After assignment, this instance's stream is
-   * replaced by the stream from `other`.
+   * This `device_buffer`'s current device memory allocation will be deallocated
+   * on `stream()`.
    *
-   * TODO: Need to clarify stream behavior here. Since we are deallocating this
-   * buffer's memory, the user needs to guarantee that it is no longer being
-   * used. So the user be responsible for syncing `stream()` beforehand
+   * If a different stream is required, call `set_stream()` on
+   * the instance before assignment. After assignment, this instance's stream is
+   * replaced by the `other.stream()`.
    *
    * @param other The `device_buffer` whose contents will be moved.
    */
