@@ -93,10 +93,8 @@ class device_buffer {
   explicit device_buffer(
       std::size_t size, cudaStream_t stream = 0,
       mr::device_memory_resource* mr = mr::get_default_resource())
-      : _size{size}, _capacity{size}, _stream{stream}, _mr{mr} {
-    if (size > 0) {
-      _data = _mr->allocate(size, this->stream());
-    }
+      : _stream{stream}, _mr{mr} {
+    allocate(size, stream());
   }
 
   /**
@@ -243,14 +241,9 @@ class device_buffer {
    * methods.
    */
   ~device_buffer() noexcept {
-    if (size() > 0) {
-      _mr->deallocate(_data, _capacity, stream());
-    }
-    _data = nullptr;
-    _size = 0;
-    _capacity = 0;
-    _stream = 0;
+    deallocate();
     _mr = nullptr;
+    _stream = 0;
   }
 
   /**
@@ -343,8 +336,10 @@ class device_buffer {
   std::size_t size() const noexcept { return _size; }
 
   /**
-   * @brief Returns if the `device_buffer` is empty and does not hold a device
-   * memory allocation.
+   * @brief Returns whether the size in bytes of the `device_buffer` is zero.
+   *
+   * If `is_empty() == true`, the `device_buffer` may still hold an allocation
+   * if `capacity() > 0`.
    *
    */
   bool is_empty() const noexcept { return 0 == size(); }
@@ -389,13 +384,35 @@ class device_buffer {
                                     ///< allocate/deallocate device memory
 
   /**
-   * @brief If the `device_buffer` holds any memory, deallocate it.
+   * @brief Allocates the specified amount of memory and updates the
+   * size/capacity accordingly.
+   *
+   * If `bytes == 0`, sets `_data = nullptr`.
+   *
+   * @param bytes The amount of memory to allocate
+   * @param stream The stream on which to allocate
+   */
+  void allocate(std::size_t bytes, cudaStream_t stream) {
+    _size = bytes;
+    _capacity = bytes;
+    _data = (bytes > 0) ? _mr->allocate(bytes, stream) : nullptr;
+  }
+
+  /**
+   * @brief Deallocate any memory held by this `device_buffer` and clear the
+   * size/capacity/data members.
+   *
+   * If the buffer doesn't hold any memory, i.e., `capacity() == 0`, doesn't
+   * call the resource deallocation.
    *
    */
   void deallocate() noexcept {
     if (capacity() > 0) {
       _mr->deallocate(data(), capacity());
     }
+    _size = 0;
+    _capacity = 0;
+    _data = nullptr;
   }
 };
 }  // namespace rmm
