@@ -132,6 +132,8 @@ struct replay_benchmark {
   }
 };
 
+
+// Usage: REPLAY_BENCHMARK -f "path/to/log/file"
 int main(int argc, char** argv) {
   // benchmark::Initialize will remove GBench command line arguments it
   // recognizes and leave any remaining arguments
