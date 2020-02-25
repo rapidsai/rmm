@@ -160,17 +160,22 @@ class device_buffer {
   }
 
   /**
-   * @brief Copy assignment operator copies the contents of `other`
+   * @brief Copies the contents of `other` into this `device_buffer`
    *
-   * Memory deallocation uses this instance's memory_resource and the last
-   * stream passed to a method on this instance. If a different stream is
-   * required for deallocation, call `set_stream()` on the instance before
-   * assignment.
+   * If the existing capacity is large enough, and the memory resources are
+   * compatible, then this `device_buffer`'s existing memory will be reused and
+   * `other`s contents will simply be copied on `other.stream()`. I.e., if
+   * `capcity() > other.size()` and
+   * `memory_resource()->is_equal(*other.memory_resource())`.
    *
-   * Allocation and copy in this function uses the memory_resource and stream
-   * from `other`. If a different stream is required for allocation/copy, call
-   * `set_stream()` on `other` before assignment. After assignment, this
-   * instance's stream is replaced by the stream from `other`.
+   * Otherwise, the existing memory will be deallocated using
+   * `memory_resource()` on `stream()` and new memory will be allocated using
+   * `other.memory_resource()` on `other.stream()`.
+   *
+   * TODO: Need to clarify stream behavior here. Since we are potentially
+   * overwriting/deallocating this buffer's memory, the user needs to guarantee
+   * that it is no longer being used. Should the user be responsible for syncing
+   * `stream()` beforehand? Or should we sync here?
    *
    * @throws rmm::bad_alloc if allocation fails
    * @throws rmm::cuda_error if the copy from `other` fails
@@ -179,8 +184,19 @@ class device_buffer {
    */
   device_buffer& operator=(device_buffer const& other) {
     if (&other != this) {
-      // copy and swap
-      device_buffer(other).swap(*this);
+      // If the current capacity is large enough and the resources are
+      // compatible, just reuse the existing memory
+      if ((capacity() > other.size()) and _mr.is_equal(*other._mr)) {
+        set_stream(other.stream());
+        resize(other.size());
+        copy(other.data(), other.size());
+      } else {
+        // Otherwise, need to deallocate and allocate new memory
+        deallocate();
+        set_stream(other.stream());
+        _mr = other._mr;
+        allocate_and_copy(other.data(), other.size());
+      }
     }
     return *this;
   }
