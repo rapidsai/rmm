@@ -115,8 +115,7 @@ class device_buffer {
                 cudaStream_t stream = 0,
                 mr::device_memory_resource* mr = mr::get_default_resource())
       : _stream{stream}, _mr{mr} {
-    allocate(size);
-    copy(source_data, size);
+    allocate_and_copy(source_data, size);
   }
 
   /**
@@ -138,11 +137,8 @@ class device_buffer {
   device_buffer(
       device_buffer const& other, cudaStream_t stream = 0,
       rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
-      : _size{other.size()}, _capacity{other.size()}, _stream{stream}, _mr{mr} {
-    _data = memory_resource()->allocate(size(), this->stream());
-
-    RMM_CUDA_TRY(cudaMemcpyAsync(data(), other.data(), size(),
-                                 cudaMemcpyDefault, this->stream()));
+      : _stream{stream}, _mr{mr} {
+    allocate_and_copy(other.data(), other.size());
   }
 
   /**
