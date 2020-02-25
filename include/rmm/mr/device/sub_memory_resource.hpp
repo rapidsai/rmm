@@ -18,6 +18,7 @@
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/detail/free_list.hpp>
+#include <rmm/detail/error.hpp>
 
 #include <cuda_runtime_api.h>
 #include <exception>
@@ -106,9 +107,9 @@ class sub_memory_resource final : public device_memory_resource {
         if (list_stream != stream) {
           cudaError_t result = cudaStreamSynchronize(list_stream);
 
-          if (result != cudaErrorInvalidResourceHandle && // stream deleted
-              result != cudaSuccess)                      // stream synced
-            throw std::runtime_error{"cudaStreamSynchronize failure"};
+          RMM_EXPECTS(result != cudaErrorInvalidResourceHandle && // stream deleted
+                      result != cudaSuccess,                      // stream synced
+                      rmm::cuda_error, "cudaStreamSynchronize failure");
 
           // insert all other blocks into this stream's list
           // TODO: Should we do this? This could cause thrashing between two 
@@ -147,10 +148,6 @@ class sub_memory_resource final : public device_memory_resource {
 
   void* allocate_from_block(block const& b, size_t size, cudaStream_t stream)
   {
-    if (b.ptr == nullptr) {
-      throw std::bad_alloc{};
-    }
-
     block alloc{b};
 
     if (b.size > size)
