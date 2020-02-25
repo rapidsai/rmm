@@ -54,15 +54,16 @@ class fixed_size_memory_resource : public device_memory_resource {
   // The required alignment of this allocator
   static constexpr std::size_t allocation_alignment = 256;
 
-  explicit fixed_size_memory_resource(UpstreamResource *upstream_resource,
-                                      std::size_t block_size = default_block_size,
-                                      std::size_t blocks_to_preallocate = default_blocks_to_preallocate)
-  : upstream_resource_{upstream_resource} {
+  explicit fixed_size_memory_resource(
+      UpstreamResource* upstream_resource,
+      std::size_t block_size = default_block_size,
+      std::size_t blocks_to_preallocate = default_blocks_to_preallocate)
+      : upstream_mr_{upstream_resource} {
     block_size_ = rmm::detail::align_up(block_size, allocation_alignment); 
     upstream_chunk_size_ = block_size * default_blocks_to_preallocate;
 
     // allocate initial blocks and insert into free list
-    new_blocks_from_upstream(0);
+    new_blocks_from_upstream(0, no_sync_blocks_);
   }
 
   virtual ~fixed_size_memory_resource() {
@@ -76,6 +77,8 @@ class fixed_size_memory_resource : public device_memory_resource {
    * @returns true
    */
   bool supports_streams() const noexcept override { return true; }
+
+  UpstreamResource* get_upstream() const noexcept { return upstream_mr_; }
 
   std::size_t get_block_size() const noexcept { return block_size_; }
 
@@ -133,13 +136,14 @@ class fixed_size_memory_resource : public device_memory_resource {
 
   // return a block from the free list associated with the specified stream, and move all other 
   // blocks in the list to the no-sync free list.
-  void* block_from_sync_list(cudaStream_t stream) {
-    free_list& blocks = sync_blocks_.at(stream);
+  void* block_from_sync_list(free_list &blocks, cudaStream_t stream) {
     void* p = nullptr;
-    if (blocks.size() > 0) {
-       p = blocks.front();
-       blocks.pop_front();
+
+    if (!blocks.empty()) {
+      p = blocks.front();
+      blocks.pop_front();
     }
+
     // insert all remaining blocks from sync list into no-sync list
     if (p != nullptr) { // found one
       cudaError_t result = cudaStreamSynchronize(stream);
@@ -155,6 +159,7 @@ class fixed_size_memory_resource : public device_memory_resource {
       // remove this stream from the freelist
       sync_blocks_.erase(stream);
     }
+
     return p;
   }
 
@@ -164,7 +169,7 @@ class fixed_size_memory_resource : public device_memory_resource {
   void* get_block(cudaStream_t stream) {
     // Try to find a larger block that doesn't require syncing
     void* p = nullptr;
-    if (no_sync_blocks_.size() > 0) {
+    if (!no_sync_blocks_.empty()) {
        p = no_sync_blocks_.front();
        no_sync_blocks_.pop_front();
     }
@@ -173,19 +178,28 @@ class fixed_size_memory_resource : public device_memory_resource {
     if (p == nullptr) {
 
       // Try to find a larger block in a different stream
-      for (auto s : sync_blocks_) {
-        if (s.first != stream) p = block_from_sync_list(s.first);
+      auto s = sync_blocks_.begin();
+      while (p == nullptr && s != sync_blocks_.end()) {
+        if (s->first != stream) p = block_from_sync_list(s->second, s->first);
+        s++;
       }
-
+      
       // nothing available in other streams, look in current stream's list
-      if (p == nullptr && (sync_blocks_.find(stream) != sync_blocks_.end())) {
-          p = block_from_sync_list(stream);
-      }
-
-      // no blocks available, so create more
       if (p == nullptr) {
-        new_blocks_from_upstream(stream);
-        p = get_block(stream);
+        auto iter = sync_blocks_.find(stream);
+        //free_list* plist = nullptr;
+        if (iter != sync_blocks_.end()) {
+          //plist = &iter->second;
+          p = block_from_sync_list(iter->second, stream);
+        }
+
+        //if (plist == nullptr) plist = &sync_blocks_[stream];
+          
+        // no blocks available, so create more
+        if (p == nullptr) {
+          new_blocks_from_upstream(stream, no_sync_blocks_);
+          p = get_block(stream);
+        }
       }
     }
 
@@ -193,8 +207,8 @@ class fixed_size_memory_resource : public device_memory_resource {
   }
 
   // Allocate new blocks from the upstream memory resource into the free list
-  void new_blocks_from_upstream(cudaStream_t stream) {
-    void* p = upstream_resource_->allocate(upstream_chunk_size_, stream);
+  void new_blocks_from_upstream(cudaStream_t stream, free_list& blocks) {
+    void* p = upstream_mr_->allocate(upstream_chunk_size_, stream);
     upstream_blocks_[p] = upstream_chunk_size_;
 
     auto num_blocks = upstream_chunk_size_ / block_size_;
@@ -203,19 +217,21 @@ class fixed_size_memory_resource : public device_memory_resource {
 
     auto first = thrust::make_transform_iterator(thrust::make_counting_iterator(std::size_t{0}), g); 
     auto last  = thrust::make_transform_iterator(thrust::make_counting_iterator(num_blocks), g); 
-    no_sync_blocks_.insert(no_sync_blocks_.cend(), first, last);
+    blocks.insert(blocks.cend(), first, last);
   }
 
   // free all allocated memory
   void free_all()
   {
-    for (auto b : upstream_blocks_) upstream_resource_->deallocate(b.first, b.second);
+    for (auto b : upstream_blocks_)
+      upstream_mr_->deallocate(b.first, b.second);
     upstream_blocks_.clear();
     no_sync_blocks_.clear();
     sync_blocks_.clear();
   }
 
-  UpstreamResource *upstream_resource_; // The resource from which to allocate new blocks
+  UpstreamResource*
+      upstream_mr_;  // The resource from which to allocate new blocks
 
   std::size_t block_size_;      // size of blocks this MR allocates
   std::size_t upstream_chunk_size_; // size of chunks allocated from heap MR

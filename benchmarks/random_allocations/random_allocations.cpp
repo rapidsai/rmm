@@ -169,6 +169,12 @@ sub_mr* create_memory_resource() {
 }
 
 template<>
+fixed_multisize_mr* create_memory_resource() {
+  rmm::mr::cuda_memory_resource *cuda_mr = new rmm::mr::cuda_memory_resource();
+  return new fixed_multisize_mr(new sub_mr(cuda_mr));
+}
+
+template<>
 hybrid_mr* create_memory_resource() {
   rmm::mr::cuda_memory_resource *cuda_mr = new rmm::mr::cuda_memory_resource();
   sub_mr *sub = new sub_mr(cuda_mr);
@@ -189,6 +195,16 @@ void destroy_memory_resource(hybrid_mr* mr) {
   delete small;
   delete large;
   delete cuda;
+}
+
+
+template<>
+void destroy_memory_resource(fixed_multisize_mr* mr) {
+  auto sub = mr->get_upstream();
+  auto cuda = sub->get_upstream();
+  delete mr;
+  delete sub;
+  delete cuda;  
 }
 
 template<>
@@ -258,6 +274,8 @@ void declare_benchmark(std::string name) {
     BENCHMARK_TEMPLATE(BM_RandomAllocations, hybrid_mr)->Apply(benchmark_range);
   else if (name == "sub")
     BENCHMARK_TEMPLATE(BM_RandomAllocations, sub_mr)->Apply(benchmark_range);
+  else if (name == "fixed_multisize")
+    BENCHMARK_TEMPLATE(BM_RandomAllocations, fixed_multisize_mr)->Apply(benchmark_range);
   else if (name == "cnmem")
     BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::cnmem_memory_resource)->Apply(benchmark_range);
   else
