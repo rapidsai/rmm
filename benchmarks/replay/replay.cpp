@@ -21,6 +21,7 @@
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 
 #include <benchmark/benchmark.h>
+#include <memory>
 #include <string>
 
 enum class action : bool { ALLOCATE, FREE };
@@ -91,12 +92,28 @@ struct allocation {
   std::size_t size{};
 };
 
+/**
+ * @brief Function object for running a replay benchmark with the specified
+ * `device_memory_resource`.
+ *
+ * @tparam MR The type of the `device_memory_resource` to use for allocation
+ * replay
+ */
 template <typename MR>
 struct replay_benchmark {
-  MR mr_{};
+  std::unique_ptr<MR> mr_{};
   parsed_log const& log_{};
 
-  replay_benchmark(MR const& mr, parsed_log const& log) : mr_{mr}, log_{log} {}
+  /**
+   * @brief Construct a `replay_benchmark` from a `parsed_log` of actions and
+   * set of arguments forwarded to the MR constructor.
+   *
+   * @param log The parsed_log containing the allocation actions to replay
+   * @param args Variable number of arguments forward to the constructor of MR
+   */
+  template <typename... Args>
+  replay_benchmark(parsed_log const& log, Args&&... args)
+      : mr_{new MR{std::forward<Args>(args)...}}, log_{log} {}
 
   void operator()(benchmark::State& state) {
     std::unordered_map<uintptr_t, allocation> allocation_map;
@@ -108,11 +125,11 @@ struct replay_benchmark {
     for (auto _ : state) {
       for (int i = 0; i < actions.size(); ++i) {
         if (action::ALLOCATE == actions[i]) {
-          auto p = mr_.allocate(sizes[i]);
+          auto p = mr_->allocate(sizes[i]);
           allocation_map[pointers[i]] = allocation{p, sizes[i]};
         } else {
           auto a = allocation_map[pointers[i]];
-          mr_.deallocate(a.p, a.size);
+          mr_->deallocate(a.p, a.size);
         }
       }
     }
@@ -139,22 +156,16 @@ int main(int argc, char** argv) {
     auto filename = result["file"].as<std::string>();
     auto parsed_log = parse_csv(filename);
 
-    std::cout << "Number of actions: " << parsed_log.actions.size()
-              << std::endl;
-
     benchmark::RegisterBenchmark(
         "CUDA Resource",
-        replay_benchmark<rmm::mr::cuda_memory_resource>{
-            rmm::mr::cuda_memory_resource{}, parsed_log})
+        replay_benchmark<rmm::mr::cuda_memory_resource>{parsed_log})
         ->Unit(benchmark::kMillisecond);
 
-    /*
-        benchmark::RegisterBenchmark(
-            "CNMEM Resource",
-            replay_benchmark<rmm::mr::cnmem_memory_resource>{
-                rmm::mr::cnmem_memory_resource{}, parsed_log})
-            ->Unit(benchmark::kMillisecond);
-            */
+    benchmark::RegisterBenchmark(
+        "CNMEM Resource",
+        replay_benchmark<rmm::mr::cnmem_memory_resource>(parsed_log, 0u))
+        ->Unit(benchmark::kMillisecond);
+
     ::benchmark::RunSpecifiedBenchmarks();
   } else {
     throw std::runtime_error{"No log filename specified."};
