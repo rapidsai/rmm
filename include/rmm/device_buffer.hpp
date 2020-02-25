@@ -179,10 +179,8 @@ class device_buffer {
    */
   device_buffer& operator=(device_buffer const& other) {
     if (&other != this) {
-      deallocate();
-      set_stream(other.stream());
-      _mr = other._mr;
-      allocate_and_copy(other.data(), other.size());
+      // copy and swap
+      device_buffer(other).swap(*this);
     }
     return *this;
   }
