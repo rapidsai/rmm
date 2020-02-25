@@ -209,6 +209,10 @@ class device_buffer {
    * the instance before assignment. After assignment, this instance's stream is
    * replaced by the stream from `other`.
    *
+   * TODO: Need to clarify stream behavior here. Since we are deallocating this
+   * buffer's memory, the user needs to guarantee that it is no longer being
+   * used. So the user be responsible for syncing `stream()` beforehand
+   *
    * @param other The `device_buffer` whose contents will be moved.
    */
   device_buffer& operator=(device_buffer&& other) {
