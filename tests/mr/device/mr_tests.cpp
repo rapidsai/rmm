@@ -351,49 +351,29 @@ TYPED_TEST(MRTest, AllocateZeroBytesStream) {
   EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(this->stream));
 }
 
-
-TYPED_TEST(MRTest, AllocateWord) {
+TYPED_TEST(MRTest, Allocate) {
   this->test_allocate(size_word);
-}
-
-TYPED_TEST(MRTest, AllocateWordStream) {
-  this->test_allocate(size_word, this->stream);
-}
-
-TYPED_TEST(MRTest, AllocateKB) {
   this->test_allocate(size_kb);
-}
-
-TYPED_TEST(MRTest, AllocateKBStream) {
-  this->test_allocate(size_kb, this->stream);
-}
-
-TYPED_TEST(MRTest, AllocateMB) {
   this->test_allocate(size_mb);
-}
-
-TYPED_TEST(MRTest, AllocateMBStream) {
-  this->test_allocate(size_mb, this->stream);
-}
-
-TYPED_TEST(MRTest, AllocateGB) {
   this->test_allocate(size_gb);
-}
 
-TYPED_TEST(MRTest, AllocateGBStream) {
-  this->test_allocate(size_gb, this->stream);
-}
-
-TYPED_TEST(MRTest, AllocateTooMuch) {
+  // should fail to allocate too much
   void* p{nullptr};
   EXPECT_THROW(p = this->mr->allocate(size_pb), rmm::bad_alloc);
   EXPECT_EQ(nullptr, p);
 }
 
-TYPED_TEST(MRTest, AllocateTooMuchStream) {
+TYPED_TEST(MRTest, AllocateOnStream) {
+  this->test_allocate(size_word, this->stream);
+  this->test_allocate(size_kb,   this->stream);
+  this->test_allocate(size_mb,   this->stream);
+  this->test_allocate(size_gb,   this->stream);
+
+  // should fail to allocate too much
   void* p{nullptr};
   EXPECT_THROW(p = this->mr->allocate(size_pb, this->stream), rmm::bad_alloc);
   EXPECT_EQ(nullptr, p);
+
 }
 
 TYPED_TEST(MRTest, RandomAllocations) {
