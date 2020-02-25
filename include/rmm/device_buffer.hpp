@@ -94,7 +94,7 @@ class device_buffer {
       std::size_t size, cudaStream_t stream = 0,
       mr::device_memory_resource* mr = mr::get_default_resource())
       : _stream{stream}, _mr{mr} {
-    allocate(size, stream());
+    allocate(size);
   }
 
   /**
@@ -392,10 +392,10 @@ class device_buffer {
    * @param bytes The amount of memory to allocate
    * @param stream The stream on which to allocate
    */
-  void allocate(std::size_t bytes, cudaStream_t stream) {
+  void allocate(std::size_t bytes) {
     _size = bytes;
     _capacity = bytes;
-    _data = (bytes > 0) ? _mr->allocate(bytes, stream) : nullptr;
+    _data = (bytes > 0) ? _mr->allocate(bytes, stream()) : nullptr;
   }
 
   /**
