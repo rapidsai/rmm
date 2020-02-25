@@ -26,6 +26,7 @@
 
 #include <list>
 #include <unordered_map>
+#include <map>
 #include <cstddef>
 #include <utility>
 #include <algorithm>
@@ -63,7 +64,7 @@ class fixed_size_memory_resource : public device_memory_resource {
     upstream_chunk_size_ = block_size * default_blocks_to_preallocate;
 
     // allocate initial blocks and insert into free list
-    new_blocks_from_upstream(0, sync_blocks_[0]);
+    new_blocks_from_upstream(0, stream_blocks_[0]);
   }
 
   virtual ~fixed_size_memory_resource() {
@@ -119,7 +120,7 @@ class fixed_size_memory_resource : public device_memory_resource {
     bytes = rmm::detail::align_up(bytes, allocation_alignment);
     RMM_EXPECTS(bytes <= block_size_, rmm::bad_alloc, "bytes must be <= block_size");
 
-    sync_blocks_[stream].push_back(p);
+    stream_blocks_[stream].push_back(p);
   }
 
   /**
@@ -153,11 +154,11 @@ class fixed_size_memory_resource : public device_memory_resource {
         throw std::runtime_error{"cudaStreamSynchronize failure"};
 
       // insert all other blocks into the no_sync list
-      auto blocks_for_stream = sync_blocks_[stream];
+      auto blocks_for_stream = stream_blocks_[stream];
       blocks_for_stream.splice(blocks_for_stream.end(), blocks);
 
       // remove this stream from the freelist
-      sync_blocks_.erase(list_stream);
+      stream_blocks_.erase(list_stream);
     }
 
     return p;
@@ -170,15 +171,15 @@ class fixed_size_memory_resource : public device_memory_resource {
     void* p = nullptr;
 
     // Try to find a block in the same stream
-    auto iter = sync_blocks_.find(stream);
-    if (iter != sync_blocks_.end())
+    auto iter = stream_blocks_.find(stream);
+    if (iter != stream_blocks_.end())
       p = block_from_sync_list(iter->second, stream, stream);
 
     // nothing in this stream's free list, look for one on another stream
     if (p == nullptr) {
       // Try to find a larger block in a different stream
-      auto s = sync_blocks_.begin();
-      while (p == nullptr && s != sync_blocks_.end()) {
+      auto s = stream_blocks_.begin();
+      while (p == nullptr && s != stream_blocks_.end()) {
         if (s->first != stream) p = block_from_sync_list(s->second, s->first, stream);
         s++;
       }
@@ -187,11 +188,12 @@ class fixed_size_memory_resource : public device_memory_resource {
     // nothing available in other streams, get new blocks
     if (p == nullptr) {
       free_list* plist = nullptr; // avoid searching for this stream's list again
-      if (iter != sync_blocks_.end()) {
+      if (iter != stream_blocks_.end()) {
         plist = &iter->second;
       }
 
-      if (plist == nullptr) plist = &sync_blocks_[stream];
+      if (plist == nullptr)
+        plist = &stream_blocks_[stream];
 
       new_blocks_from_upstream(stream, *plist);
       p = get_block(stream);
@@ -220,18 +222,17 @@ class fixed_size_memory_resource : public device_memory_resource {
     for (auto b : upstream_blocks_)
       upstream_mr_->deallocate(b.first, b.second);
     upstream_blocks_.clear();
-    sync_blocks_.clear();
+    stream_blocks_.clear();
   }
 
-  UpstreamResource*
-      upstream_mr_;  // The resource from which to allocate new blocks
+  UpstreamResource* upstream_mr_;  // The resource from which to allocate new blocks
 
   std::size_t block_size_;      // size of blocks this MR allocates
   std::size_t upstream_chunk_size_; // size of chunks allocated from heap MR
 
-  // sync free lists: map of [stream_id, free_list] pairs
+  // stream free lists: map of [stream_id, free_list] pairs
   // stream stream_id must be synced before allocating from this list
-  std::unordered_map<cudaStream_t, free_list> sync_blocks_;
+  std::map<cudaStream_t, free_list> stream_blocks_;
 
   // blocks allocated from heap: so they can be easily freed
   // blocks are ptr/size pairs
