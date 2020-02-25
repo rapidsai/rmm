@@ -46,6 +46,7 @@ cdef class DeviceBuffer:
                   uintptr_t stream=0):
         cdef const void* c_ptr
         cdef cudaStream_t c_stream
+        cdef cudaError_t err
 
         with nogil:
             c_ptr = <const void*>ptr
@@ -57,6 +58,14 @@ cdef class DeviceBuffer:
                 self.c_obj.reset(new device_buffer(size, c_stream))
             else:
                 self.c_obj.reset(new device_buffer(c_ptr, size, c_stream))
+
+            if c_stream == NULL:
+                err = cudaStreamSynchronize(c_stream)
+                if err != cudaSuccess:
+                    with gil:
+                        raise RuntimeError(
+                            f"Stream sync failed with error: {err}"
+                        )
 
     def __len__(self):
         return self.size
