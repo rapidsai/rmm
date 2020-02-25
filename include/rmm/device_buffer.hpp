@@ -185,14 +185,10 @@ class device_buffer {
    */
   device_buffer& operator=(device_buffer const& other) {
     if (&other != this) {
-      _mr->deallocate(_data, _capacity, stream());
-      _size = other._size;
-      _capacity = other._size;  // only allocate _size bytes
-      _mr = other._mr;
+      deallocate();
       set_stream(other.stream());
-      _data = _mr->allocate(_size, stream());
-      RMM_CUDA_TRY(cudaMemcpyAsync(_data, other._data, _size, cudaMemcpyDefault,
-                                   stream()));
+      _mr = other._mr;
+      allocate_and_copy(other.data(), other.size());
     }
     return *this;
   }
