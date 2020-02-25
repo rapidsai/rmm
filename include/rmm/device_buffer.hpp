@@ -72,13 +72,9 @@ class device_buffer {
  public:
   /**
    * @brief Default constructor creates an empty `device_buffer`
+   * 
    */
-  device_buffer()
-      : _data{nullptr},
-        _size{},
-        _capacity{},
-        _stream{},
-        _mr{rmm::mr::get_default_resource()} {}
+  device_buffer() = default;
 
   /**
    * @brief Constructs a new device buffer of `size` uninitialized bytes
