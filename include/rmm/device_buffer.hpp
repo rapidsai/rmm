@@ -160,7 +160,10 @@ class device_buffer {
   }
 
   /**
-   * @brief Copies the contents of `other` into this `device_buffer`
+   * @brief Copies the contents of `other` into this `device_buffer`.
+   *
+   * All operations on the data in this `device_buffer` on all streams must be
+   * complete before using this operator, otherwise behavior is undefined.
    *
    * If the existing capacity is large enough, and the memory resources are
    * compatible, then this `device_buffer`'s existing memory will be reused and
@@ -171,11 +174,6 @@ class device_buffer {
    * Otherwise, the existing memory will be deallocated using
    * `memory_resource()` on `stream()` and new memory will be allocated using
    * `other.memory_resource()` on `other.stream()`.
-   *
-   * TODO: Need to clarify stream behavior here. Since we are potentially
-   * overwriting/deallocating this buffer's memory, the user needs to guarantee
-   * that it is no longer being used. Should the user be responsible for syncing
-   * `stream()` beforehand? Or should we sync here?
    *
    * @throws rmm::bad_alloc if allocation fails
    * @throws rmm::cuda_error if the copy from `other` fails
@@ -305,7 +303,7 @@ class device_buffer {
    * reduce `capacity()` to `size()`.
    *
    * If `size() == capacity()`, no allocations nor copies occur.
-   * 
+   *
    * TODO: Need to clarify stream behavior here. Since we are potentially
    * deallocating this buffer's memory, the user needs to guarantee
    * that it is no longer being used. Should the user be responsible for syncing
