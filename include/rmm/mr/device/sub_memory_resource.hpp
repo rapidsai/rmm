@@ -95,47 +95,46 @@ class sub_memory_resource final : public device_memory_resource {
   using block = rmm::mr::detail::block;
   using free_list = rmm::mr::detail::free_list<>;
 
-  block block_from_sync_list(size_t size, cudaStream_t list_stream, cudaStream_t stream)
+  block block_from_sync_list(free_list &blocks, size_t size, 
+                             cudaStream_t list_stream, cudaStream_t stream)
   {
-    block b{nullptr, 0, false};
-    auto iter = stream_blocks.find(list_stream);
+    block b = blocks.best_fit(size);
+    if (b.ptr != nullptr) { // found one
+      if (list_stream != stream) {
+        cudaError_t result = cudaStreamSynchronize(list_stream);
 
-    if (iter != stream_blocks.end()) {
-      free_list& blocks = iter->second;
-      b = blocks.best_fit(size);
-      if (b.ptr != nullptr) { // found one
-        if (list_stream != stream) {
-          cudaError_t result = cudaStreamSynchronize(list_stream);
+        RMM_EXPECTS(result != cudaErrorInvalidResourceHandle && // stream deleted
+                    result != cudaSuccess,                      // stream synced
+                    rmm::cuda_error, "cudaStreamSynchronize failure");
 
-          RMM_EXPECTS(result != cudaErrorInvalidResourceHandle && // stream deleted
-                      result != cudaSuccess,                      // stream synced
-                      rmm::cuda_error, "cudaStreamSynchronize failure");
+        // insert all other blocks into this stream's list
+        // TODO: Should we do this? This could cause thrashing between two 
+        // streams. On the other hand, this can also reduce fragmentation.
+        stream_blocks[stream].insert(blocks.begin(), blocks.end());
+        blocks.clear();
 
-          // insert all other blocks into this stream's list
-          // TODO: Should we do this? This could cause thrashing between two 
-          // streams. On the other hand, this can also reduce fragmentation.
-          stream_blocks[stream].insert(blocks.begin(), blocks.end());
-          blocks.clear();
-
-          // remove this stream from the freelist
-          stream_blocks.erase(list_stream);
-        }
+        // remove this stream from the freelist
+        stream_blocks.erase(list_stream);
       }
     }
     return b;
   }
 
   block available_larger_block(size_t size, cudaStream_t stream) {
+    block b{};
 
     // Try to find a larger block in the same stream
-    block b = block_from_sync_list(size, stream, stream);
+    // Try to find a block in the same stream
+    auto iter = stream_blocks.find(stream);
+    if (iter != stream_blocks.end())
+      b = block_from_sync_list(iter->second, size, stream, stream);
 
-    // Try to find a larger block in a different stream
+    // nothing in this stream's free list, look for one on another stream
     if (b.ptr == nullptr) {
       auto s = stream_blocks.begin();
       while (b.ptr == nullptr && s != stream_blocks.end()) {
         if (s->first != stream) 
-          b = block_from_sync_list(size, s->first, stream);
+          b = block_from_sync_list(s->second, size, s->first, stream);
         s++;
       }
     }
