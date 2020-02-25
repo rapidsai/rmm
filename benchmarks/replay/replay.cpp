@@ -21,33 +21,22 @@
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 
 #include <benchmark/benchmark.h>
+#include <thrust/iterator/zip_iterator.h>
 #include <memory>
+#include <stdexcept>
 #include <string>
 
 enum class action : bool { ALLOCATE, FREE };
 
 /**
- * @brief Stores the contents of a parsed log
+ * @brief Represents an allocation event
  *
- * Holds 3 vectors of length `n`, where `n` is the number of actions in the log
- * - actions: Indicates if action `i` is an allocation or a deallocation
- * - sizes: Indicates the size of the action `i`
- * - pointers: For an allocation, the pointer returned, for a free, the pointer
- *   freed
  */
-struct parsed_log {
-  parsed_log(std::vector<action>&& a, std::vector<std::size_t>&& s,
-             std::vector<uintptr_t>&& p)
-      : actions{std::move(a)}, sizes{std::move(s)}, pointers{std::move(p)} {
-    if ((actions.size() != sizes.size()) or
-        (actions.size() != pointers.size())) {
-      throw std::runtime_error{
-          "Size mismatch between actions, sizes, pointers."};
-    }
-  }
-  std::vector<action> actions{};
-  std::vector<std::size_t> sizes{};
-  std::vector<uintptr_t> pointers{};
+struct event {
+  action act;         ///< Indicates if the event is an allocation or a free
+  std::size_t size;   ///< The size of the memory allocated or free'd
+  uintptr_t pointer;  ///< The pointer returned from an allocation, or the
+                      ///< pointer free'd
 };
 
 /**
@@ -55,36 +44,45 @@ struct parsed_log {
  * replay benchmark.
  *
  * @param filename Name of the RMM log file
- * @return parsed_log The logfile parsed into a set of actions that can be
- * consumed by the replay benchmark.
+ * @return Vector of events for consumption by replay benchmark
  */
-parsed_log parse_csv(std::string const& filename) {
+std::vector<event> parse_csv(std::string const& filename) {
   rapidcsv::Document csv(filename);
 
+  std::vector<std::string> actions = csv.GetColumn<std::string>("Action");
   std::vector<std::size_t> sizes = csv.GetColumn<std::size_t>("Size");
+  std::vector<std::string> pointers = csv.GetColumn<std::string>("Pointer");
 
-  // Convert action strings to enum to reduce overhead of processing actions in
-  // benchmark
-  std::vector<std::string> actions_as_string =
-      csv.GetColumn<std::string>("Action");
-  std::vector<action> actions(actions_as_string.size());
-  std::transform(actions_as_string.begin(), actions_as_string.end(),
-                 actions.begin(), [](std::string const& s) {
-                   return (s == "allocate") ? action::ALLOCATE : action::FREE;
-                 });
+  if ((sizes.size() != actions.size()) or (sizes.size() != pointers.size())) {
+    throw std::runtime_error{"Size mismatch in actions, sizes, or pointers."};
+  }
 
-  // Convert address string to uintptr_t
-  // E.g., 0x7fb3c446f000 -> 140410068856832
-  std::vector<std::string> pointers_as_string =
-      csv.GetColumn<std::string>("Pointer");
-  std::vector<uintptr_t> pointers(pointers_as_string.size());
+  std::vector<event> events(sizes.size());
+
+  auto zipped_begin = thrust::make_zip_iterator(
+      thrust::make_tuple(actions.begin(), sizes.begin(), pointers.begin()));
+  auto zipped_end = zipped_begin + sizes.size();
+
   std::transform(
-      pointers_as_string.begin(), pointers_as_string.end(), pointers.begin(),
-      [](std::string const& s) { return std::stoll(s, nullptr, 16); });
+      zipped_begin, zipped_end, events.begin(),
+      [](thrust::tuple<std::string, std::size_t, std::string> const& t) {
+        // Convert "allocate" or "free" string into `action` enum
+        action a =
+            (thrust::get<0>(t) == "allocate") ? action::ALLOCATE : action::FREE;
+        std::size_t size = thrust::get<1>(t);
 
-  return parsed_log{std::move(actions), std::move(sizes), std::move(pointers)};
+        // Convert pointer string into an integer
+        uintptr_t p = std::stoll(thrust::get<2>(t), nullptr, 16);
+        return event{a, size, p};
+      });
+
+  return events;
 }
 
+/**
+ * @brief Represents an allocation made during the replay
+ *
+ */
 struct allocation {
   allocation() = default;
   allocation(void* p_, std::size_t size_) : p{p_}, size{size_} {}
@@ -102,36 +100,34 @@ struct allocation {
 template <typename MR>
 struct replay_benchmark {
   std::unique_ptr<MR> mr_{};
-  parsed_log const& log_{};
+  std::vector<event> const& events_{};
 
   /**
-   * @brief Construct a `replay_benchmark` from a `parsed_log` of actions and
+   * @brief Construct a `replay_benchmark` from a list of events and
    * set of arguments forwarded to the MR constructor.
    *
-   * @param log The parsed_log containing the allocation actions to replay
+   * @param events The set of allocation events to replay
    * @param args Variable number of arguments forward to the constructor of MR
    */
   template <typename... Args>
-  replay_benchmark(parsed_log const& log, Args&&... args)
-      : mr_{new MR{std::forward<Args>(args)...}}, log_{log} {}
+  replay_benchmark(std::vector<event> const& events, Args&&... args)
+      : mr_{new MR{std::forward<Args>(args)...}}, events_{events} {}
 
   void operator()(benchmark::State& state) {
-    std::unordered_map<uintptr_t, allocation> allocation_map;
-
-    auto const& actions = log_.actions;
-    auto const& sizes = log_.sizes;
-    auto const& pointers = log_.pointers;
+    // Maps a pointer from the event log to an active allocation
+    std::unordered_map<uintptr_t, allocation> allocation_map(events_.size());
 
     for (auto _ : state) {
-      for (int i = 0; i < actions.size(); ++i) {
-        if (action::ALLOCATE == actions[i]) {
-          auto p = mr_->allocate(sizes[i]);
-          allocation_map[pointers[i]] = allocation{p, sizes[i]};
-        } else {
-          auto a = allocation_map[pointers[i]];
-          mr_->deallocate(a.p, a.size);
-        }
-      }
+      std::for_each(events_.begin(), events_.end(),
+                    [&allocation_map, &state, this](event e) {
+                      if (action::ALLOCATE == e.act) {
+                        auto p = mr_->allocate(e.size);
+                        allocation_map[e.pointer] = allocation{p, e.size};
+                      } else {
+                        auto a = allocation_map[e.pointer];
+                        mr_->deallocate(a.p, e.size);
+                      }
+                    });
     }
   }
 };
@@ -154,16 +150,16 @@ int main(int argc, char** argv) {
   // Parse the log file
   if (result.count("file")) {
     auto filename = result["file"].as<std::string>();
-    auto parsed_log = parse_csv(filename);
+    auto events = parse_csv(filename);
 
     benchmark::RegisterBenchmark(
         "CUDA Resource",
-        replay_benchmark<rmm::mr::cuda_memory_resource>{parsed_log})
+        replay_benchmark<rmm::mr::cuda_memory_resource>{events})
         ->Unit(benchmark::kMillisecond);
 
     benchmark::RegisterBenchmark(
         "CNMEM Resource",
-        replay_benchmark<rmm::mr::cnmem_memory_resource>(parsed_log, 0u))
+        replay_benchmark<rmm::mr::cnmem_memory_resource>(events, 0u))
         ->Unit(benchmark::kMillisecond);
 
     ::benchmark::RunSpecifiedBenchmarks();
