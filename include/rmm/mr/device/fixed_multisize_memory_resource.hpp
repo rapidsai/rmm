@@ -73,7 +73,7 @@ class fixed_multisize_memory_resource : public device_memory_resource {
                                            std::size_t min_size = default_min_size,
                                            std::size_t max_size = default_max_size,
                                            std::size_t initial_blocks_per_size = 128)
-  : upstream_resource_{upstream_resource}, min_size_{min_size}, max_size_{max_size} {
+  : upstream_mr_{upstream_resource}, min_size_{min_size}, max_size_{max_size} {
     RMM_EXPECTS(detail::is_pow2(min_size), "Minimum size must be a power of two");
     RMM_EXPECTS(detail::is_pow2(max_size), "Maximum size must be a power of two");
     
@@ -97,6 +97,8 @@ class fixed_multisize_memory_resource : public device_memory_resource {
    * @returns true
    */
   bool supports_streams() const noexcept override { return true; }
+
+  UpstreamResource* get_upstream() const noexcept { return upstream_mr_; }
 
   std::size_t get_min_size() const noexcept { return min_size_; }
   std::size_t get_max_size() const noexcept { return max_size_; }
@@ -165,7 +167,7 @@ class fixed_multisize_memory_resource : public device_memory_resource {
     return std::make_pair(0, 0);  
   }
 
-  device_memory_resource *upstream_resource_;
+  UpstreamResource *upstream_mr_;
 
   std::size_t min_size_; // size of smallest blocks allocated
   std::size_t max_size_; // size of largest blocks allocated

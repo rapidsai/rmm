@@ -33,7 +33,7 @@ namespace mr {
 /**---------------------------------------------------------------------------*
  * @brief Memory resource that allocates/deallocates using a pool sub-allocator
  *---------------------------------------------------------------------------**/
- template <typename UpstreamMemoryResource>
+template <typename UpstreamResource>
 class sub_memory_resource final : public device_memory_resource {
  public:
 
@@ -49,12 +49,12 @@ class sub_memory_resource final : public device_memory_resource {
    * zero, an implementation defined pool size is used.
    * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to.
    *---------------------------------------------------------------------------**/
-  
-  explicit sub_memory_resource(UpstreamMemoryResource *upstream_mr,
-                               std::size_t initial_pool_size = default_initial_size,
-                               std::size_t maximum_pool_size = default_maximum_size)
-    : upstream_mr_{upstream_mr}
-  {
+
+  explicit sub_memory_resource(
+      UpstreamResource* upstream_mr,
+      std::size_t initial_pool_size = default_initial_size,
+      std::size_t maximum_pool_size = default_maximum_size)
+      : upstream_mr_{upstream_mr} {
     cudaDeviceProp props;
 
     if (initial_pool_size == default_initial_size)  {
@@ -87,7 +87,7 @@ class sub_memory_resource final : public device_memory_resource {
 
   bool supports_streams() const noexcept override { return true; }
 
-  UpstreamMemoryResource* get_upstream() const noexcept { return upstream_mr_; }
+  UpstreamResource* get_upstream() const noexcept { return upstream_mr_; }
 
  private:
 
@@ -278,7 +278,7 @@ class sub_memory_resource final : public device_memory_resource {
 
   size_t maximum_pool_size{default_maximum_size};
 
-  UpstreamMemoryResource *upstream_mr_;
+  UpstreamResource* upstream_mr_;
 
   // map of [stream_id, free_list] pairs
   // stream stream_id must be synced before allocating from this list to a different stream
