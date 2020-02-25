@@ -304,7 +304,7 @@ class device_buffer {
    *
    * @param other The `device_buffer` with which to swap.
    */
-  void swap(device_buffer& other) {
+  void swap(device_buffer& other) noexcept {
     std::swap(_data, other._data);
     std::swap(_size, other._size);
     std::swap(_capacity, other._capacity);
