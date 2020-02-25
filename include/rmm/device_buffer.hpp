@@ -94,7 +94,9 @@ class device_buffer {
       std::size_t size, cudaStream_t stream = 0,
       mr::device_memory_resource* mr = mr::get_default_resource())
       : _size{size}, _capacity{size}, _stream{stream}, _mr{mr} {
-    _data = _mr->allocate(size, this->stream());
+    if (size > 0) {
+      _data = _mr->allocate(size, this->stream());
+    }
   }
 
   /**
@@ -120,7 +122,7 @@ class device_buffer {
 
       _data = _mr->allocate(_size, this->stream());
       RMM_CUDA_TRY(cudaMemcpyAsync(_data, source_data, _size, cudaMemcpyDefault,
-                               this->stream()));
+                                   this->stream()));
     }
   }
 
@@ -146,8 +148,8 @@ class device_buffer {
       : _size{other.size()}, _capacity{other.size()}, _stream{stream}, _mr{mr} {
     _data = memory_resource()->allocate(size(), this->stream());
 
-    RMM_CUDA_TRY(cudaMemcpyAsync(data(), other.data(), size(), cudaMemcpyDefault,
-                             this->stream()));
+    RMM_CUDA_TRY(cudaMemcpyAsync(data(), other.data(), size(),
+                                 cudaMemcpyDefault, this->stream()));
   }
 
   /**
@@ -201,7 +203,7 @@ class device_buffer {
       set_stream(other.stream());
       _data = _mr->allocate(_size, stream());
       RMM_CUDA_TRY(cudaMemcpyAsync(_data, other._data, _size, cudaMemcpyDefault,
-                               stream()));
+                                   stream()));
     }
     return *this;
   }
@@ -241,7 +243,9 @@ class device_buffer {
    * methods.
    */
   ~device_buffer() noexcept {
-    _mr->deallocate(_data, _capacity, stream());
+    if (size() > 0) {
+      _mr->deallocate(_data, _capacity, stream());
+    }
     _data = nullptr;
     _size = 0;
     _capacity = 0;
@@ -286,7 +290,7 @@ class device_buffer {
       void* const new_data = _mr->allocate(new_size, this->stream());
       if (_size > 0) {
         RMM_CUDA_TRY(cudaMemcpyAsync(new_data, _data, _size, cudaMemcpyDefault,
-                                 this->stream()));
+                                     this->stream()));
       }
       _mr->deallocate(_data, _size, this->stream());
       _data = new_data;
@@ -314,7 +318,7 @@ class device_buffer {
       void* const new_data = _mr->allocate(size(), this->stream());
       if (size() > 0) {
         RMM_CUDA_TRY(cudaMemcpyAsync(new_data, _data, size(), cudaMemcpyDefault,
-                                 this->stream()));
+                                     this->stream()));
       }
       _mr->deallocate(_data, size(), this->stream());
       _data = new_data;
