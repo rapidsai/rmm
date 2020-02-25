@@ -23,7 +23,7 @@
 #include <exception>
 #include <iostream>
 #include <list>
-#include <unordered_map>
+#include <map>
 #include <algorithm>
 #include <mutex>
 
@@ -282,13 +282,13 @@ class sub_memory_resource final : public device_memory_resource {
 
   // map of [stream_id, free_list] pairs
   // stream stream_id must be synced before allocating from this list to a different stream
-  std::unordered_map<cudaStream_t, free_list> stream_blocks;
+  std::map<cudaStream_t, free_list> stream_blocks;
 
   //std::list<block> allocated_blocks;
   std::set<block> allocated_blocks;
 
   // blocks allocated from upstream heap: so they can be easily freed
-  std::unordered_map<char*, block> upstream_blocks;
+  std::map<char*, block> upstream_blocks;
 };
 
 }  // namespace mr

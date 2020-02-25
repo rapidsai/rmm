@@ -25,7 +25,6 @@
 #include <cuda_runtime_api.h>
 
 #include <list>
-#include <unordered_map>
 #include <map>
 #include <cstddef>
 #include <utility>
@@ -236,7 +235,7 @@ class fixed_size_memory_resource : public device_memory_resource {
 
   // blocks allocated from heap: so they can be easily freed
   // blocks are ptr/size pairs
-  std::unordered_map<void*, size_t> upstream_blocks_;
+  std::map<void*, size_t> upstream_blocks_;
 };
 }  // namespace mr
 }  // namespace rmm
