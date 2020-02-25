@@ -304,6 +304,20 @@ class device_buffer {
   }
 
   /**
+   * @brief Swaps the contents of this `device_buffer` with another
+   * `device_buffer`.
+   *
+   * @param other The `device_buffer` with which to swap.
+   */
+  void swap(device_buffer& other) {
+    std::swap(_data, other._data);
+    std::swap(_size, other._size);
+    std::swap(_capacity, other._capacity);
+    std::swap(_stream, other._stream);
+    std::swap(_mr, other._mr);
+  }
+
+  /**
    * @brief Returns raw pointer to underlying device memory allocation
    */
   void const* data() const noexcept { return _data; }
