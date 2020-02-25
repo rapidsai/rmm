@@ -211,7 +211,7 @@ class device_buffer {
    *
    * @param other The `device_buffer` whose contents will be moved.
    */
-  device_buffer& operator=(device_buffer&& other) {
+  device_buffer& operator=(device_buffer&& other) noexcept {
     if (&other != this) {
       deallocate();
 
