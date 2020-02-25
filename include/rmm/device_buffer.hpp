@@ -72,7 +72,7 @@ class device_buffer {
  public:
   /**
    * @brief Default constructor creates an empty `device_buffer`
-   * 
+   *
    */
   device_buffer() = default;
 
@@ -133,8 +133,7 @@ class device_buffer {
   device_buffer(
       device_buffer const& other, cudaStream_t stream = 0,
       rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
-      : device_buffer{other.data(), other.size(), stream, mr}{}
-      
+      : device_buffer{other.data(), other.size(), stream, mr} {}
 
   /**
    * @brief Constructs a new `device_buffer` by moving the contents of another
@@ -292,14 +291,10 @@ class device_buffer {
   void shrink_to_fit(cudaStream_t stream = 0) {
     set_stream(stream);
     if (size() != capacity()) {
-      void* const new_data = _mr->allocate(size(), this->stream());
-      if (size() > 0) {
-        RMM_CUDA_TRY(cudaMemcpyAsync(new_data, _data, size(), cudaMemcpyDefault,
-                                     this->stream()));
-      }
-      _mr->deallocate(_data, size(), this->stream());
-      _data = new_data;
-      _capacity = size();
+      // Invoke copy ctor on self which only copies `[0, size())` and swap it
+      // with self. The temporary `device_buffer` will hold the old contents
+      // which will then be destroyed
+      device_buffer(*this).swap(*this);
     }
   }
 
