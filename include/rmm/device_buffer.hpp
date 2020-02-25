@@ -279,7 +279,7 @@ class device_buffer {
    * Reallocates and copies the contents of the device memory allocation to
    * reduce `capacity()` to `size()`.
    *
-   * If `size() == capacity()` this function has no effect.
+   * If `size() == capacity()`, no allocations nor copies occur.
    *
    * @throws rmm::bad_alloc If creating the new allocation fails
    * @throws rmm::cuda_error If the copy from the old to new allocation fails
@@ -292,22 +292,8 @@ class device_buffer {
       // Invoke copy ctor on self which only copies `[0, size())` and swap it
       // with self. The temporary `device_buffer` will hold the old contents
       // which will then be destroyed
-      device_buffer(*this).swap(*this);
+      std::swap(device_bufer(*this), *this)
     }
-  }
-
-  /**
-   * @brief Swaps the contents of this `device_buffer` with another
-   * `device_buffer`.
-   *
-   * @param other The `device_buffer` with which to swap.
-   */
-  void swap(device_buffer& other) noexcept {
-    std::swap(_data, other._data);
-    std::swap(_size, other._size);
-    std::swap(_capacity, other._capacity);
-    std::swap(_stream, other._stream);
-    std::swap(_mr, other._mr);
   }
 
   /**
@@ -432,4 +418,5 @@ class device_buffer {
     copy(source, bytes);
   }
 };
+
 }  // namespace rmm
