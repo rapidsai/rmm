@@ -410,13 +410,30 @@ class device_buffer {
     _data = nullptr;
   }
 
-  void copy(void* source, std::size_t bytes) {
+  /**
+   * @brief Copies the specified number of `bytes` from `source` into the
+   * internal device allocation.
+   *
+   * `source` can point to either host or device memory.
+   *
+   * This function assumes `_data` already points to an allocation large enough
+   * to hold `bytes` bytes.
+   *
+   * @param source The pointer to copy from
+   * @param bytes The number of bytes to copy
+   */
+  void copy(void const* source, std::size_t bytes) {
     if (bytes > 0) {
       RMM_EXPECTS(nullptr != source, "Invalid copy from nullptr.");
 
       RMM_CUDA_TRY(
           cudaMemcpyAsync(_data, source, bytes, cudaMemcpyDefault, stream()));
     }
+  }
+
+  void allocate_and_copy(void const* source, std::size_t bytes) {
+    allocate(bytes);
+    copy(source, bytes);
   }
 };
 }  // namespace rmm
