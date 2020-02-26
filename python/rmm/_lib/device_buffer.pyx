@@ -53,6 +53,13 @@ cdef class DeviceBuffer:
                (and possibly size of data to copy)
         stream : CUDA stream to use for construction and/or copying, default 0
 
+        Note
+        ----
+
+        If ``stream`` is the default stream, it is synchronized after the copy.
+        However if a non-default ``stream`` is provided, this function is fully
+        asynchronous.
+
         Examples
         --------
         >>> import rmm
