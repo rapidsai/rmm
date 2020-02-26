@@ -30,6 +30,7 @@
 - PR #280 Drop allocation/deallocation of `offset`
 - PR #282 `DeviceBuffer` use default constructor for size=0
 - PR #296 Use CuPy's `UnownedMemory` for RMM-backed allocations
+- PR #310 Improve `device_buffer` allocation logic.
 
 ## Bug Fixes
 - PR #298 Remove RMM_CUDA_TRY from cuda_event_timer destructor
