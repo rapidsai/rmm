@@ -73,7 +73,7 @@ class sub_memory_resource final : public device_memory_resource {
         maximum_pool_size = props.totalGlobalMem;
 
     // Allocate initial block
-    stream_blocks[0].insert(block_from_upstream(initial_pool_size, 0));
+    stream_blocks_[0].insert(block_from_upstream(initial_pool_size, 0));
 
     // TODO device handling?
 
@@ -103,18 +103,18 @@ class sub_memory_resource final : public device_memory_resource {
       if (list_stream != stream) {
         cudaError_t result = cudaStreamSynchronize(list_stream);
 
-        RMM_EXPECTS(result != cudaErrorInvalidResourceHandle && // stream deleted
-                    result != cudaSuccess,                      // stream synced
+        RMM_EXPECTS((result == cudaSuccess ||                   // stream synced
+                     result == cudaErrorInvalidResourceHandle), // stream deleted
                     rmm::cuda_error, "cudaStreamSynchronize failure");
 
         // insert all other blocks into this stream's list
         // TODO: Should we do this? This could cause thrashing between two 
         // streams. On the other hand, this can also reduce fragmentation.
-        stream_blocks[stream].insert(blocks.begin(), blocks.end());
+        stream_blocks_[stream].insert(blocks.begin(), blocks.end());
         blocks.clear();
 
         // remove this stream from the freelist
-        stream_blocks.erase(list_stream);
+        stream_blocks_.erase(list_stream);
       }
     }
     return b;
@@ -125,14 +125,14 @@ class sub_memory_resource final : public device_memory_resource {
 
     // Try to find a larger block in the same stream
     // Try to find a block in the same stream
-    auto iter = stream_blocks.find(stream);
-    if (iter != stream_blocks.end())
+    auto iter = stream_blocks_.find(stream);
+    if (iter != stream_blocks_.end())
       b = block_from_sync_list(iter->second, size, stream, stream);
 
     // nothing in this stream's free list, look for one on another stream
     if (b.ptr == nullptr) {
-      auto s = stream_blocks.begin();
-      while (b.ptr == nullptr && s != stream_blocks.end()) {
+      auto s = stream_blocks_.begin();
+      while (b.ptr == nullptr && s != stream_blocks_.end()) {
         if (s->first != stream) 
           b = block_from_sync_list(s->second, size, s->first, stream);
         s++;
@@ -152,11 +152,11 @@ class sub_memory_resource final : public device_memory_resource {
     if (b.size > size)
     {
       block rest{b.ptr + size, b.size - size, false};
-      stream_blocks[stream].insert(rest);
+      stream_blocks_[stream].insert(rest);
       alloc.size = size;
     }
 
-    allocated_blocks.insert(alloc);
+    allocated_blocks_.insert(alloc);
     return reinterpret_cast<void*>(alloc.ptr);
   }
 
@@ -165,14 +165,13 @@ class sub_memory_resource final : public device_memory_resource {
   {
     if (p == nullptr) return;
 
-    auto i = allocated_blocks.find(block{static_cast<char*>(p)});
+    auto i = allocated_blocks_.find(block{static_cast<char*>(p)});
 
-    if (i != allocated_blocks.end()) { // found
-      //assert(i->size == rmm::detail::align_up(size, allocation_alignment));
-      stream_blocks[stream].insert(*i);
-      allocated_blocks.erase(i);
-    }
-    else {
+    if (i != allocated_blocks_.end()) {  // found
+      // assert(i->size == rmm::detail::align_up(size, allocation_alignment));
+      stream_blocks_[stream].insert(*i);
+      allocated_blocks_.erase(i);
+    } else {
       throw std::runtime_error("Pointer not allocated by this resource.");
     }
   }
@@ -181,14 +180,15 @@ class sub_memory_resource final : public device_memory_resource {
   {
     void* p = upstream_mr_->allocate(size, stream);
     block b{reinterpret_cast<char*>(p), size, true};
-    upstream_blocks[b.ptr] = b;
+    upstream_blocks_[b.ptr] = b;
     return b;
   }
 
   void free_all()
   {
-    for (auto b : upstream_blocks) upstream_mr_->deallocate(b.first, b.second.size);
-    upstream_blocks.clear();
+    for (auto b : upstream_blocks_)
+      upstream_mr_->deallocate(b.first, b.second.size);
+    upstream_blocks_.clear();
   }
 
 #ifndef NDEBUG
@@ -197,20 +197,20 @@ class sub_memory_resource final : public device_memory_resource {
     std::tie(free, total) = upstream_mr_->get_mem_info(0);
     std::cout << "GPU free memory: " << free << "total: " << total << "\n";
 
-    std::cout << "upstream_blocks: " << upstream_blocks.size() << "\n";
+    std::cout << "upstream_blocks: " << upstream_blocks_.size() << "\n";
     std::size_t upstream_total{0};
 
-    for (auto h : upstream_blocks) { 
+    for (auto h : upstream_blocks_) { 
       h.second.print();
       upstream_total += h.second.size;
     }
     std::cout << "total upstream: " << upstream_total << " B\n";
 
-    std::cout << "allocated_blocks: " << allocated_blocks.size() << "\n";
-    for (auto b : allocated_blocks) { b.print(); }
+    std::cout << "allocated_blocks: " << allocated_blocks_.size() << "\n";
+    for (auto b : allocated_blocks_) { b.print(); }
 
     std::cout << "sync free blocks: ";
-    for (auto s : stream_blocks) { 
+    for (auto s : stream_blocks_) { 
       std::cout << "stream " << s.first << " ";
       s.second.print();
     }
@@ -272,19 +272,19 @@ class sub_memory_resource final : public device_memory_resource {
     return std::make_pair(free_size, total_size);
   }
 
-  size_t maximum_pool_size{default_maximum_size};
+  size_t maximum_pool_size_{default_maximum_size};
 
   UpstreamResource* upstream_mr_;
 
   // map of [stream_id, free_list] pairs
   // stream stream_id must be synced before allocating from this list to a different stream
-  std::map<cudaStream_t, free_list> stream_blocks;
+  std::map<cudaStream_t, free_list> stream_blocks_;
 
   //std::list<block> allocated_blocks;
-  std::set<block> allocated_blocks;
+  std::set<block> allocated_blocks_;
 
   // blocks allocated from upstream heap: so they can be easily freed
-  std::map<char*, block> upstream_blocks;
+  std::map<char*, block> upstream_blocks_;
 };
 
 }  // namespace mr
