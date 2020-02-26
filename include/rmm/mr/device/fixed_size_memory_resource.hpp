@@ -16,7 +16,6 @@
 #pragma once
 
 #include <rmm/mr/device/device_memory_resource.hpp>
-#include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/detail/error.hpp>
 
 #include <thrust/iterator/counting_iterator.h>
@@ -31,14 +30,12 @@
 #include <algorithm>
 #include <cassert>
 
-// forward decl
-using cudaStream_t = struct CUstream_st*;
-
 namespace rmm {
 
 namespace mr {
+
 /**
- * @brief Allocates fixed-size memory blocks.
+ * @brief A `device_memory_resource` which allocates memory blocks of a single fixed size.
  * 
  * Supports only allocations of size smaller than the configured block_size.
  */
@@ -54,11 +51,22 @@ class fixed_size_memory_resource : public device_memory_resource {
   // The required alignment of this allocator
   static constexpr std::size_t allocation_alignment = 256;
 
+  /**
+   * @brief Construct a new `fixed_size_memory_resource` that allocates memory from 
+   * `upstream_resource`.
+   *
+   * When the pool of blocks is all allocated, grows the pool by allocating
+   * `blocks_to_preallocate` more blocks from `upstream_mr`.
+   * 
+   * @param upstream_mr The memory_resource from which to allocate blocks for the pool.
+   * @param block_size The size of blocks to allocate.
+   * @param blocks_to_preallocate The number of blocks to allocate to initialize the pool.
+   */
   explicit fixed_size_memory_resource(
-      UpstreamResource* upstream_resource,
+      UpstreamResource* upstream_mr,
       std::size_t block_size = default_block_size,
       std::size_t blocks_to_preallocate = default_blocks_to_preallocate)
-      : upstream_mr_{upstream_resource} {
+      : upstream_mr_{upstream_mr} {
     block_size_ = rmm::detail::align_up(block_size, allocation_alignment); 
     upstream_chunk_size_ = block_size * default_blocks_to_preallocate;
 
@@ -66,6 +74,10 @@ class fixed_size_memory_resource : public device_memory_resource {
     new_blocks_from_upstream(0, stream_blocks_[0]);
   }
 
+  /**
+   * @brief Destroy the `fixed_size_memory_resource` and free all memory allocated from upstream.
+   * 
+   */
   virtual ~fixed_size_memory_resource() {
     free_all();
   }
@@ -78,12 +90,24 @@ class fixed_size_memory_resource : public device_memory_resource {
    */
   bool supports_streams() const noexcept override { return true; }
 
+  /**
+   * @brief Get the upstream memory_resource object.
+   *
+   * @return UpstreamResource* the upstream memory resource.
+   */
   UpstreamResource* get_upstream() const noexcept { return upstream_mr_; }
 
+  /**
+   * @brief Get the size of blocks allocated by this memory resource. 
+   * 
+   * @return std::size_t size in bytes of allocated blocks.
+   */
   std::size_t get_block_size() const noexcept { return block_size_; }
 
  private:
 
+  // blocks are maintained in a simple list of pointers
+  // Allocation is simply popping off the list, and freeing is pushing onto the back.
   using free_list = std::list<void*>;
 
   /**
@@ -134,8 +158,16 @@ class fixed_size_memory_resource : public device_memory_resource {
     return std::make_pair(0, 0);  
   }
 
-  // return a block from the free list associated with the specified stream, and move all other 
-  // blocks in the list to the no-sync free list.
+  /**
+   * @brief Find a free block in `free_list` `blocks`.
+   * 
+   * @param blocks The `free_list` to look in for a free block.
+   * @param list_stream The stream that all blocks in `blocks` were associated with when they were
+   *                    freed.
+   * @param stream The stream on which the allocation is being requested.
+   * @return block A pointer to memory of `get_block_size()` bytes, or nullptr if no blocks are
+   *               available in `blocks`.
+   */
   void* block_from_sync_list(free_list &blocks, cudaStream_t list_stream, cudaStream_t stream) {
     void* p = nullptr;
 
@@ -163,9 +195,17 @@ class fixed_size_memory_resource : public device_memory_resource {
     return p;
   }
 
-  // Returns a pointer to a free block. Attempts to return a block that is not associated with
-  // a stream first, and if there are none, returns a block from a sync free list. If no blocks 
-  // are available, allocates from the upstream heap resource
+  /**
+   * @brief Find an available block in the pool, for use on `stream`.
+   * 
+   * Attempts to find a free block that was last used on `stream` to avoid synchronization. If none
+   * is available, it finds a block last used on another stream. In this case, the stream associated
+   * with the found block is synchronized to ensure all asynchronous work on the memory is finished
+   * before it is used on `stream`.
+   * 
+   * @param stream The stream on which the allocation will be used.
+   * @return block A pointer to memory of size `get_block_size()`.
+   */
   void* get_block(cudaStream_t stream) {
     void* p = nullptr;
 
@@ -201,7 +241,13 @@ class fixed_size_memory_resource : public device_memory_resource {
     return p;
   }
 
-  // Allocate new blocks from the upstream memory resource into the free list
+  // 
+  /**
+   * @brief Allocate new blocks from the upstream memory resource into `free list` `blocks`.
+   * 
+   * @param stream The stream to associate the new blocks with.
+   * @param blocks The `free_list` to insert the blocks into.
+   */
   void new_blocks_from_upstream(cudaStream_t stream, free_list& blocks) {
     void* p = upstream_mr_->allocate(upstream_chunk_size_, stream);
     upstream_blocks_[p] = upstream_chunk_size_;
@@ -215,7 +261,10 @@ class fixed_size_memory_resource : public device_memory_resource {
     blocks.insert(blocks.cend(), first, last);
   }
 
-  // free all allocated memory
+  /**
+   * @brief free all memory allocated using the upstream resource.
+   * 
+   */
   void free_all()
   {
     for (auto b : upstream_blocks_)
@@ -226,7 +275,7 @@ class fixed_size_memory_resource : public device_memory_resource {
 
   UpstreamResource* upstream_mr_;  // The resource from which to allocate new blocks
 
-  std::size_t block_size_;      // size of blocks this MR allocates
+  std::size_t block_size_;          // size of blocks this MR allocates
   std::size_t upstream_chunk_size_; // size of chunks allocated from heap MR
 
   // stream free lists: map of [stream_id, free_list] pairs

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.
+ * Copyright (c) 2020, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 #pragma once
 
 #include <rmm/mr/device/device_memory_resource.hpp>
-#include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/detail/free_list.hpp>
 #include <rmm/detail/error.hpp>
 
@@ -50,6 +49,7 @@ class pool_memory_resource final : public device_memory_resource {
    * @brief Construct a `pool_memory_resource` and allocate the initial
    * device memory pool using `upstream_mr`.
    *
+   * @param upstream_mr The memory_resource from which to allocate blocks for the pool.
    * @param initial_pool_size Size, in bytes, of the initial pool. When
    * zero, an implementation-defined pool size is used.
    * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to.
@@ -112,7 +112,7 @@ class pool_memory_resource final : public device_memory_resource {
   using free_list = rmm::mr::detail::free_list<>;
 
   /**
-   * @brief Find a free block of at least `size` bytes in `free_list blocks`.
+   * @brief Find a free block of at least `size` bytes in `free_list` `blocks`.
    * 
    * @param blocks The `free_list` to look in for a free block of sufficient size.
    * @param size The requested size of the allocation.
