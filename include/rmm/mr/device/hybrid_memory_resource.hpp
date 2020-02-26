@@ -50,10 +50,10 @@ class hybrid_memory_resource : public device_memory_resource {
   explicit hybrid_memory_resource(
       SmallAllocMemoryResource* small_mr,
       LargeAllocMemoryResource* large_mr,
-      std::size_t threshold_bytes = default_threshold_size)
+      std::size_t threshold_size = default_threshold_size)
       : small_mr_{small_mr},
         large_mr_{large_mr},
-        threshold_size_{max_small_size} {}
+        threshold_size_{threshold_size} {}
 
   virtual ~hybrid_memory_resource() = default;
 
