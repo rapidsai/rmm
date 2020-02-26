@@ -298,20 +298,15 @@ class device_buffer {
   /**
    * @brief Forces the deallocation of unused memory.
    *
-   * Reallocates and copies the contents of the device memory allocation to
-   * reduce `capacity()` to `size()`.
+   * Reallocates and copies on stream `stream` the contents of the device memory
+   * allocation to reduce `capacity()` to `size()`.
    *
    * If `size() == capacity()`, no allocations nor copies occur.
-   *
-   * TODO: Need to clarify stream behavior here. Since we are potentially
-   * deallocating this buffer's memory, the user needs to guarantee
-   * that it is no longer being used. Should the user be responsible for syncing
-   * `stream()` beforehand? Or should we sync here?
    *
    * @throws rmm::bad_alloc If creating the new allocation fails
    * @throws rmm::cuda_error If the copy from the old to new allocation fails
    *
-   * @param stream The stream to use for allocation and copy
+   * @param stream The stream on which the allocation and copy are performed
    */
   void shrink_to_fit(cudaStream_t stream = 0) {
     set_stream(stream);
@@ -319,7 +314,7 @@ class device_buffer {
       // Invoke copy ctor on self which only copies `[0, size())` and swap it
       // with self. The temporary `device_buffer` will hold the old contents
       // which will then be destroyed
-      auto tmp = device_buffer{*this};
+      auto tmp = device_buffer{*this, stream};
       std::swap(tmp, *this);
     }
   }
