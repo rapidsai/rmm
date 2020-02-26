@@ -19,27 +19,43 @@
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
+#include <rmm/mr/device/fixed_multisize_memory_resource.hpp>
+#include <rmm/mr/device/pool_memory_resource.hpp>
+#include <rmm/mr/device/hybrid_memory_resource.hpp>
 
 #include <atomic>
 
 namespace rmm {
 namespace mr {
 
+// nested MR type names can get long...
+using pool_mr = pool_memory_resource<cuda_memory_resource>;
+using fixed_multisize_mr = fixed_multisize_memory_resource<pool_mr>;
+using hybrid_mr = hybrid_memory_resource<fixed_multisize_mr, pool_mr>;
+
 namespace detail{
 
 // gets the default memory_resource when none is set
 device_memory_resource* initial_resource() {
-  static cuda_memory_resource mr{};
-  return &mr;
+  static cuda_memory_resource cuda_res{};
+#if 1
+  static pool_mr pool_res{&cuda_res};
+  static hybrid_mr hybrid_res(new fixed_multisize_mr(&pool_res), &pool_res);
+  return &hybrid_res;
+#else
+  return &cuda_res;
+#endif
 }
 } // namespace detail
 
 namespace {
+
 // Use an atomic to guarantee thread safety
 std::atomic<device_memory_resource*>& get_default() {
   static std::atomic<device_memory_resource*> res{detail::initial_resource()};
   return res;
 }
+
 }  // namespace anonymous
 
 device_memory_resource* get_default_resource() {
