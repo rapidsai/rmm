@@ -20,7 +20,7 @@
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
-#include <rmm/mr/device/sub_memory_resource.hpp>
+#include <rmm/mr/device/pool_memory_resource.hpp>
 #include <rmm/mr/device/fixed_size_memory_resource.hpp>
 #include <rmm/mr/device/thrust_allocator_adaptor.hpp>
 
@@ -43,7 +43,7 @@ using resources = ::testing::Types<rmm::mr::cuda_memory_resource,
                                    rmm::mr::managed_memory_resource,
                                    rmm::mr::cnmem_memory_resource,
                                    rmm::mr::cnmem_managed_memory_resource,
-                                   rmm::mr::sub_memory_resource<rmm::mr::cuda_memory_resource>>;
+                                   rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>>;
 
 TYPED_TEST_CASE(AllocatorTest, resources);
 

@@ -18,7 +18,7 @@
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
-#include <rmm/mr/device/sub_memory_resource.hpp>
+#include <rmm/mr/device/pool_memory_resource.hpp>
 #include <rmm/mr/device/fixed_multisize_memory_resource.hpp>
 #include <rmm/mr/device/hybrid_memory_resource.hpp>
 
@@ -55,9 +55,9 @@ allocation remove_at(allocation_vector& allocs, std::size_t index) {
 }
 
 // nested MR type names can get long...
-using sub_mr = rmm::mr::sub_memory_resource<rmm::mr::cuda_memory_resource>;
-using fixed_multisize_mr = rmm::mr::fixed_multisize_memory_resource<sub_mr>;
-using hybrid_mr = rmm::mr::hybrid_memory_resource<fixed_multisize_mr, sub_mr>;
+using pool_mr = rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>;
+using fixed_multisize_mr = rmm::mr::fixed_multisize_memory_resource<pool_mr>;
+using hybrid_mr = rmm::mr::hybrid_memory_resource<fixed_multisize_mr, pool_mr>;
 
 template <typename SizeDistribution>
 void random_allocation_free(rmm::mr::device_memory_resource& mr,
@@ -163,22 +163,22 @@ MemoryResource* create_memory_resource() {
 }
 
 template<>
-sub_mr* create_memory_resource() {
+pool_mr* create_memory_resource() {
   rmm::mr::cuda_memory_resource *cuda_mr = new rmm::mr::cuda_memory_resource();
-  return new sub_mr(cuda_mr);
+  return new pool_mr(cuda_mr);
 }
 
 template<>
 fixed_multisize_mr* create_memory_resource() {
   rmm::mr::cuda_memory_resource *cuda_mr = new rmm::mr::cuda_memory_resource();
-  return new fixed_multisize_mr(new sub_mr(cuda_mr));
+  return new fixed_multisize_mr(new pool_mr(cuda_mr));
 }
 
 template<>
 hybrid_mr* create_memory_resource() {
   rmm::mr::cuda_memory_resource *cuda_mr = new rmm::mr::cuda_memory_resource();
-  sub_mr *sub = new sub_mr(cuda_mr);
-  return new hybrid_mr(new fixed_multisize_mr(sub), sub);
+  pool_mr *pool = new pool_mr(cuda_mr);
+  return new hybrid_mr(new fixed_multisize_mr(pool), pool);
 }
 
 template<typename MemoryResource>
@@ -208,7 +208,7 @@ void destroy_memory_resource(fixed_multisize_mr* mr) {
 }
 
 template<>
-void destroy_memory_resource(sub_mr* mr) {
+void destroy_memory_resource(pool_mr* mr) {
   auto cuda = mr->get_upstream();
   delete mr;
   delete cuda;  
@@ -272,8 +272,8 @@ void declare_benchmark(std::string name) {
     BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::cuda_memory_resource)->Apply(benchmark_range);
   if (name == "hybrid")
     BENCHMARK_TEMPLATE(BM_RandomAllocations, hybrid_mr)->Apply(benchmark_range);
-  else if (name == "sub")
-    BENCHMARK_TEMPLATE(BM_RandomAllocations, sub_mr)->Apply(benchmark_range);
+  else if (name == "pool")
+    BENCHMARK_TEMPLATE(BM_RandomAllocations, pool_mr)->Apply(benchmark_range);
   else if (name == "fixed_multisize")
     BENCHMARK_TEMPLATE(BM_RandomAllocations, fixed_multisize_mr)->Apply(benchmark_range);
   else if (name == "cnmem")
@@ -292,7 +292,7 @@ int main(int argc, char** argv)
     declare_benchmark(mr_name);
   }
   else {
-    BENCHMARK_TEMPLATE(BM_RandomAllocations, sub_mr)->Apply(benchmark_range);
+    BENCHMARK_TEMPLATE(BM_RandomAllocations, pool_mr)->Apply(benchmark_range);
     BENCHMARK_TEMPLATE(BM_RandomAllocations, hybrid_mr)->Apply(benchmark_range);
     BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::cnmem_memory_resource)->Apply(benchmark_range);
     BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::cuda_memory_resource)->Apply(benchmark_range);
@@ -319,7 +319,7 @@ int main(int argc, char** argv) {
   if (name == "hybrid")
     RandomAllocations<rmm::mr::hybrid_memory_resource>(1000, 4096);
   else if (name == "sub")
-    RandomAllocations<rmm::mr::sub_memory_resource>(1000, 4096);
+    RandomAllocations<rmm::mr::pool_memory_resource>(1000, 4096);
   else if (name == "cnmem")
     RandomAllocations<rmm::mr::cnmem_memory_resource>(1000, 4096);
 

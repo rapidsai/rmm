@@ -35,7 +35,7 @@ namespace mr {
  * @brief Memory resource that allocates/deallocates using a pool sub-allocator
  *---------------------------------------------------------------------------**/
 template <typename UpstreamResource>
-class sub_memory_resource final : public device_memory_resource {
+class pool_memory_resource final : public device_memory_resource {
  public:
 
   static constexpr size_t default_initial_size = ~0;
@@ -51,7 +51,7 @@ class sub_memory_resource final : public device_memory_resource {
    * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to.
    *---------------------------------------------------------------------------**/
 
-  explicit sub_memory_resource(
+  explicit pool_memory_resource(
       UpstreamResource* upstream_mr,
       std::size_t initial_pool_size = default_initial_size,
       std::size_t maximum_pool_size = default_maximum_size)
@@ -82,7 +82,7 @@ class sub_memory_resource final : public device_memory_resource {
     // TODO smarter new block size heuristic
   }
 
-  ~sub_memory_resource() {
+  ~pool_memory_resource() {
     free_all();
   }
 

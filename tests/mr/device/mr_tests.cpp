@@ -22,7 +22,7 @@
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
-#include <rmm/mr/device/sub_memory_resource.hpp>
+#include <rmm/mr/device/pool_memory_resource.hpp>
 #include <rmm/mr/device/fixed_size_memory_resource.hpp>
 #include <rmm/mr/device/fixed_multisize_memory_resource.hpp>
 #include <rmm/mr/device/hybrid_memory_resource.hpp>
@@ -72,11 +72,13 @@ struct allocation {
 }  // namespace
 
 // nested MR type names can get long...
-using sub_mr = rmm::mr::sub_memory_resource<rmm::mr::cuda_memory_resource>;
+using pool_mr = rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>;
 using fixed_size_mr = rmm::mr::fixed_size_memory_resource<rmm::mr::device_memory_resource>;
 using fixed_multisize_mr = rmm::mr::fixed_multisize_memory_resource<rmm::mr::device_memory_resource>;
-using fixed_multisize_sub_mr = rmm::mr::fixed_multisize_memory_resource<sub_mr>;
-using hybrid_mr = rmm::mr::hybrid_memory_resource<fixed_multisize_sub_mr, sub_mr>;
+using fixed_multisize_pool_mr =
+    rmm::mr::fixed_multisize_memory_resource<pool_mr>;
+using hybrid_mr =
+    rmm::mr::hybrid_memory_resource<fixed_multisize_pool_mr, pool_mr>;
 
 template <typename MemoryResourceType>
 struct MRTest : public ::testing::Test {
@@ -115,24 +117,21 @@ MRTest<fixed_multisize_mr>::MRTest() :
 {}
 
 template <>
-MRTest<sub_mr>::MRTest()
-{
+MRTest<pool_mr>::MRTest() {
   rmm::mr::cuda_memory_resource *cuda = new rmm::mr::cuda_memory_resource{};
-  this->mr.reset(new sub_mr(cuda));
+  this->mr.reset(new pool_mr(cuda));
 }
 
 template <>
 MRTest<hybrid_mr>::MRTest()
 {
   rmm::mr::cuda_memory_resource *cuda = new rmm::mr::cuda_memory_resource{};
-  sub_mr *sub = new sub_mr(cuda);
-  this->mr.reset(new hybrid_mr(new fixed_multisize_sub_mr(sub), sub));
+  pool_mr* pool = new pool_mr(cuda);
+  this->mr.reset(new hybrid_mr(new fixed_multisize_pool_mr(pool), pool));
 }
 
-
 template <>
-MRTest<sub_mr>::~MRTest()
-{
+MRTest<pool_mr>::~MRTest() {
   auto upstream = this->mr->get_upstream();
   this->mr.reset();
   delete upstream;
@@ -297,7 +296,7 @@ using resources = ::testing::Types<rmm::mr::cuda_memory_resource,
                                    rmm::mr::managed_memory_resource,
                                    rmm::mr::cnmem_memory_resource,
                                    rmm::mr::cnmem_managed_memory_resource,
-                                   sub_mr,
+                                   pool_mr,
                                    fixed_size_mr,
                                    fixed_multisize_mr,
                                    hybrid_mr>;

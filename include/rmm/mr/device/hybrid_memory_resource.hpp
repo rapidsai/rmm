@@ -17,7 +17,6 @@
 
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/default_memory_resource.hpp>
-#include <rmm/mr/device/sub_memory_resource.hpp>
 
 #include <cuda_runtime_api.h>
 
