@@ -44,6 +44,20 @@ cdef class DeviceBuffer:
                   uintptr_t ptr=0,
                   size_t size=0,
                   uintptr_t stream=0):
+        """Construct a ``DeviceBuffer`` with optional size and data pointer
+
+        Parameters
+        ----------
+        ptr : pointer to some data on host or device to copy over
+        size : size of the buffer to allocate
+               (and possibly size of data to copy)
+        stream : CUDA stream to use for construction and/or copying, default 0
+
+        Examples
+        --------
+        >>> import rmm
+        >>> db = rmm.DeviceBuffer(size=5)
+        """
         cdef const void* c_ptr
         cdef cudaStream_t c_stream
         cdef cudaError_t err
