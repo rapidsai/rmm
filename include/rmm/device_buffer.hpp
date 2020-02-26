@@ -112,7 +112,8 @@ class device_buffer {
                 cudaStream_t stream = 0,
                 mr::device_memory_resource* mr = mr::get_default_resource())
       : _stream{stream}, _mr{mr} {
-    allocate_and_copy(source_data, size);
+    allocate(size);
+    copy(source_data, size);
   }
 
   /**
@@ -140,8 +141,9 @@ class device_buffer {
    * @brief Constructs a new `device_buffer` by moving the contents of another
    * `device_buffer` into the newly constructed one.
    *
-   * After the new `device_buffer` is constructed, `other` is modified to be
-   * empty, i.e., `data()` returns `nullptr`, and `size()` is zero.
+   * After the new `device_buffer` is constructed, `other` is modified to be a
+   * valid, empty `device_buffer`, i.e., `data()` returns `nullptr`, and
+   * `size()` and `capacity()` are zero.
    *
    * @throws Nothing
    *
@@ -194,7 +196,8 @@ class device_buffer {
         deallocate();
         set_stream(other.stream());
         _mr = other._mr;
-        allocate_and_copy(other.data(), other.size());
+        allocate(other.size());
+        copy(other.data(), other.size());
       }
     }
     return *this;
