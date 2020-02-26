@@ -428,11 +428,5 @@ class device_buffer {
           cudaMemcpyAsync(_data, source, bytes, cudaMemcpyDefault, stream()));
     }
   }
-
-  void allocate_and_copy(void const* source, std::size_t bytes) {
-    allocate(bytes);
-    copy(source, bytes);
-  }
 };
-
 }  // namespace rmm
