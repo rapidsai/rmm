@@ -22,6 +22,7 @@
 #include <cuda_runtime_api.h>
 #include <cassert>
 #include <stdexcept>
+#include <utility>
 
 namespace rmm {
 /**
@@ -72,13 +73,9 @@ class device_buffer {
  public:
   /**
    * @brief Default constructor creates an empty `device_buffer`
+   *
    */
-  device_buffer()
-      : _data{nullptr},
-        _size{},
-        _capacity{},
-        _stream{},
-        _mr{rmm::mr::get_default_resource()} {}
+  device_buffer() = default;
 
   /**
    * @brief Constructs a new device buffer of `size` uninitialized bytes
@@ -93,8 +90,8 @@ class device_buffer {
   explicit device_buffer(
       std::size_t size, cudaStream_t stream = 0,
       mr::device_memory_resource* mr = mr::get_default_resource())
-      : _size{size}, _capacity{size}, _stream{stream}, _mr{mr} {
-    _data = _mr->allocate(size, this->stream());
+      : _stream{stream}, _mr{mr} {
+    allocate(size);
   }
 
   /**
@@ -114,14 +111,9 @@ class device_buffer {
   device_buffer(void const* source_data, std::size_t size,
                 cudaStream_t stream = 0,
                 mr::device_memory_resource* mr = mr::get_default_resource())
-      : _size{size}, _capacity{size}, _stream{stream}, _mr{mr} {
-    if (size > 0) {
-      RMM_EXPECTS((nullptr != source_data), "Attempt to copy from nullptr.");
-
-      _data = _mr->allocate(_size, this->stream());
-      RMM_CUDA_TRY(cudaMemcpyAsync(_data, source_data, _size, cudaMemcpyDefault,
-                               this->stream()));
-    }
+      : _stream{stream}, _mr{mr} {
+    allocate(size);
+    copy(source_data, size);
   }
 
   /**
@@ -143,19 +135,15 @@ class device_buffer {
   device_buffer(
       device_buffer const& other, cudaStream_t stream = 0,
       rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
-      : _size{other.size()}, _capacity{other.size()}, _stream{stream}, _mr{mr} {
-    _data = memory_resource()->allocate(size(), this->stream());
-
-    RMM_CUDA_TRY(cudaMemcpyAsync(data(), other.data(), size(), cudaMemcpyDefault,
-                             this->stream()));
-  }
+      : device_buffer{other.data(), other.size(), stream, mr} {}
 
   /**
    * @brief Constructs a new `device_buffer` by moving the contents of another
    * `device_buffer` into the newly constructed one.
    *
-   * After the new `device_buffer` is constructed, `other` is modified to be
-   * empty, i.e., `data()` returns `nullptr`, and `size()` is zero.
+   * After the new `device_buffer` is constructed, `other` is modified to be a
+   * valid, empty `device_buffer`, i.e., `data()` returns `nullptr`, and
+   * `size()` and `capacity()` are zero.
    *
    * @throws Nothing
    *
@@ -175,17 +163,20 @@ class device_buffer {
   }
 
   /**
-   * @brief Copy assignment operator copies the contents of `other`
+   * @brief Copies the contents of `other` into this `device_buffer`.
    *
-   * Memory deallocation uses this instance's memory_resource and the last
-   * stream passed to a method on this instance. If a different stream is
-   * required for deallocation, call `set_stream()` on the instance before
-   * assignment.
+   * All operations on the data in this `device_buffer` on all streams must be
+   * complete before using this operator, otherwise behavior is undefined.
    *
-   * Allocation and copy in this function uses the memory_resource and stream
-   * from `other`. If a different stream is required for allocation/copy, call
-   * `set_stream()` on `other` before assignment. After assignment, this
-   * instance's stream is replaced by the stream from `other`.
+   * If the existing capacity is large enough, and the memory resources are
+   * compatible, then this `device_buffer`'s existing memory will be reused and
+   * `other`s contents will simply be copied on `other.stream()`. I.e., if
+   * `capcity() > other.size()` and
+   * `memory_resource()->is_equal(*other.memory_resource())`.
+   *
+   * Otherwise, the existing memory will be deallocated using
+   * `memory_resource()` on `stream()` and new memory will be allocated using
+   * `other.memory_resource()` on `other.stream()`.
    *
    * @throws rmm::bad_alloc if allocation fails
    * @throws rmm::cuda_error if the copy from `other` fails
@@ -194,14 +185,20 @@ class device_buffer {
    */
   device_buffer& operator=(device_buffer const& other) {
     if (&other != this) {
-      _mr->deallocate(_data, _capacity, stream());
-      _size = other._size;
-      _capacity = other._size;  // only allocate _size bytes
-      _mr = other._mr;
-      set_stream(other.stream());
-      _data = _mr->allocate(_size, stream());
-      RMM_CUDA_TRY(cudaMemcpyAsync(_data, other._data, _size, cudaMemcpyDefault,
-                               stream()));
+      // If the current capacity is large enough and the resources are
+      // compatible, just reuse the existing memory
+      if ((capacity() > other.size()) and _mr->is_equal(*other._mr)) {
+        set_stream(other.stream());
+        resize(other.size());
+        copy(other.data(), other.size());
+      } else {
+        // Otherwise, need to deallocate and allocate new memory
+        deallocate();
+        set_stream(other.stream());
+        _mr = other._mr;
+        allocate(other.size());
+        copy(other.data(), other.size());
+      }
     }
     return *this;
   }
@@ -209,16 +206,19 @@ class device_buffer {
   /**
    * @brief Move assignment operator moves the contents from `other`.
    *
-   * Memory deallocation uses the last stream set in a device_buffer method
-   * on this instance. If a different stream is required, call `set_stream()` on
+   * This `device_buffer`'s current device memory allocation will be deallocated
+   * on `stream()`.
+   *
+   * If a different stream is required, call `set_stream()` on
    * the instance before assignment. After assignment, this instance's stream is
-   * replaced by the stream from `other`.
+   * replaced by the `other.stream()`.
    *
    * @param other The `device_buffer` whose contents will be moved.
    */
-  device_buffer& operator=(device_buffer&& other) {
+  device_buffer& operator=(device_buffer&& other) noexcept {
     if (&other != this) {
-      _mr->deallocate(_data, _capacity, stream());
+      deallocate();
+
       _data = other._data;
       _size = other._size;
       _capacity = other._capacity;
@@ -241,18 +241,15 @@ class device_buffer {
    * methods.
    */
   ~device_buffer() noexcept {
-    _mr->deallocate(_data, _capacity, stream());
-    _data = nullptr;
-    _size = 0;
-    _capacity = 0;
-    _stream = 0;
+    deallocate();
     _mr = nullptr;
+    _stream = 0;
   }
 
   /**
    * @brief Resize the device memory allocation
    *
-   * If the requested `new_size` is less than or equal to the current size, no
+   * If the requested `new_size` is less than or equal to `capacity()`, no
    * action is taken other than updating the value that is returned from
    * `size()`. Specifically, no memory is allocated nor copied. The value
    * `capacity()` remains the actual size of the device memory allocation.
@@ -260,14 +257,12 @@ class device_buffer {
    * @note `shrink_to_fit()` may be used to force the deallocation of unused
    * `capacity()`.
    *
-   * If `new_size` is larger than the current size, a new allocation is made
-   * to satisfy `new_size`, and the contents of the old allocation are copied
-   * to the new allocation. The old allocation is then freed.
+   * If `new_size` is larger than `capacity()`, a new allocation is made on
+   * `stream` to satisfy `new_size`, and the contents of the old allocation are
+   * copied on `stream` to the new allocation. The old allocation is then freed.
+   * The bytes from `[old_size, new_size)` are uninitialized.
    *
    * The invariant `size() <= capacity()` holds.
-   *
-   * The specified @p stream is used for allocating and copying the new memory
-   *if the memory resource supports streams.
    *
    * @throws rmm::bad_alloc If creating the new allocation fails
    * @throws rmm::cuda_error if the copy from the old to new allocation
@@ -278,17 +273,15 @@ class device_buffer {
    */
   void resize(std::size_t new_size, cudaStream_t stream = 0) {
     set_stream(stream);
-    // If the requested size is smaller, just update the size without any
-    // allocations
-    if (new_size <= _size) {
+    // If the requested size is smaller than the current capacity, just update
+    // the size without any allocations
+    if (new_size <= capacity()) {
       _size = new_size;
     } else {
       void* const new_data = _mr->allocate(new_size, this->stream());
-      if (_size > 0) {
-        RMM_CUDA_TRY(cudaMemcpyAsync(new_data, _data, _size, cudaMemcpyDefault,
-                                 this->stream()));
-      }
-      _mr->deallocate(_data, _size, this->stream());
+      RMM_CUDA_TRY(cudaMemcpyAsync(new_data, data(), size(), cudaMemcpyDefault,
+                                   this->stream()));
+      deallocate();
       _data = new_data;
       _size = new_size;
       _capacity = new_size;
@@ -298,27 +291,24 @@ class device_buffer {
   /**
    * @brief Forces the deallocation of unused memory.
    *
-   * Reallocates and copies the contents of the device memory allocation to
-   * reduce `capacity()` to `size()`.
+   * Reallocates and copies on stream `stream` the contents of the device memory
+   * allocation to reduce `capacity()` to `size()`.
    *
-   * If `size() == capacity()` this function has no effect.
+   * If `size() == capacity()`, no allocations nor copies occur.
    *
    * @throws rmm::bad_alloc If creating the new allocation fails
    * @throws rmm::cuda_error If the copy from the old to new allocation fails
    *
-   * @param stream The stream to use for allocation and copy
+   * @param stream The stream on which the allocation and copy are performed
    */
   void shrink_to_fit(cudaStream_t stream = 0) {
     set_stream(stream);
     if (size() != capacity()) {
-      void* const new_data = _mr->allocate(size(), this->stream());
-      if (size() > 0) {
-        RMM_CUDA_TRY(cudaMemcpyAsync(new_data, _data, size(), cudaMemcpyDefault,
-                                 this->stream()));
-      }
-      _mr->deallocate(_data, size(), this->stream());
-      _data = new_data;
-      _capacity = size();
+      // Invoke copy ctor on self which only copies `[0, size())` and swap it
+      // with self. The temporary `device_buffer` will hold the old contents
+      // which will then be destroyed
+      auto tmp = device_buffer{*this, stream};
+      std::swap(tmp, *this);
     }
   }
 
@@ -337,6 +327,15 @@ class device_buffer {
    * allocation
    */
   std::size_t size() const noexcept { return _size; }
+
+  /**
+   * @brief Returns whether the size in bytes of the `device_buffer` is zero.
+   *
+   * If `is_empty() == true`, the `device_buffer` may still hold an allocation
+   * if `capacity() > 0`.
+   *
+   */
+  bool is_empty() const noexcept { return 0 == size(); }
 
   /**
    * @brief Returns actual size in bytes of device memory allocation.
@@ -376,5 +375,58 @@ class device_buffer {
   mr::device_memory_resource* _mr{
       mr::get_default_resource()};  ///< The memory resource used to
                                     ///< allocate/deallocate device memory
+
+  /**
+   * @brief Allocates the specified amount of memory and updates the
+   * size/capacity accordingly.
+   *
+   * If `bytes == 0`, sets `_data = nullptr`.
+   *
+   * @param bytes The amount of memory to allocate
+   * @param stream The stream on which to allocate
+   */
+  void allocate(std::size_t bytes) {
+    _size = bytes;
+    _capacity = bytes;
+    _data = (bytes > 0) ? _mr->allocate(bytes, stream()) : nullptr;
+  }
+
+  /**
+   * @brief Deallocate any memory held by this `device_buffer` and clear the
+   * size/capacity/data members.
+   *
+   * If the buffer doesn't hold any memory, i.e., `capacity() == 0`, doesn't
+   * call the resource deallocation.
+   *
+   */
+  void deallocate() noexcept {
+    if (capacity() > 0) {
+      _mr->deallocate(data(), capacity());
+    }
+    _size = 0;
+    _capacity = 0;
+    _data = nullptr;
+  }
+
+  /**
+   * @brief Copies the specified number of `bytes` from `source` into the
+   * internal device allocation.
+   *
+   * `source` can point to either host or device memory.
+   *
+   * This function assumes `_data` already points to an allocation large enough
+   * to hold `bytes` bytes.
+   *
+   * @param source The pointer to copy from
+   * @param bytes The number of bytes to copy
+   */
+  void copy(void const* source, std::size_t bytes) {
+    if (bytes > 0) {
+      RMM_EXPECTS(nullptr != source, "Invalid copy from nullptr.");
+
+      RMM_CUDA_TRY(
+          cudaMemcpyAsync(_data, source, bytes, cudaMemcpyDefault, stream()));
+    }
+  }
 };
 }  // namespace rmm

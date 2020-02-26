@@ -30,6 +30,7 @@
 - PR #280 Drop allocation/deallocation of `offset`
 - PR #282 `DeviceBuffer` use default constructor for size=0
 - PR #296 Use CuPy's `UnownedMemory` for RMM-backed allocations
+- PR #310 Improve `device_buffer` allocation logic.
 - PR #309 Sync default stream in `DeviceBuffer` constructor
 - PR #308 Fix typo in README
 
