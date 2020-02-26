@@ -31,9 +31,9 @@
 namespace rmm {
 namespace mr {
 
-/**---------------------------------------------------------------------------*
+/**
  * @brief Memory resource that allocates/deallocates using a pool sub-allocator
- *---------------------------------------------------------------------------**/
+ */
 template <typename UpstreamResource>
 class pool_memory_resource final : public device_memory_resource {
  public:
@@ -42,14 +42,14 @@ class pool_memory_resource final : public device_memory_resource {
   static constexpr size_t default_maximum_size = ~0;
   static constexpr size_t allocation_alignment = 256;
 
-  /**---------------------------------------------------------------------------*
+  /**
    * @brief Construct a suballocator memory resource and allocate the initial
    * device memory pool
    *
    * @param initial_pool_size Size, in bytes, of the initial pool size. When
    * zero, an implementation defined pool size is used.
    * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to.
-   *---------------------------------------------------------------------------**/
+   */
 
   explicit pool_memory_resource(
       UpstreamResource* upstream_mr,

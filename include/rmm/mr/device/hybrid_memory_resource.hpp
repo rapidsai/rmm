@@ -45,12 +45,15 @@ namespace mr {
 class hybrid_memory_resource : public device_memory_resource {
  public:
 
-  static constexpr std::size_t default_max_small_size = 1 << 22; // 4 MiB
+  static constexpr std::size_t default_threshold_size = 1 << 22; // 4 MiB
 
-  explicit hybrid_memory_resource(SmallAllocMemoryResource *small_mr,
-                                  LargeAllocMemoryResource *large_mr,
-                                  std::size_t max_small_size = default_max_small_size) 
-  : small_mr_{small_mr}, large_mr_{large_mr}, max_small_size_{max_small_size} {}
+  explicit hybrid_memory_resource(
+      SmallAllocMemoryResource* small_mr,
+      LargeAllocMemoryResource* large_mr,
+      std::size_t threshold_bytes = default_threshold_size)
+      : small_mr_{small_mr},
+        large_mr_{large_mr},
+        threshold_size_{max_small_size} {}
 
   virtual ~hybrid_memory_resource() = default;
 
@@ -74,7 +77,8 @@ class hybrid_memory_resource : public device_memory_resource {
    * @return rmm::mr::device_memory_resource& memory_resource that can allocate the requested size.
    */
   rmm::mr::device_memory_resource& get_resource(std::size_t bytes) {
-    if (bytes <= max_small_size_) return *small_mr_;
+    if (bytes <= threshold_size_)
+      return *small_mr_;
     else return *large_mr_;
   }
 
@@ -120,7 +124,7 @@ class hybrid_memory_resource : public device_memory_resource {
     return std::make_pair(0, 0);
   }
 
-  std::size_t max_small_size_; // power of 2 maximum fixed size allocator
+  std::size_t threshold_size_;  // power of 2 threshold for choosing memory resource
 
   SmallAllocMemoryResource *small_mr_; // allocator for <= max_small_size
   LargeAllocMemoryResource *large_mr_; // allocator for > max_small_size
