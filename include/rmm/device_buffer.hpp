@@ -22,6 +22,7 @@
 #include <cuda_runtime_api.h>
 #include <cassert>
 #include <stdexcept>
+#include <utility>
 
 namespace rmm {
 /**
@@ -184,7 +185,7 @@ class device_buffer {
     if (&other != this) {
       // If the current capacity is large enough and the resources are
       // compatible, just reuse the existing memory
-      if ((capacity() > other.size()) and _mr.is_equal(*other._mr)) {
+      if ((capacity() > other.size()) and _mr->is_equal(*other._mr)) {
         set_stream(other.stream());
         resize(other.size());
         copy(other.data(), other.size());
@@ -318,7 +319,8 @@ class device_buffer {
       // Invoke copy ctor on self which only copies `[0, size())` and swap it
       // with self. The temporary `device_buffer` will hold the old contents
       // which will then be destroyed
-      std::swap(device_bufer(*this), *this)
+      auto tmp = device_buffer{*this};
+      std::swap(tmp, *this);
     }
   }
 
