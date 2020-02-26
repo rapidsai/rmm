@@ -258,7 +258,7 @@ class device_buffer {
    * `stream` to satisfy `new_size`, and the contents of the old allocation are
    * copied on `stream` to the new allocation. The old allocation is then freed.
    * The bytes from `[old_size, new_size)` are uninitialized.
-   * 
+   *
    * The invariant `size() <= capacity()` holds.
    *
    * @throws rmm::bad_alloc If creating the new allocation fails
@@ -276,11 +276,9 @@ class device_buffer {
       _size = new_size;
     } else {
       void* const new_data = _mr->allocate(new_size, this->stream());
-      if (_size > 0) {
-        RMM_CUDA_TRY(cudaMemcpyAsync(new_data, _data, _size, cudaMemcpyDefault,
-                                     this->stream()));
-      }
-      _mr->deallocate(_data, _size, this->stream());
+      RMM_CUDA_TRY(cudaMemcpyAsync(new_data, data(), size(), cudaMemcpyDefault,
+                                   stream()));
+      deallocate();
       _data = new_data;
       _size = new_size;
       _capacity = new_size;
