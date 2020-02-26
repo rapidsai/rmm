@@ -246,7 +246,7 @@ class device_buffer {
   /**
    * @brief Resize the device memory allocation
    *
-   * If the requested `new_size` is less than or equal to the current size, no
+   * If the requested `new_size` is less than or equal to `capacity()`, no
    * action is taken other than updating the value that is returned from
    * `size()`. Specifically, no memory is allocated nor copied. The value
    * `capacity()` remains the actual size of the device memory allocation.
@@ -254,20 +254,12 @@ class device_buffer {
    * @note `shrink_to_fit()` may be used to force the deallocation of unused
    * `capacity()`.
    *
-   * If `new_size` is larger than the current size, a new allocation is made
-   * to satisfy `new_size`, and the contents of the old allocation are copied
-   * to the new allocation. The old allocation is then freed. The bytes from
-   *`[old_size, new_size)` are uninitialized.
-   *
+   * If `new_size` is larger than `capacity()`, a new allocation is made on
+   * `stream` to satisfy `new_size`, and the contents of the old allocation are
+   * copied on `stream` to the new allocation. The old allocation is then freed.
+   * The bytes from `[old_size, new_size)` are uninitialized.
+   * 
    * The invariant `size() <= capacity()` holds.
-   *
-   * The specified `stream` is used for allocating and copying the new memory
-   *if the memory resource supports streams.
-
-   * TODO: Need to clarify stream behavior here. Since we are potentially
-   * deallocating this buffer's memory, the user needs to guarantee
-   * that it is no longer being used. Should the user be responsible for syncing
-   * `stream()` beforehand? Or should we sync here?
    *
    * @throws rmm::bad_alloc If creating the new allocation fails
    * @throws rmm::cuda_error if the copy from the old to new allocation
@@ -278,9 +270,9 @@ class device_buffer {
    */
   void resize(std::size_t new_size, cudaStream_t stream = 0) {
     set_stream(stream);
-    // If the requested size is smaller, just update the size without any
-    // allocations
-    if (new_size <= _size) {
+    // If the requested size is smaller than the current capacity, just update
+    // the size without any allocations
+    if (new_size <= capacity()) {
       _size = new_size;
     } else {
       void* const new_data = _mr->allocate(new_size, this->stream());
