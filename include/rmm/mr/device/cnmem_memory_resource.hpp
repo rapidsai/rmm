@@ -88,6 +88,12 @@ class cnmem_memory_resource : public device_memory_resource {
     assert(CNMEM_STATUS_SUCCESS == status);
   }
 
+  /**
+   * @brief Queries whether the resource supports use of non-null CUDA streams for
+   * allocation/deallocation.
+   *
+   * @returns bool true
+   */
   bool supports_streams() const noexcept override { return true; }
 
  protected:
