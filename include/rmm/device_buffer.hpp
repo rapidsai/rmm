@@ -280,7 +280,7 @@ class device_buffer {
     } else {
       void* const new_data = _mr->allocate(new_size, this->stream());
       RMM_CUDA_TRY(cudaMemcpyAsync(new_data, data(), size(), cudaMemcpyDefault,
-                                   stream()));
+                                   this->stream()));
       deallocate();
       _data = new_data;
       _size = new_size;
