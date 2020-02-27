@@ -17,8 +17,8 @@
 
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/fixed_size_memory_resource.hpp>
-#include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/aligned.hpp>
 
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
@@ -42,16 +42,16 @@ namespace rmm {
 
 namespace mr {
 
-namespace detail {
-  inline bool is_pow2(std::size_t x) { return (x & (x - 1)) == 0; }
-}
-
-/**---------------------------------------------------------------------------*
- * @brief Allocates fixed-size memory blocks.
+/**
+ * @brief Allocates fixed-size memory blocks of a range of sizes.
  * 
- * Supports only allocations of size smaller than the configured block_size.
- *---------------------------------------------------------------------------**/
-template <typename UpstreamResource>
+ * Allocates blocks in the range `[min_size], max_size]` in power of two steps, 
+ * where `min_size` and `max_size` are both powers of two.
+ * 
+ * @tparam UpstreamResource memory_resource to use for allocating the pool. Implements
+ *                          rmm::mr::device_memory_resource interface.
+ */
+ template <typename UpstreamResource>
 class fixed_multisize_memory_resource : public device_memory_resource {
  public:
 
@@ -74,8 +74,8 @@ class fixed_multisize_memory_resource : public device_memory_resource {
                                            std::size_t max_size = default_max_size,
                                            std::size_t initial_blocks_per_size = 128)
   : upstream_mr_{upstream_resource}, min_size_{min_size}, max_size_{max_size} {
-    RMM_EXPECTS(detail::is_pow2(min_size), "Minimum size must be a power of two");
-    RMM_EXPECTS(detail::is_pow2(max_size), "Maximum size must be a power of two");
+    RMM_EXPECTS(rmm::detail::is_pow2(min_size), "Minimum size must be a power of two");
+    RMM_EXPECTS(rmm::detail::is_pow2(max_size), "Maximum size must be a power of two");
     
     // allocate initial blocks and insert into free list
     for (std::size_t i = min_size; i <= max_size; i *= 2) {
@@ -86,21 +86,48 @@ class fixed_multisize_memory_resource : public device_memory_resource {
     }
   }
 
+  /**
+   * @brief Destroy the fixed_multisize_memory_resource and free all memory allocated from the
+   *        upstream resource.
+   */
   virtual ~fixed_multisize_memory_resource() {
     fixed_size_mr_.clear(); // must be deleted first since fixed_size_mrs use large_size_mr_
   }
 
   /**
-   * @brief Queries whether the resource supports use of non-null streams for
+   * @brief Query whether the resource supports use of non-null streams for
    * allocation/deallocation.
    *
    * @returns true
    */
   bool supports_streams() const noexcept override { return true; }
 
+  /**
+   * @brief Query whether the resource supports the get_mem_info API.
+   * 
+   * @return bool true if the resource supports get_mem_info, false otherwise.
+   */
+  bool supports_get_mem_info() const noexcept override {return false; }
+
+  /**
+   * @brief Get the upstream memory_resource object.
+   *
+   * @return UpstreamResource* the upstream memory resource.
+   */
   UpstreamResource* get_upstream() const noexcept { return upstream_mr_; }
 
+  /**
+   * @brief Get the minimum block size that this memory_resource can allocate.
+   * 
+   * @return std::size_t The minimum block size this memory_resource can allocate.
+   */
   std::size_t get_min_size() const noexcept { return min_size_; }
+
+  /**
+   * @brief Get the maximum block size that this memory_resource can allocate.
+   * 
+   * @return std::size_t The maximum block size this memory_resource can allocate.
+   */
   std::size_t get_max_size() const noexcept { return max_size_; }
 
  private:
@@ -108,13 +135,15 @@ class fixed_multisize_memory_resource : public device_memory_resource {
   /**
    * @brief Get the memory resource for the requested size
    *
+   * Chooses a memory_resource that allocates the smallest blocks larger than `bytes`.
+   *
    * @throws rmm::bad_alloc if the size is larger than the maximum block size.
    *
    * @param bytes Requested allocation size in bytes
    * @return rmm::mr::device_memory_resource& memory_resource that can allocate the requested size.
    */
   device_memory_resource& get_resource(std::size_t bytes) {
-    if (bytes < max_size_) {
+    if (bytes <= max_size_) {
       auto iter = std::find_if(fixed_size_mr_.begin(), fixed_size_mr_.end(),
                    [bytes](std::unique_ptr<fixed_size_memory_resource<UpstreamResource>>& res) { 
                      return bytes <= res.get()->get_block_size();
@@ -123,7 +152,7 @@ class fixed_multisize_memory_resource : public device_memory_resource {
         return *iter->get();
     }
 
-    RMM_FAIL("bytes must be < max_size", rmm::bad_alloc);
+    RMM_FAIL("bytes must be <= max_size", rmm::bad_alloc);
   }
 
   /**
@@ -168,7 +197,7 @@ class fixed_multisize_memory_resource : public device_memory_resource {
     return std::make_pair(0, 0);  
   }
 
-  UpstreamResource *upstream_mr_;
+  UpstreamResource *upstream_mr_; // The upstream memory_resource from which to allocate blocks.
 
   std::size_t min_size_; // size of smallest blocks allocated
   std::size_t max_size_; // size of largest blocks allocated

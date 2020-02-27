@@ -32,7 +32,21 @@ namespace mr {
  */
 class managed_memory_resource final : public device_memory_resource {
  public:
+
+  /**
+   * @brief Query whether the resource supports use of non-null streams for
+   * allocation/deallocation.
+   *
+   * @returns false
+   */
   bool supports_streams() const noexcept override { return false; }
+
+  /**
+   * @brief Query whether the resource supports the get_mem_info API.
+   * 
+   * @return bool true if the resource supports get_mem_info, false otherwise.
+   */
+  bool supports_get_mem_info() const noexcept override {return true; }
 
  private:
   /**

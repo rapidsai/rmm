@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -57,7 +58,7 @@ constexpr bool is_supported_alignment(std::size_t alignment) {
  * In order to retrieve the original allocation pointer `p`, the offset
  * between `p` and `q` is stored at `q - sizeof(std::ptrdiff_t)`.
  *
- * Allocations returned from `aligned_allocate` *MUST* be free'd by calling
+ * Allocations returned from `aligned_allocate` *MUST* be freed by calling
  * `aligned_deallocate` with the same arguments for `bytes` and `alignment` with
  * a compatible unary `dealloc` callable capable of freeing the memory returned
  * from `alloc`.
@@ -68,11 +69,12 @@ constexpr bool is_supported_alignment(std::size_t alignment) {
  * @param alignment Desired alignment of allocation
  * @param alloc Unary callable given a size `n` will allocate at least `n` bytes
  * of host memory.
+ * @tparam Alloc a unary callable type that allocates memory.
  * @return void* Pointer into allocation of at least `bytes` with desired
  * `alignment`.
  */
-template <typename A>
-void *aligned_allocate(std::size_t bytes, std::size_t alignment, A alloc) {
+template <typename Alloc>
+void *aligned_allocate(std::size_t bytes, std::size_t alignment, Alloc alloc) {
   assert(is_pow2(alignment));
 
   // allocate memory for bytes, plus potential alignment correction,
@@ -100,7 +102,7 @@ void *aligned_allocate(std::size_t bytes, std::size_t alignment, A alloc) {
 /**
  * @brief Frees an allocation returned from `aligned_allocate`.
  *
- * Allocations returned from `aligned_allocate` *MUST* be free'd by calling
+ * Allocations returned from `aligned_allocate` *MUST* be freed by calling
  * `aligned_deallocate` with the same arguments for `bytes` and `alignment`
  * with a compatible unary `dealloc` callable capable of freeing the memory
  * returned from `alloc`.
@@ -110,10 +112,11 @@ void *aligned_allocate(std::size_t bytes, std::size_t alignment, A alloc) {
  * @param alignment The alignment required from `aligned_allocate`
  * @param dealloc A unary callable capable of freeing memory returned from
  * `alloc` in `aligned_allocate`.
+ * @tparam Dealloc A unary callable type that deallocates memory.
  */
-template <typename D>
+template <typename Dealloc>
 void aligned_deallocate(void *p, std::size_t bytes, std::size_t alignment,
-                        D dealloc) {
+                        Dealloc dealloc) {
   (void)alignment;
 
   // Get offset from the location immediately prior to the aligned pointer

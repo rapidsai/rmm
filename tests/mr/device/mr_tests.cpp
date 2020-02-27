@@ -394,12 +394,14 @@ TYPED_TEST(MRTest, MixedRandomAllocationFreeStream)
 }
 
 TYPED_TEST(MRTest, GetMemInfo) {
-  std::pair<std::size_t,std::size_t> mem_info;
-  EXPECT_NO_THROW(mem_info = this->mr->get_mem_info(0));
-  std::size_t allocation_size = 16 * 256;
-  void * ptr;
-  EXPECT_NO_THROW(ptr = this->mr->allocate(allocation_size));
-  EXPECT_NO_THROW(mem_info = this->mr->get_mem_info(0));
-  EXPECT_TRUE(mem_info.first >= allocation_size);
-  EXPECT_NO_THROW(this->mr->deallocate(ptr,allocation_size));
+  if (this->mr->supports_get_mem_info()) {
+    std::pair<std::size_t,std::size_t> mem_info;
+    EXPECT_NO_THROW(mem_info = this->mr->get_mem_info(0));
+    std::size_t allocation_size = 16 * 256;
+    void * ptr;
+    EXPECT_NO_THROW(ptr = this->mr->allocate(allocation_size));
+    EXPECT_NO_THROW(mem_info = this->mr->get_mem_info(0));
+    EXPECT_TRUE(mem_info.first >= allocation_size);
+    EXPECT_NO_THROW(this->mr->deallocate(ptr,allocation_size));
+  }
 }

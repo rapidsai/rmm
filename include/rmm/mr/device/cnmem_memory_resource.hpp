@@ -89,12 +89,19 @@ class cnmem_memory_resource : public device_memory_resource {
   }
 
   /**
-   * @brief Queries whether the resource supports use of non-null CUDA streams for
+   * @brief Query whether the resource supports use of non-null CUDA streams for
    * allocation/deallocation.
    *
    * @returns bool true
    */
   bool supports_streams() const noexcept override { return true; }
+
+  /**
+   * @brief Query whether the resource supports the get_mem_info API.
+   * 
+   * @return bool true if the resource supports get_mem_info, false otherwise.
+   */
+  bool supports_get_mem_info() const noexcept override { return true; }
 
  protected:
   /**

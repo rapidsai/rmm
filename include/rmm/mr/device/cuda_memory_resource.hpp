@@ -34,12 +34,19 @@ class cuda_memory_resource final : public device_memory_resource {
  public:
 
   /**
-   * @brief Queries whether the resource supports use of non-null CUDA streams for
+   * @brief Query whether the resource supports use of non-null CUDA streams for
    * allocation/deallocation. `cuda_memory_resource` does not support streams.
    *
    * @returns bool false
    */
   bool supports_streams() const noexcept override { return false; }
+
+  /**
+   * @brief Query whether the resource supports the get_mem_info API.
+   * 
+   * @return true
+   */
+  bool supports_get_mem_info() const noexcept override { return true; }
 
  private:
   /**
