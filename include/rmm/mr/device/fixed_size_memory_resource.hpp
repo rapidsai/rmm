@@ -176,15 +176,18 @@ class fixed_size_memory_resource : public device_memory_resource {
       blocks.pop_front();
     }
 
-    // insert all remaining blocks from sync list into no-sync list
-    if ((p != nullptr) && (list_stream != stream)) { // found one
+    // If we found a block associated with a different stream, 
+    // we have to synchronize the stream in order to use it
+    if ((list_stream != stream) && (p != nullptr)) {
       cudaError_t result = cudaStreamSynchronize(list_stream);
 
       if (result != cudaErrorInvalidResourceHandle && // stream deleted
           result != cudaSuccess)                      // stream synced
         throw std::runtime_error{"cudaStreamSynchronize failure"};
 
-      // insert all other blocks into the no_sync list
+      // insert all other blocks into this stream's list
+      // TODO: Should we do this? This could cause thrashing between two 
+      // streams. For future analysis.
       auto blocks_for_stream = stream_blocks_[stream];
       blocks_for_stream.splice(blocks_for_stream.end(), blocks);
 

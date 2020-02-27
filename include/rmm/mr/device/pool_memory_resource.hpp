@@ -125,24 +125,25 @@ class pool_memory_resource final : public device_memory_resource {
   block block_from_sync_list(free_list &blocks, size_t size, 
                              cudaStream_t list_stream, cudaStream_t stream)
   {
-    block b = blocks.best_fit(size);
-    if (b.ptr != nullptr) { // found one
-      if (list_stream != stream) {
-        cudaError_t result = cudaStreamSynchronize(list_stream);
+    block b = blocks.best_fit(size); // get the best fit block
 
-        RMM_EXPECTS((result == cudaSuccess ||                   // stream synced
-                     result == cudaErrorInvalidResourceHandle), // stream deleted
-                    rmm::cuda_error, "cudaStreamSynchronize failure");
+    // If we found a block associated with a different stream, 
+    // we have to synchronize the stream in order to use it
+    if ((list_stream != stream) && (b.ptr != nullptr)) { 
+      cudaError_t result = cudaStreamSynchronize(list_stream);
 
-        // insert all other blocks into this stream's list
-        // TODO: Should we do this? This could cause thrashing between two 
-        // streams. On the other hand, this reduces fragmentation by coalescing.
-        stream_blocks_[stream].insert(blocks.begin(), blocks.end());
-        blocks.clear();
+      RMM_EXPECTS((result == cudaSuccess ||                   // stream synced
+                    result == cudaErrorInvalidResourceHandle), // stream deleted
+                  rmm::cuda_error, "cudaStreamSynchronize failure");
 
-        // remove this stream from the freelist
-        stream_blocks_.erase(list_stream);
-      }
+      // Now that this stream is synced, insert all other blocks into this stream's list
+      // TODO: Should we do this? This could cause thrashing between two 
+      // streams. On the other hand, this reduces fragmentation by coalescing.
+      stream_blocks_[stream].insert(blocks.begin(), blocks.end());
+      blocks.clear();
+
+      // remove this stream from the freelist
+      stream_blocks_.erase(list_stream);
     }
     return b;
   }
