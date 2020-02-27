@@ -44,8 +44,30 @@ cdef class DeviceBuffer:
                   uintptr_t ptr=0,
                   size_t size=0,
                   uintptr_t stream=0):
+        """Construct a ``DeviceBuffer`` with optional size and data pointer
+
+        Parameters
+        ----------
+        ptr : pointer to some data on host or device to copy over
+        size : size of the buffer to allocate
+               (and possibly size of data to copy)
+        stream : CUDA stream to use for construction and/or copying, default 0
+
+        Note
+        ----
+
+        If ``stream`` is the default stream, it is synchronized after the copy.
+        However if a non-default ``stream`` is provided, this function is fully
+        asynchronous.
+
+        Examples
+        --------
+        >>> import rmm
+        >>> db = rmm.DeviceBuffer(size=5)
+        """
         cdef const void* c_ptr
         cdef cudaStream_t c_stream
+        cdef cudaError_t err
 
         with nogil:
             c_ptr = <const void*>ptr
@@ -57,6 +79,14 @@ cdef class DeviceBuffer:
                 self.c_obj.reset(new device_buffer(size, c_stream))
             else:
                 self.c_obj.reset(new device_buffer(c_ptr, size, c_stream))
+
+            if c_stream == NULL:
+                err = cudaStreamSynchronize(c_stream)
+                if err != cudaSuccess:
+                    with gil:
+                        raise RuntimeError(
+                            f"Stream sync failed with error: {err}"
+                        )
 
     def __len__(self):
         return self.size
