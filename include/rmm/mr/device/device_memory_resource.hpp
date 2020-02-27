@@ -122,10 +122,10 @@ class device_memory_resource {
   }
 
   /**
-   * @brief Queries if the resource supports use of non-null streams for
+   * @brief Queries whether the resource supports use of non-null CUDA streams for
    * allocation/deallocation.
    *
-   * @returns If the resource supports non-null streams
+   * @returns bool true if the resource supports non-null CUDA streams.
    */
   virtual bool supports_streams() const noexcept = 0;
 

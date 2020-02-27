@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.
+ * Copyright (c) 2020, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 #pragma once
 
 #include <rmm/mr/device/device_memory_resource.hpp>
-#include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/detail/free_list.hpp>
 #include <rmm/detail/error.hpp>
 
@@ -32,7 +31,11 @@ namespace rmm {
 namespace mr {
 
 /**
- * @brief Memory resource that allocates/deallocates using a pool sub-allocator
+ * @brief A coalescing best-fit suballocator which uses a pool of memory allocated from
+ *        an upstream memory_resource.
+ * 
+ * @tparam UpstreamResource memory_resource to use for allocating the pool. Implements
+ *                          rmm::mr::device_memory_resource interface
  */
 template <typename UpstreamResource>
 class pool_memory_resource final : public device_memory_resource {
@@ -43,14 +46,14 @@ class pool_memory_resource final : public device_memory_resource {
   static constexpr size_t allocation_alignment = 256;
 
   /**
-   * @brief Construct a suballocator memory resource and allocate the initial
-   * device memory pool
+   * @brief Construct a `pool_memory_resource` and allocate the initial
+   * device memory pool using `upstream_mr`.
    *
-   * @param initial_pool_size Size, in bytes, of the initial pool size. When
-   * zero, an implementation defined pool size is used.
+   * @param upstream_mr The memory_resource from which to allocate blocks for the pool.
+   * @param initial_pool_size Size, in bytes, of the initial pool. When
+   * zero, an implementation-defined pool size is used.
    * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to.
    */
-
   explicit pool_memory_resource(
       UpstreamResource* upstream_mr,
       std::size_t initial_pool_size = default_initial_size,
@@ -75,19 +78,32 @@ class pool_memory_resource final : public device_memory_resource {
     // Allocate initial block
     stream_blocks_[0].insert(block_from_upstream(initial_pool_size, 0));
 
-    // TODO device handling?
-
     // TODO allocation should check maximum pool size
 
     // TODO smarter new block size heuristic
   }
 
+  /**
+   * @brief Destroy the `pool_memory_resource` and deallocate all memory it allocated using
+   * the upstream resource.
+   */
   ~pool_memory_resource() {
     free_all();
   }
 
+  /**
+   * @brief Queries whether the resource supports use of non-null CUDA streams for
+   * allocation/deallocation.
+   *
+   * @returns bool true.
+   */
   bool supports_streams() const noexcept override { return true; }
 
+  /**
+   * @brief Get the upstream memory_resource object.
+   *
+   * @return UpstreamResource* the upstream memory resource.
+   */
   UpstreamResource* get_upstream() const noexcept { return upstream_mr_; }
 
  private:
@@ -95,6 +111,17 @@ class pool_memory_resource final : public device_memory_resource {
   using block = rmm::mr::detail::block;
   using free_list = rmm::mr::detail::free_list<>;
 
+  /**
+   * @brief Find a free block of at least `size` bytes in `free_list` `blocks`.
+   * 
+   * @param blocks The `free_list` to look in for a free block of sufficient size.
+   * @param size The requested size of the allocation.
+   * @param list_stream The stream that all blocks in `blocks` were associated with when they were
+   *                    freed.
+   * @param stream The stream on which the allocation is being requested.
+   * @return block A block with non-null pointer and size >= `size`, or a nullptr block if none is 
+   *               available in `blocks`.
+   */
   block block_from_sync_list(free_list &blocks, size_t size, 
                              cudaStream_t list_stream, cudaStream_t stream)
   {
@@ -109,7 +136,7 @@ class pool_memory_resource final : public device_memory_resource {
 
         // insert all other blocks into this stream's list
         // TODO: Should we do this? This could cause thrashing between two 
-        // streams. On the other hand, this can also reduce fragmentation.
+        // streams. On the other hand, this reduces fragmentation by coalescing.
         stream_blocks_[stream].insert(blocks.begin(), blocks.end());
         blocks.clear();
 
@@ -120,6 +147,18 @@ class pool_memory_resource final : public device_memory_resource {
     return b;
   }
 
+  /**
+   * @brief Find an available block in the pool of at least `size` bytes, for use on `stream`.
+   * 
+   * Attempts to find a free block that was last used on `stream` to avoid synchronization. If none
+   * is available, it finds a block last used on another stream. In this case, the stream associated
+   * with the found block is synchronized to ensure all asynchronous work on the memory is finished
+   * before it is used on `stream`.
+   * 
+   * @param size The size of the requested allocation, in bytes.
+   * @param stream The stream on which the allocation will be used.
+   * @return block A block with non-null pointer and size >= `size`.
+   */
   block available_larger_block(size_t size, cudaStream_t stream) {
     block b{};
 
@@ -145,6 +184,16 @@ class pool_memory_resource final : public device_memory_resource {
     return b;
   }
 
+  /**
+   * @brief Splits block `b` if necessary to return a pointer to memory of `size` bytes.
+   *
+   * If the block is split, the remainder is returned to the pool.
+   * 
+   * @param b The block to allocate from.
+   * @param size The size in bytes of the requested allocation.
+   * @param stream The stream on which the allocation will be used.
+   * @return void* The pointer to the allocated memory.
+   */
   void* allocate_from_block(block const& b, size_t size, cudaStream_t stream)
   {
     block alloc{b};
@@ -160,8 +209,14 @@ class pool_memory_resource final : public device_memory_resource {
     return reinterpret_cast<void*>(alloc.ptr);
   }
 
-
-  void find_and_free_block(void *p, size_t size, cudaStream_t stream)
+  /**
+   * @brief Frees the block associated with pointer `p`, returning it to the pool.
+   * 
+   * @param p The pointer to the memory to free.
+   * @param size The size of the memory to free. Must be equal to the original allocation size.
+   * @param stream The stream on which the memory was last used.
+   */
+  void free_block(void *p, size_t size, cudaStream_t stream)
   {
     if (p == nullptr) return;
 
@@ -176,6 +231,13 @@ class pool_memory_resource final : public device_memory_resource {
     }
   }
 
+  /**
+   * @brief Allocates memory of `size` bytes using the upstream memory_resource, on `stream`.
+   * 
+   * @param size The size of the requested allocation.
+   * @param stream The stream on which the requested allocation will be used.
+   * @return block A block of at least `size` bytes.
+   */
   block block_from_upstream(size_t size, cudaStream_t stream)
   {
     void* p = upstream_mr_->allocate(size, stream);
@@ -184,6 +246,10 @@ class pool_memory_resource final : public device_memory_resource {
     return b;
   }
 
+  /**
+   * @brief Free all memory allocated from the upstream memory_resource.
+   * 
+   */
   void free_all()
   {
     for (auto b : upstream_blocks_)
@@ -192,6 +258,10 @@ class pool_memory_resource final : public device_memory_resource {
   }
 
 #ifndef NDEBUG
+  /**
+   * @brief Print debugging information about all blocks in the pool.
+   * 
+   */
   void print() {
     std::size_t free, total;
     std::tie(free, total) = upstream_mr_->get_mem_info(0);
@@ -234,10 +304,6 @@ class pool_memory_resource final : public device_memory_resource {
     bytes = rmm::detail::align_up(bytes, allocation_alignment);
     block b = available_larger_block(bytes, stream);
     void* p = allocate_from_block(b, bytes, stream);
-#ifndef NDEBUG
-    //std::cout << "Allocate " << bytes << " B on stream " << stream << "\n";
-    //print();
-#endif
     return p;
   }
 
@@ -249,12 +315,7 @@ class pool_memory_resource final : public device_memory_resource {
    * @param p Pointer to be deallocated
    *---------------------------------------------------------------------------**/
   void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override {
-    find_and_free_block(p, bytes, stream);
-#ifndef NDEBUG
-    //std::cout << "Free " << bytes << " B on stream " << stream 
-    //          << " pointer: " << p << "\n";
-    //print();
-#endif
+    free_block(p, bytes, stream);
   }
 
   /**---------------------------------------------------------------------------*
