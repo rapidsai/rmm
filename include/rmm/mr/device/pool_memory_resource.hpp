@@ -23,6 +23,7 @@
 #include <exception>
 #include <iostream>
 #include <list>
+#include <set>
 #include <map>
 #include <algorithm>
 #include <mutex>
@@ -125,7 +126,7 @@ class pool_memory_resource final : public device_memory_resource {
   block block_from_sync_list(free_list &blocks, size_t size, 
                              cudaStream_t list_stream, cudaStream_t stream)
   {
-    block b = blocks.best_fit(size); // get the best fit block
+    block const b = blocks.best_fit(size); // get the best fit block
 
     // If we found a block associated with a different stream, 
     // we have to synchronize the stream in order to use it
@@ -197,13 +198,12 @@ class pool_memory_resource final : public device_memory_resource {
    */
   void* allocate_from_block(block const& b, size_t size, cudaStream_t stream)
   {
-    block alloc{b};
+    block const alloc{b.ptr, size, b.is_head};
 
     if (b.size > size)
     {
       block rest{b.ptr + size, b.size - size, false};
       stream_blocks_[stream].insert(rest);
-      alloc.size = size;
     }
 
     allocated_blocks_.insert(alloc);
@@ -221,7 +221,7 @@ class pool_memory_resource final : public device_memory_resource {
   {
     if (p == nullptr) return;
 
-    auto i = allocated_blocks_.find(block{static_cast<char*>(p)});
+    auto const i = allocated_blocks_.find(block{static_cast<char*>(p)});
 
     if (i != allocated_blocks_.end()) {  // found
       // assert(i->size == rmm::detail::align_up(size, allocation_alignment));
@@ -303,9 +303,8 @@ class pool_memory_resource final : public device_memory_resource {
   void* do_allocate(std::size_t bytes, cudaStream_t stream) override {
     if (bytes <= 0) return nullptr;
     bytes = rmm::detail::align_up(bytes, allocation_alignment);
-    block b = available_larger_block(bytes, stream);
-    void* p = allocate_from_block(b, bytes, stream);
-    return p;
+    block const b = available_larger_block(bytes, stream);
+    return allocate_from_block(b, bytes, stream);
   }
 
   /**---------------------------------------------------------------------------*
@@ -336,7 +335,7 @@ class pool_memory_resource final : public device_memory_resource {
 
   size_t maximum_pool_size_{default_maximum_size};
 
-  UpstreamResource* upstream_mr_;
+  UpstreamResource* upstream_mr_; // The "heap" to allocate the pool from
 
   // map of [stream_id, free_list] pairs
   // stream stream_id must be synced before allocating from this list to a different stream

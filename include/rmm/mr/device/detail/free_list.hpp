@@ -86,13 +86,13 @@ struct free_list {
   using iterator = typename list_type::iterator;
   using const_iterator = typename list_type::const_iterator;
 
-  iterator begin() noexcept              { return blocks.begin(); }
-  const_iterator begin() const noexcept  { return begin(); }
-  const_iterator cbegin() const noexcept { return begin(); }
+  iterator begin() noexcept              { return blocks.begin(); } /// beginning of the free list
+  const_iterator begin() const noexcept  { return begin(); }        /// beginning of the free list
+  const_iterator cbegin() const noexcept { return begin(); }        /// beginning of the free list
 
-  iterator end() noexcept                { return blocks.end(); }
-  const_iterator end() const noexcept    { return end(); }
-  const_iterator cend() const noexcept   { return end(); }
+  iterator end() noexcept                { return blocks.end(); }   /// end of the free list
+  const_iterator end() const noexcept    { return end(); }          /// end of the free list
+  const_iterator cend() const noexcept   { return end(); }          /// end of the free list
 
   /**
    * @brief The size of the free list in blocks.
@@ -122,20 +122,20 @@ struct free_list {
     }
 
     // Find the right place (in ptr order) to insert the block
-    auto next = std::find_if(blocks.begin(), blocks.end(),
+    auto const next = std::find_if(blocks.begin(), blocks.end(),
                              [b](block const& i) { return i.ptr > b.ptr; });
-    auto previous = (next == blocks.begin()) ? next : std::prev(next);
+    auto const previous = (next == blocks.begin()) ? next : std::prev(next);
 
     // Coalesce with neighboring blocks or insert the new block if it can't be coalesced
-    bool merge_prev = !b.is_head && (previous->ptr + previous->size == b.ptr);
-    bool merge_next = (next != blocks.end()) && !next->is_head && (b.ptr + b.size == next->ptr);
+    bool const merge_prev = !b.is_head && (previous->ptr + previous->size == b.ptr);
+    bool const merge_next = (next != blocks.end()) && !next->is_head && (b.ptr + b.size == next->ptr);
 
-    if (merge_prev) {
+    if (merge_prev && merge_next) {
       *previous = detail::merge_blocks(*previous, b);
-    if (merge_next) {
       *previous = detail::merge_blocks(*previous, *next);
       erase(next);
-    }
+    } else if (merge_prev) {
+      *previous = detail::merge_blocks(*previous, b);
     } else if (merge_next) {
       *next = detail::merge_blocks(b, *next);
     } else {
@@ -182,7 +182,7 @@ struct free_list {
   block best_fit(size_t size) {
     block dummy{};
     // find best fit block
-    auto iter = std::min_element(blocks.begin(), blocks.end(),
+    auto const iter = std::min_element(blocks.begin(), blocks.end(),
     [size](block lhs, block rhs) {
       return (lhs.size >= size) && 
               ((lhs.size < rhs.size) || (rhs.size < size));
@@ -191,7 +191,7 @@ struct free_list {
     if (iter->size >= size)
     {
       // Remove the block from the free_list and return it.
-      block found = *iter;
+      block const found = *iter;
       erase(iter);
       return found;
     }
