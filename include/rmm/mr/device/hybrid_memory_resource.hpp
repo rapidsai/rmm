@@ -16,7 +16,8 @@
 #pragma once
 
 #include <rmm/mr/device/device_memory_resource.hpp>
-#include <rmm/mr/device/default_memory_resource.hpp>
+#include <rmm/detail/aligned.hpp>
+#include <rmm/detail/error.hpp>
 
 #include <cuda_runtime_api.h>
 
@@ -37,24 +38,49 @@ namespace rmm {
 namespace mr {
 
 /**
- * @brief Allocates fixed-size memory blocks.
- * 
- * Supports only allocations of size smaller than the configured block_size.
+ * @brief Allocates memory from one of two allocators selected based on the requested size.
+ *
+ * For example, could use a fixed_multisize_memory_resource for allocations below the size
+ * threshold, and a pool_memory_resource for allocations above the size threshold. This can be 
+ * advantageous if there are many small allocations, because fixed_multisize_memory_resource is much 
+ * faster than pool_memory_resource, and it can reduce fragmentation that can impact the
+ * availability of large contiguous blocks of memory.
+ *
+ * @tparam SmallAllocMemoryResource the memory_resource type to use for small allocations.
+ * @tparam LargeAllocMemoryResource the memory_resource type to use for large allocations.
  */
  template <typename SmallAllocMemoryResource, typename LargeAllocMemoryResource>
 class hybrid_memory_resource : public device_memory_resource {
  public:
 
+  // The default size used to select between the two allocators.
   static constexpr std::size_t default_threshold_size = 1 << 22; // 4 MiB
 
+  /**
+   * @brief Construct a new hybrid_memory_resource_object that selects between the two
+   * specified memory_resources based on the `threshold_size`.
+   * 
+   * @param small_mr The memory_resource to use for small allocations.
+   * @param large_mr The memory_resource to use for large allocations.
+   * @param threshold_size Allocations > this size (in bytes) use large_mr. Allocations <= this size
+   *                       use small_mr. Must be a power of two.
+   */
   explicit hybrid_memory_resource(
       SmallAllocMemoryResource* small_mr,
       LargeAllocMemoryResource* large_mr,
       std::size_t threshold_size = default_threshold_size)
       : small_mr_{small_mr},
         large_mr_{large_mr},
-        threshold_size_{threshold_size} {}
+        threshold_size_{threshold_size} {
+    RMM_EXPECTS(rmm::detail::is_pow2(threshold_size), "threshold_size must be a power of 2.");
+  }
 
+  /**
+   * @brief Destroy the hybrid-memory_resource object.
+   * 
+   * @note since hybrid_memory_resource does not own its upstream memory_resources, this does not
+   *       free any memory.
+   */
   virtual ~hybrid_memory_resource() = default;
 
   /**
@@ -65,15 +91,28 @@ class hybrid_memory_resource : public device_memory_resource {
    */
   bool supports_streams() const noexcept override { return true; }
 
+  /**
+   * @brief Get the upstream memory_resource used for small allocations.
+   * 
+   * @return SmallAllocMemoryResource* the upstream resource used for small allocations.
+   */
   SmallAllocMemoryResource* get_small_mr() { return small_mr_; }
+  /**
+   * @brief Get the upstream memory_resource used for large allocations.
+   * 
+   * @return LargeAllocMemoryResource* the upstream resource used for large allocations.
+   */
   LargeAllocMemoryResource* get_large_mr() { return large_mr_; }
 
  private:
 
   /**
-   * @brief Get the memory resource for the requested size
+   * @brief Get the memory resource to use to allocate the requested size.
    * 
-   * @param bytes Requested allocation size in bytes
+   * Returns the small memory_resource if `bytes` is <= the threshold size, or the large
+   * memory_resource otherwise.
+   *
+   * @param bytes Requested allocation size in bytes.
    * @return rmm::mr::device_memory_resource& memory_resource that can allocate the requested size.
    */
   rmm::mr::device_memory_resource& get_resource(std::size_t bytes) {
