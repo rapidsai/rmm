@@ -28,23 +28,12 @@
 namespace rmm {
 namespace mr {
 
-// nested MR type names can get long...
-using pool_mr = pool_memory_resource<cuda_memory_resource>;
-using fixed_multisize_mr = fixed_multisize_memory_resource<pool_mr>;
-using hybrid_mr = hybrid_memory_resource<fixed_multisize_mr, pool_mr>;
-
 namespace detail{
 
 // gets the default memory_resource when none is set
 device_memory_resource* initial_resource() {
   static cuda_memory_resource cuda_res{};
-#if 1
-  static pool_mr pool_res{&cuda_res};
-  static hybrid_mr hybrid_res(new fixed_multisize_mr(&pool_res), &pool_res);
-  return &hybrid_res;
-#else
   return &cuda_res;
-#endif
 }
 } // namespace detail
 

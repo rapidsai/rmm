@@ -20,6 +20,14 @@
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
+#include <rmm/mr/device/pool_memory_resource.hpp>
+#include <rmm/mr/device/fixed_multisize_memory_resource.hpp>
+#include <rmm/mr/device/hybrid_memory_resource.hpp>
+
+// nested MR type names can get long...
+using pool_mr = rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>;
+using fixed_multisize_mr = rmm::mr::fixed_multisize_memory_resource<pool_mr>;
+using hybrid_mr = rmm::mr::hybrid_memory_resource<fixed_multisize_mr, pool_mr>;
 
 namespace rmm {
 /**
@@ -102,15 +110,26 @@ void Manager::initialize(const rmmOptions_t* new_options) {
 
   if (nullptr != new_options) options = *new_options;
 
+  // nested MR type names can get long...
+  using pool_mr = rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>;
+  using mng_pool_mr = rmm::mr::pool_memory_resource<rmm::mr::managed_memory_resource>;
+  using fixed_multisize_mr = rmm::mr::fixed_multisize_memory_resource<pool_mr>;
+  using mng_fixed_multisize_mr = rmm::mr::fixed_multisize_memory_resource<mng_pool_mr>;
+  using hybrid_mr = rmm::mr::hybrid_memory_resource<fixed_multisize_mr, pool_mr>;
+  using mng_hybrid_mr = rmm::mr::hybrid_memory_resource<mng_fixed_multisize_mr, mng_pool_mr>;
+
   if (usePoolAllocator()) {
     auto pool_size = getOptions().initial_pool_size;
     auto const& devices = getOptions().devices;
     if (useManagedMemory()) {
+      // TODO: these leak...
+      mng_pool_mr* pool = new mng_pool_mr(new rmm::mr::managed_memory_resource);
       initialized_resource.reset(
-          new rmm::mr::cnmem_managed_memory_resource(pool_size, devices));
+          new mng_hybrid_mr(new mng_fixed_multisize_mr(pool), pool, pool_size));
     } else {
+      pool_mr* pool = new pool_mr(new rmm::mr::cuda_memory_resource);
       initialized_resource.reset(
-          new rmm::mr::cnmem_memory_resource(pool_size, devices));
+          new hybrid_mr(new fixed_multisize_mr(pool), pool, pool_size));
     }
   } else if (rmm::Manager::useManagedMemory()) {
     initialized_resource.reset(new rmm::mr::managed_memory_resource());
