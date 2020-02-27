@@ -38,7 +38,7 @@
 - PR #298 Remove RMM_CUDA_TRY from cuda_event_timer destructor
 - PR #299 Fix assert condition blocking debug builds
 - PR #300 Fix host mr_tests compile error
-- PR #311 Fix libcudf compilation errors due to explicit defaulted device_buffer constructor.
+- PR #312 Fix libcudf compilation errors due to explicit defaulted device_buffer constructor.
 
 
 # RMM 0.12.0 (Date TBD)
