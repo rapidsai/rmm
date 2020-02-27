@@ -84,12 +84,19 @@ class hybrid_memory_resource : public device_memory_resource {
   virtual ~hybrid_memory_resource() = default;
 
   /**
-   * @brief Queries whether the resource supports use of non-null streams for
+   * @brief Query whether the resource supports use of non-null streams for
    * allocation/deallocation.
    *
    * @returns true
    */
   bool supports_streams() const noexcept override { return true; }
+
+  /**
+   * @brief Query whether the resource supports the get_mem_info API.
+   * 
+   * @return bool true if the resource supports get_mem_info, false otherwise.
+   */
+  bool supports_get_mem_info() const noexcept override { return false; }
 
   /**
    * @brief Get the upstream memory_resource used for small allocations.

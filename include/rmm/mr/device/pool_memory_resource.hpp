@@ -101,6 +101,13 @@ class pool_memory_resource final : public device_memory_resource {
   bool supports_streams() const noexcept override { return true; }
 
   /**
+   * @brief Query whether the resource supports the get_mem_info API.
+   * 
+   * @return bool false
+   */
+  bool supports_get_mem_info() const noexcept override {return false; }
+
+  /**
    * @brief Get the upstream memory_resource object.
    *
    * @return UpstreamResource* the upstream memory resource.
