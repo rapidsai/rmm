@@ -73,9 +73,18 @@ class device_buffer {
  public:
   /**
    * @brief Default constructor creates an empty `device_buffer`
-   *
    */
-  device_buffer() = default;
+  // Note: we cannot use `device_buffer() = default;` because nvcc implicitly adds
+  // `__host__ __device__` specifiers to the defaulted constructor when it is called within the 
+  // context of both host and device functions. Specifically, the `cudf::type_dispatcher` is a host-
+  // device function. This causes warnings/errors because this ctor invokes host-only functions.
+  device_buffer()
+      : _data{nullptr},
+        _size{},
+        _capacity{},
+        _stream{},
+        _mr{rmm::mr::get_default_resource()} {}
+
 
   /**
    * @brief Constructs a new device buffer of `size` uninitialized bytes
