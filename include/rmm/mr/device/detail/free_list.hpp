@@ -17,38 +17,70 @@
 #pragma once
 
 #include <list>
-#include <set>
 #include <algorithm>
 #include <iostream>
+#include "rmm/detail/error.hpp"
 
 namespace rmm {
 namespace mr {
 namespace detail {
 
+/**
+ * @brief A simple block structure specifying the size and location of a block
+ *        of memory, with a flag indicating whether it is the head of a block
+ *        of memory allocated from the heap (or upstream allocator).
+ */
 struct block
 {
   char* ptr;          ///< Raw memory pointer
   size_t size;        ///< Size in bytes
   bool is_head;       ///< Indicates whether ptr was allocated from the heap
 
+  /**
+   * @brief Comparison operator to enable comparing blocks and storing in ordered containers.
+   * 
+   * Orders by ptr address.
+
+   * @param rhs 
+   * @return true if this block's ptr is < than `rhs` block pointer.
+   * @return false if this block's ptr is >= than `rhs` block pointer.
+   */
   bool operator<(block const& rhs) const { return ptr < rhs.ptr; };
 
+  /**
+   * @brief Print this block. For debugging.
+   */
   void print() const {
     std::cout << reinterpret_cast<void*>(ptr) << " " << size << "B\n";
   }
 };
 
-// combine contiguous blocks
+/**
+ * @brief Coalesce two contiguous blocks into one.
+ * 
+ * @throw rmm::logic_error if `a.ptr + a.size != b.ptr`. (blocks are not contiguous). 
+ * @throw rmm::logic_error if `b.is_head == true`. (merging across upstream allocation boundaries).
+ * @param a first block to merge
+ * @param b second block to merge
+ * @return block The merged block
+ */
 inline block merge_blocks(block const& a, block const& b)
 {
-  if (a.ptr + a.size != b.ptr || b.is_head)
-    throw std::logic_error("Invalid block merge");
+  RMM_EXPECTS(a.ptr + a.size == b.ptr, "Merging noncontiguous blocks");
+  RMM_EXPECTS(not b.is_head, "Merging across upstream allocation boundaries");
 
   return block{a.ptr, a.size + b.size};
 }
 
+/**
+ * @brief An ordered list of free memory blocks that coalesces contiguous blocks on insertion.
+ * 
+ * @tparam list_type the type of the internal list data structure.
+ */
 template < typename list_type = std::list<block> >
 struct free_list {
+  free_list() = default;
+  ~free_list() = default;
 
   using size_type = typename list_type::size_type;
   using iterator = typename list_type::iterator;
@@ -62,18 +94,39 @@ struct free_list {
   const_iterator end() const noexcept    { return end(); }
   const_iterator cend() const noexcept   { return end(); }
 
+  /**
+   * @brief The size of the free list in blocks.
+   * 
+   * @return size_type The number of blocks in the free list.
+   */
   size_type size() const noexcept        { return blocks.size(); }
 
+  /**
+   * @brief checks whether the free_list is empty.
+   * 
+   * @return true If there are blocks in the free_list.
+   * @return false If there are no blocks in the free_list.
+   */
+  bool is_empty() const noexcept         { return blocks.empty(); }
+
+  /**
+   * @brief Inserts a block into the `free_list` in the correct order, coalescing it with the
+   *        preceding and following blocks if either is contiguous.
+   * 
+   * @param b The block to insert.
+   */
   void insert(block const& b) {
-    if (blocks.empty()) { 
+    if (is_empty()) { 
       insert(blocks.end(), b);
       return;
     }
 
+    // Find the right place (in ptr order) to insert the block
     auto next = std::find_if(blocks.begin(), blocks.end(),
                              [b](block const& i) { return i.ptr > b.ptr; });
     auto previous = (next == blocks.begin()) ? next : std::prev(next);
 
+    // Coalesce with neighboring blocks or insert the new block if it can't be coalesced
     bool merge_prev = !b.is_head && (previous->ptr + previous->size == b.ptr);
     bool merge_next = (next != blocks.end()) && !next->is_head && (b.ptr + b.size == next->ptr);
 
@@ -86,10 +139,18 @@ struct free_list {
     } else if (merge_next) {
       *next = detail::merge_blocks(b, *next);
     } else {
-      insert(next, b);
+      insert(next, b); // cannot be coalesced, just insert
     }
   }
 
+  /**
+   * @brief Inserts blocks from range `[first, last)` into the free_list in their correct order, 
+   *        coalescing them with their preceding and following blocks if they are contiguous.
+   * 
+   * @tparam InputIt iterator type
+   * @param first The beginning of the range of blocks to insert
+   * @param last The end of the range of blocks to insert.
+   */
   template< class InputIt >
   void insert( InputIt first, InputIt last ) {
     for (auto iter = first; iter != last; ++iter) {
@@ -97,14 +158,29 @@ struct free_list {
     }
   }
 
+  /**
+   * @brief Removes the block indicated by `iter` from the free list.
+   * 
+   * @param iter An iterator referring to the block to erase.
+   */
   void erase(iterator const& iter) {
     blocks.erase(iter);
   }
 
+  /**
+  * @brief Erase all blocks from the free_list.
+  * 
+  */
   void clear() noexcept { blocks.clear(); }
 
+  /**
+   * @brief Finds the smallest block in the `free_list` large enough to fit `size` bytes.
+   * 
+   * @param size The size in bytes of the desired block.
+   * @return block A block large enough to store `size` bytes.
+   */
   block best_fit(size_t size) {
-    block dummy{nullptr, size, false};
+    block dummy{};
     // find best fit block
     auto iter = std::min_element(blocks.begin(), blocks.end(),
     [size](block lhs, block rhs) {
@@ -114,27 +190,36 @@ struct free_list {
 
     if (iter->size >= size)
     {
+      // Remove the block from the free_list and return it.
       block found = *iter;
       erase(iter);
       return found;
     }
     
-    return dummy;
+    return dummy; // not found
   }
 
+  /**
+   * @brief Print all blocks in the free_list.
+   */
   void print() const {
     std::cout << blocks.size() << "\n";
     for (block const& b : blocks) { b.print(); }
   }
 
 protected:
+  /**
+   * @brief Insert a block in the free list before the specified position
+   * 
+   * @param pos iterator before which the block will be inserted. pos may be the end() iterator.
+   * @param b The block to insert.
+   */
   void insert(const_iterator pos, block const& b) {
     blocks.insert(pos, b);
   }
 
 private:
-  list_type blocks;
-  //std::mutex blocks_mutex;
+  list_type blocks; // The internal container of blocks
 }; // free_list
 
 } // namespace rmm::mr::detail
