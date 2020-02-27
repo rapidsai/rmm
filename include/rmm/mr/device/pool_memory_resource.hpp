@@ -35,7 +35,7 @@ namespace mr {
  *        an upstream memory_resource.
  * 
  * @tparam UpstreamResource memory_resource to use for allocating the pool. Implements
- *                          rmm::mr::device_memory_resource interface
+ *                          rmm::mr::device_memory_resource interface.
  */
 template <typename UpstreamResource>
 class pool_memory_resource final : public device_memory_resource {
