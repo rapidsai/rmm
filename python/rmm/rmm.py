@@ -152,11 +152,10 @@ if numba:
             self._logging = logging
 
         def memalloc(self, nbytes, stream=0):
-            addr = librmm.rmm_alloc(nbytes, stream)
+            buf = librmm.DeviceBuffer(size=nbytes, stream=stream)
             ctx = cuda.current_context()
-            ptr = ctypes.c_uint64(int(addr))
-            finalizer = _make_finalizer(addr, stream)
-            mem = MemoryPointer(ctx, ptr, nbytes, finalizer=finalizer)
+            ptr = ctypes.c_uint64(int(buf.ptr))
+            mem = MemoryPointer(ctx, ptr, nbytes, owner=buf)
             return mem
 
         def get_ipc_handle(self, memory, stream=0):
