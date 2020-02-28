@@ -16,7 +16,8 @@
 - PR #283 Add random allocation benchmark.
 - PR #287 Enabled CUDA CXX11 for unit tests.
 - PR #292 Revamped RMM exceptions.
-- PR #162 New suballocator memory_resources.
+- PR #162 New suballocator memory_resources
+- PR #314 Improve pool_memory_resource growth strategy
 
 ## Improvements
 
