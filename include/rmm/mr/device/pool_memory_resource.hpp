@@ -25,6 +25,7 @@
 #include <list>
 #include <set>
 #include <map>
+#include <numeric>
 #include <algorithm>
 #include <mutex>
 
@@ -59,14 +60,13 @@ class pool_memory_resource final : public device_memory_resource {
       UpstreamResource* upstream_mr,
       std::size_t initial_pool_size = default_initial_size,
       std::size_t maximum_pool_size = default_maximum_size)
-      : upstream_mr_{upstream_mr} {
+      : upstream_mr_{upstream_mr}, maximum_pool_size_{maximum_pool_size} {
     cudaDeviceProp props;
 
     if (initial_pool_size == default_initial_size)  {
       int device{0};
       cudaGetDevice(&device);
       int memsize{0};
-      cudaDeviceProp props;
       cudaGetDeviceProperties(&props, device);
       initial_pool_size = props.totalGlobalMem / 2;
     }
@@ -74,7 +74,7 @@ class pool_memory_resource final : public device_memory_resource {
     initial_pool_size = rmm::detail::align_up(initial_pool_size, allocation_alignment);
 
     if (maximum_pool_size == default_maximum_size)
-        maximum_pool_size = props.totalGlobalMem;
+        maximum_pool_size_ = props.totalGlobalMem;
 
     // Allocate initial block
     stream_blocks_[0].insert(block_from_upstream(initial_pool_size, 0));
@@ -188,7 +188,7 @@ class pool_memory_resource final : public device_memory_resource {
     }
 
     // no larger blocks waiting on other streams, so create one
-    if (b.ptr == nullptr) b = block_from_upstream(size, stream);
+    if (b.ptr == nullptr) b = block_from_upstream(size_to_grow(size), stream);
 
     return b;
   }
@@ -240,6 +240,24 @@ class pool_memory_resource final : public device_memory_resource {
   }
 
   /**
+   * @brief Given a minimum size, computes an appropriate size to grow the pool.
+   * 
+   * Current strategy is to try to grow the pool by half the difference between
+   * the configured maximum pool size and the current pool size.
+   * 
+   * @param size The size of the minimum allocation immediately needed
+   * @return size_t The computed size to grow the pool.
+   */
+  size_t size_to_grow(size_t size) const {
+    auto const remaining = rmm::detail::align_up(maximum_pool_size_ - pool_size(),
+                                                 allocation_alignment);
+    auto const aligned_size = rmm::detail::align_up(size, allocation_alignment);
+    if (aligned_size <= remaining / 2) { return remaining / 2; }
+    else if (aligned_size <= remaining) { return remaining; }
+    else { return 0; }
+  };
+
+  /**
    * @brief Allocates memory of `size` bytes using the upstream memory_resource, on `stream`.
    * 
    * @param size The size of the requested allocation.
@@ -251,8 +269,18 @@ class pool_memory_resource final : public device_memory_resource {
     void* p = upstream_mr_->allocate(size, stream);
     block b{reinterpret_cast<char*>(p), size, true};
     upstream_blocks_[b.ptr] = b;
+    current_pool_size_ += b.size;
     return b;
   }
+
+  /**
+   * @brief Computes the size of the current pool
+   * 
+   * Includes allocated as well as free memory.
+   * 
+   * @return size_t The total size of the currently allocated pool.
+   */
+  size_t pool_size() const noexcept { return current_pool_size_; }
 
   /**
    * @brief Free all memory allocated from the upstream memory_resource.
@@ -263,6 +291,7 @@ class pool_memory_resource final : public device_memory_resource {
     for (auto b : upstream_blocks_)
       upstream_mr_->deallocate(b.first, b.second.size);
     upstream_blocks_.clear();
+    current_pool_size_ = 0;
   }
 
 #ifndef NDEBUG
@@ -341,6 +370,8 @@ class pool_memory_resource final : public device_memory_resource {
   }
 
   size_t maximum_pool_size_{default_maximum_size};
+
+  size_t current_pool_size_{0};
 
   UpstreamResource* upstream_mr_; // The "heap" to allocate the pool from
 
