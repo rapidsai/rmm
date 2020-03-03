@@ -155,7 +155,10 @@ if numba:
             buf = librmm.DeviceBuffer(size=nbytes, stream=stream)
             ctx = cuda.current_context()
             ptr = ctypes.c_uint64(int(buf.ptr))
-            mem = MemoryPointer(ctx, ptr, nbytes, owner=buf)
+            self.allocations[ptr.value] = buf
+            mem = MemoryPointer(ctx, ptr, nbytes,
+                                finalizer=_make_finalizer(ptr.value,
+                                                          self.allocations))
             return mem
 
         def get_ipc_handle(self, memory, stream=0):
@@ -239,7 +242,7 @@ def rmm_cupy_allocator(nbytes):
     return ptr
 
 
-def _make_finalizer(handle, stream):
+def _make_finalizer(handle, allocations):
     """
     Factory to make the finalizer function.
     We need to bind *handle* and *stream* into the actual finalizer, which
@@ -250,7 +253,7 @@ def _make_finalizer(handle, stream):
         """
         Invoked when the MemoryPointer is freed
         """
-        librmm.rmm_free(handle, stream)
+        del allocations[handle]
 
     return finalizer
 
