@@ -146,10 +146,10 @@ except Exception:
 
 if numba:
     class RMMNumbaManager(HostOnlyCUDAMemoryManager):
-        def __init__(self, logging=False):
-            super().__init__()
+        def __init__(self, *args, **kwargs):
+            self._logging = kwargs.pop('logging', False)
+            super().__init__(*args, **kwargs)
             self._initialized = False
-            self._logging = logging
 
         def memalloc(self, nbytes, stream=0):
             buf = librmm.DeviceBuffer(size=nbytes, stream=stream)
