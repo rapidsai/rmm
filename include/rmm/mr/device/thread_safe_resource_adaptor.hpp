@@ -64,6 +64,13 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
   */
   bool supports_streams() const noexcept override { return upstream_->supports_streams(); }
 
+  /**
+   * @brief Query whether the resource supports the get_mem_info API.
+   * 
+   * @return bool true if the upstream resource supports get_mem_info, false otherwise.
+   */
+  virtual bool supports_get_mem_info() const noexcept { return upstream_->supports_streams(); }
+
  private:
   /**
    * @brief Allocates memory of size at least `bytes` using the upstream
@@ -84,12 +91,6 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
   /**
    * @brief Free allocation of size `bytes` pointed to to by `p` and log the
    * deallocation.
-   *
-   * Every invocation of `logging_resource_adaptor::do_deallocate` will write
-   * the following CSV formatted line to the file specified at construction:
-   * ```
-   * *TIMESTAMP*,"free",*bytes*,*stream*
-   * ```
    *
    * @throws Nothing.
    *
