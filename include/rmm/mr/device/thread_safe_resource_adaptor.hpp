@@ -35,7 +35,7 @@ template <typename Upstream>
 class thread_safe_resource_adaptor final : public device_memory_resource {
  public:
 
-  typename lock_t
+  using lock_t = std::lock_guard<std::mutex>;
 
   /**
    * @brief Construct a new thread safe resource adaptor using `upstream` to satisfy
@@ -77,7 +77,7 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
    * @return void* Pointer to the newly allocated memory
    */
   void* do_allocate(std::size_t bytes, cudaStream_t stream) override {
-    std::lock_guard<std::mutex> lock(mtx);
+    lock_t lock(mtx);
     return upstream_->allocate(bytes, stream);
   }
 
@@ -98,7 +98,7 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
    * @param stream Stream on which to perform the deallocation
    */
   void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override {
-    std::lock_guard<std::mutex> lock(mtx);
+    lock_t lock(mtx);
     upstream_->deallocate(p, bytes, stream);
   }
 
@@ -112,7 +112,6 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
    * @return false If the two resources are not equal
    */
   bool do_is_equal(device_memory_resource const& other) const noexcept {
-    std::lock_guard<std::mutex> lock(mtx);
     return upstream_->is_equal(other);
   }
 
@@ -125,11 +124,11 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
    * @return std::pair contaiing free_size and total_size of memory
    */
   std::pair<size_t, size_t> do_get_mem_info(cudaStream_t stream) const {
-    std::lock_guard<std::mutex> lock(mtx);
+    lock_t lock(mtx);
     return upstream_->get_mem_info(stream);
   }
 
-  std::mutex mtx; // mutex for thread safe access to upstream
+  std::mutex mutable mtx; // mutex for thread safe access to upstream
   Upstream* upstream_;  ///< The upstream resource used for satisfying allocation requests
 };
 
