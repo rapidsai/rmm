@@ -64,6 +64,13 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
   */
   bool supports_streams() const noexcept override { return upstream_->supports_streams(); }
 
+  /**
+   * @brief Query whether the resource supports the get_mem_info API.
+   * 
+   * @return bool true if the upstream resource supports get_mem_info, false otherwise.
+   */
+  virtual bool supports_get_mem_info() const noexcept { return upstream_->supports_streams(); }
+
  private:
   /**
    * @brief Allocates memory of size at least `bytes` using the upstream
@@ -85,12 +92,6 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
    * @brief Free allocation of size `bytes` pointed to to by `p` and log the
    * deallocation.
    *
-   * Every invocation of `logging_resource_adaptor::do_deallocate` will write
-   * the following CSV formatted line to the file specified at construction:
-   * ```
-   * *TIMESTAMP*,"free",*bytes*,*stream*
-   * ```
-   *
    * @throws Nothing.
    *
    * @param p Pointer to be deallocated
@@ -109,10 +110,17 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
    *
    * @param other The other resource to compare to
    * @return true If the two resources are equivalent
-   * @return false If the two resources are not equal
+   * @return false If the two resources are not equivalent
    */
   bool do_is_equal(device_memory_resource const& other) const noexcept {
-    return upstream_->is_equal(other);
+    if (this == &other) return true;
+    else {
+      thread_safe_resource_adaptor<Upstream> const* thread_safe_other = 
+        dynamic_cast<thread_safe_resource_adaptor<Upstream> const*>(&other);
+      if (thread_safe_other != nullptr) 
+        return upstream_->is_equal(*thread_safe_other->get_upstream());
+      else return upstream_->is_equal(other);
+    }
   }
 
   /**

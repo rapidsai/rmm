@@ -22,6 +22,7 @@
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
+#include <rmm/mr/device/thread_safe_resource_adaptor.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
 #include <rmm/mr/device/fixed_size_memory_resource.hpp>
 #include <rmm/mr/device/fixed_multisize_memory_resource.hpp>
@@ -79,6 +80,8 @@ using fixed_multisize_pool_mr =
     rmm::mr::fixed_multisize_memory_resource<pool_mr>;
 using hybrid_mr =
     rmm::mr::hybrid_memory_resource<fixed_multisize_pool_mr, pool_mr>;
+
+using thread_safe_cuda_mr = rmm::mr::thread_safe_resource_adaptor<rmm::mr::cuda_memory_resource>;
 
 template <typename MemoryResourceType>
 struct MRTest : public ::testing::Test {
@@ -145,6 +148,16 @@ MRTest<hybrid_mr>::~MRTest()
   this->mr.reset();
   delete small;
   delete large;
+}
+
+template <>
+MRTest<thread_safe_cuda_mr>::MRTest()
+: mr{new thread_safe_cuda_mr(new rmm::mr::cuda_memory_resource)} {}
+
+template <>
+MRTest<thread_safe_cuda_mr>::~MRTest() {
+  auto upstream = mr->get_upstream();
+  delete upstream;
 }
 
 
@@ -292,10 +305,13 @@ void MRTest<fixed_multisize_mr>::test_mixed_random_allocation_free(cudaStream_t 
 }
 
 // Test on all memory resource classes
+};
+
 using resources = ::testing::Types<rmm::mr::cuda_memory_resource,
                                    rmm::mr::managed_memory_resource,
                                    rmm::mr::cnmem_memory_resource,
                                    rmm::mr::cnmem_managed_memory_resource,
+                                   thread_safe_cuda_mr,
                                    pool_mr,
                                    fixed_size_mr,
                                    fixed_multisize_mr,
