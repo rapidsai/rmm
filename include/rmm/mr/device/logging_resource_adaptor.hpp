@@ -19,9 +19,9 @@
 
 #include <rmm/detail/error.hpp>
 
-#include <sstream>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/spdlog.h>
+#include <sstream>
 
 namespace rmm {
 namespace mr {
@@ -76,6 +76,19 @@ class logging_resource_adaptor final : public device_memory_resource {
     logger_->set_pattern("%H:%M:%S:%f,%v");
   }
 
+  /**
+   * @brief Return pointer to the upstream resource.
+   *
+   * @return Upstream* Pointer to the upstream resource.
+   */
+  Upstream* get_upstream() const noexcept { return upstream_; }
+
+  /**
+   * @brief Checks whether the upstream resource supports streams.
+   *
+   * @return true The upstream resource supports streams
+   * @return false The upstream resource does not support streams.
+   */
   bool supports_streams() const noexcept override {
     return upstream_->supports_streams();
   }
