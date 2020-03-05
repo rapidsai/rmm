@@ -160,7 +160,6 @@ install(TARGETS rmm
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/rmm
         DESTINATION include)
-        
 ###################################################################################################
 # - make documentation ----------------------------------------------------------------------------
 
