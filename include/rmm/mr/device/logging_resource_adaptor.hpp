@@ -125,7 +125,7 @@ class logging_resource_adaptor final : public device_memory_resource {
   }
 
   /**
-   * @brief Free allocation of size `bytes` pointed to to by `p` and log the
+   * @brief Free allocation of size `bytes` pointed to by `p` and log the
    * deallocation.
    *
    * Every invocation of `logging_resource_adaptor::do_deallocate` will write
