@@ -46,9 +46,6 @@ class logging_resource_adaptor final : public device_memory_resource {
    *
    * The logfile will be written using CSV formatting.
    *
-   * If the directories specified in `filename` do not exist, they will be
-   * created.
-   *
    * Truncates `filename` if it already exists.
    *
    * Creating multiple `logging_resource_adaptor`s with the same `filename` will
