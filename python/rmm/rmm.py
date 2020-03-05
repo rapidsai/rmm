@@ -16,8 +16,6 @@ import ctypes
 from contextlib import contextmanager
 from enum import IntEnum
 
-from numba import cuda
-from numba.cuda.cudadrv.memory import HostOnlyCUDAMemoryManager, MemoryPointer
 import rmm._lib as librmm
 
 
@@ -140,12 +138,13 @@ def get_info(stream=0):
 
 try:
     import numba
+    from numba import cuda
 except Exception:
     numba = None
     _numba_memory_manager = None
 
 if numba:
-    class RMMNumbaManager(HostOnlyCUDAMemoryManager):
+    class RMMNumbaManager(cuda.HostOnlyCUDAMemoryManager):
         def __init__(self, *args, **kwargs):
             self._logging = kwargs.pop('logging', False)
             super().__init__(*args, **kwargs)
@@ -156,9 +155,8 @@ if numba:
             ctx = cuda.current_context()
             ptr = ctypes.c_uint64(int(buf.ptr))
             self.allocations[ptr.value] = buf
-            mem = MemoryPointer(ctx, ptr, nbytes,
-                                finalizer=_make_finalizer(ptr.value,
-                                                          self.allocations))
+            finalizer = _make_finalizer(ptr.value, self.allocations)
+            mem = cuda.MemoryPointer(ctx, ptr, nbytes, finalizer=finalizer)
             return mem
 
         def get_ipc_handle(self, memory, stream=0):
@@ -170,7 +168,7 @@ if numba:
             # at the C++ layer for this, and also not rely on borrowing bits of
             # Numba internals to initialise ipchandle.
             ipchandle = (ctypes.c_byte * 64)()  # IPC handle is 64 bytes
-            cuda.cudadrv.memory.driver_funcs.cuIpcGetMemHandle(
+            cuda.cudadrv.driver.driver.cuIpcGetMemHandle(
                 ctypes.byref(ipchandle),
                 memory.owner.handle,
             )
@@ -185,17 +183,18 @@ if numba:
             return get_info()
 
         def initialize(self):
+            # Nothing special required to initialize RMM for the context.
             super().initialize()
-            if not self._initialized:
-                reinitialize(logging=self._logging)
-                self._initialized = True
 
         def reset(self):
+            # We keep our allocations in self.allocations, which is cleared by
+            # HostOnlyCUDAMemoryManager.reset().
             super().reset()
-            reinitialize(logging=self._logging)
 
         @contextmanager
         def defer_cleanup(self):
+            # No special action taken to defer cleanup in this example
+            # implementation.
             with super().defer_cleanup():
                 yield
 
@@ -208,7 +207,7 @@ if numba:
 
 def use_rmm_for_numba():
     if numba:
-        cuda.cudadrv.driver.set_memory_manager(RMMNumbaManager)
+        cuda.set_memory_manager(RMMNumbaManager)
     else:
         raise RuntimeError("Numba is not available")
 
@@ -253,7 +252,22 @@ def _make_finalizer(handle, allocations):
         """
         Invoked when the MemoryPointer is freed
         """
-        del allocations[handle]
+        # At exit time (particularly in the Numba test suite) allocations may
+        # have already been cleaned up by a call to Context.reset() for the
+        # context, even if there are some DeviceNDArrays and their underlying
+        # allocations lying around. Finalizers then get called by weakref's
+        # atexit finalizer, at which point allocations[handle] no longer
+        # exists. This is harmless, except that a traceback is printed just
+        # prior to exit (without abnormally terminating the program), but is
+        # worrying for the user. To avoid the traceback, we check if
+        # allocations is already empty.
+        #
+        # In the case where allocations is not empty, but handle is not in
+        # allocations, then something has gone wrong - so we only guard against
+        # allocations being completely empty, rather than handle not being in
+        # allocations.
+        if allocations:
+            del allocations[handle]
 
     return finalizer
 
