@@ -23,11 +23,21 @@
 #include <rmm/mr/device/pool_memory_resource.hpp>
 #include <rmm/mr/device/fixed_multisize_memory_resource.hpp>
 #include <rmm/mr/device/hybrid_memory_resource.hpp>
+#include <rmm/mr/device/thread_safe_resource_adaptor.hpp>
 
-// nested MR type names can get long...
-using pool_mr = rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>;
-using fixed_multisize_mr = rmm::mr::fixed_multisize_memory_resource<pool_mr>;
-using hybrid_mr = rmm::mr::hybrid_memory_resource<fixed_multisize_mr, pool_mr>;
+#define RMM_HYBRID_RESOURCE
+
+#ifdef RMM_HYBRID_RESOURCE
+  // nested MR type names can get long...
+  using pool_mr = rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>;
+  using mng_pool_mr = rmm::mr::pool_memory_resource<rmm::mr::managed_memory_resource>;
+  using fixed_multisize_mr = rmm::mr::fixed_multisize_memory_resource<pool_mr>;
+  using mng_fixed_multisize_mr = rmm::mr::fixed_multisize_memory_resource<mng_pool_mr>;
+  using hybrid_mr = rmm::mr::hybrid_memory_resource<fixed_multisize_mr, pool_mr>;
+  using mng_hybrid_mr = rmm::mr::hybrid_memory_resource<mng_fixed_multisize_mr, mng_pool_mr>;
+  using thread_safe_hybrid_mr = rmm::mr::thread_safe_resource_adaptor<hybrid_mr>;
+  using thread_safe_mng_hybrid_mr = rmm::mr::thread_safe_resource_adaptor<mng_hybrid_mr>;
+#endif
 
 namespace rmm {
 /**
@@ -110,27 +120,32 @@ void Manager::initialize(const rmmOptions_t* new_options) {
 
   if (nullptr != new_options) options = *new_options;
 
-  // nested MR type names can get long...
-  using pool_mr = rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>;
-  using mng_pool_mr = rmm::mr::pool_memory_resource<rmm::mr::managed_memory_resource>;
-  using fixed_multisize_mr = rmm::mr::fixed_multisize_memory_resource<pool_mr>;
-  using mng_fixed_multisize_mr = rmm::mr::fixed_multisize_memory_resource<mng_pool_mr>;
-  using hybrid_mr = rmm::mr::hybrid_memory_resource<fixed_multisize_mr, pool_mr>;
-  using mng_hybrid_mr = rmm::mr::hybrid_memory_resource<mng_fixed_multisize_mr, mng_pool_mr>;
-
   if (usePoolAllocator()) {
+#ifdef RMM_HYBRID_RESOURCE
     auto pool_size = getOptions().initial_pool_size;
     auto const& devices = getOptions().devices;
     if (useManagedMemory()) {
-      // TODO: these leak...
       mng_pool_mr* pool = new mng_pool_mr(new rmm::mr::managed_memory_resource);
       initialized_resource.reset(
-          new mng_hybrid_mr(new mng_fixed_multisize_mr(pool), pool, pool_size));
+        new thread_safe_mng_hybrid_mr(
+          new mng_hybrid_mr(new mng_fixed_multisize_mr(pool), pool, pool_size)));
     } else {
       pool_mr* pool = new pool_mr(new rmm::mr::cuda_memory_resource);
       initialized_resource.reset(
-          new hybrid_mr(new fixed_multisize_mr(pool), pool, pool_size));
+        new thread_safe_hybrid_mr(
+          new hybrid_mr(new fixed_multisize_mr(pool), pool, pool_size)));
     }
+#else
+    auto pool_size = getOptions().initial_pool_size;
+    auto const& devices = getOptions().devices;
+    if (useManagedMemory()) {
+      initialized_resource.reset(
+        new rmm::mr::cnmem_managed_memory_resource(pool_size, devices));
+    } else {
+      initialized_resource.reset(
+        new rmm::mr::cnmem_memory_resource(pool_size,  devices));
+    }
+#endif
   } else if (rmm::Manager::useManagedMemory()) {
     initialized_resource.reset(new rmm::mr::managed_memory_resource());
   } else {
@@ -150,6 +165,28 @@ void Manager::finalize() {
   if (isInitialized()) {
     registered_streams.clear();
     logger.clear();
+#ifdef RMM_HYBRID_RESOURCE
+    // TODO: it's a pain to free all these
+    if (usePoolAllocator()) {
+      if (useManagedMemory()) {
+        thread_safe_mng_hybrid_mr *ts{
+          static_cast<thread_safe_mng_hybrid_mr*>(initialized_resource.get())
+        };
+        auto hybrid = ts->get_upstream();
+        delete hybrid->get_small_mr();
+        delete hybrid->get_large_mr();
+        delete hybrid;
+      } else {
+        thread_safe_hybrid_mr *ts{
+          static_cast<thread_safe_hybrid_mr*>(initialized_resource.get())
+        };
+        auto hybrid = ts->get_upstream();
+        delete hybrid->get_small_mr();
+        delete hybrid->get_large_mr();
+        delete hybrid;
+      }
+    }
+#endif
     initialized_resource.reset();
     is_initialized = false;
   }
