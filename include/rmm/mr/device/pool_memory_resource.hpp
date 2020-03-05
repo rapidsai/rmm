@@ -187,8 +187,12 @@ class pool_memory_resource final : public device_memory_resource {
       }
     }
 
-    // no larger blocks waiting on other streams, so create one
-    if (b.ptr == nullptr) b = block_from_upstream(size_to_grow(size), stream);
+    // no larger blocks waiting on other streams, so grow the pool and create a block
+    if (b.ptr == nullptr) {
+      size_t grow_size = size_to_grow(size);
+      RMM_EXPECTS(grow_size > 0, rmm::bad_alloc, "Maximum pool size exceeded");
+      b = block_from_upstream(grow_size, stream);
+    }
 
     return b;
   }
