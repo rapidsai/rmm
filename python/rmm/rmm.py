@@ -145,11 +145,6 @@ except Exception:
 
 if numba:
     class RMMNumbaManager(cuda.HostOnlyCUDAMemoryManager):
-        def __init__(self, *args, **kwargs):
-            self._logging = kwargs.pop('logging', False)
-            super().__init__(*args, **kwargs)
-            self._initialized = False
-
         def memalloc(self, nbytes, stream=0):
             buf = librmm.DeviceBuffer(size=nbytes, stream=stream)
             ctx = cuda.current_context()
