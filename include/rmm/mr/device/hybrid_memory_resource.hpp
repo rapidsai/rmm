@@ -122,10 +122,10 @@ class hybrid_memory_resource : public device_memory_resource {
    * @param bytes Requested allocation size in bytes.
    * @return rmm::mr::device_memory_resource& memory_resource that can allocate the requested size.
    */
-  rmm::mr::device_memory_resource& get_resource(std::size_t bytes) {
+  rmm::mr::device_memory_resource* get_resource(std::size_t bytes) {
     if (bytes <= threshold_size_)
-      return *small_mr_;
-    else return *large_mr_;
+      return small_mr_;
+    else return large_mr_;
   }
 
   /**
@@ -141,7 +141,7 @@ class hybrid_memory_resource : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cudaStream_t stream) override {
     if (bytes <= 0) return nullptr;
-    return get_resource(bytes).allocate(bytes, stream);
+    return get_resource(bytes)->allocate(bytes, stream);
   }
 
   /**
@@ -155,7 +155,7 @@ class hybrid_memory_resource : public device_memory_resource {
    * @param stream Stream on which to perform deallocation
    */
   void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override {
-    get_resource(bytes).deallocate(p, bytes, stream);
+    get_resource(bytes)->deallocate(p, bytes, stream);
   }
 
   /**

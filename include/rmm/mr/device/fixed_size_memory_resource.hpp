@@ -139,7 +139,7 @@ class fixed_size_memory_resource : public device_memory_resource {
   /**
    * @brief Deallocate memory pointed to by `p`.
    *
-   * @throws rmm::bad_alloc if `bytes` > `block_size` (constructor parameter)
+   * @throws nothing
    *
    * @param p Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the
@@ -148,8 +148,7 @@ class fixed_size_memory_resource : public device_memory_resource {
    */
   void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override {
     bytes = rmm::detail::align_up(bytes, allocation_alignment);
-    RMM_EXPECTS(bytes <= block_size_, rmm::bad_alloc, "bytes must be <= block_size");
-
+    assert(bytes <= block_size_);
     stream_blocks_[stream].push_back(p);
   }
 
