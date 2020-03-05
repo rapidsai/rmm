@@ -20,6 +20,8 @@
 #include <rmm/detail/error.hpp>
 
 #include <cuda_runtime_api.h>
+
+#include <cassert>
 #include <exception>
 #include <iostream>
 #include <list>
@@ -229,13 +231,12 @@ class pool_memory_resource final : public device_memory_resource {
     if (p == nullptr) return;
 
     auto const i = allocated_blocks_.find(block{static_cast<char*>(p)});
+    assert(i != allocated_blocks_.end());
 
-    if (i != allocated_blocks_.end()) {  // found
-      // assert(i->size == rmm::detail::align_up(size, allocation_alignment));
+    if (i != allocated_blocks_.end()) {
+      assert(i->size == rmm::detail::align_up(size, allocation_alignment));
       stream_blocks_[stream].insert(*i);
       allocated_blocks_.erase(i);
-    } else {
-      throw std::runtime_error("Pointer not allocated by this resource.");
     }
   }
 
@@ -317,7 +318,7 @@ class pool_memory_resource final : public device_memory_resource {
   /**---------------------------------------------------------------------------*
    * @brief Deallocate memory pointed to by \p p.
    *
-   * @throws std::runtime_error if \p p was not allocated by this resource.
+   * @throws nothing
    *
    * @param p Pointer to be deallocated
    *---------------------------------------------------------------------------**/

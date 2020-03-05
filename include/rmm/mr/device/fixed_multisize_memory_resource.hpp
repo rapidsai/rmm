@@ -142,17 +142,17 @@ class fixed_multisize_memory_resource : public device_memory_resource {
    * @param bytes Requested allocation size in bytes
    * @return rmm::mr::device_memory_resource& memory_resource that can allocate the requested size.
    */
-  device_memory_resource& get_resource(std::size_t bytes) {
+  device_memory_resource* get_resource(std::size_t bytes) {
+    assert(bytes <= max_size_);
     if (bytes <= max_size_) {
       auto iter = std::find_if(fixed_size_mr_.begin(), fixed_size_mr_.end(),
                    [bytes](std::unique_ptr<fixed_size_memory_resource<UpstreamResource>>& res) { 
                      return bytes <= res.get()->get_block_size();
                     });
       if (iter != fixed_size_mr_.end())
-        return *iter->get();
+        return iter->get();
     }
-
-    RMM_FAIL("bytes must be <= max_size", rmm::bad_alloc);
+    return nullptr;
   }
 
   /**
@@ -168,13 +168,14 @@ class fixed_multisize_memory_resource : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cudaStream_t stream) override {
     if (bytes <= 0) return nullptr;
-    return get_resource(bytes).allocate(bytes, stream);
+    RMM_EXPECTS(bytes <= max_size_, rmm::bad_alloc, "bytes must be <= max_size");
+    return get_resource(bytes)->allocate(bytes, stream);
   }
 
   /**
    * @brief Deallocate memory pointed to by \p p.
    *
-   * @throws std::bad_alloc if size > block_size (constructor parameter)
+   * @throws nothing
    *
    * @param p Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the
@@ -182,7 +183,8 @@ class fixed_multisize_memory_resource : public device_memory_resource {
    * @param stream Stream on which to perform deallocation
    */
   void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override {
-    get_resource(bytes).deallocate(p, bytes, stream);
+    auto res = get_resource(bytes);
+    if (res != nullptr) res->deallocate(p, bytes, stream);
   }
 
   /**
