@@ -305,8 +305,6 @@ void MRTest<fixed_multisize_mr>::test_mixed_random_allocation_free(cudaStream_t 
 }
 
 // Test on all memory resource classes
-};
-
 using resources = ::testing::Types<rmm::mr::cuda_memory_resource,
                                    rmm::mr::managed_memory_resource,
                                    rmm::mr::cnmem_memory_resource,
