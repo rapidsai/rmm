@@ -147,7 +147,7 @@ if numba:
     class RMMNumbaManager(cuda.HostOnlyCUDAMemoryManager):
         def memalloc(self, nbytes, stream=0):
             buf = librmm.DeviceBuffer(size=nbytes, stream=stream)
-            ctx = cuda.current_context()
+            ctx = self.context
             ptr = ctypes.c_uint64(int(buf.ptr))
             self.allocations[ptr.value] = buf
             finalizer = _make_finalizer(ptr.value, self.allocations)
@@ -167,7 +167,7 @@ if numba:
                 ctypes.byref(ipchandle),
                 memory.owner.handle,
             )
-            source_info = cuda.current_context().device.get_device_identity()
+            source_info = self.context.device.get_device_identity()
             ptr = memory.device_ctypes_pointer.value
             offset = librmm.rmm_getallocationoffset(ptr, stream)
             from numba.cuda.cudadrv.driver import IpcHandle
