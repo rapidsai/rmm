@@ -16,12 +16,12 @@
 
 #include "gtest/gtest.h"
 
-#include <rmm/mr/cnmem_memory_resource.hpp>
-#include <rmm/mr/cnmem_managed_memory_resource.hpp>
-#include <rmm/mr/cuda_memory_resource.hpp>
-#include <rmm/mr/default_memory_resource.hpp>
-#include <rmm/mr/device_memory_resource.hpp>
-#include <rmm/mr/managed_memory_resource.hpp>
+#include <rmm/mr/device/cnmem_memory_resource.hpp>
+#include <rmm/mr/device/cnmem_managed_memory_resource.hpp>
+#include <rmm/mr/device/cuda_memory_resource.hpp>
+#include <rmm/mr/device/default_memory_resource.hpp>
+#include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/mr/device/managed_memory_resource.hpp>
 
 #include <cuda_runtime_api.h>
 #include <cstddef>
@@ -34,10 +34,10 @@ inline bool is_aligned(void* p, std::size_t alignment = ALIGNMENT) {
   return (0 == reinterpret_cast<uintptr_t>(p) % alignment);
 }
 
-/**---------------------------------------------------------------------------*
+/**
  * @brief Returns if a pointer points to a device memory or managed memory
  * allocation.
- *---------------------------------------------------------------------------**/
+ */
 inline bool is_device_memory(void* p) {
   cudaPointerAttributes attributes{};
   if (cudaSuccess != cudaPointerGetAttributes(&attributes, p)) {
@@ -220,13 +220,13 @@ TYPED_TEST(MRTest, AllocateGBStream) {
 
 TYPED_TEST(MRTest, AllocateTooMuch) {
   void* p{nullptr};
-  EXPECT_THROW(p = this->mr->allocate(size_pb), std::bad_alloc);
+  EXPECT_THROW(p = this->mr->allocate(size_pb), rmm::bad_alloc);
   EXPECT_EQ(nullptr, p);
 }
 
 TYPED_TEST(MRTest, AllocateTooMuchStream) {
   void* p{nullptr};
-  EXPECT_THROW(p = this->mr->allocate(size_pb, this->stream), std::bad_alloc);
+  EXPECT_THROW(p = this->mr->allocate(size_pb, this->stream), rmm::bad_alloc);
   EXPECT_EQ(nullptr, p);
 }
 

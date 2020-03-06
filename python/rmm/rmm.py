@@ -28,15 +28,6 @@ class RMMError(Exception):
         super(RMMError, self).__init__(msg)
 
 
-def _array_helper(addr, datasize, shape, strides, dtype, finalizer=None):
-    ctx = cuda.current_context()
-    ptr = ctypes.c_uint64(int(addr))
-    mem = cuda.driver.MemoryPointer(ctx, ptr, datasize, finalizer=finalizer)
-    return cuda.cudadrv.devicearray.DeviceNDArray(
-        shape, strides, dtype, gpu_data=mem
-    )
-
-
 class rmm_allocation_mode(IntEnum):
     CudaDefaultAllocation = (0,)
     PoolAllocation = (1,)
@@ -153,14 +144,14 @@ def device_array_from_ptr(ptr, nelem, dtype=np.float, finalizer=None):
 
     elemsize = dtype.itemsize
     datasize = elemsize * nelem
+    shape = (nelem,)
+    strides = (elemsize,)
     # note no finalizer -- freed externally!
-    return _array_helper(
-        addr=ptr,
-        datasize=datasize,
-        shape=(nelem,),
-        strides=(elemsize,),
-        dtype=dtype,
-        finalizer=finalizer,
+    ctx = cuda.current_context()
+    ptr = ctypes.c_uint64(int(ptr))
+    mem = cuda.driver.MemoryPointer(ctx, ptr, datasize, finalizer=finalizer)
+    return cuda.cudadrv.devicearray.DeviceNDArray(
+        shape, strides, dtype, gpu_data=mem
     )
 
 
@@ -179,17 +170,13 @@ def device_array(shape, dtype=np.float, strides=None, order="C", stream=0):
         shape, strides, dtype.itemsize
     )
 
-    addr = librmm.rmm_alloc(datasize, stream)
+    buf = librmm.DeviceBuffer(size=datasize, stream=stream)
 
-    # Note Numba will call the finalizer to free the device memory
-    # allocated above
-    return _array_helper(
-        addr=addr,
-        datasize=datasize,
-        shape=shape,
-        strides=strides,
-        dtype=dtype,
-        finalizer=_make_finalizer(addr, stream),
+    ctx = cuda.current_context()
+    ptr = ctypes.c_uint64(int(buf.ptr))
+    mem = cuda.driver.MemoryPointer(ctx, ptr, datasize, owner=buf)
+    return cuda.cudadrv.devicearray.DeviceNDArray(
+        shape, strides, dtype, gpu_data=mem
     )
 
 
@@ -222,35 +209,6 @@ def to_device(ary, stream=0, copy=True, to=None):
     return to
 
 
-def auto_device(obj, stream=0, copy=True):
-    """
-    Create a DeviceRecord or DeviceArray like obj and optionally copy data from
-    host to device. If obj already represents device memory, it is returned and
-    no copy is made. Uses RMM for device memory allocation if necessary.
-    """
-    if cuda.driver.is_device_memory(obj):
-        return obj, False
-    if hasattr(obj, "__cuda_array_interface__"):
-        new_dev_array = cuda.as_cuda_array(obj)
-        # Allocate new output array using rmm and copy the numba device
-        # array to an rmm owned device array
-        out_dev_array = device_array_like(new_dev_array)
-        out_dev_array.copy_to_device(new_dev_array)
-        return out_dev_array, False
-    else:
-        if isinstance(obj, np.void):
-            devobj = cuda.devicearray.from_record_like(obj, stream=stream)
-        else:
-            if not isinstance(obj, np.ndarray):
-                obj = np.asarray(obj)
-            cuda.devicearray.sentry_contiguous(obj)
-            devobj = device_array_like(obj, stream=stream)
-
-        if copy:
-            devobj.copy_to_device(obj, stream=stream)
-        return devobj, True
-
-
 def get_ipc_handle(ary, stream=0):
     """
     Get an IPC handle from the DeviceArray ary with offset modified by
@@ -280,22 +238,6 @@ try:
 except Exception:
     cupy = None
 
-if cupy:
-
-    class RMMCuPyMemory(cupy.cuda.memory.BaseMemory):
-        def __init__(self, size):
-            self.size = size
-            if size > 0:
-                self.rmm_array = librmm.device_buffer.DeviceBuffer(size=size)
-                self.ptr = self.rmm_array.ptr
-                self.device_id = cupy.cuda.runtime.pointerGetAttributes(
-                    self.ptr
-                ).device
-            else:
-                self.rmm_array = None
-                self.ptr = 0
-                self.device_id = cupy.cuda.device.get_device_id()
-
 
 def rmm_cupy_allocator(nbytes):
     """
@@ -310,7 +252,14 @@ def rmm_cupy_allocator(nbytes):
     if cupy is None:
         raise ModuleNotFoundError("No module named 'cupy'")
 
-    return cupy.cuda.memory.MemoryPointer(RMMCuPyMemory(nbytes), 0)
+    buf = librmm.device_buffer.DeviceBuffer(size=nbytes)
+    dev_id = -1 if buf.ptr else cupy.cuda.device.get_device_id()
+    mem = cupy.cuda.UnownedMemory(
+        ptr=buf.ptr, size=buf.size, owner=buf, device_id=dev_id
+    )
+    ptr = cupy.cuda.memory.MemoryPointer(mem, 0)
+
+    return ptr
 
 
 def _make_finalizer(handle, stream):

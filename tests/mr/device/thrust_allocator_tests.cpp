@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#include <rmm/mr/cnmem_memory_resource.hpp>
-#include <rmm/mr/cnmem_managed_memory_resource.hpp>
-#include <rmm/mr/cuda_memory_resource.hpp>
-#include <rmm/mr/default_memory_resource.hpp>
-#include <rmm/mr/device_memory_resource.hpp>
-#include <rmm/mr/managed_memory_resource.hpp>
-#include <rmm/mr/thrust_allocator_adaptor.hpp>
+#include <rmm/mr/device/cnmem_memory_resource.hpp>
+#include <rmm/mr/device/cnmem_managed_memory_resource.hpp>
+#include <rmm/mr/device/cuda_memory_resource.hpp>
+#include <rmm/mr/device/default_memory_resource.hpp>
+#include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/mr/device/managed_memory_resource.hpp>
+#include <rmm/mr/device/thrust_allocator_adaptor.hpp>
 
 #include <gtest/gtest.h>
 
