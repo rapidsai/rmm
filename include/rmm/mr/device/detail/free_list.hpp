@@ -16,10 +16,12 @@
 
 #pragma once
 
+#include <rmm/detail/error.hpp>
+
 #include <list>
 #include <algorithm>
 #include <iostream>
-#include "rmm/detail/error.hpp"
+#include <cassert>
 
 namespace rmm {
 namespace mr {
@@ -66,8 +68,9 @@ struct block
  */
 inline block merge_blocks(block const& a, block const& b)
 {
-  RMM_EXPECTS(a.ptr + a.size == b.ptr, "Merging noncontiguous blocks");
-  RMM_EXPECTS(not b.is_head, "Merging across upstream allocation boundaries");
+  // should be asserts
+  assert(a.ptr + a.size == b.ptr); // non-contiguous blocks
+  assert(not b.is_head); // Can't merge across upstream allocation boundaries
 
   return block{a.ptr, a.size + b.size};
 }
@@ -88,11 +91,11 @@ struct free_list {
 
   iterator begin() noexcept              { return blocks.begin(); } /// beginning of the free list
   const_iterator begin() const noexcept  { return begin(); }        /// beginning of the free list
-  const_iterator cbegin() const noexcept { return begin(); }        /// beginning of the free list
+  const_iterator cbegin() const noexcept { return blocks.cbegin(); } /// beginning of the free list
 
   iterator end() noexcept                { return blocks.end(); }   /// end of the free list
   const_iterator end() const noexcept    { return end(); }          /// end of the free list
-  const_iterator cend() const noexcept   { return end(); }          /// end of the free list
+  const_iterator cend() const noexcept   { return blocks.cend(); }  /// end of the free list
 
   /**
    * @brief The size of the free list in blocks.
@@ -122,6 +125,7 @@ struct free_list {
     }
 
     // Find the right place (in ptr order) to insert the block
+    // Can't use binary_search because it's a linked list and will be quadratic
     auto const next = std::find_if(blocks.begin(), blocks.end(),
                              [b](block const& i) { return i.ptr > b.ptr; });
     auto const previous = (next == blocks.begin()) ? next : std::prev(next);
@@ -153,9 +157,7 @@ struct free_list {
    */
   template< class InputIt >
   void insert( InputIt first, InputIt last ) {
-    for (auto iter = first; iter != last; ++iter) {
-      insert(*iter);
-    }
+    std::for_each(first, last, [this](block const& b) { this->insert(b); });
   }
 
   /**
@@ -180,13 +182,12 @@ struct free_list {
    * @return block A block large enough to store `size` bytes.
    */
   block best_fit(size_t size) {
-    block dummy{};
     // find best fit block
-    auto const iter = std::min_element(blocks.begin(), blocks.end(),
-    [size](block lhs, block rhs) {
-      return (lhs.size >= size) && 
-              ((lhs.size < rhs.size) || (rhs.size < size));
-    });
+    auto const iter = std::min_element(
+      blocks.begin(), blocks.end(), [size](block lhs, block rhs) {
+        return (lhs.size >= size) &&
+                ((lhs.size < rhs.size) || (rhs.size < size));
+      });
 
     if (iter->size >= size)
     {
@@ -196,14 +197,14 @@ struct free_list {
       return found;
     }
     
-    return dummy; // not found
+    return block{}; // not found
   }
 
   /**
    * @brief Print all blocks in the free_list.
    */
   void print() const {
-    std::cout << blocks.size() << "\n";
+    std::cout << blocks.size() << '\n';
     for (block const& b : blocks) { b.print(); }
   }
 

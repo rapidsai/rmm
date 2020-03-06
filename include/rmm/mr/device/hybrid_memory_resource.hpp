@@ -65,13 +65,11 @@ class hybrid_memory_resource : public device_memory_resource {
    * @param threshold_size Allocations > this size (in bytes) use large_mr. Allocations <= this size
    *                       use small_mr. Must be a power of two.
    */
-  explicit hybrid_memory_resource(
-      SmallAllocMemoryResource* small_mr,
-      LargeAllocMemoryResource* large_mr,
-      std::size_t threshold_size = default_threshold_size)
-      : small_mr_{small_mr},
-        large_mr_{large_mr},
-        threshold_size_{threshold_size} {
+  hybrid_memory_resource(
+    SmallAllocMemoryResource* small_mr,
+    LargeAllocMemoryResource* large_mr,
+    std::size_t threshold_size = default_threshold_size)
+  : small_mr_{small_mr}, large_mr_{large_mr}, threshold_size_{threshold_size} {
     RMM_EXPECTS(rmm::detail::is_pow2(threshold_size), "threshold_size must be a power of 2.");
   }
 

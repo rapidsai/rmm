@@ -51,7 +51,7 @@ namespace mr {
  * @tparam UpstreamResource memory_resource to use for allocating the pool. Implements
  *                          rmm::mr::device_memory_resource interface.
  */
- template <typename UpstreamResource>
+template <typename Upstream>
 class fixed_multisize_memory_resource : public device_memory_resource {
  public:
 
@@ -69,20 +69,21 @@ class fixed_multisize_memory_resource : public device_memory_resource {
    * @param initial_blocks_per_size The number of blocks to preallocate from the upstream memory
    *        resource
    */
-  explicit fixed_multisize_memory_resource(UpstreamResource *upstream_resource,
-                                           std::size_t min_size = default_min_size,
-                                           std::size_t max_size = default_max_size,
-                                           std::size_t initial_blocks_per_size = 128)
-  : upstream_mr_{upstream_resource}, min_size_{min_size}, max_size_{max_size} {
+  explicit fixed_multisize_memory_resource(
+      Upstream* upstream_resource,
+      std::size_t min_size = default_min_size,
+      std::size_t max_size = default_max_size,
+      std::size_t initial_blocks_per_size = 128)
+      : upstream_mr_{upstream_resource},
+        min_size_{min_size},
+        max_size_{max_size} {
     RMM_EXPECTS(rmm::detail::is_pow2(min_size), "Minimum size must be a power of two");
     RMM_EXPECTS(rmm::detail::is_pow2(max_size), "Maximum size must be a power of two");
     
     // allocate initial blocks and insert into free list
     for (std::size_t i = min_size; i <= max_size; i *= 2) {
-      fixed_size_mr_.emplace_back(
-        new fixed_size_memory_resource<UpstreamResource>(upstream_resource, i, 
-                                                         initial_blocks_per_size * i)
-      );
+      fixed_size_mr_.emplace_back(new fixed_size_memory_resource<Upstream>(
+          upstream_resource, i, initial_blocks_per_size));
     }
   }
 
@@ -90,10 +91,8 @@ class fixed_multisize_memory_resource : public device_memory_resource {
    * @brief Destroy the fixed_multisize_memory_resource and free all memory allocated from the
    *        upstream resource.
    */
-  virtual ~fixed_multisize_memory_resource() {
-    fixed_size_mr_.clear(); // must be deleted first since fixed_size_mrs use large_size_mr_
-  }
-
+  virtual ~fixed_multisize_memory_resource() {}
+    
   /**
    * @brief Query whether the resource supports use of non-null streams for
    * allocation/deallocation.
@@ -114,7 +113,7 @@ class fixed_multisize_memory_resource : public device_memory_resource {
    *
    * @return UpstreamResource* the upstream memory resource.
    */
-  UpstreamResource* get_upstream() const noexcept { return upstream_mr_; }
+  Upstream* get_upstream() const noexcept { return upstream_mr_; }
 
   /**
    * @brief Get the minimum block size that this memory_resource can allocate.
@@ -145,10 +144,11 @@ class fixed_multisize_memory_resource : public device_memory_resource {
   device_memory_resource* get_resource(std::size_t bytes) {
     assert(bytes <= max_size_);
     if (bytes <= max_size_) {
-      auto iter = std::find_if(fixed_size_mr_.begin(), fixed_size_mr_.end(),
-                   [bytes](std::unique_ptr<fixed_size_memory_resource<UpstreamResource>>& res) { 
-                     return bytes <= res.get()->get_block_size();
-                    });
+      auto iter = std::find_if(
+          fixed_size_mr_.begin(), fixed_size_mr_.end(),
+          [bytes](std::unique_ptr<fixed_size_memory_resource<Upstream>>& res) {
+            return bytes <= res.get()->get_block_size();
+          });
       if (iter != fixed_size_mr_.end())
         return iter->get();
     }
@@ -199,13 +199,13 @@ class fixed_multisize_memory_resource : public device_memory_resource {
     return std::make_pair(0, 0);  
   }
 
-  UpstreamResource *upstream_mr_; // The upstream memory_resource from which to allocate blocks.
+  Upstream* upstream_mr_;  // The upstream memory_resource from which to allocate blocks.
 
   std::size_t min_size_; // size of smallest blocks allocated
   std::size_t max_size_; // size of largest blocks allocated
 
   // allocators for fixed-size blocks <= max_fixed_size_
-  std::vector<std::unique_ptr<fixed_size_memory_resource<UpstreamResource>>> fixed_size_mr_;
+  std::vector<std::unique_ptr<fixed_size_memory_resource<Upstream>>> fixed_size_mr_;
 };
 }  // namespace mr
 }  // namespace rmm
