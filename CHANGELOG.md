@@ -41,7 +41,7 @@
 - PR #312 Fix libcudf compilation errors due to explicit defaulted device_buffer constructor.
 
 
-# RMM 0.12.0 (Date TBD)
+# RMM 0.12.0 (04 Feb 2020)
 
 ## New Features
 
