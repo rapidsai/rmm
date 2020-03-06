@@ -41,12 +41,13 @@ namespace mr {
  * @tparam UpstreamResource memory_resource to use for allocating the pool. Implements
  *                          rmm::mr::device_memory_resource interface.
  */
-template <typename UpstreamResource>
+template <typename Upstream>
 class pool_memory_resource final : public device_memory_resource {
  public:
 
   static constexpr size_t default_initial_size = ~0;
   static constexpr size_t default_maximum_size = ~0;
+  // TODO use rmm-level def of this.
   static constexpr size_t allocation_alignment = 256;
 
   /**
@@ -59,7 +60,7 @@ class pool_memory_resource final : public device_memory_resource {
    * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to.
    */
   explicit pool_memory_resource(
-      UpstreamResource* upstream_mr,
+      Upstream* upstream_mr,
       std::size_t initial_pool_size = default_initial_size,
       std::size_t maximum_pool_size = default_maximum_size)
       : upstream_mr_{upstream_mr}, maximum_pool_size_{maximum_pool_size} {
@@ -67,9 +68,9 @@ class pool_memory_resource final : public device_memory_resource {
 
     if (initial_pool_size == default_initial_size)  {
       int device{0};
-      cudaGetDevice(&device);
+      RMM_CUDA_TRY(cudaGetDevice(&device));
       int memsize{0};
-      cudaGetDeviceProperties(&props, device);
+      RMM_CUDA_TRY(cudaGetDeviceProperties(&props, device));
       initial_pool_size = props.totalGlobalMem / 2;
     }
 
@@ -91,7 +92,7 @@ class pool_memory_resource final : public device_memory_resource {
    * the upstream resource.
    */
   ~pool_memory_resource() {
-    free_all();
+    release();
   }
 
   /**
@@ -114,7 +115,7 @@ class pool_memory_resource final : public device_memory_resource {
    *
    * @return UpstreamResource* the upstream memory resource.
    */
-  UpstreamResource* get_upstream() const noexcept { return upstream_mr_; }
+  Upstream* get_upstream() const noexcept { return upstream_mr_; }
 
  private:
 
@@ -122,38 +123,39 @@ class pool_memory_resource final : public device_memory_resource {
   using free_list = rmm::mr::detail::free_list<>;
 
   /**
-   * @brief Find a free block of at least `size` bytes in `free_list` `blocks`.
+   * @brief Find a free block of at least `size` bytes in `free_list` `blocks` associated with
+   *        stream `blocks_stream`, for use on `stream`.
    * 
    * @param blocks The `free_list` to look in for a free block of sufficient size.
+   * @param blocks_stream The stream that all blocks in `blocks` are associated with.
    * @param size The requested size of the allocation.
-   * @param list_stream The stream that all blocks in `blocks` were associated with when they were
-   *                    freed.
+   
    * @param stream The stream on which the allocation is being requested.
    * @return block A block with non-null pointer and size >= `size`, or a nullptr block if none is 
    *               available in `blocks`.
    */
-  block block_from_sync_list(free_list &blocks, size_t size, 
-                             cudaStream_t list_stream, cudaStream_t stream)
-  {
+  block block_from_stream(free_list& blocks,
+                          cudaStream_t blocks_stream,
+                          size_t size,
+                          cudaStream_t stream) {
     block const b = blocks.best_fit(size); // get the best fit block
 
     // If we found a block associated with a different stream, 
     // we have to synchronize the stream in order to use it
-    if ((list_stream != stream) && (b.ptr != nullptr)) { 
-      cudaError_t result = cudaStreamSynchronize(list_stream);
+    if ((blocks_stream != stream) && (b.ptr != nullptr)) { 
+      cudaError_t result = cudaStreamSynchronize(blocks_stream);
 
       RMM_EXPECTS((result == cudaSuccess ||                   // stream synced
-                    result == cudaErrorInvalidResourceHandle), // stream deleted
-                  rmm::cuda_error, "cudaStreamSynchronize failure");
+                   result == cudaErrorInvalidResourceHandle), // stream deleted
+                  rmm::bad_alloc, "cudaStreamSynchronize failure");
 
       // Now that this stream is synced, insert all other blocks into this stream's list
-      // TODO: Should we do this? This could cause thrashing between two 
-      // streams. On the other hand, this reduces fragmentation by coalescing.
+      // Note: This could cause thrashing between two streams. On the other hand, it reduces
+      // fragmentation by coalescing.
       stream_blocks_[stream].insert(blocks.begin(), blocks.end());
-      blocks.clear();
-
+      
       // remove this stream from the freelist
-      stream_blocks_.erase(list_stream);
+      stream_blocks_.erase(blocks_stream);
     }
     return b;
   }
@@ -171,32 +173,27 @@ class pool_memory_resource final : public device_memory_resource {
    * @return block A block with non-null pointer and size >= `size`.
    */
   block available_larger_block(size_t size, cudaStream_t stream) {
-    block b{};
-
-    // Try to find a larger block in the same stream
-    // Try to find a block in the same stream
+    // Try to find a larger block in free list for the same stream
     auto iter = stream_blocks_.find(stream);
-    if (iter != stream_blocks_.end())
-      b = block_from_sync_list(iter->second, size, stream, stream);
+    if (iter != stream_blocks_.end()) {
+      block b = block_from_stream(iter->second, stream, size, stream);
+      if (b.ptr != nullptr) return b;
+    }
 
     // nothing in this stream's free list, look for one on another stream
-    if (b.ptr == nullptr) {
-      auto s = stream_blocks_.begin();
-      while (b.ptr == nullptr && s != stream_blocks_.end()) {
-        if (s->first != stream) 
-          b = block_from_sync_list(s->second, size, s->first, stream);
-        s++;
+    auto s = stream_blocks_.begin();
+    while (s != stream_blocks_.end()) {
+      if (s->first != stream) {
+        block b = block_from_stream(s->second, s->first, size, stream);
+        if (b.ptr != nullptr) return b;
       }
+      ++s;
     }
 
-    // no larger blocks waiting on other streams, so grow the pool and create a block
-    if (b.ptr == nullptr) {
-      size_t grow_size = size_to_grow(size);
-      RMM_EXPECTS(grow_size > 0, rmm::bad_alloc, "Maximum pool size exceeded");
-      b = block_from_upstream(grow_size, stream);
-    }
-
-    return b;
+    // no larger blocks available on other streams, so grow the pool and create a block
+    size_t grow_size = size_to_grow(size);
+    RMM_EXPECTS(grow_size > 0, rmm::bad_alloc, "Maximum pool size exceeded");
+    return block_from_upstream(grow_size, stream);
   }
 
   /**
@@ -273,7 +270,7 @@ class pool_memory_resource final : public device_memory_resource {
   {
     void* p = upstream_mr_->allocate(size, stream);
     block b{reinterpret_cast<char*>(p), size, true};
-    upstream_blocks_[b.ptr] = b;
+    upstream_blocks_.emplace_back(b);
     current_pool_size_ += b.size;
     return b;
   }
@@ -291,10 +288,10 @@ class pool_memory_resource final : public device_memory_resource {
    * @brief Free all memory allocated from the upstream memory_resource.
    * 
    */
-  void free_all()
+  void release()
   {
     for (auto b : upstream_blocks_)
-      upstream_mr_->deallocate(b.first, b.second.size);
+      upstream_mr_->deallocate(b.ptr, b.size);
     upstream_blocks_.clear();
     current_pool_size_ = 0;
   }
@@ -313,8 +310,8 @@ class pool_memory_resource final : public device_memory_resource {
     std::size_t upstream_total{0};
 
     for (auto h : upstream_blocks_) { 
-      h.second.print();
-      upstream_total += h.second.size;
+      h.print();
+      upstream_total += h.size;
     }
     std::cout << "total upstream: " << upstream_total << " B\n";
 
@@ -330,7 +327,7 @@ class pool_memory_resource final : public device_memory_resource {
   }
 #endif // DEBUG
 
-  /**---------------------------------------------------------------------------*
+  /**
    * @brief Allocates memory of size at least \p bytes.
    *
    * The returned pointer has at least 256B alignment.
@@ -340,7 +337,7 @@ class pool_memory_resource final : public device_memory_resource {
    * @param bytes The size, in bytes, of the allocation
    * @param The stream to associate this allocation with
    * @return void* Pointer to the newly allocated memory
-   *---------------------------------------------------------------------------**/
+   */
   void* do_allocate(std::size_t bytes, cudaStream_t stream) override {
     if (bytes <= 0) return nullptr;
     bytes = rmm::detail::align_up(bytes, allocation_alignment);
@@ -348,25 +345,25 @@ class pool_memory_resource final : public device_memory_resource {
     return allocate_from_block(b, bytes, stream);
   }
 
-  /**---------------------------------------------------------------------------*
+  /**
    * @brief Deallocate memory pointed to by \p p.
    *
    * @throws nothing
    *
    * @param p Pointer to be deallocated
-   *---------------------------------------------------------------------------**/
+   */
   void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override {
     free_block(p, bytes, stream);
   }
 
-  /**---------------------------------------------------------------------------*
+  /**
    * @brief Get free and available memory for memory resource
    *
    * @throws nothing
    *
    * @param stream to execute on
    * @return std::pair contaiing free_size and total_size of memory
-   *---------------------------------------------------------------------------**/
+   */
   std::pair<size_t,size_t> do_get_mem_info( cudaStream_t stream) const override {
     std::size_t free_size{};
     std::size_t total_size{};
@@ -378,17 +375,16 @@ class pool_memory_resource final : public device_memory_resource {
 
   size_t current_pool_size_{0};
 
-  UpstreamResource* upstream_mr_; // The "heap" to allocate the pool from
+  Upstream* upstream_mr_;  // The "heap" to allocate the pool from
 
   // map of [stream_id, free_list] pairs
   // stream stream_id must be synced before allocating from this list to a different stream
   std::map<cudaStream_t, free_list> stream_blocks_;
 
-  //std::list<block> allocated_blocks;
   std::set<block> allocated_blocks_;
 
-  // blocks allocated from upstream heap: so they can be easily freed
-  std::map<char*, block> upstream_blocks_;
+  // blocks allocated from upstream: so they can be easily freed
+  std::vector<block> upstream_blocks_;
 };
 
 }  // namespace mr

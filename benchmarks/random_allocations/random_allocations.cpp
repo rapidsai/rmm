@@ -21,6 +21,7 @@
 #include <rmm/mr/device/pool_memory_resource.hpp>
 #include <rmm/mr/device/fixed_multisize_memory_resource.hpp>
 #include <rmm/mr/device/hybrid_memory_resource.hpp>
+#include <rmm/mr/device/thread_safe_resource_adaptor.hpp>
 
 #include <benchmark/benchmark.h>
 
@@ -53,11 +54,12 @@ allocation remove_at(allocation_vector& allocs, std::size_t index) {
 
   return removed;
 }
-
 // nested MR type names can get long...
 using pool_mr = rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>;
+using safe_pool_mr = rmm::mr::thread_safe_resource_adaptor<pool_mr>;
 using fixed_multisize_mr = rmm::mr::fixed_multisize_memory_resource<pool_mr>;
 using hybrid_mr = rmm::mr::hybrid_memory_resource<fixed_multisize_mr, pool_mr>;
+using safe_hybrid_mr = rmm::mr::thread_safe_resource_adaptor<hybrid_mr>;
 
 template <typename SizeDistribution>
 void random_allocation_free(rmm::mr::device_memory_resource& mr,
@@ -163,9 +165,9 @@ MemoryResource* create_memory_resource() {
 }
 
 template<>
-pool_mr* create_memory_resource() {
+safe_pool_mr* create_memory_resource() {
   rmm::mr::cuda_memory_resource *cuda_mr = new rmm::mr::cuda_memory_resource();
-  return new pool_mr(cuda_mr);
+  return new rmm::mr::thread_safe_resource_adaptor<pool_mr>(new pool_mr(cuda_mr));
 }
 
 template<>
@@ -175,10 +177,10 @@ fixed_multisize_mr* create_memory_resource() {
 }
 
 template<>
-hybrid_mr* create_memory_resource() {
+safe_hybrid_mr* create_memory_resource() {
   rmm::mr::cuda_memory_resource *cuda_mr = new rmm::mr::cuda_memory_resource();
   pool_mr *pool = new pool_mr(cuda_mr);
-  return new hybrid_mr(new fixed_multisize_mr(pool), pool);
+  return new rmm::mr::thread_safe_resource_adaptor<hybrid_mr>(new hybrid_mr(new fixed_multisize_mr(pool), pool));
 }
 
 template<typename MemoryResource>
@@ -187,11 +189,13 @@ void destroy_memory_resource(MemoryResource* mr) {
 }
 
 template<>
-void destroy_memory_resource(hybrid_mr* mr) {
-  auto small = mr->get_small_mr();
-  auto large = mr->get_large_mr();
+void destroy_memory_resource(safe_hybrid_mr* mr) {
+  auto hybrid = mr->get_upstream();
+  auto small = hybrid->get_small_mr();
+  auto large = hybrid->get_large_mr();
   auto cuda = large->get_upstream();
   delete mr;
+  delete hybrid;
   delete small;
   delete large;
   delete cuda;
@@ -208,9 +212,11 @@ void destroy_memory_resource(fixed_multisize_mr* mr) {
 }
 
 template<>
-void destroy_memory_resource(pool_mr* mr) {
-  auto cuda = mr->get_upstream();
+void destroy_memory_resource(safe_pool_mr* mr) {
+  auto pool = mr->get_upstream();
+  auto cuda = pool->get_upstream();
   delete mr;
+  delete pool;
   delete cuda;  
 }
 
@@ -271,9 +277,9 @@ void declare_benchmark(std::string name) {
   if (name == "cuda")
     BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::cuda_memory_resource)->Apply(benchmark_range);
   if (name == "hybrid")
-    BENCHMARK_TEMPLATE(BM_RandomAllocations, hybrid_mr)->Apply(benchmark_range);
+    BENCHMARK_TEMPLATE(BM_RandomAllocations, safe_hybrid_mr)->Apply(benchmark_range);
   else if (name == "pool")
-    BENCHMARK_TEMPLATE(BM_RandomAllocations, pool_mr)->Apply(benchmark_range);
+    BENCHMARK_TEMPLATE(BM_RandomAllocations, safe_pool_mr)->Apply(benchmark_range);
   else if (name == "fixed_multisize")
     BENCHMARK_TEMPLATE(BM_RandomAllocations, fixed_multisize_mr)->Apply(benchmark_range);
   else if (name == "cnmem")
@@ -292,8 +298,8 @@ int main(int argc, char** argv)
     declare_benchmark(mr_name);
   }
   else {
-    BENCHMARK_TEMPLATE(BM_RandomAllocations, pool_mr)->Apply(benchmark_range);
-    BENCHMARK_TEMPLATE(BM_RandomAllocations, hybrid_mr)->Apply(benchmark_range);
+    BENCHMARK_TEMPLATE(BM_RandomAllocations, safe_pool_mr)->Apply(benchmark_range);
+    BENCHMARK_TEMPLATE(BM_RandomAllocations, safe_hybrid_mr)->Apply(benchmark_range);
     BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::cnmem_memory_resource)->Apply(benchmark_range);
     BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::cuda_memory_resource)->Apply(benchmark_range);
   }
