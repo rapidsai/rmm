@@ -145,16 +145,16 @@ except Exception:
 
 if numba:
     class RMMNumbaManager(cuda.HostOnlyCUDAMemoryManager):
-        def memalloc(self, nbytes, stream=0):
-            buf = librmm.DeviceBuffer(size=nbytes, stream=stream)
+        def memalloc(self, size):
+            buf = librmm.DeviceBuffer(size=size)
             ctx = self.context
             ptr = ctypes.c_uint64(int(buf.ptr))
             self.allocations[ptr.value] = buf
             finalizer = _make_finalizer(ptr.value, self.allocations)
-            mem = cuda.MemoryPointer(ctx, ptr, nbytes, finalizer=finalizer)
+            mem = cuda.MemoryPointer(ctx, ptr, size, finalizer=finalizer)
             return mem
 
-        def get_ipc_handle(self, memory, stream=0):
+        def get_ipc_handle(self, memory):
             """
             Get an IPC handle from the DeviceArray ary with offset modified by
             the RMM memory pool.
@@ -169,7 +169,7 @@ if numba:
             )
             source_info = self.context.device.get_device_identity()
             ptr = memory.device_ctypes_pointer.value
-            offset = librmm.rmm_getallocationoffset(ptr, stream)
+            offset = librmm.rmm_getallocationoffset(ptr, 0)
             from numba.cuda.cudadrv.driver import IpcHandle
             return IpcHandle(memory, ipchandle, memory.size, source_info,
                              offset=offset)
