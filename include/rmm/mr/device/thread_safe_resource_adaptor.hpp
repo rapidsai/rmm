@@ -112,7 +112,7 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equivalent
    */
-  bool do_is_equal(device_memory_resource const& other) const noexcept {
+  bool do_is_equal(device_memory_resource const& other) const noexcept override {
 
     if (this == &other) return true;
     else {
