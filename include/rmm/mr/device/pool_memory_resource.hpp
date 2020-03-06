@@ -123,39 +123,39 @@ class pool_memory_resource final : public device_memory_resource {
   using free_list = rmm::mr::detail::free_list<>;
 
   /**
-   * @brief Find a free block of at least `size` bytes in `free_list` `blocks`.
+   * @brief Find a free block of at least `size` bytes in `free_list` `blocks` associated with
+   *        stream `blocks_stream`, for use on `stream`.
    * 
    * @param blocks The `free_list` to look in for a free block of sufficient size.
+   * @param blocks_stream The stream that all blocks in `blocks` are associated with.
    * @param size The requested size of the allocation.
-   * @param list_stream The stream that all blocks in `blocks` were associated with when they were
-   *                    freed.
+   
    * @param stream The stream on which the allocation is being requested.
    * @return block A block with non-null pointer and size >= `size`, or a nullptr block if none is 
    *               available in `blocks`.
    */
-  block block_from_sync_list(free_list &blocks, size_t size, 
-                             cudaStream_t list_stream, cudaStream_t stream)
-  {
+  block block_from_stream(free_list& blocks,
+                          cudaStream_t blocks_stream,
+                          size_t size,
+                          cudaStream_t stream) {
     block const b = blocks.best_fit(size); // get the best fit block
 
     // If we found a block associated with a different stream, 
     // we have to synchronize the stream in order to use it
-    if ((list_stream != stream) && (b.ptr != nullptr)) { 
-      cudaError_t result = cudaStreamSynchronize(list_stream);
+    if ((blocks_stream != stream) && (b.ptr != nullptr)) { 
+      cudaError_t result = cudaStreamSynchronize(blocks_stream);
 
       RMM_EXPECTS((result == cudaSuccess ||                   // stream synced
                    result == cudaErrorInvalidResourceHandle), // stream deleted
                   rmm::bad_alloc, "cudaStreamSynchronize failure");
 
       // Now that this stream is synced, insert all other blocks into this stream's list
-      // TODO: Should we do this? This could cause thrashing between two 
-      // streams. On the other hand, this reduces fragmentation by coalescing.
+      // Note: This could cause thrashing between two streams. On the other hand, it reduces
+      // fragmentation by coalescing.
       stream_blocks_[stream].insert(blocks.begin(), blocks.end());
-      //TODO remove 
-      blocks.clear();
-
+      
       // remove this stream from the freelist
-      stream_blocks_.erase(list_stream);
+      stream_blocks_.erase(blocks_stream);
     }
     return b;
   }
@@ -176,7 +176,7 @@ class pool_memory_resource final : public device_memory_resource {
     // Try to find a larger block in free list for the same stream
     auto iter = stream_blocks_.find(stream);
     if (iter != stream_blocks_.end()) {
-      block b = block_from_sync_list(iter->second, size, stream, stream);
+      block b = block_from_stream(iter->second, stream, size, stream);
       if (b.ptr != nullptr) return b;
     }
 
@@ -184,7 +184,7 @@ class pool_memory_resource final : public device_memory_resource {
     auto s = stream_blocks_.begin();
     while (s != stream_blocks_.end()) {
       if (s->first != stream) {
-        block b = block_from_sync_list(s->second, size, s->first, stream);
+        block b = block_from_stream(s->second, s->first, size, stream);
         if (b.ptr != nullptr) return b;
       }
       ++s;
