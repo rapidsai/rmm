@@ -131,7 +131,7 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
    * @param stream Stream on which to get the mem info.
    * @return std::pair contaiing free_size and total_size of memory
    */
-  std::pair<size_t, size_t> do_get_mem_info(cudaStream_t stream) const {
+  std::pair<size_t, size_t> do_get_mem_info(cudaStream_t stream) const override {
     lock_t lock(mtx);
     return upstream_->get_mem_info(stream);
   }
