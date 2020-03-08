@@ -47,7 +47,18 @@ struct block
    * @return true if this block's ptr is < than `rhs` block pointer.
    * @return false if this block's ptr is >= than `rhs` block pointer.
    */
-  bool operator<(block const& rhs) const { return ptr < rhs.ptr; };
+  bool operator<(block const& rhs) const noexcept { return ptr < rhs.ptr; };
+
+  /**
+   * @brief Verifies whether this block can be merged to the beginning of block b.
+   * 
+   * @param b The block to check for contiguity.
+   * @return true Returns true if this blocks's `ptr` + `size` == `b.ptr`, and `not b.is_head`, 
+                  false otherwise.
+   */
+  bool is_contiguous_before(block const& b) const noexcept {
+    return (this->ptr + this->size == b.ptr) and not (b.is_head);
+  }
 
   /**
    * @brief Print this block. For debugging.
@@ -132,8 +143,8 @@ struct free_list {
     auto const previous = (next == blocks.begin()) ? next : std::prev(next);
 
     // Coalesce with neighboring blocks or insert the new block if it can't be coalesced
-    bool const merge_prev = !b.is_head && (previous->ptr + previous->size == b.ptr);
-    bool const merge_next = (next != blocks.end()) && !next->is_head && (b.ptr + b.size == next->ptr);
+    bool const merge_prev = previous->is_contiguous_before(b);
+    bool const merge_next = (next != blocks.end()) && b.is_contiguous_before(*next);
 
     if (merge_prev && merge_next) {
       *previous = detail::merge_blocks(*previous, b);
