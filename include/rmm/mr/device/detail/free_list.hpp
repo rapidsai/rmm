@@ -59,9 +59,10 @@ struct block
 
 /**
  * @brief Coalesce two contiguous blocks into one.
- * 
- * @throw rmm::logic_error if `a.ptr + a.size != b.ptr`. (blocks are not contiguous). 
- * @throw rmm::logic_error if `b.is_head == true`. (merging across upstream allocation boundaries).
+ *
+ * `a` must immediately precede `b` and both `a` and `b` must be from the same upstream allocation.
+ * That is, `a.ptr + a.size == b.ptr` and `not b.is_head`. Otherwise behavior is undefined.
+ *
  * @param a first block to merge
  * @param b second block to merge
  * @return block The merged block
@@ -124,7 +125,7 @@ struct free_list {
       return;
     }
 
-    // Find the right place (in ptr order) to insert the block
+    // Find the right place (in ascending ptr order) to insert the block
     // Can't use binary_search because it's a linked list and will be quadratic
     auto const next = std::find_if(blocks.begin(), blocks.end(),
                              [b](block const& i) { return i.ptr > b.ptr; });
