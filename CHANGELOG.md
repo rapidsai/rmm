@@ -30,14 +30,18 @@
 - PR #280 Drop allocation/deallocation of `offset`
 - PR #282 `DeviceBuffer` use default constructor for size=0
 - PR #296 Use CuPy's `UnownedMemory` for RMM-backed allocations
+- PR #310 Improve `device_buffer` allocation logic.
+- PR #309 Sync default stream in `DeviceBuffer` constructor
+- PR #308 Fix typo in README
 
 ## Bug Fixes
 - PR #298 Remove RMM_CUDA_TRY from cuda_event_timer destructor
 - PR #299 Fix assert condition blocking debug builds
 - PR #300 Fix host mr_tests compile error
+- PR #312 Fix libcudf compilation errors due to explicit defaulted device_buffer constructor.
 
 
-# RMM 0.12.0 (Date TBD)
+# RMM 0.12.0 (04 Feb 2020)
 
 ## New Features
 
