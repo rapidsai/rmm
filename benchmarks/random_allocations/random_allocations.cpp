@@ -159,37 +159,36 @@ void uniform_random_allocations(rmm::mr::device_memory_resource& mr,
   std::normal_distribution<std::size_t> size_distribution(, max_allocation_size * size_mb);
 }*/
 
+// Wrapper class to allow RAII of memory_resource types with different constructor parameters.
 template<typename MemoryResource>
-MemoryResource* create_memory_resource() {
-  return new MemoryResource{};
-}
+struct resource_wrapper {
+  resource_wrapper() {}
+  ~resource_wrapper() { delete mr; }
+
+  MemoryResource *mr{};
+};
 
 template<>
-safe_pool_mr* create_memory_resource() {
+resource_wrapper<safe_pool_mr>::resource_wrapper() {
   rmm::mr::cuda_memory_resource *cuda_mr = new rmm::mr::cuda_memory_resource();
-  return new rmm::mr::thread_safe_resource_adaptor<pool_mr>(new pool_mr(cuda_mr));
+  mr = new rmm::mr::thread_safe_resource_adaptor<pool_mr>(new pool_mr(cuda_mr));
 }
 
 template<>
-fixed_multisize_mr* create_memory_resource() {
+resource_wrapper<fixed_multisize_mr>::resource_wrapper() {
   rmm::mr::cuda_memory_resource *cuda_mr = new rmm::mr::cuda_memory_resource();
-  return new fixed_multisize_mr(new pool_mr(cuda_mr));
+  mr = new fixed_multisize_mr(new pool_mr(cuda_mr));
 }
 
 template<>
-safe_hybrid_mr* create_memory_resource() {
+resource_wrapper<safe_hybrid_mr>::resource_wrapper() {
   rmm::mr::cuda_memory_resource *cuda_mr = new rmm::mr::cuda_memory_resource();
   pool_mr *pool = new pool_mr(cuda_mr);
-  return new rmm::mr::thread_safe_resource_adaptor<hybrid_mr>(new hybrid_mr(new fixed_multisize_mr(pool), pool));
-}
-
-template<typename MemoryResource>
-void destroy_memory_resource(MemoryResource* mr) {
-  delete mr;
+  mr = new rmm::mr::thread_safe_resource_adaptor<hybrid_mr>(new hybrid_mr(new fixed_multisize_mr(pool), pool));
 }
 
 template<>
-void destroy_memory_resource(safe_hybrid_mr* mr) {
+resource_wrapper<safe_hybrid_mr>::~resource_wrapper() {
   auto hybrid = mr->get_upstream();
   auto small = hybrid->get_small_mr();
   auto large = hybrid->get_large_mr();
@@ -201,9 +200,8 @@ void destroy_memory_resource(safe_hybrid_mr* mr) {
   delete cuda;
 }
 
-
 template<>
-void destroy_memory_resource(fixed_multisize_mr* mr) {
+resource_wrapper<fixed_multisize_mr>::~resource_wrapper() {
   auto sub = mr->get_upstream();
   auto cuda = sub->get_upstream();
   delete mr;
@@ -212,7 +210,7 @@ void destroy_memory_resource(fixed_multisize_mr* mr) {
 }
 
 template<>
-void destroy_memory_resource(safe_pool_mr* mr) {
+resource_wrapper<safe_pool_mr>::~resource_wrapper() {
   auto pool = mr->get_upstream();
   auto cuda = pool->get_upstream();
   delete mr;
@@ -224,7 +222,8 @@ constexpr size_t max_usage = 16000;
 
 template <typename MemoryResource>
 static void BM_RandomAllocations(benchmark::State& state) {
-  MemoryResource *mr = create_memory_resource<MemoryResource>();
+  resource_wrapper<MemoryResource> wrapper;
+  MemoryResource *mr = wrapper.mr;
 
   size_t num_allocations = state.range(0);
   size_t max_size = state.range(1);
@@ -235,8 +234,6 @@ static void BM_RandomAllocations(benchmark::State& state) {
   } catch (std::exception const& e) {
     std::cout << "Error: " << e.what() << "\n";
   }
-
-  destroy_memory_resource(mr);
 }
 
 static void num_range(benchmark::internal::Benchmark* b, int size) {
