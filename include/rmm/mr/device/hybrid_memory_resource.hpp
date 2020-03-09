@@ -121,8 +121,7 @@ class hybrid_memory_resource : public device_memory_resource {
    * @return rmm::mr::device_memory_resource& memory_resource that can allocate the requested size.
    */
   rmm::mr::device_memory_resource* get_resource(std::size_t bytes) {
-    if (bytes <= threshold_size_)
-      return small_mr_;
+    if (bytes <= threshold_size_) return small_mr_;
     else return large_mr_;
   }
 
