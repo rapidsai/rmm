@@ -233,12 +233,10 @@ class pool_memory_resource final : public device_memory_resource {
 
     auto const i = allocated_blocks_.find(block{static_cast<char*>(p)});
     assert(i != allocated_blocks_.end());
+    assert(i->size == rmm::detail::align_up(size, allocation_alignment));
 
-    if (i != allocated_blocks_.end()) {
-      assert(i->size == rmm::detail::align_up(size, allocation_alignment));
-      stream_free_blocks_[stream].insert(*i);
-      allocated_blocks_.erase(i);
-    }
+    stream_free_blocks_[stream].insert(*i);
+    allocated_blocks_.erase(i);
   }
 
   /**
