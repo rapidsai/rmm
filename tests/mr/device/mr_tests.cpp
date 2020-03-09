@@ -407,12 +407,6 @@ TYPED_TEST(MRTest, MixedRandomAllocationFreeStream)
   this->test_mixed_random_allocation_free(this->stream);
 }
 
-// Deallocation can't throw exceptions, even on failures
-TYPED_TEST(MRTest, DeallocateShouldNotThrow) {
-  void *p{reinterpret_cast<void*>(0xebadf00d)};
-  EXPECT_NO_THROW(this->mr->deallocate(p, size_gb));
-}
-
 TYPED_TEST(MRTest, GetMemInfo) {
   if (this->mr->supports_get_mem_info()) {
     std::pair<std::size_t,std::size_t> mem_info;
