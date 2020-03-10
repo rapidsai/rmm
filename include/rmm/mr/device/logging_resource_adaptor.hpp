@@ -19,9 +19,9 @@
 
 #include <rmm/detail/error.hpp>
 
-#include <sstream>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/spdlog.h>
+#include <sstream>
 
 namespace rmm {
 namespace mr {
@@ -46,10 +46,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    *
    * The logfile will be written using CSV formatting.
    *
-   * If the directories specified in `filename` do not exist, they will be
-   * created.
-   *
-   * Truncates `filename` if it already exists.
+   * Clears the contents of `filename` if it already exists.
    *
    * Creating multiple `logging_resource_adaptor`s with the same `filename` will
    * result in undefined behavior.
@@ -76,6 +73,19 @@ class logging_resource_adaptor final : public device_memory_resource {
     logger_->set_pattern("%H:%M:%S:%f,%v");
   }
 
+  /**
+   * @brief Return pointer to the upstream resource.
+   *
+   * @return Upstream* Pointer to the upstream resource.
+   */
+  Upstream* get_upstream() const noexcept { return upstream_; }
+
+  /**
+   * @brief Checks whether the upstream resource supports streams.
+   *
+   * @return true The upstream resource supports streams
+   * @return false The upstream resource does not support streams.
+   */
   bool supports_streams() const noexcept override {
     return upstream_->supports_streams();
   }
@@ -115,7 +125,7 @@ class logging_resource_adaptor final : public device_memory_resource {
   }
 
   /**
-   * @brief Free allocation of size `bytes` pointed to to by `p` and log the
+   * @brief Free allocation of size `bytes` pointed to by `p` and log the
    * deallocation.
    *
    * Every invocation of `logging_resource_adaptor::do_deallocate` will write
@@ -152,8 +162,17 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equal
    */
-  bool do_is_equal(device_memory_resource const& other) const noexcept {
-    return upstream_->is_equal(other);
+  bool do_is_equal(device_memory_resource const &other) const noexcept {
+    if (this == &other)
+      return true;
+    else {
+      logging_resource_adaptor<Upstream> const *cast =
+          dynamic_cast<logging_resource_adaptor<Upstream> const *>(&other);
+      if (cast != nullptr)
+        return upstream_->is_equal(*cast->get_upstream());
+      else
+        return upstream_->is_equal(other);
+  }
   }
 
   /**
