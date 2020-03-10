@@ -63,13 +63,12 @@ class fixed_size_memory_resource : public device_memory_resource {
    * @param blocks_to_preallocate The number of blocks to allocate to initialize the pool.
    */
   explicit fixed_size_memory_resource(
-      Upstream* upstream_mr,
-      std::size_t block_size = default_block_size,
-      std::size_t blocks_to_preallocate = default_blocks_to_preallocate)
-      : upstream_mr_{upstream_mr} {
-    block_size_ = rmm::detail::align_up(block_size, allocation_alignment); 
-    upstream_chunk_size_ = block_size * blocks_to_preallocate;
-
+    Upstream* upstream_mr,
+    std::size_t block_size = default_block_size,
+    std::size_t blocks_to_preallocate = default_blocks_to_preallocate)
+    : upstream_mr_{upstream_mr},
+      block_size_{rmm::detail::align_up(block_size, allocation_alignment)},
+      upstream_chunk_size_{block_size * blocks_to_preallocate} {
     // allocate initial blocks and insert into free list
     new_blocks_from_upstream(0, stream_blocks_[0]);
   }
@@ -275,8 +274,8 @@ class fixed_size_memory_resource : public device_memory_resource {
 
   Upstream* upstream_mr_;  // The resource from which to allocate new blocks
 
-  std::size_t block_size_;          // size of blocks this MR allocates
-  std::size_t upstream_chunk_size_; // size of chunks allocated from heap MR
+  std::size_t const block_size_;          // size of blocks this MR allocates
+  std::size_t const upstream_chunk_size_; // size of chunks allocated from heap MR
 
   // stream free lists: map of [stream_id, free_list] pairs
   // stream stream_id must be synced before allocating from this list

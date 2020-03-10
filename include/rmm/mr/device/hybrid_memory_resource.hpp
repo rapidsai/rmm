@@ -160,7 +160,7 @@ class hybrid_memory_resource : public device_memory_resource {
     return std::make_pair(0, 0);
   }
 
-  std::size_t threshold_size_;  // power of 2 threshold for choosing memory resource
+  std::size_t const threshold_size_;  // threshold for choosing memory_resource
 
   SmallAllocMemoryResource *small_mr_; // allocator for <= max_small_size
   LargeAllocMemoryResource *large_mr_; // allocator for > max_small_size

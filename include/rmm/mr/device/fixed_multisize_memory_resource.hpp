@@ -209,9 +209,9 @@ class fixed_multisize_memory_resource : public device_memory_resource {
 
   Upstream* upstream_mr_;  // The upstream memory_resource from which to allocate blocks.
 
-  std::size_t size_base_;         // base of the allocation block sizes (power of 2)
-  std::size_t min_size_exponent_; // exponent of the size of smallest blocks allocated
-  std::size_t max_size_exponent_; // exponent of the size of largest blocks allocated
+  std::size_t const size_base_;         // base of the allocation block sizes (power of 2)
+  std::size_t const min_size_exponent_; // exponent of the size of smallest blocks allocated
+  std::size_t const max_size_exponent_; // exponent of the size of largest blocks allocated
 
   // allocators for fixed-size blocks <= max_fixed_size_
   std::vector<std::unique_ptr<fixed_size_memory_resource<Upstream>>> fixed_size_mr_;
