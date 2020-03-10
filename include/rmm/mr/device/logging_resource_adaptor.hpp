@@ -46,7 +46,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    *
    * The logfile will be written using CSV formatting.
    *
-   * Truncates `filename` if it already exists.
+   * Clears the contents of `filename` if it already exists.
    *
    * Creating multiple `logging_resource_adaptor`s with the same `filename` will
    * result in undefined behavior.
@@ -125,7 +125,7 @@ class logging_resource_adaptor final : public device_memory_resource {
   }
 
   /**
-   * @brief Free allocation of size `bytes` pointed to to by `p` and log the
+   * @brief Free allocation of size `bytes` pointed to by `p` and log the
    * deallocation.
    *
    * Every invocation of `logging_resource_adaptor::do_deallocate` will write
