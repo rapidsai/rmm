@@ -81,10 +81,6 @@ class pool_memory_resource final : public device_memory_resource {
 
     // Allocate initial block
     stream_free_blocks_[0].insert(block_from_upstream(initial_pool_size, 0));
-
-    // TODO allocation should check maximum pool size
-
-    // TODO smarter new block size heuristic
   }
 
   /**
@@ -369,8 +365,7 @@ class pool_memory_resource final : public device_memory_resource {
     return std::make_pair(free_size, total_size);
   }
 
-  size_t maximum_pool_size_{default_maximum_size};
-
+  size_t maximum_pool_size_;
   size_t current_pool_size_{0};
 
   Upstream* upstream_mr_;  // The "heap" to allocate the pool from
