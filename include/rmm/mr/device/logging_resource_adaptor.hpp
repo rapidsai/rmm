@@ -171,7 +171,7 @@ class logging_resource_adaptor final : public device_memory_resource {
       if (cast != nullptr)
         return upstream_->is_equal(*cast->get_upstream());
       else
-    return upstream_->is_equal(other);
+        return upstream_->is_equal(other);
   }
   }
 
