@@ -162,8 +162,17 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equal
    */
-  bool do_is_equal(device_memory_resource const& other) const noexcept {
+  bool do_is_equal(device_memory_resource const &other) const noexcept {
+    if (this == &other)
+      return true;
+    else {
+      logging_resource_adaptor<Upstream> const *cast =
+          dynamic_cast<logging_resource_adaptor<Upstream> const *>(&other);
+      if (cast != nullptr)
+        return upstream_->is_equal(*cast->get_upstream());
+      else
     return upstream_->is_equal(other);
+  }
   }
 
   /**
