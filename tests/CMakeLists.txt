@@ -42,6 +42,8 @@ endfunction(ConfigureTest)
 include_directories("${GTEST_INCLUDE_DIR}"
                     "${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
                     "${CMAKE_SOURCE_DIR}/include"
+                    "${CMAKE_SOURCE_DIR}/thirdparty"
+                    "${CMAKE_SOURCE_DIR}/include/rmm"
                     "${CMAKE_SOURCE_DIR}/src"
                     "${CMAKE_CURRENT_SOURCE_DIR}/../include")
 
@@ -101,6 +103,13 @@ set(SCALAR_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/device_scalar_tests.cpp")
 
 ConfigureTest(DEVICE_SCALAR_TEST "${SCALAR_TEST_SRC}")
+###################################################################################################
+# - logger tests -------------------------------------------------------------------------------------
+
+set(LOGGER_TEST_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/logger_tests.cpp")
+
+ConfigureTest(LOGGER_TEST "${LOGGER_TEST_SRC}")
 
 ###################################################################################################
 ### enable testing ################################################################################
