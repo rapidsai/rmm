@@ -22,6 +22,7 @@
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
+#include <rmm/mr/device/thread_safe_resource_adaptor.hpp>
 
 #include <cuda_runtime_api.h>
 #include <cstddef>
@@ -70,7 +71,7 @@ template <typename MemoryResourceType>
 struct MRTest : public ::testing::Test {
   // some useful allocation sizes
 
-  std::unique_ptr<rmm::mr::device_memory_resource> mr;
+  std::unique_ptr<MemoryResourceType> mr;
   cudaStream_t stream;
 
   MRTest() : mr{new MemoryResourceType} {}
@@ -81,13 +82,26 @@ struct MRTest : public ::testing::Test {
     EXPECT_EQ(cudaSuccess, cudaStreamDestroy(stream));
   };
 
-  ~MRTest() = default;
+  ~MRTest() {}
 };
+
+using thread_safe_cuda_mr = rmm::mr::thread_safe_resource_adaptor<rmm::mr::cuda_memory_resource>;
+
+template <>
+MRTest<thread_safe_cuda_mr>::MRTest()
+: mr{new thread_safe_cuda_mr(new rmm::mr::cuda_memory_resource)} {}
+
+template <>
+MRTest<thread_safe_cuda_mr>::~MRTest() {
+  auto upstream = mr->get_upstream();
+  delete upstream;
+}
 
 using resources = ::testing::Types<rmm::mr::cuda_memory_resource,
                                    rmm::mr::managed_memory_resource,
                                    rmm::mr::cnmem_memory_resource,
-                                   rmm::mr::cnmem_managed_memory_resource>;
+                                   rmm::mr::cnmem_managed_memory_resource,
+                                   thread_safe_cuda_mr>;
 
 TYPED_TEST_CASE(MRTest, resources);
 
