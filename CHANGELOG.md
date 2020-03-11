@@ -16,6 +16,7 @@
 - PR #283 Add random allocation benchmark.
 - PR #287 Enabled CUDA CXX11 for unit tests.
 - PR #292 Revamped RMM exceptions.
+- PR #303 Added replay benchmark.
 - PR #297 Use spdlog to implement `logging_resource_adaptor`
 
 ## Improvements
