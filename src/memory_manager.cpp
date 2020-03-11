@@ -24,6 +24,7 @@
 #include <rmm/mr/device/fixed_multisize_memory_resource.hpp>
 #include <rmm/mr/device/hybrid_memory_resource.hpp>
 #include <rmm/mr/device/thread_safe_resource_adaptor.hpp>
+#include <rmm/mr/device/logging_resource_adaptor.hpp>
 
 #define RMM_HYBRID_RESOURCE
 
@@ -35,8 +36,10 @@
   using mng_fixed_multisize_mr = rmm::mr::fixed_multisize_memory_resource<mng_pool_mr>;
   using hybrid_mr = rmm::mr::hybrid_memory_resource<fixed_multisize_mr, pool_mr>;
   using mng_hybrid_mr = rmm::mr::hybrid_memory_resource<mng_fixed_multisize_mr, mng_pool_mr>;
-  using thread_safe_hybrid_mr = rmm::mr::thread_safe_resource_adaptor<hybrid_mr>;
-  using thread_safe_mng_hybrid_mr = rmm::mr::thread_safe_resource_adaptor<mng_hybrid_mr>;
+  using safe_hybrid_mr = rmm::mr::thread_safe_resource_adaptor<hybrid_mr>;
+  using safe_mng_hybrid_mr = rmm::mr::thread_safe_resource_adaptor<mng_hybrid_mr>;
+  using logging_safe_hybrid_mr = rmm::mr::logging_resource_adaptor<safe_hybrid_mr>;
+  using logging_safe_mng_hybrid_mr = rmm::mr::logging_resource_adaptor<safe_mng_hybrid_mr>;
 #endif
 
 namespace rmm {
@@ -125,15 +128,22 @@ void Manager::initialize(const rmmOptions_t* new_options) {
     auto pool_size = getOptions().initial_pool_size;
     auto const& devices = getOptions().devices;
     if (useManagedMemory()) {
-      mng_pool_mr* pool = new mng_pool_mr(new rmm::mr::managed_memory_resource);
-      initialized_resource.reset(
-        new thread_safe_mng_hybrid_mr(
-          new mng_hybrid_mr(new mng_fixed_multisize_mr(pool), pool, pool_size)));
+      mng_pool_mr* pool = new mng_pool_mr(new rmm::mr::managed_memory_resource, pool_size);
+      auto hybrid = new safe_mng_hybrid_mr(
+          new mng_hybrid_mr(new mng_fixed_multisize_mr(pool), pool));
+    
+      if (getOptions().enable_logging)
+        initialized_resource.reset(new logging_safe_mng_hybrid_mr(hybrid));
+      else
+        initialized_resource.reset(hybrid);
     } else {
-      pool_mr* pool = new pool_mr(new rmm::mr::cuda_memory_resource);
-      initialized_resource.reset(
-        new thread_safe_hybrid_mr(
-          new hybrid_mr(new fixed_multisize_mr(pool), pool, pool_size)));
+      pool_mr* pool = new pool_mr(new rmm::mr::cuda_memory_resource, pool_size);
+      auto hybrid = new safe_hybrid_mr(new hybrid_mr(new fixed_multisize_mr(pool), pool));
+
+      if (getOptions().enable_logging)
+        initialized_resource.reset(new logging_safe_hybrid_mr(hybrid));
+      else
+        initialized_resource.reset(hybrid);
     }
 #else
     auto pool_size = getOptions().initial_pool_size;
@@ -169,16 +179,20 @@ void Manager::finalize() {
     // TODO: it's a pain to free all these
     if (usePoolAllocator()) {
       if (useManagedMemory()) {
-        thread_safe_mng_hybrid_mr *ts{
-          static_cast<thread_safe_mng_hybrid_mr*>(initialized_resource.get())
+        safe_mng_hybrid_mr *ts{
+          (getOptions().enable_logging) ? 
+            static_cast<logging_safe_mng_hybrid_mr*>(initialized_resource.get())->get_upstream() :
+            static_cast<safe_mng_hybrid_mr*>(initialized_resource.get())
         };
         auto hybrid = ts->get_upstream();
         delete hybrid->get_small_mr();
         delete hybrid->get_large_mr();
         delete hybrid;
       } else {
-        thread_safe_hybrid_mr *ts{
-          static_cast<thread_safe_hybrid_mr*>(initialized_resource.get())
+        safe_hybrid_mr *ts{
+          (getOptions().enable_logging) ? 
+          static_cast<logging_safe_hybrid_mr*>(initialized_resource.get())->get_upstream() :
+          static_cast<safe_hybrid_mr*>(initialized_resource.get())
         };
         auto hybrid = ts->get_upstream();
         delete hybrid->get_small_mr();
