@@ -63,14 +63,14 @@ class pool_memory_resource final : public device_memory_resource {
       Upstream* upstream_mr,
       std::size_t initial_pool_size = default_initial_size,
       std::size_t maximum_pool_size = default_maximum_size)
-      : upstream_mr_{upstream_mr}, maximum_pool_size_{maximum_pool_size} {
+      : upstream_mr_{upstream_mr},
+        maximum_pool_size_{maximum_pool_size} {
     cudaDeviceProp props;
+    int device{0};
+    RMM_CUDA_TRY(cudaGetDevice(&device));
+    RMM_CUDA_TRY(cudaGetDeviceProperties(&props, device));
 
-    if (initial_pool_size == default_initial_size)  {
-      int device{0};
-      RMM_CUDA_TRY(cudaGetDevice(&device));
-      int memsize{0};
-      RMM_CUDA_TRY(cudaGetDeviceProperties(&props, device));
+    if (initial_pool_size == default_initial_size) {
       initial_pool_size = props.totalGlobalMem / 2;
     }
 
