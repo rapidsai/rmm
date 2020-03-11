@@ -21,7 +21,6 @@
 #include <rmm/detail/aligned.hpp>
 
 #include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/transform_iterator.h>
 
 #include <cuda_runtime_api.h>
 
@@ -34,6 +33,7 @@
 #include <memory>
 
 #include <iostream>
+#include "thrust/iterator/transform_iterator.h"
 
 // forward decl
 using cudaStream_t = struct CUstream_st*;
@@ -55,35 +55,44 @@ template <typename Upstream>
 class fixed_multisize_memory_resource : public device_memory_resource {
  public:
 
-  static constexpr std::size_t default_min_size = 1 << 18; // 256 KiB
-  static constexpr std::size_t default_max_size = 1 << 22; // 4 MiB
+  // Sizes are 2 << k, for k in [default_min_exponent, default_max_exponent]
+  static constexpr std::size_t default_size_base = 2; 
+  static constexpr std::size_t default_min_exponent = 18; // 256 KiB
+  static constexpr std::size_t default_max_exponent = 22; // 4 MiB
 
   /**
    * @brief Construct a new fixed multisize memory resource object
    * 
-   * @throws rmm::logic_error if min_size or max_size is not a power of two.
+   * Allocates multiple fixed block sizes. The block sizes start at `size_base << min_size_exponent`
+   * and grow by powers of `size_base` up to `size_base << max_size_exponent`. So, by default there
+   * are 5 block sizes: 2 << 18 (256 KiB), 2 << 19 (512 KiB), 2 << 20 (1 MiB), 2 << 21 (2 MiB), and
+   * 2 << 22 (4 MiB).
+   * 
+   * @throws rmm::logic_error if size_base is not a power of two.
    *
    * @param upstream_resource The upstream memory resource used to allocate pools of blocks
-   * @param min_size The minimum fixed block size to allocate
-   * @param max_size The maximum fixed block size to allocate
+   * @param size_base The base of allocation block sizes, defaults to 2
+   * @param min_size_exponent: The exponent of the minimum fixed block size to allocate
+   * @param max_size_exponent The exponent of the maximum fixed block size to allocate
    * @param initial_blocks_per_size The number of blocks to preallocate from the upstream memory
-   *        resource
+   *        resource, and to allocate when all current blocks are in use.
    */
   explicit fixed_multisize_memory_resource(
       Upstream* upstream_resource,
-      std::size_t min_size = default_min_size,
-      std::size_t max_size = default_max_size,
+      std::size_t size_base = default_size_base,
+      std::size_t min_size_exponent = default_min_exponent,
+      std::size_t max_size_exponent = default_max_exponent,
       std::size_t initial_blocks_per_size = 128)
       : upstream_mr_{upstream_resource},
-        min_size_{min_size},
-        max_size_{max_size} {
-    RMM_EXPECTS(rmm::detail::is_pow2(min_size), "Minimum size must be a power of two");
-    RMM_EXPECTS(rmm::detail::is_pow2(max_size), "Maximum size must be a power of two");
+        size_base_{size_base},
+        min_size_exponent_{min_size_exponent},
+        max_size_exponent_{max_size_exponent} {
+    RMM_EXPECTS(rmm::detail::is_pow2(size_base), "size_base must be a power of two");
     
     // allocate initial blocks and insert into free list
-    for (std::size_t i = min_size; i <= max_size; i *= 2) {
+    for (std::size_t i = min_size_exponent_; i <= max_size_exponent_; i++) {
       fixed_size_mr_.emplace_back(new fixed_size_memory_resource<Upstream>(
-          upstream_resource, i, initial_blocks_per_size));
+        upstream_resource, size_base << i, initial_blocks_per_size));
     }
   }
 
@@ -120,39 +129,38 @@ class fixed_multisize_memory_resource : public device_memory_resource {
    * 
    * @return std::size_t The minimum block size this memory_resource can allocate.
    */
-  std::size_t get_min_size() const noexcept { return min_size_; }
+  std::size_t get_min_size() const noexcept { return size_base_ << min_size_exponent_; }
 
   /**
    * @brief Get the maximum block size that this memory_resource can allocate.
    * 
    * @return std::size_t The maximum block size this memory_resource can allocate.
    */
-  std::size_t get_max_size() const noexcept { return max_size_; }
+  std::size_t get_max_size() const noexcept { return size_base_ << max_size_exponent_; }
 
  private:
 
   /**
    * @brief Get the memory resource for the requested size
    *
-   * Chooses a memory_resource that allocates the smallest blocks larger than `bytes`.
+   * Chooses a memory_resource that allocates the smallest blocks at least as large as `bytes`.
    *
-   * @throws rmm::bad_alloc if the size is larger than the maximum block size.
+   * The behavior is undefined if `bytes` is greater than the maximum block size.
    *
    * @param bytes Requested allocation size in bytes
    * @return rmm::mr::device_memory_resource& memory_resource that can allocate the requested size.
    */
   device_memory_resource* get_resource(std::size_t bytes) {
-    assert(bytes <= max_size_);
-    if (bytes <= max_size_) {
-      auto iter = std::find_if(
-          fixed_size_mr_.begin(), fixed_size_mr_.end(),
-          [bytes](std::unique_ptr<fixed_size_memory_resource<Upstream>>& res) {
-            return bytes <= res.get()->get_block_size();
-          });
-      if (iter != fixed_size_mr_.end())
-        return iter->get();
-    }
-    return nullptr;
+    assert(bytes <= get_max_size());
+
+    auto exponentiate = [this](std::size_t const& k) { return size_base_ << k; };
+    auto min_exp = thrust::make_transform_iterator(
+      thrust::make_counting_iterator(min_size_exponent_), exponentiate);
+      
+    auto iter = std::upper_bound(min_exp, min_exp + (max_size_exponent_ - min_size_exponent_),
+      bytes, [](std::size_t const& a, std::size_t const& b) { return a <= b; });
+
+    return fixed_size_mr_[std::distance(min_exp, iter)].get();
   }
 
   /**
@@ -168,7 +176,7 @@ class fixed_multisize_memory_resource : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cudaStream_t stream) override {
     if (bytes <= 0) return nullptr;
-    RMM_EXPECTS(bytes <= max_size_, rmm::bad_alloc, "bytes must be <= max_size");
+    RMM_EXPECTS(bytes <= get_max_size(), rmm::bad_alloc, "bytes must be <= max_size");
     return get_resource(bytes)->allocate(bytes, stream);
   }
 
@@ -201,8 +209,9 @@ class fixed_multisize_memory_resource : public device_memory_resource {
 
   Upstream* upstream_mr_;  // The upstream memory_resource from which to allocate blocks.
 
-  std::size_t min_size_; // size of smallest blocks allocated
-  std::size_t max_size_; // size of largest blocks allocated
+  std::size_t const size_base_;         // base of the allocation block sizes (power of 2)
+  std::size_t const min_size_exponent_; // exponent of the size of smallest blocks allocated
+  std::size_t const max_size_exponent_; // exponent of the size of largest blocks allocated
 
   // allocators for fixed-size blocks <= max_fixed_size_
   std::vector<std::unique_ptr<fixed_size_memory_resource<Upstream>>> fixed_size_mr_;

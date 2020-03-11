@@ -63,14 +63,14 @@ class pool_memory_resource final : public device_memory_resource {
       Upstream* upstream_mr,
       std::size_t initial_pool_size = default_initial_size,
       std::size_t maximum_pool_size = default_maximum_size)
-      : upstream_mr_{upstream_mr}, maximum_pool_size_{maximum_pool_size} {
+      : upstream_mr_{upstream_mr},
+        maximum_pool_size_{maximum_pool_size} {
     cudaDeviceProp props;
+    int device{0};
+    RMM_CUDA_TRY(cudaGetDevice(&device));
+    RMM_CUDA_TRY(cudaGetDeviceProperties(&props, device));
 
-    if (initial_pool_size == default_initial_size)  {
-      int device{0};
-      RMM_CUDA_TRY(cudaGetDevice(&device));
-      int memsize{0};
-      RMM_CUDA_TRY(cudaGetDeviceProperties(&props, device));
+    if (initial_pool_size == default_initial_size) {
       initial_pool_size = props.totalGlobalMem / 2;
     }
 
@@ -80,11 +80,7 @@ class pool_memory_resource final : public device_memory_resource {
         maximum_pool_size_ = props.totalGlobalMem;
 
     // Allocate initial block
-    stream_blocks_[0].insert(block_from_upstream(initial_pool_size, 0));
-
-    // TODO allocation should check maximum pool size
-
-    // TODO smarter new block size heuristic
+    stream_free_blocks_[0].insert(block_from_upstream(initial_pool_size, 0));
   }
 
   /**
@@ -152,10 +148,10 @@ class pool_memory_resource final : public device_memory_resource {
       // Now that this stream is synced, insert all other blocks into this stream's list
       // Note: This could cause thrashing between two streams. On the other hand, it reduces
       // fragmentation by coalescing.
-      stream_blocks_[stream].insert(blocks.begin(), blocks.end());
-      
+      stream_free_blocks_[stream].insert(blocks.begin(), blocks.end());
+
       // remove this stream from the freelist
-      stream_blocks_.erase(blocks_stream);
+      stream_free_blocks_.erase(blocks_stream);
     }
     return b;
   }
@@ -174,15 +170,15 @@ class pool_memory_resource final : public device_memory_resource {
    */
   block available_larger_block(size_t size, cudaStream_t stream) {
     // Try to find a larger block in free list for the same stream
-    auto iter = stream_blocks_.find(stream);
-    if (iter != stream_blocks_.end()) {
+    auto iter = stream_free_blocks_.find(stream);
+    if (iter != stream_free_blocks_.end()) {
       block b = block_from_stream(iter->second, stream, size, stream);
       if (b.ptr != nullptr) return b;
     }
 
     // nothing in this stream's free list, look for one on another stream
-    auto s = stream_blocks_.begin();
-    while (s != stream_blocks_.end()) {
+    auto s = stream_free_blocks_.begin();
+    while (s != stream_free_blocks_.end()) {
       if (s->first != stream) {
         block b = block_from_stream(s->second, s->first, size, stream);
         if (b.ptr != nullptr) return b;
@@ -213,7 +209,7 @@ class pool_memory_resource final : public device_memory_resource {
     if (b.size > size)
     {
       block rest{b.ptr + size, b.size - size, false};
-      stream_blocks_[stream].insert(rest);
+      stream_free_blocks_[stream].insert(rest);
     }
 
     allocated_blocks_.insert(alloc);
@@ -233,12 +229,10 @@ class pool_memory_resource final : public device_memory_resource {
 
     auto const i = allocated_blocks_.find(block{static_cast<char*>(p)});
     assert(i != allocated_blocks_.end());
+    assert(i->size == rmm::detail::align_up(size, allocation_alignment));
 
-    if (i != allocated_blocks_.end()) {
-      assert(i->size == rmm::detail::align_up(size, allocation_alignment));
-      stream_blocks_[stream].insert(*i);
-      allocated_blocks_.erase(i);
-    }
+    stream_free_blocks_[stream].insert(*i);
+    allocated_blocks_.erase(i);
   }
 
   /**
@@ -371,15 +365,14 @@ class pool_memory_resource final : public device_memory_resource {
     return std::make_pair(free_size, total_size);
   }
 
-  size_t maximum_pool_size_{default_maximum_size};
-
+  size_t maximum_pool_size_;
   size_t current_pool_size_{0};
 
   Upstream* upstream_mr_;  // The "heap" to allocate the pool from
 
   // map of [stream_id, free_list] pairs
   // stream stream_id must be synced before allocating from this list to a different stream
-  std::map<cudaStream_t, free_list> stream_blocks_;
+  std::map<cudaStream_t, free_list> stream_free_blocks_;
 
   std::set<block> allocated_blocks_;
 

@@ -47,7 +47,18 @@ struct block
    * @return true if this block's ptr is < than `rhs` block pointer.
    * @return false if this block's ptr is >= than `rhs` block pointer.
    */
-  bool operator<(block const& rhs) const { return ptr < rhs.ptr; };
+  bool operator<(block const& rhs) const noexcept { return ptr < rhs.ptr; };
+
+  /**
+   * @brief Verifies whether this block can be merged to the beginning of block b.
+   * 
+   * @param b The block to check for contiguity.
+   * @return true Returns true if this blocks's `ptr` + `size` == `b.ptr`, and `not b.is_head`, 
+                  false otherwise.
+   */
+  bool is_contiguous_before(block const& b) const noexcept {
+    return (this->ptr + this->size == b.ptr) and not (b.is_head);
+  }
 
   /**
    * @brief Print this block. For debugging.
@@ -59,16 +70,16 @@ struct block
 
 /**
  * @brief Coalesce two contiguous blocks into one.
- * 
- * @throw rmm::logic_error if `a.ptr + a.size != b.ptr`. (blocks are not contiguous). 
- * @throw rmm::logic_error if `b.is_head == true`. (merging across upstream allocation boundaries).
+ *
+ * `a` must immediately precede `b` and both `a` and `b` must be from the same upstream allocation.
+ * That is, `a.ptr + a.size == b.ptr` and `not b.is_head`. Otherwise behavior is undefined.
+ *
  * @param a first block to merge
  * @param b second block to merge
  * @return block The merged block
  */
 inline block merge_blocks(block const& a, block const& b)
 {
-  // should be asserts
   assert(a.ptr + a.size == b.ptr); // non-contiguous blocks
   assert(not b.is_head); // Can't merge across upstream allocation boundaries
 
@@ -124,15 +135,15 @@ struct free_list {
       return;
     }
 
-    // Find the right place (in ptr order) to insert the block
+    // Find the right place (in ascending ptr order) to insert the block
     // Can't use binary_search because it's a linked list and will be quadratic
     auto const next = std::find_if(blocks.begin(), blocks.end(),
                              [b](block const& i) { return i.ptr > b.ptr; });
     auto const previous = (next == blocks.begin()) ? next : std::prev(next);
 
     // Coalesce with neighboring blocks or insert the new block if it can't be coalesced
-    bool const merge_prev = !b.is_head && (previous->ptr + previous->size == b.ptr);
-    bool const merge_next = (next != blocks.end()) && !next->is_head && (b.ptr + b.size == next->ptr);
+    bool const merge_prev = previous->is_contiguous_before(b);
+    bool const merge_next = (next != blocks.end()) && b.is_contiguous_before(*next);
 
     if (merge_prev && merge_next) {
       *previous = detail::merge_blocks(*previous, b);

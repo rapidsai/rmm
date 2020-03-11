@@ -40,7 +40,7 @@ namespace mr {
 /**
  * @brief Allocates memory from one of two allocators selected based on the requested size.
  *
- * For example, could use a fixed_multisize_memory_resource for allocations below the size
+ * For example, using a fixed_multisize_memory_resource for allocations below the size
  * threshold, and a pool_memory_resource for allocations above the size threshold. This can be 
  * advantageous if there are many small allocations, because fixed_multisize_memory_resource is much 
  * faster than pool_memory_resource, and it can reduce fragmentation that can impact the
@@ -63,14 +63,13 @@ class hybrid_memory_resource : public device_memory_resource {
    * @param small_mr The memory_resource to use for small allocations.
    * @param large_mr The memory_resource to use for large allocations.
    * @param threshold_size Allocations > this size (in bytes) use large_mr. Allocations <= this size
-   *                       use small_mr. Must be a power of two.
+   *                       use small_mr.
    */
   hybrid_memory_resource(
     SmallAllocMemoryResource* small_mr,
     LargeAllocMemoryResource* large_mr,
     std::size_t threshold_size = default_threshold_size)
   : small_mr_{small_mr}, large_mr_{large_mr}, threshold_size_{threshold_size} {
-    RMM_EXPECTS(rmm::detail::is_pow2(threshold_size), "threshold_size must be a power of 2.");
   }
 
   /**
@@ -121,17 +120,12 @@ class hybrid_memory_resource : public device_memory_resource {
    * @return rmm::mr::device_memory_resource& memory_resource that can allocate the requested size.
    */
   rmm::mr::device_memory_resource* get_resource(std::size_t bytes) {
-    if (bytes <= threshold_size_)
-      return small_mr_;
+    if (bytes <= threshold_size_) return small_mr_;
     else return large_mr_;
   }
 
   /**
    * @brief Allocates memory of size at least \p bytes.
-   *
-   * The returned pointer will have at minimum 256 byte alignment.
-   *
-   * @throws std::bad_alloc if size > block_size (constructor parameter)
    *
    * @param bytes The size of the allocation
    * @param stream Stream on which to perform allocation
@@ -144,8 +138,6 @@ class hybrid_memory_resource : public device_memory_resource {
 
   /**
    * @brief Deallocate memory pointed to by \p p.
-   *
-   * @throws std::bad_alloc if size > block_size (constructor parameter)
    *
    * @param p Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the
@@ -168,7 +160,7 @@ class hybrid_memory_resource : public device_memory_resource {
     return std::make_pair(0, 0);
   }
 
-  std::size_t threshold_size_;  // power of 2 threshold for choosing memory resource
+  std::size_t const threshold_size_;  // threshold for choosing memory_resource
 
   SmallAllocMemoryResource *small_mr_; // allocator for <= max_small_size
   LargeAllocMemoryResource *large_mr_; // allocator for > max_small_size
