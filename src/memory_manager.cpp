@@ -133,7 +133,7 @@ void Manager::initialize(const rmmOptions_t* new_options) {
           new mng_hybrid_mr(new mng_fixed_multisize_mr(pool), pool));
     
       if (getOptions().enable_logging)
-        initialized_resource.reset(new logging_safe_mng_hybrid_mr(hybrid));
+        initialized_resource.reset(new logging_safe_mng_hybrid_mr(hybrid, "rmm_log.csv"));
       else
         initialized_resource.reset(hybrid);
     } else {
@@ -141,7 +141,7 @@ void Manager::initialize(const rmmOptions_t* new_options) {
       auto hybrid = new safe_hybrid_mr(new hybrid_mr(new fixed_multisize_mr(pool), pool));
 
       if (getOptions().enable_logging)
-        initialized_resource.reset(new logging_safe_hybrid_mr(hybrid));
+        initialized_resource.reset(new logging_safe_hybrid_mr(hybrid, "rmm_log.csv"));
       else
         initialized_resource.reset(hybrid);
     }
