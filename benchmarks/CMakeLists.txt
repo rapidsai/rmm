@@ -10,7 +10,7 @@ function(ConfigureBench CMAKE_BENCH_NAME CMAKE_BENCH_SRC)
                    ${CMAKE_BENCH_SRC}
                    "${CMAKE_CURRENT_SOURCE_DIR}/synchronization/synchronization.cpp")
     set_target_properties(${CMAKE_BENCH_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    target_link_libraries(${CMAKE_BENCH_NAME} benchmark benchmark_main pthread rmm )
+    target_link_libraries(${CMAKE_BENCH_NAME} benchmark pthread rmm )
     set_target_properties(${CMAKE_BENCH_NAME} PROPERTIES
                             RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/gbenchmarks")
 endfunction(ConfigureBench)
@@ -55,3 +55,10 @@ set(RANDOM_ALLOCATIONS_BENCH_SRC
   "${CMAKE_CURRENT_SOURCE_DIR}/random_allocations/random_allocations.cpp")
 
 ConfigureBench(RANDOM_ALLOCATIONS_BENCH "${RANDOM_ALLOCATIONS_BENCH_SRC}")
+###################################################################################################
+# - replay benchmark --------------------------------------------------------------------------------
+
+set(REPLAY_BENCH_SRC
+  "${CMAKE_CURRENT_SOURCE_DIR}/replay/replay.cpp")
+
+ConfigureBench(REPLAY_BENCH "${REPLAY_BENCH_SRC}")

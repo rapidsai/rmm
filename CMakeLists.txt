@@ -113,8 +113,10 @@ endif(BUILD_BENCHMARKS)
 
 include_directories("${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/include"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include/rmm"
                     "${CMAKE_CURRENT_SOURCE_DIR}/src"
-                    "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cnmem/include")
+                    "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cnmem/include"
+                    "${CMAKE_SOURCE_DIR}/thirdparty")
 
 ###################################################################################################
 # - library paths ---------------------------------------------------------------------------------
@@ -159,7 +161,6 @@ install(TARGETS rmm
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/rmm
         DESTINATION include)
-
 ###################################################################################################
 # - make documentation ----------------------------------------------------------------------------
 

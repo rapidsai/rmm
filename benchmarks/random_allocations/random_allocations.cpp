@@ -171,6 +171,8 @@ static void BM_RandomAllocationsCnmem(State& state) {
 }
 BENCHMARK(BM_RandomAllocationsCnmem)->Unit(benchmark::kMillisecond);
 
+BENCHMARK_MAIN();
+
 /*int main(void) {
   std::vector<int> state(1);
   BM_RandomAllocationsSub(state);

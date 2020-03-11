@@ -16,7 +16,9 @@
 - PR #283 Add random allocation benchmark.
 - PR #287 Enabled CUDA CXX11 for unit tests.
 - PR #292 Revamped RMM exceptions.
-- PR #319 Add thread_safe_resource_adaptor class.
+- PR #297 Use spdlog to implement `logging_resource_adaptor`
+- PR #303 Added replay benchmark.
+- PR #319 Add `thread_safe_resource_adaptor` class.
 
 ## Improvements
 
@@ -42,7 +44,7 @@
 - PR #312 Fix libcudf compilation errors due to explicit defaulted device_buffer constructor.
 
 
-# RMM 0.12.0 (Date TBD)
+# RMM 0.12.0 (04 Feb 2020)
 
 ## New Features
 
