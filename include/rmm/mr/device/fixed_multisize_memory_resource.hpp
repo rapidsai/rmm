@@ -42,6 +42,22 @@ namespace rmm {
 
 namespace mr {
 
+namespace {
+
+// Integer pow function
+std::size_t ipow(std::size_t base, std::size_t exp) {
+  std::size_t ret = 1;
+  while (exp > 0) {
+    if (exp & 1) ret *= base;  // multiply the result by the current base
+    base *= base;    // square the base
+    exp = exp >> 1;  // divide the exponent in half
+  }
+  return ret;
+}
+
+} // namespace anonymous
+
+
 /**
  * @brief Allocates fixed-size memory blocks of a range of sizes.
  * 
@@ -86,13 +102,15 @@ class fixed_multisize_memory_resource : public device_memory_resource {
       : upstream_mr_{upstream_resource},
         size_base_{size_base},
         min_size_exponent_{min_size_exponent},
-        max_size_exponent_{max_size_exponent} {
+        max_size_exponent_{max_size_exponent},
+        min_size_bytes_{ipow(size_base, min_size_exponent)},
+        max_size_bytes_{ipow(size_base, max_size_exponent)} {
     RMM_EXPECTS(rmm::detail::is_pow2(size_base), "size_base must be a power of two");
     
     // allocate initial blocks and insert into free list
     for (std::size_t i = min_size_exponent_; i <= max_size_exponent_; i++) {
       fixed_size_mr_.emplace_back(new fixed_size_memory_resource<Upstream>(
-        upstream_resource, size_base << i, initial_blocks_per_size));
+        upstream_resource, ipow(size_base, i), initial_blocks_per_size));
     }
   }
 
@@ -129,14 +147,14 @@ class fixed_multisize_memory_resource : public device_memory_resource {
    * 
    * @return std::size_t The minimum block size this memory_resource can allocate.
    */
-  std::size_t get_min_size() const noexcept { return size_base_ << min_size_exponent_; }
+  std::size_t get_min_size() const noexcept { return min_size_bytes_; }
 
   /**
    * @brief Get the maximum block size that this memory_resource can allocate.
    * 
    * @return std::size_t The maximum block size this memory_resource can allocate.
    */
-  std::size_t get_max_size() const noexcept { return size_base_ << max_size_exponent_; }
+  std::size_t get_max_size() const noexcept { return max_size_bytes_; }
 
  private:
 
@@ -153,7 +171,7 @@ class fixed_multisize_memory_resource : public device_memory_resource {
   device_memory_resource* get_resource(std::size_t bytes) {
     assert(bytes <= get_max_size());
 
-    auto exponentiate = [this](std::size_t const& k) { return size_base_ << k; };
+    auto exponentiate = [this](std::size_t const& k) { return ipow(size_base_, k); };
     auto min_exp = thrust::make_transform_iterator(
       thrust::make_counting_iterator(min_size_exponent_), exponentiate);
       
@@ -212,6 +230,8 @@ class fixed_multisize_memory_resource : public device_memory_resource {
   std::size_t const size_base_;         // base of the allocation block sizes (power of 2)
   std::size_t const min_size_exponent_; // exponent of the size of smallest blocks allocated
   std::size_t const max_size_exponent_; // exponent of the size of largest blocks allocated
+  std::size_t const min_size_bytes_;    // minimum fixed size in bytes
+  std::size_t const max_size_bytes_;    // maximum fixed size in bytes
 
   // allocators for fixed-size blocks <= max_fixed_size_
   std::vector<std::unique_ptr<fixed_size_memory_resource<Upstream>>> fixed_size_mr_;
