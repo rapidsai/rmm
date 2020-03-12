@@ -325,7 +325,6 @@ int main(int argc, char** argv) {
     RandomAllocations<rmm::mr::pool_memory_resource>(1000, 4096);
   else if (name == "cnmem")
     RandomAllocations<rmm::mr::cnmem_memory_resource>(1000, 4096);
-
   return 0;
 }*/
 
