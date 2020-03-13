@@ -88,7 +88,20 @@ class cnmem_memory_resource : public device_memory_resource {
     assert(CNMEM_STATUS_SUCCESS == status);
   }
 
+  /**
+   * @brief Query whether the resource supports use of non-null CUDA streams for
+   * allocation/deallocation.
+   *
+   * @returns bool true
+   */
   bool supports_streams() const noexcept override { return true; }
+
+  /**
+   * @brief Query whether the resource supports the get_mem_info API.
+   * 
+   * @return bool true if the resource supports get_mem_info, false otherwise.
+   */
+  bool supports_get_mem_info() const noexcept override { return true; }
 
  protected:
   /**
@@ -192,8 +205,8 @@ class cnmem_memory_resource : public device_memory_resource {
    *
    * @param stream to execute on
    * @return std::pair contaiing free_size and total_size of memory
-   */
-  std::pair<size_t, size_t> do_get_mem_info(cudaStream_t stream) const {
+   **/
+  std::pair<size_t, size_t> do_get_mem_info(cudaStream_t stream) const override {
     std::size_t free_size;
     std::size_t total_size;
     CNMEM_TRY(cnmemMemGetInfo(&free_size, &total_size, stream));
