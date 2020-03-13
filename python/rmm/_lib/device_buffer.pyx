@@ -80,13 +80,13 @@ cdef class DeviceBuffer:
             else:
                 self.c_obj.reset(new device_buffer(c_ptr, size, c_stream))
 
-                if c_stream == NULL:
-                    err = cudaStreamSynchronize(c_stream)
-                    if err != cudaSuccess:
-                        with gil:
-                            raise RuntimeError(
-                                f"Stream sync failed with error: {err}"
-                            )
+            if c_stream == NULL:
+                err = cudaStreamSynchronize(c_stream)
+                if err != cudaSuccess:
+                    with gil:
+                        raise RuntimeError(
+                            f"Stream sync failed with error: {err}"
+                        )
 
     def __len__(self):
         return self.size
