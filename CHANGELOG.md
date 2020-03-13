@@ -36,6 +36,7 @@
 - PR #296 Use CuPy's `UnownedMemory` for RMM-backed allocations
 - PR #310 Improve `device_buffer` allocation logic.
 - PR #309 Sync default stream in `DeviceBuffer` constructor
+- PR #326 Sync only on copy construction
 - PR #308 Fix typo in README
 
 ## Bug Fixes
