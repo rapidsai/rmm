@@ -15,13 +15,14 @@
  */
 #pragma once
 
-#include "device_memory_resource.hpp"
+#include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <rmm/detail/error.hpp>
 
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/spdlog.h>
 #include <sstream>
+#include <memory>
 
 namespace rmm {
 namespace mr {
@@ -89,6 +90,13 @@ class logging_resource_adaptor final : public device_memory_resource {
   bool supports_streams() const noexcept override {
     return upstream_->supports_streams();
   }
+
+  /**
+   * @brief Query whether the resource supports the get_mem_info API.
+   * 
+   * @return bool true if the upstream resource supports get_mem_info, false otherwise.
+   */
+  bool supports_get_mem_info() const noexcept override { return upstream_->supports_streams(); }
 
  private:
   /**
@@ -162,7 +170,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equal
    */
-  bool do_is_equal(device_memory_resource const &other) const noexcept {
+  bool do_is_equal(device_memory_resource const &other) const noexcept override {
     if (this == &other)
       return true;
     else {
@@ -172,7 +180,7 @@ class logging_resource_adaptor final : public device_memory_resource {
         return upstream_->is_equal(*cast->get_upstream());
       else
         return upstream_->is_equal(other);
-  }
+    }
   }
 
   /**
@@ -183,7 +191,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @param stream Stream on which to get the mem info.
    * @return std::pair contaiing free_size and total_size of memory
    */
-  std::pair<size_t, size_t> do_get_mem_info(cudaStream_t stream) const {
+  std::pair<size_t, size_t> do_get_mem_info(cudaStream_t stream) const override {
     return upstream_->get_mem_info(stream);
   }
 

@@ -111,7 +111,7 @@ class bad_alloc : public std::bad_alloc {
  * RMM_FAIL("Unsupported code path");
  *
  * // Throws `std::runtime_error`
- * RMM_FAIL(std::runtime_error, "Unsupported code path");
+ * RMM_FAIL("Unsupported code path", std::runtime_error);
  * ```
  */
 #define RMM_FAIL(...)                                     \

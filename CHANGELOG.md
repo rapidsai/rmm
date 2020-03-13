@@ -24,9 +24,10 @@
 - PR #283 Add random allocation benchmark.
 - PR #287 Enabled CUDA CXX11 for unit tests.
 - PR #292 Revamped RMM exceptions.
-- PR #297 Use spdlog to implement `logging_resource_adaptor`
+- PR #297 Use spdlog to implement `logging_resource_adaptor`.
 - PR #303 Added replay benchmark.
 - PR #319 Add `thread_safe_resource_adaptor` class.
+- PR #314 New suballocator memory_resources.
 
 ## Improvements
 
@@ -43,6 +44,7 @@
 - PR #296 Use CuPy's `UnownedMemory` for RMM-backed allocations
 - PR #310 Improve `device_buffer` allocation logic.
 - PR #309 Sync default stream in `DeviceBuffer` constructor
+- PR #326 Sync only on copy construction
 - PR #308 Fix typo in README
 
 ## Bug Fixes
