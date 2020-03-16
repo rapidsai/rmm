@@ -378,6 +378,9 @@ class pool_memory_resource final : public device_memory_resource {
 
   // blocks allocated from upstream: so they can be easily freed
   std::vector<block> upstream_blocks_;
+
+  // blocks allocated from stream: so they can be printed
+  std::map<cudaStream_t, free_list> stream_blocks_;
 };
 
 }  // namespace mr
