@@ -14,22 +14,23 @@
  * limitations under the License.
  */
 
-#include <rmm/mr/device/cnmem_memory_resource.hpp>
+#include <gtest/gtest.h>
+
 #include <rmm/mr/device/cnmem_managed_memory_resource.hpp>
+#include <rmm/mr/device/cnmem_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/mr/device/fixed_size_memory_resource.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
-#include <rmm/mr/device/fixed_size_memory_resource.hpp>
 #include <rmm/mr/device/thrust_allocator_adaptor.hpp>
+#include <rmm/thrust_rmm_allocator.h>
+#include <thrust/detail/contiguous_storage.h>
 
-
-#include <gtest/gtest.h>
-
-template <typename MemoryResourceType>
+template <typename MR>
 struct AllocatorTest : public ::testing::Test {
-  MemoryResourceType mr{};
+  MR mr{};
   cudaStream_t stream{};
 
   void SetUp() override { EXPECT_EQ(cudaSuccess, cudaStreamCreate(&stream)); }
@@ -39,13 +40,13 @@ struct AllocatorTest : public ::testing::Test {
   };
 };
 
-using resources = ::testing::Types<rmm::mr::cuda_memory_resource,
-                                   rmm::mr::managed_memory_resource,
-                                   rmm::mr::cnmem_memory_resource,
-                                   rmm::mr::cnmem_managed_memory_resource,
-                                   rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>>;
+using resources = ::testing::Types<
+    rmm::mr::cuda_memory_resource, rmm::mr::managed_memory_resource,
+    rmm::mr::cnmem_memory_resource, rmm::mr::cnmem_managed_memory_resource>;
+    //rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>>;
 
 TYPED_TEST_CASE(AllocatorTest, resources);
 
-
-// TODO Add tests once RMM cmake is updated to allow compiling .cu files
+TYPED_TEST(AllocatorTest, first) {
+    rmm::device_vector<int> ints(100);
+}
