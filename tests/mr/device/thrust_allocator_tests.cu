@@ -15,6 +15,7 @@
  */
 
 #include <gtest/gtest.h>
+#include <rmm/thrust_rmm_allocator.h>
 
 #include <rmm/mr/device/cnmem_managed_memory_resource.hpp>
 #include <rmm/mr/device/cnmem_memory_resource.hpp>
@@ -25,28 +26,37 @@
 #include <rmm/mr/device/managed_memory_resource.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
 #include <rmm/mr/device/thrust_allocator_adaptor.hpp>
-#include <rmm/thrust_rmm_allocator.h>
-#include <thrust/detail/contiguous_storage.h>
+
+using pool_mr = rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>;
+
+using resources =
+    ::testing::Types<rmm::mr::cuda_memory_resource,
+                     rmm::mr::managed_memory_resource,
+                     rmm::mr::cnmem_memory_resource,
+                     rmm::mr::cnmem_managed_memory_resource, pool_mr>;
 
 template <typename MR>
 struct AllocatorTest : public ::testing::Test {
-  MR mr{};
-  cudaStream_t stream{};
+  std::vector<std::unique_ptr<rmm::mr::device_memory_resource>> upstreams;
+  std::unique_ptr<MR> mr;
 
-  void SetUp() override { EXPECT_EQ(cudaSuccess, cudaStreamCreate(&stream)); }
+  AllocatorTest() : mr{std::make_unique<MR>()} {
+    rmm::mr::set_default_resource(mr.get());
+  }
 
-  void TearDown() override {
-    EXPECT_EQ(cudaSuccess, cudaStreamDestroy(stream));
-  };
+  ~AllocatorTest() = default;
 };
 
-using resources = ::testing::Types<
-    rmm::mr::cuda_memory_resource, rmm::mr::managed_memory_resource,
-    rmm::mr::cnmem_memory_resource, rmm::mr::cnmem_managed_memory_resource>;
-    //rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>>;
+template <>
+AllocatorTest<pool_mr>::AllocatorTest() {
+  upstreams.emplace_back(std::make_unique<rmm::mr::cuda_memory_resource>());
+  auto& cuda_upstream = upstreams.front();
+  mr.reset(new pool_mr(static_cast<rmm::mr::cuda_memory_resource*>(cuda_upstream.get())));
+}
 
 TYPED_TEST_CASE(AllocatorTest, resources);
 
 TYPED_TEST(AllocatorTest, first) {
-    rmm::device_vector<int> ints(100);
+  rmm::device_vector<int> ints(100, 1);
+  EXPECT_EQ(100, thrust::reduce(ints.begin(), ints.end()));
 }
