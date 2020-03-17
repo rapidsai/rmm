@@ -21,6 +21,7 @@
 - PR #319 Add `thread_safe_resource_adaptor` class.
 - PR #314 New suballocator memory_resources.
 - PR #330 Fixed incorrect name of `stream_free_blocks_` debug symbol.
+- PR #331 Move to C++14 and deprecate legacy APIs.
 
 ## Improvements
 
