@@ -55,7 +55,6 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
   /**
    * @brief Default constructor creates an allocator using the default memory
    * resource and default stream.
-
    */
   thrust_allocator() = default;
 
@@ -93,7 +92,8 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    * @return pointer Pointer to the newly allocated storage
    */
   pointer allocate(size_type n) {
-    return thrust::device_pointer_cast(_mr->allocate(n * sizeof(T), _stream));
+    return thrust::device_pointer_cast(
+        static_cast<T*>(_mr->allocate(n * sizeof(T), _stream)));
   }
 
   /**
