@@ -15,7 +15,8 @@
  */
 
 /**
- Allocator class compatible with thrust arrays that uses RMM device memory manager.
+ Allocator class compatible with thrust arrays that uses RMM device memory
+ manager.
 
  Author: Mark Harris
  */
@@ -23,18 +24,15 @@
 #ifndef THRUST_RMM_ALLOCATOR_H
 #define THRUST_RMM_ALLOCATOR_H
 
-#include <thrust/device_vector.h>
-#include <thrust/device_malloc_allocator.h>
-#include <thrust/system_error.h>
-#include <thrust/system/cuda/error.h>
-#include <thrust/execution_policy.h>
-
 #include <rmm/mr/device/thrust_allocator_adaptor.hpp>
 
-namespace rmm{
+#include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
+
+namespace rmm {
 /**
  * @brief Alias for a thrust::device_vector that uses RMM for memory allocation.
- * 
+ *
  */
 template <typename T>
 using device_vector = thrust::device_vector<T, rmm::mr::thrust_allocator<T>>;
@@ -56,8 +54,7 @@ using exec_policy_t = std::unique_ptr<par_t, deleter_t>;
  */
 /* --------------------------------------------------------------------------*/
 inline exec_policy_t exec_policy(cudaStream_t stream = 0) {
-
-  auto * alloc = new rmm::mr::thrust_allocator<char>(stream);
+  auto *alloc = new rmm::mr::thrust_allocator<char>(stream);
   auto deleter = [alloc](par_t *pointer) {
     delete alloc;
     delete pointer;
@@ -67,6 +64,6 @@ inline exec_policy_t exec_policy(cudaStream_t stream = 0) {
   return policy;
 }
 
-} // namespace rmm
+}  // namespace rmm
 
-#endif // THRUST_RMM_ALLOCATOR_H
+#endif  // THRUST_RMM_ALLOCATOR_H
