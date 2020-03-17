@@ -31,8 +31,7 @@
 
 #include <rmm/mr/device/thrust_allocator_adaptor.hpp>
 
-namespace rmm
-{
+namespace rmm{
 /**
  * @brief Alias for a thrust::device_vector that uses RMM for memory allocation.
  * 
