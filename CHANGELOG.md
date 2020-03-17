@@ -40,6 +40,7 @@
 - PR #309 Sync default stream in `DeviceBuffer` constructor
 - PR #326 Sync only on copy construction
 - PR #308 Fix typo in README
+- PR #334 Replace `rmm_allocator` for Thrust allocations
 
 ## Bug Fixes
 - PR #298 Remove RMM_CUDA_TRY from cuda_event_timer destructor
