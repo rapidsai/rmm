@@ -52,6 +52,7 @@ AllocatorTest<pool_mr>::AllocatorTest() {
   upstreams.emplace_back(std::make_unique<rmm::mr::cuda_memory_resource>());
   auto& cuda_upstream = upstreams.front();
   mr.reset(new pool_mr(static_cast<rmm::mr::cuda_memory_resource*>(cuda_upstream.get())));
+  rmm::mr::set_default_resource(mr.get());
 }
 
 TYPED_TEST_CASE(AllocatorTest, resources);
