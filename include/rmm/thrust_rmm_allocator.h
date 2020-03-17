@@ -29,42 +29,7 @@
 #include <thrust/system/cuda/error.h>
 #include <thrust/execution_policy.h>
 
-#include "rmm/rmm.h"
-
-template<class T>
-class rmm_allocator : public thrust::device_malloc_allocator<T>
-{
-  public:
-    using value_type = T;
-
-    rmm_allocator(cudaStream_t stream = 0) : stream(stream) {}
-    ~rmm_allocator() {
-    }
-
-    typedef thrust::device_ptr<value_type>  pointer;
-    inline pointer allocate(size_t n)
-    {
-      value_type* result = nullptr;
-  
-      rmmError_t error = RMM_ALLOC((void**)&result, n*sizeof(value_type), stream);
-     
-      if(error != RMM_SUCCESS)
-      {
-        throw thrust::system_error(error, thrust::cuda_category(), "rmm_allocator::allocate(): RMM_ALLOC");
-      }
-  
-      return thrust::device_pointer_cast(result);
-    }
-  
-    inline void deallocate(pointer ptr, size_t)
-    {
-      RMM_FREE(thrust::raw_pointer_cast(ptr), stream);
-    }
-
-  private:
-  	cudaStream_t stream;
-};
-
+#include <rmm/mr/device/thrust_allocator_adaptor.hpp>
 
 namespace rmm
 {
@@ -73,9 +38,10 @@ namespace rmm
  * 
  */
 template <typename T>
-using device_vector = thrust::device_vector<T, rmm_allocator<T>>;
+using device_vector = thrust::device_vector<T, rmm::mr::thrust_allocator<T>>;
 
-using par_t = decltype(thrust::cuda::par(*(new rmm_allocator<char>(0))));
+using par_t =
+    decltype(thrust::cuda::par(*(new rmm::mr::thrust_allocator<char>(0))));
 using deleter_t = std::function<void(par_t *)>;
 using exec_policy_t = std::unique_ptr<par_t, deleter_t>;
 
@@ -91,8 +57,8 @@ using exec_policy_t = std::unique_ptr<par_t, deleter_t>;
  */
 /* --------------------------------------------------------------------------*/
 inline exec_policy_t exec_policy(cudaStream_t stream = 0) {
-  rmm_allocator<char> *alloc{nullptr};
-  alloc = new rmm_allocator<char>(stream);
+
+  auto * alloc = new rmm::mr::thrust_allocator<char>(stream);
   auto deleter = [alloc](par_t *pointer) {
     delete alloc;
     delete pointer;
