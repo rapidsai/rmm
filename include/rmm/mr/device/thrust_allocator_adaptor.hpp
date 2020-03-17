@@ -16,11 +16,11 @@
 
 #pragma once
 
-#include <rmm/mr/device/device_memory_resource.hpp>
-#include <rmm/mr/device/default_memory_resource.hpp>
-
 #include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/device_malloc_allocator.h>
+
+#include <rmm/mr/device/default_memory_resource.hpp>
+#include <rmm/mr/device/device_memory_resource.hpp>
 
 namespace rmm {
 namespace mr {
@@ -34,7 +34,7 @@ namespace mr {
  *
  * @tparam T The type of the objects that will be allocated by this allocator
  */
- template <typename T>
+template <typename T>
 class thrust_allocator : public thrust::device_malloc_allocator<T> {
  public:
   using Base = thrust::device_malloc_allocator<T>;
@@ -52,6 +52,11 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
     using other = thrust_allocator<U>;
   };
 
+  /**
+   * @brief Default constructor creates an allocator using the default memory
+   * resource and default stream.
+
+   */
   thrust_allocator() = default;
 
   /**
