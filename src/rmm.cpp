@@ -21,12 +21,13 @@
  *
  */
 
-#include "rmm/rmm.h"
-#include "rmm/detail/memory_manager.hpp"
-#include "rmm/mr/device/cnmem_memory_resource.hpp"
-#include "rmm/mr/device/cnmem_managed_memory_resource.hpp"
-#include "rmm/mr/device/managed_memory_resource.hpp"
-#include "rmm/mr/device/cuda_memory_resource.hpp"
+#include <rmm/rmm.h>
+#include <rmm/detail/memory_manager.hpp>
+#include <rmm/mr/device/cnmem_memory_resource.hpp>
+#include <rmm/mr/device/cnmem_managed_memory_resource.hpp>
+#include <rmm/mr/device/managed_memory_resource.hpp>
+#include <rmm/mr/device/cuda_memory_resource.hpp>
+#include <rmm/detail/nvtx/ranges.hpp>
 
 #include <fstream>
 #include <sstream>
@@ -57,6 +58,7 @@ const char * rmmGetErrorString(rmmError_t errcode) {
 // Initialize memory manager state and storage.
 rmmError_t rmmInitialize(rmmOptions_t *options)
 {
+  RMM_FUNC_RANGE();
   rmm::Manager::getInstance().initialize(options);
   return RMM_SUCCESS;
 }
@@ -64,6 +66,7 @@ rmmError_t rmmInitialize(rmmOptions_t *options)
 // Shutdown memory manager.
 rmmError_t rmmFinalize()
 {
+  RMM_FUNC_RANGE();
   rmm::Manager::getInstance().finalize();
   return RMM_SUCCESS;
 }
@@ -80,6 +83,7 @@ bool rmmIsInitialized(rmmOptions_t *options)
 // Allocate memory and return a pointer to device memory.
 rmmError_t rmmAlloc(void **ptr, size_t size, cudaStream_t stream, const char* file, unsigned int line)
 {
+  RMM_FUNC_RANGE();
   return rmm::alloc(ptr, size, stream, file, line);
 }
 
@@ -92,6 +96,7 @@ rmmError_t rmmAlloc(void **ptr, size_t size, cudaStream_t stream, const char* fi
 // Release device memory and recycle the associated memory.
 rmmError_t rmmFree(void *ptr, cudaStream_t stream, const char* file, unsigned int line)
 {
+  RMM_FUNC_RANGE();
   return rmm::free(ptr, stream, file, line);
 }
 
@@ -100,6 +105,7 @@ rmmError_t rmmGetAllocationOffset(ptrdiff_t *offset,
                                   void *ptr,
                                   cudaStream_t stream)
 {
+  RMM_FUNC_RANGE();
   void *base = (void*)0xffffffff;
   CUresult res = cuMemGetAddressRange((CUdeviceptr*)&base, nullptr,
                                       (CUdeviceptr)ptr);
@@ -114,6 +120,7 @@ rmmError_t rmmGetAllocationOffset(ptrdiff_t *offset,
 // with the stream.
 rmmError_t rmmGetInfo(size_t *freeSize, size_t *totalSize, cudaStream_t stream)
 {
+  RMM_FUNC_RANGE();
   if (!rmmIsInitialized(nullptr))
     return RMM_ERROR_NOT_INITIALIZED;
   try {

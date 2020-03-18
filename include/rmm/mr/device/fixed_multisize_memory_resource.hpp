@@ -19,6 +19,7 @@
 #include <rmm/mr/device/fixed_size_memory_resource.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/aligned.hpp>
+#include <rmm/detail/nvtx/ranges.hpp>
 
 #include <thrust/iterator/counting_iterator.h>
 
@@ -105,6 +106,7 @@ class fixed_multisize_memory_resource : public device_memory_resource {
         max_size_exponent_{max_size_exponent},
         min_size_bytes_{ipow(size_base, min_size_exponent)},
         max_size_bytes_{ipow(size_base, max_size_exponent)} {
+    RMM_FUNC_RANGE();
     RMM_EXPECTS(rmm::detail::is_pow2(size_base), "size_base must be a power of two");
     
     // allocate initial blocks and insert into free list
@@ -169,6 +171,7 @@ class fixed_multisize_memory_resource : public device_memory_resource {
    * @return rmm::mr::device_memory_resource& memory_resource that can allocate the requested size.
    */
   device_memory_resource* get_resource(std::size_t bytes) {
+    RMM_FUNC_RANGE();
     assert(bytes <= get_max_size());
 
     auto exponentiate = [this](std::size_t const& k) { return ipow(size_base_, k); };
@@ -193,6 +196,7 @@ class fixed_multisize_memory_resource : public device_memory_resource {
    * @return void* Pointer to the newly allocated memory
    */
   void* do_allocate(std::size_t bytes, cudaStream_t stream) override {
+    RMM_FUNC_RANGE();
     if (bytes <= 0) return nullptr;
     RMM_EXPECTS(bytes <= get_max_size(), rmm::bad_alloc, "bytes must be <= max_size");
     return get_resource(bytes)->allocate(bytes, stream);
@@ -209,6 +213,7 @@ class fixed_multisize_memory_resource : public device_memory_resource {
    * @param stream Stream on which to perform deallocation
    */
   void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override {
+    RMM_FUNC_RANGE();
     auto res = get_resource(bytes);
     if (res != nullptr) res->deallocate(p, bytes, stream);
   }

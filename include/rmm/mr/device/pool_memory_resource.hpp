@@ -18,6 +18,7 @@
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/detail/free_list.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/nvtx/ranges.hpp>
 
 #include <cuda_runtime_api.h>
 
@@ -65,6 +66,7 @@ class pool_memory_resource final : public device_memory_resource {
       std::size_t maximum_pool_size = default_maximum_size)
       : upstream_mr_{upstream_mr},
         maximum_pool_size_{maximum_pool_size} {
+    RMM_FUNC_RANGE();
     cudaDeviceProp props;
     int device{0};
     RMM_CUDA_TRY(cudaGetDevice(&device));
@@ -134,6 +136,7 @@ class pool_memory_resource final : public device_memory_resource {
                           cudaStream_t blocks_stream,
                           size_t size,
                           cudaStream_t stream) {
+    RMM_FUNC_RANGE();
     block const b = blocks.best_fit(size); // get the best fit block
 
     // If we found a block associated with a different stream, 
@@ -169,6 +172,7 @@ class pool_memory_resource final : public device_memory_resource {
    * @return block A block with non-null pointer and size >= `size`.
    */
   block available_larger_block(size_t size, cudaStream_t stream) {
+    RMM_FUNC_RANGE();
     // Try to find a larger block in free list for the same stream
     auto iter = stream_free_blocks_.find(stream);
     if (iter != stream_free_blocks_.end()) {
@@ -204,6 +208,7 @@ class pool_memory_resource final : public device_memory_resource {
    */
   void* allocate_from_block(block const& b, size_t size, cudaStream_t stream)
   {
+    RMM_FUNC_RANGE();
     block const alloc{b.ptr, size, b.is_head};
 
     if (b.size > size)
@@ -225,6 +230,7 @@ class pool_memory_resource final : public device_memory_resource {
    */
   void free_block(void *p, size_t size, cudaStream_t stream)
   {
+    RMM_FUNC_RANGE();
     if (p == nullptr) return;
 
     auto const i = allocated_blocks_.find(block{static_cast<char*>(p)});
@@ -262,6 +268,7 @@ class pool_memory_resource final : public device_memory_resource {
    */
   block block_from_upstream(size_t size, cudaStream_t stream)
   {
+    RMM_FUNC_RANGE();
     void* p = upstream_mr_->allocate(size, stream);
     block b{reinterpret_cast<char*>(p), size, true};
     upstream_blocks_.emplace_back(b);
@@ -284,6 +291,7 @@ class pool_memory_resource final : public device_memory_resource {
    */
   void release()
   {
+    RMM_FUNC_RANGE();
     for (auto b : upstream_blocks_)
       upstream_mr_->deallocate(b.ptr, b.size);
     upstream_blocks_.clear();
@@ -333,6 +341,7 @@ class pool_memory_resource final : public device_memory_resource {
    * @return void* Pointer to the newly allocated memory
    */
   void* do_allocate(std::size_t bytes, cudaStream_t stream) override {
+    RMM_FUNC_RANGE();
     if (bytes <= 0) return nullptr;
     bytes = rmm::detail::align_up(bytes, allocation_alignment);
     block const b = available_larger_block(bytes, stream);
@@ -347,6 +356,7 @@ class pool_memory_resource final : public device_memory_resource {
    * @param p Pointer to be deallocated
    */
   void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override {
+    RMM_FUNC_RANGE();
     free_block(p, bytes, stream);
   }
 

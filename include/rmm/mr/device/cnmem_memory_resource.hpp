@@ -17,7 +17,8 @@
 
 #include <rmm/detail/cnmem.h>
 #include <rmm/detail/error.hpp>
-#include "device_memory_resource.hpp"
+#include <rmm/detail/nvtx/ranges.hpp>
+#include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <cuda_runtime_api.h>
 #include <cassert>
@@ -115,6 +116,7 @@ class cnmem_memory_resource : public device_memory_resource {
   cnmem_memory_resource(std::size_t initial_pool_size,
                         std::vector<int> const& devices,
                         memory_kind pool_type) {
+    RMM_FUNC_RANGE();
     std::vector<cnmemDevice_t> cnmem_devices;
 
     // If no devices were specified, use the current one
@@ -153,6 +155,7 @@ class cnmem_memory_resource : public device_memory_resource {
    * @return void* Pointer to the newly allocated memory
    */
   void* do_allocate(std::size_t bytes, cudaStream_t stream) override {
+    RMM_FUNC_RANGE();
     register_stream(stream);
     void* p{nullptr};
     CNMEM_TRY(cnmemMalloc(&p, bytes, stream), rmm::bad_alloc);
@@ -167,6 +170,7 @@ class cnmem_memory_resource : public device_memory_resource {
    * @param p Pointer to be deallocated
    */
   void do_deallocate(void* p, std::size_t, cudaStream_t stream) override {
+    RMM_FUNC_RANGE();
     auto status = cnmemFree(p, stream);
     assert(CNMEM_STATUS_SUCCESS == status);
   }
@@ -186,6 +190,7 @@ class cnmem_memory_resource : public device_memory_resource {
    * @param stream The stream to register
    */
   void register_stream(cudaStream_t stream) {
+    RMM_FUNC_RANGE();
     // Don't register null stream with CNMEM
     if (stream != 0) {
       // TODO Probably don't want to have to take a lock for every memory

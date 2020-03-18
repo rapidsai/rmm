@@ -141,12 +141,18 @@ SET_TARGET_PROPERTIES(rmm PROPERTIES BUILD_RPATH "\$ORIGIN")
 ###################################################################################################
 # - build options ---------------------------------------------------------------------------------
 
+# Link NVTX library
+find_library(NVTX_LIBRARY nvToolsExt PATH ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
+target_link_libraries(rmm ${NVTX_LIBRARY})
+
 option(USE_NVTX "Build with NVTX support" ON)
 if(USE_NVTX)
     message(STATUS "Using Nvidia Tools Extension")
-    find_library(NVTX_LIBRARY nvToolsExt PATH ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
-    target_link_libraries(rmm ${NVTX_LIBRARY})
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --define-macro USE_NVTX")
+    # The `USE_NVTX` macro is deprecated
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_NVTX")
+else()
+    # Makes NVTX APIs no-ops
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDISABLE_NVTX")
 endif(USE_NVTX)
 
 ###################################################################################################

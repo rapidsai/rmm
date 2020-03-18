@@ -15,9 +15,10 @@
  */
 #pragma once
 
-#include "device_memory_resource.hpp"
+#include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/nvtx/ranges.hpp>
 
 #include <cuda_runtime_api.h>
 #include <cassert>
@@ -62,6 +63,7 @@ class cuda_memory_resource final : public device_memory_resource {
    * @return void* Pointer to the newly allocated memory
    */
   void* do_allocate(std::size_t bytes, cudaStream_t) override {
+    RMM_FUNC_RANGE();
     void* p{nullptr};
     RMM_CUDA_TRY(cudaMalloc(&p, bytes), rmm::bad_alloc);
     return p;
@@ -77,6 +79,7 @@ class cuda_memory_resource final : public device_memory_resource {
    * @param p Pointer to be deallocated
    */
   void do_deallocate(void* p, std::size_t, cudaStream_t) override {
+    RMM_FUNC_RANGE();
     cudaError_t const status = cudaFree(p);
     assert(cudaSuccess == status);
   }

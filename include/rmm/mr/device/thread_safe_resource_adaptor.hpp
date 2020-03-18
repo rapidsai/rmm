@@ -16,6 +16,7 @@
 #pragma once
 
 #include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/detail/nvtx/ranges.hpp>
 #include <rmm/detail/error.hpp>
 
 #include <mutex>
@@ -49,6 +50,7 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
    */
   thread_safe_resource_adaptor(Upstream* upstream)
    : upstream_{upstream} {
+    RMM_FUNC_RANGE();
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
   }
 
@@ -84,6 +86,7 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
    * @return void* Pointer to the newly allocated memory
    */
   void* do_allocate(std::size_t bytes, cudaStream_t stream) override {
+    RMM_FUNC_RANGE();
     lock_t lock(mtx);
     return upstream_->allocate(bytes, stream);
   }
@@ -99,6 +102,7 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
    * @param stream Stream on which to perform the deallocation
    */
   void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override {
+    RMM_FUNC_RANGE();
     lock_t lock(mtx);
     upstream_->deallocate(p, bytes, stream);
   }
@@ -113,7 +117,6 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
    * @return false If the two resources are not equivalent
    */
   bool do_is_equal(device_memory_resource const& other) const noexcept override {
-
     if (this == &other) return true;
     else {
       auto thread_safe_other = dynamic_cast<thread_safe_resource_adaptor<Upstream> const*>(&other);

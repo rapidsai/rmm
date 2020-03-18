@@ -16,7 +16,7 @@
 #pragma once
 
 #include <rmm/mr/device/device_memory_resource.hpp>
-
+#include <rmm/detail/nvtx/ranges.hpp>
 #include <rmm/detail/error.hpp>
 
 #include <spdlog/sinks/basic_file_sink.h>
@@ -65,6 +65,7 @@ class logging_resource_adaptor final : public device_memory_resource {
         logger_{std::make_shared<spdlog::logger>(
             "RMM", std::make_shared<spdlog::sinks::basic_file_sink_mt>(
                        filename, true /*truncate file*/))} {
+    RMM_FUNC_RANGE();
     RMM_EXPECTS(nullptr != upstream,
                 "Unexpected null upstream resource pointer.");
 
@@ -119,6 +120,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @return void* Pointer to the newly allocated memory
    */
   void* do_allocate(std::size_t bytes, cudaStream_t stream) override {
+    RMM_FUNC_RANGE();
     auto const p = upstream_->allocate(bytes, stream);
     std::string msg{"allocate,"};
     std::stringstream ss;
@@ -149,6 +151,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @param stream Stream on which to perform the deallocation
    */
   void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override {
+    RMM_FUNC_RANGE();
     std::string msg{"free,"};
     std::stringstream ss;
     ss << p;

@@ -17,6 +17,7 @@
 #pragma once
 
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/nvtx/ranges.hpp>
 
 #include <list>
 #include <algorithm>
@@ -130,6 +131,7 @@ struct free_list {
    * @param b The block to insert.
    */
   void insert(block const& b) {
+    RMM_FUNC_RANGE();
     if (is_empty()) { 
       insert(blocks.end(), b);
       return;
@@ -168,6 +170,7 @@ struct free_list {
    */
   template< class InputIt >
   void insert( InputIt first, InputIt last ) {
+    RMM_FUNC_RANGE();
     std::for_each(first, last, [this](block const& b) { this->insert(b); });
   }
 
@@ -177,6 +180,7 @@ struct free_list {
    * @param iter An iterator referring to the block to erase.
    */
   void erase(iterator const& iter) {
+    RMM_FUNC_RANGE();
     blocks.erase(iter);
   }
 
@@ -184,7 +188,7 @@ struct free_list {
   * @brief Erase all blocks from the free_list.
   * 
   */
-  void clear() noexcept { blocks.clear(); }
+  void clear() noexcept { RMM_FUNC_RANGE(); blocks.clear(); }
 
   /**
    * @brief Finds the smallest block in the `free_list` large enough to fit `size` bytes.
@@ -193,6 +197,7 @@ struct free_list {
    * @return block A block large enough to store `size` bytes.
    */
   block best_fit(size_t size) {
+    RMM_FUNC_RANGE();
     // find best fit block
     auto const iter = std::min_element(
       blocks.begin(), blocks.end(), [size](block lhs, block rhs) {
@@ -227,6 +232,7 @@ protected:
    * @param b The block to insert.
    */
   void insert(const_iterator pos, block const& b) {
+    RMM_FUNC_RANGE();
     blocks.insert(pos, b);
   }
 

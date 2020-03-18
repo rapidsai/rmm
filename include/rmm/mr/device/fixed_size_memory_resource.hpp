@@ -17,6 +17,7 @@
 
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/nvtx/ranges.hpp>
 
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
@@ -69,6 +70,7 @@ class fixed_size_memory_resource : public device_memory_resource {
     : upstream_mr_{upstream_mr},
       block_size_{rmm::detail::align_up(block_size, allocation_alignment)},
       upstream_chunk_size_{block_size * blocks_to_preallocate} {
+    RMM_FUNC_RANGE();
     // allocate initial blocks and insert into free list
     new_blocks_from_upstream(0, stream_blocks_[0]);
   }
@@ -128,6 +130,7 @@ class fixed_size_memory_resource : public device_memory_resource {
    * @return void* Pointer to the newly allocated memory
    */
   void* do_allocate(std::size_t bytes, cudaStream_t stream) override {
+    RMM_FUNC_RANGE();
     if (bytes <= 0) return nullptr;
     bytes = rmm::detail::align_up(bytes, allocation_alignment);
     RMM_EXPECTS(bytes <= block_size_, rmm::bad_alloc, "bytes must be <= block_size");
@@ -146,6 +149,7 @@ class fixed_size_memory_resource : public device_memory_resource {
    * @param stream Stream on which to perform deallocation
    */
   void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override {
+    RMM_FUNC_RANGE();
     bytes = rmm::detail::align_up(bytes, allocation_alignment);
     assert(bytes <= block_size_);
     stream_blocks_[stream].push_back(p);
@@ -176,6 +180,7 @@ class fixed_size_memory_resource : public device_memory_resource {
   void* block_from_stream(free_list& blocks,
                           cudaStream_t blocks_stream,
                           cudaStream_t stream) {
+    RMM_FUNC_RANGE();
     void* p = nullptr;
 
     if (!blocks.empty()) {
@@ -216,6 +221,7 @@ class fixed_size_memory_resource : public device_memory_resource {
    * @return block A pointer to memory of size `get_block_size()`.
    */
   void* get_block(cudaStream_t stream) {
+    RMM_FUNC_RANGE();
     // Try to find a block in the same stream
     auto iter = stream_blocks_.find(stream);
     if (iter != stream_blocks_.end()) {
@@ -250,6 +256,7 @@ class fixed_size_memory_resource : public device_memory_resource {
    * @param blocks The `free_list` to insert the blocks into.
    */
   void new_blocks_from_upstream(cudaStream_t stream, free_list& blocks) {
+    RMM_FUNC_RANGE();
     void* p = upstream_mr_->allocate(upstream_chunk_size_, stream);
     upstream_blocks_.push_back(p);
 
@@ -266,6 +273,7 @@ class fixed_size_memory_resource : public device_memory_resource {
    */
   void release()
   {
+    RMM_FUNC_RANGE();
     for (auto p : upstream_blocks_)
       upstream_mr_->deallocate(p, upstream_chunk_size_);
     upstream_blocks_.clear();

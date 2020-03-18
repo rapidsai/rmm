@@ -18,6 +18,7 @@
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/nvtx/ranges.hpp>
 
 #include <cuda_runtime_api.h>
 
@@ -120,6 +121,7 @@ class hybrid_memory_resource : public device_memory_resource {
    * @return rmm::mr::device_memory_resource& memory_resource that can allocate the requested size.
    */
   rmm::mr::device_memory_resource* get_resource(std::size_t bytes) {
+    RMM_FUNC_RANGE();
     if (bytes <= threshold_size_) return small_mr_;
     else return large_mr_;
   }
@@ -132,6 +134,7 @@ class hybrid_memory_resource : public device_memory_resource {
    * @return void* Pointer to the newly allocated memory
    */
   void* do_allocate(std::size_t bytes, cudaStream_t stream) override {
+    RMM_FUNC_RANGE();
     if (bytes <= 0) return nullptr;
     return get_resource(bytes)->allocate(bytes, stream);
   }
@@ -145,6 +148,7 @@ class hybrid_memory_resource : public device_memory_resource {
    * @param stream Stream on which to perform deallocation
    */
   void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override {
+    RMM_FUNC_RANGE();
     get_resource(bytes)->deallocate(p, bytes, stream);
   }
 

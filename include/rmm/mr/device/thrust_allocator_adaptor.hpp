@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <rmm/mr/device/device_memory_resource.hpp>
 #include <thrust/device_malloc_allocator.h>
 
 namespace rmm {
