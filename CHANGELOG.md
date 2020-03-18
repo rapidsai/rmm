@@ -22,6 +22,7 @@
 - PR #314 New suballocator memory_resources.
 - PR #330 Fixed incorrect name of `stream_free_blocks_` debug symbol.
 - PR #331 Move to C++14 and deprecate legacy APIs.
+- PR #336 Add NVTX ranges to RMM for use in profiling tools.
 
 ## Improvements
 
