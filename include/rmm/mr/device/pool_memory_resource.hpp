@@ -321,7 +321,7 @@ class pool_memory_resource final : public device_memory_resource {
     for (auto b : allocated_blocks_) { b.print(); }
 
     std::cout << "sync free blocks: ";
-    for (auto s : stream_blocks_) { 
+    for (auto s : stream_free_blocks_) {
       std::cout << "stream " << s.first << " ";
       s.second.print();
     }

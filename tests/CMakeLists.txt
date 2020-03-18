@@ -15,13 +15,12 @@
 #=============================================================================
 cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 
-
 project(RMM_TESTS LANGUAGES C CXX CUDA)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_CUDA_STANDARD 11)
+set(CMAKE_CUDA_STANDARD 14)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
 ###################################################################################################
@@ -72,7 +71,7 @@ ConfigureTest(RMM_TEST "${RMM_TEST_SRC}")
 
 set(DEVICE_MR_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/mr_tests.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/thrust_allocator_tests.cpp")
+    "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/thrust_allocator_tests.cu")
     
 
 ConfigureTest(DEVICE_MR_TEST "${DEVICE_MR_TEST_SRC}")
