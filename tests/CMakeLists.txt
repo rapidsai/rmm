@@ -15,11 +15,13 @@
 #=============================================================================
 cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 
-
 project(RMM_TESTS LANGUAGES C CXX CUDA)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set(CMAKE_CUDA_STANDARD 14)
+set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
 ###################################################################################################
 # - compiler function -----------------------------------------------------------------------------
@@ -39,6 +41,8 @@ endfunction(ConfigureTest)
 include_directories("${GTEST_INCLUDE_DIR}"
                     "${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
                     "${CMAKE_SOURCE_DIR}/include"
+                    "${CMAKE_SOURCE_DIR}/thirdparty"
+                    "${CMAKE_SOURCE_DIR}/include/rmm"
                     "${CMAKE_SOURCE_DIR}/src"
                     "${CMAKE_CURRENT_SOURCE_DIR}/../include")
 
@@ -63,21 +67,30 @@ ConfigureTest(RMM_TEST "${RMM_TEST_SRC}")
 
 ###################################################################################################
 ###################################################################################################
-# - mr tests -------------------------------------------------------------------------------------
+# - device mr tests -------------------------------------------------------------------------------------
 
-set(MR_TEST_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/mr/mr_tests.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/mr/thrust_allocator_tests.cpp")
+set(DEVICE_MR_TEST_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/mr_tests.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/thrust_allocator_tests.cu")
     
 
-ConfigureTest(MR_TEST "${MR_TEST_SRC}")
+ConfigureTest(DEVICE_MR_TEST "${DEVICE_MR_TEST_SRC}")
 
+###################################################################################################
+###################################################################################################
+# - host mr tests -------------------------------------------------------------------------------------
+
+set(HOST_MR_TEST_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/mr/host/mr_tests.cpp")
+    
+
+ConfigureTest(HOST_MR_TEST "${HOST_MR_TEST_SRC}") 
 ###################################################################################################
 ###################################################################################################
 # - device buffer tests -------------------------------------------------------------------------------------
 
 set(BUFFER_TEST_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/device_buffer_tests.cpp")
+    "${CMAKE_CURRENT_SOURCE_DIR}/device_buffer_tests.cu")
 
 ConfigureTest(DEVICE_BUFFER_TEST "${BUFFER_TEST_SRC}")
 
@@ -89,6 +102,13 @@ set(SCALAR_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/device_scalar_tests.cpp")
 
 ConfigureTest(DEVICE_SCALAR_TEST "${SCALAR_TEST_SRC}")
+###################################################################################################
+# - logger tests -------------------------------------------------------------------------------------
+
+set(LOGGER_TEST_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/logger_tests.cpp")
+
+ConfigureTest(LOGGER_TEST "${LOGGER_TEST_SRC}")
 
 ###################################################################################################
 ### enable testing ################################################################################

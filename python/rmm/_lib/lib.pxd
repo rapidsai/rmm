@@ -1,4 +1,4 @@
-# Copyright (c) 2019, NVIDIA CORPORATION.
+# Copyright (c) 2019-2020, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# cython: profile=False
+# cython: profile = False
 # distutils: language = c++
 # cython: embedsignature = True
 # cython: language_level = 3
@@ -33,6 +33,17 @@ cdef extern from * nogil:
 
     ctypedef void* cudaStream_t "cudaStream_t"
 
+    ctypedef enum cudaMemcpyKind "cudaMemcpyKind":
+        cudaMemcpyHostToHost = 0
+        cudaMemcpyHostToDevice = 1
+        cudaMemcpyDeviceToHost = 2
+        cudaMemcpyDeviceToDevice = 3
+        cudaMemcpyDefault = 4
+
+    cudaError_t cudaMemcpyAsync(void* dst, const void* src, size_t count,
+                                cudaMemcpyKind kind)
+    cudaError_t cudaMemcpyAsync(void* dst, const void* src, size_t count,
+                                cudaMemcpyKind kind, cudaStream_t stream)
     cudaError_t cudaStreamSynchronize(cudaStream_t stream)
 
 
@@ -48,10 +59,10 @@ cdef rmmError_t c_free(
     unsigned int line=*
 ) except *
 
-cdef ptrdiff_t* c_getallocationoffset(
+cdef ptrdiff_t c_getallocationoffset(
     void *ptr,
     cudaStream_t stream
-) except? <ptrdiff_t*>NULL
+)
 
 cdef caller_pair _get_caller() except *
 

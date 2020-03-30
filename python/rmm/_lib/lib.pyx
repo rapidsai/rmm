@@ -1,4 +1,4 @@
-# Copyright (c) 2019, NVIDIA CORPORATION.
+# Copyright (c) 2019-2020, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# cython: profile=False
+# cython: profile = False
 # distutils: language = c++
 # cython: embedsignature = True
 # cython: language_level = 3
@@ -20,8 +20,9 @@
 from collections import namedtuple
 
 from libc.stdint cimport uintptr_t
-from libc.stdlib cimport malloc, free
 from libcpp.vector cimport vector
+
+from cpython.bytes cimport PyBytes_FromStringAndSize, PyBytes_AS_STRING
 
 
 # Utility Functions
@@ -142,18 +143,14 @@ def rmm_csv_log():
     calling the librmm functions via Cython
     """
     cdef size_t logsize = rmmLogSize()
-    cdef char* buf = <char*>malloc(logsize)
+    cdef bytes py_buf = PyBytes_FromStringAndSize(NULL, logsize)
+    cdef char* buf = PyBytes_AS_STRING(py_buf)
 
     with nogil:
-        rmm_error = rmmGetLog(
-            <char*>buf,
-            <size_t>logsize
-        )
+        rmm_error = rmmGetLog(buf, logsize)
 
     check_error(rmm_error)
 
-    cdef bytes py_buf = buf[:logsize]
-    free(buf)
     return py_buf.decode("utf-8")
 
 
@@ -189,7 +186,7 @@ def rmm_alloc(size, stream):
     functions via Cython
     """
     cdef size_t c_size = size
-    cdef cudaStream_t c_stream = <cudaStream_t><size_t>stream
+    cdef cudaStream_t c_stream = <cudaStream_t><uintptr_t>stream
 
     cdef uintptr_t c_addr = c_alloc(
         <size_t>c_size,
@@ -225,7 +222,7 @@ def rmm_free(ptr, stream):
     functions via Cython
     """
     cdef void * c_ptr = <void *><uintptr_t>ptr
-    cdef cudaStream_t c_stream = <cudaStream_t><size_t>stream
+    cdef cudaStream_t c_stream = <cudaStream_t><uintptr_t>stream
 
     cdef caller_pair tmp_caller_pair = _get_caller()
     cdef const char* file = tmp_caller_pair.first
@@ -239,21 +236,17 @@ def rmm_free(ptr, stream):
     )
 
 
-cdef ptrdiff_t* c_getallocationoffset(
+cdef ptrdiff_t c_getallocationoffset(
     void *ptr, cudaStream_t stream
-) except? <ptrdiff_t*>NULL:
+):
     """
     Gets the offset of ptr from its base allocation by calling the librmm
     functions via Cython
     """
-    cdef ptrdiff_t * offset = <ptrdiff_t *>malloc(sizeof(ptrdiff_t))
+    cdef ptrdiff_t offset
 
     with nogil:
-        rmm_error = rmmGetAllocationOffset(
-            <ptrdiff_t *>offset,
-            <void *>ptr,
-            <cudaStream_t>stream
-        )
+        rmm_error = rmmGetAllocationOffset(&offset, ptr, stream)
 
     check_error(rmm_error)
 
@@ -266,15 +259,11 @@ def rmm_getallocationoffset(ptr, stream):
     functions via Cython
     """
     cdef void * c_ptr = <void *><uintptr_t>ptr
-    cdef cudaStream_t c_stream = <cudaStream_t><size_t>stream
+    cdef cudaStream_t c_stream = <cudaStream_t><uintptr_t>stream
 
-    cdef ptrdiff_t * c_offset = c_getallocationoffset(
-        <void *>c_ptr,
-        <cudaStream_t>c_stream
-    )
+    cdef ptrdiff_t c_offset = c_getallocationoffset(c_ptr, c_stream)
 
-    result = int(c_offset[0])
-    free(c_offset)
+    result = int(c_offset)
     return result
 
 

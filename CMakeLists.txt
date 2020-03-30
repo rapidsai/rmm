@@ -15,7 +15,7 @@
 #=============================================================================
 cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 
-project(RMM VERSION 0.12.0 LANGUAGES C CXX CUDA)
+project(RMM VERSION 0.13.0 LANGUAGES C CXX CUDA)
 
 ###################################################################################################
 # - build type ------------------------------------------------------------------------------------
@@ -35,13 +35,13 @@ endif()
 ###################################################################################################
 # - compiler options ------------------------------------------------------------------------------
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_C_COMPILER $ENV{CC})
 set(CMAKE_CXX_COMPILER $ENV{CXX})
 
 if(CMAKE_COMPILER_IS_GNUCXX)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-error=deprecated-declarations")
 
     option(CMAKE_CXX11_ABI "Enable the GLIBCXX11 ABI" ON)
     if(CMAKE_CXX11_ABI)
@@ -54,8 +54,9 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     endif(CMAKE_CXX11_ABI)
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
-option(BUILD_TESTS "Configure CMake to build tests"
-       ON)
+option(BUILD_TESTS "Configure CMake to build tests" ON)
+option(BUILD_BENCHMARKS "Configure CMake to build (google) benchmarks" OFF)
+
 
 ###################################################################################################
 # - cnmem ---------------------------------------------------------------------------------
@@ -90,12 +91,33 @@ if(BUILD_TESTS)
 endif(BUILD_TESTS)
 
 ###################################################################################################
+# - add google benchmark --------------------------------------------------------------------------
+
+if(BUILD_BENCHMARKS)
+
+  include(ConfigureGoogleBenchmark)
+
+  if(GBENCH_FOUND)
+    message(STATUS "Google C++ Benchmarking Framework (Google Benchmark) found in ${GBENCH_ROOT}")
+    include_directories(${GBENCH_INCLUDE_DIR})
+    add_subdirectory(${CMAKE_SOURCE_DIR}/benchmarks)
+  else()
+    message(AUTHOR_WARNING "Google C++ Benchmarking Framework (Google Benchmark) not found: automated tests are disabled.")
+  endif(GBENCH_FOUND)
+
+endif(BUILD_BENCHMARKS)
+
+
+###################################################################################################
 # - include paths ---------------------------------------------------------------------------------
 
 include_directories("${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/include"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/include/rmm"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty"
                     "${CMAKE_CURRENT_SOURCE_DIR}/src"
-                    "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cnmem/include")
+                    "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cnmem/include"
+                    "${CMAKE_SOURCE_DIR}/thirdparty")
 
 ###################################################################################################
 # - library paths ---------------------------------------------------------------------------------
@@ -109,10 +131,9 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
 
 add_library(rmm SHARED
             src/rmm.cpp
-            src/device_buffer.cpp
             src/memory_manager.cpp
             thirdparty/cnmem/src/cnmem.cpp
-            src/mr/default_memory_resource.cpp)
+            src/mr/device/default_memory_resource.cpp)
 
 # override rpath for rmm
 SET_TARGET_PROPERTIES(rmm PROPERTIES BUILD_RPATH "\$ORIGIN")
@@ -141,7 +162,6 @@ install(TARGETS rmm
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/rmm
         DESTINATION include)
-
 ###################################################################################################
 # - make documentation ----------------------------------------------------------------------------
 
