@@ -2,6 +2,8 @@
 
 ## New Features
 
+- PR #341 Enable logging
+
 ## Improvements
 
 ## Bug Fixes

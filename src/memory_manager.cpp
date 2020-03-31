@@ -102,7 +102,7 @@ rmmError_t Manager::registerStream(cudaStream_t stream) {
   return RMM_SUCCESS;
 }
 
-// reset the initialized resource, enabling logging if set in options
+// reset the initialized resource, optionally enabling logging via logging_resource_adaptor
 template <typename MemoryResource>
 void reset_resource(std::unique_ptr<mr::device_memory_resource>& initialized_resource,
                     MemoryResource *mr,
