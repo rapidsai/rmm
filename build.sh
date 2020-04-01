@@ -18,14 +18,15 @@ ARGS=$*
 # script, and that this script resides in the repo dir!
 REPODIR=$(cd $(dirname $0); pwd)
 
-VALIDARGS="clean librmm rmm -v -g -n -h"
-HELP="$0 [clean] [librmm] [rmm] [-v] [-g] [-n] [-h]
+VALIDARGS="clean librmm rmm -v -g -n -s -h"
+HELP="$0 [clean] [librmm] [rmm] [-v] [-g] [-n] [-s] [-h]
    clean  - remove all existing build artifacts and configuration (start over)
    librmm - build and install the librmm C++ code
    rmm    - build and install the rmm Python package
    -v     - verbose build mode
    -g     - build for debug
    -n     - no install step
+   -s     - statically link against cudart
    -h     - print this text
 
    default action (no args) is to build and install 'librmm' and 'rmm' targets
@@ -39,6 +40,7 @@ VERBOSE=""
 BUILD_TYPE=Release
 INSTALL_TARGET=install
 PYTHON=${PYTHON:=python}
+CUDA_RUNTIME_LIBRARY=Shared
 RAN_CMAKE=0
 
 # Set defaults for vars that may not have been defined externally
@@ -59,6 +61,7 @@ function ensureCMakeRan {
     if (( RAN_CMAKE == 0 )); then
         echo "Executing cmake for librmm..."
         cmake -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" \
+              -DCMAKE_CUDA_RUNTIME_LIBRARY="${CUDA_RUNTIME_LIBRARY}" \
               -DCMAKE_CXX11_ABI=ON \
               -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..
         RAN_CMAKE=1
@@ -90,6 +93,9 @@ if hasArg -g; then
 fi
 if hasArg -n; then
     INSTALL_TARGET=""
+fi
+if hasArg -s; then
+    CUDA_RUNTIME_LIBRARY=Static
 fi
 
 # If clean given, run it prior to any other steps

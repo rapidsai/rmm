@@ -57,6 +57,17 @@ endif(CMAKE_COMPILER_IS_GNUCXX)
 option(BUILD_TESTS "Configure CMake to build tests" ON)
 option(BUILD_BENCHMARKS "Configure CMake to build (google) benchmarks" OFF)
 
+###################################################################################################
+# - cudart options --------------------------------------------------------------------------------
+# cudart can be statically linked or dynamically linked the python ecosystem wants dynamic linking
+
+
+if(CMAKE_CUDA_RUNTIME_LIBRARY MATCHES "^Static$")
+    message(STATUS "Enabling static linking of cudart")
+    set(CUDART_LIBRARY "cudart_static")
+else()
+    set(CUDART_LIBRARY "cudart")
+endif(CMAKE_CUDA_RUNTIME_LIBRARY MATCHES "^Static$")
 
 ###################################################################################################
 # - cnmem ---------------------------------------------------------------------------------
@@ -152,7 +163,7 @@ endif(USE_NVTX)
 ###################################################################################################
 # - link libraries --------------------------------------------------------------------------------
 
-target_link_libraries(rmm cudart cuda)
+target_link_libraries(rmm ${CUDART_LIBRARY} cuda)
 
 ###################################################################################################
 # - install targets -------------------------------------------------------------------------------
