@@ -40,7 +40,7 @@ VERBOSE=""
 BUILD_TYPE=Release
 INSTALL_TARGET=install
 PYTHON=${PYTHON:=python}
-CUDA_RUNTIME_LIBRARY=Shared
+CUDA_STATIC_RUNTIME=OFF
 RAN_CMAKE=0
 
 # Set defaults for vars that may not have been defined externally
@@ -61,7 +61,7 @@ function ensureCMakeRan {
     if (( RAN_CMAKE == 0 )); then
         echo "Executing cmake for librmm..."
         cmake -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" \
-              -DCUDA_RUNTIME_LIBRARY="${CUDA_RUNTIME_LIBRARY}" \
+              -DCUDA_STATIC_RUNTIME="${CUDA_STATIC_RUNTIME}" \
               -DCMAKE_CXX11_ABI=ON \
               -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..
         RAN_CMAKE=1
@@ -95,7 +95,7 @@ if hasArg -n; then
     INSTALL_TARGET=""
 fi
 if hasArg -s; then
-    CUDA_RUNTIME_LIBRARY=Static
+    CUDA_STATIC_RUNTIME=ON
 fi
 
 # If clean given, run it prior to any other steps
