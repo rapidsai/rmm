@@ -61,7 +61,7 @@ function ensureCMakeRan {
     if (( RAN_CMAKE == 0 )); then
         echo "Executing cmake for librmm..."
         cmake -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" \
-              -DCMAKE_CUDA_RUNTIME_LIBRARY="${CUDA_RUNTIME_LIBRARY}" \
+              -DCUDA_RUNTIME_LIBRARY="${CUDA_RUNTIME_LIBRARY}" \
               -DCMAKE_CXX11_ABI=ON \
               -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..
         RAN_CMAKE=1
