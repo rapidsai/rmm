@@ -2,6 +2,8 @@
 
 ## New Features
 
+- PR #343 Add in option to statically link against cudart
+
 ## Improvements
 
 ## Bug Fixes
