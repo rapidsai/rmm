@@ -240,6 +240,7 @@ namespace rmm
     bool is_initialized{false};
 
     std::unique_ptr<rmm::mr::device_memory_resource> initialized_resource{};
+    std::unique_ptr<rmm::mr::device_memory_resource> logging_adaptor{};
   };
 }
 

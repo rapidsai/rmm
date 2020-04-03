@@ -103,14 +103,21 @@ rmmError_t Manager::registerStream(cudaStream_t stream) {
 }
 
 // reset the initialized resource, optionally enabling logging via logging_resource_adaptor
+// note this is a template function so we avoid a vtable lookup on every logging allocation
+// That means it needs to be a free function since memory_manager.hpp cannot include
+// `logging_resource_adaptor.hpp` (since it depends on spdlog)
 template <typename MemoryResource>
 void reset_resource(std::unique_ptr<mr::device_memory_resource>& initialized_resource,
+                    std::unique_ptr<mr::device_memory_resource>& logging_resource,
                     MemoryResource *mr,
                     bool enable_logging) {
+  initialized_resource.reset(mr);
   if (enable_logging) {
-    initialized_resource.reset(new rmm::mr::logging_resource_adaptor<MemoryResource>(mr));
+    auto lmr = new rmm::mr::logging_resource_adaptor<MemoryResource>(mr);
+    logging_resource.reset(lmr);
+    rmm::mr::set_default_resource(lmr);
   } else {
-    initialized_resource.reset(mr);
+    rmm::mr::set_default_resource(mr);
   }
 }
 
@@ -130,14 +137,16 @@ void Manager::initialize(const rmmOptions_t* new_options) {
     auto const& devices = getOptions().devices;
 
     if (useManagedMemory()) {
-      reset_resource(initialized_resource, new pool_managed_mr(pool_size, devices), enable_logging);
+      reset_resource(initialized_resource, logging_adaptor,
+                     new pool_managed_mr(pool_size, devices), enable_logging);
     } else {
-      reset_resource(initialized_resource, new pool_mr(pool_size, devices), enable_logging);
+      reset_resource(initialized_resource, logging_adaptor,
+                     new pool_mr(pool_size, devices), enable_logging);
     }
   } else if (rmm::Manager::useManagedMemory()) {
-    reset_resource(initialized_resource, new managed_mr(), enable_logging);
+    reset_resource(initialized_resource, logging_adaptor, new managed_mr(), enable_logging);
   } else {
-    reset_resource(initialized_resource, new cuda_mr(), enable_logging);
+    reset_resource(initialized_resource, logging_adaptor, new cuda_mr(), enable_logging);
   }
 
   rmm::mr::set_default_resource(initialized_resource.get());
