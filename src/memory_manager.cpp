@@ -20,8 +20,17 @@
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
+#include <rmm/mr/device/logging_resource_adaptor.hpp>
 
 namespace rmm {
+
+using cuda_mr = rmm::mr::cuda_memory_resource;
+using pool_mr = rmm::mr::cnmem_memory_resource;
+using managed_mr = rmm::mr::cnmem_managed_memory_resource;
+using pool_managed_mr = rmm::mr::cnmem_managed_memory_resource;
+using logging_pool_mr = rmm::mr::logging_resource_adaptor<pool_mr>;
+using logging_pool_managed_mr = rmm::mr::logging_resource_adaptor<pool_managed_mr>;
+
 /**
  * Record a memory manager event in the log.
  *
@@ -93,6 +102,25 @@ rmmError_t Manager::registerStream(cudaStream_t stream) {
   return RMM_SUCCESS;
 }
 
+// reset the initialized resource, optionally enabling logging via logging_resource_adaptor
+// note this is a template function so we avoid a vtable lookup on every logging allocation
+// That means it needs to be a free function since memory_manager.hpp cannot include
+// `logging_resource_adaptor.hpp` (since it depends on spdlog)
+template <typename MemoryResource>
+void reset_resource(std::unique_ptr<mr::device_memory_resource>& initialized_resource,
+                    std::unique_ptr<mr::device_memory_resource>& logging_resource,
+                    MemoryResource *mr,
+                    bool enable_logging) {
+  initialized_resource.reset(mr);
+  if (enable_logging) {
+    auto lmr = new rmm::mr::logging_resource_adaptor<MemoryResource>(mr);
+    logging_resource.reset(lmr);
+    rmm::mr::set_default_resource(lmr);
+  } else {
+    rmm::mr::set_default_resource(mr);
+  }
+}
+
 // Initialize the manager
 void Manager::initialize(const rmmOptions_t* new_options) {
   std::lock_guard<std::mutex> guard(manager_mutex);
@@ -102,20 +130,23 @@ void Manager::initialize(const rmmOptions_t* new_options) {
 
   if (nullptr != new_options) options = *new_options;
 
+  bool enable_logging = getOptions().enable_logging;
+
   if (usePoolAllocator()) {
     auto pool_size = getOptions().initial_pool_size;
     auto const& devices = getOptions().devices;
+
     if (useManagedMemory()) {
-      initialized_resource.reset(
-          new rmm::mr::cnmem_managed_memory_resource(pool_size, devices));
+      reset_resource(initialized_resource, logging_adaptor,
+                     new pool_managed_mr(pool_size, devices), enable_logging);
     } else {
-      initialized_resource.reset(
-          new rmm::mr::cnmem_memory_resource(pool_size, devices));
+      reset_resource(initialized_resource, logging_adaptor,
+                     new pool_mr(pool_size, devices), enable_logging);
     }
   } else if (rmm::Manager::useManagedMemory()) {
-    initialized_resource.reset(new rmm::mr::managed_memory_resource());
+    reset_resource(initialized_resource, logging_adaptor, new managed_mr(), enable_logging);
   } else {
-    initialized_resource.reset(new rmm::mr::cuda_memory_resource());
+    reset_resource(initialized_resource, logging_adaptor, new cuda_mr(), enable_logging);
   }
 
   rmm::mr::set_default_resource(initialized_resource.get());
