@@ -20,6 +20,8 @@
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
+#include  <type_traits>
+
 namespace rmm {
 
 /**
@@ -97,7 +99,30 @@ class device_scalar {
    * @param host_value The host value which will be copied to device
    * @param stream CUDA stream on which to perform the copy
    */
-  void set_value(T host_value, cudaStream_t stream = 0) {
+  template <typename Dummy = void>
+  auto set_value(T host_value, cudaStream_t stream = 0)
+    -> std::enable_if_t<std::is_fundamental<T>::value, Dummy>
+  {
+    if (host_value == T{0}) {
+      RMM_CUDA_TRY(cudaMemsetAsync(buffer.data(), 0, sizeof(T), stream));
+    } else {
+      _memcpy(buffer.data(), &host_value, stream);
+    }
+  }
+
+  /**
+   * @brief Copies the value from host to device (does not synchronize the stream).
+   *
+   * @throws `rmm::cuda_error` if copying `host_value` to device memory fails
+   * @throws `rmm::cuda_error` if synchronizing `stream` fails
+   *
+   * @param host_value The host value which will be copied to device
+   * @param stream CUDA stream on which to perform the copy
+   */
+  template <typename Dummy = void>
+  auto set_value(T host_value, cudaStream_t stream = 0)
+    -> std::enable_if_t<not std::is_fundamental<T>::value, Dummy>
+  {
     _memcpy(buffer.data(), &host_value, stream);
   }
 
