@@ -45,7 +45,7 @@ class device_scalar {
    * @param stream Optional, stream on which to perform allocation and copy
    * @param mr Optional, resource with which to allocate
    */
-  device_scalar(
+  explicit device_scalar(
       cudaStream_t stream = 0,
       rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
       : buffer{sizeof(T), stream, mr} {}
@@ -111,7 +111,6 @@ class device_scalar {
    */
   T const *data() const noexcept { return static_cast<T const*>(buffer.data()); }
 
-  device_scalar() = default;
   ~device_scalar() = default;
   device_scalar(device_scalar const &) = default;
   device_scalar(device_scalar &&) = default;
