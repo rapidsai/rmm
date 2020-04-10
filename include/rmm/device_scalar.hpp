@@ -68,7 +68,7 @@ class device_scalar {
       cudaStream_t stream = 0,
       rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
       : buffer{sizeof(T), stream, mr} {
-    _memcpy(buffer.data(), &initial_value, stream);
+    set_value(initial_value, stream);
   }
 
   /**
