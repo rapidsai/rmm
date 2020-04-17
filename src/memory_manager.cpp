@@ -26,7 +26,7 @@ namespace rmm {
 
 using cuda_mr = rmm::mr::cuda_memory_resource;
 using pool_mr = rmm::mr::cnmem_memory_resource;
-using managed_mr = rmm::mr::cnmem_managed_memory_resource;
+using managed_mr = rmm::mr::managed_memory_resource;
 using pool_managed_mr = rmm::mr::cnmem_managed_memory_resource;
 using logging_pool_mr = rmm::mr::logging_resource_adaptor<pool_mr>;
 using logging_pool_managed_mr = rmm::mr::logging_resource_adaptor<pool_managed_mr>;
