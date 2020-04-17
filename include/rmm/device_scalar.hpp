@@ -38,32 +38,38 @@ class device_scalar {
                 "Scalar type must be trivially copyable");
 
   /**
-   * @brief Construct a new uninitialized `device_scalar`
+   * @brief Construct a new uninitialized `device_scalar`.
    *
-   * @throws `rmm::bad_alloc` if allocating the device memory for
-   *`initial_value` fails
-   * @throws `rmm::cuda_error` if copying `initial_value` to device memory fails
+   * Does not synchronize the stream. 
    *
-   * @param stream Optional, stream on which to perform allocation and copy
-   * @param mr Optional, resource with which to allocate
+   * @note This device_scalar is only safe to access in kernels and copies on the specified CUDA stream,
+   * or on another stream only if a dependency is enforced (e.g. using `cudaStreamWaitEvent()`).
+   *
+   * @throws `rmm::bad_alloc` if allocating the device memory for `initial_value` fails.
+   * @throws `rmm::cuda_error` if copying `initial_value` to device memory fails.
+   *
+   * @param stream Stream on which to perform asynchronous allocation.
+   * @param mr Optional, resource with which to allocate.
    */
   explicit device_scalar(
-      cudaStream_t stream = 0,
+      cudaStream_t stream,
       rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
       : buffer{sizeof(T), stream, mr} {}
 
   /**
    * @brief Construct a new `device_scalar` with an initial value.
    *
-   * Does not synchronize the stream.
-   * 
-   * @throws `rmm::bad_alloc` if allocating the device memory for
-   *`initial_value` fails
-   * @throws `rmm::cuda_error` if copying `initial_value` to device memory fails
+   * Does not synchronize the stream. 
    *
-   * @param initial_value The initial value of the object in device memory
-   * @param stream Optional, stream on which to perform allocation and copy
-   * @param mr Optional, resource with which to allocate
+   * @note This device_scalar is only safe to access in kernels and copies on the specified CUDA stream,
+   * or on another stream only if a dependency is enforced (e.g. using `cudaStreamWaitEvent()`).
+   * 
+   * @throws `rmm::bad_alloc` if allocating the device memory for `initial_value` fails.
+   * @throws `rmm::cuda_error` if copying `initial_value` to device memory fails.
+   *
+   * @param initial_value The initial value of the object in device memory.
+   * @param stream Optional, stream on which to perform allocation and copy.
+   * @param mr Optional, resource with which to allocate.
    */
   explicit device_scalar(
       T const& initial_value,
@@ -74,14 +80,20 @@ class device_scalar {
   }
 
   /**
-   * @brief Copies the value from device to host, synchronizes, and returns the
-   * value.
+   * @brief Copies the value from device to host, synchronizes, and returns the value.
+   * 
+   * Synchronizes `stream` after copying the data from device to host.
+   * 
+   * @note If the stream specified to this function is different from the stream specified
+   * to the constructor, then an appropriate dependency must be inserted between the streams 
+   * (e.g. using `cudaStreamWaitEvent()` or `cudaStreamSynchronize()`) before calling this function,
+   * otherwise there may be a race condition.
    *
-   * @throws `rmm::cuda_error` If the copy fails
-   * @throws `rmm::cuda_error` If synchronizing `stream` fails
+   * @throws `rmm::cuda_error` If the copy fails.
+   * @throws `rmm::cuda_error` If synchronizing `stream` fails.
    *
-   * @return T The value of the scalar after synchronizing the stream
-   * @param stream CUDA stream on which to perform the copy
+   * @return T The value of the scalar.
+   * @param stream CUDA stream on which to perform the copy and synchronize.
    */
   T value(cudaStream_t stream = 0) const {
     T host_value{};
@@ -91,8 +103,15 @@ class device_scalar {
   }
 
   /**
-   * @brief Copies the value from host to device (does not synchronize the stream).
+   * @brief Sets the value of the `device_scalar` to the given `host_value`.
    *
+   * @note If the stream specified to this function is different from the stream specified
+   * to the constructor, then appropriate dependencies must be inserted between the streams 
+   * (e.g. using `cudaStreamWaitEvent()` or `cudaStreamSynchronize()`) before and after calling
+   * this function, otherwise there may be a race condition.
+   *
+   * Does not synchronize `stream`.
+   * 
    * @throws `rmm::cuda_error` if copying `host_value` to device memory fails
    * @throws `rmm::cuda_error` if synchronizing `stream` fails
    *
@@ -111,8 +130,15 @@ class device_scalar {
   }
 
   /**
-   * @brief Copies the value from host to device (does not synchronize the stream).
+   * @brief Sets the value of the `device_scalar` to the given `host_value`.
    *
+   * @note If the stream specified to this function is different from the stream specified
+   * to the constructor, then appropriate dependencies must be inserted between the streams 
+   * (e.g. using `cudaStreamWaitEvent()` or `cudaStreamSynchronize()`) before and after calling
+   * this function, otherwise there may be a race condition.
+   *
+   * Does not synchronize `stream`.
+   * 
    * @throws `rmm::cuda_error` if copying `host_value` to device memory fails
    * @throws `rmm::cuda_error` if synchronizing `stream` fails
    *
@@ -128,11 +154,21 @@ class device_scalar {
 
   /**
    * @brief Returns pointer to object in device memory.
+   *
+   * @note If the returned device pointer is used on a CUDA stream different from the stream
+   * specified to the constructor, then appropriate dependencies must be inserted between the
+   * streams (e.g. using `cudaStreamWaitEvent()` or `cudaStreamSynchronize()`), otherwise there may
+   * be a race condition.
    */
   T* data() noexcept { return static_cast<T*>(buffer.data()); }
 
   /**
-   * @brief Returns pointer to object in device memory.
+   * @brief Returns const pointer to object in device memory.
+   *
+   * @note If the returned device pointer is used on a CUDA stream different from the stream
+   * specified to the constructor, then appropriate dependencies must be inserted between the
+   * streams (e.g. using `cudaStreamWaitEvent()` or `cudaStreamSynchronize()`), otherwise there may
+   * be a race condition.
    */
   T const *data() const noexcept { return static_cast<T const*>(buffer.data()); }
 
