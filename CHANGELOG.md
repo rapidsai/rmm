@@ -8,6 +8,7 @@
 ## Improvements
 
 ## Bug Fixes
+- PR #346 Add clearer exception message when RMM_LOG_FILE is unset
 
 # RMM 0.13.0 (Date TBD)
 
