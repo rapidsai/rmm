@@ -9,6 +9,8 @@
 
 ## Bug Fixes
 
+- PR #347 Mark rmmFinalizeWrapper nogil
+
 # RMM 0.13.0 (Date TBD)
 
 ## New Features
