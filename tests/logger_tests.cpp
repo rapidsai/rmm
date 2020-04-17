@@ -43,6 +43,11 @@ TEST(Adaptor, factory) {
 TEST(Adaptor, EnviromentPath) {
   rmm::mr::cuda_memory_resource upstream;
 
+  unsetenv("RMM_LOG_FILE");
+
+  // expect logging adaptor to fail if RMM_LOG_FILE is unset
+  EXPECT_THROW(rmm::mr::make_logging_adaptor(&upstream), rmm::logic_error);
+
   setenv("RMM_LOG_FILE", "envtest.txt", 1);
 
   // use log file location specified in environment variable RMM_LOG_FILE
