@@ -33,9 +33,11 @@
 #include <fstream>
 #include <sstream>
 
+// clang-format off
 #ifndef GETNAME
-#define GETNAME(x) \
-  case x: return #x; #endif
+#define GETNAME(x) case x: return #x;
+#endif
+// clang-format on
 
 // Stringify RMM error code.
 const char *
