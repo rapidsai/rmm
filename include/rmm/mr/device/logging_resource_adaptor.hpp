@@ -98,6 +98,12 @@ class logging_resource_adaptor final : public device_memory_resource {
    */
   bool supports_get_mem_info() const noexcept override { return upstream_->supports_streams(); }
 
+ private:
+  // make_logging_adaptor needs access to private get_default_filename
+  template <typename T>
+  friend logging_resource_adaptor<T> make_logging_adaptor(
+      T* upstream, std::string const& filename);
+
   /**
    * @brief Return the value of the environment variable RMM_LOG_FILE.
    * 
@@ -111,7 +117,6 @@ class logging_resource_adaptor final : public device_memory_resource {
     return std::string{filename};
   }
 
- private:
   /**
    * @brief Allocates memory of size at least `bytes` using the upstream
    * resource and logs the allocation.
