@@ -232,7 +232,8 @@ BM_RandomAllocations(benchmark::State& state) {
   size_t max_size        = state.range(1);
 
   try {
-    for (auto _ : state) uniform_random_allocations(*mr, num_allocations, max_size, max_usage);
+    for (auto _ : state)
+      uniform_random_allocations(*mr, num_allocations, max_size, max_usage);
   } catch (std::exception const& e) { std::cout << "Error: " << e.what() << "\n"; }
 }
 
@@ -250,7 +251,8 @@ size_range(benchmark::internal::Benchmark* b, int num) {
 
 static void
 num_size_range(benchmark::internal::Benchmark* b) {
-  for (int num_allocations : std::vector<int>{1000, 10000, 100000}) size_range(b, num_allocations);
+  for (int num_allocations : std::vector<int>{1000, 10000, 100000})
+    size_range(b, num_allocations);
 }
 
 int num_allocations = -1;

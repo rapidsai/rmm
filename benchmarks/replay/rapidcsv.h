@@ -1073,7 +1073,9 @@ class Document {
     if ((mLabelParams.mRowNameIdx >= 0) &&
         (static_cast<ssize_t>(mData.size()) > (mLabelParams.mColumnNameIdx + 1))) {
       int i = 0;
-      for (auto& dataRow : mData) { mRowNames[dataRow[mLabelParams.mRowNameIdx]] = i++; }
+      for (auto& dataRow : mData) {
+        mRowNames[dataRow[mLabelParams.mRowNameIdx]] = i++;
+      }
     }
   }
 
