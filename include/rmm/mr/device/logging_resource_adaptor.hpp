@@ -107,7 +107,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    */
   static std::string get_default_filename() {
     auto filename = std::getenv("RMM_LOG_FILE");
-    RMM_EXPECTS(filename != nullptr, "RMM logging requested but RMM_LOG_FILE is unset");
+    RMM_EXPECTS(filename != nullptr, "RMM logging requested without an explicit file name, but RMM_LOG_FILE is unset");
     return std::string{filename};
   }
 
