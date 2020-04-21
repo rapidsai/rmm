@@ -6,6 +6,7 @@
 - PR #343 Add in option to statically link against cudart
 
 ## Improvements
+- PR #350 Add .clang-format file & format all files
 
 ## Bug Fixes
 - PR #346 Add clearer exception message when RMM_LOG_FILE is unset
