@@ -3,6 +3,8 @@ channels:
 - rapidsai
 - conda-forge
 dependencies:
+- clang=8.0.1
+- clang-tools=8.0.1
 - cmake>=3.12
 - python>=3.6,<3.8
 - numba>=0.41
