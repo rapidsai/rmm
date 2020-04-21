@@ -17,26 +17,24 @@
 #include "synchronization.hpp"
 #include "rmm/rmm.h"
 
-#define RMM_TRY(call)                                             \
-  do {                                                            \
-    rmmError_t const status = (call);                             \
-    if (RMM_SUCCESS != status) {                                  \
-      throw std::runtime_error("RMM error");                      \
-    }                                                             \
+#define RMM_TRY(call)                                                     \
+  do {                                                                    \
+    rmmError_t const status = (call);                                     \
+    if (RMM_SUCCESS != status) { throw std::runtime_error("RMM error"); } \
   } while (0);
 
-#define RMM_CUDA_ASSERT_OK(expr)                                  \
-  do {                                                            \
-    cudaError_t const status = (expr);                            \
-    assert(cudaSuccess == status);                                \
+#define RMM_CUDA_ASSERT_OK(expr)       \
+  do {                                 \
+    cudaError_t const status = (expr); \
+    assert(cudaSuccess == status);     \
   } while (0);
 
 cuda_event_timer::cuda_event_timer(benchmark::State& state,
                                    bool flush_l2_cache,
-                                   cudaStream_t stream):
-  p_state(&state), stream(stream) {
+                                   cudaStream_t stream)
+  : p_state(&state), stream(stream) {
   // flush all of L2$
-  if(flush_l2_cache) {
+  if (flush_l2_cache) {
     int current_device = 0;
     RMM_CUDA_TRY(cudaGetDevice(&current_device));
 
@@ -45,7 +43,7 @@ cuda_event_timer::cuda_event_timer(benchmark::State& state,
 
     if (l2_cache_bytes > 0) {
       const int memset_value = 0;
-      int* l2_cache_buffer = nullptr;
+      int* l2_cache_buffer   = nullptr;
       RMM_TRY(RMM_ALLOC(&l2_cache_buffer, l2_cache_bytes, stream));
       RMM_CUDA_TRY(cudaMemsetAsync(l2_cache_buffer, memset_value, l2_cache_bytes, stream));
       RMM_TRY(RMM_FREE(l2_cache_buffer, stream));
@@ -60,11 +58,10 @@ cuda_event_timer::cuda_event_timer(benchmark::State& state,
 cuda_event_timer::~cuda_event_timer() {
   RMM_CUDA_ASSERT_OK(cudaEventRecord(stop, stream));
   RMM_CUDA_ASSERT_OK(cudaEventSynchronize(stop));
- 
+
   float milliseconds = 0.0f;
   RMM_CUDA_ASSERT_OK(cudaEventElapsedTime(&milliseconds, start, stop));
-  p_state->SetIterationTime(milliseconds/(1000.0f));
+  p_state->SetIterationTime(milliseconds / (1000.0f));
   RMM_CUDA_ASSERT_OK(cudaEventDestroy(start));
   RMM_CUDA_ASSERT_OK(cudaEventDestroy(stop));
 }
-

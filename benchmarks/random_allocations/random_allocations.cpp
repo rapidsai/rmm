@@ -17,16 +17,16 @@
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
-#include <rmm/mr/device/managed_memory_resource.hpp>
-#include <rmm/mr/device/pool_memory_resource.hpp>
 #include <rmm/mr/device/fixed_multisize_memory_resource.hpp>
 #include <rmm/mr/device/hybrid_memory_resource.hpp>
+#include <rmm/mr/device/managed_memory_resource.hpp>
+#include <rmm/mr/device/pool_memory_resource.hpp>
 #include <rmm/mr/device/thread_safe_resource_adaptor.hpp>
 
 #include <benchmark/benchmark.h>
 
-#include <random>
 #include <cstdlib>
+#include <random>
 
 #define VERBOSE 0
 
@@ -43,7 +43,8 @@ struct allocation {
 
 using allocation_vector = std::vector<allocation>;
 
-allocation remove_at(allocation_vector& allocs, std::size_t index) {
+allocation
+remove_at(allocation_vector& allocs, std::size_t index) {
   assert(index < allocs.size());
   auto removed = allocs[index];
 
@@ -55,26 +56,26 @@ allocation remove_at(allocation_vector& allocs, std::size_t index) {
   return removed;
 }
 // nested MR type names can get long...
-using pool_mr = rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>;
-using safe_pool_mr = rmm::mr::thread_safe_resource_adaptor<pool_mr>;
+using pool_mr            = rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>;
+using safe_pool_mr       = rmm::mr::thread_safe_resource_adaptor<pool_mr>;
 using fixed_multisize_mr = rmm::mr::fixed_multisize_memory_resource<pool_mr>;
-using hybrid_mr = rmm::mr::hybrid_memory_resource<fixed_multisize_mr, pool_mr>;
-using safe_hybrid_mr = rmm::mr::thread_safe_resource_adaptor<hybrid_mr>;
+using hybrid_mr          = rmm::mr::hybrid_memory_resource<fixed_multisize_mr, pool_mr>;
+using safe_hybrid_mr     = rmm::mr::thread_safe_resource_adaptor<hybrid_mr>;
 
 template <typename SizeDistribution>
-void random_allocation_free(rmm::mr::device_memory_resource& mr,
-                            SizeDistribution size_distribution,
-                            size_t num_allocations,
-                            size_t max_usage, // in MiB
-                            cudaStream_t stream = 0)
-{
+void
+random_allocation_free(rmm::mr::device_memory_resource& mr,
+                       SizeDistribution size_distribution,
+                       size_t num_allocations,
+                       size_t max_usage,  // in MiB
+                       cudaStream_t stream = 0) {
   std::default_random_engine generator;
 
-  max_usage *= size_mb; // convert to bytes
-  
-  constexpr int allocation_probability = 73; // percent
+  max_usage *= size_mb;  // convert to bytes
+
+  constexpr int allocation_probability = 73;  // percent
   std::uniform_int_distribution<int> op_distribution(0, 99);
-  std::uniform_int_distribution<int> index_distribution(0, num_allocations-1);
+  std::uniform_int_distribution<int> index_distribution(0, num_allocations - 1);
 
   int active_allocations{0};
   int allocation_count{0};
@@ -85,39 +86,37 @@ void random_allocation_free(rmm::mr::device_memory_resource& mr,
 
   for (int i = 0; i < num_allocations * 2; ++i) {
     bool do_alloc = true;
-    size_t size = static_cast<size_t>(size_distribution(generator));
-    
+    size_t size   = static_cast<size_t>(size_distribution(generator));
+
     if (active_allocations > 0) {
       int chance = op_distribution(generator);
-      do_alloc = (chance < allocation_probability) &&
-                 (allocation_count < num_allocations) &&
+      do_alloc   = (chance < allocation_probability) && (allocation_count < num_allocations) &&
                  (allocation_size + size < max_usage);
     }
 
     void* ptr = nullptr;
-    if (do_alloc) { // try to allocate
+    if (do_alloc) {  // try to allocate
       try {
         ptr = mr.allocate(size, stream);
-      } catch(rmm::bad_alloc const&) {
+      } catch (rmm::bad_alloc const&) {
         do_alloc = false;
-        #if VERBOSE
-          std::cout << "FAILED to allocate " << size << "\n";
-        #endif
+#if VERBOSE
+        std::cout << "FAILED to allocate " << size << "\n";
+#endif
       }
     }
 
-    if (do_alloc) { // alloc succeeded
+    if (do_alloc) {  // alloc succeeded
       allocations.emplace_back(ptr, size);
       active_allocations++;
       allocation_count++;
       allocation_size += size;
 
-      #if VERBOSE
-      std::cout << active_allocations << " | " << allocation_count << " Allocating: " << size 
+#if VERBOSE
+      std::cout << active_allocations << " | " << allocation_count << " Allocating: " << size
                 << " | total: " << allocation_size << "\n";
-      #endif
-    }
-    else { // dealloc, or alloc failed
+#endif
+    } else {  // dealloc, or alloc failed
       if (active_allocations > 0) {
         size_t index = index_distribution(generator) % active_allocations;
         active_allocations--;
@@ -125,10 +124,11 @@ void random_allocation_free(rmm::mr::device_memory_resource& mr,
         mr.deallocate(to_free.p, to_free.size, stream);
         allocation_size -= to_free.size;
 
-        #if VERBOSE
-        std::cout << active_allocations << " | " << allocation_count << " Deallocating: " 
-                  << to_free.size << " at " << index << " | total: " << allocation_size << "\n";
-        #endif
+#if VERBOSE
+        std::cout << active_allocations << " | " << allocation_count
+                  << " Deallocating: " << to_free.size << " at " << index
+                  << " | total: " << allocation_size << "\n";
+#endif
       }
     }
   }
@@ -140,11 +140,12 @@ void random_allocation_free(rmm::mr::device_memory_resource& mr,
 }
 }  // namespace
 
-void uniform_random_allocations(rmm::mr::device_memory_resource& mr,
-                                size_t num_allocations,
-                                size_t max_allocation_size, // in MiB
-                                size_t max_usage,
-                                cudaStream_t stream = 0) {
+void
+uniform_random_allocations(rmm::mr::device_memory_resource& mr,
+                           size_t num_allocations,
+                           size_t max_allocation_size,  // in MiB
+                           size_t max_usage,
+                           cudaStream_t stream = 0) {
   std::uniform_int_distribution<std::size_t> size_distribution(1, max_allocation_size * size_mb);
   random_allocation_free(mr, size_distribution, num_allocations, max_usage, stream);
 }
@@ -160,39 +161,40 @@ void uniform_random_allocations(rmm::mr::device_memory_resource& mr,
 }*/
 
 // Wrapper class to allow RAII of memory_resource types with different constructor parameters.
-template<typename MemoryResource>
+template <typename MemoryResource>
 struct resource_wrapper {
   resource_wrapper() {}
   ~resource_wrapper() { delete mr; }
 
-  MemoryResource *mr{};
+  MemoryResource* mr{};
 };
 
-template<>
+template <>
 resource_wrapper<safe_pool_mr>::resource_wrapper() {
-  rmm::mr::cuda_memory_resource *cuda_mr = new rmm::mr::cuda_memory_resource();
+  rmm::mr::cuda_memory_resource* cuda_mr = new rmm::mr::cuda_memory_resource();
   mr = new rmm::mr::thread_safe_resource_adaptor<pool_mr>(new pool_mr(cuda_mr));
 }
 
-template<>
+template <>
 resource_wrapper<fixed_multisize_mr>::resource_wrapper() {
-  rmm::mr::cuda_memory_resource *cuda_mr = new rmm::mr::cuda_memory_resource();
-  mr = new fixed_multisize_mr(new pool_mr(cuda_mr));
+  rmm::mr::cuda_memory_resource* cuda_mr = new rmm::mr::cuda_memory_resource();
+  mr                                     = new fixed_multisize_mr(new pool_mr(cuda_mr));
 }
 
-template<>
+template <>
 resource_wrapper<safe_hybrid_mr>::resource_wrapper() {
-  rmm::mr::cuda_memory_resource *cuda_mr = new rmm::mr::cuda_memory_resource();
-  pool_mr *pool = new pool_mr(cuda_mr);
-  mr = new rmm::mr::thread_safe_resource_adaptor<hybrid_mr>(new hybrid_mr(new fixed_multisize_mr(pool), pool));
+  rmm::mr::cuda_memory_resource* cuda_mr = new rmm::mr::cuda_memory_resource();
+  pool_mr* pool                          = new pool_mr(cuda_mr);
+  mr                                     = new rmm::mr::thread_safe_resource_adaptor<hybrid_mr>(
+    new hybrid_mr(new fixed_multisize_mr(pool), pool));
 }
 
-template<>
+template <>
 resource_wrapper<safe_hybrid_mr>::~resource_wrapper() {
   auto hybrid = mr->get_upstream();
-  auto small = hybrid->get_small_mr();
-  auto large = hybrid->get_large_mr();
-  auto cuda = large->get_upstream();
+  auto small  = hybrid->get_small_mr();
+  auto large  = hybrid->get_large_mr();
+  auto cuda   = large->get_upstream();
   delete mr;
   delete hybrid;
   delete small;
@@ -200,63 +202,62 @@ resource_wrapper<safe_hybrid_mr>::~resource_wrapper() {
   delete cuda;
 }
 
-template<>
+template <>
 resource_wrapper<fixed_multisize_mr>::~resource_wrapper() {
-  auto sub = mr->get_upstream();
+  auto sub  = mr->get_upstream();
   auto cuda = sub->get_upstream();
   delete mr;
   delete sub;
-  delete cuda;  
+  delete cuda;
 }
 
-template<>
+template <>
 resource_wrapper<safe_pool_mr>::~resource_wrapper() {
   auto pool = mr->get_upstream();
   auto cuda = pool->get_upstream();
   delete mr;
   delete pool;
-  delete cuda;  
+  delete cuda;
 }
 
 constexpr size_t max_usage = 16000;
 
 template <typename MemoryResource>
-static void BM_RandomAllocations(benchmark::State& state) {
+static void
+BM_RandomAllocations(benchmark::State& state) {
   resource_wrapper<MemoryResource> wrapper;
-  MemoryResource *mr = wrapper.mr;
+  MemoryResource* mr = wrapper.mr;
 
   size_t num_allocations = state.range(0);
-  size_t max_size = state.range(1);
+  size_t max_size        = state.range(1);
 
   try {
-    for (auto _ : state)
-      uniform_random_allocations(*mr, num_allocations, max_size, max_usage);
-  } catch (std::exception const& e) {
-    std::cout << "Error: " << e.what() << "\n";
-  }
+    for (auto _ : state) uniform_random_allocations(*mr, num_allocations, max_size, max_usage);
+  } catch (std::exception const& e) { std::cout << "Error: " << e.what() << "\n"; }
 }
 
-static void num_range(benchmark::internal::Benchmark* b, int size) {
+static void
+num_range(benchmark::internal::Benchmark* b, int size) {
   for (int num_allocations : std::vector<int>{1000, 10000, 100000})
     b->Args({num_allocations, size})->Unit(benchmark::kMillisecond);
 }
 
-
-static void size_range(benchmark::internal::Benchmark* b, int num) {
+static void
+size_range(benchmark::internal::Benchmark* b, int num) {
   for (int max_size : std::vector<int>{1, 4, 64, 256, 1024, 4096})
     b->Args({num, max_size})->Unit(benchmark::kMillisecond);
 }
 
-static void num_size_range(benchmark::internal::Benchmark* b) {
-  for (int num_allocations : std::vector<int>{1000, 10000, 100000})
-    size_range(b, num_allocations);
+static void
+num_size_range(benchmark::internal::Benchmark* b) {
+  for (int num_allocations : std::vector<int>{1000, 10000, 100000}) size_range(b, num_allocations);
 }
 
-
 int num_allocations = -1;
-int max_size = -1;
+int max_size        = -1;
 
-static void benchmark_range(benchmark::internal::Benchmark* b) {
+static void
+benchmark_range(benchmark::internal::Benchmark* b) {
   if (num_allocations > 0) {
     if (max_size > 0)
       b->Args({num_allocations, max_size})->Unit(benchmark::kMillisecond);
@@ -270,7 +271,8 @@ static void benchmark_range(benchmark::internal::Benchmark* b) {
   }
 }
 
-void declare_benchmark(std::string name) {
+void
+declare_benchmark(std::string name) {
   if (name == "cuda")
     BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::cuda_memory_resource)->Apply(benchmark_range);
   if (name == "hybrid")
@@ -280,24 +282,25 @@ void declare_benchmark(std::string name) {
   else if (name == "fixed_multisize")
     BENCHMARK_TEMPLATE(BM_RandomAllocations, fixed_multisize_mr)->Apply(benchmark_range);
   else if (name == "cnmem")
-    BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::cnmem_memory_resource)->Apply(benchmark_range);
+    BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::cnmem_memory_resource)
+      ->Apply(benchmark_range);
   else
     std::cout << "Error: invalid memory_resource name: " << name << "\n";
 }
 
-int main(int argc, char** argv)
-{
+int
+main(int argc, char** argv) {
   ::benchmark::Initialize(&argc, argv);
   if (argc > 1) {
     std::string mr_name = argv[1];
     if (argc > 2) num_allocations = atoi(argv[2]);
     if (argc > 3) max_size = atoi(argv[3]);
     declare_benchmark(mr_name);
-  }
-  else {
+  } else {
     BENCHMARK_TEMPLATE(BM_RandomAllocations, safe_pool_mr)->Apply(benchmark_range);
     BENCHMARK_TEMPLATE(BM_RandomAllocations, safe_hybrid_mr)->Apply(benchmark_range);
-    BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::cnmem_memory_resource)->Apply(benchmark_range);
+    BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::cnmem_memory_resource)
+      ->Apply(benchmark_range);
     BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::cuda_memory_resource)->Apply(benchmark_range);
   }
 
@@ -327,6 +330,3 @@ int main(int argc, char** argv) {
     RandomAllocations<rmm::mr::cnmem_memory_resource>(1000, 4096);
   return 0;
 }*/
-
-
-
