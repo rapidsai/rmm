@@ -177,15 +177,15 @@ resource_wrapper<safe_pool_mr>::resource_wrapper() {
 
 template <>
 resource_wrapper<fixed_multisize_mr>::resource_wrapper() {
-  rmm::mr::cuda_memory_resource* cuda_mr = new rmm::mr::cuda_memory_resource();
-  mr                                     = new fixed_multisize_mr(new pool_mr(cuda_mr));
+  auto cuda_mr = new rmm::mr::cuda_memory_resource();
+  mr           = new fixed_multisize_mr(new pool_mr(cuda_mr));
 }
 
 template <>
 resource_wrapper<safe_hybrid_mr>::resource_wrapper() {
-  rmm::mr::cuda_memory_resource* cuda_mr = new rmm::mr::cuda_memory_resource();
-  pool_mr* pool                          = new pool_mr(cuda_mr);
-  mr                                     = new rmm::mr::thread_safe_resource_adaptor<hybrid_mr>(
+  auto cuda_mr  = new rmm::mr::cuda_memory_resource();
+  pool_mr* pool = new pool_mr(cuda_mr);
+  mr            = new rmm::mr::thread_safe_resource_adaptor<hybrid_mr>(
     new hybrid_mr(new fixed_multisize_mr(pool), pool));
 }
 
