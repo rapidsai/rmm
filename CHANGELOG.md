@@ -6,6 +6,7 @@
 - PR #343 Add in option to statically link against cudart
 
 ## Improvements
+- PR #350 Add .clang-format file & format all files
 
 ## Bug Fixes
 
