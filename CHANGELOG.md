@@ -8,6 +8,7 @@
 ## Improvements
 
 ## Bug Fixes
+- PR #346 Add clearer exception message when RMM_LOG_FILE is unset
 
 - PR #347 Mark rmmFinalizeWrapper nogil
 - PR #348 Fix unintentional use of pool-managed resource.
