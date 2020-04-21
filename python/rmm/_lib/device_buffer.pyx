@@ -116,6 +116,20 @@ cdef class DeviceBuffer:
         cdef DeviceBuffer other = DeviceBuffer.c_to_device(state)
         self.c_obj = move(other.c_obj)
 
+    def __setitem__(self, key, value):
+        rng = range(self.size)[key]
+        if not isinstance(rng, range):
+            rng = range(rng, rng + 1)
+        if rng.step != 1:
+            raise KeyError("Slice step size must be `None` or `1`.")
+
+        cdef uintptr_t d_dst = self.ptr + rng.start
+        cdef size_t count = len(rng)
+
+        cdef uintptr_t d_src = value.__cuda_array_interface__["data"][0]
+
+        copy_device_to_ptr(d_src, d_dst, count)
+
     @property
     def __cuda_array_interface__(self):
         cdef dict intf = {
