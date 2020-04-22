@@ -69,18 +69,18 @@ cdef class DeviceBuffer:
         cdef cudaStream_t c_stream
         cdef cudaError_t err
 
-        with nogil:
-            c_ptr = <const void*>ptr
-            c_stream = <cudaStream_t>stream
+        c_ptr = <const void*>ptr
+        c_stream = <cudaStream_t>stream
 
-            if size == 0:
-                self.c_obj.reset(new device_buffer())
-            elif c_ptr == NULL:
-                self.c_obj.reset(new device_buffer(size, c_stream))
-            else:
-                self.c_obj.reset(new device_buffer(c_ptr, size, c_stream))
+        if size == 0:
+            self.c_obj.reset(new device_buffer())
+        elif c_ptr == NULL:
+            self.c_obj.reset(new device_buffer(size, c_stream))
+        else:
+            self.c_obj.reset(new device_buffer(c_ptr, size, c_stream))
 
-                if c_stream == NULL:
+            if c_stream == NULL:
+                with nogil:
                     err = cudaStreamSynchronize(c_stream)
                     if err != cudaSuccess:
                         with gil:
