@@ -6,8 +6,13 @@
 - PR #343 Add in option to statically link against cudart
 
 ## Improvements
+- PR #350 Add .clang-format file & format all files
 
 ## Bug Fixes
+- PR #346 Add clearer exception message when RMM_LOG_FILE is unset
+
+- PR #347 Mark rmmFinalizeWrapper nogil
+- PR #348 Fix unintentional use of pool-managed resource.
 
 # RMM 0.13.0 (Date TBD)
 

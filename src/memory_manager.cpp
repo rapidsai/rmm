@@ -19,16 +19,16 @@
 #include <rmm/mr/device/cnmem_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/default_memory_resource.hpp>
-#include <rmm/mr/device/managed_memory_resource.hpp>
 #include <rmm/mr/device/logging_resource_adaptor.hpp>
+#include <rmm/mr/device/managed_memory_resource.hpp>
 
 namespace rmm {
 
-using cuda_mr = rmm::mr::cuda_memory_resource;
-using pool_mr = rmm::mr::cnmem_memory_resource;
-using managed_mr = rmm::mr::cnmem_managed_memory_resource;
-using pool_managed_mr = rmm::mr::cnmem_managed_memory_resource;
-using logging_pool_mr = rmm::mr::logging_resource_adaptor<pool_mr>;
+using cuda_mr                 = rmm::mr::cuda_memory_resource;
+using pool_mr                 = rmm::mr::cnmem_memory_resource;
+using managed_mr              = rmm::mr::managed_memory_resource;
+using pool_managed_mr         = rmm::mr::cnmem_managed_memory_resource;
+using logging_pool_mr         = rmm::mr::logging_resource_adaptor<pool_mr>;
 using logging_pool_managed_mr = rmm::mr::logging_resource_adaptor<pool_managed_mr>;
 
 /**
@@ -42,10 +42,18 @@ using logging_pool_managed_mr = rmm::mr::logging_resource_adaptor<pool_managed_m
  * @param[in] stream The stream on which the allocation is happening
  *                   (only needed for Alloc/Realloc).
  */
-void Logger::record(MemEvent_t event, int deviceId, void* ptr, TimePt start,
-                    TimePt end, size_t freeMem, size_t totalMem, size_t size,
-                    cudaStream_t stream, std::string filename,
-                    unsigned int line)
+void
+Logger::record(MemEvent_t event,
+               int deviceId,
+               void* ptr,
+               TimePt start,
+               TimePt end,
+               size_t freeMem,
+               size_t totalMem,
+               size_t size,
+               cudaStream_t stream,
+               std::string filename,
+               unsigned int line)
 
 {
   std::lock_guard<std::mutex> guard(log_mutex);
@@ -53,8 +61,18 @@ void Logger::record(MemEvent_t event, int deviceId, void* ptr, TimePt start,
     current_allocations.insert(ptr);
   else if (Free == event)
     current_allocations.erase(ptr);
-  events.push_back({event, deviceId, ptr, size, stream, freeMem, totalMem,
-                    current_allocations.size(), start, end, filename, line});
+  events.push_back({event,
+                    deviceId,
+                    ptr,
+                    size,
+                    stream,
+                    freeMem,
+                    totalMem,
+                    current_allocations.size(),
+                    start,
+                    end,
+                    filename,
+                    line});
 }
 
 /**
@@ -63,7 +81,8 @@ void Logger::record(MemEvent_t event, int deviceId, void* ptr, TimePt start,
  *
  * @param[in] csv The output stream to put the CSV log string into.
  */
-void Logger::to_csv(std::ostream& csv) {
+void
+Logger::to_csv(std::ostream& csv) {
   csv << "Event Type,Device ID,Address,Stream,Size (bytes),Free Memory,"
       << "Total Memory,Current Allocs,Start,End,Elapsed,Location\n";
 
@@ -74,29 +93,29 @@ void Logger::to_csv(std::ostream& csv) {
 
     std::chrono::duration<double> elapsed = e.end - e.start;
 
-    csv << event_str << "," << e.deviceId << "," << e.ptr << "," << e.stream
-        << "," << e.size << "," << e.freeMem << "," << e.totalMem << ","
-        << e.currentAllocations << ","
+    csv << event_str << "," << e.deviceId << "," << e.ptr << "," << e.stream << "," << e.size << ","
+        << e.freeMem << "," << e.totalMem << "," << e.currentAllocations << ","
         << std::chrono::duration<double>(e.start - base_time).count() << ","
-        << std::chrono::duration<double>(e.end - base_time).count() << ","
-        << elapsed.count() << "," << e.filename << ":" << e.line << std::endl;
+        << std::chrono::duration<double>(e.end - base_time).count() << "," << elapsed.count() << ","
+        << e.filename << ":" << e.line << std::endl;
   }
 }
 
 /**
  * @brief Clear the log
  */
-void Logger::clear() {
+void
+Logger::clear() {
   std::lock_guard<std::mutex> guard(log_mutex);
   events.clear();
 }
 
-rmmError_t Manager::registerStream(cudaStream_t stream) {
+rmmError_t
+Manager::registerStream(cudaStream_t stream) {
   std::lock_guard<std::mutex> guard(manager_mutex);
   if (registered_streams.empty() || 0 == registered_streams.count(stream)) {
     registered_streams.insert(stream);
-    if (stream &&
-        usePoolAllocator())  // don't register the null stream with CNMem
+    if (stream && usePoolAllocator())  // don't register the null stream with CNMem
       RMM_CHECK_CNMEM(cnmemRegisterStream(stream));
   }
   return RMM_SUCCESS;
@@ -107,10 +126,11 @@ rmmError_t Manager::registerStream(cudaStream_t stream) {
 // That means it needs to be a free function since memory_manager.hpp cannot include
 // `logging_resource_adaptor.hpp` (since it depends on spdlog)
 template <typename MemoryResource>
-void reset_resource(std::unique_ptr<mr::device_memory_resource>& initialized_resource,
-                    std::unique_ptr<mr::device_memory_resource>& logging_resource,
-                    MemoryResource *mr,
-                    bool enable_logging) {
+void
+reset_resource(std::unique_ptr<mr::device_memory_resource>& initialized_resource,
+               std::unique_ptr<mr::device_memory_resource>& logging_resource,
+               MemoryResource* mr,
+               bool enable_logging) {
   initialized_resource.reset(mr);
   if (enable_logging) {
     auto lmr = new rmm::mr::logging_resource_adaptor<MemoryResource>(mr);
@@ -122,7 +142,8 @@ void reset_resource(std::unique_ptr<mr::device_memory_resource>& initialized_res
 }
 
 // Initialize the manager
-void Manager::initialize(const rmmOptions_t* new_options) {
+void
+Manager::initialize(const rmmOptions_t* new_options) {
   std::lock_guard<std::mutex> guard(manager_mutex);
 
   // repeat initialization is a no-op
@@ -133,15 +154,17 @@ void Manager::initialize(const rmmOptions_t* new_options) {
   bool enable_logging = getOptions().enable_logging;
 
   if (usePoolAllocator()) {
-    auto pool_size = getOptions().initial_pool_size;
+    auto pool_size      = getOptions().initial_pool_size;
     auto const& devices = getOptions().devices;
 
     if (useManagedMemory()) {
-      reset_resource(initialized_resource, logging_adaptor,
-                     new pool_managed_mr(pool_size, devices), enable_logging);
+      reset_resource(initialized_resource,
+                     logging_adaptor,
+                     new pool_managed_mr(pool_size, devices),
+                     enable_logging);
     } else {
-      reset_resource(initialized_resource, logging_adaptor,
-                     new pool_mr(pool_size, devices), enable_logging);
+      reset_resource(
+        initialized_resource, logging_adaptor, new pool_mr(pool_size, devices), enable_logging);
     }
   } else if (rmm::Manager::useManagedMemory()) {
     reset_resource(initialized_resource, logging_adaptor, new managed_mr(), enable_logging);
@@ -155,7 +178,8 @@ void Manager::initialize(const rmmOptions_t* new_options) {
 }
 
 // Shut down the Manager (clears the context)
-void Manager::finalize() {
+void
+Manager::finalize() {
   std::lock_guard<std::mutex> guard(manager_mutex);
 
   // finalization before initialization is a no-op

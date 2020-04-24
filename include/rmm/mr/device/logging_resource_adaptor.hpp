@@ -60,7 +60,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    * the file name from the environment variable "RMM_LOG_FILE".
    */
   logging_resource_adaptor(Upstream* upstream, std::string const& filename =
-                                                   std::getenv("RMM_LOG_FILE"))
+                                                   get_default_filename())
       : upstream_{upstream},
         logger_{std::make_shared<spdlog::logger>(
             "RMM", std::make_shared<spdlog::sinks::basic_file_sink_mt>(
@@ -99,6 +99,24 @@ class logging_resource_adaptor final : public device_memory_resource {
   bool supports_get_mem_info() const noexcept override { return upstream_->supports_streams(); }
 
  private:
+  // make_logging_adaptor needs access to private get_default_filename
+  template <typename T>
+  friend logging_resource_adaptor<T> make_logging_adaptor(
+      T* upstream, std::string const& filename);
+
+  /**
+   * @brief Return the value of the environment variable RMM_LOG_FILE.
+   * 
+   * @throws `rmm::logic_error` if `RMM_LOG_FILE` is not set.
+   * 
+   * @return The value of RMM_LOG_FILE as `std::string`.
+   */
+  static std::string get_default_filename() {
+    auto filename = std::getenv("RMM_LOG_FILE");
+    RMM_EXPECTS(filename != nullptr, "RMM logging requested without an explicit file name, but RMM_LOG_FILE is unset");
+    return std::string{filename};
+  }
+
   /**
    * @brief Allocates memory of size at least `bytes` using the upstream
    * resource and logs the allocation.
@@ -213,7 +231,8 @@ class logging_resource_adaptor final : public device_memory_resource {
 template <typename Upstream>
 logging_resource_adaptor<Upstream> make_logging_adaptor(
     Upstream* upstream,
-    std::string const& filename = std::getenv("RMM_LOG_FILE")) {
+    std::string const& filename =
+        logging_resource_adaptor<Upstream>::get_default_filename()) {
   return logging_resource_adaptor<Upstream>{upstream, filename};
 }
 
