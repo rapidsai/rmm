@@ -38,6 +38,16 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
                  "${GBENCH_LIBRARY_DIR}")
 
 ###################################################################################################
+# - build options ---------------------------------------------------------------------------------
+
+option(PER_THREAD_DEFAULT_STREAM "Build with per-thread default stream" OFF)
+if(PER_THREAD_DEFAULT_STREAM)
+    message(STATUS "Using per-thread default stream")
+    add_compile_definitions(CUDA_API_PER_THREAD_DEFAULT_STREAM)
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --default-stream per-thread")
+endif(PER_THREAD_DEFAULT_STREAM)
+
+###################################################################################################
 ### test sources ##################################################################################
 ###################################################################################################
 
