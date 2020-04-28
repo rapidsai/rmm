@@ -1,3 +1,19 @@
+# RMM 0.14.0 (Date TBD)
+
+## New Features
+
+- PR #341 Enable logging
+- PR #343 Add in option to statically link against cudart
+
+## Improvements
+- PR #350 Add .clang-format file & format all files
+
+## Bug Fixes
+- PR #346 Add clearer exception message when RMM_LOG_FILE is unset
+
+- PR #347 Mark rmmFinalizeWrapper nogil
+- PR #348 Fix unintentional use of pool-managed resource.
+
 # RMM 0.13.0 (Date TBD)
 
 ## New Features
@@ -16,6 +32,12 @@
 - PR #283 Add random allocation benchmark.
 - PR #287 Enabled CUDA CXX11 for unit tests.
 - PR #292 Revamped RMM exceptions.
+- PR #297 Use spdlog to implement `logging_resource_adaptor`.
+- PR #303 Added replay benchmark.
+- PR #319 Add `thread_safe_resource_adaptor` class.
+- PR #314 New suballocator memory_resources.
+- PR #330 Fixed incorrect name of `stream_free_blocks_` debug symbol.
+- PR #331 Move to C++14 and deprecate legacy APIs.
 
 ## Improvements
 
@@ -32,7 +54,9 @@
 - PR #296 Use CuPy's `UnownedMemory` for RMM-backed allocations
 - PR #310 Improve `device_buffer` allocation logic.
 - PR #309 Sync default stream in `DeviceBuffer` constructor
+- PR #326 Sync only on copy construction
 - PR #308 Fix typo in README
+- PR #334 Replace `rmm_allocator` for Thrust allocations
 
 ## Bug Fixes
 - PR #298 Remove RMM_CUDA_TRY from cuda_event_timer destructor
@@ -41,7 +65,7 @@
 - PR #312 Fix libcudf compilation errors due to explicit defaulted device_buffer constructor.
 
 
-# RMM 0.12.0 (Date TBD)
+# RMM 0.12.0 (04 Feb 2020)
 
 ## New Features
 

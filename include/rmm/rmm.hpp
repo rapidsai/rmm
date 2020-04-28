@@ -104,7 +104,7 @@ class LogIt {
  *                    requested size, or RMM_CUDA_ERROR on any other CUDA error.
  */
 template <typename T>
-inline rmmError_t alloc(T** ptr, size_t size, cudaStream_t stream,
+[[deprecated]] inline rmmError_t alloc(T** ptr, size_t size, cudaStream_t stream,
                         const char* file, unsigned int line) {
   if (!rmmIsInitialized(nullptr)) {
     if (ptr) *ptr = nullptr;
@@ -189,7 +189,7 @@ inline rmmError_t realloc(T** ptr, size_t new_size, cudaStream_t stream,
  *                    has not been called,or RMM_ERROR_CUDA_ERROR on any CUDA
  *                    error.
  */
-inline rmmError_t free(void* ptr, cudaStream_t stream, const char* file,
+[[deprecated]] inline rmmError_t free(void* ptr, cudaStream_t stream, const char* file,
                        unsigned int line) {
   if (!rmmIsInitialized(nullptr)) return RMM_ERROR_NOT_INITIALIZED;
 

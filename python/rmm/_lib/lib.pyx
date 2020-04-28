@@ -116,7 +116,7 @@ def rmm_finalize():
     return 0
 
 
-cdef void _rmmFinalizeWrapper ():
+cdef void _rmmFinalizeWrapper () nogil:
     rmmFinalize()
 
 

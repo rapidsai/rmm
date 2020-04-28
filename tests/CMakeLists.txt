@@ -15,13 +15,12 @@
 #=============================================================================
 cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 
-
 project(RMM_TESTS LANGUAGES C CXX CUDA)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_CUDA_STANDARD 11)
+set(CMAKE_CUDA_STANDARD 14)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
 ###################################################################################################
@@ -30,7 +29,7 @@ set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 function(ConfigureTest CMAKE_TEST_NAME CMAKE_TEST_SRC)
     add_executable(${CMAKE_TEST_NAME} ${CMAKE_TEST_SRC})
     set_target_properties(${CMAKE_TEST_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    target_link_libraries(${CMAKE_TEST_NAME} gmock gtest gmock_main gtest_main pthread rmm)
+    target_link_libraries(${CMAKE_TEST_NAME} gmock gtest gmock_main gtest_main pthread cudart rmm)
     set_target_properties(${CMAKE_TEST_NAME} PROPERTIES
                             RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/gtests")
     add_test(NAME ${CMAKE_TEST_NAME} COMMAND ${CMAKE_TEST_NAME})
@@ -42,6 +41,8 @@ endfunction(ConfigureTest)
 include_directories("${GTEST_INCLUDE_DIR}"
                     "${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
                     "${CMAKE_SOURCE_DIR}/include"
+                    "${CMAKE_SOURCE_DIR}/thirdparty"
+                    "${CMAKE_SOURCE_DIR}/include/rmm"
                     "${CMAKE_SOURCE_DIR}/src"
                     "${CMAKE_CURRENT_SOURCE_DIR}/../include")
 
@@ -70,7 +71,7 @@ ConfigureTest(RMM_TEST "${RMM_TEST_SRC}")
 
 set(DEVICE_MR_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/mr_tests.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/thrust_allocator_tests.cpp")
+    "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/thrust_allocator_tests.cu")
     
 
 ConfigureTest(DEVICE_MR_TEST "${DEVICE_MR_TEST_SRC}")
@@ -101,6 +102,13 @@ set(SCALAR_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/device_scalar_tests.cpp")
 
 ConfigureTest(DEVICE_SCALAR_TEST "${SCALAR_TEST_SRC}")
+###################################################################################################
+# - logger tests -------------------------------------------------------------------------------------
+
+set(LOGGER_TEST_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/logger_tests.cpp")
+
+ConfigureTest(LOGGER_TEST "${LOGGER_TEST_SRC}")
 
 ###################################################################################################
 ### enable testing ################################################################################
@@ -120,6 +128,6 @@ set(RANDOM_ALLOCATE_SRC
 
 add_executable(random_allocate ${RANDOM_ALLOCATE_SRC})
 set_target_properties(random_allocate PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(random_allocate rmm)
+target_link_libraries(random_allocate cudart rmm)
 set_target_properties(random_allocate PROPERTIES
                       RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bench")
