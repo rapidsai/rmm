@@ -2,6 +2,7 @@
 
 ## New Features
 
+- PR #317 Provide External Memory Management Plugin for Numba
 - PR #341 Enable logging
 - PR #343 Add in option to statically link against cudart
 
