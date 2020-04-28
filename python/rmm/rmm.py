@@ -166,7 +166,7 @@ class RMMNumbaManager(HostOnlyCUDAMemoryManager):
         # housekeeping elsewhere.
         self.allocations[ptr.value] = buf
 
-        return cuda.MemoryPointer(ctx, ptr, size, finalizer=finalizer)
+        return MemoryPointer(ctx, ptr, size, finalizer=finalizer)
 
     def get_ipc_handle(self, memory):
         """
