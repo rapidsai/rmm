@@ -1,13 +1,14 @@
 import pickle
 import sys
 from itertools import product
-from numba import cuda
 
 import numpy as np
 import pytest
+from numba import cuda
 
 import rmm
-rmm.use_rmm_for_numba()
+
+cuda.set_memory_manager(rmm.RMMNumbaManager)
 
 
 def array_tester(dtype, nelem):
