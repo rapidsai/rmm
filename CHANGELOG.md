@@ -9,6 +9,7 @@
 
 - PR #354 Add CMake option for per-thread default stream
 - PR #350 Add .clang-format file & format all files
+- PR #358 Fix typo in `rmm_cupy_allocator` docstring
 - PR #357 Add Docker 19 support to local gpuci build
 
 ## Bug Fixes
