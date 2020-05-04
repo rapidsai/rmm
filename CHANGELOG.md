@@ -10,10 +10,11 @@
 - PR #354 Add CMake option for per-thread default stream
 - PR #350 Add .clang-format file & format all files
 - PR #358 Fix typo in `rmm_cupy_allocator` docstring
+- PR #357 Add Docker 19 support to local gpuci build
 
 ## Bug Fixes
-- PR #346 Add clearer exception message when RMM_LOG_FILE is unset
 
+- PR #346 Add clearer exception message when RMM_LOG_FILE is unset
 - PR #347 Mark rmmFinalizeWrapper nogil
 - PR #348 Fix unintentional use of pool-managed resource.
 
@@ -62,6 +63,7 @@
 - PR #334 Replace `rmm_allocator` for Thrust allocations
 
 ## Bug Fixes
+
 - PR #298 Remove RMM_CUDA_TRY from cuda_event_timer destructor
 - PR #299 Fix assert condition blocking debug builds
 - PR #300 Fix host mr_tests compile error
