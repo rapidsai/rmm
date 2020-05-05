@@ -20,17 +20,28 @@
 #include <rmm/detail/error.hpp>
 
 #include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/stdout_sinks.h>
 #include <spdlog/spdlog.h>
 #include <sstream>
 #include <memory>
 
 namespace rmm {
 namespace mr {
+
+/**
+ * @brief Output location of the log.
+ */
+enum class LogLocation {
+  FILE = 1,
+  STDOUT = 2,
+  STDERR = 3
+};
+
 /**
  * @brief Resource that uses `Upstream` to allocate memory and logs information
  * about the requested allocation/deallocations.
  *
- * An instance of this resource can be constructured with an existing, upstream
+ * An instance of this resource can be constructed with an existing, upstream
  * resource in order to satisfy allocation requests and log
  * allocation/deallocation activity.
  *
@@ -59,14 +70,28 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @param filename Name of file to write log info. If not specified, retrieves
    * the file name from the environment variable "RMM_LOG_FILE".
    */
-  logging_resource_adaptor(Upstream* upstream, std::string const& filename =
-                                                   get_default_filename())
-      : upstream_{upstream},
-        logger_{std::make_shared<spdlog::logger>(
-            "RMM", std::make_shared<spdlog::sinks::basic_file_sink_mt>(
-                       filename, true /*truncate file*/))} {
+  logging_resource_adaptor(Upstream* upstream,
+                           LogLocation location = LogLocation::FILE,
+                           std::string const& filename = {})
+      : upstream_{upstream} {
     RMM_EXPECTS(nullptr != upstream,
                 "Unexpected null upstream resource pointer.");
+
+    switch (location) {
+      case LogLocation::FILE:
+        logger_ = std::make_shared<spdlog::logger>(
+            "RMM", std::make_shared<spdlog::sinks::basic_file_sink_mt>(
+                filename.empty() ? get_default_filename() : filename, true /*truncate file*/));
+        break;
+      case LogLocation::STDOUT:
+        logger_ = std::make_shared<spdlog::logger>(
+            "RMM", std::make_shared<spdlog::sinks::stdout_sink_mt>());
+        break;
+      case LogLocation::STDERR:
+        logger_ = std::make_shared<spdlog::logger>(
+            "RMM", std::make_shared<spdlog::sinks::stderr_sink_mt>());
+        break;
+    }
 
     auto const csv_header{"Time,Action,Pointer,Size,Stream"};
     logger_->set_pattern("%v");
@@ -99,11 +124,6 @@ class logging_resource_adaptor final : public device_memory_resource {
   bool supports_get_mem_info() const noexcept override { return upstream_->supports_streams(); }
 
  private:
-  // make_logging_adaptor needs access to private get_default_filename
-  template <typename T>
-  friend logging_resource_adaptor<T> make_logging_adaptor(
-      T* upstream, std::string const& filename);
-
   /**
    * @brief Return the value of the environment variable RMM_LOG_FILE.
    * 
@@ -231,9 +251,9 @@ class logging_resource_adaptor final : public device_memory_resource {
 template <typename Upstream>
 logging_resource_adaptor<Upstream> make_logging_adaptor(
     Upstream* upstream,
-    std::string const& filename =
-        logging_resource_adaptor<Upstream>::get_default_filename()) {
-  return logging_resource_adaptor<Upstream>{upstream, filename};
+    LogLocation location = LogLocation::FILE,
+    std::string const& filename = {}) {
+  return logging_resource_adaptor<Upstream>{upstream, location, filename};
 }
 
 }  // namespace mr
