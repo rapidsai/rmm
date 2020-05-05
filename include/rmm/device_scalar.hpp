@@ -45,8 +45,7 @@ class device_scalar {
    * @note This device_scalar is only safe to access in kernels and copies on the specified CUDA stream,
    * or on another stream only if a dependency is enforced (e.g. using `cudaStreamWaitEvent()`).
    *
-   * @throws `rmm::bad_alloc` if allocating the device memory for `initial_value` fails.
-   * @throws `rmm::cuda_error` if copying `initial_value` to device memory fails.
+   * @throws `rmm::bad_alloc` if allocating the device memory fails.
    *
    * @param stream Stream on which to perform asynchronous allocation.
    * @param mr Optional, resource with which to allocate.
@@ -112,8 +111,8 @@ class device_scalar {
    *
    * Does not synchronize `stream`.
    * 
-   * @throws `rmm::cuda_error` if copying `host_value` to device memory fails
-   * @throws `rmm::cuda_error` if synchronizing `stream` fails
+   * @throws `rmm::cuda_error` if copying `host_value` to device memory fails.
+   * @throws `rmm::cuda_error` if synchronizing `stream` fails.
    *
    * @param host_value The host value which will be copied to device
    * @param stream CUDA stream on which to perform the copy
