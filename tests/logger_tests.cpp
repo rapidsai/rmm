@@ -50,7 +50,7 @@ TEST(Adaptor, first) {
   rmm::mr::cuda_memory_resource upstream;
 
   rmm::mr::logging_resource_adaptor<rmm::mr::cuda_memory_resource> log_mr{
-      &upstream, rmm::mr::LogLocation::FILE, "logs/test1.txt"};
+      &upstream, "logs/test1.txt"};
 
   auto p = log_mr.allocate(100);
   log_mr.deallocate(p, 100);
@@ -59,8 +59,7 @@ TEST(Adaptor, first) {
 TEST(Adaptor, factory) {
   rmm::mr::cuda_memory_resource upstream;
 
-  auto log_mr = rmm::mr::make_logging_adaptor(
-      &upstream, rmm::mr::LogLocation::FILE, "logs/test2.txt");
+  auto log_mr = rmm::mr::make_logging_adaptor(&upstream, "logs/test2.txt");
 
   auto p = log_mr.allocate(100);
   log_mr.deallocate(p, 100);
@@ -89,7 +88,7 @@ TEST(Adaptor, EnviromentPath) {
 TEST(Adaptor, STDOUT) {
   rmm::mr::cuda_memory_resource upstream;
 
-  auto log_mr = rmm::mr::make_logging_adaptor(&upstream, rmm::mr::LogLocation::STDOUT);
+  auto log_mr = rmm::mr::make_logging_adaptor(&upstream, std::cout);
 
   auto p = log_mr.allocate(100);
   log_mr.deallocate(p, 100);
@@ -98,7 +97,7 @@ TEST(Adaptor, STDOUT) {
 TEST(Adaptor, STDERR) {
   rmm::mr::cuda_memory_resource upstream;
 
-  auto log_mr = rmm::mr::make_logging_adaptor(&upstream, rmm::mr::LogLocation::STDERR);
+  auto log_mr = rmm::mr::make_logging_adaptor(&upstream, std::cerr);
 
   auto p = log_mr.allocate(100);
   log_mr.deallocate(p, 100);
