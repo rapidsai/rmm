@@ -18,4 +18,7 @@
 
 #include <rmm/device_uvector.hpp>
 
-TEST(First, First){}
+TEST(First, First){
+
+    rmm::device_uvector<int> uv;
+}
