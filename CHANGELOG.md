@@ -61,6 +61,7 @@
 - PR #326 Sync only on copy construction
 - PR #308 Fix typo in README
 - PR #334 Replace `rmm_allocator` for Thrust allocations
+- PR #345 Remove stream synchronization from `device_scalar` constructor and `set_value`
 
 ## Bug Fixes
 
