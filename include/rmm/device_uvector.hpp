@@ -53,6 +53,16 @@ class device_uvector {
                           rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
     : _storage{size * sizeof(T), stream, mr}, _size{size} {}
 
+  device_buffer
+  release() noexcept {
+    _size = 0;
+    return std::move(_storage);
+  }
+
+  /**
+   * @brief Returns pointer to underlying device memory storage.
+   * 
+   */
   pointer
   data() noexcept {
     return static_cast<pointer>(_storage.data());
