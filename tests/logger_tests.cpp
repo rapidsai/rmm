@@ -84,3 +84,34 @@ TEST(Adaptor, EnviromentPath) {
   auto p = log_mr.allocate(100);
   log_mr.deallocate(p, 100);
 }
+
+TEST(Adaptor, STDOUT) {
+  testing::internal::CaptureStdout();
+
+  rmm::mr::cuda_memory_resource upstream;
+
+  auto log_mr = rmm::mr::make_logging_adaptor(&upstream, std::cout);
+
+  auto p = log_mr.allocate(100);
+  log_mr.deallocate(p, 100);
+
+  std::string output = testing::internal::GetCapturedStdout();
+  std::string header = output.substr(0, output.find("\n"));
+  ASSERT_EQ(header, "Time,Action,Pointer,Size,Stream");
+}
+
+TEST(Adaptor, STDERR) {
+  testing::internal::CaptureStderr();
+
+  rmm::mr::cuda_memory_resource upstream;
+
+  auto log_mr = rmm::mr::make_logging_adaptor(&upstream, std::cerr);
+
+  auto p = log_mr.allocate(100);
+  log_mr.deallocate(p, 100);
+
+  std::string output = testing::internal::GetCapturedStderr();
+  std::string header = output.substr(0, output.find("\n"));
+  ASSERT_EQ(header, "Time,Action,Pointer,Size,Stream");
+}
+
