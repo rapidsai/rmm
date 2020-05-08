@@ -81,62 +81,6 @@ cdef caller_pair _get_caller() except *:
     return caller_pair(file, line)
 
 
-# API Functions
-def rmm_initialize(
-        allocation_mode, initial_pool_size, devices, enable_logging
-):
-    """
-    Initializes the RMM library by calling the librmm functions via Cython
-    """
-    cdef rmmOptions_t opts = rmmOptions_t()
-    opts.allocation_mode = <rmmAllocationMode_t>allocation_mode
-    opts.initial_pool_size = <size_t>initial_pool_size
-    opts.enable_logging = <bool>enable_logging
-    opts.devices = <vector[int]>devices
-
-    with nogil:
-        rmm_error = rmmInitialize(
-            <rmmOptions_t *>&opts
-        )
-
-    check_error(rmm_error)
-
-    return 0
-
-
-def rmm_finalize():
-    """
-    Finalizes the RMM library by calling the librmm functions via Cython
-    """
-    with nogil:
-        rmm_error = rmmFinalize()
-
-    check_error(rmm_error)
-
-    return 0
-
-
-cdef void _rmmFinalizeWrapper ():
-    rmmFinalize()
-
-
-def register_atexit_finalize():
-    atexit(&_rmmFinalizeWrapper)
-
-
-def rmm_is_initialized():
-    """
-    Returns True if RMM has been initialized, false otherwise by calling the
-    librmm functions via Cython
-    """
-    with nogil:
-        result = rmmIsInitialized(
-            <rmmOptions_t *>NULL
-        )
-
-    return result
-
-
 def rmm_csv_log():
     """
     Returns a CSV log of all events logged by RMM, if logging is enabled by

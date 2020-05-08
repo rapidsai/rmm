@@ -53,12 +53,6 @@ def test_rmm_modes(dtype, nelem, managed, pool):
     array_tester(dtype, nelem)
 
 
-def test_uninitialized():
-    rmm._finalize()
-    assert not rmm.is_initialized()
-    rmm.reinitialize()  # so further tests will pass
-
-
 @pytest.mark.parametrize("dtype", _dtypes)
 @pytest.mark.parametrize("nelem", _nelems)
 def test_rmm_csv_log(dtype, nelem):
@@ -268,12 +262,3 @@ def test_rmm_getinfo():
     assert meminfo.free >= 0
     assert meminfo.total >= 0
     assert meminfo.free <= meminfo.total
-
-
-def test_rmm_getinfo_uninitialized():
-    rmm._finalize()
-
-    with pytest.raises(rmm.RMMError):
-        rmm.get_info()
-
-    rmm.reinitialize()

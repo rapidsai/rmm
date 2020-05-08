@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import ctypes
-from enum import IntEnum
 
 import numpy as np
 from numba import cuda
@@ -28,10 +27,7 @@ class RMMError(Exception):
         super(RMMError, self).__init__(msg)
 
 
-class rmm_allocation_mode(IntEnum):
-    CudaDefaultAllocation = (0,)
-    PoolAllocation = (1,)
-    CudaManagedMemory = (2,)
+_memory_resource = None
 
 
 # API Functions
@@ -45,35 +41,30 @@ def _initialize(
     """
     Initializes RMM library using the options passed
     """
-    allocation_mode = 0
-
-    if pool_allocator:
-        allocation_mode |= rmm_allocation_mode.PoolAllocation
-    if managed_memory:
-        allocation_mode |= rmm_allocation_mode.CudaManagedMemory
+    global _memory_resource
 
     if not pool_allocator:
-        initial_pool_size = 0
-    elif pool_allocator and initial_pool_size is None:
-        initial_pool_size = 0
-    elif pool_allocator and initial_pool_size == 0:
-        initial_pool_size = 1
+        if not managed_memory:
+            kind = "cuda"
+        else:
+            kind = "managed"
+    else:
+        if not managed_memory:
+            kind = "cnmem"
+        else:
+            kind = "cnmem_managed"
 
-    if devices is None:
-        devices = [0]
-    elif isinstance(devices, int):
-        devices = [devices]
+        if initial_pool_size is None:
+            initial_pool_size = 0
 
-    return librmm.rmm_initialize(
-        allocation_mode, initial_pool_size, devices, logging
+        if devices is None:
+            devices = [0]
+        elif isinstance(devices, int):
+            devices = [devices]
+
+    _memory_resource = librmm.set_default_resource(
+        kind, initial_pool_size, devices
     )
-
-
-def _finalize():
-    """
-    Finalizes the RMM library, freeing all allocated memory
-    """
-    return librmm.rmm_finalize()
 
 
 def reinitialize(
@@ -106,8 +97,9 @@ def reinitialize(
         (alloc, free, realloc).
         This has significant performance impact.
     """
-    _finalize()
-    return _initialize(
+    global _memory_resource
+    _memory_resource = None
+    _initialize(
         pool_allocator=pool_allocator,
         managed_memory=managed_memory,
         initial_pool_size=initial_pool_size,
@@ -120,7 +112,8 @@ def is_initialized():
     """
     Returns true if RMM has been initialized, false otherwise
     """
-    return librmm.rmm_is_initialized()
+    global _memory_resource
+    return _memory_resource is not None
 
 
 def csv_log():
@@ -260,26 +253,3 @@ def rmm_cupy_allocator(nbytes):
     ptr = cupy.cuda.memory.MemoryPointer(mem, 0)
 
     return ptr
-
-
-def _make_finalizer(handle, stream):
-    """
-    Factory to make the finalizer function.
-    We need to bind *handle* and *stream* into the actual finalizer, which
-    takes no args.
-    """
-
-    def finalizer():
-        """
-        Invoked when the MemoryPointer is freed
-        """
-        librmm.rmm_free(handle, stream)
-
-    return finalizer
-
-
-def _register_atexit_finalize():
-    """
-    Registers rmmFinalize() with ``std::atexit``.
-    """
-    librmm.register_atexit_finalize()
