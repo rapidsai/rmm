@@ -2,6 +2,7 @@
 
 ## New Features
 
+- PR #362 Add spdlog as a dependency in the conda package
 - PR #360 Support logging to stdout/stderr
 - PR #341 Enable logging
 - PR #343 Add in option to statically link against cudart
