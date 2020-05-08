@@ -254,11 +254,3 @@ def test_rmm_cupy_allocator():
     cupy.cuda.set_allocator(rmm.rmm_cupy_allocator)
     a = cupy.arange(10)
     assert isinstance(a.data.mem._owner, rmm.DeviceBuffer)
-
-
-def test_rmm_getinfo():
-    meminfo = rmm.get_info()
-    # Basic sanity checks of returned values
-    assert meminfo.free >= 0
-    assert meminfo.total >= 0
-    assert meminfo.free <= meminfo.total

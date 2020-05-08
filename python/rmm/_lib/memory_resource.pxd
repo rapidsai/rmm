@@ -1,5 +1,6 @@
 from libcpp cimport bool
 from libcpp.vector cimport vector
+from libcpp.pair cimport pair
 
 from rmm._lib.lib cimport cudaStream_t
 
@@ -12,12 +13,12 @@ cdef extern from "rmm/mr/device/device_memory_resource.hpp" \
 cdef extern from "rmm/mr/device/cuda_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass cuda_memory_resource(device_memory_resource):
-        bool supports_streams()
+        pass
 
 cdef extern from "rmm/mr/device/managed_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass managed_memory_resource(device_memory_resource):
-        bool supports_streams()
+        pass
 
 cdef extern from "rmm/mr/device/cnmem_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
@@ -28,7 +29,6 @@ cdef extern from "rmm/mr/device/cnmem_memory_resource.hpp" \
             size_t initial_pool_size,
             const vector[int]& devices
         )
-        bool supports_streams()
 
 cdef extern from "rmm/mr/device/cnmem_managed_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
