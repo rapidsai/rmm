@@ -19,6 +19,9 @@
 #include <rmm/device_buffer.hpp>
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+#include "rmm/thrust_rmm_allocator.h"
+
+#include <thrust/uninitialized_fill.h>
 
 namespace rmm {
 
@@ -80,6 +83,23 @@ class device_uvector {
                           cudaStream_t stream                 = 0,
                           rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
     : _storage{size * sizeof(T), stream, mr}, _size{size} {}
+
+  /**
+   * @brief Construct a new `device_uvector` with the specified number of elements initialized to
+   * the specified value.
+   *
+   * @param size The number of elements
+   * @param v The value used to initialize all elements
+   * @param stream The stream on which to perform the allocation and initialization
+   * @param mr The resource used to allocate the device storage
+   */
+  device_uvector(std::size_t size,
+                 value_type const& v,
+                 cudaStream_t stream                 = 0,
+                 rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
+    : device_uvector(size, stream, mr) {
+    thrust::uninitialized_fill(rmm::exec_policy(stream)->on(stream), begin(), end(), v);
+  }
 
   /**
    * @brief Construct a new device_uvector by deep copying the contents of another `device_uvector`.
