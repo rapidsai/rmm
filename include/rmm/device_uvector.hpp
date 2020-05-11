@@ -22,6 +22,11 @@
 
 namespace rmm {
 
+/**
+ * @brief An *uninitialized* vector of elements in device memory.
+ *
+ * @tparam T Element type
+ */
 template <typename T>
 class device_uvector {
   static_assert(std::is_trivially_copyable<T>::value,
@@ -43,69 +48,137 @@ class device_uvector {
   device_uvector& operator=(device_uvector const&) = default;
   device_uvector& operator=(device_uvector&&) = default;
 
-  explicit device_uvector(device_uvector const& other,
-                          cudaStream_t stream                 = 0,
-                          rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
-    : _storage{other.storage, stream, mr}, _size{other.size()} {}
-
+  /**
+   * @brief Construct a new `device_uvector` with sufficient uninitialized storage for `size`
+   * elements.
+   *
+   * Elements are uninitialized. Reading an element before it is initialized results in undefined
+   * behavior.
+   *
+   * @param size The number of elements to allocate storage for
+   * @param stream The stream on which to perform the allocation
+   * @param mr The resource used to allocate the device storage
+   */
   explicit device_uvector(std::size_t size,
                           cudaStream_t stream                 = 0,
                           rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
     : _storage{size * sizeof(T), stream, mr}, _size{size} {}
 
-  device_buffer
-  release() noexcept {
-    _size = 0;
-    return std::move(_storage);
-  }
+  /**
+   * @brief Construct a new device_uvector by deep copying the contents of another `device_uvector`.
+   *
+   * Elements are copied as if it were performed by `memcpy`, i.e., `T`'s copy constructor is not
+   * invoked.
+   *
+   * @param other The vector to copy from
+   * @param stream The stream on which to perform the copy
+   * @param mr The resource used to allocate device memory for the new vector
+   */
+  explicit device_uvector(device_uvector const& other,
+                          cudaStream_t stream                 = 0,
+                          rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
+    : _storage{other.storage, stream, mr}, _size{other.size()} {}
 
   /**
-   * @brief Returns pointer to underlying device memory storage.
-   * 
+   * @brief Returns pointer to underlying device storage.
+   *
+   * @return Raw pointer to element storage in device memory.
    */
   pointer
   data() noexcept {
     return static_cast<pointer>(_storage.data());
   }
 
+  /**
+   * @brief Returns const pointer to underlying device storage.
+   *
+   * @return const_pointer Raw const pointer to element storage in device memory.
+   */
   const_pointer
   data() const noexcept {
     return static_cast<const_pointer>(_storage.data());
   }
 
+  /**
+   * @brief Returns an iterator to the first element.
+   *
+   * @return Iterator to the first element.
+   */
   iterator
   begin() noexcept {
     return data();
   }
 
+  /**
+   * @brief Returns an iterator to the first element.
+   *
+   * @return Iterator to the first element.
+   */
   const_iterator
   begin() const noexcept {
     return data();
   }
 
+  /**
+   * @brief Returns an iterator to the element following the last element of the vector.
+   *
+   * The element referenced by `end()` is a placeholder and dereferencing it results in undefined
+   * behavior.
+   *
+   * @return Iterator to one past the last element.
+   */
   iterator
   end() noexcept {
     return data() + size();
   }
 
+  /**
+   * @brief Returns an iterator to the element following the last element of the vector.
+   *
+   * The element referenced by `end()` is a placeholder and dereferencing it results in undefined
+   * behavior.
+   *
+   * @return Iterator to one past the last element.
+   */
   const_iterator
   end() const noexcept {
     return data() + size();
   }
 
+  /**
+   * @brief Returns the number of elements in the vector.
+   *
+   * @return The number of elements.
+   */
   std::size_t
   size() const noexcept {
     return _size;
   }
 
+  /**
+   * @brief Returns if the vector contains no elements, i.e., `size() == 0`.
+   *
+   * @return true The vector is empty
+   * @return false The vector is not empty
+   */
   bool
   is_empty() const noexcept {
     return size() == 0;
   }
 
+  /**
+   * @brief Returns pointer to the resource used to allocate and deallocate the device storage.
+   *
+   * @return Pointer to underlying resource
+   */
+  mr::device_memory_resource*
+  memory_resource() const noexcept {
+    return _storage.memory_resource();
+  }
+
  private:
-  device_buffer _storage{};
-  std::size_t _size{};
+  device_buffer _storage{};  ///< Device memory storage for vector elements
+  std::size_t _size{};       ///< The number of elements in the vector
 };
 
 }  // namespace rmm
