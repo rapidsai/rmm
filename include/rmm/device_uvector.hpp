@@ -25,7 +25,24 @@ namespace rmm {
 /**
  * @brief An *uninitialized* vector of elements in device memory.
  *
- * @tparam T Element type
+ * Similar to a `thrust::device_vector`, `device_uvector` is random access container of elements
+ * stored contiguously in device memory. However, unlike `thrust::device_vector`, `device_uvector`
+ * does *not* default initialize the vector elements. Initialization is only performed when
+ * explicitly requested via appropriate constructors.
+ *
+ * Avoiding default initialization improves performance by eliminating the kernel launch required to
+ * default initialize the elements. This initialization is often unnecessary, e.g., when the vector
+ * is created to hold some output from some operation.
+ *
+ * However, this restricts the element type `T` to only trivially copyable types. In short,
+ * trivially copyable types can be safely copied with `memcpy`. For more information, see
+ * https://en.cppreference.com/w/cpp/types/is_trivially_copyable.
+ *
+ * Another key difference over `thrust::device_vector` is that all operations that invoke
+ * allocation, kernels, or memcpys take a CUDA stream parameter to indicate on which stream the
+ * operation will be performed.
+ *
+ * @tparam T Trivially copyable element type
  */
 template <typename T>
 class device_uvector {
