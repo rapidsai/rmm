@@ -23,13 +23,20 @@ template <typename T>
 struct TypedUVectorTest : ::testing::Test {};
 
 // An example, non-primitive, trivially copyable type
-struct trivial_type{
-    int v;
-    float f;
+struct trivial_type {
+  int v;
+  float f;
 };
 
 using TestTypes = ::testing::Types<int32_t, float, trivial_type>;
 
 TYPED_TEST_CASE(TypedUVectorTest, TestTypes);
 
-TYPED_TEST(TypedUVectorTest, First) { rmm::device_uvector<TypeParam> uv; }
+TYPED_TEST(TypedUVectorTest, DefaultConstructed) {
+  rmm::device_uvector<TypeParam> uv;
+  EXPECT_EQ(uv.size(), 0);
+  EXPECT_EQ(uv.data(), nullptr);
+  EXPECT_EQ(uv.begin(), uv.end());
+  EXPECT_TRUE(uv.is_empty());
+  EXPECT_NE(uv.memory_resource(), nullptr);
+}
