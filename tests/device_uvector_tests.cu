@@ -22,21 +22,43 @@
 template <typename T>
 struct TypedUVectorTest : ::testing::Test {};
 
-// An example, non-primitive, trivially copyable type
-struct trivial_type {
-  int v;
-  float f;
-};
-
-using TestTypes = ::testing::Types<int32_t, float, trivial_type>;
+using TestTypes = ::testing::Types<int32_t, float>;
 
 TYPED_TEST_CASE(TypedUVectorTest, TestTypes);
 
-TYPED_TEST(TypedUVectorTest, DefaultConstructed) {
-  rmm::device_uvector<TypeParam> uv;
+TYPED_TEST(TypedUVectorTest, DefaultConstructor) {
+  rmm::device_uvector<TypeParam> uv{};
   EXPECT_EQ(uv.size(), 0);
   EXPECT_EQ(uv.data(), nullptr);
   EXPECT_EQ(uv.begin(), uv.end());
   EXPECT_TRUE(uv.is_empty());
   EXPECT_NE(uv.memory_resource(), nullptr);
 }
+
+TYPED_TEST(TypedUVectorTest, ZeroSizeConstructor){
+    rmm::device_uvector<TypeParam> uv(0);
+    EXPECT_EQ(uv.size(), 0);
+    EXPECT_EQ(uv.data(), nullptr);
+    EXPECT_EQ(uv.end(), uv.begin());
+    EXPECT_TRUE(uv.is_empty());
+}
+
+TYPED_TEST(TypedUVectorTest, NonZeroSizeConstructor){
+    rmm::device_uvector<TypeParam> uv(12345);
+    EXPECT_EQ(uv.size(), 12345);
+    EXPECT_NE(uv.data(), nullptr);
+    EXPECT_EQ(uv.end(), uv.begin() + uv.size());
+    EXPECT_FALSE(uv.is_empty());
+}
+
+
+/*
+// This won't work until RMM has a strongly typed stream object
+TYPED_TEST(TypedUVectorTest, ZeroInitConstuctor){
+    rmm::device_uvector<TypeParam> uv(12345, 0);
+    EXPECT_EQ(uv.size(), 12345);
+    EXPECT_NE(uv.data(), nullptr);
+    EXPECT_EQ(uv.end(), uv.begin() + uv.size());
+    EXPECT_FALSE(uv.is_empty());
+}
+*/
