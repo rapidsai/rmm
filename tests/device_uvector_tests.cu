@@ -15,10 +15,21 @@
  */
 
 #include "gtest/gtest.h"
+#include "gtest/internal/gtest-type-util.h"
 
 #include <rmm/device_uvector.hpp>
 
-TEST(First, First){
+template <typename T>
+struct TypedUVectorTest : ::testing::Test {};
 
-    rmm::device_uvector<int> uv;
-}
+// An example, non-primitive, trivially copyable type
+struct trivial_type{
+    int v;
+    float f;
+};
+
+using TestTypes = ::testing::Types<int32_t, float, trivial_type>;
+
+TYPED_TEST_CASE(TypedUVectorTest, TestTypes);
+
+TYPED_TEST(TypedUVectorTest, First) { rmm::device_uvector<TypeParam> uv; }
