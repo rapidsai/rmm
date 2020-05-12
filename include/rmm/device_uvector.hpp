@@ -121,6 +121,51 @@ class device_uvector {
     : _storage{other.storage, stream, mr}, _size{other.size()} {}
 
   /**
+   * @brief Resizes the vector to contain `new_size` elements.
+   *
+   * If `new_size > size()`, the additional elements are uninitialized.
+   *
+   * If `new_size < capacity()`, no action is taken other than updating the value of `size()`. No
+   * memory is allocated nor copied. `shrink_to_fit()` may be used to force deallocation of unused
+   * memory.
+   *
+   * If `new_size > capacity()`, elements are copied as if by mempcy to a new allocation.
+   *
+   * The invariant `size() <= capacity()` holds.
+   *
+   * @param new_size The desired number of elements
+   * @param stream The stream on which to perform the allocation/copy (if any)
+   */
+  void
+  resize(std::size_t new_size, cudaStream_t stream = 0) {
+    _storage.resize(new_size * sizeof(value_type), stream);
+    _size = new_size;
+  }
+
+  /**
+   * @brief Forces deallocation of unused device memory.
+   *
+   * If `capacity() > size()`, reallocates and copies vector contents to eliminate unused memory.
+   *
+   * @param stream Stream on which to perform allocation and copy
+   */
+  void
+  shrink_to_fit(cudaStream_t stream = 0) {
+    _storage.shrink_to_fit(stream);
+  }
+
+  /**
+   * @brief Returns the number of elements that can be held in currently allocated storage.
+   *
+   * @return std::size_t The number of elements that can be stored without requiring a new
+   * allocation.
+   */
+  std::size_t
+  capacity() const noexcept {
+    return _storage.capacity() / sizeof(value_type);
+  }
+
+  /**
    * @brief Returns pointer to underlying device storage.
    *
    * @return Raw pointer to element storage in device memory.
