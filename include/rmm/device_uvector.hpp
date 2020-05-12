@@ -98,7 +98,11 @@ class device_uvector {
                  cudaStream_t stream                 = 0,
                  rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
     : device_uvector(size, stream, mr) {
-    thrust::uninitialized_fill(rmm::exec_policy(stream)->on(stream), begin(), end(), v);
+    if (std::is_integral<T>::value && (0 == v)) {
+      RMM_CUDA_TRY(cudaMemsetAsync(data(), 0, this->size() * sizeof(T), stream));
+    } else {
+      thrust::uninitialized_fill(rmm::exec_policy(stream)->on(stream), begin(), end(), v);
+    }
   }
 
   /**
