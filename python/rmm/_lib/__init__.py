@@ -2,4 +2,8 @@
 
 from .device_buffer import DeviceBuffer
 from .lib import *
-from .memory_resource import _set_default_resource as set_default_resource
+from .memory_resource import (
+    _set_default_resource as set_default_resource,
+    flush_logs,
+    is_initialized,
+)

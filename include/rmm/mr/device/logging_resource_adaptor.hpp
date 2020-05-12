@@ -98,6 +98,11 @@ class logging_resource_adaptor final : public device_memory_resource {
    */
   bool supports_get_mem_info() const noexcept override { return upstream_->supports_streams(); }
 
+  /**
+   * @brief Flush logger contents.
+   */
+  void flush() { logger_->flush(); }
+
  private:
   /**
    * @brief Allocates memory of size at least `bytes` using the upstream

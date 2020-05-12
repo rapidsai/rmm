@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import ctypes
+import os
 
 import numpy as np
 from numba import cuda
@@ -27,9 +28,6 @@ class RMMError(Exception):
         super(RMMError, self).__init__(msg)
 
 
-_memory_resource = None
-
-
 # API Functions
 def _initialize(
     pool_allocator=False,
@@ -37,12 +35,11 @@ def _initialize(
     initial_pool_size=None,
     devices=0,
     logging=False,
+    log_file_name=None,
 ):
     """
     Initializes RMM library using the options passed
     """
-    global _memory_resource
-
     if not pool_allocator:
         if not managed_memory:
             kind = "cuda"
@@ -62,8 +59,8 @@ def _initialize(
         elif isinstance(devices, int):
             devices = [devices]
 
-    _memory_resource = librmm.set_default_resource(
-        kind, initial_pool_size, devices
+    librmm.set_default_resource(
+        kind, initial_pool_size, devices, logging, log_file_name
     )
 
 
@@ -73,6 +70,7 @@ def reinitialize(
     initial_pool_size=None,
     devices=0,
     logging=False,
+    log_file_name=None,
 ):
     """
     Finalizes and then initializes RMM using the options passed. Using memory
@@ -96,15 +94,25 @@ def reinitialize(
         If True, enable run-time logging of all memory events
         (alloc, free, realloc).
         This has significant performance impact.
+    log_file_name : str
+        Name of the log file. If not specified, the environment variable
+        RMM_LOG_FILE is used. A TypeError is thrown if neither is available.
     """
-    global _memory_resource
-    _memory_resource = None
+    if logging and not log_file_name:
+        log_file_name = os.getenv("RMM_LOG_FILE")
+        if not log_file_name:
+            raise TypeError(
+                "RMM log file must be specified either using "
+                "log_file_name= argument or RMM_LOG_FILE "
+                "environment variable"
+            )
     _initialize(
         pool_allocator=pool_allocator,
         managed_memory=managed_memory,
         initial_pool_size=initial_pool_size,
         devices=devices,
         logging=logging,
+        log_file_name=log_file_name,
     )
 
 
@@ -112,15 +120,7 @@ def is_initialized():
     """
     Returns true if RMM has been initialized, false otherwise
     """
-    global _memory_resource
-    return _memory_resource is not None
-
-
-def csv_log():
-    """
-    Returns a CSV log of all events logged by RMM, if logging is enabled
-    """
-    return librmm.rmm_csv_log()
+    return librmm.is_initialized()
 
 
 def device_array_from_ptr(ptr, nelem, dtype=np.float, finalizer=None):

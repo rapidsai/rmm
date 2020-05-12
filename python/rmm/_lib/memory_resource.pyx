@@ -1,4 +1,5 @@
 from libcpp.memory cimport unique_ptr, make_unique
+from libcpp.string cimport string
 
 cdef class MemoryResource:
     cdef device_memory_resource* c_obj
@@ -28,19 +29,66 @@ cdef class CNMemManagedMemoryResource(MemoryResource):
             devices
         )
 
+cdef class LoggingResourceAdaptor(MemoryResource):
+    cdef MemoryResource upstream
 
-def _set_default_resource(kind, initial_pool_size=0, devices=[]):
-    cdef MemoryResource mr
+    def __cinit__(self, MemoryResource upstream, string log_file_name):
+        self.c_obj = new logging_resource_adaptor[device_memory_resource](
+            upstream.c_obj,
+            log_file_name
+        )
+        self.upstream = upstream
+
+    def flush(self):
+        (
+            <logging_resource_adaptor[device_memory_resource]*>
+            self.c_obj
+        )[0].flush()
+
+
+cdef MemoryResource mr
+
+
+def _set_default_resource(
+    kind,
+    initial_pool_size=0,
+    devices=[],
+    logging=False,
+    log_file_name=None
+):
+    global mr
+
+    mr = MemoryResource()
+
     if kind == "cuda":
-        mr = CudaMemoryResource()
+        typ = CudaMemoryResource
+        args = ()
     elif kind == "managed":
-        mr = ManagedMemoryResource()
+        typ = ManagedMemoryResource
+        args = ()
     elif kind == "cnmem":
-        mr = CNMemMemoryResource(initial_pool_size, devices)
+        typ = CNMemMemoryResource
+        args = (initial_pool_size, devices)
     elif kind == "cnmem_managed":
-        mr = CNMemManagedMemoryResource(initial_pool_size, devices)
+        typ = CNMemManagedMemoryResource
+        args = (initial_pool_size, devices)
     else:
-        raise TypeError(f"Unsupported resource kinnd: {kind}")
+        raise TypeError(f"Unsupported resource kind: {kind}")
+
+    if logging:
+        mr = LoggingResourceAdaptor(typ(*args), log_file_name.encode())
+    else:
+        mr = typ(*args)
+
     cdef device_memory_resource* c_mr = mr.c_obj
     set_default_resource(c_mr)
-    return mr
+
+
+def is_initialized():
+    global mr
+    return mr.c_obj is not NULL
+
+
+def flush_logs():
+    global mr
+    mr.flush()

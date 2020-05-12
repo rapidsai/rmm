@@ -1,5 +1,6 @@
 import pickle
 import sys
+import tempfile
 from itertools import product
 
 import numpy as np
@@ -56,24 +57,22 @@ def test_rmm_modes(dtype, nelem, managed, pool):
 @pytest.mark.parametrize("dtype", _dtypes)
 @pytest.mark.parametrize("nelem", _nelems)
 def test_rmm_csv_log(dtype, nelem):
-    # data
-    h_in = np.full(nelem, 3.2, dtype)
 
-    d_in = rmm.to_device(h_in)
-    d_result = rmm.device_array_like(d_in)
+    with tempfile.NamedTemporaryFile() as fp:
+        rmm.reinitialize(logging=True, log_file_name=fp.name)
 
-    d_result.copy_to_device(d_in)
+        # data
+        h_in = np.full(nelem, 3.2, dtype)
 
-    csv = rmm.csv_log()
+        d_in = rmm.to_device(h_in)
+        d_result = rmm.device_array_like(d_in)
 
-    assert (
-        csv.find(
-            "Event Type,Device ID,Address,Stream,Size (bytes),"
-            "Free Memory,Total Memory,Current Allocs,Start,End,"
-            "Elapsed,Location"
-        )
-        >= 0
-    )
+        d_result.copy_to_device(d_in)
+        rmm._lib.flush_logs()
+
+        csv = fp.read()
+
+        assert csv.find(b"Time,Action,Pointer,Size,Stream") >= 0
 
 
 @pytest.mark.parametrize("size", [0, 5])

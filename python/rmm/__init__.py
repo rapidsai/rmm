@@ -19,7 +19,6 @@ from rmm._lib.device_pointer import DevicePointer as _DevicePointer
 from rmm.rmm import (
     RMMError,
     _initialize,
-    csv_log,
     device_array,
     device_array_from_ptr,
     device_array_like,
