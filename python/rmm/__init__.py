@@ -15,14 +15,12 @@
 import weakref
 
 from rmm._lib.device_buffer import DeviceBuffer
-from rmm._lib.device_pointer import DevicePointer as _DevicePointer
 from rmm.rmm import (
     RMMError,
     _initialize,
     device_array,
     device_array_from_ptr,
     device_array_like,
-    get_info,
     get_ipc_handle,
     is_initialized,
     reinitialize,

@@ -46,24 +46,10 @@ cdef extern from * nogil:
     cudaError_t cudaStreamSynchronize(cudaStream_t stream)
 
 
-cdef uintptr_t c_alloc(
-    size_t size,
-    cudaStream_t stream
-) except? <uintptr_t>NULL
-
-cdef rmmError_t c_free(
-    void *ptr,
-    cudaStream_t stream,
-    const char* file=*,
-    unsigned int line=*
-) except *
-
 cdef ptrdiff_t c_getallocationoffset(
     void *ptr,
     cudaStream_t stream
 )
-
-cdef caller_pair _get_caller() except *
 
 
 cdef extern from "rmm/rmm.h" nogil:
@@ -78,45 +64,8 @@ cdef extern from "rmm/rmm.h" nogil:
         RMM_ERROR_IO,
         N_RMM_ERROR,
 
-    ctypedef enum rmmAllocationMode_t:
-        CudaDefaultAllocation = 0,
-        PoolAllocation = 1,
-        CudaManagedMemory = 2,
-
-    cdef cppclass rmmOptions_t:
-        rmmOptions_t() except +
-        rmmAllocationMode_t allocation_mode
-        size_t initial_pool_size
-        bool enable_logging
-        vector[int] devices
-
-    cdef rmmError_t rmmInitialize(
-        rmmOptions_t *options
-    ) except +
-
-    cdef rmmError_t rmmFinalize() except +
-
-    cdef bool rmmIsInitialized(
-        rmmOptions_t *options
-    ) except +
-
     cdef const char * rmmGetErrorString(
         rmmError_t errcode
-    ) except +
-
-    cdef rmmError_t rmmAlloc(
-        void **ptr,
-        size_t size,
-        cudaStream_t stream,
-        const char* file,
-        unsigned int line
-    ) except +
-
-    cdef rmmError_t rmmFree(
-        void *ptr,
-        cudaStream_t stream,
-        const char* file,
-        unsigned int line
     ) except +
 
     cdef rmmError_t rmmGetAllocationOffset(
@@ -124,46 +73,3 @@ cdef extern from "rmm/rmm.h" nogil:
         void *ptr,
         cudaStream_t stream
     ) except +
-
-    cdef rmmError_t rmmGetInfo(
-        size_t *freeSize,
-        size_t *totalSize,
-        cudaStream_t stream
-    ) except +
-
-    cdef rmmError_t rmmWriteLog(
-        const char* filename
-    ) except +
-
-    cdef size_t rmmLogSize() except +
-
-    cdef rmmError_t rmmGetLog(
-        char* buffer,
-        size_t buffer_size
-    ) except +
-
-
-cdef extern from "rmm/rmm.hpp" namespace "rmm" nogil:
-
-    cdef rmmError_t alloc[T](
-        T** ptr,
-        size_t size,
-        cudaStream_t stream,
-        const char* file,
-        unsigned int line
-    ) except +
-
-    cdef rmmError_t free(
-        void* ptr,
-        cudaStream_t stream,
-        const char* file,
-        unsigned int line
-    ) except +
-
-    cdef cppclass Manager:
-        @staticmethod
-        rmmOptions_t getOptions() except +
-
-
-cdef extern from "cstdlib":
-    int atexit(void (*func)())
