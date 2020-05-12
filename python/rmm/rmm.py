@@ -15,6 +15,7 @@
 import ctypes
 from enum import IntEnum
 
+import numpy as np
 from numba import cuda
 from numba.cuda import HostOnlyCUDAMemoryManager, IpcHandle, MemoryPointer
 
@@ -128,6 +129,31 @@ def csv_log():
     Returns a CSV log of all events logged by RMM, if logging is enabled
     """
     return librmm.rmm_csv_log()
+
+
+def device_array_from_ptr(ptr, nelem, dtype=np.float, finalizer=None):
+    """
+    device_array_from_ptr(ptr, size, dtype=np.float, stream=0)
+
+    Create a Numba device array from a ptr, size, and dtype.
+    """
+    # Handle Datetime Column
+    if dtype == np.datetime64:
+        dtype = np.dtype("datetime64[ms]")
+    else:
+        dtype = np.dtype(dtype)
+
+    elemsize = dtype.itemsize
+    datasize = elemsize * nelem
+    shape = (nelem,)
+    strides = (elemsize,)
+    # note no finalizer -- freed externally!
+    ctx = cuda.current_context()
+    ptr = ctypes.c_uint64(int(ptr))
+    mem = cuda.driver.MemoryPointer(ctx, ptr, datasize, finalizer=finalizer)
+    return cuda.cudadrv.devicearray.DeviceNDArray(
+        shape, strides, dtype, gpu_data=mem
+    )
 
 
 def get_info(stream=0):

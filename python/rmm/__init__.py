@@ -22,6 +22,7 @@ from rmm.rmm import (
     _numba_memory_manager,
     _register_atexit_finalize,
     csv_log,
+    device_array_from_ptr,
     get_info,
     is_initialized,
     reinitialize,
