@@ -226,7 +226,7 @@ except Exception:
 
 def rmm_cupy_allocator(nbytes):
     """
-    A CuPy allocator that make use of RMM.
+    A CuPy allocator that makes use of RMM.
 
     Examples
     --------
