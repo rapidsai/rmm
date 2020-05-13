@@ -59,3 +59,21 @@ cdef extern from "rmm/mr/device/logging_resource_adaptor.hpp" \
         ) except +
         Upstream* get_upstream() except +
         void flush() except +
+
+cdef extern from "rmm/mr/device/pool_memory_resource.hpp" \
+        namespace "rmm::mr" nogil:
+    cdef cppclass pool_memory_resource[Upstream](device_memory_resource):
+        pool_memory_resource(
+            Upstream* upstream,
+            size_t initial_pool_size,
+            size_t maximum_pool_size
+        )
+
+cdef extern from "rmm/mr/device/fixed_size_memory_resource.hpp" \
+        namespace "rmm::mr" nogil:
+    cdef cppclass fixed_size_memory_resource[Upstream](device_memory_resource):
+        fixed_size_memory_resource(
+            Upstream* upstream,
+            size_t block_size,
+            size_t block_to_preallocate
+        )

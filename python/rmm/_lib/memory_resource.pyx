@@ -1,8 +1,10 @@
 from libcpp.memory cimport unique_ptr, make_unique
 from libcpp.string cimport string
 
+
 cdef class MemoryResource:
     cdef device_memory_resource* c_obj
+    cdef object __weakref__
 
     def __dealloc__(self):
         del self.c_obj
@@ -29,15 +31,49 @@ cdef class CNMemManagedMemoryResource(MemoryResource):
             devices
         )
 
+cdef class PoolMemoryResource(MemoryResource):
+    cdef MemoryResource _upstream
+
+    def __cinit__(
+            self,
+            MemoryResource upstream,
+            size_t initial_pool_size=~0,
+            size_t maximum_pool_size=~0
+    ):
+        self.c_obj = new pool_memory_resource[device_memory_resource](
+            upstream.c_obj,
+            initial_pool_size,
+            maximum_pool_size
+        )
+        self._upstream = upstream
+
+
+cdef class FixedSizeMemoryResource(MemoryResource):
+    cdef MemoryResource _upstream
+
+    def __cinit__(
+            self,
+            MemoryResource upstream,
+            size_t block_size=1<<20,
+            size_t blocks_to_preallocate=128
+    ):
+        self.c_obj = new pool_memory_resource[device_memory_resource](
+            upstream.c_obj,
+            block_size,
+            blocks_to_preallocate
+        )
+        self._upstream = upstream
+
+
 cdef class LoggingResourceAdaptor(MemoryResource):
-    cdef MemoryResource upstream
+    cdef MemoryResource _upstream
 
     def __cinit__(self, MemoryResource upstream, string log_file_name):
         self.c_obj = new logging_resource_adaptor[device_memory_resource](
             upstream.c_obj,
             log_file_name
         )
-        self.upstream = upstream
+        self._upstream = upstream
 
     def flush(self):
         (
@@ -46,6 +82,7 @@ cdef class LoggingResourceAdaptor(MemoryResource):
         )[0].flush()
 
 
+# Global memory resource:
 cdef MemoryResource mr
 
 
@@ -58,6 +95,7 @@ def _set_default_resource(
 ):
     global mr
 
+    # this ensures that previous mr is GC'd:
     mr = MemoryResource()
 
     if kind == "cuda":
@@ -92,3 +130,10 @@ def is_initialized():
 def flush_logs():
     global mr
     mr.flush()
+
+
+def current_memory_resource():
+    global mr
+
+    import weakref
+    return weakref.ref(mr)
