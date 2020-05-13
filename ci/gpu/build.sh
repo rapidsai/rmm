@@ -63,6 +63,7 @@ if hasArg --skip-tests; then
 else
     logger "Installing extra test dependencies..."
     conda install "cupy>=6.0.0"
+    conda install "numba>=0.49.0"
 
     logger "Check GPU usage..."
     nvidia-smi
