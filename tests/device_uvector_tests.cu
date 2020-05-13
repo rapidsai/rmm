@@ -22,7 +22,7 @@
 template <typename T>
 struct TypedUVectorTest : ::testing::Test {};
 
-using TestTypes = ::testing::Types<int32_t, float>;
+using TestTypes = ::testing::Types<int8_t, int32_t, uint64_t, float, double>;
 
 TYPED_TEST_CASE(TypedUVectorTest, TestTypes);
 
@@ -35,22 +35,79 @@ TYPED_TEST(TypedUVectorTest, DefaultConstructor) {
   EXPECT_NE(uv.memory_resource(), nullptr);
 }
 
-TYPED_TEST(TypedUVectorTest, ZeroSizeConstructor){
-    rmm::device_uvector<TypeParam> uv(0);
-    EXPECT_EQ(uv.size(), 0);
-    EXPECT_EQ(uv.data(), nullptr);
-    EXPECT_EQ(uv.end(), uv.begin());
-    EXPECT_TRUE(uv.is_empty());
+TYPED_TEST(TypedUVectorTest, ZeroSizeConstructor) {
+  rmm::device_uvector<TypeParam> uv(0);
+  EXPECT_EQ(uv.size(), 0);
+  EXPECT_EQ(uv.data(), nullptr);
+  EXPECT_EQ(uv.end(), uv.begin());
+  EXPECT_TRUE(uv.is_empty());
 }
 
-TYPED_TEST(TypedUVectorTest, NonZeroSizeConstructor){
-    rmm::device_uvector<TypeParam> uv(12345);
-    EXPECT_EQ(uv.size(), 12345);
-    EXPECT_NE(uv.data(), nullptr);
-    EXPECT_EQ(uv.end(), uv.begin() + uv.size());
-    EXPECT_FALSE(uv.is_empty());
+TYPED_TEST(TypedUVectorTest, NonZeroSizeConstructor) {
+  rmm::device_uvector<TypeParam> uv(12345);
+  EXPECT_EQ(uv.size(), 12345);
+  EXPECT_NE(uv.data(), nullptr);
+  EXPECT_EQ(uv.end(), uv.begin() + uv.size());
+  EXPECT_FALSE(uv.is_empty());
 }
 
+TYPED_TEST(TypedUVectorTest, ResizeSmaller) {
+  auto original_size = 12345;
+  rmm::device_uvector<TypeParam> uv(original_size);
+  auto original_data  = uv.data();
+  auto original_begin = uv.begin();
+
+  auto smaller_size = uv.size() - 1;
+  uv.resize(smaller_size);
+
+  EXPECT_EQ(original_data, uv.data());
+  EXPECT_EQ(original_begin, uv.begin());
+  EXPECT_EQ(uv.size(), smaller_size);
+  EXPECT_EQ(uv.capacity(), original_size);
+
+  // shrink_to_fit should force a new allocation
+  uv.shrink_to_fit();
+  EXPECT_EQ(uv.size(), smaller_size);
+  EXPECT_EQ(uv.capacity(), smaller_size);
+}
+
+TYPED_TEST(TypedUVectorTest, ResizeLarger) {
+  auto original_size = 12345;
+  rmm::device_uvector<TypeParam> uv(original_size);
+  auto original_data  = uv.data();
+  auto original_begin = uv.begin();
+
+  auto larger_size = uv.size() + 1;
+  uv.resize(larger_size);
+
+  EXPECT_NE(uv.data(), original_data);
+  EXPECT_NE(uv.begin(), original_begin);
+  EXPECT_EQ(uv.size(), larger_size);
+  EXPECT_EQ(uv.capacity(), larger_size);
+
+  auto larger_data  = uv.data();
+  auto larger_begin = uv.begin();
+
+  // shrink_to_fit shouldn't have any effect
+  uv.shrink_to_fit();
+  EXPECT_EQ(uv.size(), larger_size);
+  EXPECT_EQ(uv.capacity(), larger_size);
+  EXPECT_EQ(uv.data(), larger_data);
+  EXPECT_EQ(uv.begin(), larger_begin);
+}
+
+TYPED_TEST(TypedUVectorTest, ResizeToZero) {
+  auto original_size = 12345;
+  rmm::device_uvector<TypeParam> uv(original_size);
+  uv.resize(0);
+
+  EXPECT_EQ(uv.size(), 0);
+  EXPECT_TRUE(uv.is_empty());
+  EXPECT_EQ(uv.capacity(), original_size);
+
+  uv.shrink_to_fit();
+  EXPECT_EQ(uv.capacity(), 0);
+}
 
 /*
 // This won't work until RMM has a strongly typed stream object
