@@ -17,7 +17,7 @@ def array_tester(dtype, nelem, alloc):
     h_result = np.empty(nelem, dtype)
 
     d_in = alloc.to_device(h_in)
-    d_result = cuda.device_array_like(d_in)
+    d_result = alloc.device_array_like(d_in)
 
     d_result.copy_to_device(d_in)
     h_result = d_result.copy_to_host()
