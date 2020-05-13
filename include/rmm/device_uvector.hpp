@@ -265,11 +265,11 @@ class device_uvector {
  private:
   device_buffer _storage{};  ///< Device memory storage for vector elements
 
-  std::size_t constexpr elements_to_bytes(std::size_t num_elements) noexcept {
+  std::size_t constexpr elements_to_bytes(std::size_t num_elements) const noexcept {
     return num_elements * sizeof(value_type);
   }
 
-  std::size_t constexpr bytes_to_elements(std::size_t num_bytes) noexcept {
+  std::size_t constexpr bytes_to_elements(std::size_t num_bytes) const noexcept {
     return num_bytes / sizeof(value_type);
   }
 };  // namespace rmm
