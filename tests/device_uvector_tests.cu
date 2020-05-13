@@ -19,6 +19,8 @@
 
 #include <rmm/device_uvector.hpp>
 
+#include <thrust/logical.h>
+
 template <typename T>
 struct TypedUVectorTest : ::testing::Test {};
 
@@ -109,13 +111,31 @@ TYPED_TEST(TypedUVectorTest, ResizeToZero) {
   EXPECT_EQ(uv.capacity(), 0);
 }
 
-/*
-// This won't work until RMM has a strongly typed stream object
-TYPED_TEST(TypedUVectorTest, ZeroInitConstuctor){
-    rmm::device_uvector<TypeParam> uv(12345, 0);
-    EXPECT_EQ(uv.size(), 12345);
-    EXPECT_NE(uv.data(), nullptr);
-    EXPECT_EQ(uv.end(), uv.begin() + uv.size());
-    EXPECT_FALSE(uv.is_empty());
+template <typename T>
+struct equal_to {
+  T v;
+  __device__ bool
+  operator()(T const& t) {
+    return t == v;
+  }
+};
+
+TYPED_TEST(TypedUVectorTest, ZeroInitConstuctor) {
+  // Explicit type for initial value to avoid ambiguity with cudaStream_t
+  rmm::device_uvector<TypeParam> uv(12345, TypeParam{0});
+  EXPECT_EQ(uv.size(), 12345);
+  EXPECT_NE(uv.data(), nullptr);
+  EXPECT_EQ(uv.end(), uv.begin() + uv.size());
+  EXPECT_FALSE(uv.is_empty());
+  EXPECT_TRUE(thrust::all_of(thrust::device, uv.begin(), uv.end(), equal_to<TypeParam>{0}));
 }
-*/
+
+TYPED_TEST(TypedUVectorTest, InitConstuctor) {
+  // Explicit type for initial value to avoid ambiguity with cudaStream_t
+  rmm::device_uvector<TypeParam> uv(12345, TypeParam{42});
+  EXPECT_EQ(uv.size(), 12345);
+  EXPECT_NE(uv.data(), nullptr);
+  EXPECT_EQ(uv.end(), uv.begin() + uv.size());
+  EXPECT_FALSE(uv.is_empty());
+  EXPECT_TRUE(thrust::all_of(thrust::device, uv.begin(), uv.end(), equal_to<TypeParam>{42}));
+}
