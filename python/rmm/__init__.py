@@ -19,13 +19,18 @@ from rmm.rmm import (
     RMMNumbaManager,
     _finalize,
     _initialize,
+    _make_finalizer,
     _numba_memory_manager,
     _register_atexit_finalize,
     csv_log,
+    device_array,
     device_array_from_ptr,
+    device_array_like,
+    get_ipc_handle,
     get_info,
     is_initialized,
     reinitialize,
+    to_device,
     rmm_cupy_allocator,
 )
 

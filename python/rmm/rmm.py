@@ -150,9 +150,79 @@ def device_array_from_ptr(ptr, nelem, dtype=np.float, finalizer=None):
     # note no finalizer -- freed externally!
     ctx = cuda.current_context()
     ptr = ctypes.c_uint64(int(ptr))
-    mem = cuda.driver.MemoryPointer(ctx, ptr, datasize, finalizer=finalizer)
+    mem = MemoryPointer(ctx, ptr, datasize, finalizer=finalizer)
     return cuda.cudadrv.devicearray.DeviceNDArray(
         shape, strides, dtype, gpu_data=mem
+    )
+
+
+def device_array(shape, dtype=np.float, strides=None, order="C", stream=0):
+    """
+    device_array(shape, dtype=np.float, strides=None, order='C',
+                 stream=0)
+
+    Allocate an empty Numba device array. Clone of Numba `cuda.device_array`,
+    but uses RMM for device memory management.
+    """
+    shape, strides, dtype = cuda.api._prepare_shape_strides_dtype(
+        shape, strides, dtype, order
+    )
+    datasize = cuda.driver.memory_size_from_info(
+        shape, strides, dtype.itemsize
+    )
+
+    buf = librmm.DeviceBuffer(size=datasize, stream=stream)
+
+    ctx = cuda.current_context()
+    ptr = ctypes.c_uint64(int(buf.ptr))
+    mem = MemoryPointer(ctx, ptr, datasize, owner=buf)
+    return cuda.cudadrv.devicearray.DeviceNDArray(
+        shape, strides, dtype, gpu_data=mem
+    )
+
+
+def device_array_like(ary, stream=0):
+    """
+    device_array_like(ary, stream=0)
+
+    Call rmmlib.device_array with information from `ary`. Clone of Numba
+    `cuda.device_array_like`, but uses RMM for device memory management.
+    """
+    if ary.ndim == 0:
+        ary = ary.reshape(1)
+
+    return device_array(ary.shape, ary.dtype, ary.strides, stream=stream)
+
+
+def to_device(ary, stream=0, copy=True, to=None):
+    """
+    to_device(ary, stream=0, copy=True, to=None)
+
+    Allocate and transfer a numpy ndarray or structured scalar to the device.
+    Clone of Numba `cuda.to_device`, but uses RMM for device memory management.
+    """
+    if to is None:
+        to = device_array_like(ary, stream=stream)
+        to.copy_to_device(ary, stream=stream)
+        return to
+    if copy:
+        to.copy_to_device(ary, stream=stream)
+    return to
+
+
+def get_ipc_handle(ary, stream=0):
+    """
+    Get an IPC handle from the DeviceArray ary with offset modified by
+    the RMM memory pool.
+    """
+    ipch = cuda.devices.get_context().get_ipc_handle(ary.gpu_data)
+    ptr = ary.device_ctypes_pointer.value
+    offset = librmm.rmm_getallocationoffset(ptr, stream)
+    # replace offset with RMM's offset
+    ipch.offset = offset
+    desc = dict(shape=ary.shape, strides=ary.strides, dtype=ary.dtype)
+    return cuda.cudadrv.devicearray.IpcArrayHandle(
+        ipc_handle=ipch, array_desc=desc
     )
 
 
@@ -184,7 +254,7 @@ class RMMNumbaManager(HostOnlyCUDAMemoryManager):
         buf = librmm.DeviceBuffer(size=size)
         ctx = self.context
         ptr = ctypes.c_uint64(int(buf.ptr))
-        finalizer = _make_finalizer(ptr.value, self.allocations)
+        finalizer = _make_emm_plugin_finalizer(ptr.value, self.allocations)
 
         # self.allocations is initialized by the parent, HostOnlyCUDAManager,
         # and cleared upon context reset, so although we insert into it here
@@ -216,6 +286,37 @@ class RMMNumbaManager(HostOnlyCUDAMemoryManager):
     @property
     def interface_version(self):
         return 1
+
+
+def _make_emm_plugin_finalizer(handle, allocations):
+    """
+    Factory to make the finalizer function.
+    We need to bind *handle* and *allocations* into the actual finalizer, which
+    takes no args.
+    """
+
+    def finalizer():
+        """
+        Invoked when the MemoryPointer is freed
+        """
+        # At exit time (particularly in the Numba test suite) allocations may
+        # have already been cleaned up by a call to Context.reset() for the
+        # context, even if there are some DeviceNDArrays and their underlying
+        # allocations lying around. Finalizers then get called by weakref's
+        # atexit finalizer, at which point allocations[handle] no longer
+        # exists. This is harmless, except that a traceback is printed just
+        # prior to exit (without abnormally terminating the program), but is
+        # worrying for the user. To avoid the traceback, we check if
+        # allocations is already empty.
+        #
+        # In the case where allocations is not empty, but handle is not in
+        # allocations, then something has gone wrong - so we only guard against
+        # allocations being completely empty, rather than handle not being in
+        # allocations.
+        if allocations:
+            del allocations[handle]
+
+    return finalizer
 
 
 # Enables the use of RMM for Numba via an environment variable setting,
@@ -253,7 +354,7 @@ def rmm_cupy_allocator(nbytes):
     return ptr
 
 
-def _make_finalizer(handle, allocations):
+def _make_finalizer(handle, stream):
     """
     Factory to make the finalizer function.
     We need to bind *handle* and *stream* into the actual finalizer, which
@@ -264,22 +365,7 @@ def _make_finalizer(handle, allocations):
         """
         Invoked when the MemoryPointer is freed
         """
-        # At exit time (particularly in the Numba test suite) allocations may
-        # have already been cleaned up by a call to Context.reset() for the
-        # context, even if there are some DeviceNDArrays and their underlying
-        # allocations lying around. Finalizers then get called by weakref's
-        # atexit finalizer, at which point allocations[handle] no longer
-        # exists. This is harmless, except that a traceback is printed just
-        # prior to exit (without abnormally terminating the program), but is
-        # worrying for the user. To avoid the traceback, we check if
-        # allocations is already empty.
-        #
-        # In the case where allocations is not empty, but handle is not in
-        # allocations, then something has gone wrong - so we only guard against
-        # allocations being completely empty, rather than handle not being in
-        # allocations.
-        if allocations:
-            del allocations[handle]
+        librmm.rmm_free(handle, stream)
 
     return finalizer
 
