@@ -20,6 +20,7 @@
 - PR #346 Add clearer exception message when RMM_LOG_FILE is unset
 - PR #347 Mark rmmFinalizeWrapper nogil
 - PR #348 Fix unintentional use of pool-managed resource.
+- PR #367 Fix flake8 issues
 
 # RMM 0.13.0 (Date TBD)
 
