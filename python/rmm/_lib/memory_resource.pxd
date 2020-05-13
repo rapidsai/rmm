@@ -77,3 +77,28 @@ cdef extern from "rmm/mr/device/fixed_size_memory_resource.hpp" \
             size_t block_size,
             size_t block_to_preallocate
         )
+
+cdef extern from "rmm/mr/device/fixed_multisize_memory_resource.hpp" \
+        namespace "rmm::mr" nogil:
+    cdef cppclass fixed_multisize_memory_resource[
+        Upstream
+    ](device_memory_resource):
+        fixed_multisize_memory_resource(
+            Upstream* upstream,
+            size_t size_base,
+            size_t min_size_exponent,
+            size_t max_size_exponent,
+            size_t initial_blocks_per_size
+        )
+
+cdef extern from "rmm/mr/device/hybrid_memory_resource.hpp" \
+        namespace "rmm::mr" nogil:
+    cdef cppclass hybrid_memory_resource[
+        SmallAllocMemoryResource,
+        LargeAllocMemoryResource
+    ](device_memory_resource):
+        hybrid_memory_resource(
+            SmallAllocMemoryResource* small_mr,
+            LargeAllocMemoryResource* large_mr,
+            size_t threshold_size
+        )

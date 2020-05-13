@@ -65,6 +65,51 @@ cdef class FixedSizeMemoryResource(MemoryResource):
         self._upstream = upstream
 
 
+cdef class FixedMultiSizeMemoryResource(MemoryResource):
+    cdef MemoryResource _upstream
+
+    def __cinit__(
+        self,
+        MemoryResource upstream,
+        size_t size_base=2,
+        size_t min_size_exponent=18,
+        size_t max_size_exponent=22,
+        size_t initial_blocks_per_size=128
+    ):
+        self.c_obj = new fixed_multisize_memory_resource[
+            device_memory_resource
+        ](
+            upstream.c_obj,
+            size_base,
+            min_size_exponent,
+            max_size_exponent,
+            initial_blocks_per_size
+        )
+        self._upstream = upstream
+
+
+cdef class HybridMemoryResource(MemoryResource):
+    cdef MemoryResource _small_alloc_mr
+    cdef MemoryResource _large_alloc_mr
+
+    def __cinit__(
+        self,
+        MemoryResource small_alloc_mr,
+        MemoryResource large_alloc_mr,
+        size_t threshold_size=1<<22
+    ):
+        self.c_obj = new hybrid_memory_resource[
+            device_memory_resource,
+            device_memory_resource
+        ](
+            small_alloc_mr.c_obj,
+            large_alloc_mr.c_obj,
+            threshold_size
+        )
+        self._small_alloc_mr = small_alloc_mr
+        self._large_alloc_mr = large_alloc_mr
+
+
 cdef class LoggingResourceAdaptor(MemoryResource):
     cdef MemoryResource _upstream
 
@@ -83,57 +128,78 @@ cdef class LoggingResourceAdaptor(MemoryResource):
 
 
 # Global memory resource:
-cdef MemoryResource mr
+cdef MemoryResource _mr
 
 
-def _set_default_resource(
-    kind,
-    initial_pool_size=0,
-    devices=[],
+def _initialize(
+    pool_allocator=False,
+    managed_memory=False,
+    initial_pool_size=None,
+    devices=0,
     logging=False,
-    log_file_name=None
+    log_file_name=None,
 ):
-    global mr
+    """
+    Initializes RMM library using the options passed
+    """
+    global _mr
+    _mr = MemoryResource()
 
-    # this ensures that previous mr is GC'd:
-    mr = MemoryResource()
-
-    if kind == "cuda":
-        typ = CudaMemoryResource
+    if not pool_allocator:
+        if not managed_memory:
+            typ = CudaMemoryResource
+        else:
+            typ = ManagedMemoryResource
         args = ()
-    elif kind == "managed":
-        typ = ManagedMemoryResource
-        args = ()
-    elif kind == "cnmem":
-        typ = CNMemMemoryResource
-        args = (initial_pool_size, devices)
-    elif kind == "cnmem_managed":
-        typ = CNMemManagedMemoryResource
-        args = (initial_pool_size, devices)
     else:
-        raise TypeError(f"Unsupported resource kind: {kind}")
+        if not managed_memory:
+            typ = CNMemMemoryResource
+        else:
+            typ = CNMemManagedMemoryResource
+
+        if initial_pool_size is None:
+            initial_pool_size = 0
+
+        if devices is None:
+            devices = [0]
+        elif isinstance(devices, int):
+            devices = [devices]
+
+        args = (initial_pool_size, devices)
+
+    cdef MemoryResource mr
 
     if logging:
         mr = LoggingResourceAdaptor(typ(*args), log_file_name.encode())
     else:
         mr = typ(*args)
 
-    cdef device_memory_resource* c_mr = mr.c_obj
+    _set_default_resource(
+        mr
+    )
+
+
+def _set_default_resource(MemoryResource mr):
+    global _mr
+
+    _mr = mr
+
+    cdef device_memory_resource* c_mr = _mr.c_obj
     set_default_resource(c_mr)
 
 
-def is_initialized():
-    global mr
-    return mr.c_obj is not NULL
-
-
-def flush_logs():
-    global mr
-    mr.flush()
-
-
-def current_memory_resource():
-    global mr
+def get_default_resource():
+    global _mr
 
     import weakref
-    return weakref.ref(mr)
+    return weakref.ref(_mr)
+
+
+def is_initialized():
+    global _mr
+    return _mr.c_obj is not NULL
+
+
+def _flush_logs():
+    global _mr
+    _mr.flush()

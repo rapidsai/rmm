@@ -15,9 +15,9 @@
 import weakref
 
 from rmm._lib.device_buffer import DeviceBuffer
+from rmm.mr import _initialize
 from rmm.rmm import (
     RMMError,
-    _initialize,
     device_array,
     device_array_from_ptr,
     device_array_like,

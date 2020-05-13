@@ -18,6 +18,7 @@ import os
 import numpy as np
 from numba import cuda
 
+import rmm
 import rmm._lib as librmm
 
 
@@ -26,42 +27,6 @@ class RMMError(Exception):
     def __init__(self, errcode, msg):
         self.errcode = errcode
         super(RMMError, self).__init__(msg)
-
-
-# API Functions
-def _initialize(
-    pool_allocator=False,
-    managed_memory=False,
-    initial_pool_size=None,
-    devices=0,
-    logging=False,
-    log_file_name=None,
-):
-    """
-    Initializes RMM library using the options passed
-    """
-    if not pool_allocator:
-        if not managed_memory:
-            kind = "cuda"
-        else:
-            kind = "managed"
-    else:
-        if not managed_memory:
-            kind = "cnmem"
-        else:
-            kind = "cnmem_managed"
-
-        if initial_pool_size is None:
-            initial_pool_size = 0
-
-        if devices is None:
-            devices = [0]
-        elif isinstance(devices, int):
-            devices = [devices]
-
-    librmm.set_default_resource(
-        kind, initial_pool_size, devices, logging, log_file_name
-    )
 
 
 def reinitialize(
@@ -106,7 +71,7 @@ def reinitialize(
                 "log_file_name= argument or RMM_LOG_FILE "
                 "environment variable"
             )
-    _initialize(
+    rmm.mr._initialize(
         pool_allocator=pool_allocator,
         managed_memory=managed_memory,
         initial_pool_size=initial_pool_size,
@@ -120,7 +85,7 @@ def is_initialized():
     """
     Returns true if RMM has been initialized, false otherwise
     """
-    return librmm.is_initialized()
+    return rmm.mr.is_initialized()
 
 
 def device_array_from_ptr(ptr, nelem, dtype=np.float, finalizer=None):

@@ -68,7 +68,7 @@ def test_rmm_csv_log(dtype, nelem):
         d_result = rmm.device_array_like(d_in)
 
         d_result.copy_to_device(d_in)
-        rmm._lib.flush_logs()
+        rmm.mr._flush_logs()
 
         csv = fp.read()
 
