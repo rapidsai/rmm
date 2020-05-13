@@ -12,7 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rmm.rmm import _initialize, _register_atexit_finalize
+import weakref
+
+from rmm.rmm import (
+    RMMError,
+    _finalize,
+    _initialize,
+    _make_finalizer,
+    _register_atexit_finalize,
+    csv_log,
+    device_array,
+    device_array_from_ptr,
+    device_array_like,
+    get_ipc_handle,
+    get_info,
+    is_initialized,
+    reinitialize,
+    to_device,
+    rmm_cupy_allocator,
+)
+
+from rmm._lib.device_buffer import DeviceBuffer
+from rmm._lib.device_pointer import DevicePointer as _DevicePointer
 
 # Initialize RMM on import, finalize RMM on process exit
 _initialize()
