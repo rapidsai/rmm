@@ -82,7 +82,7 @@ class device_uvector {
   explicit device_uvector(std::size_t size,
                           cudaStream_t stream                 = 0,
                           rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
-    : _storage{size * sizeof(T), stream, mr}, _size{size} {}
+    : _storage{elements_to_bytes(size), stream, mr} {}
 
   /**
    * @brief Construct a new `device_uvector` with the specified number of elements initialized to
@@ -100,7 +100,7 @@ class device_uvector {
     : device_uvector(size, stream, mr) {
     if (std::is_arithmetic<T>::value && (value_type{0} == v)) {
       // This is ~20% faster for sizes less than 1M
-      RMM_CUDA_TRY(cudaMemsetAsync(data(), 0, this->size() * sizeof(T), stream));
+      RMM_CUDA_TRY(cudaMemsetAsync(data(), 0, _storage.size(), stream));
     } else {
       thrust::uninitialized_fill(rmm::exec_policy(stream)->on(stream), begin(), end(), v);
     }
@@ -119,7 +119,7 @@ class device_uvector {
   explicit device_uvector(device_uvector const& other,
                           cudaStream_t stream                 = 0,
                           rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
-    : _storage{other.storage, stream, mr}, _size{other.size()} {}
+    : _storage{other.storage, stream, mr} {}
 
   /**
    * @brief Resizes the vector to contain `new_size` elements.
@@ -139,8 +139,7 @@ class device_uvector {
    */
   void
   resize(std::size_t new_size, cudaStream_t stream = 0) {
-    _storage.resize(new_size * sizeof(value_type), stream);
-    _size = new_size;
+    _storage.resize(elements_to_bytes(new_size), stream);
   }
 
   /**
@@ -163,7 +162,7 @@ class device_uvector {
    */
   std::size_t
   capacity() const noexcept {
-    return _storage.capacity() / sizeof(value_type);
+    return bytes_to_elements(_storage.capacity());
   }
 
   /**
@@ -239,7 +238,7 @@ class device_uvector {
    */
   std::size_t
   size() const noexcept {
-    return _size;
+    return bytes_to_elements(_storage.size());
   }
 
   /**
@@ -265,7 +264,14 @@ class device_uvector {
 
  private:
   device_buffer _storage{};  ///< Device memory storage for vector elements
-  std::size_t _size{};       ///< The number of elements in the vector
-};
+
+  std::size_t constexpr elements_to_bytes(std::size_t num_elements) noexcept {
+    return num_elements * sizeof(value_type);
+  }
+
+  std::size_t constexpr bytes_to_elements(std::size_t num_bytes) noexcept {
+    return num_bytes / sizeof(value_type);
+  }
+};  // namespace rmm
 
 }  // namespace rmm
