@@ -53,13 +53,14 @@ class device_uvector {
                 "device_uvector only supports types that are trivially copyable.");
 
  public:
-  using value_type     = T;
-  using size_type      = std::size_t;
-  using reference      = value_type&;
-  using pointer        = value_type*;
-  using const_pointer  = value_type const*;
-  using iterator       = pointer;
-  using const_iterator = const_pointer;
+  using value_type      = T;
+  using size_type       = std::size_t;
+  using reference       = value_type&;
+  using const_reference = value_type const&;
+  using pointer         = value_type*;
+  using const_pointer   = value_type const*;
+  using iterator        = pointer;
+  using const_iterator  = const_pointer;
 
   device_uvector()                      = default;
   ~device_uvector()                     = default;
@@ -272,6 +273,5 @@ class device_uvector {
   std::size_t constexpr bytes_to_elements(std::size_t num_bytes) const noexcept {
     return num_bytes / sizeof(value_type);
   }
-};  // namespace rmm
-
+};
 }  // namespace rmm
