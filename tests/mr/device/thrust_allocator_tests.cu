@@ -29,26 +29,25 @@
 
 using pool_mr = rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>;
 
-using resources =
-    ::testing::Types<rmm::mr::cuda_memory_resource,
-                     rmm::mr::managed_memory_resource,
-                     rmm::mr::cnmem_memory_resource,
-                     rmm::mr::cnmem_managed_memory_resource, pool_mr>;
+using resources = ::testing::Types<rmm::mr::cuda_memory_resource,
+                                   rmm::mr::managed_memory_resource,
+                                   rmm::mr::cnmem_memory_resource,
+                                   rmm::mr::cnmem_managed_memory_resource,
+                                   pool_mr>;
 
 template <typename MR>
 struct AllocatorTest : public ::testing::Test {
   std::vector<std::unique_ptr<rmm::mr::device_memory_resource>> upstreams;
   std::unique_ptr<MR> mr;
 
-  AllocatorTest() : mr{std::make_unique<MR>()} {
-    rmm::mr::set_default_resource(mr.get());
-  }
+  AllocatorTest() : mr{std::make_unique<MR>()} { rmm::mr::set_default_resource(mr.get()); }
 
   ~AllocatorTest() = default;
 };
 
 template <>
-AllocatorTest<pool_mr>::AllocatorTest() {
+AllocatorTest<pool_mr>::AllocatorTest()
+{
   upstreams.emplace_back(std::make_unique<rmm::mr::cuda_memory_resource>());
   auto& cuda_upstream = upstreams.front();
   mr.reset(new pool_mr(static_cast<rmm::mr::cuda_memory_resource*>(cuda_upstream.get())));
@@ -57,7 +56,8 @@ AllocatorTest<pool_mr>::AllocatorTest() {
 
 TYPED_TEST_CASE(AllocatorTest, resources);
 
-TYPED_TEST(AllocatorTest, first) {
+TYPED_TEST(AllocatorTest, first)
+{
   rmm::device_vector<int> ints(100, 1);
   EXPECT_EQ(100, thrust::reduce(ints.begin(), ints.end()));
 }

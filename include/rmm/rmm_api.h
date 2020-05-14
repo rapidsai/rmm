@@ -30,16 +30,15 @@ typedef struct CUstream_st *cudaStream_t;
 /** ---------------------------------------------------------------------------*
  * @brief RMM error codes
  * --------------------------------------------------------------------------**/
-typedef enum
-{
-  RMM_SUCCESS = 0,            //< Success result
-  RMM_ERROR_CUDA_ERROR,       //< A CUDA error occurred
-  RMM_ERROR_INVALID_ARGUMENT, //< An invalid argument was passed (e.g.null pointer)
-  RMM_ERROR_NOT_INITIALIZED,  //< RMM API called before rmmInitialize()
-  RMM_ERROR_OUT_OF_MEMORY,    //< The memory manager was unable to allocate more memory
-  RMM_ERROR_UNKNOWN,          //< An unknown error occurred
-  RMM_ERROR_IO,               //< Stats output error
-  N_RMM_ERROR                 //< Count of error types
+typedef enum {
+  RMM_SUCCESS = 0,             //< Success result
+  RMM_ERROR_CUDA_ERROR,        //< A CUDA error occurred
+  RMM_ERROR_INVALID_ARGUMENT,  //< An invalid argument was passed (e.g.null pointer)
+  RMM_ERROR_NOT_INITIALIZED,   //< RMM API called before rmmInitialize()
+  RMM_ERROR_OUT_OF_MEMORY,     //< The memory manager was unable to allocate more memory
+  RMM_ERROR_UNKNOWN,           //< An unknown error occurred
+  RMM_ERROR_IO,                //< Stats output error
+  N_RMM_ERROR                  //< Count of error types
 } rmmError_t;
 
 /** ---------------------------------------------------------------------------*
@@ -48,8 +47,7 @@ typedef enum
  * These settings can be ORed together. For example to use a pool of managed
  * memory, use `mode = PoolAllocation | CudaManagedMemory`.
  * --------------------------------------------------------------------------**/
-typedef enum
-{
+typedef enum {
   CudaDefaultAllocation = 0,  //< Use cudaMalloc for allocation
   PoolAllocation        = 1,  //< Use pool suballocation strategy
   CudaManagedMemory     = 2,  //< Use cudaMallocManaged rather than cudaMalloc
@@ -57,7 +55,7 @@ typedef enum
 
 /** ---------------------------------------------------------------------------*
  * @brief Options for initializing the memory manager
- * 
+ *
  * By default, uses `CudaDefaultAllocation`, which uses `cudaMalloc/cudaFree`.
  *
  * If set to zero, `initial_pool_size` defaults to half of the total GPU memory
@@ -68,8 +66,7 @@ typedef enum
  * used. These are only used when `allocation_mode == PoolAllocation`.
  * --------------------------------------------------------------------------**/
 struct rmmOptions_t {
-  rmmAllocationMode_t allocation_mode{
-      CudaDefaultAllocation};       //< Allocation strategy to use
+  rmmAllocationMode_t allocation_mode{CudaDefaultAllocation};  //< Allocation strategy to use
   std::size_t initial_pool_size{};  //< When pool suballocation is enabled,
                                     //< this is the initial pool size in bytes
   bool enable_logging{false};       //< Enable logging memory manager events
@@ -82,7 +79,7 @@ struct rmmOptions_t {
  * This function is thread-safe with respect to other calls to this function
  * and calls to rmmFinalize(), but it is not thread-safe with respect to calls
  * to rmmAlloc() and rmmFree().
- * 
+ *
  * @param[in] options Structure of options for the memory manager. Defaults are
  *                    used if it is null.
  * @return rmmError_t RMM_SUCCESS or RMM_ERROR_CUDA_ERROR on any CUDA error.
@@ -91,7 +88,7 @@ struct rmmOptions_t {
 
 /** ---------------------------------------------------------------------------*
  * @brief Shutdown memory manager.
- * 
+ *
  * This function is thread-safe with respect to other calls to this function
  * and calls to rmmInitialize(), but it is not thread-safe with respect to calls
  * to rmmAlloc() and rmmFree().
@@ -118,11 +115,11 @@ struct rmmOptions_t {
  * @param errcode The error returned by an RMM function
  * @return const char* The input error code in string form
  * --------------------------------------------------------------------------**/
-[[deprecated]] const char * rmmGetErrorString(rmmError_t errcode);
+[[deprecated]] const char *rmmGetErrorString(rmmError_t errcode);
 
 /** ---------------------------------------------------------------------------*
  * @brief Allocate memory and return a pointer to device memory.
- * 
+ *
  * This function is thread-safe with respect to other calls to rmmAlloc()
  * and rmmFree(), but it is not thread-safe with respect to calls
  * to rmmInitialize() and rmmFinalize().
@@ -137,8 +134,8 @@ struct rmmOptions_t {
  *                    null, RMM_ERROR_OUT_OF_MEMORY if unable to allocate the
  *                    requested size, or RMM_CUDA_ERROR on any other CUDA error.
  * --------------------------------------------------------------------------**/
-[[deprecated]] rmmError_t rmmAlloc(void **ptr, size_t size, cudaStream_t stream,
-                    const char* file, unsigned int line);
+[[deprecated]] rmmError_t rmmAlloc(
+  void **ptr, size_t size, cudaStream_t stream, const char *file, unsigned int line);
 
 /** ---------------------------------------------------------------------------*
  * @brief Reallocate device memory block to new size and recycle any remaining
@@ -155,7 +152,7 @@ struct rmmOptions_t {
  *                    requested size, or RMM_ERROR_CUDA_ERROR on any other CUDA
  *                    error.
  * --------------------------------------------------------------------------**/
-//rmmError_t rmmRealloc(void **ptr, size_t new_size, cudaStream_t stream,
+// rmmError_t rmmRealloc(void **ptr, size_t new_size, cudaStream_t stream,
 //                      const char* file, unsigned int line);
 
 /** ---------------------------------------------------------------------------*
@@ -164,7 +161,7 @@ struct rmmOptions_t {
  * This function is thread-safe with respect to other calls to rmmAlloc()
  * and rmmFree(), but it is not thread-safe with respect to calls
  * to rmmInitialize() and rmmFinalize().
- * 
+ *
  * @param[in] ptr The pointer to free
  * @param[in] stream The stream in which to synchronize this command
  * @param[in] file The filename location of the call to this function, for tracking
@@ -173,8 +170,10 @@ struct rmmOptions_t {
  *                    has not been called,or RMM_ERROR_CUDA_ERROR on any CUDA
  *                    error.
  * --------------------------------------------------------------------------**/
-[[deprecated]] rmmError_t rmmFree(void *ptr, cudaStream_t stream,
-                   const char* file, unsigned int line);
+[[deprecated]] rmmError_t rmmFree(void *ptr,
+                                  cudaStream_t stream,
+                                  const char *file,
+                                  unsigned int line);
 
 /** ---------------------------------------------------------------------------*
  * @brief Get the offset of ptr from its base allocation.
@@ -192,9 +191,7 @@ struct rmmOptions_t {
  *                   ptr.
  * @return rmmError_t RMM_SUCCESS if all goes well
  * --------------------------------------------------------------------------**/
-rmmError_t rmmGetAllocationOffset(ptrdiff_t *offset,
-                                  void *ptr,
-                                  cudaStream_t stream);
+rmmError_t rmmGetAllocationOffset(ptrdiff_t *offset, void *ptr, cudaStream_t stream);
 
 /** ---------------------------------------------------------------------------*
  * @brief Get amounts of free and total memory managed by a manager associated
@@ -222,7 +219,7 @@ rmmError_t rmmGetAllocationOffset(ptrdiff_t *offset,
  * @param filename The full path and filename to write.
  * @return rmmError_t RMM_SUCCESS or RMM_ERROR_IO on output failure.
  * --------------------------------------------------------------------------**/
-[[deprecated]] rmmError_t rmmWriteLog(const char* filename);
+[[deprecated]] rmmError_t rmmWriteLog(const char *filename);
 
 /** ---------------------------------------------------------------------------*
  * @brief Get the size of the CSV log string in memory.
@@ -238,4 +235,4 @@ rmmError_t rmmGetAllocationOffset(ptrdiff_t *offset,
  * @param[in] buffer_size The size allocated for buffer.
  * @return rmmError_t RMM_SUCCESS, or RMM_IO_ERROR on any failure.
  * --------------------------------------------------------------------------**/
-[[deprecated]] rmmError_t rmmGetLog(char* buffer, size_t buffer_size);
+[[deprecated]] rmmError_t rmmGetLog(char *buffer, size_t buffer_size);
