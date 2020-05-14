@@ -46,8 +46,8 @@ struct event {
  * @param filename Name of the RMM log file
  * @return Vector of events for consumption by replay benchmark
  */
-std::vector<event>
-parse_csv(std::string const& filename) {
+std::vector<event> parse_csv(std::string const& filename)
+{
   rapidcsv::Document csv(filename);
 
   std::vector<std::string> actions  = csv.GetColumn<std::string>("Action");
@@ -112,10 +112,12 @@ struct replay_benchmark {
    */
   template <typename... Args>
   replay_benchmark(std::vector<event> const& events, Args&&... args)
-    : mr_{new MR{std::forward<Args>(args)...}}, events_{events} {}
+    : mr_{new MR{std::forward<Args>(args)...}}, events_{events}
+  {
+  }
 
-  void
-  operator()(benchmark::State& state) {
+  void operator()(benchmark::State& state)
+  {
     // Maps a pointer from the event log to an active allocation
     std::unordered_map<uintptr_t, allocation> allocation_map(events_.size());
 
@@ -134,8 +136,8 @@ struct replay_benchmark {
 };
 
 // Usage: REPLAY_BENCHMARK -f "path/to/log/file"
-int
-main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
   // benchmark::Initialize will remove GBench command line arguments it
   // recognizes and leave any remaining arguments
   ::benchmark::Initialize(&argc, argv);
