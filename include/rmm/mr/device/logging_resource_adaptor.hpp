@@ -20,6 +20,7 @@
 #include <rmm/detail/error.hpp>
 
 #include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/ostream_sink.h>
 #include <spdlog/spdlog.h>
 #include <sstream>
 #include <memory>
@@ -30,7 +31,7 @@ namespace mr {
  * @brief Resource that uses `Upstream` to allocate memory and logs information
  * about the requested allocation/deallocations.
  *
- * An instance of this resource can be constructured with an existing, upstream
+ * An instance of this resource can be constructed with an existing, upstream
  * resource in order to satisfy allocation requests and log
  * allocation/deallocation activity.
  *
@@ -68,10 +69,29 @@ class logging_resource_adaptor final : public device_memory_resource {
     RMM_EXPECTS(nullptr != upstream,
                 "Unexpected null upstream resource pointer.");
 
-    auto const csv_header{"Time,Action,Pointer,Size,Stream"};
-    logger_->set_pattern("%v");
-    logger_->info(csv_header);
-    logger_->set_pattern("%H:%M:%S:%f,%v");
+    init_logger();
+  }
+
+  /**
+   * @brief Construct a new logging resource adaptor using `upstream` to satisfy
+   * allocation requests and logging information about each allocation/free to
+   * the ostream specified by `stream`.
+   *
+   * The logfile will be written using CSV formatting.
+   *
+   * @throws `rmm::logic_error` if `upstream == nullptr`
+   *
+   * @param upstream The resource used for allocating/deallocating device memory
+   * @param stream The ostream to write log info.
+   */
+  logging_resource_adaptor(Upstream* upstream, std::ostream& stream)
+      : upstream_{upstream},
+        logger_{std::make_shared<spdlog::logger>(
+            "RMM", std::make_shared<spdlog::sinks::ostream_sink_mt>(stream))} {
+    RMM_EXPECTS(nullptr != upstream,
+                "Unexpected null upstream resource pointer.");
+
+    init_logger();
   }
 
   /**
@@ -115,6 +135,16 @@ class logging_resource_adaptor final : public device_memory_resource {
     auto filename = std::getenv("RMM_LOG_FILE");
     RMM_EXPECTS(filename != nullptr, "RMM logging requested without an explicit file name, but RMM_LOG_FILE is unset");
     return std::string{filename};
+  }
+
+  /**
+   * @brief Initialize the logger.
+   */
+  void init_logger() const {
+    auto const csv_header{"Time,Action,Pointer,Size,Stream"};
+    logger_->set_pattern("%v");
+    logger_->info(csv_header);
+    logger_->set_pattern("%H:%M:%S:%f,%v");
   }
 
   /**
@@ -234,6 +264,19 @@ logging_resource_adaptor<Upstream> make_logging_adaptor(
     std::string const& filename =
         logging_resource_adaptor<Upstream>::get_default_filename()) {
   return logging_resource_adaptor<Upstream>{upstream, filename};
+}
+
+/**
+ * @brief Convenience factory to return a `logging_resource_adaptor` around the
+ * upstream resource `upstream`.
+ *
+ * @tparam Upstream Type of the upstream `device_memory_resource`.
+ * @param upstream Pointer to the upstream resource
+ * @param stream The ostream to write log info.
+ */
+template <typename Upstream>
+logging_resource_adaptor<Upstream> make_logging_adaptor(Upstream* upstream, std::ostream& stream) {
+  return logging_resource_adaptor<Upstream>{upstream, stream};
 }
 
 }  // namespace mr

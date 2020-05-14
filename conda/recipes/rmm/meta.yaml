@@ -27,7 +27,7 @@ requirements:
     - cython >=0.29,<0.30
   run:
     - python
-    - numba >=0.41
+    - numba >=0.49
 
 test:
   commands:

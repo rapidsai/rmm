@@ -42,18 +42,17 @@ using logging_pool_managed_mr = rmm::mr::logging_resource_adaptor<pool_managed_m
  * @param[in] stream The stream on which the allocation is happening
  *                   (only needed for Alloc/Realloc).
  */
-void
-Logger::record(MemEvent_t event,
-               int deviceId,
-               void* ptr,
-               TimePt start,
-               TimePt end,
-               size_t freeMem,
-               size_t totalMem,
-               size_t size,
-               cudaStream_t stream,
-               std::string filename,
-               unsigned int line)
+void Logger::record(MemEvent_t event,
+                    int deviceId,
+                    void* ptr,
+                    TimePt start,
+                    TimePt end,
+                    size_t freeMem,
+                    size_t totalMem,
+                    size_t size,
+                    cudaStream_t stream,
+                    std::string filename,
+                    unsigned int line)
 
 {
   std::lock_guard<std::mutex> guard(log_mutex);
@@ -81,8 +80,8 @@ Logger::record(MemEvent_t event,
  *
  * @param[in] csv The output stream to put the CSV log string into.
  */
-void
-Logger::to_csv(std::ostream& csv) {
+void Logger::to_csv(std::ostream& csv)
+{
   csv << "Event Type,Device ID,Address,Stream,Size (bytes),Free Memory,"
       << "Total Memory,Current Allocs,Start,End,Elapsed,Location\n";
 
@@ -104,14 +103,14 @@ Logger::to_csv(std::ostream& csv) {
 /**
  * @brief Clear the log
  */
-void
-Logger::clear() {
+void Logger::clear()
+{
   std::lock_guard<std::mutex> guard(log_mutex);
   events.clear();
 }
 
-rmmError_t
-Manager::registerStream(cudaStream_t stream) {
+rmmError_t Manager::registerStream(cudaStream_t stream)
+{
   std::lock_guard<std::mutex> guard(manager_mutex);
   if (registered_streams.empty() || 0 == registered_streams.count(stream)) {
     registered_streams.insert(stream);
@@ -126,11 +125,11 @@ Manager::registerStream(cudaStream_t stream) {
 // That means it needs to be a free function since memory_manager.hpp cannot include
 // `logging_resource_adaptor.hpp` (since it depends on spdlog)
 template <typename MemoryResource>
-void
-reset_resource(std::unique_ptr<mr::device_memory_resource>& initialized_resource,
-               std::unique_ptr<mr::device_memory_resource>& logging_resource,
-               MemoryResource* mr,
-               bool enable_logging) {
+void reset_resource(std::unique_ptr<mr::device_memory_resource>& initialized_resource,
+                    std::unique_ptr<mr::device_memory_resource>& logging_resource,
+                    MemoryResource* mr,
+                    bool enable_logging)
+{
   initialized_resource.reset(mr);
   if (enable_logging) {
     auto lmr = new rmm::mr::logging_resource_adaptor<MemoryResource>(mr);
@@ -142,8 +141,8 @@ reset_resource(std::unique_ptr<mr::device_memory_resource>& initialized_resource
 }
 
 // Initialize the manager
-void
-Manager::initialize(const rmmOptions_t* new_options) {
+void Manager::initialize(const rmmOptions_t* new_options)
+{
   std::lock_guard<std::mutex> guard(manager_mutex);
 
   // repeat initialization is a no-op
@@ -178,8 +177,8 @@ Manager::initialize(const rmmOptions_t* new_options) {
 }
 
 // Shut down the Manager (clears the context)
-void
-Manager::finalize() {
+void Manager::finalize()
+{
   std::lock_guard<std::mutex> guard(manager_mutex);
 
   // finalization before initialization is a no-op

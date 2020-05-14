@@ -2,6 +2,9 @@
 
 ## New Features
 
+- PR #317 Provide External Memory Management Plugin for Numba
+- PR #362 Add spdlog as a dependency in the conda package
+- PR #360 Support logging to stdout/stderr
 - PR #341 Enable logging
 - PR #343 Add in option to statically link against cudart
 
@@ -11,12 +14,14 @@
 - PR #350 Add .clang-format file & format all files
 - PR #358 Fix typo in `rmm_cupy_allocator` docstring
 - PR #357 Add Docker 19 support to local gpuci build
+- PR #365 Make .clang-format consistent with cuGRAPH and cuDF
 
 ## Bug Fixes
 
 - PR #346 Add clearer exception message when RMM_LOG_FILE is unset
 - PR #347 Mark rmmFinalizeWrapper nogil
 - PR #348 Fix unintentional use of pool-managed resource.
+- PR #367 Fix flake8 issues
 
 # RMM 0.13.0 (Date TBD)
 
@@ -61,6 +66,7 @@
 - PR #326 Sync only on copy construction
 - PR #308 Fix typo in README
 - PR #334 Replace `rmm_allocator` for Thrust allocations
+- PR #345 Remove stream synchronization from `device_scalar` constructor and `set_value`
 
 ## Bug Fixes
 
