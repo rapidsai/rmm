@@ -83,7 +83,9 @@ class device_uvector {
   explicit device_uvector(std::size_t size,
                           cudaStream_t stream                 = 0,
                           rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
-    : _storage{elements_to_bytes(size), stream, mr} {}
+    : _storage{elements_to_bytes(size), stream, mr}
+  {
+  }
 
   /**
    * @brief Construct a new `device_uvector` with the specified number of elements initialized to
@@ -98,7 +100,8 @@ class device_uvector {
                  value_type const& v,
                  cudaStream_t stream                 = 0,
                  rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
-    : device_uvector(size, stream, mr) {
+    : device_uvector(size, stream, mr)
+  {
     if (std::is_arithmetic<T>::value && (value_type{0} == v)) {
       // This is ~20% faster for sizes less than 1M
       RMM_CUDA_TRY(cudaMemsetAsync(data(), 0, _storage.size(), stream));
@@ -120,7 +123,9 @@ class device_uvector {
   explicit device_uvector(device_uvector const& other,
                           cudaStream_t stream                 = 0,
                           rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
-    : _storage{other.storage, stream, mr} {}
+    : _storage{other.storage, stream, mr}
+  {
+  }
 
   /**
    * @brief Resizes the vector to contain `new_size` elements.
@@ -138,8 +143,8 @@ class device_uvector {
    * @param new_size The desired number of elements
    * @param stream The stream on which to perform the allocation/copy (if any)
    */
-  void
-  resize(std::size_t new_size, cudaStream_t stream = 0) {
+  void resize(std::size_t new_size, cudaStream_t stream = 0)
+  {
     _storage.resize(elements_to_bytes(new_size), stream);
   }
 
@@ -150,20 +155,14 @@ class device_uvector {
    *
    * @param stream Stream on which to perform allocation and copy
    */
-  void
-  shrink_to_fit(cudaStream_t stream = 0) {
-    _storage.shrink_to_fit(stream);
-  }
+  void shrink_to_fit(cudaStream_t stream = 0) { _storage.shrink_to_fit(stream); }
 
   /**
    * @brief Release ownership of device memory storage.
    *
    * @return The `device_buffer` used to store the vector elements
    */
-  device_buffer
-  release() noexcept {
-    return std::move(_storage);
-  }
+  device_buffer release() noexcept { return std::move(_storage); }
 
   /**
    * @brief Returns the number of elements that can be held in currently allocated storage.
@@ -171,50 +170,35 @@ class device_uvector {
    * @return std::size_t The number of elements that can be stored without requiring a new
    * allocation.
    */
-  std::size_t
-  capacity() const noexcept {
-    return bytes_to_elements(_storage.capacity());
-  }
+  std::size_t capacity() const noexcept { return bytes_to_elements(_storage.capacity()); }
 
   /**
    * @brief Returns pointer to underlying device storage.
    *
    * @return Raw pointer to element storage in device memory.
    */
-  pointer
-  data() noexcept {
-    return static_cast<pointer>(_storage.data());
-  }
+  pointer data() noexcept { return static_cast<pointer>(_storage.data()); }
 
   /**
    * @brief Returns const pointer to underlying device storage.
    *
    * @return const_pointer Raw const pointer to element storage in device memory.
    */
-  const_pointer
-  data() const noexcept {
-    return static_cast<const_pointer>(_storage.data());
-  }
+  const_pointer data() const noexcept { return static_cast<const_pointer>(_storage.data()); }
 
   /**
    * @brief Returns an iterator to the first element.
    *
    * @return Iterator to the first element.
    */
-  iterator
-  begin() noexcept {
-    return data();
-  }
+  iterator begin() noexcept { return data(); }
 
   /**
    * @brief Returns an iterator to the first element.
    *
    * @return Iterator to the first element.
    */
-  const_iterator
-  begin() const noexcept {
-    return data();
-  }
+  const_iterator begin() const noexcept { return data(); }
 
   /**
    * @brief Returns an iterator to the element following the last element of the vector.
@@ -224,10 +208,7 @@ class device_uvector {
    *
    * @return Iterator to one past the last element.
    */
-  iterator
-  end() noexcept {
-    return data() + size();
-  }
+  iterator end() noexcept { return data() + size(); }
 
   /**
    * @brief Returns an iterator to the element following the last element of the vector.
@@ -237,20 +218,14 @@ class device_uvector {
    *
    * @return Iterator to one past the last element.
    */
-  const_iterator
-  end() const noexcept {
-    return data() + size();
-  }
+  const_iterator end() const noexcept { return data() + size(); }
 
   /**
    * @brief Returns the number of elements in the vector.
    *
    * @return The number of elements.
    */
-  std::size_t
-  size() const noexcept {
-    return bytes_to_elements(_storage.size());
-  }
+  std::size_t size() const noexcept { return bytes_to_elements(_storage.size()); }
 
   /**
    * @brief Returns if the vector contains no elements, i.e., `size() == 0`.
@@ -258,29 +233,28 @@ class device_uvector {
    * @return true The vector is empty
    * @return false The vector is not empty
    */
-  bool
-  is_empty() const noexcept {
-    return size() == 0;
-  }
+  bool is_empty() const noexcept { return size() == 0; }
 
   /**
    * @brief Returns pointer to the resource used to allocate and deallocate the device storage.
    *
    * @return Pointer to underlying resource
    */
-  mr::device_memory_resource*
-  memory_resource() const noexcept {
+  mr::device_memory_resource* memory_resource() const noexcept
+  {
     return _storage.memory_resource();
   }
 
  private:
   device_buffer _storage{};  ///< Device memory storage for vector elements
 
-  std::size_t constexpr elements_to_bytes(std::size_t num_elements) const noexcept {
+  std::size_t constexpr elements_to_bytes(std::size_t num_elements) const noexcept
+  {
     return num_elements * sizeof(value_type);
   }
 
-  std::size_t constexpr bytes_to_elements(std::size_t num_bytes) const noexcept {
+  std::size_t constexpr bytes_to_elements(std::size_t num_bytes) const noexcept
+  {
     return num_bytes / sizeof(value_type);
   }
 };
