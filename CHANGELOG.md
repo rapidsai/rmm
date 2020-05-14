@@ -10,6 +10,7 @@
 
 ## Improvements
 
+- PR #366 Remove installation of extra test dependencies
 - PR #354 Add CMake option for per-thread default stream
 - PR #350 Add .clang-format file & format all files
 - PR #358 Fix typo in `rmm_cupy_allocator` docstring
