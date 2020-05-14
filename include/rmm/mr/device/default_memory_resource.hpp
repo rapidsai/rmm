@@ -51,10 +51,9 @@ device_memory_resource* get_default_resource();
  * @return device_memory_resource* The previous value of the default device
  * memory resource pointer
  */
-device_memory_resource* set_default_resource(
-    device_memory_resource* new_resource);
+device_memory_resource* set_default_resource(device_memory_resource* new_resource);
 
-namespace detail{
+namespace detail {
 
 /**
  * @brief gets the default memory_resource when none is set

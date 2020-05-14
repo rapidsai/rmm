@@ -23,16 +23,17 @@
 
 class raii_restore_env {
  public:
-  raii_restore_env(char const* name)
-      : name_(name) {
+  raii_restore_env(char const* name) : name_(name)
+  {
     auto const value_or_null = getenv(name);
     if (value_or_null != nullptr) {
-      value_ = value_or_null;
+      value_  = value_or_null;
       is_set_ = true;
     }
   }
 
-  ~raii_restore_env() {
+  ~raii_restore_env()
+  {
     if (is_set_) {
       setenv(name_.c_str(), value_.c_str(), 1);
     } else {
@@ -46,17 +47,19 @@ class raii_restore_env {
   bool is_set_{false};
 };
 
-TEST(Adaptor, first) {
+TEST(Adaptor, first)
+{
   rmm::mr::cuda_memory_resource upstream;
 
-  rmm::mr::logging_resource_adaptor<rmm::mr::cuda_memory_resource> log_mr{
-      &upstream, "logs/test1.txt"};
+  rmm::mr::logging_resource_adaptor<rmm::mr::cuda_memory_resource> log_mr{&upstream,
+                                                                          "logs/test1.txt"};
 
   auto p = log_mr.allocate(100);
   log_mr.deallocate(p, 100);
 }
 
-TEST(Adaptor, factory) {
+TEST(Adaptor, factory)
+{
   rmm::mr::cuda_memory_resource upstream;
 
   auto log_mr = rmm::mr::make_logging_adaptor(&upstream, "logs/test2.txt");
@@ -65,7 +68,8 @@ TEST(Adaptor, factory) {
   log_mr.deallocate(p, 100);
 }
 
-TEST(Adaptor, EnviromentPath) {
+TEST(Adaptor, EnviromentPath)
+{
   rmm::mr::cuda_memory_resource upstream;
 
   // restore the original value (or unset) after test
@@ -85,7 +89,8 @@ TEST(Adaptor, EnviromentPath) {
   log_mr.deallocate(p, 100);
 }
 
-TEST(Adaptor, STDOUT) {
+TEST(Adaptor, STDOUT)
+{
   testing::internal::CaptureStdout();
 
   rmm::mr::cuda_memory_resource upstream;
@@ -100,7 +105,8 @@ TEST(Adaptor, STDOUT) {
   ASSERT_EQ(header, "Time,Action,Pointer,Size,Stream");
 }
 
-TEST(Adaptor, STDERR) {
+TEST(Adaptor, STDERR)
+{
   testing::internal::CaptureStderr();
 
   rmm::mr::cuda_memory_resource upstream;
@@ -114,4 +120,3 @@ TEST(Adaptor, STDERR) {
   std::string header = output.substr(0, output.find("\n"));
   ASSERT_EQ(header, "Time,Action,Pointer,Size,Stream");
 }
-

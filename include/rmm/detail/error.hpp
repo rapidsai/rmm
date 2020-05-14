@@ -49,9 +49,9 @@ struct cuda_error : public std::runtime_error {
  */
 class bad_alloc : public std::bad_alloc {
  public:
-  bad_alloc(const char* w)
-      : std::bad_alloc{},
-        _what{std::string{std::bad_alloc::what()} + ": " + w} {}
+  bad_alloc(const char* w) : std::bad_alloc{}, _what{std::string{std::bad_alloc::what()} + ": " + w}
+  {
+  }
 
   bad_alloc(std::string const& w) : bad_alloc(w.c_str()) {}
 
@@ -96,11 +96,9 @@ class bad_alloc : public std::bad_alloc {
 #define GET_RMM_EXPECTS_MACRO(_1, _2, _3, NAME, ...) NAME
 #define RMM_EXPECTS_3(_condition, _exception_type, _what) \
   (!!(_condition))                                        \
-      ? static_cast<void>(0)                              \
-      : throw _exception_type("RMM failure at: " __FILE__ \
-                              ":" RMM_STRINGIFY(__LINE__) ": " _what)
-#define RMM_EXPECTS_2(_condition, _reason) \
-  RMM_EXPECTS_3(_condition, rmm::logic_error, _reason)
+    ? static_cast<void>(0)                                \
+    : throw _exception_type("RMM failure at: " __FILE__ ":" RMM_STRINGIFY(__LINE__) ": " _what)
+#define RMM_EXPECTS_2(_condition, _reason) RMM_EXPECTS_3(_condition, rmm::logic_error, _reason)
 
 /**
  * @brief Indicates that an erroneous code path has been taken.
@@ -118,9 +116,8 @@ class bad_alloc : public std::bad_alloc {
   GET_RMM_FAIL_MACRO(__VA_ARGS__, RMM_FAIL_2, RMM_FAIL_1) \
   (__VA_ARGS__)
 #define GET_RMM_FAIL_MACRO(_1, _2, NAME, ...) NAME
-#define RMM_FAIL_2(_what, _exception_type)         \
-  throw _exception_type{"RMM failure at:" __FILE__ \
-                        ":" RMM_STRINGIFY(__LINE__) ": " _what};
+#define RMM_FAIL_2(_what, _exception_type) \
+  throw _exception_type{"RMM failure at:" __FILE__ ":" RMM_STRINGIFY(__LINE__) ": " _what};
 #define RMM_FAIL_1(_what) RMM_FAIL_2(_call, rmm::logic_error)
 
 /**
@@ -144,19 +141,17 @@ class bad_alloc : public std::bad_alloc {
  * ```
  *
  */
-#define RMM_CUDA_TRY(...)                                     \
+#define RMM_CUDA_TRY(...)                                             \
   GET_RMM_CUDA_TRY_MACRO(__VA_ARGS__, RMM_CUDA_TRY_2, RMM_CUDA_TRY_1) \
   (__VA_ARGS__)
 #define GET_RMM_CUDA_TRY_MACRO(_1, _2, NAME, ...) NAME
-#define RMM_CUDA_TRY_2(_call, _exception_type)                              \
-  do {                                                                  \
-    cudaError_t const error = (_call);                                  \
-    if (cudaSuccess != error) {                                         \
-      cudaGetLastError();                                               \
-      throw _exception_type{std::string{"CUDA error at: "} + __FILE__ + \
-                            RMM_STRINGIFY(__LINE__) + ": " +            \
-                            cudaGetErrorName(error) + " " +             \
-                            cudaGetErrorString(error)};                 \
-    }                                                                   \
+#define RMM_CUDA_TRY_2(_call, _exception_type)                                                    \
+  do {                                                                                            \
+    cudaError_t const error = (_call);                                                            \
+    if (cudaSuccess != error) {                                                                   \
+      cudaGetLastError();                                                                         \
+      throw _exception_type{std::string{"CUDA error at: "} + __FILE__ + RMM_STRINGIFY(__LINE__) + \
+                            ": " + cudaGetErrorName(error) + " " + cudaGetErrorString(error)};    \
+    }                                                                                             \
   } while (0);
 #define RMM_CUDA_TRY_1(_call) RMM_CUDA_TRY_2(_call, rmm::cuda_error)
