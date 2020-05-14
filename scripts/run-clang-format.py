@@ -26,7 +26,7 @@ EXPECTED_VERSION = "8.0.1"
 VERSION_REGEX = re.compile(r"clang-format version ([0-9.]+)")
 # NOTE: populate this list with more top-level dirs as we add more of them to the rmm repo
 DEFAULT_DIRS = ["src",
-                "include"
+                "include",
                 "tests",
                 "benchmarks"]
 
