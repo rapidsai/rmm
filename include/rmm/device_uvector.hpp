@@ -156,6 +156,16 @@ class device_uvector {
   }
 
   /**
+   * @brief Release ownership of device memory storage.
+   *
+   * @return The `device_buffer` used to store the vector elements
+   */
+  device_buffer
+  release() noexcept {
+    return std::move(_storage);
+  }
+
+  /**
    * @brief Returns the number of elements that can be held in currently allocated storage.
    *
    * @return std::size_t The number of elements that can be stored without requiring a new

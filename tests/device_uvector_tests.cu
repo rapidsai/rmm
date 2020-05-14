@@ -111,6 +111,21 @@ TYPED_TEST(TypedUVectorTest, ResizeToZero) {
   EXPECT_EQ(uv.capacity(), 0);
 }
 
+TYPED_TEST(TypedUVectorTest, Release){
+  auto original_size = 12345;
+  rmm::device_uvector<TypeParam> uv(original_size);
+
+  auto original_data = uv.data();
+
+  rmm::device_buffer storage = uv.release();
+
+  EXPECT_EQ(uv.size(), 0);
+  EXPECT_EQ(uv.capacity(), 0);
+  EXPECT_TRUE(uv.is_empty());
+  EXPECT_EQ(storage.data(), original_data);
+  EXPECT_EQ(storage.size(), original_size * sizeof(TypeParam));
+}
+
 template <typename T>
 struct equal_to {
   T v;
