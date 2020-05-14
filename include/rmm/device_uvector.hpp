@@ -28,7 +28,7 @@ namespace rmm {
 /**
  * @brief An *uninitialized* vector of elements in device memory.
  *
- * Similar to a `thrust::device_vector`, `device_uvector` is random access container of elements
+ * Similar to a `thrust::device_vector`, `device_uvector` is a random access container of elements
  * stored contiguously in device memory. However, unlike `thrust::device_vector`, `device_uvector`
  * does *not* default initialize the vector elements. Initialization is only performed when
  * explicitly requested via appropriate constructors.
