@@ -202,7 +202,7 @@ class device_buffer {
       // compatible, just reuse the existing memory
       if ((capacity() > other.size()) and _mr->is_equal(*other._mr)) {
         set_stream(other.stream());
-        resize(other.size());
+        resize(other.size(), stream());
         copy(other.data(), other.size());
       } else {
         // Otherwise, need to deallocate and allocate new memory
@@ -323,7 +323,7 @@ class device_buffer {
       // Invoke copy ctor on self which only copies `[0, size())` and swap it
       // with self. The temporary `device_buffer` will hold the old contents
       // which will then be destroyed
-      auto tmp = device_buffer{*this, stream};
+      auto tmp = device_buffer{*this, stream, _mr};
       std::swap(tmp, *this);
     }
   }
@@ -418,7 +418,7 @@ class device_buffer {
    */
   void deallocate() noexcept
   {
-    if (capacity() > 0) { _mr->deallocate(data(), capacity()); }
+    if (capacity() > 0) { _mr->deallocate(data(), capacity(), stream()); }
     _size     = 0;
     _capacity = 0;
     _data     = nullptr;
