@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import ctypes
-import os
 
 import numpy as np
 from numba import cuda
@@ -63,14 +62,6 @@ def reinitialize(
         Name of the log file. If not specified, the environment variable
         RMM_LOG_FILE is used. A TypeError is thrown if neither is available.
     """
-    if logging and not log_file_name:
-        log_file_name = os.getenv("RMM_LOG_FILE")
-        if not log_file_name:
-            raise TypeError(
-                "RMM log file must be specified either using "
-                "log_file_name= argument or RMM_LOG_FILE "
-                "environment variable"
-            )
     rmm.mr._initialize(
         pool_allocator=pool_allocator,
         managed_memory=managed_memory,
