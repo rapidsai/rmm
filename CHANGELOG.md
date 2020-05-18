@@ -16,6 +16,7 @@
 - PR #358 Fix typo in `rmm_cupy_allocator` docstring
 - PR #357 Add Docker 19 support to local gpuci build
 - PR #365 Make .clang-format consistent with cuGRAPH and cuDF
+- PR #371 Add docs build script to repository
 
 ## Bug Fixes
 
