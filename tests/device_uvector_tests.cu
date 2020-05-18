@@ -22,13 +22,15 @@
 #include <thrust/logical.h>
 
 template <typename T>
-struct TypedUVectorTest : ::testing::Test {};
+struct TypedUVectorTest : ::testing::Test {
+};
 
 using TestTypes = ::testing::Types<int8_t, int32_t, uint64_t, float, double>;
 
 TYPED_TEST_CASE(TypedUVectorTest, TestTypes);
 
-TYPED_TEST(TypedUVectorTest, DefaultConstructor) {
+TYPED_TEST(TypedUVectorTest, DefaultConstructor)
+{
   rmm::device_uvector<TypeParam> uv{};
   EXPECT_EQ(uv.size(), 0);
   EXPECT_EQ(uv.data(), nullptr);
@@ -37,7 +39,8 @@ TYPED_TEST(TypedUVectorTest, DefaultConstructor) {
   EXPECT_NE(uv.memory_resource(), nullptr);
 }
 
-TYPED_TEST(TypedUVectorTest, ZeroSizeConstructor) {
+TYPED_TEST(TypedUVectorTest, ZeroSizeConstructor)
+{
   rmm::device_uvector<TypeParam> uv(0);
   EXPECT_EQ(uv.size(), 0);
   EXPECT_EQ(uv.data(), nullptr);
@@ -45,7 +48,8 @@ TYPED_TEST(TypedUVectorTest, ZeroSizeConstructor) {
   EXPECT_TRUE(uv.is_empty());
 }
 
-TYPED_TEST(TypedUVectorTest, NonZeroSizeConstructor) {
+TYPED_TEST(TypedUVectorTest, NonZeroSizeConstructor)
+{
   rmm::device_uvector<TypeParam> uv(12345);
   EXPECT_EQ(uv.size(), 12345);
   EXPECT_NE(uv.data(), nullptr);
@@ -53,7 +57,8 @@ TYPED_TEST(TypedUVectorTest, NonZeroSizeConstructor) {
   EXPECT_FALSE(uv.is_empty());
 }
 
-TYPED_TEST(TypedUVectorTest, ResizeSmaller) {
+TYPED_TEST(TypedUVectorTest, ResizeSmaller)
+{
   auto original_size = 12345;
   rmm::device_uvector<TypeParam> uv(original_size);
   auto original_data  = uv.data();
@@ -73,7 +78,8 @@ TYPED_TEST(TypedUVectorTest, ResizeSmaller) {
   EXPECT_EQ(uv.capacity(), smaller_size);
 }
 
-TYPED_TEST(TypedUVectorTest, ResizeLarger) {
+TYPED_TEST(TypedUVectorTest, ResizeLarger)
+{
   auto original_size = 12345;
   rmm::device_uvector<TypeParam> uv(original_size);
   auto original_data  = uv.data();
@@ -98,7 +104,8 @@ TYPED_TEST(TypedUVectorTest, ResizeLarger) {
   EXPECT_EQ(uv.begin(), larger_begin);
 }
 
-TYPED_TEST(TypedUVectorTest, ResizeToZero) {
+TYPED_TEST(TypedUVectorTest, ResizeToZero)
+{
   auto original_size = 12345;
   rmm::device_uvector<TypeParam> uv(original_size);
   uv.resize(0);
@@ -111,7 +118,8 @@ TYPED_TEST(TypedUVectorTest, ResizeToZero) {
   EXPECT_EQ(uv.capacity(), 0);
 }
 
-TYPED_TEST(TypedUVectorTest, Release){
+TYPED_TEST(TypedUVectorTest, Release)
+{
   auto original_size = 12345;
   rmm::device_uvector<TypeParam> uv(original_size);
 
@@ -129,13 +137,11 @@ TYPED_TEST(TypedUVectorTest, Release){
 template <typename T>
 struct equal_to {
   T v;
-  __device__ bool
-  operator()(T const& t) {
-    return t == v;
-  }
+  __device__ bool operator()(T const& t) { return t == v; }
 };
 
-TYPED_TEST(TypedUVectorTest, ZeroInitConstuctor) {
+TYPED_TEST(TypedUVectorTest, ZeroInitConstuctor)
+{
   // Explicit type for initial value to avoid ambiguity with cudaStream_t
   rmm::device_uvector<TypeParam> uv(12345, TypeParam{0});
   EXPECT_EQ(uv.size(), 12345);
@@ -145,7 +151,8 @@ TYPED_TEST(TypedUVectorTest, ZeroInitConstuctor) {
   EXPECT_TRUE(thrust::all_of(thrust::device, uv.begin(), uv.end(), equal_to<TypeParam>{0}));
 }
 
-TYPED_TEST(TypedUVectorTest, InitConstuctor) {
+TYPED_TEST(TypedUVectorTest, InitConstuctor)
+{
   // Explicit type for initial value to avoid ambiguity with cudaStream_t
   rmm::device_uvector<TypeParam> uv(12345, TypeParam{42});
   EXPECT_EQ(uv.size(), 12345);
