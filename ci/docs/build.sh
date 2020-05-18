@@ -52,7 +52,7 @@ for PROJECT in ${PROJECTS[@]}; do
 done
 
 
-mv $PROJECT_WORKSPACE/doxygen/html/* $DOCS_WORKSPACE/api/libcuml/$BRANCH_VERSION
+mv $PROJECT_WORKSPACE/doxygen/html/* $DOCS_WORKSPACE/api/rmm/$BRANCH_VERSION
 
 # Customize HTML documentation
 ./update_symlinks.sh $NIGHTLY_VERSION
