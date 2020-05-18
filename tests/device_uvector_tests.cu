@@ -133,31 +133,3 @@ TYPED_TEST(TypedUVectorTest, Release)
   EXPECT_EQ(storage.data(), original_data);
   EXPECT_EQ(storage.size(), original_size * sizeof(TypeParam));
 }
-
-template <typename T>
-struct equal_to {
-  T v;
-  __device__ bool operator()(T const& t) { return t == v; }
-};
-
-TYPED_TEST(TypedUVectorTest, ZeroInitConstuctor)
-{
-  // Explicit type for initial value to avoid ambiguity with cudaStream_t
-  rmm::device_uvector<TypeParam> uv(12345, TypeParam{0});
-  EXPECT_EQ(uv.size(), 12345);
-  EXPECT_NE(uv.data(), nullptr);
-  EXPECT_EQ(uv.end(), uv.begin() + uv.size());
-  EXPECT_FALSE(uv.is_empty());
-  EXPECT_TRUE(thrust::all_of(thrust::device, uv.begin(), uv.end(), equal_to<TypeParam>{0}));
-}
-
-TYPED_TEST(TypedUVectorTest, InitConstuctor)
-{
-  // Explicit type for initial value to avoid ambiguity with cudaStream_t
-  rmm::device_uvector<TypeParam> uv(12345, TypeParam{42});
-  EXPECT_EQ(uv.size(), 12345);
-  EXPECT_NE(uv.data(), nullptr);
-  EXPECT_EQ(uv.end(), uv.begin() + uv.size());
-  EXPECT_FALSE(uv.is_empty());
-  EXPECT_TRUE(thrust::all_of(thrust::device, uv.begin(), uv.end(), equal_to<TypeParam>{42}));
-}

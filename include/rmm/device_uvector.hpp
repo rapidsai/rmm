@@ -88,29 +88,6 @@ class device_uvector {
   }
 
   /**
-   * @brief Construct a new `device_uvector` with the specified number of elements initialized to
-   * the specified value.
-   *
-   * @param size The number of elements
-   * @param v The value used to initialize all elements
-   * @param stream The stream on which to perform the allocation and initialization
-   * @param mr The resource used to allocate the device storage
-   */
-  device_uvector(std::size_t size,
-                 value_type const& v,
-                 cudaStream_t stream                 = 0,
-                 rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
-    : device_uvector(size, stream, mr)
-  {
-    if (std::is_arithmetic<T>::value && (value_type{0} == v)) {
-      // This is ~20% faster for sizes less than 1M
-      RMM_CUDA_TRY(cudaMemsetAsync(data(), 0, _storage.size(), stream));
-    } else {
-      thrust::uninitialized_fill(rmm::exec_policy(stream)->on(stream), begin(), end(), v);
-    }
-  }
-
-  /**
    * @brief Construct a new device_uvector by deep copying the contents of another `device_uvector`.
    *
    * Elements are copied as if it were performed by `memcpy`, i.e., `T`'s copy constructor is not
