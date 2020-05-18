@@ -37,8 +37,8 @@ namespace mr {
 template <typename T>
 class thrust_allocator : public thrust::device_malloc_allocator<T> {
  public:
-  using Base = thrust::device_malloc_allocator<T>;
-  using pointer = typename Base::pointer;
+  using Base      = thrust::device_malloc_allocator<T>;
+  using pointer   = typename Base::pointer;
   using size_type = typename Base::size_type;
 
   /**
@@ -73,8 +73,7 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    * @param mr The resource to be used for device memory allocation
    * @param stream The stream to be used for device memory (de)allocation
    */
-  thrust_allocator(device_memory_resource* mr, cudaStream_t stream)
-      : _mr(mr), _stream{stream} {}
+  thrust_allocator(device_memory_resource* mr, cudaStream_t stream) : _mr(mr), _stream{stream} {}
 
   /**
    * @brief Copy constructor. Copies the resource pointer and stream.
@@ -83,7 +82,9 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    */
   template <typename U>
   thrust_allocator(thrust_allocator<U> const& other)
-      : _mr(other.resource()), _stream{other.stream()} {}
+    : _mr(other.resource()), _stream{other.stream()}
+  {
+  }
 
   /**
    * @brief Allocate objects of type `T`
@@ -91,9 +92,9 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    * @param n  The number of elements of type `T` to allocate
    * @return pointer Pointer to the newly allocated storage
    */
-  pointer allocate(size_type n) {
-    return thrust::device_pointer_cast(
-        static_cast<T*>(_mr->allocate(n * sizeof(T), _stream)));
+  pointer allocate(size_type n)
+  {
+    return thrust::device_pointer_cast(static_cast<T*>(_mr->allocate(n * sizeof(T), _stream)));
   }
 
   /**
@@ -103,7 +104,8 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    * @param n number of elements, *must* be equal to the argument passed to the
    * prior `allocate` call that produced `p`
    */
-  void deallocate(pointer p, size_type n) {
+  void deallocate(pointer p, size_type n)
+  {
     return _mr->deallocate(thrust::raw_pointer_cast(p), n * sizeof(T), _stream);
   }
 

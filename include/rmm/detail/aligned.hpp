@@ -29,8 +29,7 @@ namespace detail {
  * @brief Default alignment used for host memory allocated by RMM.
  *
  */
-static constexpr std::size_t RMM_DEFAULT_HOST_ALIGNMENT{
-    alignof(std::max_align_t)};
+static constexpr std::size_t RMM_DEFAULT_HOST_ALIGNMENT{alignof(std::max_align_t)};
 
 /**
  * @brief Returns whether or not `n` is a power of 2.
@@ -42,9 +41,7 @@ constexpr bool is_pow2(std::size_t n) { return (0 == (n & (n - 1))); }
  * @brief Returns whether or not `alignment` is a valid memory alignment.
  *
  */
-constexpr bool is_supported_alignment(std::size_t alignment) {
-  return is_pow2(alignment);
-}
+constexpr bool is_supported_alignment(std::size_t alignment) { return is_pow2(alignment); }
 
 /**
  * @brief Allocates sufficient memory to satisfy the requested size `bytes` with
@@ -74,13 +71,13 @@ constexpr bool is_supported_alignment(std::size_t alignment) {
  * `alignment`.
  */
 template <typename Alloc>
-void *aligned_allocate(std::size_t bytes, std::size_t alignment, Alloc alloc) {
+void *aligned_allocate(std::size_t bytes, std::size_t alignment, Alloc alloc)
+{
   assert(is_pow2(alignment));
 
   // allocate memory for bytes, plus potential alignment correction,
   // plus store of the correction offset
-  std::size_t padded_allocation_size{bytes + alignment +
-                                     sizeof(std::ptrdiff_t)};
+  std::size_t padded_allocation_size{bytes + alignment + sizeof(std::ptrdiff_t)};
 
   char *const original = static_cast<char *>(alloc(padded_allocation_size));
 
@@ -115,8 +112,8 @@ void *aligned_allocate(std::size_t bytes, std::size_t alignment, Alloc alloc) {
  * @tparam Dealloc A unary callable type that deallocates memory.
  */
 template <typename Dealloc>
-void aligned_deallocate(void *p, std::size_t bytes, std::size_t alignment,
-                        Dealloc dealloc) {
+void aligned_deallocate(void *p, std::size_t bytes, std::size_t alignment, Dealloc dealloc)
+{
   (void)alignment;
 
   // Get offset from the location immediately prior to the aligned pointer

@@ -10,6 +10,7 @@
 
 ## Improvements
 
+- PR #366 Remove installation of extra test dependencies
 - PR #354 Add CMake option for per-thread default stream
 - PR #350 Add .clang-format file & format all files
 - PR #358 Fix typo in `rmm_cupy_allocator` docstring
@@ -22,6 +23,7 @@
 - PR #347 Mark rmmFinalizeWrapper nogil
 - PR #348 Fix unintentional use of pool-managed resource.
 - PR #367 Fix flake8 issues
+- PR #368 Fix `clang-format` missing comma bug
 
 # RMM 0.13.0 (Date TBD)
 

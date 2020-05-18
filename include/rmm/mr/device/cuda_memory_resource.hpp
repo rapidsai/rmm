@@ -32,7 +32,6 @@ namespace mr {
  */
 class cuda_memory_resource final : public device_memory_resource {
  public:
-
   /**
    * @brief Query whether the resource supports use of non-null CUDA streams for
    * allocation/deallocation. `cuda_memory_resource` does not support streams.
@@ -43,7 +42,7 @@ class cuda_memory_resource final : public device_memory_resource {
 
   /**
    * @brief Query whether the resource supports the get_mem_info API.
-   * 
+   *
    * @return true
    */
   bool supports_get_mem_info() const noexcept override { return true; }
@@ -61,7 +60,8 @@ class cuda_memory_resource final : public device_memory_resource {
    * @param bytes The size, in bytes, of the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* do_allocate(std::size_t bytes, cudaStream_t) override {
+  void* do_allocate(std::size_t bytes, cudaStream_t) override
+  {
     void* p{nullptr};
     RMM_CUDA_TRY(cudaMalloc(&p, bytes), rmm::bad_alloc);
     return p;
@@ -76,7 +76,8 @@ class cuda_memory_resource final : public device_memory_resource {
    *
    * @param p Pointer to be deallocated
    */
-  void do_deallocate(void* p, std::size_t, cudaStream_t) override {
+  void do_deallocate(void* p, std::size_t, cudaStream_t) override
+  {
     cudaError_t const status = cudaFree(p);
     assert(cudaSuccess == status);
   }
@@ -93,7 +94,8 @@ class cuda_memory_resource final : public device_memory_resource {
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equal
    */
-  bool do_is_equal(device_memory_resource const& other) const noexcept override {
+  bool do_is_equal(device_memory_resource const& other) const noexcept override
+  {
     return dynamic_cast<cuda_memory_resource const*>(&other) != nullptr;
   }
 
@@ -104,7 +106,8 @@ class cuda_memory_resource final : public device_memory_resource {
    *
    * @return std::pair contaiing free_size and total_size of memory
    */
-  std::pair<size_t, size_t> do_get_mem_info(cudaStream_t) const override {
+  std::pair<size_t, size_t> do_get_mem_info(cudaStream_t) const override
+  {
     std::size_t free_size;
     std::size_t total_size;
     RMM_CUDA_TRY(cudaMemGetInfo(&free_size, &total_size));
