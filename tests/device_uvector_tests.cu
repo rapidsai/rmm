@@ -33,7 +33,6 @@ TYPED_TEST(TypedUVectorTest, DefaultConstructor)
 {
   rmm::device_uvector<TypeParam> uv{};
   EXPECT_EQ(uv.size(), 0);
-  EXPECT_EQ(uv.data(), nullptr);
   EXPECT_EQ(uv.begin(), uv.end());
   EXPECT_TRUE(uv.is_empty());
   EXPECT_NE(uv.memory_resource(), nullptr);
@@ -43,7 +42,6 @@ TYPED_TEST(TypedUVectorTest, ZeroSizeConstructor)
 {
   rmm::device_uvector<TypeParam> uv(0);
   EXPECT_EQ(uv.size(), 0);
-  EXPECT_EQ(uv.data(), nullptr);
   EXPECT_EQ(uv.end(), uv.begin());
   EXPECT_TRUE(uv.is_empty());
 }
