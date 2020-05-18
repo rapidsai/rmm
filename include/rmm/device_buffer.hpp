@@ -201,8 +201,7 @@ class device_buffer {
       // If the current capacity is large enough and the resources are
       // compatible, just reuse the existing memory
       if ((capacity() > other.size()) and _mr->is_equal(*other._mr)) {
-        set_stream(other.stream());
-        resize(other.size(), stream());
+        resize(other.size(), other.stream());
         copy(other.data(), other.size());
       } else {
         // Otherwise, need to deallocate and allocate new memory
