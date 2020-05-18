@@ -1,57 +1,68 @@
 #!/bin/bash
-# Copyright (c) 2018, NVIDIA CORPORATION.
-######################################
-# rmm GPU build & testscript for CI  #
-######################################
-set -ex
+# Copyright (c) 2020, NVIDIA CORPORATION.
+#################################
+# RMM Docs build script for CI #
+#################################
 
-# Logger function for build status output
-function logger() {
-  echo -e "\n>>>> $@\n"
-}
+if [ -z "$PROJECT_WORKSPACE" ]; then
+    echo ">>>> ERROR: Could not detect PROJECT_WORKSPACE in environment"
+    echo ">>>> WARNING: This script contains git commands meant for automated building, do not run locally"
+    exit 1
+fi
 
-# Set path and build parallel level
+export DOCS_WORKSPACE=$WORKSPACE/docs
 export PATH=/conda/bin:/usr/local/cuda/bin:$PATH
-export PARALLEL_LEVEL=4
 export HOME=$WORKSPACE
-export DOCS_DIR=/data/docs/html
+export PROJECT_WORKSPACE=/rapids/rmm
+export LIBCUDF_KERNEL_CACHE_PATH="$HOME/.jitify-cache"
+export NIGHTLY_VERSION=$(echo $BRANCH_VERSION | awk -F. '{print $2}')
+export PROJECTS=(rmm)
 
-while getopts "d" option; do
-    case ${option} in
-        d)
-            DOCS_DIR=${OPTARG}
-            ;;
-    esac
-done
-
-################################################################################
-# SETUP - Check environment
-################################################################################
-
-logger "Get env..."
+logger "Check environment..."
 env
 
+logger "Check GPU usage..."
+nvidia-smi
+
 logger "Activate conda env..."
-source activate gdf
-conda install -c conda-forge doxygen
+source activate rapids
+# TODO: Move installs to docs-build-env meta package
+conda install -c anaconda beautifulsoup4 jq
+
 
 logger "Check versions..."
 python --version
-gcc --version
-g++ --version
+$CC --version
+$CXX --version
 conda list
 
-################################################################################
-# BUILD - Build and install librmm and rmm
-################################################################################
-logger "Build and install librmm and rmm..."
-"$WORKSPACE/build.sh" -v clean librmm rmm
+# Build Doxygen docs
+logger "Build Doxygen docs..."
+cd $PROJECT_WORKSPACE/doxygen
+doxygen Doxyfile
 
-################################################################################
-# Docs - Build RMM docs
-################################################################################
-make rmm_doc
+#Commit to Website
+cd $DOCS_WORKSPACE
 
-cd $WORKSPACE
-rm -rf ${DOCS_DIR}/*
-mv doxygen/html/* $DOCS_DIR
+for PROJECT in ${PROJECTS[@]}; do
+    if [ ! -d "api/$PROJECT/$BRANCH_VERSION" ]; then
+        mkdir -p api/$PROJECT/$BRANCH_VERSION
+    fi
+    rm -rf $DOCS_WORKSPACE/api/$PROJECT/$BRANCH_VERSION/*	
+done
+
+
+mv $PROJECT_WORKSPACE/doxygen/html/* $DOCS_WORKSPACE/api/libcuml/$BRANCH_VERSION
+
+# Customize HTML documentation
+./update_symlinks.sh $NIGHTLY_VERSION
+./customization/lib_map.sh
+
+
+for PROJECT in ${PROJECTS[@]}; do
+    echo ""
+    echo "Customizing: $PROJECT"
+    ./customization/customize_docs_in_folder.sh api/$PROJECT/ $NIGHTLY_VERSION
+    git add $DOCS_WORKSPACE/api/$PROJECT/*
+done
+
