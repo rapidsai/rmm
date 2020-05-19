@@ -44,16 +44,21 @@ constexpr bool RMM_USAGE_LOGGING{false};
 // RAII logger class
 class LogIt {
  public:
-  LogIt(Logger::MemEvent_t event, void* ptr, size_t size, cudaStream_t stream,
-        const char* filename, unsigned int line,
+  LogIt(Logger::MemEvent_t event,
+        void* ptr,
+        size_t size,
+        cudaStream_t stream,
+        const char* filename,
+        unsigned int line,
         bool usageLogging = RMM_USAGE_LOGGING)
-      : event(event),
-        device(0),
-        ptr(ptr),
-        size(size),
-        stream(stream),
-        line(line),
-        usageLogging(usageLogging) {
+    : event(event),
+      device(0),
+      ptr(ptr),
+      size(size),
+      stream(stream),
+      line(line),
+      usageLogging(usageLogging)
+  {
     if (filename) file = filename;
     if (Manager::getOptions().enable_logging) {
       RMM_CUDA_TRY(cudaGetDevice(&device));
@@ -63,17 +68,19 @@ class LogIt {
 
   /// Sometimes you need to start logging before the pointer address is
   /// known
-  inline void setPointer(void* p) {
+  inline void setPointer(void* p)
+  {
     if (Manager::getOptions().enable_logging) ptr = p;
   }
 
-  ~LogIt() {
+  ~LogIt()
+  {
     if (Manager::getOptions().enable_logging) {
       Logger::TimePt end = std::chrono::system_clock::now();
       size_t freeMem = 0, totalMem = 0;
       if (usageLogging) rmmGetInfo(&freeMem, &totalMem, stream);
-      Manager::getLogger().record(event, device, ptr, start, end, freeMem,
-                                  totalMem, size, stream, file, line);
+      Manager::getLogger().record(
+        event, device, ptr, start, end, freeMem, totalMem, size, stream, file, line);
     }
   }
 
@@ -104,8 +111,9 @@ class LogIt {
  *                    requested size, or RMM_CUDA_ERROR on any other CUDA error.
  */
 template <typename T>
-[[deprecated]] inline rmmError_t alloc(T** ptr, size_t size, cudaStream_t stream,
-                        const char* file, unsigned int line) {
+[[deprecated]] inline rmmError_t alloc(
+  T** ptr, size_t size, cudaStream_t stream, const char* file, unsigned int line)
+{
   if (!rmmIsInitialized(nullptr)) {
     if (ptr) *ptr = nullptr;
     return RMM_ERROR_NOT_INITIALIZED;
@@ -113,15 +121,12 @@ template <typename T>
 
   rmm::LogIt log(rmm::Logger::Alloc, 0, size, stream, file, line);
 
-  if (!ptr && !size) {
-    return RMM_SUCCESS;
-  }
+  if (!ptr && !size) { return RMM_SUCCESS; }
 
   if (!ptr) return RMM_ERROR_INVALID_ARGUMENT;
 
   try {
-    *ptr = static_cast<T*>(
-        rmm::mr::get_default_resource()->allocate(size, stream));
+    *ptr = static_cast<T*>(rmm::mr::get_default_resource()->allocate(size, stream));
 
   } catch (std::exception const& e) {
     *ptr = nullptr;
@@ -189,8 +194,11 @@ inline rmmError_t realloc(T** ptr, size_t new_size, cudaStream_t stream,
  *                    has not been called,or RMM_ERROR_CUDA_ERROR on any CUDA
  *                    error.
  */
-[[deprecated]] inline rmmError_t free(void* ptr, cudaStream_t stream, const char* file,
-                       unsigned int line) {
+[[deprecated]] inline rmmError_t free(void* ptr,
+                                      cudaStream_t stream,
+                                      const char* file,
+                                      unsigned int line)
+{
   if (!rmmIsInitialized(nullptr)) return RMM_ERROR_NOT_INITIALIZED;
 
   rmm::LogIt log(rmm::Logger::Free, ptr, 0, stream, file, line);

@@ -5,17 +5,20 @@ from itertools import product
 
 import numpy as np
 import pytest
+from numba import cuda
 
 import rmm
 
+cuda.set_memory_manager(rmm.RMMNumbaManager)
 
-def array_tester(dtype, nelem):
+
+def array_tester(dtype, nelem, alloc):
     # data
     h_in = np.full(nelem, 3.2, dtype)
     h_result = np.empty(nelem, dtype)
 
-    d_in = rmm.to_device(h_in)
-    d_result = rmm.device_array_like(d_in)
+    d_in = alloc.to_device(h_in)
+    d_result = alloc.device_array_like(d_in)
 
     d_result.copy_to_device(d_in)
     h_result = d_result.copy_to_host()
@@ -33,39 +36,47 @@ _dtypes = [
     np.bool_,
 ]
 _nelems = [1, 2, 7, 8, 9, 32, 128]
+_allocs = [cuda, rmm]
 
 
-@pytest.mark.parametrize("dtype,nelem", list(product(_dtypes, _nelems)))
-def test_rmm_alloc(dtype, nelem):
-    array_tester(dtype, nelem)
+@pytest.mark.parametrize("dtype", _dtypes)
+@pytest.mark.parametrize("nelem", _nelems)
+@pytest.mark.parametrize("alloc", _allocs)
+def test_rmm_alloc(dtype, nelem, alloc):
+    array_tester(dtype, nelem, alloc)
 
 
 # Test all combinations of default/managed and pooled/non-pooled allocation
 @pytest.mark.parametrize("dtype", _dtypes)
 @pytest.mark.parametrize("nelem", _nelems)
+@pytest.mark.parametrize("alloc", _allocs)
 @pytest.mark.parametrize(
     "managed, pool", list(product([False, True], [False, True]))
 )
-def test_rmm_modes(dtype, nelem, managed, pool):
+def test_rmm_modes(dtype, nelem, alloc, managed, pool):
     rmm.reinitialize(pool_allocator=pool, managed_memory=managed)
 
     assert rmm.is_initialized()
 
-    array_tester(dtype, nelem)
+    array_tester(dtype, nelem, alloc)
     rmm.reinitialize()
+
+
+def test_uninitialized():
+    rmm._finalize()
+    assert not rmm.is_initialized()
+    rmm.reinitialize()  # so further tests will pass
 
 
 @pytest.mark.parametrize("dtype", _dtypes)
 @pytest.mark.parametrize("nelem", _nelems)
 def test_rmm_csv_log(dtype, nelem):
-
     with tempfile.NamedTemporaryFile() as fp:
         rmm.reinitialize(logging=True, log_file_name=fp.name)
         array_tester(dtype, nelem)
         rmm.mr._flush_logs()
         csv = fp.read()
         assert csv.find(b"Time,Action,Pointer,Size,Stream") >= 0
-
     rmm.reinitialize()
 
 
@@ -208,6 +219,7 @@ def test_rmm_device_buffer_copy_from_host(hb):
     [
         lambda: rmm.DeviceBuffer.to_device(b"abc"),
         lambda: rmm.to_device(np.array([97, 98, 99], dtype="u1")),
+        lambda: cuda.to_device(np.array([97, 98, 99], dtype="u1")),
     ],
 )
 def test_rmm_device_buffer_copy_from_device(cuda_ary):

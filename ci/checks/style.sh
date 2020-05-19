@@ -22,7 +22,7 @@ BLACK=`black --check python`
 BLACK_RETVAL=$?
 
 # Run flake8 and get results/return code
-FLAKE=`flake8 python`
+FLAKE=`flake8 --config=python/.flake8 python`
 FLAKE_RETVAL=$?
 
 # Run flake8-cython and get results/return code
