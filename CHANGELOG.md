@@ -25,6 +25,7 @@
 - PR #348 Fix unintentional use of pool-managed resource.
 - PR #367 Fix flake8 issues
 - PR #368 Fix `clang-format` missing comma bug
+- PR #370 Fix stream and mr use in `device_buffer` methods
 
 # RMM 0.13.0 (Date TBD)
 
