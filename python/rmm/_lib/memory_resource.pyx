@@ -1,13 +1,12 @@
 import cython
 import os
 
-from libcpp.memory cimport unique_ptr, make_unique
+from libcpp.memory cimport unique_ptr, make_unique, shared_ptr, make_shared
 from libcpp.string cimport string
 
 
 cdef class MemoryResource:
-    cdef device_memory_resource* c_obj
-    cdef object __weakref__
+    cdef shared_ptr[device_memory_resource] c_obj
 
 
 cdef class CudaMemoryResource(MemoryResource):
@@ -15,10 +14,7 @@ cdef class CudaMemoryResource(MemoryResource):
     Memory resource that uses cudaMalloc/Free for allocation/deallocation
     """
     def __cinit__(self):
-        self.c_obj = new cuda_memory_resource()
-
-    def __dealloc__(self):
-        del self.c_obj
+        self.c_obj.reset(new cuda_memory_resource())
 
 
 cdef class ManagedMemoryResource(MemoryResource):
@@ -27,10 +23,7 @@ cdef class ManagedMemoryResource(MemoryResource):
     allocation/deallocation.
     """
     def __cinit__(self):
-        self.c_obj = new managed_memory_resource()
-
-    def __dealloc__(self):
-        del self.c_obj
+        self.c_obj.reset(new managed_memory_resource())
 
 
 cdef class CNMemMemoryResource(MemoryResource):
@@ -46,13 +39,10 @@ cdef class CNMemMemoryResource(MemoryResource):
         List of GPU device IDs to register with CNMEM.
     """
     def __cinit__(self, size_t initial_pool_size=0, vector[int] devices=[]):
-        self.c_obj = new cnmem_memory_resource(
+        self.c_obj.reset(new cnmem_memory_resource(
             initial_pool_size,
             devices
-        )
-
-    def __dealloc__(self):
-        del self.c_obj
+        ))
 
 
 cdef class CNMemManagedMemoryResource(MemoryResource):
@@ -69,13 +59,11 @@ cdef class CNMemManagedMemoryResource(MemoryResource):
         List of GPU device IDs to register with CNMEM.
     """
     def __cinit__(self, size_t initial_pool_size=0, vector[int] devices=[]):
-        self.c_obj = new cnmem_managed_memory_resource(
+        self.c_obj.reset(new cnmem_managed_memory_resource(
             initial_pool_size,
             devices
-        )
+        ))
 
-    def __dealloc__(self):
-        del self.c_obj
 
 cdef class PoolMemoryResource(MemoryResource):
     """
@@ -92,23 +80,18 @@ cdef class PoolMemoryResource(MemoryResource):
     maximum_pool_size : int, optional
         Maximum size in bytes, that the pool can grow to.
     """
-    cdef MemoryResource _upstream
-
     def __cinit__(
             self,
             MemoryResource upstream,
             size_t initial_pool_size=~0,
             size_t maximum_pool_size=~0
     ):
-        self.c_obj = new pool_memory_resource[device_memory_resource](
+        self.c_obj.reset(new pool_memory_resource(
             upstream.c_obj,
             initial_pool_size,
             maximum_pool_size
-        )
-        self._upstream = upstream
+        ))
 
-    def __dealloc__(self):
-        del self.c_obj
 
 cdef class FixedSizeMemoryResource(MemoryResource):
     """
@@ -127,23 +110,20 @@ cdef class FixedSizeMemoryResource(MemoryResource):
     -----
     Supports only allocations of size smaller than the configured block_size.
     """
-    cdef MemoryResource _upstream
-
     def __cinit__(
             self,
             MemoryResource upstream,
             size_t block_size=1<<20,
             size_t blocks_to_preallocate=128
     ):
-        self.c_obj = new fixed_size_memory_resource[device_memory_resource](
-            upstream.c_obj,
-            block_size,
-            blocks_to_preallocate
+        self.c_obj.reset(
+            new fixed_size_memory_resource(
+                upstream.c_obj,
+                block_size,
+                blocks_to_preallocate
+            )
         )
-        self._upstream = upstream
 
-    def __dealloc__(self):
-        del self.c_obj
 
 cdef class FixedMultiSizeMemoryResource(MemoryResource):
     """
@@ -166,8 +146,6 @@ cdef class FixedMultiSizeMemoryResource(MemoryResource):
         The number of blocks to preallocate from the upstream memory resource,
         and to allocate when all current blocks are in use.
     """
-    cdef MemoryResource _upstream
-
     def __cinit__(
         self,
         MemoryResource upstream,
@@ -176,19 +154,14 @@ cdef class FixedMultiSizeMemoryResource(MemoryResource):
         size_t max_size_exponent=22,
         size_t initial_blocks_per_size=128
     ):
-        self.c_obj = new fixed_multisize_memory_resource[
-            device_memory_resource
-        ](
+        self.c_obj.reset(new fixed_multisize_memory_resource(
             upstream.c_obj,
             size_base,
             min_size_exponent,
             max_size_exponent,
             initial_blocks_per_size
-        )
-        self._upstream = upstream
+        ))
 
-    def __dealloc__(self):
-        del self.c_obj
 
 cdef class HybridMemoryResource(MemoryResource):
     """"
@@ -204,28 +177,20 @@ cdef class HybridMemoryResource(MemoryResource):
         Size in bytes representing the threshold beyond which `large_alloc_mr`
         is used.
     """
-    cdef MemoryResource _small_alloc_mr
-    cdef MemoryResource _large_alloc_mr
-
     def __cinit__(
         self,
         MemoryResource small_alloc_mr,
         MemoryResource large_alloc_mr,
         size_t threshold_size=1<<22
     ):
-        self.c_obj = new hybrid_memory_resource[
-            device_memory_resource,
-            device_memory_resource
-        ](
-            small_alloc_mr.c_obj,
-            large_alloc_mr.c_obj,
-            threshold_size
+        self.c_obj.reset(
+            new hybrid_memory_resource(
+                small_alloc_mr.c_obj,
+                large_alloc_mr.c_obj,
+                threshold_size
+            )
         )
-        self._small_alloc_mr = small_alloc_mr
-        self._large_alloc_mr = large_alloc_mr
 
-    def __dealloc__(self):
-        del self.c_obj
 
 cdef class LoggingResourceAdaptor(MemoryResource):
     """
@@ -250,20 +215,13 @@ cdef class LoggingResourceAdaptor(MemoryResource):
                     "log_file_name= argument or RMM_LOG_FILE "
                     "environment variable"
                 )
-        self.c_obj = new logging_resource_adaptor[device_memory_resource](
+        self.c_obj.reset(new logging_resource_adaptor(
             upstream.c_obj,
             log_file_name
-        )
-        self._upstream = upstream
+        ))
 
     def flush(self):
-        (
-            <logging_resource_adaptor[device_memory_resource]*>
-            self.c_obj
-        )[0].flush()
-
-    def __dealloc__(self):
-        del self.c_obj
+        (<logging_resource_adaptor*>(self.c_obj.get()))[0].flush()
 
 
 # Global memory resource:
@@ -320,23 +278,13 @@ def _initialize(
 
 def _set_default_resource(MemoryResource mr):
     global _mr
-
     _mr = mr
-
-    cdef device_memory_resource* c_mr = _mr.c_obj
-    set_default_resource(c_mr)
-
-
-def get_default_resource():
-    global _mr
-
-    import weakref
-    return weakref.ref(_mr)
+    set_default_resource(_mr.c_obj)
 
 
 def is_initialized():
     global _mr
-    return _mr.c_obj is not NULL
+    return _mr.c_obj.get() is not NULL
 
 
 def _flush_logs():
