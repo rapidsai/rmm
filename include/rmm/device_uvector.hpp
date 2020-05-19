@@ -30,8 +30,18 @@ namespace rmm {
  *
  * Similar to a `thrust::device_vector`, `device_uvector` is a random access container of elements
  * stored contiguously in device memory. However, unlike `thrust::device_vector`, `device_uvector`
- * does *not* default initialize the vector elements. Initialization is only performed when
- * explicitly requested via appropriate constructors.
+ * does *not* default initialize the vector elements.
+ *
+ * If initialization is desired, this must be done explicitly by the caller, e.g., with
+ * `thrust::uninitialized_fill`.
+ *
+ * Example:
+ * @code
+ * rmm::device_uvector<int> uv(100);
+ *
+ * // Initializes all elements to 0
+ * thrust::uninitialized_fill(thrust::device, uv.begin(), uv.end(), 0);
+ * @endcode
  *
  * Avoiding default initialization improves performance by eliminating the kernel launch required to
  * default initialize the elements. This initialization is often unnecessary, e.g., when the vector
