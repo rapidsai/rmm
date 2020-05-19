@@ -37,36 +37,6 @@ BENCHMARK(BM_UvectorSizeConstruction)
   ->Range(10'000, 1'000'000'000)
   ->Unit(benchmark::kMicrosecond);
 
-static void BM_UvectorZeroInitializedConstruction(benchmark::State& state)
-{
-  rmm::mr::cnmem_memory_resource mr{};
-  rmm::mr::set_default_resource(&mr);
-
-  for (auto _ : state) {
-    rmm::device_uvector<int32_t>(state.range(0), int32_t{0});
-    cudaDeviceSynchronize();
-  }
-}
-BENCHMARK(BM_UvectorZeroInitializedConstruction)
-  ->RangeMultiplier(10)
-  ->Range(10'000, 1'000'000'000)
-  ->Unit(benchmark::kMicrosecond);
-
-static void BM_UvectorInitializedConstruction(benchmark::State& state)
-{
-  rmm::mr::cnmem_memory_resource mr{};
-  rmm::mr::set_default_resource(&mr);
-
-  for (auto _ : state) {
-    rmm::device_uvector<int32_t>(state.range(0), int32_t{1});
-    cudaDeviceSynchronize();
-  }
-}
-BENCHMARK(BM_UvectorInitializedConstruction)
-  ->RangeMultiplier(10)
-  ->Range(10'000, 1'000'000'000)
-  ->Unit(benchmark::kMicrosecond);
-
 static void BM_ThrustVectorSizeConstruction(benchmark::State& state)
 {
   rmm::mr::cnmem_memory_resource mr{};
