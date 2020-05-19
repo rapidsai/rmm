@@ -22,8 +22,8 @@
 #include "rmm/mr/device/cnmem_memory_resource.hpp"
 #include "rmm/mr/device/default_memory_resource.hpp"
 
-static void
-BM_UvectorSizeConstruction(benchmark::State& state) {
+static void BM_UvectorSizeConstruction(benchmark::State& state)
+{
   rmm::mr::cnmem_memory_resource mr{};
   rmm::mr::set_default_resource(&mr);
 
@@ -37,8 +37,8 @@ BENCHMARK(BM_UvectorSizeConstruction)
   ->Range(10'000, 1'000'000'000)
   ->Unit(benchmark::kMicrosecond);
 
-static void
-BM_UvectorZeroInitializedConstruction(benchmark::State& state) {
+static void BM_UvectorZeroInitializedConstruction(benchmark::State& state)
+{
   rmm::mr::cnmem_memory_resource mr{};
   rmm::mr::set_default_resource(&mr);
 
@@ -52,8 +52,8 @@ BENCHMARK(BM_UvectorZeroInitializedConstruction)
   ->Range(10'000, 1'000'000'000)
   ->Unit(benchmark::kMicrosecond);
 
-static void
-BM_UvectorInitializedConstruction(benchmark::State& state) {
+static void BM_UvectorInitializedConstruction(benchmark::State& state)
+{
   rmm::mr::cnmem_memory_resource mr{};
   rmm::mr::set_default_resource(&mr);
 
@@ -67,7 +67,8 @@ BENCHMARK(BM_UvectorInitializedConstruction)
   ->Range(10'000, 1'000'000'000)
   ->Unit(benchmark::kMicrosecond);
 
-    static void BM_ThrustVectorSizeConstruction(benchmark::State& state) {
+static void BM_ThrustVectorSizeConstruction(benchmark::State& state)
+{
   rmm::mr::cnmem_memory_resource mr{};
   rmm::mr::set_default_resource(&mr);
   for (auto _ : state) {
