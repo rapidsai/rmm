@@ -62,18 +62,13 @@ def test_rmm_modes(dtype, nelem, alloc, managed, pool):
     rmm.reinitialize()
 
 
-def test_uninitialized():
-    rmm._finalize()
-    assert not rmm.is_initialized()
-    rmm.reinitialize()  # so further tests will pass
-
-
 @pytest.mark.parametrize("dtype", _dtypes)
 @pytest.mark.parametrize("nelem", _nelems)
-def test_rmm_csv_log(dtype, nelem):
+@pytest.mark.parametrize("alloc", _allocs)
+def test_rmm_csv_log(dtype, nelem, alloc):
     with tempfile.NamedTemporaryFile() as fp:
         rmm.reinitialize(logging=True, log_file_name=fp.name)
-        array_tester(dtype, nelem)
+        array_tester(dtype, nelem, alloc)
         rmm.mr._flush_logs()
         csv = fp.read()
         assert csv.find(b"Time,Action,Pointer,Size,Stream") >= 0
@@ -263,7 +258,8 @@ def test_rmm_cupy_allocator():
 
 @pytest.mark.parametrize("dtype", _dtypes)
 @pytest.mark.parametrize("nelem", _nelems)
-def test_pool_memory_resource(dtype, nelem):
+@pytest.mark.parametrize("alloc", _allocs)
+def test_pool_memory_resource(dtype, nelem, alloc):
     rmm.mr.set_default_resource(
         rmm.mr.PoolMemoryResource(
             rmm.mr.CudaMemoryResource(),
@@ -271,12 +267,13 @@ def test_pool_memory_resource(dtype, nelem):
             maximum_pool_size=1 << 23,
         )
     )
-    array_tester(dtype, nelem)
+    array_tester(dtype, nelem, alloc)
     rmm.reinitialize()
 
 
 @pytest.mark.parametrize("dtype", _dtypes)
 @pytest.mark.parametrize("nelem", _nelems)
+@pytest.mark.parametrize("alloc", _allocs)
 @pytest.mark.parametrize(
     "upstream",
     [
@@ -284,41 +281,43 @@ def test_pool_memory_resource(dtype, nelem):
         lambda: rmm.mr.ManagedMemoryResource(),
     ],
 )
-def test_pool_fixed_size_memory_resource(dtype, nelem, upstream):
+def test_fixed_size_memory_resource(dtype, nelem, alloc, upstream):
     rmm.mr.set_default_resource(
         rmm.mr.FixedSizeMemoryResource(
             upstream(), block_size=1 << 20, blocks_to_preallocate=128
         )
     )
-    array_tester(dtype, nelem)
+    array_tester(dtype, nelem, alloc)
     rmm.reinitialize()
-
-
-# @pytest.mark.parametrize("dtype", _dtypes)
-# @pytest.mark.parametrize("nelem", _nelems)
-# @pytest.mark.parametrize(
-#     "upstream",
-#     [
-#         rmm.mr.CudaMemoryResource(),
-#         rmm.mr.ManagedMemoryResource(),
-#     ]
-# )
-# def test_fixed_multisize_memory_resource(dtype, nelem, upstream):
-#     rmm.mr.set_default_resource(
-#         rmm.mr.FixedMultiSizeMemoryResource(
-#             upstream,
-#             size_base=2,
-#             min_size_exponent=18,
-#             max_size_exponent=22,
-#             initial_blocks_per_size=128
-#         )
-#     )
-#     array_tester(dtype, nelem)
-#     rmm.reinitialize()
 
 
 @pytest.mark.parametrize("dtype", _dtypes)
 @pytest.mark.parametrize("nelem", _nelems)
+@pytest.mark.parametrize("alloc", _allocs)
+@pytest.mark.parametrize(
+    "upstream",
+    [
+        lambda: rmm.mr.CudaMemoryResource(),
+        lambda: rmm.mr.ManagedMemoryResource(),
+    ],
+)
+def test_fixed_multisize_memory_resource(dtype, nelem, alloc, upstream):
+    rmm.mr.set_default_resource(
+        rmm.mr.FixedMultiSizeMemoryResource(
+            upstream(),
+            size_base=2,
+            min_size_exponent=18,
+            max_size_exponent=22,
+            initial_blocks_per_size=128,
+        )
+    )
+    array_tester(dtype, nelem, alloc)
+    rmm.reinitialize()
+
+
+@pytest.mark.parametrize("dtype", _dtypes)
+@pytest.mark.parametrize("nelem", _nelems)
+@pytest.mark.parametrize("alloc", _allocs)
 @pytest.mark.parametrize(
     "small_alloc_mr",
     [
@@ -336,11 +335,13 @@ def test_pool_fixed_size_memory_resource(dtype, nelem, upstream):
         lambda: rmm.mr.ManagedMemoryResource(),
     ],
 )
-def test_hybrid_memory_resource(dtype, nelem, small_alloc_mr, large_alloc_mr):
+def test_hybrid_memory_resource(
+    dtype, nelem, alloc, small_alloc_mr, large_alloc_mr
+):
     rmm.mr.set_default_resource(
         rmm.mr.HybridMemoryResource(
             small_alloc_mr(), large_alloc_mr(), threshold_size=32
         )
     )
-    array_tester(dtype, nelem)
+    array_tester(dtype, nelem, alloc)
     rmm.reinitialize()
