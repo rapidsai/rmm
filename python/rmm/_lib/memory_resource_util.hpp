@@ -101,6 +101,7 @@ class fixed_size_memory_resource : public device_memory_resource {
         upstream_mr->get_mr().get(), block_size, blocks_to_preallocate)) {}
 
   std::shared_ptr<rmm::mr::device_memory_resource>
+
   get_mr() {
     return mr;
   }
@@ -112,7 +113,7 @@ class fixed_size_memory_resource : public device_memory_resource {
 
 class fixed_multisize_memory_resource : public device_memory_resource {
  public:
-  fixed_multisize_memory_resource(std::shared_ptr<device_memory_resource> upstream_resource,
+  fixed_multisize_memory_resource(std::shared_ptr<device_memory_resource> upstream_mr,
                                   std::size_t size_base,
                                   std::size_t min_size_exponent,
                                   std::size_t max_size_exponent,
@@ -127,6 +128,7 @@ class fixed_multisize_memory_resource : public device_memory_resource {
           initial_blocks_per_size)) {}
 
   std::shared_ptr<rmm::mr::device_memory_resource>
+
   get_mr() {
     return mr;
   }
