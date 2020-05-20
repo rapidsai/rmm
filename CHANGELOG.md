@@ -4,6 +4,8 @@
 
 ## Improvements
 
+- PR #372 Use CMake `FetchContent` to obtain `cnmem` instead of git submodule
+
 ## Bug Fixes
 
 # RMM 0.14.0 (Date TBD)
@@ -18,7 +20,6 @@
 
 ## Improvements
 
-- PR #372 Use CMake `FetchContent` to obtain `cnmem` instead of git submodule
 - PR #369 Use CMake `FetchContent` to obtain `spdlog` instead of vendoring
 - PR #366 Remove installation of extra test dependencies
 - PR #354 Add CMake option for per-thread default stream
