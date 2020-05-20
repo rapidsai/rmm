@@ -76,12 +76,13 @@ class device_uvector {
   using iterator        = pointer;
   using const_iterator  = const_pointer;
 
-  device_uvector()                      = default;
-  ~device_uvector()                     = default;
-  device_uvector(device_uvector const&) = default;
-  device_uvector(device_uvector&&)      = default;
-  device_uvector& operator=(device_uvector const&) = default;
+  device_uvector()                 = default;
+  ~device_uvector()                = default;
+  device_uvector(device_uvector&&) = default;
   device_uvector& operator=(device_uvector&&) = default;
+  // Default copying operations are deleted as they don't provide an option for specifying a stream
+  device_uvector(device_uvector const&) = delete;
+  device_uvector& operator=(device_uvector const&) = delete;
 
   /**
    * @brief Construct a new `device_uvector` with sufficient uninitialized storage for `size`
