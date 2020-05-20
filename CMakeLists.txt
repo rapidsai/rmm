@@ -88,7 +88,7 @@ add_subdirectory(thirdparty)
 ###################################################################################################
 # - cnmem ---------------------------------------------------------------------------------
 # include cnmem.h in the include/detail directory
-configure_file("${cnmem_SOURCE_DIR}/include/cnmem.h"
+configure_file("${CNMEM_INCLUDE_DIR}/cnmem.h"
                "${CMAKE_CURRENT_SOURCE_DIR}/include/rmm/detail/cnmem.h" COPYONLY)
 
 ###################################################################################################
@@ -141,8 +141,8 @@ include_directories("${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/include"
                     "${CMAKE_CURRENT_SOURCE_DIR}/include/rmm"
                     "${CMAKE_CURRENT_SOURCE_DIR}/src"
-                    "${cnmem_SOURCE_DIR}/include"
-                    "${spdlog_SOURCE_DIR}/include")
+                    "${CNMEM_INCLUDE_DIR}"
+                    "${SPDLOG_INCLUDE_DIR}")
 
 ###################################################################################################
 # - library paths ---------------------------------------------------------------------------------
@@ -156,7 +156,7 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
 add_library(rmm SHARED
             src/rmm.cpp
             src/memory_manager.cpp
-            "${cnmem_SOURCE_DIR}/src/cnmem.cpp"
+            "${CNMEM_SOURCE_DIR}/cnmem.cpp"
             src/mr/device/default_memory_resource.cpp)
 
 # override rpath for rmm
