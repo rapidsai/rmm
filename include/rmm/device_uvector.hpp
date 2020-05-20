@@ -105,8 +105,7 @@ class device_uvector {
   /**
    * @brief Construct a new device_uvector by deep copying the contents of another `device_uvector`.
    *
-   * Elements are copied as if it were performed by `memcpy`, i.e., `T`'s copy constructor is not
-   * invoked.
+   * Elements are copied as if by `memcpy`, i.e., `T`'s copy constructor is not invoked.
    *
    * @param other The vector to copy from
    * @param stream The stream on which to perform the copy
@@ -200,11 +199,18 @@ class device_uvector {
   iterator begin() noexcept { return data(); }
 
   /**
-   * @brief Returns an iterator to the first element.
+   * @brief Returns a const_iterator to the first element.
    *
-   * @return Iterator to the first element.
+   * @return Immutable iterator to the first element.
    */
-  const_iterator begin() const noexcept { return data(); }
+  const_iterator cbegin() const noexcept { return data(); }
+
+  /**
+   * @brief Returns a const_iterator to the first element.
+   *
+   * @return Immutable iterator to the first element.
+   */
+  const_iterator begin() const noexcept { return cbegin(); }
 
   /**
    * @brief Returns an iterator to the element following the last element of the vector.
@@ -217,14 +223,24 @@ class device_uvector {
   iterator end() noexcept { return data() + size(); }
 
   /**
+   * @brief Returns a const_iterator to the element following the last element of the vector.
+   *
+   * The element referenced by `end()` is a placeholder and dereferencing it results in undefined
+   * behavior.
+   *
+   * @return Immutable iterator to one past the last element.
+   */
+  const_iterator cend() const noexcept { return data() + size(); }
+
+  /**
    * @brief Returns an iterator to the element following the last element of the vector.
    *
    * The element referenced by `end()` is a placeholder and dereferencing it results in undefined
    * behavior.
    *
-   * @return Iterator to one past the last element.
+   * @return Immutable iterator to one past the last element.
    */
-  const_iterator end() const noexcept { return data() + size(); }
+  const_iterator end() const noexcept { return cend(); }
 
   /**
    * @brief Returns the number of elements in the vector.
