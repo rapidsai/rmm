@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+ 
 #pragma once
 
 #include <rmm/detail/error.hpp>
@@ -234,7 +235,7 @@ class device_uvector {
   std::size_t size() const noexcept { return bytes_to_elements(_storage.size()); }
 
   /**
-   * @brief Returns if the vector contains no elements, i.e., `size() == 0`.
+   * @brief Returns true if the vector contains no elements, i.e., `size() == 0`.
    *
    * @return true The vector is empty
    * @return false The vector is not empty
