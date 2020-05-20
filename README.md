@@ -2,18 +2,15 @@
 
 [![Build Status](https://gpuci.gpuopenanalytics.com/job/rapidsai/job/gpuci/job/rmm/job/branches/job/rmm-branch-pipeline/badge/icon)](https://gpuci.gpuopenanalytics.com/job/rapidsai/job/gpuci/job/rmm/job/branches/job/rmm-branch-pipeline/)
 
-RAPIDS Memory Manager (RMM) is:
+RAPIDS Memory Manager (RMM) exists to provide a polymorphic interface for host and device memory allocation.
 
- - A replacement allocator for CUDA Device Memory (and CUDA Managed Memory).
- - A pool allocator to make CUDA device memory allocation / deallocation faster
-   and asynchronous.
- - A central place for all device memory allocations in cuDF (C++ and Python) and
-   other [RAPIDS](https://rapids.ai) libraries.
+RMM is:
+ - An abstract interface for [device](#device_memory_resource) and [host](#host_memory_resource) memory allocation
+ - A collection of [implementations](#available-resources) of the interface
+ - A collection of [data structures](#data-structures) that use the interface for memory allocation
 
-RMM is not:
+ For information on how to use RMM in your C++ code, see [below](#using-rmm-in-c++).
 
- - A replacement allocator for host memory (`malloc`, `new`, `cudaMallocHost`,
-   `cudaHostRegister`).
 
 **NOTE:** For the latest stable [README.md](https://github.com/rapidsai/rmm/blob/master/README.md) ensure you are on the `master` branch.
 
@@ -123,7 +120,41 @@ $ pytest -v
 
 Done! You are ready to develop for the RMM OSS project.
 
-## Using RMM in C/C++ code
+# Using RMM in C++
+
+RMM defines two polymorphic interface classes:
+- [`rmm::mr::device_memory_resource`](#device_memory_resource) for device memory allocation
+- [`rmm::mr::host_memory_resource`](#host_memory_resource) for host memory allocation
+
+These classes are based on [`std::pmr::memory_resource`](https://en.cppreference.com/w/cpp/memory/memory_resource) introduced in C++17. 
+
+## `device_memory_resource`
+
+### Available Resources
+
+#### `cuda_memory_resource`
+
+#### `managed_memory_resource`
+
+#### `cnmem_(managed_)memory_resource`
+
+#### `pool_memory_resource`
+
+
+### Default Resource
+
+## `host_memory_resource`
+
+### Available Resources
+
+
+## Data Structures
+
+### `device_buffer`
+
+### `device_uvector`
+
+### `device_scalar`
 
 Using RMM in CUDA C++ code is straightforward. Include `rmm.h` and replace calls
 to `cudaMalloc()` and `cudaFree()` with calls to the `RMM_ALLOC()` and
