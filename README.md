@@ -2,15 +2,15 @@
 
 [![Build Status](https://gpuci.gpuopenanalytics.com/job/rapidsai/job/gpuci/job/rmm/job/branches/job/rmm-branch-pipeline/badge/icon)](https://gpuci.gpuopenanalytics.com/job/rapidsai/job/gpuci/job/rmm/job/branches/job/rmm-branch-pipeline/)
 
-RAPIDS Memory Manager (RMM) exists to provide a polymorphic interface for host and device memory allocation.
 
-RMM is:
- - An abstract interface for [device](#device_memory_resource) and [host](#host_memory_resource) memory allocation
- - A collection of [implementations](#available-resources) of the interface
- - A collection of [data structures](#data-structures) that use the interface for memory allocation
+Achieving optimal performance in GPU-centric workflows frequently requires customizing how host and device memory are allocated. For example, using "pinned" host memory for asynchronous host <-> device memory transfers, or using a device memory pool sub-allocator to reduce the cost of dynamic device memory allocation. 
 
- For information on how to use RMM in your C++ code, see [below](#using-rmm-in-c++).
+The goal of the RAPIDS Memory Manager (RMM) is to provide:
+- A common interface that allows customizing [device](#device_memory_resource) and [host](#host_memory_resource) memory allocation
+- A collection of [implementations](#available-resources) of the interface
+- A collection of [data structures](#data-structures) that use the interface for memory allocation
 
+For information on the interface RMM provides and how to use RMM in your C++ code, see [below](#using-rmm-in-c++).
 
 **NOTE:** For the latest stable [README.md](https://github.com/rapidsai/rmm/blob/master/README.md) ensure you are on the `master` branch.
 
@@ -126,20 +126,43 @@ RMM defines two polymorphic interface classes:
 - [`rmm::mr::device_memory_resource`](#device_memory_resource) for device memory allocation
 - [`rmm::mr::host_memory_resource`](#host_memory_resource) for host memory allocation
 
-These classes are based on [`std::pmr::memory_resource`](https://en.cppreference.com/w/cpp/memory/memory_resource) introduced in C++17. 
+These classes are based on the [`std::pmr::memory_resource`](https://en.cppreference.com/w/cpp/memory/memory_resource) interface class introduced in C++17 for polymorphic memory allocation.
 
 ## `device_memory_resource`
 
+`rmm::mr::device_memory_resource` is the base class that defines the interface for allocating and freeing device memory.
+
+It has two key functions:
+
+1. `void* device_memory_resource::allocate(std::size_t bytes, cudaStream_t s)`
+   - Returns a pointer to an allocation of at least `bytes` bytes.
+
+2. `void device_memory_resource::deallocate(void* p, std::size_t bytes, cudaStream_t s)`
+   - Reclaims a previous allocation of size `bytes` pointed to by `p`. 
+
+It is up to a derived class to provide implementations of these functions. 
+See [available resources](#availble-resources) for example `device_memory_resource` derived classes. 
+
 ### Available Resources
+
+RMM provides several `device_memory_resource` derived classes to satisfy various user requirements.
+For more detailed information about these resources, see their respective documentation.
 
 #### `cuda_memory_resource`
 
+Allocates and frees device memory using`cudaMalloc` and `cudaFree`.
+
 #### `managed_memory_resource`
+
+Allocates and frees device memory using `cudaMallocManaged` and `cudaFree`.
 
 #### `cnmem_(managed_)memory_resource`
 
+Uses the [CNMeM](https://github.com/NVIDIA/cnmem) pool sub-allocator to satisfy (de)allocations.
+
 #### `pool_memory_resource`
 
+A coalescing, best-fit pool sub-allocator.
 
 ### Default Resource
 
@@ -155,6 +178,12 @@ These classes are based on [`std::pmr::memory_resource`](https://en.cppreference
 ### `device_uvector`
 
 ### `device_scalar`
+
+
+### Host Data Structures
+
+RMM does not currently provide any data structures that interoperate with `rmm::mr::host_memory_resource`.
+In the near future, we hope to provide a `rmm::host_buffer` similar to `rmm::device_buffer`. 
 
 Using RMM in CUDA C++ code is straightforward. Include `rmm.h` and replace calls
 to `cudaMalloc()` and `cudaFree()` with calls to the `RMM_ALLOC()` and
