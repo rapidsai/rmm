@@ -36,11 +36,15 @@ namespace rmm {
  *
  * Example:
  * @code
- * // Allocates *uninitialized* device memory sufficient for 100 ints
- * rmm::device_uvector<int> uv(100);
+ * rmm::mr::device_memory_resource * mr = new my_custom_resource();
+ * cudaStream_t s;
  *
- * // Initializes all elements to 0
- * thrust::uninitialized_fill(thrust::device, uv.begin(), uv.end(), 0);
+ * // Allocates *uninitialized* device memory on stream `s` sufficient for 100 ints using the
+ * // supplied resource `mr`
+ * rmm::device_uvector<int> uv(100, s, mr);
+ *
+ * // Initializes all elements to 0 on stream `s`
+ * thrust::uninitialized_fill(thrust::cuda::par.on(s), uv.begin(), uv.end(), 0);
  * @endcode
  *
  * Avoiding default initialization improves performance by eliminating the kernel launch required to
