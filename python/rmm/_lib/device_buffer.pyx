@@ -110,7 +110,8 @@ cdef class DeviceBuffer:
         return int(self.c_size())
 
     def __getstate__(self):
-        return self.tobytes()
+        host_data = self.tobytes()
+        return host_data
 
     def __setstate__(self, state):
         cdef DeviceBuffer other = DeviceBuffer.c_to_device(state)
