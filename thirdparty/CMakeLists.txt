@@ -13,10 +13,10 @@ FetchContent_Declare(
 FetchContent_GetProperties(cnmem)
 if(NOT cnmem_POPULATED)
   FetchContent_Populate(cnmem)
-  set(CNMEM_INCLUDE_DIR "${cnmem_SOURCE_DIR}/include" PARENT_SCOPE)
-  set(CNMEM_SOURCE_DIR "${cnmem_SOURCE_DIR}/src" PARENT_SCOPE)
   # We are not using the cnmem CMake targets, so no need to call `add_subdirectory()`.
 endif()
+set(CNMEM_INCLUDE_DIR "${cnmem_SOURCE_DIR}/include" PARENT_SCOPE)
+set(CNMEM_SOURCE_DIR "${cnmem_SOURCE_DIR}/src" PARENT_SCOPE)
 
 ###################################################################################################
 # - spdlog ----------------------------------------------------------------------------------------
@@ -31,6 +31,6 @@ FetchContent_Declare(
 FetchContent_GetProperties(spdlog)
 if(NOT spdlog_POPULATED)
   FetchContent_Populate(spdlog)
-  set(SPDLOG_INCLUDE_DIR "${spdlog_SOURCE_DIR}/include" PARENT_SCOPE)
   # We are not using the spdlog CMake targets, so no need to call `add_subdirectory()`.
 endif()
+set(SPDLOG_INCLUDE_DIR "${spdlog_SOURCE_DIR}/include" PARENT_SCOPE)
