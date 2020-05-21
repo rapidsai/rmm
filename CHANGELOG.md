@@ -6,6 +6,8 @@
 
 ## Improvements
 
+- PR #372 Use CMake `FetchContent` to obtain `cnmem` instead of git submodule
+
 ## Bug Fixes
 
 # RMM 0.14.0 (Date TBD)

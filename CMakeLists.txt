@@ -71,18 +71,6 @@ else()
 endif(CUDA_STATIC_RUNTIME)
 
 ###################################################################################################
-# - third party dependencies-----------------------------------------------------------------------
-# add third party dependencies using CMake FetchContent
-add_subdirectory(thirdparty)
-
-###################################################################################################
-# - cnmem ---------------------------------------------------------------------------------
-# include cnmem.h in the include/detail directory
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cnmem/include/cnmem.h" 
-               "${CMAKE_CURRENT_SOURCE_DIR}/include/rmm/detail/cnmem.h" COPYONLY)
-
-
-###################################################################################################
 # - cmake modules ---------------------------------------------------------------------------------
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/" ${CMAKE_MODULE_PATH})
@@ -90,6 +78,18 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/" ${CMAKE_MODUL
 include(FeatureSummary)
 include(CheckIncludeFiles)
 include(CheckLibraryExists)
+
+###################################################################################################
+# - third party dependencies-----------------------------------------------------------------------
+# add third party dependencies using CMake FetchContent
+
+add_subdirectory(thirdparty)
+
+###################################################################################################
+# - cnmem ---------------------------------------------------------------------------------
+# include cnmem.h in the include/detail directory
+configure_file("${CNMEM_INCLUDE_DIR}/cnmem.h"
+               "${CMAKE_CURRENT_SOURCE_DIR}/include/rmm/detail/cnmem.h" COPYONLY)
 
 ###################################################################################################
 # - per-thread default stream option --------------------------------------------------------------
@@ -140,10 +140,9 @@ endif(BUILD_BENCHMARKS)
 include_directories("${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/include"
                     "${CMAKE_CURRENT_SOURCE_DIR}/include/rmm"
-                    "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty"
                     "${CMAKE_CURRENT_SOURCE_DIR}/src"
-                    "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cnmem/include"
-                    "${CMAKE_SOURCE_DIR}/thirdparty")
+                    "${CNMEM_INCLUDE_DIR}"
+                    "${SPDLOG_INCLUDE_DIR}")
 
 ###################################################################################################
 # - library paths ---------------------------------------------------------------------------------
@@ -157,9 +156,8 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
 add_library(rmm SHARED
             src/rmm.cpp
             src/memory_manager.cpp
-            thirdparty/cnmem/src/cnmem.cpp
+            "${CNMEM_SOURCE_DIR}/cnmem.cpp"
             src/mr/device/default_memory_resource.cpp)
-target_link_libraries(rmm spdlog::spdlog_header_only)
 
 # override rpath for rmm
 SET_TARGET_PROPERTIES(rmm PROPERTIES BUILD_RPATH "\$ORIGIN")
