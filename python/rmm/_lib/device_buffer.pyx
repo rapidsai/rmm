@@ -109,13 +109,9 @@ cdef class DeviceBuffer:
     def size(self):
         return int(self.c_size())
 
-    def __getstate__(self):
+    def __reduce__(self):
         host_data = self.tobytes()
-        return host_data
-
-    def __setstate__(self, state):
-        cdef DeviceBuffer other = to_device(state)
-        self.c_obj = move(other.c_obj)
+        return to_device, (host_data,)
 
     @property
     def __cuda_array_interface__(self):
