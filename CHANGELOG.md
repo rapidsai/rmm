@@ -2,6 +2,8 @@
 
 ## New Features
 
+- PR #375 Support out-of-band buffers in Python pickling
+
 ## Improvements
 
 - PR #372 Use CMake `FetchContent` to obtain `cnmem` instead of git submodule

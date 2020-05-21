@@ -18,6 +18,8 @@
 # cython: language_level = 3
 
 
+import pickle
+
 import numpy as np
 
 from libcpp.memory cimport unique_ptr
@@ -109,12 +111,11 @@ cdef class DeviceBuffer:
     def size(self):
         return int(self.c_size())
 
-    def __getstate__(self):
-        return self.tobytes()
-
-    def __setstate__(self, state):
-        cdef DeviceBuffer other = DeviceBuffer.c_to_device(state)
-        self.c_obj = move(other.c_obj)
+    def __reduce_ex__(self, protocol):
+        host_data = self.tobytes()
+        if protocol >= 5:
+            host_data = pickle.PickleBuffer(host_data)
+        return to_device, (host_data,)
 
     @property
     def __cuda_array_interface__(self):
