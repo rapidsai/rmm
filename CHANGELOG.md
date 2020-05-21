@@ -2,6 +2,8 @@
 
 ## New Features
 
+- PR #375 Support out-of-band buffers in Python pickling
+
 ## Improvements
 
 ## Bug Fixes
