@@ -109,7 +109,7 @@ cdef class DeviceBuffer:
     def size(self):
         return int(self.c_size())
 
-    def __reduce__(self):
+    def __reduce_ex__(self, protocol):
         host_data = self.tobytes()
         return to_device, (host_data,)
 
