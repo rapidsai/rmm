@@ -6,6 +6,7 @@
 
 ## Improvements
 
+- PR #377 A better way to fetch `spdlog`
 - PR #372 Use CMake `FetchContent` to obtain `cnmem` instead of git submodule
 
 ## Bug Fixes
