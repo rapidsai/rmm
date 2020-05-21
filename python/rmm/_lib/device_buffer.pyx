@@ -114,7 +114,7 @@ cdef class DeviceBuffer:
         return host_data
 
     def __setstate__(self, state):
-        cdef DeviceBuffer other = DeviceBuffer.c_to_device(state)
+        cdef DeviceBuffer other = to_device(state)
         self.c_obj = move(other.c_obj)
 
     @property
