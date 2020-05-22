@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2020, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,8 +56,7 @@
 
  */
 
-#ifndef CUDF_BENCH_SYNCHRONIZATION_H
-#define CUDF_BENCH_SYNCHRONIZATION_H
+#pragma once
 
 // Google Benchmark library
 #include <benchmark/benchmark.h>
@@ -92,5 +91,3 @@ class cuda_event_timer {
   cudaStream_t stream;
   benchmark::State* p_state;
 };
-
-#endif
