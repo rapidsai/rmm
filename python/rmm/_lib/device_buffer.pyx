@@ -112,7 +112,7 @@ cdef class DeviceBuffer:
         return int(self.c_size())
 
     def __reduce_ex__(self, protocol):
-        host_data = self.tobytes()
+        host_data = self.copy_to_host()
         if protocol >= 5:
             host_data = pickle.PickleBuffer(host_data)
         return to_device, (host_data,)
