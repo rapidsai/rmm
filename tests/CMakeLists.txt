@@ -39,6 +39,8 @@ endfunction(ConfigureTest)
 # - include paths ---------------------------------------------------------------------------------
 
 include_directories("${GTEST_INCLUDE_DIR}"
+                    "${CUB_INCLUDE_DIR}"
+                    "${THRUST_INCLUDE_DIR}"
                     "${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
                     "${CMAKE_SOURCE_DIR}/include"
                     "${CMAKE_SOURCE_DIR}/include/rmm"
