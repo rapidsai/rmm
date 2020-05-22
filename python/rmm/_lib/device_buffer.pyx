@@ -110,8 +110,7 @@ cdef class DeviceBuffer:
         return int(self.c_size())
 
     def __reduce_ex__(self, protocol):
-        host_data = self.copy_to_host()
-        return to_device, (host_data,)
+        return to_device, (self.copy_to_host(),)
 
     @property
     def __cuda_array_interface__(self):
