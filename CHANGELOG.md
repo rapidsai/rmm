@@ -6,6 +6,7 @@
 
 ## Improvements
 
+- PR #378 Use CMake `FetchContent` to obtain latest release of `cub` and `thrust`
 - PR #372 Use CMake `FetchContent` to obtain `cnmem` instead of git submodule
 
 ## Bug Fixes
