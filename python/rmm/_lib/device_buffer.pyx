@@ -18,8 +18,6 @@
 # cython: language_level = 3
 
 
-import pickle
-
 import numpy as np
 
 from libcpp.memory cimport unique_ptr
@@ -113,8 +111,6 @@ cdef class DeviceBuffer:
 
     def __reduce_ex__(self, protocol):
         host_data = self.copy_to_host()
-        if protocol >= 5:
-            host_data = pickle.PickleBuffer(host_data)
         return to_device, (host_data,)
 
     @property
