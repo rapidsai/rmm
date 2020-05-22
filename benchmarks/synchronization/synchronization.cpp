@@ -18,12 +18,6 @@
 
 #include <rmm/device_buffer.hpp>
 
-#define RMM_TRY(call)                                                     \
-  do {                                                                    \
-    rmmError_t const status = (call);                                     \
-    if (RMM_SUCCESS != status) { throw std::runtime_error("RMM error"); } \
-  } while (0);
-
 #define RMM_CUDA_ASSERT_OK(expr)       \
   do {                                 \
     cudaError_t const status = (expr); \
