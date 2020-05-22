@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2020, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,8 @@
  */
 
 #include "synchronization.hpp"
-#include "rmm/rmm.h"
 
-#define RMM_TRY(call)                                                     \
-  do {                                                                    \
-    rmmError_t const status = (call);                                     \
-    if (RMM_SUCCESS != status) { throw std::runtime_error("RMM error"); } \
-  } while (0);
+#include <rmm/device_buffer.hpp>
 
 #define RMM_CUDA_ASSERT_OK(expr)       \
   do {                                 \
@@ -44,10 +39,8 @@ cuda_event_timer::cuda_event_timer(benchmark::State& state,
 
     if (l2_cache_bytes > 0) {
       const int memset_value = 0;
-      int* l2_cache_buffer   = nullptr;
-      RMM_TRY(RMM_ALLOC(&l2_cache_buffer, l2_cache_bytes, stream));
-      RMM_CUDA_TRY(cudaMemsetAsync(l2_cache_buffer, memset_value, l2_cache_bytes, stream));
-      RMM_TRY(RMM_FREE(l2_cache_buffer, stream));
+      rmm::device_buffer l2_cache_buffer(l2_cache_bytes, stream);
+      RMM_CUDA_TRY(cudaMemsetAsync(l2_cache_buffer.data(), memset_value, l2_cache_bytes, stream));
     }
   }
 
