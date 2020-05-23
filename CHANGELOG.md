@@ -7,6 +7,7 @@
 ## Improvements
 
 - PR #372 Use CMake `FetchContent` to obtain `cnmem` instead of git submodule
+- PR #382 Rely on NumPy arrays for out-of-band pickling
 
 ## Bug Fixes
 
