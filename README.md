@@ -122,7 +122,10 @@ Done! You are ready to develop for the RMM OSS project.
 
 # Using RMM in C++
 
-RMM defines two polymorphic interface classes:
+The first goal of RMM is to provide a common interface for device and host memory allocation. 
+This allows both _users_ and _implementers_ of custom allocation logic to program to a single interface.
+
+To this end, RMM defines two abstract interface classes:
 - [`rmm::mr::device_memory_resource`](#device_memory_resource) for device memory allocation
 - [`rmm::mr::host_memory_resource`](#host_memory_resource) for host memory allocation
 
@@ -150,7 +153,7 @@ For more detailed information about these resources, see their respective docume
 
 #### `cuda_memory_resource`
 
-Allocates and frees device memory using`cudaMalloc` and `cudaFree`.
+Allocates and frees device memory using `cudaMalloc` and `cudaFree`.
 
 #### `managed_memory_resource`
 
@@ -166,18 +169,84 @@ A coalescing, best-fit pool sub-allocator.
 
 ### Default Resource
 
-## `host_memory_resource`
+Frequently, users want to configure a `device_memory_resource` object once and use it for all allocations where another resource has not explicitly been provided. 
+For example, one may want to construct a `pool_memory_resource` and use it for all allocations to get fast dynamic allocation.
 
-### Available Resources
+To enable this use case, RMM provides the concept of a "default" `device_memory_resource`. 
+This is the resource that will be used when another is not explicitly provided.
 
+Accessing and modifying the default resource is done through two functions:
+- `device_memory_resource* get_default_resource()`
+   - Returns a pointer to the current default resource
+   - The initial default memory resource is an instance of `cuda_memory_resource`
 
-## Data Structures
+- `device_memory_resource* set_default_resource(device_memory_resource* new_resource)`
+   - Updates the default memory resource pointer to `new_resource`
+   - Returns the previous default resource pointer
+   - If `new_resource` is `nullptr`, then returns the default resource to `cuda_memory_resource`
+
+#### Example
+
+```c++
+rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource(); // Points to `cuda_memory_resource`
+rmm::mr::cnmem_memory_resource pool_mr{}; // Construct a resource that uses the CNMeM pool
+rmm::mr::set_default_resource(&pool_mr); // Updates the default resource pointer to `pool_mr`
+rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource(); // Points to `pool_mr`
+```
+
+## Device Data Structures
 
 ### `device_buffer`
 
-### `device_uvector`
+An untyped, unintialized RAII class for stream ordered device memory allocation.
+
+#### Example
+
+```c++
+cudaStream_t s;
+rmm::device_buffer b{100,s}; // Allocates at least 100 bytes on stream `s` using the *default* resource
+void* p = b.data();          // Raw, untyped pointer to underlying device memory
+
+kernel<<<..., s>>>(b.data()); // `b` is only safe to use on `s`
+
+rmm::mr::device_memory_resource * mr = new my_custom_resource{...};
+rmm::device_buffer b2{100, s, mr}; // Allocates at least 100 bytes on stream `s` using the explicitly provided resource
+```
+
+### `device_uvector<T>`
+A typed, unintialized RAII class for allocation of a contiguous set of elements in device memory.
+Similar to a `thrust::device_vector`, but as an optimization, does not default initialize the contained elements.
+This optimization restricts the types `T` to trivially copyable types.
+
+#### Example
+
+```c++
+cudaStream_t s;
+rmm::device_uvector<int32_t> v(100, s); /// Allocates uninitialized storage for 100 `int32_t` elements on stream `s` using the default resource
+thrust::uninitialized_fill(thrust::cuda::par.on(s), v.begin(), v.end(), int32_t{0}); // Initializes the elements to 0
+
+rmm::mr::device_memory_resource * mr = new my_custom_resource{...};
+rmm::device_vector<int32_t> v2{100, s, mr}; // Allocates uninitialized storage for 100 `int32_t` elements on stream `s` using the explicitly provided resource
+```
 
 ### `device_scalar`
+A typed, RAII class for allocation of a single element in device memory.
+This is similar to a `device_uvector`, but provides convenience functions like modifying the value in device memory from the host, or retrieving the value from device to host.
+
+#### Example
+```c++
+cudaStream_t s;
+rmm::device_scalar<int32_t> a{s}; // Allocates uninitialized storage for a single `int32_t` in device memory
+a.set_value(42, s); // Updates the value in device memory to `42` on stream `s`
+
+kernel<<<...,s>>>(a.data()); // Pass raw pointer to underlying element in device memory
+
+int32_t v = a.value(s); // Retrieves the value from device to host on stream `s`
+```
+
+## `host_memory_resource`
+
+### Available Resources
 
 
 ### Host Data Structures
