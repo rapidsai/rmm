@@ -142,9 +142,14 @@ It has two key functions:
 
 2. `void device_memory_resource::deallocate(void* p, std::size_t bytes, cudaStream_t s)`
    - Reclaims a previous allocation of size `bytes` pointed to by `p`. 
+   - `p` *must* have been returned by a previous call to `allocate(bytes)`, otherwise behavior is undefined
 
 It is up to a derived class to provide implementations of these functions. 
 See [available resources](#availble-resources) for example `device_memory_resource` derived classes. 
+
+Unlike `std::pmr::memory_resource`, `rmm::mr::device_memory_resource` does not allow specifying an alignment argument. 
+All allocations are required to be aligned to at least 256B. 
+Furthermore, `device_memory_resource` adds an additional `cudaStream_t` argument to allow specifying the stream on which to perform the (de)allocation.
 
 ### Available Resources
 
@@ -179,11 +184,13 @@ Accessing and modifying the default resource is done through two functions:
 - `device_memory_resource* get_default_resource()`
    - Returns a pointer to the current default resource
    - The initial default memory resource is an instance of `cuda_memory_resource`
+   - This function is thread safe
 
 - `device_memory_resource* set_default_resource(device_memory_resource* new_resource)`
    - Updates the default memory resource pointer to `new_resource`
    - Returns the previous default resource pointer
    - If `new_resource` is `nullptr`, then returns the default resource to `cuda_memory_resource`
+   - This function is thread safe
 
 #### Example
 
@@ -231,7 +238,7 @@ rmm::device_vector<int32_t> v2{100, s, mr}; // Allocates uninitialized storage f
 
 ### `device_scalar`
 A typed, RAII class for allocation of a single element in device memory.
-This is similar to a `device_uvector`, but provides convenience functions like modifying the value in device memory from the host, or retrieving the value from device to host.
+This is similar to a `device_uvector` with a single element, but provides convenience functions like modifying the value in device memory from the host, or retrieving the value from device to host.
 
 #### Example
 ```c++
@@ -244,45 +251,7 @@ kernel<<<...,s>>>(a.data()); // Pass raw pointer to underlying element in device
 int32_t v = a.value(s); // Retrieves the value from device to host on stream `s`
 ```
 
-## `host_memory_resource`
-
-### Available Resources
-
-
-### Host Data Structures
-
-RMM does not currently provide any data structures that interoperate with `rmm::mr::host_memory_resource`.
-In the near future, we hope to provide a `rmm::host_buffer` similar to `rmm::device_buffer`. 
-
-Using RMM in CUDA C++ code is straightforward. Include `rmm.h` and replace calls
-to `cudaMalloc()` and `cudaFree()` with calls to the `RMM_ALLOC()` and
-`RMM_FREE()` macros, respectively.
-
-Note that `RMM_ALLOC` and `RMM_FREE` take an additional parameter, a stream
-identifier. This is necessary to enable asynchronous allocation and
-deallocation; however, the default (also known as null) stream (or `0`) can be
-used. For example:
-
-```
-// old
-cudaError_t result = cudaMalloc(&myvar, size_in_bytes);
-// ...
-cudaError_t result = cudaFree(myvar);
-```
-
-```
-// new
-rmmError_t result = RMM_ALLOC(&myvar, size_in_bytes, stream_id);
-// ...
-rmmError_t result = RMM_FREE(myvar, stream_id);
-```
-
-Note that `RMM_ALLOC` and `RMM_FREE` are wrappers around `rmm::alloc()` and
-`rmm::free()`, respectively. The lower-level functions also take a file name and
-a line number for tracking the location of RMM allocations and deallocations.
-The macro versions use the C preprocessor to automatically specify these params.
-
-### Using RMM with Thrust
+## Using RMM with Thrust
 
 RAPIDS and other CUDA libraries make heavy use of Thrust. Thrust uses CUDA device memory in two
 situations:
@@ -290,42 +259,53 @@ situations:
  1. As the backing store for `thrust::device_vector`, and
  2. As temporary storage inside some algorithms, such as `thrust::sort`.
 
-RMM includes a custom Thrust allocator in the file `thrust_rmm_allocator.h`. This defines the template class `rmm_allocator`, and
-a custom Thrust CUDA device execution policy called `rmm::exec_policy(stream)`.
+RMM provides `rmm::mr::thrust_allocator` as a conforming Thrust allocator that uses `device_memory_resource`s.
 
-#### Thrust Device Vectors
+### Thrust Algorithms
 
-Instead of creating device vectors like this:
+To instruct a Thrust algorithm to use `rmm::mr::thrust_allocator` to allocate temporary storage, you can use the custom Thrust CUDA device execution policy: `rmm::exec_policy(stream)`.
 
-```
-thrust::device_vector<size_type> permuted_indices(column_length);
-```
-
-You can tell Thrust to use `rmm_allocator` like this:
-
-```
-thrust::device_vector<size_type, rmm_allocator<T>> permuted_indices(column_length);
-```
-
-For convenience, you can use the alias `rmm::device_vector<T>` defined in
-`thrust_rmm_allocator.h` that can be used as if it were a `thrust::device_vector<T>`.
-
-#### Thrust Algorithms
-
-To instruct Thrust to use RMM to allocate temporary storage, you can use the custom
-Thrust CUDA device execution policy: `rmm::exec_policy(stream)`.
-This instructs Thrust to use the `rmm_allocator` on the specified stream for temporary memory allocation.
-
-`rmm::exec_policy(stream)` returns a `std::unique_ptr` to a Thrust execution policy that uses `rmm_allocator` for temporary allocations.
+`rmm::exec_policy(stream)` returns a `std::unique_ptr` to a Thrust execution policy that uses `rmm::mr::thrust_allocator` for temporary allocations.
 In order to specify that the Thrust algorithm be executed on a specific stream, the usage is:
 
-```
+```c++
 thrust::sort(rmm::exec_policy(stream)->on(stream), ...);
 ```
 
-The first `stream` argument is the `stream` to use for `rmm_allocator`.
+The first `stream` argument is the `stream` to use for `rmm::mr::thrust_allocator`.
 The second `stream` argument is what should be used to execute the Thrust algorithm.
 These two arguments must be identical.
+
+## `host_memory_resource`
+
+`rmm::mr::host_memory_resource` is the base class that defines the interface for allocating and freeing host memory.
+
+Similar to `device_memory_resource`, it has two key functions for (de)allocation:
+
+1. `void* device_memory_resource::allocate(std::size_t bytes, std::size_t alignment)`
+   - Returns a pointer to an allocation of at least `bytes` bytes aligned to the specified `alignment`
+
+2. `void device_memory_resource::deallocate(void* p, std::size_t bytes, std::size_t alignment)`
+   - Reclaims a previous allocation of size `bytes` pointed to by `p`. 
+
+
+Unlike `device_memory_resource`, the `host_memory_resource` interface and behavior is identical to `std::pmr::memory_resource`. 
+
+### Available Resources
+
+#### `new_delete_resource`
+
+Uses the global `operator new` and `operator delete` to allocate host memory.
+
+#### `pinned_memory_resource`
+
+Allocates "pinned" host memory using `cuda(Malloc/Free)Host`.
+
+## Host Data Structures
+
+RMM does not currently provide any data structures that interface with `host_memory_resource`.
+In the future, RMM will provide a similar host-side structure like `device_buffer` and an allocator that can be used with STL containers.
+
 
 
 ## Using RMM in Python Code
@@ -431,26 +411,3 @@ meminfo = rmm.get_info()
 print(meminfo.free)  # E.g. "16046292992"
 print(meminfo.total) # E.g. "16914055168"
 ```
-
-### CUDA Managed Memory
-
-RMM can be set to allocate all memory as managed memory (`cudaMallocManaged`
-underlying allocator). This is enabled in C++ by setting the `allocation_mode`
-member of the struct `rmmOptions_t` to include the flag `CudaManagedMemory`
-(the flags are ORed), and passing it to `rmmInitialize()`. If the flag
-`PoolAllocation` is also set, then RMM will allocate from a pool of managed
-memory.
-
-When the allocation mode is both `CudaManagedMemory` and `PoolAllocation`,
-RMM allocates the initial pool (and any expansion allocations) using
-`cudaMallocManaged` and then prefetches the pool to the GPU using
-`cudaMemPrefetchAsync` so all pool memory that will fit is initially located
-on the device.
-
-### Thread Safety
-
-RMM aims to be thread safe, and provides the following guarantees.
-
-1. `rmmInitialize()` and `rmmFinalize()` are thread-safe with respect to each other. In other words, `rmmFinalize()` cannot interrupt `rmmInitialize()` and vice versa.
-2. `rmmAlloc()` and `rmmFree()` calls are thread-safe with respect to each other. In other words, the state of the underlying allocator is thread safe.
-3. `rmmAlloc()` and `rmmFree()` are NOT thread-safe with respect to `rmmInitialize()` and `rmmFinalize()`. For example, a `rmmFinalize()` *could* interrupt an `rmmAlloc()` or `rmmFree()` in another thread. Therefore applications should ensure to protect calls to `rmmInitialize()` `rmmFinalize()`.
