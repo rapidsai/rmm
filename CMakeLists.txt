@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #=============================================================================
-cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 
 project(RMM VERSION 0.14.0 LANGUAGES C CXX CUDA)
 
@@ -69,6 +69,11 @@ if(CUDA_STATIC_RUNTIME)
 else()
     set(CUDART_LIBRARY "cudart")
 endif(CUDA_STATIC_RUNTIME)
+
+###################################################################################################
+# - third party dependencies-----------------------------------------------------------------------
+# add third party dependencies using CMake FetchContent
+add_subdirectory(thirdparty)
 
 ###################################################################################################
 # - cnmem ---------------------------------------------------------------------------------
@@ -132,7 +137,6 @@ endif(BUILD_BENCHMARKS)
 
 ###################################################################################################
 # - include paths ---------------------------------------------------------------------------------
-
 include_directories("${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/include"
                     "${CMAKE_CURRENT_SOURCE_DIR}/include/rmm"
@@ -150,12 +154,12 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
 
 ###################################################################################################
 # - library targets -------------------------------------------------------------------------------
-
 add_library(rmm SHARED
             src/rmm.cpp
             src/memory_manager.cpp
             thirdparty/cnmem/src/cnmem.cpp
             src/mr/device/default_memory_resource.cpp)
+target_link_libraries(rmm spdlog::spdlog_header_only)
 
 # override rpath for rmm
 SET_TARGET_PROPERTIES(rmm PROPERTIES BUILD_RPATH "\$ORIGIN")
