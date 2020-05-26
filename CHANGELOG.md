@@ -11,6 +11,8 @@
 
 ## Bug Fixes
 
+- PR #383 Explicitly require NumPy
+
 # RMM 0.14.0 (Date TBD)
 
 ## New Features
