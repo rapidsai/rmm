@@ -120,20 +120,6 @@ class device_uvector {
   }
 
   /**
-   * @brief Constructs a `device_uvector` by copying the contents of a `std::vector`.
-   *
-   * @param v The host vector whose contents will be copied to device
-   * @param stream The stream on which to perform the copy
-   * @param mr The resource used to allocate device memory for the new vector
-   */
-  explicit device_uvector(std::vector<T> const& v,
-                          cudaStream_t stream,
-                          rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
-    : _storage(v.data(), elements_to_bytes(v.size()), stream, mr)
-  {
-  }
-
-  /**
    * @brief Resizes the vector to contain `new_size` elements.
    *
    * If `new_size > size()`, the additional elements are uninitialized.

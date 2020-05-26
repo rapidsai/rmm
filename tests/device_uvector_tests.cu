@@ -132,17 +132,3 @@ TYPED_TEST(TypedUVectorTest, Release)
   EXPECT_EQ(storage.data(), original_data);
   EXPECT_EQ(storage.size(), original_size * sizeof(TypeParam));
 }
-
-template <typename T>
-struct equal_to {
-  T v;
-  __device__ bool operator()(T t) { return t == v; }
-};
-
-TYPED_TEST(TypedUVectorTest, CopyFromHost)
-{
-  std::vector<TypeParam> host_vector(12345, 42);
-  rmm::device_uvector<TypeParam> uv(host_vector, this->stream());
-  EXPECT_EQ(uv.size(), host_vector.size());
-  EXPECT_TRUE(thrust::all_of(thrust::device, uv.begin(), uv.end(), equal_to<TypeParam>{42}));
-}
