@@ -23,6 +23,7 @@
 
 template <typename T>
 struct TypedUVectorTest : ::testing::Test {
+  cudaStream_t stream() const noexcept { return cudaStream_t{0}; }
 };
 
 using TestTypes = ::testing::Types<int8_t, int32_t, uint64_t, float, double>;
@@ -40,7 +41,7 @@ TYPED_TEST(TypedUVectorTest, DefaultConstructor)
 
 TYPED_TEST(TypedUVectorTest, ZeroSizeConstructor)
 {
-  rmm::device_uvector<TypeParam> uv(0);
+  rmm::device_uvector<TypeParam> uv(0, this->stream());
   EXPECT_EQ(uv.size(), 0);
   EXPECT_EQ(uv.end(), uv.begin());
   EXPECT_TRUE(uv.is_empty());
@@ -48,7 +49,7 @@ TYPED_TEST(TypedUVectorTest, ZeroSizeConstructor)
 
 TYPED_TEST(TypedUVectorTest, NonZeroSizeConstructor)
 {
-  rmm::device_uvector<TypeParam> uv(12345);
+  rmm::device_uvector<TypeParam> uv(12345, this->stream());
   EXPECT_EQ(uv.size(), 12345);
   EXPECT_NE(uv.data(), nullptr);
   EXPECT_EQ(uv.end(), uv.begin() + uv.size());
@@ -58,12 +59,12 @@ TYPED_TEST(TypedUVectorTest, NonZeroSizeConstructor)
 TYPED_TEST(TypedUVectorTest, ResizeSmaller)
 {
   auto original_size = 12345;
-  rmm::device_uvector<TypeParam> uv(original_size);
+  rmm::device_uvector<TypeParam> uv(original_size, this->stream());
   auto original_data  = uv.data();
   auto original_begin = uv.begin();
 
   auto smaller_size = uv.size() - 1;
-  uv.resize(smaller_size);
+  uv.resize(smaller_size, this->stream());
 
   EXPECT_EQ(original_data, uv.data());
   EXPECT_EQ(original_begin, uv.begin());
@@ -71,7 +72,7 @@ TYPED_TEST(TypedUVectorTest, ResizeSmaller)
   EXPECT_EQ(uv.capacity(), original_size);
 
   // shrink_to_fit should force a new allocation
-  uv.shrink_to_fit();
+  uv.shrink_to_fit(this->stream());
   EXPECT_EQ(uv.size(), smaller_size);
   EXPECT_EQ(uv.capacity(), smaller_size);
 }
@@ -79,12 +80,12 @@ TYPED_TEST(TypedUVectorTest, ResizeSmaller)
 TYPED_TEST(TypedUVectorTest, ResizeLarger)
 {
   auto original_size = 12345;
-  rmm::device_uvector<TypeParam> uv(original_size);
+  rmm::device_uvector<TypeParam> uv(original_size, this->stream());
   auto original_data  = uv.data();
   auto original_begin = uv.begin();
 
   auto larger_size = uv.size() + 1;
-  uv.resize(larger_size);
+  uv.resize(larger_size, this->stream());
 
   EXPECT_NE(uv.data(), original_data);
   EXPECT_NE(uv.begin(), original_begin);
@@ -95,7 +96,7 @@ TYPED_TEST(TypedUVectorTest, ResizeLarger)
   auto larger_begin = uv.begin();
 
   // shrink_to_fit shouldn't have any effect
-  uv.shrink_to_fit();
+  uv.shrink_to_fit(this->stream());
   EXPECT_EQ(uv.size(), larger_size);
   EXPECT_EQ(uv.capacity(), larger_size);
   EXPECT_EQ(uv.data(), larger_data);
@@ -105,21 +106,21 @@ TYPED_TEST(TypedUVectorTest, ResizeLarger)
 TYPED_TEST(TypedUVectorTest, ResizeToZero)
 {
   auto original_size = 12345;
-  rmm::device_uvector<TypeParam> uv(original_size);
-  uv.resize(0);
+  rmm::device_uvector<TypeParam> uv(original_size, this->stream());
+  uv.resize(0, this->stream());
 
   EXPECT_EQ(uv.size(), 0);
   EXPECT_TRUE(uv.is_empty());
   EXPECT_EQ(uv.capacity(), original_size);
 
-  uv.shrink_to_fit();
+  uv.shrink_to_fit(this->stream());
   EXPECT_EQ(uv.capacity(), 0);
 }
 
 TYPED_TEST(TypedUVectorTest, Release)
 {
   auto original_size = 12345;
-  rmm::device_uvector<TypeParam> uv(original_size);
+  rmm::device_uvector<TypeParam> uv(original_size, this->stream());
 
   auto original_data = uv.data();
 
@@ -141,7 +142,7 @@ struct equal_to {
 TYPED_TEST(TypedUVectorTest, CopyFromHost)
 {
   std::vector<TypeParam> host_vector(12345, 42);
-  rmm::device_uvector<TypeParam> uv(host_vector);
+  rmm::device_uvector<TypeParam> uv(host_vector, this->stream());
   EXPECT_EQ(uv.size(), host_vector.size());
   EXPECT_TRUE(thrust::all_of(thrust::device, uv.begin(), uv.end(), equal_to<TypeParam>{42}));
 }

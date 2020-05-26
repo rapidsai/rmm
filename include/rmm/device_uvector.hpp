@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #pragma once
 
 #include <rmm/detail/error.hpp>
@@ -97,7 +97,7 @@ class device_uvector {
    * @param mr The resource used to allocate the device storage
    */
   explicit device_uvector(std::size_t size,
-                          cudaStream_t stream                 = 0,
+                          cudaStream_t stream,
                           rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
     : _storage{elements_to_bytes(size), stream, mr}
   {
@@ -113,7 +113,7 @@ class device_uvector {
    * @param mr The resource used to allocate device memory for the new vector
    */
   explicit device_uvector(device_uvector const& other,
-                          cudaStream_t stream                 = 0,
+                          cudaStream_t stream,
                           rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
     : _storage{other.storage, stream, mr}
   {
@@ -127,7 +127,7 @@ class device_uvector {
    * @param mr The resource used to allocate device memory for the new vector
    */
   explicit device_uvector(std::vector<T> const& v,
-                          cudaStream_t stream                 = 0,
+                          cudaStream_t stream,
                           rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
     : _storage(v.data(), elements_to_bytes(v.size()), stream, mr)
   {
@@ -149,7 +149,7 @@ class device_uvector {
    * @param new_size The desired number of elements
    * @param stream The stream on which to perform the allocation/copy (if any)
    */
-  void resize(std::size_t new_size, cudaStream_t stream = 0)
+  void resize(std::size_t new_size, cudaStream_t stream)
   {
     _storage.resize(elements_to_bytes(new_size), stream);
   }
@@ -161,7 +161,7 @@ class device_uvector {
    *
    * @param stream Stream on which to perform allocation and copy
    */
-  void shrink_to_fit(cudaStream_t stream = 0) { _storage.shrink_to_fit(stream); }
+  void shrink_to_fit(cudaStream_t stream) { _storage.shrink_to_fit(stream); }
 
   /**
    * @brief Release ownership of device memory storage.
