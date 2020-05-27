@@ -54,3 +54,10 @@ set(REPLAY_BENCH_SRC
   "${CMAKE_CURRENT_SOURCE_DIR}/replay/replay.cpp")
 
 ConfigureBench(REPLAY_BENCH "${REPLAY_BENCH_SRC}")
+###################################################################################################
+# - uvector benchmark --------------------------------------------------------------------------------
+
+set(UVECTOR_BENCH_SRC
+  "${CMAKE_CURRENT_SOURCE_DIR}/device_uvector/device_uvector_bench.cu")
+
+ConfigureBench(UVECTOR_BENCH "${UVECTOR_BENCH_SRC}")
