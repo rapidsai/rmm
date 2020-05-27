@@ -8,6 +8,7 @@
 
 - PR #372 Use CMake `FetchContent` to obtain `cnmem` instead of git submodule
 - PR #382 Rely on NumPy arrays for out-of-band pickling
+- PR #386 Add short commit to conda package name
 
 ## Bug Fixes
 
