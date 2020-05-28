@@ -141,8 +141,7 @@ include_directories("${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/include"
                     "${CMAKE_CURRENT_SOURCE_DIR}/include/rmm"
                     "${CMAKE_CURRENT_SOURCE_DIR}/src"
-                    "${CNMEM_INCLUDE_DIR}"
-                    "${SPDLOG_INCLUDE_DIR}")
+                    "${CNMEM_INCLUDE_DIR}")
 
 ###################################################################################################
 # - library paths ---------------------------------------------------------------------------------
@@ -176,7 +175,7 @@ endif(USE_NVTX)
 ###################################################################################################
 # - link libraries --------------------------------------------------------------------------------
 
-target_link_libraries(rmm ${CUDART_LIBRARY} cuda)
+target_link_libraries(rmm ${CUDART_LIBRARY} cuda spdlog::spdlog_header_only)
 
 ###################################################################################################
 # - install targets -------------------------------------------------------------------------------
