@@ -43,14 +43,6 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
 ###################################################################################################
 
 ###################################################################################################
-# - test benchmark --------------------------------------------------------------------------------
-
-set(TEST_BENCH_SRC
-  "${CMAKE_CURRENT_SOURCE_DIR}/test/test_benchmark.cpp")
-
-ConfigureBench(TEST_BENCH "${TEST_BENCH_SRC}")
-
-###################################################################################################
 # - random allocations benchmark --------------------------------------------------------------------------------
 
 set(RANDOM_ALLOCATIONS_BENCH_SRC
@@ -64,3 +56,10 @@ set(REPLAY_BENCH_SRC
   "${CMAKE_CURRENT_SOURCE_DIR}/replay/replay.cpp")
 
 ConfigureBench(REPLAY_BENCH "${REPLAY_BENCH_SRC}")
+###################################################################################################
+# - uvector benchmark --------------------------------------------------------------------------------
+
+set(UVECTOR_BENCH_SRC
+  "${CMAKE_CURRENT_SOURCE_DIR}/device_uvector/device_uvector_bench.cu")
+
+ConfigureBench(UVECTOR_BENCH "${UVECTOR_BENCH_SRC}")

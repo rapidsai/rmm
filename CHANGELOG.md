@@ -7,9 +7,13 @@
 ## Improvements
 
 - PR #378 Use CMake `FetchContent` to obtain latest release of `cub` and `thrust`
+- PR #377 A better way to fetch `spdlog`
 - PR #372 Use CMake `FetchContent` to obtain `cnmem` instead of git submodule
+- PR #382 Rely on NumPy arrays for out-of-band pickling
 
 ## Bug Fixes
+
+- PR #383 Explicitly require NumPy
 
 # RMM 0.14.0 (Date TBD)
 
@@ -20,6 +24,7 @@
 - PR #360 Support logging to stdout/stderr
 - PR #341 Enable logging
 - PR #343 Add in option to statically link against cudart
+- PR #364 Added new uninitialized device vector type, `device_uvector`
 
 ## Improvements
 
@@ -41,6 +46,9 @@
 - PR #367 Fix flake8 issues
 - PR #368 Fix `clang-format` missing comma bug
 - PR #370 Fix stream and mr use in `device_buffer` methods
+- PR #379 Remove deprecated calls from synchronization.cpp
+- PR #381 Remove test_benchmark.cpp from cmakelists
+
 
 # RMM 0.13.0 (Date TBD)
 
