@@ -5,7 +5,7 @@ include(FetchContent)
 
 FetchContent_Declare(
     cnmem
-    GIT_REPOSITORY https://github.com/NVIDIA/cnmem
+    GIT_REPOSITORY https://github.com/NVIDIA/cnmem.git
     GIT_TAG        37896cc9bfc6536a8c878a1e675835c22d827821
     GIT_SHALLOW    true
 )
@@ -23,7 +23,7 @@ set(CNMEM_SOURCE_DIR "${cnmem_SOURCE_DIR}/src" PARENT_SCOPE)
 
 FetchContent_Declare(
     cub
-    GIT_REPOSITORY https://github.com/thrust/cub
+    GIT_REPOSITORY https://github.com/thrust/cub.git
     GIT_TAG        1.9.10
     GIT_SHALLOW    true
 )
@@ -56,7 +56,7 @@ endif()
 
 FetchContent_Declare(
     thrust
-    GIT_REPOSITORY https://github.com/thrust/thrust
+    GIT_REPOSITORY https://github.com/thrust/thrust.git
     GIT_TAG        1.9.10
     GIT_SHALLOW    true
 )
