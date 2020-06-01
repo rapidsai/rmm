@@ -7,10 +7,6 @@ from libcpp.memory cimport unique_ptr, make_unique, shared_ptr, make_shared
 from libcpp.string cimport string
 
 
-cdef class MemoryResource:
-    cdef shared_ptr[device_memory_resource_wrapper] c_obj
-
-
 cdef class CudaMemoryResource(MemoryResource):
     """
     Memory resource that uses cudaMalloc/Free for allocation/deallocation
@@ -206,8 +202,6 @@ cdef class LoggingResourceAdaptor(MemoryResource):
     log_file_name : str
         Path to the file to which logs are written.
     """
-    cdef MemoryResource _upstream
-
     def __cinit__(self, MemoryResource upstream, object log_file_name=None):
         if log_file_name is None:
             log_file_name = os.getenv("RMM_LOG_FILE")

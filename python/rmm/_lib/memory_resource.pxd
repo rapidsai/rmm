@@ -81,3 +81,34 @@ cdef extern from "memory_resource_wrappers.hpp":
     void set_default_resource(
         shared_ptr[device_memory_resource_wrapper] new_resource
     ) except +
+
+
+cdef class MemoryResource:
+    cdef shared_ptr[device_memory_resource_wrapper] c_obj
+
+cdef class CudaMemoryResource(MemoryResource):
+    pass
+
+cdef class ManagedMemoryResource(MemoryResource):
+    pass
+
+cdef class CNMemMemoryResource(MemoryResource):
+    pass
+
+cdef class CNMemManagedMemoryResource(MemoryResource):
+    pass
+
+cdef class PoolMemoryResource(MemoryResource):
+    pass
+
+cdef class FixedSizeMemoryResource(MemoryResource):
+    pass
+
+cdef class FixedMultiSizeMemoryResource(MemoryResource):
+    pass
+
+cdef class HybridMemoryResource(MemoryResource):
+    pass
+
+cdef class LoggingResourceAdaptor(MemoryResource):
+    pass
