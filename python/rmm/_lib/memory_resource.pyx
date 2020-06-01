@@ -33,10 +33,10 @@ cdef class CNMemMemoryResource(MemoryResource):
     initial_pool_size : int, optional
         Initial pool size in bytes. By default, an implementation defined
         pool size is used.
-    devices : list of int
+    devices : tuple of int
         List of GPU device IDs to register with CNMEM.
     """
-    def __cinit__(self, size_t initial_pool_size=0, vector[int] devices=[]):
+    def __cinit__(self, size_t initial_pool_size=0, vector[int] devices=()):
         self.c_obj.reset(new cnmem_memory_resource_wrapper(
             initial_pool_size,
             devices
@@ -56,7 +56,7 @@ cdef class CNMemManagedMemoryResource(MemoryResource):
     devices : list of int
         List of GPU device IDs to register with CNMEM.
     """
-    def __cinit__(self, size_t initial_pool_size=0, vector[int] devices=[]):
+    def __cinit__(self, size_t initial_pool_size=0, vector[int] devices=()):
         self.c_obj.reset(new cnmem_managed_memory_resource_wrapper(
             initial_pool_size,
             devices
