@@ -1,3 +1,5 @@
+# Copyright (c) 2020, NVIDIA CORPORATION.
+
 import cython
 import os
 
@@ -6,7 +8,7 @@ from libcpp.string cimport string
 
 
 cdef class MemoryResource:
-    cdef shared_ptr[device_memory_resource] c_obj
+    cdef shared_ptr[device_memory_resource_wrapper] c_obj
 
 
 cdef class CudaMemoryResource(MemoryResource):
@@ -14,7 +16,7 @@ cdef class CudaMemoryResource(MemoryResource):
     Memory resource that uses cudaMalloc/Free for allocation/deallocation
     """
     def __cinit__(self):
-        self.c_obj.reset(new cuda_memory_resource())
+        self.c_obj.reset(new cuda_memory_resource_wrapper())
 
 
 cdef class ManagedMemoryResource(MemoryResource):
@@ -23,7 +25,7 @@ cdef class ManagedMemoryResource(MemoryResource):
     allocation/deallocation.
     """
     def __cinit__(self):
-        self.c_obj.reset(new managed_memory_resource())
+        self.c_obj.reset(new managed_memory_resource_wrapper())
 
 
 cdef class CNMemMemoryResource(MemoryResource):
@@ -39,7 +41,7 @@ cdef class CNMemMemoryResource(MemoryResource):
         List of GPU device IDs to register with CNMEM.
     """
     def __cinit__(self, size_t initial_pool_size=0, vector[int] devices=[]):
-        self.c_obj.reset(new cnmem_memory_resource(
+        self.c_obj.reset(new cnmem_memory_resource_wrapper(
             initial_pool_size,
             devices
         ))
@@ -59,7 +61,7 @@ cdef class CNMemManagedMemoryResource(MemoryResource):
         List of GPU device IDs to register with CNMEM.
     """
     def __cinit__(self, size_t initial_pool_size=0, vector[int] devices=[]):
-        self.c_obj.reset(new cnmem_managed_memory_resource(
+        self.c_obj.reset(new cnmem_managed_memory_resource_wrapper(
             initial_pool_size,
             devices
         ))
@@ -86,7 +88,7 @@ cdef class PoolMemoryResource(MemoryResource):
             size_t initial_pool_size=~0,
             size_t maximum_pool_size=~0
     ):
-        self.c_obj.reset(new pool_memory_resource(
+        self.c_obj.reset(new pool_memory_resource_wrapper(
             upstream.c_obj,
             initial_pool_size,
             maximum_pool_size
@@ -117,7 +119,7 @@ cdef class FixedSizeMemoryResource(MemoryResource):
             size_t blocks_to_preallocate=128
     ):
         self.c_obj.reset(
-            new fixed_size_memory_resource(
+            new fixed_size_memory_resource_wrapper(
                 upstream.c_obj,
                 block_size,
                 blocks_to_preallocate
@@ -154,7 +156,7 @@ cdef class FixedMultiSizeMemoryResource(MemoryResource):
         size_t max_size_exponent=22,
         size_t initial_blocks_per_size=128
     ):
-        self.c_obj.reset(new fixed_multisize_memory_resource(
+        self.c_obj.reset(new fixed_multisize_memory_resource_wrapper(
             upstream.c_obj,
             size_base,
             min_size_exponent,
@@ -184,7 +186,7 @@ cdef class HybridMemoryResource(MemoryResource):
         size_t threshold_size=1<<22
     ):
         self.c_obj.reset(
-            new hybrid_memory_resource(
+            new hybrid_memory_resource_wrapper(
                 small_alloc_mr.c_obj,
                 large_alloc_mr.c_obj,
                 threshold_size
@@ -215,13 +217,13 @@ cdef class LoggingResourceAdaptor(MemoryResource):
                     "log_file_name= argument or RMM_LOG_FILE "
                     "environment variable"
                 )
-        self.c_obj.reset(new logging_resource_adaptor(
+        self.c_obj.reset(new logging_resource_adaptor_wrapper(
             upstream.c_obj,
             log_file_name
         ))
 
     def flush(self):
-        (<logging_resource_adaptor*>(self.c_obj.get()))[0].flush()
+        (<logging_resource_adaptor_wrapper*>(self.c_obj.get()))[0].flush()
 
 
 # Global memory resource:
