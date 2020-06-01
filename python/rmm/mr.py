@@ -1,3 +1,5 @@
+# Copyright (c) 2020, NVIDIA CORPORATION.
+
 from rmm._lib.memory_resource import (  # noqa: F401
     CNMemManagedMemoryResource,
     CNMemMemoryResource,

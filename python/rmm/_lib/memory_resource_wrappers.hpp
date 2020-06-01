@@ -1,3 +1,5 @@
+// Copyright (c) 2020, NVIDIA CORPORATION.
+
 #include <memory>
 #include <rmm/mr/device/cnmem_managed_memory_resource.hpp>
 #include <rmm/mr/device/cnmem_memory_resource.hpp>
