@@ -76,8 +76,8 @@ cdef extern from "memory_resource_wrappers.hpp":
             shared_ptr[device_memory_resource_wrapper] upstream_mr,
             string filename
         ) except +
-        void flush()
+        void flush() except +
 
     void set_default_resource(
         shared_ptr[device_memory_resource_wrapper] new_resource
-    )
+    ) except +
