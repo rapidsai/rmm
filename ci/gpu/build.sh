@@ -41,17 +41,14 @@ env
 logger "Activate conda env..."
 source activate gdf
 
+# Install spdlog
+conda install spdlog">=1.4.2"
+
 logger "Check versions..."
 python --version
 gcc --version
 g++ --version
 conda list
-
-################################################################################
-# PRE-BUILD - Build dependencies not included in conda env
-################################################################################
-
-conda install spdlog">=1.4.2"
 
 ################################################################################
 # BUILD - Build and install librmm and rmm
