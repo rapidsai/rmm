@@ -38,7 +38,6 @@ extensions = [
             "../include/rmm",
             "../include",
             "../build/include",
-            "../thirdparty/",  # TODO: remove before merging
             os.path.dirname(sysconfig.get_path("include")),
             cuda_include_dir,
         ],
