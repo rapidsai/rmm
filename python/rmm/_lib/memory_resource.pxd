@@ -111,4 +111,4 @@ cdef class HybridMemoryResource(MemoryResource):
     pass
 
 cdef class LoggingResourceAdaptor(MemoryResource):
-    pass
+    cpdef flush(self)
