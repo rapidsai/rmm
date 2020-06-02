@@ -39,7 +39,6 @@ BUILD_DIRS="${LIBRMM_BUILD_DIR} ${RMM_BUILD_DIR}"
 VERBOSE=""
 BUILD_TYPE=Release
 INSTALL_TARGET=install
-PYTHON=${PYTHON:=python}
 CUDA_STATIC_RUNTIME=OFF
 RAN_CMAKE=0
 
@@ -130,12 +129,12 @@ if (( NUMARGS == 0 )) || hasArg rmm; then
     cd "${REPODIR}/python"
     if [[ ${INSTALL_TARGET} != "" ]]; then
         echo "building rmm..."
-        ${PYTHON} setup.py build_ext --inplace
+        python setup.py build_ext --inplace
         echo "installing rmm..."
-        ${PYTHON} setup.py install --single-version-externally-managed --record=record.txt
+        python setup.py install --single-version-externally-managed --record=record.txt
     else
         echo "building rmm..."
-        ${PYTHON} setup.py build_ext --inplace --library-dir="${LIBRMM_BUILD_DIR}"
+        python setup.py build_ext --inplace --library-dir="${LIBRMM_BUILD_DIR}"
     fi
 
 fi

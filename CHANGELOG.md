@@ -7,9 +7,11 @@
 - PR #360 Support logging to stdout/stderr
 - PR #341 Enable logging
 - PR #343 Add in option to statically link against cudart
+- PR #364 Added new uninitialized device vector type, `device_uvector`
 
 ## Improvements
 
+- PR #369 Use CMake `FetchContent` to obtain `spdlog` instead of vendoring
 - PR #366 Remove installation of extra test dependencies
 - PR #354 Add CMake option for per-thread default stream
 - PR #350 Add .clang-format file & format all files
@@ -21,12 +23,16 @@
 
 ## Bug Fixes
 
+- PR #373 Fix build.sh
 - PR #346 Add clearer exception message when RMM_LOG_FILE is unset
 - PR #347 Mark rmmFinalizeWrapper nogil
 - PR #348 Fix unintentional use of pool-managed resource.
 - PR #367 Fix flake8 issues
 - PR #368 Fix `clang-format` missing comma bug
 - PR #370 Fix stream and mr use in `device_buffer` methods
+- PR #379 Remove deprecated calls from synchronization.cpp
+- PR #381 Remove test_benchmark.cpp from cmakelists
+
 
 # RMM 0.13.0 (Date TBD)
 
