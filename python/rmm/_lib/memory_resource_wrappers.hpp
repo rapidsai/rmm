@@ -15,6 +15,13 @@
 #include <string>
 #include <vector>
 
+// These are "owning" versions of the memory_resource classes
+// that help lift the responsibility of managing memory resource
+// lifetimes. For example, a `pool_memory_resource_wrapper`
+// constructed using a `cuda_memory_resource_wrapper` as its
+// "upstream" resource does not require the user to keep a reference
+// to the latter.
+
 class device_memory_resource_wrapper {
  public:
   virtual std::shared_ptr<rmm::mr::device_memory_resource> get_mr() = 0;
