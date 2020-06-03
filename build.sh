@@ -18,14 +18,15 @@ ARGS=$*
 # script, and that this script resides in the repo dir!
 REPODIR=$(cd $(dirname $0); pwd)
 
-VALIDARGS="clean librmm rmm -v -g -n -h"
-HELP="$0 [clean] [librmm] [rmm] [-v] [-g] [-n] [-h]
+VALIDARGS="clean librmm rmm -v -g -n -s -h"
+HELP="$0 [clean] [librmm] [rmm] [-v] [-g] [-n] [-s] [-h]
    clean  - remove all existing build artifacts and configuration (start over)
    librmm - build and install the librmm C++ code
    rmm    - build and install the rmm Python package
    -v     - verbose build mode
    -g     - build for debug
    -n     - no install step
+   -s     - statically link against cudart
    -h     - print this text
 
    default action (no args) is to build and install 'librmm' and 'rmm' targets
@@ -38,7 +39,7 @@ BUILD_DIRS="${LIBRMM_BUILD_DIR} ${RMM_BUILD_DIR}"
 VERBOSE=""
 BUILD_TYPE=Release
 INSTALL_TARGET=install
-PYTHON=${PYTHON:=python}
+CUDA_STATIC_RUNTIME=OFF
 RAN_CMAKE=0
 
 # Set defaults for vars that may not have been defined externally
@@ -59,6 +60,7 @@ function ensureCMakeRan {
     if (( RAN_CMAKE == 0 )); then
         echo "Executing cmake for librmm..."
         cmake -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" \
+              -DCUDA_STATIC_RUNTIME="${CUDA_STATIC_RUNTIME}" \
               -DCMAKE_CXX11_ABI=ON \
               -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..
         RAN_CMAKE=1
@@ -90,6 +92,9 @@ if hasArg -g; then
 fi
 if hasArg -n; then
     INSTALL_TARGET=""
+fi
+if hasArg -s; then
+    CUDA_STATIC_RUNTIME=ON
 fi
 
 # If clean given, run it prior to any other steps
@@ -124,12 +129,12 @@ if (( NUMARGS == 0 )) || hasArg rmm; then
     cd "${REPODIR}/python"
     if [[ ${INSTALL_TARGET} != "" ]]; then
         echo "building rmm..."
-        ${PYTHON} setup.py build_ext --inplace
+        python setup.py build_ext --inplace
         echo "installing rmm..."
-        ${PYTHON} setup.py install --single-version-externally-managed --record=record.txt
+        python setup.py install --single-version-externally-managed --record=record.txt
     else
         echo "building rmm..."
-        ${PYTHON} setup.py build_ext --inplace --library-dir="${LIBRMM_BUILD_DIR}"
+        python setup.py build_ext --inplace --library-dir="${LIBRMM_BUILD_DIR}"
     fi
 
 fi

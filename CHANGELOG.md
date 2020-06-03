@@ -1,3 +1,38 @@
+# RMM 0.14.0 (03 Jun 2020)
+
+## New Features
+
+- PR #317 Provide External Memory Management Plugin for Numba
+- PR #362 Add spdlog as a dependency in the conda package
+- PR #360 Support logging to stdout/stderr
+- PR #341 Enable logging
+- PR #343 Add in option to statically link against cudart
+- PR #364 Added new uninitialized device vector type, `device_uvector`
+
+## Improvements
+
+- PR #369 Use CMake `FetchContent` to obtain `spdlog` instead of vendoring
+- PR #366 Remove installation of extra test dependencies
+- PR #354 Add CMake option for per-thread default stream
+- PR #350 Add .clang-format file & format all files
+- PR #358 Fix typo in `rmm_cupy_allocator` docstring
+- PR #357 Add Docker 19 support to local gpuci build
+- PR #365 Make .clang-format consistent with cuGRAPH and cuDF
+- PR #371 Add docs build script to repository
+
+## Bug Fixes
+
+- PR #373 Fix build.sh
+- PR #346 Add clearer exception message when RMM_LOG_FILE is unset
+- PR #347 Mark rmmFinalizeWrapper nogil
+- PR #348 Fix unintentional use of pool-managed resource.
+- PR #367 Fix flake8 issues
+- PR #368 Fix `clang-format` missing comma bug
+- PR #370 Fix stream and mr use in `device_buffer` methods
+- PR #379 Remove deprecated calls from synchronization.cpp
+- PR #381 Remove test_benchmark.cpp from cmakelists
+
+
 # RMM 0.13.0 (31 Mar 2020)
 
 ## New Features
@@ -41,8 +76,10 @@
 - PR #326 Sync only on copy construction
 - PR #308 Fix typo in README
 - PR #334 Replace `rmm_allocator` for Thrust allocations
+- PR #345 Remove stream synchronization from `device_scalar` constructor and `set_value`
 
 ## Bug Fixes
+
 - PR #298 Remove RMM_CUDA_TRY from cuda_event_timer destructor
 - PR #299 Fix assert condition blocking debug builds
 - PR #300 Fix host mr_tests compile error

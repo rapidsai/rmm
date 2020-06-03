@@ -26,9 +26,7 @@ if not CUDA_HOME:
     CUDA_HOME = os.path.dirname(os.path.dirname(path_to_cuda_gdb))
 
 if not os.path.isdir(CUDA_HOME):
-    raise OSError(
-        f"Invalid CUDA_HOME: " "directory does not exist: {CUDA_HOME}"
-    )
+    raise OSError(f"Invalid CUDA_HOME: directory does not exist: {CUDA_HOME}")
 
 cuda_include_dir = os.path.join(CUDA_HOME, "include")
 
@@ -52,7 +50,7 @@ extensions = [
 
 setup(
     name="rmm",
-    version="0.13.0",
+    version="0.14.0",
     description="rmm - RAPIDS Memory Manager",
     url="https://github.com/rapidsai/rmm",
     author="NVIDIA Corporation",

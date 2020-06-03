@@ -27,8 +27,10 @@ requirements:
     - cmake >=3.12.4
   host:
     - cudatoolkit {{ cuda_version }}.*
+    - spdlog >=1.4.2
   run:
     - {{ pin_compatible('cudatoolkit', max_pin='x.x') }}
+    - spdlog >=1.4.2
 
 test:
   commands:
