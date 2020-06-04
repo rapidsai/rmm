@@ -41,6 +41,9 @@ env
 logger "Activate conda env..."
 source activate gdf
 
+# Install spdlog
+conda install spdlog">=1.4.2"
+
 logger "Check versions..."
 python --version
 gcc --version

@@ -1,5 +1,8 @@
+# Copyright (c) 2020, NVIDIA CORPORATION.
+
 import pickle
 import sys
+import tempfile
 from itertools import product
 
 import numpy as np
@@ -58,35 +61,20 @@ def test_rmm_modes(dtype, nelem, alloc, managed, pool):
     assert rmm.is_initialized()
 
     array_tester(dtype, nelem, alloc)
-
-
-def test_uninitialized():
-    rmm._finalize()
-    assert not rmm.is_initialized()
-    rmm.reinitialize()  # so further tests will pass
+    rmm.reinitialize()
 
 
 @pytest.mark.parametrize("dtype", _dtypes)
 @pytest.mark.parametrize("nelem", _nelems)
-def test_rmm_csv_log(dtype, nelem):
-    # data
-    h_in = np.full(nelem, 3.2, dtype)
-
-    d_in = cuda.to_device(h_in)
-    d_result = cuda.device_array_like(d_in)
-
-    d_result.copy_to_device(d_in)
-
-    csv = rmm.csv_log()
-
-    assert (
-        csv.find(
-            "Event Type,Device ID,Address,Stream,Size (bytes),"
-            "Free Memory,Total Memory,Current Allocs,Start,End,"
-            "Elapsed,Location"
-        )
-        >= 0
-    )
+@pytest.mark.parametrize("alloc", _allocs)
+def test_rmm_csv_log(dtype, nelem, alloc):
+    with tempfile.NamedTemporaryFile() as fp:
+        rmm.reinitialize(logging=True, log_file_name=fp.name)
+        array_tester(dtype, nelem, alloc)
+        rmm.mr._flush_logs()
+        csv = fp.read()
+        assert csv.find(b"Time,Action,Pointer,Size,Stream") >= 0
+    rmm.reinitialize()
 
 
 @pytest.mark.parametrize("size", [0, 5])
@@ -282,18 +270,92 @@ def test_rmm_cupy_allocator():
     assert isinstance(a.data.mem._owner, rmm.DeviceBuffer)
 
 
-def test_rmm_getinfo():
-    meminfo = rmm.get_info()
-    # Basic sanity checks of returned values
-    assert meminfo.free >= 0
-    assert meminfo.total >= 0
-    assert meminfo.free <= meminfo.total
+@pytest.mark.parametrize("dtype", _dtypes)
+@pytest.mark.parametrize("nelem", _nelems)
+@pytest.mark.parametrize("alloc", _allocs)
+def test_pool_memory_resource(dtype, nelem, alloc):
+    rmm.mr.set_default_resource(
+        rmm.mr.PoolMemoryResource(
+            rmm.mr.CudaMemoryResource(),
+            initial_pool_size=1 << 22,
+            maximum_pool_size=1 << 23,
+        )
+    )
+    array_tester(dtype, nelem, alloc)
+    rmm.reinitialize()
 
 
-def test_rmm_getinfo_uninitialized():
-    rmm._finalize()
+@pytest.mark.parametrize("dtype", _dtypes)
+@pytest.mark.parametrize("nelem", _nelems)
+@pytest.mark.parametrize("alloc", _allocs)
+@pytest.mark.parametrize(
+    "upstream",
+    [
+        lambda: rmm.mr.CudaMemoryResource(),
+        lambda: rmm.mr.ManagedMemoryResource(),
+    ],
+)
+def test_fixed_size_memory_resource(dtype, nelem, alloc, upstream):
+    rmm.mr.set_default_resource(
+        rmm.mr.FixedSizeMemoryResource(
+            upstream(), block_size=1 << 20, blocks_to_preallocate=128
+        )
+    )
+    array_tester(dtype, nelem, alloc)
+    rmm.reinitialize()
 
-    with pytest.raises(rmm.RMMError):
-        rmm.get_info()
 
+@pytest.mark.parametrize("dtype", _dtypes)
+@pytest.mark.parametrize("nelem", _nelems)
+@pytest.mark.parametrize("alloc", _allocs)
+@pytest.mark.parametrize(
+    "upstream",
+    [
+        lambda: rmm.mr.CudaMemoryResource(),
+        lambda: rmm.mr.ManagedMemoryResource(),
+    ],
+)
+def test_fixed_multisize_memory_resource(dtype, nelem, alloc, upstream):
+    rmm.mr.set_default_resource(
+        rmm.mr.FixedMultiSizeMemoryResource(
+            upstream(),
+            size_base=2,
+            min_size_exponent=18,
+            max_size_exponent=22,
+            initial_blocks_per_size=128,
+        )
+    )
+    array_tester(dtype, nelem, alloc)
+    rmm.reinitialize()
+
+
+@pytest.mark.parametrize("dtype", _dtypes)
+@pytest.mark.parametrize("nelem", _nelems)
+@pytest.mark.parametrize("alloc", _allocs)
+@pytest.mark.parametrize(
+    "small_alloc_mr",
+    [
+        lambda: rmm.mr.CudaMemoryResource(),
+        lambda: rmm.mr.ManagedMemoryResource(),
+        lambda: rmm.mr.PoolMemoryResource(
+            rmm.mr.CudaMemoryResource(), 1 << 20
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    "large_alloc_mr",
+    [
+        lambda: rmm.mr.CudaMemoryResource(),
+        lambda: rmm.mr.ManagedMemoryResource(),
+    ],
+)
+def test_hybrid_memory_resource(
+    dtype, nelem, alloc, small_alloc_mr, large_alloc_mr
+):
+    rmm.mr.set_default_resource(
+        rmm.mr.HybridMemoryResource(
+            small_alloc_mr(), large_alloc_mr(), threshold_size=32
+        )
+    )
+    array_tester(dtype, nelem, alloc)
     rmm.reinitialize()

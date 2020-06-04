@@ -14,29 +14,21 @@
 
 import weakref
 
+from rmm._lib.device_buffer import DeviceBuffer
+from rmm.mr import _initialize
 from rmm.rmm import (
     RMMError,
     RMMNumbaManager,
-    _finalize,
-    _initialize,
-    _make_finalizer,
     _numba_memory_manager,
-    _register_atexit_finalize,
-    csv_log,
     device_array,
     device_array_from_ptr,
     device_array_like,
     get_ipc_handle,
-    get_info,
     is_initialized,
     reinitialize,
-    to_device,
     rmm_cupy_allocator,
+    to_device,
 )
 
-from rmm._lib.device_buffer import DeviceBuffer
-from rmm._lib.device_pointer import DevicePointer as _DevicePointer
-
-# Initialize RMM on import, finalize RMM on process exit
+# Initialize RMM on import
 _initialize()
-_register_atexit_finalize()
