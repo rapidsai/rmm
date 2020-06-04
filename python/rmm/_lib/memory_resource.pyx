@@ -286,7 +286,7 @@ cdef class LoggingResourceAdaptor(MemoryResource):
 cdef MemoryResource _mr
 
 
-def _initialize(
+cpdef _initialize(
     bool pool_allocator=False,
     bool managed_memory=False,
     object initial_pool_size=None,
@@ -334,7 +334,7 @@ def _initialize(
     )
 
 
-def _set_default_resource(MemoryResource mr):
+cpdef _set_default_resource(MemoryResource mr):
     """
     Set the memory resource to use for RMM device allocations.
 
@@ -349,11 +349,11 @@ def _set_default_resource(MemoryResource mr):
     set_default_resource(_mr.c_obj)
 
 
-def is_initialized():
+cpdef is_initialized():
     global _mr
     return _mr.c_obj.get() is not NULL
 
 
-def _flush_logs():
+cpdef _flush_logs():
     global _mr
     _mr.flush()
