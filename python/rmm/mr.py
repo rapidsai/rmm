@@ -1,6 +1,6 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
-from rmm._lib.memory_resource import (  # noqa: F401
+from rmm._lib.memory_resource import (
     CNMemManagedMemoryResource,
     CNMemMemoryResource,
     CudaMemoryResource,
@@ -28,5 +28,8 @@ __all__ = [
     "ManagedMemoryResource",
     "MemoryResource",
     "PoolMemoryResource",
+    "_flush_logs",
+    "_initialize",
     "set_default_resource",
+    "is_initialized",
 ]
