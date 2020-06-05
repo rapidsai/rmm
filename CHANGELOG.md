@@ -6,6 +6,7 @@
 
 ## Improvements
 
+- PR #378 Use CMake `FetchContent` to obtain latest release of `cub` and `thrust`
 - PR #377 A better way to fetch `spdlog`
 - PR #372 Use CMake `FetchContent` to obtain `cnmem` instead of git submodule
 - PR #382 Rely on NumPy arrays for out-of-band pickling

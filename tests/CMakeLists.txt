@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #=============================================================================
-cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 
 project(RMM_TESTS LANGUAGES C CXX CUDA)
 
@@ -40,6 +40,8 @@ endfunction(ConfigureTest)
 # - include paths ---------------------------------------------------------------------------------
 
 include_directories("${GTEST_INCLUDE_DIR}"
+                    "${CUB_INCLUDE_DIR}"
+                    "${THRUST_INCLUDE_DIR}"
                     "${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
                     "${CMAKE_SOURCE_DIR}/include"
                     "${CMAKE_SOURCE_DIR}/include/rmm"
