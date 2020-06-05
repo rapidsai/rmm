@@ -349,6 +349,13 @@ cpdef _set_default_resource(MemoryResource mr):
     set_default_resource(_mr.c_obj)
 
 
+cpdef get_default_resource_type():
+    """
+    Get the default memory resource type used for RMM device allocations.
+    """
+    return type(_mr)
+
+
 cpdef is_initialized():
     global _mr
     return _mr.c_obj.get() is not NULL
