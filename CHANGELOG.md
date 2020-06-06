@@ -3,6 +3,7 @@
 ## New Features
 
 - PR #375 Support out-of-band buffers in Python pickling
+- PR #391 Add `get_default_resource_type`
 
 ## Improvements
 

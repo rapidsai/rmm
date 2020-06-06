@@ -112,3 +112,7 @@ cdef class HybridMemoryResource(MemoryResource):
 
 cdef class LoggingResourceAdaptor(MemoryResource):
     cpdef flush(self)
+
+cpdef get_default_resource_type()
+
+cpdef is_initialized()
