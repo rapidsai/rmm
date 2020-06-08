@@ -137,7 +137,8 @@ endif(BUILD_BENCHMARKS)
 
 ###################################################################################################
 # - include paths ---------------------------------------------------------------------------------
-include_directories("${CUB_INCLUDE_DIR}"
+include_directories("${SPDLOG_INCLUDE_DIR}"
+                    "${CUB_INCLUDE_DIR}"
                     "${THRUST_INCLUDE_DIR}"
                     "${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/include"
@@ -177,7 +178,7 @@ endif(USE_NVTX)
 ###################################################################################################
 # - link libraries --------------------------------------------------------------------------------
 
-target_link_libraries(rmm ${CUDART_LIBRARY} cuda spdlog::spdlog_header_only)
+target_link_libraries(rmm ${CUDART_LIBRARY} cuda)
 
 ###################################################################################################
 # - install targets -------------------------------------------------------------------------------
