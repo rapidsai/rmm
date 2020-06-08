@@ -51,6 +51,7 @@
 - PR #370 Fix stream and mr use in `device_buffer` methods
 - PR #379 Remove deprecated calls from synchronization.cpp
 - PR #381 Remove test_benchmark.cpp from cmakelists
+- PR #392 SPDLOG matches other header-only acquisition patterns
 
 
 # RMM 0.13.0 (Date TBD)
