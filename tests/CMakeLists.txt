@@ -62,11 +62,6 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
 ###################################################################################################
 # - rmm tests -------------------------------------------------------------------------------------
 
-set(RMM_TEST_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/memory_tests.cpp")
-
-ConfigureTest(RMM_TEST "${RMM_TEST_SRC}")
-
 ###################################################################################################
 ###################################################################################################
 # - device mr tests -------------------------------------------------------------------------------------
@@ -125,19 +120,3 @@ ConfigureTest(DEVICE_UVECTOR_TEST "${DEVICE_UVECTOR_TEST_SRC}")
 ###################################################################################################
 
 enable_testing()
-
-###################################################################################################
-### Performance test sources ######################################################################
-###################################################################################################
-
-###################################################################################################
-# - random_allocate microbenchmark ----------------------------------------------------------------
-
-set(RANDOM_ALLOCATE_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/performance/random_allocate.cpp")
-
-add_executable(random_allocate ${RANDOM_ALLOCATE_SRC})
-set_target_properties(random_allocate PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(random_allocate cudart rmm)
-set_target_properties(random_allocate PROPERTIES
-                      RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bench")
