@@ -50,6 +50,7 @@ if(NOT spdlog_POPULATED)
   FetchContent_Populate(spdlog)
   add_subdirectory(${spdlog_SOURCE_DIR} ${spdlog_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif()
+set(SPDLOG_INCLUDE_DIR "${spdlog_SOURCE_DIR}/include" PARENT_SCOPE)
 
 ###################################################################################################
 # - thrust ----------------------------------------------------------------------------------------
