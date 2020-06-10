@@ -171,13 +171,13 @@ struct resource_wrapper {
   MemoryResource* mr{};
 };
 
-template<>
+template <>
 resource_wrapper<cnmem_mr>::resource_wrapper()
 {
   mr = new cnmem_mr();
 }
 
-template<>
+template <>
 resource_wrapper<cuda_mr>::resource_wrapper()
 {
   mr = new cuda_mr();
@@ -198,8 +198,8 @@ resource_wrapper<fixed_multisize_mr>::resource_wrapper()
 template <>
 resource_wrapper<safe_hybrid_mr>::resource_wrapper()
 {
-  auto pool    = new pool_mr(new cuda_mr());
-  mr           = new rmm::mr::thread_safe_resource_adaptor<hybrid_mr>(
+  auto pool = new pool_mr(new cuda_mr());
+  mr        = new rmm::mr::thread_safe_resource_adaptor<hybrid_mr>(
     new hybrid_mr(new fixed_multisize_mr(pool), pool));
 }
 
