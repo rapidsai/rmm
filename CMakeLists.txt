@@ -156,8 +156,7 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
 ###################################################################################################
 # - library targets -------------------------------------------------------------------------------
 add_library(rmm SHARED
-            "${CNMEM_SOURCE_DIR}/cnmem.cpp"
-            src/mr/device/default_memory_resource.cpp)
+            "${CNMEM_SOURCE_DIR}/cnmem.cpp")
 
 # override rpath for rmm
 SET_TARGET_PROPERTIES(rmm PROPERTIES BUILD_RPATH "\$ORIGIN")
