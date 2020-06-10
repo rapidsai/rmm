@@ -78,10 +78,8 @@ struct block {
  */
 inline block merge_blocks(block const& a, block const& b)
 {
-  assert(a.ptr + a.size == b.ptr);  // non-contiguous blocks
-  assert(not b.is_head);            // Can't merge across upstream allocation boundaries
-
-  return block{a.ptr, a.size + b.size};
+  assert(a.is_contiguous_before(b));
+  return block{a.ptr, a.size + b.size, a.is_head};
 }
 
 /**
