@@ -16,6 +16,7 @@
 ## Bug Fixes
 
 - PR #383 Explicitly require NumPy
+- PR #398 Fix missing head flag in merge_blocks (pool_memory_resource)
 
 # RMM 0.14.0 (Date TBD)
 
