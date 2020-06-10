@@ -56,11 +56,13 @@ allocation remove_at(allocation_vector& allocs, std::size_t index)
   return removed;
 }
 // nested MR type names can get long...
-using pool_mr            = rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>;
+using cuda_mr            = rmm::mr::cuda_memory_resource;
+using pool_mr            = rmm::mr::pool_memory_resource<cuda_mr>;
 using safe_pool_mr       = rmm::mr::thread_safe_resource_adaptor<pool_mr>;
 using fixed_multisize_mr = rmm::mr::fixed_multisize_memory_resource<pool_mr>;
 using hybrid_mr          = rmm::mr::hybrid_memory_resource<fixed_multisize_mr, pool_mr>;
 using safe_hybrid_mr     = rmm::mr::thread_safe_resource_adaptor<hybrid_mr>;
+using cnmem_mr           = rmm::mr::cnmem_memory_resource;
 
 template <typename SizeDistribution>
 void random_allocation_free(rmm::mr::device_memory_resource& mr,
@@ -169,25 +171,34 @@ struct resource_wrapper {
   MemoryResource* mr{};
 };
 
+template<>
+resource_wrapper<cnmem_mr>::resource_wrapper()
+{
+  mr = new cnmem_mr();
+}
+
+template<>
+resource_wrapper<cuda_mr>::resource_wrapper()
+{
+  mr = new cuda_mr();
+}
+
 template <>
 resource_wrapper<safe_pool_mr>::resource_wrapper()
 {
-  rmm::mr::cuda_memory_resource* cuda_mr = new rmm::mr::cuda_memory_resource();
-  mr = new rmm::mr::thread_safe_resource_adaptor<pool_mr>(new pool_mr(cuda_mr));
+  mr = new rmm::mr::thread_safe_resource_adaptor<pool_mr>(new pool_mr(new cuda_mr()));
 }
 
 template <>
 resource_wrapper<fixed_multisize_mr>::resource_wrapper()
 {
-  auto cuda_mr = new rmm::mr::cuda_memory_resource();
-  mr           = new fixed_multisize_mr(new pool_mr(cuda_mr));
+  mr = new fixed_multisize_mr(new pool_mr(new cuda_mr()));
 }
 
 template <>
 resource_wrapper<safe_hybrid_mr>::resource_wrapper()
 {
-  auto cuda_mr = new rmm::mr::cuda_memory_resource();
-  auto pool    = new pool_mr(cuda_mr);
+  auto pool    = new pool_mr(new cuda_mr());
   mr           = new rmm::mr::thread_safe_resource_adaptor<hybrid_mr>(
     new hybrid_mr(new fixed_multisize_mr(pool), pool));
 }
@@ -309,9 +320,8 @@ int main(int argc, char** argv)
   } else {
     BENCHMARK_TEMPLATE(BM_RandomAllocations, safe_pool_mr)->Apply(benchmark_range);
     BENCHMARK_TEMPLATE(BM_RandomAllocations, safe_hybrid_mr)->Apply(benchmark_range);
-    BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::cnmem_memory_resource)
-      ->Apply(benchmark_range);
-    BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::cuda_memory_resource)->Apply(benchmark_range);
+    BENCHMARK_TEMPLATE(BM_RandomAllocations, cnmem_mr)->Apply(benchmark_range);
+    BENCHMARK_TEMPLATE(BM_RandomAllocations, cuda_mr)->Apply(benchmark_range);
   }
 
   ::benchmark::RunSpecifiedBenchmarks();
