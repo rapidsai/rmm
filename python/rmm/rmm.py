@@ -159,22 +159,6 @@ def to_device(ary, stream=0, copy=True, to=None):
     return to
 
 
-def get_ipc_handle(ary, stream=0):
-    """
-    Get an IPC handle from the DeviceArray ary with offset modified by
-    the RMM memory pool.
-    """
-    ipch = cuda.devices.get_context().get_ipc_handle(ary.gpu_data)
-    ptr = ary.device_ctypes_pointer.value
-    offset = librmm.rmm_getallocationoffset(ptr, stream)
-    # replace offset with RMM's offset
-    ipch.offset = offset
-    desc = dict(shape=ary.shape, strides=ary.strides, dtype=ary.dtype)
-    return cuda.cudadrv.devicearray.IpcArrayHandle(
-        ipc_handle=ipch, array_desc=desc
-    )
-
-
 class RMMNumbaManager(HostOnlyCUDAMemoryManager):
     """
     External Memory Management Plugin implementation for Numba. Provides
@@ -216,7 +200,8 @@ class RMMNumbaManager(HostOnlyCUDAMemoryManager):
         )
         source_info = cuda.current_context().device.get_device_identity()
         ptr = memory.device_ctypes_pointer.value
-        offset = librmm.rmm_getallocationoffset(ptr, 0)
+        start, end = cuda.cudadrv.driver.device_extents(memory)
+        offset = ptr - start
         return IpcHandle(
             memory, ipchandle, memory.size, source_info, offset=offset
         )
