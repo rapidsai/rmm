@@ -4,6 +4,7 @@
 
 - PR #375 Support out-of-band buffers in Python pickling
 - PR #391 Add `get_default_resource_type`
+- PR #396 Remove deprecated RMM APIs.
 
 ## Improvements
 
@@ -12,6 +13,7 @@
 - PR #372 Use CMake `FetchContent` to obtain `cnmem` instead of git submodule
 - PR #382 Rely on NumPy arrays for out-of-band pickling
 - PR #386 Add short commit to conda package name
+
 
 ## Bug Fixes
 
