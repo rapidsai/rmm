@@ -23,14 +23,12 @@
 namespace rmm {
 namespace mr {
 namespace detail {
-
 /**
- * @brief gets the default memory_resource when none is set
+ * @brief Returns a pointer to the initial resource.
  *
- * A static function which will return a singleton cuda_memory_resource
+ * Returns a global instance of a `cuda_memory_resource` as a function local static.
  *
- * @return device_memory_resource* a pointer to the static
- * cuda_memory_resource
+ * @return Pointer to the static cuda_memory_resource used as the initial, default resource
  */
 inline device_memory_resource* initial_resource()
 {
@@ -74,8 +72,7 @@ inline device_memory_resource* get_default_resource() { return detail::get_defau
  *
  * @param new_resource If not nullptr, pointer to memory resource to use as new
  * default device memory resource
- * @return device_memory_resource* The previous value of the default device
- * memory resource pointer
+ * @return The previous value of the default device memory resource pointer
  */
 inline device_memory_resource* set_default_resource(device_memory_resource* new_resource)
 {
