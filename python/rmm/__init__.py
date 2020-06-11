@@ -23,7 +23,6 @@ from rmm.rmm import (
     device_array,
     device_array_from_ptr,
     device_array_like,
-    get_ipc_handle,
     is_initialized,
     reinitialize,
     rmm_cupy_allocator,

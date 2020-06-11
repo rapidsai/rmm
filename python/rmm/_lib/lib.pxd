@@ -46,12 +46,6 @@ cdef extern from * nogil:
     cudaError_t cudaStreamSynchronize(cudaStream_t stream)
 
 
-cdef ptrdiff_t c_getallocationoffset(
-    void *ptr,
-    cudaStream_t stream
-)
-
-
 cdef extern from "rmm/rmm.h" nogil:
 
     ctypedef enum rmmError_t:
@@ -66,10 +60,4 @@ cdef extern from "rmm/rmm.h" nogil:
 
     cdef const char * rmmGetErrorString(
         rmmError_t errcode
-    ) except +
-
-    cdef rmmError_t rmmGetAllocationOffset(
-        ptrdiff_t *offset,
-        void *ptr,
-        cudaStream_t stream
     ) except +
