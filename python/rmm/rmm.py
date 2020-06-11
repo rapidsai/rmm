@@ -194,14 +194,13 @@ class RMMNumbaManager(HostOnlyCUDAMemoryManager):
         Get an IPC handle for the MemoryPointer memory with offset modified by
         the RMM memory pool.
         """
+        start, end = cuda.cudadrv.driver.device_extents(memory)
         ipchandle = (ctypes.c_byte * 64)()  # IPC handle is 64 bytes
         cuda.cudadrv.driver.driver.cuIpcGetMemHandle(
-            ctypes.byref(ipchandle), memory.owner.handle,
+            ctypes.byref(ipchandle), start,
         )
         source_info = cuda.current_context().device.get_device_identity()
-        ptr = memory.device_ctypes_pointer.value
-        start, end = cuda.cudadrv.driver.device_extents(memory)
-        offset = ptr - start
+        offset = memory.handle.value - start
         return IpcHandle(
             memory, ipchandle, memory.size, source_info, offset=offset
         )
