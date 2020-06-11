@@ -33,9 +33,9 @@ namespace detail {
  *        of memory allocated from the heap (or upstream allocator).
  */
 struct block {
-  char* ptr;     ///< Raw memory pointer
-  size_t size;   ///< Size in bytes
-  bool is_head;  ///< Indicates whether ptr was allocated from the heap
+  block() = default;
+  explicit block(char* ptr) : ptr{ptr}, size(0), is_head(true) {}
+  block(char* ptr, size_t size, bool is_head) : ptr{ptr}, size{size}, is_head{is_head} {}
 
   /**
    * @brief Comparison operator to enable comparing blocks and storing in ordered containers.
@@ -46,7 +46,22 @@ struct block {
    * @return true if this block's ptr is < than `rhs` block pointer.
    * @return false if this block's ptr is >= than `rhs` block pointer.
    */
-  bool operator<(block const& rhs) const noexcept { return ptr < rhs.ptr; };
+  inline bool operator<(block const& rhs) const noexcept { return ptr < rhs.ptr; };
+
+  /**
+   * @brief Coalesce two contiguous blocks into one.
+   *
+   * `this` must immediately precede `b` and both `this` and `b` must be from the same upstream
+   * allocation. That is, `this->is_contiguous_before(b)`. Otherwise behavior is undefined.
+   *
+   * @param b block to merge
+   * @return block The merged block
+   */
+  inline block merge(block const& b) const noexcept
+  {
+    assert(is_contiguous_before(b));
+    return block(ptr, size + b.size, is_head);
+  }
 
   /**
    * @brief Verifies whether this block can be merged to the beginning of block b.
@@ -55,32 +70,41 @@ struct block {
    * @return true Returns true if this blocks's `ptr` + `size` == `b.ptr`, and `not b.is_head`,
                   false otherwise.
    */
-  bool is_contiguous_before(block const& b) const noexcept
+  inline bool is_contiguous_before(block const& b) const noexcept
   {
     return (this->ptr + this->size == b.ptr) and not(b.is_head);
+  }
+
+  /**
+   * @brief Is this block large enough to fit `sz` bytes?
+   *
+   * @param sz The size in bytes to check for fit.
+   * @return true if this block is at least `sz` bytes
+   */
+  inline bool fits(size_t sz) const noexcept { return size >= sz; }
+
+  /**
+   * @brief Is this block a better fit for `sz` bytes than block `b`?
+   *
+   * @param sz The size in bytes to check for best fit.
+   * @param b The other block to check for fit.
+   * @return true If this block is a tighter fit for `sz` bytes than block `b`.
+   * @return false If this block does not fit `sz` bytes or `b` is a tighter fit.
+   */
+  inline bool is_better_fit(size_t sz, block const& b) const noexcept
+  {
+    return fits(sz) && (size < b.size || b.size < sz);
   }
 
   /**
    * @brief Print this block. For debugging.
    */
   void print() const { std::cout << reinterpret_cast<void*>(ptr) << " " << size << "B\n"; }
-};
 
-/**
- * @brief Coalesce two contiguous blocks into one.
- *
- * `a` must immediately precede `b` and both `a` and `b` must be from the same upstream allocation.
- * That is, `a.ptr + a.size == b.ptr` and `not b.is_head`. Otherwise behavior is undefined.
- *
- * @param a first block to merge
- * @param b second block to merge
- * @return block The merged block
- */
-inline block merge_blocks(block const& a, block const& b)
-{
-  assert(a.is_contiguous_before(b));
-  return block{a.ptr, a.size + b.size, a.is_head};
-}
+  char* ptr;     ///< Raw memory pointer
+  size_t size;   ///< Size in bytes
+  bool is_head;  ///< Indicates whether ptr was allocated from the heap
+};
 
 /**
  * @brief An ordered list of free memory blocks that coalesces contiguous blocks on insertion.
@@ -135,7 +159,7 @@ struct free_list {
     // Find the right place (in ascending ptr order) to insert the block
     // Can't use binary_search because it's a linked list and will be quadratic
     auto const next =
-      std::find_if(blocks.begin(), blocks.end(), [b](block const& i) { return i.ptr > b.ptr; });
+      std::find_if(blocks.begin(), blocks.end(), [b](block const& i) { return b < i; });
     auto const previous = (next == blocks.begin()) ? next : std::prev(next);
 
     // Coalesce with neighboring blocks or insert the new block if it can't be coalesced
@@ -143,13 +167,12 @@ struct free_list {
     bool const merge_next = (next != blocks.end()) && b.is_contiguous_before(*next);
 
     if (merge_prev && merge_next) {
-      *previous = detail::merge_blocks(*previous, b);
-      *previous = detail::merge_blocks(*previous, *next);
+      *previous = previous->merge(b).merge(*next);
       erase(next);
     } else if (merge_prev) {
-      *previous = detail::merge_blocks(*previous, b);
+      *previous = previous->merge(b);
     } else if (merge_next) {
-      *next = detail::merge_blocks(b, *next);
+      *next = b.merge(*next);
     } else {
       insert(next, b);  // cannot be coalesced, just insert
     }
@@ -174,7 +197,7 @@ struct free_list {
    *
    * @param iter An iterator referring to the block to erase.
    */
-  void erase(iterator const& iter) { blocks.erase(iter); }
+  void erase(const_iterator iter) { blocks.erase(iter); }
 
   /**
    * @brief Erase all blocks from the free_list.
@@ -191,11 +214,12 @@ struct free_list {
   block best_fit(size_t size)
   {
     // find best fit block
-    auto const iter = std::min_element(blocks.begin(), blocks.end(), [size](block lhs, block rhs) {
-      return (lhs.size >= size) && ((lhs.size < rhs.size) || (rhs.size < size));
-    });
+    auto const iter =
+      std::min_element(blocks.cbegin(), blocks.cend(), [size](block const& lhs, block const& rhs) {
+        return lhs.is_better_fit(size, rhs);
+      });
 
-    if (iter->size >= size) {
+    if (iter != blocks.end() && iter->fits(size)) {
       // Remove the block from the free_list and return it.
       block const found = *iter;
       erase(iter);

@@ -30,6 +30,7 @@
 #include <mutex>
 #include <numeric>
 #include <set>
+#include <vector>
 
 namespace rmm {
 namespace mr {
