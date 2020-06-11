@@ -17,24 +17,3 @@
 # cython: embedsignature = True
 # cython: language_level = 3
 
-
-# Utility Functions
-def _get_error_msg(errcode):
-    """
-    Get error message for the given error code.
-    """
-    msg = rmmGetErrorString(<rmmError_t>errcode)
-    cdef bytes py_msg = msg
-    return py_msg.decode("utf-8")
-
-
-def check_error(errcode):
-    """
-    Checks the error of a function that returns rmmError_t and raises a Python
-    exception based on the error code
-    """
-    from rmm import RMMError
-
-    if errcode != RMM_SUCCESS:
-        msg = _get_error_msg(errcode)
-        raise RMMError(errcode, msg)

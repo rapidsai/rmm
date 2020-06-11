@@ -44,20 +44,3 @@ cdef extern from * nogil:
     cudaError_t cudaMemcpyAsync(void* dst, const void* src, size_t count,
                                 cudaMemcpyKind kind, cudaStream_t stream)
     cudaError_t cudaStreamSynchronize(cudaStream_t stream)
-
-
-cdef extern from "rmm/rmm.h" nogil:
-
-    ctypedef enum rmmError_t:
-        RMM_SUCCESS = 0,
-        RMM_ERROR_CUDA_ERROR,
-        RMM_ERROR_INVALID_ARGUMENT,
-        RMM_ERROR_NOT_INITIALIZED,
-        RMM_ERROR_OUT_OF_MEMORY,
-        RMM_ERROR_UNKNOWN,
-        RMM_ERROR_IO,
-        N_RMM_ERROR,
-
-    cdef const char * rmmGetErrorString(
-        rmmError_t errcode
-    ) except +
