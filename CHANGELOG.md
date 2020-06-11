@@ -15,7 +15,9 @@
 
 ## Bug Fixes
 
+- PR #400 Fix segfault in RANDOM_ALLOCATIONS_BENCH
 - PR #383 Explicitly require NumPy
+
 
 # RMM 0.14.0 (Date TBD)
 
