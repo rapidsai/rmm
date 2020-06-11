@@ -13,10 +13,13 @@
 - PR #372 Use CMake `FetchContent` to obtain `cnmem` instead of git submodule
 - PR #382 Rely on NumPy arrays for out-of-band pickling
 - PR #386 Add short commit to conda package name
+- PR #401 Update `get_ipc_handle()` to use cuda driver API
 
 ## Bug Fixes
 
+- PR #400 Fix segfault in RANDOM_ALLOCATIONS_BENCH
 - PR #383 Explicitly require NumPy
+
 
 # RMM 0.14.0 (Date TBD)
 

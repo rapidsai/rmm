@@ -17,13 +17,6 @@
 # cython: embedsignature = True
 # cython: language_level = 3
 
-from collections import namedtuple
-
-from libc.stdint cimport uintptr_t
-from libcpp.vector cimport vector
-
-from cpython.bytes cimport PyBytes_FromStringAndSize, PyBytes_AS_STRING
-
 
 # Utility Functions
 def _get_error_msg(errcode):
@@ -45,34 +38,3 @@ def check_error(errcode):
     if errcode != RMM_SUCCESS:
         msg = _get_error_msg(errcode)
         raise RMMError(errcode, msg)
-
-
-cdef ptrdiff_t c_getallocationoffset(
-    void *ptr, cudaStream_t stream
-):
-    """
-    Gets the offset of ptr from its base allocation by calling the librmm
-    functions via Cython
-    """
-    cdef ptrdiff_t offset
-
-    with nogil:
-        rmm_error = rmmGetAllocationOffset(&offset, ptr, stream)
-
-    check_error(rmm_error)
-
-    return offset
-
-
-def rmm_getallocationoffset(ptr, stream):
-    """
-    Gets the offset of ptr from its base allocation by calling the librmm
-    functions via Cython
-    """
-    cdef void * c_ptr = <void *><uintptr_t>ptr
-    cdef cudaStream_t c_stream = <cudaStream_t><uintptr_t>stream
-
-    cdef ptrdiff_t c_offset = c_getallocationoffset(c_ptr, c_stream)
-
-    result = int(c_offset)
-    return result
