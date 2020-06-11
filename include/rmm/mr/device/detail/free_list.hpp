@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2020, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,10 +57,11 @@ struct block {
    * @param b block to merge
    * @return block The merged block
    */
-  inline block merge(block const& b) const noexcept
+  inline block merge(block&& b) noexcept
   {
     assert(is_contiguous_before(b));
-    return block(ptr, size + b.size, is_head);
+    size += b.size;
+    return *this;
   }
 
   /**
@@ -111,14 +112,14 @@ struct block {
  *
  * @tparam list_type the type of the internal list data structure.
  */
-template <typename list_type = std::list<block>>
+template <typename block_t = block, typename list_t = std::list<block_t>>
 struct free_list {
   free_list()  = default;
   ~free_list() = default;
 
-  using size_type      = typename list_type::size_type;
-  using iterator       = typename list_type::iterator;
-  using const_iterator = typename list_type::const_iterator;
+  using size_type      = typename list_t::size_type;
+  using iterator       = typename list_t::iterator;
+  using const_iterator = typename list_t::const_iterator;
 
   iterator begin() noexcept { return blocks.begin(); }                /// beginning of the free list
   const_iterator begin() const noexcept { return begin(); }           /// beginning of the free list
@@ -149,7 +150,7 @@ struct free_list {
    *
    * @param b The block to insert.
    */
-  void insert(block const& b)
+  void insert(block_t b)
   {
     if (is_empty()) {
       insert(blocks.end(), b);
@@ -159,20 +160,22 @@ struct free_list {
     // Find the right place (in ascending ptr order) to insert the block
     // Can't use binary_search because it's a linked list and will be quadratic
     auto const next =
-      std::find_if(blocks.begin(), blocks.end(), [b](block const& i) { return b < i; });
-    auto const previous = (next == blocks.begin()) ? next : std::prev(next);
+      std::find_if(blocks.begin(), blocks.end(), [b](block_t const& i) { return b < i; });
+    auto previous = (next == blocks.begin()) ? next : std::prev(next);
 
     // Coalesce with neighboring blocks or insert the new block if it can't be coalesced
     bool const merge_prev = previous->is_contiguous_before(b);
     bool const merge_next = (next != blocks.end()) && b.is_contiguous_before(*next);
 
     if (merge_prev && merge_next) {
-      *previous = previous->merge(b).merge(*next);
+      //*previous = previous->merge(b).merge(*next);
+      previous->merge(std::move(b));
+      previous->merge(std::move(*next));
       erase(next);
     } else if (merge_prev) {
-      *previous = previous->merge(b);
+      previous->merge(std::move(b));
     } else if (merge_next) {
-      *next = b.merge(*next);
+      *next = b.merge(std::move(*next));
     } else {
       insert(next, b);  // cannot be coalesced, just insert
     }
@@ -189,7 +192,7 @@ struct free_list {
   template <class InputIt>
   void insert(InputIt first, InputIt last)
   {
-    std::for_each(first, last, [this](block const& b) { this->insert(b); });
+    std::for_each(first, last, [this](block_t const& b) { this->insert(b); });
   }
 
   /**
@@ -211,22 +214,22 @@ struct free_list {
    * @param size The size in bytes of the desired block.
    * @return block A block large enough to store `size` bytes.
    */
-  block best_fit(size_t size)
+  block_t best_fit(size_t size)
   {
     // find best fit block
-    auto const iter =
-      std::min_element(blocks.cbegin(), blocks.cend(), [size](block const& lhs, block const& rhs) {
+    auto const iter = std::min_element(
+      blocks.cbegin(), blocks.cend(), [size](block_t const& lhs, block_t const& rhs) {
         return lhs.is_better_fit(size, rhs);
       });
 
     if (iter != blocks.end() && iter->fits(size)) {
       // Remove the block from the free_list and return it.
-      block const found = *iter;
+      block_t const found = *iter;
       erase(iter);
       return found;
     }
 
-    return block{};  // not found
+    return block_t{};  // not found
   }
 
   /**
@@ -235,7 +238,7 @@ struct free_list {
   void print() const
   {
     std::cout << blocks.size() << '\n';
-    for (block const& b : blocks) {
+    for (block_t const& b : blocks) {
       b.print();
     }
   }
@@ -247,11 +250,11 @@ struct free_list {
    * @param pos iterator before which the block will be inserted. pos may be the end() iterator.
    * @param b The block to insert.
    */
-  void insert(const_iterator pos, block const& b) { blocks.insert(pos, b); }
+  void insert(const_iterator pos, block_t const& b) { blocks.insert(pos, b); }
 
  private:
-  list_type blocks;  // The internal container of blocks
-};                   // free_list
+  list_t blocks;  // The internal container of blocks
+};
 
 }  // namespace detail
 }  // namespace mr
