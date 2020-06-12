@@ -35,7 +35,7 @@ cdef class CudaMemoryResource(MemoryResource):
 cdef class ManagedMemoryResource(MemoryResource):
     def __cinit__(self):
         self.c_obj.reset(
-            thread_safe_resource_factory(new managed_memory_resource_wrapper())
+            new managed_memory_resource_wrapper()
         )
 
     def __init__(self):
@@ -50,11 +50,9 @@ cdef class ManagedMemoryResource(MemoryResource):
 cdef class CNMemMemoryResource(MemoryResource):
     def __cinit__(self, size_t initial_pool_size=0, vector[int] devices=()):
         self.c_obj.reset(
-            thread_safe_resource_factory(
-                new cnmem_memory_resource_wrapper(
-                    initial_pool_size,
-                    devices
-                )
+            new cnmem_memory_resource_wrapper(
+                initial_pool_size,
+                devices
             )
         )
 
@@ -77,11 +75,9 @@ cdef class CNMemMemoryResource(MemoryResource):
 cdef class CNMemManagedMemoryResource(MemoryResource):
     def __cinit__(self, size_t initial_pool_size=0, vector[int] devices=()):
         self.c_obj.reset(
-            thread_safe_resource_factory(
-                new cnmem_managed_memory_resource_wrapper(
-                    initial_pool_size,
-                    devices
-                )
+            new cnmem_managed_memory_resource_wrapper(
+                initial_pool_size,
+                devices
             )
         )
 
@@ -293,11 +289,9 @@ cdef class LoggingResourceAdaptor(MemoryResource):
                     "environment variable"
                 )
         self.c_obj.reset(
-            thread_safe_resource_factory(
-                new logging_resource_adaptor_wrapper(
-                    upstream.c_obj,
-                    log_file_name
-                )
+            new logging_resource_adaptor_wrapper(
+                upstream.c_obj,
+                log_file_name
             )
         )
 
