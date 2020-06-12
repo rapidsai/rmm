@@ -12,6 +12,7 @@
 #include <rmm/mr/device/logging_resource_adaptor.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
+#include <rmm/mr/device/thread_safe_resource_adaptor.hpp>
 #include <string>
 #include <vector>
 
@@ -187,6 +188,22 @@ class logging_resource_adaptor_wrapper : public device_memory_resource_wrapper {
  private:
   std::shared_ptr<device_memory_resource_wrapper> upstream_mr;
   std::shared_ptr<rmm::mr::logging_resource_adaptor<rmm::mr::device_memory_resource>> mr;
+};
+
+class thread_safe_resource_adaptor_wrapper : public device_memory_resource_wrapper {
+ public:
+  thread_safe_resource_adaptor_wrapper(std::shared_ptr<device_memory_resource_wrapper> upstream_mr)
+    : upstream_mr(upstream_mr),
+      mr(std::make_shared<rmm::mr::thread_safe_resource_adaptor<rmm::mr::device_memory_resource>>(
+        upstream_mr->get_mr().get()))
+  {
+  }
+
+  std::shared_ptr<rmm::mr::device_memory_resource> get_mr() { return mr; }
+
+ private:
+  std::shared_ptr<device_memory_resource_wrapper> upstream_mr;
+  std::shared_ptr<rmm::mr::thread_safe_resource_adaptor<rmm::mr::device_memory_resource>> mr;
 };
 
 void set_default_resource(std::shared_ptr<device_memory_resource_wrapper> new_resource)
