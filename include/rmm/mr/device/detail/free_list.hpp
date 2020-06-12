@@ -34,8 +34,38 @@ namespace detail {
  */
 struct block {
   block() = default;
-  explicit block(char* ptr) : ptr{ptr}, size(0), is_head(true) {}
-  block(char* ptr, size_t size, bool is_head) : ptr{ptr}, size{size}, is_head{is_head} {}
+  explicit block(char* ptr) : ptr{ptr}, size_bytes(0), head(true) {}
+  block(char* ptr, size_t size, bool is_head) : ptr{ptr}, size_bytes{size}, head{is_head} {}
+
+  /**
+   * @brief Returns the pointer to the memory represented by this block.
+   *
+   * @return the pointer to the memory represented by this block.
+   */
+  inline char* pointer() const { return ptr; }
+
+  /**
+   * @brief Returns the size of the memory represented by this block.
+   *
+   * @return the size in bytes of the memory represented by this block.
+   */
+  inline size_t size() const { return size_bytes; }
+
+  /**
+   * @brief Returns whether this block is the start of an allocation from an upstream allocator.
+   *
+   * A block `b` may not be coalesced with a preceding contiguous block `a` if `b.is_head == true`.
+   *
+   * @return true if this block is the start of an allocation from an upstream allocator.
+   */
+  inline bool is_head() const { return head; }
+
+  /**
+   * @brief Returns whether this block has a non-null pointer.
+   *
+   * @return true if this block has a non-null pointer, false otherwise.
+   */
+  inline bool is_valid() const { return pointer() != nullptr; }
 
   /**
    * @brief Comparison operator to enable comparing blocks and storing in ordered containers.
@@ -60,7 +90,7 @@ struct block {
   inline block merge(block const& b) const noexcept
   {
     assert(is_contiguous_before(b));
-    return block(ptr, size + b.size, is_head);
+    return block(pointer(), size() + b.size(), is_head());
   }
 
   /**
@@ -72,7 +102,7 @@ struct block {
    */
   inline bool is_contiguous_before(block const& b) const noexcept
   {
-    return (this->ptr + this->size == b.ptr) and not(b.is_head);
+    return (pointer() + size() == b.ptr) and not(b.is_head());
   }
 
   /**
@@ -81,7 +111,7 @@ struct block {
    * @param sz The size in bytes to check for fit.
    * @return true if this block is at least `sz` bytes
    */
-  inline bool fits(size_t sz) const noexcept { return size >= sz; }
+  inline bool fits(size_t sz) const noexcept { return size() >= sz; }
 
   /**
    * @brief Is this block a better fit for `sz` bytes than block `b`?
@@ -93,17 +123,18 @@ struct block {
    */
   inline bool is_better_fit(size_t sz, block const& b) const noexcept
   {
-    return fits(sz) && (size < b.size || b.size < sz);
+    return fits(sz) && (size() < b.size() || b.size() < sz);
   }
 
   /**
    * @brief Print this block. For debugging.
    */
-  void print() const { std::cout << reinterpret_cast<void*>(ptr) << " " << size << "B\n"; }
+  void print() const { std::cout << reinterpret_cast<void*>(pointer()) << " " << size() << "B\n"; }
 
-  char* ptr;     ///< Raw memory pointer
-  size_t size;   ///< Size in bytes
-  bool is_head;  ///< Indicates whether ptr was allocated from the heap
+ private:
+  char* ptr{};          ///< Raw memory pointer
+  size_t size_bytes{};  ///< Size in bytes
+  bool head{};          ///< Indicates whether ptr was allocated from the heap
 };
 
 /**
