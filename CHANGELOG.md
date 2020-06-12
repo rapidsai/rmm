@@ -15,6 +15,7 @@
 - PR #386 Add short commit to conda package name
 - PR #401 Update `get_ipc_handle()` to use cuda driver API
 - PR #404 Make all memory resources thread safe in Python
+- PR #402 Install dependencies via rapids-build-env
 
 ## Bug Fixes
 
