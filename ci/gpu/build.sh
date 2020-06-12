@@ -45,6 +45,10 @@ source activate gdf
 # Install build env
 conda install rapids-build-env=${MINOR_VERSION}.*
 
+# https://docs.rapids.ai/maintainers/depmgmt/ 
+# conda remove -f rapids-build-env
+# conda install "your-pkg=1.0.0"
+
 logger "Check versions..."
 python --version
 gcc --version
