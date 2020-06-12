@@ -5,7 +5,7 @@ from libcpp.string cimport string
 from libcpp.memory cimport shared_ptr
 
 
-cdef extern from "memory_resource_wrappers.hpp":
+cdef extern from "memory_resource_wrappers.hpp" nogil:
     cdef cppclass device_memory_resource_wrapper:
         shared_ptr[device_memory_resource_wrapper] get_mr() except +
 
