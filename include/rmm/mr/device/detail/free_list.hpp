@@ -35,6 +35,7 @@ namespace detail {
 struct block {
   block() = default;
   block(char* ptr, size_t size, bool is_head) : ptr{ptr}, size_bytes{size}, head{is_head} {}
+  virtual ~block() = default;
 
   /**
    * @brief Returns the pointer to the memory represented by this block.
@@ -131,7 +132,7 @@ struct block {
    */
   void print() const { std::cout << reinterpret_cast<void*>(pointer()) << " " << size() << "B\n"; }
 
- private:
+ protected:
   char* ptr{};          ///< Raw memory pointer
   size_t size_bytes{};  ///< Size in bytes
   bool head{};          ///< Indicates whether ptr was allocated from the heap

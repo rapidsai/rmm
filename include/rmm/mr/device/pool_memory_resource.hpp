@@ -232,8 +232,12 @@ class pool_memory_resource final : public device_memory_resource {
     assert(i != allocated_blocks_.end());
     assert(i->size == rmm::detail::align_up(size, allocation_alignment));
 
-    stream_free_blocks_[stream].insert(*i);
+    block_t b(*i);
     allocated_blocks_.erase(i);
+
+    b.record(stream);
+
+    stream_free_blocks_[stream].insert(b);
   }
 
   /**

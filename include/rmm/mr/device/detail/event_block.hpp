@@ -19,36 +19,24 @@
  *        of memory, with a flag indicating whether it is the head of a block
  *        of memory allocated from the heap (or upstream allocator).
  */
+
+#include <rmm/detail/error.hpp>
+#include <rmm/mr/device/detail/free_list.hpp>
+
+#include <cuda_runtime_api.h>
+
 #include <cassert>
 #include <cstddef>
 #include <iostream>
 #include <list>
 
-#include <cuda_runtime_api.h>
-
 namespace rmm {
 namespace mr {
 namespace detail {
 
-struct event_block {
+struct event_block : public block {
   event_block() = default;
-  explicit event_block(char* ptr) : ptr{ptr}, size(0), is_head(true) {}
-  event_block(char* ptr, size_t size, bool is_head) : ptr{ptr}, size{size}, is_head{is_head} {}
-  event_block(char* ptr, size_t size, bool is_head, std::list<cudaEvent_t> const& events)
-    : ptr{ptr}, size{size}, is_head{is_head}, events{events}
-  {
-  }
-
-  /**
-   * @brief Comparison operator to enable comparing blocks and storing in ordered containers.
-   *
-   * Orders by ptr address.
-
-   * @param rhs
-   * @return true if this block's ptr is < than `rhs` block pointer.
-   * @return false if this block's ptr is >= than `rhs` block pointer.
-   */
-  inline bool operator<(event_block const& rhs) const noexcept { return ptr < rhs.ptr; };
+  event_block(char* ptr, size_t size, bool is_head) : block(ptr, size, is_head) {}
 
   /**
    * @brief Coalesce two contiguous blocks into one.
@@ -59,57 +47,26 @@ struct event_block {
    * @param b block to merge
    * @return block The merged block
    */
-  inline event_block merge(event_block&& b) noexcept
+  event_block merge(event_block&& b) noexcept
   {
     assert(is_contiguous_before(b));
-    size += b.size;
+    size_bytes += b.size();
     events.splice(events.end(), std::move(b.events));
-    b.ptr  = nullptr;
-    b.size = 0;
+    b.ptr        = nullptr;
+    b.size_bytes = 0;
     return *this;
   }
 
-  /**
-   * @brief Verifies whether this block can be merged to the beginning of block b.
-   *
-   * @param b The block to check for contiguity.
-   * @return true Returns true if this blocks's `ptr` + `size` == `b.ptr`, and `not b.is_head`,
-                  false otherwise.
-   */
-  inline bool is_contiguous_before(event_block const& b) const noexcept
+  void record(cudaStream_t stream) noexcept
   {
-    return (this->ptr + this->size == b.ptr) and not(b.is_head);
+    cudaEvent_t event = nullptr;
+    assert(cudaSuccess == cudaEventCreateWithFlags(&event, cudaEventDisableTiming));
+    assert(cudaSuccess == cudaEventRecord(event, stream));
+
+    events.push_back(event);
   }
 
-  /**
-   * @brief Is this block large enough to fit `sz` bytes?
-   *
-   * @param sz The size in bytes to check for fit.
-   * @return true if this block is at least `sz` bytes
-   */
-  inline bool fits(size_t sz) const noexcept { return size >= sz; }
-
-  /**
-   * @brief Is this block a better fit for `sz` bytes than block `b`?
-   *
-   * @param sz The size in bytes to check for best fit.
-   * @param b The other block to check for fit.
-   * @return true If this block is a tighter fit for `sz` bytes than block `b`.
-   * @return false If this block does not fit `sz` bytes or `b` is a tighter fit.
-   */
-  inline bool is_better_fit(size_t sz, event_block const& b) const noexcept
-  {
-    return fits(sz) && (size < b.size || b.size < sz);
-  }
-
-  /**
-   * @brief Print this block. For debugging.
-   */
-  void print() const { std::cout << reinterpret_cast<void*>(ptr) << " " << size << "B\n"; }
-
-  char* ptr;                      ///< Raw memory pointer
-  size_t size;                    ///< Size in bytes
-  bool is_head;                   ///< Indicates whether ptr was allocated from the heap
+ protected:
   std::list<cudaEvent_t> events;  ///< List of events to wait on before allocating from this block
 };
 
