@@ -222,7 +222,7 @@ class pool_memory_resource final : public device_memory_resource {
   {
     if (p == nullptr) return;
 
-    auto const i = allocated_blocks_.find(block{static_cast<char*>(p)});
+    auto const i = allocated_blocks_.find(static_cast<char*>(p));
     assert(i != allocated_blocks_.end());
     assert(i->size == rmm::detail::align_up(size, allocation_alignment));
 
@@ -380,7 +380,7 @@ class pool_memory_resource final : public device_memory_resource {
   // stream stream_id must be synced before allocating from this list to a different stream
   std::map<cudaStream_t, free_list> stream_free_blocks_;
 
-  std::set<block> allocated_blocks_;
+  std::set<block, rmm::mr::detail::compare_blocks<block>> allocated_blocks_;
 
   // blocks allocated from upstream: so they can be easily freed
   std::vector<block> upstream_blocks_;

@@ -34,7 +34,6 @@ namespace detail {
  */
 struct block {
   block() = default;
-  explicit block(char* ptr) : ptr{ptr}, size_bytes(0), head(true) {}
   block(char* ptr, size_t size, bool is_head) : ptr{ptr}, size_bytes{size}, head{is_head} {}
 
   /**
@@ -76,7 +75,7 @@ struct block {
    * @return true if this block's ptr is < than `rhs` block pointer.
    * @return false if this block's ptr is >= than `rhs` block pointer.
    */
-  inline bool operator<(block const& rhs) const noexcept { return ptr < rhs.ptr; };
+  inline bool operator<(block const& rhs) const noexcept { return pointer() < rhs.pointer(); };
 
   /**
    * @brief Coalesce two contiguous blocks into one.
@@ -135,6 +134,23 @@ struct block {
   char* ptr{};          ///< Raw memory pointer
   size_t size_bytes{};  ///< Size in bytes
   bool head{};          ///< Indicates whether ptr was allocated from the heap
+};
+
+/**
+ * @brief Comparator for block types based on pointer address.
+ *
+ * This comparator allows searching associative containers of blocks by pointer rather than
+ * having to search by the contained type. Saves potentially error-prone temporary construction of
+ * a block when you just want to search by pointer.
+ */
+template <typename block_type>
+struct compare_blocks {
+  // is_transparent (C++14 feature) allows passing char* as key to set<block_type>::find()
+  using is_transparent = void;
+
+  bool operator()(block_type const& lhs, block_type const& rhs) const { return lhs < rhs; }
+  bool operator()(char const* ptr, block_type const& rhs) const { return ptr < rhs.pointer(); }
+  bool operator()(block_type const& lhs, char const* ptr) const { return lhs.pointer() < ptr; };
 };
 
 /**
