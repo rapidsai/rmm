@@ -4,6 +4,7 @@
 
 - PR #375 Support out-of-band buffers in Python pickling
 - PR #391 Add `get_default_resource_type`
+- PR #396 Remove deprecated RMM APIs.
 
 ## Improvements
 
@@ -12,11 +13,16 @@
 - PR #372 Use CMake `FetchContent` to obtain `cnmem` instead of git submodule
 - PR #382 Rely on NumPy arrays for out-of-band pickling
 - PR #386 Add short commit to conda package name
+- PR #401 Update `get_ipc_handle()` to use cuda driver API
+- PR #402 Install dependencies via rapids-build-env
 
 ## Bug Fixes
 
+- PR #400 Fix segfault in RANDOM_ALLOCATIONS_BENCH
 - PR #383 Explicitly require NumPy
-- PR #398 Fix missing head flag in merge_blocks (pool_memory_resource)
+- PR #398 Fix missing head flag in merge_blocks (pool_memory_resource) and improve block class
+- PR #403 Mark Cython `memory_resource_wrappers` `extern` as `nogil`
+
 
 # RMM 0.14.0 (Date TBD)
 

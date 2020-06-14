@@ -16,9 +16,33 @@
 
 #pragma once
 
+#include "cuda_memory_resource.hpp"
 #include "device_memory_resource.hpp"
+
+#include <atomic>
 namespace rmm {
 namespace mr {
+namespace detail {
+/**
+ * @brief Returns a pointer to the initial resource.
+ *
+ * Returns a global instance of a `cuda_memory_resource` as a function local static.
+ *
+ * @return Pointer to the static cuda_memory_resource used as the initial, default resource
+ */
+inline device_memory_resource* initial_resource()
+{
+  static cuda_memory_resource mr{};
+  return &mr;
+}
+
+// Use an atomic to guarantee thread safety
+inline std::atomic<device_memory_resource*>& get_default()
+{
+  static std::atomic<device_memory_resource*> res{detail::initial_resource()};
+  return res;
+}
+}  // namespace detail
 
 /**
  * @brief Get the default device memory resource pointer.
@@ -32,7 +56,7 @@ namespace mr {
  * @return device_memory_resource* Pointer to the current default memory
  * resource
  */
-device_memory_resource* get_default_resource();
+inline device_memory_resource* get_default_resource() { return detail::get_default().load(); }
 
 /**
  * @brief Sets the default device memory resource pointer.
@@ -48,23 +72,13 @@ device_memory_resource* get_default_resource();
  *
  * @param new_resource If not nullptr, pointer to memory resource to use as new
  * default device memory resource
- * @return device_memory_resource* The previous value of the default device
- * memory resource pointer
+ * @return The previous value of the default device memory resource pointer
  */
-device_memory_resource* set_default_resource(device_memory_resource* new_resource);
+inline device_memory_resource* set_default_resource(device_memory_resource* new_resource)
+{
+  new_resource = (new_resource == nullptr) ? detail::initial_resource() : new_resource;
+  return detail::get_default().exchange(new_resource);
+}
 
-namespace detail {
-
-/**
- * @brief gets the default memory_resource when none is set
- *
- * A static function which will return a singleton cuda_memory_resource
- *
- * @return device_memory_resource* a pointer to the static
- * cuda_memory_resource
- */
-device_memory_resource* initial_resource();
-
-}  // namespace detail
 }  // namespace mr
 }  // namespace rmm

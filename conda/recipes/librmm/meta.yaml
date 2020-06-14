@@ -32,11 +32,7 @@ requirements:
 
 test:
   commands:
-    - test -f $PREFIX/include/rmm/rmm.h
-    - test -f $PREFIX/include/rmm/rmm.hpp
-    - test -f $PREFIX/include/rmm/rmm_api.h
     - test -f $PREFIX/include/rmm/thrust_rmm_allocator.h
-    - test -f $PREFIX/include/rmm/detail/memory_manager.hpp
     - test -f $PREFIX/include/rmm/detail/cnmem.h
     - test -f $PREFIX/lib/librmm.so
 
