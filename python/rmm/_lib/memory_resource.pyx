@@ -5,23 +5,16 @@ import os
 
 
 from libcpp cimport bool
+from libcpp.cast cimport dynamic_cast
 from libcpp.memory cimport unique_ptr, make_unique, shared_ptr, make_shared
 from libcpp.string cimport string
-
-
-cdef device_memory_resource_wrapper* thread_safe_resource_factory(
-    device_memory_resource_wrapper* x
-):
-    return new thread_safe_resource_adaptor_wrapper(
-        shared_ptr[device_memory_resource_wrapper](x)
-    )
 
 
 @cython.embedsignature(True)
 cdef class CudaMemoryResource(MemoryResource):
     def __cinit__(self):
         self.c_obj.reset(
-            thread_safe_resource_factory(new cuda_memory_resource_wrapper())
+            new cuda_memory_resource_wrapper()
         )
 
     def __init__(self):
@@ -107,11 +100,13 @@ cdef class PoolMemoryResource(MemoryResource):
             size_t maximum_pool_size=~0
     ):
         self.c_obj.reset(
-            thread_safe_resource_factory(
-                new pool_memory_resource_wrapper(
-                    upstream.c_obj,
-                    initial_pool_size,
-                    maximum_pool_size
+            new thread_safe_resource_adaptor_wrapper(
+                shared_ptr[device_memory_resource_wrapper](
+                    new pool_memory_resource_wrapper(
+                        upstream.c_obj,
+                        initial_pool_size,
+                        maximum_pool_size
+                    )
                 )
             )
         )
@@ -148,11 +143,13 @@ cdef class FixedSizeMemoryResource(MemoryResource):
             size_t blocks_to_preallocate=128
     ):
         self.c_obj.reset(
-            thread_safe_resource_factory(
-                new fixed_size_memory_resource_wrapper(
-                    upstream.c_obj,
-                    block_size,
-                    blocks_to_preallocate
+            new thread_safe_resource_adaptor_wrapper(
+                shared_ptr[device_memory_resource_wrapper](
+                    new fixed_size_memory_resource_wrapper(
+                        upstream.c_obj,
+                        block_size,
+                        blocks_to_preallocate
+                    )
                 )
             )
         )
@@ -194,13 +191,15 @@ cdef class FixedMultiSizeMemoryResource(MemoryResource):
         size_t initial_blocks_per_size=128
     ):
         self.c_obj.reset(
-            thread_safe_resource_factory(
-                new fixed_multisize_memory_resource_wrapper(
-                    upstream.c_obj,
-                    size_base,
-                    min_size_exponent,
-                    max_size_exponent,
-                    initial_blocks_per_size
+            new thread_safe_resource_adaptor_wrapper(
+                shared_ptr[device_memory_resource_wrapper](
+                    new fixed_multisize_memory_resource_wrapper(
+                        upstream.c_obj,
+                        size_base,
+                        min_size_exponent,
+                        max_size_exponent,
+                        initial_blocks_per_size
+                    )
                 )
             )
         )
@@ -245,11 +244,13 @@ cdef class HybridMemoryResource(MemoryResource):
         size_t threshold_size=1<<22
     ):
         self.c_obj.reset(
-            thread_safe_resource_factory(
-                new hybrid_memory_resource_wrapper(
-                    small_alloc_mr.c_obj,
-                    large_alloc_mr.c_obj,
-                    threshold_size
+            new thread_safe_resource_adaptor_wrapper(
+                shared_ptr[device_memory_resource_wrapper](
+                    new hybrid_memory_resource_wrapper(
+                        small_alloc_mr.c_obj,
+                        large_alloc_mr.c_obj,
+                        threshold_size
+                    )
                 )
             )
         )
