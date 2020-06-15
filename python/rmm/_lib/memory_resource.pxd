@@ -78,6 +78,13 @@ cdef extern from "memory_resource_wrappers.hpp" nogil:
         ) except +
         void flush() except +
 
+    cdef cppclass thread_safe_resource_adaptor_wrapper(
+        device_memory_resource_wrapper
+    ):
+        thread_safe_resource_adaptor_wrapper(
+            shared_ptr[device_memory_resource_wrapper] upstream_mr,
+        ) except +
+
     void set_default_resource(
         shared_ptr[device_memory_resource_wrapper] new_resource
     ) except +
