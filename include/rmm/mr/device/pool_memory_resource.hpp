@@ -30,6 +30,7 @@
 #include <mutex>
 #include <numeric>
 #include <set>
+#include <vector>
 
 namespace rmm {
 namespace mr {
@@ -131,7 +132,7 @@ class pool_memory_resource final : public device_memory_resource {
 
     // If we found a block associated with a different stream,
     // we have to synchronize the stream in order to use it
-    if ((blocks_stream != stream) && (b.ptr != nullptr)) {
+    if ((blocks_stream != stream) && b.is_valid()) {
       cudaError_t result = cudaStreamSynchronize(blocks_stream);
 
       RMM_EXPECTS((result == cudaSuccess ||                    // stream synced
@@ -168,7 +169,7 @@ class pool_memory_resource final : public device_memory_resource {
     auto iter = stream_free_blocks_.find(stream);
     if (iter != stream_free_blocks_.end()) {
       block b = block_from_stream(iter->second, stream, size, stream);
-      if (b.ptr != nullptr) return b;
+      if (b.is_valid()) return b;
     }
 
     // nothing in this stream's free list, look for one on another stream
@@ -176,7 +177,7 @@ class pool_memory_resource final : public device_memory_resource {
     while (s != stream_free_blocks_.end()) {
       if (s->first != stream) {
         block b = block_from_stream(s->second, s->first, size, stream);
-        if (b.ptr != nullptr) return b;
+        if (b.is_valid()) return b;
       }
       ++s;
     }
@@ -199,15 +200,15 @@ class pool_memory_resource final : public device_memory_resource {
    */
   void* allocate_from_block(block const& b, size_t size, cudaStream_t stream)
   {
-    block const alloc{b.ptr, size, b.is_head};
+    block const alloc{b.pointer(), size, b.is_head()};
 
-    if (b.size > size) {
-      block rest{b.ptr + size, b.size - size, false};
+    if (b.size() > size) {
+      block rest{b.pointer() + size, b.size() - size, false};
       stream_free_blocks_[stream].insert(rest);
     }
 
     allocated_blocks_.insert(alloc);
-    return reinterpret_cast<void*>(alloc.ptr);
+    return reinterpret_cast<void*>(alloc.pointer());
   }
 
   /**
@@ -221,7 +222,7 @@ class pool_memory_resource final : public device_memory_resource {
   {
     if (p == nullptr) return;
 
-    auto const i = allocated_blocks_.find(block{static_cast<char*>(p)});
+    auto const i = allocated_blocks_.find(static_cast<char*>(p));
     assert(i != allocated_blocks_.end());
     assert(i->size == rmm::detail::align_up(size, allocation_alignment));
 
@@ -264,7 +265,7 @@ class pool_memory_resource final : public device_memory_resource {
     void* p = upstream_mr_->allocate(size, stream);
     block b{reinterpret_cast<char*>(p), size, true};
     upstream_blocks_.emplace_back(b);
-    current_pool_size_ += b.size;
+    current_pool_size_ += b.size();
     return b;
   }
 
@@ -284,7 +285,7 @@ class pool_memory_resource final : public device_memory_resource {
   void release()
   {
     for (auto b : upstream_blocks_)
-      upstream_mr_->deallocate(b.ptr, b.size);
+      upstream_mr_->deallocate(b.pointer(), b.size());
     upstream_blocks_.clear();
     current_pool_size_ = 0;
   }
@@ -379,7 +380,7 @@ class pool_memory_resource final : public device_memory_resource {
   // stream stream_id must be synced before allocating from this list to a different stream
   std::map<cudaStream_t, free_list> stream_free_blocks_;
 
-  std::set<block> allocated_blocks_;
+  std::set<block, rmm::mr::detail::compare_blocks<block>> allocated_blocks_;
 
   // blocks allocated from upstream: so they can be easily freed
   std::vector<block> upstream_blocks_;
