@@ -129,6 +129,7 @@ class device_uvector {
    */
   T* element_ptr(std::size_t element_index)
   {
+    assert(element_index < size());
     return data() + element_index;
   }
 
