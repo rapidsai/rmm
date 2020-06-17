@@ -60,6 +60,15 @@ class bad_alloc : public std::bad_alloc {
  private:
   std::string _what;
 };
+
+/**
+ * @brief Exception thrown when attempting to access outside of a defined range
+ *
+ */
+class out_of_range : public std::out_of_range {
+  using std::out_of_range::out_of_range;
+};
+
 }  // namespace rmm
 
 #define STRINGIFY_DETAIL(x) #x
