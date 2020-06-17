@@ -122,15 +122,13 @@ class device_uvector {
   /**
    * @brief Returns pointer to the specified element
    *
-   * @throws rmm::out_of_range exception if `element_index >= size()`
+   * Behavior is undefined if `element_index >= size()`.
    *
    * @param element_index Index of the specified element.
    * @return T* Pointer to the desired element
    */
-  T* get_pointer_to(std::size_t element_index)
+  T* element_ptr(std::size_t element_index)
   {
-    RMM_EXPECTS(
-      element_index <= size(), rmm::out_of_range, "Attempt to access out of bounds element.");
     return data() + element_index;
   }
 
@@ -147,8 +145,8 @@ class device_uvector {
    */
   void set_element(std::size_t element_index, T const& v, cudaStream_t s)
   {
-    RMM_CUDA_TRY(
-      cudaMemcpyAsync(get_pointer_to(element_index), &v, sizeof(v), cudaMemcpyDefault, s));
+    RMM_EXPECTS(element_index <= size(), rmm::out_of_range, "Attempt to access out of bounds element.");
+    RMM_CUDA_TRY(cudaMemcpyAsync(element_ptr(element_index), &v, sizeof(v), cudaMemcpyDefault, s));
 
     // TODO: Should this function synchronize? If it doesn't, the danger is that this function can
     // return before the copy is complete, and `v` may no longer be safe to copy from by the time
@@ -169,9 +167,9 @@ class device_uvector {
    */
   T get_element(std::size_t element_index, cudaStream_t s)
   {
+    RMM_EXPECTS(element_index <= size(), rmm::out_of_range, "Attempt to access out of bounds element.");
     T v;
-    RMM_CUDA_TRY(
-      cudaMemcpyAsync(&v, get_pointer_to(element_index), sizeof(v), cudaMemcpyDefault, s));
+    RMM_CUDA_TRY(cudaMemcpyAsync(&v, element_ptr(element_index), sizeof(v), cudaMemcpyDefault, s));
     RMM_CUDA_TRY(cudaStreamSynchronize(s));
     return v;
   }
