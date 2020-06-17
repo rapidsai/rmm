@@ -30,8 +30,7 @@ namespace rmm {
  *
  */
 struct logic_error : public std::logic_error {
-  logic_error(char const* const message) : std::logic_error(message) {}
-  logic_error(std::string const& message) : logic_error{message.c_str()} {}
+  using std::logic_error::logic_error;
 };
 
 /**
@@ -39,8 +38,7 @@ struct logic_error : public std::logic_error {
  *
  */
 struct cuda_error : public std::runtime_error {
-  cuda_error(const char* message) : std::runtime_error(message) {}
-  cuda_error(std::string const& message) : cuda_error{message.c_str()} {}
+  using std::runtime_error::runtime_error;
 };
 
 /**
