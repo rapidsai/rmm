@@ -124,10 +124,7 @@ class pool_memory_resource final : public device_memory_resource {
    * @return block A block with non-null pointer and size >= `size`, or a nullptr block if none is
    *               available in `blocks`.
    */
-  block block_from_stream(free_list& blocks,
-                          stream_t blocks_stream,
-                          size_t size,
-                          stream_t stream)
+  block block_from_stream(free_list& blocks, stream_t blocks_stream, size_t size, stream_t stream)
   {
     block const b = blocks.best_fit(size);  // get the best fit block
 

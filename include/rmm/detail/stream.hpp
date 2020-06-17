@@ -34,13 +34,13 @@ class stream_t {
   stream_t& operator=(stream_t&&) = default;
 
   // TODO disable construction from 0 after cuDF and others adopt stream_t
-  //stream_t(int)            = delete; //< Prevent cast from 0
-  //stream_t(std::nullptr_t) = delete; //< Prevent cast from nullptr
+  // stream_t(int)            = delete; //< Prevent cast from 0
+  // stream_t(std::nullptr_t) = delete; //< Prevent cast from nullptr
 
   /**
    * @brief Construct a default cudaStream_t.
    */
-  constexpr explicit stream_t(): _stream{0} {}
+  constexpr explicit stream_t() : _stream{0} {}
 
   /**
    * @brief Implicitly convert from cudaStream_t.
