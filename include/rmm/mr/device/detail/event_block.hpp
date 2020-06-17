@@ -21,13 +21,12 @@
  */
 
 #include <rmm/detail/error.hpp>
+#include <rmm/mr/device/detail/block.hpp>
 #include <rmm/mr/device/detail/free_list.hpp>
 
 #include <cuda_runtime_api.h>
 
 #include <cassert>
-#include <cstddef>
-#include <iostream>
 #include <list>
 
 namespace rmm {
@@ -51,6 +50,7 @@ struct event_block : public block {
   {
     assert(is_contiguous_before(b));
     size_bytes += b.size();
+    std::cout << "splicing " << b.events.size() << " events onto " << events.size() << " events\n";
     events.splice(events.end(), std::move(b.events));
     b.ptr        = nullptr;
     b.size_bytes = 0;
@@ -60,10 +60,23 @@ struct event_block : public block {
   void record(cudaStream_t stream) noexcept
   {
     cudaEvent_t event = nullptr;
-    assert(cudaSuccess == cudaEventCreateWithFlags(&event, cudaEventDisableTiming));
-    assert(cudaSuccess == cudaEventRecord(event, stream));
+    auto result       = cudaEventCreateWithFlags(&event, cudaEventDisableTiming);
+    assert(cudaSuccess == result);
+
+    result = cudaEventRecord(event, stream);
+    assert(cudaSuccess == result);
 
     events.push_back(event);
+  }
+
+  void await_events(cudaStream_t stream)
+  {
+    std::cout << "Awaiting " << events.size() << " events\n";
+    for (cudaEvent_t event : events) {
+      RMM_CUDA_TRY(cudaStreamWaitEvent(stream, event, 0));
+      RMM_CUDA_TRY(cudaEventDestroy(event));
+    }
+    events.clear();
   }
 
  protected:
