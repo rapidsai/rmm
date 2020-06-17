@@ -16,6 +16,7 @@
 #pragma once
 
 #include <rmm/detail/error.hpp>
+#include <rmm/mr/device/detail/block.hpp>
 #include <rmm/mr/device/detail/event_block.hpp>
 #include <rmm/mr/device/detail/free_list.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
@@ -134,25 +135,31 @@ class pool_memory_resource final : public device_memory_resource {
                             size_t size,
                             cudaStream_t stream)
   {
-    block_t const b = blocks.best_fit(size);  // get the best fit block
+    block_t b = blocks.best_fit(size);  // get the best fit block
 
     // If we found a block associated with a different stream,
     // we have to synchronize the stream in order to use it
-    if ((blocks_stream != stream) && b.is_valid()) {
-      cudaError_t result = cudaStreamSynchronize(blocks_stream);
+    if (b.is_valid()) {
+      if (blocks_stream != stream) {
+        cudaError_t result = cudaStreamSynchronize(blocks_stream);
 
-      RMM_EXPECTS((result == cudaSuccess ||                    // stream synced
-                   result == cudaErrorInvalidResourceHandle),  // stream deleted
-                  rmm::bad_alloc,
-                  "cudaStreamSynchronize failure");
+        RMM_EXPECTS((result == cudaSuccess ||                    // stream synced
+                     result == cudaErrorInvalidResourceHandle),  // stream deleted
+                    rmm::bad_alloc,
+                    "cudaStreamSynchronize failure");
 
-      // Now that this stream is synced, insert all other blocks into this stream's list
-      // Note: This could cause thrashing between two streams. On the other hand, it reduces
-      // fragmentation by coalescing.
-      stream_free_blocks_[stream].insert(blocks.begin(), blocks.end());
+        // Now that this stream is synced, insert all other blocks into this stream's list
+        // Note: This could cause thrashing between two streams. On the other hand, it reduces
+        // fragmentation by coalescing.
+        stream_free_blocks_[stream].insert(blocks.begin(), blocks.end());
 
-      // remove this stream from the freelist
-      stream_free_blocks_.erase(blocks_stream);
+        // remove this stream from the freelist
+        stream_free_blocks_.erase(blocks_stream);
+      } else if (stream == 0) {
+        // With per-thread default stream, we need to wait on the list of events
+        // stored with the block
+        b.await_events(stream);
+      }
     }
     return b;
   }
