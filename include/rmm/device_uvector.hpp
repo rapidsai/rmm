@@ -130,7 +130,7 @@ class device_uvector {
   T* get_pointer_to(std::size_t element_index)
   {
     RMM_EXPECTS(
-      element_index <= size(), rmm::out_of_range, "Attempt to set out of bounds element.");
+      element_index <= size(), rmm::out_of_range, "Attempt to access out of bounds element.");
     return data() + element_index;
   }
 
