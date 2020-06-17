@@ -24,6 +24,7 @@
 #ifndef THRUST_RMM_ALLOCATOR_H
 #define THRUST_RMM_ALLOCATOR_H
 
+#include <rmm/detail/stream.hpp>
 #include <rmm/mr/device/thrust_allocator_adaptor.hpp>
 
 #include <thrust/device_vector.h>
@@ -37,7 +38,7 @@ namespace rmm {
 template <typename T>
 using device_vector = thrust::device_vector<T, rmm::mr::thrust_allocator<T>>;
 
-using par_t         = decltype(thrust::cuda::par(*(new rmm::mr::thrust_allocator<char>(0))));
+using par_t         = decltype(thrust::cuda::par(*(new rmm::mr::thrust_allocator<char>())));
 using deleter_t     = std::function<void(par_t *)>;
 using exec_policy_t = std::unique_ptr<par_t, deleter_t>;
 
@@ -52,7 +53,7 @@ using exec_policy_t = std::unique_ptr<par_t, deleter_t>;
  * allocation.
  */
 /* --------------------------------------------------------------------------*/
-inline exec_policy_t exec_policy(cudaStream_t stream = 0)
+inline exec_policy_t exec_policy(stream_t stream = stream_t{})
 {
   auto *alloc  = new rmm::mr::thrust_allocator<char>(stream);
   auto deleter = [alloc](par_t *pointer) {

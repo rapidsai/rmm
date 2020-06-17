@@ -16,6 +16,7 @@
 #pragma once
 
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/stream.hpp>
 #include <rmm/mr/device/detail/free_list.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
@@ -76,7 +77,7 @@ class pool_memory_resource final : public device_memory_resource {
     if (maximum_pool_size == default_maximum_size) maximum_pool_size_ = props.totalGlobalMem;
 
     // Allocate initial block
-    stream_free_blocks_[0].insert(block_from_upstream(initial_pool_size, 0));
+    stream_free_blocks_[stream_t{}].insert(block_from_upstream(initial_pool_size, stream_t{}));
   }
 
   /**
@@ -124,9 +125,9 @@ class pool_memory_resource final : public device_memory_resource {
    *               available in `blocks`.
    */
   block block_from_stream(free_list& blocks,
-                          cudaStream_t blocks_stream,
+                          stream_t blocks_stream,
                           size_t size,
-                          cudaStream_t stream)
+                          stream_t stream)
   {
     block const b = blocks.best_fit(size);  // get the best fit block
 
@@ -163,7 +164,7 @@ class pool_memory_resource final : public device_memory_resource {
    * @param stream The stream on which the allocation will be used.
    * @return block A block with non-null pointer and size >= `size`.
    */
-  block available_larger_block(size_t size, cudaStream_t stream)
+  block available_larger_block(size_t size, stream_t stream)
   {
     // Try to find a larger block in free list for the same stream
     auto iter = stream_free_blocks_.find(stream);
@@ -198,7 +199,7 @@ class pool_memory_resource final : public device_memory_resource {
    * @param stream The stream on which the allocation will be used.
    * @return void* The pointer to the allocated memory.
    */
-  void* allocate_from_block(block const& b, size_t size, cudaStream_t stream)
+  void* allocate_from_block(block const& b, size_t size, stream_t stream)
   {
     block const alloc{b.pointer(), size, b.is_head()};
 
@@ -218,7 +219,7 @@ class pool_memory_resource final : public device_memory_resource {
    * @param size The size of the memory to free. Must be equal to the original allocation size.
    * @param stream The stream on which the memory was last used.
    */
-  void free_block(void* p, size_t size, cudaStream_t stream)
+  void free_block(void* p, size_t size, stream_t stream)
   {
     if (p == nullptr) return;
 
@@ -260,7 +261,7 @@ class pool_memory_resource final : public device_memory_resource {
    * @param stream The stream on which the requested allocation will be used.
    * @return block A block of at least `size` bytes.
    */
-  block block_from_upstream(size_t size, cudaStream_t stream)
+  block block_from_upstream(size_t size, stream_t stream)
   {
     void* p = upstream_mr_->allocate(size, stream);
     block b{reinterpret_cast<char*>(p), size, true};
@@ -335,7 +336,7 @@ class pool_memory_resource final : public device_memory_resource {
    * @param The stream to associate this allocation with
    * @return void* Pointer to the newly allocated memory
    */
-  void* do_allocate(std::size_t bytes, cudaStream_t stream) override
+  void* do_allocate(std::size_t bytes, stream_t stream) override
   {
     if (bytes <= 0) return nullptr;
     bytes         = rmm::detail::align_up(bytes, allocation_alignment);
@@ -350,7 +351,7 @@ class pool_memory_resource final : public device_memory_resource {
    *
    * @param p Pointer to be deallocated
    */
-  void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override
+  void do_deallocate(void* p, std::size_t bytes, stream_t stream) override
   {
     free_block(p, bytes, stream);
   }
@@ -363,7 +364,7 @@ class pool_memory_resource final : public device_memory_resource {
    * @param stream to execute on
    * @return std::pair contaiing free_size and total_size of memory
    */
-  std::pair<size_t, size_t> do_get_mem_info(cudaStream_t stream) const override
+  std::pair<size_t, size_t> do_get_mem_info(stream_t stream) const override
   {
     std::size_t free_size{};
     std::size_t total_size{};
@@ -378,7 +379,7 @@ class pool_memory_resource final : public device_memory_resource {
 
   // map of [stream_id, free_list] pairs
   // stream stream_id must be synced before allocating from this list to a different stream
-  std::map<cudaStream_t, free_list> stream_free_blocks_;
+  std::map<stream_t, free_list> stream_free_blocks_;
 
   std::set<block, rmm::mr::detail::compare_blocks<block>> allocated_blocks_;
 

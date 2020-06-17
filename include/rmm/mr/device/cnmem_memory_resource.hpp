@@ -17,6 +17,7 @@
 
 #include <rmm/detail/cnmem.h>
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/stream.hpp>
 #include "device_memory_resource.hpp"
 
 #include <cuda_runtime_api.h>
@@ -154,7 +155,7 @@ class cnmem_memory_resource : public device_memory_resource {
    * @param bytes The size, in bytes, of the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* do_allocate(std::size_t bytes, cudaStream_t stream) override
+  void* do_allocate(std::size_t bytes, stream_t stream) override
   {
     register_stream(stream);
     void* p{nullptr};
@@ -169,7 +170,7 @@ class cnmem_memory_resource : public device_memory_resource {
    *
    * @param p Pointer to be deallocated
    */
-  void do_deallocate(void* p, std::size_t, cudaStream_t stream) override
+  void do_deallocate(void* p, std::size_t, stream_t stream) override
   {
     auto status = cnmemFree(p, stream);
     assert(CNMEM_STATUS_SUCCESS == status);
@@ -189,7 +190,7 @@ class cnmem_memory_resource : public device_memory_resource {
    *
    * @param stream The stream to register
    */
-  void register_stream(cudaStream_t stream)
+  void register_stream(stream_t stream)
   {
     // Don't register null stream with CNMEM
     if (stream != 0) {
@@ -209,17 +210,17 @@ class cnmem_memory_resource : public device_memory_resource {
    * @param stream to execute on
    * @return std::pair contaiing free_size and total_size of memory
    **/
-  std::pair<size_t, size_t> do_get_mem_info(cudaStream_t stream) const override
+  std::pair<size_t, size_t> do_get_mem_info(stream_t stream) const override
   {
     std::size_t free_size;
     std::size_t total_size;
     CNMEM_TRY(cnmemMemGetInfo(&free_size, &total_size, stream));
     return std::make_pair(free_size, total_size);
   }
-  std::set<cudaStream_t> registered_streams{};  // Unique streams that have been
-                                                // registered with cnmem
-  std::mutex streams_mutex{};                   // Mutex used to guard concurrent access to
-                                                // `registered_streams`
+  std::set<stream_t> registered_streams{};  // Unique streams that have been
+                                            // registered with cnmem
+  std::mutex streams_mutex{};               // Mutex used to guard concurrent access to
+                                            // `registered_streams`
 };
 
 }  // namespace mr

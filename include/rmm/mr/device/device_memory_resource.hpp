@@ -15,11 +15,10 @@
  */
 #pragma once
 
+#include <rmm/detail/stream.hpp>
+
 #include <cstddef>
 #include <utility>
-
-// forward decl
-using cudaStream_t = struct CUstream_st*;
 
 namespace rmm {
 
@@ -79,7 +78,7 @@ class device_memory_resource {
    * @param stream Stream on which to perform allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* allocate(std::size_t bytes, cudaStream_t stream = 0)
+  void* allocate(std::size_t bytes, stream_t stream = stream_t{})
   {
     return do_allocate(detail::align_up(bytes, 8), stream);
   }
@@ -102,7 +101,7 @@ class device_memory_resource {
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param stream Stream on which to perform deallocation
    */
-  void deallocate(void* p, std::size_t bytes, cudaStream_t stream = 0)
+  void deallocate(void* p, std::size_t bytes, stream_t stream = stream_t{})
   {
     do_deallocate(p, detail::align_up(bytes, 8), stream);
   }
@@ -145,7 +144,7 @@ class device_memory_resource {
    * @returns a std::pair<size_t,size_t> which contains free memory in bytes
    * in .first and total amount of memory in .second
    */
-  std::pair<std::size_t, std::size_t> get_mem_info(cudaStream_t stream) const
+  std::pair<std::size_t, std::size_t> get_mem_info(stream_t stream) const
   {
     return do_get_mem_info(stream);
   }
@@ -163,7 +162,7 @@ class device_memory_resource {
    * @param stream Stream on which to perform allocation
    * @return void* Pointer to the newly allocated memory
    */
-  virtual void* do_allocate(std::size_t bytes, cudaStream_t stream) = 0;
+  virtual void* do_allocate(std::size_t bytes, stream_t stream) = 0;
 
   /**
    * @brief Deallocate memory pointed to by \p p.
@@ -176,7 +175,7 @@ class device_memory_resource {
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param stream Stream on which to perform deallocation
    */
-  virtual void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) = 0;
+  virtual void do_deallocate(void* p, std::size_t bytes, stream_t stream) = 0;
 
   /**
    * @brief Compare this resource to another.
@@ -205,7 +204,7 @@ class device_memory_resource {
    * @param stream the stream being executed on
    * @return std::pair with available and free memory for resource
    */
-  virtual std::pair<std::size_t, std::size_t> do_get_mem_info(cudaStream_t stream) const = 0;
+  virtual std::pair<std::size_t, std::size_t> do_get_mem_info(stream_t stream) const = 0;
 };
 }  // namespace mr
 }  // namespace rmm

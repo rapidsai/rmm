@@ -17,20 +17,10 @@
 
 #include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/stream.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
-#include <cuda_runtime_api.h>
-
-#include <algorithm>
-#include <cassert>
-#include <cstddef>
-#include <list>
-#include <memory>
-#include <unordered_map>
 #include <utility>
-
-// forward decl
-using cudaStream_t = struct CUstream_st*;
 
 namespace rmm {
 
@@ -131,7 +121,7 @@ class hybrid_memory_resource : public device_memory_resource {
    * @param stream Stream on which to perform allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* do_allocate(std::size_t bytes, cudaStream_t stream) override
+  void* do_allocate(std::size_t bytes, stream_t stream) override
   {
     if (bytes <= 0) return nullptr;
     return get_resource(bytes)->allocate(bytes, stream);
@@ -145,7 +135,7 @@ class hybrid_memory_resource : public device_memory_resource {
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param stream Stream on which to perform deallocation
    */
-  void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override
+  void do_deallocate(void* p, std::size_t bytes, stream_t stream) override
   {
     get_resource(bytes)->deallocate(p, bytes, stream);
   }
@@ -158,7 +148,7 @@ class hybrid_memory_resource : public device_memory_resource {
    * @param stream the stream being executed on
    * @return std::pair with available and free memory for resource
    */
-  std::pair<std::size_t, std::size_t> do_get_mem_info(cudaStream_t stream) const override
+  std::pair<std::size_t, std::size_t> do_get_mem_info(stream_t stream) const override
   {
     return std::make_pair(0, 0);
   }

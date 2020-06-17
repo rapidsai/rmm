@@ -18,10 +18,12 @@
 #include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/stream.hpp>
 
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/ostream_sink.h>
 #include <spdlog/spdlog.h>
+
 #include <memory>
 #include <sstream>
 
@@ -170,7 +172,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @param stream Stream on which to perform the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* do_allocate(std::size_t bytes, cudaStream_t stream) override
+  void* do_allocate(std::size_t bytes, stream_t stream) override
   {
     auto const p = upstream_->allocate(bytes, stream);
     std::string msg{"allocate,"};
@@ -180,7 +182,7 @@ class logging_resource_adaptor final : public device_memory_resource {
     msg += ",";
     msg += std::to_string(bytes);
     msg += ",";
-    msg += std::to_string(reinterpret_cast<uintptr_t>(stream));
+    msg += std::to_string(reinterpret_cast<uintptr_t>(cudaStream_t{stream}));
     logger_->info(msg);
     return p;
   }
@@ -201,7 +203,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @param bytes Size of the allocation
    * @param stream Stream on which to perform the deallocation
    */
-  void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override
+  void do_deallocate(void* p, std::size_t bytes, stream_t stream) override
   {
     std::string msg{"free,"};
     std::stringstream ss;
@@ -210,7 +212,7 @@ class logging_resource_adaptor final : public device_memory_resource {
     msg += ",";
     msg += std::to_string(bytes);
     msg += ",";
-    msg += std::to_string(reinterpret_cast<uintptr_t>(stream));
+    msg += std::to_string(reinterpret_cast<uintptr_t>(cudaStream_t{stream}));
     logger_->info(msg);
     upstream_->deallocate(p, bytes, stream);
   }
@@ -246,7 +248,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @param stream Stream on which to get the mem info.
    * @return std::pair contaiing free_size and total_size of memory
    */
-  std::pair<size_t, size_t> do_get_mem_info(cudaStream_t stream) const override
+  std::pair<size_t, size_t> do_get_mem_info(stream_t stream) const override
   {
     return upstream_->get_mem_info(stream);
   }

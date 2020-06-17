@@ -18,11 +18,13 @@
 #include "device_memory_resource.hpp"
 
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/stream.hpp>
 
 #include <cuda_runtime_api.h>
+
 #include <cassert>
 #include <exception>
-#include <iostream>
+#include <utility>
 
 namespace rmm {
 namespace mr {
@@ -60,7 +62,7 @@ class managed_memory_resource final : public device_memory_resource {
    * @param bytes The size, in bytes, of the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* do_allocate(std::size_t bytes, cudaStream_t) override
+  void* do_allocate(std::size_t bytes, stream_t) override
   {
     // FIXME: Unlike cudaMalloc, cudaMallocManaged will throw an error for 0
     // size allocations.
@@ -80,7 +82,7 @@ class managed_memory_resource final : public device_memory_resource {
    *
    * @param p Pointer to be deallocated
    */
-  void do_deallocate(void* p, std::size_t, cudaStream_t) override
+  void do_deallocate(void* p, std::size_t, stream_t) override
   {
     cudaError_t const status = cudaFree(p);
     assert(cudaSuccess == status);
@@ -111,7 +113,7 @@ class managed_memory_resource final : public device_memory_resource {
    * @param stream to execute on
    * @return std::pair contaiing free_size and total_size of memory
    */
-  std::pair<size_t, size_t> do_get_mem_info(cudaStream_t stream) const override
+  std::pair<size_t, size_t> do_get_mem_info(stream_t stream) const override
   {
     std::size_t free_size{};
     std::size_t total_size{};

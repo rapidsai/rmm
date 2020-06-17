@@ -16,6 +16,7 @@
 #pragma once
 
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/stream.hpp>
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
@@ -46,7 +47,7 @@ namespace rmm {
  * // allocates at least 100 bytes using the custom memory resource and
  * // specified stream
  * custom_memory_resource mr;
- * cudaStream_t stream = 0;
+ * stream_t stream = stream_t{};
  * device_buffer custom_buff(100, stream, &mr);
  *
  * // deep copies `buff` into a new device buffer using the default stream
@@ -94,7 +95,7 @@ class device_buffer {
    * @param mr Memory resource to use for the device memory allocation.
    */
   explicit device_buffer(std::size_t size,
-                         cudaStream_t stream            = 0,
+                         stream_t stream                = stream_t{},
                          mr::device_memory_resource* mr = mr::get_default_resource())
     : _stream{stream}, _mr{mr}
   {
@@ -117,7 +118,7 @@ class device_buffer {
    */
   device_buffer(void const* source_data,
                 std::size_t size,
-                cudaStream_t stream            = 0,
+                stream_t stream                = stream_t{},
                 mr::device_memory_resource* mr = mr::get_default_resource())
     : _stream{stream}, _mr{mr}
   {
@@ -142,7 +143,7 @@ class device_buffer {
    * @param mr The resource to use for allocating the new `device_buffer`
    */
   device_buffer(device_buffer const& other,
-                cudaStream_t stream                 = 0,
+                stream_t stream                     = stream_t{},
                 rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
     : device_buffer{other.data(), other.size(), stream, mr}
   {
@@ -171,7 +172,7 @@ class device_buffer {
     other._data     = nullptr;
     other._size     = 0;
     other._capacity = 0;
-    other.set_stream(0);
+    other.set_stream(stream_t{});
   }
 
   /**
@@ -241,7 +242,7 @@ class device_buffer {
       other._data     = nullptr;
       other._size     = 0;
       other._capacity = 0;
-      other.set_stream(0);
+      other.set_stream(stream_t{});
     }
     return *this;
   }
@@ -257,7 +258,7 @@ class device_buffer {
   {
     deallocate();
     _mr     = nullptr;
-    _stream = 0;
+    _stream = stream_t{};
   }
 
   /**
@@ -285,7 +286,7 @@ class device_buffer {
    * @param new_size The requested new size, in bytes
    * @param stream The stream to use for allocation and copy
    */
-  void resize(std::size_t new_size, cudaStream_t stream = 0)
+  void resize(std::size_t new_size, stream_t stream = stream_t{})
   {
     set_stream(stream);
     // If the requested size is smaller than the current capacity, just update
@@ -315,7 +316,7 @@ class device_buffer {
    *
    * @param stream The stream on which the allocation and copy are performed
    */
-  void shrink_to_fit(cudaStream_t stream = 0)
+  void shrink_to_fit(stream_t stream = stream_t{})
   {
     set_stream(stream);
     if (size() != capacity()) {
@@ -362,7 +363,7 @@ class device_buffer {
   /**
    * @brief Returns stream most recently specified for allocation/deallocation
    */
-  cudaStream_t stream() const noexcept { return _stream; }
+  stream_t stream() const noexcept { return _stream; }
 
   /**
    * @brief Sets the stream to be used for deallocation
@@ -374,7 +375,7 @@ class device_buffer {
    * called after this, the later stream parameter will be stored and used in
    * the destructor.
    */
-  void set_stream(cudaStream_t stream) noexcept { _stream = stream; }
+  void set_stream(stream_t stream) noexcept { _stream = stream; }
 
   /**
    * @brief Returns pointer to the memory resource used to allocate and
@@ -386,7 +387,7 @@ class device_buffer {
   void* _data{nullptr};     ///< Pointer to device memory allocation
   std::size_t _size{};      ///< Requested size of the device memory allocation
   std::size_t _capacity{};  ///< The actual size of the device memory allocation
-  cudaStream_t _stream{};   ///< Stream to use for device memory deallocation
+  stream_t _stream{};       ///< Stream to use for device memory deallocation
   mr::device_memory_resource* _mr{
     mr::get_default_resource()};  ///< The memory resource used to
                                   ///< allocate/deallocate device memory

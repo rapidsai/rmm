@@ -17,6 +17,7 @@
 #pragma once
 
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/stream.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
@@ -38,7 +39,7 @@ namespace rmm {
  * Example:
  * @code
  * rmm::mr::device_memory_resource * mr = new my_custom_resource();
- * cudaStream_t s;
+ * rmm::stream_t s{};
  *
  * // Allocates *uninitialized* device memory on stream `s` sufficient for 100 ints using the
  * // supplied resource `mr`
@@ -97,7 +98,7 @@ class device_uvector {
    * @param mr The resource used to allocate the device storage
    */
   explicit device_uvector(std::size_t size,
-                          cudaStream_t stream,
+                          stream_t stream,
                           rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
     : _storage{elements_to_bytes(size), stream, mr}
   {
@@ -113,7 +114,7 @@ class device_uvector {
    * @param mr The resource used to allocate device memory for the new vector
    */
   explicit device_uvector(device_uvector const& other,
-                          cudaStream_t stream,
+                          stream_t stream,
                           rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
     : _storage{other.storage, stream, mr}
   {
@@ -135,7 +136,7 @@ class device_uvector {
    * @param new_size The desired number of elements
    * @param stream The stream on which to perform the allocation/copy (if any)
    */
-  void resize(std::size_t new_size, cudaStream_t stream)
+  void resize(std::size_t new_size, stream_t stream)
   {
     _storage.resize(elements_to_bytes(new_size), stream);
   }
@@ -147,7 +148,7 @@ class device_uvector {
    *
    * @param stream Stream on which to perform allocation and copy
    */
-  void shrink_to_fit(cudaStream_t stream) { _storage.shrink_to_fit(stream); }
+  void shrink_to_fit(stream_t stream) { _storage.shrink_to_fit(stream); }
 
   /**
    * @brief Release ownership of device memory storage.
