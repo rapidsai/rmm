@@ -145,7 +145,8 @@ class device_uvector {
    */
   void set_element(std::size_t element_index, T const& v, cudaStream_t s)
   {
-    RMM_EXPECTS(element_index <= size(), rmm::out_of_range, "Attempt to access out of bounds element.");
+    RMM_EXPECTS(
+      element_index < size(), rmm::out_of_range, "Attempt to access out of bounds element.");
     RMM_CUDA_TRY(cudaMemcpyAsync(element_ptr(element_index), &v, sizeof(v), cudaMemcpyDefault, s));
 
     // TODO: Should this function synchronize? If it doesn't, the danger is that this function can
@@ -167,7 +168,8 @@ class device_uvector {
    */
   T get_element(std::size_t element_index, cudaStream_t s)
   {
-    RMM_EXPECTS(element_index <= size(), rmm::out_of_range, "Attempt to access out of bounds element.");
+    RMM_EXPECTS(
+      element_index < size(), rmm::out_of_range, "Attempt to access out of bounds element.");
     T v;
     RMM_CUDA_TRY(cudaMemcpyAsync(&v, element_ptr(element_index), sizeof(v), cudaMemcpyDefault, s));
     RMM_CUDA_TRY(cudaStreamSynchronize(s));
