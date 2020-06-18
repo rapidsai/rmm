@@ -127,7 +127,7 @@ class device_uvector {
    * @param element_index Index of the specified element.
    * @return T* Pointer to the desired element
    */
-  pointer element_ptr(std::size_t element_index)
+  pointer element_ptr(std::size_t element_index) noexcept
   {
     assert(element_index < size());
     return data() + element_index;
@@ -141,16 +141,33 @@ class device_uvector {
    * @param element_index Index of the specified element.
    * @return T* Pointer to the desired element
    */
-  const_pointer element_ptr(std::size_t element_index) const
+  const_pointer element_ptr(std::size_t element_index) const noexcept
   {
     assert(element_index < size());
     return data() + element_index;
   }
 
   /**
-   * @brief Copies `v` to the specified element in device memory.
+   * @brief Performs a synchronous copy of `v` to the specified element in device memory.
+   *
+   * Because this function synchronizes the stream `s`, it is safe to destroyed or modify the object
+   * referenced by `v` after this function has returned.
    *
    * @note: This function incurs a host to device memcpy and should be used sparingly.
+   *
+   * Example:
+   * \code{cpp}
+   * rmm::device_uvector<int32_t> vec(100, stream);
+   *
+   * int v{42};
+   *
+   * // Copies 42 to element 0 on `stream` and synchronizes the stream
+   * vec.set_element(0, v, stream);
+   * 
+   * // It is safe to destroy or modify `v`
+   * v = 13;
+   * \endcode
+   *
    *
    * @throws rmm::out_of_range exception if `element_index >= size()`
    *
@@ -163,11 +180,43 @@ class device_uvector {
     RMM_EXPECTS(
       element_index < size(), rmm::out_of_range, "Attempt to access out of bounds element.");
     RMM_CUDA_TRY(cudaMemcpyAsync(element_ptr(element_index), &v, sizeof(v), cudaMemcpyDefault, s));
+    RMM_CUDA_TRY(cudaStreamSynchronize(s));
+  }
 
-    // TODO: Should this function synchronize? If it doesn't, the danger is that this function can
-    // return before the copy is complete, and `v` may no longer be safe to copy from by the time
-    // the copy happens.
-    // RMM_CUDA_TRY(cudaStreamSynchronize(s));
+  /**
+   * @brief Performs an *a*synchronous copy of `v` to the specified element in device memory.
+   *
+   * This function does _not_ synchronize stream `s` before returning. Therefore, the object
+   * referenced by `v` cannot be destroyed or modified until `stream` has been synchronized.
+   * Otherwise, behavior is undefined.
+   *
+   * @note: This function incurs a host to device memcpy and should be used sparingly.
+   *
+   * Example:
+   * \code{cpp}
+   * rmm::device_uvector<int32_t> vec(100, stream);
+   *
+   * int v{42};
+   *
+   * // Copies 42 to element 0 on `stream`. Does _not_ synchronize
+   * vec.set_element_async(0, v, stream);
+   * ...
+   * cudaStreamSynchronize(stream);
+   * // Synchronization is required before `v` can be modified
+   * v = 13;
+   * \endcode
+   *
+   * @throws rmm::out_of_range exception if `element_index >= size()`
+   *
+   * @param element_index Index of the target element
+   * @param v The value to copy to the specified element
+   * @param s The stream on which to perform the copy
+   */
+  void set_element_async(std::size_t element_index, value_type const& v, cudaStream_t s)
+  {
+    RMM_EXPECTS(
+      element_index < size(), rmm::out_of_range, "Attempt to access out of bounds element.");
+    RMM_CUDA_TRY(cudaMemcpyAsync(element_ptr(element_index), &v, sizeof(v), cudaMemcpyDefault, s));
   }
 
   /**
@@ -181,11 +230,11 @@ class device_uvector {
    * @param s The stream on which to perform the copy
    * @return The value of the specified element
    */
-  T get_element(std::size_t element_index, cudaStream_t s) const
+  value_type get_element(std::size_t element_index, cudaStream_t s) const
   {
     RMM_EXPECTS(
       element_index < size(), rmm::out_of_range, "Attempt to access out of bounds element.");
-    T v;
+    value_type v;
     RMM_CUDA_TRY(cudaMemcpyAsync(&v, element_ptr(element_index), sizeof(v), cudaMemcpyDefault, s));
     RMM_CUDA_TRY(cudaStreamSynchronize(s));
     return v;
