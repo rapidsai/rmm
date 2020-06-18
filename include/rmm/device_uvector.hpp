@@ -150,7 +150,7 @@ class device_uvector {
   /**
    * @brief Performs a synchronous copy of `v` to the specified element in device memory.
    *
-   * Because this function synchronizes the stream `s`, it is safe to destroyed or modify the object
+   * Because this function synchronizes the stream `s`, it is safe to destroy or modify the object
    * referenced by `v` after this function has returned.
    *
    * @note: This function incurs a host to device memcpy and should be used sparingly.
@@ -163,7 +163,7 @@ class device_uvector {
    *
    * // Copies 42 to element 0 on `stream` and synchronizes the stream
    * vec.set_element(0, v, stream);
-   * 
+   *
    * // It is safe to destroy or modify `v`
    * v = 13;
    * \endcode
@@ -288,12 +288,18 @@ class device_uvector {
   /**
    * @brief Returns pointer to underlying device storage.
    *
+   * @note If `size() == 0` it is undefined behavior to deference the returned pointer. Furthermore,
+   * the returned pointer may or may not be equal to `nullptr`.
+   *
    * @return Raw pointer to element storage in device memory.
    */
   pointer data() noexcept { return static_cast<pointer>(_storage.data()); }
 
   /**
    * @brief Returns const pointer to underlying device storage.
+   *
+   * @note If `size() == 0` it is undefined behavior to deference the returned pointer. Furthermore,
+   * the returned pointer may or may not be equal to `nullptr`.
    *
    * @return const_pointer Raw const pointer to element storage in device memory.
    */
@@ -302,6 +308,8 @@ class device_uvector {
   /**
    * @brief Returns an iterator to the first element.
    *
+   * If the vector is empty, then `begin() == end()`.
+   *
    * @return Iterator to the first element.
    */
   iterator begin() noexcept { return data(); }
@@ -309,12 +317,16 @@ class device_uvector {
   /**
    * @brief Returns a const_iterator to the first element.
    *
+   * If the vector is empty, then `cbegin() == cend()`.
+   *
    * @return Immutable iterator to the first element.
    */
   const_iterator cbegin() const noexcept { return data(); }
 
   /**
    * @brief Returns a const_iterator to the first element.
+   *
+   * If the vector is empty, then `begin() == end()`.
    *
    * @return Immutable iterator to the first element.
    */
