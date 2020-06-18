@@ -127,7 +127,21 @@ class device_uvector {
    * @param element_index Index of the specified element.
    * @return T* Pointer to the desired element
    */
-  T* element_ptr(std::size_t element_index)
+  pointer element_ptr(std::size_t element_index)
+  {
+    assert(element_index < size());
+    return data() + element_index;
+  }
+
+  /**
+   * @brief Returns pointer to the specified element
+   *
+   * Behavior is undefined if `element_index >= size()`.
+   *
+   * @param element_index Index of the specified element.
+   * @return T* Pointer to the desired element
+   */
+  const_pointer element_ptr(std::size_t element_index) const
   {
     assert(element_index < size());
     return data() + element_index;
@@ -167,7 +181,7 @@ class device_uvector {
    * @param s The stream on which to perform the copy
    * @return The value of the specified element
    */
-  T get_element(std::size_t element_index, cudaStream_t s)
+  T get_element(std::size_t element_index, cudaStream_t s) const
   {
     RMM_EXPECTS(
       element_index < size(), rmm::out_of_range, "Attempt to access out of bounds element.");
