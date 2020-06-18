@@ -143,7 +143,7 @@ struct block {
  */
 template <typename block_type>
 struct compare_blocks {
-  // is_transparent (C++14 feature) allows search key type for set<block_type>::find()
+  // is_transparent (C++14 feature) allows different search key types in set<block_type>::find()
   using is_transparent = void;
 
   bool operator()(block_type const& lhs, block_type const& rhs) const { return lhs < rhs; }

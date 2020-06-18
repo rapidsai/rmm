@@ -378,7 +378,7 @@ class pool_memory_resource final : public device_memory_resource {
    * @throws nothing
    *
    * @param stream to execute on
-   * @return std::pair contaiing free_size and total_size of memory
+   * @return std::pair containing free_size and total_size of memory
    */
   std::pair<size_t, size_t> do_get_mem_info(cudaStream_t stream) const override
   {
