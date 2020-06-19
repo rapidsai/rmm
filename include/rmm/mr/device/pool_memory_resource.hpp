@@ -291,7 +291,7 @@ class pool_memory_resource final : public device_memory_resource {
     assert(i != allocated_blocks_.end());
     assert(i->size() == rmm::detail::align_up(size, allocation_alignment));
 
-    block_t b(*i);
+    block_t b{std::move(*i)};
     allocated_blocks_.erase(i);
 
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
@@ -356,7 +356,7 @@ class pool_memory_resource final : public device_memory_resource {
    */
   void release()
   {
-    for (auto b : upstream_blocks_)
+    for (auto const& b : upstream_blocks_)
       upstream_mr_->deallocate(b.pointer(), b.size());
     upstream_blocks_.clear();
     current_pool_size_ = 0;
