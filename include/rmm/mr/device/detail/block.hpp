@@ -126,7 +126,10 @@ struct block {
   /**
    * @brief Print this block. For debugging.
    */
-  void print() const { std::cout << reinterpret_cast<void*>(pointer()) << " " << size() << "B\n"; }
+  virtual void print() const
+  {
+    std::cout << reinterpret_cast<void*>(pointer()) << " " << size() << "B\n";
+  }
 
  protected:
   char* ptr{};          ///< Raw memory pointer
