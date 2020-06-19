@@ -28,7 +28,7 @@ static void BM_UvectorSizeConstruction(benchmark::State& state)
   rmm::mr::set_default_resource(&mr);
 
   for (auto _ : state) {
-    rmm::device_uvector<int32_t>(state.range(0), rmm::stream_view{});
+    rmm::device_uvector<int32_t>(state.range(0), rmm::get_default_stream());
     cudaDeviceSynchronize();
   }
 }

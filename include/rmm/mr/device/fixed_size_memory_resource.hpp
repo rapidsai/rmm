@@ -71,7 +71,7 @@ class fixed_size_memory_resource : public device_memory_resource {
       upstream_chunk_size_{block_size * blocks_to_preallocate}
   {
     // allocate initial blocks and insert into free list
-    new_blocks_from_upstream(stream_view{}, stream_blocks_[stream_view{}]);
+    new_blocks_from_upstream(get_default_stream(), stream_blocks_[get_default_stream()]);
   }
 
   /**

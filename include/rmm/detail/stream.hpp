@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 
@@ -66,5 +67,39 @@ class stream_view {
  private:
   cudaStream_t _stream;
 };
+
+namespace detail {
+// Use an atomic to guarantee thread safety
+inline std::atomic<stream_view>& default_stream()
+{
+  static std::atomic<stream_view> res{stream_view{}};
+  return res;
+}
+}  // namespace detail
+
+/**
+ * @brief Get the default stream view.
+ *
+ * The default stream view is used when an explicit stream view
+ * is not supplied. The initial default stream view is cudaStreamDefault.
+ *
+ * This function is thread-safe.
+ *
+ * @return stream_view The current default stream view
+ */
+inline stream_view get_default_stream() { return detail::default_stream().load(); }
+
+/**
+ * @brief Sets the default stream view.
+ *
+ * This function is thread-safe.
+ *
+ * @param new_stream Stream view to use as new default stream view
+ * @return The previous value of the default stream view
+ */
+inline stream_view set_default_stream(stream_view new_stream)
+{
+  return detail::default_stream().exchange(new_stream);
+}
 
 }  // namespace rmm

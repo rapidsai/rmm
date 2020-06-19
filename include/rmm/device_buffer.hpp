@@ -47,7 +47,7 @@ namespace rmm {
  * // allocates at least 100 bytes using the custom memory resource and
  * // specified stream
  * custom_memory_resource mr;
- * stream_view stream = stream_view{};
+ * stream_view stream = get_default_stream();
  * device_buffer custom_buff(100, stream, &mr);
  *
  * // deep copies `buff` into a new device buffer using the default stream
@@ -95,7 +95,7 @@ class device_buffer {
    * @param mr Memory resource to use for the device memory allocation.
    */
   explicit device_buffer(std::size_t size,
-                         stream_view stream             = stream_view{},
+                         stream_view stream             = get_default_stream(),
                          mr::device_memory_resource* mr = mr::get_default_resource())
     : _stream{stream}, _mr{mr}
   {
@@ -118,7 +118,7 @@ class device_buffer {
    */
   device_buffer(void const* source_data,
                 std::size_t size,
-                stream_view stream             = stream_view{},
+                stream_view stream             = get_default_stream(),
                 mr::device_memory_resource* mr = mr::get_default_resource())
     : _stream{stream}, _mr{mr}
   {
@@ -143,7 +143,7 @@ class device_buffer {
    * @param mr The resource to use for allocating the new `device_buffer`
    */
   device_buffer(device_buffer const& other,
-                stream_view stream                  = stream_view{},
+                stream_view stream                  = get_default_stream(),
                 rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
     : device_buffer{other.data(), other.size(), stream, mr}
   {
@@ -172,7 +172,7 @@ class device_buffer {
     other._data     = nullptr;
     other._size     = 0;
     other._capacity = 0;
-    other.set_stream(stream_view{});
+    other.set_stream(get_default_stream());
   }
 
   /**
@@ -242,7 +242,7 @@ class device_buffer {
       other._data     = nullptr;
       other._size     = 0;
       other._capacity = 0;
-      other.set_stream(stream_view{});
+      other.set_stream(get_default_stream());
     }
     return *this;
   }
@@ -258,7 +258,7 @@ class device_buffer {
   {
     deallocate();
     _mr     = nullptr;
-    _stream = stream_view{};
+    _stream = get_default_stream();
   }
 
   /**
@@ -286,7 +286,7 @@ class device_buffer {
    * @param new_size The requested new size, in bytes
    * @param stream The stream to use for allocation and copy
    */
-  void resize(std::size_t new_size, stream_view stream = stream_view{})
+  void resize(std::size_t new_size, stream_view stream = get_default_stream())
   {
     set_stream(stream);
     // If the requested size is smaller than the current capacity, just update
@@ -316,7 +316,7 @@ class device_buffer {
    *
    * @param stream The stream on which the allocation and copy are performed
    */
-  void shrink_to_fit(stream_view stream = stream_view{})
+  void shrink_to_fit(stream_view stream = get_default_stream())
   {
     set_stream(stream);
     if (size() != capacity()) {

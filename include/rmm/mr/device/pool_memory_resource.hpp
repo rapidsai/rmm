@@ -77,8 +77,8 @@ class pool_memory_resource final : public device_memory_resource {
     if (maximum_pool_size == default_maximum_size) maximum_pool_size_ = props.totalGlobalMem;
 
     // Allocate initial block
-    stream_free_blocks_[stream_view{}].insert(
-      block_from_upstream(initial_pool_size, stream_view{}));
+    stream_free_blocks_[get_default_stream()].insert(
+      block_from_upstream(initial_pool_size, get_default_stream()));
   }
 
   /**

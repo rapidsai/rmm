@@ -78,7 +78,7 @@ class device_memory_resource {
    * @param stream Stream on which to perform allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* allocate(std::size_t bytes, stream_view stream = stream_view{})
+  void* allocate(std::size_t bytes, stream_view stream = get_default_stream())
   {
     return do_allocate(detail::align_up(bytes, 8), stream);
   }
@@ -101,7 +101,7 @@ class device_memory_resource {
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param stream Stream on which to perform deallocation
    */
-  void deallocate(void* p, std::size_t bytes, stream_view stream = stream_view{})
+  void deallocate(void* p, std::size_t bytes, stream_view stream = get_default_stream())
   {
     do_deallocate(p, detail::align_up(bytes, 8), stream);
   }
