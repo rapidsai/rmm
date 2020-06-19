@@ -79,6 +79,10 @@ class pool_memory_resource final : public device_memory_resource {
 
     // Allocate initial block
     stream_free_blocks_[0].insert(block_from_upstream(initial_pool_size, 0));
+
+#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
+    event_resource.reserve(1000);
+#endif
   }
 
   /**
@@ -110,9 +114,53 @@ class pool_memory_resource final : public device_memory_resource {
   Upstream* get_upstream() const noexcept { return upstream_mr_; }
 
  private:
-#if 1
+#if CUDA_API_PER_THREAD_DEFAULT_STREAM
   using block_t   = rmm::mr::detail::event_block;
   using free_list = rmm::mr::detail::free_list<block_t>;
+
+  struct event_pool {
+    event_pool() = default;
+    ~event_pool()
+    {
+      for (auto e : events) {
+        auto result = cudaEventDestroy(e);
+        assert(cudaSuccess == result);
+      }
+      events.clear();
+    }
+
+    cudaEvent_t get_event()
+    {
+      if (!events.empty()) {
+        cudaEvent_t e = events.front();
+        events.pop_front();
+        return e;
+      } else {
+        return create_event();
+      }
+    }
+
+    void return_event(cudaEvent_t e) { events.push_back(e); }
+
+    void reserve(std::size_t n)
+    {
+      for (std::size_t i = 0; i < n; i++)
+        events.push_back(create_event());
+    }
+
+   private:
+    cudaEvent_t create_event()
+    {
+      cudaEvent_t e{};
+      auto result = cudaEventCreateWithFlags(&e, cudaEventDisableTiming);
+      assert(cudaSuccess == result);
+      return e;
+    }
+
+    std::list<cudaEvent_t> events{};
+  };
+
+  event_pool event_resource;
 #else
   using block_t   = rmm::mr::detail::block;
   using free_list = rmm::mr::detail::free_list<>;
@@ -155,11 +203,14 @@ class pool_memory_resource final : public device_memory_resource {
 
         // remove this stream from the freelist
         stream_free_blocks_.erase(blocks_stream);
-      } else if (stream == 0) {
-        // With per-thread default stream, we need to wait on the list of events
-        // stored with the block
-        b.await_events(stream);
       }
+#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
+      else if (stream == 0) {
+        // With per-thread default stream, the stream the block will be used on must wait on the
+        // events stored with the block
+        b.await_events(stream, event_resource);
+      }
+#endif
     }
     return b;
   }
@@ -242,7 +293,10 @@ class pool_memory_resource final : public device_memory_resource {
     block_t b(*i);
     allocated_blocks_.erase(i);
 
-    b.record(stream);
+#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
+    if (stream == 0)
+      b.record(stream, event_resource);  // record an event to wait on in order to use this block
+#endif
 
     stream_free_blocks_[stream].insert(b);
   }
@@ -316,7 +370,7 @@ class pool_memory_resource final : public device_memory_resource {
   {
     std::size_t free, total;
     std::tie(free, total) = upstream_mr_->get_mem_info(0);
-    std::cout << "GPU free memory: " << free << "total: " << total << "\n";
+    std::cout << "GPU free memory: " << free << " total: " << total << "\n";
 
     std::cout << "upstream_blocks: " << upstream_blocks_.size() << "\n";
     std::size_t upstream_total{0};

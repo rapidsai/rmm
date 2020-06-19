@@ -37,6 +37,12 @@ struct event_block : public block {
   event_block() = default;
   event_block(char* ptr, size_t size, bool is_head) : block(ptr, size, is_head) {}
 
+  void print() const override
+  {
+    std::cout << reinterpret_cast<void*>(pointer()) << " " << size() << "B " << events.size()
+              << "\n";
+  }
+
   /**
    * @brief Coalesce two contiguous blocks into one.
    *
@@ -50,31 +56,32 @@ struct event_block : public block {
   {
     assert(is_contiguous_before(b));
     size_bytes += b.size();
-    std::cout << "splicing " << b.events.size() << " events onto " << events.size() << " events\n";
+    // std::cout << "splicing " << b.events.size() << " events onto " << events.size() << "
+    // events\n";
     events.splice(events.end(), std::move(b.events));
     b.ptr        = nullptr;
     b.size_bytes = 0;
     return *this;
   }
 
-  void record(cudaStream_t stream) noexcept
+  template <typename EventResource>
+  void record(cudaStream_t stream, EventResource& event_resource) noexcept
   {
-    cudaEvent_t event = nullptr;
-    auto result       = cudaEventCreateWithFlags(&event, cudaEventDisableTiming);
-    assert(cudaSuccess == result);
+    cudaEvent_t event = event_resource.get_event();
 
-    result = cudaEventRecord(event, stream);
+    auto result = cudaEventRecord(event, stream);
     assert(cudaSuccess == result);
 
     events.push_back(event);
   }
 
-  void await_events(cudaStream_t stream)
+  template <typename EventResource>
+  void await_events(cudaStream_t stream, EventResource& event_resource)
   {
-    std::cout << "Awaiting " << events.size() << " events\n";
+    // std::cout << "Awaiting " << events.size() << " events\n";
     for (cudaEvent_t event : events) {
       RMM_CUDA_TRY(cudaStreamWaitEvent(stream, event, 0));
-      RMM_CUDA_TRY(cudaEventDestroy(event));
+      event_resource.return_event(event);
     }
     events.clear();
   }
