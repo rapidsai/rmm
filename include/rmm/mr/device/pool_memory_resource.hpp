@@ -291,7 +291,10 @@ class pool_memory_resource final : public device_memory_resource {
     assert(i != allocated_blocks_.end());
     assert(i->size() == rmm::detail::align_up(size, allocation_alignment));
 
-    block_t b{std::move(*i)};
+    // JH: This copy is unavoidable because the elements of a std::set are immutable and thus you
+    // can't "move" from them
+    // block_t b{std::move(*i)};
+    block_t b{*i};
     allocated_blocks_.erase(i);
 
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
