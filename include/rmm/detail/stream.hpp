@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 
 // forward decl
 using cudaStream_t = struct CUstream_st*;
@@ -51,6 +52,11 @@ class stream_view {
    * @brief Implicitly convert to cudaStream_t.
    */
   operator cudaStream_t() const { return _stream; }
+
+  /**
+   * @brief Explicit conversion to uintptr_t.
+   */
+  explicit operator uintptr_t() const { return reinterpret_cast<uintptr_t>(_stream); }
 
   /**
    * @brief Compare two streams for equality.

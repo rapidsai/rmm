@@ -182,7 +182,7 @@ class logging_resource_adaptor final : public device_memory_resource {
     msg += ",";
     msg += std::to_string(bytes);
     msg += ",";
-    msg += std::to_string(reinterpret_cast<uintptr_t>(cudaStream_t{stream}));
+    msg += std::to_string(uintptr_t{stream});
     logger_->info(msg);
     return p;
   }
@@ -212,7 +212,7 @@ class logging_resource_adaptor final : public device_memory_resource {
     msg += ",";
     msg += std::to_string(bytes);
     msg += ",";
-    msg += std::to_string(reinterpret_cast<uintptr_t>(cudaStream_t{stream}));
+    msg += std::to_string(uintptr_t{stream});
     logger_->info(msg);
     upstream_->deallocate(p, bytes, stream);
   }
