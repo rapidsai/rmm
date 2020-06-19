@@ -141,6 +141,7 @@ class pool_memory_resource final : public device_memory_resource {
     }
 
     void return_event(cudaEvent_t e) { events.push_back(e); }
+    void return_events(std::list<cudaEvent_t>&& e) { events.splice(events.end(), e); }
 
     void reserve(std::size_t n)
     {

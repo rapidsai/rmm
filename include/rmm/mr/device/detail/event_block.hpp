@@ -81,9 +81,9 @@ struct event_block : public block {
     // std::cout << "Awaiting " << events.size() << " events\n";
     for (cudaEvent_t event : events) {
       RMM_CUDA_TRY(cudaStreamWaitEvent(stream, event, 0));
-      event_resource.return_event(event);
     }
-    events.clear();
+    // events.clear();
+    event_resource.return_events(std::move(events));
   }
 
  protected:
