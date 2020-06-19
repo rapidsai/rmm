@@ -414,11 +414,11 @@ TYPED_TEST(MRTest, GetMemInfo)
 {
   if (this->mr->supports_get_mem_info()) {
     std::pair<std::size_t, std::size_t> mem_info;
-    EXPECT_NO_THROW(mem_info = this->mr->get_mem_info(rmm::stream_t{}));
+    EXPECT_NO_THROW(mem_info = this->mr->get_mem_info(rmm::stream_view{}));
     std::size_t allocation_size = 16 * 256;
     void* ptr;
     EXPECT_NO_THROW(ptr = this->mr->allocate(allocation_size));
-    EXPECT_NO_THROW(mem_info = this->mr->get_mem_info(rmm::stream_t{}));
+    EXPECT_NO_THROW(mem_info = this->mr->get_mem_info(rmm::stream_view{}));
     EXPECT_TRUE(mem_info.first >= allocation_size);
     EXPECT_NO_THROW(this->mr->deallocate(ptr, allocation_size));
   }

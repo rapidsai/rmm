@@ -26,26 +26,26 @@ namespace rmm {
 /**
  * @brief Strongly-typed wrapper for CUDA streams with default constructor.
  */
-class stream_t {
+class stream_view {
  public:
-  stream_t(stream_t const&) = default;
-  stream_t(stream_t&&)      = default;
-  stream_t& operator=(stream_t const&) = default;
-  stream_t& operator=(stream_t&&) = default;
+  stream_view(stream_view const&) = default;
+  stream_view(stream_view&&)      = default;
+  stream_view& operator=(stream_view const&) = default;
+  stream_view& operator=(stream_view&&) = default;
 
-  // TODO disable construction from 0 after cuDF and others adopt stream_t
-  // stream_t(int)            = delete; //< Prevent cast from 0
-  // stream_t(std::nullptr_t) = delete; //< Prevent cast from nullptr
+  // TODO disable construction from 0 after cuDF and others adopt stream_view
+  // stream_view(int)            = delete; //< Prevent cast from 0
+  // stream_view(std::nullptr_t) = delete; //< Prevent cast from nullptr
 
   /**
    * @brief Construct a default cudaStream_t.
    */
-  constexpr explicit stream_t() : _stream{0} {}
+  constexpr explicit stream_view() : _stream{0} {}
 
   /**
    * @brief Implicitly convert from cudaStream_t.
    */
-  stream_t(cudaStream_t stream) : _stream{stream} {}
+  stream_view(cudaStream_t stream) : _stream{stream} {}
 
   /**
    * @brief Implicitly convert to cudaStream_t.
@@ -55,7 +55,7 @@ class stream_t {
   /**
    * @brief Compare two streams for equality.
    */
-  bool operator==(stream_t const& other) { return _stream == other._stream; }
+  bool operator==(stream_view const& other) { return _stream == other._stream; }
 
  private:
   cudaStream_t _stream;
