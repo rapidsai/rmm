@@ -139,14 +139,14 @@ struct free_list {
   block_t best_fit(size_t size)
   {
     // find best fit block
-    auto const iter = std::min_element(
-      blocks.cbegin(), blocks.cend(), [size](block_t const& lhs, block_t const& rhs) {
+    auto iter = std::min_element(
+      blocks.begin(), blocks.end(), [size](block_t const& lhs, block_t const& rhs) {
         return lhs.is_better_fit(size, rhs);
       });
 
     if (iter != blocks.end() && iter->fits(size)) {
       // Remove the block from the free_list and return it.
-      block_t const found = std::move(*iter);
+      block_t const found{std::move(*iter)};
       erase(iter);
       return found;
     }
