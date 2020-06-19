@@ -78,7 +78,7 @@ class pool_memory_resource final : public device_memory_resource {
     if (maximum_pool_size == default_maximum_size) maximum_pool_size_ = props.totalGlobalMem;
 
     // Allocate initial block
-    stream_free_blocks_[0].insert(block_from_upstream(initial_pool_size, 0));
+    stream_free_blocks_[0].coalesced_emplace(block_from_upstream(initial_pool_size, 0));
 
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
     event_resource.reserve(1000);
@@ -269,11 +269,11 @@ class pool_memory_resource final : public device_memory_resource {
 
     if (b.size() > size) {
       block_t rest{b.pointer() + size, b.size() - size, false};
-      stream_free_blocks_[stream].insert(rest);
+      stream_free_blocks_[stream].coalesced_emplace(std::move(rest));
     }
-
-    allocated_blocks_.insert(alloc);
-    return reinterpret_cast<void*>(alloc.pointer());
+    auto p = alloc.pointer();
+    allocated_blocks_.emplace(std::move(alloc));
+    return p;
   }
 
   /**
@@ -299,7 +299,7 @@ class pool_memory_resource final : public device_memory_resource {
       b.record(stream, event_resource);  // record an event to wait on in order to use this block
 #endif
 
-    stream_free_blocks_[stream].insert(b);
+    stream_free_blocks_[stream].coalesced_emplace(std::move(b));
   }
 
   /**
