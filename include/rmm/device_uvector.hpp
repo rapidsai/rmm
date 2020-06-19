@@ -184,10 +184,10 @@ class device_uvector {
   }
 
   /**
-   * @brief Performs an *a*synchronous copy of `v` to the specified element in device memory.
+   * @brief Performs an asynchronous copy of `v` to the specified element in device memory.
    *
-   * This function does _not_ synchronize stream `s` before returning. Therefore, the object
-   * referenced by `v` cannot be destroyed or modified until `stream` has been synchronized.
+   * This function does not synchronize stream `s` before returning. Therefore, the object
+   * referenced by `v` should not be destroyed or modified until `stream` has been synchronized.
    * Otherwise, behavior is undefined.
    *
    * @note: This function incurs a host to device memcpy and should be used sparingly.
