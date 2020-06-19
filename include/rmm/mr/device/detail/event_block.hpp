@@ -59,7 +59,7 @@ struct event_block : public block {
    * @param b block to merge
    * @return block The merged block
    */
-  event_block merge(event_block&& b) noexcept
+  event_block& merge(event_block&& b) noexcept
   {
     assert(is_contiguous_before(b));
     size_bytes += b.size();
