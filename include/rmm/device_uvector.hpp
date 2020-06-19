@@ -154,6 +154,7 @@ class device_uvector {
    * referenced by `v` after this function has returned.
    *
    * @note: This function incurs a host to device memcpy and should be used sparingly.
+   * @note: This function synchronizes `stream`.
    *
    * Example:
    * \code{cpp}
@@ -223,6 +224,7 @@ class device_uvector {
    * @brief Returns the specified element from device memory
    *
    * @note: This function incurs a device to host memcpy and should be used sparingly.
+   * @note: This function synchronizes `stream`.
    *
    * @throws rmm::out_of_range exception if `element_index >= size()`
    *
