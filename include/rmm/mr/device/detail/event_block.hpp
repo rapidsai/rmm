@@ -35,6 +35,13 @@ namespace detail {
 
 struct event_block : public block {
   event_block() = default;
+
+  //event_block(event_block const&) = delete;
+  event_block(event_block const&) = default;
+  event_block(event_block&&) = default;
+  event_block& operator=(event_block&&) = default;
+  event_block& operator=(event_block const&) = default;
+
   event_block(char* ptr, size_t size, bool is_head) : block(ptr, size, is_head) {}
 
   void print() const override
