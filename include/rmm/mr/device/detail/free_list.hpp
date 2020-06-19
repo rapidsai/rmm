@@ -67,17 +67,22 @@ struct free_list {
    *
    * @param b The block to insert.
    */
-  void insert(block_t b)
+  void insert(block_t b) { coalesced_emplace(std::move(b)); }
+
+  template <typename... Args>
+  void coalesced_emplace(Args&&... args)
   {
+    block_t b(std::forward<Args>(args)...);
+
     if (is_empty()) {
-      insert(blocks.end(), b);
+      emplace(blocks.end(), std::move(b));
       return;
     }
 
     // Find the right place (in ascending ptr order) to insert the block
     // Can't use binary_search because it's a linked list and will be quadratic
     auto const next =
-      std::find_if(blocks.begin(), blocks.end(), [b](block_t const& i) { return b < i; });
+      std::find_if(blocks.begin(), blocks.end(), [&b](block_t const& i) { return b < i; });
     auto previous = (next == blocks.begin()) ? next : std::prev(next);
 
     // Coalesce with neighboring blocks or insert the new block if it can't be coalesced
@@ -94,7 +99,7 @@ struct free_list {
     } else if (merge_next) {
       *next = b.merge(std::move(*next));
     } else {
-      insert(next, b);  // cannot be coalesced, just insert
+      emplace(next, std::move(b));  // cannot be coalesced, just insert
     }
   }
 
@@ -141,7 +146,7 @@ struct free_list {
 
     if (iter != blocks.end() && iter->fits(size)) {
       // Remove the block from the free_list and return it.
-      block_t const found = *iter;
+      block_t const found = std::move(*iter);
       erase(iter);
       return found;
     }
@@ -168,6 +173,12 @@ struct free_list {
    * @param b The block to insert.
    */
   void insert(const_iterator pos, block_t const& b) { blocks.insert(pos, b); }
+
+  template <typename... Args>
+  void emplace(const_iterator pos, Args&&... args)
+  {
+    blocks.emplace(pos, std::forward<Args>(args)...);
+  }
 
  private:
   list_t blocks;  // The internal container of blocks
