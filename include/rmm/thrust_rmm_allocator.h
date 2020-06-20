@@ -24,7 +24,7 @@
 #ifndef THRUST_RMM_ALLOCATOR_H
 #define THRUST_RMM_ALLOCATOR_H
 
-#include <rmm/detail/stream.hpp>
+#include <rmm/detail/cuda_stream_view.hpp>
 #include <rmm/mr/device/thrust_allocator_adaptor.hpp>
 
 #include <thrust/device_vector.h>

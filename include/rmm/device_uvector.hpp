@@ -16,8 +16,8 @@
 
 #pragma once
 
+#include <rmm/detail/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
-#include <rmm/detail/stream.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>

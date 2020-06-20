@@ -16,7 +16,7 @@
 
 #include "gtest/gtest.h"
 
-#include <rmm/detail/stream.hpp>
+#include <rmm/detail/cuda_stream_view.hpp>
 #include <rmm/device_buffer.hpp>
 
 #include <cuda_runtime_api.h>

@@ -17,8 +17,8 @@
 
 #include <rmm/mr/device/device_memory_resource.hpp>
 
+#include <rmm/detail/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
-#include <rmm/detail/stream.hpp>
 
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/ostream_sink.h>

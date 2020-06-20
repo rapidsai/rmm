@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <rmm/detail/stream.hpp>
+#include <rmm/detail/cuda_stream_view.hpp>
 
 #include <cstddef>
 #include <utility>

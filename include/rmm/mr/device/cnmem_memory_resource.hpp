@@ -16,8 +16,8 @@
 #pragma once
 
 #include <rmm/detail/cnmem.h>
+#include <rmm/detail/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
-#include <rmm/detail/stream.hpp>
 #include "device_memory_resource.hpp"
 
 #include <cuda_runtime_api.h>
