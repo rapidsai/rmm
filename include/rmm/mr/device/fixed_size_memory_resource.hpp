@@ -125,7 +125,7 @@ class fixed_size_memory_resource : public device_memory_resource {
    * @param stream Stream on which to perform allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* do_allocate(std::size_t bytes, stream_view stream) override
+  void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
     if (bytes <= 0) return nullptr;
     bytes = rmm::detail::align_up(bytes, allocation_alignment);
@@ -144,7 +144,7 @@ class fixed_size_memory_resource : public device_memory_resource {
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param stream Stream on which to perform deallocation
    */
-  void do_deallocate(void* p, std::size_t bytes, stream_view stream) override
+  void do_deallocate(void* p, std::size_t bytes, cuda_stream_view stream) override
   {
     bytes = rmm::detail::align_up(bytes, allocation_alignment);
     assert(bytes <= block_size_);
@@ -159,7 +159,7 @@ class fixed_size_memory_resource : public device_memory_resource {
    * @param stream the stream being executed on
    * @return std::pair with available and free memory for resource
    */
-  std::pair<std::size_t, std::size_t> do_get_mem_info(stream_view stream) const override
+  std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view stream) const override
   {
     return std::make_pair(0, 0);
   }
@@ -174,7 +174,9 @@ class fixed_size_memory_resource : public device_memory_resource {
    * @return block A pointer to memory of `get_block_size()` bytes, or nullptr if no blocks are
    *               available in `blocks`.
    */
-  void* block_from_stream(free_list& blocks, stream_view blocks_stream, stream_view stream)
+  void* block_from_stream(free_list& blocks,
+                          cuda_stream_view blocks_stream,
+                          cuda_stream_view stream)
   {
     void* p = nullptr;
 
@@ -215,7 +217,7 @@ class fixed_size_memory_resource : public device_memory_resource {
    * @param stream The stream on which the allocation will be used.
    * @return block A pointer to memory of size `get_block_size()`.
    */
-  void* get_block(stream_view stream)
+  void* get_block(cuda_stream_view stream)
   {
     // Try to find a block in the same stream
     auto iter = stream_blocks_.find(stream);
@@ -250,7 +252,7 @@ class fixed_size_memory_resource : public device_memory_resource {
    * @param stream The stream to associate the new blocks with.
    * @param blocks The `free_list` to insert the blocks into.
    */
-  void new_blocks_from_upstream(stream_view stream, free_list& blocks)
+  void new_blocks_from_upstream(cuda_stream_view stream, free_list& blocks)
   {
     void* p = upstream_mr_->allocate(upstream_chunk_size_, stream);
     upstream_blocks_.push_back(p);
@@ -281,7 +283,7 @@ class fixed_size_memory_resource : public device_memory_resource {
 
   // stream free lists: map of [stream_id, free_list] pairs
   // stream stream_id must be synced before allocating from this list
-  std::map<stream_view, free_list> stream_blocks_;
+  std::map<cuda_stream_view, free_list> stream_blocks_;
 
   // blocks allocated from heap: so they can be easily freed
   std::vector<void*> upstream_blocks_;

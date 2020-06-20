@@ -69,7 +69,7 @@ void random_allocation_free(rmm::mr::device_memory_resource& mr,
                             SizeDistribution size_distribution,
                             size_t num_allocations,
                             size_t max_usage,  // in MiB
-                            rmm::stream_view stream = rmm::get_default_stream())
+                            rmm::cuda_stream_view stream = rmm::get_default_stream())
 {
   std::default_random_engine generator;
 
@@ -146,7 +146,7 @@ void uniform_random_allocations(rmm::mr::device_memory_resource& mr,
                                 size_t num_allocations,
                                 size_t max_allocation_size,  // in MiB
                                 size_t max_usage,
-                                rmm::stream_view stream = rmm::get_default_stream())
+                                rmm::cuda_stream_view stream = rmm::get_default_stream())
 {
   std::uniform_int_distribution<std::size_t> size_distribution(1, max_allocation_size * size_mb);
   random_allocation_free(mr, size_distribution, num_allocations, max_usage, stream);
@@ -158,7 +158,7 @@ void uniform_random_allocations(rmm::mr::device_memory_resource& mr,
                                 size_t mean_allocation_size = 500, // in MiB
                                 size_t stddev_allocation_size = 500, // in MiB
                                 size_t max_usage = 8 << 20,
-                                stream_view stream) {
+                                cuda_stream_view stream) {
   std::normal_distribution<std::size_t> size_distribution(, max_allocation_size * size_mb);
 }*/
 

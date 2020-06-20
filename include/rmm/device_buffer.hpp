@@ -47,7 +47,7 @@ namespace rmm {
  * // allocates at least 100 bytes using the custom memory resource and
  * // specified stream
  * custom_memory_resource mr;
- * stream_view stream = get_default_stream();
+ * cuda_stream_view stream = get_default_stream();
  * device_buffer custom_buff(100, stream, &mr);
  *
  * // deep copies `buff` into a new device buffer using the default stream
@@ -95,7 +95,7 @@ class device_buffer {
    * @param mr Memory resource to use for the device memory allocation.
    */
   explicit device_buffer(std::size_t size,
-                         stream_view stream             = get_default_stream(),
+                         cuda_stream_view stream        = get_default_stream(),
                          mr::device_memory_resource* mr = mr::get_default_resource())
     : _stream{stream}, _mr{mr}
   {
@@ -118,7 +118,7 @@ class device_buffer {
    */
   device_buffer(void const* source_data,
                 std::size_t size,
-                stream_view stream             = get_default_stream(),
+                cuda_stream_view stream        = get_default_stream(),
                 mr::device_memory_resource* mr = mr::get_default_resource())
     : _stream{stream}, _mr{mr}
   {
@@ -143,7 +143,7 @@ class device_buffer {
    * @param mr The resource to use for allocating the new `device_buffer`
    */
   device_buffer(device_buffer const& other,
-                stream_view stream                  = get_default_stream(),
+                cuda_stream_view stream             = get_default_stream(),
                 rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
     : device_buffer{other.data(), other.size(), stream, mr}
   {
@@ -286,7 +286,7 @@ class device_buffer {
    * @param new_size The requested new size, in bytes
    * @param stream The stream to use for allocation and copy
    */
-  void resize(std::size_t new_size, stream_view stream = get_default_stream())
+  void resize(std::size_t new_size, cuda_stream_view stream = get_default_stream())
   {
     set_stream(stream);
     // If the requested size is smaller than the current capacity, just update
@@ -316,7 +316,7 @@ class device_buffer {
    *
    * @param stream The stream on which the allocation and copy are performed
    */
-  void shrink_to_fit(stream_view stream = get_default_stream())
+  void shrink_to_fit(cuda_stream_view stream = get_default_stream())
   {
     set_stream(stream);
     if (size() != capacity()) {
@@ -363,7 +363,7 @@ class device_buffer {
   /**
    * @brief Returns stream most recently specified for allocation/deallocation
    */
-  stream_view stream() const noexcept { return _stream; }
+  cuda_stream_view stream() const noexcept { return _stream; }
 
   /**
    * @brief Sets the stream to be used for deallocation
@@ -375,7 +375,7 @@ class device_buffer {
    * called after this, the later stream parameter will be stored and used in
    * the destructor.
    */
-  void set_stream(stream_view stream) noexcept { _stream = stream; }
+  void set_stream(cuda_stream_view stream) noexcept { _stream = stream; }
 
   /**
    * @brief Returns pointer to the memory resource used to allocate and
@@ -384,10 +384,10 @@ class device_buffer {
   mr::device_memory_resource* memory_resource() const noexcept { return _mr; }
 
  private:
-  void* _data{nullptr};     ///< Pointer to device memory allocation
-  std::size_t _size{};      ///< Requested size of the device memory allocation
-  std::size_t _capacity{};  ///< The actual size of the device memory allocation
-  stream_view _stream{};    ///< Stream to use for device memory deallocation
+  void* _data{nullptr};        ///< Pointer to device memory allocation
+  std::size_t _size{};         ///< Requested size of the device memory allocation
+  std::size_t _capacity{};     ///< The actual size of the device memory allocation
+  cuda_stream_view _stream{};  ///< Stream to use for device memory deallocation
   mr::device_memory_resource* _mr{
     mr::get_default_resource()};  ///< The memory resource used to
                                   ///< allocate/deallocate device memory

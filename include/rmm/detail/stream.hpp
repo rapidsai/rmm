@@ -28,26 +28,26 @@ namespace rmm {
 /**
  * @brief Strongly-typed wrapper for CUDA streams with default constructor.
  */
-class stream_view {
+class cuda_stream_view {
  public:
-  stream_view(stream_view const&) = default;
-  stream_view(stream_view&&)      = default;
-  stream_view& operator=(stream_view const&) = default;
-  stream_view& operator=(stream_view&&) = default;
+  cuda_stream_view(cuda_stream_view const&) = default;
+  cuda_stream_view(cuda_stream_view&&)      = default;
+  cuda_stream_view& operator=(cuda_stream_view const&) = default;
+  cuda_stream_view& operator=(cuda_stream_view&&) = default;
 
-  // TODO disable construction from 0 after cuDF and others adopt stream_view
-  // stream_view(int)            = delete; //< Prevent cast from 0
-  // stream_view(std::nullptr_t) = delete; //< Prevent cast from nullptr
+  // TODO disable construction from 0 after cuDF and others adopt cuda_stream_view
+  // cuda_stream_view(int)            = delete; //< Prevent cast from 0
+  // cuda_stream_view(std::nullptr_t) = delete; //< Prevent cast from nullptr
 
   /**
    * @brief Construct a default cudaStream_t.
    */
-  constexpr explicit stream_view() : _stream{0} {}
+  constexpr explicit cuda_stream_view() : _stream{0} {}
 
   /**
    * @brief Implicitly convert from cudaStream_t.
    */
-  stream_view(cudaStream_t stream) : _stream{stream} {}
+  cuda_stream_view(cudaStream_t stream) : _stream{stream} {}
 
   /**
    * @brief Implicitly convert to cudaStream_t.
@@ -62,7 +62,7 @@ class stream_view {
   /**
    * @brief Compare two streams for equality.
    */
-  bool operator==(stream_view const& other) { return _stream == other._stream; }
+  bool operator==(cuda_stream_view const& other) { return _stream == other._stream; }
 
  private:
   cudaStream_t _stream;
@@ -70,9 +70,9 @@ class stream_view {
 
 namespace detail {
 // Use an atomic to guarantee thread safety
-inline std::atomic<stream_view>& default_stream()
+inline std::atomic<cuda_stream_view>& default_stream()
 {
-  static std::atomic<stream_view> res{stream_view{}};
+  static std::atomic<cuda_stream_view> res{cuda_stream_view{}};
   return res;
 }
 }  // namespace detail
@@ -85,9 +85,9 @@ inline std::atomic<stream_view>& default_stream()
  *
  * This function is thread-safe.
  *
- * @return stream_view The current default stream view
+ * @return cuda_stream_view The current default stream view
  */
-inline stream_view get_default_stream() { return detail::default_stream().load(); }
+inline cuda_stream_view get_default_stream() { return detail::default_stream().load(); }
 
 /**
  * @brief Sets the default stream view.
@@ -97,7 +97,7 @@ inline stream_view get_default_stream() { return detail::default_stream().load()
  * @param new_stream Stream view to use as new default stream view
  * @return The previous value of the default stream view
  */
-inline stream_view set_default_stream(stream_view new_stream)
+inline cuda_stream_view set_default_stream(cuda_stream_view new_stream)
 {
   return detail::default_stream().exchange(new_stream);
 }
