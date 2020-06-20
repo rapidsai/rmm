@@ -45,12 +45,12 @@ class cuda_stream_view {
   constexpr explicit cuda_stream_view() : _stream{0} {}
 
   /**
-   * @brief Implicitly convert from cudaStream_t.
+   * @brief Implicit conversion from cudaStream_t.
    */
   cuda_stream_view(cudaStream_t stream) : _stream{stream} {}
 
   /**
-   * @brief Implicitly convert to cudaStream_t.
+   * @brief Implicit conversion to cudaStream_t.
    */
   operator cudaStream_t() const { return _stream; }
 
