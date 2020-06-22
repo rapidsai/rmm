@@ -230,7 +230,7 @@ class device_uvector {
    * @param s The stream on which to perform the copy
    * @return The value of the specified element
    */
-  value_type get_element(std::size_t element_index, cudaStream_t s) const
+  value_type element(std::size_t element_index, cudaStream_t s) const
   {
     RMM_EXPECTS(
       element_index < size(), rmm::out_of_range, "Attempt to access out of bounds element.");

@@ -147,14 +147,14 @@ TYPED_TEST(TypedUVectorTest, OOBSetElement)
 {
   auto size = 12345;
   rmm::device_uvector<TypeParam> uv(size, this->stream());
-  EXPECT_THROW(uv.set_element(uv.size()+1, 42, this->stream()), rmm::out_of_range);
+  EXPECT_THROW(uv.set_element(uv.size() + 1, 42, this->stream()), rmm::out_of_range);
 }
 
 TYPED_TEST(TypedUVectorTest, OOBGetElement)
 {
   auto size = 12345;
   rmm::device_uvector<TypeParam> uv(size, this->stream());
-  EXPECT_THROW(uv.get_element(uv.size()+1, this->stream()), rmm::out_of_range);
+  EXPECT_THROW(uv.element(uv.size() + 1, this->stream()), rmm::out_of_range);
 }
 
 TYPED_TEST(TypedUVectorTest, GetSetElement)
@@ -163,7 +163,7 @@ TYPED_TEST(TypedUVectorTest, GetSetElement)
   rmm::device_uvector<TypeParam> uv(size, this->stream());
   for (std::size_t i = 0; i < uv.size(); ++i) {
     uv.set_element(i, i, this->stream());
-    EXPECT_EQ(static_cast<TypeParam>(i), uv.get_element(i, this->stream()));
+    EXPECT_EQ(static_cast<TypeParam>(i), uv.element(i, this->stream()));
   }
 }
 
@@ -173,6 +173,6 @@ TYPED_TEST(TypedUVectorTest, GetSetElementAsync)
   rmm::device_uvector<TypeParam> uv(size, this->stream());
   for (std::size_t i = 0; i < uv.size(); ++i) {
     uv.set_element_async(i, i, this->stream());
-    EXPECT_EQ(static_cast<TypeParam>(i), uv.get_element(i, this->stream()));
+    EXPECT_EQ(static_cast<TypeParam>(i), uv.element(i, this->stream()));
   }
 }
