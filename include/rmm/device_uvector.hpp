@@ -241,6 +241,30 @@ class device_uvector {
   }
 
   /**
+   * @brief Returns the first element.
+   *
+   * @note: This function incurs a device to host memcpy and should be used sparingly.
+   *
+   * @throws rmm::out_of_range exception if the vector is empty.
+   *
+   * @param s The stream on which to perform the copy
+   * @return The value of the first element
+   */
+  value_type front_element(cudaStream_t s) const { return element(0, s); }
+
+  /**
+   * @brief Returns the last element.
+   *
+   * @note: This function incurs a device to host memcpy and should be used sparingly.
+   *
+   * @throws rmm::out_of_range exception if the vector is empty.
+   *
+   * @param s The stream on which to perform the copy
+   * @return The value of the last element
+   */
+  value_type back_element(cudaStream_t s) const { return element(size() - 1, s); }
+
+  /**
    * @brief Resizes the vector to contain `new_size` elements.
    *
    * If `new_size > size()`, the additional elements are uninitialized.

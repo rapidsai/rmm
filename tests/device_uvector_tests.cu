@@ -176,3 +176,17 @@ TYPED_TEST(TypedUVectorTest, GetSetElementAsync)
     EXPECT_EQ(static_cast<TypeParam>(i), uv.element(i, this->stream()));
   }
 }
+
+TYPED_TEST(TypedUVectorTest, FrontBackElement)
+{
+  auto size = 12345;
+  rmm::device_uvector<TypeParam> uv(size, this->stream());
+
+  auto first = TypeParam{42};
+  auto last  = TypeParam{13};
+  uv.set_element(0, first, this->stream());
+  uv.set_element(uv.size() - 1, last, this->stream());
+
+  EXPECT_EQ(first, uv.front_element(this->stream()));
+  EXPECT_EQ(last, uv.back_element(this->stream()));
+}
