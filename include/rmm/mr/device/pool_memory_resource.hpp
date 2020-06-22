@@ -30,6 +30,8 @@
 #include <mutex>
 #include <numeric>
 #include <set>
+#include <thread>
+#include <unordered_map>
 #include <vector>
 
 namespace rmm {
@@ -132,32 +134,43 @@ class pool_memory_resource final : public device_memory_resource {
 
     // If we found a block associated with a different stream,
     // we have to synchronize the stream in order to use it
-    if ((blocks_stream != stream) && b.is_valid()) {
-      cudaError_t result = cudaStreamSynchronize(blocks_stream);
+    if (b.is_valid()) {
+#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
+      if (blocks_stream == 0) {
+        for (auto const& event_iter : events_) {
+          auto result = cudaStreamWaitEvent(stream, event_iter.second, 0);
+          assert(result == cudaSuccess);
+          // result = cudaEventDestroy(event_iter.second);
+          // assert(result == cudaSuccess);
+        }
+        // events_.clear();
+      } else
+#endif
+        if ((blocks_stream != stream)) {
+        cudaError_t result = cudaStreamSynchronize(blocks_stream);
 
-      RMM_EXPECTS((result == cudaSuccess ||                    // stream synced
-                   result == cudaErrorInvalidResourceHandle),  // stream deleted
-                  rmm::bad_alloc,
-                  "cudaStreamSynchronize failure");
+        RMM_EXPECTS((result == cudaSuccess), rmm::bad_alloc, "cudaStreamSynchronize failure");
 
-      // Now that this stream is synced, insert all other blocks into this stream's list
-      // Note: This could cause thrashing between two streams. On the other hand, it reduces
-      // fragmentation by coalescing.
-      stream_free_blocks_[stream].insert(blocks.begin(), blocks.end());
+        // Now that this stream is synced, insert all other blocks into this stream's list
+        // Note: This could cause thrashing between two streams. On the other hand, it reduces
+        // fragmentation by coalescing.
+        stream_free_blocks_[stream].insert(blocks.begin(), blocks.end());
 
-      // remove this stream from the freelist
-      stream_free_blocks_.erase(blocks_stream);
+        // remove this stream from the freelist
+        stream_free_blocks_.erase(blocks_stream);
+      }
     }
+
     return b;
   }
 
   /**
    * @brief Find an available block in the pool of at least `size` bytes, for use on `stream`.
    *
-   * Attempts to find a free block that was last used on `stream` to avoid synchronization. If none
-   * is available, it finds a block last used on another stream. In this case, the stream associated
-   * with the found block is synchronized to ensure all asynchronous work on the memory is finished
-   * before it is used on `stream`.
+   * Attempts to find a free block that was last used on `stream` to avoid synchronization. If
+   * none is available, it finds a block last used on another stream. In this case, the stream
+   * associated with the found block is synchronized to ensure all asynchronous work on the memory
+   * is finished before it is used on `stream`.
    *
    * @param size The size of the requested allocation, in bytes.
    * @param stream The stream on which the allocation will be used.
@@ -225,6 +238,23 @@ class pool_memory_resource final : public device_memory_resource {
     auto const i = allocated_blocks_.find(static_cast<char*>(p));
     assert(i != allocated_blocks_.end());
     assert(i->size == rmm::detail::align_up(size, allocation_alignment));
+
+#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
+    if (stream == 0) {
+      auto event_iter = events_.find(std::this_thread::get_id());
+      if (event_iter == events_.end()) {
+        cudaEvent_t event{};
+        auto result = cudaEventCreate(&event);
+        assert(result == cudaSuccess);
+        result = cudaEventRecord(event, stream);
+        assert(result == cudaSuccess);
+        events_[std::this_thread::get_id()] = event;
+      } else {
+        auto result = cudaEventRecord(event_iter->second, stream);
+        assert(result == cudaSuccess);
+      }
+    }
+#endif
 
     stream_free_blocks_[stream].insert(*i);
     allocated_blocks_.erase(i);
@@ -384,6 +414,11 @@ class pool_memory_resource final : public device_memory_resource {
 
   // blocks allocated from upstream: so they can be easily freed
   std::vector<block> upstream_blocks_;
+
+#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
+  // For PTDS: events from other threads that must be waited on
+  std::unordered_map<std::thread::id, cudaEvent_t> events_;
+#endif
 };
 
 }  // namespace mr
