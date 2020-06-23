@@ -32,11 +32,25 @@ enum class action : bool { ALLOCATE, FREE };
  *
  */
 struct event {
-  action act;         ///< Indicates if the event is an allocation or a free
-  std::size_t size;   ///< The size of the memory allocated or free'd
-  uintptr_t pointer;  ///< The pointer returned from an allocation, or the
-                      ///< pointer free'd
+  event()             = default;
+  event(event const&) = default;
+  event(action a, std::size_t s, void const* p)
+    : act{a}, size{s}, pointer{reinterpret_cast<uintptr_t>(p)}
+  {
+  }
+
+  event(action a, std::size_t s, uintptr_t p) : act{a}, size{s}, pointer{p} {}
+
+  action act{};         ///< Indicates if the event is an allocation or a free
+  std::size_t size{};   ///< The size of the memory allocated or free'd
+  uintptr_t pointer{};  ///< The pointer returned from an allocation, or the
+                        ///< pointer free'd
 };
+
+bool operator==(event const& lhs, event const& rhs)
+{
+  return std::tie(lhs.act, lhs.size, lhs.pointer) == std::tie(rhs.act, rhs.size, rhs.pointer);
+}
 
 /**
  * @brief Parses a RMM log file into a vector of events
