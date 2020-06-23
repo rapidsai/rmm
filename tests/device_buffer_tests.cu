@@ -262,21 +262,6 @@ TYPED_TEST(DeviceBufferTest, CopyCapacityLargerThanSizeExplicitMr)
   //                  static_cast<signed char *>(buff_copy.data())));
 }
 
-TYPED_TEST(DeviceBufferTest, CopyAssignmentToDefault)
-{
-  rmm::device_buffer const from(this->size, 0, &this->mr);
-  rmm::device_buffer to{};
-  EXPECT_NO_THROW(to = from);
-  EXPECT_NE(nullptr, to.data());
-  EXPECT_NE(nullptr, from.data());
-  EXPECT_NE(from.data(), to.data());
-  EXPECT_EQ(from.size(), to.size());
-  EXPECT_EQ(from.capacity(), to.capacity());
-  EXPECT_EQ(from.stream(), to.stream());
-  EXPECT_EQ(from.memory_resource(), to.memory_resource());
-  // TODO Check contents of memory
-}
-
 TYPED_TEST(DeviceBufferTest, CopyAssignment)
 {
   rmm::device_buffer from(this->size, 0, &this->mr);
@@ -379,34 +364,6 @@ TYPED_TEST(DeviceBufferTest, MoveConstructorStream)
   EXPECT_EQ(0, buff.capacity());
   EXPECT_EQ(0, buff.stream());
   EXPECT_NE(nullptr, buff.memory_resource());
-}
-
-TYPED_TEST(DeviceBufferTest, MoveAssignmentToDefault)
-{
-  rmm::device_buffer from(this->size, 0, &this->mr);
-  auto p        = from.data();
-  auto size     = from.size();
-  auto capacity = from.capacity();
-  auto mr       = from.memory_resource();
-  auto stream   = from.stream();
-
-  rmm::device_buffer to;
-  EXPECT_NO_THROW(to = std::move(from));
-
-  // contents of `from` should be in `to`
-  EXPECT_NE(nullptr, to.data());
-  EXPECT_EQ(p, to.data());
-  EXPECT_EQ(size, to.size());
-  EXPECT_EQ(capacity, to.capacity());
-  EXPECT_EQ(stream, to.stream());
-  EXPECT_EQ(mr, to.memory_resource());
-
-  // `from` should be empty
-  EXPECT_EQ(nullptr, from.data());
-  EXPECT_EQ(0, from.size());
-  EXPECT_EQ(0, from.capacity());
-  EXPECT_EQ(0, from.stream());
-  EXPECT_NE(nullptr, from.memory_resource());
 }
 
 TYPED_TEST(DeviceBufferTest, MoveAssignment)
