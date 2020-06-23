@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include <detail/rapidcsv.h>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/logging_resource_adaptor.hpp>
+#include <benchmarks/utilities/log_parser.hpp>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
