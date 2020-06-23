@@ -47,7 +47,7 @@ class raii_restore_env {
   bool is_set_{false};
 };
 
-TEST(Adaptor, first)
+TEST(Adaptor, FilenameConstructor)
 {
   rmm::mr::cuda_memory_resource upstream;
 
@@ -58,7 +58,7 @@ TEST(Adaptor, first)
   log_mr.deallocate(p, 100);
 }
 
-TEST(Adaptor, factory)
+TEST(Adaptor, Factory)
 {
   rmm::mr::cuda_memory_resource upstream;
 
