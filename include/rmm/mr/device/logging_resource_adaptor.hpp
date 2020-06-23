@@ -120,6 +120,13 @@ class logging_resource_adaptor final : public device_memory_resource {
    */
   void flush() { logger_->flush(); }
 
+  /**
+   * @brief Return the CSV header string
+   *
+   * @return CSV formatted header string of column names
+   */
+  std::string header() const { return std::string{"Thread,Time,Action,Pointer,Size,Stream"}; }
+
  private:
   // make_logging_adaptor needs access to private get_default_filename
   template <typename T>
@@ -143,10 +150,10 @@ class logging_resource_adaptor final : public device_memory_resource {
   /**
    * @brief Initialize the logger.
    */
-  void init_logger() const
+  void init_logger()
   {
-    auto const csv_header{"Time,Action,Pointer,Size,Stream"};
     logger_->set_pattern("%v");
+    logger_->info(header());
     logger_->set_pattern("%t,%H:%M:%S:%f,%v");
   }
 
@@ -157,7 +164,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    * If the upstream allocation is successful logs the
    * following CSV formatted line to the file specified at construction:
    * ```
-   * *TIMESTAMP*,"allocate",*bytes*,*stream*
+   * thread_id,*TIMESTAMP*,"allocate",*bytes*,*stream*
    * ```
    *
    * The returned pointer has at least 256B alignment.
@@ -191,7 +198,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    * Every invocation of `logging_resource_adaptor::do_deallocate` will write
    * the following CSV formatted line to the file specified at construction:
    * ```
-   * *TIMESTAMP*,"free",*bytes*,*stream*
+   * thread_id,*TIMESTAMP*,"free",*bytes*,*stream*
    * ```
    *
    * @throws Nothing.
@@ -254,7 +261,7 @@ class logging_resource_adaptor final : public device_memory_resource {
 
   Upstream* upstream_;  ///< The upstream resource used for satisfying
                         ///< allocation requests
-};
+};                      // namespace mr
 
 /**
  * @brief Convenience factory to return a `logging_resource_adaptor` around the

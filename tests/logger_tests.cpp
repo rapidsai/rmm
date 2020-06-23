@@ -68,7 +68,7 @@ TEST(Adaptor, factory)
   log_mr.deallocate(p, 100);
 }
 
-TEST(Adaptor, EnviromentPath)
+TEST(Adaptor, EnvironmentPath)
 {
   rmm::mr::cuda_memory_resource upstream;
 
@@ -102,7 +102,7 @@ TEST(Adaptor, STDOUT)
 
   std::string output = testing::internal::GetCapturedStdout();
   std::string header = output.substr(0, output.find("\n"));
-  ASSERT_EQ(header, "Time,Action,Pointer,Size,Stream");
+  ASSERT_EQ(header, log_mr.header());
 }
 
 TEST(Adaptor, STDERR)
@@ -118,5 +118,5 @@ TEST(Adaptor, STDERR)
 
   std::string output = testing::internal::GetCapturedStderr();
   std::string header = output.substr(0, output.find("\n"));
-  ASSERT_EQ(header, "Time,Action,Pointer,Size,Stream");
+  ASSERT_EQ(header, log_mr.header());
 }
