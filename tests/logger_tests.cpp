@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
+#include <detail/rapidcsv.h>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/logging_resource_adaptor.hpp>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 class raii_restore_env {
@@ -45,15 +47,35 @@ class raii_restore_env {
   bool is_set_{false};
 };
 
+std::string ptr_to_string(void* p)
+{
+  std::stringstream ss;
+  ss << p;
+  return ss.str();
+}
+
 TEST(Adaptor, FilenameConstructor)
 {
+  std::string filename{"logs/test1.txt"};
   rmm::mr::cuda_memory_resource upstream;
+  rmm::mr::logging_resource_adaptor<rmm::mr::cuda_memory_resource> log_mr{&upstream, filename};
 
-  rmm::mr::logging_resource_adaptor<rmm::mr::cuda_memory_resource> log_mr{&upstream,
-                                                                          "logs/test1.txt"};
+  auto p0 = log_mr.allocate(100);
+  auto p1 = log_mr.allocate(42);
+  log_mr.deallocate(p0, 100);
+  log_mr.deallocate(p1, 42);
+  log_mr.flush();
+  rapidcsv::Document csv{filename};
+  std::vector<std::string> actions  = csv.GetColumn<std::string>("Action");
+  std::vector<std::size_t> sizes    = csv.GetColumn<std::size_t>("Size");
+  std::vector<std::string> pointers = csv.GetColumn<std::string>("Pointer");
 
-  auto p = log_mr.allocate(100);
-  log_mr.deallocate(p, 100);
+  EXPECT_THAT(actions, ::testing::ElementsAre("allocate", "allocate", "free", "free"));
+  EXPECT_THAT(sizes, ::testing::ElementsAre(100, 42, 100, 42));
+
+  auto p0_string = ptr_to_string(p0);
+  auto p1_string = ptr_to_string(p1);
+  EXPECT_THAT(pointers, ::testing::ElementsAre(p0_string, p1_string, p0_string, p1_string));
 }
 
 TEST(Adaptor, Factory)
