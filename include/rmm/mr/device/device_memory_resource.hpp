@@ -16,14 +16,13 @@
 #pragma once
 
 #include <cstddef>
-#include <utility>
 #include <rmm/detail/aligned.hpp>
+#include <utility>
 
 // forward decl
 using cudaStream_t = struct CUstream_st*;
 
 namespace rmm {
-
 
 namespace mr {
 /**
