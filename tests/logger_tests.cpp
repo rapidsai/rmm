@@ -101,9 +101,10 @@ TEST(Adaptor, FilenameConstructor)
 
 TEST(Adaptor, Factory)
 {
+  std::string filename{"logs/test2.txt"};
   rmm::mr::cuda_memory_resource upstream;
 
-  auto log_mr = rmm::mr::make_logging_adaptor(&upstream, "logs/test2.txt");
+  auto log_mr = rmm::mr::make_logging_adaptor(&upstream, filename);
 
   auto p0 = log_mr.allocate(99);
   log_mr.deallocate(p0, 99);
@@ -134,7 +135,9 @@ TEST(Adaptor, EnvironmentPath)
   // expect logging adaptor to fail if RMM_LOG_FILE is unset
   EXPECT_THROW(rmm::mr::make_logging_adaptor(&upstream), rmm::logic_error);
 
-  setenv("RMM_LOG_FILE", "envtest.txt", 1);
+  std::string filename("logs/envtest.txt");
+
+  setenv("RMM_LOG_FILE", filename.c_str(), 1);
 
   // use log file location specified in environment variable RMM_LOG_FILE
   auto log_mr = rmm::mr::make_logging_adaptor(&upstream);
@@ -150,36 +153,39 @@ TEST(Adaptor, EnvironmentPath)
   std::vector<event> expected_events{
     {action::ALLOCATE, 100, p},
     {action::FREE, 100, p},
-  }
+  };
 
-  TEST(Adaptor, STDOUT)
-  {
-    testing::internal::CaptureStdout();
+  expect_log_events(filename, expected_events);
+}
 
-    rmm::mr::cuda_memory_resource upstream;
+TEST(Adaptor, STDOUT)
+{
+  testing::internal::CaptureStdout();
 
-    auto log_mr = rmm::mr::make_logging_adaptor(&upstream, std::cout);
+  rmm::mr::cuda_memory_resource upstream;
 
-    auto p = log_mr.allocate(100);
-    log_mr.deallocate(p, 100);
+  auto log_mr = rmm::mr::make_logging_adaptor(&upstream, std::cout);
 
-    std::string output = testing::internal::GetCapturedStdout();
-    std::string header = output.substr(0, output.find("\n"));
-    ASSERT_EQ(header, log_mr.header());
-  }
+  auto p = log_mr.allocate(100);
+  log_mr.deallocate(p, 100);
 
-  TEST(Adaptor, STDERR)
-  {
-    testing::internal::CaptureStderr();
+  std::string output = testing::internal::GetCapturedStdout();
+  std::string header = output.substr(0, output.find("\n"));
+  ASSERT_EQ(header, log_mr.header());
+}
 
-    rmm::mr::cuda_memory_resource upstream;
+TEST(Adaptor, STDERR)
+{
+  testing::internal::CaptureStderr();
 
-    auto log_mr = rmm::mr::make_logging_adaptor(&upstream, std::cerr);
+  rmm::mr::cuda_memory_resource upstream;
 
-    auto p = log_mr.allocate(100);
-    log_mr.deallocate(p, 100);
+  auto log_mr = rmm::mr::make_logging_adaptor(&upstream, std::cerr);
 
-    std::string output = testing::internal::GetCapturedStderr();
-    std::string header = output.substr(0, output.find("\n"));
-    ASSERT_EQ(header, log_mr.header());
-  }
+  auto p = log_mr.allocate(100);
+  log_mr.deallocate(p, 100);
+
+  std::string output = testing::internal::GetCapturedStderr();
+  std::string header = output.substr(0, output.find("\n"));
+  ASSERT_EQ(header, log_mr.header());
+}
