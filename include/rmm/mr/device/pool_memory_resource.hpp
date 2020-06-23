@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include <cstdint>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/detail/free_list.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
@@ -22,6 +23,7 @@
 #include <cuda_runtime_api.h>
 
 #include <algorithm>
+#include <atomic>
 #include <cassert>
 #include <exception>
 #include <iostream>
@@ -110,6 +112,7 @@ class pool_memory_resource final : public device_memory_resource {
   Upstream* get_upstream() const noexcept { return upstream_mr_; }
 
  private:
+  using id_type   = uint32_t;
   using block     = rmm::mr::detail::block;
   using free_list = rmm::mr::detail::free_list<>;
 
@@ -137,13 +140,12 @@ class pool_memory_resource final : public device_memory_resource {
     if (b.is_valid()) {
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
       if (blocks_stream == 0) {
-        for (auto const& event_iter : events_) {
+        // In PTDS mode, in order to use blocks from the default stream, we have to wait on all
+        // events recorded on the default stream
+        for (auto const& event_iter : default_stream_events_) {
           auto result = cudaStreamWaitEvent(stream, event_iter.second, 0);
           assert(result == cudaSuccess);
-          // result = cudaEventDestroy(event_iter.second);
-          // assert(result == cudaSuccess);
         }
-        // events_.clear();
       } else
 #endif
         if ((blocks_stream != stream)) {
@@ -241,15 +243,18 @@ class pool_memory_resource final : public device_memory_resource {
 
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
     if (stream == 0) {
-      auto event_iter = events_.find(std::this_thread::get_id());
-      if (event_iter == events_.end()) {
+      auto event_iter = default_stream_events_.find(std::this_thread::get_id());
+      if (event_iter == default_stream_events_.end()) {
+        // std::cout << "Creating new event in thread: " << std::this_thread::get_id() << "\n";
         cudaEvent_t event{};
-        auto result = cudaEventCreate(&event);
+        auto result = cudaEventCreateWithFlags(&event, cudaEventDisableTiming);
         assert(result == cudaSuccess);
         result = cudaEventRecord(event, stream);
         assert(result == cudaSuccess);
-        events_[std::this_thread::get_id()] = event;
+        default_stream_events_[std::this_thread::get_id()] = event;
       } else {
+        // std::cout << "Recording existing event in thread: " << std::this_thread::get_id() <<
+        // "\n";
         auto result = cudaEventRecord(event_iter->second, stream);
         assert(result == cudaSuccess);
       }
@@ -417,7 +422,7 @@ class pool_memory_resource final : public device_memory_resource {
 
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
   // For PTDS: events from other threads that must be waited on
-  std::unordered_map<std::thread::id, cudaEvent_t> events_;
+  std::unordered_map<std::thread::id, cudaEvent_t> default_stream_events_;
 #endif
 };
 
