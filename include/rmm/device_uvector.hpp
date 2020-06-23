@@ -77,7 +77,7 @@ class device_uvector {
   using iterator        = pointer;
   using const_iterator  = const_pointer;
 
-  device_uvector()                 = default;
+  device_uvector()                 = delete;
   ~device_uvector()                = default;
   device_uvector(device_uvector&&) = default;
   device_uvector& operator=(device_uvector&&) = default;
@@ -255,7 +255,7 @@ class device_uvector {
   }
 
  private:
-  device_buffer _storage{};  ///< Device memory storage for vector elements
+  device_buffer _storage;  ///< Device memory storage for vector elements
 
   std::size_t constexpr elements_to_bytes(std::size_t num_elements) const noexcept
   {
