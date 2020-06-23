@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+#include <benchmarks/utilities/log_parser.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/logging_resource_adaptor.hpp>
-#include <benchmarks/utilities/log_parser.hpp>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -47,11 +47,18 @@ class raii_restore_env {
   bool is_set_{false};
 };
 
-std::string ptr_to_string(void* p)
+void expect_log_events(std::string const& filename,
+                       std::vector<rmm::detail::event> const& expected_events)
 {
-  std::stringstream ss;
-  ss << p;
-  return ss.str();
+  auto actual_events = rmm::detail::parse_csv(filename);
+  for (int i = 0; i < expected_events.size(); ++i) {
+    auto expected = expected_events[i];
+    auto actual   = actual_events[i];
+    EXPECT_EQ(expected.act, actual.act);
+    // device_memory_resource automatically pads an allocation to a multiple of 8 bytes
+    EXPECT_EQ(rmm::detail::align_up(expected.size, 8), actual.size);
+    EXPECT_EQ(expected.pointer, actual.pointer);
+  }
 }
 
 TEST(Adaptor, FilenameConstructor)
@@ -65,17 +72,16 @@ TEST(Adaptor, FilenameConstructor)
   log_mr.deallocate(p0, 100);
   log_mr.deallocate(p1, 42);
   log_mr.flush();
-  rapidcsv::Document csv{filename};
-  std::vector<std::string> actions  = csv.GetColumn<std::string>("Action");
-  std::vector<std::size_t> sizes    = csv.GetColumn<std::size_t>("Size");
-  std::vector<std::string> pointers = csv.GetColumn<std::string>("Pointer");
 
-  EXPECT_THAT(actions, ::testing::ElementsAre("allocate", "allocate", "free", "free"));
-  EXPECT_THAT(sizes, ::testing::ElementsAre(100, 42, 100, 42));
+  using rmm::detail::action;
+  using rmm::detail::event;
 
-  auto p0_string = ptr_to_string(p0);
-  auto p1_string = ptr_to_string(p1);
-  EXPECT_THAT(pointers, ::testing::ElementsAre(p0_string, p1_string, p0_string, p1_string));
+  std::vector<event> expected_events{{action::ALLOCATE, 100, p0},
+                                     {action::ALLOCATE, 42, p1},
+                                     {action::FREE, 100, p0},
+                                     {action::FREE, 42, p1}};
+
+  expect_log_events(filename, expected_events);
 }
 
 TEST(Adaptor, Factory)
