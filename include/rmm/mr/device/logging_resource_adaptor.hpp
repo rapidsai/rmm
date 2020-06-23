@@ -147,8 +147,7 @@ class logging_resource_adaptor final : public device_memory_resource {
   {
     auto const csv_header{"Time,Action,Pointer,Size,Stream"};
     logger_->set_pattern("%v");
-    logger_->info(csv_header);
-    logger_->set_pattern("%H:%M:%S:%f,%v");
+    logger_->set_pattern("%t,%H:%M:%S:%f,%v");
   }
 
   /**
