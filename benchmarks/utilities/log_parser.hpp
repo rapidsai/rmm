@@ -17,6 +17,7 @@
 #pragma once
 
 #include <thrust/iterator/zip_iterator.h>
+#include <cstdint>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -40,6 +41,16 @@ struct event {
   }
 
   event(action a, std::size_t s, uintptr_t p) : act{a}, size{s}, pointer{p} {}
+
+  event(std::string const& tid, action a, std::size_t sz, uintptr_t p, uintptr_t s)
+    : thread_id{tid}, act{a}, size{sz}, pointer{p}, stream{s}
+  {
+  }
+
+  event(std::string const& tid, action a, std::size_t sz, void* p, uintptr_t s)
+    : thread_id{tid}, act{a}, size{sz}, pointer{reinterpret_cast<uintptr_t>(p)}, stream{s}
+  {
+  }
 
   action act{};           ///< Indicates if the event is an allocation or a free
   std::size_t size{};     ///< The size of the memory allocated or freed
@@ -73,6 +84,7 @@ std::vector<event> parse_csv(std::string const& filename)
   std::vector<std::string> actions  = csv.GetColumn<std::string>("Action");
   std::vector<std::size_t> sizes    = csv.GetColumn<std::size_t>("Size");
   std::vector<std::string> pointers = csv.GetColumn<std::string>("Pointer");
+  std::vector<uintptr_t> streams    = csv.GetColumn<uintptr_t>("Stream");
 
   if ((sizes.size() != actions.size()) or (sizes.size() != pointers.size())) {
     throw std::runtime_error{"Size mismatch in actions, sizes, or pointers."};
@@ -82,7 +94,7 @@ std::vector<event> parse_csv(std::string const& filename)
 
   for (std::size_t i = 0; i < actions.size(); ++i) {
     auto act  = (actions[i] == "allocate") ? action::ALLOCATE : action::FREE;
-    events[i] = event{act, sizes[i], hex_string_to_int(pointers[i])};
+    events[i] = event{tids[i], act, sizes[i], hex_string_to_int(pointers[i]), streams[i]};
   }
   return events;
 }
