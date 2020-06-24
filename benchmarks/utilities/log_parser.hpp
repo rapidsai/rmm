@@ -65,7 +65,7 @@ bool operator==(event const& lhs, event const& rhs)
  */
 std::vector<event> parse_csv(std::string const& filename)
 {
-  rapidcsv::Document csv(filename);
+  rapidcsv::Document csv(filename, rapidcsv::LabelParams(0, -1));
 
   std::vector<std::string> actions  = csv.GetColumn<std::string>("Action");
   std::vector<std::size_t> sizes    = csv.GetColumn<std::size_t>("Size");
