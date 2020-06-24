@@ -29,10 +29,8 @@
 #include <iostream>
 #include <list>
 #include <map>
-#include <mutex>
 #include <numeric>
 #include <set>
-#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -405,32 +403,22 @@ class pool_memory_resource final : public device_memory_resource {
   std::vector<block> upstream_blocks_;
 
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-  struct unique_event {
-    unique_event(std::set<id_type>& ids) : ids_(ids), id(next_id())
+  /**
+   * @brief RAII wrapper for a CUDA event
+   */
+  struct cuda_event {
+    cuda_event()
     {
-      ids_.insert(id);
       auto result = cudaEventCreateWithFlags(&event, cudaEventDisableTiming);
       assert(cudaSuccess == result);
     }
-    ~unique_event()
+    ~cuda_event()
     {
-      ids_.erase(id);
       auto result = cudaEventDestroy(event);
       assert(cudaSuccess == result);
     }
-    id_type get_id() const noexcept { return id; }
-    cudaEvent_t get_event() const noexcept { return event; }
 
-   private:
-    static id_type next_id()
-    {
-      static std::atomic<id_type> s_id{};
-      return ++s_id;
-    }
-
-    id_type id;
     cudaEvent_t event;
-    std::set<id_type>& ids_;  // reference to external set
   };
 #endif
 
@@ -438,8 +426,8 @@ class pool_memory_resource final : public device_memory_resource {
   {
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
     if (stream == 0) {
-      thread_local unique_event e{ids_};
-      return e.get_event();
+      thread_local cuda_event e{};
+      return e.event;
     } else
 #endif
     {
@@ -469,9 +457,6 @@ class pool_memory_resource final : public device_memory_resource {
     }
   }
 
-#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-  std::set<id_type> ids_;
-#endif
   std::unordered_map<cudaStream_t, cudaEvent_t> stream_events_;
   std::unordered_map<cudaEvent_t, cudaStream_t> event_streams_;
 };
