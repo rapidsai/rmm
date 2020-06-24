@@ -77,23 +77,10 @@ std::vector<event> parse_csv(std::string const& filename)
 
   std::vector<event> events(sizes.size());
 
-  auto zipped_begin =
-    thrust::make_zip_iterator(thrust::make_tuple(actions.begin(), sizes.begin(), pointers.begin()));
-  auto zipped_end = zipped_begin + sizes.size();
-
-  std::transform(zipped_begin,
-                 zipped_end,
-                 events.begin(),
-                 [](thrust::tuple<std::string, std::size_t, std::string> const& t) {
-                   // Convert "allocate" or "free" string into `action` enum
-                   action a = (thrust::get<0>(t) == "allocate") ? action::ALLOCATE : action::FREE;
-                   std::size_t size = thrust::get<1>(t);
-
-                   // Convert pointer string into an integer
-                   uintptr_t p = std::stoll(thrust::get<2>(t), nullptr, 16);
-                   return event{a, size, p};
-                 });
-
+  for (std::size_t i = 0; i < actions.size(); ++i) {
+    auto act  = (actions[i] == "allocate") ? action::ALLOCATE : action::FREE;
+    events[i] = event{act, sizes[i], hex_string_to_int(pointers[i])};
+  }
   return events;
 }
 
