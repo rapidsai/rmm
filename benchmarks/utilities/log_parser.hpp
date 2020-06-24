@@ -41,10 +41,12 @@ struct event {
 
   event(action a, std::size_t s, uintptr_t p) : act{a}, size{s}, pointer{p} {}
 
-  action act{};         ///< Indicates if the event is an allocation or a free
-  std::size_t size{};   ///< The size of the memory allocated or free'd
-  uintptr_t pointer{};  ///< The pointer returned from an allocation, or the
-                        ///< pointer free'd
+  action act{};           ///< Indicates if the event is an allocation or a free
+  std::size_t size{};     ///< The size of the memory allocated or freed
+  uintptr_t pointer{};    ///< The pointer returned from an allocation, or the
+                          ///< pointer freed
+  std::string thread_id;  ///< ID of the thread that initiated the event
+  uintptr_t stream;       ///< Numeric representation of the CUDA stream on which the event occurred
 };
 
 bool operator==(event const& lhs, event const& rhs)
