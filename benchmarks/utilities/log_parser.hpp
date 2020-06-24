@@ -22,6 +22,7 @@
 #include <stdexcept>
 #include <string>
 #include "rapidcsv.h"
+#include "rmm/mr/device/device_memory_resource.hpp"
 
 namespace rmm {
 namespace detail {
@@ -48,7 +49,7 @@ struct event {
   }
 
   event(std::string const& tid, action a, std::size_t sz, void* p, uintptr_t s)
-    : thread_id{tid}, act{a}, size{sz}, pointer{reinterpret_cast<uintptr_t>(p)}, stream{s}
+    : event{tid, a, sz, reinterpret_cast<uintptr_t>(p), s}
   {
   }
 
