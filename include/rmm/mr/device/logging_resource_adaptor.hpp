@@ -261,7 +261,7 @@ class logging_resource_adaptor final : public device_memory_resource {
 
   Upstream* upstream_;  ///< The upstream resource used for satisfying
                         ///< allocation requests
-};                      // namespace mr
+};
 
 /**
  * @brief Convenience factory to return a `logging_resource_adaptor` around the
