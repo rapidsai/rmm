@@ -54,6 +54,8 @@ bool operator==(event const& lhs, event const& rhs)
   return std::tie(lhs.act, lhs.size, lhs.pointer) == std::tie(rhs.act, rhs.size, rhs.pointer);
 }
 
+uintptr_t hex_string_to_int(std::string const& s) { return std::stoll(s, nullptr, 16); }
+
 /**
  * @brief Parses a RMM log file into a vector of events
  *
@@ -67,6 +69,7 @@ std::vector<event> parse_csv(std::string const& filename)
 {
   rapidcsv::Document csv(filename, rapidcsv::LabelParams(0, -1));
 
+  std::vector<std::string> tids     = csv.GetColumn<std::string>("Thread");
   std::vector<std::string> actions  = csv.GetColumn<std::string>("Action");
   std::vector<std::size_t> sizes    = csv.GetColumn<std::size_t>("Size");
   std::vector<std::string> pointers = csv.GetColumn<std::string>("Pointer");
