@@ -143,6 +143,8 @@ class pool_memory_resource final : public device_memory_resource {
         stream_free_blocks_[stream_event].insert(blocks.begin(), blocks.end());
         stream_free_blocks_.erase(blocks_event);
 
+        // TODO: could eliminate this ifdef and have the same behavior for PTDS and non-PTDS
+        // But the cudaEventRecord() on every free_block reduces performance significantly
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
         RMM_CUDA_TRY(cudaStreamWaitEvent(stream, blocks_event, 0));
         remove_event(blocks_event);  // only removes non-default-stream-events
