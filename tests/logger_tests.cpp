@@ -17,6 +17,7 @@
 #include <benchmarks/utilities/log_parser.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/logging_resource_adaptor.hpp>
+#include <thread>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -68,6 +69,11 @@ void expect_log_events(std::string const& filename,
              expected_events.end(),
              actual_events.begin(),
              [](auto expected, auto actual) {
+               // We don't test the logged thread id since it may be different from what we record.
+               // The actual value doesn't matter so long as events from different threads have
+               // different ids
+               // EXPECT_EQ(expected.thread_id, actual.thread_id);
+               // EXPECT_EQ(expected.stream, actual.stream);
                EXPECT_EQ(expected.act, actual.act);
                // device_memory_resource automatically pads an allocation to a multiple of 8 bytes
                EXPECT_EQ(rmm::detail::align_up(expected.size, 8), actual.size);
