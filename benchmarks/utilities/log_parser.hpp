@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <thrust/iterator/zip_iterator.h>
 #include <cstdint>
 #include <memory>
 #include <rmm/detail/error.hpp>
