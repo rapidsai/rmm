@@ -55,29 +55,75 @@ gcc --version
 g++ --version
 conda list
 
-################################################################################
-# BUILD - Build and install librmm and rmm
-################################################################################
+if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
+    ################################################################################
+    # BUILD - Build and install librmm and rmm
+    ################################################################################
 
-logger "Build and install librmm and rmm..."
-"$WORKSPACE/build.sh" -v clean librmm rmm
+    logger "Build and install librmm and rmm..."
+    "$WORKSPACE/build.sh" -v clean librmm rmm
 
-################################################################################
-# Test - librmm
-################################################################################
+    ################################################################################
+    # Test - librmm
+    ################################################################################
 
-if hasArg --skip-tests; then
-    logger "Skipping Tests..."
+    if hasArg --skip-tests; then
+        logger "Skipping Tests..."
+    else
+        logger "Check GPU usage..."
+        nvidia-smi
+
+        logger "Running googletests..."
+
+        cd "${WORKSPACE}/build"
+        GTEST_OUTPUT="xml:${WORKSPACE}/test-results/" make -j${PARALLEL_LEVEL} test
+
+        logger "Python py.test for librmm_cffi..."
+        cd $WORKSPACE/python
+        py.test --cache-clear --junitxml=${WORKSPACE}/test-results/junit-rmm.xml -v --cov-config=.coveragerc --cov=rmm --cov-report=xml:${WORKSPACE}/python/rmm-coverage.xml --cov-report term
+    fi
 else
-    logger "Check GPU usage..."
-    nvidia-smi
+    logger "Download and install librmm..."
+    export AWS_DEFAULT_REGION="us-east-2"
+    mkdir artifacts
+    cd artifacts
+    aws s3 cp s3://gpuci-cache/rapidsai/rmm/test/librmm-${CUDA}.tgz librmm.tgz
+    tar xzvf librmm.tgz
+    mv ./${CONDA_PREFIX}/conda-bld/librmm*/work $WORKSPACE/build-librmm
 
-    logger "Running googletests..."
+    export LD_LIBRARY_PATH="$WORKSPACE/build-librmm/build:$LD_LIBRARY_PATH"
 
-    cd "${WORKSPACE}/build"
-    GTEST_OUTPUT="xml:${WORKSPACE}/test-results/" make -j${PARALLEL_LEVEL} test
+    TESTRESULTS_DIR=${WORKSPACE}/test-results
+    mkdir -p ${TESTRESULTS_DIR}
+    SUITEERROR=0
 
-    logger "Python py.test for librmm_cffi..."
+    # run gtests
+    cd $WORKSPACE/build-librmm
+    for gt in "build/gtests/*" ; do
+        ${gt} --gtest_output=xml:${TESTRESULTS_DIR}/
+        exitcode=$?
+        if (( ${exitcode} != 0 )); then
+            SUITEERROR=${exitcode}
+            echo "FAILED: GTest ${gt}"
+        fi
+    done
+
+    #cd $WORKSPACE/build-librmm/python
     cd $WORKSPACE/python
+    logger "Installing librmm..."
+    conda install -c $WORKSPACE/artifacts/${CONDA_PREFIX}/conda-bld/ librmm
+
+    logger "Building rmm"
+    python setup.py build_ext --inplace --library-dir="$WORKSPACE/build-librmm/build"
+    python setup.py install --single-version-externally-managed --record=record.txt
+    # "$WORKSPACE/build.sh" -v clean rmm
+    logger "pytest rmm"
     py.test --cache-clear --junitxml=${WORKSPACE}/test-results/junit-rmm.xml -v --cov-config=.coveragerc --cov=rmm --cov-report=xml:${WORKSPACE}/python/rmm-coverage.xml --cov-report term
+    exitcode=$?
+    if (( ${exitcode} != 0 )); then
+        SUITEERROR=${exitcode}
+        echo "FAILED: 1 or more tests in /rmm/python"
+    fi
+
+    exit ${SUITEERROR}
 fi
