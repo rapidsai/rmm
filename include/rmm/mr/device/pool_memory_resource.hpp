@@ -148,7 +148,7 @@ class pool_memory_resource final : public device_memory_resource {
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
         RMM_CUDA_TRY(cudaStreamWaitEvent(stream, blocks_event, 0));
 #else
-        RMM_CUDA_TRY(cudaStreamSynchronize(event_streams_[blocks_event]));
+        RMM_CUDA_TRY(cudaStreamSynchronize(get_stream(blocks_event)));
 #endif
       }
     }
@@ -414,6 +414,15 @@ class pool_memory_resource final : public device_memory_resource {
 #endif
 
   /**
+   * @brief Get the stream associated with `event`.
+   *
+   * @param event The event for which to get the associated stream
+   *
+   * @return The stream associated with `event`
+   */
+  cudaStream_t get_stream(cudaEvent_t event) { return event_streams_[event]; }
+
+  /**
    * @brief get a unique CUDA event (possibly new) associated with `stream`
    *
    * The event is created on the first call, and it is not recorded. If compiled for per-thread
@@ -426,23 +435,29 @@ class pool_memory_resource final : public device_memory_resource {
   cudaEvent_t get_event(cudaStream_t stream)
   {
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-    if (stream == cudaStreamDefault || stream == cudaStreamPerThread) {
+    if (cudaStreamDefault == stream || cudaStreamPerThread == stream) {
       thread_local cuda_event e{};
       return e.event;
-    } else
+    }
+#else
+    // We use cudaStreamLegacy as the event map key for the default stream for consistency between
+    // PTDS and non-PTDS mode. In PTDS mode, the cudaStreamLegacy map key will only exist if the
+    // user explicitly suggests it, so it is used as the default location for the free list
+    // at construction, and for merging free lists when a thread exits (see destroy_event()).
+    // For consistency, the same key is used for null stream free lists in non-PTDS mode.
+    if (cudaStreamDefault == stream) { stream = cudaStreamLegacy; }
 #endif
-    {
-      auto iter = stream_events_.find(stream);
-      if (iter == stream_events_.end()) {
-        cudaEvent_t event{};
-        auto result = cudaEventCreateWithFlags(&event, cudaEventDisableTiming);
-        assert(cudaSuccess == result);
-        stream_events_[stream] = event;
-        event_streams_[event]  = stream;
-        return event;
-      } else {
-        return iter->second;
-      }
+
+    auto iter = stream_events_.find(stream);
+    if (iter == stream_events_.end()) {
+      cudaEvent_t event{};
+      auto result = cudaEventCreateWithFlags(&event, cudaEventDisableTiming);
+      assert(cudaSuccess == result);
+      stream_events_[stream] = event;
+      event_streams_[event]  = stream;
+      return event;
+    } else {
+      return iter->second;
     }
   }
 
@@ -486,7 +501,7 @@ class pool_memory_resource final : public device_memory_resource {
   // bidirectional mapping between non-default streams and events
   std::unordered_map<cudaStream_t, cudaEvent_t> stream_events_;
   std::unordered_map<cudaEvent_t, cudaStream_t> event_streams_;
-};
+};  // namespace mr
 
 }  // namespace mr
 }  // namespace rmm
