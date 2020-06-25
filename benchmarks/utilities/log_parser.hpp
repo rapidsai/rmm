@@ -19,6 +19,7 @@
 #include <thrust/iterator/zip_iterator.h>
 #include <cstdint>
 #include <memory>
+#include <rmm/detail/error.hpp>
 #include <stdexcept>
 #include <string>
 #include "rapidcsv.h"
@@ -87,14 +88,20 @@ std::vector<event> parse_csv(std::string const& filename)
   std::vector<std::string> pointers = csv.GetColumn<std::string>("Pointer");
   std::vector<uintptr_t> streams    = csv.GetColumn<uintptr_t>("Stream");
 
-  if ((sizes.size() != actions.size()) or (sizes.size() != pointers.size())) {
-    throw std::runtime_error{"Size mismatch in actions, sizes, or pointers."};
-  }
+  auto const size_list = {tids.size(), actions.size(), pointers.size(), streams.size()};
+
+  RMM_EXPECTS(std::all_of(std::begin(size_list),
+                          std::end(size_list),
+                          [size = sizes.size()](auto i) { return i == size; }),
+              ,
+              "Size mismatch in columns of parsed log.");
 
   std::vector<event> events(sizes.size());
 
   for (std::size_t i = 0; i < actions.size(); ++i) {
-    auto act  = (actions[i] == "allocate") ? action::ALLOCATE : action::FREE;
+    auto const& a = actions[i];
+    RMM_EXPECTS((a == "allocate") or (a == "free"), "Invalid action string.");
+    auto act  = (a == "allocate") ? action::ALLOCATE : action::FREE;
     events[i] = event{tids[i], act, sizes[i], hex_string_to_int(pointers[i]), streams[i]};
   }
   return events;
