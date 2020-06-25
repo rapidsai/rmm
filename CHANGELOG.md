@@ -17,6 +17,7 @@
 - PR #404 Make all memory resources thread safe in Python
 - PR #402 Install dependencies via rapids-build-env
 - PR #405 Move doc customization scripts to Jenkins
+- PR #421 Capture thread id in logging and improve logger testing
 
 ## Bug Fixes
 
