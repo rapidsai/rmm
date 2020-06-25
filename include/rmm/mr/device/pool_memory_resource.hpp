@@ -306,7 +306,7 @@ class pool_memory_resource final : public device_memory_resource {
     allocated_blocks_.clear();
 
     for (auto s_e : stream_events_)
-      remove_event(s_e.second);
+      destroy_event(s_e.second);
     stream_events_.clear();
     event_streams_.clear();
     stream_free_blocks_.clear();
