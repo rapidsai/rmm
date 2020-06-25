@@ -77,8 +77,9 @@ class pool_memory_resource final : public device_memory_resource {
 
     if (maximum_pool_size == default_maximum_size) maximum_pool_size_ = props.totalGlobalMem;
 
-    // Allocate initial block
-    stream_free_blocks_[get_event(0)].insert(block_from_upstream(initial_pool_size, 0));
+    // Allocate initial block and insert into free list for the legacy default stream
+    stream_free_blocks_[get_event(cudaStreamLegacy)].insert(
+      block_from_upstream(initial_pool_size, 0));
   }
 
   /**
@@ -425,7 +426,7 @@ class pool_memory_resource final : public device_memory_resource {
   cudaEvent_t get_event(cudaStream_t stream)
   {
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-    if (stream == 0) {
+    if (stream == cudaStreamDefault || stream == cudaStreamPerThread) {
       thread_local cuda_event e{};
       return e.event;
     } else
