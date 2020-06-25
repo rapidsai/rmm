@@ -31,15 +31,6 @@ using TestTypes = ::testing::Types<int8_t, int32_t, uint64_t, float, double>;
 
 TYPED_TEST_CASE(TypedUVectorTest, TestTypes);
 
-TYPED_TEST(TypedUVectorTest, DefaultConstructor)
-{
-  rmm::device_uvector<TypeParam> uv{};
-  EXPECT_EQ(uv.size(), 0);
-  EXPECT_EQ(uv.begin(), uv.end());
-  EXPECT_TRUE(uv.is_empty());
-  EXPECT_NE(uv.memory_resource(), nullptr);
-}
-
 TYPED_TEST(TypedUVectorTest, ZeroSizeConstructor)
 {
   rmm::device_uvector<TypeParam> uv(0, this->stream());

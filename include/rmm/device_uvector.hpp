@@ -80,17 +80,21 @@ class device_uvector {
   ~device_uvector()                = default;
   device_uvector(device_uvector&&) = default;
   device_uvector& operator=(device_uvector&&) = default;
-  // Default copying operations are deleted as they don't provide an option for specifying a stream
+
+  /**
+   * @brief Copy ctor is deleted as it doesn't allow a stream argument
+   */
   device_uvector(device_uvector const&) = delete;
+
+  /**
+   * @brief Copy assignment is deleted as it doesn't allow a stream argument
+   */
   device_uvector& operator=(device_uvector const&) = delete;
 
   /**
-   * @brief Default constructor creates an empty vector.
-   *
-   * TODO: Should this require a stream argument? Should this be deleted?
-   *
+   * @brief Default constructor is deleted as it doesn't allow a stream argument
    */
-  device_uvector() : _storage{} {}
+  device_uvector()  = delete;
 
   /**
    * @brief Construct a new `device_uvector` with sufficient uninitialized storage for `size`
