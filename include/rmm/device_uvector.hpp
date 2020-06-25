@@ -94,7 +94,7 @@ class device_uvector {
   /**
    * @brief Default constructor is deleted as it doesn't allow a stream argument
    */
-  device_uvector()  = delete;
+  device_uvector() = delete;
 
   /**
    * @brief Construct a new `device_uvector` with sufficient uninitialized storage for `size`

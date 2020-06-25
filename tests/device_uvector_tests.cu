@@ -182,4 +182,3 @@ TYPED_TEST(TypedUVectorTest, FrontBackElement)
   EXPECT_EQ(first, uv.front_element(this->stream()));
   EXPECT_EQ(last, uv.back_element(this->stream()));
 }
-
