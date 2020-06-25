@@ -87,7 +87,6 @@ std::vector<event> parse_csv(std::string const& filename)
   RMM_EXPECTS(std::all_of(std::begin(size_list),
                           std::end(size_list),
                           [size = sizes.size()](auto i) { return i == size; }),
-              ,
               "Size mismatch in columns of parsed log.");
 
   std::vector<event> events(sizes.size());
