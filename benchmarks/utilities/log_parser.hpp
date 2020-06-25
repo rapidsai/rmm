@@ -62,11 +62,6 @@ struct event {
   uintptr_t stream;       ///< Numeric representation of the CUDA stream on which the event occurred
 };
 
-bool operator==(event const& lhs, event const& rhs)
-{
-  return std::tie(lhs.act, lhs.size, lhs.pointer) == std::tie(rhs.act, rhs.size, rhs.pointer);
-}
-
 uintptr_t hex_string_to_int(std::string const& s) { return std::stoll(s, nullptr, 16); }
 
 /**
