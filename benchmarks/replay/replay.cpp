@@ -14,13 +14,18 @@
  * limitations under the License.
  */
 
+#include <thrust/iterator/discard_iterator.h>
 #include "cxxopts.hpp"
+#include "thrust/execution_policy.h"
+#include "thrust/iterator/constant_iterator.h"
 
 #include <benchmarks/utilities/log_parser.hpp>
 #include <rmm/mr/device/cnmem_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 
 #include <benchmark/benchmark.h>
+#include <thrust/reduce.h>
+#include <iterator>
 #include <memory>
 #include <string>
 
@@ -79,6 +84,51 @@ struct replay_benchmark {
   }
 };
 
+std::vector<std::vector<rmm::detail::event>> process_log(std::string const& filename)
+{
+  using rmm::detail::event;
+  std::vector<event> all_events = rmm::detail::parse_csv(filename);
+
+  // Sort events by thread id
+  std::stable_sort(all_events.begin(), all_events.end(), [](auto lhs, auto rhs) {
+    return lhs.thread_id < rhs.thread_id;
+  });
+
+  // Count the number of events per thread
+  std::vector<std::size_t> events_per_thread{};
+  thrust::reduce_by_key(
+    thrust::host,
+    all_events.begin(),
+    all_events.end(),
+    thrust::make_constant_iterator(1),
+    thrust::make_discard_iterator(),
+    std::back_inserter(events_per_thread),
+    [](event const& lhs, event const& rhs) { return lhs.thread_id == rhs.thread_id; });
+
+  auto const num_threads = events_per_thread.size();
+
+  // Per thread offset into the sorted list of events
+  std::vector<std::size_t> thread_event_offsets(num_threads + 1, 0);
+  thrust::inclusive_scan(thrust::host,
+                         events_per_thread.begin(),
+                         events_per_thread.end(),
+                         std::next(thread_event_offsets.begin()));
+
+  // Copy each thread's events into its own vector
+  std::vector<std::vector<event>> per_thread_events(num_threads);
+  thrust::transform(thrust::host,
+                    thread_event_offsets.begin(),
+                    std::prev(thread_event_offsets.end()),
+                    std::next(thread_event_offsets.begin()),
+                    per_thread_events.begin(),
+                    [&all_events](auto begin, auto end) {
+                      return std::vector<event>(all_events.begin() + begin,
+                                                all_events.begin() + end);
+                    });
+
+  return per_thread_events;
+}
+
 // Usage: REPLAY_BENCHMARK -f "path/to/log/file"
 int main(int argc, char** argv)
 {
@@ -97,14 +147,15 @@ int main(int argc, char** argv)
   // Parse the log file
   if (result.count("file")) {
     auto filename = result["file"].as<std::string>();
-    auto events   = rmm::detail::parse_csv(filename);
 
-    benchmark::RegisterBenchmark("CUDA Resource",
-                                 replay_benchmark<rmm::mr::cuda_memory_resource>{events})
+    auto thread_events = process_log(filename);
+
+    benchmark::RegisterBenchmark(
+      "CUDA Resource", replay_benchmark<rmm::mr::cuda_memory_resource>{thread_events.front()})
       ->Unit(benchmark::kMillisecond);
 
-    benchmark::RegisterBenchmark("CNMEM Resource",
-                                 replay_benchmark<rmm::mr::cnmem_memory_resource>(events, 0u))
+    benchmark::RegisterBenchmark(
+      "CNMEM Resource", replay_benchmark<rmm::mr::cnmem_memory_resource>(thread_events.front(), 0u))
       ->Unit(benchmark::kMillisecond);
 
     ::benchmark::RunSpecifiedBenchmarks();
