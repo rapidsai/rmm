@@ -110,24 +110,25 @@ struct MRTest : public ::testing::Test {
 
 // Specialize constructor to pass arguments
 template <>
-MRTest<fixed_size_mr>::MRTest() : mr{new fixed_size_mr{rmm::mr::get_default_resource()}}
+inline MRTest<fixed_size_mr>::MRTest() : mr{new fixed_size_mr{rmm::mr::get_default_resource()}}
 {
 }
 
 template <>
-MRTest<fixed_multisize_mr>::MRTest() : mr{new fixed_multisize_mr(rmm::mr::get_default_resource())}
+inline MRTest<fixed_multisize_mr>::MRTest()
+  : mr{new fixed_multisize_mr(rmm::mr::get_default_resource())}
 {
 }
 
 template <>
-MRTest<pool_mr>::MRTest()
+inline MRTest<pool_mr>::MRTest()
 {
   rmm::mr::cuda_memory_resource* cuda = new rmm::mr::cuda_memory_resource{};
   this->mr.reset(new pool_mr(cuda));
 }
 
 template <>
-MRTest<hybrid_mr>::MRTest()
+inline MRTest<hybrid_mr>::MRTest()
 {
   rmm::mr::cuda_memory_resource* cuda = new rmm::mr::cuda_memory_resource{};
   pool_mr* pool                       = new pool_mr(cuda);
@@ -135,7 +136,7 @@ MRTest<hybrid_mr>::MRTest()
 }
 
 template <>
-MRTest<pool_mr>::~MRTest()
+inline MRTest<pool_mr>::~MRTest()
 {
   auto upstream = this->mr->get_upstream();
   this->mr.reset();
@@ -143,7 +144,7 @@ MRTest<pool_mr>::~MRTest()
 }
 
 template <>
-MRTest<hybrid_mr>::~MRTest()
+inline MRTest<hybrid_mr>::~MRTest()
 {
   auto small = this->mr->get_small_mr();
   auto large = this->mr->get_large_mr();
@@ -153,13 +154,13 @@ MRTest<hybrid_mr>::~MRTest()
 }
 
 template <>
-MRTest<thread_safe_cuda_mr>::MRTest()
+inline MRTest<thread_safe_cuda_mr>::MRTest()
   : mr{new thread_safe_cuda_mr(new rmm::mr::cuda_memory_resource)}
 {
 }
 
 template <>
-MRTest<thread_safe_cuda_mr>::~MRTest()
+inline MRTest<thread_safe_cuda_mr>::~MRTest()
 {
   auto upstream = mr->get_upstream();
   delete upstream;
@@ -172,13 +173,13 @@ std::size_t get_max_size(MemoryResourceType* mr)
 }
 
 template <>
-std::size_t get_max_size(fixed_size_mr* mr)
+inline std::size_t get_max_size(fixed_size_mr* mr)
 {
   return mr->get_block_size();
 }
 
 template <>
-std::size_t get_max_size(fixed_multisize_mr* mr)
+inline std::size_t get_max_size(fixed_multisize_mr* mr)
 {
   return mr->get_max_size();
 }
@@ -236,15 +237,15 @@ void MRTest<MemoryResourceType>::test_random_allocations(std::size_t num_allocat
 }
 
 template <>
-void MRTest<fixed_size_mr>::test_random_allocations(std::size_t num_allocations,
-                                                    cudaStream_t stream)
+inline void MRTest<fixed_size_mr>::test_random_allocations(std::size_t num_allocations,
+                                                           cudaStream_t stream)
 {
   return test_random_allocations_base(num_allocations, 1_MiB, stream);
 }
 
 template <>
-void MRTest<fixed_multisize_mr>::test_random_allocations(std::size_t num_allocations,
-                                                         cudaStream_t stream)
+inline void MRTest<fixed_multisize_mr>::test_random_allocations(std::size_t num_allocations,
+                                                                cudaStream_t stream)
 {
   return test_random_allocations_base(num_allocations, 1_MiB, stream);
 }
@@ -302,13 +303,13 @@ void MRTest<MemoryResourceType>::test_mixed_random_allocation_free(cudaStream_t 
 }
 
 template <>
-void MRTest<fixed_size_mr>::test_mixed_random_allocation_free(cudaStream_t stream)
+inline void MRTest<fixed_size_mr>::test_mixed_random_allocation_free(cudaStream_t stream)
 {
   test_mixed_random_allocation_free_base(1_MiB, stream);
 }
 
 template <>
-void MRTest<fixed_multisize_mr>::test_mixed_random_allocation_free(cudaStream_t stream)
+inline void MRTest<fixed_multisize_mr>::test_mixed_random_allocation_free(cudaStream_t stream)
 {
   test_mixed_random_allocation_free_base(4_MiB, stream);
 }
