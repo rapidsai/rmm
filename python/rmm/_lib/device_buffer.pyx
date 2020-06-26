@@ -290,6 +290,13 @@ cdef class DeviceBuffer:
     cdef void* c_data(self):
         return self.c_obj.get()[0].data()
 
+    cdef unique_ptr[device_buffer] release(self):
+        """
+        Releases ownership the data held by this DeviceBuffer.
+        """
+        self.ptr = self.size = self.stream = 0
+        return move(self.c_obj)
+
 
 @cython.boundscheck(False)
 cpdef DeviceBuffer to_device(const unsigned char[::1] b, uintptr_t stream=0):

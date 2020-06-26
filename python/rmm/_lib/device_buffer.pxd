@@ -57,6 +57,7 @@ cdef class DeviceBuffer:
     cpdef size_t capacity(self)
     cdef void* c_data(self)
 
+    cdef unique_ptr[device_buffer] release(self)
 
 cpdef DeviceBuffer to_device(const unsigned char[::1] b, uintptr_t stream=*)
 cpdef void copy_ptr_to_host(uintptr_t db,
