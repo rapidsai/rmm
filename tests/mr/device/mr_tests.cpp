@@ -21,7 +21,6 @@ using resources = ::testing::Types<rmm::mr::cuda_memory_resource,
                                    rmm::mr::managed_memory_resource,
                                    rmm::mr::cnmem_memory_resource,
                                    rmm::mr::cnmem_managed_memory_resource,
-                                   thread_safe_cuda_mr,
                                    pool_mr,
                                    fixed_size_mr,
                                    fixed_multisize_mr,
@@ -29,16 +28,7 @@ using resources = ::testing::Types<rmm::mr::cuda_memory_resource,
 
 TYPED_TEST_CASE(MRTest, resources);
 
-TEST(DefaultTest, UseDefaultResource)
-{
-  EXPECT_NE(nullptr, rmm::mr::get_default_resource());
-  void* p{nullptr};
-  EXPECT_NO_THROW(p = rmm::mr::get_default_resource()->allocate(1_MiB));
-  EXPECT_NE(nullptr, p);
-  EXPECT_TRUE(is_aligned(p));
-  EXPECT_TRUE(is_device_memory(p));
-  EXPECT_NO_THROW(rmm::mr::get_default_resource()->deallocate(p, 1_MiB));
-}
+TEST(DefaultTest, UseDefaultResource) { test_get_default_resource(); }
 
 TYPED_TEST(MRTest, SetDefaultResource)
 {
@@ -47,13 +37,9 @@ TYPED_TEST(MRTest, SetDefaultResource)
   rmm::mr::device_memory_resource* old{nullptr};
   EXPECT_NO_THROW(old = rmm::mr::set_default_resource(this->mr.get()));
   EXPECT_NE(nullptr, old);
-  EXPECT_TRUE(this->mr->is_equal(*rmm::mr::get_default_resource()));
-  void* p{nullptr};
-  EXPECT_NO_THROW(p = rmm::mr::get_default_resource()->allocate(1_MiB));
-  EXPECT_NE(nullptr, p);
-  EXPECT_TRUE(is_aligned(p));
-  EXPECT_TRUE(is_device_memory(p));
-  EXPECT_NO_THROW(rmm::mr::get_default_resource()->deallocate(p, 1_MiB));
+
+  test_get_default_resource();  // test allocating with the new default resource
+
   // setting default resource w/ nullptr should reset to initial
   EXPECT_NO_THROW(rmm::mr::set_default_resource(nullptr));
   EXPECT_TRUE(old->is_equal(*rmm::mr::get_default_resource()));
@@ -63,58 +49,28 @@ TYPED_TEST(MRTest, SetDefaultResource)
 
 TYPED_TEST(MRTest, SelfEquality) { EXPECT_TRUE(this->mr->is_equal(*this->mr)); }
 
-TYPED_TEST(MRTest, AllocateZeroBytes)
-{
-  void* p{nullptr};
-  EXPECT_NO_THROW(p = this->mr->allocate(0));
-  EXPECT_EQ(nullptr, p);
-  EXPECT_NO_THROW(this->mr->deallocate(p, 0));
-}
-
-TYPED_TEST(MRTest, AllocateZeroBytesStream)
-{
-  void* p{nullptr};
-  EXPECT_NO_THROW(p = this->mr->allocate(0, this->stream));
-  EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(this->stream));
-  EXPECT_NO_THROW(this->mr->deallocate(p, 0, this->stream));
-  EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(this->stream));
-}
-
-TYPED_TEST(MRTest, Allocate)
-{
-  this->test_allocate(4_B);
-  this->test_allocate(1_KiB);
-  this->test_allocate(1_MiB);
-  this->test_allocate(1_GiB);
-
-  // should fail to allocate too much
-  void* p{nullptr};
-  EXPECT_THROW(p = this->mr->allocate(1_PiB), rmm::bad_alloc);
-  EXPECT_EQ(nullptr, p);
-}
+TYPED_TEST(MRTest, Allocate) { test_various_allocations(this->mr.get()); }
 
 TYPED_TEST(MRTest, AllocateOnStream)
 {
-  this->test_allocate(4_B, this->stream);
-  this->test_allocate(1_KiB, this->stream);
-  this->test_allocate(1_MiB, this->stream);
-  this->test_allocate(1_GiB, this->stream);
-
-  // should fail to allocate too much
-  void* p{nullptr};
-  EXPECT_THROW(p = this->mr->allocate(1_PiB, this->stream), rmm::bad_alloc);
-  EXPECT_EQ(nullptr, p);
+  test_various_allocations_on_stream(this->mr.get(), this->stream);
 }
 
-TYPED_TEST(MRTest, RandomAllocations) { this->test_random_allocations(); }
+TYPED_TEST(MRTest, RandomAllocations) { test_random_allocations(this->mr.get()); }
 
-TYPED_TEST(MRTest, RandomAllocationsStream) { this->test_random_allocations(100, this->stream); }
+TYPED_TEST(MRTest, RandomAllocationsStream)
+{
+  test_random_allocations(this->mr.get(), 100, this->stream);
+}
 
-TYPED_TEST(MRTest, MixedRandomAllocationFree) { this->test_mixed_random_allocation_free(); }
+TYPED_TEST(MRTest, MixedRandomAllocationFree)
+{
+  test_mixed_random_allocation_free(this->mr.get(), nullptr);
+}
 
 TYPED_TEST(MRTest, MixedRandomAllocationFreeStream)
 {
-  this->test_mixed_random_allocation_free(this->stream);
+  test_mixed_random_allocation_free(this->mr.get(), this->stream);
 }
 
 TYPED_TEST(MRTest, GetMemInfo)

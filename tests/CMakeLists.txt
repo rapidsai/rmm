@@ -68,6 +68,7 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
 
 set(DEVICE_MR_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/mr_tests.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/mr_multithreaded_tests.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/thrust_allocator_tests.cu")
     
 
