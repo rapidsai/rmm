@@ -86,6 +86,12 @@ struct replay_benchmark {
   }
 };
 
+/**
+ * @brief Processes a log file into a set of per-thread vectors of events
+ *
+ * @param filename Name of log file
+ * @return A vector of events for each thread in the log
+ */
 std::vector<std::vector<rmm::detail::event>> process_log(std::string const& filename)
 {
   using rmm::detail::event;
