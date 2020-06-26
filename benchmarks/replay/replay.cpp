@@ -20,6 +20,7 @@
 #include "thrust/iterator/constant_iterator.h"
 
 #include <benchmarks/utilities/log_parser.hpp>
+#include <rmm/detail/error.hpp>
 #include <rmm/mr/device/cnmem_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 
@@ -157,6 +158,9 @@ int main(int argc, char** argv)
                            "Replays and benchmarks allocation activity captured from RMM logging.");
 
   options.add_options()("f,file", "Name of RMM log file.", cxxopts::value<std::string>());
+  options.add_options()("v,verbose",
+                        "Enable verbose printing of log events",
+                        cxxopts::value<bool>()->default_value("false"));
 
   auto result = options.parse(argc, argv);
 
@@ -165,6 +169,15 @@ int main(int argc, char** argv)
     auto filename = result["file"].as<std::string>();
 
     auto per_thread_events = parse_per_thread_events(filename);
+
+    if (result["verbose"].as<bool>()) {
+      for (auto const& events : per_thread_events) {
+        std::cout << "Thread Events:\n";
+        for (auto const& e : events) {
+          std::cout << e << std::endl;
+        }
+      }
+    }
 
     auto const num_threads = per_thread_events.size();
 
