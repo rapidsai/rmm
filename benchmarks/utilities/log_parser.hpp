@@ -17,8 +17,11 @@
 #pragma once
 
 #include <cstdint>
+#include <iomanip>
+#include <limits>
 #include <memory>
 #include <rmm/detail/error.hpp>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include "rapidcsv.h"
@@ -53,6 +56,8 @@ struct event {
   {
   }
 
+  friend std::ostream& operator<<(std::ostream& os, event const& e);
+
   action act{};           ///< Indicates if the event is an allocation or a free
   std::size_t size{};     ///< The size of the memory allocated or freed
   uintptr_t pointer{};    ///< The pointer returned from an allocation, or the
@@ -60,6 +65,16 @@ struct event {
   std::size_t thread_id;  ///< ID of the thread that initiated the event
   uintptr_t stream;       ///< Numeric representation of the CUDA stream on which the event occurred
 };
+
+std::ostream& operator<<(std::ostream& os, event const& e)
+{
+  auto act_string = (e.act == action::ALLOCATE) ? "allocate" : "free";
+
+  os << "Thread: " << e.thread_id << std::setw(9) << act_string
+     << " Size: " << std::setw(std::numeric_limits<std::size_t>::digits10) << e.size << " Pointer: "
+     << "0x" << std::hex << e.pointer << std::dec << " Stream: " << e.stream;
+  return os;
+}
 
 uintptr_t hex_string_to_int(std::string const& s) { return std::stoll(s, nullptr, 16); }
 
