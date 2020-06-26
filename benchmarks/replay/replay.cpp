@@ -50,7 +50,7 @@ struct allocation {
 template <typename MR>
 struct replay_benchmark {
   std::unique_ptr<MR> mr_{};
-  std::vector<rmm::detail::event> const& events_{};
+  std::vector<std::vector<rmm::detail::event>> const& events_{};
 
   /**
    * @brief Construct a `replay_benchmark` from a list of events and
@@ -60,7 +60,7 @@ struct replay_benchmark {
    * @param args Variable number of arguments forward to the constructor of MR
    */
   template <typename... Args>
-  replay_benchmark(std::vector<rmm::detail::event> const& events, Args&&... args)
+  replay_benchmark(std::vector<std::vector<rmm::detail::event>> const& events, Args&&... args)
     : mr_{new MR{std::forward<Args>(args)...}}, events_{events}
   {
   }
@@ -70,8 +70,10 @@ struct replay_benchmark {
     // Maps a pointer from the event log to an active allocation
     std::unordered_map<uintptr_t, allocation> allocation_map(events_.size());
 
+    auto const& my_events = events_.at(state.thread_index);
+
     for (auto _ : state) {
-      std::for_each(events_.begin(), events_.end(), [&allocation_map, &state, this](auto e) {
+      std::for_each(my_events.begin(), my_events.end(), [&allocation_map, &state, this](auto e) {
         if (rmm::detail::action::ALLOCATE == e.act) {
           auto p                    = mr_->allocate(e.size);
           allocation_map[e.pointer] = allocation{p, e.size};
@@ -148,15 +150,19 @@ int main(int argc, char** argv)
   if (result.count("file")) {
     auto filename = result["file"].as<std::string>();
 
-    auto thread_events = process_log(filename);
+    auto per_thread_events = process_log(filename);
+
+    auto const num_threads = per_thread_events.size();
+
+    benchmark::RegisterBenchmark("CUDA Resource",
+                                 replay_benchmark<rmm::mr::cuda_memory_resource>{per_thread_events})
+      ->Unit(benchmark::kMillisecond)
+      ->Threads(num_threads);
 
     benchmark::RegisterBenchmark(
-      "CUDA Resource", replay_benchmark<rmm::mr::cuda_memory_resource>{thread_events.front()})
-      ->Unit(benchmark::kMillisecond);
-
-    benchmark::RegisterBenchmark(
-      "CNMEM Resource", replay_benchmark<rmm::mr::cnmem_memory_resource>(thread_events.front(), 0u))
-      ->Unit(benchmark::kMillisecond);
+      "CNMEM Resource", replay_benchmark<rmm::mr::cnmem_memory_resource>(per_thread_events, 0u))
+      ->Unit(benchmark::kMillisecond)
+      ->Threads(num_threads);
 
     ::benchmark::RunSpecifiedBenchmarks();
   } else {
