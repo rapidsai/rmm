@@ -92,7 +92,7 @@ struct replay_benchmark {
  * @param filename Name of log file
  * @return A vector of events for each thread in the log
  */
-std::vector<std::vector<rmm::detail::event>> process_log(std::string const& filename)
+std::vector<std::vector<rmm::detail::event>> parse_per_thread_events(std::string const& filename)
 {
   using rmm::detail::event;
   std::vector<event> all_events = rmm::detail::parse_csv(filename);
@@ -156,7 +156,7 @@ int main(int argc, char** argv)
   if (result.count("file")) {
     auto filename = result["file"].as<std::string>();
 
-    auto per_thread_events = process_log(filename);
+    auto per_thread_events = parse_per_thread_events(filename);
 
     auto const num_threads = per_thread_events.size();
 
