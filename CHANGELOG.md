@@ -19,6 +19,7 @@
 - PR #405 Move doc customization scripts to Jenkins
 - PR #414 Add element-wise access for device_uvector
 - PR #421 Capture thread id in logging and improve logger testing
+- PR #426 Added multi-threaded support to replay benchmark.
 
 ## Bug Fixes
 
