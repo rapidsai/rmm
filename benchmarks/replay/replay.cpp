@@ -97,6 +97,14 @@ std::vector<std::vector<rmm::detail::event>> parse_per_thread_events(std::string
   using rmm::detail::event;
   std::vector<event> all_events = rmm::detail::parse_csv(filename);
 
+  RMM_EXPECTS(std::all_of(all_events.begin(),
+                          all_events.end(),
+                          [](auto const& e) {
+                            return (e.stream == cudaStreamDefault) or
+                                   (e.stream == reinterpret_cast<uintptr_t>(cudaStreamPerThread));
+                          }),
+              "Non-default streams not currently supported.");
+
   // Sort events by thread id
   std::stable_sort(all_events.begin(), all_events.end(), [](auto lhs, auto rhs) {
     return lhs.thread_id < rhs.thread_id;
