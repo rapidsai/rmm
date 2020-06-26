@@ -162,15 +162,15 @@ int main(int argc, char** argv)
                         "Enable verbose printing of log events",
                         cxxopts::value<bool>()->default_value("false"));
 
-  auto result = options.parse(argc, argv);
+  auto args = options.parse(argc, argv);
 
   // Parse the log file
-  if (result.count("file")) {
-    auto filename = result["file"].as<std::string>();
+  if (args.count("file")) {
+    auto filename = args["file"].as<std::string>();
 
     auto per_thread_events = parse_per_thread_events(filename);
 
-    if (result["verbose"].as<bool>()) {
+    if (args["verbose"].as<bool>()) {
       for (auto const& events : per_thread_events) {
         std::cout << "Thread Events:\n";
         for (auto const& e : events) {
