@@ -278,16 +278,16 @@ cdef class DeviceBuffer:
 
         return b
 
-    cdef size_t c_size(self):
+    cdef size_t c_size(self) except *:
         return self.c_obj.get()[0].size()
 
-    cpdef void resize(self, size_t new_size):
+    cpdef void resize(self, size_t new_size) except *:
         self.c_obj.get()[0].resize(new_size)
 
-    cpdef size_t capacity(self):
+    cpdef size_t capacity(self) except *:
         return self.c_obj.get()[0].capacity()
 
-    cdef void* c_data(self):
+    cdef void* c_data(self) except *:
         return self.c_obj.get()[0].data()
 
     cdef unique_ptr[device_buffer] release(self):

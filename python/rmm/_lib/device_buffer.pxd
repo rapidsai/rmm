@@ -52,10 +52,10 @@ cdef class DeviceBuffer:
     cpdef copy_from_device(self, cuda_ary, uintptr_t stream=*)
     cpdef bytes tobytes(self, uintptr_t stream=*)
 
-    cdef size_t c_size(self)
-    cpdef void resize(self, size_t new_size)
-    cpdef size_t capacity(self)
-    cdef void* c_data(self)
+    cdef size_t c_size(self) except *
+    cpdef void resize(self, size_t new_size) except *
+    cpdef size_t capacity(self) except *
+    cdef void* c_data(self) except *
 
     cdef unique_ptr[device_buffer] release(self)
 
