@@ -43,12 +43,12 @@ struct event {
 
   event(action a, std::size_t s, uintptr_t p) : act{a}, size{s}, pointer{p} {}
 
-  event(std::string const& tid, action a, std::size_t sz, uintptr_t p, uintptr_t s)
+  event(std::size_t tid, action a, std::size_t sz, uintptr_t p, uintptr_t s)
     : thread_id{tid}, act{a}, size{sz}, pointer{p}, stream{s}
   {
   }
 
-  event(std::string const& tid, action a, std::size_t sz, void* p, uintptr_t s)
+  event(std::size_t tid, action a, std::size_t sz, void* p, uintptr_t s)
     : event{tid, a, sz, reinterpret_cast<uintptr_t>(p), s}
   {
   }
@@ -57,7 +57,7 @@ struct event {
   std::size_t size{};     ///< The size of the memory allocated or freed
   uintptr_t pointer{};    ///< The pointer returned from an allocation, or the
                           ///< pointer freed
-  std::string thread_id;  ///< ID of the thread that initiated the event
+  std::size_t thread_id;  ///< ID of the thread that initiated the event
   uintptr_t stream;       ///< Numeric representation of the CUDA stream on which the event occurred
 };
 
@@ -76,7 +76,7 @@ std::vector<event> parse_csv(std::string const& filename)
 {
   rapidcsv::Document csv(filename, rapidcsv::LabelParams(0, -1));
 
-  std::vector<std::string> tids     = csv.GetColumn<std::string>("Thread");
+  std::vector<std::size_t> tids     = csv.GetColumn<std::size_t>("Thread");
   std::vector<std::string> actions  = csv.GetColumn<std::string>("Action");
   std::vector<std::size_t> sizes    = csv.GetColumn<std::size_t>("Size");
   std::vector<std::string> pointers = csv.GetColumn<std::string>("Pointer");
