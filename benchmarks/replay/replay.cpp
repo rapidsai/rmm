@@ -28,6 +28,7 @@
 #include <thrust/reduce.h>
 #include <iterator>
 #include <memory>
+#include <numeric>
 #include <string>
 
 /**
@@ -164,35 +165,44 @@ int main(int argc, char** argv)
 
   auto args = options.parse(argc, argv);
 
-  // Parse the log file
-  if (args.count("file")) {
-    auto filename = args["file"].as<std::string>();
+  RMM_EXPECTS(args.count("file") > 0, "No log filename specified.");
 
-    auto per_thread_events = parse_per_thread_events(filename);
+  auto filename = args["file"].as<std::string>();
 
+  auto per_thread_events = parse_per_thread_events(filename);
+
+#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
+  std::cout << "Using CUDA per-thread default stream.\n";
+#endif
+
+  std::cout << "Total Events: "
+            << std::accumulate(
+                 per_thread_events.begin(),
+                 per_thread_events.end(),
+                 0,
+                 [](std::size_t accum, auto const& events) { return accum + events.size(); })
+            << std::endl;
+
+  for (std::size_t t = 0; t < per_thread_events.size(); ++t) {
+    std::cout << "Thread " << t << ": " << per_thread_events[t].size() << " events\n";
     if (args["verbose"].as<bool>()) {
-      for (auto const& events : per_thread_events) {
-        std::cout << "Thread Events:\n";
-        for (auto const& e : events) {
-          std::cout << e << std::endl;
-        }
+      for (auto const& e : per_thread_events[t]) {
+        std::cout << e << std::endl;
       }
     }
-
-    auto const num_threads = per_thread_events.size();
-
-    benchmark::RegisterBenchmark("CUDA Resource",
-                                 replay_benchmark<rmm::mr::cuda_memory_resource>{per_thread_events})
-      ->Unit(benchmark::kMillisecond)
-      ->Threads(num_threads);
-
-    benchmark::RegisterBenchmark(
-      "CNMEM Resource", replay_benchmark<rmm::mr::cnmem_memory_resource>(per_thread_events, 0u))
-      ->Unit(benchmark::kMillisecond)
-      ->Threads(num_threads);
-
-    ::benchmark::RunSpecifiedBenchmarks();
-  } else {
-    throw std::runtime_error{"No log filename specified."};
   }
+
+  auto const num_threads = per_thread_events.size();
+
+  benchmark::RegisterBenchmark("CUDA Resource",
+                               replay_benchmark<rmm::mr::cuda_memory_resource>{per_thread_events})
+    ->Unit(benchmark::kMillisecond)
+    ->Threads(num_threads);
+
+  benchmark::RegisterBenchmark(
+    "CNMEM Resource", replay_benchmark<rmm::mr::cnmem_memory_resource>(per_thread_events, 0u))
+    ->Unit(benchmark::kMillisecond)
+    ->Threads(num_threads);
+
+  ::benchmark::RunSpecifiedBenchmarks();
 }
