@@ -15,70 +15,14 @@
  */
 
 #include "cxxopts.hpp"
-#include "rapidcsv.h"
 
+#include <benchmarks/utilities/log_parser.hpp>
 #include <rmm/mr/device/cnmem_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 
 #include <benchmark/benchmark.h>
-#include <thrust/iterator/zip_iterator.h>
 #include <memory>
-#include <stdexcept>
 #include <string>
-
-enum class action : bool { ALLOCATE, FREE };
-
-/**
- * @brief Represents an allocation event
- *
- */
-struct event {
-  action act;         ///< Indicates if the event is an allocation or a free
-  std::size_t size;   ///< The size of the memory allocated or free'd
-  uintptr_t pointer;  ///< The pointer returned from an allocation, or the
-                      ///< pointer free'd
-};
-
-/**
- * @brief Parses the RMM log file specifed by `filename` for consumption by the
- * replay benchmark.
- *
- * @param filename Name of the RMM log file
- * @return Vector of events for consumption by replay benchmark
- */
-std::vector<event> parse_csv(std::string const& filename)
-{
-  rapidcsv::Document csv(filename);
-
-  std::vector<std::string> actions  = csv.GetColumn<std::string>("Action");
-  std::vector<std::size_t> sizes    = csv.GetColumn<std::size_t>("Size");
-  std::vector<std::string> pointers = csv.GetColumn<std::string>("Pointer");
-
-  if ((sizes.size() != actions.size()) or (sizes.size() != pointers.size())) {
-    throw std::runtime_error{"Size mismatch in actions, sizes, or pointers."};
-  }
-
-  std::vector<event> events(sizes.size());
-
-  auto zipped_begin =
-    thrust::make_zip_iterator(thrust::make_tuple(actions.begin(), sizes.begin(), pointers.begin()));
-  auto zipped_end = zipped_begin + sizes.size();
-
-  std::transform(zipped_begin,
-                 zipped_end,
-                 events.begin(),
-                 [](thrust::tuple<std::string, std::size_t, std::string> const& t) {
-                   // Convert "allocate" or "free" string into `action` enum
-                   action a = (thrust::get<0>(t) == "allocate") ? action::ALLOCATE : action::FREE;
-                   std::size_t size = thrust::get<1>(t);
-
-                   // Convert pointer string into an integer
-                   uintptr_t p = std::stoll(thrust::get<2>(t), nullptr, 16);
-                   return event{a, size, p};
-                 });
-
-  return events;
-}
 
 /**
  * @brief Represents an allocation made during the replay
@@ -101,7 +45,7 @@ struct allocation {
 template <typename MR>
 struct replay_benchmark {
   std::unique_ptr<MR> mr_{};
-  std::vector<event> const& events_{};
+  std::vector<rmm::detail::event> const& events_{};
 
   /**
    * @brief Construct a `replay_benchmark` from a list of events and
@@ -111,7 +55,7 @@ struct replay_benchmark {
    * @param args Variable number of arguments forward to the constructor of MR
    */
   template <typename... Args>
-  replay_benchmark(std::vector<event> const& events, Args&&... args)
+  replay_benchmark(std::vector<rmm::detail::event> const& events, Args&&... args)
     : mr_{new MR{std::forward<Args>(args)...}}, events_{events}
   {
   }
@@ -122,8 +66,8 @@ struct replay_benchmark {
     std::unordered_map<uintptr_t, allocation> allocation_map(events_.size());
 
     for (auto _ : state) {
-      std::for_each(events_.begin(), events_.end(), [&allocation_map, &state, this](event e) {
-        if (action::ALLOCATE == e.act) {
+      std::for_each(events_.begin(), events_.end(), [&allocation_map, &state, this](auto e) {
+        if (rmm::detail::action::ALLOCATE == e.act) {
           auto p                    = mr_->allocate(e.size);
           allocation_map[e.pointer] = allocation{p, e.size};
         } else {
@@ -153,7 +97,7 @@ int main(int argc, char** argv)
   // Parse the log file
   if (result.count("file")) {
     auto filename = result["file"].as<std::string>();
-    auto events   = parse_csv(filename);
+    auto events   = rmm::detail::parse_csv(filename);
 
     benchmark::RegisterBenchmark("CUDA Resource",
                                  replay_benchmark<rmm::mr::cuda_memory_resource>{events})

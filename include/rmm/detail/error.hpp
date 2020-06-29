@@ -30,8 +30,7 @@ namespace rmm {
  *
  */
 struct logic_error : public std::logic_error {
-  logic_error(char const* const message) : std::logic_error(message) {}
-  logic_error(std::string const& message) : logic_error{message.c_str()} {}
+  using std::logic_error::logic_error;
 };
 
 /**
@@ -39,8 +38,7 @@ struct logic_error : public std::logic_error {
  *
  */
 struct cuda_error : public std::runtime_error {
-  cuda_error(const char* message) : std::runtime_error(message) {}
-  cuda_error(std::string const& message) : cuda_error{message.c_str()} {}
+  using std::runtime_error::runtime_error;
 };
 
 /**
@@ -62,6 +60,15 @@ class bad_alloc : public std::bad_alloc {
  private:
   std::string _what;
 };
+
+/**
+ * @brief Exception thrown when attempting to access outside of a defined range
+ *
+ */
+class out_of_range : public std::out_of_range {
+  using std::out_of_range::out_of_range;
+};
+
 }  // namespace rmm
 
 #define STRINGIFY_DETAIL(x) #x
