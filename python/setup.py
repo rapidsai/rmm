@@ -11,7 +11,7 @@ from setuptools import find_packages, setup
 from setuptools.extension import Extension
 
 install_requires = ["numba", "cython"]
-cython_files = ["rmm/_lib/**/*.pyx"]
+cython_files = ["rmm/**/*.pyx"]
 
 CUDA_HOME = os.environ.get("CUDA_HOME", False)
 if not CUDA_HOME:
