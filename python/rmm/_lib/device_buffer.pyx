@@ -279,23 +279,34 @@ cdef class DeviceBuffer:
         return b
 
     cdef size_t c_size(self) except *:
-        return self.c_obj.get()[0].size()
+        if self.c_obj:
+            return self.c_obj.get()[0].size()
+        else:
+            return 0
 
     cpdef void resize(self, size_t new_size) except *:
         self.c_obj.get()[0].resize(new_size)
 
     cpdef size_t capacity(self) except *:
-        return self.c_obj.get()[0].capacity()
+        if self.c_obj:
+            return self.c_obj.get()[0].capacity()
+        else:
+            return 0
 
     cdef void* c_data(self) except *:
-        return self.c_obj.get()[0].data()
+        if self.c_obj:
+            return self.c_obj.get()[0].data()
+        else:
+            return <void*><uintptr_t>0
 
     cdef device_buffer c_release(self) except *:
         """
         Releases ownership the data held by this DeviceBuffer.
         """
-        self.ptr = self.size = self.stream = 0
-        return cython.operator.dereference(self.c_obj.release())
+        if self.c_obj:
+            return cython.operator.dereference(self.c_obj.release())
+        else:
+            return device_buffer(0)
 
 
 @cython.boundscheck(False)
