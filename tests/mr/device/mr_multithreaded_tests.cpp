@@ -134,6 +134,69 @@ inline MRTest<thread_safe_hybrid_mr>::~MRTest()
   delete cuda;
 }
 
+// specialize get_max_size for thread-safe MRs
+template <>
+std::size_t get_max_size(thread_safe_fixed_size_mr* mr)
+{
+  return mr->get_upstream()->get_block_size();
+}
+
+template <>
+std::size_t get_max_size(thread_safe_fixed_multisize_mr* mr)
+{
+  return mr->get_upstream()->get_max_size();
+}
+
+template <>
+std::size_t get_max_size(thread_safe_fixed_multisize_pool_mr* mr)
+{
+  return mr->get_upstream()->get_max_size();
+}
+
+// specialize random allocations to not allocate too large
+template <>
+inline void test_random_allocations<thread_safe_fixed_size_mr>(thread_safe_fixed_size_mr* mr,
+                                                               std::size_t num_allocations,
+                                                               cudaStream_t stream)
+{
+  return test_random_allocations_base(mr, num_allocations, 1_MiB, stream);
+}
+
+template <>
+inline void test_random_allocations<thread_safe_fixed_multisize_mr>(
+  thread_safe_fixed_multisize_mr* mr, std::size_t num_allocations, cudaStream_t stream)
+{
+  return test_random_allocations_base(mr, num_allocations, 1_MiB, stream);
+}
+
+template <>
+inline void test_random_allocations<thread_safe_fixed_multisize_pool_mr>(
+  thread_safe_fixed_multisize_pool_mr* mr, std::size_t num_allocations, cudaStream_t stream)
+{
+  return test_random_allocations_base(mr, num_allocations, 1_MiB, stream);
+}
+
+template <>
+inline void test_mixed_random_allocation_free<thread_safe_fixed_size_mr>(
+  thread_safe_fixed_size_mr* mr, cudaStream_t stream)
+{
+  test_mixed_random_allocation_free_base(mr, 1_MiB, stream);
+}
+
+template <>
+inline void test_mixed_random_allocation_free<thread_safe_fixed_multisize_mr>(
+  thread_safe_fixed_multisize_mr* mr, cudaStream_t stream)
+{
+  test_mixed_random_allocation_free_base(mr, 4_MiB, stream);
+}
+
+template <>
+inline void test_mixed_random_allocation_free<thread_safe_fixed_multisize_pool_mr>(
+  thread_safe_fixed_multisize_pool_mr* mr, cudaStream_t stream)
+{
+  test_mixed_random_allocation_free_base(mr, 4_MiB, stream);
+}
+
 // Test on all memory resource classes
 using resources = ::testing::Types<rmm::mr::cuda_memory_resource,
                                    rmm::mr::managed_memory_resource,
