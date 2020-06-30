@@ -29,14 +29,12 @@
 #include <iostream>
 #include <list>
 #include <map>
+#include <mutex>
 #include <numeric>
 #include <set>
 #include <thread>
 #include <unordered_map>
 #include <vector>
-#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-#include <mutex>
-#endif
 
 namespace rmm {
 namespace mr {

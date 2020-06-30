@@ -24,7 +24,6 @@
 
 namespace {
 
-using thread_safe_pool_mr            = rmm::mr::thread_safe_resource_adaptor<pool_mr>;
 using thread_safe_fixed_size_mr      = rmm::mr::thread_safe_resource_adaptor<fixed_size_mr>;
 using thread_safe_fixed_multisize_mr = rmm::mr::thread_safe_resource_adaptor<fixed_multisize_mr>;
 using thread_safe_fixed_multisize_pool_mr =
@@ -48,22 +47,6 @@ void spawn(Task task, Arguments... args)
 }  // namespace
 
 // specialize test constructor for thread-safe types
-
-template <>
-inline MRTest<thread_safe_pool_mr>::MRTest()
-  : mr{new thread_safe_pool_mr(new rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>(
-      new rmm::mr::cuda_memory_resource))}
-{
-}
-
-template <>
-inline MRTest<thread_safe_pool_mr>::~MRTest()
-{
-  auto pool = mr->get_upstream();
-  auto cuda = pool->get_upstream();
-  delete pool;
-  delete cuda;
-}
 
 template <>
 inline MRTest<thread_safe_fixed_size_mr>::MRTest()
@@ -202,7 +185,7 @@ using resources = ::testing::Types<rmm::mr::cuda_memory_resource,
                                    rmm::mr::managed_memory_resource,
                                    rmm::mr::cnmem_memory_resource,
                                    rmm::mr::cnmem_managed_memory_resource,
-                                   thread_safe_pool_mr,
+                                   pool_mr,
                                    thread_safe_fixed_size_mr,
                                    thread_safe_fixed_multisize_mr,
                                    thread_safe_fixed_multisize_pool_mr,
