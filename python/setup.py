@@ -11,7 +11,8 @@ from setuptools import find_packages, setup
 from setuptools.extension import Extension
 
 install_requires = ["numba", "cython"]
-cython_files = ["rmm/**/*.pyx"]
+cython_lib = ["rmm/_lib/**/*.pyx"]
+cython_tests = ["rmm/tests/**/*.pyx"]
 
 CUDA_HOME = os.environ.get("CUDA_HOME", False)
 if not CUDA_HOME:
@@ -30,23 +31,58 @@ if not os.path.isdir(CUDA_HOME):
 
 cuda_include_dir = os.path.join(CUDA_HOME, "include")
 
-extensions = [
-    Extension(
-        "*",
-        sources=cython_files,
-        include_dirs=[
-            "../include/rmm",
-            "../include",
-            "../build/include",
-            os.path.dirname(sysconfig.get_path("include")),
-            cuda_include_dir,
-        ],
-        library_dirs=[get_python_lib(), os.path.join(os.sys.prefix, "lib")],
-        libraries=["rmm"],
-        language="c++",
-        extra_compile_args=["-std=c++14"],
-    )
+try:
+    nthreads = int(os.environ.get("PARALLEL_LEVEL", "0") or "0")
+except Exception:
+    nthreads = 0
+
+include_dirs = [
+    "../include/rmm",
+    "../include",
+    "../build/include",
+    os.path.dirname(sysconfig.get_path("include")),
+    cuda_include_dir,
 ]
+
+library_dirs = [get_python_lib(), os.path.join(os.sys.prefix, "lib")]
+
+# lib:
+extensions = cythonize(
+    [
+        Extension(
+            "*",
+            sources=cython_lib,
+            include_dirs=include_dirs,
+            library_dirs=library_dirs,
+            libraries=["rmm"],
+            language="c++",
+            extra_compile_args=["-std=c++14"],
+        )
+    ],
+    nthreads=nthreads,
+    compiler_directives=dict(
+        profile=False, language_level=3, embedsignature=True,
+    ),
+)
+
+# tests:
+extensions += cythonize(
+    [
+        Extension(
+            "*",
+            sources=cython_tests,
+            include_dirs=include_dirs,
+            library_dirs=library_dirs,
+            libraries=["rmm"],
+            language="c++",
+            extra_compile_args=["-std=c++14"],
+        )
+    ],
+    nthreads=nthreads,
+    compiler_directives=dict(
+        profile=True, language_level=3, embedsignature=True, binding=True
+    ),
+)
 
 setup(
     name="rmm",

@@ -12,12 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# cython: profile = True
-# distutils: language = c++
-# cython: embedsignature = True
-# cython: language_level = 3
-# cython: binding = True
-
 import cython
 import numpy as np
 
