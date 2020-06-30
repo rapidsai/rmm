@@ -59,7 +59,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @param upstream The resource used for allocating/deallocating device memory
    * @param filename Name of file to write log info. If not specified, retrieves
    * the file name from the environment variable "RMM_LOG_FILE".
-   * @param auto_flush If true, automatically flushes the log.
+   * @param auto_flush If true, flushes the log for every (de)allocation. Warning, this will degrade performance. 
    */
   logging_resource_adaptor(Upstream* upstream,
                            std::string const& filename = get_default_filename(),
