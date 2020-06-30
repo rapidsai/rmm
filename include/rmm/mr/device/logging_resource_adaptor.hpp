@@ -86,7 +86,8 @@ class logging_resource_adaptor final : public device_memory_resource {
    *
    * @param upstream The resource used for allocating/deallocating device memory
    * @param stream The ostream to write log info.
-   * @param auto_flush If true, automatically flushes the log.
+   * @param auto_flush If true, flushes the log for every (de)allocation. Warning, this will degrade
+   * performance.
    */
   logging_resource_adaptor(Upstream* upstream, std::ostream& stream, bool auto_flush = false)
     : upstream_{upstream},
