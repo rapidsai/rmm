@@ -102,7 +102,7 @@ setup(
     ],
     # Include the separately-compiled shared library
     setup_requires=["cython"],
-    ext_modules=cythonize(extensions),
+    ext_modules=extensions,
     packages=find_packages(include=["rmm", "rmm.*"]),
     package_data={"rmm._lib": ["*.pxd"], "rmm._lib.includes": ["*.pxd"]},
     cmdclass=versioneer.get_cmdclass(),
