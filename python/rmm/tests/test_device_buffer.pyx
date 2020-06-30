@@ -37,7 +37,7 @@ def test_release():
 def test_size_after_release():
     cdef DeviceBuffer buf = DeviceBuffer.to_device(b'abc')
     buf.c_release()
-    print(buf.size)
+    assert buf.size == 0
 
 
 test_release()
