@@ -31,8 +31,12 @@
 #include <map>
 #include <numeric>
 #include <set>
+#include <thread>
 #include <unordered_map>
 #include <vector>
+#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
+#include <mutex>
+#endif
 
 namespace rmm {
 namespace mr {
@@ -86,7 +90,11 @@ class pool_memory_resource final : public device_memory_resource {
    * @brief Destroy the `pool_memory_resource` and deallocate all memory it allocated using
    * the upstream resource.
    */
-  ~pool_memory_resource() { release(); }
+  ~pool_memory_resource()
+  {
+    // foo
+    release();
+  }
 
   /**
    * @brief Queries whether the resource supports use of non-null CUDA streams for
@@ -111,9 +119,10 @@ class pool_memory_resource final : public device_memory_resource {
   Upstream* get_upstream() const noexcept { return upstream_mr_; }
 
  private:
-  using id_type   = uint32_t;
-  using block     = rmm::mr::detail::block;
-  using free_list = rmm::mr::detail::free_list<>;
+  using id_type    = uint32_t;
+  using block      = rmm::mr::detail::block;
+  using free_list  = rmm::mr::detail::free_list<>;
+  using lock_guard = std::lock_guard<std::mutex>;
 
   /**
    * @brief Find a free block of at least `size` bytes in `free_list` `blocks` associated with
@@ -228,11 +237,11 @@ class pool_memory_resource final : public device_memory_resource {
   {
     if (p == nullptr) return;
 
+    cudaEvent_t event = get_event(stream);
+
     auto const i = allocated_blocks_.find(static_cast<char*>(p));
     assert(i != allocated_blocks_.end());
     assert(i->size() == rmm::detail::align_up(size, allocation_alignment));
-
-    cudaEvent_t event = get_event(stream);
 
     // TODO: cudaEventRecord has significant overhead on deallocations, however it could mean less
     // synchronization So we need to test in real non-PTDS applications that have multiple streams
@@ -300,6 +309,8 @@ class pool_memory_resource final : public device_memory_resource {
    */
   void release()
   {
+    lock_guard lock(free_lists_mutex);
+
     for (auto b : upstream_blocks_)
       upstream_mr_->deallocate(b.pointer(), b.size());
     upstream_blocks_.clear();
@@ -321,6 +332,8 @@ class pool_memory_resource final : public device_memory_resource {
    */
   void print()
   {
+    lock_guard lock(free_lists_mutex);
+
     std::size_t free, total;
     std::tie(free, total) = upstream_mr_->get_mem_info(0);
     std::cout << "GPU free memory: " << free << "total: " << total << "\n";
@@ -362,10 +375,14 @@ class pool_memory_resource final : public device_memory_resource {
   void* do_allocate(std::size_t bytes, cudaStream_t stream) override
   {
     if (bytes <= 0) return nullptr;
-    bytes             = rmm::detail::align_up(bytes, allocation_alignment);
+
+    lock_guard lock(free_lists_mutex);
+
     cudaEvent_t event = get_event(stream);
+    bytes             = rmm::detail::align_up(bytes, allocation_alignment);
     block const b     = available_larger_block(bytes, stream, event);
-    return allocate_from_block(b, bytes, event);
+    auto p            = allocate_from_block(b, bytes, event);
+    return p;
   }
 
   /**
@@ -377,6 +394,7 @@ class pool_memory_resource final : public device_memory_resource {
    */
   void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override
   {
+    lock_guard lock(free_lists_mutex);
     free_block(p, bytes, stream);
   }
 
@@ -406,7 +424,11 @@ class pool_memory_resource final : public device_memory_resource {
       auto result = cudaEventCreateWithFlags(&event, cudaEventDisableTiming);
       assert(cudaSuccess == result);
     }
-    ~cuda_event() { parent->destroy_event(event); }
+    ~cuda_event()
+    {
+      lock_guard lock(parent->free_lists_mutex);
+      parent->destroy_event(event);
+    }
 
     cudaEvent_t event;
     pool_memory_resource<Upstream>* parent;
@@ -436,13 +458,13 @@ class pool_memory_resource final : public device_memory_resource {
   {
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
     if (cudaStreamDefault == stream || cudaStreamPerThread == stream) {
-      thread_local cuda_event e{};
+      static thread_local cuda_event e{this};
       return e.event;
     }
 #else
     // We use cudaStreamLegacy as the event map key for the default stream for consistency between
     // PTDS and non-PTDS mode. In PTDS mode, the cudaStreamLegacy map key will only exist if the
-    // user explicitly suggests it, so it is used as the default location for the free list
+    // user explicitly passes it, so it is used as the default location for the free list
     // at construction, and for merging free lists when a thread exits (see destroy_event()).
     // For consistency, the same key is used for null stream free lists in non-PTDS mode.
     if (cudaStreamDefault == stream) { stream = cudaStreamLegacy; }
@@ -475,6 +497,7 @@ class pool_memory_resource final : public device_memory_resource {
     if (free_list_iter != stream_free_blocks_.end()) {
       auto blocks = free_list_iter->second;
       stream_free_blocks_[get_event(cudaStreamLegacy)].insert(blocks.begin(), blocks.end());
+      stream_free_blocks_.erase(free_list_iter);
 
       auto result = cudaEventSynchronize(event);
       assert(cudaSuccess == result);
@@ -501,7 +524,9 @@ class pool_memory_resource final : public device_memory_resource {
   // bidirectional mapping between non-default streams and events
   std::unordered_map<cudaStream_t, cudaEvent_t> stream_events_;
   std::unordered_map<cudaEvent_t, cudaStream_t> event_streams_;
-};  // namespace mr
+
+  std::mutex mutable free_lists_mutex;  // mutex for thread-safe thread-local event destruction
+};
 
 }  // namespace mr
 }  // namespace rmm
