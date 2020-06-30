@@ -17,17 +17,36 @@
 # cython: embedsignature = True
 # cython: language_level = 3
 
-
+import functools
 import importlib
-
-cython_test_modules = [
-    "rmm.tests.test_device_buffer",
-]
+import sys
 
 
-def test_cython():
-    for mod in cython_test_modules:
-        try:
-            importlib.import_module(mod)
-        except ImportError:
-            pass
+def py_func(func):
+    """
+    Wraps func in a plain Python function.
+    """
+
+    @functools.wraps(func)
+    def wrapped(*args, **kwargs):
+        return func(*args, **kwargs)
+
+    return wrapped
+
+
+cython_test_modules = ["rmm.tests.test_device_buffer"]
+
+
+for mod in cython_test_modules:
+    try:
+        # For each callable in `mod` with name `test_*`,
+        # wrap the callable in a plain Python function
+        # and set the result as an attribute of this module.
+        mod = importlib.import_module(mod)
+        for name in dir(mod):
+            item = getattr(mod, name)
+            if callable(item) and name.startswith("test_"):
+                item = py_func(item)
+                setattr(sys.modules[__name__], name, item)
+    except ImportError:
+        pass

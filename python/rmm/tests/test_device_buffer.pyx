@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# cython: profile = False
+# cython: profile = True
 # distutils: language = c++
 # cython: embedsignature = True
 # cython: language_level = 3
+# cython: binding = True
 
-
+import cython
 import numpy as np
 
 from libcpp.memory cimport make_unique
@@ -38,7 +39,3 @@ def test_size_after_release():
     cdef DeviceBuffer buf = DeviceBuffer.to_device(b'abc')
     buf.c_release()
     assert buf.size == 0
-
-
-test_release()
-test_size_after_release()
