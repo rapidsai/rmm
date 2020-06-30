@@ -51,7 +51,9 @@ include_directories("${GTEST_INCLUDE_DIR}"
 ###################################################################################################
 # - library paths ---------------------------------------------------------------------------------
 
-link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES is an undocumented/unsupported variable containing the link directories for nvcc
+# CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES is an undocumented/unsupported variable containing the link
+# directories for nvcc
+link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" 
                  "${CMAKE_BINARY_DIR}/lib"
                  "${GTEST_LIBRARY_DIR}")
 
@@ -64,7 +66,7 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
 
 ###################################################################################################
 ###################################################################################################
-# - device mr tests -------------------------------------------------------------------------------------
+# - device mr tests --------------------------------------------------------------------------------
 
 set(DEVICE_MR_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/mr_tests.cpp"
@@ -76,16 +78,31 @@ ConfigureTest(DEVICE_MR_TEST "${DEVICE_MR_TEST_SRC}")
 
 ###################################################################################################
 ###################################################################################################
-# - host mr tests -------------------------------------------------------------------------------------
+# - device mr per-thread default stream tests------------------------------------------------------
+
+
+set(DEVICE_MR_PTDS_TEST_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/mr_multithreaded_tests.cpp")
+
+#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=thread")
+#set(CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fsanitize=thread")
+
+ConfigureTest(DEVICE_MR_PTDS_TEST "${DEVICE_MR_PTDS_TEST_SRC}")
+target_compile_definitions(DEVICE_MR_PTDS_TEST PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
+
+
+###################################################################################################
+###################################################################################################
+# - host mr tests ----------------------------------------------------------------------------------
 
 set(HOST_MR_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/host/mr_tests.cpp")
     
-
 ConfigureTest(HOST_MR_TEST "${HOST_MR_TEST_SRC}") 
+
 ###################################################################################################
 ###################################################################################################
-# - device buffer tests -------------------------------------------------------------------------------------
+# - device buffer tests ----------------------------------------------------------------------------
 
 set(BUFFER_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/device_buffer_tests.cu")
@@ -94,14 +111,14 @@ ConfigureTest(DEVICE_BUFFER_TEST "${BUFFER_TEST_SRC}")
 
 ###################################################################################################
 ###################################################################################################
-# - device scalar tests -------------------------------------------------------------------------------------
+# - device scalar tests ----------------------------------------------------------------------------
 
 set(SCALAR_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/device_scalar_tests.cpp")
 
 ConfigureTest(DEVICE_SCALAR_TEST "${SCALAR_TEST_SRC}")
 ###################################################################################################
-# - logger tests -------------------------------------------------------------------------------------
+# - logger tests ----------------------------------------------------------------------------------
 
 set(LOGGER_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/logger_tests.cpp")
@@ -109,7 +126,7 @@ set(LOGGER_TEST_SRC
 ConfigureTest(LOGGER_TEST "${LOGGER_TEST_SRC}")
 
 ###################################################################################################
-# - uvector tests -------------------------------------------------------------------------------------
+# - uvector tests ---------------------------------------------------------------------------------
 
 set(DEVICE_UVECTOR_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/device_uvector_tests.cu")
