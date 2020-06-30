@@ -46,6 +46,8 @@ include_directories("${GTEST_INCLUDE_DIR}"
                     "${CMAKE_SOURCE_DIR}/include"
                     "${CMAKE_SOURCE_DIR}/include/rmm"
                     "${CMAKE_SOURCE_DIR}/src"
+                    "${CMAKE_SOURCE_DIR}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/../include")
 
 ###################################################################################################
