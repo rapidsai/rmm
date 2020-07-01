@@ -12,11 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# cython: profile = False
-# distutils: language = c++
-# cython: embedsignature = True
-# cython: language_level = 3
-
 from libcpp.memory cimport unique_ptr
 from libc.stdint cimport uintptr_t
 
@@ -52,11 +47,12 @@ cdef class DeviceBuffer:
     cpdef copy_from_device(self, cuda_ary, uintptr_t stream=*)
     cpdef bytes tobytes(self, uintptr_t stream=*)
 
-    cdef size_t c_size(self)
-    cpdef void resize(self, size_t new_size)
-    cpdef size_t capacity(self)
-    cdef void* c_data(self)
+    cdef size_t c_size(self) except *
+    cpdef void resize(self, size_t new_size) except *
+    cpdef size_t capacity(self) except *
+    cdef void* c_data(self) except *
 
+    cdef device_buffer c_release(self) except *
 
 cpdef DeviceBuffer to_device(const unsigned char[::1] b, uintptr_t stream=*)
 cpdef void copy_ptr_to_host(uintptr_t db,
@@ -75,3 +71,4 @@ cpdef void copy_device_to_ptr(uintptr_t d_src,
 
 cdef extern from "<utility>" namespace "std" nogil:
     cdef unique_ptr[device_buffer] move(unique_ptr[device_buffer])
+    cdef device_buffer move(device_buffer)

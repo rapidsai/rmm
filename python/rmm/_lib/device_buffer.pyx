@@ -12,11 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# cython: profile = False
-# distutils: language = c++
-# cython: embedsignature = True
-# cython: language_level = 3
-
 
 import numpy as np
 
@@ -278,17 +273,23 @@ cdef class DeviceBuffer:
 
         return b
 
-    cdef size_t c_size(self):
+    cdef size_t c_size(self) except *:
         return self.c_obj.get()[0].size()
 
-    cpdef void resize(self, size_t new_size):
+    cpdef void resize(self, size_t new_size) except *:
         self.c_obj.get()[0].resize(new_size)
 
-    cpdef size_t capacity(self):
+    cpdef size_t capacity(self) except *:
         return self.c_obj.get()[0].capacity()
 
-    cdef void* c_data(self):
+    cdef void* c_data(self) except *:
         return self.c_obj.get()[0].data()
+
+    cdef device_buffer c_release(self) except *:
+        """
+        Releases ownership the data held by this DeviceBuffer.
+        """
+        return move(cython.operator.dereference(self.c_obj))
 
 
 @cython.boundscheck(False)
