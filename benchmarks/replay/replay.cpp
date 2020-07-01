@@ -125,24 +125,18 @@ std::vector<std::vector<rmm::detail::event>> parse_per_thread_events(std::string
 
   auto const num_threads = events_per_thread.size();
 
-  // Per thread offset into the sorted list of events
-  std::vector<std::size_t> thread_event_offsets(num_threads + 1, 0);
-  thrust::inclusive_scan(thrust::host,
-                         events_per_thread.begin(),
-                         events_per_thread.end(),
-                         std::next(thread_event_offsets.begin()));
-
   // Copy each thread's events into its own vector
   std::vector<std::vector<event>> per_thread_events(num_threads);
-  thrust::transform(thrust::host,
-                    thread_event_offsets.begin(),
-                    std::prev(thread_event_offsets.end()),
-                    std::next(thread_event_offsets.begin()),
-                    per_thread_events.begin(),
-                    [&all_events](auto begin, auto end) {
-                      return std::vector<event>(all_events.begin() + begin,
-                                                all_events.begin() + end);
-                    });
+  std::transform(events_per_thread.begin(),
+                 events_per_thread.end(),
+                 std::back_inserter(per_thread_events),
+                 [&all_events, offset = 0](auto num_events) mutable {
+                   auto begin = offset;
+                   offset += num_events;
+                   auto end = offset;
+                   return std::vector<event>(all_events.cbegin() + begin,
+                                             all_events.cbegin() + end);
+                 });
 
   return per_thread_events;
 }
