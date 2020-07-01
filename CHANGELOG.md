@@ -5,7 +5,7 @@
 - PR #375 Support out-of-band buffers in Python pickling
 - PR #391 Add `get_default_resource_type`
 - PR #396 Remove deprecated RMM APIs
-- PR #425 Add CUDA per-thread default stream support to `pool_memory_resource`
+- PR #425 Add CUDA per-thread default stream support and thread safety to `pool_memory_resource`
 
 ## Improvements
 
