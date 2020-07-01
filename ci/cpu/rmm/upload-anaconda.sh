@@ -29,10 +29,3 @@ if [ "$UPLOAD_RMM" == "1" ]; then
   echo ${UPLOADFILE}
   anaconda -t ${MY_UPLOAD_KEY} upload -u ${CONDA_USERNAME:-rapidsai} ${LABEL_OPTION} --skip-existing ${UPLOADFILE}
 fi
-
-if [[ "$PROJECT_FLASH" == "1" ]]; then
-  tar czvf rmm.tgz $CONDA_PREFIX/conda-bld/rmm*/work /$CONDA_PREFIX/conda-bld/{noarch,linux-64} $CONDA_PREFIX/conda-bld/channeldata.json
-  export AWS_DEFAULT_REGION="us-east-2"
-  logger "Upload conda pkg for rmm..."
-  aws s3 cp rmm.tgz s3://gpuci-cache/rapidsai/rmm/${FLASH_ID}/rmm-${CUDA}.tgz
-fi

@@ -83,14 +83,6 @@ if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
         py.test --cache-clear --junitxml=${WORKSPACE}/test-results/junit-rmm.xml -v --cov-config=.coveragerc --cov=rmm --cov-report=xml:${WORKSPACE}/python/rmm-coverage.xml --cov-report term
     fi
 else
-    logger "Download and install librmm..."
-    export AWS_DEFAULT_REGION="us-east-2"
-    mkdir artifacts
-    cd artifacts
-    aws s3 cp s3://gpuci-cache/rapidsai/rmm/test/librmm-${CUDA}.tgz librmm.tgz
-    tar xzvf librmm.tgz
-    mv ./${CONDA_PREFIX}/conda-bld/librmm*/work $WORKSPACE/build-librmm
-
     export LD_LIBRARY_PATH="$WORKSPACE/build-librmm/build:$LD_LIBRARY_PATH"
 
     TESTRESULTS_DIR=${WORKSPACE}/test-results
@@ -111,7 +103,7 @@ else
     #cd $WORKSPACE/build-librmm/python
     cd $WORKSPACE/python
     logger "Installing librmm..."
-    conda install -c $WORKSPACE/artifacts/${CONDA_PREFIX}/conda-bld/ librmm
+    conda install -c $WORKSPACE/ci/artifacts/${CONDA_PREFIX}/conda-bld/ librmm
 
     logger "Building rmm"
     python setup.py build_ext --inplace --library-dir="$WORKSPACE/build-librmm/build"
