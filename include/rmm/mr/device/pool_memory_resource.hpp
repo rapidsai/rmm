@@ -92,6 +92,10 @@ class pool_memory_resource final : public device_memory_resource {
   {
     // foo
     release();
+#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
+    for (auto& event : ptds_events)
+      event.get().parent = nullptr;
+#endif
   }
 
   /**
@@ -307,7 +311,7 @@ class pool_memory_resource final : public device_memory_resource {
    */
   void release()
   {
-    lock_guard lock(free_lists_mutex);
+    lock_guard lock(mtx);
 
     for (auto b : upstream_blocks_)
       upstream_mr_->deallocate(b.pointer(), b.size());
@@ -330,7 +334,7 @@ class pool_memory_resource final : public device_memory_resource {
    */
   void print()
   {
-    lock_guard lock(free_lists_mutex);
+    lock_guard lock(mtx);
 
     std::size_t free, total;
     std::tie(free, total) = upstream_mr_->get_mem_info(0);
@@ -374,7 +378,7 @@ class pool_memory_resource final : public device_memory_resource {
   {
     if (bytes <= 0) return nullptr;
 
-    lock_guard lock(free_lists_mutex);
+    lock_guard lock(mtx);
 
     cudaEvent_t event = get_event(stream);
     bytes             = rmm::detail::align_up(bytes, allocation_alignment);
@@ -392,7 +396,7 @@ class pool_memory_resource final : public device_memory_resource {
    */
   void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override
   {
-    lock_guard lock(free_lists_mutex);
+    lock_guard lock(mtx);
     free_block(p, bytes, stream);
   }
 
@@ -424,8 +428,10 @@ class pool_memory_resource final : public device_memory_resource {
     }
     ~cuda_event()
     {
-      lock_guard lock(parent->free_lists_mutex);
-      parent->destroy_event(event);
+      if (parent) {
+        lock_guard lock(parent->mtx);
+        parent->destroy_event(event);
+      }
     }
 
     cudaEvent_t event;
@@ -457,6 +463,7 @@ class pool_memory_resource final : public device_memory_resource {
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
     if (cudaStreamDefault == stream || cudaStreamPerThread == stream) {
       static thread_local cuda_event e{this};
+      ptds_events.push_back(e);
       return e.event;
     }
 #else
@@ -523,7 +530,12 @@ class pool_memory_resource final : public device_memory_resource {
   std::unordered_map<cudaStream_t, cudaEvent_t> stream_events_;
   std::unordered_map<cudaEvent_t, cudaStream_t> event_streams_;
 
-  std::mutex mutable free_lists_mutex;  // mutex for thread-safe thread-local event destruction
+#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
+  // references to per-thread events to avoid use-after-free when threads exit after MR is deleted
+  std::list<std::reference_wrapper<cuda_event>> ptds_events;
+#endif
+
+  std::mutex mutable mtx;  // mutex for thread-safe access
 };
 
 }  // namespace mr
