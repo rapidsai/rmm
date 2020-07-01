@@ -129,7 +129,7 @@ std::vector<std::vector<rmm::detail::event>> parse_per_thread_events(std::string
   std::vector<std::vector<event>> per_thread_events(num_threads);
   std::transform(events_per_thread.begin(),
                  events_per_thread.end(),
-                 std::back_inserter(per_thread_events),
+                 per_thread_events.begin(),
                  [&all_events, offset = 0](auto num_events) mutable {
                    auto begin = offset;
                    offset += num_events;
