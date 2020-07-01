@@ -351,9 +351,11 @@ inline MRTest<pool_mr>::~MRTest()
 template <>
 inline MRTest<hybrid_mr>::~MRTest()
 {
-  auto small = this->mr->get_small_mr();
-  auto large = this->mr->get_large_mr();
+  auto fixed = this->mr->get_small_mr();
+  auto pool  = this->mr->get_large_mr();
+  auto cuda  = pool->get_upstream();
   this->mr.reset();
-  delete small;
-  delete large;
+  delete fixed;
+  delete pool;
+  delete cuda;
 }
