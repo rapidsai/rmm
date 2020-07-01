@@ -43,6 +43,9 @@ namespace mr {
  * @brief A coalescing best-fit suballocator which uses a pool of memory allocated from
  *        an upstream memory_resource.
  *
+ * Allocation (do_allocate()) and deallocation (do_deallocate()) are thread-safe. Also,
+ * this class is compatible with CUDA per-thread default stream.
+ *
  * @tparam UpstreamResource memory_resource to use for allocating the pool. Implements
  *                          rmm::mr::device_memory_resource interface.
  */
