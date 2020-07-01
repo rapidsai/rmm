@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "gtest/gtest.h"
 #include "mr/device/cuda_memory_resource.hpp"
 #include "mr/device/default_memory_resource.hpp"
 #include "mr/device/pool_memory_resource.hpp"
@@ -245,4 +246,86 @@ TYPED_TEST(MRTest_mt, MixedRandomAllocationFree)
 TYPED_TEST(MRTest_mt, MixedRandomAllocationFreeStream)
 {
   spawn(test_mixed_random_allocation_free<TypeParam>, this->mr.get(), this->stream);
+}
+
+template <typename MemoryResourceType>
+void test_allocate_free_different_threads(MemoryResourceType* mr,
+                                          cudaStream_t streamA = 0,
+                                          cudaStream_t streamB = 0)
+{
+  std::default_random_engine generator;
+  constexpr std::size_t num_allocations{100};
+  constexpr std::size_t max_size{1_MiB};
+
+  std::uniform_int_distribution<std::size_t> size_distribution(1, max_size);
+
+  std::mutex mtx;
+  std::list<allocation> allocations;
+
+  auto allocate_loop = [&]() {
+    for (std::size_t i = 0; i < num_allocations; ++i) {
+      size_t size = size_distribution(generator);
+      void* ptr{};
+      EXPECT_NO_THROW(ptr = mr->allocate(size, streamA));
+      {
+        std::lock_guard<std::mutex> lock(mtx);
+        allocations.emplace_back(ptr, size);
+      }
+    }
+  };
+
+  auto deallocate_loop = [&]() {
+    for (std::size_t i = 0; i < num_allocations;) {
+      {
+        std::lock_guard<std::mutex> lock(mtx);
+        if (allocations.empty())
+          continue;
+        else {
+          i++;
+          allocation alloc = allocations.front();
+          allocations.pop_front();
+          EXPECT_NO_THROW(mr->deallocate(alloc.p, alloc.size, streamB));
+        }
+      }
+    }
+  };
+
+  std::thread producer(allocate_loop);
+  std::thread consumer(deallocate_loop);
+
+  producer.join();
+  consumer.join();
+}
+
+TYPED_TEST(MRTest_mt, AllocFreeDifferentThreadsDefaultStream)
+{
+  test_allocate_free_different_threads<TypeParam>(this->mr.get(), nullptr);
+}
+
+TYPED_TEST(MRTest_mt, AllocFreeDifferentThreadsSameStream)
+{
+  test_allocate_free_different_threads<TypeParam>(this->mr.get(), this->stream);
+}
+
+// cnmem does not allow freeing on a different stream than allocating
+using resources_different_stream = ::testing::Types<rmm::mr::cuda_memory_resource,
+                                                    rmm::mr::managed_memory_resource,
+                                                    pool_mr,
+                                                    thread_safe_fixed_size_mr,
+                                                    thread_safe_fixed_multisize_mr,
+                                                    thread_safe_fixed_multisize_pool_mr,
+                                                    thread_safe_hybrid_mr>;
+
+template <typename MemoryResourceType>
+using MRTestDifferentStream_mt = MRTest<MemoryResourceType>;
+
+TYPED_TEST_CASE(MRTestDifferentStream_mt, resources_different_stream);
+
+TYPED_TEST(MRTestDifferentStream_mt, AllocFreeDifferentThreadsDifferentStream)
+{
+  cudaStream_t streamB{};
+  EXPECT_EQ(cudaSuccess, cudaStreamCreate(&streamB));
+  test_allocate_free_different_threads<TypeParam>(this->mr.get(), this->stream, streamB);
+  EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(streamB));
+  EXPECT_EQ(cudaSuccess, cudaStreamDestroy(streamB));
 }
