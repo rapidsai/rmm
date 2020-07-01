@@ -31,7 +31,7 @@ HELP="$0 [clean] [librmm] [rmm] [-v] [-g] [-n] [-s] [-h]
 
    default action (no args) is to build and install 'librmm' and 'rmm' targets
 "
-LIBRMM_BUILD_DIR=${REPODIR}/build
+LIBRMM_BUILD_DIR=${LIBRMM_BUILD_DIR:=${REPODIR}/build}
 RMM_BUILD_DIR=${REPODIR}/python/build
 BUILD_DIRS="${LIBRMM_BUILD_DIR} ${RMM_BUILD_DIR}"
 
@@ -125,7 +125,6 @@ fi
 
 # Build and install the rmm Python package
 if (( NUMARGS == 0 )) || hasArg rmm; then
-    ensureCMakeRan
     cd "${REPODIR}/python"
     if [[ ${INSTALL_TARGET} != "" ]]; then
         echo "building rmm..."

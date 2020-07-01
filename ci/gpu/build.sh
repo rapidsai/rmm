@@ -103,7 +103,7 @@ else
     #cd $WORKSPACE/build-librmm/python
     cd $WORKSPACE/python
     logger "Installing librmm..."
-    conda install -c $WORKSPACE/ci/artifacts/${CONDA_PREFIX}/conda-bld/ librmm
+    conda install -c $WORKSPACE/ci/artifacts/conda-bld/ librmm
 
     logger "Building rmm"
     python setup.py build_ext --inplace --library-dir="$WORKSPACE/build-librmm/build"
