@@ -419,6 +419,16 @@ class pool_memory_resource final : public device_memory_resource {
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
   /**
    * @brief RAII wrapper for a CUDA event
+   *
+   * These objects take care of creating and freeing an event associated with a per-thread default
+   * stream. They are needed because the event needs to exist in thread_local memory, so it must
+   * be cleaned up when the thread exits. They maintain a pointer to the parent
+   * (pool_memory_resource) that created them, because when a thread exits, if the parent still
+   * exists, they must tell the parent to merge the free list associated with the event. Also, the
+   * parent maintains a list of references to the created cuda_event objects so that if any remain
+   * when the parent is destroyed, it can set their parent pointers to nullptr to we don't have a
+   * use-after-free race. Note: all of this is a workaround for the fact that there is no way
+   * currently to get a unique handle to a CUDA per-thread default stream. :(
    */
   struct cuda_event {
     cuda_event(pool_memory_resource<Upstream>* parent) : parent(parent)
