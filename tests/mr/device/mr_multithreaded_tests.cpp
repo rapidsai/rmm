@@ -249,6 +249,51 @@ TYPED_TEST(MRTest_mt, MixedRandomAllocationFreeStream)
 }
 
 template <typename MemoryResourceType>
+void allocate_loop(MemoryResourceType* mr,
+                   std::size_t num_allocations,
+                   std::list<allocation>& allocations,
+                   std::mutex& mtx,
+                   cudaStream_t stream)
+{
+  constexpr std::size_t max_size{1_MiB};
+
+  std::default_random_engine generator;
+  std::uniform_int_distribution<std::size_t> size_distribution(1, max_size);
+
+  for (std::size_t i = 0; i < num_allocations; ++i) {
+    size_t size = size_distribution(generator);
+    void* ptr{};
+    EXPECT_NO_THROW(ptr = mr->allocate(size, stream));
+    {
+      std::lock_guard<std::mutex> lock(mtx);
+      allocations.emplace_back(ptr, size);
+    }
+  }
+}
+
+template <typename MemoryResourceType>
+void deallocate_loop(MemoryResourceType* mr,
+                     std::size_t num_allocations,
+                     std::list<allocation>& allocations,
+                     std::mutex& mtx,
+                     cudaStream_t stream)
+{
+  for (std::size_t i = 0; i < num_allocations;) {
+    {
+      std::lock_guard<std::mutex> lock(mtx);
+      if (allocations.empty())
+        continue;
+      else {
+        i++;
+        allocation alloc = allocations.front();
+        allocations.pop_front();
+        EXPECT_NO_THROW(mr->deallocate(alloc.p, alloc.size, stream));
+      }
+    }
+  }
+}
+
+template <typename MemoryResourceType>
 void test_allocate_free_different_threads(MemoryResourceType* mr,
                                           cudaStream_t streamA = 0,
                                           cudaStream_t streamB = 0)
@@ -262,36 +307,18 @@ void test_allocate_free_different_threads(MemoryResourceType* mr,
   std::mutex mtx;
   std::list<allocation> allocations;
 
-  auto allocate_loop = [&]() {
-    for (std::size_t i = 0; i < num_allocations; ++i) {
-      size_t size = size_distribution(generator);
-      void* ptr{};
-      EXPECT_NO_THROW(ptr = mr->allocate(size, streamA));
-      {
-        std::lock_guard<std::mutex> lock(mtx);
-        allocations.emplace_back(ptr, size);
-      }
-    }
-  };
-
-  auto deallocate_loop = [&]() {
-    for (std::size_t i = 0; i < num_allocations;) {
-      {
-        std::lock_guard<std::mutex> lock(mtx);
-        if (allocations.empty())
-          continue;
-        else {
-          i++;
-          allocation alloc = allocations.front();
-          allocations.pop_front();
-          EXPECT_NO_THROW(mr->deallocate(alloc.p, alloc.size, streamB));
-        }
-      }
-    }
-  };
-
-  std::thread producer(allocate_loop);
-  std::thread consumer(deallocate_loop);
+  std::thread producer(allocate_loop<MemoryResourceType>,
+                       mr,
+                       num_allocations,
+                       std::ref(allocations),
+                       std::ref(mtx),
+                       streamA);
+  std::thread consumer(deallocate_loop<MemoryResourceType>,
+                       mr,
+                       num_allocations,
+                       std::ref(allocations),
+                       std::ref(mtx),
+                       streamB);
 
   producer.join();
   consumer.join();
