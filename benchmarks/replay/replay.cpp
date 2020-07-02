@@ -159,7 +159,10 @@ int main(int argc, char** argv)
 
   auto args = options.parse(argc, argv);
 
-  RMM_EXPECTS(args.count("file") > 0, "No log filename specified.");
+  if (args.count("file") == 0) {
+    std::cout << options.help() << std::endl;
+    exit(0);
+  }
 
   auto filename = args["file"].as<std::string>();
 
