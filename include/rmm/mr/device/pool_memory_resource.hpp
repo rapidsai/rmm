@@ -15,7 +15,6 @@
  */
 #pragma once
 
-#include <cstdint>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/detail/free_list.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
@@ -25,7 +24,7 @@
 #include <algorithm>
 #include <atomic>
 #include <cassert>
-#include <exception>
+#include <cstdint>
 #include <iostream>
 #include <list>
 #include <map>
@@ -314,7 +313,7 @@ class pool_memory_resource final : public device_memory_resource {
    */
   void release()
   {
-    lock_guard lock(mtx);
+    lock_guard lock(mtx_);
 
     for (auto b : upstream_blocks_)
       upstream_mr_->deallocate(b.pointer(), b.size());
@@ -337,7 +336,7 @@ class pool_memory_resource final : public device_memory_resource {
    */
   void print()
   {
-    lock_guard lock(mtx);
+    lock_guard lock(mtx_);
 
     std::size_t free, total;
     std::tie(free, total) = upstream_mr_->get_mem_info(0);
@@ -381,7 +380,7 @@ class pool_memory_resource final : public device_memory_resource {
   {
     if (bytes <= 0) return nullptr;
 
-    lock_guard lock(mtx);
+    lock_guard lock(mtx_);
 
     cudaEvent_t event = get_event(stream);
     bytes             = rmm::detail::align_up(bytes, allocation_alignment);
@@ -399,7 +398,7 @@ class pool_memory_resource final : public device_memory_resource {
    */
   void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override
   {
-    lock_guard lock(mtx);
+    lock_guard lock(mtx_);
     free_block(p, bytes, stream);
   }
 
@@ -442,7 +441,7 @@ class pool_memory_resource final : public device_memory_resource {
     ~cuda_event()
     {
       if (parent) {
-        lock_guard lock(parent->mtx);
+        lock_guard lock(parent->mtx_);
         parent->destroy_event(event);
       }
     }
@@ -529,9 +528,9 @@ class pool_memory_resource final : public device_memory_resource {
 
   Upstream* upstream_mr_;  // The "heap" to allocate the pool from
 
-  // map of [stream_id, free_list] pairs
-  // stream stream_id must be synced before allocating from this list to a different stream
-  // std::map<cudaStream_t, free_list> stream_free_blocks_;
+  // map of [cudaEvent_t, free_list] pairs
+  // Event (or associated stream) must be synced before allocating from associated free_list to a
+  // different stream
   std::map<cudaEvent_t, free_list> stream_free_blocks_;
 
   std::set<block, rmm::mr::detail::compare_blocks<block>> allocated_blocks_;
@@ -548,7 +547,7 @@ class pool_memory_resource final : public device_memory_resource {
   std::list<std::reference_wrapper<cuda_event>> ptds_events;
 #endif
 
-  std::mutex mutable mtx;  // mutex for thread-safe access
+  std::mutex mutable mtx_;  // mutex for thread-safe access
 };
 
 }  // namespace mr
