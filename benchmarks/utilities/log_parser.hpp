@@ -17,8 +17,11 @@
 #pragma once
 
 #include <cstdint>
+#include <iomanip>
+#include <limits>
 #include <memory>
 #include <rmm/detail/error.hpp>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include "rapidcsv.h"
@@ -43,23 +46,35 @@ struct event {
 
   event(action a, std::size_t s, uintptr_t p) : act{a}, size{s}, pointer{p} {}
 
-  event(std::string const& tid, action a, std::size_t sz, uintptr_t p, uintptr_t s)
+  event(std::size_t tid, action a, std::size_t sz, uintptr_t p, uintptr_t s)
     : thread_id{tid}, act{a}, size{sz}, pointer{p}, stream{s}
   {
   }
 
-  event(std::string const& tid, action a, std::size_t sz, void* p, uintptr_t s)
+  event(std::size_t tid, action a, std::size_t sz, void* p, uintptr_t s)
     : event{tid, a, sz, reinterpret_cast<uintptr_t>(p), s}
   {
   }
+
+  friend std::ostream& operator<<(std::ostream& os, event const& e);
 
   action act{};           ///< Indicates if the event is an allocation or a free
   std::size_t size{};     ///< The size of the memory allocated or freed
   uintptr_t pointer{};    ///< The pointer returned from an allocation, or the
                           ///< pointer freed
-  std::string thread_id;  ///< ID of the thread that initiated the event
+  std::size_t thread_id;  ///< ID of the thread that initiated the event
   uintptr_t stream;       ///< Numeric representation of the CUDA stream on which the event occurred
 };
+
+std::ostream& operator<<(std::ostream& os, event const& e)
+{
+  auto act_string = (e.act == action::ALLOCATE) ? "allocate" : "free";
+
+  os << "Thread: " << e.thread_id << std::setw(9) << act_string
+     << " Size: " << std::setw(std::numeric_limits<std::size_t>::digits10) << e.size << " Pointer: "
+     << "0x" << std::hex << e.pointer << std::dec << " Stream: " << e.stream;
+  return os;
+}
 
 uintptr_t hex_string_to_int(std::string const& s) { return std::stoll(s, nullptr, 16); }
 
@@ -76,7 +91,7 @@ std::vector<event> parse_csv(std::string const& filename)
 {
   rapidcsv::Document csv(filename, rapidcsv::LabelParams(0, -1));
 
-  std::vector<std::string> tids     = csv.GetColumn<std::string>("Thread");
+  std::vector<std::size_t> tids     = csv.GetColumn<std::size_t>("Thread");
   std::vector<std::string> actions  = csv.GetColumn<std::string>("Action");
   std::vector<std::size_t> sizes    = csv.GetColumn<std::size_t>("Size");
   std::vector<std::string> pointers = csv.GetColumn<std::string>("Pointer");
