@@ -95,7 +95,7 @@ class pool_memory_resource final : public device_memory_resource {
     // foo
     release();
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-    for (auto& event : ptds_events)
+    for (auto& event : ptds_events_)
       event.get().parent = nullptr;
 #endif
   }
@@ -437,6 +437,7 @@ class pool_memory_resource final : public device_memory_resource {
     {
       auto result = cudaEventCreateWithFlags(&event, cudaEventDisableTiming);
       assert(cudaSuccess == result);
+      if (parent) parent->ptds_events_.push_back(*this);
     }
     ~cuda_event()
     {
@@ -475,7 +476,6 @@ class pool_memory_resource final : public device_memory_resource {
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
     if (cudaStreamDefault == stream || cudaStreamPerThread == stream) {
       static thread_local cuda_event e{this};
-      ptds_events.push_back(e);
       return e.event;
     }
 #else
@@ -544,7 +544,7 @@ class pool_memory_resource final : public device_memory_resource {
 
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
   // references to per-thread events to avoid use-after-free when threads exit after MR is deleted
-  std::list<std::reference_wrapper<cuda_event>> ptds_events;
+  std::list<std::reference_wrapper<cuda_event>> ptds_events_;
 #endif
 
   std::mutex mutable mtx_;  // mutex for thread-safe access
