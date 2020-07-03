@@ -295,8 +295,8 @@ void deallocate_loop(MemoryResourceType* mr,
 
 template <typename MemoryResourceType>
 void test_allocate_free_different_threads(MemoryResourceType* mr,
-                                          cudaStream_t streamA = 0,
-                                          cudaStream_t streamB = 0)
+                                          cudaStream_t streamA,
+                                          cudaStream_t streamB)
 {
   std::default_random_engine generator;
   constexpr std::size_t num_allocations{100};
@@ -326,12 +326,12 @@ void test_allocate_free_different_threads(MemoryResourceType* mr,
 
 TYPED_TEST(MRTest_mt, AllocFreeDifferentThreadsDefaultStream)
 {
-  test_allocate_free_different_threads<TypeParam>(this->mr.get(), nullptr);
+  test_allocate_free_different_threads<TypeParam>(this->mr.get(), nullptr, nullptr);
 }
 
 TYPED_TEST(MRTest_mt, AllocFreeDifferentThreadsSameStream)
 {
-  test_allocate_free_different_threads<TypeParam>(this->mr.get(), this->stream);
+  test_allocate_free_different_threads<TypeParam>(this->mr.get(), this->stream, this->stream);
 }
 
 // cnmem does not allow freeing on a different stream than allocating
