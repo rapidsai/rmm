@@ -224,7 +224,7 @@ class pool_memory_resource final : public device_memory_resource {
 
     auto const i = allocated_blocks_.find(static_cast<char*>(p));
     assert(i != allocated_blocks_.end());
-    assert(i->size == rmm::detail::align_up(size, allocation_alignment));
+    assert(i->size() == rmm::detail::align_up(size, allocation_alignment));
 
     stream_free_blocks_[stream].insert(*i);
     allocated_blocks_.erase(i);
@@ -306,7 +306,7 @@ class pool_memory_resource final : public device_memory_resource {
 
     for (auto h : upstream_blocks_) {
       h.print();
-      upstream_total += h.size;
+      upstream_total += h.size();
     }
     std::cout << "total upstream: " << upstream_total << " B\n";
 
