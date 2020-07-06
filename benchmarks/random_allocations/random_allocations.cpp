@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include <rmm/mr/device/cnmem_memory_resource.hpp>
+#include <rmm/mr/device/cub_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
@@ -184,6 +185,12 @@ resource_wrapper<cuda_mr>::resource_wrapper()
 }
 
 template <>
+resource_wrapper<rmm::mr::cub_memory_resource>::resource_wrapper()
+{
+  mr = new rmm::mr::cub_memory_resource(2, 9, 29);
+}
+
+template <>
 resource_wrapper<safe_pool_mr>::resource_wrapper()
 {
   mr = new rmm::mr::thread_safe_resource_adaptor<pool_mr>(new pool_mr(new cuda_mr()));
@@ -305,6 +312,8 @@ void declare_benchmark(std::string name)
   else if (name == "cnmem")
     BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::cnmem_memory_resource)
       ->Apply(benchmark_range);
+  else if (name == "cub")
+    BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::cub_memory_resource)->Apply(benchmark_range);
   else
     std::cout << "Error: invalid memory_resource name: " << name << "\n";
 }
