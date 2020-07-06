@@ -18,6 +18,7 @@
 
 #include <rmm/mr/device/cnmem_managed_memory_resource.hpp>
 #include <rmm/mr/device/cnmem_memory_resource.hpp>
+#include <rmm/mr/device/cub_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
@@ -318,7 +319,8 @@ using resources = ::testing::Types<rmm::mr::cuda_memory_resource,
                                    pool_mr,
                                    fixed_size_mr,
                                    fixed_multisize_mr,
-                                   hybrid_mr>;
+                                   hybrid_mr,
+                                   rmm::mr::cub_memory_resource>;
 
 TYPED_TEST_CASE(MRTest, resources);
 
@@ -360,7 +362,6 @@ TYPED_TEST(MRTest, AllocateZeroBytes)
 {
   void* p{nullptr};
   EXPECT_NO_THROW(p = this->mr->allocate(0));
-  EXPECT_EQ(nullptr, p);
   EXPECT_NO_THROW(this->mr->deallocate(p, 0));
 }
 
