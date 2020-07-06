@@ -15,9 +15,9 @@
  */
 #pragma once
 
+#include "detail/error.hpp"
 #include "host_memory_resource.hpp"
 
-#include <cuda_runtime_api.h>
 #include <cstddef>
 #include <utility>
 
@@ -86,10 +86,8 @@ class pinned_memory_resource final : public host_memory_resource {
   {
     (void)alignment;
     if (nullptr == p) { return; }
-    detail::aligned_deallocate(p, bytes, alignment, [](void *p) {
-      auto status = cudaFreeHost(p);
-      assert(status == cudaSuccess);
-    });
+    detail::aligned_deallocate(
+      p, bytes, alignment, [](void *p) { RMM_ASSERT_CUDA_SUCCESS(cudaFreeHost(p)); });
   }
 };
 }  // namespace mr
