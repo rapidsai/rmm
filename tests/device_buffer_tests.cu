@@ -15,6 +15,7 @@
  */
 
 #include "gtest/gtest.h"
+#include "mr/device/cub_memory_resource.hpp"
 
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
@@ -54,7 +55,8 @@ struct DeviceBufferTest : public ::testing::Test {
 using resources = ::testing::Types<rmm::mr::cuda_memory_resource,
                                    rmm::mr::managed_memory_resource,
                                    rmm::mr::cnmem_memory_resource,
-                                   rmm::mr::cnmem_managed_memory_resource>;
+                                   rmm::mr::cnmem_managed_memory_resource,
+                                   rmm::mr::cub_memory_resource>;
 
 TYPED_TEST_CASE(DeviceBufferTest, resources);
 
