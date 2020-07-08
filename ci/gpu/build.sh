@@ -83,7 +83,7 @@ if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
         py.test --cache-clear --junitxml=${WORKSPACE}/test-results/junit-rmm.xml -v --cov-config=.coveragerc --cov=rmm --cov-report=xml:${WORKSPACE}/python/rmm-coverage.xml --cov-report term
     fi
 else
-    export LD_LIBRARY_PATH="$WORKSPACE/build-librmm/build:$LD_LIBRARY_PATH"
+    export LD_LIBRARY_PATH="$WORKSPACE/ci/artifacts/rmm/cpu/conda_work/build:$LD_LIBRARY_PATH"
 
     TESTRESULTS_DIR=${WORKSPACE}/test-results
     mkdir -p ${TESTRESULTS_DIR}
@@ -103,10 +103,10 @@ else
     #cd $WORKSPACE/build-librmm/python
     cd $WORKSPACE/python
     logger "Installing librmm..."
-    conda install -c $WORKSPACE/ci/artifacts/conda-bld/ librmm
+    conda install -c $WORKSPACE/ci/artifacts/rmm/cpu/conda-bld/ librmm
 
     logger "Building rmm"
-    python setup.py build_ext --inplace --library-dir="$WORKSPACE/build-librmm/build"
+    python setup.py build_ext --inplace --library-dir="$WORKSPACE/ci/artifacts/rmm/cpu/conda_work/build"
     python setup.py install --single-version-externally-managed --record=record.txt
     # "$WORKSPACE/build.sh" -v clean rmm
     logger "pytest rmm"
