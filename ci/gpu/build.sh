@@ -90,7 +90,7 @@ else
     SUITEERROR=0
 
     # run gtests
-    cd $WORKSPACE/build-librmm
+    cd $WORKSPACE/ci/artifacts/rmm/cpu/conda_work
     for gt in "build/gtests/*" ; do
         ${gt} --gtest_output=xml:${TESTRESULTS_DIR}/
         exitcode=$?
