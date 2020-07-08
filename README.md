@@ -20,6 +20,13 @@ For information on the interface RMM provides and how to use RMM in your C++ cod
 
 RMM can be installed with conda ([miniconda](https://conda.io/miniconda.html), or the full [Anaconda distribution](https://www.anaconda.com/download)) from the `rapidsai` channel:
 
+For `rmm version == 0.14` :
+```bash
+# for CUDA 10.2
+conda install -c nvidia -c rapidsai -c conda-forge -c defaults \
+    rmm=0.14 cudatoolkit=10.2
+```
+
 For `rmm version == 0.12` :
 ```bash
 # for CUDA 10.1
