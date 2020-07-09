@@ -11,7 +11,7 @@ LC_ALL=C.UTF-8
 LANG=C.UTF-8
 
 # Activate common conda env
-#source activate gdf
+source activate gdf
 
 # Run isort and get results/return code
 ISORT=`isort --recursive --check-only python`
