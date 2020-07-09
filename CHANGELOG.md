@@ -30,7 +30,7 @@
 - PR #398 Fix missing head flag in merge_blocks (pool_memory_resource) and improve block class
 - PR #403 Mark Cython `memory_resource_wrappers` `extern` as `nogil`
 - PR #406 Sets Google Benchmark to a fixed version, v1.5.1.
-
+- PR #434: Fix issue with incorrect docker image being used in local build script
 
 # RMM 0.14.0 (Date TBD)
 
