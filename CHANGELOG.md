@@ -24,6 +24,7 @@
 
 ## Bug Fixes
 
+- PR #433 Fix python imports
 - PR #400 Fix segfault in RANDOM_ALLOCATIONS_BENCH
 - PR #383 Explicitly require NumPy
 - PR #398 Fix missing head flag in merge_blocks (pool_memory_resource) and improve block class
