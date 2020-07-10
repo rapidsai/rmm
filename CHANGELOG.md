@@ -8,6 +8,7 @@
 
 ## Improvements
 
+- PR #428 Add the option to automatically flush memory allocate/free logs
 - PR #378 Use CMake `FetchContent` to obtain latest release of `cub` and `thrust`
 - PR #377 A better way to fetch `spdlog`
 - PR #372 Use CMake `FetchContent` to obtain `cnmem` instead of git submodule
