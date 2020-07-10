@@ -18,8 +18,8 @@ ARGS=$*
 # script, and that this script resides in the repo dir!
 REPODIR=$(cd $(dirname $0); pwd)
 
-VALIDARGS="clean librmm rmm -v -g -n -s -h"
-HELP="$0 [clean] [librmm] [rmm] [-v] [-g] [-n] [-s] [-h]
+VALIDARGS="clean librmm rmm -v -g -n -s -p -h"
+HELP="$0 [clean] [librmm] [rmm] [-v] [-g] [-n] [-s] [-p] [-h]
    clean  - remove all existing build artifacts and configuration (start over)
    librmm - build and install the librmm C++ code
    rmm    - build and install the rmm Python package
@@ -27,6 +27,7 @@ HELP="$0 [clean] [librmm] [rmm] [-v] [-g] [-n] [-s] [-h]
    -g     - build for debug
    -n     - no install step
    -s     - statically link against cudart
+   -p     - enable per-thread default stream
    -h     - print this text
 
    default action (no args) is to build and install 'librmm' and 'rmm' targets
@@ -40,6 +41,7 @@ VERBOSE=""
 BUILD_TYPE=Release
 INSTALL_TARGET=install
 CUDA_STATIC_RUNTIME=OFF
+PER_THREAD_DEFAULT_STREAM=OFF
 RAN_CMAKE=0
 
 # Set defaults for vars that may not have been defined externally
@@ -61,6 +63,7 @@ function ensureCMakeRan {
         echo "Executing cmake for librmm..."
         cmake -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" \
               -DCUDA_STATIC_RUNTIME="${CUDA_STATIC_RUNTIME}" \
+              -DPER_THREAD_DEFAULT_STREAM="${PER_THREAD_DEFAULT_STREAM}" \
               -DCMAKE_CXX11_ABI=ON \
               -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..
         RAN_CMAKE=1
@@ -95,6 +98,9 @@ if hasArg -n; then
 fi
 if hasArg -s; then
     CUDA_STATIC_RUNTIME=ON
+fi
+if hasArg -p; then
+    PER_THREAD_DEFAULT_STREAM=ON
 fi
 
 # If clean given, run it prior to any other steps
