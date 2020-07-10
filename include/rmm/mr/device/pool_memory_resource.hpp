@@ -528,7 +528,7 @@ class pool_memory_resource final : public device_memory_resource {
 
   Upstream* upstream_mr_;  // The "heap" to allocate the pool from
 
-  // map of [cudaEvent_t, free_list] pairs
+  // map of stream_event_pair --> free_list
   // Event (or associated stream) must be synced before allocating from associated free_list to a
   // different stream
   std::map<stream_event_pair, free_list> stream_free_blocks_;
