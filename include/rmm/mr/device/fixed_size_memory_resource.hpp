@@ -29,6 +29,7 @@
 #include <list>
 #include <map>
 #include <utility>
+#include <vector>
 
 namespace rmm {
 
@@ -164,6 +165,24 @@ class fixed_size_memory_resource : public device_memory_resource {
   }
 
   /**
+   * @brief Pops a fixed-size block off of free list `blocks`, if available.
+   *
+   * @param blocks
+   * @return Pointer to an available block, or nullptr if the free_list is empty.
+   */
+  void* block_from_free_list(free_list& blocks)
+  {
+    void* p = nullptr;
+
+    if (!blocks.empty()) {
+      p = blocks.front();
+      blocks.pop_front();
+    }
+
+    return p;
+  }
+
+  /**
    * @brief Find a free block in `free_list` `blocks` associated with stream `blocks_stream`, for
    *        use on `stream`.
    *
@@ -175,12 +194,7 @@ class fixed_size_memory_resource : public device_memory_resource {
    */
   void* block_from_stream(free_list& blocks, cudaStream_t blocks_stream, cudaStream_t stream)
   {
-    void* p = nullptr;
-
-    if (!blocks.empty()) {
-      p = blocks.front();
-      blocks.pop_front();
-    }
+    void* p = block_from_free_list(blocks);
 
     // If we found a block associated with a different stream,
     // we have to synchronize the stream in order to use it
@@ -219,7 +233,7 @@ class fixed_size_memory_resource : public device_memory_resource {
     // Try to find a block in the same stream
     auto iter = stream_blocks_.find(stream);
     if (iter != stream_blocks_.end()) {
-      void* p = block_from_stream(iter->second, stream, stream);
+      void* p = block_from_free_list(iter->second);
       if (p != nullptr) return p;
     }
 
@@ -236,10 +250,10 @@ class fixed_size_memory_resource : public device_memory_resource {
 
     // nothing available in other streams, get new blocks
     // avoid searching for this stream's list again
-    free_list* plist = (iter != stream_blocks_.end()) ? &iter->second : &stream_blocks_[stream];
+    free_list& list = (iter != stream_blocks_.end()) ? iter->second : stream_blocks_[stream];
 
-    new_blocks_from_upstream(stream, *plist);
-    return get_block(stream);
+    new_blocks_from_upstream(stream, list);
+    return block_from_free_list(list);
   }
 
   //
