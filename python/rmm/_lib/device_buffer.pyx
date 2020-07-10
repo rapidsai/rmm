@@ -11,26 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
 import numpy as np
 
-from libcpp.memory cimport unique_ptr
+cimport cython
+from cpython.bytes cimport PyBytes_AS_STRING, PyBytes_FromStringAndSize
 from libc.stdint cimport uintptr_t
-
-from cpython.bytes cimport PyBytes_FromStringAndSize, PyBytes_AS_STRING
+from libcpp.memory cimport unique_ptr
 
 from rmm._lib.lib cimport (
     cudaError_t,
     cudaMemcpyDeviceToDevice,
     cudaMemcpyDeviceToHost,
     cudaMemcpyHostToDevice,
-    cudaSuccess,
     cudaStream_t,
-    cudaStreamSynchronize
+    cudaStreamSynchronize,
+    cudaSuccess,
 )
-
-cimport cython
 
 
 cdef class DeviceBuffer:

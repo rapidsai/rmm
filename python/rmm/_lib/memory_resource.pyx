@@ -1,10 +1,9 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
-
 import os
 
 from libcpp cimport bool
 from libcpp.cast cimport dynamic_cast
-from libcpp.memory cimport unique_ptr, make_unique, shared_ptr, make_shared
+from libcpp.memory cimport make_shared, make_unique, shared_ptr, unique_ptr
 from libcpp.string cimport string
 
 

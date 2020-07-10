@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import ctypes
 
 import numpy as np
@@ -19,7 +18,7 @@ from numba import cuda
 from numba.cuda import HostOnlyCUDAMemoryManager, IpcHandle, MemoryPointer
 
 import rmm
-import rmm._lib as librmm
+from rmm import _lib as librmm
 
 
 # Utility Functions
