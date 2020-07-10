@@ -4,7 +4,8 @@
 
 - PR #375 Support out-of-band buffers in Python pickling
 - PR #391 Add `get_default_resource_type`
-- PR #396 Remove deprecated RMM APIs.
+- PR #396 Remove deprecated RMM APIs
+- PR #425 Add CUDA per-thread default stream support and thread safety to `pool_memory_resource`
 
 ## Improvements
 
@@ -30,7 +31,7 @@
 - PR #383 Explicitly require NumPy
 - PR #398 Fix missing head flag in merge_blocks (pool_memory_resource) and improve block class
 - PR #403 Mark Cython `memory_resource_wrappers` `extern` as `nogil`
-- PR #406 Sets Google Benchmark to a fixed version, v1.5.1.
+- PR #406 Sets Google Benchmark to a fixed version, v1.5.1
 
 
 # RMM 0.14.0 (Date TBD)
