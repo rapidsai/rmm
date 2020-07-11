@@ -18,8 +18,8 @@ ARGS=$*
 # script, and that this script resides in the repo dir!
 REPODIR=$(cd $(dirname $0); pwd)
 
-VALIDARGS="clean librmm rmm -v -g -n -s -p -h"
-HELP="$0 [clean] [librmm] [rmm] [-v] [-g] [-n] [-s] [-p] [-h]
+VALIDARGS="clean librmm rmm -v -g -n -s --ptds -h"
+HELP="$0 [clean] [librmm] [rmm] [-v] [-g] [-n] [-s] [--ptds] [-h]
    clean  - remove all existing build artifacts and configuration (start over)
    librmm - build and install the librmm C++ code
    rmm    - build and install the rmm Python package
@@ -27,7 +27,7 @@ HELP="$0 [clean] [librmm] [rmm] [-v] [-g] [-n] [-s] [-p] [-h]
    -g     - build for debug
    -n     - no install step
    -s     - statically link against cudart
-   -p     - enable per-thread default stream
+   --ptds - enable per-thread default stream
    -h     - print this text
 
    default action (no args) is to build and install 'librmm' and 'rmm' targets
@@ -99,7 +99,7 @@ fi
 if hasArg -s; then
     CUDA_STATIC_RUNTIME=ON
 fi
-if hasArg -p; then
+if hasArg --ptds; then
     PER_THREAD_DEFAULT_STREAM=ON
 fi
 
