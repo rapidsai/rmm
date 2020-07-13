@@ -4,10 +4,12 @@
 
 - PR #375 Support out-of-band buffers in Python pickling
 - PR #391 Add `get_default_resource_type`
-- PR #396 Remove deprecated RMM APIs.
+- PR #396 Remove deprecated RMM APIs
+- PR #425 Add CUDA per-thread default stream support and thread safety to `pool_memory_resource`
 
 ## Improvements
 
+- PR #428 Add the option to automatically flush memory allocate/free logs
 - PR #378 Use CMake `FetchContent` to obtain latest release of `cub` and `thrust`
 - PR #377 A better way to fetch `spdlog`
 - PR #372 Use CMake `FetchContent` to obtain `cnmem` instead of git submodule
@@ -21,6 +23,7 @@
 - PR #414 Add element-wise access for device_uvector
 - PR #421 Capture thread id in logging and improve logger testing
 - PR #426 Added multi-threaded support to replay benchmark.
+- PR #435 Update conda upload versions for new supported CUDA/Python
 
 ## Bug Fixes
 
