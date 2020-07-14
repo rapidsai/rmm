@@ -38,7 +38,7 @@ namespace mr {
  * @tparam Upstream Type of the upstream resource used for
  * allocation/deallocation.
  */
-template <typename Upstream>
+template <typename Upstream, typename Upstream_ptr = Upstream*>
 class logging_resource_adaptor final : public device_memory_resource {
  public:
   /**
@@ -62,7 +62,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @param auto_flush If true, flushes the log for every (de)allocation. Warning, this will degrade
    * performance.
    */
-  logging_resource_adaptor(Upstream* upstream,
+  logging_resource_adaptor(Upstream_ptr upstream,
                            std::string const& filename = get_default_filename(),
                            bool auto_flush             = false)
     : upstream_{upstream},
@@ -89,7 +89,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @param auto_flush If true, flushes the log for every (de)allocation. Warning, this will degrade
    * performance.
    */
-  logging_resource_adaptor(Upstream* upstream, std::ostream& stream, bool auto_flush = false)
+  logging_resource_adaptor(Upstream_ptr upstream, std::ostream& stream, bool auto_flush = false)
     : upstream_{upstream},
       logger_{std::make_shared<spdlog::logger>(
         "RMM", std::make_shared<spdlog::sinks::ostream_sink_mt>(stream))}
@@ -102,9 +102,9 @@ class logging_resource_adaptor final : public device_memory_resource {
   /**
    * @brief Return pointer to the upstream resource.
    *
-   * @return Upstream* Pointer to the upstream resource.
+   * @return Upstream_ptr Pointer to the upstream resource.
    */
-  Upstream* get_upstream() const noexcept { return upstream_; }
+  Upstream_ptr get_upstream() const noexcept { return upstream_; }
 
   /**
    * @brief Checks whether the upstream resource supports streams.
@@ -136,7 +136,8 @@ class logging_resource_adaptor final : public device_memory_resource {
  private:
   // make_logging_adaptor needs access to private get_default_filename
   template <typename T>
-  friend logging_resource_adaptor<T> make_logging_adaptor(T* upstream, std::string const& filename);
+  friend logging_resource_adaptor<T, T*> make_logging_adaptor(T* upstream,
+                                                              std::string const& filename);
 
   /**
    * @brief Return the value of the environment variable RMM_LOG_FILE.
@@ -266,8 +267,7 @@ class logging_resource_adaptor final : public device_memory_resource {
 
   std::shared_ptr<spdlog::logger> logger_;  ///< spdlog logger object
 
-  Upstream* upstream_;  ///< The upstream resource used for satisfying
-                        ///< allocation requests
+  Upstream_ptr upstream_;  ///< The upstream resource used for satisfying allocation requests
 };
 
 /**
@@ -280,11 +280,12 @@ class logging_resource_adaptor final : public device_memory_resource {
  * retrieves the log file name from the environment variable "RMM_LOG_FILE".
  */
 template <typename Upstream>
-logging_resource_adaptor<Upstream> make_logging_adaptor(
+logging_resource_adaptor<Upstream, Upstream*> make_logging_adaptor(
   Upstream* upstream,
-  std::string const& filename = logging_resource_adaptor<Upstream>::get_default_filename())
+  std::string const& filename =
+    logging_resource_adaptor<Upstream, Upstream*>::get_default_filename())
 {
-  return logging_resource_adaptor<Upstream>{upstream, filename};
+  return {upstream, filename};
 }
 
 /**
@@ -296,9 +297,10 @@ logging_resource_adaptor<Upstream> make_logging_adaptor(
  * @param stream The ostream to write log info.
  */
 template <typename Upstream>
-logging_resource_adaptor<Upstream> make_logging_adaptor(Upstream* upstream, std::ostream& stream)
+logging_resource_adaptor<Upstream, Upstream*> make_logging_adaptor(Upstream* upstream,
+                                                                   std::ostream& stream)
 {
-  return logging_resource_adaptor<Upstream>{upstream, stream};
+  return {upstream, stream};
 }
 
 }  // namespace mr

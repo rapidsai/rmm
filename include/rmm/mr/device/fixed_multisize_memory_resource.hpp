@@ -67,7 +67,7 @@ std::size_t ipow(std::size_t base, std::size_t exp)
  * @tparam UpstreamResource memory_resource to use for allocating the pool. Implements
  *                          rmm::mr::device_memory_resource interface.
  */
-template <typename Upstream>
+template <typename Upstream, typename Upstream_ptr = Upstream*>
 class fixed_multisize_memory_resource : public device_memory_resource {
  public:
   // Sizes are 2 << k, for k in [default_min_exponent, default_max_exponent]
@@ -92,7 +92,7 @@ class fixed_multisize_memory_resource : public device_memory_resource {
    * @param initial_blocks_per_size The number of blocks to preallocate from the upstream memory
    *        resource, and to allocate when all current blocks are in use.
    */
-  explicit fixed_multisize_memory_resource(Upstream* upstream_resource,
+  explicit fixed_multisize_memory_resource(Upstream_ptr upstream_resource,
                                            std::size_t size_base         = default_size_base,
                                            std::size_t min_size_exponent = default_min_exponent,
                                            std::size_t max_size_exponent = default_max_exponent,
@@ -108,7 +108,7 @@ class fixed_multisize_memory_resource : public device_memory_resource {
 
     // allocate initial blocks and insert into free list
     for (std::size_t i = min_size_exponent_; i <= max_size_exponent_; i++) {
-      fixed_size_mr_.emplace_back(new fixed_size_memory_resource<Upstream>(
+      fixed_size_mr_.emplace_back(new fixed_size_memory_resource<Upstream, Upstream_ptr>(
         upstream_resource, ipow(size_base, i), initial_blocks_per_size));
     }
   }
@@ -139,7 +139,7 @@ class fixed_multisize_memory_resource : public device_memory_resource {
    *
    * @return UpstreamResource* the upstream memory resource.
    */
-  Upstream* get_upstream() const noexcept { return upstream_mr_; }
+  Upstream_ptr get_upstream() const noexcept { return upstream_mr_; }
 
   /**
    * @brief Get the minimum block size that this memory_resource can allocate.
@@ -229,7 +229,7 @@ class fixed_multisize_memory_resource : public device_memory_resource {
     return std::make_pair(0, 0);
   }
 
-  Upstream* upstream_mr_;  // The upstream memory_resource from which to allocate blocks.
+  Upstream_ptr upstream_mr_;  // The upstream memory_resource from which to allocate blocks.
 
   std::size_t const size_base_;          // base of the allocation block sizes (power of 2)
   std::size_t const min_size_exponent_;  // exponent of the size of smallest blocks allocated
@@ -238,7 +238,7 @@ class fixed_multisize_memory_resource : public device_memory_resource {
   std::size_t const max_size_bytes_;     // maximum fixed size in bytes
 
   // allocators for fixed-size blocks <= max_fixed_size_
-  std::vector<std::unique_ptr<fixed_size_memory_resource<Upstream>>> fixed_size_mr_;
+  std::vector<std::unique_ptr<fixed_size_memory_resource<Upstream, Upstream_ptr>>> fixed_size_mr_;
 };
 }  // namespace mr
 }  // namespace rmm

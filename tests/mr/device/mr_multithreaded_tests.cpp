@@ -25,11 +25,17 @@
 
 namespace {
 
-using thread_safe_fixed_size_mr      = rmm::mr::thread_safe_resource_adaptor<fixed_size_mr>;
-using thread_safe_fixed_multisize_mr = rmm::mr::thread_safe_resource_adaptor<fixed_multisize_mr>;
+using device_mr = rmm::mr::device_memory_resource;
+using cuda_mr   = rmm::mr::cuda_memory_resource;
+using thread_safe_fixed_size_mr =
+  rmm::mr::thread_safe_resource_adaptor<fixed_size_mr, std::shared_ptr<fixed_size_mr>>;
+using thread_safe_fixed_multisize_mr =
+  rmm::mr::thread_safe_resource_adaptor<fixed_multisize_mr, std::shared_ptr<fixed_multisize_mr>>;
 using thread_safe_fixed_multisize_pool_mr =
-  rmm::mr::thread_safe_resource_adaptor<fixed_multisize_pool_mr>;
-using thread_safe_hybrid_mr = rmm::mr::thread_safe_resource_adaptor<hybrid_mr>;
+  rmm::mr::thread_safe_resource_adaptor<fixed_multisize_pool_mr,
+                                        std::shared_ptr<fixed_multisize_pool_mr>>;
+using thread_safe_hybrid_mr =
+  rmm::mr::thread_safe_resource_adaptor<hybrid_mr, std::shared_ptr<hybrid_mr>>;
 
 constexpr std::size_t num_threads{4};
 
@@ -51,71 +57,32 @@ void spawn(Task task, Arguments... args)
 
 template <>
 inline MRTest<thread_safe_fixed_size_mr>::MRTest()
-  : mr{new thread_safe_fixed_size_mr(new fixed_size_mr(rmm::mr::get_default_resource()))}
+  : mr{new thread_safe_fixed_size_mr(
+      std::make_shared<fixed_size_mr>(rmm::mr::get_default_resource()))}
 {
-}
-
-template <>
-inline MRTest<thread_safe_fixed_size_mr>::~MRTest()
-{
-  auto fixed = mr->get_upstream();
-  this->mr.reset();
-  delete fixed;
 }
 
 template <>
 inline MRTest<thread_safe_fixed_multisize_mr>::MRTest()
-  : mr{new thread_safe_fixed_multisize_mr(new fixed_multisize_mr(rmm::mr::get_default_resource()))}
+  : mr{new thread_safe_fixed_multisize_mr(
+      std::make_shared<fixed_multisize_mr>(rmm::mr::get_default_resource()))}
 {
-}
-
-template <>
-inline MRTest<thread_safe_fixed_multisize_mr>::~MRTest()
-{
-  auto fixed = mr->get_upstream();
-  this->mr.reset();
-  delete fixed;
 }
 
 template <>
 inline MRTest<thread_safe_fixed_multisize_pool_mr>::MRTest()
-  : mr{new thread_safe_fixed_multisize_pool_mr(
-      new fixed_multisize_pool_mr(new pool_mr(new rmm::mr::cuda_memory_resource)))}
+  : mr{new thread_safe_fixed_multisize_pool_mr(std::make_shared<fixed_multisize_pool_mr>(
+      std::make_shared<pool_mr>(std::make_shared<cuda_mr>())))}
 {
-}
-
-template <>
-inline MRTest<thread_safe_fixed_multisize_pool_mr>::~MRTest()
-{
-  auto fixed = mr->get_upstream();
-  auto pool  = fixed->get_upstream();
-  auto cuda  = pool->get_upstream();
-  this->mr.reset();
-  delete fixed;
-  delete pool;
-  delete cuda;
 }
 
 template <>
 inline MRTest<thread_safe_hybrid_mr>::MRTest()
 {
-  rmm::mr::cuda_memory_resource* cuda = new rmm::mr::cuda_memory_resource{};
-  pool_mr* pool                       = new pool_mr(cuda);
-  this->mr.reset(new thread_safe_hybrid_mr(new hybrid_mr(new fixed_multisize_pool_mr(pool), pool)));
-}
-
-template <>
-inline MRTest<thread_safe_hybrid_mr>::~MRTest()
-{
-  auto hybrid = mr->get_upstream();
-  auto fixed  = hybrid->get_small_mr();
-  auto pool   = hybrid->get_large_mr();
-  auto cuda   = pool->get_upstream();
-  this->mr.reset();
-  delete hybrid;
-  delete fixed;
-  delete pool;
-  delete cuda;
+  auto cuda = std::make_shared<cuda_mr>();
+  auto pool = std::make_shared<pool_mr>(cuda);
+  mr        = std::make_unique<thread_safe_hybrid_mr>(
+    std::make_shared<hybrid_mr>(std::make_shared<fixed_multisize_pool_mr>(pool), pool));
 }
 
 // specialize get_max_size for thread-safe MRs

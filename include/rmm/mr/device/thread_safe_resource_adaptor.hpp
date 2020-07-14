@@ -31,7 +31,7 @@ namespace mr {
  *
  * @tparam Upstream Type of the upstream resource used for allocation/deallocation.
  */
-template <typename Upstream>
+template <typename Upstream, typename Upstream_ptr = Upstream*>
 class thread_safe_resource_adaptor final : public device_memory_resource {
  public:
   using lock_t = std::lock_guard<std::mutex>;
@@ -46,7 +46,7 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
    *
    * @param upstream The resource used for allocating/deallocating device memory.
    */
-  thread_safe_resource_adaptor(Upstream* upstream) : upstream_{upstream}
+  thread_safe_resource_adaptor(Upstream_ptr upstream) : upstream_{upstream}
   {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
   }
@@ -54,9 +54,9 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
   /**
    * @brief Get the upstream memory resource.
    *
-   * @return Upstream* pointer to a memory resource object.
+   * @return Upstream_ptr pointer to a memory resource object.
    */
-  Upstream* get_upstream() const noexcept { return upstream_; }
+  Upstream_ptr get_upstream() const noexcept { return upstream_; }
 
   /**
    * @copydoc rmm::mr::device_memory_resource::supports_streams()
@@ -141,7 +141,7 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
   }
 
   std::mutex mutable mtx;  // mutex for thread safe access to upstream
-  Upstream* upstream_;     ///< The upstream resource used for satisfying allocation requests
+  Upstream_ptr upstream_;  ///< The upstream resource used for satisfying allocation requests
 };
 
 }  // namespace mr

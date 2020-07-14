@@ -48,7 +48,10 @@ namespace mr {
  * @tparam SmallAllocMemoryResource the memory_resource type to use for small allocations.
  * @tparam LargeAllocMemoryResource the memory_resource type to use for large allocations.
  */
-template <typename SmallAllocMemoryResource, typename LargeAllocMemoryResource>
+template <typename SmallAllocMemoryResource,
+          typename LargeAllocMemoryResource,
+          typename SmallAllocMemoryResource_ptr = SmallAllocMemoryResource*,
+          typename LargeAllocMemoryResource_ptr = LargeAllocMemoryResource*>
 class hybrid_memory_resource : public device_memory_resource {
  public:
   // The default size used to select between the two allocators.
@@ -63,8 +66,8 @@ class hybrid_memory_resource : public device_memory_resource {
    * @param threshold_size Allocations > this size (in bytes) use large_mr. Allocations <= this size
    *                       use small_mr.
    */
-  hybrid_memory_resource(SmallAllocMemoryResource* small_mr,
-                         LargeAllocMemoryResource* large_mr,
+  hybrid_memory_resource(SmallAllocMemoryResource_ptr small_mr,
+                         LargeAllocMemoryResource_ptr large_mr,
                          std::size_t threshold_size = default_threshold_size)
     : small_mr_{small_mr}, large_mr_{large_mr}, threshold_size_{threshold_size}
   {
@@ -108,23 +111,6 @@ class hybrid_memory_resource : public device_memory_resource {
 
  private:
   /**
-   * @brief Get the memory resource to use to allocate the requested size.
-   *
-   * Returns the small memory_resource if `bytes` is <= the threshold size, or the large
-   * memory_resource otherwise.
-   *
-   * @param bytes Requested allocation size in bytes.
-   * @return rmm::mr::device_memory_resource& memory_resource that can allocate the requested size.
-   */
-  rmm::mr::device_memory_resource* get_resource(std::size_t bytes)
-  {
-    if (bytes <= threshold_size_)
-      return small_mr_;
-    else
-      return large_mr_;
-  }
-
-  /**
    * @brief Allocates memory of size at least \p bytes.
    *
    * @param bytes The size of the allocation
@@ -134,7 +120,10 @@ class hybrid_memory_resource : public device_memory_resource {
   void* do_allocate(std::size_t bytes, cudaStream_t stream) override
   {
     if (bytes <= 0) return nullptr;
-    return get_resource(bytes)->allocate(bytes, stream);
+    if (bytes <= threshold_size_)
+      return small_mr_->allocate(bytes, stream);
+    else
+      return large_mr_->allocate(bytes, stream);
   }
 
   /**
@@ -147,7 +136,10 @@ class hybrid_memory_resource : public device_memory_resource {
    */
   void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override
   {
-    get_resource(bytes)->deallocate(p, bytes, stream);
+    if (bytes <= threshold_size_)
+      return small_mr_->deallocate(p, bytes, stream);
+    else
+      return large_mr_->deallocate(p, bytes, stream);
   }
 
   /**
@@ -165,8 +157,8 @@ class hybrid_memory_resource : public device_memory_resource {
 
   std::size_t const threshold_size_;  // threshold for choosing memory_resource
 
-  SmallAllocMemoryResource* small_mr_;  // allocator for <= max_small_size
-  LargeAllocMemoryResource* large_mr_;  // allocator for > max_small_size
+  SmallAllocMemoryResource_ptr small_mr_;  // allocator for <= max_small_size
+  LargeAllocMemoryResource_ptr large_mr_;  // allocator for > max_small_size
 };
 }  // namespace mr
 }  // namespace rmm

@@ -74,12 +74,19 @@ struct allocation {
 };
 
 // nested MR type names can get long...
-using pool_mr       = rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>;
-using fixed_size_mr = rmm::mr::fixed_size_memory_resource<rmm::mr::device_memory_resource>;
-using fixed_multisize_mr =
-  rmm::mr::fixed_multisize_memory_resource<rmm::mr::device_memory_resource>;
-using fixed_multisize_pool_mr = rmm::mr::fixed_multisize_memory_resource<pool_mr>;
-using hybrid_mr               = rmm::mr::hybrid_memory_resource<fixed_multisize_pool_mr, pool_mr>;
+using device_mr          = rmm::mr::device_memory_resource;
+using cuda_mr            = rmm::mr::cuda_memory_resource;
+using pool_mr            = rmm::mr::pool_memory_resource<cuda_mr, std::shared_ptr<cuda_mr>>;
+using fixed_size_mr      = rmm::mr::fixed_size_memory_resource<device_mr>;
+using fixed_multisize_mr = rmm::mr::fixed_multisize_memory_resource<device_mr>;
+using fixed_multisize_pool_mr =
+  rmm::mr::fixed_multisize_memory_resource<pool_mr, std::shared_ptr<pool_mr>>;
+using shared_fixed_multisize_pool_mr =
+  rmm::mr::fixed_multisize_memory_resource<pool_mr, std::shared_ptr<pool_mr>>;
+using hybrid_mr = rmm::mr::hybrid_memory_resource<shared_fixed_multisize_pool_mr,
+                                                  pool_mr,
+                                                  std::shared_ptr<shared_fixed_multisize_pool_mr>,
+                                                  std::shared_ptr<pool_mr>>;
 
 }  // namespace
 
@@ -326,36 +333,13 @@ inline MRTest<fixed_multisize_mr>::MRTest()
 }
 
 template <>
-inline MRTest<pool_mr>::MRTest() : mr{}
+inline MRTest<pool_mr>::MRTest() : mr{new pool_mr(std::make_shared<cuda_mr>())}
 {
-  rmm::mr::cuda_memory_resource* cuda = new rmm::mr::cuda_memory_resource{};
-  this->mr.reset(new pool_mr(cuda));
 }
 
 template <>
 inline MRTest<hybrid_mr>::MRTest()
 {
-  rmm::mr::cuda_memory_resource* cuda = new rmm::mr::cuda_memory_resource{};
-  pool_mr* pool                       = new pool_mr(cuda);
-  this->mr.reset(new hybrid_mr(new fixed_multisize_pool_mr(pool), pool));
-}
-
-template <>
-inline MRTest<pool_mr>::~MRTest()
-{
-  auto upstream = this->mr->get_upstream();
-  this->mr.reset();
-  delete upstream;
-}
-
-template <>
-inline MRTest<hybrid_mr>::~MRTest()
-{
-  auto fixed = this->mr->get_small_mr();
-  auto pool  = this->mr->get_large_mr();
-  auto cuda  = pool->get_upstream();
-  this->mr.reset();
-  delete fixed;
-  delete pool;
-  delete cuda;
+  auto pool = std::make_shared<pool_mr>(std::make_shared<cuda_mr>());
+  mr = std::make_unique<hybrid_mr>(std::make_shared<shared_fixed_multisize_pool_mr>(pool), pool);
 }

@@ -56,12 +56,17 @@ allocation remove_at(allocation_vector& allocs, std::size_t index)
   return removed;
 }
 // nested MR type names can get long...
-using cuda_mr            = rmm::mr::cuda_memory_resource;
-using pool_mr            = rmm::mr::pool_memory_resource<cuda_mr>;
-using fixed_multisize_mr = rmm::mr::fixed_multisize_memory_resource<pool_mr>;
-using hybrid_mr          = rmm::mr::hybrid_memory_resource<fixed_multisize_mr, pool_mr>;
-using safe_hybrid_mr     = rmm::mr::thread_safe_resource_adaptor<hybrid_mr>;
-using cnmem_mr           = rmm::mr::cnmem_memory_resource;
+using cuda_mr = rmm::mr::cuda_memory_resource;
+using pool_mr = rmm::mr::pool_memory_resource<cuda_mr, std::shared_ptr<cuda_mr>>;
+using fixed_multisize_mr =
+  rmm::mr::fixed_multisize_memory_resource<pool_mr, std::shared_ptr<pool_mr>>;
+using hybrid_mr = rmm::mr::hybrid_memory_resource<fixed_multisize_mr,
+                                                  pool_mr,
+                                                  std::shared_ptr<fixed_multisize_mr>,
+                                                  std::shared_ptr<pool_mr>>;
+
+using safe_hybrid_mr = rmm::mr::thread_safe_resource_adaptor<hybrid_mr, std::shared_ptr<hybrid_mr>>;
+using cnmem_mr       = rmm::mr::cnmem_memory_resource;
 
 template <typename SizeDistribution>
 void random_allocation_free(rmm::mr::device_memory_resource& mr,
@@ -165,73 +170,40 @@ void uniform_random_allocations(rmm::mr::device_memory_resource& mr,
 template <typename MemoryResource>
 struct resource_wrapper {
   resource_wrapper() {}
-  ~resource_wrapper() { delete mr; }
 
-  MemoryResource* mr{};
+  std::unique_ptr<MemoryResource> mr{};
 };
 
 template <>
 resource_wrapper<cnmem_mr>::resource_wrapper()
 {
-  mr = new cnmem_mr();
+  mr = std::make_unique<cnmem_mr>();
 }
 
 template <>
 resource_wrapper<cuda_mr>::resource_wrapper()
 {
-  mr = new cuda_mr();
+  mr = std::make_unique<cuda_mr>();
 }
 
 template <>
 resource_wrapper<pool_mr>::resource_wrapper()
 {
-  mr = new pool_mr(new cuda_mr());
+  mr = std::make_unique<pool_mr>(std::make_shared<cuda_mr>());
 }
 
 template <>
 resource_wrapper<fixed_multisize_mr>::resource_wrapper()
 {
-  mr = new fixed_multisize_mr(new pool_mr(new cuda_mr()));
+  mr = std::make_unique<fixed_multisize_mr>(std::make_shared<pool_mr>(std::make_shared<cuda_mr>()));
 }
 
 template <>
 resource_wrapper<safe_hybrid_mr>::resource_wrapper()
 {
-  auto pool = new pool_mr(new cuda_mr());
-  mr        = new rmm::mr::thread_safe_resource_adaptor<hybrid_mr>(
-    new hybrid_mr(new fixed_multisize_mr(pool), pool));
-}
-
-template <>
-resource_wrapper<safe_hybrid_mr>::~resource_wrapper()
-{
-  auto hybrid = mr->get_upstream();
-  auto small  = hybrid->get_small_mr();
-  auto large  = hybrid->get_large_mr();
-  auto cuda   = large->get_upstream();
-  delete mr;
-  delete hybrid;
-  delete small;
-  delete large;
-  delete cuda;
-}
-
-template <>
-resource_wrapper<fixed_multisize_mr>::~resource_wrapper()
-{
-  auto sub  = mr->get_upstream();
-  auto cuda = sub->get_upstream();
-  delete mr;
-  delete sub;
-  delete cuda;
-}
-
-template <>
-resource_wrapper<pool_mr>::~resource_wrapper()
-{
-  auto cuda = mr->get_upstream();
-  delete mr;
-  delete cuda;
+  auto pool = std::make_shared<pool_mr>(std::make_shared<cuda_mr>());
+  mr        = std::make_unique<safe_hybrid_mr>(
+    std::make_shared<hybrid_mr>(std::make_shared<fixed_multisize_mr>(pool), pool));
 }
 
 constexpr size_t max_usage = 16000;
@@ -240,7 +212,7 @@ template <typename MemoryResource>
 static void BM_RandomAllocations(benchmark::State& state)
 {
   resource_wrapper<MemoryResource> wrapper;
-  MemoryResource* mr = wrapper.mr;
+  std::unique_ptr<MemoryResource>& mr = wrapper.mr;
 
   size_t num_allocations = state.range(0);
   size_t max_size        = state.range(1);

@@ -48,7 +48,7 @@ namespace mr {
  * @tparam UpstreamResource memory_resource to use for allocating the pool. Implements
  *                          rmm::mr::device_memory_resource interface.
  */
-template <typename Upstream>
+template <typename Upstream, typename Upstream_ptr = Upstream*>
 class pool_memory_resource final : public device_memory_resource {
  public:
   static constexpr size_t default_initial_size = ~0;
@@ -65,7 +65,7 @@ class pool_memory_resource final : public device_memory_resource {
    * zero, an implementation-defined pool size is used.
    * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to.
    */
-  explicit pool_memory_resource(Upstream* upstream_mr,
+  explicit pool_memory_resource(Upstream_ptr upstream_mr,
                                 std::size_t initial_pool_size = default_initial_size,
                                 std::size_t maximum_pool_size = default_maximum_size)
     : upstream_mr_{upstream_mr}, maximum_pool_size_{maximum_pool_size}
@@ -118,9 +118,9 @@ class pool_memory_resource final : public device_memory_resource {
   /**
    * @brief Get the upstream memory_resource object.
    *
-   * @return UpstreamResource* the upstream memory resource.
+   * @return Upstream_ptr the upstream memory resource.
    */
-  Upstream* get_upstream() const noexcept { return upstream_mr_; }
+  Upstream_ptr get_upstream() const noexcept { return upstream_mr_; }
 
  private:
   using id_type    = uint32_t;
@@ -443,7 +443,7 @@ class pool_memory_resource final : public device_memory_resource {
    * currently to get a unique handle to a CUDA per-thread default stream. :(
    */
   struct default_stream_event {
-    default_stream_event(pool_memory_resource<Upstream>* parent) : parent(parent)
+    default_stream_event(pool_memory_resource<Upstream, Upstream_ptr>* parent) : parent(parent)
     {
       auto result = cudaEventCreateWithFlags(&event, cudaEventDisableTiming);
       assert(cudaSuccess == result);
@@ -458,7 +458,7 @@ class pool_memory_resource final : public device_memory_resource {
     }
 
     cudaEvent_t event;
-    pool_memory_resource<Upstream>* parent;
+    pool_memory_resource<Upstream, Upstream_ptr>* parent;
   };
 #endif
 
@@ -526,7 +526,7 @@ class pool_memory_resource final : public device_memory_resource {
   size_t maximum_pool_size_;
   size_t current_pool_size_{0};
 
-  Upstream* upstream_mr_;  // The "heap" to allocate the pool from
+  Upstream_ptr upstream_mr_;  // The "heap" to allocate the pool from
 
   // map of [cudaEvent_t, free_list] pairs
   // Event (or associated stream) must be synced before allocating from associated free_list to a

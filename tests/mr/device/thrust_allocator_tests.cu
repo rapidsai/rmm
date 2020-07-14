@@ -27,7 +27,8 @@
 #include <rmm/mr/device/pool_memory_resource.hpp>
 #include <rmm/mr/device/thrust_allocator_adaptor.hpp>
 
-using pool_mr = rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>;
+using cuda_mr = rmm::mr::cuda_memory_resource;
+using pool_mr = rmm::mr::pool_memory_resource<cuda_mr, std::shared_ptr<cuda_mr>>;
 
 using resources = ::testing::Types<rmm::mr::cuda_memory_resource,
                                    rmm::mr::managed_memory_resource,
@@ -37,7 +38,6 @@ using resources = ::testing::Types<rmm::mr::cuda_memory_resource,
 
 template <typename MR>
 struct AllocatorTest : public ::testing::Test {
-  std::vector<std::unique_ptr<rmm::mr::device_memory_resource>> upstreams;
   std::unique_ptr<MR> mr;
 
   AllocatorTest() : mr{std::make_unique<MR>()} { rmm::mr::set_default_resource(mr.get()); }
@@ -48,9 +48,7 @@ struct AllocatorTest : public ::testing::Test {
 template <>
 AllocatorTest<pool_mr>::AllocatorTest()
 {
-  upstreams.emplace_back(std::make_unique<rmm::mr::cuda_memory_resource>());
-  auto& cuda_upstream = upstreams.front();
-  mr.reset(new pool_mr(static_cast<rmm::mr::cuda_memory_resource*>(cuda_upstream.get())));
+  mr = std::make_unique<pool_mr>(std::make_shared<rmm::mr::cuda_memory_resource>());
   rmm::mr::set_default_resource(mr.get());
 }
 

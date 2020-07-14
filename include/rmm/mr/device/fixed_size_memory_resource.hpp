@@ -39,7 +39,7 @@ namespace mr {
  *
  * Supports only allocations of size smaller than the configured block_size.
  */
-template <typename Upstream>
+template <typename Upstream, typename Upstream_ptr = Upstream*>
 class fixed_size_memory_resource : public device_memory_resource {
  public:
   // A block is the fixed size this resource alloates
@@ -62,7 +62,7 @@ class fixed_size_memory_resource : public device_memory_resource {
    * @param blocks_to_preallocate The number of blocks to allocate to initialize the pool.
    */
   explicit fixed_size_memory_resource(
-    Upstream* upstream_mr,
+    Upstream_ptr upstream_mr,
     std::size_t block_size            = default_block_size,
     std::size_t blocks_to_preallocate = default_blocks_to_preallocate)
     : upstream_mr_{upstream_mr},
@@ -99,7 +99,7 @@ class fixed_size_memory_resource : public device_memory_resource {
    *
    * @return UpstreamResource* the upstream memory resource.
    */
-  Upstream* get_upstream() const noexcept { return upstream_mr_; }
+  Upstream_ptr get_upstream() const noexcept { return upstream_mr_; }
 
   /**
    * @brief Get the size of blocks allocated by this memory resource.
@@ -273,7 +273,7 @@ class fixed_size_memory_resource : public device_memory_resource {
     stream_blocks_.clear();
   }
 
-  Upstream* upstream_mr_;  // The resource from which to allocate new blocks
+  Upstream_ptr upstream_mr_;  // The resource from which to allocate new blocks
 
   std::size_t const block_size_;           // size of blocks this MR allocates
   std::size_t const upstream_chunk_size_;  // size of chunks allocated from heap MR
