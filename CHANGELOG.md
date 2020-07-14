@@ -25,6 +25,7 @@
 - PR #421 Capture thread id in logging and improve logger testing
 - PR #426 Added multi-threaded support to replay benchmark.
 - PR #435 Update conda upload versions for new supported CUDA/Python
+- PR #437 Test with `pickle5` (for older Python versions)
 
 ## Bug Fixes
 
