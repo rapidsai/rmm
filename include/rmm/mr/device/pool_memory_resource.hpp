@@ -86,6 +86,10 @@ class pool_memory_resource final : public device_memory_resource {
       block_from_upstream(initial_pool_size, 0));
   }
 
+  pool_memory_resource(pool_memory_resource const&) = delete;
+
+  pool_memory_resource(pool_memory_resource&&) = delete;
+
   /**
    * @brief Destroy the `pool_memory_resource` and deallocate all memory it allocated using
    * the upstream resource.
