@@ -23,11 +23,11 @@
 
 namespace rmm {
 namespace mr {
-
+namespace detail {
 template <typename Resource, typename UpstreamTuple, std::size_t... Indices, typename... Args>
 auto make_resource_impl(UpstreamTuple t, std::index_sequence<Indices...>, Args&&... args)
 {
-  return Resource{std::get<Indices>(t).get()..., std::forward<Args>(args)...};
+  return std::make_unique<Resource>(std::get<Indices>(t).get()..., std::forward<Args>(args)...);
 }
 
 template <typename Resource, typename... Upstreams, typename... Args>
@@ -36,6 +36,7 @@ auto make_resource(std::tuple<std::shared_ptr<Upstreams>...> t, Args&&... args)
   return make_resource_impl<Resource>(
     std::move(t), std::index_sequence_for<Upstreams...>{}, std::forward<Args>(args)...);
 }
+}  // namespace detail
 
 template <typename Resource, typename... Upstreams>
 class owning_wrapper final : public device_memory_resource {
@@ -45,11 +46,15 @@ class owning_wrapper final : public device_memory_resource {
   template <typename... Args>
   owning_wrapper(upstream_tuple upstreams, Args&&... args)
     : upstreams_{std::move(upstreams)},
-      wrapped_{make_resource<Resource>(std::move(upstreams), std::forward<Args>(args)...)}
+      wrapped_{detail::make_resource<Resource>(std::move(upstreams), std::forward<Args>(args)...)}
   {
     std::cout << "owning_wrapper. Number of args: " << sizeof...(args)
               << " Number of upstreams: " << std::tuple_size<upstream_tuple>::value << std::endl;
   }
+
+  Resource const& wrapped() const noexcept { return *wrapped_; }
+
+  Resource& wrapped() noexcept { return *wrapped_; }
 
   bool supports_streams() const noexcept override { return wrapped().supports_streams(); }
 
@@ -58,12 +63,12 @@ class owning_wrapper final : public device_memory_resource {
  private:
   void* do_allocate(std::size_t bytes, cudaStream_t stream) override
   {
-    return wrapped_.do_allocate(bytes, stream);
+    return wrapped().do_allocate(bytes, stream);
   }
 
   void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override
   {
-    wrapped_.do_deallocate(p, bytes, stream);
+    wrapped().do_deallocate(p, bytes, stream);
   }
 
   bool do_is_equal(device_memory_resource const& other) const noexcept override
@@ -75,9 +80,10 @@ class owning_wrapper final : public device_memory_resource {
       if (nullptr != casted) {
         return wrapped().is_equal(casted->wrapped());
       } else {
-        return wrapped_.is_equal(other);
+        return wrapped().is_equal(other);
       }
     }
+  }
 
   std::pair<std::size_t, std::size_t> do_get_mem_info(cudaStream_t stream) const override
   {
@@ -85,7 +91,7 @@ class owning_wrapper final : public device_memory_resource {
   }
 
   upstream_tuple upstreams_;
-  Resource wrapped_;
+  std::unique_ptr<Resource> wrapped_;
 };
 
 template <template <typename...> class Resource, typename... Upstreams, typename... Args>
