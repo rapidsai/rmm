@@ -63,12 +63,12 @@ class owning_wrapper final : public device_memory_resource {
  private:
   void* do_allocate(std::size_t bytes, cudaStream_t stream) override
   {
-    return wrapped().do_allocate(bytes, stream);
+    return wrapped().allocate(bytes, stream);
   }
 
   void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override
   {
-    wrapped().do_deallocate(p, bytes, stream);
+    wrapped().deallocate(p, bytes, stream);
   }
 
   bool do_is_equal(device_memory_resource const& other) const noexcept override
