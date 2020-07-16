@@ -48,8 +48,6 @@ class owning_wrapper final : public device_memory_resource {
     : upstreams_{std::move(upstreams)},
       wrapped_{detail::make_resource<Resource>(upstreams_, std::forward<Args>(args)...)}
   {
-    std::cout << "owning_wrapper. Number of args: " << sizeof...(args)
-              << " Number of upstreams: " << std::tuple_size<upstream_tuple>::value << std::endl;
   }
 
   Resource const& wrapped() const noexcept { return *wrapped_; }
@@ -97,7 +95,6 @@ class owning_wrapper final : public device_memory_resource {
 template <template <typename...> class Resource, typename... Upstreams, typename... Args>
 auto make_owning_wrapper(std::tuple<std::shared_ptr<Upstreams>...> upstreams, Args&&... args)
 {
-  std::cout << "make owning wrapper\n";
   return std::make_shared<owning_wrapper<Resource<Upstreams...>, Upstreams...>>(
     std::move(upstreams), std::forward<Args>(args)...);
 }
