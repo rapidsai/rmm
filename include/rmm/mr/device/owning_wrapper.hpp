@@ -51,9 +51,9 @@ class owning_wrapper final : public device_memory_resource {
               << " Number of upstreams: " << std::tuple_size<upstream_tuple>::value << std::endl;
   }
 
-  Resource const& wrapped() const noexcept { return wrapped_; }
+  bool supports_streams() const noexcept override { return wrapped().supports_streams(); }
 
-  Resource& wrapped() noexcept { return wrapped_; }
+  bool supports_get_mem_info() const noexcept override { return wrapped().supports_get_mem_info(); }
 
  private:
   void* do_allocate(std::size_t bytes, cudaStream_t stream) override
@@ -78,6 +78,10 @@ class owning_wrapper final : public device_memory_resource {
         return wrapped_.is_equal(other);
       }
     }
+
+  std::pair<std::size_t, std::size_t> do_get_mem_info(cudaStream_t stream) const override
+  {
+    return wrapped().get_mem_info(stream);
   }
 
   upstream_tuple upstreams_;
