@@ -25,16 +25,16 @@ namespace rmm {
 namespace mr {
 namespace detail {
 template <typename Resource, typename UpstreamTuple, std::size_t... Indices, typename... Args>
-auto make_resource_impl(UpstreamTuple t, std::index_sequence<Indices...>, Args&&... args)
+auto make_resource_impl(UpstreamTuple const& t, std::index_sequence<Indices...>, Args&&... args)
 {
   return std::make_unique<Resource>(std::get<Indices>(t).get()..., std::forward<Args>(args)...);
 }
 
 template <typename Resource, typename... Upstreams, typename... Args>
-auto make_resource(std::tuple<std::shared_ptr<Upstreams>...> t, Args&&... args)
+auto make_resource(std::tuple<std::shared_ptr<Upstreams>...> const& t, Args&&... args)
 {
   return make_resource_impl<Resource>(
-    std::move(t), std::index_sequence_for<Upstreams...>{}, std::forward<Args>(args)...);
+    t, std::index_sequence_for<Upstreams...>{}, std::forward<Args>(args)...);
 }
 }  // namespace detail
 
@@ -46,7 +46,7 @@ class owning_wrapper final : public device_memory_resource {
   template <typename... Args>
   owning_wrapper(upstream_tuple upstreams, Args&&... args)
     : upstreams_{std::move(upstreams)},
-      wrapped_{detail::make_resource<Resource>(std::move(upstreams), std::forward<Args>(args)...)}
+      wrapped_{detail::make_resource<Resource>(upstreams_, std::forward<Args>(args)...)}
   {
     std::cout << "owning_wrapper. Number of args: " << sizeof...(args)
               << " Number of upstreams: " << std::tuple_size<upstream_tuple>::value << std::endl;
@@ -97,6 +97,7 @@ class owning_wrapper final : public device_memory_resource {
 template <template <typename...> class Resource, typename... Upstreams, typename... Args>
 auto make_owning_wrapper(std::tuple<std::shared_ptr<Upstreams>...> upstreams, Args&&... args)
 {
+  std::cout << "make owning wrapper\n";
   return std::make_shared<owning_wrapper<Resource<Upstreams...>, Upstreams...>>(
     std::move(upstreams), std::forward<Args>(args)...);
 }
