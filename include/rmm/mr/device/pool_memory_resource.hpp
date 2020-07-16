@@ -60,6 +60,8 @@ class pool_memory_resource final : public device_memory_resource {
    * @brief Construct a `pool_memory_resource` and allocate the initial
    * device memory pool using `upstream_mr`.
    *
+   * @throws rmm::logic_error if `upstream_mr == nullptr`
+   *
    * @param upstream_mr The memory_resource from which to allocate blocks for the pool.
    * @param initial_pool_size Size, in bytes, of the initial pool. When
    * zero, an implementation-defined pool size is used.
@@ -70,6 +72,8 @@ class pool_memory_resource final : public device_memory_resource {
                                 std::size_t maximum_pool_size = default_maximum_size)
     : upstream_mr_{upstream_mr}, maximum_pool_size_{maximum_pool_size}
   {
+    RMM_EXPECTS(nullptr != upstream_mr, "Unexpected null upstream pointer.");
+
     cudaDeviceProp props;
     int device{0};
     RMM_CUDA_TRY(cudaGetDevice(&device));
