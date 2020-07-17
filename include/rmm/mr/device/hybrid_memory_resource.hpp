@@ -15,25 +15,13 @@
  */
 #pragma once
 
-#include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
-#include <cuda_runtime_api.h>
-
-#include <algorithm>
-#include <cassert>
 #include <cstddef>
-#include <list>
-#include <memory>
-#include <unordered_map>
 #include <utility>
 
-// forward decl
-using cudaStream_t = struct CUstream_st*;
-
 namespace rmm {
-
 namespace mr {
 
 /**
