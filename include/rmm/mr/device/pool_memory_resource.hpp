@@ -100,6 +100,12 @@ class pool_memory_resource final : public device_memory_resource {
 #endif
   }
 
+  pool_memory_resource()                            = delete;
+  pool_memory_resource(pool_memory_resource const&) = delete;
+  pool_memory_resource(pool_memory_resource&&)      = delete;
+  pool_memory_resource& operator=(pool_memory_resource const&) = delete;
+  pool_memory_resource& operator=(pool_memory_resource&&) = delete;
+
   /**
    * @brief Queries whether the resource supports use of non-null CUDA streams for
    * allocation/deallocation.
