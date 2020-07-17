@@ -33,6 +33,7 @@ namespace mr {
 class cuda_memory_resource final : public device_memory_resource {
  public:
   cuda_memory_resource()                            = default;
+  ~cuda_memory_resource()                           = default;
   cuda_memory_resource(cuda_memory_resource const&) = default;
   cuda_memory_resource(cuda_memory_resource&&)      = default;
   cuda_memory_resource& operator=(cuda_memory_resource const&) = default;
