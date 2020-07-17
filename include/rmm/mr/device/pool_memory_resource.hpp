@@ -22,11 +22,9 @@
 #include <cuda_runtime_api.h>
 
 #include <algorithm>
-#include <atomic>
 #include <cassert>
 #include <cstdint>
 #include <iostream>
-#include <list>
 #include <map>
 #include <mutex>
 #include <numeric>
