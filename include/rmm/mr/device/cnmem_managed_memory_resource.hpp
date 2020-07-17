@@ -19,14 +19,6 @@
 #include "cnmem_memory_resource.hpp"
 #include "device_memory_resource.hpp"
 
-#include <cuda_runtime_api.h>
-#include <cassert>
-#include <exception>
-#include <iostream>
-#include <mutex>
-#include <set>
-#include <vector>
-
 namespace rmm {
 namespace mr {
 /**
