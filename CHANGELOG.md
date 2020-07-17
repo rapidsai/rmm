@@ -27,6 +27,7 @@
 - PR #426 Added multi-threaded support to replay benchmark.
 - PR #435 Update conda upload versions for new supported CUDA/Python
 - PR #437 Test with `pickle5` (for older Python versions)
+- PR #443 Remove thread safe adaptor from PoolMemoryResource
 
 ## Bug Fixes
 
