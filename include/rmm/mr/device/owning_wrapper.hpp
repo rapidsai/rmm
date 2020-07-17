@@ -99,5 +99,11 @@ auto make_owning_wrapper(std::tuple<std::shared_ptr<Upstreams>...> upstreams, Ar
     std::move(upstreams), std::forward<Args>(args)...);
 }
 
+template <template <typename...> class Resource, typename Upstream, typename... Args>
+auto make_owning_wrapper(std::shared_ptr<Upstream> upstream, Args&&... args)
+{
+  return make_owning_wrapper(std::make_tuple(std::move(upstream)), std::forward<Args>(args)...);
+}
+
 }  // namespace mr
 }  // namespace rmm
