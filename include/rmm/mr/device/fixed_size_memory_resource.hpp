@@ -192,29 +192,38 @@ class fixed_size_memory_resource : public device_memory_resource {
    * @return block A pointer to memory of `get_block_size()` bytes, or nullptr if no blocks are
    *               available in `blocks`.
    */
-  void* block_from_stream(free_list& blocks, cudaStream_t blocks_stream, cudaStream_t stream)
+  void* get_block_from_other_stream(cudaStream_t stream)
   {
-    void* p = block_from_free_list(blocks);
+    // nothing in this stream's free list, look for one on another stream
+    for (auto s = stream_blocks_.begin(); s != stream_blocks_.end(); ++s) {
+      auto blocks_stream = s->first;
+      if (blocks_stream != stream) {
+        auto blocks = s->second;
 
-    // If we found a block associated with a different stream,
-    // we have to synchronize the stream in order to use it
-    if ((blocks_stream != stream) && (p != nullptr)) {
-      cudaError_t result = cudaStreamSynchronize(blocks_stream);
+        void* p = block_from_free_list(blocks);
 
-      if (result != cudaErrorInvalidResourceHandle &&  // stream deleted
-          result != cudaSuccess)                       // stream synced
-        throw std::runtime_error{"cudaStreamSynchronize failure"};
+        // If we found a block associated with a different stream,
+        // we have to synchronize the stream in order to use it
+        if ((blocks_stream != stream) && (p != nullptr)) {
+          cudaError_t result = cudaStreamSynchronize(blocks_stream);
 
-      // insert all other blocks into this stream's list
-      // Note: This could cause thrashing between two streams. For future analysis.
-      auto blocks_for_stream = stream_blocks_[stream];
-      blocks_for_stream.splice(blocks_for_stream.end(), blocks);
+          if (result != cudaErrorInvalidResourceHandle &&  // stream deleted
+              result != cudaSuccess)                       // stream synced
+            throw std::runtime_error{"cudaStreamSynchronize failure"};
 
-      // remove this stream from the freelist
-      stream_blocks_.erase(blocks_stream);
+          // insert all other blocks into this stream's list
+          // Note: This could cause thrashing between two streams. For future analysis.
+          auto blocks_for_stream = stream_blocks_[stream];
+          blocks_for_stream.splice(blocks_for_stream.end(), blocks);
+
+          // remove this stream from the freelist
+          stream_blocks_.erase(blocks_stream);
+        }
+
+        return p;
+      }
     }
-
-    return p;
+    return nullptr;
   }
 
   /**
@@ -239,14 +248,8 @@ class fixed_size_memory_resource : public device_memory_resource {
 
     // nothing in this stream's free list, look for one on another stream
     // Try to find a larger block in a different stream
-    auto s = stream_blocks_.begin();
-    while (s != stream_blocks_.end()) {
-      if (s->first != stream) {
-        void* p = block_from_stream(s->second, s->first, stream);
-        if (p != nullptr) return p;
-      }
-      ++s;
-    }
+    void* p = get_block_from_other_stream(stream);
+    if (p != nullptr) return p;
 
     // nothing available in other streams, get new blocks
     // avoid searching for this stream's list again
