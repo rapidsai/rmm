@@ -51,7 +51,6 @@ class cnmem_managed_memory_resource final : public cnmem_memory_resource {
   {
   }
 
-  cnmem_managed_memory_resource()                                     = default;
   cnmem_managed_memory_resource(cnmem_managed_memory_resource const&) = delete;
   cnmem_managed_memory_resource(cnmem_managed_memory_resource&&)      = delete;
   cnmem_managed_memory_resource& operator=(cnmem_managed_memory_resource const&) = delete;
