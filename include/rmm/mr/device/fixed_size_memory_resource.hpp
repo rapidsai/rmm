@@ -61,11 +61,39 @@ class fixed_size_memory_resource : public device_memory_resource {
    * @param block_size The size of blocks to allocate.
    * @param blocks_to_preallocate The number of blocks to allocate to initialize the pool.
    */
+  template <
+    typename P                                                                     = Upstream_ptr,
+    typename std::enable_if_t<!std::is_same<std::unique_ptr<Upstream>, P>::value>* = nullptr>
   explicit fixed_size_memory_resource(
-    Upstream_ptr upstream_mr,
+    P upstream_mr,
     std::size_t block_size            = default_block_size,
     std::size_t blocks_to_preallocate = default_blocks_to_preallocate)
     : upstream_mr_{upstream_mr},
+      block_size_{rmm::detail::align_up(block_size, allocation_alignment)},
+      upstream_chunk_size_{block_size * blocks_to_preallocate}
+  {
+    // allocate initial blocks and insert into free list
+    new_blocks_from_upstream(0, stream_blocks_[0]);
+  }
+
+  /**
+   * @brief Construct a new `fixed_size_memory_resource` that allocates memory from
+   * `upstream_resource`.
+   *
+   * When the pool of blocks is all allocated, grows the pool by allocating
+   * `blocks_to_preallocate` more blocks from `upstream_mr`.
+   *
+   * @param upstream_mr The memory_resource from which to allocate blocks for the pool.
+   * @param block_size The size of blocks to allocate.
+   * @param blocks_to_preallocate The number of blocks to allocate to initialize the pool.
+   */
+  template <typename P = Upstream_ptr,
+            typename std::enable_if_t<std::is_same<std::unique_ptr<Upstream>, P>::value>* = nullptr>
+  explicit fixed_size_memory_resource(
+    P upstream_mr,
+    std::size_t block_size            = default_block_size,
+    std::size_t blocks_to_preallocate = default_blocks_to_preallocate)
+    : upstream_mr_{std::move(upstream_mr)},
       block_size_{rmm::detail::align_up(block_size, allocation_alignment)},
       upstream_chunk_size_{block_size * blocks_to_preallocate}
   {
@@ -99,7 +127,22 @@ class fixed_size_memory_resource : public device_memory_resource {
    *
    * @return UpstreamResource* the upstream memory resource.
    */
-  Upstream_ptr get_upstream() const noexcept { return upstream_mr_; }
+  template <typename P = Upstream_ptr>
+  typename std::enable_if_t<std::is_pointer<P>::value> get_upstream() const noexcept
+  {
+    return upstream_mr_;
+  }
+
+  /**
+   * @brief Get the upstream memory_resource object.
+   *
+   * @return UpstreamResource* the upstream memory resource.
+   */
+  template <typename P = Upstream_ptr>
+  typename std::enable_if_t<!std::is_pointer<P>::value, Upstream>* get_upstream() const noexcept
+  {
+    return upstream_mr_;
+  }
 
   /**
    * @brief Get the size of blocks allocated by this memory resource.

@@ -92,7 +92,10 @@ class fixed_multisize_memory_resource : public device_memory_resource {
    * @param initial_blocks_per_size The number of blocks to preallocate from the upstream memory
    *        resource, and to allocate when all current blocks are in use.
    */
-  explicit fixed_multisize_memory_resource(Upstream_ptr upstream_resource,
+  template <
+    typename P                                                                     = Upstream_ptr,
+    typename std::enable_if_t<!std::is_same<std::unique_ptr<Upstream>, P>::value>* = nullptr>
+  explicit fixed_multisize_memory_resource(P upstream_resource,
                                            std::size_t size_base         = default_size_base,
                                            std::size_t min_size_exponent = default_min_exponent,
                                            std::size_t max_size_exponent = default_max_exponent,
@@ -104,13 +107,41 @@ class fixed_multisize_memory_resource : public device_memory_resource {
       min_size_bytes_{ipow(size_base, min_size_exponent)},
       max_size_bytes_{ipow(size_base, max_size_exponent)}
   {
-    RMM_EXPECTS(rmm::detail::is_pow2(size_base), "size_base must be a power of two");
+    init(initial_blocks_per_size);
+  }
 
-    // allocate initial blocks and insert into free list
-    for (std::size_t i = min_size_exponent_; i <= max_size_exponent_; i++) {
-      fixed_size_mr_.emplace_back(new fixed_size_memory_resource<Upstream, Upstream_ptr>(
-        upstream_resource, ipow(size_base, i), initial_blocks_per_size));
-    }
+  /**
+   * @brief Construct a new fixed multisize memory resource object
+   *
+   * Allocates multiple fixed block sizes. The block sizes start at `size_base << min_size_exponent`
+   * and grow by powers of `size_base` up to `size_base << max_size_exponent`. So, by default there
+   * are 5 block sizes: 2 << 18 (256 KiB), 2 << 19 (512 KiB), 2 << 20 (1 MiB), 2 << 21 (2 MiB), and
+   * 2 << 22 (4 MiB).
+   *
+   * @throws rmm::logic_error if size_base is not a power of two.
+   *
+   * @param upstream_resource The upstream memory resource used to allocate pools of blocks
+   * @param size_base The base of allocation block sizes, defaults to 2
+   * @param min_size_exponent: The exponent of the minimum fixed block size to allocate
+   * @param max_size_exponent The exponent of the maximum fixed block size to allocate
+   * @param initial_blocks_per_size The number of blocks to preallocate from the upstream memory
+   *        resource, and to allocate when all current blocks are in use.
+   */
+  template <typename P = Upstream_ptr,
+            typename std::enable_if_t<std::is_same<std::unique_ptr<Upstream>, P>::value>* = nullptr>
+  explicit fixed_multisize_memory_resource(P upstream_resource,
+                                           std::size_t size_base         = default_size_base,
+                                           std::size_t min_size_exponent = default_min_exponent,
+                                           std::size_t max_size_exponent = default_max_exponent,
+                                           std::size_t initial_blocks_per_size = 128)
+    : upstream_mr_{std::move(upstream_resource)},
+      size_base_{size_base},
+      min_size_exponent_{min_size_exponent},
+      max_size_exponent_{max_size_exponent},
+      min_size_bytes_{ipow(size_base, min_size_exponent)},
+      max_size_bytes_{ipow(size_base, max_size_exponent)}
+  {
+    init(initial_blocks_per_size);
   }
 
   /**
@@ -139,7 +170,22 @@ class fixed_multisize_memory_resource : public device_memory_resource {
    *
    * @return UpstreamResource* the upstream memory resource.
    */
-  Upstream_ptr get_upstream() const noexcept { return upstream_mr_; }
+  template <typename P = Upstream_ptr>
+  typename std::enable_if_t<std::is_pointer<P>::value> get_upstream() const noexcept
+  {
+    return upstream_mr_;
+  }
+
+  /**
+   * @brief Get the upstream memory_resource object.
+   *
+   * @return UpstreamResource* the upstream memory resource.
+   */
+  template <typename P = Upstream_ptr>
+  typename std::enable_if_t<!std::is_pointer<P>::value, Upstream>* get_upstream() const noexcept
+  {
+    return upstream_mr_.get();
+  }
 
   /**
    * @brief Get the minimum block size that this memory_resource can allocate.
@@ -156,6 +202,30 @@ class fixed_multisize_memory_resource : public device_memory_resource {
   std::size_t get_max_size() const noexcept { return max_size_bytes_; }
 
  private:
+  /**
+   * @brief Initialize the memory resource.
+   *
+   * Allocates multiple fixed block sizes. The block sizes start at `size_base << min_size_exponent`
+   * and grow by powers of `size_base` up to `size_base << max_size_exponent`. So, by default there
+   * are 5 block sizes: 2 << 18 (256 KiB), 2 << 19 (512 KiB), 2 << 20 (1 MiB), 2 << 21 (2 MiB), and
+   * 2 << 22 (4 MiB).
+   *
+   * @throws rmm::logic_error if size_base is not a power of two.
+   *
+   * @param initial_blocks_per_size The number of blocks to preallocate from the upstream memory
+   *        resource, and to allocate when all current blocks are in use.
+   */
+  void init(size_t initial_blocks_per_size)
+  {
+    RMM_EXPECTS(rmm::detail::is_pow2(size_base_), "size_base must be a power of two");
+
+    // allocate initial blocks and insert into free list
+    for (std::size_t i = min_size_exponent_; i <= max_size_exponent_; i++) {
+      fixed_size_mr_.emplace_back(new fixed_size_memory_resource<Upstream, Upstream_ptr>(
+        upstream_mr_, ipow(size_base_, i), initial_blocks_per_size));
+    }
+  }
+
   /**
    * @brief Get the memory resource for the requested size
    *

@@ -62,7 +62,10 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @param auto_flush If true, flushes the log for every (de)allocation. Warning, this will degrade
    * performance.
    */
-  logging_resource_adaptor(Upstream_ptr upstream,
+  template <
+    typename P                                                                     = Upstream_ptr,
+    typename std::enable_if_t<!std::is_same<std::unique_ptr<Upstream>, P>::value>* = nullptr>
+  logging_resource_adaptor(P upstream,
                            std::string const& filename = get_default_filename(),
                            bool auto_flush             = false)
     : upstream_{upstream},
@@ -70,9 +73,41 @@ class logging_resource_adaptor final : public device_memory_resource {
         "RMM",
         std::make_shared<spdlog::sinks::basic_file_sink_mt>(filename, true /*truncate file*/))}
   {
-    RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
+    init(auto_flush);
+  }
 
-    init_logger(auto_flush);
+  /**
+   * @brief Construct a new logging resource adaptor using `upstream` to satisfy
+   * allocation requests and logging information about each allocation/free to
+   * the file specified by `filename`.
+   *
+   * The logfile will be written using CSV formatting.
+   *
+   * Clears the contents of `filename` if it already exists.
+   *
+   * Creating multiple `logging_resource_adaptor`s with the same `filename` will
+   * result in undefined behavior.
+   *
+   * @throws `rmm::logic_error` if `upstream == nullptr`
+   * @throws `spdlog::spdlog_ex` if opening `filename` failed
+   *
+   * @param upstream The resource used for allocating/deallocating device memory
+   * @param filename Name of file to write log info. If not specified, retrieves
+   * the file name from the environment variable "RMM_LOG_FILE".
+   * @param auto_flush If true, flushes the log for every (de)allocation. Warning, this will degrade
+   * performance.
+   */
+  template <typename P = Upstream_ptr,
+            typename std::enable_if_t<std::is_same<std::unique_ptr<Upstream>, P>::value>* = nullptr>
+  logging_resource_adaptor(P upstream,
+                           std::string const& filename = get_default_filename(),
+                           bool auto_flush             = false)
+    : upstream_{std::move(upstream)},
+      logger_{std::make_shared<spdlog::logger>(
+        "RMM",
+        std::make_shared<spdlog::sinks::basic_file_sink_mt>(filename, true /*truncate file*/))}
+  {
+    init(auto_flush);
   }
 
   /**
@@ -89,22 +124,62 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @param auto_flush If true, flushes the log for every (de)allocation. Warning, this will degrade
    * performance.
    */
-  logging_resource_adaptor(Upstream_ptr upstream, std::ostream& stream, bool auto_flush = false)
+  template <
+    typename P                                                                     = Upstream_ptr,
+    typename std::enable_if_t<!std::is_same<std::unique_ptr<Upstream>, P>::value>* = nullptr>
+  logging_resource_adaptor(P upstream, std::ostream& stream, bool auto_flush = false)
     : upstream_{upstream},
       logger_{std::make_shared<spdlog::logger>(
         "RMM", std::make_shared<spdlog::sinks::ostream_sink_mt>(stream))}
   {
-    RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
+    init(auto_flush);
+  }
 
-    init_logger(auto_flush);
+  /**
+   * @brief Construct a new logging resource adaptor using `upstream` to satisfy
+   * allocation requests and logging information about each allocation/free to
+   * the ostream specified by `stream`.
+   *
+   * The logfile will be written using CSV formatting.
+   *
+   * @throws `rmm::logic_error` if `upstream == nullptr`
+   *
+   * @param upstream The resource used for allocating/deallocating device memory
+   * @param stream The ostream to write log info.
+   * @param auto_flush If true, flushes the log for every (de)allocation. Warning, this will degrade
+   * performance.
+   */
+  template <typename P = Upstream_ptr,
+            typename std::enable_if_t<std::is_same<std::unique_ptr<Upstream>, P>::value>* = nullptr>
+  logging_resource_adaptor(P upstream, std::ostream& stream, bool auto_flush = false)
+    : upstream_{std::move(upstream)},
+      logger_{std::make_shared<spdlog::logger>(
+        "RMM", std::make_shared<spdlog::sinks::ostream_sink_mt>(stream))}
+  {
+    init(auto_flush);
   }
 
   /**
    * @brief Return pointer to the upstream resource.
    *
-   * @return Upstream_ptr Pointer to the upstream resource.
+   * @return Upstream* Pointer to the upstream resource.
    */
-  Upstream_ptr get_upstream() const noexcept { return upstream_; }
+  template <typename P = Upstream_ptr>
+  typename std::enable_if_t<std::is_pointer<P>::value> get_upstream() const noexcept
+  {
+    return upstream_;
+  }
+
+  /**
+   * @brief Return pointer to the upstream resource.
+   *
+   * @return Upstream* Pointer to the upstream resource.
+   */
+  template <typename P = Upstream_ptr>
+  typename std::enable_if_t<!std::is_pointer<P>::value, Upstream>* get_upstream() const noexcept
+  {
+    return upstream_.get();
+  }
 
   /**
    * @brief Checks whether the upstream resource supports streams.
@@ -157,8 +232,10 @@ class logging_resource_adaptor final : public device_memory_resource {
   /**
    * @brief Initialize the logger.
    */
-  void init_logger(bool auto_flush)
+  void init(bool auto_flush)
   {
+    RMM_EXPECTS(nullptr != upstream_, "Unexpected null upstream resource pointer.");
+
     if (auto_flush) { logger_->flush_on(spdlog::level::info); }
     logger_->set_pattern("%v");
     logger_->info(header());
@@ -243,10 +320,10 @@ class logging_resource_adaptor final : public device_memory_resource {
     if (this == &other)
       return true;
     else {
-      logging_resource_adaptor<Upstream> const* cast =
-        dynamic_cast<logging_resource_adaptor<Upstream> const*>(&other);
+      auto const* cast =
+        dynamic_cast<logging_resource_adaptor<Upstream, Upstream_ptr> const*>(&other);
       if (cast != nullptr)
-        return upstream_->is_equal(*cast->get_upstream());
+        return upstream_->is_equal(*cast->upstream_);
       else
         return upstream_->is_equal(other);
     }

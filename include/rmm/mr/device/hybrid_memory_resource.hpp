@@ -66,10 +66,88 @@ class hybrid_memory_resource : public device_memory_resource {
    * @param threshold_size Allocations > this size (in bytes) use large_mr. Allocations <= this size
    *                       use small_mr.
    */
-  hybrid_memory_resource(SmallAllocMemoryResource_ptr small_mr,
-                         LargeAllocMemoryResource_ptr large_mr,
+  template <
+    typename P = SmallAllocMemoryResource,
+    typename Q = LargeAllocMemoryResource,
+    typename std::enable_if_t<!std::is_same<std::unique_ptr<SmallAllocMemoryResource>, P>::value>* =
+      nullptr,
+    typename std::enable_if_t<!std::is_same<std::unique_ptr<LargeAllocMemoryResource>, Q>::value>* =
+      nullptr>
+  hybrid_memory_resource(P small_mr,
+                         Q large_mr,
                          std::size_t threshold_size = default_threshold_size)
     : small_mr_{small_mr}, large_mr_{large_mr}, threshold_size_{threshold_size}
+  {
+  }
+
+  /**
+   * @brief Construct a new hybrid_memory_resource_object that selects between the two
+   * specified memory_resources based on the `threshold_size`.
+   *
+   * @param small_mr The memory_resource to use for small allocations.
+   * @param large_mr The memory_resource to use for large allocations.
+   * @param threshold_size Allocations > this size (in bytes) use large_mr. Allocations <= this size
+   *                       use small_mr.
+   */
+  template <
+    typename P = SmallAllocMemoryResource,
+    typename Q = LargeAllocMemoryResource,
+    typename std::enable_if_t<std::is_same<std::unique_ptr<SmallAllocMemoryResource>, P>::value>* =
+      nullptr,
+    typename std::enable_if_t<!std::is_same<std::unique_ptr<LargeAllocMemoryResource>, Q>::value>* =
+      nullptr>
+  hybrid_memory_resource(P small_mr,
+                         Q large_mr,
+                         std::size_t threshold_size = default_threshold_size)
+    : small_mr_{std::move(small_mr)}, large_mr_{large_mr}, threshold_size_{threshold_size}
+  {
+  }
+
+  /**
+   * @brief Construct a new hybrid_memory_resource_object that selects between the two
+   * specified memory_resources based on the `threshold_size`.
+   *
+   * @param small_mr The memory_resource to use for small allocations.
+   * @param large_mr The memory_resource to use for large allocations.
+   * @param threshold_size Allocations > this size (in bytes) use large_mr. Allocations <= this size
+   *                       use small_mr.
+   */
+  template <
+    typename P = SmallAllocMemoryResource,
+    typename Q = LargeAllocMemoryResource,
+    typename std::enable_if_t<!std::is_same<std::unique_ptr<SmallAllocMemoryResource>, P>::value>* =
+      nullptr,
+    typename std::enable_if_t<std::is_same<std::unique_ptr<LargeAllocMemoryResource>, Q>::value>* =
+      nullptr>
+  hybrid_memory_resource(P small_mr,
+                         Q large_mr,
+                         std::size_t threshold_size = default_threshold_size)
+    : small_mr_{small_mr}, large_mr_{std::move(large_mr)}, threshold_size_{threshold_size}
+  {
+  }
+
+  /**
+   * @brief Construct a new hybrid_memory_resource_object that selects between the two
+   * specified memory_resources based on the `threshold_size`.
+   *
+   * @param small_mr The memory_resource to use for small allocations.
+   * @param large_mr The memory_resource to use for large allocations.
+   * @param threshold_size Allocations > this size (in bytes) use large_mr. Allocations <= this size
+   *                       use small_mr.
+   */
+  template <
+    typename P = SmallAllocMemoryResource,
+    typename Q = LargeAllocMemoryResource,
+    typename std::enable_if_t<std::is_same<std::unique_ptr<SmallAllocMemoryResource>, P>::value>* =
+      nullptr,
+    typename std::enable_if_t<std::is_same<std::unique_ptr<LargeAllocMemoryResource>, Q>::value>* =
+      nullptr>
+  hybrid_memory_resource(P small_mr,
+                         Q large_mr,
+                         std::size_t threshold_size = default_threshold_size)
+    : small_mr_{std::move(small_mr)},
+      large_mr_{std::move(large_mr)},
+      threshold_size_{threshold_size}
   {
   }
 
@@ -101,15 +179,63 @@ class hybrid_memory_resource : public device_memory_resource {
    *
    * @return SmallAllocMemoryResource* the upstream resource used for small allocations.
    */
-  SmallAllocMemoryResource* get_small_mr() { return small_mr_; }
+  template <typename P = SmallAllocMemoryResource_ptr>
+  typename std::enable_if_t<std::is_pointer<P>::value> get_small_mr()
+  {
+    return small_mr_;
+  }
+
+  /**
+   * @brief Get the upstream memory_resource used for small allocations.
+   *
+   * @return SmallAllocMemoryResource* the upstream resource used for small allocations.
+   */
+  template <typename P = SmallAllocMemoryResource_ptr>
+  typename std::enable_if_t<!std::is_pointer<P>::value, SmallAllocMemoryResource>* get_small_mr()
+  {
+    return small_mr_.get();
+  }
+
   /**
    * @brief Get the upstream memory_resource used for large allocations.
    *
    * @return LargeAllocMemoryResource* the upstream resource used for large allocations.
    */
-  LargeAllocMemoryResource* get_large_mr() { return large_mr_; }
+  template <typename P = LargeAllocMemoryResource_ptr>
+  typename std::enable_if_t<std::is_pointer<P>::value> get_large_mr()
+  {
+    return large_mr_;
+  }
+
+  /**
+   * @brief Get the upstream memory_resource used for large allocations.
+   *
+   * @return LargeAllocMemoryResource* the upstream resource used for large allocations.
+   */
+  template <typename P = LargeAllocMemoryResource_ptr>
+  typename std::enable_if_t<!std::is_pointer<P>::value, LargeAllocMemoryResource>* get_large_mr()
+  {
+    return large_mr_.get();
+  }
 
  private:
+  /**
+   * @brief Get the memory resource to use to allocate the requested size.
+   *
+   * Returns the small memory_resource if `bytes` is <= the threshold size, or the large
+   * memory_resource otherwise.
+   *
+   * @param bytes Requested allocation size in bytes.
+   * @return rmm::mr::device_memory_resource& memory_resource that can allocate the requested size.
+   */
+  rmm::mr::device_memory_resource* get_resource(std::size_t bytes)
+  {
+    if (bytes <= threshold_size_)
+      return get_small_mr();
+    else
+      return get_large_mr();
+  }
+
   /**
    * @brief Allocates memory of size at least \p bytes.
    *
@@ -120,10 +246,7 @@ class hybrid_memory_resource : public device_memory_resource {
   void* do_allocate(std::size_t bytes, cudaStream_t stream) override
   {
     if (bytes <= 0) return nullptr;
-    if (bytes <= threshold_size_)
-      return small_mr_->allocate(bytes, stream);
-    else
-      return large_mr_->allocate(bytes, stream);
+    return get_resource(bytes)->allocate(bytes, stream);
   }
 
   /**
@@ -136,10 +259,7 @@ class hybrid_memory_resource : public device_memory_resource {
    */
   void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override
   {
-    if (bytes <= threshold_size_)
-      return small_mr_->deallocate(p, bytes, stream);
-    else
-      return large_mr_->deallocate(p, bytes, stream);
+    get_resource(bytes)->deallocate(p, bytes, stream);
   }
 
   /**

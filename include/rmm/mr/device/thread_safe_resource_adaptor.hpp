@@ -46,7 +46,27 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
    *
    * @param upstream The resource used for allocating/deallocating device memory.
    */
-  thread_safe_resource_adaptor(Upstream_ptr upstream) : upstream_{upstream}
+  template <
+    typename P                                                                     = Upstream_ptr,
+    typename std::enable_if_t<!std::is_same<std::unique_ptr<Upstream>, P>::value>* = nullptr>
+  explicit thread_safe_resource_adaptor(P upstream) : upstream_{upstream}
+  {
+    RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
+  }
+
+  /**
+   * @brief Construct a new thread safe resource adaptor using `upstream` to satisfy
+   * allocation requests.
+   *
+   * All allocations and frees are protected by a mutex lock
+   *
+   * @throws `rmm::logic_error` if `upstream == nullptr`
+   *
+   * @param upstream The resource used for allocating/deallocating device memory.
+   */
+  template <typename P = Upstream_ptr,
+            typename std::enable_if_t<std::is_same<std::unique_ptr<Upstream>, P>::value>* = nullptr>
+  explicit thread_safe_resource_adaptor(P upstream) : upstream_{std::move(upstream)}
   {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
   }
@@ -54,9 +74,24 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
   /**
    * @brief Get the upstream memory resource.
    *
-   * @return Upstream_ptr pointer to a memory resource object.
+   * @return Upstream* pointer to a memory resource object.
    */
-  Upstream_ptr get_upstream() const noexcept { return upstream_; }
+  template <typename P = Upstream_ptr>
+  typename std::enable_if_t<std::is_pointer<P>::value> get_upstream() const noexcept
+  {
+    return upstream_;
+  }
+
+  /**
+   * @brief Get the upstream memory resource.
+   *
+   * @return Upstream* pointer to a memory resource object.
+   */
+  template <typename P = Upstream_ptr>
+  typename std::enable_if_t<!std::is_pointer<P>::value, Upstream>* get_upstream() const noexcept
+  {
+    return upstream_.get();
+  }
 
   /**
    * @copydoc rmm::mr::device_memory_resource::supports_streams()
@@ -118,9 +153,10 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
     if (this == &other)
       return true;
     else {
-      auto thread_safe_other = dynamic_cast<thread_safe_resource_adaptor<Upstream> const*>(&other);
+      auto const* thread_safe_other =
+        dynamic_cast<thread_safe_resource_adaptor<Upstream, Upstream_ptr> const*>(&other);
       if (thread_safe_other != nullptr)
-        return upstream_->is_equal(*thread_safe_other->get_upstream());
+        return upstream_->is_equal(*thread_safe_other->upstream_);
       else
         return upstream_->is_equal(other);
     }

@@ -65,25 +65,34 @@ class pool_memory_resource final : public device_memory_resource {
    * zero, an implementation-defined pool size is used.
    * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to.
    */
-  explicit pool_memory_resource(Upstream_ptr upstream_mr,
+  template <
+    typename P                                                                     = Upstream_ptr,
+    typename std::enable_if_t<!std::is_same<std::unique_ptr<Upstream>, P>::value>* = nullptr>
+  explicit pool_memory_resource(P upstream_mr,
                                 std::size_t initial_pool_size = default_initial_size,
                                 std::size_t maximum_pool_size = default_maximum_size)
     : upstream_mr_{upstream_mr}, maximum_pool_size_{maximum_pool_size}
   {
-    cudaDeviceProp props;
-    int device{0};
-    RMM_CUDA_TRY(cudaGetDevice(&device));
-    RMM_CUDA_TRY(cudaGetDeviceProperties(&props, device));
+    init(initial_pool_size, maximum_pool_size);
+  }
 
-    if (initial_pool_size == default_initial_size) { initial_pool_size = props.totalGlobalMem / 2; }
-
-    initial_pool_size = rmm::detail::align_up(initial_pool_size, allocation_alignment);
-
-    if (maximum_pool_size == default_maximum_size) maximum_pool_size_ = props.totalGlobalMem;
-
-    // Allocate initial block and insert into free list for the legacy default stream
-    stream_free_blocks_[get_event(cudaStreamLegacy)].insert(
-      block_from_upstream(initial_pool_size, 0));
+  /**
+   * @brief Construct a `pool_memory_resource` and allocate the initial
+   * device memory pool using `upstream_mr`.
+   *
+   * @param upstream_mr The memory_resource from which to allocate blocks for the pool.
+   * @param initial_pool_size Size, in bytes, of the initial pool. When
+   * zero, an implementation-defined pool size is used.
+   * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to.
+   */
+  template <typename P = Upstream_ptr,
+            typename std::enable_if_t<std::is_same<std::unique_ptr<Upstream>, P>::value>* = nullptr>
+  explicit pool_memory_resource(P upstream_mr,
+                                std::size_t initial_pool_size = default_initial_size,
+                                std::size_t maximum_pool_size = default_maximum_size)
+    : upstream_mr_{std::move(upstream_mr)}, maximum_pool_size_{maximum_pool_size}
+  {
+    init(initial_pool_size, maximum_pool_size);
   }
 
   /**
@@ -118,9 +127,24 @@ class pool_memory_resource final : public device_memory_resource {
   /**
    * @brief Get the upstream memory_resource object.
    *
-   * @return Upstream_ptr the upstream memory resource.
+   * @return Upstream* the upstream memory resource.
    */
-  Upstream_ptr get_upstream() const noexcept { return upstream_mr_; }
+  template <typename P = Upstream_ptr>
+  typename std::enable_if_t<std::is_pointer<P>::value> get_upstream() const noexcept
+  {
+    return upstream_mr_;
+  }
+
+  /**
+   * @brief Get the upstream memory_resource object.
+   *
+   * @return Upstream* the upstream memory resource.
+   */
+  template <typename P = Upstream_ptr>
+  typename std::enable_if_t<!std::is_pointer<P>::value, Upstream>* get_upstream() const noexcept
+  {
+    return upstream_mr_.get();
+  }
 
  private:
   using id_type    = uint32_t;
@@ -138,6 +162,31 @@ class pool_memory_resource final : public device_memory_resource {
 
     bool operator<(stream_event_pair const& rhs) const { return event < rhs.event; }
   };
+
+  /**
+   * @brief Initialize the pool.
+   *
+   * @param initial_pool_size Size, in bytes, of the initial pool. When
+   * zero, an implementation-defined pool size is used.
+   * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to.
+   */
+  void init(size_t initial_pool_size, size_t maximum_pool_size)
+  {
+    cudaDeviceProp props;
+    int device{0};
+    RMM_CUDA_TRY(cudaGetDevice(&device));
+    RMM_CUDA_TRY(cudaGetDeviceProperties(&props, device));
+
+    if (initial_pool_size == default_initial_size) { initial_pool_size = props.totalGlobalMem / 2; }
+
+    initial_pool_size = rmm::detail::align_up(initial_pool_size, allocation_alignment);
+
+    if (maximum_pool_size == default_maximum_size) maximum_pool_size_ = props.totalGlobalMem;
+
+    // Allocate initial block and insert into free list for the legacy default stream
+    stream_free_blocks_[get_event(cudaStreamLegacy)].insert(
+      block_from_upstream(initial_pool_size, 0));
+  }
 
   /**
    * @brief Find a free block of at least `size` bytes in a `free_list` with a different
