@@ -92,14 +92,10 @@ cdef class PoolMemoryResource(MemoryResource):
             size_t maximum_pool_size=~0
     ):
         self.c_obj.reset(
-            new thread_safe_resource_adaptor_wrapper(
-                shared_ptr[device_memory_resource_wrapper](
-                    new pool_memory_resource_wrapper(
-                        upstream.c_obj,
-                        initial_pool_size,
-                        maximum_pool_size
-                    )
-                )
+            new pool_memory_resource_wrapper(
+                upstream.c_obj,
+                initial_pool_size,
+                maximum_pool_size
             )
         )
 
