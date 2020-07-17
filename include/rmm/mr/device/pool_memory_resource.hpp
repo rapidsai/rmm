@@ -16,7 +16,7 @@
 #pragma once
 
 #include <rmm/detail/error.hpp>
-#include <rmm/mr/device/detail/free_list.hpp>
+#include <rmm/mr/device/detail/coalescing_free_list.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <cuda_runtime_api.h>
@@ -125,7 +125,7 @@ class pool_memory_resource final : public device_memory_resource {
  private:
   using id_type    = uint32_t;
   using block      = rmm::mr::detail::block;
-  using free_list  = rmm::mr::detail::free_list<>;
+  using free_list  = rmm::mr::detail::coalescing_free_list<>;
   using lock_guard = std::lock_guard<std::mutex>;
 
   /**

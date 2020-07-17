@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2020, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -159,9 +159,9 @@ struct compare_blocks {
  * @tparam list_type the type of the internal list data structure.
  */
 template <typename list_type = std::list<block>>
-struct free_list {
-  free_list()  = default;
-  ~free_list() = default;
+struct coalescing_free_list {
+  coalescing_free_list()  = default;
+  ~coalescing_free_list() = default;
 
   using size_type      = typename list_type::size_type;
   using iterator       = typename list_type::iterator;
@@ -298,7 +298,7 @@ struct free_list {
 
  private:
   list_type blocks;  // The internal container of blocks
-};                   // free_list
+};                   // coalescing_free_list
 
 }  // namespace detail
 }  // namespace mr
