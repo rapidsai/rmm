@@ -113,7 +113,13 @@ class fixed_multisize_memory_resource : public device_memory_resource {
    * @brief Destroy the fixed_multisize_memory_resource and free all memory allocated from the
    *        upstream resource.
    */
-  virtual ~fixed_multisize_memory_resource() {}
+  ~fixed_multisize_memory_resource() = default;
+
+  fixed_multisize_memory_resource()                                       = delete;
+  fixed_multisize_memory_resource(fixed_multisize_memory_resource const&) = delete;
+  fixed_multisize_memory_resource(fixed_multisize_memory_resource&&)      = delete;
+  fixed_multisize_memory_resource& operator=(fixed_multisize_memory_resource const&) = delete;
+  fixed_multisize_memory_resource& operator=(fixed_multisize_memory_resource&&) = delete;
 
   /**
    * @brief Query whether the resource supports use of non-null streams for
