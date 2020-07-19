@@ -31,6 +31,14 @@ namespace mr {
  * See https://devblogs.nvidia.com/how-optimize-data-transfers-cuda-cc/
  *---------------------------------------------------------------------------**/
 class pinned_memory_resource final : public host_memory_resource {
+ public:
+  pinned_memory_resource()                               = default;
+  ~pinned_memory_resource()                              = default;
+  pinned_memory_resource(pinned_memory_resource const &) = default;
+  pinned_memory_resource(pinned_memory_resource &&)      = default;
+  pinned_memory_resource &operator=(pinned_memory_resource const &) = default;
+  pinned_memory_resource &operator=(pinned_memory_resource &&) = default;
+
  private:
   /**---------------------------------------------------------------------------*
    * @brief Allocates pinned memory on the host of size at least `bytes` bytes.

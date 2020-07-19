@@ -99,6 +99,13 @@ class logging_resource_adaptor final : public device_memory_resource {
     init_logger(auto_flush);
   }
 
+  logging_resource_adaptor()                                = delete;
+  ~logging_resource_adaptor()                               = default;
+  logging_resource_adaptor(logging_resource_adaptor const&) = delete;
+  logging_resource_adaptor(logging_resource_adaptor&&)      = default;
+  logging_resource_adaptor& operator=(logging_resource_adaptor const&) = delete;
+  logging_resource_adaptor& operator=(logging_resource_adaptor&&) = default;
+
   /**
    * @brief Return pointer to the upstream resource.
    *
