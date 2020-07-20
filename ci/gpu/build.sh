@@ -60,7 +60,7 @@ conda list
 ################################################################################
 
 logger "Build and install librmm and rmm..."
-"$WORKSPACE/build.sh" -v clean librmm rmm
+"$WORKSPACE/build.sh" -v --ptds clean librmm rmm
 
 ################################################################################
 # Test - librmm

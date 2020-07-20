@@ -46,7 +46,6 @@ namespace mr {
  *---------------------------------------------------------------------------**/
 class host_memory_resource {
  public:
-  host_memory_resource()          = default;
   virtual ~host_memory_resource() = default;
 
   /**---------------------------------------------------------------------------*

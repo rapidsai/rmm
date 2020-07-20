@@ -1,10 +1,9 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
-
 import os
 
 from libcpp cimport bool
 from libcpp.cast cimport dynamic_cast
-from libcpp.memory cimport unique_ptr, make_unique, shared_ptr, make_shared
+from libcpp.memory cimport make_shared, make_unique, shared_ptr, unique_ptr
 from libcpp.string cimport string
 
 
@@ -93,14 +92,10 @@ cdef class PoolMemoryResource(MemoryResource):
             size_t maximum_pool_size=~0
     ):
         self.c_obj.reset(
-            new thread_safe_resource_adaptor_wrapper(
-                shared_ptr[device_memory_resource_wrapper](
-                    new pool_memory_resource_wrapper(
-                        upstream.c_obj,
-                        initial_pool_size,
-                        maximum_pool_size
-                    )
-                )
+            new pool_memory_resource_wrapper(
+                upstream.c_obj,
+                initial_pool_size,
+                maximum_pool_size
             )
         )
 
