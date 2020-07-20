@@ -17,6 +17,7 @@
 #pragma once
 
 #include <rmm/detail/error.hpp>
+#include <rmm/mr/device/detail/free_list.hpp>
 
 #include <algorithm>
 #include <cassert>
@@ -158,37 +159,9 @@ struct compare_blocks {
  *
  * @tparam list_type the type of the internal list data structure.
  */
-template <typename list_type = std::list<block>>
-struct coalescing_free_list {
+struct coalescing_free_list : free_list<block> {
   coalescing_free_list()  = default;
   ~coalescing_free_list() = default;
-
-  using size_type      = typename list_type::size_type;
-  using iterator       = typename list_type::iterator;
-  using const_iterator = typename list_type::const_iterator;
-
-  iterator begin() noexcept { return blocks.begin(); }                /// beginning of the free list
-  const_iterator begin() const noexcept { return begin(); }           /// beginning of the free list
-  const_iterator cbegin() const noexcept { return blocks.cbegin(); }  /// beginning of the free list
-
-  iterator end() noexcept { return blocks.end(); }                /// end of the free list
-  const_iterator end() const noexcept { return end(); }           /// end of the free list
-  const_iterator cend() const noexcept { return blocks.cend(); }  /// end of the free list
-
-  /**
-   * @brief The size of the free list in blocks.
-   *
-   * @return size_type The number of blocks in the free list.
-   */
-  size_type size() const noexcept { return blocks.size(); }
-
-  /**
-   * @brief checks whether the free_list is empty.
-   *
-   * @return true If there are blocks in the free_list.
-   * @return false If there are no blocks in the free_list.
-   */
-  bool is_empty() const noexcept { return blocks.empty(); }
 
   /**
    * @brief Inserts a block into the `free_list` in the correct order, coalescing it with the
@@ -196,22 +169,21 @@ struct coalescing_free_list {
    *
    * @param b The block to insert.
    */
-  void insert(block const& b)
+  virtual void insert(block_type const& b) override
   {
     if (is_empty()) {
-      insert(blocks.end(), b);
+      free_list::insert(end(), b);
       return;
     }
 
     // Find the right place (in ascending ptr order) to insert the block
     // Can't use binary_search because it's a linked list and will be quadratic
-    auto const next =
-      std::find_if(blocks.begin(), blocks.end(), [b](block const& i) { return b < i; });
-    auto const previous = (next == blocks.begin()) ? next : std::prev(next);
+    auto const next     = std::find_if(begin(), end(), [b](block_type const& i) { return b < i; });
+    auto const previous = (next == begin()) ? next : std::prev(next);
 
     // Coalesce with neighboring blocks or insert the new block if it can't be coalesced
     bool const merge_prev = previous->is_contiguous_before(b);
-    bool const merge_next = (next != blocks.end()) && b.is_contiguous_before(*next);
+    bool const merge_next = (next != end()) && b.is_contiguous_before(*next);
 
     if (merge_prev && merge_next) {
       *previous = previous->merge(b).merge(*next);
@@ -221,84 +193,62 @@ struct coalescing_free_list {
     } else if (merge_next) {
       *next = b.merge(*next);
     } else {
-      insert(next, b);  // cannot be coalesced, just insert
+      free_list::insert(next, b);  // cannot be coalesced, just insert
     }
   }
 
   /**
-   * @brief Inserts blocks from range `[first, last)` into the free_list in their correct order,
+   * @brief Moves blocks from range `[first, last)` into the free_list in their correct order,
    *        coalescing them with their preceding and following blocks if they are contiguous.
    *
    * @tparam InputIt iterator type
    * @param first The beginning of the range of blocks to insert
    * @param last The end of the range of blocks to insert.
    */
-  template <class InputIt>
-  void insert(InputIt first, InputIt last)
+  virtual void insert(free_list&& other) override
   {
-    std::for_each(first, last, [this](block const& b) { this->insert(b); });
+    std::for_each(std::make_move_iterator(other.begin()),
+                  std::make_move_iterator(other.end()),
+                  [this](block_type&& b) { this->insert(b); });
   }
-
-  /**
-   * @brief Removes the block indicated by `iter` from the free list.
-   *
-   * @param iter An iterator referring to the block to erase.
-   */
-  void erase(const_iterator iter) { blocks.erase(iter); }
-
-  /**
-   * @brief Erase all blocks from the free_list.
-   *
-   */
-  void clear() noexcept { blocks.clear(); }
 
   /**
    * @brief Finds the smallest block in the `free_list` large enough to fit `size` bytes.
    *
+   * This is a "best fit" search.
+   *
    * @param size The size in bytes of the desired block.
    * @return block A block large enough to store `size` bytes.
    */
-  block best_fit(size_t size)
+  virtual block_type get_block(size_t size) override
   {
     // find best fit block
     auto const iter =
-      std::min_element(blocks.cbegin(), blocks.cend(), [size](block const& lhs, block const& rhs) {
+      std::min_element(cbegin(), cend(), [size](block_type const& lhs, block_type const& rhs) {
         return lhs.is_better_fit(size, rhs);
       });
 
-    if (iter != blocks.end() && iter->fits(size)) {
+    if (iter != end() && iter->fits(size)) {
       // Remove the block from the free_list and return it.
-      block const found = *iter;
+      block_type const found = *iter;
       erase(iter);
       return found;
     }
 
-    return block{};  // not found
+    return block_type{};  // not found
   }
 
   /**
    * @brief Print all blocks in the free_list.
    */
-  void print() const
+  virtual void print() const override
   {
-    std::cout << blocks.size() << '\n';
-    for (block const& b : blocks) {
-      b.print();
+    std::cout << size() << '\n';
+    for (const_iterator iter = begin(); iter != end(); ++iter) {
+      iter->print();
     }
   }
-
- protected:
-  /**
-   * @brief Insert a block in the free list before the specified position
-   *
-   * @param pos iterator before which the block will be inserted. pos may be the end() iterator.
-   * @param b The block to insert.
-   */
-  void insert(const_iterator pos, block const& b) { blocks.insert(pos, b); }
-
- private:
-  list_type blocks;  // The internal container of blocks
-};                   // coalescing_free_list
+};  // coalescing_free_list
 
 }  // namespace detail
 }  // namespace mr

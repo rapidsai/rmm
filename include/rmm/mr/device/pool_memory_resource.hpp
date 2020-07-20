@@ -125,7 +125,7 @@ class pool_memory_resource final : public device_memory_resource {
  private:
   using id_type    = uint32_t;
   using block      = rmm::mr::detail::block;
-  using free_list  = rmm::mr::detail::coalescing_free_list<>;
+  using free_list  = rmm::mr::detail::coalescing_free_list;
   using lock_guard = std::lock_guard<std::mutex>;
 
   /**
@@ -163,7 +163,7 @@ class pool_memory_resource final : public device_memory_resource {
       if (blocks_event.event != stream_event.event) {
         auto blocks = s->second;
 
-        block const b = blocks.best_fit(size);  // get the best fit block
+        block const b = blocks.get_block(size);  // get the best fit block
 
         if (b.is_valid()) {
           // Since we found a block associated with a different stream, we have to insert a wait on
@@ -176,7 +176,7 @@ class pool_memory_resource final : public device_memory_resource {
           RMM_CUDA_TRY(cudaStreamSynchronize(blocks_event.stream));
 #endif
           // Move all the blocks to the requesting stream, since it has waited on them
-          stream_free_blocks_[stream_event].insert(blocks.begin(), blocks.end());
+          stream_free_blocks_[stream_event].insert(std::move(blocks));
           stream_free_blocks_.erase(s);
 
           return b;
@@ -205,7 +205,7 @@ class pool_memory_resource final : public device_memory_resource {
     // Try to find a larger block in free list for the same stream (no sync required)
     auto iter = stream_free_blocks_.find(stream_event);
     if (iter != stream_free_blocks_.end()) {
-      block b = iter->second.best_fit(size);
+      block b = iter->second.get_block(size);
       if (b.is_valid()) return b;
     }
 
@@ -513,7 +513,7 @@ class pool_memory_resource final : public device_memory_resource {
     auto free_list_iter = stream_free_blocks_.find(stream_event);
     if (free_list_iter != stream_free_blocks_.end()) {
       auto blocks = free_list_iter->second;
-      stream_free_blocks_[get_event(cudaStreamLegacy)].insert(blocks.begin(), blocks.end());
+      stream_free_blocks_[get_event(cudaStreamLegacy)].insert(std::move(blocks));
       stream_free_blocks_.erase(free_list_iter);
 
       auto result = cudaEventSynchronize(stream_event.event);
