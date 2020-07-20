@@ -45,7 +45,6 @@ namespace mr {
  */
 class device_memory_resource {
  public:
-  device_memory_resource()          = default;
   virtual ~device_memory_resource() = default;
 
   /**
