@@ -14,26 +14,81 @@
  * limitations under the License.
  */
 
+#include <rmm/mr/device/owning_wrapper.hpp>
 #include "mr/device/cuda_memory_resource.hpp"
 #include "mr/device/device_memory_resource.hpp"
 #include "mr_test.hpp"
 
-/*
-// Test on all memory resource classes
-using resources = ::testing::Types<rmm::mr::cuda_memory_resource,
-                                   rmm::mr::managed_memory_resource,
-                                   rmm::mr::cnmem_memory_resource,
-                                   rmm::mr::cnmem_managed_memory_resource,
-                                   pool_mr,
-                                   fixed_size_mr,
-                                   fixed_multisize_mr,
-                                   hybrid_mr>;
+namespace {
 
-TYPED_TEST_CASE(MRTest, resources);
+using MRFactoryFunc = std::function<std::shared_ptr<rmm::mr::device_memory_resource>()>;
+
+/// Encapsulates a `device_memory_resource` factory function and associated name
+struct mr_factory {
+  std::string name;  ///< Name to associate with tests that use this factory
+  MRFactoryFunc f;   ///< Factory function that returns shared_ptr to `device_memory_resource`
+                     ///< instance to use in test
+};
+
+/// Test fixture class value-parameterized on different `mr_factory`s
+struct mr_test : public ::testing::TestWithParam<mr_factory> {
+  void SetUp() override
+  {
+    auto factory = GetParam().f;
+    mr           = factory();
+    EXPECT_EQ(cudaSuccess, cudaStreamCreate(&stream));
+  }
+
+  void TearDown() override { EXPECT_EQ(cudaSuccess, cudaStreamDestroy(stream)); };
+
+  std::shared_ptr<rmm::mr::device_memory_resource> mr;  ///< Pointer to resource to use in tests
+  cudaStream_t stream;
+};
+
+auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>(); }
+
+auto make_managed() { return std::make_shared<rmm::mr::managed_memory_resource>(); }
+
+auto make_cnmem() { return std::make_shared<rmm::mr::cnmem_memory_resource>(); }
+
+auto make_cnmem_managed() { return std::make_shared<rmm::mr::cnmem_managed_memory_resource>(); }
+
+auto make_pool()
+{
+  return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_cuda());
+}
+
+auto make_fixed_size()
+{
+  return rmm::mr::make_owning_wrapper<rmm::mr::fixed_size_memory_resource>(make_cuda());
+}
+
+auto make_multisize()
+{
+  return rmm::mr::make_owning_wrapper<rmm::mr::fixed_multisize_memory_resource>(make_cuda());
+}
+
+auto make_hybrid()
+{
+  return rmm::mr::make_owning_wrapper<rmm::mr::hybrid_memory_resource>(
+    std::make_tuple(make_multisize(), make_pool()));
+}
+
+INSTANTIATE_TEST_CASE_P(name,
+                        mr_test,
+                        ::testing::Values(mr_factory{"CUDA", &make_cuda},
+                                          mr_factory{"Managed", &make_managed},
+                                          mr_factory{"CNMEM", &make_cnmem},
+                                          mr_factory{"CNMEM_Managed", &make_cnmem_managed},
+                                          mr_factory{"Pool", &make_pool},
+                                          mr_factory{"FixedSize", &make_fixed_size},
+                                          mr_factory{"MultiSize", &make_multisize},
+                                          mr_factory{"Hybrid", &make_hybrid}),
+                        [](auto const& info) { return info.param.name; });
 
 TEST(DefaultTest, UseDefaultResource) { test_get_default_resource(); }
 
-TYPED_TEST(MRTest, SetDefaultResource)
+TEST_P(mr_test, SetDefaultResource)
 {
   // Not necessarily false, since two cuda_memory_resources are always equal
   // EXPECT_FALSE(this->mr->is_equal(*rmm::mr::get_default_resource()));
@@ -50,33 +105,33 @@ TYPED_TEST(MRTest, SetDefaultResource)
   // EXPECT_FALSE(this->mr->is_equal(*rmm::mr::get_default_resource()));
 }
 
-TYPED_TEST(MRTest, SelfEquality) { EXPECT_TRUE(this->mr->is_equal(*this->mr)); }
+TEST_P(mr_test, SelfEquality) { EXPECT_TRUE(this->mr->is_equal(*this->mr)); }
 
-TYPED_TEST(MRTest, Allocate) { test_various_allocations(this->mr.get()); }
+TEST_P(mr_test, Allocate) { test_various_allocations(this->mr.get()); }
 
-TYPED_TEST(MRTest, AllocateOnStream)
+TEST_P(mr_test, AllocateOnStream)
 {
   test_various_allocations_on_stream(this->mr.get(), this->stream);
 }
 
-TYPED_TEST(MRTest, RandomAllocations) { test_random_allocations(this->mr.get()); }
+TEST_P(mr_test, RandomAllocations) { test_random_allocations(this->mr.get()); }
 
-TYPED_TEST(MRTest, RandomAllocationsStream)
+TEST_P(mr_test, RandomAllocationsStream)
 {
   test_random_allocations(this->mr.get(), 100, this->stream);
 }
 
-TYPED_TEST(MRTest, MixedRandomAllocationFree)
+TEST_P(mr_test, MixedRandomAllocationFree)
 {
   test_mixed_random_allocation_free(this->mr.get(), nullptr);
 }
 
-TYPED_TEST(MRTest, MixedRandomAllocationFreeStream)
+TEST_P(mr_test, MixedRandomAllocationFreeStream)
 {
   test_mixed_random_allocation_free(this->mr.get(), this->stream);
 }
 
-TYPED_TEST(MRTest, GetMemInfo)
+TEST_P(mr_test, GetMemInfo)
 {
   if (this->mr->supports_get_mem_info()) {
     std::pair<std::size_t, std::size_t> mem_info;
@@ -89,50 +144,5 @@ TYPED_TEST(MRTest, GetMemInfo)
     EXPECT_NO_THROW(this->mr->deallocate(ptr, allocation_size));
   }
 }
-*/
-
-/*
-using resources = ::testing::Types<rmm::mr::cuda_memory_resource,
-                                   rmm::mr::managed_memory_resource,
-                                   rmm::mr::cnmem_memory_resource,
-                                   rmm::mr::cnmem_managed_memory_resource,
-                                   pool_mr,
-                                   fixed_size_mr,
-                                   fixed_multisize_mr,
-                                   hybrid_mr>;
-                                   */
-
-namespace {
-
-using MRFactory = std::function<std::shared_ptr<rmm::mr::device_memory_resource>()>;
-
-struct mr_info {
-  std::string name;
-  MRFactory f;
-};
-
-struct mr_test : public ::testing::TestWithParam<mr_info> {
-  void SetUp() override
-  {
-    auto factory = GetParam().f;
-    mr           = factory();
-  }
-  std::shared_ptr<rmm::mr::device_memory_resource> mr;
-};
-
-auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>(); }
-
-// auto make_managed() { return std::make_shared<rmm::mr::managed_memory_resource>(); }
-//
-// auto make_cnmem() { return std::make_shared<rmm::mr::cnmem_memory_resource>(); }
-//
-// auto make_cnmem_managed() { return std::make_shared<rmm::mr::cnmem_managed_memory_resource>(); }
-
-TEST_P(mr_test, First) { test_allocate(mr.get(), 10); }
-
-INSTANTIATE_TEST_CASE_P(name,
-                        mr_test,
-                        ::testing::Values(mr_info{"CUDA", &make_cuda}),
-                        [](auto const& info) { return info.param.name; });
 
 }  // namespace
