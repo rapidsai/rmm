@@ -39,13 +39,10 @@
 using cudaStream_t = struct CUstream_st*;
 
 namespace rmm {
-
 namespace mr {
-
-namespace {
-
+namespace detail {
 // Integer pow function
-std::size_t ipow(std::size_t base, std::size_t exp)
+constexpr std::size_t ipow(std::size_t base, std::size_t exp)
 {
   std::size_t ret = 1;
   while (exp > 0) {
@@ -55,8 +52,7 @@ std::size_t ipow(std::size_t base, std::size_t exp)
   }
   return ret;
 }
-
-}  // namespace
+}  // namespace detail
 
 /**
  * @brief Allocates fixed-size memory blocks of a range of sizes.
@@ -104,8 +100,8 @@ class fixed_multisize_memory_resource : public device_memory_resource {
       size_base_{size_base},
       min_size_exponent_{min_size_exponent},
       max_size_exponent_{max_size_exponent},
-      min_size_bytes_{ipow(size_base, min_size_exponent)},
-      max_size_bytes_{ipow(size_base, max_size_exponent)}
+      min_size_bytes_{detail::ipow(size_base, min_size_exponent)},
+      max_size_bytes_{detail::ipow(size_base, max_size_exponent)}
   {
     init(initial_blocks_per_size);
   }
@@ -138,8 +134,8 @@ class fixed_multisize_memory_resource : public device_memory_resource {
       size_base_{size_base},
       min_size_exponent_{min_size_exponent},
       max_size_exponent_{max_size_exponent},
-      min_size_bytes_{ipow(size_base, min_size_exponent)},
-      max_size_bytes_{ipow(size_base, max_size_exponent)}
+      min_size_bytes_{detail::ipow(size_base, min_size_exponent)},
+      max_size_bytes_{detail::ipow(size_base, max_size_exponent)}
   {
     init(initial_blocks_per_size);
   }
@@ -148,7 +144,13 @@ class fixed_multisize_memory_resource : public device_memory_resource {
    * @brief Destroy the fixed_multisize_memory_resource and free all memory allocated from the
    *        upstream resource.
    */
-  virtual ~fixed_multisize_memory_resource() {}
+  ~fixed_multisize_memory_resource() = default;
+
+  fixed_multisize_memory_resource()                                       = delete;
+  fixed_multisize_memory_resource(fixed_multisize_memory_resource const&) = delete;
+  fixed_multisize_memory_resource(fixed_multisize_memory_resource&&)      = delete;
+  fixed_multisize_memory_resource& operator=(fixed_multisize_memory_resource const&) = delete;
+  fixed_multisize_memory_resource& operator=(fixed_multisize_memory_resource&&) = delete;
 
   /**
    * @brief Query whether the resource supports use of non-null streams for
@@ -222,7 +224,7 @@ class fixed_multisize_memory_resource : public device_memory_resource {
     // allocate initial blocks and insert into free list
     for (std::size_t i = min_size_exponent_; i <= max_size_exponent_; i++) {
       fixed_size_mr_.emplace_back(new fixed_size_memory_resource<Upstream, Upstream_ptr>(
-        upstream_mr_, ipow(size_base_, i), initial_blocks_per_size));
+        upstream_mr_, detail::ipow(size_base_, i), initial_blocks_per_size));
     }
   }
 
@@ -240,7 +242,7 @@ class fixed_multisize_memory_resource : public device_memory_resource {
   {
     assert(bytes <= get_max_size());
 
-    auto exponentiate = [this](std::size_t const& k) { return ipow(size_base_, k); };
+    auto exponentiate = [this](std::size_t const& k) { return detail::ipow(size_base_, k); };
     auto min_exp      = thrust::make_transform_iterator(
       thrust::make_counting_iterator(min_size_exponent_), exponentiate);
 

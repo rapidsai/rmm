@@ -54,6 +54,13 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
   }
 
+  thread_safe_resource_adaptor()                                    = delete;
+  ~thread_safe_resource_adaptor()                                   = default;
+  thread_safe_resource_adaptor(thread_safe_resource_adaptor const&) = delete;
+  thread_safe_resource_adaptor(thread_safe_resource_adaptor&&)      = delete;
+  thread_safe_resource_adaptor& operator=(thread_safe_resource_adaptor const&) = delete;
+  thread_safe_resource_adaptor& operator=(thread_safe_resource_adaptor&&) = delete;
+
   /**
    * @brief Construct a new thread safe resource adaptor using `upstream` to satisfy
    * allocation requests.
