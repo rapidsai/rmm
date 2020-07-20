@@ -266,8 +266,7 @@ class pool_memory_resource final : public device_memory_resource {
     // synchronization So we need to test in real non-PTDS applications that have multiple streams
     // whether or not the overhead is worth it
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-    auto result = cudaEventRecord(stream_event.event, stream);
-    assert(cudaSuccess == result);
+    RMM_ASSERT_CUDA_SUCCESS(cudaEventRecord(stream_event.event, stream));
 #endif
 
     stream_free_blocks_[stream_event].insert(*i);
