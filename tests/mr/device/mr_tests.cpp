@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
+#include "mr/device/cuda_memory_resource.hpp"
+#include "mr/device/device_memory_resource.hpp"
 #include "mr_test.hpp"
 
+/*
 // Test on all memory resource classes
 using resources = ::testing::Types<rmm::mr::cuda_memory_resource,
                                    rmm::mr::managed_memory_resource,
@@ -86,3 +89,50 @@ TYPED_TEST(MRTest, GetMemInfo)
     EXPECT_NO_THROW(this->mr->deallocate(ptr, allocation_size));
   }
 }
+*/
+
+/*
+using resources = ::testing::Types<rmm::mr::cuda_memory_resource,
+                                   rmm::mr::managed_memory_resource,
+                                   rmm::mr::cnmem_memory_resource,
+                                   rmm::mr::cnmem_managed_memory_resource,
+                                   pool_mr,
+                                   fixed_size_mr,
+                                   fixed_multisize_mr,
+                                   hybrid_mr>;
+                                   */
+
+namespace {
+
+using MRFactory = std::function<std::shared_ptr<rmm::mr::device_memory_resource>()>;
+
+struct mr_info {
+  std::string name;
+  MRFactory f;
+};
+
+struct mr_test : public ::testing::TestWithParam<mr_info> {
+  void SetUp() override
+  {
+    auto factory = GetParam().f;
+    mr           = factory();
+  }
+  std::shared_ptr<rmm::mr::device_memory_resource> mr;
+};
+
+auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>(); }
+
+// auto make_managed() { return std::make_shared<rmm::mr::managed_memory_resource>(); }
+//
+// auto make_cnmem() { return std::make_shared<rmm::mr::cnmem_memory_resource>(); }
+//
+// auto make_cnmem_managed() { return std::make_shared<rmm::mr::cnmem_managed_memory_resource>(); }
+
+TEST_P(mr_test, First) { test_allocate(mr.get(), 10); }
+
+INSTANTIATE_TEST_CASE_P(name,
+                        mr_test,
+                        ::testing::Values(mr_info{"CUDA", &make_cuda}),
+                        [](auto const& info) { return info.param.name; });
+
+}  // namespace
