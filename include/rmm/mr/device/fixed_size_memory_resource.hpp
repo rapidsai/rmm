@@ -119,12 +119,12 @@ class fixed_size_memory_resource : public device_memory_resource {
   /**
    * @brief Allocates memory of size at least `bytes`.
    *
-   * The returned pointer will have at minimum 256 byte alignment.
+   * The returned pointer has at least 256 byte alignment.
    *
    * @throws rmm::bad_alloc if `bytes` > `block_size` (constructor parameter)
    *
-   * @param bytes The size of the allocation
-   * @param stream Stream on which to perform allocation
+   * @param bytes The size in bytes of the allocation
+   * @param stream Stream to associate this allocation with
    * @return void* Pointer to the newly allocated memory
    */
   void* do_allocate(std::size_t bytes, cudaStream_t stream) override
