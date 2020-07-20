@@ -173,8 +173,9 @@ class hybrid_memory_resource : public device_memory_resource {
    *
    * @return SmallAllocMemoryResource* the upstream resource used for small allocations.
    */
-  template <typename P = SmallAllocMemoryResource_ptr>
-  typename std::enable_if_t<std::is_pointer<P>::value> get_small_mr()
+  template <typename P                                            = SmallAllocMemoryResource_ptr,
+            typename std::enable_if_t<std::is_pointer<P>::value>* = nullptr>
+  P get_small_mr()
   {
     return small_mr_;
   }
@@ -184,8 +185,9 @@ class hybrid_memory_resource : public device_memory_resource {
    *
    * @return SmallAllocMemoryResource* the upstream resource used for small allocations.
    */
-  template <typename P = SmallAllocMemoryResource_ptr>
-  typename std::enable_if_t<!std::is_pointer<P>::value, SmallAllocMemoryResource>* get_small_mr()
+  template <typename P                                             = SmallAllocMemoryResource_ptr,
+            typename std::enable_if_t<!std::is_pointer<P>::value>* = nullptr>
+  SmallAllocMemoryResource* get_small_mr()
   {
     return small_mr_.get();
   }
@@ -195,8 +197,9 @@ class hybrid_memory_resource : public device_memory_resource {
    *
    * @return LargeAllocMemoryResource* the upstream resource used for large allocations.
    */
-  template <typename P = LargeAllocMemoryResource_ptr>
-  typename std::enable_if_t<std::is_pointer<P>::value> get_large_mr()
+  template <typename P                                            = LargeAllocMemoryResource_ptr,
+            typename std::enable_if_t<std::is_pointer<P>::value>* = nullptr>
+  P get_large_mr()
   {
     return large_mr_;
   }
@@ -206,8 +209,9 @@ class hybrid_memory_resource : public device_memory_resource {
    *
    * @return LargeAllocMemoryResource* the upstream resource used for large allocations.
    */
-  template <typename P = LargeAllocMemoryResource_ptr>
-  typename std::enable_if_t<!std::is_pointer<P>::value, LargeAllocMemoryResource>* get_large_mr()
+  template <typename P                                             = LargeAllocMemoryResource_ptr,
+            typename std::enable_if_t<!std::is_pointer<P>::value>* = nullptr>
+  LargeAllocMemoryResource* get_large_mr()
   {
     return large_mr_.get();
   }
