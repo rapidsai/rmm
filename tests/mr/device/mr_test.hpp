@@ -74,16 +74,7 @@ struct allocation {
   allocation() = default;
 };
 
-// nested MR type names can get long...
-using pool_mr       = rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>;
-using fixed_size_mr = rmm::mr::fixed_size_memory_resource<rmm::mr::device_memory_resource>;
-using fixed_multisize_mr =
-  rmm::mr::fixed_multisize_memory_resource<rmm::mr::device_memory_resource>;
-using fixed_multisize_pool_mr = rmm::mr::fixed_multisize_memory_resource<pool_mr>;
-using hybrid_mr               = rmm::mr::hybrid_memory_resource<fixed_multisize_pool_mr, pool_mr>;
-
 // Various test functions, shared between single-threaded and multithreaded tests.
-
 inline void test_get_default_resource()
 {
   EXPECT_NE(nullptr, rmm::mr::get_default_resource());
@@ -204,68 +195,6 @@ void test_mixed_random_allocation_free(MemoryResourceType* mr,
 
   EXPECT_EQ(active_allocations, 0);
   EXPECT_EQ(allocations.size(), active_allocations);
-}
-
-// The test fixture
-template <typename MemoryResourceType>
-struct MRTest : public ::testing::Test {
-  std::unique_ptr<MemoryResourceType> mr;
-  cudaStream_t stream;
-
-  MRTest() : mr{new MemoryResourceType} {}
-
-  void SetUp() override { EXPECT_EQ(cudaSuccess, cudaStreamCreate(&stream)); }
-
-  void TearDown() override { EXPECT_EQ(cudaSuccess, cudaStreamDestroy(stream)); };
-
-  ~MRTest() {}
-};
-
-// Specialize constructor to pass arguments
-template <>
-inline MRTest<fixed_size_mr>::MRTest() : mr{new fixed_size_mr{rmm::mr::get_default_resource()}}
-{
-}
-
-template <>
-inline MRTest<fixed_multisize_mr>::MRTest()
-  : mr{new fixed_multisize_mr(rmm::mr::get_default_resource())}
-{
-}
-
-template <>
-inline MRTest<pool_mr>::MRTest() : mr{}
-{
-  rmm::mr::cuda_memory_resource* cuda = new rmm::mr::cuda_memory_resource{};
-  this->mr.reset(new pool_mr(cuda));
-}
-
-template <>
-inline MRTest<hybrid_mr>::MRTest()
-{
-  rmm::mr::cuda_memory_resource* cuda = new rmm::mr::cuda_memory_resource{};
-  pool_mr* pool                       = new pool_mr(cuda);
-  this->mr.reset(new hybrid_mr(new fixed_multisize_pool_mr(pool), pool));
-}
-
-template <>
-inline MRTest<pool_mr>::~MRTest()
-{
-  auto upstream = this->mr->get_upstream();
-  this->mr.reset();
-  delete upstream;
-}
-
-template <>
-inline MRTest<hybrid_mr>::~MRTest()
-{
-  auto fixed = this->mr->get_small_mr();
-  auto pool  = this->mr->get_large_mr();
-  auto cuda  = pool->get_upstream();
-  this->mr.reset();
-  delete fixed;
-  delete pool;
-  delete cuda;
 }
 
 }  // namespace test
