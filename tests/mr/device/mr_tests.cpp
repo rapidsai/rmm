@@ -81,8 +81,6 @@ INSTANTIATE_TEST_CASE_P(ResourceTests,
                                           mr_factory{"CNMEM", &make_cnmem},
                                           mr_factory{"CNMEM_Managed", &make_cnmem_managed},
                                           mr_factory{"Pool", &make_pool},
-                                          mr_factory{"FixedSize", &make_fixed_size},
-                                          mr_factory{"MultiSize", &make_multisize},
                                           mr_factory{"Hybrid", &make_hybrid}),
                         [](auto const& info) { return info.param.name; });
 
