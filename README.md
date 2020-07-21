@@ -309,7 +309,7 @@ In the future, RMM will provide a similar host-side structure like `device_buffe
 
 ## Using RMM in Python Code
 
-You can use RMM in two ways in Python code:
+There are two ways to use RMM in Python code:
 
 1. Using the `rmm.DeviceBuffer` API to explicitly create and manage
    device memory allocations
