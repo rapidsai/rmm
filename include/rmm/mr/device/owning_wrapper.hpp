@@ -67,7 +67,7 @@ auto make_resource(std::tuple<std::shared_ptr<Upstreams>...> const& t, Args&&...
  * `Resource`
  */
 template <typename Resource, typename... Upstreams>
-class owning_wrapper final : public device_memory_resource {
+class owning_wrapper : public device_memory_resource {
  public:
   using upstream_tuple = std::tuple<std::shared_ptr<Upstreams>...>;
 
