@@ -434,7 +434,7 @@ This can be done in two ways:
 
 2. Using the `set_memory_manager()` function provided by Numba:
 
-  ```
+  ```python
   >>> from numba import cuda
   >>> import rmm
   >>> cuda.set_memory_manager(rmm.RMMNumbaManager)
