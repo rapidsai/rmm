@@ -68,37 +68,19 @@ class pool_memory_resource final
   explicit pool_memory_resource(Upstream* upstream_mr,
                                 std::size_t initial_pool_size = default_initial_size,
                                 std::size_t maximum_pool_size = default_maximum_size)
-    : upstream_mr_{upstream_mr}, maximum_pool_size_{maximum_pool_size}
+    : upstream_mr_{upstream_mr},
+      initial_pool_size_(initial_pool_size),
+      maximum_pool_size_(maximum_pool_size)
   {
-    cudaDeviceProp props;
-    int device{0};
-    RMM_CUDA_TRY(cudaGetDevice(&device));
-    RMM_CUDA_TRY(cudaGetDeviceProperties(&props, device));
-
-    if (initial_pool_size == default_initial_size) { initial_pool_size = props.totalGlobalMem / 2; }
-
-    initial_pool_size = rmm::detail::align_up(initial_pool_size, allocation_alignment);
-
-    if (maximum_pool_size == default_maximum_size) maximum_pool_size_ = props.totalGlobalMem;
-
     // Allocate initial block and insert into free list for the legacy default stream
-    stream_free_blocks_[get_event(cudaStreamLegacy)].insert(
-      block_from_upstream(initial_pool_size, 0));
+    initialize_pool(cudaStreamLegacy);
   }
 
   /**
    * @brief Destroy the `pool_memory_resource` and deallocate all memory it allocated using
    * the upstream resource.
    */
-  ~pool_memory_resource()
-  {
-    // foo
-    release();
-#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-    for (auto& event : ptds_events_)
-      event.get().parent = nullptr;
-#endif
-  }
+  ~pool_memory_resource() { release(); }
 
   pool_memory_resource()                            = delete;
   pool_memory_resource(pool_memory_resource const&) = delete;
@@ -129,124 +111,43 @@ class pool_memory_resource final
   Upstream* get_upstream() const noexcept { return upstream_mr_; }
 
  private:
-  using block      = rmm::mr::detail::block;
-  using free_list  = rmm::mr::detail::coalescing_free_list;
-  using lock_guard = std::lock_guard<std::mutex>;
-
-  /**
-   * @brief Allocates memory of size at least `bytes`.
-   *
-   * The returned pointer has at least 256B alignment.
-   *
-   * @throws `std::bad_alloc` if the requested allocation could not be fulfilled
-   *
-   * @param bytes The size in bytes of the allocation
-   * @param stream The stream to associate this allocation with
-   * @return void* Pointer to the newly allocated memory
-   */
-  void* do_allocate(std::size_t bytes, cudaStream_t stream) override
+  void initialize_pool(cudaStream_t stream)
   {
-    if (bytes <= 0) return nullptr;
+    cudaDeviceProp props;
+    int device{0};
+    RMM_CUDA_TRY(cudaGetDevice(&device));
+    RMM_CUDA_TRY(cudaGetDeviceProperties(&props, device));
 
-    lock_guard lock(mtx_);
-
-    stream_event_pair stream_event = get_event(stream);
-    bytes                          = rmm::detail::align_up(bytes, allocation_alignment);
-    block const b                  = available_larger_block(bytes, stream_event);
-    auto p                         = allocate_from_block(b, bytes, stream_event);
-    return p;
-  }
-
-  /**
-   * @brief Deallocate memory pointed to by \p p.
-   *
-   * @throws nothing
-   *
-   * @param p Pointer to be deallocated
-   */
-  void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override
-  {
-    lock_guard lock(mtx_);
-    free_block(p, bytes, stream);
-  }
-
-  /**
-   * @brief Find a free block of at least `size` bytes in a `free_list` with a different
-   * stream/event than `stream_event`.
-   *
-   * If an appropriate block is found in a free list F associated with event E, if
-   * `CUDA_API_PER_THREAD_DEFAULT_STREAM` is defined, `stream_event.stream` will be made to wait on
-   * event E. Otherwise, the stream associated with free list F will be synchronized. In either
-   * case all other blocks in free list F will be moved to the free list associated with
-   * `stream_event.stream`. This results in coalescing with other blocks in that free list,
-   * hopefully reducing fragmentation.
-   *
-   * @param size The requested size of the allocation.
-   * @param stream_event The stream and associated event on which the allocation is being requested.
-   * @return A block with non-null pointer and size >= `size`, or a nullptr block if none is
-   *         available in `blocks`.
-   */
-  block get_block_from_other_stream(size_t size, stream_event_pair stream_event)
-  {
-    // nothing in this stream's free list, look for one on another stream
-    for (auto s = stream_free_blocks_.begin(); s != stream_free_blocks_.end(); ++s) {
-      auto blocks_event = s->first;
-      if (blocks_event.event != stream_event.event) {
-        auto blocks = s->second;
-
-        block const b = blocks.get_block(size);  // get the best fit block
-
-        if (b.is_valid()) {
-          // Since we found a block associated with a different stream, we have to insert a wait on
-          // the stream's associated event into the allocating stream.
-          // TODO: could eliminate this ifdef and have the same behavior for PTDS and non-PTDS
-          // But the cudaEventRecord() on every free_block reduces performance significantly
-#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-          RMM_CUDA_TRY(cudaStreamWaitEvent(stream_event.stream, blocks_event.event, 0));
-#else
-          RMM_CUDA_TRY(cudaStreamSynchronize(blocks_event.stream));
-#endif
-          // Move all the blocks to the requesting stream, since it has waited on them
-          stream_free_blocks_[stream_event].insert(std::move(blocks));
-          stream_free_blocks_.erase(s);
-
-          return b;
-        }
-      }
-    }
-    return block{};
-  }
-
-  /**
-   * @brief Find an available block in the pool of at least `size` bytes, for use on `stream`.
-   *
-   * Attempts to find a free block that was last used on `stream` to avoid synchronization. If
-   * none is available, it finds a block last used on another stream. In this case, the stream
-   * associated with the found block is synchronized to ensure all asynchronous work on the memory
-   * is finished before it is used on `stream`.
-   *
-   * @throw `std::bad_alloc` if the requested allocation could not be fulfilled.
-   *
-   * @param size The size of the requested allocation, in bytes.
-   * @param stream_event The stream and associated event on which the allocation is being requested.
-   * @return block A block with non-null pointer and size >= `size`.
-   */
-  block available_larger_block(size_t size, stream_event_pair stream_event)
-  {
-    // Try to find a larger block in free list for the same stream (no sync required)
-    auto iter = stream_free_blocks_.find(stream_event);
-    if (iter != stream_free_blocks_.end()) {
-      block b = iter->second.get_block(size);
-      if (b.is_valid()) return b;
+    if (initial_pool_size_ == default_initial_size) {
+      initial_pool_size_ = props.totalGlobalMem / 2;
     }
 
-    block b = get_block_from_other_stream(size, stream_event);
-    if (b.is_valid()) return b;
+    initial_pool_size_ = rmm::detail::align_up(initial_pool_size_, allocation_alignment);
 
-    // no larger blocks available on other streams, so grow the pool and create a block
-    size_t grow_size = size_to_grow(size);
+    if (maximum_pool_size_ == default_maximum_size) { maximum_pool_size_ = props.totalGlobalMem; }
+
+    insert_block(allocate_pool_block(initial_pool_size_, stream), stream);
+  }
+
+  /**
+   * @brief Allocate a block from upstream to supply the suballocation pool.
+   *
+   * Note typically the allocated size will be larger than requested, and is based on the growth
+   * strategy (see `size_to_grow()`).
+   *
+   * @param size The minimum size to allocate
+   * @param stream The stream on which the memory is to be used.
+   * @return block_type The allocated block
+   */
+  virtual block_type allocate_pool_block(size_t size, cudaStream_t stream) override
+  {
+    auto grow_size = size_to_grow(size);
     RMM_EXPECTS(grow_size > 0, rmm::bad_alloc, "Maximum pool size exceeded");
-    return block_from_upstream(grow_size, stream_event.stream);
+    void* p = upstream_mr_->allocate(grow_size, stream);
+    block_type b{reinterpret_cast<char*>(p), size, true};
+    upstream_blocks_.emplace_back(b);  // TODO: with C++17 use version that returns a reference
+    current_pool_size_ += b.size();
+    return b;
   }
 
   /**
@@ -257,53 +158,48 @@ class pool_memory_resource final
    * @param b The block to allocate from.
    * @param size The size in bytes of the requested allocation.
    * @param stream_event The stream and associated event on which the allocation will be used.
-   * @return void* The pointer to the allocated memory.
+   * @return A pair comprising the allocated pointer and any unallocated remainder of the input
+   * block.
    */
-  void* allocate_from_block(block const& b, size_t size, stream_event_pair stream_event)
+  virtual std::pair<void*, block_type> allocate_from_block(block_type const& b,
+                                                           size_t size,
+                                                           stream_event_pair stream_event) override
   {
-    block const alloc{b.pointer(), size, b.is_head()};
-
-    if (b.size() > size) {
-      block rest{b.pointer() + size, b.size() - size, false};
-      stream_free_blocks_[stream_event].insert(rest);
-    }
-
+    block_type const alloc{b.pointer(), size, b.is_head()};
     allocated_blocks_.insert(alloc);
-    return reinterpret_cast<void*>(alloc.pointer());
+
+    auto rest =
+      (b.size() > size) ? block_type{b.pointer() + size, b.size() - size, false} : block_type{};
+    return std::make_pair(reinterpret_cast<void*>(alloc.pointer()), rest);
   }
 
   /**
-   * @brief Frees the block associated with pointer `p`, returning it to the pool.
+   * @brief Finds, frees and returns the block associated with pointer `p`.
    *
    * @param p The pointer to the memory to free.
    * @param size The size of the memory to free. Must be equal to the original allocation size.
-   * @param stream The stream on which the memory was last used.
+   * @param stream The stream-event pair for the stream on which the memory was last used.
+   * @return The (now freed) block associated with `p`. The caller is expected to return the block
+   * to the pool.
    */
-  void free_block(void* p, size_t size, cudaStream_t stream)
+  virtual block_type free_block(void* p, size_t size) noexcept override
   {
-    if (p == nullptr) return;
-
-    stream_event_pair stream_event = get_event(stream);
+    if (p == nullptr) return block_type{};
 
     auto const i = allocated_blocks_.find(static_cast<char*>(p));
     assert(i != allocated_blocks_.end());
-    assert(i->size() == rmm::detail::align_up(size, allocation_alignment));
 
-    // TODO: cudaEventRecord has significant overhead on deallocations, however it could mean less
-    // synchronization So we need to test in real non-PTDS applications that have multiple streams
-    // whether or not the overhead is worth it
-#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-    RMM_ASSERT_CUDA_SUCCESS(cudaEventRecord(stream_event.event, stream));
-#endif
-
-    stream_free_blocks_[stream_event].insert(*i);
+    auto block = *i;
+    assert(block.size() == rmm::detail::align_up(size, allocation_alignment));
     allocated_blocks_.erase(i);
+
+    return block;
   }
 
   /**
    * @brief Given a minimum size, computes an appropriate size to grow the pool.
    *
-   * Current strategy is to try to grow the pool by half the difference between
+   * Strategy is to try to grow the pool by half the difference between
    * the configured maximum pool size and the current pool size.
    *
    * @param size The size of the minimum allocation immediately needed
@@ -324,22 +220,6 @@ class pool_memory_resource final
   };
 
   /**
-   * @brief Allocates memory of `size` bytes using the upstream memory_resource, on `stream`.
-   *
-   * @param size The size of the requested allocation.
-   * @param stream The stream on which the requested allocation will be used.
-   * @return block A block of at least `size` bytes.
-   */
-  block block_from_upstream(size_t size, cudaStream_t stream)
-  {
-    void* p = upstream_mr_->allocate(size, stream);
-    block b{reinterpret_cast<char*>(p), size, true};
-    upstream_blocks_.emplace_back(b);
-    current_pool_size_ += b.size();
-    return b;
-  }
-
-  /**
    * @brief Computes the size of the current pool
    *
    * Includes allocated as well as free memory.
@@ -354,17 +234,12 @@ class pool_memory_resource final
    */
   void release()
   {
-    lock_guard lock(mtx_);
+    lock_guard lock(get_mutex());
 
     for (auto b : upstream_blocks_)
       upstream_mr_->deallocate(b.pointer(), b.size());
     upstream_blocks_.clear();
     allocated_blocks_.clear();
-
-    for (auto s_e : stream_events_)
-      destroy_event(s_e.second);
-    stream_events_.clear();
-    stream_free_blocks_.clear();
 
     current_pool_size_ = 0;
   }
@@ -376,7 +251,7 @@ class pool_memory_resource final
    */
   void print()
   {
-    lock_guard lock(mtx_);
+    lock_guard lock(get_mutex());
 
     std::size_t free, total;
     std::tie(free, total) = upstream_mr_->get_mem_info(0);
@@ -396,7 +271,7 @@ class pool_memory_resource final
       b.print();
     }
 
-    std::cout << "sync free blocks: ";
+    std::cout << "stream free blocks: ";
     for (auto s : stream_free_blocks_) {
       std::cout << "stream: " << s.first.stream << " event: " << s.first.event << " ";
       s.second.print();
@@ -421,16 +296,17 @@ class pool_memory_resource final
     return std::make_pair(free_size, total_size);
   }
 
+  size_t initial_pool_size_;
   size_t maximum_pool_size_;
   size_t current_pool_size_{0};
 
   Upstream* upstream_mr_;  // The "heap" to allocate the pool from
 
-  std::set<block, rmm::mr::detail::compare_blocks<block>> allocated_blocks_;
+  std::set<block_type, rmm::mr::detail::compare_blocks<block_type>> allocated_blocks_;
 
   // blocks allocated from upstream: so they can be easily freed
-  std::vector<block> upstream_blocks_;
-};
+  std::vector<block_type> upstream_blocks_;
+};  // namespace mr
 
 }  // namespace mr
 }  // namespace rmm
