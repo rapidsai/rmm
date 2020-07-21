@@ -74,7 +74,7 @@ auto make_hybrid()
     std::make_tuple(make_multisize(), make_pool()));
 }
 
-INSTANTIATE_TEST_CASE_P(name,
+INSTANTIATE_TEST_CASE_P(ResourceTests,
                         mr_test,
                         ::testing::Values(mr_factory{"CUDA", &make_cuda},
                                           mr_factory{"Managed", &make_managed},
