@@ -227,7 +227,7 @@ class owning_wrapper final : public device_memory_resource {
  * //`cuda_mr` and using it as both of `example_resource`s upstream resources. Forwards the
  * // arguments `42` and `3.14` to the additional `n` and `f` arguments of `example_resources`
  * // constructor.
- * auto wrapped_example = make_owning_wrapper<example_resource>(cuda_upstreams, 42, 3.14);
+ * auto wrapped_example = rmm::mr::make_owning_wrapper<example_resource>(cuda_upstreams, 42, 3.14);
  * \endcode
  *
  * @tparam Resource Template template parameter specifying the type of the wrapped resource to
