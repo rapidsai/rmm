@@ -92,7 +92,9 @@ class owning_wrapper final : public device_memory_resource {
    * auto cuda_mr = std::make_shared<cuda>();
    *
    * // Constructs an `example_resource` wrapped by an `owning_wrapper` taking shared ownership of
-   * //`cuda_mr` and using it as both of `example_resource`s upstream resources.
+   * //`cuda_mr` and using it as both of `example_resource`s upstream resources. Forwards the
+   * // arguments `42` and `3.14` to the additional `n` and `f` arguments of `example_resources`
+   * // constructor.
    * wrapped_example w{std::make_tuple(cuda_mr,cuda_mr), 42, 3.14};
    * \endcode
    *
@@ -212,13 +214,32 @@ class owning_wrapper final : public device_memory_resource {
  * as the upstream resources and `args` as the additional parameters for the constructor of
  * `Resource`.
  *
+ * \code{.cpp}
+ * template <typename Upstream1, typename Upstream2>
+ * class example_resource{
+ *   example_resource(Upstream1 * u1, Upstream2 * u2, int n, float f);
+ * };
+ *
+ * auto cuda_mr = std::make_shared<rmm::mr::cuda_memory_resource>();
+ * auto cuda_upstreams = std::make_tuple(cuda_mr, cuda_mr);
+ *
+ * // Constructs an `example_resource` wrapped by an `owning_wrapper` taking shared ownership of
+ * //`cuda_mr` and using it as both of `example_resource`s upstream resources. Forwards the
+ * // arguments `42` and `3.14` to the additional `n` and `f` arguments of `example_resources`
+ * // constructor.
+ * auto wrapped_example = make_owning_wrapper<example_resource>(cuda_upstreams, 42, 3.14);
+ * \endcode
+ *
  * @tparam Resource Template template parameter specifying the type of the wrapped resource to
  * construct
  * @tparam Upstreams Types of the upstream resources
  * @tparam Args Types of the arguments used in `Resource`s constructor
- * @param upstreams Tuple of
- * @param args
- * @return auto
+ * @param upstreams Tuple of `std::shared_ptr`s to the upstreams used by the wrapped resource, in
+ * the same order as expected by `Resource`s constructor.
+ * @param args Function parameter pack of arguments to forward to the wrapped resource's
+ * constructor
+ * @return An `owning_wrapper` wrapping a newly constructed `Resource<Upstreams...>` and
+ * `upstreams`.
  */
 template <template <typename...> class Resource, typename... Upstreams, typename... Args>
 auto make_owning_wrapper(std::tuple<std::shared_ptr<Upstreams>...> upstreams, Args&&... args)
@@ -227,7 +248,22 @@ auto make_owning_wrapper(std::tuple<std::shared_ptr<Upstreams>...> upstreams, Ar
     std::move(upstreams), std::forward<Args>(args)...);
 }
 
-template <template <typename...> class Resource, typename Upstream, typename... Args>
+/**
+ * @brief Additional convenience factory for `owning_wrapper` when `Resource` has only a single
+ * upstream resource.
+ *
+ * When a resource has only a single upstream, it can be inconvenient to construct a `std::tuple` of
+ * the upstream resource. This factory allows specifying the single upstream as just a
+ * `std::shared_ptr`.
+ *
+ * @tparam Resource Type of the wrapped resource to construct
+ * @tparam Upstream Type of the single upstream resource
+ * @tparam Args Types of the arguments used in `Resource`s constructor
+ * @param upstream `std::shared_ptr` to the upstream resource
+ * @param args Function parameter pack of arguments to forward to the wrapped resource's constructor
+ * @return An `owning_wrapper` wrapping a newly construct `Resource<Upstream>` and `upstream`.
+ */
+template <template <typename> class Resource, typename Upstream, typename... Args>
 auto make_owning_wrapper(std::shared_ptr<Upstream> upstream, Args&&... args)
 {
   return make_owning_wrapper<Resource>(std::make_tuple(std::move(upstream)),
