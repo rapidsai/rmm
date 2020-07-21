@@ -128,7 +128,7 @@ if (( NUMARGS == 0 )) || hasArg rmm; then
     cd "${REPODIR}/python"
     if [[ ${INSTALL_TARGET} != "" ]]; then
         echo "building rmm..."
-        python setup.py build_ext --inplace
+        python setup.py build_ext --inplace --library-dir="${LIBRMM_BUILD_DIR}"
         echo "installing rmm..."
         python setup.py install --single-version-externally-managed --record=record.txt
     else
