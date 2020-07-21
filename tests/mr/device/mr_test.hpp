@@ -83,24 +83,6 @@ using hybrid_mr               = rmm::mr::hybrid_memory_resource<fixed_multisize_
 
 }  // namespace
 
-template <typename MemoryResourceType>
-std::size_t get_max_size(MemoryResourceType* mr)
-{
-  return std::numeric_limits<std::size_t>::max();
-}
-
-template <>
-inline std::size_t get_max_size(fixed_size_mr* mr)
-{
-  return mr->get_block_size();
-}
-
-template <>
-inline std::size_t get_max_size(fixed_multisize_mr* mr)
-{
-  return mr->get_max_size();
-}
-
 // Various test functions, shared between single-threaded and multithreaded tests.
 
 inline void test_get_default_resource()
@@ -118,17 +100,13 @@ template <typename MemoryResourceType>
 void test_allocate(MemoryResourceType* mr, std::size_t bytes, cudaStream_t stream = 0)
 {
   void* p{nullptr};
-  if (bytes > get_max_size(mr)) {
-    EXPECT_THROW(p = mr->allocate(bytes), std::bad_alloc);
-  } else {
-    EXPECT_NO_THROW(p = mr->allocate(bytes));
-    if (stream != 0) EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(stream));
-    EXPECT_NE(nullptr, p);
-    EXPECT_TRUE(is_aligned(p));
-    EXPECT_TRUE(is_device_memory(p));
-    EXPECT_NO_THROW(mr->deallocate(p, bytes));
-    if (stream != 0) EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(stream));
-  }
+  EXPECT_NO_THROW(p = mr->allocate(bytes));
+  if (stream != 0) EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(stream));
+  EXPECT_NE(nullptr, p);
+  EXPECT_TRUE(is_aligned(p));
+  EXPECT_TRUE(is_device_memory(p));
+  EXPECT_NO_THROW(mr->deallocate(p, bytes));
+  if (stream != 0) EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(stream));
 }
 
 template <typename MemoryResourceType>
