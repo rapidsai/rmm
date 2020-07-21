@@ -22,11 +22,9 @@
 #include <cuda_runtime_api.h>
 
 #include <algorithm>
-#include <atomic>
 #include <cassert>
 #include <cstdint>
 #include <iostream>
-#include <list>
 #include <map>
 #include <mutex>
 #include <numeric>
@@ -108,6 +106,12 @@ class pool_memory_resource final : public device_memory_resource {
       event.get().parent = nullptr;
 #endif
   }
+
+  pool_memory_resource()                            = delete;
+  pool_memory_resource(pool_memory_resource const&) = delete;
+  pool_memory_resource(pool_memory_resource&&)      = delete;
+  pool_memory_resource& operator=(pool_memory_resource const&) = delete;
+  pool_memory_resource& operator=(pool_memory_resource&&) = delete;
 
   /**
    * @brief Queries whether the resource supports use of non-null CUDA streams for
@@ -271,8 +275,7 @@ class pool_memory_resource final : public device_memory_resource {
     // synchronization So we need to test in real non-PTDS applications that have multiple streams
     // whether or not the overhead is worth it
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-    auto result = cudaEventRecord(stream_event.event, stream);
-    assert(cudaSuccess == result);
+    RMM_ASSERT_CUDA_SUCCESS(cudaEventRecord(stream_event.event, stream));
 #endif
 
     stream_free_blocks_[stream_event].insert(*i);

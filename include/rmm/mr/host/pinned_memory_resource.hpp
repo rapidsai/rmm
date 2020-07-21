@@ -15,9 +15,9 @@
  */
 #pragma once
 
+#include "detail/error.hpp"
 #include "host_memory_resource.hpp"
 
-#include <cuda_runtime_api.h>
 #include <cstddef>
 #include <utility>
 
@@ -31,6 +31,14 @@ namespace mr {
  * See https://devblogs.nvidia.com/how-optimize-data-transfers-cuda-cc/
  *---------------------------------------------------------------------------**/
 class pinned_memory_resource final : public host_memory_resource {
+ public:
+  pinned_memory_resource()                               = default;
+  ~pinned_memory_resource()                              = default;
+  pinned_memory_resource(pinned_memory_resource const &) = default;
+  pinned_memory_resource(pinned_memory_resource &&)      = default;
+  pinned_memory_resource &operator=(pinned_memory_resource const &) = default;
+  pinned_memory_resource &operator=(pinned_memory_resource &&) = default;
+
  private:
   /**---------------------------------------------------------------------------*
    * @brief Allocates pinned memory on the host of size at least `bytes` bytes.
@@ -86,10 +94,8 @@ class pinned_memory_resource final : public host_memory_resource {
   {
     (void)alignment;
     if (nullptr == p) { return; }
-    detail::aligned_deallocate(p, bytes, alignment, [](void *p) {
-      auto status = cudaFreeHost(p);
-      assert(status == cudaSuccess);
-    });
+    detail::aligned_deallocate(
+      p, bytes, alignment, [](void *p) { RMM_ASSERT_CUDA_SUCCESS(cudaFreeHost(p)); });
   }
 };
 }  // namespace mr
