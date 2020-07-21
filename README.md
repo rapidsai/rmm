@@ -320,8 +320,8 @@ memory is allocated in both the above uses.
 
 ### DeviceBuffers
 
-A DeviceBuffer represents an *untyped, uninitialized device memory
-allocation*.  DeviceBuffers can be created simply by providing the
+A DeviceBuffer represents an **untyped, uninitialized device memory
+allocation**.  DeviceBuffers can be created simply by providing the
 size of the allocation in bytes:
 
 ```python
