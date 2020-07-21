@@ -223,10 +223,10 @@ class owning_wrapper final : public device_memory_resource {
  * auto cuda_mr = std::make_shared<rmm::mr::cuda_memory_resource>();
  * auto cuda_upstreams = std::make_tuple(cuda_mr, cuda_mr);
  *
- * // Constructs an `example_resource` wrapped by an `owning_wrapper` taking shared ownership of
- * //`cuda_mr` and using it as both of `example_resource`s upstream resources. Forwards the
- * // arguments `42` and `3.14` to the additional `n` and `f` arguments of `example_resources`
- * // constructor.
+ * // Constructs an `example_resource<rmm::mr::cuda_memory_resource, rmm::mr::cuda_memory_resource>`
+ * // wrapped by an `owning_wrapper` taking shared ownership of `cuda_mr` and using it as both of
+ * // `example_resource`s upstream resources. Forwards the  arguments `42` and `3.14` to the
+ * // additional `n` and `f` arguments of `example_resource` constructor.
  * auto wrapped_example = rmm::mr::make_owning_wrapper<example_resource>(cuda_upstreams, 42, 3.14);
  * \endcode
  *
