@@ -120,12 +120,12 @@ TEST_P(mr_test, RandomAllocationsStream)
 
 TEST_P(mr_test, MixedRandomAllocationFree)
 {
-  test_mixed_random_allocation_free(this->mr.get(), nullptr);
+  test_mixed_random_allocation_free(this->mr.get(), 5_MiB, cudaStreamDefault);
 }
 
 TEST_P(mr_test, MixedRandomAllocationFreeStream)
 {
-  test_mixed_random_allocation_free(this->mr.get(), this->stream);
+  test_mixed_random_allocation_free(this->mr.get(), 5_MiB, this->stream);
 }
 
 TEST_P(mr_test, GetMemInfo)

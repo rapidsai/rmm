@@ -161,9 +161,9 @@ void test_random_allocations(rmm::mr::device_memory_resource* mr,
 }
 
 template <typename MemoryResourceType>
-void test_mixed_random_allocation_free_base(MemoryResourceType* mr,
-                                            std::size_t max_size = 5_MiB,
-                                            cudaStream_t stream  = 0)
+void test_mixed_random_allocation_free(MemoryResourceType* mr,
+                                       std::size_t max_size = 5_MiB,
+                                       cudaStream_t stream  = 0)
 {
   std::default_random_engine generator;
   constexpr std::size_t num_allocations{100};
@@ -205,25 +205,6 @@ void test_mixed_random_allocation_free_base(MemoryResourceType* mr,
 
   EXPECT_EQ(active_allocations, 0);
   EXPECT_EQ(allocations.size(), active_allocations);
-}
-
-template <typename MemoryResourceType>
-void test_mixed_random_allocation_free(MemoryResourceType* mr, cudaStream_t stream)
-{
-  test_mixed_random_allocation_free_base(mr, 5_MiB, stream);
-}
-
-template <>
-inline void test_mixed_random_allocation_free<fixed_size_mr>(fixed_size_mr* mr, cudaStream_t stream)
-{
-  test_mixed_random_allocation_free_base(mr, 1_MiB, stream);
-}
-
-template <>
-inline void test_mixed_random_allocation_free<fixed_multisize_mr>(fixed_multisize_mr* mr,
-                                                                  cudaStream_t stream)
-{
-  test_mixed_random_allocation_free_base(mr, 4_MiB, stream);
 }
 
 // The test fixture
