@@ -36,7 +36,8 @@
 #include <cstdint>
 #include <random>
 
-namespace {
+namespace rmm {
+namespace test {
 
 inline bool is_aligned(void* p, std::size_t alignment = 256)
 {
@@ -80,8 +81,6 @@ using fixed_multisize_mr =
   rmm::mr::fixed_multisize_memory_resource<rmm::mr::device_memory_resource>;
 using fixed_multisize_pool_mr = rmm::mr::fixed_multisize_memory_resource<pool_mr>;
 using hybrid_mr               = rmm::mr::hybrid_memory_resource<fixed_multisize_pool_mr, pool_mr>;
-
-}  // namespace
 
 // Various test functions, shared between single-threaded and multithreaded tests.
 
@@ -268,3 +267,6 @@ inline MRTest<hybrid_mr>::~MRTest()
   delete pool;
   delete cuda;
 }
+
+}  // namespace test
+}  // namespace rmm

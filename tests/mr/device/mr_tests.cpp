@@ -19,6 +19,8 @@
 #include "mr/device/device_memory_resource.hpp"
 #include "mr_test.hpp"
 
+namespace rmm {
+namespace test {
 namespace {
 
 using MRFactoryFunc = std::function<std::shared_ptr<rmm::mr::device_memory_resource>()>;
@@ -141,5 +143,6 @@ TEST_P(mr_test, GetMemInfo)
     EXPECT_NO_THROW(this->mr->deallocate(ptr, allocation_size));
   }
 }
-
 }  // namespace
+}  // namespace test
+}  // namespace rmm
