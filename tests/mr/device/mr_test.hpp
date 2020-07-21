@@ -87,8 +87,9 @@ inline void test_get_default_resource()
   EXPECT_NO_THROW(rmm::mr::get_default_resource()->deallocate(p, 1_MiB));
 }
 
-template <typename MemoryResourceType>
-void test_allocate(MemoryResourceType* mr, std::size_t bytes, cudaStream_t stream = 0)
+inline void test_allocate(rmm::mr::device_memory_resource* mr,
+                          std::size_t bytes,
+                          cudaStream_t stream = 0)
 {
   void* p{nullptr};
   EXPECT_NO_THROW(p = mr->allocate(bytes));
@@ -100,7 +101,7 @@ void test_allocate(MemoryResourceType* mr, std::size_t bytes, cudaStream_t strea
   if (stream != 0) EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(stream));
 }
 
-void test_various_allocations(rmm::mr::device_memory_resource* mr, cudaStream_t stream)
+inline void test_various_allocations(rmm::mr::device_memory_resource* mr, cudaStream_t stream)
 {
   // test allocating zero bytes on non-default stream
   {
@@ -124,10 +125,10 @@ void test_various_allocations(rmm::mr::device_memory_resource* mr, cudaStream_t 
   }
 }
 
-void test_random_allocations(rmm::mr::device_memory_resource* mr,
-                             std::size_t num_allocations = 100,
-                             std::size_t max_size        = 5_MiB,
-                             cudaStream_t stream         = 0)
+inline void test_random_allocations(rmm::mr::device_memory_resource* mr,
+                                    std::size_t num_allocations = 100,
+                                    std::size_t max_size        = 5_MiB,
+                                    cudaStream_t stream         = 0)
 {
   std::vector<allocation> allocations(num_allocations);
 
@@ -151,10 +152,9 @@ void test_random_allocations(rmm::mr::device_memory_resource* mr,
     });
 }
 
-template <typename MemoryResourceType>
-void test_mixed_random_allocation_free(MemoryResourceType* mr,
-                                       std::size_t max_size = 5_MiB,
-                                       cudaStream_t stream  = 0)
+inline void test_mixed_random_allocation_free(rmm::mr::device_memory_resource* mr,
+                                              std::size_t max_size = 5_MiB,
+                                              cudaStream_t stream  = 0)
 {
   std::default_random_engine generator;
   constexpr std::size_t num_allocations{100};
@@ -225,33 +225,41 @@ struct mr_test : public ::testing::TestWithParam<mr_factory> {
 };
 
 /// MR factory functions
-auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>(); }
+inline auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>(); }
 
-auto make_managed() { return std::make_shared<rmm::mr::managed_memory_resource>(); }
+inline auto make_managed() { return std::make_shared<rmm::mr::managed_memory_resource>(); }
 
-auto make_cnmem() { return std::make_shared<rmm::mr::cnmem_memory_resource>(); }
+inline auto make_cnmem() { return std::make_shared<rmm::mr::cnmem_memory_resource>(); }
 
-auto make_cnmem_managed() { return std::make_shared<rmm::mr::cnmem_managed_memory_resource>(); }
+inline auto make_cnmem_managed()
+{
+  return std::make_shared<rmm::mr::cnmem_managed_memory_resource>();
+}
 
-auto make_pool()
+inline auto make_pool()
 {
   return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_cuda());
 }
 
-auto make_fixed_size()
+inline auto make_fixed_size()
 {
   return rmm::mr::make_owning_wrapper<rmm::mr::fixed_size_memory_resource>(make_cuda());
 }
 
-auto make_multisize()
+inline auto make_multisize()
 {
   return rmm::mr::make_owning_wrapper<rmm::mr::fixed_multisize_memory_resource>(make_cuda());
 }
 
-auto make_hybrid()
+inline auto make_hybrid()
 {
   return rmm::mr::make_owning_wrapper<rmm::mr::hybrid_memory_resource>(
     std::make_tuple(make_multisize(), make_pool()));
+}
+
+inline auto make_sync_hybrid()
+{
+  return rmm::mr::make_owning_wrapper<rmm::mr::thread_safe_resource_adaptor>(make_hybrid());
 }
 
 }  // namespace test
