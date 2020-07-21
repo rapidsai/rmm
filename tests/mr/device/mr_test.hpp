@@ -27,6 +27,7 @@
 #include <rmm/mr/device/fixed_size_memory_resource.hpp>
 #include <rmm/mr/device/hybrid_memory_resource.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
+#include <rmm/mr/device/owning_wrapper.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
 #include <rmm/mr/device/thread_safe_resource_adaptor.hpp>
 
@@ -195,6 +196,62 @@ void test_mixed_random_allocation_free(MemoryResourceType* mr,
 
   EXPECT_EQ(active_allocations, 0);
   EXPECT_EQ(allocations.size(), active_allocations);
+}
+
+using MRFactoryFunc = std::function<std::shared_ptr<rmm::mr::device_memory_resource>()>;
+
+/// Encapsulates a `device_memory_resource` factory function and associated name
+struct mr_factory {
+  mr_factory(std::string const& name, MRFactoryFunc f) : name{name}, f{f} {}
+
+  std::string name;  ///< Name to associate with tests that use this factory
+  MRFactoryFunc f;   ///< Factory function that returns shared_ptr to `device_memory_resource`
+                     ///< instance to use in test
+};
+
+/// Test fixture class value-parameterized on different `mr_factory`s
+struct mr_test : public ::testing::TestWithParam<mr_factory> {
+  void SetUp() override
+  {
+    auto factory = GetParam().f;
+    mr           = factory();
+    EXPECT_EQ(cudaSuccess, cudaStreamCreate(&stream));
+  }
+
+  void TearDown() override { EXPECT_EQ(cudaSuccess, cudaStreamDestroy(stream)); };
+
+  std::shared_ptr<rmm::mr::device_memory_resource> mr;  ///< Pointer to resource to use in tests
+  cudaStream_t stream;
+};
+
+/// MR factory functions
+auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>(); }
+
+auto make_managed() { return std::make_shared<rmm::mr::managed_memory_resource>(); }
+
+auto make_cnmem() { return std::make_shared<rmm::mr::cnmem_memory_resource>(); }
+
+auto make_cnmem_managed() { return std::make_shared<rmm::mr::cnmem_managed_memory_resource>(); }
+
+auto make_pool()
+{
+  return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_cuda());
+}
+
+auto make_fixed_size()
+{
+  return rmm::mr::make_owning_wrapper<rmm::mr::fixed_size_memory_resource>(make_cuda());
+}
+
+auto make_multisize()
+{
+  return rmm::mr::make_owning_wrapper<rmm::mr::fixed_multisize_memory_resource>(make_cuda());
+}
+
+auto make_hybrid()
+{
+  return rmm::mr::make_owning_wrapper<rmm::mr::hybrid_memory_resource>(
+    std::make_tuple(make_multisize(), make_pool()));
 }
 
 }  // namespace test
