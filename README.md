@@ -321,7 +321,7 @@ memory is allocated in both the above uses.
 ### DeviceBuffers
 
 A DeviceBuffer represents an **untyped, uninitialized device memory
-allocation**.  DeviceBuffers can be created simply by providing the
+allocation**.  DeviceBuffers can be created by providing the
 size of the allocation in bytes:
 
 ```python
@@ -363,7 +363,7 @@ array([1., 2., 3.])
 MemoryResources are used to configure how device memory allocations are made by RMM.
 
 By default, i.e., if you don't set a MemoryResource explicitly, RMM
-uses the `CudaMemoryResource`, which simply uses `cudaMalloc` for
+uses the `CudaMemoryResource`, which uses `cudaMalloc` for
 allocating device memory.
 
 The `rmm.mr.set_default_resource()` function can be used to set a
@@ -383,7 +383,7 @@ of `cudaMalloc` for allocating memory:
 
 As another example, `PoolMemoryResource` allows you to allocate a
 large "pool" of device memory up-front. Subsequent allocations will
-simply draw from this pool of already allocated memory.  The example
+draw from this pool of already allocated memory.  The example
 below shows how to construct a PoolMemoryResource with an initial size
 of 1 GiB and a maximum size of 4 GiB. The pool uses
 `CudaMemoryResource` as its underlying ("upstream") memory resource:
