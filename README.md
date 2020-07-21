@@ -350,7 +350,7 @@ DeviceBuffers can also be created by copying data from host memory:
 24
 ```
 
-Conversely the data underlying a DeviceBuffer can be copied to the
+Conversely, the data underlying a DeviceBuffer can be copied to the
 host:
 
 ```python
