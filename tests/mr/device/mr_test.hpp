@@ -109,32 +109,7 @@ void test_allocate(MemoryResourceType* mr, std::size_t bytes, cudaStream_t strea
   if (stream != 0) EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(stream));
 }
 
-template <typename MemoryResourceType>
-void test_various_allocations(MemoryResourceType* mr)
-{
-  // test allocating zero bytes
-  {
-    void* p{nullptr};
-    EXPECT_NO_THROW(p = mr->allocate(0));
-    EXPECT_EQ(nullptr, p);
-    EXPECT_NO_THROW(mr->deallocate(p, 0));
-  }
-
-  test_allocate(mr, 4_B);
-  test_allocate(mr, 1_KiB);
-  test_allocate(mr, 1_MiB);
-  test_allocate(mr, 1_GiB);
-
-  // should fail to allocate too much
-  {
-    void* p{nullptr};
-    EXPECT_THROW(p = mr->allocate(1_PiB), rmm::bad_alloc);
-    EXPECT_EQ(nullptr, p);
-  }
-}
-
-template <typename MemoryResourceType>
-void test_various_allocations_on_stream(MemoryResourceType* mr, cudaStream_t stream = 0)
+void test_various_allocations(rmm::mr::device_memory_resource* mr, cudaStream_t stream)
 {
   // test allocating zero bytes on non-default stream
   {
