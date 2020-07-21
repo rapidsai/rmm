@@ -25,6 +25,8 @@ using MRFactoryFunc = std::function<std::shared_ptr<rmm::mr::device_memory_resou
 
 /// Encapsulates a `device_memory_resource` factory function and associated name
 struct mr_factory {
+  mr_factory(std::string const& name, MRFactoryFunc f) : name{name}, f{f} {}
+
   std::string name;  ///< Name to associate with tests that use this factory
   MRFactoryFunc f;   ///< Factory function that returns shared_ptr to `device_memory_resource`
                      ///< instance to use in test
@@ -45,6 +47,7 @@ struct mr_test : public ::testing::TestWithParam<mr_factory> {
   cudaStream_t stream;
 };
 
+/// MR factory functions
 auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>(); }
 
 auto make_managed() { return std::make_shared<rmm::mr::managed_memory_resource>(); }
