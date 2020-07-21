@@ -29,6 +29,7 @@
 - PR #437 Test with `pickle5` (for older Python versions)
 - PR #443 Remove thread safe adaptor from PoolMemoryResource
 - PR #445 Make all resource operators/ctors explicit
+- PR #447 Update Python README with info about DeviceBuffer/MemoryResource and external libraries
 
 ## Bug Fixes
 
