@@ -104,18 +104,18 @@ TEST_P(mr_test, SetDefaultResource)
 
 TEST_P(mr_test, SelfEquality) { EXPECT_TRUE(this->mr->is_equal(*this->mr)); }
 
-TEST_P(mr_test, Allocate) { test_various_allocations(this->mr.get()); }
-
-TEST_P(mr_test, AllocateOnStream)
+TEST_P(mr_test, AllocateDefaultStream)
 {
-  test_various_allocations_on_stream(this->mr.get(), this->stream);
+  test_various_allocations(this->mr.get(), cudaStreamDefault);
 }
+
+TEST_P(mr_test, AllocateOnStream) { test_various_allocations(this->mr.get(), this->stream); }
 
 TEST_P(mr_test, RandomAllocations) { test_random_allocations(this->mr.get()); }
 
 TEST_P(mr_test, RandomAllocationsStream)
 {
-  test_random_allocations(this->mr.get(), 100, this->stream);
+  test_random_allocations(this->mr.get(), 100, 5_MiB, this->stream);
 }
 
 TEST_P(mr_test, MixedRandomAllocationFree)

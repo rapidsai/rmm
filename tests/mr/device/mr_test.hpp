@@ -133,11 +133,10 @@ void test_various_allocations(rmm::mr::device_memory_resource* mr, cudaStream_t 
   }
 }
 
-template <typename MemoryResourceType>
-void test_random_allocations_base(MemoryResourceType* mr,
-                                  std::size_t num_allocations = 100,
-                                  std::size_t max_size        = 5_MiB,
-                                  cudaStream_t stream         = 0)
+void test_random_allocations(rmm::mr::device_memory_resource* mr,
+                             std::size_t num_allocations = 100,
+                             std::size_t max_size        = 5_MiB,
+                             cudaStream_t stream         = 0)
 {
   std::vector<allocation> allocations(num_allocations);
 
@@ -159,30 +158,6 @@ void test_random_allocations_base(MemoryResourceType* mr,
       EXPECT_NO_THROW(mr->deallocate(a.p, a.size, stream));
       if (stream != 0) EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(stream));
     });
-}
-
-template <typename MemoryResourceType>
-void test_random_allocations(MemoryResourceType* mr,
-                             std::size_t num_allocations = 100,
-                             cudaStream_t stream         = 0)
-{
-  return test_random_allocations_base<MemoryResourceType>(mr, num_allocations, 5_MiB, stream);
-}
-
-template <>
-inline void test_random_allocations<fixed_size_mr>(fixed_size_mr* mr,
-                                                   std::size_t num_allocations,
-                                                   cudaStream_t stream)
-{
-  return test_random_allocations_base(mr, num_allocations, 1_MiB, stream);
-}
-
-template <>
-inline void test_random_allocations<fixed_multisize_mr>(fixed_multisize_mr* mr,
-                                                        std::size_t num_allocations,
-                                                        cudaStream_t stream)
-{
-  return test_random_allocations_base(mr, num_allocations, 1_MiB, stream);
 }
 
 template <typename MemoryResourceType>
