@@ -24,9 +24,20 @@ namespace rmm {
 namespace mr {
 namespace detail {
 
-struct fixed_size_free_list : free_list<void*> {
-  using value_type = void*;
+/**
+ * @brief Checks whether a memory block is valid. Specialization for void* pointer blocks
+ *
+ * @param b The block to check for validity
+ * @return true If `b` is valid (non-null)
+ * @return false If `b` is not valid (null)
+ */
+template <>
+inline bool is_valid<void*>(void* const& b)
+{
+  return b != nullptr;
+}
 
+struct fixed_size_free_list : free_list<void*> {
   fixed_size_free_list()  = default;
   ~fixed_size_free_list() = default;
 

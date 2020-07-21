@@ -137,6 +137,12 @@ struct block {
   bool head{};          ///< Indicates whether ptr was allocated from the heap
 };
 
+template <>
+inline bool is_valid<block>(block const& b)
+{
+  return b.is_valid();
+}
+
 /**
  * @brief Comparator for block types based on pointer address.
  *

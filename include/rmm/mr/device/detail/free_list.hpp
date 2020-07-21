@@ -24,6 +24,22 @@ namespace mr {
 namespace detail {
 
 /**
+ * @brief Checks whether a memory block is valid.
+ *
+ * This function template should be specialized for any type of block used by a concrete
+ * implementation of `free_list`.
+ *
+ * @param b The block to check for validity
+ * @return true If `b` is valid
+ * @return false If `b` is not valid
+ */
+template <typename BlockType>
+inline bool is_valid(BlockType const& b)
+{
+  return false;
+}
+
+/**
  * @brief Abstract base class defining an interface for a list of free memory blocks.
  *
  * Derived classes must implement:
