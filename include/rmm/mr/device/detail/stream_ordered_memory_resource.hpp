@@ -80,7 +80,7 @@ class stream_ordered_suballocator_memory_resource : public device_memory_resourc
   /**
    * @brief Split block `b` if necessary to return a pointer to memory of `size` bytes.
    *
-   * If the block is split, the remainder is returned to the pool.
+   * If the block is split, the remainder is returned as the second element in the output pair.
    *
    * @param b The block to allocate from.
    * @param size The size in bytes of the requested allocation.
