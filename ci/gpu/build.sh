@@ -89,6 +89,10 @@ else
     mkdir -p ${TESTRESULTS_DIR}
     SUITEERROR=0
 
+    logger "Check GPU usage..."
+    nvidia-smi
+
+    logger "Running googletests..."
     # run gtests
     cd $WORKSPACE/ci/artifacts/rmm/cpu/conda_work
     for gt in "build/gtests/*" ; do
@@ -100,15 +104,15 @@ else
         fi
     done
 
-    #cd $WORKSPACE/build-librmm/python
     cd $WORKSPACE/python
+    
     logger "Installing librmm..."
     conda install -c $WORKSPACE/ci/artifacts/rmm/cpu/conda-bld/ librmm
     export LIBRMM_BUILD_DIR="$WORKSPACE/ci/artifacts/rmm/cpu/conda_work/build"
+    
     logger "Building rmm"
-    # python setup.py build_ext --inplace --library-dir=
-    # python setup.py install --single-version-externally-managed --record=record.txt
     "$WORKSPACE/build.sh" -v rmm
+    
     logger "pytest rmm"
     py.test --cache-clear --junitxml=${WORKSPACE}/test-results/junit-rmm.xml -v --cov-config=.coveragerc --cov=rmm --cov-report=xml:${WORKSPACE}/python/rmm-coverage.xml --cov-report term
     exitcode=$?
