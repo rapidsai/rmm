@@ -126,11 +126,25 @@ class pool_memory_resource final
 
     if (maximum_pool_size_ == default_maximum_size) { maximum_pool_size_ = props.totalGlobalMem; }
 
-    insert_block(allocate_pool_block(initial_pool_size_, stream), stream);
+    insert_block(block_from_upstream(initial_pool_size_, stream), stream);
   }
 
   /**
-   * @brief Allocate a block from upstream to supply the suballocation pool.
+   * @brief Allocate space from upstream to supply the suballocation pool and return
+   * a sufficiently sized block.
+   *
+   * @param size The minimum size to allocate
+   * @param blocks The free list (ignored in this implementation)
+   * @param stream The stream on which the memory is to be used.
+   * @return block_type a block of at least `size` bytes
+   */
+  virtual block_type expand_pool(size_t size, free_list& blocks, cudaStream_t stream) override
+  {
+    return block_from_upstream(size, stream);
+  }
+
+  /**
+   * @brief Allocate a block from upstream to expand the suballocation pool.
    *
    * Note typically the allocated size will be larger than requested, and is based on the growth
    * strategy (see `size_to_grow()`).
@@ -139,7 +153,7 @@ class pool_memory_resource final
    * @param stream The stream on which the memory is to be used.
    * @return block_type The allocated block
    */
-  virtual block_type allocate_pool_block(size_t size, cudaStream_t stream) override
+  block_type block_from_upstream(size_t size, cudaStream_t stream)
   {
     auto grow_size = size_to_grow(size);
     RMM_EXPECTS(grow_size > 0, rmm::bad_alloc, "Maximum pool size exceeded");
@@ -271,11 +285,12 @@ class pool_memory_resource final
       b.print();
     }
 
-    std::cout << "stream free blocks: ";
+    // TODO
+    /*std::cout << "stream free blocks: ";
     for (auto s : stream_free_blocks_) {
       std::cout << "stream: " << s.first.stream << " event: " << s.first.event << " ";
       s.second.print();
-    }
+    }*/
     std::cout << "\n";
   }
 #endif  // DEBUG

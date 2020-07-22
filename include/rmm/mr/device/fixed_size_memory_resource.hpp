@@ -15,10 +15,9 @@
  */
 #pragma once
 
-#include <rmm/mr/device/detail/fixed_size_free_list.hpp>
-
 #include <rmm/detail/error.hpp>
-#include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/mr/device/detail/fixed_size_free_list.hpp>
+#include <rmm/mr/device/detail/stream_ordered_memory_resource.hpp>
 
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
@@ -43,7 +42,8 @@ namespace mr {
  * Supports only allocations of size smaller than the configured block_size.
  */
 template <typename Upstream>
-class fixed_size_memory_resource : public device_memory_resource {
+class fixed_size_memory_resource
+  : public detail::stream_ordered_suballocator_memory_resource<detail::fixed_size_free_list> {
  public:
   // A block is the fixed size this resource alloates
   static constexpr std::size_t default_block_size = 1 << 20;  // 1 MiB
@@ -73,7 +73,7 @@ class fixed_size_memory_resource : public device_memory_resource {
       upstream_chunk_size_{block_size * blocks_to_preallocate}
   {
     // allocate initial blocks and insert into free list
-    new_blocks_from_upstream(0, stream_blocks_[0]);
+    insert_blocks(std::move(blocks_from_upstream(cudaStreamLegacy)), cudaStreamLegacy);
   }
 
   /**
@@ -118,45 +118,86 @@ class fixed_size_memory_resource : public device_memory_resource {
   std::size_t get_block_size() const noexcept { return block_size_; }
 
  private:
-  // blocks are maintained in a simple list of pointers
-  // Allocation is simply popping off the list, and freeing is pushing onto the back.
-  using free_list = detail::fixed_size_free_list;
+  /**
+   * @brief Get the (fixed) size of allocations supported by this memory resource
+   *
+   * @return size_t The (fixed) maximum size of a single allocation supported by this memory
+   * resource
+   */
+  virtual size_t get_maximum_allocation_size() const override { return get_block_size(); }
 
   /**
-   * @brief Allocates memory of size at least `bytes`.
+   * @brief Allocate a block from upstream to supply the suballocation pool.
    *
-   * The returned pointer has at least 256 byte alignment.
+   * Note typically the allocated size will be larger than requested, and is based on the growth
+   * strategy (see `size_to_grow()`).
    *
-   * @throws rmm::bad_alloc if `bytes` > `block_size` (constructor parameter)
-   *
-   * @param bytes The size in bytes of the allocation
-   * @param stream Stream to associate this allocation with
-   * @return void* Pointer to the newly allocated memory
+   * @param size The minimum size to allocate
+   * @param stream The stream on which the memory is to be used.
+   * @return block_type The allocated block
    */
-  void* do_allocate(std::size_t bytes, cudaStream_t stream) override
+  virtual block_type expand_pool(size_t size, free_list& blocks, cudaStream_t stream) override
   {
-    if (bytes <= 0) return nullptr;
-    bytes = rmm::detail::align_up(bytes, allocation_alignment);
-    RMM_EXPECTS(bytes <= get_block_size(), rmm::bad_alloc, "bytes must be <= block_size");
-
-    return get_block(get_block_size(), stream);
+    auto new_blocks = blocks_from_upstream(stream);
+    auto b          = new_blocks.get_block(size);
+    blocks.insert(std::move(new_blocks));
+    return b;
   }
 
   /**
-   * @brief Deallocate memory pointed to by `p`.
+   * @brief Allocate blocks from upstream to expand the suballocation pool.
    *
-   * @throws nothing
-   *
-   * @param p Pointer to be deallocated
-   * @param bytes The size in bytes of the allocation. This must be equal to the
-   * value of `bytes` that was passed to the `allocate` call that returned `p`.
-   * @param stream Stream on which to perform deallocation
+   * @param size The minimum size to allocate
+   * @param stream The stream on which the memory is to be used.
+   * @return block_type The allocated block
    */
-  void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override
+  free_list blocks_from_upstream(cudaStream_t stream)
   {
-    bytes = rmm::detail::align_up(bytes, allocation_alignment);
-    assert(bytes <= block_size_);
-    stream_blocks_[stream].insert(p);
+    void* p = upstream_mr_->allocate(upstream_chunk_size_, stream);
+    upstream_blocks_.push_back(p);
+
+    auto num_blocks = upstream_chunk_size_ / block_size_;
+
+    auto g     = [p, this](int i) { return static_cast<char*>(p) + i * block_size_; };
+    auto first = thrust::make_transform_iterator(thrust::make_counting_iterator(std::size_t{0}), g);
+    free_list blocks;
+    std::for_each(first + 1, first + num_blocks, [&blocks](void* p) { blocks.insert(p); });
+    return blocks;
+  }
+
+  /**
+   * @brief Splits block `b` if necessary to return a pointer to memory of `size` bytes.
+   *
+   * If the block is split, the remainder is returned to the pool.
+   *
+   * @param b The block to allocate from.
+   * @param size The size in bytes of the requested allocation.
+   * @param stream_event The stream and associated event on which the allocation will be used.
+   * @return A pair comprising the allocated pointer and any unallocated remainder of the input
+   * block.
+   */
+  virtual std::pair<void*, block_type> allocate_from_block(block_type const& b,
+                                                           size_t size,
+                                                           stream_event_pair stream_event) override
+  {
+    return std::make_pair(b, nullptr);
+  }
+
+  /**
+   * @brief Finds, frees and returns the block associated with pointer `p`.
+   *
+   * @param p The pointer to the memory to free.
+   * @param size The size of the memory to free. Must be equal to the original allocation size.
+   * @param stream The stream-event pair for the stream on which the memory was last used.
+   * @return The (now freed) block associated with `p`. The caller is expected to return the block
+   * to the pool.
+   */
+  virtual block_type free_block(void* p, size_t size) noexcept override
+  {
+    // Deallocating a fixed-size block just inserts it in the free list, which is
+    // handled by the parent class
+    assert(rmm::detail::align_up(size, allocation_alignment) <= block_size_);
+    return p;
   }
 
   /**
@@ -173,113 +214,22 @@ class fixed_size_memory_resource : public device_memory_resource {
   }
 
   /**
-   * @brief Find a free block in a `free_list` associated with a stream other than `stream` for use
-   *        on `stream`.
-   *
-   * @param size The requested size of the allocation.
-   * @param stream The stream on which the allocation is being requested.
-   * @return block A pointer to memory of `get_block_size()` bytes, or nullptr if no blocks are
-   *               available in `blocks`.
-   */
-  void* get_block_from_other_stream(size_t size, cudaStream_t stream)
-  {
-    // nothing in this stream's free list, look for one on another stream
-    for (auto s = stream_blocks_.begin(); s != stream_blocks_.end(); ++s) {
-      auto blocks_stream = s->first;
-      if (blocks_stream != stream) {
-        auto blocks = s->second;
-
-        void* p = blocks.get_block(size);
-
-        // If we found a block associated with a different stream,
-        // we have to synchronize the stream in order to use it
-        if (p != nullptr) {
-          RMM_CUDA_TRY(cudaStreamSynchronize(blocks_stream));
-
-          // Move all the blocks to the requesting stream, since it has waited on them
-          // Note: This could cause thrashing between two streams. For future analysis.
-          stream_blocks_[stream].insert(std::move(blocks));
-          stream_blocks_.erase(blocks_stream);
-        }
-
-        return p;
-      }
-    }
-    return nullptr;
-  }
-
-  /**
-   * @brief Find an available block in the pool, for use on `stream`.
-   *
-   * Attempts to find a free block that was last used on `stream` to avoid synchronization. If none
-   * is available, it finds a block last used on another stream. In this case, the stream associated
-   * with the found block is synchronized to ensure all asynchronous work on the memory is finished
-   * before it is used on `stream`.
-   *
-   * @param stream The stream on which the allocation will be used.
-   * @return block A pointer to memory of size `get_block_size()`.
-   */
-  void* get_block(size_t size, cudaStream_t stream)
-  {
-    // Try to find a block in the same stream
-    auto iter = stream_blocks_.find(stream);
-    if (iter != stream_blocks_.end()) {
-      void* p = iter->second.get_block(size);
-      if (p != nullptr) return p;
-    }
-
-    // nothing in this stream's free list, look for one on another stream
-    // Try to find a larger block in a different stream
-    void* p = get_block_from_other_stream(size, stream);
-    if (p != nullptr) return p;
-
-    // nothing available in other streams, get new blocks
-    // avoid searching for this stream's list again
-    free_list& list = (iter != stream_blocks_.end()) ? iter->second : stream_blocks_[stream];
-
-    new_blocks_from_upstream(stream, list);
-    return list.get_block(size);
-  }
-
-  //
-  /**
-   * @brief Allocate new blocks from the upstream memory resource into `free list` `blocks`.
-   *
-   * @param stream The stream to associate the new blocks with.
-   * @param blocks The `free_list` to insert the blocks into.
-   */
-  void new_blocks_from_upstream(cudaStream_t stream, free_list& blocks)
-  {
-    void* p = upstream_mr_->allocate(upstream_chunk_size_, stream);
-    upstream_blocks_.push_back(p);
-
-    auto num_blocks = upstream_chunk_size_ / block_size_;
-
-    auto g     = [p, this](int i) { return static_cast<char*>(p) + i * block_size_; };
-    auto first = thrust::make_transform_iterator(thrust::make_counting_iterator(std::size_t{0}), g);
-    std::for_each(first, first + num_blocks, [&blocks](void* p) { blocks.insert(p); });
-  }
-
-  /**
    * @brief free all memory allocated using the upstream resource.
    *
    */
   void release()
   {
+    lock_guard lock(get_mutex());
+
     for (auto p : upstream_blocks_)
       upstream_mr_->deallocate(p, upstream_chunk_size_);
     upstream_blocks_.clear();
-    stream_blocks_.clear();
   }
 
   Upstream* upstream_mr_;  // The resource from which to allocate new blocks
 
   std::size_t const block_size_;           // size of blocks this MR allocates
   std::size_t const upstream_chunk_size_;  // size of chunks allocated from heap MR
-
-  // stream free lists: map of [stream_id, free_list] pairs
-  // stream stream_id must be synced before allocating from this list
-  std::map<cudaStream_t, free_list> stream_blocks_;
 
   // blocks allocated from heap: so they can be easily freed
   std::vector<void*> upstream_blocks_;

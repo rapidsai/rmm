@@ -15,6 +15,8 @@
  */
 #pragma once
 
+#include <limits>
+#include <rmm/detail/error.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <cuda_runtime_api.h>
@@ -69,13 +71,31 @@ class stream_ordered_suballocator_memory_resource : public device_memory_resourc
   };
 
   /**
-   * @brief Allocate a block (typically from upstream) to supply the suballocation pool
+   * @brief Get the maximum size of a single allocation supported by this suballocator memory
+   * resource
    *
-   * @param size The size to allocate
-   * @param stream The stream on which the memory is to be used.
-   * @return block_type The allocated block
+   * Default implementation is the maximum `size_t` value, but fixed-size allocators will have a
+   * lower limit. Override this function in derived classes as necessary.
+   *
+   * @return size_t The maximum size of a single allocation supported by this memory resource
    */
-  virtual block_type allocate_pool_block(size_t size, cudaStream_t stream) = 0;
+  virtual size_t get_maximum_allocation_size() const { return std::numeric_limits<size_t>::max(); }
+
+  /**
+   * @brief Allocate space (typically from upstream) to supply the suballocation pool and return
+   * a sufficiently sized block.
+   *
+   * This function returns a block because in some suballocators, a single block is allocated
+   * from upstream and returned. In other suballocators, many blocks are created from upstream. In
+   * the latter case, the function returns one block and inserts all the rest into the free list
+   * `blocks`.
+   *
+   * @param size The minimum size block to return
+   * @param blocks The free list into which to optionally insert new blocks
+   * @param stream The stream on which the memory is to be used.
+   * @return block_type a block of at least `size` bytes
+   */
+  virtual block_type expand_pool(size_t size, free_list& blocks, cudaStream_t stream) = 0;
 
   /**
    * @brief Split block `b` if necessary to return a pointer to memory of `size` bytes.
@@ -114,6 +134,11 @@ class stream_ordered_suballocator_memory_resource : public device_memory_resourc
     stream_free_blocks_[get_event(stream)].insert(b);
   }
 
+  void insert_blocks(free_list&& blocks, cudaStream_t stream)
+  {
+    stream_free_blocks_[get_event(stream)].insert(std::move(blocks));
+  }
+
   /**
    * @brief Get the mutex object
    *
@@ -138,11 +163,14 @@ class stream_ordered_suballocator_memory_resource : public device_memory_resourc
 
     lock_guard lock(mtx_);
 
-    auto stream_event  = get_event(stream);
-    bytes              = rmm::detail::align_up(bytes, allocation_alignment);
+    auto stream_event = get_event(stream);
+    bytes             = rmm::detail::align_up(bytes, allocation_alignment);
+    RMM_EXPECTS(
+      bytes <= get_maximum_allocation_size(), rmm::bad_alloc, "Maximum allocation size exceeded");
     auto const b       = get_block(bytes, stream_event);
     auto ptr_remainder = allocate_from_block(b, bytes, stream_event);
-    stream_free_blocks_[stream_event].insert(ptr_remainder.second);
+    if (is_valid(ptr_remainder.second))
+      stream_free_blocks_[stream_event].insert(ptr_remainder.second);
     return ptr_remainder.first;
   }
 
@@ -270,6 +298,13 @@ class stream_ordered_suballocator_memory_resource : public device_memory_resourc
     assert(cudaSuccess == result);
   }
 
+  /**
+   * @brief Get an avaible memory block of at least `size` bytes
+   *
+   * @param size The number of bytes to allocate
+   * @param stream_event The stream and associated event on which the allocation will be used.
+   * @return block_type A block of memory of at least `size` bytes
+   */
   block_type get_block(size_t size, stream_event_pair stream_event)
   {
     // Try to find a satisfactory block in free list for the same stream (no sync required)
@@ -284,7 +319,12 @@ class stream_ordered_suballocator_memory_resource : public device_memory_resourc
     if (is_valid(b)) return b;
 
     // no larger blocks available on other streams, so grow the pool and create a block
-    return allocate_pool_block(size, stream_event.stream);
+
+    // avoid searching for this stream's list again
+    free_list& blocks =
+      (iter != stream_free_blocks_.end()) ? iter->second : stream_free_blocks_[stream_event];
+
+    return expand_pool(size, blocks, stream_event.stream);
   }
 
   /**
