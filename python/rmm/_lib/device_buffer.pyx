@@ -11,31 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-# cython: profile = False
-# distutils: language = c++
-# cython: embedsignature = True
-# cython: language_level = 3
-
-
 import numpy as np
 
-from libcpp.memory cimport unique_ptr
+cimport cython
+from cpython.bytes cimport PyBytes_AS_STRING, PyBytes_FromStringAndSize
 from libc.stdint cimport uintptr_t
-
-from cpython.bytes cimport PyBytes_FromStringAndSize, PyBytes_AS_STRING
+from libcpp.memory cimport unique_ptr
 
 from rmm._lib.lib cimport (
     cudaError_t,
     cudaMemcpyDeviceToDevice,
     cudaMemcpyDeviceToHost,
     cudaMemcpyHostToDevice,
-    cudaSuccess,
     cudaStream_t,
-    cudaStreamSynchronize
+    cudaStreamSynchronize,
+    cudaSuccess,
 )
-
-cimport cython
 
 
 cdef class DeviceBuffer:
@@ -278,17 +269,23 @@ cdef class DeviceBuffer:
 
         return b
 
-    cdef size_t c_size(self):
+    cdef size_t c_size(self) except *:
         return self.c_obj.get()[0].size()
 
-    cpdef void resize(self, size_t new_size):
+    cpdef void resize(self, size_t new_size) except *:
         self.c_obj.get()[0].resize(new_size)
 
-    cpdef size_t capacity(self):
+    cpdef size_t capacity(self) except *:
         return self.c_obj.get()[0].capacity()
 
-    cdef void* c_data(self):
+    cdef void* c_data(self) except *:
         return self.c_obj.get()[0].data()
+
+    cdef device_buffer c_release(self) except *:
+        """
+        Releases ownership the data held by this DeviceBuffer.
+        """
+        return move(cython.operator.dereference(self.c_obj))
 
 
 @cython.boundscheck(False)

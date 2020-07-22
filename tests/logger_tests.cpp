@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-#include <spdlog/sinks/basic_file_sink.h>
-#include <spdlog/spdlog.h>
+#include <benchmarks/utilities/log_parser.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/logging_resource_adaptor.hpp>
+#include <thread>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 class raii_restore_env {
@@ -47,28 +48,88 @@ class raii_restore_env {
   bool is_set_{false};
 };
 
-TEST(Adaptor, first)
+/**
+ * @brief Verifies the specified log file contains the expected events.
+ *
+ * Events in the log file are expected to occur in the same order as in `expected_events`.
+ *
+ * @note: This function accounts for the fact that `device_memory_resource` automatically pads
+ * allocations to a multiple of 8 bytes by rounding up the expected allocation sizes to a multiple
+ * of 8.
+ *
+ * @param filename Name of CSV log file generated from `logging_resource_adaptor`
+ * @param expected_events List of expected (de)allocation events
+ */
+void expect_log_events(std::string const& filename,
+                       std::vector<rmm::detail::event> const& expected_events)
 {
-  rmm::mr::cuda_memory_resource upstream;
+  auto actual_events = rmm::detail::parse_csv(filename);
 
-  rmm::mr::logging_resource_adaptor<rmm::mr::cuda_memory_resource> log_mr{&upstream,
-                                                                          "logs/test1.txt"};
-
-  auto p = log_mr.allocate(100);
-  log_mr.deallocate(p, 100);
+  std::equal(expected_events.begin(),
+             expected_events.end(),
+             actual_events.begin(),
+             [](auto expected, auto actual) {
+               // We don't test the logged thread id since it may be different from what we record.
+               // The actual value doesn't matter so long as events from different threads have
+               // different ids
+               // EXPECT_EQ(expected.thread_id, actual.thread_id);
+               // EXPECT_EQ(expected.stream, actual.stream);
+               EXPECT_EQ(expected.act, actual.act);
+               // device_memory_resource automatically pads an allocation to a multiple of 8 bytes
+               EXPECT_EQ(rmm::detail::align_up(expected.size, 8), actual.size);
+               EXPECT_EQ(expected.pointer, actual.pointer);
+               return true;
+             });
 }
 
-TEST(Adaptor, factory)
+TEST(Adaptor, FilenameConstructor)
 {
+  std::string filename{"logs/test1.txt"};
   rmm::mr::cuda_memory_resource upstream;
+  rmm::mr::logging_resource_adaptor<rmm::mr::cuda_memory_resource> log_mr{&upstream, filename};
 
-  auto log_mr = rmm::mr::make_logging_adaptor(&upstream, "logs/test2.txt");
+  auto p0 = log_mr.allocate(100);
+  auto p1 = log_mr.allocate(42);
+  log_mr.deallocate(p0, 100);
+  log_mr.deallocate(p1, 42);
+  log_mr.flush();
 
-  auto p = log_mr.allocate(100);
-  log_mr.deallocate(p, 100);
+  using rmm::detail::action;
+  using rmm::detail::event;
+
+  std::vector<event> expected_events{{action::ALLOCATE, 100, p0},
+                                     {action::ALLOCATE, 42, p1},
+                                     {action::FREE, 100, p0},
+                                     {action::FREE, 42, p1}};
+
+  expect_log_events(filename, expected_events);
 }
 
-TEST(Adaptor, EnviromentPath)
+TEST(Adaptor, Factory)
+{
+  std::string filename{"logs/test2.txt"};
+  rmm::mr::cuda_memory_resource upstream;
+
+  auto log_mr = rmm::mr::make_logging_adaptor(&upstream, filename);
+
+  auto p0 = log_mr.allocate(99);
+  log_mr.deallocate(p0, 99);
+  auto p1 = log_mr.allocate(42);
+  log_mr.deallocate(p1, 42);
+  log_mr.flush();
+
+  using rmm::detail::action;
+  using rmm::detail::event;
+
+  std::vector<event> expected_events{{action::ALLOCATE, 99, p0},
+                                     {action::FREE, 99, p0},
+                                     {action::ALLOCATE, 42, p1},
+                                     {action::FREE, 42, p1}};
+
+  expect_log_events(filename, expected_events);
+}
+
+TEST(Adaptor, EnvironmentPath)
 {
   rmm::mr::cuda_memory_resource upstream;
 
@@ -80,13 +141,27 @@ TEST(Adaptor, EnviromentPath)
   // expect logging adaptor to fail if RMM_LOG_FILE is unset
   EXPECT_THROW(rmm::mr::make_logging_adaptor(&upstream), rmm::logic_error);
 
-  setenv("RMM_LOG_FILE", "envtest.txt", 1);
+  std::string filename("logs/envtest.txt");
+
+  setenv("RMM_LOG_FILE", filename.c_str(), 1);
 
   // use log file location specified in environment variable RMM_LOG_FILE
   auto log_mr = rmm::mr::make_logging_adaptor(&upstream);
 
   auto p = log_mr.allocate(100);
   log_mr.deallocate(p, 100);
+
+  log_mr.flush();
+
+  using rmm::detail::action;
+  using rmm::detail::event;
+
+  std::vector<event> expected_events{
+    {action::ALLOCATE, 100, p},
+    {action::FREE, 100, p},
+  };
+
+  expect_log_events(filename, expected_events);
 }
 
 TEST(Adaptor, STDOUT)
@@ -102,7 +177,7 @@ TEST(Adaptor, STDOUT)
 
   std::string output = testing::internal::GetCapturedStdout();
   std::string header = output.substr(0, output.find("\n"));
-  ASSERT_EQ(header, "Time,Action,Pointer,Size,Stream");
+  ASSERT_EQ(header, log_mr.header());
 }
 
 TEST(Adaptor, STDERR)
@@ -118,5 +193,5 @@ TEST(Adaptor, STDERR)
 
   std::string output = testing::internal::GetCapturedStderr();
   std::string header = output.substr(0, output.find("\n"));
-  ASSERT_EQ(header, "Time,Action,Pointer,Size,Stream");
+  ASSERT_EQ(header, log_mr.header());
 }

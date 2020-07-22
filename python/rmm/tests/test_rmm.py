@@ -1,6 +1,5 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
-import pickle
 import sys
 import tempfile
 from itertools import product
@@ -10,6 +9,14 @@ import pytest
 from numba import cuda
 
 import rmm
+
+if sys.version_info < (3, 8):
+    try:
+        import pickle5 as pickle
+    except ImportError:
+        import pickle
+else:
+    import pickle
 
 cuda.set_memory_manager(rmm.RMMNumbaManager)
 

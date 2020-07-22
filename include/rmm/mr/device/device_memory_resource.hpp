@@ -16,29 +16,13 @@
 #pragma once
 
 #include <cstddef>
+#include <rmm/detail/aligned.hpp>
 #include <utility>
 
 // forward decl
 using cudaStream_t = struct CUstream_st*;
 
 namespace rmm {
-
-namespace detail {
-/**
- * @brief Align up to a power of 2, align_bytes is expected to be a nonzero
- * power of 2
- *
- * @param[in] v value to align
- * @param[in] alignment amount, in bytes, must be a power of 2
- *
- * @return Return the aligned value, as one would expect
- */
-inline std::size_t align_up(std::size_t v, std::size_t align_bytes) noexcept
-{
-  return (v + (align_bytes - 1)) & ~(align_bytes - 1);
-}
-
-}  // namespace detail
 
 namespace mr {
 /**
@@ -61,7 +45,6 @@ namespace mr {
  */
 class device_memory_resource {
  public:
-  device_memory_resource()          = default;
   virtual ~device_memory_resource() = default;
 
   /**

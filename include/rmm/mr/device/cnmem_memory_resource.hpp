@@ -90,6 +90,11 @@ class cnmem_memory_resource : public device_memory_resource {
     assert(CNMEM_STATUS_SUCCESS == status);
   }
 
+  cnmem_memory_resource(cnmem_memory_resource const&) = delete;
+  cnmem_memory_resource(cnmem_memory_resource&&)      = delete;
+  cnmem_memory_resource& operator=(cnmem_memory_resource const&) = delete;
+  cnmem_memory_resource& operator=(cnmem_memory_resource&&) = delete;
+
   /**
    * @brief Query whether the resource supports use of non-null CUDA streams for
    * allocation/deallocation.
