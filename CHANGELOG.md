@@ -7,6 +7,8 @@
 - PR #396 Remove deprecated RMM APIs
 - PR #425 Add CUDA per-thread default stream support and thread safety to `pool_memory_resource`
 - PR #436 Always build and test with per-thread default stream enabled in the GPU CI build
+- PR #449 Stream-ordered suballocator abstract base class and Per-thread default stream support 
+          and thread safety for `fixed_size_memory_resource`
 
 ## Improvements
 
