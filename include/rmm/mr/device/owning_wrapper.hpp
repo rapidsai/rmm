@@ -17,6 +17,7 @@
 
 #include "device_memory_resource.hpp"
 
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <utility>
@@ -24,6 +25,7 @@
 namespace rmm {
 namespace mr {
 namespace detail {
+/// Converts a tuple into a parameter pack
 template <typename Resource, typename UpstreamTuple, std::size_t... Indices, typename... Args>
 auto make_resource_impl(UpstreamTuple const& t, std::index_sequence<Indices...>, Args&&... args)
 {
