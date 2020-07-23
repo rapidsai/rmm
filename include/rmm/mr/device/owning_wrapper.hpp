@@ -45,14 +45,14 @@ auto make_resource(std::tuple<std::shared_ptr<Upstreams>...> const& t, Args&&...
  *
  * Many `device_memory_resource` derived types allocate memory from another "upstream" resource.
  * E.g., `pool_memory_resource` allocates its pool from an upstream resource. Typically, a resource
- * does not own its upstream, and therefore it is the users responsibility to maintain the lifetime
+ * does not own its upstream, and therefore it is the user's responsibility to maintain the lifetime
  * of the upstream resource. This can be inconvenient and error prone, especially for resources with
- * complex upstreams who may themselves also have an upstream.
+ * complex upstreams that may themselves also have an upstream.
  *
  * `owning_wrapper` simplifies lifetime management of a resource, `wrapped`, by taking shared
  * ownership of all upstream resources via a `std::shared_ptr`.
  *
- * For convenience, it is reccomended to use the `make_owning_wrapper` factory instead of
+ * For convenience, it is recommended to use the `make_owning_wrapper` factory instead of
  * constructing an `owning_wrapper` directly.
  *
  * Example:
