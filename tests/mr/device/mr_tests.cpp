@@ -14,26 +14,27 @@
  * limitations under the License.
  */
 
+#include <gtest/gtest.h>
 #include "mr_test.hpp"
 
-// Test on all memory resource classes
-using resources = ::testing::Types<rmm::mr::cuda_memory_resource,
-                                   rmm::mr::managed_memory_resource,
-                                   rmm::mr::cnmem_memory_resource,
-                                   rmm::mr::cnmem_managed_memory_resource,
-                                   pool_mr,
-                                   fixed_size_mr,
-                                   fixed_multisize_mr,
-                                   hybrid_mr>;
+namespace rmm {
+namespace test {
+namespace {
 
-TYPED_TEST_CASE(MRTest, resources);
+INSTANTIATE_TEST_CASE_P(ResourceTests,
+                        mr_test,
+                        ::testing::Values(mr_factory{"CUDA", &make_cuda},
+                                          mr_factory{"Managed", &make_managed},
+                                          mr_factory{"CNMEM", &make_cnmem},
+                                          mr_factory{"CNMEM_Managed", &make_cnmem_managed},
+                                          mr_factory{"Pool", &make_pool},
+                                          mr_factory{"Hybrid", &make_hybrid}),
+                        [](auto const& info) { return info.param.name; });
 
 TEST(DefaultTest, UseDefaultResource) { test_get_default_resource(); }
 
-TYPED_TEST(MRTest, SetDefaultResource)
+TEST_P(mr_test, SetDefaultResource)
 {
-  // Not necessarily false, since two cuda_memory_resources are always equal
-  // EXPECT_FALSE(this->mr->is_equal(*rmm::mr::get_default_resource()));
   rmm::mr::device_memory_resource* old{nullptr};
   EXPECT_NO_THROW(old = rmm::mr::set_default_resource(this->mr.get()));
   EXPECT_NE(nullptr, old);
@@ -43,37 +44,35 @@ TYPED_TEST(MRTest, SetDefaultResource)
   // setting default resource w/ nullptr should reset to initial
   EXPECT_NO_THROW(rmm::mr::set_default_resource(nullptr));
   EXPECT_TRUE(old->is_equal(*rmm::mr::get_default_resource()));
-  // Not necessarily false, since two cuda_memory_resources are always equal
-  // EXPECT_FALSE(this->mr->is_equal(*rmm::mr::get_default_resource()));
 }
 
-TYPED_TEST(MRTest, SelfEquality) { EXPECT_TRUE(this->mr->is_equal(*this->mr)); }
+TEST_P(mr_test, SelfEquality) { EXPECT_TRUE(this->mr->is_equal(*this->mr)); }
 
-TYPED_TEST(MRTest, Allocate) { test_various_allocations(this->mr.get()); }
-
-TYPED_TEST(MRTest, AllocateOnStream)
+TEST_P(mr_test, AllocateDefaultStream)
 {
-  test_various_allocations_on_stream(this->mr.get(), this->stream);
+  test_various_allocations(this->mr.get(), cudaStreamDefault);
 }
 
-TYPED_TEST(MRTest, RandomAllocations) { test_random_allocations(this->mr.get()); }
+TEST_P(mr_test, AllocateOnStream) { test_various_allocations(this->mr.get(), this->stream); }
 
-TYPED_TEST(MRTest, RandomAllocationsStream)
+TEST_P(mr_test, RandomAllocations) { test_random_allocations(this->mr.get()); }
+
+TEST_P(mr_test, RandomAllocationsStream)
 {
-  test_random_allocations(this->mr.get(), 100, this->stream);
+  test_random_allocations(this->mr.get(), 100, 5_MiB, this->stream);
 }
 
-TYPED_TEST(MRTest, MixedRandomAllocationFree)
+TEST_P(mr_test, MixedRandomAllocationFree)
 {
-  test_mixed_random_allocation_free(this->mr.get(), nullptr);
+  test_mixed_random_allocation_free(this->mr.get(), 5_MiB, cudaStreamDefault);
 }
 
-TYPED_TEST(MRTest, MixedRandomAllocationFreeStream)
+TEST_P(mr_test, MixedRandomAllocationFreeStream)
 {
-  test_mixed_random_allocation_free(this->mr.get(), this->stream);
+  test_mixed_random_allocation_free(this->mr.get(), 5_MiB, this->stream);
 }
 
-TYPED_TEST(MRTest, GetMemInfo)
+TEST_P(mr_test, GetMemInfo)
 {
   if (this->mr->supports_get_mem_info()) {
     std::pair<std::size_t, std::size_t> mem_info;
@@ -86,3 +85,6 @@ TYPED_TEST(MRTest, GetMemInfo)
     EXPECT_NO_THROW(this->mr->deallocate(ptr, allocation_size));
   }
 }
+}  // namespace
+}  // namespace test
+}  // namespace rmm
