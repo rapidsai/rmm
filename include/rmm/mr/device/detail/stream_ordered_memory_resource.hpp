@@ -23,6 +23,7 @@
 
 #include <map>
 #include <mutex>
+#include <thread>
 #include <unordered_map>
 
 namespace rmm {
@@ -38,15 +39,7 @@ class stream_ordered_suballocator_memory_resource : public device_memory_resourc
   // TODO use rmm-level def of this.
   static constexpr size_t allocation_alignment = 256;
 
-  ~stream_ordered_suballocator_memory_resource()
-  {
-    release();
-
-#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-    for (auto& event : ptds_events_)
-      event.get().parent = nullptr;
-#endif
-  }
+  ~stream_ordered_suballocator_memory_resource() { release(); }
 
   stream_ordered_suballocator_memory_resource() = default;
   stream_ordered_suballocator_memory_resource(stream_ordered_suballocator_memory_resource const&) =
@@ -215,16 +208,15 @@ class stream_ordered_suballocator_memory_resource : public device_memory_resourc
    */
   template <typename ParentType>
   struct default_stream_event {
-    default_stream_event(ParentType* parent) : parent(parent)
+    default_stream_event(ParentType* parent, cudaEvent_t event) : parent(parent), event(event)
     {
-      auto result = cudaEventCreateWithFlags(&event, cudaEventDisableTiming);
-      assert(cudaSuccess == result);
-      if (parent) parent->ptds_events_.push_back(*this);
+      parent->ptds_events_.insert(this);
     }
     ~default_stream_event()
     {
       if (parent) {
-        lock_guard lock(parent->mtx_);
+        lock_guard lock(parent->get_mutex());
+        parent->ptds_events_.erase(this);
         parent->destroy_event(stream_event_pair{cudaStreamDefault, event});
       }
     }
@@ -251,8 +243,23 @@ class stream_ordered_suballocator_memory_resource : public device_memory_resourc
   {
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
     if (cudaStreamDefault == stream || cudaStreamPerThread == stream) {
-      static thread_local default_stream_event_type e{this};
-      return stream_event_pair{stream, e.event};
+      // Because multiple instances of stream_ordered_memory_resource can be called from the same
+      // thread it is not enough to store a single thread-local default_stream_event. We have to
+      // store one per MR instance, which we do using a map of instance to default_stream_event.
+      // This ensures that the events and their free-lists can be cleaned up at thread exit.
+      static thread_local std::unordered_map<void*, default_stream_event_type> default_events_tls;
+      auto thread_event = default_events_tls.find(this);
+      return (thread_event != default_events_tls.end())
+               ? stream_event_pair{stream, thread_event->second.event}
+               : [&]() {
+                   cudaEvent_t event;
+                   RMM_ASSERT_CUDA_SUCCESS(
+                     cudaEventCreateWithFlags(&event, cudaEventDisableTiming));
+                   default_events_tls.emplace(std::piecewise_construct,
+                                              std::forward_as_tuple(this),
+                                              std::forward_as_tuple(this, event));
+                   return stream_event_pair{stream, event};
+                 }();
     }
 #else
     // We use cudaStreamLegacy as the event map key for the default stream for consistency between
@@ -332,14 +339,15 @@ class stream_ordered_suballocator_memory_resource : public device_memory_resourc
    * stream/event than `stream_event`.
    *
    * If an appropriate block is found in a free list F associated with event E, if
-   * `CUDA_API_PER_THREAD_DEFAULT_STREAM` is defined, `stream_event.stream` will be made to wait on
-   * event E. Otherwise, the stream associated with free list F will be synchronized. In either
+   * `CUDA_API_PER_THREAD_DEFAULT_STREAM` is defined, `stream_event.stream` will be made to wait
+   * on event E. Otherwise, the stream associated with free list F will be synchronized. In either
    * case all other blocks in free list F will be moved to the free list associated with
    * `stream_event.stream`. This results in coalescing with other blocks in that free list,
    * hopefully reducing fragmentation.
    *
    * @param size The requested size of the allocation.
-   * @param stream_event The stream and associated event on which the allocation is being requested.
+   * @param stream_event The stream and associated event on which the allocation is being
+   * requested.
    * @return A block with non-null pointer and size >= `size`, or a nullptr block if none is
    *         available in `blocks`.
    */
@@ -354,12 +362,13 @@ class stream_ordered_suballocator_memory_resource : public device_memory_resourc
         block_type const b = blocks.get_block(size);  // get the best fit block
 
         if (is_valid(b)) {
-          // Since we found a block associated with a different stream, we have to insert a wait on
-          // the stream's associated event into the allocating stream.
+          // Since we found a block associated with a different stream, we have to insert a wait
+          // on the stream's associated event into the allocating stream.
           // TODO: could eliminate this ifdef and have the same behavior for PTDS and non-PTDS
           // But the cudaEventRecord() on every free_block reduces performance significantly
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
           RMM_CUDA_TRY(cudaStreamWaitEvent(stream_event.stream, blocks_event.event, 0));
+
 #else
           RMM_CUDA_TRY(cudaStreamSynchronize(blocks_event.stream));
 #endif
@@ -377,6 +386,7 @@ class stream_ordered_suballocator_memory_resource : public device_memory_resourc
   /**
    * @brief Clear free lists and events
    *
+   * Note: only called by destructor.
    */
   void release()
   {
@@ -386,6 +396,11 @@ class stream_ordered_suballocator_memory_resource : public device_memory_resourc
       destroy_event(s_e.second);
     stream_events_.clear();
     stream_free_blocks_.clear();
+
+#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
+    for (auto& event : ptds_events_)
+      reinterpret_cast<default_stream_event_type*>(event)->parent = nullptr;
+#endif
   }
 
   // map of stream_event_pair --> free_list
@@ -397,12 +412,12 @@ class stream_ordered_suballocator_memory_resource : public device_memory_resourc
   std::unordered_map<cudaStream_t, stream_event_pair> stream_events_;
 
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-  // references to per-thread events to avoid use-after-free when threads exit after MR is deleted
-  std::list<std::reference_wrapper<default_stream_event_type>> ptds_events_;
+  // pointers to per-thread events to avoid use-after-free when threads exit after MR is deleted
+  std::set<void*> ptds_events_;
 #endif
 
-  std::mutex mutable mtx_;  // mutex for thread-safe access
-};
+  std::mutex mtx_;  // mutex for thread-safe access
+};                  // namespace detail
 
 }  // namespace detail
 }  // namespace mr

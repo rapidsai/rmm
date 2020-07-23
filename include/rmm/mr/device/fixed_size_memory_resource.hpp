@@ -161,7 +161,7 @@ class fixed_size_memory_resource
     auto g     = [p, this](int i) { return static_cast<char*>(p) + i * block_size_; };
     auto first = thrust::make_transform_iterator(thrust::make_counting_iterator(std::size_t{0}), g);
     free_list blocks;
-    std::for_each(first + 1, first + num_blocks, [&blocks](void* p) { blocks.insert(p); });
+    std::for_each(first, first + num_blocks, [&blocks](void* p) { blocks.insert(p); });
     return blocks;
   }
 
