@@ -246,20 +246,17 @@ inline auto make_fixed_size()
   return rmm::mr::make_owning_wrapper<rmm::mr::fixed_size_memory_resource>(make_cuda());
 }
 
-inline auto make_multisize()
+template <typename Upstream>
+inline auto make_multisize(std::shared_ptr<Upstream> upstream)
 {
-  return rmm::mr::make_owning_wrapper<rmm::mr::fixed_multisize_memory_resource>(make_cuda());
+  return rmm::mr::make_owning_wrapper<rmm::mr::fixed_multisize_memory_resource>(upstream);
 }
 
 inline auto make_hybrid()
 {
+  auto pool = make_pool();
   return rmm::mr::make_owning_wrapper<rmm::mr::hybrid_memory_resource>(
-    std::make_tuple(make_multisize(), make_pool()));
-}
-
-inline auto make_sync_hybrid()
-{
-  return rmm::mr::make_owning_wrapper<rmm::mr::thread_safe_resource_adaptor>(make_hybrid());
+    std::make_tuple(make_multisize(pool), pool));
 }
 
 }  // namespace test
