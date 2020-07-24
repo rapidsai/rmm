@@ -247,7 +247,7 @@ class stream_ordered_suballocator_memory_resource : public device_memory_resourc
       // thread it is not enough to store a single thread-local default_stream_event. We have to
       // store one per MR instance, which we do using a map of instance to default_stream_event.
       // This ensures that the events and their free-lists can be cleaned up at thread exit.
-      static thread_local std::unordered_map<void*, default_stream_event_type> default_events_tls;
+      thread_local std::unordered_map<void*, default_stream_event_type> default_events_tls;
       auto thread_event = default_events_tls.find(this);
       return (thread_event != default_events_tls.end())
                ? stream_event_pair{stream, thread_event->second.event}
