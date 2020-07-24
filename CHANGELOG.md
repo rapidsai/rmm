@@ -4,10 +4,14 @@
 
 - PR #375 Support out-of-band buffers in Python pickling
 - PR #391 Add `get_default_resource_type`
-- PR #396 Remove deprecated RMM APIs.
+- PR #396 Remove deprecated RMM APIs
+- PR #425 Add CUDA per-thread default stream support and thread safety to `pool_memory_resource`
+- PR #436 Always build and test with per-thread default stream enabled in the GPU CI build
+- PR #444 Add `owning_wrapper` to simplify lifetime management of resources and their upstreams
 
 ## Improvements
 
+- PR #428 Add the option to automatically flush memory allocate/free logs
 - PR #378 Use CMake `FetchContent` to obtain latest release of `cub` and `thrust`
 - PR #377 A better way to fetch `spdlog`
 - PR #372 Use CMake `FetchContent` to obtain `cnmem` instead of git submodule
@@ -18,15 +22,26 @@
 - PR #402 Install dependencies via rapids-build-env
 - PR #405 Move doc customization scripts to Jenkins
 - PR #413 Add strongly-typed wrapper around cudaStream_t
+- PR #427 Add DeviceBuffer.release() cdef method
+- PR #414 Add element-wise access for device_uvector
+- PR #421 Capture thread id in logging and improve logger testing
+- PR #426 Added multi-threaded support to replay benchmark.
+- PR #429 Fix debug build and add new CUDA assert utility.
+- PR #435 Update conda upload versions for new supported CUDA/Python
+- PR #437 Test with `pickle5` (for older Python versions)
+- PR #443 Remove thread safe adaptor from PoolMemoryResource
+- PR #445 Make all resource operators/ctors explicit
+- PR #447 Update Python README with info about DeviceBuffer/MemoryResource and external libraries
 
 ## Bug Fixes
 
+- PR #433 Fix python imports
 - PR #400 Fix segfault in RANDOM_ALLOCATIONS_BENCH
 - PR #383 Explicitly require NumPy
 - PR #398 Fix missing head flag in merge_blocks (pool_memory_resource) and improve block class
 - PR #403 Mark Cython `memory_resource_wrappers` `extern` as `nogil`
 - PR #406 Sets Google Benchmark to a fixed version, v1.5.1.
-
+- PR #434: Fix issue with incorrect docker image being used in local build script
 
 # RMM 0.14.0 (Date TBD)
 

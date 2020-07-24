@@ -20,10 +20,10 @@
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
+#include <cstddef>
 #include <utility>
 
 namespace rmm {
-
 namespace mr {
 
 /**
@@ -66,7 +66,13 @@ class hybrid_memory_resource : public device_memory_resource {
    * @note since hybrid_memory_resource does not own its upstream memory_resources, this does not
    *       free any memory.
    */
-  virtual ~hybrid_memory_resource() = default;
+  ~hybrid_memory_resource() = default;
+
+  hybrid_memory_resource()                              = delete;
+  hybrid_memory_resource(hybrid_memory_resource const&) = delete;
+  hybrid_memory_resource(hybrid_memory_resource&&)      = delete;
+  hybrid_memory_resource& operator=(hybrid_memory_resource const&) = delete;
+  hybrid_memory_resource& operator=(hybrid_memory_resource&&) = delete;
 
   /**
    * @brief Query whether the resource supports use of non-null streams for

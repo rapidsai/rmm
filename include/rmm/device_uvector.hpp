@@ -78,13 +78,24 @@ class device_uvector {
   using iterator        = pointer;
   using const_iterator  = const_pointer;
 
-  device_uvector()                 = default;
   ~device_uvector()                = default;
   device_uvector(device_uvector&&) = default;
   device_uvector& operator=(device_uvector&&) = default;
-  // Default copying operations are deleted as they don't provide an option for specifying a stream
+
+  /**
+   * @brief Copy ctor is deleted as it doesn't allow a stream argument
+   */
   device_uvector(device_uvector const&) = delete;
+
+  /**
+   * @brief Copy assignment is deleted as it doesn't allow a stream argument
+   */
   device_uvector& operator=(device_uvector const&) = delete;
+
+  /**
+   * @brief Default constructor is deleted as it doesn't allow a stream argument
+   */
+  device_uvector() = delete;
 
   /**
    * @brief Construct a new `device_uvector` with sufficient uninitialized storage for `size`
@@ -119,6 +130,153 @@ class device_uvector {
     : _storage{other.storage, stream, mr}
   {
   }
+
+  /**
+   * @brief Returns pointer to the specified element
+   *
+   * Behavior is undefined if `element_index >= size()`.
+   *
+   * @param element_index Index of the specified element.
+   * @return T* Pointer to the desired element
+   */
+  pointer element_ptr(std::size_t element_index) noexcept
+  {
+    assert(element_index < size());
+    return data() + element_index;
+  }
+
+  /**
+   * @brief Returns pointer to the specified element
+   *
+   * Behavior is undefined if `element_index >= size()`.
+   *
+   * @param element_index Index of the specified element.
+   * @return T* Pointer to the desired element
+   */
+  const_pointer element_ptr(std::size_t element_index) const noexcept
+  {
+    assert(element_index < size());
+    return data() + element_index;
+  }
+
+  /**
+   * @brief Performs a synchronous copy of `v` to the specified element in device memory.
+   *
+   * Because this function synchronizes the stream `s`, it is safe to destroy or modify the object
+   * referenced by `v` after this function has returned.
+   *
+   * @note: This function incurs a host to device memcpy and should be used sparingly.
+   * @note: This function synchronizes `stream`.
+   *
+   * Example:
+   * \code{cpp}
+   * rmm::device_uvector<int32_t> vec(100, stream);
+   *
+   * int v{42};
+   *
+   * // Copies 42 to element 0 on `stream` and synchronizes the stream
+   * vec.set_element(0, v, stream);
+   *
+   * // It is safe to destroy or modify `v`
+   * v = 13;
+   * \endcode
+   *
+   *
+   * @throws rmm::out_of_range exception if `element_index >= size()`
+   *
+   * @param element_index Index of the target element
+   * @param v The value to copy to the specified element
+   * @param s The stream on which to perform the copy
+   */
+  void set_element(std::size_t element_index, T const& v, cudaStream_t s)
+  {
+    RMM_EXPECTS(
+      element_index < size(), rmm::out_of_range, "Attempt to access out of bounds element.");
+    RMM_CUDA_TRY(cudaMemcpyAsync(element_ptr(element_index), &v, sizeof(v), cudaMemcpyDefault, s));
+    RMM_CUDA_TRY(cudaStreamSynchronize(s));
+  }
+
+  /**
+   * @brief Performs an asynchronous copy of `v` to the specified element in device memory.
+   *
+   * This function does not synchronize stream `s` before returning. Therefore, the object
+   * referenced by `v` should not be destroyed or modified until `stream` has been synchronized.
+   * Otherwise, behavior is undefined.
+   *
+   * @note: This function incurs a host to device memcpy and should be used sparingly.
+   *
+   * Example:
+   * \code{cpp}
+   * rmm::device_uvector<int32_t> vec(100, stream);
+   *
+   * int v{42};
+   *
+   * // Copies 42 to element 0 on `stream`. Does _not_ synchronize
+   * vec.set_element_async(0, v, stream);
+   * ...
+   * cudaStreamSynchronize(stream);
+   * // Synchronization is required before `v` can be modified
+   * v = 13;
+   * \endcode
+   *
+   * @throws rmm::out_of_range exception if `element_index >= size()`
+   *
+   * @param element_index Index of the target element
+   * @param v The value to copy to the specified element
+   * @param s The stream on which to perform the copy
+   */
+  void set_element_async(std::size_t element_index, value_type const& v, cudaStream_t s)
+  {
+    RMM_EXPECTS(
+      element_index < size(), rmm::out_of_range, "Attempt to access out of bounds element.");
+    RMM_CUDA_TRY(cudaMemcpyAsync(element_ptr(element_index), &v, sizeof(v), cudaMemcpyDefault, s));
+  }
+
+  /**
+   * @brief Returns the specified element from device memory
+   *
+   * @note: This function incurs a device to host memcpy and should be used sparingly.
+   * @note: This function synchronizes `stream`.
+   *
+   * @throws rmm::out_of_range exception if `element_index >= size()`
+   *
+   * @param element_index Index of the desired element
+   * @param s The stream on which to perform the copy
+   * @return The value of the specified element
+   */
+  value_type element(std::size_t element_index, cudaStream_t s) const
+  {
+    RMM_EXPECTS(
+      element_index < size(), rmm::out_of_range, "Attempt to access out of bounds element.");
+    value_type v;
+    RMM_CUDA_TRY(cudaMemcpyAsync(&v, element_ptr(element_index), sizeof(v), cudaMemcpyDefault, s));
+    RMM_CUDA_TRY(cudaStreamSynchronize(s));
+    return v;
+  }
+
+  /**
+   * @brief Returns the first element.
+   *
+   * @note: This function incurs a device to host memcpy and should be used sparingly.
+   *
+   * @throws rmm::out_of_range exception if the vector is empty.
+   *
+   * @param s The stream on which to perform the copy
+   * @return The value of the first element
+   */
+  value_type front_element(cudaStream_t s) const { return element(0, s); }
+
+  /**
+   * @brief Returns the last element.
+   *
+   * @note: This function incurs a device to host memcpy and should be used sparingly.
+   *
+   * @throws rmm::out_of_range exception if the vector is empty.
+   *
+   * @param s The stream on which to perform the copy
+   * @return The value of the last element
+   */
+  value_type back_element(cudaStream_t s) const { return element(size() - 1, s); }
 
   /**
    * @brief Resizes the vector to contain `new_size` elements.
@@ -168,12 +326,18 @@ class device_uvector {
   /**
    * @brief Returns pointer to underlying device storage.
    *
+   * @note If `size() == 0` it is undefined behavior to deference the returned pointer. Furthermore,
+   * the returned pointer may or may not be equal to `nullptr`.
+   *
    * @return Raw pointer to element storage in device memory.
    */
   pointer data() noexcept { return static_cast<pointer>(_storage.data()); }
 
   /**
    * @brief Returns const pointer to underlying device storage.
+   *
+   * @note If `size() == 0` it is undefined behavior to deference the returned pointer. Furthermore,
+   * the returned pointer may or may not be equal to `nullptr`.
    *
    * @return const_pointer Raw const pointer to element storage in device memory.
    */
@@ -182,6 +346,8 @@ class device_uvector {
   /**
    * @brief Returns an iterator to the first element.
    *
+   * If the vector is empty, then `begin() == end()`.
+   *
    * @return Iterator to the first element.
    */
   iterator begin() noexcept { return data(); }
@@ -189,12 +355,16 @@ class device_uvector {
   /**
    * @brief Returns a const_iterator to the first element.
    *
+   * If the vector is empty, then `cbegin() == cend()`.
+   *
    * @return Immutable iterator to the first element.
    */
   const_iterator cbegin() const noexcept { return data(); }
 
   /**
    * @brief Returns a const_iterator to the first element.
+   *
+   * If the vector is empty, then `begin() == end()`.
    *
    * @return Immutable iterator to the first element.
    */

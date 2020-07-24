@@ -20,11 +20,6 @@
 #include <rmm/detail/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 
-#include <cuda_runtime_api.h>
-#include <cassert>
-#include <exception>
-#include <iostream>
-
 namespace rmm {
 namespace mr {
 /**
@@ -33,6 +28,13 @@ namespace mr {
  */
 class cuda_memory_resource final : public device_memory_resource {
  public:
+  cuda_memory_resource()                            = default;
+  ~cuda_memory_resource()                           = default;
+  cuda_memory_resource(cuda_memory_resource const&) = default;
+  cuda_memory_resource(cuda_memory_resource&&)      = default;
+  cuda_memory_resource& operator=(cuda_memory_resource const&) = default;
+  cuda_memory_resource& operator=(cuda_memory_resource&&) = default;
+
   /**
    * @brief Query whether the resource supports use of non-null CUDA streams for
    * allocation/deallocation. `cuda_memory_resource` does not support streams.
@@ -79,8 +81,7 @@ class cuda_memory_resource final : public device_memory_resource {
    */
   void do_deallocate(void* p, std::size_t, cuda_stream_view) override
   {
-    cudaError_t const status = cudaFree(p);
-    assert(cudaSuccess == status);
+    RMM_ASSERT_CUDA_SUCCESS(cudaFree(p));
   }
 
   /**

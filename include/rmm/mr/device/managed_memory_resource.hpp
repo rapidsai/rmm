@@ -34,6 +34,13 @@ namespace mr {
  */
 class managed_memory_resource final : public device_memory_resource {
  public:
+  managed_memory_resource()                               = default;
+  ~managed_memory_resource()                              = default;
+  managed_memory_resource(managed_memory_resource const&) = default;
+  managed_memory_resource(managed_memory_resource&&)      = default;
+  managed_memory_resource& operator=(managed_memory_resource const&) = default;
+  managed_memory_resource& operator=(managed_memory_resource&&) = default;
+
   /**
    * @brief Query whether the resource supports use of non-null streams for
    * allocation/deallocation.
@@ -84,8 +91,7 @@ class managed_memory_resource final : public device_memory_resource {
    */
   void do_deallocate(void* p, std::size_t, cuda_stream_view) override
   {
-    cudaError_t const status = cudaFree(p);
-    assert(cudaSuccess == status);
+    RMM_ASSERT_CUDA_SUCCESS(cudaFree(p));
   }
 
   /**

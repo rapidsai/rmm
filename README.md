@@ -307,107 +307,135 @@ RMM does not currently provide any data structures that interface with `host_mem
 In the future, RMM will provide a similar host-side structure like `device_buffer` and an allocator that can be used with STL containers.
 
 
-
 ## Using RMM in Python Code
 
-cuDF and other Python libraries typically create arrays of CUDA device memory
-by using Numba's `cuda.device_array` interfaces. Until Numba provides a plugin
-interface for using an external memory manager, RMM provides an API compatible
-with `cuda.device_array` constructors that cuDF (also cuDF C++ API pytests)
-should use to ensure all CUDA device memory is allocated via the memory manager.
-RMM provides:
+There are two ways to use RMM in Python code:
 
-   - `rmm.device_array()`
-   - `rmm.device_array_like()`
-   - `rmm.to_device()`
-   - `rmm.auto_device()`
+1. Using the `rmm.DeviceBuffer` API to explicitly create and manage
+   device memory allocations
+2. Transparently via external libraries such as CuPy and Numba
 
-Which are compatible with their Numba `cuda.*` equivalents. They return a Numba
-NDArray object whose memory is allocated in CUDA device memory using RMM.
+RMM provides a `MemoryResource` abstraction to control _how_ device
+memory is allocated in both the above uses.
 
-Following is an example from cuDF `groupby.py` that copies from a numpy array to
-an equivalent CUDA `device_array` using `to_device()`, and creates a device
-array using `device_array`, and then runs a Numba kernel (`group_mean`) to
-compute the output values.
+### DeviceBuffers
 
-```
-    ...
-    dev_begins = rmm.to_device(np.asarray(begin))
-    dev_out = rmm.device_array(size, dtype=np.float64)
-    if size > 0:
-        group_mean.forall(size)(sr.to_gpu_array(),
-                                dev_begins,
-                                dev_out)
-    values[newk] = dev_out
-```
-In another example from cuDF `cudautils.py`, `fillna` uses `device_array_like`
-to construct a CUDA device array with the same shape and data type as another.
-
-```
-def fillna(data, mask, value):
-    out = rmm.device_array_like(data)
-    out.copy_to_device(data)
-    configured = gpu_fill_masked.forall(data.size)
-    configured(value, mask, out)
-    return out
-```
-
-`rmm` also provides `get_ipc_handle()` for getting the IPC handle associated
-with a Numba NDArray, which accounts for the case where the data for the NDArray
-is suballocated from some larger pool allocation by the memory manager.
-
-### Handling RMM Options in Python Code
-
-RMM currently defaults to just calling cudaMalloc, but you can enable the
-experimental pool allocator by reinitializing RMM.
-
-```
-rmm.reinitialize(
-    pool_allocator=False, # default is False
-    managed_memory=False, # default is False
-    initial_pool_size=int(2**31), # set to 2GiB. Default is 1/2 total GPU memory
-    devices=0, # GPU device  IDs to register. By default registers only GPU 0.
-    logging=True, # default is False -- has perf overhead
-)
-```
-
-To configure RMM options to be used in cuDF before loading, simply do the above
-before you `import cudf`. You can re-initialize the memory manager with
-different settings at run time by calling `rmm.reinitialize()` with the above
-options.
-
-You can also optionally use the internal functions in cuDF which call these
-functions. Here are some example configuration functions that can be used in
-a notebook to initialize the memory manager in each Dask worker.
+A DeviceBuffer represents an **untyped, uninitialized device memory
+allocation**.  DeviceBuffers can be created by providing the
+size of the allocation in bytes:
 
 ```python
-import cudf
-
-
-# Default passthrough to cudaMalloc
-cudf.set_allocator()
-
-# Use the pool allocator
-cudf.set_allocator(pool=True)
-
-# Use the pool allocator with a 2GiB initial pool size
-cudf.set_allocator(pool=True, initial_pool_size=2<<30)
+>>> import rmm
+>>> buf = rmm.DeviceBuffer(size=100)
 ```
 
-Remember that while the pool is in use memory is not freed. So if you follow
-cuDF operations with device-memory-intensive computations that don't use RMM
-(such as XGBoost), you will need to move the data to the host and then
-finalize RMM. The Mortgage E2E workflow notebook uses this technique. We are
-working on better ways to reclaim memory, as well as making RAPIDS machine
-learning libraries use the same RMM memory pool.
-
-### Memory info
-
-The amount of free and total memory managed by RMM associated with a particular
-stream can be obtained with the `get_info` function:
+The size of the allocation and the memory address associated with it
+can be accessed via the `.size` and `.ptr` attributes respectively:
 
 ```python
-meminfo = rmm.get_info()
-print(meminfo.free)  # E.g. "16046292992"
-print(meminfo.total) # E.g. "16914055168"
+>>> buf.size
+100
+>>> buf.ptr
+140202544726016
 ```
+
+DeviceBuffers can also be created by copying data from host memory:
+
+```python
+>>> import rmm
+>>> import numpy as np
+>>> a = np.array([1, 2, 3], dtype='float64')
+>>> buf = rmm.to_device(a.tobytes())
+>>> buf.size
+24
+```
+
+Conversely, the data underlying a DeviceBuffer can be copied to the
+host:
+
+```python
+>>> np.frombuffer(buf.tobytes())
+array([1., 2., 3.])
+```
+
+### MemoryResources
+
+MemoryResources are used to configure how device memory allocations are made by RMM.
+
+By default, i.e., if you don't set a MemoryResource explicitly, RMM
+uses the `CudaMemoryResource`, which uses `cudaMalloc` for
+allocating device memory.
+
+The `rmm.mr.set_default_resource()` function can be used to set a
+different MemoryResource.  For example, enabling the
+`ManagedMemoryResource` tells RMM to use `cudaMallocManaged` instead
+of `cudaMalloc` for allocating memory:
+
+```python
+>>> import rmm
+>>> rmm.mr.set_default_resource(rmm.mr.ManagedMemoryResource())
+```
+
+> :warning: The default resource must be set **before** allocating any
+> device memory.  Setting or changing the default resource after
+> device allocations have been made can lead to unexpected behaviour
+> or crashes.
+
+As another example, `PoolMemoryResource` allows you to allocate a
+large "pool" of device memory up-front. Subsequent allocations will
+draw from this pool of already allocated memory.  The example
+below shows how to construct a PoolMemoryResource with an initial size
+of 1 GiB and a maximum size of 4 GiB. The pool uses
+`CudaMemoryResource` as its underlying ("upstream") memory resource:
+
+```python
+>>> import rmm
+>>> pool = rmm.mr.PoolMemoryResource(
+...     upstream=rmm.mr.CudaMemoryResource(),
+...     initial_pool_size=2**30,
+...     maximum_pool_size=2**32
+... )
+>>> rmm.mr.set_default_resource(pool)
+```
+
+Other MemoryResources include:
+
+* `FixedSizeMemoryResource` for allocating fixed blocks of memory
+* `HybridMemoryResource` for enabling separate MemoryResources for
+  small and large memory allocations
+
+MemoryResources are highly configurable and can be composed together
+in different ways.  See `help(rmm.mr)` for more information.
+
+### Using RMM with CuPy
+
+You can configure [CuPy](https://cupy.dev/) to use RMM for memory
+allocations by setting the CuPy CUDA allocator to
+`rmm_cupy_allocator`:
+
+```python
+>>> import rmm
+>>> import cupy
+>>> cupy.cuda.set_allocator(rmm.rmm_cupy_allocator)
+```
+
+### Using RMM with Numba
+
+You can configure Numba to use RMM for memory allocations using the
+Numba [EMM Plugin](http://numba.pydata.org/numba-doc/latest/cuda/external-memory.html#setting-the-emm-plugin).
+
+This can be done in two ways:
+
+1. Setting the environment variable `NUMBA_CUDA_MEMORY_MANAGER`:
+
+  ```python
+  $ NUMBA_CUDA_MEMORY_MANAGER=rmm python (args)
+  ```
+
+2. Using the `set_memory_manager()` function provided by Numba:
+
+  ```python
+  >>> from numba import cuda
+  >>> import rmm
+  >>> cuda.set_memory_manager(rmm.RMMNumbaManager)
+  ```

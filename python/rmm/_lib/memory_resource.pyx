@@ -1,16 +1,12 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
-
-import cython
 import os
-
 
 from libcpp cimport bool
 from libcpp.cast cimport dynamic_cast
-from libcpp.memory cimport unique_ptr, make_unique, shared_ptr, make_shared
+from libcpp.memory cimport make_shared, make_unique, shared_ptr, unique_ptr
 from libcpp.string cimport string
 
 
-@cython.embedsignature(True)
 cdef class CudaMemoryResource(MemoryResource):
     def __cinit__(self):
         self.c_obj.reset(
@@ -24,7 +20,6 @@ cdef class CudaMemoryResource(MemoryResource):
         pass
 
 
-@cython.embedsignature(True)
 cdef class ManagedMemoryResource(MemoryResource):
     def __cinit__(self):
         self.c_obj.reset(
@@ -39,7 +34,6 @@ cdef class ManagedMemoryResource(MemoryResource):
         pass
 
 
-@cython.embedsignature(True)
 cdef class CNMemMemoryResource(MemoryResource):
     def __cinit__(self, size_t initial_pool_size=0, vector[int] devices=()):
         self.c_obj.reset(
@@ -64,7 +58,6 @@ cdef class CNMemMemoryResource(MemoryResource):
         pass
 
 
-@cython.embedsignature(True)
 cdef class CNMemManagedMemoryResource(MemoryResource):
     def __cinit__(self, size_t initial_pool_size=0, vector[int] devices=()):
         self.c_obj.reset(
@@ -90,7 +83,6 @@ cdef class CNMemManagedMemoryResource(MemoryResource):
         pass
 
 
-@cython.embedsignature(True)
 cdef class PoolMemoryResource(MemoryResource):
 
     def __cinit__(
@@ -100,14 +92,10 @@ cdef class PoolMemoryResource(MemoryResource):
             size_t maximum_pool_size=~0
     ):
         self.c_obj.reset(
-            new thread_safe_resource_adaptor_wrapper(
-                shared_ptr[device_memory_resource_wrapper](
-                    new pool_memory_resource_wrapper(
-                        upstream.c_obj,
-                        initial_pool_size,
-                        maximum_pool_size
-                    )
-                )
+            new pool_memory_resource_wrapper(
+                upstream.c_obj,
+                initial_pool_size,
+                maximum_pool_size
             )
         )
 
@@ -134,7 +122,6 @@ cdef class PoolMemoryResource(MemoryResource):
         pass
 
 
-@cython.embedsignature(True)
 cdef class FixedSizeMemoryResource(MemoryResource):
     def __cinit__(
             self,
@@ -180,7 +167,6 @@ cdef class FixedSizeMemoryResource(MemoryResource):
         pass
 
 
-@cython.embedsignature(True)
 cdef class FixedMultiSizeMemoryResource(MemoryResource):
     def __cinit__(
         self,
@@ -235,7 +221,6 @@ cdef class FixedMultiSizeMemoryResource(MemoryResource):
         pass
 
 
-@cython.embedsignature(True)
 cdef class HybridMemoryResource(MemoryResource):
     def __cinit__(
         self,
@@ -278,7 +263,6 @@ cdef class HybridMemoryResource(MemoryResource):
         pass
 
 
-@cython.embedsignature(True)
 cdef class LoggingResourceAdaptor(MemoryResource):
     def __cinit__(self, MemoryResource upstream, object log_file_name=None):
         if log_file_name is None:

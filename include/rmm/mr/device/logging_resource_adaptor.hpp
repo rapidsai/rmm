@@ -61,8 +61,12 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @param upstream The resource used for allocating/deallocating device memory
    * @param filename Name of file to write log info. If not specified, retrieves
    * the file name from the environment variable "RMM_LOG_FILE".
+   * @param auto_flush If true, flushes the log for every (de)allocation. Warning, this will degrade
+   * performance.
    */
-  logging_resource_adaptor(Upstream* upstream, std::string const& filename = get_default_filename())
+  logging_resource_adaptor(Upstream* upstream,
+                           std::string const& filename = get_default_filename(),
+                           bool auto_flush             = false)
     : upstream_{upstream},
       logger_{std::make_shared<spdlog::logger>(
         "RMM",
@@ -70,7 +74,7 @@ class logging_resource_adaptor final : public device_memory_resource {
   {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
 
-    init_logger();
+    init_logger(auto_flush);
   }
 
   /**
@@ -84,16 +88,25 @@ class logging_resource_adaptor final : public device_memory_resource {
    *
    * @param upstream The resource used for allocating/deallocating device memory
    * @param stream The ostream to write log info.
+   * @param auto_flush If true, flushes the log for every (de)allocation. Warning, this will degrade
+   * performance.
    */
-  logging_resource_adaptor(Upstream* upstream, std::ostream& stream)
+  logging_resource_adaptor(Upstream* upstream, std::ostream& stream, bool auto_flush = false)
     : upstream_{upstream},
       logger_{std::make_shared<spdlog::logger>(
         "RMM", std::make_shared<spdlog::sinks::ostream_sink_mt>(stream))}
   {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
 
-    init_logger();
+    init_logger(auto_flush);
   }
+
+  logging_resource_adaptor()                                = delete;
+  ~logging_resource_adaptor()                               = default;
+  logging_resource_adaptor(logging_resource_adaptor const&) = delete;
+  logging_resource_adaptor(logging_resource_adaptor&&)      = default;
+  logging_resource_adaptor& operator=(logging_resource_adaptor const&) = delete;
+  logging_resource_adaptor& operator=(logging_resource_adaptor&&) = default;
 
   /**
    * @brief Return pointer to the upstream resource.
@@ -122,6 +135,13 @@ class logging_resource_adaptor final : public device_memory_resource {
    */
   void flush() { logger_->flush(); }
 
+  /**
+   * @brief Return the CSV header string
+   *
+   * @return CSV formatted header string of column names
+   */
+  std::string header() const { return std::string{"Thread,Time,Action,Pointer,Size,Stream"}; }
+
  private:
   // make_logging_adaptor needs access to private get_default_filename
   template <typename T>
@@ -145,12 +165,12 @@ class logging_resource_adaptor final : public device_memory_resource {
   /**
    * @brief Initialize the logger.
    */
-  void init_logger() const
+  void init_logger(bool auto_flush)
   {
-    auto const csv_header{"Time,Action,Pointer,Size,Stream"};
+    if (auto_flush) { logger_->flush_on(spdlog::level::info); }
     logger_->set_pattern("%v");
-    logger_->info(csv_header);
-    logger_->set_pattern("%H:%M:%S:%f,%v");
+    logger_->info(header());
+    logger_->set_pattern("%t,%H:%M:%S:%f,%v");
   }
 
   /**
@@ -160,7 +180,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    * If the upstream allocation is successful logs the
    * following CSV formatted line to the file specified at construction:
    * ```
-   * *TIMESTAMP*,"allocate",*bytes*,*stream*
+   * thread_id,*TIMESTAMP*,"allocate",*bytes*,*stream*
    * ```
    *
    * The returned pointer has at least 256B alignment.
@@ -194,7 +214,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    * Every invocation of `logging_resource_adaptor::do_deallocate` will write
    * the following CSV formatted line to the file specified at construction:
    * ```
-   * *TIMESTAMP*,"free",*bytes*,*stream*
+   * thread_id,*TIMESTAMP*,"free",*bytes*,*stream*
    * ```
    *
    * @throws Nothing.

@@ -46,12 +46,16 @@ include_directories("${GTEST_INCLUDE_DIR}"
                     "${CMAKE_SOURCE_DIR}/include"
                     "${CMAKE_SOURCE_DIR}/include/rmm"
                     "${CMAKE_SOURCE_DIR}/src"
+                    "${CMAKE_SOURCE_DIR}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/../include")
 
 ###################################################################################################
 # - library paths ---------------------------------------------------------------------------------
 
-link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES is an undocumented/unsupported variable containing the link directories for nvcc
+# CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES is an undocumented/unsupported variable containing the link
+# directories for nvcc
+link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" 
                  "${CMAKE_BINARY_DIR}/lib"
                  "${GTEST_LIBRARY_DIR}")
 
@@ -68,9 +72,22 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
 
 set(DEVICE_MR_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/mr_tests.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/mr_multithreaded_tests.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/thrust_allocator_tests.cu")
 
 ConfigureTest(DEVICE_MR_TEST "${DEVICE_MR_TEST_SRC}")
+
+###################################################################################################
+###################################################################################################
+# - device mr per-thread default stream tests------------------------------------------------------
+
+
+set(DEVICE_MR_PTDS_TEST_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/mr_multithreaded_tests.cpp")
+
+ConfigureTest(DEVICE_MR_PTDS_TEST "${DEVICE_MR_PTDS_TEST_SRC}")
+target_compile_definitions(DEVICE_MR_PTDS_TEST PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
+
 
 ###################################################################################################
 ###################################################################################################
@@ -78,16 +95,8 @@ ConfigureTest(DEVICE_MR_TEST "${DEVICE_MR_TEST_SRC}")
 
 set(HOST_MR_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/host/mr_tests.cpp")
-
+    
 ConfigureTest(HOST_MR_TEST "${HOST_MR_TEST_SRC}") 
-###################################################################################################
-###################################################################################################
-# - cuda stream tests -----------------------------------------------------------------------------
-
-set(CUDA_STREAM_TEST_SRC
-"${CMAKE_CURRENT_SOURCE_DIR}/cuda_stream_tests.cu")
-
-ConfigureTest(CUDA_STREAM_TEST "${CUDA_STREAM_TEST_SRC}")
 
 ###################################################################################################
 ###################################################################################################

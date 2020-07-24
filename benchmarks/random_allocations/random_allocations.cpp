@@ -58,7 +58,6 @@ allocation remove_at(allocation_vector& allocs, std::size_t index)
 // nested MR type names can get long...
 using cuda_mr            = rmm::mr::cuda_memory_resource;
 using pool_mr            = rmm::mr::pool_memory_resource<cuda_mr>;
-using safe_pool_mr       = rmm::mr::thread_safe_resource_adaptor<pool_mr>;
 using fixed_multisize_mr = rmm::mr::fixed_multisize_memory_resource<pool_mr>;
 using hybrid_mr          = rmm::mr::hybrid_memory_resource<fixed_multisize_mr, pool_mr>;
 using safe_hybrid_mr     = rmm::mr::thread_safe_resource_adaptor<hybrid_mr>;
@@ -184,9 +183,9 @@ resource_wrapper<cuda_mr>::resource_wrapper()
 }
 
 template <>
-resource_wrapper<safe_pool_mr>::resource_wrapper()
+resource_wrapper<pool_mr>::resource_wrapper()
 {
-  mr = new rmm::mr::thread_safe_resource_adaptor<pool_mr>(new pool_mr(new cuda_mr()));
+  mr = new pool_mr(new cuda_mr());
 }
 
 template <>
@@ -228,12 +227,10 @@ resource_wrapper<fixed_multisize_mr>::~resource_wrapper()
 }
 
 template <>
-resource_wrapper<safe_pool_mr>::~resource_wrapper()
+resource_wrapper<pool_mr>::~resource_wrapper()
 {
-  auto pool = mr->get_upstream();
-  auto cuda = pool->get_upstream();
+  auto cuda = mr->get_upstream();
   delete mr;
-  delete pool;
   delete cuda;
 }
 
@@ -299,7 +296,7 @@ void declare_benchmark(std::string name)
   if (name == "hybrid")
     BENCHMARK_TEMPLATE(BM_RandomAllocations, safe_hybrid_mr)->Apply(benchmark_range);
   else if (name == "pool")
-    BENCHMARK_TEMPLATE(BM_RandomAllocations, safe_pool_mr)->Apply(benchmark_range);
+    BENCHMARK_TEMPLATE(BM_RandomAllocations, pool_mr)->Apply(benchmark_range);
   else if (name == "fixed_multisize")
     BENCHMARK_TEMPLATE(BM_RandomAllocations, fixed_multisize_mr)->Apply(benchmark_range);
   else if (name == "cnmem")
@@ -318,7 +315,7 @@ int main(int argc, char** argv)
     if (argc > 3) max_size = atoi(argv[3]);
     declare_benchmark(mr_name);
   } else {
-    BENCHMARK_TEMPLATE(BM_RandomAllocations, safe_pool_mr)->Apply(benchmark_range);
+    BENCHMARK_TEMPLATE(BM_RandomAllocations, pool_mr)->Apply(benchmark_range);
     BENCHMARK_TEMPLATE(BM_RandomAllocations, safe_hybrid_mr)->Apply(benchmark_range);
     BENCHMARK_TEMPLATE(BM_RandomAllocations, cnmem_mr)->Apply(benchmark_range);
     BENCHMARK_TEMPLATE(BM_RandomAllocations, cuda_mr)->Apply(benchmark_range);
