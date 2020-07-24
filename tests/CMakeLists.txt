@@ -95,8 +95,17 @@ target_compile_definitions(DEVICE_MR_PTDS_TEST PUBLIC CUDA_API_PER_THREAD_DEFAUL
 
 set(HOST_MR_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/host/mr_tests.cpp")
-    
+
 ConfigureTest(HOST_MR_TEST "${HOST_MR_TEST_SRC}") 
+
+###################################################################################################
+###################################################################################################
+# - cuda stream tests -----------------------------------------------------------------------------
+
+set(CUDA_STREAM_TEST_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/cuda_stream_tests.cu")
+
+ConfigureTest(CUDA_STREAM_TEST "${CUDA_STREAM_TEST_SRC}")
 
 ###################################################################################################
 ###################################################################################################

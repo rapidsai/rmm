@@ -361,13 +361,13 @@ class pool_memory_resource final : public device_memory_resource {
     std::cout << "GPU free memory: " << free << "total: " << total << "\n";
 
     std::cout << "upstream_blocks: " << upstream_blocks_.size() << "\n";
-    std::size_t upcuda_stream_viewotal{0};
+    std::size_t upstream_total{0};
 
     for (auto h : upstream_blocks_) {
       h.print();
       upstream_total += h.size();
     }
-    std::cout << "total upstream: " << upcuda_stream_viewotal << " B\n";
+    std::cout << "total upstream: " << upstream_total << " B\n";
 
     std::cout << "allocated_blocks: " << allocated_blocks_.size() << "\n";
     for (auto b : allocated_blocks_) {

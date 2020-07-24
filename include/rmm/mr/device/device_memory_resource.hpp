@@ -15,10 +15,10 @@
  */
 #pragma once
 
+#include <rmm/detail/aligned.hpp>
 #include <rmm/detail/cuda_stream_view.hpp>
 
 #include <cstddef>
-#include <rmm/detail/aligned.hpp>
 #include <utility>
 
 namespace rmm {

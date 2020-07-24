@@ -20,12 +20,6 @@
 #include <rmm/detail/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 
-#include <cuda_runtime_api.h>
-
-#include <cassert>
-#include <exception>
-#include <utility>
-
 namespace rmm {
 namespace mr {
 /**
