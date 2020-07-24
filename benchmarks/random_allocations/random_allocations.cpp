@@ -21,7 +21,6 @@
 #include <rmm/mr/device/hybrid_memory_resource.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
-#include <rmm/mr/device/thread_safe_resource_adaptor.hpp>
 
 #include <benchmark/benchmark.h>
 
@@ -60,7 +59,6 @@ using cuda_mr            = rmm::mr::cuda_memory_resource;
 using pool_mr            = rmm::mr::pool_memory_resource<cuda_mr>;
 using fixed_multisize_mr = rmm::mr::fixed_multisize_memory_resource<pool_mr>;
 using hybrid_mr          = rmm::mr::hybrid_memory_resource<fixed_multisize_mr, pool_mr>;
-using safe_hybrid_mr     = rmm::mr::thread_safe_resource_adaptor<hybrid_mr>;
 using cnmem_mr           = rmm::mr::cnmem_memory_resource;
 
 template <typename SizeDistribution>
@@ -195,22 +193,19 @@ resource_wrapper<fixed_multisize_mr>::resource_wrapper()
 }
 
 template <>
-resource_wrapper<safe_hybrid_mr>::resource_wrapper()
+resource_wrapper<hybrid_mr>::resource_wrapper()
 {
   auto pool = new pool_mr(new cuda_mr());
-  mr        = new rmm::mr::thread_safe_resource_adaptor<hybrid_mr>(
-    new hybrid_mr(new fixed_multisize_mr(pool), pool));
+  mr        = new hybrid_mr(new fixed_multisize_mr(pool), pool);
 }
 
 template <>
-resource_wrapper<safe_hybrid_mr>::~resource_wrapper()
+resource_wrapper<hybrid_mr>::~resource_wrapper()
 {
-  auto hybrid = mr->get_upstream();
-  auto small  = hybrid->get_small_mr();
-  auto large  = hybrid->get_large_mr();
-  auto cuda   = large->get_upstream();
+  auto small = mr->get_small_mr();
+  auto large = mr->get_large_mr();
+  auto cuda  = large->get_upstream();
   delete mr;
-  delete hybrid;
   delete small;
   delete large;
   delete cuda;
@@ -294,7 +289,7 @@ void declare_benchmark(std::string name)
   if (name == "cuda")
     BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::cuda_memory_resource)->Apply(benchmark_range);
   if (name == "hybrid")
-    BENCHMARK_TEMPLATE(BM_RandomAllocations, safe_hybrid_mr)->Apply(benchmark_range);
+    BENCHMARK_TEMPLATE(BM_RandomAllocations, hybrid_mr)->Apply(benchmark_range);
   else if (name == "pool")
     BENCHMARK_TEMPLATE(BM_RandomAllocations, pool_mr)->Apply(benchmark_range);
   else if (name == "fixed_multisize")
@@ -316,7 +311,7 @@ int main(int argc, char** argv)
     declare_benchmark(mr_name);
   } else {
     BENCHMARK_TEMPLATE(BM_RandomAllocations, pool_mr)->Apply(benchmark_range);
-    BENCHMARK_TEMPLATE(BM_RandomAllocations, safe_hybrid_mr)->Apply(benchmark_range);
+    BENCHMARK_TEMPLATE(BM_RandomAllocations, hybrid_mr)->Apply(benchmark_range);
     BENCHMARK_TEMPLATE(BM_RandomAllocations, cnmem_mr)->Apply(benchmark_range);
     BENCHMARK_TEMPLATE(BM_RandomAllocations, cuda_mr)->Apply(benchmark_range);
   }
@@ -326,24 +321,32 @@ int main(int argc, char** argv)
 
 // For profiling
 /*template <typename MemoryResource>
-static void RandomAllocations(size_t num_allocations, size_t max_size) {
-  MemoryResource mr;
+static void RandomAllocations(size_t num_allocations, size_t max_size)
+{
+  resource_wrapper<MemoryResource> wrapper;
+  MemoryResource* mr = wrapper.mr;
 
   try {
-    uniform_random_allocations(mr, num_allocations, max_size, max_usage);
+    uniform_random_allocations(*mr, num_allocations, max_size, max_usage);
   } catch (std::exception const& e) {
     std::cout << "Error: " << e.what() << "\n";
   }
 }
 
-int main(int argc, char** argv) {
-  std::string name{ argc > 1 ? argv[1] : "cnmem" };
+int main(int argc, char** argv)
+{
+  std::string name{argc > 1 ? argv[1] : "cnmem"};
+
+  constexpr size_t n        = 100000;
+  constexpr size_t max_size = 4096;
 
   if (name == "hybrid")
-    RandomAllocations<rmm::mr::hybrid_memory_resource>(1000, 4096);
-  else if (name == "sub")
-    RandomAllocations<rmm::mr::pool_memory_resource>(1000, 4096);
+    RandomAllocations<hybrid_mr>(n, max_size);
+  else if (name == "pool")
+    RandomAllocations<pool_mr>(n, max_size);
   else if (name == "cnmem")
-    RandomAllocations<rmm::mr::cnmem_memory_resource>(1000, 4096);
+    RandomAllocations<cnmem_mr>(n, max_size);
+
+  std::cout << "Finished\n";
   return 0;
 }*/
