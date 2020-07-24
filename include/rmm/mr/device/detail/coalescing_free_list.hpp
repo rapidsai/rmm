@@ -178,18 +178,18 @@ struct coalescing_free_list : free_list<block> {
   virtual void insert(block_type const& b) override
   {
     if (is_empty()) {
-      free_list::insert(end(), b);
+      free_list::insert(cend(), b);
       return;
     }
 
     // Find the right place (in ascending ptr order) to insert the block
     // Can't use binary_search because it's a linked list and will be quadratic
     auto const next     = std::find_if(begin(), end(), [b](block_type const& i) { return b < i; });
-    auto const previous = (next == begin()) ? next : std::prev(next);
+    auto const previous = (next == cbegin()) ? next : std::prev(next);
 
     // Coalesce with neighboring blocks or insert the new block if it can't be coalesced
     bool const merge_prev = previous->is_contiguous_before(b);
-    bool const merge_next = (next != end()) && b.is_contiguous_before(*next);
+    bool const merge_next = (next != cend()) && b.is_contiguous_before(*next);
 
     if (merge_prev && merge_next) {
       *previous = previous->merge(b).merge(*next);
@@ -234,7 +234,7 @@ struct coalescing_free_list : free_list<block> {
         return lhs.is_better_fit(size, rhs);
       });
 
-    if (iter != end() && iter->fits(size)) {
+    if (iter != cend() && iter->fits(size)) {
       // Remove the block from the free_list and return it.
       block_type const found = *iter;
       erase(iter);
@@ -250,9 +250,7 @@ struct coalescing_free_list : free_list<block> {
   virtual void print() const override
   {
     std::cout << size() << '\n';
-    for (const_iterator iter = begin(); iter != end(); ++iter) {
-      iter->print();
-    }
+    std::for_each(cbegin(), cend(), [](auto const iter) { iter.print(); });
   }
 };  // coalescing_free_list
 
