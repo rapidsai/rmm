@@ -60,6 +60,8 @@ class pool_memory_resource final
    * @brief Construct a `pool_memory_resource` and allocate the initial
    * device memory pool using `upstream_mr`.
    *
+   * @throws rmm::logic_error if `upstream_mr == nullptr`
+   *
    * @param upstream_mr The memory_resource from which to allocate blocks for the pool.
    * @param initial_pool_size Size, in bytes, of the initial pool. When
    * zero, an implementation-defined pool size is used.
@@ -72,6 +74,8 @@ class pool_memory_resource final
       initial_pool_size_(initial_pool_size),
       maximum_pool_size_(maximum_pool_size)
   {
+    RMM_EXPECTS(nullptr != upstream_mr, "Unexpected null upstream pointer.");
+
     // Allocate initial block and insert into free list for the legacy default stream
     initialize_pool(cudaStreamLegacy);
   }

@@ -7,6 +7,7 @@
 - PR #396 Remove deprecated RMM APIs
 - PR #425 Add CUDA per-thread default stream support and thread safety to `pool_memory_resource`
 - PR #436 Always build and test with per-thread default stream enabled in the GPU CI build
+- PR #444 Add `owning_wrapper` to simplify lifetime management of resources and their upstreams
 - PR #449 Stream-ordered suballocator abstract base class and Per-thread default stream support 
           and thread safety for `fixed_size_memory_resource`
 
@@ -31,6 +32,7 @@
 - PR #437 Test with `pickle5` (for older Python versions)
 - PR #443 Remove thread safe adaptor from PoolMemoryResource
 - PR #445 Make all resource operators/ctors explicit
+- PR #447 Update Python README with info about DeviceBuffer/MemoryResource and external libraries
 
 ## Bug Fixes
 
