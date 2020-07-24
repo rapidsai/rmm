@@ -273,7 +273,8 @@ class stream_ordered_suballocator_memory_resource : public device_memory_resourc
     auto iter = stream_events_.find(stream);
     if (iter == stream_events_.end()) {
       stream_event_pair stream_event{stream};
-      RMM_ASSERT_CUDA_SUCCES(cudaEventCreateWithFlags(&stream_event.event, cudaEventDisableTiming));
+      RMM_ASSERT_CUDA_SUCCESS(
+        cudaEventCreateWithFlags(&stream_event.event, cudaEventDisableTiming));
       stream_events_[stream] = stream_event;
       return stream_event;
     } else {
