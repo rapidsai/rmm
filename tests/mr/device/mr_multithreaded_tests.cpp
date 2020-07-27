@@ -17,194 +17,50 @@
 #include "gtest/gtest.h"
 #include "mr/device/cuda_memory_resource.hpp"
 #include "mr/device/default_memory_resource.hpp"
+#include "mr/device/device_memory_resource.hpp"
 #include "mr/device/pool_memory_resource.hpp"
 #include "mr_test.hpp"
 
 #include <thread>
 #include <vector>
 
+namespace rmm {
+namespace test {
 namespace {
 
-using thread_safe_fixed_size_mr      = rmm::mr::thread_safe_resource_adaptor<fixed_size_mr>;
-using thread_safe_fixed_multisize_mr = rmm::mr::thread_safe_resource_adaptor<fixed_multisize_mr>;
-using thread_safe_fixed_multisize_pool_mr =
-  rmm::mr::thread_safe_resource_adaptor<fixed_multisize_pool_mr>;
-using thread_safe_hybrid_mr = rmm::mr::thread_safe_resource_adaptor<hybrid_mr>;
+struct mr_test_mt : public mr_test {
+};
+
+INSTANTIATE_TEST_CASE_P(MultiThreadResourceTests,
+                        mr_test_mt,
+                        ::testing::Values(mr_factory{"CUDA", &make_cuda},
+                                          mr_factory{"Managed", &make_managed},
+                                          mr_factory{"Pool", &make_pool},
+                                          mr_factory{"CNMEM", &make_cnmem},
+                                          mr_factory{"CNMEM_Managed", &make_cnmem_managed},
+                                          mr_factory{"SyncHybrid", &make_sync_hybrid}),
+                        [](auto const& info) { return info.param.name; });
 
 constexpr std::size_t num_threads{4};
 
 template <typename Task, typename... Arguments>
-void spawn(Task task, Arguments... args)
+void spawn(Task task, Arguments&&... args)
 {
   std::vector<std::thread> threads;
   threads.reserve(num_threads);
   for (int i = 0; i < num_threads; ++i)
-    threads.emplace_back(std::thread(task, args...));
+    threads.emplace_back(std::thread(task, std::forward<Arguments>(args)...));
 
   for (auto& t : threads)
     t.join();
 }
 
-}  // namespace
-
-// specialize test constructor for thread-safe types
-
-template <>
-inline MRTest<thread_safe_fixed_size_mr>::MRTest()
-  : mr{new thread_safe_fixed_size_mr(new fixed_size_mr(rmm::mr::get_default_resource()))}
-{
-}
-
-template <>
-inline MRTest<thread_safe_fixed_size_mr>::~MRTest()
-{
-  auto fixed = mr->get_upstream();
-  this->mr.reset();
-  delete fixed;
-}
-
-template <>
-inline MRTest<thread_safe_fixed_multisize_mr>::MRTest()
-  : mr{new thread_safe_fixed_multisize_mr(new fixed_multisize_mr(rmm::mr::get_default_resource()))}
-{
-}
-
-template <>
-inline MRTest<thread_safe_fixed_multisize_mr>::~MRTest()
-{
-  auto fixed = mr->get_upstream();
-  this->mr.reset();
-  delete fixed;
-}
-
-template <>
-inline MRTest<thread_safe_fixed_multisize_pool_mr>::MRTest()
-  : mr{new thread_safe_fixed_multisize_pool_mr(
-      new fixed_multisize_pool_mr(new pool_mr(new rmm::mr::cuda_memory_resource)))}
-{
-}
-
-template <>
-inline MRTest<thread_safe_fixed_multisize_pool_mr>::~MRTest()
-{
-  auto fixed = mr->get_upstream();
-  auto pool  = fixed->get_upstream();
-  auto cuda  = pool->get_upstream();
-  this->mr.reset();
-  delete fixed;
-  delete pool;
-  delete cuda;
-}
-
-template <>
-inline MRTest<thread_safe_hybrid_mr>::MRTest()
-{
-  rmm::mr::cuda_memory_resource* cuda = new rmm::mr::cuda_memory_resource{};
-  pool_mr* pool                       = new pool_mr(cuda);
-  this->mr.reset(new thread_safe_hybrid_mr(new hybrid_mr(new fixed_multisize_pool_mr(pool), pool)));
-}
-
-template <>
-inline MRTest<thread_safe_hybrid_mr>::~MRTest()
-{
-  auto hybrid = mr->get_upstream();
-  auto fixed  = hybrid->get_small_mr();
-  auto pool   = hybrid->get_large_mr();
-  auto cuda   = pool->get_upstream();
-  this->mr.reset();
-  delete hybrid;
-  delete fixed;
-  delete pool;
-  delete cuda;
-}
-
-// specialize get_max_size for thread-safe MRs
-template <>
-std::size_t get_max_size(thread_safe_fixed_size_mr* mr)
-{
-  return mr->get_upstream()->get_block_size();
-}
-
-template <>
-std::size_t get_max_size(thread_safe_fixed_multisize_mr* mr)
-{
-  return mr->get_upstream()->get_max_size();
-}
-
-template <>
-std::size_t get_max_size(thread_safe_fixed_multisize_pool_mr* mr)
-{
-  return mr->get_upstream()->get_max_size();
-}
-
-// specialize random allocations to not allocate too large
-template <>
-inline void test_random_allocations<thread_safe_fixed_size_mr>(thread_safe_fixed_size_mr* mr,
-                                                               std::size_t num_allocations,
-                                                               cudaStream_t stream)
-{
-  return test_random_allocations_base(mr, num_allocations, 1_MiB, stream);
-}
-
-template <>
-inline void test_random_allocations<thread_safe_fixed_multisize_mr>(
-  thread_safe_fixed_multisize_mr* mr, std::size_t num_allocations, cudaStream_t stream)
-{
-  return test_random_allocations_base(mr, num_allocations, 1_MiB, stream);
-}
-
-template <>
-inline void test_random_allocations<thread_safe_fixed_multisize_pool_mr>(
-  thread_safe_fixed_multisize_pool_mr* mr, std::size_t num_allocations, cudaStream_t stream)
-{
-  return test_random_allocations_base(mr, num_allocations, 1_MiB, stream);
-}
-
-template <>
-inline void test_mixed_random_allocation_free<thread_safe_fixed_size_mr>(
-  thread_safe_fixed_size_mr* mr, cudaStream_t stream)
-{
-  test_mixed_random_allocation_free_base(mr, 1_MiB, stream);
-}
-
-template <>
-inline void test_mixed_random_allocation_free<thread_safe_fixed_multisize_mr>(
-  thread_safe_fixed_multisize_mr* mr, cudaStream_t stream)
-{
-  test_mixed_random_allocation_free_base(mr, 4_MiB, stream);
-}
-
-template <>
-inline void test_mixed_random_allocation_free<thread_safe_fixed_multisize_pool_mr>(
-  thread_safe_fixed_multisize_pool_mr* mr, cudaStream_t stream)
-{
-  test_mixed_random_allocation_free_base(mr, 4_MiB, stream);
-}
-
-// Test on all memory resource classes
-using resources = ::testing::Types<rmm::mr::cuda_memory_resource,
-                                   rmm::mr::managed_memory_resource,
-                                   rmm::mr::cnmem_memory_resource,
-                                   rmm::mr::cnmem_managed_memory_resource,
-                                   pool_mr,
-                                   thread_safe_fixed_size_mr,
-                                   thread_safe_fixed_multisize_mr,
-                                   thread_safe_fixed_multisize_pool_mr,
-                                   thread_safe_hybrid_mr>;
-
-template <typename MemoryResourceType>
-using MRTest_mt = MRTest<MemoryResourceType>;
-
-TYPED_TEST_CASE(MRTest_mt, resources);
-
 TEST(DefaultTest, UseDefaultResource_mt) { spawn(test_get_default_resource); }
 
-TYPED_TEST(MRTest_mt, SetDefaultResource_mt)
+TEST_P(mr_test_mt, SetDefaultResource_mt)
 {
   // single thread changes default resource, then multiple threads use it
 
-  // Not necessarily false, since two cuda_memory_resources are always equal
-  // EXPECT_FALSE(this->mr->is_equal(*rmm::mr::get_default_resource()));
   rmm::mr::device_memory_resource* old{nullptr};
   EXPECT_NO_THROW(old = rmm::mr::set_default_resource(this->mr.get()));
   EXPECT_NE(nullptr, old);
@@ -217,39 +73,39 @@ TYPED_TEST(MRTest_mt, SetDefaultResource_mt)
   // setting default resource w/ nullptr should reset to initial
   EXPECT_NO_THROW(rmm::mr::set_default_resource(nullptr));
   EXPECT_TRUE(old->is_equal(*rmm::mr::get_default_resource()));
-  // Not necessarily false, since two cuda_memory_resources are always equal
-  // EXPECT_FALSE(this->mr->is_equal(*rmm::mr::get_default_resource()));
 }
 
-TYPED_TEST(MRTest_mt, Allocate) { spawn(test_various_allocations<TypeParam>, this->mr.get()); }
-
-TYPED_TEST(MRTest_mt, AllocateOnStream)
+TEST_P(mr_test_mt, AllocateDefaultStream)
 {
-  spawn(test_various_allocations_on_stream<TypeParam>, this->mr.get(), this->stream);
+  spawn(test_various_allocations, this->mr.get(), cudaStream_t{cudaStreamDefault});
 }
 
-TYPED_TEST(MRTest_mt, RandomAllocations)
+TEST_P(mr_test_mt, AllocateOnStream)
 {
-  spawn(test_random_allocations<TypeParam>, this->mr.get(), 100, nullptr);
+  spawn(test_various_allocations, this->mr.get(), this->stream);
 }
 
-TYPED_TEST(MRTest_mt, RandomAllocationsStream)
+TEST_P(mr_test_mt, RandomAllocationsDefaultStream)
 {
-  spawn(test_random_allocations<TypeParam>, this->mr.get(), 100, this->stream);
+  spawn(test_random_allocations, this->mr.get(), 100, 5_MiB, cudaStream_t{cudaStreamDefault});
 }
 
-TYPED_TEST(MRTest_mt, MixedRandomAllocationFree)
+TEST_P(mr_test_mt, RandomAllocationsStream)
 {
-  spawn(test_mixed_random_allocation_free<TypeParam>, this->mr.get(), nullptr);
+  spawn(test_random_allocations, this->mr.get(), 100, 5_MiB, this->stream);
 }
 
-TYPED_TEST(MRTest_mt, MixedRandomAllocationFreeStream)
+TEST_P(mr_test_mt, MixedRandomAllocationFreeDefaultStream)
 {
-  spawn(test_mixed_random_allocation_free<TypeParam>, this->mr.get(), this->stream);
+  spawn(test_mixed_random_allocation_free, this->mr.get(), 5_MiB, cudaStream_t{cudaStreamDefault});
 }
 
-template <typename MemoryResourceType>
-void allocate_loop(MemoryResourceType* mr,
+TEST_P(mr_test_mt, MixedRandomAllocationFreeStream)
+{
+  spawn(test_mixed_random_allocation_free, this->mr.get(), 5_MiB, this->stream);
+}
+
+void allocate_loop(rmm::mr::device_memory_resource* mr,
                    std::size_t num_allocations,
                    std::list<allocation>& allocations,
                    std::mutex& mtx,
@@ -271,88 +127,76 @@ void allocate_loop(MemoryResourceType* mr,
   }
 }
 
-template <typename MemoryResourceType>
-void deallocate_loop(MemoryResourceType* mr,
+void deallocate_loop(rmm::mr::device_memory_resource* mr,
                      std::size_t num_allocations,
                      std::list<allocation>& allocations,
                      std::mutex& mtx,
                      cudaStream_t stream)
 {
   for (std::size_t i = 0; i < num_allocations;) {
-    {
-      std::lock_guard<std::mutex> lock(mtx);
-      if (allocations.empty())
-        continue;
-      else {
-        i++;
-        allocation alloc = allocations.front();
-        allocations.pop_front();
-        EXPECT_NO_THROW(mr->deallocate(alloc.p, alloc.size, stream));
-      }
+    std::lock_guard<std::mutex> lock(mtx);
+    if (allocations.empty())
+      continue;
+    else {
+      i++;
+      allocation alloc = allocations.front();
+      allocations.pop_front();
+      EXPECT_NO_THROW(mr->deallocate(alloc.p, alloc.size, stream));
     }
   }
 }
 
-template <typename MemoryResourceType>
-void test_allocate_free_different_threads(MemoryResourceType* mr,
+void test_allocate_free_different_threads(rmm::mr::device_memory_resource* mr,
                                           cudaStream_t streamA,
                                           cudaStream_t streamB)
 {
-  std::default_random_engine generator;
   constexpr std::size_t num_allocations{100};
-  constexpr std::size_t max_size{1_MiB};
-
-  std::uniform_int_distribution<std::size_t> size_distribution(1, max_size);
 
   std::mutex mtx;
   std::list<allocation> allocations;
 
-  std::thread producer(allocate_loop<MemoryResourceType>,
-                       mr,
-                       num_allocations,
-                       std::ref(allocations),
-                       std::ref(mtx),
-                       streamA);
-  std::thread consumer(deallocate_loop<MemoryResourceType>,
-                       mr,
-                       num_allocations,
-                       std::ref(allocations),
-                       std::ref(mtx),
-                       streamB);
+  std::thread producer(
+    allocate_loop, mr, num_allocations, std::ref(allocations), std::ref(mtx), streamA);
+
+  std::thread consumer(
+    deallocate_loop, mr, num_allocations, std::ref(allocations), std::ref(mtx), streamB);
 
   producer.join();
   consumer.join();
 }
 
-TYPED_TEST(MRTest_mt, AllocFreeDifferentThreadsDefaultStream)
+TEST_P(mr_test_mt, AllocFreeDifferentThreadsDefaultStream)
 {
-  test_allocate_free_different_threads<TypeParam>(this->mr.get(), nullptr, nullptr);
+  test_allocate_free_different_threads(
+    this->mr.get(), cudaStream_t{cudaStreamDefault}, cudaStream_t{cudaStreamDefault});
 }
 
-TYPED_TEST(MRTest_mt, AllocFreeDifferentThreadsSameStream)
+TEST_P(mr_test_mt, AllocFreeDifferentThreadsSameStream)
 {
-  test_allocate_free_different_threads<TypeParam>(this->mr.get(), this->stream, this->stream);
+  test_allocate_free_different_threads(this->mr.get(), this->stream, this->stream);
 }
 
-// cnmem does not allow freeing on a different stream than allocating
-using resources_different_stream = ::testing::Types<rmm::mr::cuda_memory_resource,
-                                                    rmm::mr::managed_memory_resource,
-                                                    pool_mr,
-                                                    thread_safe_fixed_size_mr,
-                                                    thread_safe_fixed_multisize_mr,
-                                                    thread_safe_fixed_multisize_pool_mr,
-                                                    thread_safe_hybrid_mr>;
+struct mr_test_different_stream_mt : public mr_test_mt {
+};
 
-template <typename MemoryResourceType>
-using MRTestDifferentStream_mt = MRTest<MemoryResourceType>;
-
-TYPED_TEST_CASE(MRTestDifferentStream_mt, resources_different_stream);
-
-TYPED_TEST(MRTestDifferentStream_mt, AllocFreeDifferentThreadsDifferentStream)
+TEST_P(mr_test_different_stream_mt, AllocFreeDifferentThreadsDifferentStream)
 {
   cudaStream_t streamB{};
   EXPECT_EQ(cudaSuccess, cudaStreamCreate(&streamB));
-  test_allocate_free_different_threads<TypeParam>(this->mr.get(), this->stream, streamB);
+  test_allocate_free_different_threads(this->mr.get(), this->stream, streamB);
   EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(streamB));
   EXPECT_EQ(cudaSuccess, cudaStreamDestroy(streamB));
 }
+
+// CNMeM doesn't allow allocating/freeing on different streams
+INSTANTIATE_TEST_CASE_P(MultiThreadResourceTestsDifferentStreams,
+                        mr_test_different_stream_mt,
+                        ::testing::Values(mr_factory{"CUDA", &make_cuda},
+                                          mr_factory{"Managed", &make_managed},
+                                          mr_factory{"Pool", &make_pool},
+                                          mr_factory{"SyncHybrid", &make_sync_hybrid}),
+                        [](auto const& info) { return info.param.name; });
+
+}  // namespace
+}  // namespace test
+}  // namespace rmm
