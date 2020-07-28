@@ -235,7 +235,7 @@ void declare_benchmark(std::string name)
 {
   if (name == "cuda")
     BENCHMARK_CAPTURE(BM_RandomAllocations, cuda_mr, &make_cuda)->Apply(benchmark_range);
-  if (name == "hybrid")
+  else if (name == "hybrid")
     BENCHMARK_CAPTURE(BM_RandomAllocations, hybrid_mr, &make_hybrid)->Apply(benchmark_range);
   else if (name == "pool")
     BENCHMARK_CAPTURE(BM_RandomAllocations, pool_mr, &make_pool)->Apply(benchmark_range);
