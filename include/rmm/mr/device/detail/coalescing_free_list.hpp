@@ -175,7 +175,7 @@ struct coalescing_free_list : free_list<block> {
    *
    * @param b The block to insert.
    */
-  virtual void insert(block_type const& b) override
+  void insert(block_type const& b)
   {
     if (is_empty()) {
       free_list::insert(cend(), b);
@@ -211,7 +211,7 @@ struct coalescing_free_list : free_list<block> {
    * @param first The beginning of the range of blocks to insert
    * @param last The end of the range of blocks to insert.
    */
-  virtual void insert(free_list&& other) override
+  void insert(free_list&& other)
   {
     std::for_each(std::make_move_iterator(other.begin()),
                   std::make_move_iterator(other.end()),
@@ -226,7 +226,7 @@ struct coalescing_free_list : free_list<block> {
    * @param size The size in bytes of the desired block.
    * @return block A block large enough to store `size` bytes.
    */
-  virtual block_type get_block(size_t size) override
+  block_type get_block(size_t size)
   {
     // find best fit block
     auto const iter =
@@ -247,7 +247,7 @@ struct coalescing_free_list : free_list<block> {
   /**
    * @brief Print all blocks in the free_list.
    */
-  virtual void print() const override
+  void print() const
   {
     std::cout << size() << '\n';
     std::for_each(cbegin(), cend(), [](auto const iter) { iter.print(); });

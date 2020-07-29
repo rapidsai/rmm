@@ -42,12 +42,25 @@ struct fixed_size_free_list : free_list<void*> {
   ~fixed_size_free_list() = default;
 
   /**
+   * @brief Construct a new free_list from range defined by input iterators
+   *
+   * @tparam InputIt Input iterator
+   * @param first The start of the range to insert into the free_list
+   * @param last The end of the range to insert into the free_list
+   */
+  template <class InputIt>
+  fixed_size_free_list(InputIt first, InputIt last)
+  {
+    std::for_each(first, last, [this](block_type const& b) { insert(b); });
+  }
+
+  /**
    * @brief Inserts a block into the `free_list` in the correct order, coalescing it with the
    *        preceding and following blocks if either is contiguous.
    *
    * @param b The block to insert.
    */
-  virtual void insert(block_type const& b) override { push_back(b); }
+  void insert(block_type const& b) { push_back(b); }
 
   /**
    * @brief Splices blocks from range `[first, last)` onto the free_list.
@@ -55,7 +68,7 @@ struct fixed_size_free_list : free_list<void*> {
    * @param first The beginning of the range of blocks to insert
    * @param last The end of the range of blocks to insert.
    */
-  virtual void insert(free_list&& other) override { splice(cend(), std::move(other)); }
+  void insert(free_list&& other) { splice(cend(), std::move(other)); }
 
   /**
    * @brief Returns the first block in the free list.
@@ -63,7 +76,7 @@ struct fixed_size_free_list : free_list<void*> {
    * @param size The size in bytes of the desired block (unused).
    * @return block A block large enough to store `size` bytes.
    */
-  virtual block_type get_block(size_t size) override
+  block_type get_block(size_t size)
   {
     if (is_empty())
       return block_type{};
@@ -77,7 +90,7 @@ struct fixed_size_free_list : free_list<void*> {
   /**
    * @brief Print all blocks in the free_list.
    */
-  virtual void print() const override
+  void print() const
   {
     std::cout << size() << '\n';
     for (const_iterator iter = begin(); iter != end(); ++iter) {

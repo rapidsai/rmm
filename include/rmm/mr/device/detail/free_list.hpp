@@ -40,11 +40,15 @@ inline bool is_valid(BlockType const& b)
 }
 
 /**
- * @brief Abstract base class defining an interface for a list of free memory blocks.
+ * @brief Base class defining an interface for a list of free memory blocks.
  *
- * Derived classes must implement:
- *  - virtual void insert(block_type const& b)
- *  -
+ * Uses of derived classes assume the following additional methods are implemented:
+
+ *  - void insert(block_type const& b)
+ *  - void insert(free_list&& other)
+ *  - block_type get_block(size_t size)
+ *  - void print()
+ *
  * @tparam list_type the type of the internal list data structure.
  */
 template <typename BlockType, typename ListType = std::list<BlockType>>
@@ -82,21 +86,6 @@ struct free_list {
   bool is_empty() const noexcept { return blocks.empty(); }
 
   /**
-   * @brief Inserts a block into the `free_list`.
-   *
-   * @param b The block to insert.
-   */
-  virtual void insert(block_type const& b) = 0;
-
-  /**
-   * @brief Moves blocks from other into the free_list.
-   *
-   * @param first The beginning of the range of blocks to insert
-   * @param last The end of the range of blocks to insert.
-   */
-  virtual void insert(free_list&& other) = 0;
-
-  /**
    * @brief Removes the block indicated by `iter` from the free list.
    *
    * @param iter An iterator referring to the block to erase.
@@ -109,18 +98,33 @@ struct free_list {
    */
   void clear() noexcept { blocks.clear(); }
 
-  /**
+  /*
+   * @brief Inserts a block into the `free_list`.
+   *
+   * @param b The block to insert.
+   */
+  // void insert(block_type const& b);
+
+  /*
+   * @brief Moves blocks from other into the free_list.
+   *
+   * @param first The beginning of the range of blocks to insert
+   * @param last The end of the range of blocks to insert.
+   */
+  // void insert(free_list&& other);
+
+  /*
    * @brief Returns a block from `free_list` large enough to fit `size` bytes.
    *
    * @param size The size in bytes of the desired block.
    * @return block A block large enough to store `size` bytes.
    */
-  virtual block_type get_block(size_t size) = 0;
+  // block_type get_block(size_t size);
 
-  /**
+  /*
    * @brief Print all blocks in the free_list.
    */
-  virtual void print() const = 0;
+  // void print();
 
  protected:
   /**
