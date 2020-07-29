@@ -215,7 +215,7 @@ struct coalescing_free_list : free_list<block> {
   {
     std::for_each(std::make_move_iterator(other.begin()),
                   std::make_move_iterator(other.end()),
-                  [this](block_type&& b) { this->insert(b); });
+                  [this](block_type&& b) { this->insert(std::move(b)); });
   }
 
   /**

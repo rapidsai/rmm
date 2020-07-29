@@ -137,7 +137,10 @@ struct free_list {
    * @param pos iterator before which the block will be inserted. pos may be the end() iterator.
    * @param b The block to insert.
    */
-  void splice(const_iterator pos, free_list&& other) { return blocks.splice(pos, other.blocks); }
+  void splice(const_iterator pos, free_list&& other)
+  {
+    return blocks.splice(pos, std::move(other.blocks));
+  }
 
   /**
    * @brief Appends the given block to the end of the free list.
@@ -151,7 +154,7 @@ struct free_list {
    *
    * @param b The block to append.
    */
-  void push_back(block_type&& b) { blocks.push_back(b); }
+  void push_back(block_type&& b) { blocks.push_back(std::move(b)); }
 
   /**
    * @brief Removes the first element of the free list. If there are no elements in the free list,
