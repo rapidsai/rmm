@@ -138,10 +138,8 @@ class fixed_size_memory_resource
    */
   virtual block_type expand_pool(size_t size, free_list& blocks, cudaStream_t stream) override
   {
-    auto new_blocks = blocks_from_upstream(stream);
-    auto b          = new_blocks.get_block(size);
-    blocks.insert(std::move(new_blocks));
-    return b;
+    blocks.insert(std::move(blocks_from_upstream(stream)));
+    return blocks.get_block(size);
   }
 
   /**
@@ -160,9 +158,7 @@ class fixed_size_memory_resource
 
     auto g     = [p, this](int i) { return static_cast<char*>(p) + i * block_size_; };
     auto first = thrust::make_transform_iterator(thrust::make_counting_iterator(std::size_t{0}), g);
-    free_list blocks;
-    std::for_each(first, first + num_blocks, [&blocks](void* p) { blocks.insert(p); });
-    return blocks;
+    return free_list(first, first + num_blocks);
   }
 
   /**
