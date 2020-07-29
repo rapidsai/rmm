@@ -110,7 +110,6 @@ class stream_ordered_suballocator_memory_resource : public device_memory_resourc
    *
    * @param p The pointer to the memory to free.
    * @param size The size of the memory to free. Must be equal to the original allocation size.
-   * @param stream_event The stream-event pair for the stream on which the memory was last used.
    * @return The (now freed) block associated with `p`. The caller is expected to return the block
    * to the pool.
    */
