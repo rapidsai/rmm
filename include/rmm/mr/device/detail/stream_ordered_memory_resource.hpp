@@ -194,39 +194,19 @@ class stream_ordered_suballocator_memory_resource : public device_memory_resourc
  private:
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
   /**
-   * @brief RAII wrapper for a CUDA event for a per-thread default stream
-   *
-   * These objects take care of creating and freeing an event associated with a per-thread default
-   * stream. They are needed because the event needs to exist in thread_local memory, so it must
-   * be cleaned up when the thread exits. They maintain a pointer to the parent
-   * (pool_memory_resource) that created them, because when a thread exits, if the parent still
-   * exists, they must tell the parent to merge the free list associated with the event. Also, the
-   * parent maintains a list of references to the created cuda_event objects so that if any remain
-   * when the parent is destroyed, it can set their parent pointers to nullptr to we don't have a
-   * use-after-free race. Note: all of this is a workaround for the fact that there is no way
-   * currently to get a unique handle to a CUDA per-thread default stream. :(
+   * @brief RAII wrapper for a CUDA event.
    */
-  template <typename ParentType>
-  struct default_stream_event {
-    default_stream_event(ParentType* parent, cudaEvent_t event) : parent(parent), event(event)
+  struct event_wrapper {
+    event_wrapper()
     {
-      parent->ptds_events_.insert(this);
+      RMM_ASSERT_CUDA_SUCCESS(cudaEventCreateWithFlags(&event, cudaEventDisableTiming));
     }
-    ~default_stream_event()
-    {
-      if (parent) {
-        lock_guard lock(parent->get_mutex());
-        parent->ptds_events_.erase(this);
-        parent->destroy_event(stream_event_pair{cudaStreamDefault, event});
-      }
-    }
-
-    cudaEvent_t event;
-    ParentType* parent;
+    ~event_wrapper() { RMM_ASSERT_CUDA_SUCCESS(cudaEventDestroy(event)); }
+    cudaEvent_t event{};
   };
 
-  using default_stream_event_type =
-    default_stream_event<stream_ordered_suballocator_memory_resource<FreeListType>>;
+// using default_stream_event_type =
+//  default_stream_event<stream_ordered_suballocator_memory_resource<FreeListType>>;
 #endif
 
   /**
@@ -243,30 +223,18 @@ class stream_ordered_suballocator_memory_resource : public device_memory_resourc
   {
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
     if (cudaStreamDefault == stream || cudaStreamPerThread == stream) {
-      // Because multiple instances of stream_ordered_memory_resource can be called from the same
-      // thread it is not enough to store a single thread-local default_stream_event. We have to
-      // store one per MR instance, which we do using a map of instance to default_stream_event.
-      // This ensures that the events and their free-lists can be cleaned up at thread exit.
-      thread_local std::unordered_map<void*, default_stream_event_type> default_events_tls;
-      auto thread_event = default_events_tls.find(this);
-      return (thread_event != default_events_tls.end())
-               ? stream_event_pair{stream, thread_event->second.event}
-               : [&]() {
-                   cudaEvent_t event;
-                   RMM_ASSERT_CUDA_SUCCESS(
-                     cudaEventCreateWithFlags(&event, cudaEventDisableTiming));
-                   default_events_tls.emplace(std::piecewise_construct,
-                                              std::forward_as_tuple(this),
-                                              std::forward_as_tuple(this, event));
-                   return stream_event_pair{stream, event};
-                 }();
+      // Create a thread-local shared event wrapper. Shared pointers in the thread and in each MR
+      // instance ensures it is destroyed cleaned up only after all are finished with it.
+      thread_local auto event_tls = std::make_shared<event_wrapper>();
+      default_stream_events.insert(event_tls);
+      return stream_event_pair{stream, event_tls.get()->event};
     }
 #else
     // We use cudaStreamLegacy as the event map key for the default stream for consistency between
     // PTDS and non-PTDS mode. In PTDS mode, the cudaStreamLegacy map key will only exist if the
     // user explicitly passes it, so it is used as the default location for the free list
-    // at construction, and for merging free lists when a thread exits (see destroy_event()).
-    // For consistency, the same key is used for null stream free lists in non-PTDS mode.
+    // at construction. For consistency, the same key is used for null stream free lists in non-PTDS
+    // mode.
     if (cudaStreamDefault == stream) { stream = cudaStreamLegacy; }
 #endif
 
@@ -280,27 +248,6 @@ class stream_ordered_suballocator_memory_resource : public device_memory_resourc
     } else {
       return iter->second;
     }
-  }
-
-  /**
-   * @brief Destroy the specified CUDA event and move all free blocks for the associated stream
-   * to the default stream free list.
-   *
-   * @param event The event to destroy.
-   */
-  void destroy_event(stream_event_pair stream_event)
-  {
-    // If we are destroying an event with associated free list, we need to synchronize that event
-    // and then merge its free list into the (legacy) default stream's list
-    auto free_list_iter = stream_free_blocks_.find(stream_event);
-    if (free_list_iter != stream_free_blocks_.end()) {
-      auto blocks = free_list_iter->second;
-      stream_free_blocks_[get_event(cudaStreamLegacy)].insert(std::move(blocks));
-      stream_free_blocks_.erase(free_list_iter);
-
-      RMM_ASSERT_CUDA_SUCCESS(cudaEventSynchronize(stream_event.event));
-    }
-    RMM_ASSERT_CUDA_SUCCESS(cudaEventDestroy(stream_event.event));
   }
 
   /**
@@ -390,15 +337,13 @@ class stream_ordered_suballocator_memory_resource : public device_memory_resourc
   {
     lock_guard lock(mtx_);
 
-    for (auto s_e : stream_events_)
-      destroy_event(s_e.second);
+    for (auto s_e : stream_events_) {
+      RMM_ASSERT_CUDA_SUCCESS(cudaEventSynchronize(s_e.second.event));
+      RMM_ASSERT_CUDA_SUCCESS(cudaEventDestroy(s_e.second.event));
+    }
+
     stream_events_.clear();
     stream_free_blocks_.clear();
-
-#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-    for (auto& event : ptds_events_)
-      reinterpret_cast<default_stream_event_type*>(event)->parent = nullptr;
-#endif
   }
 
   // map of stream_event_pair --> free_list
@@ -410,8 +355,9 @@ class stream_ordered_suballocator_memory_resource : public device_memory_resourc
   std::unordered_map<cudaStream_t, stream_event_pair> stream_events_;
 
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-  // pointers to per-thread events to avoid use-after-free when threads exit after MR is deleted
-  std::set<void*> ptds_events_;
+  // shared pointers to events keeps the events alive as long as either the thread that created them
+  // or the MR that is using them exists.
+  std::set<std::shared_ptr<event_wrapper>> default_stream_events;
 #endif
 
   std::mutex mtx_;  // mutex for thread-safe access
