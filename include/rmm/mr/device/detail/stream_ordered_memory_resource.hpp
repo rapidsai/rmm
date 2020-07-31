@@ -31,26 +31,28 @@ namespace rmm {
 namespace mr {
 namespace detail {
 
+template <typename T>
+struct crtp {
+  T& underlying() { return static_cast<T&>(*this); }
+  T const& underlying() const { return static_cast<T const&>(*this); }
+};
+
 /**
  * @brief
  */
-template <typename FreeListType>
-class stream_ordered_suballocator_memory_resource : public device_memory_resource {
+template <typename PoolResource, typename FreeListType>
+class stream_ordered_memory_resource : public crtp<PoolResource>, public device_memory_resource {
  public:
   // TODO use rmm-level def of this.
   static constexpr size_t allocation_alignment = 256;
 
-  ~stream_ordered_suballocator_memory_resource() { release(); }
+  ~stream_ordered_memory_resource() { release(); }
 
-  stream_ordered_suballocator_memory_resource() = default;
-  stream_ordered_suballocator_memory_resource(stream_ordered_suballocator_memory_resource const&) =
-    delete;
-  stream_ordered_suballocator_memory_resource(stream_ordered_suballocator_memory_resource&&) =
-    delete;
-  stream_ordered_suballocator_memory_resource& operator =(
-    stream_ordered_suballocator_memory_resource const&) = delete;
-  stream_ordered_suballocator_memory_resource& operator =(
-    stream_ordered_suballocator_memory_resource&&) = delete;
+  stream_ordered_memory_resource()                                      = default;
+  stream_ordered_memory_resource(stream_ordered_memory_resource const&) = delete;
+  stream_ordered_memory_resource(stream_ordered_memory_resource&&)      = delete;
+  stream_ordered_memory_resource& operator=(stream_ordered_memory_resource const&) = delete;
+  stream_ordered_memory_resource& operator=(stream_ordered_memory_resource&&) = delete;
 
  protected:
   using free_list  = FreeListType;
@@ -89,7 +91,7 @@ class stream_ordered_suballocator_memory_resource : public device_memory_resourc
    * @param stream The stream on which the memory is to be used.
    * @return block_type a block of at least `size` bytes
    */
-  virtual block_type expand_pool(size_t size, free_list& blocks, cudaStream_t stream) = 0;
+  // virtual block_type expand_pool(size_t size, free_list& blocks, cudaStream_t stream) = 0;
 
   /**
    * @brief Split block `b` if necessary to return a pointer to memory of `size` bytes.
@@ -102,9 +104,9 @@ class stream_ordered_suballocator_memory_resource : public device_memory_resourc
    * @return A pair comprising the allocated pointer and any unallocated remainder of the input
    * block.
    */
-  virtual std::pair<void*, block_type> allocate_from_block(block_type const& b,
+  /*virtual std::pair<void*, block_type> allocate_from_block(block_type const& b,
                                                            size_t size,
-                                                           stream_event_pair stream_event) = 0;
+                                                           stream_event_pair stream_event) = 0;*/
 
   /**
    * @brief Finds, frees and returns the block associated with pointer `p`.
@@ -114,7 +116,7 @@ class stream_ordered_suballocator_memory_resource : public device_memory_resourc
    * @return The (now freed) block associated with `p`. The caller is expected to return the block
    * to the pool.
    */
-  virtual block_type free_block(void* p, size_t size) noexcept = 0;
+  // virtual block_type free_block(void* p, size_t size) noexcept = 0;
 
   /**
    * @brief Returns the block `b` (last used on stream `stream_event`) to the pool.
@@ -160,8 +162,8 @@ class stream_ordered_suballocator_memory_resource : public device_memory_resourc
     bytes             = rmm::detail::align_up(bytes, allocation_alignment);
     RMM_EXPECTS(
       bytes <= get_maximum_allocation_size(), rmm::bad_alloc, "Maximum allocation size exceeded");
-    auto const b       = get_block(bytes, stream_event);
-    auto ptr_remainder = allocate_from_block(b, bytes, stream_event);
+    auto const b       = this->underlying().get_block(bytes, stream_event);
+    auto ptr_remainder = this->underlying().allocate_from_block(b, bytes);
     if (is_valid(ptr_remainder.second))
       stream_free_blocks_[stream_event].insert(ptr_remainder.second);
     return ptr_remainder.first;
@@ -179,7 +181,7 @@ class stream_ordered_suballocator_memory_resource : public device_memory_resourc
     lock_guard lock(mtx_);
     auto stream_event = get_event(stream);
     bytes             = rmm::detail::align_up(bytes, allocation_alignment);
-    auto const b      = free_block(p, bytes);
+    auto const b      = this->underlying().free_block(p, bytes);
 
     // TODO: cudaEventRecord has significant overhead on deallocations, however it could mean less
     // synchronization. So we need to test in real non-PTDS applications that have multiple streams
@@ -274,7 +276,7 @@ class stream_ordered_suballocator_memory_resource : public device_memory_resourc
     free_list& blocks =
       (iter != stream_free_blocks_.end()) ? iter->second : stream_free_blocks_[stream_event];
 
-    return expand_pool(size, blocks, stream_event.stream);
+    return this->underlying().expand_pool(size, blocks, stream_event.stream);
   }
 
   /**

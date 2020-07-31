@@ -43,8 +43,12 @@ namespace mr {
  */
 template <typename Upstream>
 class fixed_size_memory_resource
-  : public detail::stream_ordered_suballocator_memory_resource<detail::fixed_size_free_list> {
+  : public detail::stream_ordered_memory_resource<fixed_size_memory_resource<Upstream>,
+                                                  detail::fixed_size_free_list> {
  public:
+  friend class detail::stream_ordered_memory_resource<fixed_size_memory_resource<Upstream>,
+                                                      detail::fixed_size_free_list>;
+
   // A block is the fixed size this resource alloates
   static constexpr std::size_t default_block_size = 1 << 20;  // 1 MiB
   // This is the number of blocks that the pool starts out with, and also the number of
@@ -73,7 +77,7 @@ class fixed_size_memory_resource
       upstream_chunk_size_{block_size * blocks_to_preallocate}
   {
     // allocate initial blocks and insert into free list
-    insert_blocks(std::move(blocks_from_upstream(cudaStreamLegacy)), cudaStreamLegacy);
+    this->insert_blocks(std::move(blocks_from_upstream(cudaStreamLegacy)), cudaStreamLegacy);
   }
 
   /**
@@ -117,14 +121,18 @@ class fixed_size_memory_resource
    */
   std::size_t get_block_size() const noexcept { return block_size_; }
 
- private:
+ protected:
+  using free_list  = detail::fixed_size_free_list;
+  using block_type = typename free_list::block_type;
+  using lock_guard = std::lock_guard<std::mutex>;
+
   /**
    * @brief Get the (fixed) size of allocations supported by this memory resource
    *
    * @return size_t The (fixed) maximum size of a single allocation supported by this memory
    * resource
    */
-  virtual size_t get_maximum_allocation_size() const override { return get_block_size(); }
+  size_t get_maximum_allocation_size() const override { return get_block_size(); }
 
   /**
    * @brief Allocate a block from upstream to supply the suballocation pool.
@@ -136,7 +144,7 @@ class fixed_size_memory_resource
    * @param stream The stream on which the memory is to be used.
    * @return block_type The allocated block
    */
-  virtual block_type expand_pool(size_t size, free_list& blocks, cudaStream_t stream) override
+  block_type expand_pool(size_t size, free_list& blocks, cudaStream_t stream)
   {
     blocks.insert(std::move(blocks_from_upstream(stream)));
     return blocks.get_block(size);
@@ -172,9 +180,7 @@ class fixed_size_memory_resource
    * @return A pair comprising the allocated pointer and any unallocated remainder of the input
    * block.
    */
-  virtual std::pair<void*, block_type> allocate_from_block(block_type const& b,
-                                                           size_t size,
-                                                           stream_event_pair stream_event) override
+  std::pair<void*, block_type> allocate_from_block(block_type const& b, size_t size)
   {
     return std::make_pair(b, nullptr);
   }
@@ -188,7 +194,7 @@ class fixed_size_memory_resource
    * @return The (now freed) block associated with `p`. The caller is expected to return the block
    * to the pool.
    */
-  virtual block_type free_block(void* p, size_t size) noexcept override
+  block_type free_block(void* p, size_t size) noexcept
   {
     // Deallocating a fixed-size block just inserts it in the free list, which is
     // handled by the parent class
@@ -215,7 +221,7 @@ class fixed_size_memory_resource
    */
   void release()
   {
-    lock_guard lock(get_mutex());
+    lock_guard lock(this->get_mutex());
 
     for (auto p : upstream_blocks_)
       upstream_mr_->deallocate(p, upstream_chunk_size_);

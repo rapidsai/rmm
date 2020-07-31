@@ -49,8 +49,12 @@ namespace mr {
  */
 template <typename Upstream>
 class pool_memory_resource final
-  : public detail::stream_ordered_suballocator_memory_resource<detail::coalescing_free_list> {
+  : public detail::stream_ordered_memory_resource<pool_memory_resource<Upstream>,
+                                                  detail::coalescing_free_list> {
  public:
+  friend class detail::stream_ordered_memory_resource<pool_memory_resource<Upstream>,
+                                                      detail::coalescing_free_list>;
+
   static constexpr size_t default_initial_size = ~0;
   static constexpr size_t default_maximum_size = ~0;
   // TODO use rmm-level def of this.
@@ -114,7 +118,11 @@ class pool_memory_resource final
    */
   Upstream* get_upstream() const noexcept { return upstream_mr_; }
 
- private:
+ protected:
+  using free_list  = detail::coalescing_free_list;
+  using block_type = typename free_list::block_type;
+  using lock_guard = std::lock_guard<std::mutex>;
+
   void initialize_pool(cudaStream_t stream)
   {
     cudaDeviceProp props;
@@ -130,7 +138,7 @@ class pool_memory_resource final
 
     if (maximum_pool_size_ == default_maximum_size) { maximum_pool_size_ = props.totalGlobalMem; }
 
-    insert_block(block_from_upstream(initial_pool_size_, stream), stream);
+    this->insert_block(block_from_upstream(initial_pool_size_, stream), stream);
   }
 
   /**
@@ -142,7 +150,7 @@ class pool_memory_resource final
    * @param stream The stream on which the memory is to be used.
    * @return block_type a block of at least `size` bytes
    */
-  virtual block_type expand_pool(size_t size, free_list& blocks, cudaStream_t stream) override
+  block_type expand_pool(size_t size, free_list& blocks, cudaStream_t stream)
   {
     return block_from_upstream(size, stream);
   }
@@ -179,9 +187,7 @@ class pool_memory_resource final
    * @return A pair comprising the allocated pointer and any unallocated remainder of the input
    * block.
    */
-  virtual std::pair<void*, block_type> allocate_from_block(block_type const& b,
-                                                           size_t size,
-                                                           stream_event_pair stream_event) override
+  std::pair<void*, block_type> allocate_from_block(block_type const& b, size_t size)
   {
     block_type const alloc{b.pointer(), size, b.is_head()};
     allocated_blocks_.insert(alloc);
@@ -200,7 +206,7 @@ class pool_memory_resource final
    * @return The (now freed) block associated with `p`. The caller is expected to return the block
    * to the pool.
    */
-  virtual block_type free_block(void* p, size_t size) noexcept override
+  block_type free_block(void* p, size_t size) noexcept
   {
     if (p == nullptr) return block_type{};
 
@@ -252,7 +258,7 @@ class pool_memory_resource final
    */
   void release()
   {
-    lock_guard lock(get_mutex());
+    lock_guard lock(this->get_mutex());
 
     for (auto b : upstream_blocks_)
       upstream_mr_->deallocate(b.pointer(), b.size());
