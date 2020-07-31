@@ -31,6 +31,17 @@ namespace rmm {
 namespace mr {
 namespace detail {
 
+/**
+ * @brief A CRTP helper function
+ *
+ * https://www.fluentcpp.com/2017/05/19/crtp-helper/
+ *
+ * Does two things:
+ * 1. Makes "crtp" explicit in the inheritance structure of a CRTP base class.
+ * 2. Avoids having to `static_cast` in a lot of places
+ *
+ * @tparam T The derived class in a CRTP hierarchy
+ */
 template <typename T>
 struct crtp {
   T& underlying() { return static_cast<T&>(*this); }
@@ -38,7 +49,25 @@ struct crtp {
 };
 
 /**
- * @brief
+ * @brief Base class for a stream-ordered memory resource
+ *
+ * This base class uses CRTP (https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern)
+ * to provide static polymorphism to enable defining suballocator resources that maintain separate
+ * pools per stream. All of the stream-ordering logic is contained in this class, but the logic
+ * to determine how memory pools are managed and the type of allocation is implented in a derived
+ * class and in a free list class.
+ *
+ * For example, a coalescing pool memory resource uses a coalescing_free_list and maintains data
+ * structures for allocated blocks and has functions to allocate and free blocks and to expand the
+ * pool.
+ *
+ * Classes derived from stream_ordered_memory_resource must implement the following four methods,
+ * documented separately:
+ *
+ * 1. size_t get_maximum_allocation_size() const
+ * 2. block_type expand_pool(size_t size, free_list& blocks, cudaStream_t stream)
+ * 3. std::pair<void*, block_type> allocate_from_block(block_type const& b, size_t size)
+ * 4. block_type free_block(void* p, size_t size) noexcept
  */
 template <typename PoolResource, typename FreeListType>
 class stream_ordered_memory_resource : public crtp<PoolResource>, public device_memory_resource {
@@ -59,12 +88,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
   using block_type = typename free_list::block_type;
   using lock_guard = std::lock_guard<std::mutex>;
 
-  struct stream_event_pair {
-    cudaStream_t stream;
-    cudaEvent_t event;
-
-    bool operator<(stream_event_pair const& rhs) const { return event < rhs.event; }
-  };
+  // Derived classes must implement these four methods
 
   /**
    * @brief Get the maximum size of a single allocation supported by this suballocator memory
@@ -75,7 +99,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    *
    * @return size_t The maximum size of a single allocation supported by this memory resource
    */
-  virtual size_t get_maximum_allocation_size() const { return std::numeric_limits<size_t>::max(); }
+  // size_t get_maximum_allocation_size() const { return std::numeric_limits<size_t>::max(); }
 
   /**
    * @brief Allocate space (typically from upstream) to supply the suballocation pool and return
@@ -91,7 +115,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    * @param stream The stream on which the memory is to be used.
    * @return block_type a block of at least `size` bytes
    */
-  // virtual block_type expand_pool(size_t size, free_list& blocks, cudaStream_t stream) = 0;
+  // block_type expand_pool(size_t size, free_list& blocks, cudaStream_t stream)
 
   /**
    * @brief Split block `b` if necessary to return a pointer to memory of `size` bytes.
@@ -104,9 +128,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    * @return A pair comprising the allocated pointer and any unallocated remainder of the input
    * block.
    */
-  /*virtual std::pair<void*, block_type> allocate_from_block(block_type const& b,
-                                                           size_t size,
-                                                           stream_event_pair stream_event) = 0;*/
+  // std::pair<void*, block_type> allocate_from_block(block_type const& b, size_t size)
 
   /**
    * @brief Finds, frees and returns the block associated with pointer `p`.
@@ -116,7 +138,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    * @return The (now freed) block associated with `p`. The caller is expected to return the block
    * to the pool.
    */
-  // virtual block_type free_block(void* p, size_t size) noexcept = 0;
+  // block_type free_block(void* p, size_t size) noexcept
 
   /**
    * @brief Returns the block `b` (last used on stream `stream_event`) to the pool.
@@ -141,6 +163,13 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    */
   std::mutex& get_mutex() { return mtx_; }
 
+  struct stream_event_pair {
+    cudaStream_t stream;
+    cudaEvent_t event;
+
+    bool operator<(stream_event_pair const& rhs) const { return event < rhs.event; }
+  };
+
   /**
    * @brief Allocates memory of size at least `bytes`.
    *
@@ -160,8 +189,9 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
 
     auto stream_event = get_event(stream);
     bytes             = rmm::detail::align_up(bytes, allocation_alignment);
-    RMM_EXPECTS(
-      bytes <= get_maximum_allocation_size(), rmm::bad_alloc, "Maximum allocation size exceeded");
+    RMM_EXPECTS(bytes <= this->underlying().get_maximum_allocation_size(),
+                rmm::bad_alloc,
+                "Maximum allocation size exceeded");
     auto const b       = this->underlying().get_block(bytes, stream_event);
     auto ptr_remainder = this->underlying().allocate_from_block(b, bytes);
     if (is_valid(ptr_remainder.second))

@@ -132,7 +132,7 @@ class fixed_size_memory_resource
    * @return size_t The (fixed) maximum size of a single allocation supported by this memory
    * resource
    */
-  size_t get_maximum_allocation_size() const override { return get_block_size(); }
+  size_t get_maximum_allocation_size() const { return get_block_size(); }
 
   /**
    * @brief Allocate a block from upstream to supply the suballocation pool.

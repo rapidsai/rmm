@@ -142,6 +142,16 @@ class pool_memory_resource final
   }
 
   /**
+   * @brief Get the maximum size of allocations supported by this memory resource
+   *
+   * Note this does not depend on the memory size of the device. It simply returns the maximum value
+   * of `size_t`
+   *
+   * @return size_t The maximum size of a single allocation supported by this memory resource
+   */
+  size_t get_maximum_allocation_size() const { return std::numeric_limits<size_t>::max(); }
+
+  /**
    * @brief Allocate space from upstream to supply the suballocation pool and return
    * a sufficiently sized block.
    *
