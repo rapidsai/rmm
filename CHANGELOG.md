@@ -8,8 +8,9 @@
 - PR #425 Add CUDA per-thread default stream support and thread safety to `pool_memory_resource`
 - PR #436 Always build and test with per-thread default stream enabled in the GPU CI build
 - PR #444 Add `owning_wrapper` to simplify lifetime management of resources and their upstreams
-- PR #449 Stream-ordered suballocator abstract base class and Per-thread default stream support 
+- PR #449 Stream-ordered suballocator base class and per-thread default stream support 
           and thread safety for `fixed_size_memory_resource`
+- PR #450 Add support for new build process (Project Flash)
 
 ## Improvements
 

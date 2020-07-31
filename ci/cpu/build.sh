@@ -47,19 +47,26 @@ conda config --set ssl_verify False
 ################################################################################
 # BUILD - Conda package builds (conda deps: librmm <- rmm)
 ################################################################################
+if [[ "$BUILD_LIBRMM" == "1" ]]; then
+  logger "Build conda pkg for librmm..."
+  source ci/cpu/librmm/build_librmm.sh
+fi
 
-logger "Build conda pkg for librmm..."
-source ci/cpu/librmm/build_librmm.sh
-
-logger "Build conda pkg for rmm..."
-source ci/cpu/rmm/build_rmm.sh
+if [[ "$BUILD_RMM" == "1" ]]; then
+  logger "Build conda pkg for rmm..."
+  source ci/cpu/rmm/build_rmm.sh
+fi
 
 ################################################################################
 # UPLOAD - Conda packages
 ################################################################################
 
-logger "Upload conda pkg for librmm..."
-source ci/cpu/librmm/upload-anaconda.sh
+if [[ "$BUILD_LIBRMM" == "1" ]]; then
+  logger "Upload conda pkg for librmm..."
+  source ci/cpu/librmm/upload-anaconda.sh
+fi
 
-logger "Upload conda pkg for rmm..."
-source ci/cpu/rmm/upload-anaconda.sh
+if [[ "$BUILD_RMM" == "1" ]]; then
+  logger "Upload conda pkg for rmm..."
+  source ci/cpu/rmm/upload-anaconda.sh
+fi
