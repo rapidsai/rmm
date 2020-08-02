@@ -25,7 +25,7 @@
 #include <stdexcept>
 #include <string>
 #include "rapidcsv.h"
-#include "rmm/mr/device/device_memory_resource.hpp"
+#include <rmm/mr/device/device_memory_resource.hpp>
 
 namespace rmm {
 namespace detail {
