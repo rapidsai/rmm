@@ -179,14 +179,18 @@ target_link_libraries(rmm PUBLIC
 ###################################################################################################
 # - install targets -------------------------------------------------------------------------------
 
+include(GNUInstallDirs)
+
 install(TARGETS rmm
-        DESTINATION lib)
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  )
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/rmm
-        DESTINATION include)
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  )
 
 install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/rmm
-        DESTINATION include)
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
       
 ###################################################################################################
 # - make documentation ----------------------------------------------------------------------------
