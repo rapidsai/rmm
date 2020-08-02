@@ -15,8 +15,8 @@
  */
 #pragma once
 
-#include "rmm/detail/error.hpp"
 #include "host_memory_resource.hpp"
+#include "rmm/detail/error.hpp"
 
 #include <cstddef>
 #include <utility>
