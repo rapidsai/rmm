@@ -15,10 +15,10 @@
  */
 
 #include "gtest/gtest.h"
-#include "mr/device/cuda_memory_resource.hpp"
-#include "mr/device/default_memory_resource.hpp"
-#include "mr/device/device_memory_resource.hpp"
-#include "mr/device/pool_memory_resource.hpp"
+#include <rmm/mr/device/cuda_memory_resource.hpp>
+#include <rmm/mr/device/default_memory_resource.hpp>
+#include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/mr/device/pool_memory_resource.hpp>
 #include "mr_test.hpp"
 
 #include <thread>
