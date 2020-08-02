@@ -142,7 +142,6 @@ include_directories("${SPDLOG_INCLUDE_DIR}"
                     "${THRUST_INCLUDE_DIR}"
                     "${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/include"
-                    "${CMAKE_CURRENT_SOURCE_DIR}/include/rmm"
                     "${CMAKE_CURRENT_SOURCE_DIR}/src"
                     "${CNMEM_INCLUDE_DIR}")
 
