@@ -89,7 +89,7 @@ add_subdirectory(thirdparty)
 # - cnmem ---------------------------------------------------------------------------------
 # include cnmem.h in the include/detail directory
 configure_file("${CNMEM_INCLUDE_DIR}/cnmem.h"
-               "${CMAKE_CURRENT_SOURCE_DIR}/include/rmm/detail/cnmem.h" COPYONLY)
+               "${CMAKE_CURRENT_BINARY_DIR}/include/rmm/detail/cnmem.h" COPYONLY)
 
 ###################################################################################################
 # - per-thread default stream option --------------------------------------------------------------
@@ -142,6 +142,7 @@ include_directories("${SPDLOG_INCLUDE_DIR}"
                     "${THRUST_INCLUDE_DIR}"
                     "${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/include"
+                    "${CMAKE_CURRENT_BINARY_DIR}/include"
                     "${CMAKE_CURRENT_SOURCE_DIR}/src"
                     "${CNMEM_INCLUDE_DIR}")
 
@@ -184,6 +185,10 @@ install(TARGETS rmm
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/rmm
         DESTINATION include)
+
+install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/rmm
+        DESTINATION include)
+      
 ###################################################################################################
 # - make documentation ----------------------------------------------------------------------------
 

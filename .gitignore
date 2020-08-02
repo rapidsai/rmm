@@ -68,7 +68,6 @@ Debug
 build/
 RelWithDebInfo/
 thirdparty/googletest/
-include/rmm/detail/cnmem.h
 
 ## Eclipse IDE
 .project
