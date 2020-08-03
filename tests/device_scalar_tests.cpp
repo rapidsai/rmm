@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include <rmm/device_scalar.hpp>
 #include <rmm/mr/device/default_memory_resource.hpp>
