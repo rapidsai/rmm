@@ -120,7 +120,7 @@ class binning_memory_resource final : public device_memory_resource {
     allocation_size = rmm::detail::align_up(allocation_size, allocation_alignment);
 
     // If the bin already exists, do nothing.
-    if (resource_bins_.count(allocation_size) > 0) {
+    if (resource_bins_.count(allocation_size) == 0) {
       owned_bin_resources_.push_back(
         std::make_unique<fixed_size_memory_resource<Upstream>>(upstream_mr_, allocation_size));
       resource_bins_.insert({allocation_size, owned_bin_resources_.back().get()});
