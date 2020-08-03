@@ -20,6 +20,7 @@
 #include "device_memory_resource.hpp"
 
 #include <mutex>
+#include <unordered_map>
 
 namespace rmm {
 namespace mr {
