@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-#include <gtest/gtest.h>
 #include "mr_test.hpp"
+
+#include <gtest/gtest.h>
 
 namespace rmm {
 namespace test {
