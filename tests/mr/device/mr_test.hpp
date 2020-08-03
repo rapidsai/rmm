@@ -79,7 +79,6 @@ struct allocation {
 inline void test_get_default_resource()
 {
   EXPECT_NE(nullptr, rmm::mr::get_default_resource());
-  EXPECT_TRUE(rmm::mr::get_default_resource->is_equal(rmm::mr::cuda_memory_resource{}));
   void* p{nullptr};
   EXPECT_NO_THROW(p = rmm::mr::get_default_resource()->allocate(1_MiB));
   EXPECT_NE(nullptr, p);
