@@ -316,61 +316,6 @@ def test_fixed_size_memory_resource(dtype, nelem, alloc, upstream):
 @pytest.mark.parametrize("nelem", _nelems)
 @pytest.mark.parametrize("alloc", _allocs)
 @pytest.mark.parametrize(
-    "upstream",
-    [
-        lambda: rmm.mr.CudaMemoryResource(),
-        lambda: rmm.mr.ManagedMemoryResource(),
-    ],
-)
-def test_fixed_multisize_memory_resource(dtype, nelem, alloc, upstream):
-    mr = rmm.mr.FixedMultiSizeMemoryResource(
-        upstream(),
-        size_base=2,
-        min_size_exponent=18,
-        max_size_exponent=22,
-        initial_blocks_per_size=128,
-    )
-    rmm.mr.set_default_resource(mr)
-    assert rmm.mr.get_default_resource_type() is type(mr)
-    array_tester(dtype, nelem, alloc)
-    rmm.reinitialize()
-
-
-@pytest.mark.parametrize("dtype", _dtypes)
-@pytest.mark.parametrize("nelem", _nelems)
-@pytest.mark.parametrize("alloc", _allocs)
-@pytest.mark.parametrize(
-    "small_alloc_mr",
-    [
-        lambda: rmm.mr.CudaMemoryResource(),
-        lambda: rmm.mr.ManagedMemoryResource(),
-        lambda: rmm.mr.PoolMemoryResource(
-            rmm.mr.CudaMemoryResource(), 1 << 20
-        ),
-    ],
-)
-@pytest.mark.parametrize(
-    "large_alloc_mr",
-    [
-        lambda: rmm.mr.CudaMemoryResource(),
-        lambda: rmm.mr.ManagedMemoryResource(),
-    ],
-)
-def test_hybrid_memory_resource(
-    dtype, nelem, alloc, small_alloc_mr, large_alloc_mr
-):
-    mr = rmm.mr.HybridMemoryResource(
-        small_alloc_mr(), large_alloc_mr(), threshold_size=32
-    )
-    rmm.mr.set_default_resource(mr)
-    assert rmm.mr.get_default_resource_type() is type(mr)
-    array_tester(dtype, nelem, alloc)
-    rmm.reinitialize()
-
-@pytest.mark.parametrize("dtype", _dtypes)
-@pytest.mark.parametrize("nelem", _nelems)
-@pytest.mark.parametrize("alloc", _allocs)
-@pytest.mark.parametrize(
     "upstream_mr",
     [
         lambda: rmm.mr.CudaMemoryResource(),

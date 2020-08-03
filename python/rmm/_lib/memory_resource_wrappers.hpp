@@ -7,9 +7,7 @@
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
-#include <rmm/mr/device/fixed_multisize_memory_resource.hpp>
 #include <rmm/mr/device/fixed_size_memory_resource.hpp>
-#include <rmm/mr/device/hybrid_memory_resource.hpp>
 #include <rmm/mr/device/logging_resource_adaptor.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
@@ -111,60 +109,6 @@ class fixed_size_memory_resource_wrapper : public device_memory_resource_wrapper
  private:
   std::shared_ptr<device_memory_resource_wrapper> upstream_mr;
   std::shared_ptr<rmm::mr::fixed_size_memory_resource<rmm::mr::device_memory_resource>> mr;
-};
-
-class fixed_multisize_memory_resource_wrapper : public device_memory_resource_wrapper {
- public:
-  fixed_multisize_memory_resource_wrapper(
-    std::shared_ptr<device_memory_resource_wrapper> upstream_mr,
-    std::size_t size_base,
-    std::size_t min_size_exponent,
-    std::size_t max_size_exponent,
-    std::size_t initial_blocks_per_size)
-    : upstream_mr(upstream_mr),
-      mr(
-        std::make_shared<rmm::mr::fixed_multisize_memory_resource<rmm::mr::device_memory_resource>>(
-          upstream_mr->get_mr().get(),
-          size_base,
-          min_size_exponent,
-          max_size_exponent,
-          initial_blocks_per_size))
-  {
-  }
-
-  std::shared_ptr<rmm::mr::device_memory_resource>
-
-  get_mr()
-  {
-    return mr;
-  }
-
- private:
-  std::shared_ptr<device_memory_resource_wrapper> upstream_mr;
-  std::shared_ptr<rmm::mr::fixed_multisize_memory_resource<rmm::mr::device_memory_resource>> mr;
-};
-
-class hybrid_memory_resource_wrapper : public device_memory_resource_wrapper {
- public:
-  hybrid_memory_resource_wrapper(std::shared_ptr<device_memory_resource_wrapper> small_alloc_mr,
-                                 std::shared_ptr<device_memory_resource_wrapper> large_alloc_mr,
-                                 std::size_t threshold_size)
-    : small_alloc_mr(small_alloc_mr),
-      large_alloc_mr(large_alloc_mr),
-      mr(std::make_shared<rmm::mr::hybrid_memory_resource<rmm::mr::device_memory_resource,
-                                                          rmm::mr::device_memory_resource>>(
-        small_alloc_mr->get_mr().get(), large_alloc_mr->get_mr().get(), threshold_size))
-  {
-  }
-
-  std::shared_ptr<rmm::mr::device_memory_resource> get_mr() { return mr; }
-
- private:
-  std::shared_ptr<device_memory_resource_wrapper> small_alloc_mr;
-  std::shared_ptr<device_memory_resource_wrapper> large_alloc_mr;
-  std::shared_ptr<rmm::mr::hybrid_memory_resource<rmm::mr::device_memory_resource,
-                                                  rmm::mr::device_memory_resource>>
-    mr;
 };
 
 class binning_memory_resource_wrapper : public device_memory_resource_wrapper {

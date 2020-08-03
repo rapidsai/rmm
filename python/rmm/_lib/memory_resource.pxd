@@ -49,26 +49,6 @@ cdef extern from "memory_resource_wrappers.hpp" nogil:
             size_t blocks_to_preallocate
         ) except +
 
-    cdef cppclass fixed_multisize_memory_resource_wrapper(
-        device_memory_resource_wrapper
-    ):
-        fixed_multisize_memory_resource_wrapper(
-            shared_ptr[device_memory_resource_wrapper] upstream_mr,
-            size_t size_base,
-            size_t min_size_exponent,
-            size_t max_size_exponent,
-            size_t initial_blocks_per_size
-        ) except +
-
-    cdef cppclass hybrid_memory_resource_wrapper(
-        device_memory_resource_wrapper
-    ):
-        hybrid_memory_resource_wrapper(
-            shared_ptr[device_memory_resource_wrapper] small_alloc_mr,
-            shared_ptr[device_memory_resource_wrapper] large_alloc_mr,
-            size_t threshold_size
-        ) except +
-
     cdef cppclass binning_memory_resource_wrapper(
         device_memory_resource_wrapper
     ):
@@ -119,12 +99,6 @@ cdef class PoolMemoryResource(MemoryResource):
     pass
 
 cdef class FixedSizeMemoryResource(MemoryResource):
-    pass
-
-cdef class FixedMultiSizeMemoryResource(MemoryResource):
-    pass
-
-cdef class HybridMemoryResource(MemoryResource):
     pass
 
 cdef class BinningMemoryResource(MemoryResource):
