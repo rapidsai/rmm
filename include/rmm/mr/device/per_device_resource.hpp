@@ -32,13 +32,13 @@ namespace mr {
 enum class cuda_device_id : int {};
 
 namespace detail {
-std::mutex& map_lock()
+inline std::mutex& map_lock()
 {
   static std::mutex map_lock;
   return map_lock;
 }
 
-auto& get_map()
+inline auto& get_map()
 {
   static std::unordered_map<cuda_device_id, device_memory_resource*> device_id_to_resource;
   return device_id_to_resource;
@@ -51,7 +51,7 @@ auto& get_map()
  *
  * @return `cuda_device_id` for the current device
  */
-cuda_device_id current_device()
+inline cuda_device_id current_device()
 {
   int dev_id;
   RMM_CUDA_TRY(cudaGetDevice(&dev_id));
