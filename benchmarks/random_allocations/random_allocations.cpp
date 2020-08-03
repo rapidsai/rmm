@@ -18,7 +18,6 @@
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/fixed_multisize_memory_resource.hpp>
-#include <rmm/mr/device/hybrid_memory_resource.hpp>
 #include <rmm/mr/device/owning_wrapper.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
 
@@ -170,13 +169,6 @@ inline auto make_multisize(std::shared_ptr<Upstream> upstream)
   return rmm::mr::make_owning_wrapper<rmm::mr::fixed_multisize_memory_resource>(upstream);
 }
 
-inline auto make_hybrid()
-{
-  auto pool = make_pool();
-  return rmm::mr::make_owning_wrapper<rmm::mr::hybrid_memory_resource>(
-    std::make_tuple(make_multisize(pool), pool));
-}
-
 inline auto make_binning()
 {
   auto pool = make_pool();
@@ -246,8 +238,6 @@ void declare_benchmark(std::string name)
 {
   if (name == "cuda")
     BENCHMARK_CAPTURE(BM_RandomAllocations, cuda_mr, &make_cuda)->Apply(benchmark_range);
-  else if (name == "hybrid")
-    BENCHMARK_CAPTURE(BM_RandomAllocations, hybrid_mr, &make_hybrid)->Apply(benchmark_range);
   else if (name == "binning")
     BENCHMARK_CAPTURE(BM_RandomAllocations, binning_mr, &make_binning)->Apply(benchmark_range);
   else if (name == "pool")
@@ -267,7 +257,7 @@ int main(int argc, char** argv)
     if (argc > 3) max_size = atoi(argv[3]);
     declare_benchmark(mr_name);
   } else {
-    std::vector<std::string> mrs{"pool", "hybrid", "binning", "cnmem", "cuda"};
+    std::vector<std::string> mrs{"pool", "binning", "cnmem", "cuda"};
     std::for_each(mrs.cbegin(), mrs.cend(), [](auto const& s) { declare_benchmark(s); });
   }
 
@@ -294,8 +284,8 @@ int main(int argc, char** argv)
   constexpr size_t n        = 100000;
   constexpr size_t max_size = 4096;
 
-  if (name == "hybrid")
-    RandomAllocations(&make_hybrid, n, max_size);
+  if (name == "binning")
+    RandomAllocations(&make_binning, n, max_size);
   else if (name == "pool")
     RandomAllocations(&make_pool, n, max_size);
   else if (name == "cnmem")
