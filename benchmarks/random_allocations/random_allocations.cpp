@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <rmm/mr/device/binning_memory_resource.hpp>
 #include <rmm/mr/device/cnmem_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
@@ -176,6 +177,16 @@ inline auto make_hybrid()
     std::make_tuple(make_multisize(pool), pool));
 }
 
+inline auto make_binning()
+{
+  auto pool = make_pool();
+  auto mr   = rmm::mr::make_owning_wrapper<rmm::mr::binning_memory_resource>(pool);
+  for (std::size_t i = 18; i <= 22; i++) {
+    mr->wrapped().add_bin(1 << i);
+  }
+  return mr;
+}
+
 using MRFactoryFunc = std::function<std::shared_ptr<rmm::mr::device_memory_resource>()>;
 
 constexpr size_t max_usage = 16000;
@@ -237,6 +248,8 @@ void declare_benchmark(std::string name)
     BENCHMARK_CAPTURE(BM_RandomAllocations, cuda_mr, &make_cuda)->Apply(benchmark_range);
   else if (name == "hybrid")
     BENCHMARK_CAPTURE(BM_RandomAllocations, hybrid_mr, &make_hybrid)->Apply(benchmark_range);
+  else if (name == "binning")
+    BENCHMARK_CAPTURE(BM_RandomAllocations, binning_mr, &make_binning)->Apply(benchmark_range);
   else if (name == "pool")
     BENCHMARK_CAPTURE(BM_RandomAllocations, pool_mr, &make_pool)->Apply(benchmark_range);
   else if (name == "cnmem")
@@ -254,7 +267,7 @@ int main(int argc, char** argv)
     if (argc > 3) max_size = atoi(argv[3]);
     declare_benchmark(mr_name);
   } else {
-    std::vector<std::string> mrs{"pool", "hybrid", "cnmem", "cuda"};
+    std::vector<std::string> mrs{"pool", "hybrid", "binning", "cnmem", "cuda"};
     std::for_each(mrs.cbegin(), mrs.cend(), [](auto const& s) { declare_benchmark(s); });
   }
 
