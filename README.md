@@ -397,15 +397,14 @@ of 1 GiB and a maximum size of 4 GiB. The pool uses
 ... )
 >>> rmm.mr.set_default_resource(pool)
 ```
-
 Other MemoryResources include:
 
 * `FixedSizeMemoryResource` for allocating fixed blocks of memory
-* `HybridMemoryResource` for enabling separate MemoryResources for
-  small and large memory allocations
+* `BinningMemoryResource` for allocating blocks within specified "bin" sizes from different memory 
+resources
 
-MemoryResources are highly configurable and can be composed together
-in different ways.  See `help(rmm.mr)` for more information.
+MemoryResources are highly configurable and can be composed together in different ways. 
+See `help(rmm.mr)` for more information.
 
 ### Using RMM with CuPy
 

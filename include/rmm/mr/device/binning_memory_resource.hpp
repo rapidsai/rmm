@@ -55,8 +55,8 @@ class binning_memory_resource final : public device_memory_resource {
   explicit binning_memory_resource(Upstream* upstream_resource) : upstream_mr_{upstream_resource} {}
 
   /**
-   * @brief Destroy the fixed_multisize_memory_resource and free all memory allocated from the
-   *        upstream resource.
+   * @brief Destroy the binning_memory_resource and free all memory allocated from the upstream
+   * resource.
    */
   ~binning_memory_resource() = default;
 
@@ -89,10 +89,12 @@ class binning_memory_resource final : public device_memory_resource {
   Upstream* get_upstream() const noexcept { return upstream_mr_; }
 
   /**
-   * @brief Add a bin suballocator to this resource
+   * @brief Add a bin allocator to this resource
    *
    * This bin will be used for any allocation smaller than `allocation_size` that is larger than
    * the next smaller bin's allocation size.
+   *
+   * If there is already a bin for the specified size it is not changed.
    *
    * This function is not thread safe.
    *
@@ -105,10 +107,12 @@ class binning_memory_resource final : public device_memory_resource {
   }
 
   /**
-   * @brief Constructs and adds a fixed_size_memory_resource bin to this resource
+   * @brief Constructs and adds a fixed_size_memory_resource bin allocator to this resource
    *
    * This bin will be used for any allocation smaller than `allocation_size` that is larger than
    * the next smaller bin's allocation size.
+   *
+   * If there is already a bin of the specified size nothing is changed.
    *
    * This function is not thread safe.
    *
