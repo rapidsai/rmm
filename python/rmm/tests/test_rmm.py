@@ -366,3 +366,30 @@ def test_hybrid_memory_resource(
     assert rmm.mr.get_default_resource_type() is type(mr)
     array_tester(dtype, nelem, alloc)
     rmm.reinitialize()
+
+@pytest.mark.parametrize("dtype", _dtypes)
+@pytest.mark.parametrize("nelem", _nelems)
+@pytest.mark.parametrize("alloc", _allocs)
+@pytest.mark.parametrize(
+    "upstream_mr",
+    [
+        lambda: rmm.mr.CudaMemoryResource(),
+        lambda: rmm.mr.ManagedMemoryResource(),
+        lambda: rmm.mr.PoolMemoryResource(
+            rmm.mr.CudaMemoryResource(), 1 << 20
+        ),
+    ],
+)
+def test_binning_memory_resource(
+    dtype, nelem, alloc, upstream_mr
+):
+    mr = rmm.mr.BinningMemoryResource(
+        upstream_mr()
+    )
+    # Add bins 256KiB, 512KiB, 1024KiB, 2048KiB, 4096KiB
+    for i in range(18, 23): 
+      mr.add_bin(1 << i)
+    rmm.mr.set_default_resource(mr)
+    assert rmm.mr.get_default_resource_type() is type(mr)
+    array_tester(dtype, nelem, alloc)
+    rmm.reinitialize()

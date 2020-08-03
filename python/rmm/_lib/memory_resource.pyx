@@ -130,14 +130,10 @@ cdef class FixedSizeMemoryResource(MemoryResource):
             size_t blocks_to_preallocate=128
     ):
         self.c_obj.reset(
-            new thread_safe_resource_adaptor_wrapper(
-                shared_ptr[device_memory_resource_wrapper](
-                    new fixed_size_memory_resource_wrapper(
-                        upstream.c_obj,
-                        block_size,
-                        blocks_to_preallocate
-                    )
-                )
+            new fixed_size_memory_resource_wrapper(
+                upstream.c_obj,
+                block_size,
+                blocks_to_preallocate
             )
         )
 
@@ -261,6 +257,51 @@ cdef class HybridMemoryResource(MemoryResource):
             `large_alloc_mr` is used.
         """
         pass
+
+cdef class BinningMemoryResource(MemoryResource):
+    def __cinit__(
+        self,
+        MemoryResource upstream_mr
+    ):
+        self.c_obj.reset(
+            new binning_memory_resource_wrapper(
+                upstream_mr.c_obj
+            )
+        )
+
+    def __init__(
+        self,
+        MemoryResource upstream_mr
+    ):
+        """"
+        Allocates memory from a set of specified "bin" sizes based on a specified allocation size.
+
+        Call add_bin to add fixed-size bin allocators.
+
+        Parameters
+        ----------
+        upstream_mr : MemoryResource
+            The memory resource to use for allocations larger than any of the bins
+        """
+        pass
+
+    cpdef add_bin(
+        self, 
+        size_t allocation_size
+    ):
+        """
+        Adds a bin of the specified maximum allocation size to this memory resource that uses a 
+        FixedSizeMemoryResource for allocation.
+        
+        Allocations smaller than allocation_size and larger than the next smaller bin size will
+        use this fixed-size memory resource.
+
+        Parameters
+        ----------
+        allocation_size : size_t
+            The maximum allocation size in bytes for the created bin
+        """
+        (<binning_memory_resource_wrapper*>(self.c_obj.get()))[0].add_bin(allocation_size)
 
 
 cdef class LoggingResourceAdaptor(MemoryResource):

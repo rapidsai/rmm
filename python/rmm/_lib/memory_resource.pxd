@@ -69,6 +69,16 @@ cdef extern from "memory_resource_wrappers.hpp" nogil:
             size_t threshold_size
         ) except +
 
+    cdef cppclass binning_memory_resource_wrapper(
+        device_memory_resource_wrapper
+    ):
+        binning_memory_resource_wrapper(
+            shared_ptr[device_memory_resource_wrapper] upstream_mr
+        ) except +
+        void add_bin(
+            size_t allocation_size
+        ) except+
+
     cdef cppclass logging_resource_adaptor_wrapper(
         device_memory_resource_wrapper
     ):
@@ -116,6 +126,9 @@ cdef class FixedMultiSizeMemoryResource(MemoryResource):
 
 cdef class HybridMemoryResource(MemoryResource):
     pass
+
+cdef class BinningMemoryResource(MemoryResource):
+    cpdef add_bin(self, size_t allocation_size)
 
 cdef class LoggingResourceAdaptor(MemoryResource):
     cpdef flush(self)

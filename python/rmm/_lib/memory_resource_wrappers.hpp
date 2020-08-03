@@ -1,6 +1,7 @@
 // Copyright (c) 2020, NVIDIA CORPORATION.
 
 #include <memory>
+#include <rmm/mr/device/binning_memory_resource.hpp>
 #include <rmm/mr/device/cnmem_managed_memory_resource.hpp>
 #include <rmm/mr/device/cnmem_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
@@ -105,12 +106,7 @@ class fixed_size_memory_resource_wrapper : public device_memory_resource_wrapper
   {
   }
 
-  std::shared_ptr<rmm::mr::device_memory_resource>
-
-  get_mr()
-  {
-    return mr;
-  }
+  std::shared_ptr<rmm::mr::device_memory_resource> get_mr() { return mr; }
 
  private:
   std::shared_ptr<device_memory_resource_wrapper> upstream_mr;
@@ -169,6 +165,28 @@ class hybrid_memory_resource_wrapper : public device_memory_resource_wrapper {
   std::shared_ptr<rmm::mr::hybrid_memory_resource<rmm::mr::device_memory_resource,
                                                   rmm::mr::device_memory_resource>>
     mr;
+};
+
+class binning_memory_resource_wrapper : public device_memory_resource_wrapper {
+ public:
+  binning_memory_resource_wrapper(std::shared_ptr<device_memory_resource_wrapper> upstream_mr)
+    : upstream_mr(upstream_mr),
+      mr(std::make_shared<rmm::mr::binning_memory_resource<rmm::mr::device_memory_resource>>(
+        upstream_mr->get_mr().get()))
+  {
+  }
+
+  std::shared_ptr<rmm::mr::device_memory_resource> get_mr() { return mr; }
+
+  void add_bin(std::size_t allocation_size) { mr->add_bin(allocation_size); }
+  void add_bin(std::size_t allocation_size, std::shared_ptr<device_memory_resource_wrapper> bin_mr)
+  {
+    mr->add_bin(allocation_size, bin_mr->get_mr().get());
+  }
+
+ private:
+  std::shared_ptr<device_memory_resource_wrapper> upstream_mr;
+  std::shared_ptr<rmm::mr::binning_memory_resource<rmm::mr::device_memory_resource>> mr;
 };
 
 class logging_resource_adaptor_wrapper : public device_memory_resource_wrapper {
