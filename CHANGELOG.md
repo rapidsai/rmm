@@ -11,6 +11,8 @@
 - PR #449 Stream-ordered suballocator base class and per-thread default stream support 
           and thread safety for `fixed_size_memory_resource`
 - PR #450 Add support for new build process (Project Flash)
+- PR #457 New `binning_memory_resource` (replaces `hybrid_memory_resource` and 
+          `fixed_multisize_memory_resource`).
 
 ## Improvements
 
