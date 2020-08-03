@@ -17,7 +17,6 @@
 #include <rmm/mr/device/cnmem_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
-#include <rmm/mr/device/fixed_multisize_memory_resource.hpp>
 #include <rmm/mr/device/owning_wrapper.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
 
@@ -161,12 +160,6 @@ inline auto make_cnmem() { return std::make_shared<rmm::mr::cnmem_memory_resourc
 inline auto make_pool()
 {
   return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_cuda());
-}
-
-template <typename Upstream>
-inline auto make_multisize(std::shared_ptr<Upstream> upstream)
-{
-  return rmm::mr::make_owning_wrapper<rmm::mr::fixed_multisize_memory_resource>(upstream);
 }
 
 inline auto make_binning()

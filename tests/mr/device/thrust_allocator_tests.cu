@@ -47,7 +47,6 @@ INSTANTIATE_TEST_CASE_P(ThrustAllocatorTests,
                                           mr_factory{"CNMEM", &make_cnmem},
                                           mr_factory{"CNMEM_Managed", &make_cnmem_managed},
                                           mr_factory{"Pool", &make_pool},
-                                          mr_factory{"Hybrid", &make_hybrid},
                                           mr_factory{"Binning", &make_binning}),
                         [](auto const& info) { return info.param.name; });
 }  // namespace

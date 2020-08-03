@@ -24,9 +24,7 @@
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
-#include <rmm/mr/device/fixed_multisize_memory_resource.hpp>
 #include <rmm/mr/device/fixed_size_memory_resource.hpp>
-#include <rmm/mr/device/hybrid_memory_resource.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
 #include <rmm/mr/device/owning_wrapper.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
@@ -245,19 +243,6 @@ inline auto make_pool()
 inline auto make_fixed_size()
 {
   return rmm::mr::make_owning_wrapper<rmm::mr::fixed_size_memory_resource>(make_cuda());
-}
-
-template <typename Upstream>
-inline auto make_multisize(std::shared_ptr<Upstream> upstream)
-{
-  return rmm::mr::make_owning_wrapper<rmm::mr::fixed_multisize_memory_resource>(upstream);
-}
-
-inline auto make_hybrid()
-{
-  auto pool = make_pool();
-  return rmm::mr::make_owning_wrapper<rmm::mr::hybrid_memory_resource>(
-    std::make_tuple(make_multisize(pool), pool));
 }
 
 inline auto make_binning()
