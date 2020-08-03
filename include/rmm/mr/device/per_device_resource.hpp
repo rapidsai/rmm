@@ -73,10 +73,9 @@ inline cuda_device_id current_device()
 inline device_memory_resource* get_per_device_resource(cuda_device_id id)
 {
   std::lock_guard<std::mutex> lock{map_lock()};
-  auto& map        = get_map();
-  auto const found = map.find(id);
+  auto& map = get_map();
   // If a resource was never set for `id`, set to the initial resource
-  return (found == map.end()) ? (map[id] = initial_resource()) : map[id];
+  return (map.find(id) == map.end()) ? (map[id] = initial_resource()) : map[id];
 }
 
 /**
