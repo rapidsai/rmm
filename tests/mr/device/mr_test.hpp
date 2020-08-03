@@ -16,8 +16,9 @@
 
 #pragma once
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
+#include <rmm/mr/device/binning_memory_resource.hpp>
 #include <rmm/mr/device/cnmem_managed_memory_resource.hpp>
 #include <rmm/mr/device/cnmem_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
@@ -257,6 +258,16 @@ inline auto make_hybrid()
   auto pool = make_pool();
   return rmm::mr::make_owning_wrapper<rmm::mr::hybrid_memory_resource>(
     std::make_tuple(make_multisize(pool), pool));
+}
+
+inline auto make_binning()
+{
+  auto pool = make_pool();
+  auto mr   = rmm::mr::make_owning_wrapper<rmm::mr::binning_memory_resource>(pool);
+  for (std::size_t i = 18; i <= 22; i++) {
+    mr->wrapped().add_bin(1 << i);
+  }
+  return mr;
 }
 
 }  // namespace test
