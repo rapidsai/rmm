@@ -43,10 +43,8 @@ INSTANTIATE_TEST_CASE_P(MultiThreadResourceTests,
                                           mr_factory{"SyncHybrid", &make_sync_hybrid}),
                         [](auto const& info) { return info.param.name; });
 
-constexpr std::size_t num_threads{4};
-
 template <typename Task, typename... Arguments>
-void spawn(Task task, Arguments&&... args)
+void spawn_n(std::size_t num_threads, Task task, Arguments&&... args)
 {
   std::vector<std::thread> threads;
   threads.reserve(num_threads);
@@ -55,6 +53,12 @@ void spawn(Task task, Arguments&&... args)
 
   for (auto& t : threads)
     t.join();
+}
+
+template <typename Task, typename... Arguments>
+void spawn(Task task, Arguments&&... args)
+{
+  spawn_n(4, task, std::forward<Arguments>(args)...);
 }
 
 TEST(DefaultTest, UseDefaultResource_mt) { spawn(test_get_default_resource); }
