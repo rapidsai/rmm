@@ -62,6 +62,23 @@ TEST_P(mr_test, SetDefaultResource)
   EXPECT_TRUE(old->is_equal(*rmm::mr::get_default_resource()));
 }
 
+TEST_P(mr_test, SetCurentDeviceResource)
+{
+  rmm::mr::device_memory_resource* old{};
+  EXPECT_NO_THROW(old = rmm::mr::set_current_device_resource(this->mr.get()));
+  EXPECT_NE(nullptr, old);
+
+  // old mr should equal a cuda mr
+  EXPECT_TRUE(old->is_equal(rmm::mr::cuda_memory_resource{}));
+
+  // current dev resource should equal this resource
+  EXPECT_TRUE(this->mr->is_equal(*rmm::mr::get_current_device_resource()));
+
+  // setting to `nullptr` should reset to initial cuda resource
+  EXPECT_NO_THROW(rmm::mr::set_current_device_resource(nullptr));
+  EXPECT_TRUE(rmm::mr::get_current_device_resource()->is_equal(rmm::mr::cuda_memory_resource{}));
+}
+
 TEST_P(mr_test, SelfEquality) { EXPECT_TRUE(this->mr->is_equal(*this->mr)); }
 
 TEST_P(mr_test, AllocateDefaultStream)
