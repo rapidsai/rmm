@@ -63,11 +63,11 @@ struct free_list {
   using const_iterator = typename list_type::const_iterator;
 
   iterator begin() noexcept { return blocks.begin(); }                /// beginning of the free list
-  const_iterator begin() const noexcept { return begin(); }           /// beginning of the free list
+  const_iterator begin() const noexcept { return blocks.begin(); }    /// beginning of the free list
   const_iterator cbegin() const noexcept { return blocks.cbegin(); }  /// beginning of the free list
 
   iterator end() noexcept { return blocks.end(); }                /// end of the free list
-  const_iterator end() const noexcept { return end(); }           /// end of the free list
+  const_iterator end() const noexcept { return blocks.end(); }    /// end of the free list
   const_iterator cend() const noexcept { return blocks.cend(); }  /// end of the free list
 
   /**
