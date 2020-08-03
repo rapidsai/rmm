@@ -29,7 +29,24 @@ namespace mr {
  * @brief Strong type for a CUDA device identifier.
  *
  */
-enum class cuda_device_id : int {};
+struct cuda_device_id {
+  using value_type = int;
+
+  /**
+   * @brief Construct a `cuda_device_id` from the specified integer value
+   *
+   */
+  explicit constexpr cuda_device_id(value_type id) noexcept : id_{id} {}
+
+  /**
+   * @brief Returns the wrapped value
+   *
+   */
+  constexpr value_type value() const noexcept { return id_; }
+
+ private:
+  value_type id_;
+};
 
 namespace detail {
 inline std::mutex& map_lock()
@@ -40,7 +57,8 @@ inline std::mutex& map_lock()
 
 inline auto& get_map()
 {
-  static std::unordered_map<cuda_device_id, device_memory_resource*> device_id_to_resource;
+  static std::unordered_map<cuda_device_id::value_type, device_memory_resource*>
+    device_id_to_resource;
   return device_id_to_resource;
 }
 
@@ -72,10 +90,11 @@ inline cuda_device_id current_device()
  */
 inline device_memory_resource* get_per_device_resource(cuda_device_id id)
 {
-  std::lock_guard<std::mutex> lock{map_lock()};
-  auto& map = get_map();
+  std::lock_guard<std::mutex> lock{detail::map_lock()};
+  auto& map = detail::get_map();
   // If a resource was never set for `id`, set to the initial resource
-  return (map.find(id) == map.end()) ? (map[id] = initial_resource()) : map[id];
+  return (map.find(id.value()) == map.end()) ? (map[id.value()] = detail::initial_resource())
+                                             : map[id.value()];
 }
 
 /**
@@ -93,15 +112,15 @@ inline device_memory_resource* get_per_device_resource(cuda_device_id id)
  * for `id`
  * @return Pointer to the previous the resource for `id`
  */
-inline device_memory_resource* set_per_device_resource(cuda_device_id,
-                                                       devicce_memory_resource* new_mr)
+inline device_memory_resource* set_per_device_resource(cuda_device_id id,
+                                                       device_memory_resource* new_mr)
 {
-  std::lock_guard<std::mutex> lock{map_lock()};
-  auto& map          = get_map();
-  auto const old_itr = map.find(id);
+  std::lock_guard<std::mutex> lock{detail::map_lock()};
+  auto& map          = detail::get_map();
+  auto const old_itr = map.find(id.value());
   // If a resource didn't previously exist for `id`, return pointer to initial_resource
-  auto old_mr = (old_itr == map.end()) ? detail::initial_resource() : old_itr->second;
-  map[id]     = (new_mr == nullptr) ? detail::initial_resource() : new_mr;
+  auto old_mr     = (old_itr == map.end()) ? detail::initial_resource() : old_itr->second;
+  map[id.value()] = (new_mr == nullptr) ? detail::initial_resource() : new_mr;
   return old_mr;
 }
 
@@ -119,7 +138,7 @@ inline device_memory_resource* set_per_device_resource(cuda_device_id,
  */
 inline device_memory_resource* get_current_device_resource()
 {
-  return get_per_device_resource(current_device());
+  return get_per_device_resource(detail::current_device());
 }
 
 /**
@@ -140,7 +159,7 @@ inline device_memory_resource* get_current_device_resource()
  */
 inline device_memory_resource* set_current_device_resource(device_memory_resource* new_mr)
 {
-  return set_per_device_resource(current_device(), new_mr);
+  return set_per_device_resource(detail::current_device(), new_mr);
 }
 }  // namespace mr
 }  // namespace rmm
