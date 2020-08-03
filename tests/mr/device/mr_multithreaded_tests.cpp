@@ -21,6 +21,7 @@
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
 
 #include <thread>
@@ -70,6 +71,17 @@ TEST(DefaultTest, DefaultResourceIsCUDA_mt)
     EXPECT_TRUE(rmm::mr::get_default_resource()->is_equal(rmm::mr::cuda_memory_resource{}));
   });
 }
+
+TEST(DefaultTest, GetCurrentDeviceResource_mt)
+{
+  spawn([]() {
+    rmm::mr::device_memory_resource* mr;
+    EXPECT_NO_THROW(mr = rmm::mr::get_current_device_resource());
+    EXPECT_NE(nullptr, mr);
+    EXPECT_TRUE(mr->is_equal(rmm::mr::cuda_memory_resource{}));
+  });
+}
+
 TEST_P(mr_test_mt, SetDefaultResource_mt)
 {
   // single thread changes default resource, then multiple threads use it
