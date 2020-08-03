@@ -63,6 +63,13 @@ void spawn(Task task, Arguments&&... args)
 
 TEST(DefaultTest, UseDefaultResource_mt) { spawn(test_get_default_resource); }
 
+TEST(DefaultTest, DefaultResourceIsCUDA_mt)
+{
+  spawn([]() {
+    EXPECT_NE(nullptr, rmm::mr::get_default_resource());
+    EXPECT_TRUE(rmm::mr::get_default_resource()->is_equal(rmm::mr::cuda_memory_resource{}));
+  });
+}
 TEST_P(mr_test_mt, SetDefaultResource_mt)
 {
   // single thread changes default resource, then multiple threads use it
