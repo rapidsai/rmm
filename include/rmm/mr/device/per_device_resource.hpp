@@ -26,16 +26,20 @@
  * @file per_device_resource.hpp
  * @brief Management of per-device `device_memory_resource`s
  *
- * It is common to construct a `device_memory_resource` and use it as a default for all allocations
- * where another resource has not been explicitly specified. In applications with multiple GPUs in
- * the same process, it may also be necessary to maintain independent "default" resources for each
- * device. To this end, the `set_per_device_resource` and `get_per_device_resource` functions enable
- * a mapping between a CUDA device id and a pointer to a `device_memory_resource`.
+ * One might wish to construct a `device_memory_resource` and use it for (de)allocation
+ * without explicit dependency injection, i.e., passing a reference to that object to all places it
+ * is to be used. Instead, one might want to set their resource as a "default" and have it be used
+ * in all places where another resource has not been explicitly specified.  In applications with
+ * multiple GPUs in the same process, it may also be necessary to maintain independent default
+ * resources for each device. To this end, the `set_per_device_resource` and
+ * `get_per_device_resource` functions enable mapping a CUDA device id to a `device_memory_resource`
+ * pointer.
  *
  * For example, given a pointer, `mr`, to a `device_memory_resource` object, calling
  * `set_per_device_resource(cuda_device_id{0}, mr)` will establish a mapping between CUDA device 0
  * and `mr` such that all future calls to `get_per_device_resource(cuda_device_id{0})` will return
- * the same pointer `mr`.
+ * the same pointer, `mr`. In this way, all places that use the resource returned from
+ * `get_per_device_resource` for (de)allocation will use the user provided resource, `mr`.
  *
  * If no resource was explicitly set for a given device specified by `id`, then
  * `get_per_device_resource(id)` will return a pointer to a `cuda_memory_resource`.
@@ -43,7 +47,6 @@
  * To fetch and modify the resource for the current CUDA device, `get_current_device_resource()` and
  * `set_current_device_resource()` will automatically use the current CUDA device id from
  * `cudaGetDevice()`.
- *
  */
 
 namespace rmm {
