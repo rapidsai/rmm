@@ -110,7 +110,6 @@ if(BUILD_TESTS)
 
     if(GTEST_FOUND)
         message(STATUS "Google C++ Testing Framework (Google Test) found in ${GTEST_ROOT}")
-        include_directories(${GTEST_INCLUDE_DIR})
         add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
     else()
         message(AUTHOR_WARNING "Google C++ Testing Framework (Google Test) not found: automated tests are disabled.")
@@ -126,7 +125,6 @@ if(BUILD_BENCHMARKS)
 
   if(GBENCH_FOUND)
     message(STATUS "Google C++ Benchmarking Framework (Google Benchmark) found in ${GBENCH_ROOT}")
-    include_directories(${GBENCH_INCLUDE_DIR})
     add_subdirectory(${CMAKE_SOURCE_DIR}/benchmarks)
   else()
     message(AUTHOR_WARNING "Google C++ Benchmarking Framework (Google Benchmark) not found: automated tests are disabled.")
@@ -139,8 +137,7 @@ endif(BUILD_BENCHMARKS)
 # - library paths ---------------------------------------------------------------------------------
 
 link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES is an undocumented/unsupported variable containing the link directories for nvcc
-                 "${CMAKE_CURRENT_BINARY_DIR}/lib"
-                 "${GTEST_LIBRARY_DIR}")
+                 "${CMAKE_CURRENT_BINARY_DIR}/lib")
 
 ###################################################################################################
 # - library targets -------------------------------------------------------------------------------
