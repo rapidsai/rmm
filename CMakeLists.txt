@@ -136,10 +136,6 @@ endif(BUILD_BENCHMARKS)
 
 
 ###################################################################################################
-# - include paths ---------------------------------------------------------------------------------
-include_directories("${CNMEM_INCLUDE_DIR}")
-
-###################################################################################################
 # - library paths ---------------------------------------------------------------------------------
 
 link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES is an undocumented/unsupported variable containing the link directories for nvcc
@@ -159,6 +155,12 @@ target_include_directories(rmm PUBLIC
   "${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
   "${CMAKE_CURRENT_SOURCE_DIR}/include"
   "${CMAKE_CURRENT_BINARY_DIR}/include"
+  )
+
+# In order to find cnmem.h while building the library, we need this.
+# For library users it is replaced by a copy of the same cnmem.h under rmm/detail
+target_include_directories(rmm PRIVATE
+  "${CNMEM_INCLUDE_DIR}"
   )
 
 ###################################################################################################
