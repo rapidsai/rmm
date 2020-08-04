@@ -49,7 +49,6 @@ include_directories("${GTEST_INCLUDE_DIR}"
 # CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES is an undocumented/unsupported variable containing the link
 # directories for nvcc
 link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" 
-                 "${CMAKE_BINARY_DIR}/lib"
                  "${GTEST_LIBRARY_DIR}")
 
 ###################################################################################################
