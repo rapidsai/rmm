@@ -22,6 +22,30 @@
 #include <map>
 #include <mutex>
 
+/**
+ * @file per_device_resource.hpp
+ * @brief Management of per-device `device_memory_resource`s
+ *
+ * It is common to construct a `device_memory_resource` and use it as a default for all allocations
+ * where another resource has not been explicitly specified. In applications with multiple GPUs in
+ * the same process, it may also be necessary to maintain independent "default" resources for each
+ * device. To this end, the `set_per_device_resource` and `get_per_device_resource` functions enable
+ * a mapping between a CUDA device id and a pointer to a `device_memory_resource`.
+ *
+ * For example, given a pointer, `mr`, to a `device_memory_resource` object, calling
+ * `set_per_device_resource(cuda_device_id{0}, mr)` will establish a mapping between CUDA device 0
+ * and `mr` such that all future calls to `get_per_device_resource(cuda_device_id{0})` will return
+ * the same pointer `mr`.
+ *
+ * If no resource was explicitly set for a given device specified by `id`, then
+ * `get_per_device_resource(id)` will return a pointer to a `cuda_memory_resource`.
+ *
+ * To fetch and modify the resource for the current CUDA device, `get_current_device_resource()` and
+ * `set_current_device_resource()` will automatically use the current CUDA device id from
+ * `cudaGetDevice()`.
+ *
+ */
+
 namespace rmm {
 namespace mr {
 
@@ -77,8 +101,8 @@ inline cuda_device_id current_device()
 /**
  * @brief Get the resource for the specified device.
  *
- * Returns a pointer to the `device_memory_resource` for the specified device. The initial resource
- * is a `cuda_memory_resource`.
+ * Returns a pointer to the `device_memory_resource` for the specified device. The initial
+ * resource is a `cuda_memory_resource`.
  *
  * `id.value()` must be in the range `[0, cudaGetDeviceCount())`, otherwise behavior is undefined.
  *
@@ -108,7 +132,8 @@ inline device_memory_resource* get_per_device_resource(cuda_device_id id)
  * `id.value()` must be in the range `[0, cudaGetDeviceCount())`, otherwise behavior is undefined.
  *
  * The object pointed to by `new_mr` must outlive the last use of the resource, otherwise behavior
- * is undefined. It is the caller's responsibility to maintain the lifetime of the resource object.
+ * is undefined. It is the caller's responsibility to maintain the lifetime of the resource
+ * object.
  *
  * This function is thread-safe with respect to concurrent calls to `set_per_device_resource`,
  * `get_per_device_resource`, `get_current_device_resource`, and `set_current_device_resource`.
