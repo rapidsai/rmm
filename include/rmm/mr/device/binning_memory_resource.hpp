@@ -91,23 +91,8 @@ class binning_memory_resource final : public device_memory_resource {
   /**
    * @brief Add a bin allocator to this resource
    *
-   * This bin will be used for any allocation smaller than `allocation_size` that is larger than
-   * the next smaller bin's allocation size.
-   *
-   * If there is already a bin for the specified size it is not changed.
-   *
-   * This function is not thread safe.
-   *
-   * @param allocation_size The maximum size that this bin allocates
-   * @param bin_resource The memory resource for the bin
-   */
-  void add_bin(std::size_t allocation_size, device_memory_resource* bin_resource)
-  {
-    resource_bins_.insert({allocation_size, bin_resource});
-  }
-
-  /**
-   * @brief Constructs and adds a fixed_size_memory_resource bin allocator to this resource
+   * Adds `bin_resource` if it is not null; otherwise constructs and adds a
+   * fixed_size_memory_resource.
    *
    * This bin will be used for any allocation smaller than `allocation_size` that is larger than
    * the next smaller bin's allocation size.
@@ -119,15 +104,19 @@ class binning_memory_resource final : public device_memory_resource {
    * @param allocation_size The maximum size that this bin allocates
    * @param bin_resource The memory resource for the bin
    */
-  void add_bin(std::size_t allocation_size)
+  void add_bin(std::size_t allocation_size, device_memory_resource* bin_resource = nullptr)
   {
     allocation_size = rmm::detail::align_up(allocation_size, allocation_alignment);
 
-    // If the bin already exists, do nothing.
-    if (resource_bins_.count(allocation_size) == 0) {
-      owned_bin_resources_.push_back(
-        std::make_unique<fixed_size_memory_resource<Upstream>>(upstream_mr_, allocation_size));
-      resource_bins_.insert({allocation_size, owned_bin_resources_.back().get()});
+    if (nullptr != bin_resource)
+      resource_bins_.insert({allocation_size, bin_resource});
+    else {
+      // If the bin already exists, do nothing.
+      if (resource_bins_.count(allocation_size) == 0) {
+        owned_bin_resources_.push_back(
+          std::make_unique<fixed_size_memory_resource<Upstream>>(upstream_mr_, allocation_size));
+        resource_bins_.insert({allocation_size, owned_bin_resources_.back().get()});
+      }
     }
   }
 
