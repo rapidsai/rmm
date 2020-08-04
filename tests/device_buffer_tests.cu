@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>

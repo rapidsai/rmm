@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#include "gtest/gtest.h"
-#include "gtest/internal/gtest-type-util.h"
+#include <gtest/gtest.h>
+#include <gtest/internal/gtest-type-util.h>
 
 #include <rmm/device_uvector.hpp>
 
