@@ -122,15 +122,21 @@ class binning_memory_resource_wrapper : public device_memory_resource_wrapper {
 
   std::shared_ptr<rmm::mr::device_memory_resource> get_mr() { return mr; }
 
-  void add_bin(std::size_t allocation_size) { mr->add_bin(allocation_size); }
-  void add_bin(std::size_t allocation_size, std::shared_ptr<device_memory_resource_wrapper> bin_mr)
+  void add_bin(std::size_t allocation_size,
+               std::shared_ptr<device_memory_resource_wrapper> bin_mr = {})
   {
-    mr->add_bin(allocation_size, bin_mr->get_mr().get());
+    if (nullptr == bin_mr.get())
+      mr->add_bin(allocation_size);
+    else {
+      bin_mrs.push_back(bin_mr);
+      mr->add_bin(allocation_size, bin_mr->get_mr().get());
+    }
   }
 
  private:
   std::shared_ptr<device_memory_resource_wrapper> upstream_mr;
   std::shared_ptr<rmm::mr::binning_memory_resource<rmm::mr::device_memory_resource>> mr;
+  std::vector<std::shared_ptr<device_memory_resource_wrapper>> bin_mrs;
 };
 
 class logging_resource_adaptor_wrapper : public device_memory_resource_wrapper {

@@ -56,6 +56,10 @@ cdef extern from "memory_resource_wrappers.hpp" nogil:
             shared_ptr[device_memory_resource_wrapper] upstream_mr
         ) except +
         void add_bin(
+            size_t allocation_size,
+            shared_ptr[device_memory_resource_wrapper] bin_mr
+        ) except+
+        void add_bin(
             size_t allocation_size
         ) except+
 
@@ -102,7 +106,7 @@ cdef class FixedSizeMemoryResource(MemoryResource):
     pass
 
 cdef class BinningMemoryResource(MemoryResource):
-    cpdef add_bin(self, size_t allocation_size)
+    cpdef add_bin(self, size_t allocation_size, object bin_resource=*)
 
 cdef class LoggingResourceAdaptor(MemoryResource):
     cpdef flush(self)

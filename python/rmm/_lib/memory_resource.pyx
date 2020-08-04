@@ -191,12 +191,13 @@ cdef class BinningMemoryResource(MemoryResource):
         pass
 
     cpdef add_bin(
-        self, 
-        size_t allocation_size
-    ):
+        self,
+        size_t allocation_size,
+        object bin_resource=None):
         """
-        Adds a bin of the specified maximum allocation size to this memory resource that uses a 
-        FixedSizeMemoryResource for allocation.
+        Adds a bin of the specified maximum allocation size to this memory resource. If specified,
+        uses bin_resource for allocation for this bin. If not specified, creates and
+        uses a FixedSizeMemoryResource for allocation for this bin.
         
         Allocations smaller than allocation_size and larger than the next smaller bin size will
         use this fixed-size memory resource.
@@ -205,9 +206,21 @@ cdef class BinningMemoryResource(MemoryResource):
         ----------
         allocation_size : size_t
             The maximum allocation size in bytes for the created bin
+        bin_resource : shared pointer to device_memory_resource_wrapper
+            The device_memory_resource to use for this bin
         """
-        (<binning_memory_resource_wrapper*>(self.c_obj.get()))[0].add_bin(allocation_size)
+        cdef MemoryResource _bin_resource
 
+        if bin_resource is None:
+            (<binning_memory_resource_wrapper*>(self.c_obj.get()))[0].add_bin(allocation_size)
+        else:
+            # Coerce Python object `bin_resource` to C object `_bin_resource`
+            _bin_resource = bin_resource  
+
+            (<binning_memory_resource_wrapper*>(self.c_obj.get()))[0].add_bin(
+                allocation_size,
+                _bin_resource.c_obj
+            )
 
 cdef class LoggingResourceAdaptor(MemoryResource):
     def __cinit__(self, MemoryResource upstream, object log_file_name=None):
