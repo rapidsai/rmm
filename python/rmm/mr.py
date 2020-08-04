@@ -1,11 +1,10 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
-
 from rmm._lib.memory_resource import (
+    BinningMemoryResource,
     CNMemManagedMemoryResource,
     CNMemMemoryResource,
     CudaMemoryResource,
     FixedSizeMemoryResource,
-    BinningMemoryResource,
     LoggingResourceAdaptor,
     ManagedMemoryResource,
     MemoryResource,
@@ -18,11 +17,11 @@ from rmm._lib.memory_resource import (
 )
 
 __all__ = [
+    "BinningMemoryResource",
     "CNMemManagedMemoryResource",
     "CNMemMemoryResource",
     "CudaMemoryResource",
     "FixedSizeMemoryResource",
-    "BinningMemoryResource",
     "LoggingResourceAdaptor",
     "ManagedMemoryResource",
     "MemoryResource",

@@ -179,14 +179,16 @@ cdef class BinningMemoryResource(MemoryResource):
         MemoryResource upstream_mr
     ):
         """"
-        Allocates memory from a set of specified "bin" sizes based on a specified allocation size.
+        Allocates memory from a set of specified "bin" sizes based on a
+        specified allocation size.
 
         Call add_bin to add fixed-size bin allocators.
 
         Parameters
         ----------
         upstream_mr : MemoryResource
-            The memory resource to use for allocations larger than any of the bins
+            The memory resource to use for allocations larger than any of the
+            bins
         """
         pass
 
@@ -195,12 +197,13 @@ cdef class BinningMemoryResource(MemoryResource):
         size_t allocation_size,
         object bin_resource=None):
         """
-        Adds a bin of the specified maximum allocation size to this memory resource. If specified,
-        uses bin_resource for allocation for this bin. If not specified, creates and
-        uses a FixedSizeMemoryResource for allocation for this bin.
+        Adds a bin of the specified maximum allocation size to this memory
+        resource. If specified, uses bin_resource for allocation for this bin.
+        If not specified, creates and uses a FixedSizeMemoryResource for
+        allocation for this bin.
         
-        Allocations smaller than allocation_size and larger than the next smaller bin size will
-        use this fixed-size memory resource.
+        Allocations smaller than allocation_size and larger than the next
+        smaller bin size will use this fixed-size memory resource.
 
         Parameters
         ----------
@@ -212,7 +215,9 @@ cdef class BinningMemoryResource(MemoryResource):
         cdef MemoryResource _bin_resource
 
         if bin_resource is None:
-            (<binning_memory_resource_wrapper*>(self.c_obj.get()))[0].add_bin(allocation_size)
+            (<binning_memory_resource_wrapper*>(self.c_obj.get()))[0].add_bin(
+                allocation_size
+            )
         else:
             # Coerce Python object `bin_resource` to C object `_bin_resource`
             _bin_resource = bin_resource  
