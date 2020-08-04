@@ -80,7 +80,9 @@ inline cuda_device_id current_device()
  * Returns a pointer to the `device_memory_resource` for the specified device. The initial resource
  * is a `cuda_memory_resource`.
  *
- * This function is thread-safe.
+ * This function is thread-safe with respect to `set_per_device_resource`,
+ * `get_current_device_resource`, and `set_current_device_resource`. Concurrent calls to any of
+ * these functions will result in a valid state, but the order of execution is undefined.
  *
  * @param id The id of the target device
  * @return Pointer to the current `device_memory_resource` for device `id`
@@ -103,7 +105,10 @@ inline device_memory_resource* get_per_device_resource(cuda_device_id id)
  * The object pointed to by `new_mr` must outlive the last use of the resource, otherwise behavior
  * is undefined. It is the caller's responsibility to maintain the lifetime of the resource object.
  *
- * This function is thread-safe.
+ * This function is thread-safe with respect to concurrent calls to `set_per_device_resource`,
+ * `get_per_device_resource`, `get_current_device_resource`, and `set_current_device_resource`.
+ * Concurrent calls to any of these functions will result in a valid state, but the order of
+ * execution is undefined.
  *
  * @param new_mr If not `nullptr`, pointer to new `device_memory_resource` to use as new resource
  * for `id`
@@ -129,7 +134,10 @@ inline device_memory_resource* set_per_device_resource(cuda_device_id id,
  *
  * The "current device" is the device returned by `cudaGetDevice`.
  *
- * This function is thread-safe
+ * This function is thread-safe with respect to concurrent calls to `set_per_device_resource`,
+ * `get_per_device_resource`, `get_current_device_resource`, and `set_current_device_resource`.
+ * Concurrent calls to any of these functions will result in a valid state, but the order of
+ * execution is undefined.
  *
  * @return Pointer to the resource for the current device
  */
@@ -150,7 +158,10 @@ inline device_memory_resource* get_current_device_resource()
  * is  undefined. It is the caller's responsibility to maintain the lifetime of the resource
  * object.
  *
- * This function is thread-safe.
+ * This function is thread-safe with respect to concurrent calls to `set_per_device_resource`,
+ * `get_per_device_resource`, `get_current_device_resource`, and `set_current_device_resource`.
+ * Concurrent calls to any of these functions will result in a valid state, but the order of
+ * execution is undefined.
  *
  * @param new_mr If not `nullptr`, pointer to new resource to use for the current device
  * @return Pointer to the previous resource for the current device
