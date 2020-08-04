@@ -19,8 +19,8 @@
 #include "default_memory_resource.hpp"
 #include "device_memory_resource.hpp"
 
+#include <map>
 #include <mutex>
-#include <unordered_map>
 
 namespace rmm {
 namespace mr {
@@ -57,8 +57,7 @@ inline std::mutex& map_lock()
 
 inline auto& get_map()
 {
-  static std::unordered_map<cuda_device_id::value_type, device_memory_resource*>
-    device_id_to_resource;
+  static std::map<cuda_device_id::value_type, device_memory_resource*> device_id_to_resource;
   return device_id_to_resource;
 }
 
