@@ -62,7 +62,7 @@ TEST_P(mr_test, SetDefaultResource)
   EXPECT_TRUE(old->is_equal(*rmm::mr::get_default_resource()));
 }
 
-TEST_P(mr_test, SetCurentDeviceResource)
+TEST_P(mr_test, SetCurrentDeviceResource)
 {
   rmm::mr::device_memory_resource* old{};
   EXPECT_NO_THROW(old = rmm::mr::set_current_device_resource(this->mr.get()));
