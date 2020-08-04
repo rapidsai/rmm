@@ -47,7 +47,6 @@
  */
 
 namespace rmm {
-namespace mr {
 
 /**
  * @brief Strong type for a CUDA device identifier.
@@ -69,6 +68,8 @@ struct cuda_device_id {
  private:
   value_type id_;
 };
+
+namespace mr {
 
 namespace detail {
 inline std::mutex& map_lock()
