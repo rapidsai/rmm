@@ -80,8 +80,8 @@ inline cuda_device_id current_device()
 /**
  * @brief Get the resource for the specified device.
  *
- * Returns a pointer to the `device_memory_resource` for the specified device. The initial resource is a
- * `cuda_memory_resource`.
+ * Returns a pointer to the `device_memory_resource` for the specified device. The initial resource
+ * is a `cuda_memory_resource`.
  *
  * This function is thread-safe.
  *
@@ -93,18 +93,18 @@ inline device_memory_resource* get_per_device_resource(cuda_device_id id)
   std::lock_guard<std::mutex> lock{detail::map_lock()};
   auto& map = detail::get_map();
   // If a resource was never set for `id`, set to the initial resource
-  return (map.find(id.value()) == map.end()) ? (map[id.value()] = detail::initial_resource())
-                                             : map[id.value()];
+  auto found = map.find(id.value());
+  return (found == map.end()) ? (map[id.value()] = detail::initial_resource()) : found->second;
 }
 
 /**
  * @brief Set the `device_memory_resource` for the specified device.
  *
- * If `new_mr` is not `nullptr`, sets the memory resource pointer for the device specified by `id` to
- * `new_mr`. Otherwise, resets `id`s resource to the initial `cuda_memory_resource`.
+ * If `new_mr` is not `nullptr`, sets the memory resource pointer for the device specified by `id`
+ * to `new_mr`. Otherwise, resets `id`s resource to the initial `cuda_memory_resource`.
  *
- * The object pointed to by `new_mr` must outlive the last use of the resource, otherwise behavior is
- * undefined. It is the caller's responsibility to maintain the lifetime of the resource object.
+ * The object pointed to by `new_mr` must outlive the last use of the resource, otherwise behavior
+ * is undefined. It is the caller's responsibility to maintain the lifetime of the resource object.
  *
  * This function is thread-safe.
  *
@@ -149,7 +149,8 @@ inline device_memory_resource* get_current_device_resource()
 
  * The "current device" is the device returned by `cudaGetDevice`.
  *
- * The object pointed to by `new_mr` must outlive the last use of the resource, otherwise behavior is
+ * The object pointed to by `new_mr` must outlive the last use of the resource, otherwise behavior
+ is
  * undefined. It is the caller's responsibility to maintain the lifetime of the resource object.
  *
  * This function is thread-safe.
