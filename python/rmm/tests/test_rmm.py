@@ -325,9 +325,7 @@ def test_fixed_size_memory_resource(dtype, nelem, alloc, upstream):
         ),
     ],
 )
-def test_binning_memory_resource(
-    dtype, nelem, alloc, upstream_mr
-):
+def test_binning_memory_resource(dtype, nelem, alloc, upstream_mr):
     upstream = upstream_mr()
     mr = rmm.mr.BinningMemoryResource(upstream)
 
@@ -339,7 +337,7 @@ def test_binning_memory_resource(
     fixed_mr = rmm.mr.FixedSizeMemoryResource(upstream, 1 << 10)
     cuda_mr = rmm.mr.CudaMemoryResource()
     mr.add_bin(1 << 10, fixed_mr)  # 1KiB bin
-    mr.add_bin(1 << 23, cuda_mr)   # 8MiB bin
+    mr.add_bin(1 << 23, cuda_mr)  # 8MiB bin
 
     rmm.mr.set_default_resource(mr)
     assert rmm.mr.get_default_resource_type() is type(mr)
