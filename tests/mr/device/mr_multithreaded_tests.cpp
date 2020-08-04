@@ -100,6 +100,39 @@ TEST_P(mr_test_mt, SetDefaultResource_mt)
   EXPECT_TRUE(old->is_equal(*rmm::mr::get_default_resource()));
 }
 
+TEST_P(mr_test_mt, SetCurrentDeviceResource_mt)
+{
+  int num_devices;
+  RMM_CUDA_TRY(cudaGetDeviceCount(&num_devices));
+
+  std::vector<std::thread> threads;
+  threads.reserve(num_devices);
+  for (int i = 0; i < num_devices; ++i) {
+    threads.emplace_back(std::thread{
+      [mr = this->mr.get()](auto dev_id) {
+        RMM_CUDA_TRY(cudaSetDevice(dev_id));
+        rmm::mr::device_memory_resource* old;
+        EXPECT_NO_THROW(old = rmm::mr::set_current_device_resource(mr));
+        EXPECT_NE(nullptr, old);
+        // initial resource for this device should be CUDA mr
+        EXPECT_TRUE(old->is_equal(rmm::mr::cuda_memory_resource{}));
+        // get_current_device_resource should equal the resource we just set
+        EXPECT_EQ(mr, rmm::mr::get_current_device_resource());
+        // Setting current dev resource to nullptr should reset to cuda MR and return the MR we
+        // previously set
+        EXPECT_NO_THROW(old = rmm::mr::set_current_device_resource(nullptr));
+        EXPECT_NE(nullptr, old);
+        EXPECT_EQ(old, mr);
+        EXPECT_TRUE(
+          rmm::mr::get_current_device_resource()->is_equal(rmm::mr::cuda_memory_resource{}));
+      },
+      i});
+  }
+
+  for (auto& t : threads)
+    t.join();
+}
+
 TEST_P(mr_test_mt, AllocateDefaultStream)
 {
   spawn(test_various_allocations, this->mr.get(), cudaStream_t{cudaStreamDefault});
