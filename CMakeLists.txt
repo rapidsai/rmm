@@ -137,8 +137,7 @@ endif(BUILD_BENCHMARKS)
 
 ###################################################################################################
 # - include paths ---------------------------------------------------------------------------------
-include_directories("${SPDLOG_INCLUDE_DIR}"
-                    "${CUB_INCLUDE_DIR}"
+include_directories("${CUB_INCLUDE_DIR}"
                     "${THRUST_INCLUDE_DIR}"
                     "${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/include"
@@ -168,14 +167,15 @@ option(USE_NVTX "Build with NVTX support" ON)
 if(USE_NVTX)
     message(STATUS "Using Nvidia Tools Extension")
     find_library(NVTX_LIBRARY nvToolsExt PATH ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
-    target_link_libraries(rmm ${NVTX_LIBRARY})
+    target_link_libraries(rmm PUBLIC ${NVTX_LIBRARY})
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --define-macro USE_NVTX")
 endif(USE_NVTX)
 
 ###################################################################################################
 # - link libraries --------------------------------------------------------------------------------
 
-target_link_libraries(rmm ${CUDART_LIBRARY} cuda)
+target_link_libraries(rmm PUBLIC
+  ${CUDART_LIBRARY} cuda spdlog::spdlog_header_only)
 
 ###################################################################################################
 # - install targets -------------------------------------------------------------------------------
