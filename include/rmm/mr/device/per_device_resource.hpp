@@ -35,13 +35,11 @@ struct cuda_device_id {
   /**
    * @brief Construct a `cuda_device_id` from the specified integer value
    *
+   * @param id The device's integer identifier
    */
   explicit constexpr cuda_device_id(value_type id) noexcept : id_{id} {}
 
-  /**
-   * @brief Returns the wrapped value
-   *
-   */
+  /// Returns the wrapped integer value
   constexpr value_type value() const noexcept { return id_; }
 
  private:
@@ -145,12 +143,12 @@ inline device_memory_resource* get_current_device_resource()
  *
  * If `new_mr` is not `nullptr`, sets the resource pointer for the current device to
  * `new_mr`. Otherwise, resets the resource to the initial `cuda_memory_resource`.
-
+ *
  * The "current device" is the device returned by `cudaGetDevice`.
  *
  * The object pointed to by `new_mr` must outlive the last use of the resource, otherwise behavior
- is
- * undefined. It is the caller's responsibility to maintain the lifetime of the resource object.
+ * is  undefined. It is the caller's responsibility to maintain the lifetime of the resource
+ * object.
  *
  * This function is thread-safe.
  *
