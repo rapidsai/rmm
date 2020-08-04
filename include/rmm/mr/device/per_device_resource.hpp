@@ -78,15 +78,15 @@ inline cuda_device_id current_device()
 }  // namespace detail
 
 /**
- * @brief Get the resource for the specified device
+ * @brief Get the resource for the specified device.
  *
- * Returns a pointer to the resource set for the specified device. The initial resource is a
+ * Returns a pointer to the `device_memory_resource` for the specified device. The initial resource is a
  * `cuda_memory_resource`.
  *
  * This function is thread-safe.
  *
  * @param id The id of the target device
- * @return Pointer to the current resource for `id`
+ * @return Pointer to the current `device_memory_resource` for device `id`
  */
 inline device_memory_resource* get_per_device_resource(cuda_device_id id)
 {
@@ -98,19 +98,19 @@ inline device_memory_resource* get_per_device_resource(cuda_device_id id)
 }
 
 /**
- * @brief Update the resource for the specified device
+ * @brief Set the `device_memory_resource` for the specified device.
  *
- * If `new_mr` is not `nullptr`, sets the resource pointer for the device specified by `id` to
+ * If `new_mr` is not `nullptr`, sets the memory resource pointer for the device specified by `id` to
  * `new_mr`. Otherwise, resets `id`s resource to the initial `cuda_memory_resource`.
  *
- * The object pointed to by `new_mr` must outlive the last use of the resource, else behavior is
+ * The object pointed to by `new_mr` must outlive the last use of the resource, otherwise behavior is
  * undefined. It is the caller's responsibility to maintain the lifetime of the resource object.
  *
  * This function is thread-safe.
  *
  * @param new_mr If not `nullptr`, pointer to new `device_memory_resource` to use as new resource
  * for `id`
- * @return Pointer to the previous the resource for `id`
+ * @return Pointer to the previous memory resource for `id`
  */
 inline device_memory_resource* set_per_device_resource(cuda_device_id id,
                                                        device_memory_resource* new_mr)
@@ -125,7 +125,7 @@ inline device_memory_resource* set_per_device_resource(cuda_device_id id,
 }
 
 /**
- * @brief Get the resource for the current device
+ * @brief Get the memory resource for the current device.
  *
  * Returns a pointer to the resource set for the current device. The initial resource is a
  * `cuda_memory_resource`.
@@ -142,14 +142,14 @@ inline device_memory_resource* get_current_device_resource()
 }
 
 /**
- * @brief Update the resource for the current device
+ * @brief Set the memory resource for the current device.
  *
  * If `new_mr` is not `nullptr`, sets the resource pointer for the current device to
  * `new_mr`. Otherwise, resets the resource to the initial `cuda_memory_resource`.
 
  * The "current device" is the device returned by `cudaGetDevice`.
  *
- * The object pointed to by `new_mr` must outlive the last use of the resource, else behavior is
+ * The object pointed to by `new_mr` must outlive the last use of the resource, otherwise behavior is
  * undefined. It is the caller's responsibility to maintain the lifetime of the resource object.
  *
  * This function is thread-safe.
