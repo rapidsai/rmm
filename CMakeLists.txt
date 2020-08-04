@@ -137,9 +137,7 @@ endif(BUILD_BENCHMARKS)
 
 ###################################################################################################
 # - include paths ---------------------------------------------------------------------------------
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include"
-                    "${CMAKE_CURRENT_BINARY_DIR}/include"
-                    "${CMAKE_CURRENT_SOURCE_DIR}/src"
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src"
                     "${CNMEM_INCLUDE_DIR}")
 
 ###################################################################################################
@@ -160,6 +158,8 @@ SET_TARGET_PROPERTIES(rmm PROPERTIES BUILD_RPATH "\$ORIGIN")
 target_include_directories(rmm PUBLIC
   "${THRUST_INCLUDE_DIR}"
   "${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
+  "${CMAKE_CURRENT_SOURCE_DIR}/include"
+  "${CMAKE_CURRENT_BINARY_DIR}/include"
   )
 
 ###################################################################################################
