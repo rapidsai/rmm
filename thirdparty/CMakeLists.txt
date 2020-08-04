@@ -19,23 +19,6 @@ set(CNMEM_INCLUDE_DIR "${cnmem_SOURCE_DIR}/include" PARENT_SCOPE)
 set(CNMEM_SOURCE_DIR "${cnmem_SOURCE_DIR}/src" PARENT_SCOPE)
 
 ###################################################################################################
-# - cub -------------------------------------------------------------------------------------------
-
-FetchContent_Declare(
-    cub
-    GIT_REPOSITORY https://github.com/thrust/cub.git
-    GIT_TAG        1.9.10
-    GIT_SHALLOW    true
-)
-
-FetchContent_GetProperties(cub)
-if(NOT cub_POPULATED)
-  FetchContent_Populate(cub)
-  # We are not using the cub CMake targets, so no need to call `add_subdirectory()`.
-endif()
-set(CUB_INCLUDE_DIR "${cub_SOURCE_DIR}" PARENT_SCOPE)
-
-###################################################################################################
 # - spdlog ----------------------------------------------------------------------------------------
 
 FetchContent_Declare(
