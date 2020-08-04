@@ -27,6 +27,7 @@ python/rmm/tests/*.cpp
 python/rmm/*.ipynb
 python/rmm/.ipynb_checkpoints
 python/*/record.txt
+python/record.txt
 .Python
 env/
 develop-eggs/
