@@ -80,9 +80,10 @@ inline cuda_device_id current_device()
  * Returns a pointer to the `device_memory_resource` for the specified device. The initial resource
  * is a `cuda_memory_resource`.
  *
- * This function is thread-safe with respect to `set_per_device_resource`,
- * `get_current_device_resource`, and `set_current_device_resource`. Concurrent calls to any of
- * these functions will result in a valid state, but the order of execution is undefined.
+ * This function is thread-safe with respect to concurrent calls to `set_per_device_resource`,
+ * `get_per_device_resource`, `get_current_device_resource`, and `set_current_device_resource`.
+ * Concurrent calls to any of these functions will result in a valid state, but the order of
+ * execution is undefined.
  *
  * @param id The id of the target device
  * @return Pointer to the current `device_memory_resource` for device `id`
