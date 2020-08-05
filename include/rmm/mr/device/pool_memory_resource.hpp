@@ -285,7 +285,7 @@ class pool_memory_resource final
    */
   void print()
   {
-    lock_guard lock(get_mutex());
+    lock_guard lock(this->get_mutex());
 
     std::size_t free, total;
     std::tie(free, total) = upstream_mr_->get_mem_info(0);

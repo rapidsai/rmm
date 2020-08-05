@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2020, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include <benchmarks/utilities/cxxopts.hpp>
+
 #include <rmm/mr/device/cnmem_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
@@ -23,6 +26,7 @@
 
 #include <benchmark/benchmark.h>
 
+#include <array>
 #include <cstdlib>
 #include <functional>
 #include <random>
@@ -245,25 +249,9 @@ void declare_benchmark(std::string name)
     std::cout << "Error: invalid memory_resource name: " << name << "\n";
 }
 
-int main(int argc, char** argv)
-{
-  ::benchmark::Initialize(&argc, argv);
-  if (argc > 1) {
-    std::string mr_name = argv[1];
-    if (argc > 2) num_allocations = atoi(argv[2]);
-    if (argc > 3) max_size = atoi(argv[3]);
-    declare_benchmark(mr_name);
-  } else {
-    std::vector<std::string> mrs{"pool", "hybrid", "cnmem", "cuda"};
-    std::for_each(mrs.cbegin(), mrs.cend(), [](auto const& s) { declare_benchmark(s); });
-  }
-
-  ::benchmark::RunSpecifiedBenchmarks();
-}
-
-/*
-// For profiling, don't remove
-static void RandomAllocations(MRFactoryFunc factory, size_t num_allocations, size_t max_size)
+static void profile_random_allocations(MRFactoryFunc factory,
+                                       size_t num_allocations,
+                                       size_t max_size)
 {
   auto mr = factory();
 
@@ -276,19 +264,55 @@ static void RandomAllocations(MRFactoryFunc factory, size_t num_allocations, siz
 
 int main(int argc, char** argv)
 {
-  std::string name{argc > 1 ? argv[1] : "cnmem"};
+  // benchmark::Initialize will remove GBench command line arguments it
+  // recognizes and leave any remaining arguments
+  ::benchmark::Initialize(&argc, argv);
 
-  constexpr size_t n        = 100000;
-  constexpr size_t max_size = 4096;
+  // Parse for replay arguments:
+  cxxopts::Options options("RMM Random Allocations Benchmark",
+                           "Benchmarks random allocations within a size range.");
 
-  if (name == "hybrid")
-    RandomAllocations(&make_hybrid, n, max_size);
-  else if (name == "pool")
-    RandomAllocations(&make_pool, n, max_size);
-  else if (name == "cnmem")
-    RandomAllocations(&make_cnmem, n, max_size);
+  options.add_options()(
+    "p,profile", "Profiling mode: run once", cxxopts::value<bool>()->default_value("false"));
+  options.add_options()("r,resource",
+                        "Type of device_memory_resource",
+                        cxxopts::value<std::string>()->default_value("pool"));
+  options.add_options()("n,numallocs",
+                        "Number of allocations (default of 0 tests a range)",
+                        cxxopts::value<int>()->default_value("0"));
+  options.add_options()("m,maxsize",
+                        "Maximum allocation size (default of 0 tests a range)",
+                        cxxopts::value<int>()->default_value("0"));
 
-  std::cout << "Finished\n";
+  auto args       = options.parse(argc, argv);
+  num_allocations = args["numallocs"].as<int>();
+  max_size        = args["maxsize"].as<int>();
+
+  if (args.count("profile") > 0) {
+    std::map<std::string, MRFactoryFunc> const funcs({{"cnmem", &make_cnmem},
+                                                      {"cuda", &make_cuda},
+                                                      {"hybrid", &make_hybrid},
+                                                      {"pool", &make_pool}});
+    auto resource = args["resource"].as<std::string>();
+
+    num_allocations = num_allocations > 0 ? num_allocations : 1000;
+    max_size        = max_size > 0 ? num_allocations : 4096;
+
+    std::cout << "Profiling " << resource << " with " << num_allocations << " allocations of max "
+              << max_size << "B\n";
+
+    profile_random_allocations(funcs.at(resource), num_allocations, max_size);
+
+    std::cout << "Finished\n";
+  } else {
+    if (args.count("resource") > 0) {
+      std::string mr_name = args["resource"].as<std::string>();
+      declare_benchmark(mr_name);
+    } else {
+      std::array<std::string, 4> mrs{"pool", "hybrid", "cnmem", "cuda"};
+      std::for_each(std::cbegin(mrs), std::cend(mrs), [](auto const& s) { declare_benchmark(s); });
+    }
+    ::benchmark::RunSpecifiedBenchmarks();
+  }
   return 0;
 }
-*/
