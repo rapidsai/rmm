@@ -289,29 +289,22 @@ class pool_memory_resource final
 
     std::size_t free, total;
     std::tie(free, total) = upstream_mr_->get_mem_info(0);
-    std::cout << "GPU free memory: " << free << "total: " << total << "\n";
+    std::cout << "GPU free memory: " << free << " total: " << total << "\n";
 
     std::cout << "upstream_blocks: " << upstream_blocks_.size() << "\n";
     std::size_t upstream_total{0};
 
     for (auto h : upstream_blocks_) {
-      h.print();
+      detail::print(h);
       upstream_total += h.size();
     }
     std::cout << "total upstream: " << upstream_total << " B\n";
 
     std::cout << "allocated_blocks: " << allocated_blocks_.size() << "\n";
-    for (auto b : allocated_blocks_) {
-      b.print();
-    }
+    for (auto b : allocated_blocks_)
+      detail::print(b);
 
-    // TODO
-    /*std::cout << "stream free blocks: ";
-    for (auto s : stream_free_blocks_) {
-      std::cout << "stream: " << s.first.stream << " event: " << s.first.event << " ";
-      s.second.print();
-    }*/
-    std::cout << "\n";
+    this->print_free_blocks();
   }
 #endif  // DEBUG
 

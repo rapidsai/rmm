@@ -227,6 +227,28 @@ class fixed_size_memory_resource
     upstream_blocks_.clear();
   }
 
+#ifndef NDEBUG
+  void print()
+  {
+    lock_guard lock(this->get_mutex());
+
+    std::size_t free, total;
+    std::tie(free, total) = upstream_mr_->get_mem_info(0);
+    std::cout << "GPU free memory: " << free << " total: " << total << "\n";
+
+    std::cout << "upstream_blocks: " << upstream_blocks_.size() << "\n";
+    std::size_t upstream_total{0};
+
+    for (auto h : upstream_blocks_) {
+      detail::print(h);
+      upstream_total += upstream_chunk_size_;
+    }
+    std::cout << "total upstream: " << upstream_total << " B\n";
+
+    this->print_free_blocks();
+  }
+#endif
+
   Upstream* upstream_mr_;  // The resource from which to allocate new blocks
 
   std::size_t const block_size_;           // size of blocks this MR allocates
@@ -234,6 +256,6 @@ class fixed_size_memory_resource
 
   // blocks allocated from heap: so they can be easily freed
   std::vector<void*> upstream_blocks_;
-};
+};  // namespace mr
 }  // namespace mr
 }  // namespace rmm

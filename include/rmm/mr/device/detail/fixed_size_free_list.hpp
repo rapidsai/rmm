@@ -37,6 +37,17 @@ inline bool is_valid<void*>(void* const& b)
   return b != nullptr;
 }
 
+/**
+ * @brief Prints a block (for debugging).
+ *
+ * @param b The block to print
+ */
+template <>
+inline void print<void*>(void* const& b)
+{
+  std::cout << b;
+}
+
 struct fixed_size_free_list : free_list<void*> {
   fixed_size_free_list()  = default;
   ~fixed_size_free_list() = default;

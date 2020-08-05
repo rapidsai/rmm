@@ -163,6 +163,17 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     stream_free_blocks_[get_event(stream)].insert(std::move(blocks));
   }
 
+  void print_free_blocks() const
+  {
+    std::cout << "stream free blocks: ";
+    for (auto s : stream_free_blocks_) {
+      std::cout << "stream: " << s.first.stream << " event: " << s.first.event << " ";
+      print(s.second);
+      std::cout << std::endl;
+    }
+    std::cout << std::endl;
+  }
+
   /**
    * @brief Get the mutex object
    *

@@ -40,6 +40,19 @@ inline bool is_valid(BlockType const& b)
 }
 
 /**
+ * @brief Prints a block (for debugging).
+ *
+ * This function template should be specialized for any type of block used by a concrete
+ * implementation of `free_list`.
+ *
+ * @param b The block to print
+ */
+template <typename BlockType>
+inline void print(BlockType const& b)
+{
+}
+
+/**
  * @brief Base class defining an interface for a list of free memory blocks.
  *
  * Uses of derived classes assume the following additional methods are implemented (see

@@ -129,7 +129,7 @@ struct block {
   /**
    * @brief Print this block. For debugging.
    */
-  void print() const { std::cout << reinterpret_cast<void*>(pointer()) << " " << size() << "B\n"; }
+  void print() const { std::cout << reinterpret_cast<void*>(pointer()) << " " << size() << " B\n"; }
 
  private:
   char* ptr{};          ///< Raw memory pointer
@@ -141,6 +141,17 @@ template <>
 inline bool is_valid<block>(block const& b)
 {
   return b.is_valid();
+}
+
+/**
+ * @brief Prints a block (for debugging).
+ *
+ * @param b The block to print
+ */
+template <>
+inline void print<block>(block const& b)
+{
+  b.print();
 }
 
 /**
