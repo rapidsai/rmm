@@ -33,6 +33,7 @@
 - PR #445 Make all resource operators/ctors explicit
 - PR #447 Update Python README with info about DeviceBuffer/MemoryResource and external libraries
 - PR #456 Minor cleanup: always use rmm/-prefixed includes
+- PR #461 cmake improvements to be more target-based
 
 ## Bug Fixes
 
