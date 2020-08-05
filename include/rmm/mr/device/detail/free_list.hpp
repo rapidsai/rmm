@@ -42,12 +42,13 @@ inline bool is_valid(BlockType const& b)
 /**
  * @brief Base class defining an interface for a list of free memory blocks.
  *
- * Uses of derived classes assume the following additional methods are implemented:
-
- *  - void insert(block_type const& b)
- *  - void insert(free_list&& other)
- *  - block_type get_block(size_t size)
- *  - void print()
+ * Uses of derived classes assume the following additional methods are implemented (see
+ * fixed_size_free_list.hpp and coalescing_free_list.hpp):
+ *
+ *  - `void insert(block_type const& b)`
+ *  - `void insert(free_list&& other)`
+ *  - `block_type get_block(size_t size)`
+ *  - `void print()`
  *
  * @tparam list_type the type of the internal list data structure.
  */
@@ -97,34 +98,6 @@ struct free_list {
    *
    */
   void clear() noexcept { blocks.clear(); }
-
-  /*
-   * @brief Inserts a block into the `free_list`.
-   *
-   * @param b The block to insert.
-   */
-  // void insert(block_type const& b);
-
-  /*
-   * @brief Moves blocks from other into the free_list.
-   *
-   * @param first The beginning of the range of blocks to insert
-   * @param last The end of the range of blocks to insert.
-   */
-  // void insert(free_list&& other);
-
-  /*
-   * @brief Returns a block from `free_list` large enough to fit `size` bytes.
-   *
-   * @param size The size in bytes of the desired block.
-   * @return block A block large enough to store `size` bytes.
-   */
-  // block_type get_block(size_t size);
-
-  /*
-   * @brief Print all blocks in the free_list.
-   */
-  // void print();
 
  protected:
   /**
