@@ -9,6 +9,7 @@
 - PR #436 Always build and test with per-thread default stream enabled in the GPU CI build
 - PR #444 Add `owning_wrapper` to simplify lifetime management of resources and their upstreams
 - PR #450 Add support for new build process (Project Flash)
+- PR #458 Add `get/set_per_device_resource` to better support multi-GPU per process applications
 
 ## Improvements
 
