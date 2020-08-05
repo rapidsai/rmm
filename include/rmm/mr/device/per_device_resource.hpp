@@ -29,7 +29,7 @@
  * One might wish to construct a `device_memory_resource` and use it for (de)allocation
  * without explicit dependency injection, i.e., passing a reference to that object to all places it
  * is to be used. Instead, one might want to set their resource as a "default" and have it be used
- * in all places where another resource has not been explicitly specified.  In applications with
+ * in all places where another resource has not been explicitly specified. In applications with
  * multiple GPUs in the same process, it may also be necessary to maintain independent default
  * resources for each device. To this end, the `set_per_device_resource` and
  * `get_per_device_resource` functions enable mapping a CUDA device id to a `device_memory_resource`
@@ -144,6 +144,7 @@ inline device_memory_resource* get_per_device_resource(cuda_device_id id)
  * Concurrent calls to any of these functions will result in a valid state, but the order of
  * execution is undefined.
  *
+ * @param id The id of the target device
  * @param new_mr If not `nullptr`, pointer to new `device_memory_resource` to use as new resource
  * for `id`
  * @return Pointer to the previous memory resource for `id`
@@ -189,7 +190,7 @@ inline device_memory_resource* get_current_device_resource()
  * The "current device" is the device returned by `cudaGetDevice`.
  *
  * The object pointed to by `new_mr` must outlive the last use of the resource, otherwise behavior
- * is  undefined. It is the caller's responsibility to maintain the lifetime of the resource
+ * is undefined. It is the caller's responsibility to maintain the lifetime of the resource
  * object.
  *
  * This function is thread-safe with respect to concurrent calls to `set_per_device_resource`,
