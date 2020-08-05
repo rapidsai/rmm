@@ -120,7 +120,9 @@ class pool_memory_resource final
 
  protected:
   using free_list  = detail::coalescing_free_list;
-  using block_type = typename free_list::block_type;
+  using block_type = free_list::block_type;
+  using typename detail::stream_ordered_memory_resource<pool_memory_resource<Upstream>,
+                                                        detail::coalescing_free_list>::split_block;
   using lock_guard = std::lock_guard<std::mutex>;
 
   void initialize_pool(cudaStream_t stream)
@@ -197,14 +199,14 @@ class pool_memory_resource final
    * @return A pair comprising the allocated pointer and any unallocated remainder of the input
    * block.
    */
-  std::pair<void*, block_type> allocate_from_block(block_type const& b, size_t size)
+  split_block allocate_from_block(block_type const& b, size_t size)
   {
     block_type const alloc{b.pointer(), size, b.is_head()};
     allocated_blocks_.insert(alloc);
 
     auto rest =
       (b.size() > size) ? block_type{b.pointer() + size, b.size() - size, false} : block_type{};
-    return std::make_pair(reinterpret_cast<void*>(alloc.pointer()), rest);
+    return {reinterpret_cast<void*>(alloc.pointer()), rest};
   }
 
   /**
