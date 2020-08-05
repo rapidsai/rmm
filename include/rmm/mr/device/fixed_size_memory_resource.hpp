@@ -256,6 +256,7 @@ class fixed_size_memory_resource
 
   // blocks allocated from heap: so they can be easily freed
   std::vector<void*> upstream_blocks_;
-};  // namespace mr
+};
+
 }  // namespace mr
 }  // namespace rmm
