@@ -132,11 +132,9 @@ class pool_memory_resource final
     RMM_CUDA_TRY(cudaGetDevice(&device));
     RMM_CUDA_TRY(cudaGetDeviceProperties(&props, device));
 
-    if (initial_pool_size_ == default_initial_size) {
-      initial_pool_size_ = props.totalGlobalMem / 2;
-    }
-
-    initial_pool_size_ = rmm::detail::align_up(initial_pool_size_, allocation_alignment);
+    initial_pool_size_ = rmm::detail::align_up(
+      (initial_pool_size_ == default_initial_size) ? props.totalGlobalMem / 2 : initial_pool_size_,
+      allocation_alignment);
 
     if (maximum_pool_size_ == default_maximum_size) { maximum_pool_size_ = props.totalGlobalMem; }
 
