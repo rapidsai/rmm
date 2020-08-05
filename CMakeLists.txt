@@ -147,10 +147,11 @@ add_library(rmm SHARED
 SET_TARGET_PROPERTIES(rmm PROPERTIES BUILD_RPATH "\$ORIGIN")
 
 target_include_directories(rmm PUBLIC
-  "${THRUST_INCLUDE_DIR}"
+  $<BUILD_INTERFACE:${THRUST_INCLUDE_DIR}>
   "${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
-  "${CMAKE_CURRENT_SOURCE_DIR}/include"
-  "${CMAKE_CURRENT_BINARY_DIR}/include"
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+  $<INSTALL_INTERFACE:include>
   )
 
 # In order to find cnmem.h while building the library, we need this.
@@ -180,8 +181,28 @@ target_link_libraries(rmm PUBLIC
 # - install targets -------------------------------------------------------------------------------
 
 include(GNUInstallDirs)
+set(INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/rmm)
+
+install(EXPORT rmm-targets
+  FILE rmm-targets.cmake
+  NAMESPACE rapids::
+  DESTINATION ${INSTALL_CONFIGDIR}
+  )
+
+include(CMakePackageConfigHelpers)
+configure_package_config_file(
+  rmm-config.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/rmm-config.cmake
+  INSTALL_DESTINATION ${INSTALL_CONFIGDIR}
+  )
+
+write_basic_package_version_file(
+  ${CMAKE_CURRENT_BINARY_DIR}/rmm-config-version.cmake
+  COMPATIBILITY AnyNewerVersion
+  )
 
 install(TARGETS rmm
+  EXPORT rmm-targets
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   )
 
@@ -190,8 +211,21 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/rmm
   )
 
 install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/rmm
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  )
       
+install(FILES
+  ${CMAKE_CURRENT_BINARY_DIR}/rmm-config.cmake
+  ${CMAKE_CURRENT_BINARY_DIR}/rmm-config-version.cmake
+  DESTINATION ${INSTALL_CONFIGDIR}
+  )
+
+# workaround that pretends we installed spdlog, even though we do not
+# want to install spdlog together with rmm
+install(TARGETS spdlog_header_only
+  EXPORT rmm-targets
+  )
+
 ###################################################################################################
 # - make documentation ----------------------------------------------------------------------------
 
