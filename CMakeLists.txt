@@ -175,7 +175,19 @@ endif(USE_NVTX)
 # - link libraries --------------------------------------------------------------------------------
 
 target_link_libraries(rmm PUBLIC
-  ${CUDART_LIBRARY} cuda spdlog::spdlog_header_only)
+  ${CUDART_LIBRARY} cuda)
+
+# What we really want to do is to add spdlog::spdlog_header_only as a PUBLIC
+# dependency. However, since we don't want to install our own copy of spdlog as part
+# of an RMM install, we can do so only during the build, but not during install, which
+# is what the below achieves.
+# This does, however, mean that downstream use of RMM in a cmake project does not automatically
+# pull in spdlog, ie., if the downstream project wants to use the `logging_resource_adaptor`,
+# it needs to make spdlog available itself.
+target_link_libraries(rmm PRIVATE
+  spdlog::spdlog_header_only)
+set_property(TARGET rmm APPEND PROPERTY
+  INTERFACE_LINK_LIBRARIES $<BUILD_INTERFACE:spdlog::spdlog_header_only>)
 
 ###################################################################################################
 # - install targets -------------------------------------------------------------------------------
@@ -214,12 +226,6 @@ install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/rmm-config.cmake
   ${CMAKE_CURRENT_BINARY_DIR}/rmm-config-version.cmake
   DESTINATION ${INSTALL_CONFIGDIR}
-  )
-
-# workaround that pretends we installed spdlog, even though we do not
-# want to install spdlog together with rmm
-install(TARGETS spdlog_header_only
-  EXPORT rmm-targets
   )
 
 ###################################################################################################
