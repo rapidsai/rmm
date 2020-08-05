@@ -120,7 +120,9 @@ class pool_memory_resource final
 
  protected:
   using free_list  = detail::coalescing_free_list;
-  using block_type = typename free_list::block_type;
+  using block_type = free_list::block_type;
+  using typename detail::stream_ordered_memory_resource<pool_memory_resource<Upstream>,
+                                                        detail::coalescing_free_list>::split_block;
   using lock_guard = std::lock_guard<std::mutex>;
 
   void initialize_pool(cudaStream_t stream)
@@ -130,11 +132,9 @@ class pool_memory_resource final
     RMM_CUDA_TRY(cudaGetDevice(&device));
     RMM_CUDA_TRY(cudaGetDeviceProperties(&props, device));
 
-    if (initial_pool_size_ == default_initial_size) {
-      initial_pool_size_ = props.totalGlobalMem / 2;
-    }
-
-    initial_pool_size_ = rmm::detail::align_up(initial_pool_size_, allocation_alignment);
+    initial_pool_size_ = rmm::detail::align_up(
+      (initial_pool_size_ == default_initial_size) ? props.totalGlobalMem / 2 : initial_pool_size_,
+      allocation_alignment);
 
     if (maximum_pool_size_ == default_maximum_size) { maximum_pool_size_ = props.totalGlobalMem; }
 
@@ -197,14 +197,14 @@ class pool_memory_resource final
    * @return A pair comprising the allocated pointer and any unallocated remainder of the input
    * block.
    */
-  std::pair<void*, block_type> allocate_from_block(block_type const& b, size_t size)
+  split_block allocate_from_block(block_type const& b, size_t size)
   {
     block_type const alloc{b.pointer(), size, b.is_head()};
     allocated_blocks_.insert(alloc);
 
     auto rest =
       (b.size() > size) ? block_type{b.pointer() + size, b.size() - size, false} : block_type{};
-    return std::make_pair(reinterpret_cast<void*>(alloc.pointer()), rest);
+    return {reinterpret_cast<void*>(alloc.pointer()), rest};
   }
 
   /**
@@ -289,29 +289,22 @@ class pool_memory_resource final
 
     std::size_t free, total;
     std::tie(free, total) = upstream_mr_->get_mem_info(0);
-    std::cout << "GPU free memory: " << free << "total: " << total << "\n";
+    std::cout << "GPU free memory: " << free << " total: " << total << "\n";
 
     std::cout << "upstream_blocks: " << upstream_blocks_.size() << "\n";
     std::size_t upstream_total{0};
 
     for (auto h : upstream_blocks_) {
-      h.print();
+      detail::print(h);
       upstream_total += h.size();
     }
     std::cout << "total upstream: " << upstream_total << " B\n";
 
     std::cout << "allocated_blocks: " << allocated_blocks_.size() << "\n";
-    for (auto b : allocated_blocks_) {
-      b.print();
-    }
+    for (auto b : allocated_blocks_)
+      detail::print(b);
 
-    // TODO
-    /*std::cout << "stream free blocks: ";
-    for (auto s : stream_free_blocks_) {
-      std::cout << "stream: " << s.first.stream << " event: " << s.first.event << " ";
-      s.second.print();
-    }*/
-    std::cout << "\n";
+    this->print_free_blocks();
   }
 #endif  // DEBUG
 

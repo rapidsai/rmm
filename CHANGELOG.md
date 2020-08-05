@@ -13,6 +13,7 @@
 - PR #450 Add support for new build process (Project Flash)
 - PR #457 New `binning_memory_resource` (replaces `hybrid_memory_resource` and 
           `fixed_multisize_memory_resource`).
+- PR #458 Add `get/set_per_device_resource` to better support multi-GPU per process applications
 
 ## Improvements
 
@@ -37,6 +38,7 @@
 - PR #445 Make all resource operators/ctors explicit
 - PR #447 Update Python README with info about DeviceBuffer/MemoryResource and external libraries
 - PR #456 Minor cleanup: always use rmm/-prefixed includes
+- PR #461 cmake improvements to be more target-based
 
 ## Bug Fixes
 

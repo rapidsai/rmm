@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <rmm/mr/device/per_device_resource.hpp>
 #include "mr_test.hpp"
 
 #include <gtest/gtest.h>
@@ -32,7 +33,21 @@ INSTANTIATE_TEST_CASE_P(ResourceTests,
                                           mr_factory{"Binning", &make_binning}),
                         [](auto const& info) { return info.param.name; });
 
+TEST(DefaultTest, DefaultResourceIsCUDA)
+{
+  EXPECT_NE(nullptr, rmm::mr::get_default_resource());
+  EXPECT_TRUE(rmm::mr::get_default_resource()->is_equal(rmm::mr::cuda_memory_resource{}));
+}
+
 TEST(DefaultTest, UseDefaultResource) { test_get_default_resource(); }
+
+TEST(DefaultTest, GetCurrentDeviceResource)
+{
+  rmm::mr::device_memory_resource* mr;
+  EXPECT_NO_THROW(mr = rmm::mr::get_current_device_resource());
+  EXPECT_NE(nullptr, mr);
+  EXPECT_TRUE(mr->is_equal(rmm::mr::cuda_memory_resource{}));
+}
 
 TEST_P(mr_test, SetDefaultResource)
 {
@@ -45,6 +60,23 @@ TEST_P(mr_test, SetDefaultResource)
   // setting default resource w/ nullptr should reset to initial
   EXPECT_NO_THROW(rmm::mr::set_default_resource(nullptr));
   EXPECT_TRUE(old->is_equal(*rmm::mr::get_default_resource()));
+}
+
+TEST_P(mr_test, SetCurrentDeviceResource)
+{
+  rmm::mr::device_memory_resource* old{};
+  EXPECT_NO_THROW(old = rmm::mr::set_current_device_resource(this->mr.get()));
+  EXPECT_NE(nullptr, old);
+
+  // old mr should equal a cuda mr
+  EXPECT_TRUE(old->is_equal(rmm::mr::cuda_memory_resource{}));
+
+  // current dev resource should equal this resource
+  EXPECT_TRUE(this->mr->is_equal(*rmm::mr::get_current_device_resource()));
+
+  // setting to `nullptr` should reset to initial cuda resource
+  EXPECT_NO_THROW(rmm::mr::set_current_device_resource(nullptr));
+  EXPECT_TRUE(rmm::mr::get_current_device_resource()->is_equal(rmm::mr::cuda_memory_resource{}));
 }
 
 TEST_P(mr_test, SelfEquality) { EXPECT_TRUE(this->mr->is_equal(*this->mr)); }

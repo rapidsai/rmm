@@ -64,10 +64,10 @@ struct crtp {
  * Classes derived from stream_ordered_memory_resource must implement the following four methods,
  * documented separately:
  *
- * 1. size_t get_maximum_allocation_size() const
- * 2. block_type expand_pool(size_t size, free_list& blocks, cudaStream_t stream)
- * 3. std::pair<void*, block_type> allocate_from_block(block_type const& b, size_t size)
- * 4. block_type free_block(void* p, size_t size) noexcept
+ * 1. `size_t get_maximum_allocation_size() const`
+ * 2. `block_type expand_pool(size_t size, free_list& blocks, cudaStream_t stream)`
+ * 3. `split_block allocate_from_block(block_type const& b, size_t size)`
+ * 4. `block_type free_block(void* p, size_t size) noexcept`
  */
 template <typename PoolResource, typename FreeListType>
 class stream_ordered_memory_resource : public crtp<PoolResource>, public device_memory_resource {
@@ -117,18 +117,25 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    */
   // block_type expand_pool(size_t size, free_list& blocks, cudaStream_t stream)
 
+  /// Struct representing a block that has been split for allocation
+  struct split_block {
+    void* allocated_pointer;  ///< The pointer allocated from a block
+    block_type remainder;     ///< The remainder of the block from which the pointer was allocated
+  };
+
   /**
    * @brief Split block `b` if necessary to return a pointer to memory of `size` bytes.
    *
-   * If the block is split, the remainder is returned as the second element in the output pair.
+   * If the block is split, the remainder is returned as the remainder element in the output
+   * `split_block`.
    *
    * @param b The block to allocate from.
    * @param size The size in bytes of the requested allocation.
    * @param stream_event The stream and associated event on which the allocation will be used.
-   * @return A pair comprising the allocated pointer and any unallocated remainder of the input
-   * block.
+   * @return A `split_block` comprising the allocated pointer and any unallocated remainder of the
+   * input block.
    */
-  // std::pair<void*, block_type> allocate_from_block(block_type const& b, size_t size)
+  // split_block allocate_from_block(block_type const& b, size_t size)
 
   /**
    * @brief Finds, frees and returns the block associated with pointer `p`.
@@ -154,6 +161,17 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
   void insert_blocks(free_list&& blocks, cudaStream_t stream)
   {
     stream_free_blocks_[get_event(stream)].insert(std::move(blocks));
+  }
+
+  void print_free_blocks() const
+  {
+    std::cout << "stream free blocks: ";
+    for (auto s : stream_free_blocks_) {
+      std::cout << "stream: " << s.first.stream << " event: " << s.first.event << " ";
+      print(s.second);
+      std::cout << std::endl;
+    }
+    std::cout << std::endl;
   }
 
   /**
@@ -192,11 +210,10 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     RMM_EXPECTS(bytes <= this->underlying().get_maximum_allocation_size(),
                 rmm::bad_alloc,
                 "Maximum allocation size exceeded");
-    auto const b       = this->underlying().get_block(bytes, stream_event);
-    auto ptr_remainder = this->underlying().allocate_from_block(b, bytes);
-    if (is_valid(ptr_remainder.second))
-      stream_free_blocks_[stream_event].insert(ptr_remainder.second);
-    return ptr_remainder.first;
+    auto const b = this->underlying().get_block(bytes, stream_event);
+    auto split   = this->underlying().allocate_from_block(b, bytes);
+    if (is_valid(split.remainder)) stream_free_blocks_[stream_event].insert(split.remainder);
+    return split.allocated_pointer;
   }
 
   /**

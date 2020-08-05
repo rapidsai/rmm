@@ -123,7 +123,9 @@ class fixed_size_memory_resource
 
  protected:
   using free_list  = detail::fixed_size_free_list;
-  using block_type = typename free_list::block_type;
+  using block_type = free_list::block_type;
+  using typename detail::stream_ordered_memory_resource<fixed_size_memory_resource<Upstream>,
+                                                        detail::fixed_size_free_list>::split_block;
   using lock_guard = std::lock_guard<std::mutex>;
 
   /**
@@ -180,10 +182,7 @@ class fixed_size_memory_resource
    * @return A pair comprising the allocated pointer and any unallocated remainder of the input
    * block.
    */
-  std::pair<void*, block_type> allocate_from_block(block_type const& b, size_t size)
-  {
-    return std::make_pair(b, nullptr);
-  }
+  split_block allocate_from_block(block_type const& b, size_t size) { return {b, nullptr}; }
 
   /**
    * @brief Finds, frees and returns the block associated with pointer `p`.
@@ -228,6 +227,28 @@ class fixed_size_memory_resource
     upstream_blocks_.clear();
   }
 
+#ifndef NDEBUG
+  void print()
+  {
+    lock_guard lock(this->get_mutex());
+
+    std::size_t free, total;
+    std::tie(free, total) = upstream_mr_->get_mem_info(0);
+    std::cout << "GPU free memory: " << free << " total: " << total << "\n";
+
+    std::cout << "upstream_blocks: " << upstream_blocks_.size() << "\n";
+    std::size_t upstream_total{0};
+
+    for (auto h : upstream_blocks_) {
+      detail::print(h);
+      upstream_total += upstream_chunk_size_;
+    }
+    std::cout << "total upstream: " << upstream_total << " B\n";
+
+    this->print_free_blocks();
+  }
+#endif
+
   Upstream* upstream_mr_;  // The resource from which to allocate new blocks
 
   std::size_t const block_size_;           // size of blocks this MR allocates
@@ -236,5 +257,6 @@ class fixed_size_memory_resource
   // blocks allocated from heap: so they can be easily freed
   std::vector<void*> upstream_blocks_;
 };
+
 }  // namespace mr
 }  // namespace rmm
