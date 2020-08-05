@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-#include "gtest/gtest.h"
-#include "mr/device/cuda_memory_resource.hpp"
-#include "mr/device/default_memory_resource.hpp"
-#include "mr/device/device_memory_resource.hpp"
-#include "mr/device/pool_memory_resource.hpp"
 #include "mr_test.hpp"
+
+#include <gtest/gtest.h>
+
+#include <rmm/mr/device/cuda_memory_resource.hpp>
+#include <rmm/mr/device/default_memory_resource.hpp>
+#include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/mr/device/per_device_resource.hpp>
+#include <rmm/mr/device/pool_memory_resource.hpp>
 
 #include <thread>
 #include <vector>
@@ -41,10 +44,8 @@ INSTANTIATE_TEST_CASE_P(MultiThreadResourceTests,
                                           mr_factory{"Hybrid", &make_hybrid}),
                         [](auto const& info) { return info.param.name; });
 
-constexpr std::size_t num_threads{4};
-
 template <typename Task, typename... Arguments>
-void spawn(Task task, Arguments&&... args)
+void spawn_n(std::size_t num_threads, Task task, Arguments&&... args)
 {
   std::vector<std::thread> threads;
   threads.reserve(num_threads);
@@ -55,7 +56,31 @@ void spawn(Task task, Arguments&&... args)
     t.join();
 }
 
+template <typename Task, typename... Arguments>
+void spawn(Task task, Arguments&&... args)
+{
+  spawn_n(4, task, std::forward<Arguments>(args)...);
+}
+
 TEST(DefaultTest, UseDefaultResource_mt) { spawn(test_get_default_resource); }
+
+TEST(DefaultTest, DefaultResourceIsCUDA_mt)
+{
+  spawn([]() {
+    EXPECT_NE(nullptr, rmm::mr::get_default_resource());
+    EXPECT_TRUE(rmm::mr::get_default_resource()->is_equal(rmm::mr::cuda_memory_resource{}));
+  });
+}
+
+TEST(DefaultTest, GetCurrentDeviceResource_mt)
+{
+  spawn([]() {
+    rmm::mr::device_memory_resource* mr;
+    EXPECT_NO_THROW(mr = rmm::mr::get_current_device_resource());
+    EXPECT_NE(nullptr, mr);
+    EXPECT_TRUE(mr->is_equal(rmm::mr::cuda_memory_resource{}));
+  });
+}
 
 TEST_P(mr_test_mt, SetDefaultResource_mt)
 {
@@ -73,6 +98,39 @@ TEST_P(mr_test_mt, SetDefaultResource_mt)
   // setting default resource w/ nullptr should reset to initial
   EXPECT_NO_THROW(rmm::mr::set_default_resource(nullptr));
   EXPECT_TRUE(old->is_equal(*rmm::mr::get_default_resource()));
+}
+
+TEST_P(mr_test_mt, SetCurrentDeviceResource_mt)
+{
+  int num_devices;
+  RMM_CUDA_TRY(cudaGetDeviceCount(&num_devices));
+
+  std::vector<std::thread> threads;
+  threads.reserve(num_devices);
+  for (int i = 0; i < num_devices; ++i) {
+    threads.emplace_back(std::thread{
+      [mr = this->mr.get()](auto dev_id) {
+        RMM_CUDA_TRY(cudaSetDevice(dev_id));
+        rmm::mr::device_memory_resource* old;
+        EXPECT_NO_THROW(old = rmm::mr::set_current_device_resource(mr));
+        EXPECT_NE(nullptr, old);
+        // initial resource for this device should be CUDA mr
+        EXPECT_TRUE(old->is_equal(rmm::mr::cuda_memory_resource{}));
+        // get_current_device_resource should equal the resource we just set
+        EXPECT_EQ(mr, rmm::mr::get_current_device_resource());
+        // Setting current dev resource to nullptr should reset to cuda MR and return the MR we
+        // previously set
+        EXPECT_NO_THROW(old = rmm::mr::set_current_device_resource(nullptr));
+        EXPECT_NE(nullptr, old);
+        EXPECT_EQ(old, mr);
+        EXPECT_TRUE(
+          rmm::mr::get_current_device_resource()->is_equal(rmm::mr::cuda_memory_resource{}));
+      },
+      i});
+  }
+
+  for (auto& t : threads)
+    t.join();
 }
 
 TEST_P(mr_test_mt, AllocateDefaultStream)
