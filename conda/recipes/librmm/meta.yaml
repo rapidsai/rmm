@@ -25,9 +25,9 @@ requirements:
   build:
     - cmake >=3.14.0
   host:
-    - cudatoolkit {{ cuda_version }}.*
+    - cudatoolkit {{ cuda_version }}.* # [ not aarch64 ]
   run:
-    - {{ pin_compatible('cudatoolkit', max_pin='x.x') }}
+    - {{ pin_compatible('cudatoolkit', max_pin='x.x') }} # [ not aarch64 ]
     - spdlog >=1.6.0
 
 test:
