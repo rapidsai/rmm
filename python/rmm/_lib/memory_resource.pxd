@@ -58,10 +58,10 @@ cdef extern from "memory_resource_wrappers.hpp" nogil:
         void add_bin(
             size_t allocation_size,
             shared_ptr[device_memory_resource_wrapper] bin_mr
-        ) except+
+        ) except +
         void add_bin(
             size_t allocation_size
-        ) except+
+        ) except +
 
     cdef cppclass logging_resource_adaptor_wrapper(
         device_memory_resource_wrapper

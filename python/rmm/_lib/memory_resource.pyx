@@ -178,7 +178,7 @@ cdef class BinningMemoryResource(MemoryResource):
         self,
         MemoryResource upstream_mr
     ):
-        """"
+        """
         Allocates memory from a set of specified "bin" sizes based on a
         specified allocation size.
 
