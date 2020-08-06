@@ -34,6 +34,8 @@ static void BM_UvectorSizeConstruction(benchmark::State& state)
     cudaDeviceSynchronize();
   }
 
+  state.SetItemsProcessed(state.iterations());
+
   rmm::mr::set_default_resource(nullptr);
 }
 BENCHMARK(BM_UvectorSizeConstruction)
@@ -51,6 +53,8 @@ static void BM_ThrustVectorSizeConstruction(benchmark::State& state)
     rmm::device_vector<int32_t> vec(state.range(0));
     cudaDeviceSynchronize();
   }
+
+  state.SetItemsProcessed(state.iterations());
 
   rmm::mr::set_default_resource(nullptr);
 }
