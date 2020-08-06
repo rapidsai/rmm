@@ -18,12 +18,11 @@
 
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
-#include <rmm/mr/device/cnmem_managed_memory_resource.hpp>
-#include <rmm/mr/device/cnmem_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
+#include <rmm/mr/device/pool_memory_resource.hpp>
 
 #include <cuda_runtime_api.h>
 #include <thrust/equal.h>
@@ -51,10 +50,7 @@ struct DeviceBufferTest : public ::testing::Test {
   void TearDown() override { EXPECT_EQ(cudaSuccess, cudaStreamDestroy(stream)); };
 };
 
-using resources = ::testing::Types<rmm::mr::cuda_memory_resource,
-                                   rmm::mr::managed_memory_resource,
-                                   rmm::mr::cnmem_memory_resource,
-                                   rmm::mr::cnmem_managed_memory_resource>;
+using resources = ::testing::Types<rmm::mr::cuda_memory_resource, rmm::mr::managed_memory_resource>;
 
 TYPED_TEST_CASE(DeviceBufferTest, resources);
 

@@ -39,8 +39,6 @@ INSTANTIATE_TEST_CASE_P(MultiThreadResourceTests,
                         ::testing::Values(mr_factory{"CUDA", &make_cuda},
                                           mr_factory{"Managed", &make_managed},
                                           mr_factory{"Pool", &make_pool},
-                                          mr_factory{"CNMEM", &make_cnmem},
-                                          mr_factory{"CNMEM_Managed", &make_cnmem_managed},
                                           mr_factory{"Binning", &make_binning}),
                         [](auto const& info) { return info.param.name; });
 
@@ -234,10 +232,7 @@ TEST_P(mr_test_mt, AllocFreeDifferentThreadsSameStream)
   test_allocate_free_different_threads(this->mr.get(), this->stream, this->stream);
 }
 
-struct mr_test_different_stream_mt : public mr_test_mt {
-};
-
-TEST_P(mr_test_different_stream_mt, AllocFreeDifferentThreadsDifferentStream)
+TEST_P(mr_test_mt, AllocFreeDifferentThreadsDifferentStream)
 {
   cudaStream_t streamB{};
   EXPECT_EQ(cudaSuccess, cudaStreamCreate(&streamB));
@@ -245,15 +240,6 @@ TEST_P(mr_test_different_stream_mt, AllocFreeDifferentThreadsDifferentStream)
   EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(streamB));
   EXPECT_EQ(cudaSuccess, cudaStreamDestroy(streamB));
 }
-
-// CNMeM doesn't allow allocating/freeing on different streams
-INSTANTIATE_TEST_CASE_P(MultiThreadResourceTestsDifferentStreams,
-                        mr_test_different_stream_mt,
-                        ::testing::Values(mr_factory{"CUDA", &make_cuda},
-                                          mr_factory{"Managed", &make_managed},
-                                          mr_factory{"Pool", &make_pool},
-                                          mr_factory{"Binning", &make_binning}),
-                        [](auto const& info) { return info.param.name; });
 
 }  // namespace
 }  // namespace test

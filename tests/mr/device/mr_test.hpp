@@ -19,8 +19,6 @@
 #include <gtest/gtest.h>
 
 #include <rmm/mr/device/binning_memory_resource.hpp>
-#include <rmm/mr/device/cnmem_managed_memory_resource.hpp>
-#include <rmm/mr/device/cnmem_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
@@ -227,13 +225,6 @@ struct mr_test : public ::testing::TestWithParam<mr_factory> {
 inline auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>(); }
 
 inline auto make_managed() { return std::make_shared<rmm::mr::managed_memory_resource>(); }
-
-inline auto make_cnmem() { return std::make_shared<rmm::mr::cnmem_memory_resource>(); }
-
-inline auto make_cnmem_managed()
-{
-  return std::make_shared<rmm::mr::cnmem_managed_memory_resource>();
-}
 
 inline auto make_pool()
 {
