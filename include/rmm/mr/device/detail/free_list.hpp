@@ -17,56 +17,47 @@
 #pragma once
 
 #include <algorithm>
+#include <iostream>
 #include <list>
 
 namespace rmm {
 namespace mr {
 namespace detail {
 
-/**
- * @brief Checks whether a memory block is valid.
- *
- * This function template should be specialized for any type of block used by a concrete
- * implementation of `free_list`.
- *
- * @param b The block to check for validity
- * @return true If `b` is valid
- * @return false If `b` is not valid
- */
-template <typename BlockType>
-inline bool is_valid(BlockType const& b)
-{
-  return false;
-}
+struct block_base {
+  void* ptr{};  ///< Raw memory pointer
 
-/**
- * @brief Prints a block (for debugging).
- *
- * This function template should be specialized for any type of block used by a concrete
- * implementation of `free_list`.
- *
- * @param b The block to print
- */
-template <typename BlockType>
-inline void print(BlockType const& b)
+  /// Returns the raw pointer for this block
+  inline void* pointer() const { return ptr; }
+  /// Returns true if this block is valid (non-null), false otherwise
+  inline bool is_valid() const { return pointer() != nullptr; }
+  /// Prints the block to stdout
+  inline void print() const { std::cout << pointer(); }
+};
+
+/// Print block_base on an ostream
+inline std::ostream& operator<<(std::ostream& out, const block_base& b)
 {
+  out << b.pointer();
+  return out;
 }
 
 /**
  * @brief Base class defining an interface for a list of free memory blocks.
  *
- * Uses of derived classes assume the following additional methods are implemented (see
- * fixed_size_free_list.hpp and coalescing_free_list.hpp):
+ * Derived classes typically provide additional methods such as the following (see
+ * fixed_size_free_list.hpp and coalescing_free_list.hpp). However this is not a required interface.
  *
- *  - `void insert(block_type const& b)`
- *  - `void insert(free_list&& other)`
- *  - `block_type get_block(size_t size)`
- *  - `void print()`
+ *  - `void insert(block_type const& b)  // insert a block into the free list`
+ *  - `void insert(free_list&& other)    // insert / merge another free list`
+ *  - `block_type get_block(size_t size) // get a block of at least size bytes
+ *  - `void print()                      // print the block`
  *
  * @tparam list_type the type of the internal list data structure.
  */
 template <typename BlockType, typename ListType = std::list<BlockType>>
-struct free_list {
+class free_list {
+ public:
   free_list()          = default;
   virtual ~free_list() = default;
 
@@ -77,11 +68,11 @@ struct free_list {
   using const_iterator = typename list_type::const_iterator;
 
   iterator begin() noexcept { return blocks.begin(); }                /// beginning of the free list
-  const_iterator begin() const noexcept { return begin(); }           /// beginning of the free list
+  const_iterator begin() const noexcept { return blocks.begin(); }    /// beginning of the free list
   const_iterator cbegin() const noexcept { return blocks.cbegin(); }  /// beginning of the free list
 
   iterator end() noexcept { return blocks.end(); }                /// end of the free list
-  const_iterator end() const noexcept { return end(); }           /// end of the free list
+  const_iterator end() const noexcept { return blocks.end(); }    /// end of the free list
   const_iterator cend() const noexcept { return blocks.cend(); }  /// end of the free list
 
   /**
@@ -111,6 +102,17 @@ struct free_list {
    *
    */
   void clear() noexcept { blocks.clear(); }
+
+  /**
+   * @brief Print all blocks in the free_list.
+   */
+  void print() const
+  {
+    std::cout << size() << std::endl;
+    for (auto const& b : blocks) {
+      std::cout << b << std::endl;
+    }
+  }
 
  protected:
   /**

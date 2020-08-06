@@ -33,16 +33,16 @@ namespace detail {
  *        of memory, with a flag indicating whether it is the head of a block
  *        of memory allocated from the heap (or upstream allocator).
  */
-struct block {
+struct block : public block_base {
   block() = default;
-  block(char* ptr, size_t size, bool is_head) : ptr{ptr}, size_bytes{size}, head{is_head} {}
+  block(char* ptr, size_t size, bool is_head) : block_base{ptr}, size_bytes{size}, head{is_head} {}
 
   /**
    * @brief Returns the pointer to the memory represented by this block.
    *
    * @return the pointer to the memory represented by this block.
    */
-  inline char* pointer() const { return ptr; }
+  inline char* pointer() const { return static_cast<char*>(ptr); }
 
   /**
    * @brief Returns the size of the memory represented by this block.
@@ -59,13 +59,6 @@ struct block {
    * @return true if this block is the start of an allocation from an upstream allocator.
    */
   inline bool is_head() const { return head; }
-
-  /**
-   * @brief Returns whether this block has a non-null pointer.
-   *
-   * @return true if this block has a non-null pointer, false otherwise.
-   */
-  inline bool is_valid() const { return pointer() != nullptr; }
 
   /**
    * @brief Comparison operator to enable comparing blocks and storing in ordered containers.
@@ -129,29 +122,21 @@ struct block {
   /**
    * @brief Print this block. For debugging.
    */
-  void print() const { std::cout << reinterpret_cast<void*>(pointer()) << " " << size() << " B\n"; }
+  inline void print() const
+  {
+    std::cout << reinterpret_cast<void*>(pointer()) << " " << size() << " B\n";
+  }
 
  private:
-  char* ptr{};          ///< Raw memory pointer
   size_t size_bytes{};  ///< Size in bytes
   bool head{};          ///< Indicates whether ptr was allocated from the heap
 };
 
-template <>
-inline bool is_valid<block>(block const& b)
+/// Print block on an ostream
+inline std::ostream& operator<<(std::ostream& out, const block& b)
 {
-  return b.is_valid();
-}
-
-/**
- * @brief Prints a block (for debugging).
- *
- * @param b The block to print
- */
-template <>
-inline void print<block>(block const& b)
-{
-  b.print();
+  out << b.pointer() << " " << b.size() << " B\n";
+  return out;
 }
 
 /**

@@ -24,31 +24,7 @@ namespace rmm {
 namespace mr {
 namespace detail {
 
-/**
- * @brief Checks whether a memory block is valid. Specialization for void* pointer blocks
- *
- * @param b The block to check for validity
- * @return true If `b` is valid (non-null)
- * @return false If `b` is not valid (null)
- */
-template <>
-inline bool is_valid<void*>(void* const& b)
-{
-  return b != nullptr;
-}
-
-/**
- * @brief Prints a block (for debugging).
- *
- * @param b The block to print
- */
-template <>
-inline void print<void*>(void* const& b)
-{
-  std::cout << b;
-}
-
-struct fixed_size_free_list : free_list<void*> {
+struct fixed_size_free_list : free_list<block_base> {
   fixed_size_free_list()  = default;
   ~fixed_size_free_list() = default;
 
@@ -95,17 +71,6 @@ struct fixed_size_free_list : free_list<void*> {
       block_type b = *begin();
       pop_front();
       return b;
-    }
-  }
-
-  /**
-   * @brief Print all blocks in the free_list.
-   */
-  void print() const
-  {
-    std::cout << size() << '\n';
-    for (const_iterator iter = begin(); iter != end(); ++iter) {
-      std::cout << *iter;
     }
   }
 };

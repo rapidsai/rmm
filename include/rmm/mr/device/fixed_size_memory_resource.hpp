@@ -162,11 +162,12 @@ class fixed_size_memory_resource
   free_list blocks_from_upstream(cudaStream_t stream)
   {
     void* p = upstream_mr_->allocate(upstream_chunk_size_, stream);
-    upstream_blocks_.push_back(p);
+    block_type b{p};
+    upstream_blocks_.push_back(b);
 
     auto num_blocks = upstream_chunk_size_ / block_size_;
 
-    auto g     = [p, this](int i) { return static_cast<char*>(p) + i * block_size_; };
+    auto g     = [p, this](int i) { return block_type{static_cast<char*>(p) + i * block_size_}; };
     auto first = thrust::make_transform_iterator(thrust::make_counting_iterator(std::size_t{0}), g);
     return free_list(first, first + num_blocks);
   }
@@ -182,7 +183,10 @@ class fixed_size_memory_resource
    * @return A pair comprising the allocated pointer and any unallocated remainder of the input
    * block.
    */
-  split_block allocate_from_block(block_type const& b, size_t size) { return {b, nullptr}; }
+  split_block allocate_from_block(block_type const& b, size_t size)
+  {
+    return split_block{b.pointer(), block_type{nullptr}};
+  }
 
   /**
    * @brief Finds, frees and returns the block associated with pointer `p`.
@@ -198,7 +202,7 @@ class fixed_size_memory_resource
     // Deallocating a fixed-size block just inserts it in the free list, which is
     // handled by the parent class
     assert(rmm::detail::align_up(size, allocation_alignment) <= block_size_);
-    return p;
+    return block_type{p};
   }
 
   /**
@@ -222,8 +226,8 @@ class fixed_size_memory_resource
   {
     lock_guard lock(this->get_mutex());
 
-    for (auto p : upstream_blocks_)
-      upstream_mr_->deallocate(p, upstream_chunk_size_);
+    for (auto b : upstream_blocks_)
+      upstream_mr_->deallocate(b.pointer(), upstream_chunk_size_);
     upstream_blocks_.clear();
   }
 
@@ -240,7 +244,7 @@ class fixed_size_memory_resource
     std::size_t upstream_total{0};
 
     for (auto h : upstream_blocks_) {
-      detail::print(h);
+      h.print();
       upstream_total += upstream_chunk_size_;
     }
     std::cout << "total upstream: " << upstream_total << " B\n";
@@ -255,7 +259,7 @@ class fixed_size_memory_resource
   std::size_t const upstream_chunk_size_;  // size of chunks allocated from heap MR
 
   // blocks allocated from heap: so they can be easily freed
-  std::vector<void*> upstream_blocks_;
+  std::vector<block_type> upstream_blocks_;
 };
 
 }  // namespace mr
