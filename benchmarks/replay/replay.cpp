@@ -18,8 +18,10 @@
 #include <benchmarks/utilities/log_parser.hpp>
 
 #include <rmm/detail/error.hpp>
-#include <rmm/mr/device/cnmem_memory_resource.hpp>
+#include <rmm/mr/device/binning_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
+#include <rmm/mr/device/owning_wrapper.hpp>
+#include <rmm/mr/device/pool_memory_resource.hpp>
 
 #include <thrust/execution_policy.h>
 #include <thrust/iterator/constant_iterator.h>
@@ -32,6 +34,27 @@
 #include <memory>
 #include <numeric>
 #include <string>
+#include "rmm/mr/device/device_memory_resource.hpp"
+
+/// MR factory functions
+inline auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>(); }
+
+inline auto make_pool()
+{
+  return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_cuda());
+}
+
+inline auto make_binning()
+{
+  auto pool = make_pool();
+  auto mr   = rmm::mr::make_owning_wrapper<rmm::mr::binning_memory_resource>(pool);
+  for (std::size_t i = 18; i <= 22; i++) {
+    mr->wrapped().add_bin(1 << i);
+  }
+  return mr;
+}
+
+using MRFactoryFunc = std::function<std::shared_ptr<rmm::mr::device_memory_resource>()>;
 
 /**
  * @brief Represents an allocation made during the replay
@@ -51,9 +74,8 @@ struct allocation {
  * @tparam MR The type of the `device_memory_resource` to use for allocation
  * replay
  */
-template <typename MR>
 struct replay_benchmark {
-  std::unique_ptr<MR> mr_{};
+  std::shared_ptr<rmm::mr::device_memory_resource> mr_{};
   std::vector<std::vector<rmm::detail::event>> const& events_{};
 
   /**
@@ -63,9 +85,9 @@ struct replay_benchmark {
    * @param events The set of allocation events to replay
    * @param args Variable number of arguments forward to the constructor of MR
    */
-  template <typename... Args>
-  replay_benchmark(std::vector<std::vector<rmm::detail::event>> const& events, Args&&... args)
-    : mr_{new MR{std::forward<Args>(args)...}}, events_{events}
+  replay_benchmark(MRFactoryFunc factory,
+                   std::vector<std::vector<rmm::detail::event>> const& events)
+    : mr_{factory()}, events_{events}
   {
   }
 
@@ -193,13 +215,16 @@ int main(int argc, char** argv)
 
   auto const num_threads = per_thread_events.size();
 
-  benchmark::RegisterBenchmark("CUDA Resource",
-                               replay_benchmark<rmm::mr::cuda_memory_resource>{per_thread_events})
+  benchmark::RegisterBenchmark("CUDA Resource", replay_benchmark{&make_cuda, per_thread_events})
     ->Unit(benchmark::kMillisecond)
     ->Threads(num_threads);
 
-  benchmark::RegisterBenchmark(
-    "CNMEM Resource", replay_benchmark<rmm::mr::cnmem_memory_resource>(per_thread_events, 0u))
+  benchmark::RegisterBenchmark("Pool Resource", replay_benchmark(&make_pool, per_thread_events))
+    ->Unit(benchmark::kMillisecond)
+    ->Threads(num_threads);
+
+  benchmark::RegisterBenchmark("Binning Resource",
+                               replay_benchmark(&make_binning, per_thread_events))
     ->Unit(benchmark::kMillisecond)
     ->Threads(num_threads);
 
