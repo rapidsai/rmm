@@ -87,9 +87,10 @@ add_subdirectory(thirdparty)
 
 ###################################################################################################
 # - cnmem ---------------------------------------------------------------------------------
-# include cnmem.h in the include/detail directory
+
+# Temporarily needed to have all RMM includes under a single directory
 configure_file("${CNMEM_INCLUDE_DIR}/cnmem.h"
-               "${CMAKE_CURRENT_BINARY_DIR}/include/rmm/detail/cnmem.h" COPYONLY)
+	       "${CMAKE_CURRENT_SOURCE_DIR}/include/rmm/detail/cnmem.h" COPYONLY)
 
 ###################################################################################################
 # - per-thread default stream option --------------------------------------------------------------
@@ -185,9 +186,6 @@ install(TARGETS rmm
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/rmm
         DESTINATION include)
 
-install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/rmm
-        DESTINATION include)
-      
 ###################################################################################################
 # - make documentation ----------------------------------------------------------------------------
 
