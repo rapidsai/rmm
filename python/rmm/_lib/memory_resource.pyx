@@ -210,8 +210,8 @@ cdef class BinningMemoryResource(MemoryResource):
         ----------
         allocation_size : size_t
             The maximum allocation size in bytes for the created bin
-        bin_resource : shared pointer to device_memory_resource_wrapper
-            The device_memory_resource to use for this bin
+        bin_resource : MemoryResource 
+            The resource to use for this bin (optional)
         """
         cdef MemoryResource _bin_resource
 

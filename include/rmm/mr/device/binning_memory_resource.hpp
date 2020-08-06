@@ -126,8 +126,6 @@ class binning_memory_resource final : public device_memory_resource {
    *
    * Chooses a memory_resource that allocates the smallest blocks at least as large as `bytes`.
    *
-   * The behavior is undefined if `bytes` is greater than the maximum block size.
-   *
    * @param bytes Requested allocation size in bytes
    * @return rmm::mr::device_memory_resource& memory_resource that can allocate the requested size.
    */
