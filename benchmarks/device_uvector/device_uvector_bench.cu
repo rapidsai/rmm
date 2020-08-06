@@ -19,18 +19,22 @@
 #include <cuda_runtime_api.h>
 #include <rmm/thrust_rmm_allocator.h>
 #include <rmm/device_uvector.hpp>
-#include <rmm/mr/device/cnmem_memory_resource.hpp>
 #include <rmm/mr/device/default_memory_resource.hpp>
+#include <rmm/mr/device/pool_memory_resource.hpp>
+#include "rmm/mr/device/cuda_memory_resource.hpp"
 
 static void BM_UvectorSizeConstruction(benchmark::State& state)
 {
-  rmm::mr::cnmem_memory_resource mr{};
+  rmm::mr::cuda_memory_resource cuda_mr{};
+  rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource> mr{&cuda_mr};
   rmm::mr::set_default_resource(&mr);
 
   for (auto _ : state) {
-    rmm::device_uvector<int32_t>(state.range(0), cudaStream_t{0});
+    rmm::device_uvector<int32_t> vec(state.range(0), cudaStream_t{0});
     cudaDeviceSynchronize();
   }
+
+  rmm::mr::set_default_resource(nullptr);
 }
 BENCHMARK(BM_UvectorSizeConstruction)
   ->RangeMultiplier(10)
@@ -39,12 +43,16 @@ BENCHMARK(BM_UvectorSizeConstruction)
 
 static void BM_ThrustVectorSizeConstruction(benchmark::State& state)
 {
-  rmm::mr::cnmem_memory_resource mr{};
+  rmm::mr::cuda_memory_resource cuda_mr{};
+  rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource> mr{&cuda_mr};
   rmm::mr::set_default_resource(&mr);
+
   for (auto _ : state) {
-    rmm::device_vector<int32_t>(state.range(0));
+    rmm::device_vector<int32_t> vec(state.range(0));
     cudaDeviceSynchronize();
   }
+
+  rmm::mr::set_default_resource(nullptr);
 }
 
 BENCHMARK(BM_ThrustVectorSizeConstruction)
