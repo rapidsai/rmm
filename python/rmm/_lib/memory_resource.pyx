@@ -34,8 +34,6 @@ cdef class ManagedMemoryResource(MemoryResource):
         pass
 
 
-
-
 cdef class PoolMemoryResource(MemoryResource):
 
     def __cinit__(
