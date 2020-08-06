@@ -34,53 +34,6 @@ cdef class ManagedMemoryResource(MemoryResource):
         pass
 
 
-cdef class CNMemMemoryResource(MemoryResource):
-    def __cinit__(self, size_t initial_pool_size=0, vector[int] devices=()):
-        self.c_obj.reset(
-            new cnmem_memory_resource_wrapper(
-                initial_pool_size,
-                devices
-            )
-        )
-
-    def __init__(self, size_t initial_pool_size=0, vector[int] devices=()):
-        """
-        Memory resource that uses the cnmem pool sub-allocator.
-
-        Parameters
-        ----------
-        initial_pool_size : int, optional
-            Initial pool size in bytes. By default, an implementation defined
-            pool size is used.
-        devices : tuple of int, optional
-            List of GPU device IDs to register with CNMEM.
-        """
-        pass
-
-
-cdef class CNMemManagedMemoryResource(MemoryResource):
-    def __cinit__(self, size_t initial_pool_size=0, vector[int] devices=()):
-        self.c_obj.reset(
-            new cnmem_managed_memory_resource_wrapper(
-                initial_pool_size,
-                devices
-            )
-        )
-
-    def __init__(self, size_t initial_pool_size=0, vector[int] devices=()):
-        """
-        Memory resource that uses the cnmem pool sub-allocator for
-        allocating/deallocating managed device memory.
-
-        Parameters
-        ----------
-        initial_pool_size : int, optional
-            Initial pool size in bytes. By default, an implementation defined
-            pool size is used.
-        devices : list of int
-            List of GPU device IDs to register with CNMEM.
-        """
-        pass
 
 
 cdef class PoolMemoryResource(MemoryResource):
@@ -271,7 +224,6 @@ cpdef _initialize(
     bool pool_allocator=False,
     bool managed_memory=False,
     object initial_pool_size=None,
-    object devices=0,
     bool logging=False,
     object log_file_name=None,
 ):
@@ -281,27 +233,20 @@ cpdef _initialize(
     global _mr
     _mr = MemoryResource()
 
-    if not pool_allocator:
-        if not managed_memory:
-            typ = CudaMemoryResource
-        else:
-            typ = ManagedMemoryResource
-        args = ()
+    if managed_memory:
+        upstream = ManagedMemoryResource
     else:
-        if not managed_memory:
-            typ = CNMemMemoryResource
-        else:
-            typ = CNMemManagedMemoryResource
+        upstream = CudaMemoryResource
 
+    if pool_allocator:
         if initial_pool_size is None:
             initial_pool_size = 0
 
-        if devices is None:
-            devices = [0]
-        elif isinstance(devices, int):
-            devices = [devices]
-
-        args = (initial_pool_size, devices)
+        typ = PoolMemoryResource
+        args = (upstream(), initial_pool_size)
+    else:
+        typ = upstream
+        args = ()
 
     cdef MemoryResource mr
 

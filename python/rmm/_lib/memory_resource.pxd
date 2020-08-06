@@ -17,22 +17,6 @@ cdef extern from "memory_resource_wrappers.hpp" nogil:
     ):
         managed_memory_resource_wrapper() except +
 
-    cdef cppclass cnmem_memory_resource_wrapper(
-        device_memory_resource_wrapper
-    ):
-        cnmem_memory_resource_wrapper(
-            size_t initial_pool_size,
-            vector[int] devices
-        ) except +
-
-    cdef cppclass cnmem_managed_memory_resource_wrapper(
-        device_memory_resource_wrapper
-    ):
-        cnmem_managed_memory_resource_wrapper(
-            size_t initial_pool_size,
-            vector[int] devices
-        ) except +
-
     cdef cppclass pool_memory_resource_wrapper(device_memory_resource_wrapper):
         pool_memory_resource_wrapper(
             shared_ptr[device_memory_resource_wrapper] upstream_mr,
@@ -91,12 +75,6 @@ cdef class CudaMemoryResource(MemoryResource):
     pass
 
 cdef class ManagedMemoryResource(MemoryResource):
-    pass
-
-cdef class CNMemMemoryResource(MemoryResource):
-    pass
-
-cdef class CNMemManagedMemoryResource(MemoryResource):
     pass
 
 cdef class PoolMemoryResource(MemoryResource):

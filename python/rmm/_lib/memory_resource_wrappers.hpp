@@ -2,8 +2,6 @@
 
 #include <memory>
 #include <rmm/mr/device/binning_memory_resource.hpp>
-#include <rmm/mr/device/cnmem_managed_memory_resource.hpp>
-#include <rmm/mr/device/cnmem_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
@@ -45,34 +43,6 @@ class managed_memory_resource_wrapper : public device_memory_resource_wrapper {
 
  private:
   std::shared_ptr<rmm::mr::managed_memory_resource> mr;
-};
-
-class cnmem_memory_resource_wrapper : public device_memory_resource_wrapper {
- public:
-  cnmem_memory_resource_wrapper(std::size_t initial_pool_size   = 0,
-                                std::vector<int> const& devices = {})
-    : mr(std::make_shared<rmm::mr::cnmem_memory_resource>(initial_pool_size, devices))
-  {
-  }
-
-  std::shared_ptr<rmm::mr::device_memory_resource> get_mr() { return mr; }
-
- private:
-  std::shared_ptr<rmm::mr::cnmem_memory_resource> mr;
-};
-
-class cnmem_managed_memory_resource_wrapper : public device_memory_resource_wrapper {
- public:
-  cnmem_managed_memory_resource_wrapper(std::size_t initial_pool_size   = 0,
-                                        std::vector<int> const& devices = {})
-    : mr(std::make_shared<rmm::mr::cnmem_managed_memory_resource>(initial_pool_size, devices))
-  {
-  }
-
-  std::shared_ptr<rmm::mr::device_memory_resource> get_mr() { return mr; }
-
- private:
-  std::shared_ptr<rmm::mr::cnmem_managed_memory_resource> mr;
 };
 
 class pool_memory_resource_wrapper : public device_memory_resource_wrapper {
