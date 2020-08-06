@@ -164,15 +164,16 @@ Allocates and frees device memory using `cudaMalloc` and `cudaFree`.
 
 Allocates and frees device memory using `cudaMallocManaged` and `cudaFree`.
 
-#### `cnmem_(managed_)memory_resource`
-
-Uses the [CNMeM](https://github.com/NVIDIA/cnmem) pool sub-allocator to satisfy (de)allocations.
-
 #### `pool_memory_resource`
 
 A coalescing, best-fit pool sub-allocator.
 
-### `fixed_size_memory_resource`
+#### `cnmem_(managed_)memory_resource` [DEPRECATED]
+
+Uses the [CNMeM](https://github.com/NVIDIA/cnmem) pool sub-allocator to satisfy (de)allocations.
+These resources are deprecated as of RMM 0.15.
+
+#### `fixed_size_memory_resource`
 
 A memory resource that can only allocate a single fixed size. Average allocation and deallocation
 cost is constant.
@@ -208,7 +209,8 @@ Accessing and modifying the default resource is done through two functions:
 
 ```c++
 rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource(); // Points to `cuda_memory_resource`
-rmm::mr::cnmem_memory_resource pool_mr{}; // Construct a resource that uses the CNMeM pool
+// Construct a resource that uses a coalescing best-fit pool allocator
+rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>> pool_mr{mr}; 
 rmm::mr::set_default_resource(&pool_mr); // Updates the default resource pointer to `pool_mr`
 rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource(); // Points to `pool_mr`
 ```
