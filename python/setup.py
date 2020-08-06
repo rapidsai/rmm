@@ -86,7 +86,7 @@ extensions += cythonize(
 
 setup(
     name="rmm",
-    version="0.15.0",
+    version="0.16.0",
     description="rmm - RAPIDS Memory Manager",
     url="https://github.com/rapidsai/rmm",
     author="NVIDIA Corporation",
