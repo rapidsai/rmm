@@ -168,7 +168,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     std::cout << "stream free blocks: ";
     for (auto s : stream_free_blocks_) {
       std::cout << "stream: " << s.first.stream << " event: " << s.first.event << " ";
-      print(s.second);
+      s.second.print();
       std::cout << std::endl;
     }
     std::cout << std::endl;
@@ -212,7 +212,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
                 "Maximum allocation size exceeded");
     auto const b = this->underlying().get_block(bytes, stream_event);
     auto split   = this->underlying().allocate_from_block(b, bytes);
-    if (is_valid(split.remainder)) stream_free_blocks_[stream_event].insert(split.remainder);
+    if (split.remainder.is_valid()) stream_free_blocks_[stream_event].insert(split.remainder);
     return split.allocated_pointer;
   }
 
@@ -310,12 +310,12 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     auto iter = stream_free_blocks_.find(stream_event);
     if (iter != stream_free_blocks_.end()) {
       block_type b = iter->second.get_block(size);
-      if (is_valid(b)) return b;
+      if (b.is_valid()) return b;
     }
 
     // Otherwise try to find a block associated with another stream
     block_type b = get_block_from_other_stream(size, stream_event);
-    if (is_valid(b)) return b;
+    if (b.is_valid()) return b;
 
     // no larger blocks available on other streams, so grow the pool and create a block
 
@@ -353,7 +353,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
 
         block_type const b = blocks.get_block(size);  // get the best fit block
 
-        if (is_valid(b)) {
+        if (b.is_valid()) {
           // Since we found a block associated with a different stream, we have to insert a wait
           // on the stream's associated event into the allocating stream.
           // TODO: could eliminate this ifdef and have the same behavior for PTDS and non-PTDS
