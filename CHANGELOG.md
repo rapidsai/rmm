@@ -4,6 +4,8 @@
 
 ## Improvements
 
+- PR #462 export cmake config for downstream use
+
 ## Bug Fixes
 
 # RMM 0.15.0 (Date TBD)
@@ -43,7 +45,6 @@
 - PR #447 Update Python README with info about DeviceBuffer/MemoryResource and external libraries
 - PR #456 Minor cleanup: always use rmm/-prefixed includes
 - PR #461 cmake improvements to be more target-based
-- PR #462 export cmake config for downstream use
 
 ## Bug Fixes
 
