@@ -47,6 +47,9 @@ inline std::atomic<device_memory_resource*>& get_default()
 /**
  * @brief Get the default device memory resource pointer.
  *
+ * Deprecated as of RMM v0.15. Please use get_current_device_resource() or
+ * get_per_device_resource().
+ *
  * The default device memory resource is used when an explicit memory resource
  * is not supplied. The initial default memory resource is a
  * `cuda_memory_resource`.
@@ -56,10 +59,16 @@ inline std::atomic<device_memory_resource*>& get_default()
  * @return device_memory_resource* Pointer to the current default memory
  * resource
  */
-inline device_memory_resource* get_default_resource() { return detail::get_default().load(); }
+[[deprecated]] inline device_memory_resource* get_default_resource()
+{
+  return detail::get_default().load();
+}
 
 /**
  * @brief Sets the default device memory resource pointer.
+ *
+ * Deprecated as of RMM v0.15. Please use set_current_device_resource() or
+ * set_per_device_resource().
  *
  * If `new_resource` is not `nullptr`, sets the default device memory resource
  * pointer to `new_resource`. Otherwise, resets the default device memory
@@ -74,7 +83,8 @@ inline device_memory_resource* get_default_resource() { return detail::get_defau
  * default device memory resource
  * @return The previous value of the default device memory resource pointer
  */
-inline device_memory_resource* set_default_resource(device_memory_resource* new_resource)
+[[deprecated]] inline device_memory_resource* set_default_resource(
+  device_memory_resource* new_resource)
 {
   new_resource = (new_resource == nullptr) ? detail::initial_resource() : new_resource;
   return detail::get_default().exchange(new_resource);
