@@ -50,6 +50,7 @@
 - PR #434 Fix issue with incorrect docker image being used in local build script
 - PR #463 Revert cmake change for cnmem header not being added to source directory
 - PR #464 More completely revert cnmem.h cmake changes
+- PR #472 Fix pool initialization
 
 # RMM 0.14.0 (03 Jun 2020)
 
