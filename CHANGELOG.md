@@ -37,6 +37,7 @@
 - PR #447 Update Python README with info about DeviceBuffer/MemoryResource and external libraries
 - PR #456 Minor cleanup: always use rmm/-prefixed includes
 - PR #461 cmake improvements to be more target-based
+- PR #468 update past release dates in changelog
 
 ## Bug Fixes
 
