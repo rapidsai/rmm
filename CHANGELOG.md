@@ -37,6 +37,7 @@
 - PR #447 Update Python README with info about DeviceBuffer/MemoryResource and external libraries
 - PR #456 Minor cleanup: always use rmm/-prefixed includes
 - PR #461 cmake improvements to be more target-based
+- PR #468 update past release dates in changelog
 
 ## Bug Fixes
 
@@ -50,7 +51,7 @@
 - PR #463 Revert cmake change for cnmem header not being added to source directory
 - PR #464 More completely revert cnmem.h cmake changes
 
-# RMM 0.14.0 (Date TBD)
+# RMM 0.14.0 (03 Jun 2020)
 
 ## New Features
 
@@ -87,7 +88,7 @@
 - PR #392 SPDLOG matches other header-only acquisition patterns
 
 
-# RMM 0.13.0 (Date TBD)
+# RMM 0.13.0 (31 Mar 2020)
 
 ## New Features
 
