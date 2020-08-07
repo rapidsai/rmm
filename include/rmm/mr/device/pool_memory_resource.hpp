@@ -162,7 +162,9 @@ class pool_memory_resource final
    */
   block_type expand_pool(size_t size, free_list& blocks, cudaStream_t stream)
   {
-    return block_from_upstream(size, stream);
+    auto grow_size = size_to_grow(size);
+    RMM_EXPECTS(grow_size > 0, rmm::bad_alloc, "Maximum pool size exceeded");
+    return block_from_upstream(grow_size, stream);
   }
 
   /**
@@ -177,10 +179,8 @@ class pool_memory_resource final
    */
   block_type block_from_upstream(size_t size, cudaStream_t stream)
   {
-    auto grow_size = size_to_grow(size);
-    RMM_EXPECTS(grow_size > 0, rmm::bad_alloc, "Maximum pool size exceeded");
-    void* p = upstream_mr_->allocate(grow_size, stream);
-    block_type b{reinterpret_cast<char*>(p), grow_size, true};
+    void* p = upstream_mr_->allocate(size, stream);
+    block_type b{reinterpret_cast<char*>(p), size, true};
     upstream_blocks_.emplace_back(b);  // TODO: with C++17 use version that returns a reference
     current_pool_size_ += b.size();
     return b;
