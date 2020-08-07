@@ -64,11 +64,18 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}"
 
 set(DEVICE_MR_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/mr_tests.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/mr_multithreaded_tests.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/mr_multithreaded_tests.cpp")
+    
+ConfigureTest(DEVICE_MR_TEST "${DEVICE_MR_TEST_SRC}")
+
+###################################################################################################
+###################################################################################################
+# - thrust allocator tests --------------------------------------------------------------------------------
+
+set(THRUST_ALLOCATOR_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/thrust_allocator_tests.cu")
     
-
-ConfigureTest(DEVICE_MR_TEST "${DEVICE_MR_TEST_SRC}")
+ConfigureTest(THRUST_ALLOCATOR_TEST "${THRUST_ALLOCATOR_TEST_SRC}")
 
 ###################################################################################################
 ###################################################################################################
