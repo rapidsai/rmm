@@ -210,7 +210,7 @@ configure_package_config_file(
 
 write_basic_package_version_file(
   ${CMAKE_CURRENT_BINARY_DIR}/rmm-config-version.cmake
-  COMPATIBILITY AnyNewerVersion
+  COMPATIBILITY SameMinorVersion
   )
 
 install(TARGETS rmm
