@@ -279,10 +279,10 @@ int main(int argc, char** argv)
                         cxxopts::value<std::string>()->default_value("pool"));
   options.add_options()("n,numallocs",
                         "Number of allocations (default of 0 tests a range)",
-                        cxxopts::value<int>()->default_value("0"));
+                        cxxopts::value<int>()->default_value("1000"));
   options.add_options()("m,maxsize",
                         "Maximum allocation size (default of 0 tests a range)",
-                        cxxopts::value<int>()->default_value("0"));
+                        cxxopts::value<int>()->default_value("4096"));
 
   auto args       = options.parse(argc, argv);
   num_allocations = args["numallocs"].as<int>();
@@ -295,9 +295,6 @@ int main(int argc, char** argv)
                                                       {"pool", &make_pool}});
     auto resource = args["resource"].as<std::string>();
 
-    num_allocations = num_allocations > 0 ? num_allocations : 1000;
-    max_size        = max_size > 0 ? num_allocations : 4096;
-
     std::cout << "Profiling " << resource << " with " << num_allocations << " allocations of max "
               << max_size << "B\n";
 
@@ -305,6 +302,13 @@ int main(int argc, char** argv)
 
     std::cout << "Finished\n";
   } else {
+    if (args.count("numallocs") == 0) {  // if zero reset to -1 so we benchmark over a range
+      num_allocations = -1;
+    }
+    if (args.count("maxsize") == 0) {  // if zero reset to -1 so we benchmark over a range
+      max_size = -1;
+    }
+
     if (args.count("resource") > 0) {
       std::string mr_name = args["resource"].as<std::string>();
       declare_benchmark(mr_name);
