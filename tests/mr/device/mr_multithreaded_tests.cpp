@@ -41,7 +41,7 @@ INSTANTIATE_TEST_CASE_P(MultiThreadResourceTests,
                                           mr_factory{"Pool", &make_pool},
                                           mr_factory{"CNMEM", &make_cnmem},
                                           mr_factory{"CNMEM_Managed", &make_cnmem_managed},
-                                          mr_factory{"SyncHybrid", &make_sync_hybrid}),
+                                          mr_factory{"Hybrid", &make_hybrid}),
                         [](auto const& info) { return info.param.name; });
 
 template <typename Task, typename... Arguments>
@@ -252,7 +252,7 @@ INSTANTIATE_TEST_CASE_P(MultiThreadResourceTestsDifferentStreams,
                         ::testing::Values(mr_factory{"CUDA", &make_cuda},
                                           mr_factory{"Managed", &make_managed},
                                           mr_factory{"Pool", &make_pool},
-                                          mr_factory{"SyncHybrid", &make_sync_hybrid}),
+                                          mr_factory{"Hybrid", &make_hybrid}),
                         [](auto const& info) { return info.param.name; });
 
 }  // namespace

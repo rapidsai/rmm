@@ -87,7 +87,6 @@ add_subdirectory(thirdparty)
 
 ###################################################################################################
 # - cnmem ---------------------------------------------------------------------------------
-
 # Temporarily needed to have all RMM includes under a single directory
 configure_file("${CNMEM_INCLUDE_DIR}/cnmem.h"
 	       "${CMAKE_CURRENT_SOURCE_DIR}/include/rmm/detail/cnmem.h" COPYONLY)

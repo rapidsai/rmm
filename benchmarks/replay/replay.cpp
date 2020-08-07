@@ -14,18 +14,20 @@
  * limitations under the License.
  */
 
-#include <thrust/iterator/discard_iterator.h>
-#include "cxxopts.hpp"
-#include "thrust/execution_policy.h"
-#include "thrust/iterator/constant_iterator.h"
-
+#include <benchmarks/utilities/cxxopts.hpp>
 #include <benchmarks/utilities/log_parser.hpp>
+
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/cnmem_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 
-#include <benchmark/benchmark.h>
+#include <thrust/execution_policy.h>
+#include <thrust/iterator/constant_iterator.h>
+#include <thrust/iterator/discard_iterator.h>
 #include <thrust/reduce.h>
+
+#include <benchmark/benchmark.h>
+
 #include <iterator>
 #include <memory>
 #include <numeric>

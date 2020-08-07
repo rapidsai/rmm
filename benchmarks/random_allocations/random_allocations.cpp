@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2020, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,19 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include <benchmarks/utilities/cxxopts.hpp>
+
 #include <rmm/mr/device/cnmem_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
-#include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/fixed_multisize_memory_resource.hpp>
 #include <rmm/mr/device/hybrid_memory_resource.hpp>
-#include <rmm/mr/device/managed_memory_resource.hpp>
+#include <rmm/mr/device/owning_wrapper.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
-#include <rmm/mr/device/thread_safe_resource_adaptor.hpp>
 
 #include <benchmark/benchmark.h>
 
+#include <array>
 #include <cstdlib>
+#include <functional>
 #include <random>
 
 #define VERBOSE 0
@@ -55,13 +58,6 @@ allocation remove_at(allocation_vector& allocs, std::size_t index)
 
   return removed;
 }
-// nested MR type names can get long...
-using cuda_mr            = rmm::mr::cuda_memory_resource;
-using pool_mr            = rmm::mr::pool_memory_resource<cuda_mr>;
-using fixed_multisize_mr = rmm::mr::fixed_multisize_memory_resource<pool_mr>;
-using hybrid_mr          = rmm::mr::hybrid_memory_resource<fixed_multisize_mr, pool_mr>;
-using safe_hybrid_mr     = rmm::mr::thread_safe_resource_adaptor<hybrid_mr>;
-using cnmem_mr           = rmm::mr::cnmem_memory_resource;
 
 template <typename SizeDistribution>
 void random_allocation_free(rmm::mr::device_memory_resource& mr,
@@ -161,86 +157,36 @@ void uniform_random_allocations(rmm::mr::device_memory_resource& mr,
   std::normal_distribution<std::size_t> size_distribution(, max_allocation_size * size_mb);
 }*/
 
-// Wrapper class to allow RAII of memory_resource types with different constructor parameters.
-template <typename MemoryResource>
-struct resource_wrapper {
-  resource_wrapper() {}
-  ~resource_wrapper() { delete mr; }
+/// MR factory functions
+inline auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>(); }
 
-  MemoryResource* mr{};
-};
+inline auto make_cnmem() { return std::make_shared<rmm::mr::cnmem_memory_resource>(); }
 
-template <>
-resource_wrapper<cnmem_mr>::resource_wrapper()
+inline auto make_pool()
 {
-  mr = new cnmem_mr();
+  return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_cuda());
 }
 
-template <>
-resource_wrapper<cuda_mr>::resource_wrapper()
+template <typename Upstream>
+inline auto make_multisize(std::shared_ptr<Upstream> upstream)
 {
-  mr = new cuda_mr();
+  return rmm::mr::make_owning_wrapper<rmm::mr::fixed_multisize_memory_resource>(upstream);
 }
 
-template <>
-resource_wrapper<pool_mr>::resource_wrapper()
+inline auto make_hybrid()
 {
-  mr = new pool_mr(new cuda_mr());
+  auto pool = make_pool();
+  return rmm::mr::make_owning_wrapper<rmm::mr::hybrid_memory_resource>(
+    std::make_tuple(make_multisize(pool), pool));
 }
 
-template <>
-resource_wrapper<fixed_multisize_mr>::resource_wrapper()
-{
-  mr = new fixed_multisize_mr(new pool_mr(new cuda_mr()));
-}
-
-template <>
-resource_wrapper<safe_hybrid_mr>::resource_wrapper()
-{
-  auto pool = new pool_mr(new cuda_mr());
-  mr        = new rmm::mr::thread_safe_resource_adaptor<hybrid_mr>(
-    new hybrid_mr(new fixed_multisize_mr(pool), pool));
-}
-
-template <>
-resource_wrapper<safe_hybrid_mr>::~resource_wrapper()
-{
-  auto hybrid = mr->get_upstream();
-  auto small  = hybrid->get_small_mr();
-  auto large  = hybrid->get_large_mr();
-  auto cuda   = large->get_upstream();
-  delete mr;
-  delete hybrid;
-  delete small;
-  delete large;
-  delete cuda;
-}
-
-template <>
-resource_wrapper<fixed_multisize_mr>::~resource_wrapper()
-{
-  auto sub  = mr->get_upstream();
-  auto cuda = sub->get_upstream();
-  delete mr;
-  delete sub;
-  delete cuda;
-}
-
-template <>
-resource_wrapper<pool_mr>::~resource_wrapper()
-{
-  auto cuda = mr->get_upstream();
-  delete mr;
-  delete cuda;
-}
+using MRFactoryFunc = std::function<std::shared_ptr<rmm::mr::device_memory_resource>()>;
 
 constexpr size_t max_usage = 16000;
 
-template <typename MemoryResource>
-static void BM_RandomAllocations(benchmark::State& state)
+static void BM_RandomAllocations(benchmark::State& state, MRFactoryFunc factory)
 {
-  resource_wrapper<MemoryResource> wrapper;
-  MemoryResource* mr = wrapper.mr;
+  auto mr = factory();
 
   size_t num_allocations = state.range(0);
   size_t max_size        = state.range(1);
@@ -292,58 +238,85 @@ static void benchmark_range(benchmark::internal::Benchmark* b)
 void declare_benchmark(std::string name)
 {
   if (name == "cuda")
-    BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::cuda_memory_resource)->Apply(benchmark_range);
-  if (name == "hybrid")
-    BENCHMARK_TEMPLATE(BM_RandomAllocations, safe_hybrid_mr)->Apply(benchmark_range);
+    BENCHMARK_CAPTURE(BM_RandomAllocations, cuda_mr, &make_cuda)->Apply(benchmark_range);
+  else if (name == "hybrid")
+    BENCHMARK_CAPTURE(BM_RandomAllocations, hybrid_mr, &make_hybrid)->Apply(benchmark_range);
   else if (name == "pool")
-    BENCHMARK_TEMPLATE(BM_RandomAllocations, pool_mr)->Apply(benchmark_range);
-  else if (name == "fixed_multisize")
-    BENCHMARK_TEMPLATE(BM_RandomAllocations, fixed_multisize_mr)->Apply(benchmark_range);
+    BENCHMARK_CAPTURE(BM_RandomAllocations, pool_mr, &make_pool)->Apply(benchmark_range);
   else if (name == "cnmem")
-    BENCHMARK_TEMPLATE(BM_RandomAllocations, rmm::mr::cnmem_memory_resource)
-      ->Apply(benchmark_range);
+    BENCHMARK_CAPTURE(BM_RandomAllocations, cnmem_mr, &make_cnmem)->Apply(benchmark_range);
   else
     std::cout << "Error: invalid memory_resource name: " << name << "\n";
 }
 
-int main(int argc, char** argv)
+static void profile_random_allocations(MRFactoryFunc factory,
+                                       size_t num_allocations,
+                                       size_t max_size)
 {
-  ::benchmark::Initialize(&argc, argv);
-  if (argc > 1) {
-    std::string mr_name = argv[1];
-    if (argc > 2) num_allocations = atoi(argv[2]);
-    if (argc > 3) max_size = atoi(argv[3]);
-    declare_benchmark(mr_name);
-  } else {
-    BENCHMARK_TEMPLATE(BM_RandomAllocations, pool_mr)->Apply(benchmark_range);
-    BENCHMARK_TEMPLATE(BM_RandomAllocations, safe_hybrid_mr)->Apply(benchmark_range);
-    BENCHMARK_TEMPLATE(BM_RandomAllocations, cnmem_mr)->Apply(benchmark_range);
-    BENCHMARK_TEMPLATE(BM_RandomAllocations, cuda_mr)->Apply(benchmark_range);
-  }
-
-  ::benchmark::RunSpecifiedBenchmarks();
-}
-
-// For profiling
-/*template <typename MemoryResource>
-static void RandomAllocations(size_t num_allocations, size_t max_size) {
-  MemoryResource mr;
+  auto mr = factory();
 
   try {
-    uniform_random_allocations(mr, num_allocations, max_size, max_usage);
+    uniform_random_allocations(*mr, num_allocations, max_size, max_usage);
   } catch (std::exception const& e) {
     std::cout << "Error: " << e.what() << "\n";
   }
 }
 
-int main(int argc, char** argv) {
-  std::string name{ argc > 1 ? argv[1] : "cnmem" };
+int main(int argc, char** argv)
+{
+  // benchmark::Initialize will remove GBench command line arguments it
+  // recognizes and leave any remaining arguments
+  ::benchmark::Initialize(&argc, argv);
 
-  if (name == "hybrid")
-    RandomAllocations<rmm::mr::hybrid_memory_resource>(1000, 4096);
-  else if (name == "sub")
-    RandomAllocations<rmm::mr::pool_memory_resource>(1000, 4096);
-  else if (name == "cnmem")
-    RandomAllocations<rmm::mr::cnmem_memory_resource>(1000, 4096);
+  // Parse for replay arguments:
+  cxxopts::Options options("RMM Random Allocations Benchmark",
+                           "Benchmarks random allocations within a size range.");
+
+  options.add_options()(
+    "p,profile", "Profiling mode: run once", cxxopts::value<bool>()->default_value("false"));
+  options.add_options()("r,resource",
+                        "Type of device_memory_resource",
+                        cxxopts::value<std::string>()->default_value("pool"));
+  options.add_options()("n,numallocs",
+                        "Number of allocations (default of 0 tests a range)",
+                        cxxopts::value<int>()->default_value("1000"));
+  options.add_options()("m,maxsize",
+                        "Maximum allocation size (default of 0 tests a range)",
+                        cxxopts::value<int>()->default_value("4096"));
+
+  auto args       = options.parse(argc, argv);
+  num_allocations = args["numallocs"].as<int>();
+  max_size        = args["maxsize"].as<int>();
+
+  if (args.count("profile") > 0) {
+    std::map<std::string, MRFactoryFunc> const funcs({{"cnmem", &make_cnmem},
+                                                      {"cuda", &make_cuda},
+                                                      {"hybrid", &make_hybrid},
+                                                      {"pool", &make_pool}});
+    auto resource = args["resource"].as<std::string>();
+
+    std::cout << "Profiling " << resource << " with " << num_allocations << " allocations of max "
+              << max_size << "B\n";
+
+    profile_random_allocations(funcs.at(resource), num_allocations, max_size);
+
+    std::cout << "Finished\n";
+  } else {
+    if (args.count("numallocs") == 0) {  // if zero reset to -1 so we benchmark over a range
+      num_allocations = -1;
+    }
+    if (args.count("maxsize") == 0) {  // if zero reset to -1 so we benchmark over a range
+      max_size = -1;
+    }
+
+    if (args.count("resource") > 0) {
+      std::string mr_name = args["resource"].as<std::string>();
+      declare_benchmark(mr_name);
+    } else {
+      std::array<std::string, 4> mrs{"pool", "hybrid", "cnmem", "cuda"};
+      std::for_each(std::cbegin(mrs), std::cend(mrs), [](auto const& s) { declare_benchmark(s); });
+    }
+    ::benchmark::RunSpecifiedBenchmarks();
+  }
   return 0;
-}*/
+}
