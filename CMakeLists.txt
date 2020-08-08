@@ -178,7 +178,7 @@ else()
   target_link_libraries(rmm PUBLIC CUDA::cudart)
 endif(CUDA_STATIC_RUNTIME)
 
-target_link_libraries(rmm PUBLIC cuda spdlog::spdlog_header_only)
+target_link_libraries(rmm PUBLIC CUDA::cuda_driver spdlog::spdlog_header_only)
 
 ###################################################################################################
 # - install targets -------------------------------------------------------------------------------
