@@ -130,12 +130,6 @@ if(BUILD_BENCHMARKS)
 
 endif(BUILD_BENCHMARKS)
 
-
-###################################################################################################
-# - library paths ---------------------------------------------------------------------------------
-
-link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}") # CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES is an undocumented/unsupported variable containing the link directories for nvcc
-
 ###################################################################################################
 # - library targets -------------------------------------------------------------------------------
 add_library(rmm SHARED
@@ -146,7 +140,6 @@ SET_TARGET_PROPERTIES(rmm PROPERTIES BUILD_RPATH "\$ORIGIN")
 
 target_include_directories(rmm PUBLIC
   "${THRUST_INCLUDE_DIR}"
-  "${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
   "${CMAKE_CURRENT_SOURCE_DIR}/include"
   "${CMAKE_CURRENT_BINARY_DIR}/include"
   )
