@@ -94,8 +94,9 @@ class pool_memory_resource final
         ((initial_pool_size == default_initial_size) ? detail::available_device_memory() / 2
                                                      : initial_pool_size),
         allocation_alignment)},
-      maximum_pool_size_{(maximum_pool_size == default_maximum_size) ? current_pool_size_ * 2
-                                                                     : maximum_pool_size}
+      maximum_pool_size_{(maximum_pool_size == default_maximum_size)
+                           ? detail::available_device_memory()
+                           : maximum_pool_size}
   {
     RMM_EXPECTS(pool_size() <= maximum_pool_size_,
                 "Initial pool size exceeds the maximum pool size!");
