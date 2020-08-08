@@ -161,12 +161,6 @@ target_include_directories(rmm PRIVATE
 # - build options ---------------------------------------------------------------------------------
 
 option(USE_NVTX "Build with NVTX support" ON)
-if(USE_NVTX)
-    message(STATUS "Using Nvidia Tools Extension")
-    find_library(NVTX_LIBRARY nvToolsExt PATH ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
-    target_link_libraries(rmm PUBLIC ${NVTX_LIBRARY})
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --define-macro USE_NVTX")
-endif(USE_NVTX)
 
 ###################################################################################################
 # - link libraries --------------------------------------------------------------------------------
@@ -177,6 +171,12 @@ if(CUDA_STATIC_RUNTIME)
 else()
   target_link_libraries(rmm PUBLIC CUDA::cudart)
 endif(CUDA_STATIC_RUNTIME)
+
+if(USE_NVTX)
+  message(STATUS "Using Nvidia Tools Extension")
+  target_link_libraries(rmm PUBLIC CUDA::nvToolsExt)
+  target_compile_definitions(rmm PUBLIC USE_NVTX)
+endif(USE_NVTX)
 
 target_link_libraries(rmm PUBLIC CUDA::cuda_driver spdlog::spdlog_header_only)
 
