@@ -121,7 +121,6 @@ endif(BUILD_TESTS)
 # - add google benchmark --------------------------------------------------------------------------
 
 if(BUILD_BENCHMARKS)
-
   include(ConfigureGoogleBenchmark)
 
   if(GBENCH_FOUND)
@@ -130,16 +129,15 @@ if(BUILD_BENCHMARKS)
   else()
     message(AUTHOR_WARNING "Google C++ Benchmarking Framework (Google Benchmark) not found: automated tests are disabled.")
   endif(GBENCH_FOUND)
-
 endif(BUILD_BENCHMARKS)
 
 ###################################################################################################
 # - library targets -------------------------------------------------------------------------------
-add_library(rmm SHARED
-            "${CNMEM_SOURCE_DIR}/cnmem.cpp")
+
+add_library(rmm SHARED "${CNMEM_SOURCE_DIR}/cnmem.cpp")
 
 # override rpath for rmm
-SET_TARGET_PROPERTIES(rmm PROPERTIES BUILD_RPATH "\$ORIGIN")
+set_target_properties(rmm PROPERTIES BUILD_RPATH "\$ORIGIN")
 
 target_include_directories(rmm PUBLIC
   "${THRUST_INCLUDE_DIR}"
