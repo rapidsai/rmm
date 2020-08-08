@@ -54,19 +54,23 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     endif(CMAKE_CXX11_ABI)
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
+###################################################################################################
+# - build options ---------------------------------------------------------------------------------
+
 option(BUILD_TESTS "Configure CMake to build tests" ON)
 option(BUILD_BENCHMARKS "Configure CMake to build (google) benchmarks" OFF)
+
+# cudart can be statically linked or dynamically linked the python ecosystem wants dynamic linking
+option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
+
+option(PER_THREAD_DEFAULT_STREAM "Build with per-thread default stream" OFF)
+
+option(USE_NVTX "Build with NVTX support" ON)
 
 ###################################################################################################
 # - find packages we depend on --------------------------------------------------------------------
 
 find_package(CUDAToolkit REQUIRED)
-
-###################################################################################################
-# - cudart options --------------------------------------------------------------------------------
-# cudart can be statically linked or dynamically linked the python ecosystem wants dynamic linking
-
-option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
 
 ###################################################################################################
 # - cmake modules ---------------------------------------------------------------------------------
@@ -93,7 +97,6 @@ configure_file("${CNMEM_INCLUDE_DIR}/cnmem.h"
 # - per-thread default stream option --------------------------------------------------------------
 # This needs to be defined first so tests and benchmarks can inherit it.
 
-option(PER_THREAD_DEFAULT_STREAM "Build with per-thread default stream" OFF)
 if(PER_THREAD_DEFAULT_STREAM)
     message(STATUS "Using per-thread default stream")
     add_compile_definitions(CUDA_API_PER_THREAD_DEFAULT_STREAM)
@@ -149,11 +152,6 @@ target_include_directories(rmm PUBLIC
 target_include_directories(rmm PRIVATE
   "${CNMEM_INCLUDE_DIR}"
   )
-
-###################################################################################################
-# - build options ---------------------------------------------------------------------------------
-
-option(USE_NVTX "Build with NVTX support" ON)
 
 ###################################################################################################
 # - link libraries --------------------------------------------------------------------------------
