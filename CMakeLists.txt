@@ -58,17 +58,15 @@ option(BUILD_TESTS "Configure CMake to build tests" ON)
 option(BUILD_BENCHMARKS "Configure CMake to build (google) benchmarks" OFF)
 
 ###################################################################################################
+# - find packages we depend on --------------------------------------------------------------------
+
+find_package(CUDAToolkit REQUIRED)
+
+###################################################################################################
 # - cudart options --------------------------------------------------------------------------------
 # cudart can be statically linked or dynamically linked the python ecosystem wants dynamic linking
 
 option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
-
-if(CUDA_STATIC_RUNTIME)
-    message(STATUS "Enabling static linking of cudart")
-    set(CUDART_LIBRARY "cudart_static")
-else()
-    set(CUDART_LIBRARY "cudart")
-endif(CUDA_STATIC_RUNTIME)
 
 ###################################################################################################
 # - cmake modules ---------------------------------------------------------------------------------
@@ -173,8 +171,14 @@ endif(USE_NVTX)
 ###################################################################################################
 # - link libraries --------------------------------------------------------------------------------
 
-target_link_libraries(rmm PUBLIC
-  ${CUDART_LIBRARY} cuda spdlog::spdlog_header_only)
+if(CUDA_STATIC_RUNTIME)
+  message(STATUS "Enabling static linking of cudart")
+  target_link_libraries(rmm PUBLIC CUDA::cudart_static)
+else()
+  target_link_libraries(rmm PUBLIC CUDA::cudart)
+endif(CUDA_STATIC_RUNTIME)
+
+target_link_libraries(rmm PUBLIC cuda spdlog::spdlog_header_only)
 
 ###################################################################################################
 # - install targets -------------------------------------------------------------------------------
