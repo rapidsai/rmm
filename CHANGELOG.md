@@ -4,6 +4,8 @@
 
 ## Improvements
 
+- PR #474 Use CMake find_package(CUDAToolkit)
+
 ## Bug Fixes
 
 # RMM 0.15.0 (Date TBD)
