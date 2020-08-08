@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #=============================================================================
-cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.17...3.18 FATAL_ERROR)
 
 project(RMM VERSION 0.16.0 LANGUAGES C CXX CUDA)
 
