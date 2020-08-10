@@ -213,6 +213,7 @@ class binning_memory_resource final : public device_memory_resource {
   std::vector<std::unique_ptr<fixed_size_memory_resource<Upstream>>> owned_bin_resources_;
 
   std::map<std::size_t, device_memory_resource*> resource_bins_;
-};  // namespace mr
+};
+
 }  // namespace mr
 }  // namespace rmm
