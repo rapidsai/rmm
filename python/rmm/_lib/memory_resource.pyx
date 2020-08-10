@@ -177,7 +177,7 @@ cdef class BinningMemoryResource(MemoryResource):
                 )
             )
         else:
-                self.c_obj.reset(
+            self.c_obj.reset(
                 new binning_memory_resource_wrapper(
                     upstream_mr.c_obj,
                     min_size_exponent,
@@ -207,9 +207,11 @@ cdef class BinningMemoryResource(MemoryResource):
             The memory resource to use for allocations larger than any of the
             bins
         min_size_exponent : size_t
-            The base-2 exponent of the minimum size FixedSizeMemoryResource bin to create.
+            The base-2 exponent of the minimum size FixedSizeMemoryResource
+            bin to create.
         max_size_exponent : size_t
-            The base-2 exponent of the maximum size FixedSizeMemoryResource bin to create.
+            The base-2 exponent of the maximum size FixedSizeMemoryResource
+            bin to create.
         """
         pass
 
