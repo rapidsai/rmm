@@ -90,6 +90,15 @@ class binning_memory_resource_wrapper : public device_memory_resource_wrapper {
   {
   }
 
+  binning_memory_resource_wrapper(std::shared_ptr<device_memory_resource_wrapper> upstream_mr,
+                                  std::size_t min_size_exponent,
+                                  std::size_t max_size_exponent)
+    : upstream_mr(upstream_mr),
+      mr(std::make_shared<rmm::mr::binning_memory_resource<rmm::mr::device_memory_resource>>(
+        upstream_mr->get_mr().get(), min_size_exponent, max_size_exponent))
+  {
+  }
+
   std::shared_ptr<rmm::mr::device_memory_resource> get_mr() { return mr; }
 
   void add_bin(std::size_t allocation_size,

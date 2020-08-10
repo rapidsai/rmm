@@ -327,11 +327,9 @@ def test_fixed_size_memory_resource(dtype, nelem, alloc, upstream):
 )
 def test_binning_memory_resource(dtype, nelem, alloc, upstream_mr):
     upstream = upstream_mr()
-    mr = rmm.mr.BinningMemoryResource(upstream)
 
     # Add fixed-size bins 256KiB, 512KiB, 1MiB, 2MiB, 4MiB
-    for i in range(18, 23):
-        mr.add_bin(1 << i)
+    mr = rmm.mr.BinningMemoryResource(upstream, 18, 22)
 
     # Test adding some explicit bin MRs
     fixed_mr = rmm.mr.FixedSizeMemoryResource(upstream, 1 << 10)

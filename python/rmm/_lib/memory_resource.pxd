@@ -39,6 +39,11 @@ cdef extern from "memory_resource_wrappers.hpp" nogil:
         binning_memory_resource_wrapper(
             shared_ptr[device_memory_resource_wrapper] upstream_mr
         ) except +
+        binning_memory_resource_wrapper(
+            shared_ptr[device_memory_resource_wrapper] upstream_mr,
+            size_t min_size_exponent,
+            size_t max_size_exponent
+        ) except +
         void add_bin(
             size_t allocation_size,
             shared_ptr[device_memory_resource_wrapper] bin_mr
