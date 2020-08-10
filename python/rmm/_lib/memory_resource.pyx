@@ -166,29 +166,50 @@ cdef class FixedSizeMemoryResource(MemoryResource):
 cdef class BinningMemoryResource(MemoryResource):
     def __cinit__(
         self,
-        MemoryResource upstream_mr
+        MemoryResource upstream_mr,
+        min_size_exponent=None,
+        max_size_exponent=None,
     ):
-        self.c_obj.reset(
-            new binning_memory_resource_wrapper(
-                upstream_mr.c_obj
+        if (min_size_exponent is None or max_size_exponent is None):
+            self.c_obj.reset(
+                new binning_memory_resource_wrapper(
+                    upstream_mr.c_obj
+                )
             )
-        )
+        else:
+                self.c_obj.reset(
+                new binning_memory_resource_wrapper(
+                    upstream_mr.c_obj,
+                    min_size_exponent,
+                    max_size_exponent
+                )
+            )
 
     def __init__(
         self,
-        MemoryResource upstream_mr
+        MemoryResource upstream_mr,
+        min_size_exponent=None,
+        max_size_exponent=None,
     ):
         """
         Allocates memory from a set of specified "bin" sizes based on a
         specified allocation size.
 
-        Call add_bin to add fixed-size bin allocators.
+        If min_size_exponent and max_size_exponent are specified, initializes
+        with one or more FixedSizeMemoryResource bins in the range
+        [2^min_size_exponent, 2^max_size_exponent].
+
+        Call add_bin to add additional bin allocators.
 
         Parameters
         ----------
         upstream_mr : MemoryResource
             The memory resource to use for allocations larger than any of the
             bins
+        min_size_exponent : size_t
+            The base-2 exponent of the minimum size FixedSizeMemoryResource bin to create.
+        max_size_exponent : size_t
+            The base-2 exponent of the maximum size FixedSizeMemoryResource bin to create.
         """
         pass
 

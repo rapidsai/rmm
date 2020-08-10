@@ -43,16 +43,46 @@ class binning_memory_resource final : public device_memory_resource {
   static constexpr std::size_t allocation_alignment = 256;
 
   /**
-   * @brief Construct a new binning memory resource object
+   * @brief Construct a new binning memory resource object.
    *
    * Initially has no bins, so simply uses the upstream_resource until bin resources are added
    * with `add_bin`.
    *
    * @throws rmm::logic_error if size_base is not a power of two.
    *
-   * @param upstream_resource The upstream memory resource used to allocate pools of blocks
+   * @param upstream_resource The upstream memory resource used to allocate bin pools.
    */
-  explicit binning_memory_resource(Upstream* upstream_resource) : upstream_mr_{upstream_resource} {}
+  explicit binning_memory_resource(Upstream* upstream_resource)
+    : upstream_mr_{[upstream_resource]() {
+        RMM_EXPECTS(nullptr != upstream_resource, "Unexpected null upstream pointer.");
+        return upstream_resource;
+      }()}
+  {
+  }
+
+  /**
+   * @brief Construct a new binning memory resource object with a range of initial bins.
+   *
+   * Constructs a new binning memory resource and adds bins backed by `fixed_size_memory_resource`
+   * in the range [2^min_size_exponent, 2^max_size_exponent]. For example if `min_size_exponent==18`
+   * and `max_size_exponent==22`, creates bins of sizes 256KiB, 512KiB, 1024KiB, 2048KiB and
+   * 4096KiB.
+   *
+   * @param upstream_resource The upstream memory resource used to allocate bin pools.
+   * @param min_size_exponent The minimum base-2 exponent bin size.
+   * @param max_size_exponent The maximum base-2 exponent bin size.
+   */
+  binning_memory_resource(Upstream* upstream_resource,
+                          std::size_t min_size_exponent,
+                          std::size_t max_size_exponent)
+    : upstream_mr_{[upstream_resource]() {
+        RMM_EXPECTS(nullptr != upstream_resource, "Unexpected null upstream pointer.");
+        return upstream_resource;
+      }()}
+  {
+    for (std::size_t i = min_size_exponent; i <= max_size_exponent; i++)
+      add_bin(1 << i);
+  }
 
   /**
    * @brief Destroy the binning_memory_resource and free all memory allocated from the upstream

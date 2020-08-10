@@ -248,10 +248,9 @@ inline auto make_fixed_size()
 inline auto make_binning()
 {
   auto pool = make_pool();
-  auto mr   = rmm::mr::make_owning_wrapper<rmm::mr::binning_memory_resource>(pool);
-  for (std::size_t i = 18; i <= 22; i++) {
-    mr->wrapped().add_bin(1 << i);
-  }
+  // Add a binning_memory_resource with fixed-size bins of sizes 256, 512, 1024, 2048 and 4096KiB
+  // Larger allocations will use the pool resource
+  auto mr = rmm::mr::make_owning_wrapper<rmm::mr::binning_memory_resource>(pool, 18, 22);
   return mr;
 }
 
