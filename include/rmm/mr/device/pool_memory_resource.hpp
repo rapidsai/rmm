@@ -36,6 +36,17 @@
 
 namespace rmm {
 namespace mr {
+namespace detail {
+/// Gets the total available device memory in bytes for the current device
+inline std::size_t available_device_memory()
+{
+  int device{0};
+  RMM_CUDA_TRY(cudaGetDevice(&device));
+  cudaDeviceProp props;
+  RMM_CUDA_TRY(cudaGetDeviceProperties(&props, device));
+  return props.totalGlobalMem;
+}
+}  // namespace detail
 
 /**
  * @brief A coalescing best-fit suballocator which uses a pool of memory allocated from
@@ -51,37 +62,45 @@ template <typename Upstream>
 class pool_memory_resource final
   : public detail::stream_ordered_memory_resource<pool_memory_resource<Upstream>,
                                                   detail::coalescing_free_list> {
- public:
-  friend class detail::stream_ordered_memory_resource<pool_memory_resource<Upstream>,
-                                                      detail::coalescing_free_list>;
-
   static constexpr size_t default_initial_size = ~0;
   static constexpr size_t default_maximum_size = ~0;
   // TODO use rmm-level def of this.
   static constexpr size_t allocation_alignment = 256;
 
+ public:
+  friend class detail::stream_ordered_memory_resource<pool_memory_resource<Upstream>,
+                                                      detail::coalescing_free_list>;
+
   /**
-   * @brief Construct a `pool_memory_resource` and allocate the initial
-   * device memory pool using `upstream_mr`.
+   * @brief Construct a `pool_memory_resource` and allocate the initial device memory pool using
+   * `upstream_mr`.
    *
    * @throws rmm::logic_error if `upstream_mr == nullptr`
    *
    * @param upstream_mr The memory_resource from which to allocate blocks for the pool.
-   * @param initial_pool_size Size, in bytes, of the initial pool. When
-   * zero, an implementation-defined pool size is used.
-   * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to.
+   * @param initial_pool_size Minimum size, in bytes, of the initial pool. Defaults to half of the
+   * available memory on the current device.
+   * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to. Defaults to all of
+   * the available memory on the current device.
    */
   explicit pool_memory_resource(Upstream* upstream_mr,
                                 std::size_t initial_pool_size = default_initial_size,
                                 std::size_t maximum_pool_size = default_maximum_size)
-    : upstream_mr_{upstream_mr},
-      initial_pool_size_(initial_pool_size),
-      maximum_pool_size_(maximum_pool_size)
+    : upstream_mr_{[upstream_mr]() {
+        RMM_EXPECTS(nullptr != upstream_mr, "Unexpected null upstream pointer.");
+        return upstream_mr;
+      }()},
+      current_pool_size_{rmm::detail::align_up(
+        ((initial_pool_size == default_initial_size) ? detail::available_device_memory() / 2
+                                                     : initial_pool_size),
+        allocation_alignment)},
+      maximum_pool_size_{(maximum_pool_size == default_maximum_size)
+                           ? detail::available_device_memory()
+                           : maximum_pool_size}
   {
-    RMM_EXPECTS(nullptr != upstream_mr, "Unexpected null upstream pointer.");
-
-    // Allocate initial block and insert into free list for the legacy default stream
-    initialize_pool(cudaStreamLegacy);
+    RMM_EXPECTS(pool_size() <= maximum_pool_size_,
+                "Initial pool size exceeds the maximum pool size!");
+    this->insert_block(block_from_upstream(pool_size(), cudaStreamLegacy), cudaStreamLegacy);
   }
 
   /**
@@ -125,27 +144,11 @@ class pool_memory_resource final
                                                         detail::coalescing_free_list>::split_block;
   using lock_guard = std::lock_guard<std::mutex>;
 
-  void initialize_pool(cudaStream_t stream)
-  {
-    cudaDeviceProp props;
-    int device{0};
-    RMM_CUDA_TRY(cudaGetDevice(&device));
-    RMM_CUDA_TRY(cudaGetDeviceProperties(&props, device));
-
-    initial_pool_size_ = rmm::detail::align_up(
-      (initial_pool_size_ == default_initial_size) ? props.totalGlobalMem / 2 : initial_pool_size_,
-      allocation_alignment);
-
-    if (maximum_pool_size_ == default_maximum_size) { maximum_pool_size_ = props.totalGlobalMem; }
-
-    this->insert_block(block_from_upstream(initial_pool_size_, stream), stream);
-  }
-
   /**
    * @brief Get the maximum size of allocations supported by this memory resource
    *
-   * Note this does not depend on the memory size of the device. It simply returns the maximum value
-   * of `size_t`
+   * Note this does not depend on the memory size of the device. It simply returns the maximum
+   * value of `size_t`
    *
    * @return size_t The maximum size of a single allocation supported by this memory resource
    */
@@ -162,27 +165,24 @@ class pool_memory_resource final
    */
   block_type expand_pool(size_t size, free_list& blocks, cudaStream_t stream)
   {
-    return block_from_upstream(size, stream);
+    auto grow_size = size_to_grow(size);
+    RMM_EXPECTS(grow_size > 0, rmm::bad_alloc, "Maximum pool size exceeded");
+    current_pool_size_ += grow_size;
+    return block_from_upstream(grow_size, stream);
   }
 
   /**
    * @brief Allocate a block from upstream to expand the suballocation pool.
    *
-   * Note typically the allocated size will be larger than requested, and is based on the growth
-   * strategy (see `size_to_grow()`).
-   *
-   * @param size The minimum size to allocate
+   * @param size The size in bytes to allocate from the upstream resource
    * @param stream The stream on which the memory is to be used.
    * @return block_type The allocated block
    */
   block_type block_from_upstream(size_t size, cudaStream_t stream)
   {
-    auto grow_size = size_to_grow(size);
-    RMM_EXPECTS(grow_size > 0, rmm::bad_alloc, "Maximum pool size exceeded");
-    void* p = upstream_mr_->allocate(grow_size, stream);
-    block_type b{reinterpret_cast<char*>(p), grow_size, true};
+    void* p = upstream_mr_->allocate(size, stream);
+    block_type b{reinterpret_cast<char*>(p), size, true};
     upstream_blocks_.emplace_back(b);  // TODO: with C++17 use version that returns a reference
-    current_pool_size_ += b.size();
     return b;
   }
 
@@ -324,11 +324,9 @@ class pool_memory_resource final
     return std::make_pair(free_size, total_size);
   }
 
-  size_t initial_pool_size_;
-  size_t maximum_pool_size_;
-  size_t current_pool_size_{0};
-
   Upstream* upstream_mr_;  // The "heap" to allocate the pool from
+  std::size_t current_pool_size_{};
+  std::size_t maximum_pool_size_{};
 
   std::set<block_type, rmm::mr::detail::compare_blocks<block_type>> allocated_blocks_;
 

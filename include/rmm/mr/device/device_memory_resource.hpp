@@ -64,7 +64,7 @@ class device_memory_resource {
    */
   void* allocate(std::size_t bytes, cudaStream_t stream = 0)
   {
-    return do_allocate(detail::align_up(bytes, 8), stream);
+    return do_allocate(rmm::detail::align_up(bytes, 8), stream);
   }
 
   /**
@@ -87,7 +87,7 @@ class device_memory_resource {
    */
   void deallocate(void* p, std::size_t bytes, cudaStream_t stream = 0)
   {
-    do_deallocate(p, detail::align_up(bytes, 8), stream);
+    do_deallocate(p, rmm::detail::align_up(bytes, 8), stream);
   }
 
   /**
