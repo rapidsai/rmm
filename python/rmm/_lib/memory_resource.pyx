@@ -118,10 +118,10 @@ cdef class BinningMemoryResource(MemoryResource):
     def __cinit__(
         self,
         MemoryResource upstream_mr,
-        min_size_exponent=None,
-        max_size_exponent=None,
+        int min_size_exponent=-1,
+        int max_size_exponent=-1,
     ):
-        if (min_size_exponent is None or max_size_exponent is None):
+        if (min_size_exponent == -1 or max_size_exponent == -1):
             self.c_obj.reset(
                 new binning_memory_resource_wrapper(
                     upstream_mr.c_obj
@@ -139,8 +139,8 @@ cdef class BinningMemoryResource(MemoryResource):
     def __init__(
         self,
         MemoryResource upstream_mr,
-        min_size_exponent=None,
-        max_size_exponent=None,
+        int min_size_exponent=-1,
+        int max_size_exponent=-1,
     ):
         """
         Allocates memory from a set of specified "bin" sizes based on a
