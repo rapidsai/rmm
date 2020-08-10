@@ -78,10 +78,10 @@ class pool_memory_resource final
    * @throws rmm::logic_error if `upstream_mr == nullptr`
    *
    * @param upstream_mr The memory_resource from which to allocate blocks for the pool.
-   * @param initial_pool_size Minimum size, in bytes, of the initial pool. Defaults to an
-   * implementation defined size.
-   * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to. Defaults to an
-   * implementation defined size.
+   * @param initial_pool_size Minimum size, in bytes, of the initial pool. Defaults to half of the
+   * available memory on the current device.
+   * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to. Defaults to all of
+   * the available memory on the current device.
    */
   explicit pool_memory_resource(Upstream* upstream_mr,
                                 std::size_t initial_pool_size = default_initial_size,
