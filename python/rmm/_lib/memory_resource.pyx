@@ -274,7 +274,7 @@ cdef class LoggingResourceAdaptor(MemoryResource):
 cdef dict _per_device_mrs = {}
 
 
-cpdef get_current_device():
+cpdef int get_current_device() except -1:
     """
     Get the current CUDA device
     """
