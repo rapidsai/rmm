@@ -4,6 +4,8 @@
 
 ## Improvements
 
+- PR #477 Just use `None` for `strides` in `DeviceBuffer`
+
 ## Bug Fixes
 
 # RMM 0.15.0 (Date TBD)
