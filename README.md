@@ -205,11 +205,11 @@ Accessing and modifying the default resource is done through two functions:
 #### Example
 
 ```c++
-rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource(); // Points to `cuda_memory_resource`
+rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource(); // Points to `cuda_memory_resource`
 // Construct a resource that uses a coalescing best-fit pool allocator
 rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>> pool_mr{mr}; 
 rmm::mr::set_default_resource(&pool_mr); // Updates the default resource pointer to `pool_mr`
-rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource(); // Points to `pool_mr`
+rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource(); // Points to `pool_mr`
 ```
 
 ## Device Data Structures
@@ -371,26 +371,31 @@ array([1., 2., 3.])
 
 ### MemoryResources
 
-MemoryResources are used to configure how device memory allocations are made by RMM.
+MemoryResources are used to configure how device memory allocations are made by
+RMM.
 
 By default, i.e., if you don't set a MemoryResource explicitly, RMM
 uses the `CudaMemoryResource`, which uses `cudaMalloc` for
 allocating device memory.
 
-The `rmm.mr.set_default_resource()` function can be used to set a
-different MemoryResource.  For example, enabling the
-`ManagedMemoryResource` tells RMM to use `cudaMallocManaged` instead
-of `cudaMalloc` for allocating memory:
+`rmm.reinitialize()` provides an easy way to initialize RMM with specific
+memory resource options across multiple devices. See `help(rmm.reinitialize) for 
+full details.
+
+For lower-level control, `rmm.mr.set_current_device_resource()` function can be
+used to set a different MemoryResource for the current CUDA device.  For
+example, enabling the `ManagedMemoryResource` tells RMM to use
+`cudaMallocManaged` instead of `cudaMalloc` for allocating memory:
 
 ```python
 >>> import rmm
->>> rmm.mr.set_default_resource(rmm.mr.ManagedMemoryResource())
+>>> rmm.mr.set_current_device_resource(rmm.mr.ManagedMemoryResource())
 ```
 
-> :warning: The default resource must be set **before** allocating any
-> device memory.  Setting or changing the default resource after
-> device allocations have been made can lead to unexpected behaviour
-> or crashes.
+> :warning: The default resource must be set for any device **before**
+> allocating any device memory on that device.  Setting or changing the
+> resource after device allocations have been made can lead to unexpected
+> behaviour or crashes.
 
 As another example, `PoolMemoryResource` allows you to allocate a
 large "pool" of device memory up-front. Subsequent allocations will
@@ -406,7 +411,7 @@ of 1 GiB and a maximum size of 4 GiB. The pool uses
 ...     initial_pool_size=2**30,
 ...     maximum_pool_size=2**32
 ... )
->>> rmm.mr.set_default_resource(pool)
+>>> rmm.mr.set_current_device_resource(pool)
 ```
 Other MemoryResources include:
 
