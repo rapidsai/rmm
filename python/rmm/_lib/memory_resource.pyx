@@ -223,7 +223,7 @@ def _append_id(filename, id):
         The ID to append
     """
     name, ext = os.path.splitext(filename)
-    return "{name}.dev{uid}{ext}".format(name=name, uid=id, ext=ext)
+    return f"{name}.dev{id}{ext}"
 
 
 cdef class LoggingResourceAdaptor(MemoryResource):
@@ -240,7 +240,7 @@ cdef class LoggingResourceAdaptor(MemoryResource):
         log_file_name = _append_id(
             log_file_name.decode(), get_current_device()
         )
-        print(log_file_name)
+
         _log_file_name = log_file_name
 
         self.c_obj.reset(
@@ -410,6 +410,10 @@ cpdef get_per_device_resource_type(int device):
 
 
 cpdef get_current_device_resource():
+    """
+    Get the memory resource used for RMM device allocations on the current
+    device.
+    """
     return get_per_device_resource(get_current_device())
 
 
@@ -440,5 +444,6 @@ cpdef _flush_logs():
     """
     global _per_device_mrs
     cdef MemoryResource each_mr
-    [each_mr.flush() for each_mr in _per_device_mrs.values()
-        if type(each_mr) is LoggingResourceAdaptor]
+    for each_mr in _per_device_mrs.values():
+        if isinstance(each_mr, LoggingResourceAdaptor):
+            each_mr.flush()
