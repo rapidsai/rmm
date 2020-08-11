@@ -7,11 +7,8 @@ from libcpp.cast cimport dynamic_cast
 from libcpp.memory cimport make_shared, make_unique, shared_ptr, unique_ptr
 from libcpp.string cimport string
 
-from rmm._lib.lib cimport (
-    cudaGetDevice,
-    cudaSetDevice,
-    cudaSuccess
-)
+from rmm._lib.lib cimport cudaGetDevice, cudaSetDevice, cudaSuccess
+
 
 cdef class CudaMemoryResource(MemoryResource):
     def __cinit__(self):
