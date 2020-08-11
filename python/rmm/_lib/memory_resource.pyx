@@ -1,6 +1,7 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 import os
 
+from libc.stdint cimport int8_t
 from libcpp cimport bool
 from libcpp.cast cimport dynamic_cast
 from libcpp.memory cimport make_shared, make_unique, shared_ptr, unique_ptr
@@ -130,14 +131,10 @@ cdef class FixedSizeMemoryResource(MemoryResource):
             size_t blocks_to_preallocate=128
     ):
         self.c_obj.reset(
-            new thread_safe_resource_adaptor_wrapper(
-                shared_ptr[device_memory_resource_wrapper](
-                    new fixed_size_memory_resource_wrapper(
-                        upstream.c_obj,
-                        block_size,
-                        blocks_to_preallocate
-                    )
-                )
+            new fixed_size_memory_resource_wrapper(
+                upstream.c_obj,
+                block_size,
+                blocks_to_preallocate
             )
         )
 
@@ -167,101 +164,93 @@ cdef class FixedSizeMemoryResource(MemoryResource):
         pass
 
 
-cdef class FixedMultiSizeMemoryResource(MemoryResource):
+cdef class BinningMemoryResource(MemoryResource):
     def __cinit__(
         self,
-        MemoryResource upstream,
-        size_t size_base=2,
-        size_t min_size_exponent=18,
-        size_t max_size_exponent=22,
-        size_t initial_blocks_per_size=128
+        MemoryResource upstream_mr,
+        int8_t min_size_exponent=-1,
+        int8_t max_size_exponent=-1,
     ):
-        self.c_obj.reset(
-            new thread_safe_resource_adaptor_wrapper(
-                shared_ptr[device_memory_resource_wrapper](
-                    new fixed_multisize_memory_resource_wrapper(
-                        upstream.c_obj,
-                        size_base,
-                        min_size_exponent,
-                        max_size_exponent,
-                        initial_blocks_per_size
-                    )
+        if (min_size_exponent == -1 or max_size_exponent == -1):
+            self.c_obj.reset(
+                new binning_memory_resource_wrapper(
+                    upstream_mr.c_obj
                 )
             )
-        )
+        else:
+            self.c_obj.reset(
+                new binning_memory_resource_wrapper(
+                    upstream_mr.c_obj,
+                    min_size_exponent,
+                    max_size_exponent
+                )
+            )
 
     def __init__(
         self,
-        MemoryResource upstream,
-        size_t size_base=2,
-        size_t min_size_exponent=18,
-        size_t max_size_exponent=22,
-        size_t initial_blocks_per_size=128
+        MemoryResource upstream_mr,
+        int8_t min_size_exponent=-1,
+        int8_t max_size_exponent=-1,
     ):
         """
-        Allocates blocks in the range `[min_size], max_size]` in power oftwo
-        steps, where `min_size` and `max_size` are both powers of two.
+        Allocates memory from a set of specified "bin" sizes based on a
+        specified allocation size.
+
+        If min_size_exponent and max_size_exponent are specified, initializes
+        with one or more FixedSizeMemoryResource bins in the range
+        [2^min_size_exponent, 2^max_size_exponent].
+
+        Call add_bin to add additional bin allocators.
 
         Parameters
         ----------
-        upstream : MemoryResource
-            The upstream memory resource used to allocate pools of blocks.
-        size_base : int, optional
-            The base of allocation block sizes (defaults is 2).
-        min_size_exponent : int, optional
-            The exponent of the minimum fixed block size to allocate
-            (default is 18).
-        max_size_exponent : int, optional
-            The exponent of the maximum fixed block size to allocate
-            (default is 22).
-        initial_blocks_per_size : int, optional
-            The number of blocks to preallocate from the upstream memory
-            resource, and to allocate when all current blocks are in use.
+        upstream_mr : MemoryResource
+            The memory resource to use for allocations larger than any of the
+            bins
+        min_size_exponent : size_t
+            The base-2 exponent of the minimum size FixedSizeMemoryResource
+            bin to create.
+        max_size_exponent : size_t
+            The base-2 exponent of the maximum size FixedSizeMemoryResource
+            bin to create.
         """
         pass
 
-
-cdef class HybridMemoryResource(MemoryResource):
-    def __cinit__(
+    cpdef add_bin(
         self,
-        MemoryResource small_alloc_mr,
-        MemoryResource large_alloc_mr,
-        size_t threshold_size=1<<22
+        size_t allocation_size,
+        object bin_resource=None
     ):
-        self.c_obj.reset(
-            new thread_safe_resource_adaptor_wrapper(
-                shared_ptr[device_memory_resource_wrapper](
-                    new hybrid_memory_resource_wrapper(
-                        small_alloc_mr.c_obj,
-                        large_alloc_mr.c_obj,
-                        threshold_size
-                    )
-                )
+        """
+        Adds a bin of the specified maximum allocation size to this memory
+        resource. If specified, uses bin_resource for allocation for this bin.
+        If not specified, creates and uses a FixedSizeMemoryResource for
+        allocation for this bin.
+
+        Allocations smaller than allocation_size and larger than the next
+        smaller bin size will use this fixed-size memory resource.
+
+        Parameters
+        ----------
+        allocation_size : size_t
+            The maximum allocation size in bytes for the created bin
+        bin_resource : MemoryResource
+            The resource to use for this bin (optional)
+        """
+        cdef MemoryResource _bin_resource
+
+        if bin_resource is None:
+            (<binning_memory_resource_wrapper*>(self.c_obj.get()))[0].add_bin(
+                allocation_size
             )
-        )
+        else:
+            # Coerce Python object `bin_resource` to C object `_bin_resource`
+            _bin_resource = bin_resource
 
-    def __init__(
-        self,
-        MemoryResource small_alloc_mr,
-        MemoryResource large_alloc_mr,
-        size_t threshold_size=1<<22
-    ):
-        """"
-        Allocates memory from one of two allocators based on the requested
-        size.
-
-        Parameters
-        ----------
-        small_alloc_mr : MemoryResource
-            The memory resource to use for small allocations.
-        large_alloc_mr : MemoryResource
-            The memory resource to use for large allocations.
-        threshold_size : int, optional
-            Size in bytes representing the threshold beyond which
-            `large_alloc_mr` is used.
-        """
-        pass
-
+            (<binning_memory_resource_wrapper*>(self.c_obj.get()))[0].add_bin(
+                allocation_size,
+                _bin_resource.c_obj
+            )
 
 cdef class LoggingResourceAdaptor(MemoryResource):
     def __cinit__(self, MemoryResource upstream, object log_file_name=None):

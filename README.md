@@ -163,13 +163,25 @@ Uses the [CNMeM](https://github.com/NVIDIA/cnmem) pool sub-allocator to satisfy 
 
 A coalescing, best-fit pool sub-allocator.
 
+### `fixed_size_memory_resource`
+
+A memory resource that can only allocate a single fixed size. Average allocation and deallocation
+cost is constant.
+
+#### `binning_memory_resource`
+
+Configurable to use multiple upstream memory resources for allocations that fall within different 
+bin sizes. Often configured with multiple bins backed by `fixed_size_memory_resource`s and a single
+`pool_memory_resource` for allocations larger than the largest bin size.
+
 ### Default Resource
 
-Frequently, users want to configure a `device_memory_resource` object once and use it for all allocations where another resource has not explicitly been provided. 
-For example, one may want to construct a `pool_memory_resource` and use it for all allocations to get fast dynamic allocation.
+RMM users commonly need to configure a `device_memory_resource` object to use for all allocations 
+where another resource has not explicitly been provided. A common example is configuring a
+`pool_memory_resource` to use for all allocations to get fast dynamic allocation.
 
-To enable this use case, RMM provides the concept of a "default" `device_memory_resource`. 
-This is the resource that will be used when another is not explicitly provided.
+To enable this use case, RMM provides the concept of a "default" `device_memory_resource`. This
+resource is used when another is not explicitly provided.
 
 Accessing and modifying the default resource is done through two functions:
 - `device_memory_resource* get_default_resource()`
@@ -180,7 +192,7 @@ Accessing and modifying the default resource is done through two functions:
 - `device_memory_resource* set_default_resource(device_memory_resource* new_resource)`
    - Updates the default memory resource pointer to `new_resource`
    - Returns the previous default resource pointer
-   - If `new_resource` is `nullptr`, then returns the default resource to `cuda_memory_resource`
+   - If `new_resource` is `nullptr`, then resets the default resource to `cuda_memory_resource`
    - This function is thread safe
 
 #### Example
@@ -388,15 +400,14 @@ of 1 GiB and a maximum size of 4 GiB. The pool uses
 ... )
 >>> rmm.mr.set_default_resource(pool)
 ```
-
 Other MemoryResources include:
 
 * `FixedSizeMemoryResource` for allocating fixed blocks of memory
-* `HybridMemoryResource` for enabling separate MemoryResources for
-  small and large memory allocations
+* `BinningMemoryResource` for allocating blocks within specified "bin" sizes from different memory 
+resources
 
-MemoryResources are highly configurable and can be composed together
-in different ways.  See `help(rmm.mr)` for more information.
+MemoryResources are highly configurable and can be composed together in different ways. 
+See `help(rmm.mr)` for more information.
 
 ### Using RMM with CuPy
 

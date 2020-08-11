@@ -1,5 +1,6 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
+from libc.stdint cimport int8_t
 from libcpp.vector cimport vector
 from libcpp.string cimport string
 from libcpp.memory cimport shared_ptr
@@ -49,24 +50,23 @@ cdef extern from "memory_resource_wrappers.hpp" nogil:
             size_t blocks_to_preallocate
         ) except +
 
-    cdef cppclass fixed_multisize_memory_resource_wrapper(
+    cdef cppclass binning_memory_resource_wrapper(
         device_memory_resource_wrapper
     ):
-        fixed_multisize_memory_resource_wrapper(
-            shared_ptr[device_memory_resource_wrapper] upstream_mr,
-            size_t size_base,
-            size_t min_size_exponent,
-            size_t max_size_exponent,
-            size_t initial_blocks_per_size
+        binning_memory_resource_wrapper(
+            shared_ptr[device_memory_resource_wrapper] upstream_mr
         ) except +
-
-    cdef cppclass hybrid_memory_resource_wrapper(
-        device_memory_resource_wrapper
-    ):
-        hybrid_memory_resource_wrapper(
-            shared_ptr[device_memory_resource_wrapper] small_alloc_mr,
-            shared_ptr[device_memory_resource_wrapper] large_alloc_mr,
-            size_t threshold_size
+        binning_memory_resource_wrapper(
+            shared_ptr[device_memory_resource_wrapper] upstream_mr,
+            int8_t min_size_exponent,
+            int8_t max_size_exponent
+        ) except +
+        void add_bin(
+            size_t allocation_size,
+            shared_ptr[device_memory_resource_wrapper] bin_mr
+        ) except +
+        void add_bin(
+            size_t allocation_size
         ) except +
 
     cdef cppclass logging_resource_adaptor_wrapper(
@@ -111,11 +111,8 @@ cdef class PoolMemoryResource(MemoryResource):
 cdef class FixedSizeMemoryResource(MemoryResource):
     pass
 
-cdef class FixedMultiSizeMemoryResource(MemoryResource):
-    pass
-
-cdef class HybridMemoryResource(MemoryResource):
-    pass
+cdef class BinningMemoryResource(MemoryResource):
+    cpdef add_bin(self, size_t allocation_size, object bin_resource=*)
 
 cdef class LoggingResourceAdaptor(MemoryResource):
     cpdef flush(self)
