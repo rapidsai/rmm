@@ -2,6 +2,7 @@
 import os
 
 from libcpp cimport bool
+from libc.stdint cimport int8_t
 from libcpp.cast cimport dynamic_cast
 from libcpp.memory cimport make_shared, make_unique, shared_ptr, unique_ptr
 from libcpp.string cimport string
@@ -123,8 +124,8 @@ cdef class BinningMemoryResource(MemoryResource):
     def __cinit__(
         self,
         MemoryResource upstream_mr,
-        int min_size_exponent=-1,
-        int max_size_exponent=-1,
+        int8_t min_size_exponent=-1,
+        int8_t max_size_exponent=-1,
     ):
         if (min_size_exponent == -1 or max_size_exponent == -1):
             self.c_obj.reset(
@@ -144,8 +145,8 @@ cdef class BinningMemoryResource(MemoryResource):
     def __init__(
         self,
         MemoryResource upstream_mr,
-        int min_size_exponent=-1,
-        int max_size_exponent=-1,
+        int8_t min_size_exponent=-1,
+        int8_t max_size_exponent=-1,
     ):
         """
         Allocates memory from a set of specified "bin" sizes based on a
