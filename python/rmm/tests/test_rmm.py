@@ -106,7 +106,7 @@ def test_rmm_device_buffer(size):
     assert set(b.__cuda_array_interface__) == keyset
     assert b.__cuda_array_interface__["data"] == (b.ptr, False)
     assert b.__cuda_array_interface__["shape"] == (b.size,)
-    assert b.__cuda_array_interface__["strides"] == (1,)
+    assert b.__cuda_array_interface__["strides"] is None
     assert b.__cuda_array_interface__["typestr"] == "|u1"
     assert b.__cuda_array_interface__["version"] == 0
 
