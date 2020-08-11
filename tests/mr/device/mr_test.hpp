@@ -84,6 +84,17 @@ inline void test_get_default_resource()
   EXPECT_NO_THROW(rmm::mr::get_default_resource()->deallocate(p, 1_MiB));
 }
 
+inline void test_get_current_device_resource()
+{
+  EXPECT_NE(nullptr, rmm::mr::get_current_device_resource());
+  void* p{nullptr};
+  EXPECT_NO_THROW(p = rmm::mr::get_current_device_resource()->allocate(1_MiB));
+  EXPECT_NE(nullptr, p);
+  EXPECT_TRUE(is_aligned(p));
+  EXPECT_TRUE(is_device_memory(p));
+  EXPECT_NO_THROW(rmm::mr::get_current_device_resource()->deallocate(p, 1_MiB));
+}
+
 inline void test_allocate(rmm::mr::device_memory_resource* mr,
                           std::size_t bytes,
                           cudaStream_t stream = 0)

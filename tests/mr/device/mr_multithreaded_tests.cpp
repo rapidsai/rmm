@@ -85,7 +85,7 @@ TEST_P(mr_test_mt, SetDefaultResource_mt)
   // single thread changes default resource, then multiple threads use it
 
   rmm::mr::device_memory_resource* old{nullptr};
-  EXPECT_NO_THROW(old = rmm::mr::set_default_resource(this->mr.get()));
+  EXPECT_NO_THROW(old = rmm::mr::set_current_device_resource(this->mr.get()));
   EXPECT_NE(nullptr, old);
 
   spawn([mr = this->mr.get()]() {
@@ -94,8 +94,8 @@ TEST_P(mr_test_mt, SetDefaultResource_mt)
   });
 
   // setting default resource w/ nullptr should reset to initial
-  EXPECT_NO_THROW(rmm::mr::set_default_resource(nullptr));
-  EXPECT_TRUE(old->is_equal(*rmm::mr::get_default_resource()));
+  EXPECT_NO_THROW(rmm::mr::set_current_device_resource(nullptr));
+  EXPECT_TRUE(old->is_equal(*rmm::mr::get_current_device_resource()));
 }
 
 TEST_P(mr_test_mt, SetCurrentDeviceResource_mt)

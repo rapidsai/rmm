@@ -72,6 +72,8 @@ TEST_P(mr_test, SetCurrentDeviceResource)
   // current dev resource should equal this resource
   EXPECT_TRUE(this->mr->is_equal(*rmm::mr::get_current_device_resource()));
 
+  test_get_current_device_resource();
+
   // setting to `nullptr` should reset to initial cuda resource
   EXPECT_NO_THROW(rmm::mr::set_current_device_resource(nullptr));
   EXPECT_TRUE(rmm::mr::get_current_device_resource()->is_equal(rmm::mr::cuda_memory_resource{}));

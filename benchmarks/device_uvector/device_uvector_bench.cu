@@ -22,12 +22,13 @@
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
 #include "rmm/mr/device/cuda_memory_resource.hpp"
+#include "rmm/mr/device/per_device_resource.hpp"
 
 static void BM_UvectorSizeConstruction(benchmark::State& state)
 {
   rmm::mr::cuda_memory_resource cuda_mr{};
   rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource> mr{&cuda_mr};
-  rmm::mr::set_default_resource(&mr);
+  rmm::mr::set_current_device_resource(&mr);
 
   for (auto _ : state) {
     rmm::device_uvector<int32_t> vec(state.range(0), cudaStream_t{0});
@@ -36,7 +37,7 @@ static void BM_UvectorSizeConstruction(benchmark::State& state)
 
   state.SetItemsProcessed(state.iterations());
 
-  rmm::mr::set_default_resource(nullptr);
+  rmm::mr::set_current_device_resource(nullptr);
 }
 BENCHMARK(BM_UvectorSizeConstruction)
   ->RangeMultiplier(10)
@@ -47,7 +48,7 @@ static void BM_ThrustVectorSizeConstruction(benchmark::State& state)
 {
   rmm::mr::cuda_memory_resource cuda_mr{};
   rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource> mr{&cuda_mr};
-  rmm::mr::set_default_resource(&mr);
+  rmm::mr::set_current_device_resource(&mr);
 
   for (auto _ : state) {
     rmm::device_vector<int32_t> vec(state.range(0));
@@ -56,7 +57,7 @@ static void BM_ThrustVectorSizeConstruction(benchmark::State& state)
 
   state.SetItemsProcessed(state.iterations());
 
-  rmm::mr::set_default_resource(nullptr);
+  rmm::mr::set_current_device_resource(nullptr);
 }
 
 BENCHMARK(BM_ThrustVectorSizeConstruction)

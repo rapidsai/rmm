@@ -20,6 +20,7 @@ from numba.cuda import HostOnlyCUDAMemoryManager, IpcHandle, MemoryPointer
 import rmm
 from rmm import _lib as librmm
 
+
 # Utility Functions
 class RMMError(Exception):
     def __init__(self, errcode, msg):

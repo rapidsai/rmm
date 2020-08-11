@@ -2,7 +2,6 @@
 
 import os
 import sys
-import tempfile
 from itertools import product
 
 import numpy as np
@@ -83,7 +82,7 @@ def test_rmm_csv_log(dtype, nelem, alloc):
         rmm.mr._flush_logs()
         # Need to open separately because the device ID is appended to filename
         filename = "/tmp/test_rmm_csv_log.dev0.csv"
-        with open(filename, 'rb') as f:
+        with open(filename, "rb") as f:
             csv = f.read()
             assert csv.find(b"Time,Action,Pointer,Size,Stream") >= 0
     finally:

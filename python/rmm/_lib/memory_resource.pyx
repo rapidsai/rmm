@@ -208,6 +208,7 @@ cdef class BinningMemoryResource(MemoryResource):
                 _bin_resource.c_obj
             )
 
+
 def _append_id(filename, id):
     """
     Append ".dev<ID>" onto a filename before the extension
@@ -216,7 +217,7 @@ def _append_id(filename, id):
 
     Parameters
     ----------
-    filename : string 
+    filename : string
         The filename, possibly with extension
     id : int
         The ID to append
@@ -236,7 +237,9 @@ cdef class LoggingResourceAdaptor(MemoryResource):
                     "environment variable"
                 )
         # Append the device ID before the file extension
-        log_file_name = _append_id(log_file_name.decode(), get_current_device())
+        log_file_name = _append_id(
+            log_file_name.decode(), get_current_device()
+        )
         print(log_file_name)
         _log_file_name = log_file_name
 
@@ -346,7 +349,7 @@ cpdef _initialize(
             mr = typ(*args)
 
         _set_per_device_resource(device, mr)
-    
+
     # reset CUDA device to original
     set_current_device(original_device)
 
@@ -377,7 +380,7 @@ cpdef _set_per_device_resource(int device, MemoryResource mr):
     """
     global _per_device_mrs
     _per_device_mrs[device] = mr
-    _mr = mr  # coerce Python object to C object 
+    _mr = mr  # coerce Python object to C object
     set_per_device_resource(device, _mr.c_obj)
 
 
@@ -427,7 +430,7 @@ cpdef is_initialized():
     return all(
         [each_mr.c_obj.get() is not NULL
             for each_mr in _per_device_mrs.values()]
-    )   
+    )
 
 
 cpdef _flush_logs():
