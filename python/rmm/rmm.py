@@ -20,7 +20,6 @@ from numba.cuda import HostOnlyCUDAMemoryManager, IpcHandle, MemoryPointer
 import rmm
 from rmm import _lib as librmm
 
-
 # Utility Functions
 class RMMError(Exception):
     def __init__(self, errcode, msg):
@@ -32,6 +31,7 @@ def reinitialize(
     pool_allocator=False,
     managed_memory=False,
     initial_pool_size=None,
+    devices=0,
     logging=False,
     log_file_name=None,
 ):
@@ -51,6 +51,8 @@ def reinitialize(
         When `pool_allocator` is True, this indicates the initial pool size in
         bytes. None is used to indicate the default size of the underlying
         memorypool implementation, which currently is 1/2 total GPU memory.
+    devices : int or List[int], default 0
+        GPU device  IDs to register. By default registers only GPU 0.
     logging : bool, default False
         If True, enable run-time logging of all memory events
         (alloc, free, realloc).
@@ -63,6 +65,7 @@ def reinitialize(
         pool_allocator=pool_allocator,
         managed_memory=managed_memory,
         initial_pool_size=initial_pool_size,
+        devices=devices,
         logging=logging,
         log_file_name=log_file_name,
     )

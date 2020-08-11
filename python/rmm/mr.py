@@ -9,8 +9,12 @@ from rmm._lib.memory_resource import (
     PoolMemoryResource,
     _flush_logs,
     _initialize,
-    _set_default_resource as set_default_resource,
-    get_default_resource_type,
+    _set_per_device_resource as set_per_device_resource,
+    get_per_device_resource,
+    set_current_device_resource,
+    get_current_device_resource,
+    get_per_device_resource_type,
+    get_current_device_resource_type,
     is_initialized,
 )
 
@@ -24,7 +28,11 @@ __all__ = [
     "PoolMemoryResource",
     "_flush_logs",
     "_initialize",
-    "set_default_resource",
-    "get_default_resource_type",
+    "set_per_device_resource",
+    "get_per_device_resource",
+    "set_current_device_resource",
+    "get_current_device_resource",
+    "get_per_device_resource_type",
+    "get_current_device_resource_type",
     "is_initialized",
 ]

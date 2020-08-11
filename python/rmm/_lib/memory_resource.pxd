@@ -68,7 +68,8 @@ cdef extern from "memory_resource_wrappers.hpp" nogil:
             shared_ptr[device_memory_resource_wrapper] upstream_mr,
         ) except +
 
-    void set_default_resource(
+    void set_per_device_resource(
+        int device,
         shared_ptr[device_memory_resource_wrapper] new_resource
     ) except +
 
@@ -92,8 +93,6 @@ cdef class BinningMemoryResource(MemoryResource):
     cpdef add_bin(self, size_t allocation_size, object bin_resource=*)
 
 cdef class LoggingResourceAdaptor(MemoryResource):
+    cdef object _log_file_name
+    cpdef get_file_name(self)
     cpdef flush(self)
-
-cpdef get_default_resource_type()
-
-cpdef is_initialized()

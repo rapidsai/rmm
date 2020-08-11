@@ -1,5 +1,6 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
+import os
 import sys
 import tempfile
 from itertools import product
@@ -75,12 +76,18 @@ def test_rmm_modes(dtype, nelem, alloc, managed, pool):
 @pytest.mark.parametrize("nelem", _nelems)
 @pytest.mark.parametrize("alloc", _allocs)
 def test_rmm_csv_log(dtype, nelem, alloc):
-    with tempfile.NamedTemporaryFile() as fp:
-        rmm.reinitialize(logging=True, log_file_name=fp.name)
+    try:
+        filename = "/tmp/test_rmm_csv_log.csv"
+        rmm.reinitialize(logging=True, log_file_name=filename)
         array_tester(dtype, nelem, alloc)
         rmm.mr._flush_logs()
-        csv = fp.read()
-        assert csv.find(b"Time,Action,Pointer,Size,Stream") >= 0
+        # Need to open separately because the device ID is appended to filename
+        filename = "/tmp/test_rmm_csv_log.dev0.csv"
+        with open(filename, 'rb') as f:
+            csv = f.read()
+            assert csv.find(b"Time,Action,Pointer,Size,Stream") >= 0
+    finally:
+        os.remove(filename)
     rmm.reinitialize()
 
 
@@ -286,8 +293,8 @@ def test_pool_memory_resource(dtype, nelem, alloc):
         initial_pool_size=1 << 22,
         maximum_pool_size=1 << 23,
     )
-    rmm.mr.set_default_resource(mr)
-    assert rmm.mr.get_default_resource_type() is type(mr)
+    rmm.mr.set_current_device_resource(mr)
+    assert rmm.mr.get_current_device_resource_type() is type(mr)
     array_tester(dtype, nelem, alloc)
     rmm.reinitialize()
 
@@ -306,8 +313,8 @@ def test_fixed_size_memory_resource(dtype, nelem, alloc, upstream):
     mr = rmm.mr.FixedSizeMemoryResource(
         upstream(), block_size=1 << 20, blocks_to_preallocate=128
     )
-    rmm.mr.set_default_resource(mr)
-    assert rmm.mr.get_default_resource_type() is type(mr)
+    rmm.mr.set_current_device_resource(mr)
+    assert rmm.mr.get_current_device_resource_type() is type(mr)
     array_tester(dtype, nelem, alloc)
     rmm.reinitialize()
 
@@ -337,7 +344,7 @@ def test_binning_memory_resource(dtype, nelem, alloc, upstream_mr):
     mr.add_bin(1 << 10, fixed_mr)  # 1KiB bin
     mr.add_bin(1 << 23, cuda_mr)  # 8MiB bin
 
-    rmm.mr.set_default_resource(mr)
-    assert rmm.mr.get_default_resource_type() is type(mr)
+    rmm.mr.set_current_device_resource(mr)
+    assert rmm.mr.get_current_device_resource_type() is type(mr)
     array_tester(dtype, nelem, alloc)
     rmm.reinitialize()
