@@ -278,9 +278,10 @@ class pool_memory_resource final
     current_pool_size_ = 0;
   }
 
-#ifndef NDEBUG
   /**
    * @brief Print debugging information about all blocks in the pool.
+   *
+   * @note This function is intended only for use in debugging.
    *
    */
   void print()
@@ -295,18 +296,17 @@ class pool_memory_resource final
     std::size_t upstream_total{0};
 
     for (auto h : upstream_blocks_) {
-      detail::print(h);
+      h.print();
       upstream_total += h.size();
     }
     std::cout << "total upstream: " << upstream_total << " B\n";
 
     std::cout << "allocated_blocks: " << allocated_blocks_.size() << "\n";
     for (auto b : allocated_blocks_)
-      detail::print(b);
+      b.print();
 
     this->print_free_blocks();
   }
-#endif  // DEBUG
 
   /**
    * @brief Get free and available memory for memory resource
