@@ -1,5 +1,6 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
+from libc.stdint cimport int8_t
 from libcpp.vector cimport vector
 from libcpp.string cimport string
 from libcpp.memory cimport shared_ptr
@@ -57,8 +58,8 @@ cdef extern from "memory_resource_wrappers.hpp" nogil:
         ) except +
         binning_memory_resource_wrapper(
             shared_ptr[device_memory_resource_wrapper] upstream_mr,
-            int min_size_exponent,
-            int max_size_exponent
+            int8_t min_size_exponent,
+            int8_t max_size_exponent
         ) except +
         void add_bin(
             size_t allocation_size,

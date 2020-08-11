@@ -72,7 +72,9 @@ class binning_memory_resource final : public device_memory_resource {
    * @param min_size_exponent The minimum base-2 exponent bin size.
    * @param max_size_exponent The maximum base-2 exponent bin size.
    */
-  binning_memory_resource(Upstream* upstream_resource, int min_size_exponent, int max_size_exponent)
+  binning_memory_resource(Upstream* upstream_resource,
+                          int8_t min_size_exponent,
+                          int8_t max_size_exponent)
     : upstream_mr_{[upstream_resource]() {
         RMM_EXPECTS(nullptr != upstream_resource, "Unexpected null upstream pointer.");
         return upstream_resource;
