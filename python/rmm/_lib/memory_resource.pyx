@@ -285,7 +285,7 @@ cpdef get_current_device():
     return current_device
 
 
-cpdef set_current_device(int device):
+cpdef void set_current_device(int device) except *:
     """
     Set the current CUDA device
 
