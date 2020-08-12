@@ -55,8 +55,10 @@ extensions = cythonize(
             sources=cython_lib,
             include_dirs=include_dirs,
             library_dirs=library_dirs,
-            runtime_library_dirs=[cuda_lib_dir,
-                os.path.join(os.sys.prefix, "lib")],
+            runtime_library_dirs=[
+                cuda_lib_dir,
+                os.path.join(os.sys.prefix, "lib"),
+            ],
             libraries=["cuda", "rmm"],
             language="c++",
             extra_compile_args=["-std=c++14"],
@@ -76,7 +78,11 @@ extensions += cythonize(
             sources=cython_tests,
             include_dirs=include_dirs,
             library_dirs=library_dirs,
-            libraries=["rmm"],
+            runtime_library_dirs=[
+                cuda_lib_dir,
+                os.path.join(os.sys.prefix, "lib"),
+            ],
+            libraries=["cuda", "rmm"],
             language="c++",
             extra_compile_args=["-std=c++14"],
         )
@@ -108,7 +114,8 @@ setup(
     ext_modules=extensions,
     packages=find_packages(include=["rmm", "rmm.*"]),
     package_data=dict.fromkeys(
-        find_packages(include=["rmm._lib", "rmm._lib.includes", "rmm._cuda*"]), ["*.pxd"],
+        find_packages(include=["rmm._lib", "rmm._lib.includes", "rmm._cuda*"]),
+        ["*.pxd"],
     ),
     cmdclass=versioneer.get_cmdclass(),
     install_requires=install_requires,
