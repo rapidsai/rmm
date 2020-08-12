@@ -354,8 +354,6 @@ cpdef _initialize(
 
         # reset CUDA device to original
         set_current_device(original_device)
-    
-
 
 
 cpdef get_per_device_resource(int device):
