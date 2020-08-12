@@ -51,6 +51,7 @@
 - PR #456 Minor cleanup: always use rmm/-prefixed includes
 - PR #461 cmake improvements to be more target-based
 - PR #468 update past release dates in changelog
+- PR #486 Document relationship between active CUDA devices and resources
 
 ## Bug Fixes
 
@@ -65,6 +66,7 @@
 - PR #464 More completely revert cnmem.h cmake changes
 - PR #473 Fix initialization logic in pool_memory_resource.
 - PR #479 Fix usage of block printing in pool_memory_resource.
+- PR #484 Fix device_uvector copy constructor compilation error and add test
 
 # RMM 0.14.0 (03 Jun 2020)
 
@@ -154,7 +156,6 @@
 - PR #299 Fix assert condition blocking debug builds
 - PR #300 Fix host mr_tests compile error
 - PR #312 Fix libcudf compilation errors due to explicit defaulted device_buffer constructor
-- PR #484 Fix device_uvector copy constructor compilation error and add test
 
 
 # RMM 0.12.0 (04 Feb 2020)

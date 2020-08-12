@@ -360,6 +360,9 @@ cpdef get_per_device_resource(int device):
     """
     Get the default memory resource for the specified device.
 
+    If the returned memory resource is used when a different device is the
+    active CUDA device, behavior is undefined.
+
     Parameters
     ----------
     device : int
@@ -378,7 +381,8 @@ cpdef _set_per_device_resource(int device, MemoryResource mr):
     device : int
         The ID of the device for which to get the memory resource.
     mr : MemoryResource
-        The memory resource to set.
+        The memory resource to set.  Must have been created while device was
+        the active CUDA device.
     """
     global _per_device_mrs
     _per_device_mrs[device] = mr
@@ -393,7 +397,8 @@ cpdef set_current_device_resource(MemoryResource mr):
     Parameters
     ----------
     mr : MemoryResource
-        The memory resource to set.
+        The memory resource to set. Must have been created while the current
+        device is the active CUDA device.
     """
     _set_per_device_resource(get_current_device(), mr)
 
@@ -415,6 +420,9 @@ cpdef get_current_device_resource():
     """
     Get the memory resource used for RMM device allocations on the current
     device.
+
+    If the returned memory resource is used when a different device is the
+    active CUDA device, behavior is undefined.
     """
     return get_per_device_resource(get_current_device())
 
