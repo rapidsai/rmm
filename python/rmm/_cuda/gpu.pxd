@@ -103,7 +103,7 @@ cdef extern from "cuda.h" nogil:
         cudaDevAttrPageableMemoryAccessUsesHostPageTables = 100
         cudaDevAttrDirectManagedMemAccessFromHost = 101
 
-    ctypedef enum cudaError:
+    cpdef enum cudaError:
         cudaSuccess = 0
         cudaErrorInvalidValue = 1
         cudaErrorMemoryAllocation = 2
@@ -393,8 +393,7 @@ cdef extern from "cuda_runtime_api.h" nogil:
                                        cudaDeviceAttr attr,
                                        int device)
     cudaError_t cudaGetDeviceProperties(cudaDeviceProp* prop, int device)
+    cudaError_t cudaSetDevice(int device)
 
     const char* cudaGetErrorName(cudaError_t error)
     const char* cudaGetErrorString(cudaError_t error)
-
-ctypedef int underlying_type_attribute

@@ -4,7 +4,6 @@ from rmm._cuda.gpu cimport (
     cudaDriverGetVersion,
     cudaRuntimeGetVersion,
     cudaGetDeviceCount,
-    cudaGetDevice,
     cudaDeviceGetAttribute,
     cudaDeviceAttr,
     cudaGetDeviceProperties,
@@ -15,10 +14,10 @@ from rmm._cuda.gpu cimport (
     CUresult,
     cuDeviceGetName,
     cuGetErrorName,
-    cuGetErrorString
+    cuGetErrorString,
+    cudaError
 )
 from enum import IntEnum
-from rmm._cuda.gpu cimport underlying_type_attribute as c_attr
 
 
 class CUDARuntimeError(RuntimeError):
@@ -59,210 +58,6 @@ class CUDADriverError(RuntimeError):
         return (type(self), (self.status,))
 
 
-class CudaDeviceAttr(IntEnum):
-    cudaDevAttrMaxThreadsPerBlock = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxThreadsPerBlock
-    cudaDevAttrMaxBlockDimX = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxBlockDimX
-    cudaDevAttrMaxBlockDimY = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxBlockDimY
-    cudaDevAttrMaxBlockDimZ = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxBlockDimZ
-    cudaDevAttrMaxGridDimX = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxGridDimX
-    cudaDevAttrMaxGridDimY = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxGridDimY
-    cudaDevAttrMaxGridDimZ = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxGridDimZ
-    cudaDevAttrMaxSharedMemoryPerBlock = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxSharedMemoryPerBlock
-    cudaDevAttrTotalConstantMemory = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrTotalConstantMemory
-    cudaDevAttrWarpSize = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrWarpSize
-    cudaDevAttrMaxPitch = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxPitch
-    cudaDevAttrMaxRegistersPerBlock = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxRegistersPerBlock
-    cudaDevAttrClockRate = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrClockRate
-    cudaDevAttrTextureAlignment = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrTextureAlignment
-    cudaDevAttrGpuOverlap = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrGpuOverlap
-    cudaDevAttrMultiProcessorCount = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMultiProcessorCount
-    cudaDevAttrKernelExecTimeout = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrKernelExecTimeout
-    cudaDevAttrIntegrated = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrIntegrated
-    cudaDevAttrCanMapHostMemory = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrCanMapHostMemory
-    cudaDevAttrComputeMode = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrComputeMode
-    cudaDevAttrMaxTexture1DWidth = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxTexture1DWidth
-    cudaDevAttrMaxTexture2DWidth = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxTexture2DWidth
-    cudaDevAttrMaxTexture2DHeight = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxTexture2DHeight
-    cudaDevAttrMaxTexture3DWidth = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxTexture3DWidth
-    cudaDevAttrMaxTexture3DHeight = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxTexture3DHeight
-    cudaDevAttrMaxTexture3DDepth = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxTexture3DDepth
-    cudaDevAttrMaxTexture2DLayeredWidth = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxTexture2DLayeredWidth
-    cudaDevAttrMaxTexture2DLayeredHeight = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxTexture2DLayeredHeight
-    cudaDevAttrMaxTexture2DLayeredLayers = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxTexture2DLayeredLayers
-    cudaDevAttrSurfaceAlignment = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrSurfaceAlignment
-    cudaDevAttrConcurrentKernels = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrConcurrentKernels
-    cudaDevAttrEccEnabled = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrEccEnabled
-    cudaDevAttrPciBusId = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrPciBusId
-    cudaDevAttrPciDeviceId = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrPciDeviceId
-    cudaDevAttrTccDriver = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrTccDriver
-    cudaDevAttrMemoryClockRate = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMemoryClockRate
-    cudaDevAttrGlobalMemoryBusWidth = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrGlobalMemoryBusWidth
-    cudaDevAttrL2CacheSize = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrL2CacheSize
-    cudaDevAttrMaxThreadsPerMultiProcessor = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxThreadsPerMultiProcessor
-    cudaDevAttrAsyncEngineCount = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrAsyncEngineCount
-    cudaDevAttrUnifiedAddressing = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrUnifiedAddressing
-    cudaDevAttrMaxTexture1DLayeredWidth = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxTexture1DLayeredWidth
-    cudaDevAttrMaxTexture1DLayeredLayers = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxTexture1DLayeredLayers
-    cudaDevAttrMaxTexture2DGatherWidth = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxTexture2DGatherWidth
-    cudaDevAttrMaxTexture2DGatherHeight = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxTexture2DGatherHeight
-    cudaDevAttrMaxTexture3DWidthAlt = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxTexture3DWidthAlt
-    cudaDevAttrMaxTexture3DHeightAlt = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxTexture3DHeightAlt
-    cudaDevAttrMaxTexture3DDepthAlt = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxTexture3DDepthAlt
-    cudaDevAttrPciDomainId = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrPciDomainId
-    cudaDevAttrTexturePitchAlignment = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrTexturePitchAlignment
-    cudaDevAttrMaxTextureCubemapWidth = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxTextureCubemapWidth
-    cudaDevAttrMaxTextureCubemapLayeredWidth = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxTextureCubemapLayeredWidth
-    cudaDevAttrMaxTextureCubemapLayeredLayers = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxTextureCubemapLayeredLayers
-    cudaDevAttrMaxSurface1DWidth = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxSurface1DWidth
-    cudaDevAttrMaxSurface2DWidth = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxSurface2DWidth
-    cudaDevAttrMaxSurface2DHeight = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxSurface2DHeight
-    cudaDevAttrMaxSurface3DWidth = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxSurface3DWidth
-    cudaDevAttrMaxSurface3DHeight = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxSurface3DHeight
-    cudaDevAttrMaxSurface3DDepth = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxSurface3DDepth
-    cudaDevAttrMaxSurface1DLayeredWidth = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxSurface1DLayeredWidth
-    cudaDevAttrMaxSurface1DLayeredLayers = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxSurface1DLayeredLayers
-    cudaDevAttrMaxSurface2DLayeredWidth = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxSurface2DLayeredWidth
-    cudaDevAttrMaxSurface2DLayeredHeight = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxSurface2DLayeredHeight
-    cudaDevAttrMaxSurface2DLayeredLayers = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxSurface2DLayeredLayers
-    cudaDevAttrMaxSurfaceCubemapWidth = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxSurfaceCubemapWidth
-    cudaDevAttrMaxSurfaceCubemapLayeredWidth = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxSurfaceCubemapLayeredWidth
-    cudaDevAttrMaxSurfaceCubemapLayeredLayers = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxSurfaceCubemapLayeredLayers
-    cudaDevAttrMaxTexture1DLinearWidth = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxTexture1DLinearWidth
-    cudaDevAttrMaxTexture2DLinearWidth = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxTexture2DLinearWidth
-    cudaDevAttrMaxTexture2DLinearHeight = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxTexture2DLinearHeight
-    cudaDevAttrMaxTexture2DLinearPitch = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxTexture2DLinearPitch
-    cudaDevAttrMaxTexture2DMipmappedWidth = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxTexture2DMipmappedWidth
-    cudaDevAttrMaxTexture2DMipmappedHeight = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxTexture2DMipmappedHeight
-    cudaDevAttrComputeCapabilityMajor = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrComputeCapabilityMajor
-    cudaDevAttrComputeCapabilityMinor = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrComputeCapabilityMinor
-    cudaDevAttrMaxTexture1DMipmappedWidth = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxTexture1DMipmappedWidth
-    cudaDevAttrStreamPrioritiesSupported = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrStreamPrioritiesSupported
-    cudaDevAttrGlobalL1CacheSupported = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrGlobalL1CacheSupported
-    cudaDevAttrLocalL1CacheSupported = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrLocalL1CacheSupported
-    cudaDevAttrMaxSharedMemoryPerMultiprocessor = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxSharedMemoryPerMultiprocessor
-    cudaDevAttrMaxRegistersPerMultiprocessor = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxRegistersPerMultiprocessor
-    cudaDevAttrManagedMemory = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrManagedMemory
-    cudaDevAttrIsMultiGpuBoard = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrIsMultiGpuBoard
-    cudaDevAttrMultiGpuBoardGroupID = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMultiGpuBoardGroupID
-    cudaDevAttrHostNativeAtomicSupported = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrHostNativeAtomicSupported
-    cudaDevAttrSingleToDoublePrecisionPerfRatio = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrSingleToDoublePrecisionPerfRatio
-    cudaDevAttrPageableMemoryAccess = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrPageableMemoryAccess
-    cudaDevAttrConcurrentManagedAccess = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrConcurrentManagedAccess
-    cudaDevAttrComputePreemptionSupported = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrComputePreemptionSupported
-    cudaDevAttrCanUseHostPointerForRegisteredMem = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrCanUseHostPointerForRegisteredMem
-    cudaDevAttrReserved92 = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrReserved92
-    cudaDevAttrReserved93 = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrReserved93
-    cudaDevAttrReserved94 = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrReserved94
-    cudaDevAttrCooperativeLaunch = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrCooperativeLaunch
-    cudaDevAttrCooperativeMultiDeviceLaunch = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrCooperativeMultiDeviceLaunch
-    cudaDevAttrMaxSharedMemoryPerBlockOptin = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrMaxSharedMemoryPerBlockOptin
-    cudaDevAttrCanFlushRemoteWrites = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrCanFlushRemoteWrites
-    cudaDevAttrHostRegisterSupported = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrHostRegisterSupported
-    cudaDevAttrPageableMemoryAccessUsesHostPageTables = \
-        <c_attr> \
-        cudaDeviceAttr.cudaDevAttrPageableMemoryAccessUsesHostPageTables
-    cudaDevAttrDirectManagedMemAccessFromHost = \
-        <c_attr> cudaDeviceAttr.cudaDevAttrDirectManagedMemAccessFromHost
-
-
 def driverGetVersion():
     """
     Returns in the latest version of CUDA supported by the driver.
@@ -275,9 +70,33 @@ def driverGetVersion():
     """
     cdef int version
     cdef cudaError_t status = cudaDriverGetVersion(&version)
-    if status != 0:
+    if status != cudaError.cudaSuccess:
         raise CUDARuntimeError(status)
     return version
+
+def get_current_device():
+    """
+    Get the current CUDA device
+    """
+    cdef int current_device
+    cdef cudaError_t status = cudaGetDevice(&current_device)
+    if status != cudaError.cudaSuccess:
+        raise CUDARuntimeError(status)
+    return current_device
+
+
+def set_current_device(int device):
+    """
+    Set the current CUDA device
+    Parameters
+    ----------
+    device : int
+        The ID of the device to set as current
+    """
+    cdef cudaError_t status = cudaSetDevice(device)
+
+    if status != cudaError.cudaSuccess:
+        raise CUDARuntimeError(status)
 
 
 def runtimeGetVersion():
@@ -292,19 +111,10 @@ def runtimeGetVersion():
 
     cdef int version
     cdef cudaError_t status = cudaRuntimeGetVersion(&version)
-    if status != 0:
+    if status != cudaError.cudaSuccess:
         raise CUDARuntimeError(status)
     return version
 
-def get_current_device():
-    """
-    Get the current CUDA device
-    """
-    cdef int current_device
-    cdef cudaError_t status = cudaGetDevice(&current_device)
-    if status != 0:
-        raise CUDARuntimeError(status)
-    return current_device
 
 def getDeviceCount():
     """
@@ -317,7 +127,8 @@ def getDeviceCount():
 
     cdef int count
     cdef cudaError_t status = cudaGetDeviceCount(&count)
-    if status != 0:
+
+    if status != cudaError.cudaSuccess:
         raise CUDARuntimeError(status)
     return count
 
@@ -339,7 +150,7 @@ def getDeviceAttribute(cudaDeviceAttr attr, int device):
 
     cdef int value
     cdef cudaError_t status = cudaDeviceGetAttribute(&value, attr, device)
-    if status != 0:
+    if status != cudaError.cudaSuccess:
         raise CUDARuntimeError(status)
     return value
 
@@ -359,7 +170,7 @@ def getDeviceProperties(int device):
 
     cdef cudaDeviceProp prop
     cdef cudaError_t status = cudaGetDeviceProperties(&prop, device)
-    if status != 0:
+    if status != cudaError.cudaSuccess:
         raise CUDARuntimeError(status)
     return prop
 

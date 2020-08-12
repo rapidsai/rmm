@@ -9,7 +9,7 @@ from libcpp.memory cimport make_shared, make_unique, shared_ptr, unique_ptr
 from libcpp.string cimport string
 
 from rmm._lib.lib cimport cudaGetDevice, cudaSetDevice, cudaSuccess
-
+from rmm._cuda.gpu import get_current_device, CUDARuntimeError, set_current_device
 
 cdef class CudaMemoryResource(MemoryResource):
     def __cinit__(self):
@@ -272,30 +272,6 @@ cdef class LoggingResourceAdaptor(MemoryResource):
 cdef dict _per_device_mrs = {}
 
 
-cpdef int get_current_device() except -1:
-    """
-    Get the current CUDA device
-    """
-    cdef int current_device
-    err = cudaGetDevice(&current_device)
-    if err != cudaSuccess:
-        raise RuntimeError(f"Failed to get CUDA device with error: {err}")
-    return current_device
-
-
-cpdef void set_current_device(int device) except *:
-    """
-    Set the current CUDA device
-
-    Parameters
-    ----------
-    device : int
-        The ID of the device to set as current
-    """
-    err = cudaSetDevice(device)
-    if err != cudaSuccess:
-        raise RuntimeError(f"Failed to set CUDA device with error: {err}")
-
 
 cpdef _initialize(
     bool pool_allocator=False,
@@ -329,7 +305,7 @@ cpdef _initialize(
     # Save the current device so we can reset it
     try:
         original_device = get_current_device()
-    except RuntimeError:
+    except CUDARuntimeError as e:
         warnings.warn("No CUDA Device Found", ResourceWarning)
     else:
         # reset any previously specified per device resources
