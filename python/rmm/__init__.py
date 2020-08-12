@@ -15,7 +15,7 @@
 import weakref
 
 from rmm._lib.device_buffer import DeviceBuffer
-from rmm.mr import _initialize
+from rmm.mr import _import_initialize
 from rmm.rmm import (
     RMMError,
     RMMNumbaManager,
@@ -30,4 +30,4 @@ from rmm.rmm import (
 )
 
 # Initialize RMM on import
-_initialize()
+_import_initialize()
