@@ -14,6 +14,7 @@ from rmm._cuda.gpu import (
     CUDARuntimeError,
     get_current_device,
     set_current_device,
+    cudaError,
 )
 
 
@@ -313,7 +314,10 @@ cpdef void _initialize(
         if cuda_initialization:
             original_device = get_current_device()
     except CUDARuntimeError as e:
-        raise e
+        if e.status in {cudaError.cudaErrorNoDevice}:
+            warnings.warn(e.msg)
+        else:
+            raise e
     else:
         # reset any previously specified per device resources
         global _per_device_mrs
