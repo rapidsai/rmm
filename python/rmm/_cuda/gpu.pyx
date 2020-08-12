@@ -1,22 +1,23 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
 from rmm._cuda.gpu cimport (
-    cudaDriverGetVersion,
-    cudaRuntimeGetVersion,
-    cudaGetDeviceCount,
-    cudaDeviceGetAttribute,
+    CUresult,
     cudaDeviceAttr,
-    cudaGetDeviceProperties,
+    cudaDeviceGetAttribute,
     cudaDeviceProp,
+    cudaDriverGetVersion,
+    cudaError,
+    cudaError_t,
+    cudaGetDeviceCount,
+    cudaGetDeviceProperties,
     cudaGetErrorName,
     cudaGetErrorString,
-    cudaError_t,
-    CUresult,
+    cudaRuntimeGetVersion,
     cuDeviceGetName,
     cuGetErrorName,
-    cudaError
     cuGetErrorString,
 )
+
 from enum import IntEnum
 
 

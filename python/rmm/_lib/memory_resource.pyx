@@ -9,11 +9,13 @@ from libcpp.memory cimport make_shared, make_unique, shared_ptr, unique_ptr
 from libcpp.string cimport string
 
 from rmm._lib.lib cimport cudaGetDevice, cudaSetDevice, cudaSuccess
+
 from rmm._cuda.gpu import (
     CUDARuntimeError,
+    get_current_device,
     set_current_device,
-    get_current_device
 )
+
 
 cdef class CudaMemoryResource(MemoryResource):
     def __cinit__(self):
