@@ -41,7 +41,7 @@
 - PR #456 Minor cleanup: always use rmm/-prefixed includes
 - PR #461 cmake improvements to be more target-based
 - PR #468 update past release dates in changelog
-- PR #485 Document relationship between active CUDA devices and resources
+- PR #486 Document relationship between active CUDA devices and resources
 
 ## Bug Fixes
 
