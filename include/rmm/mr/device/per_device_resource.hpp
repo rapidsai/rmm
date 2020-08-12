@@ -41,7 +41,7 @@
  * the same pointer, `mr`. In this way, all places that use the resource returned from
  * `get_per_device_resource` for (de)allocation will use the user provided resource, `mr`.
  *
- * @note `device_memory_resource` make CUDA API calls without setting the current CUDA device.
+ * @note `device_memory_resource`s make CUDA API calls without setting the current CUDA device.
  * Therefore a memory resource should only be used with the current CUDA device set to the device
  * that was active when the memory resource was created. Calling `set_per_device_resource(id, mr)`
  * is only valid if `id` refers to the CUDA device that was active when `mr` was created.
@@ -52,6 +52,21 @@
  * To fetch and modify the resource for the current CUDA device, `get_current_device_resource()` and
  * `set_current_device_resource()` will automatically use the current CUDA device id from
  * `cudaGetDevice()`.
+ *
+ * Creating a device_memory_resource for each device requires care to set the current device
+ * before creating each resource, and to maintain the lifetime of the resources as long as they
+ * are set as per-device resources. Here is an example loop that creates `unique_ptr`s to
+ * pool_memory_resource objects for each device and sets them as the per-device resource for that
+ * device.
+ *
+ * @code{c++}
+ * std::vector<unique_ptr<pool_memory_resource>> per_device_pools;
+ * for(int i = 0; i < N; ++i) {
+ *   cudaSetDevice(i);
+ *   per_device_pools.push_back(std::make_unique<pool_memory_resource>());
+ *   set_per_device_resource(cuda_device_id{i}, &per_device_pools.back());
+ * }
+ * @endcode
  */
 
 namespace rmm {

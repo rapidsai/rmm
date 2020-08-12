@@ -40,8 +40,23 @@ namespace mr {
  * in the base class. For example, the base class' `allocate` function may log every allocation, no
  * matter what derived class implementation is used.
  *
- * @note A device_memory_resource should only be used when the active CUDA device is the same device
+ * A device_memory_resource should only be used when the active CUDA device is the same device
  * that was active when the device_memory_resource was created. Otherwise behavior is undefined.
+ *
+ * Creating a device_memory_resource for each device requires care to set the current device
+ * before creating each resource, and to maintain the lifetime of the resources as long as they
+ * are set as per-device resources. Here is an example loop that creates `unique_ptr`s to
+ * pool_memory_resource objects for each device and sets them as the per-device resource for that
+ * device.
+ *
+ * @code{c++}
+ * std::vector<unique_ptr<pool_memory_resource>> per_device_pools;
+ * for(int i = 0; i < N; ++i) {
+ *   cudaSetDevice(i);
+ *   per_device_pools.push_back(std::make_unique<pool_memory_resource>());
+ *   set_per_device_resource(cuda_device_id{i}, &per_device_pools.back());
+ * }
+ * @endcode
  */
 class device_memory_resource {
  public:
