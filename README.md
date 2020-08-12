@@ -175,7 +175,7 @@ Configurable to use multiple upstream memory resources for allocations that fall
 bin sizes. Often configured with multiple bins backed by `fixed_size_memory_resource`s and a single
 `pool_memory_resource` for allocations larger than the largest bin size.
 
-### Default Resource
+### Default Resources and Per-device Resources
 
 RMM users commonly need to configure a `device_memory_resource` object to use for all allocations 
 where another resource has not explicitly been provided. A common example is configuring a
@@ -208,7 +208,7 @@ Accessing and modifying the default resource is done through two functions:
 rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource(); // Points to `cuda_memory_resource`
 // Construct a resource that uses a coalescing best-fit pool allocator
 rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>> pool_mr{mr}; 
-rmm::mr::set_default_resource(&pool_mr); // Updates the default resource pointer to `pool_mr`
+rmm::mr::set_current_device_resource(&pool_mr); // Updates the current device resource pointer to `pool_mr`
 rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource(); // Points to `pool_mr`
 ```
 
