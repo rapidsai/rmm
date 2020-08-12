@@ -41,12 +41,32 @@
  * the same pointer, `mr`. In this way, all places that use the resource returned from
  * `get_per_device_resource` for (de)allocation will use the user provided resource, `mr`.
  *
+ * @note `device_memory_resource`s make CUDA API calls without setting the current CUDA device.
+ * Therefore a memory resource should only be used with the current CUDA device set to the device
+ * that was active when the memory resource was created. Calling `set_per_device_resource(id, mr)`
+ * is only valid if `id` refers to the CUDA device that was active when `mr` was created.
+ *
  * If no resource was explicitly set for a given device specified by `id`, then
  * `get_per_device_resource(id)` will return a pointer to a `cuda_memory_resource`.
  *
  * To fetch and modify the resource for the current CUDA device, `get_current_device_resource()` and
  * `set_current_device_resource()` will automatically use the current CUDA device id from
  * `cudaGetDevice()`.
+ *
+ * Creating a device_memory_resource for each device requires care to set the current device
+ * before creating each resource, and to maintain the lifetime of the resources as long as they
+ * are set as per-device resources. Here is an example loop that creates `unique_ptr`s to
+ * pool_memory_resource objects for each device and sets them as the per-device resource for that
+ * device.
+ *
+ * @code{c++}
+ * std::vector<unique_ptr<pool_memory_resource>> per_device_pools;
+ * for(int i = 0; i < N; ++i) {
+ *   cudaSetDevice(i);
+ *   per_device_pools.push_back(std::make_unique<pool_memory_resource>());
+ *   set_per_device_resource(cuda_device_id{i}, &per_device_pools.back());
+ * }
+ * @endcode
  */
 
 namespace rmm {
@@ -129,6 +149,11 @@ inline cuda_device_id current_device()
  * Concurrent calls to any of these functions will result in a valid state, but the order of
  * execution is undefined.
  *
+ * @note The returned `device_memory_resource` should only be used when CUDA device `id` is the
+ * current device  (e.g. set using `cudaSetDevice()`). The behavior of a device_memory_resource is
+ * undefined if used while the active CUDA device is a different device from the one that was active
+ * when the device_memory_resource was created.
+ *
  * @param id The id of the target device
  * @return Pointer to the current `device_memory_resource` for device `id`
  */
@@ -157,6 +182,11 @@ inline device_memory_resource* get_per_device_resource(cuda_device_id id)
  * `get_per_device_resource`, `get_current_device_resource`, and `set_current_device_resource`.
  * Concurrent calls to any of these functions will result in a valid state, but the order of
  * execution is undefined.
+ *
+ * @note The resource passed in `new_mr` must have been created when device `id` was the current
+ * CUDA device (e.g. set using `cudaSetDevice()`). The behavior of a device_memory_resource is
+ * undefined if used while the active CUDA device is a different device from the one that was active
+ * when the device_memory_resource was created.
  *
  * @param id The id of the target device
  * @param new_mr If not `nullptr`, pointer to new `device_memory_resource` to use as new resource
@@ -188,6 +218,12 @@ inline device_memory_resource* set_per_device_resource(cuda_device_id id,
  * Concurrent calls to any of these functions will result in a valid state, but the order of
  * execution is undefined.
  *
+ * @note The returned `device_memory_resource` should only be used with the current CUDA device.
+ * Changing the current device (e.g. using `cudaSetDevice()`) and then using the returned resource
+ * can result in undefined behavior. The behavior of a device_memory_resource is undefined if used
+ * while the active CUDA device is a different device from the one that was active when the
+ * device_memory_resource was created.
+ *
  * @return Pointer to the resource for the current device
  */
 inline device_memory_resource* get_current_device_resource()
@@ -211,6 +247,10 @@ inline device_memory_resource* get_current_device_resource()
  * `get_per_device_resource`, `get_current_device_resource`, and `set_current_device_resource`.
  * Concurrent calls to any of these functions will result in a valid state, but the order of
  * execution is undefined.
+ *
+ * @note The resource passed in `new_mr` must have been created for the current CUDA device. The
+ * behavior of a device_memory_resource is undefined if used while the active CUDA device is a
+ * different device from the one that was active when the device_memory_resource was created.
  *
  * @param new_mr If not `nullptr`, pointer to new resource to use for the current device
  * @return Pointer to the previous resource for the current device
