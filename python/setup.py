@@ -1,4 +1,4 @@
-# Copyright (c) 2019, NVIDIA CORPORATION.
+# Copyright (c) 2019-2020, NVIDIA CORPORATION.
 import os
 import shutil
 import sysconfig
@@ -11,7 +11,7 @@ from setuptools.extension import Extension
 import versioneer
 
 install_requires = ["numba", "cython"]
-cython_lib = ["rmm/_lib/**/*.pyx"]
+cython_lib = ["rmm/**/*.pyx"]
 cython_tests = ["rmm/tests/**/*.pyx"]
 
 CUDA_HOME = os.environ.get("CUDA_HOME", False)
@@ -104,7 +104,9 @@ setup(
     setup_requires=["cython"],
     ext_modules=extensions,
     packages=find_packages(include=["rmm", "rmm.*"]),
-    package_data={"rmm._lib": ["*.pxd"], "rmm._lib.includes": ["*.pxd"]},
+    package_data=dict.fromkeys(
+        find_packages(include=["rmm._lib", "rmm._lib.includes", "rmm._cuda*"]), ["*.pxd"],
+    ),
     cmdclass=versioneer.get_cmdclass(),
     install_requires=install_requires,
     zip_safe=False,
