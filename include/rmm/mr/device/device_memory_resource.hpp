@@ -31,17 +31,17 @@ namespace mr {
  * This class serves as the interface that all custom device memory
  * implementations must satisfy.
  *
- * There are two private, pure virtual functions that all derived classes must
- *implement: `do_allocate` and `do_deallocate`. Optionally, derived classes may
- *also override `is_equal`. By default, `is_equal` simply performs an identity
- *comparison.
+ * There are two private, pure virtual functions that all derived classes must implement:
+ *`do_allocate` and `do_deallocate`. Optionally, derived classes may also override `is_equal`. By
+ * default, `is_equal` simply performs an identity comparison.
  *
- * The public, non-virtual functions `allocate`, `deallocate`, and `is_equal`
- * simply call the private virtual functions. The reason for this is to allow
- * implementing shared, default behavior in the base class. For example, the
- * base class' `allocate` function may log every allocation, no matter what
- * derived class implementation is used.
+ * The public, non-virtual functions `allocate`, `deallocate`, and `is_equal` simply call the
+ * private virtual functions. The reason for this is to allow implementing shared, default behavior
+ * in the base class. For example, the base class' `allocate` function may log every allocation, no
+ * matter what derived class implementation is used.
  *
+ * @note A device_memory_resource should only be used when the active CUDA device is the same device
+ * that was active when the device_memory_resource was created. Otherwise behavior is undefined.
  */
 class device_memory_resource {
  public:
