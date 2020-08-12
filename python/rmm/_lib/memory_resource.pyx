@@ -9,7 +9,11 @@ from libcpp.memory cimport make_shared, make_unique, shared_ptr, unique_ptr
 from libcpp.string cimport string
 
 from rmm._lib.lib cimport cudaGetDevice, cudaSetDevice, cudaSuccess
-from rmm._cuda.gpu import get_current_device, CUDARuntimeError, set_current_device
+from rmm._cuda.gpu import (
+    CUDARuntimeError,
+    set_current_device,
+    get_current_device
+)
 
 cdef class CudaMemoryResource(MemoryResource):
     def __cinit__(self):
@@ -270,7 +274,6 @@ cdef class LoggingResourceAdaptor(MemoryResource):
 
 # Global per-device memory resources; dict of int:MemoryResource
 cdef dict _per_device_mrs = {}
-
 
 
 cpdef void _initialize(

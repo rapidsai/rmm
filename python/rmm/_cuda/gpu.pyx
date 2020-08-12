@@ -14,8 +14,8 @@ from rmm._cuda.gpu cimport (
     CUresult,
     cuDeviceGetName,
     cuGetErrorName,
-    cuGetErrorString,
     cudaError
+    cuGetErrorString,
 )
 from enum import IntEnum
 
@@ -73,6 +73,7 @@ def driverGetVersion():
     if status != cudaError.cudaSuccess:
         raise CUDARuntimeError(status)
     return version
+
 
 def get_current_device():
     """
