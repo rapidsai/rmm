@@ -273,14 +273,15 @@ cdef dict _per_device_mrs = {}
 
 
 
-cpdef _initialize(
+cpdef void _initialize(
     bool pool_allocator=False,
     bool managed_memory=False,
     object initial_pool_size=None,
     object devices=0,
     bool logging=False,
     object log_file_name=None,
-):
+    bool cuda_initialization=True,
+) except *:
     """
     Initializes RMM library using the options passed
     """
@@ -304,9 +305,10 @@ cpdef _initialize(
 
     # Save the current device so we can reset it
     try:
-        original_device = get_current_device()
+        if cuda_initialization:
+            original_device = get_current_device()
     except CUDARuntimeError as e:
-        warnings.warn("No CUDA Device Found", ResourceWarning)
+        raise e
     else:
         # reset any previously specified per device resources
         global _per_device_mrs
@@ -317,9 +319,16 @@ cpdef _initialize(
         elif isinstance(devices, int):
             devices = [devices]
 
+        if not cuda_initialization and devices != [0]:
+            raise RuntimeError(
+                "Avoiding CUDA initialization is not allowed with a device "
+                "other than 0"
+            )
+
         # create a memory resource per specified device
         for device in devices:
-            set_current_device(device)
+            if cuda_initialization:
+                set_current_device(device)
 
             if logging:
                 mr = LoggingResourceAdaptor(typ(*args), log_file_name.encode())
@@ -328,13 +337,33 @@ cpdef _initialize(
 
             _set_per_device_resource(device, mr)
 
-        # reset CUDA device to original
-        set_current_device(original_device)
+        if cuda_initialization:
+            # reset CUDA device to original
+            set_current_device(original_device)
+
+
+cpdef void _import_initialize() except *:
+    """
+    Function used to import RMM at import. Checks if either a
+    ``RMM_NO_INITIALIZE`` or ``RAPIDS_NO_INITIALIZE`` environment variable
+    exists, and avoids initializing the CUDA Driver / Runtime.
+    """
+    cuda_initialization = True
+    if (
+            "RMM_NO_INITIALIZE" in os.environ or
+            "RAPIDS_NO_INITIALIZE" in os.environ
+    ):
+        cuda_initialization = False
+
+    _initialize(cuda_initialization=cuda_initialization)
 
 
 cpdef get_per_device_resource(int device):
     """
     Get the default memory resource for the specified device.
+
+    If the returned memory resource is used when a different device is the
+    active CUDA device, behavior is undefined.
 
     Parameters
     ----------
@@ -354,7 +383,8 @@ cpdef _set_per_device_resource(int device, MemoryResource mr):
     device : int
         The ID of the device for which to get the memory resource.
     mr : MemoryResource
-        The memory resource to set.
+        The memory resource to set.  Must have been created while device was
+        the active CUDA device.
     """
     global _per_device_mrs
     _per_device_mrs[device] = mr
@@ -369,7 +399,8 @@ cpdef set_current_device_resource(MemoryResource mr):
     Parameters
     ----------
     mr : MemoryResource
-        The memory resource to set.
+        The memory resource to set. Must have been created while the current
+        device is the active CUDA device.
     """
     _set_per_device_resource(get_current_device(), mr)
 
@@ -391,6 +422,9 @@ cpdef get_current_device_resource():
     """
     Get the memory resource used for RMM device allocations on the current
     device.
+
+    If the returned memory resource is used when a different device is the
+    active CUDA device, behavior is undefined.
     """
     return get_per_device_resource(get_current_device())
 
