@@ -120,7 +120,7 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
   cudaStream_t stream() const noexcept { return _stream; }
 
  private:
-  device_memory_resource* _mr{rmm::mr::get_default_resource()};
+  device_memory_resource* _mr{rmm::mr::get_current_device_resource()};
   cudaStream_t _stream{0};
 };
 }  // namespace mr

@@ -30,7 +30,7 @@ void sync_stream(cudaStream_t stream) { EXPECT_EQ(cudaSuccess, cudaStreamSynchro
 template <typename T>
 struct DeviceScalarTest : public ::testing::Test {
   cudaStream_t stream{};
-  rmm::mr::device_memory_resource* mr{rmm::mr::get_default_resource()};
+  rmm::mr::device_memory_resource* mr{rmm::mr::get_current_device_resource()};
   T value{};
   std::default_random_engine generator{};
   std::uniform_int_distribution<T> distribution{std::numeric_limits<T>::lowest(),

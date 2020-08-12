@@ -19,8 +19,6 @@
 #include <gtest/gtest.h>
 
 #include <rmm/mr/device/binning_memory_resource.hpp>
-#include <rmm/mr/device/cnmem_managed_memory_resource.hpp>
-#include <rmm/mr/device/cnmem_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
@@ -84,6 +82,17 @@ inline void test_get_default_resource()
   EXPECT_TRUE(is_aligned(p));
   EXPECT_TRUE(is_device_memory(p));
   EXPECT_NO_THROW(rmm::mr::get_default_resource()->deallocate(p, 1_MiB));
+}
+
+inline void test_get_current_device_resource()
+{
+  EXPECT_NE(nullptr, rmm::mr::get_current_device_resource());
+  void* p{nullptr};
+  EXPECT_NO_THROW(p = rmm::mr::get_current_device_resource()->allocate(1_MiB));
+  EXPECT_NE(nullptr, p);
+  EXPECT_TRUE(is_aligned(p));
+  EXPECT_TRUE(is_device_memory(p));
+  EXPECT_NO_THROW(rmm::mr::get_current_device_resource()->deallocate(p, 1_MiB));
 }
 
 inline void test_allocate(rmm::mr::device_memory_resource* mr,
@@ -227,13 +236,6 @@ struct mr_test : public ::testing::TestWithParam<mr_factory> {
 inline auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>(); }
 
 inline auto make_managed() { return std::make_shared<rmm::mr::managed_memory_resource>(); }
-
-inline auto make_cnmem() { return std::make_shared<rmm::mr::cnmem_memory_resource>(); }
-
-inline auto make_cnmem_managed()
-{
-  return std::make_shared<rmm::mr::cnmem_managed_memory_resource>();
-}
 
 inline auto make_pool()
 {

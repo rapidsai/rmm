@@ -16,14 +16,6 @@
 
 #include <gtest/gtest.h>
 #include <rmm/thrust_rmm_allocator.h>
-#include <rmm/mr/device/cnmem_managed_memory_resource.hpp>
-#include <rmm/mr/device/cnmem_memory_resource.hpp>
-#include <rmm/mr/device/cuda_memory_resource.hpp>
-#include <rmm/mr/device/default_memory_resource.hpp>
-#include <rmm/mr/device/device_memory_resource.hpp>
-#include <rmm/mr/device/fixed_size_memory_resource.hpp>
-#include <rmm/mr/device/managed_memory_resource.hpp>
-#include <rmm/mr/device/pool_memory_resource.hpp>
 #include <rmm/mr/device/thrust_allocator_adaptor.hpp>
 #include "mr_test.hpp"
 
@@ -44,8 +36,6 @@ INSTANTIATE_TEST_CASE_P(ThrustAllocatorTests,
                         allocator_test,
                         ::testing::Values(mr_factory{"CUDA", &make_cuda},
                                           mr_factory{"Managed", &make_managed},
-                                          mr_factory{"CNMEM", &make_cnmem},
-                                          mr_factory{"CNMEM_Managed", &make_cnmem_managed},
                                           mr_factory{"Pool", &make_pool},
                                           mr_factory{"Binning", &make_binning}),
                         [](auto const& info) { return info.param.name; });

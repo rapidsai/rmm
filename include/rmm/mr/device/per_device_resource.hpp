@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "default_memory_resource.hpp"
-#include "device_memory_resource.hpp"
+#include <rmm/mr/device/cuda_memory_resource.hpp>
+#include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <map>
 #include <mutex>
@@ -75,6 +75,20 @@ struct cuda_device_id {
 namespace mr {
 
 namespace detail {
+
+/**
+ * @brief Returns a pointer to the initial resource.
+ *
+ * Returns a global instance of a `cuda_memory_resource` as a function local static.
+ *
+ * @return Pointer to the static cuda_memory_resource used as the initial, default resource
+ */
+inline device_memory_resource* initial_resource()
+{
+  static cuda_memory_resource mr{};
+  return &mr;
+}
+
 inline std::mutex& map_lock()
 {
   static std::mutex map_lock;

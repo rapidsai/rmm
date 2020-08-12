@@ -17,7 +17,6 @@
 #include <benchmarks/utilities/cxxopts.hpp>
 
 #include <rmm/mr/device/binning_memory_resource.hpp>
-#include <rmm/mr/device/cnmem_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/owning_wrapper.hpp>
@@ -158,8 +157,6 @@ void uniform_random_allocations(rmm::mr::device_memory_resource& mr,
 /// MR factory functions
 inline auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>(); }
 
-inline auto make_cnmem() { return std::make_shared<rmm::mr::cnmem_memory_resource>(); }
-
 inline auto make_pool()
 {
   return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_cuda());
@@ -237,8 +234,6 @@ void declare_benchmark(std::string name)
     BENCHMARK_CAPTURE(BM_RandomAllocations, binning_mr, &make_binning)->Apply(benchmark_range);
   else if (name == "pool")
     BENCHMARK_CAPTURE(BM_RandomAllocations, pool_mr, &make_pool)->Apply(benchmark_range);
-  else if (name == "cnmem")
-    BENCHMARK_CAPTURE(BM_RandomAllocations, cnmem_mr, &make_cnmem)->Apply(benchmark_range);
   else
     std::cout << "Error: invalid memory_resource name: " << name << "\n";
 }
@@ -283,10 +278,8 @@ int main(int argc, char** argv)
   max_size        = args["maxsize"].as<int>();
 
   if (args.count("profile") > 0) {
-    std::map<std::string, MRFactoryFunc> const funcs({{"binning", &make_binning},
-                                                      {"cnmem", &make_cnmem},
-                                                      {"cuda", &make_cuda},
-                                                      {"pool", &make_pool}});
+    std::map<std::string, MRFactoryFunc> const funcs(
+      {{"binning", &make_binning}, {"cuda", &make_cuda}, {"pool", &make_pool}});
     auto resource = args["resource"].as<std::string>();
 
     std::cout << "Profiling " << resource << " with " << num_allocations << " allocations of max "
@@ -307,7 +300,7 @@ int main(int argc, char** argv)
       std::string mr_name = args["resource"].as<std::string>();
       declare_benchmark(mr_name);
     } else {
-      std::array<std::string, 4> mrs{"pool", "binning", "cnmem", "cuda"};
+      std::array<std::string, 4> mrs{"pool", "binning", "cuda"};
       std::for_each(std::cbegin(mrs), std::cend(mrs), [](auto const& s) { declare_benchmark(s); });
     }
     ::benchmark::RunSpecifiedBenchmarks();

@@ -1,11 +1,14 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 import os
+import warnings
 
 from libc.stdint cimport int8_t
 from libcpp cimport bool
 from libcpp.cast cimport dynamic_cast
 from libcpp.memory cimport make_shared, make_unique, shared_ptr, unique_ptr
 from libcpp.string cimport string
+
+from rmm._lib.lib cimport cudaGetDevice, cudaSetDevice, cudaSuccess
 
 
 cdef class CudaMemoryResource(MemoryResource):
@@ -31,55 +34,6 @@ cdef class ManagedMemoryResource(MemoryResource):
         """
         Memory resource that uses cudaMallocManaged/Free for
         allocation/deallocation.
-        """
-        pass
-
-
-cdef class CNMemMemoryResource(MemoryResource):
-    def __cinit__(self, size_t initial_pool_size=0, vector[int] devices=()):
-        self.c_obj.reset(
-            new cnmem_memory_resource_wrapper(
-                initial_pool_size,
-                devices
-            )
-        )
-
-    def __init__(self, size_t initial_pool_size=0, vector[int] devices=()):
-        """
-        Memory resource that uses the cnmem pool sub-allocator.
-
-        Parameters
-        ----------
-        initial_pool_size : int, optional
-            Initial pool size in bytes. By default, an implementation defined
-            pool size is used.
-        devices : tuple of int, optional
-            List of GPU device IDs to register with CNMEM.
-        """
-        pass
-
-
-cdef class CNMemManagedMemoryResource(MemoryResource):
-    def __cinit__(self, size_t initial_pool_size=0, vector[int] devices=()):
-        self.c_obj.reset(
-            new cnmem_managed_memory_resource_wrapper(
-                initial_pool_size,
-                devices
-            )
-        )
-
-    def __init__(self, size_t initial_pool_size=0, vector[int] devices=()):
-        """
-        Memory resource that uses the cnmem pool sub-allocator for
-        allocating/deallocating managed device memory.
-
-        Parameters
-        ----------
-        initial_pool_size : int, optional
-            Initial pool size in bytes. By default, an implementation defined
-            pool size is used.
-        devices : list of int
-            List of GPU device IDs to register with CNMEM.
         """
         pass
 
@@ -252,6 +206,24 @@ cdef class BinningMemoryResource(MemoryResource):
                 _bin_resource.c_obj
             )
 
+
+def _append_id(filename, id):
+    """
+    Append ".dev<ID>" onto a filename before the extension
+
+    Example: _append_id("hello.txt", 1) returns "hello.dev1.txt"
+
+    Parameters
+    ----------
+    filename : string
+        The filename, possibly with extension
+    id : int
+        The ID to append
+    """
+    name, ext = os.path.splitext(filename)
+    return f"{name}.dev{id}{ext}"
+
+
 cdef class LoggingResourceAdaptor(MemoryResource):
     def __cinit__(self, MemoryResource upstream, object log_file_name=None):
         if log_file_name is None:
@@ -262,10 +234,17 @@ cdef class LoggingResourceAdaptor(MemoryResource):
                     "log_file_name= argument or RMM_LOG_FILE "
                     "environment variable"
                 )
+        # Append the device ID before the file extension
+        log_file_name = _append_id(
+            log_file_name.decode(), get_current_device()
+        )
+
+        _log_file_name = log_file_name
+
         self.c_obj.reset(
             new logging_resource_adaptor_wrapper(
                 upstream.c_obj,
-                log_file_name
+                log_file_name.encode()
             )
         )
 
@@ -286,9 +265,36 @@ cdef class LoggingResourceAdaptor(MemoryResource):
     cpdef flush(self):
         (<logging_resource_adaptor_wrapper*>(self.c_obj.get()))[0].flush()
 
+    cpdef get_file_name(self):
+        return self._log_file_name
 
-# Global memory resource:
-cdef MemoryResource _mr
+# Global per-device memory resources; dict of int:MemoryResource
+cdef dict _per_device_mrs = {}
+
+
+cpdef int get_current_device() except -1:
+    """
+    Get the current CUDA device
+    """
+    cdef int current_device
+    err = cudaGetDevice(&current_device)
+    if err != cudaSuccess:
+        raise RuntimeError(f"Failed to get CUDA device with error: {err}")
+    return current_device
+
+
+cpdef void set_current_device(int device) except *:
+    """
+    Set the current CUDA device
+
+    Parameters
+    ----------
+    device : int
+        The ID of the device to set as current
+    """
+    err = cudaSetDevice(device)
+    if err != cudaSuccess:
+        raise RuntimeError(f"Failed to set CUDA device with error: {err}")
 
 
 cpdef _initialize(
@@ -302,70 +308,144 @@ cpdef _initialize(
     """
     Initializes RMM library using the options passed
     """
-    global _mr
-    _mr = MemoryResource()
-
-    if not pool_allocator:
-        if not managed_memory:
-            typ = CudaMemoryResource
-        else:
-            typ = ManagedMemoryResource
-        args = ()
+    if managed_memory:
+        upstream = ManagedMemoryResource
     else:
-        if not managed_memory:
-            typ = CNMemMemoryResource
-        else:
-            typ = CNMemManagedMemoryResource
+        upstream = CudaMemoryResource
 
+    if pool_allocator:
         if initial_pool_size is None:
             initial_pool_size = 0
+
+        typ = PoolMemoryResource
+        args = (upstream(), initial_pool_size)
+    else:
+        typ = upstream
+        args = ()
+
+    cdef MemoryResource mr
+    cdef int original_device
+
+    # Save the current device so we can reset it
+    try:
+        original_device = get_current_device()
+    except RuntimeError:
+        warnings.warn("No CUDA Device Found", ResourceWarning)
+    else:
+        # reset any previously specified per device resources
+        global _per_device_mrs
+        _per_device_mrs.clear()
 
         if devices is None:
             devices = [0]
         elif isinstance(devices, int):
             devices = [devices]
 
-        args = (initial_pool_size, devices)
+        # create a memory resource per specified device
+        for device in devices:
+            set_current_device(device)
 
-    cdef MemoryResource mr
+            if logging:
+                mr = LoggingResourceAdaptor(typ(*args), log_file_name.encode())
+            else:
+                mr = typ(*args)
 
-    if logging:
-        mr = LoggingResourceAdaptor(typ(*args), log_file_name.encode())
-    else:
-        mr = typ(*args)
+            _set_per_device_resource(device, mr)
 
-    _set_default_resource(
-        mr
-    )
+        # reset CUDA device to original
+        set_current_device(original_device)
 
 
-cpdef _set_default_resource(MemoryResource mr):
+cpdef get_per_device_resource(int device):
     """
-    Set the memory resource to use for RMM device allocations.
+    Get the default memory resource for the specified device.
+
+    Parameters
+    ----------
+    device : int
+        The ID of the device for which to get the memory resource.
+    """
+    global _per_device_mrs
+    return _per_device_mrs[device]
+
+
+cpdef _set_per_device_resource(int device, MemoryResource mr):
+    """
+    Set the default memory resource for the specified device.
+
+    Parameters
+    ----------
+    device : int
+        The ID of the device for which to get the memory resource.
+    mr : MemoryResource
+        The memory resource to set.
+    """
+    global _per_device_mrs
+    _per_device_mrs[device] = mr
+    _mr = mr  # coerce Python object to C object
+    set_per_device_resource(device, _mr.c_obj)
+
+
+cpdef set_current_device_resource(MemoryResource mr):
+    """
+    Set the default memory resource for the current device.
 
     Parameters
     ----------
     mr : MemoryResource
-        A MemoryResource object. See `rmm.mr` for the different
-        MemoryResource types available.
+        The memory resource to set.
     """
-    global _mr
-    _mr = mr
-    set_default_resource(_mr.c_obj)
+    _set_per_device_resource(get_current_device(), mr)
 
 
-cpdef get_default_resource_type():
+cpdef get_per_device_resource_type(int device):
     """
-    Get the default memory resource type used for RMM device allocations.
+    Get the memory resource type used for RMM device allocations on the
+    specified device.
+
+    Parameters
+    ----------
+    device : int
+        The device ID
     """
-    return type(_mr)
+    return type(get_per_device_resource(device))
+
+
+cpdef get_current_device_resource():
+    """
+    Get the memory resource used for RMM device allocations on the current
+    device.
+    """
+    return get_per_device_resource(get_current_device())
+
+
+cpdef get_current_device_resource_type():
+    """
+    Get the memory resource type used for RMM device allocations on the
+    current device.
+    """
+    return type(get_current_device_resource())
 
 
 cpdef is_initialized():
-    global _mr
-    return _mr.c_obj.get() is not NULL
+    """
+    Check whether RMM is initialized
+    """
+    global _per_device_mrs
+    cdef MemoryResource each_mr
+    return all(
+        [each_mr.c_obj.get() is not NULL
+            for each_mr in _per_device_mrs.values()]
+    )
 
 
 cpdef _flush_logs():
-    global _mr
-    _mr.flush()
+    """
+    Flush the logs of all currently initialized LoggingResourceAdaptor
+    memory resources
+    """
+    global _per_device_mrs
+    cdef MemoryResource each_mr
+    for each_mr in _per_device_mrs.values():
+        if isinstance(each_mr, LoggingResourceAdaptor):
+            each_mr.flush()

@@ -27,8 +27,6 @@ INSTANTIATE_TEST_CASE_P(ResourceTests,
                         mr_test,
                         ::testing::Values(mr_factory{"CUDA", &make_cuda},
                                           mr_factory{"Managed", &make_managed},
-                                          mr_factory{"CNMEM", &make_cnmem},
-                                          mr_factory{"CNMEM_Managed", &make_cnmem_managed},
                                           mr_factory{"Pool", &make_pool},
                                           mr_factory{"Binning", &make_binning}),
                         [](auto const& info) { return info.param.name; });
@@ -73,6 +71,8 @@ TEST_P(mr_test, SetCurrentDeviceResource)
 
   // current dev resource should equal this resource
   EXPECT_TRUE(this->mr->is_equal(*rmm::mr::get_current_device_resource()));
+
+  test_get_current_device_resource();
 
   // setting to `nullptr` should reset to initial cuda resource
   EXPECT_NO_THROW(rmm::mr::set_current_device_resource(nullptr));
