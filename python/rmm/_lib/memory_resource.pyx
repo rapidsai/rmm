@@ -304,7 +304,7 @@ cpdef void _initialize(
     object devices=0,
     bool logging=False,
     object log_file_name=None,
-    bool avoid_initialization=False,
+    bool cuda_initialization=True,
 ):
     """
     Initializes RMM library using the options passed
@@ -329,7 +329,7 @@ cpdef void _initialize(
 
     # Save the current device so we can reset it
     try:
-        if not avoid_initialization:
+        if cuda_initialization:
             original_device = get_current_device()
     except RuntimeError:
         warnings.warn("No CUDA Device Found", ResourceWarning)
@@ -343,15 +343,15 @@ cpdef void _initialize(
         elif isinstance(devices, int):
             devices = [devices]
 
-        if avoid_initialization and devices != [0]:
+        if not cuda_initialization and devices != [0]:
             raise RuntimeError(
-                "Avoiding initializing is not allowed with a device other than"
-                " 0"
+                "Avoiding CUDA initialization is not allowed with a device "
+                "other than 0"
             )
 
         # create a memory resource per specified device
         for device in devices:
-            if not avoid_initialization:
+            if cuda_initialization:
                 set_current_device(device)
 
             if logging:
@@ -361,7 +361,7 @@ cpdef void _initialize(
 
             _set_per_device_resource(device, mr)
 
-        if not avoid_initialization:
+        if cuda_initialization:
             # reset CUDA device to original
             set_current_device(original_device)
 
@@ -372,14 +372,14 @@ cpdef void _import_initialize():
     ``RMM_NO_INITIALIZE`` or ``RAPIDS_NO_INITIALIZE`` environment variable
     exists, and avoids initializing the CUDA Driver / Runtime.
     """
-    avoid_initialization = False
+    cuda_initialization = True
     if (
             "RMM_NO_INITIALIZE" in os.environ or
             "RAPIDS_NO_INITIALIZE" in os.environ
     ):
-        avoid_initialization = True
+        cuda_initialization = False
 
-    _initialize(avoid_initialization=avoid_initialization)
+    _initialize(cuda_initialization=cuda_initialization)
 
 
 cpdef get_per_device_resource(int device):
