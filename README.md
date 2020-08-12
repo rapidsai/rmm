@@ -175,7 +175,7 @@ Configurable to use multiple upstream memory resources for allocations that fall
 bin sizes. Often configured with multiple bins backed by `fixed_size_memory_resource`s and a single
 `pool_memory_resource` for allocations larger than the largest bin size.
 
-### Default Resource
+### Default Resources and Per-device Resources
 
 RMM users commonly need to configure a `device_memory_resource` object to use for all allocations 
 where another resource has not explicitly been provided. A common example is configuring a
@@ -208,8 +208,29 @@ Accessing and modifying the default resource is done through two functions:
 rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource(); // Points to `cuda_memory_resource`
 // Construct a resource that uses a coalescing best-fit pool allocator
 rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>> pool_mr{mr}; 
-rmm::mr::set_default_resource(&pool_mr); // Updates the default resource pointer to `pool_mr`
+rmm::mr::set_current_device_resource(&pool_mr); // Updates the current device resource pointer to `pool_mr`
 rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource(); // Points to `pool_mr`
+```
+
+#### Multiple Devices
+
+A `device_memory_resource` should only be used when the active CUDA device is the same device
+that was active when the `device_memory_resource` was created. Otherwise behavior is undefined.
+ 
+Creating a `device_memory_resource` for each device requires care to set the current device before
+creating each resource, and to maintain the lifetime of the resources as long as they are set as
+per-device resources. Here is an example loop that creates `unique_ptr`s to `pool_memory_resource`
+objects for each device and sets them as the per-device resource for that device.
+
+```c++ 
+std::vector<unique_ptr<pool_memory_resource>> per_device_pools;
+for(int i = 0; i < N; ++i) {
+    cudaSetDevice(i); // set device i before creating MR
+    // Use a vector of unique_ptr to maintain the lifetime of the MRs
+    per_device_pools.push_back(std::make_unique<pool_memory_resource>());
+    // Set the per-device resource for device i
+    set_per_device_resource(cuda_device_id{i}, &per_device_pools.back());
+}
 ```
 
 ## Device Data Structures
@@ -395,7 +416,7 @@ example, enabling the `ManagedMemoryResource` tells RMM to use
 > :warning: The default resource must be set for any device **before**
 > allocating any device memory on that device.  Setting or changing the
 > resource after device allocations have been made can lead to unexpected
-> behaviour or crashes.
+> behaviour or crashes. See [Multiple Devices](#multiple-devices)
 
 As another example, `PoolMemoryResource` allows you to allocate a
 large "pool" of device memory up-front. Subsequent allocations will
