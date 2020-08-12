@@ -297,13 +297,14 @@ cpdef void set_current_device(int device) except *:
         raise RuntimeError(f"Failed to set CUDA device with error: {err}")
 
 
-cpdef _initialize(
+cpdef void _initialize(
     bool pool_allocator=False,
     bool managed_memory=False,
     object initial_pool_size=None,
     object devices=0,
     bool logging=False,
     object log_file_name=None,
+    bool avoid_initialization=False,
 ):
     """
     Initializes RMM library using the options passed
@@ -328,7 +329,8 @@ cpdef _initialize(
 
     # Save the current device so we can reset it
     try:
-        original_device = get_current_device()
+        if not avoid_initialization:
+            original_device = get_current_device()
     except RuntimeError:
         warnings.warn("No CUDA Device Found", ResourceWarning)
     else:
@@ -341,9 +343,16 @@ cpdef _initialize(
         elif isinstance(devices, int):
             devices = [devices]
 
+        if avoid_initialization and devices != [0]:
+            raise RuntimeError(
+                "Avoiding initializing is not allowed with a device other than"
+                " 0"
+            )
+
         # create a memory resource per specified device
         for device in devices:
-            set_current_device(device)
+            if not avoid_initialization:
+                set_current_device(device)
 
             if logging:
                 mr = LoggingResourceAdaptor(typ(*args), log_file_name.encode())
@@ -352,8 +361,25 @@ cpdef _initialize(
 
             _set_per_device_resource(device, mr)
 
-        # reset CUDA device to original
-        set_current_device(original_device)
+        if not avoid_initialization:
+            # reset CUDA device to original
+            set_current_device(original_device)
+
+
+cpdef void _import_initialize():
+    """
+    Function used to import RMM at import. Checks if either a
+    ``RMM_NO_INITIALIZE`` or ``RAPIDS_NO_INITIALIZE`` environment variable
+    exists, and avoids initializing the CUDA Driver / Runtime.
+    """
+    avoid_initialization = False
+    if (
+            "RMM_NO_INITIALIZE" in os.environ or
+            "RAPIDS_NO_INITIALIZE" in os.environ
+    ):
+        avoid_initialization = True
+
+    _initialize(avoid_initialization=avoid_initialization)
 
 
 cpdef get_per_device_resource(int device):
