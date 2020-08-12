@@ -30,6 +30,7 @@ if not os.path.isdir(CUDA_HOME):
     raise OSError(f"Invalid CUDA_HOME: directory does not exist: {CUDA_HOME}")
 
 cuda_include_dir = os.path.join(CUDA_HOME, "include")
+cuda_lib_dir = os.path.join(CUDA_HOME, "lib64")
 
 try:
     nthreads = int(os.environ.get("PARALLEL_LEVEL", "0") or "0")
@@ -54,7 +55,9 @@ extensions = cythonize(
             sources=cython_lib,
             include_dirs=include_dirs,
             library_dirs=library_dirs,
-            libraries=["rmm"],
+            runtime_library_dirs=[cuda_lib_dir,
+                os.path.join(os.sys.prefix, "lib")],
+            libraries=["cuda", "rmm"],
             language="c++",
             extra_compile_args=["-std=c++14"],
         )
