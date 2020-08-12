@@ -49,6 +49,17 @@ TYPED_TEST(TypedUVectorTest, NonZeroSizeConstructor)
   EXPECT_NE(uv.element_ptr(0), nullptr);
 }
 
+TYPED_TEST(TypedUVectorTest, CopyConstructor)
+{
+  rmm::device_uvector<TypeParam> uv(12345, this->stream());
+  rmm::device_uvector<TypeParam> uv_copy(uv, this->stream());
+  EXPECT_EQ(uv_copy.size(), uv.size());
+  EXPECT_NE(uv_copy.data(), nullptr);
+  EXPECT_EQ(uv_copy.end(), uv_copy.begin() + uv_copy.size());
+  EXPECT_FALSE(uv_copy.is_empty());
+  EXPECT_NE(uv_copy.element_ptr(0), nullptr);
+}
+
 TYPED_TEST(TypedUVectorTest, ResizeSmaller)
 {
   auto original_size = 12345;
