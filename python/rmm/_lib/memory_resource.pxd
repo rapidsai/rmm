@@ -18,22 +18,6 @@ cdef extern from "memory_resource_wrappers.hpp" nogil:
     ):
         managed_memory_resource_wrapper() except +
 
-    cdef cppclass cnmem_memory_resource_wrapper(
-        device_memory_resource_wrapper
-    ):
-        cnmem_memory_resource_wrapper(
-            size_t initial_pool_size,
-            vector[int] devices
-        ) except +
-
-    cdef cppclass cnmem_managed_memory_resource_wrapper(
-        device_memory_resource_wrapper
-    ):
-        cnmem_managed_memory_resource_wrapper(
-            size_t initial_pool_size,
-            vector[int] devices
-        ) except +
-
     cdef cppclass pool_memory_resource_wrapper(device_memory_resource_wrapper):
         pool_memory_resource_wrapper(
             shared_ptr[device_memory_resource_wrapper] upstream_mr,
@@ -85,7 +69,8 @@ cdef extern from "memory_resource_wrappers.hpp" nogil:
             shared_ptr[device_memory_resource_wrapper] upstream_mr,
         ) except +
 
-    void set_default_resource(
+    void set_per_device_resource(
+        int device,
         shared_ptr[device_memory_resource_wrapper] new_resource
     ) except +
 
@@ -99,12 +84,6 @@ cdef class CudaMemoryResource(MemoryResource):
 cdef class ManagedMemoryResource(MemoryResource):
     pass
 
-cdef class CNMemMemoryResource(MemoryResource):
-    pass
-
-cdef class CNMemManagedMemoryResource(MemoryResource):
-    pass
-
 cdef class PoolMemoryResource(MemoryResource):
     pass
 
@@ -115,8 +94,6 @@ cdef class BinningMemoryResource(MemoryResource):
     cpdef add_bin(self, size_t allocation_size, object bin_resource=*)
 
 cdef class LoggingResourceAdaptor(MemoryResource):
+    cdef object _log_file_name
+    cpdef get_file_name(self)
     cpdef flush(self)
-
-cpdef get_default_resource_type()
-
-cpdef is_initialized()

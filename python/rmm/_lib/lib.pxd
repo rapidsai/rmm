@@ -39,3 +39,5 @@ cdef extern from * nogil:
     cudaError_t cudaMemcpyAsync(void* dst, const void* src, size_t count,
                                 cudaMemcpyKind kind, cudaStream_t stream)
     cudaError_t cudaStreamSynchronize(cudaStream_t stream)
+    cudaError_t cudaGetDevice(int* device)
+    cudaError_t cudaSetDevice(int device)

@@ -14,6 +14,7 @@
 - PR #457 New `binning_memory_resource` (replaces `hybrid_memory_resource` and 
           `fixed_multisize_memory_resource`).
 - PR #458 Add `get/set_per_device_resource` to better support multi-GPU per process applications
+- PR #466 Deprecate CNMeM.
 
 ## Improvements
 

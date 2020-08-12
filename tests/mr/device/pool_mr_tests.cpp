@@ -34,7 +34,7 @@ TEST(PoolTest, ThrowOnNullUpstream)
 
 TEST(PoolTest, ThrowMaxLessThanInitial)
 {
-  auto max_less_than_initial = []() { Pool mr{rmm::mr::get_default_resource(), 100, 99}; };
+  auto max_less_than_initial = []() { Pool mr{rmm::mr::get_current_device_resource(), 100, 99}; };
   EXPECT_THROW(max_less_than_initial(), rmm::logic_error);
 }
 
@@ -43,14 +43,14 @@ TEST(PoolTest, AllocateNinetyPercent)
   auto allocate_ninety = []() {
     auto const ninety_percent_pool =
       static_cast<std::size_t>(rmm::mr::detail::available_device_memory() * 0.9);
-    Pool mr{rmm::mr::get_default_resource(), ninety_percent_pool};
+    Pool mr{rmm::mr::get_current_device_resource(), ninety_percent_pool};
   };
   EXPECT_NO_THROW(allocate_ninety());
 }
 
 TEST(PoolTest, ForceGrowth)
 {
-  Pool mr{rmm::mr::get_default_resource(), 0};
+  Pool mr{rmm::mr::get_current_device_resource(), 0};
   EXPECT_NO_THROW(mr.allocate(1000));
 }
 

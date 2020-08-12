@@ -57,6 +57,8 @@ namespace mr {
 /**
  * @brief Memory resource that allocates/deallocates using the cnmem pool
  * sub-allocator.
+ *
+ * @note This class is deprecated as of RMM 0.15. Use pool_memory_resource.
  */
 class cnmem_memory_resource : public device_memory_resource {
  public:
@@ -71,8 +73,8 @@ class cnmem_memory_resource : public device_memory_resource {
    * zero, an implementation defined pool size is used.
    * @param devices List of GPU device IDs to register with CNMEM
    */
-  explicit cnmem_memory_resource(std::size_t initial_pool_size   = 0,
-                                 std::vector<int> const& devices = {})
+  [[deprecated]] explicit cnmem_memory_resource(std::size_t initial_pool_size   = 0,
+                                                std::vector<int> const& devices = {})
     : cnmem_memory_resource(initial_pool_size, devices, memory_kind::CUDA)
   {
   }

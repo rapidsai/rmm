@@ -31,7 +31,7 @@ namespace rmm {
  *
  * This class allocates untyped and *uninitialized* device memory using a
  * `device_memory_resource`. If not explicitly specified, the memory resource
- * returned from `get_default_resource()` is used.
+ * returned from `get_current_device_resource()` is used.
  *
  * @note Unlike `std::vector` or `thrust::device_vector`, the device memory
  * allocated by a `device_buffer` is uninitialized. Therefore, it is undefined
@@ -79,7 +79,7 @@ class device_buffer {
   // context of both host and device functions. Specifically, the `cudf::type_dispatcher` is a host-
   // device function. This causes warnings/errors because this ctor invokes host-only functions.
   device_buffer()
-    : _data{nullptr}, _size{}, _capacity{}, _stream{}, _mr{rmm::mr::get_default_resource()}
+    : _data{nullptr}, _size{}, _capacity{}, _stream{}, _mr{rmm::mr::get_current_device_resource()}
   {
   }
 
@@ -95,7 +95,7 @@ class device_buffer {
    */
   explicit device_buffer(std::size_t size,
                          cudaStream_t stream            = 0,
-                         mr::device_memory_resource* mr = mr::get_default_resource())
+                         mr::device_memory_resource* mr = mr::get_current_device_resource())
     : _stream{stream}, _mr{mr}
   {
     allocate(size);
@@ -118,7 +118,7 @@ class device_buffer {
   device_buffer(void const* source_data,
                 std::size_t size,
                 cudaStream_t stream            = 0,
-                mr::device_memory_resource* mr = mr::get_default_resource())
+                mr::device_memory_resource* mr = mr::get_current_device_resource())
     : _stream{stream}, _mr{mr}
   {
     allocate(size);
@@ -143,7 +143,7 @@ class device_buffer {
    */
   device_buffer(device_buffer const& other,
                 cudaStream_t stream                 = 0,
-                rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
+                rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource())
     : device_buffer{other.data(), other.size(), stream, mr}
   {
   }
@@ -388,8 +388,8 @@ class device_buffer {
   std::size_t _capacity{};  ///< The actual size of the device memory allocation
   cudaStream_t _stream{};   ///< Stream to use for device memory deallocation
   mr::device_memory_resource* _mr{
-    mr::get_default_resource()};  ///< The memory resource used to
-                                  ///< allocate/deallocate device memory
+    mr::get_current_device_resource()};  ///< The memory resource used to
+                                         ///< allocate/deallocate device memory
 
   /**
    * @brief Allocates the specified amount of memory and updates the
