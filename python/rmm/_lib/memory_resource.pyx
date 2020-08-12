@@ -1,5 +1,6 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 import os
+import warnings
 
 from libc.stdint cimport int8_t
 from libcpp cimport bool
@@ -323,32 +324,38 @@ cpdef _initialize(
         args = ()
 
     cdef MemoryResource mr
+    cdef int original_device
 
     # Save the current device so we can reset it
-    cdef int original_device = get_current_device()
+    try:
+        original_device = get_current_device()
+    except RuntimeError:
+        warnings.warn("No CUDA Device Found", ResourceWarning)
+    else:
+        # reset any previously specified per device resources
+        global _per_device_mrs
+        _per_device_mrs.clear()
 
-    # reset any previously specified per device resources
-    global _per_device_mrs
-    _per_device_mrs.clear()
+        if devices is None:
+            devices = [0]
+        elif isinstance(devices, int):
+            devices = [devices]
 
-    if devices is None:
-        devices = [0]
-    elif isinstance(devices, int):
-        devices = [devices]
+        # create a memory resource per specified device
+        for device in devices:
+            set_current_device(device)
 
-    # create a memory resource per specified device
-    for device in devices:
-        set_current_device(device)
+            if logging:
+                mr = LoggingResourceAdaptor(typ(*args), log_file_name.encode())
+            else:
+                mr = typ(*args)
 
-        if logging:
-            mr = LoggingResourceAdaptor(typ(*args), log_file_name.encode())
-        else:
-            mr = typ(*args)
+            _set_per_device_resource(device, mr)
 
-        _set_per_device_resource(device, mr)
+        # reset CUDA device to original
+        set_current_device(original_device)
+    
 
-    # reset CUDA device to original
-    set_current_device(original_device)
 
 
 cpdef get_per_device_resource(int device):
