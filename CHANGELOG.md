@@ -55,6 +55,8 @@
 - PR #464 More completely revert cnmem.h cmake changes
 - PR #473 Fix initialization logic in pool_memory_resource.
 - PR #479 Fix usage of block printing in pool_memory_resource.
+- PR #490 Allow importing RMM without initializing CUDA driver
+
 
 # RMM 0.14.0 (03 Jun 2020)
 
