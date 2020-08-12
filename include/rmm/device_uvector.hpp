@@ -128,7 +128,7 @@ class device_uvector {
     device_uvector const& other,
     cudaStream_t stream,
     rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource())
-    : _storage{other.storage, stream, mr}
+    : _storage{other._storage, stream, mr}
   {
   }
 
