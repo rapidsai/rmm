@@ -41,6 +41,11 @@
  * the same pointer, `mr`. In this way, all places that use the resource returned from
  * `get_per_device_resource` for (de)allocation will use the user provided resource, `mr`.
  *
+ * @note `device_memory_resource` make CUDA API calls without setting the current CUDA device.
+ * Therefore a memory resource should only be used with the current CUDA device set to the device
+ * that was active when the memory resource was created. Calling `set_per_device_resource(id, mr)`
+ * is only valid if `id` refers to the CUDA device that was active when `mr` was created.
+ *
  * If no resource was explicitly set for a given device specified by `id`, then
  * `get_per_device_resource(id)` will return a pointer to a `cuda_memory_resource`.
  *
