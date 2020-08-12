@@ -305,7 +305,7 @@ cpdef void _initialize(
     bool logging=False,
     object log_file_name=None,
     bool cuda_initialization=True,
-):
+) except *:
     """
     Initializes RMM library using the options passed
     """
@@ -366,7 +366,7 @@ cpdef void _initialize(
             set_current_device(original_device)
 
 
-cpdef void _import_initialize():
+cpdef void _import_initialize() except *:
     """
     Function used to import RMM at import. Checks if either a
     ``RMM_NO_INITIALIZE`` or ``RAPIDS_NO_INITIALIZE`` environment variable
