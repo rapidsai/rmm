@@ -314,7 +314,7 @@ cpdef void _initialize(
         if cuda_initialization:
             original_device = get_current_device()
     except CUDARuntimeError as e:
-        if e.status in {cudaError.cudaErrorNoDevice}:
+        if e.status == cudaError.cudaErrorNoDevice:
             warnings.warn(e.msg)
         else:
             raise e
