@@ -278,6 +278,11 @@ cdef class LoggingResourceAdaptor(MemoryResource):
 
 
 class KeyInitializedDefaultDict(defaultdict):
+    """
+    This class subclasses ``defaultdict`` in order to pass the key to the
+    ``default_factory`` function supplied during the instantiation of the
+    class instance.
+    """
     def __missing__(self, key):
         if self.default_factory is None:
             raise KeyError(key)
