@@ -26,6 +26,22 @@ class device_memory_resource_wrapper {
   virtual std::shared_ptr<rmm::mr::device_memory_resource> get_mr() = 0;
 };
 
+class default_memory_resource_wrapper : public device_memory_resource_wrapper {
+ public:
+  default_memory_resource_wrapper(int device)
+    : mr(rmm::mr::get_per_device_resource(rmm::cuda_device_id(device)))
+  {
+  }
+
+  std::shared_ptr<rmm::mr::device_memory_resource> get_mr()
+  {
+    return std::shared_ptr<rmm::mr::device_memory_resource>(mr, [](auto* p) {});
+  }
+
+ private:
+  rmm::mr::device_memory_resource* mr;
+};
+
 class cuda_memory_resource_wrapper : public device_memory_resource_wrapper {
  public:
   cuda_memory_resource_wrapper() : mr(std::make_shared<rmm::mr::cuda_memory_resource>()) {}

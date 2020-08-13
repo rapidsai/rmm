@@ -11,11 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import weakref
 
+from rmm import mr
 from rmm._lib.device_buffer import DeviceBuffer
-from rmm.mr import _import_initialize
 from rmm.rmm import (
     RMMError,
     RMMNumbaManager,
@@ -28,6 +27,3 @@ from rmm.rmm import (
     rmm_cupy_allocator,
     to_device,
 )
-
-# Initialize RMM on import
-_import_initialize()

@@ -63,6 +63,9 @@ def test_rmm_alloc(dtype, nelem, alloc):
     "managed, pool", list(product([False, True], [False, True]))
 )
 def test_rmm_modes(dtype, nelem, alloc, managed, pool):
+    assert rmm.is_initialized()
+    array_tester(dtype, nelem, alloc)
+
     rmm.reinitialize(pool_allocator=pool, managed_memory=managed)
 
     assert rmm.is_initialized()
