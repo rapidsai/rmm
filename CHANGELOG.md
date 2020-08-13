@@ -42,6 +42,7 @@
 - PR #461 cmake improvements to be more target-based
 - PR #468 update past release dates in changelog
 - PR #486 Document relationship between active CUDA devices and resources
+- PR #493 Rely on C++ lazy Memory Resource initialization behavior instead of initializing in Python
 
 ## Bug Fixes
 
