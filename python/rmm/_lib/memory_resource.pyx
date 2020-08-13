@@ -369,7 +369,7 @@ cpdef get_per_device_resource(int device):
         The ID of the device for which to get the memory resource.
     """
     global _per_device_mrs
-    return _per_device_mrs[device]
+    return _per_device_mrs.get(device)
 
 
 cpdef _set_per_device_resource(int device, MemoryResource mr):
