@@ -10,6 +10,11 @@ cdef extern from "memory_resource_wrappers.hpp" nogil:
     cdef cppclass device_memory_resource_wrapper:
         shared_ptr[device_memory_resource_wrapper] get_mr() except +
 
+    cdef cppclass default_memory_resource_wrapper(
+        device_memory_resource_wrapper
+    ):
+        default_memory_resource_wrapper(int device) except +
+
     cdef cppclass cuda_memory_resource_wrapper(device_memory_resource_wrapper):
         cuda_memory_resource_wrapper() except +
 
