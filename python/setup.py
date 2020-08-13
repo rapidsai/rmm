@@ -1,4 +1,5 @@
 # Copyright (c) 2019-2020, NVIDIA CORPORATION.
+import glob
 import os
 import shutil
 import sysconfig
@@ -10,9 +11,11 @@ from setuptools.extension import Extension
 
 import versioneer
 
+cython_lib = glob.glob("rmm/_lib/*.pyx") + glob.glob("rmm/_cuda/*.pyx")
+
 install_requires = ["numba", "cython"]
-cython_lib = ["rmm/**/*.pyx"]
-cython_tests = ["rmm/tests/**/*.pyx"]
+
+cython_tests = glob.glob("rmm/tests/*.pyx")
 
 CUDA_HOME = os.environ.get("CUDA_HOME", False)
 if not CUDA_HOME:
