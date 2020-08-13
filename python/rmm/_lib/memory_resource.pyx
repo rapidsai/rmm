@@ -1,6 +1,7 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 import os
 import warnings
+from collections import defaultdict
 
 from libc.stdint cimport int8_t
 from libcpp cimport bool
@@ -12,12 +13,17 @@ from rmm._lib.lib cimport cudaGetDevice, cudaSetDevice, cudaSuccess
 
 
 cdef class CudaMemoryResource(MemoryResource):
-    def __cinit__(self):
-        self.c_obj.reset(
-            new cuda_memory_resource_wrapper()
-        )
+    def __cinit__(self, device=None):
+        if (device is None):
+            self.c_obj.reset(
+                new cuda_memory_resource_wrapper()
+            )
+        else:
+            self.c_obj.reset(
+                new default_memory_resource_wrapper(device)
+            )
 
-    def __init__(self):
+    def __init__(self, device=None):
         """
         Memory resource that uses cudaMalloc/Free for allocation/deallocation
         """
@@ -268,8 +274,16 @@ cdef class LoggingResourceAdaptor(MemoryResource):
     cpdef get_file_name(self):
         return self._log_file_name
 
+class KeyInitializedDefaultDict(defaultdict):
+    def __missing__(self, key):
+        if self.default_factory is None:
+            raise KeyError( key )
+        else:
+            ret = self[key] = self.default_factory(key)
+            return ret
+
 # Global per-device memory resources; dict of int:MemoryResource
-cdef dict _per_device_mrs = {}
+cdef _per_device_mrs = KeyInitializedDefaultDict(CudaMemoryResource)
 
 
 cpdef int get_current_device() except -1:
