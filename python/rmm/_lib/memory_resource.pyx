@@ -14,7 +14,7 @@ from rmm._lib.lib cimport cudaGetDevice, cudaSetDevice, cudaSuccess
 
 cdef class CudaMemoryResource(MemoryResource):
     def __cinit__(self, device=None):
-        if (device is None):
+        if device is None:
             self.c_obj.reset(
                 new cuda_memory_resource_wrapper()
             )
@@ -385,7 +385,7 @@ cpdef get_per_device_resource(int device):
         The ID of the device for which to get the memory resource.
     """
     global _per_device_mrs
-    return _per_device_mrs.get(device)
+    return _per_device_mrs[device]
 
 
 cpdef _set_per_device_resource(int device, MemoryResource mr):
