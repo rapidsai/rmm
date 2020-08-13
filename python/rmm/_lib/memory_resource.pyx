@@ -15,12 +15,10 @@ from rmm._lib.lib cimport cudaGetDevice, cudaSetDevice, cudaSuccess
 cdef class CudaMemoryResource(MemoryResource):
     def __cinit__(self, device=None):
         if device is None:
-            print("cuda_memory_resource_wrapper")
             self.c_obj.reset(
                 new cuda_memory_resource_wrapper()
             )
         else:
-            print("default_memory_resource_wrapper")
             self.c_obj.reset(
                 new default_memory_resource_wrapper(device)
             )
