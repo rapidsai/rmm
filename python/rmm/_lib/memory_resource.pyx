@@ -336,11 +336,12 @@ cpdef void _initialize(
         upstream = CudaMemoryResource
 
     if pool_allocator:
-        if initial_pool_size is None:
-            initial_pool_size = 0
-
         typ = PoolMemoryResource
-        args = (upstream(), initial_pool_size)
+        if initial_pool_size is None:
+            args = (upstream(),)
+        else:
+            args = (upstream(), initial_pool_size)
+
     else:
         typ = upstream
         args = ()

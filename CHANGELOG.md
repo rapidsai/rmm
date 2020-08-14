@@ -41,8 +41,8 @@
 - PR #427 Add DeviceBuffer.release() cdef method
 - PR #414 Add element-wise access for device_uvector
 - PR #421 Capture thread id in logging and improve logger testing
-- PR #426 Added multi-threaded support to replay benchmark.
-- PR #429 Fix debug build and add new CUDA assert utility.
+- PR #426 Added multi-threaded support to replay benchmark
+- PR #429 Fix debug build and add new CUDA assert utility
 - PR #435 Update conda upload versions for new supported CUDA/Python
 - PR #437 Test with `pickle5` (for older Python versions)
 - PR #443 Remove thread safe adaptor from PoolMemoryResource
@@ -65,10 +65,11 @@
 - PR #434 Fix issue with incorrect docker image being used in local build script
 - PR #463 Revert cmake change for cnmem header not being added to source directory
 - PR #464 More completely revert cnmem.h cmake changes
-- PR #473 Fix initialization logic in pool_memory_resource.
-- PR #479 Fix usage of block printing in pool_memory_resource.
+- PR #473 Fix initialization logic in pool_memory_resource
+- PR #479 Fix usage of block printing in pool_memory_resource
 - PR #490 Allow importing RMM without initializing CUDA driver
 - PR #484 Fix device_uvector copy constructor compilation error and add test
+- PR #498 Max pool growth less greedy
 
 
 # RMM 0.14.0 (03 Jun 2020)

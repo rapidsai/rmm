@@ -41,11 +41,26 @@ TEST(PoolTest, ThrowMaxLessThanInitial)
 TEST(PoolTest, AllocateNinetyPercent)
 {
   auto allocate_ninety = []() {
-    auto const ninety_percent_pool =
-      static_cast<std::size_t>(rmm::mr::detail::available_device_memory() * 0.9);
+    std::size_t free{}, total{};
+    std::tie(free, total)          = rmm::mr::detail::available_device_memory();
+    auto const ninety_percent_pool = static_cast<std::size_t>(free * 0.9);
     Pool mr{rmm::mr::get_current_device_resource(), ninety_percent_pool};
   };
   EXPECT_NO_THROW(allocate_ninety());
+}
+
+TEST(PoolTest, TwoLargeBuffers)
+{
+  auto two_large = []() {
+    std::size_t free{}, total{};
+    std::tie(free, total) = rmm::mr::detail::available_device_memory();
+    Pool mr{rmm::mr::get_current_device_resource()};
+    auto p1 = mr.allocate(free / 4);
+    auto p2 = mr.allocate(free / 4);
+    mr.deallocate(p1, free / 4);
+    mr.deallocate(p2, free / 4);
+  };
+  EXPECT_NO_THROW(two_large());
 }
 
 TEST(PoolTest, ForceGrowth)
