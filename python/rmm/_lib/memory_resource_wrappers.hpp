@@ -64,9 +64,12 @@ class managed_memory_resource_wrapper : public device_memory_resource_wrapper {
 
 class pool_memory_resource_wrapper : public device_memory_resource_wrapper {
  public:
-  pool_memory_resource_wrapper(std::shared_ptr<device_memory_resource_wrapper> upstream_mr,
-                               std::size_t initial_pool_size,
-                               std::size_t maximum_pool_size)
+  pool_memory_resource_wrapper(
+    std::shared_ptr<device_memory_resource_wrapper> upstream_mr,
+    std::size_t initial_pool_size =
+      rmm::mr::pool_memory_resource<rmm::mr::device_memory_resource>::default_initial_size,
+    std::size_t maximum_pool_size =
+      rmm::mr::pool_memory_resource<rmm::mr::device_memory_resource>::default_maximum_size)
     : upstream_mr(upstream_mr),
       mr(std::make_shared<rmm::mr::pool_memory_resource<rmm::mr::device_memory_resource>>(
         upstream_mr->get_mr().get(), initial_pool_size, maximum_pool_size))
