@@ -341,7 +341,7 @@ cpdef void _initialize(
             args = (upstream(),)
         else:
             args = (upstream(), initial_pool_size)
-            
+
     else:
         typ = upstream
         args = ()
