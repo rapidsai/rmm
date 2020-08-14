@@ -20,6 +20,7 @@
 #include <rmm/device_buffer.hpp>
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/mr/device/per_device_resource.hpp>
 
 #include <vector>
 
@@ -107,9 +108,10 @@ class device_uvector {
    * @param stream The stream on which to perform the allocation
    * @param mr The resource used to allocate the device storage
    */
-  explicit device_uvector(std::size_t size,
-                          cudaStream_t stream,
-                          rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
+  explicit device_uvector(
+    std::size_t size,
+    cudaStream_t stream,
+    rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource())
     : _storage{elements_to_bytes(size), stream, mr}
   {
   }
@@ -123,10 +125,11 @@ class device_uvector {
    * @param stream The stream on which to perform the copy
    * @param mr The resource used to allocate device memory for the new vector
    */
-  explicit device_uvector(device_uvector const& other,
-                          cudaStream_t stream,
-                          rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource())
-    : _storage{other.storage, stream, mr}
+  explicit device_uvector(
+    device_uvector const& other,
+    cudaStream_t stream,
+    rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource())
+    : _storage{other._storage, stream, mr}
   {
   }
 

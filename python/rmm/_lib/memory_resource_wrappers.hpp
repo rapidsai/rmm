@@ -1,20 +1,18 @@
 // Copyright (c) 2020, NVIDIA CORPORATION.
 
 #include <memory>
-#include <rmm/mr/device/cnmem_managed_memory_resource.hpp>
-#include <rmm/mr/device/cnmem_memory_resource.hpp>
+#include <rmm/mr/device/binning_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
-#include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
-#include <rmm/mr/device/fixed_multisize_memory_resource.hpp>
 #include <rmm/mr/device/fixed_size_memory_resource.hpp>
-#include <rmm/mr/device/hybrid_memory_resource.hpp>
 #include <rmm/mr/device/logging_resource_adaptor.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
+#include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
 #include <rmm/mr/device/thread_safe_resource_adaptor.hpp>
 #include <string>
 #include <vector>
+#include "rmm/mr/device/per_device_resource.hpp"
 
 // These are "owning" versions of the memory_resource classes
 // that help lift the responsibility of managing memory resource
@@ -26,6 +24,22 @@
 class device_memory_resource_wrapper {
  public:
   virtual std::shared_ptr<rmm::mr::device_memory_resource> get_mr() = 0;
+};
+
+class default_memory_resource_wrapper : public device_memory_resource_wrapper {
+ public:
+  default_memory_resource_wrapper(int device)
+    : mr(rmm::mr::get_per_device_resource(rmm::cuda_device_id(device)))
+  {
+  }
+
+  std::shared_ptr<rmm::mr::device_memory_resource> get_mr()
+  {
+    return std::shared_ptr<rmm::mr::device_memory_resource>(mr, [](auto* p) {});
+  }
+
+ private:
+  rmm::mr::device_memory_resource* mr;
 };
 
 class cuda_memory_resource_wrapper : public device_memory_resource_wrapper {
@@ -48,39 +62,14 @@ class managed_memory_resource_wrapper : public device_memory_resource_wrapper {
   std::shared_ptr<rmm::mr::managed_memory_resource> mr;
 };
 
-class cnmem_memory_resource_wrapper : public device_memory_resource_wrapper {
- public:
-  cnmem_memory_resource_wrapper(std::size_t initial_pool_size   = 0,
-                                std::vector<int> const& devices = {})
-    : mr(std::make_shared<rmm::mr::cnmem_memory_resource>(initial_pool_size, devices))
-  {
-  }
-
-  std::shared_ptr<rmm::mr::device_memory_resource> get_mr() { return mr; }
-
- private:
-  std::shared_ptr<rmm::mr::cnmem_memory_resource> mr;
-};
-
-class cnmem_managed_memory_resource_wrapper : public device_memory_resource_wrapper {
- public:
-  cnmem_managed_memory_resource_wrapper(std::size_t initial_pool_size   = 0,
-                                        std::vector<int> const& devices = {})
-    : mr(std::make_shared<rmm::mr::cnmem_managed_memory_resource>(initial_pool_size, devices))
-  {
-  }
-
-  std::shared_ptr<rmm::mr::device_memory_resource> get_mr() { return mr; }
-
- private:
-  std::shared_ptr<rmm::mr::cnmem_managed_memory_resource> mr;
-};
-
 class pool_memory_resource_wrapper : public device_memory_resource_wrapper {
  public:
-  pool_memory_resource_wrapper(std::shared_ptr<device_memory_resource_wrapper> upstream_mr,
-                               std::size_t initial_pool_size,
-                               std::size_t maximum_pool_size)
+  pool_memory_resource_wrapper(
+    std::shared_ptr<device_memory_resource_wrapper> upstream_mr,
+    std::size_t initial_pool_size =
+      rmm::mr::pool_memory_resource<rmm::mr::device_memory_resource>::default_initial_size,
+    std::size_t maximum_pool_size =
+      rmm::mr::pool_memory_resource<rmm::mr::device_memory_resource>::default_maximum_size)
     : upstream_mr(upstream_mr),
       mr(std::make_shared<rmm::mr::pool_memory_resource<rmm::mr::device_memory_resource>>(
         upstream_mr->get_mr().get(), initial_pool_size, maximum_pool_size))
@@ -105,70 +94,48 @@ class fixed_size_memory_resource_wrapper : public device_memory_resource_wrapper
   {
   }
 
-  std::shared_ptr<rmm::mr::device_memory_resource>
-
-  get_mr()
-  {
-    return mr;
-  }
+  std::shared_ptr<rmm::mr::device_memory_resource> get_mr() { return mr; }
 
  private:
   std::shared_ptr<device_memory_resource_wrapper> upstream_mr;
   std::shared_ptr<rmm::mr::fixed_size_memory_resource<rmm::mr::device_memory_resource>> mr;
 };
 
-class fixed_multisize_memory_resource_wrapper : public device_memory_resource_wrapper {
+class binning_memory_resource_wrapper : public device_memory_resource_wrapper {
  public:
-  fixed_multisize_memory_resource_wrapper(
-    std::shared_ptr<device_memory_resource_wrapper> upstream_mr,
-    std::size_t size_base,
-    std::size_t min_size_exponent,
-    std::size_t max_size_exponent,
-    std::size_t initial_blocks_per_size)
+  binning_memory_resource_wrapper(std::shared_ptr<device_memory_resource_wrapper> upstream_mr)
     : upstream_mr(upstream_mr),
-      mr(
-        std::make_shared<rmm::mr::fixed_multisize_memory_resource<rmm::mr::device_memory_resource>>(
-          upstream_mr->get_mr().get(),
-          size_base,
-          min_size_exponent,
-          max_size_exponent,
-          initial_blocks_per_size))
+      mr(std::make_shared<rmm::mr::binning_memory_resource<rmm::mr::device_memory_resource>>(
+        upstream_mr->get_mr().get()))
   {
   }
 
-  std::shared_ptr<rmm::mr::device_memory_resource>
-
-  get_mr()
-  {
-    return mr;
-  }
-
- private:
-  std::shared_ptr<device_memory_resource_wrapper> upstream_mr;
-  std::shared_ptr<rmm::mr::fixed_multisize_memory_resource<rmm::mr::device_memory_resource>> mr;
-};
-
-class hybrid_memory_resource_wrapper : public device_memory_resource_wrapper {
- public:
-  hybrid_memory_resource_wrapper(std::shared_ptr<device_memory_resource_wrapper> small_alloc_mr,
-                                 std::shared_ptr<device_memory_resource_wrapper> large_alloc_mr,
-                                 std::size_t threshold_size)
-    : small_alloc_mr(small_alloc_mr),
-      large_alloc_mr(large_alloc_mr),
-      mr(std::make_shared<rmm::mr::hybrid_memory_resource<rmm::mr::device_memory_resource,
-                                                          rmm::mr::device_memory_resource>>(
-        small_alloc_mr->get_mr().get(), large_alloc_mr->get_mr().get(), threshold_size))
+  binning_memory_resource_wrapper(std::shared_ptr<device_memory_resource_wrapper> upstream_mr,
+                                  int8_t min_size_exponent,
+                                  int8_t max_size_exponent)
+    : upstream_mr(upstream_mr),
+      mr(std::make_shared<rmm::mr::binning_memory_resource<rmm::mr::device_memory_resource>>(
+        upstream_mr->get_mr().get(), min_size_exponent, max_size_exponent))
   {
   }
 
   std::shared_ptr<rmm::mr::device_memory_resource> get_mr() { return mr; }
 
+  void add_bin(std::size_t allocation_size,
+               std::shared_ptr<device_memory_resource_wrapper> bin_mr = {})
+  {
+    if (nullptr == bin_mr.get())
+      mr->add_bin(allocation_size);
+    else {
+      bin_mrs.push_back(bin_mr);
+      mr->add_bin(allocation_size, bin_mr->get_mr().get());
+    }
+  }
+
  private:
-  std::shared_ptr<device_memory_resource_wrapper> small_alloc_mr;
-  std::shared_ptr<device_memory_resource_wrapper> large_alloc_mr;
-  std::shared_ptr<rmm::mr::hybrid_memory_resource<rmm::mr::device_memory_resource,
-                                                  rmm::mr::device_memory_resource>>
-    mr;
+  std::shared_ptr<device_memory_resource_wrapper> upstream_mr;
+  std::shared_ptr<rmm::mr::binning_memory_resource<rmm::mr::device_memory_resource>> mr;
+  std::vector<std::shared_ptr<device_memory_resource_wrapper>> bin_mrs;
 };
 
 class logging_resource_adaptor_wrapper : public device_memory_resource_wrapper {
@@ -206,7 +173,14 @@ class thread_safe_resource_adaptor_wrapper : public device_memory_resource_wrapp
   std::shared_ptr<rmm::mr::thread_safe_resource_adaptor<rmm::mr::device_memory_resource>> mr;
 };
 
-void set_default_resource(std::shared_ptr<device_memory_resource_wrapper> new_resource)
+inline void set_per_device_resource(int device_id,
+                                    std::shared_ptr<device_memory_resource_wrapper> new_resource)
 {
-  rmm::mr::set_default_resource(new_resource->get_mr().get());
+  rmm::mr::set_per_device_resource(rmm::cuda_device_id{device_id}, new_resource->get_mr().get());
+}
+
+inline void set_current_device_resource(
+  std::shared_ptr<device_memory_resource_wrapper> new_resource)
+{
+  rmm::mr::set_current_device_resource(new_resource->get_mr().get());
 }

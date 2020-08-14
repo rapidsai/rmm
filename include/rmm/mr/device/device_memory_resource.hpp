@@ -31,17 +31,32 @@ namespace mr {
  * This class serves as the interface that all custom device memory
  * implementations must satisfy.
  *
- * There are two private, pure virtual functions that all derived classes must
- *implement: `do_allocate` and `do_deallocate`. Optionally, derived classes may
- *also override `is_equal`. By default, `is_equal` simply performs an identity
- *comparison.
+ * There are two private, pure virtual functions that all derived classes must implement:
+ *`do_allocate` and `do_deallocate`. Optionally, derived classes may also override `is_equal`. By
+ * default, `is_equal` simply performs an identity comparison.
  *
- * The public, non-virtual functions `allocate`, `deallocate`, and `is_equal`
- * simply call the private virtual functions. The reason for this is to allow
- * implementing shared, default behavior in the base class. For example, the
- * base class' `allocate` function may log every allocation, no matter what
- * derived class implementation is used.
+ * The public, non-virtual functions `allocate`, `deallocate`, and `is_equal` simply call the
+ * private virtual functions. The reason for this is to allow implementing shared, default behavior
+ * in the base class. For example, the base class' `allocate` function may log every allocation, no
+ * matter what derived class implementation is used.
  *
+ * A device_memory_resource should only be used when the active CUDA device is the same device
+ * that was active when the device_memory_resource was created. Otherwise behavior is undefined.
+ *
+ * Creating a device_memory_resource for each device requires care to set the current device
+ * before creating each resource, and to maintain the lifetime of the resources as long as they
+ * are set as per-device resources. Here is an example loop that creates `unique_ptr`s to
+ * pool_memory_resource objects for each device and sets them as the per-device resource for that
+ * device.
+ *
+ * @code{c++}
+ * std::vector<unique_ptr<pool_memory_resource>> per_device_pools;
+ * for(int i = 0; i < N; ++i) {
+ *   cudaSetDevice(i);
+ *   per_device_pools.push_back(std::make_unique<pool_memory_resource>());
+ *   set_per_device_resource(cuda_device_id{i}, &per_device_pools.back());
+ * }
+ * @endcode
  */
 class device_memory_resource {
  public:
@@ -64,7 +79,7 @@ class device_memory_resource {
    */
   void* allocate(std::size_t bytes, cudaStream_t stream = 0)
   {
-    return do_allocate(detail::align_up(bytes, 8), stream);
+    return do_allocate(rmm::detail::align_up(bytes, 8), stream);
   }
 
   /**
@@ -87,7 +102,7 @@ class device_memory_resource {
    */
   void deallocate(void* p, std::size_t bytes, cudaStream_t stream = 0)
   {
-    do_deallocate(p, detail::align_up(bytes, 8), stream);
+    do_deallocate(p, rmm::detail::align_up(bytes, 8), stream);
   }
 
   /**

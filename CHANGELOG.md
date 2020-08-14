@@ -5,8 +5,10 @@
 ## Improvements
 
 - PR #474 Use CMake find_package(CUDAToolkit)
+- PR #477 Just use `None` for `strides` in `DeviceBuffer`
 
 ## Bug Fixes
+
 
 # RMM 0.15.0 (Date TBD)
 
@@ -21,7 +23,10 @@
 - PR #449 Stream-ordered suballocator base class and per-thread default stream support 
           and thread safety for `fixed_size_memory_resource`
 - PR #450 Add support for new build process (Project Flash)
+- PR #457 New `binning_memory_resource` (replaces `hybrid_memory_resource` and 
+          `fixed_multisize_memory_resource`).
 - PR #458 Add `get/set_per_device_resource` to better support multi-GPU per process applications
+- PR #466 Deprecate CNMeM.
 
 ## Improvements
 
@@ -38,8 +43,8 @@
 - PR #427 Add DeviceBuffer.release() cdef method
 - PR #414 Add element-wise access for device_uvector
 - PR #421 Capture thread id in logging and improve logger testing
-- PR #426 Added multi-threaded support to replay benchmark.
-- PR #429 Fix debug build and add new CUDA assert utility.
+- PR #426 Added multi-threaded support to replay benchmark
+- PR #429 Fix debug build and add new CUDA assert utility
 - PR #435 Update conda upload versions for new supported CUDA/Python
 - PR #437 Test with `pickle5` (for older Python versions)
 - PR #443 Remove thread safe adaptor from PoolMemoryResource
@@ -48,6 +53,8 @@
 - PR #456 Minor cleanup: always use rmm/-prefixed includes
 - PR #461 cmake improvements to be more target-based
 - PR #468 update past release dates in changelog
+- PR #486 Document relationship between active CUDA devices and resources
+- PR #493 Rely on C++ lazy Memory Resource initialization behavior instead of initializing in Python
 
 ## Bug Fixes
 
@@ -60,6 +67,12 @@
 - PR #434 Fix issue with incorrect docker image being used in local build script
 - PR #463 Revert cmake change for cnmem header not being added to source directory
 - PR #464 More completely revert cnmem.h cmake changes
+- PR #473 Fix initialization logic in pool_memory_resource
+- PR #479 Fix usage of block printing in pool_memory_resource
+- PR #490 Allow importing RMM without initializing CUDA driver
+- PR #484 Fix device_uvector copy constructor compilation error and add test
+- PR #498 Max pool growth less greedy
+
 
 # RMM 0.14.0 (03 Jun 2020)
 
@@ -148,7 +161,7 @@
 - PR #298 Remove RMM_CUDA_TRY from cuda_event_timer destructor
 - PR #299 Fix assert condition blocking debug builds
 - PR #300 Fix host mr_tests compile error
-- PR #312 Fix libcudf compilation errors due to explicit defaulted device_buffer constructor.
+- PR #312 Fix libcudf compilation errors due to explicit defaulted device_buffer constructor
 
 
 # RMM 0.12.0 (04 Feb 2020)

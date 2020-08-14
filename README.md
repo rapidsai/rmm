@@ -155,41 +155,82 @@ Allocates and frees device memory using `cudaMalloc` and `cudaFree`.
 
 Allocates and frees device memory using `cudaMallocManaged` and `cudaFree`.
 
-#### `cnmem_(managed_)memory_resource`
-
-Uses the [CNMeM](https://github.com/NVIDIA/cnmem) pool sub-allocator to satisfy (de)allocations.
-
 #### `pool_memory_resource`
 
 A coalescing, best-fit pool sub-allocator.
 
-### Default Resource
+#### `cnmem_(managed_)memory_resource` [DEPRECATED]
 
-Frequently, users want to configure a `device_memory_resource` object once and use it for all allocations where another resource has not explicitly been provided. 
-For example, one may want to construct a `pool_memory_resource` and use it for all allocations to get fast dynamic allocation.
+Uses the [CNMeM](https://github.com/NVIDIA/cnmem) pool sub-allocator to satisfy (de)allocations.
+These resources are deprecated as of RMM 0.15.
 
-To enable this use case, RMM provides the concept of a "default" `device_memory_resource`. 
-This is the resource that will be used when another is not explicitly provided.
+#### `fixed_size_memory_resource`
+
+A memory resource that can only allocate a single fixed size. Average allocation and deallocation
+cost is constant.
+
+#### `binning_memory_resource`
+
+Configurable to use multiple upstream memory resources for allocations that fall within different 
+bin sizes. Often configured with multiple bins backed by `fixed_size_memory_resource`s and a single
+`pool_memory_resource` for allocations larger than the largest bin size.
+
+### Default Resources and Per-device Resources
+
+RMM users commonly need to configure a `device_memory_resource` object to use for all allocations 
+where another resource has not explicitly been provided. A common example is configuring a
+`pool_memory_resource` to use for all allocations to get fast dynamic allocation.
+
+To enable this use case, RMM provides the concept of a "default" `device_memory_resource`. This
+resource is used when another is not explicitly provided.
 
 Accessing and modifying the default resource is done through two functions:
-- `device_memory_resource* get_default_resource()`
-   - Returns a pointer to the current default resource
-   - The initial default memory resource is an instance of `cuda_memory_resource`
-   - This function is thread safe
+- `device_memory_resource* get_current_device_resource()`
+   - Returns a pointer to the default resource for the current CUDA device.
+   - The initial default memory resource is an instance of `cuda_memory_resource`.
+   - This function is thread safe with respect to concurrent calls to it and 
+     `set_current_device_resource()`.
+   - For more explicit control, you can use `get_per_device_resource()`, which takes a device ID.
+   - Replaces the deprecated `get_default_resource()`
 
-- `device_memory_resource* set_default_resource(device_memory_resource* new_resource)`
-   - Updates the default memory resource pointer to `new_resource`
+- `device_memory_resource* set_current_device_resource(device_memory_resource* new_mr)`
+   - Updates the default memory resource pointer for the current CUDA device to `new_resource`
    - Returns the previous default resource pointer
-   - If `new_resource` is `nullptr`, then returns the default resource to `cuda_memory_resource`
-   - This function is thread safe
+   - If `new_resource` is `nullptr`, then resets the default resource to `cuda_memory_resource`
+   - This function is thread safe with respect to concurrent calls to it and
+     `get_current_device_resource()`
+   - For more explicit control, you can use `set_per_device_resource()`, which takes a device ID.
+   - Replaces the deprecated `set_default_resource()`
 
 #### Example
 
 ```c++
-rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource(); // Points to `cuda_memory_resource`
-rmm::mr::cnmem_memory_resource pool_mr{}; // Construct a resource that uses the CNMeM pool
-rmm::mr::set_default_resource(&pool_mr); // Updates the default resource pointer to `pool_mr`
-rmm::mr::device_memory_resource* mr = rmm::mr::get_default_resource(); // Points to `pool_mr`
+rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource(); // Points to `cuda_memory_resource`
+// Construct a resource that uses a coalescing best-fit pool allocator
+rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>> pool_mr{mr}; 
+rmm::mr::set_current_device_resource(&pool_mr); // Updates the current device resource pointer to `pool_mr`
+rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource(); // Points to `pool_mr`
+```
+
+#### Multiple Devices
+
+A `device_memory_resource` should only be used when the active CUDA device is the same device
+that was active when the `device_memory_resource` was created. Otherwise behavior is undefined.
+ 
+Creating a `device_memory_resource` for each device requires care to set the current device before
+creating each resource, and to maintain the lifetime of the resources as long as they are set as
+per-device resources. Here is an example loop that creates `unique_ptr`s to `pool_memory_resource`
+objects for each device and sets them as the per-device resource for that device.
+
+```c++ 
+std::vector<unique_ptr<pool_memory_resource>> per_device_pools;
+for(int i = 0; i < N; ++i) {
+    cudaSetDevice(i); // set device i before creating MR
+    // Use a vector of unique_ptr to maintain the lifetime of the MRs
+    per_device_pools.push_back(std::make_unique<pool_memory_resource>());
+    // Set the per-device resource for device i
+    set_per_device_resource(cuda_device_id{i}, &per_device_pools.back());
+}
 ```
 
 ## Device Data Structures
@@ -351,26 +392,31 @@ array([1., 2., 3.])
 
 ### MemoryResources
 
-MemoryResources are used to configure how device memory allocations are made by RMM.
+MemoryResources are used to configure how device memory allocations are made by
+RMM.
 
 By default, i.e., if you don't set a MemoryResource explicitly, RMM
 uses the `CudaMemoryResource`, which uses `cudaMalloc` for
 allocating device memory.
 
-The `rmm.mr.set_default_resource()` function can be used to set a
-different MemoryResource.  For example, enabling the
-`ManagedMemoryResource` tells RMM to use `cudaMallocManaged` instead
-of `cudaMalloc` for allocating memory:
+`rmm.reinitialize()` provides an easy way to initialize RMM with specific
+memory resource options across multiple devices. See `help(rmm.reinitialize) for 
+full details.
+
+For lower-level control, `rmm.mr.set_current_device_resource()` function can be
+used to set a different MemoryResource for the current CUDA device.  For
+example, enabling the `ManagedMemoryResource` tells RMM to use
+`cudaMallocManaged` instead of `cudaMalloc` for allocating memory:
 
 ```python
 >>> import rmm
->>> rmm.mr.set_default_resource(rmm.mr.ManagedMemoryResource())
+>>> rmm.mr.set_current_device_resource(rmm.mr.ManagedMemoryResource())
 ```
 
-> :warning: The default resource must be set **before** allocating any
-> device memory.  Setting or changing the default resource after
-> device allocations have been made can lead to unexpected behaviour
-> or crashes.
+> :warning: The default resource must be set for any device **before**
+> allocating any device memory on that device.  Setting or changing the
+> resource after device allocations have been made can lead to unexpected
+> behaviour or crashes. See [Multiple Devices](#multiple-devices)
 
 As another example, `PoolMemoryResource` allows you to allocate a
 large "pool" of device memory up-front. Subsequent allocations will
@@ -386,17 +432,16 @@ of 1 GiB and a maximum size of 4 GiB. The pool uses
 ...     initial_pool_size=2**30,
 ...     maximum_pool_size=2**32
 ... )
->>> rmm.mr.set_default_resource(pool)
+>>> rmm.mr.set_current_device_resource(pool)
 ```
-
 Other MemoryResources include:
 
 * `FixedSizeMemoryResource` for allocating fixed blocks of memory
-* `HybridMemoryResource` for enabling separate MemoryResources for
-  small and large memory allocations
+* `BinningMemoryResource` for allocating blocks within specified "bin" sizes from different memory 
+resources
 
-MemoryResources are highly configurable and can be composed together
-in different ways.  See `help(rmm.mr)` for more information.
+MemoryResources are highly configurable and can be composed together in different ways. 
+See `help(rmm.mr)` for more information.
 
 ### Using RMM with CuPy
 

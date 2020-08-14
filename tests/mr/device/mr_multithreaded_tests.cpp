@@ -39,9 +39,7 @@ INSTANTIATE_TEST_CASE_P(MultiThreadResourceTests,
                         ::testing::Values(mr_factory{"CUDA", &make_cuda},
                                           mr_factory{"Managed", &make_managed},
                                           mr_factory{"Pool", &make_pool},
-                                          mr_factory{"CNMEM", &make_cnmem},
-                                          mr_factory{"CNMEM_Managed", &make_cnmem_managed},
-                                          mr_factory{"Hybrid", &make_hybrid}),
+                                          mr_factory{"Binning", &make_binning}),
                         [](auto const& info) { return info.param.name; });
 
 template <typename Task, typename... Arguments>
@@ -87,7 +85,7 @@ TEST_P(mr_test_mt, SetDefaultResource_mt)
   // single thread changes default resource, then multiple threads use it
 
   rmm::mr::device_memory_resource* old{nullptr};
-  EXPECT_NO_THROW(old = rmm::mr::set_default_resource(this->mr.get()));
+  EXPECT_NO_THROW(old = rmm::mr::set_current_device_resource(this->mr.get()));
   EXPECT_NE(nullptr, old);
 
   spawn([mr = this->mr.get()]() {
@@ -96,8 +94,8 @@ TEST_P(mr_test_mt, SetDefaultResource_mt)
   });
 
   // setting default resource w/ nullptr should reset to initial
-  EXPECT_NO_THROW(rmm::mr::set_default_resource(nullptr));
-  EXPECT_TRUE(old->is_equal(*rmm::mr::get_default_resource()));
+  EXPECT_NO_THROW(rmm::mr::set_current_device_resource(nullptr));
+  EXPECT_TRUE(old->is_equal(*rmm::mr::get_current_device_resource()));
 }
 
 TEST_P(mr_test_mt, SetCurrentDeviceResource_mt)
@@ -234,10 +232,7 @@ TEST_P(mr_test_mt, AllocFreeDifferentThreadsSameStream)
   test_allocate_free_different_threads(this->mr.get(), this->stream, this->stream);
 }
 
-struct mr_test_different_stream_mt : public mr_test_mt {
-};
-
-TEST_P(mr_test_different_stream_mt, AllocFreeDifferentThreadsDifferentStream)
+TEST_P(mr_test_mt, AllocFreeDifferentThreadsDifferentStream)
 {
   cudaStream_t streamB{};
   EXPECT_EQ(cudaSuccess, cudaStreamCreate(&streamB));
@@ -245,15 +240,6 @@ TEST_P(mr_test_different_stream_mt, AllocFreeDifferentThreadsDifferentStream)
   EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(streamB));
   EXPECT_EQ(cudaSuccess, cudaStreamDestroy(streamB));
 }
-
-// CNMeM doesn't allow allocating/freeing on different streams
-INSTANTIATE_TEST_CASE_P(MultiThreadResourceTestsDifferentStreams,
-                        mr_test_different_stream_mt,
-                        ::testing::Values(mr_factory{"CUDA", &make_cuda},
-                                          mr_factory{"Managed", &make_managed},
-                                          mr_factory{"Pool", &make_pool},
-                                          mr_factory{"Hybrid", &make_hybrid}),
-                        [](auto const& info) { return info.param.name; });
 
 }  // namespace
 }  // namespace test

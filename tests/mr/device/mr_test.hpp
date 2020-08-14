@@ -18,16 +18,14 @@
 
 #include <gtest/gtest.h>
 
-#include <rmm/mr/device/cnmem_managed_memory_resource.hpp>
-#include <rmm/mr/device/cnmem_memory_resource.hpp>
+#include <rmm/mr/device/binning_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
-#include <rmm/mr/device/fixed_multisize_memory_resource.hpp>
 #include <rmm/mr/device/fixed_size_memory_resource.hpp>
-#include <rmm/mr/device/hybrid_memory_resource.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
 #include <rmm/mr/device/owning_wrapper.hpp>
+#include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
 
 #include <cuda_runtime_api.h>
@@ -85,6 +83,17 @@ inline void test_get_default_resource()
   EXPECT_TRUE(is_aligned(p));
   EXPECT_TRUE(is_device_memory(p));
   EXPECT_NO_THROW(rmm::mr::get_default_resource()->deallocate(p, 1_MiB));
+}
+
+inline void test_get_current_device_resource()
+{
+  EXPECT_NE(nullptr, rmm::mr::get_current_device_resource());
+  void* p{nullptr};
+  EXPECT_NO_THROW(p = rmm::mr::get_current_device_resource()->allocate(1_MiB));
+  EXPECT_NE(nullptr, p);
+  EXPECT_TRUE(is_aligned(p));
+  EXPECT_TRUE(is_device_memory(p));
+  EXPECT_NO_THROW(rmm::mr::get_current_device_resource()->deallocate(p, 1_MiB));
 }
 
 inline void test_allocate(rmm::mr::device_memory_resource* mr,
@@ -229,13 +238,6 @@ inline auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>
 
 inline auto make_managed() { return std::make_shared<rmm::mr::managed_memory_resource>(); }
 
-inline auto make_cnmem() { return std::make_shared<rmm::mr::cnmem_memory_resource>(); }
-
-inline auto make_cnmem_managed()
-{
-  return std::make_shared<rmm::mr::cnmem_managed_memory_resource>();
-}
-
 inline auto make_pool()
 {
   return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_cuda());
@@ -246,17 +248,13 @@ inline auto make_fixed_size()
   return rmm::mr::make_owning_wrapper<rmm::mr::fixed_size_memory_resource>(make_cuda());
 }
 
-template <typename Upstream>
-inline auto make_multisize(std::shared_ptr<Upstream> upstream)
-{
-  return rmm::mr::make_owning_wrapper<rmm::mr::fixed_multisize_memory_resource>(upstream);
-}
-
-inline auto make_hybrid()
+inline auto make_binning()
 {
   auto pool = make_pool();
-  return rmm::mr::make_owning_wrapper<rmm::mr::hybrid_memory_resource>(
-    std::make_tuple(make_multisize(pool), pool));
+  // Add a binning_memory_resource with fixed-size bins of sizes 256, 512, 1024, 2048 and 4096KiB
+  // Larger allocations will use the pool resource
+  auto mr = rmm::mr::make_owning_wrapper<rmm::mr::binning_memory_resource>(pool, 18, 22);
+  return mr;
 }
 
 }  // namespace test

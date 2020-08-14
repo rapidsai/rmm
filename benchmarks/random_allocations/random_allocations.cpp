@@ -16,11 +16,9 @@
 
 #include <benchmarks/utilities/cxxopts.hpp>
 
-#include <rmm/mr/device/cnmem_memory_resource.hpp>
+#include <rmm/mr/device/binning_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
-#include <rmm/mr/device/fixed_multisize_memory_resource.hpp>
-#include <rmm/mr/device/hybrid_memory_resource.hpp>
 #include <rmm/mr/device/owning_wrapper.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
 
@@ -34,7 +32,6 @@
 #define VERBOSE 0
 
 namespace {
-
 constexpr std::size_t size_mb{1 << 20};
 
 struct allocation {
@@ -160,24 +157,18 @@ void uniform_random_allocations(rmm::mr::device_memory_resource& mr,
 /// MR factory functions
 inline auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>(); }
 
-inline auto make_cnmem() { return std::make_shared<rmm::mr::cnmem_memory_resource>(); }
-
 inline auto make_pool()
 {
   return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_cuda());
 }
 
-template <typename Upstream>
-inline auto make_multisize(std::shared_ptr<Upstream> upstream)
-{
-  return rmm::mr::make_owning_wrapper<rmm::mr::fixed_multisize_memory_resource>(upstream);
-}
-
-inline auto make_hybrid()
+inline auto make_binning()
 {
   auto pool = make_pool();
-  return rmm::mr::make_owning_wrapper<rmm::mr::hybrid_memory_resource>(
-    std::make_tuple(make_multisize(pool), pool));
+  // Add a binning_memory_resource with fixed-size bins of sizes 256, 512, 1024, 2048 and 4096KiB
+  // Larger allocations will use the pool resource
+  auto mr = rmm::mr::make_owning_wrapper<rmm::mr::binning_memory_resource>(pool, 18, 22);
+  return mr;
 }
 
 using MRFactoryFunc = std::function<std::shared_ptr<rmm::mr::device_memory_resource>()>;
@@ -239,12 +230,10 @@ void declare_benchmark(std::string name)
 {
   if (name == "cuda")
     BENCHMARK_CAPTURE(BM_RandomAllocations, cuda_mr, &make_cuda)->Apply(benchmark_range);
-  else if (name == "hybrid")
-    BENCHMARK_CAPTURE(BM_RandomAllocations, hybrid_mr, &make_hybrid)->Apply(benchmark_range);
+  else if (name == "binning")
+    BENCHMARK_CAPTURE(BM_RandomAllocations, binning_mr, &make_binning)->Apply(benchmark_range);
   else if (name == "pool")
     BENCHMARK_CAPTURE(BM_RandomAllocations, pool_mr, &make_pool)->Apply(benchmark_range);
-  else if (name == "cnmem")
-    BENCHMARK_CAPTURE(BM_RandomAllocations, cnmem_mr, &make_cnmem)->Apply(benchmark_range);
   else
     std::cout << "Error: invalid memory_resource name: " << name << "\n";
 }
@@ -289,10 +278,8 @@ int main(int argc, char** argv)
   max_size        = args["maxsize"].as<int>();
 
   if (args.count("profile") > 0) {
-    std::map<std::string, MRFactoryFunc> const funcs({{"cnmem", &make_cnmem},
-                                                      {"cuda", &make_cuda},
-                                                      {"hybrid", &make_hybrid},
-                                                      {"pool", &make_pool}});
+    std::map<std::string, MRFactoryFunc> const funcs(
+      {{"binning", &make_binning}, {"cuda", &make_cuda}, {"pool", &make_pool}});
     auto resource = args["resource"].as<std::string>();
 
     std::cout << "Profiling " << resource << " with " << num_allocations << " allocations of max "
@@ -313,7 +300,7 @@ int main(int argc, char** argv)
       std::string mr_name = args["resource"].as<std::string>();
       declare_benchmark(mr_name);
     } else {
-      std::array<std::string, 4> mrs{"pool", "hybrid", "cnmem", "cuda"};
+      std::array<std::string, 4> mrs{"pool", "binning", "cuda"};
       std::for_each(std::cbegin(mrs), std::cend(mrs), [](auto const& s) { declare_benchmark(s); });
     }
     ::benchmark::RunSpecifiedBenchmarks();
