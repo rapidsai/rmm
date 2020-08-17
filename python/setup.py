@@ -11,8 +11,6 @@ from setuptools.extension import Extension
 
 import versioneer
 
-cython_lib = glob.glob("rmm/_lib/*.pyx") + glob.glob("rmm/_cuda/*.pyx")
-
 install_requires = ["numba", "cython"]
 
 cython_tests = glob.glob("rmm/tests/*.pyx")
@@ -55,7 +53,31 @@ extensions = cythonize(
     [
         Extension(
             "*",
-            sources=cython_lib,
+            sources=["rmm/_lib/*.pyx"],
+            include_dirs=include_dirs,
+            library_dirs=library_dirs,
+            runtime_library_dirs=[
+                cuda_lib_dir,
+                os.path.join(os.sys.prefix, "lib"),
+            ],
+            libraries=["cuda", "rmm"],
+            language="c++",
+            extra_compile_args=["-std=c++14"],
+        )
+    ],
+    nthreads=nthreads,
+    compiler_directives=dict(
+        profile=False, language_level=3, embedsignature=True,
+    ),
+)
+
+
+# cuda:
+extensions += cythonize(
+    [
+        Extension(
+            "*",
+            sources=["rmm/_cuda/*.pyx"],
             include_dirs=include_dirs,
             library_dirs=library_dirs,
             runtime_library_dirs=[
