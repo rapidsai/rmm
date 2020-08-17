@@ -9,12 +9,7 @@ from libcpp.cast cimport dynamic_cast
 from libcpp.memory cimport make_shared, make_unique, shared_ptr, unique_ptr
 from libcpp.string cimport string
 
-from rmm._cuda.gpu import (
-    CUDARuntimeError,
-    getDevice,
-    setDevice,
-    cudaError,
-)
+from rmm._cuda.gpu import CUDARuntimeError, cudaError, getDevice, setDevice
 
 
 cdef class CudaMemoryResource(MemoryResource):

@@ -18,11 +18,7 @@ from cpython.bytes cimport PyBytes_AS_STRING, PyBytes_FromStringAndSize
 from libc.stdint cimport uintptr_t
 from libcpp.memory cimport unique_ptr
 
-from rmm._cuda.gpu cimport (
-    cudaError_t,
-    cudaError
-)
-
+from rmm._cuda.gpu cimport cudaError, cudaError_t
 from rmm._lib.lib cimport (
     cudaMemcpyDeviceToDevice,
     cudaMemcpyDeviceToHost,
