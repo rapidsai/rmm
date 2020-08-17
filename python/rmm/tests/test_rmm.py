@@ -2,7 +2,9 @@
 
 import os
 import sys
+import tempfile
 from itertools import product
+
 
 import numpy as np
 import pytest
@@ -78,18 +80,24 @@ def test_rmm_modes(dtype, nelem, alloc, managed, pool):
 @pytest.mark.parametrize("nelem", _nelems)
 @pytest.mark.parametrize("alloc", _allocs)
 def test_rmm_csv_log(dtype, nelem, alloc):
-    try:
-        filename = "/tmp/test_rmm_csv_log.csv"
-        rmm.reinitialize(logging=True, log_file_name=filename)
+    suffix = ".csv"
+
+    with tempfile.NamedTemporaryFile(suffix=suffix) as fp:
+        base_name = fp.name
+        print(base_name)
+        rmm.reinitialize(logging=True, log_file_name=base_name)
         array_tester(dtype, nelem, alloc)
         rmm.mr._flush_logs()
+
         # Need to open separately because the device ID is appended to filename
-        filename = "/tmp/test_rmm_csv_log.dev0.csv"
-        with open(filename, "rb") as f:
-            csv = f.read()
-            assert csv.find(b"Time,Action,Pointer,Size,Stream") >= 0
-    finally:
-        os.remove(filename)
+        fname = base_name[:-len(suffix)] + ".dev0" + suffix
+        print(fname)
+        try:
+            with open(fname, "rb") as f:
+                csv = f.read()
+                assert csv.find(b"Time,Action,Pointer,Size,Stream") >= 0
+        finally:
+            os.remove(fname)
     rmm.reinitialize()
 
 
