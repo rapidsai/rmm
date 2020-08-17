@@ -5,7 +5,6 @@ import sys
 import tempfile
 from itertools import product
 
-
 import numpy as np
 import pytest
 from numba import cuda
@@ -84,14 +83,12 @@ def test_rmm_csv_log(dtype, nelem, alloc):
 
     with tempfile.NamedTemporaryFile(suffix=suffix) as fp:
         base_name = fp.name
-        print(base_name)
         rmm.reinitialize(logging=True, log_file_name=base_name)
         array_tester(dtype, nelem, alloc)
         rmm.mr._flush_logs()
 
         # Need to open separately because the device ID is appended to filename
         fname = base_name[:-len(suffix)] + ".dev0" + suffix
-        print(fname)
         try:
             with open(fname, "rb") as f:
                 csv = f.read()
