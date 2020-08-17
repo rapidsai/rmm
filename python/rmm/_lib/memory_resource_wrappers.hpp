@@ -26,6 +26,22 @@ class device_memory_resource_wrapper {
   virtual std::shared_ptr<rmm::mr::device_memory_resource> get_mr() = 0;
 };
 
+class default_memory_resource_wrapper : public device_memory_resource_wrapper {
+ public:
+  default_memory_resource_wrapper(int device)
+    : mr(rmm::mr::get_per_device_resource(rmm::cuda_device_id(device)))
+  {
+  }
+
+  std::shared_ptr<rmm::mr::device_memory_resource> get_mr()
+  {
+    return std::shared_ptr<rmm::mr::device_memory_resource>(mr, [](auto* p) {});
+  }
+
+ private:
+  rmm::mr::device_memory_resource* mr;
+};
+
 class cuda_memory_resource_wrapper : public device_memory_resource_wrapper {
  public:
   cuda_memory_resource_wrapper() : mr(std::make_shared<rmm::mr::cuda_memory_resource>()) {}
@@ -48,9 +64,12 @@ class managed_memory_resource_wrapper : public device_memory_resource_wrapper {
 
 class pool_memory_resource_wrapper : public device_memory_resource_wrapper {
  public:
-  pool_memory_resource_wrapper(std::shared_ptr<device_memory_resource_wrapper> upstream_mr,
-                               std::size_t initial_pool_size,
-                               std::size_t maximum_pool_size)
+  pool_memory_resource_wrapper(
+    std::shared_ptr<device_memory_resource_wrapper> upstream_mr,
+    std::size_t initial_pool_size =
+      rmm::mr::pool_memory_resource<rmm::mr::device_memory_resource>::default_initial_size,
+    std::size_t maximum_pool_size =
+      rmm::mr::pool_memory_resource<rmm::mr::device_memory_resource>::default_maximum_size)
     : upstream_mr(upstream_mr),
       mr(std::make_shared<rmm::mr::pool_memory_resource<rmm::mr::device_memory_resource>>(
         upstream_mr->get_mr().get(), initial_pool_size, maximum_pool_size))

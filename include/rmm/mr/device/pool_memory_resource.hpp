@@ -37,14 +37,12 @@
 namespace rmm {
 namespace mr {
 namespace detail {
-/// Gets the total available device memory in bytes for the current device
-inline std::size_t available_device_memory()
+/// Gets the available and total device memory in bytes for the current device
+inline std::pair<std::size_t, std::size_t> available_device_memory()
 {
-  int device{0};
-  RMM_CUDA_TRY(cudaGetDevice(&device));
-  cudaDeviceProp props;
-  RMM_CUDA_TRY(cudaGetDeviceProperties(&props, device));
-  return props.totalGlobalMem;
+  std::size_t free{}, total{};
+  RMM_CUDA_TRY(cudaMemGetInfo(&free, &total));
+  return {free, total};
 }
 }  // namespace detail
 
@@ -62,12 +60,12 @@ template <typename Upstream>
 class pool_memory_resource final
   : public detail::stream_ordered_memory_resource<pool_memory_resource<Upstream>,
                                                   detail::coalescing_free_list> {
+ public:
   static constexpr size_t default_initial_size = ~0;
   static constexpr size_t default_maximum_size = ~0;
   // TODO use rmm-level def of this.
   static constexpr size_t allocation_alignment = 256;
 
- public:
   friend class detail::stream_ordered_memory_resource<pool_memory_resource<Upstream>,
                                                       detail::coalescing_free_list>;
 
@@ -89,15 +87,15 @@ class pool_memory_resource final
     : upstream_mr_{[upstream_mr]() {
         RMM_EXPECTS(nullptr != upstream_mr, "Unexpected null upstream pointer.");
         return upstream_mr;
-      }()},
-      current_pool_size_{rmm::detail::align_up(
-        ((initial_pool_size == default_initial_size) ? detail::available_device_memory() / 2
-                                                     : initial_pool_size),
-        allocation_alignment)},
-      maximum_pool_size_{(maximum_pool_size == default_maximum_size)
-                           ? detail::available_device_memory()
-                           : maximum_pool_size}
+      }()}
   {
+    std::size_t free{}, total{};
+    std::tie(free, total) = detail::available_device_memory();
+    initial_pool_size =
+      (initial_pool_size == default_initial_size) ? std::min(free, total / 2) : initial_pool_size;
+    current_pool_size_ = rmm::detail::align_up(initial_pool_size, allocation_alignment);
+    maximum_pool_size_ = (maximum_pool_size == default_maximum_size) ? free : maximum_pool_size;
+
     RMM_EXPECTS(pool_size() <= maximum_pool_size_,
                 "Initial pool size exceeds the maximum pool size!");
     this->insert_block(block_from_upstream(pool_size(), cudaStreamLegacy), cudaStreamLegacy);
@@ -247,7 +245,7 @@ class pool_memory_resource final
     if (aligned_size <= remaining / 2) {
       return remaining / 2;
     } else if (aligned_size <= remaining) {
-      return remaining;
+      return aligned_size;
     } else {
       return 0;
     }
