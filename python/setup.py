@@ -52,6 +52,22 @@ cuda_include_dir = os.path.join(CUDA_HOME, "include")
 cuda_lib_dir = os.path.join(CUDA_HOME, "lib64")
 CUDA_VERSION = get_cuda_version_from_header(cuda_include_dir)
 
+# Preprocessor step to specify correct pxd file with
+# valid symbols for specific version of CUDA.
+
+cwd = os.getcwd()
+if CUDA_VERSION == "10.1":
+    shutil.copyfile(
+        os.path.join(cwd, "rmm/_cuda/gpu_10.1.pxi"),
+        os.path.join(cwd, "rmm/_cuda/gpu.pxd"),
+    )
+else:
+    shutil.copyfile(
+        os.path.join(cwd, "rmm/_cuda/gpu_10.1+.pxi"),
+        os.path.join(cwd, "rmm/_cuda/gpu.pxd"),
+    )
+
+
 try:
     nthreads = int(os.environ.get("PARALLEL_LEVEL", "0") or "0")
 except Exception:
