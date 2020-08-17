@@ -333,8 +333,7 @@ cpdef void _initialize(
 
     # Save the current device so we can reset it
     try:
-        if cuda_initialization:
-            original_device = get_current_device()
+        original_device = get_current_device()
     except CUDARuntimeError as e:
         if e.status == cudaError.cudaErrorNoDevice:
             warnings.warn(e.msg)
