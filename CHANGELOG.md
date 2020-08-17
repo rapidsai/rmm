@@ -25,6 +25,7 @@
           `fixed_multisize_memory_resource`).
 - PR #458 Add `get/set_per_device_resource` to better support multi-GPU per process applications
 - PR #466 Deprecate CNMeM.
+- PR #489 Move `cudf._cuda` into `rmm._cuda`
 
 ## Improvements
 
