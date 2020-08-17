@@ -1,7 +1,6 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 import os
 import sys
-import tempfile
 from itertools import product
 
 import numpy as np
@@ -77,23 +76,22 @@ def test_rmm_modes(dtype, nelem, alloc, managed, pool):
 @pytest.mark.parametrize("dtype", _dtypes)
 @pytest.mark.parametrize("nelem", _nelems)
 @pytest.mark.parametrize("alloc", _allocs)
-def test_rmm_csv_log(dtype, nelem, alloc):
+def test_rmm_csv_log(dtype, nelem, alloc, tmpdir):
     suffix = ".csv"
 
-    with tempfile.NamedTemporaryFile(suffix=suffix) as fp:
-        base_name = fp.name
-        rmm.reinitialize(logging=True, log_file_name=base_name)
-        array_tester(dtype, nelem, alloc)
-        rmm.mr._flush_logs()
+    base_name = str(tmpdir.join("rmm_log.csv"))
+    rmm.reinitialize(logging=True, log_file_name=base_name)
+    array_tester(dtype, nelem, alloc)
+    rmm.mr._flush_logs()
 
-        # Need to open separately because the device ID is appended to filename
-        fname = base_name[: -len(suffix)] + ".dev0" + suffix
-        try:
-            with open(fname, "rb") as f:
-                csv = f.read()
-                assert csv.find(b"Time,Action,Pointer,Size,Stream") >= 0
-        finally:
-            os.remove(fname)
+    # Need to open separately because the device ID is appended to filename
+    fname = base_name[: -len(suffix)] + ".dev0" + suffix
+    try:
+        with open(fname, "rb") as f:
+            csv = f.read()
+            assert csv.find(b"Time,Action,Pointer,Size,Stream") >= 0
+    finally:
+        os.remove(fname)
     rmm.reinitialize()
 
 
