@@ -18,14 +18,17 @@ from cpython.bytes cimport PyBytes_AS_STRING, PyBytes_FromStringAndSize
 from libc.stdint cimport uintptr_t
 from libcpp.memory cimport unique_ptr
 
-from rmm._lib.lib cimport (
+from rmm._cuda.gpu cimport (
     cudaError_t,
+    cudaError
+)
+
+from rmm._lib.lib cimport (
     cudaMemcpyDeviceToDevice,
     cudaMemcpyDeviceToHost,
     cudaMemcpyHostToDevice,
     cudaStream_t,
     cudaStreamSynchronize,
-    cudaSuccess,
 )
 
 
@@ -73,7 +76,7 @@ cdef class DeviceBuffer:
 
                 if c_stream == NULL:
                     err = cudaStreamSynchronize(c_stream)
-                    if err != cudaSuccess:
+                    if err != cudaError.cudaSuccess:
                         with gil:
                             raise RuntimeError(
                                 f"Stream sync failed with error: {err}"
@@ -360,13 +363,13 @@ cpdef void copy_ptr_to_host(uintptr_t db,
 
     err = cudaMemcpyAsync(<void*>&hb[0], <const void*>db, len(hb),
                           cudaMemcpyDeviceToHost, <cudaStream_t>stream)
-    if err != cudaSuccess:
+    if err != cudaError.cudaSuccess:
         with gil:
             raise RuntimeError(f"Memcpy failed with error: {err}")
 
     if stream == 0:
         err = cudaStreamSynchronize(<cudaStream_t>stream)
-        if err != cudaSuccess:
+        if err != cudaError.cudaSuccess:
             with gil:
                 raise RuntimeError(f"Stream sync failed with error: {err}")
 
@@ -412,13 +415,13 @@ cpdef void copy_host_to_ptr(const unsigned char[::1] hb,
 
     err = cudaMemcpyAsync(<void*>db, <const void*>&hb[0], len(hb),
                           cudaMemcpyHostToDevice, <cudaStream_t>stream)
-    if err != cudaSuccess:
+    if err != cudaError.cudaSuccess:
         with gil:
             raise RuntimeError(f"Memcpy failed with error: {err}")
 
     if stream == 0:
         err = cudaStreamSynchronize(<cudaStream_t>stream)
-        if err != cudaSuccess:
+        if err != cudaError.cudaSuccess:
             with gil:
                 raise RuntimeError(f"Stream sync failed with error: {err}")
 
@@ -458,12 +461,12 @@ cpdef void copy_device_to_ptr(uintptr_t d_src,
 
     err = cudaMemcpyAsync(<void*>d_dst, <const void*>d_src, count,
                           cudaMemcpyDeviceToDevice, <cudaStream_t>stream)
-    if err != cudaSuccess:
+    if err != cudaError.cudaSuccess:
         with gil:
             raise RuntimeError(f"Memcpy failed with error: {err}")
 
     if stream == 0:
         err = cudaStreamSynchronize(<cudaStream_t>stream)
-        if err != cudaSuccess:
+        if err != cudaError.cudaSuccess:
             with gil:
                 raise RuntimeError(f"Stream sync failed with error: {err}")

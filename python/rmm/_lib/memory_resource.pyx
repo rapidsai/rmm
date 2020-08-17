@@ -9,12 +9,10 @@ from libcpp.cast cimport dynamic_cast
 from libcpp.memory cimport make_shared, make_unique, shared_ptr, unique_ptr
 from libcpp.string cimport string
 
-from rmm._lib.lib cimport cudaGetDevice, cudaSetDevice, cudaSuccess
-
 from rmm._cuda.gpu import (
     CUDARuntimeError,
-    get_current_device,
-    set_current_device,
+    getDevice,
+    setDevice,
     cudaError,
 )
 
@@ -249,7 +247,7 @@ cdef class LoggingResourceAdaptor(MemoryResource):
                 )
         # Append the device ID before the file extension
         log_file_name = _append_id(
-            log_file_name.decode(), get_current_device()
+            log_file_name.decode(), getDevice()
         )
 
         _log_file_name = log_file_name
@@ -333,7 +331,7 @@ cpdef void _initialize(
 
     # Save the current device so we can reset it
     try:
-        original_device = get_current_device()
+        original_device = getDevice()
     except CUDARuntimeError as e:
         if e.status == cudaError.cudaErrorNoDevice:
             warnings.warn(e.msg)
@@ -351,7 +349,7 @@ cpdef void _initialize(
 
         # create a memory resource per specified device
         for device in devices:
-            set_current_device(device)
+            setDevice(device)
 
             if logging:
                 mr = LoggingResourceAdaptor(typ(*args), log_file_name.encode())
@@ -361,7 +359,7 @@ cpdef void _initialize(
             _set_per_device_resource(device, mr)
 
         # reset CUDA device to original
-        set_current_device(original_device)
+        setDevice(original_device)
 
 
 cpdef get_per_device_resource(int device):
@@ -408,7 +406,7 @@ cpdef set_current_device_resource(MemoryResource mr):
         The memory resource to set. Must have been created while the current
         device is the active CUDA device.
     """
-    _set_per_device_resource(get_current_device(), mr)
+    _set_per_device_resource(getDevice(), mr)
 
 
 cpdef get_per_device_resource_type(int device):
@@ -432,7 +430,7 @@ cpdef get_current_device_resource():
     If the returned memory resource is used when a different device is the
     active CUDA device, behavior is undefined.
     """
-    return get_per_device_resource(get_current_device())
+    return get_per_device_resource(getDevice())
 
 
 cpdef get_current_device_resource_type():

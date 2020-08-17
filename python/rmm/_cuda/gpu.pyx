@@ -76,7 +76,7 @@ def driverGetVersion():
     return version
 
 
-def get_current_device():
+def getDevice():
     """
     Get the current CUDA device
     """
@@ -87,7 +87,7 @@ def get_current_device():
     return current_device
 
 
-def set_current_device(int device):
+def setDevice(int device):
     """
     Set the current CUDA device
     Parameters
