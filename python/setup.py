@@ -1,6 +1,7 @@
 # Copyright (c) 2019-2020, NVIDIA CORPORATION.
 import glob
 import os
+import re
 import shutil
 import sysconfig
 from distutils.sysconfig import get_python_lib
@@ -12,6 +13,23 @@ from setuptools.extension import Extension
 import versioneer
 
 install_requires = ["numba", "cython"]
+
+
+def get_cuda_version_from_header(cuda_include_dir):
+
+    cuda_version = None
+
+    with open(os.path.join(cuda_include_dir, "cuda.h"), "r") as f:
+        for line in f.readlines():
+            if re.search(r"#define CUDA_VERSION ", line) is not None:
+                cuda_version = line
+                break
+
+    if cuda_version is None:
+        raise TypeError("CUDA_VERSION not found in cuda.h")
+    cuda_version = int(cuda_version.split()[2])
+    return "%d.%d" % (cuda_version // 1000, (cuda_version % 1000) // 10)
+
 
 cython_tests = glob.glob("rmm/tests/*.pyx")
 
@@ -32,6 +50,7 @@ if not os.path.isdir(CUDA_HOME):
 
 cuda_include_dir = os.path.join(CUDA_HOME, "include")
 cuda_lib_dir = os.path.join(CUDA_HOME, "lib64")
+CUDA_VERSION = get_cuda_version_from_header(cuda_include_dir)
 
 try:
     nthreads = int(os.environ.get("PARALLEL_LEVEL", "0") or "0")
@@ -69,6 +88,7 @@ extensions = cythonize(
     compiler_directives=dict(
         profile=False, language_level=3, embedsignature=True,
     ),
+    compile_time_env={"CUDA_VERSION": CUDA_VERSION},
 )
 
 
@@ -93,6 +113,7 @@ extensions += cythonize(
     compiler_directives=dict(
         profile=False, language_level=3, embedsignature=True,
     ),
+    compile_time_env={"CUDA_VERSION": CUDA_VERSION},
 )
 
 # tests:
@@ -116,6 +137,7 @@ extensions += cythonize(
     compiler_directives=dict(
         profile=True, language_level=3, embedsignature=True, binding=True
     ),
+    compile_time_env={"CUDA_VERSION": CUDA_VERSION},
 )
 
 setup(
