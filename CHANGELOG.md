@@ -70,6 +70,7 @@
 - PR #490 Allow importing RMM without initializing CUDA driver
 - PR #484 Fix device_uvector copy constructor compilation error and add test
 - PR #498 Max pool growth less greedy
+- PR #500 Use tempfile rather than hardcoded path in `test_rmm_csv_log`
 
 
 # RMM 0.14.0 (03 Jun 2020)
