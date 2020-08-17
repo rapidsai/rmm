@@ -1,5 +1,4 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
-
 import os
 import sys
 import tempfile
@@ -88,7 +87,7 @@ def test_rmm_csv_log(dtype, nelem, alloc):
         rmm.mr._flush_logs()
 
         # Need to open separately because the device ID is appended to filename
-        fname = base_name[:-len(suffix)] + ".dev0" + suffix
+        fname = base_name[: -len(suffix)] + ".dev0" + suffix
         try:
             with open(fname, "rb") as f:
                 csv = f.read()
