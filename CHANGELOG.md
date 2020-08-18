@@ -27,6 +27,7 @@
 - PR #466 Deprecate CNMeM.
 - PR #489 Move `cudf._cuda` into `rmm._cuda`
 - PR #504 Generate `gpu.pxd` based on cuda version as a preprocessor step
+- PR #506 Upload rmm package per version python-cuda combo
 
 ## Improvements
 
