@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-#Build rmm once per PYTHON-CUDA combo
+#Always upload RMM Python package
 export UPLOAD_RMM=1
 
 #Build librmm once per CUDA
