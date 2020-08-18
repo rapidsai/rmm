@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-#Build rmm once per PYTHON
-if [[ "$CUDA" == "10.1" ]]; then
+#Build rmm once per PYTHON-CUDA combo
+if [[ "$PYTHON" == "3.7" ]] && [[ "$CUDA" == "10.1" ]]; then
     export UPLOAD_RMM=1
 else
     export UPLOAD_RMM=0
