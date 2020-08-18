@@ -52,6 +52,26 @@ cuda_include_dir = os.path.join(CUDA_HOME, "include")
 cuda_lib_dir = os.path.join(CUDA_HOME, "lib64")
 CUDA_VERSION = get_cuda_version_from_header(cuda_include_dir)
 
+# Preprocessor step to specify correct pxd file with
+# valid symbols for specific version of CUDA.
+
+cwd = os.getcwd()
+preprocess_files = ["gpu.pxd"]
+supported_cuda_versions = {"10.1", "10.2", "11.0"}
+
+for file_p in preprocess_files:
+    pxi_file = ".".join(file_p.split(".")[:-1])
+    pxi_file = pxi_file + ".pxi"
+
+    if CUDA_VERSION in supported_cuda_versions:
+        shutil.copyfile(
+            os.path.join(cwd, "rmm/_cuda", CUDA_VERSION, pxi_file),
+            os.path.join(cwd, "rmm/_cuda", file_p),
+        )
+    else:
+        raise TypeError(f"{CUDA_VERSION} is not supported.")
+
+
 try:
     nthreads = int(os.environ.get("PARALLEL_LEVEL", "0") or "0")
 except Exception:
@@ -88,7 +108,6 @@ extensions = cythonize(
     compiler_directives=dict(
         profile=False, language_level=3, embedsignature=True,
     ),
-    compile_time_env={"CUDA_VERSION": CUDA_VERSION},
 )
 
 
@@ -113,7 +132,6 @@ extensions += cythonize(
     compiler_directives=dict(
         profile=False, language_level=3, embedsignature=True,
     ),
-    compile_time_env={"CUDA_VERSION": CUDA_VERSION},
 )
 
 # tests:
@@ -137,7 +155,6 @@ extensions += cythonize(
     compiler_directives=dict(
         profile=True, language_level=3, embedsignature=True, binding=True
     ),
-    compile_time_env={"CUDA_VERSION": CUDA_VERSION},
 )
 
 setup(

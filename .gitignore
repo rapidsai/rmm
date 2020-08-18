@@ -46,6 +46,9 @@ wheels/
 pip-log.txt
 pip-delete-this-directory.txt
 
+# Ignore dynamically generated .pxd files
+python/rmm/_cuda/gpu.pxd
+
 # Unit test / coverage reports
 htmlcov/
 .tox/
