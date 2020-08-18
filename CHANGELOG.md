@@ -26,6 +26,7 @@
 - PR #458 Add `get/set_per_device_resource` to better support multi-GPU per process applications
 - PR #466 Deprecate CNMeM.
 - PR #489 Move `cudf._cuda` into `rmm._cuda`
+- PR #504 Generate `gpu.pxd` based on cuda version as a preprocessor step
 
 ## Improvements
 
