@@ -108,7 +108,6 @@ extensions = cythonize(
     compiler_directives=dict(
         profile=False, language_level=3, embedsignature=True,
     ),
-    # compile_time_env={"CUDA_VERSION": CUDA_VERSION},
 )
 
 
@@ -133,7 +132,6 @@ extensions += cythonize(
     compiler_directives=dict(
         profile=False, language_level=3, embedsignature=True,
     ),
-    # compile_time_env={"CUDA_VERSION": CUDA_VERSION},
 )
 
 # tests:
@@ -157,7 +155,6 @@ extensions += cythonize(
     compiler_directives=dict(
         profile=True, language_level=3, embedsignature=True, binding=True
     ),
-    # compile_time_env={"CUDA_VERSION": CUDA_VERSION},
 )
 
 setup(
