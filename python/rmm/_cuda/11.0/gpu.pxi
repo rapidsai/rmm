@@ -1,4 +1,5 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
+# For CUDA 11.0
 
 cdef extern from "cuda.h" nogil:
     cpdef enum cudaDeviceAttr:
@@ -102,6 +103,8 @@ cdef extern from "cuda.h" nogil:
         cudaDevAttrHostRegisterSupported = 99
         cudaDevAttrPageableMemoryAccessUsesHostPageTables = 100
         cudaDevAttrDirectManagedMemAccessFromHost = 101
+        cudaDevAttrMaxBlocksPerMultiprocessor = 106
+        cudaDevAttrReservedSharedMemoryPerBlock = 111
 
     cpdef enum cudaError:
         cudaSuccess = 0
@@ -150,7 +153,7 @@ cdef extern from "cuda.h" nogil:
         cudaErrorInvalidDevice = 101
         cudaErrorStartupFailure = 127
         cudaErrorInvalidKernelImage = 200
-        cudaErrorDeviceUninitilialized = 201
+        cudaErrorDeviceUninitialized = 201
         cudaErrorMapBufferObjectFailed = 205
         cudaErrorUnmapBufferObjectFailed = 206
         cudaErrorArrayIsMapped = 207
@@ -210,6 +213,8 @@ cdef extern from "cuda.h" nogil:
         cudaErrorStreamCaptureImplicit = 906
         cudaErrorCapturedEvent = 907
         cudaErrorStreamCaptureWrongThread = 908
+        cudaErrorTimeout = 909
+        cudaErrorGraphExecUpdateFailure = 910
         cudaErrorUnknown = 999
         cudaErrorApiFailureBase = 10000
 
@@ -375,6 +380,10 @@ cdef extern from "cuda.h" nogil:
         int  unifiedAddressing
         cudaUUID_t  uuid
         int  warpSize
+        int  accessPolicyMaxWindowSize
+        int  maxBlocksPerMultiProcessor
+        int  persistingL2CacheMaxSize
+        size_t  reservedSharedMemPerBlock
 
     CUresult cuDeviceGetName(char* name, int length, int device)
 

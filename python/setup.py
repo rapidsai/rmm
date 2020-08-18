@@ -56,16 +56,20 @@ CUDA_VERSION = get_cuda_version_from_header(cuda_include_dir)
 # valid symbols for specific version of CUDA.
 
 cwd = os.getcwd()
-if CUDA_VERSION == "10.1":
-    shutil.copyfile(
-        os.path.join(cwd, "rmm/_cuda/gpu_10.1.pxi"),
-        os.path.join(cwd, "rmm/_cuda/gpu.pxd"),
-    )
-else:
-    shutil.copyfile(
-        os.path.join(cwd, "rmm/_cuda/gpu_10.1+.pxi"),
-        os.path.join(cwd, "rmm/_cuda/gpu.pxd"),
-    )
+preprocess_files = ["gpu.pxd"]
+supported_cuda_versions = {"10.1", "10.2", "11.0"}
+
+for file_p in preprocess_files:
+    pxi_file = ".".join(file_p.split(".")[:-1])
+    pxi_file = pxi_file + ".pxi"
+
+    if CUDA_VERSION in supported_cuda_versions:
+        shutil.copyfile(
+            os.path.join(cwd, "rmm/_cuda", CUDA_VERSION, pxi_file),
+            os.path.join(cwd, "rmm/_cuda", file_p),
+        )
+    else:
+        raise TypeError(f"{CUDA_VERSION} is not supported.")
 
 
 try:
@@ -104,7 +108,7 @@ extensions = cythonize(
     compiler_directives=dict(
         profile=False, language_level=3, embedsignature=True,
     ),
-    compile_time_env={"CUDA_VERSION": CUDA_VERSION},
+    # compile_time_env={"CUDA_VERSION": CUDA_VERSION},
 )
 
 
@@ -129,7 +133,7 @@ extensions += cythonize(
     compiler_directives=dict(
         profile=False, language_level=3, embedsignature=True,
     ),
-    compile_time_env={"CUDA_VERSION": CUDA_VERSION},
+    # compile_time_env={"CUDA_VERSION": CUDA_VERSION},
 )
 
 # tests:
@@ -153,7 +157,7 @@ extensions += cythonize(
     compiler_directives=dict(
         profile=True, language_level=3, embedsignature=True, binding=True
     ),
-    compile_time_env={"CUDA_VERSION": CUDA_VERSION},
+    # compile_time_env={"CUDA_VERSION": CUDA_VERSION},
 )
 
 setup(
