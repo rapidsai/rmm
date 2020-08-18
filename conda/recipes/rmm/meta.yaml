@@ -27,10 +27,12 @@ requirements:
     - setuptools
     - cython >=0.29,<0.30
     - spdlog >=1.4.2
+    - cudatoolkit {{ cuda_version }}.*
   run:
     - python
     - numba >=0.49
     - numpy
+    - {{ pin_compatible('cudatoolkit', max_pin='x.x') }}
 
 test:
   commands:
