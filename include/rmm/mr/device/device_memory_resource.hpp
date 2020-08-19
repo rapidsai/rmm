@@ -53,15 +53,15 @@ namespace mr {
  * The stream specified to deallocate() should be a stream on which it is valid to use the
  * deallocated memory immediately for another allocation. Typically this is the stream on which the
  * allocation was *last* used before the call to deallocate(). The passed stream may be used
- * internally by a memory_resource for managing available memory with minimal synchronization, and
- * it may also be synchronized at a later time, for example using a call to
+ * internally by a device_memory_resource for managing available memory with minimal
+ * synchronization, and it may also be synchronized at a later time, for example using a call to
  * `cudaStreamSynchronize()`.
  *
  * For this reason, it is Undefined Behavior to destroy a CUDA stream that is passed to
- * `device_memory_resource::deallocate`. If the stream on which the allocation was last used has
- * been destroyed before calling deallocate() or it is known that it will be destroyed, it is likely
- * better to synchronize the stream (before destroying it) and then pass a different stream to
- * deallocate() (e.g. the default stream).
+ * deallocate(). If the stream on which the allocation was last used has been destroyed before
+ * calling deallocate() or it is known that it will be destroyed, it is likely better to synchronize
+ * the stream (before destroying it) and then pass a different stream to deallocate() (e.g. the
+ * default stream).
  *
  * A device_memory_resource should only be used when the active CUDA device is the same device
  * that was active when the device_memory_resource was created. Otherwise behavior is undefined.
