@@ -15,6 +15,7 @@
  */
 
 #include <rmm/detail/error.hpp>
+#include <rmm/device_buffer.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
@@ -67,6 +68,17 @@ TEST(PoolTest, ForceGrowth)
 {
   Pool mr{rmm::mr::get_current_device_resource(), 0};
   EXPECT_NO_THROW(mr.allocate(1000));
+}
+
+TEST(PoolTest, DeletedStream)
+{
+  Pool mr{rmm::mr::get_current_device_resource(), 0};
+  cudaStream_t stream;
+  const int size = 10000;
+  cudaStreamCreate(&stream);
+  EXPECT_NO_THROW(rmm::device_buffer buff(size, stream, &mr));
+  EXPECT_EQ(cudaSuccess, cudaStreamDestroy(stream));
+  EXPECT_NO_THROW(mr.allocate(size));
 }
 
 }  // namespace
