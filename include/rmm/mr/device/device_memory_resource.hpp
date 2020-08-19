@@ -40,6 +40,29 @@ namespace mr {
  * in the base class. For example, the base class' `allocate` function may log every allocation, no
  * matter what derived class implementation is used.
  *
+ * The `allocate` and `deallocate` APIs and implementations provide stream-ordered memory
+ * allocation. This allows optimizations such as re-using memory deallocated on the same stream
+ * without the overhead of stream synchronization.
+ *
+ * A call to `allocate(bytes, stream_a)` (on any derived class) returns a pointer that is valid to
+ * use on `stream_a`. Using the memory on a different stream (say `stream_b`) is Undefined Behavior
+ * unless the two streams are first synchronized, for example by using
+ * `cudaStreamSynchronize(stream_a)` or by recording a CUDA event on `stream_a` and then
+ * calling `cudaStreamWaitEvent(stream_b, event)`.
+ *
+ * The stream specified to deallocate() should be a stream on which it is valid to use the
+ * deallocated memory immediately for another allocation. Typically this is the stream on which the
+ * allocation was *last* used before the call to deallocate(). The passed stream may be used
+ * internally by a memory_resource for managing available memory with minimal synchronization, and
+ * it may also be synchronized at a later time, for example using a call to
+ * `cudaStreamSynchronize()`.
+ *
+ * For this reason, it is Undefined Behavior to destroy a CUDA stream that is passed to
+ * `device_memory_resource::deallocate`. If the stream on which the allocation was last used has
+ * been destroyed before calling deallocate() or it is known that it will be destroyed, it is likely
+ * better to synchronize the stream (before destroying it) and then pass a different stream to
+ * deallocate() (e.g. the default stream).
+ *
  * A device_memory_resource should only be used when the active CUDA device is the same device
  * that was active when the device_memory_resource was created. Otherwise behavior is undefined.
  *

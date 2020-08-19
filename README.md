@@ -136,11 +136,37 @@ It has two key functions:
    - `p` *must* have been returned by a previous call to `allocate(bytes)`, otherwise behavior is undefined
 
 It is up to a derived class to provide implementations of these functions. 
-See [available resources](#availble-resources) for example `device_memory_resource` derived classes. 
+See [available resources](#available-resources) for example `device_memory_resource` derived classes. 
 
 Unlike `std::pmr::memory_resource`, `rmm::mr::device_memory_resource` does not allow specifying an alignment argument. 
 All allocations are required to be aligned to at least 256B. 
 Furthermore, `device_memory_resource` adds an additional `cudaStream_t` argument to allow specifying the stream on which to perform the (de)allocation.
+
+### Stream-ordered Memory Allocation
+
+`rmm::mr::device_memory_resource` is a base class that provides stream-ordered memory allocation.
+This allows optimizations such as re-using memory deallocated on the same stream without the overhead
+of synchronization.
+
+A call to `device_memory_resource::allocate(bytes, stream_a)` returns a pointer that is valid to use
+on `stream_a`. Using the memory on a different stream (say `stream_b`) is Undefined Behavior unless
+the two streams are first synchronized, for example by using `cudaStreamSynchronize(stream_a)` or by
+recording a CUDA event on `stream_a` and then calling `cudaStreamWaitEvent(stream_b, event)`.
+
+The stream specified to `device_memory_resource::deallocate` should be a stream on which it is valid
+to use the deallocated memory immediately for another allocation. Typically this is the stream
+on which the allocation was *last* used before the call to `deallocate`. The passed stream may be
+used internally by a memory_resource for managing available memory with minimal synchronization, and
+it may also be synchronized at a later time, for example using a call to `cudaStreamSynchronize()`.
+
+For this reason, it is Undefined Behavior to destroy a CUDA stream that is passed to 
+`device_memory_resource::deallocate`. If the stream on which the allocation was last used has been
+destroyed before calling `deallocate` or it is known that it will be destroyed, it is likely better
+to synchronize the stream (before destroying it) and then pass a different stream to `deallocate`
+(e.g. the default stream).
+
+Note that device memory data structures such as `rmm::device_buffer` and `rmm::device_uvector`
+follow these stream-ordered memory allocation semantics and rules.
 
 ### Available Resources
 
