@@ -64,7 +64,7 @@
 - PR #484 Fix device_uvector copy constructor compilation error and add test
 - PR #498 Max pool growth less greedy
 - PR #500 Use tempfile rather than hardcoded path in `test_rmm_csv_log`
-
+- PR #509 Fix missing : before __LINE__ in throw string of RMM_CUDA_TRY
 
 # RMM 0.14.0 (03 Jun 2020)
 
