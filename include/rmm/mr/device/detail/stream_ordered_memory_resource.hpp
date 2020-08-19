@@ -230,12 +230,10 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     bytes             = rmm::detail::align_up(bytes, allocation_alignment);
     auto const b      = this->underlying().free_block(p, bytes);
 
-    // TODO: cudaEventRecord has significant overhead on deallocations, however it could mean less
-    // synchronization. So we need to test in real non-PTDS applications that have multiple streams
-    // whether or not the overhead is worth it
-#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
+    // TODO: cudaEventRecord has significant overhead on deallocations. For the non-PTDS case
+    // we may be able to delay recording the event in some situations. But using events rather than
+    // streams allows stealing from deleted streams.
     RMM_ASSERT_CUDA_SUCCESS(cudaEventRecord(stream_event.event, stream));
-#endif
 
     stream_free_blocks_[stream_event].insert(b);
   }
@@ -356,14 +354,8 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
         if (b.is_valid()) {
           // Since we found a block associated with a different stream, we have to insert a wait
           // on the stream's associated event into the allocating stream.
-          // TODO: could eliminate this ifdef and have the same behavior for PTDS and non-PTDS
-          // But the cudaEventRecord() on every free_block reduces performance significantly
-#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
           RMM_CUDA_TRY(cudaStreamWaitEvent(stream_event.stream, blocks_event.event, 0));
 
-#else
-          RMM_CUDA_TRY(cudaStreamSynchronize(blocks_event.stream));
-#endif
           // Move all the blocks to the requesting stream, since it has waited on them
           stream_free_blocks_[stream_event].insert(std::move(blocks));
           stream_free_blocks_.erase(s);
