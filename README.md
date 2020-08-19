@@ -3,22 +3,29 @@
 [![Build Status](https://gpuci.gpuopenanalytics.com/job/rapidsai/job/gpuci/job/rmm/job/branches/job/rmm-branch-pipeline/badge/icon)](https://gpuci.gpuopenanalytics.com/job/rapidsai/job/gpuci/job/rmm/job/branches/job/rmm-branch-pipeline/)
 
 
-Achieving optimal performance in GPU-centric workflows frequently requires customizing how host and device memory are allocated. For example, using "pinned" host memory for asynchronous host <-> device memory transfers, or using a device memory pool sub-allocator to reduce the cost of dynamic device memory allocation. 
+Achieving optimal performance in GPU-centric workflows frequently requires customizing how host and
+device memory are allocated. For example, using "pinned" host memory for asynchronous
+host <-> device memory transfers, or using a device memory pool sub-allocator to reduce the cost of
+dynamic device memory allocation. 
 
 The goal of the RAPIDS Memory Manager (RMM) is to provide:
-- A common interface that allows customizing [device](#device_memory_resource) and [host](#host_memory_resource) memory allocation
+- A common interface that allows customizing [device](#device_memory_resource) and
+  [host](#host_memory_resource) memory allocation
 - A collection of [implementations](#available-resources) of the interface
 - A collection of [data structures](#data-structures) that use the interface for memory allocation
 
-For information on the interface RMM provides and how to use RMM in your C++ code, see [below](#using-rmm-in-c++).
+For information on the interface RMM provides and how to use RMM in your C++ code, see
+[below](#using-rmm-in-c++).
 
-**NOTE:** For the latest stable [README.md](https://github.com/rapidsai/rmm/blob/master/README.md) ensure you are on the `master` branch.
+**NOTE:** For the latest stable [README.md](https://github.com/rapidsai/rmm/blob/master/README.md)
+ensure you are on the `master` branch.
 
 ## Installation
 
 ### Conda
 
-RMM can be installed with conda ([miniconda](https://conda.io/miniconda.html), or the full [Anaconda distribution](https://www.anaconda.com/download)) from the `rapidsai` channel:
+RMM can be installed with conda ([miniconda](https://conda.io/miniconda.html), or the full
+[Anaconda distribution](https://www.anaconda.com/download)) from the `rapidsai` channel:
 
 ```bash
 # for CUDA 10.2
@@ -32,7 +39,8 @@ conda install -c nvidia -c rapidsai -c conda-forge -c defaults \
     rmm cudatoolkit=10.0
 ```
 
-We also provide [nightly conda packages](https://anaconda.org/rapidsai-nightly) built from the tip of our latest development branch.
+We also provide [nightly conda packages](https://anaconda.org/rapidsai-nightly) built from the HEAD
+of our latest development branch.
 
 Note: RMM is supported only on Linux, and with Python versions 3.6 or 3.7.
 
@@ -66,7 +74,8 @@ $ git clone --recurse-submodules https://github.com/rapidsai/rmm.git
 $ cd rmm
 ```
 
-Follow the instructions under "Create the conda development environment `cudf_dev`" in the [cuDF README](https://github.com/rapidsai/cudf#build-from-source).
+Follow the instructions under "Create the conda development environment `cudf_dev`" in the
+[cuDF README](https://github.com/rapidsai/cudf#build-from-source).
 
 - Create the conda development environment `cudf_dev`
 ```bash
@@ -76,7 +85,9 @@ $ conda env create --name cudf_dev --file conda/environments/dev_py35.yml
 $ source activate cudf_dev
 ```
 
-- Build and install `librmm` using cmake & make. CMake depends on the `nvcc` executable being on your path or defined in `$CUDACXX`.
+- Build and install `librmm` using cmake & make. CMake depends on the `nvcc` executable being on
+  your path or defined in `$CUDACXX`.
+
 ```bash
 
 $ mkdir build                                       # make a build directory
@@ -86,7 +97,10 @@ $ make -j                                           # compile the library librmm
 $ make install                                      # install the library librmm.so to '/install/path'
 ```
 
-- Building and installing `librmm` and `rmm` using build.sh. Build.sh creates build dir at root of git repository. build.sh depends on the `nvcc` executable being on your path or defined in `$CUDACXX`.
+- Building and installing `librmm` and `rmm` using build.sh. Build.sh creates build dir at root of
+  git repository. build.sh depends on the `nvcc` executable being on your path or defined in
+  `$CUDACXX`.
+
 ```bash
 
 $ ./build.sh -h                                     # Display help and exit
@@ -114,17 +128,21 @@ Done! You are ready to develop for the RMM OSS project.
 # Using RMM in C++
 
 The first goal of RMM is to provide a common interface for device and host memory allocation. 
-This allows both _users_ and _implementers_ of custom allocation logic to program to a single interface.
+This allows both _users_ and _implementers_ of custom allocation logic to program to a single
+interface.
 
 To this end, RMM defines two abstract interface classes:
 - [`rmm::mr::device_memory_resource`](#device_memory_resource) for device memory allocation
 - [`rmm::mr::host_memory_resource`](#host_memory_resource) for host memory allocation
 
-These classes are based on the [`std::pmr::memory_resource`](https://en.cppreference.com/w/cpp/memory/memory_resource) interface class introduced in C++17 for polymorphic memory allocation.
+These classes are based on the
+[`std::pmr::memory_resource`](https://en.cppreference.com/w/cpp/memory/memory_resource) interface
+class introduced in C++17 for polymorphic memory allocation.
 
 ## `device_memory_resource`
 
-`rmm::mr::device_memory_resource` is the base class that defines the interface for allocating and freeing device memory.
+`rmm::mr::device_memory_resource` is the base class that defines the interface for allocating and
+freeing device memory.
 
 It has two key functions:
 
@@ -133,14 +151,43 @@ It has two key functions:
 
 2. `void device_memory_resource::deallocate(void* p, std::size_t bytes, cudaStream_t s)`
    - Reclaims a previous allocation of size `bytes` pointed to by `p`. 
-   - `p` *must* have been returned by a previous call to `allocate(bytes)`, otherwise behavior is undefined
+   - `p` *must* have been returned by a previous call to `allocate(bytes)`, otherwise behavior is
+     undefined
 
-It is up to a derived class to provide implementations of these functions. 
-See [available resources](#availble-resources) for example `device_memory_resource` derived classes. 
+It is up to a derived class to provide implementations of these functions. See
+[available resources](#available-resources) for example `device_memory_resource` derived classes. 
 
-Unlike `std::pmr::memory_resource`, `rmm::mr::device_memory_resource` does not allow specifying an alignment argument. 
-All allocations are required to be aligned to at least 256B. 
-Furthermore, `device_memory_resource` adds an additional `cudaStream_t` argument to allow specifying the stream on which to perform the (de)allocation.
+Unlike `std::pmr::memory_resource`, `rmm::mr::device_memory_resource` does not allow specifying an 
+alignment argument. All allocations are required to be aligned to at least 256B. Furthermore, 
+`device_memory_resource` adds an additional `cudaStream_t` argument to allow specifying the stream
+on which to perform the (de)allocation.
+
+### Stream-ordered Memory Allocation
+
+`rmm::mr::device_memory_resource` is a base class that provides stream-ordered memory allocation.
+This allows optimizations such as re-using memory deallocated on the same stream without the
+overhead of synchronization.
+
+A call to `device_memory_resource::allocate(bytes, stream_a)` returns a pointer that is valid to use
+on `stream_a`. Using the memory on a different stream (say `stream_b`) is Undefined Behavior unless
+the two streams are first synchronized, for example by using `cudaStreamSynchronize(stream_a)` or by
+recording a CUDA event on `stream_a` and then calling `cudaStreamWaitEvent(stream_b, event)`.
+
+The stream specified to `device_memory_resource::deallocate` should be a stream on which it is valid
+to use the deallocated memory immediately for another allocation. Typically this is the stream
+on which the allocation was *last* used before the call to `deallocate`. The passed stream may be
+used internally by a `device_memory_resource` for managing available memory with minimal
+synchronization, and it may also be synchronized at a later time, for example using a call to
+`cudaStreamSynchronize()`.
+
+For this reason, it is Undefined Behavior to destroy a CUDA stream that is passed to 
+`device_memory_resource::deallocate`. If the stream on which the allocation was last used has been
+destroyed before calling `deallocate` or it is known that it will be destroyed, it is likely better
+to synchronize the stream (before destroying it) and then pass a different stream to `deallocate`
+(e.g. the default stream).
+
+Note that device memory data structures such as `rmm::device_buffer` and `rmm::device_uvector`
+follow these stream-ordered memory allocation semantics and rules.
 
 ### Available Resources
 
@@ -254,8 +301,8 @@ rmm::device_buffer b2{100, s, mr}; // Allocates at least 100 bytes on stream `s`
 
 ### `device_uvector<T>`
 A typed, unintialized RAII class for allocation of a contiguous set of elements in device memory.
-Similar to a `thrust::device_vector`, but as an optimization, does not default initialize the contained elements.
-This optimization restricts the types `T` to trivially copyable types.
+Similar to a `thrust::device_vector`, but as an optimization, does not default initialize the
+contained elements. This optimization restricts the types `T` to trivially copyable types.
 
 #### Example
 
@@ -270,7 +317,8 @@ rmm::device_vector<int32_t> v2{100, s, mr}; // Allocates uninitialized storage f
 
 ### `device_scalar`
 A typed, RAII class for allocation of a single element in device memory.
-This is similar to a `device_uvector` with a single element, but provides convenience functions like modifying the value in device memory from the host, or retrieving the value from device to host.
+This is similar to a `device_uvector` with a single element, but provides convenience functions like
+modifying the value in device memory from the host, or retrieving the value from device to host.
 
 #### Example
 ```c++
@@ -291,14 +339,17 @@ situations:
  1. As the backing store for `thrust::device_vector`, and
  2. As temporary storage inside some algorithms, such as `thrust::sort`.
 
-RMM provides `rmm::mr::thrust_allocator` as a conforming Thrust allocator that uses `device_memory_resource`s.
+RMM provides `rmm::mr::thrust_allocator` as a conforming Thrust allocator that uses
+`device_memory_resource`s.
 
 ### Thrust Algorithms
 
-To instruct a Thrust algorithm to use `rmm::mr::thrust_allocator` to allocate temporary storage, you can use the custom Thrust CUDA device execution policy: `rmm::exec_policy(stream)`.
+To instruct a Thrust algorithm to use `rmm::mr::thrust_allocator` to allocate temporary storage, you
+can use the custom Thrust CUDA device execution policy: `rmm::exec_policy(stream)`.
 
-`rmm::exec_policy(stream)` returns a `std::unique_ptr` to a Thrust execution policy that uses `rmm::mr::thrust_allocator` for temporary allocations.
-In order to specify that the Thrust algorithm be executed on a specific stream, the usage is:
+`rmm::exec_policy(stream)` returns a `std::unique_ptr` to a Thrust execution policy that uses
+`rmm::mr::thrust_allocator` for temporary allocations. In order to specify that the Thrust algorithm
+be executed on a specific stream, the usage is:
 
 ```c++
 thrust::sort(rmm::exec_policy(stream)->on(stream), ...);
@@ -310,18 +361,21 @@ These two arguments must be identical.
 
 ## `host_memory_resource`
 
-`rmm::mr::host_memory_resource` is the base class that defines the interface for allocating and freeing host memory.
+`rmm::mr::host_memory_resource` is the base class that defines the interface for allocating and
+freeing host memory.
 
 Similar to `device_memory_resource`, it has two key functions for (de)allocation:
 
 1. `void* device_memory_resource::allocate(std::size_t bytes, std::size_t alignment)`
-   - Returns a pointer to an allocation of at least `bytes` bytes aligned to the specified `alignment`
+   - Returns a pointer to an allocation of at least `bytes` bytes aligned to the specified
+     `alignment`
 
 2. `void device_memory_resource::deallocate(void* p, std::size_t bytes, std::size_t alignment)`
    - Reclaims a previous allocation of size `bytes` pointed to by `p`. 
 
 
-Unlike `device_memory_resource`, the `host_memory_resource` interface and behavior is identical to `std::pmr::memory_resource`. 
+Unlike `device_memory_resource`, the `host_memory_resource` interface and behavior is identical to
+`std::pmr::memory_resource`. 
 
 ### Available Resources
 
@@ -336,7 +390,8 @@ Allocates "pinned" host memory using `cuda(Malloc/Free)Host`.
 ## Host Data Structures
 
 RMM does not currently provide any data structures that interface with `host_memory_resource`.
-In the future, RMM will provide a similar host-side structure like `device_buffer` and an allocator that can be used with STL containers.
+In the future, RMM will provide a similar host-side structure like `device_buffer` and an allocator
+that can be used with STL containers.
 
 
 ## Using RMM in Python Code

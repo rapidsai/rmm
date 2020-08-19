@@ -65,6 +65,8 @@
 - PR #498 Max pool growth less greedy
 - PR #500 Use tempfile rather than hardcoded path in `test_rmm_csv_log`
 - PR #511 Specify `--basetemp` for `py.test` run
+- PR #509 Fix missing : before __LINE__ in throw string of RMM_CUDA_TRY
+- PR #510 Fix segfault in pool_memory_resource when a CUDA stream is destroyed
 
 
 # RMM 0.14.0 (03 Jun 2020)
