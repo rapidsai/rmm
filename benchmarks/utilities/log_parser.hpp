@@ -68,7 +68,7 @@ struct event {
   uintptr_t stream;       ///< Numeric representation of the CUDA stream on which the event occurred
 };
 
-std::ostream& operator<<(std::ostream& os, event const& e)
+inline std::ostream& operator<<(std::ostream& os, event const& e)
 {
   auto act_string = (e.act == action::ALLOCATE) ? "allocate" : "free";
 
@@ -78,7 +78,7 @@ std::ostream& operator<<(std::ostream& os, event const& e)
   return os;
 }
 
-uintptr_t hex_string_to_int(std::string const& s) { return std::stoll(s, nullptr, 16); }
+inline uintptr_t hex_string_to_int(std::string const& s) { return std::stoll(s, nullptr, 16); }
 
 /**
  * @brief Parses a RMM log file into a vector of events
@@ -89,7 +89,7 @@ uintptr_t hex_string_to_int(std::string const& s) { return std::stoll(s, nullptr
  * @param filename Name of the RMM log file
  * @return Vector of events from the contents of the log file
  */
-std::vector<event> parse_csv(std::string const& filename)
+inline std::vector<event> parse_csv(std::string const& filename)
 {
   rapidcsv::Document csv(filename, rapidcsv::LabelParams(0, -1));
 
