@@ -77,6 +77,10 @@ try:
 except Exception:
     nthreads = 0
 
+define_macros = [
+    ("CUDA_API_PER_THREAD_DEFAULT_STREAM", None),
+]
+
 include_dirs = [
     "../include/rmm",
     "../include",
@@ -125,6 +129,7 @@ extensions += cythonize(
             ],
             libraries=["cuda", "rmm"],
             language="c++",
+            define_macros=define_macros,
             extra_compile_args=["-std=c++14"],
         )
     ],
@@ -148,6 +153,7 @@ extensions += cythonize(
             ],
             libraries=["cuda", "rmm"],
             language="c++",
+            define_macros=define_macros,
             extra_compile_args=["-std=c++14"],
         )
     ],

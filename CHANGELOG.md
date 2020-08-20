@@ -5,6 +5,7 @@
 ## Improvements
 
 - PR #477 Just use `None` for `strides` in `DeviceBuffer`
+- PR #480 Build RMM's Python bindings with PTDS
 
 ## Bug Fixes
 
