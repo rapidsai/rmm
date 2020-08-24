@@ -17,7 +17,7 @@
 
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/nvtx/ranges.hpp>
-#include "device_memory_resource.hpp"
+#include <rmm/mr/device/device_memory_resource.hpp>
 
 namespace rmm {
 namespace mr {
