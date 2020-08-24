@@ -15,14 +15,9 @@
  */
 #pragma once
 
-#include "device_memory_resource.hpp"
-#include <rmm/detail/nvtx/ranges.hpp>
 #include <rmm/detail/error.hpp>
-
-#include <cuda_runtime_api.h>
-#include <cassert>
-#include <exception>
-#include <iostream>
+#include <rmm/detail/nvtx/ranges.hpp>
+#include "device_memory_resource.hpp"
 
 namespace rmm {
 namespace mr {
@@ -32,6 +27,12 @@ namespace mr {
  */
 class managed_memory_resource final : public device_memory_resource {
  public:
+  managed_memory_resource()                               = default;
+  ~managed_memory_resource()                              = default;
+  managed_memory_resource(managed_memory_resource const&) = default;
+  managed_memory_resource(managed_memory_resource&&)      = default;
+  managed_memory_resource& operator=(managed_memory_resource const&) = default;
+  managed_memory_resource& operator=(managed_memory_resource&&) = default;
 
   /**
    * @brief Query whether the resource supports use of non-null streams for
@@ -43,10 +44,10 @@ class managed_memory_resource final : public device_memory_resource {
 
   /**
    * @brief Query whether the resource supports the get_mem_info API.
-   * 
+   *
    * @return bool true if the resource supports get_mem_info, false otherwise.
    */
-  bool supports_get_mem_info() const noexcept override {return true; }
+  bool supports_get_mem_info() const noexcept override { return true; }
 
  private:
   /**
@@ -61,13 +62,12 @@ class managed_memory_resource final : public device_memory_resource {
    * @param bytes The size, in bytes, of the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* do_allocate(std::size_t bytes, cudaStream_t) override {
+  void* do_allocate(std::size_t bytes, cudaStream_t) override
+  {
     RMM_FUNC_RANGE();
     // FIXME: Unlike cudaMalloc, cudaMallocManaged will throw an error for 0
     // size allocations.
-    if (bytes == 0) {
-      return nullptr;
-    }
+    if (bytes == 0) { return nullptr; }
 
     void* p{nullptr};
     RMM_CUDA_TRY(cudaMallocManaged(&p, bytes), rmm::bad_alloc);
@@ -83,10 +83,10 @@ class managed_memory_resource final : public device_memory_resource {
    *
    * @param p Pointer to be deallocated
    */
-  void do_deallocate(void* p, std::size_t, cudaStream_t) override {
+  void do_deallocate(void* p, std::size_t, cudaStream_t) override
+  {
     RMM_FUNC_RANGE();
-    cudaError_t const status = cudaFree(p);
-    assert(cudaSuccess == status);
+    RMM_ASSERT_CUDA_SUCCESS(cudaFree(p));
   }
 
   /**
@@ -101,7 +101,8 @@ class managed_memory_resource final : public device_memory_resource {
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equal
    */
-  bool do_is_equal(device_memory_resource const& other) const noexcept override {
+  bool do_is_equal(device_memory_resource const& other) const noexcept override
+  {
     return dynamic_cast<managed_memory_resource const*>(&other) != nullptr;
   }
 
@@ -113,7 +114,8 @@ class managed_memory_resource final : public device_memory_resource {
    * @param stream to execute on
    * @return std::pair contaiing free_size and total_size of memory
    */
-  std::pair<size_t, size_t> do_get_mem_info(cudaStream_t stream) const override {
+  std::pair<size_t, size_t> do_get_mem_info(cudaStream_t stream) const override
+  {
     std::size_t free_size{};
     std::size_t total_size{};
     RMM_CUDA_TRY(cudaMemGetInfo(&free_size, &total_size));

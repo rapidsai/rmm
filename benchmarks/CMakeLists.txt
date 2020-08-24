@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
+﻿cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 
 project(RMM_BENCHS LANGUAGES C CXX CUDA)
 
@@ -18,11 +18,7 @@ endfunction(ConfigureBench)
 ###################################################################################################
 # - include paths ---------------------------------------------------------------------------------
 
-include_directories("${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
-                    "${CMAKE_BINARY_DIR}/include"
-                    "${CMAKE_SOURCE_DIR}/include"
-                    "${CMAKE_SOURCE_DIR}"
-                    "${CMAKE_SOURCE_DIR}/src"
+include_directories("${CMAKE_SOURCE_DIR}"
                     "${GTEST_INCLUDE_DIR}"
                     "${GBENCH_INCLUDE_DIR}"
                     "${CMAKE_CURRENT_SOURCE_DIR}")
@@ -31,7 +27,6 @@ include_directories("${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
 # - library paths ---------------------------------------------------------------------------------
 
 link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES is an undocumented/unsupported variable containing the link directories for nvcc
-                 "${CMAKE_BINARY_DIR}/lib"
                  "${CMAKE_BINARY_DIR}"
                  "${GTEST_LIBRARY_DIR}"
                  "${GBENCH_LIBRARY_DIR}")
@@ -39,14 +34,6 @@ link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT
 ###################################################################################################
 ### test sources ##################################################################################
 ###################################################################################################
-
-###################################################################################################
-# - test benchmark --------------------------------------------------------------------------------
-
-set(TEST_BENCH_SRC
-  "${CMAKE_CURRENT_SOURCE_DIR}/test/test_benchmark.cpp")
-
-ConfigureBench(TEST_BENCH "${TEST_BENCH_SRC}")
 
 ###################################################################################################
 # - random allocations benchmark --------------------------------------------------------------------------------
@@ -62,3 +49,10 @@ set(REPLAY_BENCH_SRC
   "${CMAKE_CURRENT_SOURCE_DIR}/replay/replay.cpp")
 
 ConfigureBench(REPLAY_BENCH "${REPLAY_BENCH_SRC}")
+###################################################################################################
+# - uvector benchmark --------------------------------------------------------------------------------
+
+set(UVECTOR_BENCH_SRC
+  "${CMAKE_CURRENT_SOURCE_DIR}/device_uvector/device_uvector_bench.cu")
+
+ConfigureBench(UVECTOR_BENCH "${UVECTOR_BENCH_SRC}")

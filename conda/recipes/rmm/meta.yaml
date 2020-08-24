@@ -1,33 +1,38 @@
-# Copyright (c) 2019, NVIDIA CORPORATION.
+# Copyright (c) 2019-2020, NVIDIA CORPORATION.
 
 {% set version = environ.get('GIT_DESCRIBE_TAG', '0.0.0.dev').lstrip('v') + environ.get('VERSION_SUFFIX', '') %}
-{% set git_revision_count=environ.get('GIT_DESCRIBE_NUMBER', 0) %}
 {% set py_version=environ.get('CONDA_PY', 35) %}
+{% set cuda_version='.'.join(environ.get('CUDA_VERSION', '10.1').split('.')[:2]) %}
+
 package:
   name: rmm
   version: {{ version }}
 
 source:
-  path: ../../..
+  git_url: ../../..
 
 build:
-  number: {{ git_revision_count }}
-  string: py{{ py_version }}_{{ git_revision_count }}
+  number: {{ GIT_DESCRIBE_NUMBER }}
+  string: cuda_{{ cuda_version }}_py{{ py_version }}_{{ GIT_DESCRIBE_HASH }}_{{ GIT_DESCRIBE_NUMBER }}
   script_env:
     - RMM_BUILD_NO_GPU_TEST
     - VERSION_SUFFIX
 
 requirements:
   build:
-    - cmake >=3.12.4
+    - cmake >=3.14.0
   host:
     - python
     - librmm {{ version }}
     - setuptools
     - cython >=0.29,<0.30
+    - spdlog >=1.4.2
+    - cudatoolkit {{ cuda_version }}.*
   run:
     - python
-    - numba >=0.41
+    - numba >=0.49
+    - numpy
+    - {{ pin_compatible('cudatoolkit', max_pin='x.x') }}
 
 test:
   commands:

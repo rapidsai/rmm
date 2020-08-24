@@ -3,9 +3,13 @@ channels:
 - rapidsai
 - conda-forge
 dependencies:
-- cmake>=3.12
+- clang=8.0.1
+- clang-tools=8.0.1
+- cmake>=3.14
 - python>=3.6,<3.8
-- numba>=0.41
+- numba>=0.49
+- numpy
 - cffi>=1.10.0
 - pytest
 - cudatoolkit=9.2
+- spdlog >=1.4.2

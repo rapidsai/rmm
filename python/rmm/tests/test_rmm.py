@@ -1,20 +1,32 @@
-import pickle
+# Copyright (c) 2020, NVIDIA CORPORATION.
+import os
 import sys
 from itertools import product
 
 import numpy as np
 import pytest
+from numba import cuda
 
 import rmm
 
+if sys.version_info < (3, 8):
+    try:
+        import pickle5 as pickle
+    except ImportError:
+        import pickle
+else:
+    import pickle
 
-def array_tester(dtype, nelem):
+cuda.set_memory_manager(rmm.RMMNumbaManager)
+
+
+def array_tester(dtype, nelem, alloc):
     # data
     h_in = np.full(nelem, 3.2, dtype)
     h_result = np.empty(nelem, dtype)
 
-    d_in = rmm.to_device(h_in)
-    d_result = rmm.device_array_like(d_in)
+    d_in = alloc.to_device(h_in)
+    d_result = alloc.device_array_like(d_in)
 
     d_result.copy_to_device(d_in)
     h_result = d_result.copy_to_host()
@@ -32,54 +44,55 @@ _dtypes = [
     np.bool_,
 ]
 _nelems = [1, 2, 7, 8, 9, 32, 128]
+_allocs = [cuda, rmm]
 
 
-@pytest.mark.parametrize("dtype,nelem", list(product(_dtypes, _nelems)))
-def test_rmm_alloc(dtype, nelem):
-    array_tester(dtype, nelem)
+@pytest.mark.parametrize("dtype", _dtypes)
+@pytest.mark.parametrize("nelem", _nelems)
+@pytest.mark.parametrize("alloc", _allocs)
+def test_rmm_alloc(dtype, nelem, alloc):
+    array_tester(dtype, nelem, alloc)
 
 
 # Test all combinations of default/managed and pooled/non-pooled allocation
 @pytest.mark.parametrize("dtype", _dtypes)
 @pytest.mark.parametrize("nelem", _nelems)
+@pytest.mark.parametrize("alloc", _allocs)
 @pytest.mark.parametrize(
     "managed, pool", list(product([False, True], [False, True]))
 )
-def test_rmm_modes(dtype, nelem, managed, pool):
+def test_rmm_modes(dtype, nelem, alloc, managed, pool):
+    assert rmm.is_initialized()
+    array_tester(dtype, nelem, alloc)
+
     rmm.reinitialize(pool_allocator=pool, managed_memory=managed)
 
     assert rmm.is_initialized()
 
-    array_tester(dtype, nelem)
-
-
-def test_uninitialized():
-    rmm._finalize()
-    assert not rmm.is_initialized()
-    rmm.reinitialize()  # so further tests will pass
+    array_tester(dtype, nelem, alloc)
+    rmm.reinitialize()
 
 
 @pytest.mark.parametrize("dtype", _dtypes)
 @pytest.mark.parametrize("nelem", _nelems)
-def test_rmm_csv_log(dtype, nelem):
-    # data
-    h_in = np.full(nelem, 3.2, dtype)
+@pytest.mark.parametrize("alloc", _allocs)
+def test_rmm_csv_log(dtype, nelem, alloc, tmpdir):
+    suffix = ".csv"
 
-    d_in = rmm.to_device(h_in)
-    d_result = rmm.device_array_like(d_in)
+    base_name = str(tmpdir.join("rmm_log.csv"))
+    rmm.reinitialize(logging=True, log_file_name=base_name)
+    array_tester(dtype, nelem, alloc)
+    rmm.mr._flush_logs()
 
-    d_result.copy_to_device(d_in)
-
-    csv = rmm.csv_log()
-
-    assert (
-        csv.find(
-            "Event Type,Device ID,Address,Stream,Size (bytes),"
-            "Free Memory,Total Memory,Current Allocs,Start,End,"
-            "Elapsed,Location"
-        )
-        >= 0
-    )
+    # Need to open separately because the device ID is appended to filename
+    fname = base_name[: -len(suffix)] + ".dev0" + suffix
+    try:
+        with open(fname, "rb") as f:
+            csv = f.read()
+            assert csv.find(b"Time,Action,Pointer,Size,Stream") >= 0
+    finally:
+        os.remove(fname)
+    rmm.reinitialize()
 
 
 @pytest.mark.parametrize("size", [0, 5])
@@ -104,7 +117,7 @@ def test_rmm_device_buffer(size):
     assert set(b.__cuda_array_interface__) == keyset
     assert b.__cuda_array_interface__["data"] == (b.ptr, False)
     assert b.__cuda_array_interface__["shape"] == (b.size,)
-    assert b.__cuda_array_interface__["strides"] == (1,)
+    assert b.__cuda_array_interface__["strides"] is None
     assert b.__cuda_array_interface__["typestr"] == "|u1"
     assert b.__cuda_array_interface__["version"] == 0
 
@@ -221,6 +234,7 @@ def test_rmm_device_buffer_copy_from_host(hb):
     [
         lambda: rmm.DeviceBuffer.to_device(b"abc"),
         lambda: rmm.to_device(np.array([97, 98, 99], dtype="u1")),
+        lambda: cuda.to_device(np.array([97, 98, 99], dtype="u1")),
     ],
 )
 def test_rmm_device_buffer_copy_from_device(cuda_ary):
@@ -242,6 +256,18 @@ def test_rmm_device_buffer_pickle_roundtrip(hb):
     db2 = pickle.loads(pb)
     hb2 = db2.tobytes()
     assert hb == hb2
+    # out-of-band
+    if pickle.HIGHEST_PROTOCOL >= 5:
+        db = rmm.DeviceBuffer.to_device(hb)
+        buffers = []
+        pb2 = pickle.dumps(db, protocol=5, buffer_callback=buffers.append)
+        del db
+        assert len(buffers) == 1
+        assert isinstance(buffers[0], pickle.PickleBuffer)
+        assert bytes(buffers[0]) == hb
+        db3 = pickle.loads(pb2, buffers=buffers)
+        hb3 = db3.tobytes()
+        assert hb3 == hb
 
 
 def test_rmm_cupy_allocator():
@@ -262,18 +288,67 @@ def test_rmm_cupy_allocator():
     assert isinstance(a.data.mem._owner, rmm.DeviceBuffer)
 
 
-def test_rmm_getinfo():
-    meminfo = rmm.get_info()
-    # Basic sanity checks of returned values
-    assert meminfo.free >= 0
-    assert meminfo.total >= 0
-    assert meminfo.free <= meminfo.total
+@pytest.mark.parametrize("dtype", _dtypes)
+@pytest.mark.parametrize("nelem", _nelems)
+@pytest.mark.parametrize("alloc", _allocs)
+def test_pool_memory_resource(dtype, nelem, alloc):
+    mr = rmm.mr.PoolMemoryResource(
+        rmm.mr.CudaMemoryResource(),
+        initial_pool_size=1 << 22,
+        maximum_pool_size=1 << 23,
+    )
+    rmm.mr.set_current_device_resource(mr)
+    assert rmm.mr.get_current_device_resource_type() is type(mr)
+    array_tester(dtype, nelem, alloc)
+    rmm.reinitialize()
 
 
-def test_rmm_getinfo_uninitialized():
-    rmm._finalize()
+@pytest.mark.parametrize("dtype", _dtypes)
+@pytest.mark.parametrize("nelem", _nelems)
+@pytest.mark.parametrize("alloc", _allocs)
+@pytest.mark.parametrize(
+    "upstream",
+    [
+        lambda: rmm.mr.CudaMemoryResource(),
+        lambda: rmm.mr.ManagedMemoryResource(),
+    ],
+)
+def test_fixed_size_memory_resource(dtype, nelem, alloc, upstream):
+    mr = rmm.mr.FixedSizeMemoryResource(
+        upstream(), block_size=1 << 20, blocks_to_preallocate=128
+    )
+    rmm.mr.set_current_device_resource(mr)
+    assert rmm.mr.get_current_device_resource_type() is type(mr)
+    array_tester(dtype, nelem, alloc)
+    rmm.reinitialize()
 
-    with pytest.raises(rmm.RMMError):
-        rmm.get_info()
 
+@pytest.mark.parametrize("dtype", _dtypes)
+@pytest.mark.parametrize("nelem", _nelems)
+@pytest.mark.parametrize("alloc", _allocs)
+@pytest.mark.parametrize(
+    "upstream_mr",
+    [
+        lambda: rmm.mr.CudaMemoryResource(),
+        lambda: rmm.mr.ManagedMemoryResource(),
+        lambda: rmm.mr.PoolMemoryResource(
+            rmm.mr.CudaMemoryResource(), 1 << 20
+        ),
+    ],
+)
+def test_binning_memory_resource(dtype, nelem, alloc, upstream_mr):
+    upstream = upstream_mr()
+
+    # Add fixed-size bins 256KiB, 512KiB, 1MiB, 2MiB, 4MiB
+    mr = rmm.mr.BinningMemoryResource(upstream, 18, 22)
+
+    # Test adding some explicit bin MRs
+    fixed_mr = rmm.mr.FixedSizeMemoryResource(upstream, 1 << 10)
+    cuda_mr = rmm.mr.CudaMemoryResource()
+    mr.add_bin(1 << 10, fixed_mr)  # 1KiB bin
+    mr.add_bin(1 << 23, cuda_mr)  # 8MiB bin
+
+    rmm.mr.set_current_device_resource(mr)
+    assert rmm.mr.get_current_device_resource_type() is type(mr)
+    array_tester(dtype, nelem, alloc)
     rmm.reinitialize()
