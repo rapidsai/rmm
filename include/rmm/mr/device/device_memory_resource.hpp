@@ -15,8 +15,10 @@
  */
 #pragma once
 
-#include <cstddef>
 #include <rmm/detail/aligned.hpp>
+#include <rmm/detail/nvtx/ranges.hpp>
+
+#include <cstddef>
 #include <utility>
 
 // forward decl
@@ -102,6 +104,7 @@ class device_memory_resource {
    */
   void* allocate(std::size_t bytes, cudaStream_t stream = 0)
   {
+    RMM_FUNC_RANGE();
     return do_allocate(rmm::detail::align_up(bytes, 8), stream);
   }
 
@@ -125,6 +128,7 @@ class device_memory_resource {
    */
   void deallocate(void* p, std::size_t bytes, cudaStream_t stream = 0)
   {
+    RMM_FUNC_RANGE();
     do_deallocate(p, rmm::detail::align_up(bytes, 8), stream);
   }
 

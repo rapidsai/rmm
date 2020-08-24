@@ -15,12 +15,13 @@
  */
 #pragma once
 
-#include <limits>
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/nvtx/ranges.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <cuda_runtime_api.h>
 
+#include <limits>
 #include <map>
 #include <mutex>
 #include <set>
@@ -201,6 +202,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    */
   virtual void* do_allocate(std::size_t bytes, cudaStream_t stream) override
   {
+    RMM_FUNC_RANGE();
     if (bytes <= 0) return nullptr;
 
     lock_guard lock(mtx_);
@@ -225,6 +227,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    */
   virtual void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override
   {
+    RMM_FUNC_RANGE();
     lock_guard lock(mtx_);
     auto stream_event = get_event(stream);
     bytes             = rmm::detail::align_up(bytes, allocation_alignment);
