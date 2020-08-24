@@ -18,6 +18,13 @@
 
 #include "nvtx3.hpp"
 
+// Get the class name in NVTX ranges to help with nested memory resource types
+#ifdef __GNUC__
+#define PRETTY_FUNCTION_NAME __PRETTY_FUNCTION__
+#else
+#define PRETTY_FUNCTION_NAME __func__
+#endif
+
 namespace rmm {
 
 /**
@@ -36,14 +43,14 @@ using thread_range = ::nvtx3::domain_thread_range<librmm_domain>;
 
 /**
  * @brief Color for the RMM NVTX domain
- * 
+ *
  */
 static constexpr nvtx3::rgb librmm_color{205, 22, 75};
 
-}  // namespace cudf
+}  // namespace rmm
 
-#define RMM_FUNC_RANGE_IN(D)                                                             \
-  static ::nvtx3::registered_message<D> const nvtx3_func_name__{__func__};               \
+#define RMM_FUNC_RANGE_IN(D)                                                                      \
+  static ::nvtx3::registered_message<D> const nvtx3_func_name__{PRETTY_FUNCTION_NAME};            \
   static ::nvtx3::event_attributes const nvtx3_func_attr__{nvtx3_func_name__, rmm::librmm_color}; \
   ::nvtx3::domain_thread_range<D> const nvtx3_range__{nvtx3_func_attr__};
 
