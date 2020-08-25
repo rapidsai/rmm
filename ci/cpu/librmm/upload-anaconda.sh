@@ -7,16 +7,14 @@ set -e
 if [ "$UPLOAD_LIBRMM" == '1' ]; then
   export UPLOADFILE=$(conda build conda/recipes/librmm --python=$PYTHON --output)
 
-  SOURCE_BRANCH=master
   CUDA_REL=${CUDA_VERSION%.*}
 
-  SOURCE_BRANCH=master
 
   LABEL_OPTION="--label main"
   echo "LABEL_OPTION=${LABEL_OPTION}"
 
   # Restrict uploads to master branch
-  if [ ${GIT_BRANCH} != ${SOURCE_BRANCH} ]; then
+  if [ ${BUILD_MODE} != "branch" ]; then
     echo "Skipping upload"
     return 0
   fi
