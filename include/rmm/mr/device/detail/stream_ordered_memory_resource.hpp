@@ -17,10 +17,12 @@
 
 #include <limits>
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/logger.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <cuda_runtime_api.h>
 
+#include <functional>
 #include <map>
 #include <mutex>
 #include <set>
@@ -309,6 +311,13 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     if (iter != stream_free_blocks_.end()) {
       block_type b = iter->second.get_block(size);
       if (b.is_valid()) return b;
+
+      SPDLOG_LOGGER_INFO(&rmm::detail::logger(),
+                         "{} | Stream {} Steal {}B (my freelist has {} blocks)",
+                         std::hash<std::thread::id>{}(std::this_thread::get_id()),
+                         reinterpret_cast<void*>(stream_event.stream),
+                         size,
+                         iter->second.size());
     }
 
     // Otherwise try to find a block associated with another stream
@@ -316,6 +325,9 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     if (b.is_valid()) return b;
 
     // no larger blocks available on other streams, so grow the pool and create a block
+    SPDLOG_LOGGER_INFO(&rmm::detail::logger(),
+                       "{} | Growing pool",
+                       std::hash<std::thread::id>{}(std::this_thread::get_id()));
 
     // avoid searching for this stream's list again
     free_list& blocks =

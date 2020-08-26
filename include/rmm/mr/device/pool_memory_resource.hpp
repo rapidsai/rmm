@@ -181,6 +181,11 @@ class pool_memory_resource final
     void* p = upstream_mr_->allocate(size, stream);
     block_type b{reinterpret_cast<char*>(p), size, true};
     upstream_blocks_.emplace_back(b);  // TODO: with C++17 use version that returns a reference
+    SPDLOG_LOGGER_INFO(&rmm::detail::logger(),
+                       "{} | Stream {} Upstream allocate {}B",
+                       std::hash<std::thread::id>{}(std::this_thread::get_id()),
+                       reinterpret_cast<void*>(stream),
+                       size);
     return b;
   }
 

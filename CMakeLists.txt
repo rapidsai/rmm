@@ -170,6 +170,15 @@ if(USE_NVTX)
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --define-macro USE_NVTX")
 endif(USE_NVTX)
 
+option(ENABLE_DEBUG_LOGGING "Enable debug logging" OFF)
+if(ENABLE_DEBUG_LOGGING)
+    message(STATUS "Enabling Debug Logging")
+    target_compile_definitions(rmm PUBLIC SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG)
+else()
+    message(STATUS "Disabling Debug Logging")
+  target_compile_definitions(rmm PUBLIC SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_OFF)
+endif(ENABLE_DEBUG_LOGGING)
+
 ###################################################################################################
 # - link libraries --------------------------------------------------------------------------------
 
