@@ -1,18 +1,17 @@
 # Copyright (c) 2018, NVIDIA CORPORATION.
 
 {% set version = environ.get('GIT_DESCRIBE_TAG', '0.0.0.dev').lstrip('v') + environ.get('VERSION_SUFFIX', '') %}
-{% set git_revision_count=environ.get('GIT_DESCRIBE_NUMBER', 0) %}
 {% set cuda_version='.'.join(environ.get('CUDA_VERSION', '9.2').split('.')[:2]) %}
 package:
   name: librmm
   version: {{ version }}
 
 source:
-  path: ../../..
+  git_url: ../../..
 
 build:
-  number: {{ git_revision_count }}
-  string: cuda{{ cuda_version }}_{{ git_revision_count }}
+  number: {{ GIT_DESCRIBE_NUMBER }}
+  string: cuda{{ cuda_version }}_{{ GIT_DESCRIBE_HASH }}_{{ GIT_DESCRIBE_NUMBER }}
   script_env:
     - CC
     - CXX
@@ -24,21 +23,16 @@ build:
 
 requirements:
   build:
-    - cmake >=3.12.4
+    - cmake >=3.14.0
   host:
     - cudatoolkit {{ cuda_version }}.*
-    - spdlog >=1.4.2
   run:
     - {{ pin_compatible('cudatoolkit', max_pin='x.x') }}
-    - spdlog >=1.4.2
+    - spdlog >=1.6.0
 
 test:
   commands:
-    - test -f $PREFIX/include/rmm/rmm.h
-    - test -f $PREFIX/include/rmm/rmm.hpp
-    - test -f $PREFIX/include/rmm/rmm_api.h
     - test -f $PREFIX/include/rmm/thrust_rmm_allocator.h
-    - test -f $PREFIX/include/rmm/detail/memory_manager.hpp
     - test -f $PREFIX/include/rmm/detail/cnmem.h
     - test -f $PREFIX/lib/librmm.so
 

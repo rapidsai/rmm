@@ -20,10 +20,6 @@ export HOME=$WORKSPACE
 # Switch to project root; also root of repo checkout
 cd $WORKSPACE
 
-# Get latest tag and number of commits since tag
-export GIT_DESCRIBE_TAG=`git describe --abbrev=0 --tags`
-export GIT_DESCRIBE_NUMBER=`git rev-list ${GIT_DESCRIBE_TAG}..HEAD --count`
-
 # If nightly build, append current YYMMDD to version
 if [[ "$BUILD_MODE" = "branch" && "$SOURCE_BRANCH" = branch-* ]] ; then
   export VERSION_SUFFIX=`date +%y%m%d`
@@ -51,19 +47,26 @@ conda config --set ssl_verify False
 ################################################################################
 # BUILD - Conda package builds (conda deps: librmm <- rmm)
 ################################################################################
+if [[ "$BUILD_LIBRMM" == "1" ]]; then
+  logger "Build conda pkg for librmm..."
+  source ci/cpu/librmm/build_librmm.sh
+fi
 
-logger "Build conda pkg for librmm..."
-source ci/cpu/librmm/build_librmm.sh
-
-logger "Build conda pkg for rmm..."
-source ci/cpu/rmm/build_rmm.sh
+if [[ "$BUILD_RMM" == "1" ]]; then
+  logger "Build conda pkg for rmm..."
+  source ci/cpu/rmm/build_rmm.sh
+fi
 
 ################################################################################
 # UPLOAD - Conda packages
 ################################################################################
 
-logger "Upload conda pkg for librmm..."
-source ci/cpu/librmm/upload-anaconda.sh
+if [[ "$BUILD_LIBRMM" == "1" ]]; then
+  logger "Upload conda pkg for librmm..."
+  source ci/cpu/librmm/upload-anaconda.sh
+fi
 
-logger "Upload conda pkg for rmm..."
-source ci/cpu/rmm/upload-anaconda.sh
+if [[ "$BUILD_RMM" == "1" ]]; then
+  logger "Upload conda pkg for rmm..."
+  source ci/cpu/rmm/upload-anaconda.sh
+fi

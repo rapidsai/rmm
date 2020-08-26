@@ -21,6 +21,7 @@
 
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/mr/device/per_device_resource.hpp>
 
 namespace rmm {
 namespace mr {
@@ -120,7 +121,7 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
   cudaStream_t stream() const noexcept { return _stream; }
 
  private:
-  device_memory_resource* _mr{rmm::mr::get_default_resource()};
+  device_memory_resource* _mr{rmm::mr::get_current_device_resource()};
   cudaStream_t _stream{0};
 };
 }  // namespace mr
