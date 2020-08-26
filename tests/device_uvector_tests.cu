@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 2020, NVIDIA CORPORATION.
  *
@@ -14,8 +15,8 @@
  * limitations under the License.
  */
 
-#include "gtest/gtest.h"
-#include "gtest/internal/gtest-type-util.h"
+#include <gtest/gtest.h>
+#include <gtest/internal/gtest-type-util.h>
 
 #include <rmm/device_uvector.hpp>
 
@@ -29,15 +30,6 @@ struct TypedUVectorTest : ::testing::Test {
 using TestTypes = ::testing::Types<int8_t, int32_t, uint64_t, float, double>;
 
 TYPED_TEST_CASE(TypedUVectorTest, TestTypes);
-
-TYPED_TEST(TypedUVectorTest, DefaultConstructor)
-{
-  rmm::device_uvector<TypeParam> uv{};
-  EXPECT_EQ(uv.size(), 0);
-  EXPECT_EQ(uv.begin(), uv.end());
-  EXPECT_TRUE(uv.is_empty());
-  EXPECT_NE(uv.memory_resource(), nullptr);
-}
 
 TYPED_TEST(TypedUVectorTest, ZeroSizeConstructor)
 {
@@ -54,6 +46,18 @@ TYPED_TEST(TypedUVectorTest, NonZeroSizeConstructor)
   EXPECT_NE(uv.data(), nullptr);
   EXPECT_EQ(uv.end(), uv.begin() + uv.size());
   EXPECT_FALSE(uv.is_empty());
+  EXPECT_NE(uv.element_ptr(0), nullptr);
+}
+
+TYPED_TEST(TypedUVectorTest, CopyConstructor)
+{
+  rmm::device_uvector<TypeParam> uv(12345, this->stream());
+  rmm::device_uvector<TypeParam> uv_copy(uv, this->stream());
+  EXPECT_EQ(uv_copy.size(), uv.size());
+  EXPECT_NE(uv_copy.data(), nullptr);
+  EXPECT_EQ(uv_copy.end(), uv_copy.begin() + uv_copy.size());
+  EXPECT_FALSE(uv_copy.is_empty());
+  EXPECT_NE(uv_copy.element_ptr(0), nullptr);
 }
 
 TYPED_TEST(TypedUVectorTest, ResizeSmaller)
@@ -131,4 +135,61 @@ TYPED_TEST(TypedUVectorTest, Release)
   EXPECT_TRUE(uv.is_empty());
   EXPECT_EQ(storage.data(), original_data);
   EXPECT_EQ(storage.size(), original_size * sizeof(TypeParam));
+}
+
+TYPED_TEST(TypedUVectorTest, ElementPointer)
+{
+  auto size = 12345;
+  rmm::device_uvector<TypeParam> uv(size, this->stream());
+  for (std::size_t i = 0; i < uv.size(); ++i) {
+    EXPECT_NE(uv.element_ptr(i), nullptr);
+  }
+}
+
+TYPED_TEST(TypedUVectorTest, OOBSetElement)
+{
+  auto size = 12345;
+  rmm::device_uvector<TypeParam> uv(size, this->stream());
+  EXPECT_THROW(uv.set_element(uv.size() + 1, 42, this->stream()), rmm::out_of_range);
+}
+
+TYPED_TEST(TypedUVectorTest, OOBGetElement)
+{
+  auto size = 12345;
+  rmm::device_uvector<TypeParam> uv(size, this->stream());
+  EXPECT_THROW(uv.element(uv.size() + 1, this->stream()), rmm::out_of_range);
+}
+
+TYPED_TEST(TypedUVectorTest, GetSetElement)
+{
+  auto size = 12345;
+  rmm::device_uvector<TypeParam> uv(size, this->stream());
+  for (std::size_t i = 0; i < uv.size(); ++i) {
+    uv.set_element(i, i, this->stream());
+    EXPECT_EQ(static_cast<TypeParam>(i), uv.element(i, this->stream()));
+  }
+}
+
+TYPED_TEST(TypedUVectorTest, GetSetElementAsync)
+{
+  auto size = 12345;
+  rmm::device_uvector<TypeParam> uv(size, this->stream());
+  for (std::size_t i = 0; i < uv.size(); ++i) {
+    uv.set_element_async(i, i, this->stream());
+    EXPECT_EQ(static_cast<TypeParam>(i), uv.element(i, this->stream()));
+  }
+}
+
+TYPED_TEST(TypedUVectorTest, FrontBackElement)
+{
+  auto size = 12345;
+  rmm::device_uvector<TypeParam> uv(size, this->stream());
+
+  auto first = TypeParam{42};
+  auto last  = TypeParam{13};
+  uv.set_element(0, first, this->stream());
+  uv.set_element(uv.size() - 1, last, this->stream());
+
+  EXPECT_EQ(first, uv.front_element(this->stream()));
+  EXPECT_EQ(last, uv.back_element(this->stream()));
 }

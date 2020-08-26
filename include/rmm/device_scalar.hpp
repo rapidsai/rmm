@@ -19,6 +19,7 @@
 #include <rmm/device_buffer.hpp>
 #include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/mr/device/per_device_resource.hpp>
 
 #include <type_traits>
 
@@ -50,8 +51,9 @@ class device_scalar {
    * @param stream Stream on which to perform asynchronous allocation.
    * @param mr Optional, resource with which to allocate.
    */
-  explicit device_scalar(cudaStream_t stream,
-                         rmm::mr::device_memory_resource *mr = rmm::mr::get_default_resource())
+  explicit device_scalar(
+    cudaStream_t stream,
+    rmm::mr::device_memory_resource *mr = rmm::mr::get_current_device_resource())
     : buffer{sizeof(T), stream, mr}
   {
   }
@@ -72,9 +74,10 @@ class device_scalar {
    * @param stream Optional, stream on which to perform allocation and copy.
    * @param mr Optional, resource with which to allocate.
    */
-  explicit device_scalar(T const &initial_value,
-                         cudaStream_t stream                 = 0,
-                         rmm::mr::device_memory_resource *mr = rmm::mr::get_default_resource())
+  explicit device_scalar(
+    T const &initial_value,
+    cudaStream_t stream                 = 0,
+    rmm::mr::device_memory_resource *mr = rmm::mr::get_current_device_resource())
     : buffer{sizeof(T), stream, mr}
   {
     set_value(initial_value, stream);

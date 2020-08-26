@@ -15,7 +15,7 @@
 #=============================================================================
 cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 
-project(RMM VERSION 0.14.0 LANGUAGES C CXX CUDA)
+project(RMM VERSION 0.15.0 LANGUAGES C CXX CUDA)
 
 ###################################################################################################
 # - build type ------------------------------------------------------------------------------------
@@ -71,18 +71,6 @@ else()
 endif(CUDA_STATIC_RUNTIME)
 
 ###################################################################################################
-# - third party dependencies-----------------------------------------------------------------------
-# add third party dependencies using CMake FetchContent
-add_subdirectory(thirdparty)
-
-###################################################################################################
-# - cnmem ---------------------------------------------------------------------------------
-# include cnmem.h in the include/detail directory
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cnmem/include/cnmem.h" 
-               "${CMAKE_CURRENT_SOURCE_DIR}/include/rmm/detail/cnmem.h" COPYONLY)
-
-
-###################################################################################################
 # - cmake modules ---------------------------------------------------------------------------------
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/" ${CMAKE_MODULE_PATH})
@@ -90,6 +78,18 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/" ${CMAKE_MODUL
 include(FeatureSummary)
 include(CheckIncludeFiles)
 include(CheckLibraryExists)
+
+###################################################################################################
+# - third party dependencies-----------------------------------------------------------------------
+# add third party dependencies using CMake FetchContent
+
+add_subdirectory(thirdparty)
+
+###################################################################################################
+# - cnmem ---------------------------------------------------------------------------------
+# Temporarily needed to have all RMM includes under a single directory
+configure_file("${CNMEM_INCLUDE_DIR}/cnmem.h"
+	       "${CMAKE_CURRENT_SOURCE_DIR}/include/rmm/detail/cnmem.h" COPYONLY)
 
 ###################################################################################################
 # - per-thread default stream option --------------------------------------------------------------
@@ -110,7 +110,6 @@ if(BUILD_TESTS)
 
     if(GTEST_FOUND)
         message(STATUS "Google C++ Testing Framework (Google Test) found in ${GTEST_ROOT}")
-        include_directories(${GTEST_INCLUDE_DIR})
         add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
     else()
         message(AUTHOR_WARNING "Google C++ Testing Framework (Google Test) not found: automated tests are disabled.")
@@ -126,7 +125,6 @@ if(BUILD_BENCHMARKS)
 
   if(GBENCH_FOUND)
     message(STATUS "Google C++ Benchmarking Framework (Google Benchmark) found in ${GBENCH_ROOT}")
-    include_directories(${GBENCH_INCLUDE_DIR})
     add_subdirectory(${CMAKE_SOURCE_DIR}/benchmarks)
   else()
     message(AUTHOR_WARNING "Google C++ Benchmarking Framework (Google Benchmark) not found: automated tests are disabled.")
@@ -136,33 +134,30 @@ endif(BUILD_BENCHMARKS)
 
 
 ###################################################################################################
-# - include paths ---------------------------------------------------------------------------------
-include_directories("${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
-                    "${CMAKE_CURRENT_SOURCE_DIR}/include"
-                    "${CMAKE_CURRENT_SOURCE_DIR}/include/rmm"
-                    "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty"
-                    "${CMAKE_CURRENT_SOURCE_DIR}/src"
-                    "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/cnmem/include"
-                    "${CMAKE_SOURCE_DIR}/thirdparty")
-
-###################################################################################################
 # - library paths ---------------------------------------------------------------------------------
 
-link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES is an undocumented/unsupported variable containing the link directories for nvcc
-                 "${CMAKE_CURRENT_BINARY_DIR}/lib"
-                 "${GTEST_LIBRARY_DIR}")
+link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}") # CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES is an undocumented/unsupported variable containing the link directories for nvcc
 
 ###################################################################################################
 # - library targets -------------------------------------------------------------------------------
 add_library(rmm SHARED
-            src/rmm.cpp
-            src/memory_manager.cpp
-            thirdparty/cnmem/src/cnmem.cpp
-            src/mr/device/default_memory_resource.cpp)
-target_link_libraries(rmm spdlog::spdlog_header_only)
+            "${CNMEM_SOURCE_DIR}/cnmem.cpp")
 
 # override rpath for rmm
 SET_TARGET_PROPERTIES(rmm PROPERTIES BUILD_RPATH "\$ORIGIN")
+
+target_include_directories(rmm PUBLIC
+  "${THRUST_INCLUDE_DIR}"
+  "${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
+  "${CMAKE_CURRENT_SOURCE_DIR}/include"
+  "${CMAKE_CURRENT_BINARY_DIR}/include"
+  )
+
+# In order to find cnmem.h while building the library, we need this.
+# For library users it is replaced by a copy of the same cnmem.h under rmm/detail
+target_include_directories(rmm PRIVATE
+  "${CNMEM_INCLUDE_DIR}"
+  )
 
 ###################################################################################################
 # - build options ---------------------------------------------------------------------------------
@@ -171,14 +166,15 @@ option(USE_NVTX "Build with NVTX support" ON)
 if(USE_NVTX)
     message(STATUS "Using Nvidia Tools Extension")
     find_library(NVTX_LIBRARY nvToolsExt PATH ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
-    target_link_libraries(rmm ${NVTX_LIBRARY})
+    target_link_libraries(rmm PUBLIC ${NVTX_LIBRARY})
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --define-macro USE_NVTX")
 endif(USE_NVTX)
 
 ###################################################################################################
 # - link libraries --------------------------------------------------------------------------------
 
-target_link_libraries(rmm ${CUDART_LIBRARY} cuda)
+target_link_libraries(rmm PUBLIC
+  ${CUDART_LIBRARY} cuda spdlog::spdlog_header_only)
 
 ###################################################################################################
 # - install targets -------------------------------------------------------------------------------
@@ -188,6 +184,7 @@ install(TARGETS rmm
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/rmm
         DESTINATION include)
+
 ###################################################################################################
 # - make documentation ----------------------------------------------------------------------------
 

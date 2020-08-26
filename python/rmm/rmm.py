@@ -11,15 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import ctypes
-from enum import IntEnum
 
 import numpy as np
 from numba import cuda
 from numba.cuda import HostOnlyCUDAMemoryManager, IpcHandle, MemoryPointer
 
-import rmm._lib as librmm
+import rmm
+from rmm import _lib as librmm
 
 
 # Utility Functions
@@ -29,60 +28,13 @@ class RMMError(Exception):
         super(RMMError, self).__init__(msg)
 
 
-class rmm_allocation_mode(IntEnum):
-    CudaDefaultAllocation = (0,)
-    PoolAllocation = (1,)
-    CudaManagedMemory = (2,)
-
-
-# API Functions
-def _initialize(
-    pool_allocator=False,
-    managed_memory=False,
-    initial_pool_size=None,
-    devices=0,
-    logging=False,
-):
-    """
-    Initializes RMM library using the options passed
-    """
-    allocation_mode = 0
-
-    if pool_allocator:
-        allocation_mode |= rmm_allocation_mode.PoolAllocation
-    if managed_memory:
-        allocation_mode |= rmm_allocation_mode.CudaManagedMemory
-
-    if not pool_allocator:
-        initial_pool_size = 0
-    elif pool_allocator and initial_pool_size is None:
-        initial_pool_size = 0
-    elif pool_allocator and initial_pool_size == 0:
-        initial_pool_size = 1
-
-    if devices is None:
-        devices = [0]
-    elif isinstance(devices, int):
-        devices = [devices]
-
-    return librmm.rmm_initialize(
-        allocation_mode, initial_pool_size, devices, logging
-    )
-
-
-def _finalize():
-    """
-    Finalizes the RMM library, freeing all allocated memory
-    """
-    return librmm.rmm_finalize()
-
-
 def reinitialize(
     pool_allocator=False,
     managed_memory=False,
     initial_pool_size=None,
     devices=0,
     logging=False,
+    log_file_name=None,
 ):
     """
     Finalizes and then initializes RMM using the options passed. Using memory
@@ -106,14 +58,17 @@ def reinitialize(
         If True, enable run-time logging of all memory events
         (alloc, free, realloc).
         This has significant performance impact.
+    log_file_name : str
+        Name of the log file. If not specified, the environment variable
+        RMM_LOG_FILE is used. A TypeError is thrown if neither is available.
     """
-    _finalize()
-    return _initialize(
+    rmm.mr._initialize(
         pool_allocator=pool_allocator,
         managed_memory=managed_memory,
         initial_pool_size=initial_pool_size,
         devices=devices,
         logging=logging,
+        log_file_name=log_file_name,
     )
 
 
@@ -121,14 +76,7 @@ def is_initialized():
     """
     Returns true if RMM has been initialized, false otherwise
     """
-    return librmm.rmm_is_initialized()
-
-
-def csv_log():
-    """
-    Returns a CSV log of all events logged by RMM, if logging is enabled
-    """
-    return librmm.rmm_csv_log()
+    return rmm.mr.is_initialized()
 
 
 def device_array_from_ptr(ptr, nelem, dtype=np.float, finalizer=None):
@@ -210,30 +158,6 @@ def to_device(ary, stream=0, copy=True, to=None):
     return to
 
 
-def get_ipc_handle(ary, stream=0):
-    """
-    Get an IPC handle from the DeviceArray ary with offset modified by
-    the RMM memory pool.
-    """
-    ipch = cuda.devices.get_context().get_ipc_handle(ary.gpu_data)
-    ptr = ary.device_ctypes_pointer.value
-    offset = librmm.rmm_getallocationoffset(ptr, stream)
-    # replace offset with RMM's offset
-    ipch.offset = offset
-    desc = dict(shape=ary.shape, strides=ary.strides, dtype=ary.dtype)
-    return cuda.cudadrv.devicearray.IpcArrayHandle(
-        ipc_handle=ipch, array_desc=desc
-    )
-
-
-def get_info(stream=0):
-    """
-    Get the free and total bytes of memory managed by a manager associated with
-    the stream as a namedtuple with members `free` and `total`.
-    """
-    return librmm.rmm_getinfo(stream)
-
-
 class RMMNumbaManager(HostOnlyCUDAMemoryManager):
     """
     External Memory Management Plugin implementation for Numba. Provides
@@ -269,19 +193,19 @@ class RMMNumbaManager(HostOnlyCUDAMemoryManager):
         Get an IPC handle for the MemoryPointer memory with offset modified by
         the RMM memory pool.
         """
+        start, end = cuda.cudadrv.driver.device_extents(memory)
         ipchandle = (ctypes.c_byte * 64)()  # IPC handle is 64 bytes
         cuda.cudadrv.driver.driver.cuIpcGetMemHandle(
-            ctypes.byref(ipchandle), memory.owner.handle,
+            ctypes.byref(ipchandle), start,
         )
         source_info = cuda.current_context().device.get_device_identity()
-        ptr = memory.device_ctypes_pointer.value
-        offset = librmm.rmm_getallocationoffset(ptr, 0)
+        offset = memory.handle.value - start
         return IpcHandle(
             memory, ipchandle, memory.size, source_info, offset=offset
         )
 
     def get_memory_info(self):
-        return get_info()
+        raise NotImplementedError()
 
     @property
     def interface_version(self):
@@ -324,7 +248,6 @@ def _make_emm_plugin_finalizer(handle, allocations):
 # http://numba.pydata.org/numba-doc/latest/cuda/external-memory.html#environment-variable
 _numba_memory_manager = RMMNumbaManager
 
-
 try:
     import cupy
 except Exception:
@@ -352,26 +275,3 @@ def rmm_cupy_allocator(nbytes):
     ptr = cupy.cuda.memory.MemoryPointer(mem, 0)
 
     return ptr
-
-
-def _make_finalizer(handle, stream):
-    """
-    Factory to make the finalizer function.
-    We need to bind *handle* and *stream* into the actual finalizer, which
-    takes no args.
-    """
-
-    def finalizer():
-        """
-        Invoked when the MemoryPointer is freed
-        """
-        librmm.rmm_free(handle, stream)
-
-    return finalizer
-
-
-def _register_atexit_finalize():
-    """
-    Registers rmmFinalize() with ``std::atexit``.
-    """
-    librmm.register_atexit_finalize()

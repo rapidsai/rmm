@@ -11,31 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-# cython: profile = False
-# distutils: language = c++
-# cython: embedsignature = True
-# cython: language_level = 3
-
-
 import numpy as np
 
-from libcpp.memory cimport unique_ptr
+cimport cython
+from cpython.bytes cimport PyBytes_AS_STRING, PyBytes_FromStringAndSize
 from libc.stdint cimport uintptr_t
+from libcpp.memory cimport unique_ptr
 
-from cpython.bytes cimport PyBytes_FromStringAndSize, PyBytes_AS_STRING
-
+from rmm._cuda.gpu cimport cudaError, cudaError_t
 from rmm._lib.lib cimport (
-    cudaError_t,
     cudaMemcpyDeviceToDevice,
     cudaMemcpyDeviceToHost,
     cudaMemcpyHostToDevice,
-    cudaSuccess,
     cudaStream_t,
-    cudaStreamSynchronize
+    cudaStreamSynchronize,
 )
-
-cimport cython
 
 
 cdef class DeviceBuffer:
@@ -82,7 +72,7 @@ cdef class DeviceBuffer:
 
                 if c_stream == NULL:
                     err = cudaStreamSynchronize(c_stream)
-                    if err != cudaSuccess:
+                    if err != cudaError.cudaSuccess:
                         with gil:
                             raise RuntimeError(
                                 f"Stream sync failed with error: {err}"
@@ -109,12 +99,8 @@ cdef class DeviceBuffer:
     def size(self):
         return int(self.c_size())
 
-    def __getstate__(self):
-        return self.tobytes()
-
-    def __setstate__(self, state):
-        cdef DeviceBuffer other = DeviceBuffer.c_to_device(state)
-        self.c_obj = move(other.c_obj)
+    def __reduce__(self):
+        return to_device, (self.copy_to_host(),)
 
     @property
     def __cuda_array_interface__(self):
@@ -282,17 +268,23 @@ cdef class DeviceBuffer:
 
         return b
 
-    cdef size_t c_size(self):
+    cdef size_t c_size(self) except *:
         return self.c_obj.get()[0].size()
 
-    cpdef void resize(self, size_t new_size):
+    cpdef void resize(self, size_t new_size) except *:
         self.c_obj.get()[0].resize(new_size)
 
-    cpdef size_t capacity(self):
+    cpdef size_t capacity(self) except *:
         return self.c_obj.get()[0].capacity()
 
-    cdef void* c_data(self):
+    cdef void* c_data(self) except *:
         return self.c_obj.get()[0].data()
+
+    cdef device_buffer c_release(self) except *:
+        """
+        Releases ownership the data held by this DeviceBuffer.
+        """
+        return move(cython.operator.dereference(self.c_obj))
 
 
 @cython.boundscheck(False)
@@ -367,13 +359,13 @@ cpdef void copy_ptr_to_host(uintptr_t db,
 
     err = cudaMemcpyAsync(<void*>&hb[0], <const void*>db, len(hb),
                           cudaMemcpyDeviceToHost, <cudaStream_t>stream)
-    if err != cudaSuccess:
+    if err != cudaError.cudaSuccess:
         with gil:
             raise RuntimeError(f"Memcpy failed with error: {err}")
 
     if stream == 0:
         err = cudaStreamSynchronize(<cudaStream_t>stream)
-        if err != cudaSuccess:
+        if err != cudaError.cudaSuccess:
             with gil:
                 raise RuntimeError(f"Stream sync failed with error: {err}")
 
@@ -419,13 +411,13 @@ cpdef void copy_host_to_ptr(const unsigned char[::1] hb,
 
     err = cudaMemcpyAsync(<void*>db, <const void*>&hb[0], len(hb),
                           cudaMemcpyHostToDevice, <cudaStream_t>stream)
-    if err != cudaSuccess:
+    if err != cudaError.cudaSuccess:
         with gil:
             raise RuntimeError(f"Memcpy failed with error: {err}")
 
     if stream == 0:
         err = cudaStreamSynchronize(<cudaStream_t>stream)
-        if err != cudaSuccess:
+        if err != cudaError.cudaSuccess:
             with gil:
                 raise RuntimeError(f"Stream sync failed with error: {err}")
 
@@ -465,12 +457,12 @@ cpdef void copy_device_to_ptr(uintptr_t d_src,
 
     err = cudaMemcpyAsync(<void*>d_dst, <const void*>d_src, count,
                           cudaMemcpyDeviceToDevice, <cudaStream_t>stream)
-    if err != cudaSuccess:
+    if err != cudaError.cudaSuccess:
         with gil:
             raise RuntimeError(f"Memcpy failed with error: {err}")
 
     if stream == 0:
         err = cudaStreamSynchronize(<cudaStream_t>stream)
-        if err != cudaSuccess:
+        if err != cudaError.cudaSuccess:
             with gil:
                 raise RuntimeError(f"Stream sync failed with error: {err}")
