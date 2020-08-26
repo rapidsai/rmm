@@ -1,4 +1,4 @@
-# RMM 0.15.0 (Date TBD)
+# RMM 0.15.0 (26 Aug 2020)
 
 ## New Features
 
