@@ -52,9 +52,11 @@ def reinitialize(
     initial_pool_size : int, default None
         When `pool_allocator` is True, this indicates the initial pool size in
         bytes. By default, 1/2 of the total GPU memory is used.
+        When `pool_allocator` is False, this argument is ignored if provided.
     maximum_pool_size : int, default None
         When `pool_allocator` is True, this indicates the maximum pool size in
         bytes. By default, the total available memory on the GPU is used.
+        When `pool_allocator` is False, this argument is ignored if provided.
     devices : int or List[int], default 0
         GPU device  IDs to register. By default registers only GPU 0.
     logging : bool, default False
