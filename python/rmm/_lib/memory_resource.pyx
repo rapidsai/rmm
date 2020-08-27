@@ -49,22 +49,30 @@ cdef class PoolMemoryResource(MemoryResource):
     def __cinit__(
             self,
             MemoryResource upstream,
-            size_t initial_pool_size=~0,
-            size_t maximum_pool_size=~0
+            initial_pool_size=None,
+            maximum_pool_size=None
     ):
+        cdef size_t c_initial_pool_size
+        cdef size_t c_maximum_pool_size
+        c_initial_pool_size = (
+            ~0 if initial_pool_size is None else initial_pool_size
+        )
+        c_maximum_pool_size = (
+            ~0 if maximum_pool_size is None else maximum_pool_size
+        )
         self.c_obj.reset(
             new pool_memory_resource_wrapper(
                 upstream.c_obj,
-                initial_pool_size,
-                maximum_pool_size
+                c_initial_pool_size,
+                c_maximum_pool_size
             )
         )
 
     def __init__(
             self,
             MemoryResource upstream,
-            size_t initial_pool_size=~0,
-            size_t maximum_pool_size=~0
+            object initial_pool_size=None,
+            object maximum_pool_size=None
     ):
         """
         Coalescing best-fit suballocator which uses a pool of memory allocated
@@ -313,7 +321,7 @@ cpdef void _initialize(
 
     if pool_allocator:
         typ = PoolMemoryResource
-        args = (upstream())
+        args = (upstream(),)
         kwargs = dict(
             initial_pool_size=initial_pool_size,
             maximum_pool_size=maximum_pool_size
