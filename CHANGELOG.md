@@ -5,6 +5,7 @@
 ## Improvements
 
 - PR #477 Just use `None` for `strides` in `DeviceBuffer`
+- PR #528 Add maximum_pool_size parameter to reinitialize API
 
 ## Bug Fixes
 
