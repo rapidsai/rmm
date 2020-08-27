@@ -352,3 +352,30 @@ def test_binning_memory_resource(dtype, nelem, alloc, upstream_mr):
     assert rmm.mr.get_current_device_resource_type() is type(mr)
     array_tester(dtype, nelem, alloc)
     rmm.reinitialize()
+
+
+def test_reinitialize_max_pool_size():
+    rmm.reinitialize(
+        pool_allocator=True, initial_pool_size=0, maximum_pool_size=1 << 23
+    )
+    rmm.DeviceBuffer().resize((1 << 23) - 1)
+    rmm.reinitialize()
+
+
+def test_reinitialize_max_pool_size_exceeded():
+    rmm.reinitialize(
+        pool_allocator=True, initial_pool_size=0, maximum_pool_size=1 << 23
+    )
+    with pytest.raises(MemoryError):
+        rmm.DeviceBuffer().resize(1 << 24)
+    rmm.reinitialize()
+
+
+def test_reinitialize_initial_pool_size_gt_max():
+    with pytest.raises(RuntimeError) as e:
+        rmm.reinitialize(
+            pool_allocator=True,
+            initial_pool_size=1 << 11,
+            maximum_pool_size=1 << 10,
+        )
+    assert "Initial pool size exceeds the maximum pool size" in str(e.value)
