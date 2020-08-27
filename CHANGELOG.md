@@ -67,6 +67,7 @@
 - PR #511 Specify `--basetemp` for `py.test` run
 - PR #509 Fix missing : before __LINE__ in throw string of RMM_CUDA_TRY
 - PR #510 Fix segfault in pool_memory_resource when a CUDA stream is destroyed
+- PR #XXX Patch Thrust to workaround `CUDA_CUB_RET_IF_FAIL` macro clearing CUDA errors
 
 
 # RMM 0.14.0 (03 Jun 2020)
