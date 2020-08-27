@@ -313,15 +313,15 @@ cpdef void _initialize(
 
     if pool_allocator:
         typ = PoolMemoryResource
-        args = [upstream()]
-        if initial_pool_size is not None:
-            args.append(initial_pool_size)
-        if maximum_pool_size is not None:
-            args.append(maximum_pool_size)
-        args = tuple(args)
+        args = (upstream())
+        kwargs = dict(
+            initial_pool_size=initial_pool_size,
+            maximum_pool_size=maximum_pool_size
+        )
     else:
         typ = upstream
         args = ()
+        kwargs = {}
 
     cdef MemoryResource mr
     cdef int original_device
@@ -349,9 +349,12 @@ cpdef void _initialize(
             setDevice(device)
 
             if logging:
-                mr = LoggingResourceAdaptor(typ(*args), log_file_name.encode())
+                mr = LoggingResourceAdaptor(
+                    typ(*args, **kwargs),
+                    log_file_name.encode()
+                )
             else:
-                mr = typ(*args)
+                mr = typ(*args, **kwargs)
 
             _set_per_device_resource(device, mr)
 
