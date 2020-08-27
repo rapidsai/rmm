@@ -298,6 +298,7 @@ cpdef void _initialize(
     bool pool_allocator=False,
     bool managed_memory=False,
     object initial_pool_size=None,
+    object maximum_pool_size=None,
     object devices=0,
     bool logging=False,
     object log_file_name=None,
@@ -312,11 +313,12 @@ cpdef void _initialize(
 
     if pool_allocator:
         typ = PoolMemoryResource
-        if initial_pool_size is None:
-            args = (upstream(),)
-        else:
-            args = (upstream(), initial_pool_size)
-
+        args = [upstream()]
+        if initial_pool_size is not None:
+            args.append(initial_pool_size)
+        if maximum_pool_size is not None:
+            args.append(maximum_pool_size)
+        args = tuple(args)
     else:
         typ = upstream
         args = ()

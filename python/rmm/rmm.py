@@ -32,6 +32,7 @@ def reinitialize(
     pool_allocator=False,
     managed_memory=False,
     initial_pool_size=None,
+    maximum_pool_size=None,
     devices=0,
     logging=False,
     log_file_name=None,
@@ -50,8 +51,10 @@ def reinitialize(
         If True, use managed memory for device memory allocation
     initial_pool_size : int, default None
         When `pool_allocator` is True, this indicates the initial pool size in
-        bytes. None is used to indicate the default size of the underlying
-        memorypool implementation, which currently is 1/2 total GPU memory.
+        bytes. By default, 1/2 of the total GPU memory is used.
+    maximum_pool_size : int, default None
+        When `pool_allocator` is True, this indicates the maximum pool size in
+        bytes. By default, the total available memory on the GPU is used.
     devices : int or List[int], default 0
         GPU device  IDs to register. By default registers only GPU 0.
     logging : bool, default False
@@ -66,6 +69,7 @@ def reinitialize(
         pool_allocator=pool_allocator,
         managed_memory=managed_memory,
         initial_pool_size=initial_pool_size,
+        maximum_pool_size=maximum_pool_size,
         devices=devices,
         logging=logging,
         log_file_name=log_file_name,
