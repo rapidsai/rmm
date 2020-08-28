@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
+#include <atomic>
 #include <benchmarks/utilities/cxxopts.hpp>
 #include <benchmarks/utilities/log_parser.hpp>
 
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/binning_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
+#include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/owning_wrapper.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
 
@@ -30,11 +32,14 @@
 
 #include <benchmark/benchmark.h>
 
+#include <chrono>
 #include <iterator>
 #include <memory>
 #include <numeric>
 #include <string>
-#include "rmm/mr/device/device_memory_resource.hpp"
+#include <thread>
+
+#include "spdlog/common.h"
 
 /// MR factory functions
 inline auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>(); }
@@ -74,42 +79,127 @@ struct allocation {
  * @tparam MR The type of the `device_memory_resource` to use for allocation
  * replay
  */
-struct replay_benchmark {
+struct replay_benchmark : benchmark::Fixture {
+  MRFactoryFunc factory_;
   std::shared_ptr<rmm::mr::device_memory_resource> mr_{};
   std::vector<std::vector<rmm::detail::event>> const& events_{};
+
+  // Maps a pointer from the event log to an active allocation
+  std::unordered_map<uintptr_t, allocation> allocation_map;
+  std::mutex map_mutex;
+
+  // shared index to play back multithreaded events back in order
+  std::atomic_size_t event_index{0};
 
   /**
    * @brief Construct a `replay_benchmark` from a list of events and
    * set of arguments forwarded to the MR constructor.
    *
+   * @param factory A factory function to create the memory resource
    * @param events The set of allocation events to replay
    * @param args Variable number of arguments forward to the constructor of MR
    */
   replay_benchmark(MRFactoryFunc factory,
                    std::vector<std::vector<rmm::detail::event>> const& events)
-    : mr_{factory()}, events_{events}
+    : factory_{factory}, mr_{}, events_{events}, allocation_map{events.size()}, event_index{0}
   {
   }
 
-  void operator()(benchmark::State& state)
+  /**
+   * @brief Copy construct a replay_benchmark
+   *
+   * Does not copy the mutex or the map
+   */
+  replay_benchmark(replay_benchmark const& other)
+    : factory_{other.factory_},
+      mr_{other.mr_},
+      events_{other.events_},
+      allocation_map{events_.size()},
+      event_index{0}
   {
-    // Maps a pointer from the event log to an active allocation
-    std::unordered_map<uintptr_t, allocation> allocation_map(events_.size());
+  }
 
+  /// Add an allocation to the map (thread safe)
+  void set_allocation(std::unordered_map<uintptr_t, allocation>& allocation_map,
+                      uintptr_t ptr,
+                      allocation alloc)
+  {
+    std::lock_guard<std::mutex> lock(map_mutex);
+    allocation_map.insert({ptr, alloc});
+  }
+
+  /// Remove an allocation from the map (thread safe)
+  allocation remove_allocation(std::unordered_map<uintptr_t, allocation>& allocation_map,
+                               uintptr_t ptr)
+  {
+    std::lock_guard<std::mutex> lock(map_mutex);
+    auto iter = allocation_map.find(ptr);
+    if (iter != allocation_map.end()) {
+      allocation a = iter->second;
+      allocation_map.erase(iter);
+      return a;
+    }
+    return allocation{};
+  }
+
+  /// Create the memory resource shared by all threads before the benchmark runs
+  void SetUp(const ::benchmark::State& state) override
+  {
+    if (state.thread_index == 0) { mr_ = factory_(); }
+  }
+
+  /// Destroy the memory resource and count any unallocated memory
+  void TearDown(const ::benchmark::State& state) override
+  {
+    if (state.thread_index == 0) {
+      // clean up any leaked allocations
+      std::size_t total_leaked{0};
+      std::size_t num_leaked{0};
+      for (auto const& ptr_alloc : allocation_map) {
+        auto alloc = ptr_alloc.second;
+        num_leaked++;
+        total_leaked += alloc.size;
+        mr_->deallocate(alloc.p, alloc.size, 0);
+      }
+      if (num_leaked > 0)
+        std::cout << "LOG shows leak of " << num_leaked << " allocations of " << total_leaked
+                  << " total bytes\n";
+      allocation_map.clear();
+      mr_.reset();
+    }
+  }
+
+  /// Run the replay benchmark
+  void BenchmarkCase(::benchmark::State& state) override
+  {
     auto const& my_events = events_.at(state.thread_index);
 
+    using namespace std::chrono_literals;
+
     for (auto _ : state) {
-      std::for_each(my_events.begin(), my_events.end(), [&allocation_map, &state, this](auto e) {
+      std::for_each(my_events.begin(), my_events.end(), [&state, this](auto e) {
+        // ensure correct ordering between threads
+        while (event_index < e.index) {
+          std::this_thread::sleep_for(2us);
+        }
+
+#ifndef NDEBUG
+        std::cout << "Thread: " << state.thread_index << " Event " << e.index << std::endl;
+#endif
         if (rmm::detail::action::ALLOCATE == e.act) {
-          auto p                    = mr_->allocate(e.size);
-          allocation_map[e.pointer] = allocation{p, e.size};
+          auto p = mr_->allocate(e.size);
+          set_allocation(allocation_map, e.pointer, allocation{p, e.size});
         } else {
-          auto a = allocation_map[e.pointer];
+          auto a = remove_allocation(allocation_map, e.pointer);
           mr_->deallocate(a.p, e.size);
         }
+
+        event_index++;
       });
     }
   }
+
+  void operator()(::benchmark::State& state) { Run(state); }
 };
 
 /**
@@ -158,8 +248,13 @@ std::vector<std::vector<rmm::detail::event>> parse_per_thread_events(std::string
                    auto begin = offset;
                    offset += num_events;
                    auto end = offset;
-                   return std::vector<event>(all_events.cbegin() + begin,
-                                             all_events.cbegin() + end);
+                   std::vector<event> thread_events(all_events.cbegin() + begin,
+                                                    all_events.cbegin() + end);
+                   // sort into original order
+                   std::sort(thread_events.begin(), thread_events.end(), [](auto lhs, auto rhs) {
+                     return lhs.index < rhs.index;
+                   });
+                   return thread_events;
                  });
 
   return per_thread_events;
@@ -173,20 +268,25 @@ int main(int argc, char** argv)
   ::benchmark::Initialize(&argc, argv);
 
   // Parse for replay arguments:
-  cxxopts::Options options("RMM Replay Benchmark",
-                           "Replays and benchmarks allocation activity captured from RMM logging.");
+  auto args = [&argc, &argv]() {
+    cxxopts::Options options(
+      "RMM Replay Benchmark",
+      "Replays and benchmarks allocation activity captured from RMM logging.");
 
-  options.add_options()("f,file", "Name of RMM log file.", cxxopts::value<std::string>());
-  options.add_options()("v,verbose",
-                        "Enable verbose printing of log events",
-                        cxxopts::value<bool>()->default_value("false"));
+    options.add_options()("f,file", "Name of RMM log file.", cxxopts::value<std::string>());
+    options.add_options()("v,verbose",
+                          "Enable verbose printing of log events",
+                          cxxopts::value<bool>()->default_value("false"));
 
-  auto args = options.parse(argc, argv);
+    auto args = options.parse(argc, argv);
 
-  if (args.count("file") == 0) {
-    std::cout << options.help() << std::endl;
-    exit(0);
-  }
+    if (args.count("file") == 0) {
+      std::cout << options.help() << std::endl;
+      exit(0);
+    }
+
+    return args;
+  }();
 
   auto filename = args["file"].as<std::string>();
 
@@ -215,7 +315,7 @@ int main(int argc, char** argv)
 
   auto const num_threads = per_thread_events.size();
 
-  benchmark::RegisterBenchmark("CUDA Resource", replay_benchmark{&make_cuda, per_thread_events})
+  benchmark::RegisterBenchmark("CUDA Resource", replay_benchmark(&make_cuda, per_thread_events))
     ->Unit(benchmark::kMillisecond)
     ->Threads(num_threads);
 
