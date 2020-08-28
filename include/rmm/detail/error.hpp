@@ -16,14 +16,16 @@
 
 #pragma once
 
+#include <rmm/detail/logger.hpp>
+
 #include <cuda_runtime_api.h>
+
 #include <cassert>
 #include <iostream>
 #include <stdexcept>
 #include <string>
 
 namespace rmm {
-
 /**
  * @brief Exception thrown when logical precondition is violated.
  *
@@ -163,7 +165,7 @@ class out_of_range : public std::out_of_range {
                             RMM_STRINGIFY(__LINE__) + ": " + cudaGetErrorName(error) + " " + \
                             cudaGetErrorString(error)};                                      \
     }                                                                                        \
-  } while (0);
+  } while (0)
 #define RMM_CUDA_TRY_1(_call) RMM_CUDA_TRY_2(_call, rmm::cuda_error)
 
 /**
@@ -205,5 +207,22 @@ class out_of_range : public std::out_of_range {
                 << cudaGetErrorString(status__) << std::endl;                   \
     }                                                                           \
     assert(status__ == cudaSuccess);                                            \
-  } while (0);
+  } while (0)
+#endif
+
+/**
+ * @brief Assertion that logs a CRITICAL log message on failure.
+ */
+#ifdef NDEBUG
+#define RMM_LOGGING_ASSERT(_expr) (void)0
+#else
+#define RMM_LOGGING_ASSERT(_expr)                                                                 \
+  do {                                                                                            \
+    if (!(_expr)) {                                                                               \
+      RMM_LOG_CRITICAL(                                                                           \
+        "[" __FILE__ ":" RMM_STRINGIFY(__LINE__) "] Assertion " RMM_STRINGIFY(_expr) " failed."); \
+      rmm::logger().flush();                                                                      \
+      assert((_expr));                                                                            \
+    }                                                                                             \
+  } while (0)
 #endif

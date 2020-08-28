@@ -19,26 +19,37 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/spdlog.h>
 
+#include <iostream>
 #include <string>
 
 namespace rmm {
 
-namespace detail {
+namespace {
 
-inline std::string get_default_log_filename()
+inline std::string default_log_filename()
 {
   auto filename = std::getenv("RMM_DEBUG_LOG_FILE");
-  return (filename == nullptr) ? std::string{"rmm_debug_log.txt"} : std::string{filename};
+  return (filename == nullptr) ? std::string{"rmm_log.txt"} : std::string{filename};
 }
+}  // namespace
 
 inline spdlog::logger& logger()
 {
-  static spdlog::logger logger_("RMM",
-                                std::make_shared<spdlog::sinks::basic_file_sink_mt>(
-                                  get_default_log_filename(), true /*truncate file*/));
+  bool truncate_file{true};
+  static spdlog::logger logger_(
+    "RMM",
+    std::make_shared<spdlog::sinks::basic_file_sink_mt>(default_log_filename(), truncate_file));
+  logger_.set_pattern("[%l][%t][%H:%M:%S:%f] %v");
+  logger_.flush_on(spdlog::level::trace);
+
   return logger_;
 }
 
-}  // namespace detail
+#define RMM_LOG_TRACE(...) SPDLOG_LOGGER_TRACE(&rmm::logger(), __VA_ARGS__)
+#define RMM_LOG_DEBUG(...) SPDLOG_LOGGER_DEBUG(&rmm::logger(), __VA_ARGS__)
+#define RMM_LOG_INFO(...) SPDLOG_LOGGER_INFO(&rmm::logger(), __VA_ARGS__)
+#define RMM_LOG_WARN(...) SPDLOG_LOGGER_WARN(&rmm::logger(), __VA_ARGS__)
+#define RMM_LOG_ERROR(...) SPDLOG_LOGGER_ERROR(&rmm::logger(), __VA_ARGS__)
+#define RMM_LOG_CRITICAL(...) SPDLOG_LOGGER_CRITICAL(&rmm::logger(), __VA_ARGS__)
 
 }  // namespace rmm
