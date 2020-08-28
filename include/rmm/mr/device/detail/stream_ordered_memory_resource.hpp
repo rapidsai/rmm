@@ -203,6 +203,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    */
   virtual void* do_allocate(std::size_t bytes, cudaStream_t stream) override
   {
+    RMM_LOG_TRACE("[Allocate][{}B][stream {}]", bytes, static_cast<void*>(stream));
     if (bytes <= 0) return nullptr;
 
     lock_guard lock(mtx_);
@@ -215,6 +216,10 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     auto const b = this->underlying().get_block(bytes, stream_event);
     auto split   = this->underlying().allocate_from_block(b, bytes);
     if (split.remainder.is_valid()) stream_free_blocks_[stream_event].insert(split.remainder);
+    RMM_LOG_TRACE("[Allocated][{}B][{:p}][stream {}]",
+                  bytes,
+                  split.allocated_pointer,
+                  static_cast<void*>(stream));
     return split.allocated_pointer;
   }
 
@@ -228,6 +233,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
   virtual void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override
   {
     lock_guard lock(mtx_);
+    RMM_LOG_TRACE("[Deallocate][{}B][{:p}][stream {:p}]", bytes, p, static_cast<void*>(stream));
     auto stream_event = get_event(stream);
     bytes             = rmm::detail::align_up(bytes, allocation_alignment);
     auto const b      = this->underlying().free_block(p, bytes);
@@ -306,18 +312,16 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    */
   block_type get_block(size_t size, stream_event_pair stream_event)
   {
-    // Try to find a satisfactory block in free list for the same stream (no sync required)
+    // Try to find a satisfactory block in free list for the  same stream (no sync required)
     auto iter = stream_free_blocks_.find(stream_event);
     if (iter != stream_free_blocks_.end()) {
       block_type b = iter->second.get_block(size);
       if (b.is_valid()) return b;
 
-      SPDLOG_LOGGER_INFO(&rmm::detail::logger(),
-                         "{} | Stream {} Steal {}B (my freelist has {} blocks)",
-                         std::hash<std::thread::id>{}(std::this_thread::get_id()),
-                         reinterpret_cast<void*>(stream_event.stream),
-                         size,
-                         iter->second.size());
+      RMM_LOG_INFO("Stream {} Steal {}B (my freelist has {} blocks)",
+                   static_cast<void*>(stream_event.stream),
+                   size,
+                   iter->second.size());
     }
 
     // Otherwise try to find a block associated with another stream
@@ -325,9 +329,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     if (b.is_valid()) return b;
 
     // no larger blocks available on other streams, so grow the pool and create a block
-    SPDLOG_LOGGER_INFO(&rmm::detail::logger(),
-                       "{} | Growing pool",
-                       std::hash<std::thread::id>{}(std::this_thread::get_id()));
+    RMM_LOG_INFO("Growing pool");
 
     // avoid searching for this stream's list again
     free_list& blocks =

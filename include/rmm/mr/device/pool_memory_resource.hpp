@@ -16,6 +16,7 @@
 #pragma once
 
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/logger.hpp>
 #include <rmm/mr/device/detail/coalescing_free_list.hpp>
 #include <rmm/mr/device/detail/stream_ordered_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
@@ -23,7 +24,6 @@
 #include <cuda_runtime_api.h>
 
 #include <algorithm>
-#include <cassert>
 #include <cstdint>
 #include <iostream>
 #include <map>
@@ -181,11 +181,7 @@ class pool_memory_resource final
     void* p = upstream_mr_->allocate(size, stream);
     block_type b{reinterpret_cast<char*>(p), size, true};
     upstream_blocks_.emplace_back(b);  // TODO: with C++17 use version that returns a reference
-    SPDLOG_LOGGER_INFO(&rmm::detail::logger(),
-                       "{} | Stream {} Upstream allocate {}B",
-                       std::hash<std::thread::id>{}(std::this_thread::get_id()),
-                       reinterpret_cast<void*>(stream),
-                       size);
+    RMM_LOG_INFO("Stream {} Upstream allocate {}B", reinterpret_cast<void*>(stream), size);
     return b;
   }
 
@@ -224,10 +220,10 @@ class pool_memory_resource final
     if (p == nullptr) return block_type{};
 
     auto const i = allocated_blocks_.find(static_cast<char*>(p));
-    assert(i != allocated_blocks_.end());
+    RMM_LOGGING_ASSERT(i != allocated_blocks_.end());
 
     auto block = *i;
-    assert(block.size() == rmm::detail::align_up(size, allocation_alignment));
+    RMM_LOGGING_ASSERT(block.size() == rmm::detail::align_up(size, allocation_alignment));
     allocated_blocks_.erase(i);
 
     return block;

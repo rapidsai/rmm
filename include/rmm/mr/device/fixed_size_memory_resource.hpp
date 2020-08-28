@@ -25,7 +25,6 @@
 #include <cuda_runtime_api.h>
 
 #include <algorithm>
-#include <cassert>
 #include <cstddef>
 #include <list>
 #include <map>
@@ -201,7 +200,7 @@ class fixed_size_memory_resource
   {
     // Deallocating a fixed-size block just inserts it in the free list, which is
     // handled by the parent class
-    assert(rmm::detail::align_up(size, allocation_alignment) <= block_size_);
+    RMM_LOGGING_ASSERT(rmm::detail::align_up(size, allocation_alignment) <= block_size_);
     return block_type{p};
   }
 
