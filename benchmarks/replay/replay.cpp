@@ -261,6 +261,27 @@ std::vector<std::vector<rmm::detail::event>> parse_per_thread_events(std::string
   return per_thread_events;
 }
 
+void declare_benchmark(std::string name,
+                       std::vector<std::vector<rmm::detail::event>> const& per_thread_events,
+                       std::size_t num_threads)
+{
+  if (name == "cuda")
+    benchmark::RegisterBenchmark("CUDA Resource", replay_benchmark(&make_cuda, per_thread_events))
+      ->Unit(benchmark::kMillisecond)
+      ->Threads(num_threads);
+  else if (name == "binning")
+    benchmark::RegisterBenchmark("Binning Resource",
+                                 replay_benchmark(&make_binning, per_thread_events))
+      ->Unit(benchmark::kMillisecond)
+      ->Threads(num_threads);
+  else if (name == "pool")
+    benchmark::RegisterBenchmark("Pool Resource", replay_benchmark(&make_pool, per_thread_events))
+      ->Unit(benchmark::kMillisecond)
+      ->Threads(num_threads);
+  else
+    std::cout << "Error: invalid memory_resource name: " << name << "\n";
+}
+
 // Usage: REPLAY_BENCHMARK -f "path/to/log/file"
 int main(int argc, char** argv)
 {
@@ -275,6 +296,9 @@ int main(int argc, char** argv)
       "Replays and benchmarks allocation activity captured from RMM logging.");
 
     options.add_options()("f,file", "Name of RMM log file.", cxxopts::value<std::string>());
+    options.add_options()("r,resource",
+                          "Type of device_memory_resource",
+                          cxxopts::value<std::string>()->default_value("pool"));
     options.add_options()("v,verbose",
                           "Enable verbose printing of log events",
                           cxxopts::value<bool>()->default_value("false"));
@@ -319,18 +343,16 @@ int main(int argc, char** argv)
   // Uncomment to enable / change default log level
   // rmm::logger().set_level(spdlog::level::trace);
 
-  benchmark::RegisterBenchmark("CUDA Resource", replay_benchmark(&make_cuda, per_thread_events))
-    ->Unit(benchmark::kMillisecond)
-    ->Threads(num_threads);
-
-  benchmark::RegisterBenchmark("Pool Resource", replay_benchmark(&make_pool, per_thread_events))
-    ->Unit(benchmark::kMillisecond)
-    ->Threads(num_threads);
-
-  benchmark::RegisterBenchmark("Binning Resource",
-                               replay_benchmark(&make_binning, per_thread_events))
-    ->Unit(benchmark::kMillisecond)
-    ->Threads(num_threads);
+  if (args.count("resource") > 0) {
+    std::string mr_name = args["resource"].as<std::string>();
+    declare_benchmark(mr_name, per_thread_events, num_threads);
+  } else {
+    std::array<std::string, 4> mrs{"pool", "binning", "cuda"};
+    std::for_each(
+      std::cbegin(mrs), std::cend(mrs), [&per_thread_events, &num_threads](auto const& s) {
+        declare_benchmark(s, per_thread_events, num_threads);
+      });
+  }
 
   ::benchmark::RunSpecifiedBenchmarks();
 }
