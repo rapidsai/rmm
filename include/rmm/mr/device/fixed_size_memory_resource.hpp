@@ -230,7 +230,6 @@ class fixed_size_memory_resource
     upstream_blocks_.clear();
   }
 
-#ifndef NDEBUG
   void print()
   {
     lock_guard lock(this->get_mutex());
@@ -250,7 +249,20 @@ class fixed_size_memory_resource
 
     this->print_free_blocks();
   }
-#endif
+
+  /**
+   * @brief Get the largest available block size and total free size in the specified free list
+   *
+   * This is intended only for debugging
+   *
+   * @param blocks The free list from which to return the summary
+   * @return std::pair<std::size_t, std::size_t> Pair of largest available block, total free size
+   */
+  std::pair<std::size_t, std::size_t> free_list_summary(free_list const& blocks)
+  {
+    return blocks.is_empty() ? std::make_pair(std::size_t{0}, std::size_t{0})
+                             : std::make_pair(block_size_, blocks.size() * block_size_);
+  }
 
   Upstream* upstream_mr_;  // The resource from which to allocate new blocks
 

@@ -308,6 +308,25 @@ class pool_memory_resource final
   }
 
   /**
+   * @brief Get the largest available block size and total free size in the specified free list
+   *
+   * This is intended only for debugging
+   *
+   * @param blocks The free list from which to return the summary
+   * @return std::pair<std::size_t, std::size_t> Pair of largest available block, total free size
+   */
+  std::pair<std::size_t, std::size_t> free_list_summary(free_list const& blocks)
+  {
+    std::size_t largest{};
+    std::size_t total{};
+    std::for_each(blocks.cbegin(), blocks.cend(), [&largest, &total](auto const& b) {
+      total += b.size();
+      largest = std::max(largest, b.size());
+    });
+    return {largest, total};
+  }
+
+  /**
    * @brief Get free and available memory for memory resource
    *
    * @throws nothing
