@@ -145,13 +145,17 @@ struct replay_benchmark : benchmark::Fixture {
   /// Create the memory resource shared by all threads before the benchmark runs
   void SetUp(const ::benchmark::State& state) override
   {
-    if (state.thread_index == 0) { mr_ = factory_(); }
+    if (state.thread_index == 0) {
+      rmm::logger().log(spdlog::level::info, "------ Start of Benchmark -----");
+      mr_ = factory_();
+    }
   }
 
   /// Destroy the memory resource and count any unallocated memory
   void TearDown(const ::benchmark::State& state) override
   {
     if (state.thread_index == 0) {
+      rmm::logger().log(spdlog::level::info, "------ End of Benchmark -----");
       // clean up any leaked allocations
       std::size_t total_leaked{0};
       std::size_t num_leaked{0};
@@ -183,9 +187,6 @@ struct replay_benchmark : benchmark::Fixture {
           std::this_thread::sleep_for(2us);
         }
 
-#ifndef NDEBUG
-        std::cout << "Thread: " << state.thread_index << " Event " << e.index << std::endl;
-#endif
         if (rmm::detail::action::ALLOCATE == e.act) {
           auto p = mr_->allocate(e.size);
           set_allocation(allocation_map, e.pointer, allocation{p, e.size});
@@ -314,6 +315,9 @@ int main(int argc, char** argv)
   }
 
   auto const num_threads = per_thread_events.size();
+
+  // Uncomment to enable / change default log level
+  // rmm::logger().set_level(spdlog::level::trace);
 
   benchmark::RegisterBenchmark("CUDA Resource", replay_benchmark(&make_cuda, per_thread_events))
     ->Unit(benchmark::kMillisecond)

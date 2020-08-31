@@ -127,8 +127,8 @@ inline std::vector<event> parse_csv(std::string const& filename)
 
   std::vector<std::size_t> tids     = csv.GetColumn<std::size_t>("Thread");
   std::vector<std::string> actions  = csv.GetColumn<std::string>("Action");
-  std::vector<std::size_t> sizes    = csv.GetColumn<std::size_t>("Size");
   std::vector<std::string> pointers = csv.GetColumn<std::string>("Pointer");
+  std::vector<std::size_t> sizes    = csv.GetColumn<std::size_t>("Size");
   std::vector<uintptr_t> streams    = csv.GetColumn<uintptr_t>("Stream");
 
   auto const size_list = {tids.size(), actions.size(), pointers.size(), streams.size()};
