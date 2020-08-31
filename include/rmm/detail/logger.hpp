@@ -40,7 +40,7 @@ inline spdlog::logger& logger()
     "RMM",
     std::make_shared<spdlog::sinks::basic_file_sink_mt>(default_log_filename(), truncate_file));
   logger_.set_pattern("[%l][%t][%H:%M:%S:%f] %v");
-  logger_.flush_on(spdlog::level::trace);
+  logger_.flush_on(spdlog::level::warn);
 
   return logger_;
 }
