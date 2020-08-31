@@ -330,7 +330,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
 
     // no larger blocks available on other streams, so grow the pool and create a block
 
-    log_summary(stream_event.stream);
+    log_summary_trace(stream_event.stream);
 
     // avoid searching for this stream's list again
     free_list& blocks =
