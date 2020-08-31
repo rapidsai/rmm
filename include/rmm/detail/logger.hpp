@@ -39,8 +39,19 @@ inline spdlog::logger& logger()
   static spdlog::logger logger_(
     "RMM",
     std::make_shared<spdlog::sinks::basic_file_sink_mt>(default_log_filename(), truncate_file));
-  logger_.set_pattern("[%l][%t][%H:%M:%S:%f] %v");
-  logger_.flush_on(spdlog::level::warn);
+  static bool initialized{false};
+  if (not initialized) {
+    initialized = true;
+    logger_.set_pattern("[%l][%t][%H:%M:%S:%f] %v");
+    logger_.flush_on(spdlog::level::warn);
+
+#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
+    logger_.info("----- RMM LOG BEGIN [PTDS ENABLED] -----");
+#else
+    logger_.info("----- RMM LOG BEGIN [PTDS DISABLED] -----");
+#endif
+    logger_.flush();
+  }
 
   return logger_;
 }
