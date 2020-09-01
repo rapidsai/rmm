@@ -17,8 +17,8 @@ The goal of the RAPIDS Memory Manager (RMM) is to provide:
 For information on the interface RMM provides and how to use RMM in your C++ code, see
 [below](#using-rmm-in-c++).
 
-**NOTE:** For the latest stable [README.md](https://github.com/rapidsai/rmm/blob/master/README.md)
-ensure you are on the `master` branch.
+**NOTE:** For the latest stable [README.md](https://github.com/rapidsai/rmm/blob/main/README.md)
+ensure you are on the `main` branch.
 
 ## Installation
 

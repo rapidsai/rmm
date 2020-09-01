@@ -49,22 +49,30 @@ cdef class PoolMemoryResource(MemoryResource):
     def __cinit__(
             self,
             MemoryResource upstream,
-            size_t initial_pool_size=~0,
-            size_t maximum_pool_size=~0
+            initial_pool_size=None,
+            maximum_pool_size=None
     ):
+        cdef size_t c_initial_pool_size
+        cdef size_t c_maximum_pool_size
+        c_initial_pool_size = (
+            ~0 if initial_pool_size is None else initial_pool_size
+        )
+        c_maximum_pool_size = (
+            ~0 if maximum_pool_size is None else maximum_pool_size
+        )
         self.c_obj.reset(
             new pool_memory_resource_wrapper(
                 upstream.c_obj,
-                initial_pool_size,
-                maximum_pool_size
+                c_initial_pool_size,
+                c_maximum_pool_size
             )
         )
 
     def __init__(
             self,
             MemoryResource upstream,
-            size_t initial_pool_size=~0,
-            size_t maximum_pool_size=~0
+            object initial_pool_size=None,
+            object maximum_pool_size=None
     ):
         """
         Coalescing best-fit suballocator which uses a pool of memory allocated
@@ -298,6 +306,7 @@ cpdef void _initialize(
     bool pool_allocator=False,
     bool managed_memory=False,
     object initial_pool_size=None,
+    object maximum_pool_size=None,
     object devices=0,
     bool logging=False,
     object log_file_name=None,
@@ -312,14 +321,15 @@ cpdef void _initialize(
 
     if pool_allocator:
         typ = PoolMemoryResource
-        if initial_pool_size is None:
-            args = (upstream(),)
-        else:
-            args = (upstream(), initial_pool_size)
-
+        args = (upstream(),)
+        kwargs = dict(
+            initial_pool_size=initial_pool_size,
+            maximum_pool_size=maximum_pool_size
+        )
     else:
         typ = upstream
         args = ()
+        kwargs = {}
 
     cdef MemoryResource mr
     cdef int original_device
@@ -347,9 +357,12 @@ cpdef void _initialize(
             setDevice(device)
 
             if logging:
-                mr = LoggingResourceAdaptor(typ(*args), log_file_name.encode())
+                mr = LoggingResourceAdaptor(
+                    typ(*args, **kwargs),
+                    log_file_name.encode()
+                )
             else:
-                mr = typ(*args)
+                mr = typ(*args, **kwargs)
 
             _set_per_device_resource(device, mr)
 
