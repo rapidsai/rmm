@@ -8,7 +8,7 @@
 
 - PR #477 Just use `None` for `strides` in `DeviceBuffer`
 - PR #528 Add maximum_pool_size parameter to reinitialize API
-- PR #530 Merge free lists in pool_memory_resource to defragment before growing from upstream
+- PR #532 Merge free lists in pool_memory_resource to defragment before growing from upstream
 
 ## Bug Fixes
 
