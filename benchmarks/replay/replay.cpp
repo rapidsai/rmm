@@ -347,7 +347,7 @@ int main(int argc, char** argv)
     std::string mr_name = args["resource"].as<std::string>();
     declare_benchmark(mr_name, per_thread_events, num_threads);
   } else {
-    std::array<std::string, 4> mrs{"pool", "binning", "cuda"};
+    std::array<std::string, 3> mrs{"pool", "binning", "cuda"};
     std::for_each(
       std::cbegin(mrs), std::cend(mrs), [&per_thread_events, &num_threads](auto const& s) {
         declare_benchmark(s, per_thread_events, num_threads);
