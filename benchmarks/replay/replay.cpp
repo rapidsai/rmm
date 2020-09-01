@@ -86,10 +86,10 @@ struct replay_benchmark {
 
   // Maps a pointer from the event log to an active allocation
   std::unordered_map<uintptr_t, allocation> allocation_map;
-  std::mutex map_mutex;
 
-  // shared index to play back multithreaded events back in order
-  std::atomic_size_t event_index{0};
+  std::condition_variable cv;  // to ensure in-order playback
+  std::mutex event_mutex;      // to make event_index and allocation_map thread-safe
+  std::size_t event_index{0};  // playback index
 
   /**
    * @brief Construct a `replay_benchmark` from a list of events and
@@ -119,20 +119,18 @@ struct replay_benchmark {
   {
   }
 
-  /// Add an allocation to the map (thread safe)
+  /// Add an allocation to the map (NOT thread safe)
   void set_allocation(std::unordered_map<uintptr_t, allocation>& allocation_map,
                       uintptr_t ptr,
                       allocation alloc)
   {
-    std::lock_guard<std::mutex> lock(map_mutex);
     allocation_map.insert({ptr, alloc});
   }
 
-  /// Remove an allocation from the map (thread safe)
+  /// Remove an allocation from the map (NOT thread safe)
   allocation remove_allocation(std::unordered_map<uintptr_t, allocation>& allocation_map,
                                uintptr_t ptr)
   {
-    std::lock_guard<std::mutex> lock(map_mutex);
     auto iter = allocation_map.find(ptr);
     if (iter != allocation_map.end()) {
       allocation a = iter->second;
@@ -185,8 +183,9 @@ struct replay_benchmark {
     for (auto _ : state) {
       std::for_each(my_events.begin(), my_events.end(), [&state, this](auto e) {
         // ensure correct ordering between threads
-        while (event_index < e.index) {
-          std::this_thread::sleep_for(2us);
+        std::unique_lock<std::mutex> lock{event_mutex};
+        if (event_index != e.index) {
+          cv.wait(lock, [&]() { return event_index == e.index; });
         }
 
         if (rmm::detail::action::ALLOCATE == e.act) {
@@ -198,6 +197,7 @@ struct replay_benchmark {
         }
 
         event_index++;
+        cv.notify_all();
       });
     }
 
