@@ -79,7 +79,7 @@ struct allocation {
  * @tparam MR The type of the `device_memory_resource` to use for allocation
  * replay
  */
-struct replay_benchmark : benchmark::Fixture {
+struct replay_benchmark {
   MRFactoryFunc factory_;
   std::shared_ptr<rmm::mr::device_memory_resource> mr_{};
   std::vector<std::vector<rmm::detail::event>> const& events_{};
@@ -143,7 +143,7 @@ struct replay_benchmark : benchmark::Fixture {
   }
 
   /// Create the memory resource shared by all threads before the benchmark runs
-  void SetUp(const ::benchmark::State& state) override
+  void SetUp(const ::benchmark::State& state)
   {
     if (state.thread_index == 0) {
       rmm::logger().log(spdlog::level::info, "------ Start of Benchmark -----");
@@ -152,7 +152,7 @@ struct replay_benchmark : benchmark::Fixture {
   }
 
   /// Destroy the memory resource and count any unallocated memory
-  void TearDown(const ::benchmark::State& state) override
+  void TearDown(const ::benchmark::State& state)
   {
     if (state.thread_index == 0) {
       rmm::logger().log(spdlog::level::info, "------ End of Benchmark -----");
@@ -174,8 +174,10 @@ struct replay_benchmark : benchmark::Fixture {
   }
 
   /// Run the replay benchmark
-  void BenchmarkCase(::benchmark::State& state) override
+  void operator()(::benchmark::State& state)
   {
+    SetUp(state);
+
     auto const& my_events = events_.at(state.thread_index);
 
     using namespace std::chrono_literals;
@@ -198,9 +200,9 @@ struct replay_benchmark : benchmark::Fixture {
         event_index++;
       });
     }
-  }
 
-  void operator()(::benchmark::State& state) { Run(state); }
+    TearDown(state);
+  }
 };
 
 /**
