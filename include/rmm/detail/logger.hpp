@@ -24,24 +24,24 @@
 
 namespace rmm {
 
-namespace {
+namespace detail {
 
 inline std::string default_log_filename()
 {
   auto filename = std::getenv("RMM_DEBUG_LOG_FILE");
   return (filename == nullptr) ? std::string{"rmm_log.txt"} : std::string{filename};
 }
-}  // namespace
 
-inline spdlog::logger& logger()
-{
-  bool truncate_file{true};
-  static spdlog::logger logger_(
-    "RMM",
-    std::make_shared<spdlog::sinks::basic_file_sink_mt>(default_log_filename(), truncate_file));
-  static bool initialized{false};
-  if (not initialized) {
-    initialized = true;
+// Simple wrapper around a spdlog::logger that performs RMM-specific initialization
+struct logger_wrapper {
+  spdlog::logger logger_;
+
+  logger_wrapper()
+    : logger_{"RMM",
+              std::make_shared<spdlog::sinks::basic_file_sink_mt>(
+                default_log_filename(), true  // truncate file
+                )}
+  {
     logger_.set_pattern("[%l][%t][%H:%M:%S:%f] %v");
     logger_.flush_on(spdlog::level::warn);
 
@@ -52,8 +52,14 @@ inline spdlog::logger& logger()
 #endif
     logger_.flush();
   }
+};
 
-  return logger_;
+}  // namespace detail
+
+inline spdlog::logger& logger()
+{
+  static detail::logger_wrapper w{};
+  return w.logger_;
 }
 
 #define RMM_LOG_TRACE(...) SPDLOG_LOGGER_TRACE(&rmm::logger(), __VA_ARGS__)
