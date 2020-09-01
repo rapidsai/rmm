@@ -215,14 +215,17 @@ class out_of_range : public std::out_of_range {
  */
 #ifdef NDEBUG
 #define RMM_LOGGING_ASSERT(_expr) (void)0
-#else
+#elif SPDLOG_ACTIVE_LEVEL < SPDLOG_LEVEL_OFF
 #define RMM_LOGGING_ASSERT(_expr)                                                                 \
   do {                                                                                            \
-    if (!(_expr)) {                                                                               \
+    bool const success = (_expr);                                                                 \
+    if (!success) {                                                                               \
       RMM_LOG_CRITICAL(                                                                           \
         "[" __FILE__ ":" RMM_STRINGIFY(__LINE__) "] Assertion " RMM_STRINGIFY(_expr) " failed."); \
       rmm::logger().flush();                                                                      \
-      assert((_expr));                                                                            \
+      assert(success);                                                                            \
     }                                                                                             \
   } while (0)
+#else
+#define RMM_LOGGING_ASSERT(_expr) assert((_expr));
 #endif
