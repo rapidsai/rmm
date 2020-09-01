@@ -221,7 +221,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
                   static_cast<void*>(split.allocated_pointer),
                   static_cast<void*>(stream));
 
-    log_summary_trace(stream_event.stream);
+    log_summary_trace();
 
     return split.allocated_pointer;
   }
@@ -248,7 +248,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
 
     stream_free_blocks_[stream_event].insert(b);
 
-    log_summary_trace(stream_event.stream);
+    log_summary_trace();
   }
 
  private:
@@ -324,23 +324,24 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
       if (b.is_valid()) return b;
     }
 
-    // Otherwise try to find a block associated with another stream
-    block_type b = get_block_from_other_stream(size, stream_event, false);
-    if (b.is_valid()) { return b; }
-
-    // no large enough blocks available on other streams, so sync and merge free lists
-    // until we find one
-    b = get_block_from_other_stream(size, stream_event, true);
-    if (b.is_valid()) { return b; }
-
-    // no large enough blocks available after merging, so grow the pool
-
-    log_summary_trace(stream_event.stream);
-
-    // avoid searching for this stream's list again
     free_list& blocks =
       (iter != stream_free_blocks_.end()) ? iter->second : stream_free_blocks_[stream_event];
 
+    // Otherwise try to find a block associated with another stream
+    if (stream_free_blocks_.size() > 1) {
+      block_type b = get_block_from_other_stream(size, stream_event, blocks, false);
+      if (b.is_valid()) return b;
+    }
+    // no large enough blocks available on other streams, so sync and merge free lists
+    // until we find one
+    if (stream_free_blocks_.size() > 1) {
+      block_type b = get_block_from_other_stream(size, stream_event, blocks, true);
+      if (b.is_valid()) return b;
+    }
+
+    log_summary_trace();
+
+    // no large enough blocks available after merging, so grow the pool
     return this->underlying().expand_pool(size, blocks, stream_event.stream);
   }
 
@@ -363,33 +364,44 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    */
   block_type get_block_from_other_stream(size_t size,
                                          stream_event_pair stream_event,
-                                         bool merge_first = false)
+                                         free_list& blocks,
+                                         bool merge_first)
   {
-    // nothing in this stream's free list, look for one on another stream
-    for (auto s = stream_free_blocks_.begin(); s != stream_free_blocks_.end(); ++s) {
-      auto blocks_event = s->first;
-      if (blocks_event.event != stream_event.event) {
-        auto blocks = s->second;
+    for (auto it = stream_free_blocks_.begin(), next_it = it; it != stream_free_blocks_.end();
+         it = next_it) {
+      ++next_it;
+      auto other_event = it->first.event;
+      if (other_event != stream_event.event) {
+        auto other_blocks = it->second;
 
-        if (merge_first) {
-          merge_lists(stream_event, s);
+        block_type const b = [&]() {
+          if (merge_first) {
+            merge_lists(stream_event, blocks, other_event, std::move(other_blocks));
 
-          RMM_LOG_INFO("[A][{}B][Stream {:p}][Merged stream {:p}]",
-                       size,
-                       static_cast<void*>(stream_event.stream),
-                       static_cast<void*>(s->first.stream));
-        }
+            RMM_LOG_INFO("[A][{}B][Stream {:p}][Merged stream {:p}]",
+                         size,
+                         static_cast<void*>(stream_event.stream),
+                         static_cast<void*>(it->first.stream));
 
-        block_type const b = blocks.get_block(size);  // get the best fit block
+            stream_free_blocks_.erase(it);
+
+            return blocks.get_block(size);  // get the best fit block in merged lists
+          } else {
+            return other_blocks.get_block(size);  // get the best fit block in other list
+          }
+        }();
 
         if (b.is_valid()) {
-          if (not merge_first) merge_lists(stream_event, s);
-
           RMM_LOG_INFO((merge_first) ? "[A][{}B][Stream {:p}][Found after merging stream {:p}]"
                                      : "[A][{}B][Stream {:p}][Taken from stream {:p}]",
                        size,
                        static_cast<void*>(stream_event.stream),
-                       static_cast<void*>(s->first.stream));
+                       static_cast<void*>(it->first.stream));
+
+          if (not merge_first) {
+            merge_lists(stream_event, blocks, other_event, std::move(other_blocks));
+            stream_free_blocks_.erase(it);
+          }
 
           return b;
         }
@@ -399,15 +411,16 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
   }
 
   void merge_lists(stream_event_pair stream_event,
-                   typename std::map<stream_event_pair, free_list>::iterator to_merge)
+                   free_list& blocks,
+                   cudaEvent_t other_event,
+                   free_list&& other_blocks)
   {
     // Since we found a block associated with a different stream, we have to insert a wait
     // on the stream's associated event into the allocating stream.
-    RMM_CUDA_TRY(cudaStreamWaitEvent(stream_event.stream, to_merge->first.event, 0));
+    RMM_CUDA_TRY(cudaStreamWaitEvent(stream_event.stream, other_event, 0));
 
-    // Move all the blocks to the requesting stream, since it has waited on them
-    stream_free_blocks_[stream_event].insert(std::move(to_merge->second));
-    stream_free_blocks_.erase(to_merge);
+    // Merge the two free lists
+    blocks.insert(std::move(other_blocks));
   }
 
   /**
@@ -428,7 +441,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     stream_free_blocks_.clear();
   }
 
-  void log_summary_trace(cudaStream_t stream)
+  void log_summary_trace()
   {
 #if (SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE)
     std::size_t num_blocks{0};
