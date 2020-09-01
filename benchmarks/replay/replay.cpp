@@ -79,17 +79,17 @@ struct allocation {
  * @tparam MR The type of the `device_memory_resource` to use for allocation
  * replay
  */
-struct replay_benchmark : benchmark::Fixture {
+struct replay_benchmark {
   MRFactoryFunc factory_;
   std::shared_ptr<rmm::mr::device_memory_resource> mr_{};
   std::vector<std::vector<rmm::detail::event>> const& events_{};
 
   // Maps a pointer from the event log to an active allocation
   std::unordered_map<uintptr_t, allocation> allocation_map;
-  std::mutex map_mutex;
 
-  // shared index to play back multithreaded events back in order
-  std::atomic_size_t event_index{0};
+  std::condition_variable cv;  // to ensure in-order playback
+  std::mutex event_mutex;      // to make event_index and allocation_map thread-safe
+  std::size_t event_index{0};  // playback index
 
   /**
    * @brief Construct a `replay_benchmark` from a list of events and
@@ -119,20 +119,18 @@ struct replay_benchmark : benchmark::Fixture {
   {
   }
 
-  /// Add an allocation to the map (thread safe)
+  /// Add an allocation to the map (NOT thread safe)
   void set_allocation(std::unordered_map<uintptr_t, allocation>& allocation_map,
                       uintptr_t ptr,
                       allocation alloc)
   {
-    std::lock_guard<std::mutex> lock(map_mutex);
     allocation_map.insert({ptr, alloc});
   }
 
-  /// Remove an allocation from the map (thread safe)
+  /// Remove an allocation from the map (NOT thread safe)
   allocation remove_allocation(std::unordered_map<uintptr_t, allocation>& allocation_map,
                                uintptr_t ptr)
   {
-    std::lock_guard<std::mutex> lock(map_mutex);
     auto iter = allocation_map.find(ptr);
     if (iter != allocation_map.end()) {
       allocation a = iter->second;
@@ -143,7 +141,7 @@ struct replay_benchmark : benchmark::Fixture {
   }
 
   /// Create the memory resource shared by all threads before the benchmark runs
-  void SetUp(const ::benchmark::State& state) override
+  void SetUp(const ::benchmark::State& state)
   {
     if (state.thread_index == 0) {
       rmm::logger().log(spdlog::level::info, "------ Start of Benchmark -----");
@@ -152,7 +150,7 @@ struct replay_benchmark : benchmark::Fixture {
   }
 
   /// Destroy the memory resource and count any unallocated memory
-  void TearDown(const ::benchmark::State& state) override
+  void TearDown(const ::benchmark::State& state)
   {
     if (state.thread_index == 0) {
       rmm::logger().log(spdlog::level::info, "------ End of Benchmark -----");
@@ -174,8 +172,10 @@ struct replay_benchmark : benchmark::Fixture {
   }
 
   /// Run the replay benchmark
-  void BenchmarkCase(::benchmark::State& state) override
+  void operator()(::benchmark::State& state)
   {
+    SetUp(state);
+
     auto const& my_events = events_.at(state.thread_index);
 
     using namespace std::chrono_literals;
@@ -183,8 +183,9 @@ struct replay_benchmark : benchmark::Fixture {
     for (auto _ : state) {
       std::for_each(my_events.begin(), my_events.end(), [&state, this](auto e) {
         // ensure correct ordering between threads
-        while (event_index < e.index) {
-          std::this_thread::sleep_for(2us);
+        std::unique_lock<std::mutex> lock{event_mutex};
+        if (event_index != e.index) {
+          cv.wait(lock, [&]() { return event_index == e.index; });
         }
 
         if (rmm::detail::action::ALLOCATE == e.act) {
@@ -196,11 +197,12 @@ struct replay_benchmark : benchmark::Fixture {
         }
 
         event_index++;
+        cv.notify_all();
       });
     }
-  }
 
-  void operator()(::benchmark::State& state) { Run(state); }
+    TearDown(state);
+  }
 };
 
 /**
@@ -347,7 +349,7 @@ int main(int argc, char** argv)
     std::string mr_name = args["resource"].as<std::string>();
     declare_benchmark(mr_name, per_thread_events, num_threads);
   } else {
-    std::array<std::string, 4> mrs{"pool", "binning", "cuda"};
+    std::array<std::string, 3> mrs{"pool", "binning", "cuda"};
     std::for_each(
       std::cbegin(mrs), std::cend(mrs), [&per_thread_events, &num_threads](auto const& s) {
         declare_benchmark(s, per_thread_events, num_threads);

@@ -193,7 +193,7 @@ class pool_memory_resource final
       return b;
     } catch (std::exception const& e) {
       RMM_LOG_ERROR("[A][Stream {}][Upstream {}B][FAILURE]", reinterpret_cast<void*>(stream), size);
-      throw e;
+      throw;
     }
   }
 
