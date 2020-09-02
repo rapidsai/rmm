@@ -178,8 +178,6 @@ struct replay_benchmark {
 
     auto const& my_events = events_.at(state.thread_index);
 
-    using namespace std::chrono_literals;
-
     for (auto _ : state) {
       std::for_each(my_events.begin(), my_events.end(), [&state, this](auto e) {
         // ensure correct ordering between threads
