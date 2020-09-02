@@ -106,18 +106,20 @@ struct replay_benchmark {
   }
 
   /**
-   * @brief Copy construct a replay_benchmark
+   * @brief Move construct a replay_benchmark (needed by RegisterBenchmark)
    *
    * Does not copy the mutex or the map
    */
-  replay_benchmark(replay_benchmark const& other)
-    : factory_{other.factory_},
-      mr_{other.mr_},
-      events_{other.events_},
+  replay_benchmark(replay_benchmark&& other)
+    : factory_{std::move(other.factory_)},
+      mr_{std::move(other.mr_)},
+      events_{std::move(other.events_)},
       allocation_map{events_.size()},
       event_index{0}
   {
   }
+
+  replay_benchmark(replay_benchmark const&) = delete;
 
   /// Add an allocation to the map (NOT thread safe)
   void set_allocation(std::unordered_map<uintptr_t, allocation>& allocation_map,
@@ -177,8 +179,6 @@ struct replay_benchmark {
     SetUp(state);
 
     auto const& my_events = events_.at(state.thread_index);
-
-    using namespace std::chrono_literals;
 
     for (auto _ : state) {
       std::for_each(my_events.begin(), my_events.end(), [&state, this](auto e) {
