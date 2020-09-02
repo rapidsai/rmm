@@ -35,7 +35,9 @@ TEST(PoolTest, ThrowOnNullUpstream)
 
 TEST(PoolTest, ThrowMaxLessThanInitial)
 {
-  auto max_less_than_initial = []() { Pool mr{rmm::mr::get_current_device_resource(), 100, 99}; };
+  // Make sure first argument is enough larger than the second that alignment rounding doesn't
+  // make them equal
+  auto max_less_than_initial = []() { Pool mr{rmm::mr::get_current_device_resource(), 1000, 99}; };
   EXPECT_THROW(max_less_than_initial(), rmm::logic_error);
 }
 
@@ -79,6 +81,15 @@ TEST(PoolTest, DeletedStream)
   EXPECT_NO_THROW(rmm::device_buffer buff(size, stream, &mr));
   EXPECT_EQ(cudaSuccess, cudaStreamDestroy(stream));
   EXPECT_NO_THROW(mr.allocate(size));
+}
+
+// Issue #527
+TEST(PoolTest, InitialAndMaxPoolSizeEqual)
+{
+  EXPECT_NO_THROW([]() {
+    Pool mr(rmm::mr::get_current_device_resource(), 1000031, 1000031);
+    mr.allocate(1000);
+  }());
 }
 
 }  // namespace
