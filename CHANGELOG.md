@@ -9,6 +9,8 @@
 
 ## Bug Fixes
 
+- PR #534 Fix pool_memory_resource failure when init and max pool sizes are equal
+
 
 # RMM 0.15.0 (26 Aug 2020)
 
