@@ -192,7 +192,10 @@ class pool_memory_resource final
       upstream_blocks_.emplace_back(b);  // TODO: with C++17 use version that returns a reference
       return b;
     } catch (std::exception const& e) {
-      RMM_LOG_ERROR("[A][Stream {}][Upstream {}B][FAILURE]", reinterpret_cast<void*>(stream), size);
+      RMM_LOG_ERROR("[A][Stream {}][Upstream {}B][FAILURE {}]",
+                    reinterpret_cast<void*>(stream),
+                    size,
+                    e.what());
       throw;
     }
   }
