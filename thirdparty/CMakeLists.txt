@@ -24,8 +24,9 @@ set(CNMEM_SOURCE_DIR "${cnmem_SOURCE_DIR}/src" PARENT_SCOPE)
 FetchContent_Declare(
     spdlog
     GIT_REPOSITORY https://github.com/gabime/spdlog.git
-    GIT_TAG        v1.6.0
+    GIT_TAG        v1.7.0
     GIT_SHALLOW    true
+    PATCH_COMMAND COMMAND patch -p1 < "${CMAKE_CURRENT_SOURCE_DIR}/spdlog-fmt-stringview.patch"
 )
 
 FetchContent_GetProperties(spdlog)
