@@ -321,7 +321,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     auto iter = stream_free_blocks_.find(stream_event);
     if (iter != stream_free_blocks_.end()) {
       block_type b = iter->second.get_block(size);
-      if (b.is_valid()) { return b };
+      if (b.is_valid()) { return b; }
     }
 
     // Otherwise try to find a block associated with another stream
