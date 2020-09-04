@@ -26,7 +26,6 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/gabime/spdlog.git
     GIT_TAG        v1.7.0
     GIT_SHALLOW    true
-    PATCH_COMMAND COMMAND patch -p1 < "${CMAKE_CURRENT_SOURCE_DIR}/spdlog-fmt-stringview.patch"
 )
 
 FetchContent_GetProperties(spdlog)
