@@ -56,7 +56,7 @@ struct logger_wrapper {
                 default_log_filename(), true  // truncate file
                 )}
   {
-    logger_.set_pattern("[%l][%t][%H:%M:%S:%f] %v");
+    logger_.set_pattern("[%6t][%H:%M:%S:%f][%-6l] %v");
     logger_.flush_on(spdlog::level::warn);
 
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
