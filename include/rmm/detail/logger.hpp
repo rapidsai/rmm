@@ -32,6 +32,14 @@ namespace rmm {
 
 namespace detail {
 
+/**
+ * @brief Returns the default log filename for the RMM global logger.
+ *
+ * If the environment variable `RMM_DEBUG_LOG_FILE` is defined, its value is used as the path and
+ * name of the log file. Otherwise, the file `rmm_log.txt` in the current working directory is used.
+ *
+ * @return std::string The default log file name.
+ */
 inline std::string default_log_filename()
 {
   auto filename = std::getenv("RMM_DEBUG_LOG_FILE");
@@ -62,6 +70,13 @@ struct logger_wrapper {
 
 }  // namespace detail
 
+/**
+ * @brief Returns the global RMM logger
+ *
+ * This is a spdlog logger. The easiest way to log messages is to use the `RMM_LOG_*` macros.
+ *
+ * @return spdlog::logger& The logger.
+ */
 inline spdlog::logger& logger()
 {
   static detail::logger_wrapper w{};

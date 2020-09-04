@@ -393,6 +393,26 @@ RMM does not currently provide any data structures that interface with `host_mem
 In the future, RMM will provide a similar host-side structure like `device_buffer` and an allocator
 that can be used with STL containers.
 
+## Debug Logging
+
+RMM includes a debug logger which can be enabled to log trace and debug information to a file. This 
+information can show when errors occur, when additional memory is allocated from upstream resources,
+etc. The default log file is `rmm_log.txt` in the current working directory, but the environment
+variable `RMM_DEBUG_LOG_FILE` can be set to specify the path and file name.
+
+There is a CMake configuration variable `LOGGING_LEVEL`, which can be set to enable compilation of
+more detailed logging. The default is `INFO`. Available levels are `TRACE`, `DEBUG`, `INFO`, `WARN`,
+`ERROR`, `CRITICAL`.
+
+The log relies on the [spdlog](https://github.com/gabime/spdlog.git) library.
+
+Note that to see logging below the `INFO` level, the C++ application must also call
+`rmm::logger()::set_level()`, e.g. to enable all levels of logging down to `TRACE`, call 
+`rmm::logger()::set_level(SPDLOG_LEVEL_TRACE)`.
+
+Note that debug logging is different from the CSV memory allocation logging provided by 
+`rmm::mr::logging_resource_adapter`. The latter is for logging a history of allocation /
+deallocation actions which can be useful for replay with RMM's replay benchmark.
 
 ## Using RMM in Python Code
 
