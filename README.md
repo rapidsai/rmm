@@ -407,8 +407,8 @@ more detailed logging. The default is `INFO`. Available levels are `TRACE`, `DEB
 The log relies on the [spdlog](https://github.com/gabime/spdlog.git) library.
 
 Note that to see logging below the `INFO` level, the C++ application must also call
-`rmm::logger()::set_level()`, e.g. to enable all levels of logging down to `TRACE`, call 
-`rmm::logger()::set_level(SPDLOG_LEVEL_TRACE)`.
+`rmm::logger().set_level()`, e.g. to enable all levels of logging down to `TRACE`, call 
+`rmm::logger().set_level(spdlog::level::trace)`.
 
 Note that debug logging is different from the CSV memory allocation logging provided by 
 `rmm::mr::logging_resource_adapter`. The latter is for logging a history of allocation /
