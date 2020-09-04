@@ -136,10 +136,10 @@ class pool_memory_resource final
   Upstream* get_upstream() const noexcept { return upstream_mr_; }
 
  protected:
-  using free_list        = detail::coalescing_free_list;
-  using block_type       = free_list::block_type;
-  using split_block_type = detail::split_block<block_type>;
-  using lock_guard       = std::lock_guard<std::mutex>;
+  using free_list   = detail::coalescing_free_list;
+  using block_type  = free_list::block_type;
+  using split_block = detail::split_block<block_type>;
+  using lock_guard  = std::lock_guard<std::mutex>;
 
   /**
    * @brief Get the maximum size of allocations supported by this memory resource
@@ -210,7 +210,7 @@ class pool_memory_resource final
    * @return A pair comprising the allocated pointer and any unallocated remainder of the input
    * block.
    */
-  split_block_type allocate_from_block(block_type const& b, size_t size)
+  split_block allocate_from_block(block_type const& b, size_t size)
   {
     block_type const alloc{b.pointer(), size, b.is_head(), b.original_size()};
     allocated_blocks_.insert(alloc);
