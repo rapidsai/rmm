@@ -33,6 +33,7 @@
 #include <thread>
 #include <unordered_map>
 #include <vector>
+#include "rmm/detail/aligned.hpp"
 
 namespace rmm {
 namespace mr {
@@ -89,13 +90,25 @@ class pool_memory_resource final
         return upstream_mr;
       }()}
   {
+    RMM_EXPECTS(
+      initial_pool_size == default_initial_size ||
+        (initial_pool_size == rmm::detail::align_up(initial_pool_size, allocation_alignment)),
+      "Error, Initial pool size required to be a multiple of 256 bytes");
+    RMM_EXPECTS(
+      maximum_pool_size == default_maximum_size ||
+        (maximum_pool_size == rmm::detail::align_up(maximum_pool_size, allocation_alignment)),
+      "Error, Maximum pool size required to be a multiple of 256 bytes");
+
     std::size_t free{}, total{};
     std::tie(free, total) = detail::available_device_memory();
-    initial_pool_size =
-      (initial_pool_size == default_initial_size) ? std::min(free, total / 2) : initial_pool_size;
-    current_pool_size_ = rmm::detail::align_up(initial_pool_size, allocation_alignment);
-    maximum_pool_size_ = rmm::detail::align_up(
-      (maximum_pool_size == default_maximum_size) ? free : maximum_pool_size, allocation_alignment);
+
+    initial_pool_size = (initial_pool_size == default_initial_size)
+                          ? rmm::detail::align_up(std::min(free, total / 2), allocation_alignment)
+                          : initial_pool_size;
+    current_pool_size_ = initial_pool_size;
+    maximum_pool_size_ = (maximum_pool_size == default_maximum_size)
+                           ? rmm::detail::align_up(free, allocation_alignment)
+                           : maximum_pool_size;
 
     RMM_EXPECTS(pool_size() <= maximum_pool_size_,
                 "Initial pool size exceeds the maximum pool size!");

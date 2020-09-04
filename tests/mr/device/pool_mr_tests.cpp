@@ -20,6 +20,7 @@
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
+#include "rmm/detail/aligned.hpp"
 
 #include <gtest/gtest.h>
 
@@ -45,8 +46,9 @@ TEST(PoolTest, AllocateNinetyPercent)
 {
   auto allocate_ninety = []() {
     std::size_t free{}, total{};
-    std::tie(free, total)          = rmm::mr::detail::available_device_memory();
-    auto const ninety_percent_pool = static_cast<std::size_t>(free * 0.9);
+    std::tie(free, total) = rmm::mr::detail::available_device_memory();
+    auto const ninety_percent_pool =
+      rmm::detail::align_up(static_cast<std::size_t>(free * 0.9), Pool::allocation_alignment);
     Pool mr{rmm::mr::get_current_device_resource(), ninety_percent_pool};
   };
   EXPECT_NO_THROW(allocate_ninety());
@@ -87,9 +89,26 @@ TEST(PoolTest, DeletedStream)
 TEST(PoolTest, InitialAndMaxPoolSizeEqual)
 {
   EXPECT_NO_THROW([]() {
-    Pool mr(rmm::mr::get_current_device_resource(), 1000031, 1000031);
+    Pool mr(rmm::mr::get_current_device_resource(), 1000192, 1000192);
     mr.allocate(1000);
   }());
+}
+
+TEST(PoolTest, NonAlignedPoolSize)
+{
+  EXPECT_THROW(
+    []() {
+      Pool mr(rmm::mr::get_current_device_resource(), 1000031, 1000192);
+      mr.allocate(1000);
+    }(),
+    rmm::logic_error);
+
+  EXPECT_THROW(
+    []() {
+      Pool mr(rmm::mr::get_current_device_resource(), 1000192, 1000200);
+      mr.allocate(1000);
+    }(),
+    rmm::logic_error);
 }
 
 }  // namespace

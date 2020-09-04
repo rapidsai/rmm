@@ -103,10 +103,11 @@ class out_of_range : public std::out_of_range {
   GET_RMM_EXPECTS_MACRO(__VA_ARGS__, RMM_EXPECTS_3, RMM_EXPECTS_2) \
   (__VA_ARGS__)
 #define GET_RMM_EXPECTS_MACRO(_1, _2, _3, NAME, ...) NAME
-#define RMM_EXPECTS_3(_condition, _exception_type, _what) \
-  (!!(_condition))                                        \
-    ? static_cast<void>(0)                                \
-    : throw _exception_type("RMM failure at: " __FILE__ ":" RMM_STRINGIFY(__LINE__) ": " _what)
+#define RMM_EXPECTS_3(_condition, _exception_type, _reason)              \
+  (!!(_condition)) ? static_cast<void>(0) : throw _exception_type        \
+  {                                                                      \
+    "RMM failure at: " __FILE__ ":" RMM_STRINGIFY(__LINE__) ": " _reason \
+  }
 #define RMM_EXPECTS_2(_condition, _reason) RMM_EXPECTS_3(_condition, rmm::logic_error, _reason)
 
 /**
