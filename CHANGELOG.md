@@ -2,6 +2,8 @@
 
 ## New Features
 
+ - PR #529 Add debug logging and fix multithreaded replay benchmark
+
 ## Improvements
 
 - PR #477 Just use `None` for `strides` in `DeviceBuffer`
