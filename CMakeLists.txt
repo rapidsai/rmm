@@ -181,7 +181,7 @@ if(NOT LOGGING_LEVEL)
     set_property(CACHE LOGGING_LEVEL PROPERTY STRINGS
         "TRACE" "DEBUG" "INFO" "WARN" "ERROR" "CRITICAL" "OFF")
 else()
-message(STATUS "Setting logging level to '${LOGGING_LEVEL}'")
+    message(STATUS "Setting logging level to '${LOGGING_LEVEL}'")
 endif(NOT LOGGING_LEVEL)
 
 target_compile_definitions(rmm PUBLIC SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${LOGGING_LEVEL})
