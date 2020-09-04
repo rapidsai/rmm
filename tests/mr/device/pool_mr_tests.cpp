@@ -38,7 +38,7 @@ TEST(PoolTest, ThrowMaxLessThanInitial)
 {
   // Make sure first argument is enough larger than the second that alignment rounding doesn't
   // make them equal
-  auto max_less_than_initial = []() { Pool mr{rmm::mr::get_current_device_resource(), 1000, 99}; };
+  auto max_less_than_initial = []() { Pool mr{rmm::mr::get_current_device_resource(), 1024, 256}; };
   EXPECT_THROW(max_less_than_initial(), rmm::logic_error);
 }
 
