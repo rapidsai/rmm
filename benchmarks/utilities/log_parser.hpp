@@ -96,14 +96,16 @@ inline uintptr_t hex_string_to_int(std::string const& s) { return std::stoll(s, 
  */
 inline std::chrono::time_point<std::chrono::system_clock> parse_time(std::string const& str_time)
 {
-  std::size_t current, previous = 0;
-  current          = str_time.find(':');
-  int hours        = std::stoi(str_time.substr(previous, current - previous));
-  current          = str_time.find(':');
-  int minutes      = std::stoi(str_time.substr(previous, current - previous));
-  current          = str_time.find(':');
-  int seconds      = std::stoi(str_time.substr(previous, current - previous));
-  int microseconds = std::stoi(str_time.substr(current + 1, str_time.length()));
+  std::size_t current  = str_time.find(':');
+  std::size_t previous = 0;
+  int hours            = std::stoi(str_time.substr(previous, current - previous));
+  previous             = current;
+  current              = str_time.find(':');
+  int minutes          = std::stoi(str_time.substr(previous, current - previous));
+  previous             = current;
+  current              = str_time.find(':');
+  int seconds          = std::stoi(str_time.substr(previous, current - previous));
+  int microseconds     = std::stoi(str_time.substr(current + 1, str_time.length()));
 
   std::tm tm{seconds, minutes, hours, 1, 0, 1970, 0, 0, 0};
 
