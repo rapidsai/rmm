@@ -117,12 +117,6 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    */
   // block_type expand_pool(size_t size, free_list& blocks, cudaStream_t stream)
 
-  /// Struct representing a block that has been split for allocation
-  struct split_block {
-    void* allocated_pointer;  ///< The pointer allocated from a block
-    block_type remainder;     ///< The remainder of the block from which the pointer was allocated
-  };
-
   /**
    * @brief Split block `b` if necessary to return a pointer to memory of `size` bytes.
    *
@@ -230,10 +224,18 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     bytes             = rmm::detail::align_up(bytes, allocation_alignment);
     auto const b      = this->underlying().free_block(p, bytes);
 
-    // TODO: cudaEventRecord has significant overhead on deallocations. For the non-PTDS case
-    // we may be able to delay recording the event in some situations. But using events rather than
-    // streams allows stealing from deleted streams.
-    RMM_ASSERT_CUDA_SUCCESS(cudaEventRecord(stream_event.event, stream));
+#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
+    if (stream != cudaStreamLegacy) {
+      // TODO: cudaEventRecord has significant overhead on deallocations. For the non-PTDS case
+      // we may be able to delay recording the event in some situations. But using events rather
+      // than streams allows stealing from deleted streams.
+      RMM_ASSERT_CUDA_SUCCESS(cudaEventRecord(stream_event.event, stream));
+    }
+#else
+    if (stream != cudaStreamDefault && stream != cudaStreamLegacy) {
+      RMM_ASSERT_CUDA_SUCCESS(cudaEventRecord(stream_event.event, stream));
+    }
+#endif
 
     stream_free_blocks_[stream_event].insert(b);
   }

@@ -42,6 +42,15 @@ inline std::ostream& operator<<(std::ostream& out, const block_base& b)
   return out;
 }
 
+/// Struct representing a block that has been split for allocation
+template <typename BlockType>
+struct split_block {
+  using block_type = BlockType;
+
+  void* allocated_pointer;  ///< The pointer allocated from a block
+  block_type remainder;     ///< The remainder of the block from which the pointer was allocated
+};
+
 /**
  * @brief Base class defining an interface for a list of free memory blocks.
  *
@@ -61,11 +70,13 @@ class free_list {
   free_list()          = default;
   virtual ~free_list() = default;
 
-  using block_type     = BlockType;
-  using list_type      = ListType;
-  using size_type      = typename list_type::size_type;
-  using iterator       = typename list_type::iterator;
-  using const_iterator = typename list_type::const_iterator;
+  using block_type             = BlockType;
+  using list_type              = ListType;
+  using size_type              = typename list_type::size_type;
+  using iterator               = typename list_type::iterator;
+  using const_iterator         = typename list_type::const_iterator;
+  using reverse_iterator       = typename list_type::reverse_iterator;
+  using const_reverse_iterator = typename list_type::const_reverse_iterator;
 
   iterator begin() noexcept { return blocks.begin(); }                /// beginning of the free list
   const_iterator begin() const noexcept { return blocks.begin(); }    /// beginning of the free list
@@ -74,6 +85,29 @@ class free_list {
   iterator end() noexcept { return blocks.end(); }                /// end of the free list
   const_iterator end() const noexcept { return blocks.end(); }    /// end of the free list
   const_iterator cend() const noexcept { return blocks.cend(); }  /// end of the free list
+
+  reverse_iterator rbegin() noexcept
+  {
+    return blocks.rbegin();
+  }  /// reverse beginning of the free list
+  const_reverse_iterator rbegin() const noexcept
+  {
+    return blocks.rbegin();
+  }  /// reverse beginning of the free list
+  const_reverse_iterator crbegin() const noexcept
+  {
+    return blocks.crbegin();
+  }  /// reverse beginning of the free list
+
+  reverse_iterator rend() noexcept { return blocks.rend(); }  /// reverse end of the free list
+  const_reverse_iterator rend() const noexcept
+  {
+    return blocks.rend();
+  }  /// reverse end of the free list
+  const_reverse_iterator crend() const noexcept
+  {
+    return blocks.crend();
+  }  /// reverse end of the free list
 
   /**
    * @brief The size of the free list in blocks.

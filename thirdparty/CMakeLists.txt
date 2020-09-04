@@ -35,14 +35,15 @@ if(NOT spdlog_POPULATED)
 endif()
 
 ###################################################################################################
-# - thrust ----------------------------------------------------------------------------------------
+# - thrust/cub ------------------------------------------------------------------------------------
+
+message("Fetching Thrust")
 
 FetchContent_Declare(
     thrust
     GIT_REPOSITORY https://github.com/thrust/thrust.git
-    GIT_TAG        1.9.10
-    GIT_SHALLOW    true
-    PATCH_COMMAND COMMAND patch -p1 < "${CMAKE_CURRENT_SOURCE_DIR}/thrust-ret-if-fail.patch"
+    # August 28, 2020
+    GIT_TAG        52a8bda46c5c2128414d1d47f546b486ff0be2f0
 )
 
 FetchContent_GetProperties(thrust)
@@ -51,3 +52,4 @@ if(NOT thrust_POPULATED)
   # We are not using the thrust CMake targets, so no need to call `add_subdirectory()`.
 endif()
 set(THRUST_INCLUDE_DIR "${thrust_SOURCE_DIR}" PARENT_SCOPE)
+set(CUB_INCLUDE_DIR "${thrust_SOURCE_DIR}/dependencies/cub" PARENT_SCOPE)

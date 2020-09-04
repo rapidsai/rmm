@@ -18,6 +18,7 @@
 
 #include <gtest/gtest.h>
 
+#include <rmm/mr/device/arena_memory_resource.hpp>
 #include <rmm/mr/device/binning_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/default_memory_resource.hpp>
@@ -241,6 +242,11 @@ inline auto make_managed() { return std::make_shared<rmm::mr::managed_memory_res
 inline auto make_pool()
 {
   return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_cuda());
+}
+
+inline auto make_arena()
+{
+  return rmm::mr::make_owning_wrapper<rmm::mr::arena_memory_resource>(make_pool());
 }
 
 inline auto make_fixed_size()
