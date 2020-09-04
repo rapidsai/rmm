@@ -16,7 +16,7 @@
 #pragma once
 
 #include <rmm/detail/error.hpp>
-#include <rmm/detail/logger.hpp>
+#include <rmm/logger.hpp>
 #include <rmm/mr/device/detail/coalescing_free_list.hpp>
 #include <rmm/mr/device/detail/stream_ordered_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
