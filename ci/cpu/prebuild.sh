@@ -1,11 +1,7 @@
 #!/usr/bin/env bash
 
-#Build rmm once per PYTHON
-if [[ "$CUDA" == "10.1" ]]; then
-    export UPLOAD_RMM=1
-else
-    export UPLOAD_RMM=0
-fi
+#Always upload RMM Python package
+export UPLOAD_RMM=1
 
 #Build librmm once per CUDA
 if [[ "$PYTHON" == "3.7" ]]; then

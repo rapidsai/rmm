@@ -6,11 +6,13 @@
 
 - PR #474 Use CMake find_package(CUDAToolkit)
 - PR #477 Just use `None` for `strides` in `DeviceBuffer`
+- PR #528 Add maximum_pool_size parameter to reinitialize API
+- PR #537 Add CMake option to disable deprecation warnings
 
 ## Bug Fixes
 
 
-# RMM 0.15.0 (Date TBD)
+# RMM 0.15.0 (26 Aug 2020)
 
 ## New Features
 
@@ -27,6 +29,9 @@
           `fixed_multisize_memory_resource`).
 - PR #458 Add `get/set_per_device_resource` to better support multi-GPU per process applications
 - PR #466 Deprecate CNMeM.
+- PR #489 Move `cudf._cuda` into `rmm._cuda`
+- PR #504 Generate `gpu.pxd` based on cuda version as a preprocessor step
+- PR #506 Upload rmm package per version python-cuda combo
 
 ## Improvements
 
@@ -72,6 +77,11 @@
 - PR #490 Allow importing RMM without initializing CUDA driver
 - PR #484 Fix device_uvector copy constructor compilation error and add test
 - PR #498 Max pool growth less greedy
+- PR #500 Use tempfile rather than hardcoded path in `test_rmm_csv_log`
+- PR #511 Specify `--basetemp` for `py.test` run
+- PR #509 Fix missing : before __LINE__ in throw string of RMM_CUDA_TRY
+- PR #510 Fix segfault in pool_memory_resource when a CUDA stream is destroyed
+- PR #525 Patch Thrust to workaround `CUDA_CUB_RET_IF_FAIL` macro clearing CUDA errors
 
 
 # RMM 0.14.0 (03 Jun 2020)

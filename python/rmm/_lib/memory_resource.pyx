@@ -9,7 +9,7 @@ from libcpp.cast cimport dynamic_cast
 from libcpp.memory cimport make_shared, make_unique, shared_ptr, unique_ptr
 from libcpp.string cimport string
 
-from rmm._lib.lib cimport cudaGetDevice, cudaSetDevice, cudaSuccess
+from rmm._cuda.gpu import CUDARuntimeError, cudaError, getDevice, setDevice
 
 
 cdef class CudaMemoryResource(MemoryResource):
@@ -49,22 +49,30 @@ cdef class PoolMemoryResource(MemoryResource):
     def __cinit__(
             self,
             MemoryResource upstream,
-            size_t initial_pool_size=~0,
-            size_t maximum_pool_size=~0
+            initial_pool_size=None,
+            maximum_pool_size=None
     ):
+        cdef size_t c_initial_pool_size
+        cdef size_t c_maximum_pool_size
+        c_initial_pool_size = (
+            ~0 if initial_pool_size is None else initial_pool_size
+        )
+        c_maximum_pool_size = (
+            ~0 if maximum_pool_size is None else maximum_pool_size
+        )
         self.c_obj.reset(
             new pool_memory_resource_wrapper(
                 upstream.c_obj,
-                initial_pool_size,
-                maximum_pool_size
+                c_initial_pool_size,
+                c_maximum_pool_size
             )
         )
 
     def __init__(
             self,
             MemoryResource upstream,
-            size_t initial_pool_size=~0,
-            size_t maximum_pool_size=~0
+            object initial_pool_size=None,
+            object maximum_pool_size=None
     ):
         """
         Coalescing best-fit suballocator which uses a pool of memory allocated
@@ -242,7 +250,7 @@ cdef class LoggingResourceAdaptor(MemoryResource):
                 )
         # Append the device ID before the file extension
         log_file_name = _append_id(
-            log_file_name.decode(), get_current_device()
+            log_file_name.decode(), getDevice()
         )
 
         _log_file_name = log_file_name
@@ -294,35 +302,11 @@ class KeyInitializedDefaultDict(defaultdict):
 cdef _per_device_mrs = KeyInitializedDefaultDict(CudaMemoryResource)
 
 
-cpdef int get_current_device() except -1:
-    """
-    Get the current CUDA device
-    """
-    cdef int current_device
-    err = cudaGetDevice(&current_device)
-    if err != cudaSuccess:
-        raise RuntimeError(f"Failed to get CUDA device with error: {err}")
-    return current_device
-
-
-cpdef void set_current_device(int device) except *:
-    """
-    Set the current CUDA device
-
-    Parameters
-    ----------
-    device : int
-        The ID of the device to set as current
-    """
-    err = cudaSetDevice(device)
-    if err != cudaSuccess:
-        raise RuntimeError(f"Failed to set CUDA device with error: {err}")
-
-
 cpdef void _initialize(
     bool pool_allocator=False,
     bool managed_memory=False,
     object initial_pool_size=None,
+    object maximum_pool_size=None,
     object devices=0,
     bool logging=False,
     object log_file_name=None,
@@ -337,23 +321,27 @@ cpdef void _initialize(
 
     if pool_allocator:
         typ = PoolMemoryResource
-        if initial_pool_size is None:
-            args = (upstream(),)
-        else:
-            args = (upstream(), initial_pool_size)
-
+        args = (upstream(),)
+        kwargs = dict(
+            initial_pool_size=initial_pool_size,
+            maximum_pool_size=maximum_pool_size
+        )
     else:
         typ = upstream
         args = ()
+        kwargs = {}
 
     cdef MemoryResource mr
     cdef int original_device
 
     # Save the current device so we can reset it
     try:
-        original_device = get_current_device()
-    except RuntimeError:
-        warnings.warn("No CUDA Device Found", ResourceWarning)
+        original_device = getDevice()
+    except CUDARuntimeError as e:
+        if e.status == cudaError.cudaErrorNoDevice:
+            warnings.warn(e.msg)
+        else:
+            raise e
     else:
         # reset any previously specified per device resources
         global _per_device_mrs
@@ -366,17 +354,20 @@ cpdef void _initialize(
 
         # create a memory resource per specified device
         for device in devices:
-            set_current_device(device)
+            setDevice(device)
 
             if logging:
-                mr = LoggingResourceAdaptor(typ(*args), log_file_name.encode())
+                mr = LoggingResourceAdaptor(
+                    typ(*args, **kwargs),
+                    log_file_name.encode()
+                )
             else:
-                mr = typ(*args)
+                mr = typ(*args, **kwargs)
 
             _set_per_device_resource(device, mr)
 
         # reset CUDA device to original
-        set_current_device(original_device)
+        setDevice(original_device)
 
 
 cpdef get_per_device_resource(int device):
@@ -423,7 +414,7 @@ cpdef set_current_device_resource(MemoryResource mr):
         The memory resource to set. Must have been created while the current
         device is the active CUDA device.
     """
-    _set_per_device_resource(get_current_device(), mr)
+    _set_per_device_resource(getDevice(), mr)
 
 
 cpdef get_per_device_resource_type(int device):
@@ -447,7 +438,7 @@ cpdef get_current_device_resource():
     If the returned memory resource is used when a different device is the
     active CUDA device, behavior is undefined.
     """
-    return get_per_device_resource(get_current_device())
+    return get_per_device_resource(getDevice())
 
 
 cpdef get_current_device_resource_type():

@@ -1,5 +1,4 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
-
 import os
 import sys
 from itertools import product
@@ -77,19 +76,22 @@ def test_rmm_modes(dtype, nelem, alloc, managed, pool):
 @pytest.mark.parametrize("dtype", _dtypes)
 @pytest.mark.parametrize("nelem", _nelems)
 @pytest.mark.parametrize("alloc", _allocs)
-def test_rmm_csv_log(dtype, nelem, alloc):
+def test_rmm_csv_log(dtype, nelem, alloc, tmpdir):
+    suffix = ".csv"
+
+    base_name = str(tmpdir.join("rmm_log.csv"))
+    rmm.reinitialize(logging=True, log_file_name=base_name)
+    array_tester(dtype, nelem, alloc)
+    rmm.mr._flush_logs()
+
+    # Need to open separately because the device ID is appended to filename
+    fname = base_name[: -len(suffix)] + ".dev0" + suffix
     try:
-        filename = "/tmp/test_rmm_csv_log.csv"
-        rmm.reinitialize(logging=True, log_file_name=filename)
-        array_tester(dtype, nelem, alloc)
-        rmm.mr._flush_logs()
-        # Need to open separately because the device ID is appended to filename
-        filename = "/tmp/test_rmm_csv_log.dev0.csv"
-        with open(filename, "rb") as f:
+        with open(fname, "rb") as f:
             csv = f.read()
             assert csv.find(b"Time,Action,Pointer,Size,Stream") >= 0
     finally:
-        os.remove(filename)
+        os.remove(fname)
     rmm.reinitialize()
 
 
@@ -350,3 +352,30 @@ def test_binning_memory_resource(dtype, nelem, alloc, upstream_mr):
     assert rmm.mr.get_current_device_resource_type() is type(mr)
     array_tester(dtype, nelem, alloc)
     rmm.reinitialize()
+
+
+def test_reinitialize_max_pool_size():
+    rmm.reinitialize(
+        pool_allocator=True, initial_pool_size=0, maximum_pool_size=1 << 23
+    )
+    rmm.DeviceBuffer().resize((1 << 23) - 1)
+    rmm.reinitialize()
+
+
+def test_reinitialize_max_pool_size_exceeded():
+    rmm.reinitialize(
+        pool_allocator=True, initial_pool_size=0, maximum_pool_size=1 << 23
+    )
+    with pytest.raises(MemoryError):
+        rmm.DeviceBuffer().resize(1 << 24)
+    rmm.reinitialize()
+
+
+def test_reinitialize_initial_pool_size_gt_max():
+    with pytest.raises(RuntimeError) as e:
+        rmm.reinitialize(
+            pool_allocator=True,
+            initial_pool_size=1 << 11,
+            maximum_pool_size=1 << 10,
+        )
+    assert "Initial pool size exceeds the maximum pool size" in str(e.value)
