@@ -155,8 +155,8 @@ SET_TARGET_PROPERTIES(rmm PROPERTIES BUILD_RPATH "\$ORIGIN")
 target_include_directories(rmm PUBLIC
   "${THRUST_INCLUDE_DIR}"
   "${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
-  "${CMAKE_CURRENT_SOURCE_DIR}/include"
-  "${CMAKE_CURRENT_BINARY_DIR}/include"
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+  "$<INSTALL_INTERFACE:include>"
   )
 
 # In order to find cnmem.h while building the library, we need this.
