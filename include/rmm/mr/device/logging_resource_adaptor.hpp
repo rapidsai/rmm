@@ -19,9 +19,16 @@
 
 #include <rmm/detail/error.hpp>
 
+// If using GCC, temporary workaround for older libcudacxx defining _LIBCPP_VERSION
+// undefine it before including spdlog, due to fmtlib checking if it is defined
+// TODO: remove once libcudacxx is on Github and RAPIDS depends on it
+#ifdef __GNUG__
+#undef _LIBCPP_VERSION
+#endif
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/ostream_sink.h>
 #include <spdlog/spdlog.h>
+
 #include <memory>
 #include <sstream>
 
