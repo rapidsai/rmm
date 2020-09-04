@@ -67,7 +67,7 @@ class arena_memory_resource final : public device_memory_resource {
    * @brief Destroy the `arena_memory_resource` and deallocate all memory it allocated using
    * the upstream resource.
    */
-  ~arena_memory_resource() override = default;
+  ~arena_memory_resource() override { release(); }
 
   arena_memory_resource()                             = delete;
   arena_memory_resource(arena_memory_resource const&) = delete;
@@ -302,6 +302,23 @@ class arena_memory_resource final : public device_memory_resource {
   std::pair<size_t, size_t> do_get_mem_info(cudaStream_t stream) const override
   {
     return std::make_pair(0, 0);
+  }
+
+  /**
+   * @brief Clear arenas.
+   *
+   * Note: only called by destructor.
+   */
+  void release()
+  {
+    lock_guard lock(mtx_);
+
+    for (auto& kv : arenas_) {
+      auto& arena = kv.second;
+      lock_guard arena_lock(arena.mtx);
+      arena.free_blocks.clear();
+      arena.allocated_blocks.clear();
+    }
   }
 
   arena& get_arena()
