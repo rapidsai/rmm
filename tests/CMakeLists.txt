@@ -138,7 +138,7 @@ ConfigureTest(LOGGER_TEST "${LOGGER_TEST_SRC}")
 # - uvector tests ---------------------------------------------------------------------------------
 
 set(DEVICE_UVECTOR_TEST_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/device_uvector_tests.cu")
+    "${CMAKE_CURRENT_SOURCE_DIR}/device_uvector_tests.cpp")
 
 ConfigureTest(DEVICE_UVECTOR_TEST "${DEVICE_UVECTOR_TEST_SRC}")
 
