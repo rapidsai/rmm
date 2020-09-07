@@ -17,7 +17,7 @@
 
 #include <limits>
 #include <rmm/detail/error.hpp>
-#include <rmm/detail/logger.hpp>
+#include <rmm/logger.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <cuda_runtime_api.h>
@@ -317,11 +317,11 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    */
   block_type get_block(size_t size, stream_event_pair stream_event)
   {
-    // Try to find a satisfactory block in free list for the  same stream (no sync required)
+    // Try to find a satisfactory block in free list for the same stream (no sync required)
     auto iter = stream_free_blocks_.find(stream_event);
     if (iter != stream_free_blocks_.end()) {
       block_type b = iter->second.get_block(size);
-      if (b.is_valid()) return b;
+      if (b.is_valid()) { return b; }
     }
 
     free_list& blocks =

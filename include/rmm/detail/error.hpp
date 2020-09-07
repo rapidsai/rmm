@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <rmm/detail/logger.hpp>
+#include <rmm/logger.hpp>
 
 #include <cuda_runtime_api.h>
 

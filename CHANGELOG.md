@@ -9,6 +9,7 @@
 - PR #477 Just use `None` for `strides` in `DeviceBuffer`
 - PR #528 Add maximum_pool_size parameter to reinitialize API
 - PR #532 Merge free lists in pool_memory_resource to defragment before growing from upstream
+- PR #537 Add CMake option to disable deprecation warnings
 
 ## Bug Fixes
 

@@ -57,6 +57,12 @@ endif(CMAKE_COMPILER_IS_GNUCXX)
 option(BUILD_TESTS "Configure CMake to build tests" ON)
 option(BUILD_BENCHMARKS "Configure CMake to build (google) benchmarks" OFF)
 
+option(DISABLE_DEPRECATION_WARNING "Disable warnings generated from deprecated declarations." OFF)
+if(DISABLE_DEPRECATION_WARNING)
+  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -Wno-deprecated-declarations")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
+endif(DISABLE_DEPRECATION_WARNING)
+
 ###################################################################################################
 # - cudart options --------------------------------------------------------------------------------
 # cudart can be statically linked or dynamically linked the python ecosystem wants dynamic linking
@@ -181,7 +187,7 @@ if(NOT LOGGING_LEVEL)
     set_property(CACHE LOGGING_LEVEL PROPERTY STRINGS
         "TRACE" "DEBUG" "INFO" "WARN" "ERROR" "CRITICAL" "OFF")
 else()
-message(STATUS "Setting logging level to '${LOGGING_LEVEL}'")
+    message(STATUS "Setting logging level to '${LOGGING_LEVEL}'")
 endif(NOT LOGGING_LEVEL)
 
 target_compile_definitions(rmm PUBLIC SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${LOGGING_LEVEL})

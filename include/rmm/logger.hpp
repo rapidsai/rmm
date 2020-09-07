@@ -16,6 +16,12 @@
 
 #pragma once
 
+// If using GCC, temporary workaround for older libcudacxx defining _LIBCPP_VERSION
+// undefine it before including spdlog, due to fmtlib checking if it is defined
+// TODO: remove once libcudacxx is on Github and RAPIDS depends on it
+#ifdef __GNUG__
+#undef _LIBCPP_VERSION
+#endif
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/spdlog.h>
 
@@ -26,6 +32,14 @@ namespace rmm {
 
 namespace detail {
 
+/**
+ * @brief Returns the default log filename for the RMM global logger.
+ *
+ * If the environment variable `RMM_DEBUG_LOG_FILE` is defined, its value is used as the path and
+ * name of the log file. Otherwise, the file `rmm_log.txt` in the current working directory is used.
+ *
+ * @return std::string The default log file name.
+ */
 inline std::string default_log_filename()
 {
   auto filename = std::getenv("RMM_DEBUG_LOG_FILE");
@@ -42,7 +56,7 @@ struct logger_wrapper {
                 default_log_filename(), true  // truncate file
                 )}
   {
-    logger_.set_pattern("[%l][%t][%H:%M:%S:%f] %v");
+    logger_.set_pattern("[%6t][%H:%M:%S:%f][%-6l] %v");
     logger_.flush_on(spdlog::level::warn);
 
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
@@ -56,6 +70,13 @@ struct logger_wrapper {
 
 }  // namespace detail
 
+/**
+ * @brief Returns the global RMM logger
+ *
+ * This is a spdlog logger. The easiest way to log messages is to use the `RMM_LOG_*` macros.
+ *
+ * @return spdlog::logger& The logger.
+ */
 inline spdlog::logger& logger()
 {
   static detail::logger_wrapper w{};
