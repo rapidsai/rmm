@@ -107,7 +107,7 @@ class pool_memory_resource final
                           : initial_pool_size;
     current_pool_size_ = initial_pool_size;
     maximum_pool_size_ = (maximum_pool_size == default_maximum_size)
-                           ? rmm::detail::align_up(free, allocation_alignment)
+                           ? rmm::detail::align_down(free, allocation_alignment)
                            : maximum_pool_size;
 
     RMM_EXPECTS(pool_size() <= maximum_pool_size_,
