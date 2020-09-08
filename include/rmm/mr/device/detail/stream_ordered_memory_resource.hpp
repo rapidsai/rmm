@@ -324,19 +324,24 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
       if (b.is_valid()) { return b; }
     }
 
+    auto num_lists = stream_free_blocks_.size();
+
+    // note this creates a free list if it doesn't already exist, hence we get num lists first above
     free_list& blocks =
       (iter != stream_free_blocks_.end()) ? iter->second : stream_free_blocks_[stream_event];
 
-    // Otherwise try to find a block associated with another stream
-    if (stream_free_blocks_.size() > 1) {
-      block_type b = get_block_from_other_stream(size, stream_event, blocks, false);
-      if (b.is_valid()) return b;
-    }
-    // no large enough blocks available on other streams, so sync and merge free lists
-    // until we find one
-    if (stream_free_blocks_.size() > 1) {
-      block_type b = get_block_from_other_stream(size, stream_event, blocks, true);
-      if (b.is_valid()) return b;
+    if (num_lists > 1) {
+      // Try to find an existing block in another stream
+      {
+        block_type const b = get_block_from_other_stream(size, stream_event, blocks, false);
+        if (b.is_valid()) return b;
+      }
+
+      // no large enough blocks available on other streams, so sync and merge until we find one
+      {
+        block_type const b = get_block_from_other_stream(size, stream_event, blocks, true);
+        if (b.is_valid()) return b;
+      }
     }
 
     log_summary_trace();
