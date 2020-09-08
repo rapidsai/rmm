@@ -374,7 +374,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
   {
     for (auto it = stream_free_blocks_.begin(), next_it = it; it != stream_free_blocks_.end();
          it = next_it) {
-      ++next_it;
+      ++next_it;  // Points to element after `it` to allow erasing `it` in the loop body
       auto other_event = it->first.event;
       if (other_event != stream_event.event) {
         auto other_blocks = it->second;
