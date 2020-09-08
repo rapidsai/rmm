@@ -10,6 +10,7 @@
 - PR #477 Just use `None` for `strides` in `DeviceBuffer`
 - PR #528 Add maximum_pool_size parameter to reinitialize API
 - PR #537 Add CMake option to disable deprecation warnings
+- PR #541 Refine CMakeLists.txt to make it easy to import by external projects
 - PR #538 Upgrade CUB and Thrust to the latest commits
 - PR #542 Pin conda spdlog versions to 1.7.0
 

@@ -1,4 +1,4 @@
-set(GTEST_ROOT "${CMAKE_BINARY_DIR}/googletest")
+set(GTEST_ROOT "${CMAKE_CURRENT_BINARY_DIR}/googletest")
 
 set(GTEST_CMAKE_ARGS "")
 		     # " -Dgtest_build_samples=ON" 
@@ -14,7 +14,7 @@ elseif(CMAKE_CXX11_ABI)
     list(APPEND GTEST_CMAKE_ARGS " -DCMAKE_CXX_FLAGS=-D_GLIBCXX_USE_CXX11_ABI=1")
 endif(NOT CMAKE_CXX11_ABI)
 
-configure_file("${CMAKE_SOURCE_DIR}/cmake/Templates/GoogleTest.CMakeLists.txt.cmake"
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/Templates/GoogleTest.CMakeLists.txt.cmake"
                "${GTEST_ROOT}/CMakeLists.txt")
 
 file(MAKE_DIRECTORY "${GTEST_ROOT}/build")
