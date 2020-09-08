@@ -26,8 +26,7 @@ include_directories("${CMAKE_SOURCE_DIR}"
 ###################################################################################################
 # - library paths ---------------------------------------------------------------------------------
 
-link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES is an undocumented/unsupported variable containing the link directories for nvcc
-                 "${CMAKE_BINARY_DIR}"
+link_directories("${CMAKE_BINARY_DIR}"
                  "${GTEST_LIBRARY_DIR}"
                  "${GBENCH_LIBRARY_DIR}")
 
