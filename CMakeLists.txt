@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #=============================================================================
-cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.17...3.18 FATAL_ERROR)
 
 project(RMM VERSION 0.16.0 LANGUAGES C CXX CUDA)
 
@@ -54,6 +54,9 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     endif(CMAKE_CXX11_ABI)
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
+###################################################################################################
+# - build options ---------------------------------------------------------------------------------
+
 option(BUILD_TESTS "Configure CMake to build tests" ON)
 option(BUILD_BENCHMARKS "Configure CMake to build (google) benchmarks" OFF)
 
@@ -63,18 +66,17 @@ if(DISABLE_DEPRECATION_WARNING)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
 endif(DISABLE_DEPRECATION_WARNING)
 
-###################################################################################################
-# - cudart options --------------------------------------------------------------------------------
 # cudart can be statically linked or dynamically linked the python ecosystem wants dynamic linking
-
 option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
 
-if(CUDA_STATIC_RUNTIME)
-    message(STATUS "Enabling static linking of cudart")
-    set(CUDART_LIBRARY "cudart_static")
-else()
-    set(CUDART_LIBRARY "cudart")
-endif(CUDA_STATIC_RUNTIME)
+option(PER_THREAD_DEFAULT_STREAM "Build with per-thread default stream" OFF)
+
+option(USE_NVTX "Build with NVTX support" ON)
+
+###################################################################################################
+# - find packages we depend on --------------------------------------------------------------------
+
+find_package(CUDAToolkit REQUIRED)
 
 ###################################################################################################
 # - cmake modules ---------------------------------------------------------------------------------
@@ -101,7 +103,6 @@ configure_file("${CNMEM_INCLUDE_DIR}/cnmem.h"
 # - per-thread default stream option --------------------------------------------------------------
 # This needs to be defined first so tests and benchmarks can inherit it.
 
-option(PER_THREAD_DEFAULT_STREAM "Build with per-thread default stream" OFF)
 if(PER_THREAD_DEFAULT_STREAM)
     message(STATUS "Using per-thread default stream")
     add_compile_definitions(CUDA_API_PER_THREAD_DEFAULT_STREAM)
@@ -126,7 +127,6 @@ endif(BUILD_TESTS)
 # - add google benchmark --------------------------------------------------------------------------
 
 if(BUILD_BENCHMARKS)
-
   include(ConfigureGoogleBenchmark)
 
   if(GBENCH_FOUND)
@@ -135,26 +135,18 @@ if(BUILD_BENCHMARKS)
   else()
     message(AUTHOR_WARNING "Google C++ Benchmarking Framework (Google Benchmark) not found: automated tests are disabled.")
   endif(GBENCH_FOUND)
-
 endif(BUILD_BENCHMARKS)
-
-
-###################################################################################################
-# - library paths ---------------------------------------------------------------------------------
-
-link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}") # CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES is an undocumented/unsupported variable containing the link directories for nvcc
 
 ###################################################################################################
 # - library targets -------------------------------------------------------------------------------
-add_library(rmm SHARED
-            "${CNMEM_SOURCE_DIR}/cnmem.cpp")
+
+add_library(rmm SHARED "${CNMEM_SOURCE_DIR}/cnmem.cpp")
 
 # override rpath for rmm
-SET_TARGET_PROPERTIES(rmm PROPERTIES BUILD_RPATH "\$ORIGIN")
+set_target_properties(rmm PROPERTIES BUILD_RPATH "\$ORIGIN")
 
 target_include_directories(rmm PUBLIC
   "${THRUST_INCLUDE_DIR}"
-  "${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
   "$<INSTALL_INTERFACE:include>"
   )
@@ -166,21 +158,40 @@ target_include_directories(rmm PRIVATE
   )
 
 ###################################################################################################
-# - build options ---------------------------------------------------------------------------------
-
-option(USE_NVTX "Build with NVTX support" ON)
-if(USE_NVTX)
-    message(STATUS "Using Nvidia Tools Extension")
-    find_library(NVTX_LIBRARY nvToolsExt PATH ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
-    target_link_libraries(rmm PUBLIC ${NVTX_LIBRARY})
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --define-macro USE_NVTX")
-endif(USE_NVTX)
-
-###################################################################################################
 # - link libraries --------------------------------------------------------------------------------
 
-target_link_libraries(rmm PUBLIC
-  ${CUDART_LIBRARY} cuda spdlog::spdlog_header_only)
+if(CUDA_STATIC_RUNTIME)
+  message(STATUS "Enabling static linking of cudart")
+  target_link_libraries(rmm PUBLIC CUDA::cudart_static)
+else()
+  target_link_libraries(rmm PUBLIC CUDA::cudart)
+endif(CUDA_STATIC_RUNTIME)
+
+target_link_libraries(rmm PUBLIC CUDA::cuda_driver)
+
+if(USE_NVTX)
+  message(STATUS "Using Nvidia Tools Extension")
+  target_link_libraries(rmm PUBLIC CUDA::nvToolsExt)
+  target_compile_definitions(rmm PUBLIC USE_NVTX)
+endif(USE_NVTX)
+
+# Set a default logging level if none was specified
+set(DEFAULT_LOGGING_LEVEL OFF)
+
+if(NOT LOGGING_LEVEL)
+    message(STATUS "Setting logging level to '${DEFAULT_LOGGING_LEVEL}' since none specified.")
+    set(LOGGING_LEVEL "${DEFAULT_LOGGING_LEVEL}" CACHE
+      STRING "Choose the logging level." FORCE)
+    # Set the possible values of build type for cmake-gui
+    set_property(CACHE LOGGING_LEVEL PROPERTY STRINGS
+        "TRACE" "DEBUG" "INFO" "WARN" "ERROR" "CRITICAL" "OFF")
+else()
+    message(STATUS "Setting logging level to '${LOGGING_LEVEL}'")
+endif(NOT LOGGING_LEVEL)
+
+target_compile_definitions(rmm PUBLIC SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${LOGGING_LEVEL})
+
+target_link_libraries(rmm PUBLIC spdlog::spdlog_header_only)
 
 ###################################################################################################
 # - install targets -------------------------------------------------------------------------------
