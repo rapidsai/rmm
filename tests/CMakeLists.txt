@@ -29,7 +29,7 @@ set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 function(ConfigureTest CMAKE_TEST_NAME CMAKE_TEST_SRC)
     add_executable(${CMAKE_TEST_NAME} ${CMAKE_TEST_SRC})
     set_target_properties(${CMAKE_TEST_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    target_link_libraries(${CMAKE_TEST_NAME} gmock gtest gmock_main gtest_main pthread cudart rmm)
+    target_link_libraries(${CMAKE_TEST_NAME} gmock gtest gmock_main gtest_main pthread rmm)
     set_target_properties(${CMAKE_TEST_NAME} PROPERTIES
                             RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/gtests")
     add_test(NAME ${CMAKE_TEST_NAME} COMMAND ${CMAKE_TEST_NAME})
@@ -47,10 +47,7 @@ include_directories("${THRUST_INCLUDE_DIR}"
 ###################################################################################################
 # - library paths ---------------------------------------------------------------------------------
 
-# CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES is an undocumented/unsupported variable containing the link
-# directories for nvcc
-link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" 
-                 "${GTEST_LIBRARY_DIR}")
+link_directories("${GTEST_LIBRARY_DIR}")
 
 ###################################################################################################
 ### test sources ##################################################################################
