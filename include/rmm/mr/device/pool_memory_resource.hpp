@@ -75,6 +75,10 @@ class pool_memory_resource final
    * `upstream_mr`.
    *
    * @throws rmm::logic_error if `upstream_mr == nullptr`
+   * @throws rmm::logic_error if `initial_pool_size` is neither the default nor aligned to a
+   * multiple of 256 bytes.
+   * @throws rmm::logic_error if `maximum_pool_size` is neither the default nor aligned to a
+   * multiple of 256 bytes.
    *
    * @param upstream_mr The memory_resource from which to allocate blocks for the pool.
    * @param initial_pool_size Minimum size, in bytes, of the initial pool. Defaults to half of the
