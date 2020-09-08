@@ -167,13 +167,31 @@ else()
   target_link_libraries(rmm PUBLIC CUDA::cudart)
 endif(CUDA_STATIC_RUNTIME)
 
+target_link_libraries(rmm PUBLIC CUDA::cuda_driver)
+
 if(USE_NVTX)
   message(STATUS "Using Nvidia Tools Extension")
   target_link_libraries(rmm PUBLIC CUDA::nvToolsExt)
   target_compile_definitions(rmm PUBLIC USE_NVTX)
 endif(USE_NVTX)
 
-target_link_libraries(rmm PUBLIC CUDA::cuda_driver spdlog::spdlog_header_only)
+# Set a default logging level if none was specified
+set(DEFAULT_LOGGING_LEVEL OFF)
+
+if(NOT LOGGING_LEVEL)
+    message(STATUS "Setting logging level to '${DEFAULT_LOGGING_LEVEL}' since none specified.")
+    set(LOGGING_LEVEL "${DEFAULT_LOGGING_LEVEL}" CACHE
+      STRING "Choose the logging level." FORCE)
+    # Set the possible values of build type for cmake-gui
+    set_property(CACHE LOGGING_LEVEL PROPERTY STRINGS
+        "TRACE" "DEBUG" "INFO" "WARN" "ERROR" "CRITICAL" "OFF")
+else()
+    message(STATUS "Setting logging level to '${LOGGING_LEVEL}'")
+endif(NOT LOGGING_LEVEL)
+
+target_compile_definitions(rmm PUBLIC SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${LOGGING_LEVEL})
+
+target_link_libraries(rmm PUBLIC spdlog::spdlog_header_only)
 
 ###################################################################################################
 # - install targets -------------------------------------------------------------------------------

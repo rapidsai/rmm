@@ -20,8 +20,6 @@
 
 #include <rmm/device_uvector.hpp>
 
-#include <thrust/logical.h>
-
 template <typename T>
 struct TypedUVectorTest : ::testing::Test {
   cudaStream_t stream() const noexcept { return cudaStream_t{0}; }

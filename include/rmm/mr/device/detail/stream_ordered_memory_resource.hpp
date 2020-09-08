@@ -17,10 +17,12 @@
 
 #include <limits>
 #include <rmm/detail/error.hpp>
+#include <rmm/logger.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <cuda_runtime_api.h>
 
+#include <functional>
 #include <map>
 #include <mutex>
 #include <set>
@@ -201,6 +203,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    */
   virtual void* do_allocate(std::size_t bytes, cudaStream_t stream) override
   {
+    RMM_LOG_TRACE("[A][{}B][stream {:p}]", bytes, static_cast<void*>(stream));
     if (bytes <= 0) return nullptr;
 
     lock_guard lock(mtx_);
@@ -213,6 +216,13 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     auto const b = this->underlying().get_block(bytes, stream_event);
     auto split   = this->underlying().allocate_from_block(b, bytes);
     if (split.remainder.is_valid()) stream_free_blocks_[stream_event].insert(split.remainder);
+    RMM_LOG_TRACE("[A][{}B][{:p}][stream {:p}]",
+                  bytes,
+                  static_cast<void*>(split.allocated_pointer),
+                  static_cast<void*>(stream));
+
+    log_summary_trace(stream_event.stream);
+
     return split.allocated_pointer;
   }
 
@@ -226,6 +236,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
   virtual void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override
   {
     lock_guard lock(mtx_);
+    RMM_LOG_TRACE("[D][{}B][{:p}][stream {:p}]", bytes, p, static_cast<void*>(stream));
     auto stream_event = get_event(stream);
     bytes             = rmm::detail::align_up(bytes, allocation_alignment);
     auto const b      = this->underlying().free_block(p, bytes);
@@ -236,6 +247,8 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     RMM_ASSERT_CUDA_SUCCESS(cudaEventRecord(stream_event.event, stream));
 
     stream_free_blocks_[stream_event].insert(b);
+
+    log_summary_trace(stream_event.stream);
   }
 
  private:
@@ -308,14 +321,16 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     auto iter = stream_free_blocks_.find(stream_event);
     if (iter != stream_free_blocks_.end()) {
       block_type b = iter->second.get_block(size);
-      if (b.is_valid()) return b;
+      if (b.is_valid()) { return b; }
     }
 
     // Otherwise try to find a block associated with another stream
     block_type b = get_block_from_other_stream(size, stream_event);
-    if (b.is_valid()) return b;
+    if (b.is_valid()) { return b; }
 
     // no larger blocks available on other streams, so grow the pool and create a block
+
+    log_summary_trace(stream_event.stream);
 
     // avoid searching for this stream's list again
     free_list& blocks =
@@ -360,6 +375,11 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
           stream_free_blocks_[stream_event].insert(std::move(blocks));
           stream_free_blocks_.erase(s);
 
+          RMM_LOG_INFO("[A][{}B][Stream {:p} steal from stream {:p}]",
+                       size,
+                       static_cast<void*>(stream_event.stream),
+                       static_cast<void*>(s->first.stream));
+
           return b;
         }
       }
@@ -383,6 +403,28 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
 
     stream_events_.clear();
     stream_free_blocks_.clear();
+  }
+
+  void log_summary_trace(cudaStream_t stream)
+  {
+#if (SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE)
+    std::size_t num_blocks{0};
+    std::size_t max_block{0};
+    std::size_t free_mem{0};
+    std::for_each(stream_free_blocks_.cbegin(),
+                  stream_free_blocks_.cend(),
+                  [this, &num_blocks, &max_block, &free_mem](auto const& freelist) {
+                    num_blocks += freelist.second.size();
+                    auto summary = this->underlying().free_list_summary(freelist.second);
+                    max_block    = std::max(summary.first, max_block);
+                    free_mem += summary.second;
+                  });
+    RMM_LOG_TRACE("[Summary][Free lists: {}][Blocks: {}][Max Block: {}][Total Free: {}]",
+                  stream_free_blocks_.size(),
+                  num_blocks,
+                  max_block,
+                  free_mem);
+#endif
   }
 
   // map of stream_event_pair --> free_list
