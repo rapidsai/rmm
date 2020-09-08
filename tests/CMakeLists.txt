@@ -38,7 +38,8 @@ endfunction(ConfigureTest)
 ###################################################################################################
 # - include paths ---------------------------------------------------------------------------------
 
-include_directories("${GTEST_INCLUDE_DIR}"
+include_directories("${THRUST_INCLUDE_DIR}"
+                    "${GTEST_INCLUDE_DIR}"
                     "${CMAKE_SOURCE_DIR}"
                     "${CMAKE_CURRENT_SOURCE_DIR}"
                     "${CMAKE_CURRENT_SOURCE_DIR}/../include")
