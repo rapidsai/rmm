@@ -17,24 +17,11 @@
 
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/detail/arena.hpp>
-#include <rmm/mr/device/detail/coalescing_free_list.hpp>
-#include <rmm/mr/device/detail/free_list.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <cuda_runtime_api.h>
 
-#include <algorithm>
-#include <cassert>
-#include <cstdint>
-#include <iostream>
-#include <map>
-#include <mutex>
-#include <numeric>
-#include <set>
 #include <shared_mutex>
-#include <thread>
-#include <unordered_map>
-#include <vector>
 
 namespace rmm {
 namespace mr {
@@ -51,29 +38,20 @@ namespace mr {
 template <typename Upstream>
 class arena_memory_resource final : public device_memory_resource {
  public:
-  static constexpr size_t allocation_alignment        = 256;
-  static constexpr size_t minimum_upstream_block_size = 1UL << 22UL;  // 4 MiB
+  static constexpr size_t allocation_alignment = 256;
 
   /**
-   * @brief Construct a `arena_memory_resource`.
+   * @brief Construct an `arena_memory_resource`.
    *
    * @throws rmm::logic_error if `upstream_mr == nullptr`
    *
-   * @param upstream_mr The memory_resource from which to allocate blocks for the pool.
+   * @param upstream_mr The memory_resource from which to allocate memory for the arenas.
    */
   explicit arena_memory_resource(Upstream* upstream_mr) : upstream_mr_{upstream_mr} {}
 
-  /**
-   * @brief Destroy the `arena_memory_resource` and deallocate all memory it allocated using
-   * the upstream resource.
-   */
-  ~arena_memory_resource() override { release(); }
-
-  arena_memory_resource()                             = delete;
+  // Disable copy (and move) semantics.
   arena_memory_resource(arena_memory_resource const&) = delete;
-  arena_memory_resource(arena_memory_resource&&)      = delete;
   arena_memory_resource& operator=(arena_memory_resource const&) = delete;
-  arena_memory_resource& operator=(arena_memory_resource&&) = delete;
 
   /**
    * @brief Queries whether the resource supports use of non-null CUDA streams for
@@ -91,12 +69,9 @@ class arena_memory_resource final : public device_memory_resource {
   bool supports_get_mem_info() const noexcept override { return false; }
 
  private:
-  using arena            = detail::arena;
-  using free_list        = detail::arena::free_list;
-  using block_type       = detail::arena::block_type;
-  using split_block_type = detail::arena::split_block_type;
-  using allocated_set    = detail::arena::allocated_set;
-  using lock_guard       = std::lock_guard<std::mutex>;
+  using arena      = detail::arena::arena<Upstream>;
+  using read_lock  = std::shared_lock<std::shared_timed_mutex>;
+  using write_lock = std::lock_guard<std::shared_timed_mutex>;
 
   /**
    * @brief Get the maximum size of allocations supported by this memory resource.
@@ -108,126 +83,16 @@ class arena_memory_resource final : public device_memory_resource {
    */
   size_t get_maximum_allocation_size() const { return std::numeric_limits<size_t>::max(); }
 
-  /**
-   * @brief Allocate a block from upstream to expand the arena.
-   *
-   * @param size The size in bytes to allocate from the upstream resource
-   * @return block_type The allocated block
-   */
-  block_type block_from_upstream(size_t size)
-  {
-    void* p = upstream_mr_->allocate(size, cudaStreamLegacy);
-    block_type b{reinterpret_cast<char*>(p), size, true, size};
-    return b;
-  }
-
-  /**
-   * @brief Allocate space from upstream to supply the arena and return a sufficiently sized block.
-   *
-   * @param size The minimum size to allocate
-   * @param blocks The free list
-   * @return block_type a block of at least `size` bytes
-   */
-  block_type expand_arena(size_t size)
-  {
-    auto grow_size = std::max(size, minimum_upstream_block_size);
-    return block_from_upstream(grow_size);
-  }
-
-  /**
-   * @brief Get an available memory block of at least `size` bytes
-   *
-   * @param size The number of bytes to allocate
-   * @return block_type A block of memory of at least `size` bytes
-   */
-  block_type get_block(free_list& free_blocks, size_t size)
-  {
-    // Try to find a satisfactory block in free list for the current arena (no sync required)
-    block_type b = free_blocks.get_block(size);
-    if (b.is_valid()) return b;
-
-    // no larger blocks available, so grow the arena and create a block
-    return expand_arena(size);
-  }
-
-  /**
-   * @brief Splits block `b` if necessary to return a pointer to memory of `size` bytes.
-   *
-   * If the block is split, the remainder is returned to the arena.
-   *
-   * @param b The block to allocate from.
-   * @param size The size in bytes of the requested allocation.
-   * @return A pair comprising the allocated pointer and any unallocated remainder of the input
-   * block.
-   */
-  split_block_type allocate_from_block(block_type const& b,
-                                       size_t size,
-                                       allocated_set& allocated_blocks)
-  {
-    block_type const alloc{b.pointer(), size, b.is_head(), b.original_size()};
-    allocated_blocks.insert(alloc);
-
-    auto rest =
-      (b.size() > size) ? block_type{b.pointer() + size, b.size() - size, false, 0} : block_type{};
-    return {reinterpret_cast<void*>(alloc.pointer()), rest};
-  }
-
-  /**
-   * @brief Finds, frees and returns the block associated with pointer `p`.
-   *
-   * @param p The pointer to the memory to free.
-   * @param size The size of the memory to free. Must be equal to the original allocation size.
-   * @return The (now freed) block associated with `p`. The caller is expected to return the block
-   * to the pool.
-   */
-  block_type free_block(void* p, size_t size, allocated_set& allocated_blocks) noexcept
-  {
-    auto const i = allocated_blocks.find(static_cast<char*>(p));
-
-    // The pointer may be allocated in another arena.
-    if (i == allocated_blocks.end()) { return {}; }
-
-    auto block = *i;
-    assert(block.size() == size);
-    allocated_blocks.erase(i);
-
-    return block;
-  }
-
-  void shrink_arena(free_list& free_blocks, cudaStream_t stream)
-  {
-    bool synchronized = false;
-    for (auto it = std::next(free_blocks.begin()); it != free_blocks.end(); ++it) {
-      auto block = *it;
-      if (block.is_original()) {
-        if (!synchronized) {
-          RMM_CUDA_TRY(cudaStreamSynchronize(stream));
-          synchronized = true;
-        }
-        upstream_mr_->deallocate(block.pointer(), block.size(), cudaStreamLegacy);
-        free_blocks.erase(it--);
-      }
-    }
-  }
-
-  bool deallocate_in_arena(
-    arena& arena, void* p, size_t bytes, cudaStream_t stream, bool shrink = true)
-  {
-    lock_guard lock(arena.mtx);
-    const auto b = free_block(p, bytes, arena.allocated_blocks);
-    if (b.is_valid() && arena.free_blocks.insert(b) && shrink) {
-      shrink_arena(arena.free_blocks, stream);
-    }
-    return b.is_valid();
-  }
-
   void deallocate_across_arena(void* p, size_t bytes, cudaStream_t stream)
   {
     RMM_CUDA_TRY(cudaStreamSynchronize(stream));
 
+    write_lock lock(mtx_);
     for (auto& kv : arenas_) {
-      if (deallocate_in_arena(kv.second, p, bytes, stream, /*shrink=*/false)) return;
+      if (kv.second.deallocate(p, bytes)) return;
     }
+
+    RMM_FAIL("Allocation not found", rmm::bad_alloc);
   }
 
   /**
@@ -251,19 +116,12 @@ class arena_memory_resource final : public device_memory_resource {
       RMM_EXPECTS(
         bytes <= get_maximum_allocation_size(), rmm::bad_alloc, "Maximum allocation size exceeded");
 
-      auto& this_arena = get_arena();
-      lock_guard lock(this_arena.mtx);
-      auto const b = get_block(this_arena.free_blocks, bytes);
-      auto split   = allocate_from_block(b, bytes, this_arena.allocated_blocks);
-      if (split.remainder.is_valid()) this_arena.free_blocks.insert(split.remainder);
-      return split.allocated_pointer;
-    } else {
-      return upstream_mr_->allocate(bytes, stream);
+      if (bytes < arena::maximum_allocation_size()) { return get_arena().allocate(bytes, stream); }
     }
-#else
-    return upstream_mr_->allocate(bytes, stream);
 #endif
+    return upstream_mr_->allocate(bytes, stream);
   }
+
   /**
    * @brief Deallocate memory pointed to by `p`.
    *
@@ -278,17 +136,15 @@ class arena_memory_resource final : public device_memory_resource {
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
     if (stream == cudaStreamDefault || stream == cudaStreamPerThread) {
       bytes = rmm::detail::align_up(bytes, allocation_alignment);
-      if (deallocate_in_arena(get_arena(), p, bytes, stream)) {
+      if (bytes < arena::maximum_allocation_size()) {
+        if (!get_arena().deallocate(p, bytes, stream)) {
+          deallocate_across_arena(p, bytes, stream);
+        }
         return;
-      } else {
-        deallocate_across_arena(p, bytes, stream);
       }
-    } else {
-      return upstream_mr_->deallocate(p, bytes, stream);
     }
-#else
-    return upstream_mr_->deallocate(p, bytes, stream);
 #endif
+    return upstream_mr_->deallocate(p, bytes, stream);
   }
 
   /**
@@ -304,38 +160,24 @@ class arena_memory_resource final : public device_memory_resource {
     return std::make_pair(0, 0);
   }
 
-  /**
-   * @brief Clear arenas.
-   *
-   * Note: only called by destructor.
-   */
-  void release()
-  {
-    lock_guard lock(mtx_);
-
-    for (auto& kv : arenas_) {
-      auto& arena = kv.second;
-      lock_guard arena_lock(arena.mtx);
-      arena.free_blocks.clear();
-      arena.allocated_blocks.clear();
-    }
-  }
-
   arena& get_arena()
   {
-    auto thread_id = std::this_thread::get_id();
-    auto it        = arenas_.find(thread_id);
-    if (it != arenas_.end()) {
-      return it->second;
-    } else {
-      lock_guard lock(mtx_);
-      return arenas_[thread_id];
+    auto id = std::this_thread::get_id();
+    {
+      read_lock lock(mtx_);
+      auto it = arenas_.find(id);
+      if (it != arenas_.end()) { return it->second; }
+    }
+    {
+      write_lock lock(mtx_);
+      arenas_.emplace(id, upstream_mr_);
+      return arenas_.at(id);
     }
   }
 
-  Upstream* upstream_mr_;  // The upstream memory_resource from which to allocate blocks.
+  Upstream* upstream_mr_;
   std::unordered_map<std::thread::id, arena> arenas_;
-  mutable std::mutex mtx_;
+  mutable std::shared_timed_mutex mtx_;
 };
 
 }  // namespace mr
