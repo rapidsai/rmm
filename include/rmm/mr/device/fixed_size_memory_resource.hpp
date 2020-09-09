@@ -123,7 +123,8 @@ class fixed_size_memory_resource
  protected:
   using free_list  = detail::fixed_size_free_list;
   using block_type = free_list::block_type;
-  using split_block = detail::split_block<block_type>;
+  using typename detail::stream_ordered_memory_resource<fixed_size_memory_resource<Upstream>,
+                                                        detail::fixed_size_free_list>::split_block;
   using lock_guard = std::lock_guard<std::mutex>;
 
   /**

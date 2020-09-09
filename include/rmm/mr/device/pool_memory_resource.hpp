@@ -136,10 +136,11 @@ class pool_memory_resource final
   Upstream* get_upstream() const noexcept { return upstream_mr_; }
 
  protected:
-  using free_list   = detail::coalescing_free_list;
-  using block_type  = free_list::block_type;
-  using split_block = detail::split_block<block_type>;
-  using lock_guard  = std::lock_guard<std::mutex>;
+  using free_list  = detail::coalescing_free_list;
+  using block_type = free_list::block_type;
+  using typename detail::stream_ordered_memory_resource<pool_memory_resource<Upstream>,
+                                                        detail::coalescing_free_list>::split_block;
+  using lock_guard = std::lock_guard<std::mutex>;
 
   /**
    * @brief Get the maximum size of allocations supported by this memory resource
@@ -187,7 +188,7 @@ class pool_memory_resource final
 
     try {
       void* p = upstream_mr_->allocate(size, stream);
-      block_type b{reinterpret_cast<char*>(p), size, true, size};
+      block_type b{reinterpret_cast<char*>(p), size, true};
       upstream_blocks_.emplace_back(b);  // TODO: with C++17 use version that returns a reference
       return b;
     } catch (std::exception const& e) {
@@ -212,11 +213,11 @@ class pool_memory_resource final
    */
   split_block allocate_from_block(block_type const& b, size_t size)
   {
-    block_type const alloc{b.pointer(), size, b.is_head(), b.original_size()};
+    block_type const alloc{b.pointer(), size, b.is_head()};
     allocated_blocks_.insert(alloc);
 
     auto rest =
-      (b.size() > size) ? block_type{b.pointer() + size, b.size() - size, false, 0} : block_type{};
+      (b.size() > size) ? block_type{b.pointer() + size, b.size() - size, false} : block_type{};
     return {reinterpret_cast<void*>(alloc.pointer()), rest};
   }
 

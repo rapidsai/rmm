@@ -42,15 +42,6 @@ inline std::ostream& operator<<(std::ostream& out, const block_base& b)
   return out;
 }
 
-/// Struct representing a block that has been split for allocation
-template <typename BlockType>
-struct split_block {
-  using block_type = BlockType;
-
-  void* allocated_pointer;  ///< The pointer allocated from a block
-  block_type remainder;     ///< The remainder of the block from which the pointer was allocated
-};
-
 /**
  * @brief Base class defining an interface for a list of free memory blocks.
  *

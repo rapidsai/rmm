@@ -35,10 +35,7 @@ namespace detail {
  */
 struct block : public block_base {
   block() = default;
-  block(char* ptr, size_t size, bool is_head, size_t original_size)
-    : block_base{ptr}, size_bytes{size}, head{is_head}, original_size_bytes{original_size}
-  {
-  }
+  block(char* ptr, size_t size, bool is_head) : block_base{ptr}, size_bytes{size}, head{is_head} {}
 
   /**
    * @brief Returns the pointer to the memory represented by this block.
@@ -55,13 +52,6 @@ struct block : public block_base {
   inline size_t size() const { return size_bytes; }
 
   /**
-   * @brief Returns the original size of the memory represented by this block.
-   *
-   * @return the size in bytes of the original upstream memory allocation represented by this block.
-   */
-  inline size_t original_size() const { return original_size_bytes; }
-
-  /**
    * @brief Returns whether this block is the start of an allocation from an upstream allocator.
    *
    * A block `b` may not be coalesced with a preceding contiguous block `a` if `b.is_head == true`.
@@ -69,13 +59,6 @@ struct block : public block_base {
    * @return true if this block is the start of an allocation from an upstream allocator.
    */
   inline bool is_head() const { return head; }
-
-  /**
-   * @brief Returns whether this block is an original allocation from an upstream allocator.
-   *
-   * @return true if this block is an original allocation from an upstream allocator.
-   */
-  inline bool is_original() const { return head && size_bytes == original_size_bytes; }
 
   /**
    * @brief Comparison operator to enable comparing blocks and storing in ordered containers.
@@ -100,7 +83,7 @@ struct block : public block_base {
   inline block merge(block const& b) const noexcept
   {
     assert(is_contiguous_before(b));
-    return {pointer(), size() + b.size(), is_head(), original_size()};
+    return block(pointer(), size() + b.size(), is_head());
   }
 
   /**
@@ -141,14 +124,12 @@ struct block : public block_base {
    */
   inline void print() const
   {
-    std::cout << reinterpret_cast<void*>(pointer()) << " " << size() << " B"
-              << (is_head() ? " H" : "") << (is_original() ? " O" : "") << "\n";
+    std::cout << reinterpret_cast<void*>(pointer()) << " " << size() << " B\n";
   }
 
  private:
-  size_t size_bytes{};           ///< Size in bytes
-  size_t original_size_bytes{};  ///< Original size in bytes
-  bool head{};                   ///< Indicates whether ptr was allocated from the heap
+  size_t size_bytes{};  ///< Size in bytes
+  bool head{};          ///< Indicates whether ptr was allocated from the heap
 };
 
 /// Print block on an ostream
@@ -189,13 +170,12 @@ struct coalescing_free_list : free_list<block> {
    *        preceding and following blocks if either is contiguous.
    *
    * @param b The block to insert.
-   * @return true if an original block is produced
    */
-  bool insert(block_type const& b)
+  void insert(block_type const& b)
   {
     if (is_empty()) {
       free_list::insert(cend(), b);
-      return b.is_original();
+      return;
     }
 
     // Find the right place (in ascending ptr order) to insert the block
@@ -210,16 +190,12 @@ struct coalescing_free_list : free_list<block> {
     if (merge_prev && merge_next) {
       *previous = previous->merge(b).merge(*next);
       erase(next);
-      return previous->is_original();
     } else if (merge_prev) {
       *previous = previous->merge(b);
-      return previous->is_original();
     } else if (merge_next) {
       *next = b.merge(*next);
-      return b.is_original();
     } else {
       free_list::insert(next, b);  // cannot be coalesced, just insert
-      return b.is_original();
     }
   }
 
@@ -235,7 +211,7 @@ struct coalescing_free_list : free_list<block> {
   {
     std::for_each(std::make_move_iterator(other.begin()),
                   std::make_move_iterator(other.end()),
-                  [this](block_type&& b) { this->insert(b); });
+                  [this](block_type&& b) { this->insert(std::move(b)); });
   }
 
   /**
@@ -246,39 +222,13 @@ struct coalescing_free_list : free_list<block> {
    * @param size The size in bytes of the desired block.
    * @return block A block large enough to store `size` bytes.
    */
-  /*
-    block_type get_block(size_t size)
-    {
-      // find best fit block
-      auto const iter =
-        std::min_element(cbegin(), cend(), [size](block_type const& lhs, block_type const& rhs) {
-          return lhs.is_better_fit(size, rhs);
-        });
-
-      if (iter != cend() && iter->fits(size)) {
-        // Remove the block from the free_list and return it.
-        block_type const found = *iter;
-        erase(iter);
-        return found;
-      }
-
-      return block_type{};  // not found
-    }
-  */
-
-  /**
-   * @brief Finds the first block in the `free_list` large enough to fit `size` bytes.
-   *
-   * This is a "first fit" search.
-   *
-   * @param size The size in bytes of the desired block.
-   * @return block A block large enough to store `size` bytes.
-   */
   block_type get_block(size_t size)
   {
-    // find first fit block
+    // find best fit block
     auto const iter =
-      std::find_if(cbegin(), cend(), [size](block const& b) { return b.fits(size); });
+      std::min_element(cbegin(), cend(), [size](block_type const& lhs, block_type const& rhs) {
+        return lhs.is_better_fit(size, rhs);
+      });
 
     if (iter != cend() && iter->fits(size)) {
       // Remove the block from the free_list and return it.

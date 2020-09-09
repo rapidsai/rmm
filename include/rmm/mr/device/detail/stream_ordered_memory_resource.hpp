@@ -119,6 +119,12 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    */
   // block_type expand_pool(size_t size, free_list& blocks, cudaStream_t stream)
 
+  /// Struct representing a block that has been split for allocation
+  struct split_block {
+    void* allocated_pointer;  ///< The pointer allocated from a block
+    block_type remainder;     ///< The remainder of the block from which the pointer was allocated
+  };
+
   /**
    * @brief Split block `b` if necessary to return a pointer to memory of `size` bytes.
    *
