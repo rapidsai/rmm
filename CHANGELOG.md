@@ -7,12 +7,12 @@
 ## Improvements
 
 - PR #477 Just use `None` for `strides` in `DeviceBuffer`
-- PR #528 Add maximum_pool_size parameter to reinitialize API
+- PR #528 Add `maximum_pool_size` parameter to reinitialize API
 - PR #537 Add CMake option to disable deprecation warnings
 
 ## Bug Fixes
 
-- PR #534 Fix pool_memory_resource failure when init and max pool sizes are equal
+- PR #534 Fix `pool_memory_resource` failure when init and max pool sizes are equal
 
 
 # RMM 0.15.0 (26 Aug 2020)
