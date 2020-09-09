@@ -22,6 +22,7 @@
 #include <cuda_runtime_api.h>
 
 #include <shared_mutex>
+#include <unordered_map>
 
 namespace rmm {
 namespace mr {
@@ -116,7 +117,7 @@ class arena_memory_resource final : public device_memory_resource {
       RMM_EXPECTS(
         bytes <= get_maximum_allocation_size(), rmm::bad_alloc, "Maximum allocation size exceeded");
 
-      if (bytes < arena::maximum_allocation_size()) { return get_arena().allocate(bytes, stream); }
+      if (bytes < arena::maximum_allocation_size) { return get_arena().allocate(bytes); }
     }
 #endif
     return upstream_mr_->allocate(bytes, stream);
@@ -136,7 +137,7 @@ class arena_memory_resource final : public device_memory_resource {
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
     if (stream == cudaStreamDefault || stream == cudaStreamPerThread) {
       bytes = rmm::detail::align_up(bytes, allocation_alignment);
-      if (bytes < arena::maximum_allocation_size()) {
+      if (bytes < arena::maximum_allocation_size) {
         if (!get_arena().deallocate(p, bytes, stream)) {
           deallocate_across_arena(p, bytes, stream);
         }

@@ -16,7 +16,15 @@
 
 #pragma once
 
-#include <unordered_set>
+#include <include/rmm/detail/error.hpp>
+
+#include <cuda_runtime_api.h>
+
+#include <algorithm>
+#include <cassert>
+#include <mutex>
+#include <set>
+#include <unordered_map>
 
 namespace rmm {
 namespace mr {
@@ -24,16 +32,16 @@ namespace detail {
 namespace arena {
 
 struct block {
-  static constexpr size_t superblock_size = 4194304;  // 4 MiB
+  static constexpr size_t superblock_size = 8388608;  // 8 MiB
 
   void* pointer{};
   size_t size;
   bool is_head;
 
-  bool is_superblock() const { return is_head && size == superblock_size; }
-
   /// Returns true if this block is valid (non-null), false otherwise
   bool is_valid() const { return pointer != nullptr; }
+
+  bool is_superblock() const { return is_head && size == superblock_size; }
 
   /**
    * @brief Verifies whether this block can be merged to the beginning of block b.
@@ -99,20 +107,20 @@ struct block_hash {
 template <typename Upstream>
 class arena {
  public:
+  static constexpr size_t maximum_allocation_size = block::superblock_size / 2;  // 4 MiB
+
   explicit arena(Upstream* upstream_mr) : upstream_mr_{upstream_mr} {}
 
   // Disable copy (and move) semantics.
   arena(const arena&) = delete;
   arena& operator=(const arena&) = delete;
 
-  static constexpr size_t maximum_allocation_size() { return block::superblock_size; }
-
-  void* allocate(std::size_t bytes, cudaStream_t stream)
+  void* allocate(std::size_t bytes)
   {
     lock_guard lock(mtx_);
     auto const b = get_block(bytes);
     auto split   = allocate_from_block(b, bytes);
-    if (split.second.is_valid()) free_blocks.insert(split.second);
+    if (split.second.is_valid()) free_blocks_.insert(split.second);
     return split.first;
   }
 
@@ -120,8 +128,8 @@ class arena {
   {
     lock_guard lock(mtx_);
     auto b = free_block(p, bytes);
-    if (b.is_valid()) { insert_and_coalesce(b); }
-    if (free_superblocks.size() > 1) { shrink_arena(stream); }
+    if (b.is_valid()) { coalesce(b); }
+    if (!free_superblocks_.empty()) { shrink_arena(stream); }
     return b.is_valid();
   }
 
@@ -129,7 +137,7 @@ class arena {
   {
     lock_guard lock(mtx_);
     auto b = free_block(p, bytes);
-    if (b.is_valid()) { insert_and_coalesce(b); }
+    if (b.is_valid()) { coalesce(b); }
     return b.is_valid();
   }
 
@@ -144,14 +152,22 @@ class arena {
    */
   block get_block(size_t size)
   {
-    // Find first fit block.
+    // Find first fit free block.
     auto const iter = std::find_if(
-      free_blocks.cbegin(), free_blocks.cend(), [size](block const& b) { return b.fits(size); });
+      free_blocks_.cbegin(), free_blocks_.cend(), [size](block const& b) { return b.fits(size); });
 
-    if (iter != free_blocks.cend()) {
+    if (iter != free_blocks_.cend()) {
       // Remove the block from the free_list and return it.
       block const found = *iter;
-      free_blocks.erase(iter);
+      free_blocks_.erase(iter);
+      return found;
+    }
+
+    // Find first free superblock.
+    if (!free_superblocks_.empty()) {
+      auto const i      = free_superblocks_.cbegin();
+      block const found = *i;
+      free_superblocks_.erase(i);
       return found;
     }
 
@@ -183,7 +199,7 @@ class arena {
   std::pair<void*, block> allocate_from_block(block const& b, size_t size)
   {
     block const alloc{b.pointer, size, b.is_head};
-    allocated_blocks.insert(alloc);
+    allocated_blocks_.emplace(alloc.pointer, alloc);
     return b.split(size);
   }
 
@@ -197,61 +213,67 @@ class arena {
    */
   block free_block(void* p, size_t size) noexcept
   {
-    block b{p};
-    auto const i = allocated_blocks.find(b);
+    auto const i = allocated_blocks_.find(p);
 
     // The pointer may be allocated in another arena.
-    if (i == allocated_blocks.end()) { return {}; }
+    if (i == allocated_blocks_.end()) { return {}; }
 
-    auto found = *i;
+    auto found = i->second;
     assert(found.size == size);
-    allocated_blocks.erase(i);
+    allocated_blocks_.erase(i);
 
     return found;
   }
 
-  void insert_and_coalesce(block b)
+  void coalesce(block b)
   {
     // Find the right place (in ascending ptr order) to insert the block.
-    auto const next     = free_blocks.lower_bound(b);
-    auto const previous = (next == free_blocks.cbegin()) ? next : std::prev(next);
+    auto const next     = free_blocks_.lower_bound(b);
+    auto const previous = (next == free_blocks_.cbegin()) ? next : std::prev(next);
 
     // Coalesce with neighboring blocks or insert the new block if it can't be coalesced.
     bool const merge_prev = previous->is_contiguous_before(b);
-    bool const merge_next = (next != free_blocks.cend()) && b.is_contiguous_before(*next);
+    bool const merge_next = (next != free_blocks_.cend()) && b.is_contiguous_before(*next);
 
     if (merge_prev && merge_next) {
       b = previous->merge(b).merge(*next);
-      free_blocks.erase(previous);
-      free_blocks.erase(next);
+      free_blocks_.erase(previous);
+      free_blocks_.erase(next);
     } else if (merge_prev) {
       b = previous->merge(b);
-      free_blocks.erase(previous);
+      free_blocks_.erase(previous);
     } else if (merge_next) {
       b = b.merge(*next);
-      free_blocks.erase(next);
+      free_blocks_.erase(next);
     }
-    free_blocks.insert(b);
-    if (b.is_superblock()) { free_superblocks.insert(b); }
+    if (b.is_superblock()) {
+      free_superblocks_.insert(b);
+    } else {
+      free_blocks_.insert(b);
+    }
   }
 
   void shrink_arena(cudaStream_t stream)
   {
+    // Don't shrink if only 1 superblock is left.
+    if (free_blocks_.empty() && free_superblocks_.size() <= 1) return;
+
     RMM_CUDA_TRY(cudaStreamSynchronize(stream));
 
-    // Always keep the first superblock.
-    for (auto it = std::next(free_superblocks.begin()); it != free_superblocks.end(); ++it) {
+    for (auto it = free_blocks_.empty() ? std::next(free_superblocks_.cbegin())
+                                        : free_superblocks_.cbegin();
+         it != free_superblocks_.cend();
+         ++it) {
       auto b = *it;
       upstream_mr_->deallocate(b.pointer, b.size, cudaStreamLegacy);
-      free_superblocks.erase(it--);
-      free_blocks.erase(b);
+      free_superblocks_.erase(it--);
     }
   }
 
   Upstream* upstream_mr_;
-  std::set<block> free_blocks;
-  std::set<block> free_superblocks;
-  std::unordered_set<block, block_hash> allocated_blocks;
+  std::set<block> free_blocks_;
+  std::set<block> free_superblocks_;
+  std::unordered_map<void*, block> allocated_blocks_;
   mutable std::mutex mtx_;
 };
 
