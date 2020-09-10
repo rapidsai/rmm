@@ -48,6 +48,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER MATCHES ".*clang")
         message(STATUS "RMM: Enabling the GLIBCXX11 ABI")
     else()
         if(CMAKE_CXX_COMPILER MATCHES ".*clang")
+            # See https://github.com/rapidsai/rmm/issues/548
             message(FATAL_ERROR "Using clang with CMAKE_CXX11_ABI=Off is untested")
         endif(CMAKE_CXX_COMPILER MATCHES ".*clang")
         message(STATUS "RMM: Disabling the GLIBCXX11 ABI")
