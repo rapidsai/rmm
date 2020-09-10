@@ -71,7 +71,7 @@ option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
 
 option(PER_THREAD_DEFAULT_STREAM "Build with per-thread default stream" OFF)
 
-option(USE_NVTX "Build with NVTX support" ON)
+option(USE_NVTX "Build with NVTX support" OFF)
 
 ###################################################################################################
 # - find packages we depend on --------------------------------------------------------------------
