@@ -40,7 +40,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_C_COMPILER $ENV{CC})
 set(CMAKE_CXX_COMPILER $ENV{CXX})
 
-if(CMAKE_COMPILER_IS_GNUCXX)
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER MATCHES ".*clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-error=deprecated-declarations")
 
     option(CMAKE_CXX11_ABI "Enable the GLIBCXX11 ABI" ON)
@@ -52,7 +52,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
         set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -D_GLIBCXX_USE_CXX11_ABI=0")
     endif(CMAKE_CXX11_ABI)
-endif(CMAKE_COMPILER_IS_GNUCXX)
+endif(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER MATCHES ".*clang")
 
 ###################################################################################################
 # - build options ---------------------------------------------------------------------------------
@@ -71,7 +71,7 @@ option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
 
 option(PER_THREAD_DEFAULT_STREAM "Build with per-thread default stream" OFF)
 
-option(USE_NVTX "Build with NVTX support" ON)
+option(USE_NVTX "Build with NVTX support" OFF)
 
 ###################################################################################################
 # - find packages we depend on --------------------------------------------------------------------
@@ -167,12 +167,10 @@ else()
   target_link_libraries(rmm PUBLIC CUDA::cudart)
 endif(CUDA_STATIC_RUNTIME)
 
-target_link_libraries(rmm PUBLIC CUDA::cuda_driver)
-
 if(USE_NVTX)
   message(STATUS "Using Nvidia Tools Extension")
-  target_link_libraries(rmm PUBLIC CUDA::nvToolsExt)
-  target_compile_definitions(rmm PUBLIC USE_NVTX)
+else()
+  target_compile_definitions(rmm PUBLIC NVTX_DISABLE)
 endif(USE_NVTX)
 
 # Set a default logging level if none was specified
