@@ -60,13 +60,13 @@ void spawn(Task task, Arguments&&... args)
   spawn_n(4, task, std::forward<Arguments>(args)...);
 }
 
-TEST(DefaultTest, UseDefaultResource_mt) { spawn(test_get_default_resource); }
+TEST(DefaultTest, UseDefaultResource_mt) { spawn(test_get_current_device_resource); }
 
 TEST(DefaultTest, DefaultResourceIsCUDA_mt)
 {
   spawn([]() {
-    EXPECT_NE(nullptr, rmm::mr::get_default_resource());
-    EXPECT_TRUE(rmm::mr::get_default_resource()->is_equal(rmm::mr::cuda_memory_resource{}));
+    EXPECT_NE(nullptr, rmm::mr::get_current_device_resource());
+    EXPECT_TRUE(rmm::mr::get_current_device_resource()->is_equal(rmm::mr::cuda_memory_resource{}));
   });
 }
 
@@ -89,8 +89,8 @@ TEST_P(mr_test_mt, SetDefaultResource_mt)
   EXPECT_NE(nullptr, old);
 
   spawn([mr = this->mr.get()]() {
-    EXPECT_EQ(mr, rmm::mr::get_default_resource());
-    test_get_default_resource();  // test allocating with the new default resource
+    EXPECT_EQ(mr, rmm::mr::get_current_device_resource());
+    test_get_current_device_resource();  // test allocating with the new default resource
   });
 
   // setting default resource w/ nullptr should reset to initial

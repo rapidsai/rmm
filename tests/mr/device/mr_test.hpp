@@ -27,6 +27,7 @@
 #include <rmm/mr/device/owning_wrapper.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
+#include <rmm/detail/diagnostic.hpp>
 
 #include <cuda_runtime_api.h>
 
@@ -76,6 +77,8 @@ struct allocation {
 // Various test functions, shared between single-threaded and multithreaded tests.
 inline void test_get_default_resource()
 {
+  RMM_DIAGNOSTIC_PUSH
+  RMM_DIAGNOSTIC_IGNORE_DEPRECATED_DECLARATIONS
   EXPECT_NE(nullptr, rmm::mr::get_default_resource());
   void* p{nullptr};
   EXPECT_NO_THROW(p = rmm::mr::get_default_resource()->allocate(1_MiB));
@@ -83,6 +86,7 @@ inline void test_get_default_resource()
   EXPECT_TRUE(is_aligned(p));
   EXPECT_TRUE(is_device_memory(p));
   EXPECT_NO_THROW(rmm::mr::get_default_resource()->deallocate(p, 1_MiB));
+  RMM_DIAGNOSTIC_POP
 }
 
 inline void test_get_current_device_resource()

@@ -33,8 +33,11 @@ INSTANTIATE_TEST_CASE_P(ResourceTests,
 
 TEST(DefaultTest, DefaultResourceIsCUDA)
 {
+  RMM_DIAGNOSTIC_PUSH
+  RMM_DIAGNOSTIC_IGNORE_DEPRECATED_DECLARATIONS
   EXPECT_NE(nullptr, rmm::mr::get_default_resource());
   EXPECT_TRUE(rmm::mr::get_default_resource()->is_equal(rmm::mr::cuda_memory_resource{}));
+  RMM_DIAGNOSTIC_POP
 }
 
 TEST(DefaultTest, UseDefaultResource) { test_get_default_resource(); }
@@ -49,6 +52,8 @@ TEST(DefaultTest, GetCurrentDeviceResource)
 
 TEST_P(mr_test, SetDefaultResource)
 {
+  RMM_DIAGNOSTIC_PUSH
+  RMM_DIAGNOSTIC_IGNORE_DEPRECATED_DECLARATIONS
   rmm::mr::device_memory_resource* old{nullptr};
   EXPECT_NO_THROW(old = rmm::mr::set_default_resource(this->mr.get()));
   EXPECT_NE(nullptr, old);
@@ -58,6 +63,7 @@ TEST_P(mr_test, SetDefaultResource)
   // setting default resource w/ nullptr should reset to initial
   EXPECT_NO_THROW(rmm::mr::set_default_resource(nullptr));
   EXPECT_TRUE(old->is_equal(*rmm::mr::get_default_resource()));
+  RMM_DIAGNOSTIC_POP
 }
 
 TEST_P(mr_test, SetCurrentDeviceResource)
