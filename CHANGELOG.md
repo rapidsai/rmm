@@ -16,6 +16,7 @@
 
 ## Bug Fixes
 
+- PR #545 Fix build to support using `clang` as the host compiler
 - PR #534 Fix `pool_memory_resource` failure when init and max pool sizes are equal
 - PR #546 Remove CUDA driver linking and correct NVTX macro.
 
