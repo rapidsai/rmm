@@ -169,7 +169,6 @@ endif(CUDA_STATIC_RUNTIME)
 
 if(USE_NVTX)
   message(STATUS "Using Nvidia Tools Extension")
-  target_link_libraries(rmm PUBLIC CUDA::nvToolsExt)
   target_compile_definitions(rmm PUBLIC USE_NVTX)
 endif(USE_NVTX)
 
