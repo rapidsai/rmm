@@ -14,8 +14,7 @@ elseif(CMAKE_CXX11_ABI)
     list(APPEND GTEST_CMAKE_ARGS " -DCMAKE_CXX_FLAGS=-D_GLIBCXX_USE_CXX11_ABI=1")
 endif(NOT CMAKE_CXX11_ABI)
 
-# Poor's man workaround for
-# https://github.com/google/googletest/issues/854
+# Workaround for https://github.com/google/googletest/issues/854
 if(CMAKE_CXX_COMPILER MATCHES ".*clang")
   list(APPEND GTEST_CMAKE_ARGS " -DCMAKE_C_FLAGS=-fPIC")
   list(APPEND GTEST_CMAKE_ARGS " -DCMAKE_CXX_FLAGS=-fPIC")
