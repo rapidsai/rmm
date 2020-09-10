@@ -21,7 +21,7 @@
 
 #include <cuda_runtime_api.h>
 
-#include <mutex>
+#include <shared_mutex>
 #include <unordered_map>
 
 namespace rmm {
@@ -100,7 +100,8 @@ class arena_memory_resource final : public device_memory_resource {
 
  private:
   using arena      = detail::arena::arena<Upstream>;
-  using lock_guard = std::lock_guard<std::mutex>;
+  using read_lock  = std::shared_lock<std::shared_timed_mutex>;
+  using write_lock = std::lock_guard<std::shared_timed_mutex>;
 
   /**
    * @brief Get the maximum size of allocations supported by this memory resource.
@@ -133,7 +134,7 @@ class arena_memory_resource final : public device_memory_resource {
       RMM_EXPECTS(
         bytes <= get_maximum_allocation_size(), rmm::bad_alloc, "Maximum allocation size exceeded");
 
-      if (arena::handles_size(bytes)) { return get_arena()->allocate(bytes); }
+      if (arena::handles_size(bytes)) { return get_arena().allocate(bytes); }
     }
 #endif
     return upstream_mr_->allocate(bytes, stream);
@@ -157,7 +158,7 @@ class arena_memory_resource final : public device_memory_resource {
     if (stream == cudaStreamDefault || stream == cudaStreamPerThread) {
       bytes = rmm::detail::align_up(bytes, allocation_alignment);
       if (arena::handles_size(bytes)) {
-        if (!get_arena()->deallocate(p, bytes, stream)) {
+        if (!get_arena().deallocate(p, bytes, stream)) {
           deallocate_across_arenas(p, bytes, stream);
         }
         return;
@@ -183,9 +184,9 @@ class arena_memory_resource final : public device_memory_resource {
 
     auto id = std::this_thread::get_id();
     {
-      lock_guard lock(mtx_);
+      write_lock lock(mtx_);
       for (auto& kv : arenas_) {
-        if (kv.first != id && kv.second->deallocate(p, bytes)) return;
+        if (kv.first != id && kv.second.deallocate(p, bytes)) return;
       }
     }
 
@@ -208,22 +209,24 @@ class arena_memory_resource final : public device_memory_resource {
    *
    * @return std::shared_ptr<arena> The arena associated with the current thread
    */
-  std::shared_ptr<arena> get_arena()
+  arena& get_arena()
   {
-    thread_local auto a = std::make_shared<arena>(upstream_mr_);
-    thread_local bool is_initialized{false};
-
-    if (!is_initialized) {
-      lock_guard lock(mtx_);
-      arenas_.emplace(std::this_thread::get_id(), a);
-      is_initialized = true;
+    auto id = std::this_thread::get_id();
+    {
+      read_lock lock(mtx_);
+      auto it = arenas_.find(id);
+      if (it != arenas_.end()) { return it->second; }
     }
-    return a;
+    {
+      write_lock lock(mtx_);
+      arenas_.emplace(id, upstream_mr_);
+      return arenas_.at(id);
+    }
   }
 
   Upstream* upstream_mr_;
-  std::unordered_map<std::thread::id, std::shared_ptr<arena>> arenas_;
-  mutable std::mutex mtx_;
+  std::unordered_map<std::thread::id, arena> arenas_;
+  mutable std::shared_timed_mutex mtx_;
 };
 
 }  // namespace mr
