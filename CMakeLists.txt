@@ -169,7 +169,8 @@ endif(CUDA_STATIC_RUNTIME)
 
 if(USE_NVTX)
   message(STATUS "Using Nvidia Tools Extension")
-  target_compile_definitions(rmm PUBLIC USE_NVTX)
+else()
+  target_compile_definitions(rmm PUBLIC NVTX_DISABLE)
 endif(USE_NVTX)
 
 # Set a default logging level if none was specified
