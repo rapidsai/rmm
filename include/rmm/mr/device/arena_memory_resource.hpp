@@ -65,7 +65,7 @@ template <typename Upstream>
 class arena_memory_resource final : public device_memory_resource {
  public:
   // The required alignment of this allocator.
-  static constexpr size_t allocation_alignment = 256;
+  static constexpr std::size_t allocation_alignment = 256;
 
   /**
    * @brief Construct an `arena_memory_resource`.
@@ -107,11 +107,14 @@ class arena_memory_resource final : public device_memory_resource {
    * @brief Get the maximum size of allocations supported by this memory resource.
    *
    * Note this does not depend on the memory size of the device. It simply returns the maximum
-   * value of `size_t`.
+   * value of `std::size_t`.
    *
-   * @return size_t The maximum size of a single allocation supported by this memory resource
+   * @return std::size_t The maximum size of a single allocation supported by this memory resource
    */
-  size_t get_maximum_allocation_size() const { return std::numeric_limits<size_t>::max(); }
+  std::size_t get_maximum_allocation_size() const
+  {
+    return std::numeric_limits<std::size_t>::max();
+  }
 
   /**
    * @brief Allocates memory of size at least `bytes`.
@@ -178,9 +181,9 @@ class arena_memory_resource final : public device_memory_resource {
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param stream Stream on which to perform deallocation
    */
-  void deallocate_across_arenas(void* p, size_t bytes, cudaStream_t stream)
+  void deallocate_across_arenas(void* p, std::size_t bytes, cudaStream_t stream)
   {
-    RMM_CUDA_TRY(cudaStreamSynchronize(stream));
+    RMM_ASSERT_CUDA_SUCCESS(cudaStreamSynchronize(stream));
 
     auto id = std::this_thread::get_id();
     {
@@ -190,7 +193,8 @@ class arena_memory_resource final : public device_memory_resource {
       }
     }
 
-    RMM_FAIL("Allocation not found", rmm::bad_alloc);
+    // Allocation not found.
+    assert(0);
   }
 
   /**
@@ -199,7 +203,7 @@ class arena_memory_resource final : public device_memory_resource {
    * @param stream to execute on
    * @return std::pair containing free_size and total_size of memory
    */
-  std::pair<size_t, size_t> do_get_mem_info(cudaStream_t stream) const override
+  std::pair<std::size_t, std::size_t> do_get_mem_info(cudaStream_t stream) const override
   {
     return std::make_pair(0, 0);
   }

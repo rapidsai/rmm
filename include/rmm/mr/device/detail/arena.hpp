@@ -38,11 +38,11 @@ namespace arena {
  * superblock can be returned to upstream.
  */
 struct block {
-  static constexpr size_t superblock_size = 8388608;  ///> Size of a superblock (8 MiB)
+  static constexpr std::size_t superblock_size = 8388608;  ///> Size of a superblock (8 MiB)
 
-  void* pointer{};  ///< Raw memory pointer
-  size_t size;      ///< Size in bytes
-  bool is_head;     ///< Indicates whether pointer was allocated from upstream
+  void* pointer{};      ///< Raw memory pointer
+  std::size_t size{};   ///< Size in bytes
+  bool is_head{false};  ///< Indicates whether pointer was allocated from upstream
 
   /// Returns true if this block is valid (non-null), false otherwise.
   bool is_valid() const { return pointer != nullptr; }
@@ -68,21 +68,21 @@ struct block {
    * @param sz The size in bytes to check for fit.
    * @return true if this block is at least `sz` bytes
    */
-  bool fits(size_t sz) const { return size >= sz; }
+  bool fits(std::size_t sz) const { return size >= sz; }
 
   /**
    * @brief Split this block into a pointer and a remainder block.
    *
    * @param sz The size in bytes of the first block.
-   * @return std::pair<void*, block> A pair of pointer and remainder block
+   * @return std::pair<block, block> A pair of blocks split by sz
    */
-  std::pair<void*, block> split(size_t sz) const
+  std::pair<block, block> split(std::size_t sz) const
   {
     assert(size >= sz);
     if (size > sz) {
-      return {pointer, {increment(pointer, sz), size - sz, false}};
+      return {{pointer, sz, is_head}, {increment(pointer, sz), size - sz, false}};
     } else {
-      return {pointer, {}};
+      return {*this, {}};
     }
   }
 
@@ -107,7 +107,7 @@ struct block {
    * @param size the size to add to the pointer
    * @return void* The resulting pointer
    */
-  static void* increment(void* pointer, size_t size)
+  static void* increment(void* pointer, std::size_t size)
   {
     return static_cast<void*>(static_cast<char*>(pointer) + size);
   }
@@ -152,11 +152,9 @@ class arena {
   void* allocate(std::size_t bytes)
   {
     lock_guard lock(mtx_);
-    auto const b         = get_block(bytes);
-    auto const split     = allocate_from_block(b, bytes);
-    auto const remainder = split.second;
-    if (remainder.is_valid()) free_blocks_.insert(remainder);
-    return split.first;
+    auto const b     = get_block(bytes);
+    auto const alloc = allocate_from_block(b, bytes);
+    return alloc.pointer;
   }
 
   /**
@@ -201,7 +199,7 @@ class arena {
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @return bool if the allocation is found
    */
-  bool do_deallocate(void* p, size_t bytes)
+  bool do_deallocate(void* p, std::size_t bytes)
   {
     auto b = free_block(p, bytes);
     coalesce_block(b);
@@ -214,11 +212,11 @@ class arena {
    * @param size The size in bytes to check
    * @return true if blocks of this size are handled by an arena
    */
-  static bool handles_size(size_t size) { return size <= maximum_allocation_size; }
+  static bool handles_size(std::size_t size) { return size <= maximum_allocation_size; }
 
  private:
   /// The maximum allocation size handled by arenas (4 MiB).
-  static constexpr size_t maximum_allocation_size = block::superblock_size / 2;  // 4 MiB
+  static constexpr std::size_t maximum_allocation_size = block::superblock_size / 2;  // 4 MiB
 
   using lock_guard = std::lock_guard<std::mutex>;
 
@@ -228,7 +226,7 @@ class arena {
    * @param size The number of bytes to allocate
    * @return block A block of memory of at least `size` bytes
    */
-  block get_block(size_t size)
+  block get_block(std::size_t size)
   {
     // Find the first-fit free block.
     block b = first_fit(size);
@@ -248,7 +246,7 @@ class arena {
    * @param size The number of bytes to allocate
    * @return block A block of memory of at least `size` bytes
    */
-  block first_fit(size_t size)
+  block first_fit(std::size_t size)
   {
     auto const iter = std::find_if(
       free_blocks_.cbegin(), free_blocks_.cend(), [size](block const& b) { return b.fits(size); });
@@ -294,21 +292,23 @@ class arena {
   }
 
   /**
-   * @brief Splits block `b` if necessary to return a pointer to memory of `size` bytes.
+   * @brief Splits block `b` if necessary to return the block allocated.
    *
    * If the block is split, the remainder is returned to the arena.
    *
-   * @param b The block to allocate from.
-   * @param size The size in bytes of the requested allocation.
-   * @return A pair comprising the allocated pointer and any unallocated remainder of the input
-   * block.
+   * @param b The block to allocate from
+   * @param size The size in bytes of the requested allocation
+   * @return block The allocated block
    */
-  std::pair<void*, block> allocate_from_block(block const& b, size_t size)
+  block allocate_from_block(block const& b, std::size_t size)
   {
     assert(b.fits(size));
-    block const alloc{b.pointer, size, b.is_head};
+    auto split     = b.split(size);
+    auto alloc     = split.first;
+    auto remainder = split.second;
     allocated_blocks_.emplace(alloc.pointer, alloc);
-    return b.split(size);
+    if (remainder.is_valid()) free_blocks_.insert(remainder);
+    return alloc;
   }
 
   /**
@@ -319,7 +319,7 @@ class arena {
    * @return The (now freed) block associated with `p`. The caller is expected to return the block
    * to the arena.
    */
-  block free_block(void* p, size_t size) noexcept
+  block free_block(void* p, std::size_t size) noexcept
   {
     auto const i = allocated_blocks_.find(p);
 
