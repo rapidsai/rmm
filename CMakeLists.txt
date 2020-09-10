@@ -71,7 +71,7 @@ option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
 
 option(PER_THREAD_DEFAULT_STREAM "Build with per-thread default stream" OFF)
 
-option(USE_NVTX "Build with NVTX support" ON)
+option(USE_NVTX "Build with NVTX support" OFF)
 
 ###################################################################################################
 # - find packages we depend on --------------------------------------------------------------------
@@ -167,12 +167,10 @@ else()
   target_link_libraries(rmm PUBLIC CUDA::cudart)
 endif(CUDA_STATIC_RUNTIME)
 
-target_link_libraries(rmm PUBLIC CUDA::cuda_driver)
-
 if(USE_NVTX)
   message(STATUS "Using Nvidia Tools Extension")
-  target_link_libraries(rmm PUBLIC CUDA::nvToolsExt)
-  target_compile_definitions(rmm PUBLIC USE_NVTX)
+else()
+  target_compile_definitions(rmm PUBLIC NVTX_DISABLE)
 endif(USE_NVTX)
 
 # Set a default logging level if none was specified
