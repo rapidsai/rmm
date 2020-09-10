@@ -164,7 +164,7 @@ class arena_memory_resource final : public device_memory_resource {
       }
     }
 #endif
-    return upstream_mr_->deallocate(p, bytes, stream);
+    upstream_mr_->deallocate(p, bytes, stream);
   }
 
   /**
