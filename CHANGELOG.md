@@ -2,8 +2,9 @@
 
 ## New Features
 
- - PR #529 Add debug logging and fix multithreaded replay benchmark
-
+- PR #529 Add debug logging and fix multithreaded replay benchmark
+- PR #543 Add an arena-based memory resource for PTDS
+ 
 ## Improvements
 
 - PR #474 Use CMake find_package(CUDAToolkit)
