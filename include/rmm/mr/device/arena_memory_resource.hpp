@@ -21,7 +21,7 @@
 
 #include <cuda_runtime_api.h>
 
-#include <shared_mutex>
+#include <mutex>
 #include <unordered_map>
 
 namespace rmm {
@@ -33,12 +33,38 @@ namespace mr {
  * Allocation (do_allocate()) and deallocation (do_deallocate()) are thread-safe. Also,
  * this class is compatible with CUDA per-thread default stream.
  *
- * @tparam UpstreamResource memory_resource to use for allocating the pool. Implements
- *                          rmm::mr::device_memory_resource interface.
+ * GPU memory is divided into a global heap and per-thread heaps. Each thread allocates memory from
+ * the global heap in chunks called superblocks. All superblocks are the same size. Objects larger
+ * than half the size of a superblock are managed directly using the global heap.
+ *
+ * Blocks in the per-thread heap are allocated using address-ordered first-fit. When a block is
+ * freed, it is coalesced with neighbouring free blocks if the addresses are contiguous and do not
+ * cross superblock boundaries. Completely empty superblocks are returned to the global heap.
+ *
+ * This design is inspired by several existing CPU memory allocators targeting multi-threaded
+ * applications (glibc malloc, Hoard, jemalloc, TCMalloc), albeit in a simpler form. Possible future
+ * improvements include using size classes, allocation caches, and more fine-grained locking or
+ * lock-free approaches.
+ *
+ * \see Wilson, P. R., Johnstone, M. S., Neely, M., & Boles, D. (1995, September). Dynamic storage
+ * allocation: A survey and critical review. In International Workshop on Memory Management (pp.
+ * 1-116). Springer, Berlin, Heidelberg.
+ * \see Berger, E. D., McKinley, K. S., Blumofe, R. D., & Wilson, P. R. (2000). Hoard: A scalable
+ * memory allocator for multithreaded applications. ACM Sigplan Notices, 35(11), 117-128.
+ * \see Evans, J. (2006, April). A scalable concurrent malloc (3) implementation for FreeBSD. In
+ * Proc. of the bsdcan conference, ottawa, canada.
+ * \see https://sourceware.org/glibc/wiki/MallocInternals
+ * \see http://hoard.org/
+ * \see http://jemalloc.net/
+ * \see https://github.com/google/tcmalloc
+ *
+ * @tparam UpstreamResource memory_resource to use for allocating the arenas. Implements
+ * rmm::mr::device_memory_resource interface.
  */
 template <typename Upstream>
 class arena_memory_resource final : public device_memory_resource {
  public:
+  // The required alignment of this allocator.
   static constexpr size_t allocation_alignment = 256;
 
   /**
@@ -48,7 +74,10 @@ class arena_memory_resource final : public device_memory_resource {
    *
    * @param upstream_mr The memory_resource from which to allocate memory for the arenas.
    */
-  explicit arena_memory_resource(Upstream* upstream_mr) : upstream_mr_{upstream_mr} {}
+  explicit arena_memory_resource(Upstream* upstream_mr) : upstream_mr_{upstream_mr}
+  {
+    RMM_EXPECTS(nullptr != upstream_mr, "Unexpected null upstream pointer.");
+  }
 
   // Disable copy (and move) semantics.
   arena_memory_resource(arena_memory_resource const&) = delete;
@@ -71,8 +100,7 @@ class arena_memory_resource final : public device_memory_resource {
 
  private:
   using arena      = detail::arena::arena<Upstream>;
-  using read_lock  = std::shared_lock<std::shared_timed_mutex>;
-  using write_lock = std::lock_guard<std::shared_timed_mutex>;
+  using lock_guard = std::lock_guard<std::mutex>;
 
   /**
    * @brief Get the maximum size of allocations supported by this memory resource.
@@ -83,18 +111,6 @@ class arena_memory_resource final : public device_memory_resource {
    * @return size_t The maximum size of a single allocation supported by this memory resource
    */
   size_t get_maximum_allocation_size() const { return std::numeric_limits<size_t>::max(); }
-
-  void deallocate_across_arena(void* p, size_t bytes, cudaStream_t stream)
-  {
-    RMM_CUDA_TRY(cudaStreamSynchronize(stream));
-
-    write_lock lock(mtx_);
-    for (auto& kv : arenas_) {
-      if (kv.second.deallocate(p, bytes)) return;
-    }
-
-    RMM_FAIL("Allocation not found", rmm::bad_alloc);
-  }
 
   /**
    * @brief Allocates memory of size at least `bytes`.
@@ -117,7 +133,7 @@ class arena_memory_resource final : public device_memory_resource {
       RMM_EXPECTS(
         bytes <= get_maximum_allocation_size(), rmm::bad_alloc, "Maximum allocation size exceeded");
 
-      if (bytes < arena::maximum_allocation_size) { return get_arena().allocate(bytes); }
+      if (arena::handles_size(bytes)) { return get_arena()->allocate(bytes); }
     }
 #endif
     return upstream_mr_->allocate(bytes, stream);
@@ -126,9 +142,12 @@ class arena_memory_resource final : public device_memory_resource {
   /**
    * @brief Deallocate memory pointed to by `p`.
    *
-   * @throws nothing
+   * @throws rmm::bad_alloc if `p` is not found
    *
    * @param p Pointer to be deallocated
+   * @param bytes The size in bytes of the allocation. This must be equal to the
+   * value of `bytes` that was passed to the `allocate` call that returned `p`.
+   * @param stream Stream on which to perform deallocation
    */
   void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override
   {
@@ -137,9 +156,9 @@ class arena_memory_resource final : public device_memory_resource {
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
     if (stream == cudaStreamDefault || stream == cudaStreamPerThread) {
       bytes = rmm::detail::align_up(bytes, allocation_alignment);
-      if (bytes < arena::maximum_allocation_size) {
-        if (!get_arena().deallocate(p, bytes, stream)) {
-          deallocate_across_arena(p, bytes, stream);
+      if (arena::handles_size(bytes)) {
+        if (!get_arena()->deallocate(p, bytes, stream)) {
+          deallocate_across_arenas(p, bytes, stream);
         }
         return;
       }
@@ -149,9 +168,32 @@ class arena_memory_resource final : public device_memory_resource {
   }
 
   /**
-   * @brief Get free and available memory for memory resource
+   * @brief Deallocate memory pointed to by `p` that was allocated in a different arena.
    *
-   * @throws nothing
+   * @throws rmm::bad_alloc if `p` is not found
+   *
+   * @param p Pointer to be deallocated
+   * @param bytes The size in bytes of the allocation. This must be equal to the
+   * value of `bytes` that was passed to the `allocate` call that returned `p`.
+   * @param stream Stream on which to perform deallocation
+   */
+  void deallocate_across_arenas(void* p, size_t bytes, cudaStream_t stream)
+  {
+    RMM_CUDA_TRY(cudaStreamSynchronize(stream));
+
+    auto id = std::this_thread::get_id();
+    {
+      lock_guard lock(mtx_);
+      for (auto& kv : arenas_) {
+        if (kv.first != id && kv.second->deallocate(p, bytes)) return;
+      }
+    }
+
+    RMM_FAIL("Allocation not found", rmm::bad_alloc);
+  }
+
+  /**
+   * @brief Get free and available memory for memory resource.
    *
    * @param stream to execute on
    * @return std::pair containing free_size and total_size of memory
@@ -161,24 +203,27 @@ class arena_memory_resource final : public device_memory_resource {
     return std::make_pair(0, 0);
   }
 
-  arena& get_arena()
+  /**
+   * @brief Get the arena associated with the current thread.
+   *
+   * @return std::shared_ptr<arena> The arena associated with the current thread
+   */
+  std::shared_ptr<arena> get_arena()
   {
-    auto id = std::this_thread::get_id();
-    {
-      read_lock lock(mtx_);
-      auto it = arenas_.find(id);
-      if (it != arenas_.end()) { return it->second; }
+    thread_local auto a = std::make_shared<arena>(upstream_mr_);
+    thread_local bool is_initialized{false};
+
+    if (!is_initialized) {
+      lock_guard lock(mtx_);
+      arenas_.emplace(std::this_thread::get_id(), a);
+      is_initialized = true;
     }
-    {
-      write_lock lock(mtx_);
-      arenas_.emplace(id, upstream_mr_);
-      return arenas_.at(id);
-    }
+    return a;
   }
 
   Upstream* upstream_mr_;
-  std::unordered_map<std::thread::id, arena> arenas_;
-  mutable std::shared_timed_mutex mtx_;
+  std::unordered_map<std::thread::id, std::shared_ptr<arena>> arenas_;
+  mutable std::mutex mtx_;
 };
 
 }  // namespace mr
