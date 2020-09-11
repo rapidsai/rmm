@@ -21,7 +21,6 @@
 #include <cuda_runtime_api.h>
 
 #include <algorithm>
-#include <cassert>
 #include <mutex>
 #include <set>
 #include <unordered_map>
@@ -40,9 +39,9 @@ namespace arena {
 struct block {
   static constexpr std::size_t superblock_size = 8388608;  ///> Size of a superblock (8 MiB)
 
-  void* pointer{};      ///< Raw memory pointer
-  std::size_t size{};   ///< Size in bytes
-  bool is_head{false};  ///< Indicates whether pointer was allocated from upstream
+  void* pointer{};     ///< Raw memory pointer
+  std::size_t size{};  ///< Size in bytes
+  bool is_head{};      ///< Indicates whether pointer was allocated from upstream
 
   /// Returns true if this block is valid (non-null), false otherwise.
   bool is_valid() const { return pointer != nullptr; }
@@ -71,14 +70,14 @@ struct block {
   bool fits(std::size_t sz) const { return size >= sz; }
 
   /**
-   * @brief Split this block into a pointer and a remainder block.
+   * @brief Split this block into two by the given size.
    *
    * @param sz The size in bytes of the first block.
    * @return std::pair<block, block> A pair of blocks split by sz
    */
   std::pair<block, block> split(std::size_t sz) const
   {
-    assert(size >= sz);
+    RMM_LOGGING_ASSERT(size >= sz);
     if (size > sz) {
       return {{pointer, sz, is_head}, {increment(pointer, sz), size - sz, false}};
     } else {
@@ -96,7 +95,7 @@ struct block {
    */
   block merge(block const& b) const
   {
-    assert(is_contiguous_before(b));
+    RMM_LOGGING_ASSERT(is_contiguous_before(b));
     return {pointer, size + b.size, is_head};
   }
 
@@ -164,7 +163,7 @@ class arena {
    * @param bytes The size in bytes of the allocation. This must be equal to the
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param stream Stream on which to perform deallocation
-   * @return bool if the allocation is found
+   * @return true if the allocation is found, false otherwise
    */
   bool deallocate(void* p, std::size_t bytes, cudaStream_t stream)
   {
@@ -183,7 +182,7 @@ class arena {
    * @param p Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
-   * @return bool if the allocation is found
+   * @return true if the allocation is found, false otherwise
    */
   bool deallocate(void* p, std::size_t bytes)
   {
@@ -234,7 +233,10 @@ class arena {
 
     // No free blocks available, use the first free superblock.
     b = first_superblock();
-    if (b.is_valid()) return b;
+    if (b.is_valid()) {
+      RMM_LOGGING_ASSERT(b.fits(size));
+      return b;
+    }
 
     // No existing larger blocks available, so grow the arena and obtain a superblock.
     return expand_arena();
@@ -256,7 +258,7 @@ class arena {
     } else {
       // Remove the block from the free_list and return it.
       block const found = *iter;
-      assert(found.fits(size));
+      RMM_LOGGING_ASSERT(found.fits(size));
       free_blocks_.erase(iter);
       return found;
     }
@@ -274,7 +276,7 @@ class arena {
     } else {
       auto const iter   = free_superblocks_.cbegin();
       block const found = *iter;
-      assert(found.is_superblock());
+      RMM_LOGGING_ASSERT(found.is_superblock());
       free_superblocks_.erase(iter);
       return found;
     }
@@ -302,7 +304,7 @@ class arena {
    */
   block allocate_from_block(block const& b, std::size_t size)
   {
-    assert(b.fits(size));
+    RMM_LOGGING_ASSERT(b.fits(size));
     auto split     = b.split(size);
     auto alloc     = split.first;
     auto remainder = split.second;
@@ -327,7 +329,7 @@ class arena {
     if (i == allocated_blocks_.end()) { return {}; }
 
     auto found = i->second;
-    assert(found.size == size);
+    RMM_LOGGING_ASSERT(found.size == size);
     allocated_blocks_.erase(i);
 
     return found;
@@ -389,16 +391,25 @@ class arena {
          it != free_superblocks_.cend();
          ++it) {
       auto b = *it;
-      assert(b.is_superblock());
+      RMM_LOGGING_ASSERT(b.is_superblock());
       upstream_mr_->deallocate(b.pointer, b.size, cudaStreamLegacy);
       free_superblocks_.erase(it--);
     }
   }
 
+  /// The global heap to allocate superblocks from
   Upstream* upstream_mr_;
+
+  /// Free blocks that are not superblocks
   std::set<block> free_blocks_;
+
+  /// Free superblocks
   std::set<block> free_superblocks_;
+
+  /// Map of pointer address to allocated blocks
   std::unordered_map<void*, block> allocated_blocks_;
+
+  /// Mutex for exclusive lock
   mutable std::mutex mtx_;
 };
 

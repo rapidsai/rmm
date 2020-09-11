@@ -64,7 +64,7 @@ namespace mr {
 template <typename Upstream>
 class arena_memory_resource final : public device_memory_resource {
  public:
-  // The required alignment of this allocator.
+  /// The required alignment of this allocator.
   static constexpr std::size_t allocation_alignment = 256;
 
   /**
@@ -104,19 +104,6 @@ class arena_memory_resource final : public device_memory_resource {
   using write_lock = std::lock_guard<std::shared_timed_mutex>;
 
   /**
-   * @brief Get the maximum size of allocations supported by this memory resource.
-   *
-   * Note this does not depend on the memory size of the device. It simply returns the maximum
-   * value of `std::size_t`.
-   *
-   * @return std::size_t The maximum size of a single allocation supported by this memory resource
-   */
-  std::size_t get_maximum_allocation_size() const
-  {
-    return std::numeric_limits<std::size_t>::max();
-  }
-
-  /**
    * @brief Allocates memory of size at least `bytes`.
    *
    * The returned pointer has at least 256B alignment.
@@ -131,22 +118,20 @@ class arena_memory_resource final : public device_memory_resource {
   {
     if (bytes <= 0) return nullptr;
 
-#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-    if (stream == cudaStreamDefault || stream == cudaStreamPerThread) {
-      bytes = rmm::detail::align_up(bytes, allocation_alignment);
-      RMM_EXPECTS(
-        bytes <= get_maximum_allocation_size(), rmm::bad_alloc, "Maximum allocation size exceeded");
+    bytes = rmm::detail::align_up(bytes, allocation_alignment);
+    RMM_EXPECTS(
+      bytes <= get_maximum_allocation_size(), rmm::bad_alloc, "Maximum allocation size exceeded");
 
-      if (arena::handles_size(bytes)) { return get_arena().allocate(bytes); }
+    if (arena::handles_size(bytes)) {
+      return get_arena(stream).allocate(bytes);
+    } else {
+      RMM_ASSERT_CUDA_SUCCESS(cudaStreamSynchronize(stream));
+      return upstream_mr_->allocate(bytes, cudaStreamLegacy);
     }
-#endif
-    return upstream_mr_->allocate(bytes, stream);
   }
 
   /**
    * @brief Deallocate memory pointed to by `p`.
-   *
-   * @throws rmm::bad_alloc if `p` is not found
    *
    * @param p Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the
@@ -157,24 +142,19 @@ class arena_memory_resource final : public device_memory_resource {
   {
     if (p == nullptr || bytes <= 0) return;
 
-#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-    if (stream == cudaStreamDefault || stream == cudaStreamPerThread) {
-      bytes = rmm::detail::align_up(bytes, allocation_alignment);
-      if (arena::handles_size(bytes)) {
-        if (!get_arena().deallocate(p, bytes, stream)) {
-          deallocate_across_arenas(p, bytes, stream);
-        }
-        return;
+    bytes = rmm::detail::align_up(bytes, allocation_alignment);
+    if (arena::handles_size(bytes)) {
+      if (!get_arena(stream).deallocate(p, bytes, stream)) {
+        deallocate_across_arenas(p, bytes, stream);
       }
+    } else {
+      RMM_ASSERT_CUDA_SUCCESS(cudaStreamSynchronize(stream));
+      upstream_mr_->deallocate(p, bytes, cudaStreamLegacy);
     }
-#endif
-    upstream_mr_->deallocate(p, bytes, stream);
   }
 
   /**
    * @brief Deallocate memory pointed to by `p` that was allocated in a different arena.
-   *
-   * @throws rmm::bad_alloc if `p` is not found
    *
    * @param p Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the
@@ -185,16 +165,89 @@ class arena_memory_resource final : public device_memory_resource {
   {
     RMM_ASSERT_CUDA_SUCCESS(cudaStreamSynchronize(stream));
 
-    auto id = std::this_thread::get_id();
-    {
-      write_lock lock(mtx_);
-      for (auto& kv : arenas_) {
+    read_lock lock(mtx_);
+
+    if (is_default_stream(stream)) {
+      auto id = std::this_thread::get_id();
+      for (auto& kv : thread_arenas_) {
         if (kv.first != id && kv.second.deallocate(p, bytes)) return;
+      }
+    } else {
+      for (auto& kv : stream_arenas_) {
+        if (kv.first != stream && kv.second.deallocate(p, bytes)) return;
       }
     }
 
     // Allocation not found.
-    assert(0);
+    RMM_LOGGING_ASSERT(0);
+  }
+
+  /**
+   * @brief Get the maximum size of allocations supported by this memory resource.
+   *
+   * Note this does not depend on the memory size of the device. It simply returns the maximum
+   * value of `std::size_t`.
+   *
+   * @return std::size_t The maximum size of a single allocation supported by this memory resource
+   */
+  std::size_t get_maximum_allocation_size() const
+  {
+    return std::numeric_limits<std::size_t>::max();
+  }
+
+  /**
+   * @brief Get the arena associated with the current thread or the given stream.
+   *
+   * @param stream The stream associated with the arena
+   * @return arena& The arena associated with the current thread or the given stream
+   */
+  arena& get_arena(cudaStream_t stream)
+  {
+    if (is_default_stream(stream)) {
+      return get_thread_arena();
+    } else {
+      return get_stream_arena(stream);
+    }
+  }
+
+  /**
+   * @brief Get the arena associated with the current thread.
+   *
+   * @return arena& The arena associated with the current thread
+   */
+  arena& get_thread_arena()
+  {
+    auto id = std::this_thread::get_id();
+    {
+      read_lock lock(mtx_);
+      auto it = thread_arenas_.find(id);
+      if (it != thread_arenas_.end()) { return it->second; }
+    }
+    {
+      write_lock lock(mtx_);
+      thread_arenas_.emplace(id, upstream_mr_);
+      return thread_arenas_.at(id);
+    }
+  }
+
+  /**
+   * @brief Get the arena associated with the given stream.
+   *
+   * @return arena& The arena associated with the given stream
+   */
+  arena& get_stream_arena(cudaStream_t stream)
+  {
+    RMM_LOGGING_ASSERT(!is_default_stream(stream));
+    {
+      read_lock lock(mtx_);
+      auto it = stream_arenas_.find(stream);
+      if (it != stream_arenas_.end()) { return it->second; }
+    }
+    {
+      write_lock lock(mtx_);
+      stream_arenas_.emplace(stream, upstream_mr_);
+      return stream_arenas_.at(stream);
+    }
   }
 
   /**
@@ -209,27 +262,24 @@ class arena_memory_resource final : public device_memory_resource {
   }
 
   /**
-   * @brief Get the arena associated with the current thread.
+   * @brief Check if the given stream is considered a "default" stream.
    *
-   * @return std::shared_ptr<arena> The arena associated with the current thread
+   * @param stream to check
+   * @return true if the given stream is a default stream, false otherwise
    */
-  arena& get_arena()
+  static bool is_default_stream(cudaStream_t stream)
   {
-    auto id = std::this_thread::get_id();
-    {
-      read_lock lock(mtx_);
-      auto it = arenas_.find(id);
-      if (it != arenas_.end()) { return it->second; }
-    }
-    {
-      write_lock lock(mtx_);
-      arenas_.emplace(id, upstream_mr_);
-      return arenas_.at(id);
-    }
+    return stream == cudaStreamDefault || stream == cudaStreamLegacy ||
+           stream == cudaStreamPerThread;
   }
 
+  /// The global heap to allocate superblocks from.
   Upstream* upstream_mr_;
-  std::unordered_map<std::thread::id, arena> arenas_;
+  /// Arenas for default streams, one per thread.
+  std::unordered_map<std::thread::id, arena> thread_arenas_;
+  /// Arenas for non-default streams.
+  std::unordered_map<cudaStream_t, arena> stream_arenas_;
+  /// Mutex for read and write locks.
   mutable std::shared_timed_mutex mtx_;
 };
 
