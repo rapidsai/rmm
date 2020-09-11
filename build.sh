@@ -64,7 +64,6 @@ function ensureCMakeRan {
         cmake -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" \
               -DCUDA_STATIC_RUNTIME="${CUDA_STATIC_RUNTIME}" \
               -DPER_THREAD_DEFAULT_STREAM="${PER_THREAD_DEFAULT_STREAM}" \
-              -DCMAKE_CXX11_ABI=ON \
               -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..
         RAN_CMAKE=1
     fi
