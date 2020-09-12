@@ -73,10 +73,6 @@ find_package(CUDAToolkit REQUIRED)
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/" ${CMAKE_MODULE_PATH})
 
-include(FeatureSummary)
-include(CheckIncludeFiles)
-include(CheckLibraryExists)
-
 ###################################################################################################
 # - third party dependencies-----------------------------------------------------------------------
 # add third party dependencies using CMake FetchContent
