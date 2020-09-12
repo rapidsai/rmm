@@ -54,3 +54,10 @@ set(GTEST_INCLUDE_DIR "${GTEST_ROOT}/install/include")
 set(GTEST_LIBRARY_DIR "${GTEST_ROOT}/install/lib")
 set(GTEST_FOUND TRUE)
 
+foreach(_lib gtest gtest_main gmock gmock_main)
+  add_library(${_lib} STATIC IMPORTED)
+  set_target_properties(${_lib} PROPERTIES
+    IMPORTED_LOCATION "${GTEST_LIBRARY_DIR}/lib${_lib}.a"
+    INTERFACE_INCLUDE_DIRECTORIES "${GTEST_INCLUDE_DIR}"
+    )
+endforeach()
