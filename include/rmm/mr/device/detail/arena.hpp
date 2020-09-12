@@ -37,7 +37,7 @@ namespace arena {
  * superblock can be returned to upstream.
  */
 struct block {
-  static constexpr std::size_t superblock_size = 8388608;  ///> Size of a superblock (8 MiB)
+  static constexpr std::size_t superblock_size = 1 << 26;  ///< Size of a superblock (64 MiB)
 
   void* pointer{};     ///< Raw memory pointer
   std::size_t size{};  ///< Size in bytes
@@ -214,8 +214,8 @@ class arena {
   static bool handles_size(std::size_t size) { return size <= maximum_allocation_size; }
 
  private:
-  /// The maximum allocation size handled by arenas (4 MiB).
-  static constexpr std::size_t maximum_allocation_size = block::superblock_size / 2;  // 4 MiB
+  /// The maximum allocation size handled by arenas.
+  static constexpr std::size_t maximum_allocation_size = block::superblock_size / 2;
 
   using lock_guard = std::lock_guard<std::mutex>;
 
