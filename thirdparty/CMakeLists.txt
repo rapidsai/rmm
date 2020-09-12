@@ -21,18 +21,11 @@ set(CNMEM_SOURCE_DIR "${cnmem_SOURCE_DIR}/src" PARENT_SCOPE)
 ###################################################################################################
 # - spdlog ----------------------------------------------------------------------------------------
 
-FetchContent_Declare(
-    spdlog
-    GIT_REPOSITORY https://github.com/gabime/spdlog.git
-    GIT_TAG        v1.7.0
-    GIT_SHALLOW    true
-)
-
-FetchContent_GetProperties(spdlog)
-if(NOT spdlog_POPULATED)
-  FetchContent_Populate(spdlog)
-  add_subdirectory(${spdlog_SOURCE_DIR} ${spdlog_BINARY_DIR} EXCLUDE_FROM_ALL)
-endif()
+CPMAddPackage(
+  NAME spdlog
+  GITHUB_REPOSITORY gabime/spdlog
+  VERSION 1.7.0
+  )
 
 ###################################################################################################
 # - thrust/cub ------------------------------------------------------------------------------------
