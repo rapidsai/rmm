@@ -47,21 +47,14 @@ set(THRUST_INCLUDE_DIR "${thrust_SOURCE_DIR}" PARENT_SCOPE)
 # - googletest ------------------------------------------------------------------------------------
 
 if (BUILD_TESTS)
-  message(STATUS "Fetching GoogleTest")
-
-  FetchContent_Declare(
-    googletest
-    GIT_REPOSITORY    https://github.com/google/googletest.git
-    GIT_TAG           release-1.8.0
-    GIT_SHALLOW       true
+  CPMAddPackage(
+    NAME googletest
+    GITHUB_REPOSITORY google/googletest
+    GIT_TAG release-1.8.0
+    VERSION 1.8.0
+    OPTIONS
+      "INSTALL_GTEST OFF"
     )
-
-  FetchContent_GetProperties(googletest)
-  if (NOT googletest_POPULATED)
-    FetchContent_Populate(googletest)
-    set(CMAKE_POLICY_DEFAULT_CMP0048 NEW) # suppress warning because googletest doesn't specify its version
-    add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR} EXCLUDE_FROM_ALL)
-  endif()
 endif()
 
 ###################################################################################################
