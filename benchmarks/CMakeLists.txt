@@ -18,18 +18,13 @@ endfunction(ConfigureBench)
 ###################################################################################################
 # - include paths ---------------------------------------------------------------------------------
 
-include_directories("${THRUST_INCLUDE_DIR}"
-                    "${CMAKE_SOURCE_DIR}"
-                    "${GTEST_INCLUDE_DIR}"
-                    "${GBENCH_INCLUDE_DIR}"
-                    "${CMAKE_CURRENT_SOURCE_DIR}")
+include_directories("${CMAKE_SOURCE_DIR}"
+                    "${GBENCH_INCLUDE_DIR}")
 
 ###################################################################################################
 # - library paths ---------------------------------------------------------------------------------
 
-link_directories("${CMAKE_BINARY_DIR}"
-                 "${GTEST_LIBRARY_DIR}"
-                 "${GBENCH_LIBRARY_DIR}")
+link_directories("${GBENCH_LIBRARY_DIR}")
 
 ###################################################################################################
 ### test sources ##################################################################################
