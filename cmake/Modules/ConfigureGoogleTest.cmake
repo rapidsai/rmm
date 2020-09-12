@@ -5,10 +5,10 @@ set(GTEST_CMAKE_ARGS "")
                      # " -DCMAKE_VERBOSE_MAKEFILE=ON")
 
 # Workaround for https://github.com/google/googletest/issues/854
-if(CMAKE_CXX_COMPILER MATCHES ".*clang")
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   list(APPEND GTEST_CMAKE_ARGS " -DCMAKE_C_FLAGS=-fPIC")
   list(APPEND GTEST_CMAKE_ARGS " -DCMAKE_CXX_FLAGS=-fPIC")
-endif(CMAKE_CXX_COMPILER MATCHES ".*clang")
+endif(CMAKE_CXX_COMPILER MATCHES "Clang")
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/Templates/GoogleTest.CMakeLists.txt.cmake"
                "${GTEST_ROOT}/CMakeLists.txt")
