@@ -32,18 +32,15 @@ CPMAddPackage(
 
 message(STATUS "Fetching Thrust")
 
-FetchContent_Declare(
-    thrust
-    GIT_REPOSITORY https://github.com/thrust/thrust.git
-    # August 28, 2020
-    GIT_TAG        52a8bda46c5c2128414d1d47f546b486ff0be2f0
+CPMAddPackage(
+  NAME thrust
+  GITHUB_REPOSITORY thrust/thrust
+  # August 28, 2020
+  GIT_TAG 52a8bda46c5c2128414d1d47f546b486ff0be2f0
+  VERSION 1.9.10mod
+  DOWNLOAD_ONLY TRUE
 )
 
-FetchContent_GetProperties(thrust)
-if(NOT thrust_POPULATED)
-  FetchContent_Populate(thrust)
-  # We are not using the thrust CMake targets, so no need to call `add_subdirectory()`.
-endif()
 set(THRUST_INCLUDE_DIR "${thrust_SOURCE_DIR}" PARENT_SCOPE)
 
 ###################################################################################################
