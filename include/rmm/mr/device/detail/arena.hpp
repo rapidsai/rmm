@@ -399,16 +399,12 @@ class arena {
 
   /// The global heap to allocate superblocks from
   Upstream* upstream_mr_;
-
   /// Free blocks that are not superblocks
   std::set<block> free_blocks_;
-
   /// Free superblocks
   std::set<block> free_superblocks_;
-
   /// Map of pointer address to allocated blocks
   std::unordered_map<void*, block> allocated_blocks_;
-
   /// Mutex for exclusive lock
   mutable std::mutex mtx_;
 };
