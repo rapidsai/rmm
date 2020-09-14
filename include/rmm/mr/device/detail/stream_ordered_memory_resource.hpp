@@ -327,8 +327,6 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
       if (b.is_valid()) { return b; }
     }
 
-    log_summary_trace();
-
     // note this creates a free list if it doesn't already exist, hence we get num lists first above
     free_list& blocks =
       (iter != stream_free_blocks_.end()) ? iter->second : stream_free_blocks_[stream_event];
