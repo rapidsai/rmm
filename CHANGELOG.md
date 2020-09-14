@@ -14,6 +14,7 @@
 - PR #541 Refine CMakeLists.txt to make it easy to import by external projects
 - PR #538 Upgrade CUB and Thrust to the latest commits
 - PR #542 Pin conda spdlog versions to 1.7.0
+- PR #550 Remove CXX11 ABI handling from CMake
 
 ## Bug Fixes
 
