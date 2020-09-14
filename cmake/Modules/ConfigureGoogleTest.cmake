@@ -4,7 +4,7 @@ set(GTEST_CMAKE_ARGS "")
 		     # " -Dgtest_build_samples=ON" 
                      # " -DCMAKE_VERBOSE_MAKEFILE=ON")
 
-# Workaround for https://github.com/google/googletest/issues/854
+# Workaround https://github.com/google/googletest/issues/854
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   list(APPEND GTEST_CMAKE_ARGS " -DCMAKE_C_FLAGS=-fPIC")
   list(APPEND GTEST_CMAKE_ARGS " -DCMAKE_CXX_FLAGS=-fPIC")

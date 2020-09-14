@@ -62,12 +62,30 @@ ConfigureTest(DEVICE_MR_TEST "${DEVICE_MR_TEST_SRC}")
 
 ###################################################################################################
 ###################################################################################################
+# - device mr per-thread default stream tests------------------------------------------------------
+
+set(DEVICE_MR_PTDS_TEST_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/mr_multithreaded_tests.cpp")
+
+ConfigureTest(DEVICE_MR_PTDS_TEST "${DEVICE_MR_PTDS_TEST_SRC}")
+target_compile_definitions(DEVICE_MR_PTDS_TEST PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
+
+
+###################################################################################################
+###################################################################################################
 # - pool mr tests --------------------------------------------------------------------------------
 
 set(POOL_MR_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/pool_mr_tests.cpp")
     
 ConfigureTest(POOL_MR_TEST "${POOL_MR_TEST_SRC}")
+
+set(POOL_MR_PTDS_TEST_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/pool_mr_tests.cpp")
+
+ConfigureTest(POOL_MR_PTDS_TEST "${POOL_MR_PTDS_TEST_SRC}")
+target_compile_definitions(POOL_MR_PTDS_TEST PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
+
 
 ###################################################################################################
 ###################################################################################################
@@ -77,18 +95,6 @@ set(THRUST_ALLOCATOR_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/thrust_allocator_tests.cu")
     
 ConfigureTest(THRUST_ALLOCATOR_TEST "${THRUST_ALLOCATOR_TEST_SRC}")
-
-###################################################################################################
-###################################################################################################
-# - device mr per-thread default stream tests------------------------------------------------------
-
-
-set(DEVICE_MR_PTDS_TEST_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/mr_multithreaded_tests.cpp")
-
-ConfigureTest(DEVICE_MR_PTDS_TEST "${DEVICE_MR_PTDS_TEST_SRC}")
-target_compile_definitions(DEVICE_MR_PTDS_TEST PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
-
 
 ###################################################################################################
 ###################################################################################################
