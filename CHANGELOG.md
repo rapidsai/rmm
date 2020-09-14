@@ -9,7 +9,8 @@
 
 - PR #474 Use CMake find_package(CUDAToolkit)
 - PR #477 Just use `None` for `strides` in `DeviceBuffer`
-- PR #528 Add `maximum_pool_size` parameter to reinitialize API
+- PR #528 Add maximum_pool_size parameter to reinitialize API
+- PR #532 Merge free lists in pool_memory_resource to defragment before growing from upstream
 - PR #537 Add CMake option to disable deprecation warnings
 - PR #541 Refine CMakeLists.txt to make it easy to import by external projects
 - PR #538 Upgrade CUB and Thrust to the latest commits

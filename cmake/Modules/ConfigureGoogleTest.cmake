@@ -4,8 +4,7 @@ set(GTEST_CMAKE_ARGS "")
 		     # " -Dgtest_build_samples=ON" 
                      # " -DCMAKE_VERBOSE_MAKEFILE=ON")
 
-# Poor's man workaround for
-# https://github.com/google/googletest/issues/854
+# Workaround https://github.com/google/googletest/issues/854
 if(CMAKE_CXX_COMPILER MATCHES ".*clang")
   list(APPEND GTEST_CMAKE_ARGS " -DCMAKE_C_FLAGS=-fPIC")
   list(APPEND GTEST_CMAKE_ARGS " -DCMAKE_CXX_FLAGS=-fPIC")
@@ -53,4 +52,3 @@ message(STATUS "GoogleTest installed here: " ${GTEST_ROOT}/install)
 set(GTEST_INCLUDE_DIR "${GTEST_ROOT}/install/include")
 set(GTEST_LIBRARY_DIR "${GTEST_ROOT}/install/lib")
 set(GTEST_FOUND TRUE)
-
