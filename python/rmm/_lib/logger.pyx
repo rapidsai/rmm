@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2019, NVIDIA CORPORATION.
+# Copyright (c) 2020, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,21 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import weakref
 
-from rmm import mr
-from rmm._lib.device_buffer import DeviceBuffer
-from rmm.rmm import (
-    RMMError,
-    RMMNumbaManager,
-    _numba_memory_manager,
-    device_array,
-    device_array_from_ptr,
-    device_array_like,
-    is_initialized,
-    reinitialize,
-    rmm_cupy_allocator,
-    to_device,
-    set_logging_level,
-    get_logging_level,
-)
+cpdef set_logging_level(level):
+  set_logging_level(level)
+
+cpdef get_logging_level():
+  return get_logging_level()

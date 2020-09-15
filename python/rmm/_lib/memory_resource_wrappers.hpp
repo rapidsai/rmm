@@ -1,5 +1,7 @@
 // Copyright (c) 2020, NVIDIA CORPORATION.
 
+#pragma once
+
 #include <memory>
 #include <rmm/mr/device/binning_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>

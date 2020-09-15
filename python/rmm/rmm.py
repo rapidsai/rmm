@@ -84,6 +84,13 @@ def is_initialized():
     """
     return rmm.mr.is_initialized()
 
+def set_logging_level(level):
+    return librmm.set_logging_level(level)
+
+def get_logging_level():
+    return librmm.get_logging_level()
+
+
 
 def device_array_from_ptr(ptr, nelem, dtype=np.float, finalizer=None):
     """
