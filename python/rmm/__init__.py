@@ -26,6 +26,4 @@ from rmm.rmm import (
     reinitialize,
     rmm_cupy_allocator,
     to_device,
-    set_logging_level,
-    get_logging_level,
 )
