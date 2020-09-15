@@ -37,7 +37,7 @@ namespace arena {
  * superblock can be returned to upstream.
  */
 struct block {
-  static constexpr std::size_t superblock_size = 1 << 26;  ///< Size of a superblock (64 MiB)
+  static constexpr std::size_t superblock_size = 1u << 26u;  ///< Size of a superblock (64 MiB)
 
   void* pointer{};     ///< Raw memory pointer
   std::size_t size{};  ///< Size in bytes
