@@ -47,11 +47,9 @@ inline std::string default_log_filename()
 }
 
 // Simple wrapper around a spdlog::logger that performs RMM-specific initialization
-class logger_wrapper {
+struct logger_wrapper {
   spdlog::logger logger_;
-  bool header_written_{false};  // only write header if logger is used
 
- public:
   logger_wrapper()
     : logger_{"RMM",
               std::make_shared<spdlog::sinks::basic_file_sink_mt>(
@@ -60,25 +58,12 @@ class logger_wrapper {
   {
     logger_.set_pattern("[%6t][%H:%M:%S:%f][%-6l] %v");
     logger_.flush_on(spdlog::level::warn);
-  }
-
-  void maybe_write_header()
-  {
-    if (logger_.should_log(spdlog::level::info) && not header_written_) {
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-      logger_.info("----- RMM LOG BEGIN [PTDS ENABLED] -----");
+    logger_.info("----- RMM LOG BEGIN [PTDS ENABLED] -----");
 #else
-      logger_.info("----- RMM LOG BEGIN [PTDS DISABLED] -----");
+    logger_.info("----- RMM LOG BEGIN [PTDS DISABLED] -----");
 #endif
-      logger_.flush();
-      header_written_ = true;
-    }
-  }
-
-  spdlog::logger& get()
-  {
-    maybe_write_header();
-    return logger_;
+    logger_.flush();
   }
 };
 
@@ -94,7 +79,7 @@ class logger_wrapper {
 inline spdlog::logger& logger()
 {
   static detail::logger_wrapper w{};
-  return w.get();
+  return w.logger_;
 }
 
 // The default is INFO, but it should be used sparingly, so that by default a log file is only
