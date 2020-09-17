@@ -206,11 +206,6 @@ Allocates and frees device memory using `cudaMallocManaged` and `cudaFree`.
 
 A coalescing, best-fit pool sub-allocator.
 
-#### `cnmem_(managed_)memory_resource` [DEPRECATED]
-
-Uses the [CNMeM](https://github.com/NVIDIA/cnmem) pool sub-allocator to satisfy (de)allocations.
-These resources are deprecated as of RMM 0.15.
-
 #### `fixed_size_memory_resource`
 
 A memory resource that can only allocate a single fixed size. Average allocation and deallocation
@@ -238,7 +233,6 @@ Accessing and modifying the default resource is done through two functions:
    - This function is thread safe with respect to concurrent calls to it and 
      `set_current_device_resource()`.
    - For more explicit control, you can use `get_per_device_resource()`, which takes a device ID.
-   - Replaces the deprecated `get_default_resource()`
 
 - `device_memory_resource* set_current_device_resource(device_memory_resource* new_mr)`
    - Updates the default memory resource pointer for the current CUDA device to `new_resource`
@@ -247,7 +241,6 @@ Accessing and modifying the default resource is done through two functions:
    - This function is thread safe with respect to concurrent calls to it and
      `get_current_device_resource()`
    - For more explicit control, you can use `set_per_device_resource()`, which takes a device ID.
-   - Replaces the deprecated `set_default_resource()`
 
 #### Example
 

@@ -31,13 +31,13 @@ INSTANTIATE_TEST_CASE_P(ResourceTests,
                                           mr_factory{"Binning", &make_binning}),
                         [](auto const& info) { return info.param.name; });
 
-TEST(DefaultTest, DefaultResourceIsCUDA)
+TEST(DefaultTest, CurrentDeviceResourceIsCUDA)
 {
-  EXPECT_NE(nullptr, rmm::mr::get_default_resource());
-  EXPECT_TRUE(rmm::mr::get_default_resource()->is_equal(rmm::mr::cuda_memory_resource{}));
+  EXPECT_NE(nullptr, rmm::mr::get_current_device_resource());
+  EXPECT_TRUE(rmm::mr::get_current_device_resource()->is_equal(rmm::mr::cuda_memory_resource{}));
 }
 
-TEST(DefaultTest, UseDefaultResource) { test_get_default_resource(); }
+TEST(DefaultTest, UseCurrentDeviceResource) { test_get_current_device_resource(); }
 
 TEST(DefaultTest, GetCurrentDeviceResource)
 {
@@ -45,19 +45,6 @@ TEST(DefaultTest, GetCurrentDeviceResource)
   EXPECT_NO_THROW(mr = rmm::mr::get_current_device_resource());
   EXPECT_NE(nullptr, mr);
   EXPECT_TRUE(mr->is_equal(rmm::mr::cuda_memory_resource{}));
-}
-
-TEST_P(mr_test, SetDefaultResource)
-{
-  rmm::mr::device_memory_resource* old{nullptr};
-  EXPECT_NO_THROW(old = rmm::mr::set_default_resource(this->mr.get()));
-  EXPECT_NE(nullptr, old);
-
-  test_get_default_resource();  // test allocating with the new default resource
-
-  // setting default resource w/ nullptr should reset to initial
-  EXPECT_NO_THROW(rmm::mr::set_default_resource(nullptr));
-  EXPECT_TRUE(old->is_equal(*rmm::mr::get_default_resource()));
 }
 
 TEST_P(mr_test, SetCurrentDeviceResource)
