@@ -261,7 +261,7 @@ class global_arena final {
     RMM_EXPECTS(nullptr != upstream_mr_, "Unexpected null upstream pointer.");
     RMM_EXPECTS(initial_size == default_initial_size || initial_size == align_up(initial_size),
                 "Error, Initial arena size required to be a multiple of 256 bytes");
-    RMM_EXPECTS(maximum_size_ == default_maximum_size || maximum_size_ == align_down(maximum_size_),
+    RMM_EXPECTS(maximum_size_ == default_maximum_size || maximum_size_ == align_up(maximum_size_),
                 "Error, Maximum arena size required to be a multiple of 256 bytes");
 
     std::size_t free{}, total{};
