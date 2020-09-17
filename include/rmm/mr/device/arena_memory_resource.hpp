@@ -64,9 +64,6 @@ namespace mr {
 template <typename Upstream>
 class arena_memory_resource final : public device_memory_resource {
  public:
-  /// The required alignment of this allocator.
-  static constexpr std::size_t allocation_alignment = 256;
-
   /**
    * @brief Construct an `arena_memory_resource`.
    *
@@ -74,9 +71,11 @@ class arena_memory_resource final : public device_memory_resource {
    *
    * @param upstream_mr The memory_resource from which to allocate memory for the arenas.
    */
-  explicit arena_memory_resource(Upstream* upstream_mr) : upstream_mr_{upstream_mr}
+  explicit arena_memory_resource(Upstream* upstream_mr,
+                                 std::size_t initial_size = global_arena::default_initial_size,
+                                 std::size_t maximum_size = global_arena::default_maximum_size)
+    : global_arena_{upstream_mr, initial_size, maximum_size}
   {
-    RMM_EXPECTS(nullptr != upstream_mr, "Unexpected null upstream pointer.");
   }
 
   // Disable copy (and move) semantics.
@@ -99,9 +98,10 @@ class arena_memory_resource final : public device_memory_resource {
   bool supports_get_mem_info() const noexcept override { return false; }
 
  private:
-  using arena      = detail::arena::arena<Upstream>;
-  using read_lock  = std::shared_lock<std::shared_timed_mutex>;
-  using write_lock = std::lock_guard<std::shared_timed_mutex>;
+  using global_arena = detail::arena::global_arena<Upstream>;
+  using arena        = detail::arena::arena<Upstream>;
+  using read_lock    = std::shared_lock<std::shared_timed_mutex>;
+  using write_lock   = std::lock_guard<std::shared_timed_mutex>;
 
   /**
    * @brief Allocates memory of size at least `bytes`.
@@ -118,7 +118,7 @@ class arena_memory_resource final : public device_memory_resource {
   {
     if (bytes <= 0) return nullptr;
 
-    bytes = rmm::detail::align_up(bytes, allocation_alignment);
+    bytes = detail::arena::align_up(bytes);
     RMM_EXPECTS(
       bytes <= get_maximum_allocation_size(), rmm::bad_alloc, "Maximum allocation size exceeded");
 
@@ -126,7 +126,7 @@ class arena_memory_resource final : public device_memory_resource {
       return get_arena(stream).allocate(bytes);
     } else {
       RMM_ASSERT_CUDA_SUCCESS(cudaStreamSynchronize(stream));
-      return upstream_mr_->allocate(bytes, cudaStreamLegacy);
+      return global_arena_.allocate(bytes);
     }
   }
 
@@ -142,14 +142,14 @@ class arena_memory_resource final : public device_memory_resource {
   {
     if (p == nullptr || bytes <= 0) return;
 
-    bytes = rmm::detail::align_up(bytes, allocation_alignment);
+    bytes = detail::arena::align_up(bytes);
     if (arena::handles_size(bytes)) {
       if (!get_arena(stream).deallocate(p, bytes, stream)) {
         deallocate_across_arenas(p, bytes, stream);
       }
     } else {
       RMM_ASSERT_CUDA_SUCCESS(cudaStreamSynchronize(stream));
-      upstream_mr_->deallocate(p, bytes, cudaStreamLegacy);
+      global_arena_.deallocate(p, bytes);
     }
   }
 
@@ -225,7 +225,7 @@ class arena_memory_resource final : public device_memory_resource {
     }
     {
       write_lock lock(mtx_);
-      thread_arenas_.emplace(id, upstream_mr_);
+      thread_arenas_.emplace(id, global_arena_);
       return thread_arenas_.at(id);
     }
   }
@@ -245,7 +245,7 @@ class arena_memory_resource final : public device_memory_resource {
     }
     {
       write_lock lock(mtx_);
-      stream_arenas_.emplace(stream, upstream_mr_);
+      stream_arenas_.emplace(stream, global_arena_);
       return stream_arenas_.at(stream);
     }
   }
@@ -273,8 +273,8 @@ class arena_memory_resource final : public device_memory_resource {
            stream == cudaStreamPerThread;
   }
 
-  /// The global heap to allocate superblocks from.
-  Upstream* upstream_mr_;
+  /// The global arena to allocate superblocks from.
+  global_arena global_arena_;
   /// Arenas for default streams, one per thread.
   std::unordered_map<std::thread::id, arena> thread_arenas_;
   /// Arenas for non-default streams.

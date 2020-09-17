@@ -16,11 +16,13 @@
 
 #pragma once
 
+#include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
 
 #include <cuda_runtime_api.h>
 
 #include <algorithm>
+#include <limits>
 #include <mutex>
 #include <set>
 #include <unordered_map>
@@ -115,6 +117,247 @@ struct block {
   bool operator<(block const& b) const { return pointer < b.pointer; }
 };
 
+constexpr std::size_t allocation_alignment = 256;
+
+/**
+ * @brief Align up to the allocation alignment.
+ *
+ * @param[in] v value to align
+ * @return Return the aligned value
+ */
+constexpr std::size_t align_up(std::size_t v) noexcept
+{
+  return rmm::detail::align_up(v, allocation_alignment);
+}
+
+/**
+ * @brief Get the first free block of at least `size` bytes.
+ *
+ * @param size The number of bytes to allocate
+ * @return block A block of memory of at least `size` bytes
+ */
+inline block first_fit(std::set<block>& free_blocks, std::size_t size)
+{
+  auto const iter = std::find_if(
+    free_blocks.cbegin(), free_blocks.cend(), [size](block const& b) { return b.fits(size); });
+
+  if (iter == free_blocks.cend()) {
+    return {};
+  } else {
+    // Remove the block from the free_list and return it.
+    block const found = *iter;
+    RMM_LOGGING_ASSERT(found.fits(size));
+    free_blocks.erase(iter);
+    return found;
+  }
+}
+
+/**
+ * @brief Splits block `b` if necessary to return the block allocated.
+ *
+ * If the block is split, the remainder is returned to the arena.
+ *
+ * @param b The block to allocate from
+ * @param size The size in bytes of the requested allocation
+ * @return block The allocated block
+ */
+inline void* allocate_from_block(std::set<block>& free_blocks,
+                                 std::unordered_map<void*, block>& allocated_blocks,
+                                 block const& b,
+                                 std::size_t size)
+{
+  RMM_LOGGING_ASSERT(b.fits(size));
+  auto split = b.split(size);
+  allocated_blocks.emplace(split.first.pointer, split.first);
+  if (split.second.is_valid()) free_blocks.insert(split.second);
+  return split.first.pointer;
+}
+
+/**
+ * @brief Coalesce the given block with other free blocks.
+ *
+ * @param b The block to coalesce
+ */
+inline block coalesce_block(std::set<block>& free_blocks, block const& b)
+{
+  if (!b.is_valid()) return b;
+
+  // Find the right place (in ascending address order) to insert the block.
+  auto const next     = free_blocks.lower_bound(b);
+  auto const previous = next == free_blocks.cbegin() ? next : std::prev(next);
+
+  // Coalesce with neighboring blocks.
+  bool const merge_prev = previous->is_contiguous_before(b);
+  bool const merge_next = next != free_blocks.cend() && b.is_contiguous_before(*next);
+
+  block merged;
+  if (merge_prev && merge_next) {
+    merged = previous->merge(b).merge(*next);
+    free_blocks.erase(previous);
+    free_blocks.erase(next);
+  } else if (merge_prev) {
+    merged = previous->merge(b);
+    free_blocks.erase(previous);
+  } else if (merge_next) {
+    merged = b.merge(*next);
+    free_blocks.erase(next);
+  } else {
+    merged = b;
+  }
+  free_blocks.insert(merged);
+
+  return merged;
+}
+
+/**
+ * @brief Align down to the allocation alignment.
+ *
+ * @param[in] v value to align
+ * @return Return the aligned value
+ */
+constexpr std::size_t align_down(std::size_t v) noexcept
+{
+  return rmm::detail::align_down(v, allocation_alignment);
+}
+
+template <typename Upstream>
+class global_arena {
+ public:
+  static constexpr std::size_t default_initial_size = std::numeric_limits<std::size_t>::max();
+  static constexpr std::size_t default_maximum_size = std::numeric_limits<std::size_t>::max();
+
+  global_arena(Upstream* upstream_mr, std::size_t initial_size, std::size_t maximum_size)
+    : upstream_mr_{upstream_mr}, maximum_size_{maximum_size}
+  {
+    RMM_EXPECTS(nullptr != upstream_mr_, "Unexpected null upstream pointer.");
+    RMM_EXPECTS(initial_size == default_initial_size || initial_size == align_up(initial_size),
+                "Error, Initial arena size required to be a multiple of 256 bytes");
+    RMM_EXPECTS(maximum_size_ == default_maximum_size || maximum_size_ == align_down(maximum_size_),
+                "Error, Maximum arena size required to be a multiple of 256 bytes");
+
+    std::size_t free{}, total{};
+    RMM_CUDA_TRY(cudaMemGetInfo(&free, &total));
+    if (initial_size == default_initial_size) {
+      initial_size = align_up(std::min(free, total / 2));
+    }
+    if (maximum_size_ == default_maximum_size) { maximum_size_ = align_down(free); }
+
+    RMM_EXPECTS(initial_size <= maximum_size_, "Initial arena size exceeds the maximum pool size!");
+
+    free_blocks_.insert(expand_arena(initial_size));
+  }
+
+  // Disable copy (and move) semantics.
+  global_arena(const global_arena&) = delete;
+  global_arena& operator=(const global_arena&) = delete;
+
+  virtual ~global_arena()
+  {
+    lock_guard lock(mtx_);
+    for (auto const& b : upstream_blocks_) {
+      upstream_mr_->deallocate(b.pointer, b.size);
+    }
+  }
+
+  /**
+   * @brief Allocates memory of size at least `bytes`.
+   *
+   * @throws `std::bad_alloc` if the requested allocation could not be fulfilled
+   *
+   * @param bytes The size in bytes of the allocation
+   * @return void* Pointer to the newly allocated memory
+   */
+  void* allocate(std::size_t bytes)
+  {
+    lock_guard lock(mtx_);
+    auto const b = get_block(bytes);
+    return allocate_from_block(free_blocks_, allocated_blocks_, b, bytes);
+  }
+
+  /**
+   * @brief Deallocate memory pointed to by `p`, keeping all free superblocks.
+   *
+   * This is done when deallocating across arenas. Since we don't have access to the CUDA stream
+   * associated with this arena, it's not safe to return superblocks.
+   *
+   * @param p Pointer to be deallocated
+   * @param bytes The size in bytes of the allocation. This must be equal to the
+   * value of `bytes` that was passed to the `allocate` call that returned `p`.
+   * @return true if the allocation is found, false otherwise
+   */
+  void deallocate(void* p, std::size_t bytes)
+  {
+    lock_guard lock(mtx_);
+    auto b = free_block(p, bytes);
+    coalesce_block(free_blocks_, b);
+  }
+
+ private:
+  using lock_guard = std::lock_guard<std::mutex>;
+
+  /**
+   * @brief Get an available memory block of at least `size` bytes.
+   *
+   * @param size The number of bytes to allocate
+   * @return block A block of memory of at least `size` bytes
+   */
+  block get_block(std::size_t bytes)
+  {
+    // Find the first-fit free block.
+    block b = first_fit(free_blocks_, bytes);
+    if (b.is_valid()) return b;
+
+    // No existing larger blocks available, so grow the arena.
+    return expand_arena(size_to_grow(bytes));
+  }
+
+  constexpr std::size_t size_to_grow(std::size_t bytes) const
+  {
+    if (current_size_ + bytes > maximum_size_) {
+      RMM_FAIL("Maximum pool size exceeded", rmm::bad_alloc);
+    }
+    return maximum_size_ - current_size_;
+  }
+
+  block expand_arena(std::size_t bytes)
+  {
+    upstream_blocks_.push_back({upstream_mr_->allocate(bytes), bytes, true});
+    current_size_ += bytes;
+    return upstream_blocks_.back();
+  }
+
+  /**
+   * @brief Finds, frees and returns the block associated with pointer `p`.
+   *
+   * @param p The pointer to the memory to free.
+   * @param size The size of the memory to free. Must be equal to the original allocation size.
+   * @return The (now freed) block associated with `p`. The caller is expected to return the block
+   * to the arena.
+   */
+  block free_block(void* p, std::size_t size) noexcept
+  {
+    auto const i = allocated_blocks_.find(p);
+    RMM_LOGGING_ASSERT(i != allocated_blocks_.end());
+
+    auto found = i->second;
+    RMM_LOGGING_ASSERT(found.size == size);
+    allocated_blocks_.erase(i);
+
+    return found;
+  }
+
+  Upstream* upstream_mr_;
+  std::size_t maximum_size_;
+  std::size_t current_size_{};
+  /// Free blocks
+  std::set<block> free_blocks_;
+  /// Map of pointer address to allocated blocks
+  std::unordered_map<void*, block> allocated_blocks_;
+  std::vector<block> upstream_blocks_;
+  /// Mutex for exclusive lock
+  mutable std::mutex mtx_;
+};
+
 /**
  * @brief An arena for allocating memory for a thread.
  *
@@ -131,10 +374,7 @@ class arena {
    *
    * @param upstream_mr The memory_resource from which to allocate memory for the arena.
    */
-  explicit arena(Upstream* upstream_mr) : upstream_mr_{upstream_mr}
-  {
-    RMM_EXPECTS(nullptr != upstream_mr, "Unexpected null upstream pointer.");
-  }
+  explicit arena(global_arena<Upstream>& global_arena) : global_arena_{global_arena} {}
 
   // Disable copy (and move) semantics.
   arena(const arena&) = delete;
@@ -151,9 +391,8 @@ class arena {
   void* allocate(std::size_t bytes)
   {
     lock_guard lock(mtx_);
-    auto const b     = get_block(bytes);
-    auto const alloc = allocate_from_block(b, bytes);
-    return alloc.pointer;
+    auto const b = get_block(bytes);
+    return allocate_from_block(free_blocks_, allocated_blocks_, b, bytes);
   }
 
   /**
@@ -191,21 +430,6 @@ class arena {
   }
 
   /**
-   * @brief Deallocate memory pointed to by `p`.
-   *
-   * @param p Pointer to be deallocated
-   * @param bytes The size in bytes of the allocation. This must be equal to the
-   * value of `bytes` that was passed to the `allocate` call that returned `p`.
-   * @return bool if the allocation is found
-   */
-  bool do_deallocate(void* p, std::size_t bytes)
-  {
-    auto b = free_block(p, bytes);
-    coalesce_block(b);
-    return b.is_valid();
-  }
-
-  /**
    * @brief Does an arena handle blocks of this size?
    *
    * @param size The size in bytes to check
@@ -228,58 +452,12 @@ class arena {
   block get_block(std::size_t size)
   {
     // Find the first-fit free block.
-    block b = first_fit(size);
+    block b = first_fit(free_blocks_, size);
+    if (b.is_superblock()) free_superblocks_.erase(b);
     if (b.is_valid()) return b;
-
-    // No free blocks available, use the first free superblock.
-    b = first_superblock();
-    if (b.is_valid()) {
-      RMM_LOGGING_ASSERT(b.fits(size));
-      return b;
-    }
 
     // No existing larger blocks available, so grow the arena and obtain a superblock.
     return expand_arena();
-  }
-
-  /**
-   * @brief Get the first free block of at least `size` bytes.
-   *
-   * @param size The number of bytes to allocate
-   * @return block A block of memory of at least `size` bytes
-   */
-  block first_fit(std::size_t size)
-  {
-    auto const iter = std::find_if(
-      free_blocks_.cbegin(), free_blocks_.cend(), [size](block const& b) { return b.fits(size); });
-
-    if (iter == free_blocks_.cend()) {
-      return {};
-    } else {
-      // Remove the block from the free_list and return it.
-      block const found = *iter;
-      RMM_LOGGING_ASSERT(found.fits(size));
-      free_blocks_.erase(iter);
-      return found;
-    }
-  }
-
-  /**
-   * @brief Get the first free superblock.
-   *
-   * @return block A superblock
-   */
-  block first_superblock()
-  {
-    if (free_superblocks_.empty()) {
-      return {};
-    } else {
-      auto const iter   = free_superblocks_.cbegin();
-      block const found = *iter;
-      RMM_LOGGING_ASSERT(found.is_superblock());
-      free_superblocks_.erase(iter);
-      return found;
-    }
   }
 
   /**
@@ -290,27 +468,23 @@ class arena {
   block expand_arena()
   {
     auto size = block::superblock_size;
-    return {upstream_mr_->allocate(size, cudaStreamLegacy), size, true};
+    return {global_arena_.allocate(size), size, true};
   }
 
   /**
-   * @brief Splits block `b` if necessary to return the block allocated.
+   * @brief Deallocate memory pointed to by `p`.
    *
-   * If the block is split, the remainder is returned to the arena.
-   *
-   * @param b The block to allocate from
-   * @param size The size in bytes of the requested allocation
-   * @return block The allocated block
+   * @param p Pointer to be deallocated
+   * @param bytes The size in bytes of the allocation. This must be equal to the
+   * value of `bytes` that was passed to the `allocate` call that returned `p`.
+   * @return bool if the allocation is found
    */
-  block allocate_from_block(block const& b, std::size_t size)
+  bool do_deallocate(void* p, std::size_t bytes)
   {
-    RMM_LOGGING_ASSERT(b.fits(size));
-    auto split     = b.split(size);
-    auto alloc     = split.first;
-    auto remainder = split.second;
-    allocated_blocks_.emplace(alloc.pointer, alloc);
-    if (remainder.is_valid()) free_blocks_.insert(remainder);
-    return alloc;
+    auto b      = free_block(p, bytes);
+    auto merged = coalesce_block(free_blocks_, b);
+    if (merged.is_superblock()) { free_superblocks_.insert(merged); }
+    return b.is_valid();
   }
 
   /**
@@ -336,70 +510,30 @@ class arena {
   }
 
   /**
-   * @brief Coalesce the given block with other free blocks.
-   *
-   * @param b The block to coalesce
-   */
-  void coalesce_block(block b)
-  {
-    if (!b.is_valid()) return;
-
-    // Find the right place (in ascending address order) to insert the block.
-    auto const next     = free_blocks_.lower_bound(b);
-    auto const previous = (next == free_blocks_.cbegin()) ? next : std::prev(next);
-
-    // Coalesce with neighboring blocks.
-    bool const merge_prev = previous->is_contiguous_before(b);
-    bool const merge_next = (next != free_blocks_.cend()) && b.is_contiguous_before(*next);
-
-    if (merge_prev && merge_next) {
-      b = previous->merge(b).merge(*next);
-      free_blocks_.erase(previous);
-      free_blocks_.erase(next);
-    } else if (merge_prev) {
-      b = previous->merge(b);
-      free_blocks_.erase(previous);
-    } else if (merge_next) {
-      b = b.merge(*next);
-      free_blocks_.erase(next);
-    }
-
-    // Keep track of the coalesced free block. Free superblocks are tracked separately.
-    if (b.is_superblock()) {
-      free_superblocks_.insert(b);
-    } else {
-      free_blocks_.insert(b);
-    }
-  }
-
-  /**
    * @brief Shrink this arena by returning free superblocks to upstream.
    *
    * @param stream Stream on which to perform shrinking
    */
   void shrink_arena(cudaStream_t stream)
   {
-    // Don't shrink if no free superblocks, or no free blocks and only one superblock is left (to
-    // avoid thrashing).
-    if (free_superblocks_.empty() || free_blocks_.empty() && free_superblocks_.size() <= 1) return;
+    // Don't shrink if only one free superblock is left (to avoid thrashing).
+    if (free_superblocks_.size() <= 1) return;
 
     RMM_CUDA_TRY(cudaStreamSynchronize(stream));
 
     // Keep one superblock if no free blocks are available.
-    for (auto it = free_blocks_.empty() ? std::next(free_superblocks_.cbegin())
-                                        : free_superblocks_.cbegin();
-         it != free_superblocks_.cend();
-         ++it) {
+    for (auto it = std::next(free_superblocks_.cbegin()); it != free_superblocks_.cend(); ++it) {
       auto b = *it;
       RMM_LOGGING_ASSERT(b.is_superblock());
-      upstream_mr_->deallocate(b.pointer, b.size, cudaStreamLegacy);
+      global_arena_.deallocate(b.pointer, b.size);
       free_superblocks_.erase(it--);
+      free_blocks_.erase(b);
     }
   }
 
-  /// The global heap to allocate superblocks from
-  Upstream* upstream_mr_;
-  /// Free blocks that are not superblocks
+  /// The global arena to allocate superblocks from
+  global_arena<Upstream>& global_arena_;
+  /// Free blocks including superblocks
   std::set<block> free_blocks_;
   /// Free superblocks
   std::set<block> free_superblocks_;
