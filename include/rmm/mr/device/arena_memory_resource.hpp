@@ -33,13 +33,14 @@ namespace mr {
  * Allocation (do_allocate()) and deallocation (do_deallocate()) are thread-safe. Also,
  * this class is compatible with CUDA per-thread default stream.
  *
- * GPU memory is divided into a global heap and per-thread heaps. Each thread allocates memory from
- * the global heap in chunks called superblocks. All superblocks are the same size. Objects larger
- * than half the size of a superblock are managed directly using the global heap.
+ * GPU memory is divided into a global arena, per-thread arenas for default streams, and per-stream
+ * arenas for non-default streams. Each arena allocates memory from the global arena in chunks
+ * called superblocks. All superblocks are the same size. Objects larger than half the size of a
+ * superblock are managed directly using the global arena.
  *
- * Blocks in the per-thread heap are allocated using address-ordered first-fit. When a block is
- * freed, it is coalesced with neighbouring free blocks if the addresses are contiguous and do not
- * cross superblock boundaries. Completely empty superblocks are returned to the global heap.
+ * Blocks in each arena are allocated using address-ordered first fit. When a block is freed, it is
+ * coalesced with neighbouring free blocks if the addresses are contiguous and do not cross
+ * superblock boundaries. Completely empty superblocks are returned to the global arena.
  *
  * This design is inspired by several existing CPU memory allocators targeting multi-threaded
  * applications (glibc malloc, Hoard, jemalloc, TCMalloc), albeit in a simpler form. Possible future
@@ -58,7 +59,7 @@ namespace mr {
  * \see http://jemalloc.net/
  * \see https://github.com/google/tcmalloc
  *
- * @tparam UpstreamResource memory_resource to use for allocating the arenas. Implements
+ * @tparam Upstream Memory resource to use for allocating memory for the global arena. Implements
  * rmm::mr::device_memory_resource interface.
  */
 template <typename Upstream>
@@ -67,9 +68,17 @@ class arena_memory_resource final : public device_memory_resource {
   /**
    * @brief Construct an `arena_memory_resource`.
    *
-   * @throws rmm::logic_error if `upstream_mr == nullptr`
+   * @throws rmm::logic_error if `upstream_mr == nullptr`.
+   * @throws rmm::logic_error if `initial_size` is neither the default nor aligned to a multiple of
+   * 256 bytes.
+   * @throws rmm::logic_error if `maximum_size` is neither the default nor aligned to a multiple of
+   * 256 bytes.
    *
-   * @param upstream_mr The memory_resource from which to allocate memory for the arenas.
+   * @param upstream_mr The memory resource from which to allocate blocks for the pool
+   * @param initial_size Minimum size, in bytes, of the initial global arena. Defaults to half of
+   * the available memory on the current device.
+   * @param maximum_size Maximum size, in bytes, that the global arena can grow to. Defaults to all
+   * of the available memory on the current device.
    */
   explicit arena_memory_resource(Upstream* upstream_mr,
                                  std::size_t initial_size = global_arena::default_initial_size,
@@ -93,7 +102,7 @@ class arena_memory_resource final : public device_memory_resource {
   /**
    * @brief Query whether the resource supports the get_mem_info API.
    *
-   * @return bool false
+   * @return bool false.
    */
   bool supports_get_mem_info() const noexcept override { return false; }
 
@@ -106,13 +115,13 @@ class arena_memory_resource final : public device_memory_resource {
   /**
    * @brief Allocates memory of size at least `bytes`.
    *
-   * The returned pointer has at least 256B alignment.
+   * The returned pointer has at least 256-byte alignment.
    *
-   * @throws `std::bad_alloc` if the requested allocation could not be fulfilled
+   * @throws `std::bad_alloc` if the requested allocation could not be fulfilled.
    *
-   * @param bytes The size in bytes of the allocation
-   * @param stream The stream to associate this allocation with
-   * @return void* Pointer to the newly allocated memory
+   * @param bytes The size in bytes of the allocation.
+   * @param stream The stream to associate this allocation with.
+   * @return void* Pointer to the newly allocated memory.
    */
   void* do_allocate(std::size_t bytes, cudaStream_t stream) override
   {
@@ -133,10 +142,10 @@ class arena_memory_resource final : public device_memory_resource {
   /**
    * @brief Deallocate memory pointed to by `p`.
    *
-   * @param p Pointer to be deallocated
+   * @param p Pointer to be deallocated.
    * @param bytes The size in bytes of the allocation. This must be equal to the
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
-   * @param stream Stream on which to perform deallocation
+   * @param stream Stream on which to perform deallocation.
    */
   void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override
   {
@@ -156,10 +165,10 @@ class arena_memory_resource final : public device_memory_resource {
   /**
    * @brief Deallocate memory pointed to by `p` that was allocated in a different arena.
    *
-   * @param p Pointer to be deallocated
+   * @param p Pointer to be deallocated.
    * @param bytes The size in bytes of the allocation. This must be equal to the
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
-   * @param stream Stream on which to perform deallocation
+   * @param stream Stream on which to perform deallocation.
    */
   void deallocate_across_arenas(void* p, std::size_t bytes, cudaStream_t stream)
   {
@@ -188,7 +197,7 @@ class arena_memory_resource final : public device_memory_resource {
    * Note this does not depend on the memory size of the device. It simply returns the maximum
    * value of `std::size_t`.
    *
-   * @return std::size_t The maximum size of a single allocation supported by this memory resource
+   * @return std::size_t The maximum size of a single allocation supported by this memory resource.
    */
   std::size_t get_maximum_allocation_size() const
   {
@@ -198,8 +207,8 @@ class arena_memory_resource final : public device_memory_resource {
   /**
    * @brief Get the arena associated with the current thread or the given stream.
    *
-   * @param stream The stream associated with the arena
-   * @return arena& The arena associated with the current thread or the given stream
+   * @param stream The stream associated with the arena.
+   * @return arena& The arena associated with the current thread or the given stream.
    */
   arena& get_arena(cudaStream_t stream)
   {
@@ -213,7 +222,7 @@ class arena_memory_resource final : public device_memory_resource {
   /**
    * @brief Get the arena associated with the current thread.
    *
-   * @return arena& The arena associated with the current thread
+   * @return arena& The arena associated with the current thread.
    */
   arena& get_thread_arena()
   {
@@ -233,7 +242,7 @@ class arena_memory_resource final : public device_memory_resource {
   /**
    * @brief Get the arena associated with the given stream.
    *
-   * @return arena& The arena associated with the given stream
+   * @return arena& The arena associated with the given stream.
    */
   arena& get_stream_arena(cudaStream_t stream)
   {
@@ -253,8 +262,8 @@ class arena_memory_resource final : public device_memory_resource {
   /**
    * @brief Get free and available memory for memory resource.
    *
-   * @param stream to execute on
-   * @return std::pair containing free_size and total_size of memory
+   * @param stream to execute on.
+   * @return std::pair containing free_size and total_size of memory.
    */
   std::pair<std::size_t, std::size_t> do_get_mem_info(cudaStream_t stream) const override
   {
@@ -264,8 +273,8 @@ class arena_memory_resource final : public device_memory_resource {
   /**
    * @brief Check if the given stream is considered a "default" stream.
    *
-   * @param stream to check
-   * @return true if the given stream is a default stream, false otherwise
+   * @param stream to check.
+   * @return true if the given stream is a default stream, false otherwise.
    */
   static bool is_default_stream(cudaStream_t stream)
   {
@@ -277,7 +286,7 @@ class arena_memory_resource final : public device_memory_resource {
   global_arena global_arena_;
   /// Arenas for default streams, one per thread.
   std::unordered_map<std::thread::id, arena> thread_arenas_;
-  /// Arenas for non-default streams.
+  /// Arenas for non-default streams, one per stream.
   std::unordered_map<cudaStream_t, arena> stream_arenas_;
   /// Mutex for read and write locks.
   mutable std::shared_timed_mutex mtx_;

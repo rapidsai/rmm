@@ -35,15 +35,15 @@ namespace arena {
 /**
  * @brief Represents a chunk of memory that can be allocated and deallocated.
  *
- * A fixed-sized block obtained from the upstream memory resource is called a "superblock". Only a
- * superblock can be returned to upstream.
+ * A fixed-sized block obtained from the global arena is called a "superblock". Only a superblock
+ * can be returned to the global arena.
  */
 struct block {
-  static constexpr std::size_t superblock_size = 1u << 26u;  ///< Size of a superblock (64 MiB)
+  static constexpr std::size_t superblock_size = 1u << 26u;  ///< Size of a superblock (64 MiB).
 
-  void* pointer{};     ///< Raw memory pointer
-  std::size_t size{};  ///< Size in bytes
-  bool is_head{};      ///< Indicates whether pointer was allocated from upstream
+  void* pointer{};     ///< Raw memory pointer.
+  std::size_t size{};  ///< Size in bytes.
+  bool is_head{};      ///< Indicates whether pointer was allocated from upstream.
 
   /// Returns true if this block is valid (non-null), false otherwise.
   bool is_valid() const { return pointer != nullptr; }
@@ -67,7 +67,7 @@ struct block {
    * @brief Is this block large enough to fit `sz` bytes?
    *
    * @param sz The size in bytes to check for fit.
-   * @return true if this block is at least `sz` bytes
+   * @return true if this block is at least `sz` bytes.
    */
   bool fits(std::size_t sz) const { return size >= sz; }
 
@@ -75,7 +75,7 @@ struct block {
    * @brief Split this block into two by the given size.
    *
    * @param sz The size in bytes of the first block.
-   * @return std::pair<block, block> A pair of blocks split by sz
+   * @return std::pair<block, block> A pair of blocks split by sz.
    */
   std::pair<block, block> split(std::size_t sz) const
   {
@@ -92,8 +92,8 @@ struct block {
    *
    * `this` must immediately precede `b` and both `this` and `b` must be from the same superblock.
    *
-   * @param b block to merge
-   * @return block The merged block
+   * @param b block to merge.
+   * @return block The merged block.
    */
   block merge(block const& b) const
   {
@@ -104,9 +104,9 @@ struct block {
   /**
    * @brief Increment the given pointer by the given size.
    *
-   * @param pointer the pointer to increment
-   * @param size the size to add to the pointer
-   * @return void* The resulting pointer
+   * @param pointer the pointer to increment.
+   * @param size the size to add to the pointer.
+   * @return void* The resulting pointer.
    */
   static void* increment(void* pointer, std::size_t size)
   {
@@ -117,6 +117,7 @@ struct block {
   bool operator<(block const& b) const { return pointer < b.pointer; }
 };
 
+/// The required allocation alignment.
 constexpr std::size_t allocation_alignment = 256;
 
 /**
@@ -131,10 +132,22 @@ constexpr std::size_t align_up(std::size_t v) noexcept
 }
 
 /**
+ * @brief Align down to the allocation alignment.
+ *
+ * @param[in] v value to align
+ * @return Return the aligned value
+ */
+constexpr std::size_t align_down(std::size_t v) noexcept
+{
+  return rmm::detail::align_down(v, allocation_alignment);
+}
+
+/**
  * @brief Get the first free block of at least `size` bytes.
  *
- * @param size The number of bytes to allocate
- * @return block A block of memory of at least `size` bytes
+ * @param free_blocks The address-ordered set of free blocks.
+ * @param size The number of bytes to allocate.
+ * @return block A block of memory of at least `size` bytes, or an empty block if not found.
  */
 inline block first_fit(std::set<block>& free_blocks, std::size_t size)
 {
@@ -155,11 +168,13 @@ inline block first_fit(std::set<block>& free_blocks, std::size_t size)
 /**
  * @brief Splits block `b` if necessary to return the block allocated.
  *
- * If the block is split, the remainder is returned to the arena.
+ * If the block is split, the remainder is returned to the free blocks.
  *
- * @param b The block to allocate from
- * @param size The size in bytes of the requested allocation
- * @return block The allocated block
+ * @param free_blocks The address-ordered set of free blocks.
+ * @param allocated_blocks The map of address to allocated blocks.
+ * @param b The block to allocate from.
+ * @param size The size in bytes of the requested allocation.
+ * @return void* The allocated pointer.
  */
 inline void* allocate_from_block(std::set<block>& free_blocks,
                                  std::unordered_map<void*, block>& allocated_blocks,
@@ -176,7 +191,9 @@ inline void* allocate_from_block(std::set<block>& free_blocks,
 /**
  * @brief Coalesce the given block with other free blocks.
  *
- * @param b The block to coalesce
+ * @param free_blocks The address-ordered set of free blocks.
+ * @param b The block to coalesce.
+ * @return block The coalesced block.
  */
 inline block coalesce_block(std::set<block>& free_blocks, block const& b)
 {
@@ -210,22 +227,34 @@ inline block coalesce_block(std::set<block>& free_blocks, block const& b)
 }
 
 /**
- * @brief Align down to the allocation alignment.
+ * @brief The global arena for allocating memory from the upstream memory resource.
  *
- * @param[in] v value to align
- * @return Return the aligned value
+ * @tparam Upstream Memory resource to use for allocating the arena. Implements
+ * rmm::mr::device_memory_resource interface.
  */
-constexpr std::size_t align_down(std::size_t v) noexcept
-{
-  return rmm::detail::align_down(v, allocation_alignment);
-}
-
 template <typename Upstream>
-class global_arena {
+class global_arena final {
  public:
+  /// The default initial size for the global arena.
   static constexpr std::size_t default_initial_size = std::numeric_limits<std::size_t>::max();
+  /// The default maximum size for the global arena.
   static constexpr std::size_t default_maximum_size = std::numeric_limits<std::size_t>::max();
 
+  /**
+   * @brief Construct a global arena.
+   *
+   * @throws rmm::logic_error if `upstream_mr == nullptr`.
+   * @throws rmm::logic_error if `initial_size` is neither the default nor aligned to a multiple of
+   * 256 bytes.
+   * @throws rmm::logic_error if `maximum_size` is neither the default nor aligned to a multiple of
+   * 256 bytes.
+   *
+   * @param upstream_mr The memory resource from which to allocate blocks for the pool
+   * @param initial_size Minimum size, in bytes, of the initial global arena. Defaults to half of
+   * the available memory on the current device.
+   * @param maximum_size Maximum size, in bytes, that the global arena can grow to. Defaults to all
+   * of the available memory on the current device.
+   */
   global_arena(Upstream* upstream_mr, std::size_t initial_size, std::size_t maximum_size)
     : upstream_mr_{upstream_mr}, maximum_size_{maximum_size}
   {
@@ -251,7 +280,11 @@ class global_arena {
   global_arena(const global_arena&) = delete;
   global_arena& operator=(const global_arena&) = delete;
 
-  virtual ~global_arena()
+  /**
+   * @brief Destroy the global arena and deallocate all memory it allocated using the upstream
+   * resource.
+   */
+  ~global_arena()
   {
     lock_guard lock(mtx_);
     for (auto const& b : upstream_blocks_) {
@@ -262,10 +295,10 @@ class global_arena {
   /**
    * @brief Allocates memory of size at least `bytes`.
    *
-   * @throws `std::bad_alloc` if the requested allocation could not be fulfilled
+   * @throws `std::bad_alloc` if the requested allocation could not be fulfilled.
    *
-   * @param bytes The size in bytes of the allocation
-   * @return void* Pointer to the newly allocated memory
+   * @param bytes The size in bytes of the allocation.
+   * @return void* Pointer to the newly allocated memory.
    */
   void* allocate(std::size_t bytes)
   {
@@ -275,15 +308,11 @@ class global_arena {
   }
 
   /**
-   * @brief Deallocate memory pointed to by `p`, keeping all free superblocks.
+   * @brief Deallocate memory pointed to by `p`.
    *
-   * This is done when deallocating across arenas. Since we don't have access to the CUDA stream
-   * associated with this arena, it's not safe to return superblocks.
-   *
-   * @param p Pointer to be deallocated
-   * @param bytes The size in bytes of the allocation. This must be equal to the
-   * value of `bytes` that was passed to the `allocate` call that returned `p`.
-   * @return true if the allocation is found, false otherwise
+   * @param p Pointer to be deallocated.
+   * @param bytes The size in bytes of the allocation. This must be equal to the value of `bytes`
+   * that was passed to the `allocate` call that returned `p`.
    */
   void deallocate(void* p, std::size_t bytes)
   {
@@ -298,31 +327,45 @@ class global_arena {
   /**
    * @brief Get an available memory block of at least `size` bytes.
    *
-   * @param size The number of bytes to allocate
-   * @return block A block of memory of at least `size` bytes
+   * @param size The number of bytes to allocate.
+   * @return block A block of memory of at least `size` bytes.
    */
-  block get_block(std::size_t bytes)
+  block get_block(std::size_t size)
   {
     // Find the first-fit free block.
-    block b = first_fit(free_blocks_, bytes);
+    block b = first_fit(free_blocks_, size);
     if (b.is_valid()) return b;
 
     // No existing larger blocks available, so grow the arena.
-    return expand_arena(size_to_grow(bytes));
+    return expand_arena(size_to_grow(size));
   }
 
-  constexpr std::size_t size_to_grow(std::size_t bytes) const
+  /**
+   * @brief Get the size to grow the global arena given the requested `size` bytes.
+   *
+   * This simply grows the global arena to the maximum size.
+   *
+   * @param size The number of bytes required.
+   * @return size The size for the arena to grow.
+   */
+  constexpr std::size_t size_to_grow(std::size_t size) const
   {
-    if (current_size_ + bytes > maximum_size_) {
+    if (current_size_ + size > maximum_size_) {
       RMM_FAIL("Maximum pool size exceeded", rmm::bad_alloc);
     }
     return maximum_size_ - current_size_;
   }
 
-  block expand_arena(std::size_t bytes)
+  /**
+   * @brief Allocate space from upstream to supply the arena and return a sufficiently sized block.
+   *
+   * @param size The minimum size to allocate.
+   * @return block A block of at least `size` bytes.
+   */
+  block expand_arena(std::size_t size)
   {
-    upstream_blocks_.push_back({upstream_mr_->allocate(bytes), bytes, true});
-    current_size_ += bytes;
+    upstream_blocks_.push_back({upstream_mr_->allocate(size), size, true});
+    current_size_ += size;
     return upstream_blocks_.back();
   }
 
@@ -346,22 +389,26 @@ class global_arena {
     return found;
   }
 
+  /// The upstream resource to allocate memory from.
   Upstream* upstream_mr_;
+  /// The maximum size the global arena can grow to.
   std::size_t maximum_size_;
+  /// The current size of the global arena.
   std::size_t current_size_{};
-  /// Free blocks
+  /// Address-ordered set of free blocks.
   std::set<block> free_blocks_;
-  /// Map of pointer address to allocated blocks
+  /// Map of pointer address to allocated blocks.
   std::unordered_map<void*, block> allocated_blocks_;
+  /// Blocks allocated from upstream so that they can be quickly freed.
   std::vector<block> upstream_blocks_;
-  /// Mutex for exclusive lock
+  /// Mutex for exclusive lock.
   mutable std::mutex mtx_;
 };
 
 /**
  * @brief An arena for allocating memory for a thread.
  *
- * @tparam UpstreamResource memory_resource to use for allocating the arena. Implements
+ * @tparam Upstream Memory resource to use for allocating the global arena. Implements
  * rmm::mr::device_memory_resource interface.
  */
 template <typename Upstream>
@@ -370,9 +417,7 @@ class arena {
   /**
    * @brief Construct an `arena`.
    *
-   * @throws rmm::logic_error if `upstream_mr == nullptr`
-   *
-   * @param upstream_mr The memory_resource from which to allocate memory for the arena.
+   * @param global_arena The global arena from which to allocate superblocks.
    */
   explicit arena(global_arena<Upstream>& global_arena) : global_arena_{global_arena} {}
 
@@ -383,10 +428,10 @@ class arena {
   /**
    * @brief Allocates memory of size at least `bytes`.
    *
-   * @throws `std::bad_alloc` if the requested allocation could not be fulfilled
+   * @throws `std::bad_alloc` if the requested allocation could not be fulfilled.
    *
-   * @param bytes The size in bytes of the allocation
-   * @return void* Pointer to the newly allocated memory
+   * @param bytes The size in bytes of the allocation.
+   * @return void* Pointer to the newly allocated memory.
    */
   void* allocate(std::size_t bytes)
   {
@@ -398,11 +443,11 @@ class arena {
   /**
    * @brief Deallocate memory pointed to by `p`, and possibly return superblocks to upstream.
    *
-   * @param p Pointer to be deallocated
-   * @param bytes The size in bytes of the allocation. This must be equal to the
-   * value of `bytes` that was passed to the `allocate` call that returned `p`.
-   * @param stream Stream on which to perform deallocation
-   * @return true if the allocation is found, false otherwise
+   * @param p Pointer to be deallocated.
+   * @param bytes The size in bytes of the allocation. This must be equal to the value of `bytes`
+   * that was passed to the `allocate` call that returned `p`.
+   * @param stream Stream on which to perform deallocation.
+   * @return true if the allocation is found, false otherwise.
    */
   bool deallocate(void* p, std::size_t bytes, cudaStream_t stream)
   {
@@ -415,13 +460,13 @@ class arena {
   /**
    * @brief Deallocate memory pointed to by `p`, keeping all free superblocks.
    *
-   * This is done when deallocating across arenas. Since we don't have access to the CUDA stream
-   * associated with this arena, it's not safe to return superblocks.
+   * This is done when deallocating from another arena. Since we don't have access to the CUDA
+   * stream associated with this arena, it's not safe to return superblocks.
    *
-   * @param p Pointer to be deallocated
-   * @param bytes The size in bytes of the allocation. This must be equal to the
-   * value of `bytes` that was passed to the `allocate` call that returned `p`.
-   * @return true if the allocation is found, false otherwise
+   * @param p Pointer to be deallocated.
+   * @param bytes The size in bytes of the allocation. This must be equal to the value of `bytes`
+   * that was passed to the `allocate` call that returned `p`.
+   * @return true if the allocation is found, false otherwise.
    */
   bool deallocate(void* p, std::size_t bytes)
   {
@@ -432,8 +477,8 @@ class arena {
   /**
    * @brief Does an arena handle blocks of this size?
    *
-   * @param size The size in bytes to check
-   * @return true if blocks of this size are handled by an arena
+   * @param size The size in bytes to check.
+   * @return true if blocks of this size are handled by an arena.
    */
   static bool handles_size(std::size_t size) { return size <= maximum_allocation_size; }
 
@@ -446,8 +491,8 @@ class arena {
   /**
    * @brief Get an available memory block of at least `size` bytes.
    *
-   * @param size The number of bytes to allocate
-   * @return block A block of memory of at least `size` bytes
+   * @param size The number of bytes to allocate.
+   * @return block A block of memory of at least `size` bytes.
    */
   block get_block(std::size_t size)
   {
@@ -463,7 +508,7 @@ class arena {
   /**
    * @brief Allocate space from upstream to supply the arena and return a superblock.
    *
-   * @return block a superblock
+   * @return block A superblock.
    */
   block expand_arena()
   {
@@ -474,10 +519,10 @@ class arena {
   /**
    * @brief Deallocate memory pointed to by `p`.
    *
-   * @param p Pointer to be deallocated
-   * @param bytes The size in bytes of the allocation. This must be equal to the
-   * value of `bytes` that was passed to the `allocate` call that returned `p`.
-   * @return bool if the allocation is found
+   * @param p Pointer to be deallocated.
+   * @param bytes The size in bytes of the allocation. This must be equal to the value of `bytes`
+   * that was passed to the `allocate` call that returned `p`.
+   * @return bool if the allocation is found.
    */
   bool do_deallocate(void* p, std::size_t bytes)
   {
@@ -512,7 +557,7 @@ class arena {
   /**
    * @brief Shrink this arena by returning free superblocks to upstream.
    *
-   * @param stream Stream on which to perform shrinking
+   * @param stream Stream on which to perform shrinking.
    */
   void shrink_arena(cudaStream_t stream)
   {
@@ -521,7 +566,7 @@ class arena {
 
     RMM_CUDA_TRY(cudaStreamSynchronize(stream));
 
-    // Keep one superblock if no free blocks are available.
+    // Keep one superblock.
     for (auto it = std::next(free_superblocks_.cbegin()); it != free_superblocks_.cend(); ++it) {
       auto b = *it;
       RMM_LOGGING_ASSERT(b.is_superblock());
@@ -531,15 +576,15 @@ class arena {
     }
   }
 
-  /// The global arena to allocate superblocks from
+  /// The global arena to allocate superblocks from.
   global_arena<Upstream>& global_arena_;
-  /// Free blocks including superblocks
+  /// Free blocks including superblocks.
   std::set<block> free_blocks_;
-  /// Free superblocks
+  /// Free superblocks; these are also tracked in `free_blocks_`.
   std::set<block> free_superblocks_;
-  /// Map of pointer address to allocated blocks
+  /// Map of pointer address to allocated blocks.
   std::unordered_map<void*, block> allocated_blocks_;
-  /// Mutex for exclusive lock
+  /// Mutex for exclusive lock.
   mutable std::mutex mtx_;
 };
 
