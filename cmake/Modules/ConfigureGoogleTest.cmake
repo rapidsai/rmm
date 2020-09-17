@@ -5,10 +5,10 @@ set(GTEST_CMAKE_ARGS "")
                      # " -DCMAKE_VERBOSE_MAKEFILE=ON")
 
 # Workaround https://github.com/google/googletest/issues/854
-if(CMAKE_CXX_COMPILER MATCHES ".*clang")
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   list(APPEND GTEST_CMAKE_ARGS " -DCMAKE_C_FLAGS=-fPIC")
   list(APPEND GTEST_CMAKE_ARGS " -DCMAKE_CXX_FLAGS=-fPIC")
-endif(CMAKE_CXX_COMPILER MATCHES ".*clang")
+endif(CMAKE_CXX_COMPILER MATCHES "Clang")
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/Templates/GoogleTest.CMakeLists.txt.cmake"
                "${GTEST_ROOT}/CMakeLists.txt")
@@ -52,3 +52,11 @@ message(STATUS "GoogleTest installed here: " ${GTEST_ROOT}/install)
 set(GTEST_INCLUDE_DIR "${GTEST_ROOT}/install/include")
 set(GTEST_LIBRARY_DIR "${GTEST_ROOT}/install/lib")
 set(GTEST_FOUND TRUE)
+
+foreach(_lib gtest gtest_main gmock gmock_main)
+  add_library(${_lib} STATIC IMPORTED)
+  set_target_properties(${_lib} PROPERTIES
+    IMPORTED_LOCATION "${GTEST_LIBRARY_DIR}/lib${_lib}.a"
+    INTERFACE_INCLUDE_DIRECTORIES "${GTEST_INCLUDE_DIR}"
+    )
+endforeach()
