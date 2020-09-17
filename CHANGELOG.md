@@ -16,6 +16,7 @@
 - PR #542 Pin conda spdlog versions to 1.7.0
 - PR #550 Remove CXX11 ABI handling from CMake
 - PR #553 CMake cleanup
+- PR #556 By default, don't create a debug log file unless there are warnings/errors
 
 ## Bug Fixes
 
