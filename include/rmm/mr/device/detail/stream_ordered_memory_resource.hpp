@@ -335,7 +335,6 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
       if (b.is_valid()) { return b; }
     }
 
-    // note this creates a free list if it doesn't already exist, hence we get num lists first above
     free_list& blocks =
       (iter != stream_free_blocks_.end()) ? iter->second : stream_free_blocks_[stream_event];
 
@@ -390,10 +389,10 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
           if (merge_first) {
             merge_lists(stream_event, blocks, other_event, std::move(other_blocks));
 
-            RMM_LOG_INFO("[A][Stream {:p}][{}B][Merged stream {:p}]",
-                         static_cast<void*>(stream_event.stream),
-                         size,
-                         static_cast<void*>(it->first.stream));
+            RMM_LOG_DEBUG("[A][Stream {:p}][{}B][Merged stream {:p}]",
+                          static_cast<void*>(stream_event.stream),
+                          size,
+                          static_cast<void*>(it->first.stream));
 
             stream_free_blocks_.erase(it);
 
@@ -404,11 +403,11 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
         }();
 
         if (b.is_valid()) {
-          RMM_LOG_INFO((merge_first) ? "[A][Stream {:p}][{}B][Found after merging stream {:p}]"
-                                     : "[A][Stream {:p}][{}B][Taken from stream {:p}]",
-                       static_cast<void*>(stream_event.stream),
-                       size,
-                       static_cast<void*>(it->first.stream));
+          RMM_LOG_DEBUG((merge_first) ? "[A][Stream {:p}][{}B][Found after merging stream {:p}]"
+                                      : "[A][Stream {:p}][{}B][Taken from stream {:p}]",
+                        static_cast<void*>(stream_event.stream),
+                        size,
+                        static_cast<void*>(it->first.stream));
 
           if (not merge_first) {
             merge_lists(stream_event, blocks, other_event, std::move(other_blocks));

@@ -37,12 +37,10 @@ endif()
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_C_COMPILER $ENV{CC})
-set(CMAKE_CXX_COMPILER $ENV{CXX})
 
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER MATCHES ".*clang")
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-error=deprecated-declarations")
-endif(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER MATCHES ".*clang")
+endif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 
 ###################################################################################################
 # - build options ---------------------------------------------------------------------------------
@@ -73,10 +71,6 @@ find_package(CUDAToolkit REQUIRED)
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/" ${CMAKE_MODULE_PATH})
 
-include(FeatureSummary)
-include(CheckIncludeFiles)
-include(CheckLibraryExists)
-
 ###################################################################################################
 # - third party dependencies-----------------------------------------------------------------------
 # add third party dependencies using CMake FetchContent
@@ -104,13 +98,7 @@ endif(PER_THREAD_DEFAULT_STREAM)
 if(BUILD_TESTS)
     include(CTest)
     include(ConfigureGoogleTest)
-
-    if(GTEST_FOUND)
-        message(STATUS "Google C++ Testing Framework (Google Test) found in ${GTEST_ROOT}")
-        add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
-    else()
-        message(AUTHOR_WARNING "Google C++ Testing Framework (Google Test) not found: automated tests are disabled.")
-    endif(GTEST_FOUND)
+    add_subdirectory(tests)
 endif(BUILD_TESTS)
 
 ###################################################################################################
@@ -118,13 +106,7 @@ endif(BUILD_TESTS)
 
 if(BUILD_BENCHMARKS)
   include(ConfigureGoogleBenchmark)
-
-  if(GBENCH_FOUND)
-    message(STATUS "Google C++ Benchmarking Framework (Google Benchmark) found in ${GBENCH_ROOT}")
-    add_subdirectory(${CMAKE_SOURCE_DIR}/benchmarks)
-  else()
-    message(AUTHOR_WARNING "Google C++ Benchmarking Framework (Google Benchmark) not found: automated tests are disabled.")
-  endif(GBENCH_FOUND)
+  add_subdirectory(benchmarks)
 endif(BUILD_BENCHMARKS)
 
 ###################################################################################################
@@ -164,7 +146,7 @@ else()
 endif(USE_NVTX)
 
 # Set a default logging level if none was specified
-set(DEFAULT_LOGGING_LEVEL OFF)
+set(DEFAULT_LOGGING_LEVEL "INFO")
 
 if(NOT LOGGING_LEVEL)
     message(STATUS "Setting logging level to '${DEFAULT_LOGGING_LEVEL}' since none specified.")
