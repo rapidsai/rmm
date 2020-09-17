@@ -58,7 +58,6 @@ struct logger_wrapper {
   {
     logger_.set_pattern("[%6t][%H:%M:%S:%f][%-6l] %v");
     logger_.flush_on(spdlog::level::warn);
-
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
     logger_.info("----- RMM LOG BEGIN [PTDS ENABLED] -----");
 #else
@@ -83,6 +82,9 @@ inline spdlog::logger& logger()
   return w.logger_;
 }
 
+// The default is INFO, but it should be used sparingly, so that by default a log file is only
+// output if there is important information, warnings, errors, and critical failures
+// Log messages that require computation should only be used at level TRACE and DEBUG
 #define RMM_LOG_TRACE(...) SPDLOG_LOGGER_TRACE(&rmm::logger(), __VA_ARGS__)
 #define RMM_LOG_DEBUG(...) SPDLOG_LOGGER_DEBUG(&rmm::logger(), __VA_ARGS__)
 #define RMM_LOG_INFO(...) SPDLOG_LOGGER_INFO(&rmm::logger(), __VA_ARGS__)

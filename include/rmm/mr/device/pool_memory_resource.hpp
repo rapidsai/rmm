@@ -202,7 +202,7 @@ class pool_memory_resource final
    */
   block_type block_from_upstream(size_t size, cudaStream_t stream)
   {
-    RMM_LOG_INFO("[A][Stream {}][Upstream {}B]", reinterpret_cast<void*>(stream), size);
+    RMM_LOG_DEBUG("[A][Stream {}][Upstream {}B]", reinterpret_cast<void*>(stream), size);
 
     try {
       void* p = upstream_mr_->allocate(size, stream);
