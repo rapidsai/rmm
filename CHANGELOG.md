@@ -22,6 +22,7 @@
 - PR #545 Fix build to support using `clang` as the host compiler
 - PR #534 Fix `pool_memory_resource` failure when init and max pool sizes are equal
 - PR #546 Remove CUDA driver linking and correct NVTX macro.
+- PR #559 Fix align_down to only change unaligned values.
 
 
 # RMM 0.15.0 (26 Aug 2020)
