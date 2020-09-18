@@ -12,7 +12,7 @@ The goal of the RAPIDS Memory Manager (RMM) is to provide:
 - A common interface that allows customizing [device](#device_memory_resource) and
   [host](#host_memory_resource) memory allocation
 - A collection of [implementations](#available-resources) of the interface
-- A collection of [data structures](#data-structures) that use the interface for memory allocation
+- A collection of [data structures](#device-data-structures) that use the interface for memory allocation
 
 For information on the interface RMM provides and how to use RMM in your C++ code, see
 [below](#using-rmm-in-c++).
@@ -324,34 +324,6 @@ kernel<<<...,s>>>(a.data()); // Pass raw pointer to underlying element in device
 int32_t v = a.value(s); // Retrieves the value from device to host on stream `s`
 ```
 
-## Using RMM with Thrust
-
-RAPIDS and other CUDA libraries make heavy use of Thrust. Thrust uses CUDA device memory in two
-situations:
-
- 1. As the backing store for `thrust::device_vector`, and
- 2. As temporary storage inside some algorithms, such as `thrust::sort`.
-
-RMM provides `rmm::mr::thrust_allocator` as a conforming Thrust allocator that uses
-`device_memory_resource`s.
-
-### Thrust Algorithms
-
-To instruct a Thrust algorithm to use `rmm::mr::thrust_allocator` to allocate temporary storage, you
-can use the custom Thrust CUDA device execution policy: `rmm::exec_policy(stream)`.
-
-`rmm::exec_policy(stream)` returns a `std::unique_ptr` to a Thrust execution policy that uses
-`rmm::mr::thrust_allocator` for temporary allocations. In order to specify that the Thrust algorithm
-be executed on a specific stream, the usage is:
-
-```c++
-thrust::sort(rmm::exec_policy(stream)->on(stream), ...);
-```
-
-The first `stream` argument is the `stream` to use for `rmm::mr::thrust_allocator`.
-The second `stream` argument is what should be used to execute the Thrust algorithm.
-These two arguments must be identical.
-
 ## `host_memory_resource`
 
 `rmm::mr::host_memory_resource` is the base class that defines the interface for allocating and
@@ -385,6 +357,34 @@ Allocates "pinned" host memory using `cuda(Malloc/Free)Host`.
 RMM does not currently provide any data structures that interface with `host_memory_resource`.
 In the future, RMM will provide a similar host-side structure like `device_buffer` and an allocator
 that can be used with STL containers.
+
+## Using RMM with Thrust
+
+RAPIDS and other CUDA libraries make heavy use of Thrust. Thrust uses CUDA device memory in two
+situations:
+
+ 1. As the backing store for `thrust::device_vector`, and
+ 2. As temporary storage inside some algorithms, such as `thrust::sort`.
+
+RMM provides `rmm::mr::thrust_allocator` as a conforming Thrust allocator that uses
+`device_memory_resource`s.
+
+### Thrust Algorithms
+
+To instruct a Thrust algorithm to use `rmm::mr::thrust_allocator` to allocate temporary storage, you
+can use the custom Thrust CUDA device execution policy: `rmm::exec_policy(stream)`.
+
+`rmm::exec_policy(stream)` returns a `std::unique_ptr` to a Thrust execution policy that uses
+`rmm::mr::thrust_allocator` for temporary allocations. In order to specify that the Thrust algorithm
+be executed on a specific stream, the usage is:
+
+```c++
+thrust::sort(rmm::exec_policy(stream)->on(stream), ...);
+```
+
+The first `stream` argument is the `stream` to use for `rmm::mr::thrust_allocator`.
+The second `stream` argument is what should be used to execute the Thrust algorithm.
+These two arguments must be identical.
 
 ## Debug Logging
 
