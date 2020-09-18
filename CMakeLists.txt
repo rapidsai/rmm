@@ -104,7 +104,6 @@ endif(BUILD_TESTS)
 # - add google benchmark --------------------------------------------------------------------------
 
 if(BUILD_BENCHMARKS)
-  include(ConfigureGoogleBenchmark)
   add_subdirectory(benchmarks)
 endif(BUILD_BENCHMARKS)
 
