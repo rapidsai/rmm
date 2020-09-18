@@ -97,7 +97,6 @@ endif(PER_THREAD_DEFAULT_STREAM)
 
 if(BUILD_TESTS)
     include(CTest)
-    include(ConfigureGoogleTest)
     add_subdirectory(tests)
 endif(BUILD_TESTS)
 
