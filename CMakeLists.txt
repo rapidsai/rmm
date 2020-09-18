@@ -113,6 +113,12 @@ target_include_directories(rmm INTERFACE
   "$<INSTALL_INTERFACE:include>"
   )
 
+if(USE_NVTX)
+  message(STATUS "Using Nvidia Tools Extension")
+else()
+  target_compile_definitions(rmm PUBLIC NVTX_DISABLE)
+endif(USE_NVTX)
+
 if(CUDA_STATIC_RUNTIME)
   message(STATUS "Enabling static linking of cudart")
   target_link_libraries(rmm INTERFACE CUDA::cudart_static)

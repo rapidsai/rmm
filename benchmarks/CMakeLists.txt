@@ -24,10 +24,6 @@ else()
     set(CUDART_LIBRARY CUDA::cudart)
 endif(CUDA_STATIC_RUNTIME)
 
-if(USE_NVTX)
-    message(STATUS "Using Nvidia Tools Extension")
-endif(USE_NVTX)
-
 ###################################################################################################
 # - compiler function
 
@@ -50,11 +46,7 @@ function(ConfigureBench CMAKE_BENCH_NAME CMAKE_BENCH_SRC)
     set_target_properties(${CMAKE_BENCH_NAME} PROPERTIES
                           RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/gbenchmarks")
     
-    target_compile_definitions(${CMAKE_BENCH_NAME} PUBLIC SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${LOGGING_LEVEL})
-    
-    if(USE_NVTX)
-      target_compile_definitions(${CMAKE_BENCH_NAME} PUBLIC NVTX_DISABLE)
-    endif(USE_NVTX)
+    target_compile_definitions(${CMAKE_BENCH_NAME} PUBLIC SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${LOGGING_LEVEL})    
 endfunction(ConfigureBench)
 
 ###################################################################################################
