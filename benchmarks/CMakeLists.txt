@@ -17,13 +17,6 @@ cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 
 project(RMM_BENCHS LANGUAGES C CXX CUDA)
 
-if(CUDA_STATIC_RUNTIME)
-  message(STATUS "Enabling static linking of cudart")
-  set(CUDART_LIBRARY CUDA::cudart_static)
-else()
-  set(CUDART_LIBRARY CUDA::cudart)
-endif(CUDA_STATIC_RUNTIME)
-
 ###################################################################################################
 # - compiler function
 
@@ -33,21 +26,13 @@ function(ConfigureBench CMAKE_BENCH_NAME CMAKE_BENCH_SRC)
                  "${CMAKE_CURRENT_SOURCE_DIR}/synchronization/synchronization.cpp")
   set_target_properties(${CMAKE_BENCH_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
   target_include_directories(${CMAKE_BENCH_NAME} PRIVATE
-                             "${GBENCH_INCLUDE_DIR}"
-                             "${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
-                             "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>"
-                             "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>"
-                             "$<INSTALL_INTERFACE:include>")
-  target_link_directories(${CMAKE_BENCH_NAME} PRIVATE "${GBENCH_LIBRARY_DIR}")
+                             "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>")
   
   target_link_libraries(${CMAKE_BENCH_NAME} benchmark pthread
-                        spdlog::spdlog_header_only ${CUDART_LIBRARY})
+                        spdlog::spdlog_header_only rmm)
 
   set_target_properties(${CMAKE_BENCH_NAME} PROPERTIES
                         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/gbenchmarks")
-  
-  target_compile_definitions(${CMAKE_BENCH_NAME} PUBLIC
-                             SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${LOGGING_LEVEL})    
 endfunction(ConfigureBench)
 
 ###################################################################################################

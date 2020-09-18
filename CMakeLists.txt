@@ -144,6 +144,8 @@ else()
     message(STATUS "Setting logging level to '${LOGGING_LEVEL}'")
 endif(NOT LOGGING_LEVEL)
 
+target_compile_definitions(rmm INTERFACE SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${LOGGING_LEVEL})    
+
 ###################################################################################################
 # install targets
 

@@ -23,13 +23,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CUDA_STANDARD 14)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
-if(CUDA_STATIC_RUNTIME)
-  message(STATUS "Enabling static linking of cudart")
-  set(CUDART_LIBRARY CUDA::cudart_static)
-else()
-  set(CUDART_LIBRARY CUDA::cudart)
-endif(CUDA_STATIC_RUNTIME)
-
 ###################################################################################################
 # - compiler function
 
@@ -37,22 +30,14 @@ function(ConfigureTest CMAKE_TEST_NAME CMAKE_TEST_SRC)
   add_executable(${CMAKE_TEST_NAME} ${CMAKE_TEST_SRC})
   set_target_properties(${CMAKE_TEST_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
   target_include_directories(${CMAKE_TEST_NAME} PRIVATE
-                             "${GTEST_INCLUDE_DIR}"
-                             "${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
-                             "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>"
-                             "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>"
-                             "$<INSTALL_INTERFACE:include>")
-  target_link_directories(${CMAKE_TEST_NAME} PRIVATE "${GTEST_LIBRARY_DIR}")
+                             "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>")
 
   target_link_libraries(${CMAKE_TEST_NAME}
                         gmock gtest gmock_main gtest_main pthread
-                        spdlog::spdlog_header_only ${CUDART_LIBRARY})
+                        spdlog::spdlog_header_only rmm)
   
   set_target_properties(${CMAKE_TEST_NAME} PROPERTIES
                         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/gtests")
-
-  target_compile_definitions(${CMAKE_TEST_NAME} PUBLIC
-                             SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${LOGGING_LEVEL})
 
   add_test(NAME ${CMAKE_TEST_NAME} COMMAND ${CMAKE_TEST_NAME})
 endfunction(ConfigureTest)
