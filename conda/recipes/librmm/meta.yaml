@@ -33,7 +33,6 @@ requirements:
 test:
   commands:
     - test -f $PREFIX/include/rmm/thrust_rmm_allocator.h
-    - test -f $PREFIX/lib/librmm.so
 
 about:
   home: http://rapids.ai/
