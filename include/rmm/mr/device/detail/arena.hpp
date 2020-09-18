@@ -250,8 +250,8 @@ class global_arena final {
   static constexpr std::size_t default_initial_size = std::numeric_limits<std::size_t>::max();
   /// The default maximum size for the global arena.
   static constexpr std::size_t default_maximum_size = std::numeric_limits<std::size_t>::max();
-  /// Reserved memory that should not be allocated (16 MiB).
-  static constexpr std::size_t reserved_size = 1u << 24u;
+  /// Reserved memory that should not be allocated (32 MiB).
+  static constexpr std::size_t reserved_size = 1u << 25u;
 
   /**
    * @brief Construct a global arena.
