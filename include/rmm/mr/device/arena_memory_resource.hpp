@@ -180,7 +180,7 @@ class arena_memory_resource final : public device_memory_resource {
 
     read_lock lock(mtx_);
 
-    if (is_default_stream(stream)) {
+    if (use_per_thread_arena(stream)) {
       auto id = std::this_thread::get_id();
       for (auto& kv : thread_arenas_) {
         // Check the per-thread arena if it does not belong to the current thread, and return if the
@@ -207,7 +207,7 @@ class arena_memory_resource final : public device_memory_resource {
    */
   arena& get_arena(cudaStream_t stream)
   {
-    if (is_default_stream(stream)) {
+    if (use_per_thread_arena(stream)) {
       return get_thread_arena();
     } else {
       return get_stream_arena(stream);
@@ -241,7 +241,7 @@ class arena_memory_resource final : public device_memory_resource {
    */
   arena& get_stream_arena(cudaStream_t stream)
   {
-    RMM_LOGGING_ASSERT(!is_default_stream(stream));
+    RMM_LOGGING_ASSERT(!use_per_thread_arena(stream));
     {
       read_lock lock(mtx_);
       auto it = stream_arenas_.find(stream);
@@ -266,15 +266,20 @@ class arena_memory_resource final : public device_memory_resource {
   }
 
   /**
-   * @brief Check if the given stream is considered a "default" stream.
+   * @brief Should a per-thread arena be used given the CUDA stream.
    *
    * @param stream to check.
-   * @return true if the given stream is a default stream, false otherwise.
+   * @return true if per-thread arena should be used, false otherwise.
    */
-  static bool is_default_stream(cudaStream_t stream)
+  static bool use_per_thread_arena(cudaStream_t stream)
   {
-    return stream == cudaStreamDefault || stream == cudaStreamLegacy ||
-           stream == cudaStreamPerThread;
+#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
+    RMM_LOGGING_ASSERT(stream != cudaStreamLegacy);
+    return stream == cudaStreamDefault || stream == cudaStreamPerThread;
+#else
+    RMM_LOGGING_ASSERT(stream != cudaStreamPerThread);
+    return stream == cudaStreamDefault || stream == cudaStreamLegacy;
+#endif
   }
 
   /// The global arena to allocate superblocks from.
