@@ -99,7 +99,7 @@ extensions = cythonize(
                 cuda_lib_dir,
                 os.path.join(os.sys.prefix, "lib"),
             ],
-            libraries=["cuda"],
+            libraries=["cuda", "cudart"],
             language="c++",
             extra_compile_args=["-std=c++14"],
         )
@@ -123,7 +123,7 @@ extensions += cythonize(
                 cuda_lib_dir,
                 os.path.join(os.sys.prefix, "lib"),
             ],
-            libraries=["cuda"],
+            libraries=["cuda", "cudart"],
             language="c++",
             extra_compile_args=["-std=c++14"],
         )
@@ -146,7 +146,7 @@ extensions += cythonize(
                 cuda_lib_dir,
                 os.path.join(os.sys.prefix, "lib"),
             ],
-            libraries=["cuda"],
+            libraries=["cuda", "cudart"],
             language="c++",
             extra_compile_args=["-std=c++14"],
         )
