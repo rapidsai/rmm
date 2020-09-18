@@ -19,7 +19,6 @@
 #include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/device_malloc_allocator.h>
 
-#include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 
