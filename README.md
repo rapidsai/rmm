@@ -206,6 +206,11 @@ Allocates and frees device memory using `cudaMallocManaged` and `cudaFree`.
 
 A coalescing, best-fit pool sub-allocator.
 
+#### `cnmem_(managed_)memory_resource` [DEPRECATED]
+
+Uses the [CNMeM](https://github.com/NVIDIA/cnmem) pool sub-allocator to satisfy (de)allocations.
+These resources are deprecated as of RMM 0.15.
+
 #### `fixed_size_memory_resource`
 
 A memory resource that can only allocate a single fixed size. Average allocation and deallocation
