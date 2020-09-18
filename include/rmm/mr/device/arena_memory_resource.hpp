@@ -42,6 +42,12 @@ namespace mr {
  * coalesced with neighbouring free blocks if the addresses are contiguous and do not cross
  * superblock boundaries. Completely empty superblocks are returned to the global arena.
  *
+ * In real-world applications, allocation sizes tend to follow a power law distribution in which
+ * large allocations are rare, but small ones quite common. By handling small allocations in the
+ * per-thread arena, and leaving the large allocations to the shared global arena, adequate
+ * performance can be achieved without introducing excessive memory fragmentation under high
+ * concurrency.
+ *
  * This design is inspired by several existing CPU memory allocators targeting multi-threaded
  * applications (glibc malloc, Hoard, jemalloc, TCMalloc), albeit in a simpler form. Possible future
  * improvements include using size classes, allocation caches, and more fine-grained locking or
@@ -128,8 +134,6 @@ class arena_memory_resource final : public device_memory_resource {
     if (bytes <= 0) return nullptr;
 
     bytes = detail::arena::align_up(bytes);
-    RMM_EXPECTS(
-      bytes <= get_maximum_allocation_size(), rmm::bad_alloc, "Maximum allocation size exceeded");
 
     if (arena::handles_size(bytes)) {
       return get_arena(stream).allocate(bytes);
@@ -154,7 +158,7 @@ class arena_memory_resource final : public device_memory_resource {
     bytes = detail::arena::align_up(bytes);
     if (arena::handles_size(bytes)) {
       if (!get_arena(stream).deallocate(p, bytes, stream)) {
-        deallocate_across_arenas(p, bytes, stream);
+        deallocate_from_other_arena(p, bytes, stream);
       }
     } else {
       RMM_ASSERT_CUDA_SUCCESS(cudaStreamSynchronize(stream));
@@ -170,7 +174,7 @@ class arena_memory_resource final : public device_memory_resource {
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param stream Stream on which to perform deallocation.
    */
-  void deallocate_across_arenas(void* p, std::size_t bytes, cudaStream_t stream)
+  void deallocate_from_other_arena(void* p, std::size_t bytes, cudaStream_t stream)
   {
     RMM_ASSERT_CUDA_SUCCESS(cudaStreamSynchronize(stream));
 
@@ -179,29 +183,20 @@ class arena_memory_resource final : public device_memory_resource {
     if (is_default_stream(stream)) {
       auto id = std::this_thread::get_id();
       for (auto& kv : thread_arenas_) {
+        // Check the per-thread arena if it does not belong to the current thread, and return if the
+        // pointer is found.
         if (kv.first != id && kv.second.deallocate(p, bytes)) return;
       }
     } else {
       for (auto& kv : stream_arenas_) {
+        // Check the per-stream arena if it does not belong to the current stream, and return if the
+        // pointer is found.
         if (kv.first != stream && kv.second.deallocate(p, bytes)) return;
       }
     }
 
     // Allocation not found.
     RMM_LOGGING_ASSERT(0);
-  }
-
-  /**
-   * @brief Get the maximum size of allocations supported by this memory resource.
-   *
-   * Note this does not depend on the memory size of the device. It simply returns the maximum
-   * value of `std::size_t`.
-   *
-   * @return std::size_t The maximum size of a single allocation supported by this memory resource.
-   */
-  std::size_t get_maximum_allocation_size() const
-  {
-    return std::numeric_limits<std::size_t>::max();
   }
 
   /**

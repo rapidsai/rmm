@@ -145,6 +145,13 @@ constexpr std::size_t align_down(std::size_t v) noexcept
 /**
  * @brief Get the first free block of at least `size` bytes.
  *
+ * Address-ordered first-fit has shown to perform slightly better than best-fit when it comes to
+ * memory fragmentation, and slightly cheaper to implement. It is also used by some popular
+ * allocators such as jemalloc.
+ *
+ * \see Johnstone, M. S., & Wilson, P. R. (1998). The memory fragmentation problem: Solved?. ACM
+ * Sigplan Notices, 34(3), 26-36.
+ *
  * @param free_blocks The address-ordered set of free blocks.
  * @param size The number of bytes to allocate.
  * @return block A block of memory of at least `size` bytes, or an empty block if not found.
