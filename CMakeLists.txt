@@ -84,12 +84,6 @@ include(CheckLibraryExists)
 add_subdirectory(thirdparty)
 
 ###################################################################################################
-# - cnmem ---------------------------------------------------------------------------------
-# Temporarily needed to have all RMM includes under a single directory
-configure_file("${CNMEM_INCLUDE_DIR}/cnmem.h"
-	       "${CMAKE_CURRENT_SOURCE_DIR}/include/rmm/detail/cnmem.h" COPYONLY)
-
-###################################################################################################
 # - per-thread default stream option --------------------------------------------------------------
 # This needs to be defined first so tests and benchmarks can inherit it.
 
@@ -127,42 +121,8 @@ if(BUILD_BENCHMARKS)
   endif(GBENCH_FOUND)
 endif(BUILD_BENCHMARKS)
 
-###################################################################################################
-# - library targets -------------------------------------------------------------------------------
-
-add_library(rmm SHARED "${CNMEM_SOURCE_DIR}/cnmem.cpp")
-
-# override rpath for rmm
-set_target_properties(rmm PROPERTIES BUILD_RPATH "\$ORIGIN")
-
-target_include_directories(rmm PUBLIC
-  "${THRUST_INCLUDE_DIR}"
-  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-  "$<INSTALL_INTERFACE:include>"
-  )
-
-# In order to find cnmem.h while building the library, we need this.
-# For library users it is replaced by a copy of the same cnmem.h under rmm/detail
-target_include_directories(rmm PRIVATE
-  "${CNMEM_INCLUDE_DIR}"
-  )
 
 ###################################################################################################
-# - link libraries --------------------------------------------------------------------------------
-
-if(CUDA_STATIC_RUNTIME)
-  message(STATUS "Enabling static linking of cudart")
-  target_link_libraries(rmm PUBLIC CUDA::cudart_static)
-else()
-  target_link_libraries(rmm PUBLIC CUDA::cudart)
-endif(CUDA_STATIC_RUNTIME)
-
-if(USE_NVTX)
-  message(STATUS "Using Nvidia Tools Extension")
-else()
-  target_compile_definitions(rmm PUBLIC NVTX_DISABLE)
-endif(USE_NVTX)
-
 # Set a default logging level if none was specified
 set(DEFAULT_LOGGING_LEVEL "INFO")
 
@@ -177,15 +137,8 @@ else()
     message(STATUS "Setting logging level to '${LOGGING_LEVEL}'")
 endif(NOT LOGGING_LEVEL)
 
-target_compile_definitions(rmm PUBLIC SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${LOGGING_LEVEL})
-
-target_link_libraries(rmm PUBLIC spdlog::spdlog_header_only)
-
 ###################################################################################################
 # - install targets -------------------------------------------------------------------------------
-
-install(TARGETS rmm
-        DESTINATION lib)
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/rmm
         DESTINATION include)

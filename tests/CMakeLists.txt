@@ -23,31 +23,49 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CUDA_STANDARD 14)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
+if(CUDA_STATIC_RUNTIME)
+    message(STATUS "Enabling static linking of cudart")
+    set(CUDART_LIBRARY CUDA::cudart_static)
+else()
+    set(CUDART_LIBRARY CUDA::cudart)
+endif(CUDA_STATIC_RUNTIME)
+
+if(USE_NVTX)
+    message(STATUS "Using Nvidia Tools Extension")
+endif(USE_NVTX)
+    
+
 ###################################################################################################
 # - compiler function -----------------------------------------------------------------------------
 
 function(ConfigureTest CMAKE_TEST_NAME CMAKE_TEST_SRC)
     add_executable(${CMAKE_TEST_NAME} ${CMAKE_TEST_SRC})
     set_target_properties(${CMAKE_TEST_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    target_link_libraries(${CMAKE_TEST_NAME} gmock gtest gmock_main gtest_main pthread rmm)
+    target_include_directories(${CMAKE_TEST_NAME} PRIVATE
+                               "${THRUST_INCLUDE_DIR}"
+                               "${GTEST_INCLUDE_DIR}"
+                               "${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
+                               "${CMAKE_SOURCE_DIR}/include"
+                               "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>"
+                               "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>"
+                               "$<INSTALL_INTERFACE:include>")
+    target_link_directories(${CMAKE_TEST_NAME} PRIVATE "${GTEST_LIBRARY_DIR}")
+
+    target_link_libraries(${CMAKE_TEST_NAME}
+                          gmock gtest gmock_main gtest_main pthread
+                          spdlog::spdlog_header_only ${CUDART_LIBRARY})
+    
     set_target_properties(${CMAKE_TEST_NAME} PROPERTIES
-                            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/gtests")
+                          RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/gtests")
+
+    if (USE_NVTX)
+        target_compile_definitions(${CMAKE_TEST_NAME} PUBLIC NVTX_DISABLE)
+    endif(USE_NVTX)   
+
+    target_compile_definitions(${CMAKE_TEST_NAME} PUBLIC SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${LOGGING_LEVEL})
+
     add_test(NAME ${CMAKE_TEST_NAME} COMMAND ${CMAKE_TEST_NAME})
 endfunction(ConfigureTest)
-
-###################################################################################################
-# - include paths ---------------------------------------------------------------------------------
-
-include_directories("${THRUST_INCLUDE_DIR}"
-                    "${GTEST_INCLUDE_DIR}"
-                    "${CMAKE_SOURCE_DIR}"
-                    "${CMAKE_CURRENT_SOURCE_DIR}"
-                    "${CMAKE_CURRENT_SOURCE_DIR}/../include")
-
-###################################################################################################
-# - library paths ---------------------------------------------------------------------------------
-
-link_directories("${GTEST_LIBRARY_DIR}")
 
 ###################################################################################################
 ### test sources ##################################################################################
