@@ -116,7 +116,7 @@ target_include_directories(rmm INTERFACE
 if(USE_NVTX)
   message(STATUS "Using Nvidia Tools Extension")
 else()
-  target_compile_definitions(rmm PUBLIC NVTX_DISABLE)
+  target_compile_definitions(rmm INTERFACE NVTX_DISABLE)
 endif(USE_NVTX)
 
 if(CUDA_STATIC_RUNTIME)
