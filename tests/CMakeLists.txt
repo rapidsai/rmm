@@ -1,5 +1,5 @@
 ﻿#=============================================================================
-# Copyright (c) 2018, NVIDIA CORPORATION.
+# Copyright (c) 2018-2020, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ endif(USE_NVTX)
     
 
 ###################################################################################################
-# - compiler function -----------------------------------------------------------------------------
+# - compiler function
 
 function(ConfigureTest CMAKE_TEST_NAME CMAKE_TEST_SRC)
     add_executable(${CMAKE_TEST_NAME} ${CMAKE_TEST_SRC})
@@ -71,8 +71,7 @@ endfunction(ConfigureTest)
 ###################################################################################################
 
 ###################################################################################################
-###################################################################################################
-# - device mr tests --------------------------------------------------------------------------------
+# - device mr tests
 
 set(DEVICE_MR_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/mr_tests.cpp"
@@ -81,8 +80,7 @@ set(DEVICE_MR_TEST_SRC
 ConfigureTest(DEVICE_MR_TEST "${DEVICE_MR_TEST_SRC}")
 
 ###################################################################################################
-###################################################################################################
-# - device mr per-thread default stream tests------------------------------------------------------
+# - device mr per-thread default stream tests
 
 set(DEVICE_MR_PTDS_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/mr_multithreaded_tests.cpp")
@@ -90,10 +88,8 @@ set(DEVICE_MR_PTDS_TEST_SRC
 ConfigureTest(DEVICE_MR_PTDS_TEST "${DEVICE_MR_PTDS_TEST_SRC}")
 target_compile_definitions(DEVICE_MR_PTDS_TEST PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
 
-
 ###################################################################################################
-###################################################################################################
-# - pool mr tests --------------------------------------------------------------------------------
+# - pool mr tests
 
 set(POOL_MR_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/pool_mr_tests.cpp")
@@ -106,10 +102,8 @@ set(POOL_MR_PTDS_TEST_SRC
 ConfigureTest(POOL_MR_PTDS_TEST "${POOL_MR_PTDS_TEST_SRC}")
 target_compile_definitions(POOL_MR_PTDS_TEST PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
 
-
 ###################################################################################################
-###################################################################################################
-# - thrust allocator tests --------------------------------------------------------------------------------
+# - thrust allocator tests
 
 set(THRUST_ALLOCATOR_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/thrust_allocator_tests.cu")
@@ -117,8 +111,7 @@ set(THRUST_ALLOCATOR_TEST_SRC
 ConfigureTest(THRUST_ALLOCATOR_TEST "${THRUST_ALLOCATOR_TEST_SRC}")
 
 ###################################################################################################
-###################################################################################################
-# - host mr tests ----------------------------------------------------------------------------------
+# - host mr tests
 
 set(HOST_MR_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/host/mr_tests.cpp")
@@ -127,7 +120,7 @@ ConfigureTest(HOST_MR_TEST "${HOST_MR_TEST_SRC}")
 
 ###################################################################################################
 ###################################################################################################
-# - device buffer tests ----------------------------------------------------------------------------
+# - device buffer tests
 
 set(BUFFER_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/device_buffer_tests.cu")
@@ -136,14 +129,15 @@ ConfigureTest(DEVICE_BUFFER_TEST "${BUFFER_TEST_SRC}")
 
 ###################################################################################################
 ###################################################################################################
-# - device scalar tests ----------------------------------------------------------------------------
+# - device scalar tests
 
 set(SCALAR_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/device_scalar_tests.cpp")
 
 ConfigureTest(DEVICE_SCALAR_TEST "${SCALAR_TEST_SRC}")
+
 ###################################################################################################
-# - logger tests ----------------------------------------------------------------------------------
+# - logger tests
 
 set(LOGGER_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/logger_tests.cpp")
@@ -151,15 +145,13 @@ set(LOGGER_TEST_SRC
 ConfigureTest(LOGGER_TEST "${LOGGER_TEST_SRC}")
 
 ###################################################################################################
-# - uvector tests ---------------------------------------------------------------------------------
+# - uvector tests
 
 set(DEVICE_UVECTOR_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/device_uvector_tests.cpp")
 
 ConfigureTest(DEVICE_UVECTOR_TEST "${DEVICE_UVECTOR_TEST_SRC}")
 
-###################################################################################################
-### enable testing ################################################################################
 ###################################################################################################
 
 enable_testing()
