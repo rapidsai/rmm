@@ -130,6 +130,7 @@ target_link_libraries(rmm INTERFACE spdlog::spdlog_header_only)
 
 ###################################################################################################
 # Set a default logging level if none was specified
+
 set(DEFAULT_LOGGING_LEVEL "INFO")
 
 if(NOT LOGGING_LEVEL)
