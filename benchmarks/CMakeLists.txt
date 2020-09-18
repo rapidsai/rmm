@@ -33,6 +33,9 @@ function(ConfigureBench CMAKE_BENCH_NAME CMAKE_BENCH_SRC)
 
   set_target_properties(${CMAKE_BENCH_NAME} PROPERTIES
                         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/gbenchmarks")
+  
+  target_compile_definitions(${CMAKE_BENCH_NAME} PUBLIC
+                             SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${LOGGING_LEVEL})    
 endfunction(ConfigureBench)
 
 ###################################################################################################

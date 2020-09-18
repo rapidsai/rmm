@@ -39,6 +39,9 @@ function(ConfigureTest CMAKE_TEST_NAME CMAKE_TEST_SRC)
   set_target_properties(${CMAKE_TEST_NAME} PROPERTIES
                         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/gtests")
 
+  target_compile_definitions(${CMAKE_TEST_NAME} PUBLIC
+                             SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${LOGGING_LEVEL})
+
   add_test(NAME ${CMAKE_TEST_NAME} COMMAND ${CMAKE_TEST_NAME})
 endfunction(ConfigureTest)
 
