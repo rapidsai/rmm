@@ -162,6 +162,17 @@ alignment argument. All allocations are required to be aligned to at least 256B.
 `device_memory_resource` adds an additional `cudaStream_t` argument to allow specifying the stream
 on which to perform the (de)allocation.
 
+### Thread Safety
+
+All current device memory resources are thread safe unless documented otherwise. More specifically,
+calls to memory resource `allocate()` and `deallocate()` methods are safe with respect to calls to 
+either of these functions from other threads. They are _not_ thread safe with respect to
+construction and destruction of the memory resource object.
+
+Note that a class `thread_safe_resource_adapter` is provided which can be used to adapt a memory
+resource that is not thread safe to be thread safe (as described above). This adapter is not needed
+with any current RMM device memory resources.
+
 ### Stream-ordered Memory Allocation
 
 `rmm::mr::device_memory_resource` is a base class that provides stream-ordered memory allocation.
@@ -256,6 +267,9 @@ rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource(); //
 
 A `device_memory_resource` should only be used when the active CUDA device is the same device
 that was active when the `device_memory_resource` was created. Otherwise behavior is undefined.
+
+If a `device_memory_resource` is used with a stream associated with a different CUDA device than the
+device for which the memory resource was created, behavior is undefined.
  
 Creating a `device_memory_resource` for each device requires care to set the current device before
 creating each resource, and to maintain the lifetime of the resources as long as they are set as
