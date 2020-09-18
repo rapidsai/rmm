@@ -20,7 +20,6 @@
 
 #include <rmm/mr/device/binning_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
-#include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/fixed_size_memory_resource.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
@@ -74,16 +73,6 @@ struct allocation {
 };
 
 // Various test functions, shared between single-threaded and multithreaded tests.
-inline void test_get_default_resource()
-{
-  EXPECT_NE(nullptr, rmm::mr::get_default_resource());
-  void* p{nullptr};
-  EXPECT_NO_THROW(p = rmm::mr::get_default_resource()->allocate(1_MiB));
-  EXPECT_NE(nullptr, p);
-  EXPECT_TRUE(is_aligned(p));
-  EXPECT_TRUE(is_device_memory(p));
-  EXPECT_NO_THROW(rmm::mr::get_default_resource()->deallocate(p, 1_MiB));
-}
 
 inline void test_get_current_device_resource()
 {

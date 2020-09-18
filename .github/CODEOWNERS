@@ -1,5 +1,7 @@
 #cpp code owners
-cpp/               @rapidsai/rmm-cpp-codeowners
+include/           @rapidsai/rmm-cpp-codeowners
+tests/             @rapidsai/rmm-cpp-codeowners
+benchmarks/        @rapidsai/rmm-cpp-codeowners
 
 #python code owners
 python/            @rapidsai/rmm-python-codeowners

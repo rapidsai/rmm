@@ -238,7 +238,6 @@ Accessing and modifying the default resource is done through two functions:
    - This function is thread safe with respect to concurrent calls to it and 
      `set_current_device_resource()`.
    - For more explicit control, you can use `get_per_device_resource()`, which takes a device ID.
-   - Replaces the deprecated `get_default_resource()`
 
 - `device_memory_resource* set_current_device_resource(device_memory_resource* new_mr)`
    - Updates the default memory resource pointer for the current CUDA device to `new_resource`
@@ -247,7 +246,6 @@ Accessing and modifying the default resource is done through two functions:
    - This function is thread safe with respect to concurrent calls to it and
      `get_current_device_resource()`
    - For more explicit control, you can use `set_per_device_resource()`, which takes a device ID.
-   - Replaces the deprecated `set_default_resource()`
 
 #### Example
 

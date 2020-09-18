@@ -19,7 +19,6 @@
 #include <gtest/gtest.h>
 
 #include <rmm/mr/device/cuda_memory_resource.hpp>
-#include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
@@ -60,13 +59,13 @@ void spawn(Task task, Arguments&&... args)
   spawn_n(4, task, std::forward<Arguments>(args)...);
 }
 
-TEST(DefaultTest, UseDefaultResource_mt) { spawn(test_get_default_resource); }
+TEST(DefaultTest, UseCurrentDeviceResource_mt) { spawn(test_get_current_device_resource); }
 
-TEST(DefaultTest, DefaultResourceIsCUDA_mt)
+TEST(DefaultTest, CurrentDeviceResourceIsCUDA_mt)
 {
   spawn([]() {
-    EXPECT_NE(nullptr, rmm::mr::get_default_resource());
-    EXPECT_TRUE(rmm::mr::get_default_resource()->is_equal(rmm::mr::cuda_memory_resource{}));
+    EXPECT_NE(nullptr, rmm::mr::get_current_device_resource());
+    EXPECT_TRUE(rmm::mr::get_current_device_resource()->is_equal(rmm::mr::cuda_memory_resource{}));
   });
 }
 
@@ -80,7 +79,7 @@ TEST(DefaultTest, GetCurrentDeviceResource_mt)
   });
 }
 
-TEST_P(mr_test_mt, SetDefaultResource_mt)
+TEST_P(mr_test_mt, SetCurrentDeviceResource_mt)
 {
   // single thread changes default resource, then multiple threads use it
 
@@ -89,8 +88,8 @@ TEST_P(mr_test_mt, SetDefaultResource_mt)
   EXPECT_NE(nullptr, old);
 
   spawn([mr = this->mr.get()]() {
-    EXPECT_EQ(mr, rmm::mr::get_default_resource());
-    test_get_default_resource();  // test allocating with the new default resource
+    EXPECT_EQ(mr, rmm::mr::get_current_device_resource());
+    test_get_current_device_resource();  // test allocating with the new default resource
   });
 
   // setting default resource w/ nullptr should reset to initial
@@ -98,7 +97,7 @@ TEST_P(mr_test_mt, SetDefaultResource_mt)
   EXPECT_TRUE(old->is_equal(*rmm::mr::get_current_device_resource()));
 }
 
-TEST_P(mr_test_mt, SetCurrentDeviceResource_mt)
+TEST_P(mr_test_mt, SetCurrentDeviceResourcePerThread_mt)
 {
   int num_devices;
   RMM_CUDA_TRY(cudaGetDeviceCount(&num_devices));
