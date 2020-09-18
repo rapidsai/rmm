@@ -61,19 +61,12 @@ endif()
 # - googlebenchmark -------------------------------------------------------------------------------
 
 if (BUILD_BENCHMARKS)
-  message(STATUS "Fetching GoogleBenchmark")
-
-  FetchContent_Declare(
-    googlebenchmark
-    GIT_REPOSITORY    https://github.com/google/benchmark.git
-    GIT_TAG           v1.5.1
-    GIT_SHALLOW       true
-    )
-
-  FetchContent_GetProperties(googlebenchmark)
-  if (NOT googlebenchmark_POPULATED)
-    FetchContent_Populate(googlebenchmark)
-    set(BENCHMARK_ENABLE_TESTING OFF CACHE INTERNAL "")
-    add_subdirectory(${googlebenchmark_SOURCE_DIR} ${googlebenchmark_BINARY_DIR} EXCLUDE_FROM_ALL)
-  endif()
+  CPMAddPackage(
+    NAME benchmark
+    GITHUB_REPOSITORY google/benchmark
+    VERSION 1.5.2
+    OPTIONS
+      "BENCHMARK_ENABLE_TESTING OFF"
+      "BENCHMARK_ENABLE_INSTALL OFF"
+      )
 endif()
