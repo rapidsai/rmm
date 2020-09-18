@@ -37,7 +37,6 @@ function(ConfigureBench CMAKE_BENCH_NAME CMAKE_BENCH_SRC)
                    "${CMAKE_CURRENT_SOURCE_DIR}/synchronization/synchronization.cpp")
     set_target_properties(${CMAKE_BENCH_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
     target_include_directories(${CMAKE_BENCH_NAME} PRIVATE
-                               "${THRUST_INCLUDE_DIR}"
                                "${GBENCH_INCLUDE_DIR}"
                                "${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
                                "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>"
