@@ -47,3 +47,10 @@ set(GBENCH_INCLUDE_DIR "${GBENCH_ROOT}/install/include")
 set(GBENCH_LIBRARY_DIR "${GBENCH_ROOT}/install/lib" "${GBENCH_ROOT}/install/lib64")
 set(GBENCH_FOUND TRUE)
 
+foreach(_lib benchmark)
+  add_library(${_lib} STATIC IMPORTED)
+  set_target_properties(${_lib} PROPERTIES
+    IMPORTED_LOCATION "${GBENCH_ROOT}/install/lib/lib${_lib}.a"
+    INTERFACE_INCLUDE_DIRECTORIES "${GBENCH_INCLUDE_DIR}"
+    )
+endforeach()
