@@ -239,6 +239,8 @@ class global_arena final {
   static constexpr std::size_t default_initial_size = std::numeric_limits<std::size_t>::max();
   /// The default maximum size for the global arena.
   static constexpr std::size_t default_maximum_size = std::numeric_limits<std::size_t>::max();
+  /// Reserved memory that should not be allocated (16 MiB).
+  static constexpr std::size_t reserved_size = 1u << 24u;
 
   /**
    * @brief Construct a global arena.
@@ -269,7 +271,7 @@ class global_arena final {
     if (initial_size == default_initial_size) {
       initial_size = align_up(std::min(free, total / 2));
     }
-    if (maximum_size_ == default_maximum_size) { maximum_size_ = align_down(free); }
+    if (maximum_size_ == default_maximum_size) { maximum_size_ = align_down(free) - reserved_size; }
 
     RMM_EXPECTS(initial_size <= maximum_size_, "Initial arena size exceeds the maximum pool size!");
 
