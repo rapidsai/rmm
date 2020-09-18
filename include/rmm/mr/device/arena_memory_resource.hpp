@@ -274,11 +274,9 @@ class arena_memory_resource final : public device_memory_resource {
   static bool use_per_thread_arena(cudaStream_t stream)
   {
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-    RMM_LOGGING_ASSERT(stream != cudaStreamLegacy);
     return stream == cudaStreamDefault || stream == cudaStreamPerThread;
 #else
-    RMM_LOGGING_ASSERT(stream != cudaStreamPerThread);
-    return stream == cudaStreamDefault || stream == cudaStreamLegacy;
+    return stream == cudaStreamPerThread;
 #endif
   }
 
