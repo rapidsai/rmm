@@ -45,7 +45,6 @@ function(ConfigureTest CMAKE_TEST_NAME CMAKE_TEST_SRC)
                                "${THRUST_INCLUDE_DIR}"
                                "${GTEST_INCLUDE_DIR}"
                                "${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
-                               "${CMAKE_SOURCE_DIR}/include"
                                "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>"
                                "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>"
                                "$<INSTALL_INTERFACE:include>")

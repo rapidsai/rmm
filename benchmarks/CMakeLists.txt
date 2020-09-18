@@ -25,7 +25,6 @@ function(ConfigureBench CMAKE_BENCH_NAME CMAKE_BENCH_SRC)
                                "${THRUST_INCLUDE_DIR}"
                                "${GBENCH_INCLUDE_DIR}"
                                "${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
-                               "${CMAKE_SOURCE_DIR}/include"
                                "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>"
                                "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>"
                                "$<INSTALL_INTERFACE:include>")
