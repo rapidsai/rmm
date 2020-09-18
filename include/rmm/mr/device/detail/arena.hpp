@@ -236,6 +236,10 @@ inline block coalesce_block(std::set<block>& free_blocks, block const& b)
 /**
  * @brief The global arena for allocating memory from the upstream memory resource.
  *
+ * The global arena is a shared memory pool from which other arenas allocate superblocks. Allocation
+ * requests with size bigger than half of the size of a superblock is also handled directly by the
+ * global arena.
+ *
  * @tparam Upstream Memory resource to use for allocating the arena. Implements
  * rmm::mr::device_memory_resource interface.
  */
@@ -416,6 +420,10 @@ class global_arena final {
 
 /**
  * @brief An arena for allocating memory for a thread.
+ *
+ * An arena is a per-thread or per-non-default-stream memory pool for handling small-size
+ * allocations. It allocates superblocks from the global arena, and return them when the superblocks
+ * become empty.
  *
  * @tparam Upstream Memory resource to use for allocating the global arena. Implements
  * rmm::mr::device_memory_resource interface.
