@@ -29,15 +29,12 @@ set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 function(ConfigureTest CMAKE_TEST_NAME CMAKE_TEST_SRC)
   add_executable(${CMAKE_TEST_NAME} ${CMAKE_TEST_SRC})
   set_target_properties(${CMAKE_TEST_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-  target_include_directories(${CMAKE_TEST_NAME} PRIVATE
-                             "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>")
+  target_include_directories(${CMAKE_TEST_NAME} PRIVATE "$<BUILD_INTERFACE:${RMM_SOURCE_DIR}>")
 
-  target_link_libraries(${CMAKE_TEST_NAME}
-                        gmock gtest gmock_main gtest_main pthread
-                        spdlog::spdlog_header_only rmm)
+  target_link_libraries(${CMAKE_TEST_NAME} gmock gtest gmock_main gtest_main pthread rmm)
   
   set_target_properties(${CMAKE_TEST_NAME} PROPERTIES
-                        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/gtests")
+                        RUNTIME_OUTPUT_DIRECTORY "${RMM_BINARY_DIR}/gtests")
 
   target_compile_definitions(${CMAKE_TEST_NAME} PUBLIC
                              SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${LOGGING_LEVEL})

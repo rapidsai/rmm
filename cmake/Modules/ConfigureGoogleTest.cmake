@@ -8,7 +8,7 @@ set(GTEST_CMAKE_ARGS "")
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   list(APPEND GTEST_CMAKE_ARGS " -DCMAKE_C_FLAGS=-fPIC")
   list(APPEND GTEST_CMAKE_ARGS " -DCMAKE_CXX_FLAGS=-fPIC")
-endif(CMAKE_CXX_COMPILER MATCHES "Clang")
+endif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/Templates/GoogleTest.CMakeLists.txt.cmake"
                "${GTEST_ROOT}/CMakeLists.txt")
