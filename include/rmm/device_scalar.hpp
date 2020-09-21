@@ -126,7 +126,7 @@ class device_scalar {
    *
    * int v{42};
    *
-   * // Copies 42 to element 0 on `stream`. Does _not_ synchronize
+   * // Copies 42 to device storage on `stream`. Does _not_ synchronize
    * vec.set_value(v, stream);
    * ...
    * cudaStreamSynchronize(stream);
@@ -171,7 +171,7 @@ class device_scalar {
    *
    * int v{42};
    *
-   * // Copies 42 to element 0 on `stream`. Does _not_ synchronize
+   * // Copies 42 to device storage on `stream`. Does _not_ synchronize
    * vec.set_value(v, stream);
    * ...
    * cudaStreamSynchronize(stream);
