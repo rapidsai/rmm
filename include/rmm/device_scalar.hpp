@@ -140,9 +140,9 @@ class device_scalar {
    * @param host_value The host value which will be copied to device
    * @param stream CUDA stream on which to perform the copy
    */
-  template <typename Dummy = void>
+  template <typename Placeholder = void>
   auto set_value(T const &host_value, cudaStream_t stream = 0)
-    -> std::enable_if_t<std::is_fundamental<T>::value, Dummy>
+    -> std::enable_if_t<std::is_fundamental<T>::value, Placeholder>
   {
     if (host_value == T{0}) {
       RMM_CUDA_TRY(cudaMemsetAsync(buffer.data(), 0, sizeof(T), stream));
@@ -185,9 +185,9 @@ class device_scalar {
    * @param host_value The host value which will be copied to device
    * @param stream CUDA stream on which to perform the copy
    */
-  template <typename Dummy = void>
+  template <typename Placeholder = void>
   auto set_value(T const &host_value, cudaStream_t stream = 0)
-    -> std::enable_if_t<not std::is_fundamental<T>::value, Dummy>
+    -> std::enable_if_t<not std::is_fundamental<T>::value, Placeholder>
   {
     _memcpy(buffer.data(), &host_value, stream);
   }
