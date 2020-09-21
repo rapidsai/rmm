@@ -123,7 +123,7 @@ class device_scalar {
    * @param stream CUDA stream on which to perform the copy
    */
   template <typename Dummy = void>
-  auto set_value(T host_value, cudaStream_t stream = 0)
+  auto set_value(T const &host_value, cudaStream_t stream = 0)
     -> std::enable_if_t<std::is_fundamental<T>::value, Dummy>
   {
     if (host_value == T{0}) {
@@ -150,7 +150,7 @@ class device_scalar {
    * @param stream CUDA stream on which to perform the copy
    */
   template <typename Dummy = void>
-  auto set_value(T host_value, cudaStream_t stream = 0)
+  auto set_value(T const &host_value, cudaStream_t stream = 0)
     -> std::enable_if_t<not std::is_fundamental<T>::value, Dummy>
   {
     _memcpy(buffer.data(), &host_value, stream);
