@@ -181,7 +181,7 @@ class arena_memory_resource final : public device_memory_resource {
     read_lock lock(mtx_);
 
     if (use_per_thread_arena(stream)) {
-      auto id = std::this_thread::get_id();
+      auto const id = std::this_thread::get_id();
       for (auto& kv : thread_arenas_) {
         // Check the per-thread arena if it does not belong to the current thread, and return if the
         // pointer is found.
@@ -221,10 +221,10 @@ class arena_memory_resource final : public device_memory_resource {
    */
   arena& get_thread_arena()
   {
-    auto id = std::this_thread::get_id();
+    auto const id = std::this_thread::get_id();
     {
       read_lock lock(mtx_);
-      auto it = thread_arenas_.find(id);
+      auto const it = thread_arenas_.find(id);
       if (it != thread_arenas_.end()) { return it->second; }
     }
     {
@@ -244,7 +244,7 @@ class arena_memory_resource final : public device_memory_resource {
     RMM_LOGGING_ASSERT(!use_per_thread_arena(stream));
     {
       read_lock lock(mtx_);
-      auto it = stream_arenas_.find(stream);
+      auto const it = stream_arenas_.find(stream);
       if (it != stream_arenas_.end()) { return it->second; }
     }
     {
