@@ -114,7 +114,25 @@ class device_scalar {
    * (e.g. using `cudaStreamWaitEvent()` or `cudaStreamSynchronize()`) before and after calling
    * this function, otherwise there may be a race condition.
    *
-   * Does not synchronize `stream`.
+   * This function does not synchronize stream `stream` before returning. Therefore, the object
+   * referenced by `host_value` should not be destroyed or modified until `stream` has been
+   * synchronized. Otherwise, behavior is undefined.
+   *
+   * @note: This function incurs a host to device memcpy and should be used sparingly.
+
+   * Example:
+   * \code{cpp}
+   * rmm::device_scalar<int32_t> s;
+   *
+   * int v{42};
+   *
+   * // Copies 42 to element 0 on `stream`. Does _not_ synchronize
+   * vec.set_value(v, stream);
+   * ...
+   * cudaStreamSynchronize(stream);
+   * // Synchronization is required before `v` can be modified
+   * v = 13;
+   * \endcode
    *
    * @throws `rmm::cuda_error` if copying `host_value` to device memory fails.
    * @throws `rmm::cuda_error` if synchronizing `stream` fails.
@@ -141,7 +159,25 @@ class device_scalar {
    * (e.g. using `cudaStreamWaitEvent()` or `cudaStreamSynchronize()`) before and after calling
    * this function, otherwise there may be a race condition.
    *
-   * Does not synchronize `stream`.
+   * This function does not synchronize stream `stream` before returning. Therefore, the object
+   * referenced by `host_value` should not be destroyed or modified until `stream` has been
+   * synchronized. Otherwise, behavior is undefined.
+   *
+   * @note: This function incurs a host to device memcpy and should be used sparingly.
+
+   * Example:
+   * \code{cpp}
+   * rmm::device_scalar<int32_t> s;
+   *
+   * int v{42};
+   *
+   * // Copies 42 to element 0 on `stream`. Does _not_ synchronize
+   * vec.set_value(v, stream);
+   * ...
+   * cudaStreamSynchronize(stream);
+   * // Synchronization is required before `v` can be modified
+   * v = 13;
+   * \endcode
    *
    * @throws `rmm::cuda_error` if copying `host_value` to device memory fails
    * @throws `rmm::cuda_error` if synchronizing `stream` fails
