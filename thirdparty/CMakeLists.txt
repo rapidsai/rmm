@@ -7,6 +7,7 @@ CPMAddPackage(
   NAME spdlog
   GITHUB_REPOSITORY gabime/spdlog
   VERSION 1.7.0
+  GIT_SHALLOW TRUE
   )
 
 ###################################################################################################
@@ -34,6 +35,7 @@ if (BUILD_TESTS)
     GITHUB_REPOSITORY google/googletest
     GIT_TAG release-1.10.0
     VERSION 1.10.0
+    GIT_SHALLOW TRUE
     OPTIONS
       "INSTALL_GTEST OFF"
     )
@@ -47,6 +49,7 @@ if (BUILD_BENCHMARKS)
     NAME benchmark
     GITHUB_REPOSITORY google/benchmark
     VERSION 1.5.2
+    GIT_SHALLOW TRUE
     OPTIONS
       "BENCHMARK_ENABLE_TESTING OFF"
       "BENCHMARK_ENABLE_INSTALL OFF"
