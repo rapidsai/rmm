@@ -116,7 +116,7 @@ struct block : public block_base {
    */
   inline bool is_better_fit(size_t sz, block const& b) const noexcept
   {
-    return fits(sz) && (size() < b.size() || b.size() < sz);
+    return fits(sz) && size() < b.size();
   }
 
   /**
