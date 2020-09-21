@@ -21,6 +21,7 @@
 - PR #556 By default, don't create a debug log file unless there are warnings/errors
 - PR #561 Remove CNMeM and make RMM header-only
 - PR #565 CMake: Simplify gtest/gbench handling
+- PR #568 Upgrade googletest to v1.10.0
 
 ## Bug Fixes
 
