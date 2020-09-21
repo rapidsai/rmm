@@ -206,9 +206,7 @@ class pool_memory_resource final
 
     try {
       void* p = upstream_mr_->allocate(size, stream);
-      block_type b{reinterpret_cast<char*>(p), size, true};
-      upstream_blocks_.emplace_back(b);  // TODO: with C++17 use version that returns a reference
-      return b;
+      return *upstream_blocks_.emplace(reinterpret_cast<char*>(p), size, true).first;
     } catch (std::exception const& e) {
       RMM_LOG_ERROR("[A][Stream {}][Upstream {}B][FAILURE {}]",
                     reinterpret_cast<void*>(stream),
@@ -258,6 +256,15 @@ class pool_memory_resource final
     auto block = *i;
     RMM_LOGGING_ASSERT(block.size() == rmm::detail::align_up(size, allocation_alignment));
     allocated_blocks_.erase(i);
+
+    // If this is an upstream block, release it to upstream
+    if (block.is_head()) {
+      auto const i = upstream_blocks_.find(static_cast<char*>(p));
+      if (i != upstream_blocks_.end() && (i->size() == block.size())) {
+        upstream_blocks_.erase(i);
+        return block_type{};
+      }
+    }
 
     return block;
   }
@@ -382,7 +389,7 @@ class pool_memory_resource final
   std::set<block_type, rmm::mr::detail::compare_blocks<block_type>> allocated_blocks_;
 
   // blocks allocated from upstream: so they can be easily freed
-  std::vector<block_type> upstream_blocks_;
+  std::set<block_type, rmm::mr::detail::compare_blocks<block_type>> upstream_blocks_;
 };  // namespace mr
 
 }  // namespace mr
