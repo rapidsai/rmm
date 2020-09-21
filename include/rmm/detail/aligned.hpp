@@ -58,20 +58,6 @@ constexpr std::size_t align_up(std::size_t v, std::size_t align_bytes) noexcept
 }
 
 /**
- * @brief Check whether `v` is aligned to a multiple of `align_bytes`
- *
- * @param v The value to check
- * @param align_bytes alignment amount, in bytes, must be a power of 2
- * @return true
- * @return false
- */
-constexpr bool is_aligned(std::size_t v, std::size_t align_bytes) noexcept
-{
-  assert(is_supported_alignment(align_bytes));
-  return v & ~(align_bytes - 1);
-}
-
-/**
  * @brief Align down to the nearest multiple of specified power of 2
  *
  * @param[in] v value to align
@@ -82,7 +68,7 @@ constexpr bool is_aligned(std::size_t v, std::size_t align_bytes) noexcept
 constexpr std::size_t align_down(std::size_t v, std::size_t align_bytes) noexcept
 {
   assert(is_supported_alignment(align_bytes));
-  return is_aligned(v, align_bytes) ? v : align_up(v, align_bytes) - align_bytes;
+  return v & ~(align_bytes - 1);
 }
 
 /**
