@@ -18,9 +18,8 @@ message(STATUS "Fetching Thrust")
 CPMAddPackage(
   NAME thrust
   GITHUB_REPOSITORY thrust/thrust
-  # August 28, 2020
-  GIT_TAG 52a8bda46c5c2128414d1d47f546b486ff0be2f0
-  VERSION 1.9.10mod
+  GIT_TAG 1.10.0
+  VERSION 1.10.0
   DOWNLOAD_ONLY TRUE
 )
 
