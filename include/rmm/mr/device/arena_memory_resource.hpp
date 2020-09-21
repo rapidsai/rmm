@@ -138,7 +138,6 @@ class arena_memory_resource final : public device_memory_resource {
     if (arena::handles_size(bytes)) {
       return get_arena(stream).allocate(bytes);
     } else {
-      RMM_ASSERT_CUDA_SUCCESS(cudaStreamSynchronize(stream));
       return global_arena_.allocate(bytes);
     }
   }
