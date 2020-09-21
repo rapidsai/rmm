@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/logger.hpp>
 #include <rmm/mr/device/detail/coalescing_free_list.hpp>
@@ -33,7 +34,6 @@
 #include <thread>
 #include <unordered_map>
 #include <vector>
-#include "rmm/detail/aligned.hpp"
 
 namespace rmm {
 namespace mr {
