@@ -114,7 +114,7 @@ class device_scalar {
    * (e.g. using `cudaStreamWaitEvent()` or `cudaStreamSynchronize()`) before and after calling
    * this function, otherwise there may be a race condition.
    *
-   * This function does not synchronize stream `stream` before returning. Therefore, the object
+   * This function does not synchronize `stream` before returning. Therefore, the object
    * referenced by `host_value` should not be destroyed or modified until `stream` has been
    * synchronized. Otherwise, behavior is undefined.
    *
@@ -159,7 +159,7 @@ class device_scalar {
    * (e.g. using `cudaStreamWaitEvent()` or `cudaStreamSynchronize()`) before and after calling
    * this function, otherwise there may be a race condition.
    *
-   * This function does not synchronize stream `stream` before returning. Therefore, the object
+   * This function does not synchronize `stream` before returning. Therefore, the object
    * referenced by `host_value` should not be destroyed or modified until `stream` has been
    * synchronized. Otherwise, behavior is undefined.
    *
