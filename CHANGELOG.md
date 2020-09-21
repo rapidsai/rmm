@@ -27,6 +27,7 @@
 - PR #545 Fix build to support using `clang` as the host compiler
 - PR #534 Fix `pool_memory_resource` failure when init and max pool sizes are equal
 - PR #546 Remove CUDA driver linking and correct NVTX macro.
+- PR #569 Correct `device_scalar::set_value` to pass host value by reference to avoid copying from invalid value
 
 
 # RMM 0.15.0 (26 Aug 2020)
