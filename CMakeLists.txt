@@ -90,7 +90,6 @@ endif(PER_THREAD_DEFAULT_STREAM)
 
 if(BUILD_TESTS)
     include(CTest)
-    include(ConfigureGoogleTest)
     add_subdirectory(tests)
 endif(BUILD_TESTS)
 
@@ -98,7 +97,6 @@ endif(BUILD_TESTS)
 # add google benchmark
 
 if(BUILD_BENCHMARKS)
-  include(ConfigureGoogleBenchmark)
   add_subdirectory(benchmarks)
 endif(BUILD_BENCHMARKS)
 
