@@ -44,7 +44,7 @@ constexpr bool is_pow2(std::size_t n) { return (0 == (n & (n - 1))); }
 constexpr bool is_supported_alignment(std::size_t alignment) { return is_pow2(alignment); }
 
 /**
- * @brief Align up to a power of 2
+ * @brief Align up to nearest multiple of specified power of 2
  *
  * @param[in] v value to align
  * @param[in] alignment amount, in bytes, must be a power of 2
@@ -58,7 +58,7 @@ constexpr std::size_t align_up(std::size_t v, std::size_t align_bytes) noexcept
 }
 
 /**
- * @brief Align down to a power of 2
+ * @brief Align down to the nearest multiple of specified power of 2
  *
  * @param[in] v value to align
  * @param[in] alignment amount, in bytes, must be a power of 2
@@ -68,7 +68,7 @@ constexpr std::size_t align_up(std::size_t v, std::size_t align_bytes) noexcept
 constexpr std::size_t align_down(std::size_t v, std::size_t align_bytes) noexcept
 {
   assert(is_supported_alignment(align_bytes));
-  return align_up(v, align_bytes) - align_bytes;
+  return v & ~(align_bytes - 1);
 }
 
 /**
