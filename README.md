@@ -12,7 +12,7 @@ The goal of the RAPIDS Memory Manager (RMM) is to provide:
 - A common interface that allows customizing [device](#device_memory_resource) and
   [host](#host_memory_resource) memory allocation
 - A collection of [implementations](#available-resources) of the interface
-- A collection of [data structures](#data-structures) that use the interface for memory allocation
+- A collection of [data structures](#device-data-structures) that use the interface for memory allocation
 
 For information on the interface RMM provides and how to use RMM in your C++ code, see
 [below](#using-rmm-in-c++).
@@ -162,6 +162,17 @@ alignment argument. All allocations are required to be aligned to at least 256B.
 `device_memory_resource` adds an additional `cudaStream_t` argument to allow specifying the stream
 on which to perform the (de)allocation.
 
+### Thread Safety
+
+All current device memory resources are thread safe unless documented otherwise. More specifically,
+calls to memory resource `allocate()` and `deallocate()` methods are safe with respect to calls to 
+either of these functions from other threads. They are _not_ thread safe with respect to
+construction and destruction of the memory resource object.
+
+Note that a class `thread_safe_resource_adapter` is provided which can be used to adapt a memory
+resource that is not thread safe to be thread safe (as described above). This adapter is not needed
+with any current RMM device memory resources.
+
 ### Stream-ordered Memory Allocation
 
 `rmm::mr::device_memory_resource` is a base class that provides stream-ordered memory allocation.
@@ -205,11 +216,6 @@ Allocates and frees device memory using `cudaMallocManaged` and `cudaFree`.
 #### `pool_memory_resource`
 
 A coalescing, best-fit pool sub-allocator.
-
-#### `cnmem_(managed_)memory_resource` [DEPRECATED]
-
-Uses the [CNMeM](https://github.com/NVIDIA/cnmem) pool sub-allocator to satisfy (de)allocations.
-These resources are deprecated as of RMM 0.15.
 
 #### `fixed_size_memory_resource`
 
@@ -261,6 +267,9 @@ rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource(); //
 
 A `device_memory_resource` should only be used when the active CUDA device is the same device
 that was active when the `device_memory_resource` was created. Otherwise behavior is undefined.
+
+If a `device_memory_resource` is used with a stream associated with a different CUDA device than the
+device for which the memory resource was created, behavior is undefined.
  
 Creating a `device_memory_resource` for each device requires care to set the current device before
 creating each resource, and to maintain the lifetime of the resources as long as they are set as
@@ -329,34 +338,6 @@ kernel<<<...,s>>>(a.data()); // Pass raw pointer to underlying element in device
 int32_t v = a.value(s); // Retrieves the value from device to host on stream `s`
 ```
 
-## Using RMM with Thrust
-
-RAPIDS and other CUDA libraries make heavy use of Thrust. Thrust uses CUDA device memory in two
-situations:
-
- 1. As the backing store for `thrust::device_vector`, and
- 2. As temporary storage inside some algorithms, such as `thrust::sort`.
-
-RMM provides `rmm::mr::thrust_allocator` as a conforming Thrust allocator that uses
-`device_memory_resource`s.
-
-### Thrust Algorithms
-
-To instruct a Thrust algorithm to use `rmm::mr::thrust_allocator` to allocate temporary storage, you
-can use the custom Thrust CUDA device execution policy: `rmm::exec_policy(stream)`.
-
-`rmm::exec_policy(stream)` returns a `std::unique_ptr` to a Thrust execution policy that uses
-`rmm::mr::thrust_allocator` for temporary allocations. In order to specify that the Thrust algorithm
-be executed on a specific stream, the usage is:
-
-```c++
-thrust::sort(rmm::exec_policy(stream)->on(stream), ...);
-```
-
-The first `stream` argument is the `stream` to use for `rmm::mr::thrust_allocator`.
-The second `stream` argument is what should be used to execute the Thrust algorithm.
-These two arguments must be identical.
-
 ## `host_memory_resource`
 
 `rmm::mr::host_memory_resource` is the base class that defines the interface for allocating and
@@ -390,6 +371,34 @@ Allocates "pinned" host memory using `cuda(Malloc/Free)Host`.
 RMM does not currently provide any data structures that interface with `host_memory_resource`.
 In the future, RMM will provide a similar host-side structure like `device_buffer` and an allocator
 that can be used with STL containers.
+
+## Using RMM with Thrust
+
+RAPIDS and other CUDA libraries make heavy use of Thrust. Thrust uses CUDA device memory in two
+situations:
+
+ 1. As the backing store for `thrust::device_vector`, and
+ 2. As temporary storage inside some algorithms, such as `thrust::sort`.
+
+RMM provides `rmm::mr::thrust_allocator` as a conforming Thrust allocator that uses
+`device_memory_resource`s.
+
+### Thrust Algorithms
+
+To instruct a Thrust algorithm to use `rmm::mr::thrust_allocator` to allocate temporary storage, you
+can use the custom Thrust CUDA device execution policy: `rmm::exec_policy(stream)`.
+
+`rmm::exec_policy(stream)` returns a `std::unique_ptr` to a Thrust execution policy that uses
+`rmm::mr::thrust_allocator` for temporary allocations. In order to specify that the Thrust algorithm
+be executed on a specific stream, the usage is:
+
+```c++
+thrust::sort(rmm::exec_policy(stream)->on(stream), ...);
+```
+
+The first `stream` argument is the `stream` to use for `rmm::mr::thrust_allocator`.
+The second `stream` argument is what should be used to execute the Thrust algorithm.
+These two arguments must be identical.
 
 ## Debug Logging
 

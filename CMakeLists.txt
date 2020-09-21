@@ -20,7 +20,7 @@ project(RMM VERSION 0.16.0 LANGUAGES C CXX CUDA)
 include(cmake/CPM.cmake)
 
 ###################################################################################################
-# - build type ------------------------------------------------------------------------------------
+# - build type
 
 # Set a default build type if none was specified
 set(DEFAULT_BUILD_TYPE "Release")
@@ -35,7 +35,7 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 
 ###################################################################################################
-# - compiler options ------------------------------------------------------------------------------
+# - compiler options
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -45,7 +45,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 endif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 
 ###################################################################################################
-# - build options ---------------------------------------------------------------------------------
+# - build options
 
 option(BUILD_TESTS "Configure CMake to build tests" ON)
 option(BUILD_BENCHMARKS "Configure CMake to build (google) benchmarks" OFF)
@@ -64,29 +64,22 @@ option(PER_THREAD_DEFAULT_STREAM "Build with per-thread default stream" OFF)
 option(USE_NVTX "Build with NVTX support" OFF)
 
 ###################################################################################################
-# - find packages we depend on --------------------------------------------------------------------
+# find packages we depend on
 
 find_package(CUDAToolkit REQUIRED)
 
 ###################################################################################################
-# - cmake modules ---------------------------------------------------------------------------------
+# cmake modules
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/" ${CMAKE_MODULE_PATH})
 
 ###################################################################################################
-# - third party dependencies-----------------------------------------------------------------------
-# add third party dependencies using CMake FetchContent
+# third-party dependencies
 
 add_subdirectory(thirdparty)
 
 ###################################################################################################
-# - cnmem ---------------------------------------------------------------------------------
-# Temporarily needed to have all RMM includes under a single directory
-configure_file("${CNMEM_INCLUDE_DIR}/cnmem.h"
-	       "${CMAKE_CURRENT_SOURCE_DIR}/include/rmm/detail/cnmem.h" COPYONLY)
-
-###################################################################################################
-# - per-thread default stream option --------------------------------------------------------------
+# per-thread default stream option
 # This needs to be defined first so tests and benchmarks can inherit it.
 
 if(PER_THREAD_DEFAULT_STREAM)
@@ -95,7 +88,7 @@ if(PER_THREAD_DEFAULT_STREAM)
 endif(PER_THREAD_DEFAULT_STREAM)
 
 ###################################################################################################
-# - add gtest -------------------------------------------------------------------------------------
+# add gtest
 
 if(BUILD_TESTS)
     include(CTest)
@@ -103,49 +96,41 @@ if(BUILD_TESTS)
 endif(BUILD_TESTS)
 
 ###################################################################################################
-# - add google benchmark --------------------------------------------------------------------------
+# add google benchmark
 
 if(BUILD_BENCHMARKS)
   add_subdirectory(benchmarks)
 endif(BUILD_BENCHMARKS)
 
 ###################################################################################################
-# - library targets -------------------------------------------------------------------------------
+# library targets
 
-add_library(rmm SHARED "${CNMEM_SOURCE_DIR}/cnmem.cpp")
+add_library(rmm INTERFACE)
 
-# override rpath for rmm
-set_target_properties(rmm PROPERTIES BUILD_RPATH "\$ORIGIN")
-
-target_include_directories(rmm PUBLIC
+target_include_directories(rmm INTERFACE
   "${THRUST_INCLUDE_DIR}"
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
   "$<INSTALL_INTERFACE:include>"
   )
 
-# In order to find cnmem.h while building the library, we need this.
-# For library users it is replaced by a copy of the same cnmem.h under rmm/detail
-target_include_directories(rmm PRIVATE
-  "${CNMEM_INCLUDE_DIR}"
-  )
-
-###################################################################################################
-# - link libraries --------------------------------------------------------------------------------
-
-if(CUDA_STATIC_RUNTIME)
-  message(STATUS "Enabling static linking of cudart")
-  target_link_libraries(rmm PUBLIC CUDA::cudart_static)
-else()
-  target_link_libraries(rmm PUBLIC CUDA::cudart)
-endif(CUDA_STATIC_RUNTIME)
-
 if(USE_NVTX)
   message(STATUS "Using Nvidia Tools Extension")
 else()
-  target_compile_definitions(rmm PUBLIC NVTX_DISABLE)
+  target_compile_definitions(rmm INTERFACE NVTX_DISABLE)
 endif(USE_NVTX)
 
+if(CUDA_STATIC_RUNTIME)
+  message(STATUS "Enabling static linking of cudart")
+  target_link_libraries(rmm INTERFACE CUDA::cudart_static)
+else()
+  target_link_libraries(rmm INTERFACE CUDA::cudart)
+endif(CUDA_STATIC_RUNTIME)
+
+target_link_libraries(rmm INTERFACE spdlog::spdlog_header_only)
+
+###################################################################################################
 # Set a default logging level if none was specified
+
 set(DEFAULT_LOGGING_LEVEL "INFO")
 
 if(NOT LOGGING_LEVEL)
@@ -159,12 +144,8 @@ else()
     message(STATUS "Setting logging level to '${LOGGING_LEVEL}'")
 endif(NOT LOGGING_LEVEL)
 
-target_compile_definitions(rmm PUBLIC SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${LOGGING_LEVEL})
-
-target_link_libraries(rmm PUBLIC spdlog::spdlog_header_only)
-
 ###################################################################################################
-# - install targets -------------------------------------------------------------------------------
+# install targets
 
 install(TARGETS rmm
         DESTINATION lib)
@@ -173,7 +154,7 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/rmm
         DESTINATION include)
 
 ###################################################################################################
-# - make documentation ----------------------------------------------------------------------------
+# make documentation
 
 add_custom_command(OUTPUT RMM_DOXYGEN
                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/doxygen
