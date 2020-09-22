@@ -71,12 +71,12 @@ find_package(CUDAToolkit REQUIRED)
 ###################################################################################################
 # cmake modules
 
-set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/" ${CMAKE_MODULE_PATH})
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 ###################################################################################################
 # third-party dependencies
 
-add_subdirectory(thirdparty)
+include(RMM_thirdparty)
 
 ###################################################################################################
 # per-thread default stream option

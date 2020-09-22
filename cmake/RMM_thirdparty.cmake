@@ -22,7 +22,7 @@ CPMAddPackage(
   DOWNLOAD_ONLY TRUE
 )
 
-set(THRUST_INCLUDE_DIR "${thrust_SOURCE_DIR}" PARENT_SCOPE)
+set(THRUST_INCLUDE_DIR "${thrust_SOURCE_DIR}")
 
 ###################################################################################################
 # - googletest ------------------------------------------------------------------------------------
