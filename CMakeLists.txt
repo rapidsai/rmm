@@ -86,21 +86,6 @@ if(PER_THREAD_DEFAULT_STREAM)
 endif(PER_THREAD_DEFAULT_STREAM)
 
 ###################################################################################################
-# add gtest
-
-if(BUILD_TESTS)
-    include(CTest)
-    add_subdirectory(tests)
-endif(BUILD_TESTS)
-
-###################################################################################################
-# add google benchmark
-
-if(BUILD_BENCHMARKS)
-  add_subdirectory(benchmarks)
-endif(BUILD_BENCHMARKS)
-
-###################################################################################################
 # library targets
 
 add_library(rmm INTERFACE)
@@ -127,20 +112,38 @@ endif(CUDA_STATIC_RUNTIME)
 target_link_libraries(rmm INTERFACE spdlog::spdlog_header_only)
 
 ###################################################################################################
-# Set a default logging level if none was specified
+# Set a default logging level if none was specified. Note must be before benchmarks / tests
+# Note must use "NONE" to turn logging off, since in CMake "OFF" just unsets the variable!
 
 set(DEFAULT_LOGGING_LEVEL "INFO")
 
-if(NOT LOGGING_LEVEL)
+if (NOT LOGGING_LEVEL)
     message(STATUS "Setting logging level to '${DEFAULT_LOGGING_LEVEL}' since none specified.")
-    set(LOGGING_LEVEL "${DEFAULT_LOGGING_LEVEL}" CACHE
-      STRING "Choose the logging level." FORCE)
+    set(LOGGING_LEVEL "${DEFAULT_LOGGING_LEVEL}" CACHE STRING "Choose the logging level." FORCE)
     # Set the possible values of build type for cmake-gui
     set_property(CACHE LOGGING_LEVEL PROPERTY STRINGS
-        "TRACE" "DEBUG" "INFO" "WARN" "ERROR" "CRITICAL" "OFF")
+        "TRACE" "DEBUG" "INFO" "WARN" "ERROR" "CRITICAL" "NONE")
 else()
-    message(STATUS "Setting logging level to '${LOGGING_LEVEL}'")
+  if (LOGGING_LEVEL STREQUAL "NONE")
+    set(LOGGING_LEVEL "OFF" CACHE STRING "Choose the logging level." FORCE)
+  endif(LOGGING_LEVEL STREQUAL "NONE")
+  message(STATUS "Setting logging level to '${LOGGING_LEVEL}'")
 endif(NOT LOGGING_LEVEL)
+
+###################################################################################################
+# add gtest
+
+if(BUILD_TESTS)
+    include(CTest)
+    add_subdirectory(tests)
+endif(BUILD_TESTS)
+
+###################################################################################################
+# add google benchmark
+
+if(BUILD_BENCHMARKS)
+  add_subdirectory(benchmarks)
+endif(BUILD_BENCHMARKS)
 
 ###################################################################################################
 # install targets
