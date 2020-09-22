@@ -3,7 +3,7 @@ include(FetchContent)
 ###################################################################################################
 # - spdlog ----------------------------------------------------------------------------------------
 
-CPMAddPackage(
+CPMFindPackage(
   NAME spdlog
   GITHUB_REPOSITORY gabime/spdlog
   VERSION 1.7.0
