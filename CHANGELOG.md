@@ -4,6 +4,7 @@
 
  - PR #529 Add debug logging and fix multithreaded replay benchmark
  - PR #560 Remove deprecated `get/set_default_resource` APIs
+ - PR #573 Add a reflection interface to query type of device resource
 
 ## Improvements
 
