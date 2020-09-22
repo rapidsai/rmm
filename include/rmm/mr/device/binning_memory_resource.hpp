@@ -150,6 +150,17 @@ class binning_memory_resource final : public device_memory_resource {
     }
   }
 
+  /**
+   * @brief Query the type of the underlying device resource
+   *
+   * @return std::string containing human-readable representation of the device resource's type
+   */
+  std::string get_device_resource_type_str() const override
+  {
+    return std::string("rmm::mr::binning_memory_resource<")
+           + upstream_mr_->get_device_resource_type_str() + ">";
+  }
+
  private:
   /**
    * @brief Get the memory resource for the requested size

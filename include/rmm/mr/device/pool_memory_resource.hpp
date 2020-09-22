@@ -153,6 +153,17 @@ class pool_memory_resource final
    */
   Upstream* get_upstream() const noexcept { return upstream_mr_; }
 
+  /**
+   * @brief Query the type of the underlying device resource
+   *
+   * @return std::string containing human-readable representation of the device resource's type
+   */
+  std::string get_device_resource_type_str() const override
+  {
+    return std::string("rmm::mr::pool_memory_resource<")
+           + upstream_mr_->get_device_resource_type_str() + ">";
+  }
+
  protected:
   using free_list  = detail::coalescing_free_list;
   using block_type = free_list::block_type;

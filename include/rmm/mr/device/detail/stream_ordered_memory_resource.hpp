@@ -85,6 +85,16 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
   stream_ordered_memory_resource& operator=(stream_ordered_memory_resource const&) = delete;
   stream_ordered_memory_resource& operator=(stream_ordered_memory_resource&&) = delete;
 
+  /**
+   * @brief Query the type of the underlying device resource
+   *
+   * @return std::string containing human-readable representation of the device resource's type
+   */
+  std::string get_device_resource_type_str() const override
+  {
+    return "rmm::mr::detail::stream_ordered_memory_resource";
+  }
+
  protected:
   using free_list  = FreeListType;
   using block_type = typename free_list::block_type;

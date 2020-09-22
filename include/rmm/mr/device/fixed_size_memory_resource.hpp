@@ -120,6 +120,17 @@ class fixed_size_memory_resource
    */
   std::size_t get_block_size() const noexcept { return block_size_; }
 
+  /**
+   * @brief Query the type of the underlying device resource
+   *
+   * @return std::string containing human-readable representation of the device resource's type
+   */
+  std::string get_device_resource_type_str() const override
+  {
+    return std::string("rmm::mr::fixed_size_memory_resource<")
+           + upstream_mr_->get_device_resource_type_str() + ">";
+  }
+
  protected:
   using free_list  = detail::fixed_size_free_list;
   using block_type = free_list::block_type;

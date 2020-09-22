@@ -49,6 +49,16 @@ class cuda_memory_resource final : public device_memory_resource {
    */
   bool supports_get_mem_info() const noexcept override { return true; }
 
+  /**
+   * @brief Query the type of the underlying device resource
+   *
+   * @return std::string containing human-readable representation of the device resource's type
+   */
+  std::string get_device_resource_type_str() const override
+  {
+    return "rmm::mr::cuda_memory_resource";
+  }
+
  private:
   /**
    * @brief Allocates memory of size at least `bytes` using cudaMalloc.

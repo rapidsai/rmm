@@ -137,6 +137,20 @@ class owning_wrapper : public device_memory_resource {
    */
   bool supports_get_mem_info() const noexcept override { return wrapped().supports_get_mem_info(); }
 
+  /**
+   * @brief Query the type of the underlying device resource
+   *
+   * @return std::string containing human-readable representation of the device resource's type
+   */
+  std::string get_device_resource_type_str() const override
+  {
+    std::ostringstream oss;
+    oss << "rmm::mr::owning_wrapper<";
+    get_device_resource_type_str_helper(oss, upstreams_);
+    oss << ">";
+    return oss.str();
+  }
+
  private:
   /**
    * @brief Allocates memory using the wrapped resource.
@@ -205,6 +219,19 @@ class owning_wrapper : public device_memory_resource {
   std::pair<std::size_t, std::size_t> do_get_mem_info(cudaStream_t stream) const override
   {
     return wrapped().get_mem_info(stream);
+  }
+
+  template <size_t i = 0, typename... Ts>
+  typename std::enable_if<i == sizeof...(Ts), void>::type
+  get_device_resource_type_str_helper(std::ostringstream& oss, std::tuple<Ts...> tup) const {
+    return;
+  }
+
+  template <size_t i = 0, typename... Ts>
+  typename std::enable_if<i < sizeof...(Ts), void>::type
+  get_device_resource_type_str_helper(std::ostringstream& oss, std::tuple<Ts...> tup) const {
+    oss << std::get<i>(tup)->get_device_resource_type_str() << ", ";
+    get_device_resource_type_str_helper<i + 1>(oss, tup);
   }
 
   upstream_tuple upstreams_;           ///< The owned upstream resources

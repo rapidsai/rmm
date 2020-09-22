@@ -171,6 +171,13 @@ class device_memory_resource {
     return do_get_mem_info(stream);
   }
 
+  /**
+   * @brief Query the type of the underlying device resource
+   *
+   * @return std::string containing human-readable representation of the device resource's type
+   */
+  virtual std::string get_device_resource_type_str() const = 0;
+
  private:
   /**
    * @brief Allocates memory of size at least \p bytes.

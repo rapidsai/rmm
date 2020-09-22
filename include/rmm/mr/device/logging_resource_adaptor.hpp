@@ -147,6 +147,17 @@ class logging_resource_adaptor final : public device_memory_resource {
    */
   std::string header() const { return std::string{"Thread,Time,Action,Pointer,Size,Stream"}; }
 
+  /**
+   * @brief Query the type of the underlying device resource
+   *
+   * @return std::string containing human-readable representation of the device resource's type
+   */
+  std::string get_device_resource_type_str() const override
+  {
+    return std::string("rmm::mr::logging_resource_adaptor<")
+           + upstream_->get_device_resource_type_str() + ">";
+  }
+
  private:
   // make_logging_adaptor needs access to private get_default_filename
   template <typename T>
