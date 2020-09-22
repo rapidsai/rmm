@@ -13,13 +13,12 @@ CPMAddPackage(
 ###################################################################################################
 # - thrust/cub ------------------------------------------------------------------------------------
 
-message(STATUS "Fetching Thrust")
-
 CPMAddPackage(
   NAME thrust
   GITHUB_REPOSITORY thrust/thrust
   GIT_TAG 1.10.0
   VERSION 1.10.0
+  GIT_SHALLOW TRUE
   DOWNLOAD_ONLY TRUE
 )
 
