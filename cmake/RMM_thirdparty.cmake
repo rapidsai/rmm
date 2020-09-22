@@ -52,7 +52,7 @@ endif()
 # - googlebenchmark -------------------------------------------------------------------------------
 
 if (BUILD_BENCHMARKS)
-  CPMAddPackage(
+  CPMFindPackage(
     NAME benchmark
     GITHUB_REPOSITORY google/benchmark
     VERSION 1.5.2
