@@ -69,7 +69,7 @@ struct crtp {
  * 1. `size_t get_maximum_allocation_size() const`
  * 2. `block_type expand_pool(size_t size, free_list& blocks, cudaStream_t stream)`
  * 3. `split_block allocate_from_block(block_type const& b, size_t size)`
- * 4. `block_type free_block(void* p, size_t size) noexcept`
+ * 4. `block_type free_block(void* p, size_t size, cudaStream_t stream) noexcept`
  */
 template <typename PoolResource, typename FreeListType>
 class stream_ordered_memory_resource : public crtp<PoolResource>, public device_memory_resource {
@@ -92,7 +92,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
 
   // Derived classes must implement these four methods
 
-  /**
+  /*
    * @brief Get the maximum size of a single allocation supported by this suballocator memory
    * resource
    *
@@ -103,7 +103,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    */
   // size_t get_maximum_allocation_size() const { return std::numeric_limits<size_t>::max(); }
 
-  /**
+  /*
    * @brief Allocate space (typically from upstream) to supply the suballocation pool and return
    * a sufficiently sized block.
    *
@@ -125,7 +125,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     block_type remainder;     ///< The remainder of the block from which the pointer was allocated
   };
 
-  /**
+  /*
    * @brief Split block `b` if necessary to return a pointer to memory of `size` bytes.
    *
    * If the block is split, the remainder is returned as the remainder element in the output
@@ -139,15 +139,19 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    */
   // split_block allocate_from_block(block_type const& b, size_t size)
 
-  /**
+  /*
    * @brief Finds, frees and returns the block associated with pointer `p`.
+   *
+   * @note If the block is an upstream block, it may be freed upstream, in which case this function
+   * returns an invalid block (`nullptr`)
    *
    * @param p The pointer to the memory to free.
    * @param size The size of the memory to free. Must be equal to the original allocation size.
+   * @param stream The stream on which the memory was most recently used.
    * @return The (now freed) block associated with `p`. The caller is expected to return the block
-   * to the pool.
+   * to the pool. May return an invalid block if the block was deallocated upstream.
    */
-  // block_type free_block(void* p, size_t size) noexcept
+  // block_type free_block(void* p, size_t size, cudaStream_t stream) noexcept
 
   /**
    * @brief Returns the block `b` (last used on stream `stream_event`) to the pool.
@@ -242,14 +246,16 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     RMM_LOG_TRACE("[D][stream {:p}][{}B][{:p}]", static_cast<void*>(stream_event.stream), bytes, p);
 
     bytes        = rmm::detail::align_up(bytes, allocation_alignment);
-    auto const b = this->underlying().free_block(p, bytes);
+    auto const b = this->underlying().free_block(p, bytes, stream);
 
-    // TODO: cudaEventRecord has significant overhead on deallocations. For the non-PTDS case
-    // we may be able to delay recording the event in some situations. But using events rather than
-    // streams allows stealing from deleted streams.
-    RMM_ASSERT_CUDA_SUCCESS(cudaEventRecord(stream_event.event, stream));
+    if (b.is_valid()) {
+      // TODO: cudaEventRcord has significant overhead on deallocations. For the non-PTDS case
+      // we may be able to delay recording the event in some situations. But using events rather
+      // than streams allows stealing from deleted streams.
+      RMM_ASSERT_CUDA_SUCCESS(cudaEventRecord(stream_event.event, stream));
 
-    stream_free_blocks_[stream_event].insert(b);
+      stream_free_blocks_[stream_event].insert(b);
+    }
 
     log_summary_trace();
   }

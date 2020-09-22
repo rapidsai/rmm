@@ -240,13 +240,16 @@ class pool_memory_resource final
   /**
    * @brief Finds, frees and returns the block associated with pointer `p`.
    *
+   * @note If the block is an upstream block, it may be freed upstream, in which case this function
+   * returns an invalid block (`nullptr`)
+   *
    * @param p The pointer to the memory to free.
    * @param size The size of the memory to free. Must be equal to the original allocation size.
-   * @param stream The stream-event pair for the stream on which the memory was last used.
+   * @param stream The stream on which the memory was most recently used.
    * @return The (now freed) block associated with `p`. The caller is expected to return the block
-   * to the pool.
+   * to the pool. May return an invalid block if the block was deallocated upstream.
    */
-  block_type free_block(void* p, size_t size) noexcept
+  block_type free_block(void* p, size_t size, cudaStream_t stream) noexcept
   {
     if (p == nullptr) return block_type{};
 
@@ -261,7 +264,10 @@ class pool_memory_resource final
     if (block.is_head()) {
       auto const i = upstream_blocks_.find(static_cast<char*>(p));
       if (i != upstream_blocks_.end() && (i->size() == block.size())) {
+        RMM_LOG_DEBUG(
+          "[D][Stream {}][Upstream {}B][{:p}]", reinterpret_cast<void*>(stream), size, p);
         upstream_blocks_.erase(i);
+        upstream_mr_->deallocate(p, size, stream);
         return block_type{};
       }
     }
