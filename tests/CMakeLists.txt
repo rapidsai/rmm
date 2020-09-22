@@ -31,7 +31,8 @@ function(ConfigureTest CMAKE_TEST_NAME CMAKE_TEST_SRC)
   set_target_properties(${CMAKE_TEST_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
   target_include_directories(${CMAKE_TEST_NAME} PRIVATE "$<BUILD_INTERFACE:${RMM_SOURCE_DIR}>")
 
-  target_link_libraries(${CMAKE_TEST_NAME} gmock gtest gmock_main gtest_main pthread rmm)
+  target_link_libraries(${CMAKE_TEST_NAME} GTest::gmock GTest::gtest GTest::gmock_main GTest::gtest_main
+                        pthread rmm)
   
   set_target_properties(${CMAKE_TEST_NAME} PROPERTIES
                         RUNTIME_OUTPUT_DIRECTORY "${RMM_BINARY_DIR}/gtests")

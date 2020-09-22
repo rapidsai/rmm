@@ -28,15 +28,24 @@ set(THRUST_INCLUDE_DIR "${thrust_SOURCE_DIR}")
 # - googletest ------------------------------------------------------------------------------------
 
 if (BUILD_TESTS)
-  CPMAddPackage(
-    NAME googletest
+  CPMFindPackage(
+    NAME GTest
     GITHUB_REPOSITORY google/googletest
     GIT_TAG release-1.10.0
     VERSION 1.10.0
     GIT_SHALLOW TRUE
     OPTIONS
       "INSTALL_GTEST OFF"
+    # googletest >= 1.10.0 provides a cmake config file -- use it if it exists
+    FIND_PACKAGE_ARGUMENTS "CONFIG"
     )
+
+  if (GTest_ADDED)
+    add_library(GTest::gtest ALIAS gtest)
+    add_library(GTest::gmock ALIAS gmock)
+    add_library(GTest::gtest_main ALIAS gtest_main)
+    add_library(GTest::gmock_main ALIAS gmock_main)
+  endif()
 endif()
 
 ###################################################################################################
