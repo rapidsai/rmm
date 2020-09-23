@@ -17,6 +17,8 @@ cmake_minimum_required(VERSION 3.17...3.18 FATAL_ERROR)
 
 project(RMM VERSION 0.16.0 LANGUAGES C CXX CUDA)
 
+include(cmake/CPM.cmake)
+
 ###################################################################################################
 # - build type
 

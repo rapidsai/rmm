@@ -20,12 +20,16 @@
 - PR #556 By default, don't create a debug log file unless there are warnings/errors
 - PR #561 Remove CNMeM and make RMM header-only
 - PR #565 CMake: Simplify gtest/gbench handling
+- PR #566 CMake: use CPM for thirdparty dependencies
+- PR #568 Upgrade googletest to v1.10.0
 
 ## Bug Fixes
 
 - PR #545 Fix build to support using `clang` as the host compiler
 - PR #534 Fix `pool_memory_resource` failure when init and max pool sizes are equal
 - PR #546 Remove CUDA driver linking and correct NVTX macro.
+- PR #569 Correct `device_scalar::set_value` to pass host value by reference to avoid copying from invalid value
+- PR #559 Fix `align_down` to only change unaligned values.
 
 
 # RMM 0.15.0 (26 Aug 2020)
