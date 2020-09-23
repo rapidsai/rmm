@@ -22,6 +22,7 @@
 - PR #565 CMake: Simplify gtest/gbench handling
 - PR #566 CMake: use CPM for thirdparty dependencies
 - PR #568 Upgrade googletest to v1.10.0
+- PR #572 CMake: prefer locally installed thirdparty packages
 
 ## Bug Fixes
 
