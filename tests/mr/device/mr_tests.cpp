@@ -30,6 +30,8 @@ INSTANTIATE_TEST_CASE_P(ResourceTests,
                                           mr_factory{"Pool", &make_pool},
                                           mr_factory{"Arena", &make_arena},
                                           mr_factory{"Binning", &make_binning}),
+                                          mr_factory{"Limiting", &make_limiting},
+                                          mr_factory{"Tracking", &make_tracking}),
                         [](auto const& info) { return info.param.name; });
 
 TEST(DefaultTest, CurrentDeviceResourceIsCUDA)
