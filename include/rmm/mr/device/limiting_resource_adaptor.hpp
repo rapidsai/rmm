@@ -109,17 +109,9 @@ class limiting_resource_adaptor final : public device_memory_resource {
     std::size_t proposed_size = rmm::detail::align_up(bytes, allocation_alignment);
     if (proposed_size + used <= allocation_limit) {
       used += proposed_size;
-      try {
-        p = upstream_->allocate(bytes, stream);
-      } catch (std::exception const& e) {
-        RMM_LOG_ERROR("[A][Stream {}][Upstream {}B][FAILURE {}]",
-                      reinterpret_cast<void*>(stream),
-                      bytes,
-                      e.what());
-        throw;
-      }
+      p = upstream_->allocate(bytes, stream);
     } else {
-      throw rmm::cuda_error{std::string{"CUDA error: Unable to allocate memory due to limit"}};
+      throw rmm::bad_alloc{std::string{"CUDA error: Unable to allocate memory due to limit"}};
     }
 
     return p;
@@ -182,7 +174,7 @@ class limiting_resource_adaptor final : public device_memory_resource {
   std::size_t allocation_limit;
 
   // number of currently-allocated bytes
-  std::size_t used;
+  std::atomic<std::size_t> used;
 
   // todo: should be some way to ask the upstream...
   std::size_t allocation_alignment;

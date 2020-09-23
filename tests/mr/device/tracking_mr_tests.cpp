@@ -17,10 +17,9 @@
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/mr/device/tracking_resource_adaptor.hpp>
+#include "mr_test.hpp"
 
 #include <gtest/gtest.h>
-
-#define MB << 20
 
 namespace rmm {
 namespace test {
@@ -43,10 +42,10 @@ TEST(TrackingTest, AllFreed)
   Tracking_adaptor mr{rmm::mr::get_current_device_resource()};
   std::vector<void *> allocations;
   for (int i = 0; i < 10; ++i) {
-    allocations.push_back(mr.allocate(10 MB));
+    allocations.push_back(mr.allocate(10_MiB));
   }
   for (auto p : allocations) {
-    mr.deallocate(p, 10 MB);
+    mr.deallocate(p, 10_MiB);
   }
   EXPECT_EQ(mr.get_num_outstanding_allocations(), 0);
 }
@@ -56,10 +55,10 @@ TEST(TrackingTest, AllocationsLeft)
   Tracking_adaptor mr{rmm::mr::get_current_device_resource()};
   std::vector<void *> allocations;
   for (int i = 0; i < 10; ++i) {
-    allocations.push_back(mr.allocate(10 MB));
+    allocations.push_back(mr.allocate(10_MiB));
   }
   for (int i = 0; i < 10; i += 2) {
-    mr.deallocate(allocations[i], 10 MB);
+    mr.deallocate(allocations[i], 10_MiB);
   }
   EXPECT_EQ(mr.get_num_outstanding_allocations(), 5);
   mr.print_outstanding_allocations();

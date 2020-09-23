@@ -17,6 +17,7 @@
 
 #include <execinfo.h>
 #include <map>
+#include <mutex>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <sstream>
@@ -28,7 +29,9 @@ namespace mr {
  *
  * An instance of this resource can be constructed with an existing, upstream
  * resource in order to satisfy allocation requests, but any existing allocations
- * will be untracked.
+ * will be untracked. Tracking data is heavy as we store a stack frame, size and pointer
+ * for each allocation. This is intended as a debug adaptor and shouldn't be used in
+ * performance sensitive code.
  *
  * @tparam Upstream Type of the upstream resource used for
  * allocation/deallocation.
@@ -36,6 +39,8 @@ namespace mr {
 template <typename Upstream>
 class tracking_resource_adaptor final : public device_memory_resource {
  public:
+  using lock_t = std::lock_guard<std::mutex>;
+
   /**
    * @brief Construct a new tracking resource adaptor using `upstream` to satisfy
    * allocation requests and tracking active allocations.
@@ -87,8 +92,9 @@ class tracking_resource_adaptor final : public device_memory_resource {
    */
   void print_outstanding_allocations() const
   {
+    lock_t lock(mtx);
     std::ostringstream oss;
-    for (auto al : allocations) {
+    for (auto const& al : allocations) {
       oss << std::endl
           << "Allocation " << al.first << " of " << al.second.allocation_size
           << "bytes with callstack:" << std::endl;
@@ -143,7 +149,10 @@ class tracking_resource_adaptor final : public device_memory_resource {
     }();
 
     // track it.
-    allocations.emplace(p, bytes);
+    {
+      lock_t lock(mtx);
+      allocations.emplace(p, bytes);
+    }
 
     return p;
   }
@@ -159,7 +168,10 @@ class tracking_resource_adaptor final : public device_memory_resource {
    */
   void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override
   {
-    allocations.erase(p);
+    {
+      lock_t lock(mtx);
+      allocations.erase(p);
+    }
     upstream_->deallocate(p, bytes, stream);
   }
 
@@ -204,19 +216,20 @@ class tracking_resource_adaptor final : public device_memory_resource {
     std::size_t allocation_size;
 
     allocation_info() : allocation_size(0){};
-    allocation_info(std::size_t size)
+    allocation_info(std::size_t size) : allocation_size(size)
     {
       // store off a stack for this allocation
       const int MaxStackDepth = 64;
       void* stack[MaxStackDepth];
       auto depth = backtrace(stack, MaxStackDepth);
       stack_ptrs.insert(stack_ptrs.end(), &stack[0], &stack[depth]);
-      allocation_size = size;
     };
   };
 
   // map of active allocations
   std::map<void*, allocation_info> allocations;
+
+  std::mutex mutable mtx;  // mutex for thread safe access to allocations
 
   Upstream* upstream_;  ///< The upstream resource used for satisfying
                         ///< allocation requests
