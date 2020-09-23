@@ -184,7 +184,7 @@ class arena_memory_resource final : public device_memory_resource {
       for (auto& kv : thread_arenas_) {
         // Check the per-thread arena if it does not belong to the current thread, and return if the
         // pointer is found.
-        if (kv.first != id && kv.second.deallocate(p, bytes)) return;
+        if (kv.first != id && kv.second->deallocate(p, bytes)) return;
       }
     } else {
       for (auto& kv : stream_arenas_) {
@@ -194,8 +194,9 @@ class arena_memory_resource final : public device_memory_resource {
       }
     }
 
-    // Allocation not found.
-    RMM_LOGGING_ASSERT(0);
+    // The thread that originally allocated the block has terminated, and the allocation has been
+    // transferred to the global arena.
+    global_arena_.deallocate(p, bytes);
   }
 
   /**
@@ -224,12 +225,14 @@ class arena_memory_resource final : public device_memory_resource {
     {
       read_lock lock(mtx_);
       auto const it = thread_arenas_.find(id);
-      if (it != thread_arenas_.end()) { return it->second; }
+      if (it != thread_arenas_.end()) { return *it->second; }
     }
     {
       write_lock lock(mtx_);
-      thread_arenas_.emplace(id, global_arena_);
-      return thread_arenas_.at(id);
+      auto a = std::make_shared<arena>(global_arena_);
+      thread_arenas_.emplace(id, a);
+      thread_local detail::arena::arena_cleaner<Upstream> cleaner{a};
+      return *a;
     }
   }
 
@@ -283,7 +286,7 @@ class arena_memory_resource final : public device_memory_resource {
   global_arena global_arena_;
   /// Arenas for default streams, one per thread.
   /// Implementation note: for small sizes, map is more efficient than unordered_map.
-  std::map<std::thread::id, arena> thread_arenas_;
+  std::map<std::thread::id, std::shared_ptr<arena>> thread_arenas_;
   /// Arenas for non-default streams, one per stream.
   /// Implementation note: for small sizes, map is more efficient than unordered_map.
   std::map<cudaStream_t, arena> stream_arenas_;

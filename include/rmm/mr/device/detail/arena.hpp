@@ -23,6 +23,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <memory>
 #include <mutex>
 #include <set>
 #include <unordered_map>
@@ -336,6 +337,24 @@ class global_arena final {
     coalesce_block(free_blocks_, b);
   }
 
+  /**
+   * @brief Transfer the free and allocated blocks from a dying arena here.
+   *
+   * @param free_blocks The set of free blocks.
+   * @param allocated_blocks The map of pointer address to allocated blocks.
+   */
+  void transfer(std::set<block> const& free_blocks,
+                std::unordered_map<void*, block> const& allocated_blocks)
+  {
+    lock_guard lock(mtx_);
+    for (auto const& b : free_blocks) {
+      coalesce_block(free_blocks_, b);
+    }
+    for (auto const& kv : allocated_blocks) {
+      allocated_blocks_.emplace(kv);
+    }
+  }
+
  private:
   using lock_guard = std::lock_guard<std::mutex>;
 
@@ -496,6 +515,20 @@ class arena {
   }
 
   /**
+   * @brief Clean the arena and transfer free/allocated blocks to the global arena.
+   *
+   * This is only needed when a per-thread arena is about to die.
+   */
+  void clean()
+  {
+    lock_guard lock(mtx_);
+    global_arena_.transfer(free_blocks_, allocated_blocks_);
+    free_blocks_.clear();
+    free_superblocks_.clear();
+    allocated_blocks_.clear();
+  }
+
+  /**
    * @brief Does an arena handle blocks of this size?
    *
    * @param size The size in bytes to check.
@@ -608,6 +641,36 @@ class arena {
   std::unordered_map<void*, block> allocated_blocks_;
   /// Mutex for exclusive lock.
   mutable std::mutex mtx_;
+};
+
+/**
+ * @brief RAII-style cleaner for an arena.
+ *
+ * This is useful when a thread is about to terminate, and it contains a per-thread arena.
+ *
+ * @tparam Upstream Memory resource to use for allocating the global arena. Implements
+ * rmm::mr::device_memory_resource interface.
+ */
+template <typename Upstream>
+class arena_cleaner {
+ public:
+  explicit arena_cleaner(std::shared_ptr<arena<Upstream>> const& a) : arena_(a) {}
+
+  // Disable copy (and move) semantics.
+  arena_cleaner(const arena_cleaner&) = delete;
+  arena_cleaner& operator=(const arena_cleaner&) = delete;
+
+  ~arena_cleaner()
+  {
+    if (!arena_.expired()) {
+      auto arena_ptr = arena_.lock();
+      arena_ptr->clean();
+    }
+  }
+
+ private:
+  /// A non-owning pointer to the arena that may need cleaning.
+  std::weak_ptr<arena<Upstream>> arena_;
 };
 
 }  // namespace arena
