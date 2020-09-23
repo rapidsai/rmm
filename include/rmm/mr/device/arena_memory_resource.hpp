@@ -21,8 +21,8 @@
 
 #include <cuda_runtime_api.h>
 
+#include <map>
 #include <shared_mutex>
-#include <unordered_map>
 
 namespace rmm {
 namespace mr {
@@ -282,9 +282,11 @@ class arena_memory_resource final : public device_memory_resource {
   /// The global arena to allocate superblocks from.
   global_arena global_arena_;
   /// Arenas for default streams, one per thread.
-  std::unordered_map<std::thread::id, arena> thread_arenas_;
+  /// Implementation note: for small sizes, map is more efficient than unordered_map.
+  std::map<std::thread::id, arena> thread_arenas_;
   /// Arenas for non-default streams, one per stream.
-  std::unordered_map<cudaStream_t, arena> stream_arenas_;
+  /// Implementation note: for small sizes, map is more efficient than unordered_map.
+  std::map<cudaStream_t, arena> stream_arenas_;
   /// Mutex for read and write locks.
   mutable std::shared_timed_mutex mtx_;
 };

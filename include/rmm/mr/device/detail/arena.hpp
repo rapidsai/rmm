@@ -41,9 +41,9 @@ constexpr std::size_t superblock_size = 1u << 26u;  ///< Size of a superblock (6
  * can be returned to the global arena.
  */
 struct block {
-  void* pointer;     ///< Raw memory pointer.
-  std::size_t size;  ///< Size in bytes.
-  bool is_head;      ///< Indicates whether pointer was allocated from upstream.
+  void* pointer{};     ///< Raw memory pointer.
+  std::size_t size{};  ///< Size in bytes.
+  bool is_head{};      ///< Indicates whether pointer was allocated from upstream.
 
   /// Returns true if this block is valid (non-null), false otherwise.
   bool is_valid() const { return pointer != nullptr; }
