@@ -38,7 +38,7 @@ function(ConfigureTest CMAKE_TEST_NAME CMAKE_TEST_SRC)
                         RUNTIME_OUTPUT_DIRECTORY "${RMM_BINARY_DIR}/gtests")
 
   target_compile_definitions(${CMAKE_TEST_NAME} PUBLIC
-                             SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${LOGGING_LEVEL})
+                             "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${LOGGING_LEVEL}")    
 
   add_test(NAME ${CMAKE_TEST_NAME} COMMAND ${CMAKE_TEST_NAME})
 endfunction(ConfigureTest)
