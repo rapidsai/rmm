@@ -24,7 +24,7 @@ ensure you are on the `main` branch.
 
 ### Conda
 
-RMM can be installed with conda ([miniconda](https://conda.io/miniconda.html), or the full
+RMM can be installed with Conda ([miniconda](https://conda.io/miniconda.html), or the full
 [Anaconda distribution](https://www.anaconda.com/download)) from the `rapidsai` channel:
 
 ```bash
@@ -43,6 +43,8 @@ We also provide [nightly conda packages](https://anaconda.org/rapidsai-nightly) 
 of our latest development branch.
 
 Note: RMM is supported only on Linux, and with Python versions 3.6 or 3.7.
+
+Note: If you choose to install RMM using Conda, make sure to use GCC 7 or later. Otherwise, your application may fail to build.
 
 See the [Get RAPIDS version picker](https://rapids.ai/start.html) for more OS and version info.
 
