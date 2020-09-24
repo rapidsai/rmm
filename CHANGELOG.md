@@ -2,8 +2,9 @@
 
 ## New Features
 
- - PR #529 Add debug logging and fix multithreaded replay benchmark
- - PR #560 Remove deprecated `get/set_default_resource` APIs
+- PR #529 Add debug logging and fix multithreaded replay benchmark
+- PR #560 Remove deprecated `get/set_default_resource` APIs
+- PR #543 Add an arena-based memory resource
 
 ## Improvements
 

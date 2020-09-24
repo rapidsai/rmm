@@ -19,6 +19,7 @@
 #include <benchmarks/utilities/log_parser.hpp>
 
 #include <rmm/detail/error.hpp>
+#include <rmm/mr/device/arena_memory_resource.hpp>
 #include <rmm/mr/device/binning_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
@@ -47,6 +48,11 @@ inline auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>
 inline auto make_pool()
 {
   return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_cuda());
+}
+
+inline auto make_arena()
+{
+  return rmm::mr::make_owning_wrapper<rmm::mr::arena_memory_resource>(make_cuda());
 }
 
 inline auto make_binning()
@@ -280,6 +286,10 @@ void declare_benchmark(std::string name,
     benchmark::RegisterBenchmark("Pool Resource", replay_benchmark(&make_pool, per_thread_events))
       ->Unit(benchmark::kMillisecond)
       ->Threads(num_threads);
+  else if (name == "arena")
+    benchmark::RegisterBenchmark("Arena Resource", replay_benchmark(&make_arena, per_thread_events))
+      ->Unit(benchmark::kMillisecond)
+      ->Threads(num_threads);
   else
     std::cout << "Error: invalid memory_resource name: " << name << "\n";
 }
@@ -349,7 +359,7 @@ int main(int argc, char** argv)
     std::string mr_name = args["resource"].as<std::string>();
     declare_benchmark(mr_name, per_thread_events, num_threads);
   } else {
-    std::array<std::string, 3> mrs{"pool", "binning", "cuda"};
+    std::array<std::string, 4> mrs{"pool", "arena", "binning", "cuda"};
     std::for_each(
       std::cbegin(mrs), std::cend(mrs), [&per_thread_events, &num_threads](auto const& s) {
         declare_benchmark(s, per_thread_events, num_threads);
