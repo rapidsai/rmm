@@ -2,8 +2,9 @@
 
 ## New Features
 
- - PR #529 Add debug logging and fix multithreaded replay benchmark
- - PR #560 Remove deprecated `get/set_default_resource` APIs
+- PR #529 Add debug logging and fix multithreaded replay benchmark
+- PR #560 Remove deprecated `get/set_default_resource` APIs
+- PR #543 Add an arena-based memory resource
 
 ## Improvements
 
@@ -22,6 +23,7 @@
 - PR #565 CMake: Simplify gtest/gbench handling
 - PR #566 CMake: use CPM for thirdparty dependencies
 - PR #568 Upgrade googletest to v1.10.0
+- PR #572 CMake: prefer locally installed thirdparty packages
 
 ## Bug Fixes
 
