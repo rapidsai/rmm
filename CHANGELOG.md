@@ -24,6 +24,7 @@
 - PR #566 CMake: use CPM for thirdparty dependencies
 - PR #568 Upgrade googletest to v1.10.0
 - PR #572 CMake: prefer locally installed thirdparty packages
+- PR #571 `pool_memory_resource` can return free blocks to upstream resource
 
 ## Bug Fixes
 
