@@ -408,14 +408,17 @@ etc. The default log file is `rmm_log.txt` in the current working directory, but
 variable `RMM_DEBUG_LOG_FILE` can be set to specify the path and file name.
 
 There is a CMake configuration variable `LOGGING_LEVEL`, which can be set to enable compilation of
-more detailed logging. The default is `INFO`. Available levels are `TRACE`, `DEBUG`, `INFO`, `WARN`,
-`ERROR`, `CRITICAL`.
+more detailed logging. The default is `LEVEL_INFO`. Available levels are `LEVEL_TRACE`,
+`LEVEL_DEBUG`, `LEVEL_INFO`, `LEVEL_WARN`, `LEVEL_ERROR`, `LEVEL_CRITICAL` and `LEVEL_OFF`. Note
+that to completely disable logging at compile time you need to use
+`cmake .. -DLOGGING_LEVEL=LEVEL_OFF`. Using `-DLOGGING_LEVEL=OFF` will not work because cmake treats
+`OFF` the same as undefined.
 
 The log relies on the [spdlog](https://github.com/gabime/spdlog.git) library.
 
 Note that to see logging below the `INFO` level, the C++ application must also call
 `rmm::logger().set_level()`, e.g. to enable all levels of logging down to `TRACE`, call 
-`rmm::logger().set_level(spdlog::level::trace)`.
+`rmm::logger().set_level(spdlog::level::trace)` (and compile with `-DLOGGING_LEVEL=LEVEL_TRACE`).
 
 Note that debug logging is different from the CSV memory allocation logging provided by 
 `rmm::mr::logging_resource_adapter`. The latter is for logging a history of allocation /

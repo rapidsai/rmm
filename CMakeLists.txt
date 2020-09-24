@@ -88,21 +88,6 @@ if(PER_THREAD_DEFAULT_STREAM)
 endif(PER_THREAD_DEFAULT_STREAM)
 
 ###################################################################################################
-# add gtest
-
-if(BUILD_TESTS)
-    include(CTest)
-    add_subdirectory(tests)
-endif(BUILD_TESTS)
-
-###################################################################################################
-# add google benchmark
-
-if(BUILD_BENCHMARKS)
-  add_subdirectory(benchmarks)
-endif(BUILD_BENCHMARKS)
-
-###################################################################################################
 # library targets
 
 add_library(rmm INTERFACE)
@@ -130,19 +115,35 @@ target_link_libraries(rmm INTERFACE spdlog::spdlog_header_only)
 
 ###################################################################################################
 # Set a default logging level if none was specified
+# Must go before including gtests and benchmarks. 
 
-set(DEFAULT_LOGGING_LEVEL "INFO")
+
+set(DEFAULT_LOGGING_LEVEL "LEVEL_INFO")
 
 if(NOT LOGGING_LEVEL)
-    message(STATUS "Setting logging level to '${DEFAULT_LOGGING_LEVEL}' since none specified.")
-    set(LOGGING_LEVEL "${DEFAULT_LOGGING_LEVEL}" CACHE
-      STRING "Choose the logging level." FORCE)
-    # Set the possible values of build type for cmake-gui
-    set_property(CACHE LOGGING_LEVEL PROPERTY STRINGS
-        "TRACE" "DEBUG" "INFO" "WARN" "ERROR" "CRITICAL" "OFF")
+  message(STATUS "Setting logging level to '${DEFAULT_LOGGING_LEVEL}' since none specified.")
+  set(LOGGING_LEVEL "${DEFAULT_LOGGING_LEVEL}" CACHE STRING "Choose the logging level." FORCE)
+  # Set the possible values of build type for cmake-gui
+  set_property(CACHE LOGGING_LEVEL PROPERTY STRINGS
+               "LEVEL_TRACE" "LEVEL_DEBUG" "LEVEL_INFO" "LEVEL_WARN" "LEVEL_ERROR" "LEVEL_CRITICAL" "LEVEL_OFF")
 else()
     message(STATUS "Setting logging level to '${LOGGING_LEVEL}'")
 endif(NOT LOGGING_LEVEL)
+
+###################################################################################################
+# add gtest
+
+if(BUILD_TESTS)
+    include(CTest)
+    add_subdirectory(tests)
+endif(BUILD_TESTS)
+
+###################################################################################################
+# add google benchmark
+
+if(BUILD_BENCHMARKS)
+  add_subdirectory(benchmarks)
+endif(BUILD_BENCHMARKS)
 
 ###################################################################################################
 # install targets
