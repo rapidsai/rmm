@@ -108,7 +108,6 @@ endif(BUILD_BENCHMARKS)
 add_library(rmm INTERFACE)
 
 target_include_directories(rmm INTERFACE
-  "${THRUST_INCLUDE_DIR}"
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
   "$<INSTALL_INTERFACE:include>"
   )
@@ -126,6 +125,7 @@ else()
   target_link_libraries(rmm INTERFACE CUDA::cudart)
 endif(CUDA_STATIC_RUNTIME)
 
+target_link_libraries(rmm INTERFACE "$<BUILD_INTERFACE:Thrust::Thrust>")
 target_link_libraries(rmm INTERFACE spdlog::spdlog_header_only)
 
 ###################################################################################################
