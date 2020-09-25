@@ -24,22 +24,25 @@
 namespace rmm {
 namespace test {
 namespace {
-using Tracking_adaptor = rmm::mr::tracking_resource_adaptor<rmm::mr::device_memory_resource>;
+using Tracking_adaptor_with_stacks =
+  rmm::mr::tracking_resource_adaptor<rmm::mr::device_memory_resource, true>;
+using Tracking_adaptor_without_stacks =
+  rmm::mr::tracking_resource_adaptor<rmm::mr::device_memory_resource, false>;
 TEST(TrackingTest, ThrowOnNullUpstream)
 {
-  auto construct_nullptr = []() { Tracking_adaptor mr{nullptr}; };
+  auto construct_nullptr = []() { Tracking_adaptor_without_stacks mr{nullptr}; };
   EXPECT_THROW(construct_nullptr(), rmm::logic_error);
 }
 
 TEST(TrackingTest, Empty)
 {
-  Tracking_adaptor mr{rmm::mr::get_current_device_resource()};
+  Tracking_adaptor_without_stacks mr{rmm::mr::get_current_device_resource()};
   EXPECT_EQ(mr.get_num_outstanding_allocations(), 0);
 }
 
 TEST(TrackingTest, AllFreed)
 {
-  Tracking_adaptor mr{rmm::mr::get_current_device_resource()};
+  Tracking_adaptor_without_stacks mr{rmm::mr::get_current_device_resource()};
   std::vector<void *> allocations;
   for (int i = 0; i < 10; ++i) {
     allocations.push_back(mr.allocate(10_MiB));
@@ -52,7 +55,7 @@ TEST(TrackingTest, AllFreed)
 
 TEST(TrackingTest, AllocationsLeft)
 {
-  Tracking_adaptor mr{rmm::mr::get_current_device_resource()};
+  Tracking_adaptor_with_stacks mr{rmm::mr::get_current_device_resource()};
   std::vector<void *> allocations;
   for (int i = 0; i < 10; ++i) {
     allocations.push_back(mr.allocate(10_MiB));

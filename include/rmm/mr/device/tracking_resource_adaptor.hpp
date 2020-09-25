@@ -20,6 +20,7 @@
 #include <mutex>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+#include <shared_mutex>
 #include <sstream>
 
 namespace rmm {
@@ -36,10 +37,12 @@ namespace mr {
  * @tparam Upstream Type of the upstream resource used for
  * allocation/deallocation.
  */
-template <typename Upstream>
+template <typename Upstream, bool capture_stacks = false>
 class tracking_resource_adaptor final : public device_memory_resource {
  public:
-  using lock_t = std::lock_guard<std::mutex>;
+  // can be a std::shared_mutex once C++17 is adopted
+  using read_lock_t  = std::shared_lock<std::shared_timed_mutex>;
+  using write_lock_t = std::unique_lock<std::shared_timed_mutex>;
 
   /**
    * @brief Construct a new tracking resource adaptor using `upstream` to satisfy
@@ -92,20 +95,22 @@ class tracking_resource_adaptor final : public device_memory_resource {
    */
   void print_outstanding_allocations() const
   {
-    lock_t lock(mtx);
+    read_lock_t lock(mtx);
     std::ostringstream oss;
     for (auto const& al : allocations) {
       oss << std::endl
-          << "Allocation " << al.first << " of " << al.second.allocation_size
-          << "bytes with callstack:" << std::endl;
-      std::unique_ptr<char*, decltype(&::free)> strings(
-        backtrace_symbols(al.second.stack_ptrs.data(), al.second.stack_ptrs.size()), &::free);
-      if (strings.get() == nullptr) {
-        oss << "But no stack trace could be found!" << std::endl;
-      } else {
-        ///@todo: support for demangling of C++ symbol names
-        for (int i = 0; i < al.second.stack_ptrs.size(); ++i) {
-          oss << "#" << i << " in " << strings.get()[i] << std::endl;
+          << "Allocation " << al.first << " of " << al.second.allocation_size << "bytes";
+      if (capture_stacks) {
+        oss << " with callstack:" << std::endl;
+        std::unique_ptr<char*, decltype(&::free)> strings(
+          backtrace_symbols(al.second.stack_ptrs.data(), al.second.stack_ptrs.size()), &::free);
+        if (strings.get() == nullptr) {
+          oss << "But no stack trace could be found!" << std::endl;
+        } else {
+          ///@todo: support for demangling of C++ symbol names
+          for (int i = 0; i < al.second.stack_ptrs.size(); ++i) {
+            oss << "#" << i << " in " << strings.get()[i] << std::endl;
+          }
         }
       }
     }
@@ -150,7 +155,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
 
     // track it.
     {
-      lock_t lock(mtx);
+      write_lock_t lock(mtx);
       allocations.emplace(p, bytes);
     }
 
@@ -169,7 +174,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
   void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override
   {
     {
-      lock_t lock(mtx);
+      write_lock_t lock(mtx);
       allocations.erase(p);
     }
     upstream_->deallocate(p, bytes, stream);
@@ -218,18 +223,20 @@ class tracking_resource_adaptor final : public device_memory_resource {
     allocation_info() : allocation_size(0){};
     allocation_info(std::size_t size) : allocation_size(size)
     {
-      // store off a stack for this allocation
-      const int MaxStackDepth = 64;
-      void* stack[MaxStackDepth];
-      auto depth = backtrace(stack, MaxStackDepth);
-      stack_ptrs.insert(stack_ptrs.end(), &stack[0], &stack[depth]);
+      if (capture_stacks) {
+        // store off a stack for this allocation
+        const int MaxStackDepth = 64;
+        void* stack[MaxStackDepth];
+        auto depth = backtrace(stack, MaxStackDepth);
+        stack_ptrs.insert(stack_ptrs.end(), &stack[0], &stack[depth]);
+      }
     };
   };
 
   // map of active allocations
   std::map<void*, allocation_info> allocations;
 
-  std::mutex mutable mtx;  // mutex for thread safe access to allocations
+  std::shared_timed_mutex mutable mtx;  // mutex for thread safe access to allocations
 
   Upstream* upstream_;  ///< The upstream resource used for satisfying
                         ///< allocation requests

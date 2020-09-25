@@ -254,19 +254,5 @@ inline auto make_binning()
   return mr;
 }
 
-inline auto make_limiting()
-{
-  // for these tests, we will set max limit. Testing the limiting of this adaptor comes
-  // in the limiting_mr_tests.cpp file, which doesn't build adaptors with this
-  // function.
-  return rmm::mr::make_owning_wrapper<rmm::mr::limiting_resource_adaptor>(
-    make_cuda(), std::numeric_limits<std::size_t>::max());
-}
-
-inline auto make_tracking()
-{
-  return rmm::mr::make_owning_wrapper<rmm::mr::tracking_resource_adaptor>(make_cuda());
-}
-
 }  // namespace test
 }  // namespace rmm

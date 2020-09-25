@@ -44,12 +44,12 @@ class limiting_resource_adaptor final : public device_memory_resource {
    * @param allocation_limit Maximum memory allowed for this allocator.
    */
   limiting_resource_adaptor(Upstream* upstream,
-                            std::size_t allocation_limit_ = std::numeric_limits<std::size_t>::max(),
-                            std::size_t allocation_alignment_ = 256)
+                            std::size_t allocation_limit = std::numeric_limits<std::size_t>::max(),
+                            std::size_t allocation_alignment = 256)
     : upstream_{upstream},
-      allocation_limit{allocation_limit_},
-      allocation_alignment(allocation_alignment_),
-      used(0)
+      allocation_limit_{allocation_limit},
+      allocation_alignment_(allocation_alignment),
+      allocated_bytes_(0)
   {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
   }
@@ -86,7 +86,7 @@ class limiting_resource_adaptor final : public device_memory_resource {
     return upstream_->supports_get_mem_info();
   }
 
-  std::size_t space_free() const { return allocation_limit - used; }
+  std::size_t space_free() const { return allocation_limit_ - allocated_bytes_; }
 
  private:
   /**
@@ -106,10 +106,10 @@ class limiting_resource_adaptor final : public device_memory_resource {
   {
     void* p = nullptr;
 
-    std::size_t proposed_size = rmm::detail::align_up(bytes, allocation_alignment);
-    if (proposed_size + used <= allocation_limit) {
-      used += proposed_size;
+    std::size_t proposed_size = rmm::detail::align_up(bytes, allocation_alignment_);
+    if (proposed_size + allocated_bytes_ <= allocation_limit_) {
       p = upstream_->allocate(bytes, stream);
+      allocated_bytes_ += proposed_size;
     } else {
       throw rmm::bad_alloc{std::string{"CUDA error: Unable to allocate memory due to limit"}};
     }
@@ -128,9 +128,9 @@ class limiting_resource_adaptor final : public device_memory_resource {
    */
   void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override
   {
-    std::size_t allocated_size = rmm::detail::align_up(bytes, allocation_alignment);
-    used -= allocated_size;
+    std::size_t allocated_size = rmm::detail::align_up(bytes, allocation_alignment_);
     upstream_->deallocate(p, bytes, stream);
+    allocated_bytes_ -= allocated_size;
   }
 
   /**
@@ -167,17 +167,17 @@ class limiting_resource_adaptor final : public device_memory_resource {
   std::pair<size_t, size_t> do_get_mem_info(cudaStream_t stream) const override
   {
     auto ret = upstream_->get_mem_info(stream);
-    return {std::min(ret.first, space_free()), std::max(ret.second, allocation_limit)};
+    return {std::min(ret.first, space_free()), std::max(ret.second, allocation_limit_)};
   }
 
   // maximum bytes this allocator is allowed to allocate.
-  std::size_t allocation_limit;
+  std::size_t allocation_limit_;
 
   // number of currently-allocated bytes
-  std::atomic<std::size_t> used;
+  std::atomic<std::size_t> allocated_bytes_;
 
   // todo: should be some way to ask the upstream...
-  std::size_t allocation_alignment;
+  std::size_t allocation_alignment_;
 
   Upstream* upstream_;  ///< The upstream resource used for satisfying
                         ///< allocation requests
