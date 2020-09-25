@@ -17,6 +17,7 @@
 - PR #538 Upgrade CUB and Thrust to the latest commits
 - PR #542 Pin conda spdlog versions to 1.7.0
 - PR #550 Remove CXX11 ABI handling from CMake
+- PR #578 Switch thrust to use the NVIDIA/thrust repo
 - PR #553 CMake cleanup
 - PR #556 By default, don't create a debug log file unless there are warnings/errors
 - PR #561 Remove CNMeM and make RMM header-only
