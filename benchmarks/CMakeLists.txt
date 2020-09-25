@@ -33,7 +33,7 @@ function(ConfigureBench CMAKE_BENCH_NAME CMAKE_BENCH_SRC)
                         RUNTIME_OUTPUT_DIRECTORY "${RMM_BINARY_DIR}/gbenchmarks")
   
   target_compile_definitions(${CMAKE_BENCH_NAME} PUBLIC
-                             SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${LOGGING_LEVEL})    
+                             "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")    
 endfunction(ConfigureBench)
 
 ###################################################################################################

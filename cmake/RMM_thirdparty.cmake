@@ -15,7 +15,7 @@ CPMFindPackage(
 
 CPMFindPackage(
   NAME thrust
-  GITHUB_REPOSITORY thrust/thrust
+  GITHUB_REPOSITORY NVIDIA/thrust
   GIT_TAG 1.10.0
   VERSION 1.10.0
   GIT_SHALLOW TRUE

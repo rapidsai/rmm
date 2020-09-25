@@ -58,12 +58,14 @@ struct logger_wrapper {
   {
     logger_.set_pattern("[%6t][%H:%M:%S:%f][%-6l] %v");
     logger_.flush_on(spdlog::level::warn);
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_INFO
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
     logger_.info("----- RMM LOG BEGIN [PTDS ENABLED] -----");
 #else
     logger_.info("----- RMM LOG BEGIN [PTDS DISABLED] -----");
 #endif
     logger_.flush();
+#endif
   }
 };
 
