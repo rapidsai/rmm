@@ -114,8 +114,7 @@ endif(CUDA_STATIC_RUNTIME)
 target_link_libraries(rmm INTERFACE spdlog::spdlog_header_only)
 
 ###################################################################################################
-# Set a default logging level if none was specified
-# Must go before including gtests and benchmarks. 
+# Set logging level. Must go before including gtests and benchmarks. 
 
 set(RMM_LOGGING_LEVEL "INFO" CACHE STRING "Choose the logging level.")
 # Set the possible values of build type for cmake-gui
