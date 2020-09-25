@@ -13,7 +13,7 @@ CPMFindPackage(
 ###################################################################################################
 # - thrust/cub ------------------------------------------------------------------------------------
 
-CPMAddPackage(
+CPMFindPackage(
   NAME thrust
   GITHUB_REPOSITORY thrust/thrust
   GIT_TAG 1.10.0
