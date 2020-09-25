@@ -8,6 +8,10 @@ CPMFindPackage(
   GITHUB_REPOSITORY gabime/spdlog
   VERSION 1.7.0
   GIT_SHALLOW TRUE
+  OPTIONS
+    # If there is no pre-installed spdlog we can use, we'll install our fetched copy
+    # together with RMM
+    "SPDLOG_INSTALL TRUE"
   )
 
 ###################################################################################################

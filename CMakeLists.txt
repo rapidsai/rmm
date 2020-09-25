@@ -141,12 +141,38 @@ endif(BUILD_BENCHMARKS)
 # install targets
 
 include(GNUInstallDirs)
+set(INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/rmm)
 
-install(TARGETS rmm)
+install(TARGETS rmm
+  EXPORT rmm-targets)
 
 install(DIRECTORY include/rmm
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
+include(CMakePackageConfigHelpers)
+configure_package_config_file(
+  rmm-config.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/rmm-config.cmake
+  INSTALL_DESTINATION ${INSTALL_CONFIGDIR}
+  )
+
+write_basic_package_version_file(
+  ${CMAKE_CURRENT_BINARY_DIR}/rmm-config-version.cmake
+  COMPATIBILITY SameMinorVersion
+  )
+
+install(EXPORT rmm-targets
+  FILE rmm-targets.cmake
+  NAMESPACE rmm::
+  DESTINATION ${INSTALL_CONFIGDIR}
+  )
+
+install(FILES
+  ${CMAKE_CURRENT_BINARY_DIR}/rmm-config.cmake
+  ${CMAKE_CURRENT_BINARY_DIR}/rmm-config-version.cmake
+  DESTINATION ${INSTALL_CONFIGDIR}
+  )
+  
 ###################################################################################################
 # make documentation
 
