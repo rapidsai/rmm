@@ -14,7 +14,7 @@ CPMFindPackage(
 # - thrust/cub ------------------------------------------------------------------------------------
 
 CPMFindPackage(
-  NAME thrust
+  NAME Thrust
   GITHUB_REPOSITORY NVIDIA/thrust
   GIT_TAG 1.10.0
   VERSION 1.10.0
