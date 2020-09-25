@@ -140,11 +140,12 @@ endif(BUILD_BENCHMARKS)
 ###################################################################################################
 # install targets
 
-install(TARGETS rmm
-        DESTINATION lib)
+include(GNUInstallDirs)
 
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/rmm
-        DESTINATION include)
+install(TARGETS rmm)
+
+install(DIRECTORY include/rmm
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 ###################################################################################################
 # make documentation
