@@ -169,8 +169,8 @@ install(EXPORT rmm-targets
   )
 
 install(FILES
-  ${CMAKE_CURRENT_BINARY_DIR}/rmm-config.cmake
-  ${CMAKE_CURRENT_BINARY_DIR}/rmm-config-version.cmake
+  ${RMM_BINARY_DIR}/rmm-config.cmake
+  ${RMM_BINARY_DIR}/rmm-config-version.cmake
   DESTINATION ${INSTALL_CONFIGDIR}
   )
   
