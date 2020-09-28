@@ -13,16 +13,15 @@ CPMFindPackage(
 ###################################################################################################
 # - thrust/cub ------------------------------------------------------------------------------------
 
-CPMAddPackage(
-  NAME thrust
+CPMFindPackage(
+  NAME Thrust
   GITHUB_REPOSITORY NVIDIA/thrust
   GIT_TAG 1.10.0
   VERSION 1.10.0
   GIT_SHALLOW TRUE
-  DOWNLOAD_ONLY TRUE
-)
+  )
 
-set(THRUST_INCLUDE_DIR "${thrust_SOURCE_DIR}")
+thrust_create_target(rmm::Thrust FROM_OPTIONS)
 
 ###################################################################################################
 # - googletest ------------------------------------------------------------------------------------
