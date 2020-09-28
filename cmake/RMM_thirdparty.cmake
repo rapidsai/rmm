@@ -23,6 +23,10 @@ CPMFindPackage(
   GIT_TAG 1.10.0
   VERSION 1.10.0
   GIT_SHALLOW TRUE
+  OPTIONS
+    # If there is no pre-installed thrust we can use, we'll install our fetched copy
+    # together with RMM
+    "THRUST_INSTALL TRUE"
   )
 
 thrust_create_target(rmm::Thrust FROM_OPTIONS)
