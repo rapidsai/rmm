@@ -91,6 +91,7 @@ endif(PER_THREAD_DEFAULT_STREAM)
 # library targets
 
 add_library(rmm INTERFACE)
+add_library(rmm::rmm ALIAS rmm)
 
 target_include_directories(rmm INTERFACE
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
