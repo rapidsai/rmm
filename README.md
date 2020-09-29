@@ -402,19 +402,37 @@ These two arguments must be identical.
 
 ## Logging
 
-RMM includes two forms of logging. The first is a memory resource adaptor,
-`logging_resource_adaptor`, and the second is debug logging.
+RMM includes two forms of logging. Memory event logging and debug logging.
 
-### `logging_resource_adaptor`
+### Memory Event Logging and `logging_resource_adaptor`
 
-This adaptor can be used as a wrapper around any other `device_memory_resource` object to add
-logging of all allocations and deallocations. The log created is a comma-separated value (CSV) file.
-Each row represents either an allocation or a deallocation. The columns of the file are
+Memory event logging writes details of every allocation or deallocation to a CSV (comma-separated
+value) file. In C++, Memory Event Logging is enabled by using the `logging_resource_adaptor` as a 
+wrapper around any other `device_memory_resource` object.
+
+Each row in the log represents either an allocation or a deallocation. The columns of the file are
 "Thread, Time, Action, Pointer, Size, Stream".
 
 The CSV output files of the `logging_resource_adaptor` can be used as input to `REPLAY_BENCHMARK`,
 which is available when building RMM from source, in the `gbenchmarks` folder in the build directory.
 This log replayer can be useful for profiling and debugging allocator issues.
+
+The following C++ example creates a logging version of a `cuda_memory_resource` that outputs the log
+to the file "logs/test1.csv".
+
+```c++
+std::string filename{"logs/test1.csv"};
+rmm::mr::cuda_memory_resource upstream;
+rmm::mr::logging_resource_adaptor<rmm::mr::cuda_memory_resource> log_mr{&upstream, filename};
+```
+
+If a file name is not specified, the environment variable `RMM_LOG_FILE` is queried for the file 
+name. If `RMM_LOG_FILE` is not set, then an exception is thrown by the `logging_resource_adaptor`
+constructor.
+
+In Python, memory event logging is enabled when the `logging` parameter of `rmm.reinitialize()` is
+set to `True`. The log file name can be set using the `log_file_name` parameter. See
+`help(rmm.reinitialize)` for full details.
 
 ### Debug Logging
 
@@ -488,20 +506,18 @@ host:
 array([1., 2., 3.])
 ```
 
-### MemoryResources
+### MemoryResource objects
 
-MemoryResources are used to configure how device memory allocations are made by
+`MemoryResource` objects are used to configure how device memory allocations are made by
 RMM.
 
-By default, i.e., if you don't set a MemoryResource explicitly, RMM
-uses the `CudaMemoryResource`, which uses `cudaMalloc` for
-allocating device memory.
+By default if a `MemoryResource` is not set explicitly, RMM uses the `CudaMemoryResource`, which 
+uses `cudaMalloc` for allocating device memory.
 
-`rmm.reinitialize()` provides an easy way to initialize RMM with specific
-memory resource options across multiple devices. See `help(rmm.reinitialize) for 
-full details.
+`rmm.reinitialize()` provides an easy way to initialize RMM with specific memory resource options
+across multiple devices. See `help(rmm.reinitialize) for full details.
 
-For lower-level control, `rmm.mr.set_current_device_resource()` function can be
+For lower-level control, the `rmm.mr.set_current_device_resource()` function can be
 used to set a different MemoryResource for the current CUDA device.  For
 example, enabling the `ManagedMemoryResource` tells RMM to use
 `cudaMallocManaged` instead of `cudaMalloc` for allocating memory:
