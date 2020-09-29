@@ -515,7 +515,7 @@ By default if a `MemoryResource` is not set explicitly, RMM uses the `CudaMemory
 uses `cudaMalloc` for allocating device memory.
 
 `rmm.reinitialize()` provides an easy way to initialize RMM with specific memory resource options
-across multiple devices. See `help(rmm.reinitialize) for full details.
+across multiple devices. See `help(rmm.reinitialize)` for full details.
 
 For lower-level control, the `rmm.mr.set_current_device_resource()` function can be
 used to set a different MemoryResource for the current CUDA device.  For
