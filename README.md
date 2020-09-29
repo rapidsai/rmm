@@ -400,7 +400,23 @@ The first `stream` argument is the `stream` to use for `rmm::mr::thrust_allocato
 The second `stream` argument is what should be used to execute the Thrust algorithm.
 These two arguments must be identical.
 
-## Debug Logging
+## Logging
+
+RMM includes two forms of logging. The first is a memory resource adaptor,
+`logging_resource_adaptor`, and the second is debug logging.
+
+### `logging_resource_adaptor`
+
+This adaptor can be used as a wrapper around any other `device_memory_resource` object to add
+logging of all allocations and deallocations. The log created is a comma-separated value (CSV) file.
+Each row represents either an allocation or a deallocation. The columns of the file are
+"Thread, Time, Action, Pointer, Size, Stream".
+
+The CSV output files of the `logging_resource_adaptor` can be used as input to `REPLAY_BENCHMARK`,
+which is available when building RMM from source, in the `gbenchmarks` folder in the build directory.
+This log replayer can be useful for profiling and debugging allocator issues.
+
+### Debug Logging
 
 RMM includes a debug logger which can be enabled to log trace and debug information to a file. This 
 information can show when errors occur, when additional memory is allocated from upstream resources,
