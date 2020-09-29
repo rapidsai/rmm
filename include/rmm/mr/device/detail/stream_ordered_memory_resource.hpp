@@ -290,6 +290,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
       default_stream_events.insert(event_tls);
       return stream_event_pair{stream, event_tls.get()->event};
     }
+#ifndef CUDA_API_PER_THREAD_DEFAULT_STREAM
     // We use cudaStreamLegacy as the event map key for the default stream for consistency between
     // PTDS and non-PTDS mode. In PTDS mode, the cudaStreamLegacy map key will only exist if the
     // user explicitly passes it, so it is used as the default location for the free list
@@ -298,6 +299,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     else if (cudaStreamDefault == stream) {
       stream = cudaStreamLegacy;
     }
+#endif
 
     auto iter = stream_events_.find(stream);
     return (iter != stream_events_.end()) ? iter->second : [&]() {
