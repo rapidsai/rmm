@@ -36,6 +36,7 @@
 - PR #569 Correct `device_scalar::set_value` to pass host value by reference to avoid copying from invalid value
 - PR #559 Fix `align_down` to only change unaligned values.
 - PR #577 Fix CMake `LOGGING_LEVEL` issue which caused verbose logging / performance regression.
+- PR #582 Fix handling of per-thread default stream when not compiled for PTDS
 
 
 # RMM 0.15.0 (26 Aug 2020)
