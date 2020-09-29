@@ -153,12 +153,12 @@ install(DIRECTORY include/rmm
 include(CMakePackageConfigHelpers)
 configure_package_config_file(
   rmm-config.cmake.in
-  ${CMAKE_CURRENT_BINARY_DIR}/rmm-config.cmake
+  ${RMM_BINARY_DIR}/rmm-config.cmake
   INSTALL_DESTINATION ${INSTALL_CONFIGDIR}
   )
 
 write_basic_package_version_file(
-  ${CMAKE_CURRENT_BINARY_DIR}/rmm-config-version.cmake
+  ${RMM_BINARY_DIR}/rmm-config-version.cmake
   COMPATIBILITY SameMinorVersion
   )
 

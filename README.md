@@ -131,22 +131,20 @@ Done! You are ready to develop for the RMM OSS project.
 
 RMM uses [CPM.cmake](https://github.com/TheLartians/CPM.cmake) to
 handle third-party dependencies like spdlog, Thrust, GoogleTest,
-GoogleBenchmark. In general you won't have to worry about it. If cmake
-finds an appropriate version on your system, it'll use that (you can
-help that along by setting `CMAKE_PREFIX_PATH` to point to the
-installed location. Otherwise those dependencies will be downloaded as
+GoogleBenchmark. In general you won't have to worry about it. If CMake
+finds an appropriate version on your system, it uses it (you can
+help it along by setting `CMAKE_PREFIX_PATH` to point to the
+installed location). Otherwise those dependencies will be downloaded as
 part of the build.
 
-If you frequently start new builds from scratch, you might want to
-consider setting the environment variable `CPM_SOURCE_CACHE` to an
-external download directory, which will avoid repeated downloads of
-the thirdparty dependencies.
+If you frequently start new builds from scratch, consider setting the
+environment variable `CPM_SOURCE_CACHE` to an external download
+directory to avoid repeated downloads of the third-party dependencies.
 
 ## Using RMM in a downstream CMake project
 
-If you want to use RMM in your own CMake project, the installed RMM
-library will provide a set of config files that makes it easy to
-integrate it. In your `CMakeLists.txt`, just add
+The installed RMM library provides a set of config files that makes it easy to
+integrate RMM into your own CMake project. In your `CMakeLists.txt`, just add
 
 ```cmake
 find_package(rmm [VERSION])
@@ -154,16 +152,16 @@ find_package(rmm [VERSION])
 target_link_libraries(<your-target> (PRIVATE|PUBLIC) rmm::rmm)
 ```
 
-Since RMM is a header-only library, this will not actually link RMM,
-but make the headers available, as well as pull in transitive
-dependencies. If RMM is not installed in a default location, use
+Since RMM is a header-only library, this does not actually link RMM,
+but it makes the headers available and pulls in transitive dependencies.
+If RMM is not installed in a default location, use
 `CMAKE_PREFIX_PATH` or `rmm_ROOT` to point to its location.
 
-One of RMM's dependencies is the Thrust library, so the above will
-automatically add pull in `Thrust`, by means of a dependency on the
+One of RMM's dependencies is the Thrust library, so the above
+automatically pulls in `Thrust` by means of a dependency on the
 `rmm::Thrust` target. By default it uses the standard configuration of
 Thrust. If you want to customize it, you can set the variables
-`THRUST_HOST_SYSTEM` and `THRUST_DEVICE_SYSTEM` -- see
+`THRUST_HOST_SYSTEM` and `THRUST_DEVICE_SYSTEM`; see
 [Thrust's CMake documentation](https://github.com/NVIDIA/thrust/blob/main/thrust/cmake/README.md).
 
 # Using RMM in C++
