@@ -27,6 +27,7 @@
 - PR #572 CMake: prefer locally installed thirdparty packages
 - PR #579 CMake: handle thrust via target
 - PR #581 Improve logging documentation
+- PR #585 Update ci/local/README.md
 
 ## Bug Fixes
 
