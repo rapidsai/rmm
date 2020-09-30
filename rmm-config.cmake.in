@@ -6,8 +6,39 @@ cmake_minimum_required(VERSION 3.17)
 include(CMakeFindDependencyMacro)
 find_dependency(CUDAToolkit)
 find_dependency(spdlog 1.7.0)
-find_dependency(Thrust 1.10.0)
-thrust_create_target(rmm::Thrust FROM_OPTIONS)
+
+# find_dependency(Thrust 1.10.0)
+# thrust_create_target(rmm::Thrust FROM_OPTIONS)
+
+# Workaround for possibly missing Thrust
+# We essentially do find_dependency ourselves, so that
+# we can customize what happens if we don't find Thrust
+if(rmm_FIND_QUIETLY)
+  set(cmake_fd_quiet_arg QUIET)
+endif()
+
+get_property(cmake_fd_alreadyTransitive GLOBAL PROPERTY
+  _CMAKE_Thrust_TRANSITIVE_DEPENDENCY
+  )
+
+find_package(Thrust 1.10.0 ${cmake_fd_quiet_arg})
+
+if(NOT DEFINED cmake_fd_alreadyTransitive OR cmake_fd_alreadyTransitive)
+  set_property(GLOBAL PROPERTY _CMAKE_Thrust_TRANSITIVE_DEPENDENCY TRUE)
+endif()
+
+set(cmake_fd_quiet_arg)
+
+if (Thrust_FOUND)
+  thrust_create_target(rmm::Thrust FROM_OPTIONS)
+else()
+  message(WARNING "RMM could not find a Thrust library >= 1.10.0. Continuing anyway, which likely means that the Thrust library from your CUDA Toolkit will be used.")
+  # create a fake `rmm::Thrust` target so that `rmm::rmm`, which depends on it, can be used
+  add_library(missing_Thrust INTERFACE)
+  add_library(rmm::Thrust ALIAS missing_Thrust)
+endif()
+
+# end workaround
 
 include("${CMAKE_CURRENT_LIST_DIR}/rmm-targets.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/rmm-config-version.cmake")
