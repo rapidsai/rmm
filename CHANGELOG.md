@@ -29,6 +29,7 @@
 - PR #581 Improve logging documentation
 - PR #585 Update ci/local/README.md
 - PR #587 Replaced `move` with `std::move`
+- PR #589 Unpin `spdlog` to move to 1.8.1 or above
 
 ## Bug Fixes
 
