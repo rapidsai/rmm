@@ -67,8 +67,3 @@ cpdef void copy_device_to_ptr(uintptr_t d_src,
                               uintptr_t d_dst,
                               size_t count,
                               uintptr_t stream=*) nogil except *
-
-
-cdef extern from "<utility>" namespace "std" nogil:
-    cdef unique_ptr[device_buffer] move(unique_ptr[device_buffer])
-    cdef device_buffer move(device_buffer)

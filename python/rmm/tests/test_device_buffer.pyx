@@ -16,8 +16,9 @@ import cython
 import numpy as np
 
 from libcpp.memory cimport make_unique
+from libcpp.utility cimport move
 
-from rmm._lib.device_buffer cimport DeviceBuffer, device_buffer, move
+from rmm._lib.device_buffer cimport DeviceBuffer, device_buffer
 
 
 def test_release():
