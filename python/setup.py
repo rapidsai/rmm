@@ -55,7 +55,8 @@ CUDA_VERSION = get_cuda_version_from_header(cuda_include_dir)
 INSTALL_PREFIX = os.environ.get("INSTALL_PREFIX", False)
 if not os.path.isdir(INSTALL_PREFIX):
     raise OSError(
-        f"Invalid INSTALL_PREFIX: directory does not exist: {INSTALL_PREFIX}")
+        f"Invalid INSTALL_PREFIX: directory does not exist: {INSTALL_PREFIX}"
+    )
 rmm_include_dir = os.path.join(INSTALL_PREFIX, "include")
 
 # Preprocessor step to specify correct pxd file with
@@ -110,7 +111,9 @@ extensions = cythonize(
     ],
     nthreads=nthreads,
     compiler_directives=dict(
-        profile=False, language_level=3, embedsignature=True,
+        profile=False,
+        language_level=3,
+        embedsignature=True,
     ),
 )
 
@@ -134,7 +137,9 @@ extensions += cythonize(
     ],
     nthreads=nthreads,
     compiler_directives=dict(
-        profile=False, language_level=3, embedsignature=True,
+        profile=False,
+        language_level=3,
+        embedsignature=True,
     ),
 )
 
