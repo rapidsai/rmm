@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <execinfo.h>
+#include <boost/stacktrace.hpp>
 #include <map>
 #include <mutex>
 #include <rmm/detail/error.hpp>
@@ -37,7 +37,7 @@ namespace mr {
  * @tparam Upstream Type of the upstream resource used for
  * allocation/deallocation.
  */
-template <typename Upstream, bool capture_stacks = false>
+template <typename Upstream>
 class tracking_resource_adaptor final : public device_memory_resource {
  public:
   // can be a std::shared_mutex once C++17 is adopted
@@ -51,8 +51,10 @@ class tracking_resource_adaptor final : public device_memory_resource {
    * @throws `rmm::logic_error` if `upstream == nullptr`
    *
    * @param upstream The resource used for allocating/deallocating device memory
+   * @param capture_stacks If true, capture stacks for allocation calls
    */
-  tracking_resource_adaptor(Upstream* upstream) : upstream_{upstream}
+  tracking_resource_adaptor(Upstream* upstream, bool capture_stacks = false)
+    : upstream_{upstream}, capture_stacks_{capture_stacks}
   {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
   }
@@ -98,21 +100,11 @@ class tracking_resource_adaptor final : public device_memory_resource {
     read_lock_t lock(mtx);
     std::ostringstream oss;
     for (auto const& al : allocations) {
-      oss << std::endl
-          << "Allocation " << al.first << " of " << al.second.allocation_size << "bytes";
-      if (capture_stacks) {
-        oss << " with callstack:" << std::endl;
-        std::unique_ptr<char*, decltype(&::free)> strings(
-          backtrace_symbols(al.second.stack_ptrs.data(), al.second.stack_ptrs.size()), &::free);
-        if (strings.get() == nullptr) {
-          oss << "But no stack trace could be found!" << std::endl;
-        } else {
-          ///@todo: support for demangling of C++ symbol names
-          for (int i = 0; i < al.second.stack_ptrs.size(); ++i) {
-            oss << "#" << i << " in " << strings.get()[i] << std::endl;
-          }
-        }
+      oss << "Allocation " << al.first << " of " << al.second.allocation_size << "bytes";
+      if (al.second.strace != nullptr) {
+        oss << " with callstack:" << std::endl << *al.second.strace;
       }
+      oss << std::endl;
     }
 
     RMM_LOG_DEBUG("Outstanding Allocations: {}", oss.str());
@@ -156,7 +148,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
     // track it.
     {
       write_lock_t lock(mtx);
-      allocations.emplace(p, bytes);
+      allocations.emplace(p, allocation_info{bytes, capture_stacks_});
     }
 
     return p;
@@ -217,21 +209,18 @@ class tracking_resource_adaptor final : public device_memory_resource {
   }
 
   struct allocation_info {
-    std::vector<void*> stack_ptrs;
+    std::unique_ptr<boost::stacktrace::stacktrace> strace;
     std::size_t allocation_size;
 
-    allocation_info() : allocation_size(0){};
-    allocation_info(std::size_t size) : allocation_size(size)
+    allocation_info() : strace{nullptr}, allocation_size{0} {};
+    allocation_info(std::size_t size, bool capture_stack) : allocation_size{size}
     {
-      if (capture_stacks) {
-        // store off a stack for this allocation
-        const int MaxStackDepth = 64;
-        void* stack[MaxStackDepth];
-        auto depth = backtrace(stack, MaxStackDepth);
-        stack_ptrs.insert(stack_ptrs.end(), &stack[0], &stack[depth]);
-      }
+      // maybe store off a stack for this allocation
+      strace = capture_stack ? std::make_unique<boost::stacktrace::stacktrace>() : nullptr;
     };
   };
+
+  bool capture_stacks_;
 
   // map of active allocations
   std::map<void*, allocation_info> allocations;
