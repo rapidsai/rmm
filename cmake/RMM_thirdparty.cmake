@@ -6,7 +6,7 @@ include(FetchContent)
 CPMFindPackage(
   NAME spdlog
   GITHUB_REPOSITORY gabime/spdlog
-  VERSION 1.7.0
+  VERSION 1.8.1
   GIT_SHALLOW TRUE
   )
 
