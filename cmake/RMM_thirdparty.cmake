@@ -3,10 +3,12 @@ include(FetchContent)
 ###################################################################################################
 # - spdlog ----------------------------------------------------------------------------------------
 
+set(RMM_MIN_VERSION_spdlog 1.7.0)
+
 CPMFindPackage(
   NAME spdlog
   GITHUB_REPOSITORY gabime/spdlog
-  VERSION 1.7.0
+  VERSION ${RMM_MIN_VERSION_spdlog}
   GIT_SHALLOW TRUE
   OPTIONS
     # If there is no pre-installed spdlog we can use, we'll install our fetched copy
@@ -16,6 +18,8 @@ CPMFindPackage(
 
 ###################################################################################################
 # - thrust/cub ------------------------------------------------------------------------------------
+
+set(RMM_MIN_VERSION_Thrust 1.9.0)
 
 CPMFindPackage(
   NAME Thrust
