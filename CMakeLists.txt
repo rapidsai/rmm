@@ -171,6 +171,7 @@ install(EXPORT rmm-targets
 install(FILES
   ${RMM_BINARY_DIR}/rmm-config.cmake
   ${RMM_BINARY_DIR}/rmm-config-version.cmake
+  ${RMM_SOURCE_DIR}/cmake/install/FindThrust.cmake
   DESTINATION ${INSTALL_CONFIGDIR}
   )
   
