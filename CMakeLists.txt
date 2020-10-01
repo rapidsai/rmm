@@ -152,7 +152,7 @@ install(DIRECTORY include/rmm
 
 include(CMakePackageConfigHelpers)
 configure_package_config_file(
-  rmm-config.cmake.in
+  cmake/rmm-config.cmake.in
   ${RMM_BINARY_DIR}/rmm-config.cmake
   INSTALL_DESTINATION ${INSTALL_CONFIGDIR}
   )
