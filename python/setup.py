@@ -52,6 +52,11 @@ cuda_include_dir = os.path.join(CUDA_HOME, "include")
 cuda_lib_dir = os.path.join(CUDA_HOME, "lib64")
 CUDA_VERSION = get_cuda_version_from_header(cuda_include_dir)
 
+INSTALL_PREFIX = os.environ.get("INSTALL_PREFIX", False)
+if not os.path.isdir(INSTALL_PREFIX):
+    raise OSError(f"Invalid INSTALL_PREFIX: directory does not exist: {INSTALL_PREFIX}")
+rmm_include_dir = os.path.join(INSTALL_PREFIX, "include")
+
 # Preprocessor step to specify correct pxd file with
 # valid symbols for specific version of CUDA.
 
@@ -78,9 +83,7 @@ except Exception:
     nthreads = 0
 
 include_dirs = [
-    "../include/rmm",
-    "../include",
-    "../build/include",
+    rmm_include_dir,
     os.path.dirname(sysconfig.get_path("include")),
     cuda_include_dir,
 ]

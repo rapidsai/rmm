@@ -131,6 +131,7 @@ fi
 # Build and install the rmm Python package
 if (( NUMARGS == 0 )) || hasArg rmm; then
     cd "${REPODIR}/python"
+    export INSTALL_PREFIX
     if [[ ${INSTALL_TARGET} != "" ]]; then
         echo "building rmm..."
         python setup.py build_ext --inplace
