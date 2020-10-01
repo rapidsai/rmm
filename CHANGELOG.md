@@ -28,6 +28,7 @@
 - PR #579 CMake: handle thrust via target
 - PR #581 Improve logging documentation
 - PR #585 Update ci/local/README.md
+- PR #588 Use installed C++ RMM in python build
 
 ## Bug Fixes
 
