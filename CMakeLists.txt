@@ -61,8 +61,6 @@ option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
 
 option(PER_THREAD_DEFAULT_STREAM "Build with per-thread default stream" OFF)
 
-option(USE_NVTX "Build with NVTX support" OFF)
-
 ###################################################################################################
 # find packages we depend on
 
@@ -97,12 +95,6 @@ target_include_directories(rmm INTERFACE
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
   "$<INSTALL_INTERFACE:include>"
   )
-
-if(USE_NVTX)
-  message(STATUS "Using Nvidia Tools Extension")
-else()
-  target_compile_definitions(rmm INTERFACE NVTX_DISABLE)
-endif(USE_NVTX)
 
 if(CUDA_STATIC_RUNTIME)
   message(STATUS "Enabling static linking of cudart")
