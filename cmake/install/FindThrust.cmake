@@ -1,122 +1,65 @@
-##============================================================================
-## Copyright (c) 2014,
-## Sandia Corporation, Los Alamos National Security, LLC.,
-## UT-Battelle, LLC., Kitware Inc., University of California Davis
-## All rights reserved.
-##
-## Sandia National Laboratories, New Mexico
-## PO Box 5800
-## Albuquerque, NM 87185
-## USA
-## 
-## UT-Battelle
-## 1 Bethel Valley Rd
-## Oak Ridge, TN 37830
-##
-## Los Alamos National Security, LLC
-## 105 Central Park Square
-## Los Alamos, NM 87544
-##
-## Kitware Inc.
-## 28 Corporate Drive
-## Clifton Park, NY 12065
-## USA
-##
-## University of California, Davis
-## One Shields Avenue
-## Davis, CA 95616
-## USA
-##
-## Under the terms of Contract DE-AC04-94AL85000, there is a
-## non-exclusive license for use of this work by or on behalf of the
-## U.S. Government.
-##
-## Under the terms of Contract DE-AC52-06NA25396 with Los Alamos National
-## Laboratory (LANL), the U.S. Government retains certain rights in
-## this software.
-##
-## Redistribution and use in source and binary forms, with or without
-## modification, are permitted provided that the following conditions are
-## met:
-##
-## * Redistributions of source code must retain the above copyright
-##   notice, this list of conditions and the following disclaimer.
-##
-## * Redistributions in binary form must reproduce the above copyright
-##   notice, this list of conditions and the following disclaimer in the
-##   documentation and/or other materials provided with the
-##   distribution.
-##
-## * Neither the name of Kitware nor the names of any contributors may
-##   be used to endorse or promote products derived from this software
-##   without specific prior written permission.
-##
-## THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-## ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-## LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-## A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHORS OR
-## CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-## EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-## PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-## PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-## LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-## NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-## SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-##============================================================================
 
-#
 # FindThrust
+# ---------
 #
-# This module finds the Thrust header files and extrats their version.  It
-# sets the following variables.
+# Try to find Thrust
 #
-# THRUST_INCLUDE_DIR -  Include directory for thrust header files.  (All header
-#                       files will actually be in the thrust subdirectory.)
-# THRUST_VERSION -      Version of thrust in the form "major.minor.patch".
+# Uses Thrust_ROOT in the cache variables or in the environment as a hint
+# where to search
 #
+# IMPORTED Targets
+# ^^^^^^^^^^^^^^^^
+#
+# This module defines a basic `thrust_create_target` function as provided
+# otherwise by the newer Thrust >= 1.9.10 included configs.
+#
+# Result Variables
+# ^^^^^^^^^^^^^^^^
+#
+# This module defines the following variables:
+#
+# ``Thrust_FOUND``
+#   system has Thrust
+# ``Thrust_INCLUDE_DIRS``
+#   the Thrust include directories
 
-find_path( THRUST_INCLUDE_DIR
-  HINTS
-    /usr/include/cuda
-    /usr/local/include
-    /usr/local/cuda/include
-    ${CUDA_INCLUDE_DIRS}
-    ${CUDA_TOOLKIT_ROOT_DIR}
-    ${CUDA_SDK_ROOT_DIR}
-  NAMES thrust/version.h
-  DOC "Thrust headers"
-  )
-if( THRUST_INCLUDE_DIR )
-  list( REMOVE_DUPLICATES THRUST_INCLUDE_DIR )
-endif( THRUST_INCLUDE_DIR )
+include(FindPackageHandleStandardArgs)
 
-# Find thrust version
-if (THRUST_INCLUDE_DIR)
-  file( STRINGS ${THRUST_INCLUDE_DIR}/thrust/version.h
-    version
-    REGEX "#define THRUST_VERSION[ \t]+([0-9x]+)"
-    )
-  string( REGEX REPLACE
-    "#define THRUST_VERSION[ \t]+"
-    ""
-    version
-    "${version}"
-    )
-
-  math(EXPR major "${version} / 100000")
-  math(EXPR minor "(${version} / 100) % 1000")
-  math(EXPR version "${version} % 100")
-  set( THRUST_VERSION "${major}.${minor}.${version}")
-  set( THRUST_MAJOR_VERSION "${major}")
-  set( THRUST_MINOR_VERSION "${minor}")
+# try to find Thrust via installed config first
+find_package(Thrust QUIET CONFIG)
+if (Thrust_FOUND)
+  find_package_handle_standard_args(Thrust CONFIG_MODE)
+  return()
 endif()
 
-# Check for required components
-include( FindPackageHandleStandardArgs )
-find_package_handle_standard_args( Thrust
-  REQUIRED_VARS THRUST_INCLUDE_DIR
-  VERSION_VAR THRUST_VERSION
-  )
+cmake_minimum_required(VERSION 3.17..3.18 FATAL_ERROR)
 
-set(THRUST_INCLUDE_DIRS ${THRUST_INCLUDE_DIR})
-mark_as_advanced(THRUST_INCLUDE_DIR)
+find_dependency(CUDAToolkit)
+
+find_path(Thrust_INCLUDE_DIRS
+  NAMES thrust/version.h
+  HINTS ${CUDAToolkit_INCLUDE_DIRS})
+
+file(READ ${Thrust_INCLUDE_DIRS}/thrust/version.h _version_header)
+string(REGEX MATCH "#define THRUST_VERSION ([0-9]*)" _match "${_version_header}")
+math(EXPR major "${CMAKE_MATCH_1} / 100000")
+math(EXPR minor "(${CMAKE_MATCH_1} / 100) % 1000")
+math(EXPR subminor "${CMAKE_MATCH_1} % 100")
+set(Thrust_VERSION "${major}.${minor}.${subminor}")
+
+find_package_handle_standard_args(Thrust
+  REQUIRED_VARS Thrust_INCLUDE_DIRS
+  VERSION_VAR Thrust_VERSION)
+
+if (Thrust_FOUND)
+  function(thrust_create_target tgt)
+    if(NOT TARGET ${tgt})
+      # can't use a regular IMPORTED INTERFACE target since that'll
+      # use -isystem, leading to the wrong search order with nvcc
+      add_library(thrust_internal INTERFACE)
+      set_target_properties(thrust_internal PROPERTIES
+	INTERFACE_INCLUDE_DIRECTORIES "${Thrust_INCLUDE_DIRS}")
+      add_library(${tgt} ALIAS thrust_internal)
+    endif()
+  endfunction()
+endif()
