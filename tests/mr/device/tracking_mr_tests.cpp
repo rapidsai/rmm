@@ -61,7 +61,9 @@ TEST(TrackingTest, AllocationsLeftWithStacks)
     mr.deallocate(allocations[i], 10_MiB);
   }
   EXPECT_EQ(mr.get_num_outstanding_allocations(), 5);
-  mr.print_outstanding_allocations();
+  auto const &outstanding_allocations = mr.get_outstanding_allocations();
+  EXPECT_EQ(outstanding_allocations.size(), 5);
+  EXPECT_NE(outstanding_allocations.begin()->second.strace, nullptr);
 }
 
 TEST(TrackingTest, AllocationsLeftWithoutStacks)
@@ -75,7 +77,9 @@ TEST(TrackingTest, AllocationsLeftWithoutStacks)
     mr.deallocate(allocations[i], 10_MiB);
   }
   EXPECT_EQ(mr.get_num_outstanding_allocations(), 5);
-  mr.print_outstanding_allocations();
+  auto const &outstanding_allocations = mr.get_outstanding_allocations();
+  EXPECT_EQ(outstanding_allocations.size(), 5);
+  EXPECT_EQ(outstanding_allocations.begin()->second.strace, nullptr);
 }
 
 }  // namespace

@@ -30,9 +30,10 @@ namespace mr {
  *
  * An instance of this resource can be constructed with an existing, upstream
  * resource in order to satisfy allocation requests, but any existing allocations
- * will be untracked. Tracking data is heavy as we store a stack frame, size and pointer
- * for each allocation. This is intended as a debug adaptor and shouldn't be used in
- * performance sensitive code.
+ * will be untracked. Tracking stores a size and pointer for every allocation, and a stack
+ * frame if `capture_stacks` is true, so it can add significant overhead.
+ * `tracking_resource_adaptor` is intended as a debug adaptor and shouldn't be used in
+ * performance-sensitive code.
  *
  * @tparam Upstream Type of the upstream resource used for
  * allocation/deallocation.
@@ -43,6 +44,24 @@ class tracking_resource_adaptor final : public device_memory_resource {
   // can be a std::shared_mutex once C++17 is adopted
   using read_lock_t  = std::shared_lock<std::shared_timed_mutex>;
   using write_lock_t = std::unique_lock<std::shared_timed_mutex>;
+
+  /**
+   * @brief Information stored about an allocation. Includes the size
+   * and a stack trace if the `tracking_resource_adaptor` was initialized
+   * to capture stacks.
+   *
+   */
+  struct allocation_info {
+    std::unique_ptr<boost::stacktrace::stacktrace> strace;
+    std::size_t allocation_size;
+
+    allocation_info() : strace{nullptr}, allocation_size{0} {};
+    allocation_info(std::size_t size, bool capture_stack) : allocation_size{size}
+    {
+      // maybe store off a stack for this allocation
+      strace = capture_stack ? std::make_unique<boost::stacktrace::stacktrace>() : nullptr;
+    };
+  };
 
   /**
    * @brief Construct a new tracking resource adaptor using `upstream` to satisfy
@@ -91,23 +110,32 @@ class tracking_resource_adaptor final : public device_memory_resource {
     return upstream_->supports_get_mem_info();
   }
 
+  std::map<void*, allocation_info> const& get_outstanding_allocations() const
+  {
+    return allocations;
+  }
+
   /**
-   * @brief Print any outstanding allocations to debug log
+   * @brief Log any outstanding allocations via RMM_LOG_DEBUG
    *
    */
-  void print_outstanding_allocations() const
+  void log_outstanding_allocations() const
   {
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_DEBUG
     read_lock_t lock(mtx);
-    std::ostringstream oss;
-    for (auto const& al : allocations) {
-      oss << "Allocation " << al.first << " of " << al.second.allocation_size << "bytes";
-      if (al.second.strace != nullptr) {
-        oss << " with callstack:" << std::endl << *al.second.strace;
+    if (not allocations.empty()) {
+      std::ostringstream oss;
+      for (auto const& al : allocations) {
+        oss << al.first << ": " << al.second.allocation_size << " B";
+        if (al.second.strace != nullptr) {
+          oss << " : callstack:" << std::endl << *al.second.strace;
+        }
+        oss << std::endl;
       }
-      oss << std::endl;
-    }
 
-    RMM_LOG_DEBUG("Outstanding Allocations: {}", oss.str());
+      RMM_LOG_DEBUG("Outstanding Allocations: {}", oss.str());
+    }
+#endif  // SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_DEBUG
   }
 
   /**
@@ -207,18 +235,6 @@ class tracking_resource_adaptor final : public device_memory_resource {
   {
     return upstream_->get_mem_info(stream);
   }
-
-  struct allocation_info {
-    std::unique_ptr<boost::stacktrace::stacktrace> strace;
-    std::size_t allocation_size;
-
-    allocation_info() : strace{nullptr}, allocation_size{0} {};
-    allocation_info(std::size_t size, bool capture_stack) : allocation_size{size}
-    {
-      // maybe store off a stack for this allocation
-      strace = capture_stack ? std::make_unique<boost::stacktrace::stacktrace>() : nullptr;
-    };
-  };
 
   bool capture_stacks_;
 

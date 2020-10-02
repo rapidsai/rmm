@@ -41,26 +41,33 @@ TEST(LimitingTest, UnderLimitDueToFrees)
 {
   Limiting_adaptor mr{rmm::mr::get_current_device_resource(), 10_MiB};
   auto p1 = mr.allocate(4_MiB);
-  EXPECT_EQ(mr.space_free(), 6_MiB);
+  EXPECT_EQ(mr.allocated_bytes(), 4_MiB);
+  EXPECT_EQ(mr.allocation_limit() - mr.allocated_bytes(), 6_MiB);
   auto p2 = mr.allocate(4_MiB);
-  EXPECT_EQ(mr.space_free(), 2_MiB);
+  EXPECT_EQ(mr.allocated_bytes(), 8_MiB);
+  EXPECT_EQ(mr.allocation_limit() - mr.allocated_bytes(), 2_MiB);
   mr.deallocate(p1, 4_MiB);
-  EXPECT_EQ(mr.space_free(), 6_MiB);
-  // note that we don't keep track of fragmentation, so this should fill
-  // 100% of the memory even though it is probably over.
+  EXPECT_EQ(mr.allocated_bytes(), 4_MiB);
+  EXPECT_EQ(mr.allocation_limit() - mr.allocated_bytes(), 6_MiB);
+  // note that we don't keep track of fragmentation or things like page size
+  // so this should fill 100% of the memory even though it is probably over.
   EXPECT_NO_THROW(mr.allocate(6_MiB));
-  EXPECT_EQ(mr.space_free(), 0);
+  EXPECT_EQ(mr.allocated_bytes(), 10_MiB);
+  EXPECT_EQ(mr.allocation_limit() - mr.allocated_bytes(), 0);
 }
 
 TEST(LimitingTest, OverLimit)
 {
   Limiting_adaptor mr{rmm::mr::get_current_device_resource(), 10_MiB};
   auto p1 = mr.allocate(4_MiB);
-  EXPECT_EQ(mr.space_free(), 6_MiB);
+  EXPECT_EQ(mr.allocated_bytes(), 4_MiB);
+  EXPECT_EQ(mr.allocation_limit() - mr.allocated_bytes(), 6_MiB);
   auto p2 = mr.allocate(4_MiB);
-  EXPECT_EQ(mr.space_free(), 2_MiB);
+  EXPECT_EQ(mr.allocated_bytes(), 8_MiB);
+  EXPECT_EQ(mr.allocation_limit() - mr.allocated_bytes(), 2_MiB);
   EXPECT_THROW(mr.allocate(3_MiB), rmm::bad_alloc);
-  EXPECT_EQ(mr.space_free(), 2_MiB);
+  EXPECT_EQ(mr.allocated_bytes(), 8_MiB);
+  EXPECT_EQ(mr.allocation_limit() - mr.allocated_bytes(), 2_MiB);
 }
 
 }  // namespace

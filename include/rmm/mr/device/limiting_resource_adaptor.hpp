@@ -86,7 +86,25 @@ class limiting_resource_adaptor final : public device_memory_resource {
     return upstream_->supports_get_mem_info();
   }
 
-  std::size_t space_free() const { return allocation_limit_ - allocated_bytes_; }
+  /**
+   * @brief Query the number of bytes that have been allocated. Note that
+   * this can not be used to know how large of an allocation is possible due
+   * to both possible fragmentation and also internal page sizes and alignment
+   * that is not tracked by this allocator.
+   *
+   * @return std::size_t number of bytes that have been allocated through this
+   * allocator.
+   */
+  std::size_t allocated_bytes() const { return allocated_bytes_; }
+
+  /**
+   * @brief Query the maximum number of bytes that this allocator is allowed
+   * to allocate. This is the limit on the allocator and not a representation of
+   * the underlying device. The device may not be able to support this limit.
+   *
+   * @return std::size_t max number of bytes allowed for this allocator
+   */
+  std::size_t allocation_limit() const { return allocation_limit_; }
 
  private:
   /**
@@ -167,7 +185,8 @@ class limiting_resource_adaptor final : public device_memory_resource {
   std::pair<size_t, size_t> do_get_mem_info(cudaStream_t stream) const override
   {
     auto ret = upstream_->get_mem_info(stream);
-    return {std::min(ret.first, space_free()), std::max(ret.second, allocation_limit_)};
+    return {std::min(ret.first, allocation_limit_ - allocated_bytes_),
+            std::max(ret.second, allocation_limit_)};
   }
 
   // maximum bytes this allocator is allowed to allocate.
