@@ -31,13 +31,14 @@ function(ConfigureTest CMAKE_TEST_NAME CMAKE_TEST_SRC)
   set_target_properties(${CMAKE_TEST_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
   target_include_directories(${CMAKE_TEST_NAME} PRIVATE "$<BUILD_INTERFACE:${RMM_SOURCE_DIR}>")
 
-  target_link_libraries(${CMAKE_TEST_NAME} gmock gtest gmock_main gtest_main pthread rmm)
+  target_link_libraries(${CMAKE_TEST_NAME} GTest::gmock GTest::gtest GTest::gmock_main GTest::gtest_main
+                        pthread rmm)
   
   set_target_properties(${CMAKE_TEST_NAME} PROPERTIES
                         RUNTIME_OUTPUT_DIRECTORY "${RMM_BINARY_DIR}/gtests")
 
   target_compile_definitions(${CMAKE_TEST_NAME} PUBLIC
-                             SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${LOGGING_LEVEL})
+                        "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")    
 
   add_test(NAME ${CMAKE_TEST_NAME} COMMAND ${CMAKE_TEST_NAME})
 endfunction(ConfigureTest)
@@ -85,6 +86,15 @@ set(THRUST_ALLOCATOR_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/thrust_allocator_tests.cu")
     
 ConfigureTest(THRUST_ALLOCATOR_TEST "${THRUST_ALLOCATOR_TEST_SRC}")
+
+###################################################################################################
+# - limiting adaptor tests
+
+set(LIMITING_TEST_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/limiting_mr_tests.cpp")
+
+ConfigureTest(LIMITING_TEST "${LIMITING_TEST_SRC}")
+target_compile_definitions(LIMITING_TEST PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
 
 ###################################################################################################
 # - host mr tests
