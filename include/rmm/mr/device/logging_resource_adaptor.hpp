@@ -133,7 +133,10 @@ class logging_resource_adaptor final : public device_memory_resource {
    *
    * @return bool true if the upstream resource supports get_mem_info, false otherwise.
    */
-  bool supports_get_mem_info() const noexcept override { return upstream_->supports_streams(); }
+  bool supports_get_mem_info() const noexcept override
+  {
+    return upstream_->supports_get_mem_info();
+  }
 
   /**
    * @brief Flush logger contents.
