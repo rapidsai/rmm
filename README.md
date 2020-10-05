@@ -24,7 +24,7 @@ ensure you are on the `main` branch.
 
 ### Conda
 
-RMM can be installed with conda ([miniconda](https://conda.io/miniconda.html), or the full
+RMM can be installed with Conda ([miniconda](https://conda.io/miniconda.html), or the full
 [Anaconda distribution](https://www.anaconda.com/download)) from the `rapidsai` channel:
 
 ```bash
@@ -39,10 +39,12 @@ conda install -c nvidia -c rapidsai -c conda-forge -c defaults \
     rmm cudatoolkit=10.0
 ```
 
-We also provide [nightly conda packages](https://anaconda.org/rapidsai-nightly) built from the HEAD
+We also provide [nightly Conda packages](https://anaconda.org/rapidsai-nightly) built from the HEAD
 of our latest development branch.
 
-Note: RMM is supported only on Linux, and with Python versions 3.6 or 3.7.
+Note: RMM is supported only on Linux, and with Python versions 3.7 and later.
+
+Note: The RMM package from Conda requires building with GCC 7 or later. Otherwise, your application may fail to build.
 
 See the [Get RAPIDS version picker](https://rapids.ai/start.html) for more OS and version info.
 
@@ -52,7 +54,7 @@ See the [Get RAPIDS version picker](https://rapids.ai/start.html) for more OS an
 
 Compiler requirements:
 
-* `gcc`     version 4.8 or higher recommended
+* `gcc`     version 7.0 or higher required
 * `nvcc`    version 9.0 or higher recommended
 * `cmake`   version 3.12 or higher
 
@@ -124,6 +126,43 @@ $ pytest -v
 ```
 
 Done! You are ready to develop for the RMM OSS project.
+
+### Caching third-party dependencies
+
+RMM uses [CPM.cmake](https://github.com/TheLartians/CPM.cmake) to
+handle third-party dependencies like spdlog, Thrust, GoogleTest,
+GoogleBenchmark. In general you won't have to worry about it. If CMake
+finds an appropriate version on your system, it uses it (you can
+help it along by setting `CMAKE_PREFIX_PATH` to point to the
+installed location). Otherwise those dependencies will be downloaded as
+part of the build.
+
+If you frequently start new builds from scratch, consider setting the
+environment variable `CPM_SOURCE_CACHE` to an external download
+directory to avoid repeated downloads of the third-party dependencies.
+
+## Using RMM in a downstream CMake project
+
+The installed RMM library provides a set of config files that makes it easy to
+integrate RMM into your own CMake project. In your `CMakeLists.txt`, just add
+
+```cmake
+find_package(rmm [VERSION])
+# ...
+target_link_libraries(<your-target> (PRIVATE|PUBLIC) rmm::rmm)
+```
+
+Since RMM is a header-only library, this does not actually link RMM,
+but it makes the headers available and pulls in transitive dependencies.
+If RMM is not installed in a default location, use
+`CMAKE_PREFIX_PATH` or `rmm_ROOT` to point to its location.
+
+One of RMM's dependencies is the Thrust library, so the above
+automatically pulls in `Thrust` by means of a dependency on the
+`rmm::Thrust` target. By default it uses the standard configuration of
+Thrust. If you want to customize it, you can set the variables
+`THRUST_HOST_SYSTEM` and `THRUST_DEVICE_SYSTEM`; see
+[Thrust's CMake documentation](https://github.com/NVIDIA/thrust/blob/main/thrust/cmake/README.md).
 
 # Using RMM in C++
 
@@ -400,22 +439,56 @@ The first `stream` argument is the `stream` to use for `rmm::mr::thrust_allocato
 The second `stream` argument is what should be used to execute the Thrust algorithm.
 These two arguments must be identical.
 
-## Debug Logging
+## Logging
+
+RMM includes two forms of logging. Memory event logging and debug logging.
+
+### Memory Event Logging and `logging_resource_adaptor`
+
+Memory event logging writes details of every allocation or deallocation to a CSV (comma-separated
+value) file. In C++, Memory Event Logging is enabled by using the `logging_resource_adaptor` as a 
+wrapper around any other `device_memory_resource` object.
+
+Each row in the log represents either an allocation or a deallocation. The columns of the file are
+"Thread, Time, Action, Pointer, Size, Stream".
+
+The CSV output files of the `logging_resource_adaptor` can be used as input to `REPLAY_BENCHMARK`,
+which is available when building RMM from source, in the `gbenchmarks` folder in the build directory.
+This log replayer can be useful for profiling and debugging allocator issues.
+
+The following C++ example creates a logging version of a `cuda_memory_resource` that outputs the log
+to the file "logs/test1.csv".
+
+```c++
+std::string filename{"logs/test1.csv"};
+rmm::mr::cuda_memory_resource upstream;
+rmm::mr::logging_resource_adaptor<rmm::mr::cuda_memory_resource> log_mr{&upstream, filename};
+```
+
+If a file name is not specified, the environment variable `RMM_LOG_FILE` is queried for the file 
+name. If `RMM_LOG_FILE` is not set, then an exception is thrown by the `logging_resource_adaptor`
+constructor.
+
+In Python, memory event logging is enabled when the `logging` parameter of `rmm.reinitialize()` is
+set to `True`. The log file name can be set using the `log_file_name` parameter. See
+`help(rmm.reinitialize)` for full details.
+
+### Debug Logging
 
 RMM includes a debug logger which can be enabled to log trace and debug information to a file. This 
 information can show when errors occur, when additional memory is allocated from upstream resources,
 etc. The default log file is `rmm_log.txt` in the current working directory, but the environment
 variable `RMM_DEBUG_LOG_FILE` can be set to specify the path and file name.
 
-There is a CMake configuration variable `LOGGING_LEVEL`, which can be set to enable compilation of
-more detailed logging. The default is `INFO`. Available levels are `TRACE`, `DEBUG`, `INFO`, `WARN`,
-`ERROR`, `CRITICAL`.
+There is a CMake configuration variable `RMM_LOGGING_LEVEL`, which can be set to enable compilation
+of more detailed logging. The default is `INFO`. Available levels are `TRACE`, `DEBUG`, `INFO`,
+`WARN`, `ERROR`, `CRITICAL` and `OFF`.
 
 The log relies on the [spdlog](https://github.com/gabime/spdlog.git) library.
 
 Note that to see logging below the `INFO` level, the C++ application must also call
 `rmm::logger().set_level()`, e.g. to enable all levels of logging down to `TRACE`, call 
-`rmm::logger().set_level(spdlog::level::trace)`.
+`rmm::logger().set_level(spdlog::level::trace)` (and compile with `-DRMM_LOGGING_LEVEL=TRACE`).
 
 Note that debug logging is different from the CSV memory allocation logging provided by 
 `rmm::mr::logging_resource_adapter`. The latter is for logging a history of allocation /
@@ -472,20 +545,18 @@ host:
 array([1., 2., 3.])
 ```
 
-### MemoryResources
+### MemoryResource objects
 
-MemoryResources are used to configure how device memory allocations are made by
+`MemoryResource` objects are used to configure how device memory allocations are made by
 RMM.
 
-By default, i.e., if you don't set a MemoryResource explicitly, RMM
-uses the `CudaMemoryResource`, which uses `cudaMalloc` for
-allocating device memory.
+By default if a `MemoryResource` is not set explicitly, RMM uses the `CudaMemoryResource`, which 
+uses `cudaMalloc` for allocating device memory.
 
-`rmm.reinitialize()` provides an easy way to initialize RMM with specific
-memory resource options across multiple devices. See `help(rmm.reinitialize) for 
-full details.
+`rmm.reinitialize()` provides an easy way to initialize RMM with specific memory resource options
+across multiple devices. See `help(rmm.reinitialize)` for full details.
 
-For lower-level control, `rmm.mr.set_current_device_resource()` function can be
+For lower-level control, the `rmm.mr.set_current_device_resource()` function can be
 used to set a different MemoryResource for the current CUDA device.  For
 example, enabling the `ManagedMemoryResource` tells RMM to use
 `cudaMallocManaged` instead of `cudaMalloc` for allocating memory:

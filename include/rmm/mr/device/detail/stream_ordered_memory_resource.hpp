@@ -255,7 +255,6 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
   }
 
  private:
-#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
   /**
    * @brief RAII wrapper for a CUDA event.
    */
@@ -267,10 +266,6 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     ~event_wrapper() { RMM_ASSERT_CUDA_SUCCESS(cudaEventDestroy(event)); }
     cudaEvent_t event{};
   };
-
-// using default_stream_event_type =
-//  default_stream_event<stream_ordered_suballocator_memory_resource<FreeListType>>;
-#endif
 
   /**
    * @brief get a unique CUDA event (possibly new) associated with `stream`
@@ -286,19 +281,24 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
   {
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
     if (cudaStreamDefault == stream || cudaStreamPerThread == stream) {
+#else
+    if (cudaStreamPerThread == stream) {
+#endif
       // Create a thread-local shared event wrapper. Shared pointers in the thread and in each MR
       // instance ensures it is destroyed cleaned up only after all are finished with it.
       thread_local auto event_tls = std::make_shared<event_wrapper>();
       default_stream_events.insert(event_tls);
       return stream_event_pair{stream, event_tls.get()->event};
     }
-#else
+#ifndef CUDA_API_PER_THREAD_DEFAULT_STREAM
     // We use cudaStreamLegacy as the event map key for the default stream for consistency between
     // PTDS and non-PTDS mode. In PTDS mode, the cudaStreamLegacy map key will only exist if the
     // user explicitly passes it, so it is used as the default location for the free list
     // at construction. For consistency, the same key is used for null stream free lists in non-PTDS
     // mode.
-    if (cudaStreamDefault == stream) { stream = cudaStreamLegacy; }
+    else if (cudaStreamDefault == stream) {
+      stream = cudaStreamLegacy;
+    }
 #endif
 
     auto iter = stream_events_.find(stream);
@@ -474,11 +474,9 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
   // bidirectional mapping between non-default streams and events
   std::unordered_map<cudaStream_t, stream_event_pair> stream_events_;
 
-#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
   // shared pointers to events keeps the events alive as long as either the thread that created them
   // or the MR that is using them exists.
   std::set<std::shared_ptr<event_wrapper>> default_stream_events;
-#endif
 
   std::mutex mtx_;  // mutex for thread-safe access
 };                  // namespace detail

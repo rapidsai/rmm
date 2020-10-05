@@ -27,13 +27,13 @@ function(ConfigureBench CMAKE_BENCH_NAME CMAKE_BENCH_SRC)
   set_target_properties(${CMAKE_BENCH_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
   target_include_directories(${CMAKE_BENCH_NAME} PRIVATE "$<BUILD_INTERFACE:${RMM_SOURCE_DIR}>")
   
-  target_link_libraries(${CMAKE_BENCH_NAME} benchmark pthread rmm)
+  target_link_libraries(${CMAKE_BENCH_NAME} benchmark::benchmark pthread rmm)
 
   set_target_properties(${CMAKE_BENCH_NAME} PROPERTIES
                         RUNTIME_OUTPUT_DIRECTORY "${RMM_BINARY_DIR}/gbenchmarks")
   
   target_compile_definitions(${CMAKE_BENCH_NAME} PUBLIC
-                             SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${LOGGING_LEVEL})    
+                             "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")    
 endfunction(ConfigureBench)
 
 ###################################################################################################

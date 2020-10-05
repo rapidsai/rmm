@@ -2,8 +2,10 @@
 
 ## New Features
 
- - PR #529 Add debug logging and fix multithreaded replay benchmark
- - PR #560 Remove deprecated `get/set_default_resource` APIs
+- PR #529 Add debug logging and fix multithreaded replay benchmark
+- PR #560 Remove deprecated `get/set_default_resource` APIs
+- PR #543 Add an arena-based memory resource
+- PR #580 Install CMake config with RMM
 
 ## Improvements
 
@@ -16,19 +18,29 @@
 - PR #538 Upgrade CUB and Thrust to the latest commits
 - PR #542 Pin conda spdlog versions to 1.7.0
 - PR #550 Remove CXX11 ABI handling from CMake
+- PR #578 Switch thrust to use the NVIDIA/thrust repo
 - PR #553 CMake cleanup
 - PR #556 By default, don't create a debug log file unless there are warnings/errors
 - PR #561 Remove CNMeM and make RMM header-only
 - PR #565 CMake: Simplify gtest/gbench handling
 - PR #566 CMake: use CPM for thirdparty dependencies
 - PR #568 Upgrade googletest to v1.10.0
+- PR #572 CMake: prefer locally installed thirdparty packages
+- PR #579 CMake: handle thrust via target
+- PR #581 Improve logging documentation
+- PR #585 Update ci/local/README.md
+- PR #587 Replaced `move` with `std::move`
 
 ## Bug Fixes
 
 - PR #545 Fix build to support using `clang` as the host compiler
 - PR #534 Fix `pool_memory_resource` failure when init and max pool sizes are equal
 - PR #546 Remove CUDA driver linking and correct NVTX macro.
+- PR #569 Correct `device_scalar::set_value` to pass host value by reference to avoid copying from invalid value
 - PR #559 Fix `align_down` to only change unaligned values.
+- PR #577 Fix CMake `LOGGING_LEVEL` issue which caused verbose logging / performance regression.
+- PR #582 Fix handling of per-thread default stream when not compiled for PTDS
+- PR #590 Add missing `CODE_OF_CONDUCT.md`
 
 
 # RMM 0.15.0 (26 Aug 2020)

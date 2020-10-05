@@ -61,8 +61,6 @@ option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
 
 option(PER_THREAD_DEFAULT_STREAM "Build with per-thread default stream" OFF)
 
-option(USE_NVTX "Build with NVTX support" OFF)
-
 ###################################################################################################
 # find packages we depend on
 
@@ -71,12 +69,12 @@ find_package(CUDAToolkit REQUIRED)
 ###################################################################################################
 # cmake modules
 
-set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/" ${CMAKE_MODULE_PATH})
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 ###################################################################################################
 # third-party dependencies
 
-add_subdirectory(thirdparty)
+include(RMM_thirdparty)
 
 ###################################################################################################
 # per-thread default stream option
@@ -86,6 +84,36 @@ if(PER_THREAD_DEFAULT_STREAM)
     message(STATUS "Using per-thread default stream")
     add_compile_definitions(CUDA_API_PER_THREAD_DEFAULT_STREAM)
 endif(PER_THREAD_DEFAULT_STREAM)
+
+###################################################################################################
+# library targets
+
+add_library(rmm INTERFACE)
+add_library(rmm::rmm ALIAS rmm)
+
+target_include_directories(rmm INTERFACE
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+  "$<INSTALL_INTERFACE:include>"
+  )
+
+if(CUDA_STATIC_RUNTIME)
+  message(STATUS "Enabling static linking of cudart")
+  target_link_libraries(rmm INTERFACE CUDA::cudart_static)
+else()
+  target_link_libraries(rmm INTERFACE CUDA::cudart)
+endif(CUDA_STATIC_RUNTIME)
+
+target_link_libraries(rmm INTERFACE rmm::Thrust)
+target_link_libraries(rmm INTERFACE spdlog::spdlog_header_only)
+
+###################################################################################################
+# Set logging level. Must go before including gtests and benchmarks. 
+
+set(RMM_LOGGING_LEVEL "INFO" CACHE STRING "Choose the logging level.")
+# Set the possible values of build type for cmake-gui
+set_property(CACHE RMM_LOGGING_LEVEL PROPERTY STRINGS
+    "TRACE" "DEBUG" "INFO" "WARN" "ERROR" "CRITICAL" "OFF")
+message(STATUS "RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'.")
 
 ###################################################################################################
 # add gtest
@@ -103,56 +131,42 @@ if(BUILD_BENCHMARKS)
 endif(BUILD_BENCHMARKS)
 
 ###################################################################################################
-# library targets
-
-add_library(rmm INTERFACE)
-
-target_include_directories(rmm INTERFACE
-  "${THRUST_INCLUDE_DIR}"
-  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-  "$<INSTALL_INTERFACE:include>"
-  )
-
-if(USE_NVTX)
-  message(STATUS "Using Nvidia Tools Extension")
-else()
-  target_compile_definitions(rmm INTERFACE NVTX_DISABLE)
-endif(USE_NVTX)
-
-if(CUDA_STATIC_RUNTIME)
-  message(STATUS "Enabling static linking of cudart")
-  target_link_libraries(rmm INTERFACE CUDA::cudart_static)
-else()
-  target_link_libraries(rmm INTERFACE CUDA::cudart)
-endif(CUDA_STATIC_RUNTIME)
-
-target_link_libraries(rmm INTERFACE spdlog::spdlog_header_only)
-
-###################################################################################################
-# Set a default logging level if none was specified
-
-set(DEFAULT_LOGGING_LEVEL "INFO")
-
-if(NOT LOGGING_LEVEL)
-    message(STATUS "Setting logging level to '${DEFAULT_LOGGING_LEVEL}' since none specified.")
-    set(LOGGING_LEVEL "${DEFAULT_LOGGING_LEVEL}" CACHE
-      STRING "Choose the logging level." FORCE)
-    # Set the possible values of build type for cmake-gui
-    set_property(CACHE LOGGING_LEVEL PROPERTY STRINGS
-        "TRACE" "DEBUG" "INFO" "WARN" "ERROR" "CRITICAL" "OFF")
-else()
-    message(STATUS "Setting logging level to '${LOGGING_LEVEL}'")
-endif(NOT LOGGING_LEVEL)
-
-###################################################################################################
 # install targets
 
+include(GNUInstallDirs)
+set(INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/rmm)
+
 install(TARGETS rmm
-        DESTINATION lib)
+  EXPORT rmm-targets)
 
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/rmm
-        DESTINATION include)
+install(DIRECTORY include/rmm
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
+include(CMakePackageConfigHelpers)
+configure_package_config_file(
+  cmake/rmm-config.cmake.in
+  ${RMM_BINARY_DIR}/rmm-config.cmake
+  INSTALL_DESTINATION ${INSTALL_CONFIGDIR}
+  )
+
+write_basic_package_version_file(
+  ${RMM_BINARY_DIR}/rmm-config-version.cmake
+  COMPATIBILITY SameMinorVersion
+  )
+
+install(EXPORT rmm-targets
+  FILE rmm-targets.cmake
+  NAMESPACE rmm::
+  DESTINATION ${INSTALL_CONFIGDIR}
+  )
+
+install(FILES
+  ${RMM_BINARY_DIR}/rmm-config.cmake
+  ${RMM_BINARY_DIR}/rmm-config-version.cmake
+  ${RMM_SOURCE_DIR}/cmake/install/FindThrust.cmake
+  DESTINATION ${INSTALL_CONFIGDIR}
+  )
+  
 ###################################################################################################
 # make documentation
 
