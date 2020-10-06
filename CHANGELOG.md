@@ -13,8 +13,8 @@
 - PR #529 Add debug logging and fix multithreaded replay benchmark
 - PR #560 Remove deprecated `get/set_default_resource` APIs
 - PR #543 Add an arena-based memory resource
-- PR #575 Adding tracking memory adaptors to catch memory leaks
 - PR #580 Install CMake config with RMM
+- PR #596 Adding tracking memory adaptor to catch memory leaks
 
 ## Improvements
 
