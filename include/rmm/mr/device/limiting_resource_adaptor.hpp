@@ -104,7 +104,7 @@ class limiting_resource_adaptor final : public device_memory_resource {
    *
    * @return std::size_t max number of bytes allowed for this allocator
    */
-  std::size_t allocation_limit() const { return allocation_limit_; }
+  std::size_t get_allocation_limit() const { return allocation_limit_; }
 
  private:
   /**
