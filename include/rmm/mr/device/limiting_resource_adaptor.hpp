@@ -95,7 +95,7 @@ class limiting_resource_adaptor final : public device_memory_resource {
    * @return std::size_t number of bytes that have been allocated through this
    * allocator.
    */
-  std::size_t allocated_bytes() const { return allocated_bytes_; }
+  std::size_t get_allocated_bytes() const { return allocated_bytes_; }
 
   /**
    * @brief Query the maximum number of bytes that this allocator is allowed
