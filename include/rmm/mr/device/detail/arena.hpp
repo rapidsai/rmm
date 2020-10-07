@@ -33,8 +33,8 @@ namespace mr {
 namespace detail {
 namespace arena {
 
-/// Minimum size of a superblock (4 MiB).
-constexpr std::size_t minimum_superblock_size = 1u << 22u;
+/// Minimum size of a superblock (1 MiB).
+constexpr std::size_t minimum_superblock_size = 1u << 20u;
 
 /**
  * @brief Represents a chunk of memory that can be allocated and deallocated.
