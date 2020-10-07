@@ -341,7 +341,7 @@ int main(int argc, char** argv)
     options.add_options()("s,size",
                           "Size of simulated GPU memory in GiB. Not supported for the cuda memory "
                           "resource.",
-                          cxxopts::value<std::size_t>()->default_value("0"));
+                          cxxopts::value<float>()->default_value("0"));
     options.add_options()("v,verbose",
                           "Enable verbose printing of log events",
                           cxxopts::value<bool>()->default_value("false"));
@@ -364,7 +364,8 @@ int main(int argc, char** argv)
   std::cout << "Using CUDA per-thread default stream.\n";
 #endif
 
-  auto const simulated_size = args["size"].as<std::size_t>() << 30;
+  auto const simulated_size =
+    static_cast<std::size_t>(args["size"].as<float>() * static_cast<float>(1u << 30u));
   if (simulated_size != 0 && args["resource"].as<std::string>() != "cuda") {
     std::cout << "Simulating GPU with memory size of " << simulated_size << " bytes.\n";
   }
