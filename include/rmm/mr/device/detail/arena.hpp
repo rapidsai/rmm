@@ -33,8 +33,8 @@ namespace mr {
 namespace detail {
 namespace arena {
 
-/// Minimum size of a superblock (1 MiB).
-constexpr std::size_t minimum_superblock_size = 1u << 20u;
+/// Minimum size of a superblock (32 KiB).
+constexpr std::size_t minimum_superblock_size = 1u << 15u;
 
 /**
  * @brief Represents a chunk of memory that can be allocated and deallocated.
@@ -64,18 +64,10 @@ class block {
    */
   block(void* pointer, size_t size) : pointer_(static_cast<char*>(pointer)), size_(size) {}
 
-  /**
-   * @brief Return the underlying pointer.
-   *
-   * @return The pointer at the beginning of the block.
-   */
+  /// Returns the underlying pointer.
   void* pointer() const { return pointer_; }
 
-  /**
-   * @brief Return the size of the block.
-   *
-   * @return The size of the block.
-   */
+  /// Returns the size of the block.
   size_t size() const { return size_; }
 
   /// Returns true if this block is valid (non-null), false otherwise.
@@ -199,33 +191,15 @@ inline block first_fit(std::set<block>& free_blocks, std::size_t size)
 }
 
 /**
- * @brief Splits block `b` if necessary to return the block allocated.
- *
- * If the block is split, the remainder is returned to the free blocks.
- *
- * @param free_blocks The address-ordered set of free blocks.
- * @param b The block to allocate from.
- * @param size The size in bytes of the requested allocation.
- * @return block The allocated block.
- */
-inline block split_block(std::set<block>& free_blocks, block const& b, std::size_t size)
-{
-  auto const split     = b.split(size);
-  auto const remainder = split.second;
-  if (remainder.is_valid()) free_blocks.emplace(remainder);
-  return split.first;
-}
-
-/**
  * @brief Coalesce the given block with other free blocks.
  *
  * @param free_blocks The address-ordered set of free blocks.
  * @param b The block to coalesce.
  * @return block The coalesced block.
  */
-inline void coalesce_block(std::set<block>& free_blocks, block const& b)
+inline block coalesce_block(std::set<block>& free_blocks, block const& b)
 {
-  if (!b.is_valid()) return;
+  if (!b.is_valid()) return b;
 
   // Find the right place (in ascending address order) to insert the block.
   auto const next     = free_blocks.lower_bound(b);
@@ -235,22 +209,25 @@ inline void coalesce_block(std::set<block>& free_blocks, block const& b)
   bool const merge_prev = previous->is_contiguous_before(b);
   bool const merge_next = next != free_blocks.cend() && b.is_contiguous_before(*next);
 
+  block merged{};
   if (merge_prev && merge_next) {
-    auto const merged = previous->merge(b).merge(*next);
+    merged = previous->merge(b).merge(*next);
     free_blocks.erase(previous);
     auto const i = free_blocks.erase(next);
     free_blocks.insert(i, merged);
   } else if (merge_prev) {
-    auto const merged = previous->merge(b);
-    auto const i      = free_blocks.erase(previous);
+    merged       = previous->merge(b);
+    auto const i = free_blocks.erase(previous);
     free_blocks.insert(i, merged);
   } else if (merge_next) {
-    auto const merged = b.merge(*next);
-    auto const i      = free_blocks.erase(next);
+    merged       = b.merge(*next);
+    auto const i = free_blocks.erase(next);
     free_blocks.insert(i, merged);
   } else {
     free_blocks.emplace(b);
+    merged = b;
   }
+  return merged;
 }
 
 /**
@@ -297,13 +274,16 @@ class global_arena final {
     RMM_EXPECTS(maximum_size_ == default_maximum_size || maximum_size_ == align_up(maximum_size_),
                 "Error, Maximum arena size required to be a multiple of 256 bytes");
 
-    std::size_t free{}, total{};
-    RMM_CUDA_TRY(cudaMemGetInfo(&free, &total));
-    if (initial_size == default_initial_size) {
-      initial_size = align_up(std::min(free, total / 2));
+    if (initial_size == default_initial_size || maximum_size == default_maximum_size) {
+      std::size_t free{}, total{};
+      RMM_CUDA_TRY(cudaMemGetInfo(&free, &total));
+      if (initial_size == default_initial_size) {
+        initial_size = align_up(std::min(free, total / 2));
+      }
+      if (maximum_size_ == default_maximum_size) {
+        maximum_size_ = align_down(free) - reserved_size;
+      }
     }
-    if (maximum_size_ == default_maximum_size) { maximum_size_ = align_down(free) - reserved_size; }
-
     RMM_EXPECTS(initial_size <= maximum_size_, "Initial arena size exceeds the maximum pool size!");
 
     free_blocks_.emplace(expand_arena(initial_size));
@@ -381,8 +361,8 @@ class global_arena final {
     if (b.is_valid()) return b;
 
     // No existing larger blocks available, so grow the arena.
-    auto const upstream = expand_arena(size_to_grow(size));
-    coalesce_block(free_blocks_, upstream);
+    auto const upstream_block = expand_arena(size_to_grow(size));
+    coalesce_block(free_blocks_, upstream_block);
     return first_fit(free_blocks_, size);
   }
 
@@ -466,7 +446,6 @@ class arena {
     lock_guard lock(mtx_);
     auto const b = get_block(bytes);
     allocated_blocks_.emplace(b.pointer(), b);
-    free_size_ -= bytes;
     return b.pointer();
   }
 
@@ -484,8 +463,8 @@ class arena {
     lock_guard lock(mtx_);
     auto const b = free_block(p, bytes);
     if (b.is_valid()) {
-      coalesce_block(free_blocks_, b);
-      shrink_arena(stream);
+      auto const merged = coalesce_block(free_blocks_, b);
+      shrink_arena(merged, stream);
     }
     return b.is_valid();
   }
@@ -523,8 +502,6 @@ class arena {
   }
 
  private:
-  static constexpr float emptiness_threshold = 0.1f;
-
   using lock_guard = std::lock_guard<std::mutex>;
 
   /**
@@ -535,9 +512,11 @@ class arena {
    */
   block get_block(std::size_t size)
   {
-    // Find the first-fit free block.
-    auto const b = first_fit(free_blocks_, size);
-    if (b.is_valid()) { return b; }
+    if (size < minimum_superblock_size) {
+      // Find the first-fit free block.
+      auto const b = first_fit(free_blocks_, size);
+      if (b.is_valid()) { return b; }
+    }
 
     // No existing larger blocks available, so grow the arena and obtain a superblock.
     auto const superblock = expand_arena(size);
@@ -553,8 +532,6 @@ class arena {
   block expand_arena(std::size_t size)
   {
     auto const superblock_size = std::max(size, minimum_superblock_size);
-    total_size_ += superblock_size;
-    free_size_ += superblock_size;
     return global_arena_.allocate(superblock_size);
   }
 
@@ -576,7 +553,6 @@ class arena {
     auto const found = i->second;
     RMM_LOGGING_ASSERT(found.size() == size);
     allocated_blocks_.erase(i);
-    free_size_ += size;
 
     return found;
   }
@@ -586,36 +562,15 @@ class arena {
    *
    * @param stream Stream on which to perform shrinking.
    */
-  void shrink_arena(cudaStream_t stream)
+  void shrink_arena(block const& b, cudaStream_t stream)
   {
-    // Don't shrink if emptiness is below the threshold.
-    if (get_empty_fraction() < emptiness_threshold) return;
+    // Don't shrink if b is not a superblock.
+    if (!b.is_superblock()) return;
 
     RMM_CUDA_TRY(cudaStreamSynchronize(stream));
 
-    // Return superblocks until emptiness falls below the threshold.
-    for (auto it = free_blocks_.rbegin(); it != free_blocks_.rend();) {
-      auto const b = *it;
-      if (b.is_superblock()) {
-        global_arena_.deallocate(b);
-        it = decltype(it){free_blocks_.erase(std::next(it).base())};
-        total_size_ -= b.size();
-        free_size_ -= b.size();
-        if (get_empty_fraction() < emptiness_threshold) break;
-      } else {
-        ++it;
-      }
-    }
-  }
-
-  /**
-   * @brief Calculate the empty fraction (free_size_ / total_size_).
-   *
-   * @return float The empty fraction.
-   */
-  float get_empty_fraction() const
-  {
-    return static_cast<float>(free_size_) / static_cast<float>(total_size_);
+    global_arena_.deallocate(b);
+    free_blocks_.erase(b);
   }
 
   /// The global arena to allocate superblocks from.
@@ -624,12 +579,6 @@ class arena {
   std::set<block> free_blocks_;
   //// Map of pointer address to allocated blocks.
   std::unordered_map<void*, block> allocated_blocks_;
-
-  /// The total size of the arena.
-  std::size_t total_size_{};
-  /// The total size of all the free blocks in the arena.
-  std::size_t free_size_{};
-
   /// Mutex for exclusive lock.
   mutable std::mutex mtx_;
 };
