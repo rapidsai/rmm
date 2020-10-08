@@ -186,7 +186,7 @@ class arena_memory_resource final : public device_memory_resource {
 
     // The thread that originally allocated the block has terminated, deallocate directly in the
     // global arena.
-    global_arena_.deallocate({static_cast<char*>(p), bytes});
+    global_arena_.deallocate({p, bytes});
   }
 
   /**

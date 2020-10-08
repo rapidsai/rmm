@@ -41,15 +41,48 @@ constexpr std::size_t minimum_superblock_size = 1u << 20u;
  *
  * A fixed-sized block obtained from the global arena is called a "superblock".
  */
-struct block {
-  char* pointer{};     ///< Raw memory pointer.
-  std::size_t size{};  ///< Size in bytes.
+class block {
+ public:
+  /**
+   * @brief Construct a default block.
+   */
+  block() = default;
+
+  /**
+   * @brief Construct a block given a pointer and size.
+   *
+   * @param pointer The address for the beginning of the block.
+   * @param size The size of the block.
+   */
+  block(char* pointer, size_t size) : pointer_(pointer), size_(size) {}
+
+  /**
+   * @brief Construct a block given a void pointer and size.
+   *
+   * @param pointer The address for the beginning of the block.
+   * @param size The size of the block.
+   */
+  block(void* pointer, size_t size) : pointer_(static_cast<char*>(pointer)), size_(size) {}
+
+  /**
+   * @brief Return the underlying pointer.
+   *
+   * @return The pointer at the beginning of the block.
+   */
+  void* pointer() const { return pointer_; }
+
+  /**
+   * @brief Return the size of the block.
+   *
+   * @return The size of the block.
+   */
+  size_t size() const { return size_; }
 
   /// Returns true if this block is valid (non-null), false otherwise.
-  bool is_valid() const { return pointer != nullptr; }
+  bool is_valid() const { return pointer_ != nullptr; }
 
   /// Returns true if this block is a superblock, false otherwise.
-  bool is_superblock() const { return size >= minimum_superblock_size; }
+  bool is_superblock() const { return size_ >= minimum_superblock_size; }
 
   /**
    * @brief Verifies whether this block can be merged to the beginning of block b.
@@ -58,7 +91,7 @@ struct block {
    * @return true Returns true if this block's `pointer` + `size` == `b.ptr`, and `not b.is_head`,
                   false otherwise.
    */
-  bool is_contiguous_before(block const& b) const { return pointer + size == b.pointer; }
+  bool is_contiguous_before(block const& b) const { return pointer_ + size_ == b.pointer_; }
 
   /**
    * @brief Is this block large enough to fit `sz` bytes?
@@ -66,7 +99,7 @@ struct block {
    * @param sz The size in bytes to check for fit.
    * @return true if this block is at least `sz` bytes.
    */
-  bool fits(std::size_t sz) const { return size >= sz; }
+  bool fits(std::size_t sz) const { return size_ >= sz; }
 
   /**
    * @brief Split this block into two by the given size.
@@ -76,9 +109,9 @@ struct block {
    */
   std::pair<block, block> split(std::size_t sz) const
   {
-    RMM_LOGGING_ASSERT(size >= sz);
-    if (size > sz) {
-      return {{pointer, sz}, {pointer + sz, size - sz}};
+    RMM_LOGGING_ASSERT(size_ >= sz);
+    if (size_ > sz) {
+      return {{pointer_, sz}, {pointer_ + sz, size_ - sz}};
     } else {
       return {*this, {}};
     }
@@ -95,11 +128,15 @@ struct block {
   block merge(block const& b) const
   {
     RMM_LOGGING_ASSERT(is_contiguous_before(b));
-    return {pointer, size + b.size};
+    return {pointer_, size_ + b.size_};
   }
 
   /// Used by std::set to compare blocks.
-  bool operator<(block const& b) const { return pointer < b.pointer; }
+  bool operator<(block const& b) const { return pointer_ < b.pointer_; }
+
+ private:
+  char* pointer_{};     ///< Raw memory pointer.
+  std::size_t size_{};  ///< Size in bytes.
 };
 
 /// The required allocation alignment.
@@ -284,7 +321,7 @@ class global_arena final {
   {
     lock_guard lock(mtx_);
     for (auto const& b : upstream_blocks_) {
-      upstream_mr_->deallocate(b.pointer, b.size);
+      upstream_mr_->deallocate(b.pointer(), b.size());
     }
   }
 
@@ -373,7 +410,7 @@ class global_arena final {
    */
   block expand_arena(std::size_t size)
   {
-    upstream_blocks_.push_back({static_cast<char*>(upstream_mr_->allocate(size)), size});
+    upstream_blocks_.push_back({upstream_mr_->allocate(size), size});
     current_size_ += size;
     return upstream_blocks_.back();
   }
@@ -428,9 +465,9 @@ class arena {
   {
     lock_guard lock(mtx_);
     auto const b = get_block(bytes);
-    allocated_blocks_.emplace(b.pointer, b);
+    allocated_blocks_.emplace(b.pointer(), b);
     free_size_ -= bytes;
-    return b.pointer;
+    return b.pointer();
   }
 
   /**
@@ -537,7 +574,7 @@ class arena {
     if (i == allocated_blocks_.end()) { return {}; }
 
     auto const found = i->second;
-    RMM_LOGGING_ASSERT(found.size == size);
+    RMM_LOGGING_ASSERT(found.size() == size);
     allocated_blocks_.erase(i);
     free_size_ += size;
 
@@ -561,9 +598,9 @@ class arena {
       auto const b = *it;
       if (b.is_superblock()) {
         global_arena_.deallocate(b);
-        it = decltype(it){ free_blocks_.erase(std::next(it).base()) };
-        total_size_ -= b.size;
-        free_size_ -= b.size;
+        it = decltype(it){free_blocks_.erase(std::next(it).base())};
+        total_size_ -= b.size();
+        free_size_ -= b.size();
         if (get_empty_fraction() < emptiness_threshold) break;
       } else {
         ++it;
