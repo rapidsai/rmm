@@ -73,7 +73,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
    * @param capture_stacks If true, capture stacks for allocation calls
    */
   tracking_resource_adaptor(Upstream* upstream, bool capture_stacks = false)
-    : upstream_{upstream}, capture_stacks_{capture_stacks}
+    : upstream_{upstream}, capture_stacks_{capture_stacks}, allocated_bytes_{0}
   {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
   }
@@ -110,10 +110,28 @@ class tracking_resource_adaptor final : public device_memory_resource {
     return upstream_->supports_get_mem_info();
   }
 
+  /**
+   * @brief Get the outstanding allocations map
+   * 
+   * @return std::map<void*, allocation_info> const& of a map of allocations. The key
+   * is the allocated memory pointer and the data is the allocation_info structure, which
+   * contains size and, potentially, stack traces.
+   */
   std::map<void*, allocation_info> const& get_outstanding_allocations() const
   {
     return allocations;
   }
+
+/**
+   * @brief Query the number of bytes that have been allocated. Note that
+   * this can not be used to know how large of an allocation is possible due
+   * to both possible fragmentation and also internal page sizes and alignment
+   * that is not tracked by this allocator.
+   *
+   * @return std::size_t number of bytes that have been allocated through this
+   * allocator.
+   */
+  std::size_t get_allocated_bytes() const { return allocated_bytes_; }
 
   /**
    * @brief Log any outstanding allocations via RMM_LOG_DEBUG
@@ -178,6 +196,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
       write_lock_t lock(mtx);
       allocations.emplace(p, allocation_info{bytes, capture_stacks_});
     }
+    allocated_bytes_ += bytes;
 
     return p;
   }
@@ -197,6 +216,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
       write_lock_t lock(mtx);
       allocations.erase(p);
     }
+    allocated_bytes_ -= bytes;
     upstream_->deallocate(p, bytes, stream);
   }
 
@@ -240,6 +260,9 @@ class tracking_resource_adaptor final : public device_memory_resource {
 
   // map of active allocations
   std::map<void*, allocation_info> allocations;
+
+  // number of bytes currently allocated
+  std::atomic<std::size_t> allocated_bytes_;
 
   std::shared_timed_mutex mutable mtx;  // mutex for thread safe access to allocations
 

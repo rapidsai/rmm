@@ -35,6 +35,7 @@ TEST(TrackingTest, Empty)
 {
   Tracking_adaptor mr{rmm::mr::get_current_device_resource()};
   EXPECT_EQ(mr.get_num_outstanding_allocations(), 0);
+  EXPECT_EQ(mr.get_allocated_bytes(), 0);
 }
 
 TEST(TrackingTest, AllFreed)
@@ -48,6 +49,7 @@ TEST(TrackingTest, AllFreed)
     mr.deallocate(p, 10_MiB);
   }
   EXPECT_EQ(mr.get_num_outstanding_allocations(), 0);
+  EXPECT_EQ(mr.get_allocated_bytes(), 0);
 }
 
 TEST(TrackingTest, AllocationsLeftWithStacks)
@@ -61,6 +63,7 @@ TEST(TrackingTest, AllocationsLeftWithStacks)
     mr.deallocate(allocations[i], 10_MiB);
   }
   EXPECT_EQ(mr.get_num_outstanding_allocations(), 5);
+  EXPECT_EQ(mr.get_allocated_bytes(), 50_MiB);
   auto const &outstanding_allocations = mr.get_outstanding_allocations();
   EXPECT_EQ(outstanding_allocations.size(), 5);
   EXPECT_NE(outstanding_allocations.begin()->second.strace, nullptr);
@@ -77,6 +80,7 @@ TEST(TrackingTest, AllocationsLeftWithoutStacks)
     mr.deallocate(allocations[i], 10_MiB);
   }
   EXPECT_EQ(mr.get_num_outstanding_allocations(), 5);
+  EXPECT_EQ(mr.get_allocated_bytes(), 50_MiB);
   auto const &outstanding_allocations = mr.get_outstanding_allocations();
   EXPECT_EQ(outstanding_allocations.size(), 5);
   EXPECT_EQ(outstanding_allocations.begin()->second.strace, nullptr);
