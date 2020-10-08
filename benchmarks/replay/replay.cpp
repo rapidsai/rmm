@@ -17,7 +17,6 @@
 #include <atomic>
 #include <benchmarks/utilities/cxxopts.hpp>
 #include <benchmarks/utilities/log_parser.hpp>
-#include <benchmarks/utilities/simulated_memory_resource.hpp>
 
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/arena_memory_resource.hpp>
@@ -44,35 +43,21 @@
 #include "spdlog/common.h"
 
 /// MR factory functions
-std::shared_ptr<rmm::mr::device_memory_resource> make_cuda(std::size_t = 0)
+inline auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>(); }
+
+inline auto make_pool()
 {
-  return std::make_shared<rmm::mr::cuda_memory_resource>();
+  return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_cuda());
 }
 
-std::shared_ptr<rmm::mr::device_memory_resource> make_simulated(std::size_t simulated_size)
+inline auto make_arena()
 {
-  return std::make_shared<rmm::mr::simulated_memory_resource>(simulated_size);
+  return rmm::mr::make_owning_wrapper<rmm::mr::arena_memory_resource>(make_cuda());
 }
 
-inline auto make_pool(std::size_t simulated_size)
+inline auto make_binning()
 {
-  return simulated_size == 0
-           ? rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_cuda())
-           : rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(
-               make_simulated(simulated_size), simulated_size, simulated_size);
-}
-
-inline auto make_arena(std::size_t simulated_size)
-{
-  return simulated_size == 0
-           ? rmm::mr::make_owning_wrapper<rmm::mr::arena_memory_resource>(make_cuda())
-           : rmm::mr::make_owning_wrapper<rmm::mr::arena_memory_resource>(
-               make_simulated(simulated_size), simulated_size, simulated_size);
-}
-
-inline auto make_binning(std::size_t simulated_size)
-{
-  auto pool = make_pool(simulated_size);
+  auto pool = make_pool();
   auto mr   = rmm::mr::make_owning_wrapper<rmm::mr::binning_memory_resource>(pool);
   for (std::size_t i = 18; i <= 22; i++) {
     mr->wrapped().add_bin(1 << i);
@@ -80,7 +65,7 @@ inline auto make_binning(std::size_t simulated_size)
   return mr;
 }
 
-using MRFactoryFunc = std::function<std::shared_ptr<rmm::mr::device_memory_resource>(std::size_t)>;
+using MRFactoryFunc = std::function<std::shared_ptr<rmm::mr::device_memory_resource>()>;
 
 /**
  * @brief Represents an allocation made during the replay
@@ -102,7 +87,6 @@ struct allocation {
  */
 struct replay_benchmark {
   MRFactoryFunc factory_;
-  std::size_t simulated_size_;
   std::shared_ptr<rmm::mr::device_memory_resource> mr_{};
   std::vector<std::vector<rmm::detail::event>> const& events_{};
 
@@ -122,14 +106,8 @@ struct replay_benchmark {
    * @param args Variable number of arguments forward to the constructor of MR
    */
   replay_benchmark(MRFactoryFunc factory,
-                   std::size_t simulated_size,
                    std::vector<std::vector<rmm::detail::event>> const& events)
-    : factory_{std::move(factory)},
-      simulated_size_{simulated_size},
-      mr_{},
-      events_{events},
-      allocation_map{events.size()},
-      event_index{0}
+    : factory_{factory}, mr_{}, events_{events}, allocation_map{events.size()}, event_index{0}
   {
   }
 
@@ -138,11 +116,10 @@ struct replay_benchmark {
    *
    * Does not copy the mutex or the map
    */
-  replay_benchmark(replay_benchmark&& other) noexcept
+  replay_benchmark(replay_benchmark&& other)
     : factory_{std::move(other.factory_)},
-      simulated_size_{other.simulated_size_},
       mr_{std::move(other.mr_)},
-      events_{other.events_},
+      events_{std::move(other.events_)},
       allocation_map{events_.size()},
       event_index{0}
   {
@@ -151,16 +128,16 @@ struct replay_benchmark {
   replay_benchmark(replay_benchmark const&) = delete;
 
   /// Add an allocation to the map (NOT thread safe)
-  static void set_allocation(std::unordered_map<uintptr_t, allocation>& allocation_map,
-                             uintptr_t ptr,
-                             allocation alloc)
+  void set_allocation(std::unordered_map<uintptr_t, allocation>& allocation_map,
+                      uintptr_t ptr,
+                      allocation alloc)
   {
     allocation_map.insert({ptr, alloc});
   }
 
   /// Remove an allocation from the map (NOT thread safe)
-  static allocation remove_allocation(std::unordered_map<uintptr_t, allocation>& allocation_map,
-                                      uintptr_t ptr)
+  allocation remove_allocation(std::unordered_map<uintptr_t, allocation>& allocation_map,
+                               uintptr_t ptr)
   {
     auto iter = allocation_map.find(ptr);
     if (iter != allocation_map.end()) {
@@ -176,7 +153,7 @@ struct replay_benchmark {
   {
     if (state.thread_index == 0) {
       rmm::logger().log(spdlog::level::info, "------ Start of Benchmark -----");
-      mr_ = factory_(simulated_size_);
+      mr_ = factory_();
     }
   }
 
@@ -192,7 +169,7 @@ struct replay_benchmark {
         auto alloc = ptr_alloc.second;
         num_leaked++;
         total_leaked += alloc.size;
-        mr_->deallocate(alloc.p, alloc.size);
+        mr_->deallocate(alloc.p, alloc.size, 0);
       }
       if (num_leaked > 0)
         std::cout << "LOG shows leak of " << num_leaked << " allocations of " << total_leaked
@@ -292,29 +269,25 @@ std::vector<std::vector<rmm::detail::event>> parse_per_thread_events(std::string
   return per_thread_events;
 }
 
-void declare_benchmark(std::string const& name,
-                       std::size_t simulated_size,
+void declare_benchmark(std::string name,
                        std::vector<std::vector<rmm::detail::event>> const& per_thread_events,
                        std::size_t num_threads)
 {
   if (name == "cuda")
-    benchmark::RegisterBenchmark("CUDA Resource",
-                                 replay_benchmark(&make_cuda, simulated_size, per_thread_events))
+    benchmark::RegisterBenchmark("CUDA Resource", replay_benchmark(&make_cuda, per_thread_events))
       ->Unit(benchmark::kMillisecond)
       ->Threads(num_threads);
   else if (name == "binning")
     benchmark::RegisterBenchmark("Binning Resource",
-                                 replay_benchmark(&make_binning, simulated_size, per_thread_events))
+                                 replay_benchmark(&make_binning, per_thread_events))
       ->Unit(benchmark::kMillisecond)
       ->Threads(num_threads);
   else if (name == "pool")
-    benchmark::RegisterBenchmark("Pool Resource",
-                                 replay_benchmark(&make_pool, simulated_size, per_thread_events))
+    benchmark::RegisterBenchmark("Pool Resource", replay_benchmark(&make_pool, per_thread_events))
       ->Unit(benchmark::kMillisecond)
       ->Threads(num_threads);
   else if (name == "arena")
-    benchmark::RegisterBenchmark("Arena Resource",
-                                 replay_benchmark(&make_arena, simulated_size, per_thread_events))
+    benchmark::RegisterBenchmark("Arena Resource", replay_benchmark(&make_arena, per_thread_events))
       ->Unit(benchmark::kMillisecond)
       ->Threads(num_threads);
   else
@@ -338,10 +311,6 @@ int main(int argc, char** argv)
     options.add_options()("r,resource",
                           "Type of device_memory_resource",
                           cxxopts::value<std::string>()->default_value("pool"));
-    options.add_options()("s,size",
-                          "Size of simulated GPU memory in GiB. Not supported for the cuda memory "
-                          "resource.",
-                          cxxopts::value<float>()->default_value("0"));
     options.add_options()("v,verbose",
                           "Enable verbose printing of log events",
                           cxxopts::value<bool>()->default_value("false"));
@@ -363,12 +332,6 @@ int main(int argc, char** argv)
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
   std::cout << "Using CUDA per-thread default stream.\n";
 #endif
-
-  auto const simulated_size =
-    static_cast<std::size_t>(args["size"].as<float>() * static_cast<float>(1u << 30u));
-  if (simulated_size != 0 && args["resource"].as<std::string>() != "cuda") {
-    std::cout << "Simulating GPU with memory size of " << simulated_size << " bytes.\n";
-  }
 
   std::cout << "Total Events: "
             << std::accumulate(
@@ -394,14 +357,13 @@ int main(int argc, char** argv)
 
   if (args.count("resource") > 0) {
     std::string mr_name = args["resource"].as<std::string>();
-    declare_benchmark(mr_name, simulated_size, per_thread_events, num_threads);
+    declare_benchmark(mr_name, per_thread_events, num_threads);
   } else {
     std::array<std::string, 4> mrs{"pool", "arena", "binning", "cuda"};
-    std::for_each(std::cbegin(mrs),
-                  std::cend(mrs),
-                  [&simulated_size, &per_thread_events, &num_threads](auto const& s) {
-                    declare_benchmark(s, simulated_size, per_thread_events, num_threads);
-                  });
+    std::for_each(
+      std::cbegin(mrs), std::cend(mrs), [&per_thread_events, &num_threads](auto const& s) {
+        declare_benchmark(s, per_thread_events, num_threads);
+      });
   }
 
   ::benchmark::RunSpecifiedBenchmarks();
