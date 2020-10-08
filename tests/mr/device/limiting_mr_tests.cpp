@@ -27,7 +27,7 @@ namespace {
 using Limiting_adaptor = rmm::mr::limiting_resource_adaptor<rmm::mr::device_memory_resource>;
 TEST(LimitingTest, ThrowOnNullUpstream)
 {
-  auto construct_nullptr = []() { Limiting_adaptor mr{nullptr}; };
+  auto construct_nullptr = []() { Limiting_adaptor mr{nullptr, 5_MiB}; };
   EXPECT_THROW(construct_nullptr(), rmm::logic_error);
 }
 

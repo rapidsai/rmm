@@ -26,7 +26,8 @@ namespace mr {
  *
  * An instance of this resource can be constructed with an existing, upstream
  * resource in order to satisfy allocation requests, but any existing allocations
- * will be untracked.
+ * will be untracked. Atomics are used to make this thread-safe, but note that
+ * the `get_allocated_bytes` may not include in-flight allocations.
  *
  * @tparam Upstream Type of the upstream resource used for
  * allocation/deallocation.
@@ -44,7 +45,7 @@ class limiting_resource_adaptor final : public device_memory_resource {
    * @param allocation_limit Maximum memory allowed for this allocator.
    */
   limiting_resource_adaptor(Upstream* upstream,
-                            std::size_t allocation_limit = std::numeric_limits<std::size_t>::max(),
+                            std::size_t allocation_limit,
                             std::size_t allocation_alignment = 256)
     : upstream_{upstream},
       allocation_limit_{allocation_limit},
@@ -184,9 +185,7 @@ class limiting_resource_adaptor final : public device_memory_resource {
    */
   std::pair<size_t, size_t> do_get_mem_info(cudaStream_t stream) const override
   {
-    auto ret = upstream_->get_mem_info(stream);
-    return {std::min(ret.first, allocation_limit_ - allocated_bytes_),
-            std::max(ret.second, allocation_limit_)};
+    return {allocation_limit_ - allocated_bytes_, allocation_limit_};
   }
 
   // maximum bytes this allocator is allowed to allocate.
