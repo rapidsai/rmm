@@ -39,7 +39,7 @@ constexpr std::size_t minimum_superblock_size = 1u << 15u;
 /**
  * @brief Represents a chunk of memory that can be allocated and deallocated.
  *
- * A fixed-sized block obtained from the global arena is called a "superblock".
+ * A block bigger than a certain size is called a "superblock".
  */
 class block {
  public:
@@ -182,11 +182,14 @@ inline block first_fit(std::set<block>& free_blocks, std::size_t size)
     auto const b = *iter;
     auto const i = free_blocks.erase(iter);
 
-    // Split the block and put the remainder back.
-    auto const split     = b.split(size);
-    auto const remainder = split.second;
-    if (remainder.is_valid()) { free_blocks.insert(i, remainder); }
-    return split.first;
+    if (b.size() > size) {
+      // Split the block and put the remainder back.
+      auto const split = b.split(size);
+      free_blocks.insert(i, split.second);
+      return split.first;
+    } else {
+      return b;
+    }
   }
 }
 
@@ -233,9 +236,7 @@ inline block coalesce_block(std::set<block>& free_blocks, block const& b)
 /**
  * @brief The global arena for allocating memory from the upstream memory resource.
  *
- * The global arena is a shared memory pool from which other arenas allocate superblocks. Allocation
- * requests with size bigger than half of the size of a superblock is also handled directly by the
- * global arena.
+ * The global arena is a shared memory pool from which other arenas allocate superblocks.
  *
  * @tparam Upstream Memory resource to use for allocating the arena. Implements
  * rmm::mr::device_memory_resource interface.
@@ -412,9 +413,8 @@ class global_arena final {
 /**
  * @brief An arena for allocating memory for a thread.
  *
- * An arena is a per-thread or per-non-default-stream memory pool for handling small-size
- * allocations. It allocates superblocks from the global arena, and return them when the superblocks
- * become empty.
+ * An arena is a per-thread or per-non-default-stream memory pool for handling. It allocates
+ * superblocks from the global arena, and return them when the superblocks become empty.
  *
  * @tparam Upstream Memory resource to use for allocating the global arena. Implements
  * rmm::mr::device_memory_resource interface.
@@ -473,7 +473,8 @@ class arena {
    * @brief Deallocate memory pointed to by `p`, keeping all free superblocks.
    *
    * This is done when deallocating from another arena. Since we don't have access to the CUDA
-   * stream associated with this arena, it's not safe to return superblocks.
+   * stream associated with this arena, we don't coalesce the freed block and return it directly to
+   * the global arena.
    *
    * @param p Pointer to be deallocated.
    * @param bytes The size in bytes of the allocation. This must be equal to the value of `bytes`

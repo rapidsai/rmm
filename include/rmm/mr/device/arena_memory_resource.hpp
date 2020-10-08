@@ -35,18 +35,16 @@ namespace mr {
  *
  * GPU memory is divided into a global arena, per-thread arenas for default streams, and per-stream
  * arenas for non-default streams. Each arena allocates memory from the global arena in chunks
- * called superblocks. All superblocks are the same size. Objects larger than half the size of a
- * superblock are managed directly using the global arena.
+ * called superblocks.
  *
  * Blocks in each arena are allocated using address-ordered first fit. When a block is freed, it is
- * coalesced with neighbouring free blocks if the addresses are contiguous and do not cross
- * superblock boundaries. Completely empty superblocks are returned to the global arena.
+ * coalesced with neighbouring free blocks if the addresses are contiguous. Empty superblocks are
+ * returned to the global arena.
  *
  * In real-world applications, allocation sizes tend to follow a power law distribution in which
  * large allocations are rare, but small ones quite common. By handling small allocations in the
- * per-thread arena, and leaving the large allocations to the shared global arena, adequate
- * performance can be achieved without introducing excessive memory fragmentation under high
- * concurrency.
+ * per-thread arena, adequate performance can be achieved without introducing excessive memory
+ * fragmentation under high concurrency.
  *
  * This design is inspired by several existing CPU memory allocators targeting multi-threaded
  * applications (glibc malloc, Hoard, jemalloc, TCMalloc), albeit in a simpler form. Possible future
