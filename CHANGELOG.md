@@ -4,6 +4,8 @@
 
 ## Improvements
 
+- PR #599 Make the arena memory resource work better with the producer/consumer mode
+
 ## Bug Fixes
 
 # RMM 0.16.0 (Date TBD)
