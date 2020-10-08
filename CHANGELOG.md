@@ -50,6 +50,7 @@
 - PR #577 Fix CMake `LOGGING_LEVEL` issue which caused verbose logging / performance regression.
 - PR #582 Fix handling of per-thread default stream when not compiled for PTDS
 - PR #590 Add missing `CODE_OF_CONDUCT.md`
+- PR #595 Fix pool_mr example in README.md
 
 
 # RMM 0.15.0 (26 Aug 2020)
