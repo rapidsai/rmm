@@ -129,7 +129,7 @@ class limiting_resource_adaptor final : public device_memory_resource {
       p = upstream_->allocate(bytes, stream);
       allocated_bytes_ += proposed_size;
     } else {
-      throw rmm::bad_alloc{std::string{"CUDA error: Unable to allocate memory due to limit"}};
+      throw rmm::bad_alloc{"Exceeded memory limit"};
     }
 
     return p;
