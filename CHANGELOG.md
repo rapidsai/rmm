@@ -30,6 +30,7 @@
 - PR #581 Improve logging documentation
 - PR #585 Update ci/local/README.md
 - PR #587 Replaced `move` with `std::move`
+- PR #601 Make maximum pool size truly optional (grow until failure)
 
 ## Bug Fixes
 
