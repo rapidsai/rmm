@@ -561,6 +561,7 @@ class arena {
   /**
    * @brief Shrink this arena by returning free superblocks to upstream.
    *
+   * @param b The block that can be used to shrink the arena.
    * @param stream Stream on which to perform shrinking.
    */
   void shrink_arena(block const& b, cudaStream_t stream)
