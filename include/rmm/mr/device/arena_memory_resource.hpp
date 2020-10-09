@@ -38,7 +38,7 @@ namespace mr {
  * called superblocks.
  *
  * Blocks in each arena are allocated using address-ordered first fit. When a block is freed, it is
- * coalesced with neighbouring free blocks if the addresses are contiguous. Empty superblocks are
+ * coalesced with neighbouring free blocks if the addresses are contiguous. Free superblocks are
  * returned to the global arena.
  *
  * In real-world applications, allocation sizes tend to follow a power law distribution in which

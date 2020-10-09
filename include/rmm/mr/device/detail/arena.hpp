@@ -112,7 +112,7 @@ class block {
   /**
    * @brief Coalesce two contiguous blocks into one.
    *
-   * `this` must immediately precede `b`.
+   * `this->is_contiguous_before(b)` must be true.
    *
    * @param b block to merge.
    * @return block The merged block.
@@ -413,7 +413,7 @@ class global_arena final {
 /**
  * @brief An arena for allocating memory for a thread.
  *
- * An arena is a per-thread or per-non-default-stream memory pool for handling. It allocates
+ * An arena is a per-thread or per-non-default-stream memory pool. It allocates
  * superblocks from the global arena, and return them when the superblocks become empty.
  *
  * @tparam Upstream Memory resource to use for allocating the global arena. Implements
