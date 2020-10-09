@@ -15,11 +15,14 @@
  */
 #pragma once
 
+#include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/logger.hpp>
 #include <rmm/mr/device/detail/coalescing_free_list.hpp>
 #include <rmm/mr/device/detail/stream_ordered_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+
+#include <thrust/optional.h>
 
 #include <cuda_runtime_api.h>
 
@@ -33,7 +36,6 @@
 #include <thread>
 #include <unordered_map>
 #include <vector>
-#include "rmm/detail/aligned.hpp"
 
 namespace rmm {
 namespace mr {
@@ -62,8 +64,6 @@ class pool_memory_resource final
   : public detail::stream_ordered_memory_resource<pool_memory_resource<Upstream>,
                                                   detail::coalescing_free_list> {
  public:
-  static constexpr size_t default_initial_size = ~0;
-  static constexpr size_t default_maximum_size = ~0;
   // TODO use rmm-level def of this.
   static constexpr size_t allocation_alignment = 256;
 
@@ -87,34 +87,27 @@ class pool_memory_resource final
    * the available memory on the current device.
    */
   explicit pool_memory_resource(Upstream* upstream_mr,
-                                std::size_t initial_pool_size = default_initial_size,
-                                std::size_t maximum_pool_size = default_maximum_size)
+                                thrust::optional<std::size_t> initial_pool_size = thrust::nullopt,
+                                thrust::optional<std::size_t> maximum_pool_size = thrust::nullopt)
     : upstream_mr_{[upstream_mr]() {
         RMM_EXPECTS(nullptr != upstream_mr, "Unexpected null upstream pointer.");
         return upstream_mr;
       }()}
   {
-    RMM_EXPECTS(
-      initial_pool_size == default_initial_size ||
-        (initial_pool_size == rmm::detail::align_up(initial_pool_size, allocation_alignment)),
-      "Error, Initial pool size required to be a multiple of 256 bytes");
-    RMM_EXPECTS(
-      maximum_pool_size == default_maximum_size ||
-        (maximum_pool_size == rmm::detail::align_up(maximum_pool_size, allocation_alignment)),
-      "Error, Maximum pool size required to be a multiple of 256 bytes");
+    RMM_EXPECTS(rmm::detail::is_aligned(initial_pool_size.value_or(0), allocation_alignment),
+                "Error, Initial pool size required to be a multiple of 256 bytes");
+    RMM_EXPECTS(rmm::detail::is_aligned(maximum_pool_size.value_or(0), allocation_alignment),
+                "Error, Maximum pool size required to be a multiple of 256 bytes");
 
     std::size_t free{}, total{};
     std::tie(free, total) = detail::available_device_memory();
 
-    initial_pool_size = (initial_pool_size == default_initial_size)
-                          ? rmm::detail::align_up(std::min(free, total / 2), allocation_alignment)
-                          : initial_pool_size;
-    current_pool_size_ = initial_pool_size;
-    maximum_pool_size_ = (maximum_pool_size == default_maximum_size)
-                           ? rmm::detail::align_down(free, allocation_alignment)
-                           : maximum_pool_size;
+    current_pool_size_ = initial_pool_size.value_or(
+      rmm::detail::align_up(std::min(free, total / 2), allocation_alignment));
 
-    RMM_EXPECTS(pool_size() <= maximum_pool_size_,
+    maximum_pool_size_ = maximum_pool_size;
+
+    RMM_EXPECTS(pool_size() <= maximum_pool_size_.value_or(std::numeric_limits<std::size_t>::max()),
                 "Initial pool size exceeds the maximum pool size!");
     this->insert_block(block_from_upstream(pool_size(), cudaStreamLegacy), cudaStreamLegacy);
   }
@@ -181,17 +174,48 @@ class pool_memory_resource final
    */
   block_type expand_pool(size_t size, free_list& blocks, cudaStream_t stream)
   {
-    auto grow_size = size_to_grow(size);
-    if (grow_size == 0) {
-      RMM_LOG_ERROR("[A][Stream {}][Upstream {}B][FAILURE max pool size exceeded]",
-                    reinterpret_cast<void*>(stream),
-                    size);
-      RMM_FAIL("Maximum pool size exceeded", rmm::bad_alloc);
+    // if maximum size is not set
+    auto try_size =
+      maximum_pool_size_.has_value() ? size_to_grow(size) : std::max(size, pool_size());
+    while (try_size >= size) {
+      std::cout << "Trying " << try_size << " B" << std::endl;
+      try {
+        auto b = block_from_upstream(try_size, stream);
+        current_pool_size_ += try_size;
+        return b;
+      } catch (std::exception& e) {
+        if (try_size == size) break;  // give up after we try size once
+        try_size = std::max(size, try_size / 2);
+      }
     }
-
-    current_pool_size_ += grow_size;
-    return block_from_upstream(grow_size, stream);
+    RMM_LOG_ERROR("[A][Stream {}][Upstream {}B][FAILURE max pool size exceeded]",
+                  reinterpret_cast<void*>(stream),
+                  size);
+    RMM_FAIL("Maximum pool size exceeded", rmm::bad_alloc);
   }
+
+  /**
+   * @brief Given a minimum size, computes an appropriate size to grow the pool.
+   *
+   * Strategy is to try to grow the pool by half the difference between
+   * the configured maximum pool size and the current pool size.
+   *
+   * @param size The size of the minimum allocation immediately needed
+   * @return size_t The computed size to grow the pool.
+   */
+  size_t size_to_grow(size_t size) const
+  {
+    auto const remaining =
+      rmm::detail::align_up(maximum_pool_size_.value() - pool_size(), allocation_alignment);
+    auto const aligned_size = rmm::detail::align_up(size, allocation_alignment);
+    if (aligned_size <= remaining / 2) {
+      return remaining / 2;
+    } else if (aligned_size <= remaining) {
+      return aligned_size;
+    } else {
+      return 0;
+    }
+  };
 
   /**
    * @brief Allocate a block from upstream to expand the suballocation pool.
@@ -203,6 +227,8 @@ class pool_memory_resource final
   block_type block_from_upstream(size_t size, cudaStream_t stream)
   {
     RMM_LOG_DEBUG("[A][Stream {}][Upstream {}B]", reinterpret_cast<void*>(stream), size);
+
+    if (size == 0) return {};
 
     try {
       void* p = upstream_mr_->allocate(size, stream);
@@ -261,29 +287,6 @@ class pool_memory_resource final
 
     return block;
   }
-
-  /**
-   * @brief Given a minimum size, computes an appropriate size to grow the pool.
-   *
-   * Strategy is to try to grow the pool by half the difference between
-   * the configured maximum pool size and the current pool size.
-   *
-   * @param size The size of the minimum allocation immediately needed
-   * @return size_t The computed size to grow the pool.
-   */
-  size_t size_to_grow(size_t size) const
-  {
-    auto const remaining =
-      rmm::detail::align_up(maximum_pool_size_ - pool_size(), allocation_alignment);
-    auto const aligned_size = rmm::detail::align_up(size, allocation_alignment);
-    if (aligned_size <= remaining / 2) {
-      return remaining / 2;
-    } else if (aligned_size <= remaining) {
-      return aligned_size;
-    } else {
-      return 0;
-    }
-  };
 
   /**
    * @brief Computes the size of the current pool
@@ -377,7 +380,7 @@ class pool_memory_resource final
 
   Upstream* upstream_mr_;  // The "heap" to allocate the pool from
   std::size_t current_pool_size_{};
-  std::size_t maximum_pool_size_{};
+  thrust::optional<std::size_t> maximum_pool_size_{};
 
   std::set<block_type, rmm::mr::detail::compare_blocks<block_type>> allocated_blocks_;
 
