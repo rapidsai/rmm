@@ -6,6 +6,8 @@
 
 ## Bug Fixes
 
+- PR #602 Fix `device_scalar` and its tests 
+
 # RMM 0.16.0 (Date TBD)
 
 ## New Features
