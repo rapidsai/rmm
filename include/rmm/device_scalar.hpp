@@ -231,8 +231,8 @@ class device_scalar {
    */
   T const *data() const noexcept { return static_cast<T const *>(buffer.data()); }
 
-  device_scalar()  = default;
-  ~device_scalar() = default;
+  device_scalar()                 = default;
+  ~device_scalar()                = default;
   device_scalar(device_scalar &&) = default;
   device_scalar &operator=(device_scalar const &) = delete;
   device_scalar &operator=(device_scalar &&) = delete;
