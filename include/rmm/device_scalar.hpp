@@ -83,6 +83,25 @@ class device_scalar {
   }
 
   /**
+   * @brief Construct a new `device_scalar` by deep copying the contents of
+   * another `device_scalar`, optionally using the specified stream and memory
+   * resource.
+   *
+   * @throws rmm::bad_alloc If creating the new allocation fails.
+   * @throws rmm::cuda_error if copying from `other` fails.
+   *
+   * @param other The `device_scalar` whose contents will be copied
+   * @param stream The stream to use for the allocation and copy
+   * @param mr The resource to use for allocating the new `device_scalar`
+   */
+  device_scalar(device_scalar const &other,
+                cudaStream_t stream                 = 0,
+                rmm::mr::device_memory_resource *mr = rmm::mr::get_current_device_resource())
+    : buffer{other.buffer, stream, mr}
+  {
+  }
+
+  /**
    * @brief Copies the value from device to host, synchronizes, and returns the value.
    *
    * Synchronizes `stream` after copying the data from device to host.
@@ -212,10 +231,9 @@ class device_scalar {
    */
   T const *data() const noexcept { return static_cast<T const *>(buffer.data()); }
 
-  device_scalar()                      = default;
-  ~device_scalar()                     = default;
-  device_scalar(device_scalar const &) = default;
-  device_scalar(device_scalar &&)      = default;
+  device_scalar()  = default;
+  ~device_scalar() = default;
+  device_scalar(device_scalar &&) = default;
   device_scalar &operator=(device_scalar const &) = delete;
   device_scalar &operator=(device_scalar &&) = delete;
 
