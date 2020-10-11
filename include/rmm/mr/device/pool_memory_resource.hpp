@@ -178,7 +178,6 @@ class pool_memory_resource final
     auto try_size =
       maximum_pool_size_.has_value() ? size_to_grow(size) : std::max(size, pool_size());
     while (try_size >= size) {
-      std::cout << "Trying " << try_size << " B" << std::endl;
       try {
         auto b = block_from_upstream(try_size, stream);
         current_pool_size_ += try_size;
