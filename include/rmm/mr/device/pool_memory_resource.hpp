@@ -198,8 +198,11 @@ class pool_memory_resource final
   /**
    * @brief Given a minimum size, computes an appropriate size to grow the pool.
    *
-   * Strategy is to try to grow the pool by half the difference between
-   * the configured maximum pool size and the current pool size.
+   * Strategy is to try to grow the pool by half the difference between the configured maximum pool
+   * size and the current pool size, if the maximum pool size is set. If it is not set, try to
+   * double the current pool size.
+   *
+   * Returns 0 if the requested size cannot be satisfied.
    *
    * @param size The size of the minimum allocation immediately needed
    * @return size_t The computed size to grow the pool.
