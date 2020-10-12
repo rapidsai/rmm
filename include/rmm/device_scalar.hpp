@@ -84,7 +84,7 @@ class device_scalar {
 
   /**
    * @brief Construct a new `device_scalar` by deep copying the contents of
-   * another `device_scalar`, optionally using the specified stream and memory
+   * another `device_scalar`, using the specified stream and memory
    * resource.
    *
    * @throws rmm::bad_alloc If creating the new allocation fails.
