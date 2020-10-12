@@ -6,7 +6,7 @@
 
 ## Bug Fixes
 
-- PR #602 Fix `device_scalar` and its tests 
+- PR #602 Fix `device_scalar` and its tests so that they use the correct CUDA stream
 
 # RMM 0.16.0 (Date TBD)
 
