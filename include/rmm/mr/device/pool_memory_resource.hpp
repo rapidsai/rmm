@@ -174,9 +174,11 @@ class pool_memory_resource final
    */
   block_type expand_pool(size_t size, free_list& blocks, cudaStream_t stream)
   {
-    // if maximum size is not set
-    auto try_size =
-      maximum_pool_size_.has_value() ? size_to_grow(size) : std::max(size, pool_size());
+    // Strategy. If maximum_pool_size_ is set, then grow geometrically, e.g. by halfway to the limit
+    // each time. If it is not set, grow exponentially, e.g. by doubling the pool size each time.
+    // Upon failure, attempt to back off exponentially, e.g. by half the attempted size, until
+    // either success or the attempt is less than the requested size.
+    auto try_size = size_to_grow(size);
     while (try_size >= size) {
       try {
         auto b = block_from_upstream(try_size, stream);
@@ -204,16 +206,19 @@ class pool_memory_resource final
    */
   size_t size_to_grow(size_t size) const
   {
-    auto const remaining =
-      rmm::detail::align_up(maximum_pool_size_.value() - pool_size(), allocation_alignment);
-    auto const aligned_size = rmm::detail::align_up(size, allocation_alignment);
-    if (aligned_size <= remaining / 2) {
-      return remaining / 2;
-    } else if (aligned_size <= remaining) {
-      return aligned_size;
-    } else {
-      return 0;
-    }
+    if (maximum_pool_size_.has_value()) {
+      auto const remaining =
+        rmm::detail::align_up(maximum_pool_size_.value() - pool_size(), allocation_alignment);
+      auto const aligned_size = rmm::detail::align_up(size, allocation_alignment);
+      if (aligned_size <= remaining / 2) {
+        return remaining / 2;
+      } else if (aligned_size <= remaining) {
+        return aligned_size;
+      } else {
+        return 0;
+      }
+    } else
+      return std::max(size, pool_size());
   };
 
   /**
