@@ -21,8 +21,8 @@
     }
   },
   "format": {
-    "line_width": 80,
-    "tab_size": 4,
+    "line_width": 100,
+    "tab_size": 2,
     "command_case": "unchanged"
   },
   "lint": {
