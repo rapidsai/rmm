@@ -4,6 +4,8 @@
 
 ## Improvements
 
+- PR #604 CMake target cleanup, formatting, linting
+
 ## Bug Fixes
 
 # RMM 0.16.0 (Date TBD)
