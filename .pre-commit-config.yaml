@@ -21,15 +21,17 @@ repos:
             args: ["--config=python/.flake8.cython"]
             types: [cython]
     - repo: https://github.com/cheshirekow/cmake-format-precommit
-      rev: v0.6.13
+      rev: v0.6.11
       hooks:
           - id: cmake-format
             name: cmake-format
-            args: ["--config-files", "cmake/format.json", "--in-place", "--"]
+            args: ["--config-files", "cmake/config.json", "--in-place", "--"]
             types: [file]  # override `types: [cmake]`
             files: \.(cmake(\.in)?)$|CMakeLists\.txt
           - id: cmake-lint
-            args: ["--config-files", "cmake/format.json", "--"]
+            args: ["--config-files", "cmake/config.json", "--"]
+            types: [file]  # override `types: [cmake]`
+            files: \.(cmake(\.in)?)$|CMakeLists\.txt
 
 default_language_version:
     python: python3

@@ -13,6 +13,9 @@
 # the License.
 #
 
+# Function uses the CUDA runtime API to query the compute capability of the
+# device, so if a user doesn't pass any architecture options to CMake we only
+# build the current architecture
 function(evaluate_gpu_archs gpu_archs)
     set(eval_file ${PROJECT_BINARY_DIR}/eval_gpu_archs.cu)
     set(eval_exe ${PROJECT_BINARY_DIR}/eval_gpu_archs)
