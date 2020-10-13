@@ -151,16 +151,13 @@ struct replay_benchmark {
   replay_benchmark(replay_benchmark const&) = delete;
 
   /// Add an allocation to the map (NOT thread safe)
-  static void set_allocation(std::unordered_map<uintptr_t, allocation>& allocation_map,
-                             uintptr_t ptr,
-                             allocation alloc)
+  void set_allocation( uintptr_t ptr, allocation alloc)
   {
     allocation_map.insert({ptr, alloc});
   }
 
   /// Remove an allocation from the map (NOT thread safe)
-  static allocation remove_allocation(std::unordered_map<uintptr_t, allocation>& allocation_map,
-                                      uintptr_t ptr)
+  allocation remove_allocation(uintptr_t ptr)
   {
     auto iter = allocation_map.find(ptr);
     if (iter != allocation_map.end()) {
@@ -219,9 +216,9 @@ struct replay_benchmark {
 
         if (rmm::detail::action::ALLOCATE == e.act) {
           auto p = mr_->allocate(e.size);
-          set_allocation(allocation_map, e.pointer, allocation{p, e.size});
+          set_allocation(e.pointer, allocation{p, e.size});
         } else {
-          auto a = remove_allocation(allocation_map, e.pointer);
+          auto a = remove_allocation(e.pointer);
           mr_->deallocate(a.p, e.size);
         }
 
