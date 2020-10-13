@@ -12,10 +12,7 @@
           "FIND_PACKAGE_ARGUMENTS": "*" 
         }
       }
-    },
-    "proptags": [
-      [".*_DIRECTORIES", ["file-list"]]
-    ]
+    }
   },
   "format": {
     "line_width": 80,
