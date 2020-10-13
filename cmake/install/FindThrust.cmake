@@ -15,8 +15,10 @@
 # ^^^^^^^^^^^^^^^^
 #
 # This module defines the following variables:
-#
-# ``Thrust_FOUND`` system has Thrust ``Thrust_INCLUDE_DIRS`` the Thrust include directories
+# ~~~
+# ``Thrust_FOUND`` system has Thrust
+# ``Thrust_INCLUDE_DIRS`` the Thrust include directories
+# ~~~
 
 include(FindPackageHandleStandardArgs)
 

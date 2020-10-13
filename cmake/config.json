@@ -23,7 +23,8 @@
   "format": {
     "line_width": 100,
     "tab_size": 2,
-    "command_case": "unchanged"
+    "command_case": "unchanged",
+    "max_lines_hwrap": 1
   },
   "lint": {
     "disabled_codes": ["C0301"],

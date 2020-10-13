@@ -24,15 +24,8 @@ CPMFindPackage(
 
 # Auto-detect available GPU compute architectures
 
-set(GPU_ARCHS
-    ""
-    CACHE STRING "List of GPU architectures (semicolon-separated) to be compiled for.
-          Empty string means to auto-detect the GPUs on the current system")
-
-if("${GPU_ARCHS}" STREQUAL "")
-  include(${RMM_SOURCE_DIR}/cmake/EvalGPUArchs.cmake)
-  evaluate_gpu_archs(GPU_ARCHS)
-endif()
+include(${RMM_SOURCE_DIR}/cmake/Modules/SetGPUArchs.cmake)
+message(STATUS "RMM: Building benchmarks with GPU Architectures: ${GPU_ARCHS}")
 
 # compiler function
 
@@ -44,9 +37,9 @@ function(ConfigureBench BENCH_NAME BENCH_SRC)
   target_include_directories(${BENCH_NAME} PRIVATE "$<BUILD_INTERFACE:${RMM_SOURCE_DIR}>")
   set_target_properties(
     ${BENCH_NAME}
-    PROPERTIES POSITION_INDEPENDENT_CODE ON RUNTIME_OUTPUT_DIRECTORY
-                                            "$<BUILD_INTERFACE:${RMM_BINARY_DIR}/gbenchmarks>"
-               CUDA_ARCHITECTURES ${GPU_ARCHS})
+    PROPERTIES POSITION_INDEPENDENT_CODE ON
+               RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${RMM_BINARY_DIR}/gbenchmarks>"
+               CUDA_ARCHITECTURES "${GPU_ARCHS}")
   target_link_libraries(${BENCH_NAME} benchmark::benchmark pthread rmm)
   target_compile_definitions(${BENCH_NAME}
                              PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")

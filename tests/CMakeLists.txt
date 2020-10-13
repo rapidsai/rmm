@@ -36,17 +36,8 @@ endif()
 
 # Auto-detect available GPU compute architectures
 
-set(GPU_ARCHS
-    ""
-    CACHE
-      STRING
-      "List of GPU architectures (semicolon-separated) to be compiled for. Empty string means to auto-detect the GPUs on the current system"
-)
-
-if("${GPU_ARCHS}" STREQUAL "")
-  include(${RMM_SOURCE_DIR}/cmake/EvalGPUArchs.cmake)
-  evaluate_gpu_archs(GPU_ARCHS)
-endif()
+include(${RMM_SOURCE_DIR}/cmake/Modules/SetGPUArchs.cmake)
+message(STATUS "RMM: Building tests with GPU Architectures: ${GPU_ARCHS}")
 
 # compiler function
 
@@ -65,9 +56,9 @@ function(ConfigureTest TEST_NAME TEST_SRC)
     rmm)
   set_target_properties(
     ${TEST_NAME}
-    PROPERTIES POSITION_INDEPENDENT_CODE ON RUNTIME_OUTPUT_DIRECTORY
-                                            "$<BUILD_INTERFACE:${RMM_BINARY_DIR}/gtests>"
-               CUDA_ARCHITECTURES ${GPU_ARCHS})
+    PROPERTIES POSITION_INDEPENDENT_CODE ON
+               RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${RMM_BINARY_DIR}/gtests>"
+               CUDA_ARCHITECTURES "${GPU_ARCHS}")
   target_compile_definitions(${TEST_NAME}
                              PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
 

@@ -1,6 +1,4 @@
-# ##################################################################################################
-# * spdlog
-# ------------------------------------------------------------------------------
+# spdlog
 
 set(RMM_MIN_VERSION_spdlog 1.7.0)
 
@@ -12,9 +10,7 @@ CPMFindPackage(
   # If there is no pre-installed spdlog we can use, we'll install our fetched copy together with RMM
   OPTIONS "SPDLOG_INSTALL TRUE")
 
-# ##################################################################################################
-# * thrust/cub
-# ------------------------------------------------------------------------------
+# thrust/cub
 
 set(RMM_MIN_VERSION_Thrust 1.9.0)
 
