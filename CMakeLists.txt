@@ -88,16 +88,8 @@ set(RMM_LOGGING_LEVEL
     "INFO"
     CACHE STRING "Choose the logging level.")
 # Set the possible values of build type for cmake-gui
-set_property(
-  CACHE RMM_LOGGING_LEVEL
-  PROPERTY STRINGS
-           "TRACE"
-           "DEBUG"
-           "INFO"
-           "WARN"
-           "ERROR"
-           "CRITICAL"
-           "OFF")
+set_property(CACHE RMM_LOGGING_LEVEL PROPERTY STRINGS "TRACE" "DEBUG" "INFO" "WARN" "ERROR"
+                                              "CRITICAL" "OFF")
 message(STATUS "RMM: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'")
 
 # optionally build tests

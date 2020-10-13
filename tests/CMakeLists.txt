@@ -46,14 +46,8 @@ message(STATUS "RMM: Building tests with GPU Architectures: ${GPU_ARCHS}")
 function(ConfigureTest TEST_NAME TEST_SRC)
   add_executable(${TEST_NAME} "${TEST_SRC}")
   target_include_directories(${TEST_NAME} PRIVATE "$<BUILD_INTERFACE:${RMM_SOURCE_DIR}>")
-  target_link_libraries(
-    ${TEST_NAME}
-    GTest::gmock
-    GTest::gtest
-    GTest::gmock_main
-    GTest::gtest_main
-    pthread
-    rmm)
+  target_link_libraries(${TEST_NAME} GTest::gmock GTest::gtest GTest::gmock_main GTest::gtest_main
+                        pthread rmm)
   set_target_properties(
     ${TEST_NAME}
     PROPERTIES POSITION_INDEPENDENT_CODE ON
