@@ -6,7 +6,7 @@ dependencies:
 - clang=8.0.1
 - clang-tools=8.0.1
 - cmake>=3.18
-- cmake-format
+- cmake-format=0.6.11
 - python>=3.6,<3.8
 - numba>=0.49
 - numpy
