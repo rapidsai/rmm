@@ -92,7 +92,6 @@ if(PER_THREAD_DEFAULT_STREAM)
     target_compile_definitions(rmm INTERFACE CUDA_API_PER_THREAD_DEFAULT_STREAM)
 endif(PER_THREAD_DEFAULT_STREAM)
 
-# ##############################################################################
 # Set logging level. Must go before including gtests and benchmarks.
 
 set(RMM_LOGGING_LEVEL
@@ -111,21 +110,18 @@ set_property(
              "OFF")
 message(STATUS "RMM: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'")
 
-# ##############################################################################
 # optionally build tests
 
 if(BUILD_TESTS)
     add_subdirectory(tests)
 endif(BUILD_TESTS)
 
-# ##############################################################################
 # add google benchmark
 
 if(BUILD_BENCHMARKS)
     add_subdirectory(benchmarks)
 endif(BUILD_BENCHMARKS)
 
-# ##############################################################################
 # install targets
 
 include(GNUInstallDirs)
@@ -155,7 +151,6 @@ install(
           ${RMM_SOURCE_DIR}/cmake/install/FindThrust.cmake
     DESTINATION ${INSTALL_CONFIGDIR})
 
-# ##############################################################################
 # make documentation
 
 add_custom_command(

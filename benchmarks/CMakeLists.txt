@@ -15,8 +15,7 @@
 # =============================================================================
 cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 
-# ##############################################################################
-# * Fetch Google Benchmark
+# Fetch Google Benchmark
 
 CPMFindPackage(
     NAME benchmark
@@ -25,7 +24,6 @@ CPMFindPackage(
     GIT_SHALLOW TRUE
     OPTIONS "BENCHMARK_ENABLE_TESTING OFF" "BENCHMARK_ENABLE_INSTALL OFF")
 
-# ##############################################################################
 # Auto-detect available GPU compute architectures
 
 set(GPU_ARCHS
@@ -39,8 +37,7 @@ if("${GPU_ARCHS}" STREQUAL "")
     evaluate_gpu_archs(GPU_ARCHS)
 endif()
 
-# ##############################################################################
-# * compiler function
+# compiler function
 
 # This function takes in a benchmark name and benchmark source and handles
 # setting all of the associated properties and linking to build the benchmark
@@ -63,28 +60,22 @@ function(ConfigureBench BENCH_NAME BENCH_SRC)
         PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
 endfunction(ConfigureBench)
 
-# ##############################################################################
 # benchmark sources
-# ##############################################################################
-# ##############################################################################
 
-# ##############################################################################
-# * random allocations benchmark
+# random allocations benchmark
 
 set(RANDOM_ALLOCATIONS_BENCH_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/random_allocations/random_allocations.cpp")
 
 ConfigureBench(RANDOM_ALLOCATIONS_BENCH "${RANDOM_ALLOCATIONS_BENCH_SRC}")
 
-# ##############################################################################
-# * replay benchmark
+# replay benchmark
 
 set(REPLAY_BENCH_SRC "${CMAKE_CURRENT_SOURCE_DIR}/replay/replay.cpp")
 
 ConfigureBench(REPLAY_BENCH "${REPLAY_BENCH_SRC}")
 
-# ##############################################################################
-# * uvector benchmark
+# uvector benchmark
 
 set(UVECTOR_BENCH_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/device_uvector/device_uvector_bench.cu")

@@ -17,8 +17,7 @@ cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 
 include(CTest)
 
-# ##############################################################################
-# * Fetch GTest
+# Fetch GTest
 
 CPMFindPackage(
     NAME GTest
@@ -37,7 +36,6 @@ if(GTest_ADDED)
     add_library(GTest::gmock_main ALIAS gmock_main)
 endif()
 
-# ##############################################################################
 # Auto-detect available GPU compute architectures
 
 set(GPU_ARCHS
@@ -52,8 +50,7 @@ if("${GPU_ARCHS}" STREQUAL "")
     evaluate_gpu_archs(GPU_ARCHS)
 endif()
 
-# ##############################################################################
-# * compiler function
+# compiler function
 
 # This function takes in a test name and test source and handles setting all of
 # the associated properties and linking to build the test
@@ -82,13 +79,9 @@ function(ConfigureTest TEST_NAME TEST_SRC)
     add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
 endfunction(ConfigureTest)
 
-# ##############################################################################
 # test sources
-# ##############################################################################
-# ##############################################################################
 
-# ##############################################################################
-# * device mr tests
+# device mr tests
 
 set(DEVICE_MR_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/mr_tests.cpp"
@@ -96,8 +89,7 @@ set(DEVICE_MR_TEST_SRC
 
 ConfigureTest(DEVICE_MR_TEST "${DEVICE_MR_TEST_SRC}")
 
-# ##############################################################################
-# * device mr per-thread default stream tests
+# device mr per-thread default stream tests
 
 set(DEVICE_MR_PTDS_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/mr_multithreaded_tests.cpp")
@@ -106,8 +98,7 @@ ConfigureTest(DEVICE_MR_PTDS_TEST "${DEVICE_MR_PTDS_TEST_SRC}")
 target_compile_definitions(DEVICE_MR_PTDS_TEST
                            PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
 
-# ##############################################################################
-# * pool mr tests
+# pool mr tests
 
 set(POOL_MR_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/pool_mr_tests.cpp")
 
@@ -120,50 +111,44 @@ ConfigureTest(POOL_MR_PTDS_TEST "${POOL_MR_PTDS_TEST_SRC}")
 target_compile_definitions(POOL_MR_PTDS_TEST
                            PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
 
-# ##############################################################################
-# * thrust allocator tests
+# thrust allocator tests
 
 set(THRUST_ALLOCATOR_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/thrust_allocator_tests.cu")
 
 ConfigureTest(THRUST_ALLOCATOR_TEST "${THRUST_ALLOCATOR_TEST_SRC}")
 
-# ##############################################################################
-# * host mr tests
+# host mr tests
 
 set(HOST_MR_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/host/mr_tests.cpp")
 
 ConfigureTest(HOST_MR_TEST "${HOST_MR_TEST_SRC}")
 
-# ##############################################################################
-# * device buffer tests
+# device buffer tests
 
 set(BUFFER_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/device_buffer_tests.cu")
 
 ConfigureTest(DEVICE_BUFFER_TEST "${BUFFER_TEST_SRC}")
 
-# ##############################################################################
-# * device scalar tests
+# device scalar tests
 
 set(SCALAR_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/device_scalar_tests.cpp")
 
 ConfigureTest(DEVICE_SCALAR_TEST "${SCALAR_TEST_SRC}")
 
-# ##############################################################################
-# * logger tests
+# logger tests
 
 set(LOGGER_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/logger_tests.cpp")
 
 ConfigureTest(LOGGER_TEST "${LOGGER_TEST_SRC}")
 
-# ##############################################################################
-# * uvector tests
+# uvector tests
 
 set(DEVICE_UVECTOR_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/device_uvector_tests.cpp")
 
 ConfigureTest(DEVICE_UVECTOR_TEST "${DEVICE_UVECTOR_TEST_SRC}")
 
-# ##############################################################################
+# enable testing
 
 enable_testing()
