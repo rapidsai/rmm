@@ -1,27 +1,41 @@
 repos:
-      - repo: https://github.com/timothycrosley/isort
-        rev: 5.0.4
-        hooks:
-              - id: isort
-      - repo: https://github.com/ambv/black
-        rev: stable
-        hooks:
-              - id: black
-      - repo: https://gitlab.com/pycqa/flake8
-        rev: 3.8.1
-        hooks:
-              - id: flake8
-                alias: flake8
-                name: flake8
-                args: ["--config=python/.flake8"]
-                types: [python]
-      - repo: https://gitlab.com/pycqa/flake8
-        rev: 3.8.1
-        hooks:
-              - id: flake8
-                alias: flake8-cython
-                name: flake8-cython
-                args: ["--config=python/.flake8.cython"]
-                types: [cython]
+    - repo: https://github.com/timothycrosley/isort
+      rev: 5.0.4
+      hooks:
+          - id: isort
+    - repo: https://github.com/ambv/black
+      rev: stable
+      hooks:
+          - id: black
+    - repo: https://gitlab.com/pycqa/flake8
+      rev: 3.8.1
+      hooks:
+          - id: flake8
+            alias: flake8
+            name: flake8
+            args: ["--config=python/.flake8"]
+            types: [python]
+    - repo: https://gitlab.com/pycqa/flake8
+      rev: 3.8.1
+      hooks:
+          - id: flake8
+            alias: flake8-cython
+            name: flake8-cython
+            args: ["--config=python/.flake8.cython"]
+            types: [cython]
+    - repo: https://github.com/cheshirekow/cmake-format-precommit
+      rev: v0.6.13
+      hooks:
+          - id: cmake-format
+            alias: cmake-format
+            name: cmake-format
+            args: ["--config-files", "cmake/format.json", "--in-place"]
+            types: [cmake]
+          - id: cmake-lint
+            alias: cmake-lint
+            name: cmake-lint
+            args: ["--config-files", "cmake/format.json"]
+            types: [cmake]
+
 default_language_version:
-      python: python3
+    python: python3

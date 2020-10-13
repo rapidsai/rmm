@@ -1,132 +1,174 @@
-﻿#=============================================================================
+# =============================================================================
 # Copyright (c) 2018-2020, NVIDIA CORPORATION.
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+# http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#=============================================================================
-cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+# =============================================================================
+cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 
-project(RMM_TESTS LANGUAGES C CXX CUDA)
+include(CTest)
 
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+# ##############################################################################
+# * Fetch GTest
 
-set(CMAKE_CUDA_STANDARD 14)
-set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+cpmfindpackage(
+    NAME
+    GTest
+    GITHUB_REPOSITORY
+    google/googletest
+    GIT_TAG
+    release-1.10.0
+    VERSION
+    1.10.0
+    GIT_SHALLOW
+    TRUE
+    OPTIONS
+    "INSTALL_GTEST OFF"
+    # googletest >= 1.10.0 provides a cmake config file -- use it if it exists
+    FIND_PACKAGE_ARGUMENTS
+    "CONFIG")
 
-###################################################################################################
-# - compiler function
+if(GTest_ADDED)
+    add_library(GTest::gtest ALIAS gtest)
+    add_library(GTest::gmock ALIAS gmock)
+    add_library(GTest::gtest_main ALIAS gtest_main)
+    add_library(GTest::gmock_main ALIAS gmock_main)
+endif()
 
-function(ConfigureTest CMAKE_TEST_NAME CMAKE_TEST_SRC)
-  add_executable(${CMAKE_TEST_NAME} ${CMAKE_TEST_SRC})
-  set_target_properties(${CMAKE_TEST_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-  target_include_directories(${CMAKE_TEST_NAME} PRIVATE "$<BUILD_INTERFACE:${RMM_SOURCE_DIR}>")
+# ##############################################################################
+# Auto-detect available GPU compute architectures
 
-  target_link_libraries(${CMAKE_TEST_NAME} GTest::gmock GTest::gtest GTest::gmock_main GTest::gtest_main
-                        pthread rmm)
-  
-  set_target_properties(${CMAKE_TEST_NAME} PROPERTIES
-                        RUNTIME_OUTPUT_DIRECTORY "${RMM_BINARY_DIR}/gtests")
+set(GPU_ARCHS
+    ""
+    CACHE
+        STRING
+        "List of GPU architectures (semicolon-separated) to be compiled for. Empty string means to auto-detect the GPUs on the current system"
+)
 
-  target_compile_definitions(${CMAKE_TEST_NAME} PUBLIC
-                        "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")    
+if("${GPU_ARCHS}" STREQUAL "")
+    include(../cmake/EvalGpuArchs.cmake)
+    evaluate_gpu_archs(GPU_ARCHS)
+endif()
 
-  add_test(NAME ${CMAKE_TEST_NAME} COMMAND ${CMAKE_TEST_NAME})
+# ##############################################################################
+# * compiler function
+
+function(ConfigureTest TEST_NAME TEST_SRC)
+    add_executable(${TEST_NAME} "${TEST_SRC}")
+    target_include_directories(${TEST_NAME}
+                               PRIVATE "$<BUILD_INTERFACE:${RMM_SOURCE_DIR}>")
+    target_link_libraries(
+        ${TEST_NAME}
+        GTest::gmock
+        GTest::gtest
+        GTest::gmock_main
+        GTest::gtest_main
+        pthread
+        rmm)
+    set_target_properties(
+        ${TEST_NAME}
+        PROPERTIES POSITION_INDEPENDENT_CODE ON
+                   RUNTIME_OUTPUT_DIRECTORY
+                   "$<BUILD_INTERFACE:${RMM_BINARY_DIR}/gtests>"
+                   CUDA_ARCHITECTURES ${GPU_ARCHS})
+    target_compile_definitions(
+        ${TEST_NAME}
+        PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
+
+    add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
 endfunction(ConfigureTest)
 
-###################################################################################################
-### test sources ##################################################################################
-###################################################################################################
+# ##############################################################################
+# test sources
+# ##############################################################################
+# ##############################################################################
 
-###################################################################################################
-# - device mr tests
+# ##############################################################################
+# * device mr tests
 
 set(DEVICE_MR_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/mr_tests.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/mr_multithreaded_tests.cpp")
-    
-ConfigureTest(DEVICE_MR_TEST "${DEVICE_MR_TEST_SRC}")
 
-###################################################################################################
-# - device mr per-thread default stream tests
+configuretest(DEVICE_MR_TEST "${DEVICE_MR_TEST_SRC}")
+
+# ##############################################################################
+# * device mr per-thread default stream tests
 
 set(DEVICE_MR_PTDS_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/mr_multithreaded_tests.cpp")
 
-ConfigureTest(DEVICE_MR_PTDS_TEST "${DEVICE_MR_PTDS_TEST_SRC}")
-target_compile_definitions(DEVICE_MR_PTDS_TEST PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
+configuretest(DEVICE_MR_PTDS_TEST "${DEVICE_MR_PTDS_TEST_SRC}")
+target_compile_definitions(DEVICE_MR_PTDS_TEST
+                           PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
 
-###################################################################################################
-# - pool mr tests
+# ##############################################################################
+# * pool mr tests
 
-set(POOL_MR_TEST_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/pool_mr_tests.cpp")
-    
-ConfigureTest(POOL_MR_TEST "${POOL_MR_TEST_SRC}")
+set(POOL_MR_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/pool_mr_tests.cpp")
+
+configuretest(POOL_MR_TEST "${POOL_MR_TEST_SRC}")
 
 set(POOL_MR_PTDS_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/pool_mr_tests.cpp")
 
-ConfigureTest(POOL_MR_PTDS_TEST "${POOL_MR_PTDS_TEST_SRC}")
-target_compile_definitions(POOL_MR_PTDS_TEST PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
+configuretest(POOL_MR_PTDS_TEST "${POOL_MR_PTDS_TEST_SRC}")
+target_compile_definitions(POOL_MR_PTDS_TEST
+                           PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
 
-###################################################################################################
-# - thrust allocator tests
+# ##############################################################################
+# * thrust allocator tests
 
 set(THRUST_ALLOCATOR_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/thrust_allocator_tests.cu")
-    
-ConfigureTest(THRUST_ALLOCATOR_TEST "${THRUST_ALLOCATOR_TEST_SRC}")
 
-###################################################################################################
-# - host mr tests
+configuretest(THRUST_ALLOCATOR_TEST "${THRUST_ALLOCATOR_TEST_SRC}")
 
-set(HOST_MR_TEST_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/mr/host/mr_tests.cpp")
-    
-ConfigureTest(HOST_MR_TEST "${HOST_MR_TEST_SRC}") 
+# ##############################################################################
+# * host mr tests
 
-###################################################################################################
-# - device buffer tests
+set(HOST_MR_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/host/mr_tests.cpp")
 
-set(BUFFER_TEST_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/device_buffer_tests.cu")
+configuretest(HOST_MR_TEST "${HOST_MR_TEST_SRC}")
 
-ConfigureTest(DEVICE_BUFFER_TEST "${BUFFER_TEST_SRC}")
+# ##############################################################################
+# * device buffer tests
 
-###################################################################################################
-# - device scalar tests
+set(BUFFER_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/device_buffer_tests.cu")
 
-set(SCALAR_TEST_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/device_scalar_tests.cpp")
+configuretest(DEVICE_BUFFER_TEST "${BUFFER_TEST_SRC}")
 
-ConfigureTest(DEVICE_SCALAR_TEST "${SCALAR_TEST_SRC}")
+# ##############################################################################
+# * device scalar tests
 
-###################################################################################################
-# - logger tests
+set(SCALAR_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/device_scalar_tests.cpp")
 
-set(LOGGER_TEST_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/logger_tests.cpp")
+configuretest(DEVICE_SCALAR_TEST "${SCALAR_TEST_SRC}")
 
-ConfigureTest(LOGGER_TEST "${LOGGER_TEST_SRC}")
+# ##############################################################################
+# * logger tests
 
-###################################################################################################
-# - uvector tests
+set(LOGGER_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/logger_tests.cpp")
+
+configuretest(LOGGER_TEST "${LOGGER_TEST_SRC}")
+
+# ##############################################################################
+# * uvector tests
 
 set(DEVICE_UVECTOR_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/device_uvector_tests.cpp")
 
-ConfigureTest(DEVICE_UVECTOR_TEST "${DEVICE_UVECTOR_TEST_SRC}")
+configuretest(DEVICE_UVECTOR_TEST "${DEVICE_UVECTOR_TEST_SRC}")
 
-###################################################################################################
+# ##############################################################################
 
 enable_testing()
