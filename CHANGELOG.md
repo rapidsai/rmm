@@ -4,6 +4,8 @@
 
 ## Improvements
 
+- PR #603 Always test both legacy and per-thread default stream
+
 ## Bug Fixes
 
 # RMM 0.16.0 (Date TBD)
