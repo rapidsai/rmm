@@ -151,10 +151,7 @@ struct replay_benchmark {
   replay_benchmark(replay_benchmark const&) = delete;
 
   /// Add an allocation to the map (NOT thread safe)
-  void set_allocation( uintptr_t ptr, allocation alloc)
-  {
-    allocation_map.insert({ptr, alloc});
-  }
+  void set_allocation(uintptr_t ptr, allocation alloc) { allocation_map.insert({ptr, alloc}); }
 
   /// Remove an allocation from the map (NOT thread safe)
   allocation remove_allocation(uintptr_t ptr)
