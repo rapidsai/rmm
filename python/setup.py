@@ -106,9 +106,7 @@ extensions = cythonize(
     ],
     nthreads=nthreads,
     compiler_directives=dict(
-        profile=False,
-        language_level=3,
-        embedsignature=True,
+        profile=False, language_level=3, embedsignature=True,
     ),
 )
 
@@ -132,9 +130,7 @@ extensions += cythonize(
     ],
     nthreads=nthreads,
     compiler_directives=dict(
-        profile=False,
-        language_level=3,
-        embedsignature=True,
+        profile=False, language_level=3, embedsignature=True,
     ),
 )
 
