@@ -20,22 +20,15 @@ include(CTest)
 # ##############################################################################
 # * Fetch GTest
 
-cpmfindpackage(
-    NAME
-    GTest
-    GITHUB_REPOSITORY
-    google/googletest
-    GIT_TAG
-    release-1.10.0
-    VERSION
-    1.10.0
-    GIT_SHALLOW
-    TRUE
-    OPTIONS
-    "INSTALL_GTEST OFF"
+CPMFindPackage(
+    NAME GTest
+    GITHUB_REPOSITORY google/googletest
+    GIT_TAG release-1.10.0
+    VERSION 1.10.0
+    GIT_SHALLOW TRUE
+    OPTIONS "INSTALL_GTEST OFF"
     # googletest >= 1.10.0 provides a cmake config file -- use it if it exists
-    FIND_PACKAGE_ARGUMENTS
-    "CONFIG")
+    FIND_PACKAGE_ARGUMENTS "CONFIG")
 
 if(GTest_ADDED)
     add_library(GTest::gtest ALIAS gtest)
@@ -55,13 +48,15 @@ set(GPU_ARCHS
 )
 
 if("${GPU_ARCHS}" STREQUAL "")
-    include(../cmake/EvalGpuArchs.cmake)
+    include(${RMM_SOURCE_DIR}/cmake/EvalGPUArchs.cmake)
     evaluate_gpu_archs(GPU_ARCHS)
 endif()
 
 # ##############################################################################
 # * compiler function
 
+# This function takes in a test name and test source and handles setting all of
+# the associated properties and linking to build the test
 function(ConfigureTest TEST_NAME TEST_SRC)
     add_executable(${TEST_NAME} "${TEST_SRC}")
     target_include_directories(${TEST_NAME}

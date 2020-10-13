@@ -18,37 +18,32 @@ cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 # ##############################################################################
 # * Fetch Google Benchmark
 
-cpmfindpackage(
-    NAME
-    benchmark
-    GITHUB_REPOSITORY
-    google/benchmark
-    VERSION
-    1.5.2
-    GIT_SHALLOW
-    TRUE
-    OPTIONS
-    "BENCHMARK_ENABLE_TESTING OFF"
-    "BENCHMARK_ENABLE_INSTALL OFF")
+CPMFindPackage(
+    NAME benchmark
+    GITHUB_REPOSITORY google/benchmark
+    VERSION 1.5.2
+    GIT_SHALLOW TRUE
+    OPTIONS "BENCHMARK_ENABLE_TESTING OFF" "BENCHMARK_ENABLE_INSTALL OFF")
 
 # ##############################################################################
 # Auto-detect available GPU compute architectures
 
 set(GPU_ARCHS
     ""
-    CACHE
-        STRING
-        "List of GPU architectures (semicolon-separated) to be compiled for. Empty string means to auto-detect the GPUs on the current system"
-)
+    CACHE STRING
+          "List of GPU architectures (semicolon-separated) to be compiled for.
+          Empty string means to auto-detect the GPUs on the current system")
 
 if("${GPU_ARCHS}" STREQUAL "")
-    include(../cmake/EvalGpuArchs.cmake)
+    include(${RMM_SOURCE_DIR}/cmake/EvalGPUArchs.cmake)
     evaluate_gpu_archs(GPU_ARCHS)
 endif()
 
 # ##############################################################################
 # * compiler function
 
+# This function takes in a benchmark name and benchmark source and handles
+# setting all of the associated properties and linking to build the benchmark
 function(ConfigureBench BENCH_NAME BENCH_SRC)
     add_executable(
         ${BENCH_NAME}

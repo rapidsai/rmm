@@ -23,15 +23,16 @@ project(
 include(cmake/Modules/CPM.cmake)
 include(cmake/Modules/RMM_thirdparty.cmake)
 
-# ##############################################################################
-# * build type
+# build type
 
 # Set a default build type if none was specified
 set(DEFAULT_BUILD_TYPE "Release")
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-    message(STATUS "RMM: Setting build type to '${DEFAULT_BUILD_TYPE}' "
-                   "since none specified.")
+    message(
+        STATUS
+            "RMM: Setting build type to '${DEFAULT_BUILD_TYPE}' since none specified."
+    )
     set(CMAKE_BUILD_TYPE
         "${DEFAULT_BUILD_TYPE}"
         CACHE STRING "Choose the type of build." FORCE)
@@ -40,8 +41,7 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
                                                  "MinSizeRel" "RelWithDebInfo")
 endif()
 
-# ##############################################################################
-# * build options
+# build options
 
 option(BUILD_TESTS "Configure CMake to build tests" ON)
 option(BUILD_BENCHMARKS "Configure CMake to build (google) benchmarks" OFF)
@@ -53,12 +53,10 @@ option(PER_THREAD_DEFAULT_STREAM "Build with per-thread default stream" OFF)
 # wants dynamic linking
 option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
 
-# ##############################################################################
 # find packages we depend on
 
 find_package(CUDAToolkit REQUIRED)
 
-# ##############################################################################
 # library targets
 
 add_library(rmm INTERFACE)
@@ -165,9 +163,9 @@ add_custom_command(
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/doxygen
     COMMAND doxygen Doxyfile
     VERBATIM
-    COMMENT "")
+    COMMENT "Custom command for RMM doxygen docs")
 
 add_custom_target(
     rmm_doc
     DEPENDS RMM_DOXYGEN
-    COMMENT "")
+    COMMENT "Target for the custom command to build the RMM doxygen docs")

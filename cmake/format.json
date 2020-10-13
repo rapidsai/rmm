@@ -1,6 +1,27 @@
 {
+  "parse": {
+    "additional_commands": {
+      "CPMFindPackage": {
+        "kwargs": {
+          "NAME": 1,
+          "GITHUB_REPOSITORY": "?",
+          "GIT_TAG": "?",
+          "VERSION": "?",
+          "GIT_SHALLOW": "?",
+          "OPTIONS": "*",
+          "FIND_PACKAGE_ARGUMENTS": "*" 
+        }
+      }
+    }
+  },
   "format": {
     "line_width": 80,
-    "tab_size": 4
+    "tab_size": 4,
+    "command_case": "canonical"
+  },
+  "lint": {
+    "disabled_codes": ["C0301"],
+    "function_pattern": "[0-9A-z_]+",
+    "argument_var_pattern": "[A-z][A-z0-9_]+"
   }
 }
