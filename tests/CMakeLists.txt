@@ -94,7 +94,7 @@ set(DEVICE_MR_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/mr_tests.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/mr_multithreaded_tests.cpp")
 
-configuretest(DEVICE_MR_TEST "${DEVICE_MR_TEST_SRC}")
+ConfigureTest(DEVICE_MR_TEST "${DEVICE_MR_TEST_SRC}")
 
 # ##############################################################################
 # * device mr per-thread default stream tests
@@ -102,7 +102,7 @@ configuretest(DEVICE_MR_TEST "${DEVICE_MR_TEST_SRC}")
 set(DEVICE_MR_PTDS_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/mr_multithreaded_tests.cpp")
 
-configuretest(DEVICE_MR_PTDS_TEST "${DEVICE_MR_PTDS_TEST_SRC}")
+ConfigureTest(DEVICE_MR_PTDS_TEST "${DEVICE_MR_PTDS_TEST_SRC}")
 target_compile_definitions(DEVICE_MR_PTDS_TEST
                            PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
 
@@ -111,12 +111,12 @@ target_compile_definitions(DEVICE_MR_PTDS_TEST
 
 set(POOL_MR_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/pool_mr_tests.cpp")
 
-configuretest(POOL_MR_TEST "${POOL_MR_TEST_SRC}")
+ConfigureTest(POOL_MR_TEST "${POOL_MR_TEST_SRC}")
 
 set(POOL_MR_PTDS_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/pool_mr_tests.cpp")
 
-configuretest(POOL_MR_PTDS_TEST "${POOL_MR_PTDS_TEST_SRC}")
+ConfigureTest(POOL_MR_PTDS_TEST "${POOL_MR_PTDS_TEST_SRC}")
 target_compile_definitions(POOL_MR_PTDS_TEST
                            PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
 
@@ -126,35 +126,35 @@ target_compile_definitions(POOL_MR_PTDS_TEST
 set(THRUST_ALLOCATOR_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/thrust_allocator_tests.cu")
 
-configuretest(THRUST_ALLOCATOR_TEST "${THRUST_ALLOCATOR_TEST_SRC}")
+ConfigureTest(THRUST_ALLOCATOR_TEST "${THRUST_ALLOCATOR_TEST_SRC}")
 
 # ##############################################################################
 # * host mr tests
 
 set(HOST_MR_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/host/mr_tests.cpp")
 
-configuretest(HOST_MR_TEST "${HOST_MR_TEST_SRC}")
+ConfigureTest(HOST_MR_TEST "${HOST_MR_TEST_SRC}")
 
 # ##############################################################################
 # * device buffer tests
 
 set(BUFFER_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/device_buffer_tests.cu")
 
-configuretest(DEVICE_BUFFER_TEST "${BUFFER_TEST_SRC}")
+ConfigureTest(DEVICE_BUFFER_TEST "${BUFFER_TEST_SRC}")
 
 # ##############################################################################
 # * device scalar tests
 
 set(SCALAR_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/device_scalar_tests.cpp")
 
-configuretest(DEVICE_SCALAR_TEST "${SCALAR_TEST_SRC}")
+ConfigureTest(DEVICE_SCALAR_TEST "${SCALAR_TEST_SRC}")
 
 # ##############################################################################
 # * logger tests
 
 set(LOGGER_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/logger_tests.cpp")
 
-configuretest(LOGGER_TEST "${LOGGER_TEST_SRC}")
+ConfigureTest(LOGGER_TEST "${LOGGER_TEST_SRC}")
 
 # ##############################################################################
 # * uvector tests
@@ -162,7 +162,7 @@ configuretest(LOGGER_TEST "${LOGGER_TEST_SRC}")
 set(DEVICE_UVECTOR_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/device_uvector_tests.cpp")
 
-configuretest(DEVICE_UVECTOR_TEST "${DEVICE_UVECTOR_TEST_SRC}")
+ConfigureTest(DEVICE_UVECTOR_TEST "${DEVICE_UVECTOR_TEST_SRC}")
 
 # ##############################################################################
 

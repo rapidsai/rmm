@@ -74,14 +74,14 @@ endfunction(ConfigureBench)
 set(RANDOM_ALLOCATIONS_BENCH_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/random_allocations/random_allocations.cpp")
 
-configurebench(RANDOM_ALLOCATIONS_BENCH "${RANDOM_ALLOCATIONS_BENCH_SRC}")
+ConfigureBench(RANDOM_ALLOCATIONS_BENCH "${RANDOM_ALLOCATIONS_BENCH_SRC}")
 
 # ##############################################################################
 # * replay benchmark
 
 set(REPLAY_BENCH_SRC "${CMAKE_CURRENT_SOURCE_DIR}/replay/replay.cpp")
 
-configurebench(REPLAY_BENCH "${REPLAY_BENCH_SRC}")
+ConfigureBench(REPLAY_BENCH "${REPLAY_BENCH_SRC}")
 
 # ##############################################################################
 # * uvector benchmark
@@ -89,4 +89,4 @@ configurebench(REPLAY_BENCH "${REPLAY_BENCH_SRC}")
 set(UVECTOR_BENCH_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/device_uvector/device_uvector_bench.cu")
 
-configurebench(UVECTOR_BENCH "${UVECTOR_BENCH_SRC}")
+ConfigureBench(UVECTOR_BENCH "${UVECTOR_BENCH_SRC}")
