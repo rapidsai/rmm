@@ -228,6 +228,12 @@ TEST_P(mr_test_mt, AllocFreeDifferentThreadsDefaultStream)
     this->mr.get(), cudaStream_t{cudaStreamDefault}, cudaStream_t{cudaStreamDefault});
 }
 
+TEST_P(mr_test_mt, AllocFreeDifferentThreadsPerThreadDefaultStream)
+{
+  test_allocate_free_different_threads(
+    this->mr.get(), cudaStream_t{cudaStreamPerThread}, cudaStream_t{cudaStreamPerThread});
+}
+
 TEST_P(mr_test_mt, AllocFreeDifferentThreadsSameStream)
 {
   test_allocate_free_different_threads(this->mr.get(), this->stream, this->stream);

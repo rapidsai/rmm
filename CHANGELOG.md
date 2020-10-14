@@ -1,3 +1,11 @@
+# RMM 0.17.0 (Date TBD)
+
+## New Features
+
+## Improvements
+
+## Bug Fixes
+
 # RMM 0.16.0 (Date TBD)
 
 ## New Features
@@ -5,6 +13,8 @@
 - PR #529 Add debug logging and fix multithreaded replay benchmark
 - PR #560 Remove deprecated `get/set_default_resource` APIs
 - PR #543 Add an arena-based memory resource
+- PR #580 Install CMake config with RMM
+- PR #591 Allow the replay bench to simulate different GPU memory sizes
 
 ## Improvements
 
@@ -39,6 +49,9 @@
 - PR #569 Correct `device_scalar::set_value` to pass host value by reference to avoid copying from invalid value
 - PR #559 Fix `align_down` to only change unaligned values.
 - PR #577 Fix CMake `LOGGING_LEVEL` issue which caused verbose logging / performance regression.
+- PR #582 Fix handling of per-thread default stream when not compiled for PTDS
+- PR #590 Add missing `CODE_OF_CONDUCT.md`
+- PR #595 Fix pool_mr example in README.md
 
 
 # RMM 0.15.0 (26 Aug 2020)
