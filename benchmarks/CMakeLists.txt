@@ -27,6 +27,15 @@ CPMFindPackage(
 include(${RMM_SOURCE_DIR}/cmake/Modules/SetGPUArchs.cmake)
 message(STATUS "RMM: Building benchmarks with GPU Architectures: ${GPU_ARCHS}")
 
+# Build options
+
+option(DISABLE_DEPRECATION_WARNING "Disable warnings generated from deprecated declarations." OFF)
+option(PER_THREAD_DEFAULT_STREAM "Build with per-thread default stream" OFF)
+
+if(PER_THREAD_DEFAULT_STREAM)
+  message(STATUS "RMM: Building benchmarks with per-thread default stream")
+endif(PER_THREAD_DEFAULT_STREAM)
+
 # compiler function
 
 # This function takes in a benchmark name and benchmark source and handles setting all of the
@@ -43,6 +52,20 @@ function(ConfigureBench BENCH_NAME BENCH_SRC)
   target_link_libraries(${BENCH_NAME} benchmark::benchmark pthread rmm)
   target_compile_definitions(${BENCH_NAME}
                              PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
+
+  if(PER_THREAD_DEFAULT_STREAM)
+    target_compile_definitions(${BENCH_NAME} PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
+  endif(PER_THREAD_DEFAULT_STREAM)
+
+  target_compile_options(${BENCH_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Werror
+                                              -Wno-error=deprecated-declarations>)
+  if(DISABLE_DEPRECATION_WARNING)
+    target_compile_options(${BENCH_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler
+                                                -Wno-deprecated-declarations>)
+    target_compile_options(${BENCH_NAME}
+                           PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-declarations>)
+  endif(DISABLE_DEPRECATION_WARNING)
+
 endfunction(ConfigureBench)
 
 # benchmark sources

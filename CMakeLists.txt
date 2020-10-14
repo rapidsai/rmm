@@ -40,8 +40,6 @@ endif()
 
 option(BUILD_TESTS "Configure CMake to build tests" ON)
 option(BUILD_BENCHMARKS "Configure CMake to build (google) benchmarks" OFF)
-option(DISABLE_DEPRECATION_WARNING "Disable warnings generated from deprecated declarations." OFF)
-option(PER_THREAD_DEFAULT_STREAM "Build with per-thread default stream" OFF)
 
 # cudart can be statically linked or dynamically linked the python ecosystem wants dynamic linking
 option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
@@ -68,19 +66,6 @@ endif(CUDA_STATIC_RUNTIME)
 target_link_libraries(rmm INTERFACE rmm::Thrust)
 target_link_libraries(rmm INTERFACE spdlog::spdlog_header_only)
 target_compile_features(rmm INTERFACE cxx_std_14 cuda_std_14)
-target_compile_options(rmm INTERFACE $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Werror
-                                     -Wno-error=deprecated-declarations>)
-
-if(DISABLE_DEPRECATION_WARNING)
-  target_compile_options(rmm INTERFACE $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler
-                                       -Wno-deprecated-declarations>)
-  target_compile_options(rmm INTERFACE $<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-declarations>)
-endif(DISABLE_DEPRECATION_WARNING)
-
-if(PER_THREAD_DEFAULT_STREAM)
-  message(STATUS "RMM: Using per-thread default stream")
-  target_compile_definitions(rmm INTERFACE CUDA_API_PER_THREAD_DEFAULT_STREAM)
-endif(PER_THREAD_DEFAULT_STREAM)
 
 # Set logging level. Must go before including gtests and benchmarks.
 

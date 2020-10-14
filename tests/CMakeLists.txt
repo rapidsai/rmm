@@ -39,6 +39,15 @@ endif()
 include(${RMM_SOURCE_DIR}/cmake/Modules/SetGPUArchs.cmake)
 message(STATUS "RMM: Building tests with GPU Architectures: ${GPU_ARCHS}")
 
+# Build options
+
+option(DISABLE_DEPRECATION_WARNING "Disable warnings generated from deprecated declarations." OFF)
+option(PER_THREAD_DEFAULT_STREAM "Build with per-thread default stream" OFF)
+
+if(PER_THREAD_DEFAULT_STREAM)
+  message(STATUS "RMM: Building tests with per-thread default stream")
+endif(PER_THREAD_DEFAULT_STREAM)
+
 # compiler function
 
 # This function takes in a test name and test source and handles setting all of the associated
@@ -55,6 +64,19 @@ function(ConfigureTest TEST_NAME TEST_SRC)
                CUDA_ARCHITECTURES "${GPU_ARCHS}")
   target_compile_definitions(${TEST_NAME}
                              PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
+
+  if(PER_THREAD_DEFAULT_STREAM)
+    target_compile_definitions(${TEST_NAME} PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
+  endif(PER_THREAD_DEFAULT_STREAM)
+
+  target_compile_options(${TEST_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Werror
+                                             -Wno-error=deprecated-declarations>)
+  if(DISABLE_DEPRECATION_WARNING)
+    target_compile_options(${TEST_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler
+                                               -Wno-deprecated-declarations>)
+    target_compile_options(${TEST_NAME}
+                           PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-declarations>)
+  endif(DISABLE_DEPRECATION_WARNING)
 
   add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
 endfunction(ConfigureTest)
