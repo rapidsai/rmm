@@ -22,6 +22,8 @@
 #include <rmm/mr/device/detail/stream_ordered_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/transform_iterator.h>
 #include <thrust/optional.h>
 
 #include <cuda_runtime_api.h>
@@ -99,17 +101,7 @@ class pool_memory_resource final
     RMM_EXPECTS(rmm::detail::is_aligned(maximum_pool_size.value_or(0), allocation_alignment),
                 "Error, Maximum pool size required to be a multiple of 256 bytes");
 
-    std::size_t free{}, total{};
-    std::tie(free, total) = detail::available_device_memory();
-
-    current_pool_size_ = initial_pool_size.value_or(
-      rmm::detail::align_up(std::min(free, total / 2), allocation_alignment));
-
-    maximum_pool_size_ = maximum_pool_size;
-
-    RMM_EXPECTS(pool_size() <= maximum_pool_size_.value_or(std::numeric_limits<std::size_t>::max()),
-                "Initial pool size exceeds the maximum pool size!");
-    this->insert_block(block_from_upstream(pool_size(), cudaStreamLegacy), cudaStreamLegacy);
+    initialize_pool(initial_pool_size, maximum_pool_size);
   }
 
   /**
@@ -164,6 +156,76 @@ class pool_memory_resource final
   size_t get_maximum_allocation_size() const { return std::numeric_limits<size_t>::max(); }
 
   /**
+   * @brief Try to expand the pool by allocating a block of at least `min_size` bytes from upstream
+   *
+   * Attempts to allocate `try_size` bytes from upstream. If it fails, it iteratively reduces the
+   * attempted size by half until `min_size`, returning the allocated block once it succeeds.
+   *
+   * @throws rmm::bad_alloc if `min_size` bytes cannot be allocated from upstream.
+   *
+   * @param try_size The initial requested size to try allocating.
+   * @param min_size The minimum requested size to try allocating.
+   * @param stream The stream on which the memory is to be used.
+   * @return block_type a block of at least `min_size` bytes
+   */
+  block_type try_to_expand(std::size_t try_size, std::size_t min_size, cudaStream_t stream)
+  {
+    RMM_EXPECTS(try_size >= min_size, "try_size must be at least as big as min_size");
+    while (try_size >= min_size) {
+      auto b = block_from_upstream(try_size, stream);
+      if (b.has_value()) {
+        current_pool_size_ += b.value().size();
+        return b.value();
+      }
+      if (try_size == min_size) break;  // only try `size` once
+      try_size = std::max(min_size, try_size / 2);
+    }
+    RMM_LOG_ERROR("[A][Stream {}][Upstream {}B][FAILURE maximum pool size exceeded]",
+                  reinterpret_cast<void*>(stream),
+                  min_size);
+    RMM_FAIL("Maximum pool size exceeded", rmm::bad_alloc);
+  }
+
+  /**
+   * @brief Allocate initial memory for the pool
+   *
+   * If initial_size is unset, then queries the upstream memory resource for available memory if
+   * upstream supports `get_mem_info`, or queries the device (using CUDA API) for available memory
+   * if not. Then attempts to initialize to half the available memory.
+   *
+   * If initial_size is set, then tries to initialize the pool to that size.
+   *
+   * @param initial_size The optional initial size for the pool
+   * @param maximum_size The optional maximum size for the pool
+   */
+  void initialize_pool(thrust::optional<std::size_t> initial_size,
+                       thrust::optional<std::size_t> maximum_size)
+  {
+    auto const try_size = [&]() {
+      if (not initial_size.has_value()) {
+        std::size_t free{}, total{};
+        std::tie(free, total) = (get_upstream()->supports_get_mem_info())
+                                  ? get_upstream()->get_mem_info(cudaStreamLegacy)
+                                  : detail::available_device_memory();
+        return rmm::detail::align_up(std::min(free, total / 2), allocation_alignment);
+      } else {
+        return initial_size.value();
+      }
+    }();
+
+    current_pool_size_ = 0;  // try_to_expand will set this if it succeeds
+    maximum_pool_size_ = maximum_size;
+
+    RMM_EXPECTS(try_size <= maximum_pool_size_.value_or(std::numeric_limits<std::size_t>::max()),
+                "Initial pool size exceeds the maximum pool size!");
+
+    if (try_size > 0) {
+      auto const b = try_to_expand(try_size, try_size, cudaStreamLegacy);
+      this->insert_block(b, cudaStreamLegacy);
+    }
+  }
+
+  /**
    * @brief Allocate space from upstream to supply the suballocation pool and return
    * a sufficiently sized block.
    *
@@ -172,54 +234,34 @@ class pool_memory_resource final
    * @param stream The stream on which the memory is to be used.
    * @return block_type a block of at least `size` bytes
    */
-  block_type expand_pool(size_t size, free_list& blocks, cudaStream_t stream)
+  block_type expand_pool(std::size_t size, free_list& blocks, cudaStream_t stream)
   {
-    // Strategy. If maximum_pool_size_ is set, then grow geometrically, e.g. by halfway to the limit
-    // each time. If it is not set, grow exponentially, e.g. by doubling the pool size each time.
-    // Upon failure, attempt to back off exponentially, e.g. by half the attempted size, until
-    // either success or the attempt is less than the requested size.
-    auto try_size = size_to_grow(size);
-    while (try_size >= size) {
-      try {
-        auto b = block_from_upstream(try_size, stream);
-        current_pool_size_ += try_size;
-        return b;
-      } catch (std::exception& e) {
-        if (try_size == size) break;  // give up after we try size once
-        try_size = std::max(size, try_size / 2);
-      }
-    }
-    RMM_LOG_ERROR("[A][Stream {}][Upstream {}B][FAILURE max pool size exceeded]",
-                  reinterpret_cast<void*>(stream),
-                  size);
-    RMM_FAIL("Maximum pool size exceeded", rmm::bad_alloc);
+    // Strategy: If maximum_pool_size_ is set, then grow geometrically, e.g. by halfway to the
+    // limit each time. If it is not set, grow exponentially, e.g. by doubling the pool size each
+    // time. Upon failure, attempt to back off exponentially, e.g. by half the attempted size,
+    // until either success or the attempt is less than the requested size.
+    return try_to_expand(size_to_grow(size), size, stream);
   }
 
   /**
    * @brief Given a minimum size, computes an appropriate size to grow the pool.
    *
-   * Strategy is to try to grow the pool by half the difference between the configured maximum pool
-   * size and the current pool size, if the maximum pool size is set. If it is not set, try to
-   * double the current pool size.
+   * Strategy is to try to grow the pool by half the difference between the configured maximum
+   * pool size and the current pool size, if the maximum pool size is set. If it is not set, try
+   * to double the current pool size.
    *
    * Returns 0 if the requested size cannot be satisfied.
    *
    * @param size The size of the minimum allocation immediately needed
    * @return size_t The computed size to grow the pool.
    */
-  size_t size_to_grow(size_t size) const
+  std::size_t size_to_grow(std::size_t size) const
   {
     if (maximum_pool_size_.has_value()) {
-      auto const remaining =
-        rmm::detail::align_up(maximum_pool_size_.value() - pool_size(), allocation_alignment);
+      auto const unaligned_remaining = maximum_pool_size_.value() - pool_size();
+      auto const remaining    = rmm::detail::align_up(unaligned_remaining, allocation_alignment);
       auto const aligned_size = rmm::detail::align_up(size, allocation_alignment);
-      if (aligned_size <= remaining / 2) {
-        return remaining / 2;
-      } else if (aligned_size <= remaining) {
-        return aligned_size;
-      } else {
-        return 0;
-      }
+      return (aligned_size <= remaining) ? std::max(aligned_size, remaining / 2) : 0;
     } else
       return std::max(size, pool_size());
   };
@@ -231,7 +273,7 @@ class pool_memory_resource final
    * @param stream The stream on which the memory is to be used.
    * @return block_type The allocated block
    */
-  block_type block_from_upstream(size_t size, cudaStream_t stream)
+  thrust::optional<block_type> block_from_upstream(size_t size, cudaStream_t stream)
   {
     RMM_LOG_DEBUG("[A][Stream {}][Upstream {}B]", reinterpret_cast<void*>(stream), size);
 
@@ -241,13 +283,9 @@ class pool_memory_resource final
       void* p = upstream_mr_->allocate(size, stream);
       block_type b{reinterpret_cast<char*>(p), size, true};
       upstream_blocks_.emplace_back(b);  // TODO: with C++17 use version that returns a reference
-      return b;
+      return thrust::optional<block_type>{b};
     } catch (std::exception const& e) {
-      RMM_LOG_ERROR("[A][Stream {}][Upstream {}B][FAILURE {}]",
-                    reinterpret_cast<void*>(stream),
-                    size,
-                    e.what());
-      throw;
+      return thrust::nullopt;
     }
   }
 
