@@ -11,7 +11,6 @@
 # or implied. See the License for the specific language governing permissions and limitations under
 # the License.
 # =============================================================================
-cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 
 include(CTest)
 
@@ -37,9 +36,11 @@ endif()
 # Auto-detect available GPU compute architectures
 
 include(${RMM_SOURCE_DIR}/cmake/Modules/SetGPUArchs.cmake)
-message(STATUS "RMM: Building tests with GPU Architectures: ${GPU_ARCHS}")
+message(STATUS "RMM: Building tests with GPU Architectures: ${CMAKE_CUDA_ARCHITECTURES}")
 
 # Build options
+
+enable_language(CUDA)
 
 option(DISABLE_DEPRECATION_WARNING "Disable warnings generated from deprecated declarations." OFF)
 option(PER_THREAD_DEFAULT_STREAM "Build with per-thread default stream" OFF)
@@ -61,7 +62,7 @@ function(ConfigureTest TEST_NAME TEST_SRC)
     ${TEST_NAME}
     PROPERTIES POSITION_INDEPENDENT_CODE ON
                RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${RMM_BINARY_DIR}/gtests>"
-               CUDA_ARCHITECTURES "${GPU_ARCHS}")
+               CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}")
   target_compile_definitions(${TEST_NAME}
                              PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
 

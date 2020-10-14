@@ -11,12 +11,12 @@
 # or implied. See the License for the specific language governing permissions and limitations under
 # the License.
 # =============================================================================
-cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.18...3.18 FATAL_ERROR)
 
 project(
   RMM
   VERSION 0.17.0
-  LANGUAGES C CXX CUDA)
+  LANGUAGES CXX)
 
 include(cmake/Modules/CPM.cmake)
 include(cmake/Modules/RMM_thirdparty.cmake)

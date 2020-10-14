@@ -12,39 +12,50 @@
 # the License.
 # =============================================================================
 
-set(GPU_ARCHS
-    ""
-    CACHE
-      STRING
-      "List of GPU architectures (semicolon-separated) to be compiled for. Empty string means to auto-detect the GPUs on the current system"
-)
+# Build the list of supported architectures
 
-if("${GPU_ARCHS}" STREQUAL "")
+# Check for embedded vs workstation architectures
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
+  # This is being built for Linux4Tegra or SBSA ARM64
+  set(SUPPORTED_CUDA_ARCHITECTURES "62")
+  if((CUDAToolkit_VERSION_MAJOR EQUAL 9) OR (CUDAToolkit_VERSION_MAJOR GREATER 9))
+    list(APPEND SUPPORTED_CUDA_ARCHITECTURES "72")
+  endif((CUDAToolkit_VERSION_MAJOR EQUAL 9) OR (CUDAToolkit_VERSION_MAJOR GREATER 9))
+  if((CUDAToolkit_VERSION_MAJOR EQUAL 11) OR (CUDAToolkit_VERSION_MAJOR GREATER 11))
+    list(APPEND SUPPORTED_CUDA_ARCHITECTURES "75" "80")
+  endif((CUDAToolkit_VERSION_MAJOR EQUAL 11) OR (CUDAToolkit_VERSION_MAJOR GREATER 11))
+else()
+  # This is being built for an x86 or x86_64 architecture
+  set(SUPPORTED_CUDA_ARCHITECTURES "60")
+  if((CUDAToolkit_VERSION_MAJOR EQUAL 9) OR (CUDAToolkit_VERSION_MAJOR GREATER 9))
+    list(APPEND SUPPORTED_CUDA_ARCHITECTURES "70")
+  endif((CUDAToolkit_VERSION_MAJOR EQUAL 9) OR (CUDAToolkit_VERSION_MAJOR GREATER 9))
+  if((CUDAToolkit_VERSION_MAJOR EQUAL 10) OR (CUDAToolkit_VERSION_MAJOR GREATER 10))
+    list(APPEND SUPPORTED_CUDA_ARCHITECTURES "75")
+  endif((CUDAToolkit_VERSION_MAJOR EQUAL 10) OR (CUDAToolkit_VERSION_MAJOR GREATER 10))
+  if((CUDAToolkit_VERSION_MAJOR EQUAL 11) OR (CUDAToolkit_VERSION_MAJOR GREATER 11))
+    list(APPEND SUPPORTED_CUDA_ARCHITECTURES "80")
+  endif((CUDAToolkit_VERSION_MAJOR EQUAL 11) OR (CUDAToolkit_VERSION_MAJOR GREATER 11))
+endif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
+
+# If `CMAKE_CUDA_ARCHITECTURES` is not defined, build for all supported architectures. If
+# `CMAKE_CUDA_ARCHITECTURES` is set to an empty string (""), build for only the current
+# architecture. If `CMAKE_CUDA_ARCHITECTURES` is specified by the user, use user setting.
+
+# This needs to be run before enabling the CUDA language due to the default initialization behavior
+# of `CMAKE_CUDA_ARCHITECTURES`, https://gitlab.kitware.com/cmake/cmake/-/issues/21302
+
+if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+  set(CMAKE_CUDA_ARCHITECTURES ${SUPPORTED_CUDA_ARCHITECTURES})
+endif(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+
+if(CMAKE_CUDA_ARCHITECTURES STREQUAL "")
+  unset(CMAKE_CUDA_ARCHITECTURES)
+  unset(CMAKE_CUDA_ARCHITECTURES CACHE)
   include(${RMM_SOURCE_DIR}/cmake/Modules/EvalGPUArchs.cmake)
-  evaluate_gpu_archs(GPU_ARCHS)
-  if("${GPU_ARCHS}" STREQUAL "ALL")
-    # Check for embedded vs workstation architectures
-    if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
-      # This is being built for Linux4Tegra or SBSA ARM64
-      set(GPU_ARCHS "62")
-      if((CUDAToolkit_VERSION_MAJOR EQUAL 9) OR (CUDAToolkit_VERSION_MAJOR GREATER 9))
-        list(APPEND GPU_ARCHS "72")
-      endif()
-      if((CUDAToolkit_VERSION_MAJOR EQUAL 11) OR (CUDAToolkit_VERSION_MAJOR GREATER 11))
-        list(APPEND GPU_ARCHS "75" "80")
-      endif()
-    else()
-      # This is being built for an x86 or x86_64 architecture
-      set(GPU_ARCHS "60")
-      if((CUDAToolkit_VERSION_MAJOR EQUAL 9) OR (CUDAToolkit_VERSION_MAJOR GREATER 9))
-        list(APPEND GPU_ARCHS "70")
-      endif()
-      if((CUDAToolkit_VERSION_MAJOR EQUAL 10) OR (CUDAToolkit_VERSION_MAJOR GREATER 10))
-        list(APPEND GPU_ARCHS "75")
-      endif()
-      if((CUDAToolkit_VERSION_MAJOR EQUAL 11) OR (CUDAToolkit_VERSION_MAJOR GREATER 11))
-        list(APPEND GPU_ARCHS "80")
-      endif()
-    endif()
-  endif()
-endif()
+  evaluate_gpu_archs(CMAKE_CUDA_ARCHITECTURES)
+endif(CMAKE_CUDA_ARCHITECTURES STREQUAL "")
+
+set(CMAKE_CUDA_ARCHITECTURES
+    ${CMAKE_CUDA_ARCHITECTURES}
+    PARENT_SCOPE)
