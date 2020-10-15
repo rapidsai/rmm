@@ -2,6 +2,8 @@
 
 ## New Features
 
+ - PR #608 Add stream wrapper type
+
 ## Improvements
 
 ## Bug Fixes
