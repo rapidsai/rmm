@@ -133,6 +133,17 @@ bool operator!=(polymorphic_allocator<T> const& lhs, polymorphic_allocator<U> co
   return not(lhs == rhs);
 }
 
+/**
+ * @brief Adapts a stream ordered allocator to provide a standard `Allocator` interface
+ *
+ * A stream-ordered allocator (i.e., `allocate/deallocate` use a `cudaStream_t`) cannot be used in
+ * an interface that expects a standard C++ `Allocator` interface. `stream_allocator_adaptor` wraps
+ * a stream-ordered allocator and a stream to provide a standard `Allocator` interface. The adaptor
+ * uses the wrapped stream in calls the underlying allocator's `allocate` and `deallocate`
+ * functions.
+ *
+ * @tparam Allocator Stream ordered allocator type to adapt
+ */
 template <typename Allocator>
 class stream_allocator_adaptor {
  public:
@@ -140,8 +151,25 @@ class stream_allocator_adaptor {
 
   stream_allocator_adaptor() = delete;
 
+  /**
+   * @brief Construct a `stream_allocator_adaptor` using `a` as the underlying allocator.
+   *
+   * @note: The `stream` must not be destroyed before the `stream_allocator_adaptor`, otherwise
+   * behavior is undefined.
+   *
+   * @param a The stream ordered allocator to use as the underlying allocator
+   * @param stream The stream used with the underlying allocator
+   */
   stream_allocator_adaptor(Allocator const& a, cudaStream_t stream) : alloc_{a}, stream_{stream} {}
 
+  /**
+   * @brief Construct a `stream_allocator_adaptor` using `other.underlying_allocator()` and
+   * `other.stream()` as the underlying allocator and stream.
+   *
+   * @tparam OtherAllocator Type of `other`'s underlying allocator
+   * @param other The other `stream_allocator_adaptor` whose underlying allocator and stream will be
+   * copied
+   */
   template <typename OtherAllocator>
   stream_allocator_adaptor(stream_allocator_adaptor<OtherAllocator> const& other)
     : stream_allocator_adaptor{other.underlying_allocator(), other.stream()}
@@ -154,17 +182,41 @@ class stream_allocator_adaptor {
       stream_allocator_adaptor<typename std::allocator_traits<Allocator>::template rebind_alloc<T>>;
   };
 
+  /**
+   * @brief Allocates storage for `n` objects of type `T` using the underlying allocator on
+   * `stream()`.
+   *
+   * @param n The number of objects to allocate storage for
+   * @return Pointer to the allocated storage
+   */
   value_type* allocate(std::size_t n) { return alloc_.allocate(n, stream()); }
 
+  /**
+   * @brief Deallocates storage pointed to by `p` using the underlying allocator on `stream()`.
+   *
+   * `p` must have been allocated from by an allocator `a` that compares equal to
+   * `underlying_allocator()` using `a.allocate(n)`.
+   *
+   * @param p Pointer to memory to deallocate
+   * @param n Number of objects originally allocated
+   */
   void deallocate(value_type* p, std::size_t n) { alloc_.deallocate(p, n, stream()); }
 
+  /**
+   * @brief Returns the underlying stream on which calls to the underlying allocator are made.
+   *
+   */
   cudaStream_t stream() const noexcept { return stream_; }
 
+  /**
+   * @brief Returns the underlying stream-ordered allocator
+   *
+   */
   Allocator underlying_allocator() const noexcept { return alloc_; }
 
  private:
-  Allocator alloc_;
-  cudaStream_t stream_;
+  Allocator alloc_;      ///< Underlying allocator used for (de)allocation
+  cudaStream_t stream_;  ///< Stream on which (de)allocations are performed
 };
 
 template <typename A, typename O>
@@ -179,6 +231,15 @@ bool operator!=(stream_allocator_adaptor<A> const& lhs, stream_allocator_adaptor
   return not(lhs == rhs);
 }
 
+/**
+ * @brief Factory to construct a `stream_allocator_adaptor` from an existing stream-ordered
+ * allocator.
+ *
+ * @tparam Allocator Type of the stream-ordered allocator
+ * @param allocator The allocator to use as the underlying allocator of the `stream_allocator_adaptor`
+ * @param s The stream on which the `stream_allocator_adaptor` will perform (de)allocations
+ * @return A `stream_allocator_adaptor` wrapping `allocator` and `s`
+ */
 template <typename Allocator>
 auto make_stream_allocator_adaptor(Allocator const& allocator, cudaStream_t s)
 {
