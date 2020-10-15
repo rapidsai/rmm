@@ -16,12 +16,11 @@
 
 #pragma once
 
+#include <cuda_runtime_api.h>
+
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
-
-// forward decl
-using cudaStream_t = struct CUstream_st*;
 
 namespace rmm {
 
@@ -47,7 +46,7 @@ class cuda_stream_view {
   /**
    * @brief Implicit conversion from cudaStream_t.
    */
-  cuda_stream_view(cudaStream_t stream) : _stream{stream} {}
+  constexpr cuda_stream_view(cudaStream_t stream) : _stream{stream} {}
 
   /**
    * @brief Implicit conversion to cudaStream_t.

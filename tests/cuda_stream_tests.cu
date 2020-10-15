@@ -31,7 +31,7 @@ struct CudaStreamTest : public ::testing::Test {
 
 TEST_F(CudaStreamTest, SetDefault)
 {
-  auto initial = rmm::set_default_stream(this->stream);
+  auto initial = rmm::set_default_stream(rmm::cuda_stream_view{this->stream});
 
   auto new_default = rmm::get_default_stream();
   EXPECT_EQ(this->stream, new_default);
