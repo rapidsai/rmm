@@ -142,6 +142,17 @@ bool operator!=(polymorphic_allocator<T> const& lhs, polymorphic_allocator<U> co
  * uses the wrapped stream in calls the underlying allocator's `allocate` and `deallocate`
  * functions.
  *
+ * Example:
+ *\code{c++}
+ * my_stream_ordered_allocator<int> a{...};
+ * cudaStream_t s = // create stream;
+ *
+ * auto adapted = make_stream_allocator_adaptor(a, s);
+ *
+ * // Allocates storage for `n` int's on stream `s`
+ * int * p = std::allocator_traits<decltype(adapted)>::allocate(adapted, n);
+ *\endcode
+ *
  * @tparam Allocator Stream ordered allocator type to adapt
  */
 template <typename Allocator>
@@ -236,7 +247,8 @@ bool operator!=(stream_allocator_adaptor<A> const& lhs, stream_allocator_adaptor
  * allocator.
  *
  * @tparam Allocator Type of the stream-ordered allocator
- * @param allocator The allocator to use as the underlying allocator of the `stream_allocator_adaptor`
+ * @param allocator The allocator to use as the underlying allocator of the
+ * `stream_allocator_adaptor`
  * @param s The stream on which the `stream_allocator_adaptor` will perform (de)allocations
  * @return A `stream_allocator_adaptor` wrapping `allocator` and `s`
  */
