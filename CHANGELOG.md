@@ -1,4 +1,60 @@
-# RMM 0.15.0 (Date TBD)
+# RMM 0.17.0 (Date TBD)
+
+## New Features
+
+## Improvements
+
+## Bug Fixes
+
+# RMM 0.16.0 (Date TBD)
+
+## New Features
+
+- PR #529 Add debug logging and fix multithreaded replay benchmark
+- PR #560 Remove deprecated `get/set_default_resource` APIs
+- PR #543 Add an arena-based memory resource
+- PR #580 Install CMake config with RMM
+- PR #591 Allow the replay bench to simulate different GPU memory sizes
+- PR #594 Adding limiting memory resource adaptor
+
+## Improvements
+
+- PR #474 Use CMake find_package(CUDAToolkit)
+- PR #477 Just use `None` for `strides` in `DeviceBuffer`
+- PR #528 Add maximum_pool_size parameter to reinitialize API
+- PR #532 Merge free lists in pool_memory_resource to defragment before growing from upstream
+- PR #537 Add CMake option to disable deprecation warnings
+- PR #541 Refine CMakeLists.txt to make it easy to import by external projects
+- PR #538 Upgrade CUB and Thrust to the latest commits
+- PR #542 Pin conda spdlog versions to 1.7.0
+- PR #550 Remove CXX11 ABI handling from CMake
+- PR #578 Switch thrust to use the NVIDIA/thrust repo
+- PR #553 CMake cleanup
+- PR #556 By default, don't create a debug log file unless there are warnings/errors
+- PR #561 Remove CNMeM and make RMM header-only
+- PR #565 CMake: Simplify gtest/gbench handling
+- PR #566 CMake: use CPM for thirdparty dependencies
+- PR #568 Upgrade googletest to v1.10.0
+- PR #572 CMake: prefer locally installed thirdparty packages
+- PR #579 CMake: handle thrust via target
+- PR #581 Improve logging documentation
+- PR #585 Update ci/local/README.md
+- PR #587 Replaced `move` with `std::move`
+
+## Bug Fixes
+
+- PR #545 Fix build to support using `clang` as the host compiler
+- PR #534 Fix `pool_memory_resource` failure when init and max pool sizes are equal
+- PR #546 Remove CUDA driver linking and correct NVTX macro.
+- PR #569 Correct `device_scalar::set_value` to pass host value by reference to avoid copying from invalid value
+- PR #559 Fix `align_down` to only change unaligned values.
+- PR #577 Fix CMake `LOGGING_LEVEL` issue which caused verbose logging / performance regression.
+- PR #582 Fix handling of per-thread default stream when not compiled for PTDS
+- PR #590 Add missing `CODE_OF_CONDUCT.md`
+- PR #595 Fix pool_mr example in README.md
+
+
+# RMM 0.15.0 (26 Aug 2020)
 
 ## New Features
 
@@ -8,6 +64,16 @@
 - PR #425 Add CUDA per-thread default stream support and thread safety to `pool_memory_resource`
 - PR #436 Always build and test with per-thread default stream enabled in the GPU CI build
 - PR #444 Add `owning_wrapper` to simplify lifetime management of resources and their upstreams
+- PR #449 Stream-ordered suballocator base class and per-thread default stream support 
+          and thread safety for `fixed_size_memory_resource`
+- PR #450 Add support for new build process (Project Flash)
+- PR #457 New `binning_memory_resource` (replaces `hybrid_memory_resource` and 
+          `fixed_multisize_memory_resource`).
+- PR #458 Add `get/set_per_device_resource` to better support multi-GPU per process applications
+- PR #466 Deprecate CNMeM.
+- PR #489 Move `cudf._cuda` into `rmm._cuda`
+- PR #504 Generate `gpu.pxd` based on cuda version as a preprocessor step
+- PR #506 Upload rmm package per version python-cuda combo
 
 ## Improvements
 
@@ -25,13 +91,18 @@
 - PR #427 Add DeviceBuffer.release() cdef method
 - PR #414 Add element-wise access for device_uvector
 - PR #421 Capture thread id in logging and improve logger testing
-- PR #426 Added multi-threaded support to replay benchmark.
-- PR #429 Fix debug build and add new CUDA assert utility.
+- PR #426 Added multi-threaded support to replay benchmark
+- PR #429 Fix debug build and add new CUDA assert utility
 - PR #435 Update conda upload versions for new supported CUDA/Python
 - PR #437 Test with `pickle5` (for older Python versions)
 - PR #443 Remove thread safe adaptor from PoolMemoryResource
 - PR #445 Make all resource operators/ctors explicit
 - PR #447 Update Python README with info about DeviceBuffer/MemoryResource and external libraries
+- PR #456 Minor cleanup: always use rmm/-prefixed includes
+- PR #461 cmake improvements to be more target-based
+- PR #468 update past release dates in changelog
+- PR #486 Document relationship between active CUDA devices and resources
+- PR #493 Rely on C++ lazy Memory Resource initialization behavior instead of initializing in Python
 
 ## Bug Fixes
 
@@ -41,9 +112,22 @@
 - PR #398 Fix missing head flag in merge_blocks (pool_memory_resource) and improve block class
 - PR #403 Mark Cython `memory_resource_wrappers` `extern` as `nogil`
 - PR #406 Sets Google Benchmark to a fixed version, v1.5.1.
-- PR #434: Fix issue with incorrect docker image being used in local build script
+- PR #434 Fix issue with incorrect docker image being used in local build script
+- PR #463 Revert cmake change for cnmem header not being added to source directory
+- PR #464 More completely revert cnmem.h cmake changes
+- PR #473 Fix initialization logic in pool_memory_resource
+- PR #479 Fix usage of block printing in pool_memory_resource
+- PR #490 Allow importing RMM without initializing CUDA driver
+- PR #484 Fix device_uvector copy constructor compilation error and add test
+- PR #498 Max pool growth less greedy
+- PR #500 Use tempfile rather than hardcoded path in `test_rmm_csv_log`
+- PR #511 Specify `--basetemp` for `py.test` run
+- PR #509 Fix missing : before __LINE__ in throw string of RMM_CUDA_TRY
+- PR #510 Fix segfault in pool_memory_resource when a CUDA stream is destroyed
+- PR #525 Patch Thrust to workaround `CUDA_CUB_RET_IF_FAIL` macro clearing CUDA errors
 
-# RMM 0.14.0 (Date TBD)
+
+# RMM 0.14.0 (03 Jun 2020)
 
 ## New Features
 
@@ -80,7 +164,7 @@
 - PR #392 SPDLOG matches other header-only acquisition patterns
 
 
-# RMM 0.13.0 (Date TBD)
+# RMM 0.13.0 (31 Mar 2020)
 
 ## New Features
 
@@ -130,7 +214,7 @@
 - PR #298 Remove RMM_CUDA_TRY from cuda_event_timer destructor
 - PR #299 Fix assert condition blocking debug builds
 - PR #300 Fix host mr_tests compile error
-- PR #312 Fix libcudf compilation errors due to explicit defaulted device_buffer constructor.
+- PR #312 Fix libcudf compilation errors due to explicit defaulted device_buffer constructor
 
 
 # RMM 0.12.0 (04 Feb 2020)

@@ -16,14 +16,12 @@ from libc.stdint cimport uintptr_t
 from libcpp cimport bool
 from libcpp.utility cimport pair
 from libcpp.vector cimport vector
+from rmm._cuda.gpu cimport cudaError_t
 
 ctypedef pair[const char*, unsigned int] caller_pair
 
 
 cdef extern from * nogil:
-
-    ctypedef enum cudaError_t "cudaError_t":
-        cudaSuccess = 0
 
     ctypedef void* cudaStream_t "cudaStream_t"
 

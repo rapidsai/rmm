@@ -18,8 +18,8 @@
 
 #include <rmm/detail/cuda_stream_view.hpp>
 #include <rmm/device_buffer.hpp>
-#include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/mr/device/per_device_resource.hpp>
 
 #include <type_traits>
 
@@ -51,8 +51,9 @@ class device_scalar {
    * @param stream Stream on which to perform asynchronous allocation.
    * @param mr Optional, resource with which to allocate.
    */
-  explicit device_scalar(cuda_stream_view stream,
-                         rmm::mr::device_memory_resource *mr = rmm::mr::get_default_resource())
+  explicit device_scalar(
+    cuda_stream_view stream,
+    rmm::mr::device_memory_resource *mr = rmm::mr::get_current_device_resource())
     : buffer{sizeof(T), stream, mr}
   {
   }
@@ -73,9 +74,10 @@ class device_scalar {
    * @param stream Optional, stream on which to perform allocation and copy.
    * @param mr Optional, resource with which to allocate.
    */
-  explicit device_scalar(T const &initial_value,
-                         cuda_stream_view stream             = get_default_stream(),
-                         rmm::mr::device_memory_resource *mr = rmm::mr::get_default_resource())
+  explicit device_scalar(
+    T const &initial_value,
+    cuda_stream_view stream             = get_default_stream(),
+    rmm::mr::device_memory_resource *mr = rmm::mr::get_current_device_resource())
     : buffer{sizeof(T), stream, mr}
   {
     set_value(initial_value, stream);
@@ -113,7 +115,25 @@ class device_scalar {
    * (e.g. using `cudaStreamWaitEvent()` or `cudaStreamSynchronize()`) before and after calling
    * this function, otherwise there may be a race condition.
    *
-   * Does not synchronize `stream`.
+   * This function does not synchronize `stream` before returning. Therefore, the object
+   * referenced by `host_value` should not be destroyed or modified until `stream` has been
+   * synchronized. Otherwise, behavior is undefined.
+   *
+   * @note: This function incurs a host to device memcpy and should be used sparingly.
+
+   * Example:
+   * \code{cpp}
+   * rmm::device_scalar<int32_t> s;
+   *
+   * int v{42};
+   *
+   * // Copies 42 to device storage on `stream`. Does _not_ synchronize
+   * vec.set_value(v, stream);
+   * ...
+   * cudaStreamSynchronize(stream);
+   * // Synchronization is required before `v` can be modified
+   * v = 13;
+   * \endcode
    *
    * @throws `rmm::cuda_error` if copying `host_value` to device memory fails.
    * @throws `rmm::cuda_error` if synchronizing `stream` fails.
@@ -121,9 +141,9 @@ class device_scalar {
    * @param host_value The host value which will be copied to device
    * @param stream CUDA stream on which to perform the copy
    */
-  template <typename Dummy = void>
-  auto set_value(T host_value, cuda_stream_view stream = get_default_stream())
-    -> std::enable_if_t<std::is_fundamental<T>::value, Dummy>
+  template <typename Placeholder = void>
+  auto set_value(T const &host_value, cuda_stream_view stream = get_default_stream())
+    -> std::enable_if_t<std::is_fundamental<T>::value, Placeholder>
   {
     if (host_value == T{0}) {
       RMM_CUDA_TRY(cudaMemsetAsync(buffer.data(), 0, sizeof(T), stream));
@@ -140,7 +160,25 @@ class device_scalar {
    * (e.g. using `cudaStreamWaitEvent()` or `cudaStreamSynchronize()`) before and after calling
    * this function, otherwise there may be a race condition.
    *
-   * Does not synchronize `stream`.
+   * This function does not synchronize `stream` before returning. Therefore, the object
+   * referenced by `host_value` should not be destroyed or modified until `stream` has been
+   * synchronized. Otherwise, behavior is undefined.
+   *
+   * @note: This function incurs a host to device memcpy and should be used sparingly.
+
+   * Example:
+   * \code{cpp}
+   * rmm::device_scalar<int32_t> s;
+   *
+   * int v{42};
+   *
+   * // Copies 42 to device storage on `stream`. Does _not_ synchronize
+   * vec.set_value(v, stream);
+   * ...
+   * cudaStreamSynchronize(stream);
+   * // Synchronization is required before `v` can be modified
+   * v = 13;
+   * \endcode
    *
    * @throws `rmm::cuda_error` if copying `host_value` to device memory fails
    * @throws `rmm::cuda_error` if synchronizing `stream` fails
@@ -148,9 +186,9 @@ class device_scalar {
    * @param host_value The host value which will be copied to device
    * @param stream CUDA stream on which to perform the copy
    */
-  template <typename Dummy = void>
-  auto set_value(T host_value, cuda_stream_view stream = get_default_stream())
-    -> std::enable_if_t<not std::is_fundamental<T>::value, Dummy>
+  template <typename Placeholder = void>
+  auto set_value(T const &host_value, cuda_stream_view stream = get_default_stream())
+    -> std::enable_if_t<not std::is_fundamental<T>::value, Placeholder>
   {
     _memcpy(buffer.data(), &host_value, stream);
   }

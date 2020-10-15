@@ -20,6 +20,12 @@
 #include <rmm/detail/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 
+// If using GCC, temporary workaround for older libcudacxx defining _LIBCPP_VERSION
+// undefine it before including spdlog, due to fmtlib checking if it is defined
+// TODO: remove once libcudacxx is on Github and RAPIDS depends on it
+#ifdef __GNUG__
+#undef _LIBCPP_VERSION
+#endif
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/ostream_sink.h>
 #include <spdlog/spdlog.h>
@@ -128,7 +134,10 @@ class logging_resource_adaptor final : public device_memory_resource {
    *
    * @return bool true if the upstream resource supports get_mem_info, false otherwise.
    */
-  bool supports_get_mem_info() const noexcept override { return upstream_->supports_streams(); }
+  bool supports_get_mem_info() const noexcept override
+  {
+    return upstream_->supports_get_mem_info();
+  }
 
   /**
    * @brief Flush logger contents.

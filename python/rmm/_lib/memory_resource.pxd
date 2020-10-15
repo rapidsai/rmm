@@ -1,5 +1,6 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
+from libc.stdint cimport int8_t
 from libcpp.vector cimport vector
 from libcpp.string cimport string
 from libcpp.memory cimport shared_ptr
@@ -9,6 +10,11 @@ cdef extern from "memory_resource_wrappers.hpp" nogil:
     cdef cppclass device_memory_resource_wrapper:
         shared_ptr[device_memory_resource_wrapper] get_mr() except +
 
+    cdef cppclass default_memory_resource_wrapper(
+        device_memory_resource_wrapper
+    ):
+        default_memory_resource_wrapper(int device) except +
+
     cdef cppclass cuda_memory_resource_wrapper(device_memory_resource_wrapper):
         cuda_memory_resource_wrapper() except +
 
@@ -16,22 +22,6 @@ cdef extern from "memory_resource_wrappers.hpp" nogil:
         device_memory_resource_wrapper
     ):
         managed_memory_resource_wrapper() except +
-
-    cdef cppclass cnmem_memory_resource_wrapper(
-        device_memory_resource_wrapper
-    ):
-        cnmem_memory_resource_wrapper(
-            size_t initial_pool_size,
-            vector[int] devices
-        ) except +
-
-    cdef cppclass cnmem_managed_memory_resource_wrapper(
-        device_memory_resource_wrapper
-    ):
-        cnmem_managed_memory_resource_wrapper(
-            size_t initial_pool_size,
-            vector[int] devices
-        ) except +
 
     cdef cppclass pool_memory_resource_wrapper(device_memory_resource_wrapper):
         pool_memory_resource_wrapper(
@@ -49,24 +39,23 @@ cdef extern from "memory_resource_wrappers.hpp" nogil:
             size_t blocks_to_preallocate
         ) except +
 
-    cdef cppclass fixed_multisize_memory_resource_wrapper(
+    cdef cppclass binning_memory_resource_wrapper(
         device_memory_resource_wrapper
     ):
-        fixed_multisize_memory_resource_wrapper(
-            shared_ptr[device_memory_resource_wrapper] upstream_mr,
-            size_t size_base,
-            size_t min_size_exponent,
-            size_t max_size_exponent,
-            size_t initial_blocks_per_size
+        binning_memory_resource_wrapper(
+            shared_ptr[device_memory_resource_wrapper] upstream_mr
         ) except +
-
-    cdef cppclass hybrid_memory_resource_wrapper(
-        device_memory_resource_wrapper
-    ):
-        hybrid_memory_resource_wrapper(
-            shared_ptr[device_memory_resource_wrapper] small_alloc_mr,
-            shared_ptr[device_memory_resource_wrapper] large_alloc_mr,
-            size_t threshold_size
+        binning_memory_resource_wrapper(
+            shared_ptr[device_memory_resource_wrapper] upstream_mr,
+            int8_t min_size_exponent,
+            int8_t max_size_exponent
+        ) except +
+        void add_bin(
+            size_t allocation_size,
+            shared_ptr[device_memory_resource_wrapper] bin_mr
+        ) except +
+        void add_bin(
+            size_t allocation_size
         ) except +
 
     cdef cppclass logging_resource_adaptor_wrapper(
@@ -85,7 +74,8 @@ cdef extern from "memory_resource_wrappers.hpp" nogil:
             shared_ptr[device_memory_resource_wrapper] upstream_mr,
         ) except +
 
-    void set_default_resource(
+    void set_per_device_resource(
+        int device,
         shared_ptr[device_memory_resource_wrapper] new_resource
     ) except +
 
@@ -99,27 +89,16 @@ cdef class CudaMemoryResource(MemoryResource):
 cdef class ManagedMemoryResource(MemoryResource):
     pass
 
-cdef class CNMemMemoryResource(MemoryResource):
-    pass
-
-cdef class CNMemManagedMemoryResource(MemoryResource):
-    pass
-
 cdef class PoolMemoryResource(MemoryResource):
     pass
 
 cdef class FixedSizeMemoryResource(MemoryResource):
     pass
 
-cdef class FixedMultiSizeMemoryResource(MemoryResource):
-    pass
-
-cdef class HybridMemoryResource(MemoryResource):
-    pass
+cdef class BinningMemoryResource(MemoryResource):
+    cpdef add_bin(self, size_t allocation_size, object bin_resource=*)
 
 cdef class LoggingResourceAdaptor(MemoryResource):
+    cdef object _log_file_name
+    cpdef get_file_name(self)
     cpdef flush(self)
-
-cpdef get_default_resource_type()
-
-cpdef is_initialized()

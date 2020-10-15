@@ -16,16 +16,20 @@
 
 #pragma once
 
+#include <chrono>
+#include <rmm/detail/error.hpp>
+#include <rmm/mr/device/device_memory_resource.hpp>
+
+#include "rapidcsv.h"
+
 #include <cstdint>
 #include <iomanip>
 #include <limits>
 #include <memory>
-#include <rmm/detail/error.hpp>
+#include <numeric>
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include "rapidcsv.h"
-#include "rmm/mr/device/device_memory_resource.hpp"
 
 namespace rmm {
 namespace detail {
@@ -46,13 +50,13 @@ struct event {
 
   event(action a, std::size_t s, uintptr_t p) : act{a}, size{s}, pointer{p} {}
 
-  event(std::size_t tid, action a, std::size_t sz, uintptr_t p, uintptr_t s)
-    : thread_id{tid}, act{a}, size{sz}, pointer{p}, stream{s}
+  event(std::size_t tid, action a, std::size_t sz, uintptr_t p, uintptr_t s, std::size_t i)
+    : thread_id{tid}, act{a}, size{sz}, pointer{p}, stream{s}, index{i}
   {
   }
 
-  event(std::size_t tid, action a, std::size_t sz, void* p, uintptr_t s)
-    : event{tid, a, sz, reinterpret_cast<uintptr_t>(p), s}
+  event(std::size_t tid, action a, std::size_t sz, void* p, uintptr_t s, std::size_t i)
+    : event{tid, a, sz, reinterpret_cast<uintptr_t>(p), s, i}
   {
   }
 
@@ -64,9 +68,10 @@ struct event {
                           ///< pointer freed
   std::size_t thread_id;  ///< ID of the thread that initiated the event
   uintptr_t stream;       ///< Numeric representation of the CUDA stream on which the event occurred
+  std::size_t index;      ///< Original ordering index of the event
 };
 
-std::ostream& operator<<(std::ostream& os, event const& e)
+inline std::ostream& operator<<(std::ostream& os, event const& e)
 {
   auto act_string = (e.act == action::ALLOCATE) ? "allocate" : "free";
 
@@ -76,7 +81,38 @@ std::ostream& operator<<(std::ostream& os, event const& e)
   return os;
 }
 
-uintptr_t hex_string_to_int(std::string const& s) { return std::stoll(s, nullptr, 16); }
+inline uintptr_t hex_string_to_int(std::string const& s) { return std::stoll(s, nullptr, 16); }
+
+/**
+ * @brief Parse a log timestamp into a std::chrono::time_point
+ *
+ * @note currently unused. Seemed necessary for ordering but it appears the log currently
+ * is in timestamp order even for multithreaded logs.
+ * @note This function can be simplified with C++20 and later.
+ *
+ * @param str_time The input time in format "HH:MM:SS:us" where us is a 6 digits microseconds part
+ * of the current second. (This is the format rmm::mr::logging_resource_adaptor outputs)
+ * @return std::chrono::time_point<std::chrono::system_clock> Converted time point.
+ */
+inline std::chrono::time_point<std::chrono::system_clock> parse_time(std::string const& str_time)
+{
+  std::size_t current  = str_time.find(':');
+  std::size_t previous = 0;
+  int hours            = std::stoi(str_time.substr(previous, current - previous));
+  previous             = current;
+  current              = str_time.find(':');
+  int minutes          = std::stoi(str_time.substr(previous, current - previous));
+  previous             = current;
+  current              = str_time.find(':');
+  int seconds          = std::stoi(str_time.substr(previous, current - previous));
+  int microseconds     = std::stoi(str_time.substr(current + 1, str_time.length()));
+
+  std::tm tm{seconds, minutes, hours, 1, 0, 1970, 0, 0, 0};
+
+  auto tp = std::chrono::system_clock::from_time_t(std::mktime(&tm));
+  tp += std::chrono::microseconds{microseconds};
+  return tp;
+}
 
 /**
  * @brief Parses a RMM log file into a vector of events
@@ -87,14 +123,14 @@ uintptr_t hex_string_to_int(std::string const& s) { return std::stoll(s, nullptr
  * @param filename Name of the RMM log file
  * @return Vector of events from the contents of the log file
  */
-std::vector<event> parse_csv(std::string const& filename)
+inline std::vector<event> parse_csv(std::string const& filename)
 {
   rapidcsv::Document csv(filename, rapidcsv::LabelParams(0, -1));
 
   std::vector<std::size_t> tids     = csv.GetColumn<std::size_t>("Thread");
   std::vector<std::string> actions  = csv.GetColumn<std::string>("Action");
-  std::vector<std::size_t> sizes    = csv.GetColumn<std::size_t>("Size");
   std::vector<std::string> pointers = csv.GetColumn<std::string>("Pointer");
+  std::vector<std::size_t> sizes    = csv.GetColumn<std::size_t>("Size");
   std::vector<uintptr_t> streams    = csv.GetColumn<uintptr_t>("Stream");
 
   auto const size_list = {tids.size(), actions.size(), pointers.size(), streams.size()};
@@ -110,7 +146,7 @@ std::vector<event> parse_csv(std::string const& filename)
     auto const& a = actions[i];
     RMM_EXPECTS((a == "allocate") or (a == "free"), "Invalid action string.");
     auto act  = (a == "allocate") ? action::ALLOCATE : action::FREE;
-    events[i] = event{tids[i], act, sizes[i], hex_string_to_int(pointers[i]), streams[i]};
+    events[i] = event{tids[i], act, sizes[i], hex_string_to_int(pointers[i]), streams[i], i};
   }
   return events;
 }

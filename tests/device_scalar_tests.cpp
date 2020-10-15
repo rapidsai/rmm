@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include <rmm/device_scalar.hpp>
-#include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/mr/device/per_device_resource.hpp>
 
 #include <cuda_runtime_api.h>
 #include <chrono>
@@ -30,7 +30,7 @@ void sync_stream(cudaStream_t stream) { EXPECT_EQ(cudaSuccess, cudaStreamSynchro
 template <typename T>
 struct DeviceScalarTest : public ::testing::Test {
   cudaStream_t stream{};
-  rmm::mr::device_memory_resource* mr{rmm::mr::get_default_resource()};
+  rmm::mr::device_memory_resource* mr{rmm::mr::get_current_device_resource()};
   T value{};
   std::default_random_engine generator{};
   std::uniform_int_distribution<T> distribution{std::numeric_limits<T>::lowest(),

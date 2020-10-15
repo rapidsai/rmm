@@ -19,8 +19,8 @@
 #include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/device_malloc_allocator.h>
 
-#include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/mr/device/per_device_resource.hpp>
 
 namespace rmm {
 namespace mr {
@@ -122,8 +122,8 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
   cuda_stream_view stream() const noexcept { return _stream; }
 
  private:
-  device_memory_resource* _mr{rmm::mr::get_default_resource()};
-  cuda_stream_view _stream{};
+  device_memory_resource* _mr{rmm::mr::get_current_device_resource()};
+  cuda_stream_view _stream{0};
 };
 }  // namespace mr
 }  // namespace rmm

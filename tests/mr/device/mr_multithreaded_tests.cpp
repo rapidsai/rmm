@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-#include "gtest/gtest.h"
-#include "mr/device/cuda_memory_resource.hpp"
-#include "mr/device/default_memory_resource.hpp"
-#include "mr/device/device_memory_resource.hpp"
-#include "mr/device/pool_memory_resource.hpp"
 #include "mr_test.hpp"
+
+#include <gtest/gtest.h>
+
+#include <rmm/mr/device/arena_memory_resource.hpp>
+#include <rmm/mr/device/cuda_memory_resource.hpp>
+#include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/mr/device/per_device_resource.hpp>
+#include <rmm/mr/device/pool_memory_resource.hpp>
 
 #include <thread>
 #include <vector>
@@ -36,15 +39,12 @@ INSTANTIATE_TEST_CASE_P(MultiThreadResourceTests,
                         ::testing::Values(mr_factory{"CUDA", &make_cuda},
                                           mr_factory{"Managed", &make_managed},
                                           mr_factory{"Pool", &make_pool},
-                                          mr_factory{"CNMEM", &make_cnmem},
-                                          mr_factory{"CNMEM_Managed", &make_cnmem_managed},
-                                          mr_factory{"SyncHybrid", &make_sync_hybrid}),
+                                          mr_factory{"Arena", &make_arena},
+                                          mr_factory{"Binning", &make_binning}),
                         [](auto const& info) { return info.param.name; });
 
-constexpr std::size_t num_threads{4};
-
 template <typename Task, typename... Arguments>
-void spawn(Task task, Arguments&&... args)
+void spawn_n(std::size_t num_threads, Task task, Arguments&&... args)
 {
   std::vector<std::thread> threads;
   threads.reserve(num_threads);
@@ -55,24 +55,81 @@ void spawn(Task task, Arguments&&... args)
     t.join();
 }
 
-TEST(DefaultTest, UseDefaultResource_mt) { spawn(test_get_default_resource); }
+template <typename Task, typename... Arguments>
+void spawn(Task task, Arguments&&... args)
+{
+  spawn_n(4, task, std::forward<Arguments>(args)...);
+}
 
-TEST_P(mr_test_mt, SetDefaultResource_mt)
+TEST(DefaultTest, UseCurrentDeviceResource_mt) { spawn(test_get_current_device_resource); }
+
+TEST(DefaultTest, CurrentDeviceResourceIsCUDA_mt)
+{
+  spawn([]() {
+    EXPECT_NE(nullptr, rmm::mr::get_current_device_resource());
+    EXPECT_TRUE(rmm::mr::get_current_device_resource()->is_equal(rmm::mr::cuda_memory_resource{}));
+  });
+}
+
+TEST(DefaultTest, GetCurrentDeviceResource_mt)
+{
+  spawn([]() {
+    rmm::mr::device_memory_resource* mr;
+    EXPECT_NO_THROW(mr = rmm::mr::get_current_device_resource());
+    EXPECT_NE(nullptr, mr);
+    EXPECT_TRUE(mr->is_equal(rmm::mr::cuda_memory_resource{}));
+  });
+}
+
+TEST_P(mr_test_mt, SetCurrentDeviceResource_mt)
 {
   // single thread changes default resource, then multiple threads use it
 
   rmm::mr::device_memory_resource* old{nullptr};
-  EXPECT_NO_THROW(old = rmm::mr::set_default_resource(this->mr.get()));
+  EXPECT_NO_THROW(old = rmm::mr::set_current_device_resource(this->mr.get()));
   EXPECT_NE(nullptr, old);
 
   spawn([mr = this->mr.get()]() {
-    EXPECT_EQ(mr, rmm::mr::get_default_resource());
-    test_get_default_resource();  // test allocating with the new default resource
+    EXPECT_EQ(mr, rmm::mr::get_current_device_resource());
+    test_get_current_device_resource();  // test allocating with the new default resource
   });
 
   // setting default resource w/ nullptr should reset to initial
-  EXPECT_NO_THROW(rmm::mr::set_default_resource(nullptr));
-  EXPECT_TRUE(old->is_equal(*rmm::mr::get_default_resource()));
+  EXPECT_NO_THROW(rmm::mr::set_current_device_resource(nullptr));
+  EXPECT_TRUE(old->is_equal(*rmm::mr::get_current_device_resource()));
+}
+
+TEST_P(mr_test_mt, SetCurrentDeviceResourcePerThread_mt)
+{
+  int num_devices;
+  RMM_CUDA_TRY(cudaGetDeviceCount(&num_devices));
+
+  std::vector<std::thread> threads;
+  threads.reserve(num_devices);
+  for (int i = 0; i < num_devices; ++i) {
+    threads.emplace_back(std::thread{
+      [mr = this->mr.get()](auto dev_id) {
+        RMM_CUDA_TRY(cudaSetDevice(dev_id));
+        rmm::mr::device_memory_resource* old;
+        EXPECT_NO_THROW(old = rmm::mr::set_current_device_resource(mr));
+        EXPECT_NE(nullptr, old);
+        // initial resource for this device should be CUDA mr
+        EXPECT_TRUE(old->is_equal(rmm::mr::cuda_memory_resource{}));
+        // get_current_device_resource should equal the resource we just set
+        EXPECT_EQ(mr, rmm::mr::get_current_device_resource());
+        // Setting current dev resource to nullptr should reset to cuda MR and return the MR we
+        // previously set
+        EXPECT_NO_THROW(old = rmm::mr::set_current_device_resource(nullptr));
+        EXPECT_NE(nullptr, old);
+        EXPECT_EQ(old, mr);
+        EXPECT_TRUE(
+          rmm::mr::get_current_device_resource()->is_equal(rmm::mr::cuda_memory_resource{}));
+      },
+      i});
+  }
+
+  for (auto& t : threads)
+    t.join();
 }
 
 TEST_P(mr_test_mt, AllocateDefaultStream)
@@ -171,15 +228,18 @@ TEST_P(mr_test_mt, AllocFreeDifferentThreadsDefaultStream)
     this->mr.get(), cudaStream_t{cudaStreamDefault}, cudaStream_t{cudaStreamDefault});
 }
 
+TEST_P(mr_test_mt, AllocFreeDifferentThreadsPerThreadDefaultStream)
+{
+  test_allocate_free_different_threads(
+    this->mr.get(), cudaStream_t{cudaStreamPerThread}, cudaStream_t{cudaStreamPerThread});
+}
+
 TEST_P(mr_test_mt, AllocFreeDifferentThreadsSameStream)
 {
   test_allocate_free_different_threads(this->mr.get(), this->stream, this->stream);
 }
 
-struct mr_test_different_stream_mt : public mr_test_mt {
-};
-
-TEST_P(mr_test_different_stream_mt, AllocFreeDifferentThreadsDifferentStream)
+TEST_P(mr_test_mt, AllocFreeDifferentThreadsDifferentStream)
 {
   cudaStream_t streamB{};
   EXPECT_EQ(cudaSuccess, cudaStreamCreate(&streamB));
@@ -187,15 +247,6 @@ TEST_P(mr_test_different_stream_mt, AllocFreeDifferentThreadsDifferentStream)
   EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(streamB));
   EXPECT_EQ(cudaSuccess, cudaStreamDestroy(streamB));
 }
-
-// CNMeM doesn't allow allocating/freeing on different streams
-INSTANTIATE_TEST_CASE_P(MultiThreadResourceTestsDifferentStreams,
-                        mr_test_different_stream_mt,
-                        ::testing::Values(mr_factory{"CUDA", &make_cuda},
-                                          mr_factory{"Managed", &make_managed},
-                                          mr_factory{"Pool", &make_pool},
-                                          mr_factory{"SyncHybrid", &make_sync_hybrid}),
-                        [](auto const& info) { return info.param.name; });
 
 }  // namespace
 }  // namespace test
