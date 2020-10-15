@@ -2,6 +2,8 @@
 
 ## New Features
 
+- PR #609 Adds `polymorphic_allocator` and `stream_allocator_adaptor`
+
 ## Improvements
 
 - PR #603 Always test both legacy and per-thread default stream
