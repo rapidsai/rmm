@@ -4,6 +4,8 @@
 
 ## Improvements
 
+- PR #603 Always test both legacy and per-thread default stream
+
 ## Bug Fixes
 
 - PR #592 Add `auto_flush` to `make_logging_adaptor`

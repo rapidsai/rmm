@@ -17,6 +17,8 @@ cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 
 project(RMM_BENCHS LANGUAGES C CXX CUDA)
 
+option(PER_THREAD_DEFAULT_STREAM "Build with per-thread default stream" OFF)
+
 ###################################################################################################
 # - compiler function
 
@@ -33,7 +35,12 @@ function(ConfigureBench CMAKE_BENCH_NAME CMAKE_BENCH_SRC)
                         RUNTIME_OUTPUT_DIRECTORY "${RMM_BINARY_DIR}/gbenchmarks")
   
   target_compile_definitions(${CMAKE_BENCH_NAME} PUBLIC
-                             "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")    
+                             "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
+
+  if(PER_THREAD_DEFAULT_STREAM)
+    message(STATUS "Using per-thread default stream for ${CMAKE_BENCH_NAME}")
+    target_compile_definitions(${CMAKE_BENCH_NAME} PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
+  endif(PER_THREAD_DEFAULT_STREAM)
 endfunction(ConfigureBench)
 
 ###################################################################################################
