@@ -38,22 +38,17 @@ endif()
 include(${RMM_SOURCE_DIR}/cmake/Modules/SetGPUArchs.cmake)
 message(STATUS "RMM: Building tests with GPU Architectures: ${CMAKE_CUDA_ARCHITECTURES}")
 
-# Build options
-
 enable_language(CUDA)
 
-option(DISABLE_DEPRECATION_WARNING "Disable warnings generated from deprecated declarations." OFF)
-option(PER_THREAD_DEFAULT_STREAM "Build with per-thread default stream" OFF)
+# Build options
 
-if(PER_THREAD_DEFAULT_STREAM)
-  message(STATUS "RMM: Building tests with per-thread default stream")
-endif(PER_THREAD_DEFAULT_STREAM)
+option(DISABLE_DEPRECATION_WARNING "Disable warnings generated from deprecated declarations." OFF)
 
 # compiler function
 
 # This function takes in a test name and test source and handles setting all of the associated
 # properties and linking to build the test
-function(ConfigureTest TEST_NAME TEST_SRC)
+function(ConfigureTestInternal TEST_NAME TEST_SRC)
   add_executable(${TEST_NAME} "${TEST_SRC}")
   target_include_directories(${TEST_NAME} PRIVATE "$<BUILD_INTERFACE:${RMM_SOURCE_DIR}>")
   target_link_libraries(${TEST_NAME} GTest::gmock GTest::gtest GTest::gmock_main GTest::gtest_main
@@ -65,13 +60,9 @@ function(ConfigureTest TEST_NAME TEST_SRC)
                CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}")
   target_compile_definitions(${TEST_NAME}
                              PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
-
-  if(PER_THREAD_DEFAULT_STREAM)
-    target_compile_definitions(${TEST_NAME} PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
-  endif(PER_THREAD_DEFAULT_STREAM)
-
   target_compile_options(${TEST_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Werror
                                              -Wno-error=deprecated-declarations>)
+
   if(DISABLE_DEPRECATION_WARNING)
     target_compile_options(${TEST_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler
                                                -Wno-deprecated-declarations>)
@@ -80,6 +71,18 @@ function(ConfigureTest TEST_NAME TEST_SRC)
   endif(DISABLE_DEPRECATION_WARNING)
 
   add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
+endfunction(ConfigureTestInternal)
+
+# Wrapper around `ConfigureTestInternal` that builds tests both with and without per thread default
+# stream
+function(ConfigureTest TEST_NAME TEST_SRC)
+  # Test with legacy default stream.
+  ConfigureTestInternal("${TEST_NAME}" "${TEST_SRC}")
+
+  # Test with per-thread default stream.
+  string(REGEX REPLACE "_TEST$" "_PTDS_TEST" PTDS_TEST_NAME "${TEST_NAME}")
+  ConfigureTestInternal("${PTDS_TEST_NAME}" "${TEST_SRC}")
+  target_compile_definitions("${PTDS_TEST_NAME}" PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
 endfunction(ConfigureTest)
 
 # test sources
@@ -88,69 +91,46 @@ endfunction(ConfigureTest)
 
 set(DEVICE_MR_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/mr_tests.cpp"
                        "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/mr_multithreaded_tests.cpp")
-
 ConfigureTest(DEVICE_MR_TEST "${DEVICE_MR_TEST_SRC}")
-
-# device mr per-thread default stream tests
-
-set(DEVICE_MR_PTDS_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/mr_multithreaded_tests.cpp")
-
-ConfigureTest(DEVICE_MR_PTDS_TEST "${DEVICE_MR_PTDS_TEST_SRC}")
-target_compile_definitions(DEVICE_MR_PTDS_TEST PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
 
 # pool mr tests
 
 set(POOL_MR_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/pool_mr_tests.cpp")
-
 ConfigureTest(POOL_MR_TEST "${POOL_MR_TEST_SRC}")
-
-set(POOL_MR_PTDS_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/pool_mr_tests.cpp")
-
-ConfigureTest(POOL_MR_PTDS_TEST "${POOL_MR_PTDS_TEST_SRC}")
-target_compile_definitions(POOL_MR_PTDS_TEST PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
 
 # thrust allocator tests
 
 set(THRUST_ALLOCATOR_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/thrust_allocator_tests.cu")
-
 ConfigureTest(THRUST_ALLOCATOR_TEST "${THRUST_ALLOCATOR_TEST_SRC}")
 
 # limiting adaptor tests
 
-set(LIMITING_TEST_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/limiting_mr_tests.cpp")
-
+set(LIMITING_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/limiting_mr_tests.cpp")
 ConfigureTest(LIMITING_TEST "${LIMITING_TEST_SRC}")
-target_compile_definitions(LIMITING_TEST PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
 
 # host mr tests
 
 set(HOST_MR_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/host/mr_tests.cpp")
-
 ConfigureTest(HOST_MR_TEST "${HOST_MR_TEST_SRC}")
 
 # device buffer tests
 
 set(BUFFER_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/device_buffer_tests.cu")
-
 ConfigureTest(DEVICE_BUFFER_TEST "${BUFFER_TEST_SRC}")
 
 # device scalar tests
 
 set(SCALAR_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/device_scalar_tests.cpp")
-
 ConfigureTest(DEVICE_SCALAR_TEST "${SCALAR_TEST_SRC}")
 
 # logger tests
 
 set(LOGGER_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/logger_tests.cpp")
-
 ConfigureTest(LOGGER_TEST "${LOGGER_TEST_SRC}")
 
 # uvector tests
 
 set(DEVICE_UVECTOR_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/device_uvector_tests.cpp")
-
 ConfigureTest(DEVICE_UVECTOR_TEST "${DEVICE_UVECTOR_TEST_SRC}")
 
 # enable testing
