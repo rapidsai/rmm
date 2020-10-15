@@ -35,7 +35,8 @@ namespace mr {
  * allocator type to be interoperable, but exhibit different behavior depending on resource used.
  *
  * Unlike STL allocators, `polymorphic_allocator`'s `allocate` and `deallocate` functions are stream
- * ordered. To allow interoperability with interfaces that do not
+ * ordered. Use `stream_allocator_adaptor` to allow interoperability with interfaces that require
+ * standard, non stream-ordered `Allocator` interfaces.
  *
  * @tparam T The allocators value type.
  */
@@ -44,30 +45,80 @@ class polymorphic_allocator {
  public:
   using value_type = T;
 
-  polymorphic_allocator()                                = default;
-  polymorphic_allocator(polymorphic_allocator<T> const&) = default;
+  /**
+   * @brief Construct a `polymorphic_allocator` using the return value of
+   * `rmm::mr::get_current_device_resource()` as the underlying memory resource.
+   *
+   */
+  polymorphic_allocator() = default;
 
+  /**
+   * @brief Construct a `polymorphic_allocator` using `other.resource()` as the underlying memory
+   * resource.
+   *
+   * @param other The `polymorphic_resource` whose `resource()` will be used as the underlying
+   * resource of the new `polymorphic_allocator`.
+   */
+  polymorphic_allocator(polymorphic_allocator<T> const& other) = default;
+
+  /**
+   * @brief Construct a `polymorphic_allocator` using the provided memory resource.
+   *
+   * This constructor provides an implicit conversion from `memory_resource*`.
+   *
+   * @param mr The `device_memory_resource` to use as the underlying resource.
+   */
   polymorphic_allocator(device_memory_resource* mr) : mr_{mr} {}
 
+  /**
+   * @brief Construct a `polymorphic_allocator` using `other.resource()` as the underlying memory
+   * resource.
+   *
+   * @param other The `polymorphic_resource` whose `resource()` will be used as the underlying
+   * resource of the new `polymorphic_allocator`.
+   */
   template <typename U>
   polymorphic_allocator(polymorphic_allocator<U> const& other) noexcept : mr_{other.mr_}
   {
   }
 
+  /**
+   * @brief Allocates storage for `n` objects of type `T` using the underlying memory resource.
+   *
+   * @param n The number of objects to allocate storage for
+   * @param stream The stream on which to perform the allocation
+   * @return Pointer to the allocated storage
+   */
   value_type* allocate(std::size_t n, cudaStream_t stream)
   {
     resource()->allocate(n * sizeof(T), stream);
   }
 
+  /**
+   * @brief Deallocates storage pointed to by `p`.
+   *
+   * `p` must have been allocated from a `rmm::mr::device_memory_resource` `r` that compares equal
+   * to `*resource()` using `r.allocate(n * sizeof(T))`.
+   *
+   * @param p Pointer to memory to deallocate
+   * @param n Number of objects originally allocated
+   * @param stream Stream on which to perform the deallocation
+   */
   void deallocate(value_type* p, std::size_t n, cudaStream_t stream)
   {
     resource()->deallocate(p, n * sizeof(T), stream);
   }
 
+  /**
+   * @brief Returns pointer to the underlying `rmm::mr::device_memory_resource`.
+   *
+   * @return Pointer to the underlying resource.
+   */
   device_memory_resource* resource() const noexcept { return mr_; }
 
  private:
-  device_memory_resource* mr_{get_current_device_resource()};
+  device_memory_resource* mr_{
+    get_current_device_resource()};  ///< Underlying resource used for (de)allocation
 };
 
 template <typename T, typename U>
@@ -129,8 +180,9 @@ bool operator!=(stream_allocator_adaptor<A> const& lhs, stream_allocator_adaptor
 }
 
 template <typename Allocator>
-auto make_stream_allocator_adaptor(Allocator const& allocator, cudaStream_t s){
-    return stream_allocator_adaptor<Allocator>{allocator,s};
+auto make_stream_allocator_adaptor(Allocator const& allocator, cudaStream_t s)
+{
+  return stream_allocator_adaptor<Allocator>{allocator, s};
 }
 
 }  // namespace mr
