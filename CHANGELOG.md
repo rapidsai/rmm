@@ -5,8 +5,12 @@
 ## Improvements
 
 - PR #599 Make the arena memory resource work better with the producer/consumer mode
+- PR #603 Always test both legacy and per-thread default stream
 
 ## Bug Fixes
+
+- PR #592 Add `auto_flush` to `make_logging_adaptor`
+
 
 # RMM 0.16.0 (Date TBD)
 
