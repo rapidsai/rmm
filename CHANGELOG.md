@@ -17,6 +17,7 @@
 - PR #543 Add an arena-based memory resource
 - PR #580 Install CMake config with RMM
 - PR #591 Allow the replay bench to simulate different GPU memory sizes
+- PR #594 Adding limiting memory resource adaptor
 
 ## Improvements
 
