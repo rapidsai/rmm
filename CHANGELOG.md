@@ -6,6 +6,9 @@
 
 ## Bug Fixes
 
+- PR #592 Add `auto_flush` to `make_logging_adaptor`
+
+
 # RMM 0.16.0 (Date TBD)
 
 ## New Features
