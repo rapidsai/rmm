@@ -280,10 +280,9 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
   stream_event_pair get_event(cuda_stream_view stream)
   {
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-    if (cuda_stream_view{cudaStreamDefault} == stream ||
-        cuda_stream_view{cudaStreamPerThread} == stream) {
+    if (cudaStreamDefault == stream || cudaStreamPerThread == stream) {
 #else
-    if (cuda_stream_view{cudaStreamPerThread} == stream) {
+    if (cudaStreamPerThread == stream) {
 #endif
       // Create a thread-local shared event wrapper. Shared pointers in the thread and in each MR
       // instance ensures it is destroyed cleaned up only after all are finished with it.
@@ -297,8 +296,8 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     // user explicitly passes it, so it is used as the default location for the free list
     // at construction. For consistency, the same key is used for null stream free lists in non-PTDS
     // mode.
-    else if (cuda_stream_view{cudaStreamDefault} == stream) {
-      stream = cuda_stream_view{cudaStreamLegacy};
+    else if (cudaStreamDefault == stream) {
+      stream = cudaStreamLegacy;
     }
 #endif
 

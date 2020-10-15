@@ -77,8 +77,7 @@ class fixed_size_memory_resource
       upstream_chunk_size_{block_size * blocks_to_preallocate}
   {
     // allocate initial blocks and insert into free list
-    this->insert_blocks(std::move(blocks_from_upstream(cuda_stream_view{cudaStreamLegacy})),
-                        cuda_stream_view{cudaStreamLegacy});
+    this->insert_blocks(std::move(blocks_from_upstream(cudaStreamLegacy)), cudaStreamLegacy);
   }
 
   /**

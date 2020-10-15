@@ -117,8 +117,7 @@ class pool_memory_resource final
 
     RMM_EXPECTS(pool_size() <= maximum_pool_size_,
                 "Initial pool size exceeds the maximum pool size!");
-    this->insert_block(block_from_upstream(pool_size(), cuda_stream_view{cudaStreamLegacy}),
-                       cuda_stream_view{cudaStreamLegacy});
+    this->insert_block(block_from_upstream(pool_size(), cudaStreamLegacy), cudaStreamLegacy);
   }
 
   /**
