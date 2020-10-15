@@ -81,3 +81,54 @@ bool operator!=(polymorphic_allocator<T> const& lhs, polymorphic_allocator<U> co
 {
   return not(lhs == rhs);
 }
+
+template <typename Allocator>
+class stream_allocator_adaptor {
+ public:
+  using value_type = typename std::allocator_traits<Allocator>::value_type;
+
+  stream_allocator_adaptor() = delete;
+
+  stream_allocator_adaptor(Allocator const& a, cudaStream_t stream = 0) : alloc_{a}, stream_{stream}
+  {
+  }
+
+  template <typename OtherAllocator>
+  stream_allocator_adaptor(stream_allocator_adaptor<OtherAllocator> const& other)
+    : stream_allocator_adaptor{other.underlying_allocator(), other.stream()}
+  {
+  }
+
+  template <typename T>
+  struct rebind {
+    using other =
+      stream_allocator_adaptor<typename std::allocator_traits<Allocator>::template rebind_alloc<T>>;
+  };
+
+  value_type* allocate(std::size_t n) { return alloc_.allocate(n, stream()); }
+
+  void deallocate(value_type* p, std::size_t n) { alloc_.deallocate(p, n, stream()); }
+
+  cudaStream_t stream() const noexcept { return stream_; }
+
+  Allocator underlying_allocator() const noexcept { return alloc_; }
+
+ private:
+  Allocator alloc_;
+  cudaStream_t stream_;
+};
+
+template <typename A, typename O>
+bool operator==(stream_allocator_adaptor<A> const& lhs, stream_allocator_adaptor<O> const& rhs)
+{
+  return lhs.underlying_allocator() == rhs.underlying_allocator();
+}
+
+template <typename A, typename O>
+bool operator!=(stream_allocator_adaptor<A> const& lhs, stream_allocator_adaptor<O> const& rhs)
+{
+  return not(lhs == rhs);
+}
+
+}  // namespace mr
+}  // namespace rmm
