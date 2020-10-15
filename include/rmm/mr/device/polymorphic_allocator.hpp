@@ -89,9 +89,7 @@ class stream_allocator_adaptor {
 
   stream_allocator_adaptor() = delete;
 
-  stream_allocator_adaptor(Allocator const& a, cudaStream_t stream = 0) : alloc_{a}, stream_{stream}
-  {
-  }
+  stream_allocator_adaptor(Allocator const& a, cudaStream_t stream) : alloc_{a}, stream_{stream} {}
 
   template <typename OtherAllocator>
   stream_allocator_adaptor(stream_allocator_adaptor<OtherAllocator> const& other)
@@ -128,6 +126,11 @@ template <typename A, typename O>
 bool operator!=(stream_allocator_adaptor<A> const& lhs, stream_allocator_adaptor<O> const& rhs)
 {
   return not(lhs == rhs);
+}
+
+template <typename Allocator>
+auto make_stream_allocator_adaptor(Allocator const& allocator, cudaStream_t s){
+    return stream_allocator_adaptor<Allocator>{allocator,s};
 }
 
 }  // namespace mr
