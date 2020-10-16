@@ -80,6 +80,7 @@ message(STATUS "RMM: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'")
 # optionally build tests
 
 if(BUILD_TESTS)
+  enable_testing()
   add_subdirectory(tests)
 endif(BUILD_TESTS)
 

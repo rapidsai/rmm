@@ -80,7 +80,7 @@ if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
         cd "${WORKSPACE}/build"
         GTEST_OUTPUT="xml:${WORKSPACE}/test-results/" make -j${PARALLEL_LEVEL} test
 
-        logger "Python py.test for librmm_cffi..."
+        logger "Running rmm pytests..."
         cd $WORKSPACE/python
         py.test --cache-clear --basetemp=${WORKSPACE}/rmm-cuda-tmp --junitxml=${WORKSPACE}/test-results/junit-rmm.xml -v --cov-config=.coveragerc --cov=rmm --cov-report=xml:${WORKSPACE}/python/rmm-coverage.xml --cov-report term
     fi
