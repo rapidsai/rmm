@@ -46,6 +46,7 @@
 - PR #581 Improve logging documentation
 - PR #585 Update ci/local/README.md
 - PR #587 Replaced `move` with `std::move`
+- PR #588 Use installed C++ RMM in python build
 
 ## Bug Fixes
 
