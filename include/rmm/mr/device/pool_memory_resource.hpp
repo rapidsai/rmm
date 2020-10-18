@@ -161,7 +161,8 @@ class pool_memory_resource final
    * Attempts to allocate `try_size` bytes from upstream. If it fails, it iteratively reduces the
    * attempted size by half until `min_size`, returning the allocated block once it succeeds.
    *
-   * @throws rmm::bad_alloc if `min_size` bytes cannot be allocated from upstream.
+   * @throws rmm::bad_alloc if `min_size` bytes cannot be allocated from upstream or maximum pool
+   * size is exceeded.
    *
    * @param try_size The initial requested size to try allocating.
    * @param min_size The minimum requested size to try allocating.
@@ -170,7 +171,6 @@ class pool_memory_resource final
    */
   block_type try_to_expand(std::size_t try_size, std::size_t min_size, cudaStream_t stream)
   {
-    RMM_EXPECTS(try_size >= min_size, "try_size must be at least as big as min_size");
     while (try_size >= min_size) {
       auto b = block_from_upstream(try_size, stream);
       if (b.has_value()) {
