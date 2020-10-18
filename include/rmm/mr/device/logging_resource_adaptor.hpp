@@ -153,7 +153,9 @@ class logging_resource_adaptor final : public device_memory_resource {
  private:
   // make_logging_adaptor needs access to private get_default_filename
   template <typename T>
-  friend logging_resource_adaptor<T> make_logging_adaptor(T* upstream, std::string const& filename);
+  friend logging_resource_adaptor<T> make_logging_adaptor(T* upstream,
+                                                          std::string const& filename,
+                                                          bool auto_flush);
 
   /**
    * @brief Return the value of the environment variable RMM_LOG_FILE.
@@ -299,9 +301,10 @@ class logging_resource_adaptor final : public device_memory_resource {
 template <typename Upstream>
 logging_resource_adaptor<Upstream> make_logging_adaptor(
   Upstream* upstream,
-  std::string const& filename = logging_resource_adaptor<Upstream>::get_default_filename())
+  std::string const& filename = logging_resource_adaptor<Upstream>::get_default_filename(),
+  bool auto_flush             = false)
 {
-  return logging_resource_adaptor<Upstream>{upstream, filename};
+  return logging_resource_adaptor<Upstream>{upstream, filename, auto_flush};
 }
 
 /**
@@ -313,9 +316,11 @@ logging_resource_adaptor<Upstream> make_logging_adaptor(
  * @param stream The ostream to write log info.
  */
 template <typename Upstream>
-logging_resource_adaptor<Upstream> make_logging_adaptor(Upstream* upstream, std::ostream& stream)
+logging_resource_adaptor<Upstream> make_logging_adaptor(Upstream* upstream,
+                                                        std::ostream& stream,
+                                                        bool auto_flush = false)
 {
-  return logging_resource_adaptor<Upstream>{upstream, stream};
+  return logging_resource_adaptor<Upstream>{upstream, stream, auto_flush};
 }
 
 }  // namespace mr

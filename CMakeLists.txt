@@ -59,8 +59,6 @@ endif(DISABLE_DEPRECATION_WARNING)
 # cudart can be statically linked or dynamically linked the python ecosystem wants dynamic linking
 option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
 
-option(PER_THREAD_DEFAULT_STREAM "Build with per-thread default stream" OFF)
-
 ###################################################################################################
 # find packages we depend on
 
@@ -75,15 +73,6 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 # third-party dependencies
 
 include(RMM_thirdparty)
-
-###################################################################################################
-# per-thread default stream option
-# This needs to be defined first so tests and benchmarks can inherit it.
-
-if(PER_THREAD_DEFAULT_STREAM)
-    message(STATUS "Using per-thread default stream")
-    add_compile_definitions(CUDA_API_PER_THREAD_DEFAULT_STREAM)
-endif(PER_THREAD_DEFAULT_STREAM)
 
 ###################################################################################################
 # library targets

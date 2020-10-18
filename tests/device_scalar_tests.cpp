@@ -57,34 +57,34 @@ TYPED_TEST(DeviceScalarTest, InitialValue)
 {
   rmm::device_scalar<TypeParam> scalar{this->value, this->stream, this->mr};
   EXPECT_NE(nullptr, scalar.data());
-  EXPECT_EQ(this->value, scalar.value());
+  EXPECT_EQ(this->value, scalar.value(this->stream));
 }
 
 TYPED_TEST(DeviceScalarTest, CopyCtor)
 {
   rmm::device_scalar<TypeParam> scalar{this->value, this->stream, this->mr};
   EXPECT_NE(nullptr, scalar.data());
-  EXPECT_EQ(this->value, scalar.value());
+  EXPECT_EQ(this->value, scalar.value(this->stream));
 
-  rmm::device_scalar<TypeParam> copy{scalar};
+  rmm::device_scalar<TypeParam> copy{scalar, this->stream, this->mr};
   EXPECT_NE(nullptr, copy.data());
   EXPECT_NE(copy.data(), scalar.data());
-  EXPECT_EQ(copy.value(), scalar.value());
+  EXPECT_EQ(copy.value(this->stream), scalar.value(this->stream));
 }
 
 TYPED_TEST(DeviceScalarTest, MoveCtor)
 {
   rmm::device_scalar<TypeParam> scalar{this->value, this->stream, this->mr};
   EXPECT_NE(nullptr, scalar.data());
-  EXPECT_EQ(this->value, scalar.value());
+  EXPECT_EQ(this->value, scalar.value(this->stream));
 
   auto original_pointer = scalar.data();
-  auto original_value   = scalar.value();
+  auto original_value   = scalar.value(this->stream);
 
   rmm::device_scalar<TypeParam> moved_to{std::move(scalar)};
   EXPECT_NE(nullptr, moved_to.data());
   EXPECT_EQ(moved_to.data(), original_pointer);
-  EXPECT_EQ(moved_to.value(), original_value);
+  EXPECT_EQ(moved_to.value(this->stream), original_value);
   EXPECT_EQ(nullptr, scalar.data());
 }
 
@@ -95,6 +95,6 @@ TYPED_TEST(DeviceScalarTest, SetValue)
 
   auto expected = this->distribution(this->generator);
 
-  scalar.set_value(expected);
-  EXPECT_EQ(expected, scalar.value());
+  scalar.set_value(expected, this->stream);
+  EXPECT_EQ(expected, scalar.value(this->stream));
 }
