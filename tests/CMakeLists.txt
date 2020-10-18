@@ -26,7 +26,7 @@ set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 ###################################################################################################
 # - compiler function
 
-function(ConfigureTest CMAKE_TEST_NAME CMAKE_TEST_SRC)
+function(ConfigureTestInternal CMAKE_TEST_NAME CMAKE_TEST_SRC)
   add_executable(${CMAKE_TEST_NAME} ${CMAKE_TEST_SRC})
   set_target_properties(${CMAKE_TEST_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
   target_include_directories(${CMAKE_TEST_NAME} PRIVATE "$<BUILD_INTERFACE:${RMM_SOURCE_DIR}>")
@@ -41,6 +41,16 @@ function(ConfigureTest CMAKE_TEST_NAME CMAKE_TEST_SRC)
                         "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")    
 
   add_test(NAME ${CMAKE_TEST_NAME} COMMAND ${CMAKE_TEST_NAME})
+endfunction(ConfigureTestInternal)
+
+function(ConfigureTest CMAKE_TEST_NAME CMAKE_TEST_SRC)
+  # Test with legacy default stream.
+  ConfigureTestInternal("${CMAKE_TEST_NAME}" "${CMAKE_TEST_SRC}")
+
+  # Test with per-thread default stream.
+  string(REGEX REPLACE "_TEST$" "_PTDS_TEST" CMAKE_PTDS_TEST_NAME "${CMAKE_TEST_NAME}")
+  ConfigureTestInternal("${CMAKE_PTDS_TEST_NAME}" "${CMAKE_TEST_SRC}")
+  target_compile_definitions("${CMAKE_PTDS_TEST_NAME}" PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
 endfunction(ConfigureTest)
 
 ###################################################################################################
@@ -57,27 +67,12 @@ set(DEVICE_MR_TEST_SRC
 ConfigureTest(DEVICE_MR_TEST "${DEVICE_MR_TEST_SRC}")
 
 ###################################################################################################
-# - device mr per-thread default stream tests
-
-set(DEVICE_MR_PTDS_TEST_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/mr_multithreaded_tests.cpp")
-
-ConfigureTest(DEVICE_MR_PTDS_TEST "${DEVICE_MR_PTDS_TEST_SRC}")
-target_compile_definitions(DEVICE_MR_PTDS_TEST PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
-
-###################################################################################################
 # - pool mr tests
 
 set(POOL_MR_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/pool_mr_tests.cpp")
     
 ConfigureTest(POOL_MR_TEST "${POOL_MR_TEST_SRC}")
-
-set(POOL_MR_PTDS_TEST_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/pool_mr_tests.cpp")
-
-ConfigureTest(POOL_MR_PTDS_TEST "${POOL_MR_PTDS_TEST_SRC}")
-target_compile_definitions(POOL_MR_PTDS_TEST PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
 
 ###################################################################################################
 # - thrust allocator tests
