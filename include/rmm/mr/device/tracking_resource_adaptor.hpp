@@ -15,7 +15,13 @@
  */
 #pragma once
 
-#include <boost/stacktrace.hpp>
+#if (defined(__GNUC__) && !defined(__MINGW32__) && !defined(__MINGW64__))
+#define ENABLE_STACK_TRACES
+#endif
+
+#if defined(ENABLE_STACK_TRACES)
+#include <execinfo.h>
+#endif  // defined(ENABLE_STACK_TRACES)
 #include <map>
 #include <mutex>
 #include <rmm/detail/error.hpp>
@@ -52,14 +58,52 @@ class tracking_resource_adaptor final : public device_memory_resource {
    *
    */
   struct allocation_info {
-    std::unique_ptr<boost::stacktrace::stacktrace> strace;
+    class stack_trace {
+     public:
+      stack_trace()
+      {
+#if defined(ENABLE_STACK_TRACES)
+        // store off a stack for this allocation
+        const int MaxStackDepth = 64;
+        void* stack[MaxStackDepth];
+        auto depth = backtrace(stack, MaxStackDepth);
+        stack_ptrs.insert(stack_ptrs.end(), &stack[0], &stack[depth]);
+#endif  // defined(ENABLE_STACK_TRACES)
+      }
+
+      friend std::ostream& operator<<(std::ostream& os, const stack_trace& st)
+      {
+#if defined(ENABLE_STACK_TRACES)
+        std::unique_ptr<char*, decltype(&::free)> strings(
+          backtrace_symbols(st.stack_ptrs.data(), st.stack_ptrs.size()), &::free);
+        if (strings.get() == nullptr) {
+          os << "But no stack trace could be found!" << std::endl;
+        } else {
+          ///@todo: support for demangling of C++ symbol names
+          for (int i = 0; i < st.stack_ptrs.size(); ++i) {
+            os << "#" << i << " in " << strings.get()[i] << std::endl;
+          }
+        }
+#else
+        os << "stack traces disabled" << std::endl;
+#endif  // defined(ENABLE_STACK_TRACES)
+        return os;
+      };
+
+#if defined(ENABLE_STACK_TRACES)
+     private:
+      std::vector<void*> stack_ptrs;
+#endif  // defined(ENABLE_STACK_TRACES)
+    };
+
+    std::unique_ptr<stack_trace> strace;
     std::size_t allocation_size;
 
     allocation_info() : strace{nullptr}, allocation_size{0} {};
     allocation_info(std::size_t size, bool capture_stack) : allocation_size{size}
     {
       // maybe store off a stack for this allocation
-      strace = capture_stack ? std::make_unique<boost::stacktrace::stacktrace>() : nullptr;
+      strace = capture_stack ? std::make_unique<stack_trace>() : nullptr;
     };
   };
 
@@ -112,7 +156,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
 
   /**
    * @brief Get the outstanding allocations map
-   * 
+   *
    * @return std::map<void*, allocation_info> const& of a map of allocations. The key
    * is the allocated memory pointer and the data is the allocation_info structure, which
    * contains size and, potentially, stack traces.
@@ -122,7 +166,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
     return allocations;
   }
 
-/**
+  /**
    * @brief Query the number of bytes that have been allocated. Note that
    * this can not be used to know how large of an allocation is possible due
    * to both possible fragmentation and also internal page sizes and alignment
@@ -150,7 +194,6 @@ class tracking_resource_adaptor final : public device_memory_resource {
         }
         oss << std::endl;
       }
-
       RMM_LOG_DEBUG("Outstanding Allocations: {}", oss.str());
     }
 #endif  // SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_DEBUG
