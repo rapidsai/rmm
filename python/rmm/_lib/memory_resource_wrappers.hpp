@@ -12,7 +12,6 @@
 #include <rmm/mr/device/thread_safe_resource_adaptor.hpp>
 #include <string>
 #include <vector>
-#include "rmm/mr/device/per_device_resource.hpp"
 
 // These are "owning" versions of the memory_resource classes
 // that help lift the responsibility of managing memory resource
