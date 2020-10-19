@@ -71,7 +71,7 @@ TEST_P(mr_test, SelfEquality) { EXPECT_TRUE(this->mr->is_equal(*this->mr)); }
 
 TEST_P(mr_test, AllocateDefaultStream)
 {
-  test_various_allocations(this->mr.get(), cudaStreamDefault);
+  test_various_allocations(this->mr.get(), cuda_stream_view{});
 }
 
 TEST_P(mr_test, AllocateOnStream) { test_various_allocations(this->mr.get(), this->stream); }
@@ -85,7 +85,7 @@ TEST_P(mr_test, RandomAllocationsStream)
 
 TEST_P(mr_test, MixedRandomAllocationFree)
 {
-  test_mixed_random_allocation_free(this->mr.get(), 5_MiB, cudaStreamDefault);
+  test_mixed_random_allocation_free(this->mr.get(), 5_MiB, cuda_stream_view{});
 }
 
 TEST_P(mr_test, MixedRandomAllocationFreeStream)

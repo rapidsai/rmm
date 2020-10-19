@@ -264,8 +264,7 @@ class arena_memory_resource final : public device_memory_resource {
   static bool use_per_thread_arena(cuda_stream_view stream)
   {
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-    return stream == cuda_stream_view{cudaStreamDefault} ||
-           stream == cuda_stream_view{cudaStreamPerThread};
+    return stream == cuda_stream_view{} || stream == cuda_stream_view{cudaStreamPerThread};
 #else
     return stream == cuda_stream_view{cudaStreamPerThread};
 #endif

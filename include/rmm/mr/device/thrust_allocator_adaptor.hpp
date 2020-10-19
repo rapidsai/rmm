@@ -123,7 +123,7 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
 
  private:
   device_memory_resource* _mr{rmm::mr::get_current_device_resource()};
-  cuda_stream_view _stream{0};
+  cuda_stream_view _stream{};
 };
 }  // namespace mr
 }  // namespace rmm
