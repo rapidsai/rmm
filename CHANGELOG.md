@@ -6,6 +6,7 @@
 
 - PR #599 Make the arena memory resource work better with the producer/consumer mode
 - PR #603 Always test both legacy and per-thread default stream
+- PR #611 Add a note to the contribution guide about requiring 2 C++ reviewers
 
 ## Bug Fixes
 
