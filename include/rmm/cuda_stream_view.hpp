@@ -25,7 +25,9 @@
 namespace rmm {
 
 /**
- * @brief Strongly-typed wrapper for CUDA streams with default constructor.
+ * @brief Strongly-typed non-owning wrapper for CUDA streams with default constructor.
+ *
+ * This wrapper is simply a "view": it does not own the lifetime of the stream it wraps.
  */
 class cuda_stream_view {
  public:
@@ -41,30 +43,33 @@ class cuda_stream_view {
   /**
    * @brief Construct a default cudaStream_t.
    */
-  constexpr explicit cuda_stream_view() : _stream{0} {}
+  constexpr cuda_stream_view() noexcept : stream_{0} {}
 
   /**
    * @brief Implicit conversion from cudaStream_t.
    */
-  constexpr cuda_stream_view(cudaStream_t stream) : _stream{stream} {}
+  constexpr cuda_stream_view(cudaStream_t stream) noexcept : stream_{stream} {}
 
   /**
    * @brief Implicit conversion to cudaStream_t.
    */
-  operator cudaStream_t() const { return _stream; }
+  constexpr operator cudaStream_t() const noexcept { return stream_; }
 
   /**
    * @brief Explicit conversion to uintptr_t.
    */
-  explicit operator uintptr_t() const { return reinterpret_cast<uintptr_t>(_stream); }
+  explicit operator uintptr_t() const noexcept { return reinterpret_cast<uintptr_t>(stream_); }
 
   /**
    * @brief Compare two streams for equality.
    */
-  bool operator==(cuda_stream_view const& other) { return _stream == other._stream; }
+  constexpr bool operator==(cuda_stream_view const& other) const noexcept
+  {
+    return stream_ == other.stream_;
+  }
 
  private:
-  cudaStream_t _stream;
+  cudaStream_t stream_;
 };
 
 namespace detail {
