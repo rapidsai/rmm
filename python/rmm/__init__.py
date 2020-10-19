@@ -19,11 +19,7 @@ from rmm.rmm import (
     RMMError,
     RMMNumbaManager,
     _numba_memory_manager,
-    device_array,
-    device_array_from_ptr,
-    device_array_like,
     is_initialized,
     reinitialize,
     rmm_cupy_allocator,
-    to_device,
 )

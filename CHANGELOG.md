@@ -5,6 +5,7 @@
 ## Improvements
 
 - PR #599 Make the arena memory resource work better with the producer/consumer mode
+- PR #612 Drop old Python `device_array*` API
 - PR #603 Always test both legacy and per-thread default stream
 
 ## Bug Fixes

@@ -44,7 +44,7 @@ _dtypes = [
     np.bool_,
 ]
 _nelems = [1, 2, 7, 8, 9, 32, 128]
-_allocs = [cuda, rmm]
+_allocs = [cuda]
 
 
 @pytest.mark.parametrize("dtype", _dtypes)
@@ -233,7 +233,6 @@ def test_rmm_device_buffer_copy_from_host(hb):
     "cuda_ary",
     [
         lambda: rmm.DeviceBuffer.to_device(b"abc"),
-        lambda: rmm.to_device(np.array([97, 98, 99], dtype="u1")),
         lambda: cuda.to_device(np.array([97, 98, 99], dtype="u1")),
     ],
 )
