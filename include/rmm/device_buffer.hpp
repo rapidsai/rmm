@@ -95,7 +95,7 @@ class device_buffer {
    * @param mr Memory resource to use for the device memory allocation.
    */
   explicit device_buffer(std::size_t size,
-                         cudaStream_t stream            = get_default_stream(),
+                         cuda_stream_view stream        = get_default_stream(),
                          mr::device_memory_resource* mr = mr::get_current_device_resource())
     : _stream{stream}, _mr{mr}
   {
@@ -118,7 +118,7 @@ class device_buffer {
    */
   device_buffer(void const* source_data,
                 std::size_t size,
-                cudaStream_t stream            = get_default_stream(),
+                cuda_stream_view stream        = get_default_stream(),
                 mr::device_memory_resource* mr = mr::get_current_device_resource())
     : _stream{stream}, _mr{mr}
   {
@@ -143,7 +143,7 @@ class device_buffer {
    * @param mr The resource to use for allocating the new `device_buffer`
    */
   device_buffer(device_buffer const& other,
-                cudaStream_t stream                 = get_default_stream(),
+                cuda_stream_view stream             = get_default_stream(),
                 rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource())
     : device_buffer{other.data(), other.size(), stream, mr}
   {
