@@ -16,22 +16,19 @@
 
 #include "gtest/gtest.h"
 
+#include <rmm/cuda_stream.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_buffer.hpp>
 
 #include <cuda_runtime_api.h>
 
 struct CudaStreamTest : public ::testing::Test {
-  cudaStream_t stream{};
-
-  void SetUp() override { EXPECT_EQ(cudaSuccess, cudaStreamCreate(&stream)); }
-
-  void TearDown() override { EXPECT_EQ(cudaSuccess, cudaStreamDestroy(stream)); };
+  rmm::cuda_stream stream{};
 };
 
 TEST_F(CudaStreamTest, SetDefault)
 {
-  auto initial = rmm::set_default_stream(rmm::cuda_stream_view{this->stream});
+  auto initial = rmm::set_default_stream(this->stream);
 
   auto new_default = rmm::get_default_stream();
   EXPECT_EQ(this->stream, new_default);

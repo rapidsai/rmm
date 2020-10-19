@@ -16,6 +16,7 @@
 
 #include <gtest/gtest.h>
 
+#include <rmm/cuda_stream.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
@@ -30,11 +31,9 @@
 #include <cstddef>
 #include <random>
 
-void sync_stream(cudaStream_t stream) { EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(stream)); }
-
 template <typename MemoryResourceType>
 struct DeviceBufferTest : public ::testing::Test {
-  cudaStream_t stream{};
+  rmm::cuda_stream stream{};
   std::size_t size{};
   MemoryResourceType mr{};
 
@@ -44,10 +43,6 @@ struct DeviceBufferTest : public ::testing::Test {
     std::uniform_int_distribution<std::size_t> distribution(1000, 100000);
     size = distribution(generator);
   }
-
-  void SetUp() override { EXPECT_EQ(cudaSuccess, cudaStreamCreate(&stream)); }
-
-  void TearDown() override { EXPECT_EQ(cudaSuccess, cudaStreamDestroy(stream)); };
 };
 
 using resources = ::testing::Types<rmm::mr::cuda_memory_resource, rmm::mr::managed_memory_resource>;
@@ -67,7 +62,7 @@ TYPED_TEST(DeviceBufferTest, DefaultMemoryResource)
 TYPED_TEST(DeviceBufferTest, DefaultMemoryResourceStream)
 {
   rmm::device_buffer buff(this->size, this->stream);
-  sync_stream(this->stream);
+  this->stream.synchronize();
   EXPECT_NE(nullptr, buff.data());
   EXPECT_EQ(this->size, buff.size());
   EXPECT_EQ(this->size, buff.capacity());
@@ -89,7 +84,7 @@ TYPED_TEST(DeviceBufferTest, ExplicitMemoryResource)
 TYPED_TEST(DeviceBufferTest, ExplicitMemoryResourceStream)
 {
   rmm::device_buffer buff(this->size, this->stream, &this->mr);
-  sync_stream(this->stream);
+  this->stream.synchronize();
   EXPECT_NE(nullptr, buff.data());
   EXPECT_EQ(this->size, buff.size());
   EXPECT_EQ(this->size, buff.capacity());
@@ -352,7 +347,7 @@ TYPED_TEST(DeviceBufferTest, MoveConstructor)
 TYPED_TEST(DeviceBufferTest, MoveConstructorStream)
 {
   rmm::device_buffer buff(this->size, this->stream, &this->mr);
-  sync_stream(this->stream);
+  this->stream.synchronize();
   auto p        = buff.data();
   auto size     = buff.size();
   auto capacity = buff.capacity();
@@ -361,7 +356,7 @@ TYPED_TEST(DeviceBufferTest, MoveConstructorStream)
 
   // New buffer should have the same contents as the original
   rmm::device_buffer buff_new(std::move(buff));
-  sync_stream(this->stream);
+  this->stream.synchronize();
   EXPECT_NE(nullptr, buff_new.data());
   EXPECT_EQ(p, buff_new.data());
   EXPECT_EQ(size, buff_new.size());

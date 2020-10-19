@@ -18,6 +18,8 @@
 
 #include <gtest/gtest.h>
 
+#include <rmm/cuda_stream.hpp>
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/mr/device/arena_memory_resource.hpp>
 #include <rmm/mr/device/binning_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
@@ -88,7 +90,7 @@ inline void test_get_current_device_resource()
 
 inline void test_allocate(rmm::mr::device_memory_resource* mr,
                           std::size_t bytes,
-                          cudaStream_t stream = 0)
+                          cuda_stream_view stream = rmm::get_default_stream())
 {
   void* p{nullptr};
   EXPECT_NO_THROW(p = mr->allocate(bytes));
@@ -100,7 +102,8 @@ inline void test_allocate(rmm::mr::device_memory_resource* mr,
   if (stream != 0) EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(stream));
 }
 
-inline void test_various_allocations(rmm::mr::device_memory_resource* mr, cudaStream_t stream)
+inline void test_various_allocations(rmm::mr::device_memory_resource* mr,
+                                     cuda_stream_view const& stream)
 {
   // test allocating zero bytes on non-default stream
   {
@@ -125,9 +128,9 @@ inline void test_various_allocations(rmm::mr::device_memory_resource* mr, cudaSt
 }
 
 inline void test_random_allocations(rmm::mr::device_memory_resource* mr,
-                                    std::size_t num_allocations = 100,
-                                    std::size_t max_size        = 5_MiB,
-                                    cudaStream_t stream         = 0)
+                                    std::size_t num_allocations    = 100,
+                                    std::size_t max_size           = 5_MiB,
+                                    cuda_stream_view const& stream = rmm::get_default_stream())
 {
   std::vector<allocation> allocations(num_allocations);
 
@@ -151,9 +154,10 @@ inline void test_random_allocations(rmm::mr::device_memory_resource* mr,
     });
 }
 
-inline void test_mixed_random_allocation_free(rmm::mr::device_memory_resource* mr,
-                                              std::size_t max_size = 5_MiB,
-                                              cudaStream_t stream  = 0)
+inline void test_mixed_random_allocation_free(
+  rmm::mr::device_memory_resource* mr,
+  std::size_t max_size           = 5_MiB,
+  cuda_stream_view const& stream = rmm::get_default_stream())
 {
   std::default_random_engine generator;
   constexpr std::size_t num_allocations{100};
@@ -214,13 +218,10 @@ struct mr_test : public ::testing::TestWithParam<mr_factory> {
   {
     auto factory = GetParam().f;
     mr           = factory();
-    EXPECT_EQ(cudaSuccess, cudaStreamCreate(&stream));
   }
 
-  void TearDown() override { EXPECT_EQ(cudaSuccess, cudaStreamDestroy(stream)); };
-
   std::shared_ptr<rmm::mr::device_memory_resource> mr;  ///< Pointer to resource to use in tests
-  cudaStream_t stream;
+  rmm::cuda_stream stream{};
 };
 
 /// MR factory functions

@@ -18,6 +18,7 @@
 
 #include <gtest/gtest.h>
 
+#include <rmm/cuda_stream.hpp>
 #include <rmm/mr/device/arena_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
@@ -139,7 +140,7 @@ TEST_P(mr_test_mt, AllocateDefaultStream)
 
 TEST_P(mr_test_mt, AllocateOnStream)
 {
-  spawn(test_various_allocations, this->mr.get(), this->stream);
+  spawn(test_various_allocations, this->mr.get(), this->stream.view());
 }
 
 TEST_P(mr_test_mt, RandomAllocationsDefaultStream)
@@ -149,7 +150,7 @@ TEST_P(mr_test_mt, RandomAllocationsDefaultStream)
 
 TEST_P(mr_test_mt, RandomAllocationsStream)
 {
-  spawn(test_random_allocations, this->mr.get(), 100, 5_MiB, this->stream);
+  spawn(test_random_allocations, this->mr.get(), 100, 5_MiB, this->stream.view());
 }
 
 TEST_P(mr_test_mt, MixedRandomAllocationFreeDefaultStream)
@@ -159,7 +160,7 @@ TEST_P(mr_test_mt, MixedRandomAllocationFreeDefaultStream)
 
 TEST_P(mr_test_mt, MixedRandomAllocationFreeStream)
 {
-  spawn(test_mixed_random_allocation_free, this->mr.get(), 5_MiB, this->stream);
+  spawn(test_mixed_random_allocation_free, this->mr.get(), 5_MiB, this->stream.view());
 }
 
 void allocate_loop(rmm::mr::device_memory_resource* mr,
@@ -204,8 +205,8 @@ void deallocate_loop(rmm::mr::device_memory_resource* mr,
 }
 
 void test_allocate_free_different_threads(rmm::mr::device_memory_resource* mr,
-                                          cudaStream_t streamA,
-                                          cudaStream_t streamB)
+                                          rmm::cuda_stream_view const& streamA,
+                                          rmm::cuda_stream_view const& streamB)
 {
   constexpr std::size_t num_allocations{100};
 
@@ -242,10 +243,11 @@ TEST_P(mr_test_mt, AllocFreeDifferentThreadsSameStream)
 TEST_P(mr_test_mt, AllocFreeDifferentThreadsDifferentStream)
 {
   cudaStream_t streamB{};
-  EXPECT_EQ(cudaSuccess, cudaStreamCreate(&streamB));
-  test_allocate_free_different_threads(this->mr.get(), this->stream, streamB);
-  EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(streamB));
-  EXPECT_EQ(cudaSuccess, cudaStreamDestroy(streamB));
+  EXPECT_NO_THROW([this]() {
+    rmm::cuda_stream streamB;
+    test_allocate_free_different_threads(this->mr.get(), this->stream, streamB);
+    streamB.synchronize();
+  }());
 }
 
 }  // namespace
