@@ -17,7 +17,7 @@
 
 #include <rmm/mr/device/device_memory_resource.hpp>
 
-#include <rmm/detail/cuda_stream_view.hpp>
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 
 // If using GCC, temporary workaround for older libcudacxx defining _LIBCPP_VERSION

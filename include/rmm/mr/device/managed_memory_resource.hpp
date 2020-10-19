@@ -17,7 +17,7 @@
 
 #include "device_memory_resource.hpp"
 
-#include <rmm/detail/cuda_stream_view.hpp>
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 
 namespace rmm {

@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <rmm/detail/cuda_stream_view.hpp>
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/detail/fixed_size_free_list.hpp>
 #include <rmm/mr/device/detail/stream_ordered_memory_resource.hpp>

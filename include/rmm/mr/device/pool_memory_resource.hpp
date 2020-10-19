@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <rmm/detail/cuda_stream_view.hpp>
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/logger.hpp>
 #include <rmm/mr/device/detail/coalescing_free_list.hpp>
