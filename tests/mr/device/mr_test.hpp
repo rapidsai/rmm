@@ -38,7 +38,7 @@
 namespace rmm {
 namespace test {
 
-inline bool is_aligned(void* p, std::size_t alignment = 256)
+inline bool is_pointer_aligned(void* p, std::size_t alignment = 256)
 {
   return (0 == reinterpret_cast<uintptr_t>(p) % alignment);
 }
@@ -81,7 +81,7 @@ inline void test_get_current_device_resource()
   void* p{nullptr};
   EXPECT_NO_THROW(p = rmm::mr::get_current_device_resource()->allocate(1_MiB));
   EXPECT_NE(nullptr, p);
-  EXPECT_TRUE(is_aligned(p));
+  EXPECT_TRUE(is_pointer_aligned(p));
   EXPECT_TRUE(is_device_memory(p));
   EXPECT_NO_THROW(rmm::mr::get_current_device_resource()->deallocate(p, 1_MiB));
 }
@@ -94,7 +94,7 @@ inline void test_allocate(rmm::mr::device_memory_resource* mr,
   EXPECT_NO_THROW(p = mr->allocate(bytes));
   if (stream != 0) EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(stream));
   EXPECT_NE(nullptr, p);
-  EXPECT_TRUE(is_aligned(p));
+  EXPECT_TRUE(is_pointer_aligned(p));
   EXPECT_TRUE(is_device_memory(p));
   EXPECT_NO_THROW(mr->deallocate(p, bytes));
   if (stream != 0) EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(stream));
@@ -141,7 +141,7 @@ inline void test_random_allocations(rmm::mr::device_memory_resource* mr,
       EXPECT_NO_THROW(a.p = mr->allocate(a.size, stream));
       if (stream != 0) EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(stream));
       EXPECT_NE(nullptr, a.p);
-      EXPECT_TRUE(is_aligned(a.p));
+      EXPECT_TRUE(is_pointer_aligned(a.p));
     });
 
   std::for_each(
@@ -183,7 +183,7 @@ inline void test_mixed_random_allocation_free(rmm::mr::device_memory_resource* m
       EXPECT_NO_THROW(allocations.emplace_back(mr->allocate(size, stream), size));
       auto new_allocation = allocations.back();
       EXPECT_NE(nullptr, new_allocation.p);
-      EXPECT_TRUE(is_aligned(new_allocation.p));
+      EXPECT_TRUE(is_pointer_aligned(new_allocation.p));
     } else {
       size_t index = index_distribution(generator) % active_allocations;
       active_allocations--;

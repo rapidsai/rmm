@@ -72,6 +72,20 @@ constexpr std::size_t align_down(std::size_t v, std::size_t align_bytes) noexcep
 }
 
 /**
+ * @brief Checks whether a value is aligned to a multiple of a specified power of 2
+ *
+ * @param[in] v value to check for alignment
+ * @param[in] alignment amount, in bytes, must be a power of 2
+ *
+ * @return true if aligned
+ */
+constexpr bool is_aligned(std::size_t v, std::size_t align_bytes) noexcept
+{
+  assert(is_supported_alignment(align_bytes));
+  return v == align_down(v, align_bytes);
+}
+
+/**
  * @brief Allocates sufficient memory to satisfy the requested size `bytes` with
  * alignment `alignment` using the unary callable `alloc` to allocate memory.
  *

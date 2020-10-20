@@ -49,6 +49,7 @@
 - PR #585 Update ci/local/README.md
 - PR #587 Replaced `move` with `std::move`
 - PR #588 Use installed C++ RMM in python build
+- PR #601 Make maximum pool size truly optional (grow until failure)
 
 ## Bug Fixes
 
