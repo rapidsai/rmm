@@ -53,7 +53,7 @@ using exec_policy_t = std::unique_ptr<par_t, deleter_t>;
  * allocation.
  */
 /* --------------------------------------------------------------------------*/
-inline exec_policy_t exec_policy(cuda_stream_view stream = get_default_stream())
+inline exec_policy_t exec_policy(cuda_stream_view stream = cuda_stream_view{})
 {
   auto *alloc  = new rmm::mr::thrust_allocator<char>(stream);
   auto deleter = [alloc](par_t *pointer) {

@@ -47,7 +47,7 @@ namespace rmm {
  * // allocates at least 100 bytes using the custom memory resource and
  * // specified stream
  * custom_memory_resource mr;
- * cuda_stream_view stream = get_default_stream();
+ * cuda_stream_view stream = cuda_stream_view{};
  * device_buffer custom_buff(100, stream, &mr);
  *
  * // deep copies `buff` into a new device buffer using the default stream
@@ -95,7 +95,7 @@ class device_buffer {
    * @param mr Memory resource to use for the device memory allocation.
    */
   explicit device_buffer(std::size_t size,
-                         cuda_stream_view stream        = get_default_stream(),
+                         cuda_stream_view stream        = cuda_stream_view{},
                          mr::device_memory_resource* mr = mr::get_current_device_resource())
     : _stream{stream}, _mr{mr}
   {
@@ -118,7 +118,7 @@ class device_buffer {
    */
   device_buffer(void const* source_data,
                 std::size_t size,
-                cuda_stream_view stream        = get_default_stream(),
+                cuda_stream_view stream        = cuda_stream_view{},
                 mr::device_memory_resource* mr = mr::get_current_device_resource())
     : _stream{stream}, _mr{mr}
   {
@@ -143,7 +143,7 @@ class device_buffer {
    * @param mr The resource to use for allocating the new `device_buffer`
    */
   device_buffer(device_buffer const& other,
-                cuda_stream_view stream             = get_default_stream(),
+                cuda_stream_view stream             = cuda_stream_view{},
                 rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource())
     : device_buffer{other.data(), other.size(), stream, mr}
   {
@@ -172,7 +172,7 @@ class device_buffer {
     other._data     = nullptr;
     other._size     = 0;
     other._capacity = 0;
-    other.set_stream(get_default_stream());
+    other.set_stream(cuda_stream_view{});
   }
 
   /**
@@ -242,7 +242,7 @@ class device_buffer {
       other._data     = nullptr;
       other._size     = 0;
       other._capacity = 0;
-      other.set_stream(get_default_stream());
+      other.set_stream(cuda_stream_view{});
     }
     return *this;
   }
@@ -258,7 +258,7 @@ class device_buffer {
   {
     deallocate();
     _mr     = nullptr;
-    _stream = get_default_stream();
+    _stream = cuda_stream_view{};
   }
 
   /**
@@ -286,7 +286,7 @@ class device_buffer {
    * @param new_size The requested new size, in bytes
    * @param stream The stream to use for allocation and copy
    */
-  void resize(std::size_t new_size, cuda_stream_view stream = get_default_stream())
+  void resize(std::size_t new_size, cuda_stream_view stream = cuda_stream_view{})
   {
     set_stream(stream);
     // If the requested size is smaller than the current capacity, just update
@@ -316,7 +316,7 @@ class device_buffer {
    *
    * @param stream The stream on which the allocation and copy are performed
    */
-  void shrink_to_fit(cuda_stream_view stream = get_default_stream())
+  void shrink_to_fit(cuda_stream_view stream = cuda_stream_view{})
   {
     set_stream(stream);
     if (size() != capacity()) {

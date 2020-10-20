@@ -26,17 +26,13 @@ struct CudaStreamTest : public ::testing::Test {
   rmm::cuda_stream stream{};
 };
 
-TEST_F(CudaStreamTest, SetDefault)
+TEST_F(CudaStreamTest, Equality)
 {
-  auto initial = rmm::set_default_stream(this->stream);
-
-  auto new_default = rmm::get_default_stream();
-  EXPECT_EQ(this->stream, new_default);
-  EXPECT_NE(initial, new_default);
+  auto new_default = rmm::cuda_stream_view{};
+  EXPECT_NE(this->stream, new_default);
+  EXPECT_EQ(new_default, rmm::cuda_stream_view{});
+  EXPECT_NE(new_default, rmm::cuda_stream());
 
   rmm::device_buffer buff(0);
   EXPECT_EQ(buff.stream(), new_default);
-
-  rmm::set_default_stream(initial);
-  EXPECT_EQ(rmm::get_default_stream(), initial);
 }

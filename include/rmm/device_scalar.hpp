@@ -76,7 +76,7 @@ class device_scalar {
    */
   explicit device_scalar(
     T const &initial_value,
-    cuda_stream_view stream             = get_default_stream(),
+    cuda_stream_view stream             = cuda_stream_view{},
     rmm::mr::device_memory_resource *mr = rmm::mr::get_current_device_resource())
     : buffer{sizeof(T), stream, mr}
   {
@@ -96,7 +96,7 @@ class device_scalar {
    * @param mr The resource to use for allocating the new `device_scalar`
    */
   device_scalar(device_scalar const &other,
-                cuda_stream_view stream             = rmm::get_default_stream(),
+                cuda_stream_view stream             = rmm::cuda_stream_view{},
                 rmm::mr::device_memory_resource *mr = rmm::mr::get_current_device_resource())
     : buffer{other.buffer, stream, mr}
   {
@@ -118,7 +118,7 @@ class device_scalar {
    * @return T The value of the scalar.
    * @param stream CUDA stream on which to perform the copy and synchronize.
    */
-  T value(cuda_stream_view stream = get_default_stream()) const
+  T value(cuda_stream_view stream = cuda_stream_view{}) const
   {
     T host_value{};
     _memcpy(&host_value, buffer.data(), stream);
@@ -161,7 +161,7 @@ class device_scalar {
    * @param stream CUDA stream on which to perform the copy
    */
   template <typename Placeholder = void>
-  auto set_value(T const &host_value, cuda_stream_view stream = get_default_stream())
+  auto set_value(T const &host_value, cuda_stream_view stream = cuda_stream_view{})
     -> std::enable_if_t<std::is_fundamental<T>::value, Placeholder>
   {
     if (host_value == T{0}) {
@@ -206,7 +206,7 @@ class device_scalar {
    * @param stream CUDA stream on which to perform the copy
    */
   template <typename Placeholder = void>
-  auto set_value(T const &host_value, cuda_stream_view stream = get_default_stream())
+  auto set_value(T const &host_value, cuda_stream_view stream = cuda_stream_view{})
     -> std::enable_if_t<not std::is_fundamental<T>::value, Placeholder>
   {
     _memcpy(buffer.data(), &host_value, stream);

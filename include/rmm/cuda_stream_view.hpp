@@ -69,38 +69,4 @@ class cuda_stream_view {
   cudaStream_t stream_{};
 };
 
-namespace detail {
-// Use an atomic to guarantee thread safety
-inline std::atomic<cuda_stream_view>& default_stream()
-{
-  static std::atomic<cuda_stream_view> res{cuda_stream_view{}};
-  return res;
-}
-}  // namespace detail
-
-/**
- * @brief Get the default stream view.
- *
- * The default stream view is used when an explicit stream view
- * is not supplied. The initial default stream view is cudaStreamDefault.
- *
- * This function is thread-safe.
- *
- * @return cuda_stream_view The current default stream view
- */
-inline cuda_stream_view get_default_stream() { return detail::default_stream().load(); }
-
-/**
- * @brief Sets the default stream view.
- *
- * This function is thread-safe.
- *
- * @param new_stream Stream view to use as new default stream view
- * @return The previous value of the default stream view
- */
-inline cuda_stream_view set_default_stream(cuda_stream_view new_stream)
-{
-  return detail::default_stream().exchange(new_stream);
-}
-
 }  // namespace rmm
