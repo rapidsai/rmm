@@ -66,7 +66,7 @@ class cuda_stream_view {
   }
 
  private:
-  cudaStream_t stream_{};
+  cudaStream_t stream_{cudaStreamDefault};
 };
 
 }  // namespace rmm
