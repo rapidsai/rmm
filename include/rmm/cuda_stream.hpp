@@ -21,6 +21,8 @@
 
 #include <cuda_runtime_api.h>
 
+#include <memory>
+
 namespace rmm {
 
 /**
@@ -39,37 +41,41 @@ class cuda_stream {
   cuda_stream(cuda_stream&&) = default;
   cuda_stream& operator=(cuda_stream&&) = default;
 
+  ~cuda_stream() = default;
+
   /**
    * @brief Construct a new cuda stream object
    *
    * @throw rmm::cuda_error if stream creation fails
    */
-  cuda_stream() : stream_{} { RMM_CUDA_TRY(cudaStreamCreate(&stream_)); }
-
-  /**
-   * @brief Destroy the cuda_stream object and the CUDA stream it owns.
-   *
-   */
-  ~cuda_stream() noexcept { RMM_ASSERT_CUDA_SUCCESS(cudaStreamDestroy(stream_)); }
+  cuda_stream()
+    : stream_{[]() {
+                cudaStream_t* s = new cudaStream_t;
+                RMM_CUDA_TRY(cudaStreamCreate(s));
+                return s;
+              }(),
+              [](cudaStream_t* s) { RMM_ASSERT_CUDA_SUCCESS(cudaStreamDestroy(*s)); }}
+  {
+  }
 
   /**
    * @brief Creates an immutable, non-owning view of the CUDA stream.
    *
    * @return rmm::cuda_stream_view The view of the CUDA stream
    */
-  constexpr rmm::cuda_stream_view view() const { return rmm::cuda_stream_view{stream_}; }
+  rmm::cuda_stream_view view() const { return rmm::cuda_stream_view{*stream_}; }
 
   /**
    * @brief Implicit conversion to cudaStream_t.
    */
-  constexpr operator cudaStream_t() const noexcept { return stream_; }
+  operator cudaStream_t() const noexcept { return *stream_; }
 
   /**
    * @brief Implicit conversion to cuda_stream_view
    *
    * @return A view of the owned stream
    */
-  constexpr operator cuda_stream_view() const { return view(); }
+  operator cuda_stream_view() const { return view(); }
 
   /**
    * @brief Synchronize the owned CUDA stream.
@@ -78,26 +84,20 @@ class cuda_stream {
    *
    * @throw rmm::cuda_error if stream synchronization fails
    */
-  void synchronize() { RMM_CUDA_TRY(cudaStreamSynchronize(stream_)); }
+  void synchronize() { RMM_CUDA_TRY(cudaStreamSynchronize(*stream_)); }
 
   /**
    * @brief Compare two streams for equality.
    */
-  constexpr bool operator==(cuda_stream const& other) const noexcept
-  {
-    return stream_ == other.stream_;
-  }
+  bool operator==(cuda_stream const& other) const noexcept { return stream_ == other.stream_; }
 
   /**
    * @brief Compare two streams for equality.
    */
-  constexpr bool operator==(cuda_stream_view const& other) const noexcept
-  {
-    return stream_ == other;
-  }
+  bool operator==(cuda_stream_view const& other) const noexcept { return *stream_ == other; }
 
  private:
-  cudaStream_t stream_;
+  std::unique_ptr<cudaStream_t, std::function<void(cudaStream_t*)>> stream_;
 };
 
 }  // namespace rmm
