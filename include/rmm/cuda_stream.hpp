@@ -29,19 +29,13 @@ namespace rmm {
  * @brief Owning wrapper for a CUDA stream.
  *
  * Provides RAII lifetime semantics for a CUDA stream.
- *
  */
 class cuda_stream {
  public:
-  // No copy construction or assignment
-  cuda_stream(cuda_stream const&) = delete;
-  cuda_stream& operator=(cuda_stream const&) = delete;
-
-  // Move construction and assignment allowed
+  // Move construction/assignment allowed, but not copy construction/assignment
   cuda_stream(cuda_stream&&) = default;
   cuda_stream& operator=(cuda_stream&&) = default;
-
-  ~cuda_stream() = default;
+  ~cuda_stream()                        = default;
 
   /**
    * @brief Construct a new cuda stream object
