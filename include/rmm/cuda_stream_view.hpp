@@ -31,19 +31,16 @@ namespace rmm {
  */
 class cuda_stream_view {
  public:
-  cuda_stream_view(cuda_stream_view const&) = default;
-  cuda_stream_view(cuda_stream_view&&)      = default;
-  cuda_stream_view& operator=(cuda_stream_view const&) = default;
-  cuda_stream_view& operator=(cuda_stream_view&&) = default;
+  constexpr cuda_stream_view()                        = default;
+  constexpr cuda_stream_view(cuda_stream_view const&) = default;
+  constexpr cuda_stream_view(cuda_stream_view&&)      = default;
+  constexpr cuda_stream_view& operator=(cuda_stream_view const&) = default;
+  constexpr cuda_stream_view& operator=(cuda_stream_view&&) = default;
+  ~cuda_stream_view()                                       = default;
 
   // TODO disable construction from 0 after cuDF and others adopt cuda_stream_view
   // cuda_stream_view(int)            = delete; //< Prevent cast from 0
   // cuda_stream_view(std::nullptr_t) = delete; //< Prevent cast from nullptr
-
-  /**
-   * @brief Construct a default cudaStream_t.
-   */
-  constexpr cuda_stream_view() noexcept : stream_{0} {}
 
   /**
    * @brief Implicit conversion from cudaStream_t.
@@ -69,7 +66,7 @@ class cuda_stream_view {
   }
 
  private:
-  cudaStream_t stream_;
+  cudaStream_t stream_{};
 };
 
 namespace detail {
