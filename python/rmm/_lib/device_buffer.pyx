@@ -17,6 +17,7 @@ cimport cython
 from cpython.bytes cimport PyBytes_AS_STRING, PyBytes_FromStringAndSize
 from libc.stdint cimport uintptr_t
 from libcpp.memory cimport unique_ptr
+from libcpp.utility cimport move
 
 from rmm._cuda.gpu cimport cudaError, cudaError_t
 from rmm._lib.lib cimport (
@@ -107,7 +108,7 @@ cdef class DeviceBuffer:
         cdef dict intf = {
             "data": (self.ptr, False),
             "shape": (self.size,),
-            "strides": (1,),
+            "strides": None,
             "typestr": "|u1",
             "version": 0
         }

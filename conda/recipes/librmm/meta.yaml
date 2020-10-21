@@ -28,13 +28,35 @@ requirements:
     - cudatoolkit {{ cuda_version }}.*
   run:
     - {{ pin_compatible('cudatoolkit', max_pin='x.x') }}
-    - spdlog >=1.6.0
+    - spdlog=1.7.0
 
 test:
   commands:
     - test -f $PREFIX/include/rmm/thrust_rmm_allocator.h
-    - test -f $PREFIX/include/rmm/detail/cnmem.h
-    - test -f $PREFIX/lib/librmm.so
+    - test -f $PREFIX/include/rmm/logger.hpp
+    - test -f $PREFIX/include/rmm/device_uvector.hpp
+    - test -f $PREFIX/include/rmm/device_scalar.hpp
+    - test -f $PREFIX/include/rmm/device_buffer.hpp
+    - test -f $PREFIX/include/rmm/detail/aligned.hpp
+    - test -f $PREFIX/include/rmm/detail/error.hpp
+    - test -f $PREFIX/include/rmm/mr/device/detail/free_list.hpp
+    - test -f $PREFIX/include/rmm/mr/device/detail/coalescing_free_list.hpp
+    - test -f $PREFIX/include/rmm/mr/device/detail/fixed_size_free_list.hpp
+    - test -f $PREFIX/include/rmm/mr/device/detail/stream_ordered_memory_resource.hpp
+    - test -f $PREFIX/include/rmm/mr/device/binning_memory_resource.hpp
+    - test -f $PREFIX/include/rmm/mr/device/cuda_memory_resource.hpp
+    - test -f $PREFIX/include/rmm/mr/device/device_memory_resource.hpp
+    - test -f $PREFIX/include/rmm/mr/device/fixed_size_memory_resource.hpp
+    - test -f $PREFIX/include/rmm/mr/device/logging_resource_adaptor.hpp
+    - test -f $PREFIX/include/rmm/mr/device/managed_memory_resource.hpp
+    - test -f $PREFIX/include/rmm/mr/device/owning_wrapper.hpp
+    - test -f $PREFIX/include/rmm/mr/device/per_device_resource.hpp
+    - test -f $PREFIX/include/rmm/mr/device/pool_memory_resource.hpp
+    - test -f $PREFIX/include/rmm/mr/device/thread_safe_resource_adaptor.hpp
+    - test -f $PREFIX/include/rmm/mr/device/thrust_allocator_adaptor.hpp
+    - test -f $PREFIX/include/rmm/mr/host/host_memory_resource.hpp
+    - test -f $PREFIX/include/rmm/mr/host/new_delete_resource.hpp
+    - test -f $PREFIX/include/rmm/mr/host/pinned_memory_resource.hpp
 
 about:
   home: http://rapids.ai/

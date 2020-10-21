@@ -99,7 +99,7 @@ extensions = cythonize(
                 cuda_lib_dir,
                 os.path.join(os.sys.prefix, "lib"),
             ],
-            libraries=["cuda", "rmm"],
+            libraries=["cuda", "cudart"],
             language="c++",
             extra_compile_args=["-std=c++14"],
         )
@@ -123,7 +123,7 @@ extensions += cythonize(
                 cuda_lib_dir,
                 os.path.join(os.sys.prefix, "lib"),
             ],
-            libraries=["cuda", "rmm"],
+            libraries=["cuda", "cudart"],
             language="c++",
             extra_compile_args=["-std=c++14"],
         )
@@ -146,7 +146,7 @@ extensions += cythonize(
                 cuda_lib_dir,
                 os.path.join(os.sys.prefix, "lib"),
             ],
-            libraries=["cuda", "rmm"],
+            libraries=["cuda", "cudart"],
             language="c++",
             extra_compile_args=["-std=c++14"],
         )
@@ -159,7 +159,7 @@ extensions += cythonize(
 
 setup(
     name="rmm",
-    version="0.15.0",
+    version="0.16.0",
     description="rmm - RAPIDS Memory Manager",
     url="https://github.com/rapidsai/rmm",
     author="NVIDIA Corporation",

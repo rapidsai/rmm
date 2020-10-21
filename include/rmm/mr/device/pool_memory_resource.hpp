@@ -16,6 +16,7 @@
 #pragma once
 
 #include <rmm/detail/error.hpp>
+#include <rmm/logger.hpp>
 #include <rmm/mr/device/detail/coalescing_free_list.hpp>
 #include <rmm/mr/device/detail/stream_ordered_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
@@ -23,7 +24,6 @@
 #include <cuda_runtime_api.h>
 
 #include <algorithm>
-#include <cassert>
 #include <cstdint>
 #include <iostream>
 #include <map>
@@ -33,6 +33,7 @@
 #include <thread>
 #include <unordered_map>
 #include <vector>
+#include "rmm/detail/aligned.hpp"
 
 namespace rmm {
 namespace mr {
@@ -74,6 +75,10 @@ class pool_memory_resource final
    * `upstream_mr`.
    *
    * @throws rmm::logic_error if `upstream_mr == nullptr`
+   * @throws rmm::logic_error if `initial_pool_size` is neither the default nor aligned to a
+   * multiple of pool_memory_resource::allocation_alignment bytes.
+   * @throws rmm::logic_error if `maximum_pool_size` is neither the default nor aligned to a
+   * multiple of pool_memory_resource::allocation_alignment bytes.
    *
    * @param upstream_mr The memory_resource from which to allocate blocks for the pool.
    * @param initial_pool_size Minimum size, in bytes, of the initial pool. Defaults to half of the
@@ -89,12 +94,25 @@ class pool_memory_resource final
         return upstream_mr;
       }()}
   {
+    RMM_EXPECTS(
+      initial_pool_size == default_initial_size ||
+        (initial_pool_size == rmm::detail::align_up(initial_pool_size, allocation_alignment)),
+      "Error, Initial pool size required to be a multiple of 256 bytes");
+    RMM_EXPECTS(
+      maximum_pool_size == default_maximum_size ||
+        (maximum_pool_size == rmm::detail::align_up(maximum_pool_size, allocation_alignment)),
+      "Error, Maximum pool size required to be a multiple of 256 bytes");
+
     std::size_t free{}, total{};
     std::tie(free, total) = detail::available_device_memory();
-    initial_pool_size =
-      (initial_pool_size == default_initial_size) ? std::min(free, total / 2) : initial_pool_size;
-    current_pool_size_ = rmm::detail::align_up(initial_pool_size, allocation_alignment);
-    maximum_pool_size_ = (maximum_pool_size == default_maximum_size) ? free : maximum_pool_size;
+
+    initial_pool_size = (initial_pool_size == default_initial_size)
+                          ? rmm::detail::align_up(std::min(free, total / 2), allocation_alignment)
+                          : initial_pool_size;
+    current_pool_size_ = initial_pool_size;
+    maximum_pool_size_ = (maximum_pool_size == default_maximum_size)
+                           ? rmm::detail::align_down(free, allocation_alignment)
+                           : maximum_pool_size;
 
     RMM_EXPECTS(pool_size() <= maximum_pool_size_,
                 "Initial pool size exceeds the maximum pool size!");
@@ -164,7 +182,13 @@ class pool_memory_resource final
   block_type expand_pool(size_t size, free_list& blocks, cudaStream_t stream)
   {
     auto grow_size = size_to_grow(size);
-    RMM_EXPECTS(grow_size > 0, rmm::bad_alloc, "Maximum pool size exceeded");
+    if (grow_size == 0) {
+      RMM_LOG_ERROR("[A][Stream {}][Upstream {}B][FAILURE max pool size exceeded]",
+                    reinterpret_cast<void*>(stream),
+                    size);
+      RMM_FAIL("Maximum pool size exceeded", rmm::bad_alloc);
+    }
+
     current_pool_size_ += grow_size;
     return block_from_upstream(grow_size, stream);
   }
@@ -178,10 +202,20 @@ class pool_memory_resource final
    */
   block_type block_from_upstream(size_t size, cudaStream_t stream)
   {
-    void* p = upstream_mr_->allocate(size, stream);
-    block_type b{reinterpret_cast<char*>(p), size, true};
-    upstream_blocks_.emplace_back(b);  // TODO: with C++17 use version that returns a reference
-    return b;
+    RMM_LOG_DEBUG("[A][Stream {}][Upstream {}B]", reinterpret_cast<void*>(stream), size);
+
+    try {
+      void* p = upstream_mr_->allocate(size, stream);
+      block_type b{reinterpret_cast<char*>(p), size, true};
+      upstream_blocks_.emplace_back(b);  // TODO: with C++17 use version that returns a reference
+      return b;
+    } catch (std::exception const& e) {
+      RMM_LOG_ERROR("[A][Stream {}][Upstream {}B][FAILURE {}]",
+                    reinterpret_cast<void*>(stream),
+                    size,
+                    e.what());
+      throw;
+    }
   }
 
   /**
@@ -219,10 +253,10 @@ class pool_memory_resource final
     if (p == nullptr) return block_type{};
 
     auto const i = allocated_blocks_.find(static_cast<char*>(p));
-    assert(i != allocated_blocks_.end());
+    RMM_LOGGING_ASSERT(i != allocated_blocks_.end());
 
     auto block = *i;
-    assert(block.size() == rmm::detail::align_up(size, allocation_alignment));
+    RMM_LOGGING_ASSERT(block.size() == rmm::detail::align_up(size, allocation_alignment));
     allocated_blocks_.erase(i);
 
     return block;
@@ -304,6 +338,25 @@ class pool_memory_resource final
       b.print();
 
     this->print_free_blocks();
+  }
+
+  /**
+   * @brief Get the largest available block size and total free size in the specified free list
+   *
+   * This is intended only for debugging
+   *
+   * @param blocks The free list from which to return the summary
+   * @return std::pair<std::size_t, std::size_t> Pair of largest available block, total free size
+   */
+  std::pair<std::size_t, std::size_t> free_list_summary(free_list const& blocks)
+  {
+    std::size_t largest{};
+    std::size_t total{};
+    std::for_each(blocks.cbegin(), blocks.cend(), [&largest, &total](auto const& b) {
+      total += b.size();
+      largest = std::max(largest, b.size());
+    });
+    return {largest, total};
   }
 
   /**

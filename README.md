@@ -12,7 +12,7 @@ The goal of the RAPIDS Memory Manager (RMM) is to provide:
 - A common interface that allows customizing [device](#device_memory_resource) and
   [host](#host_memory_resource) memory allocation
 - A collection of [implementations](#available-resources) of the interface
-- A collection of [data structures](#data-structures) that use the interface for memory allocation
+- A collection of [data structures](#device-data-structures) that use the interface for memory allocation
 
 For information on the interface RMM provides and how to use RMM in your C++ code, see
 [below](#using-rmm-in-c++).
@@ -23,7 +23,7 @@ For information on the interface RMM provides and how to use RMM in your C++ cod
 
 ### Conda
 
-RMM can be installed with conda ([miniconda](https://conda.io/miniconda.html), or the full
+RMM can be installed with Conda ([miniconda](https://conda.io/miniconda.html), or the full
 [Anaconda distribution](https://www.anaconda.com/download)) from the `rapidsai` channel:
 
 ```bash
@@ -38,10 +38,12 @@ conda install -c nvidia -c rapidsai -c conda-forge -c defaults \
     rmm cudatoolkit=10.0
 ```
 
-We also provide [nightly conda packages](https://anaconda.org/rapidsai-nightly) built from the HEAD
+We also provide [nightly Conda packages](https://anaconda.org/rapidsai-nightly) built from the HEAD
 of our latest development branch.
 
-Note: RMM is supported only on Linux, and with Python versions 3.6 or 3.7.
+Note: RMM is supported only on Linux, and with Python versions 3.7 and later.
+
+Note: The RMM package from Conda requires building with GCC 7 or later. Otherwise, your application may fail to build.
 
 See the [Get RAPIDS version picker](https://rapids.ai/start.html) for more OS and version info.
 
@@ -51,7 +53,7 @@ See the [Get RAPIDS version picker](https://rapids.ai/start.html) for more OS an
 
 Compiler requirements:
 
-* `gcc`     version 4.8 or higher recommended
+* `gcc`     version 7.0 or higher required
 * `nvcc`    version 9.0 or higher recommended
 * `cmake`   version 3.12 or higher
 
@@ -124,6 +126,43 @@ $ pytest -v
 
 Done! You are ready to develop for the RMM OSS project.
 
+### Caching third-party dependencies
+
+RMM uses [CPM.cmake](https://github.com/TheLartians/CPM.cmake) to
+handle third-party dependencies like spdlog, Thrust, GoogleTest,
+GoogleBenchmark. In general you won't have to worry about it. If CMake
+finds an appropriate version on your system, it uses it (you can
+help it along by setting `CMAKE_PREFIX_PATH` to point to the
+installed location). Otherwise those dependencies will be downloaded as
+part of the build.
+
+If you frequently start new builds from scratch, consider setting the
+environment variable `CPM_SOURCE_CACHE` to an external download
+directory to avoid repeated downloads of the third-party dependencies.
+
+## Using RMM in a downstream CMake project
+
+The installed RMM library provides a set of config files that makes it easy to
+integrate RMM into your own CMake project. In your `CMakeLists.txt`, just add
+
+```cmake
+find_package(rmm [VERSION])
+# ...
+target_link_libraries(<your-target> (PRIVATE|PUBLIC) rmm::rmm)
+```
+
+Since RMM is a header-only library, this does not actually link RMM,
+but it makes the headers available and pulls in transitive dependencies.
+If RMM is not installed in a default location, use
+`CMAKE_PREFIX_PATH` or `rmm_ROOT` to point to its location.
+
+One of RMM's dependencies is the Thrust library, so the above
+automatically pulls in `Thrust` by means of a dependency on the
+`rmm::Thrust` target. By default it uses the standard configuration of
+Thrust. If you want to customize it, you can set the variables
+`THRUST_HOST_SYSTEM` and `THRUST_DEVICE_SYSTEM`; see
+[Thrust's CMake documentation](https://github.com/NVIDIA/thrust/blob/main/thrust/cmake/README.md).
+
 # Using RMM in C++
 
 The first goal of RMM is to provide a common interface for device and host memory allocation. 
@@ -160,6 +199,17 @@ Unlike `std::pmr::memory_resource`, `rmm::mr::device_memory_resource` does not a
 alignment argument. All allocations are required to be aligned to at least 256B. Furthermore, 
 `device_memory_resource` adds an additional `cudaStream_t` argument to allow specifying the stream
 on which to perform the (de)allocation.
+
+### Thread Safety
+
+All current device memory resources are thread safe unless documented otherwise. More specifically,
+calls to memory resource `allocate()` and `deallocate()` methods are safe with respect to calls to 
+either of these functions from other threads. They are _not_ thread safe with respect to
+construction and destruction of the memory resource object.
+
+Note that a class `thread_safe_resource_adapter` is provided which can be used to adapt a memory
+resource that is not thread safe to be thread safe (as described above). This adapter is not needed
+with any current RMM device memory resources.
 
 ### Stream-ordered Memory Allocation
 
@@ -205,11 +255,6 @@ Allocates and frees device memory using `cudaMallocManaged` and `cudaFree`.
 
 A coalescing, best-fit pool sub-allocator.
 
-#### `cnmem_(managed_)memory_resource` [DEPRECATED]
-
-Uses the [CNMeM](https://github.com/NVIDIA/cnmem) pool sub-allocator to satisfy (de)allocations.
-These resources are deprecated as of RMM 0.15.
-
 #### `fixed_size_memory_resource`
 
 A memory resource that can only allocate a single fixed size. Average allocation and deallocation
@@ -237,7 +282,6 @@ Accessing and modifying the default resource is done through two functions:
    - This function is thread safe with respect to concurrent calls to it and 
      `set_current_device_resource()`.
    - For more explicit control, you can use `get_per_device_resource()`, which takes a device ID.
-   - Replaces the deprecated `get_default_resource()`
 
 - `device_memory_resource* set_current_device_resource(device_memory_resource* new_mr)`
    - Updates the default memory resource pointer for the current CUDA device to `new_resource`
@@ -246,14 +290,13 @@ Accessing and modifying the default resource is done through two functions:
    - This function is thread safe with respect to concurrent calls to it and
      `get_current_device_resource()`
    - For more explicit control, you can use `set_per_device_resource()`, which takes a device ID.
-   - Replaces the deprecated `set_default_resource()`
 
 #### Example
 
 ```c++
-rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource(); // Points to `cuda_memory_resource`
+rmm::mr::cuda_memory_resource cuda_mr;
 // Construct a resource that uses a coalescing best-fit pool allocator
-rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>> pool_mr{mr}; 
+rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource> pool_mr{&cuda_mr};
 rmm::mr::set_current_device_resource(&pool_mr); // Updates the current device resource pointer to `pool_mr`
 rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource(); // Points to `pool_mr`
 ```
@@ -262,6 +305,9 @@ rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource(); //
 
 A `device_memory_resource` should only be used when the active CUDA device is the same device
 that was active when the `device_memory_resource` was created. Otherwise behavior is undefined.
+
+If a `device_memory_resource` is used with a stream associated with a different CUDA device than the
+device for which the memory resource was created, behavior is undefined.
  
 Creating a `device_memory_resource` for each device requires care to set the current device before
 creating each resource, and to maintain the lifetime of the resources as long as they are set as
@@ -330,34 +376,6 @@ kernel<<<...,s>>>(a.data()); // Pass raw pointer to underlying element in device
 int32_t v = a.value(s); // Retrieves the value from device to host on stream `s`
 ```
 
-## Using RMM with Thrust
-
-RAPIDS and other CUDA libraries make heavy use of Thrust. Thrust uses CUDA device memory in two
-situations:
-
- 1. As the backing store for `thrust::device_vector`, and
- 2. As temporary storage inside some algorithms, such as `thrust::sort`.
-
-RMM provides `rmm::mr::thrust_allocator` as a conforming Thrust allocator that uses
-`device_memory_resource`s.
-
-### Thrust Algorithms
-
-To instruct a Thrust algorithm to use `rmm::mr::thrust_allocator` to allocate temporary storage, you
-can use the custom Thrust CUDA device execution policy: `rmm::exec_policy(stream)`.
-
-`rmm::exec_policy(stream)` returns a `std::unique_ptr` to a Thrust execution policy that uses
-`rmm::mr::thrust_allocator` for temporary allocations. In order to specify that the Thrust algorithm
-be executed on a specific stream, the usage is:
-
-```c++
-thrust::sort(rmm::exec_policy(stream)->on(stream), ...);
-```
-
-The first `stream` argument is the `stream` to use for `rmm::mr::thrust_allocator`.
-The second `stream` argument is what should be used to execute the Thrust algorithm.
-These two arguments must be identical.
-
 ## `host_memory_resource`
 
 `rmm::mr::host_memory_resource` is the base class that defines the interface for allocating and
@@ -392,6 +410,88 @@ RMM does not currently provide any data structures that interface with `host_mem
 In the future, RMM will provide a similar host-side structure like `device_buffer` and an allocator
 that can be used with STL containers.
 
+## Using RMM with Thrust
+
+RAPIDS and other CUDA libraries make heavy use of Thrust. Thrust uses CUDA device memory in two
+situations:
+
+ 1. As the backing store for `thrust::device_vector`, and
+ 2. As temporary storage inside some algorithms, such as `thrust::sort`.
+
+RMM provides `rmm::mr::thrust_allocator` as a conforming Thrust allocator that uses
+`device_memory_resource`s.
+
+### Thrust Algorithms
+
+To instruct a Thrust algorithm to use `rmm::mr::thrust_allocator` to allocate temporary storage, you
+can use the custom Thrust CUDA device execution policy: `rmm::exec_policy(stream)`.
+
+`rmm::exec_policy(stream)` returns a `std::unique_ptr` to a Thrust execution policy that uses
+`rmm::mr::thrust_allocator` for temporary allocations. In order to specify that the Thrust algorithm
+be executed on a specific stream, the usage is:
+
+```c++
+thrust::sort(rmm::exec_policy(stream)->on(stream), ...);
+```
+
+The first `stream` argument is the `stream` to use for `rmm::mr::thrust_allocator`.
+The second `stream` argument is what should be used to execute the Thrust algorithm.
+These two arguments must be identical.
+
+## Logging
+
+RMM includes two forms of logging. Memory event logging and debug logging.
+
+### Memory Event Logging and `logging_resource_adaptor`
+
+Memory event logging writes details of every allocation or deallocation to a CSV (comma-separated
+value) file. In C++, Memory Event Logging is enabled by using the `logging_resource_adaptor` as a 
+wrapper around any other `device_memory_resource` object.
+
+Each row in the log represents either an allocation or a deallocation. The columns of the file are
+"Thread, Time, Action, Pointer, Size, Stream".
+
+The CSV output files of the `logging_resource_adaptor` can be used as input to `REPLAY_BENCHMARK`,
+which is available when building RMM from source, in the `gbenchmarks` folder in the build directory.
+This log replayer can be useful for profiling and debugging allocator issues.
+
+The following C++ example creates a logging version of a `cuda_memory_resource` that outputs the log
+to the file "logs/test1.csv".
+
+```c++
+std::string filename{"logs/test1.csv"};
+rmm::mr::cuda_memory_resource upstream;
+rmm::mr::logging_resource_adaptor<rmm::mr::cuda_memory_resource> log_mr{&upstream, filename};
+```
+
+If a file name is not specified, the environment variable `RMM_LOG_FILE` is queried for the file 
+name. If `RMM_LOG_FILE` is not set, then an exception is thrown by the `logging_resource_adaptor`
+constructor.
+
+In Python, memory event logging is enabled when the `logging` parameter of `rmm.reinitialize()` is
+set to `True`. The log file name can be set using the `log_file_name` parameter. See
+`help(rmm.reinitialize)` for full details.
+
+### Debug Logging
+
+RMM includes a debug logger which can be enabled to log trace and debug information to a file. This 
+information can show when errors occur, when additional memory is allocated from upstream resources,
+etc. The default log file is `rmm_log.txt` in the current working directory, but the environment
+variable `RMM_DEBUG_LOG_FILE` can be set to specify the path and file name.
+
+There is a CMake configuration variable `RMM_LOGGING_LEVEL`, which can be set to enable compilation
+of more detailed logging. The default is `INFO`. Available levels are `TRACE`, `DEBUG`, `INFO`,
+`WARN`, `ERROR`, `CRITICAL` and `OFF`.
+
+The log relies on the [spdlog](https://github.com/gabime/spdlog.git) library.
+
+Note that to see logging below the `INFO` level, the C++ application must also call
+`rmm::logger().set_level()`, e.g. to enable all levels of logging down to `TRACE`, call 
+`rmm::logger().set_level(spdlog::level::trace)` (and compile with `-DRMM_LOGGING_LEVEL=TRACE`).
+
+Note that debug logging is different from the CSV memory allocation logging provided by 
+`rmm::mr::logging_resource_adapter`. The latter is for logging a history of allocation /
+deallocation actions which can be useful for replay with RMM's replay benchmark.
 
 ## Using RMM in Python Code
 
@@ -444,20 +544,18 @@ host:
 array([1., 2., 3.])
 ```
 
-### MemoryResources
+### MemoryResource objects
 
-MemoryResources are used to configure how device memory allocations are made by
+`MemoryResource` objects are used to configure how device memory allocations are made by
 RMM.
 
-By default, i.e., if you don't set a MemoryResource explicitly, RMM
-uses the `CudaMemoryResource`, which uses `cudaMalloc` for
-allocating device memory.
+By default if a `MemoryResource` is not set explicitly, RMM uses the `CudaMemoryResource`, which 
+uses `cudaMalloc` for allocating device memory.
 
-`rmm.reinitialize()` provides an easy way to initialize RMM with specific
-memory resource options across multiple devices. See `help(rmm.reinitialize) for 
-full details.
+`rmm.reinitialize()` provides an easy way to initialize RMM with specific memory resource options
+across multiple devices. See `help(rmm.reinitialize)` for full details.
 
-For lower-level control, `rmm.mr.set_current_device_resource()` function can be
+For lower-level control, the `rmm.mr.set_current_device_resource()` function can be
 used to set a different MemoryResource for the current CUDA device.  For
 example, enabling the `ManagedMemoryResource` tells RMM to use
 `cudaMallocManaged` instead of `cudaMalloc` for allocating memory:

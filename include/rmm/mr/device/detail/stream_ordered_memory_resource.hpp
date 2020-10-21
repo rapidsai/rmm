@@ -17,10 +17,12 @@
 
 #include <limits>
 #include <rmm/detail/error.hpp>
+#include <rmm/logger.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <cuda_runtime_api.h>
 
+#include <functional>
 #include <map>
 #include <mutex>
 #include <set>
@@ -201,18 +203,28 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    */
   virtual void* do_allocate(std::size_t bytes, cudaStream_t stream) override
   {
+    RMM_LOG_TRACE("[A][stream {:p}][{}B]", static_cast<void*>(stream), bytes);
+
     if (bytes <= 0) return nullptr;
 
     lock_guard lock(mtx_);
 
     auto stream_event = get_event(stream);
-    bytes             = rmm::detail::align_up(bytes, allocation_alignment);
+
+    bytes = rmm::detail::align_up(bytes, allocation_alignment);
     RMM_EXPECTS(bytes <= this->underlying().get_maximum_allocation_size(),
                 rmm::bad_alloc,
                 "Maximum allocation size exceeded");
     auto const b = this->underlying().get_block(bytes, stream_event);
     auto split   = this->underlying().allocate_from_block(b, bytes);
     if (split.remainder.is_valid()) stream_free_blocks_[stream_event].insert(split.remainder);
+    RMM_LOG_TRACE("[A][stream {:p}][{}B][{:p}]",
+                  static_cast<void*>(stream_event.stream),
+                  bytes,
+                  static_cast<void*>(split.allocated_pointer));
+
+    log_summary_trace();
+
     return split.allocated_pointer;
   }
 
@@ -227,8 +239,10 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
   {
     lock_guard lock(mtx_);
     auto stream_event = get_event(stream);
-    bytes             = rmm::detail::align_up(bytes, allocation_alignment);
-    auto const b      = this->underlying().free_block(p, bytes);
+    RMM_LOG_TRACE("[D][stream {:p}][{}B][{:p}]", static_cast<void*>(stream_event.stream), bytes, p);
+
+    bytes        = rmm::detail::align_up(bytes, allocation_alignment);
+    auto const b = this->underlying().free_block(p, bytes);
 
     // TODO: cudaEventRecord has significant overhead on deallocations. For the non-PTDS case
     // we may be able to delay recording the event in some situations. But using events rather than
@@ -236,10 +250,11 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     RMM_ASSERT_CUDA_SUCCESS(cudaEventRecord(stream_event.event, stream));
 
     stream_free_blocks_[stream_event].insert(b);
+
+    log_summary_trace();
   }
 
  private:
-#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
   /**
    * @brief RAII wrapper for a CUDA event.
    */
@@ -251,10 +266,6 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     ~event_wrapper() { RMM_ASSERT_CUDA_SUCCESS(cudaEventDestroy(event)); }
     cudaEvent_t event{};
   };
-
-// using default_stream_event_type =
-//  default_stream_event<stream_ordered_suballocator_memory_resource<FreeListType>>;
-#endif
 
   /**
    * @brief get a unique CUDA event (possibly new) associated with `stream`
@@ -270,19 +281,24 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
   {
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
     if (cudaStreamDefault == stream || cudaStreamPerThread == stream) {
+#else
+    if (cudaStreamPerThread == stream) {
+#endif
       // Create a thread-local shared event wrapper. Shared pointers in the thread and in each MR
       // instance ensures it is destroyed cleaned up only after all are finished with it.
       thread_local auto event_tls = std::make_shared<event_wrapper>();
       default_stream_events.insert(event_tls);
       return stream_event_pair{stream, event_tls.get()->event};
     }
-#else
+#ifndef CUDA_API_PER_THREAD_DEFAULT_STREAM
     // We use cudaStreamLegacy as the event map key for the default stream for consistency between
     // PTDS and non-PTDS mode. In PTDS mode, the cudaStreamLegacy map key will only exist if the
     // user explicitly passes it, so it is used as the default location for the free list
     // at construction. For consistency, the same key is used for null stream free lists in non-PTDS
     // mode.
-    if (cudaStreamDefault == stream) { stream = cudaStreamLegacy; }
+    else if (cudaStreamDefault == stream) {
+      stream = cudaStreamLegacy;
+    }
 #endif
 
     auto iter = stream_events_.find(stream);
@@ -308,19 +324,27 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     auto iter = stream_free_blocks_.find(stream_event);
     if (iter != stream_free_blocks_.end()) {
       block_type b = iter->second.get_block(size);
-      if (b.is_valid()) return b;
+      if (b.is_valid()) { return b; }
     }
 
-    // Otherwise try to find a block associated with another stream
-    block_type b = get_block_from_other_stream(size, stream_event);
-    if (b.is_valid()) return b;
-
-    // no larger blocks available on other streams, so grow the pool and create a block
-
-    // avoid searching for this stream's list again
     free_list& blocks =
       (iter != stream_free_blocks_.end()) ? iter->second : stream_free_blocks_[stream_event];
 
+    // Try to find an existing block in another stream
+    {
+      block_type const b = get_block_from_other_stream(size, stream_event, blocks, false);
+      if (b.is_valid()) return b;
+    }
+
+    // no large enough blocks available on other streams, so sync and merge until we find one
+    {
+      block_type const b = get_block_from_other_stream(size, stream_event, blocks, true);
+      if (b.is_valid()) return b;
+    }
+
+    log_summary_trace();
+
+    // no large enough blocks available after merging, so grow the pool
     return this->underlying().expand_pool(size, blocks, stream_event.stream);
   }
 
@@ -341,30 +365,65 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    * @return A block with non-null pointer and size >= `size`, or a nullptr block if none is
    *         available in `blocks`.
    */
-  block_type get_block_from_other_stream(size_t size, stream_event_pair stream_event)
+  block_type get_block_from_other_stream(size_t size,
+                                         stream_event_pair stream_event,
+                                         free_list& blocks,
+                                         bool merge_first)
   {
-    // nothing in this stream's free list, look for one on another stream
-    for (auto s = stream_free_blocks_.begin(); s != stream_free_blocks_.end(); ++s) {
-      auto blocks_event = s->first;
-      if (blocks_event.event != stream_event.event) {
-        auto blocks = s->second;
+    for (auto it = stream_free_blocks_.begin(), next_it = it; it != stream_free_blocks_.end();
+         it = next_it) {
+      ++next_it;  // Points to element after `it` to allow erasing `it` in the loop body
+      auto other_event = it->first.event;
+      if (other_event != stream_event.event) {
+        auto other_blocks = it->second;
 
-        block_type const b = blocks.get_block(size);  // get the best fit block
+        block_type const b = [&]() {
+          if (merge_first) {
+            merge_lists(stream_event, blocks, other_event, std::move(other_blocks));
+
+            RMM_LOG_DEBUG("[A][Stream {:p}][{}B][Merged stream {:p}]",
+                          static_cast<void*>(stream_event.stream),
+                          size,
+                          static_cast<void*>(it->first.stream));
+
+            stream_free_blocks_.erase(it);
+
+            return blocks.get_block(size);  // get the best fit block in merged lists
+          } else {
+            return other_blocks.get_block(size);  // get the best fit block in other list
+          }
+        }();
 
         if (b.is_valid()) {
-          // Since we found a block associated with a different stream, we have to insert a wait
-          // on the stream's associated event into the allocating stream.
-          RMM_CUDA_TRY(cudaStreamWaitEvent(stream_event.stream, blocks_event.event, 0));
+          RMM_LOG_DEBUG((merge_first) ? "[A][Stream {:p}][{}B][Found after merging stream {:p}]"
+                                      : "[A][Stream {:p}][{}B][Taken from stream {:p}]",
+                        static_cast<void*>(stream_event.stream),
+                        size,
+                        static_cast<void*>(it->first.stream));
 
-          // Move all the blocks to the requesting stream, since it has waited on them
-          stream_free_blocks_[stream_event].insert(std::move(blocks));
-          stream_free_blocks_.erase(s);
+          if (not merge_first) {
+            merge_lists(stream_event, blocks, other_event, std::move(other_blocks));
+            stream_free_blocks_.erase(it);
+          }
 
           return b;
         }
       }
     }
     return block_type{};
+  }
+
+  void merge_lists(stream_event_pair stream_event,
+                   free_list& blocks,
+                   cudaEvent_t other_event,
+                   free_list&& other_blocks)
+  {
+    // Since we found a block associated with a different stream, we have to insert a wait
+    // on the stream's associated event into the allocating stream.
+    RMM_CUDA_TRY(cudaStreamWaitEvent(stream_event.stream, other_event, 0));
+
+    // Merge the two free lists
+    blocks.insert(std::move(other_blocks));
   }
 
   /**
@@ -385,6 +444,28 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     stream_free_blocks_.clear();
   }
 
+  void log_summary_trace()
+  {
+#if (SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE)
+    std::size_t num_blocks{0};
+    std::size_t max_block{0};
+    std::size_t free_mem{0};
+    std::for_each(stream_free_blocks_.cbegin(),
+                  stream_free_blocks_.cend(),
+                  [this, &num_blocks, &max_block, &free_mem](auto const& freelist) {
+                    num_blocks += freelist.second.size();
+                    auto summary = this->underlying().free_list_summary(freelist.second);
+                    max_block    = std::max(summary.first, max_block);
+                    free_mem += summary.second;
+                  });
+    RMM_LOG_TRACE("[Summary][Free lists: {}][Blocks: {}][Max Block: {}][Total Free: {}]",
+                  stream_free_blocks_.size(),
+                  num_blocks,
+                  max_block,
+                  free_mem);
+#endif
+  }
+
   // map of stream_event_pair --> free_list
   // Event (or associated stream) must be synced before allocating from associated free_list to a
   // different stream
@@ -393,11 +474,9 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
   // bidirectional mapping between non-default streams and events
   std::unordered_map<cudaStream_t, stream_event_pair> stream_events_;
 
-#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
   // shared pointers to events keeps the events alive as long as either the thread that created them
   // or the MR that is using them exists.
   std::set<std::shared_ptr<event_wrapper>> default_stream_events;
-#endif
 
   std::mutex mtx_;  // mutex for thread-safe access
 };                  // namespace detail
