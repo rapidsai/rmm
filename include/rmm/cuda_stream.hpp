@@ -74,7 +74,7 @@ class cuda_stream {
   /**
    * @brief Synchronize the owned CUDA stream.
    *
-   * Call's `cudaStreamSynchronize()`.
+   * Calls `cudaStreamSynchronize()`.
    *
    * @throw rmm::cuda_error if stream synchronization fails
    */

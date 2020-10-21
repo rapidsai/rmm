@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <rmm/detail/error.hpp>
+
 #include <cuda_runtime_api.h>
 
 #include <atomic>
@@ -64,6 +66,15 @@ class cuda_stream_view {
   {
     return stream_ == other.stream_;
   }
+
+  /**
+   * @brief Synchronize the viewed CUDA stream.
+   *
+   * Calls `cudaStreamSynchronize()`.
+   *
+   * @throw rmm::cuda_error if stream synchronization fails
+   */
+  void synchronize() { RMM_CUDA_TRY(cudaStreamSynchronize(stream_)); }
 
  private:
   cudaStream_t stream_{cudaStreamDefault};
