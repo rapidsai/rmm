@@ -14,9 +14,8 @@
 import numpy as np
 
 cimport cython
-from cython.operator cimport dereference
-
 from cpython.bytes cimport PyBytes_AS_STRING, PyBytes_FromStringAndSize
+from cython.operator cimport dereference
 from libc.stdint cimport uintptr_t
 from libcpp.memory cimport unique_ptr
 from libcpp.utility cimport move
@@ -30,6 +29,7 @@ from rmm._lib.lib cimport (
     cudaStream_t,
     cudaStreamSynchronize,
 )
+
 
 cdef class DeviceBuffer:
 
