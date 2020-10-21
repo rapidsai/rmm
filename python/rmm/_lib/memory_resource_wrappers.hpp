@@ -10,6 +10,9 @@
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
 #include <rmm/mr/device/thread_safe_resource_adaptor.hpp>
+
+#include <thrust/optional.h>
+
 #include <string>
 #include <vector>
 
@@ -65,13 +68,15 @@ class pool_memory_resource_wrapper : public device_memory_resource_wrapper {
  public:
   pool_memory_resource_wrapper(
     std::shared_ptr<device_memory_resource_wrapper> upstream_mr,
-    std::size_t initial_pool_size =
-      rmm::mr::pool_memory_resource<rmm::mr::device_memory_resource>::default_initial_size,
-    std::size_t maximum_pool_size =
-      rmm::mr::pool_memory_resource<rmm::mr::device_memory_resource>::default_maximum_size)
+    std::size_t initial_pool_size = ~0,  // TODO use std::optional / thrust::optional when available
+    std::size_t maximum_pool_size = ~0)
     : upstream_mr(upstream_mr),
       mr(std::make_shared<rmm::mr::pool_memory_resource<rmm::mr::device_memory_resource>>(
-        upstream_mr->get_mr().get(), initial_pool_size, maximum_pool_size))
+        upstream_mr->get_mr().get(),
+        initial_pool_size == static_cast<size_t>(~0) ? thrust::nullopt
+                                                     : thrust::make_optional(initial_pool_size),
+        maximum_pool_size == static_cast<size_t>(~0) ? thrust::nullopt
+                                                     : thrust::make_optional(maximum_pool_size)))
   {
   }
 
