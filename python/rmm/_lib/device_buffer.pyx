@@ -14,6 +14,8 @@
 import numpy as np
 
 cimport cython
+from cython.operator cimport dereference
+
 from cpython.bytes cimport PyBytes_AS_STRING, PyBytes_FromStringAndSize
 from libc.stdint cimport uintptr_t
 from libcpp.memory cimport unique_ptr
@@ -21,6 +23,7 @@ from libcpp.utility cimport move
 
 from rmm._cuda.gpu cimport cudaError, cudaError_t
 from rmm._lib.lib cimport (
+    cudaMemcpyAsync,
     cudaMemcpyDeviceToDevice,
     cudaMemcpyDeviceToHost,
     cudaMemcpyHostToDevice,
@@ -28,13 +31,12 @@ from rmm._lib.lib cimport (
     cudaStreamSynchronize,
 )
 
-
 cdef class DeviceBuffer:
 
     def __cinit__(self, *,
                   uintptr_t ptr=0,
                   size_t size=0,
-                  uintptr_t stream=0):
+                  CudaStreamView stream=None):
         """Construct a ``DeviceBuffer`` with optional size and data pointer
 
         Parameters
@@ -57,12 +59,16 @@ cdef class DeviceBuffer:
         >>> db = rmm.DeviceBuffer(size=5)
         """
         cdef const void* c_ptr
-        cdef cudaStream_t c_stream
+        cdef cuda_stream_view c_stream
         cdef cudaError_t err
+
+        if stream is None:
+            c_stream = cuda_stream_view()
+        else:
+            c_stream = dereference(stream.c_obj.get())
 
         with nogil:
             c_ptr = <const void*>ptr
-            c_stream = <cudaStream_t>stream
 
             if size == 0:
                 self.c_obj.reset(new device_buffer())
@@ -71,13 +77,8 @@ cdef class DeviceBuffer:
             else:
                 self.c_obj.reset(new device_buffer(c_ptr, size, c_stream))
 
-                if c_stream == NULL:
-                    err = cudaStreamSynchronize(c_stream)
-                    if err != cudaError.cudaSuccess:
-                        with gil:
-                            raise RuntimeError(
-                                f"Stream sync failed with error: {err}"
-                            )
+            if c_stream == cuda_stream_view():
+                c_stream.synchronize()
 
     def __len__(self):
         return self.size
@@ -122,22 +123,22 @@ cdef class DeviceBuffer:
 
     @staticmethod
     cdef DeviceBuffer c_to_device(const unsigned char[::1] b,
-                                  uintptr_t stream=0):
+                                  CudaStreamView stream=None):
         """Calls ``to_device`` function on arguments provided"""
         return to_device(b, stream)
 
     @staticmethod
-    def to_device(const unsigned char[::1] b, uintptr_t stream=0):
+    def to_device(const unsigned char[::1] b, CudaStreamView stream=None):
         """Calls ``to_device`` function on arguments provided"""
         return to_device(b, stream)
 
-    cpdef copy_to_host(self, ary=None, uintptr_t stream=0):
+    cpdef copy_to_host(self, ary=None, CudaStreamView stream=None):
         """Copy from a ``DeviceBuffer`` to a buffer on host
 
         Parameters
         ----------
         hb : ``bytes``-like buffer to write into
-        stream : CUDA stream to use for copying, default 0
+        stream : CUDA stream to use for copying, default None
 
         Examples
         --------
@@ -164,12 +165,11 @@ cdef class DeviceBuffer:
                 "Argument `hb` is too small. Need space for %i bytes." % s
             )
 
-        with nogil:
-            copy_ptr_to_host(<uintptr_t>dbp.data(), hb[:s], stream)
+        copy_ptr_to_host(<uintptr_t>dbp.data(), hb[:s], stream)
 
         return ary
 
-    cpdef copy_from_host(self, ary, uintptr_t stream=0):
+    cpdef copy_from_host(self, ary, CudaStreamView stream=None):
         """Copy from a buffer on host to ``self``
 
         Parameters
@@ -196,10 +196,9 @@ cdef class DeviceBuffer:
                 "Argument `hb` is too large. Need space for %i bytes." % s
             )
 
-        with nogil:
-            copy_host_to_ptr(hb[:s], <uintptr_t>dbp.data(), stream)
+        copy_host_to_ptr(hb[:s], <uintptr_t>dbp.data(), stream)
 
-    cpdef copy_from_device(self, cuda_ary, uintptr_t stream=0):
+    cpdef copy_from_device(self, cuda_ary, CudaStreamView stream=None):
         """Copy from a buffer on host to ``self``
 
         Parameters
@@ -250,15 +249,14 @@ cdef class DeviceBuffer:
 
         cdef device_buffer* dbp = self.c_obj.get()
 
-        with nogil:
-            copy_device_to_ptr(
-                <uintptr_t>src_ptr,
-                <uintptr_t>dbp.data(),
-                s,
-                stream
-            )
+        copy_device_to_ptr(
+            <uintptr_t>src_ptr,
+            <uintptr_t>dbp.data(),
+            s,
+            stream
+        )
 
-    cpdef bytes tobytes(self, uintptr_t stream=0):
+    cpdef bytes tobytes(self, CudaStreamView stream=None):
         cdef const device_buffer* dbp = self.c_obj.get()
         cdef size_t s = dbp.size()
 
@@ -289,7 +287,8 @@ cdef class DeviceBuffer:
 
 
 @cython.boundscheck(False)
-cpdef DeviceBuffer to_device(const unsigned char[::1] b, uintptr_t stream=0):
+cpdef DeviceBuffer to_device(const unsigned char[::1] b,
+                             CudaStreamView stream=None):
     """Return a new ``DeviceBuffer`` with a copy of the data
 
     Parameters
@@ -323,7 +322,7 @@ cpdef DeviceBuffer to_device(const unsigned char[::1] b, uintptr_t stream=0):
 @cython.boundscheck(False)
 cpdef void copy_ptr_to_host(uintptr_t db,
                             unsigned char[::1] hb,
-                            uintptr_t stream=0) nogil except *:
+                            CudaStreamView stream=None) except *:
     """Copy from a device pointer to a buffer on host
 
     Parameters
@@ -350,31 +349,35 @@ cpdef void copy_ptr_to_host(uintptr_t db,
     """
 
     if hb is None:
-        with gil:
-            raise TypeError(
-                "Argument `hb` has incorrect type"
-                " (expected bytes-like, got NoneType)"
-            )
+        raise TypeError(
+            "Argument `hb` has incorrect type"
+            " (expected bytes-like, got NoneType)"
+        )
 
     cdef cudaError_t err
+    cdef cuda_stream_view c_stream
 
-    err = cudaMemcpyAsync(<void*>&hb[0], <const void*>db, len(hb),
-                          cudaMemcpyDeviceToHost, <cudaStream_t>stream)
+    if stream is None:
+        c_stream = cuda_stream_view()
+    else:
+        c_stream = dereference(stream.c_obj.get())
+
+    with nogil:
+        err = cudaMemcpyAsync(<void*>&hb[0], <const void*>db, len(hb),
+                              cudaMemcpyDeviceToHost, <cudaStream_t>c_stream)
+
     if err != cudaError.cudaSuccess:
-        with gil:
-            raise RuntimeError(f"Memcpy failed with error: {err}")
+        raise RuntimeError(f"Memcpy failed with error: {err}")
 
-    if stream == 0:
-        err = cudaStreamSynchronize(<cudaStream_t>stream)
-        if err != cudaError.cudaSuccess:
-            with gil:
-                raise RuntimeError(f"Stream sync failed with error: {err}")
+    if stream is None:
+        with nogil:
+            c_stream.synchronize()
 
 
 @cython.boundscheck(False)
 cpdef void copy_host_to_ptr(const unsigned char[::1] hb,
                             uintptr_t db,
-                            uintptr_t stream=0) nogil except *:
+                            CudaStreamView stream=None) except *:
     """Copy from a host pointer to a device pointer
 
     Parameters
@@ -402,32 +405,36 @@ cpdef void copy_host_to_ptr(const unsigned char[::1] hb,
     """
 
     if hb is None:
-        with gil:
-            raise TypeError(
-                "Argument `hb` has incorrect type"
-                " (expected bytes-like, got NoneType)"
-            )
+        raise TypeError(
+            "Argument `hb` has incorrect type"
+            " (expected bytes-like, got NoneType)"
+        )
 
     cdef cudaError_t err
+    cdef cuda_stream_view c_stream
 
-    err = cudaMemcpyAsync(<void*>db, <const void*>&hb[0], len(hb),
-                          cudaMemcpyHostToDevice, <cudaStream_t>stream)
+    if stream is None:
+        c_stream = cuda_stream_view()
+    else:
+        c_stream = dereference(stream.c_obj.get())
+
+    with nogil:
+        err = cudaMemcpyAsync(<void*>db, <const void*>&hb[0], len(hb),
+                              cudaMemcpyHostToDevice, <cudaStream_t>c_stream)
+
     if err != cudaError.cudaSuccess:
-        with gil:
-            raise RuntimeError(f"Memcpy failed with error: {err}")
+        raise RuntimeError(f"Memcpy failed with error: {err}")
 
-    if stream == 0:
-        err = cudaStreamSynchronize(<cudaStream_t>stream)
-        if err != cudaError.cudaSuccess:
-            with gil:
-                raise RuntimeError(f"Stream sync failed with error: {err}")
+    if stream is None:
+        with nogil:
+            c_stream.synchronize()
 
 
 @cython.boundscheck(False)
 cpdef void copy_device_to_ptr(uintptr_t d_src,
                               uintptr_t d_dst,
                               size_t count,
-                              uintptr_t stream=0) nogil except *:
+                              CudaStreamView stream=None) except *:
     """Copy from a host pointer to a device pointer
 
     Parameters
@@ -455,15 +462,20 @@ cpdef void copy_device_to_ptr(uintptr_t d_src,
     array([10, 11, 12,  0,  0], dtype=uint8)
     """
     cdef cudaError_t err
+    cdef cuda_stream_view c_stream
 
-    err = cudaMemcpyAsync(<void*>d_dst, <const void*>d_src, count,
-                          cudaMemcpyDeviceToDevice, <cudaStream_t>stream)
+    if stream is None:
+        c_stream = cuda_stream_view()
+    else:
+        c_stream = dereference(stream.c_obj.get())
+
+    with nogil:
+        err = cudaMemcpyAsync(<void*>d_dst, <const void*>d_src, count,
+                              cudaMemcpyDeviceToDevice, <cudaStream_t>c_stream)
+
     if err != cudaError.cudaSuccess:
-        with gil:
-            raise RuntimeError(f"Memcpy failed with error: {err}")
+        raise RuntimeError(f"Memcpy failed with error: {err}")
 
-    if stream == 0:
-        err = cudaStreamSynchronize(<cudaStream_t>stream)
-        if err != cudaError.cudaSuccess:
-            with gil:
-                raise RuntimeError(f"Stream sync failed with error: {err}")
+    if stream is None:
+        with nogil:
+            c_stream.synchronize()
