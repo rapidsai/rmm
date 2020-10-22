@@ -44,14 +44,15 @@ cdef class DeviceBuffer:
         ptr : pointer to some data on host or device to copy over
         size : size of the buffer to allocate
                (and possibly size of data to copy)
-        stream : CUDA stream to use for construction and/or copying, default 0
+        stream : CUDA stream to use for construction and/or copying,
+                 default None
 
         Note
         ----
 
-        If ``stream`` is the default stream, it is synchronized after the copy.
-        However if a non-default ``stream`` is provided, this function is fully
-        asynchronous.
+        If ``stream`` is None, the default stream is used, and it is
+        synchronized after the copy. However if a non-default ``stream`` is
+        provided, this function is fully asynchronous.
 
         Examples
         --------
@@ -175,7 +176,7 @@ cdef class DeviceBuffer:
         Parameters
         ----------
         hb : ``bytes``-like buffer to copy from
-        stream : CUDA stream to use for copying, default 0
+        stream : CUDA stream to use for copying, default None
 
         Examples
         --------
@@ -204,7 +205,7 @@ cdef class DeviceBuffer:
         Parameters
         ----------
         cuda_ary : object to copy from that has ``__cuda_array_interface__``
-        stream : CUDA stream to use for copying, default 0
+        stream : CUDA stream to use for copying, default None
 
         Examples
         --------
@@ -294,7 +295,7 @@ cpdef DeviceBuffer to_device(const unsigned char[::1] b,
     Parameters
     ----------
     b : ``bytes``-like data on host to copy to device
-    stream : CUDA stream to use for copying, default 0
+    stream : CUDA stream to use for copying, default None
 
     Returns
     -------
@@ -329,14 +330,14 @@ cpdef void copy_ptr_to_host(uintptr_t db,
     ----------
     db : pointer to data on device to copy
     hb : ``bytes``-like buffer to write into
-    stream : CUDA stream to use for copying, default 0
+    stream : CUDA stream to use for copying, default None
 
     Note
     ----
 
-    If ``stream`` is the default stream, it is synchronized after the copy.
-    However if a non-default ``stream`` is provided, this function is fully
-    asynchronous.
+    If ``stream`` is None, the default stream is used, and it is synchronized
+    after the copy. However if a non-default ``stream`` is provided, this
+    function is fully asynchronous.
 
     Examples
     --------
@@ -384,14 +385,14 @@ cpdef void copy_host_to_ptr(const unsigned char[::1] hb,
     ----------
     hb : ``bytes``-like host buffer to copy
     db : pointer to data on device to write into
-    stream : CUDA stream to use for copying, default 0
+    stream : CUDA stream to use for copying, default None
 
     Note
     ----
 
-    If ``stream`` is the default stream, it is synchronized after the copy.
-    However if a non-default ``stream`` is provided, this function is fully
-    asynchronous.
+    If ``stream`` is None, the default stream is used, and it is synchronized
+    after the copy. However if a non-default ``stream`` is provided, this
+    function is fully asynchronous.
 
     Examples
     --------
@@ -441,14 +442,14 @@ cpdef void copy_device_to_ptr(uintptr_t d_src,
     ----------
     d_src : pointer to data on device to copy from
     d_dst : pointer to data on device to write into
-    stream : CUDA stream to use for copying, default 0
+    stream : CUDA stream to use for copying, default None
 
     Note
     ----
 
-    If ``stream`` is the default stream, it is synchronized after the copy.
-    However if a non-default ``stream`` is provided, this function is fully
-    asynchronous.
+    If ``stream`` is None, the default stream is used, and it is synchronized
+    after the copy. However if a non-default ``stream`` is provided, this
+    function is fully asynchronous.
 
     Examples
     --------

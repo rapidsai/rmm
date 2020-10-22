@@ -11,3 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+from libc.stdint cimport uintptr_t
+
+cdef class CudaStreamView:
+
+    def __cinit__(self, uintptr_t stream=0):
+        """Construct a view of the specified CUDA stream
+
+        Parameters
+        ----------
+        stream : CUDA stream to wrap, default cudaStreamDefault
+        """
+        if (stream == 0):
+            self.c_obj.reset(new cuda_stream_view())
+        else:
+            self.c_obj.reset(new cuda_stream_view(<cudaStream_t>stream))

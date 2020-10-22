@@ -21,9 +21,9 @@ cdef extern from "rmm/cuda_stream_view.hpp" namespace "rmm" nogil:
     cdef cppclass cuda_stream_view:
         cuda_stream_view()
         cuda_stream_view(cudaStream_t)
-        bool operator==(cuda_stream_view const)
         void synchronize() except +
 
+    cdef bool operator==(cuda_stream_view const, cuda_stream_view const)
 
 cdef class CudaStreamView:
     cdef unique_ptr[cuda_stream_view] c_obj
