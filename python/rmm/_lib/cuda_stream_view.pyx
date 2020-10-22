@@ -14,6 +14,7 @@
 
 from libc.stdint cimport uintptr_t
 
+
 cdef class CudaStreamView:
 
     def __cinit__(self, uintptr_t stream=0):
