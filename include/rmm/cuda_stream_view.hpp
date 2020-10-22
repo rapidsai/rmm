@@ -43,6 +43,7 @@ class cuda_stream_view {
   // TODO disable construction from 0 after cuDF and others adopt cuda_stream_view
   // cuda_stream_view(int)            = delete; //< Prevent cast from 0
   // cuda_stream_view(std::nullptr_t) = delete; //< Prevent cast from nullptr
+  // TODO also disable implicit conversion from cudaStream_t
 
   /**
    * @brief Implicit conversion from cudaStream_t.
@@ -50,22 +51,36 @@ class cuda_stream_view {
   constexpr cuda_stream_view(cudaStream_t stream) noexcept : stream_{stream} {}
 
   /**
+   * @brief Get the wrapped stream.
+   *
+   * @return cudaStream_t The wrapped stream.
+   */
+  constexpr cudaStream_t value() const noexcept { return stream_; }
+
+  /**
    * @brief Implicit conversion to cudaStream_t.
    */
-  constexpr operator cudaStream_t() const noexcept { return stream_; }
+  constexpr operator cudaStream_t() const noexcept { return value(); }
 
   /**
    * @brief Explicit conversion to uintptr_t.
    */
-  explicit operator uintptr_t() const noexcept { return reinterpret_cast<uintptr_t>(stream_); }
+  explicit operator uintptr_t() const noexcept { return reinterpret_cast<uintptr_t>(value()); }
 
   /**
-   * @brief Compare two streams for equality.
+   * @brief Return true if the wrapped stream is the CUDA default stream (aka Null Stream).
    */
-  constexpr bool operator==(cuda_stream_view const& other) const noexcept
-  {
-    return stream_ == other.stream_;
-  }
+  constexpr bool is_default() const noexcept { return value() == cudaStreamDefault; }
+
+  /**
+   * @brief Return true if the wrapped stream is the CUDA per-thread default stream.
+   */
+  bool is_per_thread_default() const noexcept { return value() == cudaStreamPerThread; }
+
+  /**
+   * @brief Return true if the wrapped stream is explicitly the CUDA legacy default stream.
+   */
+  bool is_legacy_default() const noexcept { return value() == cudaStreamLegacy; }
 
   /**
    * @brief Synchronize the viewed CUDA stream.
@@ -74,10 +89,59 @@ class cuda_stream_view {
    *
    * @throw rmm::cuda_error if stream synchronization fails
    */
-  void synchronize() { RMM_CUDA_TRY(cudaStreamSynchronize(stream_)); }
+  void synchronize() const { RMM_CUDA_TRY(cudaStreamSynchronize(stream_)); }
+
+  /**
+   * @brief Synchronize the viewed CUDA stream. Does not throw if there is an error.
+   *
+   * Calls `cudaStreamSynchronize()` and asserts if there is an error.
+   */
+  void synchronize_no_throw() const noexcept
+  {
+    RMM_ASSERT_CUDA_SUCCESS(cudaStreamSynchronize(stream_));
+  }
 
  private:
   cudaStream_t stream_{cudaStreamDefault};
 };
+
+/**
+ * @brief Static cuda_stream_view of cudaStreamDefault, for convenience
+ */
+static cuda_stream_view cuda_stream_default{};
+
+/**
+ * @brief Static cuda_stream_view of cudaStreamLegacy, for convenience
+ */
+static cuda_stream_view cuda_stream_legacy{cudaStreamLegacy};
+
+/**
+ * @brief Static cuda_stream_view of cudaStreamPerThread, for convenience
+ */
+static cuda_stream_view cuda_stream_per_thread{cudaStreamPerThread};
+
+/**
+ * @brief Equality comparison operator for streams
+ *
+ * @param lhs The first stream view to compare
+ * @param rhs The second stream view to compare
+ * @return true if equal, false if unequal
+ */
+inline bool operator==(cuda_stream_view const& lhs, cuda_stream_view const& rhs)
+{
+  return lhs.value() == rhs.value();
+}
+
+/**
+ * @brief Inequality comparison operator for streams
+ *
+ * @param lhs The first stream view to compare
+ * @param rhs The second stream view to compare
+ * @return true if unequal, false if equal
+ */
+inline bool operator!=(cuda_stream_view const& lhs, cuda_stream_view const& rhs)
+{
+  return lhs.value() != rhs.value();
+}
 
 }  // namespace rmm

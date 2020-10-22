@@ -163,7 +163,7 @@ class arena_memory_resource final : public device_memory_resource {
    */
   void deallocate_from_other_arena(void* p, std::size_t bytes, cuda_stream_view stream)
   {
-    RMM_ASSERT_CUDA_SUCCESS(cudaStreamSynchronize(stream));
+    stream.synchronize_no_throw();
 
     read_lock lock(mtx_);
 
@@ -178,7 +178,7 @@ class arena_memory_resource final : public device_memory_resource {
       for (auto& kv : stream_arenas_) {
         // If the arena does not belong to the current stream, try to deallocate from it, and return
         // if successful.
-        if (kv.first != stream && kv.second.deallocate(p, bytes)) return;
+        if (cuda_stream_view{kv.first} != stream && kv.second.deallocate(p, bytes)) return;
       }
     }
 
@@ -264,9 +264,9 @@ class arena_memory_resource final : public device_memory_resource {
   static bool use_per_thread_arena(cuda_stream_view stream)
   {
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-    return stream == cuda_stream_view{} || stream == cuda_stream_view{cudaStreamPerThread};
+    return stream.is_default() || stream.is_per_thread_default();
 #else
-    return stream == cuda_stream_view{cudaStreamPerThread};
+    return stream.is_per_thread_default();
 #endif
   }
 

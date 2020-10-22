@@ -32,8 +32,19 @@ namespace rmm {
  */
 class cuda_stream {
  public:
-  // Move construction/assignment allowed, but not copy construction/assignment
+  /**
+   * @brief Move constructor (default)
+   *
+   * A moved-from cuda_stream is invalid and it is Undefined Behavior to call methods that access
+   * the owned stream.
+   */
   cuda_stream(cuda_stream&&) = default;
+  /**
+   * @brief Move copy assignment operator (default)
+   *
+   * A moved-from cuda_stream is invalid and it is Undefined Behavior to call methods that access
+   * the owned stream.
+   */
   cuda_stream& operator=(cuda_stream&&) = default;
   ~cuda_stream()                        = default;
 
@@ -53,16 +64,35 @@ class cuda_stream {
   }
 
   /**
-   * @brief Creates an immutable, non-owning view of the CUDA stream.
+   * @brief Returns true if the owned stream is non-null
+   *
+   * @return true If the owned stream has not been explicitly moved and is therefore non-null.
+   * @return false If the owned stream has been explicitly moved and is therefore null.
+   */
+  bool is_valid() const { return stream_.get() != nullptr; }
+
+  /**
+   * @brief Get the value of the wrapped CUDA stream.
+   *
+   * @return cudaStream_t The wrapped CUDA stream.
+   */
+  cudaStream_t value() const
+  {
+    RMM_LOGGING_ASSERT(is_valid());
+    return *stream_;
+  }
+
+  /**
+   * @brief Explicit conversion to cudaStream_t.
+   */
+  explicit operator cudaStream_t() const noexcept { return value(); }
+
+  /**
+   * @brief Creates an immutable, non-owning view of the wrapped CUDA stream.
    *
    * @return rmm::cuda_stream_view The view of the CUDA stream
    */
-  rmm::cuda_stream_view view() const { return rmm::cuda_stream_view{*stream_}; }
-
-  /**
-   * @brief Implicit conversion to cudaStream_t.
-   */
-  operator cudaStream_t() const noexcept { return *stream_; }
+  cuda_stream_view view() const { return cuda_stream_view{value()}; }
 
   /**
    * @brief Implicit conversion to cuda_stream_view
@@ -78,17 +108,17 @@ class cuda_stream {
    *
    * @throw rmm::cuda_error if stream synchronization fails
    */
-  void synchronize() { RMM_CUDA_TRY(cudaStreamSynchronize(*stream_)); }
+  void synchronize() const { RMM_CUDA_TRY(cudaStreamSynchronize(value())); }
 
   /**
-   * @brief Compare two streams for equality.
+   * @brief Synchronize the owned CUDA stream. Does not throw if there is an error.
+   *
+   * Calls `cudaStreamSynchronize()` and asserts if there is an error.
    */
-  bool operator==(cuda_stream const& other) const noexcept { return stream_ == other.stream_; }
-
-  /**
-   * @brief Compare two streams for equality.
-   */
-  bool operator==(cuda_stream_view const& other) const noexcept { return *stream_ == other; }
+  void synchronize_no_throw() const noexcept
+  {
+    RMM_ASSERT_CUDA_SUCCESS(cudaStreamSynchronize(value()));
+  }
 
  private:
   std::unique_ptr<cudaStream_t, std::function<void(cudaStream_t*)>> stream_;

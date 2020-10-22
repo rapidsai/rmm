@@ -94,12 +94,12 @@ inline void test_allocate(rmm::mr::device_memory_resource* mr,
 {
   void* p{nullptr};
   EXPECT_NO_THROW(p = mr->allocate(bytes));
-  if (stream != 0) EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(stream));
+  if (not stream.is_default()) stream.synchronize();
   EXPECT_NE(nullptr, p);
   EXPECT_TRUE(is_pointer_aligned(p));
   EXPECT_TRUE(is_device_memory(p));
   EXPECT_NO_THROW(mr->deallocate(p, bytes));
-  if (stream != 0) EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(stream));
+  if (not stream.is_default()) stream.synchronize();
 }
 
 inline void test_various_allocations(rmm::mr::device_memory_resource* mr,
@@ -109,9 +109,9 @@ inline void test_various_allocations(rmm::mr::device_memory_resource* mr,
   {
     void* p{nullptr};
     EXPECT_NO_THROW(p = mr->allocate(0, stream));
-    EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(stream));
+    stream.synchronize();
     EXPECT_NO_THROW(mr->deallocate(p, 0, stream));
-    EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(stream));
+    stream.synchronize();
   }
 
   test_allocate(mr, 4_B, stream);
@@ -142,7 +142,7 @@ inline void test_random_allocations(rmm::mr::device_memory_resource* mr,
     allocations.begin(), allocations.end(), [&generator, &distribution, stream, mr](allocation& a) {
       a.size = distribution(generator);
       EXPECT_NO_THROW(a.p = mr->allocate(a.size, stream));
-      if (stream != 0) EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(stream));
+      if (not stream.is_default()) stream.synchronize();
       EXPECT_NE(nullptr, a.p);
       EXPECT_TRUE(is_pointer_aligned(a.p));
     });
@@ -150,7 +150,7 @@ inline void test_random_allocations(rmm::mr::device_memory_resource* mr,
   std::for_each(
     allocations.begin(), allocations.end(), [generator, distribution, stream, mr](allocation& a) {
       EXPECT_NO_THROW(mr->deallocate(a.p, a.size, stream));
-      if (stream != 0) EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(stream));
+      if (not stream.is_default()) stream.synchronize();
     });
 }
 

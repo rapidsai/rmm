@@ -23,16 +23,30 @@
 #include <cuda_runtime_api.h>
 
 struct CudaStreamTest : public ::testing::Test {
-  rmm::cuda_stream stream{};
 };
 
 TEST_F(CudaStreamTest, Equality)
 {
-  auto new_default = rmm::cuda_stream_view{};
-  EXPECT_NE(this->stream, new_default);
-  EXPECT_EQ(new_default, rmm::cuda_stream_view{});
-  EXPECT_NE(new_default, rmm::cuda_stream());
+  rmm::cuda_stream stream_a;
+  auto const view_a       = stream_a.view();
+  auto const view_default = rmm::cuda_stream_view{};
+
+  EXPECT_EQ(stream_a, view_a);
+  EXPECT_NE(stream_a, view_default);
+  EXPECT_EQ(view_default, rmm::cuda_stream_view{});
+  EXPECT_EQ(view_default, rmm::cuda_stream_default);
+  EXPECT_NE(view_a, rmm::cuda_stream());
+  EXPECT_NE(stream_a, rmm::cuda_stream());
 
   rmm::device_buffer buff(0);
-  EXPECT_EQ(buff.stream(), new_default);
+  EXPECT_EQ(buff.stream(), view_default);
+}
+
+TEST_F(CudaStreamTest, MoveConstructor)
+{
+  rmm::cuda_stream stream_a;
+  auto const view_a         = stream_a.view();
+  rmm::cuda_stream stream_b = std::move(stream_a);
+  EXPECT_FALSE(stream_a.is_valid());  // Any other operations on stream_a are UB, may segfault
+  EXPECT_EQ(stream_b, view_a);
 }
