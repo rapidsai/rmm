@@ -276,7 +276,7 @@ class pool_memory_resource final
    */
   thrust::optional<block_type> block_from_upstream(size_t size, cuda_stream_view stream)
   {
-    RMM_LOG_DEBUG("[A][Stream {}][Upstream {}B]", reinterpret_cast<void*>(stream), size);
+    RMM_LOG_DEBUG("[A][Stream {}][Upstream {}B]", stream, size);
 
     if (size == 0) return {};
 
