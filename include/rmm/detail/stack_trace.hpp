@@ -24,8 +24,8 @@
 
 #if defined(ENABLE_STACK_TRACES)
 #include <execinfo.h>
-#include <sstream>
 #include <memory>
+#include <sstream>
 #include <vector>
 #endif  // defined(ENABLE_STACK_TRACES)
 
@@ -33,53 +33,53 @@ namespace rmm {
 
 namespace detail {
 
-    /**
-     * @brief stack_trace is a class that will capture a stack on instatiation for output later.
-     * It can then be used in an output stream to display stack information.
-     * 
-     * rmm::detail::stack_trace saved_stack;
-     *
-     * std::cout << "callstack: " << saved_stack;
-     * 
-     */
-    class stack_trace {
-     public:
-      stack_trace()
-      {
+/**
+ * @brief stack_trace is a class that will capture a stack on instatiation for output later.
+ * It can then be used in an output stream to display stack information.
+ *
+ * rmm::detail::stack_trace saved_stack;
+ *
+ * std::cout << "callstack: " << saved_stack;
+ *
+ */
+class stack_trace {
+ public:
+  stack_trace()
+  {
 #if defined(ENABLE_STACK_TRACES)
-        // store off a stack for this allocation
-        const int MaxStackDepth = 64;
-        void* stack[MaxStackDepth];
-        auto depth = backtrace(stack, MaxStackDepth);
-        stack_ptrs.insert(stack_ptrs.end(), &stack[0], &stack[depth]);
+    // store off a stack for this allocation
+    const int MaxStackDepth = 64;
+    void* stack[MaxStackDepth];
+    auto depth = backtrace(stack, MaxStackDepth);
+    stack_ptrs.insert(stack_ptrs.end(), &stack[0], &stack[depth]);
 #endif  // defined(ENABLE_STACK_TRACES)
+  }
+
+  friend std::ostream& operator<<(std::ostream& os, const stack_trace& st)
+  {
+#if defined(ENABLE_STACK_TRACES)
+    std::unique_ptr<char*, decltype(&::free)> strings(
+      backtrace_symbols(st.stack_ptrs.data(), st.stack_ptrs.size()), &::free);
+    if (strings.get() == nullptr) {
+      os << "But no stack trace could be found!" << std::endl;
+    } else {
+      ///@todo: support for demangling of C++ symbol names
+      for (int i = 0; i < st.stack_ptrs.size(); ++i) {
+        os << "#" << i << " in " << strings.get()[i] << std::endl;
       }
-
-      friend std::ostream& operator<<(std::ostream& os, const stack_trace& st)
-      {
-#if defined(ENABLE_STACK_TRACES)
-        std::unique_ptr<char*, decltype(&::free)> strings(
-          backtrace_symbols(st.stack_ptrs.data(), st.stack_ptrs.size()), &::free);
-        if (strings.get() == nullptr) {
-          os << "But no stack trace could be found!" << std::endl;
-        } else {
-          ///@todo: support for demangling of C++ symbol names
-          for (int i = 0; i < st.stack_ptrs.size(); ++i) {
-            os << "#" << i << " in " << strings.get()[i] << std::endl;
-          }
-        }
+    }
 #else
-        os << "stack traces disabled" << std::endl;
+    os << "stack traces disabled" << std::endl;
 #endif  // defined(ENABLE_STACK_TRACES)
-        return os;
-      };
+    return os;
+  };
 
 #if defined(ENABLE_STACK_TRACES)
-     private:
-      std::vector<void*> stack_ptrs;
+ private:
+  std::vector<void*> stack_ptrs;
 #endif  // defined(ENABLE_STACK_TRACES)
-    };
+};
 
-} // namespace detail
+}  // namespace detail
 
-} // namespace rmm
+}  // namespace rmm

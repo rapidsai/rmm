@@ -54,7 +54,6 @@ class tracking_resource_adaptor final : public device_memory_resource {
    *
    */
   struct allocation_info {
-
     std::unique_ptr<rmm::detail::stack_trace> strace;
     std::size_t allocation_size;
 
