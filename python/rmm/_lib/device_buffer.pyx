@@ -320,7 +320,7 @@ cpdef DeviceBuffer to_device(const unsigned char[::1] b,
 
 
 @cython.boundscheck(False)
-cdef void copy_async(const void* src,
+cdef void _copy_async(const void* src,
                      void* dst,
                      size_t count,
                      cudaMemcpyKind kind,
