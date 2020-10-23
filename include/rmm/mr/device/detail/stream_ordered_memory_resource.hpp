@@ -279,18 +279,13 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    */
   stream_event_pair get_event(cuda_stream_view stream)
   {
-#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-    if (stream.is_default() || stream.is_per_thread_default()) {
-#else
     if (stream.is_per_thread_default()) {
-#endif
       // Create a thread-local shared event wrapper. Shared pointers in the thread and in each MR
       // instance ensures it is destroyed cleaned up only after all are finished with it.
       thread_local auto event_tls = std::make_shared<event_wrapper>();
       default_stream_events.insert(event_tls);
       return stream_event_pair{stream, event_tls.get()->event};
     }
-#ifndef CUDA_API_PER_THREAD_DEFAULT_STREAM
     // We use cudaStreamLegacy as the event map key for the default stream for consistency between
     // PTDS and non-PTDS mode. In PTDS mode, the cudaStreamLegacy map key will only exist if the
     // user explicitly passes it, so it is used as the default location for the free list
@@ -299,7 +294,6 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     else if (stream.is_default()) {
       stream = cuda_stream_legacy;
     }
-#endif
 
     auto iter = stream_events_.find(stream);
     return (iter != stream_events_.end()) ? iter->second : [&]() {
@@ -352,12 +346,10 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    * @brief Find a free block of at least `size` bytes in a `free_list` with a different
    * stream/event than `stream_event`.
    *
-   * If an appropriate block is found in a free list F associated with event E, if
-   * `CUDA_API_PER_THREAD_DEFAULT_STREAM` is defined, `stream_event.stream` will be made to wait
-   * on event E. Otherwise, the stream associated with free list F will be synchronized. In either
-   * case all other blocks in free list F will be moved to the free list associated with
-   * `stream_event.stream`. This results in coalescing with other blocks in that free list,
-   * hopefully reducing fragmentation.
+   * If an appropriate block is found in a free list F associated with event E,
+   * `stream_event.stream` will be made to wait on event E. All other blocks in free list F will be
+   * moved to the free list associated with `stream_event.stream`. This results in coalescing with
+   * other blocks in that free list, hopefully reducing fragmentation.
    *
    * @param size The requested size of the allocation.
    * @param stream_event The stream and associated event on which the allocation is being

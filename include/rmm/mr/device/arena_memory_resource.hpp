@@ -263,11 +263,7 @@ class arena_memory_resource final : public device_memory_resource {
    */
   static bool use_per_thread_arena(cuda_stream_view stream)
   {
-#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-    return stream.is_default() || stream.is_per_thread_default();
-#else
     return stream.is_per_thread_default();
-#endif
   }
 
   /// The global arena to allocate superblocks from.

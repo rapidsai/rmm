@@ -75,7 +75,14 @@ class cuda_stream_view {
   /**
    * @brief Return true if the wrapped stream is the CUDA per-thread default stream.
    */
-  bool is_per_thread_default() const noexcept { return value() == cudaStreamPerThread; }
+  bool is_per_thread_default() const noexcept
+  {
+#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
+    return value() == cudaStreamPerThread || value() == cudaStreamDefault;
+#else
+    return value() == cudaStreamPerThread;
+#endif
+  }
 
   /**
    * @brief Return true if the wrapped stream is explicitly the CUDA legacy default stream.
