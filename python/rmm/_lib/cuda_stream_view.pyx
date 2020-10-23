@@ -34,7 +34,7 @@ cdef class CudaStreamView:
         """Returns True if this is the CUDA default stream
         """
         return self.c_obj.get()[0].is_default()
-    
+
     cpdef bool is_per_thread_default(self):
         """Returns True if this is a CUDA per-thread default stream
         """

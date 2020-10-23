@@ -46,14 +46,14 @@ cdef class DeviceBuffer:
         size : size of the buffer to allocate
                (and possibly size of data to copy)
         stream : CUDA stream to use for construction and/or copying,
-                 default None
+                 default the default stream
 
         Note
         ----
 
-        If ``stream`` is None, the default stream is used, and it is
-        synchronized after the copy. However if a non-default ``stream`` is
-        provided, this function is fully asynchronous.
+        If ``stream`` is the default stream, it is synchronized after the copy.
+        However if a non-default ``stream`` is provided, this function is fully
+        asynchronous.
 
         Examples
         --------
@@ -126,7 +126,8 @@ cdef class DeviceBuffer:
         return to_device(b, stream)
 
     @staticmethod
-    def to_device(const unsigned char[::1] b, CudaStreamView stream=CudaStreamView()):
+    def to_device(const unsigned char[::1] b,
+                  CudaStreamView stream=CudaStreamView()):
         """Calls ``to_device`` function on arguments provided"""
         return to_device(b, stream)
 
@@ -136,7 +137,7 @@ cdef class DeviceBuffer:
         Parameters
         ----------
         hb : ``bytes``-like buffer to write into
-        stream : CUDA stream to use for copying, default None
+        stream : CUDA stream to use for copying, default the default stream
 
         Examples
         --------
@@ -173,7 +174,7 @@ cdef class DeviceBuffer:
         Parameters
         ----------
         hb : ``bytes``-like buffer to copy from
-        stream : CUDA stream to use for copying, default None
+        stream : CUDA stream to use for copying, default the default stream
 
         Examples
         --------
@@ -196,13 +197,14 @@ cdef class DeviceBuffer:
 
         copy_host_to_ptr(hb[:s], <uintptr_t>dbp.data(), stream)
 
-    cpdef copy_from_device(self, cuda_ary, CudaStreamView stream=CudaStreamView()):
+    cpdef copy_from_device(self, cuda_ary,
+                           CudaStreamView stream=CudaStreamView()):
         """Copy from a buffer on host to ``self``
 
         Parameters
         ----------
         cuda_ary : object to copy from that has ``__cuda_array_interface__``
-        stream : CUDA stream to use for copying, default None
+        stream : CUDA stream to use for copying, default the default stream
 
         Examples
         --------
@@ -292,7 +294,7 @@ cpdef DeviceBuffer to_device(const unsigned char[::1] b,
     Parameters
     ----------
     b : ``bytes``-like data on host to copy to device
-    stream : CUDA stream to use for copying, default None
+    stream : CUDA stream to use for copying, default the default stream
 
     Returns
     -------
@@ -319,11 +321,30 @@ cpdef DeviceBuffer to_device(const unsigned char[::1] b,
 
 @cython.boundscheck(False)
 cdef void copy_async(const void* src,
-                     void* dst, 
-                     size_t    count,
+                     void* dst,
+                     size_t count,
                      cudaMemcpyKind kind,
                      cuda_stream_view stream) nogil:
-    
+    """
+    Asynchronously copy data between host and/or device pointers
+
+    This is a convenience wrapper around cudaMemcpyAsync that
+    checks for errors. Only used for internal implementation.
+
+    Parameters
+    ----------
+    src : pointer to ``bytes``-like host buffer to or device data to copy from
+    dst : pointer to ``bytes``-like host buffer to or device data to copy into
+    count : the size in bytes to copy
+    stream : CUDA stream to use for copying, default the default stream
+
+    Note
+    ----
+
+    If ``stream`` is the default stream, it is synchronized after the copy.
+    However if a non-default ``stream`` is provided, this function is fully
+    asynchronous.
+    """
     cdef cudaError_t err = cudaMemcpyAsync(dst, src, count, kind,
                                            <cudaStream_t>stream)
 
@@ -332,7 +353,6 @@ cdef void copy_async(const void* src,
 
     if stream.is_default():
         stream.synchronize()
-
 
 
 @cython.boundscheck(False)
@@ -345,14 +365,14 @@ cpdef void copy_ptr_to_host(uintptr_t db,
     ----------
     db : pointer to data on device to copy
     hb : ``bytes``-like buffer to write into
-    stream : CUDA stream to use for copying, default None
+    stream : CUDA stream to use for copying, default the default stream
 
     Note
     ----
 
-    If ``stream`` is None, the default stream is used, and it is synchronized
-    after the copy. However if a non-default ``stream`` is provided, this
-    function is fully asynchronous.
+    If ``stream`` is the default stream, it is synchronized after the copy.
+    However if a non-default ``stream`` is provided, this function is fully
+    asynchronous.
 
     Examples
     --------
@@ -388,14 +408,14 @@ cpdef void copy_host_to_ptr(const unsigned char[::1] hb,
     ----------
     hb : ``bytes``-like host buffer to copy
     db : pointer to data on device to write into
-    stream : CUDA stream to use for copying, default None
+    stream : CUDA stream to use for copying, default the default stream
 
     Note
     ----
 
-    If ``stream`` is None, the default stream is used, and it is synchronized
-    after the copy. However if a non-default ``stream`` is provided, this
-    function is fully asynchronous.
+    If ``stream`` is the default stream, it is synchronized after the copy.
+    However if a non-default ``stream`` is provided, this function is fully
+    asynchronous.
 
     Examples
     --------
@@ -433,14 +453,14 @@ cpdef void copy_device_to_ptr(uintptr_t d_src,
     ----------
     d_src : pointer to data on device to copy from
     d_dst : pointer to data on device to write into
-    stream : CUDA stream to use for copying, default None
+    stream : CUDA stream to use for copying, default the default stream
 
     Note
     ----
 
-    If ``stream`` is None, the default stream is used, and it is synchronized
-    after the copy. However if a non-default ``stream`` is provided, this
-    function is fully asynchronous.
+    If ``stream`` is the default stream, it is synchronized after the copy.
+    However if a non-default ``stream`` is provided, this function is fully
+    asynchronous.
 
     Examples
     --------
