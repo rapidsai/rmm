@@ -4,7 +4,15 @@
 
 ## Improvements
 
+- PR #599 Make the arena memory resource work better with the producer/consumer mode
+- PR #612 Drop old Python `device_array*` API
+- PR #603 Always test both legacy and per-thread default stream
+- PR #611 Add a note to the contribution guide about requiring 2 C++ reviewers
+
 ## Bug Fixes
+
+- PR #592 Add `auto_flush` to `make_logging_adaptor`
+- PR #602 Fix `device_scalar` and its tests so that they use the correct CUDA stream
 
 # RMM 0.16.0 (Date TBD)
 
@@ -15,6 +23,8 @@
 - PR #543 Add an arena-based memory resource
 - PR #580 Install CMake config with RMM
 - PR #596 Adding tracking memory adaptor to catch memory leaks
+- PR #591 Allow the replay bench to simulate different GPU memory sizes
+- PR #594 Adding limiting memory resource adaptor
 
 ## Improvements
 
@@ -39,6 +49,8 @@
 - PR #581 Improve logging documentation
 - PR #585 Update ci/local/README.md
 - PR #587 Replaced `move` with `std::move`
+- PR #588 Use installed C++ RMM in python build
+- PR #601 Make maximum pool size truly optional (grow until failure)
 
 ## Bug Fixes
 
@@ -50,6 +62,10 @@
 - PR #577 Fix CMake `LOGGING_LEVEL` issue which caused verbose logging / performance regression.
 - PR #582 Fix handling of per-thread default stream when not compiled for PTDS
 - PR #590 Add missing `CODE_OF_CONDUCT.md`
+<<<<<<< HEAD
+=======
+- PR #595 Fix pool_mr example in README.md
+>>>>>>> upstream/branch-0.17
 
 
 # RMM 0.15.0 (26 Aug 2020)
