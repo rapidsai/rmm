@@ -95,7 +95,7 @@ class device_buffer {
    * @param mr Memory resource to use for the device memory allocation.
    */
   explicit device_buffer(std::size_t size,
-                         cuda_stream_view stream        = cuda_stream_view{},
+                         cuda_stream_view const& stream = cuda_stream_view{},
                          mr::device_memory_resource* mr = mr::get_current_device_resource())
     : _stream{stream}, _mr{mr}
   {
@@ -118,7 +118,7 @@ class device_buffer {
    */
   device_buffer(void const* source_data,
                 std::size_t size,
-                cuda_stream_view stream        = cuda_stream_view{},
+                cuda_stream_view const& stream = cuda_stream_view{},
                 mr::device_memory_resource* mr = mr::get_current_device_resource())
     : _stream{stream}, _mr{mr}
   {
@@ -143,7 +143,7 @@ class device_buffer {
    * @param mr The resource to use for allocating the new `device_buffer`
    */
   device_buffer(device_buffer const& other,
-                cuda_stream_view stream             = cuda_stream_view{},
+                cuda_stream_view const& stream      = cuda_stream_view{},
                 rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource())
     : device_buffer{other.data(), other.size(), stream, mr}
   {
@@ -286,7 +286,7 @@ class device_buffer {
    * @param new_size The requested new size, in bytes
    * @param stream The stream to use for allocation and copy
    */
-  void resize(std::size_t new_size, cuda_stream_view stream = cuda_stream_view{})
+  void resize(std::size_t new_size, cuda_stream_view const& stream = cuda_stream_view{})
   {
     set_stream(stream);
     // If the requested size is smaller than the current capacity, just update
@@ -295,7 +295,8 @@ class device_buffer {
       _size = new_size;
     } else {
       void* const new_data = _mr->allocate(new_size, this->stream());
-      RMM_CUDA_TRY(cudaMemcpyAsync(new_data, data(), size(), cudaMemcpyDefault, this->stream()));
+      RMM_CUDA_TRY(
+        cudaMemcpyAsync(new_data, data(), size(), cudaMemcpyDefault, this->stream().value()));
       deallocate();
       _data     = new_data;
       _size     = new_size;
@@ -316,7 +317,7 @@ class device_buffer {
    *
    * @param stream The stream on which the allocation and copy are performed
    */
-  void shrink_to_fit(cuda_stream_view stream = cuda_stream_view{})
+  void shrink_to_fit(cuda_stream_view const& stream = cuda_stream_view{})
   {
     set_stream(stream);
     if (size() != capacity()) {
@@ -375,7 +376,7 @@ class device_buffer {
    * called after this, the later stream parameter will be stored and used in
    * the destructor.
    */
-  void set_stream(cuda_stream_view stream) noexcept { _stream = stream; }
+  void set_stream(cuda_stream_view const& stream) noexcept { _stream = stream; }
 
   /**
    * @brief Returns pointer to the memory resource used to allocate and
@@ -441,7 +442,7 @@ class device_buffer {
     if (bytes > 0) {
       RMM_EXPECTS(nullptr != source, "Invalid copy from nullptr.");
 
-      RMM_CUDA_TRY(cudaMemcpyAsync(_data, source, bytes, cudaMemcpyDefault, stream()));
+      RMM_CUDA_TRY(cudaMemcpyAsync(_data, source, bytes, cudaMemcpyDefault, stream().value()));
     }
   }
 };

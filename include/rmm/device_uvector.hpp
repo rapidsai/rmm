@@ -110,7 +110,7 @@ class device_uvector {
    */
   explicit device_uvector(
     std::size_t size,
-    cuda_stream_view stream,
+    cuda_stream_view const& stream,
     rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource())
     : _storage{elements_to_bytes(size), stream, mr}
   {
@@ -127,7 +127,7 @@ class device_uvector {
    */
   explicit device_uvector(
     device_uvector const& other,
-    cuda_stream_view stream,
+    cuda_stream_view const& stream,
     rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource())
     : _storage{other._storage, stream, mr}
   {
@@ -296,7 +296,7 @@ class device_uvector {
    * @param new_size The desired number of elements
    * @param stream The stream on which to perform the allocation/copy (if any)
    */
-  void resize(std::size_t new_size, cuda_stream_view stream)
+  void resize(std::size_t new_size, cuda_stream_view const& stream)
   {
     _storage.resize(elements_to_bytes(new_size), stream);
   }
@@ -308,7 +308,7 @@ class device_uvector {
    *
    * @param stream Stream on which to perform allocation and copy
    */
-  void shrink_to_fit(cuda_stream_view stream) { _storage.shrink_to_fit(stream); }
+  void shrink_to_fit(cuda_stream_view const& stream) { _storage.shrink_to_fit(stream); }
 
   /**
    * @brief Release ownership of device memory storage.

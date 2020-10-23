@@ -146,7 +146,7 @@ class fixed_size_memory_resource
    * @param stream The stream on which the memory is to be used.
    * @return block_type The allocated block
    */
-  block_type expand_pool(size_t size, free_list& blocks, cuda_stream_view stream)
+  block_type expand_pool(size_t size, free_list& blocks, cuda_stream_view const& stream)
   {
     blocks.insert(std::move(blocks_from_upstream(stream)));
     return blocks.get_block(size);
@@ -159,7 +159,7 @@ class fixed_size_memory_resource
    * @param stream The stream on which the memory is to be used.
    * @return block_type The allocated block
    */
-  free_list blocks_from_upstream(cuda_stream_view stream)
+  free_list blocks_from_upstream(cuda_stream_view const& stream)
   {
     void* p = upstream_mr_->allocate(upstream_chunk_size_, stream);
     block_type b{p};
@@ -213,7 +213,7 @@ class fixed_size_memory_resource
    * @param stream the stream being executed on
    * @return std::pair with available and free memory for resource
    */
-  std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view stream) const override
+  std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view const& stream) const override
   {
     return std::make_pair(0, 0);
   }

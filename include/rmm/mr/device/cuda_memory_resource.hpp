@@ -63,7 +63,7 @@ class cuda_memory_resource final : public device_memory_resource {
    * @param bytes The size, in bytes, of the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* do_allocate(std::size_t bytes, cuda_stream_view) override
+  void* do_allocate(std::size_t bytes, cuda_stream_view const&) override
   {
     void* p{nullptr};
     RMM_CUDA_TRY(cudaMalloc(&p, bytes), rmm::bad_alloc);
@@ -79,7 +79,7 @@ class cuda_memory_resource final : public device_memory_resource {
    *
    * @param p Pointer to be deallocated
    */
-  void do_deallocate(void* p, std::size_t, cuda_stream_view) override
+  void do_deallocate(void* p, std::size_t, cuda_stream_view const&) override
   {
     RMM_ASSERT_CUDA_SUCCESS(cudaFree(p));
   }
@@ -108,7 +108,7 @@ class cuda_memory_resource final : public device_memory_resource {
    *
    * @return std::pair contaiing free_size and total_size of memory
    */
-  std::pair<size_t, size_t> do_get_mem_info(cuda_stream_view) const override
+  std::pair<size_t, size_t> do_get_mem_info(cuda_stream_view const&) const override
   {
     std::size_t free_size;
     std::size_t total_size;

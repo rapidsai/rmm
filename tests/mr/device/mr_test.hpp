@@ -90,7 +90,7 @@ inline void test_get_current_device_resource()
 
 inline void test_allocate(rmm::mr::device_memory_resource* mr,
                           std::size_t bytes,
-                          cuda_stream_view stream = {})
+                          cuda_stream_view const& stream = {})
 {
   void* p{nullptr};
   EXPECT_NO_THROW(p = mr->allocate(bytes));

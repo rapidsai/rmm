@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
 
@@ -458,7 +459,7 @@ class arena {
    * @param stream Stream on which to perform deallocation.
    * @return true if the allocation is found, false otherwise.
    */
-  bool deallocate(void* p, std::size_t bytes, cudaStream_t stream)
+  bool deallocate(void* p, std::size_t bytes, cuda_stream_view const& stream)
   {
     lock_guard lock(mtx_);
     auto const b = free_block(p, bytes);
@@ -564,12 +565,12 @@ class arena {
    * @param b The block that can be used to shrink the arena.
    * @param stream Stream on which to perform shrinking.
    */
-  void shrink_arena(block const& b, cudaStream_t stream)
+  void shrink_arena(block const& b, cuda_stream_view const& stream)
   {
     // Don't shrink if b is not a superblock.
     if (!b.is_superblock()) return;
 
-    RMM_CUDA_TRY(cudaStreamSynchronize(stream));
+    stream.synchronize_no_throw();
 
     global_arena_.deallocate(b);
     free_blocks_.erase(b);

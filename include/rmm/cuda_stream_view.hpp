@@ -58,9 +58,9 @@ class cuda_stream_view {
   constexpr cudaStream_t value() const noexcept { return stream_; }
 
   /**
-   * @brief Implicit conversion to cudaStream_t.
+   * @brief Explicit conversion to cudaStream_t.
    */
-  constexpr operator cudaStream_t() const noexcept { return value(); }
+  explicit constexpr operator cudaStream_t() const noexcept { return value(); }
 
   /**
    * @brief Explicit conversion to uintptr_t.
@@ -148,7 +148,7 @@ inline bool operator==(cuda_stream_view const& lhs, cuda_stream_view const& rhs)
  */
 inline bool operator!=(cuda_stream_view const& lhs, cuda_stream_view const& rhs)
 {
-  return not (lhs == rhs);
+  return not(lhs == rhs);
 }
 
 }  // namespace rmm

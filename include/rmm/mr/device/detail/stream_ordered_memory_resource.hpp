@@ -155,12 +155,12 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    * @param b The block to insert into the pool.
    * @param stream The stream on which the memory was last used.
    */
-  void insert_block(block_type const& b, cuda_stream_view stream)
+  void insert_block(block_type const& b, cuda_stream_view const& stream)
   {
     stream_free_blocks_[get_event(stream)].insert(b);
   }
 
-  void insert_blocks(free_list&& blocks, cuda_stream_view stream)
+  void insert_blocks(free_list&& blocks, cuda_stream_view const& stream)
   {
     stream_free_blocks_[get_event(stream)].insert(std::move(blocks));
   }
@@ -201,7 +201,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    * @param stream The stream to associate this allocation with
    * @return void* Pointer to the newly allocated memory
    */
-  virtual void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
+  virtual void* do_allocate(std::size_t bytes, cuda_stream_view const& stream) override
   {
     RMM_LOG_TRACE("[A][stream {:p}][{}B]", static_cast<void*>(stream), bytes);
 
@@ -235,7 +235,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    *
    * @param p Pointer to be deallocated
    */
-  virtual void do_deallocate(void* p, std::size_t bytes, cuda_stream_view stream) override
+  virtual void do_deallocate(void* p, std::size_t bytes, cuda_stream_view const& stream) override
   {
     lock_guard lock(mtx_);
     auto stream_event = get_event(stream);
@@ -247,7 +247,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     // TODO: cudaEventRecord has significant overhead on deallocations. For the non-PTDS case
     // we may be able to delay recording the event in some situations. But using events rather than
     // streams allows stealing from deleted streams.
-    RMM_ASSERT_CUDA_SUCCESS(cudaEventRecord(stream_event.event, stream));
+    RMM_ASSERT_CUDA_SUCCESS(cudaEventRecord(stream_event.event, stream.value()));
 
     stream_free_blocks_[stream_event].insert(b);
 
@@ -277,30 +277,28 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    * @param stream The stream for which to get an event.
    * @return The stream_event for `stream`.
    */
-  stream_event_pair get_event(cuda_stream_view stream)
+  stream_event_pair get_event(cuda_stream_view const& stream)
   {
     if (stream.is_per_thread_default()) {
       // Create a thread-local shared event wrapper. Shared pointers in the thread and in each MR
       // instance ensures it is destroyed cleaned up only after all are finished with it.
       thread_local auto event_tls = std::make_shared<event_wrapper>();
       default_stream_events.insert(event_tls);
-      return stream_event_pair{stream, event_tls.get()->event};
+      return stream_event_pair{stream.value(), event_tls.get()->event};
     }
     // We use cudaStreamLegacy as the event map key for the default stream for consistency between
     // PTDS and non-PTDS mode. In PTDS mode, the cudaStreamLegacy map key will only exist if the
     // user explicitly passes it, so it is used as the default location for the free list
     // at construction. For consistency, the same key is used for null stream free lists in non-PTDS
     // mode.
-    else if (stream.is_default()) {
-      stream = cuda_stream_legacy;
-    }
+    auto const stream_to_store = stream.is_default() ? cudaStreamLegacy : stream.value();
 
-    auto iter = stream_events_.find(stream);
+    auto const iter = stream_events_.find(stream_to_store);
     return (iter != stream_events_.end()) ? iter->second : [&]() {
-      stream_event_pair stream_event{stream};
+      stream_event_pair stream_event{stream_to_store};
       RMM_ASSERT_CUDA_SUCCESS(
         cudaEventCreateWithFlags(&stream_event.event, cudaEventDisableTiming));
-      stream_events_[stream] = stream_event;
+      stream_events_[stream_to_store] = stream_event;
       return stream_event;
     }();
   }
