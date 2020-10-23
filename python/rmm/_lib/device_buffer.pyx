@@ -438,8 +438,8 @@ cpdef void copy_host_to_ptr(const unsigned char[::1] hb,
 
     with nogil:
         c_stream = dereference(stream.c_obj.get())
-        copy_async(<const void*>&hb[0], <void*>db, len(hb),
-                   cudaMemcpyHostToDevice, c_stream)
+        _copy_async(<const void*>&hb[0], <void*>db, len(hb),
+                    cudaMemcpyHostToDevice, c_stream)
 
 
 @cython.boundscheck(False)
