@@ -15,16 +15,10 @@
  */
 #pragma once
 
-#if (defined(__GNUC__) && !defined(__MINGW32__) && !defined(__MINGW64__))
-#define ENABLE_STACK_TRACES
-#endif
-
-#if defined(ENABLE_STACK_TRACES)
-#include <execinfo.h>
-#endif  // defined(ENABLE_STACK_TRACES)
 #include <map>
 #include <mutex>
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/stack_trace.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <shared_mutex>
 #include <sstream>
@@ -60,52 +54,15 @@ class tracking_resource_adaptor final : public device_memory_resource {
    *
    */
   struct allocation_info {
-    class stack_trace {
-     public:
-      stack_trace()
-      {
-#if defined(ENABLE_STACK_TRACES)
-        // store off a stack for this allocation
-        const int MaxStackDepth = 64;
-        void* stack[MaxStackDepth];
-        auto depth = backtrace(stack, MaxStackDepth);
-        stack_ptrs.insert(stack_ptrs.end(), &stack[0], &stack[depth]);
-#endif  // defined(ENABLE_STACK_TRACES)
-      }
 
-      friend std::ostream& operator<<(std::ostream& os, const stack_trace& st)
-      {
-#if defined(ENABLE_STACK_TRACES)
-        std::unique_ptr<char*, decltype(&::free)> strings(
-          backtrace_symbols(st.stack_ptrs.data(), st.stack_ptrs.size()), &::free);
-        if (strings.get() == nullptr) {
-          os << "But no stack trace could be found!" << std::endl;
-        } else {
-          ///@todo: support for demangling of C++ symbol names
-          for (int i = 0; i < st.stack_ptrs.size(); ++i) {
-            os << "#" << i << " in " << strings.get()[i] << std::endl;
-          }
-        }
-#else
-        os << "stack traces disabled" << std::endl;
-#endif  // defined(ENABLE_STACK_TRACES)
-        return os;
-      };
-
-#if defined(ENABLE_STACK_TRACES)
-     private:
-      std::vector<void*> stack_ptrs;
-#endif  // defined(ENABLE_STACK_TRACES)
-    };
-
-    std::unique_ptr<stack_trace> strace;
+    std::unique_ptr<rmm::detail::stack_trace> strace;
     std::size_t allocation_size;
 
     allocation_info() : strace{nullptr}, allocation_size{0} {};
     allocation_info(std::size_t size, bool capture_stack) : allocation_size{size}
     {
       // maybe store off a stack for this allocation
-      strace = capture_stack ? std::make_unique<stack_trace>() : nullptr;
+      strace = capture_stack ? std::make_unique<rmm::detail::stack_trace>() : nullptr;
     };
   };
 
