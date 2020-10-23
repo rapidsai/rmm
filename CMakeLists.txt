@@ -67,22 +67,6 @@ option(PER_THREAD_DEFAULT_STREAM "Build with per-thread default stream" OFF)
 find_package(CUDAToolkit REQUIRED)
 
 ###################################################################################################
-# - find boost ------------------------------------------------------------------------------------
-
-find_package(Boost REQUIRED)
-
-message(STATUS "BOOST: Boost_LIBRARIES set to ${Boost_LIBRARIES}")
-message(STATUS "BOOST: Boost_INCLUDE_DIRS set to ${Boost_INCLUDE_DIRS}")
-
-if(Boost_FOUND)
-    message(STATUS "Boost found in ${Boost_INCLUDE_DIRS}")
-else()
-    message(FATAL_ERROR "Boost not found, please check your settings.")
-endif(Boost_FOUND)
-
-include_directories(${Boost_INCLUDE_DIRS})
-
-###################################################################################################
 # cmake modules
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})

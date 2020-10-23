@@ -39,7 +39,9 @@ namespace mr {
  * will be untracked. Tracking stores a size and pointer for every allocation, and a stack
  * frame if `capture_stacks` is true, so it can add significant overhead.
  * `tracking_resource_adaptor` is intended as a debug adaptor and shouldn't be used in
- * performance-sensitive code.
+ * performance-sensitive code. Note that callstacks may not contain all symbols unless
+ * the project is linked with `-rdynamic`. This can be accomplished with
+ * `add_link_options(-rdynamic)` in cmake.
  *
  * @tparam Upstream Type of the upstream resource used for
  * allocation/deallocation.
