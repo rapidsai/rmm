@@ -203,7 +203,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    */
   virtual void* do_allocate(std::size_t bytes, cuda_stream_view const& stream) override
   {
-    RMM_LOG_TRACE("[A][stream {:p}][{}B]", static_cast<void*>(stream), bytes);
+    RMM_LOG_TRACE("[A][stream {:p}][{}B]", fmt::ptr(stream.value()), bytes);
 
     if (bytes <= 0) return nullptr;
 
@@ -219,9 +219,9 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     auto split   = this->underlying().allocate_from_block(b, bytes);
     if (split.remainder.is_valid()) stream_free_blocks_[stream_event].insert(split.remainder);
     RMM_LOG_TRACE("[A][stream {:p}][{}B][{:p}]",
-                  static_cast<void*>(stream_event.stream),
+                  fmt::ptr(stream_event.stream),
                   bytes,
-                  static_cast<void*>(split.allocated_pointer));
+                  fmt::ptr(split.allocated_pointer));
 
     log_summary_trace();
 
@@ -239,7 +239,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
   {
     lock_guard lock(mtx_);
     auto stream_event = get_event(stream);
-    RMM_LOG_TRACE("[D][stream {:p}][{}B][{:p}]", static_cast<void*>(stream_event.stream), bytes, p);
+    RMM_LOG_TRACE("[D][stream {:p}][{}B][{:p}]", fmt::ptr(stream_event.stream), bytes, p);
 
     bytes        = rmm::detail::align_up(bytes, allocation_alignment);
     auto const b = this->underlying().free_block(p, bytes);
@@ -372,9 +372,9 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
             merge_lists(stream_event, blocks, other_event, std::move(other_blocks));
 
             RMM_LOG_DEBUG("[A][Stream {:p}][{}B][Merged stream {:p}]",
-                          static_cast<void*>(stream_event.stream),
+                          fmt::ptr(stream_event.stream),
                           size,
-                          static_cast<void*>(it->first.stream));
+                          fmt::ptr(it->first.stream));
 
             stream_free_blocks_.erase(it);
 
@@ -387,9 +387,9 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
         if (b.is_valid()) {
           RMM_LOG_DEBUG((merge_first) ? "[A][Stream {:p}][{}B][Found after merging stream {:p}]"
                                       : "[A][Stream {:p}][{}B][Taken from stream {:p}]",
-                        static_cast<void*>(stream_event.stream),
+                        fmt::ptr(stream_event.stream),
                         size,
-                        static_cast<void*>(it->first.stream));
+                        fmt::ptr(it->first.stream));
 
           if (not merge_first) {
             merge_lists(stream_event, blocks, other_event, std::move(other_blocks));

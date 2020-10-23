@@ -185,7 +185,7 @@ class pool_memory_resource final
       try_size = std::max(min_size, try_size / 2);
     }
     RMM_LOG_ERROR("[A][Stream {}][Upstream {}B][FAILURE maximum pool size exceeded]",
-                  uintptr_t{stream},
+                  fmt::ptr(stream.value()),
                   min_size);
     RMM_FAIL("Maximum pool size exceeded", rmm::bad_alloc);
   }
@@ -279,7 +279,7 @@ class pool_memory_resource final
    */
   thrust::optional<block_type> block_from_upstream(size_t size, cuda_stream_view const& stream)
   {
-    RMM_LOG_DEBUG("[A][Stream {}][Upstream {}B]", stream, size);
+    RMM_LOG_DEBUG("[A][Stream {}][Upstream {}B]", fmt::ptr(stream.value()), size);
 
     if (size == 0) return {};
 
