@@ -22,7 +22,8 @@ cdef class CudaStreamView:
 
         Parameters
         ----------
-        stream : CUDA stream to wrap, default cudaStreamDefault
+        stream : uintptr_t, optional
+            CUDA stream to wrap, default 0 (cudaStreamDefault)
         """
         if (stream == 0):
             self.c_obj.reset(new cuda_stream_view())

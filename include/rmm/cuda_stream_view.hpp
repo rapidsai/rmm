@@ -148,7 +148,7 @@ inline bool operator==(cuda_stream_view const& lhs, cuda_stream_view const& rhs)
  */
 inline bool operator!=(cuda_stream_view const& lhs, cuda_stream_view const& rhs)
 {
-  return lhs.value() != rhs.value();
+  return not (lhs == rhs);
 }
 
 }  // namespace rmm
