@@ -478,5 +478,5 @@ cpdef void copy_device_to_ptr(uintptr_t d_src,
 
     with nogil:
         c_stream = dereference(stream.c_obj.get())
-        copy_async(<const void*>d_src, <void*>d_dst, count,
-                   cudaMemcpyDeviceToDevice, c_stream)
+        _copy_async(<const void*>d_src, <void*>d_dst, count,
+                    cudaMemcpyDeviceToDevice, c_stream)
