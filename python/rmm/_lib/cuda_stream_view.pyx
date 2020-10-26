@@ -30,17 +30,12 @@ cdef class CudaStreamView:
         else:
             self.c_obj.reset(new cuda_stream_view(<cudaStream_t>stream))
 
-    cpdef bool is_default(self):
+    cpdef bool is_default(self) except *:
         """Returns True if this is the CUDA default stream
         """
         return self.c_obj.get()[0].is_default()
 
-    cpdef bool is_per_thread_default(self):
+    cpdef bool is_per_thread_default(self) except *:
         """Returns True if this is a CUDA per-thread default stream
         """
         return self.c_obj.get()[0].is_per_thread_default()
-
-    cpdef bool is_legacy_default(self):
-        """Returns True if this is the CUDA legacy default stream
-        """
-        return self.c_obj.get()[0].is_legacy_default()
