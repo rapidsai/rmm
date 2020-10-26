@@ -167,7 +167,7 @@ void allocate_loop(rmm::mr::device_memory_resource* mr,
                    std::size_t num_allocations,
                    std::list<allocation>& allocations,
                    std::mutex& mtx,
-                   rmm::cuda_stream_view const& stream)
+                   rmm::cuda_stream_view stream)
 {
   constexpr std::size_t max_size{1_MiB};
 
@@ -189,7 +189,7 @@ void deallocate_loop(rmm::mr::device_memory_resource* mr,
                      std::size_t num_allocations,
                      std::list<allocation>& allocations,
                      std::mutex& mtx,
-                     rmm::cuda_stream_view const& stream)
+                     rmm::cuda_stream_view stream)
 {
   for (std::size_t i = 0; i < num_allocations;) {
     std::lock_guard<std::mutex> lock(mtx);
@@ -205,8 +205,8 @@ void deallocate_loop(rmm::mr::device_memory_resource* mr,
 }
 
 void test_allocate_free_different_threads(rmm::mr::device_memory_resource* mr,
-                                          rmm::cuda_stream_view const& streamA,
-                                          rmm::cuda_stream_view const& streamB)
+                                          rmm::cuda_stream_view streamA,
+                                          rmm::cuda_stream_view streamB)
 {
   constexpr std::size_t num_allocations{100};
 

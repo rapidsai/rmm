@@ -134,7 +134,7 @@ static cuda_stream_view cuda_stream_per_thread{cudaStreamPerThread};
  * @param rhs The second stream view to compare
  * @return true if equal, false if unequal
  */
-inline bool operator==(cuda_stream_view const& lhs, cuda_stream_view const& rhs)
+inline bool operator==(cuda_stream_view lhs, cuda_stream_view rhs)
 {
   return lhs.value() == rhs.value();
 }
@@ -146,9 +146,6 @@ inline bool operator==(cuda_stream_view const& lhs, cuda_stream_view const& rhs)
  * @param rhs The second stream view to compare
  * @return true if unequal, false if equal
  */
-inline bool operator!=(cuda_stream_view const& lhs, cuda_stream_view const& rhs)
-{
-  return not(lhs == rhs);
-}
+inline bool operator!=(cuda_stream_view lhs, cuda_stream_view rhs) { return not(lhs == rhs); }
 
 }  // namespace rmm

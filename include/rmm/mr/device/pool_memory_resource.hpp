@@ -171,9 +171,7 @@ class pool_memory_resource final
    * @param stream The stream on which the memory is to be used.
    * @return block_type a block of at least `min_size` bytes
    */
-  block_type try_to_expand(std::size_t try_size,
-                           std::size_t min_size,
-                           cuda_stream_view const& stream)
+  block_type try_to_expand(std::size_t try_size, std::size_t min_size, cuda_stream_view stream)
   {
     while (try_size >= min_size) {
       auto b = block_from_upstream(try_size, stream);
@@ -238,7 +236,7 @@ class pool_memory_resource final
    * @param stream The stream on which the memory is to be used.
    * @return block_type a block of at least `size` bytes
    */
-  block_type expand_pool(std::size_t size, free_list& blocks, cuda_stream_view const& stream)
+  block_type expand_pool(std::size_t size, free_list& blocks, cuda_stream_view stream)
   {
     // Strategy: If maximum_pool_size_ is set, then grow geometrically, e.g. by halfway to the
     // limit each time. If it is not set, grow exponentially, e.g. by doubling the pool size each
@@ -277,7 +275,7 @@ class pool_memory_resource final
    * @param stream The stream on which the memory is to be used.
    * @return block_type The allocated block
    */
-  thrust::optional<block_type> block_from_upstream(size_t size, cuda_stream_view const& stream)
+  thrust::optional<block_type> block_from_upstream(size_t size, cuda_stream_view stream)
   {
     RMM_LOG_DEBUG("[A][Stream {}][Upstream {}B]", fmt::ptr(stream.value()), size);
 
@@ -419,7 +417,7 @@ class pool_memory_resource final
    * @param stream to execute on
    * @return std::pair contaiing free_size and total_size of memory
    */
-  std::pair<size_t, size_t> do_get_mem_info(cuda_stream_view const& stream) const override
+  std::pair<size_t, size_t> do_get_mem_info(cuda_stream_view stream) const override
   {
     std::size_t free_size{};
     std::size_t total_size{};

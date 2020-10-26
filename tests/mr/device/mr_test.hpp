@@ -90,7 +90,7 @@ inline void test_get_current_device_resource()
 
 inline void test_allocate(rmm::mr::device_memory_resource* mr,
                           std::size_t bytes,
-                          cuda_stream_view const& stream = {})
+                          cuda_stream_view stream = {})
 {
   void* p{nullptr};
   EXPECT_NO_THROW(p = mr->allocate(bytes));
@@ -102,8 +102,7 @@ inline void test_allocate(rmm::mr::device_memory_resource* mr,
   if (not stream.is_default()) stream.synchronize();
 }
 
-inline void test_various_allocations(rmm::mr::device_memory_resource* mr,
-                                     cuda_stream_view const& stream)
+inline void test_various_allocations(rmm::mr::device_memory_resource* mr, cuda_stream_view stream)
 {
   // test allocating zero bytes on non-default stream
   {
@@ -128,9 +127,9 @@ inline void test_various_allocations(rmm::mr::device_memory_resource* mr,
 }
 
 inline void test_random_allocations(rmm::mr::device_memory_resource* mr,
-                                    std::size_t num_allocations    = 100,
-                                    std::size_t max_size           = 5_MiB,
-                                    cuda_stream_view const& stream = {})
+                                    std::size_t num_allocations = 100,
+                                    std::size_t max_size        = 5_MiB,
+                                    cuda_stream_view stream     = {})
 {
   std::vector<allocation> allocations(num_allocations);
 
@@ -155,8 +154,8 @@ inline void test_random_allocations(rmm::mr::device_memory_resource* mr,
 }
 
 inline void test_mixed_random_allocation_free(rmm::mr::device_memory_resource* mr,
-                                              std::size_t max_size           = 5_MiB,
-                                              cuda_stream_view const& stream = {})
+                                              std::size_t max_size    = 5_MiB,
+                                              cuda_stream_view stream = {})
 {
   std::default_random_engine generator;
   constexpr std::size_t num_allocations{100};

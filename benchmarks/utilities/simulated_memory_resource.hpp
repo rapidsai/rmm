@@ -74,7 +74,7 @@ class simulated_memory_resource final : public device_memory_resource {
    * @param bytes The size, in bytes, of the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* do_allocate(std::size_t bytes, cuda_stream_view const&) override
+  void* do_allocate(std::size_t bytes, cuda_stream_view) override
   {
     RMM_EXPECTS(begin_ + bytes <= end_, rmm::bad_alloc, "Simulated memory size exceeded");
     auto p = static_cast<void*>(begin_);
@@ -91,7 +91,7 @@ class simulated_memory_resource final : public device_memory_resource {
    *
    * @param p Pointer to be deallocated
    */
-  void do_deallocate(void* p, std::size_t, cuda_stream_view const&) override {}
+  void do_deallocate(void* p, std::size_t, cuda_stream_view) override {}
 
   /**
    * @brief Get free and available memory for memory resource.
@@ -99,7 +99,7 @@ class simulated_memory_resource final : public device_memory_resource {
    * @param stream to execute on.
    * @return std::pair containing free_size and total_size of memory.
    */
-  std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view const& stream) const override
+  std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view stream) const override
   {
     return std::make_pair(0, 0);
   }

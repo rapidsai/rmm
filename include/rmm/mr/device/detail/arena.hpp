@@ -459,7 +459,7 @@ class arena {
    * @param stream Stream on which to perform deallocation.
    * @return true if the allocation is found, false otherwise.
    */
-  bool deallocate(void* p, std::size_t bytes, cuda_stream_view const& stream)
+  bool deallocate(void* p, std::size_t bytes, cuda_stream_view stream)
   {
     lock_guard lock(mtx_);
     auto const b = free_block(p, bytes);
@@ -565,7 +565,7 @@ class arena {
    * @param b The block that can be used to shrink the arena.
    * @param stream Stream on which to perform shrinking.
    */
-  void shrink_arena(block const& b, cuda_stream_view const& stream)
+  void shrink_arena(block const& b, cuda_stream_view stream)
   {
     // Don't shrink if b is not a superblock.
     if (!b.is_superblock()) return;

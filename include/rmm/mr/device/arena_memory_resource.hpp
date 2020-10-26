@@ -127,7 +127,7 @@ class arena_memory_resource final : public device_memory_resource {
    * @param stream The stream to associate this allocation with.
    * @return void* Pointer to the newly allocated memory.
    */
-  void* do_allocate(std::size_t bytes, cuda_stream_view const& stream) override
+  void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
     if (bytes <= 0) return nullptr;
 
@@ -143,7 +143,7 @@ class arena_memory_resource final : public device_memory_resource {
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param stream Stream on which to perform deallocation.
    */
-  void do_deallocate(void* p, std::size_t bytes, cuda_stream_view const& stream) override
+  void do_deallocate(void* p, std::size_t bytes, cuda_stream_view stream) override
   {
     if (p == nullptr || bytes <= 0) return;
 
@@ -161,7 +161,7 @@ class arena_memory_resource final : public device_memory_resource {
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param stream Stream on which to perform deallocation.
    */
-  void deallocate_from_other_arena(void* p, std::size_t bytes, cuda_stream_view const& stream)
+  void deallocate_from_other_arena(void* p, std::size_t bytes, cuda_stream_view stream)
   {
     stream.synchronize_no_throw();
 
@@ -193,7 +193,7 @@ class arena_memory_resource final : public device_memory_resource {
    * @param stream The stream associated with the arena.
    * @return arena& The arena associated with the current thread or the given stream.
    */
-  arena& get_arena(cuda_stream_view const& stream)
+  arena& get_arena(cuda_stream_view stream)
   {
     if (use_per_thread_arena(stream)) {
       return get_thread_arena();
@@ -229,7 +229,7 @@ class arena_memory_resource final : public device_memory_resource {
    *
    * @return arena& The arena associated with the given stream.
    */
-  arena& get_stream_arena(cuda_stream_view const& stream)
+  arena& get_stream_arena(cuda_stream_view stream)
   {
     RMM_LOGGING_ASSERT(!use_per_thread_arena(stream));
     {
@@ -250,7 +250,7 @@ class arena_memory_resource final : public device_memory_resource {
    * @param stream to execute on.
    * @return std::pair containing free_size and total_size of memory.
    */
-  std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view const& stream) const override
+  std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view stream) const override
   {
     return std::make_pair(0, 0);
   }
@@ -261,7 +261,7 @@ class arena_memory_resource final : public device_memory_resource {
    * @param stream to check.
    * @return true if per-thread arena should be used, false otherwise.
    */
-  static bool use_per_thread_arena(cuda_stream_view const& stream)
+  static bool use_per_thread_arena(cuda_stream_view stream)
   {
     return stream.is_per_thread_default();
   }
