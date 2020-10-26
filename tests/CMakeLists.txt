@@ -89,7 +89,6 @@ set(TRACKING_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/tracking_mr_tests.cpp")
 
 ConfigureTest(TRACKING_TEST "${TRACKING_TEST_SRC}")
-target_compile_definitions(TRACKING_TEST PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
 
 ###################################################################################################
 # - limiting adaptor tests
@@ -98,7 +97,6 @@ set(LIMITING_TEST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/limiting_mr_tests.cpp")
 
 ConfigureTest(LIMITING_TEST "${LIMITING_TEST_SRC}")
-target_compile_definitions(LIMITING_TEST PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
 
 ###################################################################################################
 # - host mr tests

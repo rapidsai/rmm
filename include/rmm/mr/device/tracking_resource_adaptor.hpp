@@ -57,17 +57,17 @@ class tracking_resource_adaptor final : public device_memory_resource {
     std::unique_ptr<rmm::detail::stack_trace> strace;
     std::size_t allocation_size;
 
-    allocation_info() : strace{nullptr}, allocation_size{0} {};
-    allocation_info(std::size_t size, bool capture_stack) : allocation_size{size}
+    allocation_info() = delete;
+    allocation_info(std::size_t size, bool capture_stack) :
+      strace{[&]() { return capture_stack ? std::make_unique<rmm::detail::stack_trace>() : nullptr;}() },
+      allocation_size{size}
     {
-      // maybe store off a stack for this allocation
-      strace = capture_stack ? std::make_unique<rmm::detail::stack_trace>() : nullptr;
     };
   };
 
   /**
    * @brief Construct a new tracking resource adaptor using `upstream` to satisfy
-   * allocation requests and tracking active allocations.
+   * allocation requests.
    *
    * @throws `rmm::logic_error` if `upstream == nullptr`
    *
@@ -121,7 +121,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
    */
   std::map<void*, allocation_info> const& get_outstanding_allocations() const
   {
-    return allocations;
+    return allocations_;
   }
 
   /**
@@ -133,7 +133,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
    * @return std::size_t number of bytes that have been allocated through this
    * allocator.
    */
-  std::size_t get_allocated_bytes() const { return allocated_bytes_; }
+  std::size_t get_allocated_bytes() const noexcept { return allocated_bytes_; }
 
   /**
    * @brief Log any outstanding allocations via RMM_LOG_DEBUG
@@ -157,13 +157,6 @@ class tracking_resource_adaptor final : public device_memory_resource {
 #endif  // SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_DEBUG
   }
 
-  /**
-   * @brief Get the number of outstanding allocations
-   *
-   * @return std::size_t number of allocations still outstanding
-   */
-  std::size_t get_num_outstanding_allocations() const { return allocations.size(); };
-
  private:
   /**
    * @brief Allocates memory of size at least `bytes` using the upstream
@@ -180,22 +173,12 @@ class tracking_resource_adaptor final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cudaStream_t stream) override
   {
-    void* p = [&]() {
-      try {
-        return upstream_->allocate(bytes, stream);
-      } catch (std::exception const& e) {
-        RMM_LOG_ERROR("[A][Stream {}][Upstream {}B][FAILURE {}]",
-                      reinterpret_cast<void*>(stream),
-                      bytes,
-                      e.what());
-        throw;
-      }
-    }();
+    void* p = upstream_->allocate(bytes, stream);
 
     // track it.
     {
-      write_lock_t lock(mtx);
-      allocations.emplace(p, allocation_info{bytes, capture_stacks_});
+      write_lock_t lock(mtx_);
+      allocations_.emplace(p, allocation_info{bytes, capture_stacks_});
     }
     allocated_bytes_ += bytes;
 
@@ -213,12 +196,12 @@ class tracking_resource_adaptor final : public device_memory_resource {
    */
   void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override
   {
+    upstream_->deallocate(p, bytes, stream);
     {
-      write_lock_t lock(mtx);
-      allocations.erase(p);
+      write_lock_t lock(mtx_);
+      allocations_.erase(p);
     }
     allocated_bytes_ -= bytes;
-    upstream_->deallocate(p, bytes, stream);
   }
 
   /**
@@ -257,15 +240,15 @@ class tracking_resource_adaptor final : public device_memory_resource {
     return upstream_->get_mem_info(stream);
   }
 
-  bool capture_stacks_;
+  bool capture_stacks_; // whether or not to capture call stacks
 
   // map of active allocations
-  std::map<void*, allocation_info> allocations;
+  std::map<void*, allocation_info> allocations_;
 
   // number of bytes currently allocated
   std::atomic<std::size_t> allocated_bytes_;
 
-  std::shared_timed_mutex mutable mtx;  // mutex for thread safe access to allocations
+  std::shared_timed_mutex mutable mtx_;  // mutex for thread safe access to allocations_
 
   Upstream* upstream_;  ///< The upstream resource used for satisfying
                         ///< allocation requests
