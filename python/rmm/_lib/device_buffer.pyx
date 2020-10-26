@@ -320,7 +320,7 @@ cpdef DeviceBuffer to_device(const unsigned char[::1] b,
 
 
 @cython.boundscheck(False)
-cdef void copy_async(const void* src,
+cdef void _copy_async(const void* src,
                      void* dst,
                      size_t count,
                      cudaMemcpyKind kind,
@@ -394,8 +394,8 @@ cpdef void copy_ptr_to_host(uintptr_t db,
 
     with nogil:
         c_stream = dereference(stream.c_obj.get())
-        copy_async(<const void*>db, <void*>&hb[0], len(hb),
-                   cudaMemcpyDeviceToHost, c_stream)
+        _copy_async(<const void*>db, <void*>&hb[0], len(hb),
+                    cudaMemcpyDeviceToHost, c_stream)
 
 
 @cython.boundscheck(False)
@@ -438,8 +438,8 @@ cpdef void copy_host_to_ptr(const unsigned char[::1] hb,
 
     with nogil:
         c_stream = dereference(stream.c_obj.get())
-        copy_async(<const void*>&hb[0], <void*>db, len(hb),
-                   cudaMemcpyHostToDevice, c_stream)
+        _copy_async(<const void*>&hb[0], <void*>db, len(hb),
+                    cudaMemcpyHostToDevice, c_stream)
 
 
 @cython.boundscheck(False)
@@ -478,5 +478,5 @@ cpdef void copy_device_to_ptr(uintptr_t d_src,
 
     with nogil:
         c_stream = dereference(stream.c_obj.get())
-        copy_async(<const void*>d_src, <void*>d_dst, count,
-                   cudaMemcpyDeviceToDevice, c_stream)
+        _copy_async(<const void*>d_src, <void*>d_dst, count,
+                    cudaMemcpyDeviceToDevice, c_stream)
