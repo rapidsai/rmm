@@ -61,7 +61,10 @@ class cuda_stream {
                 RMM_CUDA_TRY(cudaStreamCreate(s));
                 return s;
               }(),
-              [](cudaStream_t* s) { RMM_ASSERT_CUDA_SUCCESS(cudaStreamDestroy(*s)); }}
+              [](cudaStream_t* s) {
+                RMM_ASSERT_CUDA_SUCCESS(cudaStreamDestroy(*s));
+                delete s;
+              }}
   {
   }
 
