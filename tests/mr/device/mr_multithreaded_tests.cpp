@@ -135,7 +135,7 @@ TEST_P(mr_test_mt, SetCurrentDeviceResourcePerThread_mt)
 
 TEST_P(mr_test_mt, AllocateDefaultStream)
 {
-  spawn(test_various_allocations, this->mr.get(), cudaStream_t{cudaStreamDefault});
+  spawn(test_various_allocations, this->mr.get(), rmm::cuda_stream_view{});
 }
 
 TEST_P(mr_test_mt, AllocateOnStream)
@@ -145,7 +145,7 @@ TEST_P(mr_test_mt, AllocateOnStream)
 
 TEST_P(mr_test_mt, RandomAllocationsDefaultStream)
 {
-  spawn(test_random_allocations, this->mr.get(), 100, 5_MiB, cudaStream_t{cudaStreamDefault});
+  spawn(test_random_allocations, this->mr.get(), 100, 5_MiB, rmm::cuda_stream_view{});
 }
 
 TEST_P(mr_test_mt, RandomAllocationsStream)
@@ -155,7 +155,7 @@ TEST_P(mr_test_mt, RandomAllocationsStream)
 
 TEST_P(mr_test_mt, MixedRandomAllocationFreeDefaultStream)
 {
-  spawn(test_mixed_random_allocation_free, this->mr.get(), 5_MiB, cudaStream_t{cudaStreamDefault});
+  spawn(test_mixed_random_allocation_free, this->mr.get(), 5_MiB, rmm::cuda_stream_view{});
 }
 
 TEST_P(mr_test_mt, MixedRandomAllocationFreeStream)
@@ -226,13 +226,13 @@ void test_allocate_free_different_threads(rmm::mr::device_memory_resource* mr,
 TEST_P(mr_test_mt, AllocFreeDifferentThreadsDefaultStream)
 {
   test_allocate_free_different_threads(
-    this->mr.get(), cudaStream_t{cudaStreamDefault}, cudaStream_t{cudaStreamDefault});
+    this->mr.get(), rmm::cuda_stream_default, rmm::cuda_stream_default);
 }
 
 TEST_P(mr_test_mt, AllocFreeDifferentThreadsPerThreadDefaultStream)
 {
   test_allocate_free_different_threads(
-    this->mr.get(), cudaStream_t{cudaStreamPerThread}, cudaStream_t{cudaStreamPerThread});
+    this->mr.get(), rmm::cuda_stream_per_thread, rmm::cuda_stream_per_thread);
 }
 
 TEST_P(mr_test_mt, AllocFreeDifferentThreadsSameStream)
@@ -242,7 +242,6 @@ TEST_P(mr_test_mt, AllocFreeDifferentThreadsSameStream)
 
 TEST_P(mr_test_mt, AllocFreeDifferentThreadsDifferentStream)
 {
-  cudaStream_t streamB{};
   EXPECT_NO_THROW([this]() {
     rmm::cuda_stream streamB;
     test_allocate_free_different_threads(this->mr.get(), this->stream, streamB);
