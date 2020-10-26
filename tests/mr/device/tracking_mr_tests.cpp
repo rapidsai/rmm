@@ -24,7 +24,9 @@
 namespace rmm {
 namespace test {
 namespace {
-using Tracking_adaptor = rmm::mr::tracking_resource_adaptor<rmm::mr::device_memory_resource>;
+
+using tracking_adaptor = rmm::mr::tracking_resource_adaptor<rmm::mr::device_memory_resource>;
+
 TEST(TrackingTest, ThrowOnNullUpstream)
 {
   auto construct_nullptr = []() { Tracking_adaptor mr{nullptr}; };
