@@ -321,10 +321,10 @@ cpdef DeviceBuffer to_device(const unsigned char[::1] b,
 
 @cython.boundscheck(False)
 cdef void _copy_async(const void* src,
-                     void* dst,
-                     size_t count,
-                     cudaMemcpyKind kind,
-                     cuda_stream_view stream) nogil:
+                      void* dst,
+                      size_t count,
+                      cudaMemcpyKind kind,
+                      cuda_stream_view stream) nogil:
     """
     Asynchronously copy data between host and/or device pointers
 
