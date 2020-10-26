@@ -67,7 +67,7 @@ struct crtp {
  * documented separately:
  *
  * 1. `size_t get_maximum_allocation_size() const`
- * 2. `block_type expand_pool(size_t size, free_list& blocks, cudaStream_t stream)`
+ * 2. `block_type expand_pool(size_t size, free_list& blocks, cuda_stream_view stream)`
  * 3. `split_block allocate_from_block(block_type const& b, size_t size)`
  * 4. `block_type free_block(void* p, size_t size) noexcept`
  */
@@ -117,7 +117,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    * @param stream The stream on which the memory is to be used.
    * @return block_type a block of at least `size` bytes
    */
-  // block_type expand_pool(size_t size, free_list& blocks, cudaStream_t stream)
+  // block_type expand_pool(size_t size, free_list& blocks, cuda_stream_view stream)
 
   /// Struct representing a block that has been split for allocation
   struct split_block {
