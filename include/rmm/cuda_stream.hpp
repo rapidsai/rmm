@@ -74,7 +74,7 @@ class cuda_stream {
    * @return true If the owned stream has not been explicitly moved and is therefore non-null.
    * @return false If the owned stream has been explicitly moved and is therefore null.
    */
-  bool is_valid() const { return stream_.get() != nullptr; }
+  bool is_valid() const { return stream_ != nullptr; }
 
   /**
    * @brief Get the value of the wrapped CUDA stream.
