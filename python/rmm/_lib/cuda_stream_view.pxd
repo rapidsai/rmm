@@ -23,7 +23,6 @@ cdef extern from "rmm/cuda_stream_view.hpp" namespace "rmm" nogil:
         cuda_stream_view(cudaStream_t)
         bool is_default()
         bool is_per_thread_default()
-        bool is_legacy_default()
         void synchronize() except +
 
     cdef bool operator==(cuda_stream_view const, cuda_stream_view const)
@@ -31,6 +30,5 @@ cdef extern from "rmm/cuda_stream_view.hpp" namespace "rmm" nogil:
 cdef class CudaStreamView:
     cdef unique_ptr[cuda_stream_view] c_obj
 
-    cpdef bool is_default(self)
-    cpdef bool is_per_thread_default(self)
-    cpdef bool is_legacy_default(self)
+    cpdef bool is_default(self) except *
+    cpdef bool is_per_thread_default(self) except *

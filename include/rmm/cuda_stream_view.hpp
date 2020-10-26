@@ -68,11 +68,6 @@ class cuda_stream_view {
   explicit operator uintptr_t() const noexcept { return reinterpret_cast<uintptr_t>(value()); }
 
   /**
-   * @brief Return true if the wrapped stream is the CUDA default stream (aka Null Stream).
-   */
-  constexpr bool is_default() const noexcept { return value() == cudaStreamDefault; }
-
-  /**
    * @brief Return true if the wrapped stream is the CUDA per-thread default stream.
    */
   bool is_per_thread_default() const noexcept
@@ -87,7 +82,14 @@ class cuda_stream_view {
   /**
    * @brief Return true if the wrapped stream is explicitly the CUDA legacy default stream.
    */
-  bool is_legacy_default() const noexcept { return value() == cudaStreamLegacy; }
+  bool is_default() const noexcept
+  {
+#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
+    return value() == cudaStreamLegacy;
+#else
+    return value() == cudaStreamLegacy || value() == cudaStreamDefault;
+#endif
+  }
 
   /**
    * @brief Synchronize the viewed CUDA stream.
