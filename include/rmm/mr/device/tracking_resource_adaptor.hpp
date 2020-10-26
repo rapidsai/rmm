@@ -58,11 +58,11 @@ class tracking_resource_adaptor final : public device_memory_resource {
     std::size_t allocation_size;
 
     allocation_info() = delete;
-    allocation_info(std::size_t size, bool capture_stack) :
-      strace{[&]() { return capture_stack ? std::make_unique<rmm::detail::stack_trace>() : nullptr;}() },
-      allocation_size{size}
-    {
-    };
+    allocation_info(std::size_t size, bool capture_stack)
+      : strace{[&]() {
+          return capture_stack ? std::make_unique<rmm::detail::stack_trace>() : nullptr;
+        }()},
+        allocation_size{size} {};
   };
 
   /**
@@ -240,7 +240,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
     return upstream_->get_mem_info(stream);
   }
 
-  bool capture_stacks_; // whether or not to capture call stacks
+  bool capture_stacks_;  // whether or not to capture call stacks
 
   // map of active allocations
   std::map<void*, allocation_info> allocations_;
