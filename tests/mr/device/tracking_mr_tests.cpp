@@ -29,20 +29,20 @@ using tracking_adaptor = rmm::mr::tracking_resource_adaptor<rmm::mr::device_memo
 
 TEST(TrackingTest, ThrowOnNullUpstream)
 {
-  auto construct_nullptr = []() { Tracking_adaptor mr{nullptr}; };
+  auto construct_nullptr = []() { tracking_adaptor mr{nullptr}; };
   EXPECT_THROW(construct_nullptr(), rmm::logic_error);
 }
 
 TEST(TrackingTest, Empty)
 {
-  Tracking_adaptor mr{rmm::mr::get_current_device_resource()};
+  tracking_adaptor mr{rmm::mr::get_current_device_resource()};
   EXPECT_EQ(mr.get_outstanding_allocations().size(), 0);
   EXPECT_EQ(mr.get_allocated_bytes(), 0);
 }
 
 TEST(TrackingTest, AllFreed)
 {
-  Tracking_adaptor mr{rmm::mr::get_current_device_resource()};
+  tracking_adaptor mr{rmm::mr::get_current_device_resource()};
   std::vector<void *> allocations;
   for (int i = 0; i < 10; ++i) {
     allocations.push_back(mr.allocate(10_MiB));
@@ -56,7 +56,7 @@ TEST(TrackingTest, AllFreed)
 
 TEST(TrackingTest, AllocationsLeftWithStacks)
 {
-  Tracking_adaptor mr{rmm::mr::get_current_device_resource(), true};
+  tracking_adaptor mr{rmm::mr::get_current_device_resource(), true};
   std::vector<void *> allocations;
   for (int i = 0; i < 10; ++i) {
     allocations.push_back(mr.allocate(10_MiB));
@@ -73,7 +73,7 @@ TEST(TrackingTest, AllocationsLeftWithStacks)
 
 TEST(TrackingTest, AllocationsLeftWithoutStacks)
 {
-  Tracking_adaptor mr{rmm::mr::get_current_device_resource()};
+  tracking_adaptor mr{rmm::mr::get_current_device_resource()};
   std::vector<void *> allocations;
   for (int i = 0; i < 10; ++i) {
     allocations.push_back(mr.allocate(10_MiB));
