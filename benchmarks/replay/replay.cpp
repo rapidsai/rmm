@@ -242,8 +242,7 @@ std::vector<std::vector<rmm::detail::event>> parse_per_thread_events(std::string
   RMM_EXPECTS(std::all_of(all_events.begin(),
                           all_events.end(),
                           [](auto const& e) {
-                            return (e.stream == cudaStreamDefault) or
-                                   (e.stream == reinterpret_cast<uintptr_t>(cudaStreamPerThread));
+                            return e.stream.is_default() or e.stream.is_per_thread_default();
                           }),
               "Non-default streams not currently supported.");
 

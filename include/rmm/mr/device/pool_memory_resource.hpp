@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/logger.hpp>
@@ -85,8 +86,8 @@ class pool_memory_resource final
    * @param upstream_mr The memory_resource from which to allocate blocks for the pool.
    * @param initial_pool_size Minimum size, in bytes, of the initial pool. Defaults to half of the
    * available memory on the current device.
-   * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to. Defaults to all of
-   * the available memory on the current device.
+   * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to. Defaults to all
+   * of the available memory on the current device.
    */
   explicit pool_memory_resource(Upstream* upstream_mr,
                                 thrust::optional<std::size_t> initial_pool_size = thrust::nullopt,
@@ -156,7 +157,8 @@ class pool_memory_resource final
   size_t get_maximum_allocation_size() const { return std::numeric_limits<size_t>::max(); }
 
   /**
-   * @brief Try to expand the pool by allocating a block of at least `min_size` bytes from upstream
+   * @brief Try to expand the pool by allocating a block of at least `min_size` bytes from
+   * upstream
    *
    * Attempts to allocate `try_size` bytes from upstream. If it fails, it iteratively reduces the
    * attempted size by half until `min_size`, returning the allocated block once it succeeds.
@@ -169,7 +171,7 @@ class pool_memory_resource final
    * @param stream The stream on which the memory is to be used.
    * @return block_type a block of at least `min_size` bytes
    */
-  block_type try_to_expand(std::size_t try_size, std::size_t min_size, cudaStream_t stream)
+  block_type try_to_expand(std::size_t try_size, std::size_t min_size, cuda_stream_view stream)
   {
     while (try_size >= min_size) {
       auto b = block_from_upstream(try_size, stream);
@@ -181,7 +183,7 @@ class pool_memory_resource final
       try_size = std::max(min_size, try_size / 2);
     }
     RMM_LOG_ERROR("[A][Stream {}][Upstream {}B][FAILURE maximum pool size exceeded]",
-                  reinterpret_cast<void*>(stream),
+                  fmt::ptr(stream.value()),
                   min_size);
     RMM_FAIL("Maximum pool size exceeded", rmm::bad_alloc);
   }
@@ -234,7 +236,7 @@ class pool_memory_resource final
    * @param stream The stream on which the memory is to be used.
    * @return block_type a block of at least `size` bytes
    */
-  block_type expand_pool(std::size_t size, free_list& blocks, cudaStream_t stream)
+  block_type expand_pool(std::size_t size, free_list& blocks, cuda_stream_view stream)
   {
     // Strategy: If maximum_pool_size_ is set, then grow geometrically, e.g. by halfway to the
     // limit each time. If it is not set, grow exponentially, e.g. by doubling the pool size each
@@ -273,9 +275,9 @@ class pool_memory_resource final
    * @param stream The stream on which the memory is to be used.
    * @return block_type The allocated block
    */
-  thrust::optional<block_type> block_from_upstream(size_t size, cudaStream_t stream)
+  thrust::optional<block_type> block_from_upstream(size_t size, cuda_stream_view stream)
   {
-    RMM_LOG_DEBUG("[A][Stream {}][Upstream {}B]", reinterpret_cast<void*>(stream), size);
+    RMM_LOG_DEBUG("[A][Stream {}][Upstream {}B]", fmt::ptr(stream.value()), size);
 
     if (size == 0) return {};
 
@@ -415,7 +417,7 @@ class pool_memory_resource final
    * @param stream to execute on
    * @return std::pair contaiing free_size and total_size of memory
    */
-  std::pair<size_t, size_t> do_get_mem_info(cudaStream_t stream) const override
+  std::pair<size_t, size_t> do_get_mem_info(cuda_stream_view stream) const override
   {
     std::size_t free_size{};
     std::size_t total_size{};
