@@ -119,7 +119,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
    * is the allocated memory pointer and the data is the allocation_info structure, which
    * contains size and, potentially, stack traces.
    */
-  std::map<void*, allocation_info> const& get_outstanding_allocations() const
+  std::map<void*, allocation_info> const& get_outstanding_allocations() const noexcept
   {
     return allocations_;
   }
@@ -220,10 +220,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
     else {
       tracking_resource_adaptor<Upstream> const* cast =
         dynamic_cast<tracking_resource_adaptor<Upstream> const*>(&other);
-      if (cast != nullptr)
-        return upstream_->is_equal(*cast->get_upstream());
-      else
-        return upstream_->is_equal(other);
+      return cast != nullptr ? upstream_->is_equal(*cast->get_upstream()) : upstream_->is_equal(other);
     }
   }
 
@@ -240,18 +237,11 @@ class tracking_resource_adaptor final : public device_memory_resource {
     return upstream_->get_mem_info(stream);
   }
 
-  bool capture_stacks_;  // whether or not to capture call stacks
-
-  // map of active allocations
-  std::map<void*, allocation_info> allocations_;
-
-  // number of bytes currently allocated
-  std::atomic<std::size_t> allocated_bytes_;
-
-  std::shared_timed_mutex mutable mtx_;  // mutex for thread safe access to allocations_
-
-  Upstream* upstream_;  ///< The upstream resource used for satisfying
-                        ///< allocation requests
+  bool capture_stacks_;                           // whether or not to capture call stacks
+  std::map<void*, allocation_info> allocations_;  // map of active allocations
+  std::atomic<std::size_t> allocated_bytes_;      // number of bytes currently allocated
+  std::shared_timed_mutex mutable mtx_;           // mutex for thread safe access to allocations_
+  Upstream* upstream_;  ///< The upstream resource used for satisfying allocation requests
 };
 
 /**

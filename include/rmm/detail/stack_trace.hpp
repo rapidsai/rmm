@@ -49,7 +49,7 @@ class stack_trace {
     // store off a stack for this allocation
     const int MaxStackDepth = 64;
     void* stack[MaxStackDepth];
-    auto depth = backtrace(stack, MaxStackDepth);
+    auto const depth = backtrace(stack, MaxStackDepth);
     stack_ptrs.insert(stack_ptrs.end(), &stack[0], &stack[depth]);
   }
 

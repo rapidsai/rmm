@@ -140,5 +140,4 @@ ConfigureTest(DEVICE_UVECTOR_TEST "${DEVICE_UVECTOR_TEST_SRC}")
 
 ###################################################################################################
 
-
 enable_testing()
