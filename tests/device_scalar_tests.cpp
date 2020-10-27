@@ -16,6 +16,7 @@
 
 #include <gtest/gtest.h>
 
+#include <rmm/cuda_stream.hpp>
 #include <rmm/device_scalar.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
@@ -25,11 +26,9 @@
 #include <cstddef>
 #include <random>
 
-void sync_stream(cudaStream_t stream) { EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(stream)); }
-
 template <typename T>
 struct DeviceScalarTest : public ::testing::Test {
-  cudaStream_t stream{};
+  rmm::cuda_stream stream{};
   rmm::mr::device_memory_resource* mr{rmm::mr::get_current_device_resource()};
   T value{};
   std::default_random_engine generator{};
@@ -37,10 +36,6 @@ struct DeviceScalarTest : public ::testing::Test {
                                                 std::numeric_limits<T>::max()};
 
   DeviceScalarTest() { value = distribution(generator); }
-
-  void SetUp() override { EXPECT_EQ(cudaSuccess, cudaStreamCreate(&stream)); }
-
-  void TearDown() override { EXPECT_EQ(cudaSuccess, cudaStreamDestroy(stream)); };
 };
 
 using Types = ::testing::Types<int8_t, int16_t, int32_t, int64_t>;
