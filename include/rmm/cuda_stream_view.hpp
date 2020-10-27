@@ -73,7 +73,7 @@ class cuda_stream_view {
   bool is_per_thread_default() const noexcept
   {
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-    return value() == cudaStreamPerThread || value() == cudaStreamDefault;
+    return value() == cudaStreamPerThread || value() == 0;
 #else
     return value() == cudaStreamPerThread;
 #endif
@@ -87,7 +87,7 @@ class cuda_stream_view {
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
     return value() == cudaStreamLegacy;
 #else
-    return value() == cudaStreamLegacy || value() == cudaStreamDefault;
+    return value() == cudaStreamLegacy || value() == 0;
 #endif
   }
 
@@ -111,11 +111,11 @@ class cuda_stream_view {
   }
 
  private:
-  cudaStream_t stream_{cudaStreamDefault};
+  cudaStream_t stream_{0};
 };
 
 /**
- * @brief Static cuda_stream_view of cudaStreamDefault, for convenience
+ * @brief Static cuda_stream_view of the default stream (stream 0), for convenience
  */
 static cuda_stream_view cuda_stream_default{};
 
