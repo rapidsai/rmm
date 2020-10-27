@@ -218,8 +218,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
     if (this == &other)
       return true;
     else {
-      tracking_resource_adaptor<Upstream> const* cast =
-        dynamic_cast<tracking_resource_adaptor<Upstream> const*>(&other);
+      auto cast = dynamic_cast<tracking_resource_adaptor<Upstream> const*>(&other);
       return cast != nullptr ? upstream_->is_equal(*cast->get_upstream())
                              : upstream_->is_equal(other);
     }
@@ -242,7 +241,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
   std::map<void*, allocation_info> allocations_;  // map of active allocations
   std::atomic<std::size_t> allocated_bytes_;      // number of bytes currently allocated
   std::shared_timed_mutex mutable mtx_;           // mutex for thread safe access to allocations_
-  Upstream* upstream_;  ///< The upstream resource used for satisfying allocation requests
+  Upstream* upstream_;  // the upstream resource used for satisfying allocation requests
 };
 
 /**
