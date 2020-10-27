@@ -63,11 +63,6 @@ class cuda_stream_view {
   explicit constexpr operator cudaStream_t() const noexcept { return value(); }
 
   /**
-   * @brief Explicit conversion to uintptr_t.
-   */
-  explicit operator uintptr_t() const noexcept { return reinterpret_cast<uintptr_t>(value()); }
-
-  /**
    * @brief Return true if the wrapped stream is the CUDA per-thread default stream.
    */
   bool is_per_thread_default() const noexcept
@@ -149,5 +144,18 @@ inline bool operator==(cuda_stream_view lhs, cuda_stream_view rhs)
  * @return true if unequal, false if equal
  */
 inline bool operator!=(cuda_stream_view lhs, cuda_stream_view rhs) { return not(lhs == rhs); }
+
+/**
+ * @brief Output stream operator for printing / logging streams
+ *
+ * @param os The output ostream
+ * @param sv The cuda_stream_view to output
+ * @return std::ostream& The output ostream
+ */
+inline std::ostream& operator<<(std::ostream& os, cuda_stream_view sv)
+{
+  os << sv.value();
+  return os;
+}
 
 }  // namespace rmm

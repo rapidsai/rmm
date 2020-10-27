@@ -206,15 +206,7 @@ class logging_resource_adaptor final : public device_memory_resource {
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
     auto const p = upstream_->allocate(bytes, stream);
-    std::string msg{"allocate,"};
-    std::stringstream ss;
-    ss << p;
-    msg += ss.str();
-    msg += ",";
-    msg += std::to_string(bytes);
-    msg += ",";
-    msg += std::to_string(uintptr_t{stream});
-    logger_->info(msg);
+    logger_->info("allocate,{},{},{}", p, bytes, fmt::ptr(stream.value()));
     return p;
   }
 
@@ -236,15 +228,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    */
   void do_deallocate(void* p, std::size_t bytes, cuda_stream_view stream) override
   {
-    std::string msg{"free,"};
-    std::stringstream ss;
-    ss << p;
-    msg += ss.str();
-    msg += ",";
-    msg += std::to_string(bytes);
-    msg += ",";
-    msg += std::to_string(uintptr_t{stream});
-    logger_->info(msg);
+    logger_->info("free,{},{},{}", p, bytes, fmt::ptr(stream.value()));
     upstream_->deallocate(p, bytes, stream);
   }
 
