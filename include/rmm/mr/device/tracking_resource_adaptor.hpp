@@ -220,7 +220,8 @@ class tracking_resource_adaptor final : public device_memory_resource {
     else {
       tracking_resource_adaptor<Upstream> const* cast =
         dynamic_cast<tracking_resource_adaptor<Upstream> const*>(&other);
-      return cast != nullptr ? upstream_->is_equal(*cast->get_upstream()) : upstream_->is_equal(other);
+      return cast != nullptr ? upstream_->is_equal(*cast->get_upstream())
+                             : upstream_->is_equal(other);
     }
   }
 
