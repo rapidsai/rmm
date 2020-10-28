@@ -3,15 +3,19 @@
 ## New Features
 
 - PR #609 Adds `polymorphic_allocator` and `stream_allocator_adaptor`
+- PR #608 Add stream wrapper type
 
 ## Improvements
 
+- PR #599 Make the arena memory resource work better with the producer/consumer mode
+- PR #612 Drop old Python `device_array*` API
 - PR #603 Always test both legacy and per-thread default stream
+- PR #611 Add a note to the contribution guide about requiring 2 C++ reviewers
 
 ## Bug Fixes
 
 - PR #592 Add `auto_flush` to `make_logging_adaptor`
-
+- PR #602 Fix `device_scalar` and its tests so that they use the correct CUDA stream
 
 # RMM 0.16.0 (Date TBD)
 
@@ -47,6 +51,8 @@
 - PR #581 Improve logging documentation
 - PR #585 Update ci/local/README.md
 - PR #587 Replaced `move` with `std::move`
+- PR #588 Use installed C++ RMM in python build
+- PR #601 Make maximum pool size truly optional (grow until failure)
 
 ## Bug Fixes
 
