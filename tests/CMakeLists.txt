@@ -83,6 +83,12 @@ set(THRUST_ALLOCATOR_TEST_SRC
 ConfigureTest(THRUST_ALLOCATOR_TEST "${THRUST_ALLOCATOR_TEST_SRC}")
 
 ###################################################################################################
+# - polymorphic allocator tests
+
+ConfigureTest(POLYMORPHIC_ALLOCATOR_TEST 
+              "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/polymorphic_allocator_tests.cpp")
+
+###################################################################################################
 # - limiting adaptor tests
 
 set(LIMITING_TEST_SRC
