@@ -17,6 +17,10 @@
 #include <memory>
 
 #include <gtest/gtest.h>
+#include <rmm/cuda_stream.hpp>
+#include <rmm/mr/device/cuda_memory_resource.hpp>
+#include <rmm/mr/device/managed_memory_resource.hpp>
+#include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/polymorphic_allocator.hpp>
 #include "mr_test.hpp"
 
@@ -24,25 +28,64 @@ namespace rmm {
 namespace test {
 namespace {
 
-struct allocator_test : public mr_test {
+struct allocator_test : public ::testing::Test {
+  rmm::cuda_stream stream;
 };
 
-template <typename Allocator>
-void test_allocator(Allocator const& alloc){
-
+TEST_F(allocator_test, default_resource)
+{
+  rmm::mr::polymorphic_allocator<int> allocator{};
+  EXPECT_EQ(allocator.resource(), rmm::mr::get_current_device_resource());
 }
 
-template <typename Allocator>
-void test_stream_ordered_allocator(Allocator const& alloc){
-    auto allocator = Allocator{alloc};
-    int * p = allocator.allocate(1000, cudaStream_t{0});
-    EXPECT_NE(p, nullptr);
-    EXPECT_NO_THROW(allocator.deallocate(p, 1000, cudaStream_t{0}));
+TEST_F(allocator_test, custom_resource)
+{
+  rmm::mr::cuda_memory_resource mr;
+  rmm::mr::polymorphic_allocator<int> allocator{&mr};
+  EXPECT_EQ(allocator.resource(), &mr);
 }
 
-TEST(first, first) { 
-    rmm::mr::polymorphic_allocator<int> allocator{}; 
-    test_stream_ordered_allocator(allocator);
+void test_conversion(rmm::mr::polymorphic_allocator<int>) {}
+TEST_F(allocator_test, implicit_conversion)
+{
+  rmm::mr::cuda_memory_resource mr;
+  test_conversion(&mr);
+}
+
+TEST_F(allocator_test, self_equality)
+{
+  rmm::mr::polymorphic_allocator<int> allocator{};
+  EXPECT_EQ(allocator, allocator);
+  EXPECT_FALSE(allocator != allocator);
+}
+
+TEST_F(allocator_test, equal_resources)
+{
+  rmm::mr::cuda_memory_resource mr0;
+  rmm::mr::polymorphic_allocator<int> alloc0{&mr0};
+
+  rmm::mr::cuda_memory_resource mr1;
+  rmm::mr::polymorphic_allocator<int> alloc1{&mr1};
+  EXPECT_EQ(alloc0, alloc1);
+  EXPECT_FALSE(alloc0 != alloc1);
+}
+
+TEST_F(allocator_test, unequal_resources)
+{
+  rmm::mr::managed_memory_resource mr0;
+  rmm::mr::polymorphic_allocator<int> alloc0{&mr0};
+
+  rmm::mr::cuda_memory_resource mr1;
+  rmm::mr::polymorphic_allocator<int> alloc1{&mr1};
+  EXPECT_NE(alloc0, alloc1);
+}
+
+TEST_F(allocator_test, allocate_deallocate)
+{
+  rmm::mr::polymorphic_allocator<int> allocator{};
+  auto p = allocator.allocate(1000, stream);
+  EXPECT_NE(p, nullptr);
+  EXPECT_NO_THROW(allocator.deallocate(p, 1000, stream));
 }
 
 }  // namespace
