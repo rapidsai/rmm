@@ -171,7 +171,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
    * @param stream Stream on which to perform the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* do_allocate(std::size_t bytes, cudaStream_t stream) override
+  void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
     void* p = upstream_->allocate(bytes, stream);
 
@@ -194,7 +194,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
    * @param bytes Size of the allocation
    * @param stream Stream on which to perform the deallocation
    */
-  void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override
+  void do_deallocate(void* p, std::size_t bytes, cuda_stream_view stream) override
   {
     upstream_->deallocate(p, bytes, stream);
     {
@@ -232,7 +232,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
    * @param stream Stream on which to get the mem info.
    * @return std::pair contaiing free_size and total_size of memory
    */
-  std::pair<std::size_t, std::size_t> do_get_mem_info(cudaStream_t stream) const override
+  std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view stream) const override
   {
     return upstream_->get_mem_info(stream);
   }
