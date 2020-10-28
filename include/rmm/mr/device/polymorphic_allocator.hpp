@@ -21,6 +21,7 @@
 
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/cuda_stream_view.hpp>
 
 namespace rmm {
 namespace mr {
@@ -88,7 +89,7 @@ class polymorphic_allocator {
    * @param stream The stream on which to perform the allocation
    * @return Pointer to the allocated storage
    */
-  value_type* allocate(std::size_t n, cudaStream_t stream)
+  value_type* allocate(std::size_t n, cuda_stream_view stream)
   {
     resource()->allocate(n * sizeof(T), stream);
   }
@@ -103,7 +104,7 @@ class polymorphic_allocator {
    * @param n Number of objects originally allocated
    * @param stream Stream on which to perform the deallocation
    */
-  void deallocate(value_type* p, std::size_t n, cudaStream_t stream)
+  void deallocate(value_type* p, std::size_t n, cuda_stream_view stream)
   {
     resource()->deallocate(p, n * sizeof(T), stream);
   }
@@ -135,7 +136,7 @@ bool operator!=(polymorphic_allocator<T> const& lhs, polymorphic_allocator<U> co
 /**
  * @brief Adapts a stream ordered allocator to provide a standard `Allocator` interface
  *
- * A stream-ordered allocator (i.e., `allocate/deallocate` use a `cudaStream_t`) cannot be used in
+ * A stream-ordered allocator (i.e., `allocate/deallocate` use a `cuda_stream_view`) cannot be used in
  * an interface that expects a standard C++ `Allocator` interface. `stream_allocator_adaptor` wraps
  * a stream-ordered allocator and a stream to provide a standard `Allocator` interface. The adaptor
  * uses the wrapped stream in calls the underlying allocator's `allocate` and `deallocate`
@@ -144,7 +145,7 @@ bool operator!=(polymorphic_allocator<T> const& lhs, polymorphic_allocator<U> co
  * Example:
  *\code{c++}
  * my_stream_ordered_allocator<int> a{...};
- * cudaStream_t s = // create stream;
+ * cuda_stream_view s = // create stream;
  *
  * auto adapted = make_stream_allocator_adaptor(a, s);
  *
@@ -170,7 +171,7 @@ class stream_allocator_adaptor {
    * @param a The stream ordered allocator to use as the underlying allocator
    * @param stream The stream used with the underlying allocator
    */
-  stream_allocator_adaptor(Allocator const& a, cudaStream_t stream) : alloc_{a}, stream_{stream} {}
+  stream_allocator_adaptor(Allocator const& a, cuda_stream_view stream) : alloc_{a}, stream_{stream} {}
 
   /**
    * @brief Construct a `stream_allocator_adaptor` using `other.underlying_allocator()` and
@@ -216,7 +217,7 @@ class stream_allocator_adaptor {
    * @brief Returns the underlying stream on which calls to the underlying allocator are made.
    *
    */
-  cudaStream_t stream() const noexcept { return stream_; }
+  cuda_stream_view stream() const noexcept { return stream_; }
 
   /**
    * @brief Returns the underlying stream-ordered allocator
@@ -226,7 +227,7 @@ class stream_allocator_adaptor {
 
  private:
   Allocator alloc_;      ///< Underlying allocator used for (de)allocation
-  cudaStream_t stream_;  ///< Stream on which (de)allocations are performed
+  cuda_stream_view stream_;  ///< Stream on which (de)allocations are performed
 };
 
 template <typename A, typename O>
@@ -252,7 +253,7 @@ bool operator!=(stream_allocator_adaptor<A> const& lhs, stream_allocator_adaptor
  * @return A `stream_allocator_adaptor` wrapping `allocator` and `s`
  */
 template <typename Allocator>
-auto make_stream_allocator_adaptor(Allocator const& allocator, cudaStream_t s)
+auto make_stream_allocator_adaptor(Allocator const& allocator, cuda_stream_view s)
 {
   return stream_allocator_adaptor<Allocator>{allocator, s};
 }
