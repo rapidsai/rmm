@@ -61,7 +61,7 @@ if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
     ################################################################################
 
     logger "Build and install librmm and rmm..."
-    "$WORKSPACE/build.sh" -v --ptds clean librmm rmm
+    "$WORKSPACE/build.sh" -v clean librmm rmm
 
     ################################################################################
     # Test - librmm

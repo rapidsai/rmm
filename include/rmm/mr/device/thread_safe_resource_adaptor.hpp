@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/nvtx/ranges.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
@@ -90,7 +91,7 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
    * @param stream Stream on which to perform the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* do_allocate(std::size_t bytes, cudaStream_t stream) override
+  void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
     RMM_FUNC_RANGE();
     lock_t lock(mtx);
@@ -107,7 +108,7 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
    * @param bytes Size of the allocation
    * @param stream Stream on which to perform the deallocation
    */
-  void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override
+  void do_deallocate(void* p, std::size_t bytes, cuda_stream_view stream) override
   {
     RMM_FUNC_RANGE();
     lock_t lock(mtx);
@@ -144,7 +145,7 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
    * @param stream Stream on which to get the mem info.
    * @return std::pair contaiing free_size and total_size of memory
    */
-  std::pair<size_t, size_t> do_get_mem_info(cudaStream_t stream) const override
+  std::pair<size_t, size_t> do_get_mem_info(cuda_stream_view stream) const override
   {
     lock_t lock(mtx);
     return upstream_->get_mem_info(stream);

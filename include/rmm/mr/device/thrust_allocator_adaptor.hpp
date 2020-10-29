@@ -19,7 +19,6 @@
 #include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/device_malloc_allocator.h>
 
-#include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 
@@ -65,7 +64,7 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    *
    * @param stream The stream to be used for device memory (de)allocation
    */
-  explicit thrust_allocator(cudaStream_t stream) : _stream{stream} {}
+  explicit thrust_allocator(cuda_stream_view stream) : _stream{stream} {}
 
   /**
    * @brief Constructs a `thrust_allocator` using a device memory resource and
@@ -74,7 +73,9 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    * @param mr The resource to be used for device memory allocation
    * @param stream The stream to be used for device memory (de)allocation
    */
-  thrust_allocator(device_memory_resource* mr, cudaStream_t stream) : _mr(mr), _stream{stream} {}
+  thrust_allocator(device_memory_resource* mr, cuda_stream_view stream) : _mr(mr), _stream{stream}
+  {
+  }
 
   /**
    * @brief Copy constructor. Copies the resource pointer and stream.
@@ -118,11 +119,11 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
   /**
    * @brief Returns the stream used by this allocator.
    */
-  cudaStream_t stream() const noexcept { return _stream; }
+  cuda_stream_view stream() const noexcept { return _stream; }
 
  private:
   device_memory_resource* _mr{rmm::mr::get_current_device_resource()};
-  cudaStream_t _stream{0};
+  cuda_stream_view _stream{};
 };
 }  // namespace mr
 }  // namespace rmm

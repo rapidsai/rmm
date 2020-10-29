@@ -16,9 +16,9 @@
 
 #pragma once
 
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
-#include <rmm/mr/device/default_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 
@@ -39,7 +39,7 @@ namespace rmm {
  * Example:
  * @code
  * rmm::mr::device_memory_resource * mr = new my_custom_resource();
- * cudaStream_t s;
+ * rmm::cuda_stream_view s{};
  *
  * // Allocates *uninitialized* device memory on stream `s` sufficient for 100 ints using the
  * // supplied resource `mr`
@@ -110,7 +110,7 @@ class device_uvector {
    */
   explicit device_uvector(
     std::size_t size,
-    cudaStream_t stream,
+    cuda_stream_view stream,
     rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource())
     : _storage{elements_to_bytes(size), stream, mr}
   {
@@ -127,7 +127,7 @@ class device_uvector {
    */
   explicit device_uvector(
     device_uvector const& other,
-    cudaStream_t stream,
+    cuda_stream_view stream,
     rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource())
     : _storage{other._storage, stream, mr}
   {
@@ -190,12 +190,13 @@ class device_uvector {
    * @param v The value to copy to the specified element
    * @param s The stream on which to perform the copy
    */
-  void set_element(std::size_t element_index, T const& v, cudaStream_t s)
+  void set_element(std::size_t element_index, T const& v, cuda_stream_view s)
   {
     RMM_EXPECTS(
       element_index < size(), rmm::out_of_range, "Attempt to access out of bounds element.");
-    RMM_CUDA_TRY(cudaMemcpyAsync(element_ptr(element_index), &v, sizeof(v), cudaMemcpyDefault, s));
-    RMM_CUDA_TRY(cudaStreamSynchronize(s));
+    RMM_CUDA_TRY(
+      cudaMemcpyAsync(element_ptr(element_index), &v, sizeof(v), cudaMemcpyDefault, s.value()));
+    s.synchronize_no_throw();
   }
 
   /**
@@ -227,11 +228,12 @@ class device_uvector {
    * @param v The value to copy to the specified element
    * @param s The stream on which to perform the copy
    */
-  void set_element_async(std::size_t element_index, value_type const& v, cudaStream_t s)
+  void set_element_async(std::size_t element_index, value_type const& v, cuda_stream_view s)
   {
     RMM_EXPECTS(
       element_index < size(), rmm::out_of_range, "Attempt to access out of bounds element.");
-    RMM_CUDA_TRY(cudaMemcpyAsync(element_ptr(element_index), &v, sizeof(v), cudaMemcpyDefault, s));
+    RMM_CUDA_TRY(
+      cudaMemcpyAsync(element_ptr(element_index), &v, sizeof(v), cudaMemcpyDefault, s.value()));
   }
 
   /**
@@ -246,13 +248,14 @@ class device_uvector {
    * @param s The stream on which to perform the copy
    * @return The value of the specified element
    */
-  value_type element(std::size_t element_index, cudaStream_t s) const
+  value_type element(std::size_t element_index, cuda_stream_view s) const
   {
     RMM_EXPECTS(
       element_index < size(), rmm::out_of_range, "Attempt to access out of bounds element.");
     value_type v;
-    RMM_CUDA_TRY(cudaMemcpyAsync(&v, element_ptr(element_index), sizeof(v), cudaMemcpyDefault, s));
-    RMM_CUDA_TRY(cudaStreamSynchronize(s));
+    RMM_CUDA_TRY(
+      cudaMemcpyAsync(&v, element_ptr(element_index), sizeof(v), cudaMemcpyDefault, s.value()));
+    s.synchronize();
     return v;
   }
 
@@ -266,7 +269,7 @@ class device_uvector {
    * @param s The stream on which to perform the copy
    * @return The value of the first element
    */
-  value_type front_element(cudaStream_t s) const { return element(0, s); }
+  value_type front_element(cuda_stream_view s) const { return element(0, s); }
 
   /**
    * @brief Returns the last element.
@@ -278,7 +281,7 @@ class device_uvector {
    * @param s The stream on which to perform the copy
    * @return The value of the last element
    */
-  value_type back_element(cudaStream_t s) const { return element(size() - 1, s); }
+  value_type back_element(cuda_stream_view s) const { return element(size() - 1, s); }
 
   /**
    * @brief Resizes the vector to contain `new_size` elements.
@@ -296,7 +299,7 @@ class device_uvector {
    * @param new_size The desired number of elements
    * @param stream The stream on which to perform the allocation/copy (if any)
    */
-  void resize(std::size_t new_size, cudaStream_t stream)
+  void resize(std::size_t new_size, cuda_stream_view stream)
   {
     _storage.resize(elements_to_bytes(new_size), stream);
   }
@@ -308,7 +311,7 @@ class device_uvector {
    *
    * @param stream Stream on which to perform allocation and copy
    */
-  void shrink_to_fit(cudaStream_t stream) { _storage.shrink_to_fit(stream); }
+  void shrink_to_fit(cuda_stream_view stream) { _storage.shrink_to_fit(stream); }
 
   /**
    * @brief Release ownership of device memory storage.

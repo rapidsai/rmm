@@ -16,6 +16,7 @@
 
 #include <benchmarks/utilities/cxxopts.hpp>
 
+#include <rmm/mr/device/arena_memory_resource.hpp>
 #include <rmm/mr/device/binning_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
@@ -61,7 +62,7 @@ void random_allocation_free(rmm::mr::device_memory_resource& mr,
                             SizeDistribution size_distribution,
                             size_t num_allocations,
                             size_t max_usage,  // in MiB
-                            cudaStream_t stream = 0)
+                            rmm::cuda_stream_view stream = {})
 {
   std::default_random_engine generator;
 
@@ -138,7 +139,7 @@ void uniform_random_allocations(rmm::mr::device_memory_resource& mr,
                                 size_t num_allocations,
                                 size_t max_allocation_size,  // in MiB
                                 size_t max_usage,
-                                cudaStream_t stream = 0)
+                                rmm::cuda_stream_view stream = {})
 {
   std::uniform_int_distribution<std::size_t> size_distribution(1, max_allocation_size * size_mb);
   random_allocation_free(mr, size_distribution, num_allocations, max_usage, stream);
@@ -150,7 +151,7 @@ void uniform_random_allocations(rmm::mr::device_memory_resource& mr,
                                 size_t mean_allocation_size = 500, // in MiB
                                 size_t stddev_allocation_size = 500, // in MiB
                                 size_t max_usage = 8 << 20,
-                                cudaStream_t stream) {
+                                cuda_stream_view stream) {
   std::normal_distribution<std::size_t> size_distribution(, max_allocation_size * size_mb);
 }*/
 
@@ -160,6 +161,11 @@ inline auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>
 inline auto make_pool()
 {
   return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_cuda());
+}
+
+inline auto make_arena()
+{
+  return rmm::mr::make_owning_wrapper<rmm::mr::arena_memory_resource>(make_cuda());
 }
 
 inline auto make_binning()
@@ -234,6 +240,8 @@ void declare_benchmark(std::string name)
     BENCHMARK_CAPTURE(BM_RandomAllocations, binning_mr, &make_binning)->Apply(benchmark_range);
   else if (name == "pool")
     BENCHMARK_CAPTURE(BM_RandomAllocations, pool_mr, &make_pool)->Apply(benchmark_range);
+  else if (name == "arena")
+    BENCHMARK_CAPTURE(BM_RandomAllocations, arena_mr, &make_arena)->Apply(benchmark_range);
   else
     std::cout << "Error: invalid memory_resource name: " << name << "\n";
 }
@@ -278,8 +286,10 @@ int main(int argc, char** argv)
   max_size        = args["maxsize"].as<int>();
 
   if (args.count("profile") > 0) {
-    std::map<std::string, MRFactoryFunc> const funcs(
-      {{"binning", &make_binning}, {"cuda", &make_cuda}, {"pool", &make_pool}});
+    std::map<std::string, MRFactoryFunc> const funcs({{"arena", &make_arena},
+                                                      {"binning", &make_binning},
+                                                      {"cuda", &make_cuda},
+                                                      {"pool", &make_pool}});
     auto resource = args["resource"].as<std::string>();
 
     std::cout << "Profiling " << resource << " with " << num_allocations << " allocations of max "
@@ -300,7 +310,7 @@ int main(int argc, char** argv)
       std::string mr_name = args["resource"].as<std::string>();
       declare_benchmark(mr_name);
     } else {
-      std::array<std::string, 4> mrs{"pool", "binning", "cuda"};
+      std::array<std::string, 4> mrs{"pool", "binning", "cuda", "arena"};
       std::for_each(std::cbegin(mrs), std::cend(mrs), [](auto const& s) { declare_benchmark(s); });
     }
     ::benchmark::RunSpecifiedBenchmarks();

@@ -28,16 +28,17 @@ INSTANTIATE_TEST_CASE_P(ResourceTests,
                         ::testing::Values(mr_factory{"CUDA", &make_cuda},
                                           mr_factory{"Managed", &make_managed},
                                           mr_factory{"Pool", &make_pool},
+                                          mr_factory{"Arena", &make_arena},
                                           mr_factory{"Binning", &make_binning}),
                         [](auto const& info) { return info.param.name; });
 
-TEST(DefaultTest, DefaultResourceIsCUDA)
+TEST(DefaultTest, CurrentDeviceResourceIsCUDA)
 {
-  EXPECT_NE(nullptr, rmm::mr::get_default_resource());
-  EXPECT_TRUE(rmm::mr::get_default_resource()->is_equal(rmm::mr::cuda_memory_resource{}));
+  EXPECT_NE(nullptr, rmm::mr::get_current_device_resource());
+  EXPECT_TRUE(rmm::mr::get_current_device_resource()->is_equal(rmm::mr::cuda_memory_resource{}));
 }
 
-TEST(DefaultTest, UseDefaultResource) { test_get_default_resource(); }
+TEST(DefaultTest, UseCurrentDeviceResource) { test_get_current_device_resource(); }
 
 TEST(DefaultTest, GetCurrentDeviceResource)
 {
@@ -45,19 +46,6 @@ TEST(DefaultTest, GetCurrentDeviceResource)
   EXPECT_NO_THROW(mr = rmm::mr::get_current_device_resource());
   EXPECT_NE(nullptr, mr);
   EXPECT_TRUE(mr->is_equal(rmm::mr::cuda_memory_resource{}));
-}
-
-TEST_P(mr_test, SetDefaultResource)
-{
-  rmm::mr::device_memory_resource* old{nullptr};
-  EXPECT_NO_THROW(old = rmm::mr::set_default_resource(this->mr.get()));
-  EXPECT_NE(nullptr, old);
-
-  test_get_default_resource();  // test allocating with the new default resource
-
-  // setting default resource w/ nullptr should reset to initial
-  EXPECT_NO_THROW(rmm::mr::set_default_resource(nullptr));
-  EXPECT_TRUE(old->is_equal(*rmm::mr::get_default_resource()));
 }
 
 TEST_P(mr_test, SetCurrentDeviceResource)
@@ -83,7 +71,7 @@ TEST_P(mr_test, SelfEquality) { EXPECT_TRUE(this->mr->is_equal(*this->mr)); }
 
 TEST_P(mr_test, AllocateDefaultStream)
 {
-  test_various_allocations(this->mr.get(), cudaStreamDefault);
+  test_various_allocations(this->mr.get(), cuda_stream_view{});
 }
 
 TEST_P(mr_test, AllocateOnStream) { test_various_allocations(this->mr.get(), this->stream); }
@@ -97,7 +85,7 @@ TEST_P(mr_test, RandomAllocationsStream)
 
 TEST_P(mr_test, MixedRandomAllocationFree)
 {
-  test_mixed_random_allocation_free(this->mr.get(), 5_MiB, cudaStreamDefault);
+  test_mixed_random_allocation_free(this->mr.get(), 5_MiB, cuda_stream_view{});
 }
 
 TEST_P(mr_test, MixedRandomAllocationFreeStream)
@@ -109,11 +97,11 @@ TEST_P(mr_test, GetMemInfo)
 {
   if (this->mr->supports_get_mem_info()) {
     std::pair<std::size_t, std::size_t> mem_info;
-    EXPECT_NO_THROW(mem_info = this->mr->get_mem_info(0));
+    EXPECT_NO_THROW(mem_info = this->mr->get_mem_info(rmm::cuda_stream_view{}));
     std::size_t allocation_size = 16 * 256;
     void* ptr;
     EXPECT_NO_THROW(ptr = this->mr->allocate(allocation_size));
-    EXPECT_NO_THROW(mem_info = this->mr->get_mem_info(0));
+    EXPECT_NO_THROW(mem_info = this->mr->get_mem_info(rmm::cuda_stream_view{}));
     EXPECT_TRUE(mem_info.first >= allocation_size);
     EXPECT_NO_THROW(this->mr->deallocate(ptr, allocation_size));
   }
