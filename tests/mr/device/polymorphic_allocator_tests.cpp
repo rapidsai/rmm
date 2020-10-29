@@ -22,10 +22,7 @@
 #include <rmm/mr/device/managed_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/polymorphic_allocator.hpp>
-#include "mr_test.hpp"
 
-namespace rmm {
-namespace test {
 namespace {
 
 struct allocator_test : public ::testing::Test {
@@ -112,5 +109,3 @@ TEST_F(allocator_test, allocate_deallocate)
 }
 
 }  // namespace
-}  // namespace test
-}  // namespace rmm
