@@ -78,7 +78,7 @@ class polymorphic_allocator {
    * resource of the new `polymorphic_allocator`.
    */
   template <typename U>
-  polymorphic_allocator(polymorphic_allocator<U> const& other) noexcept : mr_{other.mr_}
+  polymorphic_allocator(polymorphic_allocator<U> const& other) noexcept : mr_{other.resource()}
   {
   }
 
