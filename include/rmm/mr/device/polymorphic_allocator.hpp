@@ -189,6 +189,11 @@ class stream_allocator_adaptor {
   {
   }
 
+  /**
+   * @brief Rebinds the allocator to the specified type.
+   *
+   * @tparam T The desired `value_type` of the rebound allocator type
+   */
   template <typename T>
   struct rebind {
     using other =
