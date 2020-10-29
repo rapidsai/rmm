@@ -80,6 +80,29 @@ TEST_F(allocator_test, unequal_resources)
   EXPECT_NE(alloc0, alloc1);
 }
 
+TEST_F(allocator_test, copy_ctor_same_type){
+    rmm::mr::polymorphic_allocator<int> alloc0;
+    rmm::mr::polymorphic_allocator<int> alloc1{alloc0};
+    EXPECT_EQ(alloc0, alloc1);
+    EXPECT_EQ(alloc0.resource(), alloc1.resource());
+}
+
+TEST_F(allocator_test, copy_ctor_different_type){
+    rmm::mr::polymorphic_allocator<int> alloc0;
+    rmm::mr::polymorphic_allocator<double> alloc1{alloc0};
+    EXPECT_EQ(alloc0, alloc1);
+    EXPECT_EQ(alloc0.resource(), alloc1.resource());
+}
+
+TEST_F(allocator_test, rebind){
+    using Allocator = rmm::mr::polymorphic_allocator<int>;
+    Allocator alloc0;
+
+    using Rebound = std::allocator_traits<Allocator>::rebind_alloc<double>;
+
+    EXPECT_TRUE( (std::is_same<std::allocator_traits<Rebound>::value_type, double>::value) );
+}
+
 TEST_F(allocator_test, allocate_deallocate)
 {
   rmm::mr::polymorphic_allocator<int> allocator{};
