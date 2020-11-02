@@ -19,15 +19,16 @@
 // execinfo is a linux-only library, so stack traces will only be available on
 // linux systems.
 #if (defined(__GNUC__) && !defined(__MINGW32__) && !defined(__MINGW64__))
-#define ENABLE_STACK_TRACES
+#define RMM_ENABLE_STACK_TRACES
 #endif
 
-#include <memory>
 #include <sstream>
-#include <vector>
 
-#if defined(ENABLE_STACK_TRACES)
+#if defined(RMM_ENABLE_STACK_TRACES)
 #include <execinfo.h>
+#include <memory>
+#include <vector>
+#endif
 
 namespace rmm {
 
@@ -46,15 +47,17 @@ class stack_trace {
  public:
   stack_trace()
   {
-    // store off a stack for this allocation
+#if defined(RMM_ENABLE_STACK_TRACES)
     const int MaxStackDepth = 64;
     void* stack[MaxStackDepth];
     auto const depth = backtrace(stack, MaxStackDepth);
     stack_ptrs.insert(stack_ptrs.end(), &stack[0], &stack[depth]);
+#endif  // RMM_ENABLE_STACK_TRACES
   }
 
   friend std::ostream& operator<<(std::ostream& os, const stack_trace& st)
   {
+#if defined(RMM_ENABLE_STACK_TRACES)
     std::unique_ptr<char*, decltype(&::free)> strings(
       backtrace_symbols(st.stack_ptrs.data(), st.stack_ptrs.size()), &::free);
     if (strings.get() == nullptr) {
@@ -65,45 +68,18 @@ class stack_trace {
         os << "#" << i << " in " << strings.get()[i] << std::endl;
       }
     }
+#else
+    os << "stack traces disabled" << std::endl;
+#endif  // RMM_ENABLE_STACK_TRACES
     return os;
   };
 
+#if defined(RMM_ENABLE_STACK_TRACES)
  private:
   std::vector<void*> stack_ptrs;
+#endif  // RMM_ENABLE_STACK_TRACES
 };
 
 }  // namespace detail
 
 }  // namespace rmm
-#else
-// provide an empty implementation so code doesn't need to know if stack traces
-// are enabled
-namespace rmm {
-
-namespace detail {
-
-/**
- * @brief stack_trace is a class that will capture a stack on instatiation for output later.
- * It can then be used in an output stream to display stack information.
- *
- * rmm::detail::stack_trace saved_stack;
- *
- * std::cout << "callstack: " << saved_stack;
- *
- */
-class stack_trace {
- public:
-  stack_trace() {}
-
-  friend std::ostream& operator<<(std::ostream& os, const stack_trace& st)
-  {
-    os << "stack traces disabled" << std::endl;
-    return os;
-  };
-};
-
-}  // namespace detail
-
-}  // namespace rmm
-
-#endif  // defined(ENABLE_STACK_TRACES)
