@@ -2,7 +2,8 @@
 
 ## New Features
 
- - PR #608 Add stream wrapper type
+- PR #596 Add `tracking_memory_resource_adaptor` to help catch memory leaks
+- PR #608 Add stream wrapper type
 
 ## Improvements
 
