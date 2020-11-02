@@ -179,6 +179,15 @@ class stream_allocator_adaptor {
    * @brief Construct a `stream_allocator_adaptor` using `other.underlying_allocator()` and
    * `other.stream()` as the underlying allocator and stream.
    *
+   * @param other The other `stream_allocator_adaptor` whose underlying allocator and stream will be
+   * copied
+   */
+  stream_allocator_adaptor(stream_allocator_adaptor<Allocator> const& other) = default;
+
+  /**
+   * @brief Construct a `stream_allocator_adaptor` using `other.underlying_allocator()` and
+   * `other.stream()` as the underlying allocator and stream.
+   *
    * @tparam OtherAllocator Type of `other`'s underlying allocator
    * @param other The other `stream_allocator_adaptor` whose underlying allocator and stream will be
    * copied
