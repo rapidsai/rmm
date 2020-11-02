@@ -112,7 +112,7 @@ class cuda_stream_view {
 /**
  * @brief Static cuda_stream_view of the default stream (stream 0), for convenience
  */
-static cuda_stream_view cuda_stream_default{};
+static constexpr cuda_stream_view cuda_stream_default{};
 
 /**
  * @brief Static cuda_stream_view of cudaStreamLegacy, for convenience
