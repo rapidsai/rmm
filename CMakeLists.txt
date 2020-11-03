@@ -92,8 +92,7 @@ else()
   target_link_libraries(rmm INTERFACE CUDA::cudart)
 endif(CUDA_STATIC_RUNTIME)
 
-target_link_libraries(rmm INTERFACE rmm::Thrust)
-target_link_libraries(rmm INTERFACE spdlog::spdlog_header_only)
+target_link_libraries(rmm INTERFACE rmm::Thrust spdlog::spdlog_header_only ${CMAKE_DL_LIBS})
 
 ###################################################################################################
 # Set logging level. Must go before including gtests and benchmarks. 
