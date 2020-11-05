@@ -16,6 +16,7 @@
 
 #include <gtest/gtest.h>
 
+#include <rmm/cuda_stream.hpp>
 #include <rmm/device_scalar.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
@@ -25,11 +26,9 @@
 #include <cstddef>
 #include <random>
 
-void sync_stream(cudaStream_t stream) { EXPECT_EQ(cudaSuccess, cudaStreamSynchronize(stream)); }
-
 template <typename T>
 struct DeviceScalarTest : public ::testing::Test {
-  cudaStream_t stream{};
+  rmm::cuda_stream stream{};
   rmm::mr::device_memory_resource* mr{rmm::mr::get_current_device_resource()};
   T value{};
   std::default_random_engine generator{};
@@ -37,10 +36,6 @@ struct DeviceScalarTest : public ::testing::Test {
                                                 std::numeric_limits<T>::max()};
 
   DeviceScalarTest() { value = distribution(generator); }
-
-  void SetUp() override { EXPECT_EQ(cudaSuccess, cudaStreamCreate(&stream)); }
-
-  void TearDown() override { EXPECT_EQ(cudaSuccess, cudaStreamDestroy(stream)); };
 };
 
 using Types = ::testing::Types<int8_t, int16_t, int32_t, int64_t>;
@@ -57,34 +52,34 @@ TYPED_TEST(DeviceScalarTest, InitialValue)
 {
   rmm::device_scalar<TypeParam> scalar{this->value, this->stream, this->mr};
   EXPECT_NE(nullptr, scalar.data());
-  EXPECT_EQ(this->value, scalar.value());
+  EXPECT_EQ(this->value, scalar.value(this->stream));
 }
 
 TYPED_TEST(DeviceScalarTest, CopyCtor)
 {
   rmm::device_scalar<TypeParam> scalar{this->value, this->stream, this->mr};
   EXPECT_NE(nullptr, scalar.data());
-  EXPECT_EQ(this->value, scalar.value());
+  EXPECT_EQ(this->value, scalar.value(this->stream));
 
-  rmm::device_scalar<TypeParam> copy{scalar};
+  rmm::device_scalar<TypeParam> copy{scalar, this->stream, this->mr};
   EXPECT_NE(nullptr, copy.data());
   EXPECT_NE(copy.data(), scalar.data());
-  EXPECT_EQ(copy.value(), scalar.value());
+  EXPECT_EQ(copy.value(this->stream), scalar.value(this->stream));
 }
 
 TYPED_TEST(DeviceScalarTest, MoveCtor)
 {
   rmm::device_scalar<TypeParam> scalar{this->value, this->stream, this->mr};
   EXPECT_NE(nullptr, scalar.data());
-  EXPECT_EQ(this->value, scalar.value());
+  EXPECT_EQ(this->value, scalar.value(this->stream));
 
   auto original_pointer = scalar.data();
-  auto original_value   = scalar.value();
+  auto original_value   = scalar.value(this->stream);
 
   rmm::device_scalar<TypeParam> moved_to{std::move(scalar)};
   EXPECT_NE(nullptr, moved_to.data());
   EXPECT_EQ(moved_to.data(), original_pointer);
-  EXPECT_EQ(moved_to.value(), original_value);
+  EXPECT_EQ(moved_to.value(this->stream), original_value);
   EXPECT_EQ(nullptr, scalar.data());
 }
 
@@ -95,6 +90,6 @@ TYPED_TEST(DeviceScalarTest, SetValue)
 
   auto expected = this->distribution(this->generator);
 
-  scalar.set_value(expected);
-  EXPECT_EQ(expected, scalar.value());
+  scalar.set_value(expected, this->stream);
+  EXPECT_EQ(expected, scalar.value(this->stream));
 }
