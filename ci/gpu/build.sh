@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright (c) 2018, NVIDIA CORPORATION.
+# Copyright (c) 2020, NVIDIA CORPORATION.
 ######################################
 # rmm GPU build & testscript for CI  #
 ######################################
@@ -107,7 +107,7 @@ else
     cd $WORKSPACE/python
     
     gpuci_logger "Installing librmm"
-    conda install -c $WORKSPACE/ci/artifacts/rmm/cpu/conda-bld/ librmm
+    gpuci_conda_retry install -c $WORKSPACE/ci/artifacts/rmm/cpu/conda-bld/ librmm
     export LIBRMM_BUILD_DIR="$WORKSPACE/ci/artifacts/rmm/cpu/conda_work/build"
     
     gpuci_logger "Building rmm"
