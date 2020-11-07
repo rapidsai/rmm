@@ -13,9 +13,6 @@ LANG=C.UTF-8
 # Activate common conda env
 source activate gdf
 
-# TODO (Keith) Remove these before merging
-conda install "cmake-format"
-
 # Run isort and get results/return code
 ISORT=`isort --recursive --check-only python`
 ISORT_RETVAL=$?
