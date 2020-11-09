@@ -137,9 +137,9 @@ bool operator!=(polymorphic_allocator<T> const& lhs, polymorphic_allocator<U> co
  * @brief Adapts a stream ordered allocator to provide a standard `Allocator` interface
  *
  * A stream-ordered allocator (i.e., `allocate/deallocate` use a `cuda_stream_view`) cannot be used
- *in an interface that expects a standard C++ `Allocator` interface. `stream_allocator_adaptor`
- *wraps a stream-ordered allocator and a stream to provide a standard `Allocator` interface. The
- *adaptor uses the wrapped stream in calls the underlying allocator's `allocate` and `deallocate`
+ * in an interface that expects a standard C++ `Allocator` interface. `stream_allocator_adaptor`
+ * wraps a stream-ordered allocator and a stream to provide a standard `Allocator` interface. The
+ * adaptor uses the wrapped stream in calls to the underlying allocator's `allocate` and `deallocate`
  * functions.
  *
  * Example:

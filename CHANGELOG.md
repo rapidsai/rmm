@@ -3,6 +3,7 @@
 ## New Features
 
 - PR #609 Adds `polymorphic_allocator` and `stream_allocator_adaptor`
+- PR #596 Add `tracking_memory_resource_adaptor` to help catch memory leaks
 - PR #608 Add stream wrapper type
 
 ## Improvements
@@ -16,8 +17,9 @@
 
 - PR #592 Add `auto_flush` to `make_logging_adaptor`
 - PR #602 Fix `device_scalar` and its tests so that they use the correct CUDA stream
+- PR #621 Make `rmm::cuda_stream_default` a `constexpr`
 
-# RMM 0.16.0 (Date TBD)
+# RMM 0.16.0 (21 Oct 2020)
 
 ## New Features
 

@@ -21,7 +21,6 @@
 #include <rmm/mr/device/device_memory_resource.hpp>
 
 #include "rapidcsv.h"
-#include "rmm/cuda_stream_view.hpp"
 
 #include <cstdint>
 #include <iomanip>
@@ -51,26 +50,25 @@ struct event {
 
   event(action a, std::size_t s, uintptr_t p) : act{a}, size{s}, pointer{p} {}
 
-  event(
-    std::size_t tid, action a, std::size_t sz, uintptr_t p, rmm::cuda_stream_view s, std::size_t i)
+  event(std::size_t tid, action a, std::size_t sz, uintptr_t p, uintptr_t s, std::size_t i)
     : thread_id{tid}, act{a}, size{sz}, pointer{p}, stream{s}, index{i}
   {
   }
 
-  event(std::size_t tid, action a, std::size_t sz, void* p, rmm::cuda_stream_view s, std::size_t i)
+  event(std::size_t tid, action a, std::size_t sz, void* p, uintptr_t s, std::size_t i)
     : event{tid, a, sz, reinterpret_cast<uintptr_t>(p), s, i}
   {
   }
 
   friend std::ostream& operator<<(std::ostream& os, event const& e);
 
-  action act{};                  ///< Indicates if the event is an allocation or a free
-  std::size_t size{};            ///< The size of the memory allocated or freed
-  uintptr_t pointer{};           ///< The pointer returned from an allocation, or the
-                                 ///< pointer freed
-  std::size_t thread_id;         ///< ID of the thread that initiated the event
-  rmm::cuda_stream_view stream;  ///< The CUDA stream on which the event occurred
-  std::size_t index;             ///< Original ordering index of the event
+  action act{};           ///< Indicates if the event is an allocation or a free
+  std::size_t size{};     ///< The size of the memory allocated or freed
+  uintptr_t pointer{};    ///< The pointer returned from an allocation, or the
+                          ///< pointer freed
+  std::size_t thread_id;  ///< ID of the thread that initiated the event
+  uintptr_t stream;       ///< Numeric representation of the CUDA stream on which the event occurred
+  std::size_t index;      ///< Original ordering index of the event
 };
 
 inline std::ostream& operator<<(std::ostream& os, event const& e)
@@ -82,8 +80,6 @@ inline std::ostream& operator<<(std::ostream& os, event const& e)
      << "0x" << std::hex << e.pointer << std::dec << " Stream: " << e.stream;
   return os;
 }
-
-inline uintptr_t hex_string_to_int(std::string const& s) { return std::stoll(s, nullptr, 16); }
 
 /**
  * @brief Parse a log timestamp into a std::chrono::time_point
@@ -138,16 +134,7 @@ inline std::vector<event> parse_csv(std::string const& filename)
 
   std::vector<uintptr_t> pointers = csv.GetColumn<uintptr_t>("Pointer", parse_pointer);
   std::vector<std::size_t> sizes  = csv.GetColumn<std::size_t>("Size");
-
-  auto parse_stream = [](std::string const& s, rmm::cuda_stream_view& stream) {
-    cudaStream_t cs;
-    uintptr_t ls = std::stoll(s);
-    std::memcpy(&cs, &ls, sizeof(cudaStream_t));
-    stream = rmm::cuda_stream_view{cs};
-  };
-
-  std::vector<rmm::cuda_stream_view> streams =
-    csv.GetColumn<rmm::cuda_stream_view>("Stream", parse_stream);
+  std::vector<uintptr_t> streams  = csv.GetColumn<uintptr_t>("Stream");
 
   auto const size_list = {tids.size(), actions.size(), pointers.size(), streams.size()};
 
@@ -165,7 +152,7 @@ inline std::vector<event> parse_csv(std::string const& filename)
     events[i] = event{tids[i], act, sizes[i], pointers[i], streams[i], i};
   }
   return events;
-}  // namespace detail
+}
 
 }  // namespace detail
 }  // namespace rmm
