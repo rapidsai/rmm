@@ -18,6 +18,7 @@
 - PR #592 Add `auto_flush` to `make_logging_adaptor`
 - PR #602 Fix `device_scalar` and its tests so that they use the correct CUDA stream
 - PR #621 Make `rmm::cuda_stream_default` a `constexpr`
+- PR #625 Use `librmm` conda artifact when building `rmm` conda package
 
 # RMM 0.16.0 (21 Oct 2020)
 
