@@ -282,7 +282,7 @@ cdef class LoggingResourceAdaptor(MemoryResource):
     cpdef get_file_name(self):
         return self._log_file_name
 
-cdef class TrackingResourceAdaptor(MemoryResource):
+cdef class TrackingMemoryResource(MemoryResource):
 
     def __cinit__(self, MemoryResource upstream):
         self.c_obj.reset(

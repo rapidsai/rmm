@@ -123,5 +123,5 @@ cdef class LoggingResourceAdaptor(MemoryResource):
     cpdef get_file_name(self)
     cpdef flush(self)
 
-cdef class TrackingResourceAdaptor(MemoryResource):
+cdef class TrackingMemoryResource(MemoryResource):
     pass
