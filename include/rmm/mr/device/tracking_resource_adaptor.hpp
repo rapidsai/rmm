@@ -159,7 +159,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
     write_lock_t lock(mtx_);
 
     // Reset allocated_counts but not allocations_
-    allocation_counts_ = allocation_counts();
+    allocation_counts_ = {};
   }
 
   /**
