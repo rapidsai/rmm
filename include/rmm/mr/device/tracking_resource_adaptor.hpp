@@ -66,6 +66,19 @@ class tracking_resource_adaptor final : public device_memory_resource {
   };
 
   /**
+   * @brief Stores the current, peak, and total number of allocation and
+   * allocated bytes
+   */
+  struct allocation_counts {
+    ssize_t current_bytes {0}; // Current outstanding bytes since reset()
+    ssize_t current_count {0}; // Current outstanding count since reset()
+    ssize_t peak_bytes {0}; // Max value of current_bytes since reset()
+    ssize_t peak_count {0}; // Max value of current_count since reset()
+    std::size_t total_bytes {0}; // Total allocated bytes since reset()
+    std::size_t total_count {0}; // Total allocated count since reset()
+  };
+
+  /**
    * @brief Construct a new tracking resource adaptor using `upstream` to satisfy
    * allocation requests.
    *
@@ -75,7 +88,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
    * @param capture_stacks If true, capture stacks for allocation calls
    */
   tracking_resource_adaptor(Upstream* upstream, bool capture_stacks = false)
-    : upstream_{upstream}, capture_stacks_{capture_stacks}, allocated_bytes_{0}
+    : capture_stacks_{capture_stacks}, upstream_{upstream}
   {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
   }
@@ -133,7 +146,41 @@ class tracking_resource_adaptor final : public device_memory_resource {
    * @return std::size_t number of bytes that have been allocated through this
    * allocator.
    */
-  std::size_t get_allocated_bytes() const noexcept { return allocated_bytes_; }
+  std::size_t get_allocated_bytes() const noexcept { 
+    return allocation_counts_.current_bytes; 
+  }
+
+  /**
+   * @brief Resets the tracked allocation count info back to zero. Note: Because
+   * reset_allocation_counts() resets all counts back to 0, its possible to have
+   * a negative allocation bytes or count if the number of deallocate() calls is
+   * greater than the number of allocate() since reset.
+   */
+  void reset_allocation_counts() noexcept {
+
+    write_lock_t lock(mtx_);
+
+    // Reset allocated_counts but not allocations_
+    allocation_counts_ = allocation_counts();
+  }
+
+  /**
+   * @brief Returns an allocation_counts struct for this adaptor containing the
+   * current, peak, and total number of bytes and allocation count for this
+   * adaptor since reset_allocation_counts() has been called. Note: Because
+   * reset_allocation_counts() resets all counts back to 0, its possible to have
+   * a negative allocation bytes or count if the number of deallocate() calls is
+   * greater than the number of allocate() since reset.
+   *
+   * @return allocation_counts struct containing the allocation number of bytes
+   * and count info 
+   */
+  allocation_counts get_allocation_counts() const noexcept { 
+    
+    read_lock_t lock(mtx_);
+
+    return allocation_counts_;
+  }
 
   /**
    * @brief Log any outstanding allocations via RMM_LOG_DEBUG
@@ -179,8 +226,17 @@ class tracking_resource_adaptor final : public device_memory_resource {
     {
       write_lock_t lock(mtx_);
       allocations_.emplace(p, allocation_info{bytes, capture_stacks_});
+
+      // Increment the allocation_count_ while we have the lock
+      allocation_counts_.current_bytes += bytes;
+      allocation_counts_.current_count += 1;
+      allocation_counts_.peak_bytes =
+        std::max(allocation_counts_.current_bytes, allocation_counts_.peak_bytes);
+      allocation_counts_.peak_count =
+        std::max(allocation_counts_.current_count, allocation_counts_.peak_count);
+      allocation_counts_.total_bytes += bytes;
+      allocation_counts_.total_count += 1;
     }
-    allocated_bytes_ += bytes;
 
     return p;
   }
@@ -199,9 +255,39 @@ class tracking_resource_adaptor final : public device_memory_resource {
     upstream_->deallocate(p, bytes, stream);
     {
       write_lock_t lock(mtx_);
-      allocations_.erase(p);
+
+      const auto found = allocations_.find(p);
+
+      // Ensure the allocation is found and the number of bytes match
+      if (found == allocations_.end()) {
+        // Don't throw but log an error. Throwing in a descructor (or any noexcept) will call
+        // std::terminate
+        RMM_LOG_ERROR(static_cast<std::ostringstream&&>(
+                        std::ostringstream()
+                        << "Deallocating a pointer that was not tracked. Ptr:" << p
+                        << ", Bytes: " << bytes << ", Alloc Size: " << this->allocations_.size())
+                        .str());
+      } else {
+        allocations_.erase(found);
+
+        auto allocated_bytes = found->second.allocation_size;
+
+        if (allocated_bytes != bytes) {
+          // Don't throw but log an error. Throwing in a descructor (or any noexcept) will call
+          // std::terminate
+          RMM_LOG_ERROR(static_cast<std::ostringstream&&>(std::ostringstream()
+                                                          << "Alloc bytes (" << allocated_bytes
+                                                          << ") and Dealloc bytes (" << bytes
+                                                          << ") do not match")
+                          .str());
+          bytes = allocated_bytes;
+        }
+      }
+
+      // Decrement the current allocated counts.
+      allocation_counts_.current_bytes -= bytes;
+      allocation_counts_.current_count -= 1;
     }
-    allocated_bytes_ -= bytes;
   }
 
   /**
@@ -239,7 +325,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
 
   bool capture_stacks_;                           // whether or not to capture call stacks
   std::map<void*, allocation_info> allocations_;  // map of active allocations
-  std::atomic<std::size_t> allocated_bytes_;      // number of bytes currently allocated
+  allocation_counts allocation_counts_;           // info about current, peak, total allocations
   std::shared_timed_mutex mutable mtx_;           // mutex for thread safe access to allocations_
   Upstream* upstream_;  // the upstream resource used for satisfying allocation requests
 };

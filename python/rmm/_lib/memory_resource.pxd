@@ -79,6 +79,26 @@ cdef extern from "memory_resource_wrappers.hpp" nogil:
         shared_ptr[device_memory_resource_wrapper] new_resource
     ) except +
 
+    cdef cppclass tracking_resource_adaptor_wrapper(
+        device_memory_resource_wrapper
+    ):
+        struct allocation_counts:
+            allocation_counts()
+
+            ssize_t current_bytes
+            ssize_t current_count
+            ssize_t peak_bytes
+            ssize_t peak_count
+            size_t total_bytes
+            size_t total_count
+
+        tracking_resource_adaptor_wrapper(
+            shared_ptr[device_memory_resource_wrapper] upstream_mr
+        ) except +
+
+        void reset_allocation_counts() except +
+        allocation_counts get_allocation_counts() except +
+
 
 cdef class MemoryResource:
     cdef shared_ptr[device_memory_resource_wrapper] c_obj

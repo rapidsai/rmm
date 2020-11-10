@@ -10,6 +10,7 @@
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
 #include <rmm/mr/device/thread_safe_resource_adaptor.hpp>
+#include <rmm/mr/device/tracking_resource_adaptor.hpp>
 
 #include <thrust/optional.h>
 
@@ -175,6 +176,33 @@ class thread_safe_resource_adaptor_wrapper : public device_memory_resource_wrapp
  private:
   std::shared_ptr<device_memory_resource_wrapper> upstream_mr;
   std::shared_ptr<rmm::mr::thread_safe_resource_adaptor<rmm::mr::device_memory_resource>> mr;
+};
+
+class tracking_resource_adaptor_wrapper : public device_memory_resource_wrapper {
+ public:
+  typedef rmm::mr::tracking_resource_adaptor<rmm::mr::device_memory_resource>::allocation_counts
+    allocation_counts;
+
+  tracking_resource_adaptor_wrapper(std::shared_ptr<device_memory_resource_wrapper> upstream_mr)
+    : upstream_mr(upstream_mr),
+      mr(std::make_shared<rmm::mr::tracking_resource_adaptor<rmm::mr::device_memory_resource>>(
+        upstream_mr->get_mr().get()))
+  {
+  }
+
+  std::shared_ptr<rmm::mr::device_memory_resource> get_mr() { return mr; }
+
+  void reset_allocation_counts() {
+    mr->reset_allocation_counts();
+  }
+
+  allocation_counts get_allocation_counts() const {
+    return mr->get_allocation_counts();
+  }
+
+ private:
+  std::shared_ptr<device_memory_resource_wrapper> upstream_mr;
+  std::shared_ptr<rmm::mr::tracking_resource_adaptor<rmm::mr::device_memory_resource>> mr;
 };
 
 inline void set_per_device_resource(int device_id,

@@ -282,6 +282,31 @@ cdef class LoggingResourceAdaptor(MemoryResource):
     cpdef get_file_name(self):
         return self._log_file_name
 
+cdef class TrackingResourceAdaptor(MemoryResource):
+
+    def __cinit__(self, MemoryResource upstream):
+        self.c_obj.reset(
+            new tracking_resource_adaptor_wrapper(
+                upstream.c_obj
+            )
+        )
+
+    def reset_allocation_counts(self):
+        (<tracking_resource_adaptor_wrapper*>(self.c_obj.get()))[0].reset_allocation_counts()
+
+
+    def get_allocation_counts(self) -> dict:
+        counts = (<tracking_resource_adaptor_wrapper*>(self.c_obj.get()))[0].get_allocation_counts()
+
+        return {
+            "current_bytes": counts.current_bytes,
+            "current_count": counts.current_count,
+            "peak_bytes": counts.peak_bytes,
+            "peak_count": counts.peak_count,
+            "total_bytes": counts.total_bytes,
+            "total_count": counts.total_count,
+        }
+
 
 class KeyInitializedDefaultDict(defaultdict):
     """
