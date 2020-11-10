@@ -292,11 +292,12 @@ cdef class TrackingResourceAdaptor(MemoryResource):
         )
 
     def reset_allocation_counts(self):
-        (<tracking_resource_adaptor_wrapper*>(self.c_obj.get()))[0].reset_allocation_counts()
-
+        (<tracking_resource_adaptor_wrapper*>(
+            self.c_obj.get()))[0].reset_allocation_counts()
 
     def get_allocation_counts(self) -> dict:
-        counts = (<tracking_resource_adaptor_wrapper*>(self.c_obj.get()))[0].get_allocation_counts()
+        counts = (<tracking_resource_adaptor_wrapper*>(
+            self.c_obj.get()))[0].get_allocation_counts()
 
         return {
             "current_bytes": counts.current_bytes,

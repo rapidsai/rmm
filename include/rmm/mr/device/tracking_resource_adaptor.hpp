@@ -70,12 +70,12 @@ class tracking_resource_adaptor final : public device_memory_resource {
    * allocated bytes
    */
   struct allocation_counts {
-    ssize_t current_bytes {0}; // Current outstanding bytes since reset()
-    ssize_t current_count {0}; // Current outstanding count since reset()
-    ssize_t peak_bytes {0}; // Max value of current_bytes since reset()
-    ssize_t peak_count {0}; // Max value of current_count since reset()
-    std::size_t total_bytes {0}; // Total allocated bytes since reset()
-    std::size_t total_count {0}; // Total allocated count since reset()
+    ssize_t current_bytes{0};    // Current outstanding bytes since reset()
+    ssize_t current_count{0};    // Current outstanding count since reset()
+    ssize_t peak_bytes{0};       // Max value of current_bytes since reset()
+    ssize_t peak_count{0};       // Max value of current_count since reset()
+    std::size_t total_bytes{0};  // Total allocated bytes since reset()
+    std::size_t total_count{0};  // Total allocated count since reset()
   };
 
   /**
@@ -146,9 +146,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
    * @return std::size_t number of bytes that have been allocated through this
    * allocator.
    */
-  std::size_t get_allocated_bytes() const noexcept { 
-    return allocation_counts_.current_bytes; 
-  }
+  std::size_t get_allocated_bytes() const noexcept { return allocation_counts_.current_bytes; }
 
   /**
    * @brief Resets the tracked allocation count info back to zero. Note: Because
@@ -156,8 +154,8 @@ class tracking_resource_adaptor final : public device_memory_resource {
    * a negative allocation bytes or count if the number of deallocate() calls is
    * greater than the number of allocate() since reset.
    */
-  void reset_allocation_counts() noexcept {
-
+  void reset_allocation_counts() noexcept
+  {
     write_lock_t lock(mtx_);
 
     // Reset allocated_counts but not allocations_
@@ -173,10 +171,10 @@ class tracking_resource_adaptor final : public device_memory_resource {
    * greater than the number of allocate() since reset.
    *
    * @return allocation_counts struct containing the allocation number of bytes
-   * and count info 
+   * and count info
    */
-  allocation_counts get_allocation_counts() const noexcept { 
-    
+  allocation_counts get_allocation_counts() const noexcept
+  {
     read_lock_t lock(mtx_);
 
     return allocation_counts_;

@@ -115,7 +115,7 @@ TEST(TrackingTest, PeakAllocations)
   // Verify total allocations
   EXPECT_EQ(current_alloc_counts.total_bytes, 100_MiB);
   EXPECT_EQ(current_alloc_counts.total_count, 10);
-  
+
   // Add 10 more to increase the peak
   for (int i = 0; i < 10; ++i) {
     allocations.push_back(mr.allocate(10_MiB));
@@ -150,11 +150,11 @@ TEST(TrackingTest, ResetAllocationCounts)
   for (int i = 0; i < 10; ++i) {
     allocations.push_back(mr.allocate(10_MiB));
   }
-  
+
   auto current_alloc_counts = mr.get_allocation_counts();
 
   EXPECT_EQ(mr.get_outstanding_allocations().size(), 10);
-    
+
   // Verify current allocations
   EXPECT_EQ(mr.get_allocated_bytes(), 100_MiB);
   EXPECT_EQ(current_alloc_counts.current_bytes, 100_MiB);
@@ -167,7 +167,7 @@ TEST(TrackingTest, ResetAllocationCounts)
   // Verify total allocations
   EXPECT_EQ(current_alloc_counts.total_bytes, 100_MiB);
   EXPECT_EQ(current_alloc_counts.total_count, 10);
-  
+
   // Reset the allocation counts
   mr.reset_allocation_counts();
 
