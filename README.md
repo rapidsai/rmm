@@ -340,9 +340,8 @@ for(int i = 0; i < N; ++i) {
 
 ### Allocators
 
-C++ interfaces commonly allow customizable memory allocation through the an [`Allocator`](https://en.cppreference.com/w/cpp/named_req/Allocator) object. 
+C++ interfaces commonly allow customizable memory allocation through an [`Allocator`](https://en.cppreference.com/w/cpp/named_req/Allocator) object. 
 RMM provides several `Allocator` and `Allocator`-like classes.
-
 
 #### `polymorphic_allocator`
 
@@ -358,8 +357,7 @@ Example:
 rmm::cuda_stream stream;
 rmm::mr::polymorphic_allocator<int> stream_alloc;
 
-// Constructors an adaptor that forwards all (de)allocations to `stream_alloc`
-// on `stream`.
+// Constructs an adaptor that forwards all (de)allocations to `stream_alloc` on `stream`.
 auto adapted = rmm::mr::make_stream_allocator_adaptor(stream_alloc, stream);
 
 // Allocates 100 bytes using `stream_alloc` on `stream`
