@@ -5,11 +5,6 @@
 ######################################
 set -e
 
-# Logger function for build status output
-function gpuci_logger() {
-  echo -e "\n>>>> $@\n"
-}
-
 # Set path and build parallel level
 export PATH=/opt/conda/bin:/usr/local/cuda/bin:$PATH
 export PARALLEL_LEVEL=${PARALLEL_LEVEL:-4}
