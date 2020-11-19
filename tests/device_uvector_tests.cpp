@@ -18,13 +18,12 @@
 #include <gtest/gtest.h>
 #include <gtest/internal/gtest-type-util.h>
 
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
-
-#include <thrust/logical.h>
 
 template <typename T>
 struct TypedUVectorTest : ::testing::Test {
-  cudaStream_t stream() const noexcept { return cudaStream_t{0}; }
+  rmm::cuda_stream_view stream() const noexcept { return rmm::cuda_stream_view{}; }
 };
 
 using TestTypes = ::testing::Types<int8_t, int32_t, uint64_t, float, double>;

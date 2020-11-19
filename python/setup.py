@@ -52,6 +52,13 @@ cuda_include_dir = os.path.join(CUDA_HOME, "include")
 cuda_lib_dir = os.path.join(CUDA_HOME, "lib64")
 CUDA_VERSION = get_cuda_version_from_header(cuda_include_dir)
 
+INSTALL_PREFIX = os.environ.get("INSTALL_PREFIX", False)
+if os.path.isdir(INSTALL_PREFIX):
+    rmm_include_dir = os.path.join(INSTALL_PREFIX, "include")
+else:
+    # use uninstalled headers in source tree
+    rmm_include_dir = "../include"
+
 # Preprocessor step to specify correct pxd file with
 # valid symbols for specific version of CUDA.
 
@@ -82,9 +89,7 @@ define_macros = [
 ]
 
 include_dirs = [
-    "../include/rmm",
-    "../include",
-    "../build/include",
+    rmm_include_dir,
     os.path.dirname(sysconfig.get_path("include")),
     cuda_include_dir,
 ]
@@ -103,7 +108,7 @@ extensions = cythonize(
                 cuda_lib_dir,
                 os.path.join(os.sys.prefix, "lib"),
             ],
-            libraries=["cuda", "rmm"],
+            libraries=["cuda", "cudart"],
             language="c++",
             define_macros=define_macros,
             extra_compile_args=["-std=c++14"],
@@ -128,7 +133,7 @@ extensions += cythonize(
                 cuda_lib_dir,
                 os.path.join(os.sys.prefix, "lib"),
             ],
-            libraries=["cuda", "rmm"],
+            libraries=["cuda", "cudart"],
             language="c++",
             define_macros=define_macros,
             extra_compile_args=["-std=c++14"],
@@ -152,7 +157,7 @@ extensions += cythonize(
                 cuda_lib_dir,
                 os.path.join(os.sys.prefix, "lib"),
             ],
-            libraries=["cuda", "rmm"],
+            libraries=["cuda", "cudart"],
             language="c++",
             define_macros=define_macros,
             extra_compile_args=["-std=c++14"],
@@ -166,7 +171,7 @@ extensions += cythonize(
 
 setup(
     name="rmm",
-    version="0.16.0",
+    version="0.17.0",
     description="rmm - RAPIDS Memory Manager",
     url="https://github.com/rapidsai/rmm",
     author="NVIDIA Corporation",

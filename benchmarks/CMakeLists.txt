@@ -1,58 +1,72 @@
-﻿cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
+﻿#=============================================================================
+# Copyright (c) 2018-2020, NVIDIA CORPORATION.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#=============================================================================
+cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 
 project(RMM_BENCHS LANGUAGES C CXX CUDA)
 
+option(PER_THREAD_DEFAULT_STREAM "Build with per-thread default stream" OFF)
+
 ###################################################################################################
-# - compiler function -----------------------------------------------------------------------------
+# - compiler function
 
 function(ConfigureBench CMAKE_BENCH_NAME CMAKE_BENCH_SRC)
-    add_executable(${CMAKE_BENCH_NAME}
-                   ${CMAKE_BENCH_SRC}
-                   "${CMAKE_CURRENT_SOURCE_DIR}/synchronization/synchronization.cpp")
-    set_target_properties(${CMAKE_BENCH_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    target_link_libraries(${CMAKE_BENCH_NAME} benchmark pthread rmm )
-    set_target_properties(${CMAKE_BENCH_NAME} PROPERTIES
-                            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/gbenchmarks")
+  add_executable(${CMAKE_BENCH_NAME}
+                 ${CMAKE_BENCH_SRC}
+                 "${CMAKE_CURRENT_SOURCE_DIR}/synchronization/synchronization.cpp")
+  set_target_properties(${CMAKE_BENCH_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+  target_include_directories(${CMAKE_BENCH_NAME} PRIVATE "$<BUILD_INTERFACE:${RMM_SOURCE_DIR}>")
+  
+  target_link_libraries(${CMAKE_BENCH_NAME} benchmark::benchmark pthread rmm)
+
+  set_target_properties(${CMAKE_BENCH_NAME} PROPERTIES
+                        RUNTIME_OUTPUT_DIRECTORY "${RMM_BINARY_DIR}/gbenchmarks")
+  
+  target_compile_definitions(${CMAKE_BENCH_NAME} PUBLIC
+                             "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
+
+  if(PER_THREAD_DEFAULT_STREAM)
+    message(STATUS "Using per-thread default stream for ${CMAKE_BENCH_NAME}")
+    target_compile_definitions(${CMAKE_BENCH_NAME} PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
+  endif(PER_THREAD_DEFAULT_STREAM)
 endfunction(ConfigureBench)
 
 ###################################################################################################
-# - include paths ---------------------------------------------------------------------------------
-
-include_directories("${CMAKE_SOURCE_DIR}"
-                    "${GTEST_INCLUDE_DIR}"
-                    "${GBENCH_INCLUDE_DIR}"
-                    "${CMAKE_CURRENT_SOURCE_DIR}")
-
-###################################################################################################
-# - library paths ---------------------------------------------------------------------------------
-
-link_directories("${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES}" # CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES is an undocumented/unsupported variable containing the link directories for nvcc
-                 "${CMAKE_BINARY_DIR}"
-                 "${GTEST_LIBRARY_DIR}"
-                 "${GBENCH_LIBRARY_DIR}")
-
-###################################################################################################
-### test sources ##################################################################################
+### benchmark sources #############################################################################
 ###################################################################################################
 
 ###################################################################################################
-# - random allocations benchmark --------------------------------------------------------------------------------
+# - random allocations benchmark
 
 set(RANDOM_ALLOCATIONS_BENCH_SRC
   "${CMAKE_CURRENT_SOURCE_DIR}/random_allocations/random_allocations.cpp")
 
 ConfigureBench(RANDOM_ALLOCATIONS_BENCH "${RANDOM_ALLOCATIONS_BENCH_SRC}")
+
 ###################################################################################################
-# - replay benchmark --------------------------------------------------------------------------------
+# - replay benchmark
 
 set(REPLAY_BENCH_SRC
-  "${CMAKE_CURRENT_SOURCE_DIR}/replay/replay.cpp")
+    "${CMAKE_CURRENT_SOURCE_DIR}/replay/replay.cpp")
 
 ConfigureBench(REPLAY_BENCH "${REPLAY_BENCH_SRC}")
+
 ###################################################################################################
-# - uvector benchmark --------------------------------------------------------------------------------
+# - uvector benchmark
 
 set(UVECTOR_BENCH_SRC
-  "${CMAKE_CURRENT_SOURCE_DIR}/device_uvector/device_uvector_bench.cu")
+    "${CMAKE_CURRENT_SOURCE_DIR}/device_uvector/device_uvector_bench.cu")
 
 ConfigureBench(UVECTOR_BENCH "${UVECTOR_BENCH_SRC}")

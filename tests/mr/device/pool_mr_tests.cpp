@@ -20,22 +20,31 @@
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
+#include "rmm/detail/aligned.hpp"
+#include "rmm/mr/device/limiting_resource_adaptor.hpp"
 
 #include <gtest/gtest.h>
 
 namespace rmm {
 namespace test {
 namespace {
-using Pool = rmm::mr::pool_memory_resource<rmm::mr::device_memory_resource>;
+using cuda_mr     = rmm::mr::cuda_memory_resource;
+using pool_mr     = rmm::mr::pool_memory_resource<rmm::mr::device_memory_resource>;
+using limiting_mr = rmm::mr::limiting_resource_adaptor<rmm::mr::cuda_memory_resource>;
+
 TEST(PoolTest, ThrowOnNullUpstream)
 {
-  auto construct_nullptr = []() { Pool mr{nullptr}; };
+  auto construct_nullptr = []() { pool_mr mr{nullptr}; };
   EXPECT_THROW(construct_nullptr(), rmm::logic_error);
 }
 
 TEST(PoolTest, ThrowMaxLessThanInitial)
 {
-  auto max_less_than_initial = []() { Pool mr{rmm::mr::get_current_device_resource(), 100, 99}; };
+  // Make sure first argument is enough larger than the second that alignment rounding doesn't
+  // make them equal
+  auto max_less_than_initial = []() {
+    pool_mr mr{rmm::mr::get_current_device_resource(), 1024, 256};
+  };
   EXPECT_THROW(max_less_than_initial(), rmm::logic_error);
 }
 
@@ -43,9 +52,10 @@ TEST(PoolTest, AllocateNinetyPercent)
 {
   auto allocate_ninety = []() {
     std::size_t free{}, total{};
-    std::tie(free, total)          = rmm::mr::detail::available_device_memory();
-    auto const ninety_percent_pool = static_cast<std::size_t>(free * 0.9);
-    Pool mr{rmm::mr::get_current_device_resource(), ninety_percent_pool};
+    std::tie(free, total) = rmm::mr::detail::available_device_memory();
+    auto const ninety_percent_pool =
+      rmm::detail::align_up(static_cast<std::size_t>(free * 0.9), pool_mr::allocation_alignment);
+    pool_mr mr{rmm::mr::get_current_device_resource(), ninety_percent_pool};
   };
   EXPECT_NO_THROW(allocate_ninety());
 }
@@ -55,7 +65,7 @@ TEST(PoolTest, TwoLargeBuffers)
   auto two_large = []() {
     std::size_t free{}, total{};
     std::tie(free, total) = rmm::mr::detail::available_device_memory();
-    Pool mr{rmm::mr::get_current_device_resource()};
+    pool_mr mr{rmm::mr::get_current_device_resource()};
     auto p1 = mr.allocate(free / 4);
     auto p2 = mr.allocate(free / 4);
     mr.deallocate(p1, free / 4);
@@ -66,19 +76,50 @@ TEST(PoolTest, TwoLargeBuffers)
 
 TEST(PoolTest, ForceGrowth)
 {
-  Pool mr{rmm::mr::get_current_device_resource(), 0};
+  cuda_mr cuda;
+  limiting_mr limiter{&cuda, 6000};
+  pool_mr mr{&limiter, 0};
   EXPECT_NO_THROW(mr.allocate(1000));
+  EXPECT_NO_THROW(mr.allocate(4000));
+  EXPECT_NO_THROW(mr.allocate(500));
+  EXPECT_THROW(mr.allocate(2000), rmm::bad_alloc);  // too much
 }
 
 TEST(PoolTest, DeletedStream)
 {
-  Pool mr{rmm::mr::get_current_device_resource(), 0};
-  cudaStream_t stream;
+  pool_mr mr{rmm::mr::get_current_device_resource(), 0};
+  cudaStream_t stream;  // we don't use rmm::cuda_stream here to make destruction more explicit
   const int size = 10000;
-  cudaStreamCreate(&stream);
+  EXPECT_EQ(cudaSuccess, cudaStreamCreate(&stream));
   EXPECT_NO_THROW(rmm::device_buffer buff(size, stream, &mr));
   EXPECT_EQ(cudaSuccess, cudaStreamDestroy(stream));
   EXPECT_NO_THROW(mr.allocate(size));
+}
+
+// Issue #527
+TEST(PoolTest, InitialAndMaxPoolSizeEqual)
+{
+  EXPECT_NO_THROW([]() {
+    pool_mr mr(rmm::mr::get_current_device_resource(), 1000192, 1000192);
+    mr.allocate(1000);
+  }());
+}
+
+TEST(PoolTest, NonAlignedPoolSize)
+{
+  EXPECT_THROW(
+    []() {
+      pool_mr mr(rmm::mr::get_current_device_resource(), 1000031, 1000192);
+      mr.allocate(1000);
+    }(),
+    rmm::logic_error);
+
+  EXPECT_THROW(
+    []() {
+      pool_mr mr(rmm::mr::get_current_device_resource(), 1000192, 1000200);
+      mr.allocate(1000);
+    }(),
+    rmm::logic_error);
 }
 
 }  // namespace
