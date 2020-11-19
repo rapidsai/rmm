@@ -105,6 +105,7 @@ extensions = cythonize(
             ],
             libraries=["cuda", "rmm"],
             language="c++",
+            define_macros=define_macros,
             extra_compile_args=["-std=c++14"],
         )
     ],
