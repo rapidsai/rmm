@@ -91,6 +91,19 @@ of 1 GiB and a maximum size of 4 GiB. The pool uses
 ... )
 >>> rmm.mr.set_current_device_resource(pool)
 ```
+
+Similarly, to use a pool of managed memory:
+
+```python
+>>> import rmm
+>>> pool = rmm.mr.PoolMemoryResource(
+...     upstream=rmm.mr.ManagedMemoryResource(),
+...     initial_pool_size=2**30,
+...     maximum_pool_size=2**32
+... )
+>>> rmm.mr.set_current_device_resource(pool)
+```
+
 Other MemoryResources include:
 
 * `FixedSizeMemoryResource` for allocating fixed blocks of memory
