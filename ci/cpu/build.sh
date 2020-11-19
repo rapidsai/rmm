@@ -66,7 +66,8 @@ if [[ "$BUILD_RMM" == "1" ]]; then
   if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
     conda build conda/recipes/rmm --python=$PYTHON
   else
-    conda build --dirty --no-remove-work-dir conda/recipes/rmm
+    conda build --dirty --no-remove-work-dir \
+      -c $WORKSPACE/ci/artifacts/rmm/cpu/conda-bld/ conda/recipes/rmm
   fi
 fi
 
