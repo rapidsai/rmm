@@ -1,5 +1,20 @@
 # RMM - the RAPIDS Memory Manager
 
+RMM is a package that enables you to allocate GPU ("device") memory
+in a highly configurable way. For example, it enables you to
+allocate and use pools of GPU memory, or to use
+[managed memory](https://developer.nvidia.com/blog/unified-memory-cuda-beginners/)
+for allocations.
+
+You can also easily configure other libraries like Numba and CuPy
+to use RMM for allocating device memory.
+
+## Installation
+
+See the project [README](https://github.com/rapidsai/rmm) for how to install RMM.
+
+## Using RMM
+
 There are two ways to use RMM in Python code:
 
 1. Using the `rmm.DeviceBuffer` API to explicitly create and manage
@@ -54,7 +69,7 @@ array([1., 2., 3.])
 `MemoryResource` objects are used to configure how device memory allocations are made by
 RMM.
 
-By default if a `MemoryResource` is not set explicitly, RMM uses the `CudaMemoryResource`, which 
+By default if a `MemoryResource` is not set explicitly, RMM uses the `CudaMemoryResource`, which
 uses `cudaMalloc` for allocating device memory.
 
 `rmm.reinitialize()` provides an easy way to initialize RMM with specific memory resource options
@@ -107,10 +122,10 @@ Similarly, to use a pool of managed memory:
 Other MemoryResources include:
 
 * `FixedSizeMemoryResource` for allocating fixed blocks of memory
-* `BinningMemoryResource` for allocating blocks within specified "bin" sizes from different memory 
+* `BinningMemoryResource` for allocating blocks within specified "bin" sizes from different memory
 resources
 
-MemoryResources are highly configurable and can be composed together in different ways. 
+MemoryResources are highly configurable and can be composed together in different ways.
 See `help(rmm.mr)` for more information.
 
 ### Using RMM with CuPy
