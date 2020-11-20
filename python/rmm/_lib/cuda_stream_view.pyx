@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+
 from libc.stdint cimport uintptr_t
 
 
@@ -26,7 +28,10 @@ cdef class CudaStreamView:
             CUDA stream to wrap, default 0
         """
         if (stream == 0):
-            self.c_obj.reset(new cuda_stream_view())
+            if int(os.environ.get("CUDA_PTDS", "0")) != 0:
+                self.c_obj.reset(new cuda_stream_view(<cudaStream_t>2))
+            else:
+                self.c_obj.reset(new cuda_stream_view())
         else:
             self.c_obj.reset(new cuda_stream_view(<cudaStream_t>stream))
 
