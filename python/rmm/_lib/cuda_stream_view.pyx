@@ -29,7 +29,7 @@ cdef class CudaStreamView:
             CUDA stream to wrap, default 0
         """
         if (stream == 0):
-            if int(os.environ.get("CUDA_PTDS", "0")) != 0:
+            if int(os.environ.get("RMM_PER_THREAD_DEFAULT_STREAM", "0")) != 0:
                 self.c_obj.reset(new cuda_stream_view(cudaStreamPerThread))
             else:
                 self.c_obj.reset(new cuda_stream_view())
