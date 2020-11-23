@@ -1,6 +1,9 @@
 # RMM - the RAPIDS Memory Manager
 
-RMM is a package that enables you to allocate GPU ("device") memory
+Achieving optimal performance in GPU-centric workflows frequently requires
+customizing how GPU ("device") memory is allocated.
+
+RMM is a package that enables you to allocate device memory
 in a highly configurable way. For example, it enables you to
 allocate and use pools of GPU memory, or to use
 [managed memory](https://developer.nvidia.com/blog/unified-memory-cuda-beginners/)
