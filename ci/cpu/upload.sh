@@ -38,14 +38,14 @@ export RMM_FILE=`conda build conda/recipes/rmm --python=$PYTHON --output`
 
 gpuci_logger "Starting conda uploads"
 
-if [ "$BUILD_LIBRMM" == "1" && "$UPLOAD_LIBRMM" == "1" ]; then
+if [[ "$BUILD_LIBRMM" == "1" && "$UPLOAD_LIBRMM" == "1" ]]; then
   test -e ${LIBRMM_FILE}
   echo "Upload librmm"
   echo ${LIBRMM_FILE}
   gpuci_retry anaconda -t ${MY_UPLOAD_KEY} upload -u ${CONDA_USERNAME:-rapidsai} ${LABEL_OPTION} --skip-existing ${LIBRMM_FILE}
 fi
 
-if [ "$BUILD_RMM" == "1" && "$UPLOAD_RMM" == "1" ]; then
+if [[ "$BUILD_RMM" == "1" && "$UPLOAD_RMM" == "1" ]]; then
   test -e ${RMM_FILE}
   echo "Upload rmm"
   echo ${RMM_FILE}
