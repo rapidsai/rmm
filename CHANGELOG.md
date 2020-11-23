@@ -20,6 +20,7 @@
 - PR #602 Fix `device_scalar` and its tests so that they use the correct CUDA stream
 - PR #621 Make `rmm::cuda_stream_default` a `constexpr`
 - PR #625 Use `librmm` conda artifact when building `rmm` conda package
+- PR #634 Fix conda uploads
 
 # RMM 0.16.0 (21 Oct 2020)
 
