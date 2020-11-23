@@ -25,9 +25,6 @@ cdef extern from * nogil:
 
     ctypedef void* cudaStream_t "cudaStream_t"
 
-    cudaStream_t cudaStreamLegacy
-    cudaStream_t cudaStreamPerThread
-
     ctypedef enum cudaMemcpyKind "cudaMemcpyKind":
         cudaMemcpyHostToHost = 0
         cudaMemcpyHostToDevice = 1

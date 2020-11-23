@@ -15,12 +15,17 @@
 import os
 
 from libc.stdint cimport uintptr_t
-from rmm._lib.lib cimport cudaStreamPerThread
+
+
+cpdef enum cudaStream:
+    cudaStreamDefault = 0
+    cudaStreamLegacy = 1
+    cudaStreamPerThread = 2
 
 
 cdef class CudaStreamView:
 
-    def __cinit__(self, uintptr_t stream=0):
+    def __cinit__(self, cudaStream stream=cudaStreamDefault):
         """Construct a view of the specified CUDA stream
 
         Parameters
@@ -28,9 +33,9 @@ cdef class CudaStreamView:
         stream : uintptr_t, optional
             CUDA stream to wrap, default 0
         """
-        if (stream == 0):
+        if (stream == cudaStreamDefault):
             if int(os.environ.get("RMM_PER_THREAD_DEFAULT_STREAM", "0")) != 0:
-                self.c_obj.reset(new cuda_stream_view(cudaStreamPerThread))
+                self.c_obj.reset(new cuda_stream_view(<cudaStream_t>cudaStreamPerThread))
             else:
                 self.c_obj.reset(new cuda_stream_view())
         else:
