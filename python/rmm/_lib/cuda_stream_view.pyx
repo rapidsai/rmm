@@ -15,6 +15,7 @@
 import os
 
 from libc.stdint cimport uintptr_t
+from rmm._lib.lib cimport cudaStreamPerThread
 
 
 cdef class CudaStreamView:
@@ -29,7 +30,7 @@ cdef class CudaStreamView:
         """
         if (stream == 0):
             if int(os.environ.get("CUDA_PTDS", "0")) != 0:
-                self.c_obj.reset(new cuda_stream_view(<cudaStream_t>2))
+                self.c_obj.reset(new cuda_stream_view(cudaStreamPerThread))
             else:
                 self.c_obj.reset(new cuda_stream_view())
         else:
