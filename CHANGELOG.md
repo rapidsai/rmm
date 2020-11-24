@@ -14,6 +14,7 @@
 - PR #603 Always test both legacy and per-thread default stream
 - PR #611 Add a note to the contribution guide about requiring 2 C++ reviewers
 - PR #615 Improve gpuCI Scripts
+- PR #635 Add Python docs build to gpuCI
 
 ## Bug Fixes
 
