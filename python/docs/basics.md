@@ -92,6 +92,7 @@ example, enabling the `ManagedMemoryResource` tells RMM to use
 > allocating any device memory on that device.  Setting or changing the
 > resource after device allocations have been made can lead to unexpected
 > behaviour or crashes. See [Multiple Devices](#multiple-devices)
+
 As another example, `PoolMemoryResource` allows you to allocate a
 large "pool" of device memory up-front. Subsequent allocations will
 draw from this pool of already allocated memory.  The example
