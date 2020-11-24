@@ -60,5 +60,5 @@ done
 
 
 mv $PROJECT_WORKSPACE/doxygen/html/* $DOCS_WORKSPACE/api/librmm/$BRANCH_VERSION
-mv $PROJECT_WORKSPACE/python/docs/html/* $DOCS_WORKSPACE/api/rmm/$BRANCH_VERSION
+mv $PROJECT_WORKSPACE/python/docs/_build/html/* $DOCS_WORKSPACE/api/rmm/$BRANCH_VERSION
 
