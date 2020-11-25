@@ -283,7 +283,8 @@ cdef class LoggingResourceAdaptor(MemoryResource):
         return self._log_file_name
 
 # Helper function to convert allocation_counts to a dict
-cdef dict _allocation_counts_to_dict(tracking_resource_adaptor_wrapper.allocation_counts counts):
+cdef dict _allocation_counts_to_dict(
+        tracking_resource_adaptor_wrapper.allocation_counts counts):
     return {
         "current_bytes": counts.current_bytes,
         "current_count": counts.current_count,
@@ -312,7 +313,8 @@ cdef class TrackingMemoryResource(MemoryResource):
     def get_outstanding_allocations_str(self) -> str:
 
         return (<tracking_resource_adaptor_wrapper*>(
-            self.c_obj.get()))[0].get_outstanding_allocations_str().decode('UTF-8')
+            self.c_obj.get())
+        )[0].get_outstanding_allocations_str().decode('UTF-8')
 
     def push_allocation_counts(self) -> dict:
         counts = (<tracking_resource_adaptor_wrapper*>(
