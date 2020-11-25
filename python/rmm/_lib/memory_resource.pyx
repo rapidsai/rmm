@@ -282,31 +282,49 @@ cdef class LoggingResourceAdaptor(MemoryResource):
     cpdef get_file_name(self):
         return self._log_file_name
 
+# Helper function to convert allocation_counts to a dict
+cdef dict _allocation_counts_to_dict(tracking_resource_adaptor_wrapper.allocation_counts counts):
+    return {
+        "current_bytes": counts.current_bytes,
+        "current_count": counts.current_count,
+        "peak_bytes": counts.peak_bytes,
+        "peak_count": counts.peak_count,
+        "total_bytes": counts.total_bytes,
+        "total_count": counts.total_count,
+    }
+
 cdef class TrackingMemoryResource(MemoryResource):
 
-    def __cinit__(self, MemoryResource upstream):
+    def __cinit__(self, MemoryResource upstream, bool capture_stacks=False):
         self.c_obj.reset(
             new tracking_resource_adaptor_wrapper(
-                upstream.c_obj
+                upstream.c_obj,
+                capture_stacks
             )
         )
 
-    def reset_allocation_counts(self):
-        (<tracking_resource_adaptor_wrapper*>(
-            self.c_obj.get()))[0].reset_allocation_counts()
-
-    def get_allocation_counts(self) -> dict:
+    def get_total_allocation_counts(self) -> dict:
         counts = (<tracking_resource_adaptor_wrapper*>(
-            self.c_obj.get()))[0].get_allocation_counts()
+            self.c_obj.get()))[0].get_total_allocation_counts()
 
-        return {
-            "current_bytes": counts.current_bytes,
-            "current_count": counts.current_count,
-            "peak_bytes": counts.peak_bytes,
-            "peak_count": counts.peak_count,
-            "total_bytes": counts.total_bytes,
-            "total_count": counts.total_count,
-        }
+        return _allocation_counts_to_dict(counts)
+
+    def get_outstanding_allocations_str(self) -> str:
+
+        return (<tracking_resource_adaptor_wrapper*>(
+            self.c_obj.get()))[0].get_outstanding_allocations_str().decode('UTF-8')
+
+    def push_allocation_counts(self) -> dict:
+        counts = (<tracking_resource_adaptor_wrapper*>(
+            self.c_obj.get()))[0].push_allocation_counts()
+
+        return _allocation_counts_to_dict(counts)
+
+    def pop_allocation_counts(self) -> dict:
+        counts = (<tracking_resource_adaptor_wrapper*>(
+            self.c_obj.get()))[0].pop_allocation_counts()
+
+        return _allocation_counts_to_dict(counts)
 
 
 class KeyInitializedDefaultDict(defaultdict):

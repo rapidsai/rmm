@@ -1,5 +1,6 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
+from libcpp cimport bool
 from libc.stdint cimport int8_t
 from libcpp.vector cimport vector
 from libcpp.string cimport string
@@ -93,11 +94,14 @@ cdef extern from "memory_resource_wrappers.hpp" nogil:
             size_t total_count
 
         tracking_resource_adaptor_wrapper(
-            shared_ptr[device_memory_resource_wrapper] upstream_mr
+            shared_ptr[device_memory_resource_wrapper] upstream_mr,
+            bool capture_stacks
         ) except +
 
-        void reset_allocation_counts() except +
-        allocation_counts get_allocation_counts() except +
+        allocation_counts get_total_allocation_counts() except +
+        allocation_counts push_allocation_counts() except +
+        allocation_counts pop_allocation_counts() except +
+        string get_outstanding_allocations_str() except +
 
 
 cdef class MemoryResource:

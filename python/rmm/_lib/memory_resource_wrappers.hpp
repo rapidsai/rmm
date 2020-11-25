@@ -183,21 +183,29 @@ class tracking_resource_adaptor_wrapper : public device_memory_resource_wrapper 
   typedef rmm::mr::tracking_resource_adaptor<rmm::mr::device_memory_resource>::allocation_counts
     allocation_counts;
 
-  tracking_resource_adaptor_wrapper(std::shared_ptr<device_memory_resource_wrapper> upstream_mr)
+  tracking_resource_adaptor_wrapper(std::shared_ptr<device_memory_resource_wrapper> upstream_mr, bool capture_stacks = false)
     : upstream_mr(upstream_mr),
       mr(std::make_shared<rmm::mr::tracking_resource_adaptor<rmm::mr::device_memory_resource>>(
-        upstream_mr->get_mr().get()))
+        upstream_mr->get_mr().get(), capture_stacks))
   {
   }
 
   std::shared_ptr<rmm::mr::device_memory_resource> get_mr() { return mr; }
 
-  void reset_allocation_counts() {
-    mr->reset_allocation_counts();
+  allocation_counts get_total_allocation_counts() const {
+    return mr->get_total_allocation_counts();
   }
 
-  allocation_counts get_allocation_counts() const {
-    return mr->get_allocation_counts();
+  std::string get_outstanding_allocations_str() const {
+    return mr->get_outstanding_allocations_str();
+  }
+
+  allocation_counts push_allocation_counts() {
+    return mr->push_allocation_counts();
+  }
+
+  allocation_counts pop_allocation_counts() {
+    return mr->pop_allocation_counts();
   }
 
  private:
