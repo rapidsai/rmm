@@ -1,8 +1,27 @@
+# Copyright (c) 2020, NVIDIA CORPORATION.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from libc.stdint cimport uintptr_t
 from libcpp cimport bool
 
 from rmm._lib.cuda_stream_view cimport cuda_stream_view
-from rmm._lib.lib cimport cudaStream_t
+from rmm._lib.lib cimport (
+    cudaStream_t,
+    cudaStreamDefault,
+    cudaStreamLegacy,
+    cudaStreamPerThread
+)
 from rmm._lib.cuda_stream import CudaStream
 
 from numba import cuda
@@ -29,7 +48,7 @@ cdef class Stream:
             self._from_cupy_stream(obj)
         elif obj is None:
             stream = CudaStream()
-            self._ptr = obj.value()
+            self._ptr = stream.value()
             self._owner = obj
         elif isinstance(obj, Stream):
             self._ptr, self._owner = obj._ptr, obj._owner
@@ -65,4 +84,6 @@ cdef class Stream:
         self._ptr = stream.ptr
         self._owner = stream
 
-DEFAULT_STREAM = Stream(0)
+DEFAULT_STREAM = Stream(<uintptr_t>cudaStreamLegacy)
+LEGACY_DEFAULT_STREAM = Stream(<uintptr_t>cudaStreamLegacy)
+PER_THREAD_DEFAULT_STREAM = Stream(<uintptr_t>cudaStreamPerThread)
