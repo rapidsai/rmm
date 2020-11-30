@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from libcpp cimport bool
-
 from libc.stdint cimport uintptr_t
+from libcpp cimport bool
 
 
 cdef class CudaStream:

@@ -20,18 +20,19 @@ from rmm._lib.lib cimport (
     cudaStream_t,
     cudaStreamDefault,
     cudaStreamLegacy,
-    cudaStreamPerThread
+    cudaStreamPerThread,
 )
-from rmm._lib.cuda_stream import CudaStream
 
-from numba import cuda
 import cupy
+from numba import cuda
+
+from rmm._lib.cuda_stream import CudaStream
 
 
 cdef class Stream:
     def __init__(self, obj=None):
         """
-        A Stream represents a CUDA stream.
+        BA Stream represents a CUDA stream.
 
         Parameters
         ----------
