@@ -31,7 +31,8 @@ into three categories:
 5. When done, [create your pull request](https://github.com/rapidsai/rmm/compare)
 6. Verify that CI passes all [status checks](https://help.github.com/articles/about-status-checks/). Fix if needed
 7. Wait for other developers to review your code and update code as needed
-8. Once reviewed and approved, a RAPIDS developer will merge your pull request
+8. Once reviewed and approved, a RAPIDS developer will merge your pull request. Note that for C++ code, two reviewers
+are required.
 
 Remember, if you are unsure about anything, don't hesitate to comment on issues
 and ask for clarifications!

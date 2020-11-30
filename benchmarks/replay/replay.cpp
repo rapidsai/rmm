@@ -41,6 +41,7 @@
 #include <string>
 #include <thread>
 
+#include "rmm/cuda_stream_view.hpp"
 #include "spdlog/common.h"
 
 /// MR factory functions
@@ -242,8 +243,10 @@ std::vector<std::vector<rmm::detail::event>> parse_per_thread_events(std::string
   RMM_EXPECTS(std::all_of(all_events.begin(),
                           all_events.end(),
                           [](auto const& e) {
-                            return (e.stream == cudaStreamDefault) or
-                                   (e.stream == reinterpret_cast<uintptr_t>(cudaStreamPerThread));
+                            cudaStream_t cs;
+                            memcpy(&cs, &e.stream, sizeof(cudaStream_t));
+                            auto s = rmm::cuda_stream_view{cs};
+                            return s.is_default() or s.is_per_thread_default();
                           }),
               "Non-default streams not currently supported.");
 

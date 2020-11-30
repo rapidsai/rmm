@@ -16,30 +16,37 @@ export HOME=$WORKSPACE
 export PROJECT_WORKSPACE=/rapids/rmm
 export LIBCUDF_KERNEL_CACHE_PATH="$HOME/.jitify-cache"
 export NIGHTLY_VERSION=$(echo $BRANCH_VERSION | awk -F. '{print $2}')
-export PROJECTS=(rmm)
+export PROJECTS=(librmm rmm)
 
-logger "Check environment..."
+gpuci_logger "Check environment"
 env
 
-logger "Check GPU usage..."
+gpuci_logger "Check GPU usage"
 nvidia-smi
 
-logger "Activate conda env..."
-source activate rapids
-# TODO: Move installs to docs-build-env meta package
-conda install -c anaconda beautifulsoup4 jq
+gpuci_logger "Activate conda env"
+. /opt/conda/etc/profile.d/conda.sh
+conda activate rapids
 
-
-logger "Check versions..."
+gpuci_logger "Check versions"
 python --version
 $CC --version
 $CXX --version
-conda list
+
+gpuci_logger "Check conda environment"
+conda info
+conda config --show-sources
+conda list --show-channel-urls
 
 # Build Doxygen docs
-logger "Build Doxygen docs..."
+gpuci_logger "Build Doxygen docs"
 cd $PROJECT_WORKSPACE/doxygen
 doxygen Doxyfile
+
+# Build Python docs
+gpuci_logger "Build Python docs"
+cd $PROJECT_WORKSPACE/python/docs
+make html
 
 #Commit to Website
 cd $DOCS_WORKSPACE
@@ -52,5 +59,6 @@ for PROJECT in ${PROJECTS[@]}; do
 done
 
 
-mv $PROJECT_WORKSPACE/doxygen/html/* $DOCS_WORKSPACE/api/rmm/$BRANCH_VERSION
+mv $PROJECT_WORKSPACE/doxygen/html/* $DOCS_WORKSPACE/api/librmm/$BRANCH_VERSION
+mv $PROJECT_WORKSPACE/python/docs/_build/html/* $DOCS_WORKSPACE/api/rmm/$BRANCH_VERSION
 
