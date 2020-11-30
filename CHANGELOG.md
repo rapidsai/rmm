@@ -5,6 +5,7 @@
 - PR #596 Add `tracking_memory_resource_adaptor` to help catch memory leaks
 - PR #608 Add stream wrapper type
 - PR #632 Add RMM Python docs
+- PR #636 Add a `Stream` class to manage CUDA streams in Python
 
 ## Improvements
 
