@@ -39,7 +39,7 @@ cdef class DeviceBuffer:
     def __cinit__(self, *,
                   uintptr_t ptr=0,
                   size_t size=0,
-                  stream=DEFAULT_STREAM):
+                  Stream stream=DEFAULT_STREAM):
         """Construct a ``DeviceBuffer`` with optional size and data pointer
 
         Parameters
@@ -68,20 +68,18 @@ cdef class DeviceBuffer:
         cdef const void* c_ptr
         cdef cudaError_t err
 
-        cdef Stream s = Stream(stream)
-
         with nogil:
             c_ptr = <const void*>ptr
 
             if size == 0:
                 self.c_obj.reset(new device_buffer())
             elif c_ptr == NULL:
-                self.c_obj.reset(new device_buffer(size, s.view()))
+                self.c_obj.reset(new device_buffer(size, stream.view()))
             else:
-                self.c_obj.reset(new device_buffer(c_ptr, size, s.view()))
+                self.c_obj.reset(new device_buffer(c_ptr, size, stream.view()))
 
-        if s.is_default():
-            s.synchronize()
+        if stream.is_default():
+            stream.synchronize()
 
     def __len__(self):
         return self.size
