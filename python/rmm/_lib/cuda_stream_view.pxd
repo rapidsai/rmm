@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from libcpp cimport bool
-from libcpp.memory cimport unique_ptr
 
 from rmm._lib.lib cimport cudaStream_t
 
@@ -26,9 +25,3 @@ cdef extern from "rmm/cuda_stream_view.hpp" namespace "rmm" nogil:
         void synchronize() except +
 
     cdef bool operator==(cuda_stream_view const, cuda_stream_view const)
-
-cdef class CudaStreamView:
-    cdef unique_ptr[cuda_stream_view] c_obj
-
-    cpdef bool is_default(self) except *
-    cpdef bool is_per_thread_default(self) except *
