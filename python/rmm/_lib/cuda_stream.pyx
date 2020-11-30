@@ -18,6 +18,9 @@ from libc.stdint cimport uintptr_t
 
 
 cdef class CudaStream:
+    """
+    Wraps rmm::cuda_stream (an owning class).
+    """
     def __cinit__(self):
         self.c_obj.reset(new cuda_stream())
 
