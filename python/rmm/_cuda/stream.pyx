@@ -84,6 +84,6 @@ cdef class Stream:
         self._ptr = stream.ptr
         self._owner = stream
 
-DEFAULT_STREAM = Stream(<uintptr_t>cudaStreamLegacy)
+DEFAULT_STREAM = Stream(<uintptr_t>cudaStreamDefault)
 LEGACY_DEFAULT_STREAM = Stream(<uintptr_t>cudaStreamLegacy)
 PER_THREAD_DEFAULT_STREAM = Stream(<uintptr_t>cudaStreamPerThread)
