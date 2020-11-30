@@ -49,7 +49,7 @@ cdef class Stream:
         elif obj is None:
             stream = CudaStream()
             self._ptr = stream.value()
-            self._owner = obj
+            self._owner = stream
         elif isinstance(obj, Stream):
             self._ptr, self._owner = obj._ptr, obj._owner
         elif isinstance(obj, int):
