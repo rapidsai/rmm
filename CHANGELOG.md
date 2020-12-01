@@ -24,6 +24,7 @@
 - PR #602 Fix `device_scalar` and its tests so that they use the correct CUDA stream
 - PR #621 Make `rmm::cuda_stream_default` a `constexpr`
 - PR #625 Use `librmm` conda artifact when building `rmm` conda package
+- PR #631 Force local conda artifact install
 - PR #634 Fix conda uploads
 - PR #639 Fix release script version updater based on CMake reformatting
 - PR #641 Fix adding "LANGUAGES" after version number in CMake in release script
