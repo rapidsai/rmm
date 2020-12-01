@@ -100,9 +100,10 @@ cdef class Stream:
     def _init_from_cupy_stream(self, obj):
         try:
             import cupy
-            self._ptr = <cudaStream_t>(obj.ptr)
-            self._owner = obj
-            return
+            if isinstance(obj, cupy.cuda.stream.Stream):
+                self._ptr = <cudaStream_t>(obj.ptr)
+                self._owner = obj
+                return
         except ImportError:
             pass
         raise TypeError(f"Cannot create stream from {type(obj)}")
