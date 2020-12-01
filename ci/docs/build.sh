@@ -11,7 +11,7 @@ if [ -z "$PROJECT_WORKSPACE" ]; then
 fi
 
 export DOCS_WORKSPACE=$WORKSPACE/docs
-export PATH=/conda/bin:/usr/local/cuda/bin:$PATH
+export PATH=/opt/conda/bin:/usr/local/cuda/bin:$PATH
 export HOME=$WORKSPACE
 export PROJECT_WORKSPACE=/rapids/rmm
 export LIBCUDF_KERNEL_CACHE_PATH="$HOME/.jitify-cache"
