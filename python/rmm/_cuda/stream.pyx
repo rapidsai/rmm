@@ -32,7 +32,7 @@ from rmm._lib.cuda_stream import CudaStream
 cdef class Stream:
     def __init__(self, obj=None):
         """
-        BA Stream represents a CUDA stream.
+        A Stream represents a CUDA stream.
 
         Parameters
         ----------
