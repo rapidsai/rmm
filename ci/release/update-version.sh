@@ -45,7 +45,7 @@ function sed_runner() {
     sed -i.bak ''"$1"'' $2 && rm -f ${2}.bak
 }
 
-sed_runner 's/'"RMM VERSION .* LANGUAGES"'/'"RMM VERSION ${NEXT_FULL_TAG} LANGUAGES"'/g' CMakeLists.txt
+sed_runner 's/'"  VERSION .*"'/'"  VERSION ${NEXT_FULL_TAG} LANGUAGES"'/g' CMakeLists.txt
 
 sed_runner 's/version=.*/version=\"'"${NEXT_FULL_TAG}"'\",/g' python/setup.py
 
