@@ -1,4 +1,3 @@
-
 @PACKAGE_INIT@
 
 cmake_minimum_required(VERSION 3.17)
@@ -17,7 +16,6 @@ find_dependency(Thrust @RMM_MIN_VERSION_Thrust@)
 thrust_create_target(rmm::Thrust FROM_OPTIONS)
 
 set(CMAKE_MODULE_PATH ${_save_CMAKE_MODULE_PATH})
-
 
 include("${CMAKE_CURRENT_LIST_DIR}/rmm-targets.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/rmm-config-version.cmake")

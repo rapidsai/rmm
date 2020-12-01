@@ -33,6 +33,34 @@ FLAKE_CYTHON_RETVAL=$?
 CLANG_FORMAT=`python scripts/run-clang-format.py 2>&1`
 CLANG_FORMAT_RETVAL=$?
 
+# Run cmake-format / cmake-lint and get results/return code
+CMAKE_FILES=(`find | grep -E "^.*\.cmake(\.in)?$|^.*/CMakeLists.txt$"`)
+
+CMAKE_FORMATS=()
+CMAKE_FORMAT_RETVAL=0
+
+CMAKE_LINTS=()
+CMAKE_LINT_RETVAL=0
+
+
+for cmake_file in "${CMAKE_FILES[@]}"; do
+  cmake-format --in-place --config-files cmake/config.json -- ${cmake_file}
+  TMP_CMAKE_FORMAT=`git diff --color --exit-code -- ${cmake_file}`
+  TMP_CMAKE_FORMAT_RETVAL=$?
+  if [ "$TMP_CMAKE_FORMAT_RETVAL" != "0" ]; then
+    CMAKE_FORMAT_RETVAL=1
+    CMAKE_FORMATS+=("$TMP_CMAKE_FORMAT")
+  fi
+
+  TMP_CMAKE_LINT=`cmake-lint --config-files cmake/config.json -- ${cmake_file}`
+  TMP_CMAKE_LINT_RETVAL=$?
+  if [ "$TMP_CMAKE_LINT_RETVAL" != "0" ]; then
+    CMAKE_LINT_RETVAL=1
+    CMAKE_LINTS+=("$TMP_CMAKE_LINT")
+  fi
+done
+
+
 # Output results if failure otherwise show pass
 if [ "$ISORT_RETVAL" != "0" ]; then
   echo -e "\n\n>>>> FAILED: isort style check; begin output\n\n"
@@ -74,7 +102,29 @@ else
   echo -e "\n\n>>>> PASSED: clang format check\n\n"
 fi
 
-RETVALS=($ISORT_RETVAL $BLACK_RETVAL $FLAKE_RETVAL $FLAKE_CYTHON_RETVAL $CLANG_FORMAT_RETVAL)
+if [ "$CMAKE_FORMAT_RETVAL" != "0" ]; then
+  echo -e "\n\n>>>> FAILED: cmake format check; begin output\n\n"
+  for CMAKE_FORMAT in "${CMAKE_FORMATS[@]}"; do
+    echo -e "$CMAKE_FORMAT"
+    echo -e "\n"
+  done
+  echo -e "\n\n>>>> FAILED: cmake format check; end output\n\n"
+else
+  echo -e "\n\n>>>> PASSED: cmake format check\n\n"
+fi
+
+if [ "$CMAKE_LINT_RETVAL" != "0" ]; then
+  echo -e "\n\n>>>> FAILED: cmake lint check; begin output\n\n"
+  for CMAKE_LINT in "${CMAKE_LINTS[@]}"; do
+    echo -e "$CMAKE_LINT"
+    echo -e "\n"
+  done
+  echo -e "\n\n>>>> FAILED: cmake lint check; end output\n\n"
+else
+  echo -e "\n\n>>>> PASSED: cmake lint check\n\n"
+fi
+
+RETVALS=($ISORT_RETVAL $BLACK_RETVAL $FLAKE_RETVAL $FLAKE_CYTHON_RETVAL $CLANG_FORMAT_RETVAL $CMAKE_FORMAT_RETVAL $CMAKE_LINT_RETVAL)
 IFS=$'\n'
 RETVAL=`echo "${RETVALS[*]}" | sort -nr | head -n1`
 

@@ -4,14 +4,17 @@
 
 - PR #596 Add `tracking_memory_resource_adaptor` to help catch memory leaks
 - PR #608 Add stream wrapper type
+- PR #632 Add RMM Python docs
 
 ## Improvements
 
+- PR #604 CMake target cleanup, formatting, linting
 - PR #599 Make the arena memory resource work better with the producer/consumer mode
 - PR #612 Drop old Python `device_array*` API
 - PR #603 Always test both legacy and per-thread default stream
 - PR #611 Add a note to the contribution guide about requiring 2 C++ reviewers
 - PR #615 Improve gpuCI Scripts
+- PR #635 Add Python docs build to gpuCI
 
 ## Bug Fixes
 
@@ -20,6 +23,9 @@
 - PR #621 Make `rmm::cuda_stream_default` a `constexpr`
 - PR #625 Use `librmm` conda artifact when building `rmm` conda package
 - PR #631 Force local conda artifact install
+- PR #634 Fix conda uploads
+- PR #639 Fix release script version updater based on CMake reformatting
+
 
 # RMM 0.16.0 (21 Oct 2020)
 
