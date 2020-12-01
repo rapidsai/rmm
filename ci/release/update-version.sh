@@ -50,3 +50,6 @@ sed_runner 's/'"RMM VERSION .* LANGUAGES"'/'"RMM VERSION ${NEXT_FULL_TAG} LANGUA
 sed_runner 's/version=.*/version=\"'"${NEXT_FULL_TAG}"'\",/g' python/setup.py
 
 sed_runner 's/'"PROJECT_NUMBER         = .*"'/'"PROJECT_NUMBER         = ${NEXT_SHORT_TAG}"'/g' doxygen/Doxyfile
+
+sed_runner 's/'"version =.*"'/'"version = \"${NEXT_SHORT_TAG}\""'/g' python/docs/conf.py
+sed_runner 's/'"release =.*"'/'"release = \"${NEXT_FULL_TAG}\""'/g' python/docs/conf.py

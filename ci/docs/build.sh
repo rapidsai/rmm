@@ -16,7 +16,7 @@ export HOME=$WORKSPACE
 export PROJECT_WORKSPACE=/rapids/rmm
 export LIBCUDF_KERNEL_CACHE_PATH="$HOME/.jitify-cache"
 export NIGHTLY_VERSION=$(echo $BRANCH_VERSION | awk -F. '{print $2}')
-export PROJECTS=(rmm)
+export PROJECTS=(librmm rmm)
 
 gpuci_logger "Check environment"
 env
@@ -43,6 +43,11 @@ gpuci_logger "Build Doxygen docs"
 cd $PROJECT_WORKSPACE/doxygen
 doxygen Doxyfile
 
+# Build Python docs
+gpuci_logger "Build Python docs"
+cd $PROJECT_WORKSPACE/python/docs
+make html
+
 #Commit to Website
 cd $DOCS_WORKSPACE
 
@@ -54,5 +59,6 @@ for PROJECT in ${PROJECTS[@]}; do
 done
 
 
-mv $PROJECT_WORKSPACE/doxygen/html/* $DOCS_WORKSPACE/api/rmm/$BRANCH_VERSION
+mv $PROJECT_WORKSPACE/doxygen/html/* $DOCS_WORKSPACE/api/librmm/$BRANCH_VERSION
+mv $PROJECT_WORKSPACE/python/docs/_build/html/* $DOCS_WORKSPACE/api/rmm/$BRANCH_VERSION
 
