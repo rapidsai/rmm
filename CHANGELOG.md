@@ -25,6 +25,7 @@
 - PR #634 Fix conda uploads
 - PR #639 Fix release script version updater based on CMake reformatting
 
+
 # RMM 0.16.0 (21 Oct 2020)
 
 ## New Features
