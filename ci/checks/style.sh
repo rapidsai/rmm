@@ -1,17 +1,18 @@
 #!/bin/bash
-# Copyright (c) 2018, NVIDIA CORPORATION.
+# Copyright (c) 2020, NVIDIA CORPORATION.
 #####################
 # RMM Style Tester #
 #####################
 
 # Ignore errors and set path
 set +e
-PATH=/conda/bin:$PATH
+PATH=/opt/conda/bin:$PATH
 LC_ALL=C.UTF-8
 LANG=C.UTF-8
 
 # Activate common conda env
-source activate gdf
+. /opt/conda/etc/profile.d/conda.sh
+conda activate rapids
 
 # Run isort and get results/return code
 ISORT=`isort --recursive --check-only python`

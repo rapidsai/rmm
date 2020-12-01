@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright (c) 2018, NVIDIA CORPORATION.
+# Copyright (c) 2020, NVIDIA CORPORATION.
 ######################################
 # rmm GPU build & testscript for CI  #
 ######################################
@@ -42,7 +42,7 @@ conda activate rapids
 gpuci_conda_retry install rapids-build-env=${MINOR_VERSION}.*
 
 # https://docs.rapids.ai/maintainers/depmgmt/ 
-# gpuci_conda_retry remove -f rapids-build-env
+# conda remove -f rapids-build-env
 # gpuci_conda_retry install "your-pkg=1.0.0"
 
 gpuci_logger "Check versions"
@@ -107,7 +107,7 @@ else
     cd $WORKSPACE/python
     
     gpuci_logger "Installing librmm"
-    conda install -c $WORKSPACE/ci/artifacts/rmm/cpu/conda-bld/ librmm
+    gpuci_conda_retry install -c $WORKSPACE/ci/artifacts/rmm/cpu/conda-bld/ librmm
     export LIBRMM_BUILD_DIR="$WORKSPACE/ci/artifacts/rmm/cpu/conda_work/build"
     
     gpuci_logger "Building rmm"
