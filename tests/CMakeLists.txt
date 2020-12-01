@@ -105,12 +105,12 @@ ConfigureTest(THRUST_ALLOCATOR_TEST "${THRUST_ALLOCATOR_TEST_SRC}")
 
 # polymorphic allocator tests
 
-ConfigureTest(POLYMORPHIC_ALLOCATOR_TEST 
+ConfigureTest(POLYMORPHIC_ALLOCATOR_TEST
               "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/polymorphic_allocator_tests.cpp")
 
 # stream allocator adaptor tests
 
-ConfigureTest(STREAM_ADAPTOR_TEST 
+ConfigureTest(STREAM_ADAPTOR_TEST
               "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/stream_allocator_adaptor_tests.cpp")
 
 # tracking adaptor tests
