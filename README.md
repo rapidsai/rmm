@@ -338,6 +338,41 @@ for(int i = 0; i < N; ++i) {
 }
 ```
 
+### Allocators
+
+C++ interfaces commonly allow customizable memory allocation through an [`Allocator`](https://en.cppreference.com/w/cpp/named_req/Allocator) object. 
+RMM provides several `Allocator` and `Allocator`-like classes.
+
+#### `polymorphic_allocator`
+
+A [stream-ordered](#stream-ordered-memory-allocation) allocator similar to [`std::pmr::polymorphic_allocator`](https://en.cppreference.com/w/cpp/memory/polymorphic_allocator). 
+Unlike the standard C++ `Allocator` interface, the `allocate` and `deallocate` functions take a `cuda_stream_view` indicating the stream on which the (de)allocation occurs.
+
+#### `stream_allocator_adaptor`
+
+`stream_allocator_adaptor` can be used to adapt a stream-ordered allocator to present a standard `Allocator` interface to consumers that may not be designed to work with a stream-ordered interface.
+
+Example:
+```c++
+rmm::cuda_stream stream;
+rmm::mr::polymorphic_allocator<int> stream_alloc;
+
+// Constructs an adaptor that forwards all (de)allocations to `stream_alloc` on `stream`.
+auto adapted = rmm::mr::make_stream_allocator_adaptor(stream_alloc, stream);
+
+// Allocates 100 bytes using `stream_alloc` on `stream`
+auto p = adapted.allocate(100); 
+...
+// Deallocates using `stream_alloc` on `stream`
+adapted.deallocate(p,100); 
+```
+
+#### `thrust_allocator`
+
+`thrust_allocator` is a device memory allocator that uses the strongly typed `thrust::device_ptr`, making it usable with containers like `thrust::device_vector`.
+
+See [below](#using-rmm-with-thrust) for more information on using RMM with Thrust. 
+
 ## Device Data Structures
 
 ### `device_buffer`
@@ -370,7 +405,7 @@ rmm::device_uvector<int32_t> v(100, s); /// Allocates uninitialized storage for 
 thrust::uninitialized_fill(thrust::cuda::par.on(s.value()), v.begin(), v.end(), int32_t{0}); // Initializes the elements to 0
 
 rmm::mr::device_memory_resource * mr = new my_custom_resource{...};
-rmm::device_vector<int32_t> v2{100, s, mr}; // Allocates uninitialized storage for 100 `int32_t` elements on stream `s` using the explicitly provided resource
+rmm::device_uvector<int32_t> v2{100, s, mr}; // Allocates uninitialized storage for 100 `int32_t` elements on stream `s` using the explicitly provided resource
 ```
 
 ### `device_scalar`
