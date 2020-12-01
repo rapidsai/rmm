@@ -78,8 +78,8 @@ cdef class DeviceBuffer:
             else:
                 self.c_obj.reset(new device_buffer(c_ptr, size, stream.view()))
 
-        if stream.is_default():
-            stream.synchronize()
+            if stream.c_is_default():
+                stream.c_synchronize()
 
     def __len__(self):
         return self.size

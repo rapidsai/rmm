@@ -16,13 +16,17 @@ from libc.stdint cimport uintptr_t
 from libcpp cimport bool
 
 from rmm._lib.cuda_stream_view cimport cuda_stream_view
-
+from rmm._lib.lib cimport cudaStream_t
 
 cdef class Stream:
-    cdef public:
-        uintptr_t _ptr
-        object _owner
+    cdef cudaStream_t _ptr
+    cdef object _owner
+
+    @staticmethod
+    cdef Stream _from_cudaStream_t(cudaStream_t s, object owner=*)
 
     cdef cuda_stream_view view(self) nogil except *
-    cpdef bool is_default(self) except *
-    cpdef void synchronize(self) except *
+    cdef void c_synchronize(self) nogil except *
+    cdef bool c_is_default(self) nogil except *
+    cdef void _init_with_new_cuda_stream(self) except *
+    cdef void _init_from_stream(self, Stream stream) except *

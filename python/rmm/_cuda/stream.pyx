@@ -23,9 +23,9 @@ from rmm._lib.lib cimport (
     cudaStreamPerThread,
 )
 
-import cupy
 from numba import cuda
 
+from rmm._lib.cuda_stream cimport CudaStream
 from rmm._lib.cuda_stream import CudaStream
 
 
@@ -38,26 +38,28 @@ cdef class Stream:
         ----------
         obj: optional
             * If None (the default), a new CUDA stream is created.
-            * If an integer is provided, it is assumed to be a handle
               to an existing CUDA stream.
-            * If a Numba or CUDA stream is provided, we make a thin
+            * If a Numba or CuPy stream is provided, we make a thin
               wrapper around it.
         """
-        if isinstance(obj, cuda.cudadrv.driver.Stream):
-            self._from_numba_stream(obj)
-        elif isinstance(obj, cupy.cuda.stream.Stream):
-            self._from_cupy_stream(obj)
-        elif obj is None:
-            stream = CudaStream()
-            self._ptr = stream.value()
-            self._owner = stream
+        if obj is None:
+            self._init_with_new_cuda_stream()
         elif isinstance(obj, Stream):
-            self._ptr, self._owner = obj._ptr, obj._owner
-        elif isinstance(obj, int):
-            self._ptr = obj
-            self._owner = None
+            self._init_from_stream(obj)
+        elif isinstance(obj, cuda.cudadrv.driver.Stream):
+            self._init_from_numba_stream(obj)
         else:
-            raise TypeError("obj must be None or stream")
+            self._init_from_cupy_stream(obj)
+
+    @staticmethod
+    cdef Stream _from_cudaStream_t(cudaStream_t s, object owner=None):
+        """
+        Construct a Stream from a cudaStream_t.
+        """
+        cdef Stream obj = Stream.__new__(Stream)
+        obj._ptr = s
+        obj._owner = owner
+        return obj
 
     cdef cuda_stream_view view(self) nogil except *:
         """
@@ -65,28 +67,55 @@ cdef class Stream:
         """
         return cuda_stream_view(<cudaStream_t><uintptr_t>(self._ptr))
 
-    cpdef bool is_default(self) except *:
+    cdef void c_synchronize(self) nogil except *:
         """
-        Check if we are the default CUDA stream
+        Synchronize the CUDA stream.
+        This function *must* be called in a `with nogil` block
         """
-        with nogil:
-            return self.view().is_default()
+        self.view().synchronize()
 
-    cpdef void synchronize(self) except *:
+    def synchronize(self):
         """
         Synchronize the CUDA stream
         """
         with nogil:
-            self.view().synchronize()
+            self.c_synchronize()
 
-    def _from_numba_stream(self, stream):
-        self._ptr = stream.handle.value
+    cdef bool c_is_default(self) nogil except *:
+        """
+        Check if we are the default CUDA stream
+        """
+        return self.view().is_default()
+
+    def is_default(self):
+        """
+        Check if we are the default CUDA stream
+        """
+        return self.c_is_default()
+
+    def _init_from_numba_stream(self, obj):
+        self._ptr = <cudaStream_t>(obj.handle.value)
+        self._owner = obj
+
+    def _init_from_cupy_stream(self, obj):
+        try:
+            import cupy
+            self._ptr = <cudaStream_t>(obj.ptr)
+            self._owner = obj
+            return
+        except ImportError:
+            pass
+        raise TypeError(f"Cannot create stream from {type(obj)}")
+
+    cdef void _init_with_new_cuda_stream(self) except *:
+        cdef CudaStream stream = CudaStream()
+        self._ptr = stream.value()
         self._owner = stream
 
-    def _from_cupy_stream(self, stream):
-        self._ptr = stream.ptr
-        self._owner = stream
+    cdef void _init_from_stream(self, Stream stream) except *:
+        self._ptr, self._owner = stream._ptr, stream._owner
 
-DEFAULT_STREAM = Stream(<uintptr_t>cudaStreamDefault)
-LEGACY_DEFAULT_STREAM = Stream(<uintptr_t>cudaStreamLegacy)
-PER_THREAD_DEFAULT_STREAM = Stream(<uintptr_t>cudaStreamPerThread)
+
+DEFAULT_STREAM = Stream._from_cudaStream_t(cudaStreamDefault)
+LEGACY_DEFAULT_STREAM = Stream._from_cudaStream_t(cudaStreamLegacy)
+PER_THREAD_DEFAULT_STREAM = Stream._from_cudaStream_t(cudaStreamPerThread)
