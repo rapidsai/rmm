@@ -69,13 +69,15 @@ cdef class Stream:
         """
         Check if we are the default CUDA stream
         """
-        return self.view().is_default()
+        with nogil:
+            return self.view().is_default()
 
     cpdef void synchronize(self) except *:
         """
         Synchronize the CUDA stream
         """
-        self.view().synchronize()
+        with nogil:
+            self.view().synchronize()
 
     def _from_numba_stream(self, stream):
         self._ptr = stream.handle.value
