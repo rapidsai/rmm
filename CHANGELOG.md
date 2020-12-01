@@ -31,6 +31,8 @@
 - PR #621 Make `rmm::cuda_stream_default` a `constexpr`
 - PR #625 Use `librmm` conda artifact when building `rmm` conda package
 - PR #634 Fix conda uploads
+- PR #639 Fix release script version updater based on CMake reformatting
+
 
 # RMM 0.16.0 (21 Oct 2020)
 
