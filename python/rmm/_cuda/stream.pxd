@@ -19,7 +19,7 @@ from rmm._lib.cuda_stream_view cimport cuda_stream_view
 from rmm._lib.lib cimport cudaStream_t
 
 cdef class Stream:
-    cdef cudaStream_t _ptr
+    cdef cudaStream_t _cuda_stream
     cdef object _owner
 
     @staticmethod

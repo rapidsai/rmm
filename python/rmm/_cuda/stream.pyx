@@ -38,7 +38,6 @@ cdef class Stream:
         ----------
         obj: optional
             * If None (the default), a new CUDA stream is created.
-              to an existing CUDA stream.
             * If a Numba or CuPy stream is provided, we make a thin
               wrapper around it.
         """
@@ -57,7 +56,7 @@ cdef class Stream:
         Construct a Stream from a cudaStream_t.
         """
         cdef Stream obj = Stream.__new__(Stream)
-        obj._ptr = s
+        obj._cuda_stream = s
         obj._owner = owner
         return obj
 
@@ -65,7 +64,7 @@ cdef class Stream:
         """
         Generate a rmm::cuda_stream_view from this Stream instance
         """
-        return cuda_stream_view(<cudaStream_t><uintptr_t>(self._ptr))
+        return cuda_stream_view(<cudaStream_t><uintptr_t>(self._cuda_stream))
 
     cdef void c_synchronize(self) nogil except *:
         """
@@ -94,14 +93,14 @@ cdef class Stream:
         return self.c_is_default()
 
     def _init_from_numba_stream(self, obj):
-        self._ptr = <cudaStream_t>(obj.handle.value)
+        self._cuda_stream = <cudaStream_t>(obj.handle.value)
         self._owner = obj
 
     def _init_from_cupy_stream(self, obj):
         try:
             import cupy
             if isinstance(obj, cupy.cuda.stream.Stream):
-                self._ptr = <cudaStream_t>(obj.ptr)
+                self._cuda_stream = <cudaStream_t>(obj.ptr)
                 self._owner = obj
                 return
         except ImportError:
@@ -110,11 +109,11 @@ cdef class Stream:
 
     cdef void _init_with_new_cuda_stream(self) except *:
         cdef CudaStream stream = CudaStream()
-        self._ptr = stream.value()
+        self._cuda_stream = stream.value()
         self._owner = stream
 
     cdef void _init_from_stream(self, Stream stream) except *:
-        self._ptr, self._owner = stream._ptr, stream._owner
+        self._cuda_stream, self._owner = stream._cuda_stream, stream._owner
 
 
 DEFAULT_STREAM = Stream._from_cudaStream_t(cudaStreamDefault)
