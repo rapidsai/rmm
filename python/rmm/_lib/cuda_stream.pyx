@@ -23,7 +23,7 @@ cdef class CudaStream:
     def __cinit__(self):
         self.c_obj.reset(new cuda_stream())
 
-    cdef cudaStream_t value(self) except *:
+    cdef cudaStream_t value(self) nogil except *:
         return self.c_obj.get()[0].value()
 
     cpdef bool is_valid(self) except *:
