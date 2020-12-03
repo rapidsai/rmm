@@ -18,7 +18,6 @@ from libcpp cimport bool
 from rmm._lib.cuda_stream_view cimport cuda_stream_view
 from rmm._lib.lib cimport (
     cudaStream_t,
-    cudaStreamDefault,
     cudaStreamLegacy,
     cudaStreamPerThread,
 )
