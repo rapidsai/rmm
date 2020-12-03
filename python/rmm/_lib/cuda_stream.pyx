@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+cimport cython
 from libc.stdint cimport uintptr_t
 from libcpp cimport bool
 
 
+@cython.final
 cdef class CudaStream:
     """
     Wraps rmm::cuda_stream (an owning class).
@@ -26,5 +28,5 @@ cdef class CudaStream:
     cdef cudaStream_t value(self) nogil except *:
         return self.c_obj.get()[0].value()
 
-    cpdef bool is_valid(self) except *:
+    cpdef bool is_valid(self) nogil except *:
         return self.c_obj.get()[0].is_valid()

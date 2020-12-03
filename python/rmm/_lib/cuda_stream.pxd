@@ -18,6 +18,8 @@ from libcpp.memory cimport unique_ptr
 from rmm._lib.lib cimport cudaStream_t
 from rmm._lib.cuda_stream_view cimport cuda_stream_view
 
+cimport cython
+
 
 cdef extern from "rmm/cuda_stream.hpp" namespace "rmm" nogil:
     cdef cppclass cuda_stream:
@@ -28,7 +30,9 @@ cdef extern from "rmm/cuda_stream.hpp" namespace "rmm" nogil:
         void synchronize() except +
         void synchronize_no_throw()
 
+
+@cython.final
 cdef class CudaStream:
     cdef unique_ptr[cuda_stream] c_obj
     cdef cudaStream_t value(self) nogil except *
-    cpdef bool is_valid(self) except *
+    cpdef bool is_valid(self) nogil except *
