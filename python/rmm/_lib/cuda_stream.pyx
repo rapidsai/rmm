@@ -20,7 +20,9 @@ from libcpp cimport bool
 @cython.final
 cdef class CudaStream:
     """
-    Wraps rmm::cuda_stream (an owning class).
+    Wrapper around a CUDA stream with RAII semantics.
+    When a CudaStream instance is GC'd, the underlying
+    CUDA stream is destroyed.
     """
     def __cinit__(self):
         self.c_obj.reset(new cuda_stream())
