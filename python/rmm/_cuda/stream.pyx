@@ -116,6 +116,6 @@ cdef class Stream:
         self._cuda_stream, self._owner = stream._cuda_stream, stream._owner
 
 
-DEFAULT_STREAM = Stream._from_cudaStream_t(cudaStreamDefault)
+DEFAULT_STREAM = Stream._from_cudaStream_t(<cudaStream_t>0)
 LEGACY_DEFAULT_STREAM = Stream._from_cudaStream_t(cudaStreamLegacy)
 PER_THREAD_DEFAULT_STREAM = Stream._from_cudaStream_t(cudaStreamPerThread)
