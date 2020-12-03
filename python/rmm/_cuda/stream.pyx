@@ -16,15 +16,12 @@ from libc.stdint cimport uintptr_t
 from libcpp cimport bool
 
 from rmm._lib.cuda_stream_view cimport cuda_stream_view
-from rmm._lib.lib cimport (
-    cudaStream_t,
-    cudaStreamLegacy,
-    cudaStreamPerThread,
-)
+from rmm._lib.lib cimport cudaStream_t, cudaStreamLegacy, cudaStreamPerThread
 
 from numba import cuda
 
 from rmm._lib.cuda_stream cimport CudaStream
+
 from rmm._lib.cuda_stream import CudaStream
 
 
