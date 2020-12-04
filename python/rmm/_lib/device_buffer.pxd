@@ -16,6 +16,7 @@ from libcpp.memory cimport unique_ptr
 from libc.stdint cimport uintptr_t
 
 from rmm._lib.cuda_stream_view cimport cuda_stream_view, CudaStreamView
+from rmm._lib.memory_resource cimport MemoryResource
 
 cdef extern from "rmm/device_buffer.hpp" namespace "rmm" nogil:
     cdef cppclass device_buffer:
@@ -35,6 +36,10 @@ cdef extern from "rmm/device_buffer.hpp" namespace "rmm" nogil:
 
 cdef class DeviceBuffer:
     cdef unique_ptr[device_buffer] c_obj
+
+    # Holds a reference to the MemoryResource used for allocation. Ensures the
+    # MR does not get destroyed before this object
+    cdef MemoryResource _mr
 
     @staticmethod
     cdef DeviceBuffer c_from_unique_ptr(unique_ptr[device_buffer] ptr)

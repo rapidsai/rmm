@@ -476,7 +476,7 @@ cpdef get_per_device_resource_type(int device):
     return type(get_per_device_resource(device))
 
 
-cpdef get_current_device_resource():
+cpdef MemoryResource get_current_device_resource():
     """
     Get the memory resource used for RMM device allocations on the current
     device.

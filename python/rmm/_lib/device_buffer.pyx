@@ -30,6 +30,7 @@ from rmm._lib.lib cimport (
     cudaStream_t,
     cudaStreamSynchronize,
 )
+from rmm._lib.memory_resource cimport get_current_device_resource
 
 
 cdef class DeviceBuffer:
@@ -77,6 +78,9 @@ cdef class DeviceBuffer:
 
             if c_stream.is_default():
                 c_stream.synchronize()
+        
+        # Save a reference to the MR used for allocation
+        self._mr = get_current_device_resource()
 
     def __len__(self):
         return self.size

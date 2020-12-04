@@ -129,3 +129,5 @@ cdef class LoggingResourceAdaptor(MemoryResource):
 
 cdef class TrackingMemoryResource(MemoryResource):
     pass
+
+cpdef MemoryResource get_current_device_resource()
