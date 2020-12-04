@@ -210,8 +210,8 @@ which can lead to ambiguity in APIs when it is assigned `0`.)  All RMM stream-or
 
 `rmm::cuda_stream` is a simple owning wrapper around a CUDA `cudaStream_t`. This class provides 
 RAII semantics (constructor creates the CUDA stream, destructor destroys it). An `rmm::cuda_stream`
-can never represent the CUDA default stream or per-thread default stream, it only ever represents
-a single non-default stream. `rmm::cuda_stream` cannot be copied but can be moved.
+can never represent the CUDA default stream or per-thread default stream; it only ever represents
+a single non-default stream. `rmm::cuda_stream` cannot be copied, but can be moved.
 
 ### Thread Safety
 
@@ -377,23 +377,25 @@ See [below](#using-rmm-with-thrust) for more information on using RMM with Thrus
 
 ### `device_buffer`
 
-An untyped, unintialized RAII class for stream ordered device memory allocation.
+An untyped, uninitialized RAII class for stream ordered device memory allocation.
 
 #### Example
 
 ```c++
 cuda_stream_view s{...};
-rmm::device_buffer b{100,s}; // Allocates at least 100 bytes on stream `s` using the *default* resource
-void* p = b.data();          // Raw, untyped pointer to underlying device memory
+// Allocates at least 100 bytes on stream `s` using the *default* resource
+rmm::device_buffer b{100,s}; 
+void* p = b.data();                   // Raw, untyped pointer to underlying device memory
 
 kernel<<<..., s.value()>>>(b.data()); // `b` is only safe to use on `s`
 
 rmm::mr::device_memory_resource * mr = new my_custom_resource{...};
-rmm::device_buffer b2{100, s, mr}; // Allocates at least 100 bytes on stream `s` using the explicitly provided resource
+// Allocates at least 100 bytes on stream `s` using the resource `mr`
+rmm::device_buffer b2{100, s, mr};
 ```
 
 ### `device_uvector<T>`
-A typed, unintialized RAII class for allocation of a contiguous set of elements in device memory.
+A typed, uninitialized RAII class for allocation of a contiguous set of elements in device memory.
 Similar to a `thrust::device_vector`, but as an optimization, does not default initialize the
 contained elements. This optimization restricts the types `T` to trivially copyable types.
 
@@ -401,11 +403,14 @@ contained elements. This optimization restricts the types `T` to trivially copya
 
 ```c++
 cuda_stream_view s{...};
-rmm::device_uvector<int32_t> v(100, s); /// Allocates uninitialized storage for 100 `int32_t` elements on stream `s` using the default resource
-thrust::uninitialized_fill(thrust::cuda::par.on(s.value()), v.begin(), v.end(), int32_t{0}); // Initializes the elements to 0
+// Allocates uninitialized storage for 100 `int32_t` elements on stream `s` using the default 
+rmm::device_uvector<int32_t> v(100, s); resource
+// Initializes the elements to 0
+thrust::uninitialized_fill(thrust::cuda::par.on(s.value()), v.begin(), v.end(), int32_t{0}); 
 
 rmm::mr::device_memory_resource * mr = new my_custom_resource{...};
-rmm::device_uvector<int32_t> v2{100, s, mr}; // Allocates uninitialized storage for 100 `int32_t` elements on stream `s` using the explicitly provided resource
+// Allocates uninitialized storage for 100 `int32_t` elements on stream `s` using the resource `mr`
+rmm::device_uvector<int32_t> v2{100, s, mr}; 
 ```
 
 ### `device_scalar`
@@ -416,7 +421,8 @@ modifying the value in device memory from the host, or retrieving the value from
 #### Example
 ```c++
 cuda_stream_view s{...};
-rmm::device_scalar<int32_t> a{s}; // Allocates uninitialized storage for a single `int32_t` in device memory
+// Allocates uninitialized storage for a single `int32_t` in device memory
+rmm::device_scalar<int32_t> a{s}; 
 a.set_value(42, s); // Updates the value in device memory to `42` on stream `s`
 
 kernel<<<...,s.value()>>>(a.data()); // Pass raw pointer to underlying element in device memory
