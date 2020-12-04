@@ -15,8 +15,13 @@
 from libc.stdint cimport uintptr_t
 from libcpp cimport bool
 
-from rmm._lib.cuda_stream_view cimport cuda_stream_view
-from rmm._lib.lib cimport cudaStream_t, cudaStreamLegacy, cudaStreamPerThread
+from rmm._lib.cuda_stream_view cimport (
+    cuda_stream_default,
+    cuda_stream_legacy,
+    cuda_stream_per_thread,
+    cuda_stream_view,
+)
+from rmm._lib.lib cimport cudaStream_t
 
 from numba import cuda
 
@@ -112,6 +117,8 @@ cdef class Stream:
         self._cuda_stream, self._owner = stream._cuda_stream, stream._owner
 
 
-DEFAULT_STREAM = Stream._from_cudaStream_t(<cudaStream_t>0)
-LEGACY_DEFAULT_STREAM = Stream._from_cudaStream_t(cudaStreamLegacy)
-PER_THREAD_DEFAULT_STREAM = Stream._from_cudaStream_t(cudaStreamPerThread)
+DEFAULT_STREAM = Stream._from_cudaStream_t(cuda_stream_default.value())
+LEGACY_DEFAULT_STREAM = Stream._from_cudaStream_t(cuda_stream_legacy.value())
+PER_THREAD_DEFAULT_STREAM = Stream._from_cudaStream_t(
+    cuda_stream_per_thread.value()
+)

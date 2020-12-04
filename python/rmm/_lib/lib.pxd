@@ -24,9 +24,6 @@ ctypedef pair[const char*, unsigned int] caller_pair
 cdef extern from * nogil:
 
     ctypedef void* cudaStream_t "cudaStream_t"
-    cdef cudaStream_t cudaStreamDefault
-    cdef cudaStream_t cudaStreamLegacy
-    cdef cudaStream_t cudaStreamPerThread
 
     ctypedef enum cudaMemcpyKind "cudaMemcpyKind":
         cudaMemcpyHostToHost = 0

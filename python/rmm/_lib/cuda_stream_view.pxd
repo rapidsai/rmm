@@ -20,8 +20,13 @@ cdef extern from "rmm/cuda_stream_view.hpp" namespace "rmm" nogil:
     cdef cppclass cuda_stream_view:
         cuda_stream_view()
         cuda_stream_view(cudaStream_t)
+        cudaStream_t value()
         bool is_default()
         bool is_per_thread_default()
         void synchronize() except +
 
     cdef bool operator==(cuda_stream_view const, cuda_stream_view const)
+
+    const cuda_stream_view cuda_stream_default
+    const cuda_stream_view cuda_stream_legacy
+    const cuda_stream_view cuda_stream_per_thread
