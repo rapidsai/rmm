@@ -14,22 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef THRUST_RMM_ALLOCATOR_H
-#define THRUST_RMM_ALLOCATOR_H
+#pragma once
 
 #include <rmm/cuda_stream_view.hpp>
+#include <rmm/device_vector.hpp>
 #include <rmm/mr/device/thrust_allocator_adaptor.hpp>
 
-#include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 
 namespace rmm {
-/**
- * @brief Alias for a thrust::device_vector that uses RMM for memory allocation.
- *
- */
-template <typename T>
-using device_vector = thrust::device_vector<T, rmm::mr::thrust_allocator<T>>;
 
 using par_t         = decltype(thrust::cuda::par(*(new rmm::mr::thrust_allocator<char>())));
 using deleter_t     = std::function<void(par_t *)>;
@@ -57,5 +50,3 @@ inline exec_policy_t exec_policy(cudaStream_t stream = 0)
 }
 
 }  // namespace rmm
-
-#endif  // THRUST_RMM_ALLOCATOR_H

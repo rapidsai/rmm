@@ -15,25 +15,20 @@
  */
 
 /**
- @file thrust_rmm.hpp
- Allocator class compatible with thrust arrays that uses RMM device memory
- manager.
+ @file exec_policy.hpp
+ Thrust execution policy that uses RMM's Thrust Allocator Adaptor.
  */
 
-#ifndef THRUST_RMM_HPP
-#define THRUST_RMM_HPP
+#pragma once
 
-#include <rmm/thrust_rmm_allocator.h>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/mr/device/thrust_allocator_adaptor.hpp>
-
-#include <thrust/device_vector.h>
-#include <thrust/execution_policy.h>
 
 namespace rmm {
 
 /**
- * @brief Returns a Thrust CUDA execution policy that uses RMM for temporary memory allocation.
+ * @brief Returns a Thrust CUDA execution policy that uses RMM for temporary memory allocation on
+ * the specified stream.
  */
 inline auto exec_policy(cuda_stream_view stream = cuda_stream_default)
 {
@@ -41,5 +36,3 @@ inline auto exec_policy(cuda_stream_view stream = cuda_stream_default)
 }
 
 }  // namespace rmm
-
-#endif  // THRUST_RMM_HPP
