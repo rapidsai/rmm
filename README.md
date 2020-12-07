@@ -403,8 +403,9 @@ contained elements. This optimization restricts the types `T` to trivially copya
 
 ```c++
 cuda_stream_view s{...};
-// Allocates uninitialized storage for 100 `int32_t` elements on stream `s` using the default 
-rmm::device_uvector<int32_t> v(100, s); resource
+// Allocates uninitialized storage for 100 `int32_t` elements on stream `s` using the
+// default resource
+rmm::device_uvector<int32_t> v(100, s);
 // Initializes the elements to 0
 thrust::uninitialized_fill(thrust::cuda::par.on(s.value()), v.begin(), v.end(), int32_t{0}); 
 
@@ -480,12 +481,8 @@ RMM provides `rmm::mr::thrust_allocator` as a conforming Thrust allocator that u
 To instruct a Thrust algorithm to use `rmm::mr::thrust_allocator` to allocate temporary storage, you
 can use the custom Thrust CUDA device execution policy: `rmm::exec_policy(stream)`.
 
-`rmm::exec_policy(stream)` returns a `std::unique_ptr` to a Thrust execution policy that uses
-`rmm::mr::thrust_allocator` for temporary allocations. In order to specify that the Thrust algorithm
-be executed on a specific stream, the usage is:
-
 ```c++
-thrust::sort(rmm::exec_policy(stream)->on(stream), ...);
+thrust::sort(rmm::exec_policy(stream, ...);
 ```
 
 The first `stream` argument is the `stream` to use for `rmm::mr::thrust_allocator`.
