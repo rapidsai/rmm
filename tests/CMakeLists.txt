@@ -103,6 +103,16 @@ ConfigureTest(POOL_MR_TEST "${POOL_MR_TEST_SRC}")
 set(THRUST_ALLOCATOR_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/thrust_allocator_tests.cu")
 ConfigureTest(THRUST_ALLOCATOR_TEST "${THRUST_ALLOCATOR_TEST_SRC}")
 
+# polymorphic allocator tests
+
+ConfigureTest(POLYMORPHIC_ALLOCATOR_TEST
+              "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/polymorphic_allocator_tests.cpp")
+
+# stream allocator adaptor tests
+
+ConfigureTest(STREAM_ADAPTOR_TEST
+              "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/stream_allocator_adaptor_tests.cpp")
+
 # tracking adaptor tests
 
 set(TRACKING_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/tracking_mr_tests.cpp")
