@@ -2,6 +2,8 @@
 
 ## New Features
 
+- PR #636 Add a `Stream` class to manage CUDA streams in Python
+
 ## Improvements
 
 ## Bug Fixes

@@ -13,20 +13,26 @@
 # limitations under the License.
 
 from libcpp cimport bool
+from libcpp.memory cimport unique_ptr
 
 from rmm._lib.lib cimport cudaStream_t
+from rmm._lib.cuda_stream_view cimport cuda_stream_view
 
-cdef extern from "rmm/cuda_stream_view.hpp" namespace "rmm" nogil:
-    cdef cppclass cuda_stream_view:
-        cuda_stream_view()
-        cuda_stream_view(cudaStream_t)
-        cudaStream_t value()
-        bool is_default()
-        bool is_per_thread_default()
+cimport cython
+
+
+cdef extern from "rmm/cuda_stream.hpp" namespace "rmm" nogil:
+    cdef cppclass cuda_stream:
+        cuda_stream() except +
+        bool is_valid() except +
+        cudaStream_t value() except +
+        cuda_stream_view view() except +
         void synchronize() except +
+        void synchronize_no_throw()
 
-    cdef bool operator==(cuda_stream_view const, cuda_stream_view const)
 
-    const cuda_stream_view cuda_stream_default
-    const cuda_stream_view cuda_stream_legacy
-    const cuda_stream_view cuda_stream_per_thread
+@cython.final
+cdef class CudaStream:
+    cdef unique_ptr[cuda_stream] c_obj
+    cdef cudaStream_t value(self) nogil except *
+    cpdef bool is_valid(self) nogil except *

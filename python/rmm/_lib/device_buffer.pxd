@@ -15,7 +15,9 @@
 from libcpp.memory cimport unique_ptr
 from libc.stdint cimport uintptr_t
 
-from rmm._lib.cuda_stream_view cimport cuda_stream_view, CudaStreamView
+from rmm._lib.cuda_stream_view cimport cuda_stream_view
+from rmm._cuda.stream cimport Stream
+
 
 cdef extern from "rmm/device_buffer.hpp" namespace "rmm" nogil:
     cdef cppclass device_buffer:
@@ -41,11 +43,11 @@ cdef class DeviceBuffer:
 
     @staticmethod
     cdef DeviceBuffer c_to_device(const unsigned char[::1] b,
-                                  CudaStreamView stream=*)
-    cpdef copy_to_host(self, ary=*, CudaStreamView stream=*)
-    cpdef copy_from_host(self, ary, CudaStreamView stream=*)
-    cpdef copy_from_device(self, cuda_ary, CudaStreamView stream=*)
-    cpdef bytes tobytes(self, CudaStreamView stream=*)
+                                  Stream stream=*)
+    cpdef copy_to_host(self, ary=*, Stream stream=*)
+    cpdef copy_from_host(self, ary, Stream stream=*)
+    cpdef copy_from_device(self, cuda_ary, Stream stream=*)
+    cpdef bytes tobytes(self, Stream stream=*)
 
     cdef size_t c_size(self) except *
     cpdef void resize(self, size_t new_size) except *
@@ -55,16 +57,16 @@ cdef class DeviceBuffer:
     cdef device_buffer c_release(self) except *
 
 cpdef DeviceBuffer to_device(const unsigned char[::1] b,
-                             CudaStreamView stream=*)
+                             Stream stream=*)
 cpdef void copy_ptr_to_host(uintptr_t db,
                             unsigned char[::1] hb,
-                            CudaStreamView stream=*) except *
+                            Stream stream=*) except *
 
 cpdef void copy_host_to_ptr(const unsigned char[::1] hb,
                             uintptr_t db,
-                            CudaStreamView stream=*) except *
+                            Stream stream=*) except *
 
 cpdef void copy_device_to_ptr(uintptr_t d_src,
                               uintptr_t d_dst,
                               size_t count,
-                              CudaStreamView stream=*) except *
+                              Stream stream=*) except *
