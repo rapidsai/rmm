@@ -78,9 +78,6 @@ cdef class DeviceBuffer:
             else:
                 self.c_obj.reset(new device_buffer(c_ptr, size, stream.view()))
 
-            if stream.c_is_default():
-                stream.c_synchronize()
-
     def __len__(self):
         return self.size
 
@@ -353,9 +350,6 @@ cdef void _copy_async(const void* src,
 
     if err != cudaError.cudaSuccess:
         raise RuntimeError(f"Memcpy failed with error: {err}")
-
-    if stream.is_default():
-        stream.synchronize()
 
 
 @cython.boundscheck(False)
