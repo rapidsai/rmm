@@ -391,6 +391,8 @@ cpdef void copy_ptr_to_host(uintptr_t db,
         _copy_async(<const void*>db, <void*>&hb[0], len(hb),
                     cudaMemcpyDeviceToHost, stream.view())
 
+    if stream.c_is_default():
+        stream.c_synchronize()
 
 @cython.boundscheck(False)
 cpdef void copy_host_to_ptr(const unsigned char[::1] hb,
