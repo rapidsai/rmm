@@ -6,7 +6,10 @@
 
 ## Improvements
 
+- PR #647 Simplify `rmm::exec_policy` and refactor Thrust support
+
 ## Bug Fixes
+
 
 # RMM 0.17.0 (Date TBD)
 
