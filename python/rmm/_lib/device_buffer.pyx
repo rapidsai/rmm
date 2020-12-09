@@ -53,13 +53,6 @@ cdef class DeviceBuffer:
             CUDA stream to use for construction and/or copying,
             default the default stream
 
-        Note
-        ----
-
-        If ``stream`` is the default stream, it is synchronized after the copy.
-        However if a non-default ``stream`` is provided, this function is fully
-        asynchronous.
-
         Examples
         --------
         >>> import rmm
@@ -337,13 +330,6 @@ cdef void _copy_async(const void* src,
     dst : pointer to ``bytes``-like host buffer to or device data to copy into
     count : the size in bytes to copy
     stream : CUDA stream to use for copying, default the default stream
-
-    Note
-    ----
-
-    If ``stream`` is the default stream, it is synchronized after the copy.
-    However if a non-default ``stream`` is provided, this function is fully
-    asynchronous.
     """
     cdef cudaError_t err = cudaMemcpyAsync(dst, src, count, kind,
                                            <cudaStream_t>stream)
@@ -406,13 +392,6 @@ cpdef void copy_host_to_ptr(const unsigned char[::1] hb,
     db : pointer to data on device to write into
     stream : CUDA stream to use for copying, default the default stream
 
-    Note
-    ----
-
-    If ``stream`` is the default stream, it is synchronized after the copy.
-    However if a non-default ``stream`` is provided, this function is fully
-    asynchronous.
-
     Examples
     --------
     >>> import rmm
@@ -447,13 +426,6 @@ cpdef void copy_device_to_ptr(uintptr_t d_src,
     d_src : pointer to data on device to copy from
     d_dst : pointer to data on device to write into
     stream : CUDA stream to use for copying, default the default stream
-
-    Note
-    ----
-
-    If ``stream`` is the default stream, it is synchronized after the copy.
-    However if a non-default ``stream`` is provided, this function is fully
-    asynchronous.
 
     Examples
     --------
