@@ -380,6 +380,7 @@ cpdef void copy_ptr_to_host(uintptr_t db,
     if stream.c_is_default():
         stream.c_synchronize()
 
+
 @cython.boundscheck(False)
 cpdef void copy_host_to_ptr(const unsigned char[::1] hb,
                             uintptr_t db,
@@ -391,6 +392,13 @@ cpdef void copy_host_to_ptr(const unsigned char[::1] hb,
     hb : ``bytes``-like host buffer to copy
     db : pointer to data on device to write into
     stream : CUDA stream to use for copying, default the default stream
+
+    Note
+    ----
+
+    If ``stream`` is the default stream, it is synchronized after the copy.
+    However if a non-default ``stream`` is provided, this function is fully
+    asynchronous.
 
     Examples
     --------
@@ -412,6 +420,9 @@ cpdef void copy_host_to_ptr(const unsigned char[::1] hb,
     with nogil:
         _copy_async(<const void*>&hb[0], <void*>db, len(hb),
                     cudaMemcpyHostToDevice, stream.view())
+
+    if stream.c_is_default():
+        stream.c_synchronize()
 
 
 @cython.boundscheck(False)
