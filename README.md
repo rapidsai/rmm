@@ -184,10 +184,10 @@ freeing device memory.
 
 It has two key functions:
 
-1. `void* device_memory_resource::allocate(std::size_t bytes, cudaStream_t s)`
+1. `void* device_memory_resource::allocate(std::size_t bytes, cuda_stream_view s)`
    - Returns a pointer to an allocation of at least `bytes` bytes.
 
-2. `void device_memory_resource::deallocate(void* p, std::size_t bytes, cudaStream_t s)`
+2. `void device_memory_resource::deallocate(void* p, std::size_t bytes, cuda_stream_view s)`
    - Reclaims a previous allocation of size `bytes` pointed to by `p`. 
    - `p` *must* have been returned by a previous call to `allocate(bytes)`, otherwise behavior is
      undefined
@@ -197,8 +197,20 @@ It is up to a derived class to provide implementations of these functions. See
 
 Unlike `std::pmr::memory_resource`, `rmm::mr::device_memory_resource` does not allow specifying an 
 alignment argument. All allocations are required to be aligned to at least 256B. Furthermore, 
-`device_memory_resource` adds an additional `cudaStream_t` argument to allow specifying the stream
+`device_memory_resource` adds an additional `cuda_stream_view` argument to allow specifying the stream
 on which to perform the (de)allocation.
+
+## `cuda_stream_view` and `cuda_stream`
+
+`rmm::cuda_stream_view` is a simple non-owning wrapper around a CUDA `cudaStream_t`. This wrapper's
+purpose is to provide strong type safety for stream types. (`cudaStream_t` is an alias for a pointer,
+which can lead to ambiguity in APIs when it is assigned `0`.)  All RMM stream-ordered APIs take a 
+`rmm::cuda_stream_view` argument.
+
+`rmm::cuda_stream` is a simple owning wrapper around a CUDA `cudaStream_t`. This class provides 
+RAII semantics (constructor creates the CUDA stream, destructor destroys it). An `rmm::cuda_stream`
+can never represent the CUDA default stream or per-thread default stream, it only ever represents
+a single non-default stream. `rmm::cuda_stream` cannot be copied but can be moved.
 
 ### Thread Safety
 
@@ -325,6 +337,41 @@ for(int i = 0; i < N; ++i) {
 }
 ```
 
+### Allocators
+
+C++ interfaces commonly allow customizable memory allocation through an [`Allocator`](https://en.cppreference.com/w/cpp/named_req/Allocator) object. 
+RMM provides several `Allocator` and `Allocator`-like classes.
+
+#### `polymorphic_allocator`
+
+A [stream-ordered](#stream-ordered-memory-allocation) allocator similar to [`std::pmr::polymorphic_allocator`](https://en.cppreference.com/w/cpp/memory/polymorphic_allocator). 
+Unlike the standard C++ `Allocator` interface, the `allocate` and `deallocate` functions take a `cuda_stream_view` indicating the stream on which the (de)allocation occurs.
+
+#### `stream_allocator_adaptor`
+
+`stream_allocator_adaptor` can be used to adapt a stream-ordered allocator to present a standard `Allocator` interface to consumers that may not be designed to work with a stream-ordered interface.
+
+Example:
+```c++
+rmm::cuda_stream stream;
+rmm::mr::polymorphic_allocator<int> stream_alloc;
+
+// Constructs an adaptor that forwards all (de)allocations to `stream_alloc` on `stream`.
+auto adapted = rmm::mr::make_stream_allocator_adaptor(stream_alloc, stream);
+
+// Allocates 100 bytes using `stream_alloc` on `stream`
+auto p = adapted.allocate(100); 
+...
+// Deallocates using `stream_alloc` on `stream`
+adapted.deallocate(p,100); 
+```
+
+#### `thrust_allocator`
+
+`thrust_allocator` is a device memory allocator that uses the strongly typed `thrust::device_ptr`, making it usable with containers like `thrust::device_vector`.
+
+See [below](#using-rmm-with-thrust) for more information on using RMM with Thrust. 
+
 ## Device Data Structures
 
 ### `device_buffer`
@@ -334,11 +381,11 @@ An untyped, unintialized RAII class for stream ordered device memory allocation.
 #### Example
 
 ```c++
-cudaStream_t s;
+cuda_stream_view s{...};
 rmm::device_buffer b{100,s}; // Allocates at least 100 bytes on stream `s` using the *default* resource
 void* p = b.data();          // Raw, untyped pointer to underlying device memory
 
-kernel<<<..., s>>>(b.data()); // `b` is only safe to use on `s`
+kernel<<<..., s.value()>>>(b.data()); // `b` is only safe to use on `s`
 
 rmm::mr::device_memory_resource * mr = new my_custom_resource{...};
 rmm::device_buffer b2{100, s, mr}; // Allocates at least 100 bytes on stream `s` using the explicitly provided resource
@@ -352,12 +399,12 @@ contained elements. This optimization restricts the types `T` to trivially copya
 #### Example
 
 ```c++
-cudaStream_t s;
+cuda_stream_view s{...};
 rmm::device_uvector<int32_t> v(100, s); /// Allocates uninitialized storage for 100 `int32_t` elements on stream `s` using the default resource
-thrust::uninitialized_fill(thrust::cuda::par.on(s), v.begin(), v.end(), int32_t{0}); // Initializes the elements to 0
+thrust::uninitialized_fill(thrust::cuda::par.on(s.value()), v.begin(), v.end(), int32_t{0}); // Initializes the elements to 0
 
 rmm::mr::device_memory_resource * mr = new my_custom_resource{...};
-rmm::device_vector<int32_t> v2{100, s, mr}; // Allocates uninitialized storage for 100 `int32_t` elements on stream `s` using the explicitly provided resource
+rmm::device_uvector<int32_t> v2{100, s, mr}; // Allocates uninitialized storage for 100 `int32_t` elements on stream `s` using the explicitly provided resource
 ```
 
 ### `device_scalar`
@@ -367,11 +414,11 @@ modifying the value in device memory from the host, or retrieving the value from
 
 #### Example
 ```c++
-cudaStream_t s;
+cuda_stream_view s{...};
 rmm::device_scalar<int32_t> a{s}; // Allocates uninitialized storage for a single `int32_t` in device memory
 a.set_value(42, s); // Updates the value in device memory to `42` on stream `s`
 
-kernel<<<...,s>>>(a.data()); // Pass raw pointer to underlying element in device memory
+kernel<<<...,s.value()>>>(a.data()); // Pass raw pointer to underlying element in device memory
 
 int32_t v = a.value(s); // Retrieves the value from device to host on stream `s`
 ```

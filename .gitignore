@@ -107,7 +107,7 @@ instance/
 .scrapy
 
 # Sphinx documentation
-docs/_build/
+python/docs/_build/
 
 # PyBuilder
 target/
@@ -144,3 +144,6 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# RMM log files
+rmm_log.txt
