@@ -269,22 +269,29 @@ def test_rmm_device_buffer_pickle_roundtrip(hb):
         assert hb3 == hb
 
 
-def test_rmm_cupy_allocator():
+@pytest.mark.parametrize("stream", ["null", "async"])
+def test_rmm_cupy_allocator(stream):
     cupy = pytest.importorskip("cupy")
 
-    m = rmm.rmm_cupy_allocator(42)
-    assert m.mem.size == 42
-    assert m.mem.ptr != 0
-    assert isinstance(m.mem._owner, rmm.DeviceBuffer)
+    if stream == "null":
+        stream = cupy.cuda.stream.Stream.null
+    else:
+        stream = cupy.cuda.stream.Stream()
 
-    m = rmm.rmm_cupy_allocator(0)
-    assert m.mem.size == 0
-    assert m.mem.ptr == 0
-    assert isinstance(m.mem._owner, rmm.DeviceBuffer)
+    with stream:
+        m = rmm.rmm_cupy_allocator(42)
+        assert m.mem.size == 42
+        assert m.mem.ptr != 0
+        assert isinstance(m.mem._owner, rmm.DeviceBuffer)
 
-    cupy.cuda.set_allocator(rmm.rmm_cupy_allocator)
-    a = cupy.arange(10)
-    assert isinstance(a.data.mem._owner, rmm.DeviceBuffer)
+        m = rmm.rmm_cupy_allocator(0)
+        assert m.mem.size == 0
+        assert m.mem.ptr == 0
+        assert isinstance(m.mem._owner, rmm.DeviceBuffer)
+
+        cupy.cuda.set_allocator(rmm.rmm_cupy_allocator)
+        a = cupy.arange(10)
+        assert isinstance(a.data.mem._owner, rmm.DeviceBuffer)
 
 
 @pytest.mark.parametrize("dtype", _dtypes)
