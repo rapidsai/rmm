@@ -101,7 +101,7 @@ cdef class Stream:
         try:
             import cupy
             if isinstance(obj, cupy.cuda.stream.Stream):
-                self._cuda_stream = <cudaStream_t>(obj.ptr)
+                self._cuda_stream = <cudaStream_t><uintptr_t>(obj.ptr)
                 self._owner = obj
                 return
         except ImportError:
