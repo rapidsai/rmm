@@ -109,7 +109,9 @@ def test_rmm_device_buffer(size):
     assert len(b) == b.size
     assert b.nbytes == b.size
     assert b.capacity() >= b.size
-    assert sys.getsizeof(b) == b.size
+
+    # b.size + DeviceBuffer attributes overhead
+    assert sys.getsizeof(b) > b.size
 
     # Test `__cuda_array_interface__`
     keyset = {"data", "shape", "strides", "typestr", "version"}
