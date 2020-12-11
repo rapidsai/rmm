@@ -53,6 +53,13 @@ cdef class DeviceBuffer:
             CUDA stream to use for construction and/or copying,
             default the default stream
 
+        Note
+        ----
+
+        If the pointer passed is non-null and ``stream`` is the default stream,
+        it is synchronized after the copy. However if a non-default ``stream``
+        is provided, this function is fully asynchronous.
+
         Examples
         --------
         >>> import rmm
@@ -70,6 +77,9 @@ cdef class DeviceBuffer:
                 self.c_obj.reset(new device_buffer(size, stream.view()))
             else:
                 self.c_obj.reset(new device_buffer(c_ptr, size, stream.view()))
+
+                if stream.c_is_default():
+                    stream.c_synchronize()
 
     def __len__(self):
         return self.size
