@@ -94,7 +94,7 @@ cdef class Stream:
         return self.c_is_default()
 
     def _init_from_numba_stream(self, obj):
-        if obj.handle.value == None:
+        if obj.handle.value is None:
             self._cuda_stream = cuda_stream_default.value()
         else:
             self._cuda_stream = <cudaStream_t><uintptr_t>(obj.handle.value)
