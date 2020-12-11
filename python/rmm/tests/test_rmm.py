@@ -336,6 +336,21 @@ def test_rmm_pool_cupy_allocator_with_stream(stream):
     rmm.reinitialize()
 
 
+def test_rmm_pool_cupy_allocator_stream_lifetime():
+    cupy = pytest.importorskip("cupy")
+
+    rmm.reinitialize(pool_allocator=True)
+    cupy.cuda.set_allocator(rmm.rmm_cupy_allocator)
+
+    stream = cupy.cuda.stream.Stream()
+
+    stream.use()
+    x = cupy.arange(10)
+    del stream
+
+    del x
+
+
 @pytest.mark.parametrize("dtype", _dtypes)
 @pytest.mark.parametrize("nelem", _nelems)
 @pytest.mark.parametrize("alloc", _allocs)
