@@ -18,6 +18,7 @@ project(
   VERSION 0.17.0
   LANGUAGES CXX)
 
+include(cmake/Modules/ccache.cmake)
 include(cmake/Modules/CPM.cmake)
 include(cmake/Modules/RMM_thirdparty.cmake)
 
