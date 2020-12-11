@@ -51,7 +51,10 @@ cdef class DeviceBuffer:
             (and possibly size of data to copy)
         stream : optional
             CUDA stream to use for construction and/or copying,
-            default the default stream
+            default the default stream. A reference to the stream is
+            stored internally to make sure it doesn't go out of scope
+            while it's used, destroy the underlying stream will result
+            in undefined behavior.
 
         Note
         ----
@@ -67,6 +70,8 @@ cdef class DeviceBuffer:
         """
         cdef const void* c_ptr
         cdef cudaError_t err
+
+        self._stream = stream
 
         with nogil:
             c_ptr = <const void*>ptr

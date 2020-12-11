@@ -37,6 +37,7 @@ cdef extern from "rmm/device_buffer.hpp" namespace "rmm" nogil:
 
 cdef class DeviceBuffer:
     cdef unique_ptr[device_buffer] c_obj
+    cdef Stream _stream
 
     @staticmethod
     cdef DeviceBuffer c_from_unique_ptr(unique_ptr[device_buffer] ptr)
