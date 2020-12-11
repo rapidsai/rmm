@@ -270,7 +270,6 @@ def test_rmm_device_buffer_pickle_roundtrip(hb):
 
 
 @pytest.mark.parametrize("stream", [cuda.default_stream(), cuda.stream()])
-#@pytest.mark.parametrize("stream", [cuda.stream()])
 def test_rmm_pool_numba_stream(stream):
     rmm.reinitialize(pool_allocator=True)
 
