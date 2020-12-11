@@ -262,7 +262,11 @@ Allocates and frees device memory using `cudaMalloc` and `cudaFree`.
 
 #### `managed_memory_resource`
 
-Allocates and frees device memory using `cudaMallocManaged` and `cudaFree`.
+Allocates and frees device memory using `cudaMallocManaged` and `cudaFree`. 
+
+Note that `managed_memory_resource` cannot be used with NVIDIA Virtual GPU Software (vGPU, for use
+with virtual machines or hypervisors) because [NVIDIA CUDA Unified Memory is not supported by 
+NVIDIA vGPU](https://docs.nvidia.com/grid/latest/grid-vgpu-user-guide/index.html#cuda-open-cl-support-vgpu).
 
 #### `pool_memory_resource`
 
