@@ -440,7 +440,7 @@ cpdef void copy_device_to_ptr(uintptr_t d_src,
                               uintptr_t d_dst,
                               size_t count,
                               Stream stream=DEFAULT_STREAM) except *:
-    """Copy from a host pointer to a device pointer
+    """Copy from a device pointer to a device pointer
 
     Parameters
     ----------
