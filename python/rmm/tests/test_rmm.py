@@ -269,6 +269,21 @@ def test_rmm_device_buffer_pickle_roundtrip(hb):
         assert hb3 == hb
 
 
+@pytest.mark.parametrize("stream", [cuda.default_stream(), cuda.stream()])
+#@pytest.mark.parametrize("stream", [cuda.stream()])
+def test_rmm_pool_numba_stream(stream):
+    rmm.reinitialize(pool_allocator=True)
+
+    stream = rmm._cuda.stream.Stream(stream)
+    a = rmm._lib.device_buffer.DeviceBuffer(size=3, stream=stream)
+
+    # Deleting all allocations known by the RMM pool is required
+    # before rmm.reinitialize(), otherwise it may segfault.
+    del a
+
+    rmm.reinitialize()
+
+
 def test_rmm_cupy_allocator():
     cupy = pytest.importorskip("cupy")
 
