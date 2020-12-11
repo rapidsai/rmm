@@ -94,10 +94,7 @@ cdef class Stream:
         return self.c_is_default()
 
     def _init_from_numba_stream(self, obj):
-        if obj.handle.value is None:
-            self._cuda_stream = cuda_stream_default.value()
-        else:
-            self._cuda_stream = <cudaStream_t><uintptr_t>(obj.handle.value)
+        self._cuda_stream = <cudaStream_t><uintptr_t>(int(obj))
         self._owner = obj
 
     def _init_from_cupy_stream(self, obj):
