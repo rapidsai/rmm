@@ -1,4 +1,4 @@
-# =============================================================================
+﻿# =============================================================================
 # Copyright (c) 2018-2020, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -131,8 +131,8 @@ ConfigureTest(HOST_MR_TEST "${HOST_MR_TEST_SRC}")
 
 # cuda stream tests
 
-set(CUDA_STREAM_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/cuda_stream_tests.cpp")
-
+set(CUDA_STREAM_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/cuda_stream_tests.cpp"
+                         "${CMAKE_CURRENT_SOURCE_DIR}/cuda_stream_pool_tests.cpp")
 ConfigureTest(CUDA_STREAM_TEST "${CUDA_STREAM_TEST_SRC}")
 
 # device buffer tests
