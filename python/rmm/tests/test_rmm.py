@@ -8,6 +8,7 @@ import pytest
 from numba import cuda
 
 import rmm
+import rmm._cuda.stream
 
 if sys.version_info < (3, 8):
     try:
@@ -378,3 +379,27 @@ def test_reinitialize_initial_pool_size_gt_max():
             maximum_pool_size=1 << 10,
         )
     assert "Initial pool size exceeds the maximum pool size" in str(e.value)
+
+def test_mr_object_lifetime():
+    # Test ensures MR/Stream lifetime is longer than DeviceBuffer. Even if all references go out of scope
+    import gc
+
+    # Create new Pool MR
+    rmm.mr.set_current_device_resource(rmm.mr.PoolMemoryResource(rmm.mr.get_current_device_resource()))
+
+    # Creates a new non-default stream
+    stream = rmm._cuda.stream.Stream()
+
+    # Allocate DeviceBuffer with Pool and Stream
+    a = rmm.DeviceBuffer(size=10, stream=stream)
+
+    # Change current MR. Will cause Pool to go out of scope
+    rmm.mr.set_current_device_resource(rmm.mr.CudaMemoryResource())
+    c = rmm.DeviceBuffer(size=10)
+
+    # Force collection to ensure objects are cleaned up
+    gc.collect()
+
+    # Delete a. Used to crash before. Pool MR should still be alive
+    del a
+

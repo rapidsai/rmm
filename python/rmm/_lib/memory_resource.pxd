@@ -102,3 +102,5 @@ cdef class LoggingResourceAdaptor(MemoryResource):
     cdef object _log_file_name
     cpdef get_file_name(self)
     cpdef flush(self)
+
+cpdef MemoryResource get_current_device_resource()
