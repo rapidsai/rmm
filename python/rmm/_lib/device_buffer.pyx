@@ -34,7 +34,6 @@ from rmm._lib.lib cimport (
 )
 from rmm._lib.memory_resource cimport get_current_device_resource
 
-
 cdef class DeviceBuffer:
 
     def __cinit__(self, *,
@@ -81,11 +80,10 @@ cdef class DeviceBuffer:
 
                 if stream.c_is_default():
                     stream.c_synchronize()
-        
+
         # Save a reference to the MR and stream used for allocation
         self.mr = get_current_device_resource()
         self.stream = stream
-
 
     def __len__(self):
         return self.size

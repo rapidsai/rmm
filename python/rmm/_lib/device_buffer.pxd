@@ -44,8 +44,8 @@ cdef class DeviceBuffer:
     # deallocation
     cdef DeviceMemoryResource mr
 
-    # Holds a reference to the stream used by the underlying `device_buffer`. Ensures the
-    # stream does not get destroyed before this DeviceBuffer
+    # Holds a reference to the stream used by the underlying `device_buffer`.
+    # Ensures the stream does not get destroyed before this DeviceBuffer
     cdef Stream stream
 
     @staticmethod

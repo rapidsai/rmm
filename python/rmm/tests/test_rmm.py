@@ -1,4 +1,5 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
+import gc
 import os
 import sys
 from itertools import product
@@ -380,12 +381,14 @@ def test_reinitialize_initial_pool_size_gt_max():
         )
     assert "Initial pool size exceeds the maximum pool size" in str(e.value)
 
-def test_mr_object_lifetime():
-    # Test ensures MR/Stream lifetime is longer than DeviceBuffer. Even if all references go out of scope
-    import gc
 
+def test_mr_devicebuffer_lifetime():
+    # Test ensures MR/Stream lifetime is longer than DeviceBuffer. Even if all
+    # references go out of scope
     # Create new Pool MR
-    rmm.mr.set_current_device_resource(rmm.mr.PoolMemoryResource(rmm.mr.get_current_device_resource()))
+    rmm.mr.set_current_device_resource(
+        rmm.mr.PoolMemoryResource(rmm.mr.get_current_device_resource())
+    )
 
     # Creates a new non-default stream
     stream = rmm._cuda.stream.Stream()
@@ -395,11 +398,9 @@ def test_mr_object_lifetime():
 
     # Change current MR. Will cause Pool to go out of scope
     rmm.mr.set_current_device_resource(rmm.mr.CudaMemoryResource())
-    c = rmm.DeviceBuffer(size=10)
 
     # Force collection to ensure objects are cleaned up
     gc.collect()
 
     # Delete a. Used to crash before. Pool MR should still be alive
     del a
-
