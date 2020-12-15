@@ -27,8 +27,10 @@ namespace rmm {
 /**
  * @brief A pool of CUDA streams.
  *
- * Provides fast access to a circular buffer of `cuda_stream` objects.
+ * Provides efficient access to collection of CUDA stream objects.
  *
+ * Successive calls may return a `cuda_stream_view` of identical streams. For example, a possible
+ * implementation is to maintain a circular buffer of `cuda_stream` objects.
  */
 class cuda_stream_pool {
  public:
@@ -45,7 +47,7 @@ class cuda_stream_pool {
   cuda_stream_pool(cuda_stream_pool&&)      = delete;
   cuda_stream_pool(cuda_stream_pool const&) = delete;
   cuda_stream_pool& operator=(cuda_stream_pool&&) = delete;
-  cuda_stream_pool& operator=(cuda_stream_pool&) = delete;
+  cuda_stream_pool& operator=(cuda_stream_pool const&) = delete;
 
   /**
    * @brief Get a `cuda_stream_view` of a stream in the pool.
@@ -54,11 +56,14 @@ class cuda_stream_pool {
    *
    * @return rmm::cuda_stream_view
    */
-  rmm::cuda_stream_view get_stream() { return streams_[(next_stream++) % streams_.size()].view(); }
+  rmm::cuda_stream_view get_stream() const noexcept
+  {
+    return streams_[(next_stream++) % streams_.size()].view();
+  }
 
  private:
   std::vector<rmm::cuda_stream> streams_;
-  std::atomic_size_t next_stream{};
+  mutable std::atomic_size_t next_stream{};
 };
 
 }  // namespace rmm
