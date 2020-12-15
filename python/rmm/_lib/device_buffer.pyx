@@ -34,7 +34,6 @@ from rmm._lib.lib cimport (
 )
 from rmm._lib.memory_resource cimport get_current_device_resource
 
-@cython.no_gc
 cdef class DeviceBuffer:
 
     def __cinit__(self, *,
