@@ -12,6 +12,7 @@ from libcpp.string cimport string
 
 from rmm._cuda.gpu import CUDARuntimeError, cudaError, getDevice, setDevice
 
+
 cdef class DeviceMemoryResource:
 
     cdef device_memory_resource* get_mr(self):

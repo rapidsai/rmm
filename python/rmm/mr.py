@@ -9,13 +9,13 @@ from rmm._lib.memory_resource import (
     PoolMemoryResource,
     _flush_logs,
     _initialize,
-    set_per_device_resource,
     get_current_device_resource,
     get_current_device_resource_type,
     get_per_device_resource,
     get_per_device_resource_type,
     is_initialized,
     set_current_device_resource,
+    set_per_device_resource,
 )
 
 __all__ = [
