@@ -39,7 +39,7 @@ class cuda_stream_pool {
    *
    * @param pool_size The number of streams in the pool
    */
-  explicit cuda_stream_pool(std::size_t pool_size = default_size) : streams_{pool_size} {}
+  explicit cuda_stream_pool(std::size_t pool_size = default_size) : streams_(pool_size) {}
   ~cuda_stream_pool() = default;
 
   cuda_stream_pool(cuda_stream_pool&&)      = delete;
