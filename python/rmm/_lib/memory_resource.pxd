@@ -52,79 +52,20 @@ cdef extern from "rmm/mr/device/logging_resource_adaptor.hpp" namespace "rmm::mr
 
         void flush() except +
 
+cdef extern from "rmm/mr/device/per_device_resource.hpp" namespace "rmm" nogil:
 
-cdef extern from "memory_resource_wrappers.hpp" nogil:
-    cdef cppclass device_memory_resource_wrapper:
-        shared_ptr[device_memory_resource_wrapper] get_mr() except +
+    cdef cppclass cuda_device_id:
+        ctypedef int value_type
 
-    cdef cppclass default_memory_resource_wrapper(
-        device_memory_resource_wrapper
-    ):
-        default_memory_resource_wrapper(int device) except +
+        cuda_device_id(value_type id)
 
-    cdef cppclass cuda_memory_resource_wrapper(device_memory_resource_wrapper):
-        cuda_memory_resource_wrapper() except +
+        value_type value()
 
-    cdef cppclass managed_memory_resource_wrapper(
-        device_memory_resource_wrapper
-    ):
-        managed_memory_resource_wrapper() except +
+    cdef device_memory_resource* _set_current_device_resource "rmm::mr::set_current_device_resource" (device_memory_resource* new_mr)
+    cdef device_memory_resource* _get_current_device_resource "rmm::mr::get_current_device_resource" ()
 
-    cdef cppclass pool_memory_resource_wrapper(device_memory_resource_wrapper):
-        pool_memory_resource_wrapper(
-            shared_ptr[device_memory_resource_wrapper] upstream_mr,
-            size_t initial_pool_size,
-            size_t maximum_pool_size
-        ) except +
-
-    cdef cppclass fixed_size_memory_resource_wrapper(
-        device_memory_resource_wrapper
-    ):
-        fixed_size_memory_resource_wrapper(
-            shared_ptr[device_memory_resource_wrapper] upstream_mr,
-            size_t block_size,
-            size_t blocks_to_preallocate
-        ) except +
-
-    cdef cppclass binning_memory_resource_wrapper(
-        device_memory_resource_wrapper
-    ):
-        binning_memory_resource_wrapper(
-            shared_ptr[device_memory_resource_wrapper] upstream_mr
-        ) except +
-        binning_memory_resource_wrapper(
-            shared_ptr[device_memory_resource_wrapper] upstream_mr,
-            int8_t min_size_exponent,
-            int8_t max_size_exponent
-        ) except +
-        void add_bin(
-            size_t allocation_size,
-            shared_ptr[device_memory_resource_wrapper] bin_mr
-        ) except +
-        void add_bin(
-            size_t allocation_size
-        ) except +
-
-    cdef cppclass logging_resource_adaptor_wrapper(
-        device_memory_resource_wrapper
-    ):
-        logging_resource_adaptor_wrapper(
-            shared_ptr[device_memory_resource_wrapper] upstream_mr,
-            string filename
-        ) except +
-        void flush() except +
-
-    cdef cppclass thread_safe_resource_adaptor_wrapper(
-        device_memory_resource_wrapper
-    ):
-        thread_safe_resource_adaptor_wrapper(
-            shared_ptr[device_memory_resource_wrapper] upstream_mr,
-        ) except +
-
-    void set_per_device_resource(
-        int device,
-        shared_ptr[device_memory_resource_wrapper] new_resource
-    ) except +
+    cdef device_memory_resource* _set_per_device_resource "rmm::mr::set_per_device_resource"(cuda_device_id id, device_memory_resource* new_mr)
+    cdef device_memory_resource* _get_per_device_resource "rmm::mr::get_per_device_resource"(cuda_device_id id)
 
 
 cdef class DeviceMemoryResource:
@@ -135,51 +76,27 @@ cdef class DeviceMemoryResource:
 cdef class UpstreamResourceAdaptor(DeviceMemoryResource):
     cdef readonly DeviceMemoryResource upstream_mr
 
-cdef class CudaMemoryResource2(DeviceMemoryResource):
+cdef class CudaMemoryResource(DeviceMemoryResource):
     pass
 
-cdef class ManagedMemoryResource2(DeviceMemoryResource):
+cdef class ManagedMemoryResource(DeviceMemoryResource):
     pass
 
-cdef class PoolMemoryResource2(UpstreamResourceAdaptor):
+cdef class PoolMemoryResource(UpstreamResourceAdaptor):
     pass
 
-cdef class FixedSizeMemoryResource2(UpstreamResourceAdaptor):
+cdef class FixedSizeMemoryResource(UpstreamResourceAdaptor):
     pass
 
-cdef class BinningMemoryResource2(UpstreamResourceAdaptor):
+cdef class BinningMemoryResource(UpstreamResourceAdaptor):
 
     cdef readonly list bin_mrs
 
     cpdef add_bin(self, size_t allocation_size, DeviceMemoryResource bin_resource=*)
 
-cdef class LoggingResourceAdaptor2(UpstreamResourceAdaptor):
+cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
     cdef object _log_file_name
     cpdef get_file_name(self)
     cpdef flush(self)
 
-
-cdef class MemoryResource:
-    cdef shared_ptr[device_memory_resource_wrapper] c_obj
-
-cdef class CudaMemoryResource(MemoryResource):
-    pass
-
-cdef class ManagedMemoryResource(MemoryResource):
-    pass
-
-cdef class PoolMemoryResource(MemoryResource):
-    pass
-
-cdef class FixedSizeMemoryResource(MemoryResource):
-    pass
-
-cdef class BinningMemoryResource(MemoryResource):
-    cpdef add_bin(self, size_t allocation_size, object bin_resource=*)
-
-cdef class LoggingResourceAdaptor(MemoryResource):
-    cdef object _log_file_name
-    cpdef get_file_name(self)
-    cpdef flush(self)
-
-cpdef MemoryResource get_current_device_resource()
+cpdef DeviceMemoryResource get_current_device_resource()

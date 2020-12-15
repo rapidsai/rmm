@@ -17,7 +17,7 @@ from libc.stdint cimport uintptr_t
 
 from rmm._lib.cuda_stream_view cimport cuda_stream_view
 from rmm._cuda.stream cimport Stream
-from rmm._lib.memory_resource cimport MemoryResource
+from rmm._lib.memory_resource cimport DeviceMemoryResource
 
 
 cdef extern from "rmm/device_buffer.hpp" namespace "rmm" nogil:
@@ -39,10 +39,10 @@ cdef extern from "rmm/device_buffer.hpp" namespace "rmm" nogil:
 cdef class DeviceBuffer:
     cdef unique_ptr[device_buffer] c_obj
 
-    # Holds a reference to the MemoryResource used for allocation. Ensures the
+    # Holds a reference to the DeviceMemoryResource used for allocation. Ensures the
     # MR does not get destroyed before this DeviceBuffer. `mr` is needed for
     # deallocation
-    cdef MemoryResource mr
+    cdef DeviceMemoryResource mr
 
     # Holds a reference to the stream used by the underlying `device_buffer`. Ensures the
     # stream does not get destroyed before this DeviceBuffer
