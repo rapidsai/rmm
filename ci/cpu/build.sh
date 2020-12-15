@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright (c) 2018, NVIDIA CORPORATION.
+# Copyright (c) 2020, NVIDIA CORPORATION.
 ######################################
 # rmm CPU build script for CI        #
 ######################################
@@ -37,8 +37,8 @@ conda activate rapids
 
 gpuci_logger "Check versions"
 python --version
-gcc --version
-g++ --version
+$CC --version
+$CXX --version
 
 gpuci_logger "Check conda environment"
 conda info
@@ -55,19 +55,21 @@ conda config --set ssl_verify False
 if [[ "$BUILD_LIBRMM" == "1" ]]; then
   gpuci_logger "Build conda pkg for librmm"
   if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
-    conda build conda/recipes/librmm --python=$PYTHON
+    gpuci_conda_retry build conda/recipes/librmm --python=$PYTHON
   else
-    conda build --dirty --no-remove-work-dir conda/recipes/librmm
+    gpuci_conda_retry build --dirty --no-remove-work-dir conda/recipes/librmm
   fi
 fi
 
 if [[ "$BUILD_RMM" == "1" ]]; then
   gpuci_logger "Build conda pkg for rmm"
   if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
-    conda build conda/recipes/rmm --python=$PYTHON
+    gpuci_conda_retry build conda/recipes/rmm --python=$PYTHON
   else
+    gpuci_conda_retry build --dirty --no-remove-work-dir conda/recipes/rmm
     conda build --dirty --no-remove-work-dir \
       -c $WORKSPACE/ci/artifacts/rmm/cpu/conda-bld/ conda/recipes/rmm
+
   fi
 fi
 

@@ -261,7 +261,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
    */
   allocation_counts pop_allocation_counts()
   {
-    write_lock_t lock(mtx_);
+    read_lock_t lock(mtx);
 
     RMM_EXPECTS(allocation_count_stack_.size() > 1,
                 rmm::out_of_range,
@@ -271,7 +271,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
     allocation_counts counts = allocation_count_stack_.back();
 
     // Pop the stack
-    allocation_count_stack_.pop_back();
+    if (not allocations.empty()) {
 
     // When popping the stack, the top needs to be rolled into the new top to keep the total values
     // correct

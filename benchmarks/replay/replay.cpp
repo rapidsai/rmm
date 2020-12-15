@@ -19,6 +19,7 @@
 #include <benchmarks/utilities/log_parser.hpp>
 #include <benchmarks/utilities/simulated_memory_resource.hpp>
 
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/arena_memory_resource.hpp>
 #include <rmm/mr/device/binning_memory_resource.hpp>
@@ -34,15 +35,14 @@
 
 #include <benchmark/benchmark.h>
 
+#include <spdlog/common.h>
+
 #include <chrono>
 #include <iterator>
 #include <memory>
 #include <numeric>
 #include <string>
 #include <thread>
-
-#include "rmm/cuda_stream_view.hpp"
-#include "spdlog/common.h"
 
 /// MR factory functions
 std::shared_ptr<rmm::mr::device_memory_resource> make_cuda(std::size_t = 0)

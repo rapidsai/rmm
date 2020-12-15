@@ -73,7 +73,7 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    * @param mr The resource to be used for device memory allocation
    * @param stream The stream to be used for device memory (de)allocation
    */
-  thrust_allocator(device_memory_resource* mr, cuda_stream_view stream) : _mr(mr), _stream{stream}
+  thrust_allocator(cuda_stream_view stream, device_memory_resource* mr) : _stream{stream}, _mr(mr)
   {
   }
 
@@ -122,8 +122,8 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
   cuda_stream_view stream() const noexcept { return _stream; }
 
  private:
-  device_memory_resource* _mr{rmm::mr::get_current_device_resource()};
   cuda_stream_view _stream{};
+  device_memory_resource* _mr{rmm::mr::get_current_device_resource()};
 };
 }  // namespace mr
 }  // namespace rmm
