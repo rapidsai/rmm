@@ -3,7 +3,6 @@ channels:
 - rapidsai
 - conda-forge
 dependencies:
-- ccache>=4.1
 - clang=8.0.1
 - clang-tools=8.0.1
 - cmake>=3.18

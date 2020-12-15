@@ -87,6 +87,10 @@ $ conda env create --name cudf_dev --file conda/environments/dev_py35.yml
 $ source activate cudf_dev
 ```
 
+- (Optional) install `ccache` to speed up recompilation by following the
+[ccache installation guide](https://github.com/ccache/ccache/blob/master/doc/INSTALL.md). For RMM, you don't need to
+create the symbolic links.
+
 - Build and install `librmm` using cmake & make. CMake depends on the `nvcc` executable being on
   your path or defined in `$CUDACXX`.
 
