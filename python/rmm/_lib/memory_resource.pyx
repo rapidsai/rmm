@@ -23,12 +23,15 @@ cdef class UpstreamResourceAdaptor(DeviceMemoryResource):
 
     def __cinit__(self, *args, **kwargs):
 
+        # Need to support args/kwargs here to allow child MRs to have any init
+        # signature they want
         if ("upstream_mr" in kwargs):
             self.upstream_mr = kwargs["upstream_mr"]
         elif (len(args) > 0 and isinstance(args[0], DeviceMemoryResource)):
             self.upstream_mr = args[0]
         else:
-            raise Exception("Need 'upstream_mr'")
+            raise Exception("Argument `upstream_mr` must be passed as a "
+                "keyword argument or as the first positional argument")
 
     def __dealloc__(self):
         # Must cleanup the base MR before any upstream MR
