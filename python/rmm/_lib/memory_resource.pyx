@@ -30,8 +30,9 @@ cdef class UpstreamResourceAdaptor(DeviceMemoryResource):
         elif (len(args) > 0 and isinstance(args[0], DeviceMemoryResource)):
             self.upstream_mr = args[0]
         else:
-            raise Exception("Argument `upstream_mr` must be passed as a "
-                "keyword argument or as the first positional argument")
+            raise Exception(
+                "Argument `upstream_mr` must be passed as a keyword argument "
+                "or as the first positional argument")
 
     def __dealloc__(self):
         # Must cleanup the base MR before any upstream MR
