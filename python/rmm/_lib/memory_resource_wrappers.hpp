@@ -78,6 +78,8 @@ class pool_memory_resource_wrapper : public device_memory_resource_wrapper {
         maximum_pool_size == static_cast<size_t>(~0) ? thrust::nullopt
                                                      : thrust::make_optional(maximum_pool_size)))
   {
+    auto a = initial_pool_size == static_cast<size_t>(~0) ? thrust::nullopt
+                                                     : thrust::make_optional(initial_pool_size);
   }
 
   std::shared_ptr<rmm::mr::device_memory_resource> get_mr() { return mr; }

@@ -11,6 +11,299 @@ from libcpp.string cimport string
 
 from rmm._cuda.gpu import CUDARuntimeError, cudaError, getDevice, setDevice
 
+cdef class DeviceMemoryResource:
+
+    def __dealloc__(self):
+        print("[DeviceMemoryResource] Destroying: {}".format(type(self)))
+
+    cdef device_memory_resource* get_mr(self):
+        return self.c_obj.get()
+
+
+# @cython.no_gc_clear
+cdef class UpstreamResourceAdaptor(DeviceMemoryResource):
+
+    def __cinit__(self, *args, **kwargs):
+
+        if ("upstream_mr" in kwargs):
+            self.upstream_mr = kwargs["upstream_mr"]
+        elif (len(args) > 0 and isinstance(args[0], DeviceMemoryResource)):
+            self.upstream_mr = args[0]
+        else:
+            raise Exception("Need 'upstream_mr'")
+
+    def __dealloc__(self):
+        print("[UpstreamResourceAdaptor] Destroying: {}".format(type(self)))
+
+        self.c_obj.reset()
+
+        print("[UpstreamResourceAdaptor] Done Destroying: {}".format(type(self)))
+
+
+cdef class CudaMemoryResource2(DeviceMemoryResource):
+    def __cinit__(self, device=None):
+        self.c_obj.reset(
+            new cuda_memory_resource()
+        )
+
+    def __init__(self, device=None):
+        """
+        Memory resource that uses cudaMalloc/Free for allocation/deallocation
+        """
+        pass
+
+
+cdef class ManagedMemoryResource2(DeviceMemoryResource):
+    def __cinit__(self):
+        self.c_obj.reset(
+            new managed_memory_resource()
+        )
+
+    def __init__(self):
+        """
+        Memory resource that uses cudaMallocManaged/Free for
+        allocation/deallocation.
+        """
+        pass
+
+
+cdef class PoolMemoryResource2(UpstreamResourceAdaptor):
+
+    def __cinit__(
+            self,
+            DeviceMemoryResource upstream_mr,
+            initial_pool_size=None,
+            maximum_pool_size=None
+    ):
+        cdef optional[size_t] c_initial_pool_size
+        cdef optional[size_t] c_maximum_pool_size
+        c_initial_pool_size = (
+            optional[size_t]() if initial_pool_size is None else make_optional[size_t](initial_pool_size)
+        )
+        c_maximum_pool_size = (
+            optional[size_t]() if maximum_pool_size is None else make_optional[size_t](maximum_pool_size)
+        )
+        self.c_obj.reset(
+            new pool_memory_resource[device_memory_resource](
+                upstream_mr.get_mr(),
+                c_initial_pool_size,
+                c_maximum_pool_size
+            )
+        )
+
+    def __init__(
+            self,
+            DeviceMemoryResource upstream_mr,
+            object initial_pool_size=None,
+            object maximum_pool_size=None
+    ):
+        """
+        Coalescing best-fit suballocator which uses a pool of memory allocated
+        from an upstream memory resource.
+
+        Parameters
+        ----------
+        upstream_mr : MemoryResource
+            The MemoryResource from which to allocate blocks for the pool.
+        initial_pool_size : int,optional
+            Initial pool size in bytes. By default, an implementation defined
+            pool size is used.
+        maximum_pool_size : int, optional
+            Maximum size in bytes, that the pool can grow to.
+        """
+        pass
+
+
+cdef class FixedSizeMemoryResource2(UpstreamResourceAdaptor):
+    def __cinit__(
+            self,
+            DeviceMemoryResource upstream_mr,
+            size_t block_size=1<<20,
+            size_t blocks_to_preallocate=128
+    ):
+        self.c_obj.reset(
+            new fixed_size_memory_resource[device_memory_resource](
+                upstream_mr.get_mr(),
+                block_size,
+                blocks_to_preallocate
+            )
+        )
+
+    def __init__(
+            self,
+            DeviceMemoryResource upstream_mr,
+            size_t block_size=1<<20,
+            size_t blocks_to_preallocate=128
+    ):
+        """
+        Memory resource which allocates memory blocks of a single fixed size.
+
+        Parameters
+        ----------
+        upstream_mr : MemoryResource
+            The MemoryResource from which to allocate blocks for the pool.
+        block_size : int, optional
+            The size of blocks to allocate (default is 1MiB).
+        blocks_to_preallocate : int, optional
+            The number of blocks to allocate to initialize the pool.
+
+        Notes
+        -----
+        Supports only allocations of size smaller than the configured
+        block_size.
+        """
+        pass
+
+
+cdef class BinningMemoryResource2(UpstreamResourceAdaptor):
+    def __cinit__(
+        self,
+        DeviceMemoryResource upstream_mr,
+        int8_t min_size_exponent=-1,
+        int8_t max_size_exponent=-1,
+    ):
+        if (min_size_exponent == -1 or max_size_exponent == -1):
+            self.c_obj.reset(
+                new binning_memory_resource[device_memory_resource](
+                    upstream_mr.get_mr()
+                )
+            )
+        else:
+            self.c_obj.reset(
+                new binning_memory_resource[device_memory_resource](
+                    upstream_mr.get_mr(),
+                    min_size_exponent,
+                    max_size_exponent
+                )
+            )
+
+    def __init__(
+        self,
+        DeviceMemoryResource upstream_mr,
+        int8_t min_size_exponent=-1,
+        int8_t max_size_exponent=-1,
+    ):
+        """
+        Allocates memory from a set of specified "bin" sizes based on a
+        specified allocation size.
+
+        If min_size_exponent and max_size_exponent are specified, initializes
+        with one or more FixedSizeMemoryResource bins in the range
+        [2^min_size_exponent, 2^max_size_exponent].
+
+        Call add_bin to add additional bin allocators.
+
+        Parameters
+        ----------
+        upstream_mr : MemoryResource
+            The memory resource to use for allocations larger than any of the
+            bins
+        min_size_exponent : size_t
+            The base-2 exponent of the minimum size FixedSizeMemoryResource
+            bin to create.
+        max_size_exponent : size_t
+            The base-2 exponent of the maximum size FixedSizeMemoryResource
+            bin to create.
+        """
+        pass
+
+    cpdef add_bin(
+        self,
+        size_t allocation_size,
+        DeviceMemoryResource bin_resource=None
+    ):
+        """
+        Adds a bin of the specified maximum allocation size to this memory
+        resource. If specified, uses bin_resource for allocation for this bin.
+        If not specified, creates and uses a FixedSizeMemoryResource for
+        allocation for this bin.
+
+        Allocations smaller than allocation_size and larger than the next
+        smaller bin size will use this fixed-size memory resource.
+
+        Parameters
+        ----------
+        allocation_size : size_t
+            The maximum allocation size in bytes for the created bin
+        bin_resource : MemoryResource
+            The resource to use for this bin (optional)
+        """
+        cdef MemoryResource _bin_resource
+
+        if bin_resource is None:
+            (<binning_memory_resource[device_memory_resource]*>(self.c_obj.get()))[0].add_bin(
+                allocation_size
+            )
+        else:
+            # Save the ref to the new bin resource to ensure its lifetime
+            self.bin_mrs.append(bin_resource)
+
+            (<binning_memory_resource[device_memory_resource]*>(self.c_obj.get()))[0].add_bin(
+                allocation_size,
+                bin_resource.get_mr()
+            )
+
+def _append_id(filename, id):
+    """
+    Append ".dev<ID>" onto a filename before the extension
+
+    Example: _append_id("hello.txt", 1) returns "hello.dev1.txt"
+
+    Parameters
+    ----------
+    filename : string
+        The filename, possibly with extension
+    id : int
+        The ID to append
+    """
+    name, ext = os.path.splitext(filename)
+    return f"{name}.dev{id}{ext}"
+
+
+cdef class LoggingResourceAdaptor2(UpstreamResourceAdaptor):
+    def __cinit__(self, DeviceMemoryResource upstream_mr, object log_file_name=None):
+        if log_file_name is None:
+            log_file_name = os.getenv("RMM_LOG_FILE")
+            if not log_file_name:
+                raise TypeError(
+                    "RMM log file must be specified either using "
+                    "log_file_name= argument or RMM_LOG_FILE "
+                    "environment variable"
+                )
+        # Append the device ID before the file extension
+        log_file_name = _append_id(
+            log_file_name.decode(), getDevice()
+        )
+
+        _log_file_name = log_file_name
+
+        self.c_obj.reset(
+            new logging_resource_adaptor[device_memory_resource](
+                upstream_mr.get_mr(),
+                log_file_name.encode()
+            )
+        )
+
+    def __init__(self, DeviceMemoryResource upstream_mr, object log_file_name=None):
+        """
+        Memory resource that logs information about allocations/deallocations
+        performed by an upstream memory resource.
+
+        Parameters
+        ----------
+        upstream : MemoryResource
+            The upstream memory resource.
+        log_file_name : str
+            Path to the file to which logs are written.
+        """
+        pass
+
+    cpdef flush(self):
+        (<logging_resource_adaptor[device_memory_resource]*>(self.get_mr()))[0].flush()
+
+    cpdef get_file_name(self):
+        return self._log_file_name
+
 
 cdef class CudaMemoryResource(MemoryResource):
     def __cinit__(self, device=None):
@@ -219,23 +512,6 @@ cdef class BinningMemoryResource(MemoryResource):
                 allocation_size,
                 _bin_resource.c_obj
             )
-
-
-def _append_id(filename, id):
-    """
-    Append ".dev<ID>" onto a filename before the extension
-
-    Example: _append_id("hello.txt", 1) returns "hello.dev1.txt"
-
-    Parameters
-    ----------
-    filename : string
-        The filename, possibly with extension
-    id : int
-        The ID to append
-    """
-    name, ext = os.path.splitext(filename)
-    return f"{name}.dev{id}{ext}"
 
 
 cdef class LoggingResourceAdaptor(MemoryResource):
