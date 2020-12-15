@@ -14,9 +14,6 @@ from rmm._cuda.gpu import CUDARuntimeError, cudaError, getDevice, setDevice
 
 cdef class DeviceMemoryResource:
 
-    # def __dealloc__(self):
-    #     print("[DeviceMemoryResource] Destroying: {}".format(type(self)))
-
     cdef device_memory_resource* get_mr(self):
         return self.c_obj.get()
 
