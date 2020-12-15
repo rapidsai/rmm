@@ -70,10 +70,10 @@ class tracking_resource_adaptor final : public device_memory_resource {
    * allocated bytes
    */
   struct allocation_counts {
-    ssize_t current_bytes{0};    // Current outstanding bytes
-    ssize_t current_count{0};    // Current outstanding count
-    ssize_t peak_bytes{0};       // Max value of current_bytes
-    ssize_t peak_count{0};       // Max value of current_count
+    int64_t current_bytes{0};    // Current outstanding bytes
+    int64_t current_count{0};    // Current outstanding count
+    int64_t peak_bytes{0};       // Max value of current_bytes
+    int64_t peak_count{0};       // Max value of current_count
     std::size_t total_bytes{0};  // Total allocated bytes
     std::size_t total_count{0};  // Total allocated count
 
@@ -82,7 +82,8 @@ class tracking_resource_adaptor final : public device_memory_resource {
      *
      * Increments current and peak total bytes allocated by `bytes`.
      * Increments current and peak allocation counts by `1`.
-     * Updates peak total bytes allocated and allocation count if the current values exceed previous peak.
+     * Updates peak total bytes allocated and allocation count if the current values exceed previous
+     * peak.
      *
      * @param bytes Number of bytes allocated
      */
