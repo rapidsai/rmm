@@ -22,7 +22,9 @@ from libcpp.utility cimport move
 
 from rmm._cuda.gpu cimport cudaError, cudaError_t
 from rmm._cuda.stream cimport Stream
+
 from rmm._cuda.stream import DEFAULT_STREAM
+
 from rmm._lib.lib cimport (
     cudaMemcpyAsync,
     cudaMemcpyDeviceToDevice,
@@ -33,6 +35,7 @@ from rmm._lib.lib cimport (
     cudaStreamSynchronize,
 )
 from rmm._lib.memory_resource cimport get_current_device_resource
+
 
 cdef class DeviceBuffer:
 
