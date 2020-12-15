@@ -14,7 +14,9 @@
 
 # Use ccache if possible.
 option(USE_CCACHE_COMPILER_LAUNCHER "Use ccache to launch C/C++/CUDA compilers" ON)
-set(CCACHE_CONFIGPATH "OFF" CACHE FILEPATH "Location of the ccache configuration file")
+set(CCACHE_CONFIGPATH
+    "OFF"
+    CACHE FILEPATH "Location of the ccache configuration file")
 
 if(USE_CCACHE_COMPILER_LAUNCHER)
   find_program(CCACHE_PROGRAM ccache)
