@@ -72,10 +72,14 @@ cdef class PoolMemoryResource(UpstreamResourceAdaptor):
         cdef optional[size_t] c_initial_pool_size
         cdef optional[size_t] c_maximum_pool_size
         c_initial_pool_size = (
-            optional[size_t]() if initial_pool_size is None else make_optional[size_t](initial_pool_size)
+            optional[size_t]() if
+            initial_pool_size is None
+            else make_optional[size_t](initial_pool_size)
         )
         c_maximum_pool_size = (
-            optional[size_t]() if maximum_pool_size is None else make_optional[size_t](maximum_pool_size)
+            optional[size_t]() if
+            maximum_pool_size is None
+            else make_optional[size_t](maximum_pool_size)
         )
         self.c_obj.reset(
             new pool_memory_resource[device_memory_resource](
@@ -98,7 +102,8 @@ cdef class PoolMemoryResource(UpstreamResourceAdaptor):
         Parameters
         ----------
         upstream_mr : DeviceMemoryResource
-            The DeviceMemoryResource from which to allocate blocks for the pool.
+            The DeviceMemoryResource from which to allocate blocks for the
+            pool.
         initial_pool_size : int,optional
             Initial pool size in bytes. By default, an implementation defined
             pool size is used.
@@ -135,7 +140,8 @@ cdef class FixedSizeMemoryResource(UpstreamResourceAdaptor):
         Parameters
         ----------
         upstream_mr : DeviceMemoryResource
-            The DeviceMemoryResource from which to allocate blocks for the pool.
+            The DeviceMemoryResource from which to allocate blocks for the
+            pool.
         block_size : int, optional
             The size of blocks to allocate (default is 1MiB).
         blocks_to_preallocate : int, optional
@@ -233,17 +239,17 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
         cdef DeviceMemoryResource _bin_resource
 
         if bin_resource is None:
-            (<binning_memory_resource[device_memory_resource]*>(self.c_obj.get()))[0].add_bin(
-                allocation_size
-            )
+            (<binning_memory_resource[device_memory_resource]*>(
+                self.c_obj.get()))[0].add_bin(allocation_size)
         else:
             # Save the ref to the new bin resource to ensure its lifetime
             self.bin_mrs.append(bin_resource)
 
-            (<binning_memory_resource[device_memory_resource]*>(self.c_obj.get()))[0].add_bin(
-                allocation_size,
-                bin_resource.get_mr()
-            )
+            (<binning_memory_resource[device_memory_resource]*>(
+                self.c_obj.get()))[0].add_bin(
+                    allocation_size,
+                    bin_resource.get_mr())
+
 
 def _append_id(filename, id):
     """
@@ -263,7 +269,11 @@ def _append_id(filename, id):
 
 
 cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
-    def __cinit__(self, DeviceMemoryResource upstream_mr, object log_file_name=None):
+    def __cinit__(
+        self,
+        DeviceMemoryResource upstream_mr,
+        object log_file_name=None
+    ):
         if log_file_name is None:
             log_file_name = os.getenv("RMM_LOG_FILE")
             if not log_file_name:
@@ -286,7 +296,11 @@ cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
             )
         )
 
-    def __init__(self, DeviceMemoryResource upstream_mr, object log_file_name=None):
+    def __init__(
+        self,
+        DeviceMemoryResource upstream_mr,
+        object log_file_name=None
+    ):
         """
         Memory resource that logs information about allocations/deallocations
         performed by an upstream memory resource.
@@ -301,7 +315,8 @@ cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
         pass
 
     cpdef flush(self):
-        (<logging_resource_adaptor[device_memory_resource]*>(self.get_mr()))[0].flush()
+        (<logging_resource_adaptor[device_memory_resource]*>(
+            self.get_mr()))[0].flush()
 
     cpdef get_file_name(self):
         return self._log_file_name
@@ -425,7 +440,8 @@ cpdef set_per_device_resource(int device, DeviceMemoryResource mr):
     global _per_device_mrs
     _per_device_mrs[device] = mr
 
-    # Since cuda_device_id does not have a default constructor, it must be heap allocated
+    # Since cuda_device_id does not have a default constructor, it must be heap
+    # allocated
     cdef cuda_device_id* device_id
     try:
         device_id = new cuda_device_id(device)

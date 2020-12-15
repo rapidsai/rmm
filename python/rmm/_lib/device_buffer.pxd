@@ -39,9 +39,9 @@ cdef extern from "rmm/device_buffer.hpp" namespace "rmm" nogil:
 cdef class DeviceBuffer:
     cdef unique_ptr[device_buffer] c_obj
 
-    # Holds a reference to the DeviceMemoryResource used for allocation. Ensures the
-    # MR does not get destroyed before this DeviceBuffer. `mr` is needed for
-    # deallocation
+    # Holds a reference to the DeviceMemoryResource used for allocation.
+    # Ensures the MR does not get destroyed before this DeviceBuffer. `mr` is
+    # needed for deallocation
     cdef DeviceMemoryResource mr
 
     # Holds a reference to the stream used by the underlying `device_buffer`.

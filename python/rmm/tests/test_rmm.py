@@ -404,3 +404,14 @@ def test_mr_devicebuffer_lifetime():
 
     # Delete a. Used to crash before. Pool MR should still be alive
     del a
+
+
+def test_mr_upstream_lifetime():
+    # Simple test to ensure upstream MRs are deallocated before downstream MR
+    cuda_mr = rmm.mr.CudaMemoryResource()
+
+    pool_mr = rmm.mr.PoolMemoryResource(cuda_mr)
+
+    # Delete cuda_mr first. Should be kept alive by pool_mr
+    del cuda_mr
+    del pool_mr
