@@ -22,6 +22,17 @@ else:
 cuda.set_memory_manager(rmm.RMMNumbaManager)
 
 
+@pytest.fixture(scope="function", autouse=True)
+def rmm_auto_reinitialize():
+
+    # Run the test
+    yield
+
+    # Automatically reinitialize the current memory resource after running each
+    # test
+    rmm.reinitialize()
+
+
 def array_tester(dtype, nelem, alloc):
     # data
     h_in = np.full(nelem, 3.2, dtype)
@@ -72,7 +83,6 @@ def test_rmm_modes(dtype, nelem, alloc, managed, pool):
     assert rmm.is_initialized()
 
     array_tester(dtype, nelem, alloc)
-    rmm.reinitialize()
 
 
 @pytest.mark.parametrize("dtype", _dtypes)
@@ -94,7 +104,6 @@ def test_rmm_csv_log(dtype, nelem, alloc, tmpdir):
             assert csv.find(b"Time,Action,Pointer,Size,Stream") >= 0
     finally:
         os.remove(fname)
-    rmm.reinitialize()
 
 
 @pytest.mark.parametrize("size", [0, 5])
@@ -301,7 +310,6 @@ def test_pool_memory_resource(dtype, nelem, alloc):
     rmm.mr.set_current_device_resource(mr)
     assert rmm.mr.get_current_device_resource_type() is type(mr)
     array_tester(dtype, nelem, alloc)
-    rmm.reinitialize()
 
 
 @pytest.mark.parametrize("dtype", _dtypes)
@@ -321,7 +329,6 @@ def test_fixed_size_memory_resource(dtype, nelem, alloc, upstream):
     rmm.mr.set_current_device_resource(mr)
     assert rmm.mr.get_current_device_resource_type() is type(mr)
     array_tester(dtype, nelem, alloc)
-    rmm.reinitialize()
 
 
 @pytest.mark.parametrize("dtype", _dtypes)
@@ -352,7 +359,6 @@ def test_binning_memory_resource(dtype, nelem, alloc, upstream_mr):
     rmm.mr.set_current_device_resource(mr)
     assert rmm.mr.get_current_device_resource_type() is type(mr)
     array_tester(dtype, nelem, alloc)
-    rmm.reinitialize()
 
 
 def test_reinitialize_max_pool_size():
@@ -360,7 +366,6 @@ def test_reinitialize_max_pool_size():
         pool_allocator=True, initial_pool_size=0, maximum_pool_size=1 << 23
     )
     rmm.DeviceBuffer().resize((1 << 23) - 1)
-    rmm.reinitialize()
 
 
 def test_reinitialize_max_pool_size_exceeded():
@@ -369,7 +374,6 @@ def test_reinitialize_max_pool_size_exceeded():
     )
     with pytest.raises(MemoryError):
         rmm.DeviceBuffer().resize(1 << 24)
-    rmm.reinitialize()
 
 
 def test_reinitialize_initial_pool_size_gt_max():
