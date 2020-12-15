@@ -98,9 +98,7 @@ cdef extern from "memory_resource_wrappers.hpp" nogil:
             bool capture_stacks
         ) except +
 
-        allocation_counts get_total_allocation_counts() except +
-        allocation_counts push_allocation_counts() except +
-        allocation_counts pop_allocation_counts() except +
+        allocation_counts get_allocation_counts() except +
         string get_outstanding_allocations_str() except +
 
 

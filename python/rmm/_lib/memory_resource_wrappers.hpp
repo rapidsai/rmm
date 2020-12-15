@@ -192,20 +192,12 @@ class tracking_resource_adaptor_wrapper : public device_memory_resource_wrapper 
 
   std::shared_ptr<rmm::mr::device_memory_resource> get_mr() { return mr; }
 
-  allocation_counts get_total_allocation_counts() const {
-    return mr->get_total_allocation_counts();
+  allocation_counts get_allocation_counts() const {
+    return mr->get_allocation_counts();
   }
 
   std::string get_outstanding_allocations_str() const {
     return mr->get_outstanding_allocations_str();
-  }
-
-  allocation_counts push_allocation_counts() {
-    return mr->push_allocation_counts();
-  }
-
-  allocation_counts pop_allocation_counts() {
-    return mr->pop_allocation_counts();
   }
 
  private:

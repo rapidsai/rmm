@@ -304,9 +304,9 @@ cdef class TrackingMemoryResource(MemoryResource):
             )
         )
 
-    def get_total_allocation_counts(self) -> dict:
+    def get_allocation_counts(self) -> dict:
         counts = (<tracking_resource_adaptor_wrapper*>(
-            self.c_obj.get()))[0].get_total_allocation_counts()
+            self.c_obj.get()))[0].get_allocation_counts()
 
         return _allocation_counts_to_dict(counts)
 
@@ -315,18 +315,6 @@ cdef class TrackingMemoryResource(MemoryResource):
         return (<tracking_resource_adaptor_wrapper*>(
             self.c_obj.get())
         )[0].get_outstanding_allocations_str().decode('UTF-8')
-
-    def push_allocation_counts(self) -> dict:
-        counts = (<tracking_resource_adaptor_wrapper*>(
-            self.c_obj.get()))[0].push_allocation_counts()
-
-        return _allocation_counts_to_dict(counts)
-
-    def pop_allocation_counts(self) -> dict:
-        counts = (<tracking_resource_adaptor_wrapper*>(
-            self.c_obj.get()))[0].pop_allocation_counts()
-
-        return _allocation_counts_to_dict(counts)
 
 
 class KeyInitializedDefaultDict(defaultdict):

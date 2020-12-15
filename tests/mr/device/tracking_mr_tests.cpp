@@ -101,7 +101,7 @@ TEST(TrackingTest, PeakAllocations)
     it = allocations.erase(it);
   }
 
-  auto current_alloc_counts = mr.get_total_allocation_counts();
+  auto current_alloc_counts = mr.get_allocation_counts();
 
   // Verify current allocations
   EXPECT_EQ(mr.get_allocated_bytes(), 50_MiB);
@@ -127,7 +127,7 @@ TEST(TrackingTest, PeakAllocations)
   }
   allocations.clear();
 
-  current_alloc_counts = mr.get_total_allocation_counts();
+  current_alloc_counts = mr.get_allocation_counts();
 
   // Verify current allocations
   EXPECT_EQ(mr.get_allocated_bytes(), 0);
@@ -180,11 +180,11 @@ TEST(TrackingTest, MultiTracking)
   EXPECT_EQ(inner_mr.get_allocated_bytes(), 0);
 
   // Finally, verify the peak and total values
-  EXPECT_EQ(mr.get_total_allocation_counts().peak_bytes, 150_MiB);
-  EXPECT_EQ(inner_mr.get_total_allocation_counts().peak_bytes, 50_MiB);
+  EXPECT_EQ(mr.get_allocation_counts().peak_bytes, 150_MiB);
+  EXPECT_EQ(inner_mr.get_allocation_counts().peak_bytes, 50_MiB);
 
-  EXPECT_EQ(mr.get_total_allocation_counts().peak_count, 15);
-  EXPECT_EQ(inner_mr.get_total_allocation_counts().peak_count, 5);
+  EXPECT_EQ(mr.get_allocation_counts().peak_count, 15);
+  EXPECT_EQ(inner_mr.get_allocation_counts().peak_count, 5);
 
   // Reset the current device resource
   rmm::mr::set_current_device_resource(mr.get_upstream());
@@ -215,11 +215,11 @@ TEST(TrackingTest, NegativeInnerTracking)
   EXPECT_EQ(inner_mr.get_outstanding_allocations().size(), 5);
 
   // Check the current counts
-  EXPECT_EQ(mr.get_total_allocation_counts().current_bytes, 150_MiB);
-  EXPECT_EQ(inner_mr.get_total_allocation_counts().current_bytes, 50_MiB);
+  EXPECT_EQ(mr.get_allocation_counts().current_bytes, 150_MiB);
+  EXPECT_EQ(inner_mr.get_allocation_counts().current_bytes, 50_MiB);
 
-  EXPECT_EQ(mr.get_total_allocation_counts().current_count, 15);
-  EXPECT_EQ(inner_mr.get_total_allocation_counts().current_count, 5);
+  EXPECT_EQ(mr.get_allocation_counts().current_count, 15);
+  EXPECT_EQ(inner_mr.get_allocation_counts().current_count, 5);
 
   // Deallocate all allocations using the inner_mr
   for (int i = 0; i < allocations.size(); ++i) {
@@ -232,25 +232,25 @@ TEST(TrackingTest, NegativeInnerTracking)
   EXPECT_EQ(inner_mr.get_outstanding_allocations().size(), 0);
 
   // Check the current counts are 0 for the outer
-  EXPECT_EQ(mr.get_total_allocation_counts().current_bytes, 0);
-  EXPECT_EQ(mr.get_total_allocation_counts().current_count, 0);
+  EXPECT_EQ(mr.get_allocation_counts().current_bytes, 0);
+  EXPECT_EQ(mr.get_allocation_counts().current_count, 0);
 
   // The inner_mr will have negative values
-  EXPECT_EQ(inner_mr.get_total_allocation_counts().current_bytes, -100_MiB);
-  EXPECT_EQ(inner_mr.get_total_allocation_counts().current_count, -10);
+  EXPECT_EQ(inner_mr.get_allocation_counts().current_bytes, -100_MiB);
+  EXPECT_EQ(inner_mr.get_allocation_counts().current_count, -10);
 
   // Verify the peak and total
-  EXPECT_EQ(mr.get_total_allocation_counts().peak_bytes, 150_MiB);
-  EXPECT_EQ(inner_mr.get_total_allocation_counts().peak_bytes, 50_MiB);
+  EXPECT_EQ(mr.get_allocation_counts().peak_bytes, 150_MiB);
+  EXPECT_EQ(inner_mr.get_allocation_counts().peak_bytes, 50_MiB);
 
-  EXPECT_EQ(mr.get_total_allocation_counts().peak_count, 15);
-  EXPECT_EQ(inner_mr.get_total_allocation_counts().peak_count, 5);
+  EXPECT_EQ(mr.get_allocation_counts().peak_count, 15);
+  EXPECT_EQ(inner_mr.get_allocation_counts().peak_count, 5);
 
-  EXPECT_EQ(mr.get_total_allocation_counts().total_bytes, 150_MiB);
-  EXPECT_EQ(inner_mr.get_total_allocation_counts().total_bytes, 50_MiB);
+  EXPECT_EQ(mr.get_allocation_counts().total_bytes, 150_MiB);
+  EXPECT_EQ(inner_mr.get_allocation_counts().total_bytes, 50_MiB);
 
-  EXPECT_EQ(mr.get_total_allocation_counts().total_count, 15);
-  EXPECT_EQ(inner_mr.get_total_allocation_counts().total_count, 5);
+  EXPECT_EQ(mr.get_allocation_counts().total_count, 15);
+  EXPECT_EQ(inner_mr.get_allocation_counts().total_count, 5);
 }
 
 TEST(TrackingTest, DeallocWrongBytes)
@@ -271,7 +271,7 @@ TEST(TrackingTest, DeallocWrongBytes)
   EXPECT_EQ(mr.get_allocated_bytes(), 0);
 
   // allocation_counts should be unaffected
-  auto current_alloc_counts = mr.get_total_allocation_counts();
+  auto current_alloc_counts = mr.get_allocation_counts();
 
   // Verify current allocations are correct despite the error
   EXPECT_EQ(mr.get_allocated_bytes(), 0);
@@ -285,105 +285,6 @@ TEST(TrackingTest, DeallocWrongBytes)
   // Verify total allocations
   EXPECT_EQ(current_alloc_counts.total_bytes, 100_MiB);
   EXPECT_EQ(current_alloc_counts.total_count, 10);
-}
-
-TEST(TrackingTest, PushPop)
-{
-  tracking_adaptor mr{rmm::mr::get_current_device_resource()};
-  std::vector<void *> allocations;
-
-  // Up to 90
-  for (int i = 0; i < 9; ++i) {
-    allocations.push_back(mr.allocate(10_MiB));
-  }
-  // Go down to 20 remaining
-  for (auto &&it = allocations.begin(); it != allocations.end();) {
-    mr.deallocate(*it, 10_MiB);
-    it = allocations.erase(it);
-
-    if (allocations.size() == 2) { break; }
-  }
-
-  // Push and verify counts
-  auto current_alloc_counts = mr.push_allocation_counts();
-
-  // Verify current allocations
-  EXPECT_EQ(mr.get_allocated_bytes(), 20_MiB);
-  EXPECT_EQ(current_alloc_counts.current_bytes, 20_MiB);
-  EXPECT_EQ(current_alloc_counts.current_count, 2);
-
-  // Verify peak allocations
-  EXPECT_EQ(current_alloc_counts.peak_bytes, 90_MiB);
-  EXPECT_EQ(current_alloc_counts.peak_count, 9);
-
-  // Verify total allocations
-  EXPECT_EQ(current_alloc_counts.total_bytes, 90_MiB);
-  EXPECT_EQ(current_alloc_counts.total_count, 9);
-
-  // Now allocate up to 100. This should result in index 0 with a peak of 90,
-  // index 1 with a peak of 80 and the total with a peak of 100
-  while (allocations.size() < 10) {
-    allocations.push_back(mr.allocate(10_MiB));
-  }
-
-  // Before popping Verify the total with 10 allocated
-  current_alloc_counts = mr.get_total_allocation_counts();
-
-  // Verify current allocations
-  EXPECT_EQ(mr.get_allocated_bytes(), 100_MiB);
-  EXPECT_EQ(current_alloc_counts.current_bytes, 100_MiB);
-  EXPECT_EQ(current_alloc_counts.current_count, 10);
-
-  // Verify peak allocations
-  EXPECT_EQ(current_alloc_counts.peak_bytes, 100_MiB);
-  EXPECT_EQ(current_alloc_counts.peak_count, 10);
-
-  // Verify total allocations
-  EXPECT_EQ(current_alloc_counts.total_bytes, 170_MiB);
-  EXPECT_EQ(current_alloc_counts.total_count, 17);
-
-  // Deallocate all remaining
-  for (int i = 0; i < allocations.size(); ++i) {
-    mr.deallocate(allocations[i], 10_MiB);
-  }
-  allocations.clear();
-
-  // Pop the most recent
-  current_alloc_counts = mr.pop_allocation_counts();
-
-  // Verify the popped
-  EXPECT_EQ(current_alloc_counts.current_bytes, -20_MiB);
-  EXPECT_EQ(current_alloc_counts.current_count, -2);
-
-  EXPECT_EQ(current_alloc_counts.peak_bytes, 80_MiB);
-  EXPECT_EQ(current_alloc_counts.peak_count, 8);
-
-  EXPECT_EQ(current_alloc_counts.total_bytes, 80_MiB);
-  EXPECT_EQ(current_alloc_counts.total_count, 8);
-
-  // Check the total one more time to ensure its the same
-  current_alloc_counts = mr.get_total_allocation_counts();
-
-  EXPECT_EQ(mr.get_allocated_bytes(), 0);
-  EXPECT_EQ(current_alloc_counts.current_bytes, 0);
-  EXPECT_EQ(current_alloc_counts.current_count, 0);
-
-  EXPECT_EQ(current_alloc_counts.peak_bytes, 100_MiB);
-  EXPECT_EQ(current_alloc_counts.peak_count, 10);
-
-  // Verify total allocations
-  EXPECT_EQ(current_alloc_counts.total_bytes, 170_MiB);
-  EXPECT_EQ(current_alloc_counts.total_count, 17);
-}
-
-TEST(TrackingTest, OOBPopAllocCounts)
-{
-  tracking_adaptor mr{rmm::mr::get_current_device_resource()};
-
-  mr.push_allocation_counts();
-  mr.pop_allocation_counts();
-
-  EXPECT_THROW(mr.pop_allocation_counts(), rmm::out_of_range);
 }
 
 }  // namespace
