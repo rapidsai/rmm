@@ -23,3 +23,7 @@ from rmm.rmm import (
     reinitialize,
     rmm_cupy_allocator,
 )
+
+from rmm._version import get_versions
+
+__version__ = get_versions()['version']

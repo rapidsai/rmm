@@ -20,6 +20,10 @@ project(
 
 include(cmake/Modules/CPM.cmake)
 include(cmake/Modules/RMM_thirdparty.cmake)
+include(cmake/Modules/Version.cmake)
+
+# Write the version header
+write_version()
 
 # build type
 
@@ -54,6 +58,7 @@ add_library(rmm INTERFACE)
 add_library(rmm::rmm ALIAS rmm)
 
 target_include_directories(rmm INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+                                         "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>"
                                          "$<INSTALL_INTERFACE:include>")
 
 if(CUDA_STATIC_RUNTIME)
@@ -98,6 +103,8 @@ set(INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/rmm)
 install(TARGETS rmm EXPORT rmm-targets)
 
 install(DIRECTORY include/rmm DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(FILES ${RMM_BINARY_DIR}/include/rmm/version_config.hpp
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/rmm)
 
 include(CMakePackageConfigHelpers)
 configure_package_config_file(cmake/rmm-config.cmake.in ${RMM_BINARY_DIR}/rmm-config.cmake
