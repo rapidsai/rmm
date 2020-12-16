@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#include "gtest/gtest.h"
-
 #include <rmm/cuda_stream.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_buffer.hpp>
 
 #include <cuda_runtime_api.h>
+
+#include <gtest/gtest.h>
 
 struct CudaStreamTest : public ::testing::Test {
 };
