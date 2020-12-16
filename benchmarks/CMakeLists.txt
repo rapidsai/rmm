@@ -89,3 +89,9 @@ ConfigureBench(REPLAY_BENCH "${REPLAY_BENCH_SRC}")
 set(UVECTOR_BENCH_SRC "${CMAKE_CURRENT_SOURCE_DIR}/device_uvector/device_uvector_bench.cu")
 
 ConfigureBench(UVECTOR_BENCH "${UVECTOR_BENCH_SRC}")
+
+# cuda_stream_pool benchmark
+
+set(CUDA_STREAM_POOL_BENCH_SRC "${CMAKE_CURRENT_SOURCE_DIR}/cuda_stream_pool/cuda_stream_pool_bench.cpp")
+
+ConfigureBench(CUDA_STREAM_POOL_BENCH "${CUDA_STREAM_POOL_BENCH_SRC}")
