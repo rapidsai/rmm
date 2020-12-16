@@ -87,13 +87,14 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
    * by the upstream resource.
    *
    * @param bytes The size, in bytes, of the allocation
+   * @param alignment The alignment, in bytes, of the allocation. Must be a power of 2.
    * @param stream Stream on which to perform the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
+  void* do_allocate(std::size_t bytes, std::size_t alignment, cuda_stream_view stream) override
   {
     lock_t lock(mtx);
-    return upstream_->allocate(bytes, stream);
+    return upstream_->allocate(bytes, alignment stream);
   }
 
   /**
@@ -103,13 +104,14 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
    * @throws Nothing.
    *
    * @param p Pointer to be deallocated
-   * @param bytes Size of the allocation
+   * @param bytes The size that was passed to allocate
+   * @param alignment The alignment that was passed to allocate
    * @param stream Stream on which to perform the deallocation
    */
-  void do_deallocate(void* p, std::size_t bytes, cuda_stream_view stream) override
+  void do_deallocate(void* p, std::size_t bytes, std::size_t alignment, cuda_stream_view stream) override
   {
     lock_t lock(mtx);
-    upstream_->deallocate(p, bytes, stream);
+    upstream_->deallocate(p, bytes, alignment, stream);
   }
 
   /**
@@ -121,7 +123,7 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equivalent
    */
-  bool do_is_equal(device_memory_resource const& other) const noexcept override
+  bool do_is_equal(memory_resource<memory_kind::device> const& other) const noexcept override
   {
     if (this == &other)
       return true;

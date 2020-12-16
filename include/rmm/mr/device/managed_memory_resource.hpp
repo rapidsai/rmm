@@ -63,8 +63,10 @@ class managed_memory_resource final : public device_memory_resource {
    * @param bytes The size, in bytes, of the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* do_allocate(std::size_t bytes, cuda_stream_view) override
+  void* do_allocate(std::size_t bytes, std::size_t alignment, cuda_stream_view) override
   {
+    if (alignment > 256)
+      throw rmm::bad_alloc("Unsupported alignment");
     // FIXME: Unlike cudaMalloc, cudaMallocManaged will throw an error for 0
     // size allocations.
     if (bytes == 0) { return nullptr; }
@@ -83,7 +85,7 @@ class managed_memory_resource final : public device_memory_resource {
    *
    * @param p Pointer to be deallocated
    */
-  void do_deallocate(void* p, std::size_t, cuda_stream_view) override
+  void do_deallocate(void* p, std::size_t, std::size_t, cuda_stream_view) override
   {
     RMM_ASSERT_CUDA_SUCCESS(cudaFree(p));
   }
@@ -100,7 +102,7 @@ class managed_memory_resource final : public device_memory_resource {
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equal
    */
-  bool do_is_equal(device_memory_resource const& other) const noexcept override
+  bool do_is_equal(memory_resource<memory_kind::device> const& other) const noexcept override
   {
     return dynamic_cast<managed_memory_resource const*>(&other) != nullptr;
   }

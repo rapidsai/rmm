@@ -195,11 +195,14 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    * @throws `std::bad_alloc` if the requested allocation could not be fulfilled
    *
    * @param bytes The size in bytes of the allocation
+   * @param alignment The alignment, in bytes, of the allocation (currently not used)
    * @param stream The stream to associate this allocation with
    * @return void* Pointer to the newly allocated memory
    */
-  virtual void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
+  virtual void* do_allocate(std::size_t bytes, std::size_t alignment, cuda_stream_view stream) override
   {
+    if (alignment > allocation_alignment)
+      throw rmm::bad_alloc("Unsupported alignment");
     RMM_LOG_TRACE("[A][stream {:p}][{}B]", fmt::ptr(stream.value()), bytes);
 
     if (bytes <= 0) return nullptr;
@@ -232,7 +235,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    *
    * @param p Pointer to be deallocated
    */
-  virtual void do_deallocate(void* p, std::size_t bytes, cuda_stream_view stream) override
+  virtual void do_deallocate(void* p, std::size_t bytes, std::size_t alignment, cuda_stream_view stream) override
   {
     lock_guard lock(mtx_);
     auto stream_event = get_event(stream);

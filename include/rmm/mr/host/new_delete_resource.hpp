@@ -87,6 +87,12 @@ class new_delete_resource final : public host_memory_resource {
   {
     detail::aligned_deallocate(p, bytes, alignment, [](void* p) { ::operator delete(p); });
   }
+
+  bool do_is_equal(const memory_resource<memory_kind::host> &other) const noexcept override
+  {
+    return dynamic_cast<const new_delete_resource*>(&other) != nullptr;
+  }
+
 };
 }  // namespace mr
 }  // namespace rmm

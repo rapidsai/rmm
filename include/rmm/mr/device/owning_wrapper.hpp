@@ -148,9 +148,9 @@ class owning_wrapper : public device_memory_resource {
    * @param stream Stream on which to perform the allocation
    * @return void* Pointer to the memory allocated by the wrapped resource
    */
-  void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
+  void* do_allocate(std::size_t bytes, std::size_t alignment, cuda_stream_view stream) override
   {
-    return wrapped().allocate(bytes, stream);
+    return wrapped().allocate(bytes, alignment, stream);
   }
 
   /**
@@ -164,9 +164,9 @@ class owning_wrapper : public device_memory_resource {
    * @param bytes Size of the allocation
    * @param stream Stream on which to deallocate the memory
    */
-  void do_deallocate(void* p, std::size_t bytes, cuda_stream_view stream) override
+  void do_deallocate(void* p, std::size_t bytes, std::size_t alignment, cuda_stream_view stream) override
   {
-    wrapped().deallocate(p, bytes, stream);
+    wrapped().deallocate(p, bytes, alignment, stream);
   }
 
   /**
@@ -180,7 +180,7 @@ class owning_wrapper : public device_memory_resource {
    * @return true If the two resources are equal
    * @return false If the two resources are not equal
    */
-  bool do_is_equal(device_memory_resource const& other) const noexcept override
+  bool do_is_equal(memory_resource<memory_kind::device> const& other) const noexcept override
   {
     if (this == &other) {
       return true;

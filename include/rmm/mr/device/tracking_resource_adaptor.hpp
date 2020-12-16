@@ -186,12 +186,13 @@ class tracking_resource_adaptor final : public device_memory_resource {
    * by the upstream resource.
    *
    * @param bytes The size, in bytes, of the allocation
+   * @param alignment The alignment, in bytes, of the allocation
    * @param stream Stream on which to perform the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
+  void* do_allocate(std::size_t bytes, std::size_t alignment, cuda_stream_view stream) override
   {
-    void* p = upstream_->allocate(bytes, stream);
+    void* p = upstream_->allocate(bytes, alignment, stream);
 
     // track it.
     {
@@ -209,12 +210,13 @@ class tracking_resource_adaptor final : public device_memory_resource {
    * @throws Nothing.
    *
    * @param p Pointer to be deallocated
-   * @param bytes Size of the allocation
+   * @param bytes The size that was passed to allcoate
+   * @param alignment The alignemnt that was passed to allocate
    * @param stream Stream on which to perform the deallocation
    */
-  void do_deallocate(void* p, std::size_t bytes, cuda_stream_view stream) override
+  void do_deallocate(void* p, std::size_t bytes, std::size_t alignment, cuda_stream_view stream) override
   {
-    upstream_->deallocate(p, bytes, stream);
+    upstream_->deallocate(p, bytes, alignment, stream);
     {
       write_lock_t lock(mtx_);
 
@@ -257,7 +259,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equal
    */
-  bool do_is_equal(device_memory_resource const& other) const noexcept override
+  bool do_is_equal(memory_resource<memory_kind::device> const& other) const noexcept override
   {
     if (this == &other)
       return true;
