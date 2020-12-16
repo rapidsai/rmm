@@ -28,7 +28,7 @@ requirements:
     - cudatoolkit {{ cuda_version }}.*
   run:
     - {{ pin_compatible('cudatoolkit', max_pin='x.x') }}
-    - spdlog>=1.8.2
+    - spdlog>=1.8.2,<2.0.0a0
 
 test:
   commands:
