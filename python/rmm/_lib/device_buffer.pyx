@@ -51,10 +51,10 @@ cdef class DeviceBuffer:
             (and possibly size of data to copy)
         stream : optional
             CUDA stream to use for construction and/or copying,
-            defaults to the CUDA default stream. A reference to the 
-            stream is stored internally to ensure it doesn't go out of 
-            scope while the DeviceBuffer is in use. Destroying the 
-            underlying stream while the DeviceBuffer is in use will 
+            defaults to the CUDA default stream. A reference to the
+            stream is stored internally to ensure it doesn't go out of
+            scope while the DeviceBuffer is in use. Destroying the
+            underlying stream while the DeviceBuffer is in use will
             result in undefined behavior.
 
         Note
