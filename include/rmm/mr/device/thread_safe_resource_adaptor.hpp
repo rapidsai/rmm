@@ -91,7 +91,7 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
    * @param stream Stream on which to perform the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* do_allocate(std::size_t bytes, std::size_t alignment, cuda_stream_view stream) override
+  void* do_alloc_async(std::size_t bytes, std::size_t alignment, cuda_stream_view stream) override
   {
     lock_t lock(mtx);
     return upstream_->allocate(bytes, alignment stream);
@@ -108,7 +108,7 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
    * @param alignment The alignment that was passed to allocate
    * @param stream Stream on which to perform the deallocation
    */
-  void do_deallocate(void* p, std::size_t bytes, std::size_t alignment, cuda_stream_view stream) override
+  void do_dealloc_async(void* p, std::size_t bytes, std::size_t alignment, cuda_stream_view stream) override
   {
     lock_t lock(mtx);
     upstream_->deallocate(p, bytes, alignment, stream);

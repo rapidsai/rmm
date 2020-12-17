@@ -290,7 +290,7 @@ class stream_aware_memory_resource : public memory_resource<kind> {
    */
   void* allocate(std::size_t bytes, std::size_t alignment, cuda_stream_view stream)
   {
-    return do_allocate(bytes, alignment, stream);
+    return do_alloc_async(bytes, alignment, stream);
   }
 
   /**
@@ -340,7 +340,7 @@ class stream_aware_memory_resource : public memory_resource<kind> {
    */
   void deallocate(void* p, std::size_t bytes, std::size_t alignment, cuda_stream_view stream)
   {
-    do_deallocate(p, bytes, alignment, stream);
+    do_dealloc_async(p, bytes, alignment, stream);
   }
 
   /**
@@ -377,7 +377,7 @@ class stream_aware_memory_resource : public memory_resource<kind> {
    * @param stream Stream on which to perform allocation
    * @return void* Pointer to the newly allocated memory
    */
-  virtual void* do_allocate(std::size_t bytes, std::size_t alignment, cuda_stream_view stream) = 0;
+  virtual void* do_alloc_async(std::size_t bytes, std::size_t alignment, cuda_stream_view stream) = 0;
 
   /**
    * @brief Implements host-syncrhonous allocation by using default stream
@@ -385,7 +385,7 @@ class stream_aware_memory_resource : public memory_resource<kind> {
   void* do_allocate(std::size_t bytes, std::size_t alignment) override {
     cuda_stream_view stream = {};
     stream.synchronize();
-    return do_allocate(bytes, alignment, stream);
+    return do_alloc_async(bytes, alignment, stream);
   }
 
   /**
@@ -402,7 +402,7 @@ class stream_aware_memory_resource : public memory_resource<kind> {
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param stream Stream on which to perform deallocation
    */
-  virtual void do_deallocate(void* p, std::size_t bytes, std::size_t alignment, cuda_stream_view stream) = 0;
+  virtual void do_dealloc_async(void* p, std::size_t bytes, std::size_t alignment, cuda_stream_view stream) = 0;
 
   /**
    * @brief Implements host-syncrhonous deallocation by using default stream
@@ -410,7 +410,7 @@ class stream_aware_memory_resource : public memory_resource<kind> {
   void do_deallocate(void *p, std::size_t bytes, std::size_t alignment) override {
     cuda_stream_view stream = {};
     stream.synchronize();
-    return do_deallocate(p, bytes, alignment, stream);
+    return do_dealloc_async(p, bytes, alignment, stream);
   }
 
   /**

@@ -148,7 +148,7 @@ class owning_wrapper : public device_memory_resource {
    * @param stream Stream on which to perform the allocation
    * @return void* Pointer to the memory allocated by the wrapped resource
    */
-  void* do_allocate(std::size_t bytes, std::size_t alignment, cuda_stream_view stream) override
+  void* do_alloc_async(std::size_t bytes, std::size_t alignment, cuda_stream_view stream) override
   {
     return wrapped().allocate(bytes, alignment, stream);
   }
@@ -164,7 +164,7 @@ class owning_wrapper : public device_memory_resource {
    * @param bytes Size of the allocation
    * @param stream Stream on which to deallocate the memory
    */
-  void do_deallocate(void* p, std::size_t bytes, std::size_t alignment, cuda_stream_view stream) override
+  void do_dealloc_async(void* p, std::size_t bytes, std::size_t alignment, cuda_stream_view stream) override
   {
     wrapped().deallocate(p, bytes, alignment, stream);
   }

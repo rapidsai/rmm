@@ -214,7 +214,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @param stream Stream on which to perform the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* do_allocate(std::size_t bytes, std::size_t alignment, cuda_stream_view stream) override
+  void* do_alloc_async(std::size_t bytes, std::size_t alignment, cuda_stream_view stream) override
   {
     auto const p = upstream_->allocate(bytes, alignment, stream);
     logger_->info("allocate,{},{},{},{}", p, bytes, alignment, fmt::ptr(stream.value()));
@@ -237,7 +237,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @param bytes Size of the allocation
    * @param stream Stream on which to perform the deallocation
    */
-  void do_deallocate(void* p, std::size_t bytes, std::size_t alignment, cuda_stream_view stream) override
+  void do_dealloc_async(void* p, std::size_t bytes, std::size_t alignment, cuda_stream_view stream) override
   {
     logger_->info("free,{},{},{},{}", p, bytes, alignment, fmt::ptr(stream.value()));
     upstream_->deallocate(p, bytes, alignment, stream);

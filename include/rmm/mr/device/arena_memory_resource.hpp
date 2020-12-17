@@ -127,7 +127,7 @@ class arena_memory_resource final : public device_memory_resource {
    * @param stream The stream to associate this allocation with.
    * @return void* Pointer to the newly allocated memory.
    */
-  void* do_allocate(std::size_t bytes, std::size_t alignment, cuda_stream_view stream) override
+  void* do_alloc_async(std::size_t bytes, std::size_t alignment, cuda_stream_view stream) override
   {
     if (alignment > 256)
       throw rmm::bad_alloc("Unsupported alignment");
@@ -145,7 +145,7 @@ class arena_memory_resource final : public device_memory_resource {
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param stream Stream on which to perform deallocation.
    */
-  void do_deallocate(void* p, std::size_t bytes, std::size_t, cuda_stream_view stream) override
+  void do_dealloc_async(void* p, std::size_t bytes, std::size_t, cuda_stream_view stream) override
   {
     if (p == nullptr || bytes <= 0) return;
 
