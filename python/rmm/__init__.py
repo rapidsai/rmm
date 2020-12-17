@@ -26,4 +26,4 @@ from rmm.rmm import (
 
 from rmm._version import get_versions
 
-__version__ = get_versions()['version']
+__version__ = get_versions()["version"]
