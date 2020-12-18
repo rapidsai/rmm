@@ -98,6 +98,9 @@ class memory_resource {
  public:
   virtual ~memory_resource() = default;
 
+  static constexpr mr::memory_kind memory_kind = kind;
+  static constexpr mr::allocation_order allocation_order = order;
+
   /**
    * @brief Allocates memory of size at least `bytes` bytes.
    *
@@ -218,6 +221,12 @@ class memory_resource {
   }
 };
 
+template <memory_kind kind, allocation_order order>
+constexpr mr::memory_kind memory_resource<kind, order>::memory_kind;
+
+template <memory_kind kind, allocation_order order>
+constexpr mr::allocation_order memory_resource<kind, order>::allocation_order;
+
 /**
  * @brief Base class for all multi-stream RMM memory resources.
  *
@@ -248,6 +257,9 @@ class stream_aware_memory_resource : public memory_resource<kind> {
  public:
   using memory_resource<kind>::allocate;
   using memory_resource<kind>::deallocate;
+
+  using memory_resource<kind>::memory_kind;
+  using memory_resource<kind>::allocation_order;
 
   /**
    * @brief Allocates memory of size at least \p bytes.
