@@ -92,7 +92,7 @@ void random_allocation_free(rmm::mr::device_memory_resource& mr,
     void* ptr = nullptr;
     if (do_alloc) {  // try to allocate
       try {
-        ptr = mr.allocate(size, stream);
+        ptr = mr.allocate_async(size, stream);
       } catch (rmm::bad_alloc const&) {
         do_alloc = false;
 #if VERBOSE
@@ -116,7 +116,7 @@ void random_allocation_free(rmm::mr::device_memory_resource& mr,
         size_t index = index_distribution(generator) % active_allocations;
         active_allocations--;
         allocation to_free = remove_at(allocations, index);
-        mr.deallocate(to_free.p, to_free.size, stream);
+        mr.deallocate_async(to_free.p, to_free.size, stream);
         allocation_size -= to_free.size;
 
 #if VERBOSE

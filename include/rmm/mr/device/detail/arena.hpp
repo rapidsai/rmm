@@ -458,7 +458,7 @@ class arena {
    * @param stream Stream on which to perform deallocation.
    * @return true if the allocation is found, false otherwise.
    */
-  bool deallocate(void* p, std::size_t bytes, cuda_stream_view stream)
+  bool deallocate_async(void* p, std::size_t bytes, cuda_stream_view stream)
   {
     lock_guard lock(mtx_);
 #ifdef RMM_POOL_TRACK_ALLOCATIONS

@@ -65,9 +65,11 @@ enum class allocation_order {
 };
 
 
+/**
+ * @brief Default allocation alignment, in bytes, for given memory kind.
+ */
 template <memory_kind kind>
-using default_alignment = std::integral_constant<std::size_t,
-  kind == memory_kind::host ? alignof(std::max_align_t) : 256>;
+static constexpr size_t default_alignment = kind == memory_kind::host ? alignof(std::max_align_t) : 256;
 
 
 /**
@@ -117,7 +119,7 @@ class memory_resource {
    * @param alignment Alignment of the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* allocate(std::size_t bytes, std::size_t alignment = default_alignment<kind>::value)
+  void* allocate(std::size_t bytes, std::size_t alignment = default_alignment<kind>)
   {
     return do_allocate(bytes, alignment);
   }
@@ -142,7 +144,7 @@ class memory_resource {
    *`p`.
    * @param stream Stream on which to perform deallocation
    */
-  void deallocate(void* p, std::size_t bytes, std::size_t alignment = default_alignment<kind>::value)
+  void deallocate(void* p, std::size_t bytes, std::size_t alignment = default_alignment<kind>)
   {
     do_deallocate(p, bytes, alignment);
   }
@@ -255,9 +257,6 @@ constexpr mr::allocation_order memory_resource<kind, order>::allocation_order;
 template <memory_kind kind>
 class stream_aware_memory_resource : public memory_resource<kind> {
  public:
-  using memory_resource<kind>::allocate;
-  using memory_resource<kind>::deallocate;
-
   using memory_resource<kind>::memory_kind;
   using memory_resource<kind>::allocation_order;
 
@@ -278,9 +277,9 @@ class stream_aware_memory_resource : public memory_resource<kind> {
    * @param stream Stream on which to perform allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* allocate(std::size_t bytes, cuda_stream_view stream)
+  void* allocate_async(std::size_t bytes, cuda_stream_view stream)
   {
-    return allocate(bytes, default_alignment<kind>::value, stream);
+    return allocate_async(bytes, default_alignment<kind>, stream);
   }
 
   /**
@@ -300,18 +299,18 @@ class stream_aware_memory_resource : public memory_resource<kind> {
    * @param stream Stream on which to perform allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* allocate(std::size_t bytes, std::size_t alignment, cuda_stream_view stream)
+  void* allocate_async(std::size_t bytes, std::size_t alignment, cuda_stream_view stream)
   {
-    return do_alloc_async(bytes, alignment, stream);
+    return do_allocate_async(bytes, alignment, stream);
   }
 
   /**
    * @brief Deallocate memory pointed to by \p p.
    *
-   * `p` must have been returned by a prior call to `allocate(bytes,stream)` on
-   * a `stream_memory_resource` that compares equal to `*this`, and the storage
-   * it points to must not yet have been deallocated, otherwise behavior is
-   * undefined.
+   * `p` must have been returned by a prior call to `allocate(bytes)` or
+   * `allocate_async(bytes, stream)` on a `stream_aware_memory_resource`
+   * that compares equal to `*this`, and the storage it points to must not yet
+   * have been deallocated, otherwise behavior is undefined.
    *
    * The memory returned must be available for immediate use on given stream.
    * If an implementation does not support streams, it should return memory which
@@ -324,18 +323,18 @@ class stream_aware_memory_resource : public memory_resource<kind> {
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param stream Stream on which to perform deallocation
    */
-  void deallocate(void* p, std::size_t bytes, cuda_stream_view stream)
+  void deallocate_async(void* p, std::size_t bytes, cuda_stream_view stream)
   {
-    deallocate(p, bytes, default_alignment<kind>::value, stream);
+    deallocate_async(p, bytes, default_alignment<kind>, stream);
   }
 
   /**
    * @brief Deallocate memory pointed to by \p p.
    *
-   * `p` must have been returned by a prior call to `allocate(bytes,stream)` on
-   * a `stream_memory_resource` that compares equal to `*this`, and the storage
-   * it points to must not yet have been deallocated, otherwise behavior is
-   * undefined.
+   * `p` must have been returned by a prior call to `allocate(bytes, alignment)` or
+   * `allocate_async(bytes, alignment, stream)` on a `stream_aware_memory_resource`
+   * that compares equal to `*this`, and the storage it points to must not yet
+   * have been deallocated, otherwise behavior is undefined.
    *
    * The memory returned must be available for immediate use on given stream.
    * If an implementation does not support streams, it should return memory which
@@ -350,9 +349,9 @@ class stream_aware_memory_resource : public memory_resource<kind> {
    * call to `allocate` that returned `p`.
    * @param stream Stream on which to perform deallocation
    */
-  void deallocate(void* p, std::size_t bytes, std::size_t alignment, cuda_stream_view stream)
+  void deallocate_async(void* p, std::size_t bytes, std::size_t alignment, cuda_stream_view stream)
   {
-    do_dealloc_async(p, bytes, alignment, stream);
+    do_deallocate_async(p, bytes, alignment, stream);
   }
 
   /**
@@ -389,7 +388,7 @@ class stream_aware_memory_resource : public memory_resource<kind> {
    * @param stream Stream on which to perform allocation
    * @return void* Pointer to the newly allocated memory
    */
-  virtual void* do_alloc_async(std::size_t bytes, std::size_t alignment, cuda_stream_view stream) = 0;
+  virtual void* do_allocate_async(std::size_t bytes, std::size_t alignment, cuda_stream_view stream) = 0;
 
   /**
    * @brief Implements host-syncrhonous allocation by using default stream
@@ -397,7 +396,7 @@ class stream_aware_memory_resource : public memory_resource<kind> {
   void* do_allocate(std::size_t bytes, std::size_t alignment) override {
     cuda_stream_view stream = {};
     stream.synchronize();
-    return do_alloc_async(bytes, alignment, stream);
+    return do_allocate_async(bytes, alignment, stream);
   }
 
   /**
@@ -414,7 +413,7 @@ class stream_aware_memory_resource : public memory_resource<kind> {
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param stream Stream on which to perform deallocation
    */
-  virtual void do_dealloc_async(void* p, std::size_t bytes, std::size_t alignment, cuda_stream_view stream) = 0;
+  virtual void do_deallocate_async(void* p, std::size_t bytes, std::size_t alignment, cuda_stream_view stream) = 0;
 
   /**
    * @brief Implements host-syncrhonous deallocation by using default stream
@@ -422,7 +421,7 @@ class stream_aware_memory_resource : public memory_resource<kind> {
   void do_deallocate(void *p, std::size_t bytes, std::size_t alignment) override {
     cuda_stream_view stream = {};
     stream.synchronize();
-    return do_dealloc_async(p, bytes, alignment, stream);
+    return do_deallocate_async(p, bytes, alignment, stream);
   }
 
   /**

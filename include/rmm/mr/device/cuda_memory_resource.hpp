@@ -63,7 +63,7 @@ class cuda_memory_resource final : public device_memory_resource {
    * @param bytes The size, in bytes, of the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* do_alloc_async(std::size_t bytes, std::size_t alignment, cuda_stream_view) override
+  void* do_allocate_async(std::size_t bytes, std::size_t alignment, cuda_stream_view) override
   {
     if (alignment > 256)
       throw rmm::bad_alloc("Unsupported alignment");
@@ -81,7 +81,7 @@ class cuda_memory_resource final : public device_memory_resource {
    *
    * @param p Pointer to be deallocated
    */
-  void do_dealloc_async(void* p, std::size_t, std::size_t, cuda_stream_view) override
+  void do_deallocate_async(void* p, std::size_t, std::size_t, cuda_stream_view) override
   {
     RMM_ASSERT_CUDA_SUCCESS(cudaFree(p));
   }

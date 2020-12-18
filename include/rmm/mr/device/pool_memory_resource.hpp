@@ -275,7 +275,7 @@ class pool_memory_resource final
     if (size == 0) return {};
 
     try {
-      void* p = upstream_mr_->allocate(size, stream);
+      void* p = upstream_mr_->allocate_async(size, stream);
       return thrust::optional<block_type>{
         *upstream_blocks_.emplace(reinterpret_cast<char*>(p), size, true).first};
     } catch (std::exception const& e) {

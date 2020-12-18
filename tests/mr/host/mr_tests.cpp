@@ -26,6 +26,22 @@
 #include <random>
 
 namespace {
+
+template <rmm::mr::memory_kind kind, rmm::mr::allocation_order order>
+void test_resource_traits(const rmm::mr::memory_resource<kind, order> *) {
+  static_assert(rmm::mr::memory_resource<kind, order>::memory_kind == kind, "Incorrect constant");
+  static_assert(rmm::mr::memory_resource<kind, order>::allocation_order == order, "Incorrect constant");
+}
+
+TEST(MRTest, Constants)
+{
+  rmm::mr::host_memory_resource *mr1 = nullptr;
+  rmm::mr::memory_resource<rmm::mr::memory_kind::pinned, rmm::mr::allocation_order::stream> *mr2 = nullptr;
+  test_resource_traits(mr1);
+  test_resource_traits(mr2);
+}
+
+
 inline bool is_aligned(void* p, std::size_t alignment = alignof(std::max_align_t))
 {
   return (0 == reinterpret_cast<uintptr_t>(p) % alignment);
