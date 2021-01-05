@@ -213,6 +213,14 @@ RAII semantics (constructor creates the CUDA stream, destructor destroys it). An
 can never represent the CUDA default stream or per-thread default stream; it only ever represents
 a single non-default stream. `rmm::cuda_stream` cannot be copied, but can be moved.
 
+## `cuda_stream_pool`
+
+`rmm::cuda_stream_pool` provides fast access to a pool of CUDA streams. This class can be used to 
+create a set of `cuda_stream` objects whose lifetime is equal to the `cuda_stream_pool`. Using the 
+stream pool can be faster than creating the streams on the fly. The size of the pool is configurable.
+Depending on this size, multiple calls to `cuda_stream_pool::get_stream()` may return instances of 
+`rmm::cuda_stream_view` that represent identical CUDA streams.
+
 ### Thread Safety
 
 All current device memory resources are thread safe unless documented otherwise. More specifically,
