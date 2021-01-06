@@ -64,7 +64,7 @@ else:
 
 cwd = os.getcwd()
 preprocess_files = ["gpu.pxd"]
-supported_cuda_versions = {"10.1", "10.2", "11.0"}
+supported_cuda_versions = {"10.1", "10.2", "11.0", "11.1"}
 
 for file_p in preprocess_files:
     pxi_file = ".".join(file_p.split(".")[:-1])
