@@ -103,6 +103,16 @@ ConfigureTest(POOL_MR_TEST "${POOL_MR_TEST_SRC}")
 set(THRUST_ALLOCATOR_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/thrust_allocator_tests.cu")
 ConfigureTest(THRUST_ALLOCATOR_TEST "${THRUST_ALLOCATOR_TEST_SRC}")
 
+# polymorphic allocator tests
+
+ConfigureTest(POLYMORPHIC_ALLOCATOR_TEST
+              "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/polymorphic_allocator_tests.cpp")
+
+# stream allocator adaptor tests
+
+ConfigureTest(STREAM_ADAPTOR_TEST
+              "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/stream_allocator_adaptor_tests.cpp")
+
 # tracking adaptor tests
 
 set(TRACKING_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/tracking_mr_tests.cpp")
@@ -121,8 +131,8 @@ ConfigureTest(HOST_MR_TEST "${HOST_MR_TEST_SRC}")
 
 # cuda stream tests
 
-set(CUDA_STREAM_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/cuda_stream_tests.cpp")
-
+set(CUDA_STREAM_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/cuda_stream_tests.cpp"
+                         "${CMAKE_CURRENT_SOURCE_DIR}/cuda_stream_pool_tests.cpp")
 ConfigureTest(CUDA_STREAM_TEST "${CUDA_STREAM_TEST_SRC}")
 
 # device buffer tests

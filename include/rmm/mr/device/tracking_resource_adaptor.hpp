@@ -142,10 +142,10 @@ class tracking_resource_adaptor final : public device_memory_resource {
   void log_outstanding_allocations() const
   {
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_DEBUG
-    read_lock_t lock(mtx);
-    if (not allocations.empty()) {
+    read_lock_t lock(mtx_);
+    if (not allocations_.empty()) {
       std::ostringstream oss;
-      for (auto const& al : allocations) {
+      for (auto const& al : allocations_) {
         oss << al.first << ": " << al.second.allocation_size << " B";
         if (al.second.strace != nullptr) {
           oss << " : callstack:" << std::endl << *al.second.strace;
