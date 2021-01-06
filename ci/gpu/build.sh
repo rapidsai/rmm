@@ -42,8 +42,8 @@ conda activate rapids
 gpuci_conda_retry install rapids-build-env=${MINOR_VERSION}.*
 
 # https://docs.rapids.ai/maintainers/depmgmt/ 
-conda remove --force rapids-build-env
-gpuci_conda_retry install -c conda-forge "spdlog=1.8.2"
+conda remove --force spdlog
+gpuci_conda_retry install "spdlog=1.8.2" -c conda-forge
 
 gpuci_logger "Check versions"
 python --version
