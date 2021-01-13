@@ -95,13 +95,13 @@ static constexpr size_t default_alignment = kind == memory_kind::host ? alignof(
  * base class' `allocate` function may log every allocation, no matter what
  * derived class implementation is used.
  */
-template <memory_kind kind, allocation_order order = allocation_order::host>
+template <memory_kind _kind, allocation_order _order = allocation_order::host>
 class memory_resource {
  public:
   virtual ~memory_resource() = default;
 
-  static constexpr mr::memory_kind memory_kind = kind;
-  static constexpr mr::allocation_order allocation_order = order;
+  static constexpr mr::memory_kind kind = _kind;
+  static constexpr mr::allocation_order order = _order;
 
   /**
    * @brief Allocates memory of size at least `bytes` bytes.
@@ -224,10 +224,10 @@ class memory_resource {
 };
 
 template <memory_kind kind, allocation_order order>
-constexpr mr::memory_kind memory_resource<kind, order>::memory_kind;
+constexpr mr::memory_kind memory_resource<kind, order>::kind;
 
 template <memory_kind kind, allocation_order order>
-constexpr mr::allocation_order memory_resource<kind, order>::allocation_order;
+constexpr mr::allocation_order memory_resource<kind, order>::order;
 
 /**
  * @brief Base class for all multi-stream RMM memory resources.
@@ -254,11 +254,11 @@ constexpr mr::allocation_order memory_resource<kind, order>::allocation_order;
  * base class' `allocate` function may log every allocation, no matter what
  * derived class implementation is used.
  */
-template <memory_kind kind>
-class stream_aware_memory_resource : public memory_resource<kind> {
+template <memory_kind _kind>
+class stream_aware_memory_resource : public memory_resource<_kind> {
  public:
-  using memory_resource<kind>::memory_kind;
-  using memory_resource<kind>::allocation_order;
+  using memory_resource<_kind>::kind;
+  using memory_resource<_kind>::order;
 
   /**
    * @brief Allocates memory of size at least \p bytes.
