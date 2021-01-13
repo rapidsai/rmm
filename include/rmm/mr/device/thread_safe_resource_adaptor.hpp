@@ -17,6 +17,7 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/nvtx/ranges.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <mutex>
@@ -92,6 +93,7 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
+    RMM_FUNC_RANGE();
     lock_t lock(mtx);
     return upstream_->allocate(bytes, stream);
   }
@@ -108,6 +110,7 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
    */
   void do_deallocate(void* p, std::size_t bytes, cuda_stream_view stream) override
   {
+    RMM_FUNC_RANGE();
     lock_t lock(mtx);
     upstream_->deallocate(p, bytes, stream);
   }

@@ -15,10 +15,10 @@
  */
 #pragma once
 
-#include <rmm/mr/device/device_memory_resource.hpp>
-
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/nvtx/ranges.hpp>
+#include <rmm/mr/device/device_memory_resource.hpp>
 
 // If using GCC, temporary workaround for older libcudacxx defining _LIBCPP_VERSION
 // undefine it before including spdlog, due to fmtlib checking if it is defined
@@ -78,6 +78,7 @@ class logging_resource_adaptor final : public device_memory_resource {
         "RMM",
         std::make_shared<spdlog::sinks::basic_file_sink_mt>(filename, true /*truncate file*/))}
   {
+    RMM_FUNC_RANGE()
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
 
     init_logger(auto_flush);
@@ -205,6 +206,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
+    RMM_FUNC_RANGE();
     auto const p = upstream_->allocate(bytes, stream);
     logger_->info("allocate,{},{},{}", p, bytes, fmt::ptr(stream.value()));
     return p;
@@ -228,6 +230,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    */
   void do_deallocate(void* p, std::size_t bytes, cuda_stream_view stream) override
   {
+    RMM_FUNC_RANGE();
     logger_->info("free,{},{},{}", p, bytes, fmt::ptr(stream.value()));
     upstream_->deallocate(p, bytes, stream);
   }

@@ -17,6 +17,7 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/aligned.hpp>
+#include <rmm/detail/nvtx/ranges.hpp>
 
 #include <cstddef>
 #include <utility>

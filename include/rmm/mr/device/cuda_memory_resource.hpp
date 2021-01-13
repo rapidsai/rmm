@@ -15,10 +15,11 @@
  */
 #pragma once
 
-#include "device_memory_resource.hpp"
+#include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/nvtx/ranges.hpp>
 
 namespace rmm {
 namespace mr {
@@ -65,6 +66,7 @@ class cuda_memory_resource final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cuda_stream_view) override
   {
+    RMM_FUNC_RANGE();
     void* p{nullptr};
     RMM_CUDA_TRY(cudaMalloc(&p, bytes), rmm::bad_alloc);
     return p;
@@ -81,6 +83,7 @@ class cuda_memory_resource final : public device_memory_resource {
    */
   void do_deallocate(void* p, std::size_t, cuda_stream_view) override
   {
+    RMM_FUNC_RANGE();
     RMM_ASSERT_CUDA_SUCCESS(cudaFree(p));
   }
 

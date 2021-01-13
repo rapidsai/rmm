@@ -17,6 +17,7 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/nvtx/ranges.hpp>
 #include <rmm/mr/device/detail/fixed_size_free_list.hpp>
 #include <rmm/mr/device/detail/stream_ordered_memory_resource.hpp>
 
@@ -33,7 +34,6 @@
 #include <vector>
 
 namespace rmm {
-
 namespace mr {
 
 /**
@@ -76,6 +76,7 @@ class fixed_size_memory_resource
       block_size_{rmm::detail::align_up(block_size, allocation_alignment)},
       upstream_chunk_size_{block_size * blocks_to_preallocate}
   {
+    RMM_FUNC_RANGE();
     // allocate initial blocks and insert into free list
     this->insert_blocks(std::move(blocks_from_upstream(cudaStreamLegacy)), cudaStreamLegacy);
   }

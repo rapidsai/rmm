@@ -15,14 +15,15 @@
  */
 #pragma once
 
-#include <limits>
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/nvtx/ranges.hpp>
 #include <rmm/logger.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <cuda_runtime_api.h>
 
 #include <functional>
+#include <limits>
 #include <map>
 #include <mutex>
 #include <set>
@@ -203,6 +204,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    */
   virtual void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
+    RMM_FUNC_RANGE();
     RMM_LOG_TRACE("[A][stream {:p}][{}B]", fmt::ptr(stream.value()), bytes);
 
     if (bytes <= 0) return nullptr;
@@ -237,6 +239,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    */
   virtual void do_deallocate(void* p, std::size_t bytes, cuda_stream_view stream) override
   {
+    RMM_FUNC_RANGE();
     lock_guard lock(mtx_);
     auto stream_event = get_event(stream);
     RMM_LOG_TRACE("[D][stream {:p}][{}B][{:p}]", fmt::ptr(stream_event.stream), bytes, p);
@@ -245,8 +248,8 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     auto const b = this->underlying().free_block(p, bytes);
 
     // TODO: cudaEventRecord has significant overhead on deallocations. For the non-PTDS case
-    // we may be able to delay recording the event in some situations. But using events rather than
-    // streams allows stealing from deleted streams.
+    // we may be able to delay recording the event in some situations. But using events rather
+    // than streams allows stealing from deleted streams.
     RMM_ASSERT_CUDA_SUCCESS(cudaEventRecord(stream_event.event, stream.value()));
 
     stream_free_blocks_[stream_event].insert(b);
@@ -289,8 +292,8 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     // We use cudaStreamLegacy as the event map key for the default stream for consistency between
     // PTDS and non-PTDS mode. In PTDS mode, the cudaStreamLegacy map key will only exist if the
     // user explicitly passes it, so it is used as the default location for the free list
-    // at construction. For consistency, the same key is used for null stream free lists in non-PTDS
-    // mode.
+    // at construction. For consistency, the same key is used for null stream free lists in
+    // non-PTDS mode.
     auto const stream_to_store = stream.is_default() ? cudaStreamLegacy : stream.value();
 
     auto const iter = stream_events_.find(stream_to_store);
@@ -345,9 +348,9 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    * stream/event than `stream_event`.
    *
    * If an appropriate block is found in a free list F associated with event E,
-   * `stream_event.stream` will be made to wait on event E. All other blocks in free list F will be
-   * moved to the free list associated with `stream_event.stream`. This results in coalescing with
-   * other blocks in that free list, hopefully reducing fragmentation.
+   * `stream_event.stream` will be made to wait on event E. All other blocks in free list F will
+   * be moved to the free list associated with `stream_event.stream`. This results in coalescing
+   * with other blocks in that free list, hopefully reducing fragmentation.
    *
    * @param size The requested size of the allocation.
    * @param stream_event The stream and associated event on which the allocation is being
@@ -464,8 +467,8 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
   // bidirectional mapping between non-default streams and events
   std::unordered_map<cudaStream_t, stream_event_pair> stream_events_;
 
-  // shared pointers to events keeps the events alive as long as either the thread that created them
-  // or the MR that is using them exists.
+  // shared pointers to events keeps the events alive as long as either the thread that created
+  // them or the MR that is using them exists.
   std::set<std::shared_ptr<event_wrapper>> default_stream_events;
 
   std::mutex mtx_;  // mutex for thread-safe access
