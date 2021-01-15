@@ -42,8 +42,10 @@ conda activate rapids
 gpuci_conda_retry install rapids-build-env=${MINOR_VERSION}.*
 
 # https://docs.rapids.ai/maintainers/depmgmt/ 
-# conda remove -f rapids-build-env
+# gpuci_conda_retry remove --force rapids-build-env
 # gpuci_conda_retry install "your-pkg=1.0.0"
+gpuci_conda_retry remove --force rapids-build-env
+gpuci_conda_retry install "libgcc-ng=9.3.0" "libstdcxx-ng=9.3.0" "libgfortran-ng=9.3.0"
 
 gpuci_logger "Check versions"
 python --version
