@@ -29,7 +29,7 @@ static void BM_StreamPoolGetStream(benchmark::State& state)
 
   for (auto _ : state) {
     auto s = stream_pool.get_stream();
-    auto e = cudaStreamQuery(s.value());
+    cudaStreamQuery(s.value());
   }
 
   state.SetItemsProcessed(state.iterations());
@@ -40,7 +40,7 @@ static void BM_CudaStreamClass(benchmark::State& state)
 {
   for (auto _ : state) {
     auto s = rmm::cuda_stream{};
-    auto e = cudaStreamQuery(s.view().value());
+    cudaStreamQuery(s.view().value());
   }
 
   state.SetItemsProcessed(state.iterations());

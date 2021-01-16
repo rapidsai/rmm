@@ -73,13 +73,12 @@ void random_allocation_free(rmm::mr::device_memory_resource& mr,
   std::uniform_int_distribution<int> index_distribution(0, num_allocations - 1);
 
   int active_allocations{0};
-  int allocation_count{0};
+  std::size_t allocation_count{0};
 
   allocation_vector allocations{};
   size_t allocation_size{0};
-  size_t total_allocated{0};
 
-  for (int i = 0; i < num_allocations * 2; ++i) {
+  for (std::size_t i = 0; i < num_allocations * 2; ++i) {
     bool do_alloc = true;
     size_t size   = static_cast<size_t>(size_distribution(generator));
 
