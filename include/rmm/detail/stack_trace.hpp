@@ -64,7 +64,7 @@ class stack_trace {
       os << "But no stack trace could be found!" << std::endl;
     } else {
       ///@todo: support for demangling of C++ symbol names
-      for (int i = 0; i < st.stack_ptrs.size(); ++i) {
+      for (std::size_t i = 0; i < st.stack_ptrs.size(); ++i) {
         os << "#" << i << " in " << strings.get()[i] << std::endl;
       }
     }

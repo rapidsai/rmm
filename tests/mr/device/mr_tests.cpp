@@ -99,7 +99,7 @@ TEST_P(mr_test, GetMemInfo)
     std::pair<std::size_t, std::size_t> mem_info;
     EXPECT_NO_THROW(mem_info = this->mr->get_mem_info(rmm::cuda_stream_view{}));
     std::size_t allocation_size = 16 * 256;
-    void* ptr;
+    void* ptr{nullptr};
     EXPECT_NO_THROW(ptr = this->mr->allocate(allocation_size));
     EXPECT_NO_THROW(mem_info = this->mr->get_mem_info(rmm::cuda_stream_view{}));
     EXPECT_TRUE(mem_info.first >= allocation_size);

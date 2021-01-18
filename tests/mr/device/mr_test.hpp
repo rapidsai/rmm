@@ -146,11 +146,10 @@ inline void test_random_allocations(rmm::mr::device_memory_resource* mr,
       EXPECT_TRUE(is_pointer_aligned(a.p));
     });
 
-  std::for_each(
-    allocations.begin(), allocations.end(), [generator, distribution, stream, mr](allocation& a) {
-      EXPECT_NO_THROW(mr->deallocate(a.p, a.size, stream));
-      if (not stream.is_default()) stream.synchronize();
-    });
+  std::for_each(allocations.begin(), allocations.end(), [stream, mr](allocation& a) {
+    EXPECT_NO_THROW(mr->deallocate(a.p, a.size, stream));
+    if (not stream.is_default()) stream.synchronize();
+  });
 }
 
 inline void test_mixed_random_allocation_free(rmm::mr::device_memory_resource* mr,
@@ -166,12 +165,12 @@ inline void test_mixed_random_allocation_free(rmm::mr::device_memory_resource* m
   std::uniform_int_distribution<int> op_distribution(0, 99);
   std::uniform_int_distribution<int> index_distribution(0, num_allocations - 1);
 
-  int active_allocations{0};
-  int allocation_count{0};
+  std::size_t active_allocations{0};
+  std::size_t allocation_count{0};
 
   std::vector<allocation> allocations;
 
-  for (int i = 0; i < num_allocations * 2; ++i) {
+  for (std::size_t i = 0; i < num_allocations * 2; ++i) {
     bool do_alloc = true;
     if (active_allocations > 0) {
       int chance = op_distribution(generator);
