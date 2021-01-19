@@ -102,7 +102,6 @@ ConfigureTest(POOL_MR_TEST "${POOL_MR_TEST_SRC}")
 set(CUDA_ASYNC_MR_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/cuda_async_mr_tests.cpp")
 ConfigureTest(CUDA_ASYNC_MR_TEST "${CUDA_ASYNC_MR_TEST_SRC}")
 
-
 # thrust allocator tests
 
 set(THRUST_ALLOCATOR_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/thrust_allocator_tests.cu")
