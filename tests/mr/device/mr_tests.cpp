@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-#include <rmm/mr/device/per_device_resource.hpp>
 #include "mr_test.hpp"
+
+#include <rmm/mr/device/per_device_resource.hpp>
 
 #include <gtest/gtest.h>
 
