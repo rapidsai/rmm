@@ -26,6 +26,7 @@ namespace {
 INSTANTIATE_TEST_CASE_P(ResourceTests,
                         mr_test,
                         ::testing::Values(mr_factory{"CUDA", &make_cuda},
+                                          mr_factory{"CUDA_Async", &make_cuda_async},
                                           mr_factory{"Managed", &make_managed},
                                           mr_factory{"Pool", &make_pool},
                                           mr_factory{"Arena", &make_arena},

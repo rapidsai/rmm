@@ -22,6 +22,7 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/mr/device/arena_memory_resource.hpp>
 #include <rmm/mr/device/binning_memory_resource.hpp>
+#include <rmm/mr/device/cuda_async_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/fixed_size_memory_resource.hpp>
@@ -223,6 +224,8 @@ struct mr_test : public ::testing::TestWithParam<mr_factory> {
 
 /// MR factory functions
 inline auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>(); }
+
+inline auto make_cuda_async() { return std::make_shared<rmm::mr::cuda_async_memory_resource>(); }
 
 inline auto make_managed() { return std::make_shared<rmm::mr::managed_memory_resource>(); }
 
