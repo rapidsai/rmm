@@ -130,7 +130,7 @@ class out_of_range : public std::out_of_range {
 #define GET_RMM_FAIL_MACRO(_1, _2, NAME, ...) NAME
 #define RMM_FAIL_2(_what, _exception_type) \
   throw _exception_type{"RMM failure at:" __FILE__ ":" RMM_STRINGIFY(__LINE__) ": " _what};
-#define RMM_FAIL_1(_what) RMM_FAIL_2(_call, rmm::logic_error)
+#define RMM_FAIL_1(_what) RMM_FAIL_2(_what, rmm::logic_error)
 
 /**
  * @brief Error checking macro for CUDA runtime API functions.
