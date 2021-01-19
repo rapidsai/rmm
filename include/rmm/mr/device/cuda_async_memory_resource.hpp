@@ -23,13 +23,29 @@
 
 namespace rmm {
 namespace mr {
+
+#if CUDART_VERSION >= 11020  // 11.2 introduced cudaMallocAsync
+
 /**
- * @brief `device_memory_resource` derived class that uses cudaMalloc/Free for
+ * @brief `device_memory_resource` derived class that uses `cudaMallocAsync`/`cudaFreeAsync` for
  * allocation/deallocation.
  */
 class cuda_async_memory_resource final : public device_memory_resource {
  public:
-  cuda_async_memory_resource() = default;
+  /**
+   * @brief Default constructor
+   *
+   * @throws rmm::runtime_error if the CUDA version does not support `cudaMallocAsync`
+   */
+  cuda_async_memory_resource()
+  {
+    // Check if cudaMallocAsync Memory pool supported
+    int device{0};
+    RMM_CUDA_TRY(cudaGetDevice(&device));
+    int v;
+    RMM_CUDA_TRY(cudaDeviceGetAttribute(&v, cudaDevAttrMemoryPoolsSupported, device));
+    RMM_EXPECTS(v == 1, "cudaMallocAsync Not supported with this CUDA driver version");
+  }
 
   ~cuda_async_memory_resource()
   {
@@ -67,8 +83,6 @@ class cuda_async_memory_resource final : public device_memory_resource {
    *
    * The returned pointer has at least 256B alignment.
    *
-   * @note Stream argument is ignored
-   *
    * @throws `rmm::bad_alloc` if the requested allocation could not be fulfilled
    *
    * @param bytes The size, in bytes, of the allocation
@@ -84,8 +98,6 @@ class cuda_async_memory_resource final : public device_memory_resource {
   /**
    * @brief Deallocate memory pointed to by \p p.
    *
-   * @note Stream argument is ignored.
-   *
    * @throws Nothing.
    *
    * @param p Pointer to be deallocated
@@ -97,9 +109,6 @@ class cuda_async_memory_resource final : public device_memory_resource {
 
   /**
    * @brief Compare this resource to another.
-   *
-   * Two cuda_memory_resources always compare equal, because they can each
-   * deallocate memory allocated by the other.
    *
    * @throws Nothing.
    *
@@ -127,5 +136,14 @@ class cuda_async_memory_resource final : public device_memory_resource {
     return std::make_pair(free_size, total_size);
   }
 };
+
+#else  // CUDART_VERSION < 11020 (11.2)
+
+#include <rmm/mr/device/cuda_memory_resource.hpp>
+
+using cuda_async_memory_resource = rmm::mr::cuda_memory_resource;
+
+#endif
+
 }  // namespace mr
 }  // namespace rmm
