@@ -42,9 +42,10 @@ class cuda_async_memory_resource final : public device_memory_resource {
     // Check if cudaMallocAsync Memory pool supported
     int device{0};
     RMM_CUDA_TRY(cudaGetDevice(&device));
-    int v;
-    RMM_CUDA_TRY(cudaDeviceGetAttribute(&v, cudaDevAttrMemoryPoolsSupported, device));
-    RMM_EXPECTS(v == 1, "cudaMallocAsync Not supported with this CUDA driver version");
+    int v{0};
+    auto e = cudaDeviceGetAttribute(&v, cudaDevAttrMemoryPoolsSupported, device);
+    RMM_EXPECTS(e == cudaSuccess && v == 1,
+                "cudaMallocAsync not supported with this CUDA driver/runtime version");
   }
 
   ~cuda_async_memory_resource()
