@@ -73,7 +73,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
    *
    * @return true
    */
-  bool supports_get_mem_info() const noexcept override { return true; }
+  bool supports_get_mem_info() const noexcept override { return false; }
 
  private:
   /**
@@ -138,10 +138,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
    */
   std::pair<size_t, size_t> do_get_mem_info(rmm::cuda_stream_view) const override
   {
-    std::size_t free_size;
-    std::size_t total_size;
-    RMM_CUDA_TRY(cudaMemGetInfo(&free_size, &total_size));
-    return std::make_pair(free_size, total_size);
+    return std::make_pair(0, 0);
   }
 };
 
