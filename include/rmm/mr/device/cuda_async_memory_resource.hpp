@@ -22,7 +22,7 @@
 #include <cuda_runtime_api.h>
 
 #if CUDART_VERSION >= 11020  // 11.2 introduced cudaMallocAsync
-#define CUDA_MALLOC_ASYNC_SUPPORT
+#define RMM_CUDA_MALLOC_ASYNC_SUPPORT
 #endif
 
 namespace rmm {
@@ -41,7 +41,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
    */
   cuda_async_memory_resource()
   {
-#ifdef CUDA_MALLOC_ASYNC_SUPPORT
+#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
     // Check if cudaMallocAsync Memory pool supported
     int device{0};
     RMM_CUDA_TRY(cudaGetDevice(&device));
@@ -56,7 +56,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
 
   ~cuda_async_memory_resource()
   {
-#ifdef CUDA_MALLOC_ASYNC_SUPPORT
+#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
     cudaDeviceSynchronize();
     int device{0};
     RMM_ASSERT_CUDA_SUCCESS(cudaGetDevice(&device));
@@ -100,8 +100,11 @@ class cuda_async_memory_resource final : public device_memory_resource {
   void* do_allocate(std::size_t bytes, rmm::cuda_stream_view stream) override
   {
     void* p{nullptr};
-#ifdef CUDA_MALLOC_ASYNC_SUPPORT
+#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
     if (bytes > 0) { RMM_CUDA_TRY(cudaMallocAsync(&p, bytes, stream.value()), rmm::bad_alloc); }
+#else
+    (void)bytes;
+    (void)stream;
 #endif
     return p;
   }
@@ -115,8 +118,11 @@ class cuda_async_memory_resource final : public device_memory_resource {
    */
   void do_deallocate(void* p, std::size_t, rmm::cuda_stream_view stream) override
   {
-#ifdef CUDA_MALLOC_ASYNC_SUPPORT
+#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
     if (p != nullptr) { RMM_ASSERT_CUDA_SUCCESS(cudaFreeAsync(p, stream.value())); }
+#else
+    (void)p;
+    (void)stream;
 #endif
   }
 

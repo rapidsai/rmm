@@ -28,7 +28,7 @@ using cuda_async_mr = rmm::mr::cuda_async_memory_resource;
 TEST(PoolTest, ThrowIfNotSupported)
 {
   auto construct_mr = []() { cuda_async_mr mr; };
-#ifndef CUDA_MALLOC_ASYNC_SUPPORT
+#ifndef RMM_CUDA_MALLOC_ASYNC_SUPPORT
   EXPECT_THROW(construct_mr(), rmm::logic_error);
 #else
   EXPECT_NO_THROW(construct_mr());
