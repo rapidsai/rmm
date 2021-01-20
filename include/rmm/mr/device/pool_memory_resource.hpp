@@ -304,7 +304,10 @@ class pool_memory_resource final
   split_block allocate_from_block(block_type const& b, size_t size)
   {
     block_type const alloc{b.pointer(), size, b.is_head()};
+
+#ifdef RMM_POOL_TRACK_ALLOCATIONS
     allocated_blocks_.insert(alloc);
+#endif
 
     auto rest =
       (b.size() > size) ? block_type{b.pointer() + size, b.size() - size, false} : block_type{};
@@ -327,26 +330,27 @@ class pool_memory_resource final
   {
     if (p == nullptr) return block_type{};
 
+#ifdef RMM_POOL_TRACK_ALLOCATIONS
     auto const i = allocated_blocks_.find(static_cast<char*>(p));
     RMM_LOGGING_ASSERT(i != allocated_blocks_.end());
 
     auto block = *i;
     RMM_LOGGING_ASSERT(block.size() == rmm::detail::align_up(size, allocation_alignment));
     allocated_blocks_.erase(i);
+#endif
 
     // If this is an upstream block, release it to upstream
-    if (block.is_head()) {
-      auto const i = upstream_blocks_.find(static_cast<char*>(p));
-      if (i != upstream_blocks_.end() && (i->size() == block.size())) {
-        RMM_LOG_DEBUG(
-          "[D][Stream {}][Upstream {}B][{:p}]", reinterpret_cast<void*>(stream), size, p);
-        upstream_blocks_.erase(i);
-        upstream_mr_->deallocate(p, size, stream);
-        return block_type{};
-      }
+    // if (block.is_head()) {
+    auto const i = upstream_blocks_.find(static_cast<char*>(p));
+    if (i != upstream_blocks_.end() && (i->size() == size)) {
+      RMM_LOG_DEBUG("[D][Stream {}][Upstream {}B][{:p}]", reinterpret_cast<void*>(stream), size, p);
+      upstream_blocks_.erase(i);
+      upstream_mr_->deallocate(p, size, stream);
+      return block_type{};
     }
+    //}
 
-    return block;
+    return block_type{static_cast<char*>(p), size, false};
   }
 
   /**
@@ -369,7 +373,9 @@ class pool_memory_resource final
     for (auto b : upstream_blocks_)
       upstream_mr_->deallocate(b.pointer(), b.size());
     upstream_blocks_.clear();
+#ifdef RMM_POOL_TRACK_ALLOCATIONS
     allocated_blocks_.clear();
+#endif
 
     current_pool_size_ = 0;
   }
@@ -397,9 +403,11 @@ class pool_memory_resource final
     }
     std::cout << "total upstream: " << upstream_total << " B\n";
 
+#ifdef RMM_POOL_TRACK_ALLOCATIONS
     std::cout << "allocated_blocks: " << allocated_blocks_.size() << "\n";
     for (auto b : allocated_blocks_)
       b.print();
+#endif
 
     this->print_free_blocks();
   }
@@ -443,7 +451,9 @@ class pool_memory_resource final
   std::size_t current_pool_size_{};
   thrust::optional<std::size_t> maximum_pool_size_{};
 
+#ifdef RMM_POOL_TRACK_ALLOCATIONS
   std::set<block_type, rmm::mr::detail::compare_blocks<block_type>> allocated_blocks_;
+#endif
 
   // blocks allocated from upstream: so they can be easily freed
   std::set<block_type, rmm::mr::detail::compare_blocks<block_type>> upstream_blocks_;
