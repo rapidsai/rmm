@@ -45,10 +45,10 @@ PER_THREAD_DEFAULT_STREAM=OFF
 RAN_CMAKE=0
 
 # Set defaults for vars that may not have been defined externally
-#  FIXME: if INSTALL_PREFIX is not set, check PREFIX, then check
-#         CONDA_PREFIX, but there is no fallback from there!
-INSTALL_PREFIX=${INSTALL_PREFIX:=${PREFIX:=${CONDA_PREFIX}}}
-PARALLEL_LEVEL=${PARALLEL_LEVEL:=""}
+# If INSTALL_PREFIX is not set, check PREFIX, then check
+# CONDA_PREFIX, then fall back to install inside of $LIBRMM_BUILD_DIR
+INSTALL_PREFIX=${INSTALL_PREFIX:=${PREFIX:=${CONDA_PREFIX:=$LIBRMM_BUILD_DIR/install}}}
+export PARALLEL_LEVEL=${PARALLEL_LEVEL:-4}
 
 function hasArg {
     (( NUMARGS != 0 )) && (echo " ${ARGS} " | grep -q " $1 ")
@@ -131,14 +131,15 @@ fi
 # Build and install the rmm Python package
 if (( NUMARGS == 0 )) || hasArg rmm; then
     cd "${REPODIR}/python"
+    export INSTALL_PREFIX
     if [[ ${INSTALL_TARGET} != "" ]]; then
         echo "building rmm..."
-        python setup.py build_ext --inplace --library-dir="${LIBRMM_BUILD_DIR}"
+        python setup.py build_ext --inplace
         echo "installing rmm..."
         python setup.py install --single-version-externally-managed --record=record.txt
     else
         echo "building rmm..."
-        python setup.py build_ext --inplace --library-dir="${LIBRMM_BUILD_DIR}"
+        python setup.py build_ext --inplace
     fi
 
 fi

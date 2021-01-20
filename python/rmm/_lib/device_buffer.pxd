@@ -15,16 +15,18 @@
 from libcpp.memory cimport unique_ptr
 from libc.stdint cimport uintptr_t
 
-from rmm._lib.lib cimport cudaStream_t, cudaMemcpyAsync, cudaMemcpyDeviceToHost
+from rmm._lib.cuda_stream_view cimport cuda_stream_view
+from rmm._cuda.stream cimport Stream
+
 
 cdef extern from "rmm/device_buffer.hpp" namespace "rmm" nogil:
     cdef cppclass device_buffer:
         device_buffer()
         device_buffer(size_t size) except +
-        device_buffer(size_t size, cudaStream_t stream) except +
+        device_buffer(size_t size, cuda_stream_view stream) except +
         device_buffer(const void* source_data, size_t size) except +
         device_buffer(const void* source_data,
-                      size_t size, cudaStream_t stream) except +
+                      size_t size, cuda_stream_view stream) except +
         device_buffer(const device_buffer& other) except +
         void resize(size_t new_size) except +
         void shrink_to_fit() except +
@@ -41,11 +43,11 @@ cdef class DeviceBuffer:
 
     @staticmethod
     cdef DeviceBuffer c_to_device(const unsigned char[::1] b,
-                                  uintptr_t stream=*)
-    cpdef copy_to_host(self, ary=*, uintptr_t stream=*)
-    cpdef copy_from_host(self, ary, uintptr_t stream=*)
-    cpdef copy_from_device(self, cuda_ary, uintptr_t stream=*)
-    cpdef bytes tobytes(self, uintptr_t stream=*)
+                                  Stream stream=*)
+    cpdef copy_to_host(self, ary=*, Stream stream=*)
+    cpdef copy_from_host(self, ary, Stream stream=*)
+    cpdef copy_from_device(self, cuda_ary, Stream stream=*)
+    cpdef bytes tobytes(self, Stream stream=*)
 
     cdef size_t c_size(self) except *
     cpdef void resize(self, size_t new_size) except *
@@ -54,21 +56,17 @@ cdef class DeviceBuffer:
 
     cdef device_buffer c_release(self) except *
 
-cpdef DeviceBuffer to_device(const unsigned char[::1] b, uintptr_t stream=*)
+cpdef DeviceBuffer to_device(const unsigned char[::1] b,
+                             Stream stream=*)
 cpdef void copy_ptr_to_host(uintptr_t db,
                             unsigned char[::1] hb,
-                            uintptr_t stream=*) nogil except *
+                            Stream stream=*) except *
 
 cpdef void copy_host_to_ptr(const unsigned char[::1] hb,
                             uintptr_t db,
-                            uintptr_t stream=*) nogil except *
+                            Stream stream=*) except *
 
 cpdef void copy_device_to_ptr(uintptr_t d_src,
                               uintptr_t d_dst,
                               size_t count,
-                              uintptr_t stream=*) nogil except *
-
-
-cdef extern from "<utility>" namespace "std" nogil:
-    cdef unique_ptr[device_buffer] move(unique_ptr[device_buffer])
-    cdef device_buffer move(device_buffer)
+                              Stream stream=*) except *

@@ -62,7 +62,7 @@ void random_allocation_free(rmm::mr::device_memory_resource& mr,
                             SizeDistribution size_distribution,
                             size_t num_allocations,
                             size_t max_usage,  // in MiB
-                            cudaStream_t stream = 0)
+                            rmm::cuda_stream_view stream = {})
 {
   std::default_random_engine generator;
 
@@ -73,13 +73,12 @@ void random_allocation_free(rmm::mr::device_memory_resource& mr,
   std::uniform_int_distribution<int> index_distribution(0, num_allocations - 1);
 
   int active_allocations{0};
-  int allocation_count{0};
+  std::size_t allocation_count{0};
 
   allocation_vector allocations{};
   size_t allocation_size{0};
-  size_t total_allocated{0};
 
-  for (int i = 0; i < num_allocations * 2; ++i) {
+  for (std::size_t i = 0; i < num_allocations * 2; ++i) {
     bool do_alloc = true;
     size_t size   = static_cast<size_t>(size_distribution(generator));
 
@@ -139,7 +138,7 @@ void uniform_random_allocations(rmm::mr::device_memory_resource& mr,
                                 size_t num_allocations,
                                 size_t max_allocation_size,  // in MiB
                                 size_t max_usage,
-                                cudaStream_t stream = 0)
+                                rmm::cuda_stream_view stream = {})
 {
   std::uniform_int_distribution<std::size_t> size_distribution(1, max_allocation_size * size_mb);
   random_allocation_free(mr, size_distribution, num_allocations, max_usage, stream);
@@ -151,7 +150,7 @@ void uniform_random_allocations(rmm::mr::device_memory_resource& mr,
                                 size_t mean_allocation_size = 500, // in MiB
                                 size_t stddev_allocation_size = 500, // in MiB
                                 size_t max_usage = 8 << 20,
-                                cudaStream_t stream) {
+                                cuda_stream_view stream) {
   std::normal_distribution<std::size_t> size_distribution(, max_allocation_size * size_mb);
 }*/
 
@@ -310,7 +309,7 @@ int main(int argc, char** argv)
       std::string mr_name = args["resource"].as<std::string>();
       declare_benchmark(mr_name);
     } else {
-      std::array<std::string, 4> mrs{"pool", "binning", "cuda", "arena"};
+      std::array<std::string, 4> mrs{"pool", "binning", "arena", "cuda"};
       std::for_each(std::cbegin(mrs), std::cend(mrs), [](auto const& s) { declare_benchmark(s); });
     }
     ::benchmark::RunSpecifiedBenchmarks();

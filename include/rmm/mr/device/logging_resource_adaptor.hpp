@@ -17,6 +17,7 @@
 
 #include <rmm/mr/device/device_memory_resource.hpp>
 
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 
 // If using GCC, temporary workaround for older libcudacxx defining _LIBCPP_VERSION
@@ -72,10 +73,10 @@ class logging_resource_adaptor final : public device_memory_resource {
   logging_resource_adaptor(Upstream* upstream,
                            std::string const& filename = get_default_filename(),
                            bool auto_flush             = false)
-    : upstream_{upstream},
-      logger_{std::make_shared<spdlog::logger>(
+    : logger_{std::make_shared<spdlog::logger>(
         "RMM",
-        std::make_shared<spdlog::sinks::basic_file_sink_mt>(filename, true /*truncate file*/))}
+        std::make_shared<spdlog::sinks::basic_file_sink_mt>(filename, true /*truncate file*/))},
+      upstream_{upstream}
   {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
 
@@ -97,9 +98,9 @@ class logging_resource_adaptor final : public device_memory_resource {
    * performance.
    */
   logging_resource_adaptor(Upstream* upstream, std::ostream& stream, bool auto_flush = false)
-    : upstream_{upstream},
-      logger_{std::make_shared<spdlog::logger>(
-        "RMM", std::make_shared<spdlog::sinks::ostream_sink_mt>(stream))}
+    : logger_{std::make_shared<spdlog::logger>(
+        "RMM", std::make_shared<spdlog::sinks::ostream_sink_mt>(stream))},
+      upstream_{upstream}
   {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
 
@@ -133,7 +134,10 @@ class logging_resource_adaptor final : public device_memory_resource {
    *
    * @return bool true if the upstream resource supports get_mem_info, false otherwise.
    */
-  bool supports_get_mem_info() const noexcept override { return upstream_->supports_streams(); }
+  bool supports_get_mem_info() const noexcept override
+  {
+    return upstream_->supports_get_mem_info();
+  }
 
   /**
    * @brief Flush logger contents.
@@ -150,7 +154,9 @@ class logging_resource_adaptor final : public device_memory_resource {
  private:
   // make_logging_adaptor needs access to private get_default_filename
   template <typename T>
-  friend logging_resource_adaptor<T> make_logging_adaptor(T* upstream, std::string const& filename);
+  friend logging_resource_adaptor<T> make_logging_adaptor(T* upstream,
+                                                          std::string const& filename,
+                                                          bool auto_flush);
 
   /**
    * @brief Return the value of the environment variable RMM_LOG_FILE.
@@ -197,18 +203,10 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @param stream Stream on which to perform the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* do_allocate(std::size_t bytes, cudaStream_t stream) override
+  void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
     auto const p = upstream_->allocate(bytes, stream);
-    std::string msg{"allocate,"};
-    std::stringstream ss;
-    ss << p;
-    msg += ss.str();
-    msg += ",";
-    msg += std::to_string(bytes);
-    msg += ",";
-    msg += std::to_string(reinterpret_cast<uintptr_t>(stream));
-    logger_->info(msg);
+    logger_->info("allocate,{},{},{}", p, bytes, fmt::ptr(stream.value()));
     return p;
   }
 
@@ -228,17 +226,9 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @param bytes Size of the allocation
    * @param stream Stream on which to perform the deallocation
    */
-  void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override
+  void do_deallocate(void* p, std::size_t bytes, cuda_stream_view stream) override
   {
-    std::string msg{"free,"};
-    std::stringstream ss;
-    ss << p;
-    msg += ss.str();
-    msg += ",";
-    msg += std::to_string(bytes);
-    msg += ",";
-    msg += std::to_string(reinterpret_cast<uintptr_t>(stream));
-    logger_->info(msg);
+    logger_->info("free,{},{},{}", p, bytes, fmt::ptr(stream.value()));
     upstream_->deallocate(p, bytes, stream);
   }
 
@@ -273,7 +263,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @param stream Stream on which to get the mem info.
    * @return std::pair contaiing free_size and total_size of memory
    */
-  std::pair<size_t, size_t> do_get_mem_info(cudaStream_t stream) const override
+  std::pair<size_t, size_t> do_get_mem_info(cuda_stream_view stream) const override
   {
     return upstream_->get_mem_info(stream);
   }
@@ -296,9 +286,10 @@ class logging_resource_adaptor final : public device_memory_resource {
 template <typename Upstream>
 logging_resource_adaptor<Upstream> make_logging_adaptor(
   Upstream* upstream,
-  std::string const& filename = logging_resource_adaptor<Upstream>::get_default_filename())
+  std::string const& filename = logging_resource_adaptor<Upstream>::get_default_filename(),
+  bool auto_flush             = false)
 {
-  return logging_resource_adaptor<Upstream>{upstream, filename};
+  return logging_resource_adaptor<Upstream>{upstream, filename, auto_flush};
 }
 
 /**
@@ -310,9 +301,11 @@ logging_resource_adaptor<Upstream> make_logging_adaptor(
  * @param stream The ostream to write log info.
  */
 template <typename Upstream>
-logging_resource_adaptor<Upstream> make_logging_adaptor(Upstream* upstream, std::ostream& stream)
+logging_resource_adaptor<Upstream> make_logging_adaptor(Upstream* upstream,
+                                                        std::ostream& stream,
+                                                        bool auto_flush = false)
 {
-  return logging_resource_adaptor<Upstream>{upstream, stream};
+  return logging_resource_adaptor<Upstream>{upstream, stream, auto_flush};
 }
 
 }  // namespace mr

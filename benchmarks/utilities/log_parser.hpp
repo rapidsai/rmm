@@ -51,7 +51,7 @@ struct event {
   event(action a, std::size_t s, uintptr_t p) : act{a}, size{s}, pointer{p} {}
 
   event(std::size_t tid, action a, std::size_t sz, uintptr_t p, uintptr_t s, std::size_t i)
-    : thread_id{tid}, act{a}, size{sz}, pointer{p}, stream{s}, index{i}
+    : act{a}, size{sz}, pointer{p}, thread_id{tid}, stream{s}, index{i}
   {
   }
 
@@ -80,8 +80,6 @@ inline std::ostream& operator<<(std::ostream& os, event const& e)
      << "0x" << std::hex << e.pointer << std::dec << " Stream: " << e.stream;
   return os;
 }
-
-inline uintptr_t hex_string_to_int(std::string const& s) { return std::stoll(s, nullptr, 16); }
 
 /**
  * @brief Parse a log timestamp into a std::chrono::time_point
@@ -127,11 +125,16 @@ inline std::vector<event> parse_csv(std::string const& filename)
 {
   rapidcsv::Document csv(filename, rapidcsv::LabelParams(0, -1));
 
-  std::vector<std::size_t> tids     = csv.GetColumn<std::size_t>("Thread");
-  std::vector<std::string> actions  = csv.GetColumn<std::string>("Action");
-  std::vector<std::string> pointers = csv.GetColumn<std::string>("Pointer");
-  std::vector<std::size_t> sizes    = csv.GetColumn<std::size_t>("Size");
-  std::vector<uintptr_t> streams    = csv.GetColumn<uintptr_t>("Stream");
+  std::vector<std::size_t> tids    = csv.GetColumn<std::size_t>("Thread");
+  std::vector<std::string> actions = csv.GetColumn<std::string>("Action");
+
+  auto parse_pointer = [](std::string const& s, uintptr_t& ptr) {
+    ptr = std::stoll(s, nullptr, 16);
+  };
+
+  std::vector<uintptr_t> pointers = csv.GetColumn<uintptr_t>("Pointer", parse_pointer);
+  std::vector<std::size_t> sizes  = csv.GetColumn<std::size_t>("Size");
+  std::vector<uintptr_t> streams  = csv.GetColumn<uintptr_t>("Stream");
 
   auto const size_list = {tids.size(), actions.size(), pointers.size(), streams.size()};
 
@@ -146,7 +149,7 @@ inline std::vector<event> parse_csv(std::string const& filename)
     auto const& a = actions[i];
     RMM_EXPECTS((a == "allocate") or (a == "free"), "Invalid action string.");
     auto act  = (a == "allocate") ? action::ALLOCATE : action::FREE;
-    events[i] = event{tids[i], act, sizes[i], hex_string_to_int(pointers[i]), streams[i], i};
+    events[i] = event{tids[i], act, sizes[i], pointers[i], streams[i], i};
   }
   return events;
 }

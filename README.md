@@ -24,7 +24,7 @@ ensure you are on the `main` branch.
 
 ### Conda
 
-RMM can be installed with conda ([miniconda](https://conda.io/miniconda.html), or the full
+RMM can be installed with Conda ([miniconda](https://conda.io/miniconda.html), or the full
 [Anaconda distribution](https://www.anaconda.com/download)) from the `rapidsai` channel:
 
 ```bash
@@ -39,10 +39,12 @@ conda install -c nvidia -c rapidsai -c conda-forge -c defaults \
     rmm cudatoolkit=10.0
 ```
 
-We also provide [nightly conda packages](https://anaconda.org/rapidsai-nightly) built from the HEAD
+We also provide [nightly Conda packages](https://anaconda.org/rapidsai-nightly) built from the HEAD
 of our latest development branch.
 
-Note: RMM is supported only on Linux, and with Python versions 3.6 or 3.7.
+Note: RMM is supported only on Linux, and with Python versions 3.7 and later.
+
+Note: The RMM package from Conda requires building with GCC 7 or later. Otherwise, your application may fail to build.
 
 See the [Get RAPIDS version picker](https://rapids.ai/start.html) for more OS and version info.
 
@@ -52,7 +54,7 @@ See the [Get RAPIDS version picker](https://rapids.ai/start.html) for more OS an
 
 Compiler requirements:
 
-* `gcc`     version 4.8 or higher recommended
+* `gcc`     version 7.0 or higher required
 * `nvcc`    version 9.0 or higher recommended
 * `cmake`   version 3.12 or higher
 
@@ -125,6 +127,43 @@ $ pytest -v
 
 Done! You are ready to develop for the RMM OSS project.
 
+### Caching third-party dependencies
+
+RMM uses [CPM.cmake](https://github.com/TheLartians/CPM.cmake) to
+handle third-party dependencies like spdlog, Thrust, GoogleTest,
+GoogleBenchmark. In general you won't have to worry about it. If CMake
+finds an appropriate version on your system, it uses it (you can
+help it along by setting `CMAKE_PREFIX_PATH` to point to the
+installed location). Otherwise those dependencies will be downloaded as
+part of the build.
+
+If you frequently start new builds from scratch, consider setting the
+environment variable `CPM_SOURCE_CACHE` to an external download
+directory to avoid repeated downloads of the third-party dependencies.
+
+## Using RMM in a downstream CMake project
+
+The installed RMM library provides a set of config files that makes it easy to
+integrate RMM into your own CMake project. In your `CMakeLists.txt`, just add
+
+```cmake
+find_package(rmm [VERSION])
+# ...
+target_link_libraries(<your-target> (PRIVATE|PUBLIC) rmm::rmm)
+```
+
+Since RMM is a header-only library, this does not actually link RMM,
+but it makes the headers available and pulls in transitive dependencies.
+If RMM is not installed in a default location, use
+`CMAKE_PREFIX_PATH` or `rmm_ROOT` to point to its location.
+
+One of RMM's dependencies is the Thrust library, so the above
+automatically pulls in `Thrust` by means of a dependency on the
+`rmm::Thrust` target. By default it uses the standard configuration of
+Thrust. If you want to customize it, you can set the variables
+`THRUST_HOST_SYSTEM` and `THRUST_DEVICE_SYSTEM`; see
+[Thrust's CMake documentation](https://github.com/NVIDIA/thrust/blob/main/thrust/cmake/README.md).
+
 # Using RMM in C++
 
 The first goal of RMM is to provide a common interface for device and host memory allocation. 
@@ -146,10 +185,10 @@ freeing device memory.
 
 It has two key functions:
 
-1. `void* device_memory_resource::allocate(std::size_t bytes, cudaStream_t s)`
+1. `void* device_memory_resource::allocate(std::size_t bytes, cuda_stream_view s)`
    - Returns a pointer to an allocation of at least `bytes` bytes.
 
-2. `void device_memory_resource::deallocate(void* p, std::size_t bytes, cudaStream_t s)`
+2. `void device_memory_resource::deallocate(void* p, std::size_t bytes, cuda_stream_view s)`
    - Reclaims a previous allocation of size `bytes` pointed to by `p`. 
    - `p` *must* have been returned by a previous call to `allocate(bytes)`, otherwise behavior is
      undefined
@@ -159,8 +198,28 @@ It is up to a derived class to provide implementations of these functions. See
 
 Unlike `std::pmr::memory_resource`, `rmm::mr::device_memory_resource` does not allow specifying an 
 alignment argument. All allocations are required to be aligned to at least 256B. Furthermore, 
-`device_memory_resource` adds an additional `cudaStream_t` argument to allow specifying the stream
+`device_memory_resource` adds an additional `cuda_stream_view` argument to allow specifying the stream
 on which to perform the (de)allocation.
+
+## `cuda_stream_view` and `cuda_stream`
+
+`rmm::cuda_stream_view` is a simple non-owning wrapper around a CUDA `cudaStream_t`. This wrapper's
+purpose is to provide strong type safety for stream types. (`cudaStream_t` is an alias for a pointer,
+which can lead to ambiguity in APIs when it is assigned `0`.)  All RMM stream-ordered APIs take a 
+`rmm::cuda_stream_view` argument.
+
+`rmm::cuda_stream` is a simple owning wrapper around a CUDA `cudaStream_t`. This class provides 
+RAII semantics (constructor creates the CUDA stream, destructor destroys it). An `rmm::cuda_stream`
+can never represent the CUDA default stream or per-thread default stream; it only ever represents
+a single non-default stream. `rmm::cuda_stream` cannot be copied, but can be moved.
+
+## `cuda_stream_pool`
+
+`rmm::cuda_stream_pool` provides fast access to a pool of CUDA streams. This class can be used to 
+create a set of `cuda_stream` objects whose lifetime is equal to the `cuda_stream_pool`. Using the 
+stream pool can be faster than creating the streams on the fly. The size of the pool is configurable.
+Depending on this size, multiple calls to `cuda_stream_pool::get_stream()` may return instances of 
+`rmm::cuda_stream_view` that represent identical CUDA streams.
 
 ### Thread Safety
 
@@ -211,7 +270,11 @@ Allocates and frees device memory using `cudaMalloc` and `cudaFree`.
 
 #### `managed_memory_resource`
 
-Allocates and frees device memory using `cudaMallocManaged` and `cudaFree`.
+Allocates and frees device memory using `cudaMallocManaged` and `cudaFree`. 
+
+Note that `managed_memory_resource` cannot be used with NVIDIA Virtual GPU Software (vGPU, for use
+with virtual machines or hypervisors) because [NVIDIA CUDA Unified Memory is not supported by 
+NVIDIA vGPU](https://docs.nvidia.com/grid/latest/grid-vgpu-user-guide/index.html#cuda-open-cl-support-vgpu).
 
 #### `pool_memory_resource`
 
@@ -256,9 +319,9 @@ Accessing and modifying the default resource is done through two functions:
 #### Example
 
 ```c++
-rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource(); // Points to `cuda_memory_resource`
+rmm::mr::cuda_memory_resource cuda_mr;
 // Construct a resource that uses a coalescing best-fit pool allocator
-rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>> pool_mr{mr}; 
+rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource> pool_mr{&cuda_mr};
 rmm::mr::set_current_device_resource(&pool_mr); // Updates the current device resource pointer to `pool_mr`
 rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource(); // Points to `pool_mr`
 ```
@@ -287,39 +350,80 @@ for(int i = 0; i < N; ++i) {
 }
 ```
 
+### Allocators
+
+C++ interfaces commonly allow customizable memory allocation through an [`Allocator`](https://en.cppreference.com/w/cpp/named_req/Allocator) object. 
+RMM provides several `Allocator` and `Allocator`-like classes.
+
+#### `polymorphic_allocator`
+
+A [stream-ordered](#stream-ordered-memory-allocation) allocator similar to [`std::pmr::polymorphic_allocator`](https://en.cppreference.com/w/cpp/memory/polymorphic_allocator). 
+Unlike the standard C++ `Allocator` interface, the `allocate` and `deallocate` functions take a `cuda_stream_view` indicating the stream on which the (de)allocation occurs.
+
+#### `stream_allocator_adaptor`
+
+`stream_allocator_adaptor` can be used to adapt a stream-ordered allocator to present a standard `Allocator` interface to consumers that may not be designed to work with a stream-ordered interface.
+
+Example:
+```c++
+rmm::cuda_stream stream;
+rmm::mr::polymorphic_allocator<int> stream_alloc;
+
+// Constructs an adaptor that forwards all (de)allocations to `stream_alloc` on `stream`.
+auto adapted = rmm::mr::make_stream_allocator_adaptor(stream_alloc, stream);
+
+// Allocates 100 bytes using `stream_alloc` on `stream`
+auto p = adapted.allocate(100); 
+...
+// Deallocates using `stream_alloc` on `stream`
+adapted.deallocate(p,100); 
+```
+
+#### `thrust_allocator`
+
+`thrust_allocator` is a device memory allocator that uses the strongly typed `thrust::device_ptr`, making it usable with containers like `thrust::device_vector`.
+
+See [below](#using-rmm-with-thrust) for more information on using RMM with Thrust. 
+
 ## Device Data Structures
 
 ### `device_buffer`
 
-An untyped, unintialized RAII class for stream ordered device memory allocation.
+An untyped, uninitialized RAII class for stream ordered device memory allocation.
 
 #### Example
 
 ```c++
-cudaStream_t s;
-rmm::device_buffer b{100,s}; // Allocates at least 100 bytes on stream `s` using the *default* resource
-void* p = b.data();          // Raw, untyped pointer to underlying device memory
+cuda_stream_view s{...};
+// Allocates at least 100 bytes on stream `s` using the *default* resource
+rmm::device_buffer b{100,s}; 
+void* p = b.data();                   // Raw, untyped pointer to underlying device memory
 
-kernel<<<..., s>>>(b.data()); // `b` is only safe to use on `s`
+kernel<<<..., s.value()>>>(b.data()); // `b` is only safe to use on `s`
 
 rmm::mr::device_memory_resource * mr = new my_custom_resource{...};
-rmm::device_buffer b2{100, s, mr}; // Allocates at least 100 bytes on stream `s` using the explicitly provided resource
+// Allocates at least 100 bytes on stream `s` using the resource `mr`
+rmm::device_buffer b2{100, s, mr};
 ```
 
 ### `device_uvector<T>`
-A typed, unintialized RAII class for allocation of a contiguous set of elements in device memory.
+A typed, uninitialized RAII class for allocation of a contiguous set of elements in device memory.
 Similar to a `thrust::device_vector`, but as an optimization, does not default initialize the
 contained elements. This optimization restricts the types `T` to trivially copyable types.
 
 #### Example
 
 ```c++
-cudaStream_t s;
-rmm::device_uvector<int32_t> v(100, s); /// Allocates uninitialized storage for 100 `int32_t` elements on stream `s` using the default resource
-thrust::uninitialized_fill(thrust::cuda::par.on(s), v.begin(), v.end(), int32_t{0}); // Initializes the elements to 0
+cuda_stream_view s{...};
+// Allocates uninitialized storage for 100 `int32_t` elements on stream `s` using the
+// default resource
+rmm::device_uvector<int32_t> v(100, s);
+// Initializes the elements to 0
+thrust::uninitialized_fill(thrust::cuda::par.on(s.value()), v.begin(), v.end(), int32_t{0}); 
 
 rmm::mr::device_memory_resource * mr = new my_custom_resource{...};
-rmm::device_vector<int32_t> v2{100, s, mr}; // Allocates uninitialized storage for 100 `int32_t` elements on stream `s` using the explicitly provided resource
+// Allocates uninitialized storage for 100 `int32_t` elements on stream `s` using the resource `mr`
+rmm::device_uvector<int32_t> v2{100, s, mr}; 
 ```
 
 ### `device_scalar`
@@ -329,11 +433,12 @@ modifying the value in device memory from the host, or retrieving the value from
 
 #### Example
 ```c++
-cudaStream_t s;
-rmm::device_scalar<int32_t> a{s}; // Allocates uninitialized storage for a single `int32_t` in device memory
+cuda_stream_view s{...};
+// Allocates uninitialized storage for a single `int32_t` in device memory
+rmm::device_scalar<int32_t> a{s}; 
 a.set_value(42, s); // Updates the value in device memory to `42` on stream `s`
 
-kernel<<<...,s>>>(a.data()); // Pass raw pointer to underlying element in device memory
+kernel<<<...,s.value()>>>(a.data()); // Pass raw pointer to underlying element in device memory
 
 int32_t v = a.value(s); // Retrieves the value from device to host on stream `s`
 ```
@@ -388,19 +493,49 @@ RMM provides `rmm::mr::thrust_allocator` as a conforming Thrust allocator that u
 To instruct a Thrust algorithm to use `rmm::mr::thrust_allocator` to allocate temporary storage, you
 can use the custom Thrust CUDA device execution policy: `rmm::exec_policy(stream)`.
 
-`rmm::exec_policy(stream)` returns a `std::unique_ptr` to a Thrust execution policy that uses
-`rmm::mr::thrust_allocator` for temporary allocations. In order to specify that the Thrust algorithm
-be executed on a specific stream, the usage is:
-
 ```c++
-thrust::sort(rmm::exec_policy(stream)->on(stream), ...);
+thrust::sort(rmm::exec_policy(stream, ...);
 ```
 
 The first `stream` argument is the `stream` to use for `rmm::mr::thrust_allocator`.
 The second `stream` argument is what should be used to execute the Thrust algorithm.
 These two arguments must be identical.
 
-## Debug Logging
+## Logging
+
+RMM includes two forms of logging. Memory event logging and debug logging.
+
+### Memory Event Logging and `logging_resource_adaptor`
+
+Memory event logging writes details of every allocation or deallocation to a CSV (comma-separated
+value) file. In C++, Memory Event Logging is enabled by using the `logging_resource_adaptor` as a 
+wrapper around any other `device_memory_resource` object.
+
+Each row in the log represents either an allocation or a deallocation. The columns of the file are
+"Thread, Time, Action, Pointer, Size, Stream".
+
+The CSV output files of the `logging_resource_adaptor` can be used as input to `REPLAY_BENCHMARK`,
+which is available when building RMM from source, in the `gbenchmarks` folder in the build directory.
+This log replayer can be useful for profiling and debugging allocator issues.
+
+The following C++ example creates a logging version of a `cuda_memory_resource` that outputs the log
+to the file "logs/test1.csv".
+
+```c++
+std::string filename{"logs/test1.csv"};
+rmm::mr::cuda_memory_resource upstream;
+rmm::mr::logging_resource_adaptor<rmm::mr::cuda_memory_resource> log_mr{&upstream, filename};
+```
+
+If a file name is not specified, the environment variable `RMM_LOG_FILE` is queried for the file 
+name. If `RMM_LOG_FILE` is not set, then an exception is thrown by the `logging_resource_adaptor`
+constructor.
+
+In Python, memory event logging is enabled when the `logging` parameter of `rmm.reinitialize()` is
+set to `True`. The log file name can be set using the `log_file_name` parameter. See
+`help(rmm.reinitialize)` for full details.
+
+### Debug Logging
 
 RMM includes a debug logger which can be enabled to log trace and debug information to a file. This 
 information can show when errors occur, when additional memory is allocated from upstream resources,
@@ -472,20 +607,18 @@ host:
 array([1., 2., 3.])
 ```
 
-### MemoryResources
+### MemoryResource objects
 
-MemoryResources are used to configure how device memory allocations are made by
+`MemoryResource` objects are used to configure how device memory allocations are made by
 RMM.
 
-By default, i.e., if you don't set a MemoryResource explicitly, RMM
-uses the `CudaMemoryResource`, which uses `cudaMalloc` for
-allocating device memory.
+By default if a `MemoryResource` is not set explicitly, RMM uses the `CudaMemoryResource`, which 
+uses `cudaMalloc` for allocating device memory.
 
-`rmm.reinitialize()` provides an easy way to initialize RMM with specific
-memory resource options across multiple devices. See `help(rmm.reinitialize) for 
-full details.
+`rmm.reinitialize()` provides an easy way to initialize RMM with specific memory resource options
+across multiple devices. See `help(rmm.reinitialize)` for full details.
 
-For lower-level control, `rmm.mr.set_current_device_resource()` function can be
+For lower-level control, the `rmm.mr.set_current_device_resource()` function can be
 used to set a different MemoryResource for the current CUDA device.  For
 example, enabling the `ManagedMemoryResource` tells RMM to use
 `cudaMallocManaged` instead of `cudaMalloc` for allocating memory:

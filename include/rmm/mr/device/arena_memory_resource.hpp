@@ -35,18 +35,16 @@ namespace mr {
  *
  * GPU memory is divided into a global arena, per-thread arenas for default streams, and per-stream
  * arenas for non-default streams. Each arena allocates memory from the global arena in chunks
- * called superblocks. All superblocks are the same size. Objects larger than half the size of a
- * superblock are managed directly using the global arena.
+ * called superblocks.
  *
  * Blocks in each arena are allocated using address-ordered first fit. When a block is freed, it is
- * coalesced with neighbouring free blocks if the addresses are contiguous and do not cross
- * superblock boundaries. Completely empty superblocks are returned to the global arena.
+ * coalesced with neighbouring free blocks if the addresses are contiguous. Free superblocks are
+ * returned to the global arena.
  *
  * In real-world applications, allocation sizes tend to follow a power law distribution in which
  * large allocations are rare, but small ones quite common. By handling small allocations in the
- * per-thread arena, and leaving the large allocations to the shared global arena, adequate
- * performance can be achieved without introducing excessive memory fragmentation under high
- * concurrency.
+ * per-thread arena, adequate performance can be achieved without introducing excessive memory
+ * fragmentation under high concurrency.
  *
  * This design is inspired by several existing CPU memory allocators targeting multi-threaded
  * applications (glibc malloc, Hoard, jemalloc, TCMalloc), albeit in a simpler form. Possible future
@@ -129,17 +127,12 @@ class arena_memory_resource final : public device_memory_resource {
    * @param stream The stream to associate this allocation with.
    * @return void* Pointer to the newly allocated memory.
    */
-  void* do_allocate(std::size_t bytes, cudaStream_t stream) override
+  void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
     if (bytes <= 0) return nullptr;
 
     bytes = detail::arena::align_up(bytes);
-
-    if (arena::handles_size(bytes)) {
-      return get_arena(stream).allocate(bytes);
-    } else {
-      return global_arena_.allocate(bytes);
-    }
+    return get_arena(stream).allocate(bytes);
   }
 
   /**
@@ -150,18 +143,13 @@ class arena_memory_resource final : public device_memory_resource {
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param stream Stream on which to perform deallocation.
    */
-  void do_deallocate(void* p, std::size_t bytes, cudaStream_t stream) override
+  void do_deallocate(void* p, std::size_t bytes, cuda_stream_view stream) override
   {
     if (p == nullptr || bytes <= 0) return;
 
     bytes = detail::arena::align_up(bytes);
-    if (arena::handles_size(bytes)) {
-      if (!get_arena(stream).deallocate(p, bytes, stream)) {
-        deallocate_from_other_arena(p, bytes, stream);
-      }
-    } else {
-      RMM_ASSERT_CUDA_SUCCESS(cudaStreamSynchronize(stream));
-      global_arena_.deallocate(p, bytes);
+    if (!get_arena(stream).deallocate(p, bytes, stream)) {
+      deallocate_from_other_arena(p, bytes, stream);
     }
   }
 
@@ -173,30 +161,30 @@ class arena_memory_resource final : public device_memory_resource {
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param stream Stream on which to perform deallocation.
    */
-  void deallocate_from_other_arena(void* p, std::size_t bytes, cudaStream_t stream)
+  void deallocate_from_other_arena(void* p, std::size_t bytes, cuda_stream_view stream)
   {
-    RMM_ASSERT_CUDA_SUCCESS(cudaStreamSynchronize(stream));
+    stream.synchronize_no_throw();
 
     read_lock lock(mtx_);
 
     if (use_per_thread_arena(stream)) {
       auto const id = std::this_thread::get_id();
       for (auto& kv : thread_arenas_) {
-        // Check the per-thread arena if it does not belong to the current thread, and return if the
-        // pointer is found.
+        // If the arena does not belong to the current thread, try to deallocate from it, and return
+        // if successful.
         if (kv.first != id && kv.second->deallocate(p, bytes)) return;
       }
     } else {
       for (auto& kv : stream_arenas_) {
-        // Check the per-stream arena if it does not belong to the current stream, and return if the
-        // pointer is found.
-        if (kv.first != stream && kv.second.deallocate(p, bytes)) return;
+        // If the arena does not belong to the current stream, try to deallocate from it, and return
+        // if successful.
+        if (stream != kv.first && kv.second.deallocate(p, bytes)) return;
       }
     }
 
-    // The thread that originally allocated the block has terminated, and the allocation has been
-    // transferred to the global arena.
-    global_arena_.deallocate(p, bytes);
+    // The thread that originally allocated the block has terminated, deallocate directly in the
+    // global arena.
+    global_arena_.deallocate({p, bytes});
   }
 
   /**
@@ -205,7 +193,7 @@ class arena_memory_resource final : public device_memory_resource {
    * @param stream The stream associated with the arena.
    * @return arena& The arena associated with the current thread or the given stream.
    */
-  arena& get_arena(cudaStream_t stream)
+  arena& get_arena(cuda_stream_view stream)
   {
     if (use_per_thread_arena(stream)) {
       return get_thread_arena();
@@ -241,18 +229,18 @@ class arena_memory_resource final : public device_memory_resource {
    *
    * @return arena& The arena associated with the given stream.
    */
-  arena& get_stream_arena(cudaStream_t stream)
+  arena& get_stream_arena(cuda_stream_view stream)
   {
     RMM_LOGGING_ASSERT(!use_per_thread_arena(stream));
     {
       read_lock lock(mtx_);
-      auto const it = stream_arenas_.find(stream);
+      auto const it = stream_arenas_.find(stream.value());
       if (it != stream_arenas_.end()) { return it->second; }
     }
     {
       write_lock lock(mtx_);
-      stream_arenas_.emplace(stream, global_arena_);
-      return stream_arenas_.at(stream);
+      stream_arenas_.emplace(stream.value(), global_arena_);
+      return stream_arenas_.at(stream.value());
     }
   }
 
@@ -262,7 +250,7 @@ class arena_memory_resource final : public device_memory_resource {
    * @param stream to execute on.
    * @return std::pair containing free_size and total_size of memory.
    */
-  std::pair<std::size_t, std::size_t> do_get_mem_info(cudaStream_t stream) const override
+  std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view stream) const override
   {
     return std::make_pair(0, 0);
   }
@@ -273,13 +261,9 @@ class arena_memory_resource final : public device_memory_resource {
    * @param stream to check.
    * @return true if per-thread arena should be used, false otherwise.
    */
-  static bool use_per_thread_arena(cudaStream_t stream)
+  static bool use_per_thread_arena(cuda_stream_view stream)
   {
-#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-    return stream == cudaStreamDefault || stream == cudaStreamPerThread;
-#else
-    return stream == cudaStreamPerThread;
-#endif
+    return stream.is_per_thread_default();
   }
 
   /// The global arena to allocate superblocks from.

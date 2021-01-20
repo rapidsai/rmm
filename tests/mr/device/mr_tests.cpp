@@ -71,7 +71,7 @@ TEST_P(mr_test, SelfEquality) { EXPECT_TRUE(this->mr->is_equal(*this->mr)); }
 
 TEST_P(mr_test, AllocateDefaultStream)
 {
-  test_various_allocations(this->mr.get(), cudaStreamDefault);
+  test_various_allocations(this->mr.get(), cuda_stream_view{});
 }
 
 TEST_P(mr_test, AllocateOnStream) { test_various_allocations(this->mr.get(), this->stream); }
@@ -85,7 +85,7 @@ TEST_P(mr_test, RandomAllocationsStream)
 
 TEST_P(mr_test, MixedRandomAllocationFree)
 {
-  test_mixed_random_allocation_free(this->mr.get(), 5_MiB, cudaStreamDefault);
+  test_mixed_random_allocation_free(this->mr.get(), 5_MiB, cuda_stream_view{});
 }
 
 TEST_P(mr_test, MixedRandomAllocationFreeStream)
@@ -97,11 +97,11 @@ TEST_P(mr_test, GetMemInfo)
 {
   if (this->mr->supports_get_mem_info()) {
     std::pair<std::size_t, std::size_t> mem_info;
-    EXPECT_NO_THROW(mem_info = this->mr->get_mem_info(0));
+    EXPECT_NO_THROW(mem_info = this->mr->get_mem_info(rmm::cuda_stream_view{}));
     std::size_t allocation_size = 16 * 256;
-    void* ptr;
+    void* ptr{nullptr};
     EXPECT_NO_THROW(ptr = this->mr->allocate(allocation_size));
-    EXPECT_NO_THROW(mem_info = this->mr->get_mem_info(0));
+    EXPECT_NO_THROW(mem_info = this->mr->get_mem_info(rmm::cuda_stream_view{}));
     EXPECT_TRUE(mem_info.first >= allocation_size);
     EXPECT_NO_THROW(this->mr->deallocate(ptr, allocation_size));
   }

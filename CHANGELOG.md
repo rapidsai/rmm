@@ -1,10 +1,58 @@
-# RMM 0.16.0 (Date TBD)
+# RMM 0.18.0 (Date TBD)
+
+## New Features
+
+- PR #636 Add a `Stream` class to manage CUDA streams in Python
+
+## Improvements
+
+- PR #647 Simplify `rmm::exec_policy` and refactor Thrust support
+
+## Bug Fixes
+
+
+# RMM 0.17.0 (Date TBD)
+
+## New Features
+
+- PR #609 Adds `polymorphic_allocator` and `stream_allocator_adaptor`
+- PR #596 Add `tracking_memory_resource_adaptor` to help catch memory leaks
+- PR #608 Add stream wrapper type
+- PR #632 Add RMM Python docs
+
+## Improvements
+
+- PR #604 CMake target cleanup, formatting, linting
+- PR #599 Make the arena memory resource work better with the producer/consumer mode
+- PR #612 Drop old Python `device_array*` API
+- PR #603 Always test both legacy and per-thread default stream
+- PR #611 Add a note to the contribution guide about requiring 2 C++ reviewers
+- PR #615 Improve gpuCI Scripts
+- PR #627 Cleanup gpuCI Scripts
+- PR #635 Add Python docs build to gpuCI
+
+## Bug Fixes
+
+- PR #592 Add `auto_flush` to `make_logging_adaptor`
+- PR #602 Fix `device_scalar` and its tests so that they use the correct CUDA stream
+- PR #621 Make `rmm::cuda_stream_default` a `constexpr`
+- PR #625 Use `librmm` conda artifact when building `rmm` conda package
+- PR #631 Force local conda artifact install
+- PR #634 Fix conda uploads
+- PR #639 Fix release script version updater based on CMake reformatting
+- PR #641 Fix adding "LANGUAGES" after version number in CMake in release script
+
+
+# RMM 0.16.0 (21 Oct 2020)
 
 ## New Features
 
 - PR #529 Add debug logging and fix multithreaded replay benchmark
 - PR #560 Remove deprecated `get/set_default_resource` APIs
 - PR #543 Add an arena-based memory resource
+- PR #580 Install CMake config with RMM
+- PR #591 Allow the replay bench to simulate different GPU memory sizes
+- PR #594 Adding limiting memory resource adaptor
 
 ## Improvements
 
@@ -25,7 +73,12 @@
 - PR #566 CMake: use CPM for thirdparty dependencies
 - PR #568 Upgrade googletest to v1.10.0
 - PR #572 CMake: prefer locally installed thirdparty packages
-- PR #571 `pool_memory_resource` can return free blocks to upstream resource
+- PR #579 CMake: handle thrust via target
+- PR #581 Improve logging documentation
+- PR #585 Update ci/local/README.md
+- PR #587 Replaced `move` with `std::move`
+- PR #588 Use installed C++ RMM in python build
+- PR #601 Make maximum pool size truly optional (grow until failure)
 
 ## Bug Fixes
 
@@ -35,6 +88,9 @@
 - PR #569 Correct `device_scalar::set_value` to pass host value by reference to avoid copying from invalid value
 - PR #559 Fix `align_down` to only change unaligned values.
 - PR #577 Fix CMake `LOGGING_LEVEL` issue which caused verbose logging / performance regression.
+- PR #582 Fix handling of per-thread default stream when not compiled for PTDS
+- PR #590 Add missing `CODE_OF_CONDUCT.md`
+- PR #595 Fix pool_mr example in README.md
 
 
 # RMM 0.15.0 (26 Aug 2020)

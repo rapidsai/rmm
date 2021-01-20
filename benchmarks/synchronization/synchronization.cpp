@@ -18,16 +18,20 @@
 
 #include <rmm/device_buffer.hpp>
 
+#ifdef NDEBUG
+#define RMM_CUDA_ASSERT_OK(expr) expr
+#else
 #define RMM_CUDA_ASSERT_OK(expr)       \
   do {                                 \
     cudaError_t const status = (expr); \
     assert(cudaSuccess == status);     \
   } while (0);
+#endif
 
 cuda_event_timer::cuda_event_timer(benchmark::State& state,
                                    bool flush_l2_cache,
                                    cudaStream_t stream)
-  : p_state(&state), stream(stream)
+  : stream(stream), p_state(&state)
 {
   // flush all of L2$
   if (flush_l2_cache) {
