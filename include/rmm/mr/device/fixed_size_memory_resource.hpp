@@ -200,7 +200,7 @@ class fixed_size_memory_resource
    * @return The (now freed) block associated with `p`. The caller is expected to return the block
    * to the pool. May return an invalid block if the block was deallocated upstream.
    */
-  block_type free_block(void* p, size_t size, cudaStream_t stream) noexcept
+  block_type free_block(void* p, size_t size, cuda_stream_view stream) noexcept
   {
     // Deallocating a fixed-size block just inserts it in the free list, which is
     // handled by the parent class
