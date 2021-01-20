@@ -54,18 +54,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
 #endif
   }
 
-  ~cuda_async_memory_resource()
-  {
-#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
-    cudaDeviceSynchronize();
-    int device{0};
-    RMM_ASSERT_CUDA_SUCCESS(cudaGetDevice(&device));
-    cudaMemPool_t pool;
-    RMM_ASSERT_CUDA_SUCCESS(cudaDeviceGetDefaultMemPool(&pool, device));
-    RMM_ASSERT_CUDA_SUCCESS(cudaMemPoolTrimTo(pool, 0));
-#endif
-  }
-
+  ~cuda_async_memory_resource()                                 = default;
   cuda_async_memory_resource(cuda_async_memory_resource const&) = default;
   cuda_async_memory_resource(cuda_async_memory_resource&&)      = default;
   cuda_async_memory_resource& operator=(cuda_async_memory_resource const&) = default;
