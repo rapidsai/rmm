@@ -366,7 +366,7 @@ cpdef void _initialize(
             if logging:
                 mr = LoggingResourceAdaptor(
                     typ(*args, **kwargs),
-                    log_file_name.encode()
+                    log_file_name
                 )
             else:
                 mr = typ(*args, **kwargs)
