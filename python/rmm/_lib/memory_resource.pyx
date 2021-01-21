@@ -481,6 +481,9 @@ cpdef _flush_logs():
 
 
 def enable_logging(log_file_name=None):
+    """
+    Enable logging of run-time events.
+    """
     global _per_device_mrs
     devices = [0] if not _per_device_mrs.keys() else _per_device_mrs.keys()
     for device in devices:
@@ -493,6 +496,10 @@ def enable_logging(log_file_name=None):
 
 
 def disable_logging():
+    """
+    Disable logging if it was enabled previously using
+    `rmm.initialize()` or `rmm.enable_logging()`.
+    """
     global _per_device_mrs
     for i, each_mr in _per_device_mrs.items():
         if isinstance(each_mr, LoggingResourceAdaptor):
