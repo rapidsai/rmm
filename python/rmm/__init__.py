@@ -15,6 +15,7 @@ import weakref
 
 from rmm import mr
 from rmm._lib.device_buffer import DeviceBuffer
+from rmm.mr import disable_logging, enable_logging
 from rmm.rmm import (
     RMMError,
     RMMNumbaManager,

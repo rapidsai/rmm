@@ -250,11 +250,12 @@ cdef class LoggingResourceAdaptor(MemoryResource):
                 )
         # Append the device ID before the file extension
         log_file_name = _append_id(
-            log_file_name.decode(), getDevice()
+            log_file_name, getDevice()
         )
 
         _log_file_name = log_file_name
 
+        self.upstream = upstream
         self.c_obj.reset(
             new logging_resource_adaptor_wrapper(
                 upstream.c_obj,
@@ -281,6 +282,12 @@ cdef class LoggingResourceAdaptor(MemoryResource):
 
     cpdef get_file_name(self):
         return self._log_file_name
+
+    cpdef MemoryResource get_upstream(self):
+        return self.upstream
+
+    def __dealloc__(self):
+        self.c_obj.reset()
 
 
 class KeyInitializedDefaultDict(defaultdict):
@@ -471,3 +478,22 @@ cpdef _flush_logs():
     for each_mr in _per_device_mrs.values():
         if isinstance(each_mr, LoggingResourceAdaptor):
             each_mr.flush()
+
+
+def enable_logging(log_file_name=None):
+    global _per_device_mrs
+    devices = [0] if not _per_device_mrs.keys() else _per_device_mrs.keys()
+    for device in devices:
+        each_mr = _per_device_mrs[device]
+        if not isinstance(each_mr, LoggingResourceAdaptor):
+            _set_per_device_resource(
+                device,
+                LoggingResourceAdaptor(each_mr, log_file_name)
+            )
+
+
+def disable_logging():
+    global _per_device_mrs
+    for i, each_mr in _per_device_mrs.items():
+        if isinstance(each_mr, LoggingResourceAdaptor):
+            _set_per_device_resource(i, each_mr.get_upstream())
