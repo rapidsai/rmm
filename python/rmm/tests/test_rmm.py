@@ -378,6 +378,7 @@ def test_reinitialize_initial_pool_size_gt_max():
             maximum_pool_size=1 << 10,
         )
     assert "Initial pool size exceeds the maximum pool size" in str(e.value)
+    rmm.reinitialize()
 
 
 @pytest.mark.parametrize("dtype", _dtypes)
