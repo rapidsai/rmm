@@ -99,6 +99,8 @@ cdef class BinningMemoryResource(MemoryResource):
     cpdef add_bin(self, size_t allocation_size, object bin_resource=*)
 
 cdef class LoggingResourceAdaptor(MemoryResource):
+    cdef MemoryResource upstream
     cdef object _log_file_name
+    cpdef MemoryResource get_upstream(self)
     cpdef get_file_name(self)
     cpdef flush(self)
