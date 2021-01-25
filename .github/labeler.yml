@@ -11,7 +11,3 @@ CMake:
 
 conda:
   - 'conda/**'
-
-Ops:
-  - '.github/**'
-  - 'ci/**'
