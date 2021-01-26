@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2019, NVIDIA CORPORATION.
+# Copyright (c) 2018-2021, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,3 +24,7 @@ from rmm.rmm import (
     reinitialize,
     rmm_cupy_allocator,
 )
+
+from rmm._version import get_versions
+
+__version__ = get_versions()["version"]
