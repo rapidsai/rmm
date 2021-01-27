@@ -340,7 +340,6 @@ class pool_memory_resource final
 #endif
 
     // If this is an upstream block, release it to upstream
-    // if (block.is_head()) {
     auto const i = upstream_blocks_.find(static_cast<char*>(p));
     if (i != upstream_blocks_.end() && (i->size() == size)) {
       RMM_LOG_DEBUG("[D][Stream {}][Upstream {}B][{:p}]", fmt::ptr(stream.value()), size, p);
@@ -348,7 +347,6 @@ class pool_memory_resource final
       upstream_mr_->deallocate(p, size, stream);
       return block_type{};
     }
-    //}
 
     return block_type{static_cast<char*>(p), size, false};
   }
