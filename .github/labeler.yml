@@ -11,3 +11,6 @@ CMake:
 
 conda:
   - 'conda/**'
+
+gpuCI:
+  - 'ci/**'
