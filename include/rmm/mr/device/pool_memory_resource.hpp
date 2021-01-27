@@ -343,7 +343,7 @@ class pool_memory_resource final
     // if (block.is_head()) {
     auto const i = upstream_blocks_.find(static_cast<char*>(p));
     if (i != upstream_blocks_.end() && (i->size() == size)) {
-      RMM_LOG_DEBUG("[D][Stream {}][Upstream {}B][{:p}]", reinterpret_cast<void*>(stream), size, p);
+      RMM_LOG_DEBUG("[D][Stream {}][Upstream {}B][{:p}]", fmt::ptr(stream.value()), size, p);
       upstream_blocks_.erase(i);
       upstream_mr_->deallocate(p, size, stream);
       return block_type{};
