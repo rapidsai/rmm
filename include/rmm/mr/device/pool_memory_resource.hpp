@@ -345,6 +345,7 @@ class pool_memory_resource final
       RMM_LOG_DEBUG("[D][Stream {}][Upstream {}B][{:p}]", fmt::ptr(stream.value()), size, p);
       upstream_blocks_.erase(i);
       upstream_mr_->deallocate(p, size, stream);
+      current_pool_size_ -= size;
       return block_type{};
     }
 
