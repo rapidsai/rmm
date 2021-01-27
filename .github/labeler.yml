@@ -13,7 +13,9 @@ conda:
   - 'conda/**'
 
 cpp:
-  - 'cpp/**'
+  - 'include/**'
+  - 'tests/**'
+  - 'doxygen/**'
 
 gpuCI:
   - 'ci/**'
