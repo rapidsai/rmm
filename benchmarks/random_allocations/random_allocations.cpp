@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 
 #include <rmm/mr/device/arena_memory_resource.hpp>
 #include <rmm/mr/device/binning_memory_resource.hpp>
+#include <rmm/mr/device/cuda_async_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/owning_wrapper.hpp>
@@ -157,6 +158,8 @@ void uniform_random_allocations(rmm::mr::device_memory_resource& mr,
 /// MR factory functions
 inline auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>(); }
 
+inline auto make_cuda_async() { return std::make_shared<rmm::mr::cuda_async_memory_resource>(); }
+
 inline auto make_pool()
 {
   return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_cuda());
@@ -235,6 +238,9 @@ void declare_benchmark(std::string name)
 {
   if (name == "cuda")
     BENCHMARK_CAPTURE(BM_RandomAllocations, cuda_mr, &make_cuda)->Apply(benchmark_range);
+  if (name == "cuda_async")
+    BENCHMARK_CAPTURE(BM_RandomAllocations, cuda_async_mr, &make_cuda_async)
+      ->Apply(benchmark_range);
   else if (name == "binning")
     BENCHMARK_CAPTURE(BM_RandomAllocations, binning_mr, &make_binning)->Apply(benchmark_range);
   else if (name == "pool")
@@ -288,6 +294,9 @@ int main(int argc, char** argv)
     std::map<std::string, MRFactoryFunc> const funcs({{"arena", &make_arena},
                                                       {"binning", &make_binning},
                                                       {"cuda", &make_cuda},
+#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
+                                                      {"cuda_async", &make_cuda_async},
+#endif
                                                       {"pool", &make_pool}});
     auto resource = args["resource"].as<std::string>();
 
@@ -309,7 +318,11 @@ int main(int argc, char** argv)
       std::string mr_name = args["resource"].as<std::string>();
       declare_benchmark(mr_name);
     } else {
+#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
+      std::array<std::string, 5> mrs{"pool", "binning", "arena", "cuda_async", "cuda"};
+#else
       std::array<std::string, 4> mrs{"pool", "binning", "arena", "cuda"};
+#endif
       std::for_each(std::cbegin(mrs), std::cend(mrs), [](auto const& s) { declare_benchmark(s); });
     }
     ::benchmark::RunSpecifiedBenchmarks();

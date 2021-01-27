@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-#include <rmm/mr/device/per_device_resource.hpp>
 #include "mr_test.hpp"
+
+#include <rmm/mr/device/per_device_resource.hpp>
 
 #include <gtest/gtest.h>
 
@@ -26,6 +27,9 @@ namespace {
 INSTANTIATE_TEST_CASE_P(ResourceTests,
                         mr_test,
                         ::testing::Values(mr_factory{"CUDA", &make_cuda},
+#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
+                                          mr_factory{"CUDA_Async", &make_cuda_async},
+#endif
                                           mr_factory{"Managed", &make_managed},
                                           mr_factory{"Pool", &make_pool},
                                           mr_factory{"Arena", &make_arena},
