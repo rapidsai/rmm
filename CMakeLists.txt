@@ -15,7 +15,7 @@ cmake_minimum_required(VERSION 3.18...3.18 FATAL_ERROR)
 
 project(
   RMM
-  VERSION 0.18.0
+  VERSION 0.19.0
   LANGUAGES CXX)
 
 include(cmake/Modules/CPM.cmake)
