@@ -19,7 +19,7 @@
 ## Bug Fixes
 
 
-# RMM 0.17.0 (Date TBD)
+# RMM 0.17.0 (10 Dec 2020)
 
 ## New Features
 
