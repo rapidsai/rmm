@@ -56,7 +56,7 @@ Compiler requirements:
 
 * `gcc`     version 7.0 or higher required
 * `nvcc`    version 9.0 or higher recommended
-* `cmake`   version 3.12 or higher
+* `cmake`   version 3.18 or higher
 
 CUDA/GPU requirements:
 
@@ -88,7 +88,7 @@ $ source activate cudf_dev
 ```
 
 - Build and install `librmm` using cmake & make. CMake depends on the `nvcc` executable being on
-  your path or defined in `$CUDACXX`.
+  your path or defined in `CUDACXX` environment variable.
 
 ```bash
 
@@ -101,7 +101,7 @@ $ make install                                      # install the library librmm
 
 - Building and installing `librmm` and `rmm` using build.sh. Build.sh creates build dir at root of
   git repository. build.sh depends on the `nvcc` executable being on your path or defined in
-  `$CUDACXX`.
+  `CUDACXX` environment variable.
 
 ```bash
 
