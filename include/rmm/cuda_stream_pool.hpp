@@ -61,6 +61,33 @@ class cuda_stream_pool {
     return streams_[(next_stream++) % streams_.size()].view();
   }
 
+  /**
+   * @brief Get a `cuda_stream_view` of the stream at stream_id index the pool.
+   *
+   * This function is thread safe with respect to other calls to the same function.
+   *
+   * @throws rmm::out_of_range exception if `stream_index >= size()`
+   *
+   * @param stream_id The index of the stream in the pool
+   *
+   * @return rmm::cuda_stream_view
+   */
+  rmm::cuda_stream_view get_stream(std::size_t stream_index) const
+  {
+    RMM_EXPECTS(
+      stream_id < streams_.size(), rmm::out_of_range, "Attempt to access out of bounds stream.");
+    return streams_[stream_index].view();
+  }
+
+  /**
+   * @brief Get the number of streams in the pool.
+   *
+   * This function is thread safe with respect to other calls to the same function.
+   *
+   * @return the number of streams in the pool
+   */
+  size_t get_pool_size() const noexcept { return streams_.size(); }
+
  private:
   std::vector<rmm::cuda_stream> streams_;
   mutable std::atomic_size_t next_stream{};
