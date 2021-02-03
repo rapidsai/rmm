@@ -54,7 +54,26 @@ TEST_F(CudaStreamPoolTest, ValidStreams)
   RMM_CUDA_TRY(cudaMemsetAsync(v.data(), 0xcc, 100, stream_a.value()));
   stream_a.synchronize();
 
-  auto v2 = rmm::device_uvector<uint8_t>{v, stream_b};
+  auto v2 = rmm::device_uvector<std::uint8_t>{v, stream_b};
   auto x  = v2.front_element(stream_b);
   EXPECT_EQ(x, 0xcc);
+}
+
+TEST_F(CudaStreamPoolTest, PoolSize) { EXPECT_GE(this->pool.get_pool_size(), 1); }
+
+TEST_F(CudaStreamPoolTest, OutOfBoundLinearAccess)
+{
+  EXPECT_NO_THROW(this->pool.get_stream(this->pool.get_pool_size() - 1));
+  EXPECT_THROW(this->pool.get_stream(this->pool.get_pool_size()), rmm::out_of_range);
+}
+
+TEST_F(CudaStreamPoolTest, ValidLinearAccess)
+{
+  auto const stream_a = this->pool.get_stream(0);
+  auto const stream_b = this->pool.get_stream(1);
+  EXPECT_NE(stream_a, stream_b);
+  EXPECT_FALSE(stream_a.is_default());
+  EXPECT_FALSE(stream_a.is_per_thread_default());
+  EXPECT_FALSE(stream_b.is_default());
+  EXPECT_FALSE(stream_b.is_per_thread_default());
 }

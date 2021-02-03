@@ -18,6 +18,7 @@
 
 #include <rmm/cuda_stream.hpp>
 #include <rmm/cuda_stream_view.hpp>
+#include <rmm/detail/error.hpp>
 
 #include <atomic>
 #include <vector>
@@ -75,7 +76,7 @@ class cuda_stream_pool {
   rmm::cuda_stream_view get_stream(std::size_t stream_index) const
   {
     RMM_EXPECTS(
-      stream_id < streams_.size(), rmm::out_of_range, "Attempt to access out of bounds stream.");
+      stream_index < streams_.size(), rmm::out_of_range, "Attempt to access out of bounds stream.");
     return streams_[stream_index].view();
   }
 
