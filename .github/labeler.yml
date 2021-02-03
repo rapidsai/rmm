@@ -4,22 +4,18 @@
 
 Python:
   - 'python/**'
-  - 'notebooks/**'
-  
-librmm:
-  - 'cpp/**'
 
 CMake:
   - '**/CMakeLists.txt'
   - '**/cmake/**'
-  
-Java:
-  - 'java/**'
-  
-Ops:
-  - '.github/**'
-  - 'ci/**'
+
+conda:
   - 'conda/**'
-  - '**/Dockerfile'
-  - '**/.dockerignore'
-  - 'docker/**'
+
+cpp:
+  - 'include/**'
+  - 'tests/**'
+  - 'doxygen/**'
+
+gpuCI:
+  - 'ci/**'
