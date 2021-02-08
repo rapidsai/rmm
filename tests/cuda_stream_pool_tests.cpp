@@ -63,8 +63,9 @@ TEST_F(CudaStreamPoolTest, PoolSize) { EXPECT_GE(this->pool.get_pool_size(), 1);
 
 TEST_F(CudaStreamPoolTest, OutOfBoundLinearAccess)
 {
-  EXPECT_NO_THROW(this->pool.get_stream(this->pool.get_pool_size() - 1));
-  EXPECT_THROW(this->pool.get_stream(this->pool.get_pool_size()), rmm::out_of_range);
+  auto const stream_a = this->pool.get_stream(0);
+  auto const stream_b = this->pool.get_stream(this->pool.get_pool_size());
+  EXPECT_EQ(stream_a, stream_b);
 }
 
 TEST_F(CudaStreamPoolTest, ValidLinearAccess)
