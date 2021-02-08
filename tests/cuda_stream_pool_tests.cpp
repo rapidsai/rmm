@@ -73,8 +73,4 @@ TEST_F(CudaStreamPoolTest, ValidLinearAccess)
   auto const stream_a = this->pool.get_stream(0);
   auto const stream_b = this->pool.get_stream(1);
   EXPECT_NE(stream_a, stream_b);
-  EXPECT_FALSE(stream_a.is_default());
-  EXPECT_FALSE(stream_a.is_per_thread_default());
-  EXPECT_FALSE(stream_b.is_default());
-  EXPECT_FALSE(stream_b.is_per_thread_default());
 }
