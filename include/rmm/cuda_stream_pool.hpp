@@ -63,12 +63,12 @@ class cuda_stream_pool {
   }
 
   /**
-   * @brief Get a `cuda_stream_view` of the stream associated with `stream_id`. 
+   * @brief Get a `cuda_stream_view` of the stream associated with `stream_id`.
    * Equivalent values of `stream_id` return a stream_view to the same underlying stream.
    *
    * This function is thread safe with respect to other calls to the same function.
    *
-   * @param stream_id Unique identifier for the desired stream 
+   * @param stream_id Unique identifier for the desired stream
    *
    * @return rmm::cuda_stream_view
    */
