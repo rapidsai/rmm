@@ -68,7 +68,7 @@ class cuda_stream_pool {
    *
    * This function is thread safe with respect to other calls to the same function.
    *
-   * @param stream_id The index of the stream in the pool
+   * @param stream_id Unique identifier for the desired stream 
    *
    * @return rmm::cuda_stream_view
    */
