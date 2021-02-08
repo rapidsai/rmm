@@ -18,6 +18,7 @@
 
 #include <rmm/cuda_stream.hpp>
 #include <rmm/cuda_stream_view.hpp>
+#include <rmm/detail/error.hpp>
 
 #include <atomic>
 #include <vector>
@@ -60,6 +61,30 @@ class cuda_stream_pool {
   {
     return streams_[(next_stream++) % streams_.size()].view();
   }
+
+  /**
+   * @brief Get a `cuda_stream_view` of the stream associated with `stream_id`.
+   * Equivalent values of `stream_id` return a stream_view to the same underlying stream.
+   *
+   * This function is thread safe with respect to other calls to the same function.
+   *
+   * @param stream_id Unique identifier for the desired stream
+   *
+   * @return rmm::cuda_stream_view
+   */
+  rmm::cuda_stream_view get_stream(std::size_t stream_id) const
+  {
+    return streams_[stream_id % streams_.size()].view();
+  }
+
+  /**
+   * @brief Get the number of streams in the pool.
+   *
+   * This function is thread safe with respect to other calls to the same function.
+   *
+   * @return the number of streams in the pool
+   */
+  size_t get_pool_size() const noexcept { return streams_.size(); }
 
  private:
   std::vector<rmm::cuda_stream> streams_;
