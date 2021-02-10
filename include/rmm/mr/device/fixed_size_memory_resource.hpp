@@ -208,6 +208,15 @@ class fixed_size_memory_resource
     return block_type{p};
   }
 
+  block_type free_block(block_type b, cuda_stream_view stream) noexcept
+  {
+    // Deallocating a fixed-size block just inserts it in the free list, which is
+    // handled by the parent class
+    return b;
+  }
+
+  block_type construct_block(void* p, size_t /* size */) noexcept { return block_type{p}; }
+
   /**
    * @brief Get free and available memory for memory resource
    *

@@ -341,15 +341,57 @@ class pool_memory_resource final
 
     // If this is an upstream block, release it to upstream
     auto const i = upstream_blocks_.find(static_cast<char*>(p));
-    if (i != upstream_blocks_.end() && (i->size() == size)) {
-      RMM_LOG_DEBUG("[D][Stream {}][Upstream {}B][{:p}]", fmt::ptr(stream.value()), size, p);
-      upstream_blocks_.erase(i);
-      upstream_mr_->deallocate(p, size, stream);
-      current_pool_size_ -= size;
-      return block_type{};
+    if (i != upstream_blocks_.end()) {
+      if (i->size() == size) {
+        RMM_LOG_DEBUG("[D][Stream {}][Upstream {}B][{:p}]", fmt::ptr(stream.value()), size, p);
+        upstream_blocks_.erase(i);
+        upstream_mr_->deallocate(p, size, stream);
+        current_pool_size_ -= size;
+        return block_type{};
+      } else {
+        return block_type{static_cast<char*>(p), size, true};
+      }
     }
 
     return block_type{static_cast<char*>(p), size, false};
+  }
+
+  block_type free_block(block_type const& b, cuda_stream_view stream) noexcept
+  {
+    // If this is not a head block it can't be freed upstream.
+    // If this is the original pool block, don't free it upstream automatically
+    if (!b.is_head() || (upstream_blocks_.size() == 1)) return b;
+    RMM_LOGGING_ASSERT(b.is_valid());
+
+#ifdef RMM_POOL_TRACK_ALLOCATIONS
+    auto const i = allocated_blocks_.find(b.pointer());
+    RMM_LOGGING_ASSERT(i != allocated_blocks_.end());
+
+    auto block = *i;
+    RMM_LOGGING_ASSERT(block.size() == rmm::detail::align_up(size, allocation_alignment));
+    allocated_blocks_.erase(i);
+#endif
+
+    // If this is an upstream block, release it to upstream
+    auto const i = upstream_blocks_.find(b.pointer());
+    if (i != upstream_blocks_.end()) {
+      if (i->size() == b.size()) {
+        RMM_LOG_DEBUG(
+          "[D][Stream {}][Upstream {}B][{:p}]", fmt::ptr(stream.value()), b.size(), b.pointer());
+        upstream_blocks_.erase(i);
+        upstream_mr_->deallocate(b.pointer(), b.size(), stream);
+        current_pool_size_ -= b.size();
+        return block_type{};
+      }
+    }
+
+    return b;
+  }
+
+  block_type construct_block(void* p, size_t size) noexcept
+  {
+    auto const i = upstream_blocks_.find(static_cast<char*>(p));
+    return block_type{static_cast<char*>(p), size, i != upstream_blocks_.end()};
   }
 
   /**

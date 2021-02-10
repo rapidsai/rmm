@@ -170,13 +170,11 @@ struct coalescing_free_list : free_list<block> {
    *        preceding and following blocks if either is contiguous.
    *
    * @param b The block to insert.
+   * @return block_type the coalesced block
    */
-  void insert(block_type const& b)
+  const_iterator insert(block_type const& b)
   {
-    if (is_empty()) {
-      free_list::insert(cend(), b);
-      return;
-    }
+    if (is_empty()) { return free_list::insert(cend(), b); }
 
     // Find the right place (in ascending ptr order) to insert the block
     // Can't use binary_search because it's a linked list and will be quadratic
@@ -190,14 +188,41 @@ struct coalescing_free_list : free_list<block> {
     if (merge_prev && merge_next) {
       *previous = previous->merge(b).merge(*next);
       erase(next);
+      return previous;
     } else if (merge_prev) {
       *previous = previous->merge(b);
+      return previous;
     } else if (merge_next) {
       *next = b.merge(*next);
+      return next;
     } else {
-      free_list::insert(next, b);  // cannot be coalesced, just insert
+      return free_list::insert(next, b);  // cannot be coalesced, just insert
     }
   }
+
+  /*block_type try_insert(block_type const& b)
+  {
+    if (is_empty()) return b;
+
+    auto const next     = std::find_if(begin(), end(), [b](block_type const& i) { return b < i; });
+    auto const previous = (next == cbegin()) ? next : std::prev(next);
+
+    // Coalesce with neighboring blocks or insert the new block if it can't be coalesced
+    bool const merge_prev = previous->is_contiguous_before(b);
+    bool const merge_next = (next != cend()) && b.is_contiguous_before(*next);
+
+    if (merge_prev && merge_next) {
+      auto r = *previous;
+      return r.merge(b).merge(*next);
+    } else if (merge_prev) {
+      auto r = *previous;
+      return r.merge(b);
+    } else if (merge_next) {
+      return b.merge(*next);
+    } else {
+      return b;
+    }
+  }*/
 
   /**
    * @brief Moves blocks from range `[first, last)` into the free_list in their correct order,

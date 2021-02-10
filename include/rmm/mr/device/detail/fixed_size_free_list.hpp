@@ -47,7 +47,11 @@ struct fixed_size_free_list : free_list<block_base> {
    *
    * @param b The block to insert.
    */
-  void insert(block_type const& b) { push_back(b); }
+  const_iterator insert(block_type const& b)
+  {
+    push_back(b);
+    return std::prev(this->end());
+  }
 
   /**
    * @brief Splices blocks from range `[first, last)` onto the free_list.
