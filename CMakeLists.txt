@@ -108,10 +108,10 @@ install(FILES ${RMM_BINARY_DIR}/include/rmm/version_config.hpp
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/rmm)
 
 include(CMakePackageConfigHelpers)
-configure_package_config_file(cmake/rmm-config.cmake.in ${RMM_BINARY_DIR}/rmm-config.cmake
+configure_package_config_file(cmake/rmm-config.cmake.in ${RMM_BINARY_DIR}/cmake/rmm-config.cmake
                               INSTALL_DESTINATION ${INSTALL_CONFIGDIR})
 
-write_basic_package_version_file(${RMM_BINARY_DIR}/rmm-config-version.cmake
+write_basic_package_version_file(${RMM_BINARY_DIR}/cmake/rmm-config-version.cmake
                                  COMPATIBILITY SameMinorVersion)
 
 install(
@@ -120,8 +120,32 @@ install(
   NAMESPACE rmm::
   DESTINATION ${INSTALL_CONFIGDIR})
 
-install(FILES ${RMM_BINARY_DIR}/rmm-config.cmake ${RMM_BINARY_DIR}/rmm-config-version.cmake
-              ${RMM_SOURCE_DIR}/cmake/install/FindThrust.cmake DESTINATION ${INSTALL_CONFIGDIR})
+install(
+  FILES ${RMM_BINARY_DIR}/cmake/rmm-config.cmake ${RMM_BINARY_DIR}/cmake/rmm-config-version.cmake
+        ${RMM_SOURCE_DIR}/cmake/install/FindThrust.cmake DESTINATION ${INSTALL_CONFIGDIR})
+
+# build export targets
+
+set(RMM_BUILD_DIR_EXPORT_SETTINGS
+    "list(PREPEND CMAKE_MODULE_PATH \"${RMM_SOURCE_DIR}/cmake/install/\")")
+
+configure_package_config_file(cmake/rmm-config.cmake.in ${RMM_BINARY_DIR}/rmm-config.cmake
+                              INSTALL_DESTINATION ${RMM_BINARY_DIR})
+
+write_basic_package_version_file(${RMM_BINARY_DIR}/rmm-config-version.cmake
+                                 COMPATIBILITY SameMinorVersion)
+
+export(
+  TARGETS rmm
+  FILE ${RMM_BINARY_DIR}/rmm-targets.cmake
+  NAMESPACE rmm::)
+
+if(SPDLOG_INSTALL)
+  export(
+    APPEND
+    TARGETS spdlog_header_only
+    FILE ${RMM_BINARY_DIR}/rmm-targets.cmake)
+endif()
 
 # make documentation
 
