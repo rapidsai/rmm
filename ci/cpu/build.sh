@@ -58,8 +58,6 @@ if [[ "$BUILD_LIBRMM" == "1" ]]; then
     gpuci_conda_retry build conda/recipes/librmm --python=$PYTHON
   else
     gpuci_conda_retry build --dirty --no-remove-work-dir conda/recipes/librmm
-    gpuci_logger "Checking ccache"
-    ls ${WORKSPACE}/ccache
   fi
 fi
 
