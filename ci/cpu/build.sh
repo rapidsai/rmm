@@ -56,6 +56,8 @@ if [[ "$BUILD_LIBRMM" == "1" ]]; then
   gpuci_logger "Build conda pkg for librmm"
   if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
     gpuci_conda_retry build conda/recipes/librmm --python=$PYTHON
+    gpuci_logger "Checking ccache"
+    ls ${WORKSPACE}/ccache
   else
     gpuci_conda_retry build --dirty --no-remove-work-dir conda/recipes/librmm
   fi
