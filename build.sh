@@ -60,9 +60,13 @@ function ensureCMakeRan {
     mkdir -p "${LIBRMM_BUILD_DIR}"
     if (( RAN_CMAKE == 0 )); then
         echo "Executing cmake for librmm..."
-        cmake -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" \
+        cmake -GNinja \
+	      -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" \
               -DCUDA_STATIC_RUNTIME="${CUDA_STATIC_RUNTIME}" \
               -DPER_THREAD_DEFAULT_STREAM="${PER_THREAD_DEFAULT_STREAM}" \
+	      -DCMAKE_C_COMPILER_LAUNCHER="${CMAKE_C_COMPILER_LAUNCHER}" \
+              -DCMAKE_CXX_COMPILER_LAUNCHER="${CMAKE_CXX_COMPILER_LAUNCHER}" \
+	      -DCMAKE_CUDA_COMPILER_LAUNCHER="${CMAKE_CUDA_COMPILER_LAUNCHER}" \
               -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -B "${LIBRMM_BUILD_DIR}" -S .
         RAN_CMAKE=1
     fi
