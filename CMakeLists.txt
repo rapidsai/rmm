@@ -13,6 +13,19 @@
 # =============================================================================
 cmake_minimum_required(VERSION 3.18...3.18 FATAL_ERROR)
 
+# If `CMAKE_CUDA_ARCHITECTURES` is not defined, build for all supported architectures. If
+# `CMAKE_CUDA_ARCHITECTURES` is set to an empty string (""), build for only the current
+# architecture. If `CMAKE_CUDA_ARCHITECTURES` is specified by the user, use user setting.
+
+# This needs to be run before enabling the CUDA language due to the default initialization behavior
+# of `CMAKE_CUDA_ARCHITECTURES`, https://gitlab.kitware.com/cmake/cmake/-/issues/21302
+if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+  set(RMM_BUILD_FOR_ALL_ARCHS TRUE)
+elseif(CMAKE_CUDA_ARCHITECTURES STREQUAL "")
+  unset(CMAKE_CUDA_ARCHITECTURES CACHE)
+  set(RMM_BUILD_FOR_DETECTED_ARCHS TRUE)
+endif()
+
 project(
   RMM
   VERSION 0.19.0
@@ -85,10 +98,9 @@ message(STATUS "RMM: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'")
 
 if(BUILD_TESTS OR BUILD_BENCHMARKS)
   # Auto-detect available GPU compute architectures
+  enable_language(CUDA)
   include(${RMM_SOURCE_DIR}/cmake/Modules/SetGPUArchs.cmake)
   message(STATUS "RMM: Building benchmarks with GPU Architectures: ${CMAKE_CUDA_ARCHITECTURES}")
-  # Only enable the CUDA language after including SetGPUArchs.cmake
-  enable_language(CUDA)
 endif()
 
 # optionally build tests
