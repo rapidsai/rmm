@@ -29,6 +29,7 @@ from rmm._lib.cuda_stream cimport CudaStream
 
 from rmm._lib.cuda_stream import CudaStream
 
+from rmm._cuda.event cimport cudaEventRecord, cudaStreamWaitEvent, Event
 
 cdef class Stream:
     def __init__(self, obj=None):
@@ -92,6 +93,20 @@ cdef class Stream:
         Check if we are the default CUDA stream
         """
         return self.c_is_default()
+
+    def record_event(self, Event event):
+        """
+        Records the given event on this stream
+        """
+        with nogil:
+            cudaEventRecord(event._cuda_event, self._cuda_stream)
+
+    def waiton_event(self, Event event):
+        """
+        Wait on the given event
+        """
+        with nogil:
+            cudaStreamWaitEvent(self._cuda_stream, event._cuda_event, 0)
 
     def _init_from_numba_stream(self, obj):
         self._cuda_stream = <cudaStream_t>(obj.handle.value)
