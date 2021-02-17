@@ -66,6 +66,13 @@ if(CMAKE_CUDA_ARCHITECTURES STREQUAL "")
   evaluate_gpu_archs(CMAKE_CUDA_ARCHITECTURES)
 endif(CMAKE_CUDA_ARCHITECTURES STREQUAL "")
 
+# CMake architecture list entry of "80" means to build compute and sm. What we want is for the
+# newest arch only to build that way while the rest built only for sm.
+list(SORT CMAKE_CUDA_ARCHITECTURES ORDER ASCENDING)
+list(POP_BACK CMAKE_CUDA_ARCHITECTURES latest_arch)
+list(TRANSFORM CMAKE_CUDA_ARCHITECTURES APPEND "-real")
+list(APPEND CMAKE_CUDA_ARCHITECTURES ${latest_arch})
+
 set(CMAKE_CUDA_ARCHITECTURES
     ${CMAKE_CUDA_ARCHITECTURES}
     PARENT_SCOPE)
