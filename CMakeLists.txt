@@ -84,7 +84,7 @@ set_property(CACHE RMM_LOGGING_LEVEL PROPERTY STRINGS "TRACE" "DEBUG" "INFO" "WA
 message(STATUS "RMM: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'")
 
 if(BUILD_TESTS OR BUILD_BENCHMARKS)
-    # Auto-detect available GPU compute architectures
+  # Auto-detect available GPU compute architectures
   include(${RMM_SOURCE_DIR}/cmake/Modules/SetGPUArchs.cmake)
   message(STATUS "RMM: Building benchmarks with GPU Architectures: ${CMAKE_CUDA_ARCHITECTURES}")
   # Only enable the CUDA language after including SetGPUArchs.cmake
