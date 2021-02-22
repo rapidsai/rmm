@@ -5,9 +5,10 @@
 ######################################
 set -e
 
-# Set path and build parallel level
+# Set path, build parallel level and build generator
 export PATH=/opt/conda/bin:/usr/local/cuda/bin:$PATH
 export PARALLEL_LEVEL=${PARALLEL_LEVEL:-4}
+export CMAKE_GENERATOR="Ninja"
 
 # Set home to the job's workspace
 export HOME=$WORKSPACE
