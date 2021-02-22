@@ -33,13 +33,6 @@ if(GTest_ADDED)
   add_library(GTest::gmock_main ALIAS gmock_main)
 endif()
 
-# Auto-detect available GPU compute architectures
-
-include(${RMM_SOURCE_DIR}/cmake/Modules/SetGPUArchs.cmake)
-message(STATUS "RMM: Building tests with GPU Architectures: ${CMAKE_CUDA_ARCHITECTURES}")
-
-enable_language(CUDA)
-
 # Build options
 
 option(DISABLE_DEPRECATION_WARNING "Disable warnings generated from deprecated declarations." OFF)
