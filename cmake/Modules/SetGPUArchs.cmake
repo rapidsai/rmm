@@ -50,14 +50,16 @@ endif()
 
 if(${PROJECT_NAME}_BUILD_FOR_ALL_ARCHS)
   set(CMAKE_CUDA_ARCHITECTURES ${SUPPORTED_CUDA_ARCHITECTURES})
+
+  # CMake architecture list entry of "80" means to build compute and sm. What we want is for the
+  # newest arch only to build that way while the rest built only for sm.
+  list(POP_BACK CMAKE_CUDA_ARCHITECTURES latest_arch)
+  list(TRANSFORM CMAKE_CUDA_ARCHITECTURES APPEND "-real")
+  list(APPEND CMAKE_CUDA_ARCHITECTURES ${latest_arch})
+
 elseif(${PROJECT_NAME}_BUILD_FOR_DETECTED_ARCHS)
   include(${PROJECT_SOURCE_DIR}/cmake/Modules/EvalGPUArchs.cmake)
   evaluate_gpu_archs(CMAKE_CUDA_ARCHITECTURES)
-endif()
 
-# CMake architecture list entry of "80" means to build compute and sm. What we want is for the
-# newest arch only to build that way while the rest built only for sm.
-list(SORT CMAKE_CUDA_ARCHITECTURES ORDER ASCENDING)
-list(POP_BACK CMAKE_CUDA_ARCHITECTURES latest_arch)
-list(TRANSFORM CMAKE_CUDA_ARCHITECTURES APPEND "-real")
-list(APPEND CMAKE_CUDA_ARCHITECTURES ${latest_arch})
+  list(TRANSFORM CMAKE_CUDA_ARCHITECTURES APPEND "-real")
+endif()
