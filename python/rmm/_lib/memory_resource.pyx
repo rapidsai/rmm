@@ -12,6 +12,7 @@ from libcpp.string cimport string
 
 from rmm._cuda.gpu import CUDARuntimeError, cudaError, getDevice, setDevice
 
+
 # NOTE: Keep extern declarations in .pyx file as much as possible to avoid
 # leaking dependencies when importing RMM Cython .pxd files
 cdef extern from "thrust/optional.h" namespace "thrust" nogil:

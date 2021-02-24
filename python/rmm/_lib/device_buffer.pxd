@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from libcpp.memory cimport unique_ptr
 from libc.stdint cimport uintptr_t
+from libcpp.memory cimport unique_ptr
 
-from rmm._lib.cuda_stream_view cimport cuda_stream_view
 from rmm._cuda.stream cimport Stream
+from rmm._lib.cuda_stream_view cimport cuda_stream_view
 from rmm._lib.memory_resource cimport DeviceMemoryResource
 
 
