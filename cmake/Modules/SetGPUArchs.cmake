@@ -25,15 +25,28 @@ else()
   list(REMOVE_ITEM SUPPORTED_CUDA_ARCHITECTURES "62" "72")
 endif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
 
+# CMake < 3.20 has a bug in FindCUDAToolkit where it won't properly detect the CUDAToolkit version
+# when find_package(CUDAToolkit) occurs before enable_language(CUDA)
+if(NOT DEFINED CUDAToolkit_VERSION AND CMAKE_CUDA_COMPILER)
+  execute_process(COMMAND ${CMAKE_CUDA_COMPILER} "--version" OUTPUT_VARIABLE NVCC_OUT)
+  if(NVCC_OUT MATCHES [=[ V([0-9]+)\.([0-9]+)\.([0-9]+)]=])
+    set(CUDAToolkit_VERSION_MAJOR "${CMAKE_MATCH_1}")
+    set(CUDAToolkit_VERSION_MINOR "${CMAKE_MATCH_2}")
+    set(CUDAToolkit_VERSION_PATCH "${CMAKE_MATCH_3}")
+    set(CUDAToolkit_VERSION "${CMAKE_MATCH_1}.${CMAKE_MATCH_2}.${CMAKE_MATCH_3}")
+  endif()
+  unset(NVCC_OUT)
+endif()
+
 if(CUDAToolkit_VERSION_MAJOR LESS 11)
   list(REMOVE_ITEM SUPPORTED_CUDA_ARCHITECTURES "80")
-endif(CUDAToolkit_VERSION_MAJOR LESS 11)
+endif()
 if(CUDAToolkit_VERSION_MAJOR LESS 10)
   list(REMOVE_ITEM SUPPORTED_CUDA_ARCHITECTURES "75")
-endif(CUDAToolkit_VERSION_MAJOR LESS 10)
+endif()
 if(CUDAToolkit_VERSION_MAJOR LESS 9)
   list(REMOVE_ITEM SUPPORTED_CUDA_ARCHITECTURES "70")
-endif(CUDAToolkit_VERSION_MAJOR LESS 9)
+endif()
 
 # If `CMAKE_CUDA_ARCHITECTURES` is not defined, build for all supported architectures. If
 # `CMAKE_CUDA_ARCHITECTURES` is set to an empty string (""), build for only the current
@@ -53,6 +66,9 @@ if(CMAKE_CUDA_ARCHITECTURES STREQUAL "")
   evaluate_gpu_archs(CMAKE_CUDA_ARCHITECTURES)
 endif(CMAKE_CUDA_ARCHITECTURES STREQUAL "")
 
-set(CMAKE_CUDA_ARCHITECTURES
-    ${CMAKE_CUDA_ARCHITECTURES}
-    PARENT_SCOPE)
+# CMake architecture list entry of "80" means to build compute and sm. What we want is for the
+# newest arch only to build that way while the rest built only for sm.
+list(SORT CMAKE_CUDA_ARCHITECTURES ORDER ASCENDING)
+list(POP_BACK CMAKE_CUDA_ARCHITECTURES latest_arch)
+list(TRANSFORM CMAKE_CUDA_ARCHITECTURES APPEND "-real")
+list(APPEND CMAKE_CUDA_ARCHITECTURES ${latest_arch})

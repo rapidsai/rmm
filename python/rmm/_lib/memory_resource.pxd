@@ -103,6 +103,8 @@ cdef class DeviceMemoryResource:
 cdef class UpstreamResourceAdaptor(DeviceMemoryResource):
     cdef readonly DeviceMemoryResource upstream_mr
 
+    cpdef DeviceMemoryResource get_upstream(self)
+
 cdef class CudaMemoryResource(DeviceMemoryResource):
     pass
 

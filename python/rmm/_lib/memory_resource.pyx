@@ -21,22 +21,21 @@ cdef class DeviceMemoryResource:
 
 cdef class UpstreamResourceAdaptor(DeviceMemoryResource):
 
-    def __cinit__(self, *args, **kwargs):
+    def __cinit__(self, DeviceMemoryResource upstream_mr, *args, **kwargs):
 
-        # Need to support args/kwargs here to allow child MRs to have any init
-        # signature they want
-        if ("upstream_mr" in kwargs):
-            self.upstream_mr = kwargs["upstream_mr"]
-        elif (len(args) > 0 and isinstance(args[0], DeviceMemoryResource)):
-            self.upstream_mr = args[0]
-        else:
+        if (upstream_mr is None):
             raise Exception(
                 "Argument `upstream_mr` must be passed as a keyword argument "
                 "or as the first positional argument")
 
+        self.upstream_mr = upstream_mr
+
     def __dealloc__(self):
         # Must cleanup the base MR before any upstream MR
         self.c_obj.reset()
+
+    cpdef DeviceMemoryResource get_upstream(self):
+        return self.upstream_mr
 
 
 cdef class CudaMemoryResource(DeviceMemoryResource):
@@ -289,7 +288,7 @@ cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
                 )
         # Append the device ID before the file extension
         log_file_name = _append_id(
-            log_file_name.decode(), getDevice()
+            log_file_name, getDevice()
         )
 
         _log_file_name = log_file_name
@@ -325,6 +324,9 @@ cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
 
     cpdef get_file_name(self):
         return self._log_file_name
+
+    def __dealloc__(self):
+        self.c_obj.reset()
 
 
 class KeyInitializedDefaultDict(defaultdict):
@@ -403,7 +405,7 @@ cpdef void _initialize(
             if logging:
                 mr = LoggingResourceAdaptor(
                     typ(*args, **kwargs),
-                    log_file_name.encode()
+                    log_file_name
                 )
             else:
                 mr = typ(*args, **kwargs)
@@ -448,11 +450,9 @@ cpdef set_per_device_resource(int device, DeviceMemoryResource mr):
     # Since cuda_device_id does not have a default constructor, it must be heap
     # allocated
     cdef cuda_device_id* device_id
-    try:
-        device_id = new cuda_device_id(device)
-        _set_per_device_resource(deref(device_id), mr.get_mr())
-    finally:
-        del device_id
+    cdef unique_ptr[cuda_device_id] device_id = make_unique[cuda_device_id](device)
+
+    _set_per_device_resource(deref(device_id), mr.get_mr())
 
 
 cpdef set_current_device_resource(DeviceMemoryResource mr):
@@ -522,3 +522,33 @@ cpdef _flush_logs():
     for each_mr in _per_device_mrs.values():
         if isinstance(each_mr, LoggingResourceAdaptor):
             each_mr.flush()
+
+
+def enable_logging(log_file_name=None):
+    """
+    Enable logging of run-time events.
+    """
+    global _per_device_mrs
+    cdef unique_ptr[cuda_device_id] device_ptr
+
+    devices = [0] if not _per_device_mrs.keys() else _per_device_mrs.keys()
+
+    for device in devices:
+        each_mr = <DeviceMemoryResource>_per_device_mrs[device]
+        if not isinstance(each_mr, LoggingResourceAdaptor):
+            # device_ptr = make_unique[cuda_device_id](<int>device)
+            set_per_device_resource(
+                device,
+                LoggingResourceAdaptor(each_mr, log_file_name)
+            )
+
+
+def disable_logging():
+    """
+    Disable logging if it was enabled previously using
+    `rmm.initialize()` or `rmm.enable_logging()`.
+    """
+    global _per_device_mrs
+    for i, each_mr in _per_device_mrs.items():
+        if isinstance(each_mr, LoggingResourceAdaptor):
+            set_per_device_resource(i, each_mr.get_upstream())
