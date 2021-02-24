@@ -409,7 +409,6 @@ def test_rmm_enable_disable_logging(dtype, nelem, alloc, tmpdir):
         os.remove(fname)
 
     rmm.disable_logging()
-    rmm.reinitialize()
 
 
 def test_mr_devicebuffer_lifetime():
@@ -445,4 +444,3 @@ def test_mr_upstream_lifetime():
     # Delete cuda_mr first. Should be kept alive by pool_mr
     del cuda_mr
     del pool_mr
-
