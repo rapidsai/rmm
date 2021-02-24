@@ -384,6 +384,7 @@ def test_reinitialize_initial_pool_size_gt_max():
             maximum_pool_size=1 << 10,
         )
     assert "Initial pool size exceeds the maximum pool size" in str(e.value)
+    rmm.reinitialize()
 
 
 def test_mr_devicebuffer_lifetime():
@@ -408,3 +409,30 @@ def test_mr_devicebuffer_lifetime():
 
     # Delete a. Used to crash before. Pool MR should still be alive
     del a
+
+
+@pytest.mark.parametrize("dtype", _dtypes)
+@pytest.mark.parametrize("nelem", _nelems)
+@pytest.mark.parametrize("alloc", _allocs)
+def test_rmm_enable_disable_logging(dtype, nelem, alloc, tmpdir):
+    suffix = ".csv"
+
+    base_name = str(tmpdir.join("rmm_log.csv"))
+
+    rmm.enable_logging(log_file_name=base_name)
+    print(rmm.mr.get_per_device_resource(0))
+    array_tester(dtype, nelem, alloc)
+    rmm.mr._flush_logs()
+
+    # Need to open separately because the device ID is appended to filename
+    fname = base_name[: -len(suffix)] + ".dev0" + suffix
+    try:
+        with open(fname, "rb") as f:
+            csv = f.read()
+            assert csv.find(b"Time,Action,Pointer,Size,Stream") >= 0
+    finally:
+        os.remove(fname)
+
+    rmm.disable_logging()
+    rmm.reinitialize()
+

@@ -1,5 +1,5 @@
 # =============================================================================
-# Copyright (c) 2018, NVIDIA CORPORATION.
+# Copyright (c) 2018-2021, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -15,11 +15,15 @@ cmake_minimum_required(VERSION 3.18...3.18 FATAL_ERROR)
 
 project(
   RMM
-  VERSION 0.17.0
+  VERSION 0.19.0
   LANGUAGES CXX)
 
 include(cmake/Modules/CPM.cmake)
 include(cmake/Modules/RMM_thirdparty.cmake)
+include(cmake/Modules/Version.cmake)
+
+# Write the version header
+write_version()
 
 # build type
 
@@ -53,8 +57,10 @@ find_package(CUDAToolkit REQUIRED)
 add_library(rmm INTERFACE)
 add_library(rmm::rmm ALIAS rmm)
 
-target_include_directories(rmm INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-                                         "$<INSTALL_INTERFACE:include>")
+target_include_directories(
+  rmm
+  INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+            "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>" "$<INSTALL_INTERFACE:include>")
 
 if(CUDA_STATIC_RUNTIME)
   message(STATUS "RMM: Enabling static linking of cudart")
@@ -77,6 +83,14 @@ set_property(CACHE RMM_LOGGING_LEVEL PROPERTY STRINGS "TRACE" "DEBUG" "INFO" "WA
                                               "CRITICAL" "OFF")
 message(STATUS "RMM: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'")
 
+if(BUILD_TESTS OR BUILD_BENCHMARKS)
+  # Auto-detect available GPU compute architectures
+  include(${RMM_SOURCE_DIR}/cmake/Modules/SetGPUArchs.cmake)
+  message(STATUS "RMM: Building benchmarks with GPU Architectures: ${CMAKE_CUDA_ARCHITECTURES}")
+  # Only enable the CUDA language after including SetGPUArchs.cmake
+  enable_language(CUDA)
+endif()
+
 # optionally build tests
 
 if(BUILD_TESTS)
@@ -98,12 +112,14 @@ set(INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/rmm)
 install(TARGETS rmm EXPORT rmm-targets)
 
 install(DIRECTORY include/rmm DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(FILES ${RMM_BINARY_DIR}/include/rmm/version_config.hpp
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/rmm)
 
 include(CMakePackageConfigHelpers)
-configure_package_config_file(cmake/rmm-config.cmake.in ${RMM_BINARY_DIR}/rmm-config.cmake
+configure_package_config_file(cmake/rmm-config.cmake.in ${RMM_BINARY_DIR}/cmake/rmm-config.cmake
                               INSTALL_DESTINATION ${INSTALL_CONFIGDIR})
 
-write_basic_package_version_file(${RMM_BINARY_DIR}/rmm-config-version.cmake
+write_basic_package_version_file(${RMM_BINARY_DIR}/cmake/rmm-config-version.cmake
                                  COMPATIBILITY SameMinorVersion)
 
 install(
@@ -112,8 +128,32 @@ install(
   NAMESPACE rmm::
   DESTINATION ${INSTALL_CONFIGDIR})
 
-install(FILES ${RMM_BINARY_DIR}/rmm-config.cmake ${RMM_BINARY_DIR}/rmm-config-version.cmake
-              ${RMM_SOURCE_DIR}/cmake/install/FindThrust.cmake DESTINATION ${INSTALL_CONFIGDIR})
+install(
+  FILES ${RMM_BINARY_DIR}/cmake/rmm-config.cmake ${RMM_BINARY_DIR}/cmake/rmm-config-version.cmake
+        ${RMM_SOURCE_DIR}/cmake/install/FindThrust.cmake DESTINATION ${INSTALL_CONFIGDIR})
+
+# build export targets
+
+set(RMM_BUILD_DIR_EXPORT_SETTINGS
+    "list(PREPEND CMAKE_MODULE_PATH \"${RMM_SOURCE_DIR}/cmake/install/\")")
+
+configure_package_config_file(cmake/rmm-config.cmake.in ${RMM_BINARY_DIR}/rmm-config.cmake
+                              INSTALL_DESTINATION ${RMM_BINARY_DIR})
+
+write_basic_package_version_file(${RMM_BINARY_DIR}/rmm-config-version.cmake
+                                 COMPATIBILITY SameMinorVersion)
+
+export(
+  TARGETS rmm
+  FILE ${RMM_BINARY_DIR}/rmm-targets.cmake
+  NAMESPACE rmm::)
+
+if(SPDLOG_INSTALL)
+  export(
+    APPEND
+    TARGETS spdlog_header_only
+    FILE ${RMM_BINARY_DIR}/rmm-targets.cmake)
+endif()
 
 # make documentation
 

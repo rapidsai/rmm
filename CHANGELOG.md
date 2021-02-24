@@ -1,17 +1,16 @@
-# RMM 0.18.0 (Date TBD)
+# RMM 0.19.0 (Date TBD)
 
 ## New Features
 
-- PR #636 Add a `Stream` class to manage CUDA streams in Python
-
 ## Improvements
-
-- PR #647 Simplify `rmm::exec_policy` and refactor Thrust support
 
 ## Bug Fixes
 
+# 0.18.0
 
-# RMM 0.17.0 (Date TBD)
+Please see https://github.com/rapidsai/rmm/releases/tag/branch-0.18-latest for the latest changes to this development branch.
+
+# RMM 0.17.0 (10 Dec 2020)
 
 ## New Features
 

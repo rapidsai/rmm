@@ -54,6 +54,7 @@ TEST(LimitingTest, UnderLimitDueToFrees)
   EXPECT_NO_THROW(mr.allocate(6_MiB));
   EXPECT_EQ(mr.get_allocated_bytes(), 10_MiB);
   EXPECT_EQ(mr.get_allocation_limit() - mr.get_allocated_bytes(), 0);
+  mr.deallocate(p2, 4_MiB);
 }
 
 TEST(LimitingTest, OverLimit)
@@ -68,6 +69,8 @@ TEST(LimitingTest, OverLimit)
   EXPECT_THROW(mr.allocate(3_MiB), rmm::bad_alloc);
   EXPECT_EQ(mr.get_allocated_bytes(), 8_MiB);
   EXPECT_EQ(mr.get_allocation_limit() - mr.get_allocated_bytes(), 2_MiB);
+  mr.deallocate(p1, 4_MiB);
+  mr.deallocate(p2, 4_MiB);
 }
 
 }  // namespace
