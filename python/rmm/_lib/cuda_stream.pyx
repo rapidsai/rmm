@@ -12,21 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+cimport cython
+from libc.stdint cimport uintptr_t
 from libcpp cimport bool
 
-from rmm._lib.lib cimport cudaStream_t
 
-cdef extern from "rmm/cuda_stream_view.hpp" namespace "rmm" nogil:
-    cdef cppclass cuda_stream_view:
-        cuda_stream_view()
-        cuda_stream_view(cudaStream_t)
-        cudaStream_t value()
-        bool is_default()
-        bool is_per_thread_default()
-        void synchronize() except +
+@cython.final
+cdef class CudaStream:
+    """
+    Wrapper around a CUDA stream with RAII semantics.
+    When a CudaStream instance is GC'd, the underlying
+    CUDA stream is destroyed.
+    """
+    def __cinit__(self):
+        self.c_obj.reset(new cuda_stream())
 
-    cdef bool operator==(cuda_stream_view const, cuda_stream_view const)
+    cdef cudaStream_t value(self) nogil except *:
+        return self.c_obj.get()[0].value()
 
-    const cuda_stream_view cuda_stream_default
-    const cuda_stream_view cuda_stream_legacy
-    const cuda_stream_view cuda_stream_per_thread
+    cpdef bool is_valid(self) nogil except *:
+        return self.c_obj.get()[0].is_valid()

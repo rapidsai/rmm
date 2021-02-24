@@ -21,6 +21,8 @@ from libcpp.memory cimport unique_ptr
 from libcpp.utility cimport move
 
 from rmm._cuda.gpu cimport cudaError, cudaError_t
+from rmm._cuda.stream cimport Stream
+from rmm._cuda.stream import DEFAULT_STREAM
 from rmm._lib.lib cimport (
     cudaMemcpyAsync,
     cudaMemcpyDeviceToDevice,
@@ -37,23 +39,26 @@ cdef class DeviceBuffer:
     def __cinit__(self, *,
                   uintptr_t ptr=0,
                   size_t size=0,
-                  CudaStreamView stream=CudaStreamView()):
+                  Stream stream=DEFAULT_STREAM):
         """Construct a ``DeviceBuffer`` with optional size and data pointer
 
         Parameters
         ----------
-        ptr : pointer to some data on host or device to copy over
-        size : size of the buffer to allocate
-               (and possibly size of data to copy)
-        stream : CUDA stream to use for construction and/or copying,
-                 default the default stream
+        ptr : int
+            pointer to some data on host or device to copy over
+        size : int
+            size of the buffer to allocate
+            (and possibly size of data to copy)
+        stream : optional
+            CUDA stream to use for construction and/or copying,
+            default the default stream
 
         Note
         ----
 
-        If ``stream`` is the default stream, it is synchronized after the copy.
-        However if a non-default ``stream`` is provided, this function is fully
-        asynchronous.
+        If the pointer passed is non-null and ``stream`` is the default stream,
+        it is synchronized after the copy. However if a non-default ``stream``
+        is provided, this function is fully asynchronous.
 
         Examples
         --------
@@ -61,22 +66,20 @@ cdef class DeviceBuffer:
         >>> db = rmm.DeviceBuffer(size=5)
         """
         cdef const void* c_ptr
-        cdef cuda_stream_view c_stream
         cdef cudaError_t err
 
         with nogil:
             c_ptr = <const void*>ptr
-            c_stream = dereference(stream.c_obj.get())
 
             if size == 0:
                 self.c_obj.reset(new device_buffer())
             elif c_ptr == NULL:
-                self.c_obj.reset(new device_buffer(size, c_stream))
+                self.c_obj.reset(new device_buffer(size, stream.view()))
             else:
-                self.c_obj.reset(new device_buffer(c_ptr, size, c_stream))
+                self.c_obj.reset(new device_buffer(c_ptr, size, stream.view()))
 
-            if c_stream.is_default():
-                c_stream.synchronize()
+                if stream.c_is_default():
+                    stream.c_synchronize()
 
     def __len__(self):
         return self.size
@@ -121,17 +124,17 @@ cdef class DeviceBuffer:
 
     @staticmethod
     cdef DeviceBuffer c_to_device(const unsigned char[::1] b,
-                                  CudaStreamView stream=CudaStreamView()):
+                                  Stream stream=DEFAULT_STREAM):
         """Calls ``to_device`` function on arguments provided"""
         return to_device(b, stream)
 
     @staticmethod
     def to_device(const unsigned char[::1] b,
-                  CudaStreamView stream=CudaStreamView()):
+                  Stream stream=DEFAULT_STREAM):
         """Calls ``to_device`` function on arguments provided"""
         return to_device(b, stream)
 
-    cpdef copy_to_host(self, ary=None, CudaStreamView stream=CudaStreamView()):
+    cpdef copy_to_host(self, ary=None, Stream stream=DEFAULT_STREAM):
         """Copy from a ``DeviceBuffer`` to a buffer on host
 
         Parameters
@@ -168,7 +171,7 @@ cdef class DeviceBuffer:
 
         return ary
 
-    cpdef copy_from_host(self, ary, CudaStreamView stream=CudaStreamView()):
+    cpdef copy_from_host(self, ary, Stream stream=DEFAULT_STREAM):
         """Copy from a buffer on host to ``self``
 
         Parameters
@@ -198,7 +201,7 @@ cdef class DeviceBuffer:
         copy_host_to_ptr(hb[:s], <uintptr_t>dbp.data(), stream)
 
     cpdef copy_from_device(self, cuda_ary,
-                           CudaStreamView stream=CudaStreamView()):
+                           Stream stream=DEFAULT_STREAM):
         """Copy from a buffer on host to ``self``
 
         Parameters
@@ -256,7 +259,7 @@ cdef class DeviceBuffer:
             stream
         )
 
-    cpdef bytes tobytes(self, CudaStreamView stream=CudaStreamView()):
+    cpdef bytes tobytes(self, Stream stream=DEFAULT_STREAM):
         cdef const device_buffer* dbp = self.c_obj.get()
         cdef size_t s = dbp.size()
 
@@ -288,7 +291,7 @@ cdef class DeviceBuffer:
 
 @cython.boundscheck(False)
 cpdef DeviceBuffer to_device(const unsigned char[::1] b,
-                             CudaStreamView stream=CudaStreamView()):
+                             Stream stream=DEFAULT_STREAM):
     """Return a new ``DeviceBuffer`` with a copy of the data
 
     Parameters
@@ -337,13 +340,6 @@ cdef void _copy_async(const void* src,
     dst : pointer to ``bytes``-like host buffer to or device data to copy into
     count : the size in bytes to copy
     stream : CUDA stream to use for copying, default the default stream
-
-    Note
-    ----
-
-    If ``stream`` is the default stream, it is synchronized after the copy.
-    However if a non-default ``stream`` is provided, this function is fully
-    asynchronous.
     """
     cdef cudaError_t err = cudaMemcpyAsync(dst, src, count, kind,
                                            <cudaStream_t>stream)
@@ -351,14 +347,11 @@ cdef void _copy_async(const void* src,
     if err != cudaError.cudaSuccess:
         raise RuntimeError(f"Memcpy failed with error: {err}")
 
-    if stream.is_default():
-        stream.synchronize()
-
 
 @cython.boundscheck(False)
 cpdef void copy_ptr_to_host(uintptr_t db,
                             unsigned char[::1] hb,
-                            CudaStreamView stream=CudaStreamView()) except *:
+                            Stream stream=DEFAULT_STREAM) except *:
     """Copy from a device pointer to a buffer on host
 
     Parameters
@@ -390,18 +383,18 @@ cpdef void copy_ptr_to_host(uintptr_t db,
             " (expected bytes-like, got NoneType)"
         )
 
-    cdef cuda_stream_view c_stream
-
     with nogil:
-        c_stream = dereference(stream.c_obj.get())
         _copy_async(<const void*>db, <void*>&hb[0], len(hb),
-                    cudaMemcpyDeviceToHost, c_stream)
+                    cudaMemcpyDeviceToHost, stream.view())
+
+    if stream.c_is_default():
+        stream.c_synchronize()
 
 
 @cython.boundscheck(False)
 cpdef void copy_host_to_ptr(const unsigned char[::1] hb,
                             uintptr_t db,
-                            CudaStreamView stream=CudaStreamView()) except *:
+                            Stream stream=DEFAULT_STREAM) except *:
     """Copy from a host pointer to a device pointer
 
     Parameters
@@ -434,33 +427,26 @@ cpdef void copy_host_to_ptr(const unsigned char[::1] hb,
             " (expected bytes-like, got NoneType)"
         )
 
-    cdef cuda_stream_view c_stream
-
     with nogil:
-        c_stream = dereference(stream.c_obj.get())
         _copy_async(<const void*>&hb[0], <void*>db, len(hb),
-                    cudaMemcpyHostToDevice, c_stream)
+                    cudaMemcpyHostToDevice, stream.view())
+
+    if stream.c_is_default():
+        stream.c_synchronize()
 
 
 @cython.boundscheck(False)
 cpdef void copy_device_to_ptr(uintptr_t d_src,
                               uintptr_t d_dst,
                               size_t count,
-                              CudaStreamView stream=CudaStreamView()) except *:
-    """Copy from a host pointer to a device pointer
+                              Stream stream=DEFAULT_STREAM) except *:
+    """Copy from a device pointer to a device pointer
 
     Parameters
     ----------
     d_src : pointer to data on device to copy from
     d_dst : pointer to data on device to write into
     stream : CUDA stream to use for copying, default the default stream
-
-    Note
-    ----
-
-    If ``stream`` is the default stream, it is synchronized after the copy.
-    However if a non-default ``stream`` is provided, this function is fully
-    asynchronous.
 
     Examples
     --------
@@ -474,9 +460,6 @@ cpdef void copy_device_to_ptr(uintptr_t d_src,
     array([10, 11, 12,  0,  0], dtype=uint8)
     """
 
-    cdef cuda_stream_view c_stream
-
     with nogil:
-        c_stream = dereference(stream.c_obj.get())
         _copy_async(<const void*>d_src, <void*>d_dst, count,
-                    cudaMemcpyDeviceToDevice, c_stream)
+                    cudaMemcpyDeviceToDevice, stream.view())

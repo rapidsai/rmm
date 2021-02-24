@@ -55,7 +55,7 @@ Compiler requirements:
 
 * `gcc`     version 7.0 or higher required
 * `nvcc`    version 9.0 or higher recommended
-* `cmake`   version 3.12 or higher
+* `cmake`   version 3.18 or higher
 
 CUDA/GPU requirements:
 
@@ -87,7 +87,7 @@ $ source activate cudf_dev
 ```
 
 - Build and install `librmm` using cmake & make. CMake depends on the `nvcc` executable being on
-  your path or defined in `$CUDACXX`.
+  your path or defined in `CUDACXX` environment variable.
 
 ```bash
 
@@ -100,7 +100,7 @@ $ make install                                      # install the library librmm
 
 - Building and installing `librmm` and `rmm` using build.sh. Build.sh creates build dir at root of
   git repository. build.sh depends on the `nvcc` executable being on your path or defined in
-  `$CUDACXX`.
+  `CUDACXX` environment variable.
 
 ```bash
 
@@ -209,8 +209,16 @@ which can lead to ambiguity in APIs when it is assigned `0`.)  All RMM stream-or
 
 `rmm::cuda_stream` is a simple owning wrapper around a CUDA `cudaStream_t`. This class provides 
 RAII semantics (constructor creates the CUDA stream, destructor destroys it). An `rmm::cuda_stream`
-can never represent the CUDA default stream or per-thread default stream, it only ever represents
-a single non-default stream. `rmm::cuda_stream` cannot be copied but can be moved.
+can never represent the CUDA default stream or per-thread default stream; it only ever represents
+a single non-default stream. `rmm::cuda_stream` cannot be copied, but can be moved.
+
+## `cuda_stream_pool`
+
+`rmm::cuda_stream_pool` provides fast access to a pool of CUDA streams. This class can be used to 
+create a set of `cuda_stream` objects whose lifetime is equal to the `cuda_stream_pool`. Using the 
+stream pool can be faster than creating the streams on the fly. The size of the pool is configurable.
+Depending on this size, multiple calls to `cuda_stream_pool::get_stream()` may return instances of 
+`rmm::cuda_stream_view` that represent identical CUDA streams.
 
 ### Thread Safety
 
@@ -261,7 +269,11 @@ Allocates and frees device memory using `cudaMalloc` and `cudaFree`.
 
 #### `managed_memory_resource`
 
-Allocates and frees device memory using `cudaMallocManaged` and `cudaFree`.
+Allocates and frees device memory using `cudaMallocManaged` and `cudaFree`. 
+
+Note that `managed_memory_resource` cannot be used with NVIDIA Virtual GPU Software (vGPU, for use
+with virtual machines or hypervisors) because [NVIDIA CUDA Unified Memory is not supported by 
+NVIDIA vGPU](https://docs.nvidia.com/grid/latest/grid-vgpu-user-guide/index.html#cuda-open-cl-support-vgpu).
 
 #### `pool_memory_resource`
 
@@ -376,23 +388,25 @@ See [below](#using-rmm-with-thrust) for more information on using RMM with Thrus
 
 ### `device_buffer`
 
-An untyped, unintialized RAII class for stream ordered device memory allocation.
+An untyped, uninitialized RAII class for stream ordered device memory allocation.
 
 #### Example
 
 ```c++
 cuda_stream_view s{...};
-rmm::device_buffer b{100,s}; // Allocates at least 100 bytes on stream `s` using the *default* resource
-void* p = b.data();          // Raw, untyped pointer to underlying device memory
+// Allocates at least 100 bytes on stream `s` using the *default* resource
+rmm::device_buffer b{100,s}; 
+void* p = b.data();                   // Raw, untyped pointer to underlying device memory
 
 kernel<<<..., s.value()>>>(b.data()); // `b` is only safe to use on `s`
 
 rmm::mr::device_memory_resource * mr = new my_custom_resource{...};
-rmm::device_buffer b2{100, s, mr}; // Allocates at least 100 bytes on stream `s` using the explicitly provided resource
+// Allocates at least 100 bytes on stream `s` using the resource `mr`
+rmm::device_buffer b2{100, s, mr};
 ```
 
 ### `device_uvector<T>`
-A typed, unintialized RAII class for allocation of a contiguous set of elements in device memory.
+A typed, uninitialized RAII class for allocation of a contiguous set of elements in device memory.
 Similar to a `thrust::device_vector`, but as an optimization, does not default initialize the
 contained elements. This optimization restricts the types `T` to trivially copyable types.
 
@@ -400,11 +414,15 @@ contained elements. This optimization restricts the types `T` to trivially copya
 
 ```c++
 cuda_stream_view s{...};
-rmm::device_uvector<int32_t> v(100, s); /// Allocates uninitialized storage for 100 `int32_t` elements on stream `s` using the default resource
-thrust::uninitialized_fill(thrust::cuda::par.on(s.value()), v.begin(), v.end(), int32_t{0}); // Initializes the elements to 0
+// Allocates uninitialized storage for 100 `int32_t` elements on stream `s` using the
+// default resource
+rmm::device_uvector<int32_t> v(100, s);
+// Initializes the elements to 0
+thrust::uninitialized_fill(thrust::cuda::par.on(s.value()), v.begin(), v.end(), int32_t{0}); 
 
 rmm::mr::device_memory_resource * mr = new my_custom_resource{...};
-rmm::device_uvector<int32_t> v2{100, s, mr}; // Allocates uninitialized storage for 100 `int32_t` elements on stream `s` using the explicitly provided resource
+// Allocates uninitialized storage for 100 `int32_t` elements on stream `s` using the resource `mr`
+rmm::device_uvector<int32_t> v2{100, s, mr}; 
 ```
 
 ### `device_scalar`
@@ -415,7 +433,8 @@ modifying the value in device memory from the host, or retrieving the value from
 #### Example
 ```c++
 cuda_stream_view s{...};
-rmm::device_scalar<int32_t> a{s}; // Allocates uninitialized storage for a single `int32_t` in device memory
+// Allocates uninitialized storage for a single `int32_t` in device memory
+rmm::device_scalar<int32_t> a{s}; 
 a.set_value(42, s); // Updates the value in device memory to `42` on stream `s`
 
 kernel<<<...,s.value()>>>(a.data()); // Pass raw pointer to underlying element in device memory
@@ -473,12 +492,8 @@ RMM provides `rmm::mr::thrust_allocator` as a conforming Thrust allocator that u
 To instruct a Thrust algorithm to use `rmm::mr::thrust_allocator` to allocate temporary storage, you
 can use the custom Thrust CUDA device execution policy: `rmm::exec_policy(stream)`.
 
-`rmm::exec_policy(stream)` returns a `std::unique_ptr` to a Thrust execution policy that uses
-`rmm::mr::thrust_allocator` for temporary allocations. In order to specify that the Thrust algorithm
-be executed on a specific stream, the usage is:
-
 ```c++
-thrust::sort(rmm::exec_policy(stream)->on(stream), ...);
+thrust::sort(rmm::exec_policy(stream, ...);
 ```
 
 The first `stream` argument is the `stream` to use for `rmm::mr::thrust_allocator`.

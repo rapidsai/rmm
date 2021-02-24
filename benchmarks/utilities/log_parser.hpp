@@ -51,7 +51,7 @@ struct event {
   event(action a, std::size_t s, uintptr_t p) : act{a}, size{s}, pointer{p} {}
 
   event(std::size_t tid, action a, std::size_t sz, uintptr_t p, uintptr_t s, std::size_t i)
-    : thread_id{tid}, act{a}, size{sz}, pointer{p}, stream{s}, index{i}
+    : act{a}, size{sz}, pointer{p}, thread_id{tid}, stream{s}, index{i}
   {
   }
 

@@ -58,11 +58,11 @@ function(ConfigureBench BENCH_NAME BENCH_SRC)
     target_compile_definitions(${BENCH_NAME} PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
   endif(PER_THREAD_DEFAULT_STREAM)
 
-  target_compile_options(${BENCH_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Werror
+  target_compile_options(${BENCH_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Wall -Werror
                                               -Wno-error=deprecated-declarations>)
   if(DISABLE_DEPRECATION_WARNING)
-    target_compile_options(${BENCH_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler
-                                                -Wno-deprecated-declarations>)
+    target_compile_options(
+      ${BENCH_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-Wno-deprecated-declarations>)
     target_compile_options(${BENCH_NAME}
                            PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-declarations>)
   endif(DISABLE_DEPRECATION_WARNING)
@@ -89,3 +89,10 @@ ConfigureBench(REPLAY_BENCH "${REPLAY_BENCH_SRC}")
 set(UVECTOR_BENCH_SRC "${CMAKE_CURRENT_SOURCE_DIR}/device_uvector/device_uvector_bench.cu")
 
 ConfigureBench(UVECTOR_BENCH "${UVECTOR_BENCH_SRC}")
+
+# cuda_stream_pool benchmark
+
+set(CUDA_STREAM_POOL_BENCH_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/cuda_stream_pool/cuda_stream_pool_bench.cpp")
+
+ConfigureBench(CUDA_STREAM_POOL_BENCH "${CUDA_STREAM_POOL_BENCH_SRC}")
