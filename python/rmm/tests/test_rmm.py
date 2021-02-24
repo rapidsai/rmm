@@ -120,7 +120,7 @@ def test_rmm_device_buffer(size):
     assert len(b) == b.size
     assert b.nbytes == b.size
     assert b.capacity() >= b.size
-    assert sys.getsizeof(b) == b.size
+    assert b.__sizeof__() == b.size
 
     # Test `__cuda_array_interface__`
     keyset = {"data", "shape", "strides", "typestr", "version"}
@@ -384,7 +384,6 @@ def test_reinitialize_initial_pool_size_gt_max():
             maximum_pool_size=1 << 10,
         )
     assert "Initial pool size exceeds the maximum pool size" in str(e.value)
-    rmm.reinitialize()
 
 
 def test_mr_devicebuffer_lifetime():
@@ -434,5 +433,3 @@ def test_rmm_enable_disable_logging(dtype, nelem, alloc, tmpdir):
         os.remove(fname)
 
     rmm.disable_logging()
-    rmm.reinitialize()
-
