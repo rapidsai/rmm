@@ -1,4 +1,5 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
+import gc
 import os
 import sys
 from itertools import product
@@ -8,6 +9,7 @@ import pytest
 from numba import cuda
 
 import rmm
+import rmm._cuda.stream
 
 if sys.version_info < (3, 8):
     try:
@@ -18,6 +20,17 @@ else:
     import pickle
 
 cuda.set_memory_manager(rmm.RMMNumbaManager)
+
+
+@pytest.fixture(scope="function", autouse=True)
+def rmm_auto_reinitialize():
+
+    # Run the test
+    yield
+
+    # Automatically reinitialize the current memory resource after running each
+    # test
+    rmm.reinitialize()
 
 
 def array_tester(dtype, nelem, alloc):
@@ -70,7 +83,6 @@ def test_rmm_modes(dtype, nelem, alloc, managed, pool):
     assert rmm.is_initialized()
 
     array_tester(dtype, nelem, alloc)
-    rmm.reinitialize()
 
 
 @pytest.mark.parametrize("dtype", _dtypes)
@@ -92,7 +104,6 @@ def test_rmm_csv_log(dtype, nelem, alloc, tmpdir):
             assert csv.find(b"Time,Action,Pointer,Size,Stream") >= 0
     finally:
         os.remove(fname)
-    rmm.reinitialize()
 
 
 @pytest.mark.parametrize("size", [0, 5])
@@ -109,7 +120,7 @@ def test_rmm_device_buffer(size):
     assert len(b) == b.size
     assert b.nbytes == b.size
     assert b.capacity() >= b.size
-    assert sys.getsizeof(b) == b.size
+    assert b.__sizeof__() == b.size
 
     # Test `__cuda_array_interface__`
     keyset = {"data", "shape", "strides", "typestr", "version"}
@@ -299,7 +310,6 @@ def test_pool_memory_resource(dtype, nelem, alloc):
     rmm.mr.set_current_device_resource(mr)
     assert rmm.mr.get_current_device_resource_type() is type(mr)
     array_tester(dtype, nelem, alloc)
-    rmm.reinitialize()
 
 
 @pytest.mark.parametrize("dtype", _dtypes)
@@ -319,7 +329,6 @@ def test_fixed_size_memory_resource(dtype, nelem, alloc, upstream):
     rmm.mr.set_current_device_resource(mr)
     assert rmm.mr.get_current_device_resource_type() is type(mr)
     array_tester(dtype, nelem, alloc)
-    rmm.reinitialize()
 
 
 @pytest.mark.parametrize("dtype", _dtypes)
@@ -350,7 +359,6 @@ def test_binning_memory_resource(dtype, nelem, alloc, upstream_mr):
     rmm.mr.set_current_device_resource(mr)
     assert rmm.mr.get_current_device_resource_type() is type(mr)
     array_tester(dtype, nelem, alloc)
-    rmm.reinitialize()
 
 
 def test_reinitialize_max_pool_size():
@@ -358,7 +366,6 @@ def test_reinitialize_max_pool_size():
         pool_allocator=True, initial_pool_size=0, maximum_pool_size=1 << 23
     )
     rmm.DeviceBuffer().resize((1 << 23) - 1)
-    rmm.reinitialize()
 
 
 def test_reinitialize_max_pool_size_exceeded():
@@ -367,7 +374,6 @@ def test_reinitialize_max_pool_size_exceeded():
     )
     with pytest.raises(MemoryError):
         rmm.DeviceBuffer().resize(1 << 24)
-    rmm.reinitialize()
 
 
 def test_reinitialize_initial_pool_size_gt_max():
@@ -378,7 +384,30 @@ def test_reinitialize_initial_pool_size_gt_max():
             maximum_pool_size=1 << 10,
         )
     assert "Initial pool size exceeds the maximum pool size" in str(e.value)
-    rmm.reinitialize()
+
+
+def test_mr_devicebuffer_lifetime():
+    # Test ensures MR/Stream lifetime is longer than DeviceBuffer. Even if all
+    # references go out of scope
+    # Create new Pool MR
+    rmm.mr.set_current_device_resource(
+        rmm.mr.PoolMemoryResource(rmm.mr.get_current_device_resource())
+    )
+
+    # Creates a new non-default stream
+    stream = rmm._cuda.stream.Stream()
+
+    # Allocate DeviceBuffer with Pool and Stream
+    a = rmm.DeviceBuffer(size=10, stream=stream)
+
+    # Change current MR. Will cause Pool to go out of scope
+    rmm.mr.set_current_device_resource(rmm.mr.CudaMemoryResource())
+
+    # Force collection to ensure objects are cleaned up
+    gc.collect()
+
+    # Delete a. Used to crash before. Pool MR should still be alive
+    del a
 
 
 @pytest.mark.parametrize("dtype", _dtypes)
@@ -404,4 +433,3 @@ def test_rmm_enable_disable_logging(dtype, nelem, alloc, tmpdir):
         os.remove(fname)
 
     rmm.disable_logging()
-    rmm.reinitialize()

@@ -104,3 +104,5 @@ cdef class LoggingResourceAdaptor(MemoryResource):
     cpdef MemoryResource get_upstream(self)
     cpdef get_file_name(self)
     cpdef flush(self)
+
+cpdef MemoryResource get_current_device_resource()
