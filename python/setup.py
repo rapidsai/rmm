@@ -184,7 +184,7 @@ setup(
     packages=find_packages(include=["rmm", "rmm.*"]),
     package_data=dict.fromkeys(
         find_packages(include=["rmm._lib", "rmm._lib.includes", "rmm._cuda*"]),
-        ["*.pxd"],
+        ["*.hpp", "*.pxd"],
     ),
     cmdclass=versioneer.get_cmdclass(),
     install_requires=install_requires,
