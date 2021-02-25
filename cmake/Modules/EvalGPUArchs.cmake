@@ -10,8 +10,6 @@
 # or implied. See the License for the specific language governing permissions and limitations under
 # the License.
 
-enable_language(CUDA)
-
 # Function uses the CUDA runtime API to query the compute capability of the device, so if a user
 # doesn't pass any architecture options to CMake we only build the current architecture
 function(evaluate_gpu_archs gpu_archs)
