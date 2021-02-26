@@ -6,9 +6,47 @@
 
 ## Bug Fixes
 
-# 0.18.0
+# RMM 0.18.0 (24 Feb 2021)
 
-Please see https://github.com/rapidsai/rmm/releases/tag/branch-0.18-latest for the latest changes to this development branch.
+## Breaking Changes 🚨
+
+- Remove DeviceBuffer synchronization on default stream (#650) @pentschev
+- Add a Stream class that wraps CuPy/Numba/CudaStream (#636) @shwina
+
+## Bug Fixes 🐛
+
+- SetGPUArchs updated to work around a CMake FindCUDAToolkit issue (#695) @robertmaynard
+- Remove duplicate conda build command (#670) @raydouglass
+- Update CMakeLists.txt VERSION to 0.18.0 (#665) @trxcllnt
+- Fix wrong attribute names leading to DEBUG log build issues (#653) @pentschev
+
+## Documentation 📖
+
+- Correct inconsistencies in README and CONTRIBUTING docs (#682) @robertmaynard
+- Enable tag generation for doxygen (#672) @ajschmidt8
+- Document that `managed_memory_resource` does not work with NVIDIA vGPU (#656) @harrism
+
+## New Features 🚀
+
+- Enabling/disabling logging after initialization (#678) @shwina
+- `cuda_async_memory_resource` built on `cudaMallocAsync` (#676) @harrism
+- Create labeler.yml (#669) @jolorunyomi
+- Expose the version string in C++ and Python (#666) @hcho3
+- Add a CUDA stream pool (#659) @harrism
+- Add a Stream class that wraps CuPy/Numba/CudaStream (#636) @shwina
+
+## Improvements 🛠️
+
+- Update stale GHA with exemptions &amp; new labels (#707) @mike-wendt
+- Add GHA to mark issues/prs as stale/rotten (#700) @Ethyling
+- Auto-label PRs based on their content (#691) @ajschmidt8
+- Prepare Changelog for Automation (#688) @ajschmidt8
+- Build.sh use cmake --build to drive build system invocation (#686) @robertmaynard
+- Fix failed automerge (#683) @harrism
+- Auto-label PRs based on their content (#681) @jolorunyomi
+- Build RMM tests/benchmarks with -Wall flag (#674) @trxcllnt
+- Remove DeviceBuffer synchronization on default stream (#650) @pentschev
+- Simplify `rmm::exec_policy` and refactor Thrust support (#647) @harrism
 
 # RMM 0.17.0 (10 Dec 2020)
 
