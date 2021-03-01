@@ -3,6 +3,7 @@ import os
 import warnings
 from collections import defaultdict
 
+from cython.operator cimport dereference as deref
 from libc.stdint cimport int8_t
 from libcpp cimport bool
 from libcpp.cast cimport dynamic_cast
@@ -12,16 +13,120 @@ from libcpp.string cimport string
 from rmm._cuda.gpu import CUDARuntimeError, cudaError, getDevice, setDevice
 
 
-cdef class CudaMemoryResource(MemoryResource):
+# NOTE: Keep extern declarations in .pyx file as much as possible to avoid
+# leaking dependencies when importing RMM Cython .pxd files
+cdef extern from "thrust/optional.h" namespace "thrust" nogil:
+
+    struct nullopt_t:
+        pass
+
+    cdef nullopt_t nullopt
+
+    cdef cppclass optional[T]:
+        optional()
+        optional(T v)
+
+    cdef optional[T] make_optional[T](T v)
+
+cdef extern from "rmm/mr/device/cuda_memory_resource.hpp" \
+        namespace "rmm::mr" nogil:
+    cdef cppclass cuda_memory_resource(device_memory_resource):
+        cuda_memory_resource() except +
+
+cdef extern from "rmm/mr/device/managed_memory_resource.hpp" \
+        namespace "rmm::mr" nogil:
+    cdef cppclass managed_memory_resource(device_memory_resource):
+        managed_memory_resource() except +
+
+cdef extern from "rmm/mr/device/pool_memory_resource.hpp" \
+        namespace "rmm::mr" nogil:
+    cdef cppclass pool_memory_resource[Upstream](device_memory_resource):
+        pool_memory_resource(
+            Upstream* upstream_mr,
+            optional[size_t] initial_pool_size,
+            optional[size_t] maximum_pool_size) except +
+
+cdef extern from "rmm/mr/device/fixed_size_memory_resource.hpp" \
+        namespace "rmm::mr" nogil:
+    cdef cppclass fixed_size_memory_resource[Upstream](device_memory_resource):
+        fixed_size_memory_resource(
+            Upstream* upstream_mr,
+            size_t block_size,
+            size_t block_to_preallocate) except +
+
+cdef extern from "rmm/mr/device/binning_memory_resource.hpp" \
+        namespace "rmm::mr" nogil:
+    cdef cppclass binning_memory_resource[Upstream](device_memory_resource):
+        binning_memory_resource(Upstream* upstream_mr) except +
+        binning_memory_resource(
+            Upstream* upstream_mr,
+            int8_t min_size_exponent,
+            int8_t max_size_exponent) except +
+
+        void add_bin(size_t allocation_size) except +
+        void add_bin(
+            size_t allocation_size,
+            device_memory_resource* bin_resource) except +
+
+cdef extern from "rmm/mr/device/logging_resource_adaptor.hpp" \
+        namespace "rmm::mr" nogil:
+    cdef cppclass logging_resource_adaptor[Upstream](device_memory_resource):
+        logging_resource_adaptor(
+            Upstream* upstream_mr,
+            string filename) except +
+
+        void flush() except +
+
+cdef extern from "rmm/mr/device/per_device_resource.hpp" namespace "rmm" nogil:
+
+    cdef cppclass cuda_device_id:
+        ctypedef int value_type
+
+        cuda_device_id(value_type id)
+
+        value_type value()
+
+    cdef device_memory_resource* _set_current_device_resource \
+        "rmm::mr::set_current_device_resource" (device_memory_resource* new_mr)
+    cdef device_memory_resource* _get_current_device_resource \
+        "rmm::mr::get_current_device_resource" ()
+
+    cdef device_memory_resource* _set_per_device_resource \
+        "rmm::mr::set_per_device_resource" (
+            cuda_device_id id,
+            device_memory_resource* new_mr
+        )
+    cdef device_memory_resource* _get_per_device_resource \
+        "rmm::mr::get_per_device_resource"(cuda_device_id id)
+
+cdef class DeviceMemoryResource:
+
+    cdef device_memory_resource* get_mr(self):
+        return self.c_obj.get()
+
+
+cdef class UpstreamResourceAdaptor(DeviceMemoryResource):
+
+    def __cinit__(self, DeviceMemoryResource upstream_mr, *args, **kwargs):
+
+        if (upstream_mr is None):
+            raise Exception("Argument `upstream_mr` must not be None")
+
+        self.upstream_mr = upstream_mr
+
+    def __dealloc__(self):
+        # Must cleanup the base MR before any upstream MR
+        self.c_obj.reset()
+
+    cpdef DeviceMemoryResource get_upstream(self):
+        return self.upstream_mr
+
+
+cdef class CudaMemoryResource(DeviceMemoryResource):
     def __cinit__(self, device=None):
-        if device is None:
-            self.c_obj.reset(
-                new cuda_memory_resource_wrapper()
-            )
-        else:
-            self.c_obj.reset(
-                new default_memory_resource_wrapper(device)
-            )
+        self.c_obj.reset(
+            new cuda_memory_resource()
+        )
 
     def __init__(self, device=None):
         """
@@ -30,10 +135,10 @@ cdef class CudaMemoryResource(MemoryResource):
         pass
 
 
-cdef class ManagedMemoryResource(MemoryResource):
+cdef class ManagedMemoryResource(DeviceMemoryResource):
     def __cinit__(self):
         self.c_obj.reset(
-            new managed_memory_resource_wrapper()
+            new managed_memory_resource()
         )
 
     def __init__(self):
@@ -44,25 +149,29 @@ cdef class ManagedMemoryResource(MemoryResource):
         pass
 
 
-cdef class PoolMemoryResource(MemoryResource):
+cdef class PoolMemoryResource(UpstreamResourceAdaptor):
 
     def __cinit__(
             self,
-            MemoryResource upstream,
+            DeviceMemoryResource upstream_mr,
             initial_pool_size=None,
             maximum_pool_size=None
     ):
-        cdef size_t c_initial_pool_size
-        cdef size_t c_maximum_pool_size
+        cdef optional[size_t] c_initial_pool_size
+        cdef optional[size_t] c_maximum_pool_size
         c_initial_pool_size = (
-            ~0 if initial_pool_size is None else initial_pool_size
+            optional[size_t]() if
+            initial_pool_size is None
+            else make_optional[size_t](initial_pool_size)
         )
         c_maximum_pool_size = (
-            ~0 if maximum_pool_size is None else maximum_pool_size
+            optional[size_t]() if
+            maximum_pool_size is None
+            else make_optional[size_t](maximum_pool_size)
         )
         self.c_obj.reset(
-            new pool_memory_resource_wrapper(
-                upstream.c_obj,
+            new pool_memory_resource[device_memory_resource](
+                upstream_mr.get_mr(),
                 c_initial_pool_size,
                 c_maximum_pool_size
             )
@@ -70,7 +179,7 @@ cdef class PoolMemoryResource(MemoryResource):
 
     def __init__(
             self,
-            MemoryResource upstream,
+            DeviceMemoryResource upstream_mr,
             object initial_pool_size=None,
             object maximum_pool_size=None
     ):
@@ -80,8 +189,9 @@ cdef class PoolMemoryResource(MemoryResource):
 
         Parameters
         ----------
-        upstream : MemoryResource
-            The MemoryResource from which to allocate blocks for the pool.
+        upstream_mr : DeviceMemoryResource
+            The DeviceMemoryResource from which to allocate blocks for the
+            pool.
         initial_pool_size : int,optional
             Initial pool size in bytes. By default, an implementation defined
             pool size is used.
@@ -91,16 +201,16 @@ cdef class PoolMemoryResource(MemoryResource):
         pass
 
 
-cdef class FixedSizeMemoryResource(MemoryResource):
+cdef class FixedSizeMemoryResource(UpstreamResourceAdaptor):
     def __cinit__(
             self,
-            MemoryResource upstream,
+            DeviceMemoryResource upstream_mr,
             size_t block_size=1<<20,
             size_t blocks_to_preallocate=128
     ):
         self.c_obj.reset(
-            new fixed_size_memory_resource_wrapper(
-                upstream.c_obj,
+            new fixed_size_memory_resource[device_memory_resource](
+                upstream_mr.get_mr(),
                 block_size,
                 blocks_to_preallocate
             )
@@ -108,7 +218,7 @@ cdef class FixedSizeMemoryResource(MemoryResource):
 
     def __init__(
             self,
-            MemoryResource upstream,
+            DeviceMemoryResource upstream_mr,
             size_t block_size=1<<20,
             size_t blocks_to_preallocate=128
     ):
@@ -117,8 +227,9 @@ cdef class FixedSizeMemoryResource(MemoryResource):
 
         Parameters
         ----------
-        upstream : MemoryResource
-            The MemoryResource from which to allocate blocks for the pool.
+        upstream_mr : DeviceMemoryResource
+            The DeviceMemoryResource from which to allocate blocks for the
+            pool.
         block_size : int, optional
             The size of blocks to allocate (default is 1MiB).
         blocks_to_preallocate : int, optional
@@ -132,31 +243,39 @@ cdef class FixedSizeMemoryResource(MemoryResource):
         pass
 
 
-cdef class BinningMemoryResource(MemoryResource):
+cdef class BinningMemoryResource(UpstreamResourceAdaptor):
     def __cinit__(
         self,
-        MemoryResource upstream_mr,
+        DeviceMemoryResource upstream_mr,
         int8_t min_size_exponent=-1,
         int8_t max_size_exponent=-1,
     ):
+
+        self.bin_mrs = []
+
         if (min_size_exponent == -1 or max_size_exponent == -1):
             self.c_obj.reset(
-                new binning_memory_resource_wrapper(
-                    upstream_mr.c_obj
+                new binning_memory_resource[device_memory_resource](
+                    upstream_mr.get_mr()
                 )
             )
         else:
             self.c_obj.reset(
-                new binning_memory_resource_wrapper(
-                    upstream_mr.c_obj,
+                new binning_memory_resource[device_memory_resource](
+                    upstream_mr.get_mr(),
                     min_size_exponent,
                     max_size_exponent
                 )
             )
 
+    def __dealloc__(self):
+
+        # Must cleanup the base MR before any upstream or referenced Bins
+        self.c_obj.reset()
+
     def __init__(
         self,
-        MemoryResource upstream_mr,
+        DeviceMemoryResource upstream_mr,
         int8_t min_size_exponent=-1,
         int8_t max_size_exponent=-1,
     ):
@@ -172,7 +291,7 @@ cdef class BinningMemoryResource(MemoryResource):
 
         Parameters
         ----------
-        upstream_mr : MemoryResource
+        upstream_mr : DeviceMemoryResource
             The memory resource to use for allocations larger than any of the
             bins
         min_size_exponent : size_t
@@ -187,7 +306,7 @@ cdef class BinningMemoryResource(MemoryResource):
     cpdef add_bin(
         self,
         size_t allocation_size,
-        object bin_resource=None
+        DeviceMemoryResource bin_resource=None
     ):
         """
         Adds a bin of the specified maximum allocation size to this memory
@@ -202,23 +321,22 @@ cdef class BinningMemoryResource(MemoryResource):
         ----------
         allocation_size : size_t
             The maximum allocation size in bytes for the created bin
-        bin_resource : MemoryResource
+        bin_resource : DeviceMemoryResource
             The resource to use for this bin (optional)
         """
-        cdef MemoryResource _bin_resource
+        cdef DeviceMemoryResource _bin_resource
 
         if bin_resource is None:
-            (<binning_memory_resource_wrapper*>(self.c_obj.get()))[0].add_bin(
-                allocation_size
-            )
+            (<binning_memory_resource[device_memory_resource]*>(
+                self.c_obj.get()))[0].add_bin(allocation_size)
         else:
-            # Coerce Python object `bin_resource` to C object `_bin_resource`
-            _bin_resource = bin_resource
+            # Save the ref to the new bin resource to ensure its lifetime
+            self.bin_mrs.append(bin_resource)
 
-            (<binning_memory_resource_wrapper*>(self.c_obj.get()))[0].add_bin(
-                allocation_size,
-                _bin_resource.c_obj
-            )
+            (<binning_memory_resource[device_memory_resource]*>(
+                self.c_obj.get()))[0].add_bin(
+                    allocation_size,
+                    bin_resource.get_mr())
 
 
 def _append_id(filename, id):
@@ -238,8 +356,12 @@ def _append_id(filename, id):
     return f"{name}.dev{id}{ext}"
 
 
-cdef class LoggingResourceAdaptor(MemoryResource):
-    def __cinit__(self, MemoryResource upstream, object log_file_name=None):
+cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
+    def __cinit__(
+        self,
+        DeviceMemoryResource upstream_mr,
+        object log_file_name=None
+    ):
         if log_file_name is None:
             log_file_name = os.getenv("RMM_LOG_FILE")
             if not log_file_name:
@@ -250,26 +372,30 @@ cdef class LoggingResourceAdaptor(MemoryResource):
                 )
         # Append the device ID before the file extension
         log_file_name = _append_id(
-            log_file_name.decode(), getDevice()
+            log_file_name, getDevice()
         )
 
         _log_file_name = log_file_name
 
         self.c_obj.reset(
-            new logging_resource_adaptor_wrapper(
-                upstream.c_obj,
+            new logging_resource_adaptor[device_memory_resource](
+                upstream_mr.get_mr(),
                 log_file_name.encode()
             )
         )
 
-    def __init__(self, MemoryResource upstream, object log_file_name=None):
+    def __init__(
+        self,
+        DeviceMemoryResource upstream_mr,
+        object log_file_name=None
+    ):
         """
         Memory resource that logs information about allocations/deallocations
         performed by an upstream memory resource.
 
         Parameters
         ----------
-        upstream : MemoryResource
+        upstream : DeviceMemoryResource
             The upstream memory resource.
         log_file_name : str
             Path to the file to which logs are written.
@@ -277,10 +403,14 @@ cdef class LoggingResourceAdaptor(MemoryResource):
         pass
 
     cpdef flush(self):
-        (<logging_resource_adaptor_wrapper*>(self.c_obj.get()))[0].flush()
+        (<logging_resource_adaptor[device_memory_resource]*>(
+            self.get_mr()))[0].flush()
 
     cpdef get_file_name(self):
         return self._log_file_name
+
+    def __dealloc__(self):
+        self.c_obj.reset()
 
 
 class KeyInitializedDefaultDict(defaultdict):
@@ -298,7 +428,7 @@ class KeyInitializedDefaultDict(defaultdict):
             return ret
 
 
-# Global per-device memory resources; dict of int:MemoryResource
+# Global per-device memory resources; dict of int:DeviceMemoryResource
 cdef _per_device_mrs = KeyInitializedDefaultDict(CudaMemoryResource)
 
 
@@ -331,7 +461,7 @@ cpdef void _initialize(
         args = ()
         kwargs = {}
 
-    cdef MemoryResource mr
+    cdef DeviceMemoryResource mr
     cdef int original_device
 
     # Save the current device so we can reset it
@@ -359,12 +489,12 @@ cpdef void _initialize(
             if logging:
                 mr = LoggingResourceAdaptor(
                     typ(*args, **kwargs),
-                    log_file_name.encode()
+                    log_file_name
                 )
             else:
                 mr = typ(*args, **kwargs)
 
-            _set_per_device_resource(device, mr)
+            set_per_device_resource(device, mr)
 
         # reset CUDA device to original
         setDevice(original_device)
@@ -386,7 +516,7 @@ cpdef get_per_device_resource(int device):
     return _per_device_mrs[device]
 
 
-cpdef _set_per_device_resource(int device, MemoryResource mr):
+cpdef set_per_device_resource(int device, DeviceMemoryResource mr):
     """
     Set the default memory resource for the specified device.
 
@@ -394,27 +524,32 @@ cpdef _set_per_device_resource(int device, MemoryResource mr):
     ----------
     device : int
         The ID of the device for which to get the memory resource.
-    mr : MemoryResource
+    mr : DeviceMemoryResource
         The memory resource to set.  Must have been created while device was
         the active CUDA device.
     """
     global _per_device_mrs
     _per_device_mrs[device] = mr
-    _mr = mr  # coerce Python object to C object
-    set_per_device_resource(device, _mr.c_obj)
+
+    # Since cuda_device_id does not have a default constructor, it must be heap
+    # allocated
+    cdef unique_ptr[cuda_device_id] device_id = \
+        make_unique[cuda_device_id](device)
+
+    _set_per_device_resource(deref(device_id), mr.get_mr())
 
 
-cpdef set_current_device_resource(MemoryResource mr):
+cpdef set_current_device_resource(DeviceMemoryResource mr):
     """
     Set the default memory resource for the current device.
 
     Parameters
     ----------
-    mr : MemoryResource
+    mr : DeviceMemoryResource
         The memory resource to set. Must have been created while the current
         device is the active CUDA device.
     """
-    _set_per_device_resource(getDevice(), mr)
+    set_per_device_resource(getDevice(), mr)
 
 
 cpdef get_per_device_resource_type(int device):
@@ -430,7 +565,7 @@ cpdef get_per_device_resource_type(int device):
     return type(get_per_device_resource(device))
 
 
-cpdef get_current_device_resource():
+cpdef DeviceMemoryResource get_current_device_resource():
     """
     Get the memory resource used for RMM device allocations on the current
     device.
@@ -454,9 +589,9 @@ cpdef is_initialized():
     Check whether RMM is initialized
     """
     global _per_device_mrs
-    cdef MemoryResource each_mr
+    cdef DeviceMemoryResource each_mr
     return all(
-        [each_mr.c_obj.get() is not NULL
+        [each_mr.get_mr() is not NULL
             for each_mr in _per_device_mrs.values()]
     )
 
@@ -467,7 +602,35 @@ cpdef _flush_logs():
     memory resources
     """
     global _per_device_mrs
-    cdef MemoryResource each_mr
+    cdef DeviceMemoryResource each_mr
     for each_mr in _per_device_mrs.values():
         if isinstance(each_mr, LoggingResourceAdaptor):
             each_mr.flush()
+
+
+def enable_logging(log_file_name=None):
+    """
+    Enable logging of run-time events.
+    """
+    global _per_device_mrs
+
+    devices = [0] if not _per_device_mrs.keys() else _per_device_mrs.keys()
+
+    for device in devices:
+        each_mr = <DeviceMemoryResource>_per_device_mrs[device]
+        if not isinstance(each_mr, LoggingResourceAdaptor):
+            set_per_device_resource(
+                device,
+                LoggingResourceAdaptor(each_mr, log_file_name)
+            )
+
+
+def disable_logging():
+    """
+    Disable logging if it was enabled previously using
+    `rmm.initialize()` or `rmm.enable_logging()`.
+    """
+    global _per_device_mrs
+    for i, each_mr in _per_device_mrs.items():
+        if isinstance(each_mr, LoggingResourceAdaptor):
+            set_per_device_resource(i, each_mr.get_upstream())

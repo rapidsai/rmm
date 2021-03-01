@@ -37,7 +37,7 @@ RMM_BUILD_DIR=${REPODIR}/python/build
 BUILD_DIRS="${LIBRMM_BUILD_DIR} ${RMM_BUILD_DIR}"
 
 # Set defaults for vars modified by flags to this script
-VERBOSE=""
+VERBOSE_FLAG=""
 BUILD_TYPE=Release
 INSTALL_TARGET=install
 CUDA_STATIC_RUNTIME=OFF
@@ -54,17 +54,16 @@ function hasArg {
     (( NUMARGS != 0 )) && (echo " ${ARGS} " | grep -q " $1 ")
 }
 
-# Runs cmake if it has not been run already. Bash work directory
-# is always build directory after calling this function
+# Runs cmake if it has not been run already for build directory
+# LIBRMM_BUILD_DIR
 function ensureCMakeRan {
     mkdir -p "${LIBRMM_BUILD_DIR}"
-    cd "${LIBRMM_BUILD_DIR}"
     if (( RAN_CMAKE == 0 )); then
         echo "Executing cmake for librmm..."
         cmake -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" \
               -DCUDA_STATIC_RUNTIME="${CUDA_STATIC_RUNTIME}" \
               -DPER_THREAD_DEFAULT_STREAM="${PER_THREAD_DEFAULT_STREAM}" \
-              -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..
+              -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -B "${LIBRMM_BUILD_DIR}" -S .
         RAN_CMAKE=1
     fi
 }
@@ -86,7 +85,7 @@ fi
 
 # Process flags
 if hasArg -v; then
-    VERBOSE=1
+    VERBOSE_FLAG=-v
     set -x
 fi
 if hasArg -g; then
@@ -121,10 +120,10 @@ fi
 if (( NUMARGS == 0 )) || hasArg librmm; then
     ensureCMakeRan
     echo "building librmm..."
-    make -j${PARALLEL_LEVEL} VERBOSE=${VERBOSE}
+    cmake --build "${LIBRMM_BUILD_DIR}" -j${PARALLEL_LEVEL} ${VERBOSE_FLAG}
     if [[ ${INSTALL_TARGET} != "" ]]; then
         echo "installing librmm..."
-        make -j${PARALLEL_LEVEL} VERBOSE=${VERBOSE} install
+        cmake --build "${LIBRMM_BUILD_DIR}" --target install -v ${VERBOSE_FLAG}
     fi
 fi
 

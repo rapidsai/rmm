@@ -49,7 +49,7 @@ void spawn_n(std::size_t num_threads, Task task, Arguments&&... args)
 {
   std::vector<std::thread> threads;
   threads.reserve(num_threads);
-  for (int i = 0; i < num_threads; ++i)
+  for (std::size_t i = 0; i < num_threads; ++i)
     threads.emplace_back(std::thread(task, std::forward<Arguments>(args)...));
 
   for (auto& t : threads)
@@ -75,7 +75,7 @@ TEST(DefaultTest, CurrentDeviceResourceIsCUDA_mt)
 TEST(DefaultTest, GetCurrentDeviceResource_mt)
 {
   spawn([]() {
-    rmm::mr::device_memory_resource* mr;
+    rmm::mr::device_memory_resource* mr{nullptr};
     EXPECT_NO_THROW(mr = rmm::mr::get_current_device_resource());
     EXPECT_NE(nullptr, mr);
     EXPECT_TRUE(mr->is_equal(rmm::mr::cuda_memory_resource{}));

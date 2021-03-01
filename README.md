@@ -56,7 +56,7 @@ Compiler requirements:
 
 * `gcc`     version 7.0 or higher required
 * `nvcc`    version 9.0 or higher recommended
-* `cmake`   version 3.12 or higher
+* `cmake`   version 3.18 or higher
 
 CUDA/GPU requirements:
 
@@ -88,7 +88,7 @@ $ source activate cudf_dev
 ```
 
 - Build and install `librmm` using cmake & make. CMake depends on the `nvcc` executable being on
-  your path or defined in `$CUDACXX`.
+  your path or defined in `CUDACXX` environment variable.
 
 ```bash
 
@@ -101,7 +101,7 @@ $ make install                                      # install the library librmm
 
 - Building and installing `librmm` and `rmm` using build.sh. Build.sh creates build dir at root of
   git repository. build.sh depends on the `nvcc` executable being on your path or defined in
-  `$CUDACXX`.
+  `CUDACXX` environment variable.
 
 ```bash
 
@@ -213,6 +213,14 @@ RAII semantics (constructor creates the CUDA stream, destructor destroys it). An
 can never represent the CUDA default stream or per-thread default stream; it only ever represents
 a single non-default stream. `rmm::cuda_stream` cannot be copied, but can be moved.
 
+## `cuda_stream_pool`
+
+`rmm::cuda_stream_pool` provides fast access to a pool of CUDA streams. This class can be used to 
+create a set of `cuda_stream` objects whose lifetime is equal to the `cuda_stream_pool`. Using the 
+stream pool can be faster than creating the streams on the fly. The size of the pool is configurable.
+Depending on this size, multiple calls to `cuda_stream_pool::get_stream()` may return instances of 
+`rmm::cuda_stream_view` that represent identical CUDA streams.
+
 ### Thread Safety
 
 All current device memory resources are thread safe unless documented otherwise. More specifically,
@@ -262,7 +270,11 @@ Allocates and frees device memory using `cudaMalloc` and `cudaFree`.
 
 #### `managed_memory_resource`
 
-Allocates and frees device memory using `cudaMallocManaged` and `cudaFree`.
+Allocates and frees device memory using `cudaMallocManaged` and `cudaFree`. 
+
+Note that `managed_memory_resource` cannot be used with NVIDIA Virtual GPU Software (vGPU, for use
+with virtual machines or hypervisors) because [NVIDIA CUDA Unified Memory is not supported by 
+NVIDIA vGPU](https://docs.nvidia.com/grid/latest/grid-vgpu-user-guide/index.html#cuda-open-cl-support-vgpu).
 
 #### `pool_memory_resource`
 
