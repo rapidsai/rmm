@@ -460,6 +460,10 @@ def test_cuda_async_memory_resource(dtype, nelem, alloc):
     array_tester(dtype, nelem, alloc)
 
 
+@pytest.mark.skipif(
+    rmm._cuda.gpu.driverGetVersion() < 11020,
+    reason="cudaMallocAsync not supported",
+)
 @pytest.mark.parametrize("nelems", _nelems)
 def test_cuda_async_memory_resource_stream(nelems):
     # test that using CudaAsyncMemoryResource
