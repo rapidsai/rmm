@@ -1,5 +1,5 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
-# For CUDA 11.0
+# For CUDA 11.2
 
 cdef extern from "cuda.h" nogil:
     cpdef enum cudaDeviceAttr:
