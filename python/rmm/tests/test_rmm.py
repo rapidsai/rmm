@@ -458,3 +458,16 @@ def test_cuda_async_memory_resource(dtype, nelem, alloc):
     rmm.mr.set_current_device_resource(mr)
     assert rmm.mr.get_current_device_resource_type() is type(mr)
     array_tester(dtype, nelem, alloc)
+
+
+@pytest.mark.parametrize("nelems", _nelems)
+def test_cuda_async_memory_resource_stream(nelems):
+    # test that using CudaAsyncMemoryResource
+    # with a non-default stream works
+    mr = rmm.mr.CudaAsyncMemoryResource()
+    rmm.mr.set_current_device_resource(mr)
+    stream = rmm._cuda.stream.Stream()
+    expected = np.full(nelems, 5, dtype="u1")
+    dbuf = rmm.DeviceBuffer.to_device(expected, stream=stream)
+    result = np.asarray(dbuf.copy_to_host())
+    np.testing.assert_equal(expected, result)
