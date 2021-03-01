@@ -60,7 +60,7 @@ class pinned_memory_resource final : public host_memory_resource {
 
     // If the requested alignment isn't supported, use default
     alignment =
-      (detail::is_supported_alignment(alignment)) ? alignment : detail::RMM_DEFAULT_HOST_ALIGNMENT;
+      (rmm::detail::is_supported_alignment(alignment)) ? alignment : rmm::detail::RMM_DEFAULT_HOST_ALIGNMENT;
 
     return detail::aligned_allocate(bytes, alignment, [](std::size_t size) {
       void* p{nullptr};

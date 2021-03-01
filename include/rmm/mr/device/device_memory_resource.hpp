@@ -44,21 +44,21 @@ namespace mr {
  * allocation. This allows optimizations such as re-using memory deallocated on the same stream
  * without the overhead of stream synchronization.
  *
- * A call to `allocate(bytes, stream_a)` (on any derived class) returns a pointer that is valid to
+ * A call to `allocate_async(bytes, stream_a)` (on any derived class) returns a pointer that is valid to
  * use on `stream_a`. Using the memory on a different stream (say `stream_b`) is Undefined Behavior
  * unless the two streams are first synchronized, for example by using
  * `cudaStreamSynchronize(stream_a)` or by recording a CUDA event on `stream_a` and then
  * calling `cudaStreamWaitEvent(stream_b, event)`.
  *
- * The stream specified to deallocate() should be a stream on which it is valid to use the
+ * The stream specified to deallocate_async() should be a stream on which it is valid to use the
  * deallocated memory immediately for another allocation. Typically this is the stream on which the
- * allocation was *last* used before the call to deallocate(). The passed stream may be used
+ * allocation was *last* used before the call to deallocate_async(). The passed stream may be used
  * internally by a device_memory_resource for managing available memory with minimal
  * synchronization, and it may also be synchronized at a later time, for example using a call to
  * `cudaStreamSynchronize()`.
  *
  * For this reason, it is Undefined Behavior to destroy a CUDA stream that is passed to
- * deallocate(). If the stream on which the allocation was last used has been destroyed before
+ * deallocate_async(). If the stream on which the allocation was last used has been destroyed before
  * calling deallocate() or it is known that it will be destroyed, it is likely better to synchronize
  * the stream (before destroying it) and then pass a different stream to deallocate() (e.g. the
  * default stream).
@@ -81,7 +81,7 @@ namespace mr {
  * }
  * @endcode
  */
-class device_memory_resource : public stream_aware_memory_resource<memory_kind::device> {
+class device_memory_resource : public stream_ordered_memory_resource<memory_kind::device> {
  public:
   virtual ~device_memory_resource() = default;
 

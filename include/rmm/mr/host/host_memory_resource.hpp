@@ -46,7 +46,7 @@ namespace mr {
  * derived class implementation is used.
  *
  *---------------------------------------------------------------------------**/
-using host_memory_resource = memory_resource<memory_kind::host, allocation_order::host>;
+using host_memory_resource = memory_resource<memory_kind::host>;
 
 }  // namespace mr
 }  // namespace rmm

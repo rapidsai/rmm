@@ -141,7 +141,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
    * @param bytes The size, in bytes, of the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* do_allocate(std::size_t bytes, rmm::cuda_stream_view stream) override
+  void* do_allocate_async(std::size_t bytes, std::size_t alignment, rmm::cuda_stream_view stream) override
   {
     void* p{nullptr};
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
@@ -163,7 +163,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
    *
    * @param p Pointer to be deallocated
    */
-  void do_deallocate(void* p, std::size_t, rmm::cuda_stream_view stream) override
+  void do_deallocate_async(void* p, std::size_t, std::size_t, rmm::cuda_stream_view stream) override
   {
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
     if (p != nullptr) { RMM_ASSERT_CUDA_SUCCESS(cudaFreeAsync(p, stream.value())); }
@@ -182,7 +182,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equal
    */
-  bool do_is_equal(device_memory_resource const& other) const noexcept override
+  bool do_is_equal(memory_resource<memory_kind::device> const& other) const noexcept override
   {
     return dynamic_cast<cuda_async_memory_resource const*>(&other) != nullptr;
   }

@@ -27,16 +27,16 @@
 
 namespace {
 
-template <rmm::mr::memory_kind kind, rmm::mr::allocation_order order>
-void test_resource_traits(const rmm::mr::memory_resource<kind, order> *) {
-  static_assert(rmm::mr::memory_resource<kind, order>::kind == kind, "Incorrect constant");
-  static_assert(rmm::mr::memory_resource<kind, order>::order == order, "Incorrect constant");
+template <rmm::mr::memory_kind kind, typename Context>
+void test_resource_traits(const rmm::mr::memory_resource<kind, Context> *) {
+  static_assert(rmm::mr::memory_resource<kind, Context>::kind == kind, "Incorrect constant");
+  static_assert(std::is_same<typename rmm::mr::memory_resource<kind, Context>::context, Context>::value, "Incorrect constant");
 }
 
 TEST(MRTest, Constants)
 {
   rmm::mr::host_memory_resource *mr1 = nullptr;
-  rmm::mr::memory_resource<rmm::mr::memory_kind::pinned, rmm::mr::allocation_order::stream> *mr2 = nullptr;
+  rmm::mr::memory_resource<rmm::mr::memory_kind::pinned, void> *mr2 = nullptr;
   test_resource_traits(mr1);
   test_resource_traits(mr2);
 }
