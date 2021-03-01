@@ -27,6 +27,9 @@ cdef class CudaMemoryResource(DeviceMemoryResource):
 cdef class ManagedMemoryResource(DeviceMemoryResource):
     pass
 
+cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
+    pass
+
 cdef class PoolMemoryResource(UpstreamResourceAdaptor):
     pass
 

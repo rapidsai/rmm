@@ -1,6 +1,7 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 from rmm._lib.memory_resource import (
     BinningMemoryResource,
+    CudaAsyncMemoryResource,
     CudaMemoryResource,
     DeviceMemoryResource,
     FixedSizeMemoryResource,
@@ -22,6 +23,7 @@ from rmm._lib.memory_resource import (
 
 __all__ = [
     "BinningMemoryResource",
+    "CudaAsyncMemoryResource",
     "CudaMemoryResource",
     "DeviceMemoryResource",
     "FixedSizeMemoryResource",

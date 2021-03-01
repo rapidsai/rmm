@@ -38,6 +38,11 @@ cdef extern from "rmm/mr/device/managed_memory_resource.hpp" \
     cdef cppclass managed_memory_resource(device_memory_resource):
         managed_memory_resource() except +
 
+cdef extern from "rmm/mr/device/cuda_async_memory_resource.hpp" \
+        namespace "rmm::mr" nogil:
+    cdef cppclass cuda_async_memory_resource(device_memory_resource):
+        cuda_async_memory_resource() except +
+
 cdef extern from "rmm/mr/device/pool_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass pool_memory_resource[Upstream](device_memory_resource):
@@ -99,6 +104,7 @@ cdef extern from "rmm/mr/device/per_device_resource.hpp" namespace "rmm" nogil:
     cdef device_memory_resource* _get_per_device_resource \
         "rmm::mr::get_per_device_resource"(cuda_device_id id)
 
+
 cdef class DeviceMemoryResource:
 
     cdef device_memory_resource* get_mr(self):
@@ -131,6 +137,20 @@ cdef class CudaMemoryResource(DeviceMemoryResource):
     def __init__(self, device=None):
         """
         Memory resource that uses cudaMalloc/Free for allocation/deallocation
+        """
+        pass
+
+
+cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
+    def __cinit__(self, device=None):
+        self.c_obj.reset(
+            new cuda_async_memory_resource()
+        )
+
+    def __init__(self, device=None):
+        """
+        Memory resource that uses cudaMallocAsync/Free for
+        allocation/deallocation
         """
         pass
 

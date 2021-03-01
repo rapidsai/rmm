@@ -444,3 +444,17 @@ def test_mr_upstream_lifetime():
     # Delete cuda_mr first. Should be kept alive by pool_mr
     del cuda_mr
     del pool_mr
+
+
+@pytest.mark.skipif(
+    rmm._cuda.gpu.driverGetVersion() < 11020,
+    reason="cudaMallocAsync not supported",
+)
+@pytest.mark.parametrize("dtype", _dtypes)
+@pytest.mark.parametrize("nelem", _nelems)
+@pytest.mark.parametrize("alloc", _allocs)
+def test_cuda_async_memory_resource(dtype, nelem, alloc):
+    mr = rmm.mr.CudaAsyncMemoryResource()
+    rmm.mr.set_current_device_resource(mr)
+    assert rmm.mr.get_current_device_resource_type() is type(mr)
+    array_tester(dtype, nelem, alloc)
