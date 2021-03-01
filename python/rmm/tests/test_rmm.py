@@ -287,11 +287,8 @@ def test_rmm_pool_numba_stream(stream):
     stream = rmm._cuda.stream.Stream(stream)
     a = rmm._lib.device_buffer.DeviceBuffer(size=3, stream=stream)
 
-    # Deleting all allocations known by the RMM pool is required
-    # before rmm.reinitialize(), otherwise it may segfault.
-    del a
-
-    rmm.reinitialize()
+    assert a.size == 3
+    assert a.ptr != 0
 
 
 def test_rmm_cupy_allocator():
