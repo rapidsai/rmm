@@ -75,8 +75,6 @@ cdef class DeviceBuffer:
         cdef const void* c_ptr
         cdef cudaError_t err
 
-        self._stream = stream
-
         with nogil:
             c_ptr = <const void*>ptr
 
