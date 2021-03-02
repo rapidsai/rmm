@@ -85,7 +85,7 @@ for pxd_basename in files_to_preprocess:
             pxi_basename,
         )
         pxd_pathname = os.path.join(cwd, "rmm/_cuda", pxd_basename)
-        shutil.copyfile(os.path.join(pxi_pathname), os.path.join(pxd_pathname))
+        shutil.copyfile(pxi_pathname, pxd_pathname)
     else:
         raise TypeError(f"{CUDA_VERSION} is not supported.")
 
