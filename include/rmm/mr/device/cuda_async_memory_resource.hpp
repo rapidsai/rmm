@@ -47,9 +47,9 @@ class cuda_async_memory_resource final : public device_memory_resource {
     RMM_CUDA_TRY(cudaGetDevice(&device));
     int v{0};
     auto e = cudaDeviceGetAttribute(&v, cudaDevAttrMemoryPoolsSupported, device);
-    RMM_EXPECTS(e == cudaSuccess && v == 1,
-                "cudaMallocAsync not supported by the version of the CUDA Toolkit used for this build"
-                );
+    RMM_EXPECTS(
+      e == cudaSuccess && v == 1,
+      "cudaMallocAsync not supported by the version of the CUDA Toolkit used for this build");
 #else
     RMM_FAIL("cudaMallocAsync not supported");
 #endif
