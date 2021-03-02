@@ -63,21 +63,32 @@ else:
 # valid symbols for specific version of CUDA.
 
 cwd = os.getcwd()
-preprocess_files = ["gpu.pxd"]
-supported_cuda_versions = {"10.1", "10.2", "11.0", "11.2"}
+files_to_preprocess = ["gpu.pxd"]
 
-for file_p in preprocess_files:
-    pxi_file = ".".join(file_p.split(".")[:-1])
-    pxi_file = pxi_file + ".pxi"
-
-    if CUDA_VERSION in supported_cuda_versions:
-        shutil.copyfile(
-            os.path.join(cwd, "rmm/_cuda", CUDA_VERSION, pxi_file),
-            os.path.join(cwd, "rmm/_cuda", file_p),
+# The .pxi file is unchanged between some CUDA versions
+# (e.g., 11.0 & 11.1), so we keep only a single copy
+# of it
+cuda_version_to_pxi_dir = {
+    "10.1": "10.1",
+    "10.2": "10.2",
+    "11.0": "11.0",
+    "11.1": "11.0",
+    "11.2": "11.0",
+}
+breakpoint()
+for pxd_basename in files_to_preprocess:
+    pxi_basename = os.path.splitext(pxd_basename)[0] + ".pxi"
+    if CUDA_VERSION in cuda_version_to_pxi_dir:
+        pxi_pathname = os.path.join(
+            cwd,
+            "rmm/_cuda",
+            cuda_version_to_pxi_dir[CUDA_VERSION],
+            pxi_basename,
         )
+        pxd_pathname = os.path.join(cwd, "rmm/_cuda", pxd_basename)
+        shutil.copyfile(os.path.join(pxi_pathname), os.path.join(pxd_pathname))
     else:
         raise TypeError(f"{CUDA_VERSION} is not supported.")
-
 
 try:
     nthreads = int(os.environ.get("PARALLEL_LEVEL", "0") or "0")
