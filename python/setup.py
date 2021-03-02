@@ -75,7 +75,6 @@ cuda_version_to_pxi_dir = {
     "11.1": "11.0",
     "11.2": "11.0",
 }
-breakpoint()
 for pxd_basename in files_to_preprocess:
     pxi_basename = os.path.splitext(pxd_basename)[0] + ".pxi"
     if CUDA_VERSION in cuda_version_to_pxi_dir:
