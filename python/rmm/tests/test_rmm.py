@@ -21,6 +21,9 @@ else:
 
 cuda.set_memory_manager(rmm.RMMNumbaManager)
 
+_driver_version = rmm._cuda.gpu.driverGetVersion()
+_runtime_version = rmm._cuda.gpu.runtimeGetVersion()
+
 
 @pytest.fixture(scope="function", autouse=True)
 def rmm_auto_reinitialize():
@@ -447,7 +450,7 @@ def test_mr_upstream_lifetime():
 
 
 @pytest.mark.skipif(
-    rmm._cuda.gpu.runtimeGetVersion() < 11020,
+    (_driver_version, _runtime_version) < (11020, 11020),
     reason="cudaMallocAsync not supported",
 )
 @pytest.mark.parametrize("dtype", _dtypes)
@@ -461,7 +464,7 @@ def test_cuda_async_memory_resource(dtype, nelem, alloc):
 
 
 @pytest.mark.skipif(
-    rmm._cuda.gpu.runtimeGetVersion() < 11020,
+    (_driver_version, _runtime_version) < (11020, 11020),
     reason="cudaMallocAsync not supported",
 )
 @pytest.mark.parametrize("nelems", _nelems)
