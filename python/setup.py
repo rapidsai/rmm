@@ -71,9 +71,9 @@ files_to_preprocess = ["gpu.pxd"]
 cuda_version_to_pxi_dir = {
     "10.1": "10.1",
     "10.2": "10.2",
-    "11.0": "11.0",
-    "11.1": "11.0",
-    "11.2": "11.0",
+    "11.0": "11.x",
+    "11.1": "11.x",
+    "11.2": "11.x",
 }
 for pxd_basename in files_to_preprocess:
     pxi_basename = os.path.splitext(pxd_basename)[0] + ".pxi"
