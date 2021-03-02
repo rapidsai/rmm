@@ -142,17 +142,14 @@ cdef class CudaMemoryResource(DeviceMemoryResource):
 
 
 cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
+    """
+    Memory resource that uses cudaMallocAsync/Free for
+    allocation/deallocation
+    """
     def __cinit__(self, device=None):
         self.c_obj.reset(
             new cuda_async_memory_resource()
         )
-
-    def __init__(self, device=None):
-        """
-        Memory resource that uses cudaMallocAsync/Free for
-        allocation/deallocation
-        """
-        pass
 
 
 cdef class ManagedMemoryResource(DeviceMemoryResource):
