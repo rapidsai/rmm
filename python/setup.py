@@ -1,4 +1,5 @@
 # Copyright (c) 2019-2020, NVIDIA CORPORATION.
+import filecmp
 import glob
 import os
 import re
@@ -75,6 +76,7 @@ cuda_version_to_pxi_dir = {
     "11.1": "11.x",
     "11.2": "11.x",
 }
+
 for pxd_basename in files_to_preprocess:
     pxi_basename = os.path.splitext(pxd_basename)[0] + ".pxi"
     if CUDA_VERSION in cuda_version_to_pxi_dir:
@@ -85,6 +87,13 @@ for pxd_basename in files_to_preprocess:
             pxi_basename,
         )
         pxd_pathname = os.path.join(cwd, "rmm/_cuda", pxd_basename)
+        try:
+            if filecmp.cmp(pxi_pathname, pxd_pathname):
+                # files are the same, no need to copy
+                continue
+        except FileNotFoundError:
+            # pxd_pathname doesn't exist yet
+            pass
         shutil.copyfile(pxi_pathname, pxd_pathname)
     else:
         raise TypeError(f"{CUDA_VERSION} is not supported.")
