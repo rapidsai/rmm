@@ -21,6 +21,9 @@ else:
 
 cuda.set_memory_manager(rmm.RMMNumbaManager)
 
+_driver_version = rmm._cuda.gpu.driverGetVersion()
+_runtime_version = rmm._cuda.gpu.runtimeGetVersion()
+
 
 @pytest.fixture(scope="function", autouse=True)
 def rmm_auto_reinitialize():
@@ -444,3 +447,34 @@ def test_mr_upstream_lifetime():
     # Delete cuda_mr first. Should be kept alive by pool_mr
     del cuda_mr
     del pool_mr
+
+
+@pytest.mark.skipif(
+    (_driver_version, _runtime_version) < (11020, 11020),
+    reason="cudaMallocAsync not supported",
+)
+@pytest.mark.parametrize("dtype", _dtypes)
+@pytest.mark.parametrize("nelem", _nelems)
+@pytest.mark.parametrize("alloc", _allocs)
+def test_cuda_async_memory_resource(dtype, nelem, alloc):
+    mr = rmm.mr.CudaAsyncMemoryResource()
+    rmm.mr.set_current_device_resource(mr)
+    assert rmm.mr.get_current_device_resource_type() is type(mr)
+    array_tester(dtype, nelem, alloc)
+
+
+@pytest.mark.skipif(
+    (_driver_version, _runtime_version) < (11020, 11020),
+    reason="cudaMallocAsync not supported",
+)
+@pytest.mark.parametrize("nelems", _nelems)
+def test_cuda_async_memory_resource_stream(nelems):
+    # test that using CudaAsyncMemoryResource
+    # with a non-default stream works
+    mr = rmm.mr.CudaAsyncMemoryResource()
+    rmm.mr.set_current_device_resource(mr)
+    stream = rmm._cuda.stream.Stream()
+    expected = np.full(nelems, 5, dtype="u1")
+    dbuf = rmm.DeviceBuffer.to_device(expected, stream=stream)
+    result = np.asarray(dbuf.copy_to_host())
+    np.testing.assert_equal(expected, result)
