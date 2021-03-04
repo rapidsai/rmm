@@ -283,6 +283,17 @@ def test_rmm_device_buffer_pickle_roundtrip(hb):
         assert hb3 == hb
 
 
+@pytest.mark.parametrize("stream", [cuda.default_stream(), cuda.stream()])
+def test_rmm_pool_numba_stream(stream):
+    rmm.reinitialize(pool_allocator=True)
+
+    stream = rmm._cuda.stream.Stream(stream)
+    a = rmm._lib.device_buffer.DeviceBuffer(size=3, stream=stream)
+
+    assert a.size == 3
+    assert a.ptr != 0
+
+
 def test_rmm_cupy_allocator():
     cupy = pytest.importorskip("cupy")
 
@@ -299,6 +310,54 @@ def test_rmm_cupy_allocator():
     cupy.cuda.set_allocator(rmm.rmm_cupy_allocator)
     a = cupy.arange(10)
     assert isinstance(a.data.mem._owner, rmm.DeviceBuffer)
+
+
+@pytest.mark.parametrize("stream", ["null", "async"])
+def test_rmm_pool_cupy_allocator_with_stream(stream):
+    cupy = pytest.importorskip("cupy")
+
+    rmm.reinitialize(pool_allocator=True)
+    cupy.cuda.set_allocator(rmm.rmm_cupy_allocator)
+
+    if stream == "null":
+        stream = cupy.cuda.stream.Stream.null
+    else:
+        stream = cupy.cuda.stream.Stream()
+
+    with stream:
+        m = rmm.rmm_cupy_allocator(42)
+        assert m.mem.size == 42
+        assert m.mem.ptr != 0
+        assert isinstance(m.mem._owner, rmm.DeviceBuffer)
+
+        m = rmm.rmm_cupy_allocator(0)
+        assert m.mem.size == 0
+        assert m.mem.ptr == 0
+        assert isinstance(m.mem._owner, rmm.DeviceBuffer)
+
+        a = cupy.arange(10)
+        assert isinstance(a.data.mem._owner, rmm.DeviceBuffer)
+
+    # Deleting all allocations known by the RMM pool is required
+    # before rmm.reinitialize(), otherwise it may segfault.
+    del a
+
+    rmm.reinitialize()
+
+
+def test_rmm_pool_cupy_allocator_stream_lifetime():
+    cupy = pytest.importorskip("cupy")
+
+    rmm.reinitialize(pool_allocator=True)
+    cupy.cuda.set_allocator(rmm.rmm_cupy_allocator)
+
+    stream = cupy.cuda.stream.Stream()
+
+    stream.use()
+    x = cupy.arange(10)
+    del stream
+
+    del x
 
 
 @pytest.mark.parametrize("dtype", _dtypes)

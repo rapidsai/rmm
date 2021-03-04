@@ -18,6 +18,7 @@ from numba.cuda import HostOnlyCUDAMemoryManager, IpcHandle, MemoryPointer
 
 import rmm
 from rmm import _lib as librmm
+from rmm._cuda.stream import Stream
 
 
 # Utility Functions
@@ -193,7 +194,8 @@ def rmm_cupy_allocator(nbytes):
     if cupy is None:
         raise ModuleNotFoundError("No module named 'cupy'")
 
-    buf = librmm.device_buffer.DeviceBuffer(size=nbytes)
+    stream = Stream(obj=cupy.cuda.get_current_stream())
+    buf = librmm.device_buffer.DeviceBuffer(size=nbytes, stream=stream)
     dev_id = -1 if buf.ptr else cupy.cuda.device.get_device_id()
     mem = cupy.cuda.UnownedMemory(
         ptr=buf.ptr, size=buf.size, owner=buf, device_id=dev_id
