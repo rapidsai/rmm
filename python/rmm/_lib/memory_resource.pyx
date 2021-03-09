@@ -387,11 +387,6 @@ cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
                     "log_file_name= argument or RMM_LOG_FILE "
                     "environment variable"
                 )
-        # Append the device ID before the file extension
-        log_file_name = _append_id(
-            log_file_name, getDevice()
-        )
-
         _log_file_name = log_file_name
 
         self.c_obj.reset(
@@ -504,6 +499,11 @@ cpdef void _initialize(
             setDevice(device)
 
             if logging:
+                # Append the device ID before the file extension
+                log_file_name = _append_id(
+                    log_file_name, device
+                )
+
                 mr = LoggingResourceAdaptor(
                     typ(*args, **kwargs),
                     log_file_name
@@ -628,6 +628,13 @@ cpdef _flush_logs():
 def enable_logging(log_file_name=None):
     """
     Enable logging of run-time events.
+
+    log_file_name:  str, optional
+        Name of the log file. If not specified, the environment variable
+        RMM_LOG_FILE is used. A TypeError is thrown if neither is available.
+        A separate log file is produced for each device,
+        and the suffix `".dev{id}"` is automatically added to the log file
+        name.
     """
     global _per_device_mrs
 
@@ -636,6 +643,9 @@ def enable_logging(log_file_name=None):
     for device in devices:
         each_mr = <DeviceMemoryResource>_per_device_mrs[device]
         if not isinstance(each_mr, LoggingResourceAdaptor):
+            log_file_name = _append_id(
+                log_file_name, device
+            )
             set_per_device_resource(
                 device,
                 LoggingResourceAdaptor(each_mr, log_file_name)
