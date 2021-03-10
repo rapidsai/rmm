@@ -52,7 +52,7 @@ class device_scalar {
    * @param mr Optional, resource with which to allocate.
    */
   explicit device_scalar(
-    cuda_stream_view const &stream,
+    cuda_stream_view stream,
     rmm::mr::device_memory_resource *mr = rmm::mr::get_current_device_resource())
     : buffer{sizeof(T), stream, mr}
   {
@@ -76,7 +76,7 @@ class device_scalar {
    */
   explicit device_scalar(
     T const &initial_value,
-    cuda_stream_view const &stream      = cuda_stream_view{},
+    cuda_stream_view stream             = cuda_stream_view{},
     rmm::mr::device_memory_resource *mr = rmm::mr::get_current_device_resource())
     : buffer{sizeof(T), stream, mr}
   {
@@ -96,7 +96,7 @@ class device_scalar {
    * @param mr The resource to use for allocating the new `device_scalar`
    */
   device_scalar(device_scalar const &other,
-                cuda_stream_view const &stream      = {},
+                cuda_stream_view stream             = {},
                 rmm::mr::device_memory_resource *mr = rmm::mr::get_current_device_resource())
     : buffer{other.buffer, stream, mr}
   {
@@ -118,7 +118,7 @@ class device_scalar {
    * @return T The value of the scalar.
    * @param stream CUDA stream on which to perform the copy and synchronize.
    */
-  T value(cuda_stream_view const &stream = cuda_stream_view{}) const
+  T value(cuda_stream_view stream = cuda_stream_view{}) const
   {
     T host_value{};
     _memcpy(&host_value, buffer.data(), stream);
@@ -161,7 +161,7 @@ class device_scalar {
    * @param stream CUDA stream on which to perform the copy
    */
   template <typename Placeholder = void>
-  auto set_value(T const &host_value, cuda_stream_view const &stream = cuda_stream_view{})
+  auto set_value(T const &host_value, cuda_stream_view stream = cuda_stream_view{})
     -> std::enable_if_t<std::is_fundamental<T>::value, Placeholder>
   {
     if (host_value == T{0}) {
@@ -169,6 +169,15 @@ class device_scalar {
     } else {
       _memcpy(buffer.data(), &host_value, stream);
     }
+  }
+
+  void set_value(T &&host_value, cuda_stream_view stream = cuda_stream_view{}) = delete;
+
+  template <typename Placeholder = void>
+  auto set_value_zero(cuda_stream_view stream = cuda_stream_view{})
+    -> std::enable_if_t<std::is_fundamental<T>::value, Placeholder>
+  {
+    RMM_CUDA_TRY(cudaMemsetAsync(buffer.data(), 0, sizeof(T), stream.value()));
   }
 
   /**
@@ -206,7 +215,7 @@ class device_scalar {
    * @param stream CUDA stream on which to perform the copy
    */
   template <typename Placeholder = void>
-  auto set_value(T const &host_value, cuda_stream_view const &stream = cuda_stream_view{})
+  auto set_value(T const &host_value, cuda_stream_view stream = cuda_stream_view{})
     -> std::enable_if_t<not std::is_fundamental<T>::value, Placeholder>
   {
     _memcpy(buffer.data(), &host_value, stream);
@@ -241,7 +250,7 @@ class device_scalar {
  private:
   rmm::device_buffer buffer{sizeof(T)};
 
-  inline void _memcpy(void *dst, const void *src, cuda_stream_view const &stream) const
+  inline void _memcpy(void *dst, const void *src, cuda_stream_view stream) const
   {
     RMM_CUDA_TRY(cudaMemcpyAsync(dst, src, sizeof(T), cudaMemcpyDefault, stream.value()));
   }
