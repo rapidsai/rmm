@@ -680,9 +680,9 @@ def get_log_filenames():
     """
     global _per_device_mrs
 
-    return [
-        each_mr.get_file_name()
+    return {
+        i: each_mr.get_file_name()
         if isinstance(each_mr, LoggingResourceAdaptor)
         else None
-        for each_mr in _per_device_mrs.values()
-    ]
+        for i, each_mr in _per_device_mrs.items()
+    }
