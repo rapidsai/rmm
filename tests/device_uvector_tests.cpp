@@ -174,8 +174,9 @@ TYPED_TEST(TypedUVectorTest, GetSetElementAsync)
   auto size = 12345;
   rmm::device_uvector<TypeParam> uv(size, this->stream());
   for (std::size_t i = 0; i < uv.size(); ++i) {
-    uv.set_element_async(i, i, this->stream());
-    EXPECT_EQ(static_cast<TypeParam>(i), uv.element(i, this->stream()));
+    auto init = static_cast<TypeParam>(i);
+    uv.set_element_async(i, init, this->stream());
+    EXPECT_EQ(init, uv.element(i, this->stream()));
   }
 }
 

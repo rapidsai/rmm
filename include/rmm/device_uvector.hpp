@@ -167,8 +167,8 @@ class device_uvector {
    * Because this function synchronizes the stream `s`, it is safe to destroy or modify the object
    * referenced by `v` after this function has returned.
    *
-   * @note: This function incurs a host to device memcpy and should be used sparingly.
-   * @note: This function synchronizes `stream`.
+   * @note This function incurs a host to device memcpy and should be used sparingly.
+   * @note This function synchronizes `stream`.
    *
    * Example:
    * \code{cpp}
@@ -206,7 +206,11 @@ class device_uvector {
    * referenced by `v` should not be destroyed or modified until `stream` has been synchronized.
    * Otherwise, behavior is undefined.
    *
-   * @note: This function incurs a host to device memcpy and should be used sparingly.
+   * @note This function incurs a host to device memcpy and should be used sparingly.
+   *
+   * @note Calling this function with a literal or other r-value reference for `v` is disallowed
+   *  to prevent the implementation from asynchronously copying from a literal or other implicit
+   *  temporary after it is deleted or goes out of scope.
    *
    * Example:
    * \code{cpp}
@@ -236,11 +240,17 @@ class device_uvector {
       cudaMemcpyAsync(element_ptr(element_index), &v, sizeof(v), cudaMemcpyDefault, s.value()));
   }
 
+  // We delete the r-value reference overload to prevent asynchronously copying from a literal or
+  // implicit temporary value after it is deleted or goes out of scope.
+  void set_element_async(std::size_t element_index,
+                         value_type const&& v,
+                         cuda_stream_view s) = delete;
+
   /**
    * @brief Returns the specified element from device memory
    *
-   * @note: This function incurs a device to host memcpy and should be used sparingly.
-   * @note: This function synchronizes `stream`.
+   * @note This function incurs a device to host memcpy and should be used sparingly.
+   * @note This function synchronizes `stream`.
    *
    * @throws rmm::out_of_range exception if `element_index >= size()`
    *
@@ -262,7 +272,8 @@ class device_uvector {
   /**
    * @brief Returns the first element.
    *
-   * @note: This function incurs a device to host memcpy and should be used sparingly.
+   * @note This function incurs a device-to-host memcpy and should be used sparingly.
+   * @note This function synchronizes `stream`.
    *
    * @throws rmm::out_of_range exception if the vector is empty.
    *
@@ -274,7 +285,8 @@ class device_uvector {
   /**
    * @brief Returns the last element.
    *
-   * @note: This function incurs a device to host memcpy and should be used sparingly.
+   * @note This function incurs a device-to-host memcpy and should be used sparingly.
+   * @note This function synchronizes `stream`.
    *
    * @throws rmm::out_of_range exception if the vector is empty.
    *
