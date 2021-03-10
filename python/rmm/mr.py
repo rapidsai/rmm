@@ -14,6 +14,7 @@ from rmm._lib.memory_resource import (
     enable_logging,
     get_current_device_resource,
     get_current_device_resource_type,
+    get_log_filenames,
     get_per_device_resource,
     get_per_device_resource_type,
     is_initialized,
@@ -40,5 +41,6 @@ __all__ = [
     "get_current_device_resource",
     "get_per_device_resource_type",
     "get_current_device_resource_type",
+    "get_log_filenames",
     "is_initialized",
 ]

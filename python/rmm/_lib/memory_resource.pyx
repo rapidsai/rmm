@@ -387,7 +387,12 @@ cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
                     "log_file_name= argument or RMM_LOG_FILE "
                     "environment variable"
                 )
-        _log_file_name = log_file_name
+        # Append the device ID before the file extension
+        log_file_name = _append_id(
+            log_file_name, getDevice()
+        )
+
+        self._log_file_name = log_file_name
 
         self.c_obj.reset(
             new logging_resource_adaptor[device_memory_resource](
@@ -499,11 +504,6 @@ cpdef void _initialize(
             setDevice(device)
 
             if logging:
-                # Append the device ID before the file extension
-                log_file_name = _append_id(
-                    log_file_name, device
-                )
-
                 mr = LoggingResourceAdaptor(
                     typ(*args, **kwargs),
                     log_file_name
@@ -627,14 +627,27 @@ cpdef _flush_logs():
 
 def enable_logging(log_file_name=None):
     """
-    Enable logging of run-time events.
+    Enable logging of run-time events for all devices.
 
+    Parameters
+    ----------
     log_file_name:  str, optional
         Name of the log file. If not specified, the environment variable
         RMM_LOG_FILE is used. A TypeError is thrown if neither is available.
         A separate log file is produced for each device,
         and the suffix `".dev{id}"` is automatically added to the log file
         name.
+
+    Notes
+    -----
+    Note that if you use the environment variable CUDA_VISIBLE_DEVICES
+    with logging enabled, the suffix may not be what you expect. For
+    example, if you set CUDA_VISIBLE_DEVICES=1, the log file produced
+    will still have suffix `0`. Similarly, if you set
+    CUDA_VISIBLE_DEVICES=1,0 and use devices 0 and 1, the log file
+    with suffix `0` will correspond to the GPU with device ID `1`.
+    Use `rmm.get_log_filenames()` to get the log file names
+    corresponding to each device.
     """
     global _per_device_mrs
 
@@ -643,9 +656,6 @@ def enable_logging(log_file_name=None):
     for device in devices:
         each_mr = <DeviceMemoryResource>_per_device_mrs[device]
         if not isinstance(each_mr, LoggingResourceAdaptor):
-            log_file_name = _append_id(
-                log_file_name, device
-            )
             set_per_device_resource(
                 device,
                 LoggingResourceAdaptor(each_mr, log_file_name)
@@ -661,3 +671,18 @@ def disable_logging():
     for i, each_mr in _per_device_mrs.items():
         if isinstance(each_mr, LoggingResourceAdaptor):
             set_per_device_resource(i, each_mr.get_upstream())
+
+
+def get_log_filenames():
+    """
+    Returns the log filename (or `None` if not writing logs)
+    for each device in use.
+    """
+    global _per_device_mrs
+
+    return [
+        each_mr.get_file_name()
+        if isinstance(each_mr, LoggingResourceAdaptor)
+        else None
+        for each_mr in _per_device_mrs.values()
+    ]
