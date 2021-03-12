@@ -382,7 +382,7 @@ cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
         if log_file_name is None:
             log_file_name = os.getenv("RMM_LOG_FILE")
             if not log_file_name:
-                raise TypeError(
+                raise ValueError(
                     "RMM log file must be specified either using "
                     "log_file_name= argument or RMM_LOG_FILE "
                     "environment variable"
@@ -633,7 +633,7 @@ def enable_logging(log_file_name=None):
     ----------
     log_file_name:  str, optional
         Name of the log file. If not specified, the environment variable
-        RMM_LOG_FILE is used. A TypeError is thrown if neither is available.
+        RMM_LOG_FILE is used. A ValueError is thrown if neither is available.
         A separate log file is produced for each device,
         and the suffix `".dev{id}"` is automatically added to the log file
         name.
