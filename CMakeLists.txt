@@ -97,8 +97,9 @@ message(STATUS "RMM: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'")
 
 if(BUILD_TESTS OR BUILD_BENCHMARKS)
   # Auto-detect available GPU compute architectures
-  enable_language(CUDA)
   include(${RMM_SOURCE_DIR}/cmake/Modules/SetGPUArchs.cmake)
+  # Enable the CUDA language after setting CMAKE_CUDA_ARCHITECTURES
+  enable_language(CUDA)
   message(STATUS "RMM: Building benchmarks with GPU Architectures: ${CMAKE_CUDA_ARCHITECTURES}")
 endif()
 
