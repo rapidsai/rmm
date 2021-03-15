@@ -11,7 +11,7 @@
 # the License.
 
 # Unset this first in case it's set to <empty_string>
-unset(CMAKE_CUDA_ARCHITECTURES CACHE)
+set(CMAKE_CUDA_ARCHITECTURES OFF)
 
 # Enable CUDA so we can invoke nvcc
 enable_language(CUDA)
