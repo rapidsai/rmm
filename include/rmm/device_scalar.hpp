@@ -184,12 +184,10 @@ class device_scalar {
    * (e.g. using `cudaStreamWaitEvent()` or `cudaStreamSynchronize()`) before and after calling
    * this function, otherwise there may be a race condition.
    *
-   * This function does not synchronize `stream` before returning. Therefore, the object
-   * referenced by `host_value` should not be destroyed or modified until `stream` has been
-   * synchronized. Otherwise, behavior is undefined.
+   * This function does not synchronize `stream` before returning. `host_value` is passed by value
+   * so a host-side copy may be performed before calling a device memset.
    *
-   * @note: This function incurs a host to device memcpy or device memset and should be used
-   * sparingly.
+   * @note: This function incurs a device memset.
    *
    * Example:
    * \code{cpp}
@@ -197,7 +195,7 @@ class device_scalar {
    *
    * bool v{true};
    *
-   * // Copies 42 to device storage on `stream`. Does _not_ synchronize
+   * // Copies `true` to device storage on `stream`. Does _not_ synchronize
    * vec.set_value(v, stream);
    * ...
    * cudaStreamSynchronize(stream);
@@ -214,8 +212,7 @@ class device_scalar {
   auto set_value(U const &host_value, cuda_stream_view stream = cuda_stream_view{})
     -> std::enable_if_t<std::is_same<U, bool>::value, void>
   {
-    RMM_CUDA_TRY(cudaMemsetAsync(
-      buffer.data(), host_value == true ? true : false, sizeof(bool), stream.value()));
+    RMM_CUDA_TRY(cudaMemsetAsync(buffer.data(), host_value, sizeof(bool), stream.value()));
   }
 
   /**
