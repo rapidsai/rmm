@@ -450,11 +450,11 @@ freeing host memory.
 
 Similar to `device_memory_resource`, it has two key functions for (de)allocation:
 
-1. `void* device_memory_resource::allocate(std::size_t bytes, std::size_t alignment)`
+1. `void* host_memory_resource::allocate(std::size_t bytes, std::size_t alignment)`
    - Returns a pointer to an allocation of at least `bytes` bytes aligned to the specified
      `alignment`
 
-2. `void device_memory_resource::deallocate(void* p, std::size_t bytes, std::size_t alignment)`
+2. `void host_memory_resource::deallocate(void* p, std::size_t bytes, std::size_t alignment)`
    - Reclaims a previous allocation of size `bytes` pointed to by `p`. 
 
 
