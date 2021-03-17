@@ -148,11 +148,16 @@ class arena_memory_resource final : public device_memory_resource {
     if (p == nullptr || bytes <= 0) return;
 
     bytes = detail::arena::align_up(bytes);
+#ifdef RMM_POOL_TRACK_ALLOCATIONS
     if (!get_arena(stream).deallocate(p, bytes, stream)) {
       deallocate_from_other_arena(p, bytes, stream);
     }
+#else
+    get_arena(stream).deallocate(p, bytes, stream);
+#endif
   }
 
+#ifdef RMM_POOL_TRACK_ALLOCATIONS
   /**
    * @brief Deallocate memory pointed to by `p` that was allocated in a different arena.
    *
@@ -186,6 +191,7 @@ class arena_memory_resource final : public device_memory_resource {
     // global arena.
     global_arena_.deallocate({p, bytes});
   }
+#endif
 
   /**
    * @brief Get the arena associated with the current thread or the given stream.
