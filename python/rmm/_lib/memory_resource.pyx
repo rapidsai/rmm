@@ -683,7 +683,7 @@ def get_log_filenames():
     --------
     >>> import rmm
     >>> rmm.reinitialize(devices=[0, 1], logging=True, log_file_name="rmm.log")
-    >>> rmm.mr.get_log_filenames()
+    >>> rmm.get_log_filenames()
     {0: '/home/ashwin/workspace/rapids/rmm/python/rmm.dev0.log',
      1: '/home/ashwin/workspace/rapids/rmm/python/rmm.dev1.log'}
     """
