@@ -387,11 +387,12 @@ cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
                     "log_file_name= argument or RMM_LOG_FILE "
                     "environment variable"
                 )
+
         # Append the device ID before the file extension
         log_file_name = _append_id(
             log_file_name, getDevice()
         )
-
+        log_file_name = os.path.abspath(log_file_name)
         self._log_file_name = log_file_name
 
         self.c_obj.reset(
