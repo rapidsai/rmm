@@ -18,6 +18,7 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/exec_check_disable.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
@@ -78,8 +79,12 @@ class device_uvector {
   using iterator        = pointer;
   using const_iterator  = const_pointer;
 
-  ~device_uvector()                = default;
+  RMM_EXEC_CHECK_DISABLE
+  ~device_uvector() = default;
+
+  RMM_EXEC_CHECK_DISABLE
   device_uvector(device_uvector&&) = default;
+
   device_uvector& operator=(device_uvector&&) = default;
 
   /**

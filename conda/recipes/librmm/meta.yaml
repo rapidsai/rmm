@@ -49,6 +49,7 @@ test:
     - test -f $PREFIX/include/rmm/device_buffer.hpp
     - test -f $PREFIX/include/rmm/detail/aligned.hpp
     - test -f $PREFIX/include/rmm/detail/error.hpp
+    - test -f $PREFIX/include/rmm/detail/exec_check_disable.hpp
     - test -f $PREFIX/include/rmm/mr/device/detail/arena.hpp
     - test -f $PREFIX/include/rmm/mr/device/detail/free_list.hpp
     - test -f $PREFIX/include/rmm/mr/device/detail/coalescing_free_list.hpp
