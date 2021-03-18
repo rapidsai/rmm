@@ -65,7 +65,21 @@ def reinitialize(
         This has significant performance impact.
     log_file_name : str
         Name of the log file. If not specified, the environment variable
-        RMM_LOG_FILE is used. A TypeError is thrown if neither is available.
+        RMM_LOG_FILE is used. A ValueError is thrown if neither is available.
+        A separate log file is produced for each device,
+        and the suffix `".dev{id}"` is automatically added to the log file
+        name.
+
+    Notes
+    -----
+    Note that if you use the environment variable CUDA_VISIBLE_DEVICES
+    with logging enabled, the suffix may not be what you expect. For
+    example, if you set CUDA_VISIBLE_DEVICES=1, the log file produced
+    will still have suffix `0`. Similarly, if you set
+    CUDA_VISIBLE_DEVICES=1,0 and use devices 0 and 1, the log file
+    with suffix `0` will correspond to the GPU with device ID `1`.
+    Use `rmm.get_log_filenames()` to get the log file names
+    corresponding to each device.
     """
     rmm.mr._initialize(
         pool_allocator=pool_allocator,

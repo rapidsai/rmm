@@ -382,17 +382,18 @@ cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
         if log_file_name is None:
             log_file_name = os.getenv("RMM_LOG_FILE")
             if not log_file_name:
-                raise TypeError(
+                raise ValueError(
                     "RMM log file must be specified either using "
                     "log_file_name= argument or RMM_LOG_FILE "
                     "environment variable"
                 )
+
         # Append the device ID before the file extension
         log_file_name = _append_id(
             log_file_name, getDevice()
         )
-
-        _log_file_name = log_file_name
+        log_file_name = os.path.abspath(log_file_name)
+        self._log_file_name = log_file_name
 
         self.c_obj.reset(
             new logging_resource_adaptor[device_memory_resource](
@@ -627,7 +628,27 @@ cpdef _flush_logs():
 
 def enable_logging(log_file_name=None):
     """
-    Enable logging of run-time events.
+    Enable logging of run-time events for all devices.
+
+    Parameters
+    ----------
+    log_file_name:  str, optional
+        Name of the log file. If not specified, the environment variable
+        RMM_LOG_FILE is used. A ValueError is thrown if neither is available.
+        A separate log file is produced for each device,
+        and the suffix `".dev{id}"` is automatically added to the log file
+        name.
+
+    Notes
+    -----
+    Note that if you use the environment variable CUDA_VISIBLE_DEVICES
+    with logging enabled, the suffix may not be what you expect. For
+    example, if you set CUDA_VISIBLE_DEVICES=1, the log file produced
+    will still have suffix `0`. Similarly, if you set
+    CUDA_VISIBLE_DEVICES=1,0 and use devices 0 and 1, the log file
+    with suffix `0` will correspond to the GPU with device ID `1`.
+    Use `rmm.get_log_filenames()` to get the log file names
+    corresponding to each device.
     """
     global _per_device_mrs
 
@@ -651,3 +672,26 @@ def disable_logging():
     for i, each_mr in _per_device_mrs.items():
         if isinstance(each_mr, LoggingResourceAdaptor):
             set_per_device_resource(i, each_mr.get_upstream())
+
+
+def get_log_filenames():
+    """
+    Returns the log filename (or `None` if not writing logs)
+    for each device in use.
+
+    Examples
+    --------
+    >>> import rmm
+    >>> rmm.reinitialize(devices=[0, 1], logging=True, log_file_name="rmm.log")
+    >>> rmm.get_log_filenames()
+    {0: '/home/user/workspace/rapids/rmm/python/rmm.dev0.log',
+     1: '/home/user/workspace/rapids/rmm/python/rmm.dev1.log'}
+    """
+    global _per_device_mrs
+
+    return {
+        i: each_mr.get_file_name()
+        if isinstance(each_mr, LoggingResourceAdaptor)
+        else None
+        for i, each_mr in _per_device_mrs.items()
+    }
