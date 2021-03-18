@@ -684,8 +684,8 @@ def get_log_filenames():
     >>> import rmm
     >>> rmm.reinitialize(devices=[0, 1], logging=True, log_file_name="rmm.log")
     >>> rmm.get_log_filenames()
-    {0: '/home/ashwin/workspace/rapids/rmm/python/rmm.dev0.log',
-     1: '/home/ashwin/workspace/rapids/rmm/python/rmm.dev1.log'}
+    {0: '/home/user/workspace/rapids/rmm/python/rmm.dev0.log',
+     1: '/home/user/workspace/rapids/rmm/python/rmm.dev1.log'}
     """
     global _per_device_mrs
 
