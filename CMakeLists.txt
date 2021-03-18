@@ -19,10 +19,9 @@ cmake_minimum_required(VERSION 3.18...3.18 FATAL_ERROR)
 
 # This needs to be run before enabling the CUDA language due to the default initialization behavior
 # of `CMAKE_CUDA_ARCHITECTURES`, https://gitlab.kitware.com/cmake/cmake/-/issues/21302
-if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES OR CMAKE_CUDA_ARCHITECTURES STREQUAL "ALL")
   set(RMM_BUILD_FOR_ALL_ARCHS TRUE)
 elseif(CMAKE_CUDA_ARCHITECTURES STREQUAL "")
-  unset(CMAKE_CUDA_ARCHITECTURES CACHE)
   set(RMM_BUILD_FOR_DETECTED_ARCHS TRUE)
 endif()
 
@@ -70,10 +69,8 @@ find_package(CUDAToolkit REQUIRED)
 add_library(rmm INTERFACE)
 add_library(rmm::rmm ALIAS rmm)
 
-target_include_directories(
-  rmm
-  INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-            "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>" "$<INSTALL_INTERFACE:include>")
+target_include_directories(rmm INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+                                         "$<INSTALL_INTERFACE:include>")
 
 if(CUDA_STATIC_RUNTIME)
   message(STATUS "RMM: Enabling static linking of cudart")
@@ -98,8 +95,9 @@ message(STATUS "RMM: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'")
 
 if(BUILD_TESTS OR BUILD_BENCHMARKS)
   # Auto-detect available GPU compute architectures
-  enable_language(CUDA)
   include(${RMM_SOURCE_DIR}/cmake/Modules/SetGPUArchs.cmake)
+  # Enable the CUDA language after setting CMAKE_CUDA_ARCHITECTURES
+  enable_language(CUDA)
   message(STATUS "RMM: Building benchmarks with GPU Architectures: ${CMAKE_CUDA_ARCHITECTURES}")
 endif()
 

@@ -1,4 +1,5 @@
-# Copyright (c) 2019-2020, NVIDIA CORPORATION.
+# Copyright (c) 2019-2021, NVIDIA CORPORATION.
+
 import filecmp
 import glob
 import os
@@ -20,7 +21,9 @@ def get_cuda_version_from_header(cuda_include_dir):
 
     cuda_version = None
 
-    with open(os.path.join(cuda_include_dir, "cuda.h"), "r") as f:
+    with open(
+        os.path.join(cuda_include_dir, "cuda.h"), "r", encoding="utf-8"
+    ) as f:
         for line in f.readlines():
             if re.search(r"#define CUDA_VERSION ", line) is not None:
                 cuda_version = line
@@ -109,7 +112,11 @@ include_dirs = [
     cuda_include_dir,
 ]
 
-library_dirs = [get_python_lib(), os.path.join(os.sys.prefix, "lib")]
+library_dirs = [
+    get_python_lib(),
+    os.path.join(os.sys.prefix, "lib"),
+    cuda_lib_dir,
+]
 
 # lib:
 extensions = cythonize(
