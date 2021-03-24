@@ -81,7 +81,7 @@ endif(CUDA_STATIC_RUNTIME)
 
 target_link_libraries(rmm INTERFACE rmm::Thrust)
 target_link_libraries(rmm INTERFACE spdlog::spdlog_header_only)
-target_compile_features(rmm INTERFACE cxx_std_14 cuda_std_14)
+target_compile_features(rmm INTERFACE cxx_std_14 $<BUILD_INTERFACE:cuda_std_14>)
 
 # Set logging level. Must go before including gtests and benchmarks.
 
