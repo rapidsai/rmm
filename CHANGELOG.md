@@ -1,6 +1,6 @@
 # RMM 0.20.0 (Date TBD)
 
-Please see https://github.com/rapidsai//releases/tag/v0.20.0a for the latest changes to this development branch.
+Please see https://github.com/rapidsai/rmm/releases/tag/v0.20.0a for the latest changes to this development branch.
 
 # RMM 0.19.0 (Date TBD)
 
