@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2020, NVIDIA CORPORATION.
+# Copyright (c) 2019-2021, NVIDIA CORPORATION.
 
 {% set version = environ.get('GIT_DESCRIBE_TAG', '0.0.0.dev').lstrip('v') + environ.get('VERSION_SUFFIX', '') %}
 {% set py_version=environ.get('CONDA_PY', 35) %}
@@ -23,7 +23,7 @@ requirements:
     - cmake >=3.14.0
   host:
     - python
-    - librmm {{ version }}
+    - librmm {{ version }}=*_{{ GIT_DESCRIBE_NUMBER }}
     - setuptools
     - cython >=0.29,<0.30
     - spdlog=1.7.0
