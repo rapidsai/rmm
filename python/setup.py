@@ -206,7 +206,7 @@ setup(
     ],
     # Include the separately-compiled shared library
     setup_requires=["Cython>=0.29,<0.30"],
-    extra_requires=["pytest", "pytest-xdist"],
+    extras_requires={"test": ["pytest", "pytest-xdist"]},
     ext_modules=extensions,
     packages=find_packages(include=["rmm", "rmm.*"]),
     package_data=dict.fromkeys(
