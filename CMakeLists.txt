@@ -158,7 +158,7 @@ export(
   FILE ${RMM_BINARY_DIR}/rmm-targets.cmake
   NAMESPACE rmm::)
 
-if(SPDLOG_INSTALL)
+if(RMM_EXPORT_SPDLOG)
   export(
     APPEND
     TARGETS spdlog_header_only
