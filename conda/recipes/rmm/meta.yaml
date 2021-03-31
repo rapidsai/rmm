@@ -23,7 +23,7 @@ requirements:
     - cmake >=3.14.0
   host:
     - python
-    - librmm {{ version }}=*_{{ GIT_DESCRIBE_NUMBER }}
+    - librmm {{ version }}
     - setuptools
     - cython >=0.29,<0.30
     - spdlog=1.7.0
