@@ -44,7 +44,7 @@ of our latest development branch.
 
 Note: RMM is supported only on Linux, and with Python versions 3.7 and later.
 
-Note: The RMM package from Conda requires building with GCC 7 or later. Otherwise, your application may fail to build.
+Note: The RMM package from Conda requires building with GCC 9 or later. Otherwise, your application may fail to build.
 
 See the [Get RAPIDS version picker](https://rapids.ai/start.html) for more OS and version info.
 
@@ -54,9 +54,9 @@ See the [Get RAPIDS version picker](https://rapids.ai/start.html) for more OS an
 
 Compiler requirements:
 
-* `gcc`     version 7.0 or higher required
-* `nvcc`    version 11.0 or higher recommended
-* `cmake`   version 3.18 or higher
+* `gcc`     version 9.3+
+* `nvcc`    version 11.0+
+* `cmake`   version 3.18+
 
 CUDA/GPU requirements:
 
