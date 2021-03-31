@@ -5,9 +5,7 @@
 requires = [
     "wheel",
     "setuptools",
-    "numba>=0.49",
     "Cython>=0.29,<0.30",
-    "numpy",
 ]
 
 [tool.black]
