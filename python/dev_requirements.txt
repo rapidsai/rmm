@@ -1,3 +1,5 @@
+# Copyright (c) 2021, NVIDIA CORPORATION.
+
 clang==8.0.1
 flake8==3.8.3
 black==19.10b0
