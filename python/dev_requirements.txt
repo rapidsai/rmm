@@ -1,0 +1,5 @@
+clang==8.0.1
+flake8==3.8.3
+black==19.10b0
+isort==5.0.7
+cmake-format==0.6.11

@@ -205,7 +205,7 @@ setup(
         "Programming Language :: Python :: 3.7",
     ],
     # Include the separately-compiled shared library
-    setup_requires=["cython"],
+    setup_requires=["Cython>=0.29,<0.30"],
     ext_modules=extensions,
     packages=find_packages(include=["rmm", "rmm.*"]),
     package_data=dict.fromkeys(
