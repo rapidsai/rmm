@@ -1,4 +1,4 @@
-set(CPM_DOWNLOAD_VERSION 02d57a16015209c4da38483bef7475a8e78c9da6) # 0.28.4
+set(CPM_DOWNLOAD_VERSION 4fad2eac0a3741df3d9c44b791f9163b74aa7b07) # 0.32.0
 
 if(CPM_SOURCE_CACHE)
   # Expand relative path. This is important if the provided path contains a tilde (~)
