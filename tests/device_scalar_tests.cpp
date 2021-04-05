@@ -25,20 +25,43 @@
 #include <chrono>
 #include <cstddef>
 #include <random>
+#include <type_traits>
 
 template <typename T>
 struct DeviceScalarTest : public ::testing::Test {
+  T value{};
   rmm::cuda_stream stream{};
   rmm::mr::device_memory_resource* mr{rmm::mr::get_current_device_resource()};
-  T value{};
   std::default_random_engine generator{};
-  std::uniform_int_distribution<T> distribution{std::numeric_limits<T>::lowest(),
-                                                std::numeric_limits<T>::max()};
 
-  DeviceScalarTest() { value = distribution(generator); }
+  DeviceScalarTest() { value = random_value(); }
+
+  template <typename U = T, std::enable_if_t<std::is_same<U, bool>::value, bool> = true>
+  U random_value()
+  {
+    static std::bernoulli_distribution distribution{};
+    return distribution(generator);
+  }
+
+  template <
+    typename U                                                                               = T,
+    std::enable_if_t<(std::is_integral<U>::value && not std::is_same<U, bool>::value), bool> = true>
+  U random_value()
+  {
+    static std::uniform_int_distribution<U> distribution{std::numeric_limits<T>::lowest(),
+                                                         std::numeric_limits<T>::max()};
+    return distribution(generator);
+  }
+
+  template <typename U = T, std::enable_if_t<std::is_floating_point<U>::value, bool> = true>
+  U random_value()
+  {
+    static std::normal_distribution<U> distribution{100, 20};
+    return distribution(generator);
+  }
 };
 
-using Types = ::testing::Types<int8_t, int16_t, int32_t, int64_t>;
+using Types = ::testing::Types<bool, int8_t, int16_t, int32_t, int64_t, float, double>;
 
 TYPED_TEST_CASE(DeviceScalarTest, Types);
 
@@ -88,7 +111,7 @@ TYPED_TEST(DeviceScalarTest, SetValue)
   rmm::device_scalar<TypeParam> scalar{this->value, this->stream, this->mr};
   EXPECT_NE(nullptr, scalar.data());
 
-  auto expected = this->distribution(this->generator);
+  auto expected = this->random_value();
 
   scalar.set_value(expected, this->stream);
   EXPECT_EQ(expected, scalar.value(this->stream));

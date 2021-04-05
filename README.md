@@ -56,7 +56,7 @@ Compiler requirements:
 
 * `gcc`     version 7.0 or higher required
 * `nvcc`    version 9.0 or higher recommended
-* `cmake`   version 3.12 or higher
+* `cmake`   version 3.18 or higher
 
 CUDA/GPU requirements:
 
@@ -88,7 +88,7 @@ $ source activate cudf_dev
 ```
 
 - Build and install `librmm` using cmake & make. CMake depends on the `nvcc` executable being on
-  your path or defined in `$CUDACXX`.
+  your path or defined in `CUDACXX` environment variable.
 
 ```bash
 
@@ -101,7 +101,7 @@ $ make install                                      # install the library librmm
 
 - Building and installing `librmm` and `rmm` using build.sh. Build.sh creates build dir at root of
   git repository. build.sh depends on the `nvcc` executable being on your path or defined in
-  `$CUDACXX`.
+  `CUDACXX` environment variable.
 
 ```bash
 
@@ -212,6 +212,14 @@ which can lead to ambiguity in APIs when it is assigned `0`.)  All RMM stream-or
 RAII semantics (constructor creates the CUDA stream, destructor destroys it). An `rmm::cuda_stream`
 can never represent the CUDA default stream or per-thread default stream; it only ever represents
 a single non-default stream. `rmm::cuda_stream` cannot be copied, but can be moved.
+
+## `cuda_stream_pool`
+
+`rmm::cuda_stream_pool` provides fast access to a pool of CUDA streams. This class can be used to 
+create a set of `cuda_stream` objects whose lifetime is equal to the `cuda_stream_pool`. Using the 
+stream pool can be faster than creating the streams on the fly. The size of the pool is configurable.
+Depending on this size, multiple calls to `cuda_stream_pool::get_stream()` may return instances of 
+`rmm::cuda_stream_view` that represent identical CUDA streams.
 
 ### Thread Safety
 
@@ -442,11 +450,11 @@ freeing host memory.
 
 Similar to `device_memory_resource`, it has two key functions for (de)allocation:
 
-1. `void* device_memory_resource::allocate(std::size_t bytes, std::size_t alignment)`
+1. `void* host_memory_resource::allocate(std::size_t bytes, std::size_t alignment)`
    - Returns a pointer to an allocation of at least `bytes` bytes aligned to the specified
      `alignment`
 
-2. `void device_memory_resource::deallocate(void* p, std::size_t bytes, std::size_t alignment)`
+2. `void host_memory_resource::deallocate(void* p, std::size_t bytes, std::size_t alignment)`
    - Reclaims a previous allocation of size `bytes` pointed to by `p`. 
 
 

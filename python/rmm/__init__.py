@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2019, NVIDIA CORPORATION.
+# Copyright (c) 2018-2021, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@ import weakref
 
 from rmm import mr
 from rmm._lib.device_buffer import DeviceBuffer
+from rmm._version import get_versions
+from rmm.mr import disable_logging, enable_logging, get_log_filenames
 from rmm.rmm import (
     RMMError,
     RMMNumbaManager,
@@ -23,3 +25,5 @@ from rmm.rmm import (
     reinitialize,
     rmm_cupy_allocator,
 )
+
+__version__ = get_versions()["version"]

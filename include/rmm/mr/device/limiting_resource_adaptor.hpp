@@ -47,10 +47,10 @@ class limiting_resource_adaptor final : public device_memory_resource {
   limiting_resource_adaptor(Upstream* upstream,
                             std::size_t allocation_limit,
                             std::size_t allocation_alignment = 256)
-    : upstream_{upstream},
-      allocation_limit_{allocation_limit},
+    : allocation_limit_{allocation_limit},
+      allocated_bytes_(0),
       allocation_alignment_(allocation_alignment),
-      allocated_bytes_(0)
+      upstream_{upstream}
   {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
   }

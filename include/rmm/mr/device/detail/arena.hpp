@@ -446,7 +446,9 @@ class arena {
   {
     lock_guard lock(mtx_);
     auto const b = get_block(bytes);
+#ifdef RMM_POOL_TRACK_ALLOCATIONS
     allocated_blocks_.emplace(b.pointer(), b);
+#endif
     return b.pointer();
   }
 
@@ -462,7 +464,11 @@ class arena {
   bool deallocate(void* p, std::size_t bytes, cuda_stream_view stream)
   {
     lock_guard lock(mtx_);
+#ifdef RMM_POOL_TRACK_ALLOCATIONS
     auto const b = free_block(p, bytes);
+#else
+    block const b{p, bytes};
+#endif
     if (b.is_valid()) {
       auto const merged = coalesce_block(free_blocks_, b);
       shrink_arena(merged, stream);
@@ -470,6 +476,7 @@ class arena {
     return b.is_valid();
   }
 
+#ifdef RMM_POOL_TRACK_ALLOCATIONS
   /**
    * @brief Deallocate memory pointed to by `p`, keeping all free superblocks.
    *
@@ -489,6 +496,7 @@ class arena {
     if (b.is_valid()) { global_arena_.deallocate(b); }
     return b.is_valid();
   }
+#endif
 
   /**
    * @brief Clean the arena and deallocate free blocks from the global arena.
@@ -500,7 +508,9 @@ class arena {
     lock_guard lock(mtx_);
     global_arena_.deallocate(free_blocks_);
     free_blocks_.clear();
+#ifdef RMM_POOL_TRACK_ALLOCATIONS
     allocated_blocks_.clear();
+#endif
   }
 
  private:
@@ -537,6 +547,7 @@ class arena {
     return global_arena_.allocate(superblock_size);
   }
 
+#ifdef RMM_POOL_TRACK_ALLOCATIONS
   /**
    * @brief Finds, frees and returns the block associated with pointer `p`.
    *
@@ -558,6 +569,7 @@ class arena {
 
     return found;
   }
+#endif
 
   /**
    * @brief Shrink this arena by returning free superblocks to upstream.
@@ -580,8 +592,10 @@ class arena {
   global_arena<Upstream>& global_arena_;
   /// Free blocks.
   std::set<block> free_blocks_;
+#ifdef RMM_POOL_TRACK_ALLOCATIONS
   //// Map of pointer address to allocated blocks.
   std::unordered_map<void*, block> allocated_blocks_;
+#endif
   /// Mutex for exclusive lock.
   mutable std::mutex mtx_;
 };

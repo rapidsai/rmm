@@ -1,4 +1,6 @@
-# Copyright (c) 2019-2020, NVIDIA CORPORATION.
+# Copyright (c) 2019-2021, NVIDIA CORPORATION.
+
+import filecmp
 import glob
 import os
 import re
@@ -19,7 +21,9 @@ def get_cuda_version_from_header(cuda_include_dir):
 
     cuda_version = None
 
-    with open(os.path.join(cuda_include_dir, "cuda.h"), "r") as f:
+    with open(
+        os.path.join(cuda_include_dir, "cuda.h"), "r", encoding="utf-8"
+    ) as f:
         for line in f.readlines():
             if re.search(r"#define CUDA_VERSION ", line) is not None:
                 cuda_version = line
@@ -63,21 +67,39 @@ else:
 # valid symbols for specific version of CUDA.
 
 cwd = os.getcwd()
-preprocess_files = ["gpu.pxd"]
-supported_cuda_versions = {"10.1", "10.2", "11.0"}
+files_to_preprocess = ["gpu.pxd"]
 
-for file_p in preprocess_files:
-    pxi_file = ".".join(file_p.split(".")[:-1])
-    pxi_file = pxi_file + ".pxi"
+# The .pxi file is unchanged between some CUDA versions
+# (e.g., 11.0 & 11.1), so we keep only a single copy
+# of it
+cuda_version_to_pxi_dir = {
+    "10.1": "10.1",
+    "10.2": "10.2",
+    "11.0": "11.x",
+    "11.1": "11.x",
+    "11.2": "11.x",
+}
 
-    if CUDA_VERSION in supported_cuda_versions:
-        shutil.copyfile(
-            os.path.join(cwd, "rmm/_cuda", CUDA_VERSION, pxi_file),
-            os.path.join(cwd, "rmm/_cuda", file_p),
+for pxd_basename in files_to_preprocess:
+    pxi_basename = os.path.splitext(pxd_basename)[0] + ".pxi"
+    if CUDA_VERSION in cuda_version_to_pxi_dir:
+        pxi_pathname = os.path.join(
+            cwd,
+            "rmm/_cuda",
+            cuda_version_to_pxi_dir[CUDA_VERSION],
+            pxi_basename,
         )
+        pxd_pathname = os.path.join(cwd, "rmm/_cuda", pxd_basename)
+        try:
+            if filecmp.cmp(pxi_pathname, pxd_pathname):
+                # files are the same, no need to copy
+                continue
+        except FileNotFoundError:
+            # pxd_pathname doesn't exist yet
+            pass
+        shutil.copyfile(pxi_pathname, pxd_pathname)
     else:
         raise TypeError(f"{CUDA_VERSION} is not supported.")
-
 
 try:
     nthreads = int(os.environ.get("PARALLEL_LEVEL", "0") or "0")
@@ -90,7 +112,11 @@ include_dirs = [
     cuda_include_dir,
 ]
 
-library_dirs = [get_python_lib(), os.path.join(os.sys.prefix, "lib")]
+library_dirs = [
+    get_python_lib(),
+    os.path.join(os.sys.prefix, "lib"),
+    cuda_lib_dir,
+]
 
 # lib:
 extensions = cythonize(
@@ -164,7 +190,7 @@ extensions += cythonize(
 
 setup(
     name="rmm",
-    version="0.18.0",
+    version="0.20.0",
     description="rmm - RAPIDS Memory Manager",
     url="https://github.com/rapidsai/rmm",
     author="NVIDIA Corporation",
@@ -175,16 +201,17 @@ setup(
         "Topic :: Scientific/Engineering",
         "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
     ],
     # Include the separately-compiled shared library
-    setup_requires=["cython"],
+    setup_requires=["Cython>=0.29,<0.30"],
+    extras_require={"test": ["pytest", "pytest-xdist"]},
     ext_modules=extensions,
     packages=find_packages(include=["rmm", "rmm.*"]),
     package_data=dict.fromkeys(
         find_packages(include=["rmm._lib", "rmm._lib.includes", "rmm._cuda*"]),
-        ["*.pxd"],
+        ["*.hpp", "*.pxd"],
     ),
     cmdclass=versioneer.get_cmdclass(),
     install_requires=install_requires,

@@ -66,7 +66,7 @@ class stack_trace {
       os << "But no stack trace could be found!" << std::endl;
     } else {
       // Iterate over the stack pointers converting to a string
-      for (int i = 0; i < st.stack_ptrs.size(); i++) {
+      for (std::size_t i = 0; i < st.stack_ptrs.size(); ++i) {
         // Leading index
         os << "#" << i << " in ";
 

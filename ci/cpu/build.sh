@@ -5,9 +5,10 @@
 ######################################
 set -e
 
-# Set path and build parallel level
+# Set path, build parallel level and build generator
 export PATH=/opt/conda/bin:/usr/local/cuda/bin:$PATH
 export PARALLEL_LEVEL=${PARALLEL_LEVEL:-4}
+export CMAKE_GENERATOR="Ninja"
 
 # Set home to the job's workspace
 export HOME=$WORKSPACE
@@ -66,8 +67,7 @@ if [[ "$BUILD_RMM" == "1" ]]; then
   if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
     gpuci_conda_retry build conda/recipes/rmm --python=$PYTHON
   else
-    gpuci_conda_retry build --dirty --no-remove-work-dir conda/recipes/rmm
-    conda build --dirty --no-remove-work-dir \
+    gpuci_conda_retry build --dirty --no-remove-work-dir \
       -c $WORKSPACE/ci/artifacts/rmm/cpu/conda-bld/ conda/recipes/rmm
 
   fi
