@@ -35,7 +35,7 @@ def get_cuda_version_from_header(cuda_include_dir):
     return "%d.%d" % (cuda_version // 1000, (cuda_version % 1000) // 10)
 
 
-cython_tests = glob.glob("rmm/tests/*.pyx")
+cython_tests = glob.glob("rmm/_test_cython/*.pyx")
 
 CUDA_HOME = os.environ.get("CUDA_HOME", False)
 if not CUDA_HOME:
