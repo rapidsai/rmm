@@ -108,9 +108,9 @@ inline void test_various_allocations(rmm::mr::device_memory_resource* mr, cuda_s
   // test allocating zero bytes on non-default stream
   {
     void* p{nullptr};
-    EXPECT_NO_THROW(p = mr->allocate(0, stream));
+    EXPECT_NO_THROW(p = mr->allocate_async(0, stream));
     stream.synchronize();
-    EXPECT_NO_THROW(mr->deallocate(p, 0, stream));
+    EXPECT_NO_THROW(mr->deallocate_async(p, 0, stream));
     stream.synchronize();
   }
 
@@ -122,7 +122,7 @@ inline void test_various_allocations(rmm::mr::device_memory_resource* mr, cuda_s
   // should fail to allocate too much
   {
     void* p{nullptr};
-    EXPECT_THROW(p = mr->allocate(1_PiB, stream), rmm::bad_alloc);
+    EXPECT_THROW(p = mr->allocate_async(1_PiB, stream), rmm::bad_alloc);
     EXPECT_EQ(nullptr, p);
   }
 }
@@ -141,14 +141,14 @@ inline void test_random_allocations(rmm::mr::device_memory_resource* mr,
   std::for_each(
     allocations.begin(), allocations.end(), [&generator, &distribution, stream, mr](allocation& a) {
       a.size = distribution(generator);
-      EXPECT_NO_THROW(a.p = mr->allocate(a.size, stream));
+      EXPECT_NO_THROW(a.p = mr->allocate_async(a.size, stream));
       if (not stream.is_default()) stream.synchronize();
       EXPECT_NE(nullptr, a.p);
       EXPECT_TRUE(is_pointer_aligned(a.p));
     });
 
   std::for_each(allocations.begin(), allocations.end(), [stream, mr](allocation& a) {
-    EXPECT_NO_THROW(mr->deallocate(a.p, a.size, stream));
+    EXPECT_NO_THROW(mr->deallocate_async(a.p, a.size, stream));
     if (not stream.is_default()) stream.synchronize();
   });
 }
@@ -182,7 +182,7 @@ inline void test_mixed_random_allocation_free(rmm::mr::device_memory_resource* m
       size_t size = size_distribution(generator);
       active_allocations++;
       allocation_count++;
-      EXPECT_NO_THROW(allocations.emplace_back(mr->allocate(size, stream), size));
+      EXPECT_NO_THROW(allocations.emplace_back(mr->allocate_async(size, stream), size));
       auto new_allocation = allocations.back();
       EXPECT_NE(nullptr, new_allocation.p);
       EXPECT_TRUE(is_pointer_aligned(new_allocation.p));
@@ -191,7 +191,7 @@ inline void test_mixed_random_allocation_free(rmm::mr::device_memory_resource* m
       active_allocations--;
       allocation to_free = allocations[index];
       allocations.erase(std::next(allocations.begin(), index));
-      EXPECT_NO_THROW(mr->deallocate(to_free.p, to_free.size, stream));
+      EXPECT_NO_THROW(mr->deallocate_async(to_free.p, to_free.size, stream));
     }
   }
 

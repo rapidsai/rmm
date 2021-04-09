@@ -177,7 +177,7 @@ void allocate_loop(rmm::mr::device_memory_resource* mr,
   for (std::size_t i = 0; i < num_allocations; ++i) {
     size_t size = size_distribution(generator);
     void* ptr{};
-    EXPECT_NO_THROW(ptr = mr->allocate(size, stream));
+    EXPECT_NO_THROW(ptr = mr->allocate_async(size, stream));
     {
       std::lock_guard<std::mutex> lock(mtx);
       allocations.emplace_back(ptr, size);
@@ -199,7 +199,7 @@ void deallocate_loop(rmm::mr::device_memory_resource* mr,
       i++;
       allocation alloc = allocations.front();
       allocations.pop_front();
-      EXPECT_NO_THROW(mr->deallocate(alloc.p, alloc.size, stream));
+      EXPECT_NO_THROW(mr->deallocate_async(alloc.p, alloc.size, stream));
     }
   }
 }

@@ -282,7 +282,7 @@ class pool_memory_resource final
     if (size == 0) return {};
 
     try {
-      void* p = upstream_mr_->allocate(size, stream);
+      void* p = upstream_mr_->allocate_async(size, stream);
       block_type b{reinterpret_cast<char*>(p), size, true};
       upstream_blocks_.emplace_back(b);  // TODO: with C++17 use version that returns a reference
       return thrust::optional<block_type>{b};

@@ -175,10 +175,10 @@ class binning_memory_resource final : public device_memory_resource {
    * @param stream Stream on which to perform allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
+  void* do_allocate_async(std::size_t bytes, std::size_t alignment, cuda_stream_view stream) override
   {
     if (bytes <= 0) return nullptr;
-    return get_resource(bytes)->allocate(bytes, stream);
+    return get_resource(bytes)->allocate_async(bytes, alignment, stream);
   }
 
   /**
@@ -191,10 +191,10 @@ class binning_memory_resource final : public device_memory_resource {
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param stream Stream on which to perform deallocation
    */
-  void do_deallocate(void* p, std::size_t bytes, cuda_stream_view stream) override
+  void do_deallocate_async(void* p, std::size_t bytes, std::size_t alignment, cuda_stream_view stream) override
   {
     auto res = get_resource(bytes);
-    if (res != nullptr) res->deallocate(p, bytes, stream);
+    if (res != nullptr) res->deallocate_async(p, bytes, alignment, stream);
   }
 
   /**

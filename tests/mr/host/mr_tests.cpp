@@ -26,6 +26,22 @@
 #include <random>
 
 namespace {
+
+template <rmm::mr::memory_kind kind, typename Context>
+void test_resource_traits(const rmm::mr::memory_resource<kind, Context> *) {
+  static_assert(rmm::mr::memory_resource<kind, Context>::kind == kind, "Incorrect constant");
+  static_assert(std::is_same<typename rmm::mr::memory_resource<kind, Context>::context, Context>::value, "Incorrect constant");
+}
+
+TEST(MRTest, Constants)
+{
+  rmm::mr::host_memory_resource *mr1 = nullptr;
+  rmm::mr::memory_resource<rmm::mr::memory_kind::pinned, void> *mr2 = nullptr;
+  test_resource_traits(mr1);
+  test_resource_traits(mr2);
+}
+
+
 inline bool is_aligned(void* p, std::size_t alignment = alignof(std::max_align_t))
 {
   return (0 == reinterpret_cast<uintptr_t>(p) % alignment);
@@ -78,7 +94,7 @@ struct allocation {
 
 template <typename MemoryResourceType>
 struct MRTest : public ::testing::Test {
-  std::unique_ptr<rmm::mr::host_memory_resource> mr;
+  std::unique_ptr<rmm::mr::memory_resource<MemoryResourceType::kind>> mr;
 
   MRTest() : mr{new MemoryResourceType} {}
   ~MRTest() = default;

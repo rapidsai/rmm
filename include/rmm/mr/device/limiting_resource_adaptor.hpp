@@ -121,13 +121,14 @@ class limiting_resource_adaptor final : public device_memory_resource {
    * @param stream Stream on which to perform the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
+  void* do_allocate_async(std::size_t bytes, std::size_t alignment, cuda_stream_view stream) override
   {
+    alignment = std::max(alignment, allocation_alignment_);
     void* p = nullptr;
 
-    std::size_t proposed_size = rmm::detail::align_up(bytes, allocation_alignment_);
+    std::size_t proposed_size = rmm::detail::align_up(bytes, alignment);
     if (proposed_size + allocated_bytes_ <= allocation_limit_) {
-      p = upstream_->allocate(bytes, stream);
+      p = upstream_->allocate_async(bytes, alignment, stream);
       allocated_bytes_ += proposed_size;
     } else {
       throw rmm::bad_alloc{"Exceeded memory limit"};
@@ -145,10 +146,11 @@ class limiting_resource_adaptor final : public device_memory_resource {
    * @param bytes Size of the allocation
    * @param stream Stream on which to perform the deallocation
    */
-  void do_deallocate(void* p, std::size_t bytes, cuda_stream_view stream) override
+  void do_deallocate_async(void* p, std::size_t bytes, std::size_t alignment, cuda_stream_view stream) override
   {
-    std::size_t allocated_size = rmm::detail::align_up(bytes, allocation_alignment_);
-    upstream_->deallocate(p, bytes, stream);
+    alignment = std::max(alignment, allocation_alignment_);
+    std::size_t allocated_size = rmm::detail::align_up(bytes, alignment);
+    upstream_->deallocate_async(p, bytes, stream);
     allocated_bytes_ -= allocated_size;
   }
 
@@ -161,7 +163,7 @@ class limiting_resource_adaptor final : public device_memory_resource {
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equal
    */
-  bool do_is_equal(device_memory_resource const& other) const noexcept override
+  bool do_is_equal(memory_resource<memory_kind::device> const& other) const noexcept override
   {
     if (this == &other)
       return true;

@@ -53,7 +53,7 @@ class new_delete_resource final : public host_memory_resource {
    * @return void* Pointer to the newly allocated memory
    *---------------------------------------------------------------------------**/
   void *do_allocate(std::size_t bytes,
-                    std::size_t alignment = detail::RMM_DEFAULT_HOST_ALIGNMENT) override
+                    std::size_t alignment = rmm::detail::RMM_DEFAULT_HOST_ALIGNMENT) override
   {
 #if __cplusplus >= 201703L
     return ::operator new(bytes, std::align_val_t(alignment));
@@ -61,9 +61,9 @@ class new_delete_resource final : public host_memory_resource {
 
     // If the requested alignment isn't supported, use default
     alignment =
-      (detail::is_supported_alignment(alignment)) ? alignment : detail::RMM_DEFAULT_HOST_ALIGNMENT;
+      (rmm::detail::is_supported_alignment(alignment)) ? alignment : rmm::detail::RMM_DEFAULT_HOST_ALIGNMENT;
 
-    return detail::aligned_allocate(
+    return rmm::detail::aligned_allocate(
       bytes, alignment, [](std::size_t size) { return ::operator new(size); });
 #endif
   }
@@ -88,14 +88,20 @@ class new_delete_resource final : public host_memory_resource {
    *---------------------------------------------------------------------------**/
   void do_deallocate(void *p,
                      std::size_t bytes,
-                     std::size_t alignment = detail::RMM_DEFAULT_HOST_ALIGNMENT) override
+                     std::size_t alignment = rmm::detail::RMM_DEFAULT_HOST_ALIGNMENT) override
   {
 #if __cplusplus >= 201703L
     ::operator delete(p, bytes, std::align_val_t(alignment));
 #else
-    detail::aligned_deallocate(p, bytes, alignment, [](void *p) { ::operator delete(p); });
+    rmm::detail::aligned_deallocate(p, bytes, alignment, [](void *p) { ::operator delete(p); });
 #endif
   }
+
+  bool do_is_equal(const memory_resource<memory_kind::host> &other) const noexcept override
+  {
+    return dynamic_cast<const new_delete_resource*>(&other) != nullptr;
+  }
+
 };
 }  // namespace mr
 }  // namespace rmm

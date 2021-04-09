@@ -91,7 +91,7 @@ class polymorphic_allocator {
    */
   value_type* allocate(std::size_t n, cuda_stream_view stream)
   {
-    return static_cast<value_type*>(resource()->allocate(n * sizeof(T), stream));
+    return static_cast<value_type*>(resource()->allocate_async(n * sizeof(T), stream));
   }
 
   /**
@@ -106,7 +106,7 @@ class polymorphic_allocator {
    */
   void deallocate(value_type* p, std::size_t n, cuda_stream_view stream)
   {
-    resource()->deallocate(p, n * sizeof(T), stream);
+    resource()->deallocate_async(p, n * sizeof(T), stream);
   }
 
   /**

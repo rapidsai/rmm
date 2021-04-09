@@ -96,7 +96,7 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    */
   pointer allocate(size_type n)
   {
-    return thrust::device_pointer_cast(static_cast<T*>(_mr->allocate(n * sizeof(T), _stream)));
+    return thrust::device_pointer_cast(static_cast<T*>(_mr->allocate_async(n * sizeof(T), _stream)));
   }
 
   /**
@@ -108,7 +108,7 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    */
   void deallocate(pointer p, size_type n)
   {
-    return _mr->deallocate(thrust::raw_pointer_cast(p), n * sizeof(T), _stream);
+    return _mr->deallocate_async(thrust::raw_pointer_cast(p), n * sizeof(T), _stream);
   }
 
   /**
