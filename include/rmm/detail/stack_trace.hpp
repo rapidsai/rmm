@@ -62,38 +62,32 @@ class stack_trace {
 #if defined(RMM_ENABLE_STACK_TRACES)
     std::unique_ptr<char*, decltype(&::free)> strings(
       backtrace_symbols(st.stack_ptrs.data(), st.stack_ptrs.size()), &::free);
+
     if (strings.get() == nullptr) {
       os << "But no stack trace could be found!" << std::endl;
     } else {
+
       // Iterate over the stack pointers converting to a string
       for (std::size_t i = 0; i < st.stack_ptrs.size(); ++i) {
         // Leading index
         os << "#" << i << " in ";
 
-        bool written = false;
-        Dl_info info;
+        auto const str = [&] {
+          Dl_info info;
+          if (dladdr(st.stack_ptrs[i], &info)) { 
+            int status = -1; // Demangle the name. This can occasionally fail
 
-        if (dladdr(st.stack_ptrs[i], &info)) {
-          int status = -1;
-
-          // Demangle the name. This can occasionally fail
-          std::unique_ptr<char, decltype(&::free)> demangled(
-            abi::__cxa_demangle(info.dli_sname, NULL, 0, &status), &::free);
-
-          // If it fails, fallback to the dli_name.
-          if (status == 0) {
-            os << demangled.get() << " from " << info.dli_fname;
-            written = true;
-          } else if (info.dli_sname != NULL) {
-            os << info.dli_sname << " from " << info.dli_fname;
-            written = true;
+            std::unique_ptr<char, decltype(&::free)> demangled( abi::__cxa_demangle(info.dli_sname, nullptr, 0, &status), &::free); 
+            // If it fails, fallback to the dli_name. 
+            if (status == 0 or info.dli_sname) { 
+              auto name = status == 0 ? demangled.get() : info.dli_sname;
+              return name + std::string(" from ") + info.dli_fname; 
+            } 
           }
-        }
+          return std::string(strings.get()[i]); 
+        } ();
 
-        // If the demangling and fallback failed, just print the mangled string
-        if (!written) { os << strings.get()[i]; }
-
-        os << std::endl;
+        os << str << std::endl;
       }
     }
 #else

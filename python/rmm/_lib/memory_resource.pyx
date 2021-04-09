@@ -4,7 +4,7 @@ import warnings
 from collections import defaultdict
 
 from cython.operator cimport dereference as deref
-from libc.stdint cimport int8_t
+from libc.stdint cimport int8_t, int64_t
 from libcpp cimport bool
 from libcpp.cast cimport dynamic_cast
 from libcpp.memory cimport make_shared, make_unique, shared_ptr, unique_ptr
@@ -81,6 +81,25 @@ cdef extern from "rmm/mr/device/logging_resource_adaptor.hpp" \
             string filename) except +
 
         void flush() except +
+
+cdef extern from "rmm/mr/device/tracking_resource_adaptor.hpp" \
+        namespace "rmm::mr" nogil:
+    cdef cppclass tracking_resource_adaptor[Upstream](device_memory_resource):
+        struct counter:
+            counter()
+
+            int64_t value
+            int64_t peak
+            int64_t total
+
+        tracking_resource_adaptor(
+            Upstream* upstream_mr,
+            bool capture_stacks) except +
+
+        counter get_counter(bool return_bytes) except +
+
+        string get_outstanding_allocations_str() except +
+        void log_outstanding_allocations() except +
 
 cdef extern from "rmm/mr/device/per_device_resource.hpp" namespace "rmm" nogil:
 
@@ -430,39 +449,78 @@ cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
     def __dealloc__(self):
         self.c_obj.reset()
 
-# Helper function to convert allocation_counts to a dict
-cdef dict _allocation_counts_to_dict(
-        tracking_resource_adaptor_wrapper.allocation_counts counts):
-    return {
-        "current_bytes": counts.current_bytes,
-        "current_count": counts.current_count,
-        "peak_bytes": counts.peak_bytes,
-        "peak_count": counts.peak_count,
-        "total_bytes": counts.total_bytes,
-        "total_count": counts.total_count,
-    }
 
-cdef class TrackingMemoryResource(MemoryResource):
+cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
 
-    def __cinit__(self, MemoryResource upstream, bool capture_stacks=False):
+    def __cinit__(
+        self,
+        DeviceMemoryResource upstream_mr,
+        bool capture_stacks=False
+    ):
         self.c_obj.reset(
-            new tracking_resource_adaptor_wrapper(
-                upstream.c_obj,
+            new tracking_resource_adaptor[device_memory_resource](
+                upstream_mr.get_mr(),
                 capture_stacks
             )
         )
 
-    def get_allocation_counts(self) -> dict:
-        counts = (<tracking_resource_adaptor_wrapper*>(
-            self.c_obj.get()))[0].get_allocation_counts()
+    def __init__(
+        self,
+        DeviceMemoryResource upstream_mr,
+        bool capture_stacks=False
+    ):
+        """
+        Memory resource that logs tracks allocations/deallocations
+        performed by an upstream memory resource. Includes the ability to
+        query all outstanding allocations with the stack trace, if desired.
 
-        return _allocation_counts_to_dict(counts)
+        Parameters
+        ----------
+        upstream : DeviceMemoryResource
+            The upstream memory resource.
+        capture_stacks : bool
+            Whether or not to capture the stack trace with each allocation.
+        """
+        pass
+
+    @property
+    def allocation_counts(self) -> dict:
+        counts = (<tracking_resource_adaptor[device_memory_resource]*>(
+            self.c_obj.get()))[0].get_counter(False)
+        byte_counts = (<tracking_resource_adaptor[device_memory_resource]*>(
+            self.c_obj.get()))[0].get_counter(True)
+
+        return {
+            "current_bytes": byte_counts.value,
+            "current_count": counts.value,
+            "peak_bytes": byte_counts.peak,
+            "peak_count": counts.peak,
+            "total_bytes": byte_counts.total,
+            "total_count": counts.total,
+        }
+
 
     def get_outstanding_allocations_str(self) -> str:
+        """
+        Returns a string containing information about the current outstanding
+        allocations. For each allocation, the address, size and optional
+        stack trace are shown.
+        """
 
-        return (<tracking_resource_adaptor_wrapper*>(
+        return (<tracking_resource_adaptor[device_memory_resource]*>(
             self.c_obj.get())
         )[0].get_outstanding_allocations_str().decode('UTF-8')
+
+
+    def log_outstanding_allocations(self):
+        """
+        Logs the output of `get_outstanding_allocations_str` to the current
+        RMM log file if enabled.
+        """
+
+        (<tracking_resource_adaptor[device_memory_resource]*>(
+            self.c_obj.get())
+        )[0].log_outstanding_allocations()
 
 
 class KeyInitializedDefaultDict(defaultdict):

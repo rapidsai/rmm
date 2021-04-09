@@ -65,49 +65,25 @@ class tracking_resource_adaptor final : public device_memory_resource {
         allocation_size{size} {};
   };
 
+
   /**
-   * @brief Stores the current, peak, and total number of allocations and
-   * allocated bytes
+   * @brief Utility struct for counting the current, peak, and total value of a number
    */
-  struct allocation_counts {
-    int64_t current_bytes{0};    // Current outstanding bytes
-    int64_t current_count{0};    // Current outstanding count
-    int64_t peak_bytes{0};       // Max value of current_bytes
-    int64_t peak_count{0};       // Max value of current_count
-    std::size_t total_bytes{0};  // Total allocated bytes
-    std::size_t total_count{0};  // Total allocated count
-
-    /**
-     * @brief Increments totals by `bytes` and counts  by 1, and updates peak values.
-     *
-     * Increments current and peak total bytes allocated by `bytes`.
-     * Increments current and peak allocation counts by `1`.
-     * Updates peak total bytes allocated and allocation count if the current values exceed previous
-     * peak.
-     *
-     * @param bytes Number of bytes allocated
-     */
-    void increment_count(size_t bytes)
-    {
-      current_bytes += bytes;
-      current_count += 1;
-
-      peak_bytes = std::max(current_bytes, peak_bytes);
-      peak_count = std::max(current_count, peak_count);
-
-      total_bytes += bytes;
-      total_count += 1;
+  struct counter {
+    int64_t value{0}; // Current value
+    int64_t peak{0};  // Max value of `value`
+    int64_t total{0}; // Sum of all added values
+    
+    counter& operator+=(int64_t x) { 
+      value += x;
+      total += x;
+      peak = std::max(value, peak);
+      return *this;
     }
-
-    /**
-     * @brief Decrement the current bytes and count. Peaks and totals remain unchanged
-     *
-     * @param bytes Number of bytes deallocated
-     */
-    void decrement_count(size_t bytes)
-    {
-      current_bytes -= bytes;
-      current_count -= 1;
+        
+    counter& operator-=(int64_t x) { 
+      value -= x; 
+      return *this;
     }
   };
 
@@ -121,7 +97,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
    * @param capture_stacks If true, capture stacks for allocation calls
    */
   tracking_resource_adaptor(Upstream* upstream, bool capture_stacks = false)
-    : capture_stacks_{capture_stacks}, allocated_bytes_{0}, upstream_{upstream}
+    : capture_stacks_{capture_stacks}, upstream_{upstream}
   {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
   }
@@ -179,21 +155,22 @@ class tracking_resource_adaptor final : public device_memory_resource {
    * @return std::size_t number of bytes that have been allocated through this
    * allocator.
    */
-  std::size_t get_allocated_bytes() const noexcept { return allocation_counts_.current_bytes; }
+  std::size_t get_allocated_bytes() const noexcept { return allocation_bytes_.value; }
+
+
 
   /**
-   * @brief Returns an allocation_counts struct for this adaptor containing the
-   * current, peak, and total number of bytes and allocation count for this
+   * @brief Returns a `counter` struct for this adaptor containing the current,
+   * peak, and total number of allocated bytes or allocation counts for this
    * adaptor since it was created.
-   *
-   * @return allocation_counts struct containing the allocation number of bytes
-   * and count info
+   * 
+   * @param return_bytes true to return bytes counter, false to re
+   * @return counter 
    */
-  allocation_counts get_allocation_counts() const noexcept
-  {
+  counter get_counter(bool return_bytes = true) const noexcept {
     read_lock_t lock(mtx_);
 
-    return allocation_counts_;
+    return return_bytes ? allocation_bytes_ : allocation_count_;
   }
 
   /**
@@ -256,7 +233,8 @@ class tracking_resource_adaptor final : public device_memory_resource {
       allocations_.emplace(p, allocation_info{bytes, capture_stacks_});
 
       // Increment the allocation_count_ while we have the lock
-      allocation_counts_.increment_count(bytes);
+      allocation_bytes_ += bytes;
+      allocation_count_ += 1;
     }
 
     return p;
@@ -306,7 +284,8 @@ class tracking_resource_adaptor final : public device_memory_resource {
       }
 
       // Decrement the current allocated counts.
-      allocation_counts_.decrement_count(bytes);
+      allocation_bytes_ -= bytes;
+      allocation_count_ -= 1;
     }
   }
 
@@ -345,8 +324,8 @@ class tracking_resource_adaptor final : public device_memory_resource {
 
   bool capture_stacks_;                           // whether or not to capture call stacks
   std::map<void*, allocation_info> allocations_;  // map of active allocations
-  allocation_counts
-    allocation_counts_;  // Detailed information on peak, current, and total allocation amounts
+  counter allocation_bytes_;                      // peak, current and total allocated bytes
+  counter allocation_count_;                      // peak, current and total allocation count
   std::shared_timed_mutex mutable mtx_;  // mutex for thread safe access to allocations_
   Upstream* upstream_;  // the upstream resource used for satisfying allocation requests
 };
