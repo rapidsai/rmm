@@ -30,7 +30,7 @@ namespace mr {
  *
  * See https://devblogs.nvidia.com/how-optimize-data-transfers-cuda-cc/
  *---------------------------------------------------------------------------**/
-class pinned_memory_resource final : public host_memory_resource {
+class pinned_memory_resource final : public memory_resource<memory_kind::pinned> {
  public:
   pinned_memory_resource()                              = default;
   ~pinned_memory_resource()                             = default;

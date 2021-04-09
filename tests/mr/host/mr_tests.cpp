@@ -94,7 +94,7 @@ struct allocation {
 
 template <typename MemoryResourceType>
 struct MRTest : public ::testing::Test {
-  std::unique_ptr<rmm::mr::host_memory_resource> mr;
+  std::unique_ptr<rmm::mr::memory_resource<MemoryResourceType::kind>> mr;
 
   MRTest() : mr{new MemoryResourceType} {}
   ~MRTest() = default;
