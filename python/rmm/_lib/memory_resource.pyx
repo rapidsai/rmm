@@ -499,7 +499,6 @@ cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
             "total_count": counts.total,
         }
 
-
     def get_outstanding_allocations_str(self) -> str:
         """
         Returns a string containing information about the current outstanding
@@ -511,7 +510,6 @@ cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
             self.c_obj.get())
         )[0].get_outstanding_allocations_str().decode('UTF-8')
 
-
     def log_outstanding_allocations(self):
         """
         Logs the output of `get_outstanding_allocations_str` to the current
@@ -519,8 +517,7 @@ cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
         """
 
         (<tracking_resource_adaptor[device_memory_resource]*>(
-            self.c_obj.get())
-        )[0].log_outstanding_allocations()
+            self.c_obj.get()))[0].log_outstanding_allocations()
 
 
 class KeyInitializedDefaultDict(defaultdict):

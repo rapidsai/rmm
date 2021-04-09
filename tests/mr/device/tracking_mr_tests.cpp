@@ -103,7 +103,7 @@ TEST(TrackingTest, PeakAllocations)
   }
 
   auto current_alloc_counts = mr.get_counter(false);
-  auto current_alloc_bytes = mr.get_counter(true);
+  auto current_alloc_bytes  = mr.get_counter(true);
 
   // Verify current allocations
   EXPECT_EQ(mr.get_allocated_bytes(), 50_MiB);
@@ -130,7 +130,7 @@ TEST(TrackingTest, PeakAllocations)
   allocations.clear();
 
   current_alloc_counts = mr.get_counter(false);
-  current_alloc_bytes = mr.get_counter(true);
+  current_alloc_bytes  = mr.get_counter(true);
 
   // Verify current allocations
   EXPECT_EQ(mr.get_allocated_bytes(), 0);
@@ -279,7 +279,7 @@ TEST(TrackingTest, DeallocWrongBytes)
 
   // allocation_counts should be unaffected
   auto current_alloc_counts = mr.get_counter(false);
-  auto current_alloc_bytes = mr.get_counter(true);
+  auto current_alloc_bytes  = mr.get_counter(true);
 
   // Verify current allocations are correct despite the error
   EXPECT_EQ(mr.get_allocated_bytes(), 0);

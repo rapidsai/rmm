@@ -66,7 +66,6 @@ class stack_trace {
     if (strings.get() == nullptr) {
       os << "But no stack trace could be found!" << std::endl;
     } else {
-
       // Iterate over the stack pointers converting to a string
       for (std::size_t i = 0; i < st.stack_ptrs.size(); ++i) {
         // Leading index
@@ -74,18 +73,19 @@ class stack_trace {
 
         auto const str = [&] {
           Dl_info info;
-          if (dladdr(st.stack_ptrs[i], &info)) { 
-            int status = -1; // Demangle the name. This can occasionally fail
+          if (dladdr(st.stack_ptrs[i], &info)) {
+            int status = -1;  // Demangle the name. This can occasionally fail
 
-            std::unique_ptr<char, decltype(&::free)> demangled( abi::__cxa_demangle(info.dli_sname, nullptr, 0, &status), &::free); 
-            // If it fails, fallback to the dli_name. 
-            if (status == 0 or info.dli_sname) { 
+            std::unique_ptr<char, decltype(&::free)> demangled(
+              abi::__cxa_demangle(info.dli_sname, nullptr, 0, &status), &::free);
+            // If it fails, fallback to the dli_name.
+            if (status == 0 or info.dli_sname) {
               auto name = status == 0 ? demangled.get() : info.dli_sname;
-              return name + std::string(" from ") + info.dli_fname; 
-            } 
+              return name + std::string(" from ") + info.dli_fname;
+            }
           }
-          return std::string(strings.get()[i]); 
-        } ();
+          return std::string(strings.get()[i]);
+        }();
 
         os << str << std::endl;
       }

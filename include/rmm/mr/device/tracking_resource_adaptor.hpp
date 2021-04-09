@@ -65,24 +65,25 @@ class tracking_resource_adaptor final : public device_memory_resource {
         allocation_size{size} {};
   };
 
-
   /**
    * @brief Utility struct for counting the current, peak, and total value of a number
    */
   struct counter {
-    int64_t value{0}; // Current value
-    int64_t peak{0};  // Max value of `value`
-    int64_t total{0}; // Sum of all added values
-    
-    counter& operator+=(int64_t x) { 
+    int64_t value{0};  // Current value
+    int64_t peak{0};   // Max value of `value`
+    int64_t total{0};  // Sum of all added values
+
+    counter& operator+=(int64_t x)
+    {
       value += x;
       total += x;
       peak = std::max(value, peak);
       return *this;
     }
-        
-    counter& operator-=(int64_t x) { 
-      value -= x; 
+
+    counter& operator-=(int64_t x)
+    {
+      value -= x;
       return *this;
     }
   };
@@ -157,17 +158,16 @@ class tracking_resource_adaptor final : public device_memory_resource {
    */
   std::size_t get_allocated_bytes() const noexcept { return allocation_bytes_.value; }
 
-
-
   /**
    * @brief Returns a `counter` struct for this adaptor containing the current,
    * peak, and total number of allocated bytes or allocation counts for this
    * adaptor since it was created.
-   * 
+   *
    * @param return_bytes true to return bytes counter, false to re
-   * @return counter 
+   * @return counter
    */
-  counter get_counter(bool return_bytes = true) const noexcept {
+  counter get_counter(bool return_bytes = true) const noexcept
+  {
     read_lock_t lock(mtx_);
 
     return return_bytes ? allocation_bytes_ : allocation_count_;
@@ -326,7 +326,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
   std::map<void*, allocation_info> allocations_;  // map of active allocations
   counter allocation_bytes_;                      // peak, current and total allocated bytes
   counter allocation_count_;                      // peak, current and total allocation count
-  std::shared_timed_mutex mutable mtx_;  // mutex for thread safe access to allocations_
+  std::shared_timed_mutex mutable mtx_;           // mutex for thread safe access to allocations_
   Upstream* upstream_;  // the upstream resource used for satisfying allocation requests
 };
 
