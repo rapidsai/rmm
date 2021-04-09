@@ -1,6 +1,5 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
-from libcpp cimport bool
 from libc.stdint cimport int8_t
 from libcpp.memory cimport shared_ptr
 from libcpp.string cimport string

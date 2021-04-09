@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include <cstddef>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/mr/device/tracking_resource_adaptor.hpp>
@@ -172,9 +171,7 @@ TEST(TrackingTest, MultiTracking)
   EXPECT_EQ(mr.get_allocated_bytes(), 150_MiB);
   EXPECT_EQ(inner_mr.get_allocated_bytes(), 50_MiB);
 
-  auto tracked_str = mr.get_outstanding_allocations_str();
-
-  std::cout << tracked_str;
+  EXPECT_GT(mr.get_outstanding_allocations_str().size(), 0);
 
   // Clear the allocations, causing all memory to be freed
   allocations.clear();

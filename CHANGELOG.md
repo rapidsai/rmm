@@ -67,7 +67,6 @@ Please see https://github.com/rapidsai/rmm/releases/tag/v0.19.0a for the latest 
 - PR #615 Improve gpuCI Scripts
 - PR #627 Cleanup gpuCI Scripts
 - PR #635 Add Python docs build to gpuCI
-- PR #626 Adding additional tracking info and cython bindings to `tracking_resource_adaptor`
 
 ## Bug Fixes
 
