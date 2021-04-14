@@ -55,17 +55,12 @@ class new_delete_resource final : public host_memory_resource {
   void *do_allocate(std::size_t bytes,
                     std::size_t alignment = detail::RMM_DEFAULT_HOST_ALIGNMENT) override
   {
-#if __cplusplus >= 201703L
-    return ::operator new(bytes, std::align_val_t(alignment));
-#else
-
     // If the requested alignment isn't supported, use default
     alignment =
       (detail::is_supported_alignment(alignment)) ? alignment : detail::RMM_DEFAULT_HOST_ALIGNMENT;
 
     return detail::aligned_allocate(
       bytes, alignment, [](std::size_t size) { return ::operator new(size); });
-#endif
   }
 
   /**---------------------------------------------------------------------------*
@@ -90,11 +85,7 @@ class new_delete_resource final : public host_memory_resource {
                      std::size_t bytes,
                      std::size_t alignment = detail::RMM_DEFAULT_HOST_ALIGNMENT) override
   {
-#if __cplusplus >= 201703L
-    ::operator delete(p, bytes, std::align_val_t(alignment));
-#else
     detail::aligned_deallocate(p, bytes, alignment, [](void *p) { ::operator delete(p); });
-#endif
   }
 };
 }  // namespace mr
