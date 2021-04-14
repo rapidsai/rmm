@@ -22,6 +22,7 @@
 #include <rmm/mr/device/limiting_resource_adaptor.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
+#include <rmm/detail/cuda_util.hpp>
 
 #include <gtest/gtest.h>
 
@@ -51,8 +52,7 @@ TEST(PoolTest, ThrowMaxLessThanInitial)
 TEST(PoolTest, AllocateNinetyPercent)
 {
   auto allocate_ninety = []() {
-    std::size_t free{}, total{};
-    std::tie(free, total) = rmm::mr::detail::available_device_memory();
+    auto const [free, total] = rmm::detail::available_device_memory();
     auto const ninety_percent_pool =
       rmm::detail::align_up(static_cast<std::size_t>(free * 0.9), pool_mr::allocation_alignment);
     pool_mr mr{rmm::mr::get_current_device_resource(), ninety_percent_pool};
@@ -63,8 +63,7 @@ TEST(PoolTest, AllocateNinetyPercent)
 TEST(PoolTest, TwoLargeBuffers)
 {
   auto two_large = []() {
-    std::size_t free{}, total{};
-    std::tie(free, total) = rmm::mr::detail::available_device_memory();
+    auto const [free, total] = rmm::detail::available_device_memory();
     pool_mr mr{rmm::mr::get_current_device_resource()};
     auto p1 = mr.allocate(free / 4);
     auto p2 = mr.allocate(free / 4);

@@ -22,6 +22,7 @@
 #include <rmm/mr/device/detail/coalescing_free_list.hpp>
 #include <rmm/mr/device/detail/stream_ordered_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/detail/cuda_util.hpp>
 
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
@@ -42,15 +43,6 @@
 
 namespace rmm {
 namespace mr {
-namespace detail {
-/// Gets the available and total device memory in bytes for the current device
-inline std::pair<std::size_t, std::size_t> available_device_memory()
-{
-  std::size_t free{}, total{};
-  RMM_CUDA_TRY(cudaMemGetInfo(&free, &total));
-  return {free, total};
-}
-}  // namespace detail
 
 /**
  * @brief A coalescing best-fit suballocator which uses a pool of memory allocated from
@@ -208,7 +200,7 @@ class pool_memory_resource final
         std::size_t free{}, total{};
         std::tie(free, total) = (get_upstream()->supports_get_mem_info())
                                   ? get_upstream()->get_mem_info(cudaStreamLegacy)
-                                  : detail::available_device_memory();
+                                  : rmm::detail::available_device_memory();
         return rmm::detail::align_up(std::min(free, total / 2), allocation_alignment);
       } else {
         return initial_size.value();
