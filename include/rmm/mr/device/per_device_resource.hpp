@@ -16,9 +16,9 @@
 
 #pragma once
 
+#include <rmm/cuda_device.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
-#include <rmm/cuda_device.hpp>
 
 #include <map>
 #include <mutex>
@@ -71,7 +71,6 @@
  */
 
 namespace rmm {
-
 
 namespace mr {
 

@@ -15,6 +15,7 @@
  */
 
 #include <rmm/detail/aligned.hpp>
+#include <rmm/detail/cuda_util.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
@@ -22,7 +23,6 @@
 #include <rmm/mr/device/limiting_resource_adaptor.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
-#include <rmm/detail/cuda_util.hpp>
 
 #include <gtest/gtest.h>
 

@@ -16,11 +16,11 @@
 #pragma once
 
 #include <limits>
-#include <rmm/detail/error.hpp>
-#include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/cuda_util.hpp>
+#include <rmm/detail/error.hpp>
+#include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <cuda_runtime_api.h>
 
@@ -60,16 +60,17 @@ class cuda_async_memory_resource final : public device_memory_resource {
     // Check if cudaMallocAsync Memory pool supported
     auto const device = rmm::detail::current_device();
     int cuda_pool_supported{};
-    auto e = cudaDeviceGetAttribute(&cuda_pool_supported, cudaDevAttrMemoryPoolsSupported, device.value());
+    auto e =
+      cudaDeviceGetAttribute(&cuda_pool_supported, cudaDevAttrMemoryPoolsSupported, device.value());
     RMM_EXPECTS(e == cudaSuccess && cuda_pool_supported,
                 "cudaMallocAsync not supported with this CUDA driver/runtime version");
 
     // Construct explicit pool
     cudaMemPoolProps pool_props{};
-    pool_props.allocType        = cudaMemAllocationTypePinned;
-    pool_props.handleTypes      = cudaMemHandleTypePosixFileDescriptor;
-    pool_props.location.type    = cudaMemLocationTypeDevice;
-    pool_props.location.id      = device.value();
+    pool_props.allocType     = cudaMemAllocationTypePinned;
+    pool_props.handleTypes   = cudaMemHandleTypePosixFileDescriptor;
+    pool_props.location.type = cudaMemLocationTypeDevice;
+    pool_props.location.id   = device.value();
     cudaMemPoolCreate(&cuda_pool_handle_, &pool_props);
 
     auto const [free, total] = rmm::detail::available_device_memory();
@@ -80,9 +81,9 @@ class cuda_async_memory_resource final : public device_memory_resource {
 
     // Allocate and immediately deallocate the initial_pool_size to prime the pool with the
     // specified size
-    if(initial_pool_size){
-        auto p = do_allocate(*initial_pool_size, cuda_stream_default);
-        do_deallocate(p, *initial_pool_size, cuda_stream_default);
+    if (initial_pool_size) {
+      auto p = do_allocate(*initial_pool_size, cuda_stream_default);
+      do_deallocate(p, *initial_pool_size, cuda_stream_default);
     }
 
 #else
