@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020, NVIDIA CORPORATION.
+ * Copyright (c) 2018-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ using exec_policy_t = std::unique_ptr<par_t, deleter_t>;
  */
 inline exec_policy_t exec_policy(cudaStream_t stream = 0)
 {
-  auto *alloc  = new rmm::mr::thrust_allocator<char>(stream);
+  auto *alloc  = new rmm::mr::thrust_allocator<char>(cuda_stream_view{stream});
   auto deleter = [alloc](par_t *pointer) {
     delete alloc;
     delete pointer;
