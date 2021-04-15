@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,6 +58,8 @@
 
 #pragma once
 
+#include <rmm/cuda_stream_view.hpp>
+
 // Google Benchmark library
 #include <benchmark/benchmark.h>
 #include <cuda_runtime_api.h>
@@ -70,11 +72,13 @@ class cuda_event_timer {
    *
    * @param[in,out] state  This is the benchmark::State whose timer we are going
    * to update.
-   * @param[in] flush_l2_cache_ whether or not to flush the L2 cache before
+   * @param[in] flush_l2_cache whether or not to flush the L2 cache before
    *                            every iteration.
-   * @param[in] stream_ The CUDA stream we are measuring time on.
+   * @param[in] stream The CUDA stream we are measuring time on.
    */
-  cuda_event_timer(benchmark::State& state, bool flush_l2_cache, cudaStream_t stream_ = 0);
+  cuda_event_timer(benchmark::State& state,
+                   bool flush_l2_cache,
+                   rmm::cuda_stream_view stream = rmm::cuda_stream_default);
 
   // The user will HAVE to provide a benchmark::State object to set
   // the timer so we disable the default c'tor.
@@ -88,6 +92,6 @@ class cuda_event_timer {
  private:
   cudaEvent_t start;
   cudaEvent_t stop;
-  cudaStream_t stream;
+  rmm::cuda_stream_view stream;
   benchmark::State* p_state;
 };

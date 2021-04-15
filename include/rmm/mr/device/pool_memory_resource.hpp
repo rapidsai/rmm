@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -199,7 +199,7 @@ class pool_memory_resource final
       if (not initial_size.has_value()) {
         std::size_t free{}, total{};
         std::tie(free, total) = (get_upstream()->supports_get_mem_info())
-                                  ? get_upstream()->get_mem_info(cudaStreamLegacy)
+                                  ? get_upstream()->get_mem_info(cuda_stream_legacy)
                                   : rmm::detail::available_device_memory();
         return rmm::detail::align_up(std::min(free, total / 2), allocation_alignment);
       } else {
@@ -214,8 +214,8 @@ class pool_memory_resource final
                 "Initial pool size exceeds the maximum pool size!");
 
     if (try_size > 0) {
-      auto const b = try_to_expand(try_size, try_size, cudaStreamLegacy);
-      this->insert_block(b, cudaStreamLegacy);
+      auto const b = try_to_expand(try_size, try_size, cuda_stream_legacy);
+      this->insert_block(b, cuda_stream_legacy);
     }
   }
 
