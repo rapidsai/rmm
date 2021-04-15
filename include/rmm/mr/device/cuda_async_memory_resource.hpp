@@ -24,7 +24,7 @@
 
 #include <cuda_runtime_api.h>
 
-#include <optional>
+#include <thrust/optional.h>
 
 #if CUDART_VERSION >= 11020  // 11.2 introduced cudaMallocAsync
 #define RMM_CUDA_MALLOC_ASYNC_SUPPORT
@@ -53,8 +53,8 @@ class cuda_async_memory_resource final : public device_memory_resource {
    * @param release_threshold Optional release threshold of the pool. If no value is provided, the
    * release threshold is set to the total amount of memory on the current device.
    */
-  cuda_async_memory_resource(std::optional<std::size_t> initial_pool_size = {},
-                             std::optional<std::size_t> release_threshold = {})
+  cuda_async_memory_resource(thrust::optional<std::size_t> initial_pool_size = {},
+                             thrust::optional<std::size_t> release_threshold = {})
   {
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
     // Check if cudaMallocAsync Memory pool supported
