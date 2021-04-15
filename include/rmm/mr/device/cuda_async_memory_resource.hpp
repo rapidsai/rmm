@@ -93,11 +93,13 @@ class cuda_async_memory_resource final : public device_memory_resource {
 #endif
   }
 
+#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
   /**
    * @brief Returns the underlying native handle to the CUDA pool
    *
    */
   cudaMemPool_t pool_handle() const noexcept { return cuda_pool_handle_; }
+#endif
 
   ~cuda_async_memory_resource()                                 = default;
   cuda_async_memory_resource(cuda_async_memory_resource const&) = default;
@@ -121,7 +123,9 @@ class cuda_async_memory_resource final : public device_memory_resource {
   bool supports_get_mem_info() const noexcept override { return false; }
 
  private:
+#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
   cudaMemPool_t cuda_pool_handle_;
+#endif
 
   /**
    * @brief Allocates memory of size at least `bytes` using cudaMalloc.
