@@ -35,6 +35,26 @@ TEST(PoolTest, ThrowIfNotSupported)
 #endif
 }
 
+#if defined(RMM_CUDA_MALLOC_ASYNC_SUPPORT)
+TEST(PoolTest, ExplicitInitialPoolSize){
+    cuda_async_mr mr{100};
+    void* p;
+    EXPECT_NO_THROW(p = mr.allocate(100));
+    EXPECT_NO_THROW(mr.deallocate(p,100));
+    RMM_CUDA_TRY(cudaDeviceSynchronize());
+}
+
+TEST(PoolTest, ExplicitReleaseThreshold){
+    cuda_async_mr mr{100, 1000};
+    void* p;
+    EXPECT_NO_THROW(p = mr.allocate(100));
+    EXPECT_NO_THROW(mr.deallocate(p,100));
+    RMM_CUDA_TRY(cudaDeviceSynchronize());
+}
+
+
+#endif
+
 }  // namespace
 }  // namespace test
 }  // namespace rmm

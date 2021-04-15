@@ -48,10 +48,10 @@ class cuda_async_memory_resource final : public device_memory_resource {
    *
    * @throws rmm::runtime_error if the CUDA version does not support `cudaMallocAsync`
    *
-   * @param initial_pool_size Optional initial size of the pool. If no value is provided, initial
-   * pool size is 0.
-   * @param release_threshold Optional release threshold of the pool. If no value is provided, the
-   * release threshold is set to the total amount of memory on the current device.
+   * @param initial_pool_size Optional initial size in bytes of the pool. If no value is provided,
+   * initial pool size is 0.
+   * @param release_threshold Optional release threshold size in bytes of the pool. If no value is
+   * provided, the release threshold is set to the total amount of memory on the current device.
    */
   cuda_async_memory_resource(thrust::optional<std::size_t> initial_pool_size = {},
                              thrust::optional<std::size_t> release_threshold = {})
