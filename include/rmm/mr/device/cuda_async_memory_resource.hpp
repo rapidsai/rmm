@@ -71,13 +71,13 @@ class cuda_async_memory_resource final : public device_memory_resource {
     pool_props.handleTypes   = cudaMemHandleTypePosixFileDescriptor;
     pool_props.location.type = cudaMemLocationTypeDevice;
     pool_props.location.id   = device.value();
-    cudaMemPoolCreate(&cuda_pool_handle_, &pool_props);
+    RMM_CUDA_TRY(cudaMemPoolCreate(&cuda_pool_handle_, &pool_props));
 
     auto const [free, total] = rmm::detail::available_device_memory();
 
     // Need an l-value to take address to pass to cudaMemPoolSetAttribute
     uint64_t threshold = release_threshold.value_or(total);
-    cudaMemPoolSetAttribute(cuda_pool_handle_, cudaMemPoolAttrReleaseThreshold, &threshold);
+    RMM_CUDA_TRY(cudaMemPoolSetAttribute(cuda_pool_handle_, cudaMemPoolAttrReleaseThreshold, &threshold));
 
     // Allocate and immediately deallocate the initial_pool_size to prime the pool with the
     // specified size
