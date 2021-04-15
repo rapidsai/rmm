@@ -77,7 +77,8 @@ class cuda_async_memory_resource final : public device_memory_resource {
 
     // Need an l-value to take address to pass to cudaMemPoolSetAttribute
     uint64_t threshold = release_threshold.value_or(total);
-    RMM_CUDA_TRY(cudaMemPoolSetAttribute(cuda_pool_handle_, cudaMemPoolAttrReleaseThreshold, &threshold));
+    RMM_CUDA_TRY(
+      cudaMemPoolSetAttribute(cuda_pool_handle_, cudaMemPoolAttrReleaseThreshold, &threshold));
 
     // Allocate and immediately deallocate the initial_pool_size to prime the pool with the
     // specified size
