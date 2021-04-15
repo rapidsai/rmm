@@ -431,23 +431,8 @@ cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
         self.c_obj.reset()
 
 
-class KeyInitializedDefaultDict(defaultdict):
-    """
-    This class subclasses ``defaultdict`` in order to pass the key to the
-    ``default_factory`` function supplied during the instantiation of the
-    class instance.
-    """
-    def __missing__(self, key):
-        if self.default_factory is None:
-            raise KeyError(key)
-        else:
-            ret = self.default_factory(key)
-            self[key] = ret
-            return ret
-
-
 # Global per-device memory resources; dict of int:DeviceMemoryResource
-cdef _per_device_mrs = KeyInitializedDefaultDict(CudaMemoryResource)
+cdef _per_device_mrs = defaultdict(CudaMemoryResource)
 
 
 cpdef void _initialize(
