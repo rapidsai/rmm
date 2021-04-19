@@ -33,13 +33,6 @@ if(GTest_ADDED)
   add_library(GTest::gmock_main ALIAS gmock_main)
 endif()
 
-# Auto-detect available GPU compute architectures
-
-include(${RMM_SOURCE_DIR}/cmake/Modules/SetGPUArchs.cmake)
-message(STATUS "RMM: Building tests with GPU Architectures: ${CMAKE_CUDA_ARCHITECTURES}")
-
-enable_language(CUDA)
-
 # Build options
 
 option(DISABLE_DEPRECATION_WARNING "Disable warnings generated from deprecated declarations." OFF)
@@ -60,12 +53,12 @@ function(ConfigureTestInternal TEST_NAME TEST_SRC)
                CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}")
   target_compile_definitions(${TEST_NAME}
                              PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
-  target_compile_options(${TEST_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Werror
+  target_compile_options(${TEST_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Wall -Werror
                                              -Wno-error=deprecated-declarations>)
 
   if(DISABLE_DEPRECATION_WARNING)
-    target_compile_options(${TEST_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler
-                                               -Wno-deprecated-declarations>)
+    target_compile_options(
+      ${TEST_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-Wno-deprecated-declarations>)
     target_compile_options(${TEST_NAME}
                            PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-declarations>)
   endif(DISABLE_DEPRECATION_WARNING)
@@ -97,6 +90,10 @@ ConfigureTest(DEVICE_MR_TEST "${DEVICE_MR_TEST_SRC}")
 
 set(POOL_MR_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/pool_mr_tests.cpp")
 ConfigureTest(POOL_MR_TEST "${POOL_MR_TEST_SRC}")
+
+# cuda_async mr tests
+set(CUDA_ASYNC_MR_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/cuda_async_mr_tests.cpp")
+ConfigureTest(CUDA_ASYNC_MR_TEST "${CUDA_ASYNC_MR_TEST_SRC}")
 
 # thrust allocator tests
 

@@ -1,4 +1,5 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
+import gc
 import os
 import sys
 from itertools import product
@@ -8,6 +9,7 @@ import pytest
 from numba import cuda
 
 import rmm
+import rmm._cuda.stream
 
 if sys.version_info < (3, 8):
     try:
@@ -18,6 +20,20 @@ else:
     import pickle
 
 cuda.set_memory_manager(rmm.RMMNumbaManager)
+
+_driver_version = rmm._cuda.gpu.driverGetVersion()
+_runtime_version = rmm._cuda.gpu.runtimeGetVersion()
+
+
+@pytest.fixture(scope="function", autouse=True)
+def rmm_auto_reinitialize():
+
+    # Run the test
+    yield
+
+    # Automatically reinitialize the current memory resource after running each
+    # test
+    rmm.reinitialize()
 
 
 def array_tester(dtype, nelem, alloc):
@@ -70,7 +86,6 @@ def test_rmm_modes(dtype, nelem, alloc, managed, pool):
     assert rmm.is_initialized()
 
     array_tester(dtype, nelem, alloc)
-    rmm.reinitialize()
 
 
 @pytest.mark.parametrize("dtype", _dtypes)
@@ -92,7 +107,6 @@ def test_rmm_csv_log(dtype, nelem, alloc, tmpdir):
             assert csv.find(b"Time,Action,Pointer,Size,Stream") >= 0
     finally:
         os.remove(fname)
-    rmm.reinitialize()
 
 
 @pytest.mark.parametrize("size", [0, 5])
@@ -109,7 +123,7 @@ def test_rmm_device_buffer(size):
     assert len(b) == b.size
     assert b.nbytes == b.size
     assert b.capacity() >= b.size
-    assert sys.getsizeof(b) == b.size
+    assert b.__sizeof__() == b.size
 
     # Test `__cuda_array_interface__`
     keyset = {"data", "shape", "strides", "typestr", "version"}
@@ -269,6 +283,17 @@ def test_rmm_device_buffer_pickle_roundtrip(hb):
         assert hb3 == hb
 
 
+@pytest.mark.parametrize("stream", [cuda.default_stream(), cuda.stream()])
+def test_rmm_pool_numba_stream(stream):
+    rmm.reinitialize(pool_allocator=True)
+
+    stream = rmm._cuda.stream.Stream(stream)
+    a = rmm._lib.device_buffer.DeviceBuffer(size=3, stream=stream)
+
+    assert a.size == 3
+    assert a.ptr != 0
+
+
 def test_rmm_cupy_allocator():
     cupy = pytest.importorskip("cupy")
 
@@ -287,6 +312,54 @@ def test_rmm_cupy_allocator():
     assert isinstance(a.data.mem._owner, rmm.DeviceBuffer)
 
 
+@pytest.mark.parametrize("stream", ["null", "async"])
+def test_rmm_pool_cupy_allocator_with_stream(stream):
+    cupy = pytest.importorskip("cupy")
+
+    rmm.reinitialize(pool_allocator=True)
+    cupy.cuda.set_allocator(rmm.rmm_cupy_allocator)
+
+    if stream == "null":
+        stream = cupy.cuda.stream.Stream.null
+    else:
+        stream = cupy.cuda.stream.Stream()
+
+    with stream:
+        m = rmm.rmm_cupy_allocator(42)
+        assert m.mem.size == 42
+        assert m.mem.ptr != 0
+        assert isinstance(m.mem._owner, rmm.DeviceBuffer)
+
+        m = rmm.rmm_cupy_allocator(0)
+        assert m.mem.size == 0
+        assert m.mem.ptr == 0
+        assert isinstance(m.mem._owner, rmm.DeviceBuffer)
+
+        a = cupy.arange(10)
+        assert isinstance(a.data.mem._owner, rmm.DeviceBuffer)
+
+    # Deleting all allocations known by the RMM pool is required
+    # before rmm.reinitialize(), otherwise it may segfault.
+    del a
+
+    rmm.reinitialize()
+
+
+def test_rmm_pool_cupy_allocator_stream_lifetime():
+    cupy = pytest.importorskip("cupy")
+
+    rmm.reinitialize(pool_allocator=True)
+    cupy.cuda.set_allocator(rmm.rmm_cupy_allocator)
+
+    stream = cupy.cuda.stream.Stream()
+
+    stream.use()
+    x = cupy.arange(10)
+    del stream
+
+    del x
+
+
 @pytest.mark.parametrize("dtype", _dtypes)
 @pytest.mark.parametrize("nelem", _nelems)
 @pytest.mark.parametrize("alloc", _allocs)
@@ -299,7 +372,6 @@ def test_pool_memory_resource(dtype, nelem, alloc):
     rmm.mr.set_current_device_resource(mr)
     assert rmm.mr.get_current_device_resource_type() is type(mr)
     array_tester(dtype, nelem, alloc)
-    rmm.reinitialize()
 
 
 @pytest.mark.parametrize("dtype", _dtypes)
@@ -319,7 +391,6 @@ def test_fixed_size_memory_resource(dtype, nelem, alloc, upstream):
     rmm.mr.set_current_device_resource(mr)
     assert rmm.mr.get_current_device_resource_type() is type(mr)
     array_tester(dtype, nelem, alloc)
-    rmm.reinitialize()
 
 
 @pytest.mark.parametrize("dtype", _dtypes)
@@ -350,7 +421,6 @@ def test_binning_memory_resource(dtype, nelem, alloc, upstream_mr):
     rmm.mr.set_current_device_resource(mr)
     assert rmm.mr.get_current_device_resource_type() is type(mr)
     array_tester(dtype, nelem, alloc)
-    rmm.reinitialize()
 
 
 def test_reinitialize_max_pool_size():
@@ -358,7 +428,6 @@ def test_reinitialize_max_pool_size():
         pool_allocator=True, initial_pool_size=0, maximum_pool_size=1 << 23
     )
     rmm.DeviceBuffer().resize((1 << 23) - 1)
-    rmm.reinitialize()
 
 
 def test_reinitialize_max_pool_size_exceeded():
@@ -367,7 +436,6 @@ def test_reinitialize_max_pool_size_exceeded():
     )
     with pytest.raises(MemoryError):
         rmm.DeviceBuffer().resize(1 << 24)
-    rmm.reinitialize()
 
 
 def test_reinitialize_initial_pool_size_gt_max():
@@ -378,3 +446,94 @@ def test_reinitialize_initial_pool_size_gt_max():
             maximum_pool_size=1 << 10,
         )
     assert "Initial pool size exceeds the maximum pool size" in str(e.value)
+
+
+@pytest.mark.parametrize("dtype", _dtypes)
+@pytest.mark.parametrize("nelem", _nelems)
+@pytest.mark.parametrize("alloc", _allocs)
+def test_rmm_enable_disable_logging(dtype, nelem, alloc, tmpdir):
+    suffix = ".csv"
+
+    base_name = str(tmpdir.join("rmm_log.csv"))
+
+    rmm.enable_logging(log_file_name=base_name)
+    print(rmm.mr.get_per_device_resource(0))
+    array_tester(dtype, nelem, alloc)
+    rmm.mr._flush_logs()
+
+    # Need to open separately because the device ID is appended to filename
+    fname = base_name[: -len(suffix)] + ".dev0" + suffix
+    try:
+        with open(fname, "rb") as f:
+            csv = f.read()
+            assert csv.find(b"Time,Action,Pointer,Size,Stream") >= 0
+    finally:
+        os.remove(fname)
+
+    rmm.disable_logging()
+
+
+def test_mr_devicebuffer_lifetime():
+    # Test ensures MR/Stream lifetime is longer than DeviceBuffer. Even if all
+    # references go out of scope
+    # Create new Pool MR
+    rmm.mr.set_current_device_resource(
+        rmm.mr.PoolMemoryResource(rmm.mr.get_current_device_resource())
+    )
+
+    # Creates a new non-default stream
+    stream = rmm._cuda.stream.Stream()
+
+    # Allocate DeviceBuffer with Pool and Stream
+    a = rmm.DeviceBuffer(size=10, stream=stream)
+
+    # Change current MR. Will cause Pool to go out of scope
+    rmm.mr.set_current_device_resource(rmm.mr.CudaMemoryResource())
+
+    # Force collection to ensure objects are cleaned up
+    gc.collect()
+
+    # Delete a. Used to crash before. Pool MR should still be alive
+    del a
+
+
+def test_mr_upstream_lifetime():
+    # Simple test to ensure upstream MRs are deallocated before downstream MR
+    cuda_mr = rmm.mr.CudaMemoryResource()
+
+    pool_mr = rmm.mr.PoolMemoryResource(cuda_mr)
+
+    # Delete cuda_mr first. Should be kept alive by pool_mr
+    del cuda_mr
+    del pool_mr
+
+
+@pytest.mark.skipif(
+    (_driver_version, _runtime_version) < (11020, 11020),
+    reason="cudaMallocAsync not supported",
+)
+@pytest.mark.parametrize("dtype", _dtypes)
+@pytest.mark.parametrize("nelem", _nelems)
+@pytest.mark.parametrize("alloc", _allocs)
+def test_cuda_async_memory_resource(dtype, nelem, alloc):
+    mr = rmm.mr.CudaAsyncMemoryResource()
+    rmm.mr.set_current_device_resource(mr)
+    assert rmm.mr.get_current_device_resource_type() is type(mr)
+    array_tester(dtype, nelem, alloc)
+
+
+@pytest.mark.skipif(
+    (_driver_version, _runtime_version) < (11020, 11020),
+    reason="cudaMallocAsync not supported",
+)
+@pytest.mark.parametrize("nelems", _nelems)
+def test_cuda_async_memory_resource_stream(nelems):
+    # test that using CudaAsyncMemoryResource
+    # with a non-default stream works
+    mr = rmm.mr.CudaAsyncMemoryResource()
+    rmm.mr.set_current_device_resource(mr)
+    stream = rmm._cuda.stream.Stream()
+    expected = np.full(nelems, 5, dtype="u1")
+    dbuf = rmm.DeviceBuffer.to_device(expected, stream=stream)
+    result = np.asarray(dbuf.copy_to_host())
+    np.testing.assert_equal(expected, result)

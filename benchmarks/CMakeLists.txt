@@ -21,14 +21,7 @@ CPMFindPackage(
   GIT_SHALLOW TRUE
   OPTIONS "BENCHMARK_ENABLE_TESTING OFF" "BENCHMARK_ENABLE_INSTALL OFF")
 
-# Auto-detect available GPU compute architectures
-
-include(${RMM_SOURCE_DIR}/cmake/Modules/SetGPUArchs.cmake)
-message(STATUS "RMM: Building benchmarks with GPU Architectures: ${CMAKE_CUDA_ARCHITECTURES}")
-
 # Build options
-
-enable_language(CUDA)
 
 option(DISABLE_DEPRECATION_WARNING "Disable warnings generated from deprecated declarations." OFF)
 option(PER_THREAD_DEFAULT_STREAM "Build with per-thread default stream" OFF)
@@ -58,11 +51,11 @@ function(ConfigureBench BENCH_NAME BENCH_SRC)
     target_compile_definitions(${BENCH_NAME} PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
   endif(PER_THREAD_DEFAULT_STREAM)
 
-  target_compile_options(${BENCH_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Werror
+  target_compile_options(${BENCH_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Wall -Werror
                                               -Wno-error=deprecated-declarations>)
   if(DISABLE_DEPRECATION_WARNING)
-    target_compile_options(${BENCH_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler
-                                                -Wno-deprecated-declarations>)
+    target_compile_options(
+      ${BENCH_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-Wno-deprecated-declarations>)
     target_compile_options(${BENCH_NAME}
                            PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-declarations>)
   endif(DISABLE_DEPRECATION_WARNING)

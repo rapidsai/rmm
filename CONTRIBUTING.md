@@ -1,6 +1,6 @@
 # Contributing to RMM
 
-If you are interested in contributing to cuDF, your contributions will fall
+If you are interested in contributing to RMM, your contributions will fall
 into three categories:
 1. You want to report a bug, feature request, or documentation issue
     - File an [issue](https://github.com/rapidsai/rmm/issues/new/choose)

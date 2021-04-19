@@ -28,15 +28,15 @@ RMM can be installed with Conda ([miniconda](https://conda.io/miniconda.html), o
 [Anaconda distribution](https://www.anaconda.com/download)) from the `rapidsai` channel:
 
 ```bash
-# for CUDA 10.2
+# for CUDA 11.2
 conda install -c nvidia -c rapidsai -c conda-forge -c defaults \
-    rmm cudatoolkit=10.2
-# for CUDA 10.1
+    rmm cudatoolkit=11.2
+# for CUDA 11.1
 conda install -c nvidia -c rapidsai -c conda-forge -c defaults \
-    rmm cudatoolkit=10.1
-# for CUDA 10.0
+    rmm cudatoolkit=11.1
+# for CUDA 11.0
 conda install -c nvidia -c rapidsai -c conda-forge -c defaults \
-    rmm cudatoolkit=10.0
+    rmm cudatoolkit=11.0
 ```
 
 We also provide [nightly Conda packages](https://anaconda.org/rapidsai-nightly) built from the HEAD
@@ -44,7 +44,7 @@ of our latest development branch.
 
 Note: RMM is supported only on Linux, and with Python versions 3.7 and later.
 
-Note: The RMM package from Conda requires building with GCC 7 or later. Otherwise, your application may fail to build.
+Note: The RMM package from Conda requires building with GCC 9 or later. Otherwise, your application may fail to build.
 
 See the [Get RAPIDS version picker](https://rapids.ai/start.html) for more OS and version info.
 
@@ -54,14 +54,14 @@ See the [Get RAPIDS version picker](https://rapids.ai/start.html) for more OS an
 
 Compiler requirements:
 
-* `gcc`     version 7.0 or higher required
-* `nvcc`    version 9.0 or higher recommended
-* `cmake`   version 3.12 or higher
+* `gcc`     version 9.3+
+* `nvcc`    version 11.0+
+* `cmake`   version 3.18+
 
 CUDA/GPU requirements:
 
-* CUDA 9.0+
-* NVIDIA driver 396.44+
+* CUDA 11.0+
+* NVIDIA driver 450.51+
 * Pascal architecture or better
 
 You can obtain CUDA from [https://developer.nvidia.com/cuda-downloads](https://developer.nvidia.com/cuda-downloads)
@@ -88,7 +88,7 @@ $ source activate cudf_dev
 ```
 
 - Build and install `librmm` using cmake & make. CMake depends on the `nvcc` executable being on
-  your path or defined in `$CUDACXX`.
+  your path or defined in `CUDACXX` environment variable.
 
 ```bash
 
@@ -101,7 +101,7 @@ $ make install                                      # install the library librmm
 
 - Building and installing `librmm` and `rmm` using build.sh. Build.sh creates build dir at root of
   git repository. build.sh depends on the `nvcc` executable being on your path or defined in
-  `$CUDACXX`.
+  `CUDACXX` environment variable.
 
 ```bash
 
@@ -450,11 +450,11 @@ freeing host memory.
 
 Similar to `device_memory_resource`, it has two key functions for (de)allocation:
 
-1. `void* device_memory_resource::allocate(std::size_t bytes, std::size_t alignment)`
+1. `void* host_memory_resource::allocate(std::size_t bytes, std::size_t alignment)`
    - Returns a pointer to an allocation of at least `bytes` bytes aligned to the specified
      `alignment`
 
-2. `void device_memory_resource::deallocate(void* p, std::size_t bytes, std::size_t alignment)`
+2. `void host_memory_resource::deallocate(void* p, std::size_t bytes, std::size_t alignment)`
    - Reclaims a previous allocation of size `bytes` pointed to by `p`. 
 
 
