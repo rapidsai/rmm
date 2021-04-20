@@ -101,7 +101,12 @@ class cuda_async_memory_resource final : public device_memory_resource {
   cudaMemPool_t pool_handle() const noexcept { return cuda_pool_handle_; }
 #endif
 
-  ~cuda_async_memory_resource()                                 = default;
+  ~cuda_async_memory_resource()
+  {
+#if defined(RMM_CUDA_MALLOC_ASYNC_SUPPORT)
+    RMM_ASSERT_CUDA_SUCCESS(cudaMemPoolDestroy(pool_handle()));
+#endif
+  }
   cuda_async_memory_resource(cuda_async_memory_resource const&) = default;
   cuda_async_memory_resource(cuda_async_memory_resource&&)      = default;
   cuda_async_memory_resource& operator=(cuda_async_memory_resource const&) = default;
