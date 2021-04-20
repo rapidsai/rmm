@@ -83,10 +83,9 @@ class cuda_async_memory_resource final : public device_memory_resource {
 
     // Allocate and immediately deallocate the initial_pool_size to prime the pool with the
     // specified size
-    if (initial_pool_size) {
-      auto p = do_allocate(*initial_pool_size, cuda_stream_default);
-      do_deallocate(p, *initial_pool_size, cuda_stream_default);
-    }
+    auto const pool_size = initial_pool_size.value_or(free * 0.5);
+    auto p               = do_allocate(pool_size, cuda_stream_default);
+    do_deallocate(p, pool_size, cuda_stream_default);
 
 #else
     RMM_FAIL(
