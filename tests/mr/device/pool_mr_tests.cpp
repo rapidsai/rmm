@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,6 +53,7 @@ TEST(PoolTest, AllocateNinetyPercent)
 {
   auto allocate_ninety = []() {
     auto const [free, total] = rmm::detail::available_device_memory();
+    (void)total;
     auto const ninety_percent_pool =
       rmm::detail::align_up(static_cast<std::size_t>(free * 0.9), pool_mr::allocation_alignment);
     pool_mr mr{rmm::mr::get_current_device_resource(), ninety_percent_pool};
@@ -64,6 +65,7 @@ TEST(PoolTest, TwoLargeBuffers)
 {
   auto two_large = []() {
     auto const [free, total] = rmm::detail::available_device_memory();
+    (void)total;
     pool_mr mr{rmm::mr::get_current_device_resource()};
     auto p1 = mr.allocate(free / 4);
     auto p2 = mr.allocate(free / 4);
@@ -90,7 +92,7 @@ TEST(PoolTest, DeletedStream)
   cudaStream_t stream;  // we don't use rmm::cuda_stream here to make destruction more explicit
   const int size = 10000;
   EXPECT_EQ(cudaSuccess, cudaStreamCreate(&stream));
-  EXPECT_NO_THROW(rmm::device_buffer buff(size, stream, &mr));
+  EXPECT_NO_THROW(rmm::device_buffer buff(size, cuda_stream_view{stream}, &mr));
   EXPECT_EQ(cudaSuccess, cudaStreamDestroy(stream));
   EXPECT_NO_THROW(mr.allocate(size));
 }

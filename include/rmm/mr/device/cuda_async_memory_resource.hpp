@@ -74,6 +74,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
     RMM_CUDA_TRY(cudaMemPoolCreate(&cuda_pool_handle_, &pool_props));
 
     auto const [free, total] = rmm::detail::available_device_memory();
+    (void)free;
 
     // Need an l-value to take address to pass to cudaMemPoolSetAttribute
     uint64_t threshold = release_threshold.value_or(total);
@@ -93,11 +94,13 @@ class cuda_async_memory_resource final : public device_memory_resource {
 #endif
   }
 
+#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
   /**
    * @brief Returns the underlying native handle to the CUDA pool
    *
    */
   cudaMemPool_t pool_handle() const noexcept { return cuda_pool_handle_; }
+#endif
 
   ~cuda_async_memory_resource()                                 = default;
   cuda_async_memory_resource(cuda_async_memory_resource const&) = default;
@@ -121,7 +124,9 @@ class cuda_async_memory_resource final : public device_memory_resource {
   bool supports_get_mem_info() const noexcept override { return false; }
 
  private:
+#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
   cudaMemPool_t cuda_pool_handle_;
+#endif
 
   /**
    * @brief Allocates memory of size at least `bytes` using cudaMalloc.
