@@ -15,11 +15,16 @@
  */
 #pragma once
 
+#include <limits>
+#include <rmm/cuda_device.hpp>
+#include <rmm/cuda_stream_view.hpp>
+#include <rmm/detail/cuda_util.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
-#include "rmm/cuda_stream_view.hpp"
 
 #include <cuda_runtime_api.h>
+
+#include <thrust/optional.h>
 
 #if CUDART_VERSION >= 11020  // 11.2 introduced cudaMallocAsync
 #define RMM_CUDA_MALLOC_ASYNC_SUPPORT
@@ -35,25 +40,67 @@ namespace mr {
 class cuda_async_memory_resource final : public device_memory_resource {
  public:
   /**
-   * @brief Default constructor
+   * @brief Constructs a cuda_async_memory_resource with the optionally specified initial pool size
+   * and release threshold.
+   *
+   * If the pool size grows beyond the release threshold, unused memory held by the pool will be
+   * released at the next synchronization event.
    *
    * @throws rmm::runtime_error if the CUDA version does not support `cudaMallocAsync`
+   *
+   * @param initial_pool_size Optional initial size in bytes of the pool. If no value is provided,
+   * initial pool size is 0.
+   * @param release_threshold Optional release threshold size in bytes of the pool. If no value is
+   * provided, the release threshold is set to the total amount of memory on the current device.
    */
-  cuda_async_memory_resource()
+  cuda_async_memory_resource(thrust::optional<std::size_t> initial_pool_size = {},
+                             thrust::optional<std::size_t> release_threshold = {})
   {
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
     // Check if cudaMallocAsync Memory pool supported
-    int device{0};
-    RMM_CUDA_TRY(cudaGetDevice(&device));
-    int v{0};
-    auto e = cudaDeviceGetAttribute(&v, cudaDevAttrMemoryPoolsSupported, device);
-    RMM_EXPECTS(e == cudaSuccess && v == 1,
+    auto const device = rmm::detail::current_device();
+    int cuda_pool_supported{};
+    auto e =
+      cudaDeviceGetAttribute(&cuda_pool_supported, cudaDevAttrMemoryPoolsSupported, device.value());
+    RMM_EXPECTS(e == cudaSuccess && cuda_pool_supported,
                 "cudaMallocAsync not supported with this CUDA driver/runtime version");
+
+    // Construct explicit pool
+    cudaMemPoolProps pool_props{};
+    pool_props.allocType     = cudaMemAllocationTypePinned;
+    pool_props.handleTypes   = cudaMemHandleTypePosixFileDescriptor;
+    pool_props.location.type = cudaMemLocationTypeDevice;
+    pool_props.location.id   = device.value();
+    RMM_CUDA_TRY(cudaMemPoolCreate(&cuda_pool_handle_, &pool_props));
+
+    auto const [free, total] = rmm::detail::available_device_memory();
+    (void)free;
+
+    // Need an l-value to take address to pass to cudaMemPoolSetAttribute
+    uint64_t threshold = release_threshold.value_or(total);
+    RMM_CUDA_TRY(
+      cudaMemPoolSetAttribute(cuda_pool_handle_, cudaMemPoolAttrReleaseThreshold, &threshold));
+
+    // Allocate and immediately deallocate the initial_pool_size to prime the pool with the
+    // specified size
+    if (initial_pool_size) {
+      auto p = do_allocate(*initial_pool_size, cuda_stream_default);
+      do_deallocate(p, *initial_pool_size, cuda_stream_default);
+    }
+
 #else
     RMM_FAIL(
       "cudaMallocAsync not supported by the version of the CUDA Toolkit used for this build");
 #endif
   }
+
+#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
+  /**
+   * @brief Returns the underlying native handle to the CUDA pool
+   *
+   */
+  cudaMemPool_t pool_handle() const noexcept { return cuda_pool_handle_; }
+#endif
 
   ~cuda_async_memory_resource()                                 = default;
   cuda_async_memory_resource(cuda_async_memory_resource const&) = default;
@@ -77,6 +124,10 @@ class cuda_async_memory_resource final : public device_memory_resource {
   bool supports_get_mem_info() const noexcept override { return false; }
 
  private:
+#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
+  cudaMemPool_t cuda_pool_handle_;
+#endif
+
   /**
    * @brief Allocates memory of size at least `bytes` using cudaMalloc.
    *
@@ -91,7 +142,10 @@ class cuda_async_memory_resource final : public device_memory_resource {
   {
     void* p{nullptr};
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
-    if (bytes > 0) { RMM_CUDA_TRY(cudaMallocAsync(&p, bytes, stream.value()), rmm::bad_alloc); }
+    if (bytes > 0) {
+      RMM_CUDA_TRY(cudaMallocFromPoolAsync(&p, bytes, pool_handle(), stream.value()),
+                   rmm::bad_alloc);
+    }
 #else
     (void)bytes;
     (void)stream;
