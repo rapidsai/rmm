@@ -15,6 +15,8 @@
  */
 #pragma once
 
+#include <rmm/detail/error.hpp>
+
 namespace rmm {
 
 /**
