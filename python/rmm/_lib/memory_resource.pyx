@@ -150,7 +150,7 @@ cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
     Parameters
     ----------
     initial_pool_size: int, optional
-        Initial size in bytes of the pool. If no value is provided,
+        Initial size of the pool in bytes. If no value is provided,
         the initial size is 0.
     release_threshold: int, optional
         Release threshold in bytes. If the pool size grows beyond this
