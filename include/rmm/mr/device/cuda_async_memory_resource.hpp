@@ -50,7 +50,8 @@ class cuda_async_memory_resource final : public device_memory_resource {
     RMM_EXPECTS(e == cudaSuccess && v == 1,
                 "cudaMallocAsync not supported with this CUDA driver/runtime version");
 #else
-    RMM_FAIL("cudaMallocAsync not supported");
+    RMM_FAIL(
+      "cudaMallocAsync not supported by the version of the CUDA Toolkit used for this build");
 #endif
   }
 

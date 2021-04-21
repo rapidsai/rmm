@@ -52,7 +52,7 @@ class device_scalar {
    * @param mr Optional, resource with which to allocate.
    */
   explicit device_scalar(
-    cuda_stream_view const &stream,
+    cuda_stream_view stream,
     rmm::mr::device_memory_resource *mr = rmm::mr::get_current_device_resource())
     : buffer{sizeof(T), stream, mr}
   {
@@ -76,7 +76,7 @@ class device_scalar {
    */
   explicit device_scalar(
     T const &initial_value,
-    cuda_stream_view const &stream      = cuda_stream_view{},
+    cuda_stream_view stream             = cuda_stream_view{},
     rmm::mr::device_memory_resource *mr = rmm::mr::get_current_device_resource())
     : buffer{sizeof(T), stream, mr}
   {
@@ -96,7 +96,7 @@ class device_scalar {
    * @param mr The resource to use for allocating the new `device_scalar`
    */
   device_scalar(device_scalar const &other,
-                cuda_stream_view const &stream      = {},
+                cuda_stream_view stream             = {},
                 rmm::mr::device_memory_resource *mr = rmm::mr::get_current_device_resource())
     : buffer{other.buffer, stream, mr}
   {
@@ -118,7 +118,7 @@ class device_scalar {
    * @return T The value of the scalar.
    * @param stream CUDA stream on which to perform the copy and synchronize.
    */
-  T value(cuda_stream_view const &stream = cuda_stream_view{}) const
+  T value(cuda_stream_view stream = cuda_stream_view{}) const
   {
     T host_value{};
     _memcpy(&host_value, buffer.data(), stream);
@@ -129,6 +129,9 @@ class device_scalar {
   /**
    * @brief Sets the value of the `device_scalar` to the given `host_value`.
    *
+   * This specialization for fundamental types is optimized to use `cudaMemsetAsync` when
+   * `host_value` is zero.
+   *
    * @note If the stream specified to this function is different from the stream specified
    * to the constructor, then appropriate dependencies must be inserted between the streams
    * (e.g. using `cudaStreamWaitEvent()` or `cudaStreamSynchronize()`) before and after calling
@@ -138,8 +141,9 @@ class device_scalar {
    * referenced by `host_value` should not be destroyed or modified until `stream` has been
    * synchronized. Otherwise, behavior is undefined.
    *
-   * @note: This function incurs a host to device memcpy and should be used sparingly.
-
+   * @note: This function incurs a host to device memcpy or device memset and should be used
+   * sparingly.
+   *
    * Example:
    * \code{cpp}
    * rmm::device_scalar<int32_t> s;
@@ -155,17 +159,16 @@ class device_scalar {
    * \endcode
    *
    * @throws `rmm::cuda_error` if copying `host_value` to device memory fails.
-   * @throws `rmm::cuda_error` if synchronizing `stream` fails.
    *
    * @param host_value The host value which will be copied to device
    * @param stream CUDA stream on which to perform the copy
    */
-  template <typename Placeholder = void>
-  auto set_value(T const &host_value, cuda_stream_view const &stream = cuda_stream_view{})
-    -> std::enable_if_t<std::is_fundamental<T>::value, Placeholder>
+  template <typename U = T>
+  auto set_value(U const &host_value, cuda_stream_view stream = cuda_stream_view{})
+    -> std::enable_if_t<std::is_fundamental<U>::value && not std::is_same<U, bool>::value, void>
   {
-    if (host_value == T{0}) {
-      RMM_CUDA_TRY(cudaMemsetAsync(buffer.data(), 0, sizeof(T), stream.value()));
+    if (host_value == U{0}) {
+      set_value_zero(stream);
     } else {
       _memcpy(buffer.data(), &host_value, stream);
     }
@@ -173,6 +176,49 @@ class device_scalar {
 
   /**
    * @brief Sets the value of the `device_scalar` to the given `host_value`.
+   *
+   * This specialization for `bool` is optimized to always use `cudaMemsetAsync`.
+   *
+   * @note If the stream specified to this function is different from the stream specified
+   * to the constructor, then appropriate dependencies must be inserted between the streams
+   * (e.g. using `cudaStreamWaitEvent()` or `cudaStreamSynchronize()`) before and after calling
+   * this function, otherwise there may be a race condition.
+   *
+   * This function does not synchronize `stream` before returning. `host_value` is passed by value
+   * so a host-side copy may be performed before calling a device memset.
+   *
+   * @note: This function incurs a device memset.
+   *
+   * Example:
+   * \code{cpp}
+   * rmm::device_scalar<bool> s;
+   *
+   * bool v{true};
+   *
+   * // Copies `true` to device storage on `stream`. Does _not_ synchronize
+   * vec.set_value(v, stream);
+   * ...
+   * cudaStreamSynchronize(stream);
+   * // Synchronization is required before `v` can be modified
+   * v = false;
+   * \endcode
+   *
+   * @throws `rmm::cuda_error` if the device memset fails.
+   *
+   * @param host_value The host value which the scalar will be set to (true or false)
+   * @param stream CUDA stream on which to perform the device memset
+   */
+  template <typename U = T>
+  auto set_value(U const &host_value, cuda_stream_view stream = cuda_stream_view{})
+    -> std::enable_if_t<std::is_same<U, bool>::value, void>
+  {
+    RMM_CUDA_TRY(cudaMemsetAsync(buffer.data(), host_value, sizeof(bool), stream.value()));
+  }
+
+  /**
+   * @brief Sets the value of the `device_scalar` to the given `host_value`.
+   *
+   * Specialization for non-fundamental types.
    *
    * @note If the stream specified to this function is different from the stream specified
    * to the constructor, then appropriate dependencies must be inserted between the streams
@@ -187,16 +233,16 @@ class device_scalar {
 
    * Example:
    * \code{cpp}
-   * rmm::device_scalar<int32_t> s;
+   * rmm::device_scalar<my_type> s;
    *
-   * int v{42};
+   * my_type v{42, "text"};
    *
    * // Copies 42 to device storage on `stream`. Does _not_ synchronize
    * vec.set_value(v, stream);
    * ...
    * cudaStreamSynchronize(stream);
    * // Synchronization is required before `v` can be modified
-   * v = 13;
+   * v.value = 21;
    * \endcode
    *
    * @throws `rmm::cuda_error` if copying `host_value` to device memory fails
@@ -205,11 +251,40 @@ class device_scalar {
    * @param host_value The host value which will be copied to device
    * @param stream CUDA stream on which to perform the copy
    */
-  template <typename Placeholder = void>
-  auto set_value(T const &host_value, cuda_stream_view const &stream = cuda_stream_view{})
-    -> std::enable_if_t<not std::is_fundamental<T>::value, Placeholder>
+  template <typename U = T>
+  auto set_value(T const &host_value, cuda_stream_view stream = cuda_stream_view{})
+    -> std::enable_if_t<not std::is_fundamental<U>::value, void>
   {
     _memcpy(buffer.data(), &host_value, stream);
+  }
+
+  // Disallow passing literals to set_value to avoid race conditions where the memory holding the
+  // literal can be freed before the async memcpy / memset executes.
+  void set_value(T &&host_value, cuda_stream_view stream = cuda_stream_view{}) = delete;
+
+  /**
+   * @brief Sets the value of the `device_scalar` to zero.
+   *
+   * Only supported for fundamental types.
+   *
+   * @note If the stream specified to this function is different from the stream specified
+   * to the constructor, then appropriate dependencies must be inserted between the streams
+   * (e.g. using `cudaStreamWaitEvent()` or `cudaStreamSynchronize()`) before and after calling
+   * this function, otherwise there may be a race condition.
+   *
+   * This function does not synchronize `stream` before returning.
+   *
+   * @note: This function incurs a device memset and should be used sparingly.
+   *
+   * @throws `rmm::cuda_error` if the device memset fails.
+   *
+   * @param stream CUDA stream on which to perform the device memset
+   */
+  template <typename U = T>
+  auto set_value_zero(cuda_stream_view stream = cuda_stream_view{})
+    -> std::enable_if_t<std::is_fundamental<U>::value, void>
+  {
+    RMM_CUDA_TRY(cudaMemsetAsync(buffer.data(), 0, sizeof(U), stream.value()));
   }
 
   /**
@@ -241,7 +316,7 @@ class device_scalar {
  private:
   rmm::device_buffer buffer{sizeof(T)};
 
-  inline void _memcpy(void *dst, const void *src, cuda_stream_view const &stream) const
+  inline void _memcpy(void *dst, const void *src, cuda_stream_view stream) const
   {
     RMM_CUDA_TRY(cudaMemcpyAsync(dst, src, sizeof(T), cudaMemcpyDefault, stream.value()));
   }

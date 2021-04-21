@@ -15,7 +15,8 @@ import weakref
 
 from rmm import mr
 from rmm._lib.device_buffer import DeviceBuffer
-from rmm.mr import disable_logging, enable_logging
+from rmm._version import get_versions
+from rmm.mr import disable_logging, enable_logging, get_log_filenames
 from rmm.rmm import (
     RMMError,
     RMMNumbaManager,
@@ -24,7 +25,5 @@ from rmm.rmm import (
     reinitialize,
     rmm_cupy_allocator,
 )
-
-from rmm._version import get_versions
 
 __version__ = get_versions()["version"]

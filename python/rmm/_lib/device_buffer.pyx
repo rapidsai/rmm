@@ -22,7 +22,9 @@ from libcpp.utility cimport move
 
 from rmm._cuda.gpu cimport cudaError, cudaError_t
 from rmm._cuda.stream cimport Stream
+
 from rmm._cuda.stream import DEFAULT_STREAM
+
 from rmm._lib.lib cimport (
     cudaMemcpyAsync,
     cudaMemcpyDeviceToDevice,
@@ -32,6 +34,7 @@ from rmm._lib.lib cimport (
     cudaStream_t,
     cudaStreamSynchronize,
 )
+from rmm._lib.memory_resource cimport get_current_device_resource
 
 
 cdef class DeviceBuffer:
@@ -51,7 +54,11 @@ cdef class DeviceBuffer:
             (and possibly size of data to copy)
         stream : optional
             CUDA stream to use for construction and/or copying,
-            default the default stream
+            defaults to the CUDA default stream. A reference to the
+            stream is stored internally to ensure it doesn't go out of
+            scope while the DeviceBuffer is in use. Destroying the
+            underlying stream while the DeviceBuffer is in use will
+            result in undefined behavior.
 
         Note
         ----
@@ -80,6 +87,10 @@ cdef class DeviceBuffer:
 
                 if stream.c_is_default():
                     stream.c_synchronize()
+
+        # Save a reference to the MR and stream used for allocation
+        self.mr = get_current_device_resource()
+        self.stream = stream
 
     def __len__(self):
         return self.size

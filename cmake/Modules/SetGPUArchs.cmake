@@ -1,5 +1,5 @@
 # =============================================================================
-# Copyright (c) 2020, NVIDIA CORPORATION.
+# Copyright (c) 2020-2021, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -48,24 +48,18 @@ if(CUDAToolkit_VERSION_MAJOR LESS 9)
   list(REMOVE_ITEM SUPPORTED_CUDA_ARCHITECTURES "70")
 endif()
 
-# If `CMAKE_CUDA_ARCHITECTURES` is not defined, build for all supported architectures. If
-# `CMAKE_CUDA_ARCHITECTURES` is set to an empty string (""), build for only the current
-# architecture. If `CMAKE_CUDA_ARCHITECTURES` is specified by the user, use user setting.
-
-# This needs to be run before enabling the CUDA language due to the default initialization behavior
-# of `CMAKE_CUDA_ARCHITECTURES`, https://gitlab.kitware.com/cmake/cmake/-/issues/21302
-
-if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+if(${PROJECT_NAME}_BUILD_FOR_ALL_ARCHS)
   set(CMAKE_CUDA_ARCHITECTURES ${SUPPORTED_CUDA_ARCHITECTURES})
-endif(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
 
-if(CMAKE_CUDA_ARCHITECTURES STREQUAL "")
-  unset(CMAKE_CUDA_ARCHITECTURES)
-  unset(CMAKE_CUDA_ARCHITECTURES CACHE)
-  include(${RMM_SOURCE_DIR}/cmake/Modules/EvalGPUArchs.cmake)
+  # CMake architecture list entry of "80" means to build compute and sm. What we want is for the
+  # newest arch only to build that way while the rest built only for sm.
+  list(POP_BACK CMAKE_CUDA_ARCHITECTURES latest_arch)
+  list(TRANSFORM CMAKE_CUDA_ARCHITECTURES APPEND "-real")
+  list(APPEND CMAKE_CUDA_ARCHITECTURES ${latest_arch})
+
+elseif(${PROJECT_NAME}_BUILD_FOR_DETECTED_ARCHS)
+  include(${PROJECT_SOURCE_DIR}/cmake/Modules/EvalGPUArchs.cmake)
   evaluate_gpu_archs(CMAKE_CUDA_ARCHITECTURES)
-endif(CMAKE_CUDA_ARCHITECTURES STREQUAL "")
 
-set(CMAKE_CUDA_ARCHITECTURES
-    ${CMAKE_CUDA_ARCHITECTURES}
-    PARENT_SCOPE)
+  list(TRANSFORM CMAKE_CUDA_ARCHITECTURES APPEND "-real")
+endif()

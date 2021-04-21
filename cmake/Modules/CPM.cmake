@@ -1,6 +1,8 @@
-set(CPM_DOWNLOAD_VERSION c3c7e2d9a3b890511891ffc415d7ea23c689068a) # 0.27.3
+set(CPM_DOWNLOAD_VERSION 02d57a16015209c4da38483bef7475a8e78c9da6) # 0.28.4
 
 if(CPM_SOURCE_CACHE)
+  # Expand relative path. This is important if the provided path contains a tilde (~)
+  get_filename_component(CPM_SOURCE_CACHE ${CPM_SOURCE_CACHE} ABSOLUTE)
   set(CPM_DOWNLOAD_LOCATION "${CPM_SOURCE_CACHE}/cpm/CPM_${CPM_DOWNLOAD_VERSION}.cmake")
 elseif(DEFINED ENV{CPM_SOURCE_CACHE})
   set(CPM_DOWNLOAD_LOCATION "$ENV{CPM_SOURCE_CACHE}/cpm/CPM_${CPM_DOWNLOAD_VERSION}.cmake")
@@ -12,7 +14,7 @@ if(NOT (EXISTS ${CPM_DOWNLOAD_LOCATION}))
   message(STATUS "Downloading CPM.cmake to ${CPM_DOWNLOAD_LOCATION}")
   file(
     DOWNLOAD
-    https://raw.githubusercontent.com/TheLartians/CPM.cmake/${CPM_DOWNLOAD_VERSION}/cmake/CPM.cmake
+    https://raw.githubusercontent.com/cpm-cmake/CPM.cmake/${CPM_DOWNLOAD_VERSION}/cmake/CPM.cmake
     ${CPM_DOWNLOAD_LOCATION})
 endif()
 
