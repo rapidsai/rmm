@@ -15,7 +15,7 @@
  */
 
 #include <gtest/gtest.h>
-#include <rmm/thrust_rmm_allocator.h>
+#include <rmm/device_vector.hpp>
 #include <rmm/mr/device/thrust_allocator_adaptor.hpp>
 #include "mr_test.hpp"
 
