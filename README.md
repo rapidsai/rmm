@@ -309,9 +309,9 @@ Accessing and modifying the default resource is done through two functions:
    - For more explicit control, you can use `get_per_device_resource()`, which takes a device ID.
 
 - `device_memory_resource* set_current_device_resource(device_memory_resource* new_mr)`
-   - Updates the default memory resource pointer for the current CUDA device to `new_resource`
+   - Updates the default memory resource pointer for the current CUDA device to `new_mr`
    - Returns the previous default resource pointer
-   - If `new_resource` is `nullptr`, then resets the default resource to `cuda_memory_resource`
+   - If `new_mr` is `nullptr`, then resets the default resource to `cuda_memory_resource`
    - This function is thread safe with respect to concurrent calls to it and
      `get_current_device_resource()`
    - For more explicit control, you can use `set_per_device_resource()`, which takes a device ID.
