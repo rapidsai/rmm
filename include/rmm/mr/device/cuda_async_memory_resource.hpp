@@ -49,7 +49,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
    * @throws rmm::runtime_error if the CUDA version does not support `cudaMallocAsync`
    *
    * @param initial_pool_size Optional initial size in bytes of the pool. If no value is provided,
-   * initial pool size is 0.
+   * initial pool size is half of the available GPU memory.
    * @param release_threshold Optional release threshold size in bytes of the pool. If no value is
    * provided, the release threshold is set to the total amount of memory on the current device.
    */
@@ -74,7 +74,6 @@ class cuda_async_memory_resource final : public device_memory_resource {
     RMM_CUDA_TRY(cudaMemPoolCreate(&cuda_pool_handle_, &pool_props));
 
     auto const [free, total] = rmm::detail::available_device_memory();
-    (void)free;
 
     // Need an l-value to take address to pass to cudaMemPoolSetAttribute
     uint64_t threshold = release_threshold.value_or(total);
@@ -83,10 +82,9 @@ class cuda_async_memory_resource final : public device_memory_resource {
 
     // Allocate and immediately deallocate the initial_pool_size to prime the pool with the
     // specified size
-    if (initial_pool_size) {
-      auto p = do_allocate(*initial_pool_size, cuda_stream_default);
-      do_deallocate(p, *initial_pool_size, cuda_stream_default);
-    }
+    auto const pool_size = initial_pool_size.value_or(free * 0.5);
+    auto p               = do_allocate(pool_size, cuda_stream_default);
+    do_deallocate(p, pool_size, cuda_stream_default);
 
 #else
     RMM_FAIL(
@@ -102,7 +100,12 @@ class cuda_async_memory_resource final : public device_memory_resource {
   cudaMemPool_t pool_handle() const noexcept { return cuda_pool_handle_; }
 #endif
 
-  ~cuda_async_memory_resource()                                 = default;
+  ~cuda_async_memory_resource()
+  {
+#if defined(RMM_CUDA_MALLOC_ASYNC_SUPPORT)
+    RMM_ASSERT_CUDA_SUCCESS(cudaMemPoolDestroy(pool_handle()));
+#endif
+  }
   cuda_async_memory_resource(cuda_async_memory_resource const&) = default;
   cuda_async_memory_resource(cuda_async_memory_resource&&)      = default;
   cuda_async_memory_resource& operator=(cuda_async_memory_resource const&) = default;
