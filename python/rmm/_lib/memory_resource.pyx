@@ -149,9 +149,9 @@ cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
 
     Parameters
     ----------
-    initial_pool_size: int, optional
-        Initial size of the pool in bytes. If no value is provided,
-        the initial size is 0.
+    initial_pool_size : int,optional
+        Initial pool size in bytes. By default, half the available memory
+        on the device is used.
     release_threshold: int, optional
         Release threshold in bytes. If the pool size grows beyond this
         value, unused memory held by the pool will be released at the
@@ -236,8 +236,8 @@ cdef class PoolMemoryResource(UpstreamResourceAdaptor):
             The DeviceMemoryResource from which to allocate blocks for the
             pool.
         initial_pool_size : int,optional
-            Initial pool size in bytes. By default, an implementation defined
-            pool size is used.
+            Initial pool size in bytes. By default, half the available memory
+            on the device is used.
         maximum_pool_size : int, optional
             Maximum size in bytes, that the pool can grow to.
         """
