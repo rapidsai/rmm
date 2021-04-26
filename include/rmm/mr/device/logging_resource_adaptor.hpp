@@ -181,7 +181,7 @@ class logging_resource_adaptor final : public device_memory_resource {
     if (auto_flush) { logger_->flush_on(spdlog::level::info); }
     logger_->set_pattern("%v");
     logger_->info(header());
-    logger_->set_pattern("%t,%H:%M:%S:%f,%v");
+    logger_->set_pattern("%t,%H:%M:%S.%f,%v");
   }
 
   /**
