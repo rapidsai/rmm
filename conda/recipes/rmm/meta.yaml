@@ -19,8 +19,6 @@ build:
     - VERSION_SUFFIX
 
 requirements:
-  build:
-    - cmake >=3.14.0
   host:
     - python
     - librmm {{ version }}
