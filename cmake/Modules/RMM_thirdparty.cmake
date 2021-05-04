@@ -2,7 +2,7 @@
 
 set(RMM_MIN_VERSION_spdlog 1.7.0)
 
-if (NOT TARGET sldlog)
+if (NOT TARGET spdlog)
   CPMFindPackage(
     NAME spdlog
     GITHUB_REPOSITORY gabime/spdlog
