@@ -16,7 +16,7 @@
 
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
-#include <rmm/mr/device/block_aligned_resource_adaptor.hpp>
+#include <rmm/mr/device/aligned_resource_adaptor.hpp>
 #include <rmm/mr/device/tracking_resource_adaptor.hpp>
 
 #include <gtest/gtest.h>
@@ -25,18 +25,18 @@ namespace rmm::test {
 namespace {
 
 using tracking_adaptor      = rmm::mr::tracking_resource_adaptor<rmm::mr::device_memory_resource>;
-using block_aligned_adaptor = rmm::mr::block_aligned_resource_adaptor<tracking_adaptor>;
+using aligned_adaptor       = rmm::mr::aligned_resource_adaptor<tracking_adaptor>;
 
-TEST(BlockAlignedTest, ThrowOnNullUpstream)
+TEST(AlignedTest, ThrowOnNullUpstream)
 {
-  auto construct_nullptr = []() { block_aligned_adaptor mr{nullptr}; };
+  auto construct_nullptr = []() { aligned_adaptor mr{nullptr}; };
   EXPECT_THROW(construct_nullptr(), rmm::logic_error);
 }
 
-TEST(BlockAlignedTest, SmallAllocations)
+TEST(AlignedTest, SmallAllocations)
 {
   tracking_adaptor tracker{rmm::mr::get_current_device_resource()};
-  block_aligned_adaptor mr{&tracker};
+  aligned_adaptor mr{&tracker};
 
   std::vector<void *> allocations;
   allocations.reserve(16);
@@ -54,10 +54,10 @@ TEST(BlockAlignedTest, SmallAllocations)
   EXPECT_EQ(tracker.get_allocated_bytes(), 0);
 }
 
-TEST(BlockAlignedTest, LargeAllocations)
+TEST(AlignedTest, LargeAllocations)
 {
   tracking_adaptor tracker{rmm::mr::get_current_device_resource()};
-  block_aligned_adaptor mr{&tracker};
+  aligned_adaptor mr{&tracker};
 
   std::vector<void *> allocations;
   allocations.reserve(3);
@@ -75,10 +75,10 @@ TEST(BlockAlignedTest, LargeAllocations)
   EXPECT_EQ(tracker.get_allocated_bytes(), 0);
 }
 
-TEST(BlockAlignedTest, SmallAllocationsWithCustomBlockSize)
+TEST(AlignedTest, SmallAllocationsWithCustomAlignmentSize)
 {
   tracking_adaptor tracker{rmm::mr::get_current_device_resource()};
-  block_aligned_adaptor mr{&tracker, {8192}};
+  aligned_adaptor mr{&tracker, {8192}};
 
   std::vector<void *> allocations;
   allocations.reserve(32);
@@ -96,10 +96,10 @@ TEST(BlockAlignedTest, SmallAllocationsWithCustomBlockSize)
   EXPECT_EQ(tracker.get_allocated_bytes(), 0);
 }
 
-TEST(BlockAlignedTest, LargeAllocationsWithCustomBlockSize)
+TEST(AlignedTest, LargeAllocationsWithCustomAlignmentSize)
 {
   tracking_adaptor tracker{rmm::mr::get_current_device_resource()};
-  block_aligned_adaptor mr{&tracker, {8192}};
+  aligned_adaptor mr{&tracker, {8192}};
 
   std::vector<void *> allocations;
   allocations.reserve(7);

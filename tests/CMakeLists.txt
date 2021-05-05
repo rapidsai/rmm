@@ -118,7 +118,7 @@ ConfigureTest(TRACKING_TEST "${TRACKING_TEST_SRC}")
 
 # block aligned adaptor tests
 
-set(BLOCK_ALIGNED_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/block_aligned_mr_tests.cpp")
+set(BLOCK_ALIGNED_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/aligned_mr_tests.cpp")
 
 ConfigureTest(BLOCK_ALIGNED_TEST "${BLOCK_ALIGNED_TEST_SRC}")
 
