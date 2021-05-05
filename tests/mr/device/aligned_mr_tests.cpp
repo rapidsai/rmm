@@ -24,8 +24,8 @@
 namespace rmm::test {
 namespace {
 
-using tracking_adaptor      = rmm::mr::tracking_resource_adaptor<rmm::mr::device_memory_resource>;
-using aligned_adaptor       = rmm::mr::aligned_resource_adaptor<tracking_adaptor>;
+using tracking_adaptor = rmm::mr::tracking_resource_adaptor<rmm::mr::device_memory_resource>;
+using aligned_adaptor  = rmm::mr::aligned_resource_adaptor<tracking_adaptor>;
 
 TEST(AlignedTest, ThrowOnNullUpstream)
 {
