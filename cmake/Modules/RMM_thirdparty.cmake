@@ -2,16 +2,19 @@
 
 set(RMM_MIN_VERSION_spdlog 1.7.0)
 
-CPMFindPackage(
-  NAME spdlog
-  GITHUB_REPOSITORY gabime/spdlog
-  VERSION ${RMM_MIN_VERSION_spdlog}
-  GIT_SHALLOW TRUE
-  # If there is no pre-installed spdlog we can use, we'll install our fetched copy together with RMM
-  OPTIONS "SPDLOG_INSTALL TRUE")
+if(NOT TARGET spdlog)
+  CPMFindPackage(
+    NAME spdlog
+    GITHUB_REPOSITORY gabime/spdlog
+    VERSION ${RMM_MIN_VERSION_spdlog}
+    GIT_SHALLOW TRUE
+    # If there is no pre-installed spdlog we can use, we'll install our fetched copy together with
+    # RMM
+    OPTIONS "SPDLOG_INSTALL TRUE")
 
-if(spdlog_ADDED)
-  set(RMM_EXPORT_SPDLOG TRUE)
+  if(spdlog_ADDED)
+    set(RMM_EXPORT_SPDLOG TRUE)
+  endif()
 endif()
 
 # thrust/cub
