@@ -15,17 +15,28 @@
  */
 
 #include <rmm/detail/error.hpp>
-#include <rmm/device_buffer.hpp>
 #include <rmm/mr/device/aligned_resource_adaptor.hpp>
-#include <rmm/mr/device/tracking_resource_adaptor.hpp>
+#include <rmm/mr/device/device_memory_resource.hpp>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 namespace rmm::test {
 namespace {
 
-using tracking_adaptor = rmm::mr::tracking_resource_adaptor<rmm::mr::device_memory_resource>;
-using aligned_adaptor  = rmm::mr::aligned_resource_adaptor<tracking_adaptor>;
+using ::testing::Return;
+
+class mock_resource : public rmm::mr::device_memory_resource {
+ public:
+  MOCK_METHOD(bool, supports_streams, (), (const, override, noexcept));
+  MOCK_METHOD(bool, supports_get_mem_info, (), (const, override, noexcept));
+  MOCK_METHOD(void*, do_allocate, (std::size_t, cuda_stream_view), (override));
+  MOCK_METHOD(void, do_deallocate, (void*, std::size_t, cuda_stream_view), (override));
+  using size_pair = std::pair<std::size_t, std::size_t>;
+  MOCK_METHOD(size_pair, do_get_mem_info, (cuda_stream_view), (const, override));
+};
+
+using aligned_adaptor = rmm::mr::aligned_resource_adaptor<mock_resource>;
 
 TEST(AlignedTest, ThrowOnNullUpstream)
 {
@@ -33,88 +44,130 @@ TEST(AlignedTest, ThrowOnNullUpstream)
   EXPECT_THROW(construct_nullptr(), rmm::logic_error);
 }
 
-TEST(AlignedTest, SmallAllocations)
+TEST(AlignedTest, ThrowOnInvalidAllocationAlignment)
 {
-  tracking_adaptor tracker{rmm::mr::get_current_device_resource()};
-  aligned_adaptor mr{&tracker};
-
-  std::vector<void *> allocations;
-  allocations.reserve(16);
-  for (int i = 0; i < 16; ++i) {
-    allocations.push_back(mr.allocate((i + 1) * 256));
-  }
-
-  EXPECT_EQ(tracker.get_outstanding_allocations().size(), 16);
-  EXPECT_EQ(tracker.get_allocated_bytes(), 256 * 136);
-
-  for (int i = 0; i < 16; ++i) {
-    mr.deallocate(allocations[i], (i + 1) * 256);
-  }
-  EXPECT_EQ(tracker.get_outstanding_allocations().size(), 0);
-  EXPECT_EQ(tracker.get_allocated_bytes(), 0);
+  mock_resource mock;
+  auto construct_alignment = [](auto* r, std::size_t a) { aligned_adaptor mr{r, a}; };
+  EXPECT_THROW(construct_alignment(&mock, 255), rmm::logic_error);
+  EXPECT_NO_THROW(construct_alignment(&mock, 256));
+  EXPECT_THROW(construct_alignment(&mock, 257), rmm::logic_error);
 }
 
-TEST(AlignedTest, LargeAllocations)
+TEST(AlignedTest, ThrowOnInvalidAlignmentThreshold)
 {
-  tracking_adaptor tracker{rmm::mr::get_current_device_resource()};
-  aligned_adaptor mr{&tracker};
-
-  std::vector<void *> allocations;
-  allocations.reserve(3);
-  for (int i = 0; i < 3; ++i) {
-    allocations.push_back(mr.allocate(4096 + (i + 1) * 256));
-  }
-
-  EXPECT_EQ(tracker.get_outstanding_allocations().size(), 3);
-  EXPECT_EQ(tracker.get_allocated_bytes(), 4096 * 6);
-
-  for (int i = 0; i < 3; ++i) {
-    mr.deallocate(allocations[i], 4096 + (i + 1) * 256);
-  }
-  EXPECT_EQ(tracker.get_outstanding_allocations().size(), 0);
-  EXPECT_EQ(tracker.get_allocated_bytes(), 0);
+  mock_resource mock;
+  auto construct_threshold = [](auto* r, std::size_t t) { aligned_adaptor mr{r, 4096, t}; };
+  EXPECT_THROW(construct_threshold(&mock, 65535), rmm::logic_error);
+  EXPECT_NO_THROW(construct_threshold(&mock, 65536));
+  EXPECT_THROW(construct_threshold(&mock, 65537), rmm::logic_error);
 }
 
-TEST(AlignedTest, SmallAllocationsWithCustomAlignmentSize)
+TEST(AlignedTest, SupportsStreams)
 {
-  tracking_adaptor tracker{rmm::mr::get_current_device_resource()};
-  aligned_adaptor mr{&tracker, {8192}};
+  mock_resource mock;
+  aligned_adaptor mr{&mock};
 
-  std::vector<void *> allocations;
-  allocations.reserve(32);
-  for (int i = 0; i < 32; ++i) {
-    allocations.push_back(mr.allocate((i + 1) * 256));
-  }
+  EXPECT_CALL(mock, supports_streams()).WillOnce(Return(true));
+  EXPECT_TRUE(mr.supports_streams());
 
-  EXPECT_EQ(tracker.get_outstanding_allocations().size(), 32);
-  EXPECT_EQ(tracker.get_allocated_bytes(), 256 * 528);
-
-  for (int i = 0; i < 32; ++i) {
-    mr.deallocate(allocations[i], (i + 1) * 256);
-  }
-  EXPECT_EQ(tracker.get_outstanding_allocations().size(), 0);
-  EXPECT_EQ(tracker.get_allocated_bytes(), 0);
+  EXPECT_CALL(mock, supports_streams()).WillOnce(Return(false));
+  EXPECT_FALSE(mr.supports_streams());
 }
 
-TEST(AlignedTest, LargeAllocationsWithCustomAlignmentSize)
+TEST(AlignedTest, SupportsGetMemInfo)
 {
-  tracking_adaptor tracker{rmm::mr::get_current_device_resource()};
-  aligned_adaptor mr{&tracker, {8192}};
+  mock_resource mock;
+  aligned_adaptor mr{&mock};
 
-  std::vector<void *> allocations;
-  allocations.reserve(7);
-  for (int i = 0; i < 7; ++i) {
-    allocations.push_back(mr.allocate(8192 + (i + 1) * 256));
-  }
+  EXPECT_CALL(mock, supports_get_mem_info()).WillOnce(Return(true));
+  EXPECT_TRUE(mr.supports_get_mem_info());
 
-  EXPECT_EQ(tracker.get_outstanding_allocations().size(), 7);
-  EXPECT_EQ(tracker.get_allocated_bytes(), 8192 * 14);
+  EXPECT_CALL(mock, supports_get_mem_info()).WillOnce(Return(false));
+  EXPECT_FALSE(mr.supports_get_mem_info());
+}
 
-  for (int i = 0; i < 7; ++i) {
-    mr.deallocate(allocations[i], 8192 + (i + 1) * 256);
-  }
-  EXPECT_EQ(tracker.get_outstanding_allocations().size(), 0);
-  EXPECT_EQ(tracker.get_allocated_bytes(), 0);
+TEST(AlignedTest, DefaultAllocationAlignmentPassthrough)
+{
+  mock_resource mock;
+  aligned_adaptor mr{&mock};
+
+  cuda_stream_view stream;
+  void* address = reinterpret_cast<void*>(123);
+  // device_memory_resource aligns to 8.
+  EXPECT_CALL(mock, do_allocate(8, stream)).WillOnce(Return(address));
+  EXPECT_CALL(mock, do_deallocate(address, 8, stream)).Times(1);
+  EXPECT_EQ(mr.allocate(5, stream), address);
+  mr.deallocate(address, 5, stream);
+}
+
+TEST(AlignedTest, BelowAlignmentThresholdPassthrough)
+{
+  mock_resource mock;
+  aligned_adaptor mr{&mock, 4096, 65536};
+
+  cuda_stream_view stream;
+  void* address = reinterpret_cast<void*>(123);
+  // device_memory_resource aligns to 8.
+  EXPECT_CALL(mock, do_allocate(8, stream)).WillRepeatedly(Return(address));
+  EXPECT_CALL(mock, do_deallocate(address, 8, stream)).Times(1);
+  EXPECT_EQ(mr.allocate(3, stream), address);
+  mr.deallocate(address, 3, stream);
+
+  void* address1 = reinterpret_cast<void*>(456);
+  EXPECT_CALL(mock, do_allocate(65528, stream)).WillOnce(Return(address1));
+  EXPECT_CALL(mock, do_deallocate(address1, 65528, stream)).Times(1);
+  EXPECT_EQ(mr.allocate(65528, stream), address1);
+  mr.deallocate(address1, 65528, stream);
+}
+
+TEST(AlignedTest, UpstreamAddressAlreadyAligned)
+{
+  mock_resource mock;
+  aligned_adaptor mr{&mock, 4096, 65536};
+
+  cuda_stream_view stream;
+  void* address = reinterpret_cast<void*>(4096);
+  EXPECT_CALL(mock, do_allocate(69376, stream)).WillRepeatedly(Return(address));
+  void* tail_address = reinterpret_cast<void*>(69632);
+  EXPECT_CALL(mock, do_deallocate(tail_address, 3840, stream)).Times(1);
+  EXPECT_EQ(mr.allocate(65536, stream), address);
+
+  EXPECT_CALL(mock, do_deallocate(address, 65536, stream)).Times(1);
+  mr.deallocate(address, 65536, stream);
+}
+
+TEST(AlignedTest, ReturnHeadOnly)
+{
+  mock_resource mock;
+  aligned_adaptor mr{&mock, 4096, 65536};
+
+  cuda_stream_view stream;
+  void* address = reinterpret_cast<void*>(256);
+  EXPECT_CALL(mock, do_allocate(69376, stream)).WillRepeatedly(Return(address));
+  EXPECT_CALL(mock, do_deallocate(address, 3840, stream)).Times(1);
+  void* expected_address = reinterpret_cast<void*>(4096);
+  EXPECT_EQ(mr.allocate(65536, stream), expected_address);
+
+  EXPECT_CALL(mock, do_deallocate(expected_address, 65536, stream)).Times(1);
+  mr.deallocate(expected_address, 65536, stream);
+}
+
+TEST(AlignedTest, ReturnBothHeadAndTail)
+{
+  mock_resource mock;
+  aligned_adaptor mr{&mock, 4096, 65536};
+
+  cuda_stream_view stream;
+  void* address = reinterpret_cast<void*>(768);
+  EXPECT_CALL(mock, do_allocate(69376, stream)).WillRepeatedly(Return(address));
+  EXPECT_CALL(mock, do_deallocate(address, 3328, stream)).Times(1);
+  void* tail_address = reinterpret_cast<void*>(69632);
+  EXPECT_CALL(mock, do_deallocate(tail_address, 512, stream)).Times(1);
+  void* expected_address = reinterpret_cast<void*>(4096);
+  EXPECT_EQ(mr.allocate(65536, stream), expected_address);
+
+  EXPECT_CALL(mock, do_deallocate(expected_address, 65536, stream)).Times(1);
+  mr.deallocate(expected_address, 65536, stream);
 }
 
 }  // namespace

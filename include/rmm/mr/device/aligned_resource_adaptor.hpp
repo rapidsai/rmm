@@ -24,12 +24,21 @@
 
 namespace rmm::mr {
 /**
- * @brief Resource that adapts `Upstream` memory resource to allocate memory in multiples of
- * a specified alignment size (default to 4096).
+ * @brief Resource that adapts `Upstream` memory resource to allocate memory in a specified
+ * alignment size.
  *
  * An instance of this resource can be constructed with an existing, upstream resource in order
  * to satisfy allocation requests. This adaptor wraps allocations and deallocations from Upstream
  * using the given alignment size.
+ *
+ * By default, any address returned by one of the memory allocation routines from the CUDA driver or
+ * runtime API is always aligned to at least 256 bytes. For some use cases, such as GPUDirect
+ * Storage (GDS), allocations need to be aligned to a larger size (4 KiB for GDS) in order to avoid
+ * additional copies to bounce buffers.
+ *
+ * Since a larger alignment size has some additional overhead, the user can specify a threshold
+ * size. If an allocation's size falls below the threshold, it is aligned to the default size. Only
+ * allocations with a size above the threshold are aligned to the custom alignment size.
  *
  * @tparam Upstream Type of the upstream resource used for allocation/deallocation.
  */
@@ -39,20 +48,23 @@ class aligned_resource_adaptor final : public device_memory_resource {
   /**
    * @brief Construct an aligned resource adaptor using `upstream` to satisfy allocation requests.
    *
-   * If the allocation size is smaller or equal to the specified alignment size, the default
-   * alignment from `upstream` is used; if the allocation size is larger, it is aligned up to the
-   * specified alignment size.
-   *
    * @throws `rmm::logic_error` if `upstream == nullptr`
    *
    * @param upstream The resource used for allocating/deallocating device memory.
+   * @param allocation_alignment The size used for allocation alignment.
+   * @param alignment_threshold Only allocations with a size larger than or equal to this threshold
+   * are aligned.
    */
   explicit aligned_resource_adaptor(Upstream* upstream,
-                                    std::optional<std::size_t> allocation_alignment = std::nullopt)
+                                    std::size_t allocation_alignment = default_allocation_alignment,
+                                    std::size_t alignment_threshold  = default_alignment_threshold)
     : upstream_{upstream},
-      allocation_alignment_{allocation_alignment.value_or(default_allocation_alignment)}
+      allocation_alignment_{allocation_alignment},
+      alignment_threshold_{alignment_threshold}
   {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
+    RMM_EXPECTS(allocation_alignment % 256 == 0, "Allocation alignment is not a multiple of 256.");
+    RMM_EXPECTS(alignment_threshold % 256 == 0, "Alignment threshold is not a multiple of 256.");
   }
 
   aligned_resource_adaptor()                                = delete;
@@ -84,11 +96,12 @@ class aligned_resource_adaptor final : public device_memory_resource {
    */
   [[nodiscard]] bool supports_get_mem_info() const noexcept override
   {
-    return upstream_->supports_streams();
+    return upstream_->supports_get_mem_info();
   }
 
  private:
-  static constexpr std::size_t default_allocation_alignment = 4096;
+  static constexpr std::size_t default_allocation_alignment = 256;
+  static constexpr std::size_t default_alignment_threshold  = 0;
 
   /**
    * @brief Allocates memory of size at least `bytes` using the upstream resource with the specified
@@ -103,7 +116,21 @@ class aligned_resource_adaptor final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
-    return upstream_->allocate(align(bytes), stream);
+    if (allocation_alignment_ == default_allocation_alignment || bytes < alignment_threshold_) {
+      return upstream_->allocate(bytes, stream);
+    } else {
+      auto const aligned_size = rmm::detail::align_up(bytes, allocation_alignment_);
+      auto const size         = aligned_size + allocation_alignment_ - default_allocation_alignment;
+      auto const address      = reinterpret_cast<std::size_t>(upstream_->allocate(size, stream));
+      auto const aligned_address = rmm::detail::align_up(address, allocation_alignment_);
+      auto const head_size       = aligned_address - address;
+      auto const tail_size       = size - head_size - aligned_size;
+      if (head_size != 0) { upstream_->deallocate(reinterpret_cast<void*>(address), head_size); }
+      if (tail_size != 0) {
+        upstream_->deallocate(reinterpret_cast<void*>(aligned_address + aligned_size), tail_size);
+      }
+      return reinterpret_cast<void*>(aligned_address);
+    }
   }
 
   /**
@@ -117,7 +144,11 @@ class aligned_resource_adaptor final : public device_memory_resource {
    */
   void do_deallocate(void* p, std::size_t bytes, cuda_stream_view stream) override
   {
-    upstream_->deallocate(p, align(bytes), stream);
+    if (allocation_alignment_ == default_allocation_alignment || bytes < alignment_threshold_) {
+      upstream_->deallocate(p, bytes, stream);
+    } else {
+      upstream_->deallocate(p, rmm::detail::align_up(bytes, allocation_alignment_), stream);
+    }
   }
 
   /**
@@ -155,21 +186,9 @@ class aligned_resource_adaptor final : public device_memory_resource {
     return upstream_->get_mem_info(stream);
   }
 
-  /**
-   * @brief Align up to nearest multiple of the specified alignment size.
-   *
-   * @param[in] bytes value to align
-   *
-   * @return Return the aligned value
-   */
-  std::size_t align(std::size_t bytes)
-  {
-    return bytes <= allocation_alignment_ ? bytes
-                                          : rmm::detail::align_up(bytes, allocation_alignment_);
-  }
-
   Upstream* upstream_;  ///< The upstream resource used for satisfying allocation requests
   std::size_t allocation_alignment_;  ///< The size used for allocation alignment
+  std::size_t alignment_threshold_;   ///< The size above which allocations should be aligned
 };
 
 }  // namespace rmm::mr
