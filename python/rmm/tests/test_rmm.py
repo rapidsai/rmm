@@ -539,6 +539,22 @@ def test_cuda_async_memory_resource_stream(nelems):
     np.testing.assert_equal(expected, result)
 
 
+@pytest.mark.skipif(
+    (_driver_version, _runtime_version) < (11020, 11020),
+    reason="cudaMallocAsync not supported",
+)
+@pytest.mark.parametrize("nelem", _nelems)
+@pytest.mark.parametrize("alloc", _allocs)
+def test_cuda_async_memory_resource_threshold(nelem, alloc):
+    # initial pool size == 0
+    mr = rmm.mr.CudaAsyncMemoryResource(
+        initial_pool_size=0, release_threshold=nelem
+    )
+    rmm.mr.set_current_device_resource(mr)
+    array_tester("u1", nelem, alloc)  # should not trigger release
+    array_tester("u1", 2 * nelem, alloc)  # should trigger release
+
+
 def test_tracking_resource_adaptor():
 
     cuda_mr = rmm.mr.CudaMemoryResource()

@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <rmm/cuda_device.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
@@ -71,27 +72,6 @@
 
 namespace rmm {
 
-/**
- * @brief Strong type for a CUDA device identifier.
- *
- */
-struct cuda_device_id {
-  using value_type = int;
-
-  /**
-   * @brief Construct a `cuda_device_id` from the specified integer value
-   *
-   * @param id The device's integer identifier
-   */
-  explicit constexpr cuda_device_id(value_type id) noexcept : id_{id} {}
-
-  /// Returns the wrapped integer value
-  constexpr value_type value() const noexcept { return id_; }
-
- private:
-  value_type id_;
-};
-
 namespace mr {
 
 namespace detail {
@@ -121,19 +101,6 @@ inline auto& get_map()
   return device_id_to_resource;
 }
 
-/**
- * @brief Returns a `cuda_device_id` for the current device
- *
- * The current device is the device on which the calling thread executes device code.
- *
- * @return `cuda_device_id` for the current device
- */
-inline cuda_device_id current_device()
-{
-  int dev_id;
-  RMM_CUDA_TRY(cudaGetDevice(&dev_id));
-  return cuda_device_id{dev_id};
-}
 }  // namespace detail
 
 /**
@@ -228,7 +195,7 @@ inline device_memory_resource* set_per_device_resource(cuda_device_id id,
  */
 inline device_memory_resource* get_current_device_resource()
 {
-  return get_per_device_resource(detail::current_device());
+  return get_per_device_resource(rmm::detail::current_device());
 }
 
 /**
@@ -257,7 +224,7 @@ inline device_memory_resource* get_current_device_resource()
  */
 inline device_memory_resource* set_current_device_resource(device_memory_resource* new_mr)
 {
-  return set_per_device_resource(detail::current_device(), new_mr);
+  return set_per_device_resource(rmm::detail::current_device(), new_mr);
 }
 }  // namespace mr
 }  // namespace rmm

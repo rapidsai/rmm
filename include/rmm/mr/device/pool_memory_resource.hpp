@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/aligned.hpp>
+#include <rmm/detail/cuda_util.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/logger.hpp>
 #include <rmm/mr/device/detail/coalescing_free_list.hpp>
@@ -42,15 +43,6 @@
 
 namespace rmm {
 namespace mr {
-namespace detail {
-/// Gets the available and total device memory in bytes for the current device
-inline std::pair<std::size_t, std::size_t> available_device_memory()
-{
-  std::size_t free{}, total{};
-  RMM_CUDA_TRY(cudaMemGetInfo(&free, &total));
-  return {free, total};
-}
-}  // namespace detail
 
 /**
  * @brief A coalescing best-fit suballocator which uses a pool of memory allocated from
@@ -207,8 +199,8 @@ class pool_memory_resource final
       if (not initial_size.has_value()) {
         std::size_t free{}, total{};
         std::tie(free, total) = (get_upstream()->supports_get_mem_info())
-                                  ? get_upstream()->get_mem_info(cudaStreamLegacy)
-                                  : detail::available_device_memory();
+                                  ? get_upstream()->get_mem_info(cuda_stream_legacy)
+                                  : rmm::detail::available_device_memory();
         return rmm::detail::align_up(std::min(free, total / 2), allocation_alignment);
       } else {
         return initial_size.value();
@@ -222,8 +214,8 @@ class pool_memory_resource final
                 "Initial pool size exceeds the maximum pool size!");
 
     if (try_size > 0) {
-      auto const b = try_to_expand(try_size, try_size, cudaStreamLegacy);
-      this->insert_block(b, cudaStreamLegacy);
+      auto const b = try_to_expand(try_size, try_size, cuda_stream_legacy);
+      this->insert_block(b, cuda_stream_legacy);
     }
   }
 

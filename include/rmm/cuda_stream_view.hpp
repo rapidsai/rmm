@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,10 +40,9 @@ class cuda_stream_view {
   constexpr cuda_stream_view& operator=(cuda_stream_view&&) = default;
   ~cuda_stream_view()                                       = default;
 
-  // TODO disable construction from 0 after cuDF and others adopt cuda_stream_view
-  // cuda_stream_view(int)            = delete; //< Prevent cast from 0
-  // cuda_stream_view(std::nullptr_t) = delete; //< Prevent cast from nullptr
-  // TODO also disable implicit conversion from cudaStream_t
+  // Disable construction from literal 0
+  constexpr cuda_stream_view(int)            = delete;  //< Prevent cast from 0
+  constexpr cuda_stream_view(std::nullptr_t) = delete;  //< Prevent cast from nullptr
 
   /**
    * @brief Implicit conversion from cudaStream_t.
