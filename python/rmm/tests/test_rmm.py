@@ -547,10 +547,7 @@ def test_tracking_resource_adaptor():
 
     rmm.mr.set_current_device_resource(mr)
 
-    buffers = []
-
-    for _ in range(10):
-        buffers.append(rmm.DeviceBuffer(size=1000))
+    buffers = [rmm.DeviceBuffer(size=1000) for _ in range(10)]
 
     for i in range(9, 0, -2):
         del buffers[i]
