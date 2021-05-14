@@ -155,7 +155,7 @@ TEST(AlignedTest, AlignMultiple)
   aligned_adaptor mr{&mock, 4096, 65536};
 
   cuda_stream_view stream;
-  void* pointer = reinterpret_cast<void*>(256);
+  void* pointer  = reinterpret_cast<void*>(256);
   void* pointer1 = reinterpret_cast<void*>(131584);
   void* pointer2 = reinterpret_cast<void*>(263168);
   EXPECT_CALL(mock, do_allocate(69376, stream)).WillOnce(Return(pointer));
@@ -165,7 +165,7 @@ TEST(AlignedTest, AlignMultiple)
   EXPECT_CALL(mock, do_deallocate(pointer1, 77568, stream)).Times(1);
   EXPECT_CALL(mock, do_deallocate(pointer2, 81664, stream)).Times(1);
 
-  void* expected_pointer = reinterpret_cast<void*>(4096);
+  void* expected_pointer  = reinterpret_cast<void*>(4096);
   void* expected_pointer1 = reinterpret_cast<void*>(135168);
   void* expected_pointer2 = reinterpret_cast<void*>(266240);
   EXPECT_EQ(mr.allocate(65536, stream), expected_pointer);
