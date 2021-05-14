@@ -15,7 +15,9 @@
  */
 #pragma once
 
+#include <mutex>
 #include <optional>
+#include <unordered_map>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/aligned.hpp>
@@ -102,6 +104,7 @@ class aligned_resource_adaptor final : public device_memory_resource {
  private:
   static constexpr std::size_t default_allocation_alignment = 256;
   static constexpr std::size_t default_alignment_threshold  = 0;
+  using lock_guard                                          = std::lock_guard<std::mutex>;
 
   /**
    * @brief Allocates memory of size at least `bytes` using the upstream resource with the specified
@@ -119,17 +122,16 @@ class aligned_resource_adaptor final : public device_memory_resource {
     if (allocation_alignment_ == default_allocation_alignment || bytes < alignment_threshold_) {
       return upstream_->allocate(bytes, stream);
     } else {
-      auto const aligned_size = rmm::detail::align_up(bytes, allocation_alignment_);
-      auto const size         = aligned_size + allocation_alignment_ - default_allocation_alignment;
-      auto const address      = reinterpret_cast<std::size_t>(upstream_->allocate(size, stream));
+      auto const size            = upstream_allocation_size(bytes);
+      void* pointer              = upstream_->allocate(size, stream);
+      auto const address         = reinterpret_cast<std::size_t>(pointer);
       auto const aligned_address = rmm::detail::align_up(address, allocation_alignment_);
-      auto const head_size       = aligned_address - address;
-      auto const tail_size       = size - head_size - aligned_size;
-      if (head_size != 0) { upstream_->deallocate(reinterpret_cast<void*>(address), head_size); }
-      if (tail_size != 0) {
-        upstream_->deallocate(reinterpret_cast<void*>(aligned_address + aligned_size), tail_size);
+      void* aligned_pointer      = reinterpret_cast<void*>(aligned_address);
+      if (pointer != aligned_pointer) {
+        lock_guard lock(mtx_);
+        pointers_.emplace(aligned_pointer, pointer);
       }
-      return reinterpret_cast<void*>(aligned_address);
+      return aligned_pointer;
     }
   }
 
@@ -147,7 +149,15 @@ class aligned_resource_adaptor final : public device_memory_resource {
     if (allocation_alignment_ == default_allocation_alignment || bytes < alignment_threshold_) {
       upstream_->deallocate(p, bytes, stream);
     } else {
-      upstream_->deallocate(p, rmm::detail::align_up(bytes, allocation_alignment_), stream);
+      {
+        lock_guard lock(mtx_);
+        auto const i = pointers_.find(p);
+        if (i != pointers_.end()) {
+          p = i->second;
+          pointers_.erase(i);
+        }
+      }
+      upstream_->deallocate(p, upstream_allocation_size(bytes), stream);
     }
   }
 
@@ -186,9 +196,24 @@ class aligned_resource_adaptor final : public device_memory_resource {
     return upstream_->get_mem_info(stream);
   }
 
+  /**
+   * @brief Calculate the allocation size needed from upstream to account for alignments of both the
+   * size and the base pointer.
+   *
+   * @param bytes The requested allocation size.
+   * @return Allocation size needed from upstream to align both the size and the base pointer.
+   */
+  std::size_t upstream_allocation_size(std::size_t bytes) const
+  {
+    auto const aligned_size = detail::align_up(bytes, allocation_alignment_);
+    return aligned_size + allocation_alignment_ - default_allocation_alignment;
+  }
+
   Upstream* upstream_;  ///< The upstream resource used for satisfying allocation requests
-  std::size_t allocation_alignment_;  ///< The size used for allocation alignment
-  std::size_t alignment_threshold_;   ///< The size above which allocations should be aligned
+  std::unordered_map<void*, void*> pointers_;  ///< Map of aligned pointers to upstream pointers.
+  std::size_t allocation_alignment_;           ///< The size used for allocation alignment
+  std::size_t alignment_threshold_;  ///< The size above which allocations should be aligned
+  mutable std::mutex mtx_;           ///< Mutex for exclusive lock.
 };
 
 }  // namespace rmm::mr

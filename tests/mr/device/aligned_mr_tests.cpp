@@ -92,12 +92,12 @@ TEST(AlignedTest, DefaultAllocationAlignmentPassthrough)
   aligned_adaptor mr{&mock};
 
   cuda_stream_view stream;
-  void* address = reinterpret_cast<void*>(123);
+  void* pointer = reinterpret_cast<void*>(123);
   // device_memory_resource aligns to 8.
-  EXPECT_CALL(mock, do_allocate(8, stream)).WillOnce(Return(address));
-  EXPECT_CALL(mock, do_deallocate(address, 8, stream)).Times(1);
-  EXPECT_EQ(mr.allocate(5, stream), address);
-  mr.deallocate(address, 5, stream);
+  EXPECT_CALL(mock, do_allocate(8, stream)).WillOnce(Return(pointer));
+  EXPECT_CALL(mock, do_deallocate(pointer, 8, stream)).Times(1);
+  EXPECT_EQ(mr.allocate(5, stream), pointer);
+  mr.deallocate(pointer, 5, stream);
 }
 
 TEST(AlignedTest, BelowAlignmentThresholdPassthrough)
@@ -106,18 +106,18 @@ TEST(AlignedTest, BelowAlignmentThresholdPassthrough)
   aligned_adaptor mr{&mock, 4096, 65536};
 
   cuda_stream_view stream;
-  void* address = reinterpret_cast<void*>(123);
+  void* pointer = reinterpret_cast<void*>(123);
   // device_memory_resource aligns to 8.
-  EXPECT_CALL(mock, do_allocate(8, stream)).WillRepeatedly(Return(address));
-  EXPECT_CALL(mock, do_deallocate(address, 8, stream)).Times(1);
-  EXPECT_EQ(mr.allocate(3, stream), address);
-  mr.deallocate(address, 3, stream);
+  EXPECT_CALL(mock, do_allocate(8, stream)).WillOnce(Return(pointer));
+  EXPECT_CALL(mock, do_deallocate(pointer, 8, stream)).Times(1);
+  EXPECT_EQ(mr.allocate(3, stream), pointer);
+  mr.deallocate(pointer, 3, stream);
 
-  void* address1 = reinterpret_cast<void*>(456);
-  EXPECT_CALL(mock, do_allocate(65528, stream)).WillOnce(Return(address1));
-  EXPECT_CALL(mock, do_deallocate(address1, 65528, stream)).Times(1);
-  EXPECT_EQ(mr.allocate(65528, stream), address1);
-  mr.deallocate(address1, 65528, stream);
+  void* pointer1 = reinterpret_cast<void*>(456);
+  EXPECT_CALL(mock, do_allocate(65528, stream)).WillOnce(Return(pointer1));
+  EXPECT_CALL(mock, do_deallocate(pointer1, 65528, stream)).Times(1);
+  EXPECT_EQ(mr.allocate(65528, stream), pointer1);
+  mr.deallocate(pointer1, 65528, stream);
 }
 
 TEST(AlignedTest, UpstreamAddressAlreadyAligned)
@@ -126,48 +126,54 @@ TEST(AlignedTest, UpstreamAddressAlreadyAligned)
   aligned_adaptor mr{&mock, 4096, 65536};
 
   cuda_stream_view stream;
-  void* address = reinterpret_cast<void*>(4096);
-  EXPECT_CALL(mock, do_allocate(69376, stream)).WillRepeatedly(Return(address));
-  void* tail_address = reinterpret_cast<void*>(69632);
-  EXPECT_CALL(mock, do_deallocate(tail_address, 3840, stream)).Times(1);
-  EXPECT_EQ(mr.allocate(65536, stream), address);
+  void* pointer = reinterpret_cast<void*>(4096);
+  EXPECT_CALL(mock, do_allocate(69376, stream)).WillOnce(Return(pointer));
+  EXPECT_CALL(mock, do_deallocate(pointer, 69376, stream)).Times(1);
 
-  EXPECT_CALL(mock, do_deallocate(address, 65536, stream)).Times(1);
-  mr.deallocate(address, 65536, stream);
+  EXPECT_EQ(mr.allocate(65536, stream), pointer);
+  mr.deallocate(pointer, 65536, stream);
 }
 
-TEST(AlignedTest, ReturnHeadOnly)
+TEST(AlignedTest, AlignUpstreamAddress)
 {
   mock_resource mock;
   aligned_adaptor mr{&mock, 4096, 65536};
 
   cuda_stream_view stream;
-  void* address = reinterpret_cast<void*>(256);
-  EXPECT_CALL(mock, do_allocate(69376, stream)).WillRepeatedly(Return(address));
-  EXPECT_CALL(mock, do_deallocate(address, 3840, stream)).Times(1);
-  void* expected_address = reinterpret_cast<void*>(4096);
-  EXPECT_EQ(mr.allocate(65536, stream), expected_address);
+  void* pointer = reinterpret_cast<void*>(256);
+  EXPECT_CALL(mock, do_allocate(69376, stream)).WillOnce(Return(pointer));
+  EXPECT_CALL(mock, do_deallocate(pointer, 69376, stream)).Times(1);
 
-  EXPECT_CALL(mock, do_deallocate(expected_address, 65536, stream)).Times(1);
-  mr.deallocate(expected_address, 65536, stream);
+  void* expected_pointer = reinterpret_cast<void*>(4096);
+  EXPECT_EQ(mr.allocate(65536, stream), expected_pointer);
+  mr.deallocate(expected_pointer, 65536, stream);
 }
 
-TEST(AlignedTest, ReturnBothHeadAndTail)
+TEST(AlignedTest, AlignMultiple)
 {
   mock_resource mock;
   aligned_adaptor mr{&mock, 4096, 65536};
 
   cuda_stream_view stream;
-  void* address = reinterpret_cast<void*>(768);
-  EXPECT_CALL(mock, do_allocate(69376, stream)).WillRepeatedly(Return(address));
-  EXPECT_CALL(mock, do_deallocate(address, 3328, stream)).Times(1);
-  void* tail_address = reinterpret_cast<void*>(69632);
-  EXPECT_CALL(mock, do_deallocate(tail_address, 512, stream)).Times(1);
-  void* expected_address = reinterpret_cast<void*>(4096);
-  EXPECT_EQ(mr.allocate(65536, stream), expected_address);
+  void* pointer = reinterpret_cast<void*>(256);
+  void* pointer1 = reinterpret_cast<void*>(131584);
+  void* pointer2 = reinterpret_cast<void*>(263168);
+  EXPECT_CALL(mock, do_allocate(69376, stream)).WillOnce(Return(pointer));
+  EXPECT_CALL(mock, do_allocate(77568, stream)).WillOnce(Return(pointer1));
+  EXPECT_CALL(mock, do_allocate(81664, stream)).WillOnce(Return(pointer2));
+  EXPECT_CALL(mock, do_deallocate(pointer, 69376, stream)).Times(1);
+  EXPECT_CALL(mock, do_deallocate(pointer1, 77568, stream)).Times(1);
+  EXPECT_CALL(mock, do_deallocate(pointer2, 81664, stream)).Times(1);
 
-  EXPECT_CALL(mock, do_deallocate(expected_address, 65536, stream)).Times(1);
-  mr.deallocate(expected_address, 65536, stream);
+  void* expected_pointer = reinterpret_cast<void*>(4096);
+  void* expected_pointer1 = reinterpret_cast<void*>(135168);
+  void* expected_pointer2 = reinterpret_cast<void*>(266240);
+  EXPECT_EQ(mr.allocate(65536, stream), expected_pointer);
+  EXPECT_EQ(mr.allocate(73728, stream), expected_pointer1);
+  EXPECT_EQ(mr.allocate(77800, stream), expected_pointer2);
+  mr.deallocate(expected_pointer1, 73728, stream);
+  mr.deallocate(expected_pointer, 65536, stream);
+  mr.deallocate(expected_pointer2, 77800, stream);
 }
 
 }  // namespace
