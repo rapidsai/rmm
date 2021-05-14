@@ -17,6 +17,9 @@ build:
   script_env:
     - RMM_BUILD_NO_GPU_TEST
     - VERSION_SUFFIX
+    - CC
+    - CXX
+    - CUDAHOSTCXX
 
 requirements:
   host:
