@@ -51,6 +51,7 @@ class aligned_resource_adaptor final : public device_memory_resource {
    * @brief Construct an aligned resource adaptor using `upstream` to satisfy allocation requests.
    *
    * @throws `rmm::logic_error` if `upstream == nullptr`
+   * @throws `rmm::logic_error` if `allocation_alignment` is not a power of 2
    *
    * @param upstream The resource used for allocating/deallocating device memory.
    * @param allocation_alignment The size used for allocation alignment.
@@ -65,8 +66,8 @@ class aligned_resource_adaptor final : public device_memory_resource {
       alignment_threshold_{alignment_threshold}
   {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
-    RMM_EXPECTS(allocation_alignment % 256 == 0, "Allocation alignment is not a multiple of 256.");
-    RMM_EXPECTS(alignment_threshold % 256 == 0, "Alignment threshold is not a multiple of 256.");
+    RMM_EXPECTS(rmm::detail::is_supported_alignment(allocation_alignment),
+                "Allocation alignment is not a power of 2.");
   }
 
   aligned_resource_adaptor()                                = delete;
@@ -175,16 +176,17 @@ class aligned_resource_adaptor final : public device_memory_resource {
     if (this == &other)
       return true;
     else {
-      auto aligned_other = dynamic_cast<aligned_resource_adaptor<Upstream> const*>(&other);
-      if (aligned_other != nullptr)
-        return upstream_->is_equal(*aligned_other->get_upstream());
-      else
-        return upstream_->is_equal(other);
+      auto cast = dynamic_cast<aligned_resource_adaptor<Upstream> const*>(&other);
+      return cast != nullptr && upstream_->is_equal(*cast->get_upstream()) &&
+             allocation_alignment_ == cast->allocation_alignment_ &&
+             alignment_threshold_ == cast->alignment_threshold_;
     }
   }
 
   /**
    * @brief Get free and available memory from upstream resource.
+   *
+   * The free size may not be fully allocatable because of alignment requirements.
    *
    * @throws `rmm::cuda_error` if unable to retrieve memory info.
    *

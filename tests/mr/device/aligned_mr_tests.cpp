@@ -50,16 +50,7 @@ TEST(AlignedTest, ThrowOnInvalidAllocationAlignment)
   auto construct_alignment = [](auto* r, std::size_t a) { aligned_adaptor mr{r, a}; };
   EXPECT_THROW(construct_alignment(&mock, 255), rmm::logic_error);
   EXPECT_NO_THROW(construct_alignment(&mock, 256));
-  EXPECT_THROW(construct_alignment(&mock, 257), rmm::logic_error);
-}
-
-TEST(AlignedTest, ThrowOnInvalidAlignmentThreshold)
-{
-  mock_resource mock;
-  auto construct_threshold = [](auto* r, std::size_t t) { aligned_adaptor mr{r, 4096, t}; };
-  EXPECT_THROW(construct_threshold(&mock, 65535), rmm::logic_error);
-  EXPECT_NO_THROW(construct_threshold(&mock, 65536));
-  EXPECT_THROW(construct_threshold(&mock, 65537), rmm::logic_error);
+  EXPECT_THROW(construct_alignment(&mock, 768), rmm::logic_error);
 }
 
 TEST(AlignedTest, SupportsStreams)
