@@ -172,7 +172,7 @@ TEST(AlignedTest, AlignMultiple)
 TEST(AlignedTest, AlignRealPointer)
 {
   aligned_real mr{rmm::mr::get_current_device_resource(), 4096, 65536};
-  void* alloc = mr.allocate(65536);
+  void* alloc        = mr.allocate(65536);
   auto const address = reinterpret_cast<std::size_t>(alloc);
   EXPECT_TRUE(address % 4096 == 0);
   mr.deallocate(alloc, 65536);
