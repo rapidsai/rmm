@@ -260,114 +260,6 @@ TYPED_TEST(DeviceBufferTest, CopyCapacityLargerThanSizeExplicitMr)
                             static_cast<signed char *>(buff_copy.data())));
 }
 
-TYPED_TEST(DeviceBufferTest, CopyAssignmentToDefault)
-{
-  rmm::device_buffer from(this->size, rmm::cuda_stream_default, &this->mr);
-
-  thrust::sequence(rmm::exec_policy(rmm::cuda_stream_default),
-                   static_cast<signed char *>(from.data()),
-                   static_cast<signed char *>(from.data()) + from.size(),
-                   0);
-
-  rmm::device_buffer to{};
-  EXPECT_NO_THROW(to = from);
-  EXPECT_NE(nullptr, to.data());
-  EXPECT_NE(nullptr, from.data());
-  EXPECT_NE(from.data(), to.data());
-  EXPECT_EQ(from.size(), to.size());
-  EXPECT_EQ(from.capacity(), to.capacity());
-  EXPECT_EQ(from.stream(), to.stream());
-  EXPECT_EQ(from.memory_resource(), to.memory_resource());
-
-  EXPECT_TRUE(thrust::equal(rmm::exec_policy(rmm::cuda_stream_default),
-                            static_cast<signed char *>(from.data()),
-                            static_cast<signed char *>(from.data()) + from.size(),
-                            static_cast<signed char *>(to.data())));
-}
-
-TYPED_TEST(DeviceBufferTest, CopyAssignment)
-{
-  rmm::device_buffer from(this->size, rmm::cuda_stream_default, &this->mr);
-
-  thrust::sequence(rmm::exec_policy(rmm::cuda_stream_default),
-                   static_cast<signed char *>(from.data()),
-                   static_cast<signed char *>(from.data()) + from.size(),
-                   0);
-
-  rmm::device_buffer to(this->size - 1, rmm::cuda_stream_default, &this->mr);
-
-  thrust::sequence(rmm::exec_policy(rmm::cuda_stream_default),
-                   static_cast<signed char *>(to.data()),
-                   static_cast<signed char *>(to.data()) + to.size(),
-                   100);
-
-  EXPECT_NO_THROW(to = from);
-  EXPECT_NE(nullptr, to.data());
-  EXPECT_NE(nullptr, from.data());
-  EXPECT_NE(from.data(), to.data());
-  EXPECT_EQ(from.size(), to.size());
-  EXPECT_EQ(from.capacity(), to.capacity());
-  EXPECT_EQ(from.stream(), to.stream());
-  EXPECT_EQ(from.memory_resource(), to.memory_resource());
-
-  EXPECT_TRUE(thrust::equal(rmm::exec_policy(rmm::cuda_stream_default),
-                            static_cast<signed char *>(to.data()),
-                            static_cast<signed char *>(to.data()) + to.size(),
-                            static_cast<signed char *>(from.data())));
-}
-
-TYPED_TEST(DeviceBufferTest, CopyAssignmentCapacityLargerThanSize)
-{
-  rmm::device_buffer from(this->size, rmm::cuda_stream_default, &this->mr);
-
-  thrust::sequence(rmm::exec_policy(rmm::cuda_stream_default),
-                   static_cast<signed char *>(from.data()),
-                   static_cast<signed char *>(from.data()) + from.size(),
-                   0);
-
-  from.resize(from.size() - 1, rmm::cuda_stream_default);
-
-  rmm::device_buffer to(42, rmm::cuda_stream_default, &this->mr);
-
-  thrust::sequence(rmm::exec_policy(rmm::cuda_stream_default),
-                   static_cast<signed char *>(to.data()),
-                   static_cast<signed char *>(to.data()) + to.size(),
-                   100);
-
-  EXPECT_NO_THROW(to = from);
-  EXPECT_NE(nullptr, to.data());
-  EXPECT_NE(nullptr, from.data());
-  EXPECT_NE(from.data(), to.data());
-  EXPECT_EQ(from.size(), to.size());
-  EXPECT_NE(from.capacity(),
-            to.capacity());  // copy doesn't copy the larger capacity
-  EXPECT_EQ(from.stream(), to.stream());
-  EXPECT_EQ(from.memory_resource(), to.memory_resource());
-
-  EXPECT_TRUE(thrust::equal(rmm::exec_policy(rmm::cuda_stream_default),
-                            static_cast<signed char *>(to.data()),
-                            static_cast<signed char *>(to.data()) + to.size(),
-                            static_cast<signed char *>(from.data())));
-}
-
-TYPED_TEST(DeviceBufferTest, SelfCopyAssignment)
-{
-  rmm::device_buffer buff(this->size, rmm::cuda_stream_default, &this->mr);
-  auto p        = buff.data();
-  auto size     = buff.size();
-  auto capacity = buff.capacity();
-  auto mr       = buff.memory_resource();
-  auto stream   = buff.stream();
-
-  buff = buff;  // self-assignment shouldn't modify the buffer
-  EXPECT_NE(nullptr, buff.data());
-  EXPECT_EQ(p, buff.data());
-  EXPECT_EQ(size, buff.size());
-  EXPECT_EQ(capacity, buff.capacity());
-  EXPECT_EQ(stream, buff.stream());
-  EXPECT_EQ(mr, buff.memory_resource());
-}
-
 TYPED_TEST(DeviceBufferTest, MoveConstructor)
 {
   rmm::device_buffer buff(this->size, rmm::cuda_stream_default, &this->mr);
@@ -487,7 +379,7 @@ TYPED_TEST(DeviceBufferTest, SelfMoveAssignment)
   auto mr       = buff.memory_resource();
   auto stream   = buff.stream();
 
-  buff = buff;  // self-assignment shouldn't modify the buffer
+  buff = std::move(buff);  // self-move-assignment shouldn't modify the buffer
   EXPECT_NE(nullptr, buff.data());
   EXPECT_EQ(p, buff.data());
   EXPECT_EQ(size, buff.size());

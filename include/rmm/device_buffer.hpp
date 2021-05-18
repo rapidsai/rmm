@@ -180,8 +180,6 @@ class device_buffer {
     other.set_stream(cuda_stream_view{});
   }
 
-  device_buffer& operator=(device_buffer const& other) = delete;
-
   /**
    * @brief Move assignment operator moves the contents from `other`.
    *
