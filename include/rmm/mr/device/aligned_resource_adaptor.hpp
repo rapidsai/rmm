@@ -58,9 +58,10 @@ class aligned_resource_adaptor final : public device_memory_resource {
    * @param alignment_threshold Only allocations with a size larger than or equal to this threshold
    * are aligned.
    */
-  explicit aligned_resource_adaptor(Upstream* upstream,
-                                    std::size_t allocation_alignment = default_allocation_alignment,
-                                    std::size_t alignment_threshold  = default_alignment_threshold)
+  explicit aligned_resource_adaptor(
+    Upstream* upstream,
+    std::size_t allocation_alignment = rmm::detail::CUDA_ALLOCATION_ALIGNMENT,
+    std::size_t alignment_threshold  = default_alignment_threshold)
     : upstream_{upstream},
       allocation_alignment_{allocation_alignment},
       alignment_threshold_{alignment_threshold}
@@ -103,9 +104,8 @@ class aligned_resource_adaptor final : public device_memory_resource {
   }
 
  private:
-  static constexpr std::size_t default_allocation_alignment = 256;
-  static constexpr std::size_t default_alignment_threshold  = 0;
-  using lock_guard                                          = std::lock_guard<std::mutex>;
+  static constexpr std::size_t default_alignment_threshold = 0;
+  using lock_guard                                         = std::lock_guard<std::mutex>;
 
   /**
    * @brief Allocates memory of size at least `bytes` using the upstream resource with the specified
@@ -120,7 +120,8 @@ class aligned_resource_adaptor final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
-    if (allocation_alignment_ == default_allocation_alignment || bytes < alignment_threshold_) {
+    if (allocation_alignment_ == rmm::detail::CUDA_ALLOCATION_ALIGNMENT ||
+        bytes < alignment_threshold_) {
       return upstream_->allocate(bytes, stream);
     } else {
       auto const size            = upstream_allocation_size(bytes);
@@ -147,7 +148,8 @@ class aligned_resource_adaptor final : public device_memory_resource {
    */
   void do_deallocate(void* p, std::size_t bytes, cuda_stream_view stream) override
   {
-    if (allocation_alignment_ == default_allocation_alignment || bytes < alignment_threshold_) {
+    if (allocation_alignment_ == rmm::detail::CUDA_ALLOCATION_ALIGNMENT ||
+        bytes < alignment_threshold_) {
       upstream_->deallocate(p, bytes, stream);
     } else {
       {
@@ -163,7 +165,7 @@ class aligned_resource_adaptor final : public device_memory_resource {
   }
 
   /**
-   * @brief Compare the upstream resource to another.
+   * @brief Compare this resource to another.
    *
    * @throws Nothing.
    *
@@ -208,7 +210,7 @@ class aligned_resource_adaptor final : public device_memory_resource {
   std::size_t upstream_allocation_size(std::size_t bytes) const
   {
     auto const aligned_size = detail::align_up(bytes, allocation_alignment_);
-    return aligned_size + allocation_alignment_ - default_allocation_alignment;
+    return aligned_size + allocation_alignment_ - rmm::detail::CUDA_ALLOCATION_ALIGNMENT;
   }
 
   Upstream* upstream_;  ///< The upstream resource used for satisfying allocation requests

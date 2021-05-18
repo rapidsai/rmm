@@ -17,6 +17,7 @@
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/aligned_resource_adaptor.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/mr/device/per_device_resource.hpp>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -36,18 +37,19 @@ class mock_resource : public rmm::mr::device_memory_resource {
   MOCK_METHOD(size_pair, do_get_mem_info, (cuda_stream_view), (const, override));
 };
 
-using aligned_adaptor = rmm::mr::aligned_resource_adaptor<mock_resource>;
+using aligned_mock = rmm::mr::aligned_resource_adaptor<mock_resource>;
+using aligned_real = rmm::mr::aligned_resource_adaptor<rmm::mr::device_memory_resource>;
 
 TEST(AlignedTest, ThrowOnNullUpstream)
 {
-  auto construct_nullptr = []() { aligned_adaptor mr{nullptr}; };
+  auto construct_nullptr = []() { aligned_mock mr{nullptr}; };
   EXPECT_THROW(construct_nullptr(), rmm::logic_error);
 }
 
 TEST(AlignedTest, ThrowOnInvalidAllocationAlignment)
 {
   mock_resource mock;
-  auto construct_alignment = [](auto* r, std::size_t a) { aligned_adaptor mr{r, a}; };
+  auto construct_alignment = [](auto* r, std::size_t a) { aligned_mock mr{r, a}; };
   EXPECT_THROW(construct_alignment(&mock, 255), rmm::logic_error);
   EXPECT_NO_THROW(construct_alignment(&mock, 256));
   EXPECT_THROW(construct_alignment(&mock, 768), rmm::logic_error);
@@ -56,7 +58,7 @@ TEST(AlignedTest, ThrowOnInvalidAllocationAlignment)
 TEST(AlignedTest, SupportsStreams)
 {
   mock_resource mock;
-  aligned_adaptor mr{&mock};
+  aligned_mock mr{&mock};
 
   EXPECT_CALL(mock, supports_streams()).WillOnce(Return(true));
   EXPECT_TRUE(mr.supports_streams());
@@ -68,7 +70,7 @@ TEST(AlignedTest, SupportsStreams)
 TEST(AlignedTest, SupportsGetMemInfo)
 {
   mock_resource mock;
-  aligned_adaptor mr{&mock};
+  aligned_mock mr{&mock};
 
   EXPECT_CALL(mock, supports_get_mem_info()).WillOnce(Return(true));
   EXPECT_TRUE(mr.supports_get_mem_info());
@@ -80,7 +82,7 @@ TEST(AlignedTest, SupportsGetMemInfo)
 TEST(AlignedTest, DefaultAllocationAlignmentPassthrough)
 {
   mock_resource mock;
-  aligned_adaptor mr{&mock};
+  aligned_mock mr{&mock};
 
   cuda_stream_view stream;
   void* pointer = reinterpret_cast<void*>(123);
@@ -94,7 +96,7 @@ TEST(AlignedTest, DefaultAllocationAlignmentPassthrough)
 TEST(AlignedTest, BelowAlignmentThresholdPassthrough)
 {
   mock_resource mock;
-  aligned_adaptor mr{&mock, 4096, 65536};
+  aligned_mock mr{&mock, 4096, 65536};
 
   cuda_stream_view stream;
   void* pointer = reinterpret_cast<void*>(123);
@@ -114,7 +116,7 @@ TEST(AlignedTest, BelowAlignmentThresholdPassthrough)
 TEST(AlignedTest, UpstreamAddressAlreadyAligned)
 {
   mock_resource mock;
-  aligned_adaptor mr{&mock, 4096, 65536};
+  aligned_mock mr{&mock, 4096, 65536};
 
   cuda_stream_view stream;
   void* pointer = reinterpret_cast<void*>(4096);
@@ -128,7 +130,7 @@ TEST(AlignedTest, UpstreamAddressAlreadyAligned)
 TEST(AlignedTest, AlignUpstreamAddress)
 {
   mock_resource mock;
-  aligned_adaptor mr{&mock, 4096, 65536};
+  aligned_mock mr{&mock, 4096, 65536};
 
   cuda_stream_view stream;
   void* pointer = reinterpret_cast<void*>(256);
@@ -143,7 +145,7 @@ TEST(AlignedTest, AlignUpstreamAddress)
 TEST(AlignedTest, AlignMultiple)
 {
   mock_resource mock;
-  aligned_adaptor mr{&mock, 4096, 65536};
+  aligned_mock mr{&mock, 4096, 65536};
 
   cuda_stream_view stream;
   void* pointer  = reinterpret_cast<void*>(256);
@@ -165,6 +167,15 @@ TEST(AlignedTest, AlignMultiple)
   mr.deallocate(expected_pointer1, 73728, stream);
   mr.deallocate(expected_pointer, 65536, stream);
   mr.deallocate(expected_pointer2, 77800, stream);
+}
+
+TEST(AlignedTest, AlignRealPointer)
+{
+  aligned_real mr{rmm::mr::get_current_device_resource(), 4096, 65536};
+  void* alloc = mr.allocate(65536);
+  auto const address = reinterpret_cast<std::size_t>(alloc);
+  EXPECT_TRUE(address % 4096 == 0);
+  mr.deallocate(alloc, 65536);
 }
 
 }  // namespace

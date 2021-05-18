@@ -54,8 +54,8 @@ TEST(PoolTest, AllocateNinetyPercent)
   auto allocate_ninety = []() {
     auto const [free, total] = rmm::detail::available_device_memory();
     (void)total;
-    auto const ninety_percent_pool =
-      rmm::detail::align_up(static_cast<std::size_t>(free * 0.9), pool_mr::allocation_alignment);
+    auto const ninety_percent_pool = rmm::detail::align_up(static_cast<std::size_t>(free * 0.9),
+                                                           rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
     pool_mr mr{rmm::mr::get_current_device_resource(), ninety_percent_pool};
   };
   EXPECT_NO_THROW(allocate_ninety());
