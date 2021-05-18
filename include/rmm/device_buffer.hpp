@@ -72,6 +72,11 @@ namespace rmm {
  */
 class device_buffer {
  public:
+  // The copy constructor and copy assignment operator without a stream are deleted because they
+  // provide no way to specify an explicit stream
+  device_buffer(device_buffer const& other) = delete;
+  device_buffer& operator=(device_buffer const& other) = delete;
+
   /**
    * @brief Default constructor creates an empty `device_buffer`
    */
@@ -175,46 +180,7 @@ class device_buffer {
     other.set_stream(cuda_stream_view{});
   }
 
-  /**
-   * @brief Copies the contents of `other` into this `device_buffer`.
-   *
-   * All operations on the data in this `device_buffer` on all streams must be
-   * complete before using this operator, otherwise behavior is undefined.
-   *
-   * If the existing capacity is large enough, and the memory resources are
-   * compatible, then this `device_buffer`'s existing memory will be reused and
-   * `other`s contents will simply be copied on `other.stream()`. I.e., if
-   * `capcity() > other.size()` and
-   * `memory_resource()->is_equal(*other.memory_resource())`.
-   *
-   * Otherwise, the existing memory will be deallocated using
-   * `memory_resource()` on `stream()` and new memory will be allocated using
-   * `other.memory_resource()` on `other.stream()`.
-   *
-   * @throws rmm::bad_alloc if allocation fails
-   * @throws rmm::cuda_error if the copy from `other` fails
-   *
-   * @param other The `device_buffer` to copy.
-   */
-  device_buffer& operator=(device_buffer const& other)
-  {
-    if (&other != this) {
-      // If the current capacity is large enough and the resources are
-      // compatible, just reuse the existing memory
-      if ((capacity() > other.size()) and _mr->is_equal(*other._mr)) {
-        resize(other.size(), other.stream());
-        copy_async(other.data(), other.size(), other.stream());
-      } else {
-        // Otherwise, need to deallocate and allocate new memory
-        deallocate_async(stream());
-        set_stream(other.stream());
-        _mr = other._mr;
-        allocate_async(other.size(), stream());
-        copy_async(other.data(), other.size(), stream());
-      }
-    }
-    return *this;
-  }
+  device_buffer& operator=(device_buffer const& other) = delete;
 
   /**
    * @brief Move assignment operator moves the contents from `other`.
