@@ -32,6 +32,12 @@ namespace detail {
 static constexpr std::size_t RMM_DEFAULT_HOST_ALIGNMENT{alignof(std::max_align_t)};
 
 /**
+ * @brief Default alignment used for CUDA memory allocation.
+ *
+ */
+static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
+
+/**
  * @brief Returns whether or not `n` is a power of 2.
  *
  */

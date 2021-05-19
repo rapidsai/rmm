@@ -59,9 +59,6 @@ class pool_memory_resource final
   : public detail::stream_ordered_memory_resource<pool_memory_resource<Upstream>,
                                                   detail::coalescing_free_list> {
  public:
-  // TODO use rmm-level def of this.
-  static constexpr size_t allocation_alignment = 256;
-
   friend class detail::stream_ordered_memory_resource<pool_memory_resource<Upstream>,
                                                       detail::coalescing_free_list>;
 
@@ -89,9 +86,11 @@ class pool_memory_resource final
         return upstream_mr;
       }()}
   {
-    RMM_EXPECTS(rmm::detail::is_aligned(initial_pool_size.value_or(0), allocation_alignment),
+    RMM_EXPECTS(rmm::detail::is_aligned(initial_pool_size.value_or(0),
+                                        rmm::detail::CUDA_ALLOCATION_ALIGNMENT),
                 "Error, Initial pool size required to be a multiple of 256 bytes");
-    RMM_EXPECTS(rmm::detail::is_aligned(maximum_pool_size.value_or(0), allocation_alignment),
+    RMM_EXPECTS(rmm::detail::is_aligned(maximum_pool_size.value_or(0),
+                                        rmm::detail::CUDA_ALLOCATION_ALIGNMENT),
                 "Error, Maximum pool size required to be a multiple of 256 bytes");
 
     initialize_pool(initial_pool_size, maximum_pool_size);
@@ -201,7 +200,8 @@ class pool_memory_resource final
         std::tie(free, total) = (get_upstream()->supports_get_mem_info())
                                   ? get_upstream()->get_mem_info(cuda_stream_legacy)
                                   : rmm::detail::available_device_memory();
-        return rmm::detail::align_up(std::min(free, total / 2), allocation_alignment);
+        return rmm::detail::align_up(std::min(free, total / 2),
+                                     rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
       } else {
         return initial_size.value();
       }
@@ -253,8 +253,9 @@ class pool_memory_resource final
   {
     if (maximum_pool_size_.has_value()) {
       auto const unaligned_remaining = maximum_pool_size_.value() - pool_size();
-      auto const remaining    = rmm::detail::align_up(unaligned_remaining, allocation_alignment);
-      auto const aligned_size = rmm::detail::align_up(size, allocation_alignment);
+      auto const remaining =
+        rmm::detail::align_up(unaligned_remaining, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
+      auto const aligned_size = rmm::detail::align_up(size, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
       return (aligned_size <= remaining) ? std::max(aligned_size, remaining / 2) : 0;
     } else
       return std::max(size, pool_size());

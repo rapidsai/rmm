@@ -39,9 +39,6 @@ namespace mr {
 template <typename Upstream>
 class binning_memory_resource final : public device_memory_resource {
  public:
-  // The required alignment of this allocator
-  static constexpr std::size_t allocation_alignment = 256;
-
   /**
    * @brief Construct a new binning memory resource object.
    *
@@ -136,7 +133,8 @@ class binning_memory_resource final : public device_memory_resource {
    */
   void add_bin(std::size_t allocation_size, device_memory_resource* bin_resource = nullptr)
   {
-    allocation_size = rmm::detail::align_up(allocation_size, allocation_alignment);
+    allocation_size =
+      rmm::detail::align_up(allocation_size, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
 
     if (nullptr != bin_resource)
       resource_bins_.insert({allocation_size, bin_resource});

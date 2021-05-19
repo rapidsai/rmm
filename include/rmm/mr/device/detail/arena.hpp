@@ -132,9 +132,6 @@ class block {
   std::size_t size_{};  ///< Size in bytes.
 };
 
-/// The required allocation alignment.
-constexpr std::size_t allocation_alignment = 256;
-
 /**
  * @brief Align up to the allocation alignment.
  *
@@ -143,7 +140,7 @@ constexpr std::size_t allocation_alignment = 256;
  */
 constexpr std::size_t align_up(std::size_t v) noexcept
 {
-  return rmm::detail::align_up(v, allocation_alignment);
+  return rmm::detail::align_up(v, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
 }
 
 /**
@@ -154,7 +151,7 @@ constexpr std::size_t align_up(std::size_t v) noexcept
  */
 constexpr std::size_t align_down(std::size_t v) noexcept
 {
-  return rmm::detail::align_down(v, allocation_alignment);
+  return rmm::detail::align_down(v, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
 }
 
 /**
