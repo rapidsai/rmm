@@ -110,8 +110,13 @@ class device_buffer {
   }
 
   /**
-   * @brief Construct a new device buffer by copying from a raw pointer to an
-   * existing host or device memory allocation.
+   * @brief Construct a new device buffer by copying from a raw pointer to an existing host or
+   * device memory allocation.
+   *
+   * @note This function does not synchronize `stream`. `source_data` is copied on `stream`, so the
+   * caller is responsible for correct synchronization to ensure that `source_data` is valid when
+   * the copy occurs. This includes destroying `source_data` in stream order after this function is
+   * called, or synchronizing or waiting on `stream` after this function returns as necessary.
    *
    * @throws rmm::bad_alloc If creating the new allocation fails.
    * @throws rmm::logic_error If `source_data` is null, and `size != 0`.
@@ -141,6 +146,11 @@ class device_buffer {
    * @note Only copies `other.size()` bytes from `other`, i.e., if
    *`other.size() != other.capacity()`, then the size and capacity of the newly
    * constructed `device_buffer` will be equal to `other.size()`.
+   *
+   * @note This function does not synchronize `stream`. `other` is copied on `stream`, so the
+   * caller is responsible for correct synchronization to ensure that `other` is valid when
+   * the copy occurs. This includes destroying `other` in stream order after this function is
+   * called, or synchronizing or waiting on `stream` after this function returns as necessary.
    *
    * @throws rmm::bad_alloc If creating the new allocation fails.
    * @throws rmm::cuda_error if copying from `other` fails.
