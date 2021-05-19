@@ -66,11 +66,9 @@ namespace rmm {
  * // Default construction. Buffer is empty
  * device_buffer buff_default{};
  *
- * // If the requested size is larger than the current size, resizes allocation
- * // to the new size and deep copies any previous contents. Otherwise, simply
- * // updates the value of `size()` to the newly requested size without any
- * // allocations or copies. Uses the optionally specified stream or the default
- * // stream if none specified.
+ * // If the requested size is larger than the current size, resizes allocation to the new size and
+ * // deep copies any previous contents. Otherwise, simply updates the value of `size()` to the
+ * // newly requested size without any allocations or copies. Uses the specified stream.
  * buff_default.resize(100, stream);
  *```
  */
