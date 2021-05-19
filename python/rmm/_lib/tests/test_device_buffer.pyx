@@ -19,7 +19,6 @@ from libcpp.memory cimport make_unique
 from libcpp.utility cimport move
 
 from rmm._lib.cuda_stream_view cimport cuda_stream_default
-
 from rmm._lib.device_buffer cimport DeviceBuffer, device_buffer
 
 
@@ -28,7 +27,8 @@ def test_release():
     cdef DeviceBuffer buf = DeviceBuffer.to_device(b'abc')
 
     got = DeviceBuffer.c_from_unique_ptr(
-        make_unique[device_buffer](buf.c_release(), cuda_stream_default.value())
+        make_unique[device_buffer](buf.c_release(),
+                                   cuda_stream_default.value())
     )
     np.testing.assert_equal(expect.copy_to_host(), got.copy_to_host())
 
