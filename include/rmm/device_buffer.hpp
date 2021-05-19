@@ -50,8 +50,12 @@ namespace rmm {
  * cuda_stream_view stream = cuda_stream_view{};
  * device_buffer custom_buff(100, stream, &mr);
  *
- * // deep copies `buff` into a new device buffer using the default stream
- * device_buffer buff_copy(buff);
+ * // deep copies `buff` into a new device buffer using the specified stream
+ * device_buffer buff_copy(buff, stream);
+ *
+ * // moves the memory in `from_buff` to `to_buff`. Deallocates previously allocated
+ * // to_buff memory on `to_buff.stream()`.
+ * device_buffer to_buff(std::move(from_buff));
  *
  * // deep copies `buff` into a new device buffer using the specified stream
  * device_buffer buff_copy(buff, stream);
@@ -104,7 +108,7 @@ class device_buffer {
                          mr::device_memory_resource* mr = mr::get_current_device_resource())
     : _stream{stream}, _mr{mr}
   {
-    allocate_async(size, stream);
+    allocate_async(size);
   }
 
   /**
@@ -127,8 +131,8 @@ class device_buffer {
                 mr::device_memory_resource* mr = mr::get_current_device_resource())
     : _stream{stream}, _mr{mr}
   {
-    allocate_async(size, stream);
-    copy_async(source_data, size, stream);
+    allocate_async(size);
+    copy_async(source_data, size);
   }
 
   /**
@@ -195,7 +199,7 @@ class device_buffer {
   device_buffer& operator=(device_buffer&& other) noexcept
   {
     if (&other != this) {
-      deallocate_async(stream());
+      deallocate_async();
 
       _data     = other._data;
       _size     = other._size;
@@ -220,7 +224,7 @@ class device_buffer {
    */
   ~device_buffer() noexcept
   {
-    deallocate_async(stream());
+    deallocate_async();
     _mr     = nullptr;
     _stream = cuda_stream_view{};
   }
@@ -261,7 +265,7 @@ class device_buffer {
       void* const new_data = _mr->allocate(new_size, this->stream());
       RMM_CUDA_TRY(
         cudaMemcpyAsync(new_data, data(), size(), cudaMemcpyDefault, this->stream().value()));
-      deallocate_async(stream);
+      deallocate_async();
       _data     = new_data;
       _size     = new_size;
       _capacity = new_size;
@@ -360,16 +364,17 @@ class device_buffer {
   /**
    * @brief Allocates the specified amount of memory and updates the size/capacity accordingly.
    *
+   * Allocates on `stream()` using the memory resource passed to the constructor.
+   *
    * If `bytes == 0`, sets `_data = nullptr`.
    *
    * @param bytes The amount of memory to allocate
-   * @param stream The stream on which to allocate. Not synchronized.
    */
-  void allocate_async(std::size_t bytes, cuda_stream_view stream)
+  void allocate_async(std::size_t bytes)
   {
     _size     = bytes;
     _capacity = bytes;
-    _data     = (bytes > 0) ? _mr->allocate(bytes, stream) : nullptr;
+    _data     = (bytes > 0) ? memory_resource()->allocate(bytes, stream()) : nullptr;
   }
 
   /**
@@ -379,11 +384,11 @@ class device_buffer {
    * If the buffer doesn't hold any memory, i.e., `capacity() == 0`, doesn't
    * call the resource deallocation.
    *
-   * @param stream The stream on which to deallocate. Not synchronized.
+   * Deallocates on `stream()` using the memory resource passed to the constructor.
    */
-  void deallocate_async(cuda_stream_view stream) noexcept
+  void deallocate_async() noexcept
   {
-    if (capacity() > 0) { _mr->deallocate(data(), capacity(), stream); }
+    if (capacity() > 0) { memory_resource()->deallocate(data(), capacity(), stream()); }
     _size     = 0;
     _capacity = 0;
     _data     = nullptr;
@@ -400,14 +405,13 @@ class device_buffer {
    *
    * @param source The pointer to copy from
    * @param bytes The number of bytes to copy
-   * @param stream The stream on which to perform the copy. Not synchronized.
    */
-  void copy_async(void const* source, std::size_t bytes, cuda_stream_view stream)
+  void copy_async(void const* source, std::size_t bytes)
   {
     if (bytes > 0) {
       RMM_EXPECTS(nullptr != source, "Invalid copy from nullptr.");
 
-      RMM_CUDA_TRY(cudaMemcpyAsync(_data, source, bytes, cudaMemcpyDefault, stream.value()));
+      RMM_CUDA_TRY(cudaMemcpyAsync(_data, source, bytes, cudaMemcpyDefault, stream().value()));
     }
   }
 };
