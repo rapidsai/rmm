@@ -41,7 +41,8 @@ cdef extern from "rmm/mr/device/managed_memory_resource.hpp" \
 cdef extern from "rmm/mr/device/cuda_async_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass cuda_async_memory_resource(device_memory_resource):
-        cuda_async_memory_resource() except +
+        cuda_async_memory_resource(optional[size_t] initial_pool_size,
+                                   optional[size_t] release_threshold) except +
 
 cdef extern from "rmm/mr/device/pool_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
@@ -129,12 +130,12 @@ cdef class UpstreamResourceAdaptor(DeviceMemoryResource):
 
 
 cdef class CudaMemoryResource(DeviceMemoryResource):
-    def __cinit__(self, device=None):
+    def __cinit__(self):
         self.c_obj.reset(
             new cuda_memory_resource()
         )
 
-    def __init__(self, device=None):
+    def __init__(self):
         """
         Memory resource that uses cudaMalloc/Free for allocation/deallocation
         """
@@ -144,11 +145,36 @@ cdef class CudaMemoryResource(DeviceMemoryResource):
 cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
     """
     Memory resource that uses cudaMallocAsync/Free for
-    allocation/deallocation
+    allocation/deallocation.
+
+    Parameters
+    ----------
+    initial_pool_size : int,optional
+        Initial pool size in bytes. By default, half the available memory
+        on the device is used.
+    release_threshold: int, optional
+        Release threshold in bytes. If the pool size grows beyond this
+        value, unused memory held by the pool will be released at the
+        next synchronization point.
     """
-    def __cinit__(self, device=None):
+    def __cinit__(self, initial_pool_size=None, release_threshold=None):
+        cdef optional[size_t] c_initial_pool_size = (
+            optional[size_t]()
+            if initial_pool_size is None
+            else optional[size_t](initial_pool_size)
+        )
+
+        cdef optional[size_t] c_release_threshold = (
+            optional[size_t]()
+            if release_threshold is None
+            else optional[size_t](release_threshold)
+        )
+
         self.c_obj.reset(
-            new cuda_async_memory_resource()
+            new cuda_async_memory_resource(
+                c_initial_pool_size,
+                c_release_threshold
+            )
         )
 
 
@@ -210,8 +236,8 @@ cdef class PoolMemoryResource(UpstreamResourceAdaptor):
             The DeviceMemoryResource from which to allocate blocks for the
             pool.
         initial_pool_size : int,optional
-            Initial pool size in bytes. By default, an implementation defined
-            pool size is used.
+            Initial pool size in bytes. By default, half the available memory
+            on the device is used.
         maximum_pool_size : int, optional
             Maximum size in bytes, that the pool can grow to.
         """
@@ -431,23 +457,8 @@ cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
         self.c_obj.reset()
 
 
-class KeyInitializedDefaultDict(defaultdict):
-    """
-    This class subclasses ``defaultdict`` in order to pass the key to the
-    ``default_factory`` function supplied during the instantiation of the
-    class instance.
-    """
-    def __missing__(self, key):
-        if self.default_factory is None:
-            raise KeyError(key)
-        else:
-            ret = self.default_factory(key)
-            self[key] = ret
-            return ret
-
-
 # Global per-device memory resources; dict of int:DeviceMemoryResource
-cdef _per_device_mrs = KeyInitializedDefaultDict(CudaMemoryResource)
+cdef _per_device_mrs = defaultdict(CudaMemoryResource)
 
 
 cpdef void _initialize(

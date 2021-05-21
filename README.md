@@ -29,13 +29,13 @@ RMM can be installed with Conda ([miniconda](https://conda.io/miniconda.html), o
 
 ```bash
 # for CUDA 11.2
-conda install -c nvidia -c rapidsai -c conda-forge -c defaults \
+conda install -c nvidia -c rapidsai -c conda-forge \
     rmm cudatoolkit=11.2
 # for CUDA 11.1
-conda install -c nvidia -c rapidsai -c conda-forge -c defaults \
+conda install -c nvidia -c rapidsai -c conda-forge \
     rmm cudatoolkit=11.1
 # for CUDA 11.0
-conda install -c nvidia -c rapidsai -c conda-forge -c defaults \
+conda install -c nvidia -c rapidsai -c conda-forge \
     rmm cudatoolkit=11.0
 ```
 

@@ -30,7 +30,7 @@ build:
 
 requirements:
   build:
-    - cmake >=3.14.0
+    - cmake >=3.18
   host:
     - cudatoolkit {{ cuda_version }}.*
   run:
