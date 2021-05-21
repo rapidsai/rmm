@@ -60,7 +60,7 @@ if(Thrust_FOUND)
         add_library(thrust_internal INTERFACE)
         set_target_properties(thrust_internal PROPERTIES INTERFACE_INCLUDE_DIRECTORIES
                                                          "${Thrust_INCLUDE_DIRS}")
-        endif()
+      endif()
       add_library(${tgt} ALIAS thrust_internal)
     endif()
   endfunction()
