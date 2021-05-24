@@ -27,7 +27,7 @@ requirements:
     - librmm {{ version }}
     - setuptools
     - cython >=0.29,<0.30
-    - spdlog=1.7.0
+    - spdlog>=1.8.5,<2.0.0a0
     - cudatoolkit {{ cuda_version }}.*
   run:
     - python

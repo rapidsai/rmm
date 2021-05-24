@@ -1,6 +1,6 @@
 # spdlog
 
-set(RMM_MIN_VERSION_spdlog 1.7.0)
+set(RMM_MIN_VERSION_spdlog 1.8.5)
 
 if(NOT TARGET spdlog)
   CPMFindPackage(
