@@ -27,7 +27,7 @@ endif()
 
 project(
   RMM
-  VERSION 21.06.00
+  VERSION 21.08.00
   LANGUAGES CXX)
 
 include(cmake/Modules/CPM.cmake)
