@@ -93,7 +93,7 @@ set_property(CACHE RMM_LOGGING_LEVEL PROPERTY STRINGS "TRACE" "DEBUG" "INFO" "WA
                                               "CRITICAL" "OFF")
 message(STATUS "RMM: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'")
 
-if(BUILD_TESTS OR BUILD_BENCHMARKS)
+if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME AND (BUILD_TESTS OR BUILD_BENCHMARKS))
   # Auto-detect available GPU compute architectures
   include(${RMM_SOURCE_DIR}/cmake/Modules/SetGPUArchs.cmake)
   # Enable the CUDA language after setting CMAKE_CUDA_ARCHITECTURES
@@ -103,16 +103,16 @@ endif()
 
 # optionally build tests
 
-if(BUILD_TESTS)
+if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME AND BUILD_TESTS)
   enable_testing()
   add_subdirectory(tests)
-endif(BUILD_TESTS)
+endif()
 
 # add google benchmark
 
-if(BUILD_BENCHMARKS)
+if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME AND BUILD_BENCHMARKS)
   add_subdirectory(benchmarks)
-endif(BUILD_BENCHMARKS)
+endif()
 
 # install targets
 
