@@ -12,17 +12,7 @@
 # the License.
 # =============================================================================
 
-# Fetch Google Benchmark
-
-CPMFindPackage(
-  NAME benchmark
-  GITHUB_REPOSITORY google/benchmark
-  VERSION 1.5.2
-  GIT_SHALLOW TRUE
-  OPTIONS "BENCHMARK_ENABLE_TESTING OFF" "BENCHMARK_ENABLE_INSTALL OFF")
-
 # Build options
-
 option(DISABLE_DEPRECATION_WARNING "Disable warnings generated from deprecated declarations." OFF)
 option(PER_THREAD_DEFAULT_STREAM "Build with per-thread default stream" OFF)
 
