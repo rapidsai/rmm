@@ -110,3 +110,12 @@ TYPED_TEST(DeviceScalarTest, SetValue)
   scalar.set_value_async(expected, this->stream);
   EXPECT_EQ(expected, scalar.value(this->stream));
 }
+
+TYPED_TEST(DeviceScalarTest, SetValueToZero)
+{
+  rmm::device_scalar<TypeParam> scalar{this->value, this->stream, this->mr};
+  EXPECT_NE(nullptr, scalar.data());
+
+  scalar.set_value_to_zero_async(this->stream);
+  EXPECT_EQ(TypeParam{0}, scalar.value(this->stream));
+}

@@ -152,10 +152,10 @@ class device_scalar {
   value_type value(cuda_stream_view stream) const { return _storage.front_element(stream); }
 
   /**
-   * @brief Sets the value of the `device_scalar` to the given `host_value`.
+   * @brief Sets the value of the `device_scalar` to the value of `v`.
    *
    * This specialization for fundamental types is optimized to use `cudaMemsetAsync` when
-   * `host_value` is zero.
+   * `v` is zero.
    *
    * @note If the stream specified to this function is different from the stream specified
    * to the constructor, then appropriate dependencies must be inserted between the streams
@@ -163,7 +163,7 @@ class device_scalar {
    * this function, otherwise there may be a race condition.
    *
    * This function does not synchronize `stream` before returning. Therefore, the object
-   * referenced by `host_value` should not be destroyed or modified until `stream` has been
+   * referenced by `v` should not be destroyed or modified until `stream` has been
    * synchronized. Otherwise, behavior is undefined.
    *
    * @note: This function incurs a host to device memcpy or device memset and should be used
@@ -176,7 +176,7 @@ class device_scalar {
    * int v{42};
    *
    * // Copies 42 to device storage on `stream`. Does _not_ synchronize
-   * vec.set_value(v, stream);
+   * vec.set_value_async(v, stream);
    * ...
    * cudaStreamSynchronize(stream);
    * // Synchronization is required before `v` can be modified
@@ -185,7 +185,7 @@ class device_scalar {
    *
    * @throws `rmm::cuda_error` if copying `host_value` to device memory fails.
    *
-   * @param host_value The host value which will be copied to device
+   * @param v The host value which will be copied to device
    * @param stream CUDA stream on which to perform the copy
    */
   void set_value_async(value_type const &v, cuda_stream_view s)
@@ -196,6 +196,25 @@ class device_scalar {
   // Disallow passing literals to set_value to avoid race conditions where the memory holding the
   // literal can be freed before the async memcpy / memset executes.
   void set_value_async(value_type &&host_value, cuda_stream_view stream) = delete;
+
+  /**
+   * @brief Sets the value of the `device_scalar` to zero on the specified stream.
+   *
+   * @note If the stream specified to this function is different from the stream specified
+   * to the constructor, then appropriate dependencies must be inserted between the streams
+   * (e.g. using `cudaStreamWaitEvent()` or `cudaStreamSynchronize()`) before and after calling
+   * this function, otherwise there may be a race condition.
+   *
+   * This function does not synchronize `stream` before returning.
+   *
+   * @note: This function incurs a device memset and should be used carefully.
+   *
+   * @param stream CUDA stream on which to perform the copy
+   */
+  void set_value_to_zero_async(cuda_stream_view s)
+  {
+    _storage.set_element_to_zero_async(value_type{0}, s);
+  }
 
   /**
    * @brief Returns pointer to object in device memory.

@@ -180,6 +180,16 @@ TYPED_TEST(TypedUVectorTest, GetSetElementAsync)
   }
 }
 
+TYPED_TEST(TypedUVectorTest, SetElementZeroAsync)
+{
+  auto size = 12345;
+  rmm::device_uvector<TypeParam> uv(size, this->stream());
+  for (std::size_t i = 0; i < uv.size(); ++i) {
+    uv.set_element_to_zero_async(i, this->stream());
+    EXPECT_EQ(TypeParam{0}, uv.element(i, this->stream()));
+  }
+}
+
 TYPED_TEST(TypedUVectorTest, FrontBackElement)
 {
   auto size = 12345;
