@@ -556,6 +556,21 @@ Note that debug logging is different from the CSV memory allocation logging prov
 `rmm::mr::logging_resource_adapter`. The latter is for logging a history of allocation /
 deallocation actions which can be useful for replay with RMM's replay benchmark.
 
+## RMM and CUDA Memory Bounds Checking
+
+Memory allocations taken from a memory resource that allocates a pool of memory (such as
+`pool_memory_resource`) are part of the same low-level CUDA memory allocation. Therefore, 
+out-of-bounds or misaligned accesses to these allocations are not likely to be detected by CUDA 
+tools such as [CUDA Compute Sanitizer](https://docs.nvidia.com/cuda/compute-sanitizer/index.html) 
+memcheck.
+
+An exception to this is `cuda_async_memory_resource`, which uses `cudaMallocAsync` with CUDA's 
+built-in memory pool functionality (CUDA 11.2 or later required). Illegal memory accesses to memory
+allocated by this resource are detectable with Compute Sanitizer Memcheck.
+
+It may be possible in the future to add support for memory bounds checking with other memory 
+resources using NVTX APIs.
+
 ## Using RMM in Python Code
 
 There are two ways to use RMM in Python code:
