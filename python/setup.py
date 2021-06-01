@@ -132,7 +132,7 @@ extensions = cythonize(
             ],
             libraries=["cuda", "cudart"],
             language="c++",
-            extra_compile_args=["-std=c++14"],
+            extra_compile_args=["-std=c++17"],
         )
     ],
     nthreads=nthreads,
