@@ -15,13 +15,9 @@
  */
 #pragma once
 
-#include <map>
 #include <mutex>
-#include <rmm/detail/error.hpp>
-#include <rmm/detail/stack_trace.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <shared_mutex>
-#include <sstream>
 
 namespace rmm {
 namespace mr {

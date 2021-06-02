@@ -106,6 +106,7 @@ cdef extern from "rmm/mr/device/tracking_resource_adaptor.hpp" \
             Upstream* upstream_mr,
             bool capture_stacks) except +
 
+        size_t get_allocated_bytes() except +
         string get_outstanding_allocations_str() except +
         void log_outstanding_allocations() except +
 
@@ -520,10 +521,10 @@ cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
             dict: Dictionary containing allocation counts and bytes.
         """
 
-        counts = (<tracking_resource_adaptor[device_memory_resource]*>(
-            self.c_obj.get()))[0].get_counter(False)
-        byte_counts = (<tracking_resource_adaptor[device_memory_resource]*>(
-            self.c_obj.get()))[0].get_counter(True)
+        counts = (<statistics_resource_adaptor[device_memory_resource]*>(
+            self.c_obj.get()))[0].get_allocations_counter()
+        byte_counts = (<statistics_resource_adaptor[device_memory_resource]*>(
+            self.c_obj.get()))[0].get_bytes_counter()
 
         return {
             "current_bytes": byte_counts.value,
@@ -566,6 +567,17 @@ cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
             Whether or not to capture the stack trace with each allocation.
         """
         pass
+
+    def get_allocated_bytes(self) -> size_t:
+        """
+        Query the number of bytes that have been allocated. Note that this can
+        not be used to know how large of an allocation is possible due to both
+        possible fragmentation and also internal page sizes and alignment that
+        is not tracked by this allocator.
+        """
+        return (<tracking_resource_adaptor[device_memory_resource]*>(
+            self.c_obj.get())
+        )[0].get_allocated_bytes()
 
     def get_outstanding_allocations_str(self) -> str:
         """

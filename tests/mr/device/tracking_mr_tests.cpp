@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/mr/device/tracking_resource_adaptor.hpp>
@@ -95,7 +96,7 @@ TEST(TrackingTest, MultiTracking)
 
   std::vector<std::shared_ptr<rmm::device_buffer>> allocations;
   for (std::size_t i = 0; i < 10; ++i) {
-    allocations.emplace_back(std::make_shared<rmm::device_buffer>(10_MiB));
+    allocations.emplace_back(std::make_shared<rmm::device_buffer>(10_MiB, rmm::cuda_stream_default));
   }
 
   EXPECT_EQ(mr.get_outstanding_allocations().size(), 10);
@@ -104,7 +105,7 @@ TEST(TrackingTest, MultiTracking)
   rmm::mr::set_current_device_resource(&inner_mr);
 
   for (std::size_t i = 0; i < 5; ++i) {
-    allocations.emplace_back(std::make_shared<rmm::device_buffer>(10_MiB));
+    allocations.emplace_back(std::make_shared<rmm::device_buffer>(10_MiB, rmm::cuda_stream_default));
   }
 
   // Check the allocated bytes for both MRs

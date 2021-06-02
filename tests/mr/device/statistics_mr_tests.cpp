@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/mr/device/statistics_resource_adaptor.hpp>
@@ -124,7 +125,7 @@ TEST(StatisticsTest, MultiTracking)
 
   std::vector<std::shared_ptr<rmm::device_buffer>> allocations;
   for (std::size_t i = 0; i < 10; ++i) {
-    allocations.emplace_back(std::make_shared<rmm::device_buffer>(10_MiB));
+    allocations.emplace_back(std::make_shared<rmm::device_buffer>(10_MiB, rmm::cuda_stream_default));
   }
 
   EXPECT_EQ(mr.get_allocations_counter().value, 10);
@@ -133,7 +134,7 @@ TEST(StatisticsTest, MultiTracking)
   rmm::mr::set_current_device_resource(&inner_mr);
 
   for (std::size_t i = 0; i < 5; ++i) {
-    allocations.emplace_back(std::make_shared<rmm::device_buffer>(10_MiB));
+    allocations.emplace_back(std::make_shared<rmm::device_buffer>(10_MiB, rmm::cuda_stream_default));
   }
 
   // Check the allocated bytes for both MRs
@@ -201,9 +202,6 @@ TEST(StatisticsTest, NegativeInnerTracking)
   }
   allocations.clear();
 
-  // Check the outstanding allocations are all 0
-  EXPECT_EQ(mr.get_allocations_counter().value, 0);
-  EXPECT_EQ(inner_mr.get_allocations_counter().value, 0);
 
   // Check the current counts are 0 for the outer
   EXPECT_EQ(mr.get_bytes_counter().value, 0);
@@ -225,40 +223,6 @@ TEST(StatisticsTest, NegativeInnerTracking)
 
   EXPECT_EQ(mr.get_allocations_counter().total, 15);
   EXPECT_EQ(inner_mr.get_allocations_counter().total, 5);
-}
-
-TEST(StatisticsTest, DeallocWrongBytes)
-{
-  statistics_adaptor mr{rmm::mr::get_current_device_resource()};
-  std::vector<void *> allocations;
-  for (std::size_t i = 0; i < 10; ++i) {
-    allocations.push_back(mr.allocate(10_MiB));
-  }
-
-  // When deallocating, pass the wrong bytes to deallocate
-  for (std::size_t i = 0; i < allocations.size(); ++i) {
-    mr.deallocate(allocations[i], 5_MiB);
-  }
-  allocations.clear();
-
-  EXPECT_EQ(mr.get_allocations_counter().value, 0);
-  EXPECT_EQ(mr.get_bytes_counter().value, 0);
-
-  // allocation_counts should be unaffected
-  auto current_alloc_counts = mr.get_allocations_counter();
-  auto current_alloc_bytes  = mr.get_bytes_counter();
-
-  // Verify current allocations are correct despite the error
-  EXPECT_EQ(current_alloc_bytes.value, 0);
-  EXPECT_EQ(current_alloc_counts.value, 0);
-
-  // Verify peak allocations
-  EXPECT_EQ(current_alloc_bytes.peak, 100_MiB);
-  EXPECT_EQ(current_alloc_counts.peak, 10);
-
-  // Verify total allocations
-  EXPECT_EQ(current_alloc_bytes.total, 100_MiB);
-  EXPECT_EQ(current_alloc_counts.total, 10);
 }
 
 }  // namespace
