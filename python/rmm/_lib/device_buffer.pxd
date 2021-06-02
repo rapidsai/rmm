@@ -23,14 +23,11 @@ from rmm._lib.memory_resource cimport DeviceMemoryResource
 cdef extern from "rmm/device_buffer.hpp" namespace "rmm" nogil:
     cdef cppclass device_buffer:
         device_buffer()
-        device_buffer(size_t size) except +
         device_buffer(size_t size, cuda_stream_view stream) except +
-        device_buffer(const void* source_data, size_t size) except +
         device_buffer(const void* source_data,
                       size_t size, cuda_stream_view stream) except +
-        device_buffer(const device_buffer& other) except +
-        void resize(size_t new_size) except +
-        void shrink_to_fit() except +
+        void resize(size_t new_size, cuda_stream_view stream) except +
+        void shrink_to_fit(cuda_stream_view stream) except +
         void* data()
         size_t size()
         size_t capacity()
@@ -60,7 +57,7 @@ cdef class DeviceBuffer:
     cpdef bytes tobytes(self, Stream stream=*)
 
     cdef size_t c_size(self) except *
-    cpdef void resize(self, size_t new_size) except *
+    cpdef void resize(self, size_t new_size, Stream stream=*) except *
     cpdef size_t capacity(self) except *
     cdef void* c_data(self) except *
 
