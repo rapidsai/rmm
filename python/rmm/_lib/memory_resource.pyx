@@ -85,7 +85,8 @@ cdef extern from "rmm/mr/device/logging_resource_adaptor.hpp" \
 
 cdef extern from "rmm/mr/device/statistics_resource_adaptor.hpp" \
         namespace "rmm::mr" nogil:
-    cdef cppclass statistics_resource_adaptor[Upstream](device_memory_resource):
+    cdef cppclass statistics_resource_adaptor[Upstream](
+            device_memory_resource):
         struct counter:
             counter()
 

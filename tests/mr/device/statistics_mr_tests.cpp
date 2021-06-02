@@ -125,7 +125,8 @@ TEST(StatisticsTest, MultiTracking)
 
   std::vector<std::shared_ptr<rmm::device_buffer>> allocations;
   for (std::size_t i = 0; i < 10; ++i) {
-    allocations.emplace_back(std::make_shared<rmm::device_buffer>(10_MiB, rmm::cuda_stream_default));
+    allocations.emplace_back(
+      std::make_shared<rmm::device_buffer>(10_MiB, rmm::cuda_stream_default));
   }
 
   EXPECT_EQ(mr.get_allocations_counter().value, 10);
@@ -134,7 +135,8 @@ TEST(StatisticsTest, MultiTracking)
   rmm::mr::set_current_device_resource(&inner_mr);
 
   for (std::size_t i = 0; i < 5; ++i) {
-    allocations.emplace_back(std::make_shared<rmm::device_buffer>(10_MiB, rmm::cuda_stream_default));
+    allocations.emplace_back(
+      std::make_shared<rmm::device_buffer>(10_MiB, rmm::cuda_stream_default));
   }
 
   // Check the allocated bytes for both MRs
@@ -201,7 +203,6 @@ TEST(StatisticsTest, NegativeInnerTracking)
     inner_mr.deallocate(allocations[i], 10_MiB);
   }
   allocations.clear();
-
 
   // Check the current counts are 0 for the outer
   EXPECT_EQ(mr.get_bytes_counter().value, 0);

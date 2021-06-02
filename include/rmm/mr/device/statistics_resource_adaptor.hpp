@@ -73,14 +73,13 @@ class statistics_resource_adaptor final : public device_memory_resource {
    *
    * @param upstream The resource used for allocating/deallocating device memory
    */
-  statistics_resource_adaptor(Upstream* upstream)
-    : upstream_{upstream}
+  statistics_resource_adaptor(Upstream* upstream) : upstream_{upstream}
   {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
   }
 
-  statistics_resource_adaptor()                                 = delete;
-  virtual ~statistics_resource_adaptor()                        = default;
+  statistics_resource_adaptor()                                   = delete;
+  virtual ~statistics_resource_adaptor()                          = default;
   statistics_resource_adaptor(statistics_resource_adaptor const&) = delete;
   statistics_resource_adaptor(statistics_resource_adaptor&&)      = default;
   statistics_resource_adaptor& operator=(statistics_resource_adaptor const&) = delete;
@@ -224,9 +223,9 @@ class statistics_resource_adaptor final : public device_memory_resource {
     return upstream_->get_mem_info(stream);
   }
 
-  counter bytes_;                      // peak, current and total allocated bytes
-  counter allocations_;                      // peak, current and total allocation count
-  std::shared_timed_mutex mutable mtx_;           // mutex for thread safe access to allocations_
+  counter bytes_;                        // peak, current and total allocated bytes
+  counter allocations_;                  // peak, current and total allocation count
+  std::shared_timed_mutex mutable mtx_;  // mutex for thread safe access to allocations_
   Upstream* upstream_;  // the upstream resource used for satisfying allocation requests
 };
 
