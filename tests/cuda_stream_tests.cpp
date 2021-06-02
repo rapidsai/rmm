@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ TEST_F(CudaStreamTest, Equality)
   EXPECT_NE(view_a, rmm::cuda_stream());
   EXPECT_NE(stream_a, rmm::cuda_stream());
 
-  rmm::device_buffer buff(0);
+  rmm::device_buffer buff{};
   EXPECT_EQ(buff.stream(), view_default);
 }
 

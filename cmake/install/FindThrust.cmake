@@ -56,9 +56,11 @@ if(Thrust_FOUND)
   # target since that'll use -isystem, leading to the wrong search order with nvcc
   function(thrust_create_target tgt)
     if(NOT TARGET ${tgt})
-      add_library(thrust_internal INTERFACE)
-      set_target_properties(thrust_internal PROPERTIES INTERFACE_INCLUDE_DIRECTORIES
-                                                       "${Thrust_INCLUDE_DIRS}")
+      if(NOT TARGET thrust_internal)
+        add_library(thrust_internal INTERFACE)
+        set_target_properties(thrust_internal PROPERTIES INTERFACE_INCLUDE_DIRECTORIES
+                                                         "${Thrust_INCLUDE_DIRS}")
+      endif()
       add_library(${tgt} ALIAS thrust_internal)
     endif()
   endfunction()

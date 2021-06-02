@@ -1,10 +1,63 @@
-# RMM 0.20.0 (Date TBD)
+# RMM 21.08.00 (Date TBD)
 
-Please see https://github.com/rapidsai/rmm/releases/tag/v0.20.0a for the latest changes to this development branch.
+Please see https://github.com/rapidsai/rmm/releases/tag/v21.08.0a for the latest changes to this development branch.
 
-# RMM 0.19.0 (Date TBD)
+# RMM 21.06.00 (Date TBD)
 
-Please see https://github.com/rapidsai/rmm/releases/tag/v0.19.0a for the latest changes to this development branch.
+Please see https://github.com/rapidsai/rmm/releases/tag/v21.06.00a for the latest changes to this development branch.
+
+# RMM 0.19.0 (21 Apr 2021)
+
+## 🚨 Breaking Changes
+
+- Avoid potential race conditions in device_scalar/device_uvector setters ([#725](https://github.com/rapidsai/rmm/pull/725)) [@harrism](https://github.com/harrism)
+
+## 🐛 Bug Fixes
+
+- Fix typo in setup.py ([#746](https://github.com/rapidsai/rmm/pull/746)) [@galipremsagar](https://github.com/galipremsagar)
+- Revert &quot;Update `rmm` conda recipe pinning of `librmm`&quot; ([#743](https://github.com/rapidsai/rmm/pull/743)) [@raydouglass](https://github.com/raydouglass)
+- Update `rmm` conda recipe pinning of `librmm` ([#738](https://github.com/rapidsai/rmm/pull/738)) [@mike-wendt](https://github.com/mike-wendt)
+- RMM doesn&#39;t require the CUDA language to be enabled by consumers ([#737](https://github.com/rapidsai/rmm/pull/737)) [@robertmaynard](https://github.com/robertmaynard)
+- Fix setup.py to work in a non-conda environment setup ([#733](https://github.com/rapidsai/rmm/pull/733)) [@galipremsagar](https://github.com/galipremsagar)
+- Fix auto-detecting GPU architectures ([#727](https://github.com/rapidsai/rmm/pull/727)) [@trxcllnt](https://github.com/trxcllnt)
+- CMAKE_CUDA_ARCHITECTURES doesn&#39;t change when build-system invokes cmake ([#726](https://github.com/rapidsai/rmm/pull/726)) [@robertmaynard](https://github.com/robertmaynard)
+- Ship memory_resource_wrappers.hpp as package_data ([#715](https://github.com/rapidsai/rmm/pull/715)) [@shwina](https://github.com/shwina)
+- Only include SetGPUArchs in the top-level CMakeLists.txt ([#713](https://github.com/rapidsai/rmm/pull/713)) [@trxcllnt](https://github.com/trxcllnt)
+- Fix unknown CMake command &quot;CPMFindPackage&quot; ([#699](https://github.com/rapidsai/rmm/pull/699)) [@standbyme](https://github.com/standbyme)
+
+## 📖 Documentation
+
+- Fix host_memory_resource signature typo ([#728](https://github.com/rapidsai/rmm/pull/728)) [@miguelusque](https://github.com/miguelusque)
+
+## 🚀 New Features
+
+- Clarify log file name behaviour in docs ([#722](https://github.com/rapidsai/rmm/pull/722)) [@shwina](https://github.com/shwina)
+- Add Cython definitions for device_uvector ([#720](https://github.com/rapidsai/rmm/pull/720)) [@shwina](https://github.com/shwina)
+- Python bindings for `cuda_async_memory_resource` ([#718](https://github.com/rapidsai/rmm/pull/718)) [@shwina](https://github.com/shwina)
+
+## 🛠️ Improvements
+
+- Fix cython tests ([#749](https://github.com/rapidsai/rmm/pull/749)) [@galipremsagar](https://github.com/galipremsagar)
+- Add requirements for rmm ([#739](https://github.com/rapidsai/rmm/pull/739)) [@galipremsagar](https://github.com/galipremsagar)
+- device_uvector can be used within thrust::optional ([#734](https://github.com/rapidsai/rmm/pull/734)) [@robertmaynard](https://github.com/robertmaynard)
+- arena_memory_resource optimization: disable tracking allocated blocks by default ([#732](https://github.com/rapidsai/rmm/pull/732)) [@rongou](https://github.com/rongou)
+- Remove CMAKE_CURRENT_BINARY_DIR path in rmm&#39;s target_include_directories ([#731](https://github.com/rapidsai/rmm/pull/731)) [@trxcllnt](https://github.com/trxcllnt)
+- set CMAKE_CUDA_ARCHITECTURES to OFF instead of undefined ([#729](https://github.com/rapidsai/rmm/pull/729)) [@trxcllnt](https://github.com/trxcllnt)
+- Avoid potential race conditions in device_scalar/device_uvector setters ([#725](https://github.com/rapidsai/rmm/pull/725)) [@harrism](https://github.com/harrism)
+- Update Changelog Link ([#723](https://github.com/rapidsai/rmm/pull/723)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Prepare Changelog for Automation ([#717](https://github.com/rapidsai/rmm/pull/717)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Update 0.18 changelog entry ([#716](https://github.com/rapidsai/rmm/pull/716)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Simplify cmake cuda architectures handling ([#709](https://github.com/rapidsai/rmm/pull/709)) [@robertmaynard](https://github.com/robertmaynard)
+- Build only `compute` for the newest arch in CMAKE_CUDA_ARCHITECTURES ([#706](https://github.com/rapidsai/rmm/pull/706)) [@robertmaynard](https://github.com/robertmaynard)
+- ENH Build with Ninja &amp; Pass ccache variables to conda recipe ([#705](https://github.com/rapidsai/rmm/pull/705)) [@dillon-cullinan](https://github.com/dillon-cullinan)
+- pool_memory_resource optimization: disable tracking allocated blocks by default ([#702](https://github.com/rapidsai/rmm/pull/702)) [@harrism](https://github.com/harrism)
+- Allow the build directory of rmm to be used for `find_package(rmm)` ([#698](https://github.com/rapidsai/rmm/pull/698)) [@robertmaynard](https://github.com/robertmaynard)
+- Adds a linear accessor to RMM cuda stream pool ([#696](https://github.com/rapidsai/rmm/pull/696)) [@afender](https://github.com/afender)
+- Fix merge conflicts for #692 ([#694](https://github.com/rapidsai/rmm/pull/694)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Fix merge conflicts for #692 ([#693](https://github.com/rapidsai/rmm/pull/693)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Remove C++ Wrappers in `memory_resource_adaptors.hpp` Needed by Cython ([#662](https://github.com/rapidsai/rmm/pull/662)) [@mdemoret-nv](https://github.com/mdemoret-nv)
+- Improve Cython Lifetime Management by Adding References in `DeviceBuffer` ([#661](https://github.com/rapidsai/rmm/pull/661)) [@mdemoret-nv](https://github.com/mdemoret-nv)
+- Add support for streams in CuPy allocator ([#654](https://github.com/rapidsai/rmm/pull/654)) [@pentschev](https://github.com/pentschev)
 
 # RMM 0.18.0 (24 Feb 2021)
 

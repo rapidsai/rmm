@@ -74,9 +74,6 @@ struct crtp {
 template <typename PoolResource, typename FreeListType>
 class stream_ordered_memory_resource : public crtp<PoolResource>, public device_memory_resource {
  public:
-  // TODO use rmm-level def of this.
-  static constexpr size_t allocation_alignment = 256;
-
   ~stream_ordered_memory_resource() { release(); }
 
   stream_ordered_memory_resource()                                      = default;
@@ -211,7 +208,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
 
     auto stream_event = get_event(stream);
 
-    bytes = rmm::detail::align_up(bytes, allocation_alignment);
+    bytes = rmm::detail::align_up(bytes, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
     RMM_EXPECTS(bytes <= this->underlying().get_maximum_allocation_size(),
                 rmm::bad_alloc,
                 "Maximum allocation size exceeded");
@@ -241,7 +238,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     auto stream_event = get_event(stream);
     RMM_LOG_TRACE("[D][stream {:p}][{}B][{:p}]", fmt::ptr(stream_event.stream), bytes, p);
 
-    bytes        = rmm::detail::align_up(bytes, allocation_alignment);
+    bytes        = rmm::detail::align_up(bytes, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
     auto const b = this->underlying().free_block(p, bytes);
 
     // TODO: cudaEventRecord has significant overhead on deallocations. For the non-PTDS case

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -314,7 +314,7 @@ class device_scalar {
   device_scalar &operator=(device_scalar &&) = delete;
 
  private:
-  rmm::device_buffer buffer{sizeof(T)};
+  rmm::device_buffer buffer{sizeof(T), cuda_stream_default};
 
   inline void _memcpy(void *dst, const void *src, cuda_stream_view stream) const
   {

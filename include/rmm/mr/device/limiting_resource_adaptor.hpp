@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
@@ -44,9 +45,10 @@ class limiting_resource_adaptor final : public device_memory_resource {
    * @param upstream The resource used for allocating/deallocating device memory
    * @param allocation_limit Maximum memory allowed for this allocator.
    */
-  limiting_resource_adaptor(Upstream* upstream,
-                            std::size_t allocation_limit,
-                            std::size_t allocation_alignment = 256)
+  limiting_resource_adaptor(
+    Upstream* upstream,
+    std::size_t allocation_limit,
+    std::size_t allocation_alignment = rmm::detail::CUDA_ALLOCATION_ALIGNMENT)
     : allocation_limit_{allocation_limit},
       allocated_bytes_(0),
       allocation_alignment_(allocation_alignment),
