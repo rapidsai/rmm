@@ -37,13 +37,11 @@ class device_scalar {
  public:
   static_assert(std::is_trivially_copyable<T>::value, "Scalar type must be trivially copyable");
 
-  using value_type      = T;
-  using reference       = value_type &;
-  using const_reference = value_type const &;
-  using pointer         = value_type *;
-  using const_pointer   = value_type const *;
-  using iterator        = pointer;
-  using const_iterator  = const_pointer;
+  using value_type      = typename device_uvector<T>::value_type;
+  using reference       = typename device_uvector<T>::reference;
+  using const_reference = typename device_uvector<T>::const_reference;
+  using pointer         = typename device_uvector<T>::pointer;
+  using const_pointer   = typename device_uvector<T>::const_pointer;
 
   RMM_EXEC_CHECK_DISABLE
   ~device_scalar() = default;
@@ -195,7 +193,7 @@ class device_scalar {
 
   // Disallow passing literals to set_value to avoid race conditions where the memory holding the
   // literal can be freed before the async memcpy / memset executes.
-  void set_value_async(value_type &&host_value, cuda_stream_view stream) = delete;
+  void set_value_async(value_type &&, cuda_stream_view) = delete;
 
   /**
    * @brief Sets the value of the `device_scalar` to zero on the specified stream.
