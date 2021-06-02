@@ -105,6 +105,36 @@ TEST(Adaptor, FilenameConstructor)
   expect_log_events(filename, expected_events);
 }
 
+TEST(Adaptor, MultiSinkConstructor)
+{
+  std::string filename1{"logs/test_multi_1.txt"};
+  std::string filename2{"logs/test_multi_2.txt"};
+  rmm::mr::cuda_memory_resource upstream;
+
+  auto file_sink1 = std::make_shared<spdlog::sinks::basic_file_sink_mt>(filename1, true);
+  auto file_sink2 = std::make_shared<spdlog::sinks::basic_file_sink_mt>(filename2, true);
+
+  rmm::mr::logging_resource_adaptor<rmm::mr::cuda_memory_resource> log_mr{&upstream,
+                                                                          {file_sink1, file_sink2}};
+
+  auto p0 = log_mr.allocate(100);
+  auto p1 = log_mr.allocate(42);
+  log_mr.deallocate(p0, 100);
+  log_mr.deallocate(p1, 42);
+  log_mr.flush();
+
+  using rmm::detail::action;
+  using rmm::detail::event;
+
+  std::vector<event> expected_events{{action::ALLOCATE, 100, p0},
+                                     {action::ALLOCATE, 42, p1},
+                                     {action::FREE, 100, p0},
+                                     {action::FREE, 42, p1}};
+
+  expect_log_events(filename1, expected_events);
+  expect_log_events(filename2, expected_events);
+}
+
 TEST(Adaptor, Factory)
 {
   std::string filename{"logs/test2.txt"};
