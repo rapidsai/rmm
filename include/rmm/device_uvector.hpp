@@ -225,9 +225,7 @@ class device_uvector {
 
   // We delete the r-value reference overload to prevent asynchronously copying from a literal or
   // implicit temporary value after it is deleted or goes out of scope.
-  void set_element_async(std::size_t element_index,
-                         value_type const&& v,
-                         cuda_stream_view s) = delete;
+  void set_element_async(std::size_t, value_type const&&, cuda_stream_view) = delete;
 
   /**
    * @brief Asynchronously sets the specified element to zero in device memory.
