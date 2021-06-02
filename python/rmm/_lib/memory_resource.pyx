@@ -83,9 +83,9 @@ cdef extern from "rmm/mr/device/logging_resource_adaptor.hpp" \
 
         void flush() except +
 
-cdef extern from "rmm/mr/device/tracking_resource_adaptor.hpp" \
+cdef extern from "rmm/mr/device/statistics_resource_adaptor.hpp" \
         namespace "rmm::mr" nogil:
-    cdef cppclass tracking_resource_adaptor[Upstream](device_memory_resource):
+    cdef cppclass statistics_resource_adaptor[Upstream](device_memory_resource):
         struct counter:
             counter()
 
@@ -93,11 +93,18 @@ cdef extern from "rmm/mr/device/tracking_resource_adaptor.hpp" \
             int64_t peak
             int64_t total
 
+        statistics_resource_adaptor(
+            Upstream* upstream_mr) except +
+
+        counter get_bytes_counter() except +
+        counter get_allocations_counter() except +
+
+cdef extern from "rmm/mr/device/tracking_resource_adaptor.hpp" \
+        namespace "rmm::mr" nogil:
+    cdef cppclass tracking_resource_adaptor[Upstream](device_memory_resource):
         tracking_resource_adaptor(
             Upstream* upstream_mr,
             bool capture_stacks) except +
-
-        counter get_counter(bool return_bytes) except +
 
         string get_outstanding_allocations_str() except +
         void log_outstanding_allocations() except +
@@ -475,6 +482,57 @@ cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
     def __dealloc__(self):
         self.c_obj.reset()
 
+cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
+
+    def __cinit__(
+        self,
+        DeviceMemoryResource upstream_mr
+    ):
+        self.c_obj.reset(
+            new statistics_resource_adaptor[device_memory_resource](
+                upstream_mr.get_mr()
+            )
+        )
+
+    def __init__(
+        self,
+        DeviceMemoryResource upstream_mr
+    ):
+        """
+        Memory resource that tracks the current, peak and total
+        allocations/deallocations performed by an upstream memory resource.
+        Includes the ability to query these statistics at any time.
+
+        Parameters
+        ----------
+        upstream : DeviceMemoryResource
+            The upstream memory resource.
+        """
+        pass
+
+    @property
+    def allocation_counts(self) -> dict:
+        """
+        Gets the current, peak, and total allocated bytes and number of
+        allocations.
+
+        Returns:
+            dict: Dictionary containing allocation counts and bytes.
+        """
+
+        counts = (<tracking_resource_adaptor[device_memory_resource]*>(
+            self.c_obj.get()))[0].get_counter(False)
+        byte_counts = (<tracking_resource_adaptor[device_memory_resource]*>(
+            self.c_obj.get()))[0].get_counter(True)
+
+        return {
+            "current_bytes": byte_counts.value,
+            "current_count": counts.value,
+            "peak_bytes": byte_counts.peak,
+            "peak_count": counts.peak,
+            "total_bytes": byte_counts.total,
+            "total_count": counts.total,
+        }
 
 cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
 
@@ -508,22 +566,6 @@ cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
             Whether or not to capture the stack trace with each allocation.
         """
         pass
-
-    @property
-    def allocation_counts(self) -> dict:
-        counts = (<tracking_resource_adaptor[device_memory_resource]*>(
-            self.c_obj.get()))[0].get_counter(False)
-        byte_counts = (<tracking_resource_adaptor[device_memory_resource]*>(
-            self.c_obj.get()))[0].get_counter(True)
-
-        return {
-            "current_bytes": byte_counts.value,
-            "current_count": counts.value,
-            "peak_bytes": byte_counts.peak,
-            "peak_count": counts.peak,
-            "total_bytes": byte_counts.total,
-            "total_count": counts.total,
-        }
 
     def get_outstanding_allocations_str(self) -> str:
         """

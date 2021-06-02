@@ -50,6 +50,9 @@ cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
     cpdef get_file_name(self)
     cpdef flush(self)
 
+cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
+    pass
+
 cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
     pass
 

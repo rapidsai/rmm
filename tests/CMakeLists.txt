@@ -110,6 +110,12 @@ ConfigureTest(POLYMORPHIC_ALLOCATOR_TEST
 ConfigureTest(STREAM_ADAPTOR_TEST
               "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/stream_allocator_adaptor_tests.cpp")
 
+# statistics adaptor tests
+
+set(STATISTICS_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/statistics_mr_tests.cpp")
+
+ConfigureTest(STATISTICS_TEST "${STATISTICS_TEST_SRC}")
+
 # tracking adaptor tests
 
 set(TRACKING_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/tracking_mr_tests.cpp")
