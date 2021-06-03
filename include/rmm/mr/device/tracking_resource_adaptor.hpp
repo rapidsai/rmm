@@ -138,6 +138,10 @@ class tracking_resource_adaptor final : public device_memory_resource {
   /**
    * @brief Gets a string containing the outstanding allocation pointers, their
    * size, and optionally the stack trace for when each pointer was allocated.
+   * 
+   * Stack traces are only included if this resource adaptor was created with
+   * `capture_stack == true`. Otherwise, outstanding allocation pointers will be
+   * shown with their size and empty stack traces.
    *
    * @return std::string Containing the outstanding allocation pointers.
    */
