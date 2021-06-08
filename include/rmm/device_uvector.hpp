@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -167,45 +167,10 @@ class device_uvector {
   }
 
   /**
-   * @brief Performs a synchronous copy of `v` to the specified element in device memory.
-   *
-   * Because this function synchronizes the stream `s`, it is safe to destroy or modify the object
-   * referenced by `v` after this function has returned.
-   *
-   * @note This function incurs a host to device memcpy and should be used sparingly.
-   * @note This function synchronizes `stream`.
-   *
-   * Example:
-   * \code{cpp}
-   * rmm::device_uvector<int32_t> vec(100, stream);
-   *
-   * int v{42};
-   *
-   * // Copies 42 to element 0 on `stream` and synchronizes the stream
-   * vec.set_element(0, v, stream);
-   *
-   * // It is safe to destroy or modify `v`
-   * v = 13;
-   * \endcode
-   *
-   *
-   * @throws rmm::out_of_range exception if `element_index >= size()`
-   *
-   * @param element_index Index of the target element
-   * @param v The value to copy to the specified element
-   * @param s The stream on which to perform the copy
-   */
-  void set_element(std::size_t element_index, T const& v, cuda_stream_view s)
-  {
-    RMM_EXPECTS(
-      element_index < size(), rmm::out_of_range, "Attempt to access out of bounds element.");
-    RMM_CUDA_TRY(
-      cudaMemcpyAsync(element_ptr(element_index), &v, sizeof(v), cudaMemcpyDefault, s.value()));
-    s.synchronize_no_throw();
-  }
-
-  /**
    * @brief Performs an asynchronous copy of `v` to the specified element in device memory.
+   *
+   * This specialization for fundamental types is optimized to use `cudaMemsetAsync` when
+   * `host_value` is zero.
    *
    * This function does not synchronize stream `s` before returning. Therefore, the object
    * referenced by `v` should not be destroyed or modified until `stream` has been synchronized.
@@ -241,15 +206,90 @@ class device_uvector {
   {
     RMM_EXPECTS(
       element_index < size(), rmm::out_of_range, "Attempt to access out of bounds element.");
-    RMM_CUDA_TRY(
-      cudaMemcpyAsync(element_ptr(element_index), &v, sizeof(v), cudaMemcpyDefault, s.value()));
+    if constexpr (std::is_fundamental<value_type>::value) {
+      if constexpr (std::is_same<value_type, bool>::value) {
+        RMM_CUDA_TRY(cudaMemsetAsync(element_ptr(element_index), v, sizeof(v), s.value()));
+      } else {
+        if (v == value_type{0}) {
+          set_element_to_zero_async(element_index, s);
+        } else {
+          RMM_CUDA_TRY(cudaMemcpyAsync(
+            element_ptr(element_index), &v, sizeof(v), cudaMemcpyDefault, s.value()));
+        }
+      }
+    } else {
+      RMM_CUDA_TRY(
+        cudaMemcpyAsync(element_ptr(element_index), &v, sizeof(v), cudaMemcpyDefault, s.value()));
+    }
   }
 
   // We delete the r-value reference overload to prevent asynchronously copying from a literal or
   // implicit temporary value after it is deleted or goes out of scope.
-  void set_element_async(std::size_t element_index,
-                         value_type const&& v,
-                         cuda_stream_view s) = delete;
+  void set_element_async(std::size_t, value_type const&&, cuda_stream_view) = delete;
+
+  /**
+   * @brief Asynchronously sets the specified element to zero in device memory.
+   *
+   * This function does not synchronize stream `s` before returning
+   *
+   * @note This function incurs a device memset and should be used sparingly.
+   *
+   * Example:
+   * \code{cpp}
+   * rmm::device_uvector<int32_t> vec(100, stream);
+   *
+   * int v{42};
+   *
+   * // Sets element at index 42 to 0 on `stream`. Does _not_ synchronize
+   * vec.set_element_to_zero_async(42, stream);
+   * \endcode
+   *
+   * @throws rmm::out_of_range exception if `element_index >= size()`
+   *
+   * @param element_index Index of the target element
+   * @param s The stream on which to perform the copy
+   */
+  void set_element_to_zero_async(std::size_t element_index, cuda_stream_view s)
+  {
+    RMM_EXPECTS(
+      element_index < size(), rmm::out_of_range, "Attempt to access out of bounds element.");
+    RMM_CUDA_TRY(cudaMemsetAsync(element_ptr(element_index), 0, sizeof(value_type), s.value()));
+  }
+
+  /**
+   * @brief Performs a synchronous copy of `v` to the specified element in device memory.
+   *
+   * Because this function synchronizes the stream `s`, it is safe to destroy or modify the object
+   * referenced by `v` after this function has returned.
+   *
+   * @note This function incurs a host to device memcpy and should be used sparingly.
+   * @note This function synchronizes `stream`.
+   *
+   * Example:
+   * \code{cpp}
+   * rmm::device_uvector<int32_t> vec(100, stream);
+   *
+   * int v{42};
+   *
+   * // Copies 42 to element 0 on `stream` and synchronizes the stream
+   * vec.set_element(0, v, stream);
+   *
+   * // It is safe to destroy or modify `v`
+   * v = 13;
+   * \endcode
+   *
+   *
+   * @throws rmm::out_of_range exception if `element_index >= size()`
+   *
+   * @param element_index Index of the target element
+   * @param v The value to copy to the specified element
+   * @param s The stream on which to perform the copy
+   */
+  void set_element(std::size_t element_index, T const& v, cuda_stream_view s)
+  {
+    set_element_async(element_index, v, s);
+    s.synchronize_no_throw();
+  }
 
   /**
    * @brief Returns the specified element from device memory
