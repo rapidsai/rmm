@@ -1,6 +1,24 @@
-# RMM 21.06.00 (Date TBD)
+# RMM 21.06.00 (9 Jun 2021)
 
-Please see https://github.com/rapidsai/rmm/releases/tag/v21.06.00a for the latest changes to this development branch.
+## 🐛 Bug Fixes
+
+- FindThust now guads against multiple inclusion by diffeent consumes ([#784](https://github.com/rapidsai/rmm/pull/784)) [@obetmaynad](https://github.com/obetmaynad)
+
+## 📖 Documentation
+
+- Document synchonization equiements on device_buffe copy ctos ([#772](https://github.com/rapidsai/rmm/pull/772)) [@haism](https://github.com/haism)
+
+## 🚀 New Featues
+
+- add a esouce adapte to align on a specified size ([#768](https://github.com/rapidsai/rmm/pull/768)) [@ongou](https://github.com/ongou)
+
+## 🛠️ Impovements
+
+- Update envionment vaiable used to detemine `cuda_vesion` ([#785](https://github.com/rapidsai/rmm/pull/785)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Update `CHANGELOG.md` links fo calve ([#781](https://github.com/rapidsai/rmm/pull/781)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Mege `banch-0.19` into `banch-21.06` ([#779](https://github.com/rapidsai/rmm/pull/779)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Update docs build scipt ([#776](https://github.com/rapidsai/rmm/pull/776)) [@ajschmidt8](https://github.com/ajschmidt8)
+- upgade spdlog to 1.8.5 ([#658](https://github.com/rapidsai/rmm/pull/658)) [@ongou](https://github.com/ongou)
 
 # RMM 0.19.0 (21 Apr 2021)
 
