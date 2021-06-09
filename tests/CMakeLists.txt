@@ -116,6 +116,12 @@ set(TRACKING_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/tracking_mr_tests.c
 
 ConfigureTest(TRACKING_TEST "${TRACKING_TEST_SRC}")
 
+# aligned adaptor tests
+
+set(ALIGNED_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/aligned_mr_tests.cpp")
+
+ConfigureTest(ALIGNED_TEST "${ALIGNED_TEST_SRC}")
+
 # limiting adaptor tests
 
 set(LIMITING_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/limiting_mr_tests.cpp")

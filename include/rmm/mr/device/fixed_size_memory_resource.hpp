@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,8 +54,6 @@ class fixed_size_memory_resource
   // This is the number of blocks that the pool starts out with, and also the number of
   // blocks by which the pool grows when all of its current blocks are allocated
   static constexpr std::size_t default_blocks_to_preallocate = 128;
-  // The required alignment of this allocator
-  static constexpr std::size_t allocation_alignment = 256;
 
   /**
    * @brief Construct a new `fixed_size_memory_resource` that allocates memory from
@@ -73,11 +71,11 @@ class fixed_size_memory_resource
     std::size_t block_size            = default_block_size,
     std::size_t blocks_to_preallocate = default_blocks_to_preallocate)
     : upstream_mr_{upstream_mr},
-      block_size_{rmm::detail::align_up(block_size, allocation_alignment)},
+      block_size_{rmm::detail::align_up(block_size, rmm::detail::CUDA_ALLOCATION_ALIGNMENT)},
       upstream_chunk_size_{block_size * blocks_to_preallocate}
   {
     // allocate initial blocks and insert into free list
-    this->insert_blocks(std::move(blocks_from_upstream(cudaStreamLegacy)), cudaStreamLegacy);
+    this->insert_blocks(std::move(blocks_from_upstream(cuda_stream_legacy)), cuda_stream_legacy);
   }
 
   /**
@@ -201,7 +199,8 @@ class fixed_size_memory_resource
   {
     // Deallocating a fixed-size block just inserts it in the free list, which is
     // handled by the parent class
-    RMM_LOGGING_ASSERT(rmm::detail::align_up(size, allocation_alignment) <= block_size_);
+    RMM_LOGGING_ASSERT(rmm::detail::align_up(size, rmm::detail::CUDA_ALLOCATION_ALIGNMENT) <=
+                       block_size_);
     return block_type{p};
   }
 

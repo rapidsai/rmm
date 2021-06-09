@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020, NVIDIA CORPORATION.
+ * Copyright (c) 2018-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,9 +37,10 @@ using exec_policy_t = std::unique_ptr<par_t, deleter_t>;
  * @Returns A Thrust execution policy that will use RMM for temporary memory
  * allocation.
  */
-inline exec_policy_t exec_policy(cudaStream_t stream = 0)
+[[deprecated("Use new exec_policy in rmm/exec_policy.hpp")]] inline exec_policy_t exec_policy(
+  cudaStream_t stream = 0)
 {
-  auto *alloc  = new rmm::mr::thrust_allocator<char>(stream);
+  auto *alloc  = new rmm::mr::thrust_allocator<char>(cuda_stream_view{stream});
   auto deleter = [alloc](par_t *pointer) {
     delete alloc;
     delete pointer;

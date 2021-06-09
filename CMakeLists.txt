@@ -27,7 +27,7 @@ endif()
 
 project(
   RMM
-  VERSION 0.19.0
+  VERSION 21.06.00
   LANGUAGES CXX)
 
 include(cmake/Modules/CPM.cmake)
@@ -81,7 +81,7 @@ endif(CUDA_STATIC_RUNTIME)
 
 target_link_libraries(rmm INTERFACE rmm::Thrust)
 target_link_libraries(rmm INTERFACE spdlog::spdlog_header_only)
-target_compile_features(rmm INTERFACE cxx_std_14 $<BUILD_INTERFACE:cuda_std_14>)
+target_compile_features(rmm INTERFACE cxx_std_17 $<BUILD_INTERFACE:cuda_std_17>)
 
 # Set logging level. Must go before including gtests and benchmarks.
 
@@ -158,7 +158,7 @@ export(
   FILE ${RMM_BINARY_DIR}/rmm-targets.cmake
   NAMESPACE rmm::)
 
-if(SPDLOG_INSTALL)
+if(RMM_EXPORT_SPDLOG)
   export(
     APPEND
     TARGETS spdlog_header_only

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@
 
 cuda_event_timer::cuda_event_timer(benchmark::State& state,
                                    bool flush_l2_cache,
-                                   cudaStream_t stream)
+                                   rmm::cuda_stream_view stream)
   : stream(stream), p_state(&state)
 {
   // flush all of L2$
@@ -44,18 +44,19 @@ cuda_event_timer::cuda_event_timer(benchmark::State& state,
     if (l2_cache_bytes > 0) {
       const int memset_value = 0;
       rmm::device_buffer l2_cache_buffer(l2_cache_bytes, stream);
-      RMM_CUDA_TRY(cudaMemsetAsync(l2_cache_buffer.data(), memset_value, l2_cache_bytes, stream));
+      RMM_CUDA_TRY(
+        cudaMemsetAsync(l2_cache_buffer.data(), memset_value, l2_cache_bytes, stream.value()));
     }
   }
 
   RMM_CUDA_TRY(cudaEventCreate(&start));
   RMM_CUDA_TRY(cudaEventCreate(&stop));
-  RMM_CUDA_TRY(cudaEventRecord(start, stream));
+  RMM_CUDA_TRY(cudaEventRecord(start, stream.value()));
 }
 
 cuda_event_timer::~cuda_event_timer()
 {
-  RMM_CUDA_ASSERT_OK(cudaEventRecord(stop, stream));
+  RMM_CUDA_ASSERT_OK(cudaEventRecord(stop, stream.value()));
   RMM_CUDA_ASSERT_OK(cudaEventSynchronize(stop));
 
   float milliseconds = 0.0f;

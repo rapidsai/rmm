@@ -1,7 +1,7 @@
 # Copyright (c) 2018, NVIDIA CORPORATION.
 
 {% set version = environ.get('GIT_DESCRIBE_TAG', '0.0.0.dev').lstrip('v') + environ.get('VERSION_SUFFIX', '') %}
-{% set cuda_version='.'.join(environ.get('CUDA_VERSION', '9.2').split('.')[:2]) %}
+{% set cuda_version='.'.join(environ.get('CUDA', '9.2').split('.')[:2]) %}
 package:
   name: librmm
   version: {{ version }}
@@ -30,12 +30,12 @@ build:
 
 requirements:
   build:
-    - cmake >=3.14.0
+    - cmake >=3.18
   host:
     - cudatoolkit {{ cuda_version }}.*
   run:
     - {{ pin_compatible('cudatoolkit', max_pin='x.x') }}
-    - spdlog=1.7.0
+    - spdlog>=1.8.5,<2.0.0a0
 
 test:
   commands:

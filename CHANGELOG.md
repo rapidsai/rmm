@@ -1,3 +1,25 @@
+# RMM 21.06.00 (9 Jun 2021)
+
+## 🐛 Bug Fixes
+
+- FindThust now guads against multiple inclusion by diffeent consumes ([#784](https://github.com/rapidsai/rmm/pull/784)) [@obetmaynad](https://github.com/obetmaynad)
+
+## 📖 Documentation
+
+- Document synchonization equiements on device_buffe copy ctos ([#772](https://github.com/rapidsai/rmm/pull/772)) [@haism](https://github.com/haism)
+
+## 🚀 New Featues
+
+- add a esouce adapte to align on a specified size ([#768](https://github.com/rapidsai/rmm/pull/768)) [@ongou](https://github.com/ongou)
+
+## 🛠️ Impovements
+
+- Update envionment vaiable used to detemine `cuda_vesion` ([#785](https://github.com/rapidsai/rmm/pull/785)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Update `CHANGELOG.md` links fo calve ([#781](https://github.com/rapidsai/rmm/pull/781)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Mege `banch-0.19` into `banch-21.06` ([#779](https://github.com/rapidsai/rmm/pull/779)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Update docs build scipt ([#776](https://github.com/rapidsai/rmm/pull/776)) [@ajschmidt8](https://github.com/ajschmidt8)
+- upgade spdlog to 1.8.5 ([#658](https://github.com/rapidsai/rmm/pull/658)) [@ongou](https://github.com/ongou)
+
 # RMM 0.19.0 (21 Apr 2021)
 
 ## 🚨 Breaking Changes
@@ -50,7 +72,6 @@
 - Remove C++ Wrappers in `memory_resource_adaptors.hpp` Needed by Cython ([#662](https://github.com/rapidsai/rmm/pull/662)) [@mdemoret-nv](https://github.com/mdemoret-nv)
 - Improve Cython Lifetime Management by Adding References in `DeviceBuffer` ([#661](https://github.com/rapidsai/rmm/pull/661)) [@mdemoret-nv](https://github.com/mdemoret-nv)
 - Add support for streams in CuPy allocator ([#654](https://github.com/rapidsai/rmm/pull/654)) [@pentschev](https://github.com/pentschev)
-
 
 # RMM 0.18.0 (24 Feb 2021)
 
