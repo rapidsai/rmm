@@ -18,8 +18,7 @@ include(FetchContent)
 FetchContent_Declare(
   rapids-cmake
   GIT_REPOSITORY https://github.com/rapidsai/rapids-cmake.git
-  GIT_TAG        origin/branch-21.08
-  )
+  GIT_TAG origin/branch-21.08)
 FetchContent_MakeAvailable(rapids-cmake)
 include(rapids-cmake)
 include(rapids-cpm)
@@ -40,22 +39,24 @@ rapids_cmake_build_type(Release)
 # build options
 option(BUILD_TESTS "Configure CMake to build tests" ON)
 option(BUILD_BENCHMARKS "Configure CMake to build (google) benchmarks" OFF)
-set(RMM_LOGGING_LEVEL "INFO" CACHE STRING "Choose the logging level.")
+set(RMM_LOGGING_LEVEL
+    "INFO"
+    CACHE STRING "Choose the logging level.")
 set_property(CACHE RMM_LOGGING_LEVEL PROPERTY STRINGS "TRACE" "DEBUG" "INFO" "WARN" "ERROR"
                                               "CRITICAL" "OFF")
 
-# Set logging level. Must go before including gtests and benchmarks.
-# Set the possible values of build type for cmake-gui
+# Set logging level. Must go before including gtests and benchmarks. Set the possible values of
+# build type for cmake-gui
 message(STATUS "RMM: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'")
 
 # cudart can be statically linked or dynamically linked the python ecosystem wants dynamic linking
 option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
 
 # find packages we depend on
-rapids_find_package(CUDAToolkit REQUIRED
-    BUILD_EXPORT_SET    rmm-exports
-    INSTALL_EXPORT_SET  rmm-exports
-    )
+rapids_find_package(
+  CUDAToolkit REQUIRED
+  BUILD_EXPORT_SET rmm-exports
+  INSTALL_EXPORT_SET rmm-exports)
 rapids_cpm_init()
 include(cmake/thirdparty/get_spdlog.cmake)
 include(cmake/thirdparty/get_thrust.cmake)
@@ -79,14 +80,13 @@ target_link_libraries(rmm INTERFACE spdlog::spdlog_header_only)
 target_link_libraries(rmm INTERFACE dl)
 target_compile_features(rmm INTERFACE cxx_std_17 $<BUILD_INTERFACE:cuda_std_17>)
 
-
 if((BUILD_TESTS OR BUILD_BENCHMARKS) AND CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
   include(rapids-cuda)
   rapids_cuda_init_architectures(RMM)
   enable_language(CUDA)
 
-  # Since RMM only enables CUDA optionally we need to manually
-  # include the file that rapids_cuda_init_architectures relies on `project` calling
+  # Since RMM only enables CUDA optionally we need to manually include the file that
+  # rapids_cuda_init_architectures relies on `project` calling
   include("${CMAKE_PROJECT_RMM_INCLUDE}")
   message(STATUS "RMM: Building benchmarks with GPU Architectures: ${CMAKE_CUDA_ARCHITECTURES}")
 endif()
@@ -105,7 +105,6 @@ if(BUILD_BENCHMARKS AND CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
   add_subdirectory(benchmarks)
 endif()
 
-
 # install export targets
 install(TARGETS rmm EXPORT rmm-exports)
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
@@ -113,7 +112,7 @@ install(FILES ${RMM_BINARY_DIR}/include/rmm/version_config.hpp
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/rmm)
 
 set(doc_string
-[=[
+    [=[
 Provide targets for RMM: RAPIDS Memory Manager.
 
 The goal of the [RMM](https://github.com/rapidsai/rmm) is to provide:
@@ -124,11 +123,12 @@ The goal of the [RMM](https://github.com/rapidsai/rmm) is to provide:
 ]=])
 
 set(code_string
-[=[
+    [=[
 thrust_create_target(rmm::Thrust FROM_OPTIONS)
 ]=])
 
- rapids_export(INSTALL rmm
+rapids_export(
+  INSTALL rmm
   EXPORT_SET rmm-exports
   GLOBAL_TARGETS rmm
   NAMESPACE rmm::
@@ -136,14 +136,13 @@ thrust_create_target(rmm::Thrust FROM_OPTIONS)
   FINAL_CODE_BLOCK code_string)
 
 # build export targets
-rapids_export(BUILD rmm
+rapids_export(
+  BUILD rmm
   EXPORT_SET rmm-exports
   GLOBAL_TARGETS rmm
   NAMESPACE rmm::
   DOCUMENTATION doc_string
-  FINAL_CODE_BLOCK code_string
-  )
-
+  FINAL_CODE_BLOCK code_string)
 
 # make documentation
 
