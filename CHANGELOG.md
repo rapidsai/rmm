@@ -2,9 +2,27 @@
 
 Please see https://github.com/rapidsai/rmm/releases/tag/v21.08.0a for the latest changes to this development branch.
 
-# RMM 21.06.00 (Date TBD)
+# RMM 21.06.00 (9 Jun 2021)
 
-Please see https://github.com/rapidsai/rmm/releases/tag/v21.06.00a for the latest changes to this development branch.
+## 🐛 Bug Fixes
+
+- FindThrust now guards against multiple inclusion by different consumers ([#784](https://github.com/rapidsai/rmm/pull/784)) [@robertmaynard](https://github.com/robertmaynard)
+
+## 📖 Documentation
+
+- Document synchronization requirements on device_buffer copy ctors ([#772](https://github.com/rapidsai/rmm/pull/772)) [@harrism](https://github.com/harrism)
+
+## 🚀 New Features
+
+- add a resource adapter to align on a specified size ([#768](https://github.com/rapidsai/rmm/pull/768)) [@rongou](https://github.com/rongou)
+
+## 🛠️ Improvements
+
+- Update environment variable used to determine `cuda_version` ([#785](https://github.com/rapidsai/rmm/pull/785)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Update `CHANGELOG.md` links for calver ([#781](https://github.com/rapidsai/rmm/pull/781)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Merge `branch-0.19` into `branch-21.06` ([#779](https://github.com/rapidsai/rmm/pull/779)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Update docs build script ([#776](https://github.com/rapidsai/rmm/pull/776)) [@ajschmidt8](https://github.com/ajschmidt8)
+- upgrade spdlog to 1.8.5 ([#658](https://github.com/rapidsai/rmm/pull/658)) [@rongou](https://github.com/rongou)
 
 # RMM 0.19.0 (21 Apr 2021)
 
