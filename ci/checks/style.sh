@@ -15,7 +15,7 @@ LANG=C.UTF-8
 conda activate rapids
 
 # Run isort and get results/return code
-ISORT=`isort --recursive --check-only python`
+ISORT=`isort --check-only python`
 ISORT_RETVAL=$?
 
 # Run black and get results/return code
