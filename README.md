@@ -15,7 +15,7 @@ The goal of the RAPIDS Memory Manager (RMM) is to provide:
 - A collection of [data structures](#device-data-structures) that use the interface for memory allocation
 
 For information on the interface RMM provides and how to use RMM in your C++ code, see
-[below](#using-rmm-in-c++).
+[below](#using-rmm-in-c).
 
 **NOTE:** For the latest stable [README.md](https://github.com/rapidsai/rmm/blob/main/README.md)
 ensure you are on the `main` branch.
