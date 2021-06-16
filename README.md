@@ -659,7 +659,7 @@ of 1 GiB and a maximum size of 4 GiB. The pool uses
 ```python
 >>> import rmm
 >>> pool = rmm.mr.PoolMemoryResource(
-...     upstream=rmm.mr.CudaMemoryResource(),
+...     rmm.mr.CudaMemoryResource(),
 ...     initial_pool_size=2**30,
 ...     maximum_pool_size=2**32
 ... )
