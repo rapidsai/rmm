@@ -78,6 +78,7 @@ cuda_version_to_pxi_dir = {
     "11.0": "11.x",
     "11.1": "11.x",
     "11.2": "11.x",
+    "11.3": "11.x",
 }
 
 for pxd_basename in files_to_preprocess:
