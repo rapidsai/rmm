@@ -5,7 +5,7 @@ channels:
 dependencies:
 - clang=8.0.1
 - clang-tools=8.0.1
-- cmake>=3.18
+- cmake>=3.20.1
 - cmake-format=0.6.11
 - flake8=3.8.3
 - black=19.10

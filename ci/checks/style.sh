@@ -43,9 +43,14 @@ CMAKE_FORMAT_RETVAL=0
 CMAKE_LINTS=()
 CMAKE_LINT_RETVAL=0
 
+CURRENT_TAG=$(git tag --merged HEAD | grep -xE '^v.*' | sort --version-sort | tail -n 1 | tr -d 'v')
+CURRENT_MAJOR=$(echo $CURRENT_TAG | awk '{split($0, a, "."); print a[1]}')
+CURRENT_MINOR=$(echo $CURRENT_TAG | awk '{split($0, a, "."); print a[2]}')
+CURRENT_SHORT_TAG=${CURRENT_MAJOR}.${CURRENT_MINOR}
+gpuci_retry curl -s https://raw.githubusercontent.com/rapidsai/rapids-cmake/branch-${CURRENT_SHORT_TAG}/cmake-format-rapids-cmake.json -o cmake/rapids-cmake.json
 
 for cmake_file in "${CMAKE_FILES[@]}"; do
-  cmake-format --in-place --config-files cmake/config.json -- ${cmake_file}
+  cmake-format --in-place --config-files cmake/config.json cmake/rapids-cmake.json  -- ${cmake_file}
   TMP_CMAKE_FORMAT=`git diff --color --exit-code -- ${cmake_file}`
   TMP_CMAKE_FORMAT_RETVAL=$?
   if [ "$TMP_CMAKE_FORMAT_RETVAL" != "0" ]; then
@@ -53,7 +58,7 @@ for cmake_file in "${CMAKE_FILES[@]}"; do
     CMAKE_FORMATS+=("$TMP_CMAKE_FORMAT")
   fi
 
-  TMP_CMAKE_LINT=`cmake-lint --config-files cmake/config.json -- ${cmake_file}`
+  TMP_CMAKE_LINT=`cmake-lint --config-files cmake/config.json cmake/rapids-cmake.json  -- ${cmake_file}`
   TMP_CMAKE_LINT_RETVAL=$?
   if [ "$TMP_CMAKE_LINT_RETVAL" != "0" ]; then
     CMAKE_LINT_RETVAL=1
