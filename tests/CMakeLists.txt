@@ -54,7 +54,7 @@ function(ConfigureTestInternal TEST_NAME TEST_SRC)
   target_compile_definitions(${TEST_NAME}
                              PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
   target_compile_options(${TEST_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Wall -Werror
-                                             -Wno-error=deprecated-declarations>)
+                                             -Wno-error=deprecated-declarations> -D_LIBCUDACXX_NO_RTTI)
 
   if(DISABLE_DEPRECATION_WARNING)
     target_compile_options(
@@ -163,3 +163,9 @@ ConfigureTest(LOGGER_TEST "${LOGGER_TEST_SRC}")
 
 set(DEVICE_UVECTOR_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/device_uvector_tests.cpp")
 ConfigureTest(DEVICE_UVECTOR_TEST "${DEVICE_UVECTOR_TEST_SRC}")
+
+# libcudacxx memory_resource tests
+
+# device mr tests
+set(LIBCUDACXX_DEVICE_MR_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/libcudacxx/device/mr_tests.cpp")
+ConfigureTest(LIBCUDACXX_DEVICE_MR_TEST "${LIBCUDACXX_DEVICE_MR_TEST_SRC}")

@@ -64,12 +64,16 @@ option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
 
 find_package(CUDAToolkit REQUIRED)
 
+# find libcu++
+include(cmake/thirdparty/RMM_GetLibcudacxx.cmake)
+
 # library targets
 
 add_library(rmm INTERFACE)
 add_library(rmm::rmm ALIAS rmm)
 
-target_include_directories(rmm INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+target_include_directories(rmm INTERFACE "$<BUILD_INTERFACE:${LIBCUDACXX_INCLUDE_DIR}>"
+                                         "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
                                          "$<INSTALL_INTERFACE:include>")
 
 if(CUDA_STATIC_RUNTIME)
@@ -125,6 +129,11 @@ install(TARGETS rmm EXPORT rmm-targets)
 install(DIRECTORY include/rmm DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 install(FILES ${RMM_BINARY_DIR}/include/rmm/version_config.hpp
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/rmm)
+
+install(DIRECTORY
+        ${RMM_GENERATED_INCLUDE_DIR}/include/libcxx
+        ${RMM_GENERATED_INCLUDE_DIR}/include/libcudacxx
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/rmm)
 
 include(CMakePackageConfigHelpers)
 configure_package_config_file(cmake/rmm-config.cmake.in ${RMM_BINARY_DIR}/cmake/rmm-config.cmake
