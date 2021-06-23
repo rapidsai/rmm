@@ -123,7 +123,9 @@ The goal of the [RMM](https://github.com/rapidsai/rmm) is to provide:
 
 set(code_string
     [=[
-thrust_create_target(rmm::Thrust FROM_OPTIONS)
+if(NOT TARGET rmm::Thrust)
+  thrust_create_target(rmm::Thrust FROM_OPTIONS)
+endif()
 ]=])
 
 rapids_export(
