@@ -21,8 +21,6 @@ function(find_and_configure_spdlog VERSION)
 
   rapids_cpm_find(
     spdlog ${VERSION}
-    BUILD_EXPORT_SET rmm-exports
-    INSTALL_EXPORT_SET rmm-exports
     CPM_ARGS
     GIT_REPOSITORY https://github.com/gabime/spdlog.git
     GIT_TAG v${VERSION}
@@ -31,6 +29,9 @@ function(find_and_configure_spdlog VERSION)
   # spdlog
   if(spdlog_ADDED)
     install(TARGETS spdlog_header_only EXPORT rmm-exports)
+  else()
+    rapids_export_package(BUILD spdlog rmm-exports)
+    rapids_export_package(INSTALL spdlog rmm-exports)
   endif()
 endfunction()
 
