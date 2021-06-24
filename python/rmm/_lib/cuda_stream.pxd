@@ -12,13 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+cimport cython
 from libcpp cimport bool
 from libcpp.memory cimport unique_ptr
 
-from rmm._lib.lib cimport cudaStream_t
 from rmm._lib.cuda_stream_view cimport cuda_stream_view
-
-cimport cython
+from rmm._lib.lib cimport cudaStream_t
 
 
 cdef extern from "rmm/cuda_stream.hpp" namespace "rmm" nogil:
