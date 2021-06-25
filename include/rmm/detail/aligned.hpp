@@ -119,7 +119,7 @@ constexpr bool is_aligned(std::size_t v, std::size_t align_bytes) noexcept
  * `alignment`.
  */
 template <typename Alloc>
-void *aligned_allocate(std::size_t bytes, std::size_t alignment, Alloc alloc)
+void* aligned_allocate(std::size_t bytes, std::size_t alignment, Alloc alloc)
 {
   assert(is_pow2(alignment));
 
@@ -127,19 +127,19 @@ void *aligned_allocate(std::size_t bytes, std::size_t alignment, Alloc alloc)
   // plus store of the correction offset
   std::size_t padded_allocation_size{bytes + alignment + sizeof(std::ptrdiff_t)};
 
-  char *const original = static_cast<char *>(alloc(padded_allocation_size));
+  char* const original = static_cast<char*>(alloc(padded_allocation_size));
 
   // account for storage of offset immediately prior to the aligned pointer
-  void *aligned{original + sizeof(std::ptrdiff_t)};
+  void* aligned{original + sizeof(std::ptrdiff_t)};
 
   // std::align modifies `aligned` to point to the first aligned location
   std::align(alignment, bytes, aligned, padded_allocation_size);
 
   // Compute the offset between the original and aligned pointers
-  std::ptrdiff_t offset = static_cast<char *>(aligned) - original;
+  std::ptrdiff_t offset = static_cast<char*>(aligned) - original;
 
   // Store the offset immediately before the aligned pointer
-  *(static_cast<std::ptrdiff_t *>(aligned) - 1) = offset;
+  *(static_cast<std::ptrdiff_t*>(aligned) - 1) = offset;
 
   return aligned;
 }
@@ -160,14 +160,14 @@ void *aligned_allocate(std::size_t bytes, std::size_t alignment, Alloc alloc)
  * @tparam Dealloc A unary callable type that deallocates memory.
  */
 template <typename Dealloc>
-void aligned_deallocate(void *p, std::size_t bytes, std::size_t alignment, Dealloc dealloc)
+void aligned_deallocate(void* p, std::size_t bytes, std::size_t alignment, Dealloc dealloc)
 {
   (void)alignment;
 
   // Get offset from the location immediately prior to the aligned pointer
-  std::ptrdiff_t const offset = *(reinterpret_cast<std::ptrdiff_t *>(p) - 1);
+  std::ptrdiff_t const offset = *(reinterpret_cast<std::ptrdiff_t*>(p) - 1);
 
-  void *const original = static_cast<char *>(p) - offset;
+  void* const original = static_cast<char*>(p) - offset;
 
   dealloc(original);
 }

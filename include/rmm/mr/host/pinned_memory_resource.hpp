@@ -32,12 +32,12 @@ namespace mr {
  *---------------------------------------------------------------------------**/
 class pinned_memory_resource final : public host_memory_resource {
  public:
-  pinned_memory_resource()                               = default;
-  ~pinned_memory_resource()                              = default;
-  pinned_memory_resource(pinned_memory_resource const &) = default;
-  pinned_memory_resource(pinned_memory_resource &&)      = default;
-  pinned_memory_resource &operator=(pinned_memory_resource const &) = default;
-  pinned_memory_resource &operator=(pinned_memory_resource &&) = default;
+  pinned_memory_resource()                              = default;
+  ~pinned_memory_resource()                             = default;
+  pinned_memory_resource(pinned_memory_resource const&) = default;
+  pinned_memory_resource(pinned_memory_resource&&)      = default;
+  pinned_memory_resource& operator=(pinned_memory_resource const&) = default;
+  pinned_memory_resource& operator=(pinned_memory_resource&&) = default;
 
  private:
   /**---------------------------------------------------------------------------*
@@ -53,7 +53,7 @@ class pinned_memory_resource final : public host_memory_resource {
    * @param alignment Alignment of the allocation
    * @return void* Pointer to the newly allocated memory
    *---------------------------------------------------------------------------**/
-  void *do_allocate(std::size_t bytes, std::size_t alignment = alignof(std::max_align_t)) override
+  void* do_allocate(std::size_t bytes, std::size_t alignment = alignof(std::max_align_t)) override
   {
     // don't allocate anything if the user requested zero bytes
     if (0 == bytes) { return nullptr; }
@@ -63,7 +63,7 @@ class pinned_memory_resource final : public host_memory_resource {
       (detail::is_supported_alignment(alignment)) ? alignment : detail::RMM_DEFAULT_HOST_ALIGNMENT;
 
     return detail::aligned_allocate(bytes, alignment, [](std::size_t size) {
-      void *p{nullptr};
+      void* p{nullptr};
       auto status = cudaMallocHost(&p, size);
       if (cudaSuccess != status) { throw std::bad_alloc{}; }
       return p;
@@ -88,14 +88,14 @@ class pinned_memory_resource final : public host_memory_resource {
    *`p`.
    * @param stream Stream on which to perform deallocation
    *---------------------------------------------------------------------------**/
-  void do_deallocate(void *p,
+  void do_deallocate(void* p,
                      std::size_t bytes,
                      std::size_t alignment = alignof(std::max_align_t)) override
   {
     (void)alignment;
     if (nullptr == p) { return; }
     detail::aligned_deallocate(
-      p, bytes, alignment, [](void *p) { RMM_ASSERT_CUDA_SUCCESS(cudaFreeHost(p)); });
+      p, bytes, alignment, [](void* p) { RMM_ASSERT_CUDA_SUCCESS(cudaFreeHost(p)); });
   }
 };
 }  // namespace mr
