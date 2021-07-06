@@ -36,20 +36,19 @@ using thrust_exec_policy_t =
  * @brief Returns a Thrust CUDA execution policy that uses RMM for temporary memory allocation on
  * the specified stream.
  */
-inline auto create_exec_policy(
-  cuda_stream_view stream             = cuda_stream_default,
-  rmm::mr::device_memory_resource* mr = mr::get_current_device_resource())
+inline auto exec_policy(cuda_stream_view stream             = cuda_stream_default,
+                        rmm::mr::device_memory_resource* mr = mr::get_current_device_resource())
 {
   return thrust::cuda::par(rmm::mr::thrust_allocator<char>(stream, mr)).on(stream.value());
 }
 
-class exec_policy : public thrust_exec_policy_t {
- public:
-  exec_policy(cuda_stream_view stream             = cuda_stream_default,
-              rmm::mr::device_memory_resource* mr = mr::get_current_device_resource())
-    : thrust_exec_policy_t(create_exec_policy(stream, mr))
-  {
-  }
+struct exec_policy_t {
+  explicit exec_policy_t(cuda_stream_view stream) : stream_(stream) {}
+
+  operator thrust_exec_policy_t() { return exec_policy(stream_); }
+
+ private:
+  cuda_stream_view stream_;
 };
 
 }  // namespace rmm
