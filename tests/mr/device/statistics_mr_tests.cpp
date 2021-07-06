@@ -50,7 +50,7 @@ TEST(StatisticsTest, Empty)
 TEST(StatisticsTest, AllFreed)
 {
   statistics_adaptor mr{rmm::mr::get_current_device_resource()};
-  std::vector<void *> allocations;
+  std::vector<void*> allocations;
   for (int i = 0; i < 10; ++i) {
     allocations.push_back(mr.allocate(10_MiB));
   }
@@ -66,12 +66,12 @@ TEST(StatisticsTest, AllFreed)
 TEST(StatisticsTest, PeakAllocations)
 {
   statistics_adaptor mr{rmm::mr::get_current_device_resource()};
-  std::vector<void *> allocations;
+  std::vector<void*> allocations;
   for (std::size_t i = 0; i < 10; ++i) {
     allocations.push_back(mr.allocate(10_MiB));
   }
   // Delete every other allocation
-  for (auto &&it = allocations.begin(); it != allocations.end(); ++it) {
+  for (auto&& it = allocations.begin(); it != allocations.end(); ++it) {
     mr.deallocate(*it, 10_MiB);
     it = allocations.erase(it);
   }
@@ -173,7 +173,7 @@ TEST(StatisticsTest, NegativeInnerTracking)
   // wrapped memory resource. This can happen if the MR is not saved with the
   // memory pointer
   statistics_adaptor mr{rmm::mr::get_current_device_resource()};
-  std::vector<void *> allocations;
+  std::vector<void*> allocations;
   for (std::size_t i = 0; i < 10; ++i) {
     allocations.push_back(mr.allocate(10_MiB));
   }

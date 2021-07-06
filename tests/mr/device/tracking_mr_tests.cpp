@@ -44,7 +44,7 @@ TEST(TrackingTest, Empty)
 TEST(TrackingTest, AllFreed)
 {
   tracking_adaptor mr{rmm::mr::get_current_device_resource()};
-  std::vector<void *> allocations;
+  std::vector<void*> allocations;
   for (int i = 0; i < 10; ++i) {
     allocations.push_back(mr.allocate(10_MiB));
   }
@@ -58,7 +58,7 @@ TEST(TrackingTest, AllFreed)
 TEST(TrackingTest, AllocationsLeftWithStacks)
 {
   tracking_adaptor mr{rmm::mr::get_current_device_resource(), true};
-  std::vector<void *> allocations;
+  std::vector<void*> allocations;
   for (int i = 0; i < 10; ++i) {
     allocations.push_back(mr.allocate(10_MiB));
   }
@@ -67,7 +67,7 @@ TEST(TrackingTest, AllocationsLeftWithStacks)
   }
   EXPECT_EQ(mr.get_outstanding_allocations().size(), 5);
   EXPECT_EQ(mr.get_allocated_bytes(), 50_MiB);
-  auto const &outstanding_allocations = mr.get_outstanding_allocations();
+  auto const& outstanding_allocations = mr.get_outstanding_allocations();
   EXPECT_EQ(outstanding_allocations.size(), 5);
   EXPECT_NE(outstanding_allocations.begin()->second.strace, nullptr);
 }
@@ -75,7 +75,7 @@ TEST(TrackingTest, AllocationsLeftWithStacks)
 TEST(TrackingTest, AllocationsLeftWithoutStacks)
 {
   tracking_adaptor mr{rmm::mr::get_current_device_resource()};
-  std::vector<void *> allocations;
+  std::vector<void*> allocations;
   for (int i = 0; i < 10; ++i) {
     allocations.push_back(mr.allocate(10_MiB));
   }
@@ -84,7 +84,7 @@ TEST(TrackingTest, AllocationsLeftWithoutStacks)
   }
   EXPECT_EQ(mr.get_outstanding_allocations().size(), 5);
   EXPECT_EQ(mr.get_allocated_bytes(), 50_MiB);
-  auto const &outstanding_allocations = mr.get_outstanding_allocations();
+  auto const& outstanding_allocations = mr.get_outstanding_allocations();
   EXPECT_EQ(outstanding_allocations.size(), 5);
   EXPECT_EQ(outstanding_allocations.begin()->second.strace, nullptr);
 }
@@ -139,7 +139,7 @@ TEST(TrackingTest, NegativeInnerTracking)
   // wrapped memory resource. This can happen if the MR is not saved with the
   // memory pointer
   tracking_adaptor mr{rmm::mr::get_current_device_resource()};
-  std::vector<void *> allocations;
+  std::vector<void*> allocations;
   for (std::size_t i = 0; i < 10; ++i) {
     allocations.push_back(mr.allocate(10_MiB));
   }
@@ -171,7 +171,7 @@ TEST(TrackingTest, NegativeInnerTracking)
 TEST(TrackingTest, DeallocWrongBytes)
 {
   tracking_adaptor mr{rmm::mr::get_current_device_resource()};
-  std::vector<void *> allocations;
+  std::vector<void*> allocations;
   for (std::size_t i = 0; i < 10; ++i) {
     allocations.push_back(mr.allocate(10_MiB));
   }
