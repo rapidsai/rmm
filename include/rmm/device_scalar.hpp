@@ -47,19 +47,19 @@ class device_scalar {
   ~device_scalar() = default;
 
   RMM_EXEC_CHECK_DISABLE
-  device_scalar(device_scalar &&) = default;
+  device_scalar(device_scalar&&) = default;
 
-  device_scalar &operator=(device_scalar &&) = default;
+  device_scalar& operator=(device_scalar&&) = default;
 
   /**
    * @brief Copy ctor is deleted as it doesn't allow a stream argument
    */
-  device_scalar(device_scalar const &) = delete;
+  device_scalar(device_scalar const&) = delete;
 
   /**
    * @brief Copy assignment is deleted as it doesn't allow a stream argument
    */
-  device_scalar &operator=(device_scalar const &) = delete;
+  device_scalar& operator=(device_scalar const&) = delete;
 
   /**
    * @brief Default constructor is deleted as it doesn't allow a stream argument
@@ -82,7 +82,7 @@ class device_scalar {
    */
   explicit device_scalar(
     cuda_stream_view stream,
-    rmm::mr::device_memory_resource *mr = rmm::mr::get_current_device_resource())
+    rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource())
     : _storage{1, stream, mr}
   {
   }
@@ -104,9 +104,9 @@ class device_scalar {
    * @param mr Optional, resource with which to allocate.
    */
   explicit device_scalar(
-    value_type const &initial_value,
+    value_type const& initial_value,
     cuda_stream_view stream,
-    rmm::mr::device_memory_resource *mr = rmm::mr::get_current_device_resource())
+    rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource())
     : _storage{1, stream, mr}
   {
     set_value_async(initial_value, stream);
@@ -124,9 +124,9 @@ class device_scalar {
    * @param stream The stream to use for the allocation and copy
    * @param mr The resource to use for allocating the new `device_scalar`
    */
-  device_scalar(device_scalar const &other,
+  device_scalar(device_scalar const& other,
                 cuda_stream_view stream,
-                rmm::mr::device_memory_resource *mr = rmm::mr::get_current_device_resource())
+                rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource())
     : _storage{other._storage, stream, mr}
   {
   }
@@ -186,14 +186,14 @@ class device_scalar {
    * @param v The host value which will be copied to device
    * @param stream CUDA stream on which to perform the copy
    */
-  void set_value_async(value_type const &v, cuda_stream_view s)
+  void set_value_async(value_type const& v, cuda_stream_view s)
   {
     _storage.set_element_async(0, v, s);
   }
 
   // Disallow passing literals to set_value to avoid race conditions where the memory holding the
   // literal can be freed before the async memcpy / memset executes.
-  void set_value_async(value_type &&, cuda_stream_view) = delete;
+  void set_value_async(value_type&&, cuda_stream_view) = delete;
 
   /**
    * @brief Sets the value of the `device_scalar` to zero on the specified stream.

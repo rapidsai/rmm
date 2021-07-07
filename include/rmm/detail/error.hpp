@@ -76,7 +76,7 @@ class out_of_range : public std::out_of_range {
 }  // namespace rmm
 
 #define STRINGIFY_DETAIL(x) #x
-#define RMM_STRINGIFY(x) STRINGIFY_DETAIL(x)
+#define RMM_STRINGIFY(x)    STRINGIFY_DETAIL(x)
 
 /**
  * @brief Macro for checking (pre-)conditions that throws an exception when
