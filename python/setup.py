@@ -87,12 +87,7 @@ for pxd_basename in files_to_preprocess:
         pxi_dir = cuda_version_to_pxi_dir.get(CUDA_VERSION.split(".")[0])
 
     if pxi_dir:
-        pxi_pathname = os.path.join(
-            cwd,
-            "rmm/_cuda",
-            pxi_dir,
-            pxi_basename,
-        )
+        pxi_pathname = os.path.join(cwd, "rmm/_cuda", pxi_dir, pxi_basename,)
         pxd_pathname = os.path.join(cwd, "rmm/_cuda", pxd_basename)
         try:
             if filecmp.cmp(pxi_pathname, pxd_pathname):
