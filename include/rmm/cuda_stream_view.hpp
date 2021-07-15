@@ -57,7 +57,7 @@ class cuda_stream_view {
   constexpr cudaStream_t value() const noexcept { return stream_; }
 
   /**
-   * @brief Explicit conversion to cudaStream_t.
+   * @brief Implicit conversion to cudaStream_t.
    */
   constexpr operator cudaStream_t() const noexcept { return value(); }
 
