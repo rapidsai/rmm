@@ -27,7 +27,7 @@ include(rapids-find)
 
 project(
   RMM
-  VERSION 21.08.00
+  VERSION 21.10.00
   LANGUAGES CXX)
 
 # Write the version header
