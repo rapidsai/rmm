@@ -209,7 +209,7 @@ class aligned_resource_adaptor final : public device_memory_resource {
    */
   std::size_t upstream_allocation_size(std::size_t bytes) const
   {
-    auto const aligned_size = detail::align_up(bytes, allocation_alignment_);
+    auto const aligned_size = rmm::detail::align_up(bytes, allocation_alignment_);
     return aligned_size + allocation_alignment_ - rmm::detail::CUDA_ALLOCATION_ALIGNMENT;
   }
 
