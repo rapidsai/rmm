@@ -39,11 +39,11 @@ gpuci_logger "Activate conda env"
 conda activate rapids
 
 # Install build env
-gpuci_conda_retry install rapids-build-env=${MINOR_VERSION}.*
+gpuci_mamba_retry install rapids-build-env=${MINOR_VERSION}.*
 
 # https://docs.rapids.ai/maintainers/depmgmt/ 
 # conda remove --force rapids-build-env
-# gpuci_conda_retry install "your-pkg=1.0.0"
+# gpuci_mamba_retry install "your-pkg=1.0.0"
 
 gpuci_logger "Check versions"
 python --version
@@ -110,7 +110,7 @@ else
     CONDA_FILE=`basename "$CONDA_FILE" .tar.bz2` #get filename without extension
     CONDA_FILE=${CONDA_FILE//-/=} #convert to conda install
     gpuci_logger "Installing $CONDA_FILE"
-    gpuci_conda_retry install -c $WORKSPACE/ci/artifacts/rmm/cpu/conda-bld/ "$CONDA_FILE"
+    gpuci_mamba_retry install -c $WORKSPACE/ci/artifacts/rmm/cpu/conda-bld/ "$CONDA_FILE"
 
     export LIBRMM_BUILD_DIR="$WORKSPACE/ci/artifacts/rmm/cpu/conda_work/build"
     
