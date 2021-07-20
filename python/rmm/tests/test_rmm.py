@@ -553,3 +553,109 @@ def test_cuda_async_memory_resource_threshold(nelem, alloc):
     rmm.mr.set_current_device_resource(mr)
     array_tester("u1", nelem, alloc)  # should not trigger release
     array_tester("u1", 2 * nelem, alloc)  # should trigger release
+
+
+def test_statistics_resource_adaptor():
+
+    cuda_mr = rmm.mr.CudaMemoryResource()
+
+    mr = rmm.mr.StatisticsResourceAdaptor(cuda_mr)
+
+    rmm.mr.set_current_device_resource(mr)
+
+    buffers = [rmm.DeviceBuffer(size=1000) for _ in range(10)]
+
+    for i in range(9, 0, -2):
+        del buffers[i]
+
+    assert mr.allocation_counts == {
+        "current_bytes": 5000,
+        "current_count": 5,
+        "peak_bytes": 10000,
+        "peak_count": 10,
+        "total_bytes": 10000,
+        "total_count": 10,
+    }
+
+    # Push a new Tracking adaptor
+    mr2 = rmm.mr.StatisticsResourceAdaptor(mr)
+    rmm.mr.set_current_device_resource(mr2)
+
+    for _ in range(2):
+        buffers.append(rmm.DeviceBuffer(size=1000))
+
+    assert mr2.allocation_counts == {
+        "current_bytes": 2000,
+        "current_count": 2,
+        "peak_bytes": 2000,
+        "peak_count": 2,
+        "total_bytes": 2000,
+        "total_count": 2,
+    }
+    assert mr.allocation_counts == {
+        "current_bytes": 7000,
+        "current_count": 7,
+        "peak_bytes": 10000,
+        "peak_count": 10,
+        "total_bytes": 12000,
+        "total_count": 12,
+    }
+
+    del buffers
+    gc.collect()
+
+    assert mr2.allocation_counts == {
+        "current_bytes": 0,
+        "current_count": 0,
+        "peak_bytes": 2000,
+        "peak_count": 2,
+        "total_bytes": 2000,
+        "total_count": 2,
+    }
+    assert mr.allocation_counts == {
+        "current_bytes": 0,
+        "current_count": 0,
+        "peak_bytes": 10000,
+        "peak_count": 10,
+        "total_bytes": 12000,
+        "total_count": 12,
+    }
+
+
+def test_tracking_resource_adaptor():
+
+    cuda_mr = rmm.mr.CudaMemoryResource()
+
+    mr = rmm.mr.TrackingResourceAdaptor(cuda_mr, capture_stacks=True)
+
+    rmm.mr.set_current_device_resource(mr)
+
+    buffers = [rmm.DeviceBuffer(size=1000) for _ in range(10)]
+
+    for i in range(9, 0, -2):
+        del buffers[i]
+
+    assert mr.get_allocated_bytes() == 5000
+
+    # Push a new Tracking adaptor
+    mr2 = rmm.mr.TrackingResourceAdaptor(mr, capture_stacks=True)
+    rmm.mr.set_current_device_resource(mr2)
+
+    for _ in range(2):
+        buffers.append(rmm.DeviceBuffer(size=1000))
+
+    assert mr2.get_allocated_bytes() == 2000
+    assert mr.get_allocated_bytes() == 7000
+
+    # Ensure we get back a non-empty string for the allocations
+    assert len(mr.get_outstanding_allocations_str()) > 0
+
+    del buffers
+    gc.collect()
+
+    assert mr2.get_allocated_bytes() == 0
+    assert mr.get_allocated_bytes() == 0
+
+    # make sure the allocations string is now empty
+    assert len(mr2.get_outstanding_allocations_str()) == 0
+    assert len(mr.get_outstanding_allocations_str()) == 0

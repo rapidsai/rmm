@@ -81,7 +81,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
   }
 
   tracking_resource_adaptor()                                 = delete;
-  ~tracking_resource_adaptor()                                = default;
+  virtual ~tracking_resource_adaptor()                        = default;
   tracking_resource_adaptor(tracking_resource_adaptor const&) = delete;
   tracking_resource_adaptor(tracking_resource_adaptor&&)      = default;
   tracking_resource_adaptor& operator=(tracking_resource_adaptor const&) = delete;
@@ -136,15 +136,22 @@ class tracking_resource_adaptor final : public device_memory_resource {
   std::size_t get_allocated_bytes() const noexcept { return allocated_bytes_; }
 
   /**
-   * @brief Log any outstanding allocations via RMM_LOG_DEBUG
+   * @brief Gets a string containing the outstanding allocation pointers, their
+   * size, and optionally the stack trace for when each pointer was allocated.
    *
+   * Stack traces are only included if this resource adaptor was created with
+   * `capture_stack == true`. Otherwise, outstanding allocation pointers will be
+   * shown with their size and empty stack traces.
+   *
+   * @return std::string Containing the outstanding allocation pointers.
    */
-  void log_outstanding_allocations() const
+  std::string get_outstanding_allocations_str() const
   {
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_DEBUG
     read_lock_t lock(mtx_);
-    if (not allocations_.empty()) {
-      std::ostringstream oss;
+
+    std::ostringstream oss;
+
+    if (!allocations_.empty()) {
       for (auto const& al : allocations_) {
         oss << al.first << ": " << al.second.allocation_size << " B";
         if (al.second.strace != nullptr) {
@@ -152,8 +159,19 @@ class tracking_resource_adaptor final : public device_memory_resource {
         }
         oss << std::endl;
       }
-      RMM_LOG_DEBUG("Outstanding Allocations: {}", oss.str());
     }
+
+    return oss.str();
+  }
+
+  /**
+   * @brief Log any outstanding allocations via RMM_LOG_DEBUG
+   *
+   */
+  void log_outstanding_allocations() const
+  {
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_DEBUG
+    RMM_LOG_DEBUG("Outstanding Allocations: {}", get_outstanding_allocations_str());
 #endif  // SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_DEBUG
   }
 
@@ -199,7 +217,33 @@ class tracking_resource_adaptor final : public device_memory_resource {
     upstream_->deallocate(p, bytes, stream);
     {
       write_lock_t lock(mtx_);
-      allocations_.erase(p);
+
+      const auto found = allocations_.find(p);
+
+      // Ensure the allocation is found and the number of bytes match
+      if (found == allocations_.end()) {
+        // Don't throw but log an error. Throwing in a descructor (or any noexcept) will call
+        // std::terminate
+        RMM_LOG_ERROR(
+          "Deallocating a pointer that was not tracked. Ptr: {:p} [{}B], Current Num. Allocations: "
+          "{}",
+          fmt::ptr(p),
+          bytes,
+          this->allocations_.size());
+      } else {
+        allocations_.erase(found);
+
+        auto allocated_bytes = found->second.allocation_size;
+
+        if (allocated_bytes != bytes) {
+          // Don't throw but log an error. Throwing in a descructor (or any noexcept) will call
+          // std::terminate
+          RMM_LOG_ERROR(
+            "Alloc bytes ({}) and Dealloc bytes ({}) do not match", allocated_bytes, bytes);
+
+          bytes = allocated_bytes;
+        }
+      }
     }
     allocated_bytes_ -= bytes;
   }

@@ -11,61 +11,57 @@
 # or implied. See the License for the specific language governing permissions and limitations under
 # the License.
 # =============================================================================
-cmake_minimum_required(VERSION 3.18...3.18 FATAL_ERROR)
 
-# If `CMAKE_CUDA_ARCHITECTURES` is not defined, build for all supported architectures. If
-# `CMAKE_CUDA_ARCHITECTURES` is set to an empty string (""), build for only the current
-# architecture. If `CMAKE_CUDA_ARCHITECTURES` is specified by the user, use user setting.
+cmake_minimum_required(VERSION 3.20.1 FATAL_ERROR)
 
-# This needs to be run before enabling the CUDA language due to the default initialization behavior
-# of `CMAKE_CUDA_ARCHITECTURES`, https://gitlab.kitware.com/cmake/cmake/-/issues/21302
-if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES OR CMAKE_CUDA_ARCHITECTURES STREQUAL "ALL")
-  set(RMM_BUILD_FOR_ALL_ARCHS TRUE)
-elseif(CMAKE_CUDA_ARCHITECTURES STREQUAL "")
-  set(RMM_BUILD_FOR_DETECTED_ARCHS TRUE)
-endif()
+include(FetchContent)
+FetchContent_Declare(
+  rapids-cmake
+  GIT_REPOSITORY https://github.com/rapidsai/rapids-cmake.git
+  GIT_TAG origin/branch-21.08)
+FetchContent_MakeAvailable(rapids-cmake)
+include(rapids-cmake)
+include(rapids-cpm)
+include(rapids-export)
+include(rapids-find)
 
 project(
   RMM
   VERSION 21.08.00
   LANGUAGES CXX)
 
-include(cmake/Modules/CPM.cmake)
-include(cmake/Modules/RMM_thirdparty.cmake)
-include(cmake/Modules/Version.cmake)
-
 # Write the version header
-write_version()
-
-# build type
+rapids_cmake_write_version_file(include/rmm/version_config.hpp)
 
 # Set a default build type if none was specified
-set(DEFAULT_BUILD_TYPE "Release")
-
-if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-  message(STATUS "RMM: Setting build type to '${DEFAULT_BUILD_TYPE}' since none specified.")
-  set(CMAKE_BUILD_TYPE
-      "${DEFAULT_BUILD_TYPE}"
-      CACHE STRING "Choose the type of build." FORCE)
-  # Set the possible values of build type for cmake-gui
-  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel"
-                                               "RelWithDebInfo")
-endif()
+rapids_cmake_build_type(Release)
 
 # build options
-
 option(BUILD_TESTS "Configure CMake to build tests" ON)
 option(BUILD_BENCHMARKS "Configure CMake to build (google) benchmarks" OFF)
+set(RMM_LOGGING_LEVEL
+    "INFO"
+    CACHE STRING "Choose the logging level.")
+set_property(CACHE RMM_LOGGING_LEVEL PROPERTY STRINGS "TRACE" "DEBUG" "INFO" "WARN" "ERROR"
+                                              "CRITICAL" "OFF")
+
+# Set logging level. Must go before including gtests and benchmarks. Set the possible values of
+# build type for cmake-gui
+message(STATUS "RMM: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'")
 
 # cudart can be statically linked or dynamically linked the python ecosystem wants dynamic linking
 option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
 
 # find packages we depend on
-
-find_package(CUDAToolkit REQUIRED)
+rapids_find_package(
+  CUDAToolkit REQUIRED
+  BUILD_EXPORT_SET rmm-exports
+  INSTALL_EXPORT_SET rmm-exports)
+rapids_cpm_init()
+include(cmake/thirdparty/get_spdlog.cmake)
+include(cmake/thirdparty/get_thrust.cmake)
 
 # library targets
-
 add_library(rmm INTERFACE)
 add_library(rmm::rmm ALIAS rmm)
 
@@ -81,89 +77,73 @@ endif(CUDA_STATIC_RUNTIME)
 
 target_link_libraries(rmm INTERFACE rmm::Thrust)
 target_link_libraries(rmm INTERFACE spdlog::spdlog_header_only)
+target_link_libraries(rmm INTERFACE dl)
 target_compile_features(rmm INTERFACE cxx_std_17 $<BUILD_INTERFACE:cuda_std_17>)
 
-# Set logging level. Must go before including gtests and benchmarks.
-
-set(RMM_LOGGING_LEVEL
-    "INFO"
-    CACHE STRING "Choose the logging level.")
-# Set the possible values of build type for cmake-gui
-set_property(CACHE RMM_LOGGING_LEVEL PROPERTY STRINGS "TRACE" "DEBUG" "INFO" "WARN" "ERROR"
-                                              "CRITICAL" "OFF")
-message(STATUS "RMM: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'")
-
 if((BUILD_TESTS OR BUILD_BENCHMARKS) AND CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
-  # Auto-detect available GPU compute architectures
-  include(${RMM_SOURCE_DIR}/cmake/Modules/SetGPUArchs.cmake)
-  # Enable the CUDA language after setting CMAKE_CUDA_ARCHITECTURES
+  include(rapids-cuda)
+  rapids_cuda_init_architectures(RMM)
   enable_language(CUDA)
+
+  # Since RMM only enables CUDA optionally we need to manually include the file that
+  # rapids_cuda_init_architectures relies on `project` calling
+  include("${CMAKE_PROJECT_RMM_INCLUDE}")
   message(STATUS "RMM: Building benchmarks with GPU Architectures: ${CMAKE_CUDA_ARCHITECTURES}")
 endif()
 
 # optionally build tests
-
 if(BUILD_TESTS AND CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
-  enable_testing()
+  include(cmake/thirdparty/get_gtest.cmake)
+  include(CTest) # calls enable_testing()
+
   add_subdirectory(tests)
 endif()
 
-# add google benchmark
-
+# optionally build benchmarks
 if(BUILD_BENCHMARKS AND CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+  include(cmake/thirdparty/get_gbench.cmake)
   add_subdirectory(benchmarks)
 endif()
 
-# install targets
+# install export targets
+install(TARGETS rmm EXPORT rmm-exports)
+install(DIRECTORY include/rmm/ DESTINATION include/rmm)
+install(FILES ${RMM_BINARY_DIR}/include/rmm/version_config.hpp DESTINATION include/rmm)
 
-include(GNUInstallDirs)
-set(INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/rmm)
+set(doc_string
+    [=[
+Provide targets for RMM: RAPIDS Memory Manager.
 
-install(TARGETS rmm EXPORT rmm-targets)
+The goal of the [RMM](https://github.com/rapidsai/rmm) is to provide:
 
-install(DIRECTORY include/rmm DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-install(FILES ${RMM_BINARY_DIR}/include/rmm/version_config.hpp
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/rmm)
+  A common interface that allows customizing device and host memory allocation
+  A collection of implementations of the interface
+  A collection of data structures that use the interface for memory allocation
+]=])
 
-include(CMakePackageConfigHelpers)
-configure_package_config_file(cmake/rmm-config.cmake.in ${RMM_BINARY_DIR}/cmake/rmm-config.cmake
-                              INSTALL_DESTINATION ${INSTALL_CONFIGDIR})
+set(code_string
+    [=[
+if(NOT TARGET rmm::Thrust)
+  thrust_create_target(rmm::Thrust FROM_OPTIONS)
+endif()
+]=])
 
-write_basic_package_version_file(${RMM_BINARY_DIR}/cmake/rmm-config-version.cmake
-                                 COMPATIBILITY SameMinorVersion)
-
-install(
-  EXPORT rmm-targets
-  FILE rmm-targets.cmake
+rapids_export(
+  INSTALL rmm
+  EXPORT_SET rmm-exports
+  GLOBAL_TARGETS rmm
   NAMESPACE rmm::
-  DESTINATION ${INSTALL_CONFIGDIR})
-
-install(
-  FILES ${RMM_BINARY_DIR}/cmake/rmm-config.cmake ${RMM_BINARY_DIR}/cmake/rmm-config-version.cmake
-        ${RMM_SOURCE_DIR}/cmake/install/FindThrust.cmake DESTINATION ${INSTALL_CONFIGDIR})
+  DOCUMENTATION doc_string
+  FINAL_CODE_BLOCK code_string)
 
 # build export targets
-
-set(RMM_BUILD_DIR_EXPORT_SETTINGS
-    "list(PREPEND CMAKE_MODULE_PATH \"${RMM_SOURCE_DIR}/cmake/install/\")")
-
-configure_package_config_file(cmake/rmm-config.cmake.in ${RMM_BINARY_DIR}/rmm-config.cmake
-                              INSTALL_DESTINATION ${RMM_BINARY_DIR})
-
-write_basic_package_version_file(${RMM_BINARY_DIR}/rmm-config-version.cmake
-                                 COMPATIBILITY SameMinorVersion)
-
-export(
-  TARGETS rmm
-  FILE ${RMM_BINARY_DIR}/rmm-targets.cmake
-  NAMESPACE rmm::)
-
-if(RMM_EXPORT_SPDLOG)
-  export(
-    APPEND
-    TARGETS spdlog_header_only
-    FILE ${RMM_BINARY_DIR}/rmm-targets.cmake)
-endif()
+rapids_export(
+  BUILD rmm
+  EXPORT_SET rmm-exports
+  GLOBAL_TARGETS rmm
+  NAMESPACE rmm::
+  DOCUMENTATION doc_string
+  FINAL_CODE_BLOCK code_string)
 
 # make documentation
 

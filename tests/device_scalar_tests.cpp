@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,12 +65,6 @@ using Types = ::testing::Types<bool, int8_t, int16_t, int32_t, int64_t, float, d
 
 TYPED_TEST_CASE(DeviceScalarTest, Types);
 
-TYPED_TEST(DeviceScalarTest, DefaultUninitialized)
-{
-  rmm::device_scalar<TypeParam> scalar{};
-  EXPECT_NE(nullptr, scalar.data());
-}
-
 TYPED_TEST(DeviceScalarTest, InitialValue)
 {
   rmm::device_scalar<TypeParam> scalar{this->value, this->stream, this->mr};
@@ -113,6 +107,15 @@ TYPED_TEST(DeviceScalarTest, SetValue)
 
   auto expected = this->random_value();
 
-  scalar.set_value(expected, this->stream);
+  scalar.set_value_async(expected, this->stream);
   EXPECT_EQ(expected, scalar.value(this->stream));
+}
+
+TYPED_TEST(DeviceScalarTest, SetValueToZero)
+{
+  rmm::device_scalar<TypeParam> scalar{this->value, this->stream, this->mr};
+  EXPECT_NE(nullptr, scalar.data());
+
+  scalar.set_value_to_zero_async(this->stream);
+  EXPECT_EQ(TypeParam{0}, scalar.value(this->stream));
 }
