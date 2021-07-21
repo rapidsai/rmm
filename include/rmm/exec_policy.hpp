@@ -28,14 +28,22 @@
 
 namespace rmm {
 
+using thrust_exec_policy_t =
+  thrust::detail::execute_with_allocator<rmm::mr::thrust_allocator<char>,
+                                         thrust::cuda_cub::execute_on_stream_base>;
+
 /**
- * @brief Returns a Thrust CUDA execution policy that uses RMM for temporary memory allocation on
- * the specified stream.
+ * @brief Helper class usable as a Thrust CUDA execution policy
+ * that uses RMM for temporary memory allocation on the specified stream.
  */
-inline auto exec_policy(cuda_stream_view stream             = cuda_stream_default,
-                        rmm::mr::device_memory_resource* mr = mr::get_current_device_resource())
-{
-  return thrust::cuda::par(rmm::mr::thrust_allocator<char>(stream, mr)).on(stream.value());
-}
+class exec_policy : public thrust_exec_policy_t {
+ public:
+  explicit exec_policy(cuda_stream_view stream             = cuda_stream_default,
+                       rmm::mr::device_memory_resource* mr = mr::get_current_device_resource())
+    : thrust_exec_policy_t(
+        thrust::cuda::par(rmm::mr::thrust_allocator<char>(stream, mr)).on(stream.value()))
+  {
+  }
+};
 
 }  // namespace rmm
