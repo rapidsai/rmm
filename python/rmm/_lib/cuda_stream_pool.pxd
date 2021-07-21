@@ -16,6 +16,7 @@ cimport cython
 
 from rmm._lib.cuda_stream_view cimport cuda_stream_view
 
+
 cdef extern from "rmm/cuda_stream_pool.hpp" namespace "rmm" nogil:
     cdef cppclass cuda_stream_pool:
         cuda_stream_pool(size_t pool_size)
