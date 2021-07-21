@@ -76,15 +76,12 @@ $ git clone --recurse-submodules https://github.com/rapidsai/rmm.git
 $ cd rmm
 ```
 
-Follow the instructions under "Create the conda development environment `cudf_dev`" in the
-[cuDF README](https://github.com/rapidsai/cudf#build-from-source).
-
-- Create the conda development environment `cudf_dev`
+- Create the conda development environment `rmm_dev`
 ```bash
-# create the conda environment (assuming in base `cudf` directory)
-$ conda env create --name cudf_dev --file conda/environments/dev_py35.yml
+# create the conda environment (assuming in base `rmm` directory)
+$ conda env create --name rmm_dev --file conda/environments/rmm_dev_cuda11.0.yml
 # activate the environment
-$ source activate cudf_dev
+$ conda activate rmm_dev
 ```
 
 - Build and install `librmm` using cmake & make. CMake depends on the `nvcc` executable being on
