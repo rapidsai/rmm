@@ -16,5 +16,5 @@ dependencies:
 - cffi>=1.10.0
 - pytest
 - cudatoolkit=10.1
-- spdlog>=1.8.5,<2.0.0a0
+- spdlog>=1.8.5,<1.9
 - cython>=0.29,<0.30
