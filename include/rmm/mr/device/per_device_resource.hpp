@@ -17,6 +17,7 @@
 #pragma once
 
 #include <rmm/cuda_device.hpp>
+#include <rmm/detail/export.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
@@ -95,7 +96,8 @@ inline std::mutex& map_lock()
   return map_lock;
 }
 
-inline auto& get_map()
+// Must have default visibility, see: https://github.com/rapidsai/rmm/issues/826
+RMM_EXPORT inline auto& get_map()
 {
   static std::map<cuda_device_id::value_type, device_memory_resource*> device_id_to_resource;
   return device_id_to_resource;
