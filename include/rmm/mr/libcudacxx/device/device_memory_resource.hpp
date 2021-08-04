@@ -21,8 +21,10 @@
 #include <utility>
 
 namespace rmm {
-
 namespace mr {
+
+namespace experimental {  // to avoid conflicts with existing memory resources
+
 /**
  * @brief Base class for all libcudf device memory allocation.
  *
@@ -31,5 +33,8 @@ namespace mr {
  */
 using device_memory_resource = cuda::memory_resource<cuda::memory_kind::device>;
 
+using device_resource_view = cuda::resource_view<cuda::memory_access::device>;
+
+}  // namespace experimental
 }  // namespace mr
 }  // namespace rmm

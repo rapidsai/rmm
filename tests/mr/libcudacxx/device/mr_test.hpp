@@ -21,6 +21,7 @@
 #include <rmm/cuda_stream.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/mr/libcudacxx/device/cuda_memory_resource.hpp>
+#include <rmm/mr/libcudacxx/device/managed_memory_resource.hpp>
 #include <rmm/mr/libcudacxx/device/owning_wrapper.hpp>
 #include <rmm/mr/libcudacxx/device/per_device_resource.hpp>
 
@@ -30,6 +31,8 @@
 #include <cstdint>
 #include <functional>
 #include <random>
+#include "rmm/mr/device/device_memory_resource.hpp"
+#include "rmm/mr/libcudacxx/device/device_memory_resource.hpp"
 
 namespace rmm {
 namespace test {
@@ -73,16 +76,20 @@ struct allocation {
 
 inline void test_get_current_device_resource()
 {
-  EXPECT_NE(nullptr, rmm::mr::get_current_device_resource());
+  EXPECT_EQ(cuda::resource_view<cuda::memory_access::device>{nullptr},
+            cuda::resource_view<cuda::memory_access::device>{nullptr});
+
+  EXPECT_NE(rmm::mr::experimental::device_resource_view{nullptr},
+            rmm::mr::get_current_device_resource_view());
   void* p{nullptr};
-  EXPECT_NO_THROW(p = rmm::mr::get_current_device_resource()->allocate(1_MiB));
+  EXPECT_NO_THROW(p = rmm::mr::get_current_device_resource_view()->allocate(1_MiB));
   EXPECT_NE(nullptr, p);
   EXPECT_TRUE(is_pointer_aligned(p));
   EXPECT_TRUE(is_device_memory(p));
-  EXPECT_NO_THROW(rmm::mr::get_current_device_resource()->deallocate(p, 1_MiB));
+  EXPECT_NO_THROW(rmm::mr::get_current_device_resource_view()->deallocate(p, 1_MiB));
 }
 
-inline void test_allocate(rmm::mr::device_memory_resource* mr,
+inline void test_allocate(rmm::mr::experimental::device_resource_view mr,
                           std::size_t bytes,
                           cuda_stream_view stream = {})
 {
@@ -96,7 +103,8 @@ inline void test_allocate(rmm::mr::device_memory_resource* mr,
   if (not stream.is_default()) stream.synchronize();
 }
 
-inline void test_various_allocations(rmm::mr::device_memory_resource* mr, cuda_stream_view stream)
+inline void test_various_allocations(rmm::mr::experimental::device_resource_view mr,
+                                     cuda_stream_view stream)
 {
   // test allocating zero bytes on non-default stream
   {
@@ -120,7 +128,7 @@ inline void test_various_allocations(rmm::mr::device_memory_resource* mr, cuda_s
   }
 }
 
-inline void test_random_allocations(rmm::mr::device_memory_resource* mr,
+inline void test_random_allocations(rmm::mr::experimental::device_resource_view mr,
                                     std::size_t num_allocations = 100,
                                     std::size_t max_size        = 5_MiB,
                                     cuda_stream_view stream     = {})
@@ -146,7 +154,7 @@ inline void test_random_allocations(rmm::mr::device_memory_resource* mr,
   });
 }
 
-inline void test_mixed_random_allocation_free(rmm::mr::device_memory_resource* mr,
+inline void test_mixed_random_allocation_free(rmm::mr::experimental::device_resource_view mr,
                                               std::size_t max_size    = 5_MiB,
                                               cuda_stream_view stream = {})
 {
@@ -192,37 +200,43 @@ inline void test_mixed_random_allocation_free(rmm::mr::device_memory_resource* m
   EXPECT_EQ(allocations.size(), active_allocations);
 }
 
-using MRFactoryFunc = std::function<std::shared_ptr<rmm::mr::device_memory_resource>()>;
+using MRFactoryFunc =
+  std::function<std::shared_ptr<rmm::mr::experimental::device_memory_resource>()>;
 
-/// Encapsulates a `device_memory_resource` factory function and associated name
+// Encapsulates a `device_memory_resource` factory function and associated name
 struct mr_factory {
   mr_factory(std::string const& name, MRFactoryFunc f) : name{name}, f{f} {}
 
-  std::string name;  ///< Name to associate with tests that use this factory
-  MRFactoryFunc f;   ///< Factory function that returns shared_ptr to `device_memory_resource`
-                     ///< instance to use in test
+  std::string name;  // Name to associate with tests that use this factory
+  MRFactoryFunc f;   // Factory function that returns shared_ptr to `device_memory_resource`
+                     // instance to use in test
 };
 
-/// Test fixture class value-parameterized on different `mr_factory`s
+// Test fixture class value-parameterized on different `mr_factory`s
 struct mr_test : public ::testing::TestWithParam<mr_factory> {
   void SetUp() override
   {
-    auto factory = GetParam().f;
+    auto factory = this->GetParam().f;
     mr           = factory();
+    mr_view      = cuda::view_resource(mr.get());
   }
 
-  std::shared_ptr<rmm::mr::device_memory_resource> mr;  ///< Pointer to resource to use in tests
+  // resource view to use in tests
+  std::shared_ptr<rmm::mr::experimental::device_memory_resource> mr;
+  rmm::mr::experimental::device_resource_view mr_view;
   rmm::cuda_stream stream{};
 };
 
-/// MR factory functions
-inline auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>(); }
-
-/*inline auto make_cuda_async() { return std::make_shared<rmm::mr::cuda_async_memory_resource>(); }
-
+// MR factory functions
+inline auto make_cuda()
+{
+  return std::make_shared<rmm::mr::cuda_memory_resource>();  //
+}
 inline auto make_managed() { return std::make_shared<rmm::mr::managed_memory_resource>(); }
 
-inline auto make_pool()
+// inline auto make_cuda_async() { return std::make_shared<rmm::mr::cuda_async_memory_resource>(); }
+
+/*inline auto make_pool()
 {
   return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_cuda());
 }
@@ -244,7 +258,8 @@ inline auto make_binning()
   // Larger allocations will use the pool resource
   auto mr = rmm::mr::make_owning_wrapper<rmm::mr::binning_memory_resource>(pool, 18, 22);
   return mr;
-}*/
+}
+*/
 
 }  // namespace test
 }  // namespace rmm

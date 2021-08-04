@@ -15,29 +15,32 @@
  */
 #pragma once
 
-#include <rmm/mr/libcudacxx/device/device_memory_resource.hpp>
+#include "device_memory_resource.hpp"
+#include "rmm/mr/device/device_memory_resource.hpp"
 
 #include <rmm/detail/error.hpp>
+
+#include <cuda/memory_resource>
 
 namespace rmm {
 namespace mr {
 
 /**
- * @brief `device_memory_resource` derived class that uses cudaMalloc/Free for
- * allocation/deallocation.
+ * @brief `device_memory_resource` derived class that uses
+ * cudaMallocManaged/Free for allocation/deallocation.
  */
-class cuda_memory_resource final : public experimental::device_memory_resource {
+class managed_memory_resource final : public experimental::device_memory_resource {
  public:
-  cuda_memory_resource()                            = default;
-  ~cuda_memory_resource()                           = default;
-  cuda_memory_resource(cuda_memory_resource const&) = default;
-  cuda_memory_resource(cuda_memory_resource&&)      = default;
-  cuda_memory_resource& operator=(cuda_memory_resource const&) = default;
-  cuda_memory_resource& operator=(cuda_memory_resource&&) = default;
+  managed_memory_resource()                               = default;
+  ~managed_memory_resource()                              = default;
+  managed_memory_resource(managed_memory_resource const&) = default;
+  managed_memory_resource(managed_memory_resource&&)      = default;
+  managed_memory_resource& operator=(managed_memory_resource const&) = default;
+  managed_memory_resource& operator=(managed_memory_resource&&) = default;
 
  private:
   /**
-   * @brief Allocates memory of size at least `bytes` using cudaMalloc.
+   * @brief Allocates memory of size at least \p bytes using cudaMallocManaged.
    *
    * The returned pointer has at least 256B alignment.
    *
@@ -50,8 +53,12 @@ class cuda_memory_resource final : public experimental::device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, std::size_t alignment) override
   {
+    // FIXME: Unlike cudaMalloc, cudaMallocManaged will throw an error for 0
+    // size allocations.
+    if (bytes == 0) { return nullptr; }
+
     void* p{nullptr};
-    RMM_CUDA_TRY(cudaMalloc(&p, bytes), rmm::bad_alloc);
+    RMM_CUDA_TRY(cudaMallocManaged(&p, bytes), rmm::bad_alloc);
     return p;
   }
 
@@ -72,7 +79,7 @@ class cuda_memory_resource final : public experimental::device_memory_resource {
   /**
    * @brief Compare this resource to another.
    *
-   * Two cuda_memory_resources always compare equal, because they can each
+   * Two `managed_memory_resources` always compare equal, because they can each
    * deallocate memory allocated by the other.
    *
    * @throws Nothing.
@@ -81,10 +88,12 @@ class cuda_memory_resource final : public experimental::device_memory_resource {
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equal
    */
-  bool do_is_equal(memory_resource const& other) const noexcept override
+  bool do_is_equal(rmm::mr::experimental::device_memory_resource const& other) const
+    noexcept override
   {
-    return dynamic_cast<cuda_memory_resource const*>(&other) != nullptr;
+    return dynamic_cast<managed_memory_resource const*>(&other) != nullptr;
   }
 };
+
 }  // namespace mr
 }  // namespace rmm

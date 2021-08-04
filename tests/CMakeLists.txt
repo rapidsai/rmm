@@ -32,7 +32,7 @@ function(ConfigureTestInternal TEST_NAME TEST_SRC)
   target_compile_definitions(${TEST_NAME}
                              PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
   target_compile_options(${TEST_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Wall -Werror
-                                             -Wno-error=deprecated-declarations> -D_LIBCUDACXX_NO_RTTI)
+                                             -Wno-error=deprecated-declarations>)
 
   if(DISABLE_DEPRECATION_WARNING)
     target_compile_options(

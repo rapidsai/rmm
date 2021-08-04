@@ -69,7 +69,7 @@ auto make_resource(std::tuple<std::shared_ptr<Upstreams>...> const& t, Args&&...
  * `Resource`
  */
 template <typename Resource, typename... Upstreams>
-class owning_wrapper : public device_memory_resource {
+class owning_wrapper : public experimental::device_memory_resource {
  public:
   using upstream_tuple = std::tuple<std::shared_ptr<Upstreams>...>;
 
@@ -168,7 +168,7 @@ class owning_wrapper : public device_memory_resource {
    * @return true If the two resources are equal
    * @return false If the two resources are not equal
    */
-  bool do_is_equal(device_memory_resource const& other) const noexcept override
+  bool do_is_equal(experimental::device_memory_resource const& other) const noexcept override
   {
     if (this == &other) {
       return true;

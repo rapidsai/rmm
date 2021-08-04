@@ -82,10 +82,10 @@ namespace detail {
  *
  * @return Pointer to the static cuda_memory_resource used as the initial, default resource
  */
-inline cuda::memory_resource<cuda::memory_kind::device>* initial_resource()
+inline cuda::resource_view<cuda::memory_access::device> initial_resource_view()
 {
   static cuda_memory_resource mr{};
-  return &mr;
+  return cuda::resource_view<cuda::memory_access::device>(&mr);
 }
 
 inline std::mutex& map_lock()
@@ -96,7 +96,7 @@ inline std::mutex& map_lock()
 
 inline auto& get_map()
 {
-  static std::map<cuda_device_id::value_type, cuda::memory_resource<cuda::memory_kind::device>*>
+  static std::map<cuda_device_id::value_type, cuda::resource_view<cuda::memory_access::device>>
     device_id_to_resource;
   return device_id_to_resource;
 }
@@ -124,13 +124,14 @@ inline auto& get_map()
  * @param id The id of the target device
  * @return Pointer to the current `device_memory_resource` for device `id`
  */
-inline cuda::memory_resource<cuda::memory_kind::device>* get_per_device_resource(cuda_device_id id)
+inline cuda::resource_view<cuda::memory_access::device> get_per_device_resource_view(
+  cuda_device_id id)
 {
   std::lock_guard<std::mutex> lock{detail::map_lock()};
   auto& map = detail::get_map();
   // If a resource was never set for `id`, set to the initial resource
   auto const found = map.find(id.value());
-  return (found == map.end()) ? (map[id.value()] = detail::initial_resource()) : found->second;
+  return (found == map.end()) ? (map[id.value()] = detail::initial_resource_view()) : found->second;
 }
 
 /**
@@ -160,15 +161,17 @@ inline cuda::memory_resource<cuda::memory_kind::device>* get_per_device_resource
  * for `id`
  * @return Pointer to the previous memory resource for `id`
  */
-inline cuda::memory_resource<cuda::memory_kind::device>* set_per_device_resource(
-  cuda_device_id id, cuda::memory_resource<cuda::memory_kind::device>* new_mr)
+inline cuda::resource_view<cuda::memory_access::device> set_per_device_resource_view(
+  cuda_device_id id, cuda::resource_view<cuda::memory_access::device> new_mr)
 {
   std::lock_guard<std::mutex> lock{detail::map_lock()};
   auto& map          = detail::get_map();
   auto const old_itr = map.find(id.value());
   // If a resource didn't previously exist for `id`, return pointer to initial_resource
-  auto old_mr     = (old_itr == map.end()) ? detail::initial_resource() : old_itr->second;
-  map[id.value()] = (new_mr == nullptr) ? detail::initial_resource() : new_mr;
+  auto old_mr     = (old_itr == map.end()) ? detail::initial_resource_view() : old_itr->second;
+  map[id.value()] = (new_mr == cuda::resource_view<cuda::memory_access::device>(nullptr))
+                      ? detail::initial_resource_view()
+                      : new_mr;
   return old_mr;
 }
 
@@ -193,9 +196,9 @@ inline cuda::memory_resource<cuda::memory_kind::device>* set_per_device_resource
  *
  * @return Pointer to the resource for the current device
  */
-inline cuda::memory_resource<cuda::memory_kind::device>* get_current_device_resource()
+inline cuda::resource_view<cuda::memory_access::device> get_current_device_resource_view()
 {
-  return get_per_device_resource(rmm::detail::current_device());
+  return get_per_device_resource_view(rmm::detail::current_device());
 }
 
 /**
@@ -219,13 +222,13 @@ inline cuda::memory_resource<cuda::memory_kind::device>* get_current_device_reso
  * behavior of a device_memory_resource is undefined if used while the active CUDA device is a
  * different device from the one that was active when the device_memory_resource was created.
  *
- * @param new_mr If not `nullptr`, pointer to new resource to use for the current device
- * @return Pointer to the previous resource for the current device
+ * @param new_mr new resource view to use for the current device
+ * @return previous resource view for the current device
  */
-inline cuda::memory_resource<cuda::memory_kind::device>* set_current_device_resource(
-  cuda::memory_resource<cuda::memory_kind::device>* new_mr)
+inline cuda::resource_view<cuda::memory_access::device> set_current_device_resource_view(
+  cuda::resource_view<cuda::memory_access::device> new_mr)
 {
-  return set_per_device_resource(rmm::detail::current_device(), new_mr);
+  return set_per_device_resource_view(rmm::detail::current_device(), new_mr);
 }
 }  // namespace mr
 }  // namespace rmm
