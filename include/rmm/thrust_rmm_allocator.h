@@ -25,7 +25,7 @@
 namespace rmm {
 
 using par_t         = decltype(thrust::cuda::par(*(new rmm::mr::thrust_allocator<char>())));
-using deleter_t     = std::function<void(par_t *)>;
+using deleter_t     = std::function<void(par_t*)>;
 using exec_policy_t = std::unique_ptr<par_t, deleter_t>;
 
 /**
@@ -40,8 +40,8 @@ using exec_policy_t = std::unique_ptr<par_t, deleter_t>;
 [[deprecated("Use new exec_policy in rmm/exec_policy.hpp")]] inline exec_policy_t exec_policy(
   cudaStream_t stream = 0)
 {
-  auto *alloc  = new rmm::mr::thrust_allocator<char>(cuda_stream_view{stream});
-  auto deleter = [alloc](par_t *pointer) {
+  auto* alloc  = new rmm::mr::thrust_allocator<char>(cuda_stream_view{stream});
+  auto deleter = [alloc](par_t* pointer) {
     delete alloc;
     delete pointer;
   };

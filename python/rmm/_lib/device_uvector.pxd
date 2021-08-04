@@ -1,7 +1,7 @@
 # Copyright (c) 2021, NVIDIA CORPORATION.
 
-from rmm._lib.device_buffer cimport device_buffer
 from rmm._lib.cuda_stream_view cimport cuda_stream_view
+from rmm._lib.device_buffer cimport device_buffer
 from rmm._lib.memory_resource cimport device_memory_resource
 
 

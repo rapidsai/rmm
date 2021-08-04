@@ -1,3 +1,49 @@
+# RMM 21.08.00 (4 Aug 2021)
+
+## 🚨 Breaking Changes
+
+- Refactor `rmm::device_scalar` in terms of `rmm::device_uvector` ([#789](https://github.com/rapidsai/rmm/pull/789)) [@harrism](https://github.com/harrism)
+- Explicit streams in device_buffer ([#775](https://github.com/rapidsai/rmm/pull/775)) [@harrism](https://github.com/harrism)
+
+## 🐛 Bug Fixes
+
+- Pin spdlog in dev conda envs ([#835](https://github.com/rapidsai/rmm/pull/835)) [@trxcllnt](https://github.com/trxcllnt)
+- Pinning spdlog because recent updates are causing compile issues. ([#831](https://github.com/rapidsai/rmm/pull/831)) [@cjnolet](https://github.com/cjnolet)
+- update isort to 5.6.4 ([#822](https://github.com/rapidsai/rmm/pull/822)) [@cwharris](https://github.com/cwharris)
+- fix align_up namespace in aligned_resource_adaptor.hpp ([#820](https://github.com/rapidsai/rmm/pull/820)) [@rongou](https://github.com/rongou)
+- Run updated isort hook on pxd files ([#812](https://github.com/rapidsai/rmm/pull/812)) [@charlesbluca](https://github.com/charlesbluca)
+- find_package(RMM) can now be called multiple times safely ([#811](https://github.com/rapidsai/rmm/pull/811)) [@robertmaynard](https://github.com/robertmaynard)
+- Fix building on CUDA 11.3 ([#809](https://github.com/rapidsai/rmm/pull/809)) [@benfred](https://github.com/benfred)
+- Remove leading zeros in version_config.hpp ([#793](https://github.com/rapidsai/rmm/pull/793)) [@hcho3](https://github.com/hcho3)
+
+## 📖 Documentation
+
+- Fix PoolMemoryResource Python doc examples ([#807](https://github.com/rapidsai/rmm/pull/807)) [@harrism](https://github.com/harrism)
+- Fix incorrect href in README.md ([#804](https://github.com/rapidsai/rmm/pull/804)) [@benchislett](https://github.com/benchislett)
+- Update build instruction in README ([#797](https://github.com/rapidsai/rmm/pull/797)) [@hcho3](https://github.com/hcho3)
+- Document compute sanitizer memcheck support ([#790](https://github.com/rapidsai/rmm/pull/790)) [@harrism](https://github.com/harrism)
+
+## 🚀 New Features
+
+- Bump isort, enable Cython package resorting ([#806](https://github.com/rapidsai/rmm/pull/806)) [@charlesbluca](https://github.com/charlesbluca)
+- Support multiple output sinks in logging_resource_adaptor ([#791](https://github.com/rapidsai/rmm/pull/791)) [@harrism](https://github.com/harrism)
+- Add Statistics Resource Adaptor and cython bindings to `tracking_resource_adaptor` and `statistics_resource_adaptor` ([#626](https://github.com/rapidsai/rmm/pull/626)) [@mdemoret-nv](https://github.com/mdemoret-nv)
+
+## 🛠️ Improvements
+
+- Fix isort in cuda_stream_view.pxd ([#827](https://github.com/rapidsai/rmm/pull/827)) [@harrism](https://github.com/harrism)
+- Cython extension for rmm::cuda_stream_pool ([#818](https://github.com/rapidsai/rmm/pull/818)) [@divyegala](https://github.com/divyegala)
+- Fix building on cuda 11.4 ([#817](https://github.com/rapidsai/rmm/pull/817)) [@benfred](https://github.com/benfred)
+- Updating Clang Version to 11.0.0 ([#814](https://github.com/rapidsai/rmm/pull/814)) [@codereport](https://github.com/codereport)
+- Add spdlog to `rmm-exports` if found by CPM ([#810](https://github.com/rapidsai/rmm/pull/810)) [@trxcllnt](https://github.com/trxcllnt)
+- Fix `21.08` forward-merge conflicts ([#803](https://github.com/rapidsai/rmm/pull/803)) [@ajschmidt8](https://github.com/ajschmidt8)
+- RMM now leverages rapids-cmake to reduce CMake boilerplate ([#800](https://github.com/rapidsai/rmm/pull/800)) [@robertmaynard](https://github.com/robertmaynard)
+- Refactor `rmm::device_scalar` in terms of `rmm::device_uvector` ([#789](https://github.com/rapidsai/rmm/pull/789)) [@harrism](https://github.com/harrism)
+- make it easier to include rmm in other projects ([#788](https://github.com/rapidsai/rmm/pull/788)) [@rongou](https://github.com/rongou)
+- Compile Cython with C++17. ([#787](https://github.com/rapidsai/rmm/pull/787)) [@vyasr](https://github.com/vyasr)
+- Fix Merge Conflicts ([#786](https://github.com/rapidsai/rmm/pull/786)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Explicit streams in device_buffer ([#775](https://github.com/rapidsai/rmm/pull/775)) [@harrism](https://github.com/harrism)
+
 # RMM 21.06.00 (9 Jun 2021)
 
 ## 🐛 Bug Fixes

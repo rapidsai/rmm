@@ -57,9 +57,9 @@ class cuda_stream_view {
   constexpr cudaStream_t value() const noexcept { return stream_; }
 
   /**
-   * @brief Explicit conversion to cudaStream_t.
+   * @brief Implicit conversion to cudaStream_t.
    */
-  explicit constexpr operator cudaStream_t() const noexcept { return value(); }
+  constexpr operator cudaStream_t() const noexcept { return value(); }
 
   /**
    * @brief Return true if the wrapped stream is the CUDA per-thread default stream.

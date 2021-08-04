@@ -30,12 +30,12 @@ build:
 
 requirements:
   build:
-    - cmake >=3.18
+    - cmake >=3.20.1
   host:
     - cudatoolkit {{ cuda_version }}.*
   run:
     - {{ pin_compatible('cudatoolkit', max_pin='x.x') }}
-    - spdlog>=1.8.5,<2.0.0a0
+    - spdlog>=1.8.5,<1.9
 
 test:
   commands:

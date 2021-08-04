@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include <spdlog/common.h>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
@@ -101,6 +102,16 @@ class logging_resource_adaptor final : public device_memory_resource {
     : logger_{std::make_shared<spdlog::logger>(
         "RMM", std::make_shared<spdlog::sinks::ostream_sink_mt>(stream))},
       upstream_{upstream}
+  {
+    RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
+
+    init_logger(auto_flush);
+  }
+
+  logging_resource_adaptor(Upstream* upstream,
+                           spdlog::sinks_init_list sinks,
+                           bool auto_flush = false)
+    : logger_{std::make_shared<spdlog::logger>("RMM", sinks)}, upstream_{upstream}
   {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
 

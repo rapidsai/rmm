@@ -25,6 +25,8 @@
 #include <sstream>
 
 #if defined(RMM_ENABLE_STACK_TRACES)
+#include <cxxabi.h>
+#include <dlfcn.h>
 #include <execinfo.h>
 #include <memory>
 #include <vector>
@@ -60,12 +62,32 @@ class stack_trace {
 #if defined(RMM_ENABLE_STACK_TRACES)
     std::unique_ptr<char*, decltype(&::free)> strings(
       backtrace_symbols(st.stack_ptrs.data(), st.stack_ptrs.size()), &::free);
+
     if (strings.get() == nullptr) {
       os << "But no stack trace could be found!" << std::endl;
     } else {
-      ///@todo: support for demangling of C++ symbol names
+      // Iterate over the stack pointers converting to a string
       for (std::size_t i = 0; i < st.stack_ptrs.size(); ++i) {
-        os << "#" << i << " in " << strings.get()[i] << std::endl;
+        // Leading index
+        os << "#" << i << " in ";
+
+        auto const str = [&] {
+          Dl_info info;
+          if (dladdr(st.stack_ptrs[i], &info)) {
+            int status = -1;  // Demangle the name. This can occasionally fail
+
+            std::unique_ptr<char, decltype(&::free)> demangled(
+              abi::__cxa_demangle(info.dli_sname, nullptr, 0, &status), &::free);
+            // If it fails, fallback to the dli_name.
+            if (status == 0 or info.dli_sname) {
+              auto name = status == 0 ? demangled.get() : info.dli_sname;
+              return name + std::string(" from ") + info.dli_fname;
+            }
+          }
+          return std::string(strings.get()[i]);
+        }();
+
+        os << str << std::endl;
       }
     }
 #else

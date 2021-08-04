@@ -15,7 +15,7 @@ The goal of the RAPIDS Memory Manager (RMM) is to provide:
 - A collection of [data structures](#device-data-structures) that use the interface for memory allocation
 
 For information on the interface RMM provides and how to use RMM in your C++ code, see
-[below](#using-rmm-in-c++).
+[below](#using-rmm-in-c).
 
 **NOTE:** For the latest stable [README.md](https://github.com/rapidsai/rmm/blob/main/README.md) ensure you are on the `main` branch.
 
@@ -55,7 +55,7 @@ Compiler requirements:
 
 * `gcc`     version 9.3+
 * `nvcc`    version 11.0+
-* `cmake`   version 3.18+
+* `cmake`   version 3.20.1+
 
 CUDA/GPU requirements:
 
@@ -75,15 +75,12 @@ $ git clone --recurse-submodules https://github.com/rapidsai/rmm.git
 $ cd rmm
 ```
 
-Follow the instructions under "Create the conda development environment `cudf_dev`" in the
-[cuDF README](https://github.com/rapidsai/cudf#build-from-source).
-
-- Create the conda development environment `cudf_dev`
+- Create the conda development environment `rmm_dev`
 ```bash
-# create the conda environment (assuming in base `cudf` directory)
-$ conda env create --name cudf_dev --file conda/environments/dev_py35.yml
+# create the conda environment (assuming in base `rmm` directory)
+$ conda env create --name rmm_dev --file conda/environments/rmm_dev_cuda11.0.yml
 # activate the environment
-$ source activate cudf_dev
+$ conda activate rmm_dev
 ```
 
 - Build and install `librmm` using cmake & make. CMake depends on the `nvcc` executable being on
@@ -555,6 +552,22 @@ Note that debug logging is different from the CSV memory allocation logging prov
 `rmm::mr::logging_resource_adapter`. The latter is for logging a history of allocation /
 deallocation actions which can be useful for replay with RMM's replay benchmark.
 
+## RMM and CUDA Memory Bounds Checking
+
+Memory allocations taken from a memory resource that allocates a pool of memory (such as
+`pool_memory_resource` and `arena_memory_resource`) are part of the same low-level CUDA memory 
+allocation. Therefore, out-of-bounds or misaligned accesses to these allocations are not likely to 
+be detected by CUDA tools such as 
+[CUDA Compute Sanitizer](https://docs.nvidia.com/cuda/compute-sanitizer/index.html) memcheck.
+
+Exceptions to this are `cuda_memory_resource`, which wraps `cudaMalloc`, and 
+`cuda_async_memory_resource`, which uses `cudaMallocAsync` with CUDA's built-in memory pool 
+functionality (CUDA 11.2 or later required). Illegal memory accesses to memory allocated by these 
+resources are detectable with Compute Sanitizer Memcheck.
+
+It may be possible in the future to add support for memory bounds checking with other memory 
+resources using NVTX APIs.
+
 ## Using RMM in Python Code
 
 There are two ways to use RMM in Python code:
@@ -642,7 +655,7 @@ of 1 GiB and a maximum size of 4 GiB. The pool uses
 ```python
 >>> import rmm
 >>> pool = rmm.mr.PoolMemoryResource(
-...     upstream=rmm.mr.CudaMemoryResource(),
+...     rmm.mr.CudaMemoryResource(),
 ...     initial_pool_size=2**30,
 ...     maximum_pool_size=2**32
 ... )

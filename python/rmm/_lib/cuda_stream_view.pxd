@@ -16,6 +16,7 @@ from libcpp cimport bool
 
 from rmm._lib.lib cimport cudaStream_t
 
+
 cdef extern from "rmm/cuda_stream_view.hpp" namespace "rmm" nogil:
     cdef cppclass cuda_stream_view:
         cuda_stream_view()
