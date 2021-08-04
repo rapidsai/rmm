@@ -75,21 +75,19 @@ files_to_preprocess = ["gpu.pxd"]
 cuda_version_to_pxi_dir = {
     "10.1": "10.1",
     "10.2": "10.2",
-    "11.0": "11.x",
-    "11.1": "11.x",
-    "11.2": "11.x",
-    "11.3": "11.x",
+    "11": "11.x",
 }
 
 for pxd_basename in files_to_preprocess:
     pxi_basename = os.path.splitext(pxd_basename)[0] + ".pxi"
-    if CUDA_VERSION in cuda_version_to_pxi_dir:
-        pxi_pathname = os.path.join(
-            cwd,
-            "rmm/_cuda",
-            cuda_version_to_pxi_dir[CUDA_VERSION],
-            pxi_basename,
-        )
+    pxi_dir = cuda_version_to_pxi_dir.get(CUDA_VERSION)
+    if not pxi_dir:
+        # didn't get an exact match on major.minor version - see if
+        # we have a match on just the major version
+        pxi_dir = cuda_version_to_pxi_dir.get(CUDA_VERSION.split(".")[0])
+
+    if pxi_dir:
+        pxi_pathname = os.path.join(cwd, "rmm/_cuda", pxi_dir, pxi_basename,)
         pxd_pathname = os.path.join(cwd, "rmm/_cuda", pxd_basename)
         try:
             if filecmp.cmp(pxi_pathname, pxd_pathname):
@@ -191,7 +189,7 @@ extensions += cythonize(
 
 setup(
     name="rmm",
-    version="21.08.00",
+    version="21.10.00",
     description="rmm - RAPIDS Memory Manager",
     url="https://github.com/rapidsai/rmm",
     author="NVIDIA Corporation",
