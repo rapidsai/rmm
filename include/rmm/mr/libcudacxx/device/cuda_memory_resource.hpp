@@ -69,6 +69,19 @@ class cuda_memory_resource final : public experimental::device_memory_resource {
     RMM_ASSERT_CUDA_SUCCESS(cudaFree(p));
   }
 
+  void* do_allocate_async(std::size_t bytes, std::size_t alignment, cuda::stream_view) override
+  {
+    return do_allocate(bytes, alignment);
+  }
+
+  void do_deallocate_async(void* p,
+                           std::size_t bytes,
+                           std::size_t alignment,
+                           cuda::stream_view) override
+  {
+    return do_deallocate(p, bytes, alignment);
+  };
+
   /**
    * @brief Compare this resource to another.
    *

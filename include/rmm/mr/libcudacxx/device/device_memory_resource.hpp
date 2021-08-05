@@ -31,9 +31,9 @@ namespace experimental {  // to avoid conflicts with existing memory resources
  * This class serves as the interface that all custom device memory
  * implementations must satisfy.
  */
-using device_memory_resource = cuda::memory_resource<cuda::memory_kind::device>;
+using device_memory_resource = cuda::stream_ordered_memory_resource<cuda::memory_kind::device>;
 
-using device_resource_view = cuda::resource_view<cuda::memory_access::device>;
+using device_resource_view = cuda::stream_ordered_resource_view<cuda::memory_access::device>;
 
 }  // namespace experimental
 }  // namespace mr

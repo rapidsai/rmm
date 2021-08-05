@@ -20,6 +20,8 @@
 
 #include <cuda_runtime_api.h>
 
+#include <cuda/stream_view>
+
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
@@ -60,6 +62,11 @@ class cuda_stream_view {
    * @brief Implicit conversion to cudaStream_t.
    */
   constexpr operator cudaStream_t() const noexcept { return value(); }
+
+  /**
+   * @brief Implicit conversion to cuda::stream_view.
+   */
+  constexpr operator cuda::stream_view() const noexcept { return value(); }
 
   /**
    * @brief Return true if the wrapped stream is the CUDA per-thread default stream.

@@ -76,10 +76,23 @@ class managed_memory_resource final : public experimental::device_memory_resourc
     RMM_ASSERT_CUDA_SUCCESS(cudaFree(p));
   }
 
+  void* do_allocate_async(std::size_t bytes, std::size_t alignment, cuda::stream_view) override
+  {
+    return do_allocate(bytes, alignment);
+  }
+
+  void do_deallocate_async(void* p,
+                           std::size_t bytes,
+                           std::size_t alignment,
+                           cuda::stream_view) override
+  {
+    return do_deallocate(p, bytes, alignment);
+  };
+
   /**
    * @brief Compare this resource to another.
    *
-   * Two `managed_memory_resources` always compare equal, because they can each
+   * Two managed_memory_resources always compare equal, because they can each
    * deallocate memory allocated by the other.
    *
    * @throws Nothing.
@@ -88,8 +101,7 @@ class managed_memory_resource final : public experimental::device_memory_resourc
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equal
    */
-  bool do_is_equal(rmm::mr::experimental::device_memory_resource const& other) const
-    noexcept override
+  bool do_is_equal(memory_resource const& other) const noexcept override
   {
     return dynamic_cast<managed_memory_resource const*>(&other) != nullptr;
   }
