@@ -16,13 +16,18 @@
 
 #include <benchmark/benchmark.h>
 
-#include <cuda_runtime_api.h>
 #include <rmm/cuda_stream.hpp>
 #include <rmm/cuda_stream_pool.hpp>
 #include <rmm/device_uvector.hpp>
+#include <rmm/mr/device/arena_memory_resource.hpp>
+#include <rmm/mr/device/binning_memory_resource.hpp>
+#include <rmm/mr/device/cuda_async_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
+#include <rmm/mr/device/owning_wrapper.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
+
+#include <cuda_runtime_api.h>
 
 __global__ void compute_bound_kernel(int64_t* out)
 {
@@ -38,7 +43,9 @@ __global__ void compute_bound_kernel(int64_t* out)
   *out = static_cast<int64_t>(clock_current);
 }
 
-static void BM_MultiStreamAllocations(benchmark::State& state)
+using MRFactoryFunc = std::function<std::shared_ptr<rmm::mr::device_memory_resource>()>;
+
+static void BM_MultiStreamAllocations(benchmark::State& state, MRFactoryFunc factory)
 {
   auto cuda_mr = rmm::mr::cuda_memory_resource{};
   auto mr      = rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>{&cuda_mr};
@@ -73,9 +80,59 @@ static void BM_MultiStreamAllocations(benchmark::State& state)
 
   rmm::mr::set_current_device_resource(nullptr);
 }
-BENCHMARK(BM_MultiStreamAllocations)
-  ->RangeMultiplier(2)
-  ->Ranges({{1, 16}, {8, 8}, {false, true}})
-  ->Unit(benchmark::kMicrosecond);
 
-BENCHMARK_MAIN();
+inline auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>(); }
+
+inline auto make_cuda_async() { return std::make_shared<rmm::mr::cuda_async_memory_resource>(); }
+
+inline auto make_pool()
+{
+  return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_cuda());
+}
+
+inline auto make_arena()
+{
+  return rmm::mr::make_owning_wrapper<rmm::mr::arena_memory_resource>(make_cuda());
+}
+
+inline auto make_binning()
+{
+  auto pool = make_pool();
+  // Add a binning_memory_resource with fixed-size bins of sizes 256, 512, 1024, 2048 and 4096KiB
+  // Larger allocations will use the pool resource
+  auto mr = rmm::mr::make_owning_wrapper<rmm::mr::binning_memory_resource>(pool, 18, 22);
+  return mr;
+}
+
+static void benchmark_range(benchmark::internal::Benchmark* b)
+{
+  b  //
+    ->RangeMultiplier(2)
+    ->Ranges({{1, 4}, {4, 4}, {false, true}})
+    ->Unit(benchmark::kMicrosecond);
+}
+
+void declare_benchmark()
+{
+  BENCHMARK_CAPTURE(BM_MultiStreamAllocations, cuda, &make_cuda)  //
+    ->Apply(benchmark_range);
+#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
+  BENCHMARK_CAPTURE(BM_MultiStreamAllocations, cuda_async, &make_cuda_async)  //
+    ->Apply(benchmark_range);
+#endif
+  BENCHMARK_CAPTURE(BM_MultiStreamAllocations, pool_mr, &make_pool)  //
+    ->Apply(benchmark_range);
+
+  BENCHMARK_CAPTURE(BM_MultiStreamAllocations, arena, &make_arena)  //
+    ->Apply(benchmark_range);
+
+  BENCHMARK_CAPTURE(BM_MultiStreamAllocations, binning, &make_binning)  //
+    ->Apply(benchmark_range);
+}
+
+int main(int argc, char** argv)
+{
+  ::benchmark::Initialize(&argc, argv);
+  declare_benchmark();
+  ::benchmark::RunSpecifiedBenchmarks();
+}
