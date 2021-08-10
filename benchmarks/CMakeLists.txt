@@ -81,7 +81,7 @@ set(CUDA_STREAM_POOL_BENCH_SRC
 ConfigureBench(CUDA_STREAM_POOL_BENCH "${CUDA_STREAM_POOL_BENCH_SRC}")
 
 
-# interleaving stream allocations
+# multi stream allocations
 
 set(MULTI_STREAM_ALLOCATIONS_BENCH_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/multi_stream_allocations/multi_stream_allocations_bench.cu")
