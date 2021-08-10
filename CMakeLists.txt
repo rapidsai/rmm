@@ -71,7 +71,7 @@ if(CUDA_STATIC_RUNTIME)
   target_link_libraries(rmm INTERFACE CUDA::cudart_static)
 else()
   target_link_libraries(rmm INTERFACE CUDA::cudart)
-endif(CUDA_STATIC_RUNTIME)
+endif()
 
 target_link_libraries(rmm INTERFACE rmm::Thrust)
 target_link_libraries(rmm INTERFACE spdlog::spdlog_header_only)
