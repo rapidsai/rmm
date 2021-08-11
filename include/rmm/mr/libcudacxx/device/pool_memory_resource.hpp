@@ -54,12 +54,11 @@ namespace mr {
  * @tparam UpstreamResource memory_resource to use for allocating the pool. Implements
  *                          rmm::mr::device_memory_resource interface.
  */
-template <typename Upstream>
 class pool_memory_resource final
-  : public detail::stream_ordered_memory_resource<pool_memory_resource<Upstream>,
+  : public detail::stream_ordered_memory_resource<pool_memory_resource,
                                                   detail::coalescing_free_list> {
  public:
-  friend class detail::stream_ordered_memory_resource<pool_memory_resource<Upstream>,
+  friend class detail::stream_ordered_memory_resource<pool_memory_resource,
                                                       detail::coalescing_free_list>;
 
   /**

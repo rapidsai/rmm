@@ -15,9 +15,9 @@
  */
 #pragma once
 
-#include "cuda/stream_view"
-#include "device_memory_resource.hpp"
-#include "rmm/cuda_stream_view.hpp"
+#include <rmm/mr/libcudacxx/device/device_memory_resource.hpp>
+
+#include <cuda/stream_view>
 
 #include <functional>
 #include <iostream>
@@ -257,11 +257,11 @@ class owning_wrapper : public experimental::device_memory_resource {
  * @return An `owning_wrapper` wrapping a newly constructed `Resource<Upstreams...>` and
  * `upstreams`.
  */
-template <template <typename...> class Resource, typename... Upstreams, typename... Args>
+template <class Resource, typename... Upstreams, typename... Args>
 auto make_owning_wrapper(std::tuple<std::shared_ptr<Upstreams>...> upstreams, Args&&... args)
 {
-  return std::make_shared<owning_wrapper<Resource<Upstreams...>, Upstreams...>>(
-    std::move(upstreams), std::forward<Args>(args)...);
+  return std::make_shared<owning_wrapper<Resource, Upstreams...>>(std::move(upstreams),
+                                                                  std::forward<Args>(args)...);
 }
 
 /**
@@ -279,7 +279,7 @@ auto make_owning_wrapper(std::tuple<std::shared_ptr<Upstreams>...> upstreams, Ar
  * @param args Function parameter pack of arguments to forward to the wrapped resource's constructor
  * @return An `owning_wrapper` wrapping a newly construct `Resource<Upstream>` and `upstream`.
  */
-template <template <typename> class Resource, typename Upstream, typename... Args>
+template <class Resource, typename Upstream, typename... Args>
 auto make_owning_wrapper(std::shared_ptr<Upstream> upstream, Args&&... args)
 {
   return make_owning_wrapper<Resource>(std::make_tuple(std::move(upstream)),
