@@ -24,6 +24,7 @@
 #include <rmm/mr/libcudacxx/device/managed_memory_resource.hpp>
 #include <rmm/mr/libcudacxx/device/owning_wrapper.hpp>
 #include <rmm/mr/libcudacxx/device/per_device_resource.hpp>
+#include <rmm/mr/libcudacxx/device/pool_memory_resource.hpp>
 
 #include <cuda_runtime_api.h>
 
@@ -31,13 +32,16 @@
 #include <cstdint>
 #include <functional>
 #include <random>
+#include "rmm/detail/aligned.hpp"
 #include "rmm/mr/device/device_memory_resource.hpp"
 #include "rmm/mr/libcudacxx/device/device_memory_resource.hpp"
 
 namespace rmm {
 namespace test {
 
-inline bool is_pointer_aligned(void* p, std::size_t alignment = 256)
+constexpr std::size_t DEFAULT_ALIGNMENT = 256;
+
+inline bool is_pointer_aligned(void* p, std::size_t alignment)
 {
   return (0 == reinterpret_cast<uintptr_t>(p) % alignment);
 }
@@ -84,27 +88,29 @@ inline void test_get_current_device_resource()
   void* p{nullptr};
   EXPECT_NO_THROW(p = rmm::mr::get_current_device_resource_view()->allocate(1_MiB));
   EXPECT_NE(nullptr, p);
-  EXPECT_TRUE(is_pointer_aligned(p));
+  EXPECT_TRUE(is_pointer_aligned(p, DEFAULT_ALIGNMENT));
   EXPECT_TRUE(is_device_memory(p));
   EXPECT_NO_THROW(rmm::mr::get_current_device_resource_view()->deallocate(p, 1_MiB));
 }
 
 inline void test_allocate(rmm::mr::experimental::device_resource_view mr,
                           std::size_t bytes,
+                          std::size_t alignment,
                           cuda_stream_view stream = {})
 {
   void* p{nullptr};
-  EXPECT_NO_THROW(p = mr->allocate_async(bytes, stream));
+  EXPECT_NO_THROW(p = mr->allocate_async(bytes, alignment, stream));
   if (not stream.is_default()) stream.synchronize();
   EXPECT_NE(nullptr, p);
-  EXPECT_TRUE(is_pointer_aligned(p));
+  EXPECT_TRUE(is_pointer_aligned(p, alignment));
   EXPECT_TRUE(is_device_memory(p));
-  EXPECT_NO_THROW(mr->deallocate_async(p, bytes, stream));
+  EXPECT_NO_THROW(mr->deallocate_async(p, bytes, alignment, stream));
   if (not stream.is_default()) stream.synchronize();
 }
 
 inline void test_various_allocations(rmm::mr::experimental::device_resource_view mr,
-                                     cuda_stream_view stream)
+                                     std::size_t alignment   = DEFAULT_ALIGNMENT,
+                                     cuda_stream_view stream = {})
 {
   // test allocating zero bytes on non-default stream
   {
@@ -115,15 +121,15 @@ inline void test_various_allocations(rmm::mr::experimental::device_resource_view
     stream.synchronize();
   }
 
-  test_allocate(mr, 4_B, stream);
-  test_allocate(mr, 1_KiB, stream);
-  test_allocate(mr, 1_MiB, stream);
-  test_allocate(mr, 1_GiB, stream);
+  test_allocate(mr, 4_B, DEFAULT_ALIGNMENT, stream);
+  test_allocate(mr, 1_KiB, DEFAULT_ALIGNMENT, stream);
+  test_allocate(mr, 1_MiB, DEFAULT_ALIGNMENT, stream);
+  test_allocate(mr, 1_GiB, DEFAULT_ALIGNMENT, stream);
 
   // should fail to allocate too much
   {
     void* p{nullptr};
-    EXPECT_THROW(p = mr->allocate_async(1_PiB, stream), rmm::bad_alloc);
+    EXPECT_THROW(p = mr->allocate_async(1_PiB, DEFAULT_ALIGNMENT, stream), rmm::bad_alloc);
     EXPECT_EQ(nullptr, p);
   }
 }
@@ -145,7 +151,7 @@ inline void test_random_allocations(rmm::mr::experimental::device_resource_view 
       EXPECT_NO_THROW(a.p = mr->allocate_async(a.size, stream));
       if (not stream.is_default()) stream.synchronize();
       EXPECT_NE(nullptr, a.p);
-      EXPECT_TRUE(is_pointer_aligned(a.p));
+      EXPECT_TRUE(is_pointer_aligned(a.p, DEFAULT_ALIGNMENT));
     });
 
   std::for_each(allocations.begin(), allocations.end(), [stream, mr](allocation& a) {
@@ -186,7 +192,7 @@ inline void test_mixed_random_allocation_free(rmm::mr::experimental::device_reso
       EXPECT_NO_THROW(allocations.emplace_back(mr->allocate_async(size, stream), size));
       auto new_allocation = allocations.back();
       EXPECT_NE(nullptr, new_allocation.p);
-      EXPECT_TRUE(is_pointer_aligned(new_allocation.p));
+      EXPECT_TRUE(is_pointer_aligned(new_allocation.p, DEFAULT_ALIGNMENT));
     } else {
       size_t index = index_distribution(generator) % active_allocations;
       active_allocations--;
@@ -236,12 +242,12 @@ inline auto make_managed() { return std::make_shared<rmm::mr::managed_memory_res
 
 // inline auto make_cuda_async() { return std::make_shared<rmm::mr::cuda_async_memory_resource>(); }
 
-/*inline auto make_pool()
+inline auto make_pool()
 {
   return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_cuda());
 }
 
-inline auto make_arena()
+/*inline auto make_arena()
 {
   return rmm::mr::make_owning_wrapper<rmm::mr::arena_memory_resource>(make_cuda());
 }

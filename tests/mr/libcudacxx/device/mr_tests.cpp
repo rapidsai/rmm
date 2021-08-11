@@ -24,28 +24,24 @@ namespace rmm {
 namespace test {
 namespace {
 
-INSTANTIATE_TEST_CASE_P(ResourceTests,
-                        mr_test,
-                        ::testing::Values(
-                          mr_factory{"CUDA", &make_cuda}, mr_factory { "Managed", &make_managed }
-#if 0
-                        ,
-#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
-                                          mr_factory{"CUDA_Async", &make_cuda_async},
-#endif
-                                          
-                                          mr_factory{"Pool", &make_pool},
-                                          mr_factory{"Arena", &make_arena},
-                                          mr_factory{"Binning", &make_binning}
-#endif
-                          ),
-                        [](auto const& info) { return info.param.name; });
+INSTANTIATE_TEST_CASE_P(
+  ResourceTests,
+  mr_test,
+  ::testing::Values(
+    mr_factory{"CUDA", &make_cuda},
+    mr_factory{"Managed", &make_managed},
+    //#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
+    //                                        mr_factory{"CUDA_Async", &make_cuda_async},
+    //#endif
 
-TEST(DefaultTest, UseCurrentDeviceResource)
-{
-  //
-  test_get_current_device_resource();
-}
+    mr_factory{"Pool", &make_pool}
+    //                                        mr_factory{"Arena", &make_arena},
+    //                                        mr_factory { "Binning", &make_binning }
+
+    ),
+  [](auto const& info) { return info.param.name; });
+
+TEST(DefaultTest, UseCurrentDeviceResource) { test_get_current_device_resource(); }
 
 TEST(DefaultTest, GetCurrentDeviceResource)
 {
@@ -79,10 +75,13 @@ TEST_P(mr_test, SelfEquality) { EXPECT_TRUE(this->mr_view == this->mr_view); }
 
 TEST_P(mr_test, AllocateDefaultStream)
 {
-  test_various_allocations(this->mr_view, cuda_stream_view{});
+  test_various_allocations(this->mr_view, DEFAULT_ALIGNMENT, cuda_stream_view{});
 }
 
-TEST_P(mr_test, AllocateOnStream) { test_various_allocations(this->mr_view, this->stream); }
+TEST_P(mr_test, AllocateOnStream)
+{
+  test_various_allocations(this->mr_view, DEFAULT_ALIGNMENT, this->stream);
+}
 
 TEST_P(mr_test, RandomAllocations) { test_random_allocations(this->mr_view); }
 

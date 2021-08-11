@@ -15,7 +15,9 @@
  */
 #pragma once
 
+#include "cuda/stream_view"
 #include "device_memory_resource.hpp"
+#include "rmm/cuda_stream_view.hpp"
 
 #include <functional>
 #include <iostream>
@@ -158,6 +160,42 @@ class owning_wrapper : public experimental::device_memory_resource {
   }
 
   /**
+   * @brief Allocates memory using the wrapped resource.
+   *
+   * @throws `rmm::bad_alloc` if the requested allocation could not be fulfilled by the wrapped
+   * resource.
+   *
+   * @param bytes The size, in bytes, of the allocation
+   * @param stream Stream on which to perform the allocation
+   * @return void* Pointer to the memory allocated by the wrapped resource
+   */
+  void* do_allocate_async(std::size_t bytes,
+                          std::size_t alignment,
+                          cuda::stream_view stream) override
+  {
+    return wrapped().allocate_async(bytes, alignment, stream);
+  }
+
+  /**
+   * @brief Returns an allocation to the wrapped resource.
+   *
+   * `p` must have been returned from a prior call to `do_allocate(bytes)`.
+   *
+   * @throws Nothing.
+   *
+   * @param p Pointer to the allocation to free.
+   * @param bytes Size of the allocation
+   * @param stream Stream on which to deallocate the memory
+   */
+  void do_deallocate_async(void* p,
+                           std::size_t bytes,
+                           std::size_t alignment,
+                           cuda::stream_view stream) override
+  {
+    wrapped().deallocate_async(p, bytes, alignment, stream);
+  }
+
+  /**
    * @brief Compare if this resource is equal to another.
    *
    * Two resources are equal if memory allocated by one resource can be freed by the other.
@@ -168,7 +206,8 @@ class owning_wrapper : public experimental::device_memory_resource {
    * @return true If the two resources are equal
    * @return false If the two resources are not equal
    */
-  bool do_is_equal(experimental::device_memory_resource const& other) const noexcept override
+  bool do_is_equal(
+    cuda::memory_resource<cuda::memory_kind::device> const& other) const noexcept override
   {
     if (this == &other) {
       return true;
