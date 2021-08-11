@@ -17,7 +17,10 @@
 
 #include <rmm/mr/libcudacxx/device/device_memory_resource.hpp>
 
+#include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
+
+#include <cassert>
 
 namespace rmm {
 namespace mr {
@@ -39,17 +42,19 @@ class cuda_memory_resource final : public experimental::device_memory_resource {
   /**
    * @brief Allocates memory of size at least `bytes` using cudaMalloc.
    *
-   * The returned pointer has at least 256B alignment.
-   *
-   * @note Stream argument is ignored
+   * The returned pointer has at least 256B alignment. Alignments greater than
+   * this are not supported.
    *
    * @throws `rmm::bad_alloc` if the requested allocation could not be fulfilled
+   * @throws `rmm::logic_error` if the requested alignment is greater than 256B
    *
    * @param bytes The size, in bytes, of the allocation
    * @return void* Pointer to the newly allocated memory
    */
   void* do_allocate(std::size_t bytes, std::size_t alignment) override
   {
+    RMM_EXPECTS(detail::is_aligned(detail::CUDA_ALLOCATION_ALIGNMENT, alignment),
+                "Unsupported alignment");
     void* p{nullptr};
     RMM_CUDA_TRY(cudaMalloc(&p, bytes), rmm::bad_alloc);
     return p;
@@ -58,7 +63,7 @@ class cuda_memory_resource final : public experimental::device_memory_resource {
   /**
    * @brief Deallocate memory pointed to by \p p.
    *
-   * @note Stream argument is ignored.
+   * Alignments greater than 256B are not supported and behavior is undefined.
    *
    * @throws Nothing.
    *
@@ -66,6 +71,7 @@ class cuda_memory_resource final : public experimental::device_memory_resource {
    */
   void do_deallocate(void* p, std::size_t, std::size_t alignment) override
   {
+    assert(detail::is_aligned(detail::CUDA_ALLOCATION_ALIGNMENT, alignment));
     RMM_ASSERT_CUDA_SUCCESS(cudaFree(p));
   }
 
