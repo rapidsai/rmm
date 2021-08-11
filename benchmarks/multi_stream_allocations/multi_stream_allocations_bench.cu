@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <benchmarks/utilities/cxxopts.hpp>
+
 #include <benchmark/benchmark.h>
 
 #include <rmm/cuda_stream.hpp>
@@ -45,12 +47,31 @@ __global__ void compute_bound_kernel(int64_t* out)
 
 using MRFactoryFunc = std::function<std::shared_ptr<rmm::mr::device_memory_resource>()>;
 
+static void run_prewarm(rmm::cuda_stream_pool& stream_pool, rmm::mr::device_memory_resource* mr)
+{
+  auto buffers = std::vector<rmm::device_uvector<int64_t>>();
+  for (int32_t i = 0; i < stream_pool.get_pool_size(); i++) {
+    auto stream = stream_pool.get_stream(i);
+    buffers.emplace_back(rmm::device_uvector<int64_t>(1, stream, mr));
+  }
+}
+
+static void run_test(size_t num_kernels,
+                     rmm::cuda_stream_pool& stream_pool,
+                     rmm::mr::device_memory_resource* mr)
+{
+  for (int32_t i = 0; i < num_kernels; i++) {
+    auto stream = stream_pool.get_stream(i);
+    auto buffer = rmm::device_uvector<int64_t>(1, stream, mr);
+    compute_bound_kernel<<<1, 1, 0, stream.value()>>>(buffer.data());
+  }
+}
+
 static void BM_MultiStreamAllocations(benchmark::State& state, MRFactoryFunc factory)
 {
-  auto cuda_mr = rmm::mr::cuda_memory_resource{};
-  auto mr      = rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>{&cuda_mr};
+  auto mr = factory();
 
-  rmm::mr::set_current_device_resource(&mr);
+  rmm::mr::set_current_device_resource(mr.get());
 
   auto num_streams = state.range(0);
   auto num_kernels = state.range(1);
@@ -58,21 +79,10 @@ static void BM_MultiStreamAllocations(benchmark::State& state, MRFactoryFunc fac
 
   auto stream_pool = rmm::cuda_stream_pool(num_streams);
 
-  if (do_prewarm) {
-    auto buffers = std::vector<rmm::device_uvector<int64_t>>();
-    for (int32_t i = 0; i < num_streams; i++) {
-      auto stream = stream_pool.get_stream(i);
-      buffers.emplace_back(rmm::device_uvector<int64_t>(1, stream, &mr));
-    }
-  }
+  if (do_prewarm) { run_prewarm(stream_pool, mr.get()); }
 
   for (auto _ : state) {
-    for (int32_t i = 0; i < num_kernels; i++) {
-      auto stream = stream_pool.get_stream(i);
-      auto buffer = rmm::device_uvector<int64_t>(1, stream, &mr);
-      compute_bound_kernel<<<1, 1, 0, stream.value()>>>(buffer.data());
-    }
-
+    run_test(num_kernels, stream_pool, mr.get());
     cudaDeviceSynchronize();
   }
 
@@ -112,27 +122,128 @@ static void benchmark_range(benchmark::internal::Benchmark* b)
     ->Unit(benchmark::kMicrosecond);
 }
 
-void declare_benchmark()
+MRFactoryFunc get_mr_factory(std::string resource_name)
 {
-  BENCHMARK_CAPTURE(BM_MultiStreamAllocations, cuda, &make_cuda)  //
-    ->Apply(benchmark_range);
+  if (resource_name == "cuda") { return &make_cuda; }
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
-  BENCHMARK_CAPTURE(BM_MultiStreamAllocations, cuda_async, &make_cuda_async)  //
-    ->Apply(benchmark_range);
+  if (resource_name == "cuda_async") { return &make_cuda_async; }
 #endif
-  BENCHMARK_CAPTURE(BM_MultiStreamAllocations, pool_mr, &make_pool)  //
-    ->Apply(benchmark_range);
+  if (resource_name == "pool") { return &make_pool; }
+  if (resource_name == "arena") { return &make_arena; }
+  if (resource_name == "binning") { return &make_binning; }
 
-  BENCHMARK_CAPTURE(BM_MultiStreamAllocations, arena, &make_arena)  //
-    ->Apply(benchmark_range);
+  std::cout << "Error: invalid memory_resource name: " << resource_name << std::endl;
 
-  BENCHMARK_CAPTURE(BM_MultiStreamAllocations, binning, &make_binning)  //
-    ->Apply(benchmark_range);
+  RMM_FAIL();
+}
+
+void declare_benchmark(std::string name)
+{
+  if (name == "cuda") {
+    BENCHMARK_CAPTURE(BM_MultiStreamAllocations, cuda, &make_cuda)  //
+      ->Apply(benchmark_range);
+    return;
+  }
+
+#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
+  if (name == "cuda_async") {
+    BENCHMARK_CAPTURE(BM_MultiStreamAllocations, cuda_async, &make_cuda_async)  //
+      ->Apply(benchmark_range);
+    return;
+  }
+#endif
+
+  if (name == "pool") {
+    BENCHMARK_CAPTURE(BM_MultiStreamAllocations, pool_mr, &make_pool)  //
+      ->Apply(benchmark_range);
+    return;
+  }
+
+  if (name == "arena") {
+    BENCHMARK_CAPTURE(BM_MultiStreamAllocations, arena, &make_arena)  //
+      ->Apply(benchmark_range);
+    return;
+  }
+
+  if (name == "binning") {
+    BENCHMARK_CAPTURE(BM_MultiStreamAllocations, binning, &make_binning)  //
+      ->Apply(benchmark_range);
+    return;
+  }
+
+  std::cout << "Error: invalid memory_resource name: " << name << std::endl;
+}
+
+void run_profile(std::string resource_name, int kernel_count, int stream_count, bool prewarm)
+{
+  auto mr_factory  = get_mr_factory(resource_name);
+  auto mr          = mr_factory();
+  auto stream_pool = rmm::cuda_stream_pool(stream_count);
+
+  run_test(kernel_count, stream_pool, mr.get());
 }
 
 int main(int argc, char** argv)
 {
   ::benchmark::Initialize(&argc, argv);
-  declare_benchmark();
-  ::benchmark::RunSpecifiedBenchmarks();
+
+  // Parse for replay arguments:
+  cxxopts::Options options(
+    "RMM Multi Stream Allocations Benchmark",
+    "Benchmarks interleaving temporary allocations with compute-bound kernels.");
+
+  options.add_options()(  //
+    "p,profile",
+    "Profiling mode: run once",
+    cxxopts::value<bool>()->default_value("false"));
+
+  options.add_options()(  //
+    "r,resource",
+    "Type of device_memory_resource",
+    cxxopts::value<std::string>()->default_value("pool"));
+
+  options.add_options()(  //
+    "k,kernels",
+    "Number of kernels to run: (default: 8)",
+    cxxopts::value<int>()->default_value("8"));
+
+  options.add_options()(  //
+    "s,streams",
+    "Number of streams in stream pool (default: 8)",
+    cxxopts::value<int>()->default_value("8"));
+
+  options.add_options()(  //
+    "w,warm",
+    "Ensure each stream has enough memory to satisfy allocations.",
+    cxxopts::value<bool>()->default_value("false"));
+
+  auto args = options.parse(argc, argv);
+
+  if (args.count("profile") > 0) {
+    auto resource_name = args["resource"].as<std::string>();
+    auto num_kernels   = args["kernels"].as<int>();
+    auto num_streams   = args["streams"].as<int>();
+    auto prewarm       = args["warm"].as<bool>();
+    run_profile(resource_name, num_kernels, num_streams, prewarm);
+  } else {
+    auto resource_names = std::vector<std::string>();
+
+    if (args.count("resource") > 0) {
+      resource_names.emplace_back(args["resource"].as<std::string>());
+    } else {
+      resource_names.emplace_back("cuda");
+#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
+      resource_names.emplace_back("cuda_async");
+#endif
+      resource_names.emplace_back("pool");
+      resource_names.emplace_back("arena");
+      resource_names.emplace_back("binning");
+    }
+
+    for (auto& resource_name : resource_names) {
+      declare_benchmark(resource_name);
+    }
+
+    ::benchmark::RunSpecifiedBenchmarks();
+  }
 }
