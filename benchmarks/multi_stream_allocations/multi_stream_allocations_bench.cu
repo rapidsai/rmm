@@ -180,6 +180,8 @@ void run_profile(std::string resource_name, int kernel_count, int stream_count, 
   auto mr          = mr_factory();
   auto stream_pool = rmm::cuda_stream_pool(stream_count);
 
+  if (prewarm) { run_prewarm(stream_pool, mr.get()); }
+
   run_test(kernel_count, stream_pool, mr.get());
 }
 
