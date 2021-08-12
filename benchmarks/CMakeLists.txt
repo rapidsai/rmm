@@ -52,37 +52,22 @@ function(ConfigureBench BENCH_NAME BENCH_SRC)
 
 endfunction(ConfigureBench)
 
-# benchmark sources
-
 # random allocations benchmark
-
-set(RANDOM_ALLOCATIONS_BENCH_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/random_allocations/random_allocations.cpp")
-
-ConfigureBench(RANDOM_ALLOCATIONS_BENCH "${RANDOM_ALLOCATIONS_BENCH_SRC}")
+ConfigureBench(RANDOM_ALLOCATIONS_BENCH
+  random_allocations/random_allocations.cpp)
 
 # replay benchmark
-
-set(REPLAY_BENCH_SRC "${CMAKE_CURRENT_SOURCE_DIR}/replay/replay.cpp")
-
-ConfigureBench(REPLAY_BENCH "${REPLAY_BENCH_SRC}")
+ConfigureBench(REPLAY_BENCH
+  replay/replay.cpp)
 
 # uvector benchmark
-
-set(UVECTOR_BENCH_SRC "${CMAKE_CURRENT_SOURCE_DIR}/device_uvector/device_uvector_bench.cu")
-
-ConfigureBench(UVECTOR_BENCH "${UVECTOR_BENCH_SRC}")
+ConfigureBench(UVECTOR_BENCH
+  device_uvector/device_uvector_bench.cu)
 
 # cuda_stream_pool benchmark
-
-set(CUDA_STREAM_POOL_BENCH_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/cuda_stream_pool/cuda_stream_pool_bench.cpp")
-
-ConfigureBench(CUDA_STREAM_POOL_BENCH "${CUDA_STREAM_POOL_BENCH_SRC}")
+ConfigureBench(CUDA_STREAM_POOL_BENCH
+  cuda_stream_pool/cuda_stream_pool_bench.cpp)
 
 # multi stream allocations
-
-set(MULTI_STREAM_ALLOCATIONS_BENCH_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/multi_stream_allocations/multi_stream_allocations_bench.cu")
-
-ConfigureBench(MULTI_STREAM_ALLOCATIONS_BENCH "${MULTI_STREAM_ALLOCATIONS_BENCH_SRC}")
+ConfigureBench(MULTI_STREAM_ALLOCATIONS_BENCH
+  multi_stream_allocations/multi_stream_allocations_bench.cu)
