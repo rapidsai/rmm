@@ -86,9 +86,8 @@ TEST(AlignedTest, DefaultAllocationAlignmentPassthrough)
 
   cuda_stream_view stream;
   void* pointer = reinterpret_cast<void*>(123);
-  // device_memory_resource aligns to 8.
-  EXPECT_CALL(mock, do_allocate_async(8, alignof(std::max_align_t), stream)).WillOnce(Return(pointer));
-  EXPECT_CALL(mock, do_deallocate_async(pointer, 8, alignof(std::max_align_t), stream)).Times(1);
+  EXPECT_CALL(mock, do_allocate_async(5, alignof(std::max_align_t), stream)).WillOnce(Return(pointer));
+  EXPECT_CALL(mock, do_deallocate_async(pointer, 5, alignof(std::max_align_t), stream)).Times(1);
   EXPECT_EQ(mr.allocate_async(5, stream), pointer);
   mr.deallocate_async(pointer, 5, stream);
 }
@@ -100,15 +99,14 @@ TEST(AlignedTest, BelowAlignmentThresholdPassthrough)
 
   cuda_stream_view stream;
   void* pointer = reinterpret_cast<void*>(123);
-  // device_memory_resource aligns to 8.
-  EXPECT_CALL(mock, do_allocate_async(8, alignof(std::max_align_t), stream)).WillOnce(Return(pointer));
-  EXPECT_CALL(mock, do_deallocate_async(pointer, 8, alignof(std::max_align_t), stream)).Times(1);
+  EXPECT_CALL(mock, do_allocate_async(3, alignof(std::max_align_t), stream)).WillOnce(Return(pointer));
+  EXPECT_CALL(mock, do_deallocate_async(pointer, 3, alignof(std::max_align_t), stream)).Times(1);
   EXPECT_EQ(mr.allocate_async(3, stream), pointer);
   mr.deallocate_async(pointer, 3, stream);
 
   void* pointer1 = reinterpret_cast<void*>(456);
   EXPECT_CALL(mock, do_allocate_async(65528, alignof(std::max_align_t), stream)).WillOnce(Return(pointer1));
-  EXPECT_CALL(mock, do_deallocate_async(pointer1, alignof(std::max_align_t), 65528, stream)).Times(1);
+  EXPECT_CALL(mock, do_deallocate_async(pointer1, 65528, alignof(std::max_align_t), stream)).Times(1);
   EXPECT_EQ(mr.allocate_async(65528, stream), pointer1);
   mr.deallocate_async(pointer1, 65528, stream);
 }
