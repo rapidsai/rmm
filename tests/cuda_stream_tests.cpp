@@ -21,6 +21,7 @@
 #include <cuda_runtime_api.h>
 
 #include <gtest/gtest.h>
+#include <functional>
 
 struct CudaStreamTest : public ::testing::Test {
 };

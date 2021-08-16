@@ -16,7 +16,9 @@
 
 #pragma once
 
+#ifndef NDEBUG
 #include <rmm/logger.hpp>
+#endif
 
 #include <cuda_runtime_api.h>
 

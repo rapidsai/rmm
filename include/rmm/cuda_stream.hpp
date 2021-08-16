@@ -21,6 +21,7 @@
 
 #include <cuda_runtime_api.h>
 
+#include <functional>
 #include <memory>
 
 namespace rmm {
