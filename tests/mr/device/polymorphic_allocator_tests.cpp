@@ -106,9 +106,9 @@ TEST_F(allocator_test, rebind)
 TEST_F(allocator_test, allocate_deallocate)
 {
   rmm::mr::polymorphic_allocator<int> allocator{};
-  auto p = allocator.allocate(1000, stream);
+  auto p = allocator.allocate_async(1000, stream);
   EXPECT_NE(p, nullptr);
-  EXPECT_NO_THROW(allocator.deallocate(p, 1000, stream));
+  EXPECT_NO_THROW(allocator.deallocate_async(p, 1000, stream));
 }
 
 }  // namespace

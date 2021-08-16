@@ -115,17 +115,73 @@ class aligned_resource_adaptor final : public device_memory_resource {
    * by the upstream resource.
    *
    * @param bytes The size, in bytes, of the allocation
-   * @param stream Stream on which to perform the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
+  void* do_allocate(std::size_t bytes, std::size_t) override
   {
     if (allocation_alignment_ == rmm::detail::CUDA_ALLOCATION_ALIGNMENT ||
         bytes < alignment_threshold_) {
-      return upstream_->allocate(bytes, stream);
+      return upstream_->allocate(bytes);
     } else {
       auto const size            = upstream_allocation_size(bytes);
-      void* pointer              = upstream_->allocate(size, stream);
+      void* pointer              = upstream_->allocate(size);
+      auto const address         = reinterpret_cast<std::size_t>(pointer);
+      auto const aligned_address = rmm::detail::align_up(address, allocation_alignment_);
+      void* aligned_pointer      = reinterpret_cast<void*>(aligned_address);
+      if (pointer != aligned_pointer) {
+        lock_guard lock(mtx_);
+        pointers_.emplace(aligned_pointer, pointer);
+      }
+      return aligned_pointer;
+    }
+  }
+
+  /**
+   * @brief Free allocation of size `bytes` pointed to to by `p` and log the deallocation.
+   *
+   * @throws Nothing.
+   *
+   * @param p Pointer to be deallocated
+   * @param bytes Size of the allocation
+   */
+  void do_deallocate(void* p, std::size_t, std::size_t bytes) override
+  {
+    if (allocation_alignment_ == rmm::detail::CUDA_ALLOCATION_ALIGNMENT ||
+        bytes < alignment_threshold_) {
+      upstream_->deallocate(p, bytes);
+    } else {
+      {
+        lock_guard lock(mtx_);
+        auto const i = pointers_.find(p);
+        if (i != pointers_.end()) {
+          p = i->second;
+          pointers_.erase(i);
+        }
+      }
+      upstream_->deallocate(p, upstream_allocation_size(bytes));
+    }
+  }
+
+
+  /**
+   * @brief Allocates memory of size at least `bytes` using the upstream resource with the specified
+   * alignment.
+   *
+   * @throws `rmm::bad_alloc` if the requested allocation could not be fulfilled
+   * by the upstream resource.
+   *
+   * @param bytes The size, in bytes, of the allocation
+   * @param stream Stream on which to perform the allocation
+   * @return void* Pointer to the newly allocated memory
+   */
+  void* do_allocate_async(std::size_t bytes, std::size_t, cuda_stream_view stream) override
+  {
+    if (allocation_alignment_ == rmm::detail::CUDA_ALLOCATION_ALIGNMENT ||
+        bytes < alignment_threshold_) {
+      return upstream_->allocate_async(bytes, stream);
+    } else {
+      auto const size            = upstream_allocation_size(bytes);
+      void* pointer              = upstream_->allocate_async(size, stream);
       auto const address         = reinterpret_cast<std::size_t>(pointer);
       auto const aligned_address = rmm::detail::align_up(address, allocation_alignment_);
       void* aligned_pointer      = reinterpret_cast<void*>(aligned_address);
@@ -146,11 +202,11 @@ class aligned_resource_adaptor final : public device_memory_resource {
    * @param bytes Size of the allocation
    * @param stream Stream on which to perform the deallocation
    */
-  void do_deallocate(void* p, std::size_t bytes, cuda_stream_view stream) override
+  void do_deallocate_async(void* p, std::size_t bytes, std::size_t, cuda_stream_view stream) override
   {
     if (allocation_alignment_ == rmm::detail::CUDA_ALLOCATION_ALIGNMENT ||
         bytes < alignment_threshold_) {
-      upstream_->deallocate(p, bytes, stream);
+      upstream_->deallocate_async(p, bytes, stream);
     } else {
       {
         lock_guard lock(mtx_);
@@ -160,7 +216,7 @@ class aligned_resource_adaptor final : public device_memory_resource {
           pointers_.erase(i);
         }
       }
-      upstream_->deallocate(p, upstream_allocation_size(bytes), stream);
+      upstream_->deallocate_async(p, upstream_allocation_size(bytes), stream);
     }
   }
 
@@ -173,7 +229,7 @@ class aligned_resource_adaptor final : public device_memory_resource {
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equivalent
    */
-  [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
+  [[nodiscard]] bool do_is_equal(memory_resource<memory_kind::device> const& other) const noexcept override
   {
     if (this == &other)
       return true;

@@ -201,8 +201,6 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    */
   virtual void* do_allocate_async(std::size_t bytes, std::size_t alignment, cuda_stream_view stream) override
   {
-    if (alignment > allocation_alignment)
-      throw rmm::bad_alloc("Unsupported alignment");
     RMM_LOG_TRACE("[A][stream {:p}][{}B]", fmt::ptr(stream.value()), bytes);
 
     if (bytes <= 0) return nullptr;

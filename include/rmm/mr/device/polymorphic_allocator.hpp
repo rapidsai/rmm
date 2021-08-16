@@ -82,6 +82,32 @@ class polymorphic_allocator {
   {
   }
 
+
+  /**
+   * @brief Allocates storage for `n` objects of type `T` using the underlying memory resource.
+   *
+   * @param n The number of objects to allocate storage for
+   * @return Pointer to the allocated storage
+   */
+  value_type* allocate(std::size_t n)
+  {
+    return static_cast<value_type*>(resource()->allocate_async(n * sizeof(T)));
+  }
+
+  /**
+   * @brief Deallocates storage pointed to by `p`.
+   *
+   * `p` must have been allocated from a `rmm::mr::device_memory_resource` `r` that compares equal
+   * to `*resource()` using `r.allocate(n * sizeof(T))`.
+   *
+   * @param p Pointer to memory to deallocate
+   * @param n Number of objects originally allocated
+   */
+  void deallocate(value_type* p, std::size_t n)
+  {
+    resource()->deallocate_async(p, n * sizeof(T));
+  }
+
   /**
    * @brief Allocates storage for `n` objects of type `T` using the underlying memory resource.
    *
@@ -89,7 +115,7 @@ class polymorphic_allocator {
    * @param stream The stream on which to perform the allocation
    * @return Pointer to the allocated storage
    */
-  value_type* allocate(std::size_t n, cuda_stream_view stream)
+  value_type* allocate_async(std::size_t n, cuda_stream_view stream)
   {
     return static_cast<value_type*>(resource()->allocate_async(n * sizeof(T), stream));
   }
@@ -104,7 +130,7 @@ class polymorphic_allocator {
    * @param n Number of objects originally allocated
    * @param stream Stream on which to perform the deallocation
    */
-  void deallocate(value_type* p, std::size_t n, cuda_stream_view stream)
+  void deallocate_async(value_type* p, std::size_t n, cuda_stream_view stream)
   {
     resource()->deallocate_async(p, n * sizeof(T), stream);
   }
@@ -216,7 +242,7 @@ class stream_allocator_adaptor {
    * @param n The number of objects to allocate storage for
    * @return Pointer to the allocated storage
    */
-  value_type* allocate(std::size_t n) { return alloc_.allocate(n, stream()); }
+  value_type* allocate(std::size_t n) { return alloc_.allocate_async(n, stream()); }
 
   /**
    * @brief Deallocates storage pointed to by `p` using the underlying allocator on `stream()`.
@@ -227,7 +253,7 @@ class stream_allocator_adaptor {
    * @param p Pointer to memory to deallocate
    * @param n Number of objects originally allocated
    */
-  void deallocate(value_type* p, std::size_t n) { alloc_.deallocate(p, n, stream()); }
+  void deallocate(value_type* p, std::size_t n) { alloc_.deallocate_async(p, n, stream()); }
 
   /**
    * @brief Returns the underlying stream on which calls to the underlying allocator are made.

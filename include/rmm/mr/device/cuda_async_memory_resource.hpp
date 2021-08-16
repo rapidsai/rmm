@@ -83,8 +83,9 @@ class cuda_async_memory_resource final : public device_memory_resource {
     // Allocate and immediately deallocate the initial_pool_size to prime the pool with the
     // specified size
     auto const pool_size = initial_pool_size.value_or(free * 0.5);
-    auto p               = do_allocate(pool_size, cuda_stream_default);
-    do_deallocate(p, pool_size, cuda_stream_default);
+    constexpr auto alignment = rmm::detail::CUDA_ALLOCATION_ALIGNMENT;
+    auto p               = do_allocate_async(pool_size, alignment, cuda_stream_default);
+    do_deallocate_async(p, pool_size, alignment, cuda_stream_default);
 
 #else
     RMM_FAIL(
@@ -141,6 +142,50 @@ class cuda_async_memory_resource final : public device_memory_resource {
    * @param bytes The size, in bytes, of the allocation
    * @return void* Pointer to the newly allocated memory
    */
+  void* do_allocate(std::size_t bytes, std::size_t alignment) override
+  {
+    void* p{nullptr};
+#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
+    if (bytes > 0) {
+      RMM_CUDA_TRY(cudaMallocFromPoolAsync(&p, bytes, pool_handle(), 0), rmm::bad_alloc);
+      RMM_CUDA_TRY(cudaStreamSynchronize(0), rmm::bad_alloc);
+    }
+#else
+    (void)bytes;
+#endif
+    return p;
+  }
+
+  /**
+   * @brief Deallocate memory pointed to by \p p.
+   *
+   * @throws Nothing.
+   *
+   * @param p Pointer to be deallocated
+   */
+  void do_deallocate(void* p, std::size_t, std::size_t) override
+  {
+#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
+    if (p != nullptr) {
+      RMM_ASSERT_CUDA_SUCCESS(cudaDeviceSynchronize());
+      RMM_ASSERT_CUDA_SUCCESS(cudaFreeAsync(p, 0));
+    }
+#else
+    (void)p;
+#endif
+  }
+
+
+  /**
+   * @brief Allocates memory of size at least `bytes` using cudaMalloc.
+   *
+   * The returned pointer has at least 256B alignment.
+   *
+   * @throws `rmm::bad_alloc` if the requested allocation could not be fulfilled
+   *
+   * @param bytes The size, in bytes, of the allocation
+   * @return void* Pointer to the newly allocated memory
+   */
   void* do_allocate_async(std::size_t bytes, std::size_t alignment, rmm::cuda_stream_view stream) override
   {
     void* p{nullptr};
@@ -151,6 +196,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
     }
 #else
     (void)bytes;
+    (void)alignment;
     (void)stream;
 #endif
     return p;

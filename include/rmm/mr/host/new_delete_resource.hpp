@@ -53,7 +53,7 @@ class new_delete_resource final : public host_memory_resource {
    * @return void* Pointer to the newly allocated memory
    *---------------------------------------------------------------------------**/
   void* do_allocate(std::size_t bytes,
-                    std::size_t alignment = detail::RMM_DEFAULT_HOST_ALIGNMENT) override
+                    std::size_t alignment = rmm::detail::RMM_DEFAULT_HOST_ALIGNMENT) override
   {
     // If the requested alignment isn't supported, use default
     alignment =
@@ -85,7 +85,7 @@ class new_delete_resource final : public host_memory_resource {
                      std::size_t bytes,
                      std::size_t alignment = rmm::detail::RMM_DEFAULT_HOST_ALIGNMENT) override
   {
-    detail::aligned_deallocate(p, bytes, alignment, [](void* p) { ::operator delete(p); });
+    rmm::detail::aligned_deallocate(p, bytes, alignment, [](void* p) { ::operator delete(p); });
   }
 
   bool do_is_equal(const memory_resource<memory_kind::host> &other) const noexcept override
