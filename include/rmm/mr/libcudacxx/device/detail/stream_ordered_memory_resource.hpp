@@ -23,6 +23,8 @@
 
 #include <cuda_runtime_api.h>
 
+#include <cuda/memory_resource>
+
 #include <functional>
 #include <limits>
 #include <map>
@@ -73,9 +75,9 @@ struct crtp {
  * 3. `split_block allocate_from_block(block_type const& b, size_t size)`
  * 4. `block_type free_block(void* p, size_t size) noexcept`
  */
-template <typename PoolResource, typename FreeListType>
+template <typename MemoryKind, typename PoolResource, typename FreeListType>
 class stream_ordered_memory_resource : public crtp<PoolResource>,
-                                       public experimental::device_memory_resource {
+                                       public cuda::stream_ordered_memory_resource<MemoryKind> {
  public:
   ~stream_ordered_memory_resource() { release(); }
 

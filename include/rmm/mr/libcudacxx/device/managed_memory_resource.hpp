@@ -20,6 +20,8 @@
 #include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
 
+#include <cuda/memory_resource>
+
 #include <cassert>
 
 namespace rmm {
@@ -29,7 +31,8 @@ namespace mr {
  * @brief `device_memory_resource` derived class that uses
  * cudaMallocManaged/Free for allocation/deallocation.
  */
-class managed_memory_resource final : public experimental::device_memory_resource {
+class managed_memory_resource final
+  : public cuda::stream_ordered_memory_resource<cuda::memory_kind::managed> {
  public:
   managed_memory_resource()                               = default;
   ~managed_memory_resource()                              = default;

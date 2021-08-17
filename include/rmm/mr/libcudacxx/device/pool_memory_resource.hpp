@@ -54,12 +54,15 @@ namespace mr {
  * @tparam UpstreamResource memory_resource to use for allocating the pool. Implements
  *                          rmm::mr::device_memory_resource interface.
  */
+template <typename MemoryKind>
 class pool_memory_resource final
-  : public detail::stream_ordered_memory_resource<pool_memory_resource,
+  : public detail::stream_ordered_memory_resource<MemoryKind,
+                                                  pool_memory_resource<MemoryKind>,
                                                   detail::coalescing_free_list> {
  public:
-  friend class detail::stream_ordered_memory_resource<pool_memory_resource,
-                                                      detail::coalescing_free_list>;
+  using memory_kind = MemoryKind;
+  friend class detail::
+    stream_ordered_memory_resource<MemoryKind, pool_memory_resource, detail::coalescing_free_list>;
 
   /**
    * @brief Construct a `pool_memory_resource` and allocate the initial device memory pool using
@@ -118,7 +121,8 @@ class pool_memory_resource final
  protected:
   using free_list  = detail::coalescing_free_list;
   using block_type = free_list::block_type;
-  using typename detail::stream_ordered_memory_resource<pool_memory_resource,
+  using typename detail::stream_ordered_memory_resource<MemoryKind,
+                                                        pool_memory_resource<MemoryKind>,
                                                         detail::coalescing_free_list>::split_block;
   using lock_guard = std::lock_guard<std::mutex>;
 

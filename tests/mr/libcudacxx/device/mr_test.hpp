@@ -20,7 +20,9 @@
 
 #include <rmm/cuda_stream.hpp>
 #include <rmm/cuda_stream_view.hpp>
+#include <rmm/detail/aligned.hpp>
 #include <rmm/mr/libcudacxx/device/cuda_memory_resource.hpp>
+#include <rmm/mr/libcudacxx/device/device_memory_resource.hpp>
 #include <rmm/mr/libcudacxx/device/managed_memory_resource.hpp>
 #include <rmm/mr/libcudacxx/device/owning_wrapper.hpp>
 #include <rmm/mr/libcudacxx/device/per_device_resource.hpp>
@@ -28,13 +30,12 @@
 
 #include <cuda_runtime_api.h>
 
+#include <cuda/memory_resource>
+
 #include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <random>
-#include "rmm/detail/aligned.hpp"
-#include "rmm/mr/device/device_memory_resource.hpp"
-#include "rmm/mr/libcudacxx/device/device_memory_resource.hpp"
 
 namespace rmm {
 namespace test {
@@ -206,8 +207,32 @@ inline void test_mixed_random_allocation_free(rmm::mr::experimental::device_reso
   EXPECT_EQ(allocations.size(), active_allocations);
 }
 
-using MRFactoryFunc =
-  std::function<std::shared_ptr<rmm::mr::experimental::device_memory_resource>()>;
+// wrappers so we can test resources of different types with value-parameterized tests.
+struct mr_wrapper {
+  cuda::stream_ordered_resource_view<cuda::memory_access::device> resource_view;
+  auto view() { return resource_view; }
+};
+
+struct cuda_mr_wrapper : public mr_wrapper {
+  rmm::mr::cuda_memory_resource mr;
+  cuda_mr_wrapper() : mr{} { resource_view = cuda::view_resource(&mr); }
+};
+
+struct managed_mr_wrapper : public mr_wrapper {
+  rmm::mr::managed_memory_resource mr;
+  managed_mr_wrapper() : mr{} { resource_view = cuda::view_resource(&mr); }
+};
+
+struct pool_mr_wrapper : public mr_wrapper {
+  rmm::mr::cuda_memory_resource cuda_mr;
+  rmm::mr::pool_memory_resource<cuda::memory_kind::device> pool_mr;
+  pool_mr_wrapper() : pool_mr{cuda::view_resource(&cuda_mr)}
+  {
+    resource_view = cuda::view_resource(&pool_mr);
+  }
+};
+
+using MRFactoryFunc = std::function<std::shared_ptr<mr_wrapper>()>;
 
 // Encapsulates a `device_memory_resource` factory function and associated name
 struct mr_factory {
@@ -224,28 +249,22 @@ struct mr_test : public ::testing::TestWithParam<mr_factory> {
   {
     auto factory = this->GetParam().f;
     mr           = factory();
-    mr_view      = cuda::view_resource(mr.get());
+    mr_view      = mr->view();
   }
 
   // resource view to use in tests
-  std::shared_ptr<rmm::mr::experimental::device_memory_resource> mr;
+  std::shared_ptr<mr_wrapper> mr;
   rmm::mr::experimental::device_resource_view mr_view;
   rmm::cuda_stream stream{};
 };
 
 // MR factory functions
-inline auto make_cuda()
-{
-  return std::make_shared<rmm::mr::cuda_memory_resource>();  //
-}
-inline auto make_managed() { return std::make_shared<rmm::mr::managed_memory_resource>(); }
+inline std::shared_ptr<mr_wrapper> make_cuda() { return std::make_shared<cuda_mr_wrapper>(); }
+inline std::shared_ptr<mr_wrapper> make_managed() { return std::make_shared<managed_mr_wrapper>(); }
 
 // inline auto make_cuda_async() { return std::make_shared<rmm::mr::cuda_async_memory_resource>(); }
 
-inline auto make_pool()
-{
-  return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_cuda());
-}
+inline std::shared_ptr<mr_wrapper> make_pool() { return std::make_shared<pool_mr_wrapper>(); }
 
 /*inline auto make_arena()
 {
