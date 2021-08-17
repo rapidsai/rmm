@@ -15,8 +15,7 @@
  */
 #pragma once
 
-#include <rmm/mr/libcudacxx/device/device_memory_resource.hpp>
-
+#include <cuda/memory_resource>
 #include <cuda/stream_view>
 
 #include <functional>
@@ -71,7 +70,7 @@ auto make_resource(std::tuple<std::shared_ptr<Upstreams>...> const& t, Args&&...
  * `Resource`
  */
 template <typename Resource, typename... Upstreams>
-class owning_wrapper : public experimental::device_memory_resource {
+class owning_wrapper : public cuda::stream_ordered_memory_resource<cuda::memory_kind::device> {
  public:
   using upstream_tuple = std::tuple<std::shared_ptr<Upstreams>...>;
 

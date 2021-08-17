@@ -15,8 +15,6 @@
  */
 #pragma once
 
-#include <rmm/mr/libcudacxx/device/device_memory_resource.hpp>
-
 #include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
 

@@ -52,10 +52,10 @@ TEST(DefaultTest, GetCurrentDeviceResource)
 
 TEST_P(mr_test, SetCurrentDeviceResource)
 {
-  rmm::mr::experimental::device_resource_view old{};
+  device_resource_view old{};
   EXPECT_NO_THROW(old = rmm::mr::set_current_device_resource_view(this->mr_view));
 
-  EXPECT_NE(rmm::mr::experimental::device_resource_view{nullptr}, old);
+  EXPECT_NE(device_resource_view{nullptr}, old);
 
   // old mr should equal a cuda mr
   // auto cuda_mr = rmm::mr::cuda_memory_resource{};

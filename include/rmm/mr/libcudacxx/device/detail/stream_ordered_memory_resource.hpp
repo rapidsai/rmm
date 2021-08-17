@@ -19,7 +19,6 @@
 #include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/logger.hpp>
-#include <rmm/mr/libcudacxx/device/device_memory_resource.hpp>
 
 #include <cuda_runtime_api.h>
 

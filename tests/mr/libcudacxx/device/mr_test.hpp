@@ -22,7 +22,6 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/aligned.hpp>
 #include <rmm/mr/libcudacxx/device/cuda_memory_resource.hpp>
-#include <rmm/mr/libcudacxx/device/device_memory_resource.hpp>
 #include <rmm/mr/libcudacxx/device/managed_memory_resource.hpp>
 #include <rmm/mr/libcudacxx/device/owning_wrapper.hpp>
 #include <rmm/mr/libcudacxx/device/per_device_resource.hpp>
@@ -39,6 +38,8 @@
 
 namespace rmm {
 namespace test {
+
+using device_resource_view = cuda::stream_ordered_resource_view<cuda::memory_access::device>;
 
 constexpr std::size_t DEFAULT_ALIGNMENT = 256;
 
@@ -84,8 +85,7 @@ inline void test_get_current_device_resource()
   EXPECT_EQ(cuda::resource_view<cuda::memory_access::device>{nullptr},
             cuda::resource_view<cuda::memory_access::device>{nullptr});
 
-  EXPECT_NE(rmm::mr::experimental::device_resource_view{nullptr},
-            rmm::mr::get_current_device_resource_view());
+  EXPECT_NE(device_resource_view{nullptr}, rmm::mr::get_current_device_resource_view());
   void* p{nullptr};
   EXPECT_NO_THROW(p = rmm::mr::get_current_device_resource_view()->allocate(1_MiB));
   EXPECT_NE(nullptr, p);
@@ -94,7 +94,7 @@ inline void test_get_current_device_resource()
   EXPECT_NO_THROW(rmm::mr::get_current_device_resource_view()->deallocate(p, 1_MiB));
 }
 
-inline void test_allocate(rmm::mr::experimental::device_resource_view mr,
+inline void test_allocate(device_resource_view mr,
                           std::size_t bytes,
                           std::size_t alignment,
                           cuda_stream_view stream = {})
@@ -109,7 +109,7 @@ inline void test_allocate(rmm::mr::experimental::device_resource_view mr,
   if (not stream.is_default()) stream.synchronize();
 }
 
-inline void test_various_allocations(rmm::mr::experimental::device_resource_view mr,
+inline void test_various_allocations(device_resource_view mr,
                                      std::size_t alignment   = DEFAULT_ALIGNMENT,
                                      cuda_stream_view stream = {})
 {
@@ -135,7 +135,7 @@ inline void test_various_allocations(rmm::mr::experimental::device_resource_view
   }
 }
 
-inline void test_random_allocations(rmm::mr::experimental::device_resource_view mr,
+inline void test_random_allocations(device_resource_view mr,
                                     std::size_t num_allocations = 100,
                                     std::size_t max_size        = 5_MiB,
                                     cuda_stream_view stream     = {})
@@ -161,7 +161,7 @@ inline void test_random_allocations(rmm::mr::experimental::device_resource_view 
   });
 }
 
-inline void test_mixed_random_allocation_free(rmm::mr::experimental::device_resource_view mr,
+inline void test_mixed_random_allocation_free(device_resource_view mr,
                                               std::size_t max_size    = 5_MiB,
                                               cuda_stream_view stream = {})
 {
@@ -254,7 +254,7 @@ struct mr_test : public ::testing::TestWithParam<mr_factory> {
 
   // resource view to use in tests
   std::shared_ptr<mr_wrapper> mr;
-  rmm::mr::experimental::device_resource_view mr_view;
+  device_resource_view mr_view;
   rmm::cuda_stream stream{};
 };
 

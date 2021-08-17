@@ -15,10 +15,10 @@
  */
 #pragma once
 
-#include <rmm/mr/libcudacxx/device/device_memory_resource.hpp>
-
 #include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
+
+#include <cuda/memory_resource>
 
 #include <cassert>
 
@@ -29,7 +29,8 @@ namespace mr {
  * @brief `device_memory_resource` derived class that uses cudaMalloc/Free for
  * allocation/deallocation.
  */
-class cuda_memory_resource final : public experimental::device_memory_resource {
+class cuda_memory_resource final
+  : public cuda::stream_ordered_memory_resource<cuda::memory_kind::device> {
  public:
   cuda_memory_resource()                            = default;
   ~cuda_memory_resource()                           = default;

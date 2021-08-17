@@ -22,7 +22,6 @@
 #include <rmm/logger.hpp>
 #include <rmm/mr/libcudacxx/device/detail/coalescing_free_list.hpp>
 #include <rmm/mr/libcudacxx/device/detail/stream_ordered_memory_resource.hpp>
-#include <rmm/mr/libcudacxx/device/device_memory_resource.hpp>
 
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
@@ -40,6 +39,7 @@
 #include <thread>
 #include <unordered_map>
 #include <vector>
+#include "build/cuda-11.2.0/fea-libcudacxx-mr/debug/_deps/libcudacxx-src/include/cuda/memory_resource"
 
 namespace rmm {
 namespace mr {
@@ -80,11 +80,11 @@ class pool_memory_resource final
    * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to. Defaults to all
    * of the available memory on the current device.
    */
-  explicit pool_memory_resource(experimental::device_resource_view upstream_mr_view,
+  explicit pool_memory_resource(cuda::stream_ordered_resource_view<> upstream_mr_view,
                                 thrust::optional<std::size_t> initial_pool_size = thrust::nullopt,
                                 thrust::optional<std::size_t> maximum_pool_size = thrust::nullopt)
     : upstream_mr_view_{[upstream_mr_view]() {
-        RMM_EXPECTS(experimental::device_resource_view{nullptr} != upstream_mr_view,
+        RMM_EXPECTS(cuda::stream_ordered_resource_view<>{nullptr} != upstream_mr_view,
                     "Unexpected null upstream resource view.");
         return upstream_mr_view;
       }()}
@@ -116,7 +116,7 @@ class pool_memory_resource final
    *
    * @return UpstreamResource the upstream memory resource view.
    */
-  experimental::device_resource_view get_upstream() const noexcept { return upstream_mr_view_; }
+  auto get_upstream() const noexcept { return upstream_mr_view_; }
 
  protected:
   using free_list  = detail::coalescing_free_list;
@@ -401,7 +401,7 @@ class pool_memory_resource final
     return {largest, total};
   }
 
-  experimental::device_resource_view upstream_mr_view_;  // The "heap" to allocate the pool from
+  cuda::stream_ordered_resource_view<> upstream_mr_view_;  // The "heap" to allocate the pool from
   std::size_t current_pool_size_{};
   thrust::optional<std::size_t> maximum_pool_size_{};
 
