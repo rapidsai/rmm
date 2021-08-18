@@ -16,16 +16,17 @@
 #pragma once
 
 #include <rmm/detail/error.hpp>
+#include <rmm/logger.hpp>
 #include <rmm/mr/device/detail/arena.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <cuda_runtime_api.h>
 
 #include <spdlog/common.h>
+#include <spdlog/fmt/bundled/ostream.h>
 
 #include <map>
 #include <shared_mutex>
-#include <sstream>
 
 namespace rmm::mr {
 
@@ -240,23 +241,19 @@ class arena_memory_resource final : public device_memory_resource {
   void dump_memory_log(size_t bytes)
   {
     logger_->info("**************************************************");
-    logger_->info("Ran out of memory trying to allocate {}.", detail::arena::human_size(bytes));
+    logger_->info("Ran out of memory trying to allocate {}.", rmm::detail::bytes{bytes});
     logger_->info("**************************************************");
     logger_->info("Global arena:");
     global_arena_.dump_memory_log(logger_);
     logger_->info("Per-thread arenas:");
     for (auto const& t : thread_arenas_) {
-      std::ostringstream oss;
-      oss << t.first;
-      logger_->info("  Thread {}:", oss.str());
+      logger_->info("  Thread {}:", t.first);
       t.second->dump_memory_log(logger_);
     }
     if (!stream_arenas_.empty()) {
       logger_->info("Per-stream arenas:");
       for (auto const& s : stream_arenas_) {
-        std::ostringstream oss;
-        oss << s.first;
-        logger_->info("  Stream {}:", oss.str());
+        logger_->info("  Stream {}:", static_cast<void*>(s.first));
         s.second.dump_memory_log(logger_);
       }
     }

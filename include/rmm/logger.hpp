@@ -69,6 +69,25 @@ struct logger_wrapper {
   }
 };
 
+/**
+ * @brief Represent a size in number of bytes.
+ */
+struct bytes {
+  std::size_t value;
+
+  friend std::ostream& operator<<(std::ostream& os, const bytes& b)
+  {
+    std::string const units[] = {"B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"};
+    int i                     = 0;
+    auto size                 = static_cast<double>(b.value);
+    while (size > 1024) {
+      size /= 1024;
+      i++;
+    }
+    return os << size << ' ' << units[i];
+  }
+};
+
 }  // namespace detail
 
 /**

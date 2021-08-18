@@ -16,13 +16,15 @@
 
 #pragma once
 
-#include <spdlog/common.h>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
-#include <sstream>
+#include <rmm/logger.hpp>
 
 #include <cuda_runtime_api.h>
+
+#include <spdlog/common.h>
+#include <spdlog/fmt/bundled/ostream.h>
 
 #include <algorithm>
 #include <limits>
@@ -134,6 +136,8 @@ class block {
   std::size_t size_{};  ///< Size in bytes.
 };
 
+inline bool block_size_compare(block a, block b) { return a.size() < b.size(); }
+
 /**
  * @brief Align up to the allocation alignment.
  *
@@ -154,26 +158,6 @@ constexpr std::size_t align_up(std::size_t v) noexcept
 constexpr std::size_t align_down(std::size_t v) noexcept
 {
   return rmm::detail::align_down(v, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
-}
-
-/**
- * @brief Return human readable number of bytes.
- *
- * @param bytes number of bytes
- * @return Return human readable number of bytes.
- */
-inline std::string human_size(std::size_t bytes)
-{
-  const std::string units[] = {"B", "KiB", "MiB", "GiB", "TiB"};
-  int i                     = 0;
-  auto size                 = static_cast<float>(bytes);
-  while (size > 1024) {
-    size /= 1024;
-    i++;
-  }
-  std::ostringstream oss;
-  oss << size << " " << units[i];
-  return oss.str();
 }
 
 /**
@@ -375,22 +359,24 @@ class global_arena final {
   {
     lock_guard lock(mtx_);
 
-    logger->info("  Maximum size: {}", bytes{maximum_size_});
-    logger->info("  Current size: {}", human_size(current_size_));
+    logger->info("  Maximum size: {}", rmm::detail::bytes{maximum_size_});
+    logger->info("  Current size: {}", rmm::detail::bytes{current_size_});
 
     logger->info("  # free blocks: {}", free_blocks_.size());
     std::size_t total_free{};
     for (auto const& b : free_blocks_) {
       total_free += b.size();
     }
-    logger->info("  Total size of free blocks: {}", human_size(total_free));
+    logger->info("  Total size of free blocks: {}", rmm::detail::bytes{total_free});
+    auto const m = *std::max_element(free_blocks_.begin(), free_blocks_.end(), block_size_compare);
+    logger->info("  Size of largest free block: {}", rmm::detail::bytes{m.size()});
 
     logger->info("  # upstream blocks={}", upstream_blocks_.size());
     std::size_t total_upstream{};
     for (auto const& b : upstream_blocks_) {
       total_upstream += b.size();
     }
-    logger->info("  Total size of upstream blocks: {}", human_size(total_upstream));
+    logger->info("  Total size of upstream blocks: {}", rmm::detail::bytes{total_upstream});
   }
 
  private:
@@ -541,7 +527,9 @@ class arena {
     for (auto const& b : free_blocks_) {
       total_free += b.size();
     }
-    logger->info("    Total size of free blocks: {}", human_size(total_free));
+    logger->info("    Total size of free blocks: {}", rmm::detail::bytes{total_free});
+    auto const m = *std::max_element(free_blocks_.begin(), free_blocks_.end(), block_size_compare);
+    logger->info("    Size of largest free block: {}", rmm::detail::bytes{m.size()});
   }
 
  private:
