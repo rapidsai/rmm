@@ -75,7 +75,7 @@ struct logger_wrapper {
 struct bytes {
   std::size_t value;
 
-  friend std::ostream& operator<<(std::ostream& os, const bytes& b)
+  friend std::ostream& operator<<(std::ostream& os, bytes const& b)
   {
     std::string const units[] = {"B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"};
     int i                     = 0;
