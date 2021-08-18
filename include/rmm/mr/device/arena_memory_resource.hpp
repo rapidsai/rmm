@@ -15,16 +15,17 @@
  */
 #pragma once
 
-#include <spdlog/common.h>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/detail/arena.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
-#include <sstream>
 
 #include <cuda_runtime_api.h>
 
+#include <spdlog/common.h>
+
 #include <map>
 #include <shared_mutex>
+#include <sstream>
 
 namespace rmm::mr {
 

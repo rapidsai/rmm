@@ -375,7 +375,7 @@ class global_arena final {
   {
     lock_guard lock(mtx_);
 
-    logger->info("  Maximum size: {}", human_size(maximum_size_));
+    logger->info("  Maximum size: {}", bytes{maximum_size_});
     logger->info("  Current size: {}", human_size(current_size_));
 
     logger->info("  # free blocks: {}", free_blocks_.size());
