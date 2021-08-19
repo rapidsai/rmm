@@ -127,6 +127,7 @@ library_dirs = [
 cmdclass = dict()
 cmdclass.update(versioneer.get_cmdclass())
 
+
 class build_ext_no_debug(build_ext):
     def build_extensions(self):
         try:
@@ -183,7 +184,7 @@ extensions = [
         libraries=["cuda", "cudart"],
         language="c++",
         extra_compile_args=["-std=c++17"],
-    )
+    ),
 ]
 
 setup(
