@@ -8,9 +8,15 @@ import shutil
 import sysconfig
 from distutils.sysconfig import get_python_lib
 
-from Cython.Build import cythonize
 from setuptools import find_packages, setup
 from setuptools.extension import Extension
+
+from Cython.Build import cythonize
+
+try:
+    from Cython.Distutils.build_ext import new_build_ext as build_ext
+except ImportError:
+    from setuptools.command.build_ext import build_ext
 
 import versioneer
 
@@ -117,79 +123,72 @@ library_dirs = [
     cuda_lib_dir,
 ]
 
-# lib:
-extensions = cythonize(
-    [
-        Extension(
-            "*",
-            sources=["rmm/_lib/*.pyx"],
-            include_dirs=include_dirs,
-            library_dirs=library_dirs,
-            runtime_library_dirs=[
-                cuda_lib_dir,
-                os.path.join(os.sys.prefix, "lib"),
-            ],
-            libraries=["cuda", "cudart"],
-            language="c++",
-            extra_compile_args=["-std=c++17"],
-        )
-    ],
-    nthreads=nthreads,
-    compiler_directives=dict(
-        profile=False, language_level=3, embedsignature=True,
-    ),
-)
+
+cmdclass = dict()
+cmdclass.update(versioneer.get_cmdclass())
+
+class build_ext_no_debug(build_ext):
+    def build_extensions(self):
+        try:
+            # Don't compile debug symbols
+            self.compiler.compiler_so.remove("-g")
+            # Silence the '-Wstrict-prototypes' warning
+            self.compiler.compiler_so.remove("-Wstrict-prototypes")
+        except Exception:
+            pass
+        build_ext.build_extensions(self)
 
 
-# cuda:
-extensions += cythonize(
-    [
-        Extension(
-            "*",
-            sources=["rmm/_cuda/*.pyx"],
-            include_dirs=include_dirs,
-            library_dirs=library_dirs,
-            runtime_library_dirs=[
-                cuda_lib_dir,
-                os.path.join(os.sys.prefix, "lib"),
-            ],
-            libraries=["cuda", "cudart"],
-            language="c++",
-            extra_compile_args=["-std=c++14"],
-        )
-    ],
-    nthreads=nthreads,
-    compiler_directives=dict(
-        profile=False, language_level=3, embedsignature=True,
-    ),
-)
+cmdclass["build_ext"] = build_ext_no_debug
 
-# tests:
-extensions += cythonize(
-    [
-        Extension(
-            "*",
-            sources=cython_tests,
-            include_dirs=include_dirs,
-            library_dirs=library_dirs,
-            runtime_library_dirs=[
-                cuda_lib_dir,
-                os.path.join(os.sys.prefix, "lib"),
-            ],
-            libraries=["cuda", "cudart"],
-            language="c++",
-            extra_compile_args=["-std=c++14"],
-        )
-    ],
-    nthreads=nthreads,
-    compiler_directives=dict(
-        profile=True, language_level=3, embedsignature=True, binding=True
+extensions = [
+    # lib:
+    Extension(
+        "*",
+        sources=["rmm/_lib/*.pyx"],
+        include_dirs=include_dirs,
+        library_dirs=library_dirs,
+        runtime_library_dirs=[
+            cuda_lib_dir,
+            os.path.join(os.sys.prefix, "lib"),
+        ],
+        libraries=["cuda", "cudart"],
+        language="c++",
+        extra_compile_args=["-std=c++17"],
     ),
-)
+    # cuda:
+    Extension(
+        "*",
+        sources=["rmm/_cuda/*.pyx"],
+        include_dirs=include_dirs,
+        library_dirs=library_dirs,
+        runtime_library_dirs=[
+            cuda_lib_dir,
+            os.path.join(os.sys.prefix, "lib"),
+        ],
+        libraries=["cuda", "cudart"],
+        language="c++",
+        extra_compile_args=["-std=c++17"],
+    ),
+    # tests:
+    Extension(
+        "*",
+        sources=cython_tests,
+        include_dirs=include_dirs,
+        library_dirs=library_dirs,
+        runtime_library_dirs=[
+            cuda_lib_dir,
+            os.path.join(os.sys.prefix, "lib"),
+        ],
+        libraries=["cuda", "cudart"],
+        language="c++",
+        extra_compile_args=["-std=c++17"],
+    )
+]
 
 setup(
     name="rmm",
-    version="21.08.00",
+    version=versioneer.get_version(),
     description="rmm - RAPIDS Memory Manager",
     url="https://github.com/rapidsai/rmm",
     author="NVIDIA Corporation",
@@ -206,13 +205,18 @@ setup(
     # Include the separately-compiled shared library
     setup_requires=["Cython>=0.29,<0.30"],
     extras_require={"test": ["pytest", "pytest-xdist"]},
-    ext_modules=extensions,
+    ext_modules=cythonize(
+        extensions,
+        compiler_directives=dict(
+            profile=False, language_level=3, embedsignature=True
+        ),
+    ),
     packages=find_packages(include=["rmm", "rmm.*"]),
     package_data=dict.fromkeys(
         find_packages(include=["rmm._lib", "rmm._lib.includes", "rmm._cuda*"]),
         ["*.hpp", "*.pxd"],
     ),
-    cmdclass=versioneer.get_cmdclass(),
+    cmdclass=cmdclass,
     install_requires=install_requires,
     zip_safe=False,
 )
