@@ -18,7 +18,6 @@ try:
 except ImportError:
     from setuptools.command.build_ext import build_ext as _build_ext
 
-from distutils.command.build import build as _build
 from distutils.sysconfig import get_python_lib
 
 import setuptools.command.build_ext
@@ -181,26 +180,7 @@ def remove_flags(compiler, *flags):
             pass
 
 
-class build_no_debug(_build):
-    def initialize_options(self):
-        self.debug = False
-        super().initialize_options()
-
-    def build_extensions(self):
-        # Full optimization
-        self.compiler.compiler_so.append("-O3")
-        # No debug symbols, full optimization, no '-Wstrict-prototypes' warning
-        remove_flags(
-            self.compiler, "-g", "-G", "-O1", "-O2", "-Wstrict-prototypes"
-        )
-        super().build_extensions()
-
-
 class build_ext_no_debug(_build_ext):
-    def initialize_options(self):
-        self.debug = False
-        super().initialize_options()
-
     def build_extensions(self):
         # Full optimization
         self.compiler.compiler_so.append("-O3")
@@ -232,9 +212,7 @@ class build_ext_no_debug(_build_ext):
 
 cmdclass = dict()
 cmdclass.update(versioneer.get_cmdclass())
-cmdclass["build"] = build_no_debug
 cmdclass["build_ext"] = build_ext_no_debug
-cmdclass["bdist_wheel"] = build_ext_no_debug
 
 setup(
     name="rmm",
