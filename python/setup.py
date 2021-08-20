@@ -18,13 +18,12 @@ try:
 except ImportError:
     from setuptools.command.build_ext import build_ext as _build_ext
 
-import setuptools.command.build_ext
-
-from setuptools import find_packages, setup
-from setuptools.extension import Extension
-
 from distutils.command.build import build as _build
 from distutils.sysconfig import get_python_lib
+
+import setuptools.command.build_ext
+from setuptools import find_packages, setup
+from setuptools.extension import Extension
 
 import versioneer
 
