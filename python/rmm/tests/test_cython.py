@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rmm._lib.tests.test_device_buffer import (
+from rmm._lib.tests.test_device_buffer import (  # noqa: F401
     test_release,
-    test_size_after_release
+    test_size_after_release,
 )
