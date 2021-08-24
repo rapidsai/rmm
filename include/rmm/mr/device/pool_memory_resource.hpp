@@ -303,7 +303,7 @@ class pool_memory_resource final
 
     auto rest =
       (b.size() > size) ? block_type{b.pointer() + size, b.size() - size, false} : block_type{};
-    return {reinterpret_cast<void*>(alloc.pointer()), rest};
+    return {alloc, rest};
   }
 
   /**
