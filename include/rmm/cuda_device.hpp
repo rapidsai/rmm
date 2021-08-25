@@ -17,6 +17,8 @@
 
 #include <rmm/detail/error.hpp>
 
+#include <cuda_runtime_api.h>
+
 namespace rmm {
 
 /**

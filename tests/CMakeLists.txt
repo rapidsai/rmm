@@ -19,8 +19,8 @@ option(DISABLE_DEPRECATION_WARNING "Disable warnings generated from deprecated d
 
 # This function takes in a test name and test source and handles setting all of the associated
 # properties and linking to build the test
-function(ConfigureTestInternal TEST_NAME TEST_SRC)
-  add_executable(${TEST_NAME} "${TEST_SRC}")
+function(ConfigureTestInternal TEST_NAME)
+  add_executable(${TEST_NAME} ${ARGN})
   target_include_directories(${TEST_NAME} PRIVATE "$<BUILD_INTERFACE:${RMM_SOURCE_DIR}>")
   target_link_libraries(${TEST_NAME} GTest::gmock GTest::gtest GTest::gmock_main GTest::gtest_main
                         pthread rmm)
@@ -39,111 +39,74 @@ function(ConfigureTestInternal TEST_NAME TEST_SRC)
       ${TEST_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-Wno-deprecated-declarations>)
     target_compile_options(${TEST_NAME}
                            PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-declarations>)
-  endif(DISABLE_DEPRECATION_WARNING)
+  endif()
 
   add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
-endfunction(ConfigureTestInternal)
+endfunction()
 
 # Wrapper around `ConfigureTestInternal` that builds tests both with and without per thread default
 # stream
-function(ConfigureTest TEST_NAME TEST_SRC)
+function(ConfigureTest TEST_NAME)
   # Test with legacy default stream.
-  ConfigureTestInternal("${TEST_NAME}" "${TEST_SRC}")
+  ConfigureTestInternal(${TEST_NAME} ${ARGN})
 
   # Test with per-thread default stream.
   string(REGEX REPLACE "_TEST$" "_PTDS_TEST" PTDS_TEST_NAME "${TEST_NAME}")
-  ConfigureTestInternal("${PTDS_TEST_NAME}" "${TEST_SRC}")
+  ConfigureTestInternal("${PTDS_TEST_NAME}" ${ARGN})
   target_compile_definitions("${PTDS_TEST_NAME}" PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
-endfunction(ConfigureTest)
+endfunction()
 
 # test sources
 
 # device mr tests
-
-set(DEVICE_MR_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/mr_tests.cpp"
-                       "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/mr_multithreaded_tests.cpp")
-ConfigureTest(DEVICE_MR_TEST "${DEVICE_MR_TEST_SRC}")
+ConfigureTest(DEVICE_MR_TEST mr/device/mr_tests.cpp mr/device/mr_multithreaded_tests.cpp)
 
 # pool mr tests
-
-set(POOL_MR_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/pool_mr_tests.cpp")
-ConfigureTest(POOL_MR_TEST "${POOL_MR_TEST_SRC}")
+ConfigureTest(POOL_MR_TEST mr/device/pool_mr_tests.cpp)
 
 # cuda_async mr tests
-set(CUDA_ASYNC_MR_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/cuda_async_mr_tests.cpp")
-ConfigureTest(CUDA_ASYNC_MR_TEST "${CUDA_ASYNC_MR_TEST_SRC}")
+ConfigureTest(CUDA_ASYNC_MR_TEST mr/device/cuda_async_mr_tests.cpp)
 
 # thrust allocator tests
-
-set(THRUST_ALLOCATOR_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/thrust_allocator_tests.cu")
-ConfigureTest(THRUST_ALLOCATOR_TEST "${THRUST_ALLOCATOR_TEST_SRC}")
+ConfigureTest(THRUST_ALLOCATOR_TEST mr/device/thrust_allocator_tests.cu)
 
 # polymorphic allocator tests
-
-ConfigureTest(POLYMORPHIC_ALLOCATOR_TEST
-              "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/polymorphic_allocator_tests.cpp")
+ConfigureTest(POLYMORPHIC_ALLOCATOR_TEST mr/device/polymorphic_allocator_tests.cpp)
 
 # stream allocator adaptor tests
-
-ConfigureTest(STREAM_ADAPTOR_TEST
-              "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/stream_allocator_adaptor_tests.cpp")
+ConfigureTest(STREAM_ADAPTOR_TEST mr/device/stream_allocator_adaptor_tests.cpp)
 
 # statistics adaptor tests
-
-set(STATISTICS_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/statistics_mr_tests.cpp")
-
-ConfigureTest(STATISTICS_TEST "${STATISTICS_TEST_SRC}")
+ConfigureTest(STATISTICS_TEST mr/device/statistics_mr_tests.cpp)
 
 # tracking adaptor tests
-
-set(TRACKING_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/tracking_mr_tests.cpp")
-
-ConfigureTest(TRACKING_TEST "${TRACKING_TEST_SRC}")
+ConfigureTest(TRACKING_TEST mr/device/tracking_mr_tests.cpp)
 
 # aligned adaptor tests
-
-set(ALIGNED_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/aligned_mr_tests.cpp")
-
-ConfigureTest(ALIGNED_TEST "${ALIGNED_TEST_SRC}")
+ConfigureTest(ALIGNED_TEST mr/device/aligned_mr_tests.cpp)
 
 # limiting adaptor tests
-
-set(LIMITING_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/device/limiting_mr_tests.cpp")
-ConfigureTest(LIMITING_TEST "${LIMITING_TEST_SRC}")
+ConfigureTest(LIMITING_TEST mr/device/limiting_mr_tests.cpp)
 
 # host mr tests
-
-set(HOST_MR_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/host/mr_tests.cpp")
-ConfigureTest(HOST_MR_TEST "${HOST_MR_TEST_SRC}")
+ConfigureTest(HOST_MR_TEST mr/host/mr_tests.cpp)
 
 # cuda stream tests
-
-set(CUDA_STREAM_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/cuda_stream_tests.cpp"
-                         "${CMAKE_CURRENT_SOURCE_DIR}/cuda_stream_pool_tests.cpp")
-ConfigureTest(CUDA_STREAM_TEST "${CUDA_STREAM_TEST_SRC}")
+ConfigureTest(CUDA_STREAM_TEST cuda_stream_tests.cpp cuda_stream_pool_tests.cpp)
 
 # device buffer tests
-
-set(BUFFER_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/device_buffer_tests.cu")
-ConfigureTest(DEVICE_BUFFER_TEST "${BUFFER_TEST_SRC}")
+ConfigureTest(DEVICE_BUFFER_TEST device_buffer_tests.cu)
 
 # device scalar tests
-
-set(SCALAR_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/device_scalar_tests.cpp")
-ConfigureTest(DEVICE_SCALAR_TEST "${SCALAR_TEST_SRC}")
+ConfigureTest(DEVICE_SCALAR_TEST device_scalar_tests.cpp)
 
 # logger tests
-
-set(LOGGER_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/logger_tests.cpp")
-ConfigureTest(LOGGER_TEST "${LOGGER_TEST_SRC}")
+ConfigureTest(LOGGER_TEST logger_tests.cpp)
 
 # uvector tests
-
-set(DEVICE_UVECTOR_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/device_uvector_tests.cpp")
-ConfigureTest(DEVICE_UVECTOR_TEST "${DEVICE_UVECTOR_TEST_SRC}")
+ConfigureTest(DEVICE_UVECTOR_TEST device_uvector_tests.cpp)
 
 # libcudacxx memory_resource tests
 
 # device mr tests
-set(LIBCUDACXX_DEVICE_MR_TEST_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mr/libcudacxx/device/mr_tests.cpp")
-ConfigureTest(LIBCUDACXX_DEVICE_MR_TEST "${LIBCUDACXX_DEVICE_MR_TEST_SRC}")
+ConfigureTest(LIBCUDACXX_DEVICE_MR_TEST mr/libcudacxx/device/mr_tests.cpp)
