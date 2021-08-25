@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,11 @@
 
 #pragma once
 
-#include <thrust/detail/type_traits/pointer_traits.h>
-#include <thrust/device_malloc_allocator.h>
-
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
+
+#include <thrust/detail/type_traits/pointer_traits.h>
+#include <thrust/device_malloc_allocator.h>
 
 namespace rmm {
 namespace mr {

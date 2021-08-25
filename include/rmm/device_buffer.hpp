@@ -21,7 +21,9 @@
 #include <rmm/mr/device/per_device_resource.hpp>
 
 #include <cuda_runtime_api.h>
+
 #include <cassert>
+#include <cstddef>
 #include <stdexcept>
 #include <utility>
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,22 +15,16 @@
  */
 #pragma once
 
-#include <spdlog/common.h>
-#include <rmm/mr/device/device_memory_resource.hpp>
-
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/mr/device/device_memory_resource.hpp>
 
-// If using GCC, temporary workaround for older libcudacxx defining _LIBCPP_VERSION
-// undefine it before including spdlog, due to fmtlib checking if it is defined
-// TODO: remove once libcudacxx is on Github and RAPIDS depends on it
-#ifdef __GNUG__
-#undef _LIBCPP_VERSION
-#endif
+#include <spdlog/common.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/ostream_sink.h>
 #include <spdlog/spdlog.h>
 
+#include <cstddef>
 #include <memory>
 #include <sstream>
 
@@ -274,7 +268,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @param stream Stream on which to get the mem info.
    * @return std::pair contaiing free_size and total_size of memory
    */
-  std::pair<size_t, size_t> do_get_mem_info(cuda_stream_view stream) const override
+  std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view stream) const override
   {
     return upstream_->get_mem_info(stream);
   }
