@@ -13,28 +13,14 @@
 # =============================================================================
 
 function(find_and_configure_libcudacxx VERSION)
-  CPMFindPackage(
-    NAME libcudacxx
-    VERSION ${VERSION}
-            GIT_REPOSITORY
-            https://github.com/mzient/libcudacxx.git # https://github.com/NVIDIA/libcudacxx.git
-    GIT_TAG memres_view # ${VERSION}
-    GIT_SHALLOW
-      TRUE
-      DOWNLOAD_ONLY
-      TRUE)
-  set(LIBCUDACXX_DIR
-      "${libcudacxx_SOURCE_DIR}"
-      PARENT_SCOPE)
-  set(LIBCUDACXX_INCLUDE_DIR
-      "${libcudacxx_SOURCE_DIR}/include"
-      PARENT_SCOPE)
-  set(LIBCXX_DIR
-      "${libcudacxx_SOURCE_DIR}/libcxx"
-      PARENT_SCOPE)
-  set(LIBCXX_INCLUDE_DIR
-      "${libcudacxx_SOURCE_DIR}/libcxx/include"
-      PARENT_SCOPE)
+    rapids_cpm_find(libcudacxx ${VERSION}
+    GIT_REPOSITORY          https://github.com/mzient/libcudacxx.git
+    GIT_TAG                 memres_view # ${VERSION}
+    GIT_SHALLOW             TRUE
+    DOWNLOAD_ONLY           TRUE)
+
+  set(LIBCUDACXX_INCLUDE_DIR "${libcudacxx_SOURCE_DIR}/include" PARENT_SCOPE)
+  set(LIBCXX_INCLUDE_DIR "${libcudacxx_SOURCE_DIR}/libcxx/include" PARENT_SCOPE)
 endfunction()
 
 set(RMM_MIN_VERSION_libcudacxx 1.5.0)

@@ -58,9 +58,7 @@ rapids_find_package(
 rapids_cpm_init()
 include(cmake/thirdparty/get_spdlog.cmake)
 include(cmake/thirdparty/get_thrust.cmake)
-
-# find libcu++
-include(cmake/thirdparty/RMM_GetLibcudacxx.cmake)
+include(cmake/thirdparty/get_libcudacxx.cmake)
 
 # library targets
 add_library(rmm INTERFACE)
