@@ -203,7 +203,10 @@ class build_ext_no_debug(_build_ext):
                 force=self.force,
                 gdb_debug=False,
                 compiler_directives=dict(
-                    profile=False, language_level=3, embedsignature=True
+                    profile=False,
+                    language_level=3,
+                    embedsignature=True,
+                    binding=True,
                 ),
             )
         # Skip calling super() and jump straight to setuptools
