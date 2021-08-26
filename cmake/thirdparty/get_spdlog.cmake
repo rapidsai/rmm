@@ -13,20 +13,11 @@
 # =============================================================================
 
 # Use CPM to find or clone speedlog
-function(find_and_configure_spdlog VERSION)
+function(find_and_configure_spdlog)
 
-  if(TARGET spdlog::spdlog_header_only)
-    return()
-  endif()
+  include(${rapids-cmake-dir}/cpm/spdlog.cmake)
+  rapids_cpm_spdlog()
 
-  rapids_cpm_find(
-    spdlog ${VERSION}
-    CPM_ARGS
-    GIT_REPOSITORY https://github.com/gabime/spdlog.git
-    GIT_TAG v${VERSION}
-    GIT_SHALLOW TRUE
-    OPTIONS "SPDLOG_INSTALL TRUE")
-  # spdlog
   if(spdlog_ADDED)
     install(TARGETS spdlog_header_only EXPORT rmm-exports)
   else()
@@ -35,4 +26,4 @@ function(find_and_configure_spdlog VERSION)
   endif()
 endfunction()
 
-find_and_configure_spdlog(1.8.5)
+find_and_configure_spdlog()
