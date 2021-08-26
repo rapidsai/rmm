@@ -12,6 +12,7 @@
 # the License.
 # =============================================================================
 
+# Use CPM to find or clone libcudacxx
 function(find_and_configure_libcudacxx VERSION)
   rapids_cpm_find(
     libcudacxx ${VERSION}
