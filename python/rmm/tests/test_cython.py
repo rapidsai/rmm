@@ -1,4 +1,4 @@
-# Copyright (c) 2020, NVIDIA CORPORATION.
+# Copyright (c) 2020-2021, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rmm._lib.tests.test_device_buffer import (  # noqa: F401
-    test_release,
-    test_size_after_release,
+from rmm._lib.tests.test_device_buffer import (
+    test_release as test_release_cpp,
+    test_size_after_release as test_size_after_release_cpp,
 )
+
+
+def test_release():
+    test_release_cpp()
+
+
+def test_size_after_release():
+    test_size_after_release_cpp()
