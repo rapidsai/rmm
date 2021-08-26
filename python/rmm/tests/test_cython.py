@@ -12,15 +12,36 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rmm._lib.tests.test_device_buffer import (
-    test_release as test_release_cpp,
-    test_size_after_release as test_size_after_release_cpp,
-)
+import functools
+import importlib
+import sys
 
 
-def test_release():
-    test_release_cpp()
+def py_func(func):
+    """
+    Wraps func in a plain Python function.
+    """
+
+    @functools.wraps(func)
+    def wrapped(*args, **kwargs):
+        return func(*args, **kwargs)
+
+    return wrapped
 
 
-def test_size_after_release():
-    test_size_after_release_cpp()
+cython_test_modules = ["rmm._lib.tests.test_device_buffer"]
+
+
+for mod in cython_test_modules:
+    try:
+        # For each callable in `mod` with name `test_*`,
+        # wrap the callable in a plain Python function
+        # and set the result as an attribute of this module.
+        mod = importlib.import_module(mod)
+        for name in dir(mod):
+            item = getattr(mod, name)
+            if callable(item) and name.startswith("test_"):
+                item = py_func(item)
+                setattr(sys.modules[__name__], name, item)
+    except ImportError:
+        pass
