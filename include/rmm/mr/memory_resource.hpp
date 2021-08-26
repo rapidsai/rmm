@@ -36,12 +36,14 @@ using stream_view = cuda_stream_view;
  * performance characteristics of accesses.
  *
  */
-enum class memory_kind {
-  device,  ///< Device memory accessible only from device
-  unified, ///< Unified memory accessible from both host and device
-  pinned,  ///< Page-locked system memory accessible from both host and device
-  host     ///< System memory only accessible from host code
-};
+namespace memory_kind {
+
+struct host;    ///< System memory only accessible from host code
+struct pinned;  ///< Page-locked system memory accessible from both host and device
+struct device;  ///< Device memory accessible only from device
+struct managed; ///< Managed memory accessible from both host and device
+
+}  // namespace memory_kind
 
 /**
  * @brief Tag type for the default context of `memory_resource`.
@@ -77,10 +79,10 @@ struct __get_context_impl<any_context> {
  * @tparam _Context The execution context on which the storage may be used
  * without synchronization
  */
-template <memory_kind _Kind, typename _Context = any_context>
+template <typename _Kind, typename _Context = any_context>
 class memory_resource : public detail::__get_context_impl<_Context> {
 public:
-  static constexpr memory_kind kind = _Kind;
+  using memory_kind = _Kind;
   using context = _Context;
 
   static constexpr std::size_t default_alignment = alignof(_CUDA_VSTD::max_align_t);
@@ -243,10 +245,10 @@ private:
  *
  * @tparam _Kind The `memory_kind` of the allocated memory.
  */
-template <memory_kind _Kind>
+template <typename _Kind>
 class stream_ordered_memory_resource : public memory_resource<_Kind /* default context */> {
 public:
-  using memory_resource<_Kind>::kind;
+  using memory_kind = typename memory_resource<_Kind>::memory_kind;
   using memory_resource<_Kind>::default_alignment;
 
   /**

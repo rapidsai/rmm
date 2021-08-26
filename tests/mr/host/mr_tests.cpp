@@ -27,10 +27,10 @@
 
 namespace {
 
-template <rmm::mr::memory_kind kind, typename Context>
-void test_resource_traits(const rmm::mr::memory_resource<kind, Context> *) {
-  static_assert(rmm::mr::memory_resource<kind, Context>::kind == kind, "Incorrect constant");
-  static_assert(std::is_same<typename rmm::mr::memory_resource<kind, Context>::context, Context>::value, "Incorrect constant");
+template <typename Kind, typename Context>
+void test_resource_traits(const rmm::mr::memory_resource<Kind, Context> *) {
+  static_assert(std::is_same<typename rmm::mr::memory_resource<Kind, Context>::memory_kind, Kind>::value, "Incorrect kind");
+  static_assert(std::is_same<typename rmm::mr::memory_resource<Kind, Context>::context, Context>::value, "Incorrect context");
 }
 
 TEST(MRTest, Constants)
@@ -94,7 +94,7 @@ struct allocation {
 
 template <typename MemoryResourceType>
 struct MRTest : public ::testing::Test {
-  std::unique_ptr<rmm::mr::memory_resource<MemoryResourceType::kind>> mr;
+  std::unique_ptr<rmm::mr::memory_resource<typename MemoryResourceType::memory_kind>> mr;
 
   MRTest() : mr{new MemoryResourceType} {}
   ~MRTest() = default;

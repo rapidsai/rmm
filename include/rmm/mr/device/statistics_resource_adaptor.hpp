@@ -250,7 +250,7 @@ class statistics_resource_adaptor final : public device_memory_resource {
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equal
    */
-  bool do_is_equal(memory_resource<memory_kind::device> const& other) const noexcept override
+  bool do_is_equal(memory_resource<mr::memory_kind::device> const& other) const noexcept override
   {
     if (this == &other)
       return true;
