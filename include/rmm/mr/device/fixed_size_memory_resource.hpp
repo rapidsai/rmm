@@ -184,7 +184,7 @@ class fixed_size_memory_resource
    */
   split_block allocate_from_block(block_type const& b, std::size_t size)
   {
-    return split_block{b.pointer(), block_type{nullptr}};
+    return {b, block_type{nullptr}};
   }
 
   /**

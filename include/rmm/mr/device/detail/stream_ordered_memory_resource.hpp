@@ -91,7 +91,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
 
   // Derived classes must implement these four methods
 
-  /**
+  /*
    * @brief Get the maximum size of a single allocation supported by this suballocator memory
    * resource
    *
@@ -100,10 +100,9 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    *
    * @return std::size_t The maximum size of a single allocation supported by this memory resource
    */
-  // std::size_t get_maximum_allocation_size() const { return
-  // std::numeric_limits<std::size_t>::max(); }
+  // std::size_t get_maximum_allocation_size() const
 
-  /**
+  /*
    * @brief Allocate space (typically from upstream) to supply the suballocation pool and return
    * a sufficiently sized block.
    *
@@ -119,13 +118,10 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    */
   // block_type expand_pool(std::size_t size, free_list& blocks, cuda_stream_view stream)
 
-  /// Struct representing a block that has been split for allocation
-  struct split_block {
-    void* allocated_pointer;  ///< The pointer allocated from a block
-    block_type remainder;     ///< The remainder of the block from which the pointer was allocated
-  };
+  /// Pair representing a block that has been split for allocation
+  using split_block = std::pair<block_type, block_type>;
 
-  /**
+  /*
    * @brief Split block `b` if necessary to return a pointer to memory of `size` bytes.
    *
    * If the block is split, the remainder is returned as the remainder element in the output
@@ -139,7 +135,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    */
   // split_block allocate_from_block(block_type const& b, std::size_t size)
 
-  /**
+  /*
    * @brief Finds, frees and returns the block associated with pointer `p`.
    *
    * @param p The pointer to the memory to free.
@@ -216,16 +212,13 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
                 rmm::bad_alloc,
                 "Maximum allocation size exceeded");
     auto const b = this->underlying().get_block(bytes, stream_event);
-    auto split   = this->underlying().allocate_from_block(b, bytes);
-    if (split.remainder.is_valid()) stream_free_blocks_[stream_event].insert(split.remainder);
-    RMM_LOG_TRACE("[A][stream {:p}][{}B][{:p}]",
-                  fmt::ptr(stream_event.stream),
-                  bytes,
-                  fmt::ptr(split.allocated_pointer));
+
+    RMM_LOG_TRACE(
+      "[A][stream {:p}][{}B][{:p}]", fmt::ptr(stream_event.stream), bytes, fmt::ptr(b.pointer()));
 
     log_summary_trace();
 
-    return split.allocated_pointer;
+    return b.pointer();
   }
 
   /**
@@ -237,9 +230,12 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    */
   virtual void do_deallocate(void* p, std::size_t bytes, cuda_stream_view stream) override
   {
+    RMM_LOG_TRACE("[D][stream {:p}][{}B][{:p}]", fmt::ptr(stream.value()), bytes, p);
+
+    if (bytes <= 0 || p == nullptr) return;
+
     lock_guard lock(mtx_);
     auto stream_event = get_event(stream);
-    RMM_LOG_TRACE("[D][stream {:p}][{}B][{:p}]", fmt::ptr(stream_event.stream), bytes, p);
 
     bytes        = rmm::detail::align_up(bytes, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
     auto const b = this->underlying().free_block(p, bytes);
@@ -304,7 +300,23 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
   }
 
   /**
-   * @brief Get an avaible memory block of at least `size` bytes
+   * @brief Splits a block into an allocated block of `size` bytes and a remainder block, and
+   * inserts the remainder into a free list.
+   *
+   * @param b The block to split into allocated and remainder portions.
+   * @param size The size of the block to allocate from `b`.
+   * @param blocks The `free_list` in which to insert the remainder block.
+   * @return The allocated block.
+   */
+  block_type allocate_and_insert_remainder(block_type b, std::size_t size, free_list& blocks)
+  {
+    auto const [allocated, remainder] = this->underlying().allocate_from_block(b, size);
+    if (remainder.is_valid()) blocks.insert(remainder);
+    return allocated;
+  }
+
+  /**
+   * @brief Get an available memory block of at least `size` bytes
    *
    * @param size The number of bytes to allocate
    * @param stream_event The stream and associated event on which the allocation will be used.
@@ -315,8 +327,8 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     // Try to find a satisfactory block in free list for the same stream (no sync required)
     auto iter = stream_free_blocks_.find(stream_event);
     if (iter != stream_free_blocks_.end()) {
-      block_type b = iter->second.get_block(size);
-      if (b.is_valid()) { return b; }
+      block_type const b = iter->second.get_block(size);
+      if (b.is_valid()) { return allocate_and_insert_remainder(b, size, iter->second); }
     }
 
     free_list& blocks =
@@ -337,7 +349,10 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     log_summary_trace();
 
     // no large enough blocks available after merging, so grow the pool
-    return this->underlying().expand_pool(size, blocks, cuda_stream_view{stream_event.stream});
+    block_type const b =
+      this->underlying().expand_pool(size, blocks, cuda_stream_view{stream_event.stream});
+
+    return allocate_and_insert_remainder(b, size, blocks);
   }
 
   /**
@@ -378,10 +393,18 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
 
             stream_free_blocks_.erase(it);
 
-            return blocks.get_block(size);  // get the best fit block in merged lists
+            block_type const b = blocks.get_block(size);  // get the best fit block in merged lists
+            if (b.is_valid()) { return allocate_and_insert_remainder(b, size, blocks); }
           } else {
-            return other_blocks.get_block(size);  // get the best fit block in other list
+            block_type const b = other_blocks.get_block(size);
+            if (b.is_valid()) {
+              // Since we found a block associated with a different stream, we have to insert a wait
+              // on the stream's associated event into the allocating stream.
+              RMM_CUDA_TRY(cudaStreamWaitEvent(stream_event.stream, other_event, 0));
+              return allocate_and_insert_remainder(b, size, other_blocks);
+            }
           }
+          return block_type{};
         }();
 
         if (b.is_valid()) {
@@ -390,12 +413,6 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
                         fmt::ptr(stream_event.stream),
                         size,
                         fmt::ptr(it->first.stream));
-
-          if (not merge_first) {
-            merge_lists(stream_event, blocks, other_event, std::move(other_blocks));
-            stream_free_blocks_.erase(it);
-          }
-
           return b;
         }
       }
