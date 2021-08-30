@@ -15,16 +15,18 @@
  */
 #pragma once
 
-#include <limits>
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/cuda_util.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
+#include <thrust/optional.h>
+
 #include <cuda_runtime_api.h>
 
-#include <thrust/optional.h>
+#include <cstddef>
+#include <limits>
 
 #if CUDART_VERSION >= 11020  // 11.2 introduced cudaMallocAsync
 #define RMM_CUDA_MALLOC_ASYNC_SUPPORT
@@ -194,7 +196,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
    *
    * @return std::pair contaiing free_size and total_size of memory
    */
-  std::pair<size_t, size_t> do_get_mem_info(rmm::cuda_stream_view) const override
+  std::pair<std::size_t, std::size_t> do_get_mem_info(rmm::cuda_stream_view) const override
   {
     return std::make_pair(0, 0);
   }

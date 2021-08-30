@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 #pragma once
 
-#include <limits>
 #include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/logger.hpp>
@@ -25,6 +24,7 @@
 
 #include <cstddef>
 #include <functional>
+#include <limits>
 #include <map>
 #include <mutex>
 #include <set>

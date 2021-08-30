@@ -179,7 +179,7 @@ inline void test_mixed_random_allocation_free(rmm::mr::device_memory_resource* m
     }
 
     if (do_alloc) {
-      size_t size = size_distribution(generator);
+      std::size_t size = size_distribution(generator);
       active_allocations++;
       allocation_count++;
       EXPECT_NO_THROW(allocations.emplace_back(mr->allocate(size, stream), size));
@@ -187,7 +187,7 @@ inline void test_mixed_random_allocation_free(rmm::mr::device_memory_resource* m
       EXPECT_NE(nullptr, new_allocation.p);
       EXPECT_TRUE(is_pointer_aligned(new_allocation.p));
     } else {
-      size_t index = index_distribution(generator) % active_allocations;
+      std::size_t index = index_distribution(generator) % active_allocations;
       active_allocations--;
       allocation to_free = allocations[index];
       allocations.erase(std::next(allocations.begin(), index));

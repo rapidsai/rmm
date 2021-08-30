@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@
 #include <rmm/detail/error.hpp>
 
 #include <atomic>
+#include <cstddef>
 #include <vector>
 
 namespace rmm {
@@ -84,7 +85,7 @@ class cuda_stream_pool {
    *
    * @return the number of streams in the pool
    */
-  size_t get_pool_size() const noexcept { return streams_.size(); }
+  std::size_t get_pool_size() const noexcept { return streams_.size(); }
 
  private:
   std::vector<rmm::cuda_stream> streams_;

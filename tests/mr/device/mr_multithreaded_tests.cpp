@@ -175,7 +175,7 @@ void allocate_loop(rmm::mr::device_memory_resource* mr,
   std::uniform_int_distribution<std::size_t> size_distribution(1, max_size);
 
   for (std::size_t i = 0; i < num_allocations; ++i) {
-    size_t size = size_distribution(generator);
+    std::size_t size = size_distribution(generator);
     void* ptr{};
     EXPECT_NO_THROW(ptr = mr->allocate(size, stream));
     {

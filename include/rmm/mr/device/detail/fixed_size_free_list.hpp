@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 
 #include <rmm/mr/device/detail/free_list.hpp>
 
+#include <cstddef>
 #include <iostream>
 
 namespace rmm {
@@ -63,7 +64,7 @@ struct fixed_size_free_list : free_list<block_base> {
    * @param size The size in bytes of the desired block (unused).
    * @return block A block large enough to store `size` bytes.
    */
-  block_type get_block(size_t size)
+  block_type get_block(std::size_t size)
   {
     if (is_empty())
       return block_type{};
