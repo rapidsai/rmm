@@ -31,6 +31,8 @@
 
 #include <cuda_runtime_api.h>
 
+#include <cstddef>
+
 __global__ void compute_bound_kernel(int64_t* out)
 {
   clock_t clock_begin   = clock64();
@@ -56,7 +58,7 @@ static void run_prewarm(rmm::cuda_stream_pool& stream_pool, rmm::mr::device_memo
   }
 }
 
-static void run_test(size_t num_kernels,
+static void run_test(std::size_t num_kernels,
                      rmm::cuda_stream_pool& stream_pool,
                      rmm::mr::device_memory_resource* mr)
 {
