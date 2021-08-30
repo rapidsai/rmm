@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -162,8 +162,8 @@ class device_memory_resource {
    *
    * @param stream the stream whose memory manager we want to retrieve
    *
-   * @returns a std::pair<size_t,size_t> which contains free memory in bytes
-   * in .first and total amount of memory in .second
+   * @returns a pair containing the free memory in bytes in .first and total amount of memory in
+   * .second
    */
   std::pair<std::size_t, std::size_t> get_mem_info(cuda_stream_view stream) const
   {
