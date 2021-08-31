@@ -159,14 +159,14 @@ void* aligned_allocate(std::size_t bytes, std::size_t alignment, Alloc alloc)
  * @tparam Dealloc A unary callable type that deallocates memory.
  */
 template <typename Dealloc>
-void aligned_deallocate(void* p, std::size_t bytes, std::size_t alignment, Dealloc dealloc)
+void aligned_deallocate(void* ptr, std::size_t bytes, std::size_t alignment, Dealloc dealloc)
 {
   (void)alignment;
 
   // Get offset from the location immediately prior to the aligned pointer
-  std::ptrdiff_t const offset = *(reinterpret_cast<std::ptrdiff_t*>(p) - 1);
+  std::ptrdiff_t const offset = *(reinterpret_cast<std::ptrdiff_t*>(ptr) - 1);
 
-  void* const original = static_cast<char*>(p) - offset;
+  void* const original = static_cast<char*>(ptr) - offset;
 
   dealloc(original);
 }
