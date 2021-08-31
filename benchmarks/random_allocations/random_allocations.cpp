@@ -246,7 +246,7 @@ void benchmark_range(benchmark::internal::Benchmark* bench)
   }
 }
 
-void declare_benchmark(const std::string& name)
+void declare_benchmark(std::string const& name)
 {
   if (name == "cuda") {
     BENCHMARK_CAPTURE(BM_RandomAllocations, cuda_mr, &make_cuda)  // NOLINT
@@ -269,7 +269,7 @@ void declare_benchmark(const std::string& name)
   }
 }
 
-static void profile_random_allocations(const MRFactoryFunc& factory,
+static void profile_random_allocations(MRFactoryFunc const& factory,
                                        std::size_t num_allocations,
                                        std::size_t max_size)
 {
