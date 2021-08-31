@@ -38,9 +38,9 @@ namespace {
 constexpr std::size_t size_mb{1 << 20};
 
 struct allocation {
-  void* p{nullptr};
+  void* ptr{nullptr};
   std::size_t size{0};
-  allocation(void* _p, std::size_t _size) : p{_p}, size{_size} {}
+  allocation(void* ptr, std::size_t size) : ptr{ptr}, size{size} {}
   allocation() = default;
 };
 
@@ -70,9 +70,10 @@ void random_allocation_free(rmm::mr::device_memory_resource& mr,
 
   max_usage *= size_mb;  // convert to bytes
 
-  constexpr int allocation_probability = 73;  // percent
-  std::uniform_int_distribution<int> op_distribution(0, 99);
-  std::uniform_int_distribution<int> index_distribution(0, num_allocations - 1);
+  constexpr int allocation_probability{73};  // percent
+  constexpr int max_op_chance{99};
+  std::uniform_int_distribution<int> op_distribution(0, max_op_chance);
+  std::uniform_int_distribution<int> index_distribution(0, static_cast<int>(num_allocations) - 1);
 
   int active_allocations{0};
   std::size_t allocation_count{0};
@@ -117,7 +118,7 @@ void random_allocation_free(rmm::mr::device_memory_resource& mr,
         std::size_t index = index_distribution(generator) % active_allocations;
         active_allocations--;
         allocation to_free = remove_at(allocations, index);
-        mr.deallocate(to_free.p, to_free.size, stream);
+        mr.deallocate(to_free.ptr, to_free.size, stream);
         allocation_size -= to_free.size;
 
 #if VERBOSE
@@ -136,11 +137,12 @@ void random_allocation_free(rmm::mr::device_memory_resource& mr,
 }
 }  // namespace
 
-void uniform_random_allocations(rmm::mr::device_memory_resource& mr,
-                                std::size_t num_allocations,
-                                std::size_t max_allocation_size,  // in MiB
-                                std::size_t max_usage,
-                                rmm::cuda_stream_view stream = {})
+void uniform_random_allocations(
+  rmm::mr::device_memory_resource& mr,
+  std::size_t num_allocations,      // NOLINT(bugprone-easily-swappable-parameters)
+  std::size_t max_allocation_size,  // size in MiB
+  std::size_t max_usage,
+  rmm::cuda_stream_view stream = {})
 {
   std::uniform_int_distribution<std::size_t> size_distribution(1, max_allocation_size * size_mb);
   random_allocation_free(mr, size_distribution, num_allocations, max_usage, stream);
@@ -176,7 +178,10 @@ inline auto make_binning()
   auto pool = make_pool();
   // Add a binning_memory_resource with fixed-size bins of sizes 256, 512, 1024, 2048 and 4096KiB
   // Larger allocations will use the pool resource
-  auto mr = rmm::mr::make_owning_wrapper<rmm::mr::binning_memory_resource>(pool, 18, 22);
+  constexpr auto min_bin_pow2{18};
+  constexpr auto max_bin_pow2{22};
+  auto mr = rmm::mr::make_owning_wrapper<rmm::mr::binning_memory_resource>(
+    pool, min_bin_pow2, max_bin_pow2);
   return mr;
 }
 
@@ -184,7 +189,7 @@ using MRFactoryFunc = std::function<std::shared_ptr<rmm::mr::device_memory_resou
 
 constexpr std::size_t max_usage = 16000;
 
-static void BM_RandomAllocations(benchmark::State& state, MRFactoryFunc factory)
+static void BM_RandomAllocations(benchmark::State& state, MRFactoryFunc const& factory)
 {
   auto mr = factory();
 
@@ -192,67 +197,79 @@ static void BM_RandomAllocations(benchmark::State& state, MRFactoryFunc factory)
   std::size_t max_size        = state.range(1);
 
   try {
-    for (auto _ : state)
+    for (auto _ : state) {
       uniform_random_allocations(*mr, num_allocations, max_size, max_usage);
+    }
   } catch (std::exception const& e) {
     std::cout << "Error: " << e.what() << "\n";
   }
 }
 
-static void num_range(benchmark::internal::Benchmark* b, int size)
+static void num_range(benchmark::internal::Benchmark* bench, int size)
 {
-  for (int num_allocations : std::vector<int>{1000, 10000, 100000})
-    b->Args({num_allocations, size})->Unit(benchmark::kMillisecond);
-}
-
-static void size_range(benchmark::internal::Benchmark* b, int num)
-{
-  for (int max_size : std::vector<int>{1, 4, 64, 256, 1024, 4096})
-    b->Args({num, max_size})->Unit(benchmark::kMillisecond);
-}
-
-static void num_size_range(benchmark::internal::Benchmark* b)
-{
-  for (int num_allocations : std::vector<int>{1000, 10000, 100000})
-    size_range(b, num_allocations);
-}
-
-int num_allocations = -1;
-int max_size        = -1;
-
-static void benchmark_range(benchmark::internal::Benchmark* b)
-{
-  if (num_allocations > 0) {
-    if (max_size > 0)
-      b->Args({num_allocations, max_size})->Unit(benchmark::kMillisecond);
-    else
-      size_range(b, num_allocations);
-  } else {
-    if (max_size > 0)
-      num_range(b, max_size);
-    else
-      num_size_range(b);
+  for (int num_allocations : std::vector<int>{1000, 10000, 100000}) {
+    bench->Args({num_allocations, size})->Unit(benchmark::kMillisecond);
   }
 }
 
-void declare_benchmark(std::string name)
+static void size_range(benchmark::internal::Benchmark* bench, int num)
 {
-  if (name == "cuda")
-    BENCHMARK_CAPTURE(BM_RandomAllocations, cuda_mr, &make_cuda)->Apply(benchmark_range);
-  if (name == "cuda_async")
-    BENCHMARK_CAPTURE(BM_RandomAllocations, cuda_async_mr, &make_cuda_async)
-      ->Apply(benchmark_range);
-  else if (name == "binning")
-    BENCHMARK_CAPTURE(BM_RandomAllocations, binning_mr, &make_binning)->Apply(benchmark_range);
-  else if (name == "pool")
-    BENCHMARK_CAPTURE(BM_RandomAllocations, pool_mr, &make_pool)->Apply(benchmark_range);
-  else if (name == "arena")
-    BENCHMARK_CAPTURE(BM_RandomAllocations, arena_mr, &make_arena)->Apply(benchmark_range);
-  else
-    std::cout << "Error: invalid memory_resource name: " << name << "\n";
+  for (int max_size : std::vector<int>{1, 4, 64, 256, 1024, 4096}) {
+    bench->Args({num, max_size})->Unit(benchmark::kMillisecond);
+  }
 }
 
-static void profile_random_allocations(MRFactoryFunc factory,
+static void num_size_range(benchmark::internal::Benchmark* bench)
+{
+  for (int num_allocations : std::vector<int>{1000, 10000, 100000}) {
+    size_range(bench, num_allocations);
+  }
+}
+
+int num_allocations = -1;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+int max_size        = -1;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+
+void benchmark_range(benchmark::internal::Benchmark* bench)
+{
+  if (num_allocations > 0) {
+    if (max_size > 0) {
+      bench->Args({num_allocations, max_size})->Unit(benchmark::kMillisecond);
+    } else {
+      size_range(bench, num_allocations);
+    }
+  } else {
+    if (max_size > 0) {
+      num_range(bench, max_size);
+    } else {
+      num_size_range(bench);
+    }
+  }
+}
+
+void declare_benchmark(const std::string& name)
+{
+  if (name == "cuda") {
+    BENCHMARK_CAPTURE(BM_RandomAllocations, cuda_mr, &make_cuda)  // NOLINT
+      ->Apply(benchmark_range);
+  }
+  if (name == "cuda_async") {
+    BENCHMARK_CAPTURE(BM_RandomAllocations, cuda_async_mr, &make_cuda_async)  // NOLINT
+      ->Apply(benchmark_range);
+  } else if (name == "binning") {
+    BENCHMARK_CAPTURE(BM_RandomAllocations, binning_mr, &make_binning)  // NOLINT
+      ->Apply(benchmark_range);
+  } else if (name == "pool") {
+    BENCHMARK_CAPTURE(BM_RandomAllocations, pool_mr, &make_pool)  // NOLINT
+      ->Apply(benchmark_range);
+  } else if (name == "arena") {
+    BENCHMARK_CAPTURE(BM_RandomAllocations, arena_mr, &make_arena)  // NOLINT
+      ->Apply(benchmark_range);
+  } else {
+    std::cout << "Error: invalid memory_resource name: " << name << "\n";
+  }
+}
+
+static void profile_random_allocations(const MRFactoryFunc& factory,
                                        std::size_t num_allocations,
                                        std::size_t max_size)
 {
@@ -320,11 +337,12 @@ int main(int argc, char** argv)
       declare_benchmark(mr_name);
     } else {
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
-      std::array<std::string, 5> mrs{"pool", "binning", "arena", "cuda_async", "cuda"};
+      std::vector<std::string> mrs{"pool", "binning", "arena", "cuda_async", "cuda"};
 #else
-      std::array<std::string, 4> mrs{"pool", "binning", "arena", "cuda"};
+      std::vector<std::string> mrs{"pool", "binning", "arena", "cuda"};
 #endif
-      std::for_each(std::cbegin(mrs), std::cend(mrs), [](auto const& s) { declare_benchmark(s); });
+      std::for_each(
+        std::cbegin(mrs), std::cend(mrs), [](auto const& mr) { declare_benchmark(mr); });
     }
     ::benchmark::RunSpecifiedBenchmarks();
   }

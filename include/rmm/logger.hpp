@@ -42,7 +42,7 @@ namespace detail {
  */
 inline std::string default_log_filename()
 {
-  auto filename = std::getenv("RMM_DEBUG_LOG_FILE");
+  auto* filename = std::getenv("RMM_DEBUG_LOG_FILE");
   return (filename == nullptr) ? std::string{"rmm_log.txt"} : std::string{filename};
 }
 
@@ -80,8 +80,8 @@ struct logger_wrapper {
  */
 inline spdlog::logger& logger()
 {
-  static detail::logger_wrapper w{};
-  return w.logger_;
+  static detail::logger_wrapper wrapped{};
+  return wrapped.logger_;
 }
 
 // The default is INFO, but it should be used sparingly, so that by default a log file is only

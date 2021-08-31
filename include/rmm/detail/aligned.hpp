@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,7 @@
 #include <memory>
 #include <new>
 
-namespace rmm {
-namespace detail {
+namespace rmm::detail {
 
 /**
  * @brief Default alignment used for host memory allocated by RMM.
@@ -41,7 +40,7 @@ static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
  * @brief Returns whether or not `n` is a power of 2.
  *
  */
-constexpr bool is_pow2(std::size_t n) { return (0 == (n & (n - 1))); }
+constexpr bool is_pow2(std::size_t value) { return (0 == (value & (value - 1))); }
 
 /**
  * @brief Returns whether or not `alignment` is a valid memory alignment.
@@ -57,10 +56,10 @@ constexpr bool is_supported_alignment(std::size_t alignment) { return is_pow2(al
  *
  * @return Return the aligned value, as one would expect
  */
-constexpr std::size_t align_up(std::size_t v, std::size_t align_bytes) noexcept
+constexpr std::size_t align_up(std::size_t value, std::size_t align_bytes) noexcept
 {
   assert(is_supported_alignment(align_bytes));
-  return (v + (align_bytes - 1)) & ~(align_bytes - 1);
+  return (value + (align_bytes - 1)) & ~(align_bytes - 1);
 }
 
 /**
@@ -71,10 +70,10 @@ constexpr std::size_t align_up(std::size_t v, std::size_t align_bytes) noexcept
  *
  * @return Return the aligned value, as one would expect
  */
-constexpr std::size_t align_down(std::size_t v, std::size_t align_bytes) noexcept
+constexpr std::size_t align_down(std::size_t value, std::size_t align_bytes) noexcept
 {
   assert(is_supported_alignment(align_bytes));
-  return v & ~(align_bytes - 1);
+  return value & ~(align_bytes - 1);
 }
 
 /**
@@ -85,10 +84,10 @@ constexpr std::size_t align_down(std::size_t v, std::size_t align_bytes) noexcep
  *
  * @return true if aligned
  */
-constexpr bool is_aligned(std::size_t v, std::size_t align_bytes) noexcept
+constexpr bool is_aligned(std::size_t value, std::size_t align_bytes) noexcept
 {
   assert(is_supported_alignment(align_bytes));
-  return v == align_down(v, align_bytes);
+  return value == align_down(value, align_bytes);
 }
 
 /**
@@ -171,5 +170,4 @@ void aligned_deallocate(void* p, std::size_t bytes, std::size_t alignment, Deall
 
   dealloc(original);
 }
-}  // namespace detail
-}  // namespace rmm
+}  // namespace rmm::detail

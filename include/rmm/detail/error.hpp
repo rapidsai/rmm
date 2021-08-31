@@ -51,15 +51,10 @@ struct cuda_error : public std::runtime_error {
  */
 class bad_alloc : public std::bad_alloc {
  public:
-  bad_alloc(const char* w) : std::bad_alloc{}, _what{std::string{std::bad_alloc::what()} + ": " + w}
-  {
-  }
+  bad_alloc(const char* msg) : _what{std::string{std::bad_alloc::what()} + ": " + msg} {}
+  bad_alloc(std::string const& msg) : bad_alloc(msg.c_str()) {}
 
-  bad_alloc(std::string const& w) : bad_alloc(w.c_str()) {}
-
-  virtual ~bad_alloc() = default;
-
-  virtual const char* what() const noexcept { return _what.c_str(); }
+  [[nodiscard]] const char* what() const noexcept override { return _what.c_str(); }
 
  private:
   std::string _what;

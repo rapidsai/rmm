@@ -84,9 +84,9 @@ class device_uvector {
   ~device_uvector() = default;
 
   RMM_EXEC_CHECK_DISABLE
-  device_uvector(device_uvector&&) = default;
+  device_uvector(device_uvector&&) noexcept = default;
 
-  device_uvector& operator=(device_uvector&&) = default;
+  device_uvector& operator=(device_uvector&&) noexcept = default;
 
   /**
    * @brief Copy ctor is deleted as it doesn't allow a stream argument
@@ -203,24 +203,20 @@ class device_uvector {
    * @param v The value to copy to the specified element
    * @param s The stream on which to perform the copy
    */
-  void set_element_async(std::size_t element_index, value_type const& v, cuda_stream_view s)
+  void set_element_async(std::size_t element_index,
+                         value_type const& value,
+                         cuda_stream_view stream)
   {
     RMM_EXPECTS(
       element_index < size(), rmm::out_of_range, "Attempt to access out of bounds element.");
-    if constexpr (std::is_fundamental<value_type>::value) {
-      if constexpr (std::is_same<value_type, bool>::value) {
-        RMM_CUDA_TRY(cudaMemsetAsync(element_ptr(element_index), v, sizeof(v), s.value()));
-      } else {
-        if (v == value_type{0}) {
-          set_element_to_zero_async(element_index, s);
-        } else {
-          RMM_CUDA_TRY(cudaMemcpyAsync(
-            element_ptr(element_index), &v, sizeof(v), cudaMemcpyDefault, s.value()));
-        }
-      }
-    } else {
+    if constexpr (std::is_same<value_type, bool>::value) {
       RMM_CUDA_TRY(
-        cudaMemcpyAsync(element_ptr(element_index), &v, sizeof(v), cudaMemcpyDefault, s.value()));
+        cudaMemsetAsync(element_ptr(element_index), value, sizeof(value), stream.value()));
+    } else if (std::is_fundamental<value_type>::value and value == value_type{0}) {
+      set_element_to_zero_async(element_index, stream);
+    } else {
+      RMM_CUDA_TRY(cudaMemcpyAsync(
+        element_ptr(element_index), &value, sizeof(value), cudaMemcpyDefault, stream.value()));
     }
   }
 
@@ -250,11 +246,12 @@ class device_uvector {
    * @param element_index Index of the target element
    * @param s The stream on which to perform the copy
    */
-  void set_element_to_zero_async(std::size_t element_index, cuda_stream_view s)
+  void set_element_to_zero_async(std::size_t element_index, cuda_stream_view stream)
   {
     RMM_EXPECTS(
       element_index < size(), rmm::out_of_range, "Attempt to access out of bounds element.");
-    RMM_CUDA_TRY(cudaMemsetAsync(element_ptr(element_index), 0, sizeof(value_type), s.value()));
+    RMM_CUDA_TRY(
+      cudaMemsetAsync(element_ptr(element_index), 0, sizeof(value_type), stream.value()));
   }
 
   /**
@@ -283,13 +280,13 @@ class device_uvector {
    * @throws rmm::out_of_range exception if `element_index >= size()`
    *
    * @param element_index Index of the target element
-   * @param v The value to copy to the specified element
-   * @param s The stream on which to perform the copy
+   * @param value The value to copy to the specified element
+   * @param stream The stream on which to perform the copy
    */
-  void set_element(std::size_t element_index, T const& v, cuda_stream_view s)
+  void set_element(std::size_t element_index, T const& value, cuda_stream_view stream)
   {
-    set_element_async(element_index, v, s);
-    s.synchronize_no_throw();
+    set_element_async(element_index, value, stream);
+    stream.synchronize_no_throw();
   }
 
   /**
@@ -301,18 +298,18 @@ class device_uvector {
    * @throws rmm::out_of_range exception if `element_index >= size()`
    *
    * @param element_index Index of the desired element
-   * @param s The stream on which to perform the copy
+   * @param stream The stream on which to perform the copy
    * @return The value of the specified element
    */
-  value_type element(std::size_t element_index, cuda_stream_view s) const
+  value_type element(std::size_t element_index, cuda_stream_view stream) const
   {
     RMM_EXPECTS(
       element_index < size(), rmm::out_of_range, "Attempt to access out of bounds element.");
-    value_type v;
-    RMM_CUDA_TRY(
-      cudaMemcpyAsync(&v, element_ptr(element_index), sizeof(v), cudaMemcpyDefault, s.value()));
-    s.synchronize();
-    return v;
+    value_type value;
+    RMM_CUDA_TRY(cudaMemcpyAsync(
+      &value, element_ptr(element_index), sizeof(value), cudaMemcpyDefault, stream.value()));
+    stream.synchronize();
+    return value;
   }
 
   /**
@@ -323,10 +320,10 @@ class device_uvector {
    *
    * @throws rmm::out_of_range exception if the vector is empty.
    *
-   * @param s The stream on which to perform the copy
+   * @param stream The stream on which to perform the copy
    * @return The value of the first element
    */
-  value_type front_element(cuda_stream_view s) const { return element(0, s); }
+  value_type front_element(cuda_stream_view stream) const { return element(0, stream); }
 
   /**
    * @brief Returns the last element.
@@ -336,10 +333,10 @@ class device_uvector {
    *
    * @throws rmm::out_of_range exception if the vector is empty.
    *
-   * @param s The stream on which to perform the copy
+   * @param stream The stream on which to perform the copy
    * @return The value of the last element
    */
-  value_type back_element(cuda_stream_view s) const { return element(size() - 1, s); }
+  value_type back_element(cuda_stream_view stream) const { return element(size() - 1, stream); }
 
   /**
    * @brief Resizes the vector to contain `new_size` elements.
@@ -384,7 +381,10 @@ class device_uvector {
    * @return std::size_t The number of elements that can be stored without requiring a new
    * allocation.
    */
-  std::size_t capacity() const noexcept { return bytes_to_elements(_storage.capacity()); }
+  [[nodiscard]] std::size_t capacity() const noexcept
+  {
+    return bytes_to_elements(_storage.capacity());
+  }
 
   /**
    * @brief Returns pointer to underlying device storage.
@@ -468,7 +468,7 @@ class device_uvector {
    *
    * @return The number of elements.
    */
-  std::size_t size() const noexcept { return bytes_to_elements(_storage.size()); }
+  [[nodiscard]] std::size_t size() const noexcept { return bytes_to_elements(_storage.size()); }
 
   /**
    * @brief Returns true if the vector contains no elements, i.e., `size() == 0`.
@@ -476,14 +476,14 @@ class device_uvector {
    * @return true The vector is empty
    * @return false The vector is not empty
    */
-  bool is_empty() const noexcept { return size() == 0; }
+  [[nodiscard]] bool is_empty() const noexcept { return size() == 0; }
 
   /**
    * @brief Returns pointer to the resource used to allocate and deallocate the device storage.
    *
    * @return Pointer to underlying resource
    */
-  mr::device_memory_resource* memory_resource() const noexcept
+  [[nodiscard]] mr::device_memory_resource* memory_resource() const noexcept
   {
     return _storage.memory_resource();
   }
@@ -491,12 +491,12 @@ class device_uvector {
  private:
   device_buffer _storage{};  ///< Device memory storage for vector elements
 
-  std::size_t constexpr elements_to_bytes(std::size_t num_elements) const noexcept
+  [[nodiscard]] std::size_t constexpr elements_to_bytes(std::size_t num_elements) const noexcept
   {
     return num_elements * sizeof(value_type);
   }
 
-  std::size_t constexpr bytes_to_elements(std::size_t num_bytes) const noexcept
+  [[nodiscard]] std::size_t constexpr bytes_to_elements(std::size_t num_bytes) const noexcept
   {
     return num_bytes / sizeof(value_type);
   }

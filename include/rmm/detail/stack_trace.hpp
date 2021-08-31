@@ -33,9 +33,7 @@
 #include <vector>
 #endif
 
-namespace rmm {
-
-namespace detail {
+namespace rmm::detail {
 
 /**
  * @brief stack_trace is a class that will capture a stack on instatiation for output later.
@@ -52,36 +50,37 @@ class stack_trace {
   {
 #if defined(RMM_ENABLE_STACK_TRACES)
     const int MaxStackDepth = 64;
-    void* stack[MaxStackDepth];
-    auto const depth = backtrace(stack, MaxStackDepth);
-    stack_ptrs.insert(stack_ptrs.end(), &stack[0], &stack[depth]);
+    std::array<void*, MaxStackDepth> stack{};
+    auto const depth = backtrace(stack.begin(), MaxStackDepth);
+    stack_ptrs.insert(stack_ptrs.end(), stack.begin(), &stack.at(depth));
 #endif  // RMM_ENABLE_STACK_TRACES
   }
 
-  friend std::ostream& operator<<(std::ostream& os, const stack_trace& st)
+  friend std::ostream& operator<<(std::ostream& os, const stack_trace& trace)
   {
 #if defined(RMM_ENABLE_STACK_TRACES)
     std::unique_ptr<char*, decltype(&::free)> strings(
-      backtrace_symbols(st.stack_ptrs.data(), st.stack_ptrs.size()), &::free);
+      backtrace_symbols(trace.stack_ptrs.data(), static_cast<int>(trace.stack_ptrs.size())),
+      &::free);
 
-    if (strings.get() == nullptr) {
+    if (strings == nullptr) {
       os << "But no stack trace could be found!" << std::endl;
     } else {
       // Iterate over the stack pointers converting to a string
-      for (std::size_t i = 0; i < st.stack_ptrs.size(); ++i) {
+      for (std::size_t i = 0; i < trace.stack_ptrs.size(); ++i) {
         // Leading index
         os << "#" << i << " in ";
 
         auto const str = [&] {
           Dl_info info;
-          if (dladdr(st.stack_ptrs[i], &info)) {
+          if (dladdr(trace.stack_ptrs[i], &info) != 0) {
             int status = -1;  // Demangle the name. This can occasionally fail
 
             std::unique_ptr<char, decltype(&::free)> demangled(
-              abi::__cxa_demangle(info.dli_sname, nullptr, 0, &status), &::free);
+              abi::__cxa_demangle(info.dli_sname, nullptr, nullptr, &status), &::free);
             // If it fails, fallback to the dli_name.
-            if (status == 0 or info.dli_sname) {
-              auto name = status == 0 ? demangled.get() : info.dli_sname;
+            if (status == 0 or (info.dli_sname != nullptr)) {
+              auto const* name = status == 0 ? demangled.get() : info.dli_sname;
               return name + std::string(" from ") + info.dli_fname;
             }
           }
@@ -103,6 +102,4 @@ class stack_trace {
 #endif  // RMM_ENABLE_STACK_TRACES
 };
 
-}  // namespace detail
-
-}  // namespace rmm
+}  // namespace rmm::detail
