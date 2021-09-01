@@ -29,6 +29,9 @@ struct fixed_size_free_list : free_list<block_base> {
   fixed_size_free_list()  = default;
   ~fixed_size_free_list() = default;
 
+  fixed_size_free_list(fixed_size_free_list const&) = delete;
+  fixed_size_free_list& operator=(fixed_size_free_list const&) = delete;
+
   /**
    * @brief Construct a new free_list from range defined by input iterators
    *
