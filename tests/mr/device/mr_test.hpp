@@ -103,6 +103,19 @@ inline void test_allocate(rmm::mr::device_memory_resource* mr,
   if (not stream.is_default()) stream.synchronize();
 }
 
+// Simple reproducer for https://github.com/rapidsai/rmm/issues/861
+inline void concurrent_allocations_are_different(rmm::mr::device_memory_resource* mr,
+                                                 cuda_stream_view stream)
+{
+  void* p1 = mr->allocate(8_B, stream);
+  void* p2 = mr->allocate(8_B, stream);
+
+  EXPECT_NE(p1, p2);
+
+  mr->deallocate(p1, 8_B, stream);
+  mr->deallocate(p2, 8_B, stream);
+}
+
 inline void test_various_allocations(rmm::mr::device_memory_resource* mr, cuda_stream_view stream)
 {
   // test allocating zero bytes on non-default stream

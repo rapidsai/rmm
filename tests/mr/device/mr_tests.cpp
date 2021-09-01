@@ -47,7 +47,7 @@ TEST(DefaultTest, UseCurrentDeviceResource) { test_get_current_device_resource()
 TEST(DefaultTest, GetCurrentDeviceResource)
 {
   rmm::mr::device_memory_resource* mr;
-  EXPECT_NO_THROW(mr = rmm::mr::get_current_device_resource());
+  mr = rmm::mr::get_current_device_resource();
   EXPECT_NE(nullptr, mr);
   EXPECT_TRUE(mr->is_equal(rmm::mr::cuda_memory_resource{}));
 }
@@ -55,7 +55,7 @@ TEST(DefaultTest, GetCurrentDeviceResource)
 TEST_P(mr_test, SetCurrentDeviceResource)
 {
   rmm::mr::device_memory_resource* old{};
-  EXPECT_NO_THROW(old = rmm::mr::set_current_device_resource(this->mr.get()));
+  old = rmm::mr::set_current_device_resource(this->mr.get());
   EXPECT_NE(nullptr, old);
 
   // old mr should equal a cuda mr
@@ -67,7 +67,7 @@ TEST_P(mr_test, SetCurrentDeviceResource)
   test_get_current_device_resource();
 
   // setting to `nullptr` should reset to initial cuda resource
-  EXPECT_NO_THROW(rmm::mr::set_current_device_resource(nullptr));
+  rmm::mr::set_current_device_resource(nullptr);
   EXPECT_TRUE(rmm::mr::get_current_device_resource()->is_equal(rmm::mr::cuda_memory_resource{}));
 }
 
@@ -79,6 +79,17 @@ TEST_P(mr_test, AllocateDefaultStream)
 }
 
 TEST_P(mr_test, AllocateOnStream) { test_various_allocations(this->mr.get(), this->stream); }
+
+// Simple reproducer for https://github.com/rapidsai/rmm/issues/861
+TEST_P(mr_test, AllocationsAreDifferentDefaultStream)
+{
+  concurrent_allocations_are_different(this->mr.get(), cuda_stream_view{});
+}
+
+TEST_P(mr_test, AllocationsAreDifferent)
+{
+  concurrent_allocations_are_different(this->mr.get(), this->stream);
+}
 
 TEST_P(mr_test, RandomAllocations) { test_random_allocations(this->mr.get()); }
 
@@ -101,13 +112,13 @@ TEST_P(mr_test, GetMemInfo)
 {
   if (this->mr->supports_get_mem_info()) {
     std::pair<std::size_t, std::size_t> mem_info;
-    EXPECT_NO_THROW(mem_info = this->mr->get_mem_info(rmm::cuda_stream_view{}));
+    mem_info                    = this->mr->get_mem_info(rmm::cuda_stream_view{});
     std::size_t allocation_size = 16 * 256;
     void* ptr{nullptr};
-    EXPECT_NO_THROW(ptr = this->mr->allocate(allocation_size));
-    EXPECT_NO_THROW(mem_info = this->mr->get_mem_info(rmm::cuda_stream_view{}));
+    ptr      = this->mr->allocate(allocation_size);
+    mem_info = this->mr->get_mem_info(rmm::cuda_stream_view{});
     EXPECT_TRUE(mem_info.first >= allocation_size);
-    EXPECT_NO_THROW(this->mr->deallocate(ptr, allocation_size));
+    this->mr->deallocate(ptr, allocation_size);
   }
 }
 }  // namespace

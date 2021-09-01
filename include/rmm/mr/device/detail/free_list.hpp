@@ -61,6 +61,11 @@ class free_list {
   free_list()          = default;
   virtual ~free_list() = default;
 
+  free_list(free_list const&) = delete;
+  free_list& operator=(free_list const&) = delete;
+  free_list(free_list&&)                 = delete;
+  free_list& operator=(free_list&&) = delete;
+
   using block_type     = BlockType;
   using list_type      = ListType;
   using size_type      = typename list_type::size_type;
