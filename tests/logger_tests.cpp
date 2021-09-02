@@ -26,7 +26,7 @@ class raii_restore_env {
  public:
   raii_restore_env(char const* name) : name_(name)
   {
-    auto const value_or_null = getenv(name);
+    auto* const value_or_null = getenv(name);
     if (value_or_null != nullptr) {
       value_  = value_or_null;
       is_set_ = true;
@@ -41,6 +41,11 @@ class raii_restore_env {
       unsetenv(name_.c_str());
     }
   }
+
+  raii_restore_env(raii_restore_env const&) = default;
+  raii_restore_env& operator=(raii_restore_env const&) = default;
+  raii_restore_env(raii_restore_env&&)                 = default;
+  raii_restore_env& operator=(raii_restore_env&&) = default;
 
  private:
   std::string name_{};
@@ -88,19 +93,22 @@ TEST(Adaptor, FilenameConstructor)
   rmm::mr::cuda_memory_resource upstream;
   rmm::mr::logging_resource_adaptor<rmm::mr::cuda_memory_resource> log_mr{&upstream, filename};
 
-  auto p0 = log_mr.allocate(100);
-  auto p1 = log_mr.allocate(42);
-  log_mr.deallocate(p0, 100);
-  log_mr.deallocate(p1, 42);
+  auto const size0{100};
+  auto const size1{42};
+
+  auto* ptr0 = log_mr.allocate(size0);
+  auto* ptr1 = log_mr.allocate(size1);
+  log_mr.deallocate(ptr0, size0);
+  log_mr.deallocate(ptr1, size1);
   log_mr.flush();
 
   using rmm::detail::action;
   using rmm::detail::event;
 
-  std::vector<event> expected_events{{action::ALLOCATE, 100, p0},
-                                     {action::ALLOCATE, 42, p1},
-                                     {action::FREE, 100, p0},
-                                     {action::FREE, 42, p1}};
+  std::vector<event> expected_events{{action::ALLOCATE, size0, ptr0},
+                                     {action::ALLOCATE, size1, ptr1},
+                                     {action::FREE, size0, ptr0},
+                                     {action::FREE, size1, ptr1}};
 
   expect_log_events(filename, expected_events);
 }
@@ -117,19 +125,22 @@ TEST(Adaptor, MultiSinkConstructor)
   rmm::mr::logging_resource_adaptor<rmm::mr::cuda_memory_resource> log_mr{&upstream,
                                                                           {file_sink1, file_sink2}};
 
-  auto p0 = log_mr.allocate(100);
-  auto p1 = log_mr.allocate(42);
-  log_mr.deallocate(p0, 100);
-  log_mr.deallocate(p1, 42);
+  auto const size0{100};
+  auto const size1{42};
+
+  auto* ptr0 = log_mr.allocate(size0);
+  auto* ptr1 = log_mr.allocate(size1);
+  log_mr.deallocate(ptr0, size0);
+  log_mr.deallocate(ptr1, size1);
   log_mr.flush();
 
   using rmm::detail::action;
   using rmm::detail::event;
 
-  std::vector<event> expected_events{{action::ALLOCATE, 100, p0},
-                                     {action::ALLOCATE, 42, p1},
-                                     {action::FREE, 100, p0},
-                                     {action::FREE, 42, p1}};
+  std::vector<event> expected_events{{action::ALLOCATE, size0, ptr0},
+                                     {action::ALLOCATE, size1, ptr1},
+                                     {action::FREE, size0, ptr0},
+                                     {action::FREE, size1, ptr1}};
 
   expect_log_events(filename1, expected_events);
   expect_log_events(filename2, expected_events);
@@ -142,19 +153,22 @@ TEST(Adaptor, Factory)
 
   auto log_mr = rmm::mr::make_logging_adaptor(&upstream, filename);
 
-  auto p0 = log_mr.allocate(99);
-  log_mr.deallocate(p0, 99);
-  auto p1 = log_mr.allocate(42);
-  log_mr.deallocate(p1, 42);
+  auto const size0{99};
+  auto const size1{42};
+
+  auto* ptr0 = log_mr.allocate(size0);
+  log_mr.deallocate(ptr0, size0);
+  auto* ptr1 = log_mr.allocate(size1);
+  log_mr.deallocate(ptr1, size1);
   log_mr.flush();
 
   using rmm::detail::action;
   using rmm::detail::event;
 
-  std::vector<event> expected_events{{action::ALLOCATE, 99, p0},
-                                     {action::FREE, 99, p0},
-                                     {action::ALLOCATE, 42, p1},
-                                     {action::FREE, 42, p1}};
+  std::vector<event> expected_events{{action::ALLOCATE, size0, ptr0},
+                                     {action::FREE, size0, ptr0},
+                                     {action::ALLOCATE, size1, ptr1},
+                                     {action::FREE, size1, ptr1}};
 
   expect_log_events(filename, expected_events);
 }
@@ -178,8 +192,10 @@ TEST(Adaptor, EnvironmentPath)
   // use log file location specified in environment variable RMM_LOG_FILE
   auto log_mr = rmm::mr::make_logging_adaptor(&upstream);
 
-  auto p = log_mr.allocate(100);
-  log_mr.deallocate(p, 100);
+  auto const size{100};
+
+  auto* ptr = log_mr.allocate(size);
+  log_mr.deallocate(ptr, size);
 
   log_mr.flush();
 
@@ -187,8 +203,8 @@ TEST(Adaptor, EnvironmentPath)
   using rmm::detail::event;
 
   std::vector<event> expected_events{
-    {action::ALLOCATE, 100, p},
-    {action::FREE, 100, p},
+    {action::ALLOCATE, size, ptr},
+    {action::FREE, size, ptr},
   };
 
   expect_log_events(filename, expected_events);
@@ -202,11 +218,13 @@ TEST(Adaptor, STDOUT)
 
   auto log_mr = rmm::mr::make_logging_adaptor(&upstream, std::cout);
 
-  auto p = log_mr.allocate(100);
-  log_mr.deallocate(p, 100);
+  auto const size{100};
+
+  auto* p = log_mr.allocate(size);
+  log_mr.deallocate(p, size);
 
   std::string output = testing::internal::GetCapturedStdout();
-  std::string header = output.substr(0, output.find("\n"));
+  std::string header = output.substr(0, output.find('\n'));
   ASSERT_EQ(header, log_mr.header());
 }
 
@@ -218,10 +236,12 @@ TEST(Adaptor, STDERR)
 
   auto log_mr = rmm::mr::make_logging_adaptor(&upstream, std::cerr);
 
-  auto p = log_mr.allocate(100);
-  log_mr.deallocate(p, 100);
+  auto const size{100};
+
+  auto* p = log_mr.allocate(size);
+  log_mr.deallocate(p, size);
 
   std::string output = testing::internal::GetCapturedStderr();
-  std::string header = output.substr(0, output.find("\n"));
+  std::string header = output.substr(0, output.find('\n'));
   ASSERT_EQ(header, log_mr.header());
 }

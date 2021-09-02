@@ -22,6 +22,7 @@
 #include <rmm/mr/device/per_device_resource.hpp>
 
 #include <cuda_runtime_api.h>
+
 #include <chrono>
 #include <cstddef>
 #include <random>
@@ -34,7 +35,7 @@ struct DeviceScalarTest : public ::testing::Test {
   rmm::mr::device_memory_resource* mr{rmm::mr::get_current_device_resource()};
   std::default_random_engine generator{};
 
-  DeviceScalarTest() { value = random_value(); }
+  DeviceScalarTest() : value{random_value()} {}
 
   template <typename U = T, std::enable_if_t<std::is_same<U, bool>::value, bool> = true>
   U random_value()
@@ -56,7 +57,9 @@ struct DeviceScalarTest : public ::testing::Test {
   template <typename U = T, std::enable_if_t<std::is_floating_point<U>::value, bool> = true>
   U random_value()
   {
-    static std::normal_distribution<U> distribution{100, 20};
+    auto const mean{100};
+    auto const stddev{20};
+    static std::normal_distribution<U> distribution(mean, stddev);
     return distribution(generator);
   }
 };

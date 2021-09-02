@@ -23,7 +23,7 @@
 
 template <typename T>
 struct TypedUVectorTest : ::testing::Test {
-  rmm::cuda_stream_view stream() const noexcept { return rmm::cuda_stream_view{}; }
+  [[nodiscard]] rmm::cuda_stream_view stream() const noexcept { return rmm::cuda_stream_view{}; }
 };
 
 using TestTypes = ::testing::Types<int8_t, int32_t, uint64_t, float, double>;
@@ -32,27 +32,29 @@ TYPED_TEST_CASE(TypedUVectorTest, TestTypes);
 
 TYPED_TEST(TypedUVectorTest, ZeroSizeConstructor)
 {
-  rmm::device_uvector<TypeParam> uv(0, this->stream());
-  EXPECT_EQ(uv.size(), 0);
-  EXPECT_EQ(uv.end(), uv.begin());
-  EXPECT_TRUE(uv.is_empty());
+  rmm::device_uvector<TypeParam> vec(0, this->stream());
+  EXPECT_EQ(vec.size(), 0);
+  EXPECT_EQ(vec.end(), vec.begin());
+  EXPECT_TRUE(vec.is_empty());
 }
 
 TYPED_TEST(TypedUVectorTest, NonZeroSizeConstructor)
 {
-  rmm::device_uvector<TypeParam> uv(12345, this->stream());
-  EXPECT_EQ(uv.size(), 12345);
-  EXPECT_NE(uv.data(), nullptr);
-  EXPECT_EQ(uv.end(), uv.begin() + uv.size());
-  EXPECT_FALSE(uv.is_empty());
-  EXPECT_NE(uv.element_ptr(0), nullptr);
+  auto const size{12345};
+  rmm::device_uvector<TypeParam> vec(size, this->stream());
+  EXPECT_EQ(vec.size(), 12345);
+  EXPECT_NE(vec.data(), nullptr);
+  EXPECT_EQ(vec.end(), vec.begin() + vec.size());
+  EXPECT_FALSE(vec.is_empty());
+  EXPECT_NE(vec.element_ptr(0), nullptr);
 }
 
 TYPED_TEST(TypedUVectorTest, CopyConstructor)
 {
-  rmm::device_uvector<TypeParam> uv(12345, this->stream());
-  rmm::device_uvector<TypeParam> uv_copy(uv, this->stream());
-  EXPECT_EQ(uv_copy.size(), uv.size());
+  auto const size{12345};
+  rmm::device_uvector<TypeParam> vec(size, this->stream());
+  rmm::device_uvector<TypeParam> uv_copy(vec, this->stream());
+  EXPECT_EQ(uv_copy.size(), vec.size());
   EXPECT_NE(uv_copy.data(), nullptr);
   EXPECT_EQ(uv_copy.end(), uv_copy.begin() + uv_copy.size());
   EXPECT_FALSE(uv_copy.is_empty());
@@ -61,145 +63,145 @@ TYPED_TEST(TypedUVectorTest, CopyConstructor)
 
 TYPED_TEST(TypedUVectorTest, ResizeSmaller)
 {
-  auto original_size = 12345;
-  rmm::device_uvector<TypeParam> uv(original_size, this->stream());
-  auto original_data  = uv.data();
-  auto original_begin = uv.begin();
+  auto const original_size{12345};
+  rmm::device_uvector<TypeParam> vec(original_size, this->stream());
+  auto original_data  = vec.data();
+  auto original_begin = vec.begin();
 
-  auto smaller_size = uv.size() - 1;
-  uv.resize(smaller_size, this->stream());
+  auto smaller_size = vec.size() - 1;
+  vec.resize(smaller_size, this->stream());
 
-  EXPECT_EQ(original_data, uv.data());
-  EXPECT_EQ(original_begin, uv.begin());
-  EXPECT_EQ(uv.size(), smaller_size);
-  EXPECT_EQ(uv.capacity(), original_size);
+  EXPECT_EQ(original_data, vec.data());
+  EXPECT_EQ(original_begin, vec.begin());
+  EXPECT_EQ(vec.size(), smaller_size);
+  EXPECT_EQ(vec.capacity(), original_size);
 
   // shrink_to_fit should force a new allocation
-  uv.shrink_to_fit(this->stream());
-  EXPECT_EQ(uv.size(), smaller_size);
-  EXPECT_EQ(uv.capacity(), smaller_size);
+  vec.shrink_to_fit(this->stream());
+  EXPECT_EQ(vec.size(), smaller_size);
+  EXPECT_EQ(vec.capacity(), smaller_size);
 }
 
 TYPED_TEST(TypedUVectorTest, ResizeLarger)
 {
-  auto original_size = 12345;
-  rmm::device_uvector<TypeParam> uv(original_size, this->stream());
-  auto original_data  = uv.data();
-  auto original_begin = uv.begin();
+  auto const original_size{12345};
+  rmm::device_uvector<TypeParam> vec(original_size, this->stream());
+  auto original_data  = vec.data();
+  auto original_begin = vec.begin();
 
-  auto larger_size = uv.size() + 1;
-  uv.resize(larger_size, this->stream());
+  auto larger_size = vec.size() + 1;
+  vec.resize(larger_size, this->stream());
 
-  EXPECT_NE(uv.data(), original_data);
-  EXPECT_NE(uv.begin(), original_begin);
-  EXPECT_EQ(uv.size(), larger_size);
-  EXPECT_EQ(uv.capacity(), larger_size);
+  EXPECT_NE(vec.data(), original_data);
+  EXPECT_NE(vec.begin(), original_begin);
+  EXPECT_EQ(vec.size(), larger_size);
+  EXPECT_EQ(vec.capacity(), larger_size);
 
-  auto larger_data  = uv.data();
-  auto larger_begin = uv.begin();
+  auto larger_data  = vec.data();
+  auto larger_begin = vec.begin();
 
   // shrink_to_fit shouldn't have any effect
-  uv.shrink_to_fit(this->stream());
-  EXPECT_EQ(uv.size(), larger_size);
-  EXPECT_EQ(uv.capacity(), larger_size);
-  EXPECT_EQ(uv.data(), larger_data);
-  EXPECT_EQ(uv.begin(), larger_begin);
+  vec.shrink_to_fit(this->stream());
+  EXPECT_EQ(vec.size(), larger_size);
+  EXPECT_EQ(vec.capacity(), larger_size);
+  EXPECT_EQ(vec.data(), larger_data);
+  EXPECT_EQ(vec.begin(), larger_begin);
 }
 
 TYPED_TEST(TypedUVectorTest, ResizeToZero)
 {
-  auto original_size = 12345;
-  rmm::device_uvector<TypeParam> uv(original_size, this->stream());
-  uv.resize(0, this->stream());
+  auto const original_size{12345};
+  rmm::device_uvector<TypeParam> vec(original_size, this->stream());
+  vec.resize(0, this->stream());
 
-  EXPECT_EQ(uv.size(), 0);
-  EXPECT_TRUE(uv.is_empty());
-  EXPECT_EQ(uv.capacity(), original_size);
+  EXPECT_EQ(vec.size(), 0);
+  EXPECT_TRUE(vec.is_empty());
+  EXPECT_EQ(vec.capacity(), original_size);
 
-  uv.shrink_to_fit(this->stream());
-  EXPECT_EQ(uv.capacity(), 0);
+  vec.shrink_to_fit(this->stream());
+  EXPECT_EQ(vec.capacity(), 0);
 }
 
 TYPED_TEST(TypedUVectorTest, Release)
 {
-  auto original_size = 12345;
-  rmm::device_uvector<TypeParam> uv(original_size, this->stream());
+  auto const original_size{12345};
+  rmm::device_uvector<TypeParam> vec(original_size, this->stream());
 
-  auto original_data = uv.data();
+  auto original_data = vec.data();
 
-  rmm::device_buffer storage = uv.release();
+  rmm::device_buffer storage = vec.release();
 
-  EXPECT_EQ(uv.size(), 0);
-  EXPECT_EQ(uv.capacity(), 0);
-  EXPECT_TRUE(uv.is_empty());
+  EXPECT_EQ(vec.size(), 0);
+  EXPECT_EQ(vec.capacity(), 0);
+  EXPECT_TRUE(vec.is_empty());
   EXPECT_EQ(storage.data(), original_data);
   EXPECT_EQ(storage.size(), original_size * sizeof(TypeParam));
 }
 
 TYPED_TEST(TypedUVectorTest, ElementPointer)
 {
-  auto size = 12345;
-  rmm::device_uvector<TypeParam> uv(size, this->stream());
-  for (std::size_t i = 0; i < uv.size(); ++i) {
-    EXPECT_NE(uv.element_ptr(i), nullptr);
+  auto const size{12345};
+  rmm::device_uvector<TypeParam> vec(size, this->stream());
+  for (std::size_t i = 0; i < vec.size(); ++i) {
+    EXPECT_NE(vec.element_ptr(i), nullptr);
   }
 }
 
 TYPED_TEST(TypedUVectorTest, OOBSetElement)
 {
-  auto size = 12345;
-  rmm::device_uvector<TypeParam> uv(size, this->stream());
-  EXPECT_THROW(uv.set_element(uv.size() + 1, 42, this->stream()), rmm::out_of_range);
+  auto const size{12345};
+  rmm::device_uvector<TypeParam> vec(size, this->stream());
+  EXPECT_THROW(vec.set_element(vec.size() + 1, 42, this->stream()), rmm::out_of_range);
 }
 
 TYPED_TEST(TypedUVectorTest, OOBGetElement)
 {
-  auto size = 12345;
-  rmm::device_uvector<TypeParam> uv(size, this->stream());
-  EXPECT_THROW(uv.element(uv.size() + 1, this->stream()), rmm::out_of_range);
+  auto const size{12345};
+  rmm::device_uvector<TypeParam> vec(size, this->stream());
+  EXPECT_THROW(vec.element(vec.size() + 1, this->stream()), rmm::out_of_range);
 }
 
 TYPED_TEST(TypedUVectorTest, GetSetElement)
 {
-  auto size = 12345;
-  rmm::device_uvector<TypeParam> uv(size, this->stream());
-  for (std::size_t i = 0; i < uv.size(); ++i) {
-    uv.set_element(i, i, this->stream());
-    EXPECT_EQ(static_cast<TypeParam>(i), uv.element(i, this->stream()));
+  auto const size{12345};
+  rmm::device_uvector<TypeParam> vec(size, this->stream());
+  for (std::size_t i = 0; i < vec.size(); ++i) {
+    vec.set_element(i, i, this->stream());
+    EXPECT_EQ(static_cast<TypeParam>(i), vec.element(i, this->stream()));
   }
 }
 
 TYPED_TEST(TypedUVectorTest, GetSetElementAsync)
 {
-  auto size = 12345;
-  rmm::device_uvector<TypeParam> uv(size, this->stream());
-  for (std::size_t i = 0; i < uv.size(); ++i) {
+  auto const size{12345};
+  rmm::device_uvector<TypeParam> vec(size, this->stream());
+  for (std::size_t i = 0; i < vec.size(); ++i) {
     auto init = static_cast<TypeParam>(i);
-    uv.set_element_async(i, init, this->stream());
-    EXPECT_EQ(init, uv.element(i, this->stream()));
+    vec.set_element_async(i, init, this->stream());
+    EXPECT_EQ(init, vec.element(i, this->stream()));
   }
 }
 
 TYPED_TEST(TypedUVectorTest, SetElementZeroAsync)
 {
-  auto size = 12345;
-  rmm::device_uvector<TypeParam> uv(size, this->stream());
-  for (std::size_t i = 0; i < uv.size(); ++i) {
-    uv.set_element_to_zero_async(i, this->stream());
-    EXPECT_EQ(TypeParam{0}, uv.element(i, this->stream()));
+  auto const size{12345};
+  rmm::device_uvector<TypeParam> vec(size, this->stream());
+  for (std::size_t i = 0; i < vec.size(); ++i) {
+    vec.set_element_to_zero_async(i, this->stream());
+    EXPECT_EQ(TypeParam{0}, vec.element(i, this->stream()));
   }
 }
 
 TYPED_TEST(TypedUVectorTest, FrontBackElement)
 {
-  auto size = 12345;
-  rmm::device_uvector<TypeParam> uv(size, this->stream());
+  auto const size{12345};
+  rmm::device_uvector<TypeParam> vec(size, this->stream());
 
-  auto first = TypeParam{42};
-  auto last  = TypeParam{13};
-  uv.set_element(0, first, this->stream());
-  uv.set_element(uv.size() - 1, last, this->stream());
+  auto const first = TypeParam{42};
+  auto const last  = TypeParam{13};
+  vec.set_element(0, first, this->stream());
+  vec.set_element(vec.size() - 1, last, this->stream());
 
-  EXPECT_EQ(first, uv.front_element(this->stream()));
-  EXPECT_EQ(last, uv.back_element(this->stream()));
+  EXPECT_EQ(first, vec.front_element(this->stream()));
+  EXPECT_EQ(last, vec.back_element(this->stream()));
 }
