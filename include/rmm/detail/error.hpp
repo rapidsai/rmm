@@ -101,7 +101,7 @@ class out_of_range : public std::out_of_range {
   (__VA_ARGS__)
 #define GET_RMM_EXPECTS_MACRO(_1, _2, _3, NAME, ...) NAME
 #define RMM_EXPECTS_3(_condition, _exception_type, _reason)              \
-  (!!(_condition)) ? static_cast<void>(0) : throw _exception_type        \
+  (!!(_condition)) ? static_cast<void>(0) : throw(_exception_type)       \
   {                                                                      \
     "RMM failure at: " __FILE__ ":" RMM_STRINGIFY(__LINE__) ": " _reason \
   }
@@ -124,7 +124,7 @@ class out_of_range : public std::out_of_range {
   (__VA_ARGS__)
 #define GET_RMM_FAIL_MACRO(_1, _2, NAME, ...) NAME
 #define RMM_FAIL_2(_what, _exception_type) \
-  throw _exception_type{"RMM failure at:" __FILE__ ":" RMM_STRINGIFY(__LINE__) ": " _what};
+  throw(_exception_type){"RMM failure at:" __FILE__ ":" RMM_STRINGIFY(__LINE__) ": " _what};
 #define RMM_FAIL_1(_what) RMM_FAIL_2(_what, rmm::logic_error)
 
 /**
@@ -152,15 +152,15 @@ class out_of_range : public std::out_of_range {
   GET_RMM_CUDA_TRY_MACRO(__VA_ARGS__, RMM_CUDA_TRY_2, RMM_CUDA_TRY_1) \
   (__VA_ARGS__)
 #define GET_RMM_CUDA_TRY_MACRO(_1, _2, NAME, ...) NAME
-#define RMM_CUDA_TRY_2(_call, _exception_type)                                               \
-  do {                                                                                       \
-    cudaError_t const error = (_call);                                                       \
-    if (cudaSuccess != error) {                                                              \
-      cudaGetLastError();                                                                    \
-      throw _exception_type{std::string{"CUDA error at: "} + __FILE__ + ":" +                \
-                            RMM_STRINGIFY(__LINE__) + ": " + cudaGetErrorName(error) + " " + \
-                            cudaGetErrorString(error)};                                      \
-    }                                                                                        \
+#define RMM_CUDA_TRY_2(_call, _exception_type)                                                \
+  do {                                                                                        \
+    cudaError_t const error = (_call);                                                        \
+    if (cudaSuccess != error) {                                                               \
+      cudaGetLastError();                                                                     \
+      throw(_exception_type){std::string{"CUDA error at: "} + __FILE__ + ":" +                \
+                             RMM_STRINGIFY(__LINE__) + ": " + cudaGetErrorName(error) + " " + \
+                             cudaGetErrorString(error)};                                      \
+    }                                                                                         \
   } while (0)
 #define RMM_CUDA_TRY_1(_call) RMM_CUDA_TRY_2(_call, rmm::cuda_error)
 

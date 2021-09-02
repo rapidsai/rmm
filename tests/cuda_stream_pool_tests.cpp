@@ -37,7 +37,6 @@ TEST_F(CudaStreamPoolTest, Unequal)
 TEST_F(CudaStreamPoolTest, Nondefault)
 {
   auto const stream_a = this->pool.get_stream();
-  auto const stream_b = this->pool.get_stream();
 
   // pool streams are explicit, non-default streams
   EXPECT_FALSE(stream_a.is_default());

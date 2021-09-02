@@ -7,8 +7,8 @@ Checks:          'clang-diagnostic-*,
                   performance-*,
                   readability-*,
                   llvm-*,
-                  -modernize-use-trailing-return-type',
-                  -cppcoreguidelines-macro-usage
+                  -modernize-use-trailing-return-type,
+                  -cppcoreguidelines-macro-usage'
 WarningsAsErrors: ''
 HeaderFilterRegex: ''
 AnalyzeTemporaryDtors: false
