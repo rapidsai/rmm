@@ -98,12 +98,12 @@ class block {
   /**
    * @brief Split this block into two by the given size.
    *
-   * @param sz The size in bytes of the first block.
-   * @return std::pair<block, block> A pair of blocks split by sz.
+   * @param size The size in bytes of the first block.
+   * @return std::pair<block, block> A pair of blocks split by size.
    */
   [[nodiscard]] std::pair<block, block> split(std::size_t size) const
   {
-    RMM_LOGGING_ASSERT(size_ >= sz);
+    RMM_LOGGING_ASSERT(size_ >= size);
     if (size_ > size) { return {{pointer_, size}, {pointer_ + size, size_ - size}}; }
     return {*this, {}};
   }
@@ -113,12 +113,12 @@ class block {
    *
    * `this->is_contiguous_before(b)` must be true.
    *
-   * @param b block to merge.
+   * @param blk block to merge.
    * @return block The merged block.
    */
   [[nodiscard]] block merge(block const& blk) const
   {
-    RMM_LOGGING_ASSERT(is_contiguous_before(b));
+    RMM_LOGGING_ASSERT(is_contiguous_before(blk));
     return {pointer_, size_ + blk.size_};
   }
 
