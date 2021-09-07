@@ -164,7 +164,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
   void print_free_blocks() const
   {
     std::cout << "stream free blocks: ";
-    for (auto s : stream_free_blocks_) {
+    for (auto& s : stream_free_blocks_) {
       std::cout << "stream: " << s.first.stream << " event: " << s.first.event << " ";
       s.second.print();
       std::cout << std::endl;
@@ -311,7 +311,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
   block_type allocate_and_insert_remainder(block_type b, std::size_t size, free_list& blocks)
   {
     auto const [allocated, remainder] = this->underlying().allocate_from_block(b, size);
-    if (remainder.is_valid()) blocks.insert(remainder);
+    if (remainder.is_valid()) { blocks.insert(remainder); }
     return allocated;
   }
 
@@ -360,9 +360,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    * stream/event than `stream_event`.
    *
    * If an appropriate block is found in a free list F associated with event E,
-   * `stream_event.stream` will be made to wait on event E. All other blocks in free list F will be
-   * moved to the free list associated with `stream_event.stream`. This results in coalescing with
-   * other blocks in that free list, hopefully reducing fragmentation.
+   * `stream_event.stream` will be made to wait on event E.
    *
    * @param size The requested size of the allocation.
    * @param stream_event The stream and associated event on which the allocation is being
@@ -380,7 +378,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
       ++next_it;  // Points to element after `it` to allow erasing `it` in the loop body
       auto other_event = it->first.event;
       if (other_event != stream_event.event) {
-        auto other_blocks = it->second;
+        free_list& other_blocks = it->second;
 
         block_type const b = [&]() {
           if (merge_first) {
