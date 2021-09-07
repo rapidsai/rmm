@@ -47,9 +47,9 @@ class device_scalar {
   ~device_scalar() = default;
 
   RMM_EXEC_CHECK_DISABLE
-  device_scalar(device_scalar&&) = default;
+  device_scalar(device_scalar&&) noexcept = default;
 
-  device_scalar& operator=(device_scalar&&) = default;
+  device_scalar& operator=(device_scalar&&) noexcept = default;
 
   /**
    * @brief Copy ctor is deleted as it doesn't allow a stream argument

@@ -30,10 +30,10 @@
 
 template <typename T>
 struct DeviceScalarTest : public ::testing::Test {
+  std::default_random_engine generator{};
   T value{};
   rmm::cuda_stream stream{};
   rmm::mr::device_memory_resource* mr{rmm::mr::get_current_device_resource()};
-  std::default_random_engine generator{};
 
   DeviceScalarTest() : value{random_value()} {}
 
