@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <gtest/gtest.h>
+#include "../../byte_literals.hpp"
 
 #include <rmm/cuda_stream.hpp>
 #include <rmm/cuda_stream_view.hpp>
@@ -30,6 +30,8 @@
 #include <rmm/mr/device/owning_wrapper.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
+
+#include <gtest/gtest.h>
 
 #include <cuda_runtime_api.h>
 
@@ -60,14 +62,6 @@ inline bool is_device_memory(void* p)
   return (attributes.type == cudaMemoryTypeDevice) or (attributes.type == cudaMemoryTypeManaged);
 #endif
 }
-
-// some useful allocation sizes
-constexpr long operator""_B(unsigned long long const x) { return x; }
-constexpr long operator""_KiB(unsigned long long const x) { return x * (long{1} << 10); }
-constexpr long operator""_MiB(unsigned long long const x) { return x * (long{1} << 20); }
-constexpr long operator""_GiB(unsigned long long const x) { return x * (long{1} << 30); }
-constexpr long operator""_TiB(unsigned long long const x) { return x * (long{1} << 40); }
-constexpr long operator""_PiB(unsigned long long const x) { return x * (long{1} << 50); }
 
 struct allocation {
   void* p{nullptr};
