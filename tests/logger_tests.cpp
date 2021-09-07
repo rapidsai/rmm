@@ -220,8 +220,8 @@ TEST(Adaptor, STDOUT)
 
   auto const size{100};
 
-  auto* p = log_mr.allocate(size);
-  log_mr.deallocate(p, size);
+  auto* ptr = log_mr.allocate(size);
+  log_mr.deallocate(ptr, size);
 
   std::string output = testing::internal::GetCapturedStdout();
   std::string header = output.substr(0, output.find('\n'));
@@ -238,8 +238,8 @@ TEST(Adaptor, STDERR)
 
   auto const size{100};
 
-  auto* p = log_mr.allocate(size);
-  log_mr.deallocate(p, size);
+  auto* ptr = log_mr.allocate(size);
+  log_mr.deallocate(ptr, size);
 
   std::string output = testing::internal::GetCapturedStderr();
   std::string header = output.substr(0, output.find('\n'));
