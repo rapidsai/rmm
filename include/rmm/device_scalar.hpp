@@ -186,9 +186,9 @@ class device_scalar {
    * @param v The host value which will be copied to device
    * @param stream CUDA stream on which to perform the copy
    */
-  void set_value_async(value_type const& v, cuda_stream_view s)
+  void set_value_async(value_type const& value, cuda_stream_view stream)
   {
-    _storage.set_element_async(0, v, s);
+    _storage.set_element_async(0, value, stream);
   }
 
   // Disallow passing literals to set_value to avoid race conditions where the memory holding the
@@ -209,9 +209,9 @@ class device_scalar {
    *
    * @param stream CUDA stream on which to perform the copy
    */
-  void set_value_to_zero_async(cuda_stream_view s)
+  void set_value_to_zero_async(cuda_stream_view stream)
   {
-    _storage.set_element_to_zero_async(value_type{0}, s);
+    _storage.set_element_to_zero_async(value_type{0}, stream);
   }
 
   /**
