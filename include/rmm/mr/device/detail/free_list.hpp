@@ -122,7 +122,7 @@ class free_list {
    * @brief Insert a block in the free list before the specified position
    *
    * @param pos iterator before which the block will be inserted. pos may be the end() iterator.
-   * @param b The block to insert.
+   * @param block The block to insert.
    */
   void insert(const_iterator pos, block_type const& block) { blocks.insert(pos, block); }
 
@@ -130,7 +130,7 @@ class free_list {
    * @brief Inserts a list of blocks in the free list before the specified position
    *
    * @param pos iterator before which the block will be inserted. pos may be the end() iterator.
-   * @param b The block to insert.
+   * @param other The free list to insert.
    */
   void splice(const_iterator pos, free_list&& other)
   {
@@ -140,14 +140,14 @@ class free_list {
   /**
    * @brief Appends the given block to the end of the free list.
    *
-   * @param b The block to append.
+   * @param block The block to append.
    */
   void push_back(const block_type& block) { blocks.push_back(block); }
 
   /**
    * @brief Appends the given block to the end of the free list. `b` is moved to the new element.
    *
-   * @param b The block to append.
+   * @param block The block to append.
    */
   void push_back(block_type&& block) { blocks.push_back(std::move(block)); }
 

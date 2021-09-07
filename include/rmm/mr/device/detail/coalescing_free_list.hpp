@@ -79,8 +79,8 @@ struct block : public block_base {
    * `this` must immediately precede `b` and both `this` and `b` must be from the same upstream
    * allocation. That is, `this->is_contiguous_before(b)`. Otherwise behavior is undefined.
    *
-   * @param b block to merge
-   * @return block The merged block
+   * @param blk block to merge
+   * @return The merged block
    */
   [[nodiscard]] inline block merge(block const& blk) const noexcept
   {
@@ -91,9 +91,9 @@ struct block : public block_base {
   /**
    * @brief Verifies whether this block can be merged to the beginning of block b.
    *
-   * @param b The block to check for contiguity.
-   * @return true Returns true if this blocks's `ptr` + `size` == `b.ptr`, and `not b.is_head`,
-                  false otherwise.
+   * @param blk The block to check for contiguity.
+   * @return Returns true if this blocks's `ptr` + `size` == `b.ptr`, and `not b.is_head`,
+             false otherwise.
    */
   [[nodiscard]] inline bool is_contiguous_before(block const& blk) const noexcept
   {
@@ -104,18 +104,18 @@ struct block : public block_base {
   /**
    * @brief Is this block large enough to fit `sz` bytes?
    *
-   * @param sz The size in bytes to check for fit.
-   * @return true if this block is at least `sz` bytes
+   * @param bytes The size in bytes to check for fit.
+   * @return true if this block is at least `bytes` bytes
    */
   [[nodiscard]] inline bool fits(std::size_t bytes) const noexcept { return size() >= bytes; }
 
   /**
    * @brief Is this block a better fit for `sz` bytes than block `b`?
    *
-   * @param sz The size in bytes to check for best fit.
-   * @param b The other block to check for fit.
-   * @return true If this block is a tighter fit for `sz` bytes than block `b`.
-   * @return false If this block does not fit `sz` bytes or `b` is a tighter fit.
+   * @param bytes The size in bytes to check for best fit.
+   * @param blk The other block to check for fit.
+   * @return true If this block is a tighter fit for `bytes` bytes than block `blk`.
+   * @return false If this block does not fit `bytes` bytes or `blk` is a tighter fit.
    */
   [[nodiscard]] inline bool is_better_fit(std::size_t bytes, block const& blk) const noexcept
   {
@@ -209,12 +209,11 @@ struct coalescing_free_list : free_list<block> {
   }
 
   /**
-   * @brief Moves blocks from range `[first, last)` into the free_list in their correct order,
+   * @brief Moves blocks from free_list `other` into this free_list in their correct order,
    *        coalescing them with their preceding and following blocks if they are contiguous.
    *
    * @tparam InputIt iterator type
-   * @param first The beginning of the range of blocks to insert
-   * @param last The end of the range of blocks to insert.
+   * @param other free_list of blocks to insert
    */
   void insert(free_list&& other)
   {
@@ -229,7 +228,7 @@ struct coalescing_free_list : free_list<block> {
    * This is a "best fit" search.
    *
    * @param size The size in bytes of the desired block.
-   * @return block A block large enough to store `size` bytes.
+   * @return A block large enough to store `size` bytes.
    */
   block_type get_block(std::size_t size)
   {
