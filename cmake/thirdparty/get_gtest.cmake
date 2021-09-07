@@ -23,8 +23,8 @@ function(find_and_configure_gtest VERSION)
     GTest ${VERSION}
     GLOBAL_TARGETS gmock gmock_main gtest gtest_main GTest::gmock GTest::gtest GTest::gtest_main
     CPM_ARGS
-    GIT_REPOSITORY https://github.com/google/googletest.git
-    GIT_TAG release-${VERSION}
+    GIT_REPOSITORY https://github.com/harrism/googletest.git
+    GIT_TAG fix-clang-tidy-nolint
     GIT_SHALLOW TRUE
     OPTIONS "INSTALL_GTEST OFF"
             # googletest >= 1.10.0 provides a cmake config file -- use it if it exists
@@ -40,4 +40,4 @@ function(find_and_configure_gtest VERSION)
 
 endfunction()
 
-find_and_configure_gtest(1.10.0)
+find_and_configure_gtest(1.11.0)
