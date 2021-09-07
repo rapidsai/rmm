@@ -57,13 +57,13 @@ class cuda_stream {
    */
   cuda_stream()
     : stream_{[]() {
-                auto* s = new cudaStream_t;
-                RMM_CUDA_TRY(cudaStreamCreate(s));
-                return s;
+                auto* stream = new cudaStream_t;  // NOLINT(cppcoreguidelines-owning-memory)
+                RMM_CUDA_TRY(cudaStreamCreate(stream));
+                return stream;
               }(),
               [](cudaStream_t* stream) {
                 RMM_ASSERT_CUDA_SUCCESS(cudaStreamDestroy(*stream));
-                delete stream;
+                delete stream;  // NOLINT(cppcoreguidelines-owning-memory)
               }}
   {
   }
