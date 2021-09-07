@@ -21,13 +21,11 @@
 #include <cstddef>
 #include <iostream>
 
-namespace rmm {
-namespace mr {
-namespace detail {
+namespace rmm::mr::detail {
 
 struct fixed_size_free_list : free_list<block_base> {
-  fixed_size_free_list()  = default;
-  ~fixed_size_free_list() = default;
+  fixed_size_free_list()           = default;
+  ~fixed_size_free_list() override = default;
 
   fixed_size_free_list(fixed_size_free_list const&) = delete;
   fixed_size_free_list& operator=(fixed_size_free_list const&) = delete;
@@ -44,7 +42,7 @@ struct fixed_size_free_list : free_list<block_base> {
   template <class InputIt>
   fixed_size_free_list(InputIt first, InputIt last)
   {
-    std::for_each(first, last, [this](block_type const& b) { insert(b); });
+    std::for_each(first, last, [this](block_type const& block) { insert(block); });
   }
 
   /**
@@ -53,7 +51,7 @@ struct fixed_size_free_list : free_list<block_base> {
    *
    * @param b The block to insert.
    */
-  void insert(block_type const& b) { push_back(b); }
+  void insert(block_type const& block) { push_back(block); }
 
   /**
    * @brief Splices blocks from range `[first, last)` onto the free_list.
@@ -71,16 +69,11 @@ struct fixed_size_free_list : free_list<block_base> {
    */
   block_type get_block(std::size_t size)
   {
-    if (is_empty())
-      return block_type{};
-    else {
-      block_type b = *begin();
-      pop_front();
-      return b;
-    }
+    if (is_empty()) { return block_type{}; }
+    block_type block = *begin();
+    pop_front();
+    return block;
   }
 };
 
-}  // namespace detail
-}  // namespace mr
-}  // namespace rmm
+}  // namespace rmm::mr::detail
