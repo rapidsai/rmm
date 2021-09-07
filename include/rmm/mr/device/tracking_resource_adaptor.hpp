@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,13 @@
  */
 #pragma once
 
-#include <map>
-#include <mutex>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/stack_trace.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+
+#include <cstddef>
+#include <map>
+#include <mutex>
 #include <shared_mutex>
 #include <sstream>
 

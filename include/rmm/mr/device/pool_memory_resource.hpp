@@ -31,7 +31,7 @@
 #include <cuda_runtime_api.h>
 
 #include <algorithm>
-#include <cstdint>
+#include <cstddef>
 #include <iostream>
 #include <map>
 #include <mutex>
@@ -141,11 +141,14 @@ class pool_memory_resource final
    * @brief Get the maximum size of allocations supported by this memory resource
    *
    * Note this does not depend on the memory size of the device. It simply returns the maximum
-   * value of `size_t`
+   * value of `std::size_t`
    *
-   * @return size_t The maximum size of a single allocation supported by this memory resource
+   * @return std::size_t The maximum size of a single allocation supported by this memory resource
    */
-  size_t get_maximum_allocation_size() const { return std::numeric_limits<size_t>::max(); }
+  std::size_t get_maximum_allocation_size() const
+  {
+    return std::numeric_limits<std::size_t>::max();
+  }
 
   /**
    * @brief Try to expand the pool by allocating a block of at least `min_size` bytes from
@@ -247,7 +250,7 @@ class pool_memory_resource final
    * Returns 0 if the requested size cannot be satisfied.
    *
    * @param size The size of the minimum allocation immediately needed
-   * @return size_t The computed size to grow the pool.
+   * @return std::size_t The computed size to grow the pool.
    */
   std::size_t size_to_grow(std::size_t size) const
   {
@@ -268,7 +271,7 @@ class pool_memory_resource final
    * @param stream The stream on which the memory is to be used.
    * @return block_type The allocated block
    */
-  thrust::optional<block_type> block_from_upstream(size_t size, cuda_stream_view stream)
+  thrust::optional<block_type> block_from_upstream(std::size_t size, cuda_stream_view stream)
   {
     RMM_LOG_DEBUG("[A][Stream {}][Upstream {}B]", fmt::ptr(stream.value()), size);
 
@@ -294,7 +297,7 @@ class pool_memory_resource final
    * @return A pair comprising the allocated pointer and any unallocated remainder of the input
    * block.
    */
-  split_block allocate_from_block(block_type const& b, size_t size)
+  split_block allocate_from_block(block_type const& b, std::size_t size)
   {
     block_type const alloc{b.pointer(), size, b.is_head()};
 #ifdef RMM_POOL_TRACK_ALLOCATIONS
@@ -303,7 +306,7 @@ class pool_memory_resource final
 
     auto rest =
       (b.size() > size) ? block_type{b.pointer() + size, b.size() - size, false} : block_type{};
-    return {reinterpret_cast<void*>(alloc.pointer()), rest};
+    return {alloc, rest};
   }
 
   /**
@@ -315,7 +318,7 @@ class pool_memory_resource final
    * @return The (now freed) block associated with `p`. The caller is expected to return the block
    * to the pool.
    */
-  block_type free_block(void* p, size_t size) noexcept
+  block_type free_block(void* p, std::size_t size) noexcept
   {
 #ifdef RMM_POOL_TRACK_ALLOCATIONS
     if (p == nullptr) return block_type{};
@@ -338,9 +341,9 @@ class pool_memory_resource final
    *
    * Includes allocated as well as free memory.
    *
-   * @return size_t The total size of the currently allocated pool.
+   * @return std::size_t The total size of the currently allocated pool.
    */
-  size_t pool_size() const noexcept { return current_pool_size_; }
+  std::size_t pool_size() const noexcept { return current_pool_size_; }
 
   /**
    * @brief Free all memory allocated from the upstream memory_resource.
@@ -419,7 +422,7 @@ class pool_memory_resource final
    * @param stream to execute on
    * @return std::pair contaiing free_size and total_size of memory
    */
-  std::pair<size_t, size_t> do_get_mem_info(cuda_stream_view stream) const override
+  std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view stream) const override
   {
     std::size_t free_size{};
     std::size_t total_size{};

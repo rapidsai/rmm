@@ -52,8 +52,6 @@ function(ConfigureBench BENCH_NAME)
 
 endfunction(ConfigureBench)
 
-# benchmark sources
-
 # random allocations benchmark
 ConfigureBench(RANDOM_ALLOCATIONS_BENCH random_allocations/random_allocations.cpp)
 
@@ -65,3 +63,7 @@ ConfigureBench(UVECTOR_BENCH device_uvector/device_uvector_bench.cu)
 
 # cuda_stream_pool benchmark
 ConfigureBench(CUDA_STREAM_POOL_BENCH cuda_stream_pool/cuda_stream_pool_bench.cpp)
+
+# multi stream allocations
+ConfigureBench(MULTI_STREAM_ALLOCATIONS_BENCH
+               multi_stream_allocations/multi_stream_allocations_bench.cu)

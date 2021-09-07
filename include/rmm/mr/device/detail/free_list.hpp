@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +50,7 @@ inline std::ostream& operator<<(std::ostream& out, const block_base& b)
  *
  *  - `void insert(block_type const& b)  // insert a block into the free list`
  *  - `void insert(free_list&& other)    // insert / merge another free list`
- *  - `block_type get_block(size_t size) // get a block of at least size bytes
+ *  - `block_type get_block(std::size_t size) // get a block of at least size bytes
  *  - `void print()                      // print the block`
  *
  * @tparam list_type the type of the internal list data structure.
@@ -60,6 +60,11 @@ class free_list {
  public:
   free_list()          = default;
   virtual ~free_list() = default;
+
+  free_list(free_list const&) = delete;
+  free_list& operator=(free_list const&) = delete;
+  free_list(free_list&&)                 = delete;
+  free_list& operator=(free_list&&) = delete;
 
   using block_type     = BlockType;
   using list_type      = ListType;

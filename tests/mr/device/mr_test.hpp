@@ -103,6 +103,19 @@ inline void test_allocate(rmm::mr::device_memory_resource* mr,
   if (not stream.is_default()) stream.synchronize();
 }
 
+// Simple reproducer for https://github.com/rapidsai/rmm/issues/861
+inline void concurrent_allocations_are_different(rmm::mr::device_memory_resource* mr,
+                                                 cuda_stream_view stream)
+{
+  void* p1 = mr->allocate(8_B, stream);
+  void* p2 = mr->allocate(8_B, stream);
+
+  EXPECT_NE(p1, p2);
+
+  mr->deallocate(p1, 8_B, stream);
+  mr->deallocate(p2, 8_B, stream);
+}
+
 inline void test_various_allocations(rmm::mr::device_memory_resource* mr, cuda_stream_view stream)
 {
   // test allocating zero bytes on non-default stream
@@ -179,7 +192,7 @@ inline void test_mixed_random_allocation_free(rmm::mr::device_memory_resource* m
     }
 
     if (do_alloc) {
-      size_t size = size_distribution(generator);
+      std::size_t size = size_distribution(generator);
       active_allocations++;
       allocation_count++;
       EXPECT_NO_THROW(allocations.emplace_back(mr->allocate(size, stream), size));
@@ -187,7 +200,7 @@ inline void test_mixed_random_allocation_free(rmm::mr::device_memory_resource* m
       EXPECT_NE(nullptr, new_allocation.p);
       EXPECT_TRUE(is_pointer_aligned(new_allocation.p));
     } else {
-      size_t index = index_distribution(generator) % active_allocations;
+      std::size_t index = index_distribution(generator) % active_allocations;
       active_allocations--;
       allocation to_free = allocations[index];
       allocations.erase(std::next(allocations.begin(), index));

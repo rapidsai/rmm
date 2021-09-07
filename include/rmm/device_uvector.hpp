@@ -23,6 +23,7 @@
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 
+#include <cstddef>
 #include <vector>
 
 namespace rmm {

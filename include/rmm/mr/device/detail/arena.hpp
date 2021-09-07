@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@
 #include <spdlog/fmt/bundled/ostream.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <limits>
 #include <memory>
 #include <mutex>
@@ -56,7 +57,7 @@ class block {
    * @param pointer The address for the beginning of the block.
    * @param size The size of the block.
    */
-  block(char* pointer, size_t size) : pointer_(pointer), size_(size) {}
+  block(char* pointer, std::size_t size) : pointer_(pointer), size_(size) {}
 
   /**
    * @brief Construct a block given a void pointer and size.
@@ -64,13 +65,13 @@ class block {
    * @param pointer The address for the beginning of the block.
    * @param size The size of the block.
    */
-  block(void* pointer, size_t size) : pointer_(static_cast<char*>(pointer)), size_(size) {}
+  block(void* pointer, std::size_t size) : pointer_(static_cast<char*>(pointer)), size_(size) {}
 
   /// Returns the underlying pointer.
   [[nodiscard]] void* pointer() const { return pointer_; }
 
   /// Returns the size of the block.
-  [[nodiscard]] size_t size() const { return size_; }
+  [[nodiscard]] std::size_t size() const { return size_; }
 
   /// Returns true if this block is valid (non-null), false otherwise.
   [[nodiscard]] bool is_valid() const { return pointer_ != nullptr; }

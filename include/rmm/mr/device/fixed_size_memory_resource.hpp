@@ -16,6 +16,7 @@
 #pragma once
 
 #include <rmm/cuda_stream_view.hpp>
+#include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/detail/fixed_size_free_list.hpp>
 #include <rmm/mr/device/detail/stream_ordered_memory_resource.hpp>
@@ -129,10 +130,10 @@ class fixed_size_memory_resource
   /**
    * @brief Get the (fixed) size of allocations supported by this memory resource
    *
-   * @return size_t The (fixed) maximum size of a single allocation supported by this memory
+   * @return std::size_t The (fixed) maximum size of a single allocation supported by this memory
    * resource
    */
-  size_t get_maximum_allocation_size() const { return get_block_size(); }
+  std::size_t get_maximum_allocation_size() const { return get_block_size(); }
 
   /**
    * @brief Allocate a block from upstream to supply the suballocation pool.
@@ -144,7 +145,7 @@ class fixed_size_memory_resource
    * @param stream The stream on which the memory is to be used.
    * @return block_type The allocated block
    */
-  block_type expand_pool(size_t size, free_list& blocks, cuda_stream_view stream)
+  block_type expand_pool(std::size_t size, free_list& blocks, cuda_stream_view stream)
   {
     blocks.insert(std::move(blocks_from_upstream(stream)));
     return blocks.get_block(size);
@@ -181,9 +182,9 @@ class fixed_size_memory_resource
    * @return A pair comprising the allocated pointer and any unallocated remainder of the input
    * block.
    */
-  split_block allocate_from_block(block_type const& b, size_t size)
+  split_block allocate_from_block(block_type const& b, std::size_t size)
   {
-    return split_block{b.pointer(), block_type{nullptr}};
+    return {b, block_type{nullptr}};
   }
 
   /**
@@ -195,7 +196,7 @@ class fixed_size_memory_resource
    * @return The (now freed) block associated with `p`. The caller is expected to return the block
    * to the pool.
    */
-  block_type free_block(void* p, size_t size) noexcept
+  block_type free_block(void* p, std::size_t size) noexcept
   {
     // Deallocating a fixed-size block just inserts it in the free list, which is
     // handled by the parent class

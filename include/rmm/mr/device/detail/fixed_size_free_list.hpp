@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 
 #include <rmm/mr/device/detail/free_list.hpp>
 
+#include <cstddef>
 #include <iostream>
 
 namespace rmm {
@@ -27,6 +28,11 @@ namespace detail {
 struct fixed_size_free_list : free_list<block_base> {
   fixed_size_free_list()  = default;
   ~fixed_size_free_list() = default;
+
+  fixed_size_free_list(fixed_size_free_list const&) = delete;
+  fixed_size_free_list& operator=(fixed_size_free_list const&) = delete;
+  fixed_size_free_list(fixed_size_free_list&&)                 = delete;
+  fixed_size_free_list& operator=(fixed_size_free_list&&) = delete;
 
   /**
    * @brief Construct a new free_list from range defined by input iterators
@@ -63,7 +69,7 @@ struct fixed_size_free_list : free_list<block_base> {
    * @param size The size in bytes of the desired block (unused).
    * @return block A block large enough to store `size` bytes.
    */
-  block_type get_block(size_t size)
+  block_type get_block(std::size_t size)
   {
     if (is_empty())
       return block_type{};

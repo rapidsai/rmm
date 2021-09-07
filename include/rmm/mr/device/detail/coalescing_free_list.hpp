@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstddef>
 #include <iostream>
 #include <list>
 
@@ -35,7 +36,10 @@ namespace detail {
  */
 struct block : public block_base {
   block() = default;
-  block(char* ptr, size_t size, bool is_head) : block_base{ptr}, size_bytes{size}, head{is_head} {}
+  block(char* ptr, std::size_t size, bool is_head)
+    : block_base{ptr}, size_bytes{size}, head{is_head}
+  {
+  }
 
   /**
    * @brief Returns the pointer to the memory represented by this block.
@@ -49,7 +53,7 @@ struct block : public block_base {
    *
    * @return the size in bytes of the memory represented by this block.
    */
-  inline size_t size() const { return size_bytes; }
+  inline std::size_t size() const { return size_bytes; }
 
   /**
    * @brief Returns whether this block is the start of an allocation from an upstream allocator.
@@ -104,7 +108,7 @@ struct block : public block_base {
    * @param sz The size in bytes to check for fit.
    * @return true if this block is at least `sz` bytes
    */
-  inline bool fits(size_t sz) const noexcept { return size() >= sz; }
+  inline bool fits(std::size_t sz) const noexcept { return size() >= sz; }
 
   /**
    * @brief Is this block a better fit for `sz` bytes than block `b`?
@@ -114,7 +118,7 @@ struct block : public block_base {
    * @return true If this block is a tighter fit for `sz` bytes than block `b`.
    * @return false If this block does not fit `sz` bytes or `b` is a tighter fit.
    */
-  inline bool is_better_fit(size_t sz, block const& b) const noexcept
+  inline bool is_better_fit(std::size_t sz, block const& b) const noexcept
   {
     return fits(sz) && (size() < b.size() || b.size() < sz);
   }
@@ -128,8 +132,8 @@ struct block : public block_base {
   }
 
  private:
-  size_t size_bytes{};  ///< Size in bytes
-  bool head{};          ///< Indicates whether ptr was allocated from the heap
+  std::size_t size_bytes{};  ///< Size in bytes
+  bool head{};               ///< Indicates whether ptr was allocated from the heap
 };
 
 /// Print block on an ostream
@@ -164,6 +168,11 @@ struct compare_blocks {
 struct coalescing_free_list : free_list<block> {
   coalescing_free_list()  = default;
   ~coalescing_free_list() = default;
+
+  coalescing_free_list(coalescing_free_list const&) = delete;
+  coalescing_free_list& operator=(coalescing_free_list const&) = delete;
+  coalescing_free_list(coalescing_free_list&&)                 = delete;
+  coalescing_free_list& operator=(coalescing_free_list&&) = delete;
 
   /**
    * @brief Inserts a block into the `free_list` in the correct order, coalescing it with the
@@ -222,7 +231,7 @@ struct coalescing_free_list : free_list<block> {
    * @param size The size in bytes of the desired block.
    * @return block A block large enough to store `size` bytes.
    */
-  block_type get_block(size_t size)
+  block_type get_block(std::size_t size)
   {
     // find best fit block
     auto const iter =

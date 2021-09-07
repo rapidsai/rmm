@@ -27,6 +27,7 @@
 #include <benchmark/benchmark.h>
 
 #include <array>
+#include <cstddef>
 #include <cstdlib>
 #include <functional>
 #include <random>
@@ -61,8 +62,8 @@ allocation remove_at(allocation_vector& allocs, std::size_t index)
 template <typename SizeDistribution>
 void random_allocation_free(rmm::mr::device_memory_resource& mr,
                             SizeDistribution size_distribution,
-                            size_t num_allocations,
-                            size_t max_usage,  // in MiB
+                            std::size_t num_allocations,
+                            std::size_t max_usage,  // in MiB
                             rmm::cuda_stream_view stream = {})
 {
   std::default_random_engine generator;
@@ -77,11 +78,11 @@ void random_allocation_free(rmm::mr::device_memory_resource& mr,
   std::size_t allocation_count{0};
 
   allocation_vector allocations{};
-  size_t allocation_size{0};
+  std::size_t allocation_size{0};
 
   for (std::size_t i = 0; i < num_allocations * 2; ++i) {
     bool do_alloc = true;
-    size_t size   = static_cast<size_t>(size_distribution(generator));
+    auto size     = static_cast<std::size_t>(size_distribution(generator));
 
     if (active_allocations > 0) {
       int chance = op_distribution(generator);
@@ -113,7 +114,7 @@ void random_allocation_free(rmm::mr::device_memory_resource& mr,
 #endif
     } else {  // dealloc, or alloc failed
       if (active_allocations > 0) {
-        size_t index = index_distribution(generator) % active_allocations;
+        std::size_t index = index_distribution(generator) % active_allocations;
         active_allocations--;
         allocation to_free = remove_at(allocations, index);
         mr.deallocate(to_free.p, to_free.size, stream);
@@ -136,9 +137,9 @@ void random_allocation_free(rmm::mr::device_memory_resource& mr,
 }  // namespace
 
 void uniform_random_allocations(rmm::mr::device_memory_resource& mr,
-                                size_t num_allocations,
-                                size_t max_allocation_size,  // in MiB
-                                size_t max_usage,
+                                std::size_t num_allocations,
+                                std::size_t max_allocation_size,  // in MiB
+                                std::size_t max_usage,
                                 rmm::cuda_stream_view stream = {})
 {
   std::uniform_int_distribution<std::size_t> size_distribution(1, max_allocation_size * size_mb);
@@ -147,10 +148,10 @@ void uniform_random_allocations(rmm::mr::device_memory_resource& mr,
 
 // TODO figure out how to map a normal distribution to integers between 1 and max_allocation_size
 /*void normal_random_allocations(rmm::mr::device_memory_resource& mr,
-                                size_t num_allocations = 1000,
-                                size_t mean_allocation_size = 500, // in MiB
-                                size_t stddev_allocation_size = 500, // in MiB
-                                size_t max_usage = 8 << 20,
+                                std::size_t num_allocations = 1000,
+                                std::size_t mean_allocation_size = 500, // in MiB
+                                std::size_t stddev_allocation_size = 500, // in MiB
+                                std::size_t max_usage = 8 << 20,
                                 cuda_stream_view stream) {
   std::normal_distribution<std::size_t> size_distribution(, max_allocation_size * size_mb);
 }*/
@@ -181,14 +182,14 @@ inline auto make_binning()
 
 using MRFactoryFunc = std::function<std::shared_ptr<rmm::mr::device_memory_resource>()>;
 
-constexpr size_t max_usage = 16000;
+constexpr std::size_t max_usage = 16000;
 
 static void BM_RandomAllocations(benchmark::State& state, MRFactoryFunc factory)
 {
   auto mr = factory();
 
-  size_t num_allocations = state.range(0);
-  size_t max_size        = state.range(1);
+  std::size_t num_allocations = state.range(0);
+  std::size_t max_size        = state.range(1);
 
   try {
     for (auto _ : state)
@@ -252,8 +253,8 @@ void declare_benchmark(std::string name)
 }
 
 static void profile_random_allocations(MRFactoryFunc factory,
-                                       size_t num_allocations,
-                                       size_t max_size)
+                                       std::size_t num_allocations,
+                                       std::size_t max_size)
 {
   auto mr = factory();
 
