@@ -28,8 +28,7 @@
 #include <thread>
 #include <vector>
 
-namespace rmm {
-namespace test {
+namespace rmm::test {
 namespace {
 
 struct mr_test_mt : public mr_test {
@@ -49,11 +48,13 @@ void spawn_n(std::size_t num_threads, Task task, Arguments&&... args)
 {
   std::vector<std::thread> threads;
   threads.reserve(num_threads);
-  for (std::size_t i = 0; i < num_threads; ++i)
+  for (std::size_t i = 0; i < num_threads; ++i) {
     threads.emplace_back(std::thread(task, std::forward<Arguments>(args)...));
+  }
 
-  for (auto& t : threads)
-    t.join();
+  for (auto& thread : threads) {
+    thread.join();
+  }
 }
 
 template <typename Task, typename... Arguments>
@@ -102,7 +103,7 @@ TEST_P(mr_test_mt, SetCurrentDeviceResource_mt)
 
 TEST_P(mr_test_mt, SetCurrentDeviceResourcePerThread_mt)
 {
-  int num_devices;
+  int num_devices{};
   RMM_CUDA_TRY(cudaGetDeviceCount(&num_devices));
 
   std::vector<std::thread> threads;
@@ -111,7 +112,7 @@ TEST_P(mr_test_mt, SetCurrentDeviceResourcePerThread_mt)
     threads.emplace_back(std::thread{
       [mr = this->mr.get()](auto dev_id) {
         RMM_CUDA_TRY(cudaSetDevice(dev_id));
-        rmm::mr::device_memory_resource* old;
+        rmm::mr::device_memory_resource* old{};
         EXPECT_NO_THROW(old = rmm::mr::set_current_device_resource(mr));
         EXPECT_NE(nullptr, old);
         // initial resource for this device should be CUDA mr
@@ -129,8 +130,9 @@ TEST_P(mr_test_mt, SetCurrentDeviceResourcePerThread_mt)
       i});
   }
 
-  for (auto& t : threads)
-    t.join();
+  for (auto& thread : threads) {
+    thread.join();
+  }
 }
 
 TEST_P(mr_test_mt, AllocateDefaultStream)
@@ -145,22 +147,31 @@ TEST_P(mr_test_mt, AllocateOnStream)
 
 TEST_P(mr_test_mt, RandomAllocationsDefaultStream)
 {
-  spawn(test_random_allocations, this->mr.get(), 100, 5_MiB, rmm::cuda_stream_view{});
+  spawn(test_random_allocations,
+        this->mr.get(),
+        default_num_allocations,
+        default_max_size,
+        rmm::cuda_stream_view{});
 }
 
 TEST_P(mr_test_mt, RandomAllocationsStream)
 {
-  spawn(test_random_allocations, this->mr.get(), 100, 5_MiB, this->stream.view());
+  spawn(test_random_allocations,
+        this->mr.get(),
+        default_num_allocations,
+        default_max_size,
+        this->stream.view());
 }
 
 TEST_P(mr_test_mt, MixedRandomAllocationFreeDefaultStream)
 {
-  spawn(test_mixed_random_allocation_free, this->mr.get(), 5_MiB, rmm::cuda_stream_view{});
+  spawn(
+    test_mixed_random_allocation_free, this->mr.get(), default_max_size, rmm::cuda_stream_view{});
 }
 
 TEST_P(mr_test_mt, MixedRandomAllocationFreeStream)
 {
-  spawn(test_mixed_random_allocation_free, this->mr.get(), 5_MiB, this->stream.view());
+  spawn(test_mixed_random_allocation_free, this->mr.get(), default_max_size, this->stream.view());
 }
 
 void allocate_loop(rmm::mr::device_memory_resource* mr,
@@ -193,14 +204,11 @@ void deallocate_loop(rmm::mr::device_memory_resource* mr,
 {
   for (std::size_t i = 0; i < num_allocations;) {
     std::lock_guard<std::mutex> lock(mtx);
-    if (allocations.empty())
-      continue;
-    else {
-      i++;
-      allocation alloc = allocations.front();
-      allocations.pop_front();
-      EXPECT_NO_THROW(mr->deallocate(alloc.p, alloc.size, stream));
-    }
+    if (allocations.empty()) { continue; }
+    i++;
+    allocation alloc = allocations.front();
+    allocations.pop_front();
+    EXPECT_NO_THROW(mr->deallocate(alloc.ptr, alloc.size, stream));
   }
 }
 
@@ -250,5 +258,4 @@ TEST_P(mr_test_mt, AllocFreeDifferentThreadsDifferentStream)
 }
 
 }  // namespace
-}  // namespace test
-}  // namespace rmm
+}  // namespace rmm::test
