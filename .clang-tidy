@@ -54,4 +54,6 @@ CheckOptions:
     value:           'mr|os'
   - key:             readability-identifier-length.IgnoredVariableNames
     value:           'mr|_'
+  - key:             readability-function-cognitive-complexity.IgnoreMacros
+    value:           '1'
 ...
