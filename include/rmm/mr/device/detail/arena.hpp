@@ -84,6 +84,7 @@ class block {
    */
   [[nodiscard]] bool is_contiguous_before(block const& blk) const
   {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     return pointer_ + size_ == blk.pointer_;
   }
 
@@ -104,6 +105,7 @@ class block {
   [[nodiscard]] std::pair<block, block> split(std::size_t size) const
   {
     RMM_LOGGING_ASSERT(size_ >= size);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     if (size_ > size) { return {{pointer_, size}, {pointer_ + size, size_ - size}}; }
     return {*this, {}};
   }
