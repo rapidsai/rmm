@@ -220,7 +220,7 @@ struct replay_benchmark {
           set_allocation(event.pointer, allocation{ptr, event.size});
         } else {
           auto alloc = remove_allocation(event.pointer);
-          mr_->deallocate(alloc.p, event.size);
+          mr_->deallocate(alloc.ptr, event.size);
         }
 
         event_index++;
