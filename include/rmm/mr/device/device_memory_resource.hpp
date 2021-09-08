@@ -85,8 +85,8 @@ class device_memory_resource {
   virtual ~device_memory_resource()                     = default;
   device_memory_resource(device_memory_resource const&) = default;
   device_memory_resource& operator=(device_memory_resource const&) = default;
-  device_memory_resource(device_memory_resource&&)                 = default;
-  device_memory_resource& operator=(device_memory_resource&&) = default;
+  device_memory_resource(device_memory_resource&&) noexcept        = default;
+  device_memory_resource& operator=(device_memory_resource&&) noexcept = default;
 
   /**
    * @brief Allocates memory of size at least \p bytes.
