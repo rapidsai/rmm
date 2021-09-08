@@ -109,14 +109,20 @@ TEST_P(mr_test, MixedRandomAllocationFreeStream)
 TEST_P(mr_test, GetMemInfo)
 {
   if (this->mr->supports_get_mem_info()) {
-    this->mr->get_mem_info(rmm::cuda_stream_view{});
     const auto allocation_size{16 * 256};
-    void* ptr{nullptr};
-    ptr = this->mr->allocate(allocation_size);
     {
       auto const [free, total] = this->mr->get_mem_info(rmm::cuda_stream_view{});
       EXPECT_TRUE(free >= allocation_size);
     }
+
+    void* ptr{nullptr};
+    ptr = this->mr->allocate(allocation_size);
+
+    {
+      auto const [free, total] = this->mr->get_mem_info(rmm::cuda_stream_view{});
+      EXPECT_TRUE(free >= allocation_size);
+    }
+
     this->mr->deallocate(ptr, allocation_size);
   }
 }
