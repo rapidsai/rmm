@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,23 @@
  * limitations under the License.
  */
 
+#include "../../byte_literals.hpp"
+
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/mr/device/statistics_resource_adaptor.hpp>
-#include "mr_test.hpp"
 
 #include <gtest/gtest.h>
 
-namespace rmm {
-namespace test {
+namespace rmm::test {
 namespace {
 
 using statistics_adaptor = rmm::mr::statistics_resource_adaptor<rmm::mr::device_memory_resource>;
+
+constexpr auto num_allocations{10};
+constexpr auto num_more_allocations{5};
+constexpr auto ten_MiB{10_MiB};
 
 TEST(StatisticsTest, ThrowOnNullUpstream)
 {
@@ -51,11 +55,13 @@ TEST(StatisticsTest, AllFreed)
 {
   statistics_adaptor mr{rmm::mr::get_current_device_resource()};
   std::vector<void*> allocations;
-  for (int i = 0; i < 10; ++i) {
-    allocations.push_back(mr.allocate(10_MiB));
+
+  allocations.reserve(num_allocations);
+  for (int i = 0; i < num_allocations; ++i) {
+    allocations.push_back(mr.allocate(ten_MiB));
   }
-  for (auto p : allocations) {
-    mr.deallocate(p, 10_MiB);
+  for (auto* alloc : allocations) {
+    mr.deallocate(alloc, ten_MiB);
   }
 
   // Counter values should be 0
@@ -67,12 +73,13 @@ TEST(StatisticsTest, PeakAllocations)
 {
   statistics_adaptor mr{rmm::mr::get_current_device_resource()};
   std::vector<void*> allocations;
-  for (std::size_t i = 0; i < 10; ++i) {
-    allocations.push_back(mr.allocate(10_MiB));
+
+  for (std::size_t i = 0; i < num_allocations; ++i) {
+    allocations.push_back(mr.allocate(ten_MiB));
   }
   // Delete every other allocation
   for (auto&& it = allocations.begin(); it != allocations.end(); ++it) {
-    mr.deallocate(*it, 10_MiB);
+    mr.deallocate(*it, ten_MiB);
     it = allocations.erase(it);
   }
 
@@ -92,13 +99,13 @@ TEST(StatisticsTest, PeakAllocations)
   EXPECT_EQ(current_alloc_counts.total, 10);
 
   // Add 10 more to increase the peak
-  for (std::size_t i = 0; i < 10; ++i) {
-    allocations.push_back(mr.allocate(10_MiB));
+  for (std::size_t i = 0; i < num_allocations; ++i) {
+    allocations.push_back(mr.allocate(ten_MiB));
   }
 
   // Deallocate all remaining
-  for (std::size_t i = 0; i < allocations.size(); ++i) {
-    mr.deallocate(allocations[i], 10_MiB);
+  for (auto& allocation : allocations) {
+    mr.deallocate(allocation, ten_MiB);
   }
   allocations.clear();
 
@@ -124,9 +131,9 @@ TEST(StatisticsTest, MultiTracking)
   rmm::mr::set_current_device_resource(&mr);
 
   std::vector<std::shared_ptr<rmm::device_buffer>> allocations;
-  for (std::size_t i = 0; i < 10; ++i) {
+  for (std::size_t i = 0; i < num_allocations; ++i) {
     allocations.emplace_back(
-      std::make_shared<rmm::device_buffer>(10_MiB, rmm::cuda_stream_default));
+      std::make_shared<rmm::device_buffer>(ten_MiB, rmm::cuda_stream_default));
   }
 
   EXPECT_EQ(mr.get_allocations_counter().value, 10);
@@ -134,9 +141,9 @@ TEST(StatisticsTest, MultiTracking)
   statistics_adaptor inner_mr{rmm::mr::get_current_device_resource()};
   rmm::mr::set_current_device_resource(&inner_mr);
 
-  for (std::size_t i = 0; i < 5; ++i) {
+  for (std::size_t i = 0; i < num_more_allocations; ++i) {
     allocations.emplace_back(
-      std::make_shared<rmm::device_buffer>(10_MiB, rmm::cuda_stream_default));
+      std::make_shared<rmm::device_buffer>(ten_MiB, rmm::cuda_stream_default));
   }
 
   // Check the allocated bytes for both MRs
@@ -174,8 +181,8 @@ TEST(StatisticsTest, NegativeInnerTracking)
   // memory pointer
   statistics_adaptor mr{rmm::mr::get_current_device_resource()};
   std::vector<void*> allocations;
-  for (std::size_t i = 0; i < 10; ++i) {
-    allocations.push_back(mr.allocate(10_MiB));
+  for (std::size_t i = 0; i < num_allocations; ++i) {
+    allocations.push_back(mr.allocate(ten_MiB));
   }
 
   EXPECT_EQ(mr.get_allocations_counter().value, 10);
@@ -183,8 +190,8 @@ TEST(StatisticsTest, NegativeInnerTracking)
   statistics_adaptor inner_mr{&mr};
 
   // Add more allocations
-  for (std::size_t i = 0; i < 5; ++i) {
-    allocations.push_back(inner_mr.allocate(10_MiB));
+  for (std::size_t i = 0; i < num_more_allocations; ++i) {
+    allocations.push_back(inner_mr.allocate(ten_MiB));
   }
 
   // Check the outstanding allocations
@@ -199,8 +206,8 @@ TEST(StatisticsTest, NegativeInnerTracking)
   EXPECT_EQ(inner_mr.get_allocations_counter().value, 5);
 
   // Deallocate all allocations using the inner_mr
-  for (std::size_t i = 0; i < allocations.size(); ++i) {
-    inner_mr.deallocate(allocations[i], 10_MiB);
+  for (auto& allocation : allocations) {
+    inner_mr.deallocate(allocation, ten_MiB);
   }
   allocations.clear();
 
@@ -227,5 +234,4 @@ TEST(StatisticsTest, NegativeInnerTracking)
 }
 
 }  // namespace
-}  // namespace test
-}  // namespace rmm
+}  // namespace rmm::test

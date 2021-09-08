@@ -100,13 +100,14 @@ inline void test_allocate(rmm::mr::device_memory_resource* mr,
 inline void concurrent_allocations_are_different(rmm::mr::device_memory_resource* mr,
                                                  cuda_stream_view stream)
 {
-  void* p1 = mr->allocate(8_B, stream);
-  void* p2 = mr->allocate(8_B, stream);
+  const auto size{8_B};
+  void* ptr1 = mr->allocate(size, stream);
+  void* ptr2 = mr->allocate(size, stream);
 
-  EXPECT_NE(p1, p2);
+  EXPECT_NE(ptr1, ptr2);
 
-  mr->deallocate(p1, 8_B, stream);
-  mr->deallocate(p2, 8_B, stream);
+  mr->deallocate(ptr1, size, stream);
+  mr->deallocate(ptr2, size, stream);
 }
 
 inline void test_various_allocations(rmm::mr::device_memory_resource* mr, cuda_stream_view stream)

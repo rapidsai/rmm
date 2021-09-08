@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,8 @@ TEST_F(allocator_test, custom_resource)
   EXPECT_EQ(allocator.resource(), &mr);
 }
 
-void test_conversion(rmm::mr::polymorphic_allocator<int>) {}
+void test_conversion(rmm::mr::polymorphic_allocator<int> /*unused*/) {}
+
 TEST_F(allocator_test, implicit_conversion)
 {
   rmm::mr::cuda_memory_resource mr;
@@ -106,9 +107,10 @@ TEST_F(allocator_test, rebind)
 TEST_F(allocator_test, allocate_deallocate)
 {
   rmm::mr::polymorphic_allocator<int> allocator{};
-  auto p = allocator.allocate(1000, stream);
-  EXPECT_NE(p, nullptr);
-  EXPECT_NO_THROW(allocator.deallocate(p, 1000, stream));
+  const auto size{1000};
+  auto* ptr = allocator.allocate(size, stream);
+  EXPECT_NE(ptr, nullptr);
+  EXPECT_NO_THROW(allocator.deallocate(ptr, size, stream));
 }
 
 }  // namespace
