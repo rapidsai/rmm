@@ -22,8 +22,7 @@
 #include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/device_malloc_allocator.h>
 
-namespace rmm {
-namespace mr {
+namespace rmm::mr {
 /**
  * @brief An `allocator` compatible with Thrust containers and algorithms using
  * a `device_memory_resource` for memory (de)allocation.
@@ -91,39 +90,38 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
   /**
    * @brief Allocate objects of type `T`
    *
-   * @param n  The number of elements of type `T` to allocate
+   * @param num  The number of elements of type `T` to allocate
    * @return pointer Pointer to the newly allocated storage
    */
-  pointer allocate(size_type n)
+  pointer allocate(size_type num)
   {
-    return thrust::device_pointer_cast(static_cast<T*>(_mr->allocate(n * sizeof(T), _stream)));
+    return thrust::device_pointer_cast(static_cast<T*>(_mr->allocate(num * sizeof(T), _stream)));
   }
 
   /**
    * @brief Deallocates objects of type `T`
    *
-   * @param p Pointer returned by a previous call to `allocate`
-   * @param n number of elements, *must* be equal to the argument passed to the
+   * @param ptr Pointer returned by a previous call to `allocate`
+   * @param num number of elements, *must* be equal to the argument passed to the
    * prior `allocate` call that produced `p`
    */
-  void deallocate(pointer p, size_type n)
+  void deallocate(pointer ptr, size_type num)
   {
-    return _mr->deallocate(thrust::raw_pointer_cast(p), n * sizeof(T), _stream);
+    return _mr->deallocate(thrust::raw_pointer_cast(ptr), num * sizeof(T), _stream);
   }
 
   /**
    * @brief Returns the device memory resource used by this allocator.
    */
-  device_memory_resource* resource() const noexcept { return _mr; }
+  [[nodiscard]] device_memory_resource* resource() const noexcept { return _mr; }
 
   /**
    * @brief Returns the stream used by this allocator.
    */
-  cuda_stream_view stream() const noexcept { return _stream; }
+  [[nodiscard]] cuda_stream_view stream() const noexcept { return _stream; }
 
  private:
   cuda_stream_view _stream{};
   device_memory_resource* _mr{rmm::mr::get_current_device_resource()};
 };
-}  // namespace mr
-}  // namespace rmm
+}  // namespace rmm::mr
