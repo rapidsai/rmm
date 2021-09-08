@@ -364,13 +364,16 @@ class global_arena final {
     logger->info("  Current size: {}", rmm::detail::bytes{current_size_});
 
     logger->info("  # free blocks: {}", free_blocks_.size());
-    std::size_t total_free{};
-    for (auto const& b : free_blocks_) {
-      total_free += b.size();
+    if (!free_blocks_.empty()) {
+      std::size_t total_free{};
+      for (auto const& b : free_blocks_) {
+        total_free += b.size();
+      }
+      logger->info("  Total size of free blocks: {}", rmm::detail::bytes{total_free});
+      auto const m =
+        *std::max_element(free_blocks_.begin(), free_blocks_.end(), block_size_compare);
+      logger->info("  Size of largest free block: {}", rmm::detail::bytes{m.size()});
     }
-    logger->info("  Total size of free blocks: {}", rmm::detail::bytes{total_free});
-    auto const m = *std::max_element(free_blocks_.begin(), free_blocks_.end(), block_size_compare);
-    logger->info("  Size of largest free block: {}", rmm::detail::bytes{m.size()});
 
     logger->info("  # upstream blocks={}", upstream_blocks_.size());
     std::size_t total_upstream{};
@@ -522,13 +525,16 @@ class arena {
   {
     lock_guard lock(mtx_);
     logger->info("    # free blocks: {}", free_blocks_.size());
-    std::size_t total_free{};
-    for (auto const& b : free_blocks_) {
-      total_free += b.size();
+    if (!free_blocks_.empty()) {
+      std::size_t total_free{};
+      for (auto const& b : free_blocks_) {
+        total_free += b.size();
+      }
+      logger->info("    Total size of free blocks: {}", rmm::detail::bytes{total_free});
+      auto const m =
+        *std::max_element(free_blocks_.begin(), free_blocks_.end(), block_size_compare);
+      logger->info("    Size of largest free block: {}", rmm::detail::bytes{m.size()});
     }
-    logger->info("    Total size of free blocks: {}", rmm::detail::bytes{total_free});
-    auto const m = *std::max_element(free_blocks_.begin(), free_blocks_.end(), block_size_compare);
-    logger->info("    Size of largest free block: {}", rmm::detail::bytes{m.size()});
   }
 
  private:
