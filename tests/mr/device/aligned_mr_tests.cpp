@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/aligned_resource_adaptor.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
@@ -39,6 +40,12 @@ class mock_resource : public rmm::mr::device_memory_resource {
 
 using aligned_mock = rmm::mr::aligned_resource_adaptor<mock_resource>;
 using aligned_real = rmm::mr::aligned_resource_adaptor<rmm::mr::device_memory_resource>;
+
+void* int_to_address(std::size_t val)
+{
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast, performance-no-int-to-ptr)
+  return reinterpret_cast<void*>(val);
+}
 
 TEST(AlignedTest, ThrowOnNullUpstream)
 {
@@ -87,8 +94,8 @@ TEST(AlignedTest, DefaultAllocationAlignmentPassthrough)
   aligned_mock mr{&mock};
 
   cuda_stream_view stream;
-  auto const unaligned_address{123};
-  void* const pointer = reinterpret_cast<void*>(unaligned_address);
+  void* const pointer = int_to_address(123);
+
   // device_memory_resource aligns to 8.
   {
     auto const size{8};
@@ -111,8 +118,7 @@ TEST(AlignedTest, BelowAlignmentThresholdPassthrough)
   aligned_mock mr{&mock, alignment, threshold};
 
   cuda_stream_view stream;
-  auto const unaligned_address1{123};
-  void* const pointer = reinterpret_cast<void*>(unaligned_address1);
+  void* const pointer = int_to_address(123);
   // device_memory_resource aligns to 8.
   {
     auto const size{8};
@@ -127,9 +133,8 @@ TEST(AlignedTest, BelowAlignmentThresholdPassthrough)
   }
 
   {
-    auto const unaligned_address2{456};
     auto const size{65528};
-    void* const pointer1 = reinterpret_cast<void*>(unaligned_address2);
+    void* const pointer1 = int_to_address(456);
     EXPECT_CALL(mock, do_allocate(size, stream)).WillOnce(Return(pointer1));
     EXPECT_CALL(mock, do_deallocate(pointer1, size, stream)).Times(1);
     EXPECT_EQ(mr.allocate(size, stream), pointer1);
@@ -145,8 +150,7 @@ TEST(AlignedTest, UpstreamAddressAlreadyAligned)
   aligned_mock mr{&mock, alignment, threshold};
 
   cuda_stream_view stream;
-  auto const aligned_address{4096};
-  void* const pointer = reinterpret_cast<void*>(aligned_address);
+  void* const pointer = int_to_address(4096);
 
   {
     auto const size{69376};
@@ -170,16 +174,14 @@ TEST(AlignedTest, AlignUpstreamAddress)
 
   cuda_stream_view stream;
   {
-    auto const address{256};
-    void* const pointer = reinterpret_cast<void*>(address);
+    void* const pointer = int_to_address(256);
     auto const size{69376};
     EXPECT_CALL(mock, do_allocate(size, stream)).WillOnce(Return(pointer));
     EXPECT_CALL(mock, do_deallocate(pointer, size, stream)).Times(1);
   }
 
   {
-    auto const address{4096};
-    void* const expected_pointer = reinterpret_cast<void*>(address);
+    void* const expected_pointer = int_to_address(4096);
     auto const size{65536};
     EXPECT_EQ(mr.allocate(size, stream), expected_pointer);
     mr.deallocate(expected_pointer, size, stream);
@@ -196,12 +198,9 @@ TEST(AlignedTest, AlignMultiple)
   cuda_stream_view stream;
 
   {
-    auto const address1{256};
-    auto const address2{131584};
-    auto const address3{263168};
-    void* const pointer1 = reinterpret_cast<void*>(address1);
-    void* const pointer2 = reinterpret_cast<void*>(address2);
-    void* const pointer3 = reinterpret_cast<void*>(address3);
+    void* const pointer1 = int_to_address(256);
+    void* const pointer2 = int_to_address(131584);
+    void* const pointer3 = int_to_address(263168);
     auto const size1{69376};
     auto const size2{77568};
     auto const size3{81664};
@@ -214,12 +213,9 @@ TEST(AlignedTest, AlignMultiple)
   }
 
   {
-    auto const expected_address1{4096};
-    auto const expected_address2{135168};
-    auto const expected_address3{266240};
-    void* const expected_pointer1 = reinterpret_cast<void*>(expected_address1);
-    void* const expected_pointer2 = reinterpret_cast<void*>(expected_address2);
-    void* const expected_pointer3 = reinterpret_cast<void*>(expected_address3);
+    void* const expected_pointer1 = int_to_address(4096);
+    void* const expected_pointer2 = int_to_address(135168);
+    void* const expected_pointer3 = int_to_address(266240);
     auto const size1{65536};
     auto const size2{73728};
     auto const size3{77800};
@@ -237,9 +233,8 @@ TEST(AlignedTest, AlignRealPointer)
   auto const alignment{4096};
   auto const threshold{65536};
   aligned_real mr{rmm::mr::get_current_device_resource(), alignment, threshold};
-  void* alloc        = mr.allocate(threshold);
-  auto const address = reinterpret_cast<std::size_t>(alloc);
-  EXPECT_TRUE(address % alignment == 0);
+  void* alloc = mr.allocate(threshold);
+  EXPECT_TRUE(rmm::detail::is_pointer_aligned(alloc, alignment));
   mr.deallocate(alloc, threshold);
 }
 
