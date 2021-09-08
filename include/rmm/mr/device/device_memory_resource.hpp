@@ -179,7 +179,7 @@ class device_memory_resource {
 
  private:
   // All allocations are padded to a multiple of allocation_size_alignment bytes.
-  static constexpr auto allocation_size_alignment = rmm::detail::alignment_type{8};
+  static constexpr auto allocation_size_alignment = std::size_t{8};
 
   /**
    * @brief Allocates memory of size at least \p bytes.

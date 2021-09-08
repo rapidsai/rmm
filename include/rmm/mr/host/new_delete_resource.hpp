@@ -22,8 +22,7 @@
 #include <cstddef>
 #include <utility>
 
-namespace rmm {
-namespace mr {
+namespace rmm::mr {
 
 /**---------------------------------------------------------------------------*
  * @brief A `host_memory_resource` that uses the global `operator new` and
@@ -32,7 +31,7 @@ namespace mr {
 class new_delete_resource final : public host_memory_resource {
  public:
   new_delete_resource()                           = default;
-  ~new_delete_resource()                          = default;
+  ~new_delete_resource() override                 = default;
   new_delete_resource(new_delete_resource const&) = default;
   new_delete_resource(new_delete_resource&&)      = default;
   new_delete_resource& operator=(new_delete_resource const&) = default;
@@ -56,12 +55,11 @@ class new_delete_resource final : public host_memory_resource {
                     std::size_t alignment = detail::RMM_DEFAULT_HOST_ALIGNMENT) override
   {
     // If the requested alignment isn't supported, use default
-    auto align = (detail::is_supported_alignment(rmm::detail::alignment_type{alignment}))
-                   ? rmm::detail::alignment_type{alignment}
-                   : detail::RMM_DEFAULT_HOST_ALIGNMENT;
+    alignment =
+      (detail::is_supported_alignment(alignment)) ? alignment : detail::RMM_DEFAULT_HOST_ALIGNMENT;
 
     return detail::aligned_allocate(
-      bytes, align, [](std::size_t size) { return ::operator new(size); });
+      bytes, alignment, [](std::size_t size) { return ::operator new(size); });
   }
 
   /**---------------------------------------------------------------------------*
@@ -82,12 +80,11 @@ class new_delete_resource final : public host_memory_resource {
    *`p`.
    * @param stream Stream on which to perform deallocation
    *---------------------------------------------------------------------------**/
-  void do_deallocate(void* p,
+  void do_deallocate(void* ptr,
                      std::size_t bytes,
                      std::size_t alignment = detail::RMM_DEFAULT_HOST_ALIGNMENT) override
   {
-    detail::aligned_deallocate(p, bytes, alignment, [](void* p) { ::operator delete(p); });
+    detail::aligned_deallocate(ptr, bytes, alignment, [](void* ptr) { ::operator delete(ptr); });
   }
 };
-}  // namespace mr
-}  // namespace rmm
+}  // namespace rmm::mr

@@ -56,4 +56,6 @@ CheckOptions:
     value:           'mr|_'
   - key:             readability-function-cognitive-complexity.IgnoreMacros
     value:           '1'
+  - key:             bugprone-easily-swappable-parameters.IgnoredParameterNames
+    value:           'alignment'
 ...

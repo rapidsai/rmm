@@ -24,20 +24,17 @@
 
 namespace rmm::detail {
 
-// enum alignment_type : std::size_t {};
-using alignment_type = std::size_t;
-
 /**
  * @brief Default alignment used for host memory allocated by RMM.
  *
  */
-static constexpr alignment_type RMM_DEFAULT_HOST_ALIGNMENT{alignof(std::max_align_t)};
+static constexpr std::size_t RMM_DEFAULT_HOST_ALIGNMENT{alignof(std::max_align_t)};
 
 /**
  * @brief Default alignment used for CUDA memory allocation.
  *
  */
-static constexpr alignment_type CUDA_ALLOCATION_ALIGNMENT{256};
+static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
 
 /**
  * @brief Returns whether or not `n` is a power of 2.
@@ -49,7 +46,7 @@ constexpr bool is_pow2(std::size_t value) { return (0 == (value & (value - 1)));
  * @brief Returns whether or not `alignment` is a valid memory alignment.
  *
  */
-constexpr bool is_supported_alignment(alignment_type alignment) { return is_pow2(alignment); }
+constexpr bool is_supported_alignment(std::size_t alignment) { return is_pow2(alignment); }
 
 /**
  * @brief Align up to nearest multiple of specified power of 2
@@ -59,7 +56,7 @@ constexpr bool is_supported_alignment(alignment_type alignment) { return is_pow2
  *
  * @return Return the aligned value, as one would expect
  */
-constexpr std::size_t align_up(std::size_t value, alignment_type alignment) noexcept
+constexpr std::size_t align_up(std::size_t value, std::size_t alignment) noexcept
 {
   assert(is_supported_alignment(alignment));
   return (value + (alignment - 1)) & ~(alignment - 1);
@@ -73,7 +70,7 @@ constexpr std::size_t align_up(std::size_t value, alignment_type alignment) noex
  *
  * @return Return the aligned value, as one would expect
  */
-constexpr std::size_t align_down(std::size_t value, alignment_type alignment) noexcept
+constexpr std::size_t align_down(std::size_t value, std::size_t alignment) noexcept
 {
   assert(is_supported_alignment(alignment));
   return value & ~(alignment - 1);
@@ -87,13 +84,13 @@ constexpr std::size_t align_down(std::size_t value, alignment_type alignment) no
  *
  * @return true if aligned
  */
-constexpr bool is_aligned(std::size_t value, alignment_type alignment) noexcept
+constexpr bool is_aligned(std::size_t value, std::size_t alignment) noexcept
 {
   assert(is_supported_alignment(alignment));
   return value == align_down(value, alignment);
 }
 
-inline bool is_pointer_aligned(void* ptr, alignment_type alignment = CUDA_ALLOCATION_ALIGNMENT)
+inline bool is_pointer_aligned(void* ptr, std::size_t alignment = CUDA_ALLOCATION_ALIGNMENT)
 {
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
   return rmm::detail::is_aligned(reinterpret_cast<ptrdiff_t>(ptr), alignment);
@@ -127,7 +124,7 @@ inline bool is_pointer_aligned(void* ptr, alignment_type alignment = CUDA_ALLOCA
  * `alignment`.
  */
 template <typename Alloc>
-void* aligned_allocate(std::size_t bytes, alignment_type alignment, Alloc alloc)
+void* aligned_allocate(std::size_t bytes, std::size_t alignment, Alloc alloc)
 {
   assert(is_pow2(alignment));
 
@@ -171,7 +168,7 @@ void* aligned_allocate(std::size_t bytes, alignment_type alignment, Alloc alloc)
  */
 template <typename Dealloc>
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-void aligned_deallocate(void* ptr, std::size_t bytes, alignment_type alignment, Dealloc dealloc)
+void aligned_deallocate(void* ptr, std::size_t bytes, std::size_t alignment, Dealloc dealloc)
 {
   (void)alignment;
 
