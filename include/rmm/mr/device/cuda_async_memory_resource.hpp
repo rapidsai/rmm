@@ -40,7 +40,6 @@ namespace rmm::mr {
  */
 class cuda_async_memory_resource final : public device_memory_resource {
  public:
-  enum release_threshold_size_type : std::size_t {};
   /**
    * @brief Constructs a cuda_async_memory_resource with the optionally specified initial pool size
    * and release threshold.
@@ -55,8 +54,9 @@ class cuda_async_memory_resource final : public device_memory_resource {
    * @param release_threshold Optional release threshold size in bytes of the pool. If no value is
    * provided, the release threshold is set to the total amount of memory on the current device.
    */
-  cuda_async_memory_resource(thrust::optional<std::size_t> initial_pool_size                 = {},
-                             thrust::optional<release_threshold_size_type> release_threshold = {})
+  // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+  cuda_async_memory_resource(thrust::optional<std::size_t> initial_pool_size = {},
+                             thrust::optional<std::size_t> release_threshold = {})
   {
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
     // Check if cudaMallocAsync Memory pool supported
@@ -78,7 +78,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
     auto const [free, total] = rmm::detail::available_device_memory();
 
     // Need an l-value to take address to pass to cudaMemPoolSetAttribute
-    uint64_t threshold = release_threshold.value_or(release_threshold_size_type{total});
+    uint64_t threshold = release_threshold.value_or(total);
     RMM_CUDA_TRY(
       cudaMemPoolSetAttribute(cuda_pool_handle_, cudaMemPoolAttrReleaseThreshold, &threshold));
 
