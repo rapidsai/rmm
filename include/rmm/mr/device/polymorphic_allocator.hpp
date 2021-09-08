@@ -24,8 +24,7 @@
 #include <memory>
 #include <type_traits>
 
-namespace rmm {
-namespace mr {
+namespace rmm::mr {
 
 /**
  * @brief A stream ordered Allocator using a `rmm::mr::device_memory_resource` to satisfy
@@ -45,22 +44,12 @@ template <typename T>
 class polymorphic_allocator {
  public:
   using value_type = T;
-
   /**
    * @brief Construct a `polymorphic_allocator` using the return value of
    * `rmm::mr::get_current_device_resource()` as the underlying memory resource.
    *
    */
   polymorphic_allocator() = default;
-
-  /**
-   * @brief Construct a `polymorphic_allocator` using `other.resource()` as the underlying memory
-   * resource.
-   *
-   * @param other The `polymorphic_resource` whose `resource()` will be used as the underlying
-   * resource of the new `polymorphic_allocator`.
-   */
-  polymorphic_allocator(polymorphic_allocator<T> const& other) = default;
 
   /**
    * @brief Construct a `polymorphic_allocator` using the provided memory resource.
@@ -84,30 +73,30 @@ class polymorphic_allocator {
   }
 
   /**
-   * @brief Allocates storage for `n` objects of type `T` using the underlying memory resource.
+   * @brief Allocates storage for `num` objects of type `T` using the underlying memory resource.
    *
-   * @param n The number of objects to allocate storage for
+   * @param num The number of objects to allocate storage for
    * @param stream The stream on which to perform the allocation
    * @return Pointer to the allocated storage
    */
-  value_type* allocate(std::size_t n, cuda_stream_view stream)
+  value_type* allocate(std::size_t num, cuda_stream_view stream)
   {
-    return static_cast<value_type*>(resource()->allocate(n * sizeof(T), stream));
+    return static_cast<value_type*>(resource()->allocate(num * sizeof(T), stream));
   }
 
   /**
-   * @brief Deallocates storage pointed to by `p`.
+   * @brief Deallocates storage pointed to by `ptr`.
    *
-   * `p` must have been allocated from a `rmm::mr::device_memory_resource` `r` that compares equal
+   * `ptr` must have been allocated from a `rmm::mr::device_memory_resource` `r` that compares equal
    * to `*resource()` using `r.allocate(n * sizeof(T))`.
    *
-   * @param p Pointer to memory to deallocate
-   * @param n Number of objects originally allocated
+   * @param ptr Pointer to memory to deallocate
+   * @param num Number of objects originally allocated
    * @param stream Stream on which to perform the deallocation
    */
-  void deallocate(value_type* p, std::size_t n, cuda_stream_view stream)
+  void deallocate(value_type* ptr, std::size_t num, cuda_stream_view stream)
   {
-    resource()->deallocate(p, n * sizeof(T), stream);
+    resource()->deallocate(ptr, num * sizeof(T), stream);
   }
 
   /**
@@ -115,7 +104,7 @@ class polymorphic_allocator {
    *
    * @return Pointer to the underlying resource.
    */
-  device_memory_resource* resource() const noexcept { return mr_; }
+  [[nodiscard]] device_memory_resource* resource() const noexcept { return mr_; }
 
  private:
   device_memory_resource* mr_{
@@ -169,21 +158,13 @@ class stream_allocator_adaptor {
    * @note: The `stream` must not be destroyed before the `stream_allocator_adaptor`, otherwise
    * behavior is undefined.
    *
-   * @param a The stream ordered allocator to use as the underlying allocator
+   * @param allocator The stream ordered allocator to use as the underlying allocator
    * @param stream The stream used with the underlying allocator
    */
-  stream_allocator_adaptor(Allocator const& a, cuda_stream_view stream) : alloc_{a}, stream_{stream}
+  stream_allocator_adaptor(Allocator const& allocator, cuda_stream_view stream)
+    : alloc_{allocator}, stream_{stream}
   {
   }
-
-  /**
-   * @brief Construct a `stream_allocator_adaptor` using `other.underlying_allocator()` and
-   * `other.stream()` as the underlying allocator and stream.
-   *
-   * @param other The other `stream_allocator_adaptor` whose underlying allocator and stream will be
-   * copied
-   */
-  stream_allocator_adaptor(stream_allocator_adaptor<Allocator> const& other) = default;
 
   /**
    * @brief Construct a `stream_allocator_adaptor` using `other.underlying_allocator()` and
@@ -211,30 +192,30 @@ class stream_allocator_adaptor {
   };
 
   /**
-   * @brief Allocates storage for `n` objects of type `T` using the underlying allocator on
+   * @brief Allocates storage for `num` objects of type `T` using the underlying allocator on
    * `stream()`.
    *
-   * @param n The number of objects to allocate storage for
+   * @param num The number of objects to allocate storage for
    * @return Pointer to the allocated storage
    */
-  value_type* allocate(std::size_t n) { return alloc_.allocate(n, stream()); }
+  value_type* allocate(std::size_t num) { return alloc_.allocate(num, stream()); }
 
   /**
-   * @brief Deallocates storage pointed to by `p` using the underlying allocator on `stream()`.
+   * @brief Deallocates storage pointed to by `ptr` using the underlying allocator on `stream()`.
    *
-   * `p` must have been allocated from by an allocator `a` that compares equal to
+   * `ptr` must have been allocated from by an allocator `a` that compares equal to
    * `underlying_allocator()` using `a.allocate(n)`.
    *
-   * @param p Pointer to memory to deallocate
-   * @param n Number of objects originally allocated
+   * @param ptr Pointer to memory to deallocate
+   * @param num Number of objects originally allocated
    */
-  void deallocate(value_type* p, std::size_t n) { alloc_.deallocate(p, n, stream()); }
+  void deallocate(value_type* ptr, std::size_t num) { alloc_.deallocate(ptr, num, stream()); }
 
   /**
    * @brief Returns the underlying stream on which calls to the underlying allocator are made.
    *
    */
-  cuda_stream_view stream() const noexcept { return stream_; }
+  [[nodiscard]] cuda_stream_view stream() const noexcept { return stream_; }
 
   /**
    * @brief Returns the underlying stream-ordered allocator
@@ -266,14 +247,13 @@ bool operator!=(stream_allocator_adaptor<A> const& lhs, stream_allocator_adaptor
  * @tparam Allocator Type of the stream-ordered allocator
  * @param allocator The allocator to use as the underlying allocator of the
  * `stream_allocator_adaptor`
- * @param s The stream on which the `stream_allocator_adaptor` will perform (de)allocations
+ * @param stream The stream on which the `stream_allocator_adaptor` will perform (de)allocations
  * @return A `stream_allocator_adaptor` wrapping `allocator` and `s`
  */
 template <typename Allocator>
-auto make_stream_allocator_adaptor(Allocator const& allocator, cuda_stream_view s)
+auto make_stream_allocator_adaptor(Allocator const& allocator, cuda_stream_view stream)
 {
-  return stream_allocator_adaptor<Allocator>{allocator, s};
+  return stream_allocator_adaptor<Allocator>{allocator, stream};
 }
 
-}  // namespace mr
-}  // namespace rmm
+}  // namespace rmm::mr
