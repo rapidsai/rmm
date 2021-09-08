@@ -165,7 +165,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
    *
    * @param p Pointer to be deallocated
    */
-  void do_deallocate(void* ptr, std::size_t /*bytes*/, rmm::cuda_stream_view stream) override
+  void do_deallocate(void* ptr, std::size_t, rmm::cuda_stream_view stream) override
   {
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
     if (ptr != nullptr) { RMM_ASSERT_CUDA_SUCCESS(cudaFreeAsync(ptr, stream.value())); }
@@ -197,7 +197,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
    * @return std::pair contaiing free_size and total_size of memory
    */
   [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
-    rmm::cuda_stream_view /*stream*/) const override
+    rmm::cuda_stream_view) const override
   {
     return std::make_pair(0, 0);
   }

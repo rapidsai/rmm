@@ -8,6 +8,7 @@ Checks:          'clang-diagnostic-*,
                   readability-*,
                   llvm-*,
                   -modernize-use-trailing-return-type,
+                  -readability-named-parameter,
                   -cppcoreguidelines-macro-usage'
 WarningsAsErrors: ''
 HeaderFilterRegex: ''
@@ -54,8 +55,8 @@ CheckOptions:
     value:           'mr|os'
   - key:             readability-identifier-length.IgnoredVariableNames
     value:           'mr|_'
-  - key:             readability-function-cognitive-complexity.IgnoreMacros
-    value:           '1'
+  #- key:             readability-function-cognitive-complexity.IgnoreMacros
+  #  value:           '1'
   - key:             bugprone-easily-swappable-parameters.IgnoredParameterNames
     value:           'alignment'
 ...

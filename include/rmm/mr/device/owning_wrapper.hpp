@@ -27,7 +27,7 @@ namespace detail {
 /// Converts a tuple into a parameter pack
 template <typename Resource, typename UpstreamTuple, std::size_t... Indices, typename... Args>
 auto make_resource_impl(UpstreamTuple const& upstreams,
-                        std::index_sequence<Indices...> /*indices*/,
+                        std::index_sequence<Indices...>,
                         Args&&... args)
 {
   return std::make_unique<Resource>(std::get<Indices>(upstreams).get()...,
