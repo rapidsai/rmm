@@ -505,8 +505,6 @@ class arena {
 
   /**
    * @brief Clean the arena and deallocate free blocks from the global arena.
-   *
-   * This is only needed when a per-thread arena is about to die.
    */
   void clean()
   {

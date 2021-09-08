@@ -143,11 +143,15 @@ class arena_memory_resource final : public device_memory_resource {
     bytes         = detail::arena::align_up(bytes);
     void* pointer = get_arena(stream).allocate(bytes);
     if (pointer == nullptr) {
-      if (dump_log_on_failure_) { dump_memory_log(bytes); }
-      RMM_FAIL("Maximum pool size exceeded", rmm::bad_alloc);
-    } else {
-      return pointer;
+      defragment();
+      pointer = get_arena(stream).allocate(bytes);
+      if (pointer == nullptr) {
+        if (dump_log_on_failure_) { dump_memory_log(bytes); }
+        RMM_FAIL("Maximum pool size exceeded", rmm::bad_alloc);
+      }
     }
+
+    return pointer;
   }
 
   /**
@@ -164,6 +168,22 @@ class arena_memory_resource final : public device_memory_resource {
 
     bytes = detail::arena::align_up(bytes);
     get_arena(stream).deallocate(p, bytes, stream);
+  }
+
+  /**
+   * @brief Defragment memory by returning all free blocks to the global arena.
+   */
+  void defragment()
+  {
+    read_lock lock(mtx_);
+
+    RMM_CUDA_TRY(cudaDeviceSynchronize());
+    for (auto& kv : thread_arenas_) {
+      kv.second->clean();
+    }
+    for (auto& kv : stream_arenas_) {
+      kv.second.clean();
+    }
   }
 
   /**
