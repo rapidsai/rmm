@@ -154,6 +154,7 @@ TYPED_TEST(DeviceBufferTest, CopyConstructor)
   // Initialize buffer
   thrust::sequence(rmm::exec_policy(rmm::cuda_stream_default),
                    static_cast<char*>(buff.data()),
+                   // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                    static_cast<char*>(buff.data()) + buff.size(),
                    0);
 
@@ -168,6 +169,7 @@ TYPED_TEST(DeviceBufferTest, CopyConstructor)
 
   EXPECT_TRUE(thrust::equal(rmm::exec_policy(rmm::cuda_stream_default),
                             static_cast<char*>(buff.data()),
+                            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                             static_cast<char*>(buff.data()) + buff.size(),
                             static_cast<char*>(buff_copy.data())));
 
@@ -179,6 +181,7 @@ TYPED_TEST(DeviceBufferTest, CopyConstructor)
 
   EXPECT_TRUE(thrust::equal(rmm::exec_policy(rmm::cuda_stream_default),
                             static_cast<signed char*>(buff.data()),
+                            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                             static_cast<signed char*>(buff.data()) + buff.size(),
                             static_cast<signed char*>(buff_copy.data())));
 }
@@ -193,6 +196,7 @@ TYPED_TEST(DeviceBufferTest, CopyCapacityLargerThanSize)
 
   thrust::sequence(rmm::exec_policy(rmm::cuda_stream_default),
                    static_cast<signed char*>(buff.data()),
+                   // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                    static_cast<signed char*>(buff.data()) + buff.size(),
                    0);
   rmm::device_buffer buff_copy(buff, rmm::cuda_stream_default);
@@ -208,6 +212,7 @@ TYPED_TEST(DeviceBufferTest, CopyCapacityLargerThanSize)
 
   EXPECT_TRUE(thrust::equal(rmm::exec_policy(rmm::cuda_stream_default),
                             static_cast<signed char*>(buff.data()),
+                            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                             static_cast<signed char*>(buff.data()) + buff.size(),
                             static_cast<signed char*>(buff_copy.data())));
 }
@@ -218,6 +223,7 @@ TYPED_TEST(DeviceBufferTest, CopyConstructorExplicitMr)
 
   thrust::sequence(rmm::exec_policy(rmm::cuda_stream_default),
                    static_cast<signed char*>(buff.data()),
+                   // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                    static_cast<signed char*>(buff.data()) + buff.size(),
                    0);
   rmm::device_buffer buff_copy(buff, this->stream, &this->mr);
@@ -231,6 +237,7 @@ TYPED_TEST(DeviceBufferTest, CopyConstructorExplicitMr)
 
   EXPECT_TRUE(thrust::equal(rmm::exec_policy(buff_copy.stream()),
                             static_cast<signed char*>(buff.data()),
+                            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                             static_cast<signed char*>(buff.data()) + buff.size(),
                             static_cast<signed char*>(buff_copy.data())));
 }
@@ -245,6 +252,7 @@ TYPED_TEST(DeviceBufferTest, CopyCapacityLargerThanSizeExplicitMr)
 
   thrust::sequence(rmm::exec_policy(rmm::cuda_stream_default),
                    static_cast<signed char*>(buff.data()),
+                   // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                    static_cast<signed char*>(buff.data()) + buff.size(),
                    0);
   rmm::device_buffer buff_copy(buff, this->stream, &this->mr);
@@ -261,6 +269,7 @@ TYPED_TEST(DeviceBufferTest, CopyCapacityLargerThanSizeExplicitMr)
 
   EXPECT_TRUE(thrust::equal(rmm::exec_policy(buff_copy.stream()),
                             static_cast<signed char*>(buff.data()),
+                            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                             static_cast<signed char*>(buff.data()) + buff.size(),
                             static_cast<signed char*>(buff_copy.data())));
 }
@@ -284,11 +293,11 @@ TYPED_TEST(DeviceBufferTest, MoveConstructor)
   EXPECT_EQ(mr, buff_new.memory_resource());
 
   // Original buffer should be empty
-  EXPECT_EQ(nullptr, buff.data());
-  EXPECT_EQ(0, buff.size());
-  EXPECT_EQ(0, buff.capacity());
-  EXPECT_EQ(rmm::cuda_stream_default, buff.stream());
-  EXPECT_NE(nullptr, buff.memory_resource());
+  EXPECT_EQ(nullptr, buff.data());                     // NOLINT(bugprone-use-after-move)
+  EXPECT_EQ(0, buff.size());                           // NOLINT(bugprone-use-after-move)
+  EXPECT_EQ(0, buff.capacity());                       // NOLINT(bugprone-use-after-move)
+  EXPECT_EQ(rmm::cuda_stream_default, buff.stream());  // NOLINT(bugprone-use-after-move)
+  EXPECT_NE(nullptr, buff.memory_resource());          // NOLINT(bugprone-use-after-move)
 }
 
 TYPED_TEST(DeviceBufferTest, MoveConstructorStream)
@@ -312,11 +321,11 @@ TYPED_TEST(DeviceBufferTest, MoveConstructorStream)
   EXPECT_EQ(mr, buff_new.memory_resource());
 
   // Original buffer should be empty
-  EXPECT_EQ(nullptr, buff.data());
-  EXPECT_EQ(0, buff.size());
-  EXPECT_EQ(0, buff.capacity());
-  EXPECT_EQ(rmm::cuda_stream_view{}, buff.stream());
-  EXPECT_NE(nullptr, buff.memory_resource());
+  EXPECT_EQ(nullptr, buff.data());                    // NOLINT(bugprone-use-after-move)
+  EXPECT_EQ(0, buff.size());                          // NOLINT(bugprone-use-after-move)
+  EXPECT_EQ(0, buff.capacity());                      // NOLINT(bugprone-use-after-move)
+  EXPECT_EQ(rmm::cuda_stream_view{}, buff.stream());  // NOLINT(bugprone-use-after-move)
+  EXPECT_NE(nullptr, buff.memory_resource());         // NOLINT(bugprone-use-after-move)
 }
 
 TYPED_TEST(DeviceBufferTest, MoveAssignmentToDefault)
@@ -399,6 +408,7 @@ TYPED_TEST(DeviceBufferTest, ResizeSmaller)
 
   thrust::sequence(rmm::exec_policy(rmm::cuda_stream_default),
                    static_cast<signed char*>(buff.data()),
+                   // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                    static_cast<signed char*>(buff.data()) + buff.size(),
                    0);
 
@@ -422,6 +432,7 @@ TYPED_TEST(DeviceBufferTest, ResizeSmaller)
 
   EXPECT_TRUE(thrust::equal(rmm::exec_policy(rmm::cuda_stream_default),
                             static_cast<signed char*>(buff.data()),
+                            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                             static_cast<signed char*>(buff.data()) + buff.size(),
                             static_cast<signed char*>(old_content.data())));
 }

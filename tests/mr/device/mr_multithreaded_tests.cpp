@@ -76,8 +76,7 @@ TEST(DefaultTest, CurrentDeviceResourceIsCUDA_mt)
 TEST(DefaultTest, GetCurrentDeviceResource_mt)
 {
   spawn([]() {
-    rmm::mr::device_memory_resource* mr{nullptr};
-    EXPECT_NO_THROW(mr = rmm::mr::get_current_device_resource());
+    rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource();
     EXPECT_NE(nullptr, mr);
     EXPECT_TRUE(mr->is_equal(rmm::mr::cuda_memory_resource{}));
   });
@@ -87,8 +86,7 @@ TEST_P(mr_test_mt, SetCurrentDeviceResource_mt)
 {
   // single thread changes default resource, then multiple threads use it
 
-  rmm::mr::device_memory_resource* old{nullptr};
-  EXPECT_NO_THROW(old = rmm::mr::set_current_device_resource(this->mr.get()));
+  rmm::mr::device_memory_resource* old = rmm::mr::set_current_device_resource(this->mr.get());
   EXPECT_NE(nullptr, old);
 
   spawn([mr = this->mr.get()]() {
@@ -97,7 +95,7 @@ TEST_P(mr_test_mt, SetCurrentDeviceResource_mt)
   });
 
   // setting default resource w/ nullptr should reset to initial
-  EXPECT_NO_THROW(rmm::mr::set_current_device_resource(nullptr));
+  rmm::mr::set_current_device_resource(nullptr);
   EXPECT_TRUE(old->is_equal(*rmm::mr::get_current_device_resource()));
 }
 
@@ -109,25 +107,25 @@ TEST_P(mr_test_mt, SetCurrentDeviceResourcePerThread_mt)
   std::vector<std::thread> threads;
   threads.reserve(num_devices);
   for (int i = 0; i < num_devices; ++i) {
-    threads.emplace_back(std::thread{
-      [mr = this->mr.get()](auto dev_id) {
-        RMM_CUDA_TRY(cudaSetDevice(dev_id));
-        rmm::mr::device_memory_resource* old{};
-        EXPECT_NO_THROW(old = rmm::mr::set_current_device_resource(mr));
-        EXPECT_NE(nullptr, old);
-        // initial resource for this device should be CUDA mr
-        EXPECT_TRUE(old->is_equal(rmm::mr::cuda_memory_resource{}));
-        // get_current_device_resource should equal the resource we just set
-        EXPECT_EQ(mr, rmm::mr::get_current_device_resource());
-        // Setting current dev resource to nullptr should reset to cuda MR and return the MR we
-        // previously set
-        EXPECT_NO_THROW(old = rmm::mr::set_current_device_resource(nullptr));
-        EXPECT_NE(nullptr, old);
-        EXPECT_EQ(old, mr);
-        EXPECT_TRUE(
-          rmm::mr::get_current_device_resource()->is_equal(rmm::mr::cuda_memory_resource{}));
-      },
-      i});
+    threads.emplace_back(std::thread{[mr = this->mr.get()](auto dev_id) {
+                                       RMM_CUDA_TRY(cudaSetDevice(dev_id));
+                                       rmm::mr::device_memory_resource* old =
+                                         rmm::mr::set_current_device_resource(mr);
+                                       EXPECT_NE(nullptr, old);
+                                       // initial resource for this device should be CUDA mr
+                                       EXPECT_TRUE(old->is_equal(rmm::mr::cuda_memory_resource{}));
+                                       // get_current_device_resource should equal the resource we
+                                       // just set
+                                       EXPECT_EQ(mr, rmm::mr::get_current_device_resource());
+                                       // Setting current dev resource to nullptr should reset to
+                                       // cuda MR and return the MR we previously set
+                                       old = rmm::mr::set_current_device_resource(nullptr);
+                                       EXPECT_NE(nullptr, old);
+                                       EXPECT_EQ(old, mr);
+                                       EXPECT_TRUE(rmm::mr::get_current_device_resource()->is_equal(
+                                         rmm::mr::cuda_memory_resource{}));
+                                     },
+                                     i});
   }
 
   for (auto& thread : threads) {
@@ -187,8 +185,7 @@ void allocate_loop(rmm::mr::device_memory_resource* mr,
 
   for (std::size_t i = 0; i < num_allocations; ++i) {
     std::size_t size = size_distribution(generator);
-    void* ptr{};
-    EXPECT_NO_THROW(ptr = mr->allocate(size, stream));
+    void* ptr        = mr->allocate(size, stream);
     {
       std::lock_guard<std::mutex> lock(mtx);
       allocations.emplace_back(ptr, size);
@@ -208,7 +205,7 @@ void deallocate_loop(rmm::mr::device_memory_resource* mr,
     i++;
     allocation alloc = allocations.front();
     allocations.pop_front();
-    EXPECT_NO_THROW(mr->deallocate(alloc.ptr, alloc.size, stream));
+    mr->deallocate(alloc.ptr, alloc.size, stream);
   }
 }
 
@@ -250,11 +247,9 @@ TEST_P(mr_test_mt, AllocFreeDifferentThreadsSameStream)
 
 TEST_P(mr_test_mt, AllocFreeDifferentThreadsDifferentStream)
 {
-  EXPECT_NO_THROW([this]() {
-    rmm::cuda_stream streamB;
-    test_allocate_free_different_threads(this->mr.get(), this->stream, streamB);
-    streamB.synchronize();
-  }());
+  rmm::cuda_stream streamB;
+  test_allocate_free_different_threads(this->mr.get(), this->stream, streamB);
+  streamB.synchronize();
 }
 
 }  // namespace

@@ -197,7 +197,7 @@ static void BM_RandomAllocations(benchmark::State& state, MRFactoryFunc const& f
   std::size_t max_size        = state.range(1);
 
   try {
-    for (auto _ : state) {
+    for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
       uniform_random_allocations(*mr, num_allocations, max_size, max_usage);
     }
   } catch (std::exception const& e) {
@@ -321,7 +321,11 @@ int main(int argc, char** argv)
     std::cout << "Profiling " << resource << " with " << num_allocations << " allocations of max "
               << max_size << "B\n";
 
-    profile_random_allocations(funcs.at(resource), num_allocations, max_size);
+    try {
+      profile_random_allocations(funcs.at(resource), num_allocations, max_size);
+    } catch (std::exception const& e) {
+      std::cout << "Exception caught: " << e.what() << std::endl;
+    }
 
     std::cout << "Finished\n";
   } else {

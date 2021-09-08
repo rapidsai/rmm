@@ -158,10 +158,9 @@ TYPED_TEST(MRTest, RandomAllocations)
       EXPECT_TRUE(is_aligned(alloc.ptr));
     });
 
-  std::for_each(
-    allocations.begin(), allocations.end(), [generator, distribution, this](allocation& alloc) {
-      EXPECT_NO_THROW(this->mr->deallocate(alloc.ptr, alloc.size));
-    });
+  std::for_each(allocations.begin(), allocations.end(), [this](allocation& alloc) {
+    EXPECT_NO_THROW(this->mr->deallocate(alloc.ptr, alloc.size));
+  });
 }
 
 TYPED_TEST(MRTest, MixedRandomAllocationFree)
