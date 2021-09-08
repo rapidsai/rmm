@@ -47,7 +47,7 @@ TEST(PoolTest, ExplicitInitialPoolSize)
 TEST(PoolTest, ExplicitReleaseThreshold)
 {
   const auto pool_init_size{100};
-  const auto pool_release_threshold{1000};
+  const auto pool_release_threshold = cuda_async_mr::release_threshold_size_type{1000};
   cuda_async_mr mr{pool_init_size, pool_release_threshold};
   void* ptr = mr.allocate(pool_init_size);
   mr.deallocate(ptr, pool_init_size);

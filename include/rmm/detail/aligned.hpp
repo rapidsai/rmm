@@ -24,7 +24,8 @@
 
 namespace rmm::detail {
 
-enum alignment_type : std::size_t {};
+// enum alignment_type : std::size_t {};
+using alignment_type = std::size_t;
 
 /**
  * @brief Default alignment used for host memory allocated by RMM.

@@ -81,6 +81,7 @@ namespace rmm::mr {
  */
 class device_memory_resource {
  public:
+  device_memory_resource()                              = default;
   virtual ~device_memory_resource()                     = default;
   device_memory_resource(device_memory_resource const&) = default;
   device_memory_resource& operator=(device_memory_resource const&) = default;

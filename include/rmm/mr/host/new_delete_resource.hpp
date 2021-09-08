@@ -56,11 +56,12 @@ class new_delete_resource final : public host_memory_resource {
                     std::size_t alignment = detail::RMM_DEFAULT_HOST_ALIGNMENT) override
   {
     // If the requested alignment isn't supported, use default
-    alignment =
-      (detail::is_supported_alignment(alignment)) ? alignment : detail::RMM_DEFAULT_HOST_ALIGNMENT;
+    auto align = (detail::is_supported_alignment(rmm::detail::alignment_type{alignment}))
+                   ? rmm::detail::alignment_type{alignment}
+                   : detail::RMM_DEFAULT_HOST_ALIGNMENT;
 
     return detail::aligned_allocate(
-      bytes, alignment, [](std::size_t size) { return ::operator new(size); });
+      bytes, align, [](std::size_t size) { return ::operator new(size); });
   }
 
   /**---------------------------------------------------------------------------*
