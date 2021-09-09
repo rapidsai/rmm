@@ -117,9 +117,9 @@ inline auto make_binning()
   return mr;
 }
 
-static void benchmark_range(benchmark::internal::Benchmark* b)
+static void benchmark_range(benchmark::internal::Benchmark* bench)
 {
-  b  //
+  bench  //
     ->RangeMultiplier(2)
     ->Ranges({{1, 4}, {4, 4}, {false, true}})
     ->Unit(benchmark::kMicrosecond);
@@ -177,6 +177,7 @@ void declare_benchmark(std::string const& name)
   std::cout << "Error: invalid memory_resource name: " << name << std::endl;
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 void run_profile(std::string const& resource_name, int kernel_count, int stream_count, bool prewarm)
 {
   auto mr_factory  = get_mr_factory(resource_name);
