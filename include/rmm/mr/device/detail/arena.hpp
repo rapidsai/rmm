@@ -31,6 +31,7 @@
 #include <limits>
 #include <memory>
 #include <mutex>
+#include <numeric>
 #include <set>
 #include <unordered_map>
 
@@ -238,6 +239,13 @@ inline block coalesce_block(std::set<block>& free_blocks, block const& b)
   return merged;
 }
 
+template <typename T>
+inline auto total_block_size(T const& blocks)
+{
+  return std::accumulate(
+    blocks.cbegin(), blocks.cend(), std::size_t{}, [](auto a, auto b) { return a + b.size(); });
+}
+
 /**
  * @brief The global arena for allocating memory from the upstream memory resource.
  *
@@ -365,22 +373,16 @@ class global_arena final {
 
     logger->info("  # free blocks: {}", free_blocks_.size());
     if (!free_blocks_.empty()) {
-      std::size_t total_free{};
-      for (auto const& b : free_blocks_) {
-        total_free += b.size();
-      }
-      logger->info("  Total size of free blocks: {}", rmm::detail::bytes{total_free});
+      logger->info("  Total size of free blocks: {}",
+                   rmm::detail::bytes{total_block_size(free_blocks_)});
       auto const m =
         *std::max_element(free_blocks_.begin(), free_blocks_.end(), block_size_compare);
       logger->info("  Size of largest free block: {}", rmm::detail::bytes{m.size()});
     }
 
     logger->info("  # upstream blocks={}", upstream_blocks_.size());
-    std::size_t total_upstream{};
-    for (auto const& b : upstream_blocks_) {
-      total_upstream += b.size();
-    }
-    logger->info("  Total size of upstream blocks: {}", rmm::detail::bytes{total_upstream});
+    logger->info("  Total size of upstream blocks: {}",
+                 rmm::detail::bytes{total_block_size(upstream_blocks_)});
   }
 
  private:
@@ -530,7 +532,8 @@ class arena {
       for (auto const& b : free_blocks_) {
         total_free += b.size();
       }
-      logger->info("    Total size of free blocks: {}", rmm::detail::bytes{total_free});
+      logger->info("    Total size of free blocks: {}",
+                   rmm::detail::bytes{total_block_size(free_blocks_)});
       auto const m =
         *std::max_element(free_blocks_.begin(), free_blocks_.end(), block_size_compare);
       logger->info("    Size of largest free block: {}", rmm::detail::bytes{m.size()});
