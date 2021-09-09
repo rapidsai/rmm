@@ -16,12 +16,10 @@
 function(find_and_configure_thrust)
 
   include(${rapids-cmake-dir}/cpm/thrust.cmake)
-  rapids_cpm_thrust(
-    NAMESPACE rmm)
+  rapids_cpm_thrust(NAMESPACE rmm)
 
-  # We don't list the export set information in rapids_cpm_thrust
-  # as we don't want to install Thrust as part of rmm install process.
-  # Doing so would stop consumers such as cudf from using patched
+  # We don't list the export set information in rapids_cpm_thrust as we don't want to install Thrust
+  # as part of rmm install process. Doing so would stop consumers such as cudf from using patched
   # versions, which they require for improved build times.
   rapids_export_package(BUILD Thrust rmm-exports)
   rapids_export_package(INSTALL Thrust rmm-exports)
