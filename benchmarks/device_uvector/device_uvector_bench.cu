@@ -40,13 +40,9 @@ static void BM_UvectorSizeConstruction(benchmark::State& state)
   rmm::mr::set_current_device_resource(nullptr);
 }
 
-const auto range_multiplier{10};
-const auto range_start{10'000};
-const auto range_end{1'000'000'000};
-
 BENCHMARK(BM_UvectorSizeConstruction)
-  ->RangeMultiplier(range_multiplier)
-  ->Range(range_start, range_end)
+  ->RangeMultiplier(10)           // NOLINT
+  ->Range(10'000, 1'000'000'000)  // NOLINT
   ->Unit(benchmark::kMicrosecond);
 
 static void BM_ThrustVectorSizeConstruction(benchmark::State& state)
@@ -66,8 +62,8 @@ static void BM_ThrustVectorSizeConstruction(benchmark::State& state)
 }
 
 BENCHMARK(BM_ThrustVectorSizeConstruction)
-  ->RangeMultiplier(range_multiplier)
-  ->Range(range_start, range_end)
+  ->RangeMultiplier(10)           // NOLINT
+  ->Range(10'000, 1'000'000'000)  // NOLINT
   ->Unit(benchmark::kMicrosecond);
 
 BENCHMARK_MAIN();
