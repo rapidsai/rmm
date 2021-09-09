@@ -53,7 +53,7 @@ class stack_trace {
     const int MaxStackDepth = 64;
     std::array<void*, MaxStackDepth> stack{};
     auto const depth = backtrace(stack.begin(), MaxStackDepth);
-    stack_ptrs.insert(stack_ptrs.end(), stack.begin(), &stack.at(depth));
+    stack_ptrs.insert(stack_ptrs.end(), stack.begin(), stack.begin() + depth);
 #endif  // RMM_ENABLE_STACK_TRACES
   }
 
