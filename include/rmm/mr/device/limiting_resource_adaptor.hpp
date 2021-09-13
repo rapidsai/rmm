@@ -129,18 +129,19 @@ class limiting_resource_adaptor final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
-    void* p = nullptr;
-
-    std::size_t proposed_size = rmm::detail::align_up(bytes, allocation_alignment_);
-    allocated_bytes_ += proposed_size;
-    if (allocated_bytes_ <= allocation_limit_) {
-      p = upstream_->allocate(bytes, stream);
-    } else {
-      allocated_bytes_ -= proposed_size;
-      RMM_FAIL("Exceeded memory limit", rmm::bad_alloc);
+    auto const proposed_size = rmm::detail::align_up(bytes, allocation_alignment_);
+    auto const old           = allocated_bytes_.fetch_add(proposed_size);
+    if (old + proposed_size <= allocation_limit_) {
+      try {
+        return upstream_->allocate(bytes, stream);
+      } catch (...) {
+        allocated_bytes_ -= proposed_size;
+        throw;
+      }
     }
 
-    return p;
+    allocated_bytes_ -= proposed_size;
+    RMM_FAIL("Exceeded memory limit", rmm::bad_alloc);
   }
 
   /**
