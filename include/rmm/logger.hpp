@@ -75,16 +75,17 @@ struct logger_wrapper {
 struct bytes {
   std::size_t value;
 
-  friend std::ostream& operator<<(std::ostream& os, bytes const& b)
+  friend std::ostream& operator<<(std::ostream& os, bytes const& value)
   {
-    std::string const units[] = {"B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"};
-    int i                     = 0;
-    auto size                 = static_cast<double>(b.value);
+    static std::array<std::string, 9> const units{
+      "B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"};
+    int index = 0;
+    auto size = static_cast<double>(value.value);
     while (size > 1024) {
       size /= 1024;
-      i++;
+      index++;
     }
-    return os << size << ' ' << units[i];
+    return os << size << ' ' << units.at(index);
   }
 };
 

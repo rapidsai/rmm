@@ -16,17 +16,20 @@
 #pragma once
 
 #include <rmm/detail/error.hpp>
+#include <rmm/logger.hpp>
 #include <rmm/mr/device/detail/arena.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <cuda_runtime_api.h>
 
+#include <spdlog/common.h>
+#include <spdlog/fmt/bundled/ostream.h>
+
 #include <cstddef>
 #include <map>
 #include <shared_mutex>
 
-namespace rmm {
-namespace mr {
+namespace rmm::mr {
 
 /**
  * @brief A suballocator that emphasizes fragmentation avoidance and scalable concurrency support.
@@ -87,14 +90,23 @@ class arena_memory_resource final : public device_memory_resource {
    */
   explicit arena_memory_resource(Upstream* upstream_mr,
                                  std::size_t initial_size = global_arena::default_initial_size,
-                                 std::size_t maximum_size = global_arena::default_maximum_size)
-    : global_arena_{upstream_mr, initial_size, maximum_size}
+                                 std::size_t maximum_size = global_arena::default_maximum_size,
+                                 bool dump_log_on_failure = false)
+    : global_arena_{upstream_mr, initial_size, maximum_size},
+      dump_log_on_failure_{dump_log_on_failure}
   {
+    if (dump_log_on_failure_) {
+      logger_ = spdlog::basic_logger_mt("arena_memory_dump", "rmm_arena_memory_dump.log");
+    }
   }
+
+  ~arena_memory_resource() override = default;
 
   // Disable copy (and move) semantics.
   arena_memory_resource(arena_memory_resource const&) = delete;
   arena_memory_resource& operator=(arena_memory_resource const&) = delete;
+  arena_memory_resource(arena_memory_resource&&) noexcept        = delete;
+  arena_memory_resource& operator=(arena_memory_resource&&) noexcept = delete;
 
   /**
    * @brief Queries whether the resource supports use of non-null CUDA streams for
@@ -130,69 +142,54 @@ class arena_memory_resource final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
-    if (bytes <= 0) return nullptr;
+    if (bytes <= 0) { return nullptr; }
 
-    bytes = detail::arena::align_up(bytes);
-    return get_arena(stream).allocate(bytes);
+    bytes         = detail::arena::align_up(bytes);
+    auto& arena   = get_arena(stream);
+    void* pointer = arena.allocate(bytes);
+
+    if (pointer == nullptr) {
+      write_lock lock(mtx_);
+      defragment();
+      pointer = arena.allocate(bytes);
+      if (pointer == nullptr) {
+        if (dump_log_on_failure_) { dump_memory_log(bytes); }
+        RMM_FAIL("Maximum pool size exceeded", rmm::bad_alloc);
+      }
+    }
+
+    return pointer;
   }
 
   /**
-   * @brief Deallocate memory pointed to by `p`.
+   * @brief Deallocate memory pointed to by `ptr`.
    *
-   * @param p Pointer to be deallocated.
+   * @param ptr Pointer to be deallocated.
    * @param bytes The size in bytes of the allocation. This must be equal to the
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param stream Stream on which to perform deallocation.
    */
-  void do_deallocate(void* p, std::size_t bytes, cuda_stream_view stream) override
+  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
-    if (p == nullptr || bytes <= 0) return;
+    if (ptr == nullptr || bytes <= 0) { return; }
 
     bytes = detail::arena::align_up(bytes);
-#ifdef RMM_POOL_TRACK_ALLOCATIONS
-    if (!get_arena(stream).deallocate(p, bytes, stream)) {
-      deallocate_from_other_arena(p, bytes, stream);
-    }
-#else
-    get_arena(stream).deallocate(p, bytes, stream);
-#endif
+    get_arena(stream).deallocate(ptr, bytes, stream);
   }
 
-#ifdef RMM_POOL_TRACK_ALLOCATIONS
   /**
-   * @brief Deallocate memory pointed to by `p` that was allocated in a different arena.
-   *
-   * @param p Pointer to be deallocated.
-   * @param bytes The size in bytes of the allocation. This must be equal to the
-   * value of `bytes` that was passed to the `allocate` call that returned `p`.
-   * @param stream Stream on which to perform deallocation.
+   * @brief Defragment memory by returning all free blocks to the global arena.
    */
-  void deallocate_from_other_arena(void* p, std::size_t bytes, cuda_stream_view stream)
+  void defragment()
   {
-    stream.synchronize_no_throw();
-
-    read_lock lock(mtx_);
-
-    if (use_per_thread_arena(stream)) {
-      auto const id = std::this_thread::get_id();
-      for (auto& kv : thread_arenas_) {
-        // If the arena does not belong to the current thread, try to deallocate from it, and return
-        // if successful.
-        if (kv.first != id && kv.second->deallocate(p, bytes)) return;
-      }
-    } else {
-      for (auto& kv : stream_arenas_) {
-        // If the arena does not belong to the current stream, try to deallocate from it, and return
-        // if successful.
-        if (stream != kv.first && kv.second.deallocate(p, bytes)) return;
-      }
+    RMM_CUDA_TRY(cudaDeviceSynchronize());
+    for (auto& thread_arena : thread_arenas_) {
+      thread_arena.second->clean();
     }
-
-    // The thread that originally allocated the block has terminated, deallocate directly in the
-    // global arena.
-    global_arena_.deallocate({p, bytes});
+    for (auto& stream_arena : stream_arenas_) {
+      stream_arena.second.clean();
+    }
   }
-#endif
 
   /**
    * @brief Get the arena associated with the current thread or the given stream.
@@ -202,11 +199,8 @@ class arena_memory_resource final : public device_memory_resource {
    */
   arena& get_arena(cuda_stream_view stream)
   {
-    if (use_per_thread_arena(stream)) {
-      return get_thread_arena();
-    } else {
-      return get_stream_arena(stream);
-    }
+    if (use_per_thread_arena(stream)) { return get_thread_arena(); }
+    return get_stream_arena(stream);
   }
 
   /**
@@ -216,18 +210,18 @@ class arena_memory_resource final : public device_memory_resource {
    */
   arena& get_thread_arena()
   {
-    auto const id = std::this_thread::get_id();
+    auto const thread_id = std::this_thread::get_id();
     {
       read_lock lock(mtx_);
-      auto const it = thread_arenas_.find(id);
-      if (it != thread_arenas_.end()) { return *it->second; }
+      auto const iter = thread_arenas_.find(thread_id);
+      if (iter != thread_arenas_.end()) { return *iter->second; }
     }
     {
       write_lock lock(mtx_);
-      auto a = std::make_shared<arena>(global_arena_);
-      thread_arenas_.emplace(id, a);
-      thread_local detail::arena::arena_cleaner<Upstream> cleaner{a};
-      return *a;
+      auto thread_arena = std::make_shared<arena>(global_arena_);
+      thread_arenas_.emplace(thread_id, thread_arena);
+      thread_local detail::arena::arena_cleaner<Upstream> cleaner{thread_arena};
+      return *thread_arena;
     }
   }
 
@@ -241,8 +235,8 @@ class arena_memory_resource final : public device_memory_resource {
     RMM_LOGGING_ASSERT(!use_per_thread_arena(stream));
     {
       read_lock lock(mtx_);
-      auto const it = stream_arenas_.find(stream.value());
-      if (it != stream_arenas_.end()) { return it->second; }
+      auto const iter = stream_arenas_.find(stream.value());
+      if (iter != stream_arenas_.end()) { return iter->second; }
     }
     {
       write_lock lock(mtx_);
@@ -260,6 +254,32 @@ class arena_memory_resource final : public device_memory_resource {
   std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view stream) const override
   {
     return std::make_pair(0, 0);
+  }
+
+  /**
+   * Dump memory to log.
+   *
+   * @param bytes the number of bytes requested for allocation
+   */
+  void dump_memory_log(size_t bytes)
+  {
+    logger_->info("**************************************************");
+    logger_->info("Ran out of memory trying to allocate {}.", rmm::detail::bytes{bytes});
+    logger_->info("**************************************************");
+    logger_->info("Global arena:");
+    global_arena_.dump_memory_log(logger_);
+    logger_->info("Per-thread arenas:");
+    for (auto const& thread_arena : thread_arenas_) {
+      logger_->info("  Thread {}:", thread_arena.first);
+      thread_arena.second->dump_memory_log(logger_);
+    }
+    if (!stream_arenas_.empty()) {
+      logger_->info("Per-stream arenas:");
+      for (auto const& stream_arena : stream_arenas_) {
+        logger_->info("  Stream {}:", static_cast<void*>(stream_arena.first));
+        stream_arena.second.dump_memory_log(logger_);
+      }
+    }
   }
 
   /**
@@ -281,9 +301,12 @@ class arena_memory_resource final : public device_memory_resource {
   /// Arenas for non-default streams, one per stream.
   /// Implementation note: for small sizes, map is more efficient than unordered_map.
   std::map<cudaStream_t, arena> stream_arenas_;
+  /// If true, dump memory information to log on allocation failure.
+  bool dump_log_on_failure_;
+  /// The logger for memory dump.
+  std::shared_ptr<spdlog::logger> logger_{};
   /// Mutex for read and write locks.
   mutable std::shared_timed_mutex mtx_;
 };
 
-}  // namespace mr
-}  // namespace rmm
+}  // namespace rmm::mr
