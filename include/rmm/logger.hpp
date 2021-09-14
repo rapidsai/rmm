@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,6 +66,25 @@ struct logger_wrapper {
 #endif
     logger_.flush();
 #endif
+  }
+};
+
+/**
+ * @brief Represent a size in number of bytes.
+ */
+struct bytes {
+  std::size_t value;
+
+  friend std::ostream& operator<<(std::ostream& os, bytes const& b)
+  {
+    std::string const units[] = {"B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"};
+    int i                     = 0;
+    auto size                 = static_cast<double>(b.value);
+    while (size > 1024) {
+      size /= 1024;
+      i++;
+    }
+    return os << size << ' ' << units[i];
   }
 };
 

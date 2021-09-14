@@ -22,6 +22,9 @@ export HOME=$WORKSPACE
 # Switch to project root; also root of repo checkout
 cd $WORKSPACE
 
+# Determine CUDA release version
+export CUDA_REL=${CUDA_VERSION%.*}
+
 # Get latest tag and number of commits since tag
 export GIT_DESCRIBE_TAG=`git describe --abbrev=0 --tags`
 export GIT_DESCRIBE_NUMBER=`git rev-list ${GIT_DESCRIBE_TAG}..HEAD --count`
@@ -39,7 +42,9 @@ gpuci_logger "Activate conda env"
 conda activate rapids
 
 # Install build env
-gpuci_mamba_retry install rapids-build-env=${MINOR_VERSION}.*
+gpuci_mamba_retry install -y \
+                  "cudatoolkit=$CUDA_REL" \
+                  "rapids-build-env=${MINOR_VERSION}.*"
 
 # https://docs.rapids.ai/maintainers/depmgmt/ 
 # conda remove --force rapids-build-env

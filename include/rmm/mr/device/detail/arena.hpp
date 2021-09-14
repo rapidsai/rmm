@@ -30,10 +30,13 @@
 #include <set>
 #include <unordered_map>
 
-namespace rmm::mr::detail::arena {
+namespace rmm {
+namespace mr {
+namespace detail {
+namespace arena {
 
 /// Minimum size of a superblock (256 KiB).
-constexpr std::size_t minimum_superblock_size = 1U << 18U;
+constexpr std::size_t minimum_superblock_size = 1u << 18u;
 
 /**
  * @brief Represents a chunk of memory that can be allocated and deallocated.
@@ -64,16 +67,16 @@ class block {
   block(void* pointer, std::size_t size) : pointer_(static_cast<char*>(pointer)), size_(size) {}
 
   /// Returns the underlying pointer.
-  [[nodiscard]] void* pointer() const { return pointer_; }
+  void* pointer() const { return pointer_; }
 
   /// Returns the size of the block.
-  [[nodiscard]] std::size_t size() const { return size_; }
+  std::size_t size() const { return size_; }
 
   /// Returns true if this block is valid (non-null), false otherwise.
-  [[nodiscard]] bool is_valid() const { return pointer_ != nullptr; }
+  bool is_valid() const { return pointer_ != nullptr; }
 
   /// Returns true if this block is a superblock, false otherwise.
-  [[nodiscard]] bool is_superblock() const { return size_ >= minimum_superblock_size; }
+  bool is_superblock() const { return size_ >= minimum_superblock_size; }
 
   /**
    * @brief Verifies whether this block can be merged to the beginning of block b.
@@ -82,11 +85,7 @@ class block {
    * @return true Returns true if this block's `pointer` + `size` == `b.ptr`, and `not b.is_head`,
                   false otherwise.
    */
-  [[nodiscard]] bool is_contiguous_before(block const& blk) const
-  {
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    return pointer_ + size_ == blk.pointer_;
-  }
+  bool is_contiguous_before(block const& b) const { return pointer_ + size_ == b.pointer_; }
 
   /**
    * @brief Is this block large enough to fit `sz` bytes?
@@ -94,20 +93,22 @@ class block {
    * @param sz The size in bytes to check for fit.
    * @return true if this block is at least `sz` bytes.
    */
-  [[nodiscard]] bool fits(std::size_t size) const { return size_ >= size; }
+  bool fits(std::size_t sz) const { return size_ >= sz; }
 
   /**
    * @brief Split this block into two by the given size.
    *
-   * @param size The size in bytes of the first block.
-   * @return std::pair<block, block> A pair of blocks split by size.
+   * @param sz The size in bytes of the first block.
+   * @return std::pair<block, block> A pair of blocks split by sz.
    */
-  [[nodiscard]] std::pair<block, block> split(std::size_t size) const
+  std::pair<block, block> split(std::size_t sz) const
   {
-    RMM_LOGGING_ASSERT(size_ >= size);
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    if (size_ > size) { return {{pointer_, size}, {pointer_ + size, size_ - size}}; }
-    return {*this, {}};
+    RMM_LOGGING_ASSERT(size_ >= sz);
+    if (size_ > sz) {
+      return {{pointer_, sz}, {pointer_ + sz, size_ - sz}};
+    } else {
+      return {*this, {}};
+    }
   }
 
   /**
@@ -115,17 +116,17 @@ class block {
    *
    * `this->is_contiguous_before(b)` must be true.
    *
-   * @param blk block to merge.
+   * @param b block to merge.
    * @return block The merged block.
    */
-  [[nodiscard]] block merge(block const& blk) const
+  block merge(block const& b) const
   {
-    RMM_LOGGING_ASSERT(is_contiguous_before(blk));
-    return {pointer_, size_ + blk.size_};
+    RMM_LOGGING_ASSERT(is_contiguous_before(b));
+    return {pointer_, size_ + b.size_};
   }
 
   /// Used by std::set to compare blocks.
-  bool operator<(block const& blk) const { return pointer_ < blk.pointer_; }
+  bool operator<(block const& b) const { return pointer_ < b.pointer_; }
 
  private:
   char* pointer_{};     ///< Raw memory pointer.
@@ -138,9 +139,9 @@ class block {
  * @param[in] v value to align
  * @return Return the aligned value
  */
-constexpr std::size_t align_up(std::size_t value) noexcept
+constexpr std::size_t align_up(std::size_t v) noexcept
 {
-  return rmm::detail::align_up(value, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
+  return rmm::detail::align_up(v, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
 }
 
 /**
@@ -149,9 +150,9 @@ constexpr std::size_t align_up(std::size_t value) noexcept
  * @param[in] v value to align
  * @return Return the aligned value
  */
-constexpr std::size_t align_down(std::size_t value) noexcept
+constexpr std::size_t align_down(std::size_t v) noexcept
 {
-  return rmm::detail::align_down(value, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
+  return rmm::detail::align_down(v, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
 }
 
 /**
@@ -171,21 +172,24 @@ constexpr std::size_t align_down(std::size_t value) noexcept
 inline block first_fit(std::set<block>& free_blocks, std::size_t size)
 {
   auto const iter = std::find_if(
-    free_blocks.cbegin(), free_blocks.cend(), [size](auto const& blk) { return blk.fits(size); });
+    free_blocks.cbegin(), free_blocks.cend(), [size](auto const& b) { return b.fits(size); });
 
-  if (iter == free_blocks.cend()) { return {}; }
+  if (iter == free_blocks.cend()) {
+    return {};
+  } else {
+    // Remove the block from the free_list.
+    auto const b = *iter;
+    auto const i = free_blocks.erase(iter);
 
-  // Remove the block from the free_list.
-  auto const blk  = *iter;
-  auto const next = free_blocks.erase(iter);
-
-  if (blk.size() > size) {
-    // Split the block and put the remainder back.
-    auto const split = blk.split(size);
-    free_blocks.insert(next, split.second);
-    return split.first;
+    if (b.size() > size) {
+      // Split the block and put the remainder back.
+      auto const split = b.split(size);
+      free_blocks.insert(i, split.second);
+      return split.first;
+    } else {
+      return b;
+    }
   }
-  return blk;
 }
 
 /**
@@ -195,35 +199,35 @@ inline block first_fit(std::set<block>& free_blocks, std::size_t size)
  * @param b The block to coalesce.
  * @return block The coalesced block.
  */
-inline block coalesce_block(std::set<block>& free_blocks, block const& blk)
+inline block coalesce_block(std::set<block>& free_blocks, block const& b)
 {
-  if (!blk.is_valid()) { return blk; }
+  if (!b.is_valid()) return b;
 
   // Find the right place (in ascending address order) to insert the block.
-  auto const next     = free_blocks.lower_bound(blk);
+  auto const next     = free_blocks.lower_bound(b);
   auto const previous = next == free_blocks.cbegin() ? next : std::prev(next);
 
   // Coalesce with neighboring blocks.
-  bool const merge_prev = previous->is_contiguous_before(blk);
-  bool const merge_next = next != free_blocks.cend() && blk.is_contiguous_before(*next);
+  bool const merge_prev = previous->is_contiguous_before(b);
+  bool const merge_next = next != free_blocks.cend() && b.is_contiguous_before(*next);
 
   block merged{};
   if (merge_prev && merge_next) {
-    merged = previous->merge(blk).merge(*next);
+    merged = previous->merge(b).merge(*next);
     free_blocks.erase(previous);
-    auto const iter = free_blocks.erase(next);
-    free_blocks.insert(iter, merged);
+    auto const i = free_blocks.erase(next);
+    free_blocks.insert(i, merged);
   } else if (merge_prev) {
-    merged          = previous->merge(blk);
-    auto const iter = free_blocks.erase(previous);
-    free_blocks.insert(iter, merged);
+    merged       = previous->merge(b);
+    auto const i = free_blocks.erase(previous);
+    free_blocks.insert(i, merged);
   } else if (merge_next) {
-    merged          = blk.merge(*next);
-    auto const iter = free_blocks.erase(next);
-    free_blocks.insert(iter, merged);
+    merged       = b.merge(*next);
+    auto const i = free_blocks.erase(next);
+    free_blocks.insert(i, merged);
   } else {
-    free_blocks.emplace(blk);
-    merged = blk;
+    free_blocks.emplace(b);
+    merged = b;
   }
   return merged;
 }
@@ -244,7 +248,7 @@ class global_arena final {
   /// The default maximum size for the global arena.
   static constexpr std::size_t default_maximum_size = std::numeric_limits<std::size_t>::max();
   /// Reserved memory that should not be allocated (64 MiB).
-  static constexpr std::size_t reserved_size = 1U << 26U;
+  static constexpr std::size_t reserved_size = 1u << 26u;
 
   /**
    * @brief Construct a global arena.
@@ -271,8 +275,7 @@ class global_arena final {
                 "Error, Maximum arena size required to be a multiple of 256 bytes");
 
     if (initial_size == default_initial_size || maximum_size == default_maximum_size) {
-      std::size_t free{};
-      std::size_t total{};
+      std::size_t free{}, total{};
       RMM_CUDA_TRY(cudaMemGetInfo(&free, &total));
       if (initial_size == default_initial_size) {
         initial_size = align_up(std::min(free, total / 2));
@@ -289,8 +292,6 @@ class global_arena final {
   // Disable copy (and move) semantics.
   global_arena(const global_arena&) = delete;
   global_arena& operator=(const global_arena&) = delete;
-  global_arena(global_arena&&)                 = delete;
-  global_arena& operator=(global_arena&&) = delete;
 
   /**
    * @brief Destroy the global arena and deallocate all memory it allocated using the upstream
@@ -299,8 +300,8 @@ class global_arena final {
   ~global_arena()
   {
     lock_guard lock(mtx_);
-    for (auto const& blk : upstream_blocks_) {
-      upstream_mr_->deallocate(blk.pointer(), blk.size());
+    for (auto const& b : upstream_blocks_) {
+      upstream_mr_->deallocate(b.pointer(), b.size());
     }
   }
 
@@ -325,10 +326,10 @@ class global_arena final {
    * @param bytes The size in bytes of the allocation. This must be equal to the value of `bytes`
    * that was passed to the `allocate` call that returned `p`.
    */
-  void deallocate(block const& blk)
+  void deallocate(block const& b)
   {
     lock_guard lock(mtx_);
-    coalesce_block(free_blocks_, blk);
+    coalesce_block(free_blocks_, b);
   }
 
   /**
@@ -339,8 +340,8 @@ class global_arena final {
   void deallocate(std::set<block> const& free_blocks)
   {
     lock_guard lock(mtx_);
-    for (auto const& blk : free_blocks) {
-      coalesce_block(free_blocks_, blk);
+    for (auto const& b : free_blocks) {
+      coalesce_block(free_blocks_, b);
     }
   }
 
@@ -356,8 +357,8 @@ class global_arena final {
   block get_block(std::size_t size)
   {
     // Find the first-fit free block.
-    auto const blk = first_fit(free_blocks_, size);
-    if (blk.is_valid()) { return blk; }
+    auto const b = first_fit(free_blocks_, size);
+    if (b.is_valid()) return b;
 
     // No existing larger blocks available, so grow the arena.
     auto const upstream_block = expand_arena(size_to_grow(size));
@@ -426,13 +427,10 @@ class arena {
    * @param global_arena The global arena from which to allocate superblocks.
    */
   explicit arena(global_arena<Upstream>& global_arena) : global_arena_{global_arena} {}
-  ~arena() = default;
 
   // Disable copy (and move) semantics.
   arena(const arena&) = delete;
   arena& operator=(const arena&) = delete;
-  arena(arena&&)                 = delete;
-  arena& operator=(arena&&) = delete;
 
   /**
    * @brief Allocates memory of size at least `bytes`.
@@ -445,11 +443,11 @@ class arena {
   void* allocate(std::size_t bytes)
   {
     lock_guard lock(mtx_);
-    auto const blk = get_block(bytes);
+    auto const b = get_block(bytes);
 #ifdef RMM_POOL_TRACK_ALLOCATIONS
     allocated_blocks_.emplace(b.pointer(), b);
 #endif
-    return blk.pointer();
+    return b.pointer();
   }
 
   /**
@@ -461,19 +459,19 @@ class arena {
    * @param stream Stream on which to perform deallocation.
    * @return true if the allocation is found, false otherwise.
    */
-  bool deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream)
+  bool deallocate(void* p, std::size_t bytes, cuda_stream_view stream)
   {
     lock_guard lock(mtx_);
 #ifdef RMM_POOL_TRACK_ALLOCATIONS
     auto const b = free_block(p, bytes);
 #else
-    block const blk{ptr, bytes};
+    block const b{p, bytes};
 #endif
-    if (blk.is_valid()) {
-      auto const merged = coalesce_block(free_blocks_, blk);
+    if (b.is_valid()) {
+      auto const merged = coalesce_block(free_blocks_, b);
       shrink_arena(merged, stream);
     }
-    return blk.is_valid();
+    return b.is_valid();
   }
 
 #ifdef RMM_POOL_TRACK_ALLOCATIONS
@@ -526,8 +524,8 @@ class arena {
   {
     if (size < minimum_superblock_size) {
       // Find the first-fit free block.
-      auto const blk = first_fit(free_blocks_, size);
-      if (blk.is_valid()) { return blk; }
+      auto const b = first_fit(free_blocks_, size);
+      if (b.is_valid()) { return b; }
     }
 
     // No existing larger blocks available, so grow the arena and obtain a superblock.
@@ -577,15 +575,15 @@ class arena {
    * @param b The block that can be used to shrink the arena.
    * @param stream Stream on which to perform shrinking.
    */
-  void shrink_arena(block const& blk, cuda_stream_view stream)
+  void shrink_arena(block const& b, cuda_stream_view stream)
   {
     // Don't shrink if b is not a superblock.
-    if (!blk.is_superblock()) { return; }
+    if (!b.is_superblock()) return;
 
     stream.synchronize_no_throw();
 
-    global_arena_.deallocate(blk);
-    free_blocks_.erase(blk);
+    global_arena_.deallocate(b);
+    free_blocks_.erase(b);
   }
 
   /// The global arena to allocate superblocks from.
@@ -611,14 +609,11 @@ class arena {
 template <typename Upstream>
 class arena_cleaner {
  public:
-  explicit arena_cleaner(std::shared_ptr<arena<Upstream>> const& arena) : arena_(arena) {}
+  explicit arena_cleaner(std::shared_ptr<arena<Upstream>> const& a) : arena_(a) {}
 
   // Disable copy (and move) semantics.
-  arena_cleaner()                     = delete;
-  arena_cleaner(arena_cleaner const&) = delete;
-  arena_cleaner& operator=(arena_cleaner const&) = delete;
-  arena_cleaner(arena_cleaner&&)                 = delete;
-  arena_cleaner& operator=(arena_cleaner&&) = delete;
+  arena_cleaner(const arena_cleaner&) = delete;
+  arena_cleaner& operator=(const arena_cleaner&) = delete;
 
   ~arena_cleaner()
   {
@@ -633,4 +628,7 @@ class arena_cleaner {
   std::weak_ptr<arena<Upstream>> arena_;
 };
 
-}  // namespace rmm::mr::detail::arena
+}  // namespace arena
+}  // namespace detail
+}  // namespace mr
+}  // namespace rmm

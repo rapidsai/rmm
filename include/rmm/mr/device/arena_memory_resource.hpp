@@ -25,7 +25,8 @@
 #include <map>
 #include <shared_mutex>
 
-namespace rmm::mr {
+namespace rmm {
+namespace mr {
 
 /**
  * @brief A suballocator that emphasizes fragmentation avoidance and scalable concurrency support.
@@ -91,12 +92,9 @@ class arena_memory_resource final : public device_memory_resource {
   {
   }
 
-  ~arena_memory_resource() override = default;
   // Disable copy (and move) semantics.
   arena_memory_resource(arena_memory_resource const&) = delete;
   arena_memory_resource& operator=(arena_memory_resource const&) = delete;
-  arena_memory_resource(arena_memory_resource&&)                 = delete;
-  arena_memory_resource& operator=(arena_memory_resource&&) = delete;
 
   /**
    * @brief Queries whether the resource supports use of non-null CUDA streams for
@@ -132,44 +130,44 @@ class arena_memory_resource final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
-    if (bytes <= 0) { return nullptr; }
+    if (bytes <= 0) return nullptr;
 
     bytes = detail::arena::align_up(bytes);
     return get_arena(stream).allocate(bytes);
   }
 
   /**
-   * @brief Deallocate memory pointed to by `ptr`.
+   * @brief Deallocate memory pointed to by `p`.
    *
-   * @param ptr Pointer to be deallocated.
+   * @param p Pointer to be deallocated.
    * @param bytes The size in bytes of the allocation. This must be equal to the
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param stream Stream on which to perform deallocation.
    */
-  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
+  void do_deallocate(void* p, std::size_t bytes, cuda_stream_view stream) override
   {
-    if (ptr == nullptr || bytes <= 0) { return; }
+    if (p == nullptr || bytes <= 0) return;
 
     bytes = detail::arena::align_up(bytes);
 #ifdef RMM_POOL_TRACK_ALLOCATIONS
-    if (!get_arena(stream).deallocate(ptr, bytes, stream)) {
-      deallocate_from_other_arena(ptr, bytes, stream);
+    if (!get_arena(stream).deallocate(p, bytes, stream)) {
+      deallocate_from_other_arena(p, bytes, stream);
     }
 #else
-    get_arena(stream).deallocate(ptr, bytes, stream);
+    get_arena(stream).deallocate(p, bytes, stream);
 #endif
   }
 
 #ifdef RMM_POOL_TRACK_ALLOCATIONS
   /**
-   * @brief Deallocate memory pointed to by `ptr` that was allocated in a different arena.
+   * @brief Deallocate memory pointed to by `p` that was allocated in a different arena.
    *
-   * @param ptr Pointer to be deallocated.
+   * @param p Pointer to be deallocated.
    * @param bytes The size in bytes of the allocation. This must be equal to the
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param stream Stream on which to perform deallocation.
    */
-  void deallocate_from_other_arena(void* ptr, std::size_t bytes, cuda_stream_view stream)
+  void deallocate_from_other_arena(void* p, std::size_t bytes, cuda_stream_view stream)
   {
     stream.synchronize_no_throw();
 
@@ -180,19 +178,19 @@ class arena_memory_resource final : public device_memory_resource {
       for (auto& kv : thread_arenas_) {
         // If the arena does not belong to the current thread, try to deallocate from it, and return
         // if successful.
-        if (kv.first != id && kv.second->deallocate(ptr, bytes)) return;
+        if (kv.first != id && kv.second->deallocate(p, bytes)) return;
       }
     } else {
       for (auto& kv : stream_arenas_) {
         // If the arena does not belong to the current stream, try to deallocate from it, and return
         // if successful.
-        if (stream != kv.first && kv.second.deallocate(ptr, bytes)) return;
+        if (stream != kv.first && kv.second.deallocate(p, bytes)) return;
       }
     }
 
     // The thread that originally allocated the block has terminated, deallocate directly in the
     // global arena.
-    global_arena_.deallocate({ptr, bytes});
+    global_arena_.deallocate({p, bytes});
   }
 #endif
 
@@ -204,8 +202,11 @@ class arena_memory_resource final : public device_memory_resource {
    */
   arena& get_arena(cuda_stream_view stream)
   {
-    if (use_per_thread_arena(stream)) { return get_thread_arena(); }
-    return get_stream_arena(stream);
+    if (use_per_thread_arena(stream)) {
+      return get_thread_arena();
+    } else {
+      return get_stream_arena(stream);
+    }
   }
 
   /**
@@ -215,18 +216,18 @@ class arena_memory_resource final : public device_memory_resource {
    */
   arena& get_thread_arena()
   {
-    auto const thread_id = std::this_thread::get_id();
+    auto const id = std::this_thread::get_id();
     {
       read_lock lock(mtx_);
-      auto const iter = thread_arenas_.find(thread_id);
-      if (iter != thread_arenas_.end()) { return *iter->second; }
+      auto const it = thread_arenas_.find(id);
+      if (it != thread_arenas_.end()) { return *it->second; }
     }
     {
       write_lock lock(mtx_);
-      auto thread_arena = std::make_shared<arena>(global_arena_);
-      thread_arenas_.emplace(thread_id, thread_arena);
-      thread_local detail::arena::arena_cleaner<Upstream> cleaner{thread_arena};
-      return *thread_arena;
+      auto a = std::make_shared<arena>(global_arena_);
+      thread_arenas_.emplace(id, a);
+      thread_local detail::arena::arena_cleaner<Upstream> cleaner{a};
+      return *a;
     }
   }
 
@@ -240,8 +241,8 @@ class arena_memory_resource final : public device_memory_resource {
     RMM_LOGGING_ASSERT(!use_per_thread_arena(stream));
     {
       read_lock lock(mtx_);
-      auto const iter = stream_arenas_.find(stream.value());
-      if (iter != stream_arenas_.end()) { return iter->second; }
+      auto const it = stream_arenas_.find(stream.value());
+      if (it != stream_arenas_.end()) { return it->second; }
     }
     {
       write_lock lock(mtx_);
@@ -284,4 +285,5 @@ class arena_memory_resource final : public device_memory_resource {
   mutable std::shared_timed_mutex mtx_;
 };
 
-}  // namespace rmm::mr
+}  // namespace mr
+}  // namespace rmm
