@@ -46,8 +46,8 @@ namespace rmm::mr::detail {
  */
 template <typename T>
 struct crtp {
-  T& underlying() { return static_cast<T&>(*this); }
-  T const& underlying() const { return static_cast<T const&>(*this); }
+  [[nodiscard]] T& underlying() { return static_cast<T&>(*this); }
+  [[nodiscard]] T const& underlying() const { return static_cast<T const&>(*this); }
 };
 
 /**
@@ -288,7 +288,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
       // instance ensures it is destroyed cleaned up only after all are finished with it.
       thread_local auto event_tls = std::make_shared<event_wrapper>();
       default_stream_events.insert(event_tls);
-      return stream_event_pair{stream.value(), event_tls.get()->event};
+      return stream_event_pair{stream.value(), event_tls->event};
     }
     // We use cudaStreamLegacy as the event map key for the default stream for consistency between
     // PTDS and non-PTDS mode. In PTDS mode, the cudaStreamLegacy map key will only exist if the
@@ -383,45 +383,47 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
                                          free_list& blocks,
                                          bool merge_first)
   {
-    for (auto it = stream_free_blocks_.begin(), next_it = it; it != stream_free_blocks_.end();
-         it = next_it) {
-      ++next_it;  // Points to element after `it` to allow erasing `it` in the loop body
-      auto other_event = it->first.event;
-      if (other_event != stream_event.event) {
-        free_list& other_blocks = it->second;
+    auto find_block = [&](auto iter) {
+      auto other_event   = iter->first.event;
+      auto& other_blocks = iter->second;
+      if (merge_first) {
+        merge_lists(stream_event, blocks, other_event, std::move(other_blocks));
 
-        block_type const block = [&]() {
-          if (merge_first) {
-            merge_lists(stream_event, blocks, other_event, std::move(other_blocks));
+        RMM_LOG_DEBUG("[A][Stream {:p}][{}B][Merged stream {:p}]",
+                      fmt::ptr(stream_event.stream),
+                      size,
+                      fmt::ptr(iter->first.stream));
 
-            RMM_LOG_DEBUG("[A][Stream {:p}][{}B][Merged stream {:p}]",
-                          fmt::ptr(stream_event.stream),
-                          size,
-                          fmt::ptr(it->first.stream));
+        stream_free_blocks_.erase(iter);
 
-            stream_free_blocks_.erase(it);
+        block_type const block = blocks.get_block(size);  // get the best fit block in merged lists
+        if (block.is_valid()) { return allocate_and_insert_remainder(block, size, blocks); }
+      } else {
+        block_type const block = other_blocks.get_block(size);
+        if (block.is_valid()) {
+          // Since we found a block associated with a different stream, we have to insert a wait
+          // on the stream's associated event into the allocating stream.
+          RMM_CUDA_TRY(cudaStreamWaitEvent(stream_event.stream, other_event, 0));
+          return allocate_and_insert_remainder(block, size, other_blocks);
+        }
+      }
+      return block_type{};
+    };
 
-            block_type const block =
-              blocks.get_block(size);  // get the best fit block in merged lists
-            if (block.is_valid()) { return allocate_and_insert_remainder(block, size, blocks); }
-          } else {
-            block_type const block = other_blocks.get_block(size);
-            if (block.is_valid()) {
-              // Since we found a block associated with a different stream, we have to insert a wait
-              // on the stream's associated event into the allocating stream.
-              RMM_CUDA_TRY(cudaStreamWaitEvent(stream_event.stream, other_event, 0));
-              return allocate_and_insert_remainder(block, size, other_blocks);
-            }
-          }
-          return block_type{};
-        }();
+    for (auto iter = stream_free_blocks_.begin(), next_iter = iter;
+         iter != stream_free_blocks_.end();
+         iter = next_iter) {
+      ++next_iter;  // Points to element after `iter` to allow erasing `iter` in the loop body
+
+      if (iter->first.event != stream_event.event) {
+        block_type const block = find_block(iter);
 
         if (block.is_valid()) {
           RMM_LOG_DEBUG((merge_first) ? "[A][Stream {:p}][{}B][Found after merging stream {:p}]"
                                       : "[A][Stream {:p}][{}B][Taken from stream {:p}]",
                         fmt::ptr(stream_event.stream),
                         size,
-                        fmt::ptr(it->first.stream));
+                        fmt::ptr(iter->first.stream));
           return block;
         }
       }

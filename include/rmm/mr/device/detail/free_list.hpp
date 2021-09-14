@@ -70,20 +70,26 @@ class free_list {
   using iterator       = typename list_type::iterator;
   using const_iterator = typename list_type::const_iterator;
 
-  iterator begin() noexcept { return blocks.begin(); }                /// beginning of the free list
-  const_iterator begin() const noexcept { return blocks.begin(); }    /// beginning of the free list
-  const_iterator cbegin() const noexcept { return blocks.cbegin(); }  /// beginning of the free list
+  /// beginning of the free list
+  [[nodiscard]] iterator begin() noexcept { return blocks.begin(); }
+  /// beginning of the free list
+  [[nodiscard]] const_iterator begin() const noexcept { return blocks.begin(); }
+  /// beginning of the free list
+  [[nodiscard]] const_iterator cbegin() const noexcept { return blocks.cbegin(); }
 
-  iterator end() noexcept { return blocks.end(); }                /// end of the free list
-  const_iterator end() const noexcept { return blocks.end(); }    /// end of the free list
-  const_iterator cend() const noexcept { return blocks.cend(); }  /// end of the free list
+  /// end of the free list
+  [[nodiscard]] iterator end() noexcept { return blocks.end(); }
+  /// beginning of the free list
+  [[nodiscard]] const_iterator end() const noexcept { return blocks.end(); }
+  /// beginning of the free list
+  [[nodiscard]] const_iterator cend() const noexcept { return blocks.cend(); }
 
   /**
    * @brief The size of the free list in blocks.
    *
    * @return size_type The number of blocks in the free list.
    */
-  size_type size() const noexcept { return blocks.size(); }
+  [[nodiscard]] size_type size() const noexcept { return blocks.size(); }
 
   /**
    * @brief checks whether the free_list is empty.

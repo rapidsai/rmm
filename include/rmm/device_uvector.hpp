@@ -147,7 +147,7 @@ class device_uvector {
    * @param element_index Index of the specified element.
    * @return T* Pointer to the desired element
    */
-  pointer element_ptr(std::size_t element_index) noexcept
+  [[nodiscard]] pointer element_ptr(std::size_t element_index) noexcept
   {
     assert(element_index < size());
     return data() + element_index;
@@ -161,7 +161,7 @@ class device_uvector {
    * @param element_index Index of the specified element.
    * @return T* Pointer to the desired element
    */
-  const_pointer element_ptr(std::size_t element_index) const noexcept
+  [[nodiscard]] const_pointer element_ptr(std::size_t element_index) const noexcept
   {
     assert(element_index < size());
     return data() + element_index;
@@ -323,7 +323,10 @@ class device_uvector {
    * @param stream The stream on which to perform the copy
    * @return The value of the first element
    */
-  value_type front_element(cuda_stream_view stream) const { return element(0, stream); }
+  [[nodiscard]] value_type front_element(cuda_stream_view stream) const
+  {
+    return element(0, stream);
+  }
 
   /**
    * @brief Returns the last element.
@@ -336,7 +339,10 @@ class device_uvector {
    * @param stream The stream on which to perform the copy
    * @return The value of the last element
    */
-  value_type back_element(cuda_stream_view stream) const { return element(size() - 1, stream); }
+  [[nodiscard]] value_type back_element(cuda_stream_view stream) const
+  {
+    return element(size() - 1, stream);
+  }
 
   /**
    * @brief Resizes the vector to contain `new_size` elements.
@@ -373,7 +379,7 @@ class device_uvector {
    *
    * @return The `device_buffer` used to store the vector elements
    */
-  device_buffer release() noexcept { return std::move(_storage); }
+  [[nodiscard]] device_buffer release() noexcept { return std::move(_storage); }
 
   /**
    * @brief Returns the number of elements that can be held in currently allocated storage.
@@ -394,7 +400,7 @@ class device_uvector {
    *
    * @return Raw pointer to element storage in device memory.
    */
-  pointer data() noexcept { return static_cast<pointer>(_storage.data()); }
+  [[nodiscard]] pointer data() noexcept { return static_cast<pointer>(_storage.data()); }
 
   /**
    * @brief Returns const pointer to underlying device storage.
@@ -404,7 +410,10 @@ class device_uvector {
    *
    * @return const_pointer Raw const pointer to element storage in device memory.
    */
-  const_pointer data() const noexcept { return static_cast<const_pointer>(_storage.data()); }
+  [[nodiscard]] const_pointer data() const noexcept
+  {
+    return static_cast<const_pointer>(_storage.data());
+  }
 
   /**
    * @brief Returns an iterator to the first element.
@@ -413,7 +422,7 @@ class device_uvector {
    *
    * @return Iterator to the first element.
    */
-  iterator begin() noexcept { return data(); }
+  [[nodiscard]] iterator begin() noexcept { return data(); }
 
   /**
    * @brief Returns a const_iterator to the first element.
@@ -422,7 +431,7 @@ class device_uvector {
    *
    * @return Immutable iterator to the first element.
    */
-  const_iterator cbegin() const noexcept { return data(); }
+  [[nodiscard]] const_iterator cbegin() const noexcept { return data(); }
 
   /**
    * @brief Returns a const_iterator to the first element.
@@ -431,7 +440,7 @@ class device_uvector {
    *
    * @return Immutable iterator to the first element.
    */
-  const_iterator begin() const noexcept { return cbegin(); }
+  [[nodiscard]] const_iterator begin() const noexcept { return cbegin(); }
 
   /**
    * @brief Returns an iterator to the element following the last element of the vector.
@@ -441,7 +450,7 @@ class device_uvector {
    *
    * @return Iterator to one past the last element.
    */
-  iterator end() noexcept { return data() + size(); }
+  [[nodiscard]] iterator end() noexcept { return data() + size(); }
 
   /**
    * @brief Returns a const_iterator to the element following the last element of the vector.
@@ -451,7 +460,7 @@ class device_uvector {
    *
    * @return Immutable iterator to one past the last element.
    */
-  const_iterator cend() const noexcept { return data() + size(); }
+  [[nodiscard]] const_iterator cend() const noexcept { return data() + size(); }
 
   /**
    * @brief Returns an iterator to the element following the last element of the vector.
@@ -461,7 +470,7 @@ class device_uvector {
    *
    * @return Immutable iterator to one past the last element.
    */
-  const_iterator end() const noexcept { return cend(); }
+  [[nodiscard]] const_iterator end() const noexcept { return cend(); }
 
   /**
    * @brief Returns the number of elements in the vector.

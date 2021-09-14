@@ -284,71 +284,73 @@ static void profile_random_allocations(MRFactoryFunc const& factory,
 
 int main(int argc, char** argv)
 {
-  // benchmark::Initialize will remove GBench command line arguments it
-  // recognizes and leave any remaining arguments
-  ::benchmark::Initialize(&argc, argv);
+  try {
+    // benchmark::Initialize will remove GBench command line arguments it
+    // recognizes and leave any remaining arguments
+    ::benchmark::Initialize(&argc, argv);
 
-  // Parse for replay arguments:
-  cxxopts::Options options("RMM Random Allocations Benchmark",
-                           "Benchmarks random allocations within a size range.");
+    // Parse for replay arguments:
+    cxxopts::Options options("RMM Random Allocations Benchmark",
+                             "Benchmarks random allocations within a size range.");
 
-  options.add_options()(
-    "p,profile", "Profiling mode: run once", cxxopts::value<bool>()->default_value("false"));
-  options.add_options()("r,resource",
-                        "Type of device_memory_resource",
-                        cxxopts::value<std::string>()->default_value("pool"));
-  options.add_options()("n,numallocs",
-                        "Number of allocations (default of 0 tests a range)",
-                        cxxopts::value<int>()->default_value("1000"));
-  options.add_options()("m,maxsize",
-                        "Maximum allocation size (default of 0 tests a range)",
-                        cxxopts::value<int>()->default_value("4096"));
+    options.add_options()(
+      "p,profile", "Profiling mode: run once", cxxopts::value<bool>()->default_value("false"));
+    options.add_options()("r,resource",
+                          "Type of device_memory_resource",
+                          cxxopts::value<std::string>()->default_value("pool"));
+    options.add_options()("n,numallocs",
+                          "Number of allocations (default of 0 tests a range)",
+                          cxxopts::value<int>()->default_value("1000"));
+    options.add_options()("m,maxsize",
+                          "Maximum allocation size (default of 0 tests a range)",
+                          cxxopts::value<int>()->default_value("4096"));
 
-  auto args       = options.parse(argc, argv);
-  num_allocations = args["numallocs"].as<int>();
-  max_size        = args["maxsize"].as<int>();
+    auto args       = options.parse(argc, argv);
+    num_allocations = args["numallocs"].as<int>();
+    max_size        = args["maxsize"].as<int>();
 
-  if (args.count("profile") > 0) {
-    std::map<std::string, MRFactoryFunc> const funcs({{"arena", &make_arena},
-                                                      {"binning", &make_binning},
-                                                      {"cuda", &make_cuda},
+    if (args.count("profile") > 0) {
+      std::map<std::string, MRFactoryFunc> const funcs({{"arena", &make_arena},
+                                                        {"binning", &make_binning},
+                                                        {"cuda", &make_cuda},
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
-                                                      {"cuda_async", &make_cuda_async},
+                                                        {"cuda_async", &make_cuda_async},
 #endif
-                                                      {"pool", &make_pool}});
-    auto resource = args["resource"].as<std::string>();
+                                                        {"pool", &make_pool}});
+      auto resource = args["resource"].as<std::string>();
 
-    std::cout << "Profiling " << resource << " with " << num_allocations << " allocations of max "
-              << max_size << "B\n";
+      std::cout << "Profiling " << resource << " with " << num_allocations << " allocations of max "
+                << max_size << "B\n";
 
-    try {
       profile_random_allocations(funcs.at(resource), num_allocations, max_size);
-    } catch (std::exception const& e) {
-      std::cout << "Exception caught: " << e.what() << std::endl;
-    }
 
-    std::cout << "Finished\n";
-  } else {
-    if (args.count("numallocs") == 0) {  // if zero reset to -1 so we benchmark over a range
-      num_allocations = -1;
-    }
-    if (args.count("maxsize") == 0) {  // if zero reset to -1 so we benchmark over a range
-      max_size = -1;
-    }
-
-    if (args.count("resource") > 0) {
-      std::string mr_name = args["resource"].as<std::string>();
-      declare_benchmark(mr_name);
+      std::cout << "Finished\n";
     } else {
+      if (args.count("numallocs") == 0) {  // if zero reset to -1 so we benchmark over a range
+        num_allocations = -1;
+      }
+      if (args.count("maxsize") == 0) {  // if zero reset to -1 so we benchmark over a range
+        max_size = -1;
+      }
+
+      if (args.count("resource") > 0) {
+        std::string mr_name = args["resource"].as<std::string>();
+        declare_benchmark(mr_name);
+      } else {
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
-      std::vector<std::string> mrs{"pool", "binning", "arena", "cuda_async", "cuda"};
+        std::vector<std::string> mrs{"pool", "binning", "arena", "cuda_async", "cuda"};
 #else
-      std::vector<std::string> mrs{"pool", "binning", "arena", "cuda"};
+        std::vector<std::string> mrs{"pool", "binning", "arena", "cuda"};
 #endif
-      std::for_each(
-        std::cbegin(mrs), std::cend(mrs), [](auto const& mr) { declare_benchmark(mr); });
+        std::for_each(
+          std::cbegin(mrs), std::cend(mrs), [](auto const& mr) { declare_benchmark(mr); });
+      }
+      ::benchmark::RunSpecifiedBenchmarks();
     }
-    ::benchmark::RunSpecifiedBenchmarks();
+
+  } catch (std::exception const& e) {
+    std::cout << "Exception caught: " << e.what() << std::endl;
   }
+
   return 0;
 }

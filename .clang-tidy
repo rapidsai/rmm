@@ -7,9 +7,10 @@ Checks:          'clang-diagnostic-*,
                   performance-*,
                   readability-*,
                   llvm-*,
+                  -cppcoreguidelines-macro-usage,
+                  -llvm-header-guard,
                   -modernize-use-trailing-return-type,
-                  -readability-named-parameter,
-                  -cppcoreguidelines-macro-usage'
+                  -readability-named-parameter'
 WarningsAsErrors: ''
 HeaderFilterRegex: ''
 AnalyzeTemporaryDtors: false
@@ -59,4 +60,8 @@ CheckOptions:
   #  value:           '1'
   - key:             bugprone-easily-swappable-parameters.IgnoredParameterNames
     value:           'alignment'
+  - key:             cppcoreguidelines-avoid-magic-numbers.IgnorePowersOf2IntegerValues
+    value:           '1'
+  - key:             readability-magic-numbers.IgnorePowersOf2IntegerValues
+    value:           '1'
 ...

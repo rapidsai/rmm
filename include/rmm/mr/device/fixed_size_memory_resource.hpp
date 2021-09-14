@@ -81,7 +81,7 @@ class fixed_size_memory_resource
    * @brief Destroy the `fixed_size_memory_resource` and free all memory allocated from upstream.
    *
    */
-  ~fixed_size_memory_resource() { release(); }
+  ~fixed_size_memory_resource() override { release(); }
 
   fixed_size_memory_resource()                                  = delete;
   fixed_size_memory_resource(fixed_size_memory_resource const&) = delete;

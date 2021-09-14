@@ -119,13 +119,13 @@ class owning_wrapper : public device_memory_resource {
    * @brief Returns a constant reference to the wrapped resource.
    *
    */
-  Resource const& wrapped() const noexcept { return *wrapped_; }
+  [[nodiscard]] Resource const& wrapped() const noexcept { return *wrapped_; }
 
   /**
    * @brief Returns reference to the wrapped resource.
    *
    */
-  Resource& wrapped() noexcept { return *wrapped_; }
+  [[nodiscard]] Resource& wrapped() noexcept { return *wrapped_; }
 
   /**
    * @copydoc rmm::mr::device_memory_resource::supports_streams()
