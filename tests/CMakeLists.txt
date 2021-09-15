@@ -94,6 +94,9 @@ ConfigureTest(HOST_MR_TEST mr/host/mr_tests.cpp)
 # cuda stream tests
 ConfigureTest(CUDA_STREAM_TEST cuda_stream_tests.cpp cuda_stream_pool_tests.cpp)
 
+# cuda event tests
+ConfigureTest(CUDA_EVENT_TEST cuda_event_tests.cpp)
+
 # device buffer tests
 ConfigureTest(DEVICE_BUFFER_TEST device_buffer_tests.cu)
 

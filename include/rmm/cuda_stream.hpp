@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,6 +59,24 @@ class cuda_stream {
     : stream_{[]() {
                 cudaStream_t* s = new cudaStream_t;
                 RMM_CUDA_TRY(cudaStreamCreate(s));
+                return s;
+              }(),
+              [](cudaStream_t* s) {
+                RMM_ASSERT_CUDA_SUCCESS(cudaStreamDestroy(*s));
+                delete s;
+              }}
+  {
+  }
+
+  /**
+   * @brief Construct a new cuda stream object
+   *
+   * @throw rmm::cuda_error if stream creation fails
+   */
+  cuda_stream(unsigned int flags)
+    : stream_{[flags]() {
+                cudaStream_t* s = new cudaStream_t;
+                RMM_CUDA_TRY(cudaStreamCreateWithFlags(s, flags));
                 return s;
               }(),
               [](cudaStream_t* s) {
