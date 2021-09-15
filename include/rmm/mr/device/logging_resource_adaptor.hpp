@@ -123,7 +123,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    *
    * @return Upstream* Pointer to the upstream resource.
    */
-  Upstream* get_upstream() const noexcept { return upstream_; }
+  [[nodiscard]] Upstream* get_upstream() const noexcept { return upstream_; }
 
   /**
    * @brief Checks whether the upstream resource supports streams.
@@ -162,12 +162,6 @@ class logging_resource_adaptor final : public device_memory_resource {
   }
 
  private:
-  // make_logging_adaptor needs access to private get_default_filename
-  template <typename T>
-  friend logging_resource_adaptor<T> make_logging_adaptor(T* upstream,
-                                                          std::string const& filename,
-                                                          bool auto_flush);
-
   /**
    * @brief Return the value of the environment variable RMM_LOG_FILE.
    *
@@ -272,6 +266,13 @@ class logging_resource_adaptor final : public device_memory_resource {
   {
     return upstream_->get_mem_info(stream);
   }
+
+  // make_logging_adaptor needs access to private get_default_filename
+  template <typename T>
+  // NOLINTNEXTLINE(readability-redundant-declaration)
+  friend logging_resource_adaptor<T> make_logging_adaptor(T* upstream,
+                                                          std::string const& filename,
+                                                          bool auto_flush);
 
   std::shared_ptr<spdlog::logger> logger_;  ///< spdlog logger object
 
