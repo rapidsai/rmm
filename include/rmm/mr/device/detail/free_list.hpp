@@ -25,6 +25,9 @@ namespace rmm::mr::detail {
 struct block_base {
   void* ptr{};  ///< Raw memory pointer
 
+  block_base() = default;
+  block_base(void* ptr) : ptr{ptr} {};
+
   /// Returns the raw pointer for this block
   [[nodiscard]] inline void* pointer() const { return ptr; }
   /// Returns true if this block is valid (non-null), false otherwise
