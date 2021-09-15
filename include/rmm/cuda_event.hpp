@@ -136,7 +136,11 @@ class cuda_event {
    */
   void record(cudaStream_t stream, unsigned int flags) const
   {
+#if CUDART_VERSION < 11010
+    RMM_CUDA_TRY(cudaEventRecord(value(), stream));
+#else
     RMM_CUDA_TRY(cudaEventRecordWithFlags(value(), stream, flags));
+#endif
   }
 
   /**
@@ -172,7 +176,11 @@ class cuda_event {
    */
   void record_no_throw(cudaStream_t stream, unsigned int flags) const noexcept
   {
+#if CUDART_VERSION < 11010
+    RMM_ASSERT_CUDA_SUCCESS(cudaEventRecord(value(), stream));
+#else
     RMM_ASSERT_CUDA_SUCCESS(cudaEventRecordWithFlags(value(), stream, flags));
+#endif
   }
 
   /**
