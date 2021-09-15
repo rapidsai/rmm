@@ -65,8 +65,8 @@ TYPED_TEST(TypedUVectorTest, ResizeSmaller)
 {
   auto const original_size{12345};
   rmm::device_uvector<TypeParam> vec(original_size, this->stream());
-  auto original_data  = vec.data();
-  auto original_begin = vec.begin();
+  auto* original_data  = vec.data();
+  auto* original_begin = vec.begin();
 
   auto smaller_size = vec.size() - 1;
   vec.resize(smaller_size, this->stream());
@@ -86,8 +86,8 @@ TYPED_TEST(TypedUVectorTest, ResizeLarger)
 {
   auto const original_size{12345};
   rmm::device_uvector<TypeParam> vec(original_size, this->stream());
-  auto original_data  = vec.data();
-  auto original_begin = vec.begin();
+  auto* original_data  = vec.data();
+  auto* original_begin = vec.begin();
 
   auto larger_size = vec.size() + 1;
   vec.resize(larger_size, this->stream());
@@ -97,8 +97,8 @@ TYPED_TEST(TypedUVectorTest, ResizeLarger)
   EXPECT_EQ(vec.size(), larger_size);
   EXPECT_EQ(vec.capacity(), larger_size);
 
-  auto larger_data  = vec.data();
-  auto larger_begin = vec.begin();
+  auto* larger_data  = vec.data();
+  auto* larger_begin = vec.begin();
 
   // shrink_to_fit shouldn't have any effect
   vec.shrink_to_fit(this->stream());
@@ -127,7 +127,7 @@ TYPED_TEST(TypedUVectorTest, Release)
   auto const original_size{12345};
   rmm::device_uvector<TypeParam> vec(original_size, this->stream());
 
-  auto original_data = vec.data();
+  auto* original_data = vec.data();
 
   rmm::device_buffer storage = vec.release();
 

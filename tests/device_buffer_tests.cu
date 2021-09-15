@@ -293,9 +293,10 @@ TYPED_TEST(DeviceBufferTest, MoveConstructor)
   EXPECT_EQ(mr, buff_new.memory_resource());
 
   // Original buffer should be empty
-  EXPECT_EQ(nullptr, buff.data());                     // NOLINT(bugprone-use-after-move)
-  EXPECT_EQ(0, buff.size());                           // NOLINT(bugprone-use-after-move)
-  EXPECT_EQ(0, buff.capacity());                       // NOLINT(bugprone-use-after-move)
+  EXPECT_EQ(nullptr,
+            buff.data());         // NOLINT(bugprone-use-after-move, clang-analyzer-cplusplus.Move)
+  EXPECT_EQ(0, buff.size());      // NOLINT(bugprone-use-after-move)
+  EXPECT_EQ(0, buff.capacity());  // NOLINT(bugprone-use-after-move)
   EXPECT_EQ(rmm::cuda_stream_default, buff.stream());  // NOLINT(bugprone-use-after-move)
   EXPECT_NE(nullptr, buff.memory_resource());          // NOLINT(bugprone-use-after-move)
 }
@@ -321,9 +322,10 @@ TYPED_TEST(DeviceBufferTest, MoveConstructorStream)
   EXPECT_EQ(mr, buff_new.memory_resource());
 
   // Original buffer should be empty
-  EXPECT_EQ(nullptr, buff.data());                    // NOLINT(bugprone-use-after-move)
-  EXPECT_EQ(0, buff.size());                          // NOLINT(bugprone-use-after-move)
-  EXPECT_EQ(0, buff.capacity());                      // NOLINT(bugprone-use-after-move)
+  EXPECT_EQ(nullptr,
+            buff.data());         // NOLINT(bugprone-use-after-move, clang-analyzer-cplusplus.Move)
+  EXPECT_EQ(0, buff.size());      // NOLINT(bugprone-use-after-move)
+  EXPECT_EQ(0, buff.capacity());  // NOLINT(bugprone-use-after-move)
   EXPECT_EQ(rmm::cuda_stream_view{}, buff.stream());  // NOLINT(bugprone-use-after-move)
   EXPECT_NE(nullptr, buff.memory_resource());         // NOLINT(bugprone-use-after-move)
 }
@@ -349,7 +351,7 @@ TYPED_TEST(DeviceBufferTest, MoveAssignmentToDefault)
   EXPECT_EQ(mr, dest.memory_resource());
 
   // `from` should be empty
-  EXPECT_EQ(nullptr, src.data());
+  EXPECT_EQ(nullptr, src.data());  // NOLINT(bugprone-use-after-move,clang-analyzer-cplusplus.Move)
   EXPECT_EQ(0, src.size());
   EXPECT_EQ(0, src.capacity());
   EXPECT_EQ(rmm::cuda_stream_default, src.stream());
@@ -377,7 +379,7 @@ TYPED_TEST(DeviceBufferTest, MoveAssignment)
   EXPECT_EQ(mr, dest.memory_resource());
 
   // `from` should be empty
-  EXPECT_EQ(nullptr, src.data());
+  EXPECT_EQ(nullptr, src.data());  // NOLINT(bugprone-use-after-move,clang-analyzer-cplusplus.Move)
   EXPECT_EQ(0, src.size());
   EXPECT_EQ(0, src.capacity());
   EXPECT_EQ(rmm::cuda_stream_default, src.stream());
@@ -393,8 +395,8 @@ TYPED_TEST(DeviceBufferTest, SelfMoveAssignment)
   auto* mr      = buff.memory_resource();
   auto stream   = buff.stream();
 
-  buff = std::move(buff);  // self-move-assignment shouldn't modify the buffer
-  EXPECT_NE(nullptr, buff.data());
+  buff = std::move(buff);           // self-move-assignment shouldn't modify the buffer
+  EXPECT_NE(nullptr, buff.data());  // NOLINT(bugprone-use-after-move,clang-analyzer-cplusplus.Move)
   EXPECT_EQ(ptr, buff.data());
   EXPECT_EQ(size, buff.size());
   EXPECT_EQ(capacity, buff.capacity());

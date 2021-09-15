@@ -93,13 +93,14 @@ TYPED_TEST(DeviceScalarTest, MoveCtor)
   EXPECT_NE(nullptr, scalar.data());
   EXPECT_EQ(this->value, scalar.value(this->stream));
 
-  auto original_pointer = scalar.data();
-  auto original_value   = scalar.value(this->stream);
+  auto* original_pointer = scalar.data();
+  auto original_value    = scalar.value(this->stream);
 
   rmm::device_scalar<TypeParam> moved_to{std::move(scalar)};
   EXPECT_NE(nullptr, moved_to.data());
   EXPECT_EQ(moved_to.data(), original_pointer);
   EXPECT_EQ(moved_to.value(this->stream), original_value);
+  // NOLINTNEXTLINE(bugprone-use-after-move,clang-analyzer-cplusplus.Move)
   EXPECT_EQ(nullptr, scalar.data());
 }
 
