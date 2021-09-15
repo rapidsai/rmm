@@ -158,7 +158,9 @@ TYPED_TEST(TypedUVectorTest, OOBGetElement)
 {
   auto const size{12345};
   rmm::device_uvector<TypeParam> vec(size, this->stream());
-  EXPECT_THROW(vec.element(vec.size() + 1, this->stream()), rmm::out_of_range);
+  // avoid error due to nodiscard function
+  auto foo = [&]() { return vec.element(vec.size() + 1, this->stream()); };
+  EXPECT_THROW(foo(), rmm::out_of_range);
 }
 
 TYPED_TEST(TypedUVectorTest, GetSetElement)
