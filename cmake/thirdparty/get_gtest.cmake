@@ -12,6 +12,7 @@
 # the License.
 # =============================================================================
 
+# Use CPM to find or clone gtest
 function(find_and_configure_gtest)
   include(${rapids-cmake-dir}/cpm/gtest.cmake)
   rapids_cpm_gtest()
