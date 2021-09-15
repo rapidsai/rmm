@@ -57,11 +57,11 @@ class limiting_resource_adaptor final : public device_memory_resource {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
   }
 
-  limiting_resource_adaptor()                                 = delete;
-  ~limiting_resource_adaptor() override                       = default;
-  limiting_resource_adaptor(limiting_resource_adaptor const&) = delete;
+  limiting_resource_adaptor()                                     = delete;
+  ~limiting_resource_adaptor() override                           = default;
+  limiting_resource_adaptor(limiting_resource_adaptor const&)     = delete;
+  limiting_resource_adaptor(limiting_resource_adaptor&&) noexcept = default;
   limiting_resource_adaptor& operator=(limiting_resource_adaptor const&) = delete;
-  limiting_resource_adaptor(limiting_resource_adaptor&&) noexcept        = default;
   limiting_resource_adaptor& operator=(limiting_resource_adaptor&&) noexcept = default;
 
   /**
@@ -128,15 +128,19 @@ class limiting_resource_adaptor final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
-    std::size_t proposed_size = rmm::detail::align_up(bytes, alignment_);
-    RMM_EXPECTS(proposed_size + allocated_bytes_ <= allocation_limit_,
-                rmm::bad_alloc,
-                "Exceeded memory limit");
+    auto const proposed_size = rmm::detail::align_up(bytes, alignment_);
+    auto const old           = allocated_bytes_.fetch_add(proposed_size);
+    if (old + proposed_size <= allocation_limit_) {
+      try {
+        return upstream_->allocate(bytes, stream);
+      } catch (...) {
+        allocated_bytes_ -= proposed_size;
+        throw;
+      }
+    }
 
-    auto* const ptr = upstream_->allocate(bytes, stream);
-    allocated_bytes_ += proposed_size;
-
-    return ptr;
+    allocated_bytes_ -= proposed_size;
+    RMM_FAIL("Exceeded memory limit", rmm::bad_alloc);
   }
 
   /**
