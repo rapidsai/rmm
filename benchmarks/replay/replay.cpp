@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@
 #include <thread>
 
 /// MR factory functions
-std::shared_ptr<rmm::mr::device_memory_resource> make_cuda(std::size_t /*unused*/ = 0)
+std::shared_ptr<rmm::mr::device_memory_resource> make_cuda(std::size_t = 0)
 {
   return std::make_shared<rmm::mr::cuda_memory_resource>();
 }
@@ -57,18 +57,20 @@ std::shared_ptr<rmm::mr::device_memory_resource> make_simulated(std::size_t simu
 
 inline auto make_pool(std::size_t simulated_size)
 {
-  return simulated_size == 0
-           ? rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_cuda())
-           : rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(
-               make_simulated(simulated_size), simulated_size, simulated_size);
+  if (simulated_size > 0) {
+    return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(
+      make_simulated(simulated_size), simulated_size, simulated_size);
+  }
+  return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_cuda());
 }
 
 inline auto make_arena(std::size_t simulated_size)
 {
-  return simulated_size == 0
-           ? rmm::mr::make_owning_wrapper<rmm::mr::arena_memory_resource>(make_cuda())
-           : rmm::mr::make_owning_wrapper<rmm::mr::arena_memory_resource>(
-               make_simulated(simulated_size), simulated_size, simulated_size);
+  if (simulated_size > 0) {
+    return rmm::mr::make_owning_wrapper<rmm::mr::arena_memory_resource>(
+      make_simulated(simulated_size), simulated_size, simulated_size);
+  }
+  return rmm::mr::make_owning_wrapper<rmm::mr::arena_memory_resource>(make_cuda());
 }
 
 inline auto make_binning(std::size_t simulated_size)
@@ -325,93 +327,100 @@ void declare_benchmark(std::string const& name,
 // Usage: REPLAY_BENCHMARK -f "path/to/log/file"
 int main(int argc, char** argv)
 {
-  // benchmark::Initialize will remove GBench command line arguments it
-  // recognizes and leave any remaining arguments
-  ::benchmark::Initialize(&argc, argv);
+  try {
+    // benchmark::Initialize will remove GBench command line arguments it
+    // recognizes and leave any remaining arguments
+    ::benchmark::Initialize(&argc, argv);
 
-  // Parse for replay arguments:
-  auto args = [&argc, &argv]() {
-    cxxopts::Options options(
-      "RMM Replay Benchmark",
-      "Replays and benchmarks allocation activity captured from RMM logging.");
+    // Parse for replay arguments:
+    auto args = [&argc, &argv]() {
+      cxxopts::Options options(
+        "RMM Replay Benchmark",
+        "Replays and benchmarks allocation activity captured from RMM logging.");
 
-    options.add_options()("f,file", "Name of RMM log file.", cxxopts::value<std::string>());
-    options.add_options()("r,resource",
-                          "Type of device_memory_resource",
-                          cxxopts::value<std::string>()->default_value("pool"));
-    options.add_options()("s,size",
-                          "Size of simulated GPU memory in GiB. Not supported for the cuda memory "
-                          "resource.",
-                          cxxopts::value<float>()->default_value("0"));
-    options.add_options()("v,verbose",
-                          "Enable verbose printing of log events",
-                          cxxopts::value<bool>()->default_value("false"));
+      options.add_options()("f,file", "Name of RMM log file.", cxxopts::value<std::string>());
+      options.add_options()("r,resource",
+                            "Type of device_memory_resource",
+                            cxxopts::value<std::string>()->default_value("pool"));
+      options.add_options()(
+        "s,size",
+        "Size of simulated GPU memory in GiB. Not supported for the cuda memory "
+        "resource.",
+        cxxopts::value<float>()->default_value("0"));
+      options.add_options()("v,verbose",
+                            "Enable verbose printing of log events",
+                            cxxopts::value<bool>()->default_value("false"));
 
-    auto args = options.parse(argc, argv);
+      auto args = options.parse(argc, argv);
 
-    if (args.count("file") == 0) {
-      std::cout << options.help() << std::endl;
-      exit(0);
-    }
+      if (args.count("file") == 0) {
+        std::cout << options.help() << std::endl;
+        exit(0);
+      }
 
-    return args;
-  }();
+      return args;
+    }();
 
-  auto filename = args["file"].as<std::string>();
+    auto filename = args["file"].as<std::string>();
 
-  auto per_thread_events = [filename]() {
-    try {
-      auto events = parse_per_thread_events(filename);
-      return events;
-    } catch (std::exception const& e) {
-      std::cout << "Failed to parse events: " << e.what() << std::endl;
-      return std::vector<std::vector<rmm::detail::event>>{};
-    }
-  }();
+    auto per_thread_events = [filename]() {
+      try {
+        auto events = parse_per_thread_events(filename);
+        return events;
+      } catch (std::exception const& e) {
+        std::cout << "Failed to parse events: " << e.what() << std::endl;
+        return std::vector<std::vector<rmm::detail::event>>{};
+      }
+    }();
 
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-  std::cout << "Using CUDA per-thread default stream.\n";
+    std::cout << "Using CUDA per-thread default stream.\n";
 #endif
 
-  auto const simulated_size =
-    static_cast<std::size_t>(args["size"].as<float>() * static_cast<float>(1U << 30U));
-  if (simulated_size != 0 && args["resource"].as<std::string>() != "cuda") {
-    std::cout << "Simulating GPU with memory size of " << simulated_size << " bytes.\n";
-  }
+    auto const simulated_size =
+      static_cast<std::size_t>(args["size"].as<float>() * static_cast<float>(1U << 30U));
+    if (simulated_size != 0 && args["resource"].as<std::string>() != "cuda") {
+      std::cout << "Simulating GPU with memory size of " << simulated_size << " bytes.\n";
+    }
 
-  std::cout << "Total Events: "
-            << std::accumulate(
-                 per_thread_events.begin(),
-                 per_thread_events.end(),
-                 0,
-                 [](std::size_t accum, auto const& events) { return accum + events.size(); })
-            << std::endl;
+    std::cout << "Total Events: "
+              << std::accumulate(
+                   per_thread_events.begin(),
+                   per_thread_events.end(),
+                   0,
+                   [](std::size_t accum, auto const& events) { return accum + events.size(); })
+              << std::endl;
 
-  for (std::size_t thread = 0; thread < per_thread_events.size(); ++thread) {
-    std::cout << "Thread " << thread << ": " << per_thread_events[thread].size() << " events\n";
-    if (args["verbose"].as<bool>()) {
-      for (auto const& event : per_thread_events[thread]) {
-        std::cout << event << std::endl;
+    for (std::size_t thread = 0; thread < per_thread_events.size(); ++thread) {
+      std::cout << "Thread " << thread << ": " << per_thread_events[thread].size() << " events\n";
+      if (args["verbose"].as<bool>()) {
+        for (auto const& event : per_thread_events[thread]) {
+          std::cout << event << std::endl;
+        }
       }
     }
+
+    auto const num_threads = per_thread_events.size();
+
+    // Uncomment to enable / change default log level
+    // rmm::logger().set_level(spdlog::level::trace);
+
+    if (args.count("resource") > 0) {
+      std::string mr_name = args["resource"].as<std::string>();
+      declare_benchmark(mr_name, simulated_size, per_thread_events, num_threads);
+    } else {
+      std::array<std::string, 4> mrs{"pool", "arena", "binning", "cuda"};
+      std::for_each(std::cbegin(mrs),
+                    std::cend(mrs),
+                    [&simulated_size, &per_thread_events, &num_threads](auto const& mr) {
+                      declare_benchmark(mr, simulated_size, per_thread_events, num_threads);
+                    });
+    }
+
+    ::benchmark::RunSpecifiedBenchmarks();
+  } catch (std::exception const& e) {
+    std::cout << "Exception caught: " << e.what() << std::endl;
   }
 
-  auto const num_threads = per_thread_events.size();
-
-  // Uncomment to enable / change default log level
-  // rmm::logger().set_level(spdlog::level::trace);
-
-  if (args.count("resource") > 0) {
-    std::string mr_name = args["resource"].as<std::string>();
-    declare_benchmark(mr_name, simulated_size, per_thread_events, num_threads);
-  } else {
-    std::array<std::string, 4> mrs{"pool", "arena", "binning", "cuda"};
-    std::for_each(std::cbegin(mrs),
-                  std::cend(mrs),
-                  [&simulated_size, &per_thread_events, &num_threads](auto const& mr) {
-                    declare_benchmark(mr, simulated_size, per_thread_events, num_threads);
-                  });
-  }
-
-  ::benchmark::RunSpecifiedBenchmarks();
+  return 0;
 }
