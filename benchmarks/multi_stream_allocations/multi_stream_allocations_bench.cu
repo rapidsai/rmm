@@ -113,7 +113,10 @@ inline auto make_binning()
   auto pool = make_pool();
   // Add a binning_memory_resource with fixed-size bins of sizes 256, 512, 1024, 2048 and 4096KiB
   // Larger allocations will use the pool resource
-  auto mr = rmm::mr::make_owning_wrapper<rmm::mr::binning_memory_resource>(pool, 18, 22);
+  constexpr auto min_bin_pow2{18};
+  constexpr auto max_bin_pow2{22};
+  auto mr = rmm::mr::make_owning_wrapper<rmm::mr::binning_memory_resource>(
+    pool, min_bin_pow2, max_bin_pow2);
   return mr;
 }
 
@@ -191,69 +194,75 @@ void run_profile(std::string const& resource_name, int kernel_count, int stream_
 
 int main(int argc, char** argv)
 {
-  ::benchmark::Initialize(&argc, argv);
+  try {
+    ::benchmark::Initialize(&argc, argv);
 
-  // Parse for replay arguments:
-  cxxopts::Options options(
-    "RMM Multi Stream Allocations Benchmark",
-    "Benchmarks interleaving temporary allocations with compute-bound kernels.");
+    // Parse for replay arguments:
+    cxxopts::Options options(
+      "RMM Multi Stream Allocations Benchmark",
+      "Benchmarks interleaving temporary allocations with compute-bound kernels.");
 
-  options.add_options()(  //
-    "p,profile",
-    "Profiling mode: run once",
-    cxxopts::value<bool>()->default_value("false"));
+    options.add_options()(  //
+      "p,profile",
+      "Profiling mode: run once",
+      cxxopts::value<bool>()->default_value("false"));
 
-  options.add_options()(  //
-    "r,resource",
-    "Type of device_memory_resource",
-    cxxopts::value<std::string>()->default_value("pool"));
+    options.add_options()(  //
+      "r,resource",
+      "Type of device_memory_resource",
+      cxxopts::value<std::string>()->default_value("pool"));
 
-  options.add_options()(  //
-    "k,kernels",
-    "Number of kernels to run: (default: 8)",
-    cxxopts::value<int>()->default_value("8"));
+    options.add_options()(  //
+      "k,kernels",
+      "Number of kernels to run: (default: 8)",
+      cxxopts::value<int>()->default_value("8"));
 
-  options.add_options()(  //
-    "s,streams",
-    "Number of streams in stream pool (default: 8)",
-    cxxopts::value<int>()->default_value("8"));
+    options.add_options()(  //
+      "s,streams",
+      "Number of streams in stream pool (default: 8)",
+      cxxopts::value<int>()->default_value("8"));
 
-  options.add_options()(  //
-    "w,warm",
-    "Ensure each stream has enough memory to satisfy allocations.",
-    cxxopts::value<bool>()->default_value("false"));
+    options.add_options()(  //
+      "w,warm",
+      "Ensure each stream has enough memory to satisfy allocations.",
+      cxxopts::value<bool>()->default_value("false"));
 
-  auto args = options.parse(argc, argv);
+    auto args = options.parse(argc, argv);
 
-  if (args.count("profile") > 0) {
-    auto resource_name = args["resource"].as<std::string>();
-    auto num_kernels   = args["kernels"].as<int>();
-    auto num_streams   = args["streams"].as<int>();
-    auto prewarm       = args["warm"].as<bool>();
-    try {
-      run_profile(resource_name, num_kernels, num_streams, prewarm);
-    } catch (std::exception const& e) {
-      std::cout << "Exception caught: " << e.what() << std::endl;
-    }
-  } else {
-    auto resource_names = std::vector<std::string>();
-
-    if (args.count("resource") > 0) {
-      resource_names.emplace_back(args["resource"].as<std::string>());
+    if (args.count("profile") > 0) {
+      auto resource_name = args["resource"].as<std::string>();
+      auto num_kernels   = args["kernels"].as<int>();
+      auto num_streams   = args["streams"].as<int>();
+      auto prewarm       = args["warm"].as<bool>();
+      try {
+        run_profile(resource_name, num_kernels, num_streams, prewarm);
+      } catch (std::exception const& e) {
+        std::cout << "Exception caught: " << e.what() << std::endl;
+      }
     } else {
-      resource_names.emplace_back("cuda");
+      auto resource_names = std::vector<std::string>();
+
+      if (args.count("resource") > 0) {
+        resource_names.emplace_back(args["resource"].as<std::string>());
+      } else {
+        resource_names.emplace_back("cuda");
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
-      resource_names.emplace_back("cuda_async");
+        resource_names.emplace_back("cuda_async");
 #endif
-      resource_names.emplace_back("pool");
-      resource_names.emplace_back("arena");
-      resource_names.emplace_back("binning");
-    }
+        resource_names.emplace_back("pool");
+        resource_names.emplace_back("arena");
+        resource_names.emplace_back("binning");
+      }
 
-    for (auto& resource_name : resource_names) {
-      declare_benchmark(resource_name);
-    }
+      for (auto& resource_name : resource_names) {
+        declare_benchmark(resource_name);
+      }
 
-    ::benchmark::RunSpecifiedBenchmarks();
+      ::benchmark::RunSpecifiedBenchmarks();
+    }
+  } catch (std::exception const& e) {
+    std::cout << "Exception caught: " << e.what() << std::endl;
   }
+
+  return 0;
 }
