@@ -209,15 +209,22 @@ class device_uvector {
   {
     RMM_EXPECTS(
       element_index < size(), rmm::out_of_range, "Attempt to access out of bounds element.");
+
     if constexpr (std::is_same<value_type, bool>::value) {
       RMM_CUDA_TRY(
         cudaMemsetAsync(element_ptr(element_index), value, sizeof(value), stream.value()));
-    } else if (std::is_fundamental<value_type>::value and value == value_type{0}) {
-      set_element_to_zero_async(element_index, stream);
-    } else {
-      RMM_CUDA_TRY(cudaMemcpyAsync(
-        element_ptr(element_index), &value, sizeof(value), cudaMemcpyDefault, stream.value()));
+      return;
     }
+
+    if constexpr (std::is_fundamental<value_type>::value) {
+      if (value == value_type{0}) {
+        set_element_to_zero_async(element_index, stream);
+        return;
+      }
+    }
+
+    RMM_CUDA_TRY(cudaMemcpyAsync(
+      element_ptr(element_index), &value, sizeof(value), cudaMemcpyDefault, stream.value()));
   }
 
   // We delete the r-value reference overload to prevent asynchronously copying from a literal or
@@ -379,7 +386,7 @@ class device_uvector {
    *
    * @return The `device_buffer` used to store the vector elements
    */
-  [[nodiscard]] device_buffer release() noexcept { return std::move(_storage); }
+  device_buffer release() noexcept { return std::move(_storage); }
 
   /**
    * @brief Returns the number of elements that can be held in currently allocated storage.
