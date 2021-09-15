@@ -221,7 +221,7 @@ class stream_allocator_adaptor {
    * @brief Returns the underlying stream-ordered allocator
    *
    */
-  Allocator underlying_allocator() const noexcept { return alloc_; }
+  [[nodiscard]] Allocator underlying_allocator() const noexcept { return alloc_; }
 
  private:
   Allocator alloc_;          ///< Underlying allocator used for (de)allocation

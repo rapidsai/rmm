@@ -69,7 +69,7 @@ class limiting_resource_adaptor final : public device_memory_resource {
    *
    * @return Upstream* Pointer to the upstream resource.
    */
-  Upstream* get_upstream() const noexcept { return upstream_; }
+  [[nodiscard]] Upstream* get_upstream() const noexcept { return upstream_; }
 
   /**
    * @brief Checks whether the upstream resource supports streams.
