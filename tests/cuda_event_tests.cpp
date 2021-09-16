@@ -37,35 +37,36 @@ TEST_F(CudaEventTest, MoveConstructor)
 TEST_F(CudaEventTest, EventOrder)
 {
   rmm::cuda_stream_view stream_a(rmm::cuda_stream_default);
-  rmm::cuda_stream stream_b_owner(cudaStreamNonBlocking);
-  cudaStream_t stream_b = stream_b_owner.value();
-  rmm::cuda_stream stream_c(cudaStreamNonBlocking);
+  rmm::cuda_stream stream_b(rmm::STREAM_NON_BLOCKING);
+  rmm::cuda_stream stream_c(rmm::STREAM_NON_BLOCKING);
 
   rmm::cuda_event result_copied_back;
-  rmm::cuda_event memory_written;
-  rmm::cuda_event buf_created;
+  rmm::cuda_event memory_written_owner;
+  rmm::cuda_event_view memory_written(memory_written_owner);
+  rmm::cuda_event buf_created_owner;
+  cudaEvent_t buf_created(buf_created_owner.value());
 
   const unsigned char expected = 42;
   unsigned char answer         = 0;
 
   // prepare the device memory
   rmm::device_scalar<unsigned char> buf(stream_c);
-  buf_created.record_no_throw(stream_c);
+  stream_c.record_no_throw(buf_created);
 
   // set the expected result in the device memory
-  buf_created.wait(stream_b);
-  RMM_CUDA_TRY(cudaMemsetAsync(buf.data(), expected, 1, stream_b));
-  memory_written.record(stream_b, 0);
+  stream_b.wait(buf_created);
+  RMM_CUDA_TRY(cudaMemsetAsync(buf.data(), expected, 1, stream_b.value()));
+  stream_b.record(memory_written, rmm::EVENT_RECORD_DEFAULT);
 
   // copy the written result back
-  memory_written.wait(stream_a, 0);
+  stream_a.wait(memory_written, rmm::EVENT_WAIT_DEFAULT);
   RMM_CUDA_TRY(cudaMemcpyAsync(&answer, buf.data(), 1, cudaMemcpyDeviceToHost, stream_a));
-  result_copied_back.record(stream_a);
+  stream_a.record(result_copied_back);
 
   // this must not affect the result, because memset happens after the data has been copied back.
-  result_copied_back.wait(stream_c);
+  stream_c.wait(result_copied_back);
   RMM_CUDA_TRY(cudaMemsetAsync(buf.data(), expected + 1, 1, stream_c.value()));
-  memory_written.record(stream_c, 0);
+  stream_c.record(memory_written);
 
   memory_written.wait();
   result_copied_back.wait();

@@ -73,7 +73,7 @@ class cuda_stream {
    *
    * @throw rmm::cuda_error if stream creation fails
    */
-  cuda_stream(unsigned int flags)
+  cuda_stream(cuda_stream_flags flags)
     : stream_{[flags]() {
                 cudaStream_t* s = new cudaStream_t;
                 RMM_CUDA_TRY(cudaStreamCreateWithFlags(s, flags));
@@ -141,6 +141,67 @@ class cuda_stream {
   void synchronize_no_throw() const noexcept
   {
     RMM_ASSERT_CUDA_SUCCESS(cudaStreamSynchronize(value()));
+  }
+
+  /**
+   * @brief Record the given CUDA event in the owned CUDA stream.
+   *
+   * Calls `cudaEventRecord()`.
+   *
+   * @throw rmm::cuda_error if event recording fails
+   */
+  void record(cuda_event_view event) const { view().record(event); }
+
+  /**
+   * @brief Record the given CUDA event in the owned CUDA stream.
+   *
+   * Calls `cudaEventRecordWithFlags()`.
+   *
+   * @throw rmm::cuda_error if event recording fails
+   */
+  void record(cuda_event_view event, cuda_event_record_flags flags) const
+  {
+    view().record(event, flags);
+  }
+
+  /**
+   * @brief Record the given CUDA event in the owned CUDA stream.
+   *
+   * Calls `cudaEventRecord()` asserting the CUDA_SUCCESS result.
+   */
+  void record_no_throw(cuda_event_view event) const noexcept { view().record_no_throw(event); }
+
+  /**
+   * @brief Record the given CUDA event in the owned CUDA stream.
+   *
+   * Calls `cudaEventRecordWithFlags()` asserting the CUDA_SUCCESS result.
+   */
+  void record_no_throw(cuda_event_view event, cuda_event_record_flags flags) const noexcept
+  {
+    view().record_no_throw(event, flags);
+  }
+
+  /**
+   * @brief Wait for the given CUDA event in the owned CUDA stream.
+   *
+   * Calls `cudaStreamWaitEvent()`.
+   *
+   * @throw rmm::cuda_error if event waiting fails
+   */
+  void wait(cuda_event_view event, cuda_event_wait_flags flags = EVENT_WAIT_DEFAULT) const
+  {
+    view().wait(event, flags);
+  }
+
+  /**
+   * @brief Wait for the given CUDA event in the owned CUDA stream.
+   *
+   * Calls `cudaStreamWaitEvent()` asserting the CUDA_SUCCESS result.
+   */
+  void wait_no_throw(cuda_event_view event,
+                     cuda_event_wait_flags flags = EVENT_WAIT_DEFAULT) const noexcept
+  {
+    view().wait_no_throw(event, flags);
   }
 
  private:
