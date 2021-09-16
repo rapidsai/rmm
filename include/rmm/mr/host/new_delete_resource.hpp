@@ -51,13 +51,14 @@ class new_delete_resource final : public host_memory_resource {
    * @return Pointer to the newly allocated memory
    */
   void* do_allocate(std::size_t bytes,
-                    std::size_t alignment = detail::RMM_DEFAULT_HOST_ALIGNMENT) override
+                    std::size_t alignment = rmm::detail::RMM_DEFAULT_HOST_ALIGNMENT) override
   {
     // If the requested alignment isn't supported, use default
-    alignment =
-      (detail::is_supported_alignment(alignment)) ? alignment : detail::RMM_DEFAULT_HOST_ALIGNMENT;
+    alignment = (rmm::detail::is_supported_alignment(alignment))
+                  ? alignment
+                  : rmm::detail::RMM_DEFAULT_HOST_ALIGNMENT;
 
-    return detail::aligned_allocate(
+    return rmm::detail::aligned_allocate(
       bytes, alignment, [](std::size_t size) { return ::operator new(size); });
   }
 
@@ -78,9 +79,10 @@ class new_delete_resource final : public host_memory_resource {
    */
   void do_deallocate(void* ptr,
                      std::size_t bytes,
-                     std::size_t alignment = detail::RMM_DEFAULT_HOST_ALIGNMENT) override
+                     std::size_t alignment = rmm::detail::RMM_DEFAULT_HOST_ALIGNMENT) override
   {
-    detail::aligned_deallocate(ptr, bytes, alignment, [](void* ptr) { ::operator delete(ptr); });
+    rmm::detail::aligned_deallocate(
+      ptr, bytes, alignment, [](void* ptr) { ::operator delete(ptr); });
   }
 };
 
