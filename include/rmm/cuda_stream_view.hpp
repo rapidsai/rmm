@@ -106,13 +106,13 @@ class cuda_stream_view {
     if (value() == other.value()) return true;
     // legacy + blocking streams
     unsigned int flags = 0;
-    if (value() == cudaStreamLegacy) {
+    if (is_default()) {
       RMM_CUDA_TRY(cudaStreamGetFlags(other.value(), &flags));
-      return (flags & rmm::STREAM_NON_BLOCKING) == 0;
+      if ((flags & rmm::STREAM_NON_BLOCKING) == 0) return true;
     }
-    if (other.value() == cudaStreamLegacy) {
+    if (other.is_default()) {
       RMM_CUDA_TRY(cudaStreamGetFlags(value(), &flags));
-      return (flags & rmm::STREAM_NON_BLOCKING) == 0;
+      if ((flags & rmm::STREAM_NON_BLOCKING) == 0) return true;
     }
     return false;
   }
