@@ -94,6 +94,30 @@ class cuda_stream_view {
   }
 
   /**
+   *  @brief Tells if the viewed CUDA stream is implicitly synchronized with the given stream.
+   *
+   *  This can happen e.g.
+   *   if the two views point to the same stream
+   *   or sometimes when one of them is the legacy default stream.
+   */
+  bool is_implicitly_synchronized(cuda_stream_view other) const
+  {
+    // any stream is "synchronized" with itself
+    if (value() == other.value()) return true;
+    // legacy + blocking streams
+    unsigned int flags = 0;
+    if (value() == cudaStreamLegacy) {
+      RMM_CUDA_TRY(cudaStreamGetFlags(other.value(), &flags));
+      return (flags & rmm::STREAM_NON_BLOCKING) == 0;
+    }
+    if (other.value() == cudaStreamLegacy) {
+      RMM_CUDA_TRY(cudaStreamGetFlags(value(), &flags));
+      return (flags & rmm::STREAM_NON_BLOCKING) == 0;
+    }
+    return false;
+  }
+
+  /**
    * @brief Synchronize the viewed CUDA stream.
    *
    * Calls `cudaStreamSynchronize()`.

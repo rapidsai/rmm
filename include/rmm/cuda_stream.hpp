@@ -125,6 +125,18 @@ class cuda_stream {
   operator cuda_stream_view() const { return view(); }
 
   /**
+   *  @brief Tells if the owned CUDA stream is implicitly synchronized with the given stream.
+   *
+   *  This can happen e.g.
+   *   if both of them are the same stream
+   *   or sometimes when one of them is the legacy default stream.
+   */
+  bool is_implicitly_synchronized(cuda_stream_view other) const
+  {
+    return view().is_implicitly_synchronized(other);
+  }
+
+  /**
    * @brief Synchronize the owned CUDA stream.
    *
    * Calls `cudaStreamSynchronize()`.
