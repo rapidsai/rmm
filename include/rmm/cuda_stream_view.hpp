@@ -158,7 +158,7 @@ class cuda_stream_view {
   void record(cuda_event_view event, cuda_event_record_flags flags) const
   {
 #if CUDART_VERSION < 11010
-    RMM_CUDA_TRY(cudaEventRecord(event.value(), value());
+    RMM_CUDA_TRY(cudaEventRecord(event.value(), value()));
 #else
     RMM_CUDA_TRY(cudaEventRecordWithFlags(event.value(), value(), flags));
 #endif
@@ -182,7 +182,7 @@ class cuda_stream_view {
   void record_no_throw(cuda_event_view event, cuda_event_record_flags flags) const noexcept
   {
 #if CUDART_VERSION < 11010
-    RMM_ASSERT_CUDA_SUCCESS(cudaEventRecord(event.value(), value());
+    RMM_ASSERT_CUDA_SUCCESS(cudaEventRecord(event.value(), value()));
 #else
     RMM_ASSERT_CUDA_SUCCESS(cudaEventRecordWithFlags(event.value(), value(), flags));
 #endif
