@@ -148,7 +148,7 @@ class cuda_event {
    *
    * @throw rmm::cuda_error if event synchronization fails
    */
-  void wait() const { view().wait() }
+  void wait() const { view().wait(); }
 
   /**
    * @brief Synchronize the owned CUDA event (block host thread till completion).
