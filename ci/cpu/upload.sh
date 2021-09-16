@@ -30,7 +30,7 @@ fi
 gpuci_logger "Get conda file output locations"
 
 export LIBRMM_FILE=`conda build conda/recipes/librmm --output`
-export RMM_FILE=`conda build conda/recipes/rmm --python=$PYTHON --output`
+export RMM_FILE=`conda build conda/recipes/rmm --python=$PYTHON_VER --output`
 
 ################################################################################
 # UPLOAD - Conda packages

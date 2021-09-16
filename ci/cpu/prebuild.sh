@@ -4,7 +4,7 @@
 export UPLOAD_RMM=1
 
 #Build librmm once per CUDA
-if [[ "$PYTHON" == "3.7" ]]; then
+if [[ "$PYTHON_VER" == "3.7" ]]; then
     export UPLOAD_LIBRMM=1
 else
     export UPLOAD_LIBRMM=0

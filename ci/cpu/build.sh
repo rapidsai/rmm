@@ -61,7 +61,7 @@ conda config --set ssl_verify False
 if [[ "$BUILD_LIBRMM" == "1" ]]; then
   gpuci_logger "Build conda pkg for librmm"
   if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
-    gpuci_conda_retry build conda/recipes/librmm --python=$PYTHON
+    gpuci_conda_retry build conda/recipes/librmm --python=$PYTHON_VER
   else
     gpuci_conda_retry build --dirty --no-remove-work-dir conda/recipes/librmm
   fi
@@ -70,7 +70,7 @@ fi
 if [[ "$BUILD_RMM" == "1" ]]; then
   gpuci_logger "Build conda pkg for rmm"
   if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
-    gpuci_conda_retry build conda/recipes/rmm --python=$PYTHON
+    gpuci_conda_retry build conda/recipes/rmm --python=$PYTHON_VER
   else
     gpuci_conda_retry build --dirty --no-remove-work-dir \
       -c $WORKSPACE/ci/artifacts/rmm/cpu/conda-bld/ conda/recipes/rmm
