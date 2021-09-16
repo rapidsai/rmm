@@ -38,17 +38,25 @@ enum cuda_event_flags {
 };
 
 enum cuda_event_record_flags {
-  /** Default event creation flag. */
+/** Default event creation flag. */
+#if CUDART_VERSION < 11010
+  EVENT_RECORD_DEFAULT = 0,
+#else
   EVENT_RECORD_DEFAULT = cudaEventRecordDefault,
   /** Event is captured in the graph as an external event node when performing stream capture. */
   EVENT_RECORD_EXTERNAL = cudaEventRecordExternal
+#endif
 };
 
 enum cuda_event_wait_flags {
-  /** Default event creation flag. */
+/** Default event creation flag. */
+#if CUDART_VERSION < 11010
+  EVENT_WAIT_DEFAULT = 0,
+#else
   EVENT_WAIT_DEFAULT = cudaEventWaitDefault,
   /** Event is captured in the graph as an external event node when performing stream capture. */
   EVENT_WAIT_EXTERNAL = cudaEventWaitExternal
+#endif
 };
 
 /**
