@@ -33,10 +33,10 @@ struct cuda_device_id {
    *
    * @param id The device's integer identifier
    */
-  explicit constexpr cuda_device_id(value_type id) noexcept : id_{id} {}
+  explicit constexpr cuda_device_id(value_type dev_id) noexcept : id_{dev_id} {}
 
   /// Returns the wrapped integer value
-  constexpr value_type value() const noexcept { return id_; }
+  [[nodiscard]] constexpr value_type value() const noexcept { return id_; }
 
  private:
   value_type id_;
@@ -52,7 +52,7 @@ namespace detail {
  */
 inline cuda_device_id current_device()
 {
-  int dev_id;
+  int dev_id{};
   RMM_CUDA_TRY(cudaGetDevice(&dev_id));
   return cuda_device_id{dev_id};
 }

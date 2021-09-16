@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,6 @@ TEST_F(CudaStreamPoolTest, Unequal)
 TEST_F(CudaStreamPoolTest, Nondefault)
 {
   auto const stream_a = this->pool.get_stream();
-  auto const stream_b = this->pool.get_stream();
 
   // pool streams are explicit, non-default streams
   EXPECT_FALSE(stream_a.is_default());
@@ -50,13 +49,14 @@ TEST_F(CudaStreamPoolTest, ValidStreams)
   auto const stream_b = this->pool.get_stream();
 
   // Operations on the streams should work correctly and without throwing exceptions
-  auto v = rmm::device_uvector<std::uint8_t>{100, stream_a};
-  RMM_CUDA_TRY(cudaMemsetAsync(v.data(), 0xcc, 100, stream_a.value()));
+  auto constexpr vector_size{100};
+  auto vec1 = rmm::device_uvector<std::uint8_t>{vector_size, stream_a};
+  RMM_CUDA_TRY(cudaMemsetAsync(vec1.data(), 0xcc, 100, stream_a.value()));
   stream_a.synchronize();
 
-  auto v2 = rmm::device_uvector<std::uint8_t>{v, stream_b};
-  auto x  = v2.front_element(stream_b);
-  EXPECT_EQ(x, 0xcc);
+  auto vec2    = rmm::device_uvector<std::uint8_t>{vec1, stream_b};
+  auto element = vec2.front_element(stream_b);
+  EXPECT_EQ(element, 0xcc);
 }
 
 TEST_F(CudaStreamPoolTest, PoolSize) { EXPECT_GE(this->pool.get_pool_size(), 1); }

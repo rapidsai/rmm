@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,7 @@
 
 #include <cuda_runtime_api.h>
 
-namespace rmm {
-namespace mr {
+namespace rmm::mr {
 
 /**
  * @brief A device memory resource that simulates a fix-sized GPU.
@@ -39,14 +38,18 @@ class simulated_memory_resource final : public device_memory_resource {
    * @param memory_size_bytes The size of the memory to simulate.
    */
   explicit simulated_memory_resource(std::size_t memory_size_bytes)
-    : begin_{reinterpret_cast<char*>(0x100)},
-      end_{reinterpret_cast<char*>(begin_ + memory_size_bytes)}
+    : begin_{reinterpret_cast<char*>(0x100)},                    // NOLINT
+      end_{reinterpret_cast<char*>(begin_ + memory_size_bytes)}  // NOLINT
   {
   }
+
+  ~simulated_memory_resource() override = default;
 
   // Disable copy (and move) semantics.
   simulated_memory_resource(simulated_memory_resource const&) = delete;
   simulated_memory_resource& operator=(simulated_memory_resource const&) = delete;
+  simulated_memory_resource(simulated_memory_resource&&)                 = delete;
+  simulated_memory_resource& operator=(simulated_memory_resource&&) = delete;
 
   /**
    * @brief Query whether the resource supports use of non-null CUDA streams for
@@ -54,14 +57,14 @@ class simulated_memory_resource final : public device_memory_resource {
    *
    * @returns bool false
    */
-  bool supports_streams() const noexcept override { return false; }
+  [[nodiscard]] bool supports_streams() const noexcept override { return false; }
 
   /**
    * @brief Query whether the resource supports the get_mem_info API.
    *
    * @return false
    */
-  bool supports_get_mem_info() const noexcept override { return false; }
+  [[nodiscard]] bool supports_get_mem_info() const noexcept override { return false; }
 
  private:
   /**
@@ -76,22 +79,23 @@ class simulated_memory_resource final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cuda_stream_view) override
   {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     RMM_EXPECTS(begin_ + bytes <= end_, rmm::bad_alloc, "Simulated memory size exceeded");
-    auto p = static_cast<void*>(begin_);
-    begin_ += bytes;
-    return p;
+    auto* ptr = static_cast<void*>(begin_);
+    begin_ += bytes;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    return ptr;
   }
 
   /**
-   * @brief Deallocate memory pointed to by \p p.
+   * @brief Deallocate memory pointed to by `p`.
    *
    * @note This call is ignored.
    *
    * @throws Nothing.
    *
-   * @param p Pointer to be deallocated
+   * @param ptr Pointer to be deallocated
    */
-  void do_deallocate(void* p, std::size_t, cuda_stream_view) override {}
+  void do_deallocate(void* ptr, std::size_t, cuda_stream_view) override {}
 
   /**
    * @brief Get free and available memory for memory resource.
@@ -99,14 +103,13 @@ class simulated_memory_resource final : public device_memory_resource {
    * @param stream to execute on.
    * @return std::pair containing free_size and total_size of memory.
    */
-  std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view stream) const override
+  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
+    cuda_stream_view stream) const override
   {
     return std::make_pair(0, 0);
   }
 
- private:
-  char* begin_;
-  char* end_;
+  char* begin_{};
+  char* end_{};
 };
-}  // namespace mr
-}  // namespace rmm
+}  // namespace rmm::mr

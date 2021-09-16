@@ -28,8 +28,7 @@
 #include <memory>
 #include <sstream>
 
-namespace rmm {
-namespace mr {
+namespace rmm::mr {
 /**
  * @brief Resource that uses `Upstream` to allocate memory and logs information
  * about the requested allocation/deallocations.
@@ -113,18 +112,18 @@ class logging_resource_adaptor final : public device_memory_resource {
   }
 
   logging_resource_adaptor()                                = delete;
-  ~logging_resource_adaptor()                               = default;
+  ~logging_resource_adaptor() override                      = default;
   logging_resource_adaptor(logging_resource_adaptor const&) = delete;
-  logging_resource_adaptor(logging_resource_adaptor&&)      = default;
   logging_resource_adaptor& operator=(logging_resource_adaptor const&) = delete;
-  logging_resource_adaptor& operator=(logging_resource_adaptor&&) = default;
+  logging_resource_adaptor(logging_resource_adaptor&&) noexcept        = default;
+  logging_resource_adaptor& operator=(logging_resource_adaptor&&) noexcept = default;
 
   /**
    * @brief Return pointer to the upstream resource.
    *
    * @return Upstream* Pointer to the upstream resource.
    */
-  Upstream* get_upstream() const noexcept { return upstream_; }
+  [[nodiscard]] Upstream* get_upstream() const noexcept { return upstream_; }
 
   /**
    * @brief Checks whether the upstream resource supports streams.
@@ -132,14 +131,17 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @return true The upstream resource supports streams
    * @return false The upstream resource does not support streams.
    */
-  bool supports_streams() const noexcept override { return upstream_->supports_streams(); }
+  [[nodiscard]] bool supports_streams() const noexcept override
+  {
+    return upstream_->supports_streams();
+  }
 
   /**
    * @brief Query whether the resource supports the get_mem_info API.
    *
    * @return bool true if the upstream resource supports get_mem_info, false otherwise.
    */
-  bool supports_get_mem_info() const noexcept override
+  [[nodiscard]] bool supports_get_mem_info() const noexcept override
   {
     return upstream_->supports_get_mem_info();
   }
@@ -154,15 +156,12 @@ class logging_resource_adaptor final : public device_memory_resource {
    *
    * @return CSV formatted header string of column names
    */
-  std::string header() const { return std::string{"Thread,Time,Action,Pointer,Size,Stream"}; }
+  [[nodiscard]] std::string header() const
+  {
+    return std::string{"Thread,Time,Action,Pointer,Size,Stream"};
+  }
 
  private:
-  // make_logging_adaptor needs access to private get_default_filename
-  template <typename T>
-  friend logging_resource_adaptor<T> make_logging_adaptor(T* upstream,
-                                                          std::string const& filename,
-                                                          bool auto_flush);
-
   /**
    * @brief Return the value of the environment variable RMM_LOG_FILE.
    *
@@ -172,7 +171,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    */
   static std::string get_default_filename()
   {
-    auto filename = std::getenv("RMM_LOG_FILE");
+    auto* filename = std::getenv("RMM_LOG_FILE");
     RMM_EXPECTS(filename != nullptr,
                 "RMM logging requested without an explicit file name, but RMM_LOG_FILE is unset");
     return std::string{filename};
@@ -210,13 +209,13 @@ class logging_resource_adaptor final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
-    auto const p = upstream_->allocate(bytes, stream);
-    logger_->info("allocate,{},{},{}", p, bytes, fmt::ptr(stream.value()));
-    return p;
+    auto const ptr = upstream_->allocate(bytes, stream);
+    logger_->info("allocate,{},{},{}", ptr, bytes, fmt::ptr(stream.value()));
+    return ptr;
   }
 
   /**
-   * @brief Free allocation of size `bytes` pointed to by `p` and log the
+   * @brief Free allocation of size `bytes` pointed to by `ptr` and log the
    * deallocation.
    *
    * Every invocation of `logging_resource_adaptor::do_deallocate` will write
@@ -227,14 +226,14 @@ class logging_resource_adaptor final : public device_memory_resource {
    *
    * @throws Nothing.
    *
-   * @param p Pointer to be deallocated
+   * @param ptr Pointer to be deallocated
    * @param bytes Size of the allocation
    * @param stream Stream on which to perform the deallocation
    */
-  void do_deallocate(void* p, std::size_t bytes, cuda_stream_view stream) override
+  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
-    logger_->info("free,{},{},{}", p, bytes, fmt::ptr(stream.value()));
-    upstream_->deallocate(p, bytes, stream);
+    logger_->info("free,{},{},{}", ptr, bytes, fmt::ptr(stream.value()));
+    upstream_->deallocate(ptr, bytes, stream);
   }
 
   /**
@@ -246,18 +245,12 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equal
    */
-  bool do_is_equal(device_memory_resource const& other) const noexcept override
+  [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
   {
-    if (this == &other)
-      return true;
-    else {
-      logging_resource_adaptor<Upstream> const* cast =
-        dynamic_cast<logging_resource_adaptor<Upstream> const*>(&other);
-      if (cast != nullptr)
-        return upstream_->is_equal(*cast->get_upstream());
-      else
-        return upstream_->is_equal(other);
-    }
+    if (this == &other) { return true; }
+    auto const* cast = dynamic_cast<logging_resource_adaptor<Upstream> const*>(&other);
+    if (cast != nullptr) { return upstream_->is_equal(*cast->get_upstream()); }
+    return upstream_->is_equal(other);
   }
 
   /**
@@ -268,10 +261,18 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @param stream Stream on which to get the mem info.
    * @return std::pair contaiing free_size and total_size of memory
    */
-  std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view stream) const override
+  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
+    cuda_stream_view stream) const override
   {
     return upstream_->get_mem_info(stream);
   }
+
+  // make_logging_adaptor needs access to private get_default_filename
+  template <typename T>
+  // NOLINTNEXTLINE(readability-redundant-declaration)
+  friend logging_resource_adaptor<T> make_logging_adaptor(T* upstream,
+                                                          std::string const& filename,
+                                                          bool auto_flush);
 
   std::shared_ptr<spdlog::logger> logger_;  ///< spdlog logger object
 
@@ -313,5 +314,4 @@ logging_resource_adaptor<Upstream> make_logging_adaptor(Upstream* upstream,
   return logging_resource_adaptor<Upstream>{upstream, stream, auto_flush};
 }
 
-}  // namespace mr
-}  // namespace rmm
+}  // namespace rmm::mr

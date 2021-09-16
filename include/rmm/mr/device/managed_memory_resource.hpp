@@ -22,8 +22,7 @@
 
 #include <cstddef>
 
-namespace rmm {
-namespace mr {
+namespace rmm::mr {
 /**
  * @brief `device_memory_resource` derived class that uses
  * cudaMallocManaged/Free for allocation/deallocation.
@@ -31,7 +30,7 @@ namespace mr {
 class managed_memory_resource final : public device_memory_resource {
  public:
   managed_memory_resource()                               = default;
-  ~managed_memory_resource()                              = default;
+  ~managed_memory_resource() override                     = default;
   managed_memory_resource(managed_memory_resource const&) = default;
   managed_memory_resource(managed_memory_resource&&)      = default;
   managed_memory_resource& operator=(managed_memory_resource const&) = default;
@@ -43,18 +42,18 @@ class managed_memory_resource final : public device_memory_resource {
    *
    * @returns false
    */
-  bool supports_streams() const noexcept override { return false; }
+  [[nodiscard]] bool supports_streams() const noexcept override { return false; }
 
   /**
    * @brief Query whether the resource supports the get_mem_info API.
    *
    * @return bool true if the resource supports get_mem_info, false otherwise.
    */
-  bool supports_get_mem_info() const noexcept override { return true; }
+  [[nodiscard]] bool supports_get_mem_info() const noexcept override { return true; }
 
  private:
   /**
-   * @brief Allocates memory of size at least \p bytes using cudaMallocManaged.
+   * @brief Allocates memory of size at least `bytes` using cudaMallocManaged.
    *
    * The returned pointer has at least 256B alignment.
    *
@@ -71,23 +70,23 @@ class managed_memory_resource final : public device_memory_resource {
     // size allocations.
     if (bytes == 0) { return nullptr; }
 
-    void* p{nullptr};
-    RMM_CUDA_TRY(cudaMallocManaged(&p, bytes), rmm::bad_alloc);
-    return p;
+    void* ptr{nullptr};
+    RMM_CUDA_TRY(cudaMallocManaged(&ptr, bytes), rmm::bad_alloc);
+    return ptr;
   }
 
   /**
-   * @brief Deallocate memory pointed to by \p p.
+   * @brief Deallocate memory pointed to by `ptr`.
    *
    * @note Stream argument is ignored.
    *
    * @throws Nothing.
    *
-   * @param p Pointer to be deallocated
+   * @param ptr Pointer to be deallocated
    */
-  void do_deallocate(void* p, std::size_t, cuda_stream_view) override
+  void do_deallocate(void* ptr, std::size_t, cuda_stream_view) override
   {
-    RMM_ASSERT_CUDA_SUCCESS(cudaFree(p));
+    RMM_ASSERT_CUDA_SUCCESS(cudaFree(ptr));
   }
 
   /**
@@ -102,7 +101,7 @@ class managed_memory_resource final : public device_memory_resource {
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equal
    */
-  bool do_is_equal(device_memory_resource const& other) const noexcept override
+  [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
   {
     return dynamic_cast<managed_memory_resource const*>(&other) != nullptr;
   }
@@ -115,7 +114,8 @@ class managed_memory_resource final : public device_memory_resource {
    * @param stream to execute on
    * @return std::pair contaiing free_size and total_size of memory
    */
-  std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view stream) const override
+  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
+    cuda_stream_view stream) const override
   {
     std::size_t free_size{};
     std::size_t total_size{};
@@ -124,5 +124,4 @@ class managed_memory_resource final : public device_memory_resource {
   }
 };
 
-}  // namespace mr
-}  // namespace rmm
+}  // namespace rmm::mr

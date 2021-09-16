@@ -38,12 +38,13 @@ using exec_policy_t = std::unique_ptr<par_t, deleter_t>;
  * allocation.
  */
 [[deprecated("Use new exec_policy in rmm/exec_policy.hpp")]] inline exec_policy_t exec_policy(
-  cudaStream_t stream = 0)
+  cudaStream_t stream = nullptr)
 {
+  // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
   auto* alloc  = new rmm::mr::thrust_allocator<char>(cuda_stream_view{stream});
   auto deleter = [alloc](par_t* pointer) {
-    delete alloc;
-    delete pointer;
+    delete alloc;    // NOLINT(cppcoreguidelines-owning-memory)
+    delete pointer;  // NOLINT(cppcoreguidelines-owning-memory)
   };
 
   exec_policy_t policy{new par_t(*alloc), deleter};

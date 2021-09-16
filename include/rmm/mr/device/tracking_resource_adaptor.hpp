@@ -25,8 +25,7 @@
 #include <shared_mutex>
 #include <sstream>
 
-namespace rmm {
-namespace mr {
+namespace rmm::mr {
 /**
  * @brief Resource that uses `Upstream` to allocate memory and tracks allocations.
  *
@@ -83,11 +82,11 @@ class tracking_resource_adaptor final : public device_memory_resource {
   }
 
   tracking_resource_adaptor()                                 = delete;
-  virtual ~tracking_resource_adaptor()                        = default;
+  ~tracking_resource_adaptor() override                       = default;
   tracking_resource_adaptor(tracking_resource_adaptor const&) = delete;
-  tracking_resource_adaptor(tracking_resource_adaptor&&)      = default;
   tracking_resource_adaptor& operator=(tracking_resource_adaptor const&) = delete;
-  tracking_resource_adaptor& operator=(tracking_resource_adaptor&&) = default;
+  tracking_resource_adaptor(tracking_resource_adaptor&&) noexcept        = default;
+  tracking_resource_adaptor& operator=(tracking_resource_adaptor&&) noexcept = default;
 
   /**
    * @brief Return pointer to the upstream resource.
@@ -154,10 +153,10 @@ class tracking_resource_adaptor final : public device_memory_resource {
     std::ostringstream oss;
 
     if (!allocations_.empty()) {
-      for (auto const& al : allocations_) {
-        oss << al.first << ": " << al.second.allocation_size << " B";
-        if (al.second.strace != nullptr) {
-          oss << " : callstack:" << std::endl << *al.second.strace;
+      for (auto const& alloc : allocations_) {
+        oss << alloc.first << ": " << alloc.second.allocation_size << " B";
+        if (alloc.second.strace != nullptr) {
+          oss << " : callstack:" << std::endl << *alloc.second.strace;
         }
         oss << std::endl;
       }
@@ -193,34 +192,34 @@ class tracking_resource_adaptor final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
-    void* p = upstream_->allocate(bytes, stream);
+    void* ptr = upstream_->allocate(bytes, stream);
 
     // track it.
     {
       write_lock_t lock(mtx_);
-      allocations_.emplace(p, allocation_info{bytes, capture_stacks_});
+      allocations_.emplace(ptr, allocation_info{bytes, capture_stacks_});
     }
     allocated_bytes_ += bytes;
 
-    return p;
+    return ptr;
   }
 
   /**
-   * @brief Free allocation of size `bytes` pointed to by `p`
+   * @brief Free allocation of size `bytes` pointed to by `ptr`
    *
    * @throws Nothing.
    *
-   * @param p Pointer to be deallocated
+   * @param ptr Pointer to be deallocated
    * @param bytes Size of the allocation
    * @param stream Stream on which to perform the deallocation
    */
-  void do_deallocate(void* p, std::size_t bytes, cuda_stream_view stream) override
+  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
-    upstream_->deallocate(p, bytes, stream);
+    upstream_->deallocate(ptr, bytes, stream);
     {
       write_lock_t lock(mtx_);
 
-      const auto found = allocations_.find(p);
+      const auto found = allocations_.find(ptr);
 
       // Ensure the allocation is found and the number of bytes match
       if (found == allocations_.end()) {
@@ -229,7 +228,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
         RMM_LOG_ERROR(
           "Deallocating a pointer that was not tracked. Ptr: {:p} [{}B], Current Num. Allocations: "
           "{}",
-          fmt::ptr(p),
+          fmt::ptr(ptr),
           bytes,
           this->allocations_.size());
       } else {
@@ -261,13 +260,10 @@ class tracking_resource_adaptor final : public device_memory_resource {
    */
   bool do_is_equal(device_memory_resource const& other) const noexcept override
   {
-    if (this == &other)
-      return true;
-    else {
-      auto cast = dynamic_cast<tracking_resource_adaptor<Upstream> const*>(&other);
-      return cast != nullptr ? upstream_->is_equal(*cast->get_upstream())
-                             : upstream_->is_equal(other);
-    }
+    if (this == &other) { return true; }
+    auto cast = dynamic_cast<tracking_resource_adaptor<Upstream> const*>(&other);
+    return cast != nullptr ? upstream_->is_equal(*cast->get_upstream())
+                           : upstream_->is_equal(other);
   }
 
   /**
@@ -303,5 +299,4 @@ tracking_resource_adaptor<Upstream> make_tracking_adaptor(Upstream* upstream)
   return tracking_resource_adaptor<Upstream>{upstream};
 }
 
-}  // namespace mr
-}  // namespace rmm
+}  // namespace rmm::mr

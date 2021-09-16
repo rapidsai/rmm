@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-#include <memory>
-
-#include <gtest/gtest.h>
 #include <rmm/cuda_stream.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/polymorphic_allocator.hpp>
+
+#include <gtest/gtest.h>
+
+#include <memory>
 
 namespace {
 
@@ -34,7 +35,7 @@ TEST_F(allocator_test, factory)
 {
   using Adaptor = rmm::mr::stream_allocator_adaptor<decltype(allocator)>;
   auto adapted  = rmm::mr::make_stream_allocator_adaptor(allocator, stream);
-  static_assert((std::is_same<decltype(adapted), Adaptor>::value), "");
+  static_assert((std::is_same<decltype(adapted), Adaptor>::value));
   EXPECT_EQ(adapted.underlying_allocator(), allocator);
   EXPECT_EQ(adapted.stream(), stream);
 }
@@ -97,21 +98,21 @@ TEST_F(allocator_test, rebind)
 {
   auto adapted  = rmm::mr::make_stream_allocator_adaptor(allocator, stream);
   using Rebound = std::allocator_traits<decltype(adapted)>::rebind_alloc<double>;
-  static_assert((std::is_same<std::allocator_traits<Rebound>::value_type, double>::value), "");
+  static_assert((std::is_same<std::allocator_traits<Rebound>::value_type, double>::value));
   static_assert(
     std::is_same<Rebound,
-                 rmm::mr::stream_allocator_adaptor<rmm::mr::polymorphic_allocator<double>>>::value,
-    "");
+                 rmm::mr::stream_allocator_adaptor<rmm::mr::polymorphic_allocator<double>>>::value);
 
-  Rebound r{adapted};
+  Rebound rebound{adapted};
 }
 
 TEST_F(allocator_test, allocate_deallocate)
 {
   auto adapted = rmm::mr::make_stream_allocator_adaptor(allocator, stream);
-  auto p       = adapted.allocate(1000);
-  EXPECT_NE(p, nullptr);
-  EXPECT_NO_THROW(adapted.deallocate(p, 1000));
+  auto const size{1000};
+  auto* ptr = adapted.allocate(size);
+  EXPECT_NE(ptr, nullptr);
+  EXPECT_NO_THROW(adapted.deallocate(ptr, size));
 }
 
 }  // namespace
