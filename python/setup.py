@@ -219,7 +219,7 @@ cmdclass["build_ext"] = build_ext_no_debug
 
 setup(
     name="rmm",
-    version=versioneer.get_version(),
+    version="21.08.02",
     description="rmm - RAPIDS Memory Manager",
     url="https://github.com/rapidsai/rmm",
     author="NVIDIA Corporation",
