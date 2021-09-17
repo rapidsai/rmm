@@ -58,10 +58,11 @@ class pinned_memory_resource final : public host_memory_resource {
     if (0 == bytes) { return nullptr; }
 
     // If the requested alignment isn't supported, use default
-    alignment =
-      (detail::is_supported_alignment(alignment)) ? alignment : detail::RMM_DEFAULT_HOST_ALIGNMENT;
+    alignment = (rmm::detail::is_supported_alignment(alignment))
+                  ? alignment
+                  : rmm::detail::RMM_DEFAULT_HOST_ALIGNMENT;
 
-    return detail::aligned_allocate(bytes, alignment, [](std::size_t size) {
+    return rmm::detail::aligned_allocate(bytes, alignment, [](std::size_t size) {
       void* ptr{nullptr};
       auto status = cudaMallocHost(&ptr, size);
       if (cudaSuccess != status) { throw std::bad_alloc{}; }
@@ -89,7 +90,7 @@ class pinned_memory_resource final : public host_memory_resource {
                      std::size_t alignment = alignof(std::max_align_t)) override
   {
     if (nullptr == ptr) { return; }
-    detail::aligned_deallocate(
+    rmm::detail::aligned_deallocate(
       ptr, bytes, alignment, [](void* ptr) { RMM_ASSERT_CUDA_SUCCESS(cudaFreeHost(ptr)); });
   }
 };
