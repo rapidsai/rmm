@@ -84,7 +84,7 @@ struct block : public block_base {
    */
   [[nodiscard]] inline block merge(block const& blk) const noexcept
   {
-    assert(is_contiguous_before(b));
+    assert(is_contiguous_before(blk));
     return {pointer(), size() + blk.size(), is_head()};
   }
 
