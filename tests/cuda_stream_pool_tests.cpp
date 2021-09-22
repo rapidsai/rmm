@@ -26,6 +26,11 @@ struct CudaStreamPoolTest : public ::testing::Test {
   rmm::cuda_stream_pool pool{};
 };
 
+TEST_F(CudaStreamPoolTest, ZeroSizePoolException)
+{
+  EXPECT_THROW(rmm::cuda_stream_pool pool{0}, rmm::logic_error);
+}
+
 TEST_F(CudaStreamPoolTest, Unequal)
 {
   auto const stream_a = this->pool.get_stream();

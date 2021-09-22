@@ -109,7 +109,7 @@ class block {
    */
   [[nodiscard]] std::pair<block, block> split(std::size_t size) const
   {
-    RMM_LOGGING_ASSERT(size_ >= sz);
+    RMM_LOGGING_ASSERT(size_ >= size);
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     if (size_ > size) { return {{pointer_, size}, {pointer_ + size, size_ - size}}; }
     return {*this, {}};
@@ -125,7 +125,7 @@ class block {
    */
   [[nodiscard]] block merge(block const& blk) const
   {
-    RMM_LOGGING_ASSERT(is_contiguous_before(b));
+    RMM_LOGGING_ASSERT(is_contiguous_before(blk));
     return {pointer_, size_ + blk.size_};
   }
 

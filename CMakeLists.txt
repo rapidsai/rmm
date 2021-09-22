@@ -103,6 +103,8 @@ if(BUILD_BENCHMARKS AND CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
   add_subdirectory(benchmarks)
 endif()
 
+include(CPack)
+
 # install export targets
 install(TARGETS rmm EXPORT rmm-exports)
 install(DIRECTORY include/rmm/ DESTINATION include/rmm)
