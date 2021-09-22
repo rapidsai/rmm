@@ -23,10 +23,12 @@
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
+#include <type_traits>
 
 namespace rmm {
 
-enum cuda_event_flags {
+enum cuda_event_flags : unsigned int {
   /** Default event flag. */
   EVENT_DEFAULT = cudaEventDefault,
   /** Event uses blocking synchronization. */
@@ -37,7 +39,12 @@ enum cuda_event_flags {
   EVENT_INTERPROCESS = cudaEventInterprocess
 };
 
-enum cuda_event_record_flags {
+constexpr inline cuda_event_flags operator|(cuda_event_flags a, cuda_event_flags b)
+{
+  return static_cast<cuda_event_flags>(static_cast<unsigned int>(a) | static_cast<unsigned int>(b));
+}
+
+enum cuda_event_record_flags : unsigned int {
 /** Default event creation flag. */
 #if CUDART_VERSION < 11010
   EVENT_RECORD_DEFAULT = 0,
@@ -48,7 +55,14 @@ enum cuda_event_record_flags {
 #endif
 };
 
-enum cuda_event_wait_flags {
+constexpr inline cuda_event_record_flags operator|(cuda_event_record_flags a,
+                                                   cuda_event_record_flags b)
+{
+  return static_cast<cuda_event_record_flags>(static_cast<unsigned int>(a) |
+                                              static_cast<unsigned int>(b));
+}
+
+enum cuda_event_wait_flags : unsigned int {
 /** Default event creation flag. */
 #if CUDART_VERSION < 11010
   EVENT_WAIT_DEFAULT = 0,
@@ -59,24 +73,26 @@ enum cuda_event_wait_flags {
 #endif
 };
 
-/**
- * @brief Strongly-typed non-owning wrapper for CUDA events.
- *
- * This wrapper is simply a "view": it does not own the lifetime of the event it wraps.
- */
-class cuda_event_view {
+constexpr inline cuda_event_wait_flags operator|(cuda_event_wait_flags a, cuda_event_wait_flags b)
+{
+  return static_cast<cuda_event_wait_flags>(static_cast<unsigned int>(a) |
+                                            static_cast<unsigned int>(b));
+}
+
+/** @brief An event view with flags provided at runtime. */
+class cuda_event_view_ {
  public:
-  constexpr cuda_event_view()                       = delete;
-  constexpr cuda_event_view(cuda_event_view const&) = default;
-  constexpr cuda_event_view(cuda_event_view&&)      = default;
-  constexpr cuda_event_view& operator=(cuda_event_view const&) = default;
-  constexpr cuda_event_view& operator=(cuda_event_view&&) = default;
-  ~cuda_event_view()                                      = default;
+  constexpr cuda_event_view_()                        = delete;
+  constexpr cuda_event_view_(cuda_event_view_ const&) = default;
+  constexpr cuda_event_view_(cuda_event_view_&&)      = default;
+  constexpr cuda_event_view_& operator=(cuda_event_view_ const&) = default;
+  constexpr cuda_event_view_& operator=(cuda_event_view_&&) = default;
+  ~cuda_event_view_()                                       = default;
 
   /**
    * @brief Implicit conversion from cudaEvent_t.
    */
-  constexpr cuda_event_view(cudaEvent_t event) noexcept : event_{event} {}
+  constexpr cuda_event_view_(cudaEvent_t event) noexcept : event_{event} {}
 
   /**
    * @brief Get the wrapped event.
@@ -95,7 +111,7 @@ class cuda_event_view {
    *
    * @return time in milliseconds.
    */
-  float elapsed_time_since(cuda_event_view prev_event) const
+  float elapsed_time_since(const cuda_event_view_& prev_event) const
   {
     float ms;
     RMM_CUDA_TRY(cudaEventElapsedTime(&ms, prev_event.value(), value()));
@@ -135,6 +151,51 @@ class cuda_event_view {
   cudaEvent_t event_;
 };
 
+template <cuda_event_flags Flags>
+class cuda_event;
+
+/**
+ * @brief Strongly-typed non-owning wrapper for CUDA events.
+ *
+ * This wrapper is simply a "view": it does not own the lifetime of the event it wraps.
+ */
+template <cuda_event_flags Flags = EVENT_DEFAULT>
+class cuda_event_view : public cuda_event_view_ {
+ public:
+  constexpr cuda_event_view()                              = delete;
+  constexpr cuda_event_view(cuda_event_view<Flags> const&) = default;
+  constexpr cuda_event_view(cuda_event_view<Flags>&&)      = default;
+  constexpr cuda_event_view(cuda_event<Flags> const&) noexcept;
+  constexpr cuda_event_view& operator=(cuda_event_view<Flags> const&) = default;
+  constexpr cuda_event_view& operator=(cuda_event_view<Flags>&&) = default;
+  ~cuda_event_view()                                             = default;
+
+  /**
+   * @brief Computes the elapsed time between since the given event till the viewed event.
+   *
+   * @return time in milliseconds.
+   */
+  inline float elapsed_time_since(const cuda_event_view_& prev_event) const
+  {
+    static_assert((Flags & EVENT_DISABLE_TIMING) == 0,
+                  "EVENT_DISABLE_TIMING must not be set for this event.");
+    return cuda_event_view_::elapsed_time_since(prev_event);
+  }
+
+  /**
+   * @brief Computes the elapsed time between since the given event till the viewed event.
+   *
+   * @return time in milliseconds.
+   */
+  template <cuda_event_flags FlagsPrev>
+  inline float elapsed_time_since(const cuda_event_view<FlagsPrev>& prev_event) const
+  {
+    static_assert((FlagsPrev & EVENT_DISABLE_TIMING) == 0,
+                  "EVENT_DISABLE_TIMING must not be set for the previous event.");
+    return elapsed_time_since(static_cast<const cuda_event_view_&>(prev_event));
+  }
+};
+
 /**
  * @brief Equality comparison operator for events
  *
@@ -142,7 +203,7 @@ class cuda_event_view {
  * @param rhs The second event view to compare
  * @return true if equal, false if unequal
  */
-inline bool operator==(cuda_event_view lhs, cuda_event_view rhs)
+inline bool operator==(cuda_event_view_ lhs, cuda_event_view_ rhs)
 {
   return lhs.value() == rhs.value();
 }
@@ -154,7 +215,7 @@ inline bool operator==(cuda_event_view lhs, cuda_event_view rhs)
  * @param rhs The second event view to compare
  * @return true if unequal, false if equal
  */
-inline bool operator!=(cuda_event_view lhs, cuda_event_view rhs) { return not(lhs == rhs); }
+inline bool operator!=(cuda_event_view_ lhs, cuda_event_view_ rhs) { return not(lhs == rhs); }
 
 /**
  * @brief Output event operator for printing / logging events
@@ -163,7 +224,7 @@ inline bool operator!=(cuda_event_view lhs, cuda_event_view rhs) { return not(lh
  * @param sv The cuda_event_view to output
  * @return std::ostream& The output ostream
  */
-inline std::ostream& operator<<(std::ostream& os, cuda_event_view sv)
+inline std::ostream& operator<<(std::ostream& os, cuda_event_view_ sv)
 {
   os << sv.value();
   return os;

@@ -29,7 +29,7 @@ struct CudaEventTest : public ::testing::Test {
 TEST_F(CudaEventTest, MoveConstructor)
 {
   rmm::cuda_event event_a;
-  rmm::cuda_event event_b = std::move(event_a);
+  rmm::cuda_event<rmm::EVENT_DEFAULT> event_b = std::move(event_a);
   EXPECT_FALSE(event_a.is_valid());
   EXPECT_TRUE(event_b.is_valid());
 }
@@ -40,8 +40,8 @@ TEST_F(CudaEventTest, EventOrder)
   rmm::cuda_stream stream_b(rmm::STREAM_NON_BLOCKING);
   rmm::cuda_stream stream_c(rmm::STREAM_NON_BLOCKING);
 
-  rmm::cuda_event result_copied_back;
-  rmm::cuda_event memory_written_owner;
+  rmm::cuda_event<rmm::EVENT_DEFAULT> result_copied_back;
+  rmm::cuda_event<rmm::EVENT_DISABLE_TIMING | rmm::EVENT_INTERPROCESS> memory_written_owner;
   rmm::cuda_event_view memory_written(memory_written_owner);
   rmm::cuda_event buf_created_owner;
   cudaEvent_t buf_created(buf_created_owner.value());
@@ -77,4 +77,6 @@ TEST_F(CudaEventTest, EventOrder)
   RMM_CUDA_TRY(cudaMemcpyAsync(&answer, buf.data(), 1, cudaMemcpyDeviceToHost, stream_a));
   stream_a.synchronize();
   EXPECT_NE(expected, answer);
+
+  EXPECT_GE(result_copied_back.elapsed_time_since(buf_created), 0.0f);
 }
