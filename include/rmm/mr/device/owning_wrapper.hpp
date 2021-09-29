@@ -22,21 +22,23 @@
 #include <memory>
 #include <utility>
 
-namespace rmm {
-namespace mr {
+namespace rmm::mr {
 namespace detail {
 /// Converts a tuple into a parameter pack
 template <typename Resource, typename UpstreamTuple, std::size_t... Indices, typename... Args>
-auto make_resource_impl(UpstreamTuple const& t, std::index_sequence<Indices...>, Args&&... args)
+auto make_resource_impl(UpstreamTuple const& upstreams,
+                        std::index_sequence<Indices...>,
+                        Args&&... args)
 {
-  return std::make_unique<Resource>(std::get<Indices>(t).get()..., std::forward<Args>(args)...);
+  return std::make_unique<Resource>(std::get<Indices>(upstreams).get()...,
+                                    std::forward<Args>(args)...);
 }
 
 template <typename Resource, typename... Upstreams, typename... Args>
-auto make_resource(std::tuple<std::shared_ptr<Upstreams>...> const& t, Args&&... args)
+auto make_resource(std::tuple<std::shared_ptr<Upstreams>...> const& upstreams, Args&&... args)
 {
   return make_resource_impl<Resource>(
-    t, std::index_sequence_for<Upstreams...>{}, std::forward<Args>(args)...);
+    upstreams, std::index_sequence_for<Upstreams...>{}, std::forward<Args>(args)...);
 }
 }  // namespace detail
 
@@ -117,25 +119,31 @@ class owning_wrapper : public device_memory_resource {
    * @brief Returns a constant reference to the wrapped resource.
    *
    */
-  Resource const& wrapped() const noexcept { return *wrapped_; }
+  [[nodiscard]] Resource const& wrapped() const noexcept { return *wrapped_; }
 
   /**
    * @brief Returns reference to the wrapped resource.
    *
    */
-  Resource& wrapped() noexcept { return *wrapped_; }
+  [[nodiscard]] Resource& wrapped() noexcept { return *wrapped_; }
 
   /**
    * @copydoc rmm::mr::device_memory_resource::supports_streams()
    */
-  bool supports_streams() const noexcept override { return wrapped().supports_streams(); }
+  [[nodiscard]] bool supports_streams() const noexcept override
+  {
+    return wrapped().supports_streams();
+  }
 
   /**
    * @brief Query whether the resource supports the get_mem_info API.
    *
    * @return true if the upstream resource supports get_mem_info, false otherwise.
    */
-  bool supports_get_mem_info() const noexcept override { return wrapped().supports_get_mem_info(); }
+  [[nodiscard]] bool supports_get_mem_info() const noexcept override
+  {
+    return wrapped().supports_get_mem_info();
+  }
 
  private:
   /**
@@ -156,17 +164,17 @@ class owning_wrapper : public device_memory_resource {
   /**
    * @brief Returns an allocation to the wrapped resource.
    *
-   * `p` must have been returned from a prior call to `do_allocate(bytes)`.
+   * `ptr` must have been returned from a prior call to `do_allocate(bytes)`.
    *
    * @throws Nothing.
    *
-   * @param p Pointer to the allocation to free.
+   * @param ptr Pointer to the allocation to free.
    * @param bytes Size of the allocation
    * @param stream Stream on which to deallocate the memory
    */
-  void do_deallocate(void* p, std::size_t bytes, cuda_stream_view stream) override
+  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
-    wrapped().deallocate(p, bytes, stream);
+    wrapped().deallocate(ptr, bytes, stream);
   }
 
   /**
@@ -180,18 +188,12 @@ class owning_wrapper : public device_memory_resource {
    * @return true If the two resources are equal
    * @return false If the two resources are not equal
    */
-  bool do_is_equal(device_memory_resource const& other) const noexcept override
+  [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
   {
-    if (this == &other) {
-      return true;
-    } else {
-      auto casted = dynamic_cast<owning_wrapper<Resource, Upstreams...> const*>(&other);
-      if (nullptr != casted) {
-        return wrapped().is_equal(casted->wrapped());
-      } else {
-        return wrapped().is_equal(other);
-      }
-    }
+    if (this == &other) { return true; }
+    auto casted = dynamic_cast<owning_wrapper<Resource, Upstreams...> const*>(&other);
+    if (nullptr != casted) { return wrapped().is_equal(casted->wrapped()); }
+    return wrapped().is_equal(other);
   }
 
   /**
@@ -202,7 +204,8 @@ class owning_wrapper : public device_memory_resource {
    * @param stream Stream on which to get the mem info.
    * @return std::pair contaiing free_size and total_size of memory
    */
-  std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view stream) const override
+  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
+    cuda_stream_view stream) const override
   {
     return wrapped().get_mem_info(stream);
   }
@@ -272,5 +275,4 @@ auto make_owning_wrapper(std::shared_ptr<Upstream> upstream, Args&&... args)
                                        std::forward<Args>(args)...);
 }
 
-}  // namespace mr
-}  // namespace rmm
+}  // namespace rmm::mr

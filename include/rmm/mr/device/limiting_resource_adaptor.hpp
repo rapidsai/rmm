@@ -21,8 +21,7 @@
 
 #include <cstddef>
 
-namespace rmm {
-namespace mr {
+namespace rmm::mr {
 /**
  * @brief Resource that uses `Upstream` to allocate memory and limits the total
  * allocations possible.
@@ -47,31 +46,30 @@ class limiting_resource_adaptor final : public device_memory_resource {
    * @param upstream The resource used for allocating/deallocating device memory
    * @param allocation_limit Maximum memory allowed for this allocator.
    */
-  limiting_resource_adaptor(
-    Upstream* upstream,
-    std::size_t allocation_limit,
-    std::size_t allocation_alignment = rmm::detail::CUDA_ALLOCATION_ALIGNMENT)
+  limiting_resource_adaptor(Upstream* upstream,
+                            std::size_t allocation_limit,
+                            std::size_t alignment = rmm::detail::CUDA_ALLOCATION_ALIGNMENT)
     : allocation_limit_{allocation_limit},
       allocated_bytes_(0),
-      allocation_alignment_(allocation_alignment),
+      alignment_(alignment),
       upstream_{upstream}
   {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
   }
 
-  limiting_resource_adaptor()                                 = delete;
-  ~limiting_resource_adaptor()                                = default;
-  limiting_resource_adaptor(limiting_resource_adaptor const&) = delete;
-  limiting_resource_adaptor(limiting_resource_adaptor&&)      = default;
+  limiting_resource_adaptor()                                     = delete;
+  ~limiting_resource_adaptor() override                           = default;
+  limiting_resource_adaptor(limiting_resource_adaptor const&)     = delete;
+  limiting_resource_adaptor(limiting_resource_adaptor&&) noexcept = default;
   limiting_resource_adaptor& operator=(limiting_resource_adaptor const&) = delete;
-  limiting_resource_adaptor& operator=(limiting_resource_adaptor&&) = default;
+  limiting_resource_adaptor& operator=(limiting_resource_adaptor&&) noexcept = default;
 
   /**
    * @brief Return pointer to the upstream resource.
    *
    * @return Upstream* Pointer to the upstream resource.
    */
-  Upstream* get_upstream() const noexcept { return upstream_; }
+  [[nodiscard]] Upstream* get_upstream() const noexcept { return upstream_; }
 
   /**
    * @brief Checks whether the upstream resource supports streams.
@@ -79,14 +77,17 @@ class limiting_resource_adaptor final : public device_memory_resource {
    * @return true The upstream resource supports streams
    * @return false The upstream resource does not support streams.
    */
-  bool supports_streams() const noexcept override { return upstream_->supports_streams(); }
+  [[nodiscard]] bool supports_streams() const noexcept override
+  {
+    return upstream_->supports_streams();
+  }
 
   /**
    * @brief Query whether the resource supports the get_mem_info API.
    *
    * @return bool true if the upstream resource supports get_mem_info, false otherwise.
    */
-  bool supports_get_mem_info() const noexcept override
+  [[nodiscard]] bool supports_get_mem_info() const noexcept override
   {
     return upstream_->supports_get_mem_info();
   }
@@ -100,7 +101,7 @@ class limiting_resource_adaptor final : public device_memory_resource {
    * @return std::size_t number of bytes that have been allocated through this
    * allocator.
    */
-  std::size_t get_allocated_bytes() const { return allocated_bytes_; }
+  [[nodiscard]] std::size_t get_allocated_bytes() const { return allocated_bytes_; }
 
   /**
    * @brief Query the maximum number of bytes that this allocator is allowed
@@ -109,7 +110,7 @@ class limiting_resource_adaptor final : public device_memory_resource {
    *
    * @return std::size_t max number of bytes allowed for this allocator
    */
-  std::size_t get_allocation_limit() const { return allocation_limit_; }
+  [[nodiscard]] std::size_t get_allocation_limit() const { return allocation_limit_; }
 
  private:
   /**
@@ -127,32 +128,34 @@ class limiting_resource_adaptor final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
-    void* p = nullptr;
-
-    std::size_t proposed_size = rmm::detail::align_up(bytes, allocation_alignment_);
-    if (proposed_size + allocated_bytes_ <= allocation_limit_) {
-      p = upstream_->allocate(bytes, stream);
-      allocated_bytes_ += proposed_size;
-    } else {
-      throw rmm::bad_alloc{"Exceeded memory limit"};
+    auto const proposed_size = rmm::detail::align_up(bytes, alignment_);
+    auto const old           = allocated_bytes_.fetch_add(proposed_size);
+    if (old + proposed_size <= allocation_limit_) {
+      try {
+        return upstream_->allocate(bytes, stream);
+      } catch (...) {
+        allocated_bytes_ -= proposed_size;
+        throw;
+      }
     }
 
-    return p;
+    allocated_bytes_ -= proposed_size;
+    RMM_FAIL("Exceeded memory limit", rmm::bad_alloc);
   }
 
   /**
-   * @brief Free allocation of size `bytes` pointed to by `p`
+   * @brief Free allocation of size `bytes` pointed to by `ptr`
    *
    * @throws Nothing.
    *
-   * @param p Pointer to be deallocated
+   * @param ptr Pointer to be deallocated
    * @param bytes Size of the allocation
    * @param stream Stream on which to perform the deallocation
    */
-  void do_deallocate(void* p, std::size_t bytes, cuda_stream_view stream) override
+  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
-    std::size_t allocated_size = rmm::detail::align_up(bytes, allocation_alignment_);
-    upstream_->deallocate(p, bytes, stream);
+    std::size_t allocated_size = rmm::detail::align_up(bytes, alignment_);
+    upstream_->deallocate(ptr, bytes, stream);
     allocated_bytes_ -= allocated_size;
   }
 
@@ -165,18 +168,12 @@ class limiting_resource_adaptor final : public device_memory_resource {
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equal
    */
-  bool do_is_equal(device_memory_resource const& other) const noexcept override
+  [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
   {
-    if (this == &other)
-      return true;
-    else {
-      limiting_resource_adaptor<Upstream> const* cast =
-        dynamic_cast<limiting_resource_adaptor<Upstream> const*>(&other);
-      if (cast != nullptr)
-        return upstream_->is_equal(*cast->get_upstream());
-      else
-        return upstream_->is_equal(other);
-    }
+    if (this == &other) { return true; }
+    auto const* cast = dynamic_cast<limiting_resource_adaptor<Upstream> const*>(&other);
+    if (cast != nullptr) { return upstream_->is_equal(*cast->get_upstream()); }
+    return upstream_->is_equal(other);
   }
 
   /**
@@ -187,7 +184,8 @@ class limiting_resource_adaptor final : public device_memory_resource {
    * @param stream Stream on which to get the mem info.
    * @return std::pair contaiing free_size and total_size of memory
    */
-  std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view stream) const override
+  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
+    cuda_stream_view stream) const override
   {
     return {allocation_limit_ - allocated_bytes_, allocation_limit_};
   }
@@ -199,7 +197,7 @@ class limiting_resource_adaptor final : public device_memory_resource {
   std::atomic<std::size_t> allocated_bytes_;
 
   // todo: should be some way to ask the upstream...
-  std::size_t allocation_alignment_;
+  std::size_t alignment_;
 
   Upstream* upstream_;  ///< The upstream resource used for satisfying
                         ///< allocation requests
@@ -220,5 +218,4 @@ limiting_resource_adaptor<Upstream> make_limiting_adaptor(Upstream* upstream,
   return limiting_resource_adaptor<Upstream>{upstream, allocation_limit};
 }
 
-}  // namespace mr
-}  // namespace rmm
+}  // namespace rmm::mr

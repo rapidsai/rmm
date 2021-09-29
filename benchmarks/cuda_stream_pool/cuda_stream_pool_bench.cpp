@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#include <benchmark/benchmark.h>
-
 #include <rmm/cuda_stream_pool.hpp>
 #include <rmm/detail/error.hpp>
 
 #include <cuda_runtime_api.h>
+
+#include <benchmark/benchmark.h>
 
 #include <stdexcept>
 
@@ -27,23 +27,23 @@ static void BM_StreamPoolGetStream(benchmark::State& state)
 {
   rmm::cuda_stream_pool stream_pool{};
 
-  for (auto _ : state) {
-    auto s = stream_pool.get_stream();
-    cudaStreamQuery(s.value());
+  for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
+    auto stream = stream_pool.get_stream();
+    cudaStreamQuery(stream.value());
   }
 
-  state.SetItemsProcessed(state.iterations());
+  state.SetItemsProcessed(static_cast<int64_t>(state.iterations()));
 }
 BENCHMARK(BM_StreamPoolGetStream)->Unit(benchmark::kMicrosecond);
 
 static void BM_CudaStreamClass(benchmark::State& state)
 {
-  for (auto _ : state) {
-    auto s = rmm::cuda_stream{};
-    cudaStreamQuery(s.view().value());
+  for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
+    auto stream = rmm::cuda_stream{};
+    cudaStreamQuery(stream.view().value());
   }
 
-  state.SetItemsProcessed(state.iterations());
+  state.SetItemsProcessed(static_cast<int64_t>(state.iterations()));
 }
 BENCHMARK(BM_CudaStreamClass)->Unit(benchmark::kMicrosecond);
 

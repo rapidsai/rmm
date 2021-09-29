@@ -33,9 +33,7 @@
 #include <utility>
 #include <vector>
 
-namespace rmm {
-
-namespace mr {
+namespace rmm::mr {
 
 /**
  * @brief A `device_memory_resource` which allocates memory blocks of a single fixed size.
@@ -83,7 +81,7 @@ class fixed_size_memory_resource
    * @brief Destroy the `fixed_size_memory_resource` and free all memory allocated from upstream.
    *
    */
-  ~fixed_size_memory_resource() { release(); }
+  ~fixed_size_memory_resource() override { release(); }
 
   fixed_size_memory_resource()                                  = delete;
   fixed_size_memory_resource(fixed_size_memory_resource const&) = delete;
@@ -97,14 +95,14 @@ class fixed_size_memory_resource
    *
    * @returns true
    */
-  bool supports_streams() const noexcept override { return true; }
+  [[nodiscard]] bool supports_streams() const noexcept override { return true; }
 
   /**
    * @brief Query whether the resource supports the get_mem_info API.
    *
    * @return bool true if the resource supports get_mem_info, false otherwise.
    */
-  bool supports_get_mem_info() const noexcept override { return false; }
+  [[nodiscard]] bool supports_get_mem_info() const noexcept override { return false; }
 
   /**
    * @brief Get the upstream memory_resource object.
@@ -118,7 +116,7 @@ class fixed_size_memory_resource
    *
    * @return std::size_t size in bytes of allocated blocks.
    */
-  std::size_t get_block_size() const noexcept { return block_size_; }
+  [[nodiscard]] std::size_t get_block_size() const noexcept { return block_size_; }
 
  protected:
   using free_list  = detail::fixed_size_free_list;
@@ -133,7 +131,7 @@ class fixed_size_memory_resource
    * @return std::size_t The (fixed) maximum size of a single allocation supported by this memory
    * resource
    */
-  std::size_t get_maximum_allocation_size() const { return get_block_size(); }
+  [[nodiscard]] std::size_t get_maximum_allocation_size() const { return get_block_size(); }
 
   /**
    * @brief Allocate a block from upstream to supply the suballocation pool.
@@ -160,49 +158,53 @@ class fixed_size_memory_resource
    */
   free_list blocks_from_upstream(cuda_stream_view stream)
   {
-    void* p = upstream_mr_->allocate(upstream_chunk_size_, stream);
-    block_type b{p};
-    upstream_blocks_.push_back(b);
+    void* ptr = upstream_mr_->allocate(upstream_chunk_size_, stream);
+    block_type block{ptr};
+    upstream_blocks_.push_back(block);
 
     auto num_blocks = upstream_chunk_size_ / block_size_;
 
-    auto g     = [p, this](int i) { return block_type{static_cast<char*>(p) + i * block_size_}; };
-    auto first = thrust::make_transform_iterator(thrust::make_counting_iterator(std::size_t{0}), g);
+    auto block_gen = [ptr, this](int index) {
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+      return block_type{static_cast<char*>(ptr) + index * block_size_};
+    };
+    auto first =
+      thrust::make_transform_iterator(thrust::make_counting_iterator(std::size_t{0}), block_gen);
     return free_list(first, first + num_blocks);
   }
 
   /**
-   * @brief Splits block `b` if necessary to return a pointer to memory of `size` bytes.
+   * @brief Splits block if necessary to return a pointer to memory of `size` bytes.
    *
    * If the block is split, the remainder is returned to the pool.
    *
-   * @param b The block to allocate from.
+   * @param block The block to allocate from.
    * @param size The size in bytes of the requested allocation.
    * @param stream_event The stream and associated event on which the allocation will be used.
    * @return A pair comprising the allocated pointer and any unallocated remainder of the input
    * block.
    */
-  split_block allocate_from_block(block_type const& b, std::size_t size)
+  split_block allocate_from_block(block_type const& block, std::size_t size)
   {
-    return {b, block_type{nullptr}};
+    return {block, block_type{nullptr}};
   }
 
   /**
-   * @brief Finds, frees and returns the block associated with pointer `p`.
+   * @brief Finds, frees and returns the block associated with pointer.
    *
-   * @param p The pointer to the memory to free.
+   * @param ptr The pointer to the memory to free.
    * @param size The size of the memory to free. Must be equal to the original allocation size.
    * @param stream The stream-event pair for the stream on which the memory was last used.
    * @return The (now freed) block associated with `p`. The caller is expected to return the block
    * to the pool.
    */
-  block_type free_block(void* p, std::size_t size) noexcept
+  block_type free_block(void* ptr, std::size_t size) noexcept
   {
     // Deallocating a fixed-size block just inserts it in the free list, which is
     // handled by the parent class
     RMM_LOGGING_ASSERT(rmm::detail::align_up(size, rmm::detail::CUDA_ALLOCATION_ALIGNMENT) <=
                        block_size_);
-    return block_type{p};
+    return block_type{ptr};
   }
 
   /**
@@ -213,7 +215,8 @@ class fixed_size_memory_resource
    * @param stream the stream being executed on
    * @return std::pair with available and free memory for resource
    */
-  std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view stream) const override
+  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
+    cuda_stream_view stream) const override
   {
     return std::make_pair(0, 0);
   }
@@ -226,8 +229,9 @@ class fixed_size_memory_resource
   {
     lock_guard lock(this->get_mutex());
 
-    for (auto b : upstream_blocks_)
-      upstream_mr_->deallocate(b.pointer(), upstream_chunk_size_);
+    for (auto block : upstream_blocks_) {
+      upstream_mr_->deallocate(block.pointer(), upstream_chunk_size_);
+    }
     upstream_blocks_.clear();
   }
 
@@ -235,15 +239,14 @@ class fixed_size_memory_resource
   {
     lock_guard lock(this->get_mutex());
 
-    std::size_t free, total;
-    std::tie(free, total) = upstream_mr_->get_mem_info(0);
+    auto const [free, total] = upstream_mr_->get_mem_info(0);
     std::cout << "GPU free memory: " << free << " total: " << total << "\n";
 
     std::cout << "upstream_blocks: " << upstream_blocks_.size() << "\n";
     std::size_t upstream_total{0};
 
-    for (auto h : upstream_blocks_) {
-      h.print();
+    for (auto blocks : upstream_blocks_) {
+      blocks.print();
       upstream_total += upstream_chunk_size_;
     }
     std::cout << "total upstream: " << upstream_total << " B\n";
@@ -265,6 +268,7 @@ class fixed_size_memory_resource
                              : std::make_pair(block_size_, blocks.size() * block_size_);
   }
 
+ private:
   Upstream* upstream_mr_;  // The resource from which to allocate new blocks
 
   std::size_t const block_size_;           // size of blocks this MR allocates
@@ -274,5 +278,4 @@ class fixed_size_memory_resource
   std::vector<block_type> upstream_blocks_;
 };
 
-}  // namespace mr
-}  // namespace rmm
+}  // namespace rmm::mr

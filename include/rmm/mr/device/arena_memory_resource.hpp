@@ -100,9 +100,13 @@ class arena_memory_resource final : public device_memory_resource {
     }
   }
 
+  ~arena_memory_resource() override = default;
+
   // Disable copy (and move) semantics.
   arena_memory_resource(arena_memory_resource const&) = delete;
   arena_memory_resource& operator=(arena_memory_resource const&) = delete;
+  arena_memory_resource(arena_memory_resource&&) noexcept        = delete;
+  arena_memory_resource& operator=(arena_memory_resource&&) noexcept = delete;
 
   /**
    * @brief Queries whether the resource supports use of non-null CUDA streams for
@@ -138,16 +142,16 @@ class arena_memory_resource final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
-    if (bytes <= 0) return nullptr;
+    if (bytes <= 0) { return nullptr; }
 
     bytes         = detail::arena::align_up(bytes);
-    auto& a       = get_arena(stream);
-    void* pointer = a.allocate(bytes);
+    auto& arena   = get_arena(stream);
+    void* pointer = arena.allocate(bytes);
 
     if (pointer == nullptr) {
       write_lock lock(mtx_);
       defragment();
-      pointer = a.allocate(bytes);
+      pointer = arena.allocate(bytes);
       if (pointer == nullptr) {
         if (dump_log_on_failure_) { dump_memory_log(bytes); }
         RMM_FAIL("Maximum pool size exceeded", rmm::bad_alloc);
@@ -158,19 +162,19 @@ class arena_memory_resource final : public device_memory_resource {
   }
 
   /**
-   * @brief Deallocate memory pointed to by `p`.
+   * @brief Deallocate memory pointed to by `ptr`.
    *
-   * @param p Pointer to be deallocated.
+   * @param ptr Pointer to be deallocated.
    * @param bytes The size in bytes of the allocation. This must be equal to the
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param stream Stream on which to perform deallocation.
    */
-  void do_deallocate(void* p, std::size_t bytes, cuda_stream_view stream) override
+  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
-    if (p == nullptr || bytes <= 0) return;
+    if (ptr == nullptr || bytes <= 0) { return; }
 
     bytes = detail::arena::align_up(bytes);
-    get_arena(stream).deallocate(p, bytes, stream);
+    get_arena(stream).deallocate(ptr, bytes, stream);
   }
 
   /**
@@ -179,11 +183,11 @@ class arena_memory_resource final : public device_memory_resource {
   void defragment()
   {
     RMM_CUDA_TRY(cudaDeviceSynchronize());
-    for (auto& kv : thread_arenas_) {
-      kv.second->clean();
+    for (auto& thread_arena : thread_arenas_) {
+      thread_arena.second->clean();
     }
-    for (auto& kv : stream_arenas_) {
-      kv.second.clean();
+    for (auto& stream_arena : stream_arenas_) {
+      stream_arena.second.clean();
     }
   }
 
@@ -195,11 +199,8 @@ class arena_memory_resource final : public device_memory_resource {
    */
   arena& get_arena(cuda_stream_view stream)
   {
-    if (use_per_thread_arena(stream)) {
-      return get_thread_arena();
-    } else {
-      return get_stream_arena(stream);
-    }
+    if (use_per_thread_arena(stream)) { return get_thread_arena(); }
+    return get_stream_arena(stream);
   }
 
   /**
@@ -209,18 +210,18 @@ class arena_memory_resource final : public device_memory_resource {
    */
   arena& get_thread_arena()
   {
-    auto const id = std::this_thread::get_id();
+    auto const thread_id = std::this_thread::get_id();
     {
       read_lock lock(mtx_);
-      auto const it = thread_arenas_.find(id);
-      if (it != thread_arenas_.end()) { return *it->second; }
+      auto const iter = thread_arenas_.find(thread_id);
+      if (iter != thread_arenas_.end()) { return *iter->second; }
     }
     {
       write_lock lock(mtx_);
-      auto a = std::make_shared<arena>(global_arena_);
-      thread_arenas_.emplace(id, a);
-      thread_local detail::arena::arena_cleaner<Upstream> cleaner{a};
-      return *a;
+      auto thread_arena = std::make_shared<arena>(global_arena_);
+      thread_arenas_.emplace(thread_id, thread_arena);
+      thread_local detail::arena::arena_cleaner<Upstream> cleaner{thread_arena};
+      return *thread_arena;
     }
   }
 
@@ -234,8 +235,8 @@ class arena_memory_resource final : public device_memory_resource {
     RMM_LOGGING_ASSERT(!use_per_thread_arena(stream));
     {
       read_lock lock(mtx_);
-      auto const it = stream_arenas_.find(stream.value());
-      if (it != stream_arenas_.end()) { return it->second; }
+      auto const iter = stream_arenas_.find(stream.value());
+      if (iter != stream_arenas_.end()) { return iter->second; }
     }
     {
       write_lock lock(mtx_);
@@ -268,15 +269,15 @@ class arena_memory_resource final : public device_memory_resource {
     logger_->info("Global arena:");
     global_arena_.dump_memory_log(logger_);
     logger_->info("Per-thread arenas:");
-    for (auto const& t : thread_arenas_) {
-      logger_->info("  Thread {}:", t.first);
-      t.second->dump_memory_log(logger_);
+    for (auto const& thread_arena : thread_arenas_) {
+      logger_->info("  Thread {}:", thread_arena.first);
+      thread_arena.second->dump_memory_log(logger_);
     }
     if (!stream_arenas_.empty()) {
       logger_->info("Per-stream arenas:");
-      for (auto const& s : stream_arenas_) {
-        logger_->info("  Stream {}:", static_cast<void*>(s.first));
-        s.second.dump_memory_log(logger_);
+      for (auto const& stream_arena : stream_arenas_) {
+        logger_->info("  Stream {}:", static_cast<void*>(stream_arena.first));
+        stream_arena.second.dump_memory_log(logger_);
       }
     }
   }

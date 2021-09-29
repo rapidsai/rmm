@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,8 +31,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace rmm {
-namespace detail {
+namespace rmm::detail {
 
 enum class action : bool { ALLOCATE, FREE };
 
@@ -43,41 +42,57 @@ enum class action : bool { ALLOCATE, FREE };
 struct event {
   event()             = default;
   event(event const&) = default;
-  event(action a, std::size_t s, void const* p)
-    : act{a}, size{s}, pointer{reinterpret_cast<uintptr_t>(p)}
+  event& operator=(event const&) = default;
+  event(event&&) noexcept        = default;
+  event& operator=(event&&) noexcept = default;
+  ~event()                           = default;
+  event(action act, std::size_t size, void const* ptr)
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    : act{act}, size{size}, pointer{reinterpret_cast<uintptr_t>(ptr)}
   {
   }
 
-  event(action a, std::size_t s, uintptr_t p) : act{a}, size{s}, pointer{p} {}
+  // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+  event(action act, std::size_t size, uintptr_t ptr) : act{act}, size{size}, pointer{ptr} {}
 
-  event(std::size_t tid, action a, std::size_t sz, uintptr_t p, uintptr_t s, std::size_t i)
-    : act{a}, size{sz}, pointer{p}, thread_id{tid}, stream{s}, index{i}
+  event(std::size_t tid,
+        action act,
+        std::size_t size,  // NOLINT(bugprone-easily-swappable-parameters)
+        uintptr_t ptr,
+        uintptr_t stream,
+        std::size_t index)
+    : act{act}, size{size}, pointer{ptr}, thread_id{tid}, stream{stream}, index{index}
   {
   }
 
-  event(std::size_t tid, action a, std::size_t sz, void* p, uintptr_t s, std::size_t i)
-    : event{tid, a, sz, reinterpret_cast<uintptr_t>(p), s, i}
+  event(
+    std::size_t tid, action act, std::size_t size, void* ptr, uintptr_t stream, std::size_t index)
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    : event{tid, act, size, reinterpret_cast<uintptr_t>(ptr), stream, index}
   {
   }
 
-  friend std::ostream& operator<<(std::ostream& os, event const& e);
+  friend std::ostream& operator<<(std::ostream& os, event const& evt);
 
-  action act{};           ///< Indicates if the event is an allocation or a free
-  std::size_t size{};     ///< The size of the memory allocated or freed
-  uintptr_t pointer{};    ///< The pointer returned from an allocation, or the
-                          ///< pointer freed
-  std::size_t thread_id;  ///< ID of the thread that initiated the event
-  uintptr_t stream;       ///< Numeric representation of the CUDA stream on which the event occurred
-  std::size_t index;      ///< Original ordering index of the event
+  action act{};             ///< Indicates if the event is an allocation or a free
+  std::size_t size{};       ///< The size of the memory allocated or freed
+  uintptr_t pointer{};      ///< The pointer returned from an allocation, or the
+                            ///< pointer freed
+  std::size_t thread_id{};  ///< ID of the thread that initiated the event
+  uintptr_t stream{};   ///< Numeric representation of the CUDA stream on which the event occurred
+  std::size_t index{};  ///< Original ordering index of the event
 };
 
-inline std::ostream& operator<<(std::ostream& os, event const& e)
+inline std::ostream& operator<<(std::ostream& os, event const& evt)
 {
-  auto act_string = (e.act == action::ALLOCATE) ? "allocate" : "free";
+  const auto* act_string = (evt.act == action::ALLOCATE) ? "allocate" : "free";
 
-  os << "Thread: " << e.thread_id << std::setw(9) << act_string
-     << " Size: " << std::setw(std::numeric_limits<std::size_t>::digits10) << e.size << " Pointer: "
-     << "0x" << std::hex << e.pointer << std::dec << " Stream: " << e.stream;
+  const auto format_width{9};
+
+  os << "Thread: " << evt.thread_id << std::setw(format_width) << act_string
+     << " Size: " << std::setw(std::numeric_limits<std::size_t>::digits10) << evt.size
+     << " Pointer: "
+     << "0x" << std::hex << evt.pointer << std::dec << " Stream: " << evt.stream;
   return os;
 }
 
@@ -105,11 +120,12 @@ inline std::chrono::time_point<std::chrono::system_clock> parse_time(std::string
   int seconds          = std::stoi(str_time.substr(previous, current - previous));
   int microseconds     = std::stoi(str_time.substr(current + 1, str_time.length()));
 
-  std::tm tm{seconds, minutes, hours, 1, 0, 1970, 0, 0, 0};
+  auto const epoch_year{1970};
+  std::tm time{seconds, minutes, hours, 1, 0, epoch_year, 0, 0, 0};
 
-  auto tp = std::chrono::system_clock::from_time_t(std::mktime(&tm));
-  tp += std::chrono::microseconds{microseconds};
-  return tp;
+  auto timepoint = std::chrono::system_clock::from_time_t(std::mktime(&time));
+  timepoint += std::chrono::microseconds{microseconds};
+  return timepoint;
 }
 
 /**
@@ -128,8 +144,9 @@ inline std::vector<event> parse_csv(std::string const& filename)
   std::vector<std::size_t> tids    = csv.GetColumn<std::size_t>("Thread");
   std::vector<std::string> actions = csv.GetColumn<std::string>("Action");
 
-  auto parse_pointer = [](std::string const& s, uintptr_t& ptr) {
-    ptr = std::stoll(s, nullptr, 16);
+  auto parse_pointer = [](std::string const& str, uintptr_t& ptr) {
+    auto const base{16};
+    ptr = std::stoll(str, nullptr, base);
   };
 
   std::vector<uintptr_t> pointers = csv.GetColumn<uintptr_t>("Pointer", parse_pointer);
@@ -140,19 +157,18 @@ inline std::vector<event> parse_csv(std::string const& filename)
 
   RMM_EXPECTS(std::all_of(std::begin(size_list),
                           std::end(size_list),
-                          [size = sizes.size()](auto i) { return i == size; }),
+                          [size = sizes.size()](auto val) { return val == size; }),
               "Size mismatch in columns of parsed log.");
 
   std::vector<event> events(sizes.size());
 
   for (std::size_t i = 0; i < actions.size(); ++i) {
-    auto const& a = actions[i];
-    RMM_EXPECTS((a == "allocate") or (a == "free"), "Invalid action string.");
-    auto act  = (a == "allocate") ? action::ALLOCATE : action::FREE;
+    auto const& action = actions[i];
+    RMM_EXPECTS((action == "allocate") or (action == "free"), "Invalid action string.");
+    auto act  = (action == "allocate") ? action::ALLOCATE : action::FREE;
     events[i] = event{tids[i], act, sizes[i], pointers[i], streams[i], i};
   }
   return events;
 }
 
-}  // namespace detail
-}  // namespace rmm
+}  // namespace rmm::detail

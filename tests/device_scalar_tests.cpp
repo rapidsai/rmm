@@ -22,6 +22,7 @@
 #include <rmm/mr/device/per_device_resource.hpp>
 
 #include <cuda_runtime_api.h>
+
 #include <chrono>
 #include <cstddef>
 #include <random>
@@ -29,12 +30,12 @@
 
 template <typename T>
 struct DeviceScalarTest : public ::testing::Test {
+  std::default_random_engine generator{};
   T value{};
   rmm::cuda_stream stream{};
   rmm::mr::device_memory_resource* mr{rmm::mr::get_current_device_resource()};
-  std::default_random_engine generator{};
 
-  DeviceScalarTest() { value = random_value(); }
+  DeviceScalarTest() : value{random_value()} {}
 
   template <typename U = T, std::enable_if_t<std::is_same<U, bool>::value, bool> = true>
   U random_value()
@@ -56,7 +57,9 @@ struct DeviceScalarTest : public ::testing::Test {
   template <typename U = T, std::enable_if_t<std::is_floating_point<U>::value, bool> = true>
   U random_value()
   {
-    static std::normal_distribution<U> distribution{100, 20};
+    auto const mean{100};
+    auto const stddev{20};
+    static std::normal_distribution<U> distribution(mean, stddev);
     return distribution(generator);
   }
 };
@@ -90,13 +93,14 @@ TYPED_TEST(DeviceScalarTest, MoveCtor)
   EXPECT_NE(nullptr, scalar.data());
   EXPECT_EQ(this->value, scalar.value(this->stream));
 
-  auto original_pointer = scalar.data();
-  auto original_value   = scalar.value(this->stream);
+  auto* original_pointer = scalar.data();
+  auto original_value    = scalar.value(this->stream);
 
   rmm::device_scalar<TypeParam> moved_to{std::move(scalar)};
   EXPECT_NE(nullptr, moved_to.data());
   EXPECT_EQ(moved_to.data(), original_pointer);
   EXPECT_EQ(moved_to.value(this->stream), original_value);
+  // NOLINTNEXTLINE(bugprone-use-after-move,clang-analyzer-cplusplus.Move)
   EXPECT_EQ(nullptr, scalar.data());
 }
 

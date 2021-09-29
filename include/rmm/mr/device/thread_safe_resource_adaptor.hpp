@@ -22,8 +22,7 @@
 #include <cstddef>
 #include <mutex>
 
-namespace rmm {
-namespace mr {
+namespace rmm::mr {
 /**
  * @brief Resource that adapts `Upstream` memory resource adaptor to be thread safe.
  *
@@ -54,7 +53,7 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
   }
 
   thread_safe_resource_adaptor()                                    = delete;
-  ~thread_safe_resource_adaptor()                                   = default;
+  ~thread_safe_resource_adaptor() override                          = default;
   thread_safe_resource_adaptor(thread_safe_resource_adaptor const&) = delete;
   thread_safe_resource_adaptor(thread_safe_resource_adaptor&&)      = delete;
   thread_safe_resource_adaptor& operator=(thread_safe_resource_adaptor const&) = delete;
@@ -98,19 +97,18 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
   }
 
   /**
-   * @brief Free allocation of size `bytes` pointed to to by `p` and log the
-   * deallocation.
+   * @brief Free allocation of size `bytes` pointed to to by `ptr`.s
    *
    * @throws Nothing.
    *
-   * @param p Pointer to be deallocated
+   * @param ptr Pointer to be deallocated
    * @param bytes Size of the allocation
    * @param stream Stream on which to perform the deallocation
    */
-  void do_deallocate(void* p, std::size_t bytes, cuda_stream_view stream) override
+  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
     lock_t lock(mtx);
-    upstream_->deallocate(p, bytes, stream);
+    upstream_->deallocate(ptr, bytes, stream);
   }
 
   /**
@@ -124,15 +122,12 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
    */
   bool do_is_equal(device_memory_resource const& other) const noexcept override
   {
-    if (this == &other)
-      return true;
-    else {
-      auto thread_safe_other = dynamic_cast<thread_safe_resource_adaptor<Upstream> const*>(&other);
-      if (thread_safe_other != nullptr)
-        return upstream_->is_equal(*thread_safe_other->get_upstream());
-      else
-        return upstream_->is_equal(other);
+    if (this == &other) { return true; }
+    auto thread_safe_other = dynamic_cast<thread_safe_resource_adaptor<Upstream> const*>(&other);
+    if (thread_safe_other != nullptr) {
+      return upstream_->is_equal(*thread_safe_other->get_upstream());
     }
+    return upstream_->is_equal(other);
   }
 
   /**
@@ -153,5 +148,4 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
   Upstream* upstream_;     ///< The upstream resource used for satisfying allocation requests
 };
 
-}  // namespace mr
-}  // namespace rmm
+}  // namespace rmm::mr

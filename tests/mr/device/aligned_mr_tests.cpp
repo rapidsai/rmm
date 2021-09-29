@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/aligned_resource_adaptor.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
@@ -40,6 +41,12 @@ class mock_resource : public rmm::mr::device_memory_resource {
 using aligned_mock = rmm::mr::aligned_resource_adaptor<mock_resource>;
 using aligned_real = rmm::mr::aligned_resource_adaptor<rmm::mr::device_memory_resource>;
 
+void* int_to_address(std::size_t val)
+{
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast, performance-no-int-to-ptr)
+  return reinterpret_cast<void*>(val);
+}
+
 TEST(AlignedTest, ThrowOnNullUpstream)
 {
   auto construct_nullptr = []() { aligned_mock mr{nullptr}; };
@@ -49,7 +56,9 @@ TEST(AlignedTest, ThrowOnNullUpstream)
 TEST(AlignedTest, ThrowOnInvalidAllocationAlignment)
 {
   mock_resource mock;
-  auto construct_alignment = [](auto* r, std::size_t a) { aligned_mock mr{r, a}; };
+  auto construct_alignment = [](auto* memres, std::size_t align) {
+    aligned_mock mr{memres, align};
+  };
   EXPECT_THROW(construct_alignment(&mock, 255), rmm::logic_error);
   EXPECT_NO_THROW(construct_alignment(&mock, 256));
   EXPECT_THROW(construct_alignment(&mock, 768), rmm::logic_error);
@@ -85,97 +94,148 @@ TEST(AlignedTest, DefaultAllocationAlignmentPassthrough)
   aligned_mock mr{&mock};
 
   cuda_stream_view stream;
-  void* pointer = reinterpret_cast<void*>(123);
+  void* const pointer = int_to_address(123);
+
   // device_memory_resource aligns to 8.
-  EXPECT_CALL(mock, do_allocate(8, stream)).WillOnce(Return(pointer));
-  EXPECT_CALL(mock, do_deallocate(pointer, 8, stream)).Times(1);
-  EXPECT_EQ(mr.allocate(5, stream), pointer);
-  mr.deallocate(pointer, 5, stream);
+  {
+    auto const size{8};
+    EXPECT_CALL(mock, do_allocate(size, stream)).WillOnce(Return(pointer));
+    EXPECT_CALL(mock, do_deallocate(pointer, size, stream)).Times(1);
+  }
+
+  {
+    auto const size{5};
+    EXPECT_EQ(mr.allocate(size, stream), pointer);
+    mr.deallocate(pointer, size, stream);
+  }
 }
 
 TEST(AlignedTest, BelowAlignmentThresholdPassthrough)
 {
   mock_resource mock;
-  aligned_mock mr{&mock, 4096, 65536};
+  auto const alignment{4096};
+  auto const threshold{65536};
+  aligned_mock mr{&mock, alignment, threshold};
 
   cuda_stream_view stream;
-  void* pointer = reinterpret_cast<void*>(123);
+  void* const pointer = int_to_address(123);
   // device_memory_resource aligns to 8.
-  EXPECT_CALL(mock, do_allocate(8, stream)).WillOnce(Return(pointer));
-  EXPECT_CALL(mock, do_deallocate(pointer, 8, stream)).Times(1);
-  EXPECT_EQ(mr.allocate(3, stream), pointer);
-  mr.deallocate(pointer, 3, stream);
+  {
+    auto const size{8};
+    EXPECT_CALL(mock, do_allocate(size, stream)).WillOnce(Return(pointer));
+    EXPECT_CALL(mock, do_deallocate(pointer, size, stream)).Times(1);
+  }
 
-  void* pointer1 = reinterpret_cast<void*>(456);
-  EXPECT_CALL(mock, do_allocate(65528, stream)).WillOnce(Return(pointer1));
-  EXPECT_CALL(mock, do_deallocate(pointer1, 65528, stream)).Times(1);
-  EXPECT_EQ(mr.allocate(65528, stream), pointer1);
-  mr.deallocate(pointer1, 65528, stream);
+  {
+    auto const size{3};
+    EXPECT_EQ(mr.allocate(size, stream), pointer);
+    mr.deallocate(pointer, size, stream);
+  }
+
+  {
+    auto const size{65528};
+    void* const pointer1 = int_to_address(456);
+    EXPECT_CALL(mock, do_allocate(size, stream)).WillOnce(Return(pointer1));
+    EXPECT_CALL(mock, do_deallocate(pointer1, size, stream)).Times(1);
+    EXPECT_EQ(mr.allocate(size, stream), pointer1);
+    mr.deallocate(pointer1, size, stream);
+  }
 }
 
 TEST(AlignedTest, UpstreamAddressAlreadyAligned)
 {
   mock_resource mock;
-  aligned_mock mr{&mock, 4096, 65536};
+  auto const alignment{4096};
+  auto const threshold{65536};
+  aligned_mock mr{&mock, alignment, threshold};
 
   cuda_stream_view stream;
-  void* pointer = reinterpret_cast<void*>(4096);
-  EXPECT_CALL(mock, do_allocate(69376, stream)).WillOnce(Return(pointer));
-  EXPECT_CALL(mock, do_deallocate(pointer, 69376, stream)).Times(1);
+  void* const pointer = int_to_address(4096);
 
-  EXPECT_EQ(mr.allocate(65536, stream), pointer);
-  mr.deallocate(pointer, 65536, stream);
+  {
+    auto const size{69376};
+    EXPECT_CALL(mock, do_allocate(size, stream)).WillOnce(Return(pointer));
+    EXPECT_CALL(mock, do_deallocate(pointer, size, stream)).Times(1);
+  }
+
+  {
+    auto const size{65536};
+    EXPECT_EQ(mr.allocate(size, stream), pointer);
+    mr.deallocate(pointer, size, stream);
+  }
 }
 
 TEST(AlignedTest, AlignUpstreamAddress)
 {
   mock_resource mock;
-  aligned_mock mr{&mock, 4096, 65536};
+  auto const alignment{4096};
+  auto const threshold{65536};
+  aligned_mock mr{&mock, alignment, threshold};
 
   cuda_stream_view stream;
-  void* pointer = reinterpret_cast<void*>(256);
-  EXPECT_CALL(mock, do_allocate(69376, stream)).WillOnce(Return(pointer));
-  EXPECT_CALL(mock, do_deallocate(pointer, 69376, stream)).Times(1);
+  {
+    void* const pointer = int_to_address(256);
+    auto const size{69376};
+    EXPECT_CALL(mock, do_allocate(size, stream)).WillOnce(Return(pointer));
+    EXPECT_CALL(mock, do_deallocate(pointer, size, stream)).Times(1);
+  }
 
-  void* expected_pointer = reinterpret_cast<void*>(4096);
-  EXPECT_EQ(mr.allocate(65536, stream), expected_pointer);
-  mr.deallocate(expected_pointer, 65536, stream);
+  {
+    void* const expected_pointer = int_to_address(4096);
+    auto const size{65536};
+    EXPECT_EQ(mr.allocate(size, stream), expected_pointer);
+    mr.deallocate(expected_pointer, size, stream);
+  }
 }
 
 TEST(AlignedTest, AlignMultiple)
 {
   mock_resource mock;
-  aligned_mock mr{&mock, 4096, 65536};
+  auto const alignment{4096};
+  auto const threshold{65536};
+  aligned_mock mr{&mock, alignment, threshold};
 
   cuda_stream_view stream;
-  void* pointer  = reinterpret_cast<void*>(256);
-  void* pointer1 = reinterpret_cast<void*>(131584);
-  void* pointer2 = reinterpret_cast<void*>(263168);
-  EXPECT_CALL(mock, do_allocate(69376, stream)).WillOnce(Return(pointer));
-  EXPECT_CALL(mock, do_allocate(77568, stream)).WillOnce(Return(pointer1));
-  EXPECT_CALL(mock, do_allocate(81664, stream)).WillOnce(Return(pointer2));
-  EXPECT_CALL(mock, do_deallocate(pointer, 69376, stream)).Times(1);
-  EXPECT_CALL(mock, do_deallocate(pointer1, 77568, stream)).Times(1);
-  EXPECT_CALL(mock, do_deallocate(pointer2, 81664, stream)).Times(1);
 
-  void* expected_pointer  = reinterpret_cast<void*>(4096);
-  void* expected_pointer1 = reinterpret_cast<void*>(135168);
-  void* expected_pointer2 = reinterpret_cast<void*>(266240);
-  EXPECT_EQ(mr.allocate(65536, stream), expected_pointer);
-  EXPECT_EQ(mr.allocate(73728, stream), expected_pointer1);
-  EXPECT_EQ(mr.allocate(77800, stream), expected_pointer2);
-  mr.deallocate(expected_pointer1, 73728, stream);
-  mr.deallocate(expected_pointer, 65536, stream);
-  mr.deallocate(expected_pointer2, 77800, stream);
+  {
+    void* const pointer1 = int_to_address(256);
+    void* const pointer2 = int_to_address(131584);
+    void* const pointer3 = int_to_address(263168);
+    auto const size1{69376};
+    auto const size2{77568};
+    auto const size3{81664};
+    EXPECT_CALL(mock, do_allocate(size1, stream)).WillOnce(Return(pointer1));
+    EXPECT_CALL(mock, do_allocate(size2, stream)).WillOnce(Return(pointer2));
+    EXPECT_CALL(mock, do_allocate(size3, stream)).WillOnce(Return(pointer3));
+    EXPECT_CALL(mock, do_deallocate(pointer1, size1, stream)).Times(1);
+    EXPECT_CALL(mock, do_deallocate(pointer2, size2, stream)).Times(1);
+    EXPECT_CALL(mock, do_deallocate(pointer3, size3, stream)).Times(1);
+  }
+
+  {
+    void* const expected_pointer1 = int_to_address(4096);
+    void* const expected_pointer2 = int_to_address(135168);
+    void* const expected_pointer3 = int_to_address(266240);
+    auto const size1{65536};
+    auto const size2{73728};
+    auto const size3{77800};
+    EXPECT_EQ(mr.allocate(size1, stream), expected_pointer1);
+    EXPECT_EQ(mr.allocate(size2, stream), expected_pointer2);
+    EXPECT_EQ(mr.allocate(size3, stream), expected_pointer3);
+    mr.deallocate(expected_pointer1, size1, stream);
+    mr.deallocate(expected_pointer2, size2, stream);
+    mr.deallocate(expected_pointer3, size3, stream);
+  }
 }
 
 TEST(AlignedTest, AlignRealPointer)
 {
-  aligned_real mr{rmm::mr::get_current_device_resource(), 4096, 65536};
-  void* alloc        = mr.allocate(65536);
-  auto const address = reinterpret_cast<std::size_t>(alloc);
-  EXPECT_TRUE(address % 4096 == 0);
-  mr.deallocate(alloc, 65536);
+  auto const alignment{4096};
+  auto const threshold{65536};
+  aligned_real mr{rmm::mr::get_current_device_resource(), alignment, threshold};
+  void* alloc = mr.allocate(threshold);
+  EXPECT_TRUE(rmm::detail::is_pointer_aligned(alloc, alignment));
+  mr.deallocate(alloc, threshold);
 }
 
 }  // namespace

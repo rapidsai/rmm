@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-#include <gtest/gtest.h>
-#include <rmm/device_vector.hpp>
-#include <rmm/mr/device/thrust_allocator_adaptor.hpp>
 #include "mr_test.hpp"
 
-namespace rmm {
-namespace test {
+#include <rmm/device_vector.hpp>
+#include <rmm/mr/device/thrust_allocator_adaptor.hpp>
+
+#include <gtest/gtest.h>
+
+namespace rmm::test {
 namespace {
 
 struct allocator_test : public mr_test {
@@ -28,8 +29,9 @@ struct allocator_test : public mr_test {
 
 TEST_P(allocator_test, first)
 {
-  rmm::device_vector<int> ints(100, 1);
-  EXPECT_EQ(100, thrust::reduce(ints.begin(), ints.end()));
+  auto const num_ints{100};
+  rmm::device_vector<int> ints(num_ints, 1);
+  EXPECT_EQ(num_ints, thrust::reduce(ints.begin(), ints.end()));
 }
 
 INSTANTIATE_TEST_CASE_P(ThrustAllocatorTests,
@@ -39,6 +41,6 @@ INSTANTIATE_TEST_CASE_P(ThrustAllocatorTests,
                                           mr_factory{"Pool", &make_pool},
                                           mr_factory{"Binning", &make_binning}),
                         [](auto const& info) { return info.param.name; });
+
 }  // namespace
-}  // namespace test
-}  // namespace rmm
+}  // namespace rmm::test

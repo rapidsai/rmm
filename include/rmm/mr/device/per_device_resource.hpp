@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,9 +71,7 @@
  * @endcode
  */
 
-namespace rmm {
-
-namespace mr {
+namespace rmm::mr {
 
 namespace detail {
 
@@ -126,13 +124,14 @@ RMM_EXPORT inline auto& get_map()
  * @param id The id of the target device
  * @return Pointer to the current `device_memory_resource` for device `id`
  */
-inline device_memory_resource* get_per_device_resource(cuda_device_id id)
+inline device_memory_resource* get_per_device_resource(cuda_device_id device_id)
 {
   std::lock_guard<std::mutex> lock{detail::map_lock()};
   auto& map = detail::get_map();
   // If a resource was never set for `id`, set to the initial resource
-  auto const found = map.find(id.value());
-  return (found == map.end()) ? (map[id.value()] = detail::initial_resource()) : found->second;
+  auto const found = map.find(device_id.value());
+  return (found == map.end()) ? (map[device_id.value()] = detail::initial_resource())
+                              : found->second;
 }
 
 /**
@@ -162,15 +161,15 @@ inline device_memory_resource* get_per_device_resource(cuda_device_id id)
  * for `id`
  * @return Pointer to the previous memory resource for `id`
  */
-inline device_memory_resource* set_per_device_resource(cuda_device_id id,
+inline device_memory_resource* set_per_device_resource(cuda_device_id device_id,
                                                        device_memory_resource* new_mr)
 {
   std::lock_guard<std::mutex> lock{detail::map_lock()};
   auto& map          = detail::get_map();
-  auto const old_itr = map.find(id.value());
+  auto const old_itr = map.find(device_id.value());
   // If a resource didn't previously exist for `id`, return pointer to initial_resource
-  auto old_mr     = (old_itr == map.end()) ? detail::initial_resource() : old_itr->second;
-  map[id.value()] = (new_mr == nullptr) ? detail::initial_resource() : new_mr;
+  auto* old_mr           = (old_itr == map.end()) ? detail::initial_resource() : old_itr->second;
+  map[device_id.value()] = (new_mr == nullptr) ? detail::initial_resource() : new_mr;
   return old_mr;
 }
 
@@ -228,5 +227,4 @@ inline device_memory_resource* set_current_device_resource(device_memory_resourc
 {
   return set_per_device_resource(rmm::detail::current_device(), new_mr);
 }
-}  // namespace mr
-}  // namespace rmm
+}  // namespace rmm::mr

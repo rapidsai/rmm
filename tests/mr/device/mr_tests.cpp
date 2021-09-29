@@ -20,21 +20,20 @@
 
 #include <gtest/gtest.h>
 
-namespace rmm {
-namespace test {
+namespace rmm::test {
 namespace {
 
-INSTANTIATE_TEST_CASE_P(ResourceTests,
-                        mr_test,
-                        ::testing::Values(mr_factory{"CUDA", &make_cuda},
+INSTANTIATE_TEST_SUITE_P(ResourceTests,
+                         mr_test,
+                         ::testing::Values(mr_factory{"CUDA", &make_cuda},
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
-                                          mr_factory{"CUDA_Async", &make_cuda_async},
+                                           mr_factory{"CUDA_Async", &make_cuda_async},
 #endif
-                                          mr_factory{"Managed", &make_managed},
-                                          mr_factory{"Pool", &make_pool},
-                                          mr_factory{"Arena", &make_arena},
-                                          mr_factory{"Binning", &make_binning}),
-                        [](auto const& info) { return info.param.name; });
+                                           mr_factory{"Managed", &make_managed},
+                                           mr_factory{"Pool", &make_pool},
+                                           mr_factory{"Arena", &make_arena},
+                                           mr_factory{"Binning", &make_binning}),
+                         [](auto const& info) { return info.param.name; });
 
 TEST(DefaultTest, CurrentDeviceResourceIsCUDA)
 {
@@ -46,8 +45,7 @@ TEST(DefaultTest, UseCurrentDeviceResource) { test_get_current_device_resource()
 
 TEST(DefaultTest, GetCurrentDeviceResource)
 {
-  rmm::mr::device_memory_resource* mr;
-  mr = rmm::mr::get_current_device_resource();
+  auto* mr = rmm::mr::get_current_device_resource();
   EXPECT_NE(nullptr, mr);
   EXPECT_TRUE(mr->is_equal(rmm::mr::cuda_memory_resource{}));
 }
@@ -95,32 +93,38 @@ TEST_P(mr_test, RandomAllocations) { test_random_allocations(this->mr.get()); }
 
 TEST_P(mr_test, RandomAllocationsStream)
 {
-  test_random_allocations(this->mr.get(), 100, 5_MiB, this->stream);
+  test_random_allocations(this->mr.get(), default_num_allocations, default_max_size, this->stream);
 }
 
 TEST_P(mr_test, MixedRandomAllocationFree)
 {
-  test_mixed_random_allocation_free(this->mr.get(), 5_MiB, cuda_stream_view{});
+  test_mixed_random_allocation_free(this->mr.get(), default_max_size, cuda_stream_view{});
 }
 
 TEST_P(mr_test, MixedRandomAllocationFreeStream)
 {
-  test_mixed_random_allocation_free(this->mr.get(), 5_MiB, this->stream);
+  test_mixed_random_allocation_free(this->mr.get(), default_max_size, this->stream);
 }
 
 TEST_P(mr_test, GetMemInfo)
 {
   if (this->mr->supports_get_mem_info()) {
-    std::pair<std::size_t, std::size_t> mem_info;
-    mem_info                    = this->mr->get_mem_info(rmm::cuda_stream_view{});
-    std::size_t allocation_size = 16 * 256;
+    const auto allocation_size{16 * 256};
+    {
+      auto const [free, total] = this->mr->get_mem_info(rmm::cuda_stream_view{});
+      EXPECT_TRUE(free >= allocation_size);
+    }
+
     void* ptr{nullptr};
-    ptr      = this->mr->allocate(allocation_size);
-    mem_info = this->mr->get_mem_info(rmm::cuda_stream_view{});
-    EXPECT_TRUE(mem_info.first >= allocation_size);
+    ptr = this->mr->allocate(allocation_size);
+
+    {
+      auto const [free, total] = this->mr->get_mem_info(rmm::cuda_stream_view{});
+      EXPECT_TRUE(free >= allocation_size);
+    }
+
     this->mr->deallocate(ptr, allocation_size);
   }
 }
 }  // namespace
-}  // namespace test
-}  // namespace rmm
+}  // namespace rmm::test

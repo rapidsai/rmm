@@ -47,6 +47,7 @@ TEST_F(CudaStreamTest, MoveConstructor)
   rmm::cuda_stream stream_a;
   auto const view_a         = stream_a.view();
   rmm::cuda_stream stream_b = std::move(stream_a);
+  // NOLINTNEXTLINE(bugprone-use-after-move, clang-analyzer-cplusplus.Move)
   EXPECT_FALSE(stream_a.is_valid());  // Any other operations on stream_a are UB, may segfault
   EXPECT_EQ(stream_b, view_a);
 }
