@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@
 #include <rmm/detail/error.hpp>
 
 #include <atomic>
+#include <cstddef>
 #include <vector>
 
 namespace rmm {
@@ -38,11 +39,15 @@ class cuda_stream_pool {
   static constexpr std::size_t default_size{16};  ///< Default stream pool size
 
   /**
-   * @brief Construct a new cuda stream pool object of the given size
+   * @brief Construct a new cuda stream pool object of the given non-zero size
    *
+   * @throws logic_error if `pool_size` is zero
    * @param pool_size The number of streams in the pool
    */
-  explicit cuda_stream_pool(std::size_t pool_size = default_size) : streams_(pool_size) {}
+  explicit cuda_stream_pool(std::size_t pool_size = default_size) : streams_(pool_size)
+  {
+    RMM_EXPECTS(pool_size > 0, "Stream pool size must be greater than zero");
+  }
   ~cuda_stream_pool() = default;
 
   cuda_stream_pool(cuda_stream_pool&&)      = delete;
@@ -84,7 +89,7 @@ class cuda_stream_pool {
    *
    * @return the number of streams in the pool
    */
-  size_t get_pool_size() const noexcept { return streams_.size(); }
+  std::size_t get_pool_size() const noexcept { return streams_.size(); }
 
  private:
   std::vector<rmm::cuda_stream> streams_;

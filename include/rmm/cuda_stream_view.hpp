@@ -56,7 +56,7 @@ class cuda_stream_view {
    *
    * @return cudaStream_t The wrapped stream.
    */
-  constexpr cudaStream_t value() const noexcept { return stream_; }
+  [[nodiscard]] constexpr cudaStream_t value() const noexcept { return stream_; }
 
   /**
    * @brief Implicit conversion to cudaStream_t.
@@ -71,26 +71,12 @@ class cuda_stream_view {
   /**
    * @brief Return true if the wrapped stream is the CUDA per-thread default stream.
    */
-  bool is_per_thread_default() const noexcept
-  {
-#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-    return value() == cudaStreamPerThread || value() == 0;
-#else
-    return value() == cudaStreamPerThread;
-#endif
-  }
+  [[nodiscard]] inline bool is_per_thread_default() const noexcept;
 
   /**
    * @brief Return true if the wrapped stream is explicitly the CUDA legacy default stream.
    */
-  bool is_default() const noexcept
-  {
-#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-    return value() == cudaStreamLegacy;
-#else
-    return value() == cudaStreamLegacy || value() == 0;
-#endif
-  }
+  [[nodiscard]] inline bool is_default() const noexcept;
 
   /**
    * @brief Synchronize the viewed CUDA stream.
@@ -112,7 +98,7 @@ class cuda_stream_view {
   }
 
  private:
-  cudaStream_t stream_{0};
+  cudaStream_t stream_{};
 };
 
 /**
@@ -123,12 +109,38 @@ static constexpr cuda_stream_view cuda_stream_default{};
 /**
  * @brief Static cuda_stream_view of cudaStreamLegacy, for convenience
  */
-static cuda_stream_view cuda_stream_legacy{cudaStreamLegacy};
+
+static const cuda_stream_view cuda_stream_legacy{
+  cudaStreamLegacy  // NOLINT(cppcoreguidelines-pro-type-cstyle-cast)
+};
 
 /**
  * @brief Static cuda_stream_view of cudaStreamPerThread, for convenience
  */
-static cuda_stream_view cuda_stream_per_thread{cudaStreamPerThread};
+static const cuda_stream_view cuda_stream_per_thread{
+  cudaStreamPerThread  // NOLINT(cppcoreguidelines-pro-type-cstyle-cast)
+};
+
+[[nodiscard]] inline bool cuda_stream_view::is_per_thread_default() const noexcept
+{
+#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
+  return value() == cuda_stream_per_thread || value() == nullptr;
+#else
+  return value() == cuda_stream_per_thread;
+#endif
+}
+
+/**
+ * @brief Return true if the wrapped stream is explicitly the CUDA legacy default stream.
+ */
+[[nodiscard]] inline bool cuda_stream_view::is_default() const noexcept
+{
+#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
+  return value() == cuda_stream_legacy;
+#else
+  return value() == cuda_stream_legacy || value() == nullptr;
+#endif
+}
 
 /**
  * @brief Equality comparison operator for streams
@@ -158,9 +170,9 @@ inline bool operator!=(cuda_stream_view lhs, cuda_stream_view rhs) { return not(
  * @param sv The cuda_stream_view to output
  * @return std::ostream& The output ostream
  */
-inline std::ostream& operator<<(std::ostream& os, cuda_stream_view sv)
+inline std::ostream& operator<<(std::ostream& os, cuda_stream_view stream)
 {
-  os << sv.value();
+  os << stream.value();
   return os;
 }
 

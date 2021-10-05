@@ -57,13 +57,13 @@ class cuda_stream {
    */
   cuda_stream()
     : stream_{[]() {
-                cudaStream_t* s = new cudaStream_t;
-                RMM_CUDA_TRY(cudaStreamCreate(s));
-                return s;
+                auto* stream = new cudaStream_t;  // NOLINT(cppcoreguidelines-owning-memory)
+                RMM_CUDA_TRY(cudaStreamCreate(stream));
+                return stream;
               }(),
-              [](cudaStream_t* s) {
-                RMM_ASSERT_CUDA_SUCCESS(cudaStreamDestroy(*s));
-                delete s;
+              [](cudaStream_t* stream) {
+                RMM_ASSERT_CUDA_SUCCESS(cudaStreamDestroy(*stream));
+                delete stream;  // NOLINT(cppcoreguidelines-owning-memory)
               }}
   {
   }
@@ -74,14 +74,14 @@ class cuda_stream {
    * @return true If the owned stream has not been explicitly moved and is therefore non-null.
    * @return false If the owned stream has been explicitly moved and is therefore null.
    */
-  bool is_valid() const { return stream_ != nullptr; }
+  [[nodiscard]] bool is_valid() const { return stream_ != nullptr; }
 
   /**
    * @brief Get the value of the wrapped CUDA stream.
    *
    * @return cudaStream_t The wrapped CUDA stream.
    */
-  cudaStream_t value() const
+  [[nodiscard]] cudaStream_t value() const
   {
     RMM_LOGGING_ASSERT(is_valid());
     return *stream_;
@@ -97,7 +97,7 @@ class cuda_stream {
    *
    * @return rmm::cuda_stream_view The view of the CUDA stream
    */
-  cuda_stream_view view() const { return cuda_stream_view{value()}; }
+  [[nodiscard]] cuda_stream_view view() const { return cuda_stream_view{value()}; }
 
   /**
    * @brief Implicit conversion to cuda_stream_view

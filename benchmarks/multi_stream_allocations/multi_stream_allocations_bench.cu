@@ -16,8 +16,6 @@
 
 #include <benchmarks/utilities/cxxopts.hpp>
 
-#include <benchmark/benchmark.h>
-
 #include <rmm/cuda_stream.hpp>
 #include <rmm/cuda_stream_pool.hpp>
 #include <rmm/device_uvector.hpp>
@@ -31,13 +29,18 @@
 
 #include <cuda_runtime_api.h>
 
+#include <benchmark/benchmark.h>
+
+#include <cstddef>
+
 __global__ void compute_bound_kernel(int64_t* out)
 {
   clock_t clock_begin   = clock64();
   clock_t clock_current = clock_begin;
+  auto const million{1'000'000};
 
-  if (threadIdx.x == 0) {
-    while (clock_current - clock_begin < 1000000) {
+  if (threadIdx.x == 0) {  // NOLINT(readability-static-accessed-through-instance)
+    while (clock_current - clock_begin < million) {
       clock_current = clock64();
     }
   }
@@ -56,7 +59,7 @@ static void run_prewarm(rmm::cuda_stream_pool& stream_pool, rmm::mr::device_memo
   }
 }
 
-static void run_test(size_t num_kernels,
+static void run_test(std::size_t num_kernels,
                      rmm::cuda_stream_pool& stream_pool,
                      rmm::mr::device_memory_resource* mr)
 {
@@ -67,7 +70,7 @@ static void run_test(size_t num_kernels,
   }
 }
 
-static void BM_MultiStreamAllocations(benchmark::State& state, MRFactoryFunc factory)
+static void BM_MultiStreamAllocations(benchmark::State& state, MRFactoryFunc const& factory)
 {
   auto mr = factory();
 
@@ -75,18 +78,18 @@ static void BM_MultiStreamAllocations(benchmark::State& state, MRFactoryFunc fac
 
   auto num_streams = state.range(0);
   auto num_kernels = state.range(1);
-  auto do_prewarm  = state.range(2);
+  bool do_prewarm  = state.range(2) != 0;
 
   auto stream_pool = rmm::cuda_stream_pool(num_streams);
 
   if (do_prewarm) { run_prewarm(stream_pool, mr.get()); }
 
-  for (auto _ : state) {
+  for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
     run_test(num_kernels, stream_pool, mr.get());
     cudaDeviceSynchronize();
   }
 
-  state.SetItemsProcessed(state.iterations() * num_kernels);
+  state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * num_kernels));
 
   rmm::mr::set_current_device_resource(nullptr);
 }
@@ -110,19 +113,22 @@ inline auto make_binning()
   auto pool = make_pool();
   // Add a binning_memory_resource with fixed-size bins of sizes 256, 512, 1024, 2048 and 4096KiB
   // Larger allocations will use the pool resource
-  auto mr = rmm::mr::make_owning_wrapper<rmm::mr::binning_memory_resource>(pool, 18, 22);
+  constexpr auto min_bin_pow2{18};
+  constexpr auto max_bin_pow2{22};
+  auto mr = rmm::mr::make_owning_wrapper<rmm::mr::binning_memory_resource>(
+    pool, min_bin_pow2, max_bin_pow2);
   return mr;
 }
 
-static void benchmark_range(benchmark::internal::Benchmark* b)
+static void benchmark_range(benchmark::internal::Benchmark* bench)
 {
-  b  //
+  bench  //
     ->RangeMultiplier(2)
     ->Ranges({{1, 4}, {4, 4}, {false, true}})
     ->Unit(benchmark::kMicrosecond);
 }
 
-MRFactoryFunc get_mr_factory(std::string resource_name)
+MRFactoryFunc get_mr_factory(std::string const& resource_name)
 {
   if (resource_name == "cuda") { return &make_cuda; }
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
@@ -137,7 +143,7 @@ MRFactoryFunc get_mr_factory(std::string resource_name)
   RMM_FAIL();
 }
 
-void declare_benchmark(std::string name)
+void declare_benchmark(std::string const& name)
 {
   if (name == "cuda") {
     BENCHMARK_CAPTURE(BM_MultiStreamAllocations, cuda, &make_cuda)  //
@@ -174,7 +180,8 @@ void declare_benchmark(std::string name)
   std::cout << "Error: invalid memory_resource name: " << name << std::endl;
 }
 
-void run_profile(std::string resource_name, int kernel_count, int stream_count, bool prewarm)
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+void run_profile(std::string const& resource_name, int kernel_count, int stream_count, bool prewarm)
 {
   auto mr_factory  = get_mr_factory(resource_name);
   auto mr          = mr_factory();
@@ -187,65 +194,75 @@ void run_profile(std::string resource_name, int kernel_count, int stream_count, 
 
 int main(int argc, char** argv)
 {
-  ::benchmark::Initialize(&argc, argv);
+  try {
+    ::benchmark::Initialize(&argc, argv);
 
-  // Parse for replay arguments:
-  cxxopts::Options options(
-    "RMM Multi Stream Allocations Benchmark",
-    "Benchmarks interleaving temporary allocations with compute-bound kernels.");
+    // Parse for replay arguments:
+    cxxopts::Options options(
+      "RMM Multi Stream Allocations Benchmark",
+      "Benchmarks interleaving temporary allocations with compute-bound kernels.");
 
-  options.add_options()(  //
-    "p,profile",
-    "Profiling mode: run once",
-    cxxopts::value<bool>()->default_value("false"));
+    options.add_options()(  //
+      "p,profile",
+      "Profiling mode: run once",
+      cxxopts::value<bool>()->default_value("false"));
 
-  options.add_options()(  //
-    "r,resource",
-    "Type of device_memory_resource",
-    cxxopts::value<std::string>()->default_value("pool"));
+    options.add_options()(  //
+      "r,resource",
+      "Type of device_memory_resource",
+      cxxopts::value<std::string>()->default_value("pool"));
 
-  options.add_options()(  //
-    "k,kernels",
-    "Number of kernels to run: (default: 8)",
-    cxxopts::value<int>()->default_value("8"));
+    options.add_options()(  //
+      "k,kernels",
+      "Number of kernels to run: (default: 8)",
+      cxxopts::value<int>()->default_value("8"));
 
-  options.add_options()(  //
-    "s,streams",
-    "Number of streams in stream pool (default: 8)",
-    cxxopts::value<int>()->default_value("8"));
+    options.add_options()(  //
+      "s,streams",
+      "Number of streams in stream pool (default: 8)",
+      cxxopts::value<int>()->default_value("8"));
 
-  options.add_options()(  //
-    "w,warm",
-    "Ensure each stream has enough memory to satisfy allocations.",
-    cxxopts::value<bool>()->default_value("false"));
+    options.add_options()(  //
+      "w,warm",
+      "Ensure each stream has enough memory to satisfy allocations.",
+      cxxopts::value<bool>()->default_value("false"));
 
-  auto args = options.parse(argc, argv);
+    auto args = options.parse(argc, argv);
 
-  if (args.count("profile") > 0) {
-    auto resource_name = args["resource"].as<std::string>();
-    auto num_kernels   = args["kernels"].as<int>();
-    auto num_streams   = args["streams"].as<int>();
-    auto prewarm       = args["warm"].as<bool>();
-    run_profile(resource_name, num_kernels, num_streams, prewarm);
-  } else {
-    auto resource_names = std::vector<std::string>();
-
-    if (args.count("resource") > 0) {
-      resource_names.emplace_back(args["resource"].as<std::string>());
+    if (args.count("profile") > 0) {
+      auto resource_name = args["resource"].as<std::string>();
+      auto num_kernels   = args["kernels"].as<int>();
+      auto num_streams   = args["streams"].as<int>();
+      auto prewarm       = args["warm"].as<bool>();
+      try {
+        run_profile(resource_name, num_kernels, num_streams, prewarm);
+      } catch (std::exception const& e) {
+        std::cout << "Exception caught: " << e.what() << std::endl;
+      }
     } else {
-      resource_names.emplace_back("cuda");
+      auto resource_names = std::vector<std::string>();
+
+      if (args.count("resource") > 0) {
+        resource_names.emplace_back(args["resource"].as<std::string>());
+      } else {
+        resource_names.emplace_back("cuda");
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
-      resource_names.emplace_back("cuda_async");
+        resource_names.emplace_back("cuda_async");
 #endif
-      resource_names.emplace_back("pool");
-      resource_names.emplace_back("arena");
-      resource_names.emplace_back("binning");
-    }
+        resource_names.emplace_back("pool");
+        resource_names.emplace_back("arena");
+        resource_names.emplace_back("binning");
+      }
 
-    for (auto& resource_name : resource_names) {
-      declare_benchmark(resource_name);
-    }
+      for (auto& resource_name : resource_names) {
+        declare_benchmark(resource_name);
+      }
 
-    ::benchmark::RunSpecifiedBenchmarks();
+      ::benchmark::RunSpecifiedBenchmarks();
+    }
+  } catch (std::exception const& e) {
+    std::cout << "Exception caught: " << e.what() << std::endl;
   }
+
+  return 0;
 }

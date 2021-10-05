@@ -19,8 +19,7 @@
 
 #include <gtest/gtest.h>
 
-namespace rmm {
-namespace test {
+namespace rmm::test {
 namespace {
 
 using cuda_async_mr = rmm::mr::cuda_async_memory_resource;
@@ -38,24 +37,24 @@ TEST(PoolTest, ThrowIfNotSupported)
 #if defined(RMM_CUDA_MALLOC_ASYNC_SUPPORT)
 TEST(PoolTest, ExplicitInitialPoolSize)
 {
-  cuda_async_mr mr{100};
-  void* p;
-  EXPECT_NO_THROW(p = mr.allocate(100));
-  EXPECT_NO_THROW(mr.deallocate(p, 100));
+  const auto pool_init_size{100};
+  cuda_async_mr mr{pool_init_size};
+  void* ptr = mr.allocate(pool_init_size);
+  mr.deallocate(ptr, pool_init_size);
   RMM_CUDA_TRY(cudaDeviceSynchronize());
 }
 
 TEST(PoolTest, ExplicitReleaseThreshold)
 {
-  cuda_async_mr mr{100, 1000};
-  void* p;
-  EXPECT_NO_THROW(p = mr.allocate(100));
-  EXPECT_NO_THROW(mr.deallocate(p, 100));
+  const auto pool_init_size{100};
+  const auto pool_release_threshold{1000};
+  cuda_async_mr mr{pool_init_size, pool_release_threshold};
+  void* ptr = mr.allocate(pool_init_size);
+  mr.deallocate(ptr, pool_init_size);
   RMM_CUDA_TRY(cudaDeviceSynchronize());
 }
 
 #endif
 
 }  // namespace
-}  // namespace test
-}  // namespace rmm
+}  // namespace rmm::test

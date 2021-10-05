@@ -34,4 +34,4 @@ cdef extern from "rmm/cuda_stream.hpp" namespace "rmm" nogil:
 cdef class CudaStream:
     cdef unique_ptr[cuda_stream] c_obj
     cdef cudaStream_t value(self) nogil except *
-    cpdef bool is_valid(self) nogil except *
+    cdef bool is_valid(self) nogil except *

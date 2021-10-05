@@ -30,5 +30,5 @@ cdef class CudaStream:
     cdef cudaStream_t value(self) nogil except *:
         return self.c_obj.get()[0].value()
 
-    cpdef bool is_valid(self) nogil except *:
+    cdef bool is_valid(self) nogil except *:
         return self.c_obj.get()[0].is_valid()

@@ -51,15 +51,10 @@ struct cuda_error : public std::runtime_error {
  */
 class bad_alloc : public std::bad_alloc {
  public:
-  bad_alloc(const char* w) : std::bad_alloc{}, _what{std::string{std::bad_alloc::what()} + ": " + w}
-  {
-  }
+  bad_alloc(const char* msg) : _what{std::string{std::bad_alloc::what()} + ": " + msg} {}
+  bad_alloc(std::string const& msg) : bad_alloc(msg.c_str()) {}
 
-  bad_alloc(std::string const& w) : bad_alloc(w.c_str()) {}
-
-  virtual ~bad_alloc() = default;
-
-  virtual const char* what() const noexcept { return _what.c_str(); }
+  [[nodiscard]] const char* what() const noexcept override { return _what.c_str(); }
 
  private:
   std::string _what;
@@ -105,10 +100,11 @@ class out_of_range : public std::out_of_range {
   GET_RMM_EXPECTS_MACRO(__VA_ARGS__, RMM_EXPECTS_3, RMM_EXPECTS_2) \
   (__VA_ARGS__)
 #define GET_RMM_EXPECTS_MACRO(_1, _2, _3, NAME, ...) NAME
-#define RMM_EXPECTS_3(_condition, _exception_type, _reason)              \
-  (!!(_condition)) ? static_cast<void>(0) : throw _exception_type        \
-  {                                                                      \
-    "RMM failure at: " __FILE__ ":" RMM_STRINGIFY(__LINE__) ": " _reason \
+#define RMM_EXPECTS_3(_condition, _exception_type, _reason)                       \
+  (!!(_condition)) ? static_cast<void>(0)                                         \
+                   : throw _exception_type /*NOLINT(bugprone-macro-parentheses)*/ \
+  {                                                                               \
+    "RMM failure at: " __FILE__ ":" RMM_STRINGIFY(__LINE__) ": " _reason          \
   }
 #define RMM_EXPECTS_2(_condition, _reason) RMM_EXPECTS_3(_condition, rmm::logic_error, _reason)
 
@@ -128,7 +124,8 @@ class out_of_range : public std::out_of_range {
   GET_RMM_FAIL_MACRO(__VA_ARGS__, RMM_FAIL_2, RMM_FAIL_1) \
   (__VA_ARGS__)
 #define GET_RMM_FAIL_MACRO(_1, _2, NAME, ...) NAME
-#define RMM_FAIL_2(_what, _exception_type) \
+#define RMM_FAIL_2(_what, _exception_type)       \
+  /*NOLINTNEXTLINE(bugprone-macro-parentheses)*/ \
   throw _exception_type{"RMM failure at:" __FILE__ ":" RMM_STRINGIFY(__LINE__) ": " _what};
 #define RMM_FAIL_1(_what) RMM_FAIL_2(_what, rmm::logic_error)
 
@@ -162,6 +159,7 @@ class out_of_range : public std::out_of_range {
     cudaError_t const error = (_call);                                                       \
     if (cudaSuccess != error) {                                                              \
       cudaGetLastError();                                                                    \
+      /*NOLINTNEXTLINE(bugprone-macro-parentheses)*/                                         \
       throw _exception_type{std::string{"CUDA error at: "} + __FILE__ + ":" +                \
                             RMM_STRINGIFY(__LINE__) + ": " + cudaGetErrorName(error) + " " + \
                             cudaGetErrorString(error)};                                      \

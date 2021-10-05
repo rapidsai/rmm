@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,15 +18,19 @@
 
 #include <rmm/mr/device/detail/free_list.hpp>
 
+#include <cstddef>
 #include <iostream>
 
-namespace rmm {
-namespace mr {
-namespace detail {
+namespace rmm::mr::detail {
 
 struct fixed_size_free_list : free_list<block_base> {
-  fixed_size_free_list()  = default;
-  ~fixed_size_free_list() = default;
+  fixed_size_free_list()           = default;
+  ~fixed_size_free_list() override = default;
+
+  fixed_size_free_list(fixed_size_free_list const&) = delete;
+  fixed_size_free_list& operator=(fixed_size_free_list const&) = delete;
+  fixed_size_free_list(fixed_size_free_list&&)                 = delete;
+  fixed_size_free_list& operator=(fixed_size_free_list&&) = delete;
 
   /**
    * @brief Construct a new free_list from range defined by input iterators
@@ -38,22 +42,21 @@ struct fixed_size_free_list : free_list<block_base> {
   template <class InputIt>
   fixed_size_free_list(InputIt first, InputIt last)
   {
-    std::for_each(first, last, [this](block_type const& b) { insert(b); });
+    std::for_each(first, last, [this](block_type const& block) { insert(block); });
   }
 
   /**
    * @brief Inserts a block into the `free_list` in the correct order, coalescing it with the
    *        preceding and following blocks if either is contiguous.
    *
-   * @param b The block to insert.
+   * @param block The block to insert.
    */
-  void insert(block_type const& b) { push_back(b); }
+  void insert(block_type const& block) { push_back(block); }
 
   /**
-   * @brief Splices blocks from range `[first, last)` onto the free_list.
+   * @brief Inserts blocks from another free list into this free_list.
    *
-   * @param first The beginning of the range of blocks to insert
-   * @param last The end of the range of blocks to insert.
+   * @param other The free_list to insert into this free_list.
    */
   void insert(free_list&& other) { splice(cend(), std::move(other)); }
 
@@ -61,20 +64,15 @@ struct fixed_size_free_list : free_list<block_base> {
    * @brief Returns the first block in the free list.
    *
    * @param size The size in bytes of the desired block (unused).
-   * @return block A block large enough to store `size` bytes.
+   * @return A block large enough to store `size` bytes.
    */
-  block_type get_block(size_t size)
+  block_type get_block(std::size_t size)
   {
-    if (is_empty())
-      return block_type{};
-    else {
-      block_type b = *begin();
-      pop_front();
-      return b;
-    }
+    if (is_empty()) { return block_type{}; }
+    block_type block = *begin();
+    pop_front();
+    return block;
   }
 };
 
-}  // namespace detail
-}  // namespace mr
-}  // namespace rmm
+}  // namespace rmm::mr::detail

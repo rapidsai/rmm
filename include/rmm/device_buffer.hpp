@@ -21,7 +21,9 @@
 #include <rmm/mr/device/per_device_resource.hpp>
 
 #include <cuda_runtime_api.h>
+
 #include <cassert>
+#include <cstddef>
 #include <stdexcept>
 #include <utility>
 
@@ -86,10 +88,7 @@ class device_buffer {
   // `__host__ __device__` specifiers to the defaulted constructor when it is called within the
   // context of both host and device functions. Specifically, the `cudf::type_dispatcher` is a host-
   // device function. This causes warnings/errors because this ctor invokes host-only functions.
-  device_buffer()
-    : _data{nullptr}, _size{}, _capacity{}, _stream{}, _mr{rmm::mr::get_current_device_resource()}
-  {
-  }
+  device_buffer() : _mr{rmm::mr::get_current_device_resource()} {}
 
   /**
    * @brief Constructs a new device buffer of `size` uninitialized bytes
@@ -308,7 +307,7 @@ class device_buffer {
   /**
    * @brief Returns raw pointer to underlying device memory allocation
    */
-  void const* data() const noexcept { return _data; }
+  [[nodiscard]] void const* data() const noexcept { return _data; }
 
   /**
    * @brief Returns raw pointer to underlying device memory allocation
@@ -319,7 +318,7 @@ class device_buffer {
    * @brief Returns size in bytes that was requested for the device memory
    * allocation
    */
-  std::size_t size() const noexcept { return _size; }
+  [[nodiscard]] std::size_t size() const noexcept { return _size; }
 
   /**
    * @brief Returns whether the size in bytes of the `device_buffer` is zero.
@@ -328,19 +327,19 @@ class device_buffer {
    * if `capacity() > 0`.
    *
    */
-  bool is_empty() const noexcept { return 0 == size(); }
+  [[nodiscard]] bool is_empty() const noexcept { return 0 == size(); }
 
   /**
    * @brief Returns actual size in bytes of device memory allocation.
    *
    * The invariant `size() <= capacity()` holds.
    */
-  std::size_t capacity() const noexcept { return _capacity; }
+  [[nodiscard]] std::size_t capacity() const noexcept { return _capacity; }
 
   /**
    * @brief Returns stream most recently specified for allocation/deallocation
    */
-  cuda_stream_view stream() const noexcept { return _stream; }
+  [[nodiscard]] cuda_stream_view stream() const noexcept { return _stream; }
 
   /**
    * @brief Sets the stream to be used for deallocation
@@ -358,7 +357,7 @@ class device_buffer {
    * @brief Returns pointer to the memory resource used to allocate and
    * deallocate the device memory
    */
-  mr::device_memory_resource* memory_resource() const noexcept { return _mr; }
+  [[nodiscard]] mr::device_memory_resource* memory_resource() const noexcept { return _mr; }
 
  private:
   void* _data{nullptr};        ///< Pointer to device memory allocation

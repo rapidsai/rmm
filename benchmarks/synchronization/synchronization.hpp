@@ -89,9 +89,15 @@ class cuda_event_timer {
   // will be set to the value given by `cudaEventElapsedTime`.
   ~cuda_event_timer();
 
+  // disable copy and move
+  cuda_event_timer(cuda_event_timer const&) = delete;
+  cuda_event_timer& operator=(cuda_event_timer const&) = delete;
+  cuda_event_timer(cuda_event_timer&&)                 = delete;
+  cuda_event_timer& operator=(cuda_event_timer&&) = delete;
+
  private:
-  cudaEvent_t start;
-  cudaEvent_t stop;
-  rmm::cuda_stream_view stream;
-  benchmark::State* p_state;
+  cudaEvent_t start{};
+  cudaEvent_t stop{};
+  rmm::cuda_stream_view stream{};
+  benchmark::State* p_state{};
 };
