@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,8 +27,7 @@
 #include <memory>
 #include <vector>
 
-namespace rmm {
-namespace mr {
+namespace rmm::mr {
 
 /**
  * @brief Allocates memory from upstream resources associated with bin sizes.
@@ -70,22 +69,23 @@ class binning_memory_resource final : public device_memory_resource {
    * @param max_size_exponent The maximum base-2 exponent bin size.
    */
   binning_memory_resource(Upstream* upstream_resource,
-                          int8_t min_size_exponent,
+                          int8_t min_size_exponent,  // NOLINT(bugprone-easily-swappable-parameters)
                           int8_t max_size_exponent)
     : upstream_mr_{[upstream_resource]() {
         RMM_EXPECTS(nullptr != upstream_resource, "Unexpected null upstream pointer.");
         return upstream_resource;
       }()}
   {
-    for (auto i = min_size_exponent; i <= max_size_exponent; i++)
+    for (auto i = min_size_exponent; i <= max_size_exponent; i++) {
       add_bin(1 << i);
+    }
   }
 
   /**
    * @brief Destroy the binning_memory_resource and free all memory allocated from the upstream
    * resource.
    */
-  ~binning_memory_resource() = default;
+  ~binning_memory_resource() override = default;
 
   binning_memory_resource()                               = delete;
   binning_memory_resource(binning_memory_resource const&) = delete;
@@ -99,21 +99,21 @@ class binning_memory_resource final : public device_memory_resource {
    *
    * @returns true
    */
-  bool supports_streams() const noexcept override { return true; }
+  [[nodiscard]] bool supports_streams() const noexcept override { return true; }
 
   /**
    * @brief Query whether the resource supports the get_mem_info API.
    *
    * @return bool true if the resource supports get_mem_info, false otherwise.
    */
-  bool supports_get_mem_info() const noexcept override { return false; }
+  [[nodiscard]] bool supports_get_mem_info() const noexcept override { return false; }
 
   /**
    * @brief Get the upstream memory_resource object.
    *
    * @return UpstreamResource* the upstream memory resource.
    */
-  Upstream* get_upstream() const noexcept { return upstream_mr_; }
+  [[nodiscard]] Upstream* get_upstream() const noexcept { return upstream_mr_; }
 
   /**
    * @brief Add a bin allocator to this resource
@@ -136,15 +136,13 @@ class binning_memory_resource final : public device_memory_resource {
     allocation_size =
       rmm::detail::align_up(allocation_size, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
 
-    if (nullptr != bin_resource)
+    if (nullptr != bin_resource) {
       resource_bins_.insert({allocation_size, bin_resource});
-    else {
-      // If the bin already exists, do nothing.
-      if (resource_bins_.count(allocation_size) == 0) {
-        owned_bin_resources_.push_back(
-          std::make_unique<fixed_size_memory_resource<Upstream>>(upstream_mr_, allocation_size));
-        resource_bins_.insert({allocation_size, owned_bin_resources_.back().get()});
-      }
+    } else if (resource_bins_.count(allocation_size) == 0) {  // do nothing if bin already exists
+
+      owned_bin_resources_.push_back(
+        std::make_unique<fixed_size_memory_resource<Upstream>>(upstream_mr_, allocation_size));
+      resource_bins_.insert({allocation_size, owned_bin_resources_.back().get()});
     }
   }
 
@@ -175,7 +173,7 @@ class binning_memory_resource final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
-    if (bytes <= 0) return nullptr;
+    if (bytes <= 0) { return nullptr; }
     return get_resource(bytes)->allocate(bytes, stream);
   }
 
@@ -189,10 +187,10 @@ class binning_memory_resource final : public device_memory_resource {
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param stream Stream on which to perform deallocation
    */
-  void do_deallocate(void* p, std::size_t bytes, cuda_stream_view stream) override
+  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
     auto res = get_resource(bytes);
-    if (res != nullptr) res->deallocate(p, bytes, stream);
+    if (res != nullptr) { res->deallocate(ptr, bytes, stream); }
   }
 
   /**
@@ -203,7 +201,8 @@ class binning_memory_resource final : public device_memory_resource {
    * @param stream the stream being executed on
    * @return std::pair with available and free memory for resource
    */
-  std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view stream) const override
+  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
+    cuda_stream_view stream) const override
   {
     return std::make_pair(0, 0);
   }
@@ -215,5 +214,4 @@ class binning_memory_resource final : public device_memory_resource {
   std::map<std::size_t, device_memory_resource*> resource_bins_;
 };
 
-}  // namespace mr
-}  // namespace rmm
+}  // namespace rmm::mr

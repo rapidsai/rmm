@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,14 @@
  */
 #pragma once
 
-#include "device_memory_resource.hpp"
+#include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 
-namespace rmm {
-namespace mr {
+#include <cstddef>
+
+namespace rmm::mr {
 /**
  * @brief `device_memory_resource` derived class that uses cudaMalloc/Free for
  * allocation/deallocation.
@@ -29,7 +30,7 @@ namespace mr {
 class cuda_memory_resource final : public device_memory_resource {
  public:
   cuda_memory_resource()                            = default;
-  ~cuda_memory_resource()                           = default;
+  ~cuda_memory_resource() override                  = default;
   cuda_memory_resource(cuda_memory_resource const&) = default;
   cuda_memory_resource(cuda_memory_resource&&)      = default;
   cuda_memory_resource& operator=(cuda_memory_resource const&) = default;
@@ -41,14 +42,14 @@ class cuda_memory_resource final : public device_memory_resource {
    *
    * @returns bool false
    */
-  bool supports_streams() const noexcept override { return false; }
+  [[nodiscard]] bool supports_streams() const noexcept override { return false; }
 
   /**
    * @brief Query whether the resource supports the get_mem_info API.
    *
    * @return true
    */
-  bool supports_get_mem_info() const noexcept override { return true; }
+  [[nodiscard]] bool supports_get_mem_info() const noexcept override { return true; }
 
  private:
   /**
@@ -65,9 +66,9 @@ class cuda_memory_resource final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cuda_stream_view) override
   {
-    void* p{nullptr};
-    RMM_CUDA_TRY(cudaMalloc(&p, bytes), rmm::bad_alloc);
-    return p;
+    void* ptr{nullptr};
+    RMM_CUDA_TRY(cudaMalloc(&ptr, bytes), rmm::bad_alloc);
+    return ptr;
   }
 
   /**
@@ -79,9 +80,9 @@ class cuda_memory_resource final : public device_memory_resource {
    *
    * @param p Pointer to be deallocated
    */
-  void do_deallocate(void* p, std::size_t, cuda_stream_view) override
+  void do_deallocate(void* ptr, std::size_t, cuda_stream_view) override
   {
-    RMM_ASSERT_CUDA_SUCCESS(cudaFree(p));
+    RMM_ASSERT_CUDA_SUCCESS(cudaFree(ptr));
   }
 
   /**
@@ -96,7 +97,7 @@ class cuda_memory_resource final : public device_memory_resource {
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equal
    */
-  bool do_is_equal(device_memory_resource const& other) const noexcept override
+  [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
   {
     return dynamic_cast<cuda_memory_resource const*>(&other) != nullptr;
   }
@@ -108,13 +109,12 @@ class cuda_memory_resource final : public device_memory_resource {
    *
    * @return std::pair contaiing free_size and total_size of memory
    */
-  std::pair<size_t, size_t> do_get_mem_info(cuda_stream_view) const override
+  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view) const override
   {
-    std::size_t free_size;
-    std::size_t total_size;
+    std::size_t free_size{};
+    std::size_t total_size{};
     RMM_CUDA_TRY(cudaMemGetInfo(&free_size, &total_size));
     return std::make_pair(free_size, total_size);
   }
 };
-}  // namespace mr
-}  // namespace rmm
+}  // namespace rmm::mr

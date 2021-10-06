@@ -15,23 +15,24 @@
  */
 #pragma once
 
-#include <limits>
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/cuda_util.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
+#include <thrust/optional.h>
+
 #include <cuda_runtime_api.h>
 
-#include <thrust/optional.h>
+#include <cstddef>
+#include <limits>
 
 #if CUDART_VERSION >= 11020  // 11.2 introduced cudaMallocAsync
 #define RMM_CUDA_MALLOC_ASYNC_SUPPORT
 #endif
 
-namespace rmm {
-namespace mr {
+namespace rmm::mr {
 
 /**
  * @brief `device_memory_resource` derived class that uses `cudaMallocAsync`/`cudaFreeAsync` for
@@ -53,6 +54,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
    * @param release_threshold Optional release threshold size in bytes of the pool. If no value is
    * provided, the release threshold is set to the total amount of memory on the current device.
    */
+  // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
   cuda_async_memory_resource(thrust::optional<std::size_t> initial_pool_size = {},
                              thrust::optional<std::size_t> release_threshold = {})
   {
@@ -60,9 +62,9 @@ class cuda_async_memory_resource final : public device_memory_resource {
     // Check if cudaMallocAsync Memory pool supported
     auto const device = rmm::detail::current_device();
     int cuda_pool_supported{};
-    auto e =
+    auto result =
       cudaDeviceGetAttribute(&cuda_pool_supported, cudaDevAttrMemoryPoolsSupported, device.value());
-    RMM_EXPECTS(e == cudaSuccess && cuda_pool_supported,
+    RMM_EXPECTS(result == cudaSuccess && cuda_pool_supported,
                 "cudaMallocAsync not supported with this CUDA driver/runtime version");
 
     // Construct explicit pool
@@ -82,9 +84,9 @@ class cuda_async_memory_resource final : public device_memory_resource {
 
     // Allocate and immediately deallocate the initial_pool_size to prime the pool with the
     // specified size
-    auto const pool_size = initial_pool_size.value_or(free * 0.5);
-    auto p               = do_allocate(pool_size, cuda_stream_default);
-    do_deallocate(p, pool_size, cuda_stream_default);
+    auto const pool_size = initial_pool_size.value_or(free / 2);
+    auto* ptr            = do_allocate(pool_size, cuda_stream_default);
+    do_deallocate(ptr, pool_size, cuda_stream_default);
 
 #else
     RMM_FAIL(
@@ -97,19 +99,19 @@ class cuda_async_memory_resource final : public device_memory_resource {
    * @brief Returns the underlying native handle to the CUDA pool
    *
    */
-  cudaMemPool_t pool_handle() const noexcept { return cuda_pool_handle_; }
+  [[nodiscard]] cudaMemPool_t pool_handle() const noexcept { return cuda_pool_handle_; }
 #endif
 
-  ~cuda_async_memory_resource()
+  ~cuda_async_memory_resource() override
   {
 #if defined(RMM_CUDA_MALLOC_ASYNC_SUPPORT)
     RMM_ASSERT_CUDA_SUCCESS(cudaMemPoolDestroy(pool_handle()));
 #endif
   }
-  cuda_async_memory_resource(cuda_async_memory_resource const&) = default;
-  cuda_async_memory_resource(cuda_async_memory_resource&&)      = default;
-  cuda_async_memory_resource& operator=(cuda_async_memory_resource const&) = default;
-  cuda_async_memory_resource& operator=(cuda_async_memory_resource&&) = default;
+  cuda_async_memory_resource(cuda_async_memory_resource const&) = delete;
+  cuda_async_memory_resource(cuda_async_memory_resource&&)      = delete;
+  cuda_async_memory_resource& operator=(cuda_async_memory_resource const&) = delete;
+  cuda_async_memory_resource& operator=(cuda_async_memory_resource&&) = delete;
 
   /**
    * @brief Query whether the resource supports use of non-null CUDA streams for
@@ -117,18 +119,18 @@ class cuda_async_memory_resource final : public device_memory_resource {
    *
    * @returns bool true
    */
-  bool supports_streams() const noexcept override { return true; }
+  [[nodiscard]] bool supports_streams() const noexcept override { return true; }
 
   /**
    * @brief Query whether the resource supports the get_mem_info API.
    *
    * @return true
    */
-  bool supports_get_mem_info() const noexcept override { return false; }
+  [[nodiscard]] bool supports_get_mem_info() const noexcept override { return false; }
 
  private:
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
-  cudaMemPool_t cuda_pool_handle_;
+  cudaMemPool_t cuda_pool_handle_{};
 #endif
 
   /**
@@ -143,17 +145,17 @@ class cuda_async_memory_resource final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, rmm::cuda_stream_view stream) override
   {
-    void* p{nullptr};
+    void* ptr{nullptr};
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
     if (bytes > 0) {
-      RMM_CUDA_TRY(cudaMallocFromPoolAsync(&p, bytes, pool_handle(), stream.value()),
+      RMM_CUDA_TRY(cudaMallocFromPoolAsync(&ptr, bytes, pool_handle(), stream.value()),
                    rmm::bad_alloc);
     }
 #else
     (void)bytes;
     (void)stream;
 #endif
-    return p;
+    return ptr;
   }
 
   /**
@@ -163,12 +165,12 @@ class cuda_async_memory_resource final : public device_memory_resource {
    *
    * @param p Pointer to be deallocated
    */
-  void do_deallocate(void* p, std::size_t, rmm::cuda_stream_view stream) override
+  void do_deallocate(void* ptr, std::size_t, rmm::cuda_stream_view stream) override
   {
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
-    if (p != nullptr) { RMM_ASSERT_CUDA_SUCCESS(cudaFreeAsync(p, stream.value())); }
+    if (ptr != nullptr) { RMM_ASSERT_CUDA_SUCCESS(cudaFreeAsync(ptr, stream.value())); }
 #else
-    (void)p;
+    (void)ptr;
     (void)stream;
 #endif
   }
@@ -182,7 +184,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equal
    */
-  bool do_is_equal(device_memory_resource const& other) const noexcept override
+  [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
   {
     return dynamic_cast<cuda_async_memory_resource const*>(&other) != nullptr;
   }
@@ -194,11 +196,11 @@ class cuda_async_memory_resource final : public device_memory_resource {
    *
    * @return std::pair contaiing free_size and total_size of memory
    */
-  std::pair<size_t, size_t> do_get_mem_info(rmm::cuda_stream_view) const override
+  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
+    rmm::cuda_stream_view) const override
   {
     return std::make_pair(0, 0);
   }
 };
 
-}  // namespace mr
-}  // namespace rmm
+}  // namespace rmm::mr

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,25 +20,26 @@
 #include <iostream>
 #include <list>
 
-namespace rmm {
-namespace mr {
-namespace detail {
+namespace rmm::mr::detail {
 
 struct block_base {
   void* ptr{};  ///< Raw memory pointer
 
+  block_base() = default;
+  block_base(void* ptr) : ptr{ptr} {};
+
   /// Returns the raw pointer for this block
-  inline void* pointer() const { return ptr; }
+  [[nodiscard]] inline void* pointer() const { return ptr; }
   /// Returns true if this block is valid (non-null), false otherwise
-  inline bool is_valid() const { return pointer() != nullptr; }
+  [[nodiscard]] inline bool is_valid() const { return pointer() != nullptr; }
   /// Prints the block to stdout
   inline void print() const { std::cout << pointer(); }
 };
 
 /// Print block_base on an ostream
-inline std::ostream& operator<<(std::ostream& out, const block_base& b)
+inline std::ostream& operator<<(std::ostream& out, const block_base& block)
 {
-  out << b.pointer();
+  out << block.pointer();
   return out;
 }
 
@@ -50,7 +51,7 @@ inline std::ostream& operator<<(std::ostream& out, const block_base& b)
  *
  *  - `void insert(block_type const& b)  // insert a block into the free list`
  *  - `void insert(free_list&& other)    // insert / merge another free list`
- *  - `block_type get_block(size_t size) // get a block of at least size bytes
+ *  - `block_type get_block(std::size_t size) // get a block of at least size bytes
  *  - `void print()                      // print the block`
  *
  * @tparam list_type the type of the internal list data structure.
@@ -61,26 +62,37 @@ class free_list {
   free_list()          = default;
   virtual ~free_list() = default;
 
+  free_list(free_list const&) = delete;
+  free_list& operator=(free_list const&) = delete;
+  free_list(free_list&&)                 = delete;
+  free_list& operator=(free_list&&) = delete;
+
   using block_type     = BlockType;
   using list_type      = ListType;
   using size_type      = typename list_type::size_type;
   using iterator       = typename list_type::iterator;
   using const_iterator = typename list_type::const_iterator;
 
-  iterator begin() noexcept { return blocks.begin(); }                /// beginning of the free list
-  const_iterator begin() const noexcept { return blocks.begin(); }    /// beginning of the free list
-  const_iterator cbegin() const noexcept { return blocks.cbegin(); }  /// beginning of the free list
+  /// beginning of the free list
+  [[nodiscard]] iterator begin() noexcept { return blocks.begin(); }
+  /// beginning of the free list
+  [[nodiscard]] const_iterator begin() const noexcept { return blocks.begin(); }
+  /// beginning of the free list
+  [[nodiscard]] const_iterator cbegin() const noexcept { return blocks.cbegin(); }
 
-  iterator end() noexcept { return blocks.end(); }                /// end of the free list
-  const_iterator end() const noexcept { return blocks.end(); }    /// end of the free list
-  const_iterator cend() const noexcept { return blocks.cend(); }  /// end of the free list
+  /// end of the free list
+  [[nodiscard]] iterator end() noexcept { return blocks.end(); }
+  /// beginning of the free list
+  [[nodiscard]] const_iterator end() const noexcept { return blocks.end(); }
+  /// beginning of the free list
+  [[nodiscard]] const_iterator cend() const noexcept { return blocks.cend(); }
 
   /**
    * @brief The size of the free list in blocks.
    *
    * @return size_type The number of blocks in the free list.
    */
-  size_type size() const noexcept { return blocks.size(); }
+  [[nodiscard]] size_type size() const noexcept { return blocks.size(); }
 
   /**
    * @brief checks whether the free_list is empty.
@@ -88,7 +100,7 @@ class free_list {
    * @return true If there are blocks in the free_list.
    * @return false If there are no blocks in the free_list.
    */
-  bool is_empty() const noexcept { return blocks.empty(); }
+  [[nodiscard]] bool is_empty() const noexcept { return blocks.empty(); }
 
   /**
    * @brief Removes the block indicated by `iter` from the free list.
@@ -109,8 +121,8 @@ class free_list {
   void print() const
   {
     std::cout << size() << std::endl;
-    for (auto const& b : blocks) {
-      std::cout << b << std::endl;
+    for (auto const& block : blocks) {
+      std::cout << block << std::endl;
     }
   }
 
@@ -119,15 +131,15 @@ class free_list {
    * @brief Insert a block in the free list before the specified position
    *
    * @param pos iterator before which the block will be inserted. pos may be the end() iterator.
-   * @param b The block to insert.
+   * @param block The block to insert.
    */
-  void insert(const_iterator pos, block_type const& b) { blocks.insert(pos, b); }
+  void insert(const_iterator pos, block_type const& block) { blocks.insert(pos, block); }
 
   /**
    * @brief Inserts a list of blocks in the free list before the specified position
    *
    * @param pos iterator before which the block will be inserted. pos may be the end() iterator.
-   * @param b The block to insert.
+   * @param other The free list to insert.
    */
   void splice(const_iterator pos, free_list&& other)
   {
@@ -137,16 +149,16 @@ class free_list {
   /**
    * @brief Appends the given block to the end of the free list.
    *
-   * @param b The block to append.
+   * @param block The block to append.
    */
-  void push_back(const block_type& b) { blocks.push_back(b); }
+  void push_back(const block_type& block) { blocks.push_back(block); }
 
   /**
    * @brief Appends the given block to the end of the free list. `b` is moved to the new element.
    *
-   * @param b The block to append.
+   * @param block The block to append.
    */
-  void push_back(block_type&& b) { blocks.push_back(std::move(b)); }
+  void push_back(block_type&& block) { blocks.push_back(std::move(block)); }
 
   /**
    * @brief Removes the first element of the free list. If there are no elements in the free list,
@@ -160,6 +172,4 @@ class free_list {
   list_type blocks;  // The internal container of blocks
 };
 
-}  // namespace detail
-}  // namespace mr
-}  // namespace rmm
+}  // namespace rmm::mr::detail

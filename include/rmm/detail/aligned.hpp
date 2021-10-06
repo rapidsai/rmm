@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,7 @@
 #include <memory>
 #include <new>
 
-namespace rmm {
-namespace detail {
+namespace rmm::detail {
 
 /**
  * @brief Default alignment used for host memory allocated by RMM.
@@ -41,7 +40,7 @@ static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
  * @brief Returns whether or not `n` is a power of 2.
  *
  */
-constexpr bool is_pow2(std::size_t n) { return (0 == (n & (n - 1))); }
+constexpr bool is_pow2(std::size_t value) { return (0 == (value & (value - 1))); }
 
 /**
  * @brief Returns whether or not `alignment` is a valid memory alignment.
@@ -57,10 +56,10 @@ constexpr bool is_supported_alignment(std::size_t alignment) { return is_pow2(al
  *
  * @return Return the aligned value, as one would expect
  */
-constexpr std::size_t align_up(std::size_t v, std::size_t align_bytes) noexcept
+constexpr std::size_t align_up(std::size_t value, std::size_t alignment) noexcept
 {
-  assert(is_supported_alignment(align_bytes));
-  return (v + (align_bytes - 1)) & ~(align_bytes - 1);
+  assert(is_supported_alignment(alignment));
+  return (value + (alignment - 1)) & ~(alignment - 1);
 }
 
 /**
@@ -71,10 +70,10 @@ constexpr std::size_t align_up(std::size_t v, std::size_t align_bytes) noexcept
  *
  * @return Return the aligned value, as one would expect
  */
-constexpr std::size_t align_down(std::size_t v, std::size_t align_bytes) noexcept
+constexpr std::size_t align_down(std::size_t value, std::size_t alignment) noexcept
 {
-  assert(is_supported_alignment(align_bytes));
-  return v & ~(align_bytes - 1);
+  assert(is_supported_alignment(alignment));
+  return value & ~(alignment - 1);
 }
 
 /**
@@ -85,10 +84,16 @@ constexpr std::size_t align_down(std::size_t v, std::size_t align_bytes) noexcep
  *
  * @return true if aligned
  */
-constexpr bool is_aligned(std::size_t v, std::size_t align_bytes) noexcept
+constexpr bool is_aligned(std::size_t value, std::size_t alignment) noexcept
 {
-  assert(is_supported_alignment(align_bytes));
-  return v == align_down(v, align_bytes);
+  assert(is_supported_alignment(alignment));
+  return value == align_down(value, alignment);
+}
+
+inline bool is_pointer_aligned(void* ptr, std::size_t alignment = CUDA_ALLOCATION_ALIGNMENT)
+{
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+  return rmm::detail::is_aligned(reinterpret_cast<ptrdiff_t>(ptr), alignment);
 }
 
 /**
@@ -130,6 +135,7 @@ void* aligned_allocate(std::size_t bytes, std::size_t alignment, Alloc alloc)
   char* const original = static_cast<char*>(alloc(padded_allocation_size));
 
   // account for storage of offset immediately prior to the aligned pointer
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
   void* aligned{original + sizeof(std::ptrdiff_t)};
 
   // std::align modifies `aligned` to point to the first aligned location
@@ -139,6 +145,7 @@ void* aligned_allocate(std::size_t bytes, std::size_t alignment, Alloc alloc)
   std::ptrdiff_t offset = static_cast<char*>(aligned) - original;
 
   // Store the offset immediately before the aligned pointer
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
   *(static_cast<std::ptrdiff_t*>(aligned) - 1) = offset;
 
   return aligned;
@@ -160,16 +167,18 @@ void* aligned_allocate(std::size_t bytes, std::size_t alignment, Alloc alloc)
  * @tparam Dealloc A unary callable type that deallocates memory.
  */
 template <typename Dealloc>
-void aligned_deallocate(void* p, std::size_t bytes, std::size_t alignment, Dealloc dealloc)
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+void aligned_deallocate(void* ptr, std::size_t bytes, std::size_t alignment, Dealloc dealloc)
 {
   (void)alignment;
 
   // Get offset from the location immediately prior to the aligned pointer
-  std::ptrdiff_t const offset = *(reinterpret_cast<std::ptrdiff_t*>(p) - 1);
+  // NOLINTNEXTLINE
+  std::ptrdiff_t const offset = *(reinterpret_cast<std::ptrdiff_t*>(ptr) - 1);
 
-  void* const original = static_cast<char*>(p) - offset;
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+  void* const original = static_cast<char*>(ptr) - offset;
 
   dealloc(original);
 }
-}  // namespace detail
-}  // namespace rmm
+}  // namespace rmm::detail

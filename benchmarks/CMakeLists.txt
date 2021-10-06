@@ -18,14 +18,14 @@ option(PER_THREAD_DEFAULT_STREAM "Build with per-thread default stream" OFF)
 
 if(PER_THREAD_DEFAULT_STREAM)
   message(STATUS "RMM: Building benchmarks with per-thread default stream")
-endif(PER_THREAD_DEFAULT_STREAM)
+endif()
 
 # compiler function
 
 # This function takes in a benchmark name and benchmark source and handles setting all of the
 # associated properties and linking to build the benchmark
-function(ConfigureBench BENCH_NAME BENCH_SRC)
-  add_executable(${BENCH_NAME} ${BENCH_SRC}
+function(ConfigureBench BENCH_NAME)
+  add_executable(${BENCH_NAME} ${ARGN}
                                "${CMAKE_CURRENT_SOURCE_DIR}/synchronization/synchronization.cpp")
   target_include_directories(${BENCH_NAME} PRIVATE "$<BUILD_INTERFACE:${RMM_SOURCE_DIR}>")
   set_target_properties(
@@ -39,7 +39,7 @@ function(ConfigureBench BENCH_NAME BENCH_SRC)
 
   if(PER_THREAD_DEFAULT_STREAM)
     target_compile_definitions(${BENCH_NAME} PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
-  endif(PER_THREAD_DEFAULT_STREAM)
+  endif()
 
   target_compile_options(${BENCH_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Wall -Werror
                                               -Wno-error=deprecated-declarations>)
@@ -48,34 +48,22 @@ function(ConfigureBench BENCH_NAME BENCH_SRC)
       ${BENCH_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-Wno-deprecated-declarations>)
     target_compile_options(${BENCH_NAME}
                            PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-declarations>)
-  endif(DISABLE_DEPRECATION_WARNING)
+  endif()
 
 endfunction(ConfigureBench)
 
-# benchmark sources
-
 # random allocations benchmark
-
-set(RANDOM_ALLOCATIONS_BENCH_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/random_allocations/random_allocations.cpp")
-
-ConfigureBench(RANDOM_ALLOCATIONS_BENCH "${RANDOM_ALLOCATIONS_BENCH_SRC}")
+ConfigureBench(RANDOM_ALLOCATIONS_BENCH random_allocations/random_allocations.cpp)
 
 # replay benchmark
-
-set(REPLAY_BENCH_SRC "${CMAKE_CURRENT_SOURCE_DIR}/replay/replay.cpp")
-
-ConfigureBench(REPLAY_BENCH "${REPLAY_BENCH_SRC}")
+ConfigureBench(REPLAY_BENCH replay/replay.cpp)
 
 # uvector benchmark
-
-set(UVECTOR_BENCH_SRC "${CMAKE_CURRENT_SOURCE_DIR}/device_uvector/device_uvector_bench.cu")
-
-ConfigureBench(UVECTOR_BENCH "${UVECTOR_BENCH_SRC}")
+ConfigureBench(UVECTOR_BENCH device_uvector/device_uvector_bench.cu)
 
 # cuda_stream_pool benchmark
+ConfigureBench(CUDA_STREAM_POOL_BENCH cuda_stream_pool/cuda_stream_pool_bench.cpp)
 
-set(CUDA_STREAM_POOL_BENCH_SRC
-    "${CMAKE_CURRENT_SOURCE_DIR}/cuda_stream_pool/cuda_stream_pool_bench.cpp")
-
-ConfigureBench(CUDA_STREAM_POOL_BENCH "${CUDA_STREAM_POOL_BENCH_SRC}")
+# multi stream allocations
+ConfigureBench(MULTI_STREAM_ALLOCATIONS_BENCH
+               multi_stream_allocations/multi_stream_allocations_bench.cu)

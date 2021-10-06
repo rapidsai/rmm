@@ -59,9 +59,10 @@ cuda_event_timer::~cuda_event_timer()
   RMM_CUDA_ASSERT_OK(cudaEventRecord(stop, stream.value()));
   RMM_CUDA_ASSERT_OK(cudaEventSynchronize(stop));
 
-  float milliseconds = 0.0f;
+  float milliseconds = 0.0F;
   RMM_CUDA_ASSERT_OK(cudaEventElapsedTime(&milliseconds, start, stop));
-  p_state->SetIterationTime(milliseconds / (1000.0f));
+  const auto to_milliseconds{1.0F / 1000};
+  p_state->SetIterationTime(milliseconds * to_milliseconds);
   RMM_CUDA_ASSERT_OK(cudaEventDestroy(start));
   RMM_CUDA_ASSERT_OK(cudaEventDestroy(stop));
 }

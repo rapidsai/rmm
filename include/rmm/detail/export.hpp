@@ -13,19 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #pragma once
 
-#include <rmm/detail/error.hpp>
-
-namespace rmm::detail {
-
-/// Gets the available and total device memory in bytes for the current device
-inline std::pair<std::size_t, std::size_t> available_device_memory()
-{
-  std::size_t free{};
-  std::size_t total{};
-  RMM_CUDA_TRY(cudaMemGetInfo(&free, &total));
-  return {free, total};
-}
-
-}  // namespace rmm::detail
+// Macros used for defining symbol visibility, only GLIBC is supported
+#if (defined(__GNUC__) && !defined(__MINGW32__) && !defined(__MINGW64__))
+#define RMM_EXPORT __attribute__((visibility("default")))
+#define RMM_HIDDEN __attribute__((visibility("hidden")))
+#else
+#define RMM_EXPORT
+#define RMM_HIDDEN
+#endif

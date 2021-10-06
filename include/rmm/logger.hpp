@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ namespace detail {
  */
 inline std::string default_log_filename()
 {
-  auto filename = std::getenv("RMM_DEBUG_LOG_FILE");
+  auto* filename = std::getenv("RMM_DEBUG_LOG_FILE");
   return (filename == nullptr) ? std::string{"rmm_log.txt"} : std::string{filename};
 }
 
@@ -69,6 +69,26 @@ struct logger_wrapper {
   }
 };
 
+/**
+ * @brief Represent a size in number of bytes.
+ */
+struct bytes {
+  std::size_t value;
+
+  friend std::ostream& operator<<(std::ostream& os, bytes const& value)
+  {
+    static std::array<std::string, 9> const units{
+      "B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"};
+    int index = 0;
+    auto size = static_cast<double>(value.value);
+    while (size > 1024) {
+      size /= 1024;
+      index++;
+    }
+    return os << size << ' ' << units.at(index);
+  }
+};
+
 }  // namespace detail
 
 /**
@@ -80,8 +100,8 @@ struct logger_wrapper {
  */
 inline spdlog::logger& logger()
 {
-  static detail::logger_wrapper w{};
-  return w.logger_;
+  static detail::logger_wrapper wrapped{};
+  return wrapped.logger_;
 }
 
 // The default is INFO, but it should be used sparingly, so that by default a log file is only

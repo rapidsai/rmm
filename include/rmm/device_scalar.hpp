@@ -47,9 +47,9 @@ class device_scalar {
   ~device_scalar() = default;
 
   RMM_EXEC_CHECK_DISABLE
-  device_scalar(device_scalar&&) = default;
+  device_scalar(device_scalar&&) noexcept = default;
 
-  device_scalar& operator=(device_scalar&&) = default;
+  device_scalar& operator=(device_scalar&&) noexcept = default;
 
   /**
    * @brief Copy ctor is deleted as it doesn't allow a stream argument
@@ -147,7 +147,10 @@ class device_scalar {
    * @return T The value of the scalar.
    * @param stream CUDA stream on which to perform the copy and synchronize.
    */
-  value_type value(cuda_stream_view stream) const { return _storage.front_element(stream); }
+  [[nodiscard]] value_type value(cuda_stream_view stream) const
+  {
+    return _storage.front_element(stream);
+  }
 
   /**
    * @brief Sets the value of the `device_scalar` to the value of `v`.
@@ -186,9 +189,9 @@ class device_scalar {
    * @param v The host value which will be copied to device
    * @param stream CUDA stream on which to perform the copy
    */
-  void set_value_async(value_type const& v, cuda_stream_view s)
+  void set_value_async(value_type const& value, cuda_stream_view stream)
   {
-    _storage.set_element_async(0, v, s);
+    _storage.set_element_async(0, value, stream);
   }
 
   // Disallow passing literals to set_value to avoid race conditions where the memory holding the
@@ -209,9 +212,9 @@ class device_scalar {
    *
    * @param stream CUDA stream on which to perform the copy
    */
-  void set_value_to_zero_async(cuda_stream_view s)
+  void set_value_to_zero_async(cuda_stream_view stream)
   {
-    _storage.set_element_to_zero_async(value_type{0}, s);
+    _storage.set_element_to_zero_async(value_type{0}, stream);
   }
 
   /**
@@ -222,7 +225,7 @@ class device_scalar {
    * streams (e.g. using `cudaStreamWaitEvent()` or `cudaStreamSynchronize()`), otherwise there may
    * be a race condition.
    */
-  pointer data() noexcept { return static_cast<pointer>(_storage.data()); }
+  [[nodiscard]] pointer data() noexcept { return static_cast<pointer>(_storage.data()); }
 
   /**
    * @brief Returns const pointer to object in device memory.
@@ -232,7 +235,10 @@ class device_scalar {
    * streams (e.g. using `cudaStreamWaitEvent()` or `cudaStreamSynchronize()`), otherwise there may
    * be a race condition.
    */
-  const_pointer data() const noexcept { return static_cast<const_pointer>(_storage.data()); }
+  [[nodiscard]] const_pointer data() const noexcept
+  {
+    return static_cast<const_pointer>(_storage.data());
+  }
 
  private:
   rmm::device_uvector<T> _storage;

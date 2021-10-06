@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,13 @@
  */
 #pragma once
 
-#include <mutex>
 #include <rmm/mr/device/device_memory_resource.hpp>
+
+#include <cstddef>
+#include <mutex>
 #include <shared_mutex>
 
-namespace rmm {
-namespace mr {
+namespace rmm::mr {
 /**
  * @brief Resource that uses `Upstream` to allocate memory and tracks statistics
  * on memory allocations.
@@ -50,17 +51,17 @@ class statistics_resource_adaptor final : public device_memory_resource {
     int64_t peak{0};   // Max value of `value`
     int64_t total{0};  // Sum of all added values
 
-    counter& operator+=(int64_t x)
+    counter& operator+=(int64_t val)
     {
-      value += x;
-      total += x;
+      value += val;
+      total += val;
       peak = std::max(value, peak);
       return *this;
     }
 
-    counter& operator-=(int64_t x)
+    counter& operator-=(int64_t val)
     {
-      value -= x;
+      value -= val;
       return *this;
     }
   };
@@ -79,11 +80,11 @@ class statistics_resource_adaptor final : public device_memory_resource {
   }
 
   statistics_resource_adaptor()                                   = delete;
-  virtual ~statistics_resource_adaptor()                          = default;
+  ~statistics_resource_adaptor() override                         = default;
   statistics_resource_adaptor(statistics_resource_adaptor const&) = delete;
-  statistics_resource_adaptor(statistics_resource_adaptor&&)      = default;
   statistics_resource_adaptor& operator=(statistics_resource_adaptor const&) = delete;
-  statistics_resource_adaptor& operator=(statistics_resource_adaptor&&) = default;
+  statistics_resource_adaptor(statistics_resource_adaptor&&) noexcept        = default;
+  statistics_resource_adaptor& operator=(statistics_resource_adaptor&&) noexcept = default;
 
   /**
    * @brief Return pointer to the upstream resource.
@@ -154,7 +155,7 @@ class statistics_resource_adaptor final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
-    void* p = upstream_->allocate(bytes, stream);
+    void* ptr = upstream_->allocate(bytes, stream);
 
     // increment the stats
     {
@@ -165,21 +166,21 @@ class statistics_resource_adaptor final : public device_memory_resource {
       allocations_ += 1;
     }
 
-    return p;
+    return ptr;
   }
 
   /**
-   * @brief Free allocation of size `bytes` pointed to by `p`
+   * @brief Free allocation of size `bytes` pointed to by `ptr`
    *
    * @throws Nothing.
    *
-   * @param p Pointer to be deallocated
+   * @param ptr Pointer to be deallocated
    * @param bytes Size of the allocation
    * @param stream Stream on which to perform the deallocation
    */
-  void do_deallocate(void* p, std::size_t bytes, cuda_stream_view stream) override
+  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
-    upstream_->deallocate(p, bytes, stream);
+    upstream_->deallocate(ptr, bytes, stream);
 
     {
       write_lock_t lock(mtx_);
@@ -201,13 +202,10 @@ class statistics_resource_adaptor final : public device_memory_resource {
    */
   bool do_is_equal(device_memory_resource const& other) const noexcept override
   {
-    if (this == &other)
-      return true;
-    else {
-      auto cast = dynamic_cast<statistics_resource_adaptor<Upstream> const*>(&other);
-      return cast != nullptr ? upstream_->is_equal(*cast->get_upstream())
-                             : upstream_->is_equal(other);
-    }
+    if (this == &other) { return true; }
+    auto cast = dynamic_cast<statistics_resource_adaptor<Upstream> const*>(&other);
+    return cast != nullptr ? upstream_->is_equal(*cast->get_upstream())
+                           : upstream_->is_equal(other);
   }
 
   /**
@@ -242,5 +240,4 @@ statistics_resource_adaptor<Upstream> make_statistics_adaptor(Upstream* upstream
   return statistics_resource_adaptor<Upstream>{upstream};
 }
 
-}  // namespace mr
-}  // namespace rmm
+}  // namespace rmm::mr
