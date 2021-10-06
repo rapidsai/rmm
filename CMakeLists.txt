@@ -58,12 +58,16 @@ rapids_find_package(
 rapids_cpm_init()
 include(cmake/thirdparty/get_spdlog.cmake)
 include(cmake/thirdparty/get_thrust.cmake)
+include(cmake/thirdparty/get_libcudacxx.cmake)
 
 # library targets
 add_library(rmm INTERFACE)
 add_library(rmm::rmm ALIAS rmm)
 
 target_include_directories(rmm INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+                                         "$<INSTALL_INTERFACE:include>")
+target_include_directories(rmm INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+                                         "$<BUILD_INTERFACE:${LIBCUDACXX_INCLUDE_DIR}>"
                                          "$<INSTALL_INTERFACE:include>")
 
 if(CUDA_STATIC_RUNTIME)
@@ -107,7 +111,9 @@ include(CPack)
 
 # install export targets
 install(TARGETS rmm EXPORT rmm-exports)
-install(DIRECTORY include/rmm/ DESTINATION include/rmm)
+install(DIRECTORY ${RMM_GENERATED_INCLUDE_DIR}/include/libcxx
+                  ${RMM_GENERATED_INCLUDE_DIR}/include/libcudacxx
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/rmm)
 install(FILES ${RMM_BINARY_DIR}/include/rmm/version_config.hpp DESTINATION include/rmm)
 
 set(doc_string
