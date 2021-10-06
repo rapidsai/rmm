@@ -380,6 +380,33 @@ cdef extern from "cuda.h" nogil:
     CUresult cuGetErrorName(CUresult error, const char** pStr)
     CUresult cuGetErrorString(CUresult error, const char** pStr)
 
+    ctypedef unsigned int CUdeviceptr
+
+    cpdef enum CUpointer_attribute "CUpointer_attribute_enum":
+        CU_POINTER_ATTRIBUTE_CONTEXT = 1
+        CU_POINTER_ATTRIBUTE_MEMORY_TYPE = 2
+        CU_POINTER_ATTRIBUTE_DEVICE_POINTER = 3
+        CU_POINTER_ATTRIBUTE_HOST_POINTER = 4
+        CU_POINTER_ATTRIBUTE_P2P_TOKENS = 5
+        CU_POINTER_ATTRIBUTE_SYNC_MEMOPS = 6
+        CU_POINTER_ATTRIBUTE_BUFFER_ID = 7
+        CU_POINTER_ATTRIBUTE_IS_MANAGED = 8
+        CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL = 9
+        CU_POINTER_ATTRIBUTE_IS_LEGACY_CUDA_IPC_CAPABLE = 10
+        CU_POINTER_ATTRIBUTE_RANGE_START_ADDR = 11
+        CU_POINTER_ATTRIBUTE_RANGE_SIZE = 12
+        CU_POINTER_ATTRIBUTE_MAPPED = 13
+        CU_POINTER_ATTRIBUTE_ALLOWED_HANDLE_TYPES = 14
+        CU_POINTER_ATTRIBUTE_IS_GPU_DIRECT_RDMA_CAPABLE = 15
+        CU_POINTER_ATTRIBUTE_ACCESS_FLAGS = 16
+        CU_POINTER_ATTRIBUTE_MEMPOOL_HANDLE = 17
+
+    CUresult cuPointerGetAttribute (
+        void* data,
+        CUpointer_attribute attribute,
+        CUdeviceptr ptr
+    )
+
 cdef extern from "cuda_runtime_api.h" nogil:
 
     cudaError_t cudaDriverGetVersion(int* driverVersion)

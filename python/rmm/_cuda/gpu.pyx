@@ -1,6 +1,9 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
+from libc.stdint cimport int32_t, uintptr_t
+
 from rmm._cuda.gpu cimport (
+    CUpointer_attribute,
     CUresult,
     cudaDeviceAttr,
     cudaDeviceGetAttribute,
@@ -199,3 +202,32 @@ def deviceGetName(int device):
     if status != 0:
         raise CUDADriverError(status)
     return device_name.decode()
+
+
+def pointerGetAttribute(uintptr_t ptr, CUpointer_attribute attribute):
+    """
+    Return the specified attribute for the device pointer `ptr`.
+
+    Parameters
+    ----------
+    ptr: int
+        Device pointer
+    attribute: CUpointer_attribute
+        The attribute to return
+
+    Notes
+    -----
+    Currently, only the attribute CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL
+    is supported.
+    """
+    if attribute != CUpointer_attribute.CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL:
+        raise ValueError(f"Unsupported attribute {attribute}")
+    cdef int c_ordinal
+    cdef  CUresult status = cuPointerGetAttribute(
+        <void*>(&c_ordinal),
+        attribute,
+        ptr
+    )
+    if status != 0:
+        raise CUDADriverError(status)
+    return <uintptr_t> c_ordinal
