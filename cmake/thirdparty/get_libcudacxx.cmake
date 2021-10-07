@@ -32,4 +32,4 @@ endfunction()
 
 set(RMM_MIN_VERSION_libcudacxx 1.5.0)
 
-find_and_configure_libcudacxx(${CUDF_MIN_VERSION_libcudacxx})
+find_and_configure_libcudacxx(${RMM_MIN_VERSION_libcudacxx})
