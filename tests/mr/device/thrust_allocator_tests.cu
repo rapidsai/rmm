@@ -15,6 +15,7 @@
  */
 
 #include "mr_test.hpp"
+#include "rmm/mr/device/per_device_resource.hpp"
 
 #include <rmm/device_vector.hpp>
 #include <rmm/mr/device/thrust_allocator_adaptor.hpp>
@@ -25,6 +26,13 @@ namespace rmm::test {
 namespace {
 
 struct allocator_test : public mr_test {
+  void SetUp() override
+  {
+    mr_test::SetUp();
+    rmm::mr::set_current_device_resource(mr.get());
+  }
+
+  void TearDown() override { rmm::mr::set_current_device_resource(nullptr); }
 };
 
 TEST_P(allocator_test, first)
