@@ -64,11 +64,10 @@ include(cmake/thirdparty/get_libcudacxx.cmake)
 add_library(rmm INTERFACE)
 add_library(rmm::rmm ALIAS rmm)
 
-target_include_directories(rmm INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-                                         "$<INSTALL_INTERFACE:include>")
-target_include_directories(rmm INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-                                         "$<BUILD_INTERFACE:${LIBCUDACXX_INCLUDE_DIR}>"
-                                         "$<INSTALL_INTERFACE:include>")
+target_include_directories(
+  rmm INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+                "$<BUILD_INTERFACE:${LIBCUDACXX_INCLUDE_DIR}>"
+                "$<INSTALL_INTERFACE:include>")
 
 if(CUDA_STATIC_RUNTIME)
   message(STATUS "RMM: Enabling static linking of cudart")
@@ -111,9 +110,10 @@ include(CPack)
 
 # install export targets
 install(TARGETS rmm EXPORT rmm-exports)
-install(DIRECTORY ${RMM_GENERATED_INCLUDE_DIR}/include/libcxx
-                  ${RMM_GENERATED_INCLUDE_DIR}/include/libcudacxx
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/rmm)
+install(
+  DIRECTORY ${RMM_GENERATED_INCLUDE_DIR}/include/libcxx
+            ${RMM_GENERATED_INCLUDE_DIR}/include/libcudacxx
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/rmm)
 install(FILES ${RMM_BINARY_DIR}/include/rmm/version_config.hpp DESTINATION include/rmm)
 
 set(doc_string
