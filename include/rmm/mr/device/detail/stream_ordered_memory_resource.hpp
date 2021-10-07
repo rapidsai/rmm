@@ -83,6 +83,8 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
   stream_ordered_memory_resource& operator=(stream_ordered_memory_resource&&) = delete;
 
  protected:
+  TEMPORARY_BASE_CLASS_OVERRIDES
+
   using free_list  = FreeListType;
   using block_type = typename free_list::block_type;
   using lock_guard = std::lock_guard<std::mutex>;
@@ -251,6 +253,21 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     stream_free_blocks_[stream_event].insert(block);
 
     log_summary_trace();
+  }
+
+  /**
+   * @brief Compare this resource to another.
+   *
+   * By default, simply checks if \p *this and \p other refer to the same
+   * object, i.e., does not check if they are two objects of the same class.
+   *
+   * @param other The other resource to compare to
+   * @return true If the two resources are equivalent
+   * @return false If the two resources are not equal
+   */
+  [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
+  {
+    return this == &other;
   }
 
  private:

@@ -129,6 +129,8 @@ class cuda_async_memory_resource final : public device_memory_resource {
   [[nodiscard]] bool supports_get_mem_info() const noexcept override { return false; }
 
  private:
+  TEMPORARY_BASE_CLASS_OVERRIDES
+
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
   cudaMemPool_t cuda_pool_handle_{};
 #endif

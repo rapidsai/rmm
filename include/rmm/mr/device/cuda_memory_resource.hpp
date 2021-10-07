@@ -52,6 +52,8 @@ class cuda_memory_resource final : public device_memory_resource {
   [[nodiscard]] bool supports_get_mem_info() const noexcept override { return true; }
 
  private:
+  TEMPORARY_BASE_CLASS_OVERRIDES
+
   /**
    * @brief Allocates memory of size at least `bytes` using cudaMalloc.
    *

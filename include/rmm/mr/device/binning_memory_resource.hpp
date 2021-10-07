@@ -147,6 +147,8 @@ class binning_memory_resource final : public device_memory_resource {
   }
 
  private:
+  TEMPORARY_BASE_CLASS_OVERRIDES
+
   /**
    * @brief Get the memory resource for the requested size
    *
@@ -191,6 +193,18 @@ class binning_memory_resource final : public device_memory_resource {
   {
     auto res = get_resource(bytes);
     if (res != nullptr) { res->deallocate(ptr, bytes, stream); }
+  }
+
+  /**
+   * @brief Compare this resource to another.
+   *
+   * @param other The other resource to compare to
+   * @return true If the two resources are equivalent
+   * @return false If the two resources are not equal
+   */
+  [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
+  {
+    return this == &other;
   }
 
   /**

@@ -18,8 +18,39 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/aligned.hpp>
 
+#include <cuda/memory_resource>
+
 #include <cstddef>
 #include <utility>
+
+// This macro defines overrides of `cuda::stream_ordered_memory_resource` APIs that are needed
+// for compatibility while we transition to using `cuda::memory_resource` as the base classes for
+// RMM MRs. Most derived MR classes will need this line added. They also need to add an explicit
+// override of the `device_memory_resource` overload of `do_is_equal`
+#define TEMPORARY_BASE_CLASS_OVERRIDES                                                          \
+  void* do_allocate(std::size_t bytes, std::size_t alignment) override                          \
+  {                                                                                             \
+    return do_allocate(bytes, rmm::cuda_stream_default);                                        \
+  }                                                                                             \
+  void* do_allocate_async(std::size_t bytes, std::size_t alignment, cuda::stream_view stream)   \
+    override                                                                                    \
+  {                                                                                             \
+    return do_allocate(bytes, stream.get());                                                    \
+  }                                                                                             \
+  void do_deallocate(void* ptr, std::size_t bytes, std::size_t alignment) override              \
+  {                                                                                             \
+    return do_deallocate(ptr, bytes, rmm::cuda_stream_default);                                 \
+  }                                                                                             \
+  void do_deallocate_async(                                                                     \
+    void* ptr, std::size_t bytes, std::size_t alignment, cuda::stream_view stream) override     \
+  {                                                                                             \
+    return do_deallocate(ptr, bytes, stream.get());                                             \
+  }                                                                                             \
+  [[nodiscard]] bool do_is_equal(cuda::memory_resource<cuda::memory_kind::device> const& other) \
+    const noexcept override                                                                     \
+  {                                                                                             \
+    return this == &other;                                                                      \
+  }
 
 namespace rmm::mr {
 
@@ -79,10 +110,11 @@ namespace rmm::mr {
  * }
  * @endcode
  */
-class device_memory_resource {
+class device_memory_resource
+  : public cuda::stream_ordered_memory_resource<cuda::memory_kind::device> {
  public:
   device_memory_resource()                              = default;
-  virtual ~device_memory_resource()                     = default;
+  ~device_memory_resource() override                    = default;
   device_memory_resource(device_memory_resource const&) = default;
   device_memory_resource& operator=(device_memory_resource const&) = default;
   device_memory_resource(device_memory_resource&&) noexcept        = default;
@@ -178,6 +210,8 @@ class device_memory_resource {
   }
 
  private:
+  TEMPORARY_BASE_CLASS_OVERRIDES
+
   // All allocations are padded to a multiple of allocation_size_alignment bytes.
   static constexpr auto allocation_size_alignment = std::size_t{8};
 

@@ -124,6 +124,8 @@ class arena_memory_resource final : public device_memory_resource {
   bool supports_get_mem_info() const noexcept override { return false; }
 
  private:
+  TEMPORARY_BASE_CLASS_OVERRIDES
+
   using global_arena = detail::arena::global_arena<Upstream>;
   using arena        = detail::arena::arena<Upstream>;
   using read_lock    = std::shared_lock<std::shared_timed_mutex>;
@@ -254,6 +256,18 @@ class arena_memory_resource final : public device_memory_resource {
   std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view stream) const override
   {
     return std::make_pair(0, 0);
+  }
+
+  /**
+   * @brief Compare this resource to another.
+   *
+   * @param other The other resource to compare to
+   * @return true If the two resources are equivalent
+   * @return false If the two resources are not equal
+   */
+  [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
+  {
+    return this == &other;
   }
 
   /**

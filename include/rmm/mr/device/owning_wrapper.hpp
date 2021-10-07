@@ -146,6 +146,8 @@ class owning_wrapper : public device_memory_resource {
   }
 
  private:
+  TEMPORARY_BASE_CLASS_OVERRIDES
+
   /**
    * @brief Allocates memory using the wrapped resource.
    *
