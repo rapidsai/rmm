@@ -36,7 +36,7 @@ function(ConfigureTestInternal TEST_NAME)
 
   if(DISABLE_DEPRECATION_WARNING)
     target_compile_options(
-      ${TEST_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-Wno-deprecated-declarations>)
+      ${TEST_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:--Werror=all-warnings -Xcompiler=-Wall,-Werror>)
     target_compile_options(${TEST_NAME}
                            PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-declarations>)
   endif()
