@@ -30,6 +30,6 @@ function(find_and_configure_libcudacxx VERSION)
       PARENT_SCOPE)
 endfunction()
 
-set(CUDF_MIN_VERSION_libcudacxx 1.5.0)
+set(RMM_MIN_VERSION_libcudacxx 1.5.0)
 
 find_and_configure_libcudacxx(${CUDF_MIN_VERSION_libcudacxx})
