@@ -64,6 +64,9 @@ ConfigureTest(DEVICE_MR_TEST mr/device/mr_tests.cpp mr/device/mr_multithreaded_t
 # pool mr tests
 ConfigureTest(POOL_MR_TEST mr/device/pool_mr_tests.cpp)
 
+# arena mr tests
+ConfigureTest(ARENA_MR_TEST mr/device/arena_mr_tests.cpp)
+
 # cuda_async mr tests
 ConfigureTest(CUDA_ASYNC_MR_TEST mr/device/cuda_async_mr_tests.cpp)
 

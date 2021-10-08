@@ -89,8 +89,8 @@ class arena_memory_resource final : public device_memory_resource {
    * of the available memory on the current device.
    */
   explicit arena_memory_resource(Upstream* upstream_mr,
-                                 std::size_t initial_size = global_arena::default_initial_size,
-                                 std::size_t maximum_size = global_arena::default_maximum_size,
+                                 std::optional<std::size_t> initial_size = std::nullopt,
+                                 std::optional<std::size_t> maximum_size = std::nullopt,
                                  bool dump_log_on_failure = false)
     : global_arena_{upstream_mr, initial_size, maximum_size},
       dump_log_on_failure_{dump_log_on_failure}
@@ -144,7 +144,7 @@ class arena_memory_resource final : public device_memory_resource {
   {
     if (bytes <= 0) { return nullptr; }
 
-    bytes         = detail::arena::align_up(bytes);
+    bytes         = rmm::detail::align_up_cuda(bytes);
     auto& arena   = get_arena(stream);
     void* pointer = arena.allocate(bytes);
 
@@ -173,7 +173,7 @@ class arena_memory_resource final : public device_memory_resource {
   {
     if (ptr == nullptr || bytes <= 0) { return; }
 
-    bytes = detail::arena::align_up(bytes);
+    bytes = rmm::detail::align_up_cuda(bytes);
     get_arena(stream).deallocate(ptr, bytes, stream);
   }
 
