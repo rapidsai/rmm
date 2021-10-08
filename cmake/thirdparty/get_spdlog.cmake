@@ -22,7 +22,6 @@ function(find_and_configure_spdlog)
     install(TARGETS spdlog_header_only EXPORT rmm-exports)
   else()
     rapids_export_package(BUILD spdlog rmm-exports)
-    rapids_export_package(INSTALL spdlog rmm-exports)
   endif()
 endfunction()
 
