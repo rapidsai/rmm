@@ -240,6 +240,11 @@ class device_scalar {
     return static_cast<const_pointer>(_storage.data());
   }
 
+  /**
+   * @brief Returns stream most recently specified for allocation/deallocation
+   */
+  [[nodiscard]] cuda_stream_view stream() const noexcept { return _storage.stream(); }
+
  private:
   rmm::device_uvector<T> _storage;
 };

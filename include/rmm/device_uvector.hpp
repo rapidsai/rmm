@@ -504,6 +504,11 @@ class device_uvector {
     return _storage.memory_resource();
   }
 
+  /**
+   * @brief Returns stream most recently specified for allocation/deallocation
+   */
+  [[nodiscard]] cuda_stream_view stream() const noexcept { return _storage.stream(); }
+
  private:
   device_buffer _storage{};  ///< Device memory storage for vector elements
 
