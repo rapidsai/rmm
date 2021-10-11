@@ -75,6 +75,8 @@ class cuda_async_memory_resource final : public device_memory_resource {
     pool_props.location.id   = device.value();
     RMM_CUDA_TRY(cudaMemPoolCreate(&cuda_pool_handle_, &pool_props));
 
+    is_owner_of_pool_ = true;
+
     auto const [free, total] = rmm::detail::available_device_memory();
 
     // Need an l-value to take address to pass to cudaMemPoolSetAttribute
@@ -96,6 +98,32 @@ class cuda_async_memory_resource final : public device_memory_resource {
 
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
   /**
+   * @brief Constructs a cuda_async_memory_resource which will use an existing CUDA memory pool.
+   * The provided pool will not be owned by cuda_async_memory_resource and has to remain valid
+   * during the lifetime of the memory resource.
+   *
+   * @throws rmm::runtime_error if the CUDA version does not support `cudaMallocAsync`
+   *
+   * @param valid_pool_handle Handle to a CUDA memory pool which will be used to
+   * serve allocation requests.
+   */
+  cuda_async_memory_resource(cudaMemPool_t valid_pool_handle)
+  {
+    // Check if cudaMallocAsync Memory pool supported
+    auto const device = rmm::detail::current_device();
+    int cuda_pool_supported{};
+    auto result =
+      cudaDeviceGetAttribute(&cuda_pool_supported, cudaDevAttrMemoryPoolsSupported, device.value());
+    RMM_EXPECTS(result == cudaSuccess && cuda_pool_supported,
+                "cudaMallocAsync not supported with this CUDA driver/runtime version");
+
+    cuda_pool_handle_ = valid_pool_handle;
+    is_owner_of_pool_ = false;
+  }
+#endif
+
+#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
+  /**
    * @brief Returns the underlying native handle to the CUDA pool
    *
    */
@@ -105,7 +133,9 @@ class cuda_async_memory_resource final : public device_memory_resource {
   ~cuda_async_memory_resource() override
   {
 #if defined(RMM_CUDA_MALLOC_ASYNC_SUPPORT)
-    RMM_ASSERT_CUDA_SUCCESS(cudaMemPoolDestroy(pool_handle()));
+    if(is_owner_of_pool_) {
+      RMM_ASSERT_CUDA_SUCCESS(cudaMemPoolDestroy(pool_handle()));
+    }
 #endif
   }
   cuda_async_memory_resource(cuda_async_memory_resource const&) = delete;
@@ -130,6 +160,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
 
  private:
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
+  bool is_owner_of_pool_{};
   cudaMemPool_t cuda_pool_handle_{};
 #endif
 
