@@ -19,7 +19,7 @@ ARGS=$*
 REPODIR=$(cd $(dirname $0); pwd)
 
 VALIDARGS="clean librmm rmm -v -g -n -s --ptds -h"
-HELP="$0 [clean] [librmm] [rmm] [-v] [-g] [-n] [-s] [--ptds] [-h]
+HELP="$0 [clean] [librmm] [rmm] [-v] [-g] [-n] [-s] [--ptds] [--cmake-args=\"<args>\"] [-h]
    clean  - remove all existing build artifacts and configuration (start over)
    librmm - build and install the librmm C++ code
    rmm    - build and install the rmm Python package
@@ -28,6 +28,7 @@ HELP="$0 [clean] [librmm] [rmm] [-v] [-g] [-n] [-s] [--ptds] [-h]
    -n     - no install step
    -s     - statically link against cudart
    --ptds - enable per-thread default stream
+   --cmake-args=\\\"<args>\\\"   - pass arbitrary list of CMake configuration options (escape all quotes in argument)
    -h     - print this text
 
    default action (no args) is to build and install 'librmm' and 'rmm' targets
@@ -54,16 +55,41 @@ function hasArg {
     (( NUMARGS != 0 )) && (echo " ${ARGS} " | grep -q " $1 ")
 }
 
+function cmakeArgs {
+    # Check for multiple cmake args options
+    if [[ $(echo $ARGS | { grep -Eo "\-\-cmake\-args" || true; } | wc -l ) -gt 1 ]]; then
+        echo "Multiple --cmake-args options were provided, please provide only one: ${ARGS}"
+        exit 1
+    fi
+
+    # Check for cmake args option
+    if [[ -n $(echo $ARGS | { grep -E "\-\-cmake\-args" || true; } ) ]]; then
+        # There are possible weird edge cases that may cause this regex filter to output nothing and fail silently
+        # the true pipe will catch any weird edge cases that may happen and will cause the program to fall back
+        # on the invalid option error
+        CMAKE_ARGS=$(echo $ARGS | { grep -Eo "\-\-cmake\-args=\".+\"" || true; })
+        if [[ -n ${CMAKE_ARGS} ]]; then
+            # Remove the full  CMAKE_ARGS argument from list of args so that it passes validArgs function
+            ARGS=${ARGS//$CMAKE_ARGS/}
+            # Filter the full argument down to just the extra string that will be added to cmake call
+            CMAKE_ARGS=$(echo $CMAKE_ARGS | grep -Eo "\".+\"" | sed -e 's/^"//' -e 's/"$//')
+        fi
+    fi
+}
+
+
 # Runs cmake if it has not been run already for build directory
 # LIBRMM_BUILD_DIR
 function ensureCMakeRan {
     mkdir -p "${LIBRMM_BUILD_DIR}"
     if (( RAN_CMAKE == 0 )); then
         echo "Executing cmake for librmm..."
-        cmake -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" \
+        cmake -B "${LIBRMM_BUILD_DIR}" -S . \
+              -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" \
               -DCUDA_STATIC_RUNTIME="${CUDA_STATIC_RUNTIME}" \
               -DPER_THREAD_DEFAULT_STREAM="${PER_THREAD_DEFAULT_STREAM}" \
-              -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -B "${LIBRMM_BUILD_DIR}" -S .
+              -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+              ${CMAKE_ARGS}
         RAN_CMAKE=1
     fi
 }
@@ -74,12 +100,14 @@ if hasArg -h; then
 fi
 
 # Check for valid usage
-if (( NUMARGS != 0 )); then
+if (( ${NUMARGS} != 0 )); then
+    # Check for cmake args
+    cmakeArgs
     for a in ${ARGS}; do
-	if ! (echo " ${VALIDARGS} " | grep -q " ${a} "); then
-	    echo "Invalid option: ${a}"
-	    exit 1
-	fi
+    if ! (echo " ${VALIDARGS} " | grep -q " ${a} "); then
+        echo "Invalid option or formatting, check --help: ${a}"
+        exit 1
+    fi
     done
 fi
 
