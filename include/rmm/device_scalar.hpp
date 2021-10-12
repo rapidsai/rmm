@@ -245,6 +245,18 @@ class device_scalar {
    */
   [[nodiscard]] cuda_stream_view stream() const noexcept { return _storage.stream(); }
 
+  /**
+   * @brief Sets the stream to be used for deallocation
+   *
+   * If no other rmm::device_scalar method that allocates or copies memory is
+   * called after this call with a different stream argument, then @p stream
+   * will be used for deallocation in the `rmm::device_scalar destructor.
+   * Otherwise, if another rmm::device_scalar method with a stream parameter is
+   * called after this, the later stream parameter will be stored and used in
+   * the destructor.
+   */
+  void set_stream(cuda_stream_view stream) noexcept { _storage.set_stream(stream); }
+
  private:
   rmm::device_uvector<T> _storage;
 };
