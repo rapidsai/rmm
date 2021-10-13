@@ -138,7 +138,7 @@ class owning_wrapper : public device_memory_resource {
   /**
    * @brief Query whether the resource supports the get_mem_info API.
    *
-   * @return true if the upstream resource supports get_mem_info, false otherwise.
+   * @return true if the wrapped resource supports get_mem_info, false otherwise.
    */
   [[nodiscard]] bool supports_get_mem_info() const noexcept override
   {
