@@ -17,8 +17,9 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
-#include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
+
+#include <cuda/memory_resource>
 
 #include <cuda_runtime_api.h>
 
@@ -102,7 +103,8 @@ class device_buffer {
    */
   explicit device_buffer(std::size_t size,
                          cuda_stream_view stream,
-                         mr::device_memory_resource* mr = mr::get_current_device_resource())
+                         cuda::stream_ordered_resource_view<cuda::memory_access::device> mr =
+                           mr::get_current_device_resource())
     : _stream{stream}, _mr{mr}
   {
     allocate_async(size);
@@ -130,7 +132,8 @@ class device_buffer {
   device_buffer(void const* source_data,
                 std::size_t size,
                 cuda_stream_view stream,
-                mr::device_memory_resource* mr = mr::get_current_device_resource())
+                cuda::stream_ordered_resource_view<cuda::memory_access::device> mr =
+                  mr::get_current_device_resource())
     : _stream{stream}, _mr{mr}
   {
     allocate_async(size);
@@ -160,7 +163,8 @@ class device_buffer {
    */
   device_buffer(device_buffer const& other,
                 cuda_stream_view stream,
-                rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource())
+                cuda::stream_ordered_resource_view<cuda::memory_access::device> mr =
+                  rmm::mr::get_current_device_resource())
     : device_buffer{other.data(), other.size(), stream, mr}
   {
   }
@@ -269,7 +273,7 @@ class device_buffer {
     if (new_size <= capacity()) {
       _size = new_size;
     } else {
-      void* const new_data = _mr->allocate(new_size, this->stream());
+      void* const new_data = _mr->allocate_async(new_size, this->stream().value());
       RMM_CUDA_TRY(
         cudaMemcpyAsync(new_data, data(), size(), cudaMemcpyDefault, this->stream().value()));
       deallocate_async();
@@ -357,14 +361,18 @@ class device_buffer {
    * @brief Returns pointer to the memory resource used to allocate and
    * deallocate the device memory
    */
-  [[nodiscard]] mr::device_memory_resource* memory_resource() const noexcept { return _mr; }
+  [[nodiscard]] cuda::stream_ordered_resource_view<cuda::memory_access::device> memory_resource()
+    const noexcept
+  {
+    return _mr;
+  }
 
  private:
   void* _data{nullptr};        ///< Pointer to device memory allocation
   std::size_t _size{};         ///< Requested size of the device memory allocation
   std::size_t _capacity{};     ///< The actual size of the device memory allocation
   cuda_stream_view _stream{};  ///< Stream to use for device memory deallocation
-  mr::device_memory_resource* _mr{
+  cuda::stream_ordered_resource_view<cuda::memory_access::device> _mr{
     mr::get_current_device_resource()};  ///< The memory resource used to
                                          ///< allocate/deallocate device memory
 
@@ -381,7 +389,7 @@ class device_buffer {
   {
     _size     = bytes;
     _capacity = bytes;
-    _data     = (bytes > 0) ? memory_resource()->allocate(bytes, stream()) : nullptr;
+    _data     = (bytes > 0) ? memory_resource()->allocate_async(bytes, stream().value()) : nullptr;
   }
 
   /**
@@ -395,7 +403,9 @@ class device_buffer {
    */
   void deallocate_async() noexcept
   {
-    if (capacity() > 0) { memory_resource()->deallocate(data(), capacity(), stream()); }
+    if (capacity() > 0) {
+      memory_resource()->deallocate_async(data(), capacity(), stream().value());
+    }
     _size     = 0;
     _capacity = 0;
     _data     = nullptr;

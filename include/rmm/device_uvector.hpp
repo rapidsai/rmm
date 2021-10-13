@@ -20,8 +20,9 @@
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/exec_check_disable.hpp>
 #include <rmm/device_buffer.hpp>
-#include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
+
+#include <cuda/memory_resource>
 
 #include <cstddef>
 #include <vector>
@@ -114,10 +115,10 @@ class device_uvector {
    * @param stream The stream on which to perform the allocation
    * @param mr The resource used to allocate the device storage
    */
-  explicit device_uvector(
-    std::size_t size,
-    cuda_stream_view stream,
-    rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource())
+  explicit device_uvector(std::size_t size,
+                          cuda_stream_view stream,
+                          cuda::stream_ordered_resource_view<cuda::memory_access::device> mr =
+                            rmm::mr::get_current_device_resource())
     : _storage{elements_to_bytes(size), stream, mr}
   {
   }
@@ -131,10 +132,10 @@ class device_uvector {
    * @param stream The stream on which to perform the copy
    * @param mr The resource used to allocate device memory for the new vector
    */
-  explicit device_uvector(
-    device_uvector const& other,
-    cuda_stream_view stream,
-    rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource())
+  explicit device_uvector(device_uvector const& other,
+                          cuda_stream_view stream,
+                          cuda::stream_ordered_resource_view<cuda::memory_access::device> mr =
+                            rmm::mr::get_current_device_resource())
     : _storage{other._storage, stream, mr}
   {
   }
@@ -499,7 +500,8 @@ class device_uvector {
    *
    * @return Pointer to underlying resource
    */
-  [[nodiscard]] mr::device_memory_resource* memory_resource() const noexcept
+  [[nodiscard]] cuda::stream_ordered_resource_view<cuda::memory_access::device> memory_resource()
+    const noexcept
   {
     return _storage.memory_resource();
   }

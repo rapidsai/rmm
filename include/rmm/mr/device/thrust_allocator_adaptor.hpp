@@ -16,11 +16,12 @@
 
 #pragma once
 
-#include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 
 #include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/device_malloc_allocator.h>
+
+#include <cuda/memory_resource>
 
 namespace rmm::mr {
 /**
@@ -72,7 +73,9 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    * @param mr The resource to be used for device memory allocation
    * @param stream The stream to be used for device memory (de)allocation
    */
-  thrust_allocator(cuda_stream_view stream, device_memory_resource* mr) : _stream{stream}, _mr(mr)
+  thrust_allocator(cuda_stream_view stream,
+                   cuda::stream_ordered_resource_view<cuda::memory_access::device> mr)
+    : _stream{stream}, _mr(mr)
   {
   }
 
@@ -95,7 +98,8 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    */
   pointer allocate(size_type num)
   {
-    return thrust::device_pointer_cast(static_cast<T*>(_mr->allocate(num * sizeof(T), _stream)));
+    return thrust::device_pointer_cast(
+      static_cast<T*>(_mr->allocate_async(num * sizeof(T), _stream.value())));
   }
 
   /**
@@ -107,13 +111,17 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    */
   void deallocate(pointer ptr, size_type num)
   {
-    return _mr->deallocate(thrust::raw_pointer_cast(ptr), num * sizeof(T), _stream);
+    return _mr->deallocate_async(thrust::raw_pointer_cast(ptr), num * sizeof(T), _stream.value());
   }
 
   /**
    * @brief Returns the device memory resource used by this allocator.
    */
-  [[nodiscard]] device_memory_resource* resource() const noexcept { return _mr; }
+  [[nodiscard]] cuda::stream_ordered_resource_view<cuda::memory_access::device> resource()
+    const noexcept
+  {
+    return _mr;
+  }
 
   /**
    * @brief Returns the stream used by this allocator.
@@ -122,6 +130,7 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
 
  private:
   cuda_stream_view _stream{};
-  device_memory_resource* _mr{rmm::mr::get_current_device_resource()};
+  cuda::stream_ordered_resource_view<cuda::memory_access::device> _mr{
+    rmm::mr::get_current_device_resource()};
 };
 }  // namespace rmm::mr

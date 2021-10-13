@@ -18,8 +18,9 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
-#include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
+
+#include <cuda/memory_resource>
 
 #include <type_traits>
 
@@ -80,9 +81,9 @@ class device_scalar {
    * @param stream Stream on which to perform asynchronous allocation.
    * @param mr Optional, resource with which to allocate.
    */
-  explicit device_scalar(
-    cuda_stream_view stream,
-    rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource())
+  explicit device_scalar(cuda_stream_view stream,
+                         cuda::stream_ordered_resource_view<cuda::memory_access::device> mr =
+                           rmm::mr::get_current_device_resource())
     : _storage{1, stream, mr}
   {
   }
@@ -100,13 +101,13 @@ class device_scalar {
    * @throws `rmm::cuda_error` if copying `initial_value` to device memory fails.
    *
    * @param initial_value The initial value of the object in device memory.
-   * @param stream Optional, stream on which to perform allocation and copy.
-   * @param mr Optional, resource with which to allocate.
+   * @param stream Optional stream on which to perform allocation and copy.
+   * @param mr Optional memory resource view with which to allocate.
    */
-  explicit device_scalar(
-    value_type const& initial_value,
-    cuda_stream_view stream,
-    rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource())
+  explicit device_scalar(value_type const& initial_value,
+                         cuda_stream_view stream,
+                         cuda::stream_ordered_resource_view<cuda::memory_access::device> mr =
+                           rmm::mr::get_current_device_resource())
     : _storage{1, stream, mr}
   {
     set_value_async(initial_value, stream);
@@ -121,12 +122,13 @@ class device_scalar {
    * @throws rmm::cuda_error if copying from `other` fails.
    *
    * @param other The `device_scalar` whose contents will be copied
-   * @param stream The stream to use for the allocation and copy
-   * @param mr The resource to use for allocating the new `device_scalar`
+   * @param stream Optional stream on which to perform allocation and copy.
+   * @param mr Optional memory resource view with which to allocate.
    */
   device_scalar(device_scalar const& other,
                 cuda_stream_view stream,
-                rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource())
+                cuda::stream_ordered_resource_view<cuda::memory_access::device> mr =
+                  rmm::mr::get_current_device_resource())
     : _storage{other._storage, stream, mr}
   {
   }

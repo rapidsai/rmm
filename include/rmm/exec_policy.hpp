@@ -38,8 +38,9 @@ using thrust_exec_policy_t =
  */
 class exec_policy : public thrust_exec_policy_t {
  public:
-  explicit exec_policy(cuda_stream_view stream             = cuda_stream_default,
-                       rmm::mr::device_memory_resource* mr = mr::get_current_device_resource())
+  explicit exec_policy(cuda_stream_view stream = cuda_stream_default,
+                       cuda::stream_ordered_resource_view<cuda::memory_access::device> mr =
+                         mr::get_current_device_resource())
     : thrust_exec_policy_t(
         thrust::cuda::par(rmm::mr::thrust_allocator<char>(stream, mr)).on(stream.value()))
   {
