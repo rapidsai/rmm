@@ -200,8 +200,8 @@ class device_uvector {
    * @throws rmm::out_of_range exception if `element_index >= size()`
    *
    * @param element_index Index of the target element
-   * @param v The value to copy to the specified element
-   * @param s The stream on which to perform the copy
+   * @param value The value to copy to the specified element
+   * @param stream The stream on which to perform the copy
    */
   void set_element_async(std::size_t element_index,
                          value_type const& value,
@@ -251,7 +251,7 @@ class device_uvector {
    * @throws rmm::out_of_range exception if `element_index >= size()`
    *
    * @param element_index Index of the target element
-   * @param s The stream on which to perform the copy
+   * @param stream The stream on which to perform the copy
    */
   void set_element_to_zero_async(std::size_t element_index, cuda_stream_view stream)
   {
@@ -512,12 +512,11 @@ class device_uvector {
   /**
    * @brief Sets the stream to be used for deallocation
    *
-   * If no other rmm::device_uvector method that allocates or copies memory is
-   * called after this call with a different stream argument, then @p stream
+   * If no other rmm::device_uvector method that allocates memory is called
+   * after this call with a different stream argument, then @p stream
    * will be used for deallocation in the `rmm::device_uvector destructor.
-   * Otherwise, if another rmm::device_uvector method with a stream parameter is
-   * called after this, the later stream parameter will be stored and used in
-   * the destructor.
+   * However, if either of `resize()` or `shrink_to_fit()` is called after this,
+   * the later stream parameter will be stored and used in the destructor.
    */
   void set_stream(cuda_stream_view stream) noexcept { _storage.set_stream(stream); }
 
