@@ -17,7 +17,7 @@ function(find_and_configure_libcudacxx VERSION)
   rapids_cpm_find(
     libcudacxx ${VERSION}
     GIT_REPOSITORY https://github.com/mzient/libcudacxx.git
-    GIT_TAG memres_view  # ${VERSION}
+    GIT_TAG memres_view # ${VERSION}
     GIT_SHALLOW TRUE DOWNLOAD_ONLY TRUE)
 
   set(LIBCUDACXX_INCLUDE_DIR
