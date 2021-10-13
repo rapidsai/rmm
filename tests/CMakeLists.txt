@@ -107,3 +107,6 @@ ConfigureTest(LOGGER_TEST logger_tests.cpp)
 
 # uvector tests
 ConfigureTest(DEVICE_UVECTOR_TEST device_uvector_tests.cpp)
+
+# resource_view tests
+ConfigureTest(RESOURCE_VIEW_TEST resource_view_tests.cpp)
