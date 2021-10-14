@@ -114,8 +114,12 @@ cdef extern from "rmm/mr/device/tracking_resource_adaptor.hpp" \
 cdef extern from "rmm/mr/device/oom_callback_resource_adaptor.hpp" \
         namespace "rmm::mr" nogil:
     ctypedef bool (*oom_callback_t)(size_t, void*)
-    cdef cppclass oom_callback_resource_adaptor[Upstream](device_memory_resource):
-        oom_callback_resource_adaptor(Upstream* upstream_mr, oom_callback_t callback, void* closure) except +
+    cdef cppclass oom_callback_resource_adaptor[Upstream](
+        device_memory_resource
+    ):
+        oom_callback_resource_adaptor(
+            Upstream* upstream_mr, oom_callback_t callback, void* closure
+        ) except +
 
 
 cdef extern from "rmm/mr/device/per_device_resource.hpp" namespace "rmm" nogil:
