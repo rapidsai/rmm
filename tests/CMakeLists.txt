@@ -82,6 +82,9 @@ ConfigureTest(STATISTICS_TEST mr/device/statistics_mr_tests.cpp)
 # tracking adaptor tests
 ConfigureTest(TRACKING_TEST mr/device/tracking_mr_tests.cpp)
 
+# out-of-memory callback adaptor tests
+ConfigureTest(OOM_CALLBACK_TEST mr/device/oom_callback_mr_tests.cpp)
+
 # aligned adaptor tests
 ConfigureTest(ALIGNED_TEST mr/device/aligned_mr_tests.cpp)
 
