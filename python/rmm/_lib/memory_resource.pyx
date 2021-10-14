@@ -111,6 +111,13 @@ cdef extern from "rmm/mr/device/tracking_resource_adaptor.hpp" \
         string get_outstanding_allocations_str() except +
         void log_outstanding_allocations() except +
 
+cdef extern from "rmm/mr/device/oom_callback_resource_adaptor.hpp" \
+        namespace "rmm::mr" nogil:
+    ctypedef bool (*oom_callback_t)(size_t, void*)
+    cdef cppclass oom_callback_resource_adaptor[Upstream](device_memory_resource):
+        oom_callback_resource_adaptor(Upstream* upstream_mr, oom_callback_t callback, void* closure) except +
+
+
 cdef extern from "rmm/mr/device/per_device_resource.hpp" namespace "rmm" nogil:
 
     cdef cppclass cuda_device_id:
@@ -599,6 +606,44 @@ cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
 
         (<tracking_resource_adaptor[device_memory_resource]*>(
             self.c_obj.get()))[0].log_outstanding_allocations()
+
+
+cdef bool _oom_callback_function(size_t bytes, void *closure) with gil:
+    return (<object>closure)(bytes)
+
+
+cdef class OOMCallbackResourceAdaptor(UpstreamResourceAdaptor):
+
+    def __cinit__(
+        self,
+        DeviceMemoryResource upstream_mr,
+        object callback,
+    ):
+        self._callback = callback
+        self.c_obj.reset(
+            new oom_callback_resource_adaptor[device_memory_resource](
+                upstream_mr.get_mr(),
+                <oom_callback_t>_oom_callback_function,
+                <void*>callback
+            )
+        )
+
+    def __init__(
+        self,
+        DeviceMemoryResource upstream_mr,
+        object callback,
+    ):
+        """
+        Memory resource that call callback when memory allocation fails.
+
+        Parameters
+        ----------
+        upstream : DeviceMemoryResource
+            The upstream memory resource.
+        callback : callable
+            Function called when memory allocation fails.
+        """
+        pass
 
 
 # Global per-device memory resources; dict of int:DeviceMemoryResource

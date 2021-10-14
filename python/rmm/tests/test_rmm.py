@@ -659,3 +659,22 @@ def test_tracking_resource_adaptor():
     # make sure the allocations string is now empty
     assert len(mr2.get_outstanding_allocations_str()) == 0
     assert len(mr.get_outstanding_allocations_str()) == 0
+
+
+def test_oom_callback_resource_adaptor():
+    retried = [False]
+
+    def callback(nbytes: int) -> bool:
+        if retried[0]:
+            return False
+        else:
+            retried[0] = True
+            return True
+
+    cuda_mr = rmm.mr.CudaMemoryResource()
+    mr = rmm.mr.OOMCallbackResourceAdaptor(cuda_mr, callback)
+    rmm.mr.set_current_device_resource(mr)
+
+    with pytest.raises(MemoryError):
+        rmm.DeviceBuffer(size=int(1e11))
+    assert retried[0]
