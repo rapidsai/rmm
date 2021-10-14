@@ -25,6 +25,15 @@ namespace rmm::mr {
 /**
  * @brief Callback function type used by oom_callback_resource_adaptor
  *
+ * The resource adaptor calls this function when a memory allocation throws a
+ * `std::bad_alloc` exception. The function then decide if the resource adaptor
+ * should try to allocate the memory again or re-throw the `std::bad_alloc`
+ * exception.
+ *
+ * `bool oom_callback_t(std::size_t bytes, void* callback_arg)`
+ *   @param bytes Size of the failed memory allocation
+ *   @param arg Extra argument specified when the resource manager was created.
+ *   @return Whether to request a memory allocation retry or re-throw exception.
  */
 using oom_callback_t = bool (*)(std::size_t, void*);
 
@@ -35,7 +44,7 @@ using oom_callback_t = bool (*)(std::size_t, void*);
  * An instance of this resource can be constructed with an existing, upstream
  * resource in order to satisfy allocation requests.
  *
- * The callback function takes an allocation size and a closure and returns
+ * The callback function takes an allocation size and a callback_arg and returns
  * whether to retry the allocation or throw `std::bad_alloc`.
  *
  * @tparam Upstream Type of the upstream resource used for
@@ -51,11 +60,11 @@ class oom_callback_resource_adaptor final : public device_memory_resource {
    * @throws `rmm::logic_error` if `upstream == nullptr`
    *
    * @param upstream The resource used for allocating/deallocating device memory
-   * @param callback Callback function
-   * @param closure Extra argument passed to `callback`
+   * @param callback Callback function <see oom_callback_t>
+   * @param callback_arg Extra argument passed to `callback`
    */
-  oom_callback_resource_adaptor(Upstream* upstream, oom_callback_t callback, void* closure)
-    : upstream_{upstream}, callback_{callback}, closure_{closure}
+  oom_callback_resource_adaptor(Upstream* upstream, oom_callback_t callback, void* callback_arg)
+    : upstream_{upstream}, callback_{callback}, callback_arg_{callback_arg}
   {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
   }
@@ -114,7 +123,7 @@ class oom_callback_resource_adaptor final : public device_memory_resource {
         break;
       } catch (std::bad_alloc const& e) {
         // Call callback
-        if (!(*callback_)(bytes, closure_)) { throw; }
+        if (!(*callback_)(bytes, callback_arg_)) { throw; }
       }
     }
     return ret;
@@ -166,7 +175,7 @@ class oom_callback_resource_adaptor final : public device_memory_resource {
 
   Upstream* upstream_;  // the upstream resource used for satisfying allocation requests
   oom_callback_t callback_;
-  void* closure_;
+  void* callback_arg_;
 };
 
 }  // namespace rmm::mr
