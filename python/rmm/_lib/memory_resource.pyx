@@ -118,7 +118,7 @@ cdef extern from "rmm/mr/device/oom_callback_resource_adaptor.hpp" \
         device_memory_resource
     ):
         oom_callback_resource_adaptor(
-            Upstream* upstream_mr, oom_callback_t callback, void* closure
+            Upstream* upstream_mr, oom_callback_t callback, void* callback_arg
         ) except +
 
 
@@ -612,8 +612,8 @@ cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
             self.c_obj.get()))[0].log_outstanding_allocations()
 
 
-cdef bool _oom_callback_function(size_t bytes, void *closure) with gil:
-    return (<object>closure)(bytes)
+cdef bool _oom_callback_function(size_t bytes, void *callback_arg) with gil:
+    return (<object>callback_arg)(bytes)
 
 
 cdef class OOMCallbackResourceAdaptor(UpstreamResourceAdaptor):
