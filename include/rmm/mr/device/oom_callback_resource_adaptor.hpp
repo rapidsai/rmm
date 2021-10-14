@@ -26,7 +26,7 @@ namespace rmm::mr {
  * @brief Callback function type used by oom_callback_resource_adaptor
  *
  */
-using oom_callback_t = bool (*)(std::size_t, void *);
+using oom_callback_t = bool (*)(std::size_t, void*);
 
 /**
  * @brief Resource that uses `Upstream` to allocate memory and calls `callback`
@@ -44,7 +44,6 @@ using oom_callback_t = bool (*)(std::size_t, void *);
 template <typename Upstream>
 class oom_callback_resource_adaptor final : public device_memory_resource {
  public:
-
   /**
    * @brief Construct a new OOM callback resource adaptor using `upstream` to satisfy
    * allocation requests.
@@ -55,13 +54,14 @@ class oom_callback_resource_adaptor final : public device_memory_resource {
    * @param callback Callback function
    * @param closure Extra argument passed to `callback`
    */
-  oom_callback_resource_adaptor(Upstream* upstream, oom_callback_t callback, void *closure) : upstream_{upstream}, callback_{callback}, closure_{closure}
+  oom_callback_resource_adaptor(Upstream* upstream, oom_callback_t callback, void* closure)
+    : upstream_{upstream}, callback_{callback}, closure_{closure}
   {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
   }
 
-  oom_callback_resource_adaptor()                                 = delete;
-  ~oom_callback_resource_adaptor() override                       = default;
+  oom_callback_resource_adaptor()                                     = delete;
+  ~oom_callback_resource_adaptor() override                           = default;
   oom_callback_resource_adaptor(oom_callback_resource_adaptor const&) = delete;
   oom_callback_resource_adaptor& operator=(oom_callback_resource_adaptor const&) = delete;
   oom_callback_resource_adaptor(oom_callback_resource_adaptor&&) noexcept        = default;
@@ -112,11 +112,9 @@ class oom_callback_resource_adaptor final : public device_memory_resource {
       try {
         ret = upstream_->allocate(bytes, stream);
         break;
-      } catch (std::bad_alloc const &e) {
+      } catch (std::bad_alloc const& e) {
         // Call callback
-        if (!(*callback_)(bytes, closure_)) {
-          throw;
-        }
+        if (!(*callback_)(bytes, closure_)) { throw; }
       }
     }
     return ret;
