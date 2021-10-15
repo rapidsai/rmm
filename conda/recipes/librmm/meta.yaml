@@ -2,6 +2,7 @@
 
 {% set version = environ.get('GIT_DESCRIBE_TAG', '0.0.0.dev').lstrip('v') + environ.get('VERSION_SUFFIX', '') %}
 {% set cuda_version='.'.join(environ.get('CUDA', '9.2').split('.')[:2]) %}
+{% set cuda_major=cuda_version.split('.')[0] %}
 package:
   name: librmm
   version: {{ version }}
@@ -11,7 +12,7 @@ source:
 
 build:
   number: {{ GIT_DESCRIBE_NUMBER }}
-  string: cuda{{ cuda_version }}_{{ GIT_DESCRIBE_HASH }}_{{ GIT_DESCRIBE_NUMBER }}
+  string: cuda{{ cuda_major }}_{{ GIT_DESCRIBE_HASH }}_{{ GIT_DESCRIBE_NUMBER }}
   script_env:
     - CC
     - CXX
@@ -34,7 +35,7 @@ requirements:
   host:
     - cudatoolkit {{ cuda_version }}.*
   run:
-    - {{ pin_compatible('cudatoolkit', max_pin='x.x') }}
+    - {{ pin_compatible('cudatoolkit', max_pin='x', min_pin='x') }}
     - spdlog>=1.8.5,<1.9
 
 test:
