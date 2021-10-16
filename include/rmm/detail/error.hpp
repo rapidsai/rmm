@@ -168,22 +168,21 @@ class out_of_range : public std::out_of_range {
   GET_RMM_CUDA_TRY_MACRO(__VA_ARGS__, RMM_CUDA_TRY_4, INVALID, RMM_CUDA_TRY_2, RMM_CUDA_TRY_1) \
   (__VA_ARGS__)
 #define GET_RMM_CUDA_TRY_MACRO(_1, _2, _3, _4, NAME, ...) NAME
-#define RMM_CUDA_TRY_4(_call, _exception_type, _custom_error, _custom_exception_type)        \
-  do {                                                                                       \
-    cudaError_t const error = (_call);                                                       \
-    if (cudaSuccess != error) {                                                              \
-      cudaGetLastError();                                                                    \
-      auto const msg = std::string{"CUDA error at: "} + __FILE__ + ":" +                     \
-                       RMM_STRINGIFY(__LINE__) + ": " + cudaGetErrorName(error) + " " +      \
-                       cudaGetErrorString(error);                                            \
-      if ((_custom_error) == error) {                                                        \
-        /*NOLINTNEXTLINE(bugprone-macro-parentheses)*/                                       \
-        throw _custom_exception_type{msg};                                                   \
-      } else {                                                                               \
-        /*NOLINTNEXTLINE(bugprone-macro-parentheses)*/                                       \
-        throw _exception_type{msg};                                                          \
-      }                                                                                      \
-    }                                                                                        \
+#define RMM_CUDA_TRY_4(_call, _exception_type, _custom_error, _custom_exception_type)              \
+  do {                                                                                             \
+    cudaError_t const error = (_call);                                                             \
+    if (cudaSuccess != error) {                                                                    \
+      cudaGetLastError();                                                                          \
+      auto const msg = std::string{"CUDA error at: "} + __FILE__ + ":" + RMM_STRINGIFY(__LINE__) + \
+                       ": " + cudaGetErrorName(error) + " " + cudaGetErrorString(error);           \
+      if ((_custom_error) == error) {                                                              \
+        /*NOLINTNEXTLINE(bugprone-macro-parentheses)*/                                             \
+        throw _custom_exception_type{msg};                                                         \
+      } else {                                                                                     \
+        /*NOLINTNEXTLINE(bugprone-macro-parentheses)*/                                             \
+        throw _exception_type{msg};                                                                \
+      }                                                                                            \
+    }                                                                                              \
   } while (0)
 #define RMM_CUDA_TRY_2(_call, _exception_type) \
   RMM_CUDA_TRY_4(_call, _exception_type, cudaSuccess, rmm::cuda_error)

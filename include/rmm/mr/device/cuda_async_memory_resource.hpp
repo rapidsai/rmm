@@ -149,7 +149,9 @@ class cuda_async_memory_resource final : public device_memory_resource {
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
     if (bytes > 0) {
       RMM_CUDA_TRY(cudaMallocFromPoolAsync(&ptr, bytes, pool_handle(), stream.value()),
-                   rmm::bad_alloc, cudaErrorMemoryAllocation, rmm::out_of_memory);
+                   rmm::bad_alloc,
+                   cudaErrorMemoryAllocation,
+                   rmm::out_of_memory);
     }
 #else
     (void)bytes;
