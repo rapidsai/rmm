@@ -61,6 +61,16 @@ class bad_alloc : public std::bad_alloc {
 };
 
 /**
+ * @brief Exception thrown when RMM runs out of memory
+ *
+ */
+class out_of_memory : public bad_alloc {
+ public:
+  out_of_memory(const char* msg) : bad_alloc{msg} {}
+  out_of_memory(std::string const& msg) : bad_alloc{msg} {}
+};
+
+/**
  * @brief Exception thrown when attempting to access outside of a defined range
  *
  */
@@ -147,24 +157,36 @@ class out_of_range : public std::out_of_range {
  *
  * // Throws `std::runtime_error` if `cudaMalloc` fails
  * RMM_CUDA_TRY(cudaMalloc(&p, 100), std::runtime_error);
+ *
+ * // Throws `rmm::bad_alloc` if `cudaMalloc` fails, but throw `rmm::out_of_memory` if
+ * // the error code is `cudaErrorMemoryAllocation`
+ * RMM_CUDA_TRY(cudaMalloc(&p, 100), rmm::bad_alloc, cudaErrorMemoryAllocation, rmm::out_of_memory);
  * ```
  *
  */
-#define RMM_CUDA_TRY(...)                                             \
-  GET_RMM_CUDA_TRY_MACRO(__VA_ARGS__, RMM_CUDA_TRY_2, RMM_CUDA_TRY_1) \
+#define RMM_CUDA_TRY(...)                                                                      \
+  GET_RMM_CUDA_TRY_MACRO(__VA_ARGS__, RMM_CUDA_TRY_4, INVALID, RMM_CUDA_TRY_2, RMM_CUDA_TRY_1) \
   (__VA_ARGS__)
-#define GET_RMM_CUDA_TRY_MACRO(_1, _2, NAME, ...) NAME
-#define RMM_CUDA_TRY_2(_call, _exception_type)                                               \
+#define GET_RMM_CUDA_TRY_MACRO(_1, _2, _3, _4, NAME, ...) NAME
+#define RMM_CUDA_TRY_4(_call, _exception_type, _custom_error, _custom_exception_type)        \
   do {                                                                                       \
     cudaError_t const error = (_call);                                                       \
     if (cudaSuccess != error) {                                                              \
       cudaGetLastError();                                                                    \
-      /*NOLINTNEXTLINE(bugprone-macro-parentheses)*/                                         \
-      throw _exception_type{std::string{"CUDA error at: "} + __FILE__ + ":" +                \
-                            RMM_STRINGIFY(__LINE__) + ": " + cudaGetErrorName(error) + " " + \
-                            cudaGetErrorString(error)};                                      \
+      auto const msg = std::string{"CUDA error at: "} + __FILE__ + ":" +                     \
+                       RMM_STRINGIFY(__LINE__) + ": " + cudaGetErrorName(error) + " " +      \
+                       cudaGetErrorString(error);                                            \
+      if ((_custom_error) == error) {                                                        \
+        /*NOLINTNEXTLINE(bugprone-macro-parentheses)*/                                       \
+        throw _custom_exception_type{msg};                                                   \
+      } else {                                                                               \
+        /*NOLINTNEXTLINE(bugprone-macro-parentheses)*/                                       \
+        throw _exception_type{msg};                                                          \
+      }                                                                                      \
     }                                                                                        \
   } while (0)
+#define RMM_CUDA_TRY_2(_call, _exception_type) \
+  RMM_CUDA_TRY_4(_call, _exception_type, cudaSuccess, rmm::cuda_error)
 #define RMM_CUDA_TRY_1(_call) RMM_CUDA_TRY_2(_call, rmm::cuda_error)
 
 /**
