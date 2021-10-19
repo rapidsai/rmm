@@ -16,46 +16,30 @@
 
 #include <rmm/cuda_device.hpp>
 #include <rmm/detail/error.hpp>
-#include <rmm/mr/device/cuda_async_memory_resource.hpp>
+#include <rmm/mr/device/cuda_pool_wrapper.hpp>
 
 #include <gtest/gtest.h>
 
 namespace rmm::test {
 namespace {
 
-using cuda_async_mr = rmm::mr::cuda_async_memory_resource;
-
-TEST(PoolTest, ThrowIfNotSupported)
-{
-  auto construct_mr = []() { cuda_async_mr mr; };
-#ifndef RMM_CUDA_MALLOC_ASYNC_SUPPORT
-  EXPECT_THROW(construct_mr(), rmm::logic_error);
-#else
-  EXPECT_NO_THROW(construct_mr());
-#endif
-}
+using cuda_async_mr = rmm::mr::cuda_pool_wrapper;
 
 #if defined(RMM_CUDA_MALLOC_ASYNC_SUPPORT)
-TEST(PoolTest, ExplicitInitialPoolSize)
+
+TEST(PoolTest, UsePool)
 {
+  cudaMemPool_t memPool{};
+  RMM_CUDA_TRY(cudaDeviceGetDefaultMemPool(&memPool, rmm::detail::current_device().value()));
+
   const auto pool_init_size{100};
-  cuda_async_mr mr{pool_init_size};
+  cuda_async_mr mr{memPool};
   void* ptr = mr.allocate(pool_init_size);
   mr.deallocate(ptr, pool_init_size);
   RMM_CUDA_TRY(cudaDeviceSynchronize());
 }
 
-TEST(PoolTest, ExplicitReleaseThreshold)
-{
-  const auto pool_init_size{100};
-  const auto pool_release_threshold{1000};
-  cuda_async_mr mr{pool_init_size, pool_release_threshold};
-  void* ptr = mr.allocate(pool_init_size);
-  mr.deallocate(ptr, pool_init_size);
-  RMM_CUDA_TRY(cudaDeviceSynchronize());
-}
-
-TEST(PoolTest, TakingOwnershipOfPool)
+TEST(PoolTest, NotTakingOwnershipOfPool)
 {
   cudaMemPoolProps poolProps = { };
   poolProps.allocType = cudaMemAllocationTypePinned;
@@ -76,31 +60,19 @@ TEST(PoolTest, TakingOwnershipOfPool)
 
   }
 
-  auto destroy_invalid_pool = [&](){
+  auto destroy_valid_pool = [&](){
     auto result = cudaMemPoolDestroy(memPool);
-    RMM_EXPECTS(result == cudaErrorInvalidValue, "Owning mr did not destroy owned pool");
+    RMM_EXPECTS(result == cudaSuccess, "Pool wrapper did destroy pool");
   };
 
-  EXPECT_NO_THROW(destroy_invalid_pool());
+  EXPECT_NO_THROW(destroy_valid_pool());
 }
 
 TEST(PoolTest, ThrowIfNullptrPool)
 {
-  auto construct_mr = []() {
-    cudaMemPool_t memPool{nullptr};
-    cuda_async_mr mr{memPool};
-  };
-
-  EXPECT_THROW(construct_mr(), rmm::logic_error);
-}
-
-TEST(PoolTest, ThrowIfDefaultPool)
-{
-  auto construct_mr = []() {
-    cudaMemPool_t memPool{};
-    RMM_CUDA_TRY(cudaDeviceGetDefaultMemPool(&memPool, rmm::detail::current_device().value()));
-
-    cuda_async_mr mr{memPool};
+  auto construct_mr = []() { 
+    cudaMemPool_t memPool{nullptr}; 
+    cuda_async_mr mr{memPool}; 
   };
 
   EXPECT_THROW(construct_mr(), rmm::logic_error);
