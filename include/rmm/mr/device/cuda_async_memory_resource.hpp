@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
 __attribute__((weak)) cudaError_t cudaFreeAsync(void* devPtr, cudaStream_t hStream);
 __attribute__((weak)) cudaError_t cudaMallocFromPoolAsync(void** ptr,
                                                           size_t size,
@@ -26,6 +27,7 @@ __attribute__((weak)) cudaError_t cudaMemPoolDestroy(cudaMemPool_t memPool);
 __attribute__((weak)) cudaError_t cudaMemPoolSetAttribute(cudaMemPool_t memPool,
                                                           cudaMemPoolAttr attr,
                                                           void* value);
+#endif
 
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream_view.hpp>
