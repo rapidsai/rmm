@@ -24,8 +24,8 @@ __attribute__((weak)) cudaError_t cudaMemPoolCreate(cudaMemPool_t* memPool,
                                                     const cudaMemPoolProps* poolProps);
 __attribute__((weak)) cudaError_t cudaMemPoolDestroy(cudaMemPool_t memPool);
 __attribute__((weak)) cudaError_t cudaMemPoolSetAttribute(cudaMemPool_t memPool,
-                                                           cudaMemPoolAttr attr,
-                                                           void* value);
+                                                          cudaMemPoolAttr attr,
+                                                          void* value);
 
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream_view.hpp>
