@@ -23,7 +23,7 @@ __attribute__((weak)) cudaError_t cudaMallocFromPoolAsync(void** ptr,
 __attribute__((weak)) cudaError_t cudaMemPoolCreate(cudaMemPool_t* memPool,
                                                     const cudaMemPoolProps* poolProps);
 __attribute__((weak)) cudaError_t cudaMemPoolDestroy(cudaMemPool_t memPool);
-__attribute__((weak)) cudaeError_t cudaMemPoolSetAttribute(cudaMemPool_t memPool,
+__attribute__((weak)) cudaError_t cudaMemPoolSetAttribute(cudaMemPool_t memPool,
                                                            cudaMemPoolAttr attr,
                                                            void* value);
 
