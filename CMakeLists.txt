@@ -50,6 +50,10 @@ message(STATUS "RMM: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'")
 # cudart can be statically linked or dynamically linked the python ecosystem wants dynamic linking
 option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
 
+if(NOT RMM_GENERATED_INCLUDE_DIR)
+  set(RMM_GENERATED_INCLUDE_DIR ${RMM_BINARY_DIR})
+endif()
+
 # find packages we depend on
 rapids_find_package(
   CUDAToolkit REQUIRED
@@ -131,7 +135,39 @@ set(code_string
 if(NOT TARGET rmm::Thrust)
   thrust_create_target(rmm::Thrust FROM_OPTIONS)
 endif()
+
+# nvcc automatically adds the CUDA Toolkit system include paths before any
+# system include paths that CMake adds.
+#
+# CMake implicitly treats all includes on import targets as 'SYSTEM' includes.
+#
+# To get the cudacxx shipped with RMM to be picked up by consumers instead of the
+# version shipped with the CUDA Toolkit we need to make sure it is a non-SYSTEM
+# include on the CMake side.
+#
+# To do this currently, we move the includes from the cudf::cudf target to a
+# non-import target to ensure they are `-I` instead of `-isystem`
+
+add_library(rmm_non_system_includes INTERFACE)
+target_link_libraries(rmm::rmm INTERFACE rmm_non_system_includes)
+
+get_target_property(all_includes rmm::rmm INTERFACE_INCLUDE_DIRECTORIES)
+set(system_includes )
+set(normal_includes )
+foreach(include IN LISTS all_includes)
+  if(include MATCHES "/libcudacxx")
+    list(APPEND normal_includes "${include}")
+  else()
+    list(APPEND system_includes "${include}")
+  endif()
+endforeach()
+set_target_properties(rmm::rmm PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${system_includes}")
+set_target_properties(rmm_non_system_includes PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${normal_includes}")
 ]=])
+
+# TODO temporary: force dependents to find RMM's version of libcudacxx
+string(APPEND code_string "set(LIBCUDACXX_INCLUDE_DIR \"${LIBCUDACXX_INCLUDE_DIR}\" CACHE PATH \"\")\n")
+string(APPEND code_string "set(LIBCXX_INCLUDE_DIR \"${LIBCXX_INCLUDE_DIR}\" CACHE PATH \"\")\n")
 
 rapids_export(
   INSTALL rmm
