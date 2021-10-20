@@ -17,6 +17,8 @@
 
 #include <rmm/mr/device/device_memory_resource.hpp>
 
+#include <cuda/memory_resource>
+
 #include <functional>
 #include <iostream>
 #include <memory>
@@ -190,7 +192,8 @@ class owning_wrapper : public device_memory_resource {
    * @return true If the two resources are equal
    * @return false If the two resources are not equal
    */
-  [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
+  [[nodiscard]] bool do_is_equal(
+    cuda::memory_resource<memory_kind> const& other) const noexcept override
   {
     if (this == &other) { return true; }
     auto casted = dynamic_cast<owning_wrapper<Resource, Upstreams...> const*>(&other);

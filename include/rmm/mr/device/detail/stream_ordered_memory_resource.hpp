@@ -20,6 +20,8 @@
 #include <rmm/logger.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
+#include <cuda/memory_resource>
+
 #include <cuda_runtime_api.h>
 
 #include <cstddef>
@@ -265,7 +267,8 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equal
    */
-  [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
+  [[nodiscard]] bool do_is_equal(
+    cuda::memory_resource<memory_kind> const& other) const noexcept override
   {
     return this == &other;
   }

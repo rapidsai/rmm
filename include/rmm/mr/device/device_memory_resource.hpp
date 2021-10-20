@@ -26,34 +26,28 @@
 // This macro defines overrides of `cuda::stream_ordered_memory_resource` APIs that are needed
 // for compatibility while we transition to using `cuda::memory_resource` as the base classes for
 // RMM MRs. Most derived MR classes will need this line added. They also need to add an explicit
-// override of the `device_memory_resource` overload of `do_is_equal`
-#define TEMPORARY_BASE_CLASS_OVERRIDES                                                          \
-  void* do_allocate(std::size_t bytes, std::size_t alignment) override                          \
-  {                                                                                             \
-    return do_allocate(bytes, rmm::cuda_stream_default);                                        \
-  }                                                                                             \
-  void* do_allocate_async(std::size_t bytes, std::size_t alignment, cuda::stream_view stream)   \
-    override                                                                                    \
-  {                                                                                             \
-    return do_allocate(bytes, stream.get());                                                    \
-  }                                                                                             \
-  void do_deallocate(void* ptr, std::size_t bytes, std::size_t alignment) override              \
-  {                                                                                             \
-    return do_deallocate(ptr, bytes, rmm::cuda_stream_default);                                 \
-  }                                                                                             \
-  void do_deallocate_async(                                                                     \
-    void* ptr, std::size_t bytes, std::size_t alignment, cuda::stream_view stream) override     \
-  {                                                                                             \
-    return do_deallocate(ptr, bytes, stream.get());                                             \
-  }                                                                                             \
-  [[nodiscard]] bool do_is_equal(cuda::memory_resource<cuda::memory_kind::device> const& other) \
-    const noexcept override                                                                     \
-  {                                                                                             \
-    return this == &other;                                                                      \
+// override of `do_is_equal(cuda::memory_resource<memory_kind>)`
+#define TEMPORARY_BASE_CLASS_OVERRIDES                                                        \
+  void* do_allocate(std::size_t bytes, std::size_t alignment) override                        \
+  {                                                                                           \
+    return do_allocate(bytes, rmm::cuda_stream_default);                                      \
+  }                                                                                           \
+  void* do_allocate_async(std::size_t bytes, std::size_t alignment, cuda::stream_view stream) \
+    override                                                                                  \
+  {                                                                                           \
+    return do_allocate(bytes, stream.get());                                                  \
+  }                                                                                           \
+  void do_deallocate(void* ptr, std::size_t bytes, std::size_t alignment) override            \
+  {                                                                                           \
+    return do_deallocate(ptr, bytes, rmm::cuda_stream_default);                               \
+  }                                                                                           \
+  void do_deallocate_async(                                                                   \
+    void* ptr, std::size_t bytes, std::size_t alignment, cuda::stream_view stream) override   \
+  {                                                                                           \
+    return do_deallocate(ptr, bytes, stream.get());                                           \
   }
 
 namespace rmm::mr {
-
 /**
  * @brief Base class for all libcudf device memory allocation.
  *
@@ -164,24 +158,6 @@ class device_memory_resource
   }
 
   /**
-   * @brief Compare this resource to another.
-   *
-   * Two device_memory_resources compare equal if and only if memory allocated
-   * from one device_memory_resource can be deallocated from the other and vice
-   * versa.
-   *
-   * By default, simply checks if \p *this and \p other refer to the same
-   * object, i.e., does not check if they are two objects of the same class.
-   *
-   * @param other The other resource to compare to
-   * @returns If the two resources are equivalent
-   */
-  [[nodiscard]] bool is_equal(device_memory_resource const& other) const noexcept
-  {
-    return do_is_equal(other);
-  }
-
-  /**
    * @brief Query whether the resource supports use of non-null CUDA streams for
    * allocation/deallocation.
    *
@@ -241,25 +217,6 @@ class device_memory_resource
    * @param stream Stream on which to perform deallocation
    */
   virtual void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) = 0;
-
-  /**
-   * @brief Compare this resource to another.
-   *
-   * Two device_memory_resources compare equal if and only if memory allocated
-   * from one device_memory_resource can be deallocated from the other and vice
-   * versa.
-   *
-   * By default, simply checks if \p *this and \p other refer to the same
-   * object, i.e., does not check if they are two objects of the same class.
-   *
-   * @param other The other resource to compare to
-   * @return true If the two resources are equivalent
-   * @return false If the two resources are not equal
-   */
-  [[nodiscard]] virtual bool do_is_equal(device_memory_resource const& other) const noexcept
-  {
-    return this == &other;
-  }
 
   /**
    * @brief Get free and available memory for memory resource

@@ -120,7 +120,7 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equivalent
    */
-  bool do_is_equal(device_memory_resource const& other) const noexcept override
+  bool do_is_equal(cuda::memory_resource<memory_kind> const& other) const noexcept override
   {
     if (this == &other) { return true; }
     auto thread_safe_other = dynamic_cast<thread_safe_resource_adaptor<Upstream> const*>(&other);

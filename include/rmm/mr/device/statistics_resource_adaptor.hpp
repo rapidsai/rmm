@@ -17,6 +17,8 @@
 
 #include <rmm/mr/device/device_memory_resource.hpp>
 
+#include <cuda/memory_resource>
+
 #include <cstddef>
 #include <mutex>
 #include <shared_mutex>
@@ -200,7 +202,7 @@ class statistics_resource_adaptor final : public device_memory_resource {
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equal
    */
-  bool do_is_equal(device_memory_resource const& other) const noexcept override
+  bool do_is_equal(cuda::memory_resource<memory_kind> const& other) const noexcept override
   {
     if (this == &other) { return true; }
     auto cast = dynamic_cast<statistics_resource_adaptor<Upstream> const*>(&other);

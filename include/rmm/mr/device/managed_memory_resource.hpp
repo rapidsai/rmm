@@ -15,10 +15,11 @@
  */
 #pragma once
 
-#include <rmm/mr/device/device_memory_resource.hpp>
-
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/mr/device/device_memory_resource.hpp>
+
+#include <cuda/memory_resource>
 
 #include <cstddef>
 
@@ -103,7 +104,8 @@ class managed_memory_resource final : public device_memory_resource {
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equal
    */
-  [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
+  [[nodiscard]] bool do_is_equal(
+    cuda::memory_resource<memory_kind> const& other) const noexcept override
   {
     return dynamic_cast<managed_memory_resource const*>(&other) != nullptr;
   }

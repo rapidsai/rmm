@@ -24,6 +24,8 @@
 #include <spdlog/sinks/ostream_sink.h>
 #include <spdlog/spdlog.h>
 
+#include <cuda/memory_resource>
+
 #include <cstddef>
 #include <memory>
 #include <sstream>
@@ -245,7 +247,8 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equal
    */
-  [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
+  [[nodiscard]] bool do_is_equal(
+    cuda::memory_resource<memory_kind> const& other) const noexcept override
   {
     if (this == &other) { return true; }
     auto const* cast = dynamic_cast<logging_resource_adaptor<Upstream> const*>(&other);

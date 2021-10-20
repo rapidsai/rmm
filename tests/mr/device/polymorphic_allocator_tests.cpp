@@ -14,14 +14,17 @@
  * limitations under the License.
  */
 
-#include <memory>
-
-#include <gtest/gtest.h>
 #include <rmm/cuda_stream.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/polymorphic_allocator.hpp>
+
+#include <cuda/memory_resource>
+
+#include <gtest/gtest.h>
+
+#include <memory>
 
 namespace {
 
@@ -32,14 +35,14 @@ struct allocator_test : public ::testing::Test {
 TEST_F(allocator_test, default_resource)
 {
   rmm::mr::polymorphic_allocator<int> allocator{};
-  EXPECT_EQ(allocator.resource(), rmm::mr::get_current_device_resource());
+  EXPECT_EQ(allocator.resource(), cuda::view_resource(rmm::mr::get_current_device_resource()));
 }
 
 TEST_F(allocator_test, custom_resource)
 {
   rmm::mr::cuda_memory_resource mr;
   rmm::mr::polymorphic_allocator<int> allocator{&mr};
-  EXPECT_EQ(allocator.resource(), &mr);
+  EXPECT_EQ(allocator.resource(), cuda::view_resource(&mr));
 }
 
 void test_conversion(rmm::mr::polymorphic_allocator<int> /*unused*/) {}
@@ -47,7 +50,9 @@ void test_conversion(rmm::mr::polymorphic_allocator<int> /*unused*/) {}
 TEST_F(allocator_test, implicit_conversion)
 {
   rmm::mr::cuda_memory_resource mr;
-  test_conversion(&mr);
+  // TODO: with C++20 hopefully we can use CTAD on alias templates to do something more like this
+  // test_conversion(cuda::stream_ordered_resource_view{&mr});
+  test_conversion(cuda::stream_ordered_resource_view<cuda::memory_access::device>{&mr});
 }
 
 TEST_F(allocator_test, self_equality)
