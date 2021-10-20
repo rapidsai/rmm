@@ -162,11 +162,13 @@ foreach(include IN LISTS all_includes)
   endif()
 endforeach()
 set_target_properties(rmm::rmm PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${system_includes}")
-set_target_properties(rmm_non_system_includes PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${normal_includes}")
+set_target_properties(rmm_non_system_includes
+                      PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${normal_includes}")
 ]=])
 
 # TODO temporary: force dependents to find RMM's version of libcudacxx
-string(APPEND code_string "set(LIBCUDACXX_INCLUDE_DIR \"${LIBCUDACXX_INCLUDE_DIR}\" CACHE PATH \"\")\n")
+string(APPEND code_string
+       "set(LIBCUDACXX_INCLUDE_DIR \"${LIBCUDACXX_INCLUDE_DIR}\" CACHE PATH \"\")\n")
 string(APPEND code_string "set(LIBCXX_INCLUDE_DIR \"${LIBCXX_INCLUDE_DIR}\" CACHE PATH \"\")\n")
 
 rapids_export(
