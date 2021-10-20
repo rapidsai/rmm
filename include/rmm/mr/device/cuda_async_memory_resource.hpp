@@ -79,6 +79,16 @@ class cuda_async_memory_resource final : public device_memory_resource {
     // Check if cudaMallocAsync Memory pool supported
     auto const device = rmm::detail::current_device();
     int cuda_pool_supported{};
+
+    // We first need to check if the runtime version supports cudaMemPool
+    // before checking that the driver does.
+    int version = 0;
+    RMM_CUDA_TRY(cudaRuntimeGetVersion(&version));
+    if (version < 11020) {
+      RMM_FAIL(
+        "cudaMallocAsync not supported by the version of the CUDA Runtime used when executing");
+    }
+
     auto result =
       cudaDeviceGetAttribute(&cuda_pool_supported, cudaDevAttrMemoryPoolsSupported, device.value());
     RMM_EXPECTS(result == cudaSuccess && cuda_pool_supported,
