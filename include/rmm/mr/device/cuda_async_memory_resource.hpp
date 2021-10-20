@@ -15,19 +15,26 @@
  */
 #pragma once
 
-#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
-__attribute__((weak)) cudaError_t cudaFreeAsync(void* devPtr, cudaStream_t hStream);
-__attribute__((weak)) cudaError_t cudaMallocFromPoolAsync(void** ptr,
+#if CUDART_VERSION >= 11020  // 11.2 introduced cudaMallocAsync
+#define RMM_CUDA_MALLOC_ASYNC_SUPPORT
+
+#define RMM_WEAK_ATTRIBUTE __attribute__((weak))
+
+RMM_WEAK_ATTRIBUTE cudaError_t cudaFreeAsync(void* devPtr, cudaStream_t hStream);
+RMM_WEAK_ATTRIBUTE cudaError_t cudaMallocFromPoolAsync(void** ptr,
                                                           size_t size,
                                                           cudaMemPool_t memPool,
                                                           cudaStream_t stream);
-__attribute__((weak)) cudaError_t cudaMemPoolCreate(cudaMemPool_t* memPool,
+RMM_WEAK_ATTRIBUTE cudaError_t cudaMemPoolCreate(cudaMemPool_t* memPool,
                                                     const cudaMemPoolProps* poolProps);
-__attribute__((weak)) cudaError_t cudaMemPoolDestroy(cudaMemPool_t memPool);
-__attribute__((weak)) cudaError_t cudaMemPoolSetAttribute(cudaMemPool_t memPool,
+RMM_WEAK_ATTRIBUTE cudaError_t cudaMemPoolDestroy(cudaMemPool_t memPool);
+RMM_WEAK_ATTRIBUTE cudaError_t cudaMemPoolSetAttribute(cudaMemPool_t memPool,
                                                           cudaMemPoolAttr attr,
                                                           void* value);
+
+#undef RMM_WEAK_ATTRIBUTE
 #endif
+
 
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream_view.hpp>
@@ -41,10 +48,6 @@ __attribute__((weak)) cudaError_t cudaMemPoolSetAttribute(cudaMemPool_t memPool,
 
 #include <cstddef>
 #include <limits>
-
-#if CUDART_VERSION >= 11020  // 11.2 introduced cudaMallocAsync
-#define RMM_CUDA_MALLOC_ASYNC_SUPPORT
-#endif
 
 namespace rmm::mr {
 
