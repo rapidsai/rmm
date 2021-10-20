@@ -18,7 +18,9 @@
 #if CUDART_VERSION >= 11020  // 11.2 introduced cudaMallocAsync
 #define RMM_CUDA_MALLOC_ASYNC_SUPPORT
 
+#ifndef RMM_WEAK_ATTRIBUTE
 #define RMM_WEAK_ATTRIBUTE __attribute__((weak))
+#endif
 
 RMM_WEAK_ATTRIBUTE cudaError_t cudaFreeAsync(void* devPtr, cudaStream_t hStream);
 RMM_WEAK_ATTRIBUTE cudaError_t cudaMallocFromPoolAsync(void** ptr,
