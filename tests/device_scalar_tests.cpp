@@ -27,13 +27,15 @@
 #include <cstddef>
 #include <random>
 #include <type_traits>
+#include "cuda/memory_resource"
 
 template <typename T>
 struct DeviceScalarTest : public ::testing::Test {
   std::default_random_engine generator{};
   T value{};
   rmm::cuda_stream stream{};
-  rmm::mr::device_memory_resource* mr{rmm::mr::get_current_device_resource()};
+  cuda::stream_ordered_resource_view<cuda::memory_access::device> mr{
+    rmm::mr::get_current_device_resource()};
 
   DeviceScalarTest() : value{random_value()} {}
 
