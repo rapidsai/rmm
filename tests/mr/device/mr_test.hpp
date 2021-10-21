@@ -87,12 +87,12 @@ inline void test_allocate(rmm::mr::device_memory_resource* mr,
                           std::size_t bytes,
                           cuda_stream_view stream = {})
 {
-  void* ptr = mr->allocate(bytes);
+  void* ptr = mr->allocate(bytes, stream);
   if (not stream.is_default()) { stream.synchronize(); }
   EXPECT_NE(nullptr, ptr);
   EXPECT_TRUE(rmm::detail::is_pointer_aligned(ptr));
   EXPECT_TRUE(is_device_memory(ptr));
-  mr->deallocate(ptr, bytes);
+  mr->deallocate(ptr, bytes, stream);
   if (not stream.is_default()) { stream.synchronize(); }
 }
 
