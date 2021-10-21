@@ -19,6 +19,8 @@
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
+#include <cuda/memory_resource>
+
 #include <cstddef>
 #include <mutex>
 
@@ -29,10 +31,7 @@ namespace rmm::mr {
  * An instance of this resource can be constructured with an existing, upstream resource in order
  * to satisfy allocation requests. This adaptor wraps allocations and deallocations from Upstream
  * in a mutex lock.
- *
- * @tparam Upstream Type of the upstream resource used for allocation/deallocation.
  */
-template <typename Upstream>
 class thread_safe_resource_adaptor final : public device_memory_resource {
  public:
   using lock_t = std::lock_guard<std::mutex>;
@@ -47,9 +46,13 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
    *
    * @param upstream The resource used for allocating/deallocating device memory.
    */
-  thread_safe_resource_adaptor(Upstream* upstream) : upstream_{upstream}
+  thread_safe_resource_adaptor(
+    cuda::stream_ordered_resource_view<cuda::memory_access::device> upstream)
+    : upstream_{upstream}
   {
-    RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
+    RMM_EXPECTS(
+      upstream != cuda::stream_ordered_resource_view<cuda::memory_access::device>{nullptr},
+      "Unexpected null upstream resource pointer.");
   }
 
   thread_safe_resource_adaptor()                                    = delete;
@@ -62,21 +65,24 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
   /**
    * @brief Get the upstream memory resource.
    *
-   * @return Upstream* pointer to a memory resource object.
+   * @return View of the upstream memory resource.
    */
-  Upstream* get_upstream() const noexcept { return upstream_; }
+  cuda::stream_ordered_resource_view<cuda::memory_access::device> get_upstream() const noexcept
+  {
+    return upstream_;
+  }
 
   /**
    * @copydoc rmm::mr::device_memory_resource::supports_streams()
    */
-  bool supports_streams() const noexcept override { return upstream_->supports_streams(); }
+  bool supports_streams() const noexcept override { return true; }
 
   /**
    * @brief Query whether the resource supports the get_mem_info API.
    *
    * @return bool true if the upstream resource supports get_mem_info, false otherwise.
    */
-  bool supports_get_mem_info() const noexcept override { return upstream_->supports_streams(); }
+  bool supports_get_mem_info() const noexcept override { return false; }
 
  private:
   /**
@@ -93,7 +99,7 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
     lock_t lock(mtx);
-    return upstream_->allocate(bytes, stream);
+    return upstream_->allocate_async(bytes, stream.value());
   }
 
   /**
@@ -108,7 +114,7 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
     lock_t lock(mtx);
-    upstream_->deallocate(ptr, bytes, stream);
+    upstream_->deallocate_async(ptr, bytes, stream.value());
   }
 
   /**
@@ -123,11 +129,10 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
   bool do_is_equal(cuda::memory_resource<memory_kind> const& other) const noexcept override
   {
     if (this == &other) { return true; }
-    auto thread_safe_other = dynamic_cast<thread_safe_resource_adaptor<Upstream> const*>(&other);
-    if (thread_safe_other != nullptr) {
-      return upstream_->is_equal(*thread_safe_other->get_upstream());
-    }
-    return upstream_->is_equal(other);
+    auto const* thread_safe_other = dynamic_cast<thread_safe_resource_adaptor const*>(&other);
+    if (thread_safe_other != nullptr) { return upstream_ == thread_safe_other->get_upstream(); }
+    // TODO Fix:
+    return false;  // upstream_ == &other;
   }
 
   /**
@@ -140,12 +145,13 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
    */
   std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view stream) const override
   {
-    lock_t lock(mtx);
-    return upstream_->get_mem_info(stream);
+    // lock_t lock(mtx);
+    return {0, 0};
   }
 
   std::mutex mutable mtx;  // mutex for thread safe access to upstream
-  Upstream* upstream_;     ///< The upstream resource used for satisfying allocation requests
+  cuda::stream_ordered_resource_view<cuda::memory_access::device>
+    upstream_;  ///< The upstream resource used for satisfying allocation requests
 };
 
 }  // namespace rmm::mr

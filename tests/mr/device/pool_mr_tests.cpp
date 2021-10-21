@@ -29,8 +29,8 @@
 namespace rmm::test {
 namespace {
 using cuda_mr     = rmm::mr::cuda_memory_resource;
-using pool_mr     = rmm::mr::pool_memory_resource<rmm::mr::device_memory_resource>;
-using limiting_mr = rmm::mr::limiting_resource_adaptor<rmm::mr::cuda_memory_resource>;
+using pool_mr     = rmm::mr::pool_memory_resource;
+using limiting_mr = rmm::mr::limiting_resource_adaptor;
 
 TEST(PoolTest, ThrowOnNullUpstream)
 {

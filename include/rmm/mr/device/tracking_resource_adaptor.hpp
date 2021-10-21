@@ -39,11 +39,7 @@ namespace rmm::mr {
  * performance-sensitive code. Note that callstacks may not contain all symbols unless
  * the project is linked with `-rdynamic`. This can be accomplished with
  * `add_link_options(-rdynamic)` in cmake.
- *
- * @tparam Upstream Type of the upstream resource used for
- * allocation/deallocation.
  */
-template <typename Upstream>
 class tracking_resource_adaptor final : public device_memory_resource {
  public:
   // can be a std::shared_mutex once C++17 is adopted
@@ -77,25 +73,32 @@ class tracking_resource_adaptor final : public device_memory_resource {
    * @param upstream The resource used for allocating/deallocating device memory
    * @param capture_stacks If true, capture stacks for allocation calls
    */
-  tracking_resource_adaptor(Upstream* upstream, bool capture_stacks = false)
+  tracking_resource_adaptor(
+    cuda::stream_ordered_resource_view<cuda::memory_access::device> upstream,
+    bool capture_stacks = false)
     : capture_stacks_{capture_stacks}, allocated_bytes_{0}, upstream_{upstream}
   {
-    RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
+    RMM_EXPECTS(
+      upstream != cuda::stream_ordered_resource_view<cuda::memory_access::device>{nullptr},
+      "Unexpected null upstream resource pointer.");
   }
 
   tracking_resource_adaptor()                                 = delete;
   ~tracking_resource_adaptor() override                       = default;
   tracking_resource_adaptor(tracking_resource_adaptor const&) = delete;
   tracking_resource_adaptor& operator=(tracking_resource_adaptor const&) = delete;
-  tracking_resource_adaptor(tracking_resource_adaptor&&) noexcept        = default;
-  tracking_resource_adaptor& operator=(tracking_resource_adaptor&&) noexcept = default;
+  tracking_resource_adaptor(tracking_resource_adaptor&&) noexcept        = delete;
+  tracking_resource_adaptor& operator=(tracking_resource_adaptor&&) noexcept = delete;
 
   /**
    * @brief Return pointer to the upstream resource.
    *
-   * @return Upstream* Pointer to the upstream resource.
+   * @return View of the upstream resource.
    */
-  Upstream* get_upstream() const noexcept { return upstream_; }
+  cuda::stream_ordered_resource_view<cuda::memory_access::device> get_upstream() const noexcept
+  {
+    return upstream_;
+  }
 
   /**
    * @brief Checks whether the upstream resource supports streams.
@@ -103,17 +106,14 @@ class tracking_resource_adaptor final : public device_memory_resource {
    * @return true The upstream resource supports streams
    * @return false The upstream resource does not support streams.
    */
-  bool supports_streams() const noexcept override { return upstream_->supports_streams(); }
+  bool supports_streams() const noexcept override { return true; }
 
   /**
    * @brief Query whether the resource supports the get_mem_info API.
    *
    * @return bool true if the upstream resource supports get_mem_info, false otherwise.
    */
-  bool supports_get_mem_info() const noexcept override
-  {
-    return upstream_->supports_get_mem_info();
-  }
+  bool supports_get_mem_info() const noexcept override { return false; }
 
   /**
    * @brief Get the outstanding allocations map
@@ -194,7 +194,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
-    void* ptr = upstream_->allocate(bytes, stream);
+    void* ptr = upstream_->allocate_async(bytes, stream.value());
 
     // track it.
     {
@@ -217,7 +217,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
    */
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
-    upstream_->deallocate(ptr, bytes, stream);
+    upstream_->deallocate_async(ptr, bytes, stream.value());
     {
       write_lock_t lock(mtx_);
 
@@ -263,9 +263,9 @@ class tracking_resource_adaptor final : public device_memory_resource {
   bool do_is_equal(cuda::memory_resource<memory_kind> const& other) const noexcept override
   {
     if (this == &other) { return true; }
-    auto cast = dynamic_cast<tracking_resource_adaptor<Upstream> const*>(&other);
-    return cast != nullptr ? upstream_->is_equal(*cast->get_upstream())
-                           : upstream_->is_equal(other);
+    auto const* cast = dynamic_cast<tracking_resource_adaptor const*>(&other);
+    return cast != nullptr ? upstream_ == cast->get_upstream()
+                           : false;  // TODO fix -> upstream_ == &other;
   }
 
   /**
@@ -278,27 +278,15 @@ class tracking_resource_adaptor final : public device_memory_resource {
    */
   std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view stream) const override
   {
-    return upstream_->get_mem_info(stream);
+    return {0, 0};
   }
 
   bool capture_stacks_;                           // whether or not to capture call stacks
   std::map<void*, allocation_info> allocations_;  // map of active allocations
   std::atomic<std::size_t> allocated_bytes_;      // number of bytes currently allocated
   std::shared_timed_mutex mutable mtx_;           // mutex for thread safe access to allocations_
-  Upstream* upstream_;  // the upstream resource used for satisfying allocation requests
+  cuda::stream_ordered_resource_view<cuda::memory_access::device>
+    upstream_;  // the upstream resource used for satisfying allocation requests
 };
-
-/**
- * @brief Convenience factory to return a `tracking_resource_adaptor` around the
- * upstream resource `upstream`.
- *
- * @tparam Upstream Type of the upstream `device_memory_resource`.
- * @param upstream Pointer to the upstream resource
- */
-template <typename Upstream>
-tracking_resource_adaptor<Upstream> make_tracking_adaptor(Upstream* upstream)
-{
-  return tracking_resource_adaptor<Upstream>{upstream};
-}
 
 }  // namespace rmm::mr

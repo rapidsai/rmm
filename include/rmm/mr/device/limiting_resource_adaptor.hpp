@@ -17,6 +17,7 @@
 
 #include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <cuda/memory_resource>
@@ -36,7 +37,6 @@ namespace rmm::mr {
  * @tparam Upstream Type of the upstream resource used for
  * allocation/deallocation.
  */
-template <typename Upstream>
 class limiting_resource_adaptor final : public device_memory_resource {
  public:
   /**
@@ -48,30 +48,37 @@ class limiting_resource_adaptor final : public device_memory_resource {
    * @param upstream The resource used for allocating/deallocating device memory
    * @param allocation_limit Maximum memory allowed for this allocator.
    */
-  limiting_resource_adaptor(Upstream* upstream,
-                            std::size_t allocation_limit,
-                            std::size_t alignment = rmm::detail::CUDA_ALLOCATION_ALIGNMENT)
+  limiting_resource_adaptor(
+    cuda::stream_ordered_resource_view<cuda::memory_access::device> upstream,
+    std::size_t allocation_limit,
+    std::size_t alignment = rmm::detail::CUDA_ALLOCATION_ALIGNMENT)
     : allocation_limit_{allocation_limit},
       allocated_bytes_(0),
       alignment_(alignment),
       upstream_{upstream}
   {
-    RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
+    RMM_EXPECTS(
+      upstream != cuda::stream_ordered_resource_view<cuda::memory_access::device>{nullptr},
+      "Unexpected null upstream resource pointer.");
   }
 
   limiting_resource_adaptor()                                     = delete;
   ~limiting_resource_adaptor() override                           = default;
   limiting_resource_adaptor(limiting_resource_adaptor const&)     = delete;
-  limiting_resource_adaptor(limiting_resource_adaptor&&) noexcept = default;
+  limiting_resource_adaptor(limiting_resource_adaptor&&) noexcept = delete;
   limiting_resource_adaptor& operator=(limiting_resource_adaptor const&) = delete;
-  limiting_resource_adaptor& operator=(limiting_resource_adaptor&&) noexcept = default;
+  limiting_resource_adaptor& operator=(limiting_resource_adaptor&&) noexcept = delete;
 
   /**
    * @brief Return pointer to the upstream resource.
    *
-   * @return Upstream* Pointer to the upstream resource.
+   * @return View of the upstream resource.
    */
-  [[nodiscard]] Upstream* get_upstream() const noexcept { return upstream_; }
+  [[nodiscard]] cuda::stream_ordered_resource_view<cuda::memory_access::device> get_upstream()
+    const noexcept
+  {
+    return upstream_;
+  }
 
   /**
    * @brief Checks whether the upstream resource supports streams.
@@ -79,20 +86,14 @@ class limiting_resource_adaptor final : public device_memory_resource {
    * @return true The upstream resource supports streams
    * @return false The upstream resource does not support streams.
    */
-  [[nodiscard]] bool supports_streams() const noexcept override
-  {
-    return upstream_->supports_streams();
-  }
+  [[nodiscard]] bool supports_streams() const noexcept override { return true; }
 
   /**
    * @brief Query whether the resource supports the get_mem_info API.
    *
    * @return bool true if the upstream resource supports get_mem_info, false otherwise.
    */
-  [[nodiscard]] bool supports_get_mem_info() const noexcept override
-  {
-    return upstream_->supports_get_mem_info();
-  }
+  [[nodiscard]] bool supports_get_mem_info() const noexcept override { return false; }
 
   /**
    * @brief Query the number of bytes that have been allocated. Note that
@@ -134,7 +135,7 @@ class limiting_resource_adaptor final : public device_memory_resource {
     auto const old           = allocated_bytes_.fetch_add(proposed_size);
     if (old + proposed_size <= allocation_limit_) {
       try {
-        return upstream_->allocate(bytes, stream);
+        return upstream_->allocate_async(bytes, stream.value());
       } catch (...) {
         allocated_bytes_ -= proposed_size;
         throw;
@@ -157,7 +158,7 @@ class limiting_resource_adaptor final : public device_memory_resource {
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
     std::size_t allocated_size = rmm::detail::align_up(bytes, alignment_);
-    upstream_->deallocate(ptr, bytes, stream);
+    upstream_->deallocate_async(ptr, bytes, stream.value());
     allocated_bytes_ -= allocated_size;
   }
 
@@ -174,9 +175,10 @@ class limiting_resource_adaptor final : public device_memory_resource {
     cuda::memory_resource<memory_kind> const& other) const noexcept override
   {
     if (this == &other) { return true; }
-    auto const* cast = dynamic_cast<limiting_resource_adaptor<Upstream> const*>(&other);
-    if (cast != nullptr) { return upstream_->is_equal(*cast->get_upstream()); }
-    return upstream_->is_equal(other);
+    auto const* cast = dynamic_cast<limiting_resource_adaptor const*>(&other);
+    if (cast != nullptr) { return upstream_ == cast->get_upstream(); }
+    // TODO fix this
+    return false;  // upstream_ == &other;
   }
 
   /**
@@ -202,23 +204,9 @@ class limiting_resource_adaptor final : public device_memory_resource {
   // todo: should be some way to ask the upstream...
   std::size_t alignment_;
 
-  Upstream* upstream_;  ///< The upstream resource used for satisfying
-                        ///< allocation requests
+  cuda::stream_ordered_resource_view<cuda::memory_access::device>
+    upstream_;  ///< The upstream resource used for satisfying
+                ///< allocation requests
 };
-
-/**
- * @brief Convenience factory to return a `limiting_resource_adaptor` around the
- * upstream resource `upstream`.
- *
- * @tparam Upstream Type of the upstream `device_memory_resource`.
- * @param upstream Pointer to the upstream resource
- * @param limit Maximum amount of memory to allocate
- */
-template <typename Upstream>
-limiting_resource_adaptor<Upstream> make_limiting_adaptor(Upstream* upstream,
-                                                          std::size_t allocation_limit)
-{
-  return limiting_resource_adaptor<Upstream>{upstream, allocation_limit};
-}
 
 }  // namespace rmm::mr

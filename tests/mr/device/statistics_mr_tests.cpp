@@ -26,7 +26,7 @@
 namespace rmm::test {
 namespace {
 
-using statistics_adaptor = rmm::mr::statistics_resource_adaptor<rmm::mr::device_memory_resource>;
+using statistics_adaptor = rmm::mr::statistics_resource_adaptor;
 
 constexpr auto num_allocations{10};
 constexpr auto num_more_allocations{5};
@@ -127,7 +127,8 @@ TEST(StatisticsTest, PeakAllocations)
 
 TEST(StatisticsTest, MultiTracking)
 {
-  statistics_adaptor mr{rmm::mr::get_current_device_resource()};
+  auto* original_mr = rmm::mr::get_current_device_resource();
+  statistics_adaptor mr{original_mr};
   rmm::mr::set_current_device_resource(&mr);
 
   std::vector<std::shared_ptr<rmm::device_buffer>> allocations;
@@ -171,7 +172,7 @@ TEST(StatisticsTest, MultiTracking)
   EXPECT_EQ(inner_mr.get_allocations_counter().peak, 5);
 
   // Reset the current device resource
-  rmm::mr::set_current_device_resource(mr.get_upstream());
+  rmm::mr::set_current_device_resource(original_mr);
 }
 
 TEST(StatisticsTest, NegativeInnerTracking)

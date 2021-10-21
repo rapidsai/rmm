@@ -280,4 +280,18 @@ auto make_owning_wrapper(std::shared_ptr<Upstream> upstream, Args&&... args)
                                        std::forward<Args>(args)...);
 }
 
+template <class Resource, typename... Upstreams, typename... Args>
+auto make_owning_wrapper(std::tuple<std::shared_ptr<Upstreams>...> upstreams, Args&&... args)
+{
+  return std::make_shared<owning_wrapper<Resource, Upstreams...>>(std::move(upstreams),
+                                                                  std::forward<Args>(args)...);
+}
+
+template <class Resource, typename Upstream, typename... Args>
+auto make_owning_wrapper(std::shared_ptr<Upstream> upstream, Args&&... args)
+{
+  return make_owning_wrapper<Resource>(std::make_tuple(std::move(upstream)),
+                                       std::forward<Args>(args)...);
+}
+
 }  // namespace rmm::mr

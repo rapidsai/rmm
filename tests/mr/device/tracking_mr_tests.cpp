@@ -26,7 +26,7 @@
 namespace rmm::test {
 namespace {
 
-using tracking_adaptor = rmm::mr::tracking_resource_adaptor<rmm::mr::device_memory_resource>;
+using tracking_adaptor = rmm::mr::tracking_resource_adaptor;
 
 constexpr auto num_allocations{10};
 constexpr auto num_more_allocations{5};
@@ -99,7 +99,8 @@ TEST(TrackingTest, AllocationsLeftWithoutStacks)
 
 TEST(TrackingTest, MultiTracking)
 {
-  tracking_adaptor mr{rmm::mr::get_current_device_resource(), true};
+  auto* original_mr = rmm::mr::get_current_device_resource();
+  tracking_adaptor mr{original_mr, true};
   rmm::mr::set_current_device_resource(&mr);
 
   std::vector<std::shared_ptr<rmm::device_buffer>> allocations;
@@ -138,7 +139,7 @@ TEST(TrackingTest, MultiTracking)
   EXPECT_EQ(inner_mr.get_allocated_bytes(), 0);
 
   // Reset the current device resource
-  rmm::mr::set_current_device_resource(mr.get_upstream());
+  rmm::mr::set_current_device_resource(original_mr);
 }
 
 TEST(TrackingTest, NegativeInnerTracking)

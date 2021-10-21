@@ -35,14 +35,14 @@ struct allocator_test : public ::testing::Test {
 TEST_F(allocator_test, default_resource)
 {
   rmm::mr::polymorphic_allocator<int> allocator{};
-  EXPECT_EQ(allocator.resource(), cuda::view_resource(rmm::mr::get_current_device_resource()));
+  EXPECT_EQ(allocator.resource(), rmm::mr::get_current_device_resource());
 }
 
 TEST_F(allocator_test, custom_resource)
 {
   rmm::mr::cuda_memory_resource mr;
   rmm::mr::polymorphic_allocator<int> allocator{&mr};
-  EXPECT_EQ(allocator.resource(), cuda::view_resource(&mr));
+  EXPECT_EQ(allocator.resource(), &mr);
 }
 
 void test_conversion(rmm::mr::polymorphic_allocator<int> /*unused*/) {}

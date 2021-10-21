@@ -24,6 +24,8 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 
+#include <cuda/memory_resource>
+
 #include <cuda_runtime_api.h>
 
 #include <algorithm>
@@ -40,12 +42,11 @@ namespace rmm::mr {
  *
  * Supports only allocations of size smaller than the configured block_size.
  */
-template <typename Upstream>
 class fixed_size_memory_resource
-  : public detail::stream_ordered_memory_resource<fixed_size_memory_resource<Upstream>,
+  : public detail::stream_ordered_memory_resource<fixed_size_memory_resource,
                                                   detail::fixed_size_free_list> {
  public:
-  friend class detail::stream_ordered_memory_resource<fixed_size_memory_resource<Upstream>,
+  friend class detail::stream_ordered_memory_resource<fixed_size_memory_resource,
                                                       detail::fixed_size_free_list>;
 
   // A block is the fixed size this resource alloates
@@ -66,15 +67,19 @@ class fixed_size_memory_resource
    * @param blocks_to_preallocate The number of blocks to allocate to initialize the pool.
    */
   explicit fixed_size_memory_resource(
-    Upstream* upstream_mr,
+    cuda::stream_ordered_resource_view<cuda::memory_access::device> upstream_mr,
     std::size_t block_size            = default_block_size,
     std::size_t blocks_to_preallocate = default_blocks_to_preallocate)
     : upstream_mr_{upstream_mr},
       block_size_{rmm::detail::align_up(block_size, rmm::detail::CUDA_ALLOCATION_ALIGNMENT)},
       upstream_chunk_size_{block_size * blocks_to_preallocate}
   {
+    RMM_EXPECTS(
+      upstream_mr_ != cuda::stream_ordered_resource_view<cuda::memory_access::device>{nullptr},
+      "Unexpected null upstream resource pointer.");
+
     // allocate initial blocks and insert into free list
-    this->insert_blocks(std::move(blocks_from_upstream(cuda_stream_legacy)), cuda_stream_legacy);
+    this->insert_blocks(blocks_from_upstream(cuda_stream_legacy), cuda_stream_legacy);
   }
 
   /**
@@ -107,9 +112,13 @@ class fixed_size_memory_resource
   /**
    * @brief Get the upstream memory_resource object.
    *
-   * @return UpstreamResource* the upstream memory resource.
+   * @return A view of the upstream memory resource.
    */
-  Upstream* get_upstream() const noexcept { return upstream_mr_; }
+  [[nodiscard]] cuda::stream_ordered_resource_view<cuda::memory_access::device> get_upstream()
+    const noexcept
+  {
+    return upstream_mr_;
+  }
 
   /**
    * @brief Get the size of blocks allocated by this memory resource.
@@ -121,7 +130,7 @@ class fixed_size_memory_resource
  protected:
   using free_list  = detail::fixed_size_free_list;
   using block_type = free_list::block_type;
-  using typename detail::stream_ordered_memory_resource<fixed_size_memory_resource<Upstream>,
+  using typename detail::stream_ordered_memory_resource<fixed_size_memory_resource,
                                                         detail::fixed_size_free_list>::split_block;
   using lock_guard = std::lock_guard<std::mutex>;
 
@@ -158,19 +167,19 @@ class fixed_size_memory_resource
    */
   free_list blocks_from_upstream(cuda_stream_view stream)
   {
-    void* ptr = upstream_mr_->allocate(upstream_chunk_size_, stream);
+    void* ptr = upstream_mr_->allocate_async(upstream_chunk_size_, stream.value());
     block_type block{ptr};
     upstream_blocks_.push_back(block);
 
     auto num_blocks = upstream_chunk_size_ / block_size_;
 
-    auto block_gen = [ptr, this](int index) {
+    auto block_gen = [ptr, this](std::size_t index) {
       // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
       return block_type{static_cast<char*>(ptr) + index * block_size_};
     };
     auto first =
       thrust::make_transform_iterator(thrust::make_counting_iterator(std::size_t{0}), block_gen);
-    return free_list(first, first + num_blocks);
+    return {first, first + thrust::counting_iterator<unsigned long>::difference_type(num_blocks)};
   }
 
   /**
@@ -184,7 +193,7 @@ class fixed_size_memory_resource
    * @return A pair comprising the allocated pointer and any unallocated remainder of the input
    * block.
    */
-  split_block allocate_from_block(block_type const& block, std::size_t size)
+  static split_block allocate_from_block(block_type const& block, std::size_t size)
   {
     return {block, block_type{nullptr}};
   }
@@ -198,7 +207,7 @@ class fixed_size_memory_resource
    * @return The (now freed) block associated with `p`. The caller is expected to return the block
    * to the pool.
    */
-  block_type free_block(void* ptr, std::size_t size) noexcept
+  static block_type free_block(void* ptr, std::size_t size) noexcept
   {
     // Deallocating a fixed-size block just inserts it in the free list, which is
     // handled by the parent class
@@ -239,9 +248,6 @@ class fixed_size_memory_resource
   {
     lock_guard lock(this->get_mutex());
 
-    auto const [free, total] = upstream_mr_->get_mem_info(0);
-    std::cout << "GPU free memory: " << free << " total: " << total << "\n";
-
     std::cout << "upstream_blocks: " << upstream_blocks_.size() << "\n";
     std::size_t upstream_total{0};
 
@@ -269,7 +275,8 @@ class fixed_size_memory_resource
   }
 
  private:
-  Upstream* upstream_mr_;  // The resource from which to allocate new blocks
+  cuda::stream_ordered_resource_view<cuda::memory_access::device>
+    upstream_mr_;  // The resource from which to allocate new blocks
 
   std::size_t const block_size_;           // size of blocks this MR allocates
   std::size_t const upstream_chunk_size_;  // size of chunks allocated from heap MR

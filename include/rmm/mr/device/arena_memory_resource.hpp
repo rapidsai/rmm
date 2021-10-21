@@ -72,7 +72,6 @@ namespace rmm::mr {
  * @tparam Upstream Memory resource to use for allocating memory for the global arena. Implements
  * rmm::mr::device_memory_resource interface.
  */
-template <typename Upstream>
 class arena_memory_resource final : public device_memory_resource {
  public:
   /**
@@ -90,10 +89,11 @@ class arena_memory_resource final : public device_memory_resource {
    * @param maximum_size Maximum size, in bytes, that the global arena can grow to. Defaults to all
    * of the available memory on the current device.
    */
-  explicit arena_memory_resource(Upstream* upstream_mr,
-                                 std::size_t initial_size = global_arena::default_initial_size,
-                                 std::size_t maximum_size = global_arena::default_maximum_size,
-                                 bool dump_log_on_failure = false)
+  explicit arena_memory_resource(
+    cuda::stream_ordered_resource_view<cuda::memory_access::device> upstream_mr,
+    std::size_t initial_size = global_arena::default_initial_size,
+    std::size_t maximum_size = global_arena::default_maximum_size,
+    bool dump_log_on_failure = false)
     : global_arena_{upstream_mr, initial_size, maximum_size},
       dump_log_on_failure_{dump_log_on_failure}
   {
@@ -128,8 +128,8 @@ class arena_memory_resource final : public device_memory_resource {
  private:
   TEMPORARY_BASE_CLASS_OVERRIDES
 
-  using global_arena = detail::arena::global_arena<Upstream>;
-  using arena        = detail::arena::arena<Upstream>;
+  using global_arena = detail::arena::global_arena;
+  using arena        = detail::arena::arena;
   using read_lock    = std::shared_lock<std::shared_timed_mutex>;
   using write_lock   = std::lock_guard<std::shared_timed_mutex>;
 
@@ -224,7 +224,7 @@ class arena_memory_resource final : public device_memory_resource {
       write_lock lock(mtx_);
       auto thread_arena = std::make_shared<arena>(global_arena_);
       thread_arenas_.emplace(thread_id, thread_arena);
-      thread_local detail::arena::arena_cleaner<Upstream> cleaner{thread_arena};
+      thread_local detail::arena::arena_cleaner cleaner{thread_arena};
       return *thread_arena;
     }
   }

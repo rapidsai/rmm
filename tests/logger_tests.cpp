@@ -91,7 +91,7 @@ TEST(Adaptor, FilenameConstructor)
 {
   std::string filename{"logs/test1.txt"};
   rmm::mr::cuda_memory_resource upstream;
-  rmm::mr::logging_resource_adaptor<rmm::mr::cuda_memory_resource> log_mr{&upstream, filename};
+  rmm::mr::logging_resource_adaptor log_mr{&upstream, filename};
 
   auto const size0{100};
   auto const size1{42};
@@ -122,8 +122,7 @@ TEST(Adaptor, MultiSinkConstructor)
   auto file_sink1 = std::make_shared<spdlog::sinks::basic_file_sink_mt>(filename1, true);
   auto file_sink2 = std::make_shared<spdlog::sinks::basic_file_sink_mt>(filename2, true);
 
-  rmm::mr::logging_resource_adaptor<rmm::mr::cuda_memory_resource> log_mr{&upstream,
-                                                                          {file_sink1, file_sink2}};
+  rmm::mr::logging_resource_adaptor log_mr{&upstream, {file_sink1, file_sink2}};
 
   auto const size0{100};
   auto const size1{42};
@@ -151,7 +150,7 @@ TEST(Adaptor, Factory)
   std::string filename{"logs/test2.txt"};
   rmm::mr::cuda_memory_resource upstream;
 
-  auto log_mr = rmm::mr::make_logging_adaptor(&upstream, filename);
+  auto log_mr = rmm::mr::logging_resource_adaptor(&upstream, filename);
 
   auto const size0{99};
   auto const size1{42};
@@ -183,14 +182,14 @@ TEST(Adaptor, EnvironmentPath)
   unsetenv("RMM_LOG_FILE");
 
   // expect logging adaptor to fail if RMM_LOG_FILE is unset
-  EXPECT_THROW(rmm::mr::make_logging_adaptor(&upstream), rmm::logic_error);
+  EXPECT_THROW(auto mr = rmm::mr::logging_resource_adaptor(&upstream), rmm::logic_error);
 
   std::string filename("logs/envtest.txt");
 
   setenv("RMM_LOG_FILE", filename.c_str(), 1);
 
   // use log file location specified in environment variable RMM_LOG_FILE
-  auto log_mr = rmm::mr::make_logging_adaptor(&upstream);
+  auto log_mr = rmm::mr::logging_resource_adaptor(&upstream);
 
   auto const size{100};
 
@@ -216,7 +215,7 @@ TEST(Adaptor, STDOUT)
 
   rmm::mr::cuda_memory_resource upstream;
 
-  auto log_mr = rmm::mr::make_logging_adaptor(&upstream, std::cout);
+  auto log_mr = rmm::mr::logging_resource_adaptor(&upstream, std::cout);
 
   auto const size{100};
 
@@ -234,7 +233,7 @@ TEST(Adaptor, STDERR)
 
   rmm::mr::cuda_memory_resource upstream;
 
-  auto log_mr = rmm::mr::make_logging_adaptor(&upstream, std::cerr);
+  auto log_mr = rmm::mr::logging_resource_adaptor(&upstream, std::cerr);
 
   auto const size{100};
 

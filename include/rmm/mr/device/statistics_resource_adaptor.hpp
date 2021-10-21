@@ -34,11 +34,7 @@ namespace rmm::mr {
  * and total memory allocations for both the number of bytes and number of calls
  * to the memory resource. `statistics_resource_adaptor` is intended as a debug
  * adaptor and shouldn't be used in performance-sensitive code.
- *
- * @tparam Upstream Type of the upstream resource used for
- * allocation/deallocation.
  */
-template <typename Upstream>
 class statistics_resource_adaptor final : public device_memory_resource {
  public:
   // can be a std::shared_mutex once C++17 is adopted
@@ -76,24 +72,31 @@ class statistics_resource_adaptor final : public device_memory_resource {
    *
    * @param upstream The resource used for allocating/deallocating device memory
    */
-  statistics_resource_adaptor(Upstream* upstream) : upstream_{upstream}
+  statistics_resource_adaptor(
+    cuda::stream_ordered_resource_view<cuda::memory_access::device> upstream)
+    : upstream_{upstream}
   {
-    RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
+    RMM_EXPECTS(
+      upstream != cuda::stream_ordered_resource_view<cuda::memory_access::device>{nullptr},
+      "Unexpected null upstream resource pointer.");
   }
 
   statistics_resource_adaptor()                                   = delete;
   ~statistics_resource_adaptor() override                         = default;
   statistics_resource_adaptor(statistics_resource_adaptor const&) = delete;
   statistics_resource_adaptor& operator=(statistics_resource_adaptor const&) = delete;
-  statistics_resource_adaptor(statistics_resource_adaptor&&) noexcept        = default;
-  statistics_resource_adaptor& operator=(statistics_resource_adaptor&&) noexcept = default;
+  statistics_resource_adaptor(statistics_resource_adaptor&&) noexcept        = delete;
+  statistics_resource_adaptor& operator=(statistics_resource_adaptor&&) noexcept = delete;
 
   /**
    * @brief Return pointer to the upstream resource.
    *
-   * @return Upstream* Pointer to the upstream resource.
+   * @return View of the upstream resource.
    */
-  Upstream* get_upstream() const noexcept { return upstream_; }
+  cuda::stream_ordered_resource_view<cuda::memory_access::device> get_upstream() const noexcept
+  {
+    return upstream_;
+  }
 
   /**
    * @brief Checks whether the upstream resource supports streams.
@@ -101,17 +104,14 @@ class statistics_resource_adaptor final : public device_memory_resource {
    * @return true The upstream resource supports streams
    * @return false The upstream resource does not support streams.
    */
-  bool supports_streams() const noexcept override { return upstream_->supports_streams(); }
+  bool supports_streams() const noexcept override { return true; }
 
   /**
    * @brief Query whether the resource supports the get_mem_info API.
    *
    * @return bool true if the upstream resource supports get_mem_info, false otherwise.
    */
-  bool supports_get_mem_info() const noexcept override
-  {
-    return upstream_->supports_get_mem_info();
-  }
+  bool supports_get_mem_info() const noexcept override { return false; }
 
   /**
    * @brief Returns a `counter` struct for this adaptor containing the current,
@@ -157,14 +157,14 @@ class statistics_resource_adaptor final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
-    void* ptr = upstream_->allocate(bytes, stream);
+    void* ptr = upstream_->allocate_async(bytes, stream.value());
 
     // increment the stats
     {
       write_lock_t lock(mtx_);
 
       // Increment the allocation_count_ while we have the lock
-      bytes_ += bytes;
+      bytes_ += static_cast<int64_t>(bytes);
       allocations_ += 1;
     }
 
@@ -182,13 +182,13 @@ class statistics_resource_adaptor final : public device_memory_resource {
    */
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
-    upstream_->deallocate(ptr, bytes, stream);
+    upstream_->deallocate_async(ptr, bytes, stream.value());
 
     {
       write_lock_t lock(mtx_);
 
       // Decrement the current allocated counts.
-      bytes_ -= bytes;
+      bytes_ -= static_cast<int64_t>(bytes);
       allocations_ -= 1;
     }
   }
@@ -205,9 +205,9 @@ class statistics_resource_adaptor final : public device_memory_resource {
   bool do_is_equal(cuda::memory_resource<memory_kind> const& other) const noexcept override
   {
     if (this == &other) { return true; }
-    auto cast = dynamic_cast<statistics_resource_adaptor<Upstream> const*>(&other);
-    return cast != nullptr ? upstream_->is_equal(*cast->get_upstream())
-                           : upstream_->is_equal(other);
+    auto const* cast = dynamic_cast<statistics_resource_adaptor const*>(&other);
+    return cast != nullptr ? upstream_ == cast->get_upstream()
+                           : false;  // TODO fix-> : upstream_ == &other;
   }
 
   /**
@@ -220,26 +220,14 @@ class statistics_resource_adaptor final : public device_memory_resource {
    */
   std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view stream) const override
   {
-    return upstream_->get_mem_info(stream);
+    return {0, 0};
   }
 
   counter bytes_;                        // peak, current and total allocated bytes
   counter allocations_;                  // peak, current and total allocation count
   std::shared_timed_mutex mutable mtx_;  // mutex for thread safe access to allocations_
-  Upstream* upstream_;  // the upstream resource used for satisfying allocation requests
+  cuda::stream_ordered_resource_view<cuda::memory_access::device>
+    upstream_;  // the upstream resource used for satisfying allocation requests
 };
-
-/**
- * @brief Convenience factory to return a `statistics_resource_adaptor` around the
- * upstream resource `upstream`.
- *
- * @tparam Upstream Type of the upstream `device_memory_resource`.
- * @param upstream Pointer to the upstream resource
- */
-template <typename Upstream>
-statistics_resource_adaptor<Upstream> make_statistics_adaptor(Upstream* upstream)
-{
-  return statistics_resource_adaptor<Upstream>{upstream};
-}
 
 }  // namespace rmm::mr

@@ -21,6 +21,8 @@
 #include <rmm/detail/error.hpp>
 #include <rmm/logger.hpp>
 
+#include <cuda/memory_resource>
+
 #include <cuda_runtime_api.h>
 
 #include <spdlog/common.h>
@@ -250,7 +252,6 @@ inline auto total_block_size(T const& blocks)
  * @tparam Upstream Memory resource to use for allocating the arena. Implements
  * rmm::mr::device_memory_resource interface.
  */
-template <typename Upstream>
 class global_arena final {
  public:
   /// The default initial size for the global arena.
@@ -275,10 +276,14 @@ class global_arena final {
    * @param maximum_size Maximum size, in bytes, that the global arena can grow to. Defaults to all
    * of the available memory on the current device.
    */
-  global_arena(Upstream* upstream_mr, std::size_t initial_size, std::size_t maximum_size)
+  global_arena(cuda::stream_ordered_resource_view<cuda::memory_access::device> upstream_mr,
+               std::size_t initial_size,
+               std::size_t maximum_size)
     : upstream_mr_{upstream_mr}, maximum_size_{maximum_size}
   {
-    RMM_EXPECTS(nullptr != upstream_mr_, "Unexpected null upstream pointer.");
+    RMM_EXPECTS(
+      upstream_mr_ != cuda::stream_ordered_resource_view<cuda::memory_access::device>{nullptr},
+      "Unexpected null upstream pointer.");
     RMM_EXPECTS(initial_size == default_initial_size || initial_size == align_up(initial_size),
                 "Error, Initial arena size required to be a multiple of 256 bytes");
     RMM_EXPECTS(maximum_size_ == default_maximum_size || maximum_size_ == align_up(maximum_size_),
@@ -426,7 +431,7 @@ class global_arena final {
   block expand_arena(std::size_t size)
   {
     if (size > 0) {
-      upstream_blocks_.push_back({upstream_mr_->allocate(size), size});
+      upstream_blocks_.emplace_back(upstream_mr_->allocate(size), size);
       current_size_ += size;
       return upstream_blocks_.back();
     }
@@ -434,7 +439,7 @@ class global_arena final {
   }
 
   /// The upstream resource to allocate memory from.
-  Upstream* upstream_mr_;
+  cuda::stream_ordered_resource_view<cuda::memory_access::device> upstream_mr_;
   /// The maximum size the global arena can grow to.
   std::size_t maximum_size_;
   /// The current size of the global arena.
@@ -456,7 +461,6 @@ class global_arena final {
  * @tparam Upstream Memory resource to use for allocating the global arena. Implements
  * rmm::mr::device_memory_resource interface.
  */
-template <typename Upstream>
 class arena {
  public:
   /**
@@ -464,7 +468,7 @@ class arena {
    *
    * @param global_arena The global arena from which to allocate superblocks.
    */
-  explicit arena(global_arena<Upstream>& global_arena) : global_arena_{global_arena} {}
+  explicit arena(global_arena& global_arena) : global_arena_{global_arena} {}
 
   ~arena() = default;
 
@@ -588,7 +592,7 @@ class arena {
   }
 
   /// The global arena to allocate superblocks from.
-  global_arena<Upstream>& global_arena_;
+  global_arena& global_arena_;
   /// Free blocks.
   std::set<block> free_blocks_;
   /// Mutex for exclusive lock.
@@ -603,10 +607,9 @@ class arena {
  * @tparam Upstream Memory resource to use for allocating the global arena. Implements
  * rmm::mr::device_memory_resource interface.
  */
-template <typename Upstream>
 class arena_cleaner {
  public:
-  explicit arena_cleaner(std::shared_ptr<arena<Upstream>> const& arena) : arena_(arena) {}
+  explicit arena_cleaner(std::shared_ptr<arena> const& arena) : arena_(arena) {}
 
   // Disable copy (and move) semantics.
   arena_cleaner(arena_cleaner const&) = delete;
@@ -624,7 +627,7 @@ class arena_cleaner {
 
  private:
   /// A non-owning pointer to the arena that may need cleaning.
-  std::weak_ptr<arena<Upstream>> arena_;
+  std::weak_ptr<arena> arena_;
 };
 
 }  // namespace rmm::mr::detail::arena

@@ -47,7 +47,6 @@ namespace rmm::mr {
  *
  * @tparam Upstream Type of the upstream resource used for allocation/deallocation.
  */
-template <typename Upstream>
 class aligned_resource_adaptor final : public device_memory_resource {
  public:
   /**
@@ -61,12 +60,15 @@ class aligned_resource_adaptor final : public device_memory_resource {
    * @param alignment_threshold Only allocations with a size larger than or equal to this threshold
    * are aligned.
    */
-  explicit aligned_resource_adaptor(Upstream* upstream,
-                                    std::size_t alignment = rmm::detail::CUDA_ALLOCATION_ALIGNMENT,
-                                    std::size_t alignment_threshold = default_alignment_threshold)
+  explicit aligned_resource_adaptor(
+    cuda::stream_ordered_resource_view<cuda::memory_access::device> upstream,
+    std::size_t alignment           = rmm::detail::CUDA_ALLOCATION_ALIGNMENT,
+    std::size_t alignment_threshold = default_alignment_threshold)
     : upstream_{upstream}, alignment_{alignment}, alignment_threshold_{alignment_threshold}
   {
-    RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
+    RMM_EXPECTS(
+      upstream != cuda::stream_ordered_resource_view<cuda::memory_access::device>{nullptr},
+      "Unexpected null upstream resource pointer.");
     RMM_EXPECTS(rmm::detail::is_supported_alignment(alignment),
                 "Allocation alignment is not a power of 2.");
   }
@@ -81,27 +83,24 @@ class aligned_resource_adaptor final : public device_memory_resource {
   /**
    * @brief Get the upstream memory resource.
    *
-   * @return Upstream* pointer to a memory resource object.
+   * @return View of upstream memory resource.
    */
-  Upstream* get_upstream() const noexcept { return upstream_; }
+  cuda::stream_ordered_resource_view<cuda::memory_access::device> get_upstream() const noexcept
+  {
+    return upstream_;
+  }
 
   /**
    * @copydoc rmm::mr::device_memory_resource::supports_streams()
    */
-  [[nodiscard]] bool supports_streams() const noexcept override
-  {
-    return upstream_->supports_streams();
-  }
+  [[nodiscard]] bool supports_streams() const noexcept override { return true; }
 
   /**
    * @brief Query whether the resource supports the get_mem_info API.
    *
    * @return bool true if the upstream resource supports get_mem_info, false otherwise.
    */
-  [[nodiscard]] bool supports_get_mem_info() const noexcept override
-  {
-    return upstream_->supports_get_mem_info();
-  }
+  [[nodiscard]] bool supports_get_mem_info() const noexcept override { return false; }
 
  private:
   static constexpr std::size_t default_alignment_threshold = 0;
@@ -121,10 +120,10 @@ class aligned_resource_adaptor final : public device_memory_resource {
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
     if (alignment_ == rmm::detail::CUDA_ALLOCATION_ALIGNMENT || bytes < alignment_threshold_) {
-      return upstream_->allocate(bytes, stream);
+      return upstream_->allocate_async(bytes, stream.value());
     }
     auto const size = upstream_allocation_size(bytes);
-    void* pointer   = upstream_->allocate(size, stream);
+    void* pointer   = upstream_->allocate_async(size, stream.value());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     auto const address         = reinterpret_cast<std::size_t>(pointer);
     auto const aligned_address = rmm::detail::align_up(address, alignment_);
@@ -149,7 +148,7 @@ class aligned_resource_adaptor final : public device_memory_resource {
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
     if (alignment_ == rmm::detail::CUDA_ALLOCATION_ALIGNMENT || bytes < alignment_threshold_) {
-      upstream_->deallocate(ptr, bytes, stream);
+      upstream_->deallocate_async(ptr, bytes, stream.value());
     } else {
       {
         lock_guard lock(mtx_);
@@ -159,7 +158,7 @@ class aligned_resource_adaptor final : public device_memory_resource {
           pointers_.erase(iter);
         }
       }
-      upstream_->deallocate(ptr, upstream_allocation_size(bytes), stream);
+      upstream_->deallocate_async(ptr, upstream_allocation_size(bytes), stream.value());
     }
   }
 
@@ -176,9 +175,9 @@ class aligned_resource_adaptor final : public device_memory_resource {
     cuda::memory_resource<memory_kind> const& other) const noexcept override
   {
     if (this == &other) { return true; }
-    auto cast = dynamic_cast<aligned_resource_adaptor<Upstream> const*>(&other);
-    return cast != nullptr && upstream_->is_equal(*cast->get_upstream()) &&
-           alignment_ == cast->alignment_ && alignment_threshold_ == cast->alignment_threshold_;
+    auto const* cast = dynamic_cast<aligned_resource_adaptor const*>(&other);
+    return (cast != nullptr) && (upstream_ == cast->get_upstream()) &&
+           (alignment_ == cast->alignment_) && (alignment_threshold_ == cast->alignment_threshold_);
   }
 
   /**
@@ -194,7 +193,7 @@ class aligned_resource_adaptor final : public device_memory_resource {
   [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
     cuda_stream_view stream) const override
   {
-    return upstream_->get_mem_info(stream);
+    return {0, 0};
   }
 
   /**
@@ -210,11 +209,12 @@ class aligned_resource_adaptor final : public device_memory_resource {
     return aligned_size + alignment_ - rmm::detail::CUDA_ALLOCATION_ALIGNMENT;
   }
 
-  Upstream* upstream_;  ///< The upstream resource used for satisfying allocation requests
-  std::unordered_map<void*, void*> pointers_;  ///< Map of aligned pointers to upstream pointers.
-  std::size_t alignment_;                      ///< The size used for allocation alignment
-  std::size_t alignment_threshold_;  ///< The size above which allocations should be aligned
-  mutable std::mutex mtx_;           ///< Mutex for exclusive lock.
+  // The upstream resource used for satisfying allocation requests
+  cuda::stream_ordered_resource_view<cuda::memory_access::device> upstream_;
+  std::unordered_map<void*, void*> pointers_;  // Map of aligned pointers to upstream pointers.
+  std::size_t alignment_;                      // The size used for allocation alignment
+  std::size_t alignment_threshold_;            // The size above which allocations should be aligned
+  mutable std::mutex mtx_;                     // Mutex for exclusive lock.
 };
 
 }  // namespace rmm::mr
