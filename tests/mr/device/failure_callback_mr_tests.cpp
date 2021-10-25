@@ -19,7 +19,7 @@
 #include <cstddef>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
-#include <rmm/mr/device/oom_callback_resource_adaptor.hpp>
+#include <rmm/mr/device/failure_callback_resource_adaptor.hpp>
 
 #include <gtest/gtest.h>
 
@@ -27,7 +27,7 @@ namespace rmm::test {
 namespace {
 
 using oom_callback_adaptor =
-  rmm::mr::oom_callback_resource_adaptor<rmm::mr::device_memory_resource>;
+  rmm::mr::failure_callback_resource_adaptor<rmm::mr::device_memory_resource>;
 
 typedef struct {
   bool retried;

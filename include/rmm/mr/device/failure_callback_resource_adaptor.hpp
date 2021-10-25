@@ -23,7 +23,7 @@
 namespace rmm::mr {
 
 /**
- * @brief Callback function type used by oom_callback_resource_adaptor
+ * @brief Callback function type used by failure_callback_resource_adaptor
  *
  * The resource adaptor calls this function when a memory allocation throws a
  * `std::bad_alloc` exception. The function decides whether the resource adaptor
@@ -31,17 +31,17 @@ namespace rmm::mr {
  * exception.
  *
  * The callback function signature is:
- *     `bool oom_callback_t(std::size_t bytes, void* callback_arg)`
- *  
- * The callback function will be passed two parameters: `bytes` is the size of the failed memory allocation,
- * and `arg` is the extra argument passed to the constructor of the `oom_callback_resource_adaptor`.
- * The callback function returns a Boolean where true means to retry the memory allocation and false means to throw    
- * a `rmm::bad_alloc` exception.
+ *     `bool failure_callback_t(std::size_t bytes, void* callback_arg)`
+ *
+ * The callback function will be passed two parameters: `bytes` is the size of the failed memory
+ * allocation, and `arg` is the extra argument passed to the constructor of the
+ * `failure_callback_resource_adaptor`. The callback function returns a Boolean where true means to
+ * retry the memory allocation and false means to throw a `rmm::bad_alloc` exception.
  */
 using failure_callback_t = bool (*)(std::size_t, void*);
 
 /**
- * @brief A device memory resource that calls a callback function when the upstream 
+ * @brief A device memory resource that calls a callback function when the upstream
  * memory resource fails to allocate.
  * when allocations throws `std::bad_alloc`.
  *
@@ -49,7 +49,8 @@ using failure_callback_t = bool (*)(std::size_t, void*);
  * resource in order to satisfy allocation requests.
  *
  * The callback function takes an allocation size and a callback argument and returns
- * whether a bool representing whether to retry the allocation (true) or throw `std::bad_alloc` (false).
+ * whether a bool representing whether to retry the allocation (true) or throw `std::bad_alloc`
+ * (false).
  *
  * @tparam Upstream The type of the upstream resource used for allocation/deallocation.
  */
@@ -66,18 +67,21 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
    * @param callback Callback function @see failure_callback_t
    * @param callback_arg Extra argument passed to `callback`
    */
-  oom_callback_resource_adaptor(Upstream* upstream, oom_callback_t callback, void* callback_arg)
+  failure_callback_resource_adaptor(Upstream* upstream,
+                                    failure_callback_t callback,
+                                    void* callback_arg)
     : upstream_{upstream}, callback_{callback}, callback_arg_{callback_arg}
   {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
   }
 
-  oom_callback_resource_adaptor()                                     = delete;
-  ~oom_callback_resource_adaptor() override                           = default;
-  oom_callback_resource_adaptor(oom_callback_resource_adaptor const&) = delete;
-  oom_callback_resource_adaptor& operator=(oom_callback_resource_adaptor const&) = delete;
-  oom_callback_resource_adaptor(oom_callback_resource_adaptor&&) noexcept        = default;
-  oom_callback_resource_adaptor& operator=(oom_callback_resource_adaptor&&) noexcept = default;
+  failure_callback_resource_adaptor()                                         = delete;
+  ~failure_callback_resource_adaptor() override                               = default;
+  failure_callback_resource_adaptor(failure_callback_resource_adaptor const&) = delete;
+  failure_callback_resource_adaptor& operator=(failure_callback_resource_adaptor const&) = delete;
+  failure_callback_resource_adaptor(failure_callback_resource_adaptor&&) noexcept        = default;
+  failure_callback_resource_adaptor& operator=(failure_callback_resource_adaptor&&) noexcept =
+    default;
 
   /**
    * @brief Return pointer to the upstream resource.
@@ -158,7 +162,7 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
   bool do_is_equal(device_memory_resource const& other) const noexcept override
   {
     if (this == &other) { return true; }
-    auto cast = dynamic_cast<oom_callback_resource_adaptor<Upstream> const*>(&other);
+    auto cast = dynamic_cast<failure_callback_resource_adaptor<Upstream> const*>(&other);
     return cast != nullptr ? upstream_->is_equal(*cast->get_upstream())
                            : upstream_->is_equal(other);
   }
@@ -177,7 +181,7 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
   }
 
   Upstream* upstream_;  // the upstream resource used for satisfying allocation requests
-  oom_callback_t callback_;
+  failure_callback_t callback_;
   void* callback_arg_;
 };
 

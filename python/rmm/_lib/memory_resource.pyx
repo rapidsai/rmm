@@ -111,14 +111,14 @@ cdef extern from "rmm/mr/device/tracking_resource_adaptor.hpp" \
         string get_outstanding_allocations_str() except +
         void log_outstanding_allocations() except +
 
-cdef extern from "rmm/mr/device/oom_callback_resource_adaptor.hpp" \
+cdef extern from "rmm/mr/device/failure_callback_resource_adaptor.hpp" \
         namespace "rmm::mr" nogil:
-    ctypedef bool (*oom_callback_t)(size_t, void*)
-    cdef cppclass oom_callback_resource_adaptor[Upstream](
+    ctypedef bool (*failure_callback_t)(size_t, void*)
+    cdef cppclass failure_callback_resource_adaptor[Upstream](
         device_memory_resource
     ):
-        oom_callback_resource_adaptor(
-            Upstream* upstream_mr, oom_callback_t callback, void* callback_arg
+        failure_callback_resource_adaptor(
+            Upstream* upstream_mr, failure_callback_t callback, void* callback_arg
         ) except +
 
 
@@ -625,9 +625,9 @@ cdef class OOMCallbackResourceAdaptor(UpstreamResourceAdaptor):
     ):
         self._callback = callback
         self.c_obj.reset(
-            new oom_callback_resource_adaptor[device_memory_resource](
+            new failure_callback_resource_adaptor[device_memory_resource](
                 upstream_mr.get_mr(),
-                <oom_callback_t>_oom_callback_function,
+                <failure_callback_t>_oom_callback_function,
                 <void*>callback
             )
         )
