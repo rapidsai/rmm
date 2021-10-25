@@ -26,41 +26,44 @@ namespace rmm::mr {
  * @brief Callback function type used by oom_callback_resource_adaptor
  *
  * The resource adaptor calls this function when a memory allocation throws a
- * `std::bad_alloc` exception. The function then decide if the resource adaptor
+ * `std::bad_alloc` exception. The function decides whether the resource adaptor
  * should try to allocate the memory again or re-throw the `std::bad_alloc`
  * exception.
  *
- * `bool oom_callback_t(std::size_t bytes, void* callback_arg)`
- *   @param bytes Size of the failed memory allocation
- *   @param arg Extra argument specified when the resource manager was created.
- *   @return Whether to request a memory allocation retry or re-throw exception.
+ * The callback function signature is:
+ *     `bool oom_callback_t(std::size_t bytes, void* callback_arg)`
+ *  
+ * The callback function will be passed two parameters: `bytes` is the size of the failed memory allocation,
+ * and `arg` is the extra argument passed to the constructor of the `oom_callback_resource_adaptor`.
+ * The callback function returns a Boolean where true means to retry the memory allocation and false means to throw    
+ * a `rmm::bad_alloc` exception.
  */
-using oom_callback_t = bool (*)(std::size_t, void*);
+using failure_callback_t = bool (*)(std::size_t, void*);
 
 /**
- * @brief Resource that uses `Upstream` to allocate memory and calls `callback`
+ * @brief A device memory resource that calls a callback function when the upstream 
+ * memory resource fails to allocate.
  * when allocations throws `std::bad_alloc`.
  *
- * An instance of this resource can be constructed with an existing, upstream
+ * An instance of this resource must be constructed with an existing, upstream
  * resource in order to satisfy allocation requests.
  *
- * The callback function takes an allocation size and a callback_arg and returns
- * whether to retry the allocation or throw `std::bad_alloc`.
+ * The callback function takes an allocation size and a callback argument and returns
+ * whether a bool representing whether to retry the allocation (true) or throw `std::bad_alloc` (false).
  *
- * @tparam Upstream Type of the upstream resource used for
- * allocation/deallocation.
+ * @tparam Upstream The type of the upstream resource used for allocation/deallocation.
  */
 template <typename Upstream>
-class oom_callback_resource_adaptor final : public device_memory_resource {
+class failure_callback_resource_adaptor final : public device_memory_resource {
  public:
   /**
-   * @brief Construct a new OOM callback resource adaptor using `upstream` to satisfy
+   * @brief Construct a new `failure_callback_resource_adaptor` using `upstream` to satisfy
    * allocation requests.
    *
    * @throws `rmm::logic_error` if `upstream == nullptr`
    *
    * @param upstream The resource used for allocating/deallocating device memory
-   * @param callback Callback function <see oom_callback_t>
+   * @param callback Callback function @see failure_callback_t
    * @param callback_arg Extra argument passed to `callback`
    */
   oom_callback_resource_adaptor(Upstream* upstream, oom_callback_t callback, void* callback_arg)
