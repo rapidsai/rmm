@@ -674,7 +674,7 @@ def test_tracking_resource_adaptor():
     assert len(mr.get_outstanding_allocations_str()) == 0
 
 
-def test_oom_callback_resource_adaptor():
+def test_failure_callback_resource_adaptor():
     retried = [False]
 
     def callback(nbytes: int) -> bool:
@@ -685,7 +685,7 @@ def test_oom_callback_resource_adaptor():
             return True
 
     cuda_mr = rmm.mr.CudaMemoryResource()
-    mr = rmm.mr.OOMCallbackResourceAdaptor(cuda_mr, callback)
+    mr = rmm.mr.FailureCallbackResourceAdaptor(cuda_mr, callback)
     rmm.mr.set_current_device_resource(mr)
 
     with pytest.raises(MemoryError):

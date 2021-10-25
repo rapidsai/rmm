@@ -68,7 +68,7 @@ cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
 cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
     pass
 
-cdef class OOMCallbackResourceAdaptor(UpstreamResourceAdaptor):
+cdef class FailureCallbackResourceAdaptor(UpstreamResourceAdaptor):
     cdef object _callback
 
 cpdef DeviceMemoryResource get_current_device_resource()

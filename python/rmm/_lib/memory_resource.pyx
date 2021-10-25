@@ -631,7 +631,7 @@ cdef bool _oom_callback_function(size_t bytes, void *callback_arg) with gil:
     return (<object>callback_arg)(bytes)
 
 
-cdef class OOMCallbackResourceAdaptor(UpstreamResourceAdaptor):
+cdef class FailureCallbackResourceAdaptor(UpstreamResourceAdaptor):
 
     def __cinit__(
         self,
