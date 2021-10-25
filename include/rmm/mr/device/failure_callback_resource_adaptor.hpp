@@ -33,17 +33,17 @@ namespace rmm::mr {
  * The callback function signature is:
  *     `bool failure_callback_t(std::size_t bytes, void* callback_arg)`
  *
- * The callback function will be passed two parameters: `bytes` is the size of the failed memory
- * allocation, and `arg` is the extra argument passed to the constructor of the
- * `failure_callback_resource_adaptor`. The callback function returns a Boolean where true means to
- * retry the memory allocation and false means to throw a `rmm::bad_alloc` exception.
+ * The callback function will be passed two parameters: `bytes` is the size of the
+ * failed memory allocation, and `arg` is the extra argument passed to the constructor
+ * of the `failure_callback_resource_adaptor`. The callback function returns a Boolean
+ * where true means to retry the memory allocation and false means to throw a
+ * `rmm::bad_alloc` exception.
  */
 using failure_callback_t = bool (*)(std::size_t, void*);
 
 /**
- * @brief A device memory resource that calls a callback function when the upstream
- * memory resource fails to allocate.
- * when allocations throws `std::bad_alloc`.
+ * @brief A device memory resource that calls a callback function when allocations
+ * throws `std::bad_alloc`.
  *
  * An instance of this resource must be constructed with an existing, upstream
  * resource in order to satisfy allocation requests.
@@ -51,6 +51,37 @@ using failure_callback_t = bool (*)(std::size_t, void*);
  * The callback function takes an allocation size and a callback argument and returns
  * whether a bool representing whether to retry the allocation (true) or throw `std::bad_alloc`
  * (false).
+ *
+ * When implementing a callback function for allocation retry, care has to be taking to
+ * avoid an infinity loop. In the following example, we make sure to only retry the allocation
+ * once:
+ *
+ *   using failure_callback_adaptor =
+ *     rmm::mr::failure_callback_resource_adaptor<rmm::mr::device_memory_resource>;
+ *
+ *   typedef struct {
+ *     bool retried;
+ *   } cb_arg;
+ *
+ *   bool failure_handler(std::size_t bytes, void* arg)
+ *   {
+ *     cb_arg* a = reinterpret_cast<cb_arg*>(arg);
+ *     if (!a->retried) {
+ *       a->retried = true;
+ *       return true;  // First time we request an allocation retry
+ *     } else {
+ *       return false;  // Second time we let the adaptor throw std::bad_alloc
+ *     }
+ *   }
+ *
+ *   int main()
+ *   {
+ *     cb_arg arg{false};
+ *     failure_callback_adaptor mr{
+ *       rmm::mr::get_current_device_resource(), failure_handler, &arg
+ *     };
+ *     rmm::mr::set_current_device_resource(&mr);
+ *   }
  *
  * @tparam Upstream The type of the upstream resource used for allocation/deallocation.
  */
