@@ -118,7 +118,9 @@ cdef extern from "rmm/mr/device/failure_callback_resource_adaptor.hpp" \
         device_memory_resource
     ):
         failure_callback_resource_adaptor(
-            Upstream* upstream_mr, failure_callback_t callback, void* callback_arg
+            Upstream* upstream_mr,
+            failure_callback_t callback,
+            void* callback_arg
         ) except +
 
 
