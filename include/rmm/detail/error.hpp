@@ -63,20 +63,10 @@ class bad_alloc : public std::bad_alloc {
 /**
  * @brief Exception thrown when RMM runs out of memory
  *
- * This is thrown under the following conditions:
- *   - For `arena_memory_resource`, when the global arena can no longer allocate more memory from
- * upstream.
- *   - For `cuda_async_memory_resource`, when `cudaMallocFromPoolAsync` returns
- * `cudaErrorMemoryAllocation`.
- *   - For `cuda_memory_resource`, when `cudaMalloc` returns `cudaErrorMemoryAllocation`.
- *   - For `limiting_resource_adapter`, when total allocated bytes exceeds the limit.
- *   - For `managed_memory_resource`, when `cudaMallocManaged` returns `cudaErrorMemoryAllocation`.
- *   - For `pool_memory_resource`, when the pool can no longer allocate more memory from upstream.
+ * This error should only be thrown when we know for sure a resource is out of memory.
  */
 class out_of_memory : public bad_alloc {
  public:
-  out_of_memory(const char* msg) : bad_alloc{msg} {}
-  out_of_memory(std::string const& msg) : bad_alloc{msg} {}
   using bad_alloc::bad_alloc;
 };
 
