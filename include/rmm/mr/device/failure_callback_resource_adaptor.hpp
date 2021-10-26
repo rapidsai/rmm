@@ -57,34 +57,30 @@ using failure_callback_t = std::function<bool(std::size_t, void*)>;
  * avoid an infinite loop. In the following example, we make sure to only retry the allocation
  * once:
  *
- *   @code
- *   using failure_callback_adaptor =
- *     rmm::mr::failure_callback_resource_adaptor<rmm::mr::device_memory_resource>;
+ * @code{c++}
+ * using failure_callback_adaptor =
+ *   rmm::mr::failure_callback_resource_adaptor<rmm::mr::device_memory_resource>;
  *
- *   typedef struct {
- *     bool retried;
- *   } cb_arg;
- *
- *   bool failure_handler(std::size_t bytes, void* arg)
- *   {
- *     cb_arg* a = reinterpret_cast<cb_arg*>(arg);
- *     if (!a->retried) {
- *       a->retried = true;
- *       return true;  // First time we request an allocation retry
- *     } else {
- *       return false;  // Second time we let the adaptor throw std::bad_alloc
- *     }
+ * bool failure_handler(std::size_t bytes, void* arg)
+ * {
+ *   bool& retried = *reinterpret_cast<bool*>(arg);
+ *   if (!retried) {
+ *     retried = true;
+ *     return true;  // First time we request an allocation retry
+ *   } else {
+ *     return false;  // Second time we let the adaptor throw std::bad_alloc
  *   }
+ * }
  *
- *   int main()
- *   {
- *     cb_arg arg{false};
- *     failure_callback_adaptor mr{
- *       rmm::mr::get_current_device_resource(), failure_handler, &arg
- *     };
- *     rmm::mr::set_current_device_resource(&mr);
- *   }
- *  @endcode
+ * int main()
+ * {
+ *   bool retried{false};
+ *   failure_callback_adaptor mr{
+ *     rmm::mr::get_current_device_resource(), failure_handler, &retried
+ *   };
+ *   rmm::mr::set_current_device_resource(&mr);
+ * }
+ * @endcode
  *
  * @tparam Upstream The type of the upstream resource used for allocation/deallocation.
  */

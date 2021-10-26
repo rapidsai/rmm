@@ -29,15 +29,11 @@ namespace {
 using failure_callback_adaptor =
   rmm::mr::failure_callback_resource_adaptor<rmm::mr::device_memory_resource>;
 
-typedef struct {
-  bool retried;
-} cb_arg;
-
 bool failure_handler(std::size_t bytes, void* arg)
 {
-  cb_arg* a = reinterpret_cast<cb_arg*>(arg);
-  if (!a->retried) {
-    a->retried = true;
+  bool& retried = *reinterpret_cast<bool*>(arg);
+  if (!retried) {
+    retried = true;
     return true;  // First time we request an allocation retry
   } else {
     return false;  // Second time we let the adaptor throw std::bad_alloc
@@ -46,12 +42,12 @@ bool failure_handler(std::size_t bytes, void* arg)
 
 TEST(FailureCallbackTest, RetryAllocationOnce)
 {
-  cb_arg arg{false};
-  failure_callback_adaptor mr{rmm::mr::get_current_device_resource(), failure_handler, &arg};
+  bool retried{false};
+  failure_callback_adaptor mr{rmm::mr::get_current_device_resource(), failure_handler, &retried};
   rmm::mr::set_current_device_resource(&mr);
-  EXPECT_EQ(arg.retried, false);
-  EXPECT_THROW(mr.allocate(100_GiB), std::bad_alloc);
-  EXPECT_EQ(arg.retried, true);
+  EXPECT_EQ(retried, false);
+  EXPECT_THROW(mr.allocate(512_GiB), std::bad_alloc);
+  EXPECT_EQ(retried, true);
 }
 
 }  // namespace
