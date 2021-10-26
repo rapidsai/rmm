@@ -71,7 +71,7 @@ class managed_memory_resource final : public device_memory_resource {
     if (bytes == 0) { return nullptr; }
 
     void* ptr{nullptr};
-    RMM_CUDA_TRY(cudaMallocManaged(&ptr, bytes), rmm::bad_alloc);
+    RMM_CUDA_TRY_ALLOC(cudaMallocManaged(&ptr, bytes));
     return ptr;
   }
 
