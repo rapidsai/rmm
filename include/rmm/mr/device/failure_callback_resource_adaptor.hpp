@@ -20,6 +20,7 @@
 
 #include <cstddef>
 #include <functional>
+#include <utility>
 
 namespace rmm::mr {
 
@@ -67,9 +68,8 @@ using failure_callback_t = std::function<bool(std::size_t, void*)>;
  *   if (!retried) {
  *     retried = true;
  *     return true;  // First time we request an allocation retry
- *   } else {
- *     return false;  // Second time we let the adaptor throw std::bad_alloc
  *   }
+ *   return false;  // Second time we let the adaptor throw std::bad_alloc
  * }
  *
  * int main()
@@ -83,10 +83,12 @@ using failure_callback_t = std::function<bool(std::size_t, void*)>;
  * @endcode
  *
  * @tparam Upstream The type of the upstream resource used for allocation/deallocation.
+ * @tparam ExceptionType The type of exception that this adaptor should respond to
  */
-template <typename Upstream>
+template <typename Upstream, typename ExceptionType = rmm::bad_alloc>
 class failure_callback_resource_adaptor final : public device_memory_resource {
  public:
+  using exception_type = ExceptionType;  ///< The type of exception this object catches/throws
   /**
    * @brief Construct a new `failure_callback_resource_adaptor` using `upstream` to satisfy
    * allocation requests.
@@ -100,7 +102,7 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
   failure_callback_resource_adaptor(Upstream* upstream,
                                     failure_callback_t callback,
                                     void* callback_arg)
-    : upstream_{upstream}, callback_{callback}, callback_arg_{callback_arg}
+    : upstream_{upstream}, callback_{std::move(callback)}, callback_arg_{callback_arg}
   {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
   }
@@ -126,14 +128,17 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
    * @return true The upstream resource supports streams
    * @return false The upstream resource does not support streams.
    */
-  bool supports_streams() const noexcept override { return upstream_->supports_streams(); }
+  [[nodiscard]] bool supports_streams() const noexcept override
+  {
+    return upstream_->supports_streams();
+  }
 
   /**
    * @brief Query whether the resource supports the get_mem_info API.
    *
    * @return bool true if the upstream resource supports get_mem_info, false otherwise.
    */
-  bool supports_get_mem_info() const noexcept override
+  [[nodiscard]] bool supports_get_mem_info() const noexcept override
   {
     return upstream_->supports_get_mem_info();
   }
@@ -143,7 +148,7 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
    * @brief Allocates memory of size at least `bytes` using the upstream
    * resource.
    *
-   * @throws `rmm::bad_alloc` if the requested allocation could not be fulfilled
+   * @throws `exception_type` if the requested allocation could not be fulfilled
    * by the upstream resource.
    *
    * @param bytes The size, in bytes, of the allocation
@@ -152,13 +157,13 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
-    void* ret;
+    void* ret{};
 
     while (true) {
       try {
         ret = upstream_->allocate(bytes, stream);
         break;
-      } catch (std::bad_alloc const& e) {
+      } catch (exception_type const& e) {
         if (!callback_(bytes, callback_arg_)) { throw; }
       }
     }
@@ -188,7 +193,7 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equal
    */
-  bool do_is_equal(device_memory_resource const& other) const noexcept override
+  [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
   {
     if (this == &other) { return true; }
     auto cast = dynamic_cast<failure_callback_resource_adaptor<Upstream> const*>(&other);
@@ -204,7 +209,8 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
    * @param stream Stream on which to get the mem info.
    * @return std::pair contaiing free_size and total_size of memory
    */
-  std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view stream) const override
+  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
+    cuda_stream_view stream) const override
   {
     return upstream_->get_mem_info(stream);
   }
