@@ -50,13 +50,14 @@ using failure_callback_t = std::function<bool(std::size_t, void*)>;
  * resource in order to satisfy allocation requests.
  *
  * The callback function takes an allocation size and a callback argument and returns
- * whether a bool representing whether to retry the allocation (true) or throw `std::bad_alloc`
+ * a bool representing whether to retry the allocation (true) or throw `std::bad_alloc`
  * (false).
  *
- * When implementing a callback function for allocation retry, care has to be taking to
- * avoid an infinity loop. In the following example, we make sure to only retry the allocation
+ * When implementing a callback function for allocation retry, care must be taken to
+ * avoid an infinite loop. In the following example, we make sure to only retry the allocation
  * once:
  *
+ *   @code
  *   using failure_callback_adaptor =
  *     rmm::mr::failure_callback_resource_adaptor<rmm::mr::device_memory_resource>;
  *
@@ -83,6 +84,7 @@ using failure_callback_t = std::function<bool(std::size_t, void*)>;
  *     };
  *     rmm::mr::set_current_device_resource(&mr);
  *   }
+ *  @endcode
  *
  * @tparam Upstream The type of the upstream resource used for allocation/deallocation.
  */
