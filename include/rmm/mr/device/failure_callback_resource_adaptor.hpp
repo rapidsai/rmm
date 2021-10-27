@@ -41,7 +41,7 @@ namespace rmm::mr {
  * where true means to retry the memory allocation and false means to throw a
  * `rmm::bad_alloc` exception.
  */
-using failure_callback_t = std::function<bool(std::size_t, void*)>;
+using failure_callback_t = std::function<bool(std::size_t, std::exception const&, void*)>;
 
 /**
  * @brief A device memory resource that calls a callback function when allocations
@@ -164,7 +164,7 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
         ret = upstream_->allocate(bytes, stream);
         break;
       } catch (exception_type const& e) {
-        if (!callback_(bytes, callback_arg_)) { throw; }
+        if (!callback_(bytes, e, callback_arg_)) { throw; }
       }
     }
     return ret;
