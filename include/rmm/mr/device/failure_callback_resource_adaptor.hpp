@@ -27,42 +27,39 @@ namespace rmm::mr {
 /**
  * @brief Callback function type used by failure_callback_resource_adaptor
  *
- * The resource adaptor calls this function when a memory allocation throws a
- * `std::bad_alloc` exception. The function decides whether the resource adaptor
- * should try to allocate the memory again or re-throw the `std::bad_alloc`
- * exception.
+ * The resource adaptor calls this function when a memory allocation throws a specified exception
+ * type. The function decides whether the resource adaptor should try to allocate the memory again
+ * or re-throw the exception.
  *
  * The callback function signature is:
- *     `bool failure_callback_t(std::size_t bytes, void* callback_arg)`
+ *     `bool failure_callback_t(std::size_t bytes, std::exception const& error, void* callback_arg)`
  *
- * The callback function will be passed two parameters: `bytes` is the size of the
- * failed memory allocation, and `arg` is the extra argument passed to the constructor
- * of the `failure_callback_resource_adaptor`. The callback function returns a Boolean
- * where true means to retry the memory allocation and false means to throw a
- * `rmm::bad_alloc` exception.
+ * The callback function is passed three parameters: `bytes` is the size of the failed memory
+ * allocation, error is the exception thrown by the upstream memory resource for the allocation,
+ * and `arg` is the extra argument passed to the constructor of the
+ * `failure_callback_resource_adaptor`. The callback function returns a Boolean where true means to
+ * retry the memory allocation and false means to re-throw the exception.
  */
 using failure_callback_t = std::function<bool(std::size_t, std::exception const&, void*)>;
 
 /**
  * @brief A device memory resource that calls a callback function when allocations
- * throws `std::bad_alloc`.
+ * throw a specified exception type.
  *
  * An instance of this resource must be constructed with an existing, upstream
  * resource in order to satisfy allocation requests.
  *
- * The callback function takes an allocation size and a callback argument and returns
- * a bool representing whether to retry the allocation (true) or throw `std::bad_alloc`
- * (false).
+ * The callback function takes an allocation size, an exception, and a callback argument and returns
+ * a bool representing whether to retry the allocation (true) or throw `std::bad_alloc` (false).
  *
- * When implementing a callback function for allocation retry, care must be taken to
- * avoid an infinite loop. In the following example, we make sure to only retry the allocation
- * once:
+ * When implementing a callback function for allocation retry, care must be taken to avoid an
+ * infinite loop. The following example makes sure to only retry the allocation once:
  *
  * @code{c++}
  * using failure_callback_adaptor =
  *   rmm::mr::failure_callback_resource_adaptor<rmm::mr::device_memory_resource>;
  *
- * bool failure_handler(std::size_t bytes, void* arg)
+ * bool failure_handler(std::size_t bytes, std::exception const& error, void* arg)
  * {
  *   bool& retried = *reinterpret_cast<bool*>(arg);
  *   if (!retried) {
@@ -85,10 +82,11 @@ using failure_callback_t = std::function<bool(std::size_t, std::exception const&
  * @tparam Upstream The type of the upstream resource used for allocation/deallocation.
  * @tparam ExceptionType The type of exception that this adaptor should respond to
  */
-template <typename Upstream, typename ExceptionType = rmm::bad_alloc>
+template <typename Upstream, typename ExceptionType = rmm::out_of_memory>
 class failure_callback_resource_adaptor final : public device_memory_resource {
  public:
   using exception_type = ExceptionType;  ///< The type of exception this object catches/throws
+
   /**
    * @brief Construct a new `failure_callback_resource_adaptor` using `upstream` to satisfy
    * allocation requests.
