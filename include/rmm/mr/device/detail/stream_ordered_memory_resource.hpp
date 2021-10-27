@@ -212,7 +212,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
 
     size = rmm::detail::align_up(size, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
     RMM_EXPECTS(size <= this->underlying().get_maximum_allocation_size(),
-                rmm::bad_alloc,
+                rmm::out_of_memory,
                 "Maximum allocation size exceeded");
     auto const block = this->underlying().get_block(size, stream_event);
 

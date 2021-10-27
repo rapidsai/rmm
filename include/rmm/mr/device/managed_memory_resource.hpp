@@ -48,7 +48,7 @@ class managed_memory_resource final : public device_memory_resource {
   /**
    * @brief Query whether the resource supports the get_mem_info API.
    *
-   * @return bool true if the resource supports get_mem_info, false otherwise.
+   * @return true
    */
   [[nodiscard]] bool supports_get_mem_info() const noexcept override { return true; }
 
@@ -74,7 +74,7 @@ class managed_memory_resource final : public device_memory_resource {
     if (bytes == 0) { return nullptr; }
 
     void* ptr{nullptr};
-    RMM_CUDA_TRY(cudaMallocManaged(&ptr, bytes), rmm::bad_alloc);
+    RMM_CUDA_TRY_ALLOC(cudaMallocManaged(&ptr, bytes));
     return ptr;
   }
 
