@@ -111,9 +111,11 @@ else
         fi
     done
 
+    # TODO: Move boa install to gpuci/rapidsai
+    gpuci_mamba_retry install boa
     export CONDA_BLD_DIR="$WORKSPACE/.conda-bld"
     gpuci_logger "Building and installing rmm"
-    gpuci_conda_retry build --no-build-id --croot ${CONDA_BLD_DIR} \
+    gpuci_conda_retry mambabuild --no-build-id --croot ${CONDA_BLD_DIR} \
       -c $WORKSPACE/ci/artifacts/rmm/cpu/.conda-bld/ conda/recipes/rmm
     gpuci_mamba_retry install -c $WORKSPACE/ci/artifacts/rmm/cpu/.conda-bld/ \
       -c ${CONDA_BLD_DIR} rmm
