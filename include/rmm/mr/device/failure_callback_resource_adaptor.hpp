@@ -35,12 +35,11 @@ namespace rmm::mr {
  *     `bool failure_callback_t(std::size_t bytes, std::exception const& error, void* callback_arg)`
  *
  * The callback function is passed three parameters: `bytes` is the size of the failed memory
- * allocation, error is the exception thrown by the upstream memory resource for the allocation,
- * and `arg` is the extra argument passed to the constructor of the
+ * allocation and `arg` is the extra argument passed to the constructor of the
  * `failure_callback_resource_adaptor`. The callback function returns a Boolean where true means to
  * retry the memory allocation and false means to re-throw the exception.
  */
-using failure_callback_t = std::function<bool(std::size_t, std::exception const&, void*)>;
+using failure_callback_t = std::function<bool(std::size_t, void*)>;
 
 /**
  * @brief A device memory resource that calls a callback function when allocations
@@ -59,7 +58,7 @@ using failure_callback_t = std::function<bool(std::size_t, std::exception const&
  * using failure_callback_adaptor =
  *   rmm::mr::failure_callback_resource_adaptor<rmm::mr::device_memory_resource>;
  *
- * bool failure_handler(std::size_t bytes, std::exception const& error, void* arg)
+ * bool failure_handler(std::size_t bytes, void* arg)
  * {
  *   bool& retried = *reinterpret_cast<bool*>(arg);
  *   if (!retried) {
@@ -162,7 +161,7 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
         ret = upstream_->allocate(bytes, stream);
         break;
       } catch (exception_type const& e) {
-        if (!callback_(bytes, e, callback_arg_)) { throw; }
+        if (!callback_(bytes, callback_arg_)) { throw; }
       }
     }
     return ret;

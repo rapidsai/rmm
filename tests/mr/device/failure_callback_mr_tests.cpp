@@ -32,7 +32,7 @@ template <typename ExceptionType = rmm::bad_alloc>
 using failure_callback_adaptor =
   rmm::mr::failure_callback_resource_adaptor<rmm::mr::device_memory_resource, ExceptionType>;
 
-bool failure_handler(std::size_t /*bytes*/, std::exception const& /*error*/, void* arg)
+bool failure_handler(std::size_t /*bytes*/, void* arg)
 {
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
   bool& retried = *reinterpret_cast<bool*>(arg);
