@@ -131,8 +131,7 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
     if (this == &other) { return true; }
     auto const* thread_safe_other = dynamic_cast<thread_safe_resource_adaptor const*>(&other);
     if (thread_safe_other != nullptr) { return upstream_ == thread_safe_other->get_upstream(); }
-    // TODO Fix:
-    return false;  // upstream_ == &other;
+    return upstream_ == &other;
   }
 
   /**

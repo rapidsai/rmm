@@ -255,8 +255,7 @@ class logging_resource_adaptor final : public device_memory_resource {
     if (this == &other) { return true; }
     auto const* cast = dynamic_cast<logging_resource_adaptor const*>(&other);
     if (cast != nullptr) { return upstream_ == cast->get_upstream(); }
-    // TODO fix
-    return false;  // upstream_ == &other;
+    return upstream_ == &other;
   }
 
   /**

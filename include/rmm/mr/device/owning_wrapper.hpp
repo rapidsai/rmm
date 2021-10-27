@@ -197,8 +197,8 @@ class owning_wrapper : public device_memory_resource {
   {
     if (this == &other) { return true; }
     auto casted = dynamic_cast<owning_wrapper<Resource, Upstreams...> const*>(&other);
-    if (nullptr != casted) { return wrapped().is_equal(casted->wrapped()); }
-    return wrapped().is_equal(other);
+    if (nullptr != casted) { return cuda::view_resource(&wrapped()) == &casted->wrapped(); }
+    return cuda::view_resource(&wrapped()) == &other;
   }
 
   /**

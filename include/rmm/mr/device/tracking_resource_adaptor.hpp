@@ -264,8 +264,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
   {
     if (this == &other) { return true; }
     auto const* cast = dynamic_cast<tracking_resource_adaptor const*>(&other);
-    return cast != nullptr ? upstream_ == cast->get_upstream()
-                           : false;  // TODO fix -> upstream_ == &other;
+    return cast != nullptr ? upstream_ == cast->get_upstream() : upstream_ == &other;
   }
 
   /**
