@@ -15,6 +15,7 @@
  */
 
 #include "../../byte_literals.hpp"
+#include "rmm/mr/device/device_memory_resource.hpp"
 
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
@@ -25,7 +26,7 @@
 namespace rmm::test {
 namespace {
 
-using limiting_adaptor = rmm::mr::limiting_resource_adaptor;
+using limiting_adaptor = rmm::mr::limiting_resource_adaptor<mr::device_memory_resource*>;
 
 TEST(LimitingTest, ThrowOnNullUpstream)
 {

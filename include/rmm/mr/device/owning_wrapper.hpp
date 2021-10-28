@@ -280,6 +280,7 @@ auto make_owning_wrapper(std::shared_ptr<Upstream> upstream, Args&&... args)
                                        std::forward<Args>(args)...);
 }
 
+// TODO: can't make latest owning wrapper usage work without adding these...
 template <class Resource, typename... Upstreams, typename... Args>
 auto make_owning_wrapper(std::tuple<std::shared_ptr<Upstreams>...> upstreams, Args&&... args)
 {

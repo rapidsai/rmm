@@ -58,30 +58,35 @@ std::shared_ptr<rmm::mr::device_memory_resource> make_simulated(std::size_t simu
 inline auto make_pool(std::size_t simulated_size)
 {
   if (simulated_size > 0) {
-    return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(
+    return rmm::mr::make_owning_wrapper<
+      rmm::mr::pool_memory_resource<rmm::mr::device_memory_resource*>>(
       make_simulated(simulated_size), simulated_size, simulated_size);
   }
-  return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_cuda());
+  return rmm::mr::make_owning_wrapper<
+    rmm::mr::pool_memory_resource<rmm::mr::device_memory_resource*>>(make_cuda());
 }
 
 inline auto make_arena(std::size_t simulated_size)
 {
   if (simulated_size > 0) {
-    return rmm::mr::make_owning_wrapper<rmm::mr::arena_memory_resource>(
+    return rmm::mr::make_owning_wrapper<
+      rmm::mr::arena_memory_resource<rmm::mr::device_memory_resource*>>(
       make_simulated(simulated_size), simulated_size, simulated_size);
   }
-  return rmm::mr::make_owning_wrapper<rmm::mr::arena_memory_resource>(make_cuda());
+  return rmm::mr::make_owning_wrapper<
+    rmm::mr::arena_memory_resource<rmm::mr::device_memory_resource*>>(make_cuda());
 }
 
 inline auto make_binning(std::size_t simulated_size)
 {
   auto pool = make_pool(simulated_size);
-  auto mr   = rmm::mr::make_owning_wrapper<rmm::mr::binning_memory_resource>(pool);
-  const auto min_size_exp{18};
-  const auto max_size_exp{22};
-  for (std::size_t i = min_size_exp; i <= max_size_exp; i++) {
-    mr->wrapped().add_bin(1 << i);
-  }
+  // Add a binning_memory_resource with fixed-size bins of sizes 256, 512, 1024, 2048 and 4096KiB
+  // Larger allocations will use the pool resource
+  constexpr auto min_bin_pow2{18};
+  constexpr auto max_bin_pow2{22};
+  auto mr = rmm::mr::make_owning_wrapper<rmm::mr::binning_memory_resource<
+    rmm::mr::owning_wrapper<rmm::mr::pool_memory_resource<rmm::mr::device_memory_resource*>,
+                            rmm::mr::device_memory_resource>*>>(pool, min_bin_pow2, max_bin_pow2);
   return mr;
 }
 

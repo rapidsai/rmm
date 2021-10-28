@@ -15,6 +15,7 @@
  */
 
 #include "../../byte_literals.hpp"
+#include "rmm/mr/device/device_memory_resource.hpp"
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
@@ -26,7 +27,7 @@
 namespace rmm::test {
 namespace {
 
-using tracking_adaptor = rmm::mr::tracking_resource_adaptor;
+using tracking_adaptor = rmm::mr::tracking_resource_adaptor<mr::device_memory_resource*>;
 
 constexpr auto num_allocations{10};
 constexpr auto num_more_allocations{5};

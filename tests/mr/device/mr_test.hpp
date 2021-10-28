@@ -242,17 +242,20 @@ inline auto make_managed() { return std::make_shared<rmm::mr::managed_memory_res
 
 inline auto make_pool()
 {
-  return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_cuda());
+  return rmm::mr::make_owning_wrapper<
+    rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource*>>(make_cuda());
 }
 
 inline auto make_arena()
 {
-  return rmm::mr::make_owning_wrapper<rmm::mr::arena_memory_resource>(make_cuda());
+  return rmm::mr::make_owning_wrapper<
+    rmm::mr::arena_memory_resource<rmm::mr::cuda_memory_resource*>>(make_cuda());
 }
 
 inline auto make_fixed_size()
 {
-  return rmm::mr::make_owning_wrapper<rmm::mr::fixed_size_memory_resource>(make_cuda());
+  return rmm::mr::make_owning_wrapper<
+    rmm::mr::fixed_size_memory_resource<rmm::mr::cuda_memory_resource*>>(make_cuda());
 }
 
 inline auto make_binning()
@@ -263,8 +266,9 @@ inline auto make_binning()
   auto const bin_range_start{18};
   auto const bin_range_end{22};
 
-  auto mr = rmm::mr::make_owning_wrapper<rmm::mr::binning_memory_resource>(
-    pool, bin_range_start, bin_range_end);
+  auto mr = rmm::mr::make_owning_wrapper<rmm::mr::binning_memory_resource<
+    rmm::mr::owning_wrapper<rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource*>,
+                            rmm::mr::cuda_memory_resource>*>>(pool, bin_range_start, bin_range_end);
   return mr;
 }
 

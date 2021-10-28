@@ -69,11 +69,14 @@ namespace rmm::mr {
  * \see http://jemalloc.net/
  * \see https://github.com/google/tcmalloc
  *
- * @tparam Upstream Memory resource to use for allocating memory for the global arena. Implements
- * rmm::mr::device_memory_resource interface.
+ * @tparam UpstreamPointer Type of the pointer to the upstream resource used for allocation.
+ * @tparam Properties properties of the upstream resource (usually deduced with CTAD)
  */
+template <typename UpstreamPointer, typename... Properties>
 class arena_memory_resource final : public device_memory_resource {
  public:
+  using upstream_view_type = cuda::basic_resource_view<UpstreamPointer, Properties...>;
+
   /**
    * @brief Construct an `arena_memory_resource`.
    *
@@ -89,11 +92,10 @@ class arena_memory_resource final : public device_memory_resource {
    * @param maximum_size Maximum size, in bytes, that the global arena can grow to. Defaults to all
    * of the available memory on the current device.
    */
-  explicit arena_memory_resource(
-    cuda::stream_ordered_resource_view<cuda::memory_access::device> upstream_mr,
-    std::size_t initial_size = global_arena::default_initial_size,
-    std::size_t maximum_size = global_arena::default_maximum_size,
-    bool dump_log_on_failure = false)
+  explicit arena_memory_resource(upstream_view_type upstream_mr,
+                                 std::size_t initial_size = global_arena::default_initial_size,
+                                 std::size_t maximum_size = global_arena::default_maximum_size,
+                                 bool dump_log_on_failure = false)
     : global_arena_{upstream_mr, initial_size, maximum_size},
       dump_log_on_failure_{dump_log_on_failure}
   {
@@ -116,20 +118,20 @@ class arena_memory_resource final : public device_memory_resource {
    *
    * @returns bool true.
    */
-  bool supports_streams() const noexcept override { return true; }
+  [[nodiscard]] bool supports_streams() const noexcept override { return true; }
 
   /**
    * @brief Query whether the resource supports the get_mem_info API.
    *
    * @return bool false.
    */
-  bool supports_get_mem_info() const noexcept override { return false; }
+  [[nodiscard]] bool supports_get_mem_info() const noexcept override { return false; }
 
  private:
   TEMPORARY_BASE_CLASS_OVERRIDES
 
-  using global_arena = detail::arena::global_arena;
-  using arena        = detail::arena::arena;
+  using global_arena = detail::arena::global_arena<UpstreamPointer, Properties...>;
+  using arena        = detail::arena::arena<UpstreamPointer, Properties...>;
   using read_lock    = std::shared_lock<std::shared_timed_mutex>;
   using write_lock   = std::lock_guard<std::shared_timed_mutex>;
 
@@ -201,7 +203,7 @@ class arena_memory_resource final : public device_memory_resource {
    * @param stream The stream associated with the arena.
    * @return arena& The arena associated with the current thread or the given stream.
    */
-  arena& get_arena(cuda_stream_view stream)
+  [[nodiscard]] arena& get_arena(cuda_stream_view stream)
   {
     if (use_per_thread_arena(stream)) { return get_thread_arena(); }
     return get_stream_arena(stream);
@@ -212,7 +214,7 @@ class arena_memory_resource final : public device_memory_resource {
    *
    * @return arena& The arena associated with the current thread.
    */
-  arena& get_thread_arena()
+  [[nodiscard]] arena& get_thread_arena()
   {
     auto const thread_id = std::this_thread::get_id();
     {
@@ -234,7 +236,7 @@ class arena_memory_resource final : public device_memory_resource {
    *
    * @return arena& The arena associated with the given stream.
    */
-  arena& get_stream_arena(cuda_stream_view stream)
+  [[nodiscard]] arena& get_stream_arena(cuda_stream_view stream)
   {
     RMM_LOGGING_ASSERT(!use_per_thread_arena(stream));
     {
@@ -255,7 +257,8 @@ class arena_memory_resource final : public device_memory_resource {
    * @param stream to execute on.
    * @return std::pair containing free_size and total_size of memory.
    */
-  std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view stream) const override
+  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
+    cuda_stream_view stream) const override
   {
     return std::make_pair(0, 0);
   }
@@ -305,7 +308,7 @@ class arena_memory_resource final : public device_memory_resource {
    * @param stream to check.
    * @return true if per-thread arena should be used, false otherwise.
    */
-  static bool use_per_thread_arena(cuda_stream_view stream)
+  [[nodiscard]] static bool use_per_thread_arena(cuda_stream_view stream)
   {
     return stream.is_per_thread_default();
   }

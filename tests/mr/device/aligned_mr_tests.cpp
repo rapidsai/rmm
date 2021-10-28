@@ -46,7 +46,9 @@ void* int_to_address(std::size_t val)
 
 TEST(AlignedTest, ThrowOnNullUpstream)
 {
-  auto construct_nullptr = []() { mr::aligned_resource_adaptor mr{nullptr}; };
+  auto construct_nullptr = []() {
+    mr::aligned_resource_adaptor<mr::device_memory_resource*> mr{nullptr};
+  };
   EXPECT_THROW(construct_nullptr(), rmm::logic_error);
 }
 
@@ -54,7 +56,7 @@ TEST(AlignedTest, ThrowOnInvalidAllocationAlignment)
 {
   mock_resource mock;
   auto construct_alignment = [](auto* memres, std::size_t align) {
-    mr::aligned_resource_adaptor mr{memres, align};
+    mr::aligned_resource_adaptor<mock_resource*> mr{memres, align};
   };
   EXPECT_THROW(construct_alignment(&mock, 255), rmm::logic_error);
   EXPECT_NO_THROW(construct_alignment(&mock, 256));
@@ -64,7 +66,7 @@ TEST(AlignedTest, ThrowOnInvalidAllocationAlignment)
 TEST(AlignedTest, DefaultAllocationAlignmentPassthrough)
 {
   mock_resource mock;
-  mr::aligned_resource_adaptor mr{&mock};
+  mr::aligned_resource_adaptor<mock_resource*> mr{&mock};
 
   cuda_stream_view stream;
   void* const pointer = int_to_address(123);
@@ -88,7 +90,7 @@ TEST(AlignedTest, BelowAlignmentThresholdPassthrough)
   mock_resource mock;
   auto const alignment{4096};
   auto const threshold{65536};
-  mr::aligned_resource_adaptor mr{&mock, alignment, threshold};
+  mr::aligned_resource_adaptor<mock_resource*> mr{&mock, alignment, threshold};
 
   cuda_stream_view stream;
   void* const pointer = int_to_address(123);
@@ -120,7 +122,7 @@ TEST(AlignedTest, UpstreamAddressAlreadyAligned)
   mock_resource mock;
   auto const alignment{4096};
   auto const threshold{65536};
-  mr::aligned_resource_adaptor mr{&mock, alignment, threshold};
+  mr::aligned_resource_adaptor<mock_resource*> mr{&mock, alignment, threshold};
 
   cuda_stream_view stream;
   void* const pointer = int_to_address(4096);
@@ -143,7 +145,7 @@ TEST(AlignedTest, AlignUpstreamAddress)
   mock_resource mock;
   auto const alignment{4096};
   auto const threshold{65536};
-  mr::aligned_resource_adaptor mr{&mock, alignment, threshold};
+  mr::aligned_resource_adaptor<mock_resource*> mr{&mock, alignment, threshold};
 
   cuda_stream_view stream;
   {
@@ -166,7 +168,7 @@ TEST(AlignedTest, AlignMultiple)
   mock_resource mock;
   auto const alignment{4096};
   auto const threshold{65536};
-  mr::aligned_resource_adaptor mr{&mock, alignment, threshold};
+  mr::aligned_resource_adaptor<mock_resource*> mr{&mock, alignment, threshold};
 
   cuda_stream_view stream;
 
@@ -205,7 +207,8 @@ TEST(AlignedTest, AlignRealPointer)
 {
   auto const alignment{4096};
   auto const threshold{65536};
-  mr::aligned_resource_adaptor mr{rmm::mr::get_current_device_resource(), alignment, threshold};
+  mr::aligned_resource_adaptor<mr::device_memory_resource*> mr{
+    rmm::mr::get_current_device_resource(), alignment, threshold};
   void* alloc = mr.allocate(threshold);
   EXPECT_TRUE(rmm::detail::is_pointer_aligned(alloc, alignment));
   mr.deallocate(alloc, threshold);

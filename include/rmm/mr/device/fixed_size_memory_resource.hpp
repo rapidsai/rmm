@@ -41,13 +41,20 @@ namespace rmm::mr {
  * @brief A `device_memory_resource` which allocates memory blocks of a single fixed size.
  *
  * Supports only allocations of size smaller than the configured block_size.
+ *
+ * @tparam UpstreamPointer Type of the pointer to the upstream resource used for allocation.
+ * @tparam Properties properties of the upstream resource (usually deduced with CTAD)
  */
-class fixed_size_memory_resource
-  : public detail::stream_ordered_memory_resource<fixed_size_memory_resource,
-                                                  detail::fixed_size_free_list> {
+template <typename UpstreamPointer, typename... Properties>
+class fixed_size_memory_resource : public detail::stream_ordered_memory_resource<
+                                     fixed_size_memory_resource<UpstreamPointer, Properties...>,
+                                     detail::fixed_size_free_list> {
  public:
-  friend class detail::stream_ordered_memory_resource<fixed_size_memory_resource,
-                                                      detail::fixed_size_free_list>;
+  using upstream_view_type = cuda::basic_resource_view<UpstreamPointer, Properties...>;
+
+  friend class detail::stream_ordered_memory_resource<
+    fixed_size_memory_resource<UpstreamPointer, Properties...>,
+    detail::fixed_size_free_list>;
 
   // A block is the fixed size this resource alloates
   static constexpr std::size_t default_block_size = 1 << 20;  // 1 MiB
@@ -67,16 +74,14 @@ class fixed_size_memory_resource
    * @param blocks_to_preallocate The number of blocks to allocate to initialize the pool.
    */
   explicit fixed_size_memory_resource(
-    cuda::stream_ordered_resource_view<cuda::memory_access::device> upstream_mr,
+    upstream_view_type upstream_mr,
     std::size_t block_size            = default_block_size,
     std::size_t blocks_to_preallocate = default_blocks_to_preallocate)
     : upstream_mr_{upstream_mr},
       block_size_{rmm::detail::align_up(block_size, rmm::detail::CUDA_ALLOCATION_ALIGNMENT)},
       upstream_chunk_size_{block_size * blocks_to_preallocate}
   {
-    RMM_EXPECTS(
-      upstream_mr_ != cuda::stream_ordered_resource_view<cuda::memory_access::device>{nullptr},
-      "Unexpected null upstream resource pointer.");
+    RMM_EXPECTS(upstream_mr_, "Unexpected null upstream resource view.");
 
     // allocate initial blocks and insert into free list
     this->insert_blocks(blocks_from_upstream(cuda_stream_legacy), cuda_stream_legacy);
@@ -86,7 +91,7 @@ class fixed_size_memory_resource
    * @brief Destroy the `fixed_size_memory_resource` and free all memory allocated from upstream.
    *
    */
-  ~fixed_size_memory_resource() override { release(); }
+  virtual ~fixed_size_memory_resource() { release(); }
 
   fixed_size_memory_resource()                                  = delete;
   fixed_size_memory_resource(fixed_size_memory_resource const&) = delete;
@@ -114,11 +119,7 @@ class fixed_size_memory_resource
    *
    * @return A view of the upstream memory resource.
    */
-  [[nodiscard]] cuda::stream_ordered_resource_view<cuda::memory_access::device> get_upstream()
-    const noexcept
-  {
-    return upstream_mr_;
-  }
+  [[nodiscard]] upstream_view_type get_upstream() const noexcept { return upstream_mr_; }
 
   /**
    * @brief Get the size of blocks allocated by this memory resource.
@@ -275,8 +276,7 @@ class fixed_size_memory_resource
   }
 
  private:
-  cuda::stream_ordered_resource_view<cuda::memory_access::device>
-    upstream_mr_;  // The resource from which to allocate new blocks
+  upstream_view_type upstream_mr_;  // The resource from which to allocate new blocks
 
   std::size_t const block_size_;           // size of blocks this MR allocates
   std::size_t const upstream_chunk_size_;  // size of chunks allocated from heap MR

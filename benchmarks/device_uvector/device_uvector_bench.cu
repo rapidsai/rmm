@@ -24,10 +24,12 @@
 
 #include <cuda_runtime_api.h>
 
+using pool_mr = rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource*>;
+
 static void BM_UvectorSizeConstruction(benchmark::State& state)
 {
   rmm::mr::cuda_memory_resource cuda_mr{};
-  rmm::mr::pool_memory_resource mr{&cuda_mr};
+  pool_mr mr{&cuda_mr};
   rmm::mr::set_current_device_resource(&mr);
 
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
@@ -48,7 +50,7 @@ BENCHMARK(BM_UvectorSizeConstruction)
 static void BM_ThrustVectorSizeConstruction(benchmark::State& state)
 {
   rmm::mr::cuda_memory_resource cuda_mr{};
-  rmm::mr::pool_memory_resource mr{&cuda_mr};
+  pool_mr mr{&cuda_mr};
   rmm::mr::set_current_device_resource(&mr);
 
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)

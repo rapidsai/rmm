@@ -20,6 +20,7 @@
 
 #include <cstddef>
 #include <functional>
+#include <utility>
 
 namespace rmm::mr {
 
@@ -82,11 +83,14 @@ using failure_callback_t = std::function<bool(std::size_t, void*)>;
  * }
  * @endcode
  *
- * @tparam Upstream The type of the upstream resource used for allocation/deallocation.
+ * @tparam UpstreamPointer Type of the pointer to the upstream resource used for allocation.
+ * @tparam Properties properties of the upstream resource (usually deduced with CTAD)
  */
-template <typename Upstream>
+template <typename UpstreamPointer, typename... Properties>
+
 class failure_callback_resource_adaptor final : public device_memory_resource {
  public:
+  using upstream_view_type = cuda::basic_resource_view<UpstreamPointer, Properties...>;
   /**
    * @brief Construct a new `failure_callback_resource_adaptor` using `upstream` to satisfy
    * allocation requests.
@@ -97,12 +101,12 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
    * @param callback Callback function @see failure_callback_t
    * @param callback_arg Extra argument passed to `callback`
    */
-  failure_callback_resource_adaptor(Upstream* upstream,
+  failure_callback_resource_adaptor(upstream_view_type upstream,
                                     failure_callback_t callback,
                                     void* callback_arg)
-    : upstream_{upstream}, callback_{callback}, callback_arg_{callback_arg}
+    : upstream_{upstream}, callback_{std::move(callback)}, callback_arg_{callback_arg}
   {
-    RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
+    RMM_EXPECTS(upstream, "Unexpected null upstream resource view.");
   }
 
   failure_callback_resource_adaptor()                                         = delete;
@@ -118,7 +122,7 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
    *
    * @return Upstream* Pointer to the upstream resource.
    */
-  Upstream* get_upstream() const noexcept { return upstream_; }
+  [[nodiscard]] upstream_view_type get_upstream() const noexcept { return upstream_; }
 
   /**
    * @brief Checks whether the upstream resource supports streams.
@@ -126,14 +130,17 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
    * @return true The upstream resource supports streams
    * @return false The upstream resource does not support streams.
    */
-  bool supports_streams() const noexcept override { return upstream_->supports_streams(); }
+  [[nodiscard]] bool supports_streams() const noexcept override
+  {
+    return upstream_->supports_streams();
+  }
 
   /**
    * @brief Query whether the resource supports the get_mem_info API.
    *
    * @return bool true if the upstream resource supports get_mem_info, false otherwise.
    */
-  bool supports_get_mem_info() const noexcept override
+  [[nodiscard]] bool supports_get_mem_info() const noexcept override
   {
     return upstream_->supports_get_mem_info();
   }
@@ -152,7 +159,7 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
-    void* ret;
+    void* ret{};
 
     while (true) {
       try {
@@ -188,10 +195,11 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equal
    */
-  bool do_is_equal(cuda::memory_resource<memory_kind> const& other) const noexcept override
+  [[nodiscard]] bool do_is_equal(
+    cuda::memory_resource<memory_kind> const& other) const noexcept override
   {
     if (this == &other) { return true; }
-    auto const* cast = dynamic_cast<failure_callback_resource_adaptor<Upstream> const*>(&other);
+    auto const* cast = dynamic_cast<failure_callback_resource_adaptor const*>(&other);
     return cast != nullptr ? upstream_ == cast->get_upstream() : upstream_ == &other;
   }
 
@@ -203,12 +211,13 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
    * @param stream Stream on which to get the mem info.
    * @return std::pair contaiing free_size and total_size of memory
    */
-  std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view stream) const override
+  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
+    cuda_stream_view stream) const override
   {
     return upstream_->get_mem_info(stream);
   }
 
-  Upstream* upstream_;  // the upstream resource used for satisfying allocation requests
+  upstream_view_type upstream_;  // the upstream resource used for satisfying allocation requests
   failure_callback_t callback_;
   void* callback_arg_;
 };

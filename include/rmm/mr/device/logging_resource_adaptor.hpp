@@ -32,37 +32,40 @@
 
 namespace rmm::mr {
 /**
- * @brief Resource that uses `Upstream` to allocate memory and logs information
- * about the requested allocation/deallocations.
+ * @brief Resource that uses `Upstream` to allocate memory and logs information about the
+ * allocations and deallocations.
  *
- * An instance of this resource can be constructed with an existing, upstream
- * resource in order to satisfy allocation requests and log
- * allocation/deallocation activity.
+ * An instance of this resource can be constructed with an existing, upstream resource in order to
+ * satisfy allocation requests and log allocation/deallocation activity.
+
+ * @tparam UpstreamPointer Type of the pointer to the upstream resource used for allocation.
+ * @tparam Properties properties of the upstream resource (usually deduced with CTAD)
  */
+template <typename UpstreamPointer, typename... Properties>
 class logging_resource_adaptor final : public device_memory_resource {
  public:
+  using upstream_view_type = cuda::basic_resource_view<UpstreamPointer, Properties...>;
   /**
-   * @brief Construct a new logging resource adaptor using `upstream` to satisfy
-   * allocation requests and logging information about each allocation/free to
-   * the file specified by `filename`.
+   * @brief Construct a new logging resource adaptor using `upstream` to satisfy allocation requests
+   * and logging information about each allocation/free to the file specified by `filename`.
    *
-   * The logfile will be written using CSV formatting.
+   * The logfile is written using CSV formatting.
    *
    * Clears the contents of `filename` if it already exists.
    *
-   * Creating multiple `logging_resource_adaptor`s with the same `filename` will
-   * result in undefined behavior.
+   * Creating multiple `logging_resource_adaptor`s with the same `filename` results in undefined
+   * behavior.
    *
    * @throws `rmm::logic_error` if `upstream == nullptr`
    * @throws `spdlog::spdlog_ex` if opening `filename` failed
    *
    * @param upstream The resource used for allocating/deallocating device memory
-   * @param filename Name of file to write log info. If not specified, retrieves
-   * the file name from the environment variable "RMM_LOG_FILE".
+   * @param filename Name of file to write log info. If not specified, retrieves the file name from
+   * the environment variable "RMM_LOG_FILE".
    * @param auto_flush If true, flushes the log for every (de)allocation. Warning, this will degrade
    * performance.
    */
-  logging_resource_adaptor(cuda::stream_ordered_resource_view<cuda::memory_access::device> upstream,
+  logging_resource_adaptor(upstream_view_type upstream,
                            std::string const& filename = get_default_filename(),
                            bool auto_flush             = false)
     : logger_{std::make_shared<spdlog::logger>(
@@ -70,17 +73,15 @@ class logging_resource_adaptor final : public device_memory_resource {
         std::make_shared<spdlog::sinks::basic_file_sink_mt>(filename, true /*truncate file*/))},
       upstream_{upstream}
   {
-    RMM_EXPECTS(
-      upstream != cuda::stream_ordered_resource_view<cuda::memory_access::device>{nullptr},
-      "Unexpected null upstream resource pointer.");
+    RMM_EXPECTS(upstream != upstream_view_type{nullptr},
+                "Unexpected null upstream resource pointer.");
 
     init_logger(auto_flush);
   }
 
   /**
-   * @brief Construct a new logging resource adaptor using `upstream` to satisfy
-   * allocation requests and logging information about each allocation/free to
-   * the ostream specified by `stream`.
+   * @brief Construct a new logging resource adaptor using `upstream` to satisfy allocation requests
+   * and logging information about each allocation/free to the ostream specified by `stream`.
    *
    * The logfile will be written using CSV formatting.
    *
@@ -91,28 +92,26 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @param auto_flush If true, flushes the log for every (de)allocation. Warning, this will degrade
    * performance.
    */
-  logging_resource_adaptor(cuda::stream_ordered_resource_view<cuda::memory_access::device> upstream,
+  logging_resource_adaptor(upstream_view_type upstream,
                            std::ostream& stream,
                            bool auto_flush = false)
     : logger_{std::make_shared<spdlog::logger>(
         "RMM", std::make_shared<spdlog::sinks::ostream_sink_mt>(stream))},
       upstream_{upstream}
   {
-    RMM_EXPECTS(
-      upstream != cuda::stream_ordered_resource_view<cuda::memory_access::device>{nullptr},
-      "Unexpected null upstream resource pointer.");
+    RMM_EXPECTS(upstream != upstream_view_type{nullptr},
+                "Unexpected null upstream resource pointer.");
 
     init_logger(auto_flush);
   }
 
-  logging_resource_adaptor(cuda::stream_ordered_resource_view<cuda::memory_access::device> upstream,
+  logging_resource_adaptor(upstream_view_type upstream,
                            spdlog::sinks_init_list sinks,
                            bool auto_flush = false)
     : logger_{std::make_shared<spdlog::logger>("RMM", sinks)}, upstream_{upstream}
   {
-    RMM_EXPECTS(
-      upstream != cuda::stream_ordered_resource_view<cuda::memory_access::device>{nullptr},
-      "Unexpected null upstream resource pointer.");
+    RMM_EXPECTS(upstream != upstream_view_type{nullptr},
+                "Unexpected null upstream resource pointer.");
 
     init_logger(auto_flush);
   }
@@ -129,11 +128,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    *
    * @return View of the upstream resource.
    */
-  [[nodiscard]] cuda::stream_ordered_resource_view<cuda::memory_access::device> get_upstream()
-    const noexcept
-  {
-    return upstream_;
-  }
+  [[nodiscard]] upstream_view_type get_upstream() const noexcept { return upstream_; }
 
   /**
    * @brief Checks whether the upstream resource supports streams.
@@ -193,19 +188,19 @@ class logging_resource_adaptor final : public device_memory_resource {
   }
 
   /**
-   * @brief Allocates memory of size at least `bytes` using the upstream
-   * resource and logs the allocation.
+   * @brief Allocates memory of size at least `bytes` using the upstream resource and logs the
+   * allocation.
    *
-   * If the upstream allocation is successful logs the
-   * following CSV formatted line to the file specified at construction:
+   * If the upstream allocation is successful logs the following CSV formatted line to the file
+   * specified at construction:
    * ```
    * thread_id,*TIMESTAMP*,"allocate",*bytes*,*stream*
    * ```
    *
    * The returned pointer has at least 256B alignment.
    *
-   * @throws `rmm::bad_alloc` if the requested allocation could not be fulfilled
-   * by the upstream resource.
+   * @throws `rmm::bad_alloc` if the requested allocation could not be fulfilled by the upstream
+   * resource.
    *
    * @param bytes The size, in bytes, of the allocation
    * @param stream Stream on which to perform the allocation
@@ -219,11 +214,10 @@ class logging_resource_adaptor final : public device_memory_resource {
   }
 
   /**
-   * @brief Free allocation of size `bytes` pointed to by `ptr` and log the
-   * deallocation.
+   * @brief Free allocation of size `bytes` pointed to by `ptr` and log the deallocation.
    *
-   * Every invocation of `logging_resource_adaptor::do_deallocate` will write
-   * the following CSV formatted line to the file specified at construction:
+   * Every invocation of `logging_resource_adaptor::do_deallocate` will write the following CSV
+   * formatted line to the file specified at construction:
    * ```
    * thread_id,*TIMESTAMP*,"free",*bytes*,*stream*
    * ```
@@ -272,11 +266,9 @@ class logging_resource_adaptor final : public device_memory_resource {
     return {0, 0};
   }
 
-  std::shared_ptr<spdlog::logger> logger_;  ///< spdlog logger object
+  std::shared_ptr<spdlog::logger> logger_;  // spdlog logger object
 
-  cuda::stream_ordered_resource_view<cuda::memory_access::device>
-    upstream_;  ///< The upstream resource used for satisfying
-                ///< allocation requests
+  upstream_view_type upstream_;  // The upstream resource used for satisfying allocation requests
 };
 
 }  // namespace rmm::mr

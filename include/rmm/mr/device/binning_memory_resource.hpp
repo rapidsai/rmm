@@ -36,9 +36,16 @@ namespace rmm::mr {
  *
  * @tparam UpstreamResource memory_resource to use for allocations that don't fall within any
  * configured bin size. Implements rmm::mr::device_memory_resource interface.
+ *
+ * @tparam UpstreamPointer Type of the pointer to the upstream resource used for allocation.
+ * @tparam Properties properties of the upstream resource (usually deduced with CTAD)
  */
+template <typename UpstreamPointer, typename... Properties>
 class binning_memory_resource final : public device_memory_resource {
  public:
+  using upstream_view_type = cuda::basic_resource_view<UpstreamPointer, Properties...>;
+  using bin_view_type      = cuda::stream_ordered_resource_view<Properties...>;
+
   /**
    * @brief Construct a new binning memory resource object.
    *
@@ -49,13 +56,9 @@ class binning_memory_resource final : public device_memory_resource {
    *
    * @param upstream_resource The upstream memory resource used to allocate bin pools.
    */
-  explicit binning_memory_resource(
-    cuda::stream_ordered_resource_view<cuda::memory_access::device> upstream_mr)
-    : upstream_mr_{upstream_mr}
+  explicit binning_memory_resource(upstream_view_type upstream_mr) : upstream_mr_{upstream_mr}
   {
-    RMM_EXPECTS(
-      upstream_mr_ != cuda::stream_ordered_resource_view<cuda::memory_access::device>{nullptr},
-      "Unexpected null upstream resource pointer.");
+    RMM_EXPECTS(upstream_mr_, "Unexpected null upstream resource view.");
   }
 
   /**
@@ -66,19 +69,16 @@ class binning_memory_resource final : public device_memory_resource {
    * and `max_size_exponent==22`, creates bins of sizes 256KiB, 512KiB, 1024KiB, 2048KiB and
    * 4096KiB.
    *
-   * @param upstream_resource The upstream memory resource used to allocate bin pools.
+   * @param upstream_mr The upstream memory resource used to allocate bin pools.
    * @param min_size_exponent The minimum base-2 exponent bin size.
    * @param max_size_exponent The maximum base-2 exponent bin size.
    */
-  binning_memory_resource(
-    cuda::stream_ordered_resource_view<cuda::memory_access::device> upstream_resource,
-    int8_t min_size_exponent,  // NOLINT(bugprone-easily-swappable-parameters)
-    int8_t max_size_exponent)
-    : upstream_mr_{upstream_resource}
+  binning_memory_resource(upstream_view_type upstream_mr,
+                          int8_t min_size_exponent,  // NOLINT(bugprone-easily-swappable-parameters)
+                          int8_t max_size_exponent)
+    : upstream_mr_{upstream_mr}
   {
-    RMM_EXPECTS(
-      upstream_mr_ != cuda::stream_ordered_resource_view<cuda::memory_access::device>{nullptr},
-      "Unexpected null upstream resource pointer.");
+    RMM_EXPECTS(upstream_mr_, "Unexpected null upstream resource pointer.");
 
     for (auto i = min_size_exponent; i <= max_size_exponent; i++) {
       add_bin(1 << i);
@@ -117,11 +117,7 @@ class binning_memory_resource final : public device_memory_resource {
    *
    * @return UpstreamResource* the upstream memory resource.
    */
-  [[nodiscard]] cuda::stream_ordered_resource_view<cuda::memory_access::device> get_upstream()
-    const noexcept
-  {
-    return upstream_mr_;
-  }
+  [[nodiscard]] upstream_view_type get_upstream() const noexcept { return upstream_mr_; }
 
   /**
    * @brief Add a bin allocator to this resource
@@ -139,19 +135,17 @@ class binning_memory_resource final : public device_memory_resource {
    * @param allocation_size The maximum size that this bin allocates
    * @param bin_resource The memory resource for the bin
    */
-  void add_bin(
-    std::size_t allocation_size,
-    cuda::stream_ordered_resource_view<cuda::memory_access::device> bin_resource = nullptr)
+  void add_bin(std::size_t allocation_size, bin_view_type bin_resource = nullptr)
   {
     allocation_size =
       rmm::detail::align_up(allocation_size, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
 
-    if (bin_resource != cuda::stream_ordered_resource_view<cuda::memory_access::device>(nullptr)) {
+    if (bin_resource) {
       resource_bins_.insert({allocation_size, bin_resource});
     } else if (resource_bins_.count(allocation_size) == 0) {  // do nothing if bin already exists
-
       owned_bin_resources_.push_back(
-        std::make_unique<fixed_size_memory_resource>(upstream_mr_, allocation_size));
+        std::make_unique<fixed_size_memory_resource<UpstreamPointer, Properties...>>(
+          upstream_mr_, allocation_size));
       resource_bins_.insert({allocation_size, owned_bin_resources_.back().get()});
     }
   }
@@ -167,7 +161,7 @@ class binning_memory_resource final : public device_memory_resource {
    * @param bytes Requested allocation size in bytes
    * @return rmm::mr::device_memory_resource& memory_resource that can allocate the requested size.
    */
-  cuda::stream_ordered_resource_view<cuda::memory_access::device> get_resource(std::size_t bytes)
+  bin_view_type get_resource(std::size_t bytes)
   {
     auto iter = resource_bins_.lower_bound(bytes);
     return (iter != resource_bins_.cend()) ? iter->second : get_upstream();
@@ -201,9 +195,7 @@ class binning_memory_resource final : public device_memory_resource {
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
     auto res = get_resource(bytes);
-    if (res != cuda::stream_ordered_resource_view<cuda::memory_access::device>{nullptr}) {
-      res->deallocate_async(ptr, bytes, stream.value());
-    }
+    res->deallocate_async(ptr, bytes, stream.value());
   }
 
   /**
@@ -233,13 +225,12 @@ class binning_memory_resource final : public device_memory_resource {
     return {0, 0};
   }
 
-  cuda::stream_ordered_resource_view<cuda::memory_access::device>
-    upstream_mr_;  // The upstream memory_resource from which to allocate blocks.
+  upstream_view_type upstream_mr_;  // The upstream memory_resource from which to allocate blocks.
 
-  std::vector<std::unique_ptr<fixed_size_memory_resource>> owned_bin_resources_{};
+  std::vector<std::unique_ptr<fixed_size_memory_resource<UpstreamPointer, Properties...>>>
+    owned_bin_resources_{};
 
-  std::map<std::size_t, cuda::stream_ordered_resource_view<cuda::memory_access::device>>
-    resource_bins_;
+  std::map<std::size_t, bin_view_type> resource_bins_;
 };
 
 }  // namespace rmm::mr

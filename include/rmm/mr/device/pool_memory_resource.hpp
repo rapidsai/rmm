@@ -52,13 +52,16 @@ namespace rmm::mr {
  * Allocation (do_allocate()) and deallocation (do_deallocate()) are thread-safe. Also,
  * this class is compatible with CUDA per-thread default stream.
  *
- * @tparam UpstreamResource memory_resource to use for allocating the pool. Implements
- *                          rmm::mr::device_memory_resource interface.
+ * @tparam UpstreamPointer Type of the pointer to the upstream resource used for allocation.
+ * @tparam Properties properties of the upstream resource (usually deduced with CTAD)
  */
-class pool_memory_resource final
-  : public detail::stream_ordered_memory_resource<pool_memory_resource,
-                                                  detail::coalescing_free_list> {
+template <typename UpstreamPointer, typename... Properties>
+class pool_memory_resource final : public detail::stream_ordered_memory_resource<
+                                     pool_memory_resource<UpstreamPointer, Properties...>,
+                                     detail::coalescing_free_list> {
  public:
+  using upstream_view_type = cuda::basic_resource_view<UpstreamPointer, Properties...>;
+
   friend class detail::stream_ordered_memory_resource<pool_memory_resource,
                                                       detail::coalescing_free_list>;
 
@@ -78,15 +81,12 @@ class pool_memory_resource final
    * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to. Defaults to all
    * of the available memory on the current device.
    */
-  explicit pool_memory_resource(
-    cuda::stream_ordered_resource_view<cuda::memory_access::device> upstream_mr,
-    thrust::optional<std::size_t> initial_pool_size = thrust::nullopt,
-    thrust::optional<std::size_t> maximum_pool_size = thrust::nullopt)
+  explicit pool_memory_resource(upstream_view_type upstream_mr,
+                                thrust::optional<std::size_t> initial_pool_size = thrust::nullopt,
+                                thrust::optional<std::size_t> maximum_pool_size = thrust::nullopt)
     : upstream_mr_{upstream_mr}
   {
-    RMM_EXPECTS(
-      upstream_mr_ != cuda::stream_ordered_resource_view<cuda::memory_access::device>{nullptr},
-      "Unexpected null upstream resource pointer.");
+    RMM_EXPECTS(upstream_mr_, "Unexpected null upstream resource pointer.");
     RMM_EXPECTS(rmm::detail::is_aligned(initial_pool_size.value_or(0),
                                         rmm::detail::CUDA_ALLOCATION_ALIGNMENT),
                 "Error, Initial pool size required to be a multiple of 256 bytes");
@@ -101,7 +101,7 @@ class pool_memory_resource final
    * @brief Destroy the `pool_memory_resource` and deallocate all memory it allocated using
    * the upstream resource.
    */
-  ~pool_memory_resource() override { release(); }
+  virtual ~pool_memory_resource() { release(); }
 
   pool_memory_resource()                            = delete;
   pool_memory_resource(pool_memory_resource const&) = delete;
@@ -129,10 +129,7 @@ class pool_memory_resource final
    *
    * @return UpstreamResource* the upstream memory resource.
    */
-  cuda::stream_ordered_resource_view<cuda::memory_access::device> get_upstream() const noexcept
-  {
-    return upstream_mr_;
-  }
+  [[nodiscard]] upstream_view_type get_upstream() const noexcept { return upstream_mr_; }
 
  protected:
   using free_list  = detail::coalescing_free_list;
@@ -169,7 +166,9 @@ class pool_memory_resource final
    * @param stream The stream on which the memory is to be used.
    * @return block_type a block of at least `min_size` bytes
    */
-  block_type try_to_expand(std::size_t try_size, std::size_t min_size, cuda_stream_view stream)
+  [[nodiscard]] block_type try_to_expand(std::size_t try_size,
+                                         std::size_t min_size,
+                                         cuda_stream_view stream)
   {
     while (try_size >= min_size) {
       auto block = block_from_upstream(try_size, stream);
@@ -234,7 +233,7 @@ class pool_memory_resource final
    * @param stream The stream on which the memory is to be used.
    * @return block_type a block of at least `size` bytes
    */
-  block_type expand_pool(std::size_t size, free_list& blocks, cuda_stream_view stream)
+  [[nodiscard]] block_type expand_pool(std::size_t size, free_list& blocks, cuda_stream_view stream)
   {
     // Strategy: If maximum_pool_size_ is set, then grow geometrically, e.g. by halfway to the
     // limit each time. If it is not set, grow exponentially, e.g. by doubling the pool size each
@@ -274,7 +273,8 @@ class pool_memory_resource final
    * @param stream The stream on which the memory is to be used.
    * @return block_type The allocated block
    */
-  thrust::optional<block_type> block_from_upstream(std::size_t size, cuda_stream_view stream)
+  [[nodiscard]] thrust::optional<block_type> block_from_upstream(std::size_t size,
+                                                                 cuda_stream_view stream)
   {
     RMM_LOG_DEBUG("[A][Stream {}][Upstream {}B]", fmt::ptr(stream.value()), size);
 
@@ -300,7 +300,7 @@ class pool_memory_resource final
    * @return A pair comprising the allocated pointer and any unallocated remainder of the input
    * block.
    */
-  static split_block allocate_from_block(block_type const& block, std::size_t size)
+  [[nodiscard]] static split_block allocate_from_block(block_type const& block, std::size_t size)
   {
     block_type const alloc{block.pointer(), size, block.is_head()};
 #ifdef RMM_POOL_TRACK_ALLOCATIONS
@@ -323,7 +323,7 @@ class pool_memory_resource final
    * @return The (now freed) block associated with `p`. The caller is expected to return the block
    * to the pool.
    */
-  block_type free_block(void* ptr, std::size_t size) noexcept
+  [[nodiscard]] block_type free_block(void* ptr, std::size_t size) noexcept
   {
 #ifdef RMM_POOL_TRACK_ALLOCATIONS
     if (ptr == nullptr) return block_type{};
@@ -408,7 +408,8 @@ class pool_memory_resource final
    * @param blocks The free list from which to return the summary
    * @return std::pair<std::size_t, std::size_t> Pair of largest available block, total free size
    */
-  static std::pair<std::size_t, std::size_t> free_list_summary(free_list const& blocks)
+  [[nodiscard]] static std::pair<std::size_t, std::size_t> free_list_summary(
+    free_list const& blocks)
   {
     std::size_t largest{};
     std::size_t total{};
@@ -435,8 +436,7 @@ class pool_memory_resource final
   }
 
  private:
-  cuda::stream_ordered_resource_view<cuda::memory_access::device>
-    upstream_mr_;  // The "heap" to allocate the pool from
+  upstream_view_type upstream_mr_;  // The upstream resource to use to allocate the pool
   std::size_t current_pool_size_{};
   thrust::optional<std::size_t> maximum_pool_size_{};
 

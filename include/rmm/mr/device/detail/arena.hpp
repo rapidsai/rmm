@@ -251,9 +251,15 @@ inline auto total_block_size(T const& blocks)
  *
  * @tparam Upstream Memory resource to use for allocating the arena. Implements
  * rmm::mr::device_memory_resource interface.
+ *
+ * @tparam UpstreamPointer Type of the pointer to the upstream resource used for allocation.
+ * @tparam Properties properties of the upstream resource (usually deduced with CTAD)
  */
+template <typename UpstreamPointer, typename... Properties>
 class global_arena final {
  public:
+  using upstream_view_type = cuda::basic_resource_view<UpstreamPointer, Properties...>;
+
   /// The default initial size for the global arena.
   static constexpr std::size_t default_initial_size = std::numeric_limits<std::size_t>::max();
   /// The default maximum size for the global arena.
@@ -276,14 +282,10 @@ class global_arena final {
    * @param maximum_size Maximum size, in bytes, that the global arena can grow to. Defaults to all
    * of the available memory on the current device.
    */
-  global_arena(cuda::stream_ordered_resource_view<cuda::memory_access::device> upstream_mr,
-               std::size_t initial_size,
-               std::size_t maximum_size)
+  global_arena(upstream_view_type upstream_mr, std::size_t initial_size, std::size_t maximum_size)
     : upstream_mr_{upstream_mr}, maximum_size_{maximum_size}
   {
-    RMM_EXPECTS(
-      upstream_mr_ != cuda::stream_ordered_resource_view<cuda::memory_access::device>{nullptr},
-      "Unexpected null upstream pointer.");
+    RMM_EXPECTS(upstream_mr_ != upstream_view_type{nullptr}, "Unexpected null upstream pointer.");
     RMM_EXPECTS(initial_size == default_initial_size || initial_size == align_up(initial_size),
                 "Error, Initial arena size required to be a multiple of 256 bytes");
     RMM_EXPECTS(maximum_size_ == default_maximum_size || maximum_size_ == align_up(maximum_size_),
@@ -331,7 +333,7 @@ class global_arena final {
    * @param bytes The size in bytes of the allocation.
    * @return void* Pointer to the newly allocated memory.
    */
-  block allocate(std::size_t bytes)
+  [[nodiscard]] block allocate(std::size_t bytes)
   {
     lock_guard lock(mtx_);
     return get_block(bytes);
@@ -396,7 +398,7 @@ class global_arena final {
    * @param size The number of bytes to allocate.
    * @return block A block of memory of at least `size` bytes.
    */
-  block get_block(std::size_t size)
+  [[nodiscard]] block get_block(std::size_t size)
   {
     // Find the first-fit free block.
     auto const blk = first_fit(free_blocks_, size);
@@ -416,7 +418,7 @@ class global_arena final {
    * @param size The number of bytes required.
    * @return size The size for the arena to grow, or 0 if no more memory.
    */
-  constexpr std::size_t size_to_grow(std::size_t size) const
+  [[nodiscard]] constexpr std::size_t size_to_grow(std::size_t size) const
   {
     if (current_size_ + size > maximum_size_) { return 0; }
     return maximum_size_ - current_size_;
@@ -428,7 +430,7 @@ class global_arena final {
    * @param size The minimum size to allocate.
    * @return block A block of at least `size` bytes.
    */
-  block expand_arena(std::size_t size)
+  [[nodiscard]] block expand_arena(std::size_t size)
   {
     if (size > 0) {
       upstream_blocks_.emplace_back(upstream_mr_->allocate(size), size);
@@ -438,17 +440,17 @@ class global_arena final {
     return {};
   }
 
-  /// The upstream resource to allocate memory from.
-  cuda::stream_ordered_resource_view<cuda::memory_access::device> upstream_mr_;
-  /// The maximum size the global arena can grow to.
+  // The upstream resource to allocate memory from.
+  upstream_view_type upstream_mr_;
+  // The maximum size the global arena can grow to.
   std::size_t maximum_size_;
-  /// The current size of the global arena.
+  // The current size of the global arena.
   std::size_t current_size_{};
-  /// Address-ordered set of free blocks.
+  // Address-ordered set of free blocks.
   std::set<block> free_blocks_;
-  /// Blocks allocated from upstream so that they can be quickly freed.
+  // Blocks allocated from upstream so that they can be quickly freed.
   std::vector<block> upstream_blocks_;
-  /// Mutex for exclusive lock.
+  // Mutex for exclusive lock.
   mutable std::mutex mtx_;
 };
 
@@ -460,15 +462,21 @@ class global_arena final {
  *
  * @tparam Upstream Memory resource to use for allocating the global arena. Implements
  * rmm::mr::device_memory_resource interface.
+ *
+ * @tparam UpstreamPointer Type of the pointer to the upstream resource used for allocation.
+ * @tparam Properties properties of the upstream resource (usually deduced with CTAD)
  */
+template <typename UpstreamPointer, typename... Properties>
 class arena {
  public:
+  using global_arena_type = global_arena<UpstreamPointer, Properties...>;
+
   /**
    * @brief Construct an `arena`.
    *
    * @param global_arena The global arena from which to allocate superblocks.
    */
-  explicit arena(global_arena& global_arena) : global_arena_{global_arena} {}
+  explicit arena(global_arena_type& global_arena) : global_arena_{global_arena} {}
 
   ~arena() = default;
 
@@ -592,7 +600,7 @@ class arena {
   }
 
   /// The global arena to allocate superblocks from.
-  global_arena& global_arena_;
+  global_arena_type& global_arena_;
   /// Free blocks.
   std::set<block> free_blocks_;
   /// Mutex for exclusive lock.
@@ -604,12 +612,14 @@ class arena {
  *
  * This is useful when a thread is about to terminate, and it contains a per-thread arena.
  *
- * @tparam Upstream Memory resource to use for allocating the global arena. Implements
- * rmm::mr::device_memory_resource interface.
+ * @tparam UpstreamPointer Type of the pointer to the upstream resource used for allocation.
+ * @tparam Properties properties of the upstream resource (usually deduced with CTAD)
  */
+template <typename UpstreamPointer, typename... Properties>
 class arena_cleaner {
  public:
-  explicit arena_cleaner(std::shared_ptr<arena> const& arena) : arena_(arena) {}
+  using arena_type = arena<UpstreamPointer, Properties...>;
+  explicit arena_cleaner(std::shared_ptr<arena_type> const& arena) : arena_(arena) {}
 
   // Disable copy (and move) semantics.
   arena_cleaner(arena_cleaner const&) = delete;
@@ -627,7 +637,7 @@ class arena_cleaner {
 
  private:
   /// A non-owning pointer to the arena that may need cleaning.
-  std::weak_ptr<arena> arena_;
+  std::weak_ptr<arena_type> arena_{};
 };
 
 }  // namespace rmm::mr::detail::arena

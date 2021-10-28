@@ -27,7 +27,7 @@ namespace rmm::test {
 namespace {
 
 using failure_callback_adaptor =
-  rmm::mr::failure_callback_resource_adaptor<rmm::mr::device_memory_resource>;
+  rmm::mr::failure_callback_resource_adaptor<rmm::mr::device_memory_resource*>;
 
 bool failure_handler(std::size_t bytes, void* arg)
 {

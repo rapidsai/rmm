@@ -25,18 +25,23 @@
 
 namespace rmm::mr {
 /**
- * @brief Resource that uses `Upstream` to allocate memory and tracks statistics
- * on memory allocations.
+ * @brief Resource that uses `Upstream` to allocate memory and tracks statistics* on memory
+ * allocations.
  *
- * An instance of this resource can be constructed with an existing, upstream
- * resource in order to satisfy allocation requests, but any existing
- * allocations will be untracked. Tracking statistics stores the current, peak
- * and total memory allocations for both the number of bytes and number of calls
- * to the memory resource. `statistics_resource_adaptor` is intended as a debug
- * adaptor and shouldn't be used in performance-sensitive code.
+ * An instance of this resource can be constructed with an existing, upstream resource in order to
+ * satisfy allocation requests, but any existing allocations will be untracked. Tracking statistics
+ * stores the current, peak and total memory allocations for both the number of bytes and number of
+ * calls to the memory resource. `statistics_resource_adaptor` is intended as a debug adaptor and
+ * shouldn't be used in performance-sensitive code.
+ *
+ * @tparam UpstreamPointer Type of the pointer to the upstream resource used for allocation.
+ * @tparam Properties properties of the upstream resource (usually deduced with CTAD)
  */
+template <typename UpstreamPointer, typename... Properties>
 class statistics_resource_adaptor final : public device_memory_resource {
  public:
+  using upstream_view_type = cuda::basic_resource_view<UpstreamPointer, Properties...>;
+
   // can be a std::shared_mutex once C++17 is adopted
   using read_lock_t  = std::shared_lock<std::shared_timed_mutex>;
   using write_lock_t = std::unique_lock<std::shared_timed_mutex>;
@@ -65,20 +70,17 @@ class statistics_resource_adaptor final : public device_memory_resource {
   };
 
   /**
-   * @brief Construct a new statistics resource adaptor using `upstream` to satisfy
-   * allocation requests.
+   * @brief Construct a new statistics resource adaptor using `upstream` to satisfy allocation
+   * requests.
    *
    * @throws `rmm::logic_error` if `upstream == nullptr`
    *
    * @param upstream The resource used for allocating/deallocating device memory
    */
-  statistics_resource_adaptor(
-    cuda::stream_ordered_resource_view<cuda::memory_access::device> upstream)
-    : upstream_{upstream}
+  statistics_resource_adaptor(upstream_view_type upstream) : upstream_{upstream}
   {
-    RMM_EXPECTS(
-      upstream != cuda::stream_ordered_resource_view<cuda::memory_access::device>{nullptr},
-      "Unexpected null upstream resource pointer.");
+    RMM_EXPECTS(upstream != upstream_view_type{nullptr},
+                "Unexpected null upstream resource pointer.");
   }
 
   statistics_resource_adaptor()                                   = delete;
@@ -89,14 +91,11 @@ class statistics_resource_adaptor final : public device_memory_resource {
   statistics_resource_adaptor& operator=(statistics_resource_adaptor&&) noexcept = delete;
 
   /**
-   * @brief Return pointer to the upstream resource.
+   * @brief Returns a view of the upstream resource.
    *
    * @return View of the upstream resource.
    */
-  cuda::stream_ordered_resource_view<cuda::memory_access::device> get_upstream() const noexcept
-  {
-    return upstream_;
-  }
+  [[nodiscard]] upstream_view_type get_upstream() const noexcept { return upstream_; }
 
   /**
    * @brief Checks whether the upstream resource supports streams.
@@ -104,52 +103,45 @@ class statistics_resource_adaptor final : public device_memory_resource {
    * @return true The upstream resource supports streams
    * @return false The upstream resource does not support streams.
    */
-  bool supports_streams() const noexcept override { return true; }
+  [[nodiscard]] bool supports_streams() const noexcept override { return true; }
 
   /**
    * @brief Query whether the resource supports the get_mem_info API.
    *
    * @return bool true if the upstream resource supports get_mem_info, false otherwise.
    */
-  bool supports_get_mem_info() const noexcept override { return false; }
+  [[nodiscard]] bool supports_get_mem_info() const noexcept override { return false; }
 
   /**
-   * @brief Returns a `counter` struct for this adaptor containing the current,
-   * peak, and total number of allocated bytes for this
-   * adaptor since it was created.
+   * @brief Returns a `counter` struct for this adaptor containing the current, peak, and total
+   * number of allocated bytes for this adaptor since it was created.
    *
    * @return counter struct containing bytes count
    */
-  counter get_bytes_counter() const noexcept
+  [[nodiscard]] counter get_bytes_counter() const noexcept
   {
     read_lock_t lock(mtx_);
-
     return bytes_;
   }
 
   /**
-   * @brief Returns a `counter` struct for this adaptor containing the current,
-   * peak, and total number of allocation counts for this adaptor since it was
-   * created.
+   * @brief Returns a `counter` struct for this adaptor containing the current, peak, and total
+   * number of allocation counts for this adaptor since it was created.
    *
    * @return counter struct containing allocations count
    */
-  counter get_allocations_counter() const noexcept
+  [[nodiscard]] counter get_allocations_counter() const noexcept
   {
     read_lock_t lock(mtx_);
-
     return allocations_;
   }
 
  private:
   /**
-   * @brief Allocates memory of size at least `bytes` using the upstream
-   * resource as long as it fits inside the allocation limit.
+   * @brief Allocates memory of size at least `bytes` using the upstream resource and updates
+   * statistics.
    *
    * The returned pointer has at least 256B alignment.
-   *
-   * @throws `rmm::bad_alloc` if the requested allocation could not be fulfilled
-   * by the upstream resource.
    *
    * @param bytes The size, in bytes, of the allocation
    * @param stream Stream on which to perform the allocation
@@ -172,7 +164,7 @@ class statistics_resource_adaptor final : public device_memory_resource {
   }
 
   /**
-   * @brief Free allocation of size `bytes` pointed to by `ptr`
+   * @brief Free allocation of size `bytes` pointed to by `ptr`.
    *
    * @throws Nothing.
    *
@@ -202,7 +194,8 @@ class statistics_resource_adaptor final : public device_memory_resource {
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equal
    */
-  bool do_is_equal(cuda::memory_resource<memory_kind> const& other) const noexcept override
+  [[nodiscard]] bool do_is_equal(
+    cuda::memory_resource<memory_kind> const& other) const noexcept override
   {
     if (this == &other) { return true; }
     auto const* cast = dynamic_cast<statistics_resource_adaptor const*>(&other);
@@ -217,7 +210,8 @@ class statistics_resource_adaptor final : public device_memory_resource {
    * @param stream Stream on which to get the mem info.
    * @return std::pair contaiing free_size and total_size of memory
    */
-  std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view stream) const override
+  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
+    cuda_stream_view stream) const override
   {
     return {0, 0};
   }
@@ -225,8 +219,7 @@ class statistics_resource_adaptor final : public device_memory_resource {
   counter bytes_;                        // peak, current and total allocated bytes
   counter allocations_;                  // peak, current and total allocation count
   std::shared_timed_mutex mutable mtx_;  // mutex for thread safe access to allocations_
-  cuda::stream_ordered_resource_view<cuda::memory_access::device>
-    upstream_;  // the upstream resource used for satisfying allocation requests
+  upstream_view_type upstream_;  // the upstream resource used for satisfying allocation requests
 };
 
 }  // namespace rmm::mr

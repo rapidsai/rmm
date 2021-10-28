@@ -26,19 +26,20 @@
 
 namespace rmm::mr {
 /**
- * @brief Resource that uses `Upstream` to allocate memory and limits the total
- * allocations possible.
+ * @brief Resource that uses `Upstream` to allocate memory and limits the total allocation.
  *
- * An instance of this resource can be constructed with an existing, upstream
- * resource in order to satisfy allocation requests, but any existing allocations
- * will be untracked. Atomics are used to make this thread-safe, but note that
- * the `get_allocated_bytes` may not include in-flight allocations.
+ * An instance of this resource can be constructed with an existing, upstream resource in order to
+ * satisfy allocation requests, but any existing allocations will be untracked. Atomics are used to
+ * make this thread-safe, but note that the `get_allocated_bytes` may not include in-flight
+ * allocations.
  *
- * @tparam Upstream Type of the upstream resource used for
- * allocation/deallocation.
+ * @tparam UpstreamPointer Type of the pointer to the upstream resource used for allocation.
+ * @tparam Properties properties of the upstream resource (usually deduced with CTAD)
  */
+template <typename UpstreamPointer, typename... Properties>
 class limiting_resource_adaptor final : public device_memory_resource {
  public:
+  using upstream_view_type = cuda::basic_resource_view<UpstreamPointer, Properties...>;
   /**
    * @brief Construct a new limiting resource adaptor using `upstream` to satisfy
    * allocation requests and limiting the total allocation amount possible.
@@ -48,18 +49,16 @@ class limiting_resource_adaptor final : public device_memory_resource {
    * @param upstream The resource used for allocating/deallocating device memory
    * @param allocation_limit Maximum memory allowed for this allocator.
    */
-  limiting_resource_adaptor(
-    cuda::stream_ordered_resource_view<cuda::memory_access::device> upstream,
-    std::size_t allocation_limit,
-    std::size_t alignment = rmm::detail::CUDA_ALLOCATION_ALIGNMENT)
+  limiting_resource_adaptor(upstream_view_type upstream,
+                            std::size_t allocation_limit,
+                            std::size_t alignment = rmm::detail::CUDA_ALLOCATION_ALIGNMENT)
     : allocation_limit_{allocation_limit},
       allocated_bytes_(0),
       alignment_(alignment),
       upstream_{upstream}
   {
-    RMM_EXPECTS(
-      upstream != cuda::stream_ordered_resource_view<cuda::memory_access::device>{nullptr},
-      "Unexpected null upstream resource pointer.");
+    RMM_EXPECTS(upstream != upstream_view_type{nullptr},
+                "Unexpected null upstream resource pointer.");
   }
 
   limiting_resource_adaptor()                                     = delete;
@@ -74,11 +73,7 @@ class limiting_resource_adaptor final : public device_memory_resource {
    *
    * @return View of the upstream resource.
    */
-  [[nodiscard]] cuda::stream_ordered_resource_view<cuda::memory_access::device> get_upstream()
-    const noexcept
-  {
-    return upstream_;
-  }
+  [[nodiscard]] upstream_view_type get_upstream() const noexcept { return upstream_; }
 
   /**
    * @brief Checks whether the upstream resource supports streams.
@@ -203,9 +198,8 @@ class limiting_resource_adaptor final : public device_memory_resource {
   // todo: should be some way to ask the upstream...
   std::size_t alignment_;
 
-  cuda::stream_ordered_resource_view<cuda::memory_access::device>
-    upstream_;  ///< The upstream resource used for satisfying
-                ///< allocation requests
+  // The upstream resource used for satisfying allocation requests
+  upstream_view_type upstream_;
 };
 
 }  // namespace rmm::mr
