@@ -61,6 +61,16 @@ class bad_alloc : public std::bad_alloc {
 };
 
 /**
+ * @brief Exception thrown when RMM runs out of memory
+ *
+ * This error should only be thrown when we know for sure a resource is out of memory.
+ */
+class out_of_memory : public bad_alloc {
+ public:
+  using bad_alloc::bad_alloc;
+};
+
+/**
  * @brief Exception thrown when attempting to access outside of a defined range
  *
  */
@@ -166,6 +176,31 @@ class out_of_range : public std::out_of_range {
     }                                                                                        \
   } while (0)
 #define RMM_CUDA_TRY_1(_call) RMM_CUDA_TRY_2(_call, rmm::cuda_error)
+
+/**
+ * @brief Error checking macro for CUDA memory allocation calls.
+ *
+ * Invokes a CUDA memory allocation function call. If the call does not return
+ * `cudaSuccess`, invokes cudaGetLastError() to clear the error and throws an
+ * exception detailing the CUDA error that occurred
+ *
+ * Defaults to throwing `rmm::bad_alloc`, but when `cudaErrorMemoryAllocation` is returned,
+ * `rmm::out_of_memory` is thrown instead.
+ */
+#define RMM_CUDA_TRY_ALLOC(_call)                                                                  \
+  do {                                                                                             \
+    cudaError_t const error = (_call);                                                             \
+    if (cudaSuccess != error) {                                                                    \
+      cudaGetLastError();                                                                          \
+      auto const msg = std::string{"CUDA error at: "} + __FILE__ + ":" + RMM_STRINGIFY(__LINE__) + \
+                       ": " + cudaGetErrorName(error) + " " + cudaGetErrorString(error);           \
+      if (cudaErrorMemoryAllocation == error) {                                                    \
+        throw rmm::out_of_memory{msg};                                                             \
+      } else {                                                                                     \
+        throw rmm::bad_alloc{msg};                                                                 \
+      }                                                                                            \
+    }                                                                                              \
+  } while (0)
 
 /**
  * @brief Error checking macro similar to `assert` for CUDA runtime API calls
