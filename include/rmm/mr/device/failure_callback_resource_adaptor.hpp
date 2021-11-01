@@ -32,9 +32,9 @@ namespace rmm::mr {
  * or re-throw the exception.
  *
  * The callback function signature is:
- *     `bool failure_callback_t(std::size_t bytes, std::exception const& error, void* callback_arg)`
+ *     `bool failure_callback_t(std::size_t bytes, void* callback_arg)`
  *
- * The callback function is passed three parameters: `bytes` is the size of the failed memory
+ * The callback function is passed two parameters: `bytes` is the size of the failed memory
  * allocation and `arg` is the extra argument passed to the constructor of the
  * `failure_callback_resource_adaptor`. The callback function returns a Boolean where true means to
  * retry the memory allocation and false means to re-throw the exception.
@@ -48,8 +48,8 @@ using failure_callback_t = std::function<bool(std::size_t, void*)>;
  * An instance of this resource must be constructed with an existing, upstream
  * resource in order to satisfy allocation requests.
  *
- * The callback function takes an allocation size, an exception, and a callback argument and returns
- * a bool representing whether to retry the allocation (true) or throw `std::bad_alloc` (false).
+ * The callback function takes an allocation size and a callback argument and returns
+ * a bool representing whether to retry the allocation (true) or re-throw the caught exception (false).
  *
  * When implementing a callback function for allocation retry, care must be taken to avoid an
  * infinite loop. The following example makes sure to only retry the allocation once:
