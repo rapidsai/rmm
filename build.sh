@@ -18,8 +18,8 @@ ARGS=$*
 # script, and that this script resides in the repo dir!
 REPODIR=$(cd $(dirname $0); pwd)
 
-VALIDARGS="clean librmm rmm -v -g -n -s --ptds -h"
-HELP="$0 [clean] [librmm] [rmm] [-v] [-g] [-n] [-s] [--ptds] [--cmake-args=\"<args>\"] [-h]
+VALIDARGS="clean librmm rmm -v -g -n -s --ptds --no-async -h"
+HELP="$0 [clean] [librmm] [rmm] [-v] [-g] [-n] [-s] [--ptds] [--no-async] [--cmake-args=\"<args>\"] [-h]
    clean  - remove all existing build artifacts and configuration (start over)
    librmm - build and install the librmm C++ code
    rmm    - build and install the rmm Python package
@@ -28,6 +28,7 @@ HELP="$0 [clean] [librmm] [rmm] [-v] [-g] [-n] [-s] [--ptds] [--cmake-args=\"<ar
    -n     - no install step
    -s     - statically link against cudart
    --ptds - enable per-thread default stream
+   --no-async  - disable CUDA malloc async support
    --cmake-args=\\\"<args>\\\"   - pass arbitrary list of CMake configuration options (escape all quotes in argument)
    -h     - print this text
 
@@ -43,6 +44,7 @@ BUILD_TYPE=Release
 INSTALL_TARGET=install
 CUDA_STATIC_RUNTIME=OFF
 PER_THREAD_DEFAULT_STREAM=OFF
+NO_CUDA_MALLOC_ASYNC_SUPPORT=OFF
 RAN_CMAKE=0
 
 # Set defaults for vars that may not have been defined externally
@@ -88,6 +90,7 @@ function ensureCMakeRan {
               -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" \
               -DCUDA_STATIC_RUNTIME="${CUDA_STATIC_RUNTIME}" \
               -DPER_THREAD_DEFAULT_STREAM="${PER_THREAD_DEFAULT_STREAM}" \
+              -DNO_CUDA_MALLOC_ASYNC_SUPPORT="${NO_CUDA_MALLOC_ASYNC_SUPPORT}" \
               -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
               ${CMAKE_ARGS}
         RAN_CMAKE=1
@@ -128,6 +131,9 @@ fi
 if hasArg --ptds; then
     PER_THREAD_DEFAULT_STREAM=ON
 fi
+if hasArg --no-async; then
+    NO_CUDA_MALLOC_ASYNC_SUPPORT=ON
+fi
 
 # If clean given, run it prior to any other steps
 if hasArg clean; then
@@ -159,14 +165,16 @@ fi
 if (( NUMARGS == 0 )) || hasArg rmm; then
     cd "${REPODIR}/python"
     export INSTALL_PREFIX
-    if [[ ${INSTALL_TARGET} != "" ]]; then
-        echo "building rmm..."
+    echo "building rmm..."
+    if [[ ${NO_CUDA_MALLOC_ASYNC_SUPPORT} == ON ]]; then
+        python setup.py build_ext_no_async --inplace
+    else
         python setup.py build_ext --inplace
+    fi
+
+    if [[ ${INSTALL_TARGET} != "" ]]; then
         echo "installing rmm..."
         python setup.py install --single-version-externally-managed --record=record.txt
-    else
-        echo "building rmm..."
-        python setup.py build_ext --inplace
     fi
 
 fi
