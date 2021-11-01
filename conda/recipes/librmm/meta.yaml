@@ -3,6 +3,9 @@
 {% set version = environ.get('GIT_DESCRIBE_TAG', '0.0.0.dev').lstrip('v') + environ.get('VERSION_SUFFIX', '') %}
 {% set cuda_version='.'.join(environ.get('CUDA', '9.2').split('.')[:2]) %}
 {% set cuda_major=cuda_version.split('.')[0] %}
+{% set build_flags="" if cudaMallocAsync else "--no-async" %}
+{% set build_str_modifier="has_cma" if cudaMallocAsync else "no_cma" %}
+
 package:
   name: librmm
   version: {{ version }}
@@ -12,7 +15,7 @@ source:
 
 build:
   number: {{ GIT_DESCRIBE_NUMBER }}
-  string: cuda{{ cuda_major }}_{{ GIT_DESCRIBE_HASH }}_{{ GIT_DESCRIBE_NUMBER }}
+  string: cuda{{ cuda_major }}_{{ GIT_DESCRIBE_HASH }}_{{ GIT_DESCRIBE_NUMBER }}_{{ build_str_modifier }}
   script_env:
     - CC
     - CXX
@@ -26,6 +29,7 @@ build:
     - CMAKE_C_COMPILER_LAUNCHER
     - CMAKE_CXX_COMPILER_LAUNCHER
     - CMAKE_CUDA_COMPILER_LAUNCHER
+    - BUILD_FLAGS="{{ build_flags }}"
   run_exports:
     - {{ pin_subpackage("librmm", max_pin="x.x") }}
 
@@ -35,8 +39,12 @@ requirements:
   host:
     - cudatoolkit {{ cuda_version }}.*
   run:
-    - {{ pin_compatible('cudatoolkit', max_pin='x', min_pin='x') }}
     - spdlog>=1.8.5,<1.9
+{% if cudaMallocAsync %}
+    - {{ pin_compatible('cudatoolkit', max_pin='x', lower_bound='11.2') }} # cudatoolkit >=11.2,<12.0.0
+{% else %}
+    - {{ pin_compatible('cudatoolkit', upper_bound='11.2', lower_bound='11.0') }} # cudatoolkit >=11.0,<11.2
+{% endif %}
 
 test:
   commands:
