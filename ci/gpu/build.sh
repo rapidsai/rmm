@@ -46,7 +46,7 @@ gpuci_mamba_retry install -y \
                   "cudatoolkit=$CUDA_REL" \
                   "rapids-build-env=${MINOR_VERSION}.*"
 
-# https://docs.rapids.ai/maintainers/depmgmt/ 
+# https://docs.rapids.ai/maintainers/depmgmt/
 # conda remove --force rapids-build-env
 # gpuci_mamba_retry install "your-pkg=1.0.0"
 
@@ -121,10 +121,10 @@ else
     gpuci_mamba_retry install -c $WORKSPACE/ci/artifacts/rmm/cpu/conda-bld/ "$CONDA_FILE"
 
     export LIBRMM_BUILD_DIR="$WORKSPACE/ci/artifacts/rmm/cpu/conda_work/build"
-    
+
     gpuci_logger "Building rmm"
     "$WORKSPACE/build.sh" -v rmm
-    
+
     gpuci_logger "pytest rmm"
     py.test --cache-clear --junitxml=${WORKSPACE}/test-results/junit-rmm.xml -v --cov-config=.coveragerc --cov=rmm --cov-report=xml:${WORKSPACE}/python/rmm-coverage.xml --cov-report term
     exitcode=$?
