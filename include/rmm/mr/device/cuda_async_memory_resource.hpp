@@ -29,7 +29,7 @@
 #include <limits>
 
 #if CUDART_VERSION >= 11020  // 11.2 introduced cudaMallocAsync
-#ifndef NO_RMM_CUDA_MALLOC_ASYNC_SUPPORT
+#ifndef RMM_DISABLE_CUDA_MALLOC_ASYNC
 #define RMM_CUDA_MALLOC_ASYNC_SUPPORT
 #endif
 #endif
