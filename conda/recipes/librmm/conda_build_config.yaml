@@ -1,3 +1,3 @@
 cudaMallocAsync:
-  - true
-  - false
+  - has_cma
+  - no_cma
