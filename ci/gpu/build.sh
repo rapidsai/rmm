@@ -23,7 +23,9 @@ export HOME=$WORKSPACE
 cd $WORKSPACE
 
 # Determine CUDA release version
-export CUDA_REL=${CUDA_VERSION%.*}
+export CUDA_MAJOR_VER=$(echo "${CUDA_VERSION}" | cut -f 1 -d.)
+export CUDA_MINOR_VER=$(echo "${CUDA_VERSION}" | cut -f 2 -d.)
+export CUDA_REL="${CUDA_MAJOR_VER}.${CUDA_MINOR_VER}"
 
 # Get latest tag and number of commits since tag
 export GIT_DESCRIBE_TAG=`git describe --abbrev=0 --tags`
@@ -111,9 +113,9 @@ else
 
     cd $WORKSPACE/python
 
-    CONDA_FILE=`find $WORKSPACE/ci/artifacts/rmm/cpu/conda-bld/ -name "librmm*has_cma*.tar.bz2"`
-    if [[ "$CUDA" == "11.0" ]]; then
-        CONDA_FILE=`find $WORKSPACE/ci/artifacts/rmm/cpu/conda-bld/ -name "librmm*no_cma*.tar.bz2"`
+    CONDA_FILE=`find $WORKSPACE/ci/artifacts/rmm/cpu/conda-bld/ -name "librmm*no_cma*.tar.bz2"`
+    if [[ "$CUDA_MAJOR_VER" -ge 11 ]] && [[ "$CUDA_MINOR_VER" -ge 2 ]]; then
+        CONDA_FILE=`find $WORKSPACE/ci/artifacts/rmm/cpu/conda-bld/ -name "librmm*has_cma*.tar.bz2"`
     fi
     CONDA_FILE=`basename "$CONDA_FILE" .tar.bz2` #get filename without extension
     CONDA_FILE=${CONDA_FILE//-/=} #convert to conda install
