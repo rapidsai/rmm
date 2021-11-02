@@ -51,8 +51,10 @@ message(STATUS "RMM: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'")
 option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
 
 # find packages we depend on
-rapids_find_package(CUDAToolkit REQUIRED BUILD_EXPORT_SET rmm-exports INSTALL_EXPORT_SET
-                    rmm-exports)
+rapids_find_package(
+  CUDAToolkit REQUIRED
+  BUILD_EXPORT_SET rmm-exports
+  INSTALL_EXPORT_SET rmm-exports)
 rapids_cpm_init()
 include(cmake/thirdparty/get_spdlog.cmake)
 include(cmake/thirdparty/get_thrust.cmake)
@@ -126,12 +128,22 @@ if(NOT TARGET rmm::Thrust)
 endif()
 ]=])
 
-rapids_export(INSTALL rmm EXPORT_SET rmm-exports GLOBAL_TARGETS rmm NAMESPACE rmm:: DOCUMENTATION
-              doc_string FINAL_CODE_BLOCK code_string)
+rapids_export(
+  INSTALL rmm
+  EXPORT_SET rmm-exports
+  GLOBAL_TARGETS rmm
+  NAMESPACE rmm::
+  DOCUMENTATION doc_string
+  FINAL_CODE_BLOCK code_string)
 
 # build export targets
-rapids_export(BUILD rmm EXPORT_SET rmm-exports GLOBAL_TARGETS rmm NAMESPACE rmm:: DOCUMENTATION
-              doc_string FINAL_CODE_BLOCK code_string)
+rapids_export(
+  BUILD rmm
+  EXPORT_SET rmm-exports
+  GLOBAL_TARGETS rmm
+  NAMESPACE rmm::
+  DOCUMENTATION doc_string
+  FINAL_CODE_BLOCK code_string)
 
 # make documentation
 
