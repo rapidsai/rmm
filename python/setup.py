@@ -215,7 +215,7 @@ class build_ext_no_debug(_build_ext):
 class build_ext_no_async(build_ext_no_debug):
     def build_extensions(self):
         # Disable async support
-        self.compiler.compiler_so.append("-DNO_RMM_CUDA_MALLOC_ASYNC_SUPPORT")
+        self.compiler.compiler_so.append("-DRMM_DISABLE_CUDA_MALLOC_ASYNC")
         super().build_extensions()
 
 
