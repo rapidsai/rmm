@@ -20,10 +20,8 @@ function(find_and_configure_gbench VERSION)
   endif()
 
   rapids_cpm_find(
-    benchmark ${VERSION}
-    CPM_ARGS GITHUB_REPOSITORY google/benchmark VERSION ${VERSION}
-    GIT_SHALLOW TRUE
-    OPTIONS "BENCHMARK_ENABLE_TESTING OFF" "BENCHMARK_ENABLE_INSTALL OFF")
+    benchmark ${VERSION} CPM_ARGS GITHUB_REPOSITORY google/benchmark VERSION ${VERSION} GIT_SHALLOW
+    TRUE OPTIONS "BENCHMARK_ENABLE_TESTING OFF" "BENCHMARK_ENABLE_INSTALL OFF")
 
 endfunction()
 

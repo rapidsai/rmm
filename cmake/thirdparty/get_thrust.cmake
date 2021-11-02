@@ -16,10 +16,7 @@
 function(find_and_configure_thrust)
 
   include(${rapids-cmake-dir}/cpm/thrust.cmake)
-  rapids_cpm_thrust(
-    NAMESPACE rmm
-    BUILD_EXPORT_SET rmm-exports
-    INSTALL_EXPORT_SET rmm-exports)
+  rapids_cpm_thrust(NAMESPACE rmm BUILD_EXPORT_SET rmm-exports INSTALL_EXPORT_SET rmm-exports)
 
 endfunction()
 
