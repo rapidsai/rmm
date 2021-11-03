@@ -213,9 +213,17 @@ class build_ext_no_debug(_build_ext):
         setuptools.command.build_ext.build_ext.finalize_options(self)
 
 
+class build_ext_no_async(build_ext_no_debug):
+    def build_extensions(self):
+        # Disable async support
+        self.compiler.compiler_so.append("-DRMM_DISABLE_CUDA_MALLOC_ASYNC")
+        super().build_extensions()
+
+
 cmdclass = dict()
 cmdclass.update(versioneer.get_cmdclass())
 cmdclass["build_ext"] = build_ext_no_debug
+cmdclass["build_ext_no_async"] = build_ext_no_async
 
 setup(
     name="rmm",
