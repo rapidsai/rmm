@@ -198,7 +198,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    */
   void* do_allocate(std::size_t size, cuda_stream_view stream) override
   {
-    RMM_LOG_TRACE("[A][stream {:p}][{}B]", fmt::ptr(stream.value()), bytes);
+    RMM_LOG_TRACE("[A][stream {:p}][{}B]", fmt::ptr(stream.value()), size);
 
     if (size <= 0) { return nullptr; }
 
@@ -208,13 +208,13 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
 
     size = rmm::detail::align_up(size, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
     RMM_EXPECTS(size <= this->underlying().get_maximum_allocation_size(),
-                rmm::bad_alloc,
+                rmm::out_of_memory,
                 "Maximum allocation size exceeded");
     auto const block = this->underlying().get_block(size, stream_event);
 
     RMM_LOG_TRACE("[A][stream {:p}][{}B][{:p}]",
                   fmt::ptr(stream_event.stream),
-                  bytes,
+                  size,
                   fmt::ptr(block.pointer()));
 
     log_summary_trace();
@@ -233,7 +233,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    */
   void do_deallocate(void* ptr, std::size_t size, cuda_stream_view stream) override
   {
-    RMM_LOG_TRACE("[D][stream {:p}][{}B][{:p}]", fmt::ptr(stream.value()), bytes, p);
+    RMM_LOG_TRACE("[D][stream {:p}][{}B][{:p}]", fmt::ptr(stream.value()), size, ptr);
 
     if (size <= 0 || ptr == nullptr) { return; }
 

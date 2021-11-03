@@ -1,5 +1,5 @@
 # =============================================================================
-# Copyright (c) 2018-2020, NVIDIA CORPORATION.
+# Copyright (c) 2018-2021, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -31,6 +31,9 @@ function(ConfigureTestInternal TEST_NAME)
                CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}")
   target_compile_definitions(${TEST_NAME}
                              PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
+  if(DEFINED CUDA_MALLOC_ASYNC_SUPPORT AND NOT CUDA_MALLOC_ASYNC_SUPPORT)
+    target_compile_definitions(${TEST_NAME} PUBLIC "RMM_DISABLE_CUDA_MALLOC_ASYNC")
+  endif()
   target_compile_options(${TEST_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Wall -Werror
                                              -Wno-error=deprecated-declarations>)
 
@@ -81,6 +84,9 @@ ConfigureTest(STATISTICS_TEST mr/device/statistics_mr_tests.cpp)
 
 # tracking adaptor tests
 ConfigureTest(TRACKING_TEST mr/device/tracking_mr_tests.cpp)
+
+# out-of-memory callback adaptor tests
+ConfigureTest(FAILURE_CALLBACK_TEST mr/device/failure_callback_mr_tests.cpp)
 
 # aligned adaptor tests
 ConfigureTest(ALIGNED_TEST mr/device/aligned_mr_tests.cpp)

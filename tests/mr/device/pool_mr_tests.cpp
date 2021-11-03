@@ -86,7 +86,7 @@ TEST(PoolTest, ForceGrowth)
   EXPECT_NO_THROW(mr.allocate(1000));
   EXPECT_NO_THROW(mr.allocate(4000));
   EXPECT_NO_THROW(mr.allocate(500));
-  EXPECT_THROW(mr.allocate(2000), rmm::bad_alloc);  // too much
+  EXPECT_THROW(mr.allocate(2000), rmm::out_of_memory);  // too much
 }
 
 TEST(PoolTest, DeletedStream)
