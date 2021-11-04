@@ -23,7 +23,7 @@
 #include <cuda_runtime_api.h>
 
 #include <spdlog/common.h>
-#include <spdlog/fmt/bundled/ostream.h>
+#include <spdlog/fmt/ostr.h>
 
 #include <cstddef>
 #include <map>
