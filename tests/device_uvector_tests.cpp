@@ -26,7 +26,11 @@ struct TypedUVectorTest : ::testing::Test {
   [[nodiscard]] rmm::cuda_stream_view stream() const noexcept { return rmm::cuda_stream_view{}; }
 };
 
-using TestTypes = ::testing::Types<int8_t, int32_t, uint64_t, float, double>;
+using TestTypes = ::testing::Types<bool, int8_t, int32_t, uint64_t, float, double>;
+
+// explicit instantiation for code coverage testing. Ensures unused template class methods are
+// included in coverage analysis.
+template class rmm::device_uvector<int32_t>;
 
 TYPED_TEST_CASE(TypedUVectorTest, TestTypes);
 
@@ -199,8 +203,8 @@ TYPED_TEST(TypedUVectorTest, FrontBackElement)
   auto const size{12345};
   rmm::device_uvector<TypeParam> vec(size, this->stream());
 
-  auto const first = TypeParam{42};
-  auto const last  = TypeParam{13};
+  auto const first = TypeParam(42);
+  auto const last  = TypeParam(13);
   vec.set_element(0, first, this->stream());
   vec.set_element(vec.size() - 1, last, this->stream());
 

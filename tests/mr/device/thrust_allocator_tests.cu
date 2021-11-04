@@ -21,6 +21,10 @@
 
 #include <gtest/gtest.h>
 
+// explicit instantiation for code coverage testing. Ensures unused template class methods are
+// included in coverage analysis.
+template class rmm::mr::thrust_allocator<int>;
+
 namespace rmm::test {
 namespace {
 

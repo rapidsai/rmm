@@ -28,6 +28,10 @@
 #include <random>
 #include <type_traits>
 
+// explicit instantiation for code coverage testing. Ensures unused template class methods are
+// included in coverage analysis.
+template class rmm::device_scalar<int32_t>;
+
 template <typename T>
 struct DeviceScalarTest : public ::testing::Test {
   std::default_random_engine generator{};
