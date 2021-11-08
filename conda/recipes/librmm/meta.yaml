@@ -13,7 +13,7 @@ source:
 
 build:
   number: {{ GIT_DESCRIBE_NUMBER }}
-  string: cuda{{ cuda_major }}_{{ GIT_DESCRIBE_HASH }}_{{ GIT_DESCRIBE_NUMBER }}_{{ cudaMallocAsync }}
+  string: cuda{{ cuda_major }}_{{ GIT_DESCRIBE_HASH }}_{{ GIT_DESCRIBE_NUMBER }}
   script_env:
     - CC
     - CXX
@@ -37,11 +37,7 @@ requirements:
     - cudatoolkit {{ cuda_version }}.*
   run:
     - spdlog>=1.8.5,<1.9
-{% if cudaMallocAsync == "has_cma" %}
-    - {{ pin_compatible('cudatoolkit', max_pin='x', lower_bound='11.2') }} # cudatoolkit >=11.2,<12.0.0
-{% else %}
-    - {{ pin_compatible('cudatoolkit', upper_bound='11.2', lower_bound='11.0') }} # cudatoolkit >=11.0,<11.2
-{% endif %}
+    - {{ pin_compatible('cudatoolkit', max_pin='x', min_pin='x') }}
 
 test:
   commands:

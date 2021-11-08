@@ -113,10 +113,7 @@ else
 
     cd $WORKSPACE/python
 
-    CONDA_FILE=`find $WORKSPACE/ci/artifacts/rmm/cpu/conda-bld/ -name "librmm*no_cma*.tar.bz2"`
-    if [[ "$CUDA_MAJOR_VER" -ge 11 ]] && [[ "$CUDA_MINOR_VER" -ge 2 ]]; then
-        CONDA_FILE=`find $WORKSPACE/ci/artifacts/rmm/cpu/conda-bld/ -name "librmm*has_cma*.tar.bz2"`
-    fi
+    CONDA_FILE=`find $WORKSPACE/ci/artifacts/rmm/cpu/conda-bld/ -name "librmm*.tar.bz2"`
     CONDA_FILE=`basename "$CONDA_FILE" .tar.bz2` #get filename without extension
     CONDA_FILE=${CONDA_FILE//-/=} #convert to conda install
     gpuci_logger "Installing $CONDA_FILE"
