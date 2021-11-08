@@ -38,82 +38,81 @@
 
 namespace rmm::mr::detail::arena {
 
-/// Minimum size of a superblock (256 KiB).
-constexpr std::size_t minimum_superblock_size = 1U << 18U;
+/**
+ * @brief Represents a contiguous region of memory.
+ */
+class memory_span {
+ public:
+  /**
+   * @brief Construct a default span.
+   */
+  memory_span() = default;
+
+  /**
+   * @brief Construct a span given a pointer and size.
+   *
+   * @param pointer The address for the beginning of the span.
+   * @param size The size of the span.
+   */
+  memory_span(void* pointer, std::size_t size) : pointer_{static_cast<char*>(pointer)}, size_{size}
+  {
+  }
+
+  /// Returns the underlying pointer.
+  [[nodiscard]] char* pointer() const { return pointer_; }
+
+  /// Returns the size of the span.
+  [[nodiscard]] std::size_t size() const { return size_; }
+
+  /// Returns true if this span is valid (non-null), false otherwise.
+  [[nodiscard]] bool is_valid() const { return pointer_ != nullptr; }
+
+  /// Used by std::set to compare spans.
+  bool operator<(memory_span const& s) const { return pointer_ < s.pointer_; }
+
+ private:
+  char* pointer_{};     ///< Raw memory pointer.
+  std::size_t size_{};  ///< Size in bytes.
+};
 
 /**
  * @brief Represents a chunk of memory that can be allocated and deallocated.
- *
- * A block bigger than a certain size is called a "superblock".
  */
-class block {
+class block final : public memory_span {
  public:
-  /**
-   * @brief Construct a default block.
-   */
-  block() = default;
+  using memory_span::memory_span;
 
   /**
-   * @brief Construct a block given a pointer and size.
+   * @brief Is this block large enough to fit `sz` bytes?
    *
-   * @param pointer The address for the beginning of the block.
-   * @param size The size of the block.
+   * @param sz The size in bytes to check for fit.
+   * @return true if this block is at least `sz` bytes.
    */
-  block(char* pointer, std::size_t size) : pointer_(pointer), size_(size) {}
-
-  /**
-   * @brief Construct a block given a void pointer and size.
-   *
-   * @param pointer The address for the beginning of the block.
-   * @param size The size of the block.
-   */
-  block(void* pointer, std::size_t size) : pointer_(static_cast<char*>(pointer)), size_(size) {}
-
-  /// Returns the underlying pointer.
-  [[nodiscard]] void* pointer() const { return pointer_; }
-
-  /// Returns the size of the block.
-  [[nodiscard]] std::size_t size() const { return size_; }
-
-  /// Returns true if this block is valid (non-null), false otherwise.
-  [[nodiscard]] bool is_valid() const { return pointer_ != nullptr; }
-
-  /// Returns true if this block is a superblock, false otherwise.
-  [[nodiscard]] bool is_superblock() const { return size_ >= minimum_superblock_size; }
+  [[nodiscard]] bool fits(std::size_t sz) const { return size() >= sz; }
 
   /**
    * @brief Verifies whether this block can be merged to the beginning of block b.
    *
    * @param b The block to check for contiguity.
-   * @return true Returns true if this block's `pointer` + `size` == `b.ptr`, and `not b.is_head`,
-                  false otherwise.
+   * @return true Returns true if this block's `pointer` + `size` == `b.pointer`.
    */
-  [[nodiscard]] bool is_contiguous_before(block const& blk) const
+  [[nodiscard]] bool is_contiguous_before(block const& b) const
   {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    return pointer_ + size_ == blk.pointer_;
+    return pointer() + size() == b.pointer();
   }
-
-  /**
-   * @brief Is this block large enough to fit `sz` bytes?
-   *
-   * @param size The size in bytes to check for fit.
-   * @return true if this block is at least `sz` bytes.
-   */
-  [[nodiscard]] bool fits(std::size_t size) const { return size_ >= size; }
 
   /**
    * @brief Split this block into two by the given size.
    *
-   * @param size The size in bytes of the first block.
+   * @param sz The size in bytes of the first block.
    * @return std::pair<block, block> A pair of blocks split by sz.
    */
-  [[nodiscard]] std::pair<block, block> split(std::size_t size) const
+  [[nodiscard]] std::pair<block, block> split(std::size_t sz) const
   {
-    RMM_LOGGING_ASSERT(size_ >= size);
+    RMM_LOGGING_ASSERT(size() >= sz);
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    if (size_ > size) { return {{pointer_, size}, {pointer_ + size, size_ - size}}; }
-    return {*this, {}};
+    return {{pointer(), sz}, {pointer() + sz, size() - sz}};
   }
 
   /**
@@ -124,102 +123,198 @@ class block {
    * @param b block to merge.
    * @return block The merged block.
    */
-  [[nodiscard]] block merge(block const& blk) const
+  [[nodiscard]] block merge(block const& b) const
   {
-    RMM_LOGGING_ASSERT(is_contiguous_before(blk));
-    return {pointer_, size_ + blk.size_};
+    RMM_LOGGING_ASSERT(is_contiguous_before(b));
+    return {pointer(), size() + b.size()};
   }
-
-  /// Used by std::set to compare blocks.
-  bool operator<(block const& blk) const { return pointer_ < blk.pointer_; }
-
- private:
-  char* pointer_{};     ///< Raw memory pointer.
-  std::size_t size_{};  ///< Size in bytes.
 };
 
-inline bool block_size_compare(block lhs, block rhs) { return lhs.size() < rhs.size(); }
+/// Comparison function for block sizes.
+struct block_size_compare {
+  bool operator()(block const& lhs, block const& rhs) const { return lhs.size() < rhs.size(); }
+};
 
-/**
- * @brief Get the first free block of at least `size` bytes.
- *
- * Address-ordered first-fit has shown to perform slightly better than best-fit when it comes to
- * memory fragmentation, and slightly cheaper to implement. It is also used by some popular
- * allocators such as jemalloc.
- *
- * \see Johnstone, M. S., & Wilson, P. R. (1998). The memory fragmentation problem: Solved?. ACM
- * Sigplan Notices, 34(3), 26-36.
- *
- * @param free_blocks The address-ordered set of free blocks.
- * @param size The number of bytes to allocate.
- * @return block A block of memory of at least `size` bytes, or an empty block if not found.
- */
-inline block first_fit(std::set<block>& free_blocks, std::size_t size)
-{
-  auto const iter = std::find_if(
-    free_blocks.cbegin(), free_blocks.cend(), [size](auto const& blk) { return blk.fits(size); });
-
-  if (iter == free_blocks.cend()) { return {}; }
-  // Remove the block from the free_list.
-  auto const blk  = *iter;
-  auto const next = free_blocks.erase(iter);
-
-  if (blk.size() > size) {
-    // Split the block and put the remainder back.
-    auto const split = blk.split(size);
-    free_blocks.insert(next, split.second);
-    return split.first;
-  }
-  return blk;
-}
-
-/**
- * @brief Coalesce the given block with other free blocks.
- *
- * @param free_blocks The address-ordered set of free blocks.
- * @param b The block to coalesce.
- * @return block The coalesced block.
- */
-inline block coalesce_block(std::set<block>& free_blocks, block const& blk)
-{
-  if (!blk.is_valid()) { return blk; }
-
-  // Find the right place (in ascending address order) to insert the block.
-  auto const next     = free_blocks.lower_bound(blk);
-  auto const previous = next == free_blocks.cbegin() ? next : std::prev(next);
-
-  // Coalesce with neighboring blocks.
-  bool const merge_prev = previous->is_contiguous_before(blk);
-  bool const merge_next = next != free_blocks.cend() && blk.is_contiguous_before(*next);
-
-  block merged{};
-  if (merge_prev && merge_next) {
-    merged = previous->merge(blk).merge(*next);
-    free_blocks.erase(previous);
-    auto const iter = free_blocks.erase(next);
-    free_blocks.insert(iter, merged);
-  } else if (merge_prev) {
-    merged          = previous->merge(blk);
-    auto const iter = free_blocks.erase(previous);
-    free_blocks.insert(iter, merged);
-  } else if (merge_next) {
-    merged          = blk.merge(*next);
-    auto const iter = free_blocks.erase(next);
-    free_blocks.insert(iter, merged);
-  } else {
-    free_blocks.emplace(blk);
-    merged = blk;
-  }
-  return merged;
-}
-
+/// Calculate the total size of a collection of blocks.
 template <typename T>
 inline auto total_block_size(T const& blocks)
 {
-  return std::accumulate(blocks.cbegin(), blocks.cend(), std::size_t{}, [](auto lhs, auto rhs) {
-    return lhs + rhs.size();
-  });
+  return std::accumulate(
+    blocks.cbegin(), blocks.cend(), std::size_t{}, [](auto const& lhs, auto const& rhs) {
+      return lhs + rhs.size();
+    });
 }
+
+/**
+ * @brief Represents a large chunk of memory that is exchanged between the global arena and
+ * per-thread arenas.
+ */
+class superblock final : public memory_span {
+ public:
+  /// Minimum size of a superblock (4 MiB).
+  static constexpr std::size_t minimum_size{1U << 22U};
+
+  /**
+   * @brief Construct a default superblock.
+   */
+  superblock() = default;
+
+  /**
+   * @brief Construct a superblock given a pointer and size.
+   *
+   * @param pointer The address for the beginning of the superblock.
+   * @param size The size of the superblock.
+   */
+  superblock(void* pointer, std::size_t size) : memory_span{pointer, size}
+  {
+    free_blocks_.emplace(pointer, size);
+  }
+
+  // Disable copy semantics.
+  superblock(superblock const&) = delete;
+  superblock& operator=(superblock const&) = delete;
+  // Allow move semantics.
+  superblock(superblock&& s) noexcept = default;
+  superblock& operator=(superblock&&) noexcept = default;
+
+  ~superblock() = default;
+
+  /**
+   * @brief Is this superblock empty?
+   *
+   * @return true if this superblock is empty.
+   */
+  [[nodiscard]] bool empty() const
+  {
+    return free_blocks_.size() == 1 && free_blocks_.cbegin()->size() == size();
+  }
+
+  /**
+   * @brief Whether this superblock contains the given block.
+   *
+   * @param b The block to search for.
+   * @return true if the given block belongs to this superblock.
+   */
+  [[nodiscard]] bool contains(block const& b) const
+  {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    return pointer() <= b.pointer() && pointer() + size() >= b.pointer() + b.size();
+  }
+
+  /**
+   * @brief Can this superblock fit `sz` bytes?
+   *
+   * @param sz The size in bytes to check for fit.
+   * @return true if this superblock can fit `sz` bytes.
+   */
+  [[nodiscard]] bool fits(std::size_t sz) const
+  {
+    return std::any_of(
+      free_blocks_.cbegin(), free_blocks_.cend(), [sz](auto const& b) { return b.fits(sz); });
+  }
+
+  /**
+   * @brief Verifies whether this superblock can be merged to the beginning of superblock s.
+   *
+   * @param s The superblock to check for contiguity.
+   * @return true Returns true if both superblocks are empty and this superblock's
+   * `pointer` + `size` == `s.ptr`.
+   */
+  [[nodiscard]] bool is_contiguous_before(superblock const& s) const
+  {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    return empty() && s.empty() && pointer() + size() == s.pointer();
+  }
+
+  /**
+   * @brief Split this superblock into two by the given size.
+   *
+   * @param sz The size in bytes of the first block.
+   * @return superblock_pair A pair of superblocks split by sz.
+   */
+  [[nodiscard]] std::pair<superblock, superblock> split(std::size_t sz) const
+  {
+    RMM_LOGGING_ASSERT(empty() && sz >= minimum_size && size() - sz >= minimum_size);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    return {superblock{pointer(), sz}, superblock{pointer() + sz, size() - sz}};
+  }
+
+  /**
+   * @brief Coalesce two contiguous superblocks into one.
+   *
+   * `this->is_contiguous_before(s)` must be true.
+   *
+   * @param s superblock to merge.
+   * @return block The merged block.
+   */
+  [[nodiscard]] superblock merge(superblock const& s) const
+  {
+    RMM_LOGGING_ASSERT(is_contiguous_before(s));
+    return {pointer(), size() + s.size()};
+  }
+
+  /**
+   * @brief Get the first free block of at least `size` bytes.
+   *
+   * @param size The number of bytes to allocate.
+   * @return block A block of memory of at least `size` bytes, or an empty block if not found.
+   */
+  block first_fit(std::size_t size) const
+  {
+    auto const iter = std::find_if(
+      free_blocks_.cbegin(), free_blocks_.cend(), [size](auto const& b) { return b.fits(size); });
+    if (iter == free_blocks_.cend()) { return {}; }
+
+    // Remove the block from the free list.
+    auto const b    = *iter;
+    auto const next = free_blocks_.erase(iter);
+
+    if (b.size() > size) {
+      // Split the block and put the remainder back.
+      auto const split = b.split(size);
+      free_blocks_.insert(next, split.second);
+      return split.first;
+    }
+    return b;
+  }
+
+  /**
+   * @brief Coalesce the given block with other free blocks.
+   *
+   * @param b The block to coalesce.
+   */
+  void coalesce(block const& b) const
+  {
+    // Find the right place (in ascending address order) to insert the block.
+    auto const next     = free_blocks_.lower_bound(b);
+    auto const previous = next == free_blocks_.cbegin() ? next : std::prev(next);
+
+    // Coalesce with neighboring blocks.
+    bool const merge_prev = previous->is_contiguous_before(b);
+    bool const merge_next = next != free_blocks_.cend() && b.is_contiguous_before(*next);
+
+    if (merge_prev && merge_next) {
+      auto const merged = previous->merge(b).merge(*next);
+      free_blocks_.erase(previous);
+      auto const iter = free_blocks_.erase(next);
+      free_blocks_.insert(iter, merged);
+    } else if (merge_prev) {
+      auto const merged = previous->merge(b);
+      auto const iter   = free_blocks_.erase(previous);
+      free_blocks_.insert(iter, merged);
+    } else if (merge_next) {
+      auto const merged = b.merge(*next);
+      auto const iter   = free_blocks_.erase(next);
+      free_blocks_.insert(iter, merged);
+    } else {
+      free_blocks_.insert(next, b);
+    }
+  }
+
+ private:
+  /// Address-ordered set of free blocks.
+  mutable std::set<block> free_blocks_{};
+};
 
 /**
  * @brief The global arena for allocating memory from the upstream memory resource.
@@ -232,48 +327,21 @@ inline auto total_block_size(T const& blocks)
 template <typename Upstream>
 class global_arena final {
  public:
-  /// Reserved memory that should not be allocated (64 MiB).
-  static constexpr std::size_t reserved_size = 1U << 26U;
-
   /**
    * @brief Construct a global arena.
    *
    * @throws rmm::logic_error if `upstream_mr == nullptr`.
-   * @throws rmm::logic_error if `initial_size` is neither the default nor aligned to a multiple of
-   * 256 bytes.
-   * @throws rmm::logic_error if `maximum_size` is neither the default nor aligned to a multiple of
-   * 256 bytes.
    *
    * @param upstream_mr The memory resource from which to allocate blocks for the pool
-   * @param initial_size Minimum size, in bytes, of the initial global arena. Defaults to half of
-   * the available memory on the current device.
-   * @param maximum_size Maximum size, in bytes, that the global arena can grow to. Defaults to all
-   * of the available memory on the current device.
+   * @param arena_size Size in bytes of the global arena. Defaults to all the available memory on
+   * the current device.
    */
-  global_arena(Upstream* upstream_mr,
-               std::optional<std::size_t> initial_size,
-               std::optional<std::size_t> maximum_size)
-    : upstream_mr_{upstream_mr}, maximum_size_{maximum_size.value_or(0)}
+  global_arena(Upstream* upstream_mr, std::optional<std::size_t> arena_size)
+    : upstream_mr_{upstream_mr}
   {
     RMM_EXPECTS(nullptr != upstream_mr_, "Unexpected null upstream pointer.");
-    RMM_EXPECTS(!initial_size || rmm::detail::is_cuda_aligned(initial_size.value()),
-                "Error, Initial arena size required to be a multiple of 256 bytes");
-    RMM_EXPECTS(!maximum_size || rmm::detail::is_cuda_aligned(maximum_size.value()),
-                "Error, Maximum arena size required to be a multiple of 256 bytes");
-
-    auto init = initial_size.value_or(0);
-    if (!initial_size || !maximum_size) {
-      auto const [free, total] = rmm::detail::available_device_memory();
-      if (!initial_size) {
-        init = rmm::detail::align_down_cuda(free) - reserved_size;
-      }
-      if (!maximum_size) {
-        maximum_size_ = rmm::detail::align_down_cuda(free) - reserved_size;
-      }
-    }
-    RMM_EXPECTS(init <= maximum_size_, "Initial arena size exceeds the maximum pool size!");
-
-    free_blocks_.emplace(expand_arena(init));
+    auto const size = rmm::detail::align_down_cuda(arena_size.value_or(default_size()));
+    initialize(size);
   }
 
   // Disable copy (and move) semantics.
@@ -289,47 +357,102 @@ class global_arena final {
   ~global_arena()
   {
     lock_guard lock(mtx_);
-    for (auto const& blk : upstream_blocks_) {
-      upstream_mr_->deallocate(blk.pointer(), blk.size());
+    upstream_mr_->deallocate(upstream_block_.pointer(), upstream_block_.size());
+  }
+
+  /**
+   * @brief Acquire a superblock that can fit a block of the given size.
+   *
+   * @param size The size in bytes of the allocation.
+   * @return superblock The acquired superblock.
+   */
+  superblock acquire(std::size_t size)
+  {
+    lock_guard lock(mtx_);
+    return first_fit(size);
+  }
+
+  /**
+   * @brief Release a superblock.
+   *
+   * @param s Superblock to be released.
+   */
+  void release(superblock&& s)
+  {
+    lock_guard lock(mtx_);
+    coalesce(std::move(s));
+  }
+
+  /**
+   * @brief Release a set of superblocks from a dying arena.
+   *
+   * @param superblocks The set of superblocks.
+   */
+  void release(std::set<superblock>& superblocks)
+  {
+    lock_guard lock(mtx_);
+    auto iter = superblocks.cbegin();
+    while (iter != superblocks.cend()) {
+      auto s = std::move(superblocks.extract(iter).value());
+      coalesce(std::move(s));
+      ++iter;
     }
   }
 
   /**
-   * @brief Allocates memory of size at least `bytes`.
+   * @brief Allocate a large block directly.
    *
-   * @throws `std::bad_alloc` if the requested allocation could not be fulfilled.
-   *
-   * @param bytes The size in bytes of the allocation.
+   * @param size The size in bytes of the allocation.
    * @return void* Pointer to the newly allocated memory.
    */
-  block allocate(std::size_t bytes)
+  void* allocate(std::size_t size)
   {
-    lock_guard lock(mtx_);
-    return get_block(bytes);
-  }
-
-  /**
-   * @brief Deallocate memory pointed to by `blk`.
-   *
-   * @param blk Block to be deallocated.
-   */
-  void deallocate(block const& blk)
-  {
-    lock_guard lock(mtx_);
-    coalesce_block(free_blocks_, blk);
-  }
-
-  /**
-   * @brief Deallocate a set of free blocks from a dying arena.
-   *
-   * @param free_blocks The set of free blocks.
-   */
-  void deallocate(std::set<block> const& free_blocks)
-  {
-    lock_guard lock(mtx_);
-    for (auto const& blk : free_blocks) {
-      coalesce_block(free_blocks_, blk);
+    if (handles(size)) {
+      lock_guard lock(mtx_);
+      return first_fit(size).pointer();
     }
+    return nullptr;
+  }
+
+  /**
+   * @brief Deallocate memory pointed to by `ptr` directly.
+   *
+   * @param ptr Pointer to be deallocated.
+   * @param size The size in bytes of the allocation. This must be equal to the value of `size`
+   * that was passed to the `allocate` call that returned `p`.
+   * @param stream Stream on which to perform deallocation.
+   * @return bool true if the allocation is found, false otherwise.
+   */
+  bool deallocate(void* ptr, std::size_t size, cuda_stream_view stream)
+  {
+    if (handles(size)) {
+      stream.synchronize_no_throw();
+
+      lock_guard lock(mtx_);
+      superblock s{ptr, size};
+      coalesce(std::move(s));
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * @brief Deallocate memory pointed to by `ptr` that was allocated in a per-thread arena.
+   *
+   * @param ptr Pointer to be deallocated.
+   * @param bytes The size in bytes of the allocation. This must be equal to the
+   * value of `bytes` that was passed to the `allocate` call that returned `ptr`.
+   * @param stream Stream on which to perform deallocation.
+   */
+  void deallocate_from_other_arena(void* ptr, std::size_t bytes)
+  {
+    lock_guard lock(mtx_);
+
+    block const b{ptr, bytes};
+    auto const iter = std::find_if(
+      superblocks_.cbegin(), superblocks_.cend(), [b](auto const& s) { return s.contains(b); });
+    if (iter == superblocks_.cend()) { RMM_FAIL("allocation not found"); }
+    iter->coalesce(b);
   }
 
   /**
@@ -339,86 +462,132 @@ class global_arena final {
    */
   void dump_memory_log(std::shared_ptr<spdlog::logger> const& logger) const
   {
-    lock_guard lock(mtx_);
-
-    logger->info("  Maximum size: {}", rmm::detail::bytes{maximum_size_});
-    logger->info("  Current size: {}", rmm::detail::bytes{current_size_});
-
-    logger->info("  # free blocks: {}", free_blocks_.size());
-    if (!free_blocks_.empty()) {
-      logger->info("  Total size of free blocks: {}",
-                   rmm::detail::bytes{total_block_size(free_blocks_)});
-      auto const largest_free =
-        *std::max_element(free_blocks_.begin(), free_blocks_.end(), block_size_compare);
-      logger->info("  Size of largest free block: {}", rmm::detail::bytes{largest_free.size()});
-    }
-
-    logger->info("  # upstream blocks={}", upstream_blocks_.size());
-    logger->info("  Total size of upstream blocks: {}",
-                 rmm::detail::bytes{total_block_size(upstream_blocks_)});
+    //    lock_guard lock(mtx_);
+    //
+    //    logger->info("  Maximum size: {}", rmm::detail::bytes{maximum_size_});
+    //    logger->info("  Current size: {}", rmm::detail::bytes{current_size_});
+    //
+    //    logger->info("  # free blocks: {}", free_blocks_.size());
+    //    if (!free_blocks_.empty()) {
+    //      logger->info("  Total size of free blocks: {}",
+    //                   rmm::detail::bytes{total_block_size(free_blocks_)});
+    //      auto const largest_free =
+    //        *std::max_element(free_blocks_.begin(), free_blocks_.end(), block_size_compare);
+    //      logger->info("  Size of largest free block: {}",
+    //      rmm::detail::bytes{largest_free.size()});
+    //    }
+    //
+    //    logger->info("  # upstream blocks={}", upstream_blocks_.size());
+    //    logger->info("  Total size of upstream blocks: {}",
+    //                 rmm::detail::bytes{total_block_size(upstream_blocks_)});
   }
 
  private:
   using lock_guard = std::lock_guard<std::mutex>;
 
+  /// Reserved memory that should not be allocated (64 MiB).
+  static constexpr std::size_t reserved_size = 1U << 26U;
+
   /**
-   * @brief Get an available memory block of at least `size` bytes.
+   * @brief Default size of the global arena if unspecified.
+   * @return the default global arena size.
+   */
+  constexpr std::size_t default_size() const
+  {
+    auto const [free, total] = rmm::detail::available_device_memory();
+    return free - reserved_size;
+  }
+
+  /**
+   * @brief Allocate space from upstream to initialize the arena.
+   *
+   * @param size The size to allocate.
+   */
+  void initialize(std::size_t size)
+  {
+    RMM_LOGGING_ASSERT(size >= superblock::minimum_size);
+    upstream_block_ = {upstream_mr_->allocate(size), size};
+    superblocks_.emplace(upstream_block_.pointer(), size);
+  }
+
+  /**
+   * @brief Should allocation of `size` bytes be handled by the global arena directly?
+   *
+   * @param size The size in bytes of the allocation.
+   * @return bool True if the allocation should be handled by the global arena.
+   */
+  bool handles(std::size_t size) { return size > superblock::minimum_size / 2; }
+
+  /**
+   * @brief Get the first superblock that can fit a block of at least `size` bytes.
+   *
+   * Address-ordered first-fit has shown to perform slightly better than best-fit when it comes to
+   * memory fragmentation, and slightly cheaper to implement. It is also used by some popular
+   * allocators such as jemalloc.
+   *
+   * \see Johnstone, M. S., & Wilson, P. R. (1998). The memory fragmentation problem: Solved?. ACM
+   * Sigplan Notices, 34(3), 26-36.
    *
    * @param size The number of bytes to allocate.
-   * @return block A block of memory of at least `size` bytes.
+   * @return superblock A superblock that can fit at least `size` bytes, or empty if not found.
    */
-  block get_block(std::size_t size)
+  superblock first_fit(std::size_t size)
   {
-    // Find the first-fit free block.
-    auto const blk = first_fit(free_blocks_, size);
-    if (blk.is_valid()) { return blk; }
+    auto const iter = std::find_if(
+      superblocks_.cbegin(), superblocks_.cend(), [size](auto const& s) { return s.fits(size); });
+    if (iter == superblocks_.cend()) { return {}; }
 
-    // No existing larger blocks available, so grow the arena.
-    auto const upstream_block = expand_arena(size_to_grow(size));
-    coalesce_block(free_blocks_, upstream_block);
-    return first_fit(free_blocks_, size);
-  }
-
-  /**
-   * @brief Get the size to grow the global arena given the requested `size` bytes.
-   *
-   * This simply grows the global arena to the maximum size.
-   *
-   * @param size The number of bytes required.
-   * @return size The size for the arena to grow, or 0 if no more memory.
-   */
-  constexpr std::size_t size_to_grow(std::size_t size) const
-  {
-    if (current_size_ + size > maximum_size_) { return 0; }
-    return maximum_size_ - current_size_;
-  }
-
-  /**
-   * @brief Allocate space from upstream to supply the arena and return a sufficiently sized block.
-   *
-   * @param size The minimum size to allocate.
-   * @return block A block of at least `size` bytes.
-   */
-  block expand_arena(std::size_t size)
-  {
-    if (size > 0) {
-      upstream_blocks_.push_back({upstream_mr_->allocate(size), size});
-      current_size_ += size;
-      return upstream_blocks_.back();
+    auto node_handle = superblocks_.extract(iter);
+    auto s           = std::move(node_handle.value());
+    auto const sz    = std::max(size, superblock::minimum_size);
+    if (s.empty() && s.size() - sz >= superblock::minimum_size) {
+      // Split the superblock and put the remainder back.
+      auto [head, tail] = s.split(sz);
+      superblocks_.insert(std::move(tail));
+      return std::move(head);
     }
-    return {};
+    return s;
+  }
+
+  /**
+   * @brief Coalesce the given superblock with other empty superblocks.
+   *
+   * @param s The superblock to coalesce.
+   */
+  void coalesce(superblock&& s)
+  {
+    // Find the right place (in ascending address order) to insert the block.
+    auto const next     = superblocks_.lower_bound(s);
+    auto const previous = next == superblocks_.cbegin() ? next : std::prev(next);
+
+    // Coalesce with neighboring blocks.
+    bool const merge_prev = previous->is_contiguous_before(s);
+    bool const merge_next = next != superblocks_.cend() && s.is_contiguous_before(*next);
+
+    if (merge_prev && merge_next) {
+      auto p      = std::move(superblocks_.extract(previous).value());
+      auto n      = std::move(superblocks_.extract(next).value());
+      auto merged = p.merge(std::move(s)).merge(std::move(n));
+      superblocks_.insert(std::move(merged));
+    } else if (merge_prev) {
+      auto p      = std::move(superblocks_.extract(previous).value());
+      auto merged = p.merge(std::move(s));
+      superblocks_.insert(std::move(merged));
+    } else if (merge_next) {
+      auto n      = std::move(superblocks_.extract(next).value());
+      auto merged = s.merge(std::move(n));
+      superblocks_.insert(std::move(merged));
+    } else {
+      superblocks_.insert(std::move(s));
+    }
   }
 
   /// The upstream resource to allocate memory from.
   Upstream* upstream_mr_;
-  /// The maximum size the global arena can grow to.
-  std::size_t maximum_size_;
-  /// The current size of the global arena.
-  std::size_t current_size_{};
-  /// Address-ordered set of free blocks.
-  std::set<block> free_blocks_;
-  /// Blocks allocated from upstream so that they can be quickly freed.
-  std::vector<block> upstream_blocks_;
+  /// Block allocated from upstream so that it can be quickly freed.
+  block upstream_block_;
+  /// Address-ordered set of superblocks.
+  std::set<superblock> superblocks_;
   /// Mutex for exclusive lock.
   mutable std::mutex mtx_;
 };
@@ -427,7 +596,7 @@ class global_arena final {
  * @brief An arena for allocating memory for a thread.
  *
  * An arena is a per-thread or per-non-default-stream memory pool. It allocates
- * superblocks from the global arena, and return them when the superblocks become empty.
+ * superblocks from the global arena, and returns them when the superblocks become empty.
  *
  * @tparam Upstream Memory resource to use for allocating the global arena. Implements
  * rmm::mr::device_memory_resource interface.
@@ -442,43 +611,44 @@ class arena {
    */
   explicit arena(global_arena<Upstream>& global_arena) : global_arena_{global_arena} {}
 
-  ~arena() = default;
-
   // Disable copy (and move) semantics.
   arena(arena const&) = delete;
   arena& operator=(arena const&) = delete;
   arena(arena&&) noexcept        = delete;
   arena& operator=(arena&&) noexcept = delete;
 
+  ~arena() = default;
+
   /**
-   * @brief Allocates memory of size at least `bytes`.
+   * @brief Allocates memory of size at least `size` bytes.
    *
-   * @throws `std::bad_alloc` if the requested allocation could not be fulfilled.
-   *
-   * @param bytes The size in bytes of the allocation.
+   * @param size The size in bytes of the allocation.
    * @return void* Pointer to the newly allocated memory.
    */
-  void* allocate(std::size_t bytes)
+  void* allocate(std::size_t size)
   {
+    auto* ptr = global_arena_.allocate(size);
+    if (ptr != nullptr) { return ptr; }
+
     lock_guard lock(mtx_);
-    auto const blk = get_block(bytes);
-    return blk.pointer();
+    return get_block(size).pointer();
   }
 
   /**
    * @brief Deallocate memory pointed to by `ptr`, and possibly return superblocks to upstream.
    *
    * @param ptr Pointer to be deallocated.
-   * @param bytes The size in bytes of the allocation. This must be equal to the value of `bytes`
+   * @param size The size in bytes of the allocation. This must be equal to the value of `size`
    * that was passed to the `allocate` call that returned `p`.
    * @param stream Stream on which to perform deallocation.
+   * @return bool true if the allocation is found, false otherwise.
    */
-  void deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream)
+  bool deallocate(void* ptr, std::size_t size, cuda_stream_view stream)
   {
+    if (global_arena_.deallocate(ptr, size, stream)) { return true; }
+
     lock_guard lock(mtx_);
-    block const blk{ptr, bytes};
-    auto const merged = coalesce_block(free_blocks_, blk);
-    shrink_arena(merged, stream);
+    return deallocate_from_superblock({ptr, size});
   }
 
   /**
@@ -487,8 +657,7 @@ class arena {
   void clean()
   {
     lock_guard lock(mtx_);
-    global_arena_.deallocate(free_blocks_);
-    free_blocks_.clear();
+    global_arena_.release(superblocks_);
   }
 
   /**
@@ -498,21 +667,20 @@ class arena {
    */
   void dump_memory_log(std::shared_ptr<spdlog::logger> const& logger) const
   {
-    lock_guard lock(mtx_);
-    logger->info("    # free blocks: {}", free_blocks_.size());
-    if (!free_blocks_.empty()) {
-      logger->info("    Total size of free blocks: {}",
-                   rmm::detail::bytes{total_block_size(free_blocks_)});
-      auto const largest_free =
-        *std::max_element(free_blocks_.begin(), free_blocks_.end(), block_size_compare);
-      logger->info("    Size of largest free block: {}", rmm::detail::bytes{largest_free.size()});
-    }
+    //    lock_guard lock(mtx_);
+    //    logger->info("    # free blocks: {}", free_blocks_.size());
+    //    if (!free_blocks_.empty()) {
+    //      logger->info("    Total size of free blocks: {}",
+    //                   rmm::detail::bytes{total_block_size(free_blocks_)});
+    //      auto const largest_free =
+    //        *std::max_element(free_blocks_.begin(), free_blocks_.end(), block_size_compare);
+    //      logger->info("    Size of largest free block: {}",
+    //      rmm::detail::bytes{largest_free.size()});
+    //    }
   }
 
  private:
   using lock_guard = std::lock_guard<std::mutex>;
-  /// Maximum number of free blocks to keep.
-  static constexpr int max_free_blocks = 16;
 
   /**
    * @brief Get an available memory block of at least `size` bytes.
@@ -522,51 +690,75 @@ class arena {
    */
   block get_block(std::size_t size)
   {
-    if (size < minimum_superblock_size) {
-      // Find the first-fit free block.
-      auto const blk = first_fit(free_blocks_, size);
-      if (blk.is_valid()) { return blk; }
-    }
+    // Find the first-fit free block.
+    auto const b = first_fit(size);
+    if (b.is_valid()) { return b; }
 
     // No existing larger blocks available, so grow the arena and obtain a superblock.
-    auto const superblock = expand_arena(size);
-    if (superblock.is_valid()) {
-      coalesce_block(free_blocks_, superblock);
-      return first_fit(free_blocks_, size);
-    }
-    return superblock;
+    return expand_arena(size);
   }
 
   /**
-   * @brief Allocate space from upstream to supply the arena and return a superblock.
+   * @brief Get the first free block of at least `size` bytes.
    *
-   * @return A superblock.
+   * Address-ordered first-fit has shown to perform slightly better than best-fit when it comes to
+   * memory fragmentation, and slightly cheaper to implement. It is also used by some popular
+   * allocators such as jemalloc.
+   *
+   * \see Johnstone, M. S., & Wilson, P. R. (1998). The memory fragmentation problem: Solved?. ACM
+   * Sigplan Notices, 34(3), 26-36.
+   *
+   * @param size The number of bytes to allocate.
+   * @return block A block of memory of at least `size` bytes, or an empty block if not found.
+   */
+  block first_fit(std::size_t size)
+  {
+    for (auto const& s : superblocks_) {
+      auto const b = s.first_fit(size);
+      if (b.is_valid()) { return b; }
+    }
+    return {};
+  }
+
+  /**
+   * @brief Deallocate a block from the superblock it belongs to.
+   *
+   * @param b The block to deallocate.
+   * @return true if the block is found.
+   */
+  bool deallocate_from_superblock(block b)
+  {
+    auto const iter = std::find_if(
+      superblocks_.begin(), superblocks_.end(), [b](auto& s) { return s.contains(b); });
+    if (iter == superblocks_.end()) { return false; }
+
+    auto const& s = *iter;
+    s.coalesce(b);
+    if (s.empty()) { global_arena_.release(std::move(superblocks_.extract(iter).value())); }
+    return true;
+  }
+
+  /**
+   * @brief Allocate space from upstream to supply the arena and return a block.
+   *
+   * @param size The number of bytes to allocate.
+   * @return block A block of memory of at least `size` bytes.
    */
   block expand_arena(std::size_t size)
   {
-    auto const superblock_size = std::max(size, minimum_superblock_size);
-    return global_arena_.allocate(superblock_size);
-  }
-
-  /**
-   * @brief Shrink this arena by returning free superblocks to upstream.
-   *
-   * @param blk The block that can be used to shrink the arena.
-   * @param stream Stream on which to perform shrinking.
-   */
-  void shrink_arena(block const& blk, cuda_stream_view stream)
-  {
-    if (blk.is_superblock() || free_blocks_.size() > max_free_blocks) {
-      stream.synchronize_no_throw();
-      global_arena_.deallocate(blk);
-      free_blocks_.erase(blk);
+    auto s = global_arena_.acquire(size);
+    if (s.is_valid()) {
+      auto const b = s.first_fit(size);
+      superblocks_.insert(std::move(s));
+      return b;
     }
+    return {};
   }
 
   /// The global arena to allocate superblocks from.
   global_arena<Upstream>& global_arena_;
-  /// Free blocks.
-  std::set<block> free_blocks_;
+  /// Acquired superblocks.
+  std::set<superblock> superblocks_;
   /// Mutex for exclusive lock.
   mutable std::mutex mtx_;
 };

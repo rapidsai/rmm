@@ -32,29 +32,6 @@ TEST(ArenaTest, NullUpstream)
   EXPECT_THROW([]() { arena_mr mr{nullptr}; }(), rmm::logic_error);
 }
 
-TEST(ArenaTest, UnalignedInitialSize)
-{
-  EXPECT_THROW([]() { arena_mr mr(rmm::mr::get_current_device_resource(), 255); }(),
-               rmm::logic_error);
-}
-
-TEST(ArenaTest, UnalignedMaximumSize)
-{
-  EXPECT_THROW([]() { arena_mr mr(rmm::mr::get_current_device_resource(), 256, 257); }(),
-               rmm::logic_error);
-}
-
-TEST(ArenaTest, MaxLessThanInitial)
-{
-  EXPECT_THROW([]() { arena_mr mr(rmm::mr::get_current_device_resource(), 512, 256); }(),
-               rmm::logic_error);
-}
-
-TEST(ArenaTest, MaxEqualToInitial)
-{
-  EXPECT_NO_THROW([]() { arena_mr mr(rmm::mr::get_current_device_resource(), 512, 512); }());
-}
-
 TEST(ArenaTest, AllocateNinetyPercent)
 {
   EXPECT_NO_THROW([]() {

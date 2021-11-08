@@ -77,23 +77,15 @@ class arena_memory_resource final : public device_memory_resource {
    * @brief Construct an `arena_memory_resource`.
    *
    * @throws rmm::logic_error if `upstream_mr == nullptr`.
-   * @throws rmm::logic_error if `initial_size` is neither the default nor aligned to a multiple of
-   * 256 bytes.
-   * @throws rmm::logic_error if `maximum_size` is neither the default nor aligned to a multiple of
-   * 256 bytes.
    *
    * @param upstream_mr The memory resource from which to allocate blocks for the pool
-   * @param initial_size Minimum size, in bytes, of the initial global arena. Defaults to half of
-   * the available memory on the current device.
-   * @param maximum_size Maximum size, in bytes, that the global arena can grow to. Defaults to all
-   * of the available memory on the current device.
+   * @param arena_size Size in bytes of the global arena. Defaults to all the available memory on
+   * the current device.
    */
   explicit arena_memory_resource(Upstream* upstream_mr,
-                                 std::optional<std::size_t> initial_size = std::nullopt,
-                                 std::optional<std::size_t> maximum_size = std::nullopt,
-                                 bool dump_log_on_failure = false)
-    : global_arena_{upstream_mr, initial_size, maximum_size},
-      dump_log_on_failure_{dump_log_on_failure}
+                                 std::optional<std::size_t> arena_size = std::nullopt,
+                                 bool dump_log_on_failure              = false)
+    : global_arena_{upstream_mr, arena_size}, dump_log_on_failure_{dump_log_on_failure}
   {
     if (dump_log_on_failure_) {
       logger_ = spdlog::basic_logger_mt("arena_memory_dump", "rmm_arena_memory_dump.log");
@@ -124,8 +116,8 @@ class arena_memory_resource final : public device_memory_resource {
   bool supports_get_mem_info() const noexcept override { return false; }
 
  private:
-  using global_arena = detail::arena::global_arena<Upstream>;
-  using arena        = detail::arena::arena<Upstream>;
+  using global_arena = rmm::mr::detail::arena::global_arena<Upstream>;
+  using arena        = rmm::mr::detail::arena::arena<Upstream>;
   using read_lock    = std::shared_lock<std::shared_timed_mutex>;
   using write_lock   = std::lock_guard<std::shared_timed_mutex>;
 
@@ -174,7 +166,43 @@ class arena_memory_resource final : public device_memory_resource {
     if (ptr == nullptr || bytes <= 0) { return; }
 
     bytes = rmm::detail::align_up_cuda(bytes);
-    get_arena(stream).deallocate(ptr, bytes, stream);
+    if (!get_arena(stream).deallocate(ptr, bytes, stream)) {
+      deallocate_from_other_arena(ptr, bytes, stream);
+    }
+  }
+
+  /**
+   * @brief Deallocate memory pointed to by `ptr` that was allocated in a different arena.
+   *
+   * @param ptr Pointer to be deallocated.
+   * @param bytes The size in bytes of the allocation. This must be equal to the
+   * value of `bytes` that was passed to the `allocate` call that returned `ptr`.
+   * @param stream Stream on which to perform deallocation.
+   */
+  void deallocate_from_other_arena(void* ptr, std::size_t bytes, cuda_stream_view stream)
+  {
+    stream.synchronize_no_throw();
+
+    read_lock lock(mtx_);
+
+    if (use_per_thread_arena(stream)) {
+      auto const id = std::this_thread::get_id();
+      for (auto& kv : thread_arenas_) {
+        // If the arena does not belong to the current thread, try to deallocate from it, and return
+        // if successful.
+        if (kv.first != id && kv.second->deallocate(ptr, bytes, stream)) { return; }
+      }
+    } else {
+      for (auto& kv : stream_arenas_) {
+        // If the arena does not belong to the current stream, try to deallocate from it, and return
+        // if successful.
+        if (stream.value() != kv.first && kv.second.deallocate(ptr, bytes, stream)) { return; }
+      }
+    }
+
+    // The thread that originally allocated the block has terminated, deallocate directly in the
+    // global arena.
+    global_arena_.deallocate_from_other_arena(ptr, bytes);
   }
 
   /**
