@@ -174,7 +174,7 @@ class superblock final : public memory_span {
   superblock(superblock const&) = delete;
   superblock& operator=(superblock const&) = delete;
   // Allow move semantics.
-  superblock(superblock&& s) noexcept = default;
+  superblock(superblock&& sb) noexcept = default;
   superblock& operator=(superblock&&) noexcept = default;
 
   ~superblock() = default;
@@ -220,10 +220,10 @@ class superblock final : public memory_span {
    * @return true Returns true if both superblocks are empty and this superblock's
    * `pointer` + `size` == `s.ptr`.
    */
-  [[nodiscard]] bool is_contiguous_before(superblock const& s) const
+  [[nodiscard]] bool is_contiguous_before(superblock const& sb) const
   {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    return empty() && s.empty() && pointer() + size() == s.pointer();
+    return empty() && sb.empty() && pointer() + size() == sb.pointer();
   }
 
   /**
@@ -247,10 +247,10 @@ class superblock final : public memory_span {
    * @param s superblock to merge.
    * @return block The merged block.
    */
-  [[nodiscard]] superblock merge(superblock const& s) const
+  [[nodiscard]] superblock merge(superblock const& sb) const
   {
-    RMM_LOGGING_ASSERT(is_contiguous_before(s));
-    return {pointer(), size() + s.size()};
+    RMM_LOGGING_ASSERT(is_contiguous_before(sb));
+    return {pointer(), size() + sb.size()};
   }
 
   /**
@@ -333,8 +333,8 @@ class global_arena final {
    * @throws rmm::logic_error if `upstream_mr == nullptr`.
    *
    * @param upstream_mr The memory resource from which to allocate blocks for the pool
-   * @param arena_size Size in bytes of the global arena. Defaults to all the available memory on
-   * the current device.
+   * @param arena_size Size in bytes of the global arena. Defaults to half of the available memory
+   * on the current device.
    */
   global_arena(Upstream* upstream_mr, std::optional<std::size_t> arena_size)
     : upstream_mr_{upstream_mr}
@@ -377,10 +377,10 @@ class global_arena final {
    *
    * @param s Superblock to be released.
    */
-  void release(superblock&& s)
+  void release(superblock&& sb)
   {
     lock_guard lock(mtx_);
-    coalesce(std::move(s));
+    coalesce(std::move(sb));
   }
 
   /**
@@ -391,11 +391,8 @@ class global_arena final {
   void release(std::set<superblock>& superblocks)
   {
     lock_guard lock(mtx_);
-    auto iter = superblocks.cbegin();
-    while (iter != superblocks.cend()) {
-      auto s = std::move(superblocks.extract(iter).value());
-      coalesce(std::move(s));
-      ++iter;
+    while (!superblocks.empty()) {
+      coalesce(std::move(superblocks.extract(superblocks.cbegin()).value()));
     }
   }
 
@@ -429,8 +426,7 @@ class global_arena final {
       stream.synchronize_no_throw();
 
       lock_guard lock(mtx_);
-      superblock s{ptr, size};
-      coalesce(std::move(s));
+      coalesce({ptr, size});
       return true;
     }
     return false;
@@ -450,7 +446,7 @@ class global_arena final {
 
     block const b{ptr, bytes};
     auto const iter = std::find_if(
-      superblocks_.cbegin(), superblocks_.cend(), [b](auto const& s) { return s.contains(b); });
+      superblocks_.cbegin(), superblocks_.cend(), [&](auto const& sb) { return sb.contains(b); });
     if (iter == superblocks_.cend()) { RMM_FAIL("allocation not found"); }
     iter->coalesce(b);
   }
@@ -485,9 +481,6 @@ class global_arena final {
  private:
   using lock_guard = std::lock_guard<std::mutex>;
 
-  /// Reserved memory that should not be allocated (64 MiB).
-  static constexpr std::size_t reserved_size = 1U << 26U;
-
   /**
    * @brief Default size of the global arena if unspecified.
    * @return the default global arena size.
@@ -495,7 +488,7 @@ class global_arena final {
   constexpr std::size_t default_size() const
   {
     auto const [free, total] = rmm::detail::available_device_memory();
-    return free - reserved_size;
+    return free / 2;
   }
 
   /**
@@ -534,51 +527,50 @@ class global_arena final {
   superblock first_fit(std::size_t size)
   {
     auto const iter = std::find_if(
-      superblocks_.cbegin(), superblocks_.cend(), [size](auto const& s) { return s.fits(size); });
+      superblocks_.cbegin(), superblocks_.cend(), [size](auto const& sb) { return sb.fits(size); });
     if (iter == superblocks_.cend()) { return {}; }
 
-    auto node_handle = superblocks_.extract(iter);
-    auto s           = std::move(node_handle.value());
-    auto const sz    = std::max(size, superblock::minimum_size);
-    if (s.empty() && s.size() - sz >= superblock::minimum_size) {
+    auto sb       = std::move(superblocks_.extract(iter).value());
+    auto const sz = std::max(size, superblock::minimum_size);
+    if (sb.empty() && sb.size() - sz >= superblock::minimum_size) {
       // Split the superblock and put the remainder back.
-      auto [head, tail] = s.split(sz);
+      auto [head, tail] = sb.split(sz);
       superblocks_.insert(std::move(tail));
       return std::move(head);
     }
-    return s;
+    return sb;
   }
 
   /**
    * @brief Coalesce the given superblock with other empty superblocks.
    *
-   * @param s The superblock to coalesce.
+   * @param sb The superblock to coalesce.
    */
-  void coalesce(superblock&& s)
+  void coalesce(superblock&& sb)
   {
     // Find the right place (in ascending address order) to insert the block.
-    auto const next     = superblocks_.lower_bound(s);
+    auto const next     = superblocks_.lower_bound(sb);
     auto const previous = next == superblocks_.cbegin() ? next : std::prev(next);
 
     // Coalesce with neighboring blocks.
-    bool const merge_prev = previous->is_contiguous_before(s);
-    bool const merge_next = next != superblocks_.cend() && s.is_contiguous_before(*next);
+    bool const merge_prev = previous->is_contiguous_before(sb);
+    bool const merge_next = next != superblocks_.cend() && sb.is_contiguous_before(*next);
 
     if (merge_prev && merge_next) {
-      auto p      = std::move(superblocks_.extract(previous).value());
-      auto n      = std::move(superblocks_.extract(next).value());
-      auto merged = p.merge(std::move(s)).merge(std::move(n));
-      superblocks_.insert(std::move(merged));
+      auto prev_sb = std::move(superblocks_.extract(previous).value());
+      auto next_sb = std::move(superblocks_.extract(next).value());
+      auto merged  = prev_sb.merge(sb).merge(next_sb);
+      superblocks_.emplace(std::move(merged));
     } else if (merge_prev) {
-      auto p      = std::move(superblocks_.extract(previous).value());
-      auto merged = p.merge(std::move(s));
-      superblocks_.insert(std::move(merged));
+      auto prev_sb = std::move(superblocks_.extract(previous).value());
+      auto merged  = prev_sb.merge(sb);
+      superblocks_.emplace(std::move(merged));
     } else if (merge_next) {
-      auto n      = std::move(superblocks_.extract(next).value());
-      auto merged = s.merge(std::move(n));
-      superblocks_.insert(std::move(merged));
+      auto next_sb = std::move(superblocks_.extract(next).value());
+      auto merged  = sb.merge(next_sb);
+      superblocks_.emplace(std::move(merged));
     } else {
-      superblocks_.insert(std::move(s));
+      superblocks_.emplace(std::move(sb));
     }
   }
 
@@ -726,15 +718,15 @@ class arena {
    * @param b The block to deallocate.
    * @return true if the block is found.
    */
-  bool deallocate_from_superblock(block b)
+  bool deallocate_from_superblock(block const& b)
   {
     auto const iter = std::find_if(
-      superblocks_.begin(), superblocks_.end(), [b](auto& s) { return s.contains(b); });
+      superblocks_.begin(), superblocks_.end(), [&](auto const& sb) { return sb.contains(b); });
     if (iter == superblocks_.end()) { return false; }
 
-    auto const& s = *iter;
-    s.coalesce(b);
-    if (s.empty()) { global_arena_.release(std::move(superblocks_.extract(iter).value())); }
+    auto const& sb = *iter;
+    sb.coalesce(b);
+    if (sb.empty()) { global_arena_.release(std::move(superblocks_.extract(iter).value())); }
     return true;
   }
 
@@ -746,10 +738,10 @@ class arena {
    */
   block expand_arena(std::size_t size)
   {
-    auto s = global_arena_.acquire(size);
-    if (s.is_valid()) {
-      auto const b = s.first_fit(size);
-      superblocks_.insert(std::move(s));
+    auto sb = global_arena_.acquire(size);
+    if (sb.is_valid()) {
+      auto const b = sb.first_fit(size);
+      superblocks_.emplace(std::move(sb));
       return b;
     }
     return {};

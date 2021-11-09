@@ -78,7 +78,7 @@ class arena_memory_resource final : public device_memory_resource {
    *
    * @throws rmm::logic_error if `upstream_mr == nullptr`.
    *
-   * @param upstream_mr The memory resource from which to allocate blocks for the pool
+   * @param upstream_mr The memory resource from which to allocate blocks for the pool.
    * @param arena_size Size in bytes of the global arena. Defaults to all the available memory on
    * the current device.
    */
@@ -118,8 +118,8 @@ class arena_memory_resource final : public device_memory_resource {
  private:
   using global_arena = rmm::mr::detail::arena::global_arena<Upstream>;
   using arena        = rmm::mr::detail::arena::arena<Upstream>;
-  using read_lock    = std::shared_lock<std::shared_timed_mutex>;
-  using write_lock   = std::lock_guard<std::shared_timed_mutex>;
+  using read_lock    = std::shared_lock<std::shared_mutex>;
+  using write_lock   = std::unique_lock<std::shared_mutex>;
 
   /**
    * @brief Allocates memory of size at least `bytes`.
@@ -183,17 +183,17 @@ class arena_memory_resource final : public device_memory_resource {
   {
     stream.synchronize_no_throw();
 
-    read_lock lock(mtx_);
+    write_lock lock(mtx_);
 
     if (use_per_thread_arena(stream)) {
       auto const id = std::this_thread::get_id();
-      for (auto& kv : thread_arenas_) {
+      for (auto&& kv : thread_arenas_) {
         // If the arena does not belong to the current thread, try to deallocate from it, and return
         // if successful.
         if (kv.first != id && kv.second->deallocate(ptr, bytes, stream)) { return; }
       }
     } else {
-      for (auto& kv : stream_arenas_) {
+      for (auto&& kv : stream_arenas_) {
         // If the arena does not belong to the current stream, try to deallocate from it, and return
         // if successful.
         if (stream.value() != kv.first && kv.second.deallocate(ptr, bytes, stream)) { return; }
@@ -211,10 +211,10 @@ class arena_memory_resource final : public device_memory_resource {
   void defragment()
   {
     RMM_CUDA_TRY(cudaDeviceSynchronize());
-    for (auto& thread_arena : thread_arenas_) {
+    for (auto&& thread_arena : thread_arenas_) {
       thread_arena.second->clean();
     }
-    for (auto& stream_arena : stream_arenas_) {
+    for (auto&& stream_arena : stream_arenas_) {
       stream_arena.second.clean();
     }
   }
@@ -334,7 +334,7 @@ class arena_memory_resource final : public device_memory_resource {
   /// The logger for memory dump.
   std::shared_ptr<spdlog::logger> logger_{};
   /// Mutex for read and write locks.
-  mutable std::shared_timed_mutex mtx_;
+  mutable std::shared_mutex mtx_;
 };
 
 }  // namespace rmm::mr
