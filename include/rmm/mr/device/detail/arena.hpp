@@ -75,6 +75,16 @@ class memory_span {
   std::size_t size_{};  ///< Size in bytes.
 };
 
+/// Calculate the total size of a collection of memory spans.
+template <typename T>
+inline auto total_memory_size(std::set<T> const& spans)
+{
+  return std::accumulate(
+    spans.cbegin(), spans.cend(), std::size_t{}, [](auto const& lhs, auto const& rhs) {
+      return lhs + rhs.size();
+    });
+}
+
 /**
  * @brief Represents a chunk of memory that can be allocated and deallocated.
  */
@@ -131,18 +141,9 @@ class block final : public memory_span {
 };
 
 /// Comparison function for block sizes.
-struct block_size_compare {
-  bool operator()(block const& lhs, block const& rhs) const { return lhs.size() < rhs.size(); }
-};
-
-/// Calculate the total size of a collection of blocks.
-template <typename T>
-inline auto total_block_size(T const& blocks)
+inline bool block_size_compare(block const& lhs, block const& rhs)
 {
-  return std::accumulate(
-    blocks.cbegin(), blocks.cend(), std::size_t{}, [](auto const& lhs, auto const& rhs) {
-      return lhs + rhs.size();
-    });
+  return lhs.size() < rhs.size();
 }
 
 /**
@@ -311,9 +312,28 @@ class superblock final : public memory_span {
     }
   }
 
+  /**
+   * @brief Find the max free block.
+   * @return the max free block.
+   */
+  block max_free() const
+  {
+    return *std::max_element(free_blocks_.cbegin(), free_blocks_.cend(), block_size_compare);
+  }
+
  private:
   /// Address-ordered set of free blocks.
   mutable std::set<block> free_blocks_{};
+};
+
+/// Find the max free size from a set of superblocks.
+inline auto max_free(std::set<superblock> const& superblocks)
+{
+  std::size_t size{};
+  for (auto const& sb : superblocks) {
+    size = std::max(size, sb.max_free().size());
+  }
+  return size;
 };
 
 /**
@@ -458,24 +478,16 @@ class global_arena final {
    */
   void dump_memory_log(std::shared_ptr<spdlog::logger> const& logger) const
   {
-    //    lock_guard lock(mtx_);
-    //
-    //    logger->info("  Maximum size: {}", rmm::detail::bytes{maximum_size_});
-    //    logger->info("  Current size: {}", rmm::detail::bytes{current_size_});
-    //
-    //    logger->info("  # free blocks: {}", free_blocks_.size());
-    //    if (!free_blocks_.empty()) {
-    //      logger->info("  Total size of free blocks: {}",
-    //                   rmm::detail::bytes{total_block_size(free_blocks_)});
-    //      auto const largest_free =
-    //        *std::max_element(free_blocks_.begin(), free_blocks_.end(), block_size_compare);
-    //      logger->info("  Size of largest free block: {}",
-    //      rmm::detail::bytes{largest_free.size()});
-    //    }
-    //
-    //    logger->info("  # upstream blocks={}", upstream_blocks_.size());
-    //    logger->info("  Total size of upstream blocks: {}",
-    //                 rmm::detail::bytes{total_block_size(upstream_blocks_)});
+    lock_guard lock(mtx_);
+
+    logger->info("  Arena size: {}", rmm::detail::bytes{upstream_block_.size()});
+
+    logger->info("  # superblocks: {}", superblocks_.size());
+    if (!superblocks_.empty()) {
+      logger->info("  Total size of superblocks: {}",
+                   rmm::detail::bytes{total_memory_size(superblocks_)});
+      logger->info("  Size of largest free block: {}", rmm::detail::bytes{max_free(superblocks_)});
+    }
   }
 
  private:
@@ -659,16 +671,14 @@ class arena {
    */
   void dump_memory_log(std::shared_ptr<spdlog::logger> const& logger) const
   {
-    //    lock_guard lock(mtx_);
-    //    logger->info("    # free blocks: {}", free_blocks_.size());
-    //    if (!free_blocks_.empty()) {
-    //      logger->info("    Total size of free blocks: {}",
-    //                   rmm::detail::bytes{total_block_size(free_blocks_)});
-    //      auto const largest_free =
-    //        *std::max_element(free_blocks_.begin(), free_blocks_.end(), block_size_compare);
-    //      logger->info("    Size of largest free block: {}",
-    //      rmm::detail::bytes{largest_free.size()});
-    //    }
+    lock_guard lock(mtx_);
+    logger->info("    # superblocks: {}", superblocks_.size());
+    if (!superblocks_.empty()) {
+      logger->info("    Total size of superblocks: {}",
+                   rmm::detail::bytes{total_memory_size(superblocks_)});
+      logger->info("    Size of largest free block: {}",
+                   rmm::detail::bytes{max_free(superblocks_)});
+    }
   }
 
  private:

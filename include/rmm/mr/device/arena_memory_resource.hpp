@@ -92,6 +92,24 @@ class arena_memory_resource final : public device_memory_resource {
     }
   }
 
+  /**
+   * @brief Construct an `arena_memory_resource`.
+   *
+   * @throws rmm::logic_error if `upstream_mr == nullptr`.
+   *
+   * @param upstream_mr The memory resource from which to allocate blocks for the pool.
+   * @param arena_size Size in bytes of the global arena. Defaults to all the available memory on
+   * the current device.
+   * @param max_size Unused.
+   * @deprecated Use the version without the max size.
+   */
+  arena_memory_resource(Upstream* upstream_mr,
+                        std::optional<std::size_t> arena_size,
+                        std::optional<std::size_t> max_size)
+    : arena_memory_resource{upstream_mr, arena_size, false}
+  {
+  }
+
   ~arena_memory_resource() override = default;
 
   // Disable copy (and move) semantics.
@@ -141,13 +159,8 @@ class arena_memory_resource final : public device_memory_resource {
     void* pointer = arena.allocate(bytes);
 
     if (pointer == nullptr) {
-      write_lock lock(mtx_);
-      defragment();
-      pointer = arena.allocate(bytes);
-      if (pointer == nullptr) {
-        if (dump_log_on_failure_) { dump_memory_log(bytes); }
-        RMM_FAIL("Maximum pool size exceeded", rmm::out_of_memory);
-      }
+      if (dump_log_on_failure_) { dump_memory_log(bytes); }
+      RMM_FAIL("Maximum pool size exceeded", rmm::out_of_memory);
     }
 
     return pointer;
@@ -183,7 +196,7 @@ class arena_memory_resource final : public device_memory_resource {
   {
     stream.synchronize_no_throw();
 
-    write_lock lock(mtx_);
+    read_lock lock(mtx_);
 
     if (use_per_thread_arena(stream)) {
       auto const id = std::this_thread::get_id();
@@ -203,20 +216,6 @@ class arena_memory_resource final : public device_memory_resource {
     // The thread that originally allocated the block has terminated, deallocate directly in the
     // global arena.
     global_arena_.deallocate_from_other_arena(ptr, bytes);
-  }
-
-  /**
-   * @brief Defragment memory by returning all free blocks to the global arena.
-   */
-  void defragment()
-  {
-    RMM_CUDA_TRY(cudaDeviceSynchronize());
-    for (auto&& thread_arena : thread_arenas_) {
-      thread_arena.second->clean();
-    }
-    for (auto&& stream_arena : stream_arenas_) {
-      stream_arena.second.clean();
-    }
   }
 
   /**
@@ -330,7 +329,7 @@ class arena_memory_resource final : public device_memory_resource {
   /// Implementation note: for small sizes, map is more efficient than unordered_map.
   std::map<cudaStream_t, arena> stream_arenas_;
   /// If true, dump memory information to log on allocation failure.
-  bool dump_log_on_failure_;
+  bool dump_log_on_failure_{};
   /// The logger for memory dump.
   std::shared_ptr<spdlog::logger> logger_{};
   /// Mutex for read and write locks.
