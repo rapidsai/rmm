@@ -108,9 +108,6 @@ ConfigureTest(POLYMORPHIC_ALLOCATOR_TEST mr/device/polymorphic_allocator_tests.c
 # stream allocator adaptor tests
 ConfigureTest(STREAM_ADAPTOR_TEST mr/device/stream_allocator_adaptor_tests.cpp)
 
-# stream allocator adaptor tests
-ConfigureTest(THREAD_SAFE_ADAPTOR_TEST mr/device/thread_safe_adaptor_tests.cpp)
-
 # statistics adaptor tests
 ConfigureTest(STATISTICS_TEST mr/device/statistics_mr_tests.cpp)
 
