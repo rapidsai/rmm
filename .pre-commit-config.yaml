@@ -25,18 +25,26 @@ repos:
             name: flake8-cython
             args: ["--config=python/.flake8.cython"]
             types: [cython]
-    - repo: https://github.com/cheshirekow/cmake-format-precommit
-      rev: v0.6.11
+    - repo: local
       hooks:
-          - id: cmake-format
-            name: cmake-format
-            args: ["--config-files", "cmake/config.json", "--in-place", "--"]
-            types: [file]  # override `types: [cmake]`
-            files: \.(cmake(\.in)?)$|CMakeLists\.txt
-          - id: cmake-lint
-            args: ["--config-files", "cmake/config.json", "--"]
-            types: [file]  # override `types: [cmake]`
-            files: \.(cmake(\.in)?)$|CMakeLists\.txt
+            - id: cmake-format
+              name: cmake-format
+              entry: bash scripts/run-cmake-format.sh cmake-format
+              language: python
+              types: [cmake]
+              # Note that pre-commit autoupdate does not update the versions
+              # of dependencies, so we'll have to update this manually.
+              additional_dependencies:
+                - cmake-format==0.6.11
+            - id: cmake-lint
+              name: cmake-lint
+              entry: bash scripts/run-cmake-format.sh cmake-lint
+              language: python
+              types: [cmake]
+              # Note that pre-commit autoupdate does not update the versions
+              # of dependencies, so we'll have to update this manually.
+              additional_dependencies:
+                - cmake-format==0.6.11
 
 default_language_version:
     python: python3
