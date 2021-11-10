@@ -30,9 +30,11 @@
 #include <algorithm>
 #include <cstddef>
 #include <limits>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <numeric>
+#include <optional>
 #include <set>
 #include <unordered_map>
 
@@ -75,13 +77,13 @@ class memory_span {
   std::size_t size_{};  ///< Size in bytes.
 };
 
-/// Calculate the total size of a collection of memory spans.
+/// Calculate the total size of a map of memory spans.
 template <typename T>
-inline auto total_memory_size(std::set<T> const& spans)
+inline auto total_memory_size(std::map<void*, T> const& spans)
 {
   return std::accumulate(
     spans.cbegin(), spans.cend(), std::size_t{}, [](auto const& lhs, auto const& rhs) {
-      return lhs + rhs.size();
+      return lhs + rhs.second.size();
     });
 }
 
@@ -260,7 +262,7 @@ class superblock final : public memory_span {
    * @param size The number of bytes to allocate.
    * @return block A block of memory of at least `size` bytes, or an empty block if not found.
    */
-  block first_fit(std::size_t size) const
+  block first_fit(std::size_t size)
   {
     auto const iter = std::find_if(
       free_blocks_.cbegin(), free_blocks_.cend(), [size](auto const& b) { return b.fits(size); });
@@ -284,7 +286,7 @@ class superblock final : public memory_span {
    *
    * @param b The block to coalesce.
    */
-  void coalesce(block const& b) const
+  void coalesce(block const& b)
   {
     // Find the right place (in ascending address order) to insert the block.
     auto const next     = free_blocks_.lower_bound(b);
@@ -316,22 +318,22 @@ class superblock final : public memory_span {
    * @brief Find the max free block.
    * @return the max free block.
    */
-  block max_free() const
+  [[nodiscard]] block max_free() const
   {
     return *std::max_element(free_blocks_.cbegin(), free_blocks_.cend(), block_size_compare);
   }
 
  private:
   /// Address-ordered set of free blocks.
-  mutable std::set<block> free_blocks_{};
+  std::set<block> free_blocks_{};
 };
 
-/// Find the max free size from a set of superblocks.
-inline auto max_free(std::set<superblock> const& superblocks)
+/// Find the max free size from a map of superblocks.
+inline auto max_free(std::map<void*, superblock> const& superblocks)
 {
   std::size_t size{};
-  for (auto const& sb : superblocks) {
-    size = std::max(size, sb.max_free().size());
+  for (auto const& kv : superblocks) {
+    size = std::max(size, kv.second.max_free().size());
   }
   return size;
 };
@@ -408,11 +410,11 @@ class global_arena final {
    *
    * @param superblocks The set of superblocks.
    */
-  void release(std::set<superblock>& superblocks)
+  void release(std::map<void*, superblock>& superblocks)
   {
     lock_guard lock(mtx_);
     while (!superblocks.empty()) {
-      coalesce(std::move(superblocks.extract(superblocks.cbegin()).value()));
+      coalesce(std::move(superblocks.extract(superblocks.cbegin()).mapped()));
     }
   }
 
@@ -465,10 +467,11 @@ class global_arena final {
     lock_guard lock(mtx_);
 
     block const b{ptr, bytes};
-    auto const iter = std::find_if(
-      superblocks_.cbegin(), superblocks_.cend(), [&](auto const& sb) { return sb.contains(b); });
-    if (iter == superblocks_.cend()) { RMM_FAIL("allocation not found"); }
-    iter->coalesce(b);
+    auto iter = std::find_if(superblocks_.begin(), superblocks_.end(), [&](auto const& kv) {
+      return kv.second.contains(b);
+    });
+    if (iter == superblocks_.end()) { RMM_FAIL("allocation not found"); }
+    iter->second.coalesce(b);
   }
 
   /**
@@ -512,7 +515,7 @@ class global_arena final {
   {
     RMM_LOGGING_ASSERT(size >= superblock::minimum_size);
     upstream_block_ = {upstream_mr_->allocate(size), size};
-    superblocks_.emplace(upstream_block_.pointer(), size);
+    superblocks_.try_emplace(upstream_block_.pointer(), upstream_block_.pointer(), size);
   }
 
   /**
@@ -521,7 +524,7 @@ class global_arena final {
    * @param size The size in bytes of the allocation.
    * @return bool True if the allocation should be handled by the global arena.
    */
-  bool handles(std::size_t size) { return size > superblock::minimum_size / 2; }
+  bool handles(std::size_t size) const { return size > superblock::minimum_size / 2; }
 
   /**
    * @brief Get the first superblock that can fit a block of at least `size` bytes.
@@ -538,16 +541,17 @@ class global_arena final {
    */
   superblock first_fit(std::size_t size)
   {
-    auto const iter = std::find_if(
-      superblocks_.cbegin(), superblocks_.cend(), [size](auto const& sb) { return sb.fits(size); });
+    auto const iter = std::find_if(superblocks_.cbegin(),
+                                   superblocks_.cend(),
+                                   [size](auto const& kv) { return kv.second.fits(size); });
     if (iter == superblocks_.cend()) { return {}; }
 
-    auto sb       = std::move(superblocks_.extract(iter).value());
+    auto sb       = std::move(superblocks_.extract(iter).mapped());
     auto const sz = std::max(size, superblock::minimum_size);
     if (sb.empty() && sb.size() - sz >= superblock::minimum_size) {
       // Split the superblock and put the remainder back.
       auto [head, tail] = sb.split(sz);
-      superblocks_.insert(std::move(tail));
+      superblocks_.try_emplace(tail.pointer(), std::move(tail));
       return std::move(head);
     }
     return sb;
@@ -561,28 +565,28 @@ class global_arena final {
   void coalesce(superblock&& sb)
   {
     // Find the right place (in ascending address order) to insert the block.
-    auto const next     = superblocks_.lower_bound(sb);
+    auto const next     = superblocks_.lower_bound(sb.pointer());
     auto const previous = next == superblocks_.cbegin() ? next : std::prev(next);
 
     // Coalesce with neighboring blocks.
-    bool const merge_prev = previous->is_contiguous_before(sb);
-    bool const merge_next = next != superblocks_.cend() && sb.is_contiguous_before(*next);
+    bool const merge_prev = previous->second.is_contiguous_before(sb);
+    bool const merge_next = next != superblocks_.cend() && sb.is_contiguous_before(next->second);
 
     if (merge_prev && merge_next) {
-      auto prev_sb = std::move(superblocks_.extract(previous).value());
-      auto next_sb = std::move(superblocks_.extract(next).value());
+      auto prev_sb = std::move(superblocks_.extract(previous).mapped());
+      auto next_sb = std::move(superblocks_.extract(next).mapped());
       auto merged  = prev_sb.merge(sb).merge(next_sb);
-      superblocks_.emplace(std::move(merged));
+      superblocks_.try_emplace(merged.pointer(), std::move(merged));
     } else if (merge_prev) {
-      auto prev_sb = std::move(superblocks_.extract(previous).value());
+      auto prev_sb = std::move(superblocks_.extract(previous).mapped());
       auto merged  = prev_sb.merge(sb);
-      superblocks_.emplace(std::move(merged));
+      superblocks_.try_emplace(merged.pointer(), std::move(merged));
     } else if (merge_next) {
-      auto next_sb = std::move(superblocks_.extract(next).value());
+      auto next_sb = std::move(superblocks_.extract(next).mapped());
       auto merged  = sb.merge(next_sb);
-      superblocks_.emplace(std::move(merged));
+      superblocks_.try_emplace(merged.pointer(), std::move(merged));
     } else {
-      superblocks_.emplace(std::move(sb));
+      superblocks_.try_emplace(sb.pointer(), std::move(sb));
     }
   }
 
@@ -590,8 +594,8 @@ class global_arena final {
   Upstream* upstream_mr_;
   /// Block allocated from upstream so that it can be quickly freed.
   block upstream_block_;
-  /// Address-ordered set of superblocks.
-  std::set<superblock> superblocks_;
+  /// Address-ordered map of superblocks.
+  std::map<void*, superblock> superblocks_;
   /// Mutex for exclusive lock.
   mutable std::mutex mtx_;
 };
@@ -715,8 +719,8 @@ class arena {
    */
   block first_fit(std::size_t size)
   {
-    for (auto const& s : superblocks_) {
-      auto const b = s.first_fit(size);
+    for (auto&& kv : superblocks_) {
+      auto const b = kv.second.first_fit(size);
       if (b.is_valid()) { return b; }
     }
     return {};
@@ -730,13 +734,14 @@ class arena {
    */
   bool deallocate_from_superblock(block const& b)
   {
-    auto const iter = std::find_if(
-      superblocks_.begin(), superblocks_.end(), [&](auto const& sb) { return sb.contains(b); });
+    auto iter = std::find_if(superblocks_.begin(), superblocks_.end(), [&](auto const& kv) {
+      return kv.second.contains(b);
+    });
     if (iter == superblocks_.end()) { return false; }
 
-    auto const& sb = *iter;
+    auto& sb = iter->second;
     sb.coalesce(b);
-    if (sb.empty()) { global_arena_.release(std::move(superblocks_.extract(iter).value())); }
+    if (sb.empty()) { global_arena_.release(std::move(superblocks_.extract(iter).mapped())); }
     return true;
   }
 
@@ -751,7 +756,7 @@ class arena {
     auto sb = global_arena_.acquire(size);
     if (sb.is_valid()) {
       auto const b = sb.first_fit(size);
-      superblocks_.emplace(std::move(sb));
+      superblocks_.try_emplace(sb.pointer(), std::move(sb));
       return b;
     }
     return {};
@@ -760,7 +765,7 @@ class arena {
   /// The global arena to allocate superblocks from.
   global_arena<Upstream>& global_arena_;
   /// Acquired superblocks.
-  std::set<superblock> superblocks_;
+  std::map<void*, superblock> superblocks_;
   /// Mutex for exclusive lock.
   mutable std::mutex mtx_;
 };
