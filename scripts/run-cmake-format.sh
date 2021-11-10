@@ -40,7 +40,7 @@ if ! [ ${status} -eq 0 ]; then
 fi
 
 DEFAULT_FORMAT_FILE_LOCATIONS=(
-  "${RMM_ROOT}/_deps/rapids-cmake-src/cmake-format-rapids-cmake.json",
+  "${RMM_ROOT}/_deps/rapids-cmake-src/cmake-format-rapids-cmake.json"
 )
 
 if [ -z ${RAPIDS_CMAKE_FORMAT_FILE:+PLACEHOLDER} ]; then
