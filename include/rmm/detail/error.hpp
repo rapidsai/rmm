@@ -240,6 +240,7 @@ class out_of_range : public std::out_of_range {
       std::cerr << "CUDA Error detected. " << cudaGetErrorName(status__) << " " \
                 << cudaGetErrorString(status__) << std::endl;                   \
     }                                                                           \
+    /* NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-array-to-pointer-decay) */   \
     assert(status__ == cudaSuccess);                                            \
   } while (0)
 #endif
@@ -257,6 +258,7 @@ class out_of_range : public std::out_of_range {
       RMM_LOG_CRITICAL(                                                                           \
         "[" __FILE__ ":" RMM_STRINGIFY(__LINE__) "] Assertion " RMM_STRINGIFY(_expr) " failed."); \
       rmm::logger().flush();                                                                      \
+      /* NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-array-to-pointer-decay) */                   \
       assert(success);                                                                            \
     }                                                                                             \
   } while (0)
