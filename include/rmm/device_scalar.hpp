@@ -186,7 +186,7 @@ class device_scalar {
    *
    * @throws `rmm::cuda_error` if copying `host_value` to device memory fails.
    *
-   * @param v The host value which will be copied to device
+   * @param value The host value which will be copied to device
    * @param stream CUDA stream on which to perform the copy
    */
   void set_value_async(value_type const& value, cuda_stream_view stream)
@@ -239,6 +239,16 @@ class device_scalar {
   {
     return static_cast<const_pointer>(_storage.data());
   }
+
+  /**
+   * @brief Returns stream most recently specified for allocation/deallocation
+   */
+  [[nodiscard]] cuda_stream_view stream() const noexcept { return _storage.stream(); }
+
+  /**
+   * @brief Sets the stream to be used for deallocation
+   */
+  void set_stream(cuda_stream_view stream) noexcept { _storage.set_stream(stream); }
 
  private:
   rmm::device_uvector<T> _storage;

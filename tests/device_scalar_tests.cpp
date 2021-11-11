@@ -123,3 +123,15 @@ TYPED_TEST(DeviceScalarTest, SetValueToZero)
   scalar.set_value_to_zero_async(this->stream);
   EXPECT_EQ(TypeParam{0}, scalar.value(this->stream));
 }
+
+TYPED_TEST(DeviceScalarTest, SetGetStream)
+{
+  rmm::device_scalar<TypeParam> scalar(this->value, this->stream, this->mr);
+
+  EXPECT_EQ(scalar.stream(), this->stream);
+
+  rmm::cuda_stream_view const otherstream{cudaStreamPerThread};
+  scalar.set_stream(otherstream);
+
+  EXPECT_EQ(scalar.stream(), otherstream);
+}

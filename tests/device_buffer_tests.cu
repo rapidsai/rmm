@@ -450,3 +450,15 @@ TYPED_TEST(DeviceBufferTest, ResizeBigger)
   // Resizing bigger means the data should point to a new allocation
   EXPECT_NE(old_data, buff.data());
 }
+
+TYPED_TEST(DeviceBufferTest, SetGetStream)
+{
+  rmm::device_buffer buff(this->size, rmm::cuda_stream_default, &this->mr);
+
+  EXPECT_EQ(buff.stream(), rmm::cuda_stream_default);
+
+  rmm::cuda_stream_view const otherstream{cudaStreamPerThread};
+  buff.set_stream(otherstream);
+
+  EXPECT_EQ(buff.stream(), otherstream);
+}
