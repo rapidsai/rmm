@@ -27,19 +27,20 @@ namespace rmm::test {
 namespace {
 
 using memory_span = rmm::mr::detail::arena::memory_span;
-using block = rmm::mr::detail::arena::block;
-using superblock = rmm::mr::detail::arena::superblock;
-using arena_mr = rmm::mr::arena_memory_resource<rmm::mr::device_memory_resource>;
+using block       = rmm::mr::detail::arena::block;
+using superblock  = rmm::mr::detail::arena::superblock;
+using arena_mr    = rmm::mr::arena_memory_resource<rmm::mr::device_memory_resource>;
 
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-auto const fake_address = reinterpret_cast<void*>(1L << 10L);
+auto const fake_address = reinterpret_cast<void*>(1024L);
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-auto const fake_address2 = reinterpret_cast<void*>(1L << 11L);
+auto const fake_address2 = reinterpret_cast<void*>(2048L);
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-auto const fake_address3 = reinterpret_cast<void*>(1L << 22L);
+auto const fake_address3 = reinterpret_cast<void*>(4194304L);
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-auto const fake_address4 = reinterpret_cast<void*>(1L << 23L);
+auto const fake_address4 = reinterpret_cast<void*>(8388608L);
 
+// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
 TEST(ArenaTest, MemorySpan)
 {
   memory_span const ms{};
@@ -48,6 +49,7 @@ TEST(ArenaTest, MemorySpan)
   EXPECT_TRUE(ms2.is_valid());
 }
 
+// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
 TEST(ArenaTest, BlockFits)
 {
   block const b{fake_address, 1024};
@@ -55,6 +57,7 @@ TEST(ArenaTest, BlockFits)
   EXPECT_FALSE(b.fits(1025));
 }
 
+// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
 TEST(ArenaTest, BlockIsContiguousBefore)
 {
   block const b{fake_address, 1024};
@@ -65,6 +68,7 @@ TEST(ArenaTest, BlockIsContiguousBefore)
   EXPECT_FALSE(b3.is_contiguous_before(b4));
 }
 
+// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
 TEST(ArenaTest, BlockSplit)
 {
   block const b{fake_address, 2048};
@@ -75,6 +79,7 @@ TEST(ArenaTest, BlockSplit)
   EXPECT_EQ(tail.size(), 1024);
 }
 
+// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
 TEST(ArenaTest, BlockMerge)
 {
   block const b{fake_address, 1024};
@@ -84,6 +89,7 @@ TEST(ArenaTest, BlockMerge)
   EXPECT_EQ(merged.size(), 2048);
 }
 
+// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
 TEST(ArenaTest, SuperblockEmpty)
 {
   superblock sb{fake_address3, 4194304};
@@ -92,6 +98,7 @@ TEST(ArenaTest, SuperblockEmpty)
   EXPECT_FALSE(sb.empty());
 }
 
+// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
 TEST(ArenaTest, SuperblockContains)
 {
   superblock const sb{fake_address3, 4194304};
@@ -107,6 +114,7 @@ TEST(ArenaTest, SuperblockContains)
   EXPECT_FALSE(sb.contains(b5));
 }
 
+// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
 TEST(ArenaTest, SuperblockFits)
 {
   superblock sb{fake_address3, 4194304};
@@ -120,6 +128,7 @@ TEST(ArenaTest, SuperblockFits)
   EXPECT_FALSE(sb.fits(2097153));
 }
 
+// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
 TEST(ArenaTest, SuperblockIsContiguousBefore)
 {
   superblock sb{fake_address3, 4194304};
@@ -137,6 +146,7 @@ TEST(ArenaTest, SuperblockIsContiguousBefore)
   EXPECT_TRUE(sb.is_contiguous_before(sb2));
 }
 
+// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
 TEST(ArenaTest, SuperblockSplit)
 {
   superblock sb{fake_address3, 8388608};
@@ -149,6 +159,7 @@ TEST(ArenaTest, SuperblockSplit)
   EXPECT_TRUE(tail.empty());
 }
 
+// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
 TEST(ArenaTest, SuperblockMerge)
 {
   superblock sb{fake_address3, 4194304};
@@ -159,13 +170,76 @@ TEST(ArenaTest, SuperblockMerge)
   EXPECT_TRUE(merged.empty());
 }
 
+// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
+TEST(ArenaTest, SuperblockFirstFit)
+{
+  superblock sb{fake_address3, 4194304};
+  auto const b = sb.first_fit(1024);
+  EXPECT_EQ(b.pointer(), fake_address3);
+  EXPECT_EQ(b.size(), 1024);
+  auto const b2 = sb.first_fit(2048);
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+  EXPECT_EQ(b2.pointer(), static_cast<char*>(fake_address3) + 1024);
+  EXPECT_EQ(b2.size(), 2048);
+  sb.coalesce(b);
+  auto const b3 = sb.first_fit(512);
+  EXPECT_EQ(b3.pointer(), fake_address3);
+  EXPECT_EQ(b3.size(), 512);
+}
+
+// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
+TEST(ArenaTest, SuperblockCoalesceMergeNext)
+{
+  superblock sb{fake_address3, 4194304};
+  auto const b = sb.first_fit(2097152);
+  sb.coalesce(b);
+  EXPECT_TRUE(sb.first_fit(4194304).is_valid());
+}
+
+// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
+TEST(ArenaTest, SuperblockCoalesceMergePrevious)
+{
+  superblock sb{fake_address3, 4194304};
+  auto const b  = sb.first_fit(1024);
+  auto const b2 = sb.first_fit(1024);
+  sb.first_fit(1024);
+  sb.coalesce(b);
+  sb.coalesce(b2);
+  auto const b3 = sb.first_fit(2048);
+  EXPECT_EQ(b3.pointer(), fake_address3);
+}
+
+// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
+TEST(ArenaTest, SuperblockCoalesceMergePreviousAndNext)
+{
+  superblock sb{fake_address3, 4194304};
+  auto const b  = sb.first_fit(1024);
+  auto const b2 = sb.first_fit(1024);
+  sb.coalesce(b);
+  sb.coalesce(b2);
+  EXPECT_TRUE(sb.first_fit(4194304).is_valid());
+}
+
+// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
+TEST(ArenaTest, SuperblockMaxFree)
+{
+  superblock sb{fake_address3, 4194304};
+  sb.first_fit(2097152);
+  auto const b = sb.max_free();
+  EXPECT_EQ(b.size(), 2097152);
+}
+
+// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
 TEST(ArenaTest, NullUpstream)
 {
+  // NOLINTNEXTLINE(cppcoreguidelines-avoid-goto)
   EXPECT_THROW([]() { arena_mr mr{nullptr}; }(), rmm::logic_error);
 }
 
+// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
 TEST(ArenaTest, AllocateNinetyPercent)
 {
+  // NOLINTNEXTLINE(cppcoreguidelines-avoid-goto)
   EXPECT_NO_THROW([]() {
     auto const free = rmm::detail::available_device_memory().first;
     auto const ninety_percent =
@@ -174,17 +248,19 @@ TEST(ArenaTest, AllocateNinetyPercent)
   }());
 }
 
+// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
 TEST(ArenaTest, SmallMediumLarge)
 {
+  // NOLINTNEXTLINE(cppcoreguidelines-avoid-goto)
   EXPECT_NO_THROW([]() {
     arena_mr mr(rmm::mr::get_current_device_resource());
-    auto* small = mr.allocate(256);
-    auto* medium = mr.allocate(1U << 26U);
+    auto* small     = mr.allocate(256);
+    auto* medium    = mr.allocate(1U << 26U);
     auto const free = rmm::detail::available_device_memory().first;
-    auto* large = mr.allocate(free / 2);
+    auto* large     = mr.allocate(free / 3);
     mr.deallocate(small, 256);
     mr.deallocate(medium, 1U << 26U);
-    mr.deallocate(large, free / 4);
+    mr.deallocate(large, free / 3);
   }());
 }
 
