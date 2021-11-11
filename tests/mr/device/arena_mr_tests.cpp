@@ -25,7 +25,139 @@
 
 namespace rmm::test {
 namespace {
+
+using memory_span = rmm::mr::detail::arena::memory_span;
+using block = rmm::mr::detail::arena::block;
+using superblock = rmm::mr::detail::arena::superblock;
 using arena_mr = rmm::mr::arena_memory_resource<rmm::mr::device_memory_resource>;
+
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+auto const fake_address = reinterpret_cast<void*>(1L << 10L);
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+auto const fake_address2 = reinterpret_cast<void*>(1L << 11L);
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+auto const fake_address3 = reinterpret_cast<void*>(1L << 22L);
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+auto const fake_address4 = reinterpret_cast<void*>(1L << 23L);
+
+TEST(ArenaTest, MemorySpan)
+{
+  memory_span const ms{};
+  EXPECT_FALSE(ms.is_valid());
+  memory_span const ms2{fake_address, 256};
+  EXPECT_TRUE(ms2.is_valid());
+}
+
+TEST(ArenaTest, BlockFits)
+{
+  block const b{fake_address, 1024};
+  EXPECT_TRUE(b.fits(1024));
+  EXPECT_FALSE(b.fits(1025));
+}
+
+TEST(ArenaTest, BlockIsContiguousBefore)
+{
+  block const b{fake_address, 1024};
+  block const b2{fake_address2, 256};
+  EXPECT_TRUE(b.is_contiguous_before(b2));
+  block const b3{fake_address, 512};
+  block const b4{fake_address2, 1024};
+  EXPECT_FALSE(b3.is_contiguous_before(b4));
+}
+
+TEST(ArenaTest, BlockSplit)
+{
+  block const b{fake_address, 2048};
+  auto const [head, tail] = b.split(1024);
+  EXPECT_EQ(head.pointer(), fake_address);
+  EXPECT_EQ(head.size(), 1024);
+  EXPECT_EQ(tail.pointer(), fake_address2);
+  EXPECT_EQ(tail.size(), 1024);
+}
+
+TEST(ArenaTest, BlockMerge)
+{
+  block const b{fake_address, 1024};
+  block const b2{fake_address2, 1024};
+  auto const merged = b.merge(b2);
+  EXPECT_EQ(merged.pointer(), fake_address);
+  EXPECT_EQ(merged.size(), 2048);
+}
+
+TEST(ArenaTest, SuperblockEmpty)
+{
+  superblock sb{fake_address3, 4194304};
+  EXPECT_TRUE(sb.empty());
+  sb.first_fit(256);
+  EXPECT_FALSE(sb.empty());
+}
+
+TEST(ArenaTest, SuperblockContains)
+{
+  superblock const sb{fake_address3, 4194304};
+  block const b{fake_address, 2048};
+  EXPECT_FALSE(sb.contains(b));
+  block const b2{fake_address3, 1024};
+  EXPECT_TRUE(sb.contains(b2));
+  block const b3{fake_address3, 4194305};
+  EXPECT_FALSE(sb.contains(b3));
+  block const b4{fake_address3, 4194304};
+  EXPECT_TRUE(sb.contains(b4));
+  block const b5{fake_address4, 256};
+  EXPECT_FALSE(sb.contains(b5));
+}
+
+TEST(ArenaTest, SuperblockFits)
+{
+  superblock sb{fake_address3, 4194304};
+  EXPECT_TRUE(sb.fits(4194304));
+  EXPECT_FALSE(sb.fits(4194305));
+
+  auto const b = sb.first_fit(1048576);
+  sb.first_fit(1048576);
+  sb.coalesce(b);
+  EXPECT_TRUE(sb.fits(2097152));
+  EXPECT_FALSE(sb.fits(2097153));
+}
+
+TEST(ArenaTest, SuperblockIsContiguousBefore)
+{
+  superblock sb{fake_address3, 4194304};
+  superblock sb2{fake_address4, 4194304};
+  EXPECT_TRUE(sb.is_contiguous_before(sb2));
+
+  auto const b = sb.first_fit(256);
+  EXPECT_FALSE(sb.is_contiguous_before(sb2));
+  sb.coalesce(b);
+  EXPECT_TRUE(sb.is_contiguous_before(sb2));
+
+  auto const b2 = sb2.first_fit(1024);
+  EXPECT_FALSE(sb.is_contiguous_before(sb2));
+  sb2.coalesce(b2);
+  EXPECT_TRUE(sb.is_contiguous_before(sb2));
+}
+
+TEST(ArenaTest, SuperblockSplit)
+{
+  superblock sb{fake_address3, 8388608};
+  auto const [head, tail] = sb.split(4194304);
+  EXPECT_EQ(head.pointer(), fake_address3);
+  EXPECT_EQ(head.size(), 4194304);
+  EXPECT_TRUE(head.empty());
+  EXPECT_EQ(tail.pointer(), fake_address4);
+  EXPECT_EQ(tail.size(), 4194304);
+  EXPECT_TRUE(tail.empty());
+}
+
+TEST(ArenaTest, SuperblockMerge)
+{
+  superblock sb{fake_address3, 4194304};
+  superblock sb2{fake_address4, 4194304};
+  auto const merged = sb.merge(sb2);
+  EXPECT_EQ(merged.pointer(), fake_address3);
+  EXPECT_EQ(merged.size(), 8388608);
+  EXPECT_TRUE(merged.empty());
+}
 
 TEST(ArenaTest, NullUpstream)
 {

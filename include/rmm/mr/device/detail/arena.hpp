@@ -70,7 +70,7 @@ class memory_span {
   [[nodiscard]] bool is_valid() const { return pointer_ != nullptr; }
 
   /// Used by std::set to compare spans.
-  bool operator<(memory_span const& s) const { return pointer_ < s.pointer_; }
+  bool operator<(memory_span const& ms) const { return pointer_ < ms.pointer_; }
 
  private:
   char* pointer_{};     ///< Raw memory pointer.
@@ -247,7 +247,7 @@ class superblock final : public memory_span {
    *
    * `this->is_contiguous_before(s)` must be true.
    *
-   * @param s superblock to merge.
+   * @param sb superblock to merge.
    * @return block The merged block.
    */
   [[nodiscard]] superblock merge(superblock const& sb) const
