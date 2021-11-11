@@ -40,8 +40,7 @@ auto const fake_address3 = reinterpret_cast<void*>(4194304L);
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
 auto const fake_address4 = reinterpret_cast<void*>(8388608L);
 
-// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
-TEST(ArenaTest, MemorySpan)
+TEST(ArenaTest, MemorySpan)  // NOLINT
 {
   memory_span const ms{};
   EXPECT_FALSE(ms.is_valid());
@@ -49,16 +48,14 @@ TEST(ArenaTest, MemorySpan)
   EXPECT_TRUE(ms2.is_valid());
 }
 
-// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
-TEST(ArenaTest, BlockFits)
+TEST(ArenaTest, BlockFits)  // NOLINT
 {
   block const b{fake_address, 1024};
   EXPECT_TRUE(b.fits(1024));
   EXPECT_FALSE(b.fits(1025));
 }
 
-// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
-TEST(ArenaTest, BlockIsContiguousBefore)
+TEST(ArenaTest, BlockIsContiguousBefore)  // NOLINT
 {
   block const b{fake_address, 1024};
   block const b2{fake_address2, 256};
@@ -68,8 +65,7 @@ TEST(ArenaTest, BlockIsContiguousBefore)
   EXPECT_FALSE(b3.is_contiguous_before(b4));
 }
 
-// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
-TEST(ArenaTest, BlockSplit)
+TEST(ArenaTest, BlockSplit)  // NOLINT
 {
   block const b{fake_address, 2048};
   auto const [head, tail] = b.split(1024);
@@ -79,8 +75,7 @@ TEST(ArenaTest, BlockSplit)
   EXPECT_EQ(tail.size(), 1024);
 }
 
-// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
-TEST(ArenaTest, BlockMerge)
+TEST(ArenaTest, BlockMerge)  // NOLINT
 {
   block const b{fake_address, 1024};
   block const b2{fake_address2, 1024};
@@ -89,8 +84,7 @@ TEST(ArenaTest, BlockMerge)
   EXPECT_EQ(merged.size(), 2048);
 }
 
-// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
-TEST(ArenaTest, SuperblockEmpty)
+TEST(ArenaTest, SuperblockEmpty)  // NOLINT
 {
   superblock sb{fake_address3, 4194304};
   EXPECT_TRUE(sb.empty());
@@ -98,8 +92,7 @@ TEST(ArenaTest, SuperblockEmpty)
   EXPECT_FALSE(sb.empty());
 }
 
-// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
-TEST(ArenaTest, SuperblockContains)
+TEST(ArenaTest, SuperblockContains)  // NOLINT
 {
   superblock const sb{fake_address3, 4194304};
   block const b{fake_address, 2048};
@@ -114,8 +107,7 @@ TEST(ArenaTest, SuperblockContains)
   EXPECT_FALSE(sb.contains(b5));
 }
 
-// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
-TEST(ArenaTest, SuperblockFits)
+TEST(ArenaTest, SuperblockFits)  // NOLINT
 {
   superblock sb{fake_address3, 4194304};
   EXPECT_TRUE(sb.fits(4194304));
@@ -128,8 +120,7 @@ TEST(ArenaTest, SuperblockFits)
   EXPECT_FALSE(sb.fits(2097153));
 }
 
-// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
-TEST(ArenaTest, SuperblockIsContiguousBefore)
+TEST(ArenaTest, SuperblockIsContiguousBefore)  // NOLINT
 {
   superblock sb{fake_address3, 4194304};
   superblock sb2{fake_address4, 4194304};
@@ -146,8 +137,7 @@ TEST(ArenaTest, SuperblockIsContiguousBefore)
   EXPECT_TRUE(sb.is_contiguous_before(sb2));
 }
 
-// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
-TEST(ArenaTest, SuperblockSplit)
+TEST(ArenaTest, SuperblockSplit)  // NOLINT
 {
   superblock sb{fake_address3, 8388608};
   auto const [head, tail] = sb.split(4194304);
@@ -159,8 +149,7 @@ TEST(ArenaTest, SuperblockSplit)
   EXPECT_TRUE(tail.empty());
 }
 
-// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
-TEST(ArenaTest, SuperblockMerge)
+TEST(ArenaTest, SuperblockMerge)  // NOLINT
 {
   superblock sb{fake_address3, 4194304};
   superblock sb2{fake_address4, 4194304};
@@ -170,8 +159,7 @@ TEST(ArenaTest, SuperblockMerge)
   EXPECT_TRUE(merged.empty());
 }
 
-// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
-TEST(ArenaTest, SuperblockFirstFit)
+TEST(ArenaTest, SuperblockFirstFit)  // NOLINT
 {
   superblock sb{fake_address3, 4194304};
   auto const b = sb.first_fit(1024);
@@ -187,8 +175,7 @@ TEST(ArenaTest, SuperblockFirstFit)
   EXPECT_EQ(b3.size(), 512);
 }
 
-// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
-TEST(ArenaTest, SuperblockCoalesceMergeNext)
+TEST(ArenaTest, SuperblockCoalesceMergeNext)  // NOLINT
 {
   superblock sb{fake_address3, 4194304};
   auto const b = sb.first_fit(2097152);
@@ -196,8 +183,7 @@ TEST(ArenaTest, SuperblockCoalesceMergeNext)
   EXPECT_TRUE(sb.first_fit(4194304).is_valid());
 }
 
-// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
-TEST(ArenaTest, SuperblockCoalesceMergePrevious)
+TEST(ArenaTest, SuperblockCoalesceMergePrevious)  // NOLINT
 {
   superblock sb{fake_address3, 4194304};
   auto const b  = sb.first_fit(1024);
@@ -209,8 +195,7 @@ TEST(ArenaTest, SuperblockCoalesceMergePrevious)
   EXPECT_EQ(b3.pointer(), fake_address3);
 }
 
-// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
-TEST(ArenaTest, SuperblockCoalesceMergePreviousAndNext)
+TEST(ArenaTest, SuperblockCoalesceMergePreviousAndNext)  // NOLINT
 {
   superblock sb{fake_address3, 4194304};
   auto const b  = sb.first_fit(1024);
@@ -220,8 +205,7 @@ TEST(ArenaTest, SuperblockCoalesceMergePreviousAndNext)
   EXPECT_TRUE(sb.first_fit(4194304).is_valid());
 }
 
-// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
-TEST(ArenaTest, SuperblockMaxFree)
+TEST(ArenaTest, SuperblockMaxFree)  // NOLINT
 {
   superblock sb{fake_address3, 4194304};
   sb.first_fit(2097152);
@@ -229,18 +213,15 @@ TEST(ArenaTest, SuperblockMaxFree)
   EXPECT_EQ(b.size(), 2097152);
 }
 
-// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
-TEST(ArenaTest, NullUpstream)
+TEST(ArenaTest, NullUpstream)  // NOLINT
 {
   // NOLINTNEXTLINE(cppcoreguidelines-avoid-goto)
   EXPECT_THROW([]() { arena_mr mr{nullptr}; }(), rmm::logic_error);
 }
 
-// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
-TEST(ArenaTest, AllocateNinetyPercent)
+TEST(ArenaTest, AllocateNinetyPercent)  // NOLINT
 {
-  // NOLINTNEXTLINE(cppcoreguidelines-avoid-goto)
-  EXPECT_NO_THROW([]() {
+  EXPECT_NO_THROW([]() {  // NOLINT(cppcoreguidelines-avoid-goto)
     auto const free = rmm::detail::available_device_memory().first;
     auto const ninety_percent =
       rmm::detail::align_up_cuda(static_cast<std::size_t>(static_cast<double>(free) * 0.9));
@@ -248,11 +229,9 @@ TEST(ArenaTest, AllocateNinetyPercent)
   }());
 }
 
-// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
-TEST(ArenaTest, SmallMediumLarge)
+TEST(ArenaTest, SmallMediumLarge)  // NOLINT
 {
-  // NOLINTNEXTLINE(cppcoreguidelines-avoid-goto)
-  EXPECT_NO_THROW([]() {
+  EXPECT_NO_THROW([]() {  // NOLINT(cppcoreguidelines-avoid-goto)
     arena_mr mr(rmm::mr::get_current_device_resource());
     auto* small     = mr.allocate(256);
     auto* medium    = mr.allocate(1U << 26U);
