@@ -14,8 +14,13 @@
 
 # Build options
 option(DISABLE_DEPRECATION_WARNING "Disable warnings generated from deprecated declarations." OFF)
+option(CODE_COVERAGE "Enable generating code coverage with gcov." OFF)
 
-# compiler function
+if(CODE_COVERAGE)
+  if(NOT (CMAKE_BUILD_TYPE STREQUAL "Debug"))
+    message(WARNING "Generating code coverage for optimised (non-Debug) builds not recommended")
+  endif()
+endif()
 
 # This function takes in a test name and test source and handles setting all of the associated
 # properties and linking to build the test
@@ -31,6 +36,9 @@ function(ConfigureTestInternal TEST_NAME)
                CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}")
   target_compile_definitions(${TEST_NAME}
                              PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
+  if(DEFINED CUDA_MALLOC_ASYNC_SUPPORT AND NOT CUDA_MALLOC_ASYNC_SUPPORT)
+    target_compile_definitions(${TEST_NAME} PUBLIC "RMM_DISABLE_CUDA_MALLOC_ASYNC")
+  endif()
   target_compile_options(${TEST_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Wall -Werror
                                              -Wno-error=deprecated-declarations>)
   target_compile_options(${TEST_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:--Werror=all-warnings
@@ -41,6 +49,33 @@ function(ConfigureTestInternal TEST_NAME)
                                                -Xcompiler=-Wno-deprecated-declarations>)
     target_compile_options(${TEST_NAME}
                            PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-declarations>)
+  endif()
+
+  if(CODE_COVERAGE)
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+
+      set(KEEP_DIR ${CMAKE_CURRENT_BINARY_DIR}/tmp)
+      make_directory(${KEEP_DIR})
+      target_compile_options(${TEST_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:--keep
+                                                 --keep-dir=${KEEP_DIR}>)
+      target_compile_options(
+        ${TEST_NAME}
+        PUBLIC
+          $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=--coverage,-fprofile-abs-path,-fkeep-inline-functions,-fno-elide-constructors>
+      )
+      target_compile_options(
+        ${TEST_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CXX>:--coverage -fprofile-abs-path
+                            -fkeep-inline-functions -fno-elide-constructors>)
+      target_link_options(${TEST_NAME} PRIVATE --coverage)
+      target_link_libraries(${TEST_NAME} gcov)
+    endif()
+
+    # Add coverage-generated files to clean target
+    list(APPEND COVERAGE_CLEAN_FILES "**/*.gcno" "**/*.gcda")
+    set_property(
+      TARGET ${TEST_NAME}
+      APPEND
+      PROPERTY ADDITIONAL_CLEAN_FILES ${COVERAGE_CLEAN_FILES})
   endif()
 
   add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})

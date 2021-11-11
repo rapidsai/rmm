@@ -3,6 +3,7 @@
 {% set version = environ.get('GIT_DESCRIBE_TAG', '0.0.0.dev').lstrip('v') + environ.get('VERSION_SUFFIX', '') %}
 {% set py_version=environ.get('CONDA_PY', 35) %}
 {% set cuda_version='.'.join(environ.get('CUDA', '10.1').split('.')[:2]) %}
+{% set cuda_major=cuda_version.split('.')[0] %}
 
 package:
   name: rmm
@@ -13,7 +14,7 @@ source:
 
 build:
   number: {{ GIT_DESCRIBE_NUMBER }}
-  string: cuda_{{ cuda_version }}_py{{ py_version }}_{{ GIT_DESCRIBE_HASH }}_{{ GIT_DESCRIBE_NUMBER }}
+  string: cuda{{ cuda_major }}_py{{ py_version }}_{{ GIT_DESCRIBE_HASH }}_{{ GIT_DESCRIBE_NUMBER }}_{{ cudaMallocAsync }}
   script_env:
     - RMM_BUILD_NO_GPU_TEST
     - VERSION_SUFFIX
@@ -33,7 +34,11 @@ requirements:
     - python
     - numba >=0.49
     - numpy
-    - {{ pin_compatible('cudatoolkit', max_pin='x.x') }}
+{% if cudaMallocAsync == "has_cma" %}
+    - {{ pin_compatible('cudatoolkit', max_pin='x', lower_bound='11.2') }} # cudatoolkit >=11.2,<12.0.0
+{% else %}
+    - {{ pin_compatible('cudatoolkit', upper_bound='11.2', lower_bound='11.0') }} # cudatoolkit >=11.0,<11.2
+{% endif %}
 
 test:
   commands:
