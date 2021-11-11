@@ -40,6 +40,8 @@ TEST_F(CudaStreamTest, Equality)
 
   rmm::device_buffer buff{};
   EXPECT_EQ(buff.stream(), view_default);
+
+  EXPECT_NE(static_cast<cudaStream_t>(stream_a), rmm::cuda_stream_default.value());
 }
 
 TEST_F(CudaStreamTest, MoveConstructor)
@@ -50,4 +52,11 @@ TEST_F(CudaStreamTest, MoveConstructor)
   // NOLINTNEXTLINE(bugprone-use-after-move, clang-analyzer-cplusplus.Move)
   EXPECT_FALSE(stream_a.is_valid());  // Any other operations on stream_a are UB, may segfault
   EXPECT_EQ(stream_b, view_a);
+}
+
+TEST_F(CudaStreamTest, TestSyncNoThrow)
+{
+  rmm::cuda_stream stream_a;
+  cudaStreamDestroy(static_cast<cudaStream_t>(stream_a));
+  EXPECT_NO_THROW(stream_a.synchronize_no_throw());
 }
