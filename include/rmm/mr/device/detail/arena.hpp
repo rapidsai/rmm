@@ -58,6 +58,8 @@ class memory_span {
    */
   memory_span(void* pointer, std::size_t size) : pointer_{static_cast<char*>(pointer)}, size_{size}
   {
+    RMM_LOGGING_ASSERT(pointer != nullptr);
+    RMM_LOGGING_ASSERT(size > 0);
   }
 
   /// Returns the underlying pointer.
@@ -67,10 +69,14 @@ class memory_span {
   [[nodiscard]] std::size_t size() const { return size_; }
 
   /// Returns true if this span is valid (non-null), false otherwise.
-  [[nodiscard]] bool is_valid() const { return pointer_ != nullptr; }
+  [[nodiscard]] bool is_valid() const { return pointer_ != nullptr && size_ > 0; }
 
   /// Used by std::set to compare spans.
-  bool operator<(memory_span const& ms) const { return pointer_ < ms.pointer_; }
+  bool operator<(memory_span const& ms) const
+  {
+    RMM_LOGGING_ASSERT(ms.is_valid());
+    return pointer_ < ms.pointer_;
+  }
 
  private:
   char* pointer_{};     ///< Raw memory pointer.
@@ -100,7 +106,12 @@ class block final : public memory_span {
    * @param sz The size in bytes to check for fit.
    * @return true if this block is at least `sz` bytes.
    */
-  [[nodiscard]] bool fits(std::size_t sz) const { return size() >= sz; }
+  [[nodiscard]] bool fits(std::size_t sz) const
+  {
+    RMM_LOGGING_ASSERT(is_valid());
+    RMM_LOGGING_ASSERT(sz > 0);
+    return size() >= sz;
+  }
 
   /**
    * @brief Verifies whether this block can be merged to the beginning of block b.
@@ -110,6 +121,8 @@ class block final : public memory_span {
    */
   [[nodiscard]] bool is_contiguous_before(block const& b) const
   {
+    RMM_LOGGING_ASSERT(is_valid());
+    RMM_LOGGING_ASSERT(b.is_valid());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     return pointer() + size() == b.pointer();
   }
@@ -122,6 +135,7 @@ class block final : public memory_span {
    */
   [[nodiscard]] std::pair<block, block> split(std::size_t sz) const
   {
+    RMM_LOGGING_ASSERT(is_valid());
     RMM_LOGGING_ASSERT(size() >= sz);
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     return {{pointer(), sz}, {pointer() + sz, size() - sz}};
@@ -137,6 +151,8 @@ class block final : public memory_span {
    */
   [[nodiscard]] block merge(block const& b) const
   {
+    RMM_LOGGING_ASSERT(is_valid());
+    RMM_LOGGING_ASSERT(b.is_valid());
     RMM_LOGGING_ASSERT(is_contiguous_before(b));
     return {pointer(), size() + b.size()};
   }
@@ -145,6 +161,8 @@ class block final : public memory_span {
 /// Comparison function for block sizes.
 inline bool block_size_compare(block const& lhs, block const& rhs)
 {
+  RMM_LOGGING_ASSERT(lhs.is_valid());
+  RMM_LOGGING_ASSERT(rhs.is_valid());
   return lhs.size() < rhs.size();
 }
 
@@ -170,6 +188,7 @@ class superblock final : public memory_span {
    */
   superblock(void* pointer, std::size_t size) : memory_span{pointer, size}
   {
+    RMM_LOGGING_ASSERT(size >= minimum_size);
     free_blocks_.emplace(pointer, size);
   }
 
@@ -189,6 +208,7 @@ class superblock final : public memory_span {
    */
   [[nodiscard]] bool empty() const
   {
+    RMM_LOGGING_ASSERT(is_valid());
     return free_blocks_.size() == 1 && free_blocks_.cbegin()->size() == size();
   }
 
@@ -200,6 +220,8 @@ class superblock final : public memory_span {
    */
   [[nodiscard]] bool contains(block const& b) const
   {
+    RMM_LOGGING_ASSERT(is_valid());
+    RMM_LOGGING_ASSERT(b.is_valid());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     return pointer() <= b.pointer() && pointer() + size() >= b.pointer() + b.size();
   }
@@ -212,6 +234,7 @@ class superblock final : public memory_span {
    */
   [[nodiscard]] bool fits(std::size_t sz) const
   {
+    RMM_LOGGING_ASSERT(is_valid());
     return std::any_of(
       free_blocks_.cbegin(), free_blocks_.cend(), [sz](auto const& b) { return b.fits(sz); });
   }
@@ -225,6 +248,8 @@ class superblock final : public memory_span {
    */
   [[nodiscard]] bool is_contiguous_before(superblock const& sb) const
   {
+    RMM_LOGGING_ASSERT(is_valid());
+    RMM_LOGGING_ASSERT(sb.is_valid());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     return empty() && sb.empty() && pointer() + size() == sb.pointer();
   }
@@ -237,6 +262,7 @@ class superblock final : public memory_span {
    */
   [[nodiscard]] std::pair<superblock, superblock> split(std::size_t sz) const
   {
+    RMM_LOGGING_ASSERT(is_valid());
     RMM_LOGGING_ASSERT(empty() && sz >= minimum_size && size() - sz >= minimum_size);
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     return {superblock{pointer(), sz}, superblock{pointer() + sz, size() - sz}};
@@ -264,6 +290,9 @@ class superblock final : public memory_span {
    */
   block first_fit(std::size_t size)
   {
+    RMM_LOGGING_ASSERT(is_valid());
+    RMM_LOGGING_ASSERT(size > 0);
+
     auto const iter = std::find_if(
       free_blocks_.cbegin(), free_blocks_.cend(), [size](auto const& b) { return b.fits(size); });
     if (iter == free_blocks_.cend()) { return {}; }
@@ -288,6 +317,10 @@ class superblock final : public memory_span {
    */
   void coalesce(block const& b)
   {
+    RMM_LOGGING_ASSERT(is_valid());
+    RMM_LOGGING_ASSERT(b.is_valid());
+    RMM_LOGGING_ASSERT(contains(b));
+
     // Find the right place (in ascending address order) to insert the block.
     auto const next     = free_blocks_.lower_bound(b);
     auto const previous = next == free_blocks_.cbegin() ? next : std::prev(next);
@@ -390,6 +423,8 @@ class global_arena final {
    */
   superblock acquire(std::size_t size)
   {
+    // Superblocks should only be acquired if the size is not directly handled by the global arena.
+    RMM_LOGGING_ASSERT(!handles(size));
     lock_guard lock(mtx_);
     return first_fit(size);
   }
@@ -401,6 +436,7 @@ class global_arena final {
    */
   void release(superblock&& sb)
   {
+    RMM_LOGGING_ASSERT(sb.is_valid());
     lock_guard lock(mtx_);
     coalesce(std::move(sb));
   }
@@ -414,7 +450,9 @@ class global_arena final {
   {
     lock_guard lock(mtx_);
     while (!superblocks.empty()) {
-      coalesce(std::move(superblocks.extract(superblocks.cbegin()).mapped()));
+      auto&& sb = std::move(superblocks.extract(superblocks.cbegin()).mapped());
+      RMM_LOGGING_ASSERT(sb.is_valid());
+      coalesce(std::move(sb));
     }
   }
 
@@ -484,7 +522,6 @@ class global_arena final {
     lock_guard lock(mtx_);
 
     logger->info("  Arena size: {}", rmm::detail::bytes{upstream_block_.size()});
-
     logger->info("  # superblocks: {}", superblocks_.size());
     if (!superblocks_.empty()) {
       logger->info("  Total size of superblocks: {}",
@@ -564,6 +601,8 @@ class global_arena final {
    */
   void coalesce(superblock&& sb)
   {
+    RMM_LOGGING_ASSERT(sb.is_valid());
+
     // Find the right place (in ascending address order) to insert the block.
     auto const next     = superblocks_.lower_bound(sb.pointer());
     auto const previous = next == superblocks_.cbegin() ? next : std::prev(next);

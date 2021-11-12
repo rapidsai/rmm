@@ -21,15 +21,25 @@
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 
+#include <gmock/gmock-actions.h>
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 namespace rmm::test {
 namespace {
 
-using memory_span = rmm::mr::detail::arena::memory_span;
-using block       = rmm::mr::detail::arena::block;
-using superblock  = rmm::mr::detail::arena::superblock;
-using arena_mr    = rmm::mr::arena_memory_resource<rmm::mr::device_memory_resource>;
+class mock_memory_resource {
+ public:
+  MOCK_METHOD(void*, allocate, (std::size_t));
+  MOCK_METHOD(void, deallocate, (void*, std::size_t));
+};
+
+using memory_span  = rmm::mr::detail::arena::memory_span;
+using block        = rmm::mr::detail::arena::block;
+using superblock   = rmm::mr::detail::arena::superblock;
+using global_arena = rmm::mr::detail::arena::global_arena<mock_memory_resource>;
+using arena_mr     = rmm::mr::arena_memory_resource<rmm::mr::device_memory_resource>;
+using ::testing::Return;
 
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
 auto const fake_address = reinterpret_cast<void*>(1024L);
@@ -40,6 +50,10 @@ auto const fake_address3 = reinterpret_cast<void*>(4194304L);
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
 auto const fake_address4 = reinterpret_cast<void*>(8388608L);
 
+/**
+ * Test memory_span.
+ */
+
 TEST(ArenaTest, MemorySpan)  // NOLINT
 {
   memory_span const ms{};
@@ -47,6 +61,10 @@ TEST(ArenaTest, MemorySpan)  // NOLINT
   memory_span const ms2{fake_address, 256};
   EXPECT_TRUE(ms2.is_valid());
 }
+
+/**
+ * Test block.
+ */
 
 TEST(ArenaTest, BlockFits)  // NOLINT
 {
@@ -83,6 +101,10 @@ TEST(ArenaTest, BlockMerge)  // NOLINT
   EXPECT_EQ(merged.pointer(), fake_address);
   EXPECT_EQ(merged.size(), 2048);
 }
+
+/**
+ * Test superblock.
+ */
 
 TEST(ArenaTest, SuperblockEmpty)  // NOLINT
 {
@@ -212,6 +234,41 @@ TEST(ArenaTest, SuperblockMaxFree)  // NOLINT
   auto const b = sb.max_free();
   EXPECT_EQ(b.size(), 2097152);
 }
+
+/**
+ * Test global_arena.
+ */
+
+TEST(ArenaTest, GlobalArenaNullUpstream)  // NOLINT
+{
+  auto construct_nullptr = []() { global_arena ga{nullptr, std::nullopt}; };
+  EXPECT_THROW(construct_nullptr(), rmm::logic_error);  // NOLINT(cppcoreguidelines-avoid-goto)
+}
+
+TEST(ArenaTest, GlobalArenaAcquire)  // NOLINT
+{
+  mock_memory_resource mock;
+  EXPECT_CALL(mock, allocate(8388608)).WillOnce(Return(fake_address3));
+  EXPECT_CALL(mock, deallocate(fake_address3, 8388608));
+
+  global_arena ga{&mock, 8388608};
+
+  auto const sb = ga.acquire(256);
+  EXPECT_EQ(sb.pointer(), fake_address3);
+  EXPECT_EQ(sb.size(), 4194304);
+  EXPECT_TRUE(sb.empty());
+
+  auto const sb2 = ga.acquire(1024);
+  EXPECT_EQ(sb2.pointer(), fake_address4);
+  EXPECT_EQ(sb2.size(), 4194304);
+  EXPECT_TRUE(sb2.empty());
+
+  EXPECT_FALSE(ga.acquire(512).is_valid());
+}
+
+/**
+ * Test arena_memory_resource.
+ */
 
 TEST(ArenaTest, NullUpstream)  // NOLINT
 {
