@@ -29,7 +29,7 @@ repos:
       hooks:
             - id: cmake-format
               name: cmake-format
-              entry: bash scripts/run-cmake-format.sh cmake-format
+              entry: ./scripts/run-cmake-format.sh cmake-format
               language: python
               types: [cmake]
               # Note that pre-commit autoupdate does not update the versions
@@ -38,7 +38,7 @@ repos:
                 - cmake-format==0.6.11
             - id: cmake-lint
               name: cmake-lint
-              entry: bash scripts/run-cmake-format.sh cmake-lint
+              entry: ./scripts/run-cmake-format.sh cmake-lint
               language: python
               types: [cmake]
               # Note that pre-commit autoupdate does not update the versions
