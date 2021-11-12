@@ -442,7 +442,7 @@ class global_arena final {
   }
 
   /**
-   * @brief Release a set of superblocks from a dying arena.
+   * @brief Release a map of superblocks from a dying arena.
    *
    * @param superblocks The set of superblocks.
    */

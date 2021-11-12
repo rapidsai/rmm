@@ -266,6 +266,55 @@ TEST(ArenaTest, GlobalArenaAcquire)  // NOLINT
   EXPECT_FALSE(ga.acquire(512).is_valid());
 }
 
+TEST(ArenaTest, GlobalArenaReleaseMergeNext)  // NOLINT
+{
+  mock_memory_resource mock;
+  EXPECT_CALL(mock, allocate(8388608)).WillOnce(Return(fake_address3));
+  EXPECT_CALL(mock, deallocate(fake_address3, 8388608));
+
+  global_arena ga{&mock, 8388608};
+
+  auto sb = ga.acquire(256);
+  ga.release(std::move(sb));
+  auto* p = ga.allocate(8388608);
+  EXPECT_EQ(p, fake_address3);
+}
+
+TEST(ArenaTest, GlobalArenaReleaseMergePrevious)  // NOLINT
+{
+  mock_memory_resource mock;
+  EXPECT_CALL(mock, allocate(16777216)).WillOnce(Return(fake_address3));
+  EXPECT_CALL(mock, deallocate(fake_address3, 16777216));
+
+  global_arena ga{&mock, 16777216};
+
+  auto sb = ga.acquire(256);
+  auto sb2 = ga.acquire(1024);
+  ga.acquire(512);
+  ga.release(std::move(sb));
+  ga.release(std::move(sb2));
+  auto* p = ga.allocate(8388608);
+  EXPECT_EQ(p, fake_address3);
+}
+
+TEST(ArenaTest, GlobalArenaReleaseMergePreviousAndNext)  // NOLINT
+{
+  mock_memory_resource mock;
+  EXPECT_CALL(mock, allocate(16777216)).WillOnce(Return(fake_address3));
+  EXPECT_CALL(mock, deallocate(fake_address3, 16777216));
+
+  global_arena ga{&mock, 16777216};
+
+  auto sb = ga.acquire(256);
+  auto sb2 = ga.acquire(1024);
+  auto sb3 = ga.acquire(512);
+  ga.release(std::move(sb));
+  ga.release(std::move(sb3));
+  ga.release(std::move(sb2));
+  auto* p = ga.allocate(16777216);
+  EXPECT_EQ(p, fake_address3);
+}
+
 /**
  * Test arena_memory_resource.
  */
