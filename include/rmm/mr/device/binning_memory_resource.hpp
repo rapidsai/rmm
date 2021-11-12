@@ -133,8 +133,7 @@ class binning_memory_resource final : public device_memory_resource {
    */
   void add_bin(std::size_t allocation_size, device_memory_resource* bin_resource = nullptr)
   {
-    allocation_size =
-      rmm::detail::align_up(allocation_size, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
+    allocation_size = rmm::detail::align_up(allocation_size);
 
     if (nullptr != bin_resource) {
       resource_bins_.insert({allocation_size, bin_resource});

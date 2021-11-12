@@ -140,28 +140,6 @@ class block {
 inline bool block_size_compare(block lhs, block rhs) { return lhs.size() < rhs.size(); }
 
 /**
- * @brief Align up to the allocation alignment.
- *
- * @param[in] v value to align
- * @return Return the aligned value
- */
-constexpr std::size_t align_up(std::size_t value) noexcept
-{
-  return rmm::detail::align_up(value, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
-}
-
-/**
- * @brief Align down to the allocation alignment.
- *
- * @param[in] v value to align
- * @return Return the aligned value
- */
-constexpr std::size_t align_down(std::size_t value) noexcept
-{
-  return rmm::detail::align_down(value, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
-}
-
-/**
  * @brief Get the first free block of at least `size` bytes.
  *
  * Address-ordered first-fit has shown to perform slightly better than best-fit when it comes to
@@ -279,9 +257,11 @@ class global_arena final {
     : upstream_mr_{upstream_mr}, maximum_size_{maximum_size}
   {
     RMM_EXPECTS(nullptr != upstream_mr_, "Unexpected null upstream pointer.");
-    RMM_EXPECTS(initial_size == default_initial_size || initial_size == align_up(initial_size),
-                "Error, Initial arena size required to be a multiple of 256 bytes");
-    RMM_EXPECTS(maximum_size_ == default_maximum_size || maximum_size_ == align_up(maximum_size_),
+    RMM_EXPECTS(
+      initial_size == default_initial_size || initial_size == rmm::detail::align_up(initial_size),
+      "Error, Initial arena size required to be a multiple of 256 bytes");
+    RMM_EXPECTS(maximum_size_ == default_maximum_size ||
+                  maximum_size_ == rmm::detail::align_up(maximum_size_),
                 "Error, Maximum arena size required to be a multiple of 256 bytes");
 
     if (initial_size == default_initial_size || maximum_size == default_maximum_size) {
@@ -289,10 +269,10 @@ class global_arena final {
       std::size_t total{};
       RMM_CUDA_TRY(cudaMemGetInfo(&free, &total));
       if (initial_size == default_initial_size) {
-        initial_size = align_up(std::min(free, total / 2));
+        initial_size = rmm::detail::align_up(std::min(free, total / 2));
       }
       if (maximum_size_ == default_maximum_size) {
-        maximum_size_ = align_down(free) - reserved_size;
+        maximum_size_ = rmm::detail::align_down(free) - reserved_size;
       }
     }
     RMM_EXPECTS(initial_size <= maximum_size_, "Initial arena size exceeds the maximum pool size!");

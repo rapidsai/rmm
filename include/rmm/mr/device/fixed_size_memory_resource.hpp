@@ -70,7 +70,7 @@ class fixed_size_memory_resource
     std::size_t block_size            = default_block_size,
     std::size_t blocks_to_preallocate = default_blocks_to_preallocate)
     : upstream_mr_{upstream_mr},
-      block_size_{rmm::detail::align_up(block_size, rmm::detail::CUDA_ALLOCATION_ALIGNMENT)},
+      block_size_{rmm::detail::align_up(block_size)},
       upstream_chunk_size_{block_size * blocks_to_preallocate}
   {
     // allocate initial blocks and insert into free list
@@ -202,8 +202,7 @@ class fixed_size_memory_resource
   {
     // Deallocating a fixed-size block just inserts it in the free list, which is
     // handled by the parent class
-    RMM_LOGGING_ASSERT(rmm::detail::align_up(size, rmm::detail::CUDA_ALLOCATION_ALIGNMENT) <=
-                       block_size_);
+    RMM_LOGGING_ASSERT(rmm::detail::align_up(size) <= block_size_);
     return block_type{ptr};
   }
 

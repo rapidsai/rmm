@@ -206,7 +206,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
 
     auto stream_event = get_event(stream);
 
-    size = rmm::detail::align_up(size, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
+    size = rmm::detail::align_up(size);
     RMM_EXPECTS(size <= this->underlying().get_maximum_allocation_size(),
                 rmm::out_of_memory,
                 "Maximum allocation size exceeded");
@@ -240,7 +240,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     lock_guard lock(mtx_);
     auto stream_event = get_event(stream);
 
-    size             = rmm::detail::align_up(size, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
+    size             = rmm::detail::align_up(size);
     auto const block = this->underlying().free_block(ptr, size);
 
     // TODO: cudaEventRecord has significant overhead on deallocations. For the non-PTDS case

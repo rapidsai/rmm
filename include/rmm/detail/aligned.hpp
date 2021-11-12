@@ -56,7 +56,8 @@ constexpr bool is_supported_alignment(std::size_t alignment) { return is_pow2(al
  *
  * @return Return the aligned value, as one would expect
  */
-constexpr std::size_t align_up(std::size_t value, std::size_t alignment) noexcept
+constexpr std::size_t align_up(std::size_t value,
+                               std::size_t alignment = CUDA_ALLOCATION_ALIGNMENT) noexcept
 {
   assert(is_supported_alignment(alignment));
   return (value + (alignment - 1)) & ~(alignment - 1);
@@ -70,7 +71,8 @@ constexpr std::size_t align_up(std::size_t value, std::size_t alignment) noexcep
  *
  * @return Return the aligned value, as one would expect
  */
-constexpr std::size_t align_down(std::size_t value, std::size_t alignment) noexcept
+constexpr std::size_t align_down(std::size_t value,
+                                 std::size_t alignment = CUDA_ALLOCATION_ALIGNMENT) noexcept
 {
   assert(is_supported_alignment(alignment));
   return value & ~(alignment - 1);
@@ -84,7 +86,8 @@ constexpr std::size_t align_down(std::size_t value, std::size_t alignment) noexc
  *
  * @return true if aligned
  */
-constexpr bool is_aligned(std::size_t value, std::size_t alignment) noexcept
+constexpr bool is_aligned(std::size_t value,
+                          std::size_t alignment = CUDA_ALLOCATION_ALIGNMENT) noexcept
 {
   assert(is_supported_alignment(alignment));
   return value == align_down(value, alignment);

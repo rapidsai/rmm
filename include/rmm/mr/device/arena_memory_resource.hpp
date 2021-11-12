@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/logger.hpp>
 #include <rmm/mr/device/detail/arena.hpp>
@@ -144,7 +145,7 @@ class arena_memory_resource final : public device_memory_resource {
   {
     if (bytes <= 0) { return nullptr; }
 
-    bytes         = detail::arena::align_up(bytes);
+    bytes         = rmm::detail::align_up(bytes);
     auto& arena   = get_arena(stream);
     void* pointer = arena.allocate(bytes);
 
@@ -173,7 +174,7 @@ class arena_memory_resource final : public device_memory_resource {
   {
     if (ptr == nullptr || bytes <= 0) { return; }
 
-    bytes = detail::arena::align_up(bytes);
+    bytes = rmm::detail::align_up(bytes);
     get_arena(stream).deallocate(ptr, bytes, stream);
   }
 
