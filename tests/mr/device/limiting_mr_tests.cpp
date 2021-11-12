@@ -38,7 +38,7 @@ TEST(LimitingTest, TooBig)
 {
   auto const max_size{5_MiB};
   Limiting_adaptor mr{rmm::mr::get_current_device_resource(), max_size};
-  EXPECT_THROW(mr.allocate(max_size + 1), rmm::bad_alloc);
+  EXPECT_THROW(mr.allocate(max_size + 1), rmm::out_of_memory);
 }
 
 TEST(LimitingTest, UnderLimitDueToFrees)
@@ -83,7 +83,7 @@ TEST(LimitingTest, OverLimit)
   EXPECT_EQ(mr.get_allocated_bytes(), allocated_bytes);
   EXPECT_EQ(mr.get_allocation_limit() - mr.get_allocated_bytes(), max_size - allocated_bytes);
   auto const size2{3_MiB};
-  EXPECT_THROW(mr.allocate(size2), rmm::bad_alloc);
+  EXPECT_THROW(mr.allocate(size2), rmm::out_of_memory);
   EXPECT_EQ(mr.get_allocated_bytes(), allocated_bytes);
   EXPECT_EQ(mr.get_allocation_limit() - mr.get_allocated_bytes(), max_size - allocated_bytes);
   mr.deallocate(ptr1, 4_MiB);

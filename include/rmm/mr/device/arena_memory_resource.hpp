@@ -23,7 +23,7 @@
 #include <cuda_runtime_api.h>
 
 #include <spdlog/common.h>
-#include <spdlog/fmt/bundled/ostream.h>
+#include <spdlog/fmt/ostr.h>
 
 #include <cstddef>
 #include <map>
@@ -154,7 +154,7 @@ class arena_memory_resource final : public device_memory_resource {
       pointer = arena.allocate(bytes);
       if (pointer == nullptr) {
         if (dump_log_on_failure_) { dump_memory_log(bytes); }
-        RMM_FAIL("Maximum pool size exceeded", rmm::bad_alloc);
+        RMM_FAIL("Maximum pool size exceeded", rmm::out_of_memory);
       }
     }
 

@@ -128,7 +128,7 @@ inline void test_various_allocations(rmm::mr::device_memory_resource* mr, cuda_s
   // should fail to allocate too much
   {
     void* ptr{nullptr};
-    EXPECT_THROW(ptr = mr->allocate(1_PiB, stream), rmm::bad_alloc);
+    EXPECT_THROW(ptr = mr->allocate(1_PiB, stream), rmm::out_of_memory);
     EXPECT_EQ(nullptr, ptr);
   }
 }

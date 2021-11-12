@@ -1,4 +1,17 @@
-# Copyright (c) 2020, NVIDIA CORPORATION.
+# Copyright (c) 2020-2021, NVIDIA CORPORATION.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import gc
 import os
 import sys
@@ -659,3 +672,22 @@ def test_tracking_resource_adaptor():
     # make sure the allocations string is now empty
     assert len(mr2.get_outstanding_allocations_str()) == 0
     assert len(mr.get_outstanding_allocations_str()) == 0
+
+
+def test_failure_callback_resource_adaptor():
+    retried = [False]
+
+    def callback(nbytes: int) -> bool:
+        if retried[0]:
+            return False
+        else:
+            retried[0] = True
+            return True
+
+    cuda_mr = rmm.mr.CudaMemoryResource()
+    mr = rmm.mr.FailureCallbackResourceAdaptor(cuda_mr, callback)
+    rmm.mr.set_current_device_resource(mr)
+
+    with pytest.raises(MemoryError):
+        rmm.DeviceBuffer(size=int(1e11))
+    assert retried[0]
