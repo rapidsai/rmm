@@ -17,6 +17,7 @@
 #include <rmm/cuda_stream.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_buffer.hpp>
+#include <sstream>
 
 #include <cuda_runtime_api.h>
 
@@ -57,6 +58,26 @@ TEST_F(CudaStreamTest, MoveConstructor)
 TEST_F(CudaStreamTest, TestSyncNoThrow)
 {
   rmm::cuda_stream stream_a;
+// Cannot test this in debug mode because it will cause an assertion.
+// But need this test to get full code coverage
+#ifdef NDEBUG
   cudaStreamDestroy(static_cast<cudaStream_t>(stream_a));
+#endif
   EXPECT_NO_THROW(stream_a.synchronize_no_throw());
+}
+
+TEST_F(CudaStreamTest, TestStreamViewOstream)
+{
+  rmm::cuda_stream stream_a;
+  rmm::cuda_stream_view view(stream_a);
+
+  std::ostringstream oss;
+
+  oss << view;
+
+  std::ostringstream oss_expected;
+
+  oss_expected << stream_a.value();
+
+  EXPECT_EQ(oss.str(), oss_expected.str());
 }
