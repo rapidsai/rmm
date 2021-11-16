@@ -130,6 +130,13 @@ inline void test_various_allocations(rmm::mr::device_memory_resource* mr, cuda_s
     void* ptr{nullptr};
     EXPECT_THROW(ptr = mr->allocate(1_PiB, stream), rmm::out_of_memory);
     EXPECT_EQ(nullptr, ptr);
+
+    // test e.what();
+    try {
+      ptr = mr->allocate(1_PiB, stream);
+    } catch (rmm::out_of_memory const& e) {
+      EXPECT_NE(e.what(), "");
+    }
   }
 }
 
