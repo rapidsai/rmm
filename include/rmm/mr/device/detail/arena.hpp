@@ -108,7 +108,7 @@ class block final : public memory_span {
    */
   [[nodiscard]] bool fits(std::size_t sz) const
   {
-    RMM_LOGGING_ASSERT(is_valid());
+    if (!is_valid()) { RMM_LOGGING_ASSERT(is_valid()); }
     RMM_LOGGING_ASSERT(sz > 0);
     return size() >= sz;
   }
@@ -188,7 +188,7 @@ class superblock final : public memory_span {
    */
   superblock(void* pointer, std::size_t size) : memory_span{pointer, size}
   {
-    RMM_LOGGING_ASSERT(size >= minimum_size);
+    RMM_LOGGING_ASSERT(size >= minimum_size / 2);
     free_blocks_.emplace(pointer, size);
   }
 
@@ -413,7 +413,16 @@ class global_arena final {
   {
     lock_guard lock(mtx_);
     upstream_mr_->deallocate(upstream_block_.pointer(), upstream_block_.size());
+    superblocks_.clear();
   }
+
+  /**
+   * @brief Should allocation of `size` bytes be handled by the global arena directly?
+   *
+   * @param size The size in bytes of the allocation.
+   * @return bool True if the allocation should be handled by the global arena.
+   */
+  bool handles(std::size_t size) const { return size > superblock::minimum_size / 2; }
 
   /**
    * @brief Acquire a superblock that can fit a block of the given size.
@@ -464,11 +473,9 @@ class global_arena final {
    */
   void* allocate(std::size_t size)
   {
-    if (handles(size)) {
-      lock_guard lock(mtx_);
-      return first_fit(size).pointer();
-    }
-    return nullptr;
+    RMM_LOGGING_ASSERT(handles(size));
+    lock_guard lock(mtx_);
+    return first_fit(size).pointer();
   }
 
   /**
@@ -482,14 +489,11 @@ class global_arena final {
    */
   bool deallocate(void* ptr, std::size_t size, cuda_stream_view stream)
   {
-    if (handles(size)) {
-      stream.synchronize_no_throw();
-
-      lock_guard lock(mtx_);
-      coalesce({ptr, size});
-      return true;
-    }
-    return false;
+    RMM_LOGGING_ASSERT(handles(size));
+    stream.synchronize_no_throw();
+    lock_guard lock(mtx_);
+    coalesce({ptr, size});
+    return true;
   }
 
   /**
@@ -510,6 +514,7 @@ class global_arena final {
     });
     if (iter == superblocks_.end()) { RMM_FAIL("allocation not found"); }
     iter->second.coalesce(b);
+    if (iter->second.empty()) { coalesce(std::move(superblocks_.extract(iter).mapped())); }
   }
 
   /**
@@ -552,16 +557,10 @@ class global_arena final {
   {
     RMM_LOGGING_ASSERT(size >= superblock::minimum_size);
     upstream_block_ = {upstream_mr_->allocate(size), size};
-    superblocks_.try_emplace(upstream_block_.pointer(), upstream_block_.pointer(), size);
+    if (!upstream_block_.is_valid()) { RMM_FAIL("Failed to allocate memory from upstream"); }
+    superblocks_.insert(
+      std::make_pair(upstream_block_.pointer(), superblock(upstream_block_.pointer(), size)));
   }
-
-  /**
-   * @brief Should allocation of `size` bytes be handled by the global arena directly?
-   *
-   * @param size The size in bytes of the allocation.
-   * @return bool True if the allocation should be handled by the global arena.
-   */
-  bool handles(std::size_t size) const { return size > superblock::minimum_size / 2; }
 
   /**
    * @brief Get the first superblock that can fit a block of at least `size` bytes.
@@ -588,7 +587,7 @@ class global_arena final {
     if (sb.empty() && sb.size() - sz >= superblock::minimum_size) {
       // Split the superblock and put the remainder back.
       auto [head, tail] = sb.split(sz);
-      superblocks_.try_emplace(tail.pointer(), std::move(tail));
+      superblocks_.insert(std::make_pair(tail.pointer(), std::move(tail)));
       return std::move(head);
     }
     return sb;
@@ -615,17 +614,17 @@ class global_arena final {
       auto prev_sb = std::move(superblocks_.extract(previous).mapped());
       auto next_sb = std::move(superblocks_.extract(next).mapped());
       auto merged  = prev_sb.merge(sb).merge(next_sb);
-      superblocks_.try_emplace(merged.pointer(), std::move(merged));
+      superblocks_.insert(std::make_pair(merged.pointer(), std::move(merged)));
     } else if (merge_prev) {
       auto prev_sb = std::move(superblocks_.extract(previous).mapped());
       auto merged  = prev_sb.merge(sb);
-      superblocks_.try_emplace(merged.pointer(), std::move(merged));
+      superblocks_.insert(std::make_pair(merged.pointer(), std::move(merged)));
     } else if (merge_next) {
       auto next_sb = std::move(superblocks_.extract(next).mapped());
       auto merged  = sb.merge(next_sb);
-      superblocks_.try_emplace(merged.pointer(), std::move(merged));
+      superblocks_.insert(std::make_pair(merged.pointer(), std::move(merged)));
     } else {
-      superblocks_.try_emplace(sb.pointer(), std::move(sb));
+      superblocks_.insert(std::make_pair(sb.pointer(), std::move(sb)));
     }
   }
 
@@ -674,9 +673,7 @@ class arena {
    */
   void* allocate(std::size_t size)
   {
-    auto* ptr = global_arena_.allocate(size);
-    if (ptr != nullptr) { return ptr; }
-
+    if (global_arena_.handles(size)) { return global_arena_.allocate(size); }
     lock_guard lock(mtx_);
     return get_block(size).pointer();
   }
@@ -692,8 +689,7 @@ class arena {
    */
   bool deallocate(void* ptr, std::size_t size, cuda_stream_view stream)
   {
-    if (global_arena_.deallocate(ptr, size, stream)) { return true; }
-
+    if (global_arena_.handles(size)) { return global_arena_.deallocate(ptr, size, stream); }
     lock_guard lock(mtx_);
     return deallocate_from_superblock({ptr, size});
   }
@@ -795,7 +791,7 @@ class arena {
     auto sb = global_arena_.acquire(size);
     if (sb.is_valid()) {
       auto const b = sb.first_fit(size);
-      superblocks_.try_emplace(sb.pointer(), std::move(sb));
+      superblocks_.insert(std::make_pair(sb.pointer(), std::move(sb)));
       return b;
     }
     return {};

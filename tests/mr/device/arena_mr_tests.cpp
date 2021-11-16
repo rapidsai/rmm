@@ -315,6 +315,70 @@ TEST(ArenaTest, GlobalArenaReleaseMergePreviousAndNext)  // NOLINT
   EXPECT_EQ(p, fake_address3);
 }
 
+TEST(ArenaTest, GlobalArenaReleaseMultiple)  // NOLINT
+{
+  mock_memory_resource mock;
+  EXPECT_CALL(mock, allocate(16777216)).WillOnce(Return(fake_address3));
+  EXPECT_CALL(mock, deallocate(fake_address3, 16777216));
+
+  global_arena ga{&mock, 16777216};
+
+  std::map<void*, superblock> superblocks{};
+  auto sb = ga.acquire(256);
+  superblocks.insert(std::make_pair(sb.pointer(), std::move(sb)));
+  auto sb2 = ga.acquire(1024);
+  superblocks.insert(std::make_pair(sb2.pointer(), std::move(sb2)));
+  auto sb3 = ga.acquire(512);
+  superblocks.insert(std::make_pair(sb3.pointer(), std::move(sb3)));
+  ga.release(superblocks);
+  auto* p = ga.allocate(16777216);
+  EXPECT_EQ(p, fake_address3);
+}
+
+TEST(ArenaTest, GlobalArenaAllocate)  // NOLINT
+{
+  mock_memory_resource mock;
+  EXPECT_CALL(mock, allocate(8388608)).WillOnce(Return(fake_address3));
+  EXPECT_CALL(mock, deallocate(fake_address3, 8388608));
+
+  global_arena ga{&mock, 8388608};
+
+  auto* ptr = ga.allocate(4194304);
+  EXPECT_EQ(ptr, fake_address3);
+  auto* ptr2 = ga.allocate(4194304);
+  EXPECT_EQ(ptr2, fake_address4);
+}
+
+TEST(ArenaTest, GlobalArenaDeallocate)  // NOLINT
+{
+  mock_memory_resource mock;
+  EXPECT_CALL(mock, allocate(8388608)).WillOnce(Return(fake_address3));
+  EXPECT_CALL(mock, deallocate(fake_address3, 8388608));
+
+  global_arena ga{&mock, 8388608};
+
+  auto* ptr = ga.allocate(4194304);
+  EXPECT_EQ(ptr, fake_address3);
+  EXPECT_TRUE(ga.deallocate(ptr, 4194304, {}));
+  ptr = ga.allocate(4194304);
+  EXPECT_EQ(ptr, fake_address3);
+}
+
+TEST(ArenaTest, GlobalArenaDeallocateFromOtherArena)  // NOLINT
+{
+  mock_memory_resource mock;
+  EXPECT_CALL(mock, allocate(8388608)).WillOnce(Return(fake_address3));
+  EXPECT_CALL(mock, deallocate(fake_address3, 8388608));
+
+  global_arena ga{&mock, 8388608};
+
+  auto sb = ga.acquire(512);
+  auto const b = sb.first_fit(512);
+  ga.release(std::move(sb));
+  ga.deallocate_from_other_arena(b.pointer(), b.size());
+  EXPECT_EQ(ga.allocate(8388608), fake_address3);
+}
+
 /**
  * Test arena_memory_resource.
  */
