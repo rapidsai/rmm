@@ -38,6 +38,7 @@ using memory_span  = rmm::mr::detail::arena::memory_span;
 using block        = rmm::mr::detail::arena::block;
 using superblock   = rmm::mr::detail::arena::superblock;
 using global_arena = rmm::mr::detail::arena::global_arena<mock_memory_resource>;
+using arena        = rmm::mr::detail::arena::arena<mock_memory_resource>;
 using arena_mr     = rmm::mr::arena_memory_resource<rmm::mr::device_memory_resource>;
 using ::testing::Return;
 
@@ -288,7 +289,7 @@ TEST(ArenaTest, GlobalArenaReleaseMergePrevious)  // NOLINT
 
   global_arena ga{&mock, 16777216};
 
-  auto sb = ga.acquire(256);
+  auto sb  = ga.acquire(256);
   auto sb2 = ga.acquire(1024);
   ga.acquire(512);
   ga.release(std::move(sb));
@@ -305,7 +306,7 @@ TEST(ArenaTest, GlobalArenaReleaseMergePreviousAndNext)  // NOLINT
 
   global_arena ga{&mock, 16777216};
 
-  auto sb = ga.acquire(256);
+  auto sb  = ga.acquire(256);
   auto sb2 = ga.acquire(1024);
   auto sb3 = ga.acquire(512);
   ga.release(std::move(sb));
@@ -372,11 +373,89 @@ TEST(ArenaTest, GlobalArenaDeallocateFromOtherArena)  // NOLINT
 
   global_arena ga{&mock, 8388608};
 
-  auto sb = ga.acquire(512);
+  auto sb      = ga.acquire(512);
   auto const b = sb.first_fit(512);
   ga.release(std::move(sb));
   ga.deallocate_from_other_arena(b.pointer(), b.size());
   EXPECT_EQ(ga.allocate(8388608), fake_address3);
+}
+
+/**
+ * Test arena.
+ */
+
+TEST(ArenaTest, ArenaAllocate)  // NOLINT
+{
+  mock_memory_resource mock;
+  EXPECT_CALL(mock, allocate(8388608)).WillOnce(Return(fake_address3));
+  EXPECT_CALL(mock, deallocate(fake_address3, 8388608));
+  global_arena ga{&mock, 8388608};
+  arena a{ga};
+
+  EXPECT_EQ(a.allocate(4194304), fake_address3);
+  EXPECT_EQ(a.allocate(256), fake_address4);
+}
+
+TEST(ArenaTest, ArenaDeallocate)  // NOLINT
+{
+  mock_memory_resource mock;
+  EXPECT_CALL(mock, allocate(8388608)).WillOnce(Return(fake_address3));
+  EXPECT_CALL(mock, deallocate(fake_address3, 8388608));
+  global_arena ga{&mock, 8388608};
+  arena a{ga};
+
+  auto* ptr = a.allocate(4194304);
+  a.deallocate(ptr, 4194304, {});
+  auto* ptr2 = a.allocate(256);
+  a.deallocate(ptr2, 256, {});
+  EXPECT_EQ(a.allocate(8388608), fake_address3);
+}
+
+TEST(ArenaTest, ArenaDeallocateMergePrevious)  // NOLINT
+{
+  mock_memory_resource mock;
+  EXPECT_CALL(mock, allocate(8388608)).WillOnce(Return(fake_address3));
+  EXPECT_CALL(mock, deallocate(fake_address3, 8388608));
+  global_arena ga{&mock, 8388608};
+  arena a{ga};
+
+  auto* ptr  = a.allocate(256);
+  auto* ptr2 = a.allocate(256);
+  a.allocate(256);
+  a.deallocate(ptr, 256, {});
+  a.deallocate(ptr2, 256, {});
+  EXPECT_EQ(a.allocate(512), fake_address3);
+}
+
+TEST(ArenaTest, ArenaDeallocateMergeNext)  // NOLINT
+{
+  mock_memory_resource mock;
+  EXPECT_CALL(mock, allocate(8388608)).WillOnce(Return(fake_address3));
+  EXPECT_CALL(mock, deallocate(fake_address3, 8388608));
+  global_arena ga{&mock, 8388608};
+  arena a{ga};
+
+  auto* ptr  = a.allocate(256);
+  auto* ptr2 = a.allocate(256);
+  a.allocate(256);
+  a.deallocate(ptr2, 256, {});
+  a.deallocate(ptr, 256, {});
+  EXPECT_EQ(a.allocate(512), fake_address3);
+}
+
+TEST(ArenaTest, ArenaDeallocateMergePreviousAndNext)  // NOLINT
+{
+  mock_memory_resource mock;
+  EXPECT_CALL(mock, allocate(8388608)).WillOnce(Return(fake_address3));
+  EXPECT_CALL(mock, deallocate(fake_address3, 8388608));
+  global_arena ga{&mock, 8388608};
+  arena a{ga};
+
+  auto* ptr  = a.allocate(256);
+  auto* ptr2 = a.allocate(256);
+  a.deallocate(ptr, 256, {});
+  a.deallocate(ptr2, 256, {});
+  EXPECT_EQ(a.allocate(2048), fake_address3);
 }
 
 /**

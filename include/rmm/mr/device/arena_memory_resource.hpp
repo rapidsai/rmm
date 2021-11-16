@@ -201,7 +201,7 @@ class arena_memory_resource final : public device_memory_resource {
   {
     stream.synchronize_no_throw();
 
-    read_lock lock(mtx_);
+    write_lock lock(mtx_);
 
     if (use_per_thread_arena(stream)) {
       auto const id = std::this_thread::get_id();

@@ -108,7 +108,7 @@ class block final : public memory_span {
    */
   [[nodiscard]] bool fits(std::size_t sz) const
   {
-    if (!is_valid()) { RMM_LOGGING_ASSERT(is_valid()); }
+    RMM_LOGGING_ASSERT(is_valid());
     RMM_LOGGING_ASSERT(sz > 0);
     return size() >= sz;
   }
@@ -557,9 +557,7 @@ class global_arena final {
   {
     RMM_LOGGING_ASSERT(size >= superblock::minimum_size);
     upstream_block_ = {upstream_mr_->allocate(size), size};
-    if (!upstream_block_.is_valid()) { RMM_FAIL("Failed to allocate memory from upstream"); }
-    superblocks_.insert(
-      std::make_pair(upstream_block_.pointer(), superblock(upstream_block_.pointer(), size)));
+    superblocks_.try_emplace(upstream_block_.pointer(), upstream_block_.pointer(), size);
   }
 
   /**
