@@ -188,7 +188,7 @@ class superblock final : public memory_span {
    */
   superblock(void* pointer, std::size_t size) : memory_span{pointer, size}
   {
-    RMM_LOGGING_ASSERT(size >= minimum_size / 2);
+    RMM_LOGGING_ASSERT(size > minimum_size / 2);
     free_blocks_.emplace(pointer, size);
   }
 
@@ -321,6 +321,11 @@ class superblock final : public memory_span {
     RMM_LOGGING_ASSERT(b.is_valid());
     RMM_LOGGING_ASSERT(contains(b));
 
+    if (free_blocks_.empty()) {
+      free_blocks_.insert(b);
+      return;
+    }
+
     // Find the right place (in ascending address order) to insert the block.
     auto const next     = free_blocks_.lower_bound(b);
     auto const previous = next == free_blocks_.cbegin() ? next : std::prev(next);
@@ -348,12 +353,12 @@ class superblock final : public memory_span {
   }
 
   /**
-   * @brief Find the max free block.
-   * @return the max free block.
+   * @brief Find the max free block size.
+   * @return the max free block size.
    */
-  [[nodiscard]] block max_free() const
+  [[nodiscard]] std::size_t max_free() const
   {
-    return *std::max_element(free_blocks_.cbegin(), free_blocks_.cend(), block_size_compare);
+    return std::max_element(free_blocks_.cbegin(), free_blocks_.cend(), block_size_compare)->size();
   }
 
  private:
@@ -366,7 +371,7 @@ inline auto max_free(std::map<void*, superblock> const& superblocks)
 {
   std::size_t size{};
   for (auto const& kv : superblocks) {
-    size = std::max(size, kv.second.max_free().size());
+    size = std::max(size, kv.second.max_free());
   }
   return size;
 };
@@ -460,7 +465,7 @@ class global_arena final {
   {
     lock_guard lock(mtx_);
     while (!superblocks.empty()) {
-      auto&& sb = std::move(superblocks.extract(superblocks.cbegin()).mapped());
+      auto sb = std::move(superblocks.extract(superblocks.cbegin()).mapped());
       RMM_LOGGING_ASSERT(sb.is_valid());
       coalesce(std::move(sb));
     }
@@ -514,8 +519,14 @@ class global_arena final {
       return kv.second.contains(b);
     });
     if (iter == superblocks_.end()) { RMM_FAIL("allocation not found"); }
-    iter->second.coalesce(b);
-    if (iter->second.empty()) { coalesce(std::move(superblocks_.extract(iter).mapped())); }
+
+    auto sb = std::move(superblocks_.extract(iter).mapped());
+    sb.coalesce(b);
+    if (sb.empty()) {
+      coalesce(std::move(sb));
+    } else {
+      superblocks_.insert(std::make_pair(sb.pointer(), std::move(sb)));
+    }
   }
 
   /**
@@ -600,6 +611,11 @@ class global_arena final {
   void coalesce(superblock&& sb)
   {
     RMM_LOGGING_ASSERT(sb.is_valid());
+
+    if (superblocks_.empty()) {
+      superblocks_.insert(std::make_pair(sb.pointer(), std::move(sb)));
+      return;
+    }
 
     // Find the right place (in ascending address order) to insert the block.
     auto const next     = superblocks_.lower_bound(sb.pointer());
@@ -773,9 +789,13 @@ class arena {
     });
     if (iter == superblocks_.end()) { return false; }
 
-    auto& sb = iter->second;
+    auto sb = std::move(superblocks_.extract(iter).mapped());
     sb.coalesce(b);
-    if (sb.empty()) { global_arena_.release(std::move(superblocks_.extract(iter).mapped())); }
+    if (sb.empty()) {
+      global_arena_.release(std::move(sb));
+    } else {
+      superblocks_.insert(std::make_pair(sb.pointer(), std::move(sb)));
+    }
     return true;
   }
 

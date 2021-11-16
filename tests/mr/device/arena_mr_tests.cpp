@@ -198,6 +198,15 @@ TEST(ArenaTest, SuperblockFirstFit)  // NOLINT
   EXPECT_EQ(b3.size(), 512);
 }
 
+TEST(ArenaTest, SuperblockCoalesceAfterFull)  // NOLINT
+{
+  superblock sb{fake_address3, 4194304};
+  auto const b = sb.first_fit(2097152);
+  sb.first_fit(2097152);
+  sb.coalesce(b);
+  EXPECT_TRUE(sb.first_fit(2097152).is_valid());
+}
+
 TEST(ArenaTest, SuperblockCoalesceMergeNext)  // NOLINT
 {
   superblock sb{fake_address3, 4194304};
@@ -232,8 +241,7 @@ TEST(ArenaTest, SuperblockMaxFree)  // NOLINT
 {
   superblock sb{fake_address3, 4194304};
   sb.first_fit(2097152);
-  auto const b = sb.max_free();
-  EXPECT_EQ(b.size(), 2097152);
+  EXPECT_EQ(sb.max_free(), 2097152);
 }
 
 /**
