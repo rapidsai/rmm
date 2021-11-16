@@ -395,7 +395,8 @@ class global_arena final {
     : upstream_mr_{upstream_mr}
   {
     RMM_EXPECTS(nullptr != upstream_mr_, "Unexpected null upstream pointer.");
-    auto const size = rmm::detail::align_down_cuda(arena_size.value_or(default_size()));
+    auto const size = rmm::detail::align_down(arena_size.value_or(default_size()),
+                                              rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
     initialize(size);
   }
 

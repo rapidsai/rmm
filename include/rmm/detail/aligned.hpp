@@ -63,18 +63,6 @@ constexpr std::size_t align_up(std::size_t value, std::size_t alignment) noexcep
 }
 
 /**
- * @brief Align up to nearest multiple of the CUDA allocation alignment
- *
- * @param[in] v value to align
- *
- * @return Return the aligned value, as one would expect
- */
-constexpr std::size_t align_up_cuda(std::size_t value) noexcept
-{
-  return align_up(value, CUDA_ALLOCATION_ALIGNMENT);
-}
-
-/**
  * @brief Align down to the nearest multiple of specified power of 2
  *
  * @param[in] v value to align
@@ -89,18 +77,6 @@ constexpr std::size_t align_down(std::size_t value, std::size_t alignment) noexc
 }
 
 /**
- * @brief Align down to the nearest multiple of the CUDA allocation alignment
- *
- * @param[in] v value to align
- *
- * @return Return the aligned value, as one would expect
- */
-constexpr std::size_t align_down_cuda(std::size_t value) noexcept
-{
-  return align_down(value, CUDA_ALLOCATION_ALIGNMENT);
-}
-
-/**
  * @brief Checks whether a value is aligned to a multiple of a specified power of 2
  *
  * @param[in] v value to check for alignment
@@ -112,18 +88,6 @@ constexpr bool is_aligned(std::size_t value, std::size_t alignment) noexcept
 {
   assert(is_supported_alignment(alignment));
   return value == align_down(value, alignment);
-}
-
-/**
- * @brief Checks whether a value is aligned to a multiple of the CUDA allocation alignment
- *
- * @param[in] v value to check for alignment
- *
- * @return true if aligned
- */
-constexpr bool is_cuda_aligned(std::size_t value) noexcept
-{
-  return is_aligned(value, CUDA_ALLOCATION_ALIGNMENT);
 }
 
 inline bool is_pointer_aligned(void* ptr, std::size_t alignment = CUDA_ALLOCATION_ALIGNMENT)

@@ -473,7 +473,8 @@ TEST(ArenaTest, AllocateNinetyPercent)  // NOLINT
   EXPECT_NO_THROW([]() {  // NOLINT(cppcoreguidelines-avoid-goto)
     auto const free = rmm::detail::available_device_memory().first;
     auto const ninety_percent =
-      rmm::detail::align_up_cuda(static_cast<std::size_t>(static_cast<double>(free) * 0.9));
+      rmm::detail::align_up(static_cast<std::size_t>(static_cast<double>(free) * 0.9),
+                            rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
     arena_mr mr(rmm::mr::get_current_device_resource(), ninety_percent);
   }());
 }

@@ -154,7 +154,7 @@ class arena_memory_resource final : public device_memory_resource {
   {
     if (bytes <= 0) { return nullptr; }
 
-    bytes         = rmm::detail::align_up_cuda(bytes);
+    bytes         = rmm::detail::align_up(bytes, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
     auto& arena   = get_arena(stream);
     void* pointer = arena.allocate(bytes);
 
@@ -183,7 +183,7 @@ class arena_memory_resource final : public device_memory_resource {
   {
     if (ptr == nullptr || bytes <= 0) { return; }
 
-    bytes = rmm::detail::align_up_cuda(bytes);
+    bytes = rmm::detail::align_up(bytes, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
     if (!get_arena(stream).deallocate(ptr, bytes, stream)) {
       deallocate_from_other_arena(ptr, bytes, stream);
     }
