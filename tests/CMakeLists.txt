@@ -96,6 +96,9 @@ endfunction()
 # device mr tests
 ConfigureTest(DEVICE_MR_TEST mr/device/mr_tests.cpp mr/device/mr_multithreaded_tests.cpp)
 
+# general adaptor tests
+ConfigureTest(ADAPTOR_TEST mr/device/adaptor_tests.cpp)
+
 # pool mr tests
 ConfigureTest(POOL_MR_TEST mr/device/pool_mr_tests.cpp)
 
@@ -110,9 +113,6 @@ ConfigureTest(POLYMORPHIC_ALLOCATOR_TEST mr/device/polymorphic_allocator_tests.c
 
 # stream allocator adaptor tests
 ConfigureTest(STREAM_ADAPTOR_TEST mr/device/stream_allocator_adaptor_tests.cpp)
-
-# thread-safe adaptor tests
-ConfigureTest(THREAD_SAFE_ADAPTOR_TEST mr/device/thread_safe_adaptor_tests.cpp)
 
 # statistics adaptor tests
 ConfigureTest(STATISTICS_TEST mr/device/statistics_mr_tests.cpp)
