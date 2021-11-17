@@ -59,10 +59,10 @@ function(ConfigureTestInternal TEST_NAME)
       target_compile_options(
         ${TEST_NAME}
         PUBLIC
-          $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=--coverage,-fprofile-abs-path,-fkeep-inline-functions,-fno-elide-constructors>
+          $<$<COMPILE_LANGUAGE:CUDA>:-O0 -Xcompiler=-O0,--coverage,-fprofile-abs-path,-fkeep-inline-functions,-fno-elide-constructors>
       )
       target_compile_options(
-        ${TEST_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CXX>:--coverage -fprofile-abs-path
+        ${TEST_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-O0 --coverage -fprofile-abs-path
                             -fkeep-inline-functions -fno-elide-constructors>)
       target_link_options(${TEST_NAME} PRIVATE --coverage)
       target_link_libraries(${TEST_NAME} gcov)
@@ -146,3 +146,6 @@ ConfigureTest(LOGGER_TEST logger_tests.cpp)
 
 # uvector tests
 ConfigureTest(DEVICE_UVECTOR_TEST device_uvector_tests.cpp)
+
+# arena MR tests
+ConfigureTest(ARENA_MR_TEST mr/device/arena_mr_tests.cpp)

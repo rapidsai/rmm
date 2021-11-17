@@ -15,12 +15,14 @@
  */
 
 #include <benchmarks/utilities/log_parser.hpp>
+
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/logging_resource_adaptor.hpp>
-#include <thread>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+
+#include <thread>
 
 class raii_restore_env {
  public:
