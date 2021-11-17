@@ -332,13 +332,13 @@ TEST(ArenaTest, GlobalArenaReleaseMultiple)  // NOLINT
 
   global_arena ga{&mock, 16777216};
 
-  std::map<void*, superblock> superblocks{};
+  std::set<superblock> superblocks{};
   auto sb = ga.acquire(256);
-  superblocks.insert(std::make_pair(sb.pointer(), std::move(sb)));
+  superblocks.insert(std::move(sb));
   auto sb2 = ga.acquire(1024);
-  superblocks.insert(std::make_pair(sb2.pointer(), std::move(sb2)));
+  superblocks.insert(std::move(sb2));
   auto sb3 = ga.acquire(512);
-  superblocks.insert(std::make_pair(sb3.pointer(), std::move(sb3)));
+  superblocks.insert(std::move(sb3));
   ga.release(superblocks);
   auto* p = ga.allocate(16777216);
   EXPECT_EQ(p, fake_address3);
