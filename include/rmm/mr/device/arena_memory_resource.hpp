@@ -92,24 +92,6 @@ class arena_memory_resource final : public device_memory_resource {
     }
   }
 
-  /**
-   * @brief Construct an `arena_memory_resource`.
-   *
-   * @throws rmm::logic_error if `upstream_mr == nullptr`.
-   *
-   * @param upstream_mr The memory resource from which to allocate blocks for the pool.
-   * @param arena_size Size in bytes of the global arena. Defaults to all the available memory on
-   * the current device.
-   * @param max_size Unused.
-   * @deprecated Use the version without the max size.
-   */
-  arena_memory_resource(Upstream* upstream_mr,
-                        std::optional<std::size_t> arena_size,
-                        std::optional<std::size_t> max_size)
-    : arena_memory_resource{upstream_mr, arena_size, false}
-  {
-  }
-
   ~arena_memory_resource() override = default;
 
   // Disable copy (and move) semantics.

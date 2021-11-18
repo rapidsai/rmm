@@ -284,7 +284,7 @@ TEST(ArenaTest, GlobalArenaReleaseMergeNext)  // NOLINT
   global_arena ga{&mock, 8388608};
 
   auto sb = ga.acquire(256);
-  ga.release(std::move(sb));
+  ga.release(std::move(sb), {});
   auto* p = ga.allocate(8388608);
   EXPECT_EQ(p, fake_address3);
 }
@@ -300,8 +300,8 @@ TEST(ArenaTest, GlobalArenaReleaseMergePrevious)  // NOLINT
   auto sb  = ga.acquire(256);
   auto sb2 = ga.acquire(1024);
   ga.acquire(512);
-  ga.release(std::move(sb));
-  ga.release(std::move(sb2));
+  ga.release(std::move(sb), {});
+  ga.release(std::move(sb2), {});
   auto* p = ga.allocate(8388608);
   EXPECT_EQ(p, fake_address3);
 }
@@ -317,9 +317,9 @@ TEST(ArenaTest, GlobalArenaReleaseMergePreviousAndNext)  // NOLINT
   auto sb  = ga.acquire(256);
   auto sb2 = ga.acquire(1024);
   auto sb3 = ga.acquire(512);
-  ga.release(std::move(sb));
-  ga.release(std::move(sb3));
-  ga.release(std::move(sb2));
+  ga.release(std::move(sb), {});
+  ga.release(std::move(sb3), {});
+  ga.release(std::move(sb2), {});
   auto* p = ga.allocate(16777216);
   EXPECT_EQ(p, fake_address3);
 }
@@ -383,7 +383,7 @@ TEST(ArenaTest, GlobalArenaDeallocateFromOtherArena)  // NOLINT
 
   auto sb      = ga.acquire(512);
   auto const b = sb.first_fit(512);
-  ga.release(std::move(sb));
+  ga.release(std::move(sb), {});
   ga.deallocate_from_other_arena(b.pointer(), b.size());
   EXPECT_EQ(ga.allocate(8388608), fake_address3);
 }

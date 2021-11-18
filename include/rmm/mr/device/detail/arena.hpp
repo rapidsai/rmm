@@ -446,10 +446,12 @@ class global_arena final {
    * @brief Release a superblock.
    *
    * @param s Superblock to be released.
+   * @param stream The stream to synchronize on before releasing.
    */
-  void release(superblock&& sb)
+  void release(superblock&& sb, cuda_stream_view stream)
   {
     RMM_LOGGING_ASSERT(sb.is_valid());
+    stream.synchronize_no_throw();
     lock_guard lock(mtx_);
     coalesce(std::move(sb));
   }
@@ -702,7 +704,7 @@ class arena {
   {
     if (global_arena_.handles(size)) { return global_arena_.deallocate(ptr, size, stream); }
     lock_guard lock(mtx_);
-    return deallocate_from_superblock({ptr, size});
+    return deallocate_from_superblock({ptr, size}, stream);
   }
 
   /**
@@ -779,9 +781,10 @@ class arena {
    * @brief Deallocate a block from the superblock it belongs to.
    *
    * @param b The block to deallocate.
+   * @param stream The stream to use for deallocation.
    * @return true if the block is found.
    */
-  bool deallocate_from_superblock(block const& b)
+  bool deallocate_from_superblock(block const& b, cuda_stream_view stream)
   {
     auto const iter = std::find_if(
       superblocks_.cbegin(), superblocks_.cend(), [&](auto const& sb) { return sb.contains(b); });
@@ -790,7 +793,7 @@ class arena {
     auto sb = std::move(superblocks_.extract(iter).value());
     sb.coalesce(b);
     if (sb.empty()) {
-      global_arena_.release(std::move(sb));
+      global_arena_.release(std::move(sb), stream);
     } else {
       superblocks_.insert(std::move(sb));
     }
