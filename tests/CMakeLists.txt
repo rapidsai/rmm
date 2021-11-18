@@ -16,12 +16,6 @@
 option(DISABLE_DEPRECATION_WARNING "Disable warnings generated from deprecated declarations." OFF)
 option(CODE_COVERAGE "Enable generating code coverage with gcov." OFF)
 
-if(CODE_COVERAGE)
-  if(NOT (CMAKE_BUILD_TYPE STREQUAL "Debug"))
-    message(WARNING "Generating code coverage for optimised (non-Debug) builds not recommended")
-  endif()
-endif()
-
 # This function takes in a test name and test source and handles setting all of the associated
 # properties and linking to build the test
 function(ConfigureTestInternal TEST_NAME)
@@ -59,7 +53,8 @@ function(ConfigureTestInternal TEST_NAME)
       target_compile_options(
         ${TEST_NAME}
         PUBLIC
-          $<$<COMPILE_LANGUAGE:CUDA>:-O0 -Xcompiler=-O0,--coverage,-fprofile-abs-path,-fkeep-inline-functions,-fno-elide-constructors>
+          $<$<COMPILE_LANGUAGE:CUDA>:-O0
+          -Xcompiler=--coverage,-fprofile-abs-path,-fkeep-inline-functions,-fno-elide-constructors>
       )
       target_compile_options(
         ${TEST_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-O0 --coverage -fprofile-abs-path
