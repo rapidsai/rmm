@@ -134,7 +134,7 @@ class block final : public memory_span {
   [[nodiscard]] std::pair<block, block> split(std::size_t sz) const
   {
     RMM_LOGGING_ASSERT(is_valid());
-    RMM_LOGGING_ASSERT(size() >= sz);
+    RMM_LOGGING_ASSERT(size() > sz);
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     return {{pointer(), sz}, {pointer() + sz, size() - sz}};
   }
@@ -149,8 +149,6 @@ class block final : public memory_span {
    */
   [[nodiscard]] block merge(block const& b) const
   {
-    RMM_LOGGING_ASSERT(is_valid());
-    RMM_LOGGING_ASSERT(b.is_valid());
     RMM_LOGGING_ASSERT(is_contiguous_before(b));
     return {pointer(), size() + b.size()};
   }
@@ -313,7 +311,7 @@ class superblock final : public memory_span {
    *
    * @param b The block to coalesce.
    */
-  void coalesce(block const& b)
+  void coalesce(block const& b)  // NOLINT(readability-function-cognitive-complexity)
   {
     RMM_LOGGING_ASSERT(is_valid());
     RMM_LOGGING_ASSERT(b.is_valid());
@@ -417,7 +415,6 @@ class global_arena final {
   {
     lock_guard lock(mtx_);
     upstream_mr_->deallocate(upstream_block_.pointer(), upstream_block_.size());
-    superblocks_.clear();
   }
 
   /**
@@ -491,15 +488,13 @@ class global_arena final {
    * @param size The size in bytes of the allocation. This must be equal to the value of `size`
    * that was passed to the `allocate` call that returned `p`.
    * @param stream Stream on which to perform deallocation.
-   * @return bool true if the allocation is found, false otherwise.
    */
-  bool deallocate(void* ptr, std::size_t size, cuda_stream_view stream)
+  void deallocate(void* ptr, std::size_t size, cuda_stream_view stream)
   {
     RMM_LOGGING_ASSERT(handles(size));
     stream.synchronize_no_throw();
     lock_guard lock(mtx_);
     coalesce({ptr, size});
-    return true;
   }
 
   /**
@@ -702,7 +697,10 @@ class arena {
    */
   bool deallocate(void* ptr, std::size_t size, cuda_stream_view stream)
   {
-    if (global_arena_.handles(size)) { return global_arena_.deallocate(ptr, size, stream); }
+    if (global_arena_.handles(size)) {
+      global_arena_.deallocate(ptr, size, stream);
+      return true;
+    }
     lock_guard lock(mtx_);
     return deallocate_from_superblock({ptr, size}, stream);
   }

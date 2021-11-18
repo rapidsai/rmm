@@ -368,7 +368,7 @@ TEST(ArenaTest, GlobalArenaDeallocate)  // NOLINT
 
   auto* ptr = ga.allocate(4194304);
   EXPECT_EQ(ptr, fake_address3);
-  EXPECT_TRUE(ga.deallocate(ptr, 4194304, {}));
+  ga.deallocate(ptr, 4194304, {});
   ptr = ga.allocate(4194304);
   EXPECT_EQ(ptr, fake_address3);
 }

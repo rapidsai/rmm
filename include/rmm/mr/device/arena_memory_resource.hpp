@@ -78,9 +78,9 @@ class arena_memory_resource final : public device_memory_resource {
    *
    * @throws rmm::logic_error if `upstream_mr == nullptr`.
    *
-   * @param upstream_mr The memory resource from which to allocate blocks for the pool.
-   * @param arena_size Size in bytes of the global arena. Defaults to all the available memory on
-   * the current device.
+   * @param upstream_mr The memory resource from which to allocate blocks for the global arena.
+   * @param arena_size Size in bytes of the global arena. Defaults to half of the available memory
+   * on the current device.
    */
   explicit arena_memory_resource(Upstream* upstream_mr,
                                  std::optional<std::size_t> arena_size = std::nullopt,
@@ -126,7 +126,7 @@ class arena_memory_resource final : public device_memory_resource {
    *
    * The returned pointer has at least 256-byte alignment.
    *
-   * @throws `std::bad_alloc` if the requested allocation could not be fulfilled.
+   * @throws `rmm::out_of_memory` if no more memory is available for the requested size.
    *
    * @param bytes The size in bytes of the allocation.
    * @param stream The stream to associate this allocation with.
@@ -153,7 +153,7 @@ class arena_memory_resource final : public device_memory_resource {
    *
    * @param ptr Pointer to be deallocated.
    * @param bytes The size in bytes of the allocation. This must be equal to the
-   * value of `bytes` that was passed to the `allocate` call that returned `p`.
+   * value of `bytes` that was passed to the `allocate` call that returned `ptr`.
    * @param stream Stream on which to perform deallocation.
    */
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
@@ -176,19 +176,21 @@ class arena_memory_resource final : public device_memory_resource {
    */
   void deallocate_from_other_arena(void* ptr, std::size_t bytes, cuda_stream_view stream)
   {
+    // Since we are returning this memory to another stream, we need to make sure the current stream
+    // is caught up.
     stream.synchronize_no_throw();
 
-    read_lock lock(mtx_);
+    write_lock lock(mtx_);
 
     if (use_per_thread_arena(stream)) {
       auto const id = std::this_thread::get_id();
-      for (auto&& kv : thread_arenas_) {
+      for (auto const& kv : thread_arenas_) {
         // If the arena does not belong to the current thread, try to deallocate from it, and return
         // if successful.
         if (kv.first != id && kv.second->deallocate(ptr, bytes, stream)) { return; }
       }
     } else {
-      for (auto&& kv : stream_arenas_) {
+      for (auto& kv : stream_arenas_) {
         // If the arena does not belong to the current stream, try to deallocate from it, and return
         // if successful.
         if (stream.value() != kv.first && kv.second.deallocate(ptr, bytes, stream)) { return; }
