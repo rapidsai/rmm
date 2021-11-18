@@ -366,6 +366,7 @@ class pool_memory_resource final
     current_pool_size_ = 0;
   }
 
+#if 0  // disabled when not debugging
   /**
    * @brief Print debugging information about all blocks in the pool.
    *
@@ -376,7 +377,7 @@ class pool_memory_resource final
   {
     lock_guard lock(this->get_mutex());
 
-    auto const [free, total] = upstream_mr_->get_mem_info(0);
+    auto const [free, total] = upstream_mr_->get_mem_info(rmm::cuda_stream_default);
     std::cout << "GPU free memory: " << free << " total: " << total << "\n";
 
     std::cout << "upstream_blocks: " << upstream_blocks_.size() << "\n";
@@ -396,6 +397,7 @@ class pool_memory_resource final
 
     this->print_free_blocks();
   }
+#endif
 
   /**
    * @brief Get the largest available block size and total free size in the specified free list
