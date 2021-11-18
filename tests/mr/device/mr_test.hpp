@@ -135,7 +135,7 @@ inline void test_various_allocations(rmm::mr::device_memory_resource* mr, cuda_s
     try {
       ptr = mr->allocate(1_PiB, stream);
     } catch (rmm::out_of_memory const& e) {
-      EXPECT_NE(e.what(), "");
+      EXPECT_NE(std::string{e.what()}.find("out_of_memory"), std::string::npos);
     }
   }
 }
