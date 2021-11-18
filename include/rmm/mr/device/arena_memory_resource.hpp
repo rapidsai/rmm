@@ -180,17 +180,17 @@ class arena_memory_resource final : public device_memory_resource {
     // is caught up.
     stream.synchronize_no_throw();
 
-    write_lock lock(mtx_);
+    read_lock lock(mtx_);
 
     if (use_per_thread_arena(stream)) {
       auto const id = std::this_thread::get_id();
-      for (auto const& kv : thread_arenas_) {
+      for (auto&& kv : thread_arenas_) {
         // If the arena does not belong to the current thread, try to deallocate from it, and return
         // if successful.
         if (kv.first != id && kv.second->deallocate(ptr, bytes, stream)) { return; }
       }
     } else {
-      for (auto& kv : stream_arenas_) {
+      for (auto&& kv : stream_arenas_) {
         // If the arena does not belong to the current stream, try to deallocate from it, and return
         // if successful.
         if (stream.value() != kv.first && kv.second.deallocate(ptr, bytes, stream)) { return; }

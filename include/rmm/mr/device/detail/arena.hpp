@@ -185,6 +185,7 @@ class superblock final : public memory_span {
   superblock(void* pointer, std::size_t size) : memory_span{pointer, size}
   {
     RMM_LOGGING_ASSERT(size > minimum_size / 2);
+    RMM_LOGGING_ASSERT(size < 1UL << 40UL);
     free_blocks_.emplace(pointer, size);
   }
 
@@ -259,7 +260,7 @@ class superblock final : public memory_span {
   [[nodiscard]] std::pair<superblock, superblock> split(std::size_t sz) const
   {
     RMM_LOGGING_ASSERT(is_valid());
-    RMM_LOGGING_ASSERT(empty() && sz >= minimum_size && size() - sz >= minimum_size);
+    RMM_LOGGING_ASSERT(empty() && sz >= minimum_size && size() >= sz + minimum_size);
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     return {superblock{pointer(), sz}, superblock{pointer() + sz, size() - sz}};
   }
@@ -587,7 +588,7 @@ class global_arena final {
 
     auto sb       = std::move(superblocks_.extract(iter).value());
     auto const sz = std::max(size, superblock::minimum_size);
-    if (sb.empty() && sb.size() - sz >= superblock::minimum_size) {
+    if (sb.empty() && sb.size() >= sz + superblock::minimum_size) {
       // Split the superblock and put the remainder back.
       auto [head, tail] = sb.split(sz);
       superblocks_.insert(std::move(tail));
