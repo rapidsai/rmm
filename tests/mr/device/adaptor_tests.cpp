@@ -24,6 +24,7 @@
 #include <rmm/mr/device/failure_callback_resource_adaptor.hpp>
 #include <rmm/mr/device/limiting_resource_adaptor.hpp>
 #include <rmm/mr/device/logging_resource_adaptor.hpp>
+#include <rmm/mr/device/owning_wrapper.hpp>
 #include <rmm/mr/device/statistics_resource_adaptor.hpp>
 #include <rmm/mr/device/thread_safe_resource_adaptor.hpp>
 #include <rmm/mr/device/tracking_resource_adaptor.hpp>
@@ -43,40 +44,38 @@ using rmm::mr::logging_resource_adaptor;
 using rmm::mr::statistics_resource_adaptor;
 using rmm::mr::thread_safe_resource_adaptor;
 using rmm::mr::tracking_resource_adaptor;
+using owning_wrapper = rmm::mr::owning_wrapper<aligned_resource_adaptor<cuda_mr>, cuda_mr>;
 
 using adaptors = ::testing::Types<aligned_resource_adaptor<cuda_mr>,
                                   failure_callback_resource_adaptor<cuda_mr>,
                                   limiting_resource_adaptor<cuda_mr>,
                                   logging_resource_adaptor<cuda_mr>,
+                                  owning_wrapper,
                                   statistics_resource_adaptor<cuda_mr>,
                                   thread_safe_resource_adaptor<cuda_mr>,
                                   tracking_resource_adaptor<cuda_mr>>;
-
-/*template <typename Adaptor>
-auto make_adaptor(cuda_mr const& cuda)
-{
-  return std::make_shared<Adaptor>(&cuda);
-}*/
 
 template <typename MemoryResourceType>
 struct AdaptorTest : public ::testing::Test {
   using adaptor_type = MemoryResourceType;
   cuda_mr cuda{};
-  std::unique_ptr<adaptor_type> mr;
+  std::shared_ptr<adaptor_type> mr;
 
   AdaptorTest() : mr{make_adaptor(&cuda)} {}
 
   auto make_adaptor(cuda_mr* upstream)
   {
     if constexpr (std::is_same_v<adaptor_type, failure_callback_resource_adaptor<cuda_mr>>) {
-      return std::make_unique<adaptor_type>(
+      return std::make_shared<adaptor_type>(
         upstream, [](std::size_t bytes, void* arg) { return false; }, nullptr);
     } else if constexpr (std::is_same_v<adaptor_type, limiting_resource_adaptor<cuda_mr>>) {
-      return std::make_unique<adaptor_type>(upstream, 64_MiB);
+      return std::make_shared<adaptor_type>(upstream, 64_MiB);
     } else if constexpr (std::is_same_v<adaptor_type, logging_resource_adaptor<cuda_mr>>) {
-      return std::make_unique<adaptor_type>(upstream, "rmm_adaptor_test_log.txt");
+      return std::make_shared<adaptor_type>(upstream, "rmm_adaptor_test_log.txt");
+    } else if constexpr (std::is_same_v<adaptor_type, owning_wrapper>) {
+      return mr::make_owning_wrapper<aligned_resource_adaptor>(std::make_shared<cuda_mr>());
     } else {
-      return std::make_unique<adaptor_type>(upstream);
+      return std::make_shared<adaptor_type>(upstream);
     }
   }
 };
@@ -85,7 +84,9 @@ TYPED_TEST_CASE(AdaptorTest, adaptors);
 
 TYPED_TEST(AdaptorTest, NullUpstream)
 {
-  EXPECT_THROW(this->make_adaptor(nullptr), rmm::logic_error);
+  if constexpr (not std::is_same_v<TypeParam, owning_wrapper>) {
+    EXPECT_THROW(this->make_adaptor(nullptr), rmm::logic_error);
+  }
 }
 
 TYPED_TEST(AdaptorTest, Equality)
@@ -96,7 +97,14 @@ TYPED_TEST(AdaptorTest, Equality)
   EXPECT_TRUE(this->mr->is_equal(*other_mr));
 }
 
-TYPED_TEST(AdaptorTest, GetUpstream) { EXPECT_EQ(this->mr->get_upstream(), &this->cuda); }
+TYPED_TEST(AdaptorTest, GetUpstream)
+{
+  if constexpr (std::is_same_v<TypeParam, owning_wrapper>) {
+    EXPECT_TRUE(this->mr->wrapped().get_upstream()->is_equal(this->cuda));
+  } else {
+    EXPECT_TRUE(this->mr->get_upstream()->is_equal(this->cuda));
+  }
+}
 
 TYPED_TEST(AdaptorTest, SupportsStreams)
 {
