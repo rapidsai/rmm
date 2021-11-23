@@ -144,3 +144,6 @@ ConfigureTest(DEVICE_UVECTOR_TEST device_uvector_tests.cpp)
 
 # arena MR tests
 ConfigureTest(ARENA_MR_TEST mr/device/arena_mr_tests.cpp)
+
+# binning MR tests
+ConfigureTest(BINNING_MR_TEST mr/device/binning_mr_tests.cpp)
