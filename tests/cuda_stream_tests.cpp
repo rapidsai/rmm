@@ -81,3 +81,9 @@ TEST_F(CudaStreamTest, TestStreamViewOstream)
 
   EXPECT_EQ(oss.str(), oss_expected.str());
 }
+
+TEST_F(CudaStreamTest, TestStreamViewDestructor)
+{
+  auto view = std::make_shared<rmm::cuda_stream_view>(rmm::cuda_stream_per_thread);
+  view->synchronize();
+}
