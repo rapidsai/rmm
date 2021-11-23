@@ -6,9 +6,41 @@ Please see https://github.com/rapidsai/rmm/releases/tag/v22.02.00a for the lates
 
 Please see https://github.com/rapidsai/rmm/releases/tag/v21.12.00a for the latest changes to this development branch.
 
-# RMM 21.10.00 (Date TBD)
+# RMM 21.10.00 (7 Oct 2021)
 
-Please see https://github.com/rapidsai/rmm/releases/tag/v21.10.00a for the latest changes to this development branch.
+## 🚨 Breaking Changes
+
+- Delete cuda_async_memory_resource copy/move ctors/operators ([#860](https://github.com/rapidsai/rmm/pull/860)) [@jrhemstad](https://github.com/jrhemstad)
+
+## 🐛 Bug Fixes
+
+- Fix parameter name in asserts ([#875](https://github.com/rapidsai/rmm/pull/875)) [@vyasr](https://github.com/vyasr)
+- Disallow zero-size stream pools ([#873](https://github.com/rapidsai/rmm/pull/873)) [@harrism](https://github.com/harrism)
+- Correct namespace usage in host memory resources ([#872](https://github.com/rapidsai/rmm/pull/872)) [@divyegala](https://github.com/divyegala)
+- fix race condition in limiting resource adapter ([#869](https://github.com/rapidsai/rmm/pull/869)) [@rongou](https://github.com/rongou)
+- Install the right cudatoolkit in the conda env in gpu/build.sh ([#864](https://github.com/rapidsai/rmm/pull/864)) [@shwina](https://github.com/shwina)
+- Disable copy/move ctors and operator= from free_list classes ([#862](https://github.com/rapidsai/rmm/pull/862)) [@harrism](https://github.com/harrism)
+- Delete cuda_async_memory_resource copy/move ctors/operators ([#860](https://github.com/rapidsai/rmm/pull/860)) [@jrhemstad](https://github.com/jrhemstad)
+- Improve concurrency of stream_ordered_memory_resource by stealing less ([#851](https://github.com/rapidsai/rmm/pull/851)) [@harrism](https://github.com/harrism)
+- Use the new RAPIDS.cmake to fetch rapids-cmake ([#838](https://github.com/rapidsai/rmm/pull/838)) [@robertmaynard](https://github.com/robertmaynard)
+
+## 📖 Documentation
+
+- Forward-merge branch-21.08 to branch-21.10 ([#846](https://github.com/rapidsai/rmm/pull/846)) [@jakirkham](https://github.com/jakirkham)
+
+## 🛠️ Improvements
+
+- Forward-merge `branch-21.08` into `branch-21.10` ([#877](https://github.com/rapidsai/rmm/pull/877)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Add .clang-tidy and fix clang-tidy warnings ([#857](https://github.com/rapidsai/rmm/pull/857)) [@harrism](https://github.com/harrism)
+- Update to use rapids-cmake 21.10 pre-configured packages ([#854](https://github.com/rapidsai/rmm/pull/854)) [@robertmaynard](https://github.com/robertmaynard)
+- Clean up: use std::size_t, include cstddef and aligned.hpp where missing ([#852](https://github.com/rapidsai/rmm/pull/852)) [@harrism](https://github.com/harrism)
+- tweak the arena mr to reduce fragmentation ([#845](https://github.com/rapidsai/rmm/pull/845)) [@rongou](https://github.com/rongou)
+- Fix transitive include in cuda_device header ([#843](https://github.com/rapidsai/rmm/pull/843)) [@wphicks](https://github.com/wphicks)
+- Refactor cmake style ([#842](https://github.com/rapidsai/rmm/pull/842)) [@robertmaynard](https://github.com/robertmaynard)
+- add multi stream allocations benchmark. ([#841](https://github.com/rapidsai/rmm/pull/841)) [@cwharris](https://github.com/cwharris)
+- Enforce default visibility for `get_map`. ([#833](https://github.com/rapidsai/rmm/pull/833)) [@trivialfis](https://github.com/trivialfis)
+- ENH Replace gpuci_conda_retry with gpuci_mamba_retry ([#823](https://github.com/rapidsai/rmm/pull/823)) [@dillon-cullinan](https://github.com/dillon-cullinan)
+- Execution policy class ([#816](https://github.com/rapidsai/rmm/pull/816)) [@viclafargue](https://github.com/viclafargue)
 
 # RMM 21.08.00 (4 Aug 2021)
 
