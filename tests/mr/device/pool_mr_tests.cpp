@@ -24,11 +24,13 @@
 #include <rmm/mr/device/limiting_resource_adaptor.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
+#include "rmm/mr/device/binning_memory_resource.hpp"
 #include "rmm/mr/device/detail/fixed_size_free_list.hpp"
+#include "rmm/mr/device/fixed_size_memory_resource.hpp"
 
 #include <gtest/gtest.h>
 
-// to force coverage
+// explicit instantiation for test coverage purposes
 template class rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>;
 
 namespace rmm::test {

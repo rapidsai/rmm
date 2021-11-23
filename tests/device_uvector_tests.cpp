@@ -21,6 +21,9 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
 
+// explicit instantiation for test coverage purposes.
+template class rmm::device_uvector<int32_t>;
+
 template <typename T>
 struct TypedUVectorTest : ::testing::Test {
   [[nodiscard]] rmm::cuda_stream_view stream() const noexcept { return rmm::cuda_stream_view{}; }

@@ -34,8 +34,6 @@
 #include <cstddef>
 #include <type_traits>
 
-namespace rmm::test {
-
 using cuda_mr = rmm::mr::cuda_memory_resource;
 using rmm::mr::aligned_resource_adaptor;
 using rmm::mr::failure_callback_resource_adaptor;
@@ -45,6 +43,17 @@ using rmm::mr::statistics_resource_adaptor;
 using rmm::mr::thread_safe_resource_adaptor;
 using rmm::mr::tracking_resource_adaptor;
 using owning_wrapper = rmm::mr::owning_wrapper<aligned_resource_adaptor<cuda_mr>, cuda_mr>;
+
+// explicit instantiations for test coverage purposes
+template class rmm::mr::aligned_resource_adaptor<cuda_mr>;
+template class rmm::mr::failure_callback_resource_adaptor<cuda_mr>;
+template class rmm::mr::limiting_resource_adaptor<cuda_mr>;
+template class rmm::mr::logging_resource_adaptor<cuda_mr>;
+template class rmm::mr::statistics_resource_adaptor<cuda_mr>;
+template class rmm::mr::thread_safe_resource_adaptor<cuda_mr>;
+template class rmm::mr::tracking_resource_adaptor<cuda_mr>;
+
+namespace rmm::test {
 
 using adaptors = ::testing::Types<aligned_resource_adaptor<cuda_mr>,
                                   failure_callback_resource_adaptor<cuda_mr>,
@@ -129,6 +138,7 @@ TYPED_TEST(AdaptorTest, AllocFree)
 {
   void* ptr{nullptr};
   EXPECT_NO_THROW(ptr = this->mr->allocate(1024));
+  EXPECT_NE(ptr, nullptr);
   EXPECT_NO_THROW(this->mr->deallocate(ptr, 1024));
 }
 

@@ -21,6 +21,9 @@
 
 #include <gtest/gtest.h>
 
+// explicit instantiation for test coverage purposes
+template class rmm::mr::thrust_allocator<int>;
+
 namespace rmm::test {
 namespace {
 

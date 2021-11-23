@@ -28,6 +28,9 @@
 #include <random>
 #include <type_traits>
 
+// explicit instantiation for test coverage purposes
+template class rmm::device_scalar<int>;
+
 template <typename T>
 struct DeviceScalarTest : public ::testing::Test {
   std::default_random_engine generator{};
