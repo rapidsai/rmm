@@ -101,9 +101,17 @@ TYPED_TEST(AdaptorTest, NullUpstream)
 TYPED_TEST(AdaptorTest, Equality)
 {
   EXPECT_TRUE(this->mr->is_equal(*this->mr));
-  cuda_mr other_cuda;
-  auto other_mr = this->make_adaptor(&this->cuda);
-  EXPECT_TRUE(this->mr->is_equal(*other_mr));
+
+  {
+    auto other_mr = this->make_adaptor(&this->cuda);
+    EXPECT_TRUE(this->mr->is_equal(*other_mr));
+  }
+
+  {
+    rmm::mr::device_memory_resource* device_mr = &this->cuda;
+    auto other_mr = aligned_resource_adaptor<rmm::mr::device_memory_resource>{device_mr};
+    EXPECT_FALSE(this->mr->is_equal(other_mr));
+  }
 }
 
 TYPED_TEST(AdaptorTest, GetUpstream)
