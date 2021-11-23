@@ -66,6 +66,12 @@ class memory_span {
   /// Returns the size of the span.
   [[nodiscard]] std::size_t size() const { return size_; }
 
+  /// Returns the end of the span.
+  [[nodiscard]] char* end() const
+  {
+    return pointer_ + size_;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+  }
+
   /// Returns true if this span is valid (non-null), false otherwise.
   [[nodiscard]] bool is_valid() const { return pointer_ != nullptr && size_ > 0; }
 
@@ -168,8 +174,8 @@ inline bool block_size_compare(block const& lhs, block const& rhs)
  */
 class superblock final : public memory_span {
  public:
-  /// Minimum size of a superblock (4 MiB).
-  static constexpr std::size_t minimum_size{1U << 22U};
+  /// Minimum size of a superblock (64 MiB).
+  static constexpr std::size_t minimum_size{1U << 26U};
 
   /**
    * @brief Construct a default superblock.
@@ -184,7 +190,7 @@ class superblock final : public memory_span {
    */
   superblock(void* pointer, std::size_t size) : memory_span{pointer, size}
   {
-    RMM_LOGGING_ASSERT(size > minimum_size / 2);
+    RMM_LOGGING_ASSERT(size >= minimum_size);
     RMM_LOGGING_ASSERT(size < 1UL << 40UL);
     free_blocks_.emplace(pointer, size);
   }
@@ -207,6 +213,17 @@ class superblock final : public memory_span {
   {
     RMM_LOGGING_ASSERT(is_valid());
     return free_blocks_.size() == 1 && free_blocks_.cbegin()->size() == size();
+  }
+
+  /**
+   * @brief Return the number of free blocks.
+   *
+   * @return the number of free blocks.
+   */
+  [[nodiscard]] std::size_t free_blocks() const
+  {
+    RMM_LOGGING_ASSERT(is_valid());
+    return free_blocks_.size();
   }
 
   /**
@@ -355,6 +372,7 @@ class superblock final : public memory_span {
    */
   [[nodiscard]] std::size_t max_free() const
   {
+    if (free_blocks_.empty()) { return 0; }
     return std::max_element(free_blocks_.cbegin(), free_blocks_.cend(), block_size_compare)->size();
   }
 
@@ -424,7 +442,7 @@ class global_arena final {
    * @param size The size in bytes of the allocation.
    * @return bool True if the allocation should be handled by the global arena.
    */
-  bool handles(std::size_t size) const { return size > superblock::minimum_size / 2; }
+  bool handles(std::size_t size) const { return size > superblock::minimum_size; }
 
   /**
    * @brief Acquire a superblock that can fit a block of the given size.
@@ -437,19 +455,17 @@ class global_arena final {
     // Superblocks should only be acquired if the size is not directly handled by the global arena.
     RMM_LOGGING_ASSERT(!handles(size));
     lock_guard lock(mtx_);
-    return first_fit(size);
+    return first_fit(size, superblock::minimum_size);
   }
 
   /**
    * @brief Release a superblock.
    *
    * @param s Superblock to be released.
-   * @param stream The stream to synchronize on before releasing.
    */
-  void release(superblock&& sb, cuda_stream_view stream)
+  void release(superblock&& sb)
   {
     RMM_LOGGING_ASSERT(sb.is_valid());
-    stream.synchronize_no_throw();
     lock_guard lock(mtx_);
     coalesce(std::move(sb));
   }
@@ -479,7 +495,13 @@ class global_arena final {
   {
     RMM_LOGGING_ASSERT(handles(size));
     lock_guard lock(mtx_);
-    return first_fit(size).pointer();
+    auto const aligned = rmm::detail::align_up(size, superblock::minimum_size);
+    auto sb            = first_fit(aligned, aligned);
+    if (sb.is_valid()) {
+      RMM_LOGGING_ASSERT(large_allocations_.find(sb.pointer()) == large_allocations_.cend());
+      large_allocations_.emplace(sb.pointer(), sb.size());
+    }
+    return sb.pointer();
   }
 
   /**
@@ -495,7 +517,9 @@ class global_arena final {
     RMM_LOGGING_ASSERT(handles(size));
     stream.synchronize_no_throw();
     lock_guard lock(mtx_);
-    coalesce({ptr, size});
+    auto const allocated_size = large_allocations_.at(ptr);
+    large_allocations_.erase(ptr);
+    coalesce({ptr, allocated_size});
   }
 
   /**
@@ -539,6 +563,23 @@ class global_arena final {
       logger->info("  Total size of superblocks: {}",
                    rmm::detail::bytes{total_memory_size(superblocks_)});
       logger->info("  Size of largest free block: {}", rmm::detail::bytes{max_free(superblocks_)});
+      logger->info("  # of outstanding large allocations: {}", large_allocations_.size());
+      auto i = 0;
+      char* prev_end{};
+      for (auto const& sb : superblocks_) {
+        if (prev_end == nullptr) { prev_end = sb.pointer(); }
+        logger->info(
+          "    Superblock {}: start={}, end={}, size={}, empty={}, # free blocks={}, gap={}",
+          i,
+          fmt::ptr(sb.pointer()),
+          fmt::ptr(sb.end()),
+          rmm::detail::bytes{sb.size()},
+          sb.empty(),
+          sb.free_blocks(),
+          rmm::detail::bytes{static_cast<size_t>(sb.pointer() - prev_end)});
+        prev_end = sb.end();
+        i++;
+      }
     }
   }
 
@@ -578,19 +619,20 @@ class global_arena final {
    * Sigplan Notices, 34(3), 26-36.
    *
    * @param size The number of bytes to allocate.
+   * @param minimum_size The minimum size of the superblock required.
    * @return superblock A superblock that can fit at least `size` bytes, or empty if not found.
    */
-  superblock first_fit(std::size_t size)
+  superblock first_fit(std::size_t size, std::size_t minimum_size)
   {
-    auto const iter = std::find_if(
-      superblocks_.cbegin(), superblocks_.cend(), [size](auto const& sb) { return sb.fits(size); });
+    auto const iter = std::find_if(superblocks_.cbegin(), superblocks_.cend(), [=](auto const& sb) {
+      return sb.fits(size) && sb.size() >= minimum_size;
+    });
     if (iter == superblocks_.cend()) { return {}; }
 
-    auto sb       = std::move(superblocks_.extract(iter).value());
-    auto const sz = std::max(size, superblock::minimum_size);
-    if (sb.empty() && sb.size() >= sz + superblock::minimum_size) {
+    auto sb = std::move(superblocks_.extract(iter).value());
+    if (sb.empty() && sb.size() >= minimum_size + superblock::minimum_size) {
       // Split the superblock and put the remainder back.
-      auto [head, tail] = sb.split(sz);
+      auto [head, tail] = sb.split(minimum_size);
       superblocks_.insert(std::move(tail));
       return std::move(head);
     }
@@ -643,6 +685,8 @@ class global_arena final {
   block upstream_block_;
   /// Address-ordered set of superblocks.
   std::set<superblock> superblocks_;
+  /// Large allocations.
+  std::unordered_map<void*, std::size_t> large_allocations_;
   /// Mutex for exclusive lock.
   mutable std::mutex mtx_;
 };
@@ -707,12 +751,26 @@ class arena {
   }
 
   /**
-   * @brief Clean the arena and deallocate free blocks from the global arena.
+   * @brief Clean the arena and release all superblocks to the global arena.
    */
   void clean()
   {
     lock_guard lock(mtx_);
     global_arena_.release(superblocks_);
+  }
+
+  /**
+   * @brief Defragment the arena and release empty superblock to the global arena.
+   */
+  void defragment()
+  {
+    lock_guard lock(mtx_);
+    while (true) {
+      auto const iter = std::find_if(
+        superblocks_.cbegin(), superblocks_.cend(), [](auto const& sb) { return sb.empty(); });
+      if (iter == superblocks_.cend()) { return; }
+      global_arena_.release(std::move(superblocks_.extract(iter).value()));
+    }
   }
 
   /**
@@ -729,6 +787,19 @@ class arena {
                    rmm::detail::bytes{total_memory_size(superblocks_)});
       logger->info("    Size of largest free block: {}",
                    rmm::detail::bytes{max_free(superblocks_)});
+      auto i = 0;
+      for (auto const& sb : superblocks_) {
+        logger->info(
+          "      Superblock {}: start={}, end={}, size={}, empty={}, # free blocks={}, max free={}",
+          i,
+          fmt::ptr(sb.pointer()),
+          fmt::ptr(sb.end()),
+          rmm::detail::bytes{sb.size()},
+          sb.empty(),
+          sb.free_blocks(),
+          rmm::detail::bytes{sb.max_free()});
+        i++;
+      }
     }
   }
 
@@ -791,11 +862,7 @@ class arena {
 
     auto sb = std::move(superblocks_.extract(iter).value());
     sb.coalesce(b);
-    if (sb.empty()) {
-      global_arena_.release(std::move(sb), stream);
-    } else {
-      superblocks_.insert(std::move(sb));
-    }
+    superblocks_.insert(std::move(sb));
     return true;
   }
 
@@ -809,6 +876,7 @@ class arena {
   {
     auto sb = global_arena_.acquire(size);
     if (sb.is_valid()) {
+      RMM_LOGGING_ASSERT(sb.size() >= superblock::minimum_size);
       auto const b = sb.first_fit(size);
       superblocks_.insert(std::move(sb));
       return b;

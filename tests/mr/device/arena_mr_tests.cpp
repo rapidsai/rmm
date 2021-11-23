@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <rmm/cuda_stream.hpp>
 #include <rmm/detail/aligned.hpp>
 #include <rmm/detail/cuda_util.hpp>
 #include <rmm/detail/error.hpp>
@@ -25,6 +26,8 @@
 #include <gmock/gmock-actions.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+
+#include <memory>
 
 namespace rmm::test {
 namespace {
@@ -43,20 +46,40 @@ using arena        = rmm::mr::detail::arena::arena<mock_memory_resource>;
 using arena_mr     = rmm::mr::arena_memory_resource<rmm::mr::device_memory_resource>;
 using ::testing::Return;
 
-// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast,performance-no-int-to-ptr)
 auto const fake_address = reinterpret_cast<void*>(1_KiB);
-// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast,performance-no-int-to-ptr)
 auto const fake_address2 = reinterpret_cast<void*>(2_KiB);
-// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-auto const fake_address3 = reinterpret_cast<void*>(4_MiB);
-// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-auto const fake_address4 = reinterpret_cast<void*>(8_MiB);
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast,performance-no-int-to-ptr)
+auto const fake_address3 = reinterpret_cast<void*>(superblock::minimum_size);
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast,performance-no-int-to-ptr)
+auto const fake_address4 = reinterpret_cast<void*>(superblock::minimum_size * 2);
+
+class ArenaTest : public ::testing::Test {
+ protected:
+  void SetUp() override
+  {
+    EXPECT_CALL(mock_, allocate(arena_size_)).WillOnce(Return(fake_address3));
+    EXPECT_CALL(mock_, deallocate(fake_address3, arena_size_));
+    ga_ = std::make_unique<global_arena>(&mock_, arena_size_);
+    a_  = std::make_unique<arena>(*ga_);
+  }
+
+  // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
+  std::size_t arena_size_{superblock::minimum_size * 4};
+  // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
+  mock_memory_resource mock_{};
+  // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
+  std::unique_ptr<global_arena> ga_{};
+  // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
+  std::unique_ptr<arena> a_{};
+};
 
 /**
  * Test memory_span.
  */
 
-TEST(ArenaTest, MemorySpan)  // NOLINT
+TEST_F(ArenaTest, MemorySpan)  // NOLINT
 {
   memory_span const ms{};
   EXPECT_FALSE(ms.is_valid());
@@ -68,14 +91,14 @@ TEST(ArenaTest, MemorySpan)  // NOLINT
  * Test block.
  */
 
-TEST(ArenaTest, BlockFits)  // NOLINT
+TEST_F(ArenaTest, BlockFits)  // NOLINT
 {
   block const b{fake_address, 1_KiB};
   EXPECT_TRUE(b.fits(1_KiB));
   EXPECT_FALSE(b.fits(1_KiB + 1));
 }
 
-TEST(ArenaTest, BlockIsContiguousBefore)  // NOLINT
+TEST_F(ArenaTest, BlockIsContiguousBefore)  // NOLINT
 {
   block const b{fake_address, 1_KiB};
   block const b2{fake_address2, 256};
@@ -85,7 +108,7 @@ TEST(ArenaTest, BlockIsContiguousBefore)  // NOLINT
   EXPECT_FALSE(b3.is_contiguous_before(b4));
 }
 
-TEST(ArenaTest, BlockSplit)  // NOLINT
+TEST_F(ArenaTest, BlockSplit)  // NOLINT
 {
   block const b{fake_address, 2_KiB};
   auto const [head, tail] = b.split(1_KiB);
@@ -95,7 +118,7 @@ TEST(ArenaTest, BlockSplit)  // NOLINT
   EXPECT_EQ(tail.size(), 1_KiB);
 }
 
-TEST(ArenaTest, BlockMerge)  // NOLINT
+TEST_F(ArenaTest, BlockMerge)  // NOLINT
 {
   block const b{fake_address, 1_KiB};
   block const b2{fake_address2, 1_KiB};
@@ -108,46 +131,46 @@ TEST(ArenaTest, BlockMerge)  // NOLINT
  * Test superblock.
  */
 
-TEST(ArenaTest, SuperblockEmpty)  // NOLINT
+TEST_F(ArenaTest, SuperblockEmpty)  // NOLINT
 {
-  superblock sb{fake_address3, 4_MiB};
+  superblock sb{fake_address3, superblock::minimum_size};
   EXPECT_TRUE(sb.empty());
   sb.first_fit(256);
   EXPECT_FALSE(sb.empty());
 }
 
-TEST(ArenaTest, SuperblockContains)  // NOLINT
+TEST_F(ArenaTest, SuperblockContains)  // NOLINT
 {
-  superblock const sb{fake_address3, 4_MiB};
+  superblock const sb{fake_address3, superblock::minimum_size};
   block const b{fake_address, 2_KiB};
   EXPECT_FALSE(sb.contains(b));
   block const b2{fake_address3, 1_KiB};
   EXPECT_TRUE(sb.contains(b2));
-  block const b3{fake_address3, 4_MiB + 1};
+  block const b3{fake_address3, superblock::minimum_size + 1};
   EXPECT_FALSE(sb.contains(b3));
-  block const b4{fake_address3, 4_MiB};
+  block const b4{fake_address3, superblock::minimum_size};
   EXPECT_TRUE(sb.contains(b4));
   block const b5{fake_address4, 256};
   EXPECT_FALSE(sb.contains(b5));
 }
 
-TEST(ArenaTest, SuperblockFits)  // NOLINT
+TEST_F(ArenaTest, SuperblockFits)  // NOLINT
 {
-  superblock sb{fake_address3, 4_MiB};
-  EXPECT_TRUE(sb.fits(4_MiB));
-  EXPECT_FALSE(sb.fits(4_MiB + 1));
+  superblock sb{fake_address3, superblock::minimum_size};
+  EXPECT_TRUE(sb.fits(superblock::minimum_size));
+  EXPECT_FALSE(sb.fits(superblock::minimum_size + 1));
 
-  auto const b = sb.first_fit(1_MiB);
-  sb.first_fit(1_MiB);
+  auto const b = sb.first_fit(superblock::minimum_size / 4);
+  sb.first_fit(superblock::minimum_size / 4);
   sb.coalesce(b);
-  EXPECT_TRUE(sb.fits(2_MiB));
-  EXPECT_FALSE(sb.fits(2_MiB + 1));
+  EXPECT_TRUE(sb.fits(superblock::minimum_size / 2));
+  EXPECT_FALSE(sb.fits(superblock::minimum_size / 2 + 1));
 }
 
-TEST(ArenaTest, SuperblockIsContiguousBefore)  // NOLINT
+TEST_F(ArenaTest, SuperblockIsContiguousBefore)  // NOLINT
 {
-  superblock sb{fake_address3, 4_MiB};
-  superblock sb2{fake_address4, 4_MiB};
+  superblock sb{fake_address3, superblock::minimum_size};
+  superblock sb2{fake_address4, superblock::minimum_size};
   EXPECT_TRUE(sb.is_contiguous_before(sb2));
 
   auto const b = sb.first_fit(256);
@@ -161,31 +184,31 @@ TEST(ArenaTest, SuperblockIsContiguousBefore)  // NOLINT
   EXPECT_TRUE(sb.is_contiguous_before(sb2));
 }
 
-TEST(ArenaTest, SuperblockSplit)  // NOLINT
+TEST_F(ArenaTest, SuperblockSplit)  // NOLINT
 {
-  superblock sb{fake_address3, 8_MiB};
-  auto const [head, tail] = sb.split(4_MiB);
+  superblock sb{fake_address3, superblock::minimum_size * 2};
+  auto const [head, tail] = sb.split(superblock::minimum_size);
   EXPECT_EQ(head.pointer(), fake_address3);
-  EXPECT_EQ(head.size(), 4_MiB);
+  EXPECT_EQ(head.size(), superblock::minimum_size);
   EXPECT_TRUE(head.empty());
   EXPECT_EQ(tail.pointer(), fake_address4);
-  EXPECT_EQ(tail.size(), 4_MiB);
+  EXPECT_EQ(tail.size(), superblock::minimum_size);
   EXPECT_TRUE(tail.empty());
 }
 
-TEST(ArenaTest, SuperblockMerge)  // NOLINT
+TEST_F(ArenaTest, SuperblockMerge)  // NOLINT
 {
-  superblock sb{fake_address3, 4_MiB};
-  superblock sb2{fake_address4, 4_MiB};
+  superblock sb{fake_address3, superblock::minimum_size};
+  superblock sb2{fake_address4, superblock::minimum_size};
   auto const merged = sb.merge(sb2);
   EXPECT_EQ(merged.pointer(), fake_address3);
-  EXPECT_EQ(merged.size(), 8_MiB);
+  EXPECT_EQ(merged.size(), superblock::minimum_size * 2);
   EXPECT_TRUE(merged.empty());
 }
 
-TEST(ArenaTest, SuperblockFirstFit)  // NOLINT
+TEST_F(ArenaTest, SuperblockFirstFit)  // NOLINT
 {
-  superblock sb{fake_address3, 4_MiB};
+  superblock sb{fake_address3, superblock::minimum_size};
   auto const b = sb.first_fit(1_KiB);
   EXPECT_EQ(b.pointer(), fake_address3);
   EXPECT_EQ(b.size(), 1_KiB);
@@ -199,26 +222,26 @@ TEST(ArenaTest, SuperblockFirstFit)  // NOLINT
   EXPECT_EQ(b3.size(), 512);
 }
 
-TEST(ArenaTest, SuperblockCoalesceAfterFull)  // NOLINT
+TEST_F(ArenaTest, SuperblockCoalesceAfterFull)  // NOLINT
 {
-  superblock sb{fake_address3, 4_MiB};
-  auto const b = sb.first_fit(2_MiB);
-  sb.first_fit(2_MiB);
+  superblock sb{fake_address3, superblock::minimum_size};
+  auto const b = sb.first_fit(superblock::minimum_size / 2);
+  sb.first_fit(superblock::minimum_size / 2);
   sb.coalesce(b);
-  EXPECT_TRUE(sb.first_fit(2_MiB).is_valid());
+  EXPECT_TRUE(sb.first_fit(superblock::minimum_size / 2).is_valid());
 }
 
-TEST(ArenaTest, SuperblockCoalesceMergeNext)  // NOLINT
+TEST_F(ArenaTest, SuperblockCoalesceMergeNext)  // NOLINT
 {
-  superblock sb{fake_address3, 4_MiB};
-  auto const b = sb.first_fit(2_MiB);
+  superblock sb{fake_address3, superblock::minimum_size};
+  auto const b = sb.first_fit(superblock::minimum_size / 2);
   sb.coalesce(b);
-  EXPECT_TRUE(sb.first_fit(4_MiB).is_valid());
+  EXPECT_TRUE(sb.first_fit(superblock::minimum_size).is_valid());
 }
 
-TEST(ArenaTest, SuperblockCoalesceMergePrevious)  // NOLINT
+TEST_F(ArenaTest, SuperblockCoalesceMergePrevious)  // NOLINT
 {
-  superblock sb{fake_address3, 4_MiB};
+  superblock sb{fake_address3, superblock::minimum_size};
   auto const b  = sb.first_fit(1_KiB);
   auto const b2 = sb.first_fit(1_KiB);
   sb.first_fit(1_KiB);
@@ -228,256 +251,222 @@ TEST(ArenaTest, SuperblockCoalesceMergePrevious)  // NOLINT
   EXPECT_EQ(b3.pointer(), fake_address3);
 }
 
-TEST(ArenaTest, SuperblockCoalesceMergePreviousAndNext)  // NOLINT
+TEST_F(ArenaTest, SuperblockCoalesceMergePreviousAndNext)  // NOLINT
 {
-  superblock sb{fake_address3, 4_MiB};
+  superblock sb{fake_address3, superblock::minimum_size};
   auto const b  = sb.first_fit(1_KiB);
   auto const b2 = sb.first_fit(1_KiB);
   sb.coalesce(b);
   sb.coalesce(b2);
-  EXPECT_TRUE(sb.first_fit(4_MiB).is_valid());
+  EXPECT_TRUE(sb.first_fit(superblock::minimum_size).is_valid());
 }
 
-TEST(ArenaTest, SuperblockMaxFree)  // NOLINT
+TEST_F(ArenaTest, SuperblockMaxFree)  // NOLINT
 {
-  superblock sb{fake_address3, 4_MiB};
-  sb.first_fit(2_MiB);
-  EXPECT_EQ(sb.max_free(), 2_MiB);
+  superblock sb{fake_address3, superblock::minimum_size};
+  sb.first_fit(superblock::minimum_size / 2);
+  EXPECT_EQ(sb.max_free(), superblock::minimum_size / 2);
+}
+
+TEST_F(ArenaTest, SuperblockMaxFreeWhenFull)  // NOLINT
+{
+  superblock sb{fake_address3, superblock::minimum_size};
+  sb.first_fit(superblock::minimum_size);
+  EXPECT_EQ(sb.max_free(), 0);
 }
 
 /**
  * Test global_arena.
  */
 
-TEST(ArenaTest, GlobalArenaNullUpstream)  // NOLINT
+TEST_F(ArenaTest, GlobalArenaNullUpstream)  // NOLINT
 {
   auto construct_nullptr = []() { global_arena ga{nullptr, std::nullopt}; };
   EXPECT_THROW(construct_nullptr(), rmm::logic_error);  // NOLINT(cppcoreguidelines-avoid-goto)
 }
 
-TEST(ArenaTest, GlobalArenaAcquire)  // NOLINT
+TEST_F(ArenaTest, GlobalArenaAcquire)  // NOLINT
 {
-  mock_memory_resource mock;
-  EXPECT_CALL(mock, allocate(8_MiB)).WillOnce(Return(fake_address3));
-  EXPECT_CALL(mock, deallocate(fake_address3, 8_MiB));
-
-  global_arena ga{&mock, 8_MiB};
-
-  auto const sb = ga.acquire(256);
+  auto const sb = ga_->acquire(256);
   EXPECT_EQ(sb.pointer(), fake_address3);
-  EXPECT_EQ(sb.size(), 4_MiB);
+  EXPECT_EQ(sb.size(), superblock::minimum_size);
   EXPECT_TRUE(sb.empty());
 
-  auto const sb2 = ga.acquire(1_KiB);
+  auto const sb2 = ga_->acquire(1_KiB);
   EXPECT_EQ(sb2.pointer(), fake_address4);
-  EXPECT_EQ(sb2.size(), 4_MiB);
+  EXPECT_EQ(sb2.size(), superblock::minimum_size);
   EXPECT_TRUE(sb2.empty());
 
-  EXPECT_FALSE(ga.acquire(512).is_valid());
+  ga_->acquire(512);
+  ga_->acquire(512);
+  EXPECT_FALSE(ga_->acquire(512).is_valid());
 }
 
-TEST(ArenaTest, GlobalArenaReleaseMergeNext)  // NOLINT
+TEST_F(ArenaTest, GlobalArenaReleaseMergeNext)  // NOLINT
 {
-  mock_memory_resource mock;
-  EXPECT_CALL(mock, allocate(8_MiB)).WillOnce(Return(fake_address3));
-  EXPECT_CALL(mock, deallocate(fake_address3, 8_MiB));
-
-  global_arena ga{&mock, 8_MiB};
-
-  auto sb = ga.acquire(256);
-  ga.release(std::move(sb), {});
-  auto* p = ga.allocate(8_MiB);
+  auto sb = ga_->acquire(256);
+  ga_->release(std::move(sb));
+  auto* p = ga_->allocate(arena_size_);
   EXPECT_EQ(p, fake_address3);
 }
 
-TEST(ArenaTest, GlobalArenaReleaseMergePrevious)  // NOLINT
+TEST_F(ArenaTest, GlobalArenaReleaseMergePrevious)  // NOLINT
 {
-  mock_memory_resource mock;
-  EXPECT_CALL(mock, allocate(16_MiB)).WillOnce(Return(fake_address3));
-  EXPECT_CALL(mock, deallocate(fake_address3, 16_MiB));
-
-  global_arena ga{&mock, 16_MiB};
-
-  auto sb  = ga.acquire(256);
-  auto sb2 = ga.acquire(1_KiB);
-  ga.acquire(512);
-  ga.release(std::move(sb), {});
-  ga.release(std::move(sb2), {});
-  auto* p = ga.allocate(8_MiB);
+  auto sb  = ga_->acquire(256);
+  auto sb2 = ga_->acquire(1_KiB);
+  ga_->acquire(512);
+  ga_->release(std::move(sb));
+  ga_->release(std::move(sb2));
+  auto* p = ga_->allocate(superblock::minimum_size * 2);
   EXPECT_EQ(p, fake_address3);
 }
 
-TEST(ArenaTest, GlobalArenaReleaseMergePreviousAndNext)  // NOLINT
+TEST_F(ArenaTest, GlobalArenaReleaseMergePreviousAndNext)  // NOLINT
 {
-  mock_memory_resource mock;
-  EXPECT_CALL(mock, allocate(16_MiB)).WillOnce(Return(fake_address3));
-  EXPECT_CALL(mock, deallocate(fake_address3, 16_MiB));
-
-  global_arena ga{&mock, 16_MiB};
-
-  auto sb  = ga.acquire(256);
-  auto sb2 = ga.acquire(1_KiB);
-  auto sb3 = ga.acquire(512);
-  ga.release(std::move(sb), {});
-  ga.release(std::move(sb3), {});
-  ga.release(std::move(sb2), {});
-  auto* p = ga.allocate(16_MiB);
+  auto sb  = ga_->acquire(256);
+  auto sb2 = ga_->acquire(1_KiB);
+  auto sb3 = ga_->acquire(512);
+  ga_->release(std::move(sb));
+  ga_->release(std::move(sb3));
+  ga_->release(std::move(sb2));
+  auto* p = ga_->allocate(arena_size_);
   EXPECT_EQ(p, fake_address3);
 }
 
-TEST(ArenaTest, GlobalArenaReleaseMultiple)  // NOLINT
+TEST_F(ArenaTest, GlobalArenaReleaseMultiple)  // NOLINT
 {
-  mock_memory_resource mock;
-  EXPECT_CALL(mock, allocate(16_MiB)).WillOnce(Return(fake_address3));
-  EXPECT_CALL(mock, deallocate(fake_address3, 16_MiB));
-
-  global_arena ga{&mock, 16_MiB};
-
   std::set<superblock> superblocks{};
-  auto sb = ga.acquire(256);
+  auto sb = ga_->acquire(256);
   superblocks.insert(std::move(sb));
-  auto sb2 = ga.acquire(1_KiB);
+  auto sb2 = ga_->acquire(1_KiB);
   superblocks.insert(std::move(sb2));
-  auto sb3 = ga.acquire(512);
+  auto sb3 = ga_->acquire(512);
   superblocks.insert(std::move(sb3));
-  ga.release(superblocks);
-  auto* p = ga.allocate(16_MiB);
+  ga_->release(superblocks);
+  auto* p = ga_->allocate(arena_size_);
   EXPECT_EQ(p, fake_address3);
 }
 
-TEST(ArenaTest, GlobalArenaAllocate)  // NOLINT
+TEST_F(ArenaTest, GlobalArenaAllocate)  // NOLINT
 {
-  mock_memory_resource mock;
-  EXPECT_CALL(mock, allocate(8_MiB)).WillOnce(Return(fake_address3));
-  EXPECT_CALL(mock, deallocate(fake_address3, 8_MiB));
-
-  global_arena ga{&mock, 8_MiB};
-
-  auto* ptr = ga.allocate(4_MiB);
-  EXPECT_EQ(ptr, fake_address3);
-  auto* ptr2 = ga.allocate(4_MiB);
-  EXPECT_EQ(ptr2, fake_address4);
-}
-
-TEST(ArenaTest, GlobalArenaDeallocate)  // NOLINT
-{
-  mock_memory_resource mock;
-  EXPECT_CALL(mock, allocate(8_MiB)).WillOnce(Return(fake_address3));
-  EXPECT_CALL(mock, deallocate(fake_address3, 8_MiB));
-
-  global_arena ga{&mock, 8_MiB};
-
-  auto* ptr = ga.allocate(4_MiB);
-  EXPECT_EQ(ptr, fake_address3);
-  ga.deallocate(ptr, 4_MiB, {});
-  ptr = ga.allocate(4_MiB);
+  auto* ptr = ga_->allocate(superblock::minimum_size * 2);
   EXPECT_EQ(ptr, fake_address3);
 }
 
-TEST(ArenaTest, GlobalArenaDeallocateFromOtherArena)  // NOLINT
+TEST_F(ArenaTest, GlobalArenaAllocateExtraLarge)  // NOLINT
 {
-  mock_memory_resource mock;
-  EXPECT_CALL(mock, allocate(8_MiB)).WillOnce(Return(fake_address3));
-  EXPECT_CALL(mock, deallocate(fake_address3, 8_MiB));
+  EXPECT_EQ(ga_->allocate(1_PiB), nullptr);
+  EXPECT_EQ(ga_->allocate(1_PiB), nullptr);
+}
 
-  global_arena ga{&mock, 8_MiB};
+TEST_F(ArenaTest, GlobalArenaAllocateAlignUp)  // NOLINT
+{
+  ga_->allocate(superblock::minimum_size + 256);
+  ga_->allocate(superblock::minimum_size + 256);
+  EXPECT_EQ(ga_->allocate(superblock::minimum_size + 256), nullptr);
+}
 
-  auto sb      = ga.acquire(512);
+TEST_F(ArenaTest, GlobalArenaDeallocate)  // NOLINT
+{
+  auto* ptr = ga_->allocate(superblock::minimum_size * 2);
+  EXPECT_EQ(ptr, fake_address3);
+  ga_->deallocate(ptr, superblock::minimum_size * 2, {});
+  ptr = ga_->allocate(superblock::minimum_size * 2);
+  EXPECT_EQ(ptr, fake_address3);
+}
+
+TEST_F(ArenaTest, GlobalArenaDeallocateAlignUp)  // NOLINT
+{
+  auto* ptr  = ga_->allocate(superblock::minimum_size + 256);
+  auto* ptr2 = ga_->allocate(superblock::minimum_size + 512);
+  ga_->deallocate(ptr, superblock::minimum_size + 256, {});
+  ga_->deallocate(ptr2, superblock::minimum_size + 512, {});
+  EXPECT_EQ(ga_->allocate(arena_size_), fake_address3);
+}
+
+TEST_F(ArenaTest, GlobalArenaDeallocateFromOtherArena)  // NOLINT
+{
+  auto sb      = ga_->acquire(512);
   auto const b = sb.first_fit(512);
-  ga.release(std::move(sb), {});
-  ga.deallocate_from_other_arena(b.pointer(), b.size());
-  EXPECT_EQ(ga.allocate(8_MiB), fake_address3);
+  ga_->release(std::move(sb));
+  ga_->deallocate_from_other_arena(b.pointer(), b.size());
+  EXPECT_EQ(ga_->allocate(arena_size_), fake_address3);
 }
 
 /**
  * Test arena.
  */
 
-TEST(ArenaTest, ArenaAllocate)  // NOLINT
+TEST_F(ArenaTest, ArenaAllocate)  // NOLINT
 {
-  mock_memory_resource mock;
-  EXPECT_CALL(mock, allocate(8_MiB)).WillOnce(Return(fake_address3));
-  EXPECT_CALL(mock, deallocate(fake_address3, 8_MiB));
-  global_arena ga{&mock, 8_MiB};
-  arena a{ga};
-
-  EXPECT_EQ(a.allocate(4_MiB), fake_address3);
-  EXPECT_EQ(a.allocate(256), fake_address4);
+  EXPECT_EQ(a_->allocate(superblock::minimum_size), fake_address3);
+  EXPECT_EQ(a_->allocate(256), fake_address4);
 }
 
-TEST(ArenaTest, ArenaDeallocate)  // NOLINT
+TEST_F(ArenaTest, ArenaDeallocate)  // NOLINT
 {
-  mock_memory_resource mock;
-  EXPECT_CALL(mock, allocate(8_MiB)).WillOnce(Return(fake_address3));
-  EXPECT_CALL(mock, deallocate(fake_address3, 8_MiB));
-  global_arena ga{&mock, 8_MiB};
-  arena a{ga};
-
-  auto* ptr = a.allocate(4_MiB);
-  a.deallocate(ptr, 4_MiB, {});
-  auto* ptr2 = a.allocate(256);
-  a.deallocate(ptr2, 256, {});
-  EXPECT_EQ(a.allocate(8_MiB), fake_address3);
+  auto* ptr = a_->allocate(superblock::minimum_size);
+  a_->deallocate(ptr, superblock::minimum_size, {});
+  auto* ptr2 = a_->allocate(256);
+  a_->deallocate(ptr2, 256, {});
+  EXPECT_EQ(a_->allocate(superblock::minimum_size), fake_address3);
 }
 
-TEST(ArenaTest, ArenaDeallocateMergePrevious)  // NOLINT
+TEST_F(ArenaTest, ArenaDeallocateMergePrevious)  // NOLINT
 {
-  mock_memory_resource mock;
-  EXPECT_CALL(mock, allocate(8_MiB)).WillOnce(Return(fake_address3));
-  EXPECT_CALL(mock, deallocate(fake_address3, 8_MiB));
-  global_arena ga{&mock, 8_MiB};
-  arena a{ga};
-
-  auto* ptr  = a.allocate(256);
-  auto* ptr2 = a.allocate(256);
-  a.allocate(256);
-  a.deallocate(ptr, 256, {});
-  a.deallocate(ptr2, 256, {});
-  EXPECT_EQ(a.allocate(512), fake_address3);
+  auto* ptr  = a_->allocate(256);
+  auto* ptr2 = a_->allocate(256);
+  a_->allocate(256);
+  a_->deallocate(ptr, 256, {});
+  a_->deallocate(ptr2, 256, {});
+  EXPECT_EQ(a_->allocate(512), fake_address3);
 }
 
-TEST(ArenaTest, ArenaDeallocateMergeNext)  // NOLINT
+TEST_F(ArenaTest, ArenaDeallocateMergeNext)  // NOLINT
 {
-  mock_memory_resource mock;
-  EXPECT_CALL(mock, allocate(8_MiB)).WillOnce(Return(fake_address3));
-  EXPECT_CALL(mock, deallocate(fake_address3, 8_MiB));
-  global_arena ga{&mock, 8_MiB};
-  arena a{ga};
-
-  auto* ptr  = a.allocate(256);
-  auto* ptr2 = a.allocate(256);
-  a.allocate(256);
-  a.deallocate(ptr2, 256, {});
-  a.deallocate(ptr, 256, {});
-  EXPECT_EQ(a.allocate(512), fake_address3);
+  auto* ptr  = a_->allocate(256);
+  auto* ptr2 = a_->allocate(256);
+  a_->allocate(256);
+  a_->deallocate(ptr2, 256, {});
+  a_->deallocate(ptr, 256, {});
+  EXPECT_EQ(a_->allocate(512), fake_address3);
 }
 
-TEST(ArenaTest, ArenaDeallocateMergePreviousAndNext)  // NOLINT
+TEST_F(ArenaTest, ArenaDeallocateMergePreviousAndNext)  // NOLINT
 {
-  mock_memory_resource mock;
-  EXPECT_CALL(mock, allocate(8_MiB)).WillOnce(Return(fake_address3));
-  EXPECT_CALL(mock, deallocate(fake_address3, 8_MiB));
-  global_arena ga{&mock, 8_MiB};
-  arena a{ga};
+  auto* ptr  = a_->allocate(256);
+  auto* ptr2 = a_->allocate(256);
+  a_->deallocate(ptr, 256, {});
+  a_->deallocate(ptr2, 256, {});
+  EXPECT_EQ(a_->allocate(2_KiB), fake_address3);
+}
 
-  auto* ptr  = a.allocate(256);
-  auto* ptr2 = a.allocate(256);
-  a.deallocate(ptr, 256, {});
-  a.deallocate(ptr2, 256, {});
-  EXPECT_EQ(a.allocate(2_KiB), fake_address3);
+TEST_F(ArenaTest, ArenaDefragment)  // NOLINT
+{
+  std::vector<void*> pointers;
+  std::size_t num_pointers{4};
+  for (std::size_t i = 0; i < num_pointers; i++) {
+    pointers.push_back(a_->allocate(superblock::minimum_size));
+  }
+  for (auto* ptr : pointers) {
+    a_->deallocate(ptr, superblock::minimum_size, {});
+  }
+  EXPECT_EQ(ga_->allocate(arena_size_), nullptr);
+  a_->defragment();
+  EXPECT_EQ(ga_->allocate(arena_size_), fake_address3);
 }
 
 /**
  * Test arena_memory_resource.
  */
 
-TEST(ArenaTest, NullUpstream)  // NOLINT
+TEST_F(ArenaTest, NullUpstream)  // NOLINT
 {
   // NOLINTNEXTLINE(cppcoreguidelines-avoid-goto)
   EXPECT_THROW([]() { arena_mr mr{nullptr}; }(), rmm::logic_error);
 }
 
-TEST(ArenaTest, AllocateNinetyPercent)  // NOLINT
+TEST_F(ArenaTest, AllocateNinetyPercent)  // NOLINT
 {
   EXPECT_NO_THROW([]() {  // NOLINT(cppcoreguidelines-avoid-goto)
     auto const free = rmm::detail::available_device_memory().first;
@@ -488,7 +477,7 @@ TEST(ArenaTest, AllocateNinetyPercent)  // NOLINT
   }());
 }
 
-TEST(ArenaTest, SmallMediumLarge)  // NOLINT
+TEST_F(ArenaTest, SmallMediumLarge)  // NOLINT
 {
   EXPECT_NO_THROW([]() {  // NOLINT(cppcoreguidelines-avoid-goto)
     arena_mr mr(rmm::mr::get_current_device_resource());
@@ -499,6 +488,30 @@ TEST(ArenaTest, SmallMediumLarge)  // NOLINT
     mr.deallocate(small, 256);
     mr.deallocate(medium, 64_MiB);
     mr.deallocate(large, free / 3);
+  }());
+}
+
+TEST_F(ArenaTest, Defragment)  // NOLINT
+{
+  EXPECT_NO_THROW([]() {  // NOLINT(cppcoreguidelines-avoid-goto)
+    auto const arena_size = superblock::minimum_size * 4;
+    arena_mr mr(rmm::mr::get_current_device_resource(), arena_size);
+    std::vector<std::thread> threads;
+    std::size_t num_threads{4};
+    threads.reserve(num_threads);
+    for (std::size_t i = 0; i < num_threads; ++i) {
+      threads.emplace_back(std::thread([&] {
+        cuda_stream stream{};
+        void* ptr = mr.allocate(32_KiB, stream);
+        mr.deallocate(ptr, 32_KiB, stream);
+      }));
+    }
+    for (auto& thread : threads) {
+      thread.join();
+    }
+
+    auto* ptr = mr.allocate(arena_size);
+    mr.deallocate(ptr, arena_size);
   }());
 }
 
