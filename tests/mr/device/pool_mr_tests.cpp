@@ -19,14 +19,10 @@
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
-#include <rmm/mr/device/detail/coalescing_free_list.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/limiting_resource_adaptor.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
-#include "rmm/mr/device/binning_memory_resource.hpp"
-#include "rmm/mr/device/detail/fixed_size_free_list.hpp"
-#include "rmm/mr/device/fixed_size_memory_resource.hpp"
 
 #include <gtest/gtest.h>
 
@@ -152,34 +148,6 @@ TEST(PoolTest, UpstreamDoesntSupportMemInfo)
   pool_mr mr2(&mr1);
   auto* ptr = mr2.allocate(1024);
   mr2.deallocate(ptr, 1024);
-}
-
-using free_list_types =
-  ::testing::Types<mr::detail::fixed_size_free_list, mr::detail::coalescing_free_list>;
-
-TYPED_TEST_CASE(FreeListTest, free_list_types);
-
-template <typename FreeListType>
-struct FreeListTest : public ::testing::Test {
-};
-
-TYPED_TEST(FreeListTest, Size)
-{
-  TypeParam free_list;
-  typename TypeParam::block_type blk{};
-  EXPECT_EQ(free_list.size(), 0);
-  free_list.insert(blk);
-  EXPECT_EQ(free_list.size(), 1);
-}
-
-// To complete coverage
-TYPED_TEST(FreeListTest, Print)
-{
-  TypeParam free_list;
-  typename TypeParam::block_type blk{};
-  std::cout << blk << "\n";
-  free_list.insert(blk);
-  free_list.print();
 }
 
 }  // namespace

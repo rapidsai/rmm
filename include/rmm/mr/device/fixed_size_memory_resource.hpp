@@ -235,7 +235,7 @@ class fixed_size_memory_resource
     upstream_blocks_.clear();
   }
 
-#if 0  // disabled when not debugging
+#ifdef RMM_DEBUG_PRINT
   void print()
   {
     lock_guard lock(this->get_mutex());

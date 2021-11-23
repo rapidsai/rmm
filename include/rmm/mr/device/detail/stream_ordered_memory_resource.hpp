@@ -159,7 +159,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     stream_free_blocks_[get_event(stream)].insert(std::move(blocks));
   }
 
-#if 0  // disabled when not debugging
+#ifdef RMM_DEBUG_PRINT
   void print_free_blocks() const
   {
     std::cout << "stream free blocks: ";

@@ -366,7 +366,7 @@ class pool_memory_resource final
     current_pool_size_ = 0;
   }
 
-#if 0  // disabled when not debugging
+#ifdef RMM_DEBUG_PRINT
   /**
    * @brief Print debugging information about all blocks in the pool.
    *
