@@ -71,11 +71,25 @@ using Types = ::testing::Types<bool, int8_t, int16_t, int32_t, int64_t, float, d
 
 TYPED_TEST_CASE(DeviceScalarTest, Types);
 
+TYPED_TEST(DeviceScalarTest, Unitialized)
+{
+  rmm::device_scalar<TypeParam> scalar{this->stream, this->mr};
+  EXPECT_NE(nullptr, scalar.data());
+}
+
 TYPED_TEST(DeviceScalarTest, InitialValue)
 {
   rmm::device_scalar<TypeParam> scalar{this->value, this->stream, this->mr};
   EXPECT_NE(nullptr, scalar.data());
   EXPECT_EQ(this->value, scalar.value(this->stream));
+}
+
+// test const version of data()
+TYPED_TEST(DeviceScalarTest, ConstPtrData)
+{
+  rmm::device_scalar<TypeParam> const scalar{this->value, this->stream, this->mr};
+  typename rmm::device_scalar<TypeParam>::const_pointer data = scalar.data();
+  EXPECT_NE(nullptr, data);
 }
 
 TYPED_TEST(DeviceScalarTest, CopyCtor)
