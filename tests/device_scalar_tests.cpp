@@ -88,7 +88,7 @@ TYPED_TEST(DeviceScalarTest, InitialValue)
 TYPED_TEST(DeviceScalarTest, ConstPtrData)
 {
   rmm::device_scalar<TypeParam> const scalar{this->value, this->stream, this->mr};
-  typename rmm::device_scalar<TypeParam>::const_pointer data = scalar.data();
+  auto const* data = scalar.data();
   EXPECT_NE(nullptr, data);
 }
 
