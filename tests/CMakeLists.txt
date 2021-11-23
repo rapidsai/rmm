@@ -54,8 +54,7 @@ function(ConfigureTestInternal TEST_NAME)
         ${TEST_NAME}
         PUBLIC
           $<$<COMPILE_LANGUAGE:CUDA>:-O0
-          -Xcompiler=--coverage,-fprofile-abs-path,-fkeep-inline-functions,-fno-elide-constructors>
-      )
+          -Xcompiler=--coverage,-fprofile-abs-path,-fkeep-inline-functions,-fno-elide-constructors>)
       target_compile_options(
         ${TEST_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-O0 --coverage -fprofile-abs-path
                             -fkeep-inline-functions -fno-elide-constructors>)
