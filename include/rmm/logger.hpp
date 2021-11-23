@@ -75,17 +75,22 @@ struct logger_wrapper {
 struct bytes {
   std::size_t value;
 
+  static constexpr char const* units(int index)
+  {
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)
+    return std::array<char const*, 9>{"B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"}
+      .at(index);
+  }
+
   friend std::ostream& operator<<(std::ostream& os, bytes const& value)
   {
-    static std::array<std::string, 9> const units{
-      "B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"};
     int index = 0;
     auto size = static_cast<double>(value.value);
     while (size > 1024) {
       size /= 1024;
       index++;
     }
-    return os << size << ' ' << units.at(index);
+    return os << size << ' ' << units(index);
   }
 };
 
