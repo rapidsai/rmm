@@ -278,7 +278,7 @@ class pool_memory_resource final
     if (size == 0) { return {}; }
 
     try {
-      void* ptr = upstream_mr_->allocate(size, stream);
+      void* ptr = get_upstream()->allocate(size, stream);
       return thrust::optional<block_type>{
         *upstream_blocks_.emplace(static_cast<char*>(ptr), size, true).first};
     } catch (std::exception const& e) {
@@ -356,7 +356,7 @@ class pool_memory_resource final
     lock_guard lock(this->get_mutex());
 
     for (auto block : upstream_blocks_) {
-      upstream_mr_->deallocate(block.pointer(), block.size());
+      get_upstream()->deallocate(block.pointer(), block.size());
     }
     upstream_blocks_.clear();
 #ifdef RMM_POOL_TRACK_ALLOCATIONS
