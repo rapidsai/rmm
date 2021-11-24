@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <iterator>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/detail/free_list.hpp>
 
@@ -221,9 +222,9 @@ struct coalescing_free_list : free_list<block> {
    */
   void insert(free_list&& other)
   {
+    using std::make_move_iterator;
     auto inserter = [this](block_type&& block) { this->insert(block); };
-    std::for_each(
-      std::make_move_iterator(other.begin()), std::make_move_iterator(other.end()), inserter);
+    std::for_each(make_move_iterator(other.begin()), make_move_iterator(other.end()), inserter);
   }
 
   /**
