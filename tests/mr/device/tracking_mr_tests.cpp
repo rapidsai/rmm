@@ -214,8 +214,6 @@ TEST(TrackingTest, LogOutstandingAllocations)
 
   rmm::logger().set_level(spdlog::level::debug);
   mr.log_outstanding_allocations();
-  rmm::logger().flush();
-  std::this_thread::sleep_for(std::chrono::milliseconds(300));
   EXPECT_NE(oss.str().find("Outstanding Allocations"), std::string::npos);
 
   for (auto& allocation : allocations) {
