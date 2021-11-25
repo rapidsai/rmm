@@ -23,10 +23,9 @@
 
 namespace rmm::mr {
 
-using allocate_callback_t = std::function<void*(std::size_t, cuda_stream_view, void*)>;
-using deallocate_callback_t = std::function<void*(void*, std::size_t, cuda_stream_view, void*)>;
+using allocate_callback_t = std::function<void*(std::size_t, void*)>;  // TODO: can we accept a stream here?
+using deallocate_callback_t = std::function<void(void*, std::size_t, void*)>;
 
-template <typename Upstream>
 class callback_memory_resource final : public device_memory_resource {
 
 public:
@@ -43,13 +42,21 @@ private:
 
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
-    return allocate_callback_(bytes, stream, allocate_callback_arg_);
+    return allocate_callback_(bytes, allocate_callback_arg_);
   }
 
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
-    deallocate_callback_(bytes, stream, deallocate_callback_arg_);
+    deallocate_callback_(ptr, bytes, deallocate_callback_arg_);
   }
+
+  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view) const override
+  {
+    throw std::runtime_error("cannot get free / total memory");
+  }
+
+  [[nodiscard]] virtual bool supports_streams() const noexcept { return false; }
+  [[nodiscard]] virtual bool supports_get_mem_info() const noexcept { return false; }
 
   allocate_callback_t allocate_callback_;
   deallocate_callback_t deallocate_callback_;

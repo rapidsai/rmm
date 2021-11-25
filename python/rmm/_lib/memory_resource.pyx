@@ -17,7 +17,7 @@ import warnings
 from collections import defaultdict
 
 from cython.operator cimport dereference as deref
-from libc.stdint cimport int8_t, int64_t
+from libc.stdint cimport int8_t, int64_t, uintptr_t
 from libcpp cimport bool
 from libcpp.cast cimport dynamic_cast
 from libcpp.memory cimport make_shared, make_unique, shared_ptr, unique_ptr
@@ -75,6 +75,19 @@ cdef extern from "rmm/mr/device/fixed_size_memory_resource.hpp" \
             Upstream* upstream_mr,
             size_t block_size,
             size_t block_to_preallocate) except +
+
+cdef extern from "rmm/mr/device/callback_memory_resource.hpp" \
+        namespace "rmm::mr" nogil:
+    ctypedef void* (*allocate_callback_t)(size_t, void*)
+    ctypedef void (*deallocate_callback_t)(void*, size_t, void*)
+
+    cdef cppclass callback_memory_resource(device_memory_resource):
+        callback_memory_resource(
+            allocate_callback_t allocate_callback,
+            deallocate_callback_t deallocate_callback,
+            void* allocate_callback_arg,
+            void* deallocate_callback_arg
+        ) except +
 
 cdef extern from "rmm/mr/device/binning_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
@@ -442,6 +455,35 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
                 self.c_obj.get()))[0].add_bin(
                     allocation_size,
                     bin_resource.get_mr())
+
+
+cdef void* _allocate_callback_wrapper(size_t nbytes, void *ctx) with gil:
+    return <void*><uintptr_t>((<object>ctx)(nbytes))
+
+cdef void _deallocate_callback_wrapper(
+    void* ptr,
+    size_t nbytes,
+    void *ctx
+) with gil:
+    (<object>ctx)(<int><uintptr_t>(ptr), nbytes)
+
+
+cdef class CallbackMemoryResource:
+    def __init__(
+        self,
+        allocate_func,
+        deallocate_func,
+    ):
+        self._allocate_func = allocate_func
+        self._deallocate_func = deallocate_func
+        self.c_obj.reset(
+            new callback_memory_resource(
+                <allocate_callback_t>(_allocate_callback_wrapper),
+                <deallocate_callback_t>(_deallocate_callback_wrapper),
+                <void*>(allocate_func),
+                <void*>(deallocate_func)
+            )
+        )
 
 
 def _append_id(filename, id):
