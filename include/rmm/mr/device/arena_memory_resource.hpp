@@ -160,10 +160,10 @@ class arena_memory_resource final : public device_memory_resource {
   {
     RMM_CUDA_TRY(cudaDeviceSynchronize());
     for (auto& thread_arena : thread_arenas_) {
-      thread_arena.second->defragment();
+      thread_arena.second->clean();
     }
     for (auto& stream_arena : stream_arenas_) {
-      stream_arena.second.defragment();
+      stream_arena.second.clean();
     }
   }
 
@@ -199,20 +199,15 @@ class arena_memory_resource final : public device_memory_resource {
     // is caught up.
     stream.synchronize_no_throw();
 
-    read_lock lock(mtx_);
+    write_lock lock(mtx_);
 
     if (use_per_thread_arena(stream)) {
-      auto const id = std::this_thread::get_id();
       for (auto&& kv : thread_arenas_) {
-        // If the arena does not belong to the current thread, try to deallocate from it, and return
-        // if successful.
-        if (kv.first != id && kv.second->deallocate(ptr, bytes, stream)) { return; }
+        if (kv.second->deallocate(ptr, bytes, stream)) { return; }
       }
     } else {
       for (auto&& kv : stream_arenas_) {
-        // If the arena does not belong to the current stream, try to deallocate from it, and return
-        // if successful.
-        if (stream.value() != kv.first && kv.second.deallocate(ptr, bytes, stream)) { return; }
+        if (kv.second.deallocate(ptr, bytes, stream)) { return; }
       }
     }
 
