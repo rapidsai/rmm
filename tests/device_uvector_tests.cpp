@@ -207,3 +207,16 @@ TYPED_TEST(TypedUVectorTest, FrontBackElement)
   EXPECT_EQ(first, vec.front_element(this->stream()));
   EXPECT_EQ(last, vec.back_element(this->stream()));
 }
+
+TYPED_TEST(TypedUVectorTest, SetGetStream)
+{
+  auto const size{12345};
+  rmm::device_uvector<TypeParam> vec(size, this->stream());
+
+  EXPECT_EQ(vec.stream(), this->stream());
+
+  rmm::cuda_stream_view const otherstream{cudaStreamPerThread};
+  vec.set_stream(otherstream);
+
+  EXPECT_EQ(vec.stream(), otherstream);
+}

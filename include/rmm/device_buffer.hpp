@@ -348,12 +348,11 @@ class device_buffer {
   /**
    * @brief Sets the stream to be used for deallocation
    *
-   * If no other rmm::device_buffer method that allocates or copies memory is
-   * called after this call with a different stream argument, then @p stream
-   * will be used for deallocation in the `rmm::device_buffer destructor.
-   * Otherwise, if another rmm::device_buffer method with a stream parameter is
-   * called after this, the later stream parameter will be stored and used in
-   * the destructor.
+   * If no other rmm::device_buffer method that allocates memory is called
+   * after this call with a different stream argument, then @p stream
+   * will be used for deallocation in the `rmm::device_uvector destructor.
+   * However, if either of `resize()` or `shrink_to_fit()` is called after this,
+   * the later stream parameter will be stored and used in the destructor.
    */
   void set_stream(cuda_stream_view stream) noexcept { _stream = stream; }
 
