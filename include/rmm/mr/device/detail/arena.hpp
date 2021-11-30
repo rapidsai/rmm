@@ -174,8 +174,8 @@ inline bool block_size_compare(block const& lhs, block const& rhs)
  */
 class superblock final : public memory_span {
  public:
-  /// Minimum size of a superblock (64 MiB).
-  static constexpr std::size_t minimum_size{1U << 26U};
+  /// Minimum size of a superblock (1 MiB).
+  static constexpr std::size_t minimum_size{1U << 20U};
 
   /**
    * @brief Construct a default superblock.
