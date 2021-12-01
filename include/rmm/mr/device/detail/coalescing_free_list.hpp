@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <iterator>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/detail/free_list.hpp>
 
@@ -122,6 +123,7 @@ struct block : public block_base {
     return fits(bytes) && (size() < blk.size() || blk.size() < bytes);
   }
 
+#ifdef RMM_DEBUG_PRINT
   /**
    * @brief Print this block. For debugging.
    */
@@ -129,18 +131,21 @@ struct block : public block_base {
   {
     std::cout << fmt::format("{} {} B", fmt::ptr(pointer()), size()) << std::endl;
   }
+#endif
 
  private:
   std::size_t size_bytes{};  ///< Size in bytes
   bool head{};               ///< Indicates whether ptr was allocated from the heap
 };
 
+#ifdef RMM_DEBUG_PRINT
 /// Print block on an ostream
 inline std::ostream& operator<<(std::ostream& out, const block& blk)
 {
   out << fmt::format("{} {} B\n", fmt::ptr(blk.pointer()), blk.size());
   return out;
 }
+#endif
 
 /**
  * @brief Comparator for block types based on pointer address.
@@ -217,9 +222,9 @@ struct coalescing_free_list : free_list<block> {
    */
   void insert(free_list&& other)
   {
-    std::for_each(std::make_move_iterator(other.begin()),
-                  std::make_move_iterator(other.end()),
-                  [this](block_type&& block) { this->insert(block); });
+    using std::make_move_iterator;
+    auto inserter = [this](block_type&& block) { this->insert(block); };
+    std::for_each(make_move_iterator(other.begin()), make_move_iterator(other.end()), inserter);
   }
 
   /**
@@ -233,10 +238,10 @@ struct coalescing_free_list : free_list<block> {
   block_type get_block(std::size_t size)
   {
     // find best fit block
-    auto const iter =
-      std::min_element(cbegin(), cend(), [size](block_type const& lhs, block_type const& rhs) {
-        return lhs.is_better_fit(size, rhs);
-      });
+    auto finder = [size](block_type const& lhs, block_type const& rhs) {
+      return lhs.is_better_fit(size, rhs);
+    };
+    auto const iter = std::min_element(cbegin(), cend(), finder);
 
     if (iter != cend() && iter->fits(size)) {
       // Remove the block from the free_list and return it.
@@ -248,6 +253,7 @@ struct coalescing_free_list : free_list<block> {
     return block_type{};  // not found
   }
 
+#ifdef RMM_DEBUG_PRINT
   /**
    * @brief Print all blocks in the free_list.
    */
@@ -256,6 +262,7 @@ struct coalescing_free_list : free_list<block> {
     std::cout << size() << '\n';
     std::for_each(cbegin(), cend(), [](auto const iter) { iter.print(); });
   }
+#endif
 };  // coalescing_free_list
 
 }  // namespace rmm::mr::detail

@@ -32,6 +32,20 @@ INSTANTIATE_TEST_SUITE_P(ResourceTests,
                                            mr_factory{"Managed", &make_managed},
                                            mr_factory{"Pool", &make_pool},
                                            mr_factory{"Arena", &make_arena},
+                                           mr_factory{"Binning", &make_binning},
+                                           mr_factory{"Fixed_Size", &make_fixed_size}),
+                         [](auto const& info) { return info.param.name; });
+
+// Leave out fixed-size MR here because it can't handle the dynamic allocation sizes
+INSTANTIATE_TEST_SUITE_P(ResourceAllocationTests,
+                         mr_allocation_test,
+                         ::testing::Values(mr_factory{"CUDA", &make_cuda},
+#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
+                                           mr_factory{"CUDA_Async", &make_cuda_async},
+#endif
+                                           mr_factory{"Managed", &make_managed},
+                                           mr_factory{"Pool", &make_pool},
+                                           mr_factory{"Arena", &make_arena},
                                            mr_factory{"Binning", &make_binning}),
                          [](auto const& info) { return info.param.name; });
 
@@ -71,39 +85,14 @@ TEST_P(mr_test, SetCurrentDeviceResource)
 
 TEST_P(mr_test, SelfEquality) { EXPECT_TRUE(this->mr->is_equal(*this->mr)); }
 
-TEST_P(mr_test, AllocateDefaultStream)
+TEST_P(mr_test, SupportsStreams)
 {
-  test_various_allocations(this->mr.get(), cuda_stream_view{});
-}
-
-TEST_P(mr_test, AllocateOnStream) { test_various_allocations(this->mr.get(), this->stream); }
-
-// Simple reproducer for https://github.com/rapidsai/rmm/issues/861
-TEST_P(mr_test, AllocationsAreDifferentDefaultStream)
-{
-  concurrent_allocations_are_different(this->mr.get(), cuda_stream_view{});
-}
-
-TEST_P(mr_test, AllocationsAreDifferent)
-{
-  concurrent_allocations_are_different(this->mr.get(), this->stream);
-}
-
-TEST_P(mr_test, RandomAllocations) { test_random_allocations(this->mr.get()); }
-
-TEST_P(mr_test, RandomAllocationsStream)
-{
-  test_random_allocations(this->mr.get(), default_num_allocations, default_max_size, this->stream);
-}
-
-TEST_P(mr_test, MixedRandomAllocationFree)
-{
-  test_mixed_random_allocation_free(this->mr.get(), default_max_size, cuda_stream_view{});
-}
-
-TEST_P(mr_test, MixedRandomAllocationFreeStream)
-{
-  test_mixed_random_allocation_free(this->mr.get(), default_max_size, this->stream);
+  if (this->mr->is_equal(rmm::mr::cuda_memory_resource{}) ||
+      this->mr->is_equal(rmm::mr::managed_memory_resource{})) {
+    EXPECT_FALSE(this->mr->supports_streams());
+  } else {
+    EXPECT_TRUE(this->mr->supports_streams());
+  }
 }
 
 TEST_P(mr_test, GetMemInfo)
@@ -124,7 +113,50 @@ TEST_P(mr_test, GetMemInfo)
     }
 
     this->mr->deallocate(ptr, allocation_size);
+  } else {
+    auto const [free, total] = this->mr->get_mem_info(rmm::cuda_stream_view{});
+    EXPECT_EQ(free, 0);
+    EXPECT_EQ(total, 0);
   }
 }
+
+// Simple reproducer for https://github.com/rapidsai/rmm/issues/861
+TEST_P(mr_test, AllocationsAreDifferentDefaultStream)
+{
+  concurrent_allocations_are_different(this->mr.get(), cuda_stream_view{});
+}
+
+TEST_P(mr_test, AllocationsAreDifferent)
+{
+  concurrent_allocations_are_different(this->mr.get(), this->stream);
+}
+
+TEST_P(mr_allocation_test, AllocateDefaultStream)
+{
+  test_various_allocations(this->mr.get(), cuda_stream_view{});
+}
+
+TEST_P(mr_allocation_test, AllocateOnStream)
+{
+  test_various_allocations(this->mr.get(), this->stream);
+}
+
+TEST_P(mr_allocation_test, RandomAllocations) { test_random_allocations(this->mr.get()); }
+
+TEST_P(mr_allocation_test, RandomAllocationsStream)
+{
+  test_random_allocations(this->mr.get(), default_num_allocations, default_max_size, this->stream);
+}
+
+TEST_P(mr_allocation_test, MixedRandomAllocationFree)
+{
+  test_mixed_random_allocation_free(this->mr.get(), default_max_size, cuda_stream_view{});
+}
+
+TEST_P(mr_allocation_test, MixedRandomAllocationFreeStream)
+{
+  test_mixed_random_allocation_free(this->mr.get(), default_max_size, this->stream);
+}
+
 }  // namespace
 }  // namespace rmm::test

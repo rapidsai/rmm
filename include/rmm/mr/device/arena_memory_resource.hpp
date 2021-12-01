@@ -280,6 +280,7 @@ class arena_memory_resource final : public device_memory_resource {
         stream_arena.second.dump_memory_log(logger_);
       }
     }
+    logger_->flush();
   }
 
   /**

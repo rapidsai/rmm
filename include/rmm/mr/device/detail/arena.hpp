@@ -177,8 +177,9 @@ constexpr std::size_t align_down(std::size_t value) noexcept
  */
 inline block first_fit(std::set<block>& free_blocks, std::size_t size)
 {
-  auto const iter = std::find_if(
-    free_blocks.cbegin(), free_blocks.cend(), [size](auto const& blk) { return blk.fits(size); });
+  auto fits = [size](auto const& blk) { return blk.fits(size); };
+
+  auto const iter = std::find_if(free_blocks.cbegin(), free_blocks.cend(), fits);
 
   if (iter == free_blocks.cend()) { return {}; }
   // Remove the block from the free_list.

@@ -20,6 +20,10 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
+#include <rmm/mr/device/per_device_resource.hpp>
+
+// explicit instantiation for test coverage purposes.
+template class rmm::device_uvector<int32_t>;
 
 template <typename T>
 struct TypedUVectorTest : ::testing::Test {
@@ -29,6 +33,12 @@ struct TypedUVectorTest : ::testing::Test {
 using TestTypes = ::testing::Types<int8_t, int32_t, uint64_t, float, double>;
 
 TYPED_TEST_CASE(TypedUVectorTest, TestTypes);
+
+TYPED_TEST(TypedUVectorTest, MemoryResource)
+{
+  rmm::device_uvector<TypeParam> vec(128, this->stream());
+  EXPECT_EQ(vec.memory_resource(), rmm::mr::get_current_device_resource());
+}
 
 TYPED_TEST(TypedUVectorTest, ZeroSizeConstructor)
 {
@@ -219,4 +229,22 @@ TYPED_TEST(TypedUVectorTest, SetGetStream)
   vec.set_stream(otherstream);
 
   EXPECT_EQ(vec.stream(), otherstream);
+}
+
+TYPED_TEST(TypedUVectorTest, Iterators)
+{
+  auto const size{12345};
+  rmm::device_uvector<TypeParam> vec(size, this->stream());
+
+  EXPECT_EQ(vec.begin(), vec.data());
+  EXPECT_EQ(vec.cbegin(), vec.data());
+
+  auto const* const_begin = std::as_const(vec).begin();
+  EXPECT_EQ(const_begin, vec.cbegin());
+
+  EXPECT_EQ(std::distance(vec.begin(), vec.end()), vec.size());
+  EXPECT_EQ(std::distance(vec.cbegin(), vec.cend()), vec.size());
+
+  auto const* const_end = std::as_const(vec).end();
+  EXPECT_EQ(const_end, vec.cend());
 }
