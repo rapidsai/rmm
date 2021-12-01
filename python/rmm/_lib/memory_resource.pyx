@@ -457,7 +457,7 @@ cdef void _deallocate_callback_wrapper(
     size_t nbytes,
     void *ctx
 ) with gil:
-    (<object>ctx)(<int><uintptr_t>(ptr), nbytes)
+    (<object>ctx)(<uintptr_t>(ptr), nbytes)
 
 
 cdef class CallbackMemoryResource:
