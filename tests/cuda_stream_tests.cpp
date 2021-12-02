@@ -17,6 +17,7 @@
 #include <rmm/cuda_stream.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_buffer.hpp>
+#include <sstream>
 
 #include <cuda_runtime_api.h>
 
@@ -40,6 +41,8 @@ TEST_F(CudaStreamTest, Equality)
 
   rmm::device_buffer buff{};
   EXPECT_EQ(buff.stream(), view_default);
+
+  EXPECT_NE(static_cast<cudaStream_t>(stream_a), rmm::cuda_stream_default.value());
 }
 
 TEST_F(CudaStreamTest, MoveConstructor)
@@ -50,4 +53,38 @@ TEST_F(CudaStreamTest, MoveConstructor)
   // NOLINTNEXTLINE(bugprone-use-after-move, clang-analyzer-cplusplus.Move)
   EXPECT_FALSE(stream_a.is_valid());  // Any other operations on stream_a are UB, may segfault
   EXPECT_EQ(stream_b, view_a);
+}
+
+TEST_F(CudaStreamTest, TestSyncNoThrow)
+{
+  rmm::cuda_stream stream_a;
+// Cannot test this in debug mode because it will cause an assertion.
+// But need this test to get full code coverage
+#ifdef NDEBUG
+  cudaStreamDestroy(static_cast<cudaStream_t>(stream_a));
+#endif
+  EXPECT_NO_THROW(stream_a.synchronize_no_throw());
+}
+
+TEST_F(CudaStreamTest, TestStreamViewOstream)
+{
+  rmm::cuda_stream stream_a;
+  rmm::cuda_stream_view view(stream_a);
+
+  std::ostringstream oss;
+
+  oss << view;
+
+  std::ostringstream oss_expected;
+
+  oss_expected << stream_a.value();
+
+  EXPECT_EQ(oss.str(), oss_expected.str());
+}
+
+// Without this we don't get test coverage of ~stream_view, presumably because it is elided
+TEST_F(CudaStreamTest, TestStreamViewDestructor)
+{
+  auto view = std::make_shared<rmm::cuda_stream_view>(rmm::cuda_stream_per_thread);
+  view->synchronize();
 }

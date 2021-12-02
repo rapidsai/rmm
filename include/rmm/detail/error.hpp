@@ -52,7 +52,7 @@ struct cuda_error : public std::runtime_error {
 class bad_alloc : public std::bad_alloc {
  public:
   bad_alloc(const char* msg) : _what{std::string{std::bad_alloc::what()} + ": " + msg} {}
-  bad_alloc(std::string const& msg) : bad_alloc(msg.c_str()) {}
+  bad_alloc(std::string const& msg) : bad_alloc{msg.c_str()} {}
 
   [[nodiscard]] const char* what() const noexcept override { return _what.c_str(); }
 
@@ -67,7 +67,8 @@ class bad_alloc : public std::bad_alloc {
  */
 class out_of_memory : public bad_alloc {
  public:
-  using bad_alloc::bad_alloc;
+  out_of_memory(const char* msg) : bad_alloc{std::string{"out_of_memory: "} + msg} {}
+  out_of_memory(std::string const& msg) : out_of_memory{msg.c_str()} {}
 };
 
 /**

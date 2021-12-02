@@ -307,8 +307,8 @@ class superblock final : public memory_span {
     RMM_LOGGING_ASSERT(is_valid());
     RMM_LOGGING_ASSERT(size > 0);
 
-    auto const iter = std::find_if(
-      free_blocks_.cbegin(), free_blocks_.cend(), [size](auto const& b) { return b.fits(size); });
+    auto fits = [size](auto const& blk) { return blk.fits(size); };
+    auto const iter = std::find_if(free_blocks_.cbegin(), free_blocks_.cend(), fits);
     if (iter == free_blocks_.cend()) { return {}; }
 
     // Remove the block from the free list.

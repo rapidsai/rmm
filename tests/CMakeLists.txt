@@ -16,12 +16,6 @@
 option(DISABLE_DEPRECATION_WARNING "Disable warnings generated from deprecated declarations." OFF)
 option(CODE_COVERAGE "Enable generating code coverage with gcov." OFF)
 
-if(CODE_COVERAGE)
-  if(NOT (CMAKE_BUILD_TYPE STREQUAL "Debug"))
-    message(WARNING "Generating code coverage for optimised (non-Debug) builds not recommended")
-  endif()
-endif()
-
 # This function takes in a test name and test source and handles setting all of the associated
 # properties and linking to build the test
 function(ConfigureTestInternal TEST_NAME)
@@ -59,10 +53,10 @@ function(ConfigureTestInternal TEST_NAME)
       target_compile_options(
         ${TEST_NAME}
         PUBLIC
-          $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=--coverage,-fprofile-abs-path,-fkeep-inline-functions,-fno-elide-constructors>
-      )
+          $<$<COMPILE_LANGUAGE:CUDA>:-O0
+          -Xcompiler=--coverage,-fprofile-abs-path,-fkeep-inline-functions,-fno-elide-constructors>)
       target_compile_options(
-        ${TEST_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CXX>:--coverage -fprofile-abs-path
+        ${TEST_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-O0 --coverage -fprofile-abs-path
                             -fkeep-inline-functions -fno-elide-constructors>)
       target_link_options(${TEST_NAME} PRIVATE --coverage)
       target_link_libraries(${TEST_NAME} gcov)
@@ -96,11 +90,11 @@ endfunction()
 # device mr tests
 ConfigureTest(DEVICE_MR_TEST mr/device/mr_tests.cpp mr/device/mr_multithreaded_tests.cpp)
 
+# general adaptor tests
+ConfigureTest(ADAPTOR_TEST mr/device/adaptor_tests.cpp)
+
 # pool mr tests
 ConfigureTest(POOL_MR_TEST mr/device/pool_mr_tests.cpp)
-
-# arena mr tests
-ConfigureTest(ARENA_MR_TEST mr/device/arena_mr_tests.cpp)
 
 # cuda_async mr tests
 ConfigureTest(CUDA_ASYNC_MR_TEST mr/device/cuda_async_mr_tests.cpp)
@@ -146,3 +140,9 @@ ConfigureTest(LOGGER_TEST logger_tests.cpp)
 
 # uvector tests
 ConfigureTest(DEVICE_UVECTOR_TEST device_uvector_tests.cpp)
+
+# arena MR tests
+ConfigureTest(ARENA_MR_TEST mr/device/arena_mr_tests.cpp)
+
+# binning MR tests
+ConfigureTest(BINNING_MR_TEST mr/device/binning_mr_tests.cpp)

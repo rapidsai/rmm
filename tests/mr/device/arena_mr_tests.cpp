@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "../../byte_literals.hpp"
 #include <rmm/cuda_stream.hpp>
 #include <rmm/detail/aligned.hpp>
 #include <rmm/detail/cuda_util.hpp>
@@ -21,13 +22,12 @@
 #include <rmm/mr/device/arena_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
-#include "../../byte_literals.hpp"
 
-#include <gmock/gmock-actions.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <memory>
+#include <sys/stat.h>
 
 namespace rmm::test {
 namespace {
@@ -460,10 +460,11 @@ TEST_F(ArenaTest, ArenaDefragment)  // NOLINT
  * Test arena_memory_resource.
  */
 
-TEST_F(ArenaTest, NullUpstream)  // NOLINT
+TEST_F(ArenaTest, ThrowOnNullUpstream)  // NOLINT
 {
+  auto construct_nullptr = []() { arena_mr mr{nullptr}; };
   // NOLINTNEXTLINE(cppcoreguidelines-avoid-goto)
-  EXPECT_THROW([]() { arena_mr mr{nullptr}; }(), rmm::logic_error);
+  EXPECT_THROW(construct_nullptr(), rmm::logic_error);
 }
 
 TEST_F(ArenaTest, AllocateNinetyPercent)  // NOLINT
@@ -513,6 +514,45 @@ TEST_F(ArenaTest, Defragment)  // NOLINT
     auto* ptr = mr.allocate(arena_size);
     mr.deallocate(ptr, arena_size);
   }());
+}
+
+TEST_F(ArenaTest, DumpLogOnFailure)  // NOLINT
+{
+  arena_mr mr{rmm::mr::get_current_device_resource(), 1_MiB, true};
+
+  {  // make the log interesting
+    std::vector<std::thread> threads;
+    std::size_t num_threads{4};
+    threads.reserve(num_threads);
+    for (std::size_t i = 0; i < num_threads; ++i) {
+      threads.emplace_back(std::thread([&] {
+        void* ptr = mr.allocate(32_KiB);
+        mr.deallocate(ptr, 32_KiB);
+      }));
+    }
+
+    for (auto& thread : threads) {
+      thread.join();
+    }
+  }
+
+  // NOLINTNEXTLINE(cppcoreguidelines-avoid-goto)
+  EXPECT_THROW(mr.allocate(8_MiB), rmm::out_of_memory);
+
+  struct stat file_status {
+  };
+  EXPECT_EQ(stat("rmm_arena_memory_dump.log", &file_status), 0);
+  EXPECT_GE(file_status.st_size, 0);
+}
+
+TEST_F(ArenaTest, FeatureSupport)  // NOLINT
+{
+  arena_mr mr{rmm::mr::get_current_device_resource(), 1_MiB};
+  EXPECT_TRUE(mr.supports_streams());
+  EXPECT_FALSE(mr.supports_get_mem_info());
+  auto [free, total] = mr.get_mem_info(rmm::cuda_stream_default);
+  EXPECT_EQ(free, 0);
+  EXPECT_EQ(total, 0);
 }
 
 }  // namespace
