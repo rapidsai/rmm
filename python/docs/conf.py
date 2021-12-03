@@ -72,7 +72,7 @@ author = "NVIDIA"
 version = "21.12"
 # The full version, including alpha/beta/rc tags.
 <<<<<<< HEAD
-release = "21.10.01"
+release = "21.12.00"
 =======
 release = "21.12.00"
 >>>>>>> origin/branch-21.12
