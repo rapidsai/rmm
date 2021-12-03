@@ -1,4 +1,17 @@
-# Copyright (c) 2020, NVIDIA CORPORATION.
+# Copyright (c) 2020-2021, NVIDIA CORPORATION.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import os
 import warnings
 from collections import defaultdict
@@ -110,6 +123,19 @@ cdef extern from "rmm/mr/device/tracking_resource_adaptor.hpp" \
         size_t get_allocated_bytes() except +
         string get_outstanding_allocations_str() except +
         void log_outstanding_allocations() except +
+
+cdef extern from "rmm/mr/device/failure_callback_resource_adaptor.hpp" \
+        namespace "rmm::mr" nogil:
+    ctypedef bool (*failure_callback_t)(size_t, void*)
+    cdef cppclass failure_callback_resource_adaptor[Upstream](
+        device_memory_resource
+    ):
+        failure_callback_resource_adaptor(
+            Upstream* upstream_mr,
+            failure_callback_t callback,
+            void* callback_arg
+        ) except +
+
 
 cdef extern from "rmm/mr/device/per_device_resource.hpp" namespace "rmm" nogil:
 
@@ -599,6 +625,44 @@ cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
 
         (<tracking_resource_adaptor[device_memory_resource]*>(
             self.c_obj.get()))[0].log_outstanding_allocations()
+
+
+cdef bool _oom_callback_function(size_t bytes, void *callback_arg) with gil:
+    return (<object>callback_arg)(bytes)
+
+
+cdef class FailureCallbackResourceAdaptor(UpstreamResourceAdaptor):
+
+    def __cinit__(
+        self,
+        DeviceMemoryResource upstream_mr,
+        object callback,
+    ):
+        self._callback = callback
+        self.c_obj.reset(
+            new failure_callback_resource_adaptor[device_memory_resource](
+                upstream_mr.get_mr(),
+                <failure_callback_t>_oom_callback_function,
+                <void*>callback
+            )
+        )
+
+    def __init__(
+        self,
+        DeviceMemoryResource upstream_mr,
+        object callback,
+    ):
+        """
+        Memory resource that call callback when memory allocation fails.
+
+        Parameters
+        ----------
+        upstream : DeviceMemoryResource
+            The upstream memory resource.
+        callback : callable
+            Function called when memory allocation fails.
+        """
+        pass
 
 
 # Global per-device memory resources; dict of int:DeviceMemoryResource

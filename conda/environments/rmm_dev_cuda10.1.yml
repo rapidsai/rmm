@@ -3,8 +3,8 @@ channels:
 - rapidsai
 - conda-forge
 dependencies:
-- clang=11.0.0
-- clang-tools=11.0.0
+- clang=11.1.0
+- clang-tools=11.1.0
 - cmake>=3.20.1
 - cmake-format=0.6.11
 - flake8=3.8.3
@@ -18,3 +18,4 @@ dependencies:
 - cudatoolkit=10.1
 - spdlog>=1.8.5,<1.9
 - cython>=0.29,<0.30
+- gcovr>=5.0

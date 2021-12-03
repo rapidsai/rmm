@@ -29,7 +29,9 @@
 #include <limits>
 
 #if CUDART_VERSION >= 11020  // 11.2 introduced cudaMallocAsync
+#ifndef RMM_DISABLE_CUDA_MALLOC_ASYNC
 #define RMM_CUDA_MALLOC_ASYNC_SUPPORT
+#endif
 #endif
 
 namespace rmm::mr {
@@ -124,7 +126,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
   /**
    * @brief Query whether the resource supports the get_mem_info API.
    *
-   * @return true
+   * @return false
    */
   [[nodiscard]] bool supports_get_mem_info() const noexcept override { return false; }
 
@@ -148,8 +150,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
     void* ptr{nullptr};
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
     if (bytes > 0) {
-      RMM_CUDA_TRY(cudaMallocFromPoolAsync(&ptr, bytes, pool_handle(), stream.value()),
-                   rmm::bad_alloc);
+      RMM_CUDA_TRY_ALLOC(cudaMallocFromPoolAsync(&ptr, bytes, pool_handle(), stream.value()));
     }
 #else
     (void)bytes;

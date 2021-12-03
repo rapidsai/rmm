@@ -37,8 +37,12 @@ TEST_P(allocator_test, first)
 INSTANTIATE_TEST_CASE_P(ThrustAllocatorTests,
                         allocator_test,
                         ::testing::Values(mr_factory{"CUDA", &make_cuda},
+#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
+                                          mr_factory{"CUDA_Async", &make_cuda_async},
+#endif
                                           mr_factory{"Managed", &make_managed},
                                           mr_factory{"Pool", &make_pool},
+                                          mr_factory{"Arena", &make_arena},
                                           mr_factory{"Binning", &make_binning}),
                         [](auto const& info) { return info.param.name; });
 
