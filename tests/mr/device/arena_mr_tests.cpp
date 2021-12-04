@@ -46,14 +46,12 @@ using arena        = rmm::mr::detail::arena::arena<mock_memory_resource>;
 using arena_mr     = rmm::mr::arena_memory_resource<rmm::mr::device_memory_resource>;
 using ::testing::Return;
 
-// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast,performance-no-int-to-ptr)
-auto const fake_address = reinterpret_cast<void*>(1_KiB);
-// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast,performance-no-int-to-ptr)
+// NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast,performance-no-int-to-ptr)
+auto const fake_address  = reinterpret_cast<void*>(1_KiB);
 auto const fake_address2 = reinterpret_cast<void*>(2_KiB);
-// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast,performance-no-int-to-ptr)
 auto const fake_address3 = reinterpret_cast<void*>(superblock::minimum_size);
-// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast,performance-no-int-to-ptr)
 auto const fake_address4 = reinterpret_cast<void*>(superblock::minimum_size * 2);
+// NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast,performance-no-int-to-ptr)
 
 class ArenaTest : public ::testing::Test {
  protected:
@@ -65,15 +63,30 @@ class ArenaTest : public ::testing::Test {
     a_  = std::make_unique<arena>(*ga_);
   }
 
-  // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
+  // NOLINTBEGIN(cppcoreguidelines-non-private-member-variables-in-classes)
   std::size_t arena_size_{superblock::minimum_size * 4};
-  // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
   mock_memory_resource mock_{};
-  // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
   std::unique_ptr<global_arena> ga_{};
-  // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
   std::unique_ptr<arena> a_{};
+  // NOLINTEND(cppcoreguidelines-non-private-member-variables-in-classes)
 };
+
+/**
+ * Test align_to_size_class.
+ */
+TEST_F(ArenaTest, AlignToSizeClass)  // NOLINT
+{
+  using rmm::mr::detail::arena::align_to_size_class;
+  EXPECT_EQ(align_to_size_class(8), 256);
+  EXPECT_EQ(align_to_size_class(256), 256);
+  EXPECT_EQ(align_to_size_class(264), 512);
+  EXPECT_EQ(align_to_size_class(512), 512);
+  EXPECT_EQ(align_to_size_class(17_KiB), 20_KiB);
+  EXPECT_EQ(align_to_size_class(13_MiB), 14_MiB);
+  EXPECT_EQ(align_to_size_class(2500_MiB), 2560_MiB);
+  EXPECT_EQ(align_to_size_class(128_GiB), 128_GiB);
+  EXPECT_EQ(align_to_size_class(1_PiB), std::numeric_limits<std::size_t>::max());
+}
 
 /**
  * Test memory_span.
@@ -357,13 +370,6 @@ TEST_F(ArenaTest, GlobalArenaAllocateExtraLarge)  // NOLINT
 {
   EXPECT_EQ(ga_->allocate(1_PiB), nullptr);
   EXPECT_EQ(ga_->allocate(1_PiB), nullptr);
-}
-
-TEST_F(ArenaTest, GlobalArenaAllocateAlignUp)  // NOLINT
-{
-  ga_->allocate(superblock::minimum_size + 256);
-  ga_->allocate(superblock::minimum_size + 256);
-  EXPECT_EQ(ga_->allocate(superblock::minimum_size + 256), nullptr);
 }
 
 TEST_F(ArenaTest, GlobalArenaDeallocate)  // NOLINT

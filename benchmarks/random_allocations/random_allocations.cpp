@@ -170,7 +170,9 @@ inline auto make_pool()
 
 inline auto make_arena()
 {
-  return rmm::mr::make_owning_wrapper<rmm::mr::arena_memory_resource>(make_cuda());
+  auto free    = rmm::detail::available_device_memory().first;
+  auto reserve = 1UL << 26;
+  return rmm::mr::make_owning_wrapper<rmm::mr::arena_memory_resource>(make_cuda(), free - reserve);
 }
 
 inline auto make_binning()

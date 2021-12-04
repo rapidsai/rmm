@@ -118,8 +118,6 @@ class arena_memory_resource final : public device_memory_resource {
  private:
   using global_arena = rmm::mr::detail::arena::global_arena<Upstream>;
   using arena        = rmm::mr::detail::arena::arena<Upstream>;
-  using read_lock    = std::shared_lock<std::shared_mutex>;
-  using write_lock   = std::unique_lock<std::shared_mutex>;
 
   /**
    * @brief Allocates memory of size at least `bytes`.
@@ -135,22 +133,25 @@ class arena_memory_resource final : public device_memory_resource {
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
     if (bytes <= 0) { return nullptr; }
+    bytes       = rmm::mr::detail::arena::align_to_size_class(bytes);
+    auto& arena = get_arena(stream);
 
-    bytes         = rmm::detail::align_up(bytes, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
-    auto& arena   = get_arena(stream);
-    void* pointer = arena.allocate(bytes);
+    {
+      std::shared_lock lock(mtx_);
+      void* pointer = arena.allocate(bytes);
+      if (pointer != nullptr) { return pointer; }
+    }
 
-    if (pointer == nullptr) {
-      write_lock lock(mtx_);
+    {
+      std::unique_lock lock(mtx_);
       defragment();
-      pointer = arena.allocate(bytes);
+      void* pointer = arena.allocate(bytes);
       if (pointer == nullptr) {
         if (dump_log_on_failure_) { dump_memory_log(bytes); }
         RMM_FAIL("Maximum pool size exceeded", rmm::out_of_memory);
       }
+      return pointer;
     }
-
-    return pointer;
   }
 
   /**
@@ -178,9 +179,20 @@ class arena_memory_resource final : public device_memory_resource {
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
     if (ptr == nullptr || bytes <= 0) { return; }
+    bytes       = rmm::mr::detail::arena::align_to_size_class(bytes);
+    auto& arena = get_arena(stream);
 
-    bytes = rmm::detail::align_up(bytes, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
-    if (!get_arena(stream).deallocate(ptr, bytes, stream)) {
+    {
+      std::shared_lock lock(mtx_);
+      if (arena.deallocate(ptr, bytes, stream)) { return; }
+    }
+
+    {
+      // Since we are returning this memory to another stream, we need to make sure the current
+      // stream is caught up.
+      stream.synchronize_no_throw();
+
+      std::unique_lock lock(mtx_);
       deallocate_from_other_arena(ptr, bytes, stream);
     }
   }
@@ -195,19 +207,13 @@ class arena_memory_resource final : public device_memory_resource {
    */
   void deallocate_from_other_arena(void* ptr, std::size_t bytes, cuda_stream_view stream)
   {
-    // Since we are returning this memory to another stream, we need to make sure the current stream
-    // is caught up.
-    stream.synchronize_no_throw();
-
-    write_lock lock(mtx_);
-
     if (use_per_thread_arena(stream)) {
-      for (auto&& kv : thread_arenas_) {
-        if (kv.second->deallocate(ptr, bytes, stream)) { return; }
+      for (auto const& thread_arena : thread_arenas_) {
+        if (thread_arena.second->deallocate(ptr, bytes, stream)) { return; }
       }
     } else {
-      for (auto&& kv : stream_arenas_) {
-        if (kv.second.deallocate(ptr, bytes, stream)) { return; }
+      for (auto& stream_arena : stream_arenas_) {
+        if (stream_arena.second.deallocate(ptr, bytes, stream)) { return; }
       }
     }
 
@@ -237,12 +243,12 @@ class arena_memory_resource final : public device_memory_resource {
   {
     auto const thread_id = std::this_thread::get_id();
     {
-      read_lock lock(mtx_);
+      std::shared_lock lock(map_mtx_);
       auto const iter = thread_arenas_.find(thread_id);
       if (iter != thread_arenas_.end()) { return *iter->second; }
     }
     {
-      write_lock lock(mtx_);
+      std::unique_lock lock(map_mtx_);
       auto thread_arena = std::make_shared<arena>(global_arena_);
       thread_arenas_.emplace(thread_id, thread_arena);
       thread_local detail::arena::arena_cleaner<Upstream> cleaner{thread_arena};
@@ -259,12 +265,12 @@ class arena_memory_resource final : public device_memory_resource {
   {
     RMM_LOGGING_ASSERT(!use_per_thread_arena(stream));
     {
-      read_lock lock(mtx_);
+      std::shared_lock lock(map_mtx_);
       auto const iter = stream_arenas_.find(stream.value());
       if (iter != stream_arenas_.end()) { return iter->second; }
     }
     {
-      write_lock lock(mtx_);
+      std::unique_lock lock(map_mtx_);
       stream_arenas_.emplace(stream.value(), global_arena_);
       return stream_arenas_.at(stream.value());
     }
@@ -331,7 +337,9 @@ class arena_memory_resource final : public device_memory_resource {
   bool dump_log_on_failure_{};
   /// The logger for memory dump.
   std::shared_ptr<spdlog::logger> logger_{};
-  /// Mutex for read and write locks.
+  /// Mutex for read and write locks on arena maps.
+  mutable std::shared_mutex map_mtx_;
+  /// Mutex for shared and unique locks on the mr.
   mutable std::shared_mutex mtx_;
 };
 
