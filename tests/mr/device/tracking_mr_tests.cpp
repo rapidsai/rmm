@@ -213,8 +213,11 @@ TEST(TrackingTest, LogOutstandingAllocations)
   }
 
   rmm::logger().set_level(spdlog::level::debug);
-  mr.log_outstanding_allocations();
+  EXPECT_NO_THROW(mr.log_outstanding_allocations());
+
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_DEBUG
   EXPECT_NE(oss.str().find("Outstanding Allocations"), std::string::npos);
+#endif
 
   for (auto& allocation : allocations) {
     mr.deallocate(allocation, ten_MiB);
