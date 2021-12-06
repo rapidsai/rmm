@@ -25,7 +25,7 @@ from setuptools.extension import Extension
 
 import versioneer
 
-install_requires = ["numba", "cython"]
+install_requires = ["numba", "cython", "cuda-python"]
 
 
 def get_cuda_version_from_header(cuda_include_dir):
