@@ -156,6 +156,6 @@ def deviceGetName(device: int):
     """
 
     status, device_name = cuda.cuDeviceGetName(256, cuda.CUdevice(device))
-    if status.value != 0:
+    if status != cuda.CUresult.CUDA_SUCCESS:
         raise CUDADriverError(status)
     return device_name.decode()
