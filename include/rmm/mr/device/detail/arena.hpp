@@ -643,13 +643,15 @@ class global_arena final {
       for (auto const& sblk : superblocks_) {
         if (prev_end == nullptr) { prev_end = sblk.pointer(); }
         logger->info(
-          "    Superblock {}: start={}, end={}, size={}, empty={}, # free blocks={}, gap={}",
+          "    Superblock {}: start={}, end={}, size={}, empty={}, # free blocks={}, max free={}, "
+          "gap={}",
           index,
           fmt::ptr(sblk.pointer()),
           fmt::ptr(sblk.end()),
           rmm::detail::bytes{sblk.size()},
           sblk.empty(),
           sblk.free_blocks(),
+          rmm::detail::bytes{sblk.max_free()},
           rmm::detail::bytes{static_cast<size_t>(sblk.pointer() - prev_end)});
         prev_end = sblk.end();
         index++;
