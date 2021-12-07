@@ -395,7 +395,7 @@ TEST_F(ArenaTest, GlobalArenaDeallocateFromOtherArena)  // NOLINT
   auto sb      = ga_->acquire(512);
   auto const b = sb.first_fit(512);
   ga_->release(std::move(sb));
-  ga_->deallocate_from_other_arena(b.pointer(), b.size());
+  ga_->deallocate(b.pointer(), b.size());
   EXPECT_EQ(ga_->allocate(arena_size_), fake_address3);
 }
 

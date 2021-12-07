@@ -133,7 +133,11 @@ class arena_memory_resource final : public device_memory_resource {
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
     if (bytes <= 0) { return nullptr; }
-    bytes       = rmm::mr::detail::arena::align_to_size_class(bytes);
+#ifdef RMM_ARENA_USE_SIZE_CLASSES
+    bytes = rmm::mr::detail::arena::align_to_size_class(bytes);
+#else
+    bytes = rmm::detail::align_up(bytes, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
+#endif
     auto& arena = get_arena(stream);
 
     {
@@ -179,7 +183,11 @@ class arena_memory_resource final : public device_memory_resource {
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
     if (ptr == nullptr || bytes <= 0) { return; }
-    bytes       = rmm::mr::detail::arena::align_to_size_class(bytes);
+#ifdef RMM_ARENA_USE_SIZE_CLASSES
+    bytes = rmm::mr::detail::arena::align_to_size_class(bytes);
+#else
+    bytes = rmm::detail::align_up(bytes, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
+#endif
     auto& arena = get_arena(stream);
 
     {
@@ -209,17 +217,17 @@ class arena_memory_resource final : public device_memory_resource {
   {
     if (use_per_thread_arena(stream)) {
       for (auto const& thread_arena : thread_arenas_) {
-        if (thread_arena.second->deallocate(ptr, bytes, stream)) { return; }
+        if (thread_arena.second->deallocate(ptr, bytes)) { return; }
       }
     } else {
       for (auto& stream_arena : stream_arenas_) {
-        if (stream_arena.second.deallocate(ptr, bytes, stream)) { return; }
+        if (stream_arena.second.deallocate(ptr, bytes)) { return; }
       }
     }
 
-    // The thread that originally allocated the block has terminated, deallocate directly in the
-    // global arena.
-    global_arena_.deallocate_from_other_arena(ptr, bytes);
+    if (!global_arena_.deallocate(ptr, bytes)) {
+      RMM_FAIL("allocation not found");
+    }
   }
 
   /**

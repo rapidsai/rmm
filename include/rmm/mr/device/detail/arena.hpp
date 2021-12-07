@@ -155,10 +155,10 @@ class memory_span {
   [[nodiscard]] bool is_valid() const { return pointer_ != nullptr && size_ > 0; }
 
   /// Used by std::set to compare spans.
-  bool operator<(memory_span const& ms) const
+  bool operator<(memory_span const& mem_span) const
   {
-    RMM_LOGGING_ASSERT(ms.is_valid());
-    return pointer_ < ms.pointer_;
+    RMM_LOGGING_ASSERT(mem_span.is_valid());
+    return pointer_ < mem_span.pointer_;
   }
 
  private:
@@ -184,58 +184,58 @@ class block final : public memory_span {
   using memory_span::memory_span;
 
   /**
-   * @brief Is this block large enough to fit `sz` bytes?
+   * @brief Is this block large enough to fit `bytes` bytes?
    *
-   * @param sz The size in bytes to check for fit.
-   * @return true if this block is at least `sz` bytes.
+   * @param bytes The size in bytes to check for fit.
+   * @return true if this block is at least `bytes` bytes.
    */
-  [[nodiscard]] bool fits(std::size_t sz) const
+  [[nodiscard]] bool fits(std::size_t bytes) const
   {
     RMM_LOGGING_ASSERT(is_valid());
-    RMM_LOGGING_ASSERT(sz > 0);
-    return size() >= sz;
+    RMM_LOGGING_ASSERT(bytes > 0);
+    return size() >= bytes;
   }
 
   /**
-   * @brief Verifies whether this block can be merged to the beginning of block b.
+   * @brief Verifies whether this block can be merged to the beginning of block blk.
    *
-   * @param b The block to check for contiguity.
-   * @return true Returns true if this block's `pointer` + `size` == `b.pointer`.
+   * @param blk The block to check for contiguity.
+   * @return true Returns true if this block's `pointer` + `size` == `blk.pointer`.
    */
-  [[nodiscard]] bool is_contiguous_before(block const& b) const
+  [[nodiscard]] bool is_contiguous_before(block const& blk) const
   {
     RMM_LOGGING_ASSERT(is_valid());
-    RMM_LOGGING_ASSERT(b.is_valid());
+    RMM_LOGGING_ASSERT(blk.is_valid());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    return pointer() + size() == b.pointer();
+    return pointer() + size() == blk.pointer();
   }
 
   /**
    * @brief Split this block into two by the given size.
    *
-   * @param sz The size in bytes of the first block.
-   * @return std::pair<block, block> A pair of blocks split by sz.
+   * @param bytes The size in bytes of the first block.
+   * @return std::pair<block, block> A pair of blocks split by bytes.
    */
-  [[nodiscard]] std::pair<block, block> split(std::size_t sz) const
+  [[nodiscard]] std::pair<block, block> split(std::size_t bytes) const
   {
     RMM_LOGGING_ASSERT(is_valid());
-    RMM_LOGGING_ASSERT(size() > sz);
+    RMM_LOGGING_ASSERT(size() > bytes);
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    return {{pointer(), sz}, {pointer() + sz, size() - sz}};
+    return {{pointer(), bytes}, {pointer() + bytes, size() - bytes}};
   }
 
   /**
    * @brief Coalesce two contiguous blocks into one.
    *
-   * `this->is_contiguous_before(b)` must be true.
+   * `this->is_contiguous_before(blk)` must be true.
    *
-   * @param b block to merge.
+   * @param blk block to merge.
    * @return block The merged block.
    */
-  [[nodiscard]] block merge(block const& b) const
+  [[nodiscard]] block merge(block const& blk) const
   {
-    RMM_LOGGING_ASSERT(is_contiguous_before(b));
-    return {pointer(), size() + b.size()};
+    RMM_LOGGING_ASSERT(is_contiguous_before(blk));
+    return {pointer(), size() + blk.size()};
   }
 };
 
@@ -278,7 +278,7 @@ class superblock final : public memory_span {
   superblock(superblock const&) = delete;
   superblock& operator=(superblock const&) = delete;
   // Allow move semantics.
-  superblock(superblock&& sb) noexcept = default;
+  superblock(superblock&&) noexcept = default;
   superblock& operator=(superblock&&) noexcept = default;
 
   ~superblock() = default;
@@ -308,28 +308,29 @@ class superblock final : public memory_span {
   /**
    * @brief Whether this superblock contains the given block.
    *
-   * @param b The block to search for.
+   * @param blk The block to search for.
    * @return true if the given block belongs to this superblock.
    */
-  [[nodiscard]] bool contains(block const& b) const
+  [[nodiscard]] bool contains(block const& blk) const
   {
     RMM_LOGGING_ASSERT(is_valid());
-    RMM_LOGGING_ASSERT(b.is_valid());
+    RMM_LOGGING_ASSERT(blk.is_valid());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    return pointer() <= b.pointer() && pointer() + size() >= b.pointer() + b.size();
+    return pointer() <= blk.pointer() && pointer() + size() >= blk.pointer() + blk.size();
   }
 
   /**
-   * @brief Can this superblock fit `sz` bytes?
+   * @brief Can this superblock fit `bytes` bytes?
    *
-   * @param sz The size in bytes to check for fit.
-   * @return true if this superblock can fit `sz` bytes.
+   * @param bytes The size in bytes to check for fit.
+   * @return true if this superblock can fit `bytes` bytes.
    */
-  [[nodiscard]] bool fits(std::size_t sz) const
+  [[nodiscard]] bool fits(std::size_t bytes) const
   {
     RMM_LOGGING_ASSERT(is_valid());
-    return std::any_of(
-      free_blocks_.cbegin(), free_blocks_.cend(), [sz](auto const& b) { return b.fits(sz); });
+    return std::any_of(free_blocks_.cbegin(), free_blocks_.cend(), [bytes](auto const& blk) {
+      return blk.fits(bytes);
+    });
   }
 
   /**
@@ -339,26 +340,26 @@ class superblock final : public memory_span {
    * @return true Returns true if both superblocks are empty and this superblock's
    * `pointer` + `size` == `s.ptr`.
    */
-  [[nodiscard]] bool is_contiguous_before(superblock const& sb) const
+  [[nodiscard]] bool is_contiguous_before(superblock const& sblk) const
   {
     RMM_LOGGING_ASSERT(is_valid());
-    RMM_LOGGING_ASSERT(sb.is_valid());
+    RMM_LOGGING_ASSERT(sblk.is_valid());
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    return empty() && sb.empty() && pointer() + size() == sb.pointer();
+    return empty() && sblk.empty() && pointer() + size() == sblk.pointer();
   }
 
   /**
    * @brief Split this superblock into two by the given size.
    *
-   * @param sz The size in bytes of the first block.
-   * @return superblock_pair A pair of superblocks split by sz.
+   * @param bytes The size in bytes of the first block.
+   * @return superblock_pair A pair of superblocks split by bytes.
    */
-  [[nodiscard]] std::pair<superblock, superblock> split(std::size_t sz) const
+  [[nodiscard]] std::pair<superblock, superblock> split(std::size_t bytes) const
   {
     RMM_LOGGING_ASSERT(is_valid());
-    RMM_LOGGING_ASSERT(empty() && sz >= minimum_size && size() >= sz + minimum_size);
+    RMM_LOGGING_ASSERT(empty() && bytes >= minimum_size && size() >= bytes + minimum_size);
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    return {superblock{pointer(), sz}, superblock{pointer() + sz, size() - sz}};
+    return {superblock{pointer(), bytes}, superblock{pointer() + bytes, size() - bytes}};
   }
 
   /**
@@ -366,13 +367,13 @@ class superblock final : public memory_span {
    *
    * `this->is_contiguous_before(s)` must be true.
    *
-   * @param sb superblock to merge.
+   * @param sblk superblock to merge.
    * @return block The merged block.
    */
-  [[nodiscard]] superblock merge(superblock const& sb) const
+  [[nodiscard]] superblock merge(superblock const& sblk) const
   {
-    RMM_LOGGING_ASSERT(is_contiguous_before(sb));
-    return {pointer(), size() + sb.size()};
+    RMM_LOGGING_ASSERT(is_contiguous_before(sblk));
+    return {pointer(), size() + sblk.size()};
   }
 
   /**
@@ -391,57 +392,52 @@ class superblock final : public memory_span {
     if (iter == free_blocks_.cend()) { return {}; }
 
     // Remove the block from the free list.
-    auto const b    = *iter;
+    auto const blk  = *iter;
     auto const next = free_blocks_.erase(iter);
 
-    if (b.size() > size) {
+    if (blk.size() > size) {
       // Split the block and put the remainder back.
-      auto const split = b.split(size);
+      auto const split = blk.split(size);
       free_blocks_.insert(next, split.second);
       return split.first;
     }
-    return b;
+    return blk;
   }
 
   /**
    * @brief Coalesce the given block with other free blocks.
    *
-   * @param b The block to coalesce.
+   * @param blk The block to coalesce.
    */
-  void coalesce(block const& b)  // NOLINT(readability-function-cognitive-complexity)
+  void coalesce(block const& blk)  // NOLINT(readability-function-cognitive-complexity)
   {
     RMM_LOGGING_ASSERT(is_valid());
-    RMM_LOGGING_ASSERT(b.is_valid());
-    RMM_LOGGING_ASSERT(contains(b));
-
-    if (free_blocks_.empty()) {
-      free_blocks_.insert(b);
-      return;
-    }
+    RMM_LOGGING_ASSERT(blk.is_valid());
+    RMM_LOGGING_ASSERT(contains(blk));
 
     // Find the right place (in ascending address order) to insert the block.
-    auto const next     = free_blocks_.lower_bound(b);
+    auto const next     = free_blocks_.lower_bound(blk);
     auto const previous = next == free_blocks_.cbegin() ? next : std::prev(next);
 
     // Coalesce with neighboring blocks.
-    bool const merge_prev = previous->is_contiguous_before(b);
-    bool const merge_next = next != free_blocks_.cend() && b.is_contiguous_before(*next);
+    bool const merge_prev = previous != free_blocks_.cend() && previous->is_contiguous_before(blk);
+    bool const merge_next = next != free_blocks_.cend() && blk.is_contiguous_before(*next);
 
     if (merge_prev && merge_next) {
-      auto const merged = previous->merge(b).merge(*next);
+      auto const merged = previous->merge(blk).merge(*next);
       free_blocks_.erase(previous);
       auto const iter = free_blocks_.erase(next);
       free_blocks_.insert(iter, merged);
     } else if (merge_prev) {
-      auto const merged = previous->merge(b);
+      auto const merged = previous->merge(blk);
       auto const iter   = free_blocks_.erase(previous);
       free_blocks_.insert(iter, merged);
     } else if (merge_next) {
-      auto const merged = b.merge(*next);
+      auto const merged = blk.merge(*next);
       auto const iter   = free_blocks_.erase(next);
       free_blocks_.insert(iter, merged);
     } else {
-      free_blocks_.insert(next, b);
+      free_blocks_.insert(next, blk);
     }
   }
 
@@ -464,8 +460,8 @@ class superblock final : public memory_span {
 inline auto max_free(std::set<superblock> const& superblocks)
 {
   std::size_t size{};
-  for (auto const& sb : superblocks) {
-    size = std::max(size, sb.max_free());
+  for (auto const& sblk : superblocks) {
+    size = std::max(size, sblk.max_free());
   }
   return size;
 };
@@ -534,7 +530,7 @@ class global_arena final {
     // Superblocks should only be acquired if the size is not directly handled by the global arena.
     RMM_LOGGING_ASSERT(!handles(size));
     std::lock_guard lock(mtx_);
-    return first_fit(size, superblock::minimum_size);
+    return first_fit(size);
   }
 
   /**
@@ -542,11 +538,11 @@ class global_arena final {
    *
    * @param s Superblock to be released.
    */
-  void release(superblock&& sb)
+  void release(superblock&& sblk)
   {
-    RMM_LOGGING_ASSERT(sb.is_valid());
+    RMM_LOGGING_ASSERT(sblk.is_valid());
     std::lock_guard lock(mtx_);
-    coalesce(std::move(sb));
+    coalesce(std::move(sblk));
   }
 
   /**
@@ -558,9 +554,9 @@ class global_arena final {
   {
     std::lock_guard lock(mtx_);
     while (!superblocks.empty()) {
-      auto sb = std::move(superblocks.extract(superblocks.cbegin()).value());
-      RMM_LOGGING_ASSERT(sb.is_valid());
-      coalesce(std::move(sb));
+      auto sblk = std::move(superblocks.extract(superblocks.cbegin()).value());
+      RMM_LOGGING_ASSERT(sblk.is_valid());
+      coalesce(std::move(sblk));
     }
   }
 
@@ -574,56 +570,57 @@ class global_arena final {
   {
     RMM_LOGGING_ASSERT(handles(size));
     std::lock_guard lock(mtx_);
-    auto sb = first_fit(size, size);
-    if (sb.is_valid()) {
-      RMM_LOGGING_ASSERT(large_allocations_.find(sb.pointer()) == large_allocations_.cend());
-      large_allocations_.emplace(sb.pointer(), sb.size());
+    auto sblk = first_fit(size);
+    if (sblk.is_valid()) {
+      auto blk = sblk.first_fit(size);
+      superblocks_.insert(std::move(sblk));
+      return blk.pointer();
     }
-    return sb.pointer();
+    return nullptr;
   }
 
   /**
-   * @brief Deallocate memory pointed to by `ptr` directly.
+   * @brief Deallocate memory pointed to by `ptr`.
    *
    * @param ptr Pointer to be deallocated.
    * @param size The size in bytes of the allocation. This must be equal to the value of `size`
    * that was passed to the `allocate` call that returned `p`.
    * @param stream Stream on which to perform deallocation.
+   * @return bool true if the allocation is found, false otherwise.
    */
-  void deallocate(void* ptr, std::size_t size, cuda_stream_view stream)
+  bool deallocate(void* ptr, std::size_t size, cuda_stream_view stream)
   {
     RMM_LOGGING_ASSERT(handles(size));
     stream.synchronize_no_throw();
-    std::lock_guard lock(mtx_);
-    auto const allocated_size = large_allocations_.at(ptr);
-    large_allocations_.erase(ptr);
-    coalesce({ptr, allocated_size});
+    return deallocate(ptr, size);
   }
 
   /**
-   * @brief Deallocate memory pointed to by `ptr` that was allocated in a per-thread arena.
+   * @brief Deallocate memory pointed to by `ptr`.
    *
    * @param ptr Pointer to be deallocated.
    * @param bytes The size in bytes of the allocation. This must be equal to the
    * value of `bytes` that was passed to the `allocate` call that returned `ptr`.
-   * @param stream Stream on which to perform deallocation.
+   * @return bool true if the allocation is found, false otherwise.
    */
-  void deallocate_from_other_arena(void* ptr, std::size_t bytes)
+  bool deallocate(void* ptr, std::size_t bytes)
   {
     std::lock_guard lock(mtx_);
 
-    block const b{ptr, bytes};
-    auto const iter = std::find_if(
-      superblocks_.cbegin(), superblocks_.cend(), [&](auto const& sb) { return sb.contains(b); });
-    if (iter == superblocks_.cend()) { RMM_FAIL("allocation not found"); }
+    block const blk{ptr, bytes};
+    auto const iter = std::find_if(superblocks_.cbegin(),
+                                   superblocks_.cend(),
+                                   [&](auto const& sblk) { return sblk.contains(blk); });
+    if (iter == superblocks_.cend()) { return false; }
 
-    auto sb = std::move(superblocks_.extract(iter).value());
-    sb.coalesce(b);
-    if (sb.empty()) {
-      coalesce(std::move(sb));
+    auto sblk = std::move(superblocks_.extract(iter).value());
+    sblk.coalesce(blk);
+    if (sblk.empty()) {
+      coalesce(std::move(sblk));
     } else {
-      superblocks_.insert(std::move(sb));
+      superblocks_.insert(std::move(sblk));
     }
+    return true;
   }
 
   /**
@@ -641,22 +638,21 @@ class global_arena final {
       logger->info("  Total size of superblocks: {}",
                    rmm::detail::bytes{total_memory_size(superblocks_)});
       logger->info("  Size of largest free block: {}", rmm::detail::bytes{max_free(superblocks_)});
-      logger->info("  # of outstanding large allocations: {}", large_allocations_.size());
-      auto i = 0;
+      auto index = 0;
       char* prev_end{};
-      for (auto const& sb : superblocks_) {
-        if (prev_end == nullptr) { prev_end = sb.pointer(); }
+      for (auto const& sblk : superblocks_) {
+        if (prev_end == nullptr) { prev_end = sblk.pointer(); }
         logger->info(
           "    Superblock {}: start={}, end={}, size={}, empty={}, # free blocks={}, gap={}",
-          i,
-          fmt::ptr(sb.pointer()),
-          fmt::ptr(sb.end()),
-          rmm::detail::bytes{sb.size()},
-          sb.empty(),
-          sb.free_blocks(),
-          rmm::detail::bytes{static_cast<size_t>(sb.pointer() - prev_end)});
-        prev_end = sb.end();
-        i++;
+          index,
+          fmt::ptr(sblk.pointer()),
+          fmt::ptr(sblk.end()),
+          rmm::detail::bytes{sblk.size()},
+          sblk.empty(),
+          sblk.free_blocks(),
+          rmm::detail::bytes{static_cast<size_t>(sblk.pointer() - prev_end)});
+        prev_end = sblk.end();
+        index++;
       }
     }
   }
@@ -698,60 +694,56 @@ class global_arena final {
    * @param minimum_size The minimum size of the superblock required.
    * @return superblock A superblock that can fit at least `size` bytes, or empty if not found.
    */
-  superblock first_fit(std::size_t size, std::size_t minimum_size)
+  superblock first_fit(std::size_t size)
   {
-    auto const iter = std::find_if(superblocks_.cbegin(), superblocks_.cend(), [=](auto const& sb) {
-      return sb.fits(size) && sb.size() >= minimum_size;
+    auto iter = std::find_if(superblocks_.cbegin(), superblocks_.cend(), [=](auto const& sblk) {
+      return sblk.fits(size);
     });
     if (iter == superblocks_.cend()) { return {}; }
 
-    auto sb = std::move(superblocks_.extract(iter).value());
-    if (sb.empty() && sb.size() >= minimum_size + superblock::minimum_size) {
+    auto sblk           = std::move(superblocks_.extract(iter).value());
+    auto const min_size = std::max(superblock::minimum_size, size);
+    if (sblk.empty() && sblk.size() >= min_size + superblock::minimum_size) {
       // Split the superblock and put the remainder back.
-      auto [head, tail] = sb.split(minimum_size);
+      auto [head, tail] = sblk.split(min_size);
       superblocks_.insert(std::move(tail));
       return std::move(head);
     }
-    return sb;
+    return sblk;
   }
 
   /**
    * @brief Coalesce the given superblock with other empty superblocks.
    *
-   * @param sb The superblock to coalesce.
+   * @param sblk The superblock to coalesce.
    */
-  void coalesce(superblock&& sb)
+  void coalesce(superblock&& sblk)
   {
-    RMM_LOGGING_ASSERT(sb.is_valid());
-
-    if (superblocks_.empty()) {
-      superblocks_.insert(std::move(sb));
-      return;
-    }
+    RMM_LOGGING_ASSERT(sblk.is_valid());
 
     // Find the right place (in ascending address order) to insert the block.
-    auto const next     = superblocks_.lower_bound(sb);
+    auto const next     = superblocks_.lower_bound(sblk);
     auto const previous = next == superblocks_.cbegin() ? next : std::prev(next);
 
     // Coalesce with neighboring blocks.
-    bool const merge_prev = previous->is_contiguous_before(sb);
-    bool const merge_next = next != superblocks_.cend() && sb.is_contiguous_before(*next);
+    bool const merge_prev = previous != superblocks_.cend() && previous->is_contiguous_before(sblk);
+    bool const merge_next = next != superblocks_.cend() && sblk.is_contiguous_before(*next);
 
     if (merge_prev && merge_next) {
       auto prev_sb = std::move(superblocks_.extract(previous).value());
       auto next_sb = std::move(superblocks_.extract(next).value());
-      auto merged  = prev_sb.merge(sb).merge(next_sb);
+      auto merged  = prev_sb.merge(sblk).merge(next_sb);
       superblocks_.insert(std::move(merged));
     } else if (merge_prev) {
       auto prev_sb = std::move(superblocks_.extract(previous).value());
-      auto merged  = prev_sb.merge(sb);
+      auto merged  = prev_sb.merge(sblk);
       superblocks_.insert(std::move(merged));
     } else if (merge_next) {
       auto next_sb = std::move(superblocks_.extract(next).value());
-      auto merged  = sb.merge(next_sb);
+      auto merged  = sblk.merge(next_sb);
       superblocks_.insert(std::move(merged));
     } else {
-      superblocks_.insert(std::move(sb));
+      superblocks_.insert(std::move(sblk));
     }
   }
 
@@ -761,8 +753,6 @@ class global_arena final {
   block upstream_block_;
   /// Address-ordered set of superblocks.
   std::set<superblock> superblocks_;
-  /// Large allocations.
-  std::unordered_map<void*, std::size_t> large_allocations_;
   /// Mutex for exclusive lock.
   mutable std::mutex mtx_;
 };
@@ -818,12 +808,22 @@ class arena {
    */
   bool deallocate(void* ptr, std::size_t size, cuda_stream_view stream)
   {
-    if (global_arena_.handles(size)) {
-      global_arena_.deallocate(ptr, size, stream);
-      return true;
-    }
+    if (global_arena_.handles(size) && global_arena_.deallocate(ptr, size, stream)) { return true; }
+    return deallocate(ptr, size);
+  }
+
+  /**
+   * @brief Deallocate memory pointed to by `ptr`, and possibly return superblocks to upstream.
+   *
+   * @param ptr Pointer to be deallocated.
+   * @param size The size in bytes of the allocation. This must be equal to the value of `size`
+   * that was passed to the `allocate` call that returned `p`.
+   * @return bool true if the allocation is found, false otherwise.
+   */
+  bool deallocate(void* ptr, std::size_t size)
+  {
     std::lock_guard lock(mtx_);
-    return deallocate_from_superblock({ptr, size}, stream);
+    return deallocate_from_superblock({ptr, size});
   }
 
   /**
@@ -833,6 +833,7 @@ class arena {
   {
     std::lock_guard lock(mtx_);
     global_arena_.release(superblocks_);
+    superblocks_.clear();
   }
 
   /**
@@ -843,7 +844,7 @@ class arena {
     std::lock_guard lock(mtx_);
     while (true) {
       auto const iter = std::find_if(
-        superblocks_.cbegin(), superblocks_.cend(), [](auto const& sb) { return sb.empty(); });
+        superblocks_.cbegin(), superblocks_.cend(), [](auto const& sblk) { return sblk.empty(); });
       if (iter == superblocks_.cend()) { return; }
       global_arena_.release(std::move(superblocks_.extract(iter).value()));
     }
@@ -863,18 +864,18 @@ class arena {
                    rmm::detail::bytes{total_memory_size(superblocks_)});
       logger->info("    Size of largest free block: {}",
                    rmm::detail::bytes{max_free(superblocks_)});
-      auto i = 0;
-      for (auto const& sb : superblocks_) {
+      auto index = 0;
+      for (auto const& sblk : superblocks_) {
         logger->info(
           "      Superblock {}: start={}, end={}, size={}, empty={}, # free blocks={}, max free={}",
-          i,
-          fmt::ptr(sb.pointer()),
-          fmt::ptr(sb.end()),
-          rmm::detail::bytes{sb.size()},
-          sb.empty(),
-          sb.free_blocks(),
-          rmm::detail::bytes{sb.max_free()});
-        i++;
+          index,
+          fmt::ptr(sblk.pointer()),
+          fmt::ptr(sblk.end()),
+          rmm::detail::bytes{sblk.size()},
+          sblk.empty(),
+          sblk.free_blocks(),
+          rmm::detail::bytes{sblk.max_free()});
+        index++;
       }
     }
   }
@@ -889,8 +890,8 @@ class arena {
   block get_block(std::size_t size)
   {
     // Find the first-fit free block.
-    auto const b = first_fit(size);
-    if (b.is_valid()) { return b; }
+    auto const blk = first_fit(size);
+    if (blk.is_valid()) { return blk; }
 
     // No existing larger blocks available, so grow the arena and obtain a superblock.
     return expand_arena(size);
@@ -911,32 +912,34 @@ class arena {
    */
   block first_fit(std::size_t size)
   {
-    auto const iter = std::find_if(
-      superblocks_.cbegin(), superblocks_.cend(), [size](auto const& sb) { return sb.fits(size); });
+    auto const iter = std::find_if(superblocks_.cbegin(),
+                                   superblocks_.cend(),
+                                   [size](auto const& sblk) { return sblk.fits(size); });
     if (iter == superblocks_.cend()) { return {}; }
 
-    auto sb      = std::move(superblocks_.extract(iter).value());
-    auto const b = sb.first_fit(size);
-    superblocks_.insert(std::move(sb));
-    return b;
+    auto sblk      = std::move(superblocks_.extract(iter).value());
+    auto const blk = sblk.first_fit(size);
+    superblocks_.insert(std::move(sblk));
+    return blk;
   }
 
   /**
    * @brief Deallocate a block from the superblock it belongs to.
    *
-   * @param b The block to deallocate.
+   * @param blk The block to deallocate.
    * @param stream The stream to use for deallocation.
    * @return true if the block is found.
    */
-  bool deallocate_from_superblock(block const& b, cuda_stream_view stream)
+  bool deallocate_from_superblock(block const& blk)
   {
-    auto const iter = std::find_if(
-      superblocks_.cbegin(), superblocks_.cend(), [&](auto const& sb) { return sb.contains(b); });
+    auto const iter = std::find_if(superblocks_.cbegin(),
+                                   superblocks_.cend(),
+                                   [&](auto const& sblk) { return sblk.contains(blk); });
     if (iter == superblocks_.cend()) { return false; }
 
-    auto sb = std::move(superblocks_.extract(iter).value());
-    sb.coalesce(b);
-    superblocks_.insert(std::move(sb));
+    auto sblk = std::move(superblocks_.extract(iter).value());
+    sblk.coalesce(blk);
+    superblocks_.insert(std::move(sblk));
     return true;
   }
 
@@ -948,12 +951,12 @@ class arena {
    */
   block expand_arena(std::size_t size)
   {
-    auto sb = global_arena_.acquire(size);
-    if (sb.is_valid()) {
-      RMM_LOGGING_ASSERT(sb.size() >= superblock::minimum_size);
-      auto const b = sb.first_fit(size);
-      superblocks_.insert(std::move(sb));
-      return b;
+    auto sblk = global_arena_.acquire(size);
+    if (sblk.is_valid()) {
+      RMM_LOGGING_ASSERT(sblk.size() >= superblock::minimum_size);
+      auto const blk = sblk.first_fit(size);
+      superblocks_.insert(std::move(sblk));
+      return blk;
     }
     return {};
   }
