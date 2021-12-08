@@ -442,10 +442,16 @@ class superblock final : public memory_span {
   }
 
   /**
+   * @brief Find the total free block size.
+   * @return the total free block size.
+   */
+  [[nodiscard]] std::size_t total_free_size() const { return total_memory_size(free_blocks_); }
+
+  /**
    * @brief Find the max free block size.
    * @return the max free block size.
    */
-  [[nodiscard]] std::size_t max_free() const
+  [[nodiscard]] std::size_t max_free_size() const
   {
     if (free_blocks_.empty()) { return 0; }
     return std::max_element(free_blocks_.cbegin(), free_blocks_.cend(), block_size_compare)->size();
@@ -456,12 +462,21 @@ class superblock final : public memory_span {
   std::set<block> free_blocks_{};
 };
 
+/// Calculate the total free size of a set of superblocks.
+inline auto total_free_size(std::set<superblock> const& superblocks)
+{
+  return std::accumulate(
+    superblocks.cbegin(), superblocks.cend(), std::size_t{}, [](auto const& lhs, auto const& rhs) {
+      return lhs + rhs.total_free_size();
+    });
+}
+
 /// Find the max free size from a set of superblocks.
-inline auto max_free(std::set<superblock> const& superblocks)
+inline auto max_free_size(std::set<superblock> const& superblocks)
 {
   std::size_t size{};
   for (auto const& sblk : superblocks) {
-    size = std::max(size, sblk.max_free());
+    size = std::max(size, sblk.max_free_size());
   }
   return size;
 };
@@ -635,14 +650,20 @@ class global_arena final {
     logger->info("  Arena size: {}", rmm::detail::bytes{upstream_block_.size()});
     logger->info("  # superblocks: {}", superblocks_.size());
     if (!superblocks_.empty()) {
-      logger->info("  Total size of superblocks: {}",
-                   rmm::detail::bytes{total_memory_size(superblocks_)});
-      logger->info("  Size of largest free block: {}", rmm::detail::bytes{max_free(superblocks_)});
+      logger->debug("  Total size of superblocks: {}",
+                    rmm::detail::bytes{total_memory_size(superblocks_)});
+      auto const total_free    = total_free_size(superblocks_);
+      auto const max_free      = max_free_size(superblocks_);
+      auto const fragmentation = (1 - max_free / static_cast<double>(total_free)) * 100;
+      logger->info("  Total free memory: {}", rmm::detail::bytes{total_free});
+      logger->info("  Largest block of free memory: {}", rmm::detail::bytes{max_free});
+      logger->info("  Fragmentation: {:.2f}%", fragmentation);
+
       auto index = 0;
       char* prev_end{};
       for (auto const& sblk : superblocks_) {
         if (prev_end == nullptr) { prev_end = sblk.pointer(); }
-        logger->info(
+        logger->debug(
           "    Superblock {}: start={}, end={}, size={}, empty={}, # free blocks={}, max free={}, "
           "gap={}",
           index,
@@ -651,7 +672,7 @@ class global_arena final {
           rmm::detail::bytes{sblk.size()},
           sblk.empty(),
           sblk.free_blocks(),
-          rmm::detail::bytes{sblk.max_free()},
+          rmm::detail::bytes{sblk.max_free_size()},
           rmm::detail::bytes{static_cast<size_t>(sblk.pointer() - prev_end)});
         prev_end = sblk.end();
         index++;
@@ -860,15 +881,15 @@ class arena {
   void dump_memory_log(std::shared_ptr<spdlog::logger> const& logger) const
   {
     std::lock_guard lock(mtx_);
-    logger->info("    # superblocks: {}", superblocks_.size());
+    logger->debug("    # superblocks: {}", superblocks_.size());
     if (!superblocks_.empty()) {
-      logger->info("    Total size of superblocks: {}",
-                   rmm::detail::bytes{total_memory_size(superblocks_)});
-      logger->info("    Size of largest free block: {}",
-                   rmm::detail::bytes{max_free(superblocks_)});
+      logger->debug("    Total size of superblocks: {}",
+                    rmm::detail::bytes{total_memory_size(superblocks_)});
+      logger->debug("    Size of largest free block: {}",
+                    rmm::detail::bytes{max_free_size(superblocks_)});
       auto index = 0;
       for (auto const& sblk : superblocks_) {
-        logger->info(
+        logger->debug(
           "      Superblock {}: start={}, end={}, size={}, empty={}, # free blocks={}, max free={}",
           index,
           fmt::ptr(sblk.pointer()),
@@ -876,7 +897,7 @@ class arena {
           rmm::detail::bytes{sblk.size()},
           sblk.empty(),
           sblk.free_blocks(),
-          rmm::detail::bytes{sblk.max_free()});
+          rmm::detail::bytes{sblk.max_free_size()});
         index++;
       }
     }
