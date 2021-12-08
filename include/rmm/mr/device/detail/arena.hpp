@@ -719,9 +719,9 @@ class global_arena final {
    */
   superblock first_fit(std::size_t size)
   {
-    auto iter = std::find_if(superblocks_.cbegin(), superblocks_.cend(), [=](auto const& sblk) {
-      return sblk.fits(size);
-    });
+    auto const iter = std::find_if(superblocks_.cbegin(),
+                                   superblocks_.cend(),
+                                   [=](auto const& sblk) { return sblk.fits(size); });
     if (iter == superblocks_.cend()) { return {}; }
 
     auto sblk           = std::move(superblocks_.extract(iter).value());

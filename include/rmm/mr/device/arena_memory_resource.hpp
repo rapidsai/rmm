@@ -89,6 +89,8 @@ class arena_memory_resource final : public device_memory_resource {
   {
     if (dump_log_on_failure_) {
       logger_ = spdlog::basic_logger_mt("arena_memory_dump", "rmm_arena_memory_dump.log");
+      // Set the level to `debug` for more detailed output.
+      logger_->set_level(spdlog::level::info);
     }
   }
 
