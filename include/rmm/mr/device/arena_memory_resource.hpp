@@ -81,6 +81,7 @@ class arena_memory_resource final : public device_memory_resource {
    * @param upstream_mr The memory resource from which to allocate blocks for the global arena.
    * @param arena_size Size in bytes of the global arena. Defaults to half of the available memory
    * on the current device.
+   * @param dump_log_on_failure If true, dump memory log when running out of memory.
    */
   explicit arena_memory_resource(Upstream* upstream_mr,
                                  std::optional<std::size_t> arena_size = std::nullopt,

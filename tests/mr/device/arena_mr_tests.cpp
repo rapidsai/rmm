@@ -38,9 +38,9 @@ class mock_memory_resource {
   MOCK_METHOD(void, deallocate, (void*, std::size_t));
 };
 
-using memory_span  = rmm::mr::detail::arena::memory_span;
-using block        = rmm::mr::detail::arena::block;
-using superblock   = rmm::mr::detail::arena::superblock;
+using rmm::mr::detail::arena::block;
+using rmm::mr::detail::arena::byte_span;
+using rmm::mr::detail::arena::superblock;
 using global_arena = rmm::mr::detail::arena::global_arena<mock_memory_resource>;
 using arena        = rmm::mr::detail::arena::arena<mock_memory_resource>;
 using arena_mr     = rmm::mr::arena_memory_resource<rmm::mr::device_memory_resource>;
@@ -89,15 +89,15 @@ TEST_F(ArenaTest, AlignToSizeClass)  // NOLINT
 }
 
 /**
- * Test memory_span.
+ * Test byte_span.
  */
 
-TEST_F(ArenaTest, MemorySpan)  // NOLINT
+TEST_F(ArenaTest, ByteSpan)  // NOLINT
 {
-  memory_span const mem_span{};
-  EXPECT_FALSE(mem_span.is_valid());
-  memory_span const ms2{fake_address, 256};
-  EXPECT_TRUE(ms2.is_valid());
+  byte_span const span{};
+  EXPECT_FALSE(span.is_valid());
+  byte_span const span2{fake_address, 256};
+  EXPECT_TRUE(span2.is_valid());
 }
 
 /**

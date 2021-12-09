@@ -120,12 +120,12 @@ inline std::size_t align_to_size_class(std::size_t value) noexcept
 /**
  * @brief Represents a contiguous region of memory.
  */
-class memory_span {
+class byte_span {
  public:
   /**
    * @brief Construct a default span.
    */
-  memory_span() = default;
+  byte_span() = default;
 
   /**
    * @brief Construct a span given a pointer and size.
@@ -133,7 +133,7 @@ class memory_span {
    * @param pointer The address for the beginning of the span.
    * @param size The size of the span.
    */
-  memory_span(void* pointer, std::size_t size) : pointer_{static_cast<char*>(pointer)}, size_{size}
+  byte_span(void* pointer, std::size_t size) : pointer_{static_cast<char*>(pointer)}, size_{size}
   {
     RMM_LOGGING_ASSERT(pointer != nullptr);
     RMM_LOGGING_ASSERT(size > 0);
@@ -155,10 +155,10 @@ class memory_span {
   [[nodiscard]] bool is_valid() const { return pointer_ != nullptr && size_ > 0; }
 
   /// Used by std::set to compare spans.
-  bool operator<(memory_span const& mem_span) const
+  bool operator<(byte_span const& span) const
   {
-    RMM_LOGGING_ASSERT(mem_span.is_valid());
-    return pointer_ < mem_span.pointer_;
+    RMM_LOGGING_ASSERT(span.is_valid());
+    return pointer_ < span.pointer_;
   }
 
  private:
@@ -166,7 +166,7 @@ class memory_span {
   std::size_t size_{};  ///< Size in bytes.
 };
 
-/// Calculate the total size of a set of memory spans.
+/// Calculate the total size of a set of spans.
 template <typename T>
 inline auto total_memory_size(std::set<T> const& spans)
 {
@@ -179,9 +179,9 @@ inline auto total_memory_size(std::set<T> const& spans)
 /**
  * @brief Represents a chunk of memory that can be allocated and deallocated.
  */
-class block final : public memory_span {
+class block final : public byte_span {
  public:
-  using memory_span::memory_span;
+  using byte_span::byte_span;
 
   /**
    * @brief Is this block large enough to fit `bytes` bytes?
@@ -251,10 +251,12 @@ inline bool block_size_compare(block const& lhs, block const& rhs)
  * @brief Represents a large chunk of memory that is exchanged between the global arena and
  * per-thread arenas.
  */
-class superblock final : public memory_span {
+class superblock final : public byte_span {
  public:
   /// Minimum size of a superblock (1 MiB).
-  static constexpr std::size_t minimum_size{1U << 20U};
+  static constexpr std::size_t minimum_size{1UL << 20};
+  /// Maximum size of a superblock (1 TiB), as a sanity check.
+  static constexpr std::size_t maximum_size{1UL << 40};
 
   /**
    * @brief Construct a default superblock.
@@ -267,10 +269,10 @@ class superblock final : public memory_span {
    * @param pointer The address for the beginning of the superblock.
    * @param size The size of the superblock.
    */
-  superblock(void* pointer, std::size_t size) : memory_span{pointer, size}
+  superblock(void* pointer, std::size_t size) : byte_span{pointer, size}
   {
     RMM_LOGGING_ASSERT(size >= minimum_size);
-    RMM_LOGGING_ASSERT(size < 1UL << 40UL);
+    RMM_LOGGING_ASSERT(size <= maximum_size);
     free_blocks_.emplace(pointer, size);
   }
 
