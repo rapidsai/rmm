@@ -38,7 +38,7 @@ namespace rmm::mr {
 template <typename UpstreamPointer, typename... Properties>
 class thread_safe_resource_adaptor final : public device_memory_resource {
  public:
-  using upstream_view_type = cuda::basic_resource_view<UpstreamPointer, Properties...>;
+  using upstream_view_type = cuda::pmr::basic_resource_ptr<UpstreamPointer, Properties...>;
   using lock_t             = std::lock_guard<std::mutex>;
 
   /**
@@ -125,7 +125,7 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equivalent
    */
-  bool do_is_equal(cuda::memory_resource<memory_kind> const& other) const noexcept override
+  bool do_is_equal(cuda::pmr::memory_resource<memory_kind> const& other) const noexcept override
   {
     if (this == &other) { return true; }
     auto const* thread_safe_other = dynamic_cast<thread_safe_resource_adaptor const*>(&other);

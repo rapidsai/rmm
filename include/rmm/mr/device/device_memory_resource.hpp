@@ -24,9 +24,9 @@
 #include <utility>
 
 // This macro defines overrides of `cuda::stream_ordered_memory_resource` APIs that are needed
-// for compatibility while we transition to using `cuda::memory_resource` as the base classes for
-// RMM MRs. Most derived MR classes will need this line added. They also need to add an explicit
-// override of `do_is_equal(cuda::memory_resource<memory_kind>)`
+// for compatibility while we transition to using `cuda::pmr::memory_resource` as the base classes
+// for RMM MRs. Most derived MR classes will need this line added. They also need to add an explicit
+// override of `do_is_equal(cuda::pmr::memory_resource<memory_kind>)`
 #define TEMPORARY_BASE_CLASS_OVERRIDES                                                        \
   void* do_allocate(std::size_t bytes, std::size_t alignment) override                        \
   {                                                                                           \
@@ -105,7 +105,7 @@ namespace rmm::mr {
  * @endcode
  */
 class device_memory_resource
-  : public cuda::stream_ordered_memory_resource<cuda::memory_kind::device> {
+  : public cuda::pmr::stream_ordered_resource<cuda::pmr::memory_kind::device> {
  public:
   device_memory_resource()                              = default;
   ~device_memory_resource() override                    = default;

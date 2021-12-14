@@ -60,7 +60,7 @@ class pool_memory_resource final : public detail::stream_ordered_memory_resource
                                      pool_memory_resource<UpstreamPointer, Properties...>,
                                      detail::coalescing_free_list> {
  public:
-  using upstream_view_type = cuda::basic_resource_view<UpstreamPointer, Properties...>;
+  using upstream_view_type = cuda::pmr::basic_resource_ptr<UpstreamPointer, Properties...>;
 
   friend class detail::stream_ordered_memory_resource<pool_memory_resource,
                                                       detail::coalescing_free_list>;

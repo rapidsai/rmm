@@ -51,8 +51,8 @@ TEST_F(allocator_test, implicit_conversion)
 {
   rmm::mr::cuda_memory_resource mr;
   // TODO: with C++20 hopefully we can use CTAD on alias templates to do something more like this
-  // test_conversion(cuda::stream_ordered_resource_view{&mr});
-  test_conversion(cuda::stream_ordered_resource_view<cuda::memory_access::device>{&mr});
+  // test_conversion(cuda::pmr::stream_ordered_resource_ptr{&mr});
+  test_conversion(cuda::pmr::stream_ordered_resource_ptr<cuda::pmr::memory_access::device>{&mr});
 }
 
 TEST_F(allocator_test, self_equality)

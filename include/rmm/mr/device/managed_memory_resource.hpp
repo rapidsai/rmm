@@ -105,7 +105,7 @@ class managed_memory_resource final : public device_memory_resource {
    * @return false If the two resources are not equal
    */
   [[nodiscard]] bool do_is_equal(
-    cuda::memory_resource<memory_kind> const& other) const noexcept override
+    cuda::pmr::memory_resource<memory_kind> const& other) const noexcept override
   {
     return dynamic_cast<managed_memory_resource const*>(&other) != nullptr;
   }

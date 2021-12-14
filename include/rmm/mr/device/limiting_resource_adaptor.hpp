@@ -39,7 +39,7 @@ namespace rmm::mr {
 template <typename UpstreamPointer, typename... Properties>
 class limiting_resource_adaptor final : public device_memory_resource {
  public:
-  using upstream_view_type = cuda::basic_resource_view<UpstreamPointer, Properties...>;
+  using upstream_view_type = cuda::pmr::basic_resource_ptr<UpstreamPointer, Properties...>;
   /**
    * @brief Construct a new limiting resource adaptor using `upstream` to satisfy
    * allocation requests and limiting the total allocation amount possible.
@@ -167,7 +167,7 @@ class limiting_resource_adaptor final : public device_memory_resource {
    * @return false If the two resources are not equal
    */
   [[nodiscard]] bool do_is_equal(
-    cuda::memory_resource<memory_kind> const& other) const noexcept override
+    cuda::pmr::memory_resource<memory_kind> const& other) const noexcept override
   {
     if (this == &other) { return true; }
     auto const* cast = dynamic_cast<limiting_resource_adaptor const*>(&other);

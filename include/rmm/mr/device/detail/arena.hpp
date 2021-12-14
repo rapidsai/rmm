@@ -258,7 +258,7 @@ inline auto total_block_size(T const& blocks)
 template <typename UpstreamPointer, typename... Properties>
 class global_arena final {
  public:
-  using upstream_view_type = cuda::basic_resource_view<UpstreamPointer, Properties...>;
+  using upstream_view_type = cuda::pmr::basic_resource_ptr<UpstreamPointer, Properties...>;
 
   /// The default initial size for the global arena.
   static constexpr std::size_t default_initial_size = std::numeric_limits<std::size_t>::max();

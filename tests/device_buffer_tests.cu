@@ -293,7 +293,7 @@ TYPED_TEST(DeviceBufferTest, MoveConstructor)
   EXPECT_EQ(0, buff.size());      // NOLINT(bugprone-use-after-move)
   EXPECT_EQ(0, buff.capacity());  // NOLINT(bugprone-use-after-move)
   EXPECT_EQ(rmm::cuda_stream_default, buff.stream());  // NOLINT(bugprone-use-after-move)
-  EXPECT_NE(cuda::stream_ordered_resource_view<cuda::memory_access::device>{nullptr},
+  EXPECT_NE(cuda::pmr::stream_ordered_resource_ptr<cuda::pmr::memory_access::device>{nullptr},
             buff.memory_resource());  // NOLINT(bugprone-use-after-move)
 }
 
@@ -323,7 +323,7 @@ TYPED_TEST(DeviceBufferTest, MoveConstructorStream)
   EXPECT_EQ(0, buff.size());      // NOLINT(bugprone-use-after-move)
   EXPECT_EQ(0, buff.capacity());  // NOLINT(bugprone-use-after-move)
   EXPECT_EQ(rmm::cuda_stream_view{}, buff.stream());  // NOLINT(bugprone-use-after-move)
-  EXPECT_NE(cuda::stream_ordered_resource_view<cuda::memory_access::device>{nullptr},
+  EXPECT_NE(cuda::pmr::stream_ordered_resource_ptr<cuda::pmr::memory_access::device>{nullptr},
             buff.memory_resource());  // NOLINT(bugprone-use-after-move)
 }
 
@@ -352,7 +352,7 @@ TYPED_TEST(DeviceBufferTest, MoveAssignmentToDefault)
   EXPECT_EQ(0, src.size());
   EXPECT_EQ(0, src.capacity());
   EXPECT_EQ(rmm::cuda_stream_default, src.stream());
-  EXPECT_NE(cuda::stream_ordered_resource_view<cuda::memory_access::device>{nullptr},
+  EXPECT_NE(cuda::pmr::stream_ordered_resource_ptr<cuda::pmr::memory_access::device>{nullptr},
             src.memory_resource());  // NOLINT(bugprone-use-after-move)
 }
 
@@ -381,7 +381,7 @@ TYPED_TEST(DeviceBufferTest, MoveAssignment)
   EXPECT_EQ(0, src.size());
   EXPECT_EQ(0, src.capacity());
   EXPECT_EQ(rmm::cuda_stream_default, src.stream());
-  EXPECT_NE(cuda::stream_ordered_resource_view<cuda::memory_access::device>{nullptr},
+  EXPECT_NE(cuda::pmr::stream_ordered_resource_ptr<cuda::pmr::memory_access::device>{nullptr},
             src.memory_resource());  // NOLINT(bugprone-use-after-move)
 }
 

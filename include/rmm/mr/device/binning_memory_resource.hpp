@@ -43,8 +43,8 @@ namespace rmm::mr {
 template <typename UpstreamPointer, typename... Properties>
 class binning_memory_resource final : public device_memory_resource {
  public:
-  using upstream_view_type = cuda::basic_resource_view<UpstreamPointer, Properties...>;
-  using bin_view_type      = cuda::stream_ordered_resource_view<Properties...>;
+  using upstream_view_type = cuda::pmr::basic_resource_ptr<UpstreamPointer, Properties...>;
+  using bin_view_type      = cuda::pmr::stream_ordered_resource_ptr<Properties...>;
 
   /**
    * @brief Construct a new binning memory resource object.
@@ -206,7 +206,7 @@ class binning_memory_resource final : public device_memory_resource {
    * @return false If the two resources are not equal
    */
   [[nodiscard]] bool do_is_equal(
-    cuda::memory_resource<memory_kind> const& other) const noexcept override
+    cuda::pmr::memory_resource<memory_kind> const& other) const noexcept override
   {
     return this == &other;
   }

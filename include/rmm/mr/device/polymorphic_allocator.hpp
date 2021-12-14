@@ -28,7 +28,7 @@
 namespace rmm::mr {
 
 /**
- * @brief A stream ordered Allocator using a `cuda::stream_ordered_resource_view` to satisfy
+ * @brief A stream ordered Allocator using a `cuda::pmr::stream_ordered_resource_ptr` to satisfy
  * (de)allocations.
  *
  * Similar to `std::pmr::polymorphic_allocator`, uses the runtime polymorphism of
@@ -59,7 +59,7 @@ class polymorphic_allocator {
    *
    * @param mr The `device_memory_resource` to use as the underlying resource.
    */
-  polymorphic_allocator(cuda::stream_ordered_resource_view<cuda::memory_access::device> mr)
+  polymorphic_allocator(cuda::pmr::stream_ordered_resource_ptr<cuda::pmr::memory_access::device> mr)
     : mr_{mr}
   {
   }
@@ -108,14 +108,14 @@ class polymorphic_allocator {
    *
    * @return Pointer to the underlying resource.
    */
-  [[nodiscard]] cuda::stream_ordered_resource_view<cuda::memory_access::device> resource()
+  [[nodiscard]] cuda::pmr::stream_ordered_resource_ptr<cuda::pmr::memory_access::device> resource()
     const noexcept
   {
     return mr_;
   }
 
  private:
-  cuda::stream_ordered_resource_view<cuda::memory_access::device> mr_{
+  cuda::pmr::stream_ordered_resource_ptr<cuda::pmr::memory_access::device> mr_{
     get_current_device_resource()};  ///< Underlying resource used for (de)allocation
 };
 

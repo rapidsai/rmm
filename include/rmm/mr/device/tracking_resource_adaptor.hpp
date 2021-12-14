@@ -46,7 +46,7 @@ namespace rmm::mr {
 template <typename UpstreamPointer, typename... Properties>
 class tracking_resource_adaptor final : public device_memory_resource {
  public:
-  using upstream_view_type = cuda::basic_resource_view<UpstreamPointer, Properties...>;
+  using upstream_view_type = cuda::pmr::basic_resource_ptr<UpstreamPointer, Properties...>;
   // can be a std::shared_mutex once C++17 is adopted
   using read_lock_t  = std::shared_lock<std::shared_timed_mutex>;
   using write_lock_t = std::unique_lock<std::shared_timed_mutex>;
@@ -254,7 +254,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equal
    */
-  bool do_is_equal(cuda::memory_resource<memory_kind> const& other) const noexcept override
+  bool do_is_equal(cuda::pmr::memory_resource<memory_kind> const& other) const noexcept override
   {
     if (this == &other) { return true; }
     auto const* cast = dynamic_cast<tracking_resource_adaptor const*>(&other);

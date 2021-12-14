@@ -193,12 +193,12 @@ class owning_wrapper : public device_memory_resource {
    * @return false If the two resources are not equal
    */
   [[nodiscard]] bool do_is_equal(
-    cuda::memory_resource<memory_kind> const& other) const noexcept override
+    cuda::pmr::memory_resource<memory_kind> const& other) const noexcept override
   {
     if (this == &other) { return true; }
     auto casted = dynamic_cast<owning_wrapper<Resource, Upstreams...> const*>(&other);
-    if (nullptr != casted) { return cuda::view_resource(&wrapped()) == &casted->wrapped(); }
-    return cuda::view_resource(&wrapped()) == &other;
+    if (nullptr != casted) { return cuda::pmr::view_resource(&wrapped()) == &casted->wrapped(); }
+    return cuda::pmr::view_resource(&wrapped()) == &other;
   }
 
   /**

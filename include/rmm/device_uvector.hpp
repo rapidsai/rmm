@@ -117,8 +117,8 @@ class device_uvector {
    */
   explicit device_uvector(std::size_t size,
                           cuda_stream_view stream,
-                          cuda::stream_ordered_resource_view<cuda::memory_access::device> mr =
-                            rmm::mr::get_current_device_resource())
+                          cuda::pmr::stream_ordered_resource_ptr<cuda::pmr::memory_access::device>
+                            mr = rmm::mr::get_current_device_resource())
     : _storage{elements_to_bytes(size), stream, mr}
   {
   }
@@ -134,8 +134,8 @@ class device_uvector {
    */
   explicit device_uvector(device_uvector const& other,
                           cuda_stream_view stream,
-                          cuda::stream_ordered_resource_view<cuda::memory_access::device> mr =
-                            rmm::mr::get_current_device_resource())
+                          cuda::pmr::stream_ordered_resource_ptr<cuda::pmr::memory_access::device>
+                            mr = rmm::mr::get_current_device_resource())
     : _storage{other._storage, stream, mr}
   {
   }
@@ -500,8 +500,8 @@ class device_uvector {
    *
    * @return Pointer to underlying resource
    */
-  [[nodiscard]] cuda::stream_ordered_resource_view<cuda::memory_access::device> memory_resource()
-    const noexcept
+  [[nodiscard]] cuda::pmr::stream_ordered_resource_ptr<cuda::pmr::memory_access::device>
+  memory_resource() const noexcept
   {
     return _storage.memory_resource();
   }

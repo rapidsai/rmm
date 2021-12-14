@@ -34,7 +34,7 @@ struct DeviceScalarTest : public ::testing::Test {
   std::default_random_engine generator{};
   T value{};
   rmm::cuda_stream stream{};
-  cuda::stream_ordered_resource_view<cuda::memory_access::device> mr{
+  cuda::pmr::stream_ordered_resource_ptr<cuda::pmr::memory_access::device> mr{
     rmm::mr::get_current_device_resource()};
 
   DeviceScalarTest() : value{random_value()} {}

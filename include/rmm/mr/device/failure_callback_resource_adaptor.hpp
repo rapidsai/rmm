@@ -89,7 +89,7 @@ template <typename UpstreamPointer,
 
 class failure_callback_resource_adaptor final : public device_memory_resource {
  public:
-  using upstream_view_type = cuda::basic_resource_view<UpstreamPointer, Properties...>;
+  using upstream_view_type = cuda::pmr::basic_resource_ptr<UpstreamPointer, Properties...>;
   using exception_type     = ExceptionType;  ///< The type of exception this object catches/throws
   /**
    * @brief Construct a new `failure_callback_resource_adaptor` using `upstream` to satisfy
@@ -196,7 +196,7 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
    * @return false If the two resources are not equal
    */
   [[nodiscard]] bool do_is_equal(
-    cuda::memory_resource<memory_kind> const& other) const noexcept override
+    cuda::pmr::memory_resource<memory_kind> const& other) const noexcept override
   {
     if (this == &other) { return true; }
     auto const* cast = dynamic_cast<failure_callback_resource_adaptor const*>(&other);

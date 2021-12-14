@@ -103,8 +103,8 @@ class device_buffer {
    */
   explicit device_buffer(std::size_t size,
                          cuda_stream_view stream,
-                         cuda::stream_ordered_resource_view<cuda::memory_access::device> mr =
-                           mr::get_current_device_resource())
+                         cuda::pmr::stream_ordered_resource_ptr<cuda::pmr::memory_access::device>
+                           mr = mr::get_current_device_resource())
     : _stream{stream}, _mr{mr}
   {
     allocate_async(size);
@@ -132,7 +132,7 @@ class device_buffer {
   device_buffer(void const* source_data,
                 std::size_t size,
                 cuda_stream_view stream,
-                cuda::stream_ordered_resource_view<cuda::memory_access::device> mr =
+                cuda::pmr::stream_ordered_resource_ptr<cuda::pmr::memory_access::device> mr =
                   mr::get_current_device_resource())
     : _stream{stream}, _mr{mr}
   {
@@ -163,7 +163,7 @@ class device_buffer {
    */
   device_buffer(device_buffer const& other,
                 cuda_stream_view stream,
-                cuda::stream_ordered_resource_view<cuda::memory_access::device> mr =
+                cuda::pmr::stream_ordered_resource_ptr<cuda::pmr::memory_access::device> mr =
                   rmm::mr::get_current_device_resource())
     : device_buffer{other.data(), other.size(), stream, mr}
   {
@@ -236,7 +236,6 @@ class device_buffer {
   ~device_buffer() noexcept
   {
     deallocate_async();
-    _mr     = nullptr;
     _stream = cuda_stream_view{};
   }
 
@@ -360,8 +359,8 @@ class device_buffer {
    * @brief Returns pointer to the memory resource used to allocate and
    * deallocate the device memory
    */
-  [[nodiscard]] cuda::stream_ordered_resource_view<cuda::memory_access::device> memory_resource()
-    const noexcept
+  [[nodiscard]] cuda::pmr::stream_ordered_resource_ptr<cuda::pmr::memory_access::device>
+  memory_resource() const noexcept
   {
     return _mr;
   }
@@ -371,7 +370,7 @@ class device_buffer {
   std::size_t _size{};         ///< Requested size of the device memory allocation
   std::size_t _capacity{};     ///< The actual size of the device memory allocation
   cuda_stream_view _stream{};  ///< Stream to use for device memory deallocation
-  cuda::stream_ordered_resource_view<cuda::memory_access::device> _mr{
+  cuda::pmr::stream_ordered_resource_ptr<cuda::pmr::memory_access::device> _mr{
     mr::get_current_device_resource()};  ///< The memory resource used to
                                          ///< allocate/deallocate device memory
 

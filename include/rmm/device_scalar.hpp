@@ -82,8 +82,8 @@ class device_scalar {
    * @param mr Optional, resource with which to allocate.
    */
   explicit device_scalar(cuda_stream_view stream,
-                         cuda::stream_ordered_resource_view<cuda::memory_access::device> mr =
-                           rmm::mr::get_current_device_resource())
+                         cuda::pmr::stream_ordered_resource_ptr<cuda::pmr::memory_access::device>
+                           mr = rmm::mr::get_current_device_resource())
     : _storage{1, stream, mr}
   {
   }
@@ -106,8 +106,8 @@ class device_scalar {
    */
   explicit device_scalar(value_type const& initial_value,
                          cuda_stream_view stream,
-                         cuda::stream_ordered_resource_view<cuda::memory_access::device> mr =
-                           rmm::mr::get_current_device_resource())
+                         cuda::pmr::stream_ordered_resource_ptr<cuda::pmr::memory_access::device>
+                           mr = rmm::mr::get_current_device_resource())
     : _storage{1, stream, mr}
   {
     set_value_async(initial_value, stream);
@@ -127,7 +127,7 @@ class device_scalar {
    */
   device_scalar(device_scalar const& other,
                 cuda_stream_view stream,
-                cuda::stream_ordered_resource_view<cuda::memory_access::device> mr =
+                cuda::pmr::stream_ordered_resource_ptr<cuda::pmr::memory_access::device> mr =
                   rmm::mr::get_current_device_resource())
     : _storage{other._storage, stream, mr}
   {

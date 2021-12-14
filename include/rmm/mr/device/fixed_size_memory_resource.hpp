@@ -50,7 +50,7 @@ class fixed_size_memory_resource : public detail::stream_ordered_memory_resource
                                      fixed_size_memory_resource<UpstreamPointer, Properties...>,
                                      detail::fixed_size_free_list> {
  public:
-  using upstream_view_type = cuda::basic_resource_view<UpstreamPointer, Properties...>;
+  using upstream_view_type = cuda::pmr::basic_resource_ptr<UpstreamPointer, Properties...>;
 
   friend class detail::stream_ordered_memory_resource<
     fixed_size_memory_resource<UpstreamPointer, Properties...>,

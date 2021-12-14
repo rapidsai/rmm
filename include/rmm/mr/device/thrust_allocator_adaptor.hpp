@@ -74,7 +74,7 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    * @param stream The stream to be used for device memory (de)allocation
    */
   thrust_allocator(cuda_stream_view stream,
-                   cuda::stream_ordered_resource_view<cuda::memory_access::device> mr)
+                   cuda::pmr::stream_ordered_resource_ptr<cuda::pmr::memory_access::device> mr)
     : _stream{stream}, _mr(mr)
   {
   }
@@ -117,7 +117,7 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
   /**
    * @brief Returns the device memory resource used by this allocator.
    */
-  [[nodiscard]] cuda::stream_ordered_resource_view<cuda::memory_access::device> resource()
+  [[nodiscard]] cuda::pmr::stream_ordered_resource_ptr<cuda::pmr::memory_access::device> resource()
     const noexcept
   {
     return _mr;
@@ -130,7 +130,7 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
 
  private:
   cuda_stream_view _stream{};
-  cuda::stream_ordered_resource_view<cuda::memory_access::device> _mr{
+  cuda::pmr::stream_ordered_resource_ptr<cuda::pmr::memory_access::device> _mr{
     rmm::mr::get_current_device_resource()};
 };
 }  // namespace rmm::mr

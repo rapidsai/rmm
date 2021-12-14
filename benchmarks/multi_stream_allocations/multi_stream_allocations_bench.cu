@@ -53,7 +53,7 @@ __global__ void compute_bound_kernel(int64_t* out)
 using MRFactoryFunc = std::function<std::shared_ptr<rmm::mr::device_memory_resource>()>;
 
 static void run_prewarm(rmm::cuda_stream_pool& stream_pool,
-                        cuda::stream_ordered_resource_view<cuda::memory_access::device> mr)
+                        cuda::pmr::stream_ordered_resource_ptr<cuda::pmr::memory_access::device> mr)
 {
   auto buffers = std::vector<rmm::device_uvector<int64_t>>();
   for (int32_t i = 0; i < stream_pool.get_pool_size(); i++) {
@@ -64,7 +64,7 @@ static void run_prewarm(rmm::cuda_stream_pool& stream_pool,
 
 static void run_test(std::size_t num_kernels,
                      rmm::cuda_stream_pool& stream_pool,
-                     cuda::stream_ordered_resource_view<cuda::memory_access::device> mr)
+                     cuda::pmr::stream_ordered_resource_ptr<cuda::pmr::memory_access::device> mr)
 {
   for (int32_t i = 0; i < num_kernels; i++) {
     auto stream = stream_pool.get_stream(i);
