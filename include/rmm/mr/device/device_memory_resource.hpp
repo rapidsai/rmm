@@ -105,7 +105,8 @@ namespace rmm::mr {
  * @endcode
  */
 class device_memory_resource
-  : public cuda::pmr::stream_ordered_resource<cuda::pmr::memory_kind::device> {
+  : public cuda::pmr::stream_ordered_resource<
+      cuda::pmr::memory_kind::with_properties<cuda::pmr::memory_access::device>> {
  public:
   device_memory_resource()                              = default;
   ~device_memory_resource() override                    = default;
