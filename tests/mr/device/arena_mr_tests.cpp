@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "../../byte_literals.hpp"
 #include <rmm/cuda_stream.hpp>
 #include <rmm/detail/aligned.hpp>
 #include <rmm/detail/cuda_util.hpp>
@@ -21,13 +22,12 @@
 #include <rmm/mr/device/arena_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
-#include "../../byte_literals.hpp"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include <sys/stat.h>
 #include <memory>
+#include <sys/stat.h>
 
 namespace rmm::test {
 namespace {
