@@ -13,11 +13,17 @@
 # limitations under the License.
 
 from libc.stdint cimport uintptr_t
-from libcpp.memory cimport unique_ptr
+from libcpp.memory cimport unique_ptr, shared_ptr
 
 from rmm._cuda.stream cimport Stream
 from rmm._lib.cuda_stream_view cimport cuda_stream_view
 from rmm._lib.memory_resource cimport DeviceMemoryResource
+
+
+cdef extern from "rmm/mr/device/device_memory_resource.hpp" \
+        namespace "rmm::mr" nogil:
+    cdef cppclass device_memory_resource:
+        pass
 
 
 cdef extern from "rmm/device_buffer.hpp" namespace "rmm" nogil:
@@ -39,7 +45,7 @@ cdef class DeviceBuffer:
     # Holds a reference to the DeviceMemoryResource used for allocation.
     # Ensures the MR does not get destroyed before this DeviceBuffer. `mr` is
     # needed for deallocation
-    cdef DeviceMemoryResource mr
+    cdef shared_ptr[device_memory_resource] mr
 
     # Holds a reference to the stream used by the underlying `device_buffer`.
     # Ensures the stream does not get destroyed before this DeviceBuffer

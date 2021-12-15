@@ -26,6 +26,7 @@ cdef extern from "rmm/mr/device/device_memory_resource.hpp" \
 cdef class DeviceMemoryResource:
     cdef shared_ptr[device_memory_resource] c_obj
 
+    cdef shared_ptr[device_memory_resource] get(self)
     cdef device_memory_resource* get_mr(self)
 
 cdef class UpstreamResourceAdaptor(DeviceMemoryResource):

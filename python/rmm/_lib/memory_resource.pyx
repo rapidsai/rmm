@@ -162,6 +162,9 @@ cdef extern from "rmm/mr/device/per_device_resource.hpp" namespace "rmm" nogil:
 
 cdef class DeviceMemoryResource:
 
+    cdef shared_ptr[device_memory_resource] get(self):
+        return self.c_obj
+
     cdef device_memory_resource* get_mr(self):
         return self.c_obj.get()
 
