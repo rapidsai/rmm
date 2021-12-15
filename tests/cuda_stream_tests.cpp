@@ -21,6 +21,7 @@
 
 #include <cuda_runtime_api.h>
 
+#include <gtest/gtest-death-test.h>
 #include <gtest/gtest.h>
 
 struct CudaStreamTest : public ::testing::Test {
@@ -55,17 +56,6 @@ TEST_F(CudaStreamTest, MoveConstructor)
   EXPECT_EQ(stream_b, view_a);
 }
 
-TEST_F(CudaStreamTest, TestSyncNoThrow)
-{
-  rmm::cuda_stream stream_a;
-// Cannot test this in debug mode because it will cause an assertion.
-// But need this test to get full code coverage
-#ifdef NDEBUG
-  cudaStreamDestroy(static_cast<cudaStream_t>(stream_a));
-#endif
-  EXPECT_NO_THROW(stream_a.synchronize_no_throw());
-}
-
 TEST_F(CudaStreamTest, TestStreamViewOstream)
 {
   rmm::cuda_stream stream_a;
@@ -88,3 +78,24 @@ TEST_F(CudaStreamTest, TestStreamViewDestructor)
   auto view = std::make_shared<rmm::cuda_stream_view>(rmm::cuda_stream_per_thread);
   view->synchronize();
 }
+
+TEST_F(CudaStreamTest, TestSyncNoThrow)
+{
+  rmm::cuda_stream stream_a;
+  EXPECT_NO_THROW(stream_a.synchronize_no_throw());
+}
+
+#ifndef NDEBUG
+using CudaStreamDeathTest = CudaStreamTest;
+
+TEST_F(CudaStreamDeathTest, TestSyncNoThrow)
+{
+  auto test = []() {
+    rmm::cuda_stream stream_a;
+    cudaStreamDestroy(static_cast<cudaStream_t>(stream_a));
+    // should assert here or in `~cuda_stream()`
+    stream_a.synchronize_no_throw();
+  };
+  EXPECT_DEATH(test(), "Assertion");
+}
+#endif
