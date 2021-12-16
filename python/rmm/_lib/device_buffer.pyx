@@ -89,7 +89,7 @@ cdef class DeviceBuffer:
                     stream.c_synchronize()
 
         # Save a reference to the MR and stream used for allocation
-        self.mr = get_current_device_resource().get()
+        self.mr = get_current_device_resource().c_obj
         self.stream = stream
 
     def __len__(self):
