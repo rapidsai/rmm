@@ -45,8 +45,9 @@ cdef class DeviceBuffer:
     # Holds a reference to the memory resource used for allocation
     # and ensures that it is not destroyed before the device buffer
     # is deallocated. A reference to a DeviceMemoryResource cannot
-    # be used as it could be released prematurely because of the circle
-    # reference breaking mechanism.
+    # be used as it could be released prematurely by the gc if the DeviceBuffer
+    # is in a reference cycle.
+    # See https://github.com/rapidsai/rmm/pull/931 for details.
     cdef shared_ptr[device_memory_resource] mr
 
     # Holds a reference to the stream used by the underlying `device_buffer`.
