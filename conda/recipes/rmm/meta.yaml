@@ -41,8 +41,8 @@ requirements:
 {% endif %}
 
 test:
-  commands:
-    - python -c "import rmm"
+  imports:
+    - rmm
 
 about:
   home: http://rapids.ai/
