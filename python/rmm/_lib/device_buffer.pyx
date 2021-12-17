@@ -37,6 +37,11 @@ from rmm._lib.lib cimport (
 from rmm._lib.memory_resource cimport get_current_device_resource
 
 
+# The DeviceMemoryResource attribute could be released prematurely
+# by the gc if the DeviceBuffer is in a reference cycle. Removing
+# the tp_clear function with the no_gc_clear decoration prevents that.
+# See https://github.com/rapidsai/rmm/pull/931 for details.
+@cython.no_gc_clear
 cdef class DeviceBuffer:
 
     def __cinit__(self, *,
@@ -89,7 +94,7 @@ cdef class DeviceBuffer:
                     stream.c_synchronize()
 
         # Save a reference to the MR and stream used for allocation
-        self.mr = get_current_device_resource().c_obj
+        self.mr = get_current_device_resource()
         self.stream = stream
 
     def __len__(self):
