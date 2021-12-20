@@ -492,7 +492,8 @@ def test_rmm_enable_disable_logging(dtype, nelem, alloc, tmpdir):
 def test_mr_devicebuffer_lifetime():
     # Test ensures MR/Stream lifetime is longer than DeviceBuffer. Even if all
     # references go out of scope
-    # Create new Pool MR
+    # It is necessary to verify that it also works when using an upstream :
+    # here a Pool MR with the current MR as upstream
     rmm.mr.set_current_device_resource(
         rmm.mr.PoolMemoryResource(rmm.mr.get_current_device_resource())
     )
