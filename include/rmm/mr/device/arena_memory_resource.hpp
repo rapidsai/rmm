@@ -28,6 +28,7 @@
 #include <cstddef>
 #include <map>
 #include <shared_mutex>
+#include <thread>
 
 namespace rmm::mr {
 

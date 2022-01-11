@@ -29,6 +29,9 @@
 #include <memory>
 #include <sys/stat.h>
 
+#include <thread>
+#include <vector>
+
 namespace rmm::test {
 namespace {
 
