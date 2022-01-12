@@ -45,9 +45,9 @@ function(ConfigureBench BENCH_NAME)
     target_compile_definitions(${TEST_NAME} PUBLIC "RMM_DISABLE_CUDA_MALLOC_ASYNC")
   endif()
 
-  target_compile_options(${BENCH_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Wall -Werror
-                                              -Wno-error=deprecated-declarations
-                                              -Wno-unknown-pragmas>)
+  target_compile_options(
+    ${BENCH_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Wall -Werror
+                         -Wno-error=deprecated-declarations -Wno-unknown-pragmas>)
   if(DISABLE_DEPRECATION_WARNING)
     target_compile_options(
       ${BENCH_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-Wno-deprecated-declarations>)
