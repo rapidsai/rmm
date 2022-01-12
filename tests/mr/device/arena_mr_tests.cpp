@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, NVIDIA CORPORATION.
+ * Copyright (c) 2021-2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,22 +56,19 @@ auto const fake_address3 = reinterpret_cast<void*>(superblock::minimum_size);
 auto const fake_address4 = reinterpret_cast<void*>(superblock::minimum_size * 2);
 // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast,performance-no-int-to-ptr)
 
-class ArenaTest : public ::testing::Test {
- protected:
+struct ArenaTest : public ::testing::Test {
   void SetUp() override
   {
-    EXPECT_CALL(mock_, allocate(arena_size_)).WillOnce(Return(fake_address3));
-    EXPECT_CALL(mock_, deallocate(fake_address3, arena_size_));
-    global_arena_ = std::make_unique<global_arena>(&mock_, arena_size_);
-    arena_        = std::make_unique<arena>(*global_arena_);
+    EXPECT_CALL(mock_mr, allocate(arena_size)).WillOnce(Return(fake_address3));
+    EXPECT_CALL(mock_mr, deallocate(fake_address3, arena_size));
+    global        = std::make_unique<global_arena>(&mock_mr, arena_size);
+    per_thread    = std::make_unique<arena>(*global);
   }
 
-  // NOLINTBEGIN(cppcoreguidelines-non-private-member-variables-in-classes)
-  std::size_t arena_size_{superblock::minimum_size * 4};
-  mock_memory_resource mock_{};
-  std::unique_ptr<global_arena> global_arena_{};
-  std::unique_ptr<arena> arena_{};
-  // NOLINTEND(cppcoreguidelines-non-private-member-variables-in-classes)
+  std::size_t arena_size{superblock::minimum_size * 4};
+  mock_memory_resource mock_mr{};
+  std::unique_ptr<global_arena> global{};
+  std::unique_ptr<arena> per_thread{};
 };
 
 /**
@@ -303,103 +300,103 @@ TEST_F(ArenaTest, GlobalArenaNullUpstream)  // NOLINT
 
 TEST_F(ArenaTest, GlobalArenaAcquire)  // NOLINT
 {
-  auto const sblk = global_arena_->acquire(256);
+  auto const sblk = global->acquire(256);
   EXPECT_EQ(sblk.pointer(), fake_address3);
   EXPECT_EQ(sblk.size(), superblock::minimum_size);
   EXPECT_TRUE(sblk.empty());
 
-  auto const sb2 = global_arena_->acquire(1_KiB);
+  auto const sb2 = global->acquire(1_KiB);
   EXPECT_EQ(sb2.pointer(), fake_address4);
   EXPECT_EQ(sb2.size(), superblock::minimum_size);
   EXPECT_TRUE(sb2.empty());
 
-  global_arena_->acquire(512);
-  global_arena_->acquire(512);
-  EXPECT_FALSE(global_arena_->acquire(512).is_valid());
+  global->acquire(512);
+  global->acquire(512);
+  EXPECT_FALSE(global->acquire(512).is_valid());
 }
 
 TEST_F(ArenaTest, GlobalArenaReleaseMergeNext)  // NOLINT
 {
-  auto sblk = global_arena_->acquire(256);
-  global_arena_->release(std::move(sblk));
-  auto* ptr = global_arena_->allocate(arena_size_);
+  auto sblk = global->acquire(256);
+  global->release(std::move(sblk));
+  auto* ptr = global->allocate(arena_size);
   EXPECT_EQ(ptr, fake_address3);
 }
 
 TEST_F(ArenaTest, GlobalArenaReleaseMergePrevious)  // NOLINT
 {
-  auto sblk = global_arena_->acquire(256);
-  auto sb2  = global_arena_->acquire(1_KiB);
-  global_arena_->acquire(512);
-  global_arena_->release(std::move(sblk));
-  global_arena_->release(std::move(sb2));
-  auto* ptr = global_arena_->allocate(superblock::minimum_size * 2);
+  auto sblk = global->acquire(256);
+  auto sb2  = global->acquire(1_KiB);
+  global->acquire(512);
+  global->release(std::move(sblk));
+  global->release(std::move(sb2));
+  auto* ptr = global->allocate(superblock::minimum_size * 2);
   EXPECT_EQ(ptr, fake_address3);
 }
 
 TEST_F(ArenaTest, GlobalArenaReleaseMergePreviousAndNext)  // NOLINT
 {
-  auto sblk = global_arena_->acquire(256);
-  auto sb2  = global_arena_->acquire(1_KiB);
-  auto sb3  = global_arena_->acquire(512);
-  global_arena_->release(std::move(sblk));
-  global_arena_->release(std::move(sb3));
-  global_arena_->release(std::move(sb2));
-  auto* ptr = global_arena_->allocate(arena_size_);
+  auto sblk = global->acquire(256);
+  auto sb2  = global->acquire(1_KiB);
+  auto sb3  = global->acquire(512);
+  global->release(std::move(sblk));
+  global->release(std::move(sb3));
+  global->release(std::move(sb2));
+  auto* ptr = global->allocate(arena_size);
   EXPECT_EQ(ptr, fake_address3);
 }
 
 TEST_F(ArenaTest, GlobalArenaReleaseMultiple)  // NOLINT
 {
   std::set<superblock> superblocks{};
-  auto sblk = global_arena_->acquire(256);
+  auto sblk = global->acquire(256);
   superblocks.insert(std::move(sblk));
-  auto sb2 = global_arena_->acquire(1_KiB);
+  auto sb2 = global->acquire(1_KiB);
   superblocks.insert(std::move(sb2));
-  auto sb3 = global_arena_->acquire(512);
+  auto sb3 = global->acquire(512);
   superblocks.insert(std::move(sb3));
-  global_arena_->release(superblocks);
-  auto* ptr = global_arena_->allocate(arena_size_);
+  global->release(superblocks);
+  auto* ptr = global->allocate(arena_size);
   EXPECT_EQ(ptr, fake_address3);
 }
 
 TEST_F(ArenaTest, GlobalArenaAllocate)  // NOLINT
 {
-  auto* ptr = global_arena_->allocate(superblock::minimum_size * 2);
+  auto* ptr = global->allocate(superblock::minimum_size * 2);
   EXPECT_EQ(ptr, fake_address3);
 }
 
 TEST_F(ArenaTest, GlobalArenaAllocateExtraLarge)  // NOLINT
 {
-  EXPECT_EQ(global_arena_->allocate(1_PiB), nullptr);
-  EXPECT_EQ(global_arena_->allocate(1_PiB), nullptr);
+  EXPECT_EQ(global->allocate(1_PiB), nullptr);
+  EXPECT_EQ(global->allocate(1_PiB), nullptr);
 }
 
 TEST_F(ArenaTest, GlobalArenaDeallocate)  // NOLINT
 {
-  auto* ptr = global_arena_->allocate(superblock::minimum_size * 2);
+  auto* ptr = global->allocate(superblock::minimum_size * 2);
   EXPECT_EQ(ptr, fake_address3);
-  global_arena_->deallocate(ptr, superblock::minimum_size * 2, {});
-  ptr = global_arena_->allocate(superblock::minimum_size * 2);
+  global->deallocate(ptr, superblock::minimum_size * 2, {});
+  ptr = global->allocate(superblock::minimum_size * 2);
   EXPECT_EQ(ptr, fake_address3);
 }
 
 TEST_F(ArenaTest, GlobalArenaDeallocateAlignUp)  // NOLINT
 {
-  auto* ptr  = global_arena_->allocate(superblock::minimum_size + 256);
-  auto* ptr2 = global_arena_->allocate(superblock::minimum_size + 512);
-  global_arena_->deallocate(ptr, superblock::minimum_size + 256, {});
-  global_arena_->deallocate(ptr2, superblock::minimum_size + 512, {});
-  EXPECT_EQ(global_arena_->allocate(arena_size_), fake_address3);
+  auto* ptr  = global->allocate(superblock::minimum_size + 256);
+  auto* ptr2 = global->allocate(superblock::minimum_size + 512);
+  global->deallocate(ptr, superblock::minimum_size + 256, {});
+  global->deallocate(ptr2, superblock::minimum_size + 512, {});
+  EXPECT_EQ(global->allocate(arena_size), fake_address3);
 }
 
 TEST_F(ArenaTest, GlobalArenaDeallocateFromOtherArena)  // NOLINT
 {
-  auto sblk      = global_arena_->acquire(512);
+  auto sblk      = global->acquire(512);
   auto const blk = sblk.first_fit(512);
-  global_arena_->release(std::move(sblk));
-  global_arena_->deallocate(blk.pointer(), blk.size());
-  EXPECT_EQ(global_arena_->allocate(arena_size_), fake_address3);
+  global->release(std::move(sblk));
+  global->deallocate(blk.pointer(), blk.size());
+  EXPECT_EQ(global->allocate(arena_size), fake_address3);
 }
 
 /**
@@ -408,46 +405,46 @@ TEST_F(ArenaTest, GlobalArenaDeallocateFromOtherArena)  // NOLINT
 
 TEST_F(ArenaTest, ArenaAllocate)  // NOLINT
 {
-  EXPECT_EQ(arena_->allocate(superblock::minimum_size), fake_address3);
-  EXPECT_EQ(arena_->allocate(256), fake_address4);
+  EXPECT_EQ(per_thread->allocate(superblock::minimum_size), fake_address3);
+  EXPECT_EQ(per_thread->allocate(256), fake_address4);
 }
 
 TEST_F(ArenaTest, ArenaDeallocate)  // NOLINT
 {
-  auto* ptr = arena_->allocate(superblock::minimum_size);
-  arena_->deallocate(ptr, superblock::minimum_size, {});
-  auto* ptr2 = arena_->allocate(256);
-  arena_->deallocate(ptr2, 256, {});
-  EXPECT_EQ(arena_->allocate(superblock::minimum_size), fake_address3);
+  auto* ptr = per_thread->allocate(superblock::minimum_size);
+  per_thread->deallocate(ptr, superblock::minimum_size, {});
+  auto* ptr2 = per_thread->allocate(256);
+  per_thread->deallocate(ptr2, 256, {});
+  EXPECT_EQ(per_thread->allocate(superblock::minimum_size), fake_address3);
 }
 
 TEST_F(ArenaTest, ArenaDeallocateMergePrevious)  // NOLINT
 {
-  auto* ptr  = arena_->allocate(256);
-  auto* ptr2 = arena_->allocate(256);
-  arena_->allocate(256);
-  arena_->deallocate(ptr, 256, {});
-  arena_->deallocate(ptr2, 256, {});
-  EXPECT_EQ(arena_->allocate(512), fake_address3);
+  auto* ptr  = per_thread->allocate(256);
+  auto* ptr2 = per_thread->allocate(256);
+  per_thread->allocate(256);
+  per_thread->deallocate(ptr, 256, {});
+  per_thread->deallocate(ptr2, 256, {});
+  EXPECT_EQ(per_thread->allocate(512), fake_address3);
 }
 
 TEST_F(ArenaTest, ArenaDeallocateMergeNext)  // NOLINT
 {
-  auto* ptr  = arena_->allocate(256);
-  auto* ptr2 = arena_->allocate(256);
-  arena_->allocate(256);
-  arena_->deallocate(ptr2, 256, {});
-  arena_->deallocate(ptr, 256, {});
-  EXPECT_EQ(arena_->allocate(512), fake_address3);
+  auto* ptr  = per_thread->allocate(256);
+  auto* ptr2 = per_thread->allocate(256);
+  per_thread->allocate(256);
+  per_thread->deallocate(ptr2, 256, {});
+  per_thread->deallocate(ptr, 256, {});
+  EXPECT_EQ(per_thread->allocate(512), fake_address3);
 }
 
 TEST_F(ArenaTest, ArenaDeallocateMergePreviousAndNext)  // NOLINT
 {
-  auto* ptr  = arena_->allocate(256);
-  auto* ptr2 = arena_->allocate(256);
-  arena_->deallocate(ptr, 256, {});
-  arena_->deallocate(ptr2, 256, {});
-  EXPECT_EQ(arena_->allocate(2_KiB), fake_address3);
+  auto* ptr  = per_thread->allocate(256);
+  auto* ptr2 = per_thread->allocate(256);
+  per_thread->deallocate(ptr, 256, {});
+  per_thread->deallocate(ptr2, 256, {});
+  EXPECT_EQ(per_thread->allocate(2_KiB), fake_address3);
 }
 
 TEST_F(ArenaTest, ArenaDefragment)  // NOLINT
@@ -455,14 +452,14 @@ TEST_F(ArenaTest, ArenaDefragment)  // NOLINT
   std::vector<void*> pointers;
   std::size_t num_pointers{4};
   for (std::size_t i = 0; i < num_pointers; i++) {
-    pointers.push_back(arena_->allocate(superblock::minimum_size));
+    pointers.push_back(per_thread->allocate(superblock::minimum_size));
   }
   for (auto* ptr : pointers) {
-    arena_->deallocate(ptr, superblock::minimum_size, {});
+    per_thread->deallocate(ptr, superblock::minimum_size, {});
   }
-  EXPECT_EQ(global_arena_->allocate(arena_size_), nullptr);
-  arena_->defragment();
-  EXPECT_EQ(global_arena_->allocate(arena_size_), fake_address3);
+  EXPECT_EQ(global->allocate(arena_size), nullptr);
+  per_thread->defragment();
+  EXPECT_EQ(global->allocate(arena_size), fake_address3);
 }
 
 /**
@@ -474,6 +471,13 @@ TEST_F(ArenaTest, ThrowOnNullUpstream)  // NOLINT
   auto construct_nullptr = []() { arena_mr mr{nullptr}; };
   // NOLINTNEXTLINE(cppcoreguidelines-avoid-goto)
   EXPECT_THROW(construct_nullptr(), rmm::logic_error);
+}
+
+TEST_F(ArenaTest, SizeSmallerThanSuperblockSize)  // NOLINT
+{
+  auto construct_small = []() { arena_mr mr{rmm::mr::get_current_device_resource(), 256}; };
+  // NOLINTNEXTLINE(cppcoreguidelines-avoid-goto)
+  EXPECT_THROW(construct_small(), rmm::logic_error);
 }
 
 TEST_F(ArenaTest, AllocateNinetyPercent)  // NOLINT

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -509,6 +509,8 @@ class global_arena final {
     RMM_EXPECTS(nullptr != upstream_mr_, "Unexpected null upstream pointer.");
     auto const size = rmm::detail::align_down(arena_size.value_or(default_size()),
                                               rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
+    RMM_EXPECTS(size >= superblock::minimum_size,
+                "Arena size smaller than minimum superblock size.");
     initialize(size);
   }
 
@@ -700,7 +702,6 @@ class global_arena final {
    */
   void initialize(std::size_t size)
   {
-    RMM_LOGGING_ASSERT(size >= superblock::minimum_size);
     upstream_block_ = {upstream_mr_->allocate(size), size};
     superblocks_.emplace(upstream_block_.pointer(), size);
   }
