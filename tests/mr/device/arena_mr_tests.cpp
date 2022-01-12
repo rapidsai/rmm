@@ -61,8 +61,8 @@ struct ArenaTest : public ::testing::Test {
   {
     EXPECT_CALL(mock_mr, allocate(arena_size)).WillOnce(Return(fake_address3));
     EXPECT_CALL(mock_mr, deallocate(fake_address3, arena_size));
-    global        = std::make_unique<global_arena>(&mock_mr, arena_size);
-    per_thread    = std::make_unique<arena>(*global);
+    global     = std::make_unique<global_arena>(&mock_mr, arena_size);
+    per_thread = std::make_unique<arena>(*global);
   }
 
   std::size_t arena_size{superblock::minimum_size * 4};
