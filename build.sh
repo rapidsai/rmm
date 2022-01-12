@@ -42,6 +42,8 @@ BUILD_DIRS="${LIBRMM_BUILD_DIR} ${RMM_BUILD_DIR}"
 VERBOSE_FLAG=""
 BUILD_TYPE=Release
 INSTALL_TARGET=install
+BUILD_BENCHMARKS=OFF
+BUILD_TESTS=OFF
 CUDA_STATIC_RUNTIME=OFF
 PER_THREAD_DEFAULT_STREAM=OFF
 CUDA_MALLOC_ASYNC_SUPPORT=ON
@@ -125,6 +127,12 @@ fi
 if hasArg -n; then
     INSTALL_TARGET=""
 fi
+if hasArg benchmarks; then
+    BUILD_BENCHMARKS=ON
+fi
+if hasArg tests; then
+    BUILD_TESTS=ON
+fi
 if hasArg -s; then
     CUDA_STATIC_RUNTIME=ON
 fi
@@ -154,7 +162,9 @@ fi
 if (( NUMARGS == 0 )) || hasArg librmm; then
     ensureCMakeRan
     echo "building librmm..."
-    cmake --build "${LIBRMM_BUILD_DIR}" -j${PARALLEL_LEVEL} ${VERBOSE_FLAG}
+    cmake --build "${LIBRMM_BUILD_DIR}" -j${PARALLEL_LEVEL} ${VERBOSE_FLAG} \
+        -DBUILD_TESTS=${BUILD_TESTS} \
+        -DBUILD_BENCHMARKS=${BUILD_BENCHMARKS}
     if [[ ${INSTALL_TARGET} != "" ]]; then
         echo "installing librmm..."
         cmake --build "${LIBRMM_BUILD_DIR}" --target install -v ${VERBOSE_FLAG}
