@@ -394,8 +394,8 @@ TEST_F(ArenaTest, GlobalArenaDeallocateAlignUp)  // NOLINT
 
 TEST_F(ArenaTest, GlobalArenaDeallocateFromOtherArena)  // NOLINT
 {
-  auto sblk      = global->acquire(512);
-  auto const blk = sblk.first_fit(512);
+  auto sblk       = global->acquire(512);
+  auto const blk  = sblk.first_fit(512);
   auto const blk2 = sblk.first_fit(1024);
   global->release(std::move(sblk));
   global->deallocate(blk.pointer(), blk.size());
