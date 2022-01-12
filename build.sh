@@ -20,17 +20,19 @@ REPODIR=$(cd $(dirname $0); pwd)
 
 VALIDARGS="clean librmm rmm -v -g -n -s --ptds --no-cudamallocasync -h"
 HELP="$0 [clean] [librmm] [rmm] [-v] [-g] [-n] [-s] [--ptds] [--no-cudamallocasync] [--cmake-args=\"<args>\"] [-h]
-   clean  - remove all existing build artifacts and configuration (start over)
-   librmm - build and install the librmm C++ code
-   rmm    - build and install the rmm Python package
-   -v     - verbose build mode
-   -g     - build for debug
-   -n     - no install step
-   -s     - statically link against cudart
-   --ptds - enable per-thread default stream
-   --no-cudamallocasync  - disable CUDA malloc async support
-   --cmake-args=\\\"<args>\\\"   - pass arbitrary list of CMake configuration options (escape all quotes in argument)
-   -h     - print this text
+   clean                       - remove all existing build artifacts and configuration (start over)
+   librmm                      - build and install the librmm C++ code
+   rmm                         - build and install the rmm Python package
+   benchmarks                  - build benchmarks
+   tests                       - build tests
+   -v                          - verbose build mode
+   -g                          - build for debug
+   -n                          - no install step
+   -s                          - statically link against cudart
+   --ptds                      - enable per-thread default stream
+   --no-cudamallocasync        - disable CUDA malloc async support
+   --cmake-args=\\\"<args>\\\" - pass arbitrary list of CMake configuration options (escape all quotes in argument)
+   -h                          - print this text
 
    default action (no args) is to build and install 'librmm' and 'rmm' targets
 "
@@ -94,6 +96,8 @@ function ensureCMakeRan {
               -DPER_THREAD_DEFAULT_STREAM="${PER_THREAD_DEFAULT_STREAM}" \
               -DCUDA_MALLOC_ASYNC_SUPPORT="${CUDA_MALLOC_ASYNC_SUPPORT}" \
               -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+              -DBUILD_TESTS=${BUILD_TESTS} \
+              -DBUILD_BENCHMARKS=${BUILD_BENCHMARKS} \
               ${CMAKE_ARGS}
         RAN_CMAKE=1
     fi
@@ -162,9 +166,7 @@ fi
 if (( NUMARGS == 0 )) || hasArg librmm; then
     ensureCMakeRan
     echo "building librmm..."
-    cmake --build "${LIBRMM_BUILD_DIR}" -j${PARALLEL_LEVEL} ${VERBOSE_FLAG} \
-        -DBUILD_TESTS=${BUILD_TESTS} \
-        -DBUILD_BENCHMARKS=${BUILD_BENCHMARKS}
+    cmake --build "${LIBRMM_BUILD_DIR}" -j${PARALLEL_LEVEL} ${VERBOSE_FLAG}
     if [[ ${INSTALL_TARGET} != "" ]]; then
         echo "installing librmm..."
         cmake --build "${LIBRMM_BUILD_DIR}" --target install -v ${VERBOSE_FLAG}
