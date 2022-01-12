@@ -876,36 +876,6 @@ class arena {
     }
   }
 
-  /**
-   * Dump memory to log.
-   *
-   * @param logger the spdlog logger to use
-   */
-  void dump_memory_log(std::shared_ptr<spdlog::logger> const& logger) const
-  {
-    std::lock_guard lock(mtx_);
-    logger->debug("    # superblocks: {}", superblocks_.size());
-    if (!superblocks_.empty()) {
-      logger->debug("    Total size of superblocks: {}",
-                    rmm::detail::bytes{total_memory_size(superblocks_)});
-      logger->debug("    Size of largest free block: {}",
-                    rmm::detail::bytes{max_free_size(superblocks_)});
-      auto index = 0;
-      for (auto const& sblk : superblocks_) {
-        logger->debug(
-          "      Superblock {}: start={}, end={}, size={}, empty={}, # free blocks={}, max free={}",
-          index,
-          fmt::ptr(sblk.pointer()),
-          fmt::ptr(sblk.end()),
-          rmm::detail::bytes{sblk.size()},
-          sblk.empty(),
-          sblk.free_blocks(),
-          rmm::detail::bytes{sblk.max_free_size()});
-        index++;
-      }
-    }
-  }
-
  private:
   /**
    * @brief Get an available memory block of at least `size` bytes.

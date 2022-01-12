@@ -310,18 +310,6 @@ class arena_memory_resource final : public device_memory_resource {
     logger_->info("**************************************************");
     logger_->info("Global arena:");
     global_arena_.dump_memory_log(logger_);
-    logger_->debug("Per-thread arenas:");
-    for (auto const& thread_arena : thread_arenas_) {
-      logger_->debug("  Thread {}:", thread_arena.first);
-      thread_arena.second->dump_memory_log(logger_);
-    }
-    if (!stream_arenas_.empty()) {
-      logger_->debug("Per-stream arenas:");
-      for (auto const& stream_arena : stream_arenas_) {
-        logger_->debug("  Stream {}:", static_cast<void*>(stream_arena.first));
-        stream_arena.second.dump_memory_log(logger_);
-      }
-    }
     logger_->flush();
   }
 

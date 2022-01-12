@@ -277,7 +277,9 @@ TEST_F(ArenaTest, SuperblockCoalesceMergePreviousAndNext)  // NOLINT
 TEST_F(ArenaTest, SuperblockMaxFreeSize)  // NOLINT
 {
   superblock sblk{fake_address3, superblock::minimum_size};
-  sblk.first_fit(superblock::minimum_size / 2);
+  auto const blk = sblk.first_fit(superblock::minimum_size / 4);
+  sblk.first_fit(superblock::minimum_size / 4);
+  sblk.coalesce(blk);
   EXPECT_EQ(sblk.max_free_size(), superblock::minimum_size / 2);
 }
 
@@ -394,8 +396,10 @@ TEST_F(ArenaTest, GlobalArenaDeallocateFromOtherArena)  // NOLINT
 {
   auto sblk      = global->acquire(512);
   auto const blk = sblk.first_fit(512);
+  auto const blk2 = sblk.first_fit(1024);
   global->release(std::move(sblk));
   global->deallocate(blk.pointer(), blk.size());
+  global->deallocate(blk2.pointer(), blk2.size());
   EXPECT_EQ(global->allocate(arena_size), fake_address3);
 }
 
