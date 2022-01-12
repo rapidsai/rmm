@@ -38,13 +38,13 @@ namespace rmm::mr {
  * @brief `device_memory_resource` derived class that uses `cudaMallocAsync`/`cudaFreeAsync` for
  * allocation/deallocation.
  */
-class cuda_pool_wrapper final : public device_memory_resource {
+class cuda_async_view_memory_resource final : public device_memory_resource {
  public:
  
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
   /**
-   * @brief Constructs a cuda_pool_wrapper which uses an existing CUDA memory pool.
-   * The provided pool is not owned by cuda_pool_wrapper and must remain valid
+   * @brief Constructs a cuda_async_view_memory_resource which uses an existing CUDA memory pool.
+   * The provided pool is not owned by cuda_async_view_memory_resource and must remain valid
    * during the lifetime of the memory resource.
    *
    * @throws rmm::runtime_error if the CUDA version does not support `cudaMallocAsync`
@@ -52,7 +52,7 @@ class cuda_pool_wrapper final : public device_memory_resource {
    * @param valid_pool_handle Handle to a CUDA memory pool which will be used to
    * serve allocation requests.
    */
-  cuda_pool_wrapper(cudaMemPool_t valid_pool_handle)
+  cuda_async_view_memory_resource(cudaMemPool_t valid_pool_handle)
     : cuda_pool_handle_{[valid_pool_handle]() {
         RMM_EXPECTS(nullptr != valid_pool_handle, "Unexpected null pool handle.");        
         return valid_pool_handle;
@@ -76,11 +76,11 @@ class cuda_pool_wrapper final : public device_memory_resource {
   [[nodiscard]] cudaMemPool_t pool_handle() const noexcept { return cuda_pool_handle_; }
 #endif
 
-  cuda_pool_wrapper() = default;
-  cuda_pool_wrapper(cuda_pool_wrapper const&) = default;
-  cuda_pool_wrapper(cuda_pool_wrapper&&)      = default;
-  cuda_pool_wrapper& operator=(cuda_pool_wrapper const&) = default;
-  cuda_pool_wrapper& operator=(cuda_pool_wrapper&&) = default;
+  cuda_async_view_memory_resource() = default;
+  cuda_async_view_memory_resource(cuda_async_view_memory_resource const&) = default;
+  cuda_async_view_memory_resource(cuda_async_view_memory_resource&&)      = default;
+  cuda_async_view_memory_resource& operator=(cuda_async_view_memory_resource const&) = default;
+  cuda_async_view_memory_resource& operator=(cuda_async_view_memory_resource&&) = default;
 
   /**
    * @brief Query whether the resource supports use of non-null CUDA streams for
@@ -155,7 +155,7 @@ class cuda_pool_wrapper final : public device_memory_resource {
    */
   [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
   {
-    return dynamic_cast<cuda_pool_wrapper const*>(&other) != nullptr;
+    return dynamic_cast<cuda_async_view_memory_resource const*>(&other) != nullptr;
   }
 
   /**

@@ -20,7 +20,7 @@
 #include <rmm/detail/cuda_util.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
-#include <rmm/mr/device/cuda_pool_wrapper.hpp>
+#include <rmm/mr/device/cuda_async_view_memory_resource.hpp>
 
 #include <thrust/optional.h>
 
@@ -87,7 +87,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
     RMM_CUDA_TRY(
       cudaMemPoolSetAttribute(cuda_pool_handle, cudaMemPoolAttrReleaseThreshold, &threshold));
 
-    pool_ = cuda_pool_wrapper{cuda_pool_handle};
+    pool_ = cuda_async_view_memory_resource{cuda_pool_handle};
 
     // Allocate and immediately deallocate the initial_pool_size to prime the pool with the
     // specified size
@@ -100,41 +100,6 @@ class cuda_async_memory_resource final : public device_memory_resource {
       "cudaMallocAsync not supported by the version of the CUDA Toolkit used for this build");
 #endif
   }
-
-#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
-  /**
-   * @brief Constructs a cuda_async_memory_resource which uses an existing CUDA memory pool.
-   * cuda_async_memory_resource takes ownership of this pool.
-   *
-   * @throws rmm::runtime_error if the CUDA version does not support `cudaMallocAsync`
-   * @throws rmm::runtime_error if the pool is null
-   * @throws rmm::runtime_error if the pool is the default memory pool of the current device
-   *
-   * @param valid_pool_handle Handle to a CUDA memory pool which will be used to
-   * serve allocation requests. 
-   */
-  cuda_async_memory_resource(cudaMemPool_t valid_pool_handle)
-    : pool_{[valid_pool_handle]() {
-        RMM_EXPECTS(nullptr != valid_pool_handle, "Unexpected null pool handle.");        
-        return valid_pool_handle;
-      }()}
-  {  
-    // Check if cudaMallocAsync Memory pool supported
-    auto const device = rmm::detail::current_device();
-    int cuda_pool_supported{};
-    auto result =
-      cudaDeviceGetAttribute(&cuda_pool_supported, cudaDevAttrMemoryPoolsSupported, device.value());
-    RMM_EXPECTS(result == cudaSuccess && cuda_pool_supported,
-                "cudaMallocAsync not supported with this CUDA driver/runtime version");
-
-    // Check if valid_pool_handle is not equal to to default memory pool
-    cudaMemPool_t default_pool{};
-    result = cudaDeviceGetDefaultMemPool(&default_pool, device.value());
-
-    RMM_EXPECTS(result == cudaSuccess && default_pool != pool_handle(),
-                "Cannot take ownership of the default memory pool");
-  }
-#endif
 
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
   /**
@@ -173,7 +138,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
  private:
 
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
-  cuda_pool_wrapper pool_{};
+  cuda_async_view_memory_resource pool_{};
 #endif
 
   /**

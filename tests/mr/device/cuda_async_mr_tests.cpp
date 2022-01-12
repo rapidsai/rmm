@@ -55,57 +55,6 @@ TEST(PoolTest, ExplicitReleaseThreshold)
   RMM_CUDA_TRY(cudaDeviceSynchronize());
 }
 
-TEST(PoolTest, TakingOwnershipOfPool)
-{
-  cudaMemPoolProps poolProps = { };
-  poolProps.allocType = cudaMemAllocationTypePinned;
-  poolProps.location.id = rmm::detail::current_device().value();
-  poolProps.location.type = cudaMemLocationTypeDevice;
-
-  cudaMemPool_t memPool{};
-
-  RMM_CUDA_TRY(cudaMemPoolCreate(&memPool, &poolProps));
-
-  {
-
-    const auto pool_init_size{100};
-    cuda_async_mr mr{memPool};
-    void* ptr = mr.allocate(pool_init_size);
-    mr.deallocate(ptr, pool_init_size);
-    RMM_CUDA_TRY(cudaDeviceSynchronize());
-
-  }
-
-  auto destroy_invalid_pool = [&](){
-    auto result = cudaMemPoolDestroy(memPool);
-    RMM_EXPECTS(result == cudaErrorInvalidValue, "Owning mr did not destroy owned pool");
-  };
-
-  EXPECT_NO_THROW(destroy_invalid_pool());
-}
-
-TEST(PoolTest, ThrowIfNullptrPool)
-{
-  auto construct_mr = []() {
-    cudaMemPool_t memPool{nullptr};
-    cuda_async_mr mr{memPool};
-  };
-
-  EXPECT_THROW(construct_mr(), rmm::logic_error);
-}
-
-TEST(PoolTest, ThrowIfDefaultPool)
-{
-  auto construct_mr = []() {
-    cudaMemPool_t memPool{};
-    RMM_CUDA_TRY(cudaDeviceGetDefaultMemPool(&memPool, rmm::detail::current_device().value()));
-
-    cuda_async_mr mr{memPool};
-  };
-
-  EXPECT_THROW(construct_mr(), rmm::logic_error);
-}
-
 
 #endif
 
