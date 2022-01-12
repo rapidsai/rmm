@@ -46,7 +46,8 @@ function(ConfigureBench BENCH_NAME)
   endif()
 
   target_compile_options(${BENCH_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Wall -Werror
-                                              -Wno-error=deprecated-declarations>)
+                                              -Wno-error=deprecated-declarations
+                                              -Wno-unknown-pragmas>)
   if(DISABLE_DEPRECATION_WARNING)
     target_compile_options(
       ${BENCH_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-Wno-deprecated-declarations>)
