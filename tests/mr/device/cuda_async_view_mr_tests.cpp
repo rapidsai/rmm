@@ -51,13 +51,11 @@ TEST(PoolTest, NotTakingOwnershipOfPool)
   RMM_CUDA_TRY(cudaMemPoolCreate(&memPool, &poolProps));
 
   {
-
     const auto pool_init_size{100};
     cuda_async_view_mr mr{memPool};
     void* ptr = mr.allocate(pool_init_size);
     mr.deallocate(ptr, pool_init_size);
     RMM_CUDA_TRY(cudaDeviceSynchronize());
-
   }
 
   auto destroy_valid_pool = [&](){

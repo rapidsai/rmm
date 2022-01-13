@@ -55,7 +55,6 @@ TEST(PoolTest, ExplicitReleaseThreshold)
   RMM_CUDA_TRY(cudaDeviceSynchronize());
 }
 
-
 #endif
 
 }  // namespace
