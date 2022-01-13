@@ -6,8 +6,15 @@ from cuda import cuda, cudart
 class CUDARuntimeError(RuntimeError):
     def __init__(self, status: cudart.cudaError_t):
         self.status = status
-        _, name = cudart.cudaGetErrorName(status)
-        _, msg = cudart.cudaGetErrorString(status)
+
+        err, name = cudart.cudaGetErrorName(status)
+        if err != cudart.cudaError_t.cudaSuccess:
+            raise CUDARuntimeError(err.value)
+
+        err, msg = cudart.cudaGetErrorString(status)
+        if err != cudart.cudaError_t.cudaSuccess:
+            raise CUDARuntimeError(err.value)
+
         super(CUDARuntimeError, self).__init__(
             "%s: %s" % (name.decode(), msg.decode())
         )
