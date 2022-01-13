@@ -4,7 +4,7 @@ from cuda import cuda, cudart
 
 
 class CUDARuntimeError(RuntimeError):
-    def __init__(self, status: cuda.CUresult.CUDA_SUCCESS):
+    def __init__(self, status: cudart.cudaError_t):
         self.status = status
         _, name = cudart.cudaGetErrorName(status)
         _, msg = cudart.cudaGetErrorString(status)
