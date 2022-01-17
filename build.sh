@@ -18,7 +18,7 @@ ARGS=$*
 # script, and that this script resides in the repo dir!
 REPODIR=$(cd $(dirname $0); pwd)
 
-VALIDARGS="clean librmm rmm -v -g -n -s --ptds --no-cudamallocasync -h"
+VALIDARGS="clean librmm rmm -v -g -n -s --ptds --no-cudamallocasync -h tests benchmarks"
 HELP="$0 [clean] [librmm] [rmm] [-v] [-g] [-n] [-s] [--ptds] [--no-cudamallocasync] [--cmake-args=\"<args>\"] [-h]
    clean                       - remove all existing build artifacts and configuration (start over)
    librmm                      - build and install the librmm C++ code
