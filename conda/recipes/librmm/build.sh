@@ -4,5 +4,5 @@
 if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
   ./build.sh -v clean librmm --cmake-args=\"-DCMAKE_INSTALL_LIBDIR=lib\"
 else
-  ./build.sh -v clean librmm tests --cmake-args=\"-DCMAKE_INSTALL_LIBDIR=lib\"
+  ./build.sh -v clean librmm tests benchmarks --cmake-args=\"-DCMAKE_INSTALL_LIBDIR=lib\"
 fi
