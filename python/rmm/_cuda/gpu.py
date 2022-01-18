@@ -7,13 +7,11 @@ class CUDARuntimeError(RuntimeError):
     def __init__(self, status: cudart.cudaError_t):
         self.status = status
 
-        err, name = cudart.cudaGetErrorName(status)
-        if err != cudart.cudaError_t.cudaSuccess:
-            raise CUDARuntimeError(err.value)
+        _, name = cudart.cudaGetErrorName(status)
+        _, msg = cudart.cudaGetErrorString(status)
 
-        err, msg = cudart.cudaGetErrorString(status)
-        if err != cudart.cudaError_t.cudaSuccess:
-            raise CUDARuntimeError(err.value)
+        if name == "unrecognized error code":
+            raise RuntimeError(name.decode())
 
         super(CUDARuntimeError, self).__init__(
             f"{name.decode()}: {msg.decode()}"
@@ -27,13 +25,11 @@ class CUDADriverError(RuntimeError):
     def __init__(self, status: cuda.CUresult):
         self.status = status
 
-        err, name = cuda.cuGetErrorName(status)
-        if err != cuda.CUresult.CUDA_SUCCESS:
-            raise CUDADriverError(err.value)
+        _, name = cuda.cuGetErrorName(status)
+        _, msg = cuda.cuGetErrorString(status)
 
-        err, msg = cuda.cuGetErrorString(status)
-        if err != cuda.CUresult.CUDA_SUCCESS:
-            raise CUDADriverError(err.value)
+        if msg == b"unrecognized  error code":
+            raise RuntimeError(name.decode())
 
         super(CUDADriverError, self).__init__(
             f"{name.decode()}: {msg.decode()}"
