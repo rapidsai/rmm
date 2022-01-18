@@ -16,7 +16,7 @@ class CUDARuntimeError(RuntimeError):
             raise CUDARuntimeError(err.value)
 
         super(CUDARuntimeError, self).__init__(
-            "%s: %s" % (name.decode(), msg.decode())
+            f"{name.decode()}: {msg.decode()}"
         )
 
     def __reduce__(self):
