@@ -36,7 +36,7 @@ class CUDADriverError(RuntimeError):
             raise CUDADriverError(err.value)
 
         super(CUDADriverError, self).__init__(
-            "%s: %s" % (name.decode(), msg.decode())
+            f"{name.decode()}: {msg.decode()}"
         )
 
     def __reduce__(self):
