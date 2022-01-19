@@ -1,5 +1,6 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
+import numba.cuda
 from cuda import cuda, cudart
 
 
@@ -78,13 +79,13 @@ def runtimeGetVersion():
     The version is returned as (1000 major + 10 minor). For example,
     CUDA 9.2 would be represented by 9020.
 
-    This function automatically raises CUDARuntimeError with error message
-    and status code.
+    This calls numba.cuda.runtime.get_version() rather than cuda-python due to
+    current limitations in cuda-python.
     """
-    status, version = cudart.cudaRuntimeGetVersion()
-    if status != cudart.cudaError_t.cudaSuccess:
-        raise CUDARuntimeError(status)
-    return version
+    # TODO: Replace this with `cuda.cudart.cudaRuntimeGetVersion()` when the
+    # limitation is fixed.
+    major, minor = numba.cuda.runtime.get_version()
+    return major * 1000 + minor * 10
 
 
 def getDeviceCount():
