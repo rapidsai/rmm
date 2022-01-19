@@ -23,7 +23,9 @@ from libcpp.cast cimport dynamic_cast
 from libcpp.memory cimport make_shared, make_unique, shared_ptr, unique_ptr
 from libcpp.string cimport string
 
-from rmm._cuda.gpu import CUDARuntimeError, cudaError, getDevice, setDevice
+from cuda.cudart import cudaError_t
+
+from rmm._cuda.gpu import CUDARuntimeError, getDevice, setDevice
 
 
 # NOTE: Keep extern declarations in .pyx file as much as possible to avoid
@@ -705,7 +707,7 @@ cpdef void _initialize(
     try:
         original_device = getDevice()
     except CUDARuntimeError as e:
-        if e.status == cudaError.cudaErrorNoDevice:
+        if e.status == cudaError_t.cudaErrorNoDevice:
             warnings.warn(e.msg)
         else:
             raise e
