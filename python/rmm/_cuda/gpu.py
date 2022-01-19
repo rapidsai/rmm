@@ -1,7 +1,7 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
-from cuda import cuda, cudart
 import numba.cuda
+from cuda import cuda, cudart
 
 
 class CUDARuntimeError(RuntimeError):
@@ -82,7 +82,8 @@ def runtimeGetVersion():
     This calls numba.cuda.runtime.get_version() rather than cuda-python due to
     current limitations in cuda-python.
     """
-    # TODO: Replace this with `cuda.cudart.cudaRuntimeGetVersion()` when the limitation is fixed.
+    # TODO: Replace this with `cuda.cudart.cudaRuntimeGetVersion()` when the
+    # limitation is fixed.
     major, minor = numba.cuda.runtime.get_version()
     return major * 1000 + minor * 10
 
