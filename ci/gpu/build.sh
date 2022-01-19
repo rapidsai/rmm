@@ -68,7 +68,7 @@ if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
     ################################################################################
 
     gpuci_logger "Build and install librmm and rmm"
-    "$WORKSPACE/build.sh" -v clean librmm rmm
+    "$WORKSPACE/build.sh" -v clean librmm rmm benchmarks tests
 
     ################################################################################
     # Test - librmm
