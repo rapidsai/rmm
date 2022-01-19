@@ -30,6 +30,7 @@ requirements:
     - cython >=0.29,<0.30
     - spdlog>=1.8.5,<2.0.0a0
     - cudatoolkit {{ cuda_version }}.*
+    - cuda-python >=11.5,<12.0
   run:
     - python
     - numba >=0.49
@@ -39,6 +40,7 @@ requirements:
 {% else %}
     - {{ pin_compatible('cudatoolkit', upper_bound='11.2', lower_bound='11.0') }} # cudatoolkit >=11.0,<11.2
 {% endif %}
+    - cuda-python >=11.5,<12.0
 
 test:
   imports:
