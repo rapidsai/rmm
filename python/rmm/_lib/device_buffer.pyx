@@ -47,7 +47,7 @@ cdef class DeviceBuffer:
     def __cinit__(self, *,
                   uintptr_t ptr=0,
                   size_t size=0,
-                  Stream stream=DEFAULT_STREAM,
+                  Stream stream=None,
                   DeviceMemoryResource mr=None):
         """Construct a ``DeviceBuffer`` with optional size and data pointer
 
@@ -82,8 +82,13 @@ cdef class DeviceBuffer:
         >>> import rmm
         >>> db = rmm.DeviceBuffer(size=5)
         """
-        cdef const void* c_ptr
+        cdef:
+            const void* c_ptr
+            cuda_stream_view c_stream_view
+            device_memory_resource* c_mr
 
+        if stream is None:
+            stream = DEFAULT_STREAM
         if mr is None:
             mr = get_current_device_resource()
 
@@ -93,15 +98,16 @@ cdef class DeviceBuffer:
 
         with nogil:
             c_ptr = <const void*>ptr
+            c_stream_view = stream.view()
+            c_mr = mr.c_obj.get()
 
             if size == 0:
                 self.c_obj.reset(new device_buffer())
             elif c_ptr == NULL:
-                self.c_obj.reset(new device_buffer(
-                    size, stream.view(), mr.c_obj.get()))
+                self.c_obj.reset(new device_buffer(size, c_stream_view, c_mr))
             else:
                 self.c_obj.reset(new device_buffer(
-                    c_ptr, size, stream.view(), mr.c_obj.get()))
+                    c_ptr, size, c_stream_view, c_mr))
 
                 if stream.c_is_default():
                     stream.c_synchronize()
