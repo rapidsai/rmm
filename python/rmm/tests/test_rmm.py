@@ -716,3 +716,10 @@ def test_dev_buf_circle_ref_dealloc():
     # deallocate `dbuf1` (which needs the MR alive), a segfault occurs.
 
     gc.collect()
+
+
+def test_device_buffer_nondefault_mr():
+    # test creating a DeviceBuffer with a non-default memory resource
+    dbuf = rmm.DeviceBuffer(size=100_000, mr=rmm.mr.CudaMemoryResource())
+    del dbuf
+    gc.collect()

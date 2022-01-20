@@ -47,7 +47,8 @@ cdef class DeviceBuffer:
     def __cinit__(self, *,
                   uintptr_t ptr=0,
                   size_t size=0,
-                  Stream stream=DEFAULT_STREAM):
+                  Stream stream=DEFAULT_STREAM,
+                  DeviceMemoryResource mr=None):
         """Construct a ``DeviceBuffer`` with optional size and data pointer
 
         Parameters
@@ -64,9 +65,13 @@ cdef class DeviceBuffer:
             scope while the DeviceBuffer is in use. Destroying the
             underlying stream while the DeviceBuffer is in use will
             result in undefined behavior.
+        mr : DeviceMemoryResource, optional
+            The memory resource to use for the allocation. If not
+            provided, the memory resource returned from
+            ``get_current_device_resource()`` is used.
 
-        Note
-        ----
+        Notes
+        -----
 
         If the pointer passed is non-null and ``stream`` is the default stream,
         it is synchronized after the copy. However if a non-default ``stream``
@@ -79,22 +84,27 @@ cdef class DeviceBuffer:
         """
         cdef const void* c_ptr
 
+        if mr is None:
+            mr = get_current_device_resource()
+
+        # Save a reference to the MR and stream used for allocation
+        self.mr = mr
+        self.stream = stream
+
         with nogil:
             c_ptr = <const void*>ptr
 
             if size == 0:
                 self.c_obj.reset(new device_buffer())
             elif c_ptr == NULL:
-                self.c_obj.reset(new device_buffer(size, stream.view()))
+                self.c_obj.reset(new device_buffer(
+                    size, stream.view(), mr.c_obj.get()))
             else:
-                self.c_obj.reset(new device_buffer(c_ptr, size, stream.view()))
+                self.c_obj.reset(new device_buffer(
+                    c_ptr, size, stream.view(), mr.c_obj.get()))
 
                 if stream.c_is_default():
                     stream.c_synchronize()
-
-        # Save a reference to the MR and stream used for allocation
-        self.mr = get_current_device_resource()
-        self.stream = stream
 
     def __len__(self):
         return self.size
