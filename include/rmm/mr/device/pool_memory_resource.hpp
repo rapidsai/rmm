@@ -254,7 +254,7 @@ class pool_memory_resource final
     if (maximum_pool_size_.has_value()) {
       auto const unaligned_remaining = maximum_pool_size_.value() - pool_size();
       using rmm::detail::align_up;
-      auto const remaining = align_up(unaligned_remaining);
+      auto const remaining    = align_up(unaligned_remaining);
       auto const aligned_size = align_up(size);
       return (aligned_size <= remaining) ? std::max(aligned_size, remaining / 2) : 0;
     }
