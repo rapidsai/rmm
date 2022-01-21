@@ -130,6 +130,13 @@ inline void test_various_allocations(rmm::mr::device_memory_resource* mr, cuda_s
     void* ptr{nullptr};
     EXPECT_THROW(ptr = mr->allocate(1_PiB, stream), rmm::out_of_memory);
     EXPECT_EQ(nullptr, ptr);
+
+    // test e.what();
+    try {
+      ptr = mr->allocate(1_PiB, stream);
+    } catch (rmm::out_of_memory const& e) {
+      EXPECT_NE(std::string{e.what()}.find("out_of_memory"), std::string::npos);
+    }
   }
 }
 
@@ -231,6 +238,9 @@ struct mr_test : public ::testing::TestWithParam<mr_factory> {
 
   std::shared_ptr<rmm::mr::device_memory_resource> mr;  ///< Pointer to resource to use in tests
   rmm::cuda_stream stream{};
+};
+
+struct mr_allocation_test : public mr_test {
 };
 
 /// MR factory functions

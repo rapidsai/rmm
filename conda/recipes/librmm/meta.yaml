@@ -27,6 +27,7 @@ build:
     - CMAKE_C_COMPILER_LAUNCHER
     - CMAKE_CXX_COMPILER_LAUNCHER
     - CMAKE_CUDA_COMPILER_LAUNCHER
+    - PROJECT_FLASH
   run_exports:
     - {{ pin_subpackage("librmm", max_pin="x.x") }}
 

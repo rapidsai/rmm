@@ -492,7 +492,8 @@ def test_rmm_enable_disable_logging(dtype, nelem, alloc, tmpdir):
 def test_mr_devicebuffer_lifetime():
     # Test ensures MR/Stream lifetime is longer than DeviceBuffer. Even if all
     # references go out of scope
-    # Create new Pool MR
+    # It is necessary to verify that it also works when using an upstream :
+    # here a Pool MR with the current MR as upstream
     rmm.mr.set_current_device_resource(
         rmm.mr.PoolMemoryResource(rmm.mr.get_current_device_resource())
     )
@@ -691,3 +692,27 @@ def test_failure_callback_resource_adaptor():
     with pytest.raises(MemoryError):
         rmm.DeviceBuffer(size=int(1e11))
     assert retried[0]
+
+
+def test_dev_buf_circle_ref_dealloc():
+    rmm.mr.set_current_device_resource(rmm.mr.CudaMemoryResource())
+
+    dbuf1 = rmm.DeviceBuffer(size=1_000_000)
+
+    # Make dbuf1 part of a reference cycle:
+    l1 = [dbuf1]
+    l1.append(l1)
+
+    # due to the reference cycle, the device buffer doesn't actually get
+    # cleaned up until later, when we invoke `gc.collect()`:
+    del dbuf1, l1
+
+    rmm.mr.set_current_device_resource(rmm.mr.CudaMemoryResource())
+
+    # by now, the only remaining reference to the *original* memory
+    # resource should be in `dbuf1`. However, the cyclic garbage collector
+    # will eliminate that reference when it clears the object via its
+    # `tp_clear` method.  Later, when `tp_dealloc` attemps to actually
+    # deallocate `dbuf1` (which needs the MR alive), a segfault occurs.
+
+    gc.collect()

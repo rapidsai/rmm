@@ -1,59 +1,34 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
-from rmm._cuda.gpu cimport (
-    CUresult,
-    cudaDeviceAttr,
-    cudaDeviceGetAttribute,
-    cudaDeviceProp,
-    cudaDriverGetVersion,
-    cudaError,
-    cudaError_t,
-    cudaGetDeviceCount,
-    cudaGetDeviceProperties,
-    cudaGetErrorName,
-    cudaGetErrorString,
-    cudaRuntimeGetVersion,
-    cuDeviceGetName,
-    cuGetErrorName,
-    cuGetErrorString,
-)
-
-from enum import IntEnum
+import numba.cuda
+from cuda import cuda, cudart
 
 
 class CUDARuntimeError(RuntimeError):
-
-    def __init__(self, cudaError_t status):
+    def __init__(self, status: cudart.cudaError_t):
         self.status = status
-        cdef str name = cudaGetErrorName(status).decode()
-        cdef str msg = cudaGetErrorString(status).decode()
+
+        _, name = cudart.cudaGetErrorName(status)
+        _, msg = cudart.cudaGetErrorString(status)
+
         super(CUDARuntimeError, self).__init__(
-            '%s: %s' % (name, msg))
+            f"{name.decode()}: {msg.decode()}"
+        )
 
     def __reduce__(self):
         return (type(self), (self.status,))
 
 
 class CUDADriverError(RuntimeError):
-
-    def __init__(self, CUresult status):
+    def __init__(self, status: cuda.CUresult):
         self.status = status
 
-        cdef const char* name_cstr
-        cdef CUresult name_status = cuGetErrorName(status, &name_cstr)
-        if name_status != 0:
-            raise CUDADriverError(name_status)
-
-        cdef const char* msg_cstr
-        cdef CUresult msg_status = cuGetErrorString(status, &msg_cstr)
-        if msg_status != 0:
-            raise CUDADriverError(msg_status)
-
-        cdef str name = name_cstr.decode()
-        cdef str msg = msg_cstr.decode()
+        _, name = cuda.cuGetErrorName(status)
+        _, msg = cuda.cuGetErrorString(status)
 
         super(CUDADriverError, self).__init__(
-            '%s: %s' % (name, msg))
+            f"{name.decode()}: {msg.decode()}"
+        )
 
     def __reduce__(self):
         return (type(self), (self.status,))
@@ -69,9 +44,8 @@ def driverGetVersion():
     This function automatically raises CUDARuntimeError with error message
     and status code.
     """
-    cdef int version
-    cdef cudaError_t status = cudaDriverGetVersion(&version)
-    if status != cudaError.cudaSuccess:
+    status, version = cudart.cudaDriverGetVersion()
+    if status != cudart.cudaError_t.cudaSuccess:
         raise CUDARuntimeError(status)
     return version
 
@@ -80,14 +54,13 @@ def getDevice():
     """
     Get the current CUDA device
     """
-    cdef int current_device
-    cdef cudaError_t status = cudaGetDevice(&current_device)
-    if status != cudaError.cudaSuccess:
+    status, device = cudart.cudaGetDevice()
+    if status != cudart.cudaError_t.cudaSuccess:
         raise CUDARuntimeError(status)
-    return current_device
+    return device
 
 
-def setDevice(int device):
+def setDevice(device: int):
     """
     Set the current CUDA device
     Parameters
@@ -95,9 +68,8 @@ def setDevice(int device):
     device : int
         The ID of the device to set as current
     """
-    cdef cudaError_t status = cudaSetDevice(device)
-
-    if status != cudaError.cudaSuccess:
+    (status,) = cudart.cudaSetDevice(device)
+    if status != cudart.cudaError_t.cudaSuccess:
         raise CUDARuntimeError(status)
 
 
@@ -107,15 +79,13 @@ def runtimeGetVersion():
     The version is returned as (1000 major + 10 minor). For example,
     CUDA 9.2 would be represented by 9020.
 
-    This function automatically raises CUDARuntimeError with error message
-    and status code.
+    This calls numba.cuda.runtime.get_version() rather than cuda-python due to
+    current limitations in cuda-python.
     """
-
-    cdef int version
-    cdef cudaError_t status = cudaRuntimeGetVersion(&version)
-    if status != cudaError.cudaSuccess:
-        raise CUDARuntimeError(status)
-    return version
+    # TODO: Replace this with `cuda.cudart.cudaRuntimeGetVersion()` when the
+    # limitation is fixed.
+    major, minor = numba.cuda.runtime.get_version()
+    return major * 1000 + minor * 10
 
 
 def getDeviceCount():
@@ -126,16 +96,13 @@ def getDeviceCount():
     This function automatically raises CUDARuntimeError with error message
     and status code.
     """
-
-    cdef int count
-    cdef cudaError_t status = cudaGetDeviceCount(&count)
-
-    if status != cudaError.cudaSuccess:
+    status, count = cudart.cudaGetDeviceCount()
+    if status != cudart.cudaError_t.cudaSuccess:
         raise CUDARuntimeError(status)
     return count
 
 
-def getDeviceAttribute(cudaDeviceAttr attr, int device):
+def getDeviceAttribute(attr: cudart.cudaDeviceAttr, device: int):
     """
     Returns information about the device.
 
@@ -149,15 +116,13 @@ def getDeviceAttribute(cudaDeviceAttr attr, int device):
     This function automatically raises CUDARuntimeError with error message
     and status code.
     """
-
-    cdef int value
-    cdef cudaError_t status = cudaDeviceGetAttribute(&value, attr, device)
-    if status != cudaError.cudaSuccess:
+    status, value = cudart.cudaDeviceGetAttribute(attr, device)
+    if status != cudart.cudaError_t.cudaSuccess:
         raise CUDARuntimeError(status)
     return value
 
 
-def getDeviceProperties(int device):
+def getDeviceProperties(device: int):
     """
     Returns information about the compute-device.
 
@@ -169,15 +134,13 @@ def getDeviceProperties(int device):
     This function automatically raises CUDARuntimeError with error message
     and status code.
     """
-
-    cdef cudaDeviceProp prop
-    cdef cudaError_t status = cudaGetDeviceProperties(&prop, device)
-    if status != cudaError.cudaSuccess:
+    status, prop = cudart.cudaGetDeviceProperties(device)
+    if status != cudart.cudaError_t.cudaSuccess:
         raise CUDARuntimeError(status)
     return prop
 
 
-def deviceGetName(int device):
+def deviceGetName(device: int):
     """
     Returns an identifer string for the device.
 
@@ -190,12 +153,7 @@ def deviceGetName(int device):
     and status code.
     """
 
-    cdef char[256] device_name
-    cdef CUresult status = cuDeviceGetName(
-        device_name,
-        sizeof(device_name),
-        device
-    )
-    if status != 0:
+    status, device_name = cuda.cuDeviceGetName(256, cuda.CUdevice(device))
+    if status != cuda.CUresult.CUDA_SUCCESS:
         raise CUDADriverError(status)
     return device_name.decode()

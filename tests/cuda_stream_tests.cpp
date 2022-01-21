@@ -17,9 +17,11 @@
 #include <rmm/cuda_stream.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_buffer.hpp>
+#include <sstream>
 
 #include <cuda_runtime_api.h>
 
+#include <gtest/gtest-death-test.h>
 #include <gtest/gtest.h>
 
 struct CudaStreamTest : public ::testing::Test {
@@ -40,6 +42,8 @@ TEST_F(CudaStreamTest, Equality)
 
   rmm::device_buffer buff{};
   EXPECT_EQ(buff.stream(), view_default);
+
+  EXPECT_NE(static_cast<cudaStream_t>(stream_a), rmm::cuda_stream_default.value());
 }
 
 TEST_F(CudaStreamTest, MoveConstructor)
@@ -51,3 +55,47 @@ TEST_F(CudaStreamTest, MoveConstructor)
   EXPECT_FALSE(stream_a.is_valid());  // Any other operations on stream_a are UB, may segfault
   EXPECT_EQ(stream_b, view_a);
 }
+
+TEST_F(CudaStreamTest, TestStreamViewOstream)
+{
+  rmm::cuda_stream stream_a;
+  rmm::cuda_stream_view view(stream_a);
+
+  std::ostringstream oss;
+
+  oss << view;
+
+  std::ostringstream oss_expected;
+
+  oss_expected << stream_a.value();
+
+  EXPECT_EQ(oss.str(), oss_expected.str());
+}
+
+// Without this we don't get test coverage of ~stream_view, presumably because it is elided
+TEST_F(CudaStreamTest, TestStreamViewDestructor)
+{
+  auto view = std::make_shared<rmm::cuda_stream_view>(rmm::cuda_stream_per_thread);
+  view->synchronize();
+}
+
+TEST_F(CudaStreamTest, TestSyncNoThrow)
+{
+  rmm::cuda_stream stream_a;
+  EXPECT_NO_THROW(stream_a.synchronize_no_throw());
+}
+
+#ifndef NDEBUG
+using CudaStreamDeathTest = CudaStreamTest;
+
+TEST_F(CudaStreamDeathTest, TestSyncNoThrow)
+{
+  auto test = []() {
+    rmm::cuda_stream stream_a;
+    cudaStreamDestroy(static_cast<cudaStream_t>(stream_a));
+    // should assert here or in `~cuda_stream()`
+    stream_a.synchronize_no_throw();
+  };
+  EXPECT_DEATH(test(), "Assertion");
+}
+#endif

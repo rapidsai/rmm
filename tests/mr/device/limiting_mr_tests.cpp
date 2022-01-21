@@ -41,6 +41,15 @@ TEST(LimitingTest, TooBig)
   EXPECT_THROW(mr.allocate(max_size + 1), rmm::out_of_memory);
 }
 
+TEST(LimitingTest, UpstreamFailure)
+{
+  auto const max_size_1{2_MiB};
+  auto const max_size_2{5_MiB};
+  Limiting_adaptor mr1{rmm::mr::get_current_device_resource(), max_size_1};
+  Limiting_adaptor mr2{&mr1, max_size_2};
+  EXPECT_THROW(mr2.allocate(4_MiB), rmm::out_of_memory);
+}
+
 TEST(LimitingTest, UnderLimitDueToFrees)
 {
   auto const max_size{10_MiB};

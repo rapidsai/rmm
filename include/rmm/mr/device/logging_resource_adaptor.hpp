@@ -27,6 +27,7 @@
 #include <cstddef>
 #include <memory>
 #include <sstream>
+#include <string_view>
 
 namespace rmm::mr {
 /**
@@ -67,10 +68,7 @@ class logging_resource_adaptor final : public device_memory_resource {
   logging_resource_adaptor(Upstream* upstream,
                            std::string const& filename = get_default_filename(),
                            bool auto_flush             = false)
-    : logger_{std::make_shared<spdlog::logger>(
-        "RMM",
-        std::make_shared<spdlog::sinks::basic_file_sink_mt>(filename, true /*truncate file*/))},
-      upstream_{upstream}
+    : logger_{make_logger(filename)}, upstream_{upstream}
   {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
 
@@ -92,9 +90,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    * performance.
    */
   logging_resource_adaptor(Upstream* upstream, std::ostream& stream, bool auto_flush = false)
-    : logger_{std::make_shared<spdlog::logger>(
-        "RMM", std::make_shared<spdlog::sinks::ostream_sink_mt>(stream))},
-      upstream_{upstream}
+    : logger_{make_logger(stream)}, upstream_{upstream}
   {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
 
@@ -104,7 +100,7 @@ class logging_resource_adaptor final : public device_memory_resource {
   logging_resource_adaptor(Upstream* upstream,
                            spdlog::sinks_init_list sinks,
                            bool auto_flush = false)
-    : logger_{std::make_shared<spdlog::logger>("RMM", sinks)}, upstream_{upstream}
+    : logger_{make_logger(sinks)}, upstream_{upstream}
   {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
 
@@ -175,6 +171,23 @@ class logging_resource_adaptor final : public device_memory_resource {
     RMM_EXPECTS(filename != nullptr,
                 "RMM logging requested without an explicit file name, but RMM_LOG_FILE is unset");
     return std::string{filename};
+  }
+
+  static auto make_logger(std::ostream& stream)
+  {
+    return std::make_shared<spdlog::logger>(
+      "RMM", std::make_shared<spdlog::sinks::ostream_sink_mt>(stream));
+  }
+
+  static auto make_logger(std::string const& filename)
+  {
+    return std::make_shared<spdlog::logger>(
+      "RMM", std::make_shared<spdlog::sinks::basic_file_sink_mt>(filename, true /*truncate file*/));
+  }
+
+  static auto make_logger(spdlog::sinks_init_list sinks)
+  {
+    return std::make_shared<spdlog::logger>("RMM", sinks);
   }
 
   /**

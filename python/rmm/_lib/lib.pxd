@@ -17,24 +17,4 @@ from libcpp cimport bool
 from libcpp.utility cimport pair
 from libcpp.vector cimport vector
 
-from rmm._cuda.gpu cimport cudaError_t
-
 ctypedef pair[const char*, unsigned int] caller_pair
-
-
-cdef extern from * nogil:
-
-    ctypedef void* cudaStream_t "cudaStream_t"
-
-    ctypedef enum cudaMemcpyKind "cudaMemcpyKind":
-        cudaMemcpyHostToHost = 0
-        cudaMemcpyHostToDevice = 1
-        cudaMemcpyDeviceToHost = 2
-        cudaMemcpyDeviceToDevice = 3
-        cudaMemcpyDefault = 4
-
-    cudaError_t cudaMemcpyAsync(void* dst, const void* src, size_t count,
-                                cudaMemcpyKind kind)
-    cudaError_t cudaMemcpyAsync(void* dst, const void* src, size_t count,
-                                cudaMemcpyKind kind, cudaStream_t stream)
-    cudaError_t cudaStreamSynchronize(cudaStream_t stream)
