@@ -6,9 +6,39 @@ Please see https://github.com/rapidsai/rmm/releases/tag/v22.04.00a for the lates
 
 Please see https://github.com/rapidsai/rmm/releases/tag/v22.02.00a for the latest changes to this development branch.
 
-# RMM 21.12.00 (Date TBD)
+# RMM 21.12.00 (9 Dec 2021)
 
-Please see https://github.com/rapidsai/rmm/releases/tag/v21.12.00a for the latest changes to this development branch.
+## 🚨 Breaking Changes
+
+- Parameterize exception type caught by failure_callback_resource_adaptor ([#898](https://github.com/rapidsai/rmm/pull/898)) [@harrism](https://github.com/harrism)
+
+## 🐛 Bug Fixes
+
+- Update recipes for Enhanced Compatibility ([#910](https://github.com/rapidsai/rmm/pull/910)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Fix `librmm` uploads ([#909](https://github.com/rapidsai/rmm/pull/909)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Use spdlog/fmt/ostr.h as it supports external fmt library ([#907](https://github.com/rapidsai/rmm/pull/907)) [@robertmaynard](https://github.com/robertmaynard)
+- Fix variable names in logging macro calls ([#897](https://github.com/rapidsai/rmm/pull/897)) [@harrism](https://github.com/harrism)
+- Keep rapids cmake version in sync ([#876](https://github.com/rapidsai/rmm/pull/876)) [@robertmaynard](https://github.com/robertmaynard)
+
+## 📖 Documentation
+
+- Replace `to_device()` in docs  with `DeviceBuffer.to_device()` ([#902](https://github.com/rapidsai/rmm/pull/902)) [@shwina](https://github.com/shwina)
+- Fix return value docs for supports_get_mem_info ([#884](https://github.com/rapidsai/rmm/pull/884)) [@harrism](https://github.com/harrism)
+
+## 🚀 New Features
+
+- Out-of-memory callback resource adaptor ([#892](https://github.com/rapidsai/rmm/pull/892)) [@madsbk](https://github.com/madsbk)
+
+## 🛠️ Improvements
+
+- suppress spurious clang-tidy warnings in debug macros ([#914](https://github.com/rapidsai/rmm/pull/914)) [@rongou](https://github.com/rongou)
+- C++ code coverage support ([#905](https://github.com/rapidsai/rmm/pull/905)) [@harrism](https://github.com/harrism)
+- Provide ./build.sh flag to control CUDA async malloc support ([#901](https://github.com/rapidsai/rmm/pull/901)) [@robertmaynard](https://github.com/robertmaynard)
+- Parameterize exception type caught by failure_callback_resource_adaptor ([#898](https://github.com/rapidsai/rmm/pull/898)) [@harrism](https://github.com/harrism)
+- Throw `rmm::out_of_memory` when we know for sure ([#894](https://github.com/rapidsai/rmm/pull/894)) [@rongou](https://github.com/rongou)
+- Update `conda` recipes for Enhanced Compatibility effort ([#893](https://github.com/rapidsai/rmm/pull/893)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Add functions to query the stream of device_uvector and device_scalar ([#887](https://github.com/rapidsai/rmm/pull/887)) [@fkallen](https://github.com/fkallen)
+- Add spdlog to install export set ([#886](https://github.com/rapidsai/rmm/pull/886)) [@trxcllnt](https://github.com/trxcllnt)
 
 # RMM 21.10.00 (7 Oct 2021)
 
