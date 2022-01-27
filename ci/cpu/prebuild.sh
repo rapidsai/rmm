@@ -1,14 +1,8 @@
 #!/usr/bin/env bash
 
-#Always upload RMM Python package
+#Always upload RMM packages
 export UPLOAD_RMM=1
-
-#Build librmm once per CUDA
-if [[ "$PYTHON" == "3.8" ]]; then
-    export UPLOAD_LIBRMM=1
-else
-    export UPLOAD_LIBRMM=0
-fi
+export UPLOAD_LIBRMM=1
 
 if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
     #If project flash is not activate, always build both
