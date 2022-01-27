@@ -66,6 +66,7 @@ cdef extern from "rmm/mr/device/pool_memory_resource.hpp" \
             Upstream* upstream_mr,
             optional[size_t] initial_pool_size,
             optional[size_t] maximum_pool_size) except +
+        size_t pool_size()
 
 cdef extern from "rmm/mr/device/fixed_size_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
@@ -298,6 +299,10 @@ cdef class PoolMemoryResource(UpstreamResourceAdaptor):
             Maximum size in bytes, that the pool can grow to.
         """
         pass
+
+    def pool_size(self):
+        return (<pool_memory_resource[device_memory_resource]*>(
+            self.c_obj.get()))[0].pool_size()
 
 
 cdef class FixedSizeMemoryResource(UpstreamResourceAdaptor):
