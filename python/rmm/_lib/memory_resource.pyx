@@ -301,9 +301,10 @@ cdef class PoolMemoryResource(UpstreamResourceAdaptor):
         pass
 
     def pool_size(self):
-        return (<pool_memory_resource[device_memory_resource]*>(
-            self.c_obj.get()))[0].pool_size()
-
+        cdef pool_memory_resource[device_memory_resource]* c_mr = (
+            <pool_memory_resource[device_memory_resource]*>(self.get_mr())
+        )
+        return c_mr.pool_size()
 
 cdef class FixedSizeMemoryResource(UpstreamResourceAdaptor):
     def __cinit__(
