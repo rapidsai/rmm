@@ -118,11 +118,11 @@ else
 
     cd $WORKSPACE/python
 
-    CONDA_FILE=`find $WORKSPACE/ci/artifacts/rmm/cpu/conda-bld/ -name "librmm*.tar.bz2"`
+    CONDA_FILE=`find $WORKSPACE/ci/artifacts/rmm/cpu/.conda-bld/ -name "librmm*.tar.bz2"`
     CONDA_FILE=`basename "$CONDA_FILE" .tar.bz2` #get filename without extension
     CONDA_FILE=${CONDA_FILE//-/=} #convert to conda install
     gpuci_logger "Installing $CONDA_FILE"
-    gpuci_mamba_retry install -c $WORKSPACE/ci/artifacts/rmm/cpu/conda-bld/ "$CONDA_FILE"
+    gpuci_mamba_retry install -c $WORKSPACE/ci/artifacts/rmm/cpu/.conda-bld/ "$CONDA_FILE"
 
     export LIBRMM_BUILD_DIR="$WORKSPACE/ci/artifacts/rmm/cpu/conda_work/build"
 
