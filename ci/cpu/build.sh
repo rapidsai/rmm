@@ -66,6 +66,7 @@ conda config --set ssl_verify False
 
 if [[ "$BUILD_LIBRMM" == "1" ]]; then
   gpuci_logger "Build conda pkg for librmm"
+  sccache --zero-stats
   if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
     gpuci_conda_retry build conda/recipes/librmm --python=$PYTHON
   else
@@ -73,6 +74,8 @@ if [[ "$BUILD_LIBRMM" == "1" ]]; then
     mkdir -p ${CONDA_BLD_DIR}/librmm
     mv ${CONDA_BLD_DIR}/work/ ${CONDA_BLD_DIR}/librmm/work
   fi
+  gpuci_logger "sccache stats"
+  sccache --show-stats
 fi
 
 if [[ "$BUILD_RMM" == "1" ]]; then
