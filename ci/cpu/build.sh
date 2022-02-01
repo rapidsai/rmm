@@ -66,7 +66,6 @@ conda config --set ssl_verify False
 
 if [[ "$BUILD_LIBRMM" == "1" ]]; then
   gpuci_logger "Build conda pkg for librmm"
-  sccache --zero-stats
   if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
     gpuci_conda_retry build conda/recipes/librmm --python=$PYTHON
   else
