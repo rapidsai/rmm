@@ -188,7 +188,11 @@ class cuda_async_memory_resource final : public device_memory_resource {
   [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
   {
     auto const* async_mr = dynamic_cast<cuda_async_memory_resource const*>(&other);
+#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
     return (async_mr != nullptr) && (this->pool_handle() == async_mr->pool_handle());
+#else
+    return async_mr != nullptr;
+#endif
   }
 
   /**
