@@ -20,23 +20,28 @@ from libc.stdint cimport uintptr_t
 from libcpp.memory cimport unique_ptr
 from libcpp.utility cimport move
 
-from rmm._cuda.gpu cimport cudaError, cudaError_t
 from rmm._cuda.stream cimport Stream
 
 from rmm._cuda.stream import DEFAULT_STREAM
 
-from rmm._lib.lib cimport (
+cimport cuda.ccudart as ccudart
+from cuda.ccudart cimport (
+    cudaError,
+    cudaError_t,
     cudaMemcpyAsync,
-    cudaMemcpyDeviceToDevice,
-    cudaMemcpyDeviceToHost,
-    cudaMemcpyHostToDevice,
     cudaMemcpyKind,
     cudaStream_t,
     cudaStreamSynchronize,
 )
+
 from rmm._lib.memory_resource cimport get_current_device_resource
 
 
+# The DeviceMemoryResource attribute could be released prematurely
+# by the gc if the DeviceBuffer is in a reference cycle. Removing
+# the tp_clear function with the no_gc_clear decoration prevents that.
+# See https://github.com/rapidsai/rmm/pull/931 for details.
+@cython.no_gc_clear
 cdef class DeviceBuffer:
 
     def __cinit__(self, *,
@@ -73,7 +78,6 @@ cdef class DeviceBuffer:
         >>> db = rmm.DeviceBuffer(size=5)
         """
         cdef const void* c_ptr
-        cdef cudaError_t err
 
         with nogil:
             c_ptr = <const void*>ptr
@@ -339,7 +343,7 @@ cpdef DeviceBuffer to_device(const unsigned char[::1] b,
 cdef void _copy_async(const void* src,
                       void* dst,
                       size_t count,
-                      cudaMemcpyKind kind,
+                      ccudart.cudaMemcpyKind kind,
                       cuda_stream_view stream) nogil:
     """
     Asynchronously copy data between host and/or device pointers
@@ -398,7 +402,7 @@ cpdef void copy_ptr_to_host(uintptr_t db,
 
     with nogil:
         _copy_async(<const void*>db, <void*>&hb[0], len(hb),
-                    cudaMemcpyDeviceToHost, stream.view())
+                    cudaMemcpyKind.cudaMemcpyDeviceToHost, stream.view())
 
     if stream.c_is_default():
         stream.c_synchronize()
@@ -442,7 +446,7 @@ cpdef void copy_host_to_ptr(const unsigned char[::1] hb,
 
     with nogil:
         _copy_async(<const void*>&hb[0], <void*>db, len(hb),
-                    cudaMemcpyHostToDevice, stream.view())
+                    cudaMemcpyKind.cudaMemcpyHostToDevice, stream.view())
 
     if stream.c_is_default():
         stream.c_synchronize()
@@ -475,4 +479,4 @@ cpdef void copy_device_to_ptr(uintptr_t d_src,
 
     with nogil:
         _copy_async(<const void*>d_src, <void*>d_dst, count,
-                    cudaMemcpyDeviceToDevice, stream.view())
+                    cudaMemcpyKind.cudaMemcpyDeviceToDevice, stream.view())

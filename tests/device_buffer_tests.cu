@@ -56,6 +56,12 @@ using resources = ::testing::Types<rmm::mr::cuda_memory_resource, rmm::mr::manag
 
 TYPED_TEST_CASE(DeviceBufferTest, resources);
 
+TYPED_TEST(DeviceBufferTest, EmptyBuffer)
+{
+  rmm::device_buffer buff(0, rmm::cuda_stream_view{});
+  EXPECT_TRUE(buff.is_empty());
+}
+
 TYPED_TEST(DeviceBufferTest, DefaultMemoryResource)
 {
   rmm::device_buffer buff(this->size, rmm::cuda_stream_view{});
