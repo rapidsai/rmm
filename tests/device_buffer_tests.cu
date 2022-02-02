@@ -67,6 +67,7 @@ TYPED_TEST(DeviceBufferTest, DefaultMemoryResource)
   rmm::device_buffer buff(this->size, rmm::cuda_stream_view{});
   EXPECT_NE(nullptr, buff.data());
   EXPECT_EQ(this->size, buff.size());
+  EXPECT_EQ(this->size, buff.ssize());
   EXPECT_EQ(this->size, buff.capacity());
   EXPECT_EQ(rmm::mr::get_current_device_resource(), buff.memory_resource());
   EXPECT_EQ(rmm::cuda_stream_view{}, buff.stream());

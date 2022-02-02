@@ -487,6 +487,17 @@ class device_uvector {
   [[nodiscard]] std::size_t size() const noexcept { return bytes_to_elements(_storage.size()); }
 
   /**
+   * @brief Returns signed number of elements in the vector.
+   *
+   * @return The number of elements.
+   */
+  [[nodiscard]] std::int64_t ssize() const noexcept
+  {
+    assert(size() < std::numeric_limits<int64_t>::max() && "Size overflows signed integer");
+    return static_cast<int64_t>(size());
+  }
+
+  /**
    * @brief Returns true if the vector contains no elements, i.e., `size() == 0`.
    *
    * @return true The vector is empty

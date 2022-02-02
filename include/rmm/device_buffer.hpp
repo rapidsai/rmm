@@ -315,10 +315,18 @@ class device_buffer {
   void* data() noexcept { return _data; }
 
   /**
-   * @brief Returns size in bytes that was requested for the device memory
-   * allocation
+   * @brief Returns size in bytes of the underlying device memory storage.
    */
   [[nodiscard]] std::size_t size() const noexcept { return _size; }
+
+  /**
+   * @brief Returns signed size in bytes of the underlying device memory storage.
+   */
+  [[nodiscard]] std::int64_t ssize() const noexcept
+  {
+    assert(size() < std::numeric_limits<int64_t>::max() && "Size overflows signed integer");
+    return static_cast<int64_t>(size());
+  }
 
   /**
    * @brief Returns whether the size in bytes of the `device_buffer` is zero.
