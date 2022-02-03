@@ -285,7 +285,7 @@ class device_buffer {
    * Reallocates and copies on stream `stream` the contents of the device memory
    * allocation to reduce `capacity()` to `size()`.
    *
-   * If `size() == capacity()`, no allocations nor copies occur.
+   * If `size() == capacity()`, no allocations or copies occur.
    *
    * @throws rmm::bad_alloc If creating the new allocation fails
    * @throws rmm::cuda_error If the copy from the old to new allocation fails
@@ -315,12 +315,12 @@ class device_buffer {
   void* data() noexcept { return _data; }
 
   /**
-   * @brief Returns size in bytes of the underlying device memory storage.
+   * @brief Returns the number of bytes.
    */
   [[nodiscard]] std::size_t size() const noexcept { return _size; }
 
   /**
-   * @brief Returns signed size in bytes of the underlying device memory storage.
+   * @brief Returns the signed number of bytes.
    */
   [[nodiscard]] std::int64_t ssize() const noexcept
   {
@@ -329,7 +329,7 @@ class device_buffer {
   }
 
   /**
-   * @brief Returns whether the size in bytes of the `device_buffer` is zero.
+   * @brief returns the number of bytes that can be held in currently allocated storage.
    *
    * If `is_empty() == true`, the `device_buffer` may still hold an allocation
    * if `capacity() > 0`.

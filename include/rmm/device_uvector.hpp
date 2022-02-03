@@ -480,16 +480,12 @@ class device_uvector {
   [[nodiscard]] const_iterator end() const noexcept { return cend(); }
 
   /**
-   * @brief Returns the number of elements in the vector.
-   *
-   * @return The number of elements.
+   * @brief Returns the number of elements.
    */
   [[nodiscard]] std::size_t size() const noexcept { return bytes_to_elements(_storage.size()); }
 
   /**
-   * @brief Returns signed number of elements in the vector.
-   *
-   * @return The number of elements.
+   * @brief Returns the signed number of elements.
    */
   [[nodiscard]] std::int64_t ssize() const noexcept
   {
