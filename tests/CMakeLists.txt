@@ -76,6 +76,7 @@ function(ConfigureTestInternal TEST_NAME)
   install(
     TARGETS ${TEST_NAME}
     COMPONENT testing
+    DESTINATION bin/gtests/librmm
     EXCLUDE_FROM_ALL)
 endfunction()
 

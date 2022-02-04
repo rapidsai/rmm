@@ -59,6 +59,7 @@ function(ConfigureBench BENCH_NAME)
   install(
     TARGETS ${BENCH_NAME}
     COMPONENT testing
+    DESTINATION bin/benchmarks/librmm
     EXCLUDE_FROM_ALL)
 endfunction(ConfigureBench)
 
