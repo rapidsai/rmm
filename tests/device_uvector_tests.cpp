@@ -1,6 +1,6 @@
 
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,8 @@ TYPED_TEST(TypedUVectorTest, NonZeroSizeConstructor)
 {
   auto const size{12345};
   rmm::device_uvector<TypeParam> vec(size, this->stream());
-  EXPECT_EQ(vec.size(), 12345);
+  EXPECT_EQ(vec.size(), size);
+  EXPECT_EQ(vec.ssize(), size);
   EXPECT_NE(vec.data(), nullptr);
   EXPECT_EQ(vec.end(), vec.begin() + vec.size());
   EXPECT_FALSE(vec.is_empty());

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -285,7 +285,7 @@ class device_buffer {
    * Reallocates and copies on stream `stream` the contents of the device memory
    * allocation to reduce `capacity()` to `size()`.
    *
-   * If `size() == capacity()`, no allocations nor copies occur.
+   * If `size() == capacity()`, no allocations or copies occur.
    *
    * @throws rmm::bad_alloc If creating the new allocation fails
    * @throws rmm::cuda_error If the copy from the old to new allocation fails
@@ -315,13 +315,21 @@ class device_buffer {
   void* data() noexcept { return _data; }
 
   /**
-   * @brief Returns size in bytes that was requested for the device memory
-   * allocation
+   * @brief Returns the number of bytes.
    */
   [[nodiscard]] std::size_t size() const noexcept { return _size; }
 
   /**
-   * @brief Returns whether the size in bytes of the `device_buffer` is zero.
+   * @brief Returns the signed number of bytes.
+   */
+  [[nodiscard]] std::int64_t ssize() const noexcept
+  {
+    assert(size() < std::numeric_limits<int64_t>::max() && "Size overflows signed integer");
+    return static_cast<int64_t>(size());
+  }
+
+  /**
+   * @brief returns the number of bytes that can be held in currently allocated storage.
    *
    * If `is_empty() == true`, the `device_buffer` may still hold an allocation
    * if `capacity() > 0`.
