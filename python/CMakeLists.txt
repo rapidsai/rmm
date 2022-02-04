@@ -1,5 +1,5 @@
 #=============================================================================
-# Copyright (c) 2020, NVIDIA CORPORATION.
+# Copyright (c) 2022, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,20 +14,24 @@
 # limitations under the License.
 #=============================================================================
 
-cmake_minimum_required(VERSION 3.18...3.18)
+cmake_minimum_required(VERSION 3.20.1 FATAL_ERROR)
 
-set(rmm_version 0.17.0)
+# TODO: Pull this directly from the file written by rapids_cmake_write_version_file.
+set(rmm_version 22.04.00)
 
+# TODO: What name do we want to use here?
 project(rmm-python VERSION ${rmm_version} LANGUAGES CXX CUDA)
 
-find_package(Cython REQUIRED)
+find_package(PythonExtensions REQUIRED)
 find_package(Python3 REQUIRED COMPONENTS Development)
+find_package(Cython REQUIRED)
 find_package(CUDAToolkit REQUIRED)
 
 # include(cmake/CPM.cmake)
 # TODO (kk): CPMFindPackage spdlog
 # TODO (kk): CPMFindPackage Thrust
 
+# TODO: Is this the expected behavior? To use existing installs if found, otherwise the headers from the source directory?
 # Try to find an installed RMM, if not found add the parent directory
 # TODO (kk): Do some basic validation to ensure the parent is as expected
 find_package(RMM ${rmm_version})
@@ -39,4 +43,3 @@ endif(NOT RMM_FOUND)
 
 add_subdirectory(rmm/_cuda)
 add_subdirectory(rmm/_lib)
-add_subdirectory(rmm/tests)

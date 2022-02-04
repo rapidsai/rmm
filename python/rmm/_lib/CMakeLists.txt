@@ -16,7 +16,7 @@
 list(APPEND cython_sources "device_buffer.pyx")
 list(APPEND cython_sources "lib.pyx")
 list(APPEND cython_sources "memory_resource.pyx")
-list(APPEND cython_sources "cuda_stream_view.pyx")
+list(APPEND cython_sources "cuda_stream.pyx")
 
 # Build all of the Cython targets
 foreach(cython_file ${cython_sources})

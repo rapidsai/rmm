@@ -1,5 +1,5 @@
 # =============================================================================
-# Copyright (c) 2020, NVIDIA CORPORATION.
+# Copyright (c) 2022, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -12,25 +12,8 @@
 # the License.
 # =============================================================================
 
-# Preprocessor step to specify correct pxd file with valid symbols for specific version of CUDA.
-set(preprocess_files "gpu.pxd;")
-set(supported_cuda_versions "10.1;10.2;11.0")
-foreach(file_p ${preprocess_files})
-  get_filename_component(pxi_file ${file_p} NAME_WLE)
-  set(pxi_file "${pxi_file}.pxi")
-  set(cuda_major_minor "${CUDAToolkit_VERSION_MAJOR}.${CUDAToolkit_VERSION_MINOR}")
-  if(cuda_major_minor IN_LIST supported_cuda_versions)
-    file(COPY "${cuda_major_minor}/${pxi_file}" DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}")
-    file(RENAME "${pxi_file}" "gpu.pxd")
-  else()
-    MESSAGE(
-      FATAL_ERROR "CUDA ${CUDAToolkit_VERSION_MAJOR}.${CUDAToolkit_VERSION_MINOR} is not supported."
-    )
-  endif(cuda_major_minor IN_LIST supported_cuda_versions)
-endforeach(file_p ${preprocess_files})
-
 # Set the list of Cython files to build
-list(APPEND cython_sources "gpu.pyx")
+list(APPEND cython_sources "stream.pyx")
 
 # Build all of the Cython targets
 foreach(cython_file ${cython_sources})

@@ -17,6 +17,7 @@
 requires = [
     "wheel",
     "setuptools",
+    "cython>=0.29,<0.30",
     "scikit-build",
     "cmake",
     "ninja",
