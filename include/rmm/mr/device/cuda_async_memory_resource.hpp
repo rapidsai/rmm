@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, NVIDIA CORPORATION.
+ * Copyright (c) 2021-2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -187,7 +187,12 @@ class cuda_async_memory_resource final : public device_memory_resource {
    */
   [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
   {
-    return dynamic_cast<cuda_async_memory_resource const*>(&other) != nullptr;
+    auto const* async_mr = dynamic_cast<cuda_async_memory_resource const*>(&other);
+#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
+    return (async_mr != nullptr) && (this->pool_handle() == async_mr->pool_handle());
+#else
+    return async_mr != nullptr;
+#endif
   }
 
   /**
