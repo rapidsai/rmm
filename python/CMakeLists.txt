@@ -27,10 +27,6 @@ find_package(Python3 REQUIRED COMPONENTS Development)
 find_package(Cython REQUIRED)
 find_package(CUDAToolkit REQUIRED)
 
-# include(cmake/CPM.cmake)
-# TODO (kk): CPMFindPackage spdlog
-# TODO (kk): CPMFindPackage Thrust
-
 # TODO: Is this the expected behavior? To use existing installs if found, otherwise the headers from the source directory?
 # Try to find an installed RMM, if not found add the parent directory
 # TODO (kk): Do some basic validation to ensure the parent is as expected

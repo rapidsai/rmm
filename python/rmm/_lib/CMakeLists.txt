@@ -13,18 +13,24 @@
 # =============================================================================
 
 # Set the list of Cython files to build
-list(APPEND cython_sources "device_buffer.pyx")
-list(APPEND cython_sources "lib.pyx")
-list(APPEND cython_sources "memory_resource.pyx")
-list(APPEND cython_sources "cuda_stream.pyx")
+set(cython_sources
+    device_buffer
+    lib
+    memory_resource
+    cuda_stream)
 
 # Build all of the Cython targets
-foreach(cython_file ${cython_sources})
-  get_filename_component(cython_module_name ${cython_file} NAME_WLE)
-  add_cython_target("${cython_module_name}" "${cython_file}" CXX PY3)
-  add_library(${cython_module_name} MODULE ${cython_module_name})
-  set_target_properties(${cython_module_name} PROPERTIES PREFIX "")
-  target_link_libraries(${cython_module_name} rmm::rmm Python3::Module)
-  target_include_directories(${cython_module_name} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
-  install(TARGETS ${cython_module_name} LIBRARY DESTINATION rmm/_lib)
-endforeach(cython_file ${cython_sources})
+foreach(cython_module ${cython_sources})
+  add_cython_target("${cython_module}" CXX PY3)
+  add_library(${cython_module} MODULE ${cython_module})
+  # TODO: This doesn't seem to be necessary for some reason. Are the Python
+  # headers somehow being included without it?
+  #python_extension_module(${cython_module})
+
+  # To avoid libraries being prefixed with "lib".
+  set_target_properties(${cython_module} PROPERTIES PREFIX "")
+
+  target_link_libraries(${cython_module} rmm::rmm Python3::Module)
+  target_include_directories(${cython_module} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+  install(TARGETS ${cython_module} DESTINATION rmm/_lib)
+endforeach(cython_module ${cython_sources})
