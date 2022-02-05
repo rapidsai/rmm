@@ -13,8 +13,7 @@
 # =============================================================================
 
 # Set the list of Cython files to build
-set(cython_modules
-    stream)
+set(cython_modules stream)
 
 # Build all of the Cython targets
 add_cython_modules(${cython_modules})
