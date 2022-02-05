@@ -21,10 +21,18 @@ set(rmm_version 22.04.00)
 project(
   rmm-python
   VERSION ${rmm_version}
-  LANGUAGES CXX CUDA)
+  # TODO: For some reason building Python extension modules via the
+  # python_extension_module requires the C language here to be enabled. I
+  # suspect that it assumes that Cython is C even when it's actually building
+  # C++. Setting a directive in the file does not resolve the problem.
+  LANGUAGES C CXX CUDA)
 
 find_package(PythonExtensions REQUIRED)
-find_package(Python3 REQUIRED COMPONENTS Development)
+# TODO: This isn't necessary if we use `python_extension_module`, but it is for manually linking to the Python3 headers.
+#find_package(Python3 REQUIRED COMPONENTS Development)
+# TODO: When would we need to add these?
+#find_package(PythonInterp REQUIRED)
+#find_package(PythonLibs REQUIRED)
 find_package(Cython REQUIRED)
 find_package(CUDAToolkit REQUIRED)
 
