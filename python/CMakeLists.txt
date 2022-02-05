@@ -37,5 +37,6 @@ if(NOT RMM_FOUND)
   add_subdirectory(../ rmm-cpp)
 endif(NOT RMM_FOUND)
 
+add_subdirectory(cmake)
 add_subdirectory(rmm/_cuda)
 add_subdirectory(rmm/_lib)
