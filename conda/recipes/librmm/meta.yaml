@@ -39,8 +39,8 @@ outputs:
     build:
       number: {{ GIT_DESCRIBE_NUMBER }}
       string: cuda{{ cuda_major }}_{{ GIT_DESCRIBE_HASH }}_{{ GIT_DESCRIBE_NUMBER }}
-      run_exports:
-        - {{ pin_subpackage("librmm", max_pin="x.x") }}
+      # run_exports:
+      #   - {{ pin_subpackage("librmm", max_pin="x.x") }}
     requirements:
       build:
         - cmake {{ cmake_version }}
