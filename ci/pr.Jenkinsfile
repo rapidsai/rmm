@@ -14,6 +14,7 @@ pipeline {
           env
           echo "hello world!"
           nvidia-smi
+          ls -al
         """
       }
     }
