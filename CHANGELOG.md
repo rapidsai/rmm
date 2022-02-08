@@ -2,24 +2,24 @@
 
 ## 🐛 Bug Fixes
 
-- Use numba to get CUDA untime vesion. ([#946](https://github.com/rapidsai/rmm/pull/946)) [@bdice](https://github.com/bdice)
-- Tempoaily disable wanings fo unknown pagmas ([#942](https://github.com/rapidsai/rmm/pull/942)) [@haism](https://github.com/haism)
-- Build benchmaks in RMM CI ([#941](https://github.com/rapidsai/rmm/pull/941)) [@haism](https://github.com/haism)
-- Heades that use `std::thead` now include &lt;thead&gt; ([#938](https://github.com/rapidsai/rmm/pull/938)) [@obetmaynad](https://github.com/obetmaynad)
-- Fix failing steam test with a debug-only death test ([#934](https://github.com/rapidsai/rmm/pull/934)) [@haism](https://github.com/haism)
-- Pevent `DeviceBuffe` DeviceMemoyResouce pematue elease ([#931](https://github.com/rapidsai/rmm/pull/931)) [@viclafague](https://github.com/viclafague)
-- Fix failing tacking test ([#929](https://github.com/rapidsai/rmm/pull/929)) [@haism](https://github.com/haism)
+- Use numba to get CUDA runtime version. ([#946](https://github.com/rapidsai/rmm/pull/946)) [@bdice](https://github.com/bdice)
+- Temporarily disable warnings for unknown pragmas ([#942](https://github.com/rapidsai/rmm/pull/942)) [@harrism](https://github.com/harrism)
+- Build benchmarks in RMM CI ([#941](https://github.com/rapidsai/rmm/pull/941)) [@harrism](https://github.com/harrism)
+- Headers that use `std::thread` now include &lt;thread&gt; ([#938](https://github.com/rapidsai/rmm/pull/938)) [@robertmaynard](https://github.com/robertmaynard)
+- Fix failing stream test with a debug-only death test ([#934](https://github.com/rapidsai/rmm/pull/934)) [@harrism](https://github.com/harrism)
+- Prevent `DeviceBuffer` DeviceMemoryResource premature release ([#931](https://github.com/rapidsai/rmm/pull/931)) [@viclafargue](https://github.com/viclafargue)
+- Fix failing tracking test ([#929](https://github.com/rapidsai/rmm/pull/929)) [@harrism](https://github.com/harrism)
 
-## 🛠️ Impovements
+## 🛠️ Improvements
 
-- Pepae upload scipts fo Python 3.7 emoval ([#952](https://github.com/rapidsai/rmm/pull/952)) [@Ethyling](https://github.com/Ethyling)
-- Fix impots tests syntax ([#935](https://github.com/rapidsai/rmm/pull/935)) [@Ethyling](https://github.com/Ethyling)
-- Remove `IncludeCategoies` fom `.clang-fomat` ([#933](https://github.com/rapidsai/rmm/pull/933)) [@codeepot](https://github.com/codeepot)
+- Prepare upload scripts for Python 3.7 removal ([#952](https://github.com/rapidsai/rmm/pull/952)) [@Ethyling](https://github.com/Ethyling)
+- Fix imports tests syntax ([#935](https://github.com/rapidsai/rmm/pull/935)) [@Ethyling](https://github.com/Ethyling)
+- Remove `IncludeCategories` from `.clang-format` ([#933](https://github.com/rapidsai/rmm/pull/933)) [@codereport](https://github.com/codereport)
 - Replace use of custom CUDA bindings with CUDA-Python ([#930](https://github.com/rapidsai/rmm/pull/930)) [@shwina](https://github.com/shwina)
-- Remove `setup.py` fom `update-elease.sh` scipt ([#926](https://github.com/rapidsai/rmm/pull/926)) [@ajschmidt8](https://github.com/ajschmidt8)
-- Impove C++ Test Coveage ([#920](https://github.com/rapidsai/rmm/pull/920)) [@haism](https://github.com/haism)
-- Impove the Aena allocato to educe memoy fagmentation ([#916](https://github.com/rapidsai/rmm/pull/916)) [@ongou](https://github.com/ongou)
-- Simplify CMake linting with cmake-fomat ([#913](https://github.com/rapidsai/rmm/pull/913)) [@vyas](https://github.com/vyas)
+- Remove `setup.py` from `update-release.sh` script ([#926](https://github.com/rapidsai/rmm/pull/926)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Improve C++ Test Coverage ([#920](https://github.com/rapidsai/rmm/pull/920)) [@harrism](https://github.com/harrism)
+- Improve the Arena allocator to reduce memory fragmentation ([#916](https://github.com/rapidsai/rmm/pull/916)) [@rongou](https://github.com/rongou)
+- Simplify CMake linting with cmake-format ([#913](https://github.com/rapidsai/rmm/pull/913)) [@vyasr](https://github.com/vyasr)
 
 # RMM 21.12.00 (9 Dec 2021)
 
