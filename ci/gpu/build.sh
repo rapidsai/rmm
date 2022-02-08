@@ -12,8 +12,7 @@ function hasArg {
     (( ${NUMARGS} != 0 )) && (echo " ${ARGS} " | grep -q " $1 ")
 }
 
-# Set path and build parallel level
-export PATH=/opt/conda/bin:/usr/local/cuda/bin:$PATH
+# Set build parallel level
 export PARALLEL_LEVEL=${PARALLEL_LEVEL:-4}
 
 # Set home to the job's workspace
@@ -43,10 +42,6 @@ export CMAKE_C_COMPILER_LAUNCHER="sccache"
 
 gpuci_logger "Get env"
 env
-
-gpuci_logger "Activate conda env"
-. /opt/conda/etc/profile.d/conda.sh
-conda activate rapids
 
 # Install build env
 gpuci_mamba_retry install -y \

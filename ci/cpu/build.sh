@@ -5,8 +5,7 @@
 ######################################
 set -e
 
-# Set path, build parallel level and build generator
-export PATH=/opt/conda/bin:/usr/local/cuda/bin:$PATH
+# Set build parallel level and build generator
 export PARALLEL_LEVEL=${PARALLEL_LEVEL:-4}
 export CMAKE_GENERATOR="Ninja"
 export CONDA_BLD_DIR="$WORKSPACE/.conda-bld"
@@ -37,10 +36,6 @@ export CMAKE_C_COMPILER_LAUNCHER="sccache"
 
 gpuci_logger "Get env"
 env
-
-gpuci_logger "Activate conda env"
-. /opt/conda/etc/profile.d/conda.sh
-conda activate rapids
 
 # Remove rapidsai-nightly channel if we are building main branch
 if [ "$SOURCE_BRANCH" = "main" ]; then
@@ -95,4 +90,3 @@ fi
 
 gpuci_logger "Upload conda packages"
 source ci/cpu/upload.sh
-

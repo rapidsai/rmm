@@ -23,10 +23,6 @@ env
 gpuci_logger "Check GPU usage"
 nvidia-smi
 
-gpuci_logger "Activate conda env"
-. /opt/conda/etc/profile.d/conda.sh
-conda activate rapids
-
 gpuci_logger "Check versions"
 python --version
 $CC --version
@@ -60,4 +56,3 @@ done
 
 mv $PROJECT_WORKSPACE/doxygen/html/* $DOCS_WORKSPACE/api/librmm/$BRANCH_VERSION
 mv $PROJECT_WORKSPACE/python/docs/_build/html/* $DOCS_WORKSPACE/api/rmm/$BRANCH_VERSION
-

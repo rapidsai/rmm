@@ -53,4 +53,3 @@ if [[ "$BUILD_RMM" == "1" && "$UPLOAD_RMM" == "1" ]]; then
     gpuci_retry anaconda -t ${MY_UPLOAD_KEY} upload -u ${CONDA_USERNAME:-rapidsai} ${LABEL_OPTION} --skip-existing ${RMM_FILE} --no-progress
   done <<< "${RMM_FILES}"
 fi
-
