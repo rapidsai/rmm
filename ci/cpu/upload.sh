@@ -23,14 +23,6 @@ if [ -z "$MY_UPLOAD_KEY" ]; then
   return 0
 fi
 
-################################################################################
-# SETUP - Get conda file output locations
-################################################################################
-
-gpuci_logger "Get conda file output locations"
-
-export LIBRMM_FILE=$(conda build conda/recipes/librmm --output)
-export RMM_FILES=$(conda build conda/recipes/rmm --python=$PYTHON --output)
 
 ################################################################################
 # UPLOAD - Conda packages
@@ -39,6 +31,7 @@ export RMM_FILES=$(conda build conda/recipes/rmm --python=$PYTHON --output)
 gpuci_logger "Starting conda uploads"
 
 if [[ "$BUILD_LIBRMM" == "1" && "$UPLOAD_LIBRMM" == "1" ]]; then
+  export LIBRMM_FILE=$(conda build conda/recipes/librmm --output)
   test -e ${LIBRMM_FILE}
   echo "Upload librmm"
   echo ${LIBRMM_FILE}
@@ -46,6 +39,7 @@ if [[ "$BUILD_LIBRMM" == "1" && "$UPLOAD_LIBRMM" == "1" ]]; then
 fi
 
 if [[ "$BUILD_RMM" == "1" && "$UPLOAD_RMM" == "1" ]]; then
+  export RMM_FILES=$(conda build conda/recipes/rmm --python=$PYTHON --output)
   while read -r RMM_FILE; do
     test -e ${RMM_FILE}
     echo "Upload rmm"
