@@ -17,7 +17,6 @@ cmake_minimum_required(VERSION 3.20.1 FATAL_ERROR)
 # TODO: Pull this directly from the file written by rapids_cmake_write_version_file.
 set(rmm_version 22.04.00)
 
-# TODO: What name do we want to use here?
 project(
   rmm-python
   VERSION ${rmm_version}
@@ -28,17 +27,10 @@ project(
   LANGUAGES C CXX CUDA)
 
 find_package(PythonExtensions REQUIRED)
-# TODO: This isn't necessary if we use `python_extension_module`, but it is for manually linking to the Python3 headers.
-#find_package(Python3 REQUIRED COMPONENTS Development)
-# TODO: When would we need to add these?
-#find_package(PythonInterp REQUIRED)
-#find_package(PythonLibs REQUIRED)
 find_package(Cython REQUIRED)
 find_package(CUDAToolkit REQUIRED)
 
-# TODO: Is this the expected behavior? To use existing installs if found, otherwise the headers from
-# the source directory? Try to find an installed RMM, if not found add the parent directory TODO
-# (kk): Do some basic validation to ensure the parent is as expected
+# TODO: Instead of running find_package first, default to using add_subdirectory unless a configuration option is set to use a pre-built RMM.
 find_package(RMM ${rmm_version})
 if(NOT RMM_FOUND)
   set(BUILD_TESTS OFF)
