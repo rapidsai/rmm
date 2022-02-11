@@ -40,7 +40,8 @@ function(add_cython_modules cython_modules)
 
     target_link_libraries(${cython_module} rmm::rmm)
     target_include_directories(${cython_module} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
-    cmake_path(RELATIVE_PATH CMAKE_CURRENT_SOURCE_DIR BASE_DIRECTORY ${rmm-python_SOURCE_DIR} OUTPUT_VARIABLE install_dst)
+    cmake_path(RELATIVE_PATH CMAKE_CURRENT_SOURCE_DIR BASE_DIRECTORY ${rmm-python_SOURCE_DIR}
+               OUTPUT_VARIABLE install_dst)
     install(TARGETS ${cython_module} DESTINATION ${install_dst})
   endforeach(cython_module ${cython_sources})
 endfunction()
