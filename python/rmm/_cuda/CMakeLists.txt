@@ -16,4 +16,4 @@
 set(cython_modules stream)
 
 # Build all of the Cython targets
-add_cython_modules("${cython_modules}" rmm/_cuda)
+add_cython_modules("${cython_modules}")

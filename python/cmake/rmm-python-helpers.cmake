@@ -29,7 +29,7 @@ extension module.
   The list of modules to build.
 
 #]=======================================================================]
-function(add_cython_modules cython_modules install_dst)
+function(add_cython_modules cython_modules)
   foreach(cython_module ${cython_modules})
     add_cython_target(${cython_module} CXX PY3)
     add_library(${cython_module} MODULE ${cython_module})
@@ -40,9 +40,7 @@ function(add_cython_modules cython_modules install_dst)
 
     target_link_libraries(${cython_module} rmm::rmm)
     target_include_directories(${cython_module} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
-    # TODO: Currently requiring the user to pass the install destination
-    # because I'm not sure what CMake variable is most appropriate to work for
-    # both in- and out-of-source builds.
+    cmake_path(RELATIVE_PATH CMAKE_CURRENT_SOURCE_DIR BASE_DIRECTORY ${rmm-python_SOURCE_DIR} OUTPUT_VARIABLE install_dst)
     install(TARGETS ${cython_module} DESTINATION ${install_dst})
   endforeach(cython_module ${cython_sources})
 endfunction()

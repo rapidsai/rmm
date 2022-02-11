@@ -16,4 +16,4 @@
 set(cython_modules device_buffer lib memory_resource cuda_stream)
 
 # Build all of the Cython targets
-add_cython_modules("${cython_modules}" rmm/_lib)
+add_cython_modules("${cython_modules}")
