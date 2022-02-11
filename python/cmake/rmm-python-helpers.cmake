@@ -39,8 +39,8 @@ function(add_cython_modules cython_modules)
     set_target_properties(${cython_module} PROPERTIES PREFIX "")
     target_link_libraries(${cython_module} rmm::rmm)
 
-    # Compute the install directory relative to the source and rely on installs
-    # being relative to the CMAKE_PREFIX_PATH for e.g. editable installs.
+    # Compute the install directory relative to the source and rely on installs being relative to
+    # the CMAKE_PREFIX_PATH for e.g. editable installs.
     cmake_path(RELATIVE_PATH CMAKE_CURRENT_SOURCE_DIR BASE_DIRECTORY ${rmm-python_SOURCE_DIR}
                OUTPUT_VARIABLE install_dst)
     install(TARGETS ${cython_module} DESTINATION ${install_dst})
