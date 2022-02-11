@@ -20,18 +20,28 @@ set(rmm_version 22.04.00)
 project(
   rmm-python
   VERSION ${rmm_version}
-  # TODO: For some reason building Python extension modules via the
-  # python_extension_module requires the C language here to be enabled. I
-  # suspect that it assumes that Cython is C even when it's actually building
-  # C++. Setting a directive in the file does not resolve the problem.
+  # TODO: Building Python extension modules via the python_extension_module
+  # requires the C language to be enabled here. The test project that is built
+  # in scikit-build to verify various linking options for the python library is
+  # hardcoded to build with C, so until that is fixed we need to keep this.
   LANGUAGES C CXX CUDA)
+
+option(FIND_RMM_CPP "Search for existing RMM CPP installations before defaulting to local files" OFF)
 
 find_package(PythonExtensions REQUIRED)
 find_package(Cython REQUIRED)
 find_package(CUDAToolkit REQUIRED)
 
-# TODO: Instead of running find_package first, default to using add_subdirectory unless a configuration option is set to use a pre-built RMM.
-find_package(RMM ${rmm_version})
+# If the user requested it we attempt to find RMM.
+# TODO: Should we allow the user to specify a path instead of just searching?
+# This version assumes that the installation has been appropriately configured
+# for CMake discovery.
+if(FIND_RMM_CPP)
+    find_package(RMM ${rmm_version})
+else()
+    set(RMM_FOUND OFF)
+endif(FIND_RMM_CPP)
+
 if(NOT RMM_FOUND)
   set(BUILD_TESTS OFF)
   set(BUILD_BENCHMARKS OFF)
