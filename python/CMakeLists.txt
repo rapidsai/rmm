@@ -31,7 +31,6 @@ option(FIND_RMM_CPP "Search for existing RMM CPP installations before defaulting
 
 find_package(PythonExtensions REQUIRED)
 find_package(Cython REQUIRED)
-find_package(CUDAToolkit REQUIRED)
 
 # If the user requested it we attempt to find RMM. TODO: Should we allow the user to specify a path
 # instead of just searching? This version assumes that the installation has been appropriately
