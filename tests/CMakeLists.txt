@@ -27,7 +27,8 @@ function(ConfigureTestInternal TEST_NAME)
     ${TEST_NAME}
     PROPERTIES POSITION_INDEPENDENT_CODE ON
                RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${RMM_BINARY_DIR}/gtests>"
-               CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}")
+               CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
+               INSTALL_RPATH "\$ORIGIN/../../../lib")
   target_compile_definitions(${TEST_NAME}
                              PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
   if(DEFINED CUDA_MALLOC_ASYNC_SUPPORT AND NOT CUDA_MALLOC_ASYNC_SUPPORT)
@@ -71,6 +72,12 @@ function(ConfigureTestInternal TEST_NAME)
   endif()
 
   add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
+
+  install(
+    TARGETS ${TEST_NAME}
+    COMPONENT testing
+    DESTINATION bin/gtests/librmm
+    EXCLUDE_FROM_ALL)
 endfunction()
 
 # Wrapper around `ConfigureTestInternal` that builds tests both with and without per thread default

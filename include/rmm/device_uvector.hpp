@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -480,11 +480,18 @@ class device_uvector {
   [[nodiscard]] const_iterator end() const noexcept { return cend(); }
 
   /**
-   * @brief Returns the number of elements in the vector.
-   *
-   * @return The number of elements.
+   * @brief Returns the number of elements.
    */
   [[nodiscard]] std::size_t size() const noexcept { return bytes_to_elements(_storage.size()); }
+
+  /**
+   * @brief Returns the signed number of elements.
+   */
+  [[nodiscard]] std::int64_t ssize() const noexcept
+  {
+    assert(size() < std::numeric_limits<int64_t>::max() && "Size overflows signed integer");
+    return static_cast<int64_t>(size());
+  }
 
   /**
    * @brief Returns true if the vector contains no elements, i.e., `size() == 0`.
