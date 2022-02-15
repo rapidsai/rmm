@@ -173,7 +173,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
   void do_deallocate(void* ptr, std::size_t size, rmm::cuda_stream_view stream) override
   {
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
-    if (ptr != nullptr) { pool_.deallocate(ptr, size, stream); }
+    pool_.deallocate(ptr, size, stream);
 #else
     (void)ptr;
     (void)size;
