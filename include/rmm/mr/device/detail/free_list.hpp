@@ -32,16 +32,21 @@ struct block_base {
   [[nodiscard]] inline void* pointer() const { return ptr; }
   /// Returns true if this block is valid (non-null), false otherwise
   [[nodiscard]] inline bool is_valid() const { return pointer() != nullptr; }
+
+#ifdef RMM_DEBUG_PRINT
   /// Prints the block to stdout
   inline void print() const { std::cout << pointer(); }
+#endif
 };
 
+#ifdef RMM_DEBUG_PRINT
 /// Print block_base on an ostream
 inline std::ostream& operator<<(std::ostream& out, const block_base& block)
 {
   out << block.pointer();
   return out;
 }
+#endif
 
 /**
  * @brief Base class defining an interface for a list of free memory blocks.
@@ -115,6 +120,7 @@ class free_list {
    */
   void clear() noexcept { blocks.clear(); }
 
+#ifdef RMM_DEBUG_PRINT
   /**
    * @brief Print all blocks in the free_list.
    */
@@ -125,6 +131,7 @@ class free_list {
       std::cout << block << std::endl;
     }
   }
+#endif
 
  protected:
   /**

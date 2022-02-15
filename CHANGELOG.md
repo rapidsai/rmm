@@ -1,14 +1,80 @@
+# RMM 22.04.00 (Date TBD)
+
+Please see https://github.com/rapidsai/rmm/releases/tag/v22.04.00a for the latest changes to this development branch.
+
 # RMM 22.02.00 (Date TBD)
 
 Please see https://github.com/rapidsai/rmm/releases/tag/v22.02.00a for the latest changes to this development branch.
 
-# RMM 21.12.00 (Date TBD)
+# RMM 21.12.00 (9 Dec 2021)
 
-Please see https://github.com/rapidsai/rmm/releases/tag/v21.12.00a for the latest changes to this development branch.
+## 🚨 Breaking Changes
 
-# RMM 21.10.00 (Date TBD)
+- Parameterize exception type caught by failure_callback_resource_adaptor ([#898](https://github.com/rapidsai/rmm/pull/898)) [@harrism](https://github.com/harrism)
 
-Please see https://github.com/rapidsai/rmm/releases/tag/v21.10.00a for the latest changes to this development branch.
+## 🐛 Bug Fixes
+
+- Update recipes for Enhanced Compatibility ([#910](https://github.com/rapidsai/rmm/pull/910)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Fix `librmm` uploads ([#909](https://github.com/rapidsai/rmm/pull/909)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Use spdlog/fmt/ostr.h as it supports external fmt library ([#907](https://github.com/rapidsai/rmm/pull/907)) [@robertmaynard](https://github.com/robertmaynard)
+- Fix variable names in logging macro calls ([#897](https://github.com/rapidsai/rmm/pull/897)) [@harrism](https://github.com/harrism)
+- Keep rapids cmake version in sync ([#876](https://github.com/rapidsai/rmm/pull/876)) [@robertmaynard](https://github.com/robertmaynard)
+
+## 📖 Documentation
+
+- Replace `to_device()` in docs  with `DeviceBuffer.to_device()` ([#902](https://github.com/rapidsai/rmm/pull/902)) [@shwina](https://github.com/shwina)
+- Fix return value docs for supports_get_mem_info ([#884](https://github.com/rapidsai/rmm/pull/884)) [@harrism](https://github.com/harrism)
+
+## 🚀 New Features
+
+- Out-of-memory callback resource adaptor ([#892](https://github.com/rapidsai/rmm/pull/892)) [@madsbk](https://github.com/madsbk)
+
+## 🛠️ Improvements
+
+- suppress spurious clang-tidy warnings in debug macros ([#914](https://github.com/rapidsai/rmm/pull/914)) [@rongou](https://github.com/rongou)
+- C++ code coverage support ([#905](https://github.com/rapidsai/rmm/pull/905)) [@harrism](https://github.com/harrism)
+- Provide ./build.sh flag to control CUDA async malloc support ([#901](https://github.com/rapidsai/rmm/pull/901)) [@robertmaynard](https://github.com/robertmaynard)
+- Parameterize exception type caught by failure_callback_resource_adaptor ([#898](https://github.com/rapidsai/rmm/pull/898)) [@harrism](https://github.com/harrism)
+- Throw `rmm::out_of_memory` when we know for sure ([#894](https://github.com/rapidsai/rmm/pull/894)) [@rongou](https://github.com/rongou)
+- Update `conda` recipes for Enhanced Compatibility effort ([#893](https://github.com/rapidsai/rmm/pull/893)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Add functions to query the stream of device_uvector and device_scalar ([#887](https://github.com/rapidsai/rmm/pull/887)) [@fkallen](https://github.com/fkallen)
+- Add spdlog to install export set ([#886](https://github.com/rapidsai/rmm/pull/886)) [@trxcllnt](https://github.com/trxcllnt)
+
+# RMM 21.10.00 (7 Oct 2021)
+
+## 🚨 Breaking Changes
+
+- Delete cuda_async_memory_resource copy/move ctors/operators ([#860](https://github.com/rapidsai/rmm/pull/860)) [@jrhemstad](https://github.com/jrhemstad)
+
+## 🐛 Bug Fixes
+
+- Fix parameter name in asserts ([#875](https://github.com/rapidsai/rmm/pull/875)) [@vyasr](https://github.com/vyasr)
+- Disallow zero-size stream pools ([#873](https://github.com/rapidsai/rmm/pull/873)) [@harrism](https://github.com/harrism)
+- Correct namespace usage in host memory resources ([#872](https://github.com/rapidsai/rmm/pull/872)) [@divyegala](https://github.com/divyegala)
+- fix race condition in limiting resource adapter ([#869](https://github.com/rapidsai/rmm/pull/869)) [@rongou](https://github.com/rongou)
+- Install the right cudatoolkit in the conda env in gpu/build.sh ([#864](https://github.com/rapidsai/rmm/pull/864)) [@shwina](https://github.com/shwina)
+- Disable copy/move ctors and operator= from free_list classes ([#862](https://github.com/rapidsai/rmm/pull/862)) [@harrism](https://github.com/harrism)
+- Delete cuda_async_memory_resource copy/move ctors/operators ([#860](https://github.com/rapidsai/rmm/pull/860)) [@jrhemstad](https://github.com/jrhemstad)
+- Improve concurrency of stream_ordered_memory_resource by stealing less ([#851](https://github.com/rapidsai/rmm/pull/851)) [@harrism](https://github.com/harrism)
+- Use the new RAPIDS.cmake to fetch rapids-cmake ([#838](https://github.com/rapidsai/rmm/pull/838)) [@robertmaynard](https://github.com/robertmaynard)
+
+## 📖 Documentation
+
+- Forward-merge branch-21.08 to branch-21.10 ([#846](https://github.com/rapidsai/rmm/pull/846)) [@jakirkham](https://github.com/jakirkham)
+
+## 🛠️ Improvements
+
+- Forward-merge `branch-21.08` into `branch-21.10` ([#877](https://github.com/rapidsai/rmm/pull/877)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Add .clang-tidy and fix clang-tidy warnings ([#857](https://github.com/rapidsai/rmm/pull/857)) [@harrism](https://github.com/harrism)
+- Update to use rapids-cmake 21.10 pre-configured packages ([#854](https://github.com/rapidsai/rmm/pull/854)) [@robertmaynard](https://github.com/robertmaynard)
+- Clean up: use std::size_t, include cstddef and aligned.hpp where missing ([#852](https://github.com/rapidsai/rmm/pull/852)) [@harrism](https://github.com/harrism)
+- tweak the arena mr to reduce fragmentation ([#845](https://github.com/rapidsai/rmm/pull/845)) [@rongou](https://github.com/rongou)
+- Fix transitive include in cuda_device header ([#843](https://github.com/rapidsai/rmm/pull/843)) [@wphicks](https://github.com/wphicks)
+- Refactor cmake style ([#842](https://github.com/rapidsai/rmm/pull/842)) [@robertmaynard](https://github.com/robertmaynard)
+- add multi stream allocations benchmark. ([#841](https://github.com/rapidsai/rmm/pull/841)) [@cwharris](https://github.com/cwharris)
+- Enforce default visibility for `get_map`. ([#833](https://github.com/rapidsai/rmm/pull/833)) [@trivialfis](https://github.com/trivialfis)
+- ENH Replace gpuci_conda_retry with gpuci_mamba_retry ([#823](https://github.com/rapidsai/rmm/pull/823)) [@dillon-cullinan](https://github.com/dillon-cullinan)
+- Execution policy class ([#816](https://github.com/rapidsai/rmm/pull/816)) [@viclafargue](https://github.com/viclafargue)
 
 # RMM 21.08.00 (4 Aug 2021)
 

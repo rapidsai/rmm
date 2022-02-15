@@ -23,7 +23,9 @@ from libcpp.cast cimport dynamic_cast
 from libcpp.memory cimport make_shared, make_unique, shared_ptr, unique_ptr
 from libcpp.string cimport string
 
-from rmm._cuda.gpu import CUDARuntimeError, cudaError, getDevice, setDevice
+from cuda.cudart import cudaError_t
+
+from rmm._cuda.gpu import CUDARuntimeError, getDevice, setDevice
 
 
 # NOTE: Keep extern declarations in .pyx file as much as possible to avoid
@@ -64,6 +66,7 @@ cdef extern from "rmm/mr/device/pool_memory_resource.hpp" \
             Upstream* upstream_mr,
             optional[size_t] initial_pool_size,
             optional[size_t] maximum_pool_size) except +
+        size_t pool_size()
 
 cdef extern from "rmm/mr/device/fixed_size_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
@@ -297,6 +300,11 @@ cdef class PoolMemoryResource(UpstreamResourceAdaptor):
         """
         pass
 
+    def pool_size(self):
+        cdef pool_memory_resource[device_memory_resource]* c_mr = (
+            <pool_memory_resource[device_memory_resource]*>(self.get_mr())
+        )
+        return c_mr.pool_size()
 
 cdef class FixedSizeMemoryResource(UpstreamResourceAdaptor):
     def __cinit__(
@@ -705,7 +713,7 @@ cpdef void _initialize(
     try:
         original_device = getDevice()
     except CUDARuntimeError as e:
-        if e.status == cudaError.cudaErrorNoDevice:
+        if e.status == cudaError_t.cudaErrorNoDevice:
             warnings.warn(e.msg)
         else:
             raise e

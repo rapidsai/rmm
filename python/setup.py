@@ -1,6 +1,5 @@
 # Copyright (c) 2019-2021, NVIDIA CORPORATION.
 
-import filecmp
 import glob
 import os
 import re
@@ -26,7 +25,7 @@ from setuptools.extension import Extension
 
 import versioneer
 
-install_requires = ["numba", "cython"]
+install_requires = ["numba", "cython", "cuda-python"]
 
 
 def get_cuda_version_from_header(cuda_include_dir):
@@ -74,43 +73,6 @@ if os.path.isdir(INSTALL_PREFIX):
 else:
     # use uninstalled headers in source tree
     rmm_include_dir = "../include"
-
-# Preprocessor step to specify correct pxd file with
-# valid symbols for specific version of CUDA.
-
-cwd = os.getcwd()
-files_to_preprocess = ["gpu.pxd"]
-
-# The .pxi file is unchanged between some CUDA versions
-# (e.g., 11.0 & 11.1), so we keep only a single copy
-# of it
-cuda_version_to_pxi_dir = {
-    "10.1": "10.1",
-    "10.2": "10.2",
-    "11": "11.x",
-}
-
-for pxd_basename in files_to_preprocess:
-    pxi_basename = os.path.splitext(pxd_basename)[0] + ".pxi"
-    pxi_dir = cuda_version_to_pxi_dir.get(CUDA_VERSION)
-    if not pxi_dir:
-        # didn't get an exact match on major.minor version - see if
-        # we have a match on just the major version
-        pxi_dir = cuda_version_to_pxi_dir.get(CUDA_VERSION.split(".")[0])
-
-    if pxi_dir:
-        pxi_pathname = os.path.join(cwd, "rmm/_cuda", pxi_dir, pxi_basename,)
-        pxd_pathname = os.path.join(cwd, "rmm/_cuda", pxd_basename)
-        try:
-            if filecmp.cmp(pxi_pathname, pxd_pathname):
-                # files are the same, no need to copy
-                continue
-        except FileNotFoundError:
-            # pxd_pathname doesn't exist yet
-            pass
-        shutil.copyfile(pxi_pathname, pxd_pathname)
-    else:
-        raise TypeError(f"{CUDA_VERSION} is not supported.")
 
 include_dirs = [
     rmm_include_dir,

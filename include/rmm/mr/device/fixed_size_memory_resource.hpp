@@ -158,7 +158,7 @@ class fixed_size_memory_resource
    */
   free_list blocks_from_upstream(cuda_stream_view stream)
   {
-    void* ptr = upstream_mr_->allocate(upstream_chunk_size_, stream);
+    void* ptr = get_upstream()->allocate(upstream_chunk_size_, stream);
     block_type block{ptr};
     upstream_blocks_.push_back(block);
 
@@ -230,16 +230,17 @@ class fixed_size_memory_resource
     lock_guard lock(this->get_mutex());
 
     for (auto block : upstream_blocks_) {
-      upstream_mr_->deallocate(block.pointer(), upstream_chunk_size_);
+      get_upstream()->deallocate(block.pointer(), upstream_chunk_size_);
     }
     upstream_blocks_.clear();
   }
 
+#ifdef RMM_DEBUG_PRINT
   void print()
   {
     lock_guard lock(this->get_mutex());
 
-    auto const [free, total] = upstream_mr_->get_mem_info(0);
+    auto const [free, total] = get_upstream()->get_mem_info(rmm::cuda_stream_default);
     std::cout << "GPU free memory: " << free << " total: " << total << "\n";
 
     std::cout << "upstream_blocks: " << upstream_blocks_.size() << "\n";
@@ -253,6 +254,7 @@ class fixed_size_memory_resource
 
     this->print_free_blocks();
   }
+#endif
 
   /**
    * @brief Get the largest available block size and total free size in the specified free list

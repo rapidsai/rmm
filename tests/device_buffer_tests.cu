@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,11 +56,18 @@ using resources = ::testing::Types<rmm::mr::cuda_memory_resource, rmm::mr::manag
 
 TYPED_TEST_CASE(DeviceBufferTest, resources);
 
+TYPED_TEST(DeviceBufferTest, EmptyBuffer)
+{
+  rmm::device_buffer buff(0, rmm::cuda_stream_view{});
+  EXPECT_TRUE(buff.is_empty());
+}
+
 TYPED_TEST(DeviceBufferTest, DefaultMemoryResource)
 {
   rmm::device_buffer buff(this->size, rmm::cuda_stream_view{});
   EXPECT_NE(nullptr, buff.data());
   EXPECT_EQ(this->size, buff.size());
+  EXPECT_EQ(this->size, buff.ssize());
   EXPECT_EQ(this->size, buff.capacity());
   EXPECT_EQ(rmm::mr::get_current_device_resource(), buff.memory_resource());
   EXPECT_EQ(rmm::cuda_stream_view{}, buff.stream());

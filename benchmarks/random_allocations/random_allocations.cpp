@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -170,7 +170,9 @@ inline auto make_pool()
 
 inline auto make_arena()
 {
-  return rmm::mr::make_owning_wrapper<rmm::mr::arena_memory_resource>(make_cuda());
+  auto free = rmm::detail::available_device_memory().first;
+  constexpr auto reserve{64UL << 20};  // Leave some space for CUDA overhead.
+  return rmm::mr::make_owning_wrapper<rmm::mr::arena_memory_resource>(make_cuda(), free - reserve);
 }
 
 inline auto make_binning()

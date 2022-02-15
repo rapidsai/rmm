@@ -77,8 +77,8 @@ struct bytes {
 
   friend std::ostream& operator<<(std::ostream& os, bytes const& value)
   {
-    static std::array<std::string, 9> const units{
-      "B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"};
+    static std::array units{"B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"};
+
     int index = 0;
     auto size = static_cast<double>(value.value);
     while (size > 1024) {
