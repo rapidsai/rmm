@@ -31,19 +31,19 @@ fi
 gpuci_logger "Starting conda uploads"
 
 if [[ "$BUILD_LIBRMM" == "1" && "$UPLOAD_LIBRMM" == "1" ]]; then
-  export LIBRMM_FILE=$(conda build --croot ${CONDA_BLD_DIR} conda/recipes/librmm --output)
-  test -e ${LIBRMM_FILE}
-  echo "Upload librmm"
-  echo ${LIBRMM_FILE}
-  gpuci_retry anaconda -t ${MY_UPLOAD_KEY} upload -u ${CONDA_USERNAME:-rapidsai} ${LABEL_OPTION} --skip-existing ${LIBRMM_FILE} --no-progress
+  export LIBRMM_FILES=$(conda build --croot ${CONDA_BLD_DIR} conda/recipes/librmm --output)
+  while read -r LIBRMM_FILE; do
+    test -e ${LIBRMM_FILE}
+    echo "Upload librmm file: ${LIBRMM_FILE}"
+    gpuci_retry anaconda -t ${MY_UPLOAD_KEY} upload -u ${CONDA_USERNAME:-rapidsai} ${LABEL_OPTION} --skip-existing ${LIBRMM_FILE} --no-progress
+  done <<< "${LIBRMM_FILES}"
 fi
 
 if [[ "$BUILD_RMM" == "1" && "$UPLOAD_RMM" == "1" ]]; then
   export RMM_FILES=$(conda build --croot ${CONDA_BLD_DIR} conda/recipes/rmm --python=$PYTHON --output)
   while read -r RMM_FILE; do
     test -e ${RMM_FILE}
-    echo "Upload rmm"
-    echo ${RMM_FILE}
+    echo "Upload rmm file: ${RMM_FILE}"
     gpuci_retry anaconda -t ${MY_UPLOAD_KEY} upload -u ${CONDA_USERNAME:-rapidsai} ${LABEL_OPTION} --skip-existing ${RMM_FILE} --no-progress
   done <<< "${RMM_FILES}"
 fi
