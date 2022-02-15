@@ -90,7 +90,8 @@ if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
         py.test --cache-clear --basetemp=${WORKSPACE}/rmm-cuda-tmp --junitxml=${WORKSPACE}/test-results/junit-rmm.xml -v --cov-config=.coveragerc --cov=rmm --cov-report=xml:${WORKSPACE}/python/rmm-coverage.xml --cov-report term
     fi
 else
-    export LD_LIBRARY_PATH="$WORKSPACE/ci/artifacts/rmm/cpu/conda_work/build:$LD_LIBRARY_PATH"
+
+    gpuci_mamba_retry install -c $WORKSPACE/ci/artifacts/rmm/cpu/.conda-bld/ librmm librmm_tests
 
     TESTRESULTS_DIR=${WORKSPACE}/test-results
     mkdir -p ${TESTRESULTS_DIR}
@@ -100,9 +101,8 @@ else
     nvidia-smi
 
     gpuci_logger "Running googletests"
-    # run gtests
-    cd $WORKSPACE/ci/artifacts/rmm/cpu/conda_work
-    for gt in "build/gtests/*" ; do
+    # run gtests from librmm_tests package
+    for gt in "$CONDA_PREFIX/bin/gtests/librmm/*" ; do
         ${gt} --gtest_output=xml:${TESTRESULTS_DIR}/
         exitcode=$?
         if (( ${exitcode} != 0 )); then
@@ -112,13 +112,6 @@ else
     done
 
     cd $WORKSPACE/python
-
-    CONDA_FILE=`find $WORKSPACE/ci/artifacts/rmm/cpu/.conda-bld/ -name "librmm*.tar.bz2"`
-    CONDA_FILE=`basename "$CONDA_FILE" .tar.bz2` #get filename without extension
-    CONDA_FILE=${CONDA_FILE//-/=} #convert to conda install
-    gpuci_logger "Installing $CONDA_FILE"
-    gpuci_mamba_retry install -c $WORKSPACE/ci/artifacts/rmm/cpu/.conda-bld/ "$CONDA_FILE"
-
     export LIBRMM_BUILD_DIR="$WORKSPACE/ci/artifacts/rmm/cpu/conda_work/build"
 
     gpuci_logger "Building rmm"
