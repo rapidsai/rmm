@@ -32,6 +32,34 @@ option(FIND_RMM_CPP "Search for existing RMM CPP installations before defaulting
 find_package(PythonExtensions REQUIRED)
 find_package(Cython REQUIRED)
 
+# TODO: Should we guard this based on a scikit-build version?
+# Override this function to avoid scikit-build clobbering symbol visibility.
+function(_set_python_extension_symbol_visibility _target)
+  if(PYTHON_VERSION_MAJOR VERSION_GREATER 2)
+    set(_modinit_prefix "PyInit_")
+  else()
+    set(_modinit_prefix "init")
+  endif()
+  message("_modinit_prefix:${_modinit_prefix}")
+  if("${CMAKE_C_COMPILER_ID}" STREQUAL "MSVC")
+    set_target_properties(${_target} PROPERTIES LINK_FLAGS
+        "/EXPORT:${_modinit_prefix}${_target}"
+    )
+  elseif("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    set(_script_path
+      ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/${_target}-version-script.map
+    )
+    file(WRITE ${_script_path}
+        # Note: The change is to this script, which does not indiscriminately
+        # mark all non PyInit symbols as local.
+               "{global: ${_modinit_prefix}${_target}; };"
+    )
+    set_property(TARGET ${_target} APPEND_STRING PROPERTY LINK_FLAGS
+        " -Wl,--version-script=\"${_script_path}\""
+    )
+  endif()
+endfunction()
+
 # If the user requested it we attempt to find RMM. TODO: Should we allow the user to specify a path
 # instead of just searching? This version assumes that the installation has been appropriately
 # configured for CMake discovery.
