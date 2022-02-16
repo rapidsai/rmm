@@ -60,6 +60,9 @@ function(_set_python_extension_symbol_visibility _target)
   endif()
 endfunction()
 
+# Ignore unused variable warning.
+set(ignored_variable "${SKBUILD}")
+
 # If the user requested it we attempt to find RMM. TODO: Should we allow the user to specify a path
 # instead of just searching? This version assumes that the installation has been appropriately
 # configured for CMake discovery.
