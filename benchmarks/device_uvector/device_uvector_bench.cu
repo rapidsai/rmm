@@ -15,6 +15,7 @@
  */
 
 #include "../synchronization/synchronization.hpp"
+#include "thrust/detail/raw_pointer_cast.h"
 
 #include <rmm/cuda_stream.hpp>
 #include <rmm/detail/error.hpp>
@@ -92,8 +93,10 @@ Vector make_vector(int num_elements, rmm::cuda_stream_view stream, bool zero_ini
   static_assert(std::is_same_v<Vector, thrust_vector> or std::is_same_v<Vector, rmm_vector> or
                   std::is_same_v<Vector, rmm_uvector>,
                 "unsupported vector type");
-  if constexpr (std::is_same_v<Vector, thrust_vector> or std::is_same_v<Vector, rmm_vector>) {
+  if constexpr (std::is_same_v<Vector, thrust_vector>) {
     return Vector(num_elements, 0);
+  } else if constexpr (std::is_same_v<Vector, rmm_vector>) {
+    return Vector(num_elements, 0, rmm::mr::thrust_allocator<std::int32_t>(stream));
   } else if constexpr (std::is_same_v<Vector, rmm_uvector>) {
     auto vec = Vector(num_elements, stream);
     if (zero_init) {
@@ -106,14 +109,7 @@ Vector make_vector(int num_elements, rmm::cuda_stream_view stream, bool zero_ini
 template <typename Vector>
 int32_t* vector_data(Vector& vec)
 {
-  static_assert(std::is_same_v<Vector, thrust_vector> or std::is_same_v<Vector, rmm_vector> or
-                  std::is_same_v<Vector, rmm_uvector>,
-                "unsupported vector type");
-  if constexpr (std::is_same_v<Vector, thrust_vector> or std::is_same_v<Vector, rmm_vector>) {
-    return vec.data().get();
-  } else if constexpr (std::is_same_v<Vector, rmm_uvector>) {
-    return vec.data();
-  }
+  return thrust::raw_pointer_cast(vec.data());
 }
 
 template <typename Vector>
@@ -126,9 +122,9 @@ void vector_workflow(std::size_t num_elements,
   auto input = make_vector<Vector>(num_elements, input_stream, true);
   input_stream.synchronize();
   for (rmm::cuda_stream_view stream : streams) {
-    auto vec = make_vector<Vector>(num_elements, stream);
+    auto output = make_vector<Vector>(num_elements, stream);
     kernel<<<num_blocks, block_size, 0, stream.value()>>>(
-      vector_data(input), vector_data(vec), num_elements);
+      vector_data(input), vector_data(output), num_elements);
   }
 
   for (rmm::cuda_stream_view stream : streams) {
@@ -148,7 +144,6 @@ void BM_VectorWorkflow(benchmark::State& state)
   auto num_elements = state.range(0);
   int block_size    = 256;
   int num_blocks    = 16;
-  auto counter      = thrust::make_counting_iterator(0);
 
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
     cuda_event_timer timer(state, true, input_stream);  // flush_l2_cache = true
@@ -162,21 +157,24 @@ void BM_VectorWorkflow(benchmark::State& state)
   rmm::mr::set_current_device_resource(nullptr);
 }
 
-BENCHMARK_TEMPLATE(BM_VectorWorkflow, thrust::device_vector<int32_t>)  // NOLINT
-  ->RangeMultiplier(10)                                                // NOLINT
-  ->Range(100'000, 100'000'000)                                        // NOLINT
+BENCHMARK_TEMPLATE(BM_VectorWorkflow, thrust_vector)  // NOLINT
+  ->RangeMultiplier(10)                               // NOLINT
+  ->Range(100'000, 100'000'000)                       // NOLINT
   ->Unit(benchmark::kMicrosecond)
   ->UseManualTime();
 
-BENCHMARK_TEMPLATE(BM_VectorWorkflow, rmm::device_vector<int32_t>)  // NOLINT
-  ->RangeMultiplier(10)                                             // NOLINT
-  ->Range(100'000, 100'000'000)                                     // NOLINT
+// The only difference here is that `rmm::device_vector` uses `rmm::current_device_resource()`
+// for allocation while `thrust::device_vector` uses cudaMalloc/cudaFree. In the benchmarks we use
+// `cuda_async_memory_resource`, which is faster.
+BENCHMARK_TEMPLATE(BM_VectorWorkflow, rmm_vector)  // NOLINT
+  ->RangeMultiplier(10)                            // NOLINT
+  ->Range(100'000, 100'000'000)                    // NOLINT
   ->Unit(benchmark::kMicrosecond)
   ->UseManualTime();
 
-BENCHMARK_TEMPLATE(BM_VectorWorkflow, rmm::device_uvector<int32_t>)  // NOLINT
-  ->RangeMultiplier(10)                                              // NOLINT
-  ->Range(100'000, 100'000'000)                                      // NOLINT
+BENCHMARK_TEMPLATE(BM_VectorWorkflow, rmm_uvector)  // NOLINT
+  ->RangeMultiplier(10)                             // NOLINT
+  ->Range(100'000, 100'000'000)                     // NOLINT
   ->Unit(benchmark::kMicrosecond)
   ->UseManualTime();
 
