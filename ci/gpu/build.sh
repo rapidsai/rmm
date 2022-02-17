@@ -92,7 +92,7 @@ if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
 
         gpuci_logger "Running rmm pytests..."
         cd $WORKSPACE/python
-        py.test --cache-clear --basetemp=${WORKSPACE}/rmm-cuda-tmp --junitxml=${WORKSPACE}/test-results/junit-rmm.xml -v --cov-config=.coveragerc --cov=rmm --cov-report=xml:${WORKSPACE}/python/rmm-coverage.xml --cov-report term -x
+        py.test --cache-clear --basetemp=${WORKSPACE}/rmm-cuda-tmp --junitxml=${WORKSPACE}/test-results/junit-rmm.xml -v --cov-config=.coveragerc --cov=rmm --cov-report=xml:${WORKSPACE}/python/rmm-coverage.xml --cov-report term
     fi
 else
     export LD_LIBRARY_PATH="$WORKSPACE/ci/artifacts/rmm/cpu/conda_work/build:$LD_LIBRARY_PATH"
@@ -130,7 +130,7 @@ else
     "$WORKSPACE/build.sh" -v rmm
 
     gpuci_logger "pytest rmm"
-    py.test --cache-clear --junitxml=${WORKSPACE}/test-results/junit-rmm.xml -v --cov-config=.coveragerc --cov=rmm --cov-report=xml:${WORKSPACE}/python/rmm-coverage.xml --cov-report term
+    py.test --cache-clear --junitxml=${WORKSPACE}/test-results/junit-rmm.xml -v --cov-config=.coveragerc --cov=rmm --cov-report=xml:${WORKSPACE}/python/rmm-coverage.xml --cov-report term -x
     exitcode=$?
     if (( ${exitcode} != 0 )); then
         SUITEERROR=${exitcode}
