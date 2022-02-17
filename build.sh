@@ -179,7 +179,7 @@ if (( NUMARGS == 0 )) || hasArg rmm; then
     export INSTALL_PREFIX
     echo "building rmm..."
     if [[ ${CUDA_MALLOC_ASYNC_SUPPORT} == OFF ]]; then
-        python setup.py build_ext_no_async --inplace
+        python setup.py build_ext --inplace -- -DRMM_DISABLE_CUDA_MALLOC_ASYNC
     else
         python setup.py build_ext --inplace
     fi
