@@ -40,11 +40,11 @@ void BM_UvectorSizeConstruction(benchmark::State& state)
   rmm::mr::set_current_device_resource(&mr);
 
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
-    rmm::device_uvector<int32_t> vec(state.range(0), rmm::cuda_stream_view{});
+    rmm::device_uvector<std::int32_t> vec(state.range(0), rmm::cuda_stream_view{});
     cudaDeviceSynchronize();
   }
 
-  state.SetItemsProcessed(static_cast<int64_t>(state.iterations()));
+  state.SetItemsProcessed(static_cast<std::int64_t>(state.iterations()));
 
   rmm::mr::set_current_device_resource(nullptr);
 }
@@ -61,11 +61,11 @@ void BM_ThrustVectorSizeConstruction(benchmark::State& state)
   rmm::mr::set_current_device_resource(&mr);
 
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
-    rmm::device_vector<int32_t> vec(state.range(0));
+    rmm::device_vector<std::int32_t> vec(state.range(0));
     cudaDeviceSynchronize();
   }
 
-  state.SetItemsProcessed(static_cast<int64_t>(state.iterations()));
+  state.SetItemsProcessed(static_cast<std::int64_t>(state.iterations()));
 
   rmm::mr::set_current_device_resource(nullptr);
 }
@@ -88,7 +88,7 @@ using rmm_vector    = rmm::device_vector<int32_t>;
 using rmm_uvector   = rmm::device_uvector<int32_t>;
 
 template <typename Vector>
-Vector make_vector(int num_elements, rmm::cuda_stream_view stream, bool zero_init = false)
+Vector make_vector(std::int64_t num_elements, rmm::cuda_stream_view stream, bool zero_init = false)
 {
   static_assert(std::is_same_v<Vector, thrust_vector> or std::is_same_v<Vector, rmm_vector> or
                   std::is_same_v<Vector, rmm_uvector>,
@@ -100,7 +100,7 @@ Vector make_vector(int num_elements, rmm::cuda_stream_view stream, bool zero_ini
   } else if constexpr (std::is_same_v<Vector, rmm_uvector>) {
     auto vec = Vector(num_elements, stream);
     if (zero_init) {
-      cudaMemsetAsync(vec.data(), 0, num_elements * sizeof(int32_t), stream.value());
+      cudaMemsetAsync(vec.data(), 0, num_elements * sizeof(std::int32_t), stream.value());
     }
     return vec;
   }
@@ -114,8 +114,8 @@ int32_t* vector_data(Vector& vec)
 
 template <typename Vector>
 void vector_workflow(std::size_t num_elements,
-                     int num_blocks,
-                     int block_size,
+                     std::int64_t num_blocks,
+                     std::int64_t block_size,
                      rmm::cuda_stream const& input_stream,
                      std::vector<rmm::cuda_stream> const& streams)
 {
@@ -141,18 +141,18 @@ void BM_VectorWorkflow(benchmark::State& state)
   rmm::cuda_stream input_stream;
   std::vector<rmm::cuda_stream> streams(4);
 
-  auto num_elements = state.range(0);
-  int block_size    = 256;
-  int num_blocks    = 16;
+  auto const num_elements   = state.range(0);
+  auto constexpr block_size = 256;
+  auto constexpr num_blocks = 16;
 
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
     cuda_event_timer timer(state, true, input_stream);  // flush_l2_cache = true
     vector_workflow<Vector>(num_elements, num_blocks, block_size, input_stream, streams);
   }
 
-  constexpr auto num_accesses = 9;
-  auto bytes                  = num_elements * sizeof(int32_t) * num_accesses;
-  state.SetBytesProcessed(static_cast<int64_t>(state.iterations() * bytes));
+  auto constexpr num_accesses = 9;
+  auto const bytes            = num_elements * sizeof(std::int32_t) * num_accesses;
+  state.SetBytesProcessed(static_cast<std::int64_t>(state.iterations() * bytes));
 
   rmm::mr::set_current_device_resource(nullptr);
 }
