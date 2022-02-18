@@ -178,11 +178,12 @@ if (( NUMARGS == 0 )) || hasArg rmm; then
     cd "${REPODIR}/python"
     export INSTALL_PREFIX
     echo "building rmm..."
-    python setup.py build_ext --inplace -- -DCUDA_MALLOC_ASYNC_SUPPORT=OFF
+    python setup.py build_ext --inplace -- -DCUDA_MALLOC_ASYNC_SUPPORT=OFF -- -v
 
     if [[ ${INSTALL_TARGET} != "" ]]; then
         echo "installing rmm..."
-        python setup.py install --single-version-externally-managed --record=record.txt
+        # TODO: I shouldn't have to pass the flags twice, but just in case I do...
+        python setup.py install --single-version-externally-managed --record=record.txt -- -DCUDA_MALLOC_ASYNC_SUPPORT=OFF -- -v
     fi
 
 fi
