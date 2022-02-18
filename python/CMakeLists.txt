@@ -73,7 +73,7 @@ else()
 endif()
 
 if(DEFINED CUDA_MALLOC_ASYNC_SUPPORT AND NOT CUDA_MALLOC_ASYNC_SUPPORT)
-  compile_definitions("RMM_DISABLE_CUDA_MALLOC_ASYNC")
+  add_compile_definitions("RMM_DISABLE_CUDA_MALLOC_ASYNC")
 endif()
 
 if(NOT RMM_FOUND)
