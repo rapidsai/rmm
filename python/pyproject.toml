@@ -19,7 +19,7 @@ requires = [
     "setuptools",
     "cython>=0.29,<0.30",
     "scikit-build",
-    "cmake",
+    "cmake>=3.20.1",
     "ninja",
 ]
 
