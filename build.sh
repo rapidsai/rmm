@@ -178,7 +178,7 @@ if (( NUMARGS == 0 )) || hasArg rmm; then
     cd "${REPODIR}/python"
     export INSTALL_PREFIX
     echo "building rmm..."
-    python setup.py build_ext --inplace -- -DCUDA_MALLOC_ASYNC_SUPPORT=ON
+    python setup.py build_ext --inplace -- -DCUDA_MALLOC_ASYNC_SUPPORT=OFF
 
     if [[ ${INSTALL_TARGET} != "" ]]; then
         echo "installing rmm..."
