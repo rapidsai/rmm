@@ -130,8 +130,13 @@ else
     "$WORKSPACE/build.sh" -v rmm
 
     gpuci_logger "pytest rmm"
-    py.test --cache-clear --junitxml=${WORKSPACE}/test-results/junit-rmm.xml -v --cov-config=.coveragerc --cov=rmm --cov-report=xml:${WORKSPACE}/python/rmm-coverage.xml --cov-report term -x
+    py.test --cache-clear --junitxml=${WORKSPACE}/test-results/junit-rmm.xml -v --cov-config=.coveragerc --cov=rmm --cov-report=xml:${WORKSPACE}/python/rmm-coverage.xml --cov-report term
     exitcode=$?
+
+    python -c "import rmm; print(rmm.__file__)"
+    ls `python -c "import rmm; import os; print(os.path.dirname(rmm.__file__))"`
+    ls `python -c "import rmm; import os; print(os.path.dirname(rmm.__file__))"`/_lib
+
     if (( ${exitcode} != 0 )); then
         SUITEERROR=${exitcode}
         echo "FAILED: 1 or more tests in /rmm/python"
