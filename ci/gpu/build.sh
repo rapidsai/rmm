@@ -100,9 +100,21 @@ else
     gpuci_logger "Check GPU usage"
     nvidia-smi
 
+    export ASYNC_TESTS_TO_SKIP='[
+        "CUDA_ASYNC_MR_PTDS_TEST",
+        "CUDA_ASYNC_MR_TEST"
+    ]'
+
     gpuci_logger "Running googletests"
     # run gtests from librmm_tests package
-    for gt in "$CONDA_PREFIX/bin/gtests/librmm/"* ; do
+    for gt in "$CONDA_PREFIX/bin/gtests/librmm/"*; do
+        export TEST_NAME=$(basename "$gt")
+        if [ "$CUDA_MAJOR_VER" -eq "11" ] && [ "$CUDA_MINOR_VER" -lt "2" ]; then
+            if [ $(jq -n "env.ASYNC_TESTS_TO_SKIP | fromjson | index(env.TEST_NAME)") != null ]; then
+                echo "skipping $TEST_NAME due to older, unsupported CUDA version"
+                continue
+            fi
+        fi
         ${gt} --gtest_output=xml:${TESTRESULTS_DIR}/
         exitcode=$?
         if (( ${exitcode} != 0 )); then
