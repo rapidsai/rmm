@@ -12,26 +12,6 @@ package:
 source:
   git_url: ../../..
 
-requirements:
-  build:
-    - cmake {{ cmake_version }}
-
-build:
-  script_env:
-    - CC
-    - CXX
-    - CUDAHOSTCXX
-    - PARALLEL_LEVEL
-    - CMAKE_GENERATOR
-    - CMAKE_C_COMPILER_LAUNCHER
-    - CMAKE_CXX_COMPILER_LAUNCHER
-    - CMAKE_CUDA_COMPILER_LAUNCHER
-    - SCCACHE_S3_KEY_PREFIX=librmm-aarch64 # [aarch64]
-    - SCCACHE_S3_KEY_PREFIX=librmm-linux64 # [linux64]
-    - SCCACHE_BUCKET=rapids-sccache
-    - SCCACHE_REGION=us-west-2
-    - SCCACHE_IDLE_TIMEOUT=32768
-
 outputs:
   - name: librmm
     version: {{ version }}
@@ -39,6 +19,20 @@ outputs:
     build:
       number: {{ GIT_DESCRIBE_NUMBER }}
       string: cuda{{ cuda_major }}_{{ GIT_DESCRIBE_HASH }}_{{ GIT_DESCRIBE_NUMBER }}
+      script_env: &script_env
+        - CC
+        - CXX
+        - CUDAHOSTCXX
+        - PARALLEL_LEVEL
+        - CMAKE_GENERATOR
+        - CMAKE_C_COMPILER_LAUNCHER
+        - CMAKE_CXX_COMPILER_LAUNCHER
+        - CMAKE_CUDA_COMPILER_LAUNCHER
+        - SCCACHE_S3_KEY_PREFIX=librmm-aarch64 # [aarch64]
+        - SCCACHE_S3_KEY_PREFIX=librmm-linux64 # [linux64]
+        - SCCACHE_BUCKET=rapids-sccache
+        - SCCACHE_REGION=us-west-2
+        - SCCACHE_IDLE_TIMEOUT=32768
       run_exports:
         - {{ pin_subpackage("librmm", max_pin="x.x") }}
     requirements:
@@ -93,6 +87,7 @@ outputs:
     build:
       number: {{ GIT_DESCRIBE_NUMBER }}
       string: cuda{{ cuda_major }}_{{ GIT_DESCRIBE_HASH }}_{{ GIT_DESCRIBE_NUMBER }}
+      script_env: *script_env
     requirements:
       build:
         - cmake {{ cmake_version }}
