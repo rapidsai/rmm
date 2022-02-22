@@ -489,7 +489,8 @@ class device_uvector {
    */
   [[nodiscard]] std::int64_t ssize() const noexcept
   {
-    assert(size() < std::numeric_limits<int64_t>::max() && "Size overflows signed integer");
+    assert(size() < static_cast<std::size_t>(std::numeric_limits<int64_t>::max()) &&
+           "Size overflows signed integer");
     return static_cast<int64_t>(size());
   }
 
