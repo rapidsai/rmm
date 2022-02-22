@@ -130,7 +130,7 @@ else
     "$WORKSPACE/build.sh" -v rmm
 
     gpuci_logger "pytest rmm"
-    py.test --cache-clear --junitxml=${WORKSPACE}/test-results/junit-rmm.xml -v --cov-config=.coveragerc --cov=rmm --cov-report=xml:${WORKSPACE}/python/rmm-coverage.xml --cov-report term
+    py.test --cache-clear --junitxml=${WORKSPACE}/test-results/junit-rmm.xml -v --cov-config=.coveragerc --cov=rmm --cov-report=xml:${WORKSPACE}/python/rmm-coverage.xml --cov-report term -x
     exitcode=$?
 
     python -c "import rmm; print(rmm.__file__)"
