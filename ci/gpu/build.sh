@@ -91,7 +91,7 @@ if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
     fi
 else
 
-    gpuci_mamba_retry install -c $WORKSPACE/ci/artifacts/rmm/cpu/.conda-bld/ librmm librmm_tests
+    gpuci_mamba_retry install -y -c $WORKSPACE/ci/artifacts/rmm/cpu/.conda-bld/ librmm_tests
 
     TESTRESULTS_DIR=${WORKSPACE}/test-results
     mkdir -p ${TESTRESULTS_DIR}
