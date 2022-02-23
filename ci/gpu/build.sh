@@ -102,7 +102,7 @@ else
 
     gpuci_logger "Running googletests"
     # run gtests from librmm_tests package
-    for gt in "$CONDA_PREFIX/bin/gtests/librmm/*" ; do
+    for gt in "$CONDA_PREFIX/bin/gtests/librmm/"* ; do
         ${gt} --gtest_output=xml:${TESTRESULTS_DIR}/
         exitcode=$?
         if (( ${exitcode} != 0 )); then
