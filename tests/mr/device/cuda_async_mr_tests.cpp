@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "skip_async.hpp"
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/cuda_async_memory_resource.hpp>
 
@@ -28,13 +29,9 @@ class AsyncMRTest : public ::testing::Test {
  protected:
   void SetUp() override
   {
-    int runtime_version{};
-    RMM_CUDA_TRY(cudaRuntimeGetVersion(&runtime_version));
-    int driver_version{};
-    RMM_CUDA_TRY(cudaDriverGetVersion(&driver_version));
-    constexpr int min_async_version = 11020;
-    if (runtime_version < min_async_version || driver_version < min_async_version) {
-      GTEST_SKIP() << "Skipping tests since cudaMallocAsync not supported by runtime/driver";
+    if (should_skip_async()) {
+      GTEST_SKIP() << "Skipping tests since cudaMallocAsync not supported with this CUDA "
+                   << "driver/runtime version";
     }
   }
 };

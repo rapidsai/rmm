@@ -17,6 +17,7 @@
 #pragma once
 
 #include "../../byte_literals.hpp"
+#include "skip_async.hpp"
 
 #include <rmm/cuda_stream.hpp>
 #include <rmm/cuda_stream_view.hpp>
@@ -232,6 +233,10 @@ struct mr_factory {
 struct mr_test : public ::testing::TestWithParam<mr_factory> {
   void SetUp() override
   {
+    if (GetParam().name == "CUDA_Async" && should_skip_async()) {
+      GTEST_SKIP() << "Skipping tests since cudaMallocAsync not supported with this CUDA "
+                   << "driver/runtime version";
+    }
     auto factory = GetParam().factory;
     mr           = factory();
   }
