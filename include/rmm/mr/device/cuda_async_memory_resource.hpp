@@ -126,10 +126,10 @@ class cuda_async_memory_resource final : public device_memory_resource {
     }()};
     static auto driver_supports_pool{[] {
       int cuda_pool_supported{};
-      RMM_CUDA_TRY(cudaDeviceGetAttribute(&cuda_pool_supported,
-                                          cudaDevAttrMemoryPoolsSupported,
-                                          rmm::detail::current_device().value()));
-      return cuda_pool_supported == 1;
+      auto result = cudaDeviceGetAttribute(&cuda_pool_supported,
+                                           cudaDevAttrMemoryPoolsSupported,
+                                           rmm::detail::current_device().value());
+      return result == cudaSuccess and cuda_pool_supported == 1;
     }()};
     return runtime_supports_pool and driver_supports_pool;
 #else
