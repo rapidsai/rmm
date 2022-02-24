@@ -255,7 +255,7 @@ inline auto make_cuda_async()
   if (rmm::mr::cuda_async_memory_resource::is_supported()) {
     return std::make_shared<rmm::mr::cuda_async_memory_resource>();
   }
-  return std::shared_ptr<rmm::mr::cuda_async_memory_resource>{};
+  return std::shared_ptr<rmm::mr::cuda_async_memory_resource>{nullptr};
 }
 
 inline auto make_managed() { return std::make_shared<rmm::mr::managed_memory_resource>(); }
