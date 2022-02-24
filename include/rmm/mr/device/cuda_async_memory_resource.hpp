@@ -117,18 +117,24 @@ class cuda_async_memory_resource final : public device_memory_resource {
    */
   static bool is_supported()
   {
-    static auto runtime_version{[] {
+#if defined(RMM_CUDA_MALLOC_ASYNC_SUPPORT)
+    static auto runtime_supports_pool{[] {
       int runtime_version{};
       RMM_CUDA_TRY(cudaRuntimeGetVersion(&runtime_version));
-      return runtime_version;
+      constexpr auto min_async_version{11020};
+      return runtime_version >= min_async_version;
     }()};
-    static auto driver_version{[] {
-      int driver_version{};
-      RMM_CUDA_TRY(cudaDriverGetVersion(&driver_version));
-      return driver_version;
+    static auto driver_supports_pool{[] {
+      int cuda_pool_supported{};
+      RMM_CUDA_TRY(cudaDeviceGetAttribute(&cuda_pool_supported,
+                                          cudaDevAttrMemoryPoolsSupported,
+                                          rmm::detail::current_device().value()));
+      return cuda_pool_supported == 1;
     }()};
-    constexpr auto min_async_version{11020};
-    return runtime_version >= min_async_version && driver_version >= min_async_version;
+    return runtime_supports_pool and driver_supports_pool;
+#else
+    return false;
+#endif
   }
 
   /**
