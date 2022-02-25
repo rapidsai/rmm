@@ -41,10 +41,10 @@ TEST(PoolTest, UsePool)
 
 TEST(PoolTest, NotTakingOwnershipOfPool)
 {
-  cudaMemPoolProps poolProps = { };
-  poolProps.allocType = cudaMemAllocationTypePinned;
-  poolProps.location.id = rmm::detail::current_device().value();
-  poolProps.location.type = cudaMemLocationTypeDevice;
+  cudaMemPoolProps poolProps = {};
+  poolProps.allocType        = cudaMemAllocationTypePinned;
+  poolProps.location.id      = rmm::detail::current_device().value();
+  poolProps.location.type    = cudaMemLocationTypeDevice;
 
   cudaMemPool_t memPool{};
 
@@ -58,7 +58,7 @@ TEST(PoolTest, NotTakingOwnershipOfPool)
     RMM_CUDA_TRY(cudaDeviceSynchronize());
   }
 
-  auto destroy_valid_pool = [&](){
+  auto destroy_valid_pool = [&]() {
     auto result = cudaMemPoolDestroy(memPool);
     RMM_EXPECTS(result == cudaSuccess, "Pool wrapper did destroy pool");
   };
@@ -68,14 +68,13 @@ TEST(PoolTest, NotTakingOwnershipOfPool)
 
 TEST(PoolTest, ThrowIfNullptrPool)
 {
-  auto construct_mr = []() { 
-    cudaMemPool_t memPool{nullptr}; 
-    cuda_async_view_mr mr{memPool}; 
+  auto construct_mr = []() {
+    cudaMemPool_t memPool{nullptr};
+    cuda_async_view_mr mr{memPool};
   };
 
   EXPECT_THROW(construct_mr(), rmm::logic_error);
 }
-
 
 #endif
 

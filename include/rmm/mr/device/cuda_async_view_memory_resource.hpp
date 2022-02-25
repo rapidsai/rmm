@@ -40,7 +40,6 @@ namespace rmm::mr {
  */
 class cuda_async_view_memory_resource final : public device_memory_resource {
  public:
- 
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
   /**
    * @brief Constructs a cuda_async_view_memory_resource which uses an existing CUDA memory pool.
@@ -54,7 +53,7 @@ class cuda_async_view_memory_resource final : public device_memory_resource {
    */
   cuda_async_view_memory_resource(cudaMemPool_t valid_pool_handle)
     : cuda_pool_handle_{[valid_pool_handle]() {
-        RMM_EXPECTS(nullptr != valid_pool_handle, "Unexpected null pool handle.");        
+        RMM_EXPECTS(nullptr != valid_pool_handle, "Unexpected null pool handle.");
         return valid_pool_handle;
       }()}
   {
@@ -76,7 +75,7 @@ class cuda_async_view_memory_resource final : public device_memory_resource {
   [[nodiscard]] cudaMemPool_t pool_handle() const noexcept { return cuda_pool_handle_; }
 #endif
 
-  cuda_async_view_memory_resource() = default;
+  cuda_async_view_memory_resource()                                       = default;
   cuda_async_view_memory_resource(cuda_async_view_memory_resource const&) = default;
   cuda_async_view_memory_resource(cuda_async_view_memory_resource&&)      = default;
   cuda_async_view_memory_resource& operator=(cuda_async_view_memory_resource const&) = default;

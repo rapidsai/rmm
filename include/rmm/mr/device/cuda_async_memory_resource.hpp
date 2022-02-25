@@ -19,8 +19,8 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/cuda_util.hpp>
 #include <rmm/detail/error.hpp>
-#include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/cuda_async_view_memory_resource.hpp>
+#include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <thrust/optional.h>
 
@@ -136,7 +136,6 @@ class cuda_async_memory_resource final : public device_memory_resource {
   [[nodiscard]] bool supports_get_mem_info() const noexcept override { return false; }
 
  private:
-
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
   cuda_async_view_memory_resource pool_{};
 #endif
