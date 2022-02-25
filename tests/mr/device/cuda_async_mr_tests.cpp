@@ -24,7 +24,18 @@ namespace {
 
 using cuda_async_mr = rmm::mr::cuda_async_memory_resource;
 
-TEST(AsyncMRTest, ThrowIfNotSupported)
+class AsyncMRTest : public ::testing::Test {
+ protected:
+  void SetUp() override
+  {
+    if (!rmm::mr::cuda_async_memory_resource::is_supported()) {
+      GTEST_SKIP() << "Skipping tests since cudaMallocAsync not supported with this CUDA "
+                   << "driver/runtime version";
+    }
+  }
+};
+
+TEST_F(AsyncMRTest, ThrowIfNotSupported)
 {
   auto construct_mr = []() { cuda_async_mr mr; };
 #ifndef RMM_CUDA_MALLOC_ASYNC_SUPPORT
@@ -35,7 +46,7 @@ TEST(AsyncMRTest, ThrowIfNotSupported)
 }
 
 #if defined(RMM_CUDA_MALLOC_ASYNC_SUPPORT)
-TEST(AsyncMRTest, ExplicitInitialPoolSize)
+TEST_F(AsyncMRTest, ExplicitInitialPoolSize)
 {
   const auto pool_init_size{100};
   cuda_async_mr mr{pool_init_size};
@@ -44,7 +55,7 @@ TEST(AsyncMRTest, ExplicitInitialPoolSize)
   RMM_CUDA_TRY(cudaDeviceSynchronize());
 }
 
-TEST(AsyncMRTest, ExplicitReleaseThreshold)
+TEST_F(AsyncMRTest, ExplicitReleaseThreshold)
 {
   const auto pool_init_size{100};
   const auto pool_release_threshold{1000};
@@ -54,7 +65,7 @@ TEST(AsyncMRTest, ExplicitReleaseThreshold)
   RMM_CUDA_TRY(cudaDeviceSynchronize());
 }
 
-TEST(AsyncMRTest, DifferentPoolsUnequal)
+TEST_F(AsyncMRTest, DifferentPoolsUnequal)
 {
   const auto pool_init_size{100};
   const auto pool_release_threshold{1000};

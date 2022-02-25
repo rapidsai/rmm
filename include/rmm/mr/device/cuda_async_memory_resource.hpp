@@ -62,11 +62,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
   {
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
     // Check if cudaMallocAsync Memory pool supported
-    auto const device = rmm::detail::current_device();
-    int cuda_pool_supported{};
-    auto result =
-      cudaDeviceGetAttribute(&cuda_pool_supported, cudaDevAttrMemoryPoolsSupported, device.value());
-    RMM_EXPECTS(result == cudaSuccess && cuda_pool_supported,
+    RMM_EXPECTS(is_supported(),
                 "cudaMallocAsync not supported with this CUDA driver/runtime version");
 
     // Construct explicit pool
@@ -74,7 +70,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
     pool_props.allocType     = cudaMemAllocationTypePinned;
     pool_props.handleTypes   = cudaMemHandleTypePosixFileDescriptor;
     pool_props.location.type = cudaMemLocationTypeDevice;
-    pool_props.location.id   = device.value();
+    pool_props.location.id   = rmm::detail::current_device().value();
     RMM_CUDA_TRY(cudaMemPoolCreate(&cuda_pool_handle_, &pool_props));
 
     auto const [free, total] = rmm::detail::available_device_memory();
@@ -114,6 +110,32 @@ class cuda_async_memory_resource final : public device_memory_resource {
   cuda_async_memory_resource(cuda_async_memory_resource&&)      = delete;
   cuda_async_memory_resource& operator=(cuda_async_memory_resource const&) = delete;
   cuda_async_memory_resource& operator=(cuda_async_memory_resource&&) = delete;
+
+  /**
+   * @brief Is cudaMallocAsync supported with this cuda runtime/driver version?
+   * @return true if both the cuda runtime and driver are newer than 11.2
+   */
+  static bool is_supported()
+  {
+#if defined(RMM_CUDA_MALLOC_ASYNC_SUPPORT)
+    static auto runtime_supports_pool{[] {
+      int runtime_version{};
+      RMM_CUDA_TRY(cudaRuntimeGetVersion(&runtime_version));
+      constexpr auto min_async_version{11020};
+      return runtime_version >= min_async_version;
+    }()};
+    static auto driver_supports_pool{[] {
+      int cuda_pool_supported{};
+      auto result = cudaDeviceGetAttribute(&cuda_pool_supported,
+                                           cudaDevAttrMemoryPoolsSupported,
+                                           rmm::detail::current_device().value());
+      return result == cudaSuccess and cuda_pool_supported == 1;
+    }()};
+    return runtime_supports_pool and driver_supports_pool;
+#else
+    return false;
+#endif
+  }
 
   /**
    * @brief Query whether the resource supports use of non-null CUDA streams for

@@ -234,6 +234,10 @@ struct mr_test : public ::testing::TestWithParam<mr_factory> {
   {
     auto factory = GetParam().factory;
     mr           = factory();
+    if (mr == nullptr) {
+      GTEST_SKIP() << "Skipping tests since the memory resource is not supported with this CUDA "
+                   << "driver/runtime version";
+    }
   }
 
   std::shared_ptr<rmm::mr::device_memory_resource> mr;  ///< Pointer to resource to use in tests
@@ -246,7 +250,13 @@ struct mr_allocation_test : public mr_test {
 /// MR factory functions
 inline auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>(); }
 
-inline auto make_cuda_async() { return std::make_shared<rmm::mr::cuda_async_memory_resource>(); }
+inline auto make_cuda_async()
+{
+  if (rmm::mr::cuda_async_memory_resource::is_supported()) {
+    return std::make_shared<rmm::mr::cuda_async_memory_resource>();
+  }
+  return std::shared_ptr<rmm::mr::cuda_async_memory_resource>{nullptr};
+}
 
 inline auto make_managed() { return std::make_shared<rmm::mr::managed_memory_resource>(); }
 
