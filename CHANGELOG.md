@@ -2,9 +2,28 @@
 
 Please see https://github.com/rapidsai/rmm/releases/tag/v22.04.00a for the latest changes to this development branch.
 
-# RMM 22.02.00 (Date TBD)
+# RMM 22.02.00 (2 Feb 2022)
 
-Please see https://github.com/rapidsai/rmm/releases/tag/v22.02.00a for the latest changes to this development branch.
+## 🐛 Bug Fixes
+
+- Use numba to get CUDA runtime version. ([#946](https://github.com/rapidsai/rmm/pull/946)) [@bdice](https://github.com/bdice)
+- Temporarily disable warnings for unknown pragmas ([#942](https://github.com/rapidsai/rmm/pull/942)) [@harrism](https://github.com/harrism)
+- Build benchmarks in RMM CI ([#941](https://github.com/rapidsai/rmm/pull/941)) [@harrism](https://github.com/harrism)
+- Headers that use `std::thread` now include &lt;thread&gt; ([#938](https://github.com/rapidsai/rmm/pull/938)) [@robertmaynard](https://github.com/robertmaynard)
+- Fix failing stream test with a debug-only death test ([#934](https://github.com/rapidsai/rmm/pull/934)) [@harrism](https://github.com/harrism)
+- Prevent `DeviceBuffer` DeviceMemoryResource premature release ([#931](https://github.com/rapidsai/rmm/pull/931)) [@viclafargue](https://github.com/viclafargue)
+- Fix failing tracking test ([#929](https://github.com/rapidsai/rmm/pull/929)) [@harrism](https://github.com/harrism)
+
+## 🛠️ Improvements
+
+- Prepare upload scripts for Python 3.7 removal ([#952](https://github.com/rapidsai/rmm/pull/952)) [@Ethyling](https://github.com/Ethyling)
+- Fix imports tests syntax ([#935](https://github.com/rapidsai/rmm/pull/935)) [@Ethyling](https://github.com/Ethyling)
+- Remove `IncludeCategories` from `.clang-format` ([#933](https://github.com/rapidsai/rmm/pull/933)) [@codereport](https://github.com/codereport)
+- Replace use of custom CUDA bindings with CUDA-Python ([#930](https://github.com/rapidsai/rmm/pull/930)) [@shwina](https://github.com/shwina)
+- Remove `setup.py` from `update-release.sh` script ([#926](https://github.com/rapidsai/rmm/pull/926)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Improve C++ Test Coverage ([#920](https://github.com/rapidsai/rmm/pull/920)) [@harrism](https://github.com/harrism)
+- Improve the Arena allocator to reduce memory fragmentation ([#916](https://github.com/rapidsai/rmm/pull/916)) [@rongou](https://github.com/rongou)
+- Simplify CMake linting with cmake-format ([#913](https://github.com/rapidsai/rmm/pull/913)) [@vyasr](https://github.com/vyasr)
 
 # RMM 21.12.00 (9 Dec 2021)
 
