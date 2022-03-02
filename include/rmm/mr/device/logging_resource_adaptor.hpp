@@ -227,7 +227,7 @@ class logging_resource_adaptor final : public device_memory_resource {
       logger_->info("allocate,{},{},{}", ptr, bytes, fmt::ptr(stream.value()));
       return ptr;
     } catch (...) {
-      logger_->info("allocate failure,,{},{}", bytes, fmt::ptr(stream.value()));
+      logger_->info("allocate failure,{},{},{}", nullptr, bytes, fmt::ptr(stream.value()));
       throw;
     }
   }
