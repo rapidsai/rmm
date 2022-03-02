@@ -164,7 +164,8 @@ inline std::vector<event> parse_csv(std::string const& filename)
 
   for (std::size_t i = 0; i < actions.size(); ++i) {
     auto const& action = actions[i];
-    RMM_EXPECTS((action == "allocate") or (action == "free"), "Invalid action string.");
+    RMM_EXPECTS((action == "allocate") or (action == "allocate failure") or (action == "free"),
+                "Invalid action string.");
     auto act  = (action == "allocate") ? action::ALLOCATE : action::FREE;
     events[i] = event{tids[i], act, sizes[i], pointers[i], streams[i], i};
   }

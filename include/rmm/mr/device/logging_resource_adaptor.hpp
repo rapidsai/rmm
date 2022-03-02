@@ -222,9 +222,14 @@ class logging_resource_adaptor final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
-    auto const ptr = upstream_->allocate(bytes, stream);
-    logger_->info("allocate,{},{},{}", ptr, bytes, fmt::ptr(stream.value()));
-    return ptr;
+    try {
+      auto const ptr = upstream_->allocate(bytes, stream);
+      logger_->info("allocate,{},{},{}", ptr, bytes, fmt::ptr(stream.value()));
+      return ptr;
+    } catch (...) {
+      logger_->info("allocate failure,,{},{}", bytes, fmt::ptr(stream.value()));
+      throw;
+    }
   }
 
   /**
