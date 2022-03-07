@@ -129,16 +129,9 @@ else
     gpuci_logger "Building rmm"
     "$WORKSPACE/build.sh" -v rmm
 
-    gpuci_logger "printing info"
-
-    python -c "import rmm; print(rmm.__file__)"
-    ls `python -c "import rmm; import os; print(os.path.dirname(rmm.__file__))"`
-    ls `python -c "import rmm; import os; print(os.path.dirname(rmm.__file__))"`/_lib
-
     gpuci_logger "pytest rmm"
-    py.test --cache-clear --junitxml=${WORKSPACE}/test-results/junit-rmm.xml -v --cov-config=.coveragerc --cov=rmm --cov-report=xml:${WORKSPACE}/python/rmm-coverage.xml --cov-report term -x
+    py.test --cache-clear --junitxml=${WORKSPACE}/test-results/junit-rmm.xml -v --cov-config=.coveragerc --cov=rmm --cov-report=xml:${WORKSPACE}/python/rmm-coverage.xml --cov-report term
     exitcode=$?
-
     if (( ${exitcode} != 0 )); then
         SUITEERROR=${exitcode}
         echo "FAILED: 1 or more tests in /rmm/python"
