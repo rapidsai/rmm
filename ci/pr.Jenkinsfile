@@ -8,14 +8,14 @@ pipeline {
         agent {
           docker {
             image 'gpuci/rapidsai:22.04-cuda11.5-devel-centos7-py3.8'
-            label 'cpu4'
+            label "cpu4-${ARC}"
           }
         }
 
         axes {
           axis {
             name 'ARC'
-            values 'ARM', 'AMD'
+            values 'arm64', 'amd64'
           }
         }
 
@@ -38,7 +38,7 @@ pipeline {
         axes {
           axis {
             name 'ARC'
-            values 'ARM', 'AMD'
+            values 'arm64', 'amd64'
           }
 
           axis {
