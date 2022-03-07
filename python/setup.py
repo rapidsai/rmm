@@ -5,8 +5,6 @@ from skbuild import setup
 
 import versioneer
 
-# TODO: Need to find a way to enable builds without debug or async like we had
-# before with a custom cmdclass.
 setup(
     name="rmm",
     version=versioneer.get_version(),
