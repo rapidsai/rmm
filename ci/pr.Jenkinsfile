@@ -60,7 +60,9 @@ pipeline {
     stage("Tests") {
       steps {
         script {
-            parallel getTestStages()
+          parallel getTestStages({
+            echo "hello from rmm repo"
+          })
         }
       }
     }
