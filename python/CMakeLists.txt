@@ -23,10 +23,11 @@ project(
   # TODO: Building Python extension modules via the python_extension_module requires the C language
   # to be enabled here. The test project that is built in scikit-build to verify various linking
   # options for the python library is hardcoded to build with C, so until that is fixed we need to
-  # keep this.
+  # keep C.
+
   # TODO: The C++ RMM CMake configuration targets cuda_std_17 features, which prior to
   # CMake 3.22 will also pull in the corresponding required languages even if this project does not
-  # actually require those languages. As a result, we need to include CUDA here. We can remove this
+  # actually require those languages. As a result, we need to include CUDA here. We can remove CUDA
   # once we upgrade the minimum required CMake version to 3.22.
   LANGUAGES C CXX CUDA)
 
