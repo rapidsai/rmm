@@ -7,7 +7,7 @@ pipeline {
       matrix {
         agent {
           docker {
-            image 'gpuci/rapidsai:22.04-cuda11.5-devel-centos7-py3.8'
+            image getArcImage("${ARC}")
             label "cpu4-${ARC}"
           }
         }
