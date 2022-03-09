@@ -16,6 +16,7 @@
 #pragma once
 #include <dlfcn.h>
 #include <memory>
+#include <cuda_runtime_api.h>
 
 namespace rmm::detail {
 
@@ -61,7 +62,7 @@ struct dynamic_load_runtime {
   }
 };
 
-
+#if CUDART_VERSION >= 11020  // 11.2 introduced cudaMallocAsync
 /**
  * @brief `async_alloc` bind to the Stream Ordered Memory Allocator functions
  * at runtime.
@@ -70,29 +71,40 @@ struct dynamic_load_runtime {
  * < CUDA 11.2 runtime as these functions are found at call time
  */
 struct async_alloc {
-
   static bool is_supported()
   {
+
 #if defined(RMM_STATIC_CUDART)
-    static bool has_support = (CUDART_VERSION >= 11020);
+    static bool runtime_supports_pool = (CUDART_VERSION >= 11020);
 #else
-    static bool has_support = dynamic_load_runtime::function<void*>("cudaFreeAsync") != nullptr;
+    static bool runtime_supports_pool =
+      dynamic_load_runtime::function<void*>("cudaFreeAsync") != nullptr;
 #endif
-    return has_support;
+
+    static auto driver_supports_pool{[] {
+      int cuda_pool_supported{};
+      auto result = cudaDeviceGetAttribute(&cuda_pool_supported,
+                                           cudaDevAttrMemoryPoolsSupported,
+                                           rmm::detail::current_device().value());
+      return result == cudaSuccess and cuda_pool_supported == 1;
+    }()};
+    return runtime_supports_pool and driver_supports_pool;
   }
 
 #if defined(RMM_STATIC_CUDART)
-  #define RMM_SYNC_ALLOC_WRAPPER(name)\
-  template <typename... Args> \
-  static cudaError_t name(Args... args) { \
-    return ::name(args...); \
+#define RMM_SYNC_ALLOC_WRAPPER(name)    \
+  template <typename... Args>           \
+  static cudaError_t name(Args... args) \
+  {                                     \
+    return ::name(args...);             \
   }
 #else
-  #define RMM_SYNC_ALLOC_WRAPPER(name)\
-  template <typename... Args> \
-  static cudaError_t name(Args... args) { \
+#define RMM_SYNC_ALLOC_WRAPPER(name)                                         \
+  template <typename... Args>                                                \
+  static cudaError_t name(Args... args)                                      \
+  {                                                                          \
     static const auto func = dynamic_load_runtime::function<Args...>(#name); \
-    return func(args...); \
+    return func(args...);                                                    \
   }
 #endif
 
@@ -102,4 +114,5 @@ struct async_alloc {
   RMM_SYNC_ALLOC_WRAPPER(cudaMallocFromPoolAsync);
   RMM_SYNC_ALLOC_WRAPPER(cudaFreeAsync);
 };
+#endif
 }  // namespace rmm::detail

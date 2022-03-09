@@ -28,7 +28,7 @@ class AsyncMRTest : public ::testing::Test {
  protected:
   void SetUp() override
   {
-    if (!rmm::mr::cuda_async_memory_resource::is_supported()) {
+    if (!rmm::detail::async_alloc::is_supported()) {
       GTEST_SKIP() << "Skipping tests since cudaMallocAsync not supported with this CUDA "
                    << "driver/runtime version";
     }
