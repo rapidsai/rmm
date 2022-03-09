@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 #pragma once
+#include <cuda_runtime_api.h>
 #include <dlfcn.h>
 #include <memory>
-#include <cuda_runtime_api.h>
 
 namespace rmm::detail {
 
@@ -39,7 +39,7 @@ struct dynamic_load_runtime {
       const std::string libname_ver = "libcudart.so." + std::to_string(major) + ".0";
       const std::string libname     = "libcudart.so";
 
-      auto ptr = ::dlopen(libname_ver.c_str(), RTLD_LAZY);
+      auto* ptr = ::dlopen(libname_ver.c_str(), RTLD_LAZY);
       if (!ptr) { ::dlopen(libname.c_str(), RTLD_LAZY); }
       if (!ptr) { return false; }
 
@@ -57,7 +57,7 @@ struct dynamic_load_runtime {
     if (!open_cuda_runtime()) { return nullptr; }
     auto* handle = ::dlsym(cuda_runtime_lib.get(), func_name);
     if (!handle) { return nullptr; }
-    auto function_ptr = reinterpret_cast<cudart_func_ptr<Args...>>(handle);
+    auto* function_ptr = reinterpret_cast<cudart_func_ptr<Args...>>(handle);
     return function_ptr;
   }
 };
@@ -73,7 +73,6 @@ struct dynamic_load_runtime {
 struct async_alloc {
   static bool is_supported()
   {
-
 #if defined(RMM_STATIC_CUDART)
     static bool runtime_supports_pool = (CUDART_VERSION >= 11020);
 #else
