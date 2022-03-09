@@ -49,15 +49,15 @@ struct dynamic_load_runtime {
   }
 
   template <typename... Args>
-  using function_return_type = std::add_pointer_t<cudaError_t(Args...)>;
+  using cudart_func_ptr = std::add_pointer_t<cudaError_t(Args...)>;
 
   template <typename... Args>
-  static function_return_type<Args...> function(const char* func_name)
+  static cudart_func_ptr<Args...> function(const char* func_name)
   {
     if (!open_cuda_runtime()) { return nullptr; }
     auto* handle = ::dlsym(cuda_runtime_lib.get(), func_name);
     if (!handle) { return nullptr; }
-    auto function_ptr = reinterpret_cast<function_return_type<Args...>>(handle);
+    auto function_ptr = reinterpret_cast<cudart_func_ptr<Args...>>(handle);
     return function_ptr;
   }
 };
