@@ -12,4 +12,5 @@
 # the License.
 # =============================================================================
 
-include(rmm-python-helpers.cmake)
+include(rmm_python_helpers.cmake)
+include(skbuild_patches.cmake)

@@ -38,7 +38,7 @@ HELP="$0 [clean] [librmm] [rmm] [-v] [-g] [-n] [-s] [--ptds] [--no-cudamallocasy
 "
 LIBRMM_BUILD_DIR=${LIBRMM_BUILD_DIR:=${REPODIR}/build}
 RMM_BUILD_DIR="${REPODIR}/python/build ${REPODIR}/python/_skbuild"
-BUILD_DIRS="${LIBRMM_BUILD_DIR} ${RMM_BUILD_DIR}"
+BUILD_DIR="${LIBRMM_BUILD_DIR} ${RMM_BUILD_DIR}"
 
 # Set defaults for vars modified by flags to this script
 VERBOSE_FLAG=""
@@ -157,7 +157,7 @@ if hasArg clean; then
         if [ -d "${bd}" ]; then
             find "${bd}" -mindepth 1 -delete
             rmdir "${bd}" || true
-	fi
+    fi
     done
 fi
 
@@ -180,9 +180,9 @@ if (( NUMARGS == 0 )) || hasArg rmm; then
     echo "building rmm..."
 
     if [[ ${CUDA_MALLOC_ASYNC_SUPPORT} == OFF ]]; then
-		python setup.py build_ext --inplace -- -DCUDA_MALLOC_ASYNC_SUPPORT=OFF
+        python setup.py build_ext --inplace -- -DCUDA_MALLOC_ASYNC_SUPPORT=OFF
     else
-		python setup.py build_ext --inplace
+        python setup.py build_ext --inplace
     fi
 
     if [[ ${INSTALL_TARGET} != "" ]]; then
