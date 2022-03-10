@@ -180,14 +180,14 @@ if (( NUMARGS == 0 )) || hasArg rmm; then
     echo "building rmm..."
 
     if [[ ${CUDA_MALLOC_ASYNC_SUPPORT} == OFF ]]; then
-        python setup.py build_ext --inplace -- -DCUDA_MALLOC_ASYNC_SUPPORT=OFF
+        python setup.py build_ext --inplace -- -DCUDA_MALLOC_ASYNC_SUPPORT=OFF -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX}
     else
-        python setup.py build_ext --inplace
+        python setup.py build_ext --inplace -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX}
     fi
 
     if [[ ${INSTALL_TARGET} != "" ]]; then
         echo "installing rmm..."
-        python setup.py install --single-version-externally-managed --record=record.txt
+        python setup.py install --single-version-externally-managed --record=record.txt -- -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX}
     fi
 
 fi
