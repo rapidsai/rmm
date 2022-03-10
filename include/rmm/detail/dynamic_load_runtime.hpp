@@ -53,7 +53,7 @@ struct dynamic_load_runtime {
   static cudart_func_ptr<Args...> function(const char* func_name)
   {
     auto* runtime = open_cuda_runtime();
-    auto* handle = ::dlsym(runtime, func_name);
+    auto* handle  = ::dlsym(runtime, func_name);
     if (!handle) { return nullptr; }
     auto* function_ptr = reinterpret_cast<cudart_func_ptr<Args...>>(handle);
     return function_ptr;
