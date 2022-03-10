@@ -27,25 +27,23 @@ namespace rmm::detail {
  * are added in newer minor versions of the cuda runtime.
  */
 struct dynamic_load_runtime {
-  static constexpr auto dlclose_destructor = [](void* handle) { ::dlclose(handle); };
-  inline static std::unique_ptr<void, decltype(dlclose_destructor)> cuda_runtime_lib{
-    nullptr, dlclose_destructor};
-
-  static bool open_cuda_runtime()
+  static void* open_cuda_runtime()
   {
-    if (!cuda_runtime_lib) {
+    auto close_cudart = [](void* handle) { ::dlclose(handle); };
+    auto open_cudart  = []() {
       ::dlerror();
       const int major               = CUDART_VERSION / 1000;
       const std::string libname_ver = "libcudart.so." + std::to_string(major) + ".0";
       const std::string libname     = "libcudart.so";
 
-      auto* ptr = ::dlopen(libname_ver.c_str(), RTLD_LAZY);
-      if (!ptr) { ::dlopen(libname.c_str(), RTLD_LAZY); }
-      if (!ptr) { return false; }
+      auto ptr = ::dlopen(libname_ver.c_str(), RTLD_LAZY);
+      if (!ptr) { ptr = ::dlopen(libname.c_str(), RTLD_LAZY); }
+      if (ptr) { return ptr; }
 
-      cuda_runtime_lib.reset(ptr);
-    }
-    return true;
+      RMM_FAIL("Unable to dlopen cudart");
+    };
+    static std::unique_ptr<void, decltype(close_cudart)> cudart_handle{open_cudart(), close_cudart};
+    return cudart_handle.get();
   }
 
   template <typename... Args>
@@ -54,8 +52,9 @@ struct dynamic_load_runtime {
   template <typename... Args>
   static cudart_func_ptr<Args...> function(const char* func_name)
   {
-    if (!open_cuda_runtime()) { return nullptr; }
-    auto* handle = ::dlsym(cuda_runtime_lib.get(), func_name);
+    auto* runtime = open_cuda_runtime();
+    if (!runtime) { return nullptr; }
+    auto* handle = ::dlsym(runtime, func_name);
     if (!handle) { return nullptr; }
     auto* function_ptr = reinterpret_cast<cudart_func_ptr<Args...>>(handle);
     return function_ptr;
