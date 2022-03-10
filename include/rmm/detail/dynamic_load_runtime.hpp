@@ -27,7 +27,7 @@ namespace rmm::detail {
  * are added in newer minor versions of the cuda runtime.
  */
 struct dynamic_load_runtime {
-  static void* open_cuda_runtime()
+  static void* get_cuda_runtime_handle()
   {
     auto close_cudart = [](void* handle) { ::dlclose(handle); };
     auto open_cudart  = []() {
@@ -52,7 +52,7 @@ struct dynamic_load_runtime {
   template <typename... Args>
   static cudart_func_ptr<Args...> function(const char* func_name)
   {
-    auto* runtime = open_cuda_runtime();
+    auto* runtime = get_cuda_runtime_handle();
     auto* handle  = ::dlsym(runtime, func_name);
     if (!handle) { return nullptr; }
     auto* function_ptr = reinterpret_cast<cudart_func_ptr<Args...>>(handle);
