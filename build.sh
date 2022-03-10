@@ -157,7 +157,7 @@ if hasArg clean; then
         if [ -d "${bd}" ]; then
             find "${bd}" -mindepth 1 -delete
             rmdir "${bd}" || true
-    fi
+        fi
     done
 fi
 
