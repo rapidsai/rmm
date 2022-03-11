@@ -182,7 +182,7 @@ if (( NUMARGS == 0 )) || hasArg rmm; then
     if [[ ${CUDA_MALLOC_ASYNC_SUPPORT} == OFF ]]; then
         python setup.py build_ext --inplace -- -DCUDA_MALLOC_ASYNC_SUPPORT=OFF -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX}
     else
-        python setup.py build_ext --inplace -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX}
+        python setup.py build_ext --inplace -- -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX}
     fi
 
     if [[ ${INSTALL_TARGET} != "" ]]; then

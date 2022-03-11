@@ -34,7 +34,7 @@ into three categories:
 8. Once reviewed and approved, a RAPIDS developer will merge your pull request. Note that for C++ code, two reviewers
 are required.
 
-To set up a development environment, follow the steps in the [README](https://github.com/rapidsai/cudf/blob/main/README.md) for cloning the repository and creating the conda environment.
+To set up a development environment, follow the steps in the [README](https://github.com/rapidsai/rmm/blob/main/README.md) for cloning the repository and creating the conda environment.
 Once the environment is created, you can build and install RMM using
 ```bash
 $ python setup.py develop
