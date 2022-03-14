@@ -205,10 +205,16 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @brief Allocates memory of size at least `bytes` using the upstream
    * resource and logs the allocation.
    *
-   * If the upstream allocation is successful logs the
-   * following CSV formatted line to the file specified at construction:
+   * If the upstream allocation is successful, logs the following CSV formatted
+   * line to the file specified at construction:
    * ```
-   * thread_id,*TIMESTAMP*,"allocate",*bytes*,*stream*
+   * thread_id,*TIMESTAMP*,"allocate",*pointer*,*bytes*,*stream*
+   * ```
+   *
+   * If the upstream allocation failed, logs the following CSV formatted line
+   * to the file specified at construction:
+   * ```
+   * thread_id,*TIMESTAMP*,"allocate failure",0x0,*bytes*,*stream*
    * ```
    *
    * The returned pointer has at least 256B alignment.
