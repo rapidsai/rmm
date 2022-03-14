@@ -73,6 +73,18 @@ class cuda_async_memory_resource final : public device_memory_resource {
     pool_props.location.id   = rmm::detail::current_device().value();
     RMM_CUDA_TRY(cudaMemPoolCreate(&cuda_pool_handle_, &pool_props));
 
+    // CUDA drivers before 11.5 have known incompatibilities with the async allocator.
+    // We'll disable `cudaMemPoolReuseAllowOpportunistic` if cuda driver < 11.5.
+    // See https://github.com/NVIDIA/spark-rapids/issues/4710.
+    int driver_version{};
+    RMM_CUDA_TRY(cudaDriverGetVersion(&driver_version));
+    constexpr auto min_async_version{11050};
+    if (driver_version < min_async_version) {
+      int disabled{0};
+      RMM_CUDA_TRY(
+        cudaMemPoolSetAttribute(cuda_pool_handle_, cudaMemPoolReuseAllowOpportunistic, &disabled));
+    }
+
     auto const [free, total] = rmm::detail::available_device_memory();
 
     // Need an l-value to take address to pass to cudaMemPoolSetAttribute
@@ -106,10 +118,10 @@ class cuda_async_memory_resource final : public device_memory_resource {
     RMM_ASSERT_CUDA_SUCCESS(cudaMemPoolDestroy(pool_handle()));
 #endif
   }
-  cuda_async_memory_resource(cuda_async_memory_resource const&)            = delete;
-  cuda_async_memory_resource(cuda_async_memory_resource&&)                 = delete;
+  cuda_async_memory_resource(cuda_async_memory_resource const&) = delete;
+  cuda_async_memory_resource(cuda_async_memory_resource&&)      = delete;
   cuda_async_memory_resource& operator=(cuda_async_memory_resource const&) = delete;
-  cuda_async_memory_resource& operator=(cuda_async_memory_resource&&)      = delete;
+  cuda_async_memory_resource& operator=(cuda_async_memory_resource&&) = delete;
 
   /**
    * @brief Is cudaMallocAsync supported with this cuda runtime/driver version?
@@ -129,15 +141,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
       auto result = cudaDeviceGetAttribute(&cuda_pool_supported,
                                            cudaDevAttrMemoryPoolsSupported,
                                            rmm::detail::current_device().value());
-
-      int driver_version{};
-      RMM_CUDA_TRY(cudaDriverGetVersion(&driver_version));
-      // CUDA drivers before 11.5 have known incompatibilities with the async allocator.
-      // See https://github.com/NVIDIA/spark-rapids/issues/4710.
-      constexpr auto min_async_version{11050};
-
-      return result == cudaSuccess and cuda_pool_supported == 1 and
-             driver_version >= min_async_version;
+      return result == cudaSuccess and cuda_pool_supported == 1;
     }()};
     return runtime_supports_pool and driver_supports_pool;
 #else
