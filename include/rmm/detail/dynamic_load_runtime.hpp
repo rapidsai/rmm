@@ -90,11 +90,12 @@ struct async_alloc {
   }
 
 #if defined(RMM_STATIC_CUDART)
-#define RMM_SYNC_ALLOC_WRAPPER(name, signature) \
-  template <typename... Args>                   \
-  static cudaError_t name(Args... args)         \
-  {                                             \
-    return ::name(args...);                     \
+#define RMM_SYNC_ALLOC_WRAPPER(name, signature)              \
+  template <typename... Args>                                \
+  static cudaError_t name(Args... args)                      \
+  {                                                          \
+    static const auto func = static_cast<signature>(::name); \
+    return func(args...);                                    \
   }
 #else
 #define RMM_SYNC_ALLOC_WRAPPER(name, signature)                                \
