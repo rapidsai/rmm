@@ -50,7 +50,7 @@ struct dynamic_load_runtime {
   using funcion_sig = std::add_pointer_t<cudaError_t(Args...)>;
 
   template <typename signature>
-  static funcion_sig function(const char* func_name)
+  static signature function(const char* func_name)
   {
     auto* runtime = get_cuda_runtime_handle();
     auto* handle  = ::dlsym(runtime, func_name);
