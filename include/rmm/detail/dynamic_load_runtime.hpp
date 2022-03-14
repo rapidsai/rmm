@@ -47,15 +47,15 @@ struct dynamic_load_runtime {
   }
 
   template <typename... Args>
-  using cudart_func_ptr = std::add_pointer_t<cudaError_t(Args...)>;
+  using funcion_sig = std::add_pointer_t<cudaError_t(Args...)>;
 
-  template <typename... Args>
-  static cudart_func_ptr<Args...> function(const char* func_name)
+  template <typename signature>
+  static funcion_sig function(const char* func_name)
   {
     auto* runtime = get_cuda_runtime_handle();
     auto* handle  = ::dlsym(runtime, func_name);
     if (!handle) { return nullptr; }
-    auto* function_ptr = reinterpret_cast<cudart_func_ptr<Args...>>(handle);
+    auto* function_ptr = reinterpret_cast<signature>(handle);
     return function_ptr;
   }
 };
@@ -75,7 +75,8 @@ struct async_alloc {
     static bool runtime_supports_pool = (CUDART_VERSION >= 11020);
 #else
     static bool runtime_supports_pool =
-      dynamic_load_runtime::function<void*>("cudaFreeAsync") != nullptr;
+      dynamic_load_runtime::function<dynamic_load_runtime::funcion_sig<void*, cudaStream_t>>(
+        "cudaFreeAsync") != nullptr;
 #endif
 
     static auto driver_supports_pool{[] {
@@ -89,27 +90,39 @@ struct async_alloc {
   }
 
 #if defined(RMM_STATIC_CUDART)
-#define RMM_SYNC_ALLOC_WRAPPER(name)    \
-  template <typename... Args>           \
-  static cudaError_t name(Args... args) \
-  {                                     \
-    return ::name(args...);             \
+#define RMM_SYNC_ALLOC_WRAPPER(name, signature) \
+  template <typename... Args>                   \
+  static cudaError_t name(Args... args)         \
+  {                                             \
+    return ::name(args...);                     \
   }
 #else
-#define RMM_SYNC_ALLOC_WRAPPER(name)                                         \
-  template <typename... Args>                                                \
-  static cudaError_t name(Args... args)                                      \
-  {                                                                          \
-    static const auto func = dynamic_load_runtime::function<Args...>(#name); \
-    return func(args...);                                                    \
+#define RMM_SYNC_ALLOC_WRAPPER(name, signature)                                \
+  template <typename... Args>                                                  \
+  static cudaError_t name(Args... args)                                        \
+  {                                                                            \
+    static const auto func = dynamic_load_runtime::function<signature>(#name); \
+    return func(args...);                                                      \
   }
 #endif
 
-  RMM_SYNC_ALLOC_WRAPPER(cudaMemPoolCreate);
-  RMM_SYNC_ALLOC_WRAPPER(cudaMemPoolSetAttribute);
-  RMM_SYNC_ALLOC_WRAPPER(cudaMemPoolDestroy);
-  RMM_SYNC_ALLOC_WRAPPER(cudaMallocFromPoolAsync);
-  RMM_SYNC_ALLOC_WRAPPER(cudaFreeAsync);
+  template <typename... Args>
+  using cudart_sig = dynamic_load_runtime::funcion_sig<Args...>;
+
+  using cudaMemPoolCreate_sig = cudart_sig<cudaMemPool_t*, const cudaMemPoolProps*>;
+  RMM_SYNC_ALLOC_WRAPPER(cudaMemPoolCreate, cudaMemPoolCreate_sig);
+
+  using cudaMemPoolSetAttribute_sig = cudart_sig<cudaMemPool_t, cudaMemPoolAttr, void*>;
+  RMM_SYNC_ALLOC_WRAPPER(cudaMemPoolSetAttribute, cudaMemPoolSetAttribute_sig);
+
+  using cudaMemPoolDestroy_sig = cudart_sig<cudaMemPool_t>;
+  RMM_SYNC_ALLOC_WRAPPER(cudaMemPoolDestroy, cudaMemPoolDestroy_sig);
+
+  using cudaMallocFromPoolAsync_sig = cudart_sig<void**, size_t, cudaMemPool_t, cudaStream_t>;
+  RMM_SYNC_ALLOC_WRAPPER(cudaMallocFromPoolAsync, cudaMallocFromPoolAsync_sig);
+
+  using cudaFreeAsync_sig = cudart_sig<void*, cudaStream_t>;
+  RMM_SYNC_ALLOC_WRAPPER(cudaFreeAsync, cudaFreeAsync_sig);
 };
 #endif
 }  // namespace rmm::detail
