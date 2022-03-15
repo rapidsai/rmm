@@ -108,7 +108,7 @@ struct async_alloc {
   }
 
   template <typename... Args>
-  using cudart_sig = dynamic_load_runtime::funcion_sig<Args...>;
+  using cudart_sig = dynamic_load_runtime::function_sig<Args...>;
 
   using cudaMemPoolCreate_sig = cudart_sig<cudaMemPool_t*, const cudaMemPoolProps*>;
   RMM_CUDART_API_WRAPPER(cudaMemPoolCreate, cudaMemPoolCreate_sig);
