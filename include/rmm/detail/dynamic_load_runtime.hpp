@@ -47,7 +47,7 @@ struct dynamic_load_runtime {
   }
 
   template <typename... Args>
-  using funcion_sig = std::add_pointer_t<cudaError_t(Args...)>;
+  using function_sig = std::add_pointer_t<cudaError_t(Args...)>;
 
   template <typename signature>
   static signature function(const char* func_name)
