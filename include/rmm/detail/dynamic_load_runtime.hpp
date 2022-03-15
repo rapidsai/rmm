@@ -16,6 +16,7 @@
 #pragma once
 #include <cuda_runtime_api.h>
 #include <dlfcn.h>
+#include <optional>
 #include <memory>
 
 namespace rmm::detail {
@@ -50,13 +51,13 @@ struct dynamic_load_runtime {
   using function_sig = std::add_pointer_t<cudaError_t(Args...)>;
 
   template <typename signature>
-  static signature function(const char* func_name)
+  static std::optional<signature> function(const char* func_name)
   {
     auto* runtime = get_cuda_runtime_handle();
     auto* handle  = ::dlsym(runtime, func_name);
     if (!handle) { return nullptr; }
     auto* function_ptr = reinterpret_cast<signature>(handle);
-    return function_ptr;
+    return std::optional<signature>(function_ptr);
   }
 };
 
@@ -74,7 +75,8 @@ struct dynamic_load_runtime {
   static cudaError_t name(Args... args)                                        \
   {                                                                            \
     static const auto func = dynamic_load_runtime::function<signature>(#name); \
-    return func(args...);                                                      \
+    if(func) { return func.value(args...); }                                   \
+    RMM_FAIL("Failed to find #name function in libcudart.so");                 \
   }
 #endif
 
