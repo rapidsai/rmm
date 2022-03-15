@@ -75,7 +75,7 @@ struct async_alloc {
     static bool runtime_supports_pool = (CUDART_VERSION >= 11020);
 #else
     static bool runtime_supports_pool =
-      dynamic_load_runtime::function<dynamic_load_runtime::funcion_sig<void*, cudaStream_t>>(
+      dynamic_load_runtime::function<dynamic_load_runtime::function_sig<void*, cudaStream_t>>(
         "cudaFreeAsync") != nullptr;
 #endif
 
