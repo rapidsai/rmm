@@ -104,7 +104,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
   ~cuda_async_memory_resource() override
   {
 #if defined(RMM_CUDA_MALLOC_ASYNC_SUPPORT)
-    RMM_ASSERT_CUDA_SUCCESS(cudaMemPoolDestroy(pool_handle()));
+    RMM_ASSERT_CUDA_SUCCESS(rmm::detail::async_alloc::cudaMemPoolDestroy(pool_handle()));
 #endif
   }
   cuda_async_memory_resource(cuda_async_memory_resource const&) = delete;
