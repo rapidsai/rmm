@@ -62,7 +62,7 @@ struct dynamic_load_runtime {
 
 #if CUDART_VERSION >= 11020  // 11.2 introduced cudaMallocAsync
 /**
- * @brief `async_alloc` bind to the Stream Ordered Memory Allocator functions
+ * @brief Bind to the stream-ordered memory allocator functions
  * at runtime.
  *
  * This allows RMM users to compile/link against CUDA 11.2+ and run with
