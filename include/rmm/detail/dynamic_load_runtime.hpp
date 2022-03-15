@@ -75,7 +75,7 @@ struct dynamic_load_runtime {
   static cudaError_t name(Args... args)                                        \
   {                                                                            \
     static const auto func = dynamic_load_runtime::function<signature>(#name); \
-    if(func) { return func.value(args...); }                                   \
+    if(func) { return (*func)(args...); }                                      \
     RMM_FAIL("Failed to find #name function in libcudart.so");                 \
   }
 #endif
