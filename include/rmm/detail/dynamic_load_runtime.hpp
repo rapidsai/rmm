@@ -16,8 +16,8 @@
 #pragma once
 #include <cuda_runtime_api.h>
 #include <dlfcn.h>
-#include <optional>
 #include <memory>
+#include <optional>
 
 namespace rmm::detail {
 
@@ -75,7 +75,7 @@ struct dynamic_load_runtime {
   static cudaError_t name(Args... args)                                        \
   {                                                                            \
     static const auto func = dynamic_load_runtime::function<signature>(#name); \
-    if(func) { return (*func)(args...); }                                      \
+    if (func) { return (*func)(args...); }                                     \
     RMM_FAIL("Failed to find #name function in libcudart.so");                 \
   }
 #endif
