@@ -66,7 +66,7 @@ struct dynamic_load_runtime {
  * at runtime.
  *
  * This allows RMM users to compile/link against CUDA 11.2+ and run with
- * < CUDA 11.2 runtime as these functions are found at call time
+ * < CUDA 11.2 runtime as these functions are found at call time.
  */
 struct async_alloc {
   static bool is_supported()
