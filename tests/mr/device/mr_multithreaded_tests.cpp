@@ -192,7 +192,7 @@ void allocate_loop(rmm::mr::device_memory_resource* mr,
     void* ptr        = mr->allocate(size, stream);
     {
       std::lock_guard<std::mutex> lock(mtx);
-      EXPECT_EQ(cudaSuccess, cudaEventRecord(event, stream.value()));
+      RMM_CUDA_TRY(cudaEventRecord(event, stream.value()));
       allocations.emplace_back(ptr, size);
     }
   }
@@ -209,7 +209,7 @@ void deallocate_loop(rmm::mr::device_memory_resource* mr,
     std::lock_guard<std::mutex> lock(mtx);
     if (allocations.empty()) { continue; }
     i++;
-    EXPECT_EQ(cudaSuccess, cudaStreamWaitEvent(stream.value(), event));
+    RMM_CUDA_TRY(cudaStreamWaitEvent(stream.value(), event));
     allocation alloc = allocations.front();
     allocations.pop_front();
     mr->deallocate(alloc.ptr, alloc.size, stream);
@@ -226,7 +226,7 @@ void test_allocate_free_different_threads(rmm::mr::device_memory_resource* mr,
   std::list<allocation> allocations;
   cudaEvent_t event;
 
-  EXPECT_EQ(cudaSuccess, cudaEventCreate(&event));
+  RMM_CUDA_TRY(cudaEventCreate(&event));
 
   std::thread producer(allocate_loop,
                        mr,
@@ -247,7 +247,7 @@ void test_allocate_free_different_threads(rmm::mr::device_memory_resource* mr,
   producer.join();
   consumer.join();
 
-  EXPECT_EQ(cudaSuccess, cudaEventDestroy(event));
+  RMM_CUDA_TRY(cudaEventDestroy(event));
 }
 
 TEST_P(mr_test_mt, AllocFreeDifferentThreadsDefaultStream)
