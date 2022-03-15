@@ -55,7 +55,7 @@ struct dynamic_load_runtime {
   {
     auto* runtime = get_cuda_runtime_handle();
     auto* handle  = ::dlsym(runtime, func_name);
-    if (!handle) { return nullptr; }
+    if (!handle) { return std::nullopt; }
     auto* function_ptr = reinterpret_cast<signature>(handle);
     return std::optional<signature>(function_ptr);
   }
