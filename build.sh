@@ -37,8 +37,8 @@ HELP="$0 [clean] [librmm] [rmm] [-v] [-g] [-n] [-s] [--ptds] [--no-cudamallocasy
    default action (no args) is to build and install 'librmm' and 'rmm' targets
 "
 LIBRMM_BUILD_DIR=${LIBRMM_BUILD_DIR:=${REPODIR}/build}
-RMM_BUILD_DIR=${REPODIR}/python/build
-BUILD_DIRS="${LIBRMM_BUILD_DIR} ${RMM_BUILD_DIR}"
+RMM_BUILD_DIR="${REPODIR}/python/build ${REPODIR}/python/_skbuild"
+BUILD_DIR="${LIBRMM_BUILD_DIR} ${RMM_BUILD_DIR}"
 
 # Set defaults for vars modified by flags to this script
 VERBOSE_FLAG=""
@@ -157,7 +157,7 @@ if hasArg clean; then
         if [ -d "${bd}" ]; then
             find "${bd}" -mindepth 1 -delete
             rmdir "${bd}" || true
-	fi
+        fi
     done
 fi
 
@@ -178,15 +178,16 @@ if (( NUMARGS == 0 )) || hasArg rmm; then
     cd "${REPODIR}/python"
     export INSTALL_PREFIX
     echo "building rmm..."
+
     if [[ ${CUDA_MALLOC_ASYNC_SUPPORT} == OFF ]]; then
-        python setup.py build_ext_no_async --inplace
+        python setup.py build_ext --inplace -- -DCUDA_MALLOC_ASYNC_SUPPORT=OFF -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX}
     else
-        python setup.py build_ext --inplace
+        python setup.py build_ext --inplace -- -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX}
     fi
 
     if [[ ${INSTALL_TARGET} != "" ]]; then
         echo "installing rmm..."
-        python setup.py install --single-version-externally-managed --record=record.txt
+        python setup.py install --single-version-externally-managed --record=record.txt -- -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX}
     fi
 
 fi
