@@ -3,8 +3,6 @@
 {% set version = environ.get('GIT_DESCRIBE_TAG', '0.0.0.dev').lstrip('v') + environ.get('VERSION_SUFFIX', '') %}
 {% set cuda_version='.'.join(environ.get('CUDA', '9.2').split('.')[:2]) %}
 {% set cuda_major=cuda_version.split('.')[0] %}
-{% set cmake_version=">=3.20.1" %}
-{% set gtest_version="=1.10.0" %}
 
 package:
   name: librmm-split
