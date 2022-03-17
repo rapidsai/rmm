@@ -74,6 +74,18 @@ class cuda_async_memory_resource final : public device_memory_resource {
     pool_props.location.id   = rmm::detail::current_device().value();
     RMM_CUDA_TRY(rmm::detail::async_alloc::cudaMemPoolCreate(&cuda_pool_handle_, &pool_props));
 
+    // CUDA drivers before 11.5 have known incompatibilities with the async allocator.
+    // We'll disable `cudaMemPoolReuseAllowOpportunistic` if cuda driver < 11.5.
+    // See https://github.com/NVIDIA/spark-rapids/issues/4710.
+    int driver_version{};
+    RMM_CUDA_TRY(cudaDriverGetVersion(&driver_version));
+    constexpr auto min_async_version{11050};
+    if (driver_version < min_async_version) {
+      int disabled{0};
+      RMM_CUDA_TRY(
+        cudaMemPoolSetAttribute(cuda_pool_handle_, cudaMemPoolReuseAllowOpportunistic, &disabled));
+    }
+
     auto const [free, total] = rmm::detail::available_device_memory();
 
     // Need an l-value to take address to pass to cudaMemPoolSetAttribute
