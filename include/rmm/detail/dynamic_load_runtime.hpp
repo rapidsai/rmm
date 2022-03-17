@@ -62,12 +62,13 @@ struct dynamic_load_runtime {
 };
 
 #if defined(RMM_STATIC_CUDART)
-#define RMM_CUDART_API_WRAPPER(name, signature)              \
-  template <typename... Args>                                \
-  static cudaError_t name(Args... args)                      \
-  {                                                          \
-    static const auto func = static_cast<signature>(::name); \
-    return func(args...);                                    \
+#define RMM_CUDART_API_WRAPPER(name, signature)                               \
+  template <typename... Args>                                                 \
+  static cudaError_t name(Args... args)                                       \
+  {                                                                           \
+    static_assert(static_cast<signature>(::name),                             \
+                  "Failed to find #name function with arguments #signature"); \
+    return ::name(args...);                                                   \
   }
 #else
 #define RMM_CUDART_API_WRAPPER(name, signature)                                \
