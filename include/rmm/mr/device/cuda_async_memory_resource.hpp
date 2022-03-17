@@ -82,8 +82,8 @@ class cuda_async_memory_resource final : public device_memory_resource {
     constexpr auto min_async_version{11050};
     if (driver_version < min_async_version) {
       int disabled{0};
-      RMM_CUDA_TRY(
-        cudaMemPoolSetAttribute(cuda_pool_handle_, cudaMemPoolReuseAllowOpportunistic, &disabled));
+      RMM_CUDA_TRY(rmm::detail::async_alloc::cudaMemPoolSetAttribute(
+        cuda_pool_handle_, cudaMemPoolReuseAllowOpportunistic, &disabled));
     }
 
     auto const [free, total] = rmm::detail::available_device_memory();
