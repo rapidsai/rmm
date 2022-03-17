@@ -15,7 +15,7 @@
 cmake_minimum_required(VERSION 3.20.1 FATAL_ERROR)
 
 # TODO: Pull this directly from the file written by rapids_cmake_write_version_file.
-set(rmm_version 22.04.00)
+set(rmm_version 22.06.00)
 
 project(
   rmm-python
