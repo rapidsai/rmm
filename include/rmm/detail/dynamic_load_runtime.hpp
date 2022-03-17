@@ -62,14 +62,19 @@ struct dynamic_load_runtime {
 };
 
 #if defined(RMM_STATIC_CUDART)
+// clang-format off
 #define RMM_CUDART_API_WRAPPER(name, signature)                               \
   template <typename... Args>                                                 \
   static cudaError_t name(Args... args)                                       \
   {                                                                           \
+    _Pragma("GCC diagnostic push")                                            \
+    _Pragma("GCC diagnostic ignored \"-Waddress\"")                           \
     static_assert(static_cast<signature>(::name),                             \
                   "Failed to find #name function with arguments #signature"); \
+    _Pragma("GCC diagnostic pop")                                             \
     return ::name(args...);                                                   \
   }
+// clang-format on
 #else
 #define RMM_CUDART_API_WRAPPER(name, signature)                                \
   template <typename... Args>                                                  \
