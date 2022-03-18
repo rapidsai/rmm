@@ -86,7 +86,7 @@ outputs:
       home: http://rapids.ai/
       license: Apache-2.0
       summary: librmm library
-  - name: librmm_tests
+  - name: librmm-tests
     version: {{ version }}
     script: install_librmm_tests.sh
     build:
