@@ -91,7 +91,7 @@ if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
     fi
 else
 
-    gpuci_mamba_retry install -c $WORKSPACE/ci/artifacts/rmm/cpu/.conda-bld/ librmm librmm_tests
+    gpuci_mamba_retry install -c $WORKSPACE/ci/artifacts/rmm/cpu/.conda-bld/ librmm librmm-tests
 
     TESTRESULTS_DIR=${WORKSPACE}/test-results
     mkdir -p ${TESTRESULTS_DIR}
@@ -101,7 +101,7 @@ else
     nvidia-smi
 
     gpuci_logger "Running googletests"
-    # run gtests from librmm_tests package
+    # run gtests from librmm-tests package
     for gt in "$CONDA_PREFIX/bin/gtests/librmm/"* ; do
         ${gt} --gtest_output=xml:${TESTRESULTS_DIR}/
         exitcode=$?
