@@ -84,8 +84,6 @@ pipeline {
     }
 
     stage("Nightly Test Stage") {
-      // Run when pipeline is triggered by a nightly build
-      // Always upload
       when { triggeredBy 'TimerTrigger' }
       environment { UPLOAD_PKGS = "true" }
       steps {
