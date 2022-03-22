@@ -1,10 +1,9 @@
-# Copyright (c) 2018, NVIDIA CORPORATION.
+# Copyright (c) 2018-2022, NVIDIA CORPORATION.
 
 {% set version = environ.get('GIT_DESCRIBE_TAG', '0.0.0.dev').lstrip('v') + environ.get('VERSION_SUFFIX', '') %}
 {% set cuda_version='.'.join(environ.get('CUDA', '9.2').split('.')[:2]) %}
 {% set cuda_major=cuda_version.split('.')[0] %}
-{% set cmake_version=">=3.20.1" %}
-{% set gtest_version="=1.10.0" %}
+{% set cuda_spec = ">=" + cuda_major ~ ",<" + (cuda_major | int + 1) ~ ".0a0" %} # i.e. >=11,<12.0a0
 
 package:
   name: librmm-split
@@ -15,6 +14,8 @@ source:
 requirements:
   build:
     - cmake {{ cmake_version }}
+  host:
+    - cudatoolkit {{ cuda_version }}.*
 
 build:
   script_env:
@@ -44,11 +45,9 @@ outputs:
     requirements:
       build:
         - cmake {{ cmake_version }}
-      host:
-        - cudatoolkit {{ cuda_version }}.*
       run:
+        - cudatoolkit {{ cuda_spec }}
         - spdlog>=1.8.5,<1.9
-        - {{ pin_compatible('cudatoolkit', max_pin='x', min_pin='x') }}
     test:
       commands:
         - test -f $PREFIX/include/rmm/thrust_rmm_allocator.h
@@ -87,7 +86,7 @@ outputs:
       home: http://rapids.ai/
       license: Apache-2.0
       summary: librmm library
-  - name: librmm_tests
+  - name: librmm-tests
     version: {{ version }}
     script: install_librmm_tests.sh
     build:
@@ -96,10 +95,8 @@ outputs:
     requirements:
       build:
         - cmake {{ cmake_version }}
-      host:
-        - cudatoolkit {{ cuda_version }}.*
       run:
-        - {{ pin_compatible('cudatoolkit', max_pin='x', min_pin='x') }}
+        - cudatoolkit {{ cuda_spec }}
         - {{ pin_subpackage('librmm', exact=True) }}
         - gtest {{ gtest_version }}
         - gmock {{ gtest_version }}

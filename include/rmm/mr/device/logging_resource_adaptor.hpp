@@ -205,10 +205,16 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @brief Allocates memory of size at least `bytes` using the upstream
    * resource and logs the allocation.
    *
-   * If the upstream allocation is successful logs the
-   * following CSV formatted line to the file specified at construction:
+   * If the upstream allocation is successful, logs the following CSV formatted
+   * line to the file specified at construction:
    * ```
-   * thread_id,*TIMESTAMP*,"allocate",*bytes*,*stream*
+   * thread_id,*TIMESTAMP*,"allocate",*pointer*,*bytes*,*stream*
+   * ```
+   *
+   * If the upstream allocation failed, logs the following CSV formatted line
+   * to the file specified at construction:
+   * ```
+   * thread_id,*TIMESTAMP*,"allocate failure",0x0,*bytes*,*stream*
    * ```
    *
    * The returned pointer has at least 256B alignment.
@@ -222,9 +228,14 @@ class logging_resource_adaptor final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
-    auto const ptr = upstream_->allocate(bytes, stream);
-    logger_->info("allocate,{},{},{}", ptr, bytes, fmt::ptr(stream.value()));
-    return ptr;
+    try {
+      auto const ptr = upstream_->allocate(bytes, stream);
+      logger_->info("allocate,{},{},{}", ptr, bytes, fmt::ptr(stream.value()));
+      return ptr;
+    } catch (...) {
+      logger_->info("allocate failure,{},{},{}", nullptr, bytes, fmt::ptr(stream.value()));
+      throw;
+    }
   }
 
   /**

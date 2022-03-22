@@ -18,6 +18,7 @@
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/cuda_util.hpp>
+#include <rmm/detail/dynamic_load_runtime.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
@@ -116,8 +117,8 @@ class cuda_async_view_memory_resource final : public device_memory_resource {
     void* ptr{nullptr};
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
     if (bytes > 0) {
-      RMM_CUDA_TRY(cudaMallocFromPoolAsync(&ptr, bytes, pool_handle(), stream.value()),
-                   rmm::bad_alloc);
+      RMM_CUDA_TRY_ALLOC(rmm::detail::async_alloc::cudaMallocFromPoolAsync(
+        &ptr, bytes, pool_handle(), stream.value()));
     }
 #else
     (void)bytes;
@@ -136,7 +137,9 @@ class cuda_async_view_memory_resource final : public device_memory_resource {
   void do_deallocate(void* ptr, std::size_t, rmm::cuda_stream_view stream) override
   {
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
-    if (ptr != nullptr) { RMM_ASSERT_CUDA_SUCCESS(cudaFreeAsync(ptr, stream.value())); }
+    if (ptr != nullptr) {
+      RMM_ASSERT_CUDA_SUCCESS(rmm::detail::async_alloc::cudaFreeAsync(ptr, stream.value()));
+    }
 #else
     (void)ptr;
     (void)stream;

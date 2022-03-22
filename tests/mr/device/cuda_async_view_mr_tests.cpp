@@ -27,17 +27,18 @@ using cuda_async_view_mr = rmm::mr::cuda_async_view_memory_resource;
 
 #if defined(RMM_CUDA_MALLOC_ASYNC_SUPPORT)
 
-TEST(PoolTest, UsePool)
+/*TEST(PoolTest, UsePool)
 {
   cudaMemPool_t memPool{};
-  RMM_CUDA_TRY(cudaDeviceGetDefaultMemPool(&memPool, rmm::detail::current_device().value()));
+  RMM_CUDA_TRY(rmm::detail::async_alloc::cudaDeviceGetDefaultMemPool(
+    &memPool, rmm::detail::current_device().value()));
 
   const auto pool_init_size{100};
   cuda_async_view_mr mr{memPool};
   void* ptr = mr.allocate(pool_init_size);
   mr.deallocate(ptr, pool_init_size);
   RMM_CUDA_TRY(cudaDeviceSynchronize());
-}
+}*/
 
 TEST(PoolTest, NotTakingOwnershipOfPool)
 {
@@ -48,7 +49,7 @@ TEST(PoolTest, NotTakingOwnershipOfPool)
 
   cudaMemPool_t memPool{};
 
-  RMM_CUDA_TRY(cudaMemPoolCreate(&memPool, &poolProps));
+  RMM_CUDA_TRY(rmm::detail::async_alloc::cudaMemPoolCreate(&memPool, &poolProps));
 
   {
     const auto pool_init_size{100};
@@ -59,7 +60,7 @@ TEST(PoolTest, NotTakingOwnershipOfPool)
   }
 
   auto destroy_valid_pool = [&]() {
-    auto result = cudaMemPoolDestroy(memPool);
+    auto result = rmm::detail::async_alloc::cudaMemPoolDestroy(memPool);
     RMM_EXPECTS(result == cudaSuccess, "Pool wrapper did destroy pool");
   };
 
