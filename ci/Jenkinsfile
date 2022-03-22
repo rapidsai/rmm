@@ -10,55 +10,21 @@ pipeline {
       }
     }
     stage("C++ Matrix Build") {
-      matrix {
-        agent {
-          docker {
-            image getArcImage("${ARC}")
-            label "cpu4-${ARC}"
-          }
+      steps {
+        script {
+          parallel generateStage("cuda_build", {
+            echo "Hello CUDA!"
+          })
         }
-
-        axes {
-          axis {
-            name 'ARC'
-            values 'arm64', 'amd64'
-          }
-        }
-
-        stages {
-          stage ('C++ Build') {
-            steps {
-              echo "Do Build for ${ARC}"
-            }
-          }
-        }      
       }
     }
 
     stage("Python Matrix Build") {
-      matrix {
-        agent {
-          label 'cpu'
-        }
-
-        axes {
-          axis {
-            name 'ARC'
-            values 'arm64', 'amd64'
-          }
-
-          axis {
-            name 'PYTHON_VER'
-            values '3.8', '3.9'
-          }
-        }
-
-        stages {
-          stage('Python Build') {
-            steps {
-              echo "Do Build for arc:${ARC} and py_ver:${PYTHON_VER}"
-            }
-          }
+      steps {
+        script {
+          parallel generateStage("python_build", {
+            echo "Hello Python!"
+          })
         }
       }
     }
@@ -75,7 +41,7 @@ pipeline {
         sh "env"
         echo "${currentBuild.buildCauses}"
         script {
-          parallel getTestStages({
+          parallel generateStage("branch_pr_test",{
             echo "hello from rmm repo"
             echo "Upload packages: \${UPLOAD_PKGS}"
           })
@@ -90,7 +56,7 @@ pipeline {
         sh "env"
         echo "${currentBuild.buildCauses}"
         script {
-          parallel getTestStages({
+          parallel generateStage("nightly_test", {
             echo "Upload packages: \${UPLOAD_PKGS}"
             echo "Uploading packages..."
           })
