@@ -133,6 +133,9 @@ struct async_alloc {
 
   using cudaFreeAsync_sig = cudart_sig<void*, cudaStream_t>;
   RMM_CUDART_API_WRAPPER(cudaFreeAsync, cudaFreeAsync_sig);
+
+  using cudaDeviceGetDefaultMemPool_sig = cudart_sig<cudaMemPool_t*, int>;
+  RMM_CUDART_API_WRAPPER(cudaDeviceGetDefaultMemPool, cudaDeviceGetDefaultMemPool_sig);
 };
 #endif
 

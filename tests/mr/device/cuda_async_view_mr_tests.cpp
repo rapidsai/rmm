@@ -27,7 +27,7 @@ using cuda_async_view_mr = rmm::mr::cuda_async_view_memory_resource;
 
 #if defined(RMM_CUDA_MALLOC_ASYNC_SUPPORT)
 
-/*TEST(PoolTest, UsePool)
+TEST(PoolTest, UsePool)
 {
   cudaMemPool_t memPool{};
   RMM_CUDA_TRY(rmm::detail::async_alloc::cudaDeviceGetDefaultMemPool(
@@ -38,7 +38,7 @@ using cuda_async_view_mr = rmm::mr::cuda_async_view_memory_resource;
   void* ptr = mr.allocate(pool_init_size);
   mr.deallocate(ptr, pool_init_size);
   RMM_CUDA_TRY(cudaDeviceSynchronize());
-}*/
+}
 
 TEST(PoolTest, NotTakingOwnershipOfPool)
 {
