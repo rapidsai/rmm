@@ -20,6 +20,7 @@
 #include <rmm/detail/cuda_util.hpp>
 #include <rmm/detail/dynamic_load_runtime.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/mr/device/cuda_async_view_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <thrust/optional.h>
@@ -72,7 +73,9 @@ class cuda_async_memory_resource final : public device_memory_resource {
     pool_props.handleTypes   = cudaMemHandleTypePosixFileDescriptor;
     pool_props.location.type = cudaMemLocationTypeDevice;
     pool_props.location.id   = rmm::detail::current_device().value();
-    RMM_CUDA_TRY(rmm::detail::async_alloc::cudaMemPoolCreate(&cuda_pool_handle_, &pool_props));
+    cudaMemPool_t cuda_pool_handle{};
+    RMM_CUDA_TRY(rmm::detail::async_alloc::cudaMemPoolCreate(&cuda_pool_handle, &pool_props));
+    pool_ = cuda_async_view_memory_resource{cuda_pool_handle};
 
     // CUDA drivers before 11.5 have known incompatibilities with the async allocator.
     // We'll disable `cudaMemPoolReuseAllowOpportunistic` if cuda driver < 11.5.
@@ -83,7 +86,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
     if (driver_version < min_async_version) {
       int disabled{0};
       RMM_CUDA_TRY(rmm::detail::async_alloc::cudaMemPoolSetAttribute(
-        cuda_pool_handle_, cudaMemPoolReuseAllowOpportunistic, &disabled));
+        pool_handle(), cudaMemPoolReuseAllowOpportunistic, &disabled));
     }
 
     auto const [free, total] = rmm::detail::available_device_memory();
@@ -91,7 +94,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
     // Need an l-value to take address to pass to cudaMemPoolSetAttribute
     uint64_t threshold = release_threshold.value_or(total);
     RMM_CUDA_TRY(rmm::detail::async_alloc::cudaMemPoolSetAttribute(
-      cuda_pool_handle_, cudaMemPoolAttrReleaseThreshold, &threshold));
+      pool_handle(), cudaMemPoolAttrReleaseThreshold, &threshold));
 
     // Allocate and immediately deallocate the initial_pool_size to prime the pool with the
     // specified size
@@ -110,7 +113,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
    * @brief Returns the underlying native handle to the CUDA pool
    *
    */
-  [[nodiscard]] cudaMemPool_t pool_handle() const noexcept { return cuda_pool_handle_; }
+  [[nodiscard]] cudaMemPool_t pool_handle() const noexcept { return pool_.pool_handle(); }
 #endif
 
   ~cuda_async_memory_resource() override
@@ -141,7 +144,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
 
  private:
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
-  cudaMemPool_t cuda_pool_handle_{};
+  cuda_async_view_memory_resource pool_{};
 #endif
 
   /**
@@ -158,10 +161,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
   {
     void* ptr{nullptr};
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
-    if (bytes > 0) {
-      RMM_CUDA_TRY_ALLOC(rmm::detail::async_alloc::cudaMallocFromPoolAsync(
-        &ptr, bytes, pool_handle(), stream.value()));
-    }
+    ptr = pool_.allocate(bytes, stream);
 #else
     (void)bytes;
     (void)stream;
@@ -176,14 +176,13 @@ class cuda_async_memory_resource final : public device_memory_resource {
    *
    * @param p Pointer to be deallocated
    */
-  void do_deallocate(void* ptr, std::size_t, rmm::cuda_stream_view stream) override
+  void do_deallocate(void* ptr, std::size_t size, rmm::cuda_stream_view stream) override
   {
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
-    if (ptr != nullptr) {
-      RMM_ASSERT_CUDA_SUCCESS(rmm::detail::async_alloc::cudaFreeAsync(ptr, stream.value()));
-    }
+    pool_.deallocate(ptr, size, stream);
 #else
     (void)ptr;
+    (void)size;
     (void)stream;
 #endif
   }
