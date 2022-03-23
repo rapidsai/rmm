@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <rmm/cuda_device.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/cuda_async_memory_resource.hpp>
 
