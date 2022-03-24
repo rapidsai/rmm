@@ -13,7 +13,7 @@
 # limitations under the License.
 import ctypes
 
-from cuda.cuda import CUdeviceptr
+from cuda.cuda import CUdeviceptr, cuIpcGetMemHandle
 from numba import config, cuda
 from numba.cuda import HostOnlyCUDAMemoryManager, IpcHandle, MemoryPointer
 
@@ -142,12 +142,18 @@ class RMMNumbaManager(HostOnlyCUDAMemoryManager):
         the RMM memory pool.
         """
         start, end = cuda.cudadrv.driver.device_extents(memory)
-        ipchandle = (ctypes.c_byte * 64)()  # IPC handle is 64 bytes
-        cuda.cudadrv.driver.driver.cuIpcGetMemHandle(
-            ctypes.byref(ipchandle), start,
-        )
+
+        if config.CUDA_USE_NVIDIA_BINDING:
+            _, ipchandle = cuIpcGetMemHandle(start)
+            offset = int(memory.handle) - int(start)
+        else:
+            ipchandle = (ctypes.c_byte * 64)()  # IPC handle is 64 bytes
+            cuda.cudadrv.driver.driver.cuIpcGetMemHandle(
+                ctypes.byref(ipchandle), start,
+            )
+            offset = memory.handle.value - start
         source_info = cuda.current_context().device.get_device_identity()
-        offset = memory.handle.value - start
+
         return IpcHandle(
             memory, ipchandle, memory.size, source_info, offset=offset
         )
