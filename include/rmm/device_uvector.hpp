@@ -23,9 +23,6 @@
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 
-#include <thrust/device_vector.h>
-#include <thrust/execution_policy.h>
-
 #include <cstddef>
 #include <vector>
 
