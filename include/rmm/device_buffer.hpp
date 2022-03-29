@@ -22,6 +22,8 @@
 
 #include <cuda_runtime_api.h>
 
+#include <thrust/device_vector.h>
+
 #include <cassert>
 #include <cstddef>
 #include <stdexcept>
