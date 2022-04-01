@@ -526,7 +526,8 @@ def test_mr_upstream_lifetime():
 
 
 @pytest.mark.skipif(
-    not _CUDAMALLOC_ASYNC_SUPPORTED, reason="cudaMallocAsync not supported",
+    not _CUDAMALLOC_ASYNC_SUPPORTED,
+    reason="cudaMallocAsync not supported",
 )
 @pytest.mark.parametrize("dtype", _dtypes)
 @pytest.mark.parametrize("nelem", _nelems)
@@ -539,7 +540,8 @@ def test_cuda_async_memory_resource(dtype, nelem, alloc):
 
 
 @pytest.mark.skipif(
-    not _CUDAMALLOC_ASYNC_SUPPORTED, reason="cudaMallocAsync not supported",
+    not _CUDAMALLOC_ASYNC_SUPPORTED,
+    reason="cudaMallocAsync not supported",
 )
 @pytest.mark.parametrize("nelems", _nelems)
 def test_cuda_async_memory_resource_stream(nelems):
@@ -555,7 +557,8 @@ def test_cuda_async_memory_resource_stream(nelems):
 
 
 @pytest.mark.skipif(
-    not _CUDAMALLOC_ASYNC_SUPPORTED, reason="cudaMallocAsync not supported",
+    not _CUDAMALLOC_ASYNC_SUPPORTED,
+    reason="cudaMallocAsync not supported",
 )
 @pytest.mark.parametrize("nelem", _nelems)
 @pytest.mark.parametrize("alloc", _allocs)

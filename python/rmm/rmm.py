@@ -137,7 +137,8 @@ class RMMNumbaManager(HostOnlyCUDAMemoryManager):
         start, end = cuda.cudadrv.driver.device_extents(memory)
         ipchandle = (ctypes.c_byte * 64)()  # IPC handle is 64 bytes
         cuda.cudadrv.driver.driver.cuIpcGetMemHandle(
-            ctypes.byref(ipchandle), start,
+            ctypes.byref(ipchandle),
+            start,
         )
         source_info = cuda.current_context().device.get_device_identity()
         offset = memory.handle.value - start
