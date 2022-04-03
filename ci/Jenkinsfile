@@ -2,11 +2,98 @@
 
 pipeline {
   agent any
+  options {
+    timestamps()
+    buildDiscarder(logRotator(numToKeepStr: '1')) } 
+    ansiColor('xterm')
+  }
   stages {
-    stage("Build Stage") {
+    stage("Build Stage") { 
       steps {
         sh "env"
         echo "${currentBuild.buildCauses}"
+      }
+
+      parallel {
+        stage('Check Size') {
+
+        }
+
+        stage('Check Style') {
+          agent { label "runner" }
+          environment {
+            GHTK = credentials('GHTK')
+            BUILD_TYPE = 'style'
+            BUILD_MODE = 'pull-request'
+          }
+          withRemoteDocker( // TODO: update
+            debug: false, 
+            main: <object of type com.gpuopenanalytics.jenkins.remotedocker.job.DockerImageConfiguration>, 
+            sideContainers: [], 
+            workspaceOverride: '/workspace') {
+              // some block
+          }
+
+          steps {
+            cleanWs (
+              cleanWhenAborted: false, 
+              cleanWhenFailure: false, 
+              cleanWhenSuccess: false, 
+              cleanWhenUnstable: false, 
+              deleteDirs: true, 
+              externalDelete: 'sudo rm -rf %s'
+            )
+
+            sh '''#!/bin/bash
+set -e
+TMPDIR="\${WORKSPACE}/tmp"
+
+BUILD_SCRIPT="ci/checks/style.sh"
+cd "$WORKSPACE"
+
+hostname
+env > env.list
+if [ -f $BUILD_SCRIPT ]; then
+    echo ">>>> Detected in repo script, using '${BUILD_SCRIPT}' for build..."
+    source ${BUILD_SCRIPT}
+    exit $?
+else
+echo ">>>> ERROR: No script '${BUILD_SCRIPT}' detected..."
+    exit 1
+fi
+            '''
+          }
+
+
+          post {
+            always {
+              step([
+                  $class: "GitHubCommitStatusSetter",
+                  reposSource: [$class: "ManuallyEnteredRepositorySource", url: "https://github.com/rapids-ai/rmm"],
+                  contextSource: [$class: "ManuallyEnteredCommitContextSource", context: "gpuci/rmm/check/style"],
+                  errorHandlers: [[$class: "ChangingBuildStatusErrorHandler", result: "UNSTABLE"]],
+                  statusResultSource: [ 
+                    $class: "ConditionalStatusResultSource", 
+                    results: [
+                      [$class: 'BetterThanOrEqualBuildResult', result: 'SUCCESS', state: 'SUCCESS', message: build.description],
+                      [$class: 'BetterThanOrEqualBuildResult', result: 'FAILURE', state: 'FAILURE', message: build.description],
+                      [$class: 'AnyBuildResult', state: 'FAILURE', message: 'Loophole']
+                    ]
+                  ]
+              ]);
+
+              cleanWs (
+                cleanWhenAborted: true, 
+                cleanWhenFailure: true, 
+                cleanWhenNotBuilt: true,
+                cleanWhenSuccess: true, 
+                cleanWhenUnstable: true, 
+                deleteDirs: true,
+                disableDeferredWipeout: true,
+              )
+            }
+          }
+        }
       }
     }
     stage("C++ Matrix Build") {
