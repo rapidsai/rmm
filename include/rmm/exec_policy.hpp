@@ -60,8 +60,9 @@ using thrust_exec_policy_nosync_t =
  */
 class exec_policy_nosync : public thrust_exec_policy_nosync_t {
  public:
-  explicit exec_policy_nosync(cuda_stream_view stream             = cuda_stream_default,
-                       rmm::mr::device_memory_resource* mr = mr::get_current_device_resource())
+  explicit exec_policy_nosync(
+    cuda_stream_view stream             = cuda_stream_default,
+    rmm::mr::device_memory_resource* mr = mr::get_current_device_resource())
     : thrust_exec_policy_nosync_t(
         thrust::cuda::par_nosync(rmm::mr::thrust_allocator<char>(stream, mr)).on(stream.value()))
   {
@@ -71,7 +72,7 @@ class exec_policy_nosync : public thrust_exec_policy_nosync_t {
 #else
 
 using thrust_exec_policy_nosync_t = thrust_exec_policy_t;
-using exec_policy_nosync = exec_policy;
+using exec_policy_nosync          = exec_policy;
 
 #endif
 
