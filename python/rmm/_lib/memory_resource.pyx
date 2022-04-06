@@ -181,6 +181,12 @@ cdef class DeviceMemoryResource:
     cdef device_memory_resource* get_mr(self):
         return self.c_obj.get()
 
+    def allocate(self, size_t nbytes):
+        return <uintptr_t>self.c_obj.get().allocate(nbytes)
+
+    def deallocate(self, uintptr_t ptr, size_t nbytes):
+        self.c_obj.get().deallocate(<void*>(ptr), nbytes)
+
 
 cdef class UpstreamResourceAdaptor(DeviceMemoryResource):
 

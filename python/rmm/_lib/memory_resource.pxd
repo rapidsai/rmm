@@ -21,11 +21,11 @@ from libcpp.vector cimport vector
 cdef extern from "rmm/mr/device/device_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass device_memory_resource:
-        pass
+        void* allocate(size_t bytes) except +
+        void deallocate(void* ptr, size_t bytes) except +
 
 cdef class DeviceMemoryResource:
     cdef shared_ptr[device_memory_resource] c_obj
-
     cdef device_memory_resource* get_mr(self)
 
 cdef class UpstreamResourceAdaptor(DeviceMemoryResource):
