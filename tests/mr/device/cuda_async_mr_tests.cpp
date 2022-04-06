@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, NVIDIA CORPORATION.
+ * Copyright (c) 2021-2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <rmm/cuda_device.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/cuda_async_memory_resource.hpp>
 
@@ -24,7 +25,18 @@ namespace {
 
 using cuda_async_mr = rmm::mr::cuda_async_memory_resource;
 
-TEST(PoolTest, ThrowIfNotSupported)
+class AsyncMRTest : public ::testing::Test {
+ protected:
+  void SetUp() override
+  {
+    if (!rmm::detail::async_alloc::is_supported()) {
+      GTEST_SKIP() << "Skipping tests since cudaMallocAsync not supported with this CUDA "
+                   << "driver/runtime version";
+    }
+  }
+};
+
+TEST_F(AsyncMRTest, ThrowIfNotSupported)
 {
   auto construct_mr = []() { cuda_async_mr mr; };
 #ifndef RMM_CUDA_MALLOC_ASYNC_SUPPORT
@@ -35,7 +47,7 @@ TEST(PoolTest, ThrowIfNotSupported)
 }
 
 #if defined(RMM_CUDA_MALLOC_ASYNC_SUPPORT)
-TEST(PoolTest, ExplicitInitialPoolSize)
+TEST_F(AsyncMRTest, ExplicitInitialPoolSize)
 {
   const auto pool_init_size{100};
   cuda_async_mr mr{pool_init_size};
@@ -44,7 +56,7 @@ TEST(PoolTest, ExplicitInitialPoolSize)
   RMM_CUDA_TRY(cudaDeviceSynchronize());
 }
 
-TEST(PoolTest, ExplicitReleaseThreshold)
+TEST_F(AsyncMRTest, ExplicitReleaseThreshold)
 {
   const auto pool_init_size{100};
   const auto pool_release_threshold{1000};
@@ -52,6 +64,15 @@ TEST(PoolTest, ExplicitReleaseThreshold)
   void* ptr = mr.allocate(pool_init_size);
   mr.deallocate(ptr, pool_init_size);
   RMM_CUDA_TRY(cudaDeviceSynchronize());
+}
+
+TEST_F(AsyncMRTest, DifferentPoolsUnequal)
+{
+  const auto pool_init_size{100};
+  const auto pool_release_threshold{1000};
+  cuda_async_mr mr1{pool_init_size, pool_release_threshold};
+  cuda_async_mr mr2{pool_init_size, pool_release_threshold};
+  EXPECT_FALSE(mr1.is_equal(mr2));
 }
 
 #endif

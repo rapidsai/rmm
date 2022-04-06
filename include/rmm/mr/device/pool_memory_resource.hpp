@@ -129,6 +129,15 @@ class pool_memory_resource final
    */
   Upstream* get_upstream() const noexcept { return upstream_mr_; }
 
+  /**
+   * @brief Computes the size of the current pool
+   *
+   * Includes allocated as well as free memory.
+   *
+   * @return std::size_t The total size of the currently allocated pool.
+   */
+  [[nodiscard]] std::size_t pool_size() const noexcept { return current_pool_size_; }
+
  protected:
   using free_list  = detail::coalescing_free_list;
   using block_type = free_list::block_type;
@@ -337,15 +346,6 @@ class pool_memory_resource final
     return block_type{static_cast<char*>(ptr), size, (iter != upstream_blocks_.end())};
 #endif
   }
-
-  /**
-   * @brief Computes the size of the current pool
-   *
-   * Includes allocated as well as free memory.
-   *
-   * @return std::size_t The total size of the currently allocated pool.
-   */
-  [[nodiscard]] std::size_t pool_size() const noexcept { return current_pool_size_; }
 
   /**
    * @brief Free all memory allocated from the upstream memory_resource.

@@ -9,6 +9,7 @@ set -e
 export PATH=/opt/conda/bin:/usr/local/cuda/bin:$PATH
 export PARALLEL_LEVEL=${PARALLEL_LEVEL:-4}
 export CMAKE_GENERATOR="Ninja"
+export CONDA_BLD_DIR="$WORKSPACE/.conda-bld"
 
 # Set home to the job's workspace
 export HOME=$WORKSPACE
@@ -63,8 +64,12 @@ if [[ "$BUILD_LIBRMM" == "1" ]]; then
   if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
     gpuci_conda_retry build conda/recipes/librmm --python=$PYTHON
   else
-    gpuci_conda_retry build --dirty --no-remove-work-dir conda/recipes/librmm
+    gpuci_conda_retry build --no-build-id --croot ${CONDA_BLD_DIR} --dirty --no-remove-work-dir conda/recipes/librmm
+    mkdir -p ${CONDA_BLD_DIR}/librmm
+    mv ${CONDA_BLD_DIR}/work/ ${CONDA_BLD_DIR}/librmm/work
   fi
+  gpuci_logger "sccache stats"
+  sccache --show-stats
 fi
 
 if [[ "$BUILD_RMM" == "1" ]]; then
@@ -72,9 +77,10 @@ if [[ "$BUILD_RMM" == "1" ]]; then
   if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
     gpuci_conda_retry build conda/recipes/rmm --python=$PYTHON
   else
-    gpuci_conda_retry build --dirty --no-remove-work-dir \
-      -c $WORKSPACE/ci/artifacts/rmm/cpu/conda-bld/ conda/recipes/rmm
-
+    gpuci_conda_retry build --no-build-id --croot ${CONDA_BLD_DIR} --dirty --no-remove-work-dir \
+      -c $WORKSPACE/ci/artifacts/rmm/cpu/.conda-bld/ conda/recipes/rmm
+    mkdir -p ${CONDA_BLD_DIR}/rmm
+    mv ${CONDA_BLD_DIR}/work/ ${CONDA_BLD_DIR}/rmm/work
   fi
 fi
 
