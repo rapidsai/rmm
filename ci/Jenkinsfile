@@ -3,7 +3,6 @@
 pipeline {
   agent any
   options {
-    timestamps()
     buildDiscarder(logRotator(numToKeepStr: '1')) 
     ansiColor('xterm')
   }
@@ -218,72 +217,67 @@ pipeline {
         PROJECT_FLASH = '1'
         REPO = "rmm"
         PARALLEL_LEVEL = '4'
-        GHTK = credentials('GHTK')
+        CUDA="11.5"
+        // GHTK = credentials('GHTK')
       }
       steps {
-        cleanWs (
-          deleteDirs: true, 
-          externalDelete: 'sudo rm -rf %s'
-        )
+        sh "echo starting C++ matrix builds"
+        sh 'printenv'
+        // cleanWs (
+        //   deleteDirs: true, 
+        //   externalDelete: 'sudo rm -rf %s'
+        // )
 
-        withCredentials([[
-            $class: 'AmazonWebServicesCredentialsBinding',
-            credentialsId: "aws-s3-gpuci-cache",
-            accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-            secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
-        ]]) {
-            
-        }
-
-        timeout(time: 2400, unit: 'SECONDS') {
-          catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-            sh "exit 1"
-          }           
-        }
+        // timeout(time: 2400, unit: 'SECONDS') {
+        //   catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+        //     sh "exit 1"
+        //   }           
+        // }
 
         script {
           parallel generateStage("cuda_build", {
-            sh '''#!/bin/bash
-              set -e
-              TMPDIR=${WORKSPACE}/tmp
+            checkout scm
 
-              unset SUDO_UID SUDO_GID SUDO_USER
-              PREBUILD_SCRIPT="ci/cpu/prebuild.sh"
-              BUILD_SCRIPT="ci/cpu/build.sh"
+            withCredentials([[
+                $class: 'AmazonWebServicesCredentialsBinding',
+                credentialsId: "aws-s3-gpuci",
+                accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+            ]]) {
+              sh '''#!/bin/bash
+                set -e
+                TMPDIR=${WORKSPACE}/tmp
 
-              export NVCC="/usr/local/cuda/bin/nvcc"
-              export CUDAToolkit_ROOT="/usr/local/cuda"
-              export CUDACXX="/usr/local/cuda/bin/nvcc"
+                unset SUDO_UID SUDO_GID SUDO_USER
+                BUILD_SCRIPT="ci/build_cpp.sh"
 
-              cd "$WORKSPACE"
+                export NVCC="/usr/local/cuda/bin/nvcc"
+                export CUDAToolkit_ROOT="/usr/local/cuda"
+                export CUDACXX="/usr/local/cuda/bin/nvcc"
 
-              #Override nvidia-smi to exit on 0 and 14 as succesful
-              #14 is infoROM corrupted
-              function nvidia-smi() {
-                  /usr/bin/nvidia-smi $@
-                  EXIT_VAL=$?
-                  if [[ $EXIT_VAL == 0 || $EXIT_VAL == 14 ]]; then
-                      return 0
-                  fi
-                  exit $EXIT_VAL
-              }
+                cd "$WORKSPACE"
 
-              if [ -f $PREBUILD_SCRIPT ]; then
-                  echo ">>>> Detected in repo script, using '${PREBUILD_SCRIPT}' for prebuild..."
-                  source "$PREBUILD_SCRIPT"
-              else
-                  echo ">>>> No script '${PREBUILD_SCRIPT}' detected..."
-              fi
+                #Override nvidia-smi to exit on 0 and 14 as succesful
+                #14 is infoROM corrupted
+                function nvidia-smi() {
+                    /usr/bin/nvidia-smi $@
+                    EXIT_VAL=$?
+                    if [[ $EXIT_VAL == 0 || $EXIT_VAL == 14 ]]; then
+                        return 0
+                    fi
+                    exit $EXIT_VAL
+                }
 
-              cd "$WORKSPACE"
-              if [ -f $BUILD_SCRIPT ]; then
-                  echo ">>>> Detected in repo script, using '${BUILD_SCRIPT}' for build..."
-                  source ${BUILD_SCRIPT}
-              else
-                  echo ">>>> ERROR: No script '${BUILD_SCRIPT}' detected..."
-                  exit 1
-              fi
-            '''
+                cd "$WORKSPACE"
+                if [ -f $BUILD_SCRIPT ]; then
+                    echo ">>>> Detected in repo script, using '${BUILD_SCRIPT}' for build..."
+                    source ${BUILD_SCRIPT}
+                else
+                    echo ">>>> ERROR: No script '${BUILD_SCRIPT}' detected..."
+                    exit 1
+                fi
+              '''                
+            }
 
             echo "Hello CUDA!"
           })
