@@ -23,31 +23,46 @@
 
 namespace rmm::mr {
 
-using allocate_callback_t = std::function<void*(std::size_t, void*)>;  // TODO: can we accept a stream here?
-using deallocate_callback_t = std::function<void(void*, std::size_t, void*)>;
+/**
+ * @brief Callback function type used by callback_memory_resource for allocation.
+ *
+ * The function signature must match that of `rmm::device_memory_resource::allocate()`.
+ */
+using allocate_callback_t = std::function<void*(std::size_t, void*, cuda_stream_view)>;
 
+/**
+ * @brief Callback function type used by callback_memory_resource for deallocation.
+ *
+ * The function signature must match that of `rmm::device_memory_resource::deallocate()`.
+ */
+using deallocate_callback_t = std::function<void(void*, std::size_t, void*, cuda_stream_view)>;
+
+/**
+ * @brief A device memory resource that uses the provided callbacks for memory allocation
+ * and deallocation.
+ */
 class callback_memory_resource final : public device_memory_resource {
-
-public:
+ public:
   callback_memory_resource(allocate_callback_t allocate_callback,
-                            deallocate_callback_t deallocate_callback,
-                            void* allocate_callback_arg,
-                            void* deallocate_callback_arg)
+                           deallocate_callback_t deallocate_callback,
+                           void* allocate_callback_arg,
+                           void* deallocate_callback_arg)
     : allocate_callback_(allocate_callback),
       deallocate_callback_(deallocate_callback),
       allocate_callback_arg_(allocate_callback_arg),
-      deallocate_callback_arg_(deallocate_callback_arg) {}
+      deallocate_callback_arg_(deallocate_callback_arg)
+  {
+  }
 
-private:
-
+ private:
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
-    return allocate_callback_(bytes, allocate_callback_arg_);
+    return allocate_callback_(bytes, allocate_callback_arg_, stream);
   }
 
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
-    deallocate_callback_(ptr, bytes, deallocate_callback_arg_);
+    deallocate_callback_(ptr, bytes, deallocate_callback_arg_, stream);
   }
 
   [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view) const override
