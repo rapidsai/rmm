@@ -28,7 +28,7 @@
 namespace rmm::test {
 namespace {
 
-TEST(CallbackTest, CallbackTestSimple)
+TEST(CallbackTest, PassThroughTest)
 {
   auto base_mr           = rmm::mr::get_current_device_resource();
   auto allocate_callback = [&base_mr](std::size_t size, void* arg, cuda_stream_view stream) {
@@ -44,5 +44,29 @@ TEST(CallbackTest, CallbackTestSimple)
   mr.deallocate(ptr, 10_MiB);
 }
 
+TEST(CallbackTest, LoggingTest)
+{
+  testing::internal::CaptureStdout();
+  
+  auto base_mr           = rmm::mr::get_current_device_resource();
+  auto allocate_callback = [&base_mr](std::size_t size, void* arg, cuda_stream_view stream) {
+    std::cout << "Allocating " << size << " bytes" << std::endl;
+    return base_mr->allocate(size, stream);
+  };
+  auto deallocate_callback = [&base_mr](
+                               void* ptr, std::size_t size, void* arg, cuda_stream_view stream) {
+    std::cout << "Deallocating " << size << " bytes" << std::endl;    
+    base_mr->deallocate(ptr, size, stream);
+  };
+  auto mr =
+    rmm::mr::callback_memory_resource(allocate_callback, deallocate_callback, nullptr, nullptr);
+  auto ptr = mr.allocate(10_MiB);
+  mr.deallocate(ptr, 10_MiB);
+
+  std::string output = testing::internal::GetCapturedStdout();
+  std::string expect {"Allocating " + std::to_string(10_MiB) + " bytes" + "\n" + "Deallocating " + std::to_string(10_MiB) + " bytes\n"};
+  ASSERT_EQ(expect, output);
+}
+  
 }  // namespace
 }  // namespace rmm::test
