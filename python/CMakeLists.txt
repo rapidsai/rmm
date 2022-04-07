@@ -20,7 +20,6 @@ set(CYTHON_FLAGS
     "--directive binding=True,embedsignature=True,always_allow_keywords=True"
     CACHE STRING "The directives for Cython compilation.")
 
-
 project(
   rmm-python
   VERSION ${rmm_version}
