@@ -23,6 +23,8 @@
 #include <rmm/device_buffer.hpp>
 #include <rmm/mr/device/callback_memory_resource.hpp>
 
+#include <spdlog/fmt/ostr.h>
+
 #include <gtest/gtest.h>
 
 namespace rmm::test {
@@ -64,7 +66,7 @@ TEST(CallbackTest, LoggingTest)
   mr.deallocate(ptr, 10_MiB);
 
   std::string output = testing::internal::GetCapturedStdout();
-  std::string expect {"Allocating " + std::to_string(10_MiB) + " bytes" + "\n" + "Deallocating " + std::to_string(10_MiB) + " bytes\n"};
+  std::string expect = fmt::format("Allocating {} bytes\nDeallocating {} bytes\n", 10_MiB, 10_MiB);
   ASSERT_EQ(expect, output);
 }
   
