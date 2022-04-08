@@ -24,18 +24,28 @@
 namespace rmm::mr {
 
 /**
- * @brief Callback function type used by callback_memory_resource for allocation.
+ * @brief Callback function type used by callback memory resource for allocation.
  *
- * The function signature must match that of `rmm::device_memory_resource::allocate()`.
+ * The signature of the callback function is:
+ *   `void* allocate_callback_t(std::size_t bytes, cuda_stream_view stream, void* arg);
+ *
+ * `bytes` specifies the number of bytes to allocate. `stream` is the CUDA stream
+ * on which the memory is used. Additional information to the callback may be passed
+ * via `arg`. The function returns the pointer to the allocated memory.
  */
-using allocate_callback_t = std::function<void*(std::size_t, void*, cuda_stream_view)>;
+using allocate_callback_t = std::function<void*(std::size_t, cuda_stream_view, void*)>;
 
 /**
  * @brief Callback function type used by callback_memory_resource for deallocation.
  *
- * The function signature must match that of `rmm::device_memory_resource::deallocate()`.
+ * The signature of the callback function is:
+ *   `void* deallocate_callback_t(void* ptr, std::size_t bytes, cuda_stream_view stream, void* arg);
+ *
+ * `ptr` specifies the pointer to the memory to be freed, while `bytes` specified
+ * the number of bytes to free. `stream` is the CUDA stream on which the memory is used.
+ * Additional information to the callback may be passed via `arg`
  */
-using deallocate_callback_t = std::function<void(void*, std::size_t, void*, cuda_stream_view)>;
+using deallocate_callback_t = std::function<void(void*, std::size_t, cuda_stream_view, void*)>;
 
 /**
  * @brief A device memory resource that uses the provided callbacks for memory allocation
@@ -43,10 +53,18 @@ using deallocate_callback_t = std::function<void(void*, std::size_t, void*, cuda
  */
 class callback_memory_resource final : public device_memory_resource {
  public:
+  /**
+   * @brief Construct a new callback memory resource.
+   *
+   * @throws Nothing.
+   *
+   * @param allocate_callback The callback function used for allocation
+   * @param deallocate_callback The callback function used for deallocation
+   */
   callback_memory_resource(allocate_callback_t allocate_callback,
                            deallocate_callback_t deallocate_callback,
                            void* allocate_callback_arg,
-                           void* deallocate_callback_arg)
+                           void* deallocate_callback_arg) noexcept
     : allocate_callback_(allocate_callback),
       deallocate_callback_(deallocate_callback),
       allocate_callback_arg_(allocate_callback_arg),
@@ -54,15 +72,22 @@ class callback_memory_resource final : public device_memory_resource {
   {
   }
 
+  callback_memory_resource()                                = delete;
+  ~callback_memory_resource() override                      = default;
+  callback_memory_resource(callback_memory_resource const&) = delete;
+  callback_memory_resource& operator=(callback_memory_resource const&) = delete;
+  callback_memory_resource(callback_memory_resource&&) noexcept        = default;
+  callback_memory_resource& operator=(callback_memory_resource&&) noexcept = default;
+
  private:
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
-    return allocate_callback_(bytes, allocate_callback_arg_, stream);
+    return allocate_callback_(bytes, stream, allocate_callback_arg_);
   }
 
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
-    deallocate_callback_(ptr, bytes, deallocate_callback_arg_, stream);
+    deallocate_callback_(ptr, bytes, stream, deallocate_callback_arg_);
   }
 
   [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view) const override

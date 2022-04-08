@@ -33,11 +33,11 @@ namespace {
 TEST(CallbackTest, PassThroughTest)
 {
   auto base_mr           = rmm::mr::get_current_device_resource();
-  auto allocate_callback = [&base_mr](std::size_t size, void* arg, cuda_stream_view stream) {
+  auto allocate_callback = [&base_mr](std::size_t size, cuda_stream_view stream, void* arg) {
     return base_mr->allocate(size, stream);
   };
   auto deallocate_callback = [&base_mr](
-                               void* ptr, std::size_t size, void* arg, cuda_stream_view stream) {
+                               void* ptr, std::size_t size, cuda_stream_view stream, void* arg) {
     base_mr->deallocate(ptr, size, stream);
   };
   auto mr =
@@ -49,15 +49,15 @@ TEST(CallbackTest, PassThroughTest)
 TEST(CallbackTest, LoggingTest)
 {
   testing::internal::CaptureStdout();
-  
+
   auto base_mr           = rmm::mr::get_current_device_resource();
-  auto allocate_callback = [&base_mr](std::size_t size, void* arg, cuda_stream_view stream) {
+  auto allocate_callback = [&base_mr](std::size_t size, cuda_stream_view stream, void* arg) {
     std::cout << "Allocating " << size << " bytes" << std::endl;
     return base_mr->allocate(size, stream);
   };
   auto deallocate_callback = [&base_mr](
-                               void* ptr, std::size_t size, void* arg, cuda_stream_view stream) {
-    std::cout << "Deallocating " << size << " bytes" << std::endl;    
+                               void* ptr, std::size_t size, cuda_stream_view stream, void* arg) {
+    std::cout << "Deallocating " << size << " bytes" << std::endl;
     base_mr->deallocate(ptr, size, stream);
   };
   auto mr =
@@ -69,6 +69,6 @@ TEST(CallbackTest, LoggingTest)
   std::string expect = fmt::format("Allocating {} bytes\nDeallocating {} bytes\n", 10_MiB, 10_MiB);
   ASSERT_EQ(expect, output);
 }
-  
+
 }  // namespace
 }  // namespace rmm::test
