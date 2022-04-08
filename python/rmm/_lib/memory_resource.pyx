@@ -26,6 +26,7 @@ from libcpp.string cimport string
 from cuda.cudart import cudaError_t
 
 from rmm._cuda.gpu import CUDARuntimeError, getDevice, setDevice
+from rmm._lib.cuda_stream_view cimport cuda_stream_view
 
 
 # NOTE: Keep extern declarations in .pyx file as much as possible to avoid
@@ -463,18 +464,40 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
                     bin_resource.get_mr())
 
 
-cdef void* _allocate_callback_wrapper(size_t nbytes, void *ctx) with gil:
+cdef void* _allocate_callback_wrapper(
+    size_t nbytes,
+    cuda_stream_view stream,
+    void *ctx
+) with gil:
     return <void*><uintptr_t>((<object>ctx)(nbytes))
 
 cdef void _deallocate_callback_wrapper(
     void* ptr,
     size_t nbytes,
+    cuda_stream_view stream,
     void *ctx
 ) with gil:
     (<object>ctx)(<uintptr_t>(ptr), nbytes)
 
 
 cdef class CallbackMemoryResource:
+    """
+    A memory resource that uses the user-provided callables to do
+    memory allocation and deallocation.
+
+    The allocation function must accept a single integer argument,
+    representing the number of bytes to allocate, and return
+    an integer representing the pointer to the allocated memory.
+
+    The deallocation function must accept two arguments,
+    an integer representing the pointer to the memory to free,
+    and a second integer representing the number of bytes to free.
+
+    Parameters
+    ----------
+    allocate_func: callable
+    deallocate_func: callable
+    """
     def __init__(
         self,
         allocate_func,

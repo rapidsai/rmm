@@ -719,3 +719,25 @@ def test_dev_buf_circle_ref_dealloc():
     # deallocate `dbuf1` (which needs the MR alive), a segfault occurs.
 
     gc.collect()
+
+
+def test_custom_mr(capsys):
+    base_mr = rmm.mr.CudaMemoryResource()
+
+    def allocate_func(size):
+        print(f"Allocating {size} bytes")
+        return base_mr.allocate(size)
+
+    def deallocate_func(ptr, size):
+        print(f"Deallocating {size} bytes")
+        return base_mr.deallocate(ptr, size)
+
+    rmm.mr.set_current_device_resource(
+        rmm.mr.CallbackMemoryResource(allocate_func, deallocate_func)
+    )
+
+    dbuf = rmm.DeviceBuffer(size=256)
+    del dbuf
+
+    captured = capsys.readouterr()
+    assert captured.out == "Allocating 256 bytes\nDeallocating 256 bytes\n"
