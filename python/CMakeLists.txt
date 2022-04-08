@@ -14,8 +14,11 @@
 
 cmake_minimum_required(VERSION 3.20.1 FATAL_ERROR)
 
-# TODO: Pull this directly from the file written by rapids_cmake_write_version_file.
-set(rmm_version 22.04.00)
+set(rmm_version 22.06.00)
+
+set(CYTHON_FLAGS
+    "--directive binding=True,embedsignature=True,always_allow_keywords=True"
+    CACHE STRING "The directives for Cython compilation.")
 
 project(
   rmm-python
@@ -48,10 +51,6 @@ if(FIND_RMM_CPP)
   find_package(RMM ${rmm_version})
 else()
   set(RMM_FOUND OFF)
-endif()
-
-if(DEFINED CUDA_MALLOC_ASYNC_SUPPORT AND NOT CUDA_MALLOC_ASYNC_SUPPORT)
-  add_compile_definitions("RMM_DISABLE_CUDA_MALLOC_ASYNC")
 endif()
 
 if(NOT RMM_FOUND)

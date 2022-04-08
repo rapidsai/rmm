@@ -252,7 +252,7 @@ inline auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>
 
 inline auto make_cuda_async()
 {
-  if (rmm::mr::cuda_async_memory_resource::is_supported()) {
+  if (rmm::detail::async_alloc::is_supported()) {
     return std::make_shared<rmm::mr::cuda_async_memory_resource>();
   }
   return std::shared_ptr<rmm::mr::cuda_async_memory_resource>{nullptr};

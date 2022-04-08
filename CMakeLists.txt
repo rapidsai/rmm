@@ -14,7 +14,7 @@
 
 cmake_minimum_required(VERSION 3.20.1 FATAL_ERROR)
 
-file(DOWNLOAD https://raw.githubusercontent.com/rapidsai/rapids-cmake/branch-22.04/RAPIDS.cmake
+file(DOWNLOAD https://raw.githubusercontent.com/rapidsai/rapids-cmake/branch-22.06/RAPIDS.cmake
      ${CMAKE_BINARY_DIR}/RAPIDS.cmake)
 include(${CMAKE_BINARY_DIR}/RAPIDS.cmake)
 
@@ -25,7 +25,7 @@ include(rapids-find)
 
 project(
   RMM
-  VERSION 22.04.00
+  VERSION 22.06.00
   LANGUAGES CXX)
 
 # Write the version header
@@ -69,6 +69,7 @@ target_include_directories(rmm INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOUR
 if(CUDA_STATIC_RUNTIME)
   message(STATUS "RMM: Enabling static linking of cudart")
   target_link_libraries(rmm INTERFACE CUDA::cudart_static)
+  target_compile_definitions(rmm INTERFACE RMM_STATIC_CUDART)
 else()
   target_link_libraries(rmm INTERFACE CUDA::cudart)
 endif()

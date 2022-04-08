@@ -42,10 +42,6 @@ function(ConfigureBench BENCH_NAME)
     target_compile_definitions(${BENCH_NAME} PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
   endif()
 
-  if(DEFINED CUDA_MALLOC_ASYNC_SUPPORT AND NOT CUDA_MALLOC_ASYNC_SUPPORT)
-    target_compile_definitions(${TEST_NAME} PUBLIC "RMM_DISABLE_CUDA_MALLOC_ASYNC")
-  endif()
-
   target_compile_options(
     ${BENCH_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Wall -Werror
                          -Wno-error=deprecated-declarations -Wno-unknown-pragmas>)

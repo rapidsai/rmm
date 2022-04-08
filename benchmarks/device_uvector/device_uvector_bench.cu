@@ -15,7 +15,6 @@
  */
 
 #include "../synchronization/synchronization.hpp"
-#include "thrust/detail/raw_pointer_cast.h"
 
 #include <rmm/cuda_stream.hpp>
 #include <rmm/detail/error.hpp>
@@ -29,6 +28,9 @@
 #include <benchmark/benchmark.h>
 
 #include <cuda_runtime_api.h>
+
+#include <thrust/device_vector.h>
+#include <thrust/memory.h>
 
 #include <cstdio>
 #include <type_traits>
