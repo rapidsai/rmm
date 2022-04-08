@@ -21,19 +21,12 @@ conda info
 conda config --show-sources
 conda list --show-channel-urls
 
-# FIX Added to deal with Anancoda SSL verification issues during conda builds
-# conda config --set ssl_verify False
-
 
 ################################################################################
-# BUILD - Conda package builds (LIBRMM)
+# BUILD - Conda package builds (RMM)
 ################################################################################
-
-
-export CONDA_BLD_DIR="$WORKSPACE/.conda-bld"
 FILE_NAME="conda_build_${BRANCH_NAME}-arc-${ARC}.tar"
 
-conda build conda/recipes/librmm --croot ${CONDA_BLD_DIR}
-tar -cvf ${FILE_NAME} ${CONDA_BLD_DIR}
-ls -la $CONDA_BLD_DIR
-aws s3 cp ${FILE_NAME} "s3://rapids-downloads/blobs/"
+aws s3 cp "s3://rapids-downloads/blobs/${FILE_NAME}" conda_cpp.tar
+tar -xvf conda_cpp.tar -C cpp_channel/
+conda build --channel ./cpp_channel/ conda/recipes/rmm

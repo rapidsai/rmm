@@ -284,22 +284,51 @@ pipeline {
         }
       }
 
-      post {
-        always {
-          publishHTML (target : [allowMissing: true,
-            alwaysLinkToLastBuild: false,
-            keepAll: true,
-            reportFiles: 'BuildMetrics.html, ninja.log',
-            reportName: 'Build Metrics Report',
-            reportTitles: 'Build Metrics Details, Ninja Log'])
-        }
-      }
+      // post {
+      //   always {
+      //     publishHTML (target : [allowMissing: true,
+      //       alwaysLinkToLastBuild: false,
+      //       keepAll: true,
+      //       reportFiles: 'BuildMetrics.html, ninja.log',
+      //       reportName: 'Build Metrics Report',
+      //       reportTitles: 'Build Metrics Details, Ninja Log'])
+      //   }
+      // }
     }
 
     stage("Python Matrix Build") {
       steps {
         script {
           parallel generateStage("python_build", {
+            checkout scm
+
+            withCredentials([[
+                $class: 'AmazonWebServicesCredentialsBinding',
+                credentialsId: "aws-s3-gpuci",
+                accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+            ]]) {
+              sh '''#!/bin/bash
+                set -e
+                TMPDIR=${WORKSPACE}/tmp
+
+                unset SUDO_UID SUDO_GID SUDO_USER
+                BUILD_SCRIPT="ci/build_py.sh"
+
+                export NVCC="/usr/local/cuda/bin/nvcc"
+                export CUDAToolkit_ROOT="/usr/local/cuda"
+                export CUDACXX="/usr/local/cuda/bin/nvcc"
+
+                cd "$WORKSPACE"
+                if [ -f $BUILD_SCRIPT ]; then
+                    echo ">>>> Detected in repo script, using '${BUILD_SCRIPT}' for build..."
+                    source ${BUILD_SCRIPT}
+                else
+                    echo ">>>> ERROR: No script '${BUILD_SCRIPT}' detected..."
+                    exit 1
+                fi
+              '''                
+            }
             echo "Hello Python!"
           })
         }
