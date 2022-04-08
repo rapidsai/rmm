@@ -29,11 +29,14 @@ conda list --show-channel-urls
 # BUILD - Conda package builds (LIBRMM)
 ################################################################################
 
+cd $WORKSPACE
+CONDA_BLD_DIR=".conda-bld"
+FILE_NAME="conda_librmm_build_${BRANCH_NAME}-arc-${ARC}.tar"
 
-export CONDA_BLD_DIR="$WORKSPACE/.conda-bld"
-FILE_NAME="conda_build_${BRANCH_NAME}-arc-${ARC}.tar"
-
+# Build
 conda build conda/recipes/librmm --croot ${CONDA_BLD_DIR}
 tar -cvf ${FILE_NAME} ${CONDA_BLD_DIR}
 ls -la $CONDA_BLD_DIR
-aws s3 cp ${FILE_NAME} "s3://rapids-downloads/blobs/"
+
+# Copy artifact to s3
+aws s3 cp ${FILE_NAME} "s3://rapids-downloads/ci/"
