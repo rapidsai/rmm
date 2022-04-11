@@ -102,7 +102,7 @@ class out_of_range : public std::out_of_range {
  * @param[in] _condition Expression that evaluates to true or false
  * @param[in] _expection_type The exception type to throw; must inherit
  *     `std::exception`. If not specified (i.e. if only two macro
- *     arguments are provided), defaults to `cudf::logic_error`
+ *     arguments are provided), defaults to `rmm::logic_error`
  * @param[in] _what  String literal description of why the exception was
  *     thrown, i.e. why `_condition` was expected to be true.
  * @throw `_exception_type` if the condition evaluates to 0 (false).
