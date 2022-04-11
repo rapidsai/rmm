@@ -214,7 +214,6 @@ pipeline {
         buildCudaVarName = '1'
         BUILD_TYPE = 'cpu'
         BUILD_MODE = 'pull-request'
-        PROJECT_FLASH = '1'
         REPO = "rmm"
         PARALLEL_LEVEL = '4'
         CUDA="11.5"
@@ -297,6 +296,9 @@ pipeline {
     }
 
     stage("Python Matrix Build") {
+      environment {
+        CUDA="11.5"
+      }
       steps {
         script {
           parallel generateStage("python_build", {
@@ -338,18 +340,30 @@ pipeline {
     stage("PR/Branch Test Stage") {
       when { not { triggeredBy 'TimerTrigger' } }
       environment {
-          UPLOAD_PKGS = """${sh(
-                returnStdout: true,
-                script: 'echo "$GIT_BRANCH" | grep -iq "pr" && echo "false" || echo "true"'
-            )}"""
+        CUDA="11.5"
+        UPLOAD_PKGS = """${sh(
+              returnStdout: true,
+              script: 'echo "$GIT_BRANCH" | grep -iq "pr" && echo "false" || echo "true"'
+          )}"""
       }
       steps {
         sh "env"
         echo "${currentBuild.buildCauses}"
         script {
           parallel generateStage("branch_pr_test",{
-            echo "hello from rmm repo"
-            echo "Upload packages: \${UPLOAD_PKGS}"
+            checkout scm
+            withCredentials([[
+                $class: 'AmazonWebServicesCredentialsBinding',
+                credentialsId: "aws-s3-gpuci",
+                accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+            ]]) {    
+              echo "hello from rmm repo"
+              echo "Upload packages: \${UPLOAD_PKGS}"
+              sh '''#!/bin/bash
+                source ci/gpu_test.sh
+              '''         
+            }
           })
         }
       }
@@ -363,6 +377,7 @@ pipeline {
         echo "${currentBuild.buildCauses}"
         script {
           parallel generateStage("nightly_test", {
+            checkout scm
             echo "Upload packages: \${UPLOAD_PKGS}"
             echo "Uploading packages..."
           })
