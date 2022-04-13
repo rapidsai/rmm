@@ -486,12 +486,17 @@ cdef class CallbackMemoryResource:
     memory allocation and deallocation.
 
     The allocation function must accept a single integer argument,
-    representing the number of bytes to allocate, and return
-    an integer representing the pointer to the allocated memory.
+    representing the number of bytes to allocate, and return an
+    integer representing the pointer to the allocated memory.
 
-    The deallocation function must accept two arguments,
-    an integer representing the pointer to the memory to free,
-    and a second integer representing the number of bytes to free.
+    The deallocation function must accept two arguments, an integer
+    representing the pointer to the memory to free, and a second
+    integer representing the number of bytes to free.
+
+    ``CallbackMemoryResource`` should really only be used for
+    debugging memory issues, as there is a significant performance
+    penalty associated with using a Python function for each memory
+    allocation and deallocation.
 
     Parameters
     ----------
