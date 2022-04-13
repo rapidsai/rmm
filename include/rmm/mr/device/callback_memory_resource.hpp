@@ -29,9 +29,12 @@ namespace rmm::mr {
  * The signature of the callback function is:
  *   `void* allocate_callback_t(std::size_t bytes, cuda_stream_view stream, void* arg);
  *
- * `bytes` specifies the number of bytes to allocate. `stream` is the CUDA stream
- * on which the memory is used. Additional information to the callback may be passed
- * via `arg`. The function returns the pointer to the allocated memory.
+ * * Returns a pointer to an allocation of at least `bytes` usable immediately on
+ *   `stream`. The stream-ordered behavior requirements are identical to
+ *   `device_memory_resource::allocate`.
+ *
+ * * Additional context to the callback may be passed via `arg` that is provided at
+ *   construction of the `callback_memory_resource`.
  */
 using allocate_callback_t = std::function<void*(std::size_t, cuda_stream_view, void*)>;
 
@@ -41,9 +44,13 @@ using allocate_callback_t = std::function<void*(std::size_t, cuda_stream_view, v
  * The signature of the callback function is:
  *   `void* deallocate_callback_t(void* ptr, std::size_t bytes, cuda_stream_view stream, void* arg);
  *
- * `ptr` specifies the pointer to the memory to be freed, while `bytes` specified
- * the number of bytes to free. `stream` is the CUDA stream on which the memory is used.
- * Additional information to the callback may be passed via `arg`
+ * * Deallocates memory pointed to by `ptr`. `bytes` specifies the size of the allocation
+ *   in bytes, and must equal the value of `bytes` that was passed to the allocate callback
+ *   function. The stream-ordered behavior requirements are identical to
+ *   `device_memory_resource::deallocate`.
+ *
+ * * Additional context to the callback may be passed via `arg` that is provided at
+ *   contruction of the `callback_memory_resource`.
  */
 using deallocate_callback_t = std::function<void(void*, std::size_t, cuda_stream_view, void*)>;
 
