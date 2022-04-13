@@ -51,17 +51,22 @@ TEST(CallbackTest, LoggingTest)
   testing::internal::CaptureStdout();
 
   auto base_mr           = rmm::mr::get_current_device_resource();
-  auto allocate_callback = [&base_mr](std::size_t size, cuda_stream_view stream, void* arg) {
+  auto allocate_callback = [expected_base_mr](std::size_t size, cuda_stream_view stream, void* arg) {
     std::cout << "Allocating " << size << " bytes" << std::endl;
+    auto base_mr = static_cast<device_memory_resource*>(arg);
+    ASSERT_EQ(base_mr, expected_base_mr);
     return base_mr->allocate(size, stream);
   };
-  auto deallocate_callback = [&base_mr](
+  
+  auto deallocate_callback = [expected_base_mr](
                                void* ptr, std::size_t size, cuda_stream_view stream, void* arg) {
     std::cout << "Deallocating " << size << " bytes" << std::endl;
+    auto base_mr = static_cast<device_memory_resource*>(arg);
+    ASSERT_EQ(base_mr, expected_base_mr);
     base_mr->deallocate(ptr, size, stream);
   };
   auto mr =
-    rmm::mr::callback_memory_resource(allocate_callback, deallocate_callback, nullptr, nullptr);
+    rmm::mr::callback_memory_resource(allocate_callback, deallocate_callback, base_mr, base_mr);
   auto ptr = mr.allocate(10_MiB);
   mr.deallocate(ptr, 10_MiB);
 
