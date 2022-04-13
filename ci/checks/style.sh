@@ -19,7 +19,7 @@ ISORT=`isort --check-only python --settings-path=python/setup.cfg `
 ISORT_RETVAL=$?
 
 # Run black and get results/return code
-BLACK=`black --check python`
+BLACK=`black --config python/pyproject.toml --check python`
 BLACK_RETVAL=$?
 
 # Run flake8 and get results/return code

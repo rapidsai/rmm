@@ -30,6 +30,7 @@ function sed_runner() {
 }
 
 sed_runner 's/'"  VERSION .*"'/'"  VERSION ${NEXT_FULL_TAG}"'/g' CMakeLists.txt
+sed_runner 's/'"rmm_version .*)"'/'"rmm_version ${NEXT_FULL_TAG})"'/g' python/CMakeLists.txt
 sed_runner 's/'"branch-.*\/RAPIDS.cmake"'/'"branch-${NEXT_SHORT_TAG}\/RAPIDS.cmake"'/g' CMakeLists.txt
 
 sed_runner 's/'"PROJECT_NUMBER         = .*"'/'"PROJECT_NUMBER         = ${NEXT_SHORT_TAG}"'/g' doxygen/Doxyfile

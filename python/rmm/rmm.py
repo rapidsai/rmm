@@ -13,7 +13,8 @@
 # limitations under the License.
 import ctypes
 
-from numba import cuda
+from cuda.cuda import CUdeviceptr, cuIpcGetMemHandle
+from numba import config, cuda
 from numba.cuda import HostOnlyCUDAMemoryManager, IpcHandle, MemoryPointer
 
 import rmm
@@ -118,14 +119,20 @@ class RMMNumbaManager(HostOnlyCUDAMemoryManager):
         """
         buf = librmm.DeviceBuffer(size=size)
         ctx = self.context
-        ptr = ctypes.c_uint64(int(buf.ptr))
-        finalizer = _make_emm_plugin_finalizer(ptr.value, self.allocations)
+
+        if config.CUDA_USE_NVIDIA_BINDING:
+            ptr = CUdeviceptr(int(buf.ptr))
+        else:
+            # expect ctypes bindings in numba
+            ptr = ctypes.c_uint64(int(buf.ptr))
+
+        finalizer = _make_emm_plugin_finalizer(int(buf.ptr), self.allocations)
 
         # self.allocations is initialized by the parent, HostOnlyCUDAManager,
         # and cleared upon context reset, so although we insert into it here
         # and delete from it in the finalizer, we need not do any other
         # housekeeping elsewhere.
-        self.allocations[ptr.value] = buf
+        self.allocations[int(buf.ptr)] = buf
 
         return MemoryPointer(ctx, ptr, size, finalizer=finalizer)
 
@@ -135,12 +142,19 @@ class RMMNumbaManager(HostOnlyCUDAMemoryManager):
         the RMM memory pool.
         """
         start, end = cuda.cudadrv.driver.device_extents(memory)
-        ipchandle = (ctypes.c_byte * 64)()  # IPC handle is 64 bytes
-        cuda.cudadrv.driver.driver.cuIpcGetMemHandle(
-            ctypes.byref(ipchandle), start,
-        )
+
+        if config.CUDA_USE_NVIDIA_BINDING:
+            _, ipchandle = cuIpcGetMemHandle(start)
+            offset = int(memory.handle) - int(start)
+        else:
+            ipchandle = (ctypes.c_byte * 64)()  # IPC handle is 64 bytes
+            cuda.cudadrv.driver.driver.cuIpcGetMemHandle(
+                ctypes.byref(ipchandle),
+                start,
+            )
+            offset = memory.handle.value - start
         source_info = cuda.current_context().device.get_device_identity()
-        offset = memory.handle.value - start
+
         return IpcHandle(
             memory, ipchandle, memory.size, source_info, offset=offset
         )
