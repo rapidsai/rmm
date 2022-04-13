@@ -71,9 +71,11 @@ class callback_memory_resource final : public device_memory_resource {
    * @param allocate_callback The callback function used for allocation
    * @param deallocate_callback The callback function used for deallocation
    * @param allocate_callback_arg Additional context passed to `allocate_callback`.
-   * It is the caller's responsibility to maintain the lifetime of the pointed-to data.
+   * It is the caller's responsibility to maintain the lifetime of the pointed-to data
+   * for the duration of the lifetime of the `callback_memory_resource`.
    * @param deallocate_callback_arg Additional context passed to `deallocate_callback`.
-   * It is the caller's responsibility to maintain the lifetime of the pointed-to data.
+   * It is the caller's responsibility to maintain the lifetime of the pointed-to data
+   * for the duration of the lifetime of the `callback_memory_resource`.
    */
   callback_memory_resource(allocate_callback_t allocate_callback,
                            deallocate_callback_t deallocate_callback,
