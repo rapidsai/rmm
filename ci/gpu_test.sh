@@ -10,9 +10,10 @@ gpuci_logger "Activate conda env"
 . /opt/conda/etc/profile.d/conda.sh
 conda activate rapids
 
+echo "CUDA version for mamba install: ${CUDA}"
 # Install build env
 gpuci_mamba_retry install -y \
-                  "cudatoolkit=11.0" \
+                  "cudatoolkit=${CUDA}" \
                   "rapids-build-env=22.06.*"
 
 # https://docs.rapids.ai/maintainers/depmgmt/

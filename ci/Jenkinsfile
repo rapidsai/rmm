@@ -12,202 +12,6 @@ pipeline {
         sh "env"
         echo "${currentBuild.buildCauses}"
       }
-
-      // parallel {
-      //   stage('Check Size') {
-      //     agent { label "runner" }
-      //     environment {
-      //       GHTK = credentials('GHTK')
-      //       BUILD_TYPE = 'size'
-      //       BUILD_MODE = 'pull-request'
-      //       COMMIT_HASH = "${env.GIT_COMMIT}"
-      //       TARGET_BRANCH = "${env.CHANGE_TARGET}"
-      //       REPORT_HASH = "${env.GIT_COMMIT}" // TODO: figure out
-      //     }
-      //     withRemoteDocker( //TODO: replace
-      //       debug: false, 
-      //       main: <object of type com.gpuopenanalytics.jenkins.remotedocker.job.DockerImageConfiguration>, 
-      //       sideContainers: [], 
-      //       workspaceOverride: '/workspace') {
-      //         // some block
-      //     }
-
-      //     steps {
-      //       cleanWs (
-      //         cleanWhenAborted: false, 
-      //         cleanWhenFailure: false, 
-      //         cleanWhenSuccess: false, 
-      //         cleanWhenUnstable: false, 
-      //         deleteDirs: true, 
-      //         externalDelete: 'sudo rm -rf %s'
-      //       )
-
-      //       sh """#!/bin/bash
-      //         set -e
-      //         set +x
-      //         curl -s -XPOST -H "Authorization: token \$GHTK" "https://api.github.com/repos/rapidsai/rmm/statuses/${REPORT_HASH}" -d "{
-      //           \\"state\\": \\"pending\\",
-      //           \\"context\\": \\"gpuci/rmm/check/style\\",
-      //           \\"target_url\\": \\"\${BUILD_URL}console\\",
-      //           \\"description\\": \\"Running\\"
-      //         }" 2>&1 > /dev/null
-      //         unset GHTK
-      //       """
-
-      //       sh '''#!/bin/bash
-      //         set -e
-
-      //         DIFF_FILES=$(mktemp)
-      //         LARGE_FILES=$(mktemp)
-      //         FILESIZE_LIMIT=5242880
-      //         RETVAL=0
-
-      //         # Activate rapids environment for Git LFS access
-      //         . /opt/conda/etc/profile.d/conda.sh
-      //         conda activate rapids
-
-      //         # Checkout target branch
-      //         git checkout --force $TARGET_BRANCH
-      //         # Switch back to PR branch
-      //         git checkout --force current-pr-branch
-      //         # Checkout newest commit of PR branch
-      //         git checkout -fq $COMMIT_HASH;
-
-      //         # Get list of files changed in current PR
-      //         git diff --name-only $TARGET_BRANCH..current-pr-branch > ${DIFF_FILES}
-
-      //         echo '### Files modified in current PR'
-      //         while read FILE; do 
-      //             echo 'Size check ' $FILE
-      //             if [ -f "$WORKSPACE/$FILE" ]; then
-      //                 if [ `du -b "$WORKSPACE/$FILE" | awk '{print $1}'` -gt $FILESIZE_LIMIT ]; then 
-      //                     RETVAL=1
-      //                     echo $FILE >> ${LARGE_FILES}
-      //                 fi
-      //             fi
-      //         done < ${DIFF_FILES}
-
-      //         if [ $RETVAL == 1 ]; then
-      //             echo "### Files exceeding the $FILESIZE_LIMIT size limit.  Please see documentation for" 
-      //             echo "### large file handling:  https://docs.rapids.ai/resources/git/#large-files-and-git"
-      //             cat  ${LARGE_FILES}  
-      //             echo "###"
-      //             else
-      //             echo "### All files under the $FILESIZE_LIMIT size limit"
-      //         fi
-
-      //         rm -f ${DIFF_FILES} ${LARGE_FILES}
-      //         exit $RETVAL           
-      //       '''
-      //     }
-
-
-      //     post {
-      //       always {
-      //         step([
-      //             $class: "GitHubCommitStatusSetter",
-      //             reposSource: [$class: "ManuallyEnteredRepositorySource", url: "https://github.com/rapids-ai/rmm"],
-      //             contextSource: [$class: "ManuallyEnteredCommitContextSource", context: "gpuci/rmm/check/size"],
-      //             errorHandlers: [[$class: "ChangingBuildStatusErrorHandler", result: "UNSTABLE"]],
-      //             statusResultSource: [ 
-      //               $class: "ConditionalStatusResultSource", 
-      //               results: [
-      //                 [$class: 'BetterThanOrEqualBuildResult', result: 'SUCCESS', state: 'SUCCESS', message: build.description],
-      //                 [$class: 'BetterThanOrEqualBuildResult', result: 'FAILURE', state: 'FAILURE', message: build.description],
-      //                 [$class: 'AnyBuildResult', state: 'FAILURE', message: 'Loophole']
-      //               ]
-      //             ]
-      //         ]);
-
-      //         cleanWs (
-      //           cleanWhenAborted: true, 
-      //           cleanWhenFailure: true, 
-      //           cleanWhenNotBuilt: true,
-      //           cleanWhenSuccess: true, 
-      //           cleanWhenUnstable: true, 
-      //           deleteDirs: true,
-      //           disableDeferredWipeout: true,
-      //         )
-      //       }
-      //     }
-      //   }
-
-      //   stage('Check Style') {
-      //     agent { label "runner" }
-      //     environment {
-      //       GHTK = credentials('GHTK')
-      //       BUILD_TYPE = 'style'
-      //       BUILD_MODE = 'pull-request'
-      //     }
-      //     withRemoteDocker( // TODO: update
-      //       debug: false, 
-      //       main: <object of type com.gpuopenanalytics.jenkins.remotedocker.job.DockerImageConfiguration>, 
-      //       sideContainers: [], 
-      //       workspaceOverride: '/workspace') {
-      //         // some block
-      //     }
-
-      //     steps {
-      //       cleanWs (
-      //         cleanWhenAborted: false, 
-      //         cleanWhenFailure: false, 
-      //         cleanWhenSuccess: false, 
-      //         cleanWhenUnstable: false, 
-      //         deleteDirs: true, 
-      //         externalDelete: 'sudo rm -rf %s'
-      //       )
-
-      //       sh '''#!/bin/bash
-      //         set -e
-      //         TMPDIR="\${WORKSPACE}/tmp"
-
-      //         BUILD_SCRIPT="ci/checks/style.sh"
-      //         cd "$WORKSPACE"
-
-      //         hostname
-      //         env > env.list
-      //         if [ -f $BUILD_SCRIPT ]; then
-      //             echo ">>>> Detected in repo script, using '${BUILD_SCRIPT}' for build..."
-      //             source ${BUILD_SCRIPT}
-      //             exit $?
-      //         else
-      //         echo ">>>> ERROR: No script '${BUILD_SCRIPT}' detected..."
-      //             exit 1
-      //         fi
-      //       '''
-      //     }
-
-
-      //     post {
-      //       always {
-      //         step([
-      //             $class: "GitHubCommitStatusSetter",
-      //             reposSource: [$class: "ManuallyEnteredRepositorySource", url: "https://github.com/rapids-ai/rmm"],
-      //             contextSource: [$class: "ManuallyEnteredCommitContextSource", context: "gpuci/rmm/check/style"],
-      //             errorHandlers: [[$class: "ChangingBuildStatusErrorHandler", result: "UNSTABLE"]],
-      //             statusResultSource: [ 
-      //               $class: "ConditionalStatusResultSource", 
-      //               results: [
-      //                 [$class: 'BetterThanOrEqualBuildResult', result: 'SUCCESS', state: 'SUCCESS', message: build.description],
-      //                 [$class: 'BetterThanOrEqualBuildResult', result: 'FAILURE', state: 'FAILURE', message: build.description],
-      //                 [$class: 'AnyBuildResult', state: 'FAILURE', message: 'Loophole']
-      //               ]
-      //             ]
-      //         ]);
-
-      //         cleanWs (
-      //           cleanWhenAborted: true, 
-      //           cleanWhenFailure: true, 
-      //           cleanWhenNotBuilt: true,
-      //           cleanWhenSuccess: true, 
-      //           cleanWhenUnstable: true, 
-      //           deleteDirs: true,
-      //           disableDeferredWipeout: true,
-      //         )
-      //       }
-      //     }
-      //   }
-      // }
     }
     stage("C++ Matrix Build") {
       environment {
@@ -217,16 +21,10 @@ pipeline {
         REPO = "rmm"
         PARALLEL_LEVEL = '4'
         CUDA="11.5"
-        // GHTK = credentials('GHTK')
       }
       steps {
         sh "echo starting C++ matrix builds"
         sh 'printenv'
-        // timeout(time: 2400, unit: 'SECONDS') {
-        //   catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-        //     sh "exit 1"
-        //   }           
-        // }
 
         script {
           parallel generateStage("cuda_build", {
@@ -277,17 +75,6 @@ pipeline {
           })
         }
       }
-
-      // post {
-      //   always {
-      //     publishHTML (target : [allowMissing: true,
-      //       alwaysLinkToLastBuild: false,
-      //       keepAll: true,
-      //       reportFiles: 'BuildMetrics.html, ninja.log',
-      //       reportName: 'Build Metrics Report',
-      //       reportTitles: 'Build Metrics Details, Ninja Log'])
-      //   }
-      // }
     }
 
     stage("Python Matrix Build") {
