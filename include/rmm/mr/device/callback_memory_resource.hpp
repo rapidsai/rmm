@@ -42,7 +42,7 @@ using allocate_callback_t = std::function<void*(std::size_t, cuda_stream_view, v
  * @brief Callback function type used by callback_memory_resource for deallocation.
  *
  * The signature of the callback function is:
- *   `void* deallocate_callback_t(void* ptr, std::size_t bytes, cuda_stream_view stream, void* arg);
+ *   `void deallocate_callback_t(void* ptr, std::size_t bytes, cuda_stream_view stream, void* arg);
  *
  * * Deallocates memory pointed to by `ptr`. `bytes` specifies the size of the allocation
  *   in bytes, and must equal the value of `bytes` that was passed to the allocate callback
