@@ -467,7 +467,7 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
 cdef void* _allocate_callback_wrapper(
     size_t nbytes,
     cuda_stream_view stream,
-    void *ctx
+    void* ctx
 ) with gil:
     return <void*><uintptr_t>((<object>ctx)(nbytes))
 
@@ -475,7 +475,7 @@ cdef void _deallocate_callback_wrapper(
     void* ptr,
     size_t nbytes,
     cuda_stream_view stream,
-    void *ctx
+    void* ctx
 ) with gil:
     (<object>ctx)(<uintptr_t>(ptr), nbytes)
 

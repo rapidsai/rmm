@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, NVIDIA CORPORATION.
+ * Copyright (c) 2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,13 @@
  */
 
 #include "../../byte_literals.hpp"
-#include "rmm/cuda_stream_view.hpp"
-#include "rmm/mr/device/device_memory_resource.hpp"
-
-#include <cstddef>
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/mr/device/callback_memory_resource.hpp>
+#include <rmm/mr/device/device_memory_resource.hpp>
+
+#include <cstddef>
 
 #include <spdlog/fmt/ostr.h>
 
