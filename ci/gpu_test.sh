@@ -35,11 +35,11 @@ PY_FILE_NAME="conda_rmm_build_${BRANCH_NAME}-arc-${ARC}.tar"
 
 aws s3 cp "s3://rapids-downloads/ci/${CPP_FILE_NAME}" conda_cpp.tar
 aws s3 cp "s3://rapids-downloads/ci/${PY_FILE_NAME}" conda_py.tar
+ls -la
+mkdir cpp__artifact && tar -xvf conda_cpp.tar -C cpp__artifact/
+mkdir py__artifact && tar -xvf conda_py.tar -C py__artifact/
 
-mkdir cpp_artifact && tar -xvf conda_cpp.tar -C cpp_artifact/
-mkdir py_artifact && tar -xvf conda_py.tar -C py_artifact/
-
-gpuci_mamba_retry install -c cpp_artifact/.conda-bld -c py_artifact/.py-conda-bld rmm librmm
+gpuci_mamba_retry install -c ./cpp__artifact/.conda-bld -c ./py__artifact/.py-conda-bld rmm librmm librmm-tests
 
 TESTRESULTS_DIR=${WORKSPACE}/test-results
 mkdir -p ${TESTRESULTS_DIR}

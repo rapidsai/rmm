@@ -222,11 +222,6 @@ pipeline {
       steps {
         sh "echo starting C++ matrix builds"
         sh 'printenv'
-        // cleanWs (
-        //   deleteDirs: true, 
-        //   externalDelete: 'sudo rm -rf %s'
-        // )
-
         // timeout(time: 2400, unit: 'SECONDS') {
         //   catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
         //     sh "exit 1"
@@ -302,6 +297,10 @@ pipeline {
       steps {
         script {
           parallel generateStage("python_build", {
+            cleanWs (
+              deleteDirs: true,
+              externalDelete: 'sudo rm -rf %s'
+            )
             checkout scm
 
             withCredentials([[
@@ -351,6 +350,10 @@ pipeline {
         echo "${currentBuild.buildCauses}"
         script {
           parallel generateStage("branch_pr_test",{
+            cleanWs (
+              deleteDirs: true,
+              externalDelete: 'sudo rm -rf %s'
+            )
             checkout scm
             withCredentials([[
                 $class: 'AmazonWebServicesCredentialsBinding',
@@ -377,6 +380,10 @@ pipeline {
         echo "${currentBuild.buildCauses}"
         script {
           parallel generateStage("nightly_test", {
+            cleanWs (
+              deleteDirs: true,
+              externalDelete: 'sudo rm -rf %s'
+            )
             checkout scm
             echo "Upload packages: \${UPLOAD_PKGS}"
             echo "Uploading packages..."
