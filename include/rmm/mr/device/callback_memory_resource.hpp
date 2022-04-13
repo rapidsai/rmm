@@ -66,8 +66,6 @@ class callback_memory_resource final : public device_memory_resource {
    * Constructs a callback memory resource that uses the user-provided callbacks
    * `allocate_callback` for allocation and `deallocate_callback` for deallocation.
    *
-   * @throws Nothing.
-   *
    * @param allocate_callback The callback function used for allocation
    * @param deallocate_callback The callback function used for deallocation
    * @param allocate_callback_arg Additional context passed to `allocate_callback`.
