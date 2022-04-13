@@ -50,7 +50,7 @@ using allocate_callback_t = std::function<void*(std::size_t, cuda_stream_view, v
  *   `device_memory_resource::deallocate`.
  *
  * * Additional context to the callback may be passed via `arg` that is provided at
- *   contruction of the `callback_memory_resource`.
+ *   construction of the `callback_memory_resource`.
  */
 using deallocate_callback_t = std::function<void(void*, std::size_t, cuda_stream_view, void*)>;
 
