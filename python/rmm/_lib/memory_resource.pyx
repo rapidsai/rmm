@@ -480,7 +480,7 @@ cdef void _deallocate_callback_wrapper(
     (<object>ctx)(<uintptr_t>(ptr), nbytes)
 
 
-cdef class CallbackMemoryResource:
+cdef class CallbackMemoryResource(DeviceMemoryResource):
     """
     A memory resource that uses the user-provided callables to do
     memory allocation and deallocation.
