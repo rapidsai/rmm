@@ -51,8 +51,10 @@ using allocate_callback_t = std::function<void*(std::size_t, cuda_stream_view, v
  *   function. The stream-ordered behavior requirements are identical to
  *   `device_memory_resource::deallocate`.
  *
- * * Additional context to the callback may be passed via `arg` that is provided at
- *   construction of the `callback_memory_resource`.
+ * * This signature is compatible with `do_deallocate` but adds the extra function
+ *   parameter `arg`. The `arg` is provided to the constructor of the
+ *   `callback_memory_resource` and will be forwarded along to every invocation
+ *   of the callback function.
  */
 using deallocate_callback_t = std::function<void(void*, std::size_t, cuda_stream_view, void*)>;
 
