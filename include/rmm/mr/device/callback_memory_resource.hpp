@@ -81,7 +81,7 @@ class callback_memory_resource final : public device_memory_resource {
    */
   callback_memory_resource(allocate_callback_t allocate_callback,
                            deallocate_callback_t deallocate_callback,
-                           void* allocate_callback_arg = nullptr,
+                           void* allocate_callback_arg   = nullptr,
                            void* deallocate_callback_arg = nullptr) noexcept
     : allocate_callback_(allocate_callback),
       deallocate_callback_(deallocate_callback),

@@ -15,6 +15,7 @@
  */
 
 #include "../../byte_literals.hpp"
+#include "../../mock_resource.hpp"
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
@@ -25,14 +26,20 @@
 
 #include <spdlog/fmt/ostr.h>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 namespace rmm::test {
 namespace {
 
-TEST(CallbackTest, PassThroughTest)
+using ::testing::_;
+
+TEST(CallbackTest, TestCallbacksAreInvoked)
 {
-  auto base_mr           = rmm::mr::get_current_device_resource();
+  auto base_mr = mock_resource();
+  EXPECT_CALL(base_mr, do_allocate(10_MiB, cuda_stream_view{})).Times(1);
+  EXPECT_CALL(base_mr, do_deallocate(_, 10_MiB, cuda_stream_view{})).Times(1);
+
   auto allocate_callback = [](std::size_t size, cuda_stream_view stream, void* arg) {
     auto base_mr = static_cast<rmm::mr::device_memory_resource*>(arg);
     return base_mr->allocate(size, stream);
@@ -42,9 +49,8 @@ TEST(CallbackTest, PassThroughTest)
     base_mr->deallocate(ptr, size, stream);
   };
   auto mr =
-    rmm::mr::callback_memory_resource(allocate_callback, deallocate_callback, base_mr, base_mr);
+    rmm::mr::callback_memory_resource(allocate_callback, deallocate_callback, &base_mr, &base_mr);
   auto ptr = mr.allocate(10_MiB);
-  ASSERT_NE(nullptr, ptr);
   mr.deallocate(ptr, 10_MiB);
 }
 
