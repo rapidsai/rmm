@@ -2,9 +2,43 @@
 
 Please see https://github.com/rapidsai/rmm/releases/tag/v22.06.00a for the latest changes to this development branch.
 
-# RMM 22.04.00 (Date TBD)
+# RMM 22.04.00 (6 Apr 2022)
 
-Please see https://github.com/rapidsai/rmm/releases/tag/v22.04.00a for the latest changes to this development branch.
+## 🐛 Bug Fixes
+
+- Add cuda-python dependency to pyproject.toml ([#994](https://github.com/rapidsai/rmm/pull/994)) [@sevagh](https://github.com/sevagh)
+- Disable opportunistic reuse in async mr when cuda driver &lt; 11.5 ([#993](https://github.com/rapidsai/rmm/pull/993)) [@rongou](https://github.com/rongou)
+- Use CUDA 11.2+ features via dlopen ([#990](https://github.com/rapidsai/rmm/pull/990)) [@robertmaynard](https://github.com/robertmaynard)
+- Skip async mr tests when cuda runtime/driver &lt; 11.2 ([#986](https://github.com/rapidsai/rmm/pull/986)) [@rongou](https://github.com/rongou)
+- Fix warning/error in debug assertion in device_uvector.hpp ([#979](https://github.com/rapidsai/rmm/pull/979)) [@harrism](https://github.com/harrism)
+- Fix signed/unsigned comparison warning ([#970](https://github.com/rapidsai/rmm/pull/970)) [@jlowe](https://github.com/jlowe)
+- Fix comparison of async MRs with different underlying pools. ([#965](https://github.com/rapidsai/rmm/pull/965)) [@harrism](https://github.com/harrism)
+
+## 🚀 New Features
+
+- Use scikit-build for the build process ([#976](https://github.com/rapidsai/rmm/pull/976)) [@vyasr](https://github.com/vyasr)
+
+## 🛠️ Improvements
+
+- Temporarily disable new `ops-bot` functionality ([#1005](https://github.com/rapidsai/rmm/pull/1005)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Rename `librmm_tests` to `librmm-tests` ([#1000](https://github.com/rapidsai/rmm/pull/1000)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Update `librmm` `conda` recipe ([#997](https://github.com/rapidsai/rmm/pull/997)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Remove `no_cma`/`has_cma` variants ([#996](https://github.com/rapidsai/rmm/pull/996)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Fix free-before-alloc in multithreaded test ([#992](https://github.com/rapidsai/rmm/pull/992)) [@aladram](https://github.com/aladram)
+- Add `.github/ops-bot.yaml` config file ([#991](https://github.com/rapidsai/rmm/pull/991)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Log allocation failures ([#988](https://github.com/rapidsai/rmm/pull/988)) [@rongou](https://github.com/rongou)
+- Update `librmm` `conda` outputs ([#983](https://github.com/rapidsai/rmm/pull/983)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Bump Python requirements in `setup.cfg` and `rmm_dev.yml` ([#982](https://github.com/rapidsai/rmm/pull/982)) [@shwina](https://github.com/shwina)
+- New benchmark compares concurrent throughput of device_vector and device_uvector ([#981](https://github.com/rapidsai/rmm/pull/981)) [@harrism](https://github.com/harrism)
+- Update `librmm` recipe to output `librmm_tests` package ([#978](https://github.com/rapidsai/rmm/pull/978)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Update upload.sh to use `--croot` ([#975](https://github.com/rapidsai/rmm/pull/975)) [@AyodeAwe](https://github.com/AyodeAwe)
+- Fix `conda` uploads ([#974](https://github.com/rapidsai/rmm/pull/974)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Add CMake `install` rules for tests ([#969](https://github.com/rapidsai/rmm/pull/969)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Add device_buffer::ssize() and device_uvector::ssize() ([#966](https://github.com/rapidsai/rmm/pull/966)) [@harrism](https://github.com/harrism)
+- Added yml file for cudatoolkit version 11.6 ([#964](https://github.com/rapidsai/rmm/pull/964)) [@alhad-deshpande](https://github.com/alhad-deshpande)
+- Replace `ccache` with `sccache` ([#963](https://github.com/rapidsai/rmm/pull/963)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Make `pool_memory_resource::pool_size()` public ([#962](https://github.com/rapidsai/rmm/pull/962)) [@shwina](https://github.com/shwina)
+- Allow construction of cuda_async_memory_resource from existing pool ([#889](https://github.com/rapidsai/rmm/pull/889)) [@fkallen](https://github.com/fkallen)
 
 # RMM 22.02.00 (2 Feb 2022)
 
