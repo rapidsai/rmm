@@ -32,7 +32,7 @@ conda list --show-channel-urls
 
 
 CPP_FILE_NAME="conda_librmm_build_${BRANCH_NAME}-arc-${ARC}.tar"
-PY_FILE_NAME="conda_rmm_build_${BRANCH_NAME}-arc-${ARC}.tar"
+PY_FILE_NAME="conda_rmm_build_${BRANCH_NAME}-arc-${ARC}-py-${PY_VER}.tar"
 
 aws s3 cp "s3://rapids-downloads/ci/${CPP_FILE_NAME}" conda_cpp.tar
 aws s3 cp "s3://rapids-downloads/ci/${PY_FILE_NAME}" conda_py.tar
