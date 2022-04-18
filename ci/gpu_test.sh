@@ -11,14 +11,6 @@ gpuci_logger "Activate conda env"
 conda activate rapids
 
 echo "CUDA version for mamba install: ${CUDA}"
-# Install build env
-gpuci_mamba_retry install -y \
-                  "cudatoolkit=${CUDA}" \
-                  "rapids-build-env=22.06.*"
-
-# https://docs.rapids.ai/maintainers/depmgmt/
-# conda remove --force rapids-build-env
-# gpuci_mamba_retry install "your-pkg=1.0.0"
 
 gpuci_logger "Check versions"
 python --version

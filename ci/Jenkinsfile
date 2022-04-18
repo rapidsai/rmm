@@ -37,38 +37,9 @@ pipeline {
                 secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
             ]]) {
               sh '''#!/bin/bash
-                set -e
-                TMPDIR=${WORKSPACE}/tmp
-
-                unset SUDO_UID SUDO_GID SUDO_USER
-                BUILD_SCRIPT="ci/build_cpp.sh"
-
-                export NVCC="/usr/local/cuda/bin/nvcc"
-                export CUDAToolkit_ROOT="/usr/local/cuda"
-                export CUDACXX="/usr/local/cuda/bin/nvcc"
-
-                cd "$WORKSPACE"
-
-                #Override nvidia-smi to exit on 0 and 14 as succesful
-                #14 is infoROM corrupted
-                function nvidia-smi() {
-                    /usr/bin/nvidia-smi $@
-                    EXIT_VAL=$?
-                    if [[ $EXIT_VAL == 0 || $EXIT_VAL == 14 ]]; then
-                        return 0
-                    fi
-                    exit $EXIT_VAL
-                }
-
-                cd "$WORKSPACE"
-                if [ -f $BUILD_SCRIPT ]; then
-                    echo ">>>> Detected in repo script, using '${BUILD_SCRIPT}' for build..."
-                    source ${BUILD_SCRIPT}
-                else
-                    echo ">>>> ERROR: No script '${BUILD_SCRIPT}' detected..."
-                    exit 1
-                fi
-              '''                
+                chmod +x ./ci/build_cpp.sh
+                ./ci/build_cpp.sh
+              '''
             }
 
             echo "Hello CUDA!"
@@ -97,25 +68,9 @@ pipeline {
                 secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
             ]]) {
               sh '''#!/bin/bash
-                set -e
-                TMPDIR=${WORKSPACE}/tmp
-
-                unset SUDO_UID SUDO_GID SUDO_USER
-                BUILD_SCRIPT="ci/build_py.sh"
-
-                export NVCC="/usr/local/cuda/bin/nvcc"
-                export CUDAToolkit_ROOT="/usr/local/cuda"
-                export CUDACXX="/usr/local/cuda/bin/nvcc"
-
-                cd "$WORKSPACE"
-                if [ -f $BUILD_SCRIPT ]; then
-                    echo ">>>> Detected in repo script, using '${BUILD_SCRIPT}' for build..."
-                    source ${BUILD_SCRIPT}
-                else
-                    echo ">>>> ERROR: No script '${BUILD_SCRIPT}' detected..."
-                    exit 1
-                fi
-              '''                
+                chmod +x ./ci/build_py.sh
+                ./ci/build_py.sh
+              '''
             }
             echo "Hello Python!"
           })
