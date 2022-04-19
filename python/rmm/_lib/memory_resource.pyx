@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2021, NVIDIA CORPORATION.
+# Copyright (c) 2020-2022, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ import warnings
 from collections import defaultdict
 
 from cython.operator cimport dereference as deref
-from libc.stdint cimport int8_t, int64_t
+from libc.stdint cimport int8_t, int64_t, uintptr_t
 from libcpp cimport bool
 from libcpp.cast cimport dynamic_cast
 from libcpp.memory cimport make_shared, make_unique, shared_ptr, unique_ptr
@@ -26,6 +26,7 @@ from libcpp.string cimport string
 from cuda.cudart import cudaError_t
 
 from rmm._cuda.gpu import CUDARuntimeError, getDevice, setDevice
+from rmm._lib.cuda_stream_view cimport cuda_stream_view
 
 
 # NOTE: Keep extern declarations in .pyx file as much as possible to avoid
@@ -75,6 +76,19 @@ cdef extern from "rmm/mr/device/fixed_size_memory_resource.hpp" \
             Upstream* upstream_mr,
             size_t block_size,
             size_t block_to_preallocate) except +
+
+cdef extern from "rmm/mr/device/callback_memory_resource.hpp" \
+        namespace "rmm::mr" nogil:
+    ctypedef void* (*allocate_callback_t)(size_t, void*)
+    ctypedef void (*deallocate_callback_t)(void*, size_t, void*)
+
+    cdef cppclass callback_memory_resource(device_memory_resource):
+        callback_memory_resource(
+            allocate_callback_t allocate_callback,
+            deallocate_callback_t deallocate_callback,
+            void* allocate_callback_arg,
+            void* deallocate_callback_arg
+        ) except +
 
 cdef extern from "rmm/mr/device/binning_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
@@ -167,6 +181,12 @@ cdef class DeviceMemoryResource:
 
     cdef device_memory_resource* get_mr(self):
         return self.c_obj.get()
+
+    def allocate(self, size_t nbytes):
+        return <uintptr_t>self.c_obj.get().allocate(nbytes)
+
+    def deallocate(self, uintptr_t ptr, size_t nbytes):
+        self.c_obj.get().deallocate(<void*>(ptr), nbytes)
 
 
 cdef class UpstreamResourceAdaptor(DeviceMemoryResource):
@@ -442,6 +462,80 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
                 self.c_obj.get()))[0].add_bin(
                     allocation_size,
                     bin_resource.get_mr())
+
+
+cdef void* _allocate_callback_wrapper(
+    size_t nbytes,
+    cuda_stream_view stream,
+    void* ctx
+) with gil:
+    return <void*><uintptr_t>((<object>ctx)(nbytes))
+
+cdef void _deallocate_callback_wrapper(
+    void* ptr,
+    size_t nbytes,
+    cuda_stream_view stream,
+    void* ctx
+) with gil:
+    (<object>ctx)(<uintptr_t>(ptr), nbytes)
+
+
+cdef class CallbackMemoryResource(DeviceMemoryResource):
+    """
+    A memory resource that uses the user-provided callables to do
+    memory allocation and deallocation.
+
+    ``CallbackMemoryResource`` should really only be used for
+    debugging memory issues, as there is a significant performance
+    penalty associated with using a Python function for each memory
+    allocation and deallocation.
+
+    Parameters
+    ----------
+    allocate_func: callable
+        The allocation function must accept a single integer argument,
+        representing the number of bytes to allocate, and return an
+        integer representing the pointer to the allocated memory.
+    deallocate_func: callable
+        The deallocation function must accept two arguments, an integer
+        representing the pointer to the memory to free, and a second
+        integer representing the number of bytes to free.
+
+    Examples
+    -------
+    >>> import rmm
+    >>> base_mr = rmm.mr.CudaMemoryResource()
+    >>> def allocate_func(size):
+    ...     print(f"Allocating {size} bytes")
+    ...     return base_mr.allocate(size)
+    ...
+    >>> def deallocate_func(ptr, size):
+    ...     print(f"Deallocating {size} bytes")
+    ...     return base_mr.deallocate(ptr, size)
+    ...
+    >>> rmm.mr.set_current_device_resource(
+        rmm.mr.CallbackMemoryResource(allocate_func, deallocate_func)
+    )
+    >>> dbuf = rmm.DeviceBuffer(size=256)
+    Allocating 256 bytes
+    >>> del dbuf
+    Deallocating 256 bytes
+    """
+    def __init__(
+        self,
+        allocate_func,
+        deallocate_func,
+    ):
+        self._allocate_func = allocate_func
+        self._deallocate_func = deallocate_func
+        self.c_obj.reset(
+            new callback_memory_resource(
+                <allocate_callback_t>(_allocate_callback_wrapper),
+                <deallocate_callback_t>(_deallocate_callback_wrapper),
+                <void*>(allocate_func),
+                <void*>(deallocate_func)
+            )
+        )
 
 
 def _append_id(filename, id):
