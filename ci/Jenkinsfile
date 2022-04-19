@@ -3,29 +3,22 @@
 pipeline {
   agent any
   options {
-    buildDiscarder(logRotator(numToKeepStr: '1')) 
+    buildDiscarder(logRotator(numToKeepStr: '10'))
     ansiColor('xterm')
   }
   stages {
-    stage("Build Stage") { 
+    stage("Style Checks") {
       steps {
         sh "env"
-        echo "${currentBuild.buildCauses}"
       }
     }
     stage("C++ Matrix Build") {
       environment {
-        buildCudaVarName = '1'
-        BUILD_TYPE = 'cpu'
         BUILD_MODE = 'pull-request'
-        REPO = "rmm"
         PARALLEL_LEVEL = '4'
         CUDA="11.5"
       }
       steps {
-        sh "echo starting C++ matrix builds"
-        sh 'printenv'
-
         script {
           parallel generateStage("cuda_build", {
             checkout scm
@@ -36,13 +29,8 @@ pipeline {
                 accessKeyVariable: 'AWS_ACCESS_KEY_ID',
                 secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
             ]]) {
-              sh '''#!/bin/bash
-                chmod +x ./ci/build_cpp.sh
-                ./ci/build_cpp.sh
-              '''
+              sh "./ci/build_cpp.sh"
             }
-
-            echo "Hello CUDA!"
           })
         }
       }
@@ -55,10 +43,6 @@ pipeline {
       steps {
         script {
           parallel generateStage("python_build", {
-            cleanWs (
-              deleteDirs: true,
-              externalDelete: 'sudo rm -rf %s'
-            )
             checkout scm
 
             withCredentials([[
@@ -67,12 +51,8 @@ pipeline {
                 accessKeyVariable: 'AWS_ACCESS_KEY_ID',
                 secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
             ]]) {
-              sh '''#!/bin/bash
-                chmod +x ./ci/build_py.sh
-                ./ci/build_py.sh
-              '''
+              sh "./ci/build_py.sh"
             }
-            echo "Hello Python!"
           })
         }
       }
@@ -92,22 +72,14 @@ pipeline {
         echo "${currentBuild.buildCauses}"
         script {
           parallel generateStage("branch_pr_test",{
-            cleanWs (
-              deleteDirs: true,
-              externalDelete: 'sudo rm -rf %s'
-            )
             checkout scm
             withCredentials([[
                 $class: 'AmazonWebServicesCredentialsBinding',
                 credentialsId: "aws-s3-gpuci",
                 accessKeyVariable: 'AWS_ACCESS_KEY_ID',
                 secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
-            ]]) {    
-              echo "hello from rmm repo"
-              echo "Upload packages: \${UPLOAD_PKGS}"
-              sh '''#!/bin/bash
-                source ci/gpu_test.sh
-              '''         
+            ]]) {
+              sh "./ci/gpu_test.sh"
             }
           })
         }
@@ -122,13 +94,8 @@ pipeline {
         echo "${currentBuild.buildCauses}"
         script {
           parallel generateStage("nightly_test", {
-            cleanWs (
-              deleteDirs: true,
-              externalDelete: 'sudo rm -rf %s'
-            )
             checkout scm
             echo "Upload packages: \${UPLOAD_PKGS}"
-            echo "Uploading packages..."
           })
         }
       }

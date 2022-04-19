@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 ################################################################################
 # SETUP - Check environment
@@ -21,7 +22,6 @@ conda info
 conda config --show-sources
 conda list --show-channel-urls
 
-
 ################################################################################
 # BUILD - Conda package builds (RMM)
 ################################################################################
@@ -34,8 +34,6 @@ CONDA_BLD_DIR=".py-conda-bld"
 aws s3 cp "s3://rapids-downloads/ci/${CPP_FILE_NAME}" conda_cpp.tar
 mkdir cpp_channel
 tar -xvf conda_cpp.tar -C cpp_channel/
-ls -la cpp_channel
-find .
 
 # Build
 conda build --channel ./cpp_channel/.conda-bld conda/recipes/rmm --croot ${CONDA_BLD_DIR}

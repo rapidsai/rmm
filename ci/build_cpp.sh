@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 ################################################################################
 # SETUP - Check environment
@@ -21,22 +22,19 @@ conda info
 conda config --show-sources
 conda list --show-channel-urls
 
-# FIX Added to deal with Anancoda SSL verification issues during conda builds
-# conda config --set ssl_verify False
-
-
 ################################################################################
 # BUILD - Conda package builds (LIBRMM)
 ################################################################################
 
-cd $WORKSPACE
 CONDA_BLD_DIR=".conda-bld"
 FILE_NAME="conda_librmm_build_${BRANCH_NAME}-arc-${ARC}.tar"
 
 # Build
-conda build conda/recipes/librmm --croot ${CONDA_BLD_DIR}
-tar -cvf ${FILE_NAME} ${CONDA_BLD_DIR}
-ls -la $CONDA_BLD_DIR
+conda build \
+  --croot ${CONDA_BLD_DIR} \
+  --no-build-id \
+  conda/recipes/librmm
 
 # Copy artifact to s3
+tar -cvf ${FILE_NAME} ${CONDA_BLD_DIR}
 aws s3 cp ${FILE_NAME} "s3://rapids-downloads/ci/"

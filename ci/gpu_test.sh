@@ -1,4 +1,6 @@
 #!/bin/bash
+set -e
+
 ################################################################################
 # SETUP - Check environment
 ################################################################################
@@ -28,11 +30,14 @@ PY_FILE_NAME="conda_rmm_build_${BRANCH_NAME}-arc-${ARC}-py-${PY_VER}.tar"
 
 aws s3 cp "s3://rapids-downloads/ci/${CPP_FILE_NAME}" conda_cpp.tar
 aws s3 cp "s3://rapids-downloads/ci/${PY_FILE_NAME}" conda_py.tar
-ls -la
-mkdir cpp__artifact && tar -xvf conda_cpp.tar -C cpp__artifact/
-mkdir py__artifact && tar -xvf conda_py.tar -C py__artifact/
+mkdir cpp__artifact py__artifact
+tar -xvf conda_cpp.tar -C cpp__artifact/
+tar -xvf conda_py.tar -C py__artifact/
 
-gpuci_mamba_retry install -c ./cpp__artifact/.conda-bld -c ./py__artifact/.py-conda-bld rmm librmm librmm-tests
+gpuci_mamba_retry install -y \
+    -c ./cpp__artifact/.conda-bld \
+    -c ./py__artifact/.py-conda-bld \
+    rmm librmm librmm-tests
 
 TESTRESULTS_DIR=${WORKSPACE}/test-results
 mkdir -p ${TESTRESULTS_DIR}
@@ -41,6 +46,7 @@ SUITEERROR=0
 gpuci_logger "Check GPU usage"
 nvidia-smi
 
+set +e
 gpuci_logger "Running googletests"
 # run gtests from librmm-tests package
 for gt in "$CONDA_PREFIX/bin/gtests/librmm/"* ; do
@@ -52,12 +58,10 @@ for gt in "$CONDA_PREFIX/bin/gtests/librmm/"* ; do
     fi
 done
 
-cd $WORKSPACE/python
-export LIBRMM_BUILD_DIR="$WORKSPACE/ci/artifacts/rmm/cpu/conda_work/build"
-
+cd python
 
 gpuci_logger "pytest rmm"
-py.test --cache-clear --junitxml=${WORKSPACE}/test-results/junit-rmm.xml -v --cov-config=.coveragerc --cov=rmm --cov-report=xml:${WORKSPACE}/python/rmm-coverage.xml --cov-report term
+py.test --cache-clear --junitxml=test-results/junit-rmm.xml -v --cov-config=.coveragerc --cov=rmm --cov-report=xml:python/rmm-coverage.xml --cov-report term
 exitcode=$?
 if (( ${exitcode} != 0 )); then
     SUITEERROR=${exitcode}
