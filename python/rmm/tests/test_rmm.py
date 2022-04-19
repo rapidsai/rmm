@@ -721,6 +721,15 @@ def test_dev_buf_circle_ref_dealloc():
     gc.collect()
 
 
+def test_mr_allocate_deallocate():
+    mr = rmm.mr.TrackingResourceAdaptor(rmm.mr.get_current_device_resource())
+    size = 1 << 23  # 8 MiB
+    ptr = mr.allocate(size)
+    assert mr.get_allocated_bytes() == 1 << 23
+    mr.deallocate(ptr, size)
+    assert mr.get_allocated_bytes() == 0
+
+
 def test_custom_mr(capsys):
     base_mr = rmm.mr.CudaMemoryResource()
 
