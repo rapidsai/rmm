@@ -500,6 +500,26 @@ cdef class CallbackMemoryResource(DeviceMemoryResource):
         The deallocation function must accept two arguments, an integer
         representing the pointer to the memory to free, and a second
         integer representing the number of bytes to free.
+
+    Examples
+    -------
+    >>> import rmm
+    >>> base_mr = rmm.mr.CudaMemoryResource()
+    >>> def allocate_func(size):
+    ...     print(f"Allocating {size} bytes")
+    ...     return base_mr.allocate(size)
+    ...
+    >>> def deallocate_func(ptr, size):
+    ...     print(f"Deallocating {size} bytes")
+    ...     return base_mr.deallocate(ptr, size)
+    ...
+    >>> rmm.mr.set_current_device_resource(
+        rmm.mr.CallbackMemoryResource(allocate_func, deallocate_func)
+    )
+    >>> dbuf = rmm.DeviceBuffer(size=256)
+    Allocating 256 bytes
+    >>> del dbuf
+    Deallocating 256 bytes
     """
     def __init__(
         self,
