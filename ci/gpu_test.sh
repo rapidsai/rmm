@@ -30,7 +30,7 @@ PY_FILE_NAME="conda_rmm_build_${BRANCH_NAME}-arc-${ARC}-py-${PY_VER}.tar"
 
 aws s3 cp "s3://rapids-downloads/ci/${CPP_FILE_NAME}" conda_cpp.tar
 aws s3 cp "s3://rapids-downloads/ci/${PY_FILE_NAME}" conda_py.tar
-mkdir cpp__artifact py__artifact
+mkdir -p cpp__artifact py__artifact
 tar -xvf conda_cpp.tar -C cpp__artifact/
 tar -xvf conda_py.tar -C py__artifact/
 
