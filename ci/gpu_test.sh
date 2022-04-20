@@ -30,6 +30,7 @@ PY_FILE_NAME="conda_rmm_build_${BRANCH_NAME}-arc-${ARC}-py-${PY_VER}.tar"
 
 aws s3 cp "s3://rapids-downloads/ci/${CPP_FILE_NAME}" conda_cpp.tar
 aws s3 cp "s3://rapids-downloads/ci/${PY_FILE_NAME}" conda_py.tar
+ls -al
 mkdir -p cpp__artifact py__artifact
 tar -xvf conda_cpp.tar -C cpp__artifact/
 tar -xvf conda_py.tar -C py__artifact/
@@ -61,6 +62,8 @@ done
 cd python
 
 gpuci_logger "pytest rmm"
+ulimit -c unlimited
+echo "/tmp/core.%h.%e.%t" > /proc/sys/kernel/core_pattern
 py.test --cache-clear --junitxml=test-results/junit-rmm.xml -v --cov-config=.coveragerc --cov=rmm --cov-report=xml:python/rmm-coverage.xml --cov-report term
 exitcode=$?
 if (( ${exitcode} != 0 )); then
