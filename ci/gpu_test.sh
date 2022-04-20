@@ -63,7 +63,7 @@ cd python
 
 gpuci_logger "pytest rmm"
 ulimit -c unlimited
-echo "/tmp/core.%h.%e.%t" > /proc/sys/kernel/core_pattern
+echo "/var/lib/jenkins/workspace/rapidsai-org_rmm_PR-989_tmp/core.%h.%e.%t" > /proc/sys/kernel/core_pattern
 py.test --cache-clear --junitxml=test-results/junit-rmm.xml -v --cov-config=.coveragerc --cov=rmm --cov-report=xml:python/rmm-coverage.xml --cov-report term
 exitcode=$?
 if (( ${exitcode} != 0 )); then
