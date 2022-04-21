@@ -43,6 +43,10 @@ pipeline {
       steps {
         script {
           parallel generateStage("python_build", {
+            cleanWs (
+              deleteDirs: true,
+              externalDelete: 'sudo rm -rf %s'
+            )
             checkout scm
 
             withCredentials([[
@@ -72,6 +76,10 @@ pipeline {
         echo "${currentBuild.buildCauses}"
         script {
           parallel generateStage("branch_pr_test",{
+            cleanWs (
+              deleteDirs: true,
+              externalDelete: 'sudo rm -rf %s'
+            )
             checkout scm
             withCredentials([[
                 $class: 'AmazonWebServicesCredentialsBinding',
@@ -94,6 +102,10 @@ pipeline {
         echo "${currentBuild.buildCauses}"
         script {
           parallel generateStage("nightly_test", {
+            cleanWs (
+              deleteDirs: true,
+              externalDelete: 'sudo rm -rf %s'
+            )
             checkout scm
             echo "Upload packages: \${UPLOAD_PKGS}"
           })
