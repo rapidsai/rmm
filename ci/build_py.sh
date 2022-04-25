@@ -26,8 +26,11 @@ conda list --show-channel-urls
 # BUILD - Conda package builds (RMM)
 ################################################################################
 gpuci_logger "Begin build"
-CPP_FILE_NAME="conda_librmm_build_${BRANCH_NAME}-arc-${ARC}.tar"
-PY_FILE_NAME="conda_rmm_build_${BRANCH_NAME}-arc-${ARC}-py-${PY_VER}.tar"
+
+# FIX ME: These paths are to be dynamically computed based on env vars and vary per build type.
+# We will have a utility tool that consolidates the logic to compute the correct paths.
+CPP_FILE_NAME="ci/rmm/pull-request/${CHANGE_ID}/${GIT_COMMIT}/librmm_${ARCH}.tar"
+PY_FILE_NAME="ci/rmm/pull-request/${CHANGE_ID}/${GIT_COMMIT}/rmm_${ARCH}.tar"
 CONDA_BLD_DIR=".py-conda-bld"
 
 # Copy Cpp artifact from s3

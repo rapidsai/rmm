@@ -27,7 +27,11 @@ conda list --show-channel-urls
 ################################################################################
 
 CONDA_BLD_DIR=".conda-bld"
-FILE_NAME="conda_librmm_build_${BRANCH_NAME}-arc-${ARC}.tar"
+FILE_NAME="conda_librmm_build_${BRANCH_NAME}-arch-${ARCH}.tar"
+
+# FIX ME: This path is to be dynamically computed based on env vars and vary per build type.
+# We will have a utility tool that consolidates the logic to compute the correct path.
+FILE_NAME="ci/rmm/pull-request/${CHANGE_ID}/${GIT_COMMIT}/librmm_${ARCH}.tar"
 
 # Build
 conda build \

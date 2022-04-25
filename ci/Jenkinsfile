@@ -1,7 +1,10 @@
-@Library('gpuci_shared_lib') _
+@Library('jenkins_shared_lib') _
 
 pipeline {
   agent any
+  environment {
+    BUILD_MODE = 'pull-request'
+  }
   options {
     buildDiscarder(logRotator(numToKeepStr: '10'))
     ansiColor('xterm')
@@ -14,15 +17,11 @@ pipeline {
     }
     stage("C++ Matrix Build") {
       environment {
-        BUILD_MODE = 'pull-request'
         PARALLEL_LEVEL = '4'
-        CUDA="11.5"
       }
       steps {
         script {
           parallel generateStage("cuda_build", {
-            checkout scm
-
             withCredentials([[
                 $class: 'AmazonWebServicesCredentialsBinding',
                 credentialsId: "aws-s3-gpuci",
@@ -37,18 +36,9 @@ pipeline {
     }
 
     stage("Python Matrix Build") {
-      environment {
-        CUDA="11.5"
-      }
       steps {
         script {
           parallel generateStage("python_build", {
-            cleanWs (
-              deleteDirs: true,
-              externalDelete: 'sudo rm -rf %s'
-            )
-            checkout scm
-
             withCredentials([[
                 $class: 'AmazonWebServicesCredentialsBinding',
                 credentialsId: "aws-s3-gpuci",
@@ -64,13 +54,6 @@ pipeline {
 
     stage("PR/Branch Test Stage") {
       when { not { triggeredBy 'TimerTrigger' } }
-      environment {
-        CUDA="11.5"
-        UPLOAD_PKGS = """${sh(
-              returnStdout: true,
-              script: 'echo "$GIT_BRANCH" | grep -iq "pr" && echo "false" || echo "true"'
-          )}"""
-      }
       steps {
         sh "env"
         echo "${currentBuild.buildCauses}"
@@ -98,16 +81,10 @@ pipeline {
       when { triggeredBy 'TimerTrigger' }
       environment { UPLOAD_PKGS = "true" }
       steps {
-        sh "env"
         echo "${currentBuild.buildCauses}"
         script {
           parallel generateStage("nightly_test", {
-            cleanWs (
-              deleteDirs: true,
-              externalDelete: 'sudo rm -rf %s'
-            )
-            checkout scm
-            echo "Upload packages: \${UPLOAD_PKGS}"
+            sh "./ci/gpu_test.sh"
           })
         }
       }

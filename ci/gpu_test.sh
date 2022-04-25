@@ -25,8 +25,10 @@ conda config --show-sources
 conda list --show-channel-urls
 
 
-CPP_FILE_NAME="conda_librmm_build_${BRANCH_NAME}-arc-${ARC}.tar"
-PY_FILE_NAME="conda_rmm_build_${BRANCH_NAME}-arc-${ARC}-py-${PY_VER}.tar"
+# FIX ME: These paths are to be dynamically computed based on env vars and vary per build type.
+# We will have a utility tool that consolidates the logic to compute the correct paths.
+CPP_FILE_NAME="ci/rmm/pull-request/${CHANGE_ID}/${GIT_COMMIT}/librmm_${ARCH}.tar"
+PY_FILE_NAME="ci/rmm/pull-request/${CHANGE_ID}/${GIT_COMMIT}/rmm_${ARCH}.tar"
 
 aws s3 cp "s3://rapids-downloads/ci/${CPP_FILE_NAME}" conda_cpp.tar
 aws s3 cp "s3://rapids-downloads/ci/${PY_FILE_NAME}" conda_py.tar
@@ -62,8 +64,6 @@ done
 cd python
 
 gpuci_logger "pytest rmm"
-ulimit -c unlimited
-echo "/var/lib/jenkins/workspace/rapidsai-org_rmm_PR-989_tmp/core.%h.%e.%t" > /proc/sys/kernel/core_pattern
 py.test --cache-clear --junitxml=test-results/junit-rmm.xml -v --cov-config=.coveragerc --cov=rmm --cov-report=xml:python/rmm-coverage.xml --cov-report term
 exitcode=$?
 if (( ${exitcode} != 0 )); then
