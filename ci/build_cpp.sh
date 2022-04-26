@@ -27,11 +27,11 @@ conda list --show-channel-urls
 ################################################################################
 
 CONDA_BLD_DIR=".conda-bld"
-FILE_NAME="conda_librmm_build_${BRANCH_NAME}-arch-${ARCH}.tar"
+LIB_TAR="librmm_${ARCH}.tar"
 
 # FIX ME: This path is to be dynamically computed based on env vars and vary per build type.
 # We will have a utility tool that consolidates the logic to compute the correct path.
-FILE_NAME="ci/rmm/pull-request/${CHANGE_ID}/${GIT_COMMIT}/librmm_${ARCH}.tar"
+FILE_PATH="ci/rmm/pull-request/${CHANGE_ID}/${GIT_COMMIT}/${LIB_TAR}"
 
 # Build
 conda build \
@@ -40,5 +40,5 @@ conda build \
   conda/recipes/librmm
 
 # Copy artifact to s3
-tar -cvf ${FILE_NAME} ${CONDA_BLD_DIR}
-aws s3 cp ${FILE_NAME} "s3://rapids-downloads/ci/"
+tar -cvf ${LIB_TAR} ${CONDA_BLD_DIR}
+aws s3 cp ${LIB_TAR} "s3://rapids-downloads/${FILE_PATH}"

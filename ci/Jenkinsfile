@@ -3,6 +3,9 @@
 pipeline {
   agent any
   environment {
+    // Serves to represent in what 'mode' this run is happening.
+    // Will be used to determine whether packages should be uploaded (branch&nightly) or not (PRs)
+    // Value will be dynamically computed by a utility tool gpuci-tools
     BUILD_MODE = 'pull-request'
   }
   options {

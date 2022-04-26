@@ -30,8 +30,8 @@ conda list --show-channel-urls
 CPP_FILE_NAME="ci/rmm/pull-request/${CHANGE_ID}/${GIT_COMMIT}/librmm_${ARCH}.tar"
 PY_FILE_NAME="ci/rmm/pull-request/${CHANGE_ID}/${GIT_COMMIT}/rmm_${ARCH}.tar"
 
-aws s3 cp "s3://rapids-downloads/ci/${CPP_FILE_NAME}" conda_cpp.tar
-aws s3 cp "s3://rapids-downloads/ci/${PY_FILE_NAME}" conda_py.tar
+aws s3 cp "s3://rapids-downloads/${CPP_FILE_NAME}" conda_cpp.tar
+aws s3 cp "s3://rapids-downloads/${PY_FILE_NAME}" conda_py.tar
 ls -al
 mkdir -p cpp__artifact py__artifact
 tar -xvf conda_cpp.tar -C cpp__artifact/
