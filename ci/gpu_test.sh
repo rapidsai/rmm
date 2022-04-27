@@ -42,7 +42,7 @@ gpuci_mamba_retry install -y \
     -c ./py__artifact/.py-conda-bld \
     rmm librmm librmm-tests
 
-TESTRESULTS_DIR=${WORKSPACE}/test-results
+TESTRESULTS_DIR=test-results
 mkdir -p ${TESTRESULTS_DIR}
 SUITEERROR=0
 

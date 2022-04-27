@@ -60,8 +60,6 @@ pipeline {
     stage("PR/Branch Test Stage") {
       when { not { triggeredBy 'TimerTrigger' } }
       steps {
-        sh "env"
-        echo "${currentBuild.buildCauses}"
         script {
           // generate the PR/Branch test stages across different configuration options
           parallel generateStage("branch_pr_test",{
@@ -82,7 +80,6 @@ pipeline {
       when { triggeredBy 'TimerTrigger' }
       environment { UPLOAD_PKGS = "true" }
       steps {
-        echo "${currentBuild.buildCauses}"
         script {
           // generate the nightly test stages across different configuration options
           parallel generateStage("branch_pr_test",{
