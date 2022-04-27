@@ -5,7 +5,7 @@ pipeline {
   environment {
     // Serves to represent in what 'mode' this run is happening.
     // Will be used to determine whether packages should be uploaded (branch&nightly) or not (PRs)
-    // Value will be dynamically computed by a utility tool gpuci-tools
+    // Value will be dynamically computed by a utility tool to be included in gpuci-tools
     BUILD_MODE = 'pull-request'
   }
   options {
@@ -62,11 +62,6 @@ pipeline {
         echo "${currentBuild.buildCauses}"
         script {
           parallel generateStage("branch_pr_test",{
-            cleanWs (
-              deleteDirs: true,
-              externalDelete: 'sudo rm -rf %s'
-            )
-            checkout scm
             withCredentials([[
                 $class: 'AmazonWebServicesCredentialsBinding',
                 credentialsId: "aws-s3-gpuci",
