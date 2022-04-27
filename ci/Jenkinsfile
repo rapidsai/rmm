@@ -24,6 +24,7 @@ pipeline {
       }
       steps {
         script {
+          // generate the CUDA stages across different configuration options
           parallel generateStage("cuda_build", {
             withCredentials([[
                 $class: 'AmazonWebServicesCredentialsBinding',
@@ -41,6 +42,7 @@ pipeline {
     stage("Python Matrix Build") {
       steps {
         script {
+          // generate the python stages across different configuration options
           parallel generateStage("python_build", {
             withCredentials([[
                 $class: 'AmazonWebServicesCredentialsBinding',
@@ -61,6 +63,7 @@ pipeline {
         sh "env"
         echo "${currentBuild.buildCauses}"
         script {
+          // generate the PR/Branch test stages across different configuration options
           parallel generateStage("branch_pr_test",{
             withCredentials([[
                 $class: 'AmazonWebServicesCredentialsBinding',
@@ -81,8 +84,16 @@ pipeline {
       steps {
         echo "${currentBuild.buildCauses}"
         script {
-          parallel generateStage("nightly_test", {
-            sh "./ci/gpu_test.sh"
+          // generate the nightly test stages across different configuration options
+          parallel generateStage("branch_pr_test",{
+            withCredentials([[
+                $class: 'AmazonWebServicesCredentialsBinding',
+                credentialsId: "aws-s3-gpuci",
+                accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+            ]]) {
+              sh "./ci/gpu_test.sh"
+            }
           })
         }
       }
