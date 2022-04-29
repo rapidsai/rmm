@@ -22,6 +22,9 @@ pipeline {
       environment {
         PARALLEL_LEVEL = '4'
       }
+      options {
+        timeout(time: 30, unit: 'MINUTES') 
+      }
       steps {
         script {
           // generate the CUDA stages across different configuration options
@@ -40,6 +43,9 @@ pipeline {
     }
 
     stage("Python Matrix Build") {
+      options {
+        timeout(time: 30, unit: 'MINUTES') 
+      }
       steps {
         script {
           // generate the python stages across different configuration options
@@ -59,6 +65,9 @@ pipeline {
 
     stage("PR/Branch Test Stage") {
       when { not { triggeredBy 'TimerTrigger' } }
+      options {
+        timeout(time: 10, unit: 'MINUTES') 
+      }
       steps {
         script {
           // generate the PR/Branch test stages across different configuration options
@@ -78,6 +87,9 @@ pipeline {
 
     stage("Nightly Test Stage") {
       when { triggeredBy 'TimerTrigger' }
+      options {
+        timeout(time: 10, unit: 'MINUTES') 
+      }
       environment { UPLOAD_PKGS = "true" }
       steps {
         script {
