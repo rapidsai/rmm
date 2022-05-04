@@ -24,7 +24,7 @@ from libcpp.memory cimport make_shared, make_unique, shared_ptr, unique_ptr
 from libcpp.string cimport string
 
 from cuda.cudart import cudaError_t
-from cuda.ccudart import cudaMemAllocationHandleType
+from cuda.ccudart cimport cudaMemAllocationHandleType, cudaMemHandleTypePosixFileDescriptor
 
 from rmm._cuda.gpu import CUDARuntimeError, getDevice, setDevice
 
@@ -62,7 +62,7 @@ cdef extern from "rmm/mr/device/cuda_async_memory_resource.hpp" \
         cuda_async_memory_resource(
             optional[size_t] initial_pool_size,
             optional[size_t] release_threshold,
-            optional[bool] enable_ipc) except +
+            optional[cudaMemAllocationHandleType] export_handle_type) except +
 
 cdef extern from "rmm/mr/device/pool_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
