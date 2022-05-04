@@ -237,7 +237,12 @@ cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
         value, unused memory held by the pool will be released at the
         next synchronization point.
     """
-    def __cinit__(self, initial_pool_size=None, release_threshold=None, export_handle_type=None):
+    def __cinit__(
+            self, 
+            initial_pool_size=None, 
+            release_threshold=None, 
+            export_handle_type=None
+    ):
         cdef optional[size_t] c_initial_pool_size = (
             optional[size_t]()
             if initial_pool_size is None
