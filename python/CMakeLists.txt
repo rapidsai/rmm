@@ -39,9 +39,7 @@ project(
 option(FIND_RMM_CPP "Search for existing RMM C++ installations before defaulting to local files"
        OFF)
 
-# If the user requested it we attempt to find RMM. TODO: Should we allow the user to specify a path
-# instead of just searching? This version assumes that the installation has been appropriately
-# configured for CMake discovery.
+# If the user requested it we attempt to find RMM.
 if(FIND_RMM_CPP)
   find_package(RMM ${rmm_version})
 else()
