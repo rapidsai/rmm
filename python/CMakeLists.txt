@@ -16,9 +16,10 @@ cmake_minimum_required(VERSION 3.20.1 FATAL_ERROR)
 
 set(rmm_version 22.06.00)
 
-set(CYTHON_FLAGS
-    "--directive binding=True,embedsignature=True,always_allow_keywords=True"
-    CACHE STRING "The directives for Cython compilation.")
+# TODO: This link needs to be changed back to the mainline branch of rapids-cmake before the PR is merged.
+file(DOWNLOAD https://raw.githubusercontent.com/vyasr/rapids-cmake/cf54c7d6e215c1188e1b9eb660565bdf42b83b64/RAPIDS.cmake
+        ${CMAKE_BINARY_DIR}/RAPIDS.cmake)
+include(${CMAKE_BINARY_DIR}/RAPIDS.cmake)
 
 project(
   rmm-python
@@ -38,12 +39,6 @@ project(
 option(FIND_RMM_CPP "Search for existing RMM C++ installations before defaulting to local files"
        OFF)
 
-find_package(PythonExtensions REQUIRED)
-find_package(Cython REQUIRED)
-
-# Ignore unused variable warning.
-set(ignored_variable "${SKBUILD}")
-
 # If the user requested it we attempt to find RMM. TODO: Should we allow the user to specify a path
 # instead of just searching? This version assumes that the installation has been appropriately
 # configured for CMake discovery.
@@ -59,6 +54,7 @@ if(NOT RMM_FOUND)
   add_subdirectory(../ rmm-cpp)
 endif()
 
-add_subdirectory(cmake)
+include(rapids-cython)
+rapids_cython_init()
 add_subdirectory(rmm/_cuda)
 add_subdirectory(rmm/_lib)
