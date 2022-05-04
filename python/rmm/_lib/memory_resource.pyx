@@ -238,9 +238,9 @@ cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
         next synchronization point.
     """
     def __cinit__(
-            self, 
-            initial_pool_size=None, 
-            release_threshold=None, 
+            self,
+            initial_pool_size=None,
+            release_threshold=None,
             export_handle_type=None
     ):
         cdef optional[size_t] c_initial_pool_size = (
