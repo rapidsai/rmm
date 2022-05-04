@@ -24,6 +24,7 @@ from libcpp.memory cimport make_shared, make_unique, shared_ptr, unique_ptr
 from libcpp.string cimport string
 
 from cuda.cudart import cudaError_t
+from cuda.cudart import cudaMemAllocationHandleType
 
 from rmm._cuda.gpu import CUDARuntimeError, getDevice, setDevice
 from rmm._lib.cuda_stream_view cimport cuda_stream_view
@@ -57,8 +58,10 @@ cdef extern from "rmm/mr/device/managed_memory_resource.hpp" \
 cdef extern from "rmm/mr/device/cuda_async_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass cuda_async_memory_resource(device_memory_resource):
-        cuda_async_memory_resource(optional[size_t] initial_pool_size,
-                                   optional[size_t] release_threshold) except +
+        cuda_async_memory_resource(
+            optional[size_t] initial_pool_size,
+            optional[size_t] release_threshold,
+            optional[cudaMemAllocationHandleType] export_handle_type) except +
 
 cdef extern from "rmm/mr/device/pool_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
@@ -234,7 +237,7 @@ cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
         value, unused memory held by the pool will be released at the
         next synchronization point.
     """
-    def __cinit__(self, initial_pool_size=None, release_threshold=None):
+    def __cinit__(self, initial_pool_size=None, release_threshold=None, export_handle_type=None):
         cdef optional[size_t] c_initial_pool_size = (
             optional[size_t]()
             if initial_pool_size is None
@@ -247,10 +250,17 @@ cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
             else optional[size_t](release_threshold)
         )
 
+        cdef optional[cudaMemAllocationHandleType] c_export_handle_type = (
+            optional[cudaMemAllocationHandleType]()
+            if export_handle_type is None
+            else optional[export_handle_type](export_handle_type)
+        )
+
         self.c_obj.reset(
             new cuda_async_memory_resource(
                 c_initial_pool_size,
-                c_release_threshold
+                c_release_threshold,
+                c_export_handle_type
             )
         )
 
