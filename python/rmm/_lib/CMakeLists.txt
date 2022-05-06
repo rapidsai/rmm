@@ -16,5 +16,5 @@ set(cython_sources device_buffer.pyx lib.pyx memory_resource.pyx cuda_stream.pyx
 set(linked_libraries rmm::rmm)
 
 # Build all of the Cython targets
-rapids_cython_create_modules(SOURCE_FILES "${cython_sources}" LINKED_LIBRARIES
-                             "${linked_libraries}" CXX)
+rapids_cython_create_modules(SOURCE_FILES "${cython_sources}" LINKED_LIBRARIES "${linked_libraries}"
+                                                                               CXX)
