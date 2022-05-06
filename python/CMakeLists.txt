@@ -40,7 +40,7 @@ option(FIND_RMM_CPP "Search for existing RMM C++ installations before defaulting
 
 # If the user requested it we attempt to find RMM.
 if(FIND_RMM_CPP)
-  find_package(RMM ${rmm_version})
+  find_package(rmm ${rmm_version})
 else()
   set(RMM_FOUND OFF)
 endif()
