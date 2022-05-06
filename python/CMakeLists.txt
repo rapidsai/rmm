@@ -42,10 +42,10 @@ option(FIND_RMM_CPP "Search for existing RMM C++ installations before defaulting
 if(FIND_RMM_CPP)
   find_package(rmm ${rmm_version})
 else()
-  set(RMM_FOUND OFF)
+  set(rmm_FOUND OFF)
 endif()
 
-if(NOT RMM_FOUND)
+if(NOT rmm_FOUND)
   set(BUILD_TESTS OFF)
   set(BUILD_BENCHMARKS OFF)
   add_subdirectory(../ rmm-cpp)
