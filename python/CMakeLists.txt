@@ -27,8 +27,7 @@ project(
             # language to be enabled here. The test project that is built in scikit-build to verify
             # various linking options for the python library is hardcoded to build with C, so until
             # that is fixed we need to keep C.
-            C
-            CXX)
+            C CXX)
 
 option(FIND_RMM_CPP "Search for existing RMM C++ installations before defaulting to local files"
        OFF)
@@ -41,9 +40,8 @@ else()
 endif()
 
 if(NOT rmm_FOUND)
-  # TODO: This will not be necessary once we upgrade to CMake 3.22, which will
-  # pull in the required languages for the C++ project even if this project
-  # does not require those languges.
+  # TODO: This will not be necessary once we upgrade to CMake 3.22, which will pull in the required
+  # languages for the C++ project even if this project does not require those languges.
   enable_language(CUDA)
   set(BUILD_TESTS OFF)
   set(BUILD_BENCHMARKS OFF)
