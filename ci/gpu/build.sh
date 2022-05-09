@@ -31,6 +31,7 @@ export CUDA_REL="${CUDA_MAJOR_VER}.${CUDA_MINOR_VER}"
 export GIT_DESCRIBE_TAG=`git describe --abbrev=0 --tags`
 export GIT_DESCRIBE_NUMBER=`git rev-list ${GIT_DESCRIBE_TAG}..HEAD --count`
 export MINOR_VERSION=`echo $GIT_DESCRIBE_TAG | grep -o -E '([0-9]+\.[0-9]+)'`
+unset GIT_DESCRIBE_TAG
 
 ################################################################################
 # SETUP - Check environment
@@ -43,15 +44,6 @@ gpuci_logger "Activate conda env"
 . /opt/conda/etc/profile.d/conda.sh
 conda activate rapids
 
-# Install build env
-gpuci_mamba_retry install -y \
-                  "cudatoolkit=$CUDA_REL" \
-                  "rapids-build-env=${MINOR_VERSION}.*"
-
-# https://docs.rapids.ai/maintainers/depmgmt/
-# conda remove --force rapids-build-env
-# gpuci_mamba_retry install "your-pkg=1.0.0"
-
 gpuci_logger "Check versions"
 python --version
 $CC --version
@@ -63,6 +55,15 @@ conda config --show-sources
 conda list --show-channel-urls
 
 if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
+    # Install build env
+    gpuci_mamba_retry install -y \
+                  "cudatoolkit=$CUDA_REL" \
+                  "rapids-build-env=${MINOR_VERSION}.*"
+
+    # https://docs.rapids.ai/maintainers/depmgmt/
+    # conda remove --force rapids-build-env
+    # gpuci_mamba_retry install "your-pkg=1.0.0"
+
     ################################################################################
     # BUILD - Build and install librmm and rmm
     ################################################################################
@@ -90,7 +91,6 @@ if [[ -z "$PROJECT_FLASH" || "$PROJECT_FLASH" == "0" ]]; then
         py.test --cache-clear --basetemp=${WORKSPACE}/rmm-cuda-tmp --junitxml=${WORKSPACE}/test-results/junit-rmm.xml -v --cov-config=.coveragerc --cov=rmm --cov-report=xml:${WORKSPACE}/python/rmm-coverage.xml --cov-report term
     fi
 else
-
     gpuci_mamba_retry install -c $WORKSPACE/ci/artifacts/rmm/cpu/.conda-bld/ librmm librmm-tests
 
     TESTRESULTS_DIR=${WORKSPACE}/test-results
@@ -111,12 +111,14 @@ else
         fi
     done
 
+    export CONDA_BLD_DIR="$WORKSPACE/.conda-bld"
+    gpuci_logger "Building and installing rmm"
+    gpuci_conda_retry build --no-build-id --croot ${CONDA_BLD_DIR} \
+      -c $WORKSPACE/ci/artifacts/rmm/cpu/.conda-bld/ conda/recipes/rmm
+    gpuci_mamba_retry install -c $WORKSPACE/ci/artifacts/rmm/cpu/.conda-bld/ \
+      -c ${CONDA_BLD_DIR} rmm
+
     cd $WORKSPACE/python
-    export LIBRMM_BUILD_DIR="$WORKSPACE/ci/artifacts/rmm/cpu/conda_work/build"
-
-    gpuci_logger "Building rmm"
-    "$WORKSPACE/build.sh" -v rmm
-
     gpuci_logger "pytest rmm"
     py.test --cache-clear --junitxml=${WORKSPACE}/test-results/junit-rmm.xml -v --cov-config=.coveragerc --cov=rmm --cov-report=xml:${WORKSPACE}/python/rmm-coverage.xml --cov-report term
     exitcode=$?
