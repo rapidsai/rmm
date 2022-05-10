@@ -608,7 +608,7 @@ DeviceBuffers can also be created by copying data from host memory:
 >>> import rmm
 >>> import numpy as np
 >>> a = np.array([1, 2, 3], dtype='float64')
->>> buf = rmm.to_device(a.tobytes())
+>>> buf = rmm.DeviceBuffer.to_device(a.tobytes())
 >>> buf.size
 24
 ```
