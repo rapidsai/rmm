@@ -11,6 +11,7 @@ pipeline {
   options {
     buildDiscarder(logRotator(numToKeepStr: '10'))
     ansiColor('xterm')
+    disableConcurrentBuilds(abortPrevious: true)
   }
   stages {
     stage("Style Checks") {
