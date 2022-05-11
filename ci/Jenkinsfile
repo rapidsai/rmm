@@ -1,7 +1,7 @@
 @Library('jenkins_shared_lib') _
 
 pipeline {
-  agent { label "cpu" }
+  agent any
   environment {
     BUILD_TYPE = sh(returnStdout: true, script: 'rapids-build-type')
   }
