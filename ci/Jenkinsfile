@@ -30,14 +30,7 @@ pipeline {
         script {
           // generate the CUDA stages across different configuration options
           parallel generateStage("cuda_build", {
-            withCredentials([[
-                $class: 'AmazonWebServicesCredentialsBinding',
-                credentialsId: "aws-s3-gpuci",
-                accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
-            ]]) {
-              sh "./ci/build_cpp.sh"
-            }
+            sh "./ci/build_cpp.sh"
           })
         }
       }
@@ -51,14 +44,7 @@ pipeline {
         script {
           // generate the python stages across different configuration options
           parallel generateStage("python_build", {
-            withCredentials([[
-                $class: 'AmazonWebServicesCredentialsBinding',
-                credentialsId: "aws-s3-gpuci",
-                accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
-            ]]) {
-              sh "./ci/build_py.sh"
-            }
+            sh "./ci/build_py.sh"
           })
         }
       }
@@ -73,14 +59,7 @@ pipeline {
         script {
           // generate the PR/Branch test stages across different configuration options
           parallel generateStage("branch_pr_test",{
-            withCredentials([[
-                $class: 'AmazonWebServicesCredentialsBinding',
-                credentialsId: "aws-s3-gpuci",
-                accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
-            ]]) {
-              sh "./ci/gpu_test.sh"
-            }
+            sh "./ci/gpu_test.sh"
           })
         }
       }
@@ -96,14 +75,7 @@ pipeline {
         script {
           // generate the nightly test stages across different configuration options
           parallel generateStage("branch_pr_test",{
-            withCredentials([[
-                $class: 'AmazonWebServicesCredentialsBinding',
-                credentialsId: "aws-s3-gpuci",
-                accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
-            ]]) {
-              sh "./ci/gpu_test.sh"
-            }
+            sh "./ci/gpu_test.sh"
           })
         }
       }
