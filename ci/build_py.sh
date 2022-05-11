@@ -25,23 +25,16 @@ conda list --show-channel-urls
 ################################################################################
 # BUILD - Conda package builds (RMM)
 ################################################################################
-gpuci_logger "Begin build"
-PY_LIB_TAR="rmm_${ARCH}.tar"
+gpuci_logger "Begin py build"
 
-# FIX ME: These paths are to be dynamically computed based on env vars and vary per build type.
-# We will have a utility tool that consolidates the logic to compute the correct paths.
-CPP_FILE_PATH="ci/rmm/pull-request/${CHANGE_ID}/${GIT_COMMIT}/librmm_${ARCH}.tar"
-PY_FILE_PATH="ci/rmm/pull-request/${CHANGE_ID}/${GIT_COMMIT}/${PY_LIB_TAR}"
-CONDA_BLD_DIR=".py-conda-bld"
+# Python Build Stage
+CPP_CHANNEL=$(rapids-download-conda-from-s3 cpp)
 
-# Copy Cpp artifact from s3
-aws s3 cp "s3://rapids-downloads/${CPP_FILE_PATH}" conda_cpp.tar
-mkdir cpp_channel
-tar -xvf conda_cpp.tar -C cpp_channel/
+conda build \
+  -c "${CPP_CHANNEL}" \
+  --croot /tmp/conda-bld-workspace \
+  --output-folder /tmp/conda-bld-output \
+  conda/recipes/rmm
 
-# Build
-conda build --channel ./cpp_channel/.conda-bld conda/recipes/rmm --croot ${CONDA_BLD_DIR}
-
-# Copy artifact to s3
-tar -cvf ${PY_LIB_TAR} ${CONDA_BLD_DIR}
-aws s3 cp ${PY_LIB_TAR} "s3://rapids-downloads/${PY_FILE_PATH}"
+# doc -> https://github.com/rapidsai/gpuci-tools/pull/26#issue-1226701276
+rapids-upload-conda-to-s3 python

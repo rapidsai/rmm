@@ -25,20 +25,12 @@ conda list --show-channel-urls
 ################################################################################
 # BUILD - Conda package builds (LIBRMM)
 ################################################################################
+gpuci_logger "Begin cpp build"
 
-CONDA_BLD_DIR=".conda-bld"
-LIB_TAR="librmm_${ARCH}.tar"
-
-# FIX ME: This path is to be dynamically computed based on env vars and vary per build type.
-# We will have a utility tool that consolidates the logic to compute the correct path.
-FILE_PATH="ci/rmm/pull-request/${CHANGE_ID}/${GIT_COMMIT}/${LIB_TAR}"
-
-# Build
 conda build \
-  --croot ${CONDA_BLD_DIR} \
-  --no-build-id \
+  --croot /tmp/conda-bld-workspace \
+  --output-folder /tmp/conda-bld-output \
   conda/recipes/librmm
 
-# Copy artifact to s3
-tar -cvf ${LIB_TAR} ${CONDA_BLD_DIR}
-aws s3 cp ${LIB_TAR} "s3://rapids-downloads/${FILE_PATH}"
+# doc -> https://github.com/rapidsai/gpuci-tools/pull/26#issue-1226701276
+rapids-upload-conda-to-s3 cpp

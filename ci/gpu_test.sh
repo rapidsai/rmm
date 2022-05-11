@@ -25,22 +25,14 @@ conda config --show-sources
 conda list --show-channel-urls
 
 
-# FIX ME: These paths are to be dynamically computed based on env vars and vary per build type.
-# We will have a utility tool that consolidates the logic to compute the correct paths.
-CPP_FILE_NAME="ci/rmm/pull-request/${CHANGE_ID}/${GIT_COMMIT}/librmm_${ARCH}.tar"
-PY_FILE_NAME="ci/rmm/pull-request/${CHANGE_ID}/${GIT_COMMIT}/rmm_${ARCH}.tar"
+# GPU Test Stage
+CPP_CHANNEL=$(rapids-download-conda-from-s3 cpp)
+PYTHON_CHANNEL=$(rapids-download-conda-from-s3 python)
 
-aws s3 cp "s3://rapids-downloads/${CPP_FILE_NAME}" conda_cpp.tar
-aws s3 cp "s3://rapids-downloads/${PY_FILE_NAME}" conda_py.tar
-ls -al
-mkdir -p cpp__artifact py__artifact
-tar -xvf conda_cpp.tar -C cpp__artifact/
-tar -xvf conda_py.tar -C py__artifact/
-
-gpuci_mamba_retry install -y \
-    -c ./cpp__artifact/.conda-bld \
-    -c ./py__artifact/.py-conda-bld \
-    rmm librmm librmm-tests
+conda install \
+  -c "${CPP_CHANNEL}" \
+  -c "${PYTHON_CHANNEL}" \
+  rmm librmm librmm-tests
 
 TESTRESULTS_DIR=test-results
 mkdir -p ${TESTRESULTS_DIR}
