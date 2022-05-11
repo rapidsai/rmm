@@ -685,7 +685,7 @@ allocations by setting the CuPy CUDA allocator to
 ```
 
 
-**Note:** This only configures cuPy to use current RMM resource for allocations. 
+**Note:** This only configures CuPy to use the current RMM resource for allocations. 
 It does not initialize nor change the current resource, e.g., enabling a memory pool. 
 See [here](#memoryresource-objects) for more information on how this can be done.
 
@@ -710,6 +710,6 @@ This can be done in two ways:
   >>> cuda.set_memory_manager(rmm.RMMNumbaManager)
   ```
 
-**Note:** This only configures Numba to use current RMM resource for allocations. 
+**Note:** This only configures Numba to use the current RMM resource for allocations. 
 It does not initialize nor change the current resource, e.g., enabling a memory pool. 
 See [here](#memoryresource-objects) for more information on how this can be done.
