@@ -245,6 +245,9 @@ cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
         Release threshold in bytes. If the pool size grows beyond this
         value, unused memory held by the pool will be released at the
         next synchronization point.
+    enable_ipc: Boolean, optional
+        If true, enables export of Posix file descriptor handle for the memory
+        allocated by this resource so that it can be used with CUDA IPC.
     """
     def __cinit__(
             self,
@@ -265,11 +268,9 @@ cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
         )
 
         cdef optional[cudaMemAllocationHandleType] c_export_handle_type = (
-            optional[cudaMemAllocationHandleType]()
+            optional[cudaMemHandleTypePosixFileDescriptor]()
             if enable_ipc
-            else optional[cudaMemAllocationHandleType](
-                cudaMemHandleTypePosixFileDescriptor
-            )
+            else optional[cudaMemAllocationHandleType]()
         )
 
         self.c_obj.reset(
