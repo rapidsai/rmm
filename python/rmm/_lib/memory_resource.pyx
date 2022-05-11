@@ -24,11 +24,19 @@ from libcpp.memory cimport make_shared, make_unique, shared_ptr, unique_ptr
 from libcpp.string cimport string
 
 from cuda.cudart import cudaError_t
-from cuda.ccudart cimport cudaMemAllocationHandleType, cudaMemHandleTypePosixFileDescriptor
 
 from rmm._cuda.gpu import CUDARuntimeError, getDevice, setDevice
 
 from rmm._lib.cuda_stream_view cimport cuda_stream_view
+
+
+# NOTE: We can't use declarations of CUDA types from CUDA Python and
+# expect them to work with external code. So we declare them
+# ourselves.  See https://github.com/NVIDIA/cuda-python/issues/22 for
+# details.
+cdef extern from "driver_types.h" nogil:
+    enum cudaMemAllocationHandleType:
+        cudaMemHandleTypePosixFileDescriptor
 
 
 # NOTE: Keep extern declarations in .pyx file as much as possible to avoid
@@ -258,8 +266,10 @@ cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
 
         cdef optional[cudaMemAllocationHandleType] c_export_handle_type = (
             optional[cudaMemAllocationHandleType]()
-            if enable_ipc == True
-            else optional[cudaMemAllocationHandleType](cudaMemHandleTypePosixFileDescriptor)
+            if enable_ipc
+            else optional[cudaMemAllocationHandleType](
+                cudaMemHandleTypePosixFileDescriptor
+            )
         )
 
         self.c_obj.reset(
