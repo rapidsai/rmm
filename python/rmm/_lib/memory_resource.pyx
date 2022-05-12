@@ -268,7 +268,9 @@ cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
         )
 
         cdef optional[cudaMemAllocationHandleType] c_export_handle_type = (
-            optional[cudaMemHandleTypePosixFileDescriptor]()
+            optional[cudaMemAllocationHandleType](
+                cudaMemHandleTypePosixFileDescriptor
+            )
             if enable_ipc
             else optional[cudaMemAllocationHandleType]()
         )
