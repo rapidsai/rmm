@@ -239,6 +239,16 @@ def test_rmm_device_buffer_bytes_roundtrip(hb):
             assert mv == mv3
 
 
+def test_rmm_device_buffer_join():
+    L_h = [b"ab", b"cde", b"", b"f", b"gh"]
+    L_d = list(map(rmm.DeviceBuffer.to_device, L_h))
+    for sep_h in [b"", b"."]:
+        sep_d = rmm.DeviceBuffer.to_device(sep_h)
+        r_h = sep_h.join(L_h)
+        r_d = sep_d.join(L_d)
+        assert r_d.tobytes() == r_h
+
+
 @pytest.mark.parametrize(
     "hb",
     [

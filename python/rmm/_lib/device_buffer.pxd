@@ -55,6 +55,7 @@ cdef class DeviceBuffer:
     cpdef copy_from_host(self, ary, Stream stream=*)
     cpdef copy_from_device(self, cuda_ary, Stream stream=*)
     cpdef bytes tobytes(self, Stream stream=*)
+    cpdef DeviceBuffer join(self, list L, Stream stream=*)
 
     cdef size_t c_size(self) except *
     cpdef void resize(self, size_t new_size, Stream stream=*) except *

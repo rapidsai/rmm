@@ -285,6 +285,58 @@ cdef class DeviceBuffer:
 
         return b
 
+    cpdef DeviceBuffer join(self, list L, Stream stream=DEFAULT_STREAM):
+        """Joins a sequence of ``DeviceBuffer``s with ``self`` inbetween.
+
+        This is analogous to ``bytes.join(...)``.
+
+        Parameters
+        ----------
+        L : ``list`` of ``DeviceBuffer``s
+        stream : CUDA stream to use for copying, default the default stream
+
+        Examples
+        --------
+        >>> import rmm
+        >>> db = rmm.DeviceBuffer()
+        >>> db1 = rmm.DeviceBuffer.to_device(b"abc")
+        >>> db2 = rmm.DeviceBuffer.to_device(b"def")
+        >>> rdb = db.join([db1, db2])
+        >>> hb = rdb.copy_to_host()
+        >>> print(hb)
+        array([ 97,  98,  99, 100, 101, 102], dtype=uint8)
+        """
+        cdef uintptr_t sp = <uintptr_t>self.c_data()
+        cdef size_t sdbs = self.c_size()
+
+        cdef size_t N = len(L)
+
+        cdef size_t s = (N - 1) * sdbs
+        cdef DeviceBuffer db
+        for db in L:
+            s += db.c_size()
+
+        cdef DeviceBuffer rdb = DeviceBuffer(size=s, stream=stream)
+        cdef uintptr_t rp = <uintptr_t>rdb.c_data()
+
+        cdef uintptr_t dp, offset = 0
+        cdef size_t i
+        for i in range(N - 1):
+            db = L[i]
+            dp = <uintptr_t>db.c_data()
+            dbs = db.c_size()
+            copy_device_to_ptr(dp, rp + offset, dbs, stream)
+            offset += dbs
+            if sdbs > 0:
+                copy_device_to_ptr(sp, rp + offset, sdbs, stream)
+                offset += sdbs
+        db = L[N - 1]
+        dp = <uintptr_t>db.c_data()
+        dbs = db.c_size()
+        copy_device_to_ptr(dp, rp + offset, dbs, stream)
+
+        return rdb
+
     cdef size_t c_size(self) except *:
         return self.c_obj.get()[0].size()
 
