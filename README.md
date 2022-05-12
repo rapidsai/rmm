@@ -712,4 +712,4 @@ This can be done in two ways:
 
 **Note:** This only configures Numba to use the current RMM resource for allocations. 
 It does not initialize nor change the current resource, e.g., enabling a memory pool. 
-See [here](#memoryresource-objects) for more information on how this can be done.
+See [here](#memoryresource-objects) for more information on changing the current memory resource.
