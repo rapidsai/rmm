@@ -27,7 +27,6 @@ pipeline {
         script {
           // generate the CUDA stages across different configuration options
           parallel generateStage("cuda_build", {
-            sh 'exit 1'
             sh "./ci/build_cpp.sh"
           })
         }
