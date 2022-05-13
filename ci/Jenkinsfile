@@ -25,7 +25,6 @@ pipeline {
       }
       steps {
         script {
-          // generate the CUDA stages across different configuration options
           parallel generateStage("cuda_build", {
             sh "./ci/build_cpp.sh"
           })
@@ -39,7 +38,6 @@ pipeline {
       }
       steps {
         script {
-          // generate the python stages across different configuration options
           parallel generateStage("python_build", {
             sh "./ci/build_py.sh"
           })
@@ -47,14 +45,13 @@ pipeline {
       }
     }
 
-    stage("PR/Branch Test Stage") {
-      when { not { triggeredBy 'TimerTrigger' } }
+    stage("PR Test Stage") {
+      when { environment name: 'BUILD_TYPE', value: 'pull-request' }
       options {
         timeout(time: 10, unit: 'MINUTES', activity: true)
       }
       steps {
         script {
-          // generate the PR/Branch test stages across different configuration options
           parallel generateStage("branch_pr_test",{
             sh "./ci/gpu_test.sh"
           })
@@ -63,14 +60,13 @@ pipeline {
     }
 
     stage("Nightly Test Stage") {
-      when { triggeredBy 'TimerTrigger' }
+      when { environment name: 'BUILD_TYPE', value: 'nightly' }
       options {
         timeout(time: 10, unit: 'MINUTES', activity: true)
       }
       environment { UPLOAD_PKGS = "true" }
       steps {
         script {
-          // generate the nightly test stages across different configuration options
           parallel generateStage("branch_pr_test",{
             sh "./ci/gpu_test.sh"
           })
@@ -87,13 +83,7 @@ pipeline {
       }
 
       steps {
-        sh '''#!/bin/bash
-          CPP_CHANNEL=$(rapids-download-conda-from-s3 cpp)
-          PYTHON_CHANNEL=$(rapids-download-conda-from-s3 python)
-
-          rapids-upload-to-anaconda "${CPP_CHANNEL}"
-          rapids-upload-to-anaconda "${PYTHON_CHANNEL}"
-        '''
+        sh "./ci/upload_to_anaconda.sh"
       }
     }
   }
