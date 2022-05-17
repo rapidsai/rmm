@@ -67,10 +67,16 @@ cdef extern from "rmm/mr/device/managed_memory_resource.hpp" \
 cdef extern from "rmm/mr/device/cuda_async_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass cuda_async_memory_resource(device_memory_resource):
+        enum allocation_handle_type:
+            none,
+            posix_file_descriptor,
+            win32,
+            win32_kmt
+
         cuda_async_memory_resource(
             optional[size_t] initial_pool_size,
             optional[size_t] release_threshold,
-            optional[cudaMemAllocationHandleType] export_handle_type) except +
+            optional[allocation_handle_type] export_handle_type) except +
 
 cdef extern from "rmm/mr/device/pool_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
@@ -267,12 +273,12 @@ cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
             else optional[size_t](release_threshold)
         )
 
-        cdef optional[cudaMemAllocationHandleType] c_export_handle_type = (
-            optional[cudaMemAllocationHandleType](
-                cudaMemHandleTypePosixFileDescriptor
+        cdef optional[allocation_handle_type] c_export_handle_type = (
+            optional[allocation_handle_type](
+                posix_file_descriptor
             )
             if enable_ipc
-            else optional[cudaMemAllocationHandleType]()
+            else optional[allocation_handle_type]()
         )
 
         self.c_obj.reset(

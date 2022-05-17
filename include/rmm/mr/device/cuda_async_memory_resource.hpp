@@ -44,6 +44,17 @@ namespace rmm::mr {
  */
 class cuda_async_memory_resource final : public device_memory_resource {
  public:
+  /**
+   * Flags for specifying particular handle types
+   */
+  enum class allocation_handle_type {
+    none                  = 0x0, /**< Does not allow any export mechanism. > */
+    posix_file_descriptor = 0x1, /**< Allows a file descriptor to be used for exporting. Permitted
+                                    only on POSIX systems. (int) */
+    win32     = 0x2,             /**< Allows a Win32 NT handle to be used for exporting. (HANDLE) */
+    win32_kmt = 0x4 /**< Allows a Win32 KMT handle to be used for exporting. (D3DKMT_HANDLE) */
+  };
+
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
   /**
    * @brief Constructs a cuda_async_memory_resource with the optionally specified initial pool size
@@ -63,9 +74,9 @@ class cuda_async_memory_resource final : public device_memory_resource {
    * `cudaMemHandleTypeNone` for no IPC support.
    */
   // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-  cuda_async_memory_resource(thrust::optional<std::size_t> initial_pool_size                  = {},
-                             thrust::optional<std::size_t> release_threshold                  = {},
-                             thrust::optional<cudaMemAllocationHandleType> export_handle_type = {})
+  cuda_async_memory_resource(thrust::optional<std::size_t> initial_pool_size             = {},
+                             thrust::optional<std::size_t> release_threshold             = {},
+                             thrust::optional<allocation_handle_type> export_handle_type = {})
   {
     // Check if cudaMallocAsync Memory pool supported
     RMM_EXPECTS(rmm::detail::async_alloc::is_supported(),
@@ -74,7 +85,8 @@ class cuda_async_memory_resource final : public device_memory_resource {
     // Construct explicit pool
     cudaMemPoolProps pool_props{};
     pool_props.allocType   = cudaMemAllocationTypePinned;
-    pool_props.handleTypes = export_handle_type.value_or(cudaMemHandleTypeNone);
+    pool_props.handleTypes = static_cast<cudaMemAllocationHandleType>(
+      export_handle_type.value_or(allocation_handle_type::none));
     RMM_EXPECTS(rmm::detail::async_alloc::is_export_handle_type_supported(pool_props.handleTypes),
                 "Requested IPC memory handle type not supported");
     pool_props.location.type = cudaMemLocationTypeDevice;
@@ -110,8 +122,9 @@ class cuda_async_memory_resource final : public device_memory_resource {
   }
 #else
   // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-  cuda_async_memory_resource(thrust::optional<std::size_t> initial_pool_size = {},
-                             thrust::optional<std::size_t> release_threshold = {})
+  cuda_async_memory_resource(thrust::optional<std::size_t> initial_pool_size             = {},
+                             thrust::optional<std::size_t> release_threshold             = {},
+                             thrust::optional<allocation_handle_type> export_handle_type = {})
   {
     RMM_FAIL(
       "cudaMallocAsync not supported by the version of the CUDA Toolkit used for this build");
