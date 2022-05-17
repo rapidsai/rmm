@@ -34,7 +34,18 @@ from rmm._lib.cuda_stream_view cimport cuda_stream_view
 # expect them to work with external code. So we declare them
 # ourselves.  See https://github.com/NVIDIA/cuda-python/issues/22 for
 # details.
-cdef extern from "driver_types.h" nogil:
+cdef extern from * nogil:
+    """
+    #include <cuda_runtime_api.h>
+
+    #if (CUDART_VERSION < 11030)
+    enum cudaMemAllocationHandleType {
+        cudaMemHandleTypePosixFileDescriptor = 0
+    };
+    #endif
+    """
+    int CUDART_VERSION
+
     enum cudaMemAllocationHandleType:
         cudaMemHandleTypePosixFileDescriptor
 
