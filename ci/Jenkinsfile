@@ -13,9 +13,20 @@ pipeline {
   stages {
     stage("Style Checks") {
       steps {
-        sh "env"
+        docker.image("gpuci/rapidsai-driver:22.06-cuda11.5-devel-centos7-py3.8") {
+          sh "./ci/check_style.sh"
+        }
       }
     }
+
+    stage("Style Checks") {
+      steps {     
+        docker.image("gpuci/rapidsai-driver:22.06-cuda11.5-devel-centos7-py3.8") {
+          sh "./ci/check_size.sh"
+        }
+      }
+    }
+
     stage("C++ Matrix Build") {
       environment {
         PARALLEL_LEVEL = '4'
