@@ -42,7 +42,6 @@ pipeline {
         }
       }
     }
-
     stage("Python Matrix Build") {
       options {
         timeout(time: 30, unit: 'MINUTES', activity: true)
@@ -55,7 +54,6 @@ pipeline {
         }
       }
     }
-
     stage("PR Test Stage") {
       when { environment name: 'BUILD_TYPE', value: 'pull-request' }
       options {
@@ -69,7 +67,6 @@ pipeline {
         }
       }
     }
-
     stage("Nightly Test Stage") {
       when { environment name: 'BUILD_TYPE', value: 'nightly' }
       options {
@@ -84,15 +81,17 @@ pipeline {
         }
       }
     }
-
     stage("Upload Anaconda Packages") {
+      environment {
+        STABLE_CONDA_TOKEN = credentials('rapidsai-conda-upload-api')
+        NIGHTLY_CONDA_TOKEN = credentials('rapidsai-nightly-conda-upload-api')
+      }
       when {
         anyOf {
           environment name: 'BUILD_TYPE', value: 'branch'
           environment name: 'BUILD_TYPE', value: 'nightly'
         }
       }
-
       steps {
         sh "./ci/upload_to_anaconda.sh"
       }
