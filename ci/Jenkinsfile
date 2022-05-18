@@ -12,22 +12,25 @@ pipeline {
   }
   stages {
     stage("Style Checks") {
+      when { environment name: 'BUILD_TYPE', value: 'pull-request' }
       agent {
         docker { 
           image "gpuci/rapidsai-driver:22.06-cuda11.5-devel-centos7-py3.8" 
-          reuseNode true
+          label 'cpu'
         }
       }
       steps {
-        sh "./ci/check_style.sh"
+        sh "./ci/checks/style.sh"
+        sh 'printenv'
       }
     }
 
     stage("Size Checks") {
+      when { environment name: 'BUILD_TYPE', value: 'pull-request' }
       agent {
         docker { 
           image "gpuci/rapidsai-driver:22.06-cuda11.5-devel-centos7-py3.8" 
-          reuseNode true
+          label 'cpu'
         }
       }
       steps {     

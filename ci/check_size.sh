@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+set -x
+printenv
+
 DIFF_FILES=$(mktemp)
 LARGE_FILES=$(mktemp)
 FILESIZE_LIMIT=5242880
@@ -10,6 +13,7 @@ RETVAL=0
 . /opt/conda/etc/profile.d/conda.sh
 conda activate rapids
 
+git branch current-pr-branch
 # Checkout target branch
 git checkout --force $TARGET_BRANCH
 # Switch back to PR branch
