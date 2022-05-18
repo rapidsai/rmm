@@ -34,6 +34,6 @@ setup(
         )
     },
     cmdclass=versioneer.get_cmdclass(),
-    install_requires=["cuda-python", "numba"],
+    install_requires=["cuda-python", "numpy", "numba"],
     zip_safe=False,
 )
