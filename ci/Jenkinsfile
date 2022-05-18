@@ -12,18 +12,20 @@ pipeline {
   }
   stages {
     stage("Style Checks") {
+      agent {
+        docker { image "gpuci/rapidsai-driver:22.06-cuda11.5-devel-centos7-py3.8" }
+      }
       steps {
-        docker.image("gpuci/rapidsai-driver:22.06-cuda11.5-devel-centos7-py3.8") {
-          sh "./ci/check_style.sh"
-        }
+        sh "./ci/check_style.sh"
       }
     }
 
-    stage("Style Checks") {
+    stage("Size Checks") {
+      agent {
+        docker { image "gpuci/rapidsai-driver:22.06-cuda11.5-devel-centos7-py3.8" }
+      }
       steps {     
-        docker.image("gpuci/rapidsai-driver:22.06-cuda11.5-devel-centos7-py3.8") {
-          sh "./ci/check_size.sh"
-        }
+        sh "./ci/check_size.sh"
       }
     }
 
