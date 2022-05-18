@@ -30,26 +30,6 @@ from rmm._cuda.gpu import CUDARuntimeError, getDevice, setDevice
 from rmm._lib.cuda_stream_view cimport cuda_stream_view
 
 
-# NOTE: We can't use declarations of CUDA types from CUDA Python and
-# expect them to work with external code. So we declare them
-# ourselves.  See https://github.com/NVIDIA/cuda-python/issues/22 for
-# details.
-cdef extern from * nogil:
-    """
-    #include <cuda_runtime_api.h>
-
-    #if (CUDART_VERSION < 11030)
-    enum cudaMemAllocationHandleType {
-        cudaMemHandleTypePosixFileDescriptor = 0
-    };
-    #endif
-    """
-    int CUDART_VERSION
-
-    enum cudaMemAllocationHandleType:
-        cudaMemHandleTypePosixFileDescriptor
-
-
 # NOTE: Keep extern declarations in .pyx file as much as possible to avoid
 # leaking dependencies when importing RMM Cython .pxd files
 cdef extern from "thrust/optional.h" namespace "thrust" nogil:
@@ -84,6 +64,7 @@ cdef extern from "rmm/mr/device/cuda_async_memory_resource.hpp" \
             optional[size_t] release_threshold,
             optional[allocation_handle_type] export_handle_type) except +
 
+# TODO: when we adopt Cython 3.0 use enum class
 cdef extern from "rmm/mr/device/cuda_async_memory_resource.hpp" \
         namespace \
         "rmm::mr::cuda_async_memory_resource::allocation_handle_type" \
