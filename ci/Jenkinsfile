@@ -13,19 +13,19 @@ pipeline {
   stages {
     stage("Style Checks") {
       agent {
-        docker { image "gpuci/rapidsai-driver:22.06-cuda11.5-devel-centos7-py3.8" }
+        docker { image "gpuci/rapidsai-driver:22.06-cuda11.5-devel-centos7-py3.8" reuseNode true }
       }
       steps {
-        sh "./ci/check_style.sh"
+        echo 'debug'
       }
     }
 
     stage("Size Checks") {
       agent {
-        docker { image "gpuci/rapidsai-driver:22.06-cuda11.5-devel-centos7-py3.8" }
+        docker { image "gpuci/rapidsai-driver:22.06-cuda11.5-devel-centos7-py3.8" reuseNode true }
       }
       steps {     
-        sh "./ci/check_size.sh"
+        echo 'debug'
       }
     }
 
