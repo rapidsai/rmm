@@ -21,7 +21,6 @@ pipeline {
       }
       steps {
         sh "./ci/checks/style.sh"
-        sh 'printenv'
       }
     }
 
@@ -33,8 +32,9 @@ pipeline {
           label 'cpu'
         }
       }
-      steps {     
-        sh "./ci/check_size.sh"
+      steps {   
+        sh 'printenv'  
+        sh "rapids-size-checker"
       }
     }
 
