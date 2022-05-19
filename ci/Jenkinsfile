@@ -20,6 +20,7 @@ pipeline {
         }
       }
       steps {
+        sh 'exit 0'
         sh "./ci/checks/style.sh"
       }
     }
