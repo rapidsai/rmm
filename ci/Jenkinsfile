@@ -11,31 +11,34 @@ pipeline {
     disableConcurrentBuilds(abortPrevious: true)
   }
   stages {
-    stage("Style Checks") {
-      when { environment name: 'BUILD_TYPE', value: 'pull-request' }
-      agent {
-        docker { 
-          image "gpuci/rapidsai-driver:22.06-cuda11.5-devel-centos7-py3.8" 
-          label 'cpu'
+    stage ('Run checks') {
+      parallel {
+        stage("Style Checks") {
+          when { environment name: 'BUILD_TYPE', value: 'pull-request' }
+          agent {
+            docker {
+              image "gpuci/rapidsai-driver:22.06-cuda11.5-devel-centos7-py3.8" 
+              label 'cpu'
+            }
+          }
+          steps {
+            sh "./ci/checks/style.sh"
+          }
         }
-      }
-      steps {
-        sh 'exit 0'
-        sh "./ci/checks/style.sh"
-      }
-    }
 
-    stage("Size Checks") {
-      when { environment name: 'BUILD_TYPE', value: 'pull-request' }
-      agent {
-        docker { 
-          image "gpuci/rapidsai-driver:22.06-cuda11.5-devel-centos7-py3.8" 
-          label 'cpu'
+        stage("Size Checks") {
+          when { environment name: 'BUILD_TYPE', value: 'pull-request' }
+          agent {
+            docker { 
+              image "gpuci/rapidsai-driver:22.06-cuda11.5-devel-centos7-py3.8" 
+              label 'cpu'
+            }
+          }
+          steps {   
+            sh 'printenv'  
+            sh "rapids-size-checker"
+          }
         }
-      }
-      steps {   
-        sh 'printenv'  
-        sh "rapids-size-checker"
       }
     }
 
