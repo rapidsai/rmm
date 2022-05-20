@@ -2,7 +2,9 @@ pipeline {
     agent any
     stages {
         stage('Say Hello') {
-            sh 'Hello World'
+            steps {
+                echo 'Hello World'
+            }
         }
     }
 }
