@@ -18,6 +18,8 @@ build:
   script_env:
     - RMM_BUILD_NO_GPU_TEST
     - VERSION_SUFFIX
+  ignore_run_exports_from:
+    - {{ compiler('cuda') }}
 
 requirements:
   build:
@@ -25,8 +27,7 @@ requirements:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
     - {{ compiler('cuda') }} {{ cuda_version }}
-    - sysroot_linux-64 {{ sysroot_version }}  # [linux64]
-    - sysroot_linux-aarch64 {{ sysroot_version }}  # [aarch64]
+    - sysroot_{{ target_platform }} {{ sysroot_version }}
   host:
     - cuda-python >=11.5,<12.0
     - cudatoolkit {{ cuda_version }}.*
