@@ -69,7 +69,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
    * @param release_threshold Optional release threshold size in bytes of the pool. If no value is
    * provided, the release threshold is set to the total amount of memory on the current device.
    * @param export_handle_type Optional `cudaMemAllocationHandleType` that allocations from this
-   * resource should support for interprocess communication (IPC). Default is
+   * resource should support interprocess communication (IPC). Default is
    * `cudaMemHandleTypeNone` for no IPC support.
    */
   // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
