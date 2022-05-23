@@ -125,7 +125,7 @@ struct async_alloc {
    * @brief Check whether the specified `cudaMemAllocationHandleType` is supported on the present
    * CUDA driver/runtime version.
    *
-   * @note This query was introduced in CUDA 11.3 so on CUDA 11.2 this will only return true for
+   * @note This query was introduced in CUDA 11.3 so on CUDA 11.2 this function will only return true for
    * `cudaMemHandleTypeNone`.
    *
    * @param handle_type An IPC export handle type to check for support.
