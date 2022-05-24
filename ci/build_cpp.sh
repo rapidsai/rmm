@@ -4,6 +4,9 @@ set -e
 # Check environment
 source ci/check_environment.sh
 
+# Update env vars
+source rapids-env-update
+
 ################################################################################
 # BUILD - Conda package builds (LIBRMM)
 ################################################################################
