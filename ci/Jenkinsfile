@@ -9,6 +9,7 @@ pipeline {
     buildDiscarder(logRotator(numToKeepStr: '10'))
     ansiColor('xterm')
     disableConcurrentBuilds(abortPrevious: true)
+    parallelsAlwaysFailFast()
   }
   stages {
     stage("Style & Size Checks") {
