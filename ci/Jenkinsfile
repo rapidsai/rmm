@@ -59,7 +59,7 @@ pipeline {
       }
       steps {
         script {
-          parallel generateStage("branch_pr_test",{
+          parallel generateStage("pr_test",{
             sh "./ci/gpu_test.sh"
           })
         }
@@ -73,7 +73,7 @@ pipeline {
       environment { UPLOAD_PKGS = "true" }
       steps {
         script {
-          parallel generateStage("branch_pr_test",{
+          parallel generateStage("pr_test",{
             sh "./ci/gpu_test.sh"
           })
         }
