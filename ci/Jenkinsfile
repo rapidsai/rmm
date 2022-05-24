@@ -74,7 +74,7 @@ pipeline {
       environment { UPLOAD_PKGS = "true" }
       steps {
         script {
-          parallel generateStage("pr_test",{
+          parallel generateStage("nightly_test",{
             sh "./ci/gpu_test.sh"
           })
         }
