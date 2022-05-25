@@ -136,9 +136,9 @@ struct async_alloc {
   {
     int supported_handle_types_bitmask{};
 #if CUDART_VERSION >= 11030  // 11.3 introduced cudaDevAttrMemoryPoolSupportedHandleTypes
-    cudaDeviceGetAttribute(&supported_handle_types_bitmask,
-                           cudaDevAttrMemoryPoolSupportedHandleTypes,
-                           rmm::detail::current_device().value());
+    RMM_CUDA_TRY(cudaDeviceGetAttribute(&supported_handle_types_bitmask,
+                                        cudaDevAttrMemoryPoolSupportedHandleTypes,
+                                        rmm::detail::current_device().value()));
 #endif
     return (supported_handle_types_bitmask & handle_type) == handle_type;
   }
