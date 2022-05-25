@@ -49,10 +49,10 @@ class cuda_async_memory_resource final : public device_memory_resource {
    *
    * @note These values are exact copies from `cudaMemAllocationHandleType`. We need to
    * define our own enum here because the earliest CUDA runtime version that supports asynchronous
-   * memory pools (CUDA 11.2) did not support these flags. So we need a placeholder that can be
+   * memory pools (CUDA 11.2) did not support these flags, so we need a placeholder that can be
    * used consistently in the constructor of `cuda_async_memory_resource` with all versions of
    * CUDA >= 11.2. See the `cudaMemAllocationHandleType` docs at
-   * https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html"
+   * https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html
    */
   enum class allocation_handle_type {
     none                  = 0x0,  ///< Does not allow any export mechanism.
