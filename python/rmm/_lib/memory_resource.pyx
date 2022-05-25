@@ -257,7 +257,7 @@ cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
         self,
         initial_pool_size=None,
         release_threshold=None,
-        enable_ipc=False
+        enable_ipc=True
     ):
         cdef optional[size_t] c_initial_pool_size = (
             optional[size_t]()
