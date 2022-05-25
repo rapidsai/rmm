@@ -9,10 +9,10 @@ pipeline {
     buildDiscarder(logRotator(numToKeepStr: '10'))
     ansiColor('xterm')
     disableConcurrentBuilds(abortPrevious: true)
-    parallelsAlwaysFailFast()
   }
   stages {
     stage("Style & Size Checks") {
+      failFast true
       environment {
         GH_TOKEN = credentials('gputester-github-token')
       }
@@ -30,6 +30,7 @@ pipeline {
     }
 
     stage("C++ Matrix Build") {
+      failFast true
       environment {
         PARALLEL_LEVEL = '4'
       }
@@ -45,6 +46,7 @@ pipeline {
       }
     }
     stage("Python Matrix Build") {
+      failFast true
       options {
         timeout(time: 30, unit: 'MINUTES', activity: true)
       }
@@ -57,6 +59,7 @@ pipeline {
       }
     }
     stage("PR Test Stage") {
+      failFast true
       when { environment name: 'BUILD_TYPE', value: 'pull-request' }
       options {
         timeout(time: 10, unit: 'MINUTES', activity: true)
@@ -70,6 +73,7 @@ pipeline {
       }
     }
     stage("Nightly Test Stage") {
+      failFast true
       when { environment name: 'BUILD_TYPE', value: 'nightly' }
       options {
         timeout(time: 10, unit: 'MINUTES', activity: true)
