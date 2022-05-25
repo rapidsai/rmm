@@ -25,7 +25,13 @@ from libcpp.string cimport string
 
 from cuda.cudart import cudaError_t
 
-from rmm._cuda.gpu import CUDARuntimeError, getDevice, setDevice
+from rmm._cuda.gpu import (
+    CUDARuntimeError,
+    driverGetVersion,
+    getDevice,
+    runtimeGetVersion,
+    setDevice,
+)
 
 from rmm._lib.cuda_stream_view cimport cuda_stream_view
 
@@ -257,7 +263,7 @@ cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
         self,
         initial_pool_size=None,
         release_threshold=None,
-        enable_ipc=True
+        enable_ipc=False
     ):
         cdef optional[size_t] c_initial_pool_size = (
             optional[size_t]()
@@ -270,6 +276,16 @@ cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
             if release_threshold is None
             else optional[size_t](release_threshold)
         )
+
+        # IPC export handle support query is only possibly on CUDA 11.3 or
+        # later, so IPC not supported on earlier versions
+        if enable_ipc:
+            driver_version = driverGetVersion()
+            runtime_version = runtimeGetVersion()
+            if (driver_version <= 11020 or runtime_version <= 11020):
+                raise ValueError(
+                    "enable_ipc=True is not supported on CUDA <= 11.2."
+                )
 
         cdef optional[allocation_handle_type] c_export_handle_type = (
             optional[allocation_handle_type](
