@@ -543,21 +543,6 @@ def test_cuda_async_memory_resource(dtype, nelem, alloc):
     not _CUDAMALLOC_ASYNC_SUPPORTED,
     reason="cudaMallocAsync not supported",
 )
-def test_cuda_async_memory_resource_ipc():
-    # Test that enabling IPC earlier than CUDA 11.3 raises a ValueError
-    if _driver_version < 11030 or _runtime_version < 11030:
-        with pytest.raises(ValueError):
-            mr = rmm.mr.CudaAsyncMemoryResource(enable_ipc=True)
-    else:
-        mr = rmm.mr.CudaAsyncMemoryResource(enable_ipc=True)
-        rmm.mr.set_current_device_resource(mr)
-        assert rmm.mr.get_current_device_resource_type() is type(mr)
-
-
-@pytest.mark.skipif(
-    not _CUDAMALLOC_ASYNC_SUPPORTED,
-    reason="cudaMallocAsync not supported",
-)
 @pytest.mark.parametrize("nelems", _nelems)
 def test_cuda_async_memory_resource_stream(nelems):
     # test that using CudaAsyncMemoryResource
