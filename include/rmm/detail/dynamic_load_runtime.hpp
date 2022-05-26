@@ -14,13 +14,8 @@
  * limitations under the License.
  */
 #pragma once
-
-#include <rmm/cuda_device.hpp>
-
 #include <cuda_runtime_api.h>
-
 #include <dlfcn.h>
-
 #include <memory>
 #include <optional>
 
@@ -119,28 +114,6 @@ struct async_alloc {
       return result == cudaSuccess and cuda_pool_supported == 1;
     }()};
     return runtime_supports_pool and driver_supports_pool;
-  }
-
-  /**
-   * @brief Check whether the specified `cudaMemAllocationHandleType` is supported on the present
-   * CUDA driver/runtime version.
-   *
-   * @note This query was introduced in CUDA 11.3 so on CUDA 11.2 this function will only return
-   * true for `cudaMemHandleTypeNone`.
-   *
-   * @param handle_type An IPC export handle type to check for support.
-   * @return true if supported
-   * @return false if unsupported
-   */
-  static bool is_export_handle_type_supported(cudaMemAllocationHandleType handle_type)
-  {
-    int supported_handle_types_bitmask{};
-#if CUDART_VERSION >= 11030  // 11.3 introduced cudaDevAttrMemoryPoolSupportedHandleTypes
-    RMM_CUDA_TRY(cudaDeviceGetAttribute(&supported_handle_types_bitmask,
-                                        cudaDevAttrMemoryPoolSupportedHandleTypes,
-                                        rmm::detail::current_device().value()));
-#endif
-    return (supported_handle_types_bitmask & handle_type) == handle_type;
   }
 
   template <typename... Args>
