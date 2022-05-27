@@ -29,7 +29,6 @@ pipeline {
     }
 
     stage("C++ Matrix Build") {
-      failFast true
       environment {
         PARALLEL_LEVEL = '4'
       }
