@@ -12,8 +12,9 @@
 # the License.
 # =============================================================================
 
-# Set the list of Cython files to build
-set(cython_modules device_buffer lib memory_resource cuda_stream)
+set(cython_sources device_buffer.pyx lib.pyx memory_resource.pyx cuda_stream.pyx)
+set(linked_libraries rmm::rmm)
 
 # Build all of the Cython targets
-add_cython_modules("${cython_modules}")
+rapids_cython_create_modules(SOURCE_FILES "${cython_sources}" LINKED_LIBRARIES "${linked_libraries}"
+                                                                               CXX)

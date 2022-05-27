@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2021, NVIDIA CORPORATION.
+# Copyright (c) 2020-2022, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,11 +21,11 @@ from libcpp.vector cimport vector
 cdef extern from "rmm/mr/device/device_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass device_memory_resource:
-        pass
+        void* allocate(size_t bytes) except +
+        void deallocate(void* ptr, size_t bytes) except +
 
 cdef class DeviceMemoryResource:
     cdef shared_ptr[device_memory_resource] c_obj
-
     cdef device_memory_resource* get_mr(self)
 
 cdef class UpstreamResourceAdaptor(DeviceMemoryResource):
@@ -56,6 +56,10 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
         self,
         size_t allocation_size,
         DeviceMemoryResource bin_resource=*)
+
+cdef class CallbackMemoryResource(DeviceMemoryResource):
+    cdef object _allocate_func
+    cdef object _deallocate_func
 
 cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
     cdef object _log_file_name

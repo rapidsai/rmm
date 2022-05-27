@@ -608,7 +608,7 @@ DeviceBuffers can also be created by copying data from host memory:
 >>> import rmm
 >>> import numpy as np
 >>> a = np.array([1, 2, 3], dtype='float64')
->>> buf = rmm.to_device(a.tobytes())
+>>> buf = rmm.DeviceBuffer.to_device(a.tobytes())
 >>> buf.size
 24
 ```
@@ -684,6 +684,11 @@ allocations by setting the CuPy CUDA allocator to
 >>> cupy.cuda.set_allocator(rmm.rmm_cupy_allocator)
 ```
 
+
+**Note:** This only configures CuPy to use the current RMM resource for allocations. 
+It does not initialize nor change the current resource, e.g., enabling a memory pool. 
+See [here](#memoryresource-objects) for more information on changing the current memory resource.
+
 ### Using RMM with Numba
 
 You can configure Numba to use RMM for memory allocations using the
@@ -704,3 +709,7 @@ This can be done in two ways:
   >>> import rmm
   >>> cuda.set_memory_manager(rmm.RMMNumbaManager)
   ```
+
+**Note:** This only configures Numba to use the current RMM resource for allocations. 
+It does not initialize nor change the current resource, e.g., enabling a memory pool. 
+See [here](#memoryresource-objects) for more information on changing the current memory resource.
