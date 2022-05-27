@@ -1,10 +1,6 @@
 #!/bin/bash
 set -e
 
-if [ ${ARCH} == "arm64" ]; then
-  exit 1
-fi
-
 # Check environment
 source ci/check_environment.sh
 
