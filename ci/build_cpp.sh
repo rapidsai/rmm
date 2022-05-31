@@ -12,7 +12,7 @@ source ci/check_environment.sh
 ################################################################################
 gpuci_logger "Begin cpp build"
 
-gpuci_conda_retry mambabuild \
+gpuci_mamba_retry mambabuild \
   --croot /tmp/conda-bld-workspace \
   --output-folder /tmp/conda-bld-output \
   conda/recipes/librmm

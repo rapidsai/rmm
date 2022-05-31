@@ -15,7 +15,7 @@ gpuci_logger "Begin py build"
 # Python Build Stage
 CPP_CHANNEL=$(rapids-download-conda-from-s3 cpp)
 
-gpuci_conda_retry mambabuild \
+gpuci_mamba_retry mambabuild \
   -c "${CPP_CHANNEL}" \
   --croot /tmp/conda-bld-workspace \
   --output-folder /tmp/conda-bld-output \
