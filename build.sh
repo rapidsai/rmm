@@ -37,7 +37,7 @@ HELP="$0 [clean] [librmm] [rmm] [-v] [-g] [-n] [-s] [--ptds] [--cmake-args=\"<ar
 "
 LIBRMM_BUILD_DIR=${LIBRMM_BUILD_DIR:=${REPODIR}/build}
 RMM_BUILD_DIR="${REPODIR}/python/build ${REPODIR}/python/_skbuild"
-BUILD_DIR="${LIBRMM_BUILD_DIR} ${RMM_BUILD_DIR}"
+BUILD_DIRS="${LIBRMM_BUILD_DIR} ${RMM_BUILD_DIR}"
 
 # Set defaults for vars modified by flags to this script
 VERBOSE_FLAG=""
@@ -173,11 +173,11 @@ if (( NUMARGS == 0 )) || hasArg rmm; then
     export INSTALL_PREFIX
     echo "building rmm..."
 
-    python setup.py build_ext --inplace -- -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX}
+    python setup.py build_ext --inplace -- -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX} ${CMAKE_ARGS}
 
     if [[ ${INSTALL_TARGET} != "" ]]; then
         echo "installing rmm..."
-        python setup.py install --single-version-externally-managed --record=record.txt -- -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX}
+        python setup.py install --single-version-externally-managed --record=record.txt -- -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX} ${CMAKE_ARGS}
     fi
 
 fi

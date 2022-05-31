@@ -13,6 +13,7 @@
 # limitations under the License.
 from rmm._lib.memory_resource import (
     BinningMemoryResource,
+    CallbackMemoryResource,
     CudaAsyncMemoryResource,
     CudaMemoryResource,
     DeviceMemoryResource,
@@ -39,6 +40,7 @@ from rmm._lib.memory_resource import (
 
 __all__ = [
     "BinningMemoryResource",
+    "CallbackMemoryResource",
     "CudaAsyncMemoryResource",
     "CudaMemoryResource",
     "DeviceMemoryResource",
