@@ -141,6 +141,11 @@ if hasArg --ptds; then
     PER_THREAD_DEFAULT_STREAM=ON
 fi
 
+# Append `-DFIND_RMM_CPP=ON` to CMAKE_ARGS unless a user specified the option.
+if [[ ${CMAKE_ARGS} != *"DFIND_RMM_CPP"* ]]; then
+    CMAKE_ARGS="${CMAKE_ARGS} -DFIND_RMM_CPP=ON"
+fi
+
 # If clean given, run it prior to any other steps
 if hasArg clean; then
     # If the dirs to clean are mounted dirs in a container, the
