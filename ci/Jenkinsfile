@@ -18,7 +18,7 @@ pipeline {
       when { environment name: 'BUILD_TYPE', value: 'pull-request' }
       agent {
         docker {
-          image "gpuci/rapidsai-driver:22.06-cuda11.5-devel-centos7-py3.8" 
+          image "gpuci/rapidsai-driver:22.08-cuda11.5-devel-centos7-py3.8" 
           label 'cpu'
         }
       }

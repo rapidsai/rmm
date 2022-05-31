@@ -9,7 +9,7 @@ source ci/check_environment.sh
 CPP_CHANNEL=$(rapids-download-conda-from-s3 cpp)
 PYTHON_CHANNEL=$(rapids-download-conda-from-s3 python)
 
-conda install \
+gpuci_conda_retry install \
   -c "${CPP_CHANNEL}" \
   -c "${PYTHON_CHANNEL}" \
   rmm librmm librmm-tests

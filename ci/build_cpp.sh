@@ -1,18 +1,18 @@
 #!/bin/bash
 set -e
 
-# Check environment
-source ci/check_environment.sh
-
 # Update env vars
 source rapids-env-update
+
+# Check environment
+source ci/check_environment.sh
 
 ################################################################################
 # BUILD - Conda package builds (LIBRMM)
 ################################################################################
 gpuci_logger "Begin cpp build"
 
-conda build \
+gpuci_conda_retry mambabuild \
   --croot /tmp/conda-bld-workspace \
   --output-folder /tmp/conda-bld-output \
   conda/recipes/librmm
