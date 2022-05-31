@@ -142,7 +142,7 @@ if hasArg --ptds; then
 fi
 
 # Append `-DFIND_RMM_CPP=ON` to CMAKE_ARGS unless a user specified the option.
-if [[ ${CMAKE_ARGS} != *"DFIND_RMM_CPP"* ]]; then
+if [[ "${CMAKE_ARGS}" != *"DFIND_RMM_CPP"* ]]; then
     CMAKE_ARGS="${CMAKE_ARGS} -DFIND_RMM_CPP=ON"
 fi
 
