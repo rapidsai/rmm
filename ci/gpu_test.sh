@@ -9,10 +9,13 @@ source ci/check_environment.sh
 CPP_CHANNEL=$(rapids-download-conda-from-s3 cpp)
 PYTHON_CHANNEL=$(rapids-download-conda-from-s3 python)
 
-gpuci_mamba_retry install \
+TEST_ENV="test-env"
+gpuci_mamba_retry create -y \
+  -n "${TEST_ENV}" \
   -c "${CPP_CHANNEL}" \
   -c "${PYTHON_CHANNEL}" \
   rmm librmm librmm-tests
+conda activate "${TEST_ENV}"
 
 TESTRESULTS_DIR=test-results
 mkdir -p ${TESTRESULTS_DIR}
