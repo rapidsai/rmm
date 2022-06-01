@@ -137,15 +137,15 @@ struct async_alloc {
     int supported_handle_types_bitmask{};
 #if CUDART_VERSION >= 11030  // 11.3 introduced cudaDevAttrMemoryPoolSupportedHandleTypes
     if (cudaMemHandleTypeNone != handle_type) {
-        auto const result = cudaDeviceGetAttribute(&supported_handle_types_bitmask,
-                                                   cudaDevAttrMemoryPoolSupportedHandleTypes,
-                                                   rmm::detail::current_device().value());
+      auto const result = cudaDeviceGetAttribute(&supported_handle_types_bitmask,
+                                                 cudaDevAttrMemoryPoolSupportedHandleTypes,
+                                                 rmm::detail::current_device().value());
 
-        // Don't throw on cudaErrorInvalidValue
-        auto const unsupported_runtime = (result == cudaErrorInvalidValue);
-        if (unsupported_runtime) return false;
-        // throw any other error that may have occurred
-        RMM_CUDA_TRY(result);
+      // Don't throw on cudaErrorInvalidValue
+      auto const unsupported_runtime = (result == cudaErrorInvalidValue);
+      if (unsupported_runtime) return false;
+      // throw any other error that may have occurred
+      RMM_CUDA_TRY(result);
     }
 
 #endif
