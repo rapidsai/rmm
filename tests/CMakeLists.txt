@@ -150,3 +150,6 @@ ConfigureTest(ARENA_MR_TEST mr/device/arena_mr_tests.cpp)
 
 # binning MR tests
 ConfigureTest(BINNING_MR_TEST mr/device/binning_mr_tests.cpp)
+
+# callback memory resource tests
+ConfigureTest(CALLBACK_MR_TEST mr/device/callback_mr_tests.cpp)

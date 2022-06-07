@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2021, NVIDIA CORPORATION.
+# Copyright (c) 2020-2022, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -526,7 +526,8 @@ def test_mr_upstream_lifetime():
 
 
 @pytest.mark.skipif(
-    not _CUDAMALLOC_ASYNC_SUPPORTED, reason="cudaMallocAsync not supported",
+    not _CUDAMALLOC_ASYNC_SUPPORTED,
+    reason="cudaMallocAsync not supported",
 )
 @pytest.mark.parametrize("dtype", _dtypes)
 @pytest.mark.parametrize("nelem", _nelems)
@@ -539,7 +540,23 @@ def test_cuda_async_memory_resource(dtype, nelem, alloc):
 
 
 @pytest.mark.skipif(
-    not _CUDAMALLOC_ASYNC_SUPPORTED, reason="cudaMallocAsync not supported",
+    not _CUDAMALLOC_ASYNC_SUPPORTED,
+    reason="cudaMallocAsync not supported",
+)
+def test_cuda_async_memory_resource_ipc():
+    # Test that enabling IPC earlier than CUDA 11.3 raises a ValueError
+    if _driver_version < 11030 or _runtime_version < 11030:
+        with pytest.raises(ValueError):
+            mr = rmm.mr.CudaAsyncMemoryResource(enable_ipc=True)
+    else:
+        mr = rmm.mr.CudaAsyncMemoryResource(enable_ipc=True)
+        rmm.mr.set_current_device_resource(mr)
+        assert rmm.mr.get_current_device_resource_type() is type(mr)
+
+
+@pytest.mark.skipif(
+    not _CUDAMALLOC_ASYNC_SUPPORTED,
+    reason="cudaMallocAsync not supported",
 )
 @pytest.mark.parametrize("nelems", _nelems)
 def test_cuda_async_memory_resource_stream(nelems):
@@ -555,7 +572,8 @@ def test_cuda_async_memory_resource_stream(nelems):
 
 
 @pytest.mark.skipif(
-    not _CUDAMALLOC_ASYNC_SUPPORTED, reason="cudaMallocAsync not supported",
+    not _CUDAMALLOC_ASYNC_SUPPORTED,
+    reason="cudaMallocAsync not supported",
 )
 @pytest.mark.parametrize("nelem", _nelems)
 @pytest.mark.parametrize("alloc", _allocs)
@@ -716,3 +734,34 @@ def test_dev_buf_circle_ref_dealloc():
     # deallocate `dbuf1` (which needs the MR alive), a segfault occurs.
 
     gc.collect()
+
+
+def test_mr_allocate_deallocate():
+    mr = rmm.mr.TrackingResourceAdaptor(rmm.mr.get_current_device_resource())
+    size = 1 << 23  # 8 MiB
+    ptr = mr.allocate(size)
+    assert mr.get_allocated_bytes() == 1 << 23
+    mr.deallocate(ptr, size)
+    assert mr.get_allocated_bytes() == 0
+
+
+def test_custom_mr(capsys):
+    base_mr = rmm.mr.CudaMemoryResource()
+
+    def allocate_func(size):
+        print(f"Allocating {size} bytes")
+        return base_mr.allocate(size)
+
+    def deallocate_func(ptr, size):
+        print(f"Deallocating {size} bytes")
+        return base_mr.deallocate(ptr, size)
+
+    rmm.mr.set_current_device_resource(
+        rmm.mr.CallbackMemoryResource(allocate_func, deallocate_func)
+    )
+
+    dbuf = rmm.DeviceBuffer(size=256)
+    del dbuf
+
+    captured = capsys.readouterr()
+    assert captured.out == "Allocating 256 bytes\nDeallocating 256 bytes\n"
