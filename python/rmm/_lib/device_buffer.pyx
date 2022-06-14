@@ -344,7 +344,7 @@ cdef void _copy_async(const void* src,
                       void* dst,
                       size_t count,
                       ccudart.cudaMemcpyKind kind,
-                      cuda_stream_view stream) nogil:
+                      cuda_stream_view stream) nogil except *:
     """
     Asynchronously copy data between host and/or device pointers
 
