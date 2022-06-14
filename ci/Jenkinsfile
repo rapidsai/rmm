@@ -56,14 +56,13 @@ pipeline {
       }
     }
     stage("WSL2 Nightly Test Stage") {
-      agent {label 'wsl2'}
       when { environment name: 'BUILD_TYPE', value: 'nightly' }
       options {
         timeout(time: 10, unit: 'MINUTES', activity: true)
       }
       steps {
         script {
-          parallel generateStage("nightly_test",{
+          parallel generateStage("wsl2_nightly_test",{
             sh "./ci/gpu_test.sh"
           })
         }
