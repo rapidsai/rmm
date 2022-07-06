@@ -96,8 +96,10 @@ def getDeviceCount():
     This function automatically raises CUDARuntimeError with error message
     and status code.
     """
-    major, minor = numba.cuda.driver.get_version()
-    return major * 1000 + minor * 10
+    status, count = cudart.cudaGetDeviceCount()
+    if status != cudart.cudaError_t.cudaSuccess:
+        raise CUDARuntimeError(status)
+    return count
 
 
 def getDeviceAttribute(attr: cudart.cudaDeviceAttr, device: int):
