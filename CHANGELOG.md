@@ -2,9 +2,39 @@
 
 Please see https://github.com/rapidsai/rmm/releases/tag/v22.08.00a for the latest changes to this development branch.
 
-# RMM 22.06.00 (Date TBD)
+# RMM 22.06.00 (7 Jun 2022)
 
-Please see https://github.com/rapidsai/rmm/releases/tag/v22.06.00a for the latest changes to this development branch.
+## 🐛 Bug Fixes
+
+- Clarifies Python requirements and version constraints ([#1037](https://github.com/rapidsai/rmm/pull/1037)) [@jakirkham](https://github.com/jakirkham)
+- Use `lib` (not `lib64`) for libraries ([#1024](https://github.com/rapidsai/rmm/pull/1024)) [@jakirkham](https://github.com/jakirkham)
+- Properly enable Cython docstrings. ([#1020](https://github.com/rapidsai/rmm/pull/1020)) [@vyasr](https://github.com/vyasr)
+- Update `RMMNumbaManager` to handle `NUMBA_CUDA_USE_NVIDIA_BINDING=1` ([#1004](https://github.com/rapidsai/rmm/pull/1004)) [@brandon-b-miller](https://github.com/brandon-b-miller)
+
+## 📖 Documentation
+
+- Clarify using RMM with other Python libraries ([#1034](https://github.com/rapidsai/rmm/pull/1034)) [@jrhemstad](https://github.com/jrhemstad)
+- Replace `to_device` with `DeviceBuffer.to_device` ([#1033](https://github.com/rapidsai/rmm/pull/1033)) [@wence-](https://github.com/wence-)
+- Documentation Fix: Replace `cudf::logic_error` with `rmm::logic_error` ([#1021](https://github.com/rapidsai/rmm/pull/1021)) [@codereport](https://github.com/codereport)
+
+## 🚀 New Features
+
+- Add rmm::exec_policy_nosync ([#1009](https://github.com/rapidsai/rmm/pull/1009)) [@fkallen](https://github.com/fkallen)
+- Callback memory resource ([#980](https://github.com/rapidsai/rmm/pull/980)) [@shwina](https://github.com/shwina)
+
+## 🛠️ Improvements
+
+- Fix conda recipes for conda compilers ([#1043](https://github.com/rapidsai/rmm/pull/1043)) [@Ethyling](https://github.com/Ethyling)
+- Use new rapids-cython component of rapids-cmake to simplify builds ([#1031](https://github.com/rapidsai/rmm/pull/1031)) [@vyasr](https://github.com/vyasr)
+- Merge branch-22.04 to branch-22.06 ([#1028](https://github.com/rapidsai/rmm/pull/1028)) [@jakirkham](https://github.com/jakirkham)
+- Update CMake pinning to just avoid 3.23.0. ([#1023](https://github.com/rapidsai/rmm/pull/1023)) [@vyasr](https://github.com/vyasr)
+- Build python using conda in GPU jobs ([#1017](https://github.com/rapidsai/rmm/pull/1017)) [@Ethyling](https://github.com/Ethyling)
+- Remove pip requirements file. ([#1015](https://github.com/rapidsai/rmm/pull/1015)) [@bdice](https://github.com/bdice)
+- Clean up Thrust includes. ([#1011](https://github.com/rapidsai/rmm/pull/1011)) [@bdice](https://github.com/bdice)
+- Update black version ([#1010](https://github.com/rapidsai/rmm/pull/1010)) [@vyasr](https://github.com/vyasr)
+- Update cmake-format version for pre-commit and environments. ([#995](https://github.com/rapidsai/rmm/pull/995)) [@vyasr](https://github.com/vyasr)
+- Use conda compilers ([#977](https://github.com/rapidsai/rmm/pull/977)) [@Ethyling](https://github.com/Ethyling)
+- Build conda packages using mambabuild ([#900](https://github.com/rapidsai/rmm/pull/900)) [@Ethyling](https://github.com/Ethyling)
 
 # RMM 22.04.00 (6 Apr 2022)
 
