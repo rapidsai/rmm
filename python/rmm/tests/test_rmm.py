@@ -781,54 +781,56 @@ def make_reinit_hook():
         rmm.unregister_reinitialize_hook(func)
 
 
-def test_reinit_hooks_register(make_reinit_hook, capsys):
-    make_reinit_hook(lambda: print("one"))
-    make_reinit_hook(lambda: print("two"))
-    make_reinit_hook(lambda x: print(x), "three")
+def test_reinit_hooks_register(make_reinit_hook):
+    L = []
+    make_reinit_hook(lambda: L.append(1))
+    make_reinit_hook(lambda: L.append(2))
+    make_reinit_hook(lambda x: L.append(x), 3)
 
     rmm.reinitialize()
-    captured = capsys.readouterr()
-    assert captured.out == "three\ntwo\none\n"
+    assert L == [3, 2, 1]
 
 
-def test_reinit_hooks_unregister(make_reinit_hook, capsys):
-    one = make_reinit_hook(lambda: print("one"))
-    make_reinit_hook(lambda: print("two"))
+def test_reinit_hooks_unregister(make_reinit_hook):
+    L = []
+    one = make_reinit_hook(lambda: L.append(1))
+    make_reinit_hook(lambda: L.append(2))
 
     rmm.unregister_reinitialize_hook(one)
     rmm.reinitialize()
-    captured = capsys.readouterr()
-    assert captured.out == "two\n"
+    assert L == [2]
 
 
-def test_reinit_hooks_register_twice(make_reinit_hook, capsys):
+def test_reinit_hooks_register_twice(make_reinit_hook):
+    L = []
+
     def func_with_arg(x):
-        print(x)
+        L.append(x)
 
     def func_without_arg():
-        print("two")
+        L.append(2)
 
-    make_reinit_hook(func_with_arg, "one")
+    make_reinit_hook(func_with_arg, 1)
     make_reinit_hook(func_without_arg)
-    make_reinit_hook(func_with_arg, "three")
+    make_reinit_hook(func_with_arg, 3)
     make_reinit_hook(func_without_arg)
 
     rmm.reinitialize()
-    captured = capsys.readouterr()
-    assert captured.out == "two\nthree\ntwo\none\n"
+    assert L == [2, 3, 2, 1]
 
 
-def test_reinit_hooks_unregister_twice_registered(make_reinit_hook, capsys):
+def test_reinit_hooks_unregister_twice_registered(make_reinit_hook):
     # unregistering a twice-registered function
     # should unregister both instances:
-    def func_with_arg(x):
-        print(x)
+    L = []
 
-    make_reinit_hook(func_with_arg, "one")
-    make_reinit_hook(lambda: print("two"))
-    make_reinit_hook(func_with_arg, "three")
+    def func_with_arg(x):
+        L.append(x)
+
+    make_reinit_hook(func_with_arg, 1)
+    make_reinit_hook(lambda: L.append(2))
+    make_reinit_hook(func_with_arg, 3)
 
     rmm.unregister_reinitialize_hook(func_with_arg)
     rmm.reinitialize()
-    captured = capsys.readouterr()
-    assert captured.out == "two\n"
+    assert L == [2]
