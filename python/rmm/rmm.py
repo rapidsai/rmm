@@ -246,6 +246,10 @@ def register_reinitialize_hook(func, *args, **kwargs):
     Add a function to the list of functions that will be called before
     `rmm.reinitialize()`.
 
+    Typically, a library will use this function to register hooks that
+    are responsible for deleting any remaining internal references to
+    objects using device memory allocated by RMM.
+
     Hooks are called in the *reverse* order they are registered.
 
     Parameters
