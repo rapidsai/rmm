@@ -87,8 +87,8 @@ def reinitialize(
     corresponding to each device.
     """
     [
-        hook(*args, **kwargs)
-        for (hook, args, kwargs) in reversed(_reinitialize_hooks)
+        func(*args, **kwargs)
+        for (func, args, kwargs) in reversed(_reinitialize_hooks)
     ]
     rmm.mr._initialize(
         pool_allocator=pool_allocator,
