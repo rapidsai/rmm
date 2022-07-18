@@ -818,7 +818,7 @@ def test_reinit_hooks_register_twice(make_reinit_hook, capsys):
     assert captured.out == "two\nthree\ntwo\none\n"
 
 
-def test_register_reinit_hook_twice(reinit_hooks, capsys):
+def test_reinit_hooks_unregister_twice_registered(make_reinit_hook, capsys):
     # unregistering a twice-registered function
     # should unregister both instances:
     def func_with_arg(x):
@@ -828,6 +828,7 @@ def test_register_reinit_hook_twice(reinit_hooks, capsys):
     make_reinit_hook(lambda: print("two"))
     make_reinit_hook(func_with_arg, "three")
 
+    rmm.unregister_reinitialize_hook(func_with_arg)
     rmm.reinitialize()
     captured = capsys.readouterr()
     assert captured.out == "two\n"
