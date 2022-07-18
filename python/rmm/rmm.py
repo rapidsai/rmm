@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import ctypes
+from itertools import filterfalse
 
 from cuda.cuda import CUdeviceptr, cuIpcGetMemHandle
 from numba import config, cuda
@@ -29,7 +30,7 @@ class RMMError(Exception):
         super(RMMError, self).__init__(msg)
 
 
-_reinitialize_hooks = {}
+_reinitialize_hooks = []
 
 
 def reinitialize(
@@ -254,7 +255,8 @@ def register_reinitialize_hook(func, *args, **kwargs):
     args, kwargs
         Positional and keyword arguments to bepassed to `func`
     """
-    _reinitialize_hooks[func] = (args, kwargs)
+    global _reinitialize_hooks
+    _reinitialize_hooks.append((func, args, kwargs))
     return func
 
 
@@ -262,6 +264,11 @@ def unregister_reinitialize_hook(func):
     """
     Remove `func` from the list of functions that will be called before
     `rmm.reinitialize()`.
+
+    If `func` was registered more than once, every instance of it will
+    be removed from the list of functions.
     """
-    _reinitialize_hooks.pop(func, None)
-    return func
+    global _reinitialize_hooks
+    _reinitialize_hooks = list(
+        filterfalse(lambda x: x[0] == func, _reinitialize_hooks)
+    )
