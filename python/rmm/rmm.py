@@ -88,7 +88,7 @@ def reinitialize(
     """
     [
         hook(*args, **kwargs)
-        for (hook, (args, kwargs)) in reversed(_reinitialize_hooks.items())
+        for (hook, args, kwargs) in reversed(_reinitialize_hooks)
     ]
     rmm.mr._initialize(
         pool_allocator=pool_allocator,

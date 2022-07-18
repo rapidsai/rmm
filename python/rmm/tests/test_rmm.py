@@ -767,36 +767,67 @@ def test_custom_mr(capsys):
     assert captured.out == "Allocating 256 bytes\nDeallocating 256 bytes\n"
 
 
-def test_reinitialize_hooks(capsys):
-    def one():
-        print("one")
+@pytest.fixture
+def make_reinit_hook():
+    funcs = []
 
-    def two():
-        print("two")
+    def _make_reinit_hook(func, *args, **kwargs):
+        funcs.append(func)
+        rmm.register_reinitialize_hook(func, *args, **kwargs)
+        return func
 
-    def three(s):
-        print(s)
+    yield _make_reinit_hook
+    for func in funcs:
+        rmm.unregister_reinitialize_hook(func)
 
-    rmm.register_reinitialize_hook(one)
-    rmm.register_reinitialize_hook(two)
-    rmm.register_reinitialize_hook(three, "four")
+
+def test_reinit_hooks_register(make_reinit_hook, capsys):
+    make_reinit_hook(lambda: print("one"))
+    make_reinit_hook(lambda: print("two"))
+    make_reinit_hook(lambda x: print(x), "three")
 
     rmm.reinitialize()
     captured = capsys.readouterr()
-    assert captured.out == "four\ntwo\none\n"
+    assert captured.out == "three\ntwo\none\n"
+
+
+def test_reinit_hooks_unregister(make_reinit_hook, capsys):
+    one = make_reinit_hook(lambda: print("one"))
+    make_reinit_hook(lambda: print("two"))
 
     rmm.unregister_reinitialize_hook(one)
-    rmm.unregister_reinitialize_hook(two)
-    rmm.unregister_reinitialize_hook(three)
-
-    rmm.register_reinitialize_hook(one)
-    rmm.register_reinitialize_hook(two)
-    rmm.unregister_reinitialize_hook(one)
-
     rmm.reinitialize()
     captured = capsys.readouterr()
     assert captured.out == "two\n"
 
-    rmm.unregister_reinitialize_hook(one)
-    rmm.unregister_reinitialize_hook(two)
-    rmm.unregister_reinitialize_hook(three)
+
+def test_reinit_hooks_register_twice(make_reinit_hook, capsys):
+    def func_with_arg(x):
+        print(x)
+
+    def func_without_arg():
+        print("two")
+
+    make_reinit_hook(func_with_arg, "one")
+    make_reinit_hook(func_without_arg)
+    make_reinit_hook(func_with_arg, "three")
+    make_reinit_hook(func_without_arg)
+
+    rmm.reinitialize()
+    captured = capsys.readouterr()
+    assert captured.out == "two\nthree\ntwo\none\n"
+
+
+def test_register_reinit_hook_twice(reinit_hooks, capsys):
+    # unregistering a twice-registered function
+    # should unregister both instances:
+    def func_with_arg(x):
+        print(x)
+
+    make_reinit_hook(func_with_arg, "one")
+    make_reinit_hook(lambda: print("two"))
+    make_reinit_hook(func_with_arg, "three")
+
+    rmm.reinitialize()
+    captured = capsys.readouterr()
+    assert captured.out == "two\n"
