@@ -22,8 +22,10 @@ from rmm.rmm import (
     RMMNumbaManager,
     _numba_memory_manager,
     is_initialized,
+    register_reinitialize_hook,
     reinitialize,
     rmm_cupy_allocator,
+    unregister_reinitialize_hook,
 )
 
 __version__ = get_versions()["version"]

@@ -765,3 +765,38 @@ def test_custom_mr(capsys):
 
     captured = capsys.readouterr()
     assert captured.out == "Allocating 256 bytes\nDeallocating 256 bytes\n"
+
+
+def test_reinitialize_hooks(capsys):
+    def one():
+        print("one")
+
+    def two():
+        print("two")
+
+    def three(s):
+        print(s)
+
+    rmm.register_reinitialize_hook(one)
+    rmm.register_reinitialize_hook(two)
+    rmm.register_reinitialize_hook(three, "four")
+
+    rmm.reinitialize()
+    captured = capsys.readouterr()
+    assert captured.out == "four\ntwo\none\n"
+
+    rmm.unregister_reinitialize_hook(one)
+    rmm.unregister_reinitialize_hook(two)
+    rmm.unregister_reinitialize_hook(three)
+
+    rmm.register_reinitialize_hook(one)
+    rmm.register_reinitialize_hook(two)
+    rmm.unregister_reinitialize_hook(one)
+
+    rmm.reinitialize()
+    captured = capsys.readouterr()
+    assert captured.out == "two\n"
+
+    rmm.unregister_reinitialize_hook(one)
+    rmm.unregister_reinitialize_hook(two)
+    rmm.unregister_reinitialize_hook(three)

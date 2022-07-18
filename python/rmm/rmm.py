@@ -29,6 +29,9 @@ class RMMError(Exception):
         super(RMMError, self).__init__(msg)
 
 
+_reinitialize_hooks = {}
+
+
 def reinitialize(
     pool_allocator=False,
     managed_memory=False,
@@ -82,6 +85,10 @@ def reinitialize(
     Use `rmm.get_log_filenames()` to get the log file names
     corresponding to each device.
     """
+    [
+        hook(*args, **kwargs)
+        for (hook, (args, kwargs)) in reversed(_reinitialize_hooks.items())
+    ]
     rmm.mr._initialize(
         pool_allocator=pool_allocator,
         managed_memory=managed_memory,
@@ -231,3 +238,21 @@ def rmm_cupy_allocator(nbytes):
     ptr = cupy.cuda.memory.MemoryPointer(mem, 0)
 
     return ptr
+
+
+def register_reinitialize_hook(func, *args, **kwargs):
+    """
+    Register a hook to be called by `rmm.reinitialize()`.
+
+    Hooks are called in the *reverse* order they are registered.
+    """
+    _reinitialize_hooks[func] = (args, kwargs)
+    return func
+
+
+def unregister_reinitialize_hook(func):
+    """
+    Remove func from the list of hooks to be called by `rmm.reinitialize()`.
+    """
+    _reinitialize_hooks.pop(func, None)
+    return func
