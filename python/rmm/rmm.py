@@ -242,9 +242,17 @@ def rmm_cupy_allocator(nbytes):
 
 def register_reinitialize_hook(func, *args, **kwargs):
     """
-    Register a hook to be called by `rmm.reinitialize()`.
+    Add a function to the list of functions that will be called before
+    `rmm.reinitialize()`.
 
     Hooks are called in the *reverse* order they are registered.
+
+    Parameters
+    ----------
+    func: callable
+        Function to be called before `rmm.reinitialize()`
+    args, kwargs
+        Positional and keyword arguments to bepassed to `func`
     """
     _reinitialize_hooks[func] = (args, kwargs)
     return func
@@ -252,7 +260,8 @@ def register_reinitialize_hook(func, *args, **kwargs):
 
 def unregister_reinitialize_hook(func):
     """
-    Remove func from the list of hooks to be called by `rmm.reinitialize()`.
+    Remove `func` from the list of functions that will be called before
+    `rmm.reinitialize()`.
     """
     _reinitialize_hooks.pop(func, None)
     return func
