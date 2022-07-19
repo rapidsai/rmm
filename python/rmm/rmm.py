@@ -250,7 +250,7 @@ def register_reinitialize_hook(func, *args, **kwargs):
     internal cache of objects that use device memory allocated by RMM
     can register a hook to release those references before RMM is
     reinitialized, thus ensuring that the relevant device memory
-    resource can be deallocated
+    resource can be deallocated.
 
     Hooks are called in the *reverse* order they are registered.
 
