@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import ctypes
-from itertools import filterfalse
 
 from cuda.cuda import CUdeviceptr, cuIpcGetMemHandle
 from numba import config, cuda
@@ -252,7 +251,7 @@ def register_reinitialize_hook(func, *args, **kwargs):
     reinitialized, thus ensuring that the relevant device memory
     resource can be deallocated.
 
-    Hooks are called in the *reverse* order they are registered.  This
+    Hooks are called in the *reverse* order they are registered. This
     is useful, for example, when a library registers multiple hooks
     and needs them to run in a specific order for cleanup to be safe.
     Hooks cannot rely on being registered in a particular order
@@ -261,7 +260,7 @@ def register_reinitialize_hook(func, *args, **kwargs):
 
     Parameters
     ----------
-    func: callable
+    func : callable
         Function to be called before :py:func:`~rmm.reinitialize()`
     args, kwargs
         Positional and keyword arguments to be passed to `func`
@@ -280,6 +279,4 @@ def unregister_reinitialize_hook(func):
     be removed from the list of hooks.
     """
     global _reinitialize_hooks
-    _reinitialize_hooks = list(
-        filterfalse(lambda x: x[0] == func, _reinitialize_hooks)
-    )
+    _reinitialize_hooks = [x for x in _reinitialize_hooks if x[0] != func]
