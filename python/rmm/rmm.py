@@ -259,7 +259,7 @@ def register_reinitialize_hook(func, *args, **kwargs):
     func: callable
         Function to be called before :py:func:`~rmm.reinitialize()`
     args, kwargs
-        Positional and keyword arguments to bepassed to `func`
+        Positional and keyword arguments to be passed to `func`
     """
     global _reinitialize_hooks
     _reinitialize_hooks.append((func, args, kwargs))
