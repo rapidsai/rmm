@@ -245,14 +245,19 @@ def register_reinitialize_hook(func, *args, **kwargs):
     Add a function to the list of functions ("hooks") that will be
     called before :py:func:`~rmm.reinitialize()`.
 
-    A library may register hooks to perform any necessary cleanup
-    before RMM is reinitialized. For example, a library with an
-    internal cache of objects that use device memory allocated by RMM
-    can register a hook to release those references before RMM is
+    A user or library may register hooks to perform any necessary
+    cleanup before RMM is reinitialized. For example, a library with
+    an internal cache of objects that use device memory allocated by
+    RMM can register a hook to release those references before RMM is
     reinitialized, thus ensuring that the relevant device memory
     resource can be deallocated
 
-    Hooks are called in the *reverse* order they are registered.
+    Hooks are called in the *reverse* order they are registered.  This
+    is useful, for example, when a library registers multiple hooks
+    and needs them to run in a specific order for cleanup to be safe.
+    Hooks cannot rely on being registered in a particular order
+    relative to hooks registered by other packages, since that is
+    determined by package import ordering.
 
     Parameters
     ----------
