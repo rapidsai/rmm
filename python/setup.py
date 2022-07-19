@@ -34,6 +34,10 @@ setup(
         )
     },
     cmdclass=versioneer.get_cmdclass(),
-    install_requires=["cuda-python>=11.5,<12.0", "numpy>=1.19", "numba>=0.49"],
+    install_requires=[
+        "cuda-python>=11.5,<11.7.1",
+        "numpy>=1.19",
+        "numba>=0.49",
+    ],
     zip_safe=False,
 )

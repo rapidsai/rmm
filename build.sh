@@ -71,12 +71,12 @@ function cmakeArgs {
         # There are possible weird edge cases that may cause this regex filter to output nothing and fail silently
         # the true pipe will catch any weird edge cases that may happen and will cause the program to fall back
         # on the invalid option error
-        CMAKE_ARGS=$(echo $ARGS | { grep -Eo "\-\-cmake\-args=\".+\"" || true; })
-        if [[ -n ${CMAKE_ARGS} ]]; then
-            # Remove the full  CMAKE_ARGS argument from list of args so that it passes validArgs function
-            ARGS=${ARGS//$CMAKE_ARGS/}
+        EXTRA_CMAKE_ARGS=$(echo $ARGS | { grep -Eo "\-\-cmake\-args=\".+\"" || true; })
+        if [[ -n ${EXTRA_CMAKE_ARGS} ]]; then
+            # Remove the full  EXTRA_CMAKE_ARGS argument from list of args so that it passes validArgs function
+            ARGS=${ARGS//$EXTRA_CMAKE_ARGS/}
             # Filter the full argument down to just the extra string that will be added to cmake call
-            CMAKE_ARGS=$(echo $CMAKE_ARGS | grep -Eo "\".+\"" | sed -e 's/^"//' -e 's/"$//')
+            EXTRA_CMAKE_ARGS=$(echo $EXTRA_CMAKE_ARGS | grep -Eo "\".+\"" | sed -e 's/^"//' -e 's/"$//')
         fi
     fi
 }
@@ -95,7 +95,7 @@ function ensureCMakeRan {
               -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
               -DBUILD_TESTS=${BUILD_TESTS} \
               -DBUILD_BENCHMARKS=${BUILD_BENCHMARKS} \
-              ${CMAKE_ARGS}
+              ${EXTRA_CMAKE_ARGS}
         RAN_CMAKE=1
     fi
 }
@@ -141,6 +141,11 @@ if hasArg --ptds; then
     PER_THREAD_DEFAULT_STREAM=ON
 fi
 
+# Append `-DFIND_RMM_CPP=ON` to CMAKE_ARGS unless a user specified the option.
+if [[ "${EXTRA_CMAKE_ARGS}" != *"DFIND_RMM_CPP"* ]]; then
+    EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DFIND_RMM_CPP=ON"
+fi
+
 # If clean given, run it prior to any other steps
 if hasArg clean; then
     # If the dirs to clean are mounted dirs in a container, the
@@ -173,11 +178,11 @@ if (( NUMARGS == 0 )) || hasArg rmm; then
     export INSTALL_PREFIX
     echo "building rmm..."
 
-    python setup.py build_ext --inplace -- -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX} ${CMAKE_ARGS}
+    python setup.py build_ext --inplace -- -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX} ${EXTRA_CMAKE_ARGS}
 
     if [[ ${INSTALL_TARGET} != "" ]]; then
         echo "installing rmm..."
-        python setup.py install --single-version-externally-managed --record=record.txt -- -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX} ${CMAKE_ARGS}
+        python setup.py install --single-version-externally-managed --record=record.txt -- -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX} ${EXTRA_CMAKE_ARGS}
     fi
 
 fi
