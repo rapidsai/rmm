@@ -250,7 +250,7 @@ def register_reinitialize_hook(func, *args, **kwargs):
     an internal cache of objects that use device memory allocated by
     RMM can register a hook to release those references before RMM is
     reinitialized, thus ensuring that the relevant device memory
-    resource can be deallocated
+    resource can be deallocated.
 
     Hooks are called in the *reverse* order they are registered.  This
     is useful, for example, when a library registers multiple hooks
@@ -264,7 +264,7 @@ def register_reinitialize_hook(func, *args, **kwargs):
     func: callable
         Function to be called before :py:func:`~rmm.reinitialize()`
     args, kwargs
-        Positional and keyword arguments to bepassed to `func`
+        Positional and keyword arguments to be passed to `func`
     """
     global _reinitialize_hooks
     _reinitialize_hooks.append((func, args, kwargs))
