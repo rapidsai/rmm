@@ -86,10 +86,9 @@ def reinitialize(
     Use `rmm.get_log_filenames()` to get the log file names
     corresponding to each device.
     """
-    [
+    for func, args, kwargs in reversed(_reinitialize_hooks):
         func(*args, **kwargs)
-        for (func, args, kwargs) in reversed(_reinitialize_hooks)
-    ]
+
     rmm.mr._initialize(
         pool_allocator=pool_allocator,
         managed_memory=managed_memory,
@@ -243,19 +242,22 @@ def rmm_cupy_allocator(nbytes):
 
 def register_reinitialize_hook(func, *args, **kwargs):
     """
-    Add a function to the list of functions that will be called before
-    `rmm.reinitialize()`.
+    Add a function to the list of functions ("hooks") that will be
+    called before :py:func:`~rmm.reinitialize()`.
 
-    Typically, a library will use this function to register hooks that
-    are responsible for deleting any remaining internal references to
-    objects using device memory allocated by RMM.
+    A library may register hooks to perform any necessary cleanup
+    before RMM is reinitialized. For example, a library with an
+    internal cache of objects that use device memory allocated by RMM
+    can register a hook to release those references before RMM is
+    reinitialized, thus ensuring that the relevant device memory
+    resource can be deallocated
 
     Hooks are called in the *reverse* order they are registered.
 
     Parameters
     ----------
     func: callable
-        Function to be called before `rmm.reinitialize()`
+        Function to be called before :py:func:`~rmm.reinitialize()`
     args, kwargs
         Positional and keyword arguments to bepassed to `func`
     """
@@ -266,11 +268,11 @@ def register_reinitialize_hook(func, *args, **kwargs):
 
 def unregister_reinitialize_hook(func):
     """
-    Remove `func` from the list of functions that will be called before
-    `rmm.reinitialize()`.
+    Remove `func` from list of hooks that will be called before
+    :py:func:`~rmm.reinitialize()`.
 
     If `func` was registered more than once, every instance of it will
-    be removed from the list of functions.
+    be removed from the list of hooks.
     """
     global _reinitialize_hooks
     _reinitialize_hooks = list(
