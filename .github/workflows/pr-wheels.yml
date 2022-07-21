@@ -13,5 +13,5 @@ jobs:
       package-dir: python
       cpu-smoketest-command: "python3 -c 'import rmm; print(rmm)'"
       manylinux-platform: manylinux_2_24
-      gpu-smoketest-command: "python3 -c 'import rmm; print(rmm)'"
+      gpu-smoketest-command: ""
     secrets: inherit
