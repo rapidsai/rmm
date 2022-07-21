@@ -13,5 +13,5 @@ jobs:
       package-dir: python
       cpu-smoketest-command: "python3 -c 'import rmm; print(rmm)'"
       manylinux-platform: manylinux_2_24
-        #gpu-smoketest-command: "python3 -c 'import rmm; print(rmm); buf = rmm.DeviceBuffer(size=100); print(buf.size); print(buf.ptr); assert buf.size == 100'"
+      gpu-smoketest-command: "python3 -c 'import rmm; print(rmm)'"
     secrets: inherit
