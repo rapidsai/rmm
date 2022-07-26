@@ -5,6 +5,8 @@ on:
 
 jobs:
   check_generated_files:
+    env:
+      CONFIG_FILE_PATH: conda/environments/envs.yaml
     name: ensure conda env files are up-to-date
     runs-on: ubuntu-latest
     steps:
@@ -14,20 +16,24 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
+      - name: Compute additional env vars
+        run: |
+          echo "CONFIG_FILE_DIR=$(dirname ${{ env.CONFIG_FILE_PATH }})" | tee --append $GITHUB_ENV
+          echo "CONFIG_FILE_NAME=$(basename ${{ env.CONFIG_FILE_PATH }})" | tee --append $GITHUB_ENV
       - name: Install rapids-env-generator
         run: pip install git+https://github.com/rapidsai/rapids-env-generator.git@initial-commit#egg=rapids-env-generator
       - name: Run rapids-env-generator
         run: |
-          find conda/environments -type f ! -name envs.yaml -delete # delete existing environment files
-          reg
+          find ${{ env.CONFIG_FILE_DIR }} -type f ! -name ${{ env.CONFIG_FILE_NAME }} -delete # delete existing environment files
+          reg --config ${{ env.CONFIG_FILE_PATH }}
       - name: Ensure generated environment files are up-to-date
         run: |
           git diff --exit-code
-          test -z "$(git status --porcelain conda/environments)" # ensures there are no untracked environment files
+          test -z "$(git status --porcelain ${{ env.CONFIG_FILE_DIR }})" # ensures there are no untracked environment files
       - name: Ensure a "full" environment exists
         run: |
           # ensure .envs.full exists
-          yq -e '.envs | has("full")' < conda/environments/envs.yaml
+          yq -e '.envs | has("full")' < ${{ env.CONFIG_FILE_PATH }}
 
           # ensure .envs.full.includes has all dependency lists
           export RESERVED_KEYS='["envs", "specifics", "channels"]'
@@ -35,11 +41,11 @@ jobs:
             yq -e -o json \
             'keys |
             . - (strenv(RESERVED_KEYS) | from_json) |
-            sort' < conda/environments/envs.yaml
+            sort' < ${{ env.CONFIG_FILE_PATH }}
           )
           export FULL_ENV_INCLUDES=$(
             yq -e -o json \
             '.envs.full.includes |
-            sort' < conda/environments/envs.yaml
+            sort' < ${{ env.CONFIG_FILE_PATH }}
           )
           yq -ne 'strenv(FULL_ENV_INCLUDES) == strenv(DEP_LISTS)'
