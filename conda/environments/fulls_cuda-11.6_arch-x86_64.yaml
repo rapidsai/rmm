@@ -21,4 +21,4 @@ dependencies:
 - python>=3.8,<3.10
 - scikit-build>=0.13.1
 - spdlog>=1.8.5,<1.9
-name: full_cuda-11.6_arch-x86_64
+name: fulls_cuda-11.6_arch-x86_64
