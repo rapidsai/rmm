@@ -4,9 +4,11 @@ from setuptools import find_packages
 from skbuild import setup
 
 import versioneer
+import os
+
 
 setup(
-    name="rmm",
+    name="rmm"+os.getenv("PYTHON_PACKAGE_CUDA_SUFFIX", default=""),
     version=versioneer.get_version(),
     description="rmm - RAPIDS Memory Manager",
     url="https://github.com/rapidsai/rmm",
