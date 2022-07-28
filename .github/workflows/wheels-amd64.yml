@@ -1,0 +1,26 @@
+name: RMM wheels
+
+on:
+  push:
+    branches:
+      - 'pull-request/[0-9]+'
+
+jobs:
+  rmm-wheel-amd64-38:
+    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-amd64.yml@feat/wheel-ci-actions
+    with:
+      package-name: rmm_cuda11
+      package-dir: python
+      python-version: "3.8"
+      cibw-environment: "PYTHON_PACKAGE_CUDA_SUFFIX='-cuda11'"
+      gpu-smoketest: "import rmm; buf = rmm.DeviceBuffer(size=100); print(buf.size); print(buf.ptr); assert buf.size == 100"
+    secrets: inherit
+  rmm-wheel-amd64-39:
+    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-amd64.yml@feat/wheel-ci-actions
+    with:
+      package-name: rmm_cuda11
+      package-dir: python
+      python-version: "3.9"
+      cibw-environment: "PYTHON_PACKAGE_CUDA_SUFFIX='-cuda11'"
+      gpu-smoketest: "import rmm; buf = rmm.DeviceBuffer(size=100); print(buf.size); print(buf.ptr); assert buf.size == 100"
+    secrets: inherit
