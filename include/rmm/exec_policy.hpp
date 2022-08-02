@@ -26,6 +26,9 @@
 
 #include <thrust/system/cuda/execution_policy.h>
 #include <thrust/version.h>
+#ifdef THRUST_WRAPPED_NAMESPACE
+ using namespace THRUST_WRAPPED_NAMESPACE;
+#endif
 
 namespace rmm {
 

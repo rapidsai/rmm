@@ -23,6 +23,9 @@
 
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
+#ifdef THRUST_WRAPPED_NAMESPACE
+ using namespace THRUST_WRAPPED_NAMESPACE;
+#endif
 
 #include <cuda_runtime_api.h>
 

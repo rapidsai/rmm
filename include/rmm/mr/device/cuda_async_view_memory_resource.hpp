@@ -23,6 +23,9 @@
 #include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <thrust/optional.h>
+#ifdef THRUST_WRAPPED_NAMESPACE
+ using namespace THRUST_WRAPPED_NAMESPACE;
+#endif
 
 #include <cuda_runtime_api.h>
 
