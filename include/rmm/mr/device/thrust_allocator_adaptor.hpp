@@ -23,7 +23,7 @@
 #include <thrust/device_ptr.h>
 #include <thrust/memory.h>
 #ifdef THRUST_WRAPPED_NAMESPACE
- using namespace THRUST_WRAPPED_NAMESPACE;
+using namespace THRUST_WRAPPED_NAMESPACE;
 #endif
 
 namespace rmm::mr {

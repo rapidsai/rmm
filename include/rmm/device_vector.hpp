@@ -20,7 +20,7 @@
 
 #include <thrust/device_vector.h>
 #ifdef THRUST_WRAPPED_NAMESPACE
- using namespace THRUST_WRAPPED_NAMESPACE;
+using namespace THRUST_WRAPPED_NAMESPACE;
 #endif
 
 namespace rmm {
