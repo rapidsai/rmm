@@ -26,6 +26,7 @@
 
 #include <thrust/system/cuda/execution_policy.h>
 #include <thrust/version.h>
+
 #include <rmm/detail/thrust_namespace.h>
 
 namespace rmm {

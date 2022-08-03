@@ -22,6 +22,7 @@
 #include <thrust/device_malloc_allocator.h>
 #include <thrust/device_ptr.h>
 #include <thrust/memory.h>
+
 #include <rmm/detail/thrust_namespace.h>
 
 namespace rmm::mr {

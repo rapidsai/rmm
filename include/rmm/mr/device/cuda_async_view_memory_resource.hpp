@@ -23,6 +23,7 @@
 #include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <thrust/optional.h>
+
 #include <rmm/detail/thrust_namespace.h>
 
 #include <cuda_runtime_api.h>

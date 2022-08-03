@@ -27,6 +27,7 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/optional.h>
+
 #include <rmm/detail/thrust_namespace.h>
 
 #include <cuda_runtime_api.h>
