@@ -119,6 +119,42 @@ TYPED_TEST(TypedUVectorTest, ResizeLarger)
   EXPECT_EQ(vec.begin(), larger_begin);
 }
 
+TYPED_TEST(TypedUVectorTest, ReserveSmaller)
+{
+  auto const original_size{12345};
+  rmm::device_uvector<TypeParam> vec(original_size, this->stream());
+  auto* const original_data    = vec.data();
+  auto* const original_begin   = vec.begin();
+  auto const original_capacity = vec.capacity();
+
+  auto const smaller_capacity = vec.capacity() - 1;
+  vec.reserve(smaller_capacity, this->stream());
+
+  EXPECT_EQ(vec.data(), original_data);
+  EXPECT_EQ(vec.begin(), original_begin);
+  EXPECT_EQ(vec.size(), original_size);
+  EXPECT_EQ(vec.capacity(), original_capacity);
+}
+
+TYPED_TEST(TypedUVectorTest, ReserveLarger)
+{
+  auto const original_size{12345};
+  rmm::device_uvector<TypeParam> vec(original_size, this->stream());
+  vec.set_element(0, 1, this->stream());
+  auto* const original_data  = vec.data();
+  auto* const original_begin = vec.begin();
+
+  auto const larger_capacity = vec.capacity() + 1;
+  vec.reserve(larger_capacity, this->stream());
+
+  EXPECT_NE(vec.data(), original_data);
+  EXPECT_NE(vec.begin(), original_begin);
+  EXPECT_EQ(vec.size(), original_size);
+  EXPECT_EQ(vec.capacity(), larger_capacity);
+  // The element should be copied
+  EXPECT_EQ(vec.element(0, this->stream()), 1);
+}
+
 TYPED_TEST(TypedUVectorTest, ResizeToZero)
 {
   auto const original_size{12345};

@@ -458,6 +458,31 @@ TYPED_TEST(DeviceBufferTest, ResizeBigger)
   EXPECT_NE(old_data, buff.data());
 }
 
+TYPED_TEST(DeviceBufferTest, ReserveSmaller)
+{
+  rmm::device_buffer buff(this->size, rmm::cuda_stream_default, &this->mr);
+  auto* const old_data    = buff.data();
+  auto const old_capacity = buff.capacity();
+  auto const new_capacity = buff.capacity() - 1;
+  buff.reserve(new_capacity, rmm::cuda_stream_default);
+  EXPECT_EQ(this->size, buff.size());
+  EXPECT_EQ(old_capacity, buff.capacity());
+  // Reserving smaller means the allocation is unchanged
+  EXPECT_EQ(old_data, buff.data());
+}
+
+TYPED_TEST(DeviceBufferTest, ReserveBigger)
+{
+  rmm::device_buffer buff(this->size, rmm::cuda_stream_default, &this->mr);
+  auto* const old_data    = buff.data();
+  auto const new_capacity = buff.capacity() + 1;
+  buff.reserve(new_capacity, rmm::cuda_stream_default);
+  EXPECT_EQ(this->size, buff.size());
+  EXPECT_EQ(new_capacity, buff.capacity());
+  // Reserving bigger means the data should point to a new allocation
+  EXPECT_NE(old_data, buff.data());
+}
+
 TYPED_TEST(DeviceBufferTest, SetGetStream)
 {
   rmm::device_buffer buff(this->size, rmm::cuda_stream_default, &this->mr);

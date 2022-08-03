@@ -352,6 +352,23 @@ class device_uvector {
   }
 
   /**
+   * @brief Increases the capacity of the vector to `new_capacity` elements.
+   *
+   * If `new_capacity <= capacity()`, no action is taken.
+   *
+   * If `new_capacity > capacity()`, a new allocation of size `new_capacity` is created, and the
+   * first `size()` elements from the current allocation are copied there as if by mempcy. Finally,
+   * the old allocation is freed and replaced by the new allocation.
+   *
+   * @param new_capacity The desired capacity (number of elements)
+   * @param stream The stream on which to perform the allocation/copy (if any)
+   */
+  void reserve(std::size_t new_capacity, cuda_stream_view stream)
+  {
+    _storage.reserve(elements_to_bytes(new_capacity), stream);
+  }
+
+  /**
    * @brief Resizes the vector to contain `new_size` elements.
    *
    * If `new_size > size()`, the additional elements are uninitialized.
