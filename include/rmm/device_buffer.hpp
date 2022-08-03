@@ -258,14 +258,12 @@ class device_buffer {
   {
     set_stream(stream);
     if (new_capacity > capacity()) {
-      void* const new_data = _mr->allocate(new_capacity, this->stream());
-      auto const old_size  = size();
+      auto tmp            = device_buffer{new_capacity, stream, _mr};
+      auto const old_size = size();
       RMM_CUDA_TRY(
-        cudaMemcpyAsync(new_data, data(), size(), cudaMemcpyDefault, this->stream().value()));
-      deallocate_async();
-      _data     = new_data;
-      _size     = old_size;
-      _capacity = new_capacity;
+        cudaMemcpyAsync(tmp.data(), data(), size(), cudaMemcpyDefault, this->stream().value()));
+      std::swap(tmp, *this);
+      _size = old_size;
     }
   }
 
@@ -302,13 +300,10 @@ class device_buffer {
     if (new_size <= capacity()) {
       _size = new_size;
     } else {
-      void* const new_data = _mr->allocate(new_size, this->stream());
+      auto tmp = device_buffer{new_size, stream, _mr};
       RMM_CUDA_TRY(
-        cudaMemcpyAsync(new_data, data(), size(), cudaMemcpyDefault, this->stream().value()));
-      deallocate_async();
-      _data     = new_data;
-      _size     = new_size;
-      _capacity = new_size;
+        cudaMemcpyAsync(tmp.data(), data(), size(), cudaMemcpyDefault, this->stream().value()));
+      std::swap(tmp, *this);
     }
   }
 
