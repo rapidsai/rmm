@@ -23,9 +23,8 @@
 #include <rmm/mr/device/cuda_async_view_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
-#include <thrust/optional.h>
-
 #include <rmm/detail/thrust_namespace.h>
+#include <thrust/optional.h>
 
 #include <cuda_runtime_api.h>
 

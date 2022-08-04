@@ -17,5 +17,13 @@
 #pragma once
 
 #ifdef THRUST_WRAPPED_NAMESPACE
+
+// Ensure the namespace exist before we import it
+// so that this include can occur before thrust includes
+namespace THRUST_WRAPPED_NAMESPACE {
+    namespace thrust {
+    }
+}
 using namespace THRUST_WRAPPED_NAMESPACE;
+
 #endif
