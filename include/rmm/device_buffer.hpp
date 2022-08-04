@@ -260,8 +260,7 @@ class device_buffer {
     if (new_capacity > capacity()) {
       auto tmp            = device_buffer{new_capacity, stream, _mr};
       auto const old_size = size();
-      RMM_CUDA_TRY(
-        cudaMemcpyAsync(tmp.data(), data(), size(), cudaMemcpyDefault, stream.value()));
+      RMM_CUDA_TRY(cudaMemcpyAsync(tmp.data(), data(), size(), cudaMemcpyDefault, stream.value()));
       *this = std::move(tmp);
       _size = old_size;
     }
@@ -301,8 +300,7 @@ class device_buffer {
       _size = new_size;
     } else {
       auto tmp = device_buffer{new_size, stream, _mr};
-      RMM_CUDA_TRY(
-        cudaMemcpyAsync(tmp.data(), data(), size(), cudaMemcpyDefault, stream.value()));
+      RMM_CUDA_TRY(cudaMemcpyAsync(tmp.data(), data(), size(), cudaMemcpyDefault, stream.value()));
       *this = std::move(tmp);
     }
   }
