@@ -21,9 +21,9 @@
 // Ensure the namespace exist before we import it
 // so that this include can occur before thrust includes
 namespace THRUST_WRAPPED_NAMESPACE {
-    namespace thrust {
-    }
+namespace thrust {
 }
+}  // namespace THRUST_WRAPPED_NAMESPACE
 using namespace THRUST_WRAPPED_NAMESPACE;
 
 #endif
