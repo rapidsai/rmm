@@ -199,5 +199,7 @@ autoclass_content = "init"
 
 def setup(app):
     app.add_js_file("copybutton_pydocs.js")
-    app.add_css_file("params.css")
     app.add_css_file("https://docs.rapids.ai/assets/css/custom.css")
+    app.add_js_file(
+        "https://docs.rapids.ai/assets/js/custom.js", loading_method="defer"
+    )
