@@ -357,7 +357,7 @@ class device_uvector {
    * If `new_capacity <= capacity()`, no action is taken.
    *
    * If `new_capacity > capacity()`, a new allocation of size `new_capacity` is created, and the
-   * first `size()` elements from the current allocation are copied there as if by mempcy. Finally,
+   * first `size()` elements from the current allocation are copied there as if by memcpy. Finally,
    * the old allocation is freed and replaced by the new allocation.
    *
    * @param new_capacity The desired capacity (number of elements)
@@ -377,7 +377,7 @@ class device_uvector {
    * memory is allocated nor copied. `shrink_to_fit()` may be used to force deallocation of unused
    * memory.
    *
-   * If `new_size > capacity()`, elements are copied as if by mempcy to a new allocation.
+   * If `new_size > capacity()`, elements are copied as if by memcpy to a new allocation.
    *
    * The invariant `size() <= capacity()` holds.
    *
