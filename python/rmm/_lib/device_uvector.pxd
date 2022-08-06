@@ -29,6 +29,7 @@ cdef extern from "rmm/device_buffer.hpp" namespace "rmm" nogil:
         ) except +
         T front_element(cuda_stream_view s) except +
         T back_element(cuda_stream_view s) except +
+        void reserve(size_t new_capacity, cuda_stream_view stream) except +
         void resize(size_t new_size, cuda_stream_view stream) except +
         void shrink_to_fit(cuda_stream_view stream) except +
         device_buffer release()

@@ -288,6 +288,11 @@ cdef class DeviceBuffer:
     cdef size_t c_size(self) except *:
         return self.c_obj.get()[0].size()
 
+    cpdef void reserve(self,
+                       size_t new_capacity,
+                       Stream stream=DEFAULT_STREAM) except *:
+        self.c_obj.get()[0].reserve(new_capacity, stream.view())
+
     cpdef void resize(self,
                       size_t new_size,
                       Stream stream=DEFAULT_STREAM) except *:
