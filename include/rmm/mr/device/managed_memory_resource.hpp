@@ -115,7 +115,7 @@ class managed_memory_resource final : public device_memory_resource {
    * @return std::pair contaiing free_size and total_size of memory
    */
   [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
-    cuda_stream_view stream) const override
+    cuda_stream_view) const override
   {
     std::size_t free_size{};
     std::size_t total_size{};

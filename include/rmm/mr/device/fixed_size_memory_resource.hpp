@@ -216,7 +216,7 @@ class fixed_size_memory_resource
    * @return std::pair with available and free memory for resource
    */
   [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
-    cuda_stream_view stream) const override
+    cuda_stream_view) const override
   {
     return std::make_pair(0, 0);
   }
