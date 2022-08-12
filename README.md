@@ -10,7 +10,7 @@
 - [librmm Reference Documentation](https://docs.rapids.ai/api/librmm/stable/): C/C++ CUDA library API reference.
 - [Getting Started](https://rapids.ai/start.html): Instructions for installing RMM.
 - [RAPIDS Community](https://rapids.ai/community.html): Get help, contribute, and collaborate.
-- [GitHub repository](https://github.com/rapidsai/rmm): Download the cuDF source code.
+- [GitHub repository](https://github.com/rapidsai/rmm): Download the RMM source code.
 - [Issue tracker](https://github.com/rapidsai/rmm/issues): Report issues or request features.
 
 ## Overview
