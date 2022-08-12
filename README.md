@@ -29,6 +29,8 @@ The goal of the RAPIDS Memory Manager (RMM) is to provide:
 For information on the interface RMM provides and how to use RMM in your C++ code, see
 [below](#using-rmm-in-c).
 
+For a walkthrough about the design of the RAPIDS Memory Manager, read [Fast, Flexible Allocation for NVIDIA CUDA with RAPIDS Memory Manager](https://developer.nvidia.com/blog/fast-flexible-allocation-for-cuda-with-rapids-memory-manager/) on the NVIDIA Developer Blog.
+
 ## Installation
 
 ### Conda
