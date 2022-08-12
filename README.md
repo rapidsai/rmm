@@ -2,6 +2,18 @@
 
 [![Build Status](https://gpuci.gpuopenanalytics.com/job/rapidsai/job/gpuci/job/rmm/job/branches/job/rmm-branch-pipeline/badge/icon)](https://gpuci.gpuopenanalytics.com/job/rapidsai/job/gpuci/job/rmm/job/branches/job/rmm-branch-pipeline/)
 
+**NOTE:** For the latest stable [README.md](https://github.com/rapidsai/rmm/blob/main/README.md) ensure you are on the `main` branch.
+
+## Resources
+
+- [RMM Reference Documentation](https://docs.rapids.ai/api/rmm/stable/): Python API reference, tutorials, and topic guides.
+- [librmm Reference Documentation](https://docs.rapids.ai/api/librmm/stable/): C/C++ CUDA library API reference.
+- [Getting Started](https://rapids.ai/start.html): Instructions for installing RMM.
+- [RAPIDS Community](https://rapids.ai/community.html): Get help, contribute, and collaborate.
+- [GitHub repository](https://github.com/rapidsai/rmm): Download the cuDF source code.
+- [Issue tracker](https://github.com/rapidsai/rmm/issues): Report issues or request features.
+
+## Overview
 
 Achieving optimal performance in GPU-centric workflows frequently requires customizing how host and
 device memory are allocated. For example, using "pinned" host memory for asynchronous
@@ -16,9 +28,6 @@ The goal of the RAPIDS Memory Manager (RMM) is to provide:
 
 For information on the interface RMM provides and how to use RMM in your C++ code, see
 [below](#using-rmm-in-c).
-
-**NOTE:** For the latest stable [README.md](https://github.com/rapidsai/rmm/blob/main/README.md)
-ensure you are on the `main` branch.
 
 ## Installation
 
