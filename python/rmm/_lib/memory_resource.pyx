@@ -236,19 +236,19 @@ cdef class CudaMemoryResource(DeviceMemoryResource):
 
     def __init__(self):
         """
-        Memory resource that uses cudaMalloc/Free for allocation/deallocation
+        Memory resource that uses ``cudaMalloc``/``cudaFree`` for allocation/deallocation.
         """
         pass
 
 
 cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
     """
-    Memory resource that uses cudaMallocAsync/Free for
+    Memory resource that uses ``cudaMallocAsync``/``cudaFreeAsync`` for
     allocation/deallocation.
 
     Parameters
     ----------
-    initial_pool_size : int,optional
+    initial_pool_size : int, optional
         Initial pool size in bytes. By default, half the available memory
         on the device is used.
     release_threshold: int, optional
@@ -312,7 +312,7 @@ cdef class ManagedMemoryResource(DeviceMemoryResource):
 
     def __init__(self):
         """
-        Memory resource that uses cudaMallocManaged/Free for
+        Memory resource that uses ``cudaMallocManaged``/``cudaFree`` for
         allocation/deallocation.
         """
         pass
@@ -361,7 +361,7 @@ cdef class PoolMemoryResource(UpstreamResourceAdaptor):
         upstream_mr : DeviceMemoryResource
             The DeviceMemoryResource from which to allocate blocks for the
             pool.
-        initial_pool_size : int,optional
+        initial_pool_size : int, optional
             Initial pool size in bytes. By default, half the available memory
             on the device is used.
         maximum_pool_size : int, optional
@@ -551,7 +551,7 @@ cdef class CallbackMemoryResource(DeviceMemoryResource):
         integer representing the number of bytes to free.
 
     Examples
-    -------
+    --------
     >>> import rmm
     >>> base_mr = rmm.mr.CudaMemoryResource()
     >>> def allocate_func(size):
@@ -694,6 +694,9 @@ cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
         """
         Gets the current, peak, and total allocated bytes and number of
         allocations.
+
+        The dictionary keys are ``current_bytes``, ``current_count``,
+        ``peak_bytes``, ``peak_count``, ``total_bytes``, and ``total_count``.
 
         Returns:
             dict: Dictionary containing allocation counts and bytes.
