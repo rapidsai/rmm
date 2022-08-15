@@ -708,7 +708,7 @@ See [here](#memoryresource-objects) for more information on changing the current
 ### Using RMM with Numba
 
 You can configure Numba to use RMM for memory allocations using the
-Numba [EMM Plugin](https://numba.readthedocs.io/en/stable/cuda/external-memory.html).
+Numba [EMM Plugin](https://numba.readthedocs.io/en/stable/cuda/external-memory.html#setting-emm-plugin).
 
 This can be done in two ways:
 
