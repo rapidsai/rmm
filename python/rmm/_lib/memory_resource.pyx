@@ -236,7 +236,8 @@ cdef class CudaMemoryResource(DeviceMemoryResource):
 
     def __init__(self):
         """
-        Memory resource that uses ``cudaMalloc``/``cudaFree`` for allocation/deallocation.
+        Memory resource that uses ``cudaMalloc``/``cudaFree`` for
+        allocation/deallocation.
         """
         pass
 

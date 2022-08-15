@@ -69,10 +69,9 @@ def reinitialize(
         This has a significant performance impact.
     log_file_name : str
         Name of the log file. If not specified, the environment variable
-        ``RMM_LOG_FILE`` is used. A ValueError is thrown if neither is available.
-        A separate log file is produced for each device,
-        and the suffix `".dev{id}"` is automatically added to the log file
-        name.
+        ``RMM_LOG_FILE`` is used. A ``ValueError`` is thrown if neither is
+        available. A separate log file is produced for each device, and the
+        suffix `".dev{id}"` is automatically added to the log file name.
 
     Notes
     -----
