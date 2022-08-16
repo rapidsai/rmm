@@ -13,16 +13,12 @@
 # limitations under the License.
 #
 
-import gdb
 import sys
+import gdb
 
-if sys.version_info[0] > 2:
-    Iterator = object
-else:
-    # "Polyfill" for Python2 Iterator interface
-    class Iterator:
-        def next(self):
-            return self.__next__()
+
+if "@RMM_PRETTY_PRINTER@" != "1":
+    sys.exit("This file is only a template, use gdb-pretty-printer.py in the CMake build directory instead.")
 
 
 class HostIterator(Iterator):
@@ -101,65 +97,6 @@ class DeviceIterator(Iterator):
         return ('[%d]' % count, elt)
 
 
-class ThrustVectorPrinter(gdb.printing.PrettyPrinter):
-    """Print a thrust::*_vector"""
-
-    def __init__(self, val):
-        self.val = val
-        self.pointer = val['m_storage']['m_begin']['m_iterator']
-        self.size = int(val['m_size'])
-        self.capacity = int(val['m_storage']['m_size'])
-        self.is_device = False
-        if str(self.pointer.type).startswith("thrust::device_ptr"):
-            self.pointer = self.pointer['m_iterator']
-            self.is_device = True
-
-    def children(self):
-        if self.is_device:
-            return DeviceIterator(self.pointer, self.size)
-        else:
-            return HostIterator(self.pointer, self.size)
-
-    def to_string(self):
-        typename = str(self.val.type)
-        return ('%s of length %d, capacity %d' % (typename, self.size, self.capacity))
-
-    def display_hint(self):
-        return 'array'
-
-
-class ThrustReferencePrinter(gdb.printing.PrettyPrinter):
-    """Print a thrust::device_reference"""
-
-    def __init__(self, val):
-        self.val = val
-        self.pointer = val['ptr']['m_iterator']
-        self.type = self.pointer.dereference().type
-        sizeof = self.type.sizeof
-        self.buffer = gdb.parse_and_eval('(void*)malloc(%s)' % sizeof)
-        device_addr = hex(self.pointer)
-        buffer_addr = hex(self.buffer)
-        status = gdb.parse_and_eval('(cudaError)cudaMemcpy(%s, %s, %d, cudaMemcpyDeviceToHost)' % (
-            buffer_addr, device_addr, sizeof))
-        if status != 0:
-            raise gdb.MemoryError('memcpy from device failed: %s' % status)
-        self.buffer_val = gdb.parse_and_eval(
-            hex(self.buffer)).cast(self.pointer.type).dereference()
-
-    def __del__(self):
-        gdb.parse_and_eval('(void)free(%s)' % hex(self.buffer)).fetch_lazy()
-
-    def children(self):
-        return []
-
-    def to_string(self):
-        typename = str(self.val.type)
-        return ('(%s) @%s: %s' % (typename, self.pointer, self.buffer_val))
-
-    def display_hint(self):
-        return None
-
-
 class RmmDeviceUVectorPrinter(gdb.printing.PrettyPrinter):
     """Print a rmm::device_uvector"""
 
@@ -212,18 +149,4 @@ def lookup_rmm_type(val):
     return None
 
 
-def lookup_thrust_type(val):
-    if not str(val.type.unqualified()).startswith('thrust::'):
-        return None
-    suffix = str(val.type.unqualified())[8:]
-    if not is_template_type_not_alias(suffix):
-        return None
-    if template_match(suffix, 'host_vector') or template_match(suffix, 'device_vector'):
-        return ThrustVectorPrinter(val)
-    elif int(gdb.VERSION.split(".")[0]) >= 10 and template_match(suffix, 'device_reference'):
-        return ThrustReferencePrinter(val)
-    return None
-
-
 gdb.pretty_printers.append(lookup_rmm_type)
-gdb.pretty_printers.append(lookup_thrust_type)
