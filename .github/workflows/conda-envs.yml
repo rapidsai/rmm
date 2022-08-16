@@ -1,8 +1,0 @@
-name: conda-env-files
-
-on:
-  pull_request:
-
-jobs:
-  check_generated_files:
-    uses: rapidsai/shared-action-workflows/.github/workflows/conda-envs.yaml@main

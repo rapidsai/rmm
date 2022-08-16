@@ -1,0 +1,8 @@
+name: dependency-files
+
+on:
+  pull_request:
+
+jobs:
+  check_generated_files:
+    uses: rapidsai/shared-action-workflows/.github/workflows/dependency-files.yaml@main
