@@ -29,6 +29,9 @@ class RMMError(Exception):
         super(RMMError, self).__init__(msg)
 
 
+_reinitialize_hooks = []
+
+
 def reinitialize(
     pool_allocator=False,
     managed_memory=False,
@@ -82,6 +85,9 @@ def reinitialize(
     Use `rmm.get_log_filenames()` to get the log file names
     corresponding to each device.
     """
+    for func, args, kwargs in reversed(_reinitialize_hooks):
+        func(*args, **kwargs)
+
     rmm.mr._initialize(
         pool_allocator=pool_allocator,
         managed_memory=managed_memory,
@@ -231,3 +237,46 @@ def rmm_cupy_allocator(nbytes):
     ptr = cupy.cuda.memory.MemoryPointer(mem, 0)
 
     return ptr
+
+
+def register_reinitialize_hook(func, *args, **kwargs):
+    """
+    Add a function to the list of functions ("hooks") that will be
+    called before :py:func:`~rmm.reinitialize()`.
+
+    A user or library may register hooks to perform any necessary
+    cleanup before RMM is reinitialized. For example, a library with
+    an internal cache of objects that use device memory allocated by
+    RMM can register a hook to release those references before RMM is
+    reinitialized, thus ensuring that the relevant device memory
+    resource can be deallocated.
+
+    Hooks are called in the *reverse* order they are registered. This
+    is useful, for example, when a library registers multiple hooks
+    and needs them to run in a specific order for cleanup to be safe.
+    Hooks cannot rely on being registered in a particular order
+    relative to hooks registered by other packages, since that is
+    determined by package import ordering.
+
+    Parameters
+    ----------
+    func : callable
+        Function to be called before :py:func:`~rmm.reinitialize()`
+    args, kwargs
+        Positional and keyword arguments to be passed to `func`
+    """
+    global _reinitialize_hooks
+    _reinitialize_hooks.append((func, args, kwargs))
+    return func
+
+
+def unregister_reinitialize_hook(func):
+    """
+    Remove `func` from list of hooks that will be called before
+    :py:func:`~rmm.reinitialize()`.
+
+    If `func` was registered more than once, every instance of it will
+    be removed from the list of hooks.
+    """
+    global _reinitialize_hooks
+    _reinitialize_hooks = [x for x in _reinitialize_hooks if x[0] != func]

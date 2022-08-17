@@ -1,6 +1,6 @@
 repos:
     - repo: https://github.com/pycqa/isort
-      rev: 5.6.4
+      rev: 5.10.1
       hooks:
           - id: isort
             args: ["--settings-path=python/setup.cfg"]
