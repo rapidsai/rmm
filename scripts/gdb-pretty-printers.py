@@ -16,7 +16,7 @@
 import gdb
 
 
-if not 'ThrustVectorPrinter' in locals():
+if not "ThrustVectorPrinter" in locals():
     raise Exception("This file expects the Thrust pretty-printers to be loaded already. "
                     "Either load them manually, or use the generated load-pretty-printers "
                     "script in the build directory")
@@ -102,9 +102,9 @@ class RmmDeviceUVectorPrinter(gdb.printing.PrettyPrinter):
     def __init__(self, val):
         self.val = val
         el_type = val.type.template_argument(0)
-        self.pointer = val['_storage']['_data'].cast(el_type.pointer())
-        self.size = int(val['_storage']['_size']) // el_type.sizeof
-        self.capacity = int(val['_storage']['_capacity']) // el_type.sizeof
+        self.pointer = val["_storage"]["_data"].cast(el_type.pointer())
+        self.size = int(val["_storage"]["_size"]) // el_type.sizeof
+        self.capacity = int(val["_storage"]["_capacity"]) // el_type.sizeof
 
     def children(self):
         return DeviceIterator(self.pointer, self.size)        
@@ -114,19 +114,19 @@ class RmmDeviceUVectorPrinter(gdb.printing.PrettyPrinter):
         return (f"{typename} of length {self.size}, capacity {self.capacity}")
 
     def display_hint(self):
-        return 'array'
+        return "array"
 
 
 # Workaround to avoid using the pretty printer on things like std::vector<int>::iterator
 def is_template_type_not_alias(typename):
-    loc = typename.find('<')
+    loc = typename.find("<")
     if loc is None:
         return False
     depth = 0
     for char in typename[loc:-1]:
-        if char == '<':
+        if char == "<":
             depth += 1
-        if char == '>':
+        if char == ">":
             depth -= 1
         if depth == 0:
             return False
@@ -138,12 +138,12 @@ def template_match(typename, template_name):
 
 
 def lookup_rmm_type(val):
-    if not str(val.type.unqualified()).startswith('rmm::'):
+    if not str(val.type.unqualified()).startswith("rmm::"):
         return None
     suffix = str(val.type.unqualified())[5:]
     if not is_template_type_not_alias(suffix):
         return None
-    if template_match(suffix, 'device_uvector'):
+    if template_match(suffix, "device_uvector"):
         return RmmDeviceUVectorPrinter(val)
     return None
 
