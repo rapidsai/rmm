@@ -106,6 +106,13 @@ endif()
 
 include(CPack)
 
+# optionally assemble Thrust pretty-printers
+if(Thrust_SOURCE_DIR)
+  file(READ ${Thrust_SOURCE_DIR}/scripts/gdb-pretty-printers.py THRUST_PRETTY_PRINTER_CONTENT)
+  file(READ ${PROJECT_SOURCE_DIR}/scripts/gdb-pretty-printers.py RMM_PRETTY_PRINTER_CONTENT)
+  file(WRITE ${PROJECT_BINARY_DIR}/scripts/gdb-pretty-printers.py "${THRUST_PRETTY_PRINTER_CONTENT}${RMM_PRETTY_PRINTER_CONTENT}")
+endif()
+
 # install export targets
 install(TARGETS rmm EXPORT rmm-exports)
 install(DIRECTORY include/rmm/ DESTINATION include/rmm)
