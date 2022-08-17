@@ -73,9 +73,9 @@ version = "22.08"
 # The full version, including alpha/beta/rc tags.
 <<<<<<< HEAD
 <<<<<<< HEAD
-release = "22.06.01"
+release = "22.08.00"
 =======
-release = "22.06.01"
+release = "22.08.00"
 >>>>>>> origin/branch-22.06
 =======
 release = "22.08.00"
