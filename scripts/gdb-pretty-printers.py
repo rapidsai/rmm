@@ -18,8 +18,8 @@ import gdb
 
 if not 'ThrustVectorPrinter' in locals():
     raise Exception("This file expects the Thrust pretty-printers to be loaded already. "
-                    "Either load them manually, or use the generated gdb-pretty-printers.py "
-                    "in the build directory")
+                    "Either load them manually, or use the generated load-pretty-printers "
+                    "script in the build directory")
 
 
 class HostIterator(Iterator):
@@ -38,8 +38,8 @@ class HostIterator(Iterator):
             raise StopIteration
         elt = self.item.dereference()
         count = self.count
-        self.item = self.item + 1
-        self.count = self.count + 1
+        self.item += 1
+        self.count += 1
         return ('[%d]' % count, elt)
 
 
@@ -90,11 +90,11 @@ class DeviceIterator(Iterator):
             raise StopIteration
         self.update_buffer()
         elt = self.buffer_item.dereference()
-        self.buffer_item = self.buffer_item + 1
-        self.buffer_count = self.buffer_count + 1
+        self.buffer_item += 1
+        self.buffer_count += 1
         count = self.count
-        self.item = self.item + 1
-        self.count = self.count + 1
+        self.item += 1
+        self.count += 1
         return ('[%d]' % count, elt)
 
 
