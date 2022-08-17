@@ -26,3 +26,23 @@ jobs:
       gpu-smoketest-before: "nvidia-smi"
       gpu-smoketest: "import rmm; buf = rmm.DeviceBuffer(size=100); print(buf.size); print(buf.ptr); assert buf.size == 100"
     secrets: inherit
+  rmm-wheel-arm64-38:
+    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-arm64.yml@feat/wheel-ci-actions
+    with:
+      package-name: rmm_cuda11
+      package-dir: python
+      python-version: "3.8"
+      cibw-environment: "PYTHON_PACKAGE_CUDA_SUFFIX='-cuda11'"
+      gpu-smoketest-before: "nvidia-smi"
+      gpu-smoketest: "import rmm; buf = rmm.DeviceBuffer(size=100); print(buf.size); print(buf.ptr); assert buf.size == 100"
+    secrets: inherit
+  rmm-wheel-arm64-39:
+    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-arm64.yml@feat/wheel-ci-actions
+    with:
+      package-name: rmm_cuda11
+      package-dir: python
+      python-version: "3.9"
+      cibw-environment: "PYTHON_PACKAGE_CUDA_SUFFIX='-cuda11'"
+      gpu-smoketest-before: "nvidia-smi"
+      gpu-smoketest: "import rmm; buf = rmm.DeviceBuffer(size=100); print(buf.size); print(buf.ptr); assert buf.size == 100"
+    secrets: inherit
