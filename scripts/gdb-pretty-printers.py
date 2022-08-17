@@ -22,7 +22,7 @@ if not 'ThrustVectorPrinter' in locals():
                     "script in the build directory")
 
 
-class HostIterator(Iterator):
+class HostIterator():
     """Iterates over arrays in host memory"""
 
     def __init__(self, start, size):
@@ -40,10 +40,10 @@ class HostIterator(Iterator):
         count = self.count
         self.item += 1
         self.count += 1
-        return ('[%d]' % count, elt)
+        return (f"[{count}]", elt)
 
 
-class DeviceIterator(Iterator):
+class DeviceIterator():
     """Iterates over arrays in device memory by copying chunks into host memory"""
 
     def __init__(self, start, size):
@@ -56,8 +56,7 @@ class DeviceIterator(Iterator):
         self.buffer_start = 0
         # At most 1 MB or size, at least 1
         self.buffer_size = min(size, max(1, 2 ** 20 // self.sizeof))
-        self.buffer = gdb.parse_and_eval(
-            '(void*)malloc(%s)' % (self.buffer_size * self.sizeof))
+        self.buffer = gdb.parse_and_eval(f"(void*)malloc({self.buffer_size * self.sizeof})")
         self.buffer.fetch_lazy()
         self.buffer_count = self.buffer_size
         self.update_buffer()
@@ -73,14 +72,13 @@ class DeviceIterator(Iterator):
             size = min(self.buffer_size, self.size -
                         self.buffer_start) * self.sizeof
             status = gdb.parse_and_eval(
-                '(cudaError)cudaMemcpy(%s, %s, %d, cudaMemcpyDeviceToHost)' % (buffer_addr, device_addr, size))
+                f"(cudaError)cudaMemcpy({buffer_addr}, {device_addr}, {size}, cudaMemcpyDeviceToHost)")
             if status != 0:
                 raise gdb.MemoryError(
-                    'memcpy from device failed: %s' % status)
+                    f"memcpy from device failed: {status}")
 
     def __del__(self):
-        gdb.parse_and_eval('(void)free(%s)' %
-                            hex(self.buffer)).fetch_lazy()
+        gdb.parse_and_eval(f"(void)free({hex(self.buffer)})").fetch_lazy()
 
     def __iter__(self):
         return self
@@ -95,7 +93,7 @@ class DeviceIterator(Iterator):
         count = self.count
         self.item += 1
         self.count += 1
-        return ('[%d]' % count, elt)
+        return (f"[{count}]", elt)
 
 
 class RmmDeviceUVectorPrinter(gdb.printing.PrettyPrinter):
@@ -113,7 +111,7 @@ class RmmDeviceUVectorPrinter(gdb.printing.PrettyPrinter):
 
     def to_string(self):
         typename = str(self.val.type)
-        return ('%s of length %d, capacity %d' % (typename, self.size, self.capacity))
+        return (f"{typename} of length {self.size}, capacity {self.capacity}")
 
     def display_hint(self):
         return 'array'
@@ -125,7 +123,7 @@ def is_template_type_not_alias(typename):
     if loc is None:
         return False
     depth = 0
-    for char in typename[typename.find('<'):-1]:
+    for char in typename[loc:-1]:
         if char == '<':
             depth += 1
         if char == '>':
