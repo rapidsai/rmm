@@ -150,3 +150,6 @@ ENV/
 
 # RMM log files
 rmm_log.txt
+
+# cibuildwheel
+/wheelhouse
