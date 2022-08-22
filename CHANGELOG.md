@@ -2,9 +2,26 @@
 
 Please see https://github.com/rapidsai/rmm/releases/tag/v22.10.00a for the latest changes to this development branch.
 
-# RMM 22.08.00 (Date TBD)
+# RMM 22.08.00 (17 Aug 2022)
 
-Please see https://github.com/rapidsai/rmm/releases/tag/v22.08.00a for the latest changes to this development branch.
+## 🐛 Bug Fixes
+
+- Specify `language` as `&#39;en&#39;` instead of `None` ([#1059](https://github.com/rapidsai/rmm/pull/1059)) [@jakirkham](https://github.com/jakirkham)
+- Add a missed `except *` ([#1057](https://github.com/rapidsai/rmm/pull/1057)) [@shwina](https://github.com/shwina)
+- Properly handle cudaMemHandleTypeNone and cudaErrorInvalidValue in is_export_handle_type_supported ([#1055](https://github.com/rapidsai/rmm/pull/1055)) [@gerashegalov](https://github.com/gerashegalov)
+
+## 📖 Documentation
+
+- Centralize common css &amp; js code in docs ([#1075](https://github.com/rapidsai/rmm/pull/1075)) [@galipremsagar](https://github.com/galipremsagar)
+
+## 🛠️ Improvements
+
+- Add the ability to register and unregister reinitialization hooks ([#1072](https://github.com/rapidsai/rmm/pull/1072)) [@shwina](https://github.com/shwina)
+- Update isort to 5.10.1 ([#1069](https://github.com/rapidsai/rmm/pull/1069)) [@vyasr](https://github.com/vyasr)
+- Forward merge 22.06 into 22.08 ([#1067](https://github.com/rapidsai/rmm/pull/1067)) [@vyasr](https://github.com/vyasr)
+- Forward merge 22.06 into 22.08 ([#1066](https://github.com/rapidsai/rmm/pull/1066)) [@vyasr](https://github.com/vyasr)
+- Pin max version of `cuda-python` to `11.7` ([#1062](https://github.com/rapidsai/rmm/pull/1062)) [@galipremsagar](https://github.com/galipremsagar)
+- Change build.sh to find C++ library by default and avoid shadowing CMAKE_ARGS ([#1053](https://github.com/rapidsai/rmm/pull/1053)) [@vyasr](https://github.com/vyasr)
 
 # RMM 22.06.00 (7 Jun 2022)
 
