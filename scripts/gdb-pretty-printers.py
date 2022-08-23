@@ -16,14 +16,14 @@
 import gdb
 
 
-if not "ThrustVectorPrinter" in locals():
-    raise Exception("This file expects the Thrust pretty-printers to be loaded already. "
+if "ThrustVectorPrinter" not in locals():
+    raise NameError("This file expects the Thrust pretty-printers to be loaded already. "
                     "Either load them manually, or use the generated load-pretty-printers "
                     "script in the build directory")
 
 
-class HostIterator():
-    """Iterates over arrays in host memory"""
+class HostIterator:
+    """Iterates over arrays in host memory."""
 
     def __init__(self, start, size):
         self.item = start
@@ -43,8 +43,8 @@ class HostIterator():
         return (f"[{count}]", elt)
 
 
-class DeviceIterator():
-    """Iterates over arrays in device memory by copying chunks into host memory"""
+class DeviceIterator:
+    """Iterates over arrays in device memory by copying chunks into host memory."""
 
     def __init__(self, start, size):
         self.exec = exec
@@ -97,7 +97,7 @@ class DeviceIterator():
 
 
 class RmmDeviceUVectorPrinter(gdb.printing.PrettyPrinter):
-    """Print a rmm::device_uvector"""
+    """Print a rmm::device_uvector."""
 
     def __init__(self, val):
         self.val = val
@@ -110,8 +110,7 @@ class RmmDeviceUVectorPrinter(gdb.printing.PrettyPrinter):
         return DeviceIterator(self.pointer, self.size)        
 
     def to_string(self):
-        typename = str(self.val.type)
-        return (f"{typename} of length {self.size}, capacity {self.capacity}")
+        return (f"{self.val.type} of length {self.size}, capacity {self.capacity}")
 
     def display_hint(self):
         return "array"
