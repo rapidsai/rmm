@@ -426,7 +426,7 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
         int8_t max_size_exponent=-1,
     ):
 
-        self.bin_mrs = []
+        self._bin_mrs = []
 
         if (min_size_exponent == -1 or max_size_exponent == -1):
             self.c_obj.reset(
@@ -460,15 +460,15 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
 
         If min_size_exponent and max_size_exponent are specified, initializes
         with one or more FixedSizeMemoryResource bins in the range
-        [2^min_size_exponent, 2^max_size_exponent].
+        ``[2**min_size_exponent, 2**max_size_exponent]``.
 
-        Call add_bin to add additional bin allocators.
+        Call :py:meth:`~.add_bin` to add additional bin allocators.
 
         Parameters
         ----------
         upstream_mr : DeviceMemoryResource
             The memory resource to use for allocations larger than any of the
-            bins
+            bins.
         min_size_exponent : size_t
             The base-2 exponent of the minimum size FixedSizeMemoryResource
             bin to create.
@@ -506,12 +506,17 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
                 self.c_obj.get()))[0].add_bin(allocation_size)
         else:
             # Save the ref to the new bin resource to ensure its lifetime
-            self.bin_mrs.append(bin_resource)
+            self._bin_mrs.append(bin_resource)
 
             (<binning_memory_resource[device_memory_resource]*>(
                 self.c_obj.get()))[0].add_bin(
                     allocation_size,
                     bin_resource.get_mr())
+
+    @property
+    def bin_mrs(self) -> list:
+        """Get the list of binned memory resources."""
+        return self._bin_mrs
 
 
 cdef void* _allocate_callback_wrapper(
