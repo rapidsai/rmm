@@ -16,12 +16,6 @@
 import gdb
 
 
-if "ThrustVectorPrinter" not in locals():
-    raise NameError("This file expects the Thrust pretty-printers to be loaded already. "
-                    "Either load them manually, or use the generated load-pretty-printers "
-                    "script in the build directory")
-
-
 class HostIterator:
     """Iterates over arrays in host memory."""
 
