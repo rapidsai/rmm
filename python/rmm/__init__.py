@@ -32,7 +32,6 @@ __all__ = [
     "DeviceBuffer",
     "RMMError",
     "RMMNumbaManager",
-    "_numba_memory_manager",
     "disable_logging",
     "enable_logging",
     "get_log_filenames",
