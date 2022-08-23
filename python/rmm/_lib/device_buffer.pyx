@@ -106,14 +106,17 @@ cdef class DeviceBuffer:
 
     @property
     def nbytes(self):
+        """Gets the size of the buffer in bytes."""
         return self.size
 
     @property
     def ptr(self):
+        """Gets a pointer to the underlying data."""
         return int(<uintptr_t>self.c_data())
 
     @property
     def size(self):
+        """Gets the size of the buffer in bytes."""
         return int(self.c_size())
 
     def __reduce__(self):
