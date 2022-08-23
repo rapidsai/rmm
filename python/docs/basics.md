@@ -152,7 +152,7 @@ This can be done in two ways:
 
 1. Setting the environment variable `NUMBA_CUDA_MEMORY_MANAGER`:
 
-  ```python
+  ```bash
   $ NUMBA_CUDA_MEMORY_MANAGER=rmm python (args)
   ```
 
