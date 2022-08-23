@@ -33,7 +33,7 @@ A DeviceBuffer represents an **untyped, uninitialized device memory
 allocation**.  DeviceBuffers can be created by providing the
 size of the allocation in bytes:
 
-```python
+```pycon
 >>> import rmm
 >>> buf = rmm.DeviceBuffer(size=100)
 ```
@@ -41,7 +41,7 @@ size of the allocation in bytes:
 The size of the allocation and the memory address associated with it
 can be accessed via the `.size` and `.ptr` attributes respectively:
 
-```python
+```pycon
 >>> buf.size
 100
 >>> buf.ptr
@@ -50,7 +50,7 @@ can be accessed via the `.size` and `.ptr` attributes respectively:
 
 DeviceBuffers can also be created by copying data from host memory:
 
-```python
+```pycon
 >>> import rmm
 >>> import numpy as np
 >>> a = np.array([1, 2, 3], dtype='float64')
@@ -62,7 +62,7 @@ DeviceBuffers can also be created by copying data from host memory:
 Conversely, the data underlying a DeviceBuffer can be copied to the
 host:
 
-```python
+```pycon
 >>> np.frombuffer(buf.tobytes())
 array([1., 2., 3.])
 ```
@@ -83,7 +83,7 @@ used to set a different MemoryResource for the current CUDA device.  For
 example, enabling the `ManagedMemoryResource` tells RMM to use
 `cudaMallocManaged` instead of `cudaMalloc` for allocating memory:
 
-```python
+```pycon
 >>> import rmm
 >>> rmm.mr.set_current_device_resource(rmm.mr.ManagedMemoryResource())
 ```
@@ -100,7 +100,7 @@ below shows how to construct a PoolMemoryResource with an initial size
 of 1 GiB and a maximum size of 4 GiB. The pool uses
 `CudaMemoryResource` as its underlying ("upstream") memory resource:
 
-```python
+```pycon
 >>> import rmm
 >>> pool = rmm.mr.PoolMemoryResource(
 ...     rmm.mr.CudaMemoryResource(),
@@ -112,7 +112,7 @@ of 1 GiB and a maximum size of 4 GiB. The pool uses
 
 Similarly, to use a pool of managed memory:
 
-```python
+```pycon
 >>> import rmm
 >>> pool = rmm.mr.PoolMemoryResource(
 ...     rmm.mr.ManagedMemoryResource(),
@@ -137,7 +137,7 @@ You can configure [CuPy](https://cupy.dev/) to use RMM for memory
 allocations by setting the CuPy CUDA allocator to
 `rmm_cupy_allocator`:
 
-```python
+```pycon
 >>> import rmm
 >>> import cupy
 >>> cupy.cuda.set_allocator(rmm.rmm_cupy_allocator)
@@ -158,7 +158,7 @@ This can be done in two ways:
 
 2. Using the `set_memory_manager()` function provided by Numba:
 
-  ```python
+  ```pycon
   >>> from numba import cuda
   >>> import rmm
   >>> cuda.set_memory_manager(rmm.RMMNumbaManager)
