@@ -45,7 +45,6 @@ extensions = [
     "IPython.sphinxext.ipython_directive",
     "nbsphinx",
     "recommonmark",
-    "sphinx.ext.napoleon",
 ]
 
 
