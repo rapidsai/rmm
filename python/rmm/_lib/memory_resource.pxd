@@ -50,7 +50,7 @@ cdef class FixedSizeMemoryResource(UpstreamResourceAdaptor):
 
 cdef class BinningMemoryResource(UpstreamResourceAdaptor):
 
-    cdef readonly list bin_mrs
+    cdef readonly list _bin_mrs
 
     cpdef add_bin(
         self,
