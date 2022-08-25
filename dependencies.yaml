@@ -3,7 +3,7 @@ files:
   all:
     generate: conda
     matrix:
-      cuda_version: ["11.5", "11.6"]
+      cuda: ["11.5", "11.6"]
       arch: [x86_64]
     includes:
       - miscellaneous
@@ -37,20 +37,26 @@ dependencies:
       test:
         - pytest
         - pytest-cov
-    x86_64-11.5:
-      miscellaneous:
-        - cuda-python>=11.5,<11.7.1
-    x86_64-11.6:
-      miscellaneous:
-        - cuda-python>=11.6,<11.7.1
+    specific:
+      - matrix:
+          cuda: "11.5"
+        miscellaneous:
+          - cuda-python>=11.5,<11.7.1
+      - matrix:
+          cuda: "11.6"
+        miscellaneous:
+          - cuda-python>=11.6,<11.7.1
   conda:
     common:
       miscellaneous:
         - clang-tools=11.1.0
         - spdlog>=1.8.5,<1.9
-    x86_64-11.5:
-      miscellaneous:
-        - cudatoolkit=11.5
-    x86_64-11.6:
-      miscellaneous:
-        - cudatoolkit=11.6
+    specific:
+      - matrix:
+          cuda: "11.5"
+        miscellaneous:
+          - cudatoolkit=11.5
+      - matrix:
+          cuda: "11.6"
+        miscellaneous:
+          - cudatoolkit=11.6
