@@ -108,6 +108,11 @@ endif()
 
 include(CPack)
 
+# optionally assemble Thrust pretty-printers
+if(Thrust_SOURCE_DIR)
+  configure_file(scripts/load-pretty-printers.in load-pretty-printers @ONLY)
+endif()
+
 # install export targets
 install(TARGETS rmm EXPORT rmm-exports)
 install(DIRECTORY include/rmm/ DESTINATION include/rmm)
