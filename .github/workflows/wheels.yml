@@ -12,6 +12,8 @@ jobs:
       package-name: rmm_cuda11
       package-dir: python
       python-version: "3.8"
+      cibw-test-extras: "test"
+      cibw-test-command: "python -m py.test -v ./python/rmm/tests"
       gpu-smoketest: "import rmm; buf = rmm.DeviceBuffer(size=100); print(buf.size); print(buf.ptr); assert buf.size == 100"
     secrets: inherit
   rmm-wheel-amd64-39:
@@ -20,6 +22,8 @@ jobs:
       package-name: rmm_cuda11
       package-dir: python
       python-version: "3.9"
+      cibw-test-extras: "test"
+      cibw-test-command: "python -m py.test -v ./python/rmm/tests"
       gpu-smoketest: "import rmm; buf = rmm.DeviceBuffer(size=100); print(buf.size); print(buf.ptr); assert buf.size == 100"
     secrets: inherit
   rmm-wheel-arm64-38:
@@ -28,6 +32,8 @@ jobs:
       package-name: rmm_cuda11
       package-dir: python
       python-version: "3.8"
+      cibw-test-extras: "test"
+      cibw-test-command: "python -m py.test -v ./python/rmm/tests"
       gpu-smoketest: "import rmm; buf = rmm.DeviceBuffer(size=100); print(buf.size); print(buf.ptr); assert buf.size == 100"
     secrets: inherit
   rmm-wheel-arm64-39:
@@ -36,5 +42,7 @@ jobs:
       package-name: rmm_cuda11
       package-dir: python
       python-version: "3.9"
+      cibw-test-extras: "test"
+      cibw-test-command: "python -m py.test -v ./python/rmm/tests"
       gpu-smoketest: "import rmm; buf = rmm.DeviceBuffer(size=100); print(buf.size); print(buf.ptr); assert buf.size == 100"
     secrets: inherit
