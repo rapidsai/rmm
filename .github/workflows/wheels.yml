@@ -6,42 +6,12 @@ on:
       - 'pull-request/[0-9]+'
 
 jobs:
-  rmm-wheel-amd64-38:
-    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-amd64.yml@feat/wheel-ci-actions
+  rmm-wheels:
+    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-manylinux.yml@feat/wheel-ci-actions
     with:
       package-name: rmm_cuda11
       package-dir: python
-      python-version: "3.8"
-      cibw-test-extras: "test"
-      cibw-test-command: "python -m py.test -v ./python/rmm/tests"
-      gpu-smoketest: "import rmm; buf = rmm.DeviceBuffer(size=100); print(buf.size); print(buf.ptr); assert buf.size == 100"
-    secrets: inherit
-  rmm-wheel-amd64-39:
-    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-amd64.yml@feat/wheel-ci-actions
-    with:
-      package-name: rmm_cuda11
-      package-dir: python
-      python-version: "3.9"
-      cibw-test-extras: "test"
-      cibw-test-command: "python -m py.test -v ./python/rmm/tests"
-      gpu-smoketest: "import rmm; buf = rmm.DeviceBuffer(size=100); print(buf.size); print(buf.ptr); assert buf.size == 100"
-    secrets: inherit
-  rmm-wheel-arm64-38:
-    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-arm64.yml@feat/wheel-ci-actions
-    with:
-      package-name: rmm_cuda11
-      package-dir: python
-      python-version: "3.8"
-      cibw-test-extras: "test"
-      cibw-test-command: "python -m py.test -v ./python/rmm/tests"
-      gpu-smoketest: "import rmm; buf = rmm.DeviceBuffer(size=100); print(buf.size); print(buf.ptr); assert buf.size == 100"
-    secrets: inherit
-  rmm-wheel-arm64-39:
-    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-arm64.yml@feat/wheel-ci-actions
-    with:
-      package-name: rmm_cuda11
-      package-dir: python
-      python-version: "3.9"
+      python-version: "3.8 3.9"
       cibw-test-extras: "test"
       cibw-test-command: "python -m py.test -v ./python/rmm/tests"
       gpu-smoketest: "import rmm; buf = rmm.DeviceBuffer(size=100); print(buf.size); print(buf.ptr); assert buf.size == 100"
