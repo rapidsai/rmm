@@ -9,7 +9,7 @@ jobs:
   rmm-wheels:
     uses: rapidsai/shared-action-workflows/.github/workflows/wheels-manylinux.yml@feat/wheel-ci-actions
     with:
-      package-name: rmm_cuda11
+      package-name: rmm_cu11
       package-dir: python
       python-version: "3.8 3.9"
       cibw-test-extras: "test"
