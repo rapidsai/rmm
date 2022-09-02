@@ -1,5 +1,4 @@
-# see https://github.com/rapidsai/dependency-file-generator for details
-# dependency files to create
+# Dependency list for https://github.com/rapidsai/dependency-file-generator
 files:
   all:
     generate: conda
@@ -15,11 +14,9 @@ files:
     generate: none
     includes:
       - test
-# channels to add to conda environment files
 channels:
   - rapidsai
   - conda-forge
-# dependency lists
 dependencies:
   conda_and_requirements:
     common:
