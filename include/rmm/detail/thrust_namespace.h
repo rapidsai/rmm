@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <thrust/detail/config.h> // namespace macros
+#include <thrust/detail/config.h>  // namespace macros
 
 #ifdef THRUST_WRAPPED_NAMESPACE
 
@@ -28,7 +28,7 @@ namespace thrust {
 }  // namespace THRUST_WRAPPED_NAMESPACE
 
 namespace rmm {
-  using namespace THRUST_WRAPPED_NAMESPACE;
+using namespace THRUST_WRAPPED_NAMESPACE;
 }
 
 #endif
