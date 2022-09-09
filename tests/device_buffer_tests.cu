@@ -29,7 +29,7 @@
 
 #include <thrust/equal.h>
 #include <thrust/sequence.h>
-namespace testing{
+namespace testing {
 namespace thrust = THRUST_NS_QUALIFIER;
 }
 using namespace testing;
