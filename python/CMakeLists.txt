@@ -31,6 +31,7 @@ project(
 
 option(FIND_RMM_CPP "Search for existing RMM C++ installations before defaulting to local files"
        OFF)
+option(RMM_BUILD_WHEELS "Whether we're building a wheel for pypi" OFF)
 
 # If the user requested it we attempt to find RMM.
 if(FIND_RMM_CPP)
@@ -45,7 +46,16 @@ if(NOT rmm_FOUND)
   enable_language(CUDA)
   set(BUILD_TESTS OFF)
   set(BUILD_BENCHMARKS OFF)
-  add_subdirectory(../ rmm-cpp)
+
+  # Statically link dependencies if building wheels
+  set(CUDA_STATIC_RUNTIME ${RMM_BUILD_WHEELS})
+  set(_exclude_from_all "")
+  if(RMM_BUILD_WHEELS)
+    # Don't install the cuDF C++ targets into wheels
+    set(_exclude_from_all EXCLUDE_FROM_ALL)
+  endif()
+
+  add_subdirectory(../ rmm-cpp ${_exclude_from_all})
 endif()
 
 include(rapids-cython)
