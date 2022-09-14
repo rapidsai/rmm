@@ -26,6 +26,7 @@ setup(
     # Include the separately-compiled shared library
     extras_require={"test": ["pytest", "pytest-xdist"]},
     packages=find_packages(include=["rmm", "rmm.*"]),
+    include_package_data=True,
     package_data={
         # Note: A dict comprehension with an explicit copy is necessary (rather
         # than something simpler like a dict.fromkeys) because otherwise every
