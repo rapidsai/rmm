@@ -13,6 +13,7 @@ jobs:
       package-dir: python
       python-version: "3.8 3.9"
       manylinux-container: "manylinux2014"
+      manylinux-test-container: "manylinux_2_27"
       cibw-test-extras: "test"
       cibw-test-command: "python -m py.test -v ./python/rmm/tests"
       gpu-smoketest: "import rmm; buf = rmm.DeviceBuffer(size=100); print(buf.size); print(buf.ptr); assert buf.size == 100"
@@ -23,6 +24,7 @@ jobs:
       package-name: rmm_cu11
       package-dir: python
       python-version: "3.8 3.9"
+      manylinux-test-container: "manylinux_2_27"
       cibw-test-extras: "test"
       cibw-test-command: "python -m py.test -v ./python/rmm/tests"
       gpu-smoketest: "import rmm; buf = rmm.DeviceBuffer(size=100); print(buf.size); print(buf.ptr); assert buf.size == 100"
