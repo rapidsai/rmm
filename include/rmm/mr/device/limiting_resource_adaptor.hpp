@@ -57,11 +57,11 @@ class limiting_resource_adaptor final : public device_memory_resource {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
   }
 
-  limiting_resource_adaptor()                                     = delete;
-  ~limiting_resource_adaptor() override                           = default;
-  limiting_resource_adaptor(limiting_resource_adaptor const&)     = delete;
-  limiting_resource_adaptor(limiting_resource_adaptor&&) noexcept = default;
-  limiting_resource_adaptor& operator=(limiting_resource_adaptor const&) = delete;
+  limiting_resource_adaptor()                                                = delete;
+  ~limiting_resource_adaptor() override                                      = default;
+  limiting_resource_adaptor(limiting_resource_adaptor const&)                = delete;
+  limiting_resource_adaptor(limiting_resource_adaptor&&) noexcept            = default;
+  limiting_resource_adaptor& operator=(limiting_resource_adaptor const&)     = delete;
   limiting_resource_adaptor& operator=(limiting_resource_adaptor&&) noexcept = default;
 
   /**
@@ -184,8 +184,7 @@ class limiting_resource_adaptor final : public device_memory_resource {
    * @param stream Stream on which to get the mem info.
    * @return std::pair contaiing free_size and total_size of memory
    */
-  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
-    cuda_stream_view) const override
+  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view) const override
   {
     return {allocation_limit_ - allocated_bytes_, allocation_limit_};
   }

@@ -29,12 +29,12 @@ namespace rmm::mr {
  */
 class managed_memory_resource final : public device_memory_resource {
  public:
-  managed_memory_resource()                               = default;
-  ~managed_memory_resource() override                     = default;
-  managed_memory_resource(managed_memory_resource const&) = default;
-  managed_memory_resource(managed_memory_resource&&)      = default;
+  managed_memory_resource()                                          = default;
+  ~managed_memory_resource() override                                = default;
+  managed_memory_resource(managed_memory_resource const&)            = default;
+  managed_memory_resource(managed_memory_resource&&)                 = default;
   managed_memory_resource& operator=(managed_memory_resource const&) = default;
-  managed_memory_resource& operator=(managed_memory_resource&&) = default;
+  managed_memory_resource& operator=(managed_memory_resource&&)      = default;
 
   /**
    * @brief Query whether the resource supports use of non-null streams for
@@ -114,8 +114,7 @@ class managed_memory_resource final : public device_memory_resource {
    * @param stream to execute on
    * @return std::pair contaiing free_size and total_size of memory
    */
-  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
-    cuda_stream_view) const override
+  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view) const override
   {
     std::size_t free_size{};
     std::size_t total_size{};
