@@ -14,6 +14,5 @@ jobs:
       python-version: "3.8 3.9"
       cibw-test-extras: "test"
       cibw-test-command: "python -m py.test -v ./python/rmm/tests"
-      manylinux-container: "manylinux_2_27"
       gpu-smoketest: "import rmm; buf = rmm.DeviceBuffer(size=100); print(buf.size); print(buf.ptr); assert buf.size == 100"
     secrets: inherit
