@@ -9,8 +9,8 @@ jobs:
   rmm-wheels:
     uses: rapidsai/shared-action-workflows/.github/workflows/wheels-manylinux.yml@feat/wheel-ci-actions-2
     with:
-      package-name: rmm_cu11
       package-dir: python
+      package-name: "rmm"
       python-version: "3.8 3.9"
       manylinux-container-amd64: "manylinux2014"
       manylinux-container-arm64: "manylinux_2_31"
