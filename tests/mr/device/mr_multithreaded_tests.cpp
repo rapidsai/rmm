@@ -179,6 +179,7 @@ void allocate_loop(rmm::mr::device_memory_resource* mr,
                    std::size_t num_allocations,
                    std::list<allocation>& allocations,
                    std::mutex& mtx,
+                   std::condition_variable& cv,
                    cudaEvent_t& event,
                    rmm::cuda_stream_view stream)
 {
@@ -195,27 +196,34 @@ void allocate_loop(rmm::mr::device_memory_resource* mr,
       RMM_CUDA_TRY(cudaEventRecord(event, stream.value()));
       allocations.emplace_back(ptr, size);
     }
+    cv.notify_one();
   }
+  // Work around for threads going away before cudaEvent has finished async processing
+  cudaEventSynchronize(event);
 }
 
 void deallocate_loop(rmm::mr::device_memory_resource* mr,
                      std::size_t num_allocations,
                      std::list<allocation>& allocations,
                      std::mutex& mtx,
+                     std::condition_variable& cv,
                      cudaEvent_t& event,
                      rmm::cuda_stream_view stream)
 {
-  for (std::size_t i = 0; i < num_allocations;) {
-    std::lock_guard<std::mutex> lock(mtx);
-    if (allocations.empty()) { continue; }
-    i++;
+  for (std::size_t i = 0; i < num_allocations; i++) {
+    std::unique_lock lk(mtx);
+    cv.wait(lk, [&allocations] { return !allocations.empty(); });
     RMM_CUDA_TRY(cudaStreamWaitEvent(stream.value(), event));
     allocation alloc = allocations.front();
     allocations.pop_front();
     mr->deallocate(alloc.ptr, alloc.size, stream);
+    lk.unlock();
+    cv.notify_one();
   }
-}
 
+  // Work around for threads going away before cudaEvent has finished async processing
+  cudaEventSynchronize(event);
+}
 void test_allocate_free_different_threads(rmm::mr::device_memory_resource* mr,
                                           rmm::cuda_stream_view streamA,
                                           rmm::cuda_stream_view streamB)
@@ -223,6 +231,7 @@ void test_allocate_free_different_threads(rmm::mr::device_memory_resource* mr,
   constexpr std::size_t num_allocations{100};
 
   std::mutex mtx;
+  std::condition_variable cv;
   std::list<allocation> allocations;
   cudaEvent_t event;
 
@@ -233,6 +242,7 @@ void test_allocate_free_different_threads(rmm::mr::device_memory_resource* mr,
                        num_allocations,
                        std::ref(allocations),
                        std::ref(mtx),
+                       std::ref(cv),
                        std::ref(event),
                        streamA);
 
@@ -241,6 +251,7 @@ void test_allocate_free_different_threads(rmm::mr::device_memory_resource* mr,
                        num_allocations,
                        std::ref(allocations),
                        std::ref(mtx),
+                       std::ref(cv),
                        std::ref(event),
                        streamB);
 
