@@ -218,7 +218,6 @@ void deallocate_loop(rmm::mr::device_memory_resource* mr,
     allocations.pop_front();
     mr->deallocate(alloc.ptr, alloc.size, stream);
     lk.unlock();
-    cv.notify_one();
   }
 
   // Work around for threads going away before cudaEvent has finished async processing
