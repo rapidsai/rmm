@@ -760,11 +760,36 @@ def test_custom_mr(capsys):
         rmm.mr.CallbackMemoryResource(allocate_func, deallocate_func)
     )
 
-    dbuf = rmm.DeviceBuffer(size=256)
-    del dbuf
+    rmm.DeviceBuffer(size=256)
 
     captured = capsys.readouterr()
     assert captured.out == "Allocating 256 bytes\nDeallocating 256 bytes\n"
+
+
+@pytest.mark.parametrize(
+    "err_raise,err_catch",
+    [
+        (MemoryError, MemoryError),
+        (RuntimeError, RuntimeError),
+        (Exception, RuntimeError),
+        (BaseException, RuntimeError),
+    ],
+)
+def test_callback_mr_error(err_raise, err_catch):
+    base_mr = rmm.mr.CudaMemoryResource()
+
+    def allocate_func(size):
+        raise err_raise("My alloc error")
+
+    def deallocate_func(ptr, size):
+        return base_mr.deallocate(ptr, size)
+
+    rmm.mr.set_current_device_resource(
+        rmm.mr.CallbackMemoryResource(allocate_func, deallocate_func)
+    )
+
+    with pytest.raises(err_catch, match="My alloc error"):
+        rmm.DeviceBuffer(size=256)
 
 
 @pytest.fixture
