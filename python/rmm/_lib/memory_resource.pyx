@@ -55,7 +55,7 @@ cdef CppExcept translate_python_except_to_cpp(err: BaseException):
 
 # Implementation of `throw_cpp_except()`, which throws a given `CppExcept`.
 # This function MUST be called without the GIL otherwise the thrown C++
-# exception are tanslated back into a Python exception.
+# exception are translated back into a Python exception.
 cdef extern from *:
     """
     #include <stdexcept>
