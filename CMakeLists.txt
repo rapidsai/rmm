@@ -15,7 +15,7 @@
 cmake_minimum_required(VERSION 3.20.1 FATAL_ERROR)
 
 if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/RMM_RAPIDS.cmake)
-  file(DOWNLOAD https://raw.githubusercontent.com/rapidsai/rapids-cmake/branch-22.10/RAPIDS.cmake
+  file(DOWNLOAD https://raw.githubusercontent.com/rapidsai/rapids-cmake/branch-22.12/RAPIDS.cmake
        ${CMAKE_CURRENT_BINARY_DIR}/RMM_RAPIDS.cmake)
 endif()
 include(${CMAKE_CURRENT_BINARY_DIR}/RMM_RAPIDS.cmake)
@@ -27,7 +27,7 @@ include(rapids-find)
 
 project(
   RMM
-  VERSION 22.10.00
+  VERSION 22.12.00
   LANGUAGES CXX)
 
 # Write the version header

@@ -1,3 +1,7 @@
+# RMM 22.12.00 (Date TBD)
+
+Please see https://github.com/rapidsai/rmm/releases/tag/v22.12.00a for the latest changes to this development branch.
+
 # RMM 22.10.00 (Date TBD)
 
 Please see https://github.com/rapidsai/rmm/releases/tag/v22.10.00a for the latest changes to this development branch.
