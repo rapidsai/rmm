@@ -183,7 +183,7 @@ void allocate_loop(rmm::mr::device_memory_resource* mr,
                    cudaEvent_t& event,
                    rmm::cuda_stream_view stream)
 {
-  constexpr std::size_t max_size{1_KiB};
+  constexpr std::size_t max_size{1_MiB};
 
   std::default_random_engine generator;
   std::uniform_int_distribution<std::size_t> size_distribution(1, max_size);
@@ -227,7 +227,7 @@ void test_allocate_free_different_threads(rmm::mr::device_memory_resource* mr,
                                           rmm::cuda_stream_view streamA,
                                           rmm::cuda_stream_view streamB)
 {
-  constexpr std::size_t num_allocations{3};
+  constexpr std::size_t num_allocations{100};
 
   std::mutex mtx;
   std::condition_variable allocations_ready;
