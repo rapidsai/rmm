@@ -712,6 +712,18 @@ def test_failure_callback_resource_adaptor():
     assert retried[0]
 
 
+def test_failure_callback_resource_adaptor_error():
+    def callback(nbytes: int) -> bool:
+        raise RuntimeError("MyError")
+
+    cuda_mr = rmm.mr.CudaMemoryResource()
+    mr = rmm.mr.FailureCallbackResourceAdaptor(cuda_mr, callback)
+    rmm.mr.set_current_device_resource(mr)
+
+    with pytest.raises(RuntimeError, match="MyError"):
+        rmm.DeviceBuffer(size=int(1e11))
+
+
 def test_dev_buf_circle_ref_dealloc():
     rmm.mr.set_current_device_resource(rmm.mr.CudaMemoryResource())
 

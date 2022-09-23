@@ -830,8 +830,14 @@ cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
             self.c_obj.get()))[0].log_outstanding_allocations()
 
 
-cdef bool _oom_callback_function(size_t bytes, void *callback_arg) with gil:
-    return (<object>callback_arg)(bytes)
+cdef bool _oom_callback_function(size_t bytes, void *callback_arg) nogil:
+    cdef CppExcept err
+    with gil:
+        try:
+            return (<object>callback_arg)(bytes)
+        except BaseException as e:
+            err = translate_python_except_to_cpp(e)
+    throw_cpp_except(err)
 
 
 cdef class FailureCallbackResourceAdaptor(UpstreamResourceAdaptor):
