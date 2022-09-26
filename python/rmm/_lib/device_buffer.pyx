@@ -142,6 +142,8 @@ cdef class DeviceBuffer:
         if stream.c_is_default():
             stream.c_synchronize()
         buf.c_obj = move(ptr)
+        self.mr = get_current_device_resource()
+        self.stream = stream
         return buf
 
     @staticmethod
