@@ -8,7 +8,7 @@ cuda_compiler:
   - nvcc
 
 cmake_version:
-  - ">=3.20.1,!=3.23.0"
+  - ">=3.23.1"
 
 gtest_version:
   - "=1.10.0"
