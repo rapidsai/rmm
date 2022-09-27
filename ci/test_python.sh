@@ -3,7 +3,6 @@
 set -euo pipefail
 
 rapids-logger "Create test conda environment"
-# TODO: Move this
 . /opt/conda/etc/profile.d/conda.sh
 
 rapids-dependency-file-generator \
@@ -14,8 +13,7 @@ rapids-dependency-file-generator \
 mamba env create -f env.yaml -n test
 conda activate test
 
-# Check environment
-rapids-check-env
+rapids-print-env
 
 rapids-logger "Downloading artifacts from previous jobs"
 CPP_CHANNEL=$(rapids-download-conda-from-s3 cpp)

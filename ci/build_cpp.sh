@@ -2,11 +2,9 @@
 
 set -euo pipefail
 
-# Update env vars
 source rapids-env-update
 
-# Check env
-rapids-check-env
+rapids-print-env
 
 rapids-logger "Begin cpp build"
 

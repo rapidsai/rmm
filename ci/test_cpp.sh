@@ -2,14 +2,11 @@
 
 set -euo pipefail
 
-# TODO: Move this
 . /opt/conda/etc/profile.d/conda.sh
 conda activate base
 
-# Check environment
-rapids-check-env
+rapids-print-env
 
-# GPU Test Stage
 CPP_CHANNEL=$(rapids-download-conda-from-s3 cpp)
 
 rapids-mamba-retry install \
@@ -26,7 +23,6 @@ nvidia-smi
 set +e
 
 rapids-logger "Running googletests"
-# run gtests from librmm-tests package
 for gt in "$CONDA_PREFIX/bin/gtests/librmm/"* ; do
     ${gt} --gtest_output=xml:${TESTRESULTS_DIR}/
     exitcode=$?
