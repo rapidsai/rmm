@@ -9,7 +9,7 @@ import os
 
 setup(
     name="rmm"+os.getenv("PYTHON_PACKAGE_CUDA_SUFFIX", default=""),
-    version=versioneer.get_version(),
+    version=os.getenv("PYTHON_PACKAGE_VERSIONEER_OVERRIDE", default=versioneer.get_version()),
     description="rmm - RAPIDS Memory Manager",
     url="https://github.com/rapidsai/rmm",
     author="NVIDIA Corporation",
