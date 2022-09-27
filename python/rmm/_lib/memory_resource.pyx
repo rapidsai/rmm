@@ -50,8 +50,7 @@ cdef CppExcept translate_python_except_to_cpp(err: BaseException):
     """
     if isinstance(err, MemoryError):
         return CppExcept(0, str.encode(str(err)))
-    if isinstance(err, BaseException):
-        return CppExcept(-1, str.encode(str(err)))
+    return CppExcept(-1, str.encode(str(err)))
 
 # Implementation of `throw_cpp_except()`, which throws a given `CppExcept`.
 # This function MUST be called without the GIL otherwise the thrown C++
