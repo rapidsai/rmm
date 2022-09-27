@@ -11,7 +11,7 @@ rapids-dependency-file-generator \
   --file_key checks \
   --matrix "cuda=${RAPIDS_CUDA_VERSION%.*};arch=$(arch);py=${RAPIDS_PY_VERSION}" > env.yaml
 
-mamba env create -f env.yaml -n checks
+rapids-mamba-retry env create -f env.yaml -n checks
 conda activate checks
 
 set +e
