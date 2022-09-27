@@ -10,7 +10,7 @@ rapids-dependency-file-generator \
   --file_key test \
   --matrix "cuda=${RAPIDS_CUDA_VERSION%.*};arch=$(arch);py=${RAPIDS_PY_VERSION}" > env.yaml
 
-rapids-mamba-retry env create -f env.yaml -n test
+rapids-mamba-retry env create --force -f env.yaml -n test
 conda activate test
 
 rapids-print-env
