@@ -24,6 +24,7 @@
 #include <rmm/mr/device/detail/stream_ordered_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
+#include <rmm/detail/thrust_namespace.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/optional.h>

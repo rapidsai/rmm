@@ -24,6 +24,7 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/mr/device/thrust_allocator_adaptor.hpp>
 
+#include <rmm/detail/thrust_namespace.h>
 #include <thrust/system/cuda/execution_policy.h>
 #include <thrust/version.h>
 
