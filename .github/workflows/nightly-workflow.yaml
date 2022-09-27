@@ -11,7 +11,7 @@ jobs:
   cpp-build:
     name: C++ build
     secrets: inherit
-    uses: rapidsai/shared-action-workflows/.github/workflows/conda-cpp-matrix-build.yaml@feat/conda-actions
+    uses: rapidsai/shared-action-workflows/.github/workflows/conda-cpp-matrix-build.yaml@main
     with:
       build_type: nightly
       repo: rapidsai/rmm
@@ -20,7 +20,7 @@ jobs:
     name: C++ tests for PRs
     needs: cpp-build
     secrets: inherit
-    uses: rapidsai/shared-action-workflows/.github/workflows/conda-cpp-tests.yaml@feat/conda-actions
+    uses: rapidsai/shared-action-workflows/.github/workflows/conda-cpp-tests.yaml@main
     with:
       build_type: nightly
       repo: rapidsai/rmm
@@ -29,7 +29,7 @@ jobs:
     name: Python build
     needs: cpp-build
     secrets: inherit
-    uses: rapidsai/shared-action-workflows/.github/workflows/conda-python-matrix-build.yaml@feat/conda-actions
+    uses: rapidsai/shared-action-workflows/.github/workflows/conda-python-matrix-build.yaml@main
     with:
       build_type: nightly
       repo: rapidsai/rmm
@@ -38,7 +38,7 @@ jobs:
     name: Python tests for PRs
     needs: python-build
     secrets: inherit
-    uses: rapidsai/shared-action-workflows/.github/workflows/conda-python-tests.yaml@feat/conda-actions
+    uses: rapidsai/shared-action-workflows/.github/workflows/conda-python-tests.yaml@main
     with:
       build_type: nightly
       repo: rapidsai/rmm
@@ -49,7 +49,7 @@ jobs:
   #   name: Upload conda packages for branch builds
   #   needs: [python-tests, cpp-tests]
   #   secrets: inherit
-  #   uses: rapidsai/shared-action-workflows/.github/workflows/conda-upload-packages.yaml@feat/conda-actions
+  #   uses: rapidsai/shared-action-workflows/.github/workflows/conda-upload-packages.yaml@main
   #   with:
   #     build_type: nightly
   #     repo: rapidsai/rmm

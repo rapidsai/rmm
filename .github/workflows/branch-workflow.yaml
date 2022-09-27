@@ -15,20 +15,20 @@ jobs:
   cpp-build:
     name: C++ build
     secrets: inherit
-    uses: rapidsai/shared-action-workflows/.github/workflows/conda-cpp-matrix-build.yaml@feat/conda-actions
+    uses: rapidsai/shared-action-workflows/.github/workflows/conda-cpp-matrix-build.yaml@main
     with:
       build_type: branch
   python-build:
     name: Python build
     needs: cpp-build
     secrets: inherit
-    uses: rapidsai/shared-action-workflows/.github/workflows/conda-python-matrix-build.yaml@feat/conda-actions
+    uses: rapidsai/shared-action-workflows/.github/workflows/conda-python-matrix-build.yaml@main
     with:
       build_type: branch
   upload-conda:
     name: Upload conda packages for branch builds
     needs: python-build
     secrets: inherit
-    uses: rapidsai/shared-action-workflows/.github/workflows/conda-upload-packages.yaml@feat/conda-actions
+    uses: rapidsai/shared-action-workflows/.github/workflows/conda-upload-packages.yaml@main
     with:
       build_type: branch
