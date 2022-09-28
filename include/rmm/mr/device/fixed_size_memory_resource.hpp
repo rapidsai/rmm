@@ -21,6 +21,7 @@
 #include <rmm/mr/device/detail/fixed_size_free_list.hpp>
 #include <rmm/mr/device/detail/stream_ordered_memory_resource.hpp>
 
+#include <rmm/detail/thrust_namespace.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 
