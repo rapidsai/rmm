@@ -83,11 +83,11 @@ class fixed_size_memory_resource
    */
   ~fixed_size_memory_resource() override { release(); }
 
-  fixed_size_memory_resource()                                             = delete;
-  fixed_size_memory_resource(fixed_size_memory_resource const&)            = delete;
-  fixed_size_memory_resource(fixed_size_memory_resource&&)                 = delete;
+  fixed_size_memory_resource()                                  = delete;
+  fixed_size_memory_resource(fixed_size_memory_resource const&) = delete;
+  fixed_size_memory_resource(fixed_size_memory_resource&&)      = delete;
   fixed_size_memory_resource& operator=(fixed_size_memory_resource const&) = delete;
-  fixed_size_memory_resource& operator=(fixed_size_memory_resource&&)      = delete;
+  fixed_size_memory_resource& operator=(fixed_size_memory_resource&&) = delete;
 
   /**
    * @brief Query whether the resource supports use of non-null streams for
