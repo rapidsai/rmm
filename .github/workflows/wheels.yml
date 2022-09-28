@@ -11,6 +11,7 @@ jobs:
     with:
       package-dir: python
       package-name: "rmm"
+      python-package-versioneer-override: "22.10.00a"
       python-version: "3.8 3.9"
 
       manylinux-container-amd64: "rapidsai/manylinux2014"
@@ -18,8 +19,6 @@ jobs:
 
       auditwheel-repair-command-amd64: "auditwheel --verbose repair -w {dest_dir} --plat manylinux_2_17_x86_64 {wheel}"
       auditwheel-repair-command-arm64: "auditwheel --verbose repair -w {dest_dir} --plat manylinux_2_24_aarch64 {wheel}"
-
-      cibw-environment: "RAPIDS_PY_WHEEL_VERSIONEER_OVERRIDE=22.10.00a"
 
       test-container-amd64: "rapidsai/manylinux_2_27" # use the 18.04 container to test wheels on an old-ish distro
       test-container-arm64: "rapidsai/manylinux_2_27"
