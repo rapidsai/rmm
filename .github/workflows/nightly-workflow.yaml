@@ -43,14 +43,12 @@ jobs:
       build_type: nightly
       repo: rapidsai/rmm
       ref: ${{ inputs.REF }}
-  # FIX ME: test the upload step only after the other
-  # jobs are confirmed working
-  # upload-conda:
-  #   name: Upload conda packages for branch builds
-  #   needs: [python-tests, cpp-tests]
-  #   secrets: inherit
-  #   uses: rapidsai/shared-action-workflows/.github/workflows/conda-upload-packages.yaml@main
-  #   with:
-  #     build_type: nightly
-  #     repo: rapidsai/rmm
-  #     ref: ${{ inputs.REF }}
+  upload-conda:
+    name: Upload conda packages for branch builds
+    needs: [python-tests, cpp-tests]
+    secrets: inherit
+    uses: rapidsai/shared-action-workflows/.github/workflows/conda-upload-packages.yaml@main
+    with:
+      build_type: nightly
+      repo: rapidsai/rmm
+      ref: ${{ inputs.REF }}

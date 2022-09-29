@@ -91,6 +91,5 @@ fi
 # UPLOAD - Conda packages
 ################################################################################
 
-gpuci_logger "Upload conda packages"
-source ci/cpu/upload.sh
-
+# gpuci_logger "Upload conda packages"
+# source ci/cpu/upload.sh
