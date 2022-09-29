@@ -36,7 +36,7 @@ cd python
 set +e
 
 rapids-logger "pytest rmm"
-py.test --cache-clear --junitxml="${TESTRESULTS_DIR}/junit-rmm.xml" -v --cov-config=.coveragerc --cov=rmm --cov-report=xml:python/rmm-coverage.xml --cov-report term
+pytest --cache-clear --junitxml="${TESTRESULTS_DIR}/junit-rmm.xml" -v --cov-config=.coveragerc --cov=rmm --cov-report=xml:python/rmm-coverage.xml --cov-report term
 exitcode=$?
 if (( ${exitcode} != 0 )); then
     SUITEERROR=${exitcode}
