@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,19 @@
 
 #pragma once
 
-#include <rmm/mr/device/thrust_allocator_adaptor.hpp>
+#include <thrust/detail/config.h>  // namespace macros
 
-#include <rmm/detail/thrust_namespace.h>
-#include <thrust/device_vector.h>
+#ifdef THRUST_WRAPPED_NAMESPACE
+
+// Ensure the namespace exist before we import it
+// so that this include can occur before thrust includes
+namespace THRUST_WRAPPED_NAMESPACE {
+namespace thrust {
+}
+}  // namespace THRUST_WRAPPED_NAMESPACE
 
 namespace rmm {
-/**
- * @brief Alias for a thrust::device_vector that uses RMM for memory allocation.
- *
- */
-template <typename T>
-using device_vector = thrust::device_vector<T, rmm::mr::thrust_allocator<T>>;
+using namespace THRUST_WRAPPED_NAMESPACE;
+}
 
-}  // namespace rmm
+#endif

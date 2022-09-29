@@ -87,6 +87,11 @@ function(ConfigureTest TEST_NAME)
   string(REGEX REPLACE "_TEST$" "_PTDS_TEST" PTDS_TEST_NAME "${TEST_NAME}")
   ConfigureTestInternal("${PTDS_TEST_NAME}" ${ARGN})
   target_compile_definitions("${PTDS_TEST_NAME}" PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
+
+  # Test with custom thrust namespace
+  string(REGEX REPLACE "_TEST$" "_NAMESPACE_TEST" NS_TEST_NAME "${TEST_NAME}")
+  ConfigureTestInternal("${NS_TEST_NAME}" ${ARGN})
+  target_compile_definitions("${NS_TEST_NAME}" PUBLIC THRUST_WRAPPED_NAMESPACE=rmm_thrust)
 endfunction()
 
 # test sources

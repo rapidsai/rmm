@@ -14,6 +14,13 @@ files:
     generate: none
     includes:
       - test
+      - py_version
+  checks:
+    generate: none
+    includes:
+      - build
+      - develop
+      - py_version
 channels:
   - rapidsai
   - conda-forge
@@ -21,7 +28,7 @@ dependencies:
   conda_and_requirements:
     common:
       build:
-        - cmake>=3.20.1,!=3.23.0
+        - cmake>=3.23.1
         - cython>=0.29,<0.30
         - python>=3.8,<3.10
         - scikit-build>=0.13.1
@@ -54,6 +61,14 @@ dependencies:
         - clang=11.1.0
         - clang-tools=11.1.0
     specific:
+      - matrix:
+          py: "3.8"
+        py_version:
+          - python=3.8
+      - matrix:
+          py: "3.9"
+        py_version:
+          - python=3.9
       - matrix:
           cuda: "11.5"
         build:
