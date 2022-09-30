@@ -13,7 +13,7 @@ jobs:
       package-name: "rmm"
       python-package-versioneer-override: "22.10.00a"
       python-version: "3.8 3.9"
-      python-package-build-tag: ""
+      python-package-build-tag: "0"
 
       manylinux-container-amd64: "rapidsai/manylinux2014"
       manylinux-container-arm64: "rapidsai/manylinux_2_31"
