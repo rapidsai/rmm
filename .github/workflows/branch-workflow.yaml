@@ -6,6 +6,17 @@ on:
       - "branch-*"
     tags:
       - v[0-9][0-9].[0-9][0-9].[0-9][0-9]
+  workflow_call:
+    inputs:
+      branch:
+        required: true
+        type: string
+      sha:
+        required: true
+        type: string
+      build_type:
+        type: string
+        default: nightly
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -16,16 +27,40 @@ jobs:
     secrets: inherit
     uses: rapidsai/shared-action-workflows/.github/workflows/conda-cpp-matrix-build.yaml@main
     with:
-      build_type: branch
+      build_type: ${{ inputs.build_type || 'branch' }}
+      repo: rapidsai/rmm
+      branch: ${{ inputs.branch }}
+      sha: ${{ inputs.sha }}
   python-build:
-    needs: cpp-build
+    needs: [cpp-build]
     secrets: inherit
     uses: rapidsai/shared-action-workflows/.github/workflows/conda-python-matrix-build.yaml@main
     with:
-      build_type: branch
+      build_type: ${{ inputs.build_type || 'branch' }}
+      repo: rapidsai/rmm
+      branch: ${{ inputs.branch }}
+      sha: ${{ inputs.sha }}
   upload-conda:
-    needs: python-build
+    needs: [cpp-build, python-build]
     secrets: inherit
     uses: rapidsai/shared-action-workflows/.github/workflows/conda-upload-packages.yaml@main
     with:
-      build_type: branch
+      build_type: ${{ inputs.build_type || 'branch' }}
+      repo: rapidsai/rmm
+      branch: ${{ inputs.branch }}
+      sha: ${{ inputs.sha }}
+  # TODO: move to reusable workflows
+  trigger-nightly-tests:
+    if: inputs.build_type == 'nightly'
+    needs: [cpp-build, python-build, upload-conda]
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.WORKFLOW_TOKEN }}
+    steps:
+      - run: |
+          gh workflow run \
+            -R rapidsai/rmm \
+            --ref update-nightly-workflow \
+            nightly-test-workflow.yaml \
+            -f branch=${{ inputs.branch }} \
+            -f sha=${{ inputs.sha }}
