@@ -5,6 +5,14 @@ set -euo pipefail
 . /opt/conda/etc/profile.d/conda.sh
 conda activate base
 
+rapids-dependency-file-generator \
+  --generate conda \
+  --file_key test_cpp \
+  --matrix "cuda=${RAPIDS_CUDA_VERSION%.*}" > env.yaml
+
+rapids-mamba-retry env create --force -f env.yaml -n test
+conda activate test
+
 rapids-print-env
 
 CPP_CHANNEL=$(rapids-download-conda-from-s3 cpp)
