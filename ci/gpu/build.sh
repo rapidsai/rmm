@@ -27,6 +27,10 @@ export CUDA_MAJOR_VER=$(echo "${CUDA_VERSION}" | cut -f 1 -d.)
 export CUDA_MINOR_VER=$(echo "${CUDA_VERSION}" | cut -f 2 -d.)
 export CUDA_REL="${CUDA_MAJOR_VER}.${CUDA_MINOR_VER}"
 
+# Workaround to keep Jenkins builds working
+# until we migrate fully to GitHub Actions
+export RAPIDS_CUDA_VERSION="${CUDA}"
+
 # Get latest tag and number of commits since tag
 export GIT_DESCRIBE_TAG=`git describe --abbrev=0 --tags`
 export GIT_DESCRIBE_NUMBER=`git rev-list ${GIT_DESCRIBE_TAG}..HEAD --count`
