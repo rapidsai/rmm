@@ -10,13 +10,18 @@ files:
       - cudatoolkit
       - develop
       - run
-      - test
-  test:
+      - test_cpp
+      - test_python
+  test_python:
     generate: none
     includes:
       - cudatoolkit
       - py_version
-      - test
+      - test_python
+  test_cpp:
+    generate: none
+    includes:
+      - cudatoolkit
   checks:
     generate: none
     includes:
@@ -43,7 +48,7 @@ dependencies:
         - flake8=3.8.3
         - gcovr>=5.0
         - isort=5.10.1
-      test:
+      test_python:
         - pytest
         - pytest-cov
     specific:
