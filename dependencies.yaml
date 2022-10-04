@@ -7,14 +7,16 @@ files:
       arch: [x86_64]
     includes:
       - build
+      - cudatoolkit
       - develop
       - run
       - test
   test:
     generate: none
     includes:
-      - test
+      - cudatoolkit
       - py_version
+      - test
   checks:
     generate: none
     includes:
@@ -70,10 +72,22 @@ dependencies:
         py_version:
           - python=3.9
       - matrix:
+          cuda: "11.0"
+        cudatoolkit:
+          - cudatoolkit=11.0
+      - matrix:
+          cuda: "11.2"
+        cudatoolkit:
+          - cudatoolkit=11.2
+      - matrix:
+          cuda: "11.4"
+        cudatoolkit:
+          - cudatoolkit=11.4
+      - matrix:
           cuda: "11.5"
-        build:
+        cudatoolkit:
           - cudatoolkit=11.5
       - matrix:
           cuda: "11.6"
-        build:
+        cudatoolkit:
           - cudatoolkit=11.6
