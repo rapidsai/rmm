@@ -1,0 +1,29 @@
+name: nightly-test
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        required: true
+        type: string
+      sha:
+        required: true
+        type: string
+
+jobs:
+  cpp-tests:
+    secrets: inherit
+    uses: rapidsai/shared-action-workflows/.github/workflows/conda-cpp-tests.yaml@use-sha
+    with:
+      build_type: nightly
+      repo: rapidsai/rmm
+      branch: ${{ inputs.branch }}
+      sha: ${{ inputs.sha }}
+  python-tests:
+    secrets: inherit
+    uses: rapidsai/shared-action-workflows/.github/workflows/conda-python-tests.yaml@use-sha
+    with:
+      build_type: nightly
+      repo: rapidsai/rmm
+      branch: ${{ inputs.branch }}
+      sha: ${{ inputs.sha }}
