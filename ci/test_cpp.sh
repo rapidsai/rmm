@@ -11,7 +11,7 @@ CPP_CHANNEL=$(rapids-download-conda-from-s3 cpp)
 
 rapids-mamba-retry install \
   -c "${CPP_CHANNEL}" \
-  rmm librmm librmm-tests
+  librmm librmm-tests
 
 TESTRESULTS_DIR=test-results
 mkdir -p ${TESTRESULTS_DIR}
