@@ -11,6 +11,9 @@ on:
       branch:
         required: true
         type: string
+      date:
+        required: true
+        type: string
       sha:
         required: true
         type: string
@@ -30,6 +33,7 @@ jobs:
       build_type: ${{ inputs.build_type || 'branch' }}
       repo: rapidsai/rmm
       branch: ${{ inputs.branch }}
+      date: ${{ inputs.date }}
       sha: ${{ inputs.sha }}
   python-build:
     needs: [cpp-build]
@@ -39,6 +43,7 @@ jobs:
       build_type: ${{ inputs.build_type || 'branch' }}
       repo: rapidsai/rmm
       branch: ${{ inputs.branch }}
+      date: ${{ inputs.date }}
       sha: ${{ inputs.sha }}
   upload-conda:
     needs: [cpp-build, python-build]
@@ -48,6 +53,7 @@ jobs:
       build_type: ${{ inputs.build_type || 'branch' }}
       repo: rapidsai/rmm
       branch: ${{ inputs.branch }}
+      date: ${{ inputs.date }}
       sha: ${{ inputs.sha }}
   # TODO: move to reusable workflows
   trigger-nightly-tests:
@@ -63,4 +69,5 @@ jobs:
             --ref update-nightly-workflow \
             nightly-test-workflow.yaml \
             -f branch=${{ inputs.branch }} \
+            -f date=${{ inputs.date }} \
             -f sha=${{ inputs.sha }}
