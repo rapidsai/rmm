@@ -55,19 +55,13 @@ jobs:
       branch: ${{ inputs.branch }}
       date: ${{ inputs.date }}
       sha: ${{ inputs.sha }}
-  # TODO: move to reusable workflows
   trigger-nightly-tests:
     if: inputs.build_type == 'nightly'
-    needs: [cpp-build, python-build, upload-conda]
-    runs-on: ubuntu-latest
-    env:
-      GH_TOKEN: ${{ secrets.WORKFLOW_TOKEN }}
-    steps:
-      - run: |
-          gh workflow run \
-            -R rapidsai/rmm \
-            --ref update-nightly-workflow \
-            nightly-test-workflow.yaml \
-            -f branch=${{ inputs.branch }} \
-            -f date=${{ inputs.date }} \
-            -f sha=${{ inputs.sha }}
+    needs: [cpp-build, python-build]
+    secrets: inherit
+    uses: rapidsai/shared-action-workflows/.github/workflows/trigger-nightly-tests.yaml@use-sha
+    with:
+      repo: rapidsai/rmm
+      branch: ${{ inputs.branch }}
+      date: ${{ inputs.date }}
+      sha: ${{ inputs.sha }}
