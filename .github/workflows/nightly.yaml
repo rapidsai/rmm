@@ -1,9 +1,12 @@
-name: nightly-test
+name: nightly
 
 on:
   workflow_dispatch:
     inputs:
       branch:
+        required: true
+        type: string
+      date:
         required: true
         type: string
       sha:
@@ -18,6 +21,7 @@ jobs:
       build_type: nightly
       repo: rapidsai/rmm
       branch: ${{ inputs.branch }}
+      date: ${{ inputs.date }}
       sha: ${{ inputs.sha }}
   python-tests:
     secrets: inherit
@@ -26,4 +30,5 @@ jobs:
       build_type: nightly
       repo: rapidsai/rmm
       branch: ${{ inputs.branch }}
+      date: ${{ inputs.date }}
       sha: ${{ inputs.sha }}
