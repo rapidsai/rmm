@@ -44,10 +44,8 @@ def driverGetVersion():
     This function automatically raises CUDARuntimeError with error message
     and status code.
     """
-    status, version = cudart.cudaDriverGetVersion()
-    if status != cudart.cudaError_t.cudaSuccess:
-        raise CUDARuntimeError(status)
-    return version
+    major, minor = numba.cuda.driver.get_version()
+    return major * 1000 + minor * 10
 
 
 def getDevice():
