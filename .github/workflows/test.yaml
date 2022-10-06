@@ -1,7 +1,7 @@
-name: nightly
+name: test
 
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
       branch:
         required: true
@@ -16,7 +16,7 @@ on:
 jobs:
   cpp-tests:
     secrets: inherit
-    uses: rapidsai/shared-action-workflows/.github/workflows/conda-cpp-tests.yaml@use-sha
+    uses: rapidsai/shared-action-workflows/.github/workflows/conda-cpp-tests.yaml@main
     with:
       build_type: nightly
       repo: rapidsai/rmm
@@ -25,7 +25,7 @@ jobs:
       sha: ${{ inputs.sha }}
   python-tests:
     secrets: inherit
-    uses: rapidsai/shared-action-workflows/.github/workflows/conda-python-tests.yaml@use-sha
+    uses: rapidsai/shared-action-workflows/.github/workflows/conda-python-tests.yaml@main
     with:
       build_type: nightly
       repo: rapidsai/rmm
