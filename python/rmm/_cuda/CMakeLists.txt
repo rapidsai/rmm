@@ -12,7 +12,7 @@
 # the License.
 # =============================================================================
 
-set(cython_sources stream.pyx)
+set(cython_sources stream.pyx custom_cuda_bindings.pyx)
 set(linked_libraries rmm::rmm)
 
 rapids_cython_create_modules(SOURCE_FILES "${cython_sources}" LINKED_LIBRARIES "${linked_libraries}"
