@@ -90,9 +90,8 @@ def test_cuda_async_memory_resource_ipc():
 
     def is_ipc_supported():
         from cuda import cudart
-        success = cudart.cudaError_t.cudaSuccess
         err, device_id = cudart.cudaGetDevice()
-        if err != success:
+        if err != cudart.cudaError_t.cudaSuccess:
             raise RuntimeError("Failed to get device.")
         err, _ = cudart.cudaDeviceGetAttribute(
             cudart.cudaDeviceAttr.cudaDevAttrMemoryPoolSupportedHandleTypes,
