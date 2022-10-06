@@ -1,4 +1,4 @@
-name: nightly
+name: test
 
 on:
   workflow_call:
