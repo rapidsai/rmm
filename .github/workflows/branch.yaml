@@ -55,13 +55,3 @@ jobs:
       branch: ${{ inputs.branch }}
       date: ${{ inputs.date }}
       sha: ${{ inputs.sha }}
-  trigger-nightly-tests:
-    if: inputs.build_type == 'nightly'
-    needs: [cpp-build, python-build]
-    secrets: inherit
-    uses: rapidsai/shared-action-workflows/.github/workflows/trigger-nightly-tests.yaml@use-sha
-    with:
-      repo: rapidsai/rmm
-      branch: ${{ inputs.branch }}
-      date: ${{ inputs.date }}
-      sha: ${{ inputs.sha }}
