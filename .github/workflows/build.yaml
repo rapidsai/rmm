@@ -28,7 +28,7 @@ concurrency:
 jobs:
   cpp-build:
     secrets: inherit
-    uses: rapidsai/shared-action-workflows/.github/workflows/conda-cpp-matrix-build.yaml@use-sha
+    uses: rapidsai/shared-action-workflows/.github/workflows/conda-cpp-matrix-build.yaml@main
     with:
       build_type: ${{ inputs.build_type || 'branch' }}
       repo: rapidsai/rmm
@@ -38,7 +38,7 @@ jobs:
   python-build:
     needs: [cpp-build]
     secrets: inherit
-    uses: rapidsai/shared-action-workflows/.github/workflows/conda-python-matrix-build.yaml@use-sha
+    uses: rapidsai/shared-action-workflows/.github/workflows/conda-python-matrix-build.yaml@main
     with:
       build_type: ${{ inputs.build_type || 'branch' }}
       repo: rapidsai/rmm
@@ -48,7 +48,7 @@ jobs:
   upload-conda:
     needs: [cpp-build, python-build]
     secrets: inherit
-    uses: rapidsai/shared-action-workflows/.github/workflows/conda-upload-packages.yaml@use-sha
+    uses: rapidsai/shared-action-workflows/.github/workflows/conda-upload-packages.yaml@main
     with:
       build_type: ${{ inputs.build_type || 'branch' }}
       repo: rapidsai/rmm
