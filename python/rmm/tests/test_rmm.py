@@ -549,7 +549,12 @@ def test_cuda_async_memory_resource_ipc():
         with pytest.raises(ValueError):
             mr = rmm.mr.CudaAsyncMemoryResource(enable_ipc=True)
     else:
-        mr = rmm.mr.CudaAsyncMemoryResource(enable_ipc=True)
+        try:
+            mr = rmm.mr.CudaAsyncMemoryResource(enable_ipc=True)
+        except RuntimeError:
+            raise RuntimeError(
+                f"drv: {_driver_version}, rt: {_runtime_version}"
+            )
         rmm.mr.set_current_device_resource(mr)
         assert rmm.mr.get_current_device_resource_type() is type(mr)
 
