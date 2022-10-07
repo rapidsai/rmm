@@ -17,6 +17,7 @@ jobs:
     secrets: inherit
     uses: rapidsai/shared-action-workflows/.github/workflows/checks.yaml@rmm-test
   conda-cpp-build:
+    needs: checks
     secrets: inherit
     uses: rapidsai/shared-action-workflows/.github/workflows/conda-cpp-matrix-build.yaml@rmm-test
     with:
