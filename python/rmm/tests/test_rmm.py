@@ -19,6 +19,7 @@ from itertools import product
 
 import numpy as np
 import pytest
+from cuda import cudart
 from numba import cuda
 
 import rmm
@@ -89,16 +90,17 @@ def test_cuda_async_memory_resource_ipc():
     # does not appear to be reliable with CUDA Minor Version Compatibility.
 
     def is_ipc_supported():
-        from cuda import cudart
         err, device_id = cudart.cudaGetDevice()
         if err != cudart.cudaError_t.cudaSuccess:
             raise RuntimeError("Failed to get device.")
-        err, val = cudart.cudaDeviceGetAttribute(
+        err, supported_handle_types = cudart.cudaDeviceGetAttribute(
             cudart.cudaDeviceAttr.cudaDevAttrMemoryPoolSupportedHandleTypes,
             device_id,
         )
-        raise RuntimeError(f"Driver version: {_driver_version}, Runtime version: {_runtime_version}, Error code: {err}, Supported handle types: {val}")
-        return err != cudart.cudaError_t.cudaErrorInvalidValue
+        return (
+            err != cudart.cudaError_t.cudaErrorInvalidValue
+            and supported_handle_types != 0
+        )
 
     if not is_ipc_supported():
         with pytest.raises(ValueError):
