@@ -38,7 +38,7 @@ class HostIterator:
 
 
 class DeviceIterator:
-    """Iterates over arrays in device memory by copying chunks into host memory."""
+    """Iterates over device arrays by copying chunks to the host."""
 
     def __init__(self, start, size):
         self.exec = exec
@@ -49,27 +49,33 @@ class DeviceIterator:
         self.sizeof = self.item.dereference().type.sizeof
         self.buffer_start = 0
         # At most 1 MB or size, at least 1
-        self.buffer_size = min(size, max(1, 2 ** 20 // self.sizeof))
-        self.buffer = gdb.parse_and_eval(f"(void*)malloc({self.buffer_size * self.sizeof})")
+        self.buffer_size = min(size, max(1, 2**20 // self.sizeof))
+        self.buffer = gdb.parse_and_eval(
+            f"(void*)malloc({self.buffer_size * self.sizeof})"
+        )
         self.buffer.fetch_lazy()
         self.buffer_count = self.buffer_size
         self.update_buffer()
 
     def update_buffer(self):
         if self.buffer_count >= self.buffer_size:
-            self.buffer_item = gdb.parse_and_eval(
-                hex(self.buffer)).cast(self.item.type)
+            self.buffer_item = gdb.parse_and_eval(hex(self.buffer)).cast(
+                self.item.type
+            )
             self.buffer_count = 0
             self.buffer_start = self.count
             device_addr = hex(self.item.dereference().address)
             buffer_addr = hex(self.buffer)
-            size = min(self.buffer_size, self.size -
-                        self.buffer_start) * self.sizeof
+            size = (
+                min(self.buffer_size, self.size - self.buffer_start)
+                * self.sizeof
+            )
             status = gdb.parse_and_eval(
-                f"(cudaError)cudaMemcpy({buffer_addr}, {device_addr}, {size}, cudaMemcpyDeviceToHost)")
+                f"(cudaError)cudaMemcpy({buffer_addr}, {device_addr}, {size}, "
+                "cudaMemcpyDeviceToHost)"
+            )
             if status != 0:
-                raise gdb.MemoryError(
-                    f"memcpy from device failed: {status}")
+                raise gdb.MemoryError(f"memcpy from device failed: {status}")
 
     def __del__(self):
         gdb.parse_and_eval(f"(void)free({hex(self.buffer)})").fetch_lazy()
@@ -101,16 +107,19 @@ class RmmDeviceUVectorPrinter(gdb.printing.PrettyPrinter):
         self.capacity = int(val["_storage"]["_capacity"]) // el_type.sizeof
 
     def children(self):
-        return DeviceIterator(self.pointer, self.size)        
+        return DeviceIterator(self.pointer, self.size)
 
     def to_string(self):
-        return (f"{self.val.type} of length {self.size}, capacity {self.capacity}")
+        return (
+            f"{self.val.type} of length {self.size}, capacity {self.capacity}"
+        )
 
     def display_hint(self):
         return "array"
 
 
-# Workaround to avoid using the pretty printer on things like std::vector<int>::iterator
+# Workaround to avoid using the pretty printer on things like
+# std::vector<int>::iterator
 def is_template_type_not_alias(typename):
     loc = typename.find("<")
     if loc is None:
