@@ -157,3 +157,22 @@ def deviceGetName(device: int):
     if status != cuda.CUresult.CUDA_SUCCESS:
         raise CUDADriverError(status)
     return device_name.decode()
+
+
+def is_ipc_supported(device: int):
+    """Check if any IPC memory pool handles are supported by the device.
+
+    Parameters
+    ----------
+    device : int
+        Device number to query
+    """
+    status, supported_handle_types = cudart.cudaDeviceGetAttribute(
+        cudart.cudaDeviceAttr.cudaDevAttrMemoryPoolSupportedHandleTypes,
+        device,
+    )
+    return (
+        status == cudart.cudaError_t.cudaSuccess
+        and supported_handle_types
+        != cudart.cudaMemAllocationHandleType.cudaMemHandleTypeNone
+    )

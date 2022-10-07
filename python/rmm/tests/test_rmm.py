@@ -19,7 +19,6 @@ from itertools import product
 
 import numpy as np
 import pytest
-from cuda import cudart
 from numba import cuda
 
 import rmm
@@ -89,21 +88,7 @@ def test_cuda_async_memory_resource_ipc():
     # IPC is supported by CUDA driver >= 11.3, but querying the driver version
     # does not appear to be reliable with CUDA Minor Version Compatibility.
 
-    def is_ipc_supported():
-        err, device_id = cudart.cudaGetDevice()
-        if err != cudart.cudaError_t.cudaSuccess:
-            raise RuntimeError("Failed to get device.")
-        err, supported_handle_types = cudart.cudaDeviceGetAttribute(
-            cudart.cudaDeviceAttr.cudaDevAttrMemoryPoolSupportedHandleTypes,
-            device_id,
-        )
-        return (
-            err != cudart.cudaError_t.cudaErrorInvalidValue
-            and supported_handle_types
-            != cudart.cudaMemAllocationHandleType.cudaMemHandleTypeNone
-        )
-
-    if not is_ipc_supported():
+    if not rmm._cuda.gpu.is_ipc_supported(rmm._cuda.gpu.getDevice()):
         with pytest.raises(ValueError):
             mr = rmm.mr.CudaAsyncMemoryResource(enable_ipc=True)
     else:

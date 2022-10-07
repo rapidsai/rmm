@@ -28,9 +28,8 @@ from cuda.cudart import cudaError_t
 
 from rmm._cuda.gpu import (
     CUDARuntimeError,
-    driverGetVersion,
     getDevice,
-    runtimeGetVersion,
+    is_ipc_supported,
     setDevice,
 )
 
@@ -314,15 +313,12 @@ cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
             else optional[size_t](release_threshold)
         )
 
-        # IPC export handle support query is only possibly on CUDA 11.3 or
-        # later, so IPC not supported on earlier versions
-        if enable_ipc:
-            driver_version = driverGetVersion()
-            runtime_version = runtimeGetVersion()
-            if (driver_version <= 11020 or runtime_version <= 11020):
-                raise ValueError(
-                    "enable_ipc=True is not supported on CUDA <= 11.2."
-                )
+        # IPC handles are only supported on CUDA 11.3 or later.
+        if enable_ipc and not is_ipc_supported(getDevice()):
+            raise ValueError(
+                "enable_ipc=True is not supported by this device. "
+                "CUDA >= 11.3 is required."
+            )
 
         cdef optional[allocation_handle_type] c_export_handle_type = (
             optional[allocation_handle_type](
