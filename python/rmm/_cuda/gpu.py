@@ -142,7 +142,7 @@ def getDeviceProperties(device: int):
 
 def deviceGetName(device: int):
     """
-    Returns an identifer string for the device.
+    Returns an identifier string for the device.
 
     Parameters
     ----------
