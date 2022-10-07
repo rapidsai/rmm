@@ -99,7 +99,8 @@ def test_cuda_async_memory_resource_ipc():
         )
         return (
             err != cudart.cudaError_t.cudaErrorInvalidValue
-            and supported_handle_types != 0
+            and supported_handle_types
+            != cudart.cudaMemAllocationHandleType.cudaMemHandleTypeNone
         )
 
     if not is_ipc_supported():
