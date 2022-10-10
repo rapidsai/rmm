@@ -1,15 +1,17 @@
 # Copyright (c) 2019-2022, NVIDIA CORPORATION.
 
+import os
+
 from setuptools import find_packages
 from skbuild import setup
 
 import versioneer
-import os
-
 
 setup(
-    name="rmm"+os.getenv("RAPIDS_PY_WHEEL_CUDA_SUFFIX", default=""),
-    version=os.getenv("RAPIDS_PY_WHEEL_VERSIONEER_OVERRIDE", default=versioneer.get_version()),
+    name="rmm" + os.getenv("RAPIDS_PY_WHEEL_CUDA_SUFFIX", default=""),
+    version=os.getenv(
+        "RAPIDS_PY_WHEEL_VERSIONEER_OVERRIDE", default=versioneer.get_version()
+    ),
     description="rmm - RAPIDS Memory Manager",
     url="https://github.com/rapidsai/rmm",
     author="NVIDIA Corporation",
