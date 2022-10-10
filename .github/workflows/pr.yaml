@@ -3,7 +3,7 @@ name: pr
 on:
   push:
     branches:
-      - 'pull-request/[0-9]+'
+      - "pull-request/[0-9]+"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -17,6 +17,7 @@ jobs:
     secrets: inherit
     uses: rapidsai/shared-action-workflows/.github/workflows/checks.yaml@main
   conda-cpp-build:
+    needs: checks
     secrets: inherit
     uses: rapidsai/shared-action-workflows/.github/workflows/conda-cpp-matrix-build.yaml@main
     with:
