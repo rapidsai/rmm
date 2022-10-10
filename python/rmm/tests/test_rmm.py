@@ -871,3 +871,22 @@ def test_reinit_hooks_unregister_twice_registered(make_reinit_hook):
     rmm.unregister_reinitialize_hook(func_with_arg)
     rmm.reinitialize()
     assert L == [2]
+
+
+@pytest.mark.parametrize(
+    "cuda_ary",
+    [
+        lambda: rmm.DeviceBuffer.to_device(b"abc"),
+        lambda: cuda.to_device(np.array([97, 98, 99, 0, 0], dtype="u1")),
+    ],
+)
+def test_rmm_device_buffer_copy(cuda_ary):
+    cuda_ary = cuda_ary()
+    db = rmm.DeviceBuffer.to_device(np.zeros(5, dtype="u1"))
+    db.copy_from_device(cuda_ary)
+    db_copy = db.copy()
+
+    expected = np.array([97, 98, 99, 0, 0], dtype="u1")
+    result = db_copy.copy_to_host()
+
+    np.testing.assert_equal(expected, result)

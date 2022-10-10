@@ -133,6 +133,27 @@ cdef class DeviceBuffer:
         }
         return intf
 
+    def copy(self):
+        """Returns a deep copy of DeviceBuffer
+
+        Returns
+        -------
+        A deep copy of existing ``DeviceBuffer``
+
+        Examples
+        --------
+        >>> import rmm
+        >>> db = rmm.DeviceBuffer.to_device(b"abc")
+        >>> db_copy = db.copy()
+        >>> db.copy_to_host()
+        array([97, 98, 99], dtype=uint8)
+        >>> db_copy.copy_to_host()
+        array([97, 98, 99], dtype=uint8)
+        """
+        new_copy = DeviceBuffer(size=self.size)
+        copy_device_to_ptr(self.ptr, new_copy.ptr, self.size)
+        return new_copy
+
     @staticmethod
     cdef DeviceBuffer c_from_unique_ptr(unique_ptr[device_buffer] ptr):
         cdef DeviceBuffer buf = DeviceBuffer.__new__(DeviceBuffer)
@@ -475,13 +496,12 @@ cpdef void copy_device_to_ptr(uintptr_t d_src,
     Examples
     --------
     >>> import rmm
-    >>> import numpy as np
     >>> db = rmm.DeviceBuffer(size=5)
     >>> db2 = rmm.DeviceBuffer.to_device(b"abc")
     >>> rmm._lib.device_buffer.copy_device_to_ptr(db2.ptr, db.ptr, db2.size)
     >>> hb = db.copy_to_host()
-    >>> print(hb)
-    array([10, 11, 12,  0,  0], dtype=uint8)
+    >>> hb
+    array([97, 98, 99,  0,  0], dtype=uint8)
     """
 
     with nogil:
