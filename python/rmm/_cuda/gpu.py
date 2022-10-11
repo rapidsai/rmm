@@ -159,8 +159,8 @@ def deviceGetName(device: int):
     return device_name.decode()
 
 
-def is_ipc_supported(device: int):
-    """Check if any IPC memory pool handles are supported by the device.
+def is_async_export_handle_supported(device: int):
+    """Check if CUDA memory pools support IPC handles.
 
     Parameters
     ----------

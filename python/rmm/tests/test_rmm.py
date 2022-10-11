@@ -548,7 +548,7 @@ def test_cuda_async_memory_resource_ipc():
     # IPC is supported by CUDA driver >= 11.3, but querying the driver version
     # does not appear to be reliable with CUDA Minor Version Compatibility.
 
-    if not rmm._cuda.gpu.is_ipc_supported(rmm._cuda.gpu.getDevice()):
+    if not rmm._cuda.gpu.is_async_export_handle_supported(rmm._cuda.gpu.getDevice()):
         with pytest.raises(ValueError):
             mr = rmm.mr.CudaAsyncMemoryResource(enable_ipc=True)
     else:
