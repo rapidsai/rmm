@@ -886,6 +886,10 @@ def test_rmm_device_buffer_copy(cuda_ary):
     db.copy_from_device(cuda_ary)
     db_copy = db.copy()
 
+    assert db is not db_copy
+    assert db.ptr != db_copy.ptr
+    assert len(db) == len(db_copy)
+
     expected = np.array([97, 98, 99, 0, 0], dtype="u1")
     result = db_copy.copy_to_host()
 

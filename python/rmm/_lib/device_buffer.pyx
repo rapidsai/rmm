@@ -17,7 +17,7 @@ cimport cython
 from cpython.bytes cimport PyBytes_AS_STRING, PyBytes_FromStringAndSize
 from cython.operator cimport dereference
 from libc.stdint cimport uintptr_t
-from libcpp.memory cimport unique_ptr
+from libcpp.memory cimport make_unique, unique_ptr
 from libcpp.utility cimport move
 
 from rmm._cuda.stream cimport Stream
@@ -149,10 +149,15 @@ cdef class DeviceBuffer:
         array([97, 98, 99], dtype=uint8)
         >>> db_copy.copy_to_host()
         array([97, 98, 99], dtype=uint8)
+        >>> assert db is not db_copy
+        >>> assert db.ptr != db_copy.ptr
         """
-        new_copy = DeviceBuffer(size=self.size)
-        copy_device_to_ptr(self.ptr, new_copy.ptr, self.size)
-        return new_copy
+        ret = DeviceBuffer.c_from_unique_ptr(
+            make_unique[device_buffer](self.c_obj.get()[0], self.stream.view())
+        )
+        ret.mr = self.mr
+        ret.stream = self.stream
+        return ret
 
     @staticmethod
     cdef DeviceBuffer c_from_unique_ptr(unique_ptr[device_buffer] ptr):
