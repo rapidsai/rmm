@@ -2,11 +2,23 @@
 
 [![Build Status](https://gpuci.gpuopenanalytics.com/job/rapidsai/job/gpuci/job/rmm/job/branches/job/rmm-branch-pipeline/badge/icon)](https://gpuci.gpuopenanalytics.com/job/rapidsai/job/gpuci/job/rmm/job/branches/job/rmm-branch-pipeline/)
 
+**NOTE:** For the latest stable [README.md](https://github.com/rapidsai/rmm/blob/main/README.md) ensure you are on the `main` branch.
+
+## Resources
+
+- [RMM Reference Documentation](https://docs.rapids.ai/api/rmm/stable/): Python API reference, tutorials, and topic guides.
+- [librmm Reference Documentation](https://docs.rapids.ai/api/librmm/stable/): C/C++ CUDA library API reference.
+- [Getting Started](https://rapids.ai/start.html): Instructions for installing RMM.
+- [RAPIDS Community](https://rapids.ai/community.html): Get help, contribute, and collaborate.
+- [GitHub repository](https://github.com/rapidsai/rmm): Download the RMM source code.
+- [Issue tracker](https://github.com/rapidsai/rmm/issues): Report issues or request features.
+
+## Overview
 
 Achieving optimal performance in GPU-centric workflows frequently requires customizing how host and
 device memory are allocated. For example, using "pinned" host memory for asynchronous
 host <-> device memory transfers, or using a device memory pool sub-allocator to reduce the cost of
-dynamic device memory allocation. 
+dynamic device memory allocation.
 
 The goal of the RAPIDS Memory Manager (RMM) is to provide:
 - A common interface that allows customizing [device](#device_memory_resource) and
@@ -17,7 +29,7 @@ The goal of the RAPIDS Memory Manager (RMM) is to provide:
 For information on the interface RMM provides and how to use RMM in your C++ code, see
 [below](#using-rmm-in-c).
 
-**NOTE:** For the latest stable [README.md](https://github.com/rapidsai/rmm/blob/main/README.md) ensure you are on the `main` branch.
+For a walkthrough about the design of the RAPIDS Memory Manager, read [Fast, Flexible Allocation for NVIDIA CUDA with RAPIDS Memory Manager](https://developer.nvidia.com/blog/fast-flexible-allocation-for-cuda-with-rapids-memory-manager/) on the NVIDIA Developer Blog.
 
 ## Installation
 
@@ -56,7 +68,7 @@ Compiler requirements:
 
 * `gcc`     version 9.3+
 * `nvcc`    version 11.0+
-* `cmake`   version 3.20.1+
+* `cmake`   version 3.23.1+
 
 CUDA/GPU requirements:
 
@@ -79,7 +91,7 @@ $ cd rmm
 - Create the conda development environment `rmm_dev`
 ```bash
 # create the conda environment (assuming in base `rmm` directory)
-$ conda env create --name rmm_dev --file conda/environments/rmm_dev_cuda11.0.yml
+$ conda env create --name rmm_dev --file conda/environments/all_cuda-115_arch-x86_64.yaml
 # activate the environment
 $ conda activate rmm_dev
 ```
@@ -163,7 +175,7 @@ Thrust. If you want to customize it, you can set the variables
 
 # Using RMM in C++
 
-The first goal of RMM is to provide a common interface for device and host memory allocation. 
+The first goal of RMM is to provide a common interface for device and host memory allocation.
 This allows both _users_ and _implementers_ of custom allocation logic to program to a single
 interface.
 
@@ -186,15 +198,15 @@ It has two key functions:
    - Returns a pointer to an allocation of at least `bytes` bytes.
 
 2. `void device_memory_resource::deallocate(void* p, std::size_t bytes, cuda_stream_view s)`
-   - Reclaims a previous allocation of size `bytes` pointed to by `p`. 
+   - Reclaims a previous allocation of size `bytes` pointed to by `p`.
    - `p` *must* have been returned by a previous call to `allocate(bytes)`, otherwise behavior is
      undefined
 
 It is up to a derived class to provide implementations of these functions. See
-[available resources](#available-resources) for example `device_memory_resource` derived classes. 
+[available resources](#available-resources) for example `device_memory_resource` derived classes.
 
-Unlike `std::pmr::memory_resource`, `rmm::mr::device_memory_resource` does not allow specifying an 
-alignment argument. All allocations are required to be aligned to at least 256B. Furthermore, 
+Unlike `std::pmr::memory_resource`, `rmm::mr::device_memory_resource` does not allow specifying an
+alignment argument. All allocations are required to be aligned to at least 256B. Furthermore,
 `device_memory_resource` adds an additional `cuda_stream_view` argument to allow specifying the stream
 on which to perform the (de)allocation.
 
@@ -202,26 +214,26 @@ on which to perform the (de)allocation.
 
 `rmm::cuda_stream_view` is a simple non-owning wrapper around a CUDA `cudaStream_t`. This wrapper's
 purpose is to provide strong type safety for stream types. (`cudaStream_t` is an alias for a pointer,
-which can lead to ambiguity in APIs when it is assigned `0`.)  All RMM stream-ordered APIs take a 
+which can lead to ambiguity in APIs when it is assigned `0`.)  All RMM stream-ordered APIs take a
 `rmm::cuda_stream_view` argument.
 
-`rmm::cuda_stream` is a simple owning wrapper around a CUDA `cudaStream_t`. This class provides 
+`rmm::cuda_stream` is a simple owning wrapper around a CUDA `cudaStream_t`. This class provides
 RAII semantics (constructor creates the CUDA stream, destructor destroys it). An `rmm::cuda_stream`
 can never represent the CUDA default stream or per-thread default stream; it only ever represents
 a single non-default stream. `rmm::cuda_stream` cannot be copied, but can be moved.
 
 ## `cuda_stream_pool`
 
-`rmm::cuda_stream_pool` provides fast access to a pool of CUDA streams. This class can be used to 
-create a set of `cuda_stream` objects whose lifetime is equal to the `cuda_stream_pool`. Using the 
+`rmm::cuda_stream_pool` provides fast access to a pool of CUDA streams. This class can be used to
+create a set of `cuda_stream` objects whose lifetime is equal to the `cuda_stream_pool`. Using the
 stream pool can be faster than creating the streams on the fly. The size of the pool is configurable.
-Depending on this size, multiple calls to `cuda_stream_pool::get_stream()` may return instances of 
+Depending on this size, multiple calls to `cuda_stream_pool::get_stream()` may return instances of
 `rmm::cuda_stream_view` that represent identical CUDA streams.
 
 ### Thread Safety
 
 All current device memory resources are thread safe unless documented otherwise. More specifically,
-calls to memory resource `allocate()` and `deallocate()` methods are safe with respect to calls to 
+calls to memory resource `allocate()` and `deallocate()` methods are safe with respect to calls to
 either of these functions from other threads. They are _not_ thread safe with respect to
 construction and destruction of the memory resource object.
 
@@ -247,7 +259,7 @@ used internally by a `device_memory_resource` for managing available memory with
 synchronization, and it may also be synchronized at a later time, for example using a call to
 `cudaStreamSynchronize()`.
 
-For this reason, it is Undefined Behavior to destroy a CUDA stream that is passed to 
+For this reason, it is Undefined Behavior to destroy a CUDA stream that is passed to
 `device_memory_resource::deallocate`. If the stream on which the allocation was last used has been
 destroyed before calling `deallocate` or it is known that it will be destroyed, it is likely better
 to synchronize the stream (before destroying it) and then pass a different stream to `deallocate`
@@ -255,6 +267,11 @@ to synchronize the stream (before destroying it) and then pass a different strea
 
 Note that device memory data structures such as `rmm::device_buffer` and `rmm::device_uvector`
 follow these stream-ordered memory allocation semantics and rules.
+
+For further information about stream-ordered memory allocation semantics, read
+[Using the NVIDIA CUDA Stream-Ordered Memory
+Allocator](https://developer.nvidia.com/blog/using-cuda-stream-ordered-memory-allocator-part-1/)
+on the NVIDIA Developer Blog.
 
 ### Available Resources
 
@@ -267,10 +284,10 @@ Allocates and frees device memory using `cudaMalloc` and `cudaFree`.
 
 #### `managed_memory_resource`
 
-Allocates and frees device memory using `cudaMallocManaged` and `cudaFree`. 
+Allocates and frees device memory using `cudaMallocManaged` and `cudaFree`.
 
 Note that `managed_memory_resource` cannot be used with NVIDIA Virtual GPU Software (vGPU, for use
-with virtual machines or hypervisors) because [NVIDIA CUDA Unified Memory is not supported by 
+with virtual machines or hypervisors) because [NVIDIA CUDA Unified Memory is not supported by
 NVIDIA vGPU](https://docs.nvidia.com/grid/latest/grid-vgpu-user-guide/index.html#cuda-open-cl-support-vgpu).
 
 #### `pool_memory_resource`
@@ -284,13 +301,13 @@ cost is constant.
 
 #### `binning_memory_resource`
 
-Configurable to use multiple upstream memory resources for allocations that fall within different 
+Configurable to use multiple upstream memory resources for allocations that fall within different
 bin sizes. Often configured with multiple bins backed by `fixed_size_memory_resource`s and a single
 `pool_memory_resource` for allocations larger than the largest bin size.
 
 ### Default Resources and Per-device Resources
 
-RMM users commonly need to configure a `device_memory_resource` object to use for all allocations 
+RMM users commonly need to configure a `device_memory_resource` object to use for all allocations
 where another resource has not explicitly been provided. A common example is configuring a
 `pool_memory_resource` to use for all allocations to get fast dynamic allocation.
 
@@ -301,7 +318,7 @@ Accessing and modifying the default resource is done through two functions:
 - `device_memory_resource* get_current_device_resource()`
    - Returns a pointer to the default resource for the current CUDA device.
    - The initial default memory resource is an instance of `cuda_memory_resource`.
-   - This function is thread safe with respect to concurrent calls to it and 
+   - This function is thread safe with respect to concurrent calls to it and
      `set_current_device_resource()`.
    - For more explicit control, you can use `get_per_device_resource()`, which takes a device ID.
 
@@ -330,13 +347,13 @@ that was active when the `device_memory_resource` was created. Otherwise behavio
 
 If a `device_memory_resource` is used with a stream associated with a different CUDA device than the
 device for which the memory resource was created, behavior is undefined.
- 
+
 Creating a `device_memory_resource` for each device requires care to set the current device before
 creating each resource, and to maintain the lifetime of the resources as long as they are set as
 per-device resources. Here is an example loop that creates `unique_ptr`s to `pool_memory_resource`
 objects for each device and sets them as the per-device resource for that device.
 
-```c++ 
+```c++
 std::vector<unique_ptr<pool_memory_resource>> per_device_pools;
 for(int i = 0; i < N; ++i) {
     cudaSetDevice(i); // set device i before creating MR
@@ -349,12 +366,12 @@ for(int i = 0; i < N; ++i) {
 
 ### Allocators
 
-C++ interfaces commonly allow customizable memory allocation through an [`Allocator`](https://en.cppreference.com/w/cpp/named_req/Allocator) object. 
+C++ interfaces commonly allow customizable memory allocation through an [`Allocator`](https://en.cppreference.com/w/cpp/named_req/Allocator) object.
 RMM provides several `Allocator` and `Allocator`-like classes.
 
 #### `polymorphic_allocator`
 
-A [stream-ordered](#stream-ordered-memory-allocation) allocator similar to [`std::pmr::polymorphic_allocator`](https://en.cppreference.com/w/cpp/memory/polymorphic_allocator). 
+A [stream-ordered](#stream-ordered-memory-allocation) allocator similar to [`std::pmr::polymorphic_allocator`](https://en.cppreference.com/w/cpp/memory/polymorphic_allocator).
 Unlike the standard C++ `Allocator` interface, the `allocate` and `deallocate` functions take a `cuda_stream_view` indicating the stream on which the (de)allocation occurs.
 
 #### `stream_allocator_adaptor`
@@ -370,17 +387,17 @@ rmm::mr::polymorphic_allocator<int> stream_alloc;
 auto adapted = rmm::mr::make_stream_allocator_adaptor(stream_alloc, stream);
 
 // Allocates 100 bytes using `stream_alloc` on `stream`
-auto p = adapted.allocate(100); 
+auto p = adapted.allocate(100);
 ...
 // Deallocates using `stream_alloc` on `stream`
-adapted.deallocate(p,100); 
+adapted.deallocate(p,100);
 ```
 
 #### `thrust_allocator`
 
 `thrust_allocator` is a device memory allocator that uses the strongly typed `thrust::device_ptr`, making it usable with containers like `thrust::device_vector`.
 
-See [below](#using-rmm-with-thrust) for more information on using RMM with Thrust. 
+See [below](#using-rmm-with-thrust) for more information on using RMM with Thrust.
 
 ## Device Data Structures
 
@@ -393,7 +410,7 @@ An untyped, uninitialized RAII class for stream ordered device memory allocation
 ```c++
 cuda_stream_view s{...};
 // Allocates at least 100 bytes on stream `s` using the *default* resource
-rmm::device_buffer b{100,s}; 
+rmm::device_buffer b{100,s};
 void* p = b.data();                   // Raw, untyped pointer to underlying device memory
 
 kernel<<<..., s.value()>>>(b.data()); // `b` is only safe to use on `s`
@@ -416,11 +433,11 @@ cuda_stream_view s{...};
 // default resource
 rmm::device_uvector<int32_t> v(100, s);
 // Initializes the elements to 0
-thrust::uninitialized_fill(thrust::cuda::par.on(s.value()), v.begin(), v.end(), int32_t{0}); 
+thrust::uninitialized_fill(thrust::cuda::par.on(s.value()), v.begin(), v.end(), int32_t{0});
 
 rmm::mr::device_memory_resource * mr = new my_custom_resource{...};
 // Allocates uninitialized storage for 100 `int32_t` elements on stream `s` using the resource `mr`
-rmm::device_uvector<int32_t> v2{100, s, mr}; 
+rmm::device_uvector<int32_t> v2{100, s, mr};
 ```
 
 ### `device_scalar`
@@ -432,7 +449,7 @@ modifying the value in device memory from the host, or retrieving the value from
 ```c++
 cuda_stream_view s{...};
 // Allocates uninitialized storage for a single `int32_t` in device memory
-rmm::device_scalar<int32_t> a{s}; 
+rmm::device_scalar<int32_t> a{s};
 a.set_value(42, s); // Updates the value in device memory to `42` on stream `s`
 
 kernel<<<...,s.value()>>>(a.data()); // Pass raw pointer to underlying element in device memory
@@ -452,11 +469,11 @@ Similar to `device_memory_resource`, it has two key functions for (de)allocation
      `alignment`
 
 2. `void host_memory_resource::deallocate(void* p, std::size_t bytes, std::size_t alignment)`
-   - Reclaims a previous allocation of size `bytes` pointed to by `p`. 
+   - Reclaims a previous allocation of size `bytes` pointed to by `p`.
 
 
 Unlike `device_memory_resource`, the `host_memory_resource` interface and behavior is identical to
-`std::pmr::memory_resource`. 
+`std::pmr::memory_resource`.
 
 ### Available Resources
 
@@ -505,7 +522,7 @@ RMM includes two forms of logging. Memory event logging and debug logging.
 ### Memory Event Logging and `logging_resource_adaptor`
 
 Memory event logging writes details of every allocation or deallocation to a CSV (comma-separated
-value) file. In C++, Memory Event Logging is enabled by using the `logging_resource_adaptor` as a 
+value) file. In C++, Memory Event Logging is enabled by using the `logging_resource_adaptor` as a
 wrapper around any other `device_memory_resource` object.
 
 Each row in the log represents either an allocation or a deallocation. The columns of the file are
@@ -524,7 +541,7 @@ rmm::mr::cuda_memory_resource upstream;
 rmm::mr::logging_resource_adaptor<rmm::mr::cuda_memory_resource> log_mr{&upstream, filename};
 ```
 
-If a file name is not specified, the environment variable `RMM_LOG_FILE` is queried for the file 
+If a file name is not specified, the environment variable `RMM_LOG_FILE` is queried for the file
 name. If `RMM_LOG_FILE` is not set, then an exception is thrown by the `logging_resource_adaptor`
 constructor.
 
@@ -534,7 +551,7 @@ set to `True`. The log file name can be set using the `log_file_name` parameter.
 
 ### Debug Logging
 
-RMM includes a debug logger which can be enabled to log trace and debug information to a file. This 
+RMM includes a debug logger which can be enabled to log trace and debug information to a file. This
 information can show when errors occur, when additional memory is allocated from upstream resources,
 etc. The default log file is `rmm_log.txt` in the current working directory, but the environment
 variable `RMM_DEBUG_LOG_FILE` can be set to specify the path and file name.
@@ -546,27 +563,27 @@ of more detailed logging. The default is `INFO`. Available levels are `TRACE`, `
 The log relies on the [spdlog](https://github.com/gabime/spdlog.git) library.
 
 Note that to see logging below the `INFO` level, the C++ application must also call
-`rmm::logger().set_level()`, e.g. to enable all levels of logging down to `TRACE`, call 
+`rmm::logger().set_level()`, e.g. to enable all levels of logging down to `TRACE`, call
 `rmm::logger().set_level(spdlog::level::trace)` (and compile with `-DRMM_LOGGING_LEVEL=TRACE`).
 
-Note that debug logging is different from the CSV memory allocation logging provided by 
+Note that debug logging is different from the CSV memory allocation logging provided by
 `rmm::mr::logging_resource_adapter`. The latter is for logging a history of allocation /
 deallocation actions which can be useful for replay with RMM's replay benchmark.
 
 ## RMM and CUDA Memory Bounds Checking
 
 Memory allocations taken from a memory resource that allocates a pool of memory (such as
-`pool_memory_resource` and `arena_memory_resource`) are part of the same low-level CUDA memory 
-allocation. Therefore, out-of-bounds or misaligned accesses to these allocations are not likely to 
-be detected by CUDA tools such as 
+`pool_memory_resource` and `arena_memory_resource`) are part of the same low-level CUDA memory
+allocation. Therefore, out-of-bounds or misaligned accesses to these allocations are not likely to
+be detected by CUDA tools such as
 [CUDA Compute Sanitizer](https://docs.nvidia.com/cuda/compute-sanitizer/index.html) memcheck.
 
-Exceptions to this are `cuda_memory_resource`, which wraps `cudaMalloc`, and 
-`cuda_async_memory_resource`, which uses `cudaMallocAsync` with CUDA's built-in memory pool 
-functionality (CUDA 11.2 or later required). Illegal memory accesses to memory allocated by these 
+Exceptions to this are `cuda_memory_resource`, which wraps `cudaMalloc`, and
+`cuda_async_memory_resource`, which uses `cudaMallocAsync` with CUDA's built-in memory pool
+functionality (CUDA 11.2 or later required). Illegal memory accesses to memory allocated by these
 resources are detectable with Compute Sanitizer Memcheck.
 
-It may be possible in the future to add support for memory bounds checking with other memory 
+It may be possible in the future to add support for memory bounds checking with other memory
 resources using NVTX APIs.
 
 ## Using RMM in Python Code
@@ -625,7 +642,7 @@ array([1., 2., 3.])
 `MemoryResource` objects are used to configure how device memory allocations are made by
 RMM.
 
-By default if a `MemoryResource` is not set explicitly, RMM uses the `CudaMemoryResource`, which 
+By default if a `MemoryResource` is not set explicitly, RMM uses the `CudaMemoryResource`, which
 uses `cudaMalloc` for allocating device memory.
 
 `rmm.reinitialize()` provides an easy way to initialize RMM with specific memory resource options
@@ -665,10 +682,10 @@ of 1 GiB and a maximum size of 4 GiB. The pool uses
 Other MemoryResources include:
 
 * `FixedSizeMemoryResource` for allocating fixed blocks of memory
-* `BinningMemoryResource` for allocating blocks within specified "bin" sizes from different memory 
+* `BinningMemoryResource` for allocating blocks within specified "bin" sizes from different memory
 resources
 
-MemoryResources are highly configurable and can be composed together in different ways. 
+MemoryResources are highly configurable and can be composed together in different ways.
 See `help(rmm.mr)` for more information.
 
 ### Using RMM with CuPy
@@ -684,14 +701,14 @@ allocations by setting the CuPy CUDA allocator to
 ```
 
 
-**Note:** This only configures CuPy to use the current RMM resource for allocations. 
-It does not initialize nor change the current resource, e.g., enabling a memory pool. 
+**Note:** This only configures CuPy to use the current RMM resource for allocations.
+It does not initialize nor change the current resource, e.g., enabling a memory pool.
 See [here](#memoryresource-objects) for more information on changing the current memory resource.
 
 ### Using RMM with Numba
 
 You can configure Numba to use RMM for memory allocations using the
-Numba [EMM Plugin](http://numba.pydata.org/numba-doc/latest/cuda/external-memory.html#setting-the-emm-plugin).
+Numba [EMM Plugin](https://numba.readthedocs.io/en/stable/cuda/external-memory.html#setting-emm-plugin).
 
 This can be done in two ways:
 
@@ -709,6 +726,6 @@ This can be done in two ways:
   >>> cuda.set_memory_manager(rmm.RMMNumbaManager)
   ```
 
-**Note:** This only configures Numba to use the current RMM resource for allocations. 
-It does not initialize nor change the current resource, e.g., enabling a memory pool. 
+**Note:** This only configures Numba to use the current RMM resource for allocations.
+It does not initialize nor change the current resource, e.g., enabling a memory pool.
 See [here](#memoryresource-objects) for more information on changing the current memory resource.

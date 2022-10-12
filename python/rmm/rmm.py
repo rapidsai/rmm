@@ -66,24 +66,22 @@ def reinitialize(
     logging : bool, default False
         If True, enable run-time logging of all memory events
         (alloc, free, realloc).
-        This has significant performance impact.
+        This has a significant performance impact.
     log_file_name : str
         Name of the log file. If not specified, the environment variable
-        RMM_LOG_FILE is used. A ValueError is thrown if neither is available.
-        A separate log file is produced for each device,
-        and the suffix `".dev{id}"` is automatically added to the log file
-        name.
+        ``RMM_LOG_FILE`` is used. A ``ValueError`` is thrown if neither is
+        available. A separate log file is produced for each device, and the
+        suffix `".dev{id}"` is automatically added to the log file name.
 
     Notes
     -----
-    Note that if you use the environment variable CUDA_VISIBLE_DEVICES
-    with logging enabled, the suffix may not be what you expect. For
-    example, if you set CUDA_VISIBLE_DEVICES=1, the log file produced
-    will still have suffix `0`. Similarly, if you set
-    CUDA_VISIBLE_DEVICES=1,0 and use devices 0 and 1, the log file
-    with suffix `0` will correspond to the GPU with device ID `1`.
-    Use `rmm.get_log_filenames()` to get the log file names
-    corresponding to each device.
+    Note that if you use the environment variable ``CUDA_VISIBLE_DEVICES`` with
+    logging enabled, the suffix may not be what you expect. For example, if you
+    set ``CUDA_VISIBLE_DEVICES=1``, the log file produced will still have
+    suffix ``0``. Similarly, if you set ``CUDA_VISIBLE_DEVICES=1,0`` and use
+    devices 0 and 1, the log file with suffix ``0`` will correspond to the GPU
+    with device ID ``1``. Use `rmm.get_log_filenames()` to get the log file
+    names corresponding to each device.
     """
     for func, args, kwargs in reversed(_reinitialize_hooks):
         func(*args, **kwargs)
@@ -101,7 +99,7 @@ def reinitialize(
 
 def is_initialized():
     """
-    Returns true if RMM has been initialized, false otherwise
+    Returns True if RMM has been initialized, False otherwise.
     """
     return rmm.mr.is_initialized()
 
@@ -111,7 +109,7 @@ class RMMNumbaManager(HostOnlyCUDAMemoryManager):
     External Memory Management Plugin implementation for Numba. Provides
     on-device allocation only.
 
-    See http://numba.pydata.org/numba-doc/latest/cuda/external-memory.html for
+    See https://numba.readthedocs.io/en/stable/cuda/external-memory.html for
     details of the interface being implemented here.
     """
 
@@ -206,7 +204,7 @@ def _make_emm_plugin_finalizer(handle, allocations):
 
 # Enables the use of RMM for Numba via an environment variable setting,
 # NUMBA_CUDA_MEMORY_MANAGER=rmm. See:
-# http://numba.pydata.org/numba-doc/latest/cuda/external-memory.html#environment-variable
+# https://numba.readthedocs.io/en/stable/cuda/external-memory.html#environment-variable
 _numba_memory_manager = RMMNumbaManager
 
 try:

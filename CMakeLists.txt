@@ -12,11 +12,13 @@
 # the License.
 # =============================================================================
 
-cmake_minimum_required(VERSION 3.20.1 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.23.1 FATAL_ERROR)
 
-file(DOWNLOAD https://raw.githubusercontent.com/rapidsai/rapids-cmake/branch-22.08/RAPIDS.cmake
-     ${CMAKE_BINARY_DIR}/RAPIDS.cmake)
-include(${CMAKE_BINARY_DIR}/RAPIDS.cmake)
+if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/RMM_RAPIDS.cmake)
+  file(DOWNLOAD https://raw.githubusercontent.com/rapidsai/rapids-cmake/branch-22.10/RAPIDS.cmake
+       ${CMAKE_CURRENT_BINARY_DIR}/RMM_RAPIDS.cmake)
+endif()
+include(${CMAKE_CURRENT_BINARY_DIR}/RMM_RAPIDS.cmake)
 
 include(rapids-cmake)
 include(rapids-cpm)
@@ -25,7 +27,7 @@ include(rapids-find)
 
 project(
   RMM
-  VERSION 22.08.00
+  VERSION 22.10.00
   LANGUAGES CXX)
 
 # Write the version header
@@ -105,6 +107,11 @@ if(BUILD_BENCHMARKS AND CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 endif()
 
 include(CPack)
+
+# optionally assemble Thrust pretty-printers
+if(Thrust_SOURCE_DIR)
+  configure_file(scripts/load-pretty-printers.in load-pretty-printers @ONLY)
+endif()
 
 # install export targets
 install(TARGETS rmm EXPORT rmm-exports)

@@ -237,6 +237,36 @@ class device_buffer {
   }
 
   /**
+   * @brief Increase the capacity of the device memory allocation
+   *
+   * If the requested `new_capacity` is less than or equal to `capacity()`, no
+   * action is taken.
+   *
+   * If `new_capacity` is larger than `capacity()`, a new allocation is made on
+   * `stream` to satisfy `new_capacity`, and the contents of the old allocation are
+   * copied on `stream` to the new allocation. The old allocation is then freed.
+   * The bytes from `[size(), new_capacity)` are uninitialized.
+   *
+   * @throws rmm::bad_alloc If creating the new allocation fails
+   * @throws rmm::cuda_error if the copy from the old to new allocation
+   * fails
+   *
+   * @param new_capacity The requested new capacity, in bytes
+   * @param stream The stream to use for allocation and copy
+   */
+  void reserve(std::size_t new_capacity, cuda_stream_view stream)
+  {
+    set_stream(stream);
+    if (new_capacity > capacity()) {
+      auto tmp            = device_buffer{new_capacity, stream, _mr};
+      auto const old_size = size();
+      RMM_CUDA_TRY(cudaMemcpyAsync(tmp.data(), data(), size(), cudaMemcpyDefault, stream.value()));
+      *this = std::move(tmp);
+      _size = old_size;
+    }
+  }
+
+  /**
    * @brief Resize the device memory allocation
    *
    * If the requested `new_size` is less than or equal to `capacity()`, no
@@ -256,7 +286,7 @@ class device_buffer {
    *
    * @throws rmm::bad_alloc If creating the new allocation fails
    * @throws rmm::cuda_error if the copy from the old to new allocation
-   *fails
+   * fails
    *
    * @param new_size The requested new size, in bytes
    * @param stream The stream to use for allocation and copy
@@ -269,13 +299,9 @@ class device_buffer {
     if (new_size <= capacity()) {
       _size = new_size;
     } else {
-      void* const new_data = _mr->allocate(new_size, this->stream());
-      RMM_CUDA_TRY(
-        cudaMemcpyAsync(new_data, data(), size(), cudaMemcpyDefault, this->stream().value()));
-      deallocate_async();
-      _data     = new_data;
-      _size     = new_size;
-      _capacity = new_size;
+      auto tmp = device_buffer{new_size, stream, _mr};
+      RMM_CUDA_TRY(cudaMemcpyAsync(tmp.data(), data(), size(), cudaMemcpyDefault, stream.value()));
+      *this = std::move(tmp);
     }
   }
 

@@ -100,7 +100,7 @@ function ensureCMakeRan {
     fi
 }
 
-if hasArg -h; then
+if hasArg -h || hasArg --help; then
     echo "${HELP}"
     exit 0
 fi

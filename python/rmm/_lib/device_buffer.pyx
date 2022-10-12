@@ -67,7 +67,6 @@ cdef class DeviceBuffer:
 
         Note
         ----
-
         If the pointer passed is non-null and ``stream`` is the default stream,
         it is synchronized after the copy. However if a non-default ``stream``
         is provided, this function is fully asynchronous.
@@ -107,14 +106,17 @@ cdef class DeviceBuffer:
 
     @property
     def nbytes(self):
+        """Gets the size of the buffer in bytes."""
         return self.size
 
     @property
     def ptr(self):
+        """Gets a pointer to the underlying data."""
         return int(<uintptr_t>self.c_data())
 
     @property
     def size(self):
+        """Gets the size of the buffer in bytes."""
         return int(self.c_size())
 
     def __reduce__(self):
@@ -146,15 +148,15 @@ cdef class DeviceBuffer:
     @staticmethod
     def to_device(const unsigned char[::1] b,
                   Stream stream=DEFAULT_STREAM):
-        """Calls ``to_device`` function on arguments provided"""
+        """Calls ``to_device`` function on arguments provided."""
         return to_device(b, stream)
 
     cpdef copy_to_host(self, ary=None, Stream stream=DEFAULT_STREAM):
-        """Copy from a ``DeviceBuffer`` to a buffer on host
+        """Copy from a ``DeviceBuffer`` to a buffer on host.
 
         Parameters
         ----------
-        hb : ``bytes``-like buffer to write into
+        ary : ``bytes``-like buffer to write into
         stream : CUDA stream to use for copying, default the default stream
 
         Examples
@@ -179,7 +181,7 @@ cdef class DeviceBuffer:
             hb = ary = np.empty((s,), dtype="u1")
         elif len(hb) < s:
             raise ValueError(
-                "Argument `hb` is too small. Need space for %i bytes." % s
+                "Argument `ary` is too small. Need space for %i bytes." % s
             )
 
         copy_ptr_to_host(<uintptr_t>dbp.data(), hb[:s], stream)
@@ -191,7 +193,7 @@ cdef class DeviceBuffer:
 
         Parameters
         ----------
-        hb : ``bytes``-like buffer to copy from
+        ary : ``bytes``-like buffer to copy from
         stream : CUDA stream to use for copying, default the default stream
 
         Examples
@@ -210,7 +212,7 @@ cdef class DeviceBuffer:
         cdef size_t s = len(hb)
         if s > self.size:
             raise ValueError(
-                "Argument `hb` is too large. Need space for %i bytes." % s
+                "Argument `ary` is too large. Need space for %i bytes." % s
             )
 
         copy_host_to_ptr(hb[:s], <uintptr_t>dbp.data(), stream)
@@ -288,6 +290,11 @@ cdef class DeviceBuffer:
     cdef size_t c_size(self) except *:
         return self.c_obj.get()[0].size()
 
+    cpdef void reserve(self,
+                       size_t new_capacity,
+                       Stream stream=DEFAULT_STREAM) except *:
+        self.c_obj.get()[0].reserve(new_capacity, stream.view())
+
     cpdef void resize(self,
                       size_t new_size,
                       Stream stream=DEFAULT_STREAM) except *:
@@ -301,7 +308,7 @@ cdef class DeviceBuffer:
 
     cdef device_buffer c_release(self) except *:
         """
-        Releases ownership the data held by this DeviceBuffer.
+        Releases ownership of the data held by this DeviceBuffer.
         """
         return move(cython.operator.dereference(self.c_obj))
 
@@ -309,7 +316,7 @@ cdef class DeviceBuffer:
 @cython.boundscheck(False)
 cpdef DeviceBuffer to_device(const unsigned char[::1] b,
                              Stream stream=DEFAULT_STREAM):
-    """Return a new ``DeviceBuffer`` with a copy of the data
+    """Return a new ``DeviceBuffer`` with a copy of the data.
 
     Parameters
     ----------
@@ -346,16 +353,17 @@ cdef void _copy_async(const void* src,
                       ccudart.cudaMemcpyKind kind,
                       cuda_stream_view stream) nogil except *:
     """
-    Asynchronously copy data between host and/or device pointers
+    Asynchronously copy data between host and/or device pointers.
 
     This is a convenience wrapper around cudaMemcpyAsync that
     checks for errors. Only used for internal implementation.
 
     Parameters
     ----------
-    src : pointer to ``bytes``-like host buffer to or device data to copy from
-    dst : pointer to ``bytes``-like host buffer to or device data to copy into
+    src : pointer to ``bytes``-like host buffer or device data to copy from
+    dst : pointer to ``bytes``-like host buffer or device data to copy into
     count : the size in bytes to copy
+    kind : the kind of copy to perform
     stream : CUDA stream to use for copying, default the default stream
     """
     cdef cudaError_t err = cudaMemcpyAsync(dst, src, count, kind,
@@ -379,7 +387,6 @@ cpdef void copy_ptr_to_host(uintptr_t db,
 
     Note
     ----
-
     If ``stream`` is the default stream, it is synchronized after the copy.
     However if a non-default ``stream`` is provided, this function is fully
     asynchronous.
@@ -422,7 +429,6 @@ cpdef void copy_host_to_ptr(const unsigned char[::1] hb,
 
     Note
     ----
-
     If ``stream`` is the default stream, it is synchronized after the copy.
     However if a non-default ``stream`` is provided, this function is fully
     asynchronous.
@@ -463,6 +469,7 @@ cpdef void copy_device_to_ptr(uintptr_t d_src,
     ----------
     d_src : pointer to data on device to copy from
     d_dst : pointer to data on device to write into
+    count : the size in bytes to copy
     stream : CUDA stream to use for copying, default the default stream
 
     Examples

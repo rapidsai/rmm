@@ -21,6 +21,7 @@ from libc.stdint cimport int8_t, int64_t, uintptr_t
 from libcpp cimport bool
 from libcpp.cast cimport dynamic_cast
 from libcpp.memory cimport make_shared, make_unique, shared_ptr, unique_ptr
+from libcpp.pair cimport pair
 from libcpp.string cimport string
 
 from cuda.cudart import cudaError_t
@@ -34,6 +35,41 @@ from rmm._cuda.gpu import (
 )
 
 from rmm._lib.cuda_stream_view cimport cuda_stream_view
+
+# Transparent handle of a C++ exception
+ctypedef pair[int, string] CppExcept
+
+cdef CppExcept translate_python_except_to_cpp(err: BaseException):
+    """Translate a Python exception into a C++ exception handle
+
+    The returned exception handle can then be thrown by `throw_cpp_except()`,
+    which MUST be done without holding the GIL.
+
+    This is useful when C++ calls a Python function and needs to catch or
+    propagate exceptions.
+    """
+    if isinstance(err, MemoryError):
+        return CppExcept(0, str.encode(str(err)))
+    return CppExcept(-1, str.encode(str(err)))
+
+# Implementation of `throw_cpp_except()`, which throws a given `CppExcept`.
+# This function MUST be called without the GIL otherwise the thrown C++
+# exception are translated back into a Python exception.
+cdef extern from *:
+    """
+    #include <stdexcept>
+    #include <utility>
+
+    void throw_cpp_except(std::pair<int, std::string> res) {
+        switch(res.first) {
+            case 0:
+                throw rmm::out_of_memory(res.second);
+            default:
+                throw std::runtime_error(res.second);
+        }
+    }
+    """
+    void throw_cpp_except(CppExcept) nogil
 
 
 # NOTE: Keep extern declarations in .pyx file as much as possible to avoid
@@ -236,19 +272,20 @@ cdef class CudaMemoryResource(DeviceMemoryResource):
 
     def __init__(self):
         """
-        Memory resource that uses cudaMalloc/Free for allocation/deallocation
+        Memory resource that uses ``cudaMalloc``/``cudaFree`` for
+        allocation/deallocation.
         """
         pass
 
 
 cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
     """
-    Memory resource that uses cudaMallocAsync/Free for
+    Memory resource that uses ``cudaMallocAsync``/``cudaFreeAsync`` for
     allocation/deallocation.
 
     Parameters
     ----------
-    initial_pool_size : int,optional
+    initial_pool_size : int, optional
         Initial pool size in bytes. By default, half the available memory
         on the device is used.
     release_threshold: int, optional
@@ -312,7 +349,7 @@ cdef class ManagedMemoryResource(DeviceMemoryResource):
 
     def __init__(self):
         """
-        Memory resource that uses cudaMallocManaged/Free for
+        Memory resource that uses ``cudaMallocManaged``/``cudaFree`` for
         allocation/deallocation.
         """
         pass
@@ -361,7 +398,7 @@ cdef class PoolMemoryResource(UpstreamResourceAdaptor):
         upstream_mr : DeviceMemoryResource
             The DeviceMemoryResource from which to allocate blocks for the
             pool.
-        initial_pool_size : int,optional
+        initial_pool_size : int, optional
             Initial pool size in bytes. By default, half the available memory
             on the device is used.
         maximum_pool_size : int, optional
@@ -425,7 +462,7 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
         int8_t max_size_exponent=-1,
     ):
 
-        self.bin_mrs = []
+        self._bin_mrs = []
 
         if (min_size_exponent == -1 or max_size_exponent == -1):
             self.c_obj.reset(
@@ -459,15 +496,15 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
 
         If min_size_exponent and max_size_exponent are specified, initializes
         with one or more FixedSizeMemoryResource bins in the range
-        [2^min_size_exponent, 2^max_size_exponent].
+        ``[2**min_size_exponent, 2**max_size_exponent]``.
 
-        Call add_bin to add additional bin allocators.
+        Call :py:meth:`~.add_bin` to add additional bin allocators.
 
         Parameters
         ----------
         upstream_mr : DeviceMemoryResource
             The memory resource to use for allocations larger than any of the
-            bins
+            bins.
         min_size_exponent : size_t
             The base-2 exponent of the minimum size FixedSizeMemoryResource
             bin to create.
@@ -505,20 +542,31 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
                 self.c_obj.get()))[0].add_bin(allocation_size)
         else:
             # Save the ref to the new bin resource to ensure its lifetime
-            self.bin_mrs.append(bin_resource)
+            self._bin_mrs.append(bin_resource)
 
             (<binning_memory_resource[device_memory_resource]*>(
                 self.c_obj.get()))[0].add_bin(
                     allocation_size,
                     bin_resource.get_mr())
 
+    @property
+    def bin_mrs(self) -> list:
+        """Get the list of binned memory resources."""
+        return self._bin_mrs
+
 
 cdef void* _allocate_callback_wrapper(
     size_t nbytes,
     cuda_stream_view stream,
     void* ctx
-) with gil:
-    return <void*><uintptr_t>((<object>ctx)(nbytes))
+) nogil:
+    cdef CppExcept err
+    with gil:
+        try:
+            return <void*><uintptr_t>((<object>ctx)(nbytes))
+        except BaseException as e:
+            err = translate_python_except_to_cpp(e)
+    throw_cpp_except(err)
 
 cdef void _deallocate_callback_wrapper(
     void* ptr,
@@ -551,7 +599,7 @@ cdef class CallbackMemoryResource(DeviceMemoryResource):
         integer representing the number of bytes to free.
 
     Examples
-    -------
+    --------
     >>> import rmm
     >>> base_mr = rmm.mr.CudaMemoryResource()
     >>> def allocate_func(size):
@@ -695,6 +743,9 @@ cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
         Gets the current, peak, and total allocated bytes and number of
         allocations.
 
+        The dictionary keys are ``current_bytes``, ``current_count``,
+        ``peak_bytes``, ``peak_count``, ``total_bytes``, and ``total_count``.
+
         Returns:
             dict: Dictionary containing allocation counts and bytes.
         """
@@ -778,8 +829,14 @@ cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
             self.c_obj.get()))[0].log_outstanding_allocations()
 
 
-cdef bool _oom_callback_function(size_t bytes, void *callback_arg) with gil:
-    return (<object>callback_arg)(bytes)
+cdef bool _oom_callback_function(size_t bytes, void *callback_arg) nogil:
+    cdef CppExcept err
+    with gil:
+        try:
+            return (<object>callback_arg)(bytes)
+        except BaseException as e:
+            err = translate_python_except_to_cpp(e)
+    throw_cpp_except(err)
 
 
 cdef class FailureCallbackResourceAdaptor(UpstreamResourceAdaptor):
