@@ -159,6 +159,9 @@ cdef class DeviceBuffer:
         ret.stream = self.stream
         return ret
 
+    def __deepcopy__(self, memo):
+        return self.copy()
+
     @staticmethod
     cdef DeviceBuffer c_from_unique_ptr(unique_ptr[device_buffer] ptr):
         cdef DeviceBuffer buf = DeviceBuffer.__new__(DeviceBuffer)

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 import gc
 import os
 import sys
@@ -880,11 +881,14 @@ def test_reinit_hooks_unregister_twice_registered(make_reinit_hook):
         lambda: cuda.to_device(np.array([97, 98, 99, 0, 0], dtype="u1")),
     ],
 )
-def test_rmm_device_buffer_copy(cuda_ary):
+@pytest.mark.parametrize(
+    "make_copy", [lambda db: db.copy(), lambda db: copy.deepcopy(db)]
+)
+def test_rmm_device_buffer_copy(cuda_ary, make_copy):
     cuda_ary = cuda_ary()
     db = rmm.DeviceBuffer.to_device(np.zeros(5, dtype="u1"))
     db.copy_from_device(cuda_ary)
-    db_copy = db.copy()
+    db_copy = make_copy(db)
 
     assert db is not db_copy
     assert db.ptr != db_copy.ptr
