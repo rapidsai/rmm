@@ -551,9 +551,23 @@ def test_cuda_async_memory_resource_ipc():
     if rmm._cuda.gpu.is_async_export_handle_supported(
         rmm._cuda.gpu.getDevice()
     ):
-        mr = rmm.mr.CudaAsyncMemoryResource(enable_ipc=True)
-        rmm.mr.set_current_device_resource(mr)
-        assert rmm.mr.get_current_device_resource_type() is type(mr)
+        try:
+            mr = rmm.mr.CudaAsyncMemoryResource(enable_ipc=True)
+            rmm.mr.set_current_device_resource(mr)
+            assert rmm.mr.get_current_device_resource_type() is type(mr)
+        except Exception:
+            from cuda import cudart
+
+            status, supported_handle_types = cudart.cudaDeviceGetAttribute(
+                cudart.cudaDeviceAttr.cudaDevAttrMemoryPoolSupportedHandleTypes,  # noqa: E501
+                rmm._cuda.gpu.getDevice(),
+            )
+            raise RuntimeError(
+                f"Driver {_driver_version}, "
+                f"Runtime {_runtime_version}, "
+                f"Status {status}, "
+                f"Supported handle types {supported_handle_types}"
+            )
     else:
         with pytest.raises(ValueError):
             mr = rmm.mr.CudaAsyncMemoryResource(enable_ipc=True)
