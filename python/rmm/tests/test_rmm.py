@@ -544,19 +544,33 @@ def test_cuda_async_memory_resource(dtype, nelem, alloc):
     reason="cudaMallocAsync not supported",
 )
 def test_cuda_async_memory_resource_ipc():
-    # Test that enabling IPC earlier than CUDA 11.3 raises a ValueError
-    if _driver_version < 11030 or _runtime_version < 11030:
-        with pytest.raises(ValueError):
-            mr = rmm.mr.CudaAsyncMemoryResource(enable_ipc=True)
-    else:
+    # Test that enabling IPC raises a ValueError if unsupported.
+    # IPC is supported by CUDA driver >= 11.3, but querying the driver version
+    # does not appear to be reliable with CUDA Minor Version Compatibility.
+
+    if rmm._cuda.gpu.is_async_export_handle_supported(
+        rmm._cuda.gpu.getDevice()
+    ):
         try:
             mr = rmm.mr.CudaAsyncMemoryResource(enable_ipc=True)
-        except RuntimeError:
-            raise RuntimeError(
-                f"drv: {_driver_version}, rt: {_runtime_version}"
+            rmm.mr.set_current_device_resource(mr)
+            assert rmm.mr.get_current_device_resource_type() is type(mr)
+        except Exception:
+            from cuda import cudart
+
+            status, supported_handle_types = cudart.cudaDeviceGetAttribute(
+                cudart.cudaDeviceAttr.cudaDevAttrMemoryPoolSupportedHandleTypes,  # noqa: E501
+                rmm._cuda.gpu.getDevice(),
             )
-        rmm.mr.set_current_device_resource(mr)
-        assert rmm.mr.get_current_device_resource_type() is type(mr)
+            raise RuntimeError(
+                f"Driver {_driver_version}, "
+                f"Runtime {_runtime_version}, "
+                f"Status {status}, "
+                f"Supported handle types {supported_handle_types}"
+            )
+    else:
+        with pytest.raises(ValueError):
+            mr = rmm.mr.CudaAsyncMemoryResource(enable_ipc=True)
 
 
 @pytest.mark.skipif(

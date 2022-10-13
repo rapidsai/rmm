@@ -142,7 +142,7 @@ def getDeviceProperties(device: int):
 
 def deviceGetName(device: int):
     """
-    Returns an identifer string for the device.
+    Returns an identifier string for the device.
 
     Parameters
     ----------
@@ -157,3 +157,22 @@ def deviceGetName(device: int):
     if status != cuda.CUresult.CUDA_SUCCESS:
         raise CUDADriverError(status)
     return device_name.decode()
+
+
+def is_async_export_handle_supported(device: int):
+    """Check if CUDA memory pools support IPC handles.
+
+    Parameters
+    ----------
+    device : int
+        Device number to query
+    """
+    status, supported_handle_types = cudart.cudaDeviceGetAttribute(
+        cudart.cudaDeviceAttr.cudaDevAttrMemoryPoolSupportedHandleTypes,
+        device,
+    )
+    return (
+        status == cudart.cudaError_t.cudaSuccess
+        and supported_handle_types
+        != cudart.cudaMemAllocationHandleType.cudaMemHandleTypeNone
+    )
