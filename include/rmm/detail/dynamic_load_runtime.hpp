@@ -143,9 +143,7 @@ struct async_alloc {
 
       // Don't throw on cudaErrorInvalidValue
       auto const unsupported_runtime = (result == cudaErrorInvalidValue);
-      if (unsupported_runtime) {
-        RMM_FAIL("Unsupported runtime attempting to get handle types");
-      }
+      if (unsupported_runtime) { RMM_FAIL("Unsupported runtime attempting to get handle types"); }
       // throw any other error that may have occurred
       RMM_CUDA_TRY(result);
     }
