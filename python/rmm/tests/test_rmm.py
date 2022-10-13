@@ -34,7 +34,7 @@ else:
 
 cuda.set_memory_manager(rmm.RMMNumbaManager)
 
-_driver_version = rmm._cuda.custom_cuda_bindings.driverGetVersion()
+_driver_version = rmm._cuda.driverGetVersion()
 _runtime_version = rmm._cuda.gpu.runtimeGetVersion()
 _CUDAMALLOC_ASYNC_SUPPORTED = (_driver_version >= 11020) and (
     _runtime_version >= 11020

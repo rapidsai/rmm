@@ -458,3 +458,23 @@ def driverGetVersion():
     if status != cudaError.cudaSuccess:
         raise CUDARuntimeError(status)
     return version
+
+
+def getDeviceAttribute(cudaDeviceAttr attr, int device):
+    """
+    Returns information about the device.
+    Parameters
+    ----------
+        attr : cudaDeviceAttr
+            Device attribute to query
+        device : int
+            Device number to query
+    This function automatically raises CUDARuntimeError with error message
+    and status code.
+    """
+
+    cdef int value
+    cdef cudaError_t status = cudaDeviceGetAttribute(&value, attr, device)
+    if status != cudaError.cudaSuccess:
+        raise CUDARuntimeError(status)
+    return value
