@@ -13,7 +13,7 @@
 # =============================================================================
 
 set(cython_sources stream.pyx custom_cuda_bindings.pyx)
-set(linked_libraries rmm::rmm)
+set(linked_libraries rmm::rmm CUDA::cuda_driver)
 
 rapids_cython_create_modules(SOURCE_FILES "${cython_sources}" LINKED_LIBRARIES "${linked_libraries}"
                                                                                CXX)

@@ -105,6 +105,7 @@ cdef extern from "cuda.h" nogil:
         cudaDevAttrDirectManagedMemAccessFromHost = 101
         cudaDevAttrMaxBlocksPerMultiprocessor = 106
         cudaDevAttrReservedSharedMemoryPerBlock = 111
+        cudaDevAttrMemoryPoolSupportedHandleTypes = 119
 
     cpdef enum cudaError:
         cudaSuccess = 0
@@ -442,8 +443,8 @@ class CUDADriverError(RuntimeError):
 
     def __reduce__(self):
         return (type(self), (self.status,))
-    
-    
+
+
 def driverGetVersion():
     """
     Returns in the latest version of CUDA supported by the driver.

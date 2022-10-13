@@ -556,16 +556,18 @@ def test_cuda_async_memory_resource_ipc():
             rmm.mr.set_current_device_resource(mr)
             assert rmm.mr.get_current_device_resource_type() is type(mr)
         except Exception:
-            from cuda import cudart
+            from rmm._cuda.custom_cuda_bindings import (
+                cudaDeviceAttr,
+                getDeviceAttribute,
+            )
 
-            status, supported_handle_types = cudart.cudaDeviceGetAttribute(
-                cudart.cudaDeviceAttr.cudaDevAttrMemoryPoolSupportedHandleTypes,  # noqa: E501
+            supported_handle_types = getDeviceAttribute(
+                cudaDeviceAttr.cudaDevAttrMemoryPoolSupportedHandleTypes,  # noqa: E501
                 rmm._cuda.gpu.getDevice(),
             )
             raise RuntimeError(
                 f"Driver {_driver_version}, "
                 f"Runtime {_runtime_version}, "
-                f"Status {status}, "
                 f"Supported handle types {supported_handle_types}"
             )
     else:
