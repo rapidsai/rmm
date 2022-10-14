@@ -562,7 +562,9 @@ def test_cuda_async_memory_resource_ipc():
         mr = rmm.mr.CudaAsyncMemoryResource(enable_ipc=True)
     except RuntimeError as e:
         # CUDA 11.3 is required for IPC memory handle support
-        assert str(e) == "Requested IPC memory handle type not supported"
+        assert str(e).endswith(
+            "Requested IPC memory handle type not supported"
+        )
     else:
         rmm.mr.set_current_device_resource(mr)
         assert rmm.mr.get_current_device_resource_type() is type(mr)
