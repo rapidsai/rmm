@@ -152,14 +152,11 @@ cdef class DeviceBuffer:
         >>> assert db is not db_copy
         >>> assert db.ptr != db_copy.ptr
         """
-        ret = DeviceBuffer.c_from_unique_ptr(
-            make_unique[device_buffer](self.c_obj.get()[0], self.stream.view())
-        )
+        ret = DeviceBuffer(ptr=self.ptr, size=self.size, stream=self.stream)
         ret.mr = self.mr
-        ret.stream = self.stream
         return ret
 
-    def __deepcopy__(self, memo):
+    def __copy__(self):
         return self.copy()
 
     @staticmethod
