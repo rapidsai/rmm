@@ -898,7 +898,7 @@ def test_reinit_hooks_unregister_twice_registered(make_reinit_hook):
     ],
 )
 @pytest.mark.parametrize(
-    "make_copy", [lambda db: db.copy(), lambda db: copy.deepcopy(db)]
+    "make_copy", [lambda db: db.copy(), lambda db: copy.copy(db)]
 )
 def test_rmm_device_buffer_copy(cuda_ary, make_copy):
     cuda_ary = cuda_ary()
