@@ -545,12 +545,28 @@ def test_cuda_async_memory_resource(dtype, nelem, alloc):
     reason="cudaMallocAsync not supported",
 )
 def test_cuda_async_memory_resource_ipc():
-    # Test that enabling IPC earlier than CUDA 11.3 raises a ValueError
-    if _driver_version < 11030 or _runtime_version < 11030:
-        with pytest.raises(ValueError):
-            mr = rmm.mr.CudaAsyncMemoryResource(enable_ipc=True)
-    else:
+    # TODO: We don't have a great way to check if IPC is supported in Python,
+    # without using the C++ function
+    # rmm::detail::async_alloc::is_export_handle_type_supported. We can't
+    # accurately test driver and runtime versions for this via Python because
+    # cuda-python always has the IPC handle enum defined (which normally
+    # requires a CUDA 11.3 runtime) and the cuda-compat package in Docker
+    # containers prevents us from assuming that the driver we see actually
+    # supports IPC handles even if its reported version is new enough (we may
+    # see a newer driver than what is present on the host). We can only know
+    # the expected behavior by checking the C++ function mentioned above, which
+    # is then a redundant check because the CudaAsyncMemoryResource constructor
+    # follows the same logic. Therefore, we cannot easily ensure this test
+    # passes in certain expected configurations -- we can only ensure that if
+    # it fails, it fails in a predictable way.
+    try:
         mr = rmm.mr.CudaAsyncMemoryResource(enable_ipc=True)
+    except RuntimeError as e:
+        # CUDA 11.3 is required for IPC memory handle support
+        assert str(e).endswith(
+            "Requested IPC memory handle type not supported"
+        )
+    else:
         rmm.mr.set_current_device_resource(mr)
         assert rmm.mr.get_current_device_resource_type() is type(mr)
 

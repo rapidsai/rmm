@@ -314,16 +314,8 @@ cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
             else optional[size_t](release_threshold)
         )
 
-        # IPC export handle support query is only possibly on CUDA 11.3 or
-        # later, so IPC not supported on earlier versions
-        if enable_ipc:
-            driver_version = driverGetVersion()
-            runtime_version = runtimeGetVersion()
-            if (driver_version <= 11020 or runtime_version <= 11020):
-                raise ValueError(
-                    "enable_ipc=True is not supported on CUDA <= 11.2."
-                )
-
+        # If IPC memory handles are not supported, the constructor below will
+        # raise an error from C++.
         cdef optional[allocation_handle_type] c_export_handle_type = (
             optional[allocation_handle_type](
                 posix_file_descriptor
