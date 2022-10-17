@@ -134,7 +134,7 @@ cdef class DeviceBuffer:
         return intf
 
     def copy(self):
-        """Returns a deep copy of DeviceBuffer.
+        """Returns a copy of DeviceBuffer.
 
         Returns
         -------
