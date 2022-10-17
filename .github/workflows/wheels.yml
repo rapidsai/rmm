@@ -15,9 +15,8 @@ jobs:
     with:
       package-dir: python
       package-name: "rmm"
-      python-package-versioneer-override: "22.10.00a"
+      python-package-versioneer-override: "22.10.00"
       python-version: "3.8 3.9"
-      python-package-build-tag: "5"
 
       test-extras: "test"
       test-unittest: "python -m py.test -v ./python/rmm/tests"
