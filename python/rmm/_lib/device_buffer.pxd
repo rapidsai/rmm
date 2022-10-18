@@ -59,7 +59,7 @@ cdef class DeviceBuffer:
 
     @staticmethod
     cdef DeviceBuffer c_to_device(const unsigned char[::1] b,
-                                  Stream stream=*)
+                                  Stream stream=*, DeviceMemoryResource mr=*)
     cpdef copy_to_host(self, ary=*, Stream stream=*)
     cpdef copy_from_host(self, ary, Stream stream=*)
     cpdef copy_from_device(self, cuda_ary, Stream stream=*)
@@ -74,7 +74,7 @@ cdef class DeviceBuffer:
     cdef device_buffer c_release(self) except *
 
 cpdef DeviceBuffer to_device(const unsigned char[::1] b,
-                             Stream stream=*)
+                             Stream stream=*, DeviceMemoryResource mr=*)
 cpdef void copy_ptr_to_host(uintptr_t db,
                             unsigned char[::1] hb,
                             Stream stream=*) except *

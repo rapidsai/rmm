@@ -182,15 +182,17 @@ cdef class DeviceBuffer:
 
     @staticmethod
     cdef DeviceBuffer c_to_device(const unsigned char[::1] b,
-                                  Stream stream=DEFAULT_STREAM):
+                                  Stream stream=DEFAULT_STREAM,
+                                  DeviceMemoryResource mr=None):
         """Calls ``to_device`` function on arguments provided"""
-        return to_device(b, stream)
+        return to_device(b, stream, mr)
 
     @staticmethod
     def to_device(const unsigned char[::1] b,
-                  Stream stream=DEFAULT_STREAM):
+                  Stream stream=DEFAULT_STREAM,
+                  DeviceMemoryResource mr=None):
         """Calls ``to_device`` function on arguments provided."""
-        return to_device(b, stream)
+        return to_device(b, stream, mr)
 
     cpdef copy_to_host(self, ary=None, Stream stream=DEFAULT_STREAM):
         """Copy from a ``DeviceBuffer`` to a buffer on host.
@@ -356,7 +358,8 @@ cdef class DeviceBuffer:
 
 @cython.boundscheck(False)
 cpdef DeviceBuffer to_device(const unsigned char[::1] b,
-                             Stream stream=DEFAULT_STREAM):
+                             Stream stream=DEFAULT_STREAM,
+                             DeviceMemoryResource mr=None):
     """Return a new ``DeviceBuffer`` with a copy of the data.
 
     Parameters
@@ -384,7 +387,7 @@ cpdef DeviceBuffer to_device(const unsigned char[::1] b,
 
     cdef uintptr_t p = <uintptr_t>&b[0]
     cdef size_t s = len(b)
-    return DeviceBuffer(ptr=p, size=s, stream=stream)
+    return DeviceBuffer(ptr=p, size=s, stream=stream, mr=mr)
 
 
 @cython.boundscheck(False)
