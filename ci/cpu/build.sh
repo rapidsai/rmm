@@ -34,6 +34,23 @@ fi
 # SETUP - Check environment
 ################################################################################
 
+cat <<< '
+auto_update_conda: False
+ssl_verify: False
+channels:
+  - gpuci
+  - rapidsai-nightly
+  - dask/label/dev
+  - rapidsai
+  - pytorch
+  - conda-forge
+  - nvidia
+conda-build:
+  set_build_id: false
+  root_dir: /tmp/conda-bld-workspace
+  output_folder: /tmp/conda-bld-output
+' > /opt/conda/.condarc
+
 gpuci_logger "Get env"
 env
 
