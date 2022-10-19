@@ -9,7 +9,7 @@ dependencies:
 - clang=11.1.0
 - cmake>=3.23.1
 - cmakelang=0.6.13
-- cuda-python>=11.5,<11.7.1
+- cuda-python=11.7.1
 - cudatoolkit=11.5
 - cython>=0.29,<0.30
 - flake8=3.8.3
