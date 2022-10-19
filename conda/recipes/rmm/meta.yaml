@@ -29,7 +29,7 @@ requirements:
     - {{ compiler('cuda') }} {{ cuda_version }}
     - sysroot_{{ target_platform }} {{ sysroot_version }}
   host:
-    - cuda-python >=11.5,<11.7.1
+    - cuda-python =11.7.1
     - cudatoolkit {{ cuda_version }}.*
     - cython >=0.29,<0.30
     - librmm {{ version }}.*

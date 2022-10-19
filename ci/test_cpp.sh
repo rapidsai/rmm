@@ -2,6 +2,21 @@
 
 set -euo pipefail
 
+cat <<< '
+auto_update_conda: False
+ssl_verify: False
+channels:
+  - gpuci
+  - rapidsai-nightly
+  - dask/label/dev
+  - rapidsai
+  - pytorch
+  - conda-forge
+  - nvidia
+conda-build:
+  set_build_id: false
+' > /opt/conda/.condarc
+
 . /opt/conda/etc/profile.d/conda.sh
 conda activate base
 
