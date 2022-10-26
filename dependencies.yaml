@@ -55,11 +55,11 @@ dependencies:
       - matrix:
           cuda: "11.5"
         build:
-          - cuda-python>=11.5,<11.7.1
+          - cuda-python>=11.7.1,<12.0
       - matrix:
           cuda: "11.6"
         build:
-          - cuda-python>=11.6,<11.7.1
+          - cuda-python>=11.7.1,<12.0
   - output_types: [conda]
     common:
       build:
