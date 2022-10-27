@@ -17,5 +17,5 @@ cpp:
   - 'tests/**'
   - 'doxygen/**'
 
-gpuCI:
+ci:
   - 'ci/**'
