@@ -1,7 +1,7 @@
 # Dependency list for https://github.com/rapidsai/dependency-file-generator
 files:
   all:
-    generate: conda
+    output: conda
     matrix:
       cuda: ["11.5", "11.6"]
       arch: [x86_64]
@@ -12,17 +12,17 @@ files:
       - run
       - test_python
   test_python:
-    generate: none
+    output: none
     includes:
       - cudatoolkit
       - py_version
       - test_python
   test_cpp:
-    generate: none
+    output: none
     includes:
       - cudatoolkit
   checks:
-    generate: none
+    output: none
     includes:
       - build
       - develop
@@ -36,23 +36,13 @@ dependencies:
       - output_types: [conda, requirements]
         packages:
           - cmake>=3.23.1
+          - cuda-python>=11.7.1,<12.0
           - cython>=0.29,<0.30
           - python>=3.8,<3.10
           - scikit-build>=0.13.1
       - output_types: conda
         packages:
           - spdlog>=1.8.5,<1.9
-    specific:
-      - output_types: [conda, requirements]
-        matrices:
-          - matrix:
-              cuda: "11.5"
-            build:
-              - cuda-python>=11.5,<11.7.1
-          - matrix:
-              cuda: "11.6"
-            build:
-              - cuda-python>=11.6,<11.7.1
   cudatoolkit:
     specific:
       - output_types: conda

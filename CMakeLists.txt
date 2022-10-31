@@ -102,7 +102,8 @@ endif()
 
 # optionally build benchmarks
 if(BUILD_BENCHMARKS AND CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
-  include(cmake/thirdparty/get_gbench.cmake)
+  include(${rapids-cmake-dir}/cpm/gbench.cmake)
+  rapids_cpm_gbench()
   add_subdirectory(benchmarks)
 endif()
 
