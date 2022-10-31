@@ -73,6 +73,14 @@ CUDA/GPU requirements:
 
 You can obtain CUDA from [https://developer.nvidia.com/cuda-downloads](https://developer.nvidia.com/cuda-downloads)
 
+Python requirements:
+* `scikit-build`
+* `cuda-python`
+* `cython`
+
+For more details, see [pyproject.tom](python/pyproject.toml)
+
+
 ### Script to build RMM from source
 
 To install RMM from source, ensure the dependencies are met and follow the steps below:
