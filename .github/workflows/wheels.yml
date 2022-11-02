@@ -18,7 +18,7 @@ jobs:
       python-package-versioneer-override: "22.12.00a"
       python-package-build-tag: "0"
 
-      skbuild-configure-options: "-DRMM_BUILD_WHEELS=ON -DCMAKE_CUDA_ARCHITECTURES=ALL"
+      skbuild-configure-options: "-DRMM_BUILD_WHEELS=ON"
 
       test-extras: "test"
       test-unittest: "python -m py.test -v ./python/rmm/tests"
