@@ -38,7 +38,7 @@ class HostIterator:
 
 
 class DeviceIterator:
-    """Iterates over arrays in device memory by copying chunks into host memory."""
+    """Iterates over device arrays by copying chunks to the host."""
 
     def __init__(self, start, size):
         self.exec = exec
@@ -71,7 +71,8 @@ class DeviceIterator:
                 * self.sizeof
             )
             status = gdb.parse_and_eval(
-                f"(cudaError)cudaMemcpy({buffer_addr}, {device_addr}, {size}, cudaMemcpyDeviceToHost)"
+                f"(cudaError)cudaMemcpy({buffer_addr}, {device_addr}, {size}, "
+                "cudaMemcpyDeviceToHost)"
             )
             if status != 0:
                 raise gdb.MemoryError(f"memcpy from device failed: {status}")
@@ -117,7 +118,8 @@ class RmmDeviceUVectorPrinter(gdb.printing.PrettyPrinter):
         return "array"
 
 
-# Workaround to avoid using the pretty printer on things like std::vector<int>::iterator
+# Workaround to avoid using the pretty printer on things like
+# std::vector<int>::iterator
 def is_template_type_not_alias(typename):
     loc = typename.find("<")
     if loc is None:

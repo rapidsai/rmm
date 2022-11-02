@@ -14,9 +14,9 @@
 
 cmake_minimum_required(VERSION 3.23.1 FATAL_ERROR)
 
-set(rmm_version 22.10.00)
+set(rmm_version 22.12.00)
 
-file(DOWNLOAD https://raw.githubusercontent.com/rapidsai/rapids-cmake/branch-22.10/RAPIDS.cmake
+file(DOWNLOAD https://raw.githubusercontent.com/rapidsai/rapids-cmake/branch-22.12/RAPIDS.cmake
      ${CMAKE_BINARY_DIR}/RAPIDS.cmake)
 include(${CMAKE_BINARY_DIR}/RAPIDS.cmake)
 

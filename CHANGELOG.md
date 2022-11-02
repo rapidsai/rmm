@@ -1,6 +1,43 @@
-# RMM 22.10.00 (Date TBD)
+# RMM 22.12.00 (Date TBD)
 
-Please see https://github.com/rapidsai/rmm/releases/tag/v22.10.00a for the latest changes to this development branch.
+Please see https://github.com/rapidsai/rmm/releases/tag/v22.12.00a for the latest changes to this development branch.
+
+# RMM 22.10.00 (12 Oct 2022)
+
+## 🐛 Bug Fixes
+
+- Ensure consistent spdlog dependency target no matter the source ([#1101](https://github.com/rapidsai/rmm/pull/1101)) [@robertmaynard](https://github.com/robertmaynard)
+- Remove cuda event deadlocking issues in device mr tests ([#1097](https://github.com/rapidsai/rmm/pull/1097)) [@robertmaynard](https://github.com/robertmaynard)
+- Propagate exceptions raised in Python callback functions ([#1096](https://github.com/rapidsai/rmm/pull/1096)) [@madsbk](https://github.com/madsbk)
+- Avoid unused parameter warnings in do_get_mem_info ([#1084](https://github.com/rapidsai/rmm/pull/1084)) [@fkallen](https://github.com/fkallen)
+- Use rapids-cmake 22.10 best practice for RAPIDS.cmake location ([#1083](https://github.com/rapidsai/rmm/pull/1083)) [@robertmaynard](https://github.com/robertmaynard)
+
+## 📖 Documentation
+
+- Document that minimum required CMake version is now 3.23.1 ([#1098](https://github.com/rapidsai/rmm/pull/1098)) [@robertmaynard](https://github.com/robertmaynard)
+- Fix docs for module-level API ([#1091](https://github.com/rapidsai/rmm/pull/1091)) [@bdice](https://github.com/bdice)
+- Improve DeviceBuffer docs. ([#1090](https://github.com/rapidsai/rmm/pull/1090)) [@bdice](https://github.com/bdice)
+- Branch 22.10 merge 22.08 ([#1089](https://github.com/rapidsai/rmm/pull/1089)) [@harrism](https://github.com/harrism)
+- Improve docs formatting and update links. ([#1086](https://github.com/rapidsai/rmm/pull/1086)) [@bdice](https://github.com/bdice)
+- Add resources section to README. ([#1085](https://github.com/rapidsai/rmm/pull/1085)) [@bdice](https://github.com/bdice)
+- Simplify PR template. ([#1080](https://github.com/rapidsai/rmm/pull/1080)) [@bdice](https://github.com/bdice)
+
+## 🚀 New Features
+
+- Add `gdb` pretty-printers for rmm types ([#1088](https://github.com/rapidsai/rmm/pull/1088)) [@upsj](https://github.com/upsj)
+- Support using THRUST_WRAPPED_NAMESPACE ([#1077](https://github.com/rapidsai/rmm/pull/1077)) [@robertmaynard](https://github.com/robertmaynard)
+
+## 🛠️ Improvements
+
+- GH Actions - Enforce `checks` before builds run ([#1125](https://github.com/rapidsai/rmm/pull/1125)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Update GH Action Workflows ([#1123](https://github.com/rapidsai/rmm/pull/1123)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Add `cudatoolkit` versions to `dependencies.yaml` ([#1119](https://github.com/rapidsai/rmm/pull/1119)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Remove `rmm` installation from `librmm` tests` ([#1117](https://github.com/rapidsai/rmm/pull/1117)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Add GitHub Actions workflows ([#1104](https://github.com/rapidsai/rmm/pull/1104)) [@Ethyling](https://github.com/Ethyling)
+- `build.sh`: accept `--help` ([#1093](https://github.com/rapidsai/rmm/pull/1093)) [@madsbk](https://github.com/madsbk)
+- Move clang dependency to conda develop packages. ([#1092](https://github.com/rapidsai/rmm/pull/1092)) [@bdice](https://github.com/bdice)
+- Add device_uvector::reserve and device_buffer::reserve ([#1079](https://github.com/rapidsai/rmm/pull/1079)) [@upsj](https://github.com/upsj)
+- Bifurcate Dependency Lists ([#1073](https://github.com/rapidsai/rmm/pull/1073)) [@ajschmidt8](https://github.com/ajschmidt8)
 
 # RMM 22.08.00 (17 Aug 2022)
 
@@ -443,10 +480,10 @@ Please see https://github.com/rapidsai/rmm/releases/tag/v22.10.00a for the lates
 - PR #425 Add CUDA per-thread default stream support and thread safety to `pool_memory_resource`
 - PR #436 Always build and test with per-thread default stream enabled in the GPU CI build
 - PR #444 Add `owning_wrapper` to simplify lifetime management of resources and their upstreams
-- PR #449 Stream-ordered suballocator base class and per-thread default stream support 
+- PR #449 Stream-ordered suballocator base class and per-thread default stream support
           and thread safety for `fixed_size_memory_resource`
 - PR #450 Add support for new build process (Project Flash)
-- PR #457 New `binning_memory_resource` (replaces `hybrid_memory_resource` and 
+- PR #457 New `binning_memory_resource` (replaces `hybrid_memory_resource` and
           `fixed_multisize_memory_resource`).
 - PR #458 Add `get/set_per_device_resource` to better support multi-GPU per process applications
 - PR #466 Deprecate CNMeM.

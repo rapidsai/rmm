@@ -18,6 +18,16 @@ build:
   script_env:
     - RMM_BUILD_NO_GPU_TEST
     - VERSION_SUFFIX
+    - CMAKE_C_COMPILER_LAUNCHER
+    - CMAKE_CXX_COMPILER_LAUNCHER
+    - CMAKE_CUDA_COMPILER_LAUNCHER
+    - SCCACHE_S3_KEY_PREFIX=rmm-aarch64 # [aarch64]
+    - SCCACHE_S3_KEY_PREFIX=rmm-linux64 # [linux64]
+    - SCCACHE_BUCKET=rapids-sccache
+    - SCCACHE_REGION=us-west-2
+    - SCCACHE_IDLE_TIMEOUT=32768
+    - AWS_ACCESS_KEY_ID
+    - AWS_SECRET_ACCESS_KEY
   ignore_run_exports_from:
     - {{ compiler('cuda') }}
 
@@ -29,7 +39,7 @@ requirements:
     - {{ compiler('cuda') }} {{ cuda_version }}
     - sysroot_{{ target_platform }} {{ sysroot_version }}
   host:
-    - cuda-python >=11.5,<11.7.1
+    - cuda-python >=11.7.1,<12.0
     - cudatoolkit {{ cuda_version }}.*
     - cython >=0.29,<0.30
     - librmm {{ version }}.*
@@ -38,7 +48,7 @@ requirements:
     - setuptools
     - spdlog>=1.8.5,<2.0.0a0
   run:
-    - cuda-python >=11.5,<11.7.1
+    - cuda-python >=11.7.1,<12.0
     - numba >=0.49
     - numpy >=1.19
     - {{ pin_compatible('cudatoolkit', max_pin='x', min_pin='x') }}
