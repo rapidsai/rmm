@@ -47,10 +47,10 @@ if(NOT rmm_FOUND)
   set(BUILD_TESTS OFF)
   set(BUILD_BENCHMARKS OFF)
 
-  # Statically link dependencies if building wheels
-  set(CUDA_STATIC_RUNTIME ${RMM_BUILD_WHEELS})
   set(_exclude_from_all "")
   if(RMM_BUILD_WHEELS)
+    # Statically link dependencies if building wheels
+    set(CUDA_STATIC_RUNTIME ON)
     # Don't install the cuDF C++ targets into wheels
     set(_exclude_from_all EXCLUDE_FROM_ALL)
   endif()
