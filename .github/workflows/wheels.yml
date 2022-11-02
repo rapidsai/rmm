@@ -21,5 +21,5 @@ jobs:
       skbuild-configure-options: "-DRMM_BUILD_WHEELS=ON"
 
       test-extras: "test"
-      test-unittest: "python -m py.test -v ./python/rmm/tests"
+      test-unittest: "python -m pytest -v ./python/rmm/tests"
     secrets: inherit
