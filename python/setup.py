@@ -29,6 +29,7 @@ setup(
     extras_require={"test": ["pytest", "pytest-xdist"]},
     packages=find_packages(include=["rmm", "rmm.*"]),
     include_package_data=True,
+    python_requires=">=3.8",
     package_data={
         # Note: A dict comprehension with an explicit copy is necessary (rather
         # than something simpler like a dict.fromkeys) because otherwise every
@@ -40,7 +41,7 @@ setup(
     },
     cmdclass=versioneer.get_cmdclass(),
     install_requires=[
-        "cuda-python>=11.5,<11.7.1",
+        "cuda-python>=11.7.1,<12.0",
         "numpy>=1.19",
         "numba>=0.49",
     ],
