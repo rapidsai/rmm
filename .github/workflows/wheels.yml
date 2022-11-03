@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   rmm-wheels:
-    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-manylinux.yml@feat/wheel-ci-actions-2
+    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-manylinux.yml@feat/wheel-ci-actions-3
     with:
       package-dir: python
       package-name: "rmm"
