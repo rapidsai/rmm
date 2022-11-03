@@ -39,15 +39,12 @@ RMM can be installed with Conda ([miniconda](https://conda.io/miniconda.html), o
 [Anaconda distribution](https://www.anaconda.com/download)) from the `rapidsai` channel:
 
 ```bash
+# for CUDA 11.5
+conda install -c rapidsai -c conda-forge -c nvidia \
+    rmm cudatoolkit=11.5
 # for CUDA 11.2
-conda install -c nvidia -c rapidsai -c conda-forge \
+conda install -c rapidsai -c conda-forge -c nvidia \
     rmm cudatoolkit=11.2
-# for CUDA 11.1
-conda install -c nvidia -c rapidsai -c conda-forge \
-    rmm cudatoolkit=11.1
-# for CUDA 11.0
-conda install -c nvidia -c rapidsai -c conda-forge \
-    rmm cudatoolkit=11.0
 ```
 
 We also provide [nightly Conda packages](https://anaconda.org/rapidsai-nightly) built from the HEAD

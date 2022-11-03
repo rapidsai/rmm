@@ -29,7 +29,7 @@ requirements:
     - {{ compiler('cuda') }} {{ cuda_version }}
     - sysroot_{{ target_platform }} {{ sysroot_version }}
   host:
-    - cuda-python >=11.5,<11.7.1
+    - cuda-python >=11.7.1,<12.0
     - cudatoolkit {{ cuda_version }}.*
     - cython >=0.29,<0.30
     - librmm {{ version }}.*
@@ -38,7 +38,7 @@ requirements:
     - setuptools
     - spdlog>=1.8.5,<2.0.0a0
   run:
-    - cuda-python >=11.5,<11.7.1
+    - cuda-python >=11.7.1,<12.0
     - numba >=0.49
     - numpy >=1.19
     - {{ pin_compatible('cudatoolkit', max_pin='x', min_pin='x') }}
