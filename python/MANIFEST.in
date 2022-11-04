@@ -1,0 +1,12 @@
+# Cython files
+recursive-include rmm *.pxd
+recursive-include rmm *.pyx
+
+# Build files
+recursive-include rmm CMakeLists.txt
+
+# License
+include LICENSE
+
+# README
+include README

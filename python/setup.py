@@ -23,17 +23,6 @@ setup(
     # Include the separately-compiled shared library
     extras_require={"test": ["pytest"]},
     packages=find_packages(include=["rmm", "rmm.*"]),
-    include_package_data=True,
-    python_requires=">=3.8",
-    package_data={
-        # Note: A dict comprehension with an explicit copy is necessary (rather
-        # than something simpler like a dict.fromkeys) because otherwise every
-        # package will refer to the same list and skbuild modifies it in place.
-        key: ["*.hpp", "*.pxd"]
-        for key in find_packages(
-            include=["rmm._lib", "rmm._lib.includes", "rmm._cuda*"]
-        )
-    },
     install_requires=[
         "cuda-python>=11.7.1,<12.0",
         "numpy>=1.19",
