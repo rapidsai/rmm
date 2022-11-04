@@ -47,6 +47,7 @@ requirements:
     - python
     - scikit-build >=0.13.1
     - setuptools
+    - tomli  # [py<311]
   run:
     - cuda-python >=11.7.1,<12.0
     - numba >=0.49
