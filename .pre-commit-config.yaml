@@ -9,7 +9,7 @@ repos:
       rev: 5.12.0
       hooks:
           - id: isort
-            args: ["--config-root=python/", "--resolve-all-configs"]
+            args: ["--settings-path=python/pyproject.toml"]
             files: python/.*
             types_or: [python, cython, pyi]
     - repo: https://github.com/ambv/black
