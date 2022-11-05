@@ -1,31 +1,26 @@
+# Copyright (c) 2022, NVIDIA CORPORATION.
 repos:
-    - repo: https://github.com/pycqa/isort
+    - repo: https://github.com/PyCQA/isort
       rev: 5.10.1
       hooks:
           - id: isort
-            args: ["--settings-path=python/setup.cfg"]
+            args: ["--config-root=python/", "--resolve-all-configs"]
             files: python/.*
-            exclude: __init__.py$
-            types: [text]
-            types_or: [python, cython]
+            types_or: [python, cython, pyi]
     - repo: https://github.com/ambv/black
       rev: 22.3.0
       hooks:
           - id: black
             args: ["--config=python/pyproject.toml"]
     - repo: https://github.com/PyCQA/flake8
-      rev: 3.8.3
+      rev: 5.0.4
       hooks:
           - id: flake8
-            alias: flake8
-            name: flake8
-            args: ["--config=python/.flake8"]
-            types: [python]
-          - id: flake8
-            alias: flake8-cython
-            name: flake8-cython
-            args: ["--config=python/.flake8.cython"]
-            types: [cython]
+            args: ["--config=python/setup.cfg"]
+            files: python/.*$
+            types: [file]
+            types_or: [python, cython]
+            additional_dependencies: ["flake8-force"]
     - repo: local
       hooks:
             - id: cmake-format
