@@ -30,6 +30,12 @@ repos:
       rev: v0.1.10
       hooks:
           - id: cython-lint
+    - repo: https://github.com/pre-commit/mirrors-clang-format
+      rev: v11.1.0
+      hooks:
+            - id: clang-format
+              types_or: [c, c++, cuda]
+              args: ["-fallback-style=none", "-style=file", "-i"]
     - repo: https://github.com/sirosen/texthooks
       rev: 0.4.0
       hooks:
