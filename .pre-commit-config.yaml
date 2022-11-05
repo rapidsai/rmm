@@ -30,6 +30,14 @@ repos:
       rev: v0.1.10
       hooks:
           - id: cython-lint
+    - repo: https://github.com/sirosen/texthooks
+      rev: 0.4.0
+      hooks:
+            - id: fix-smartquotes
+              exclude: |
+                (?x)^(
+                  ^benchmarks/utilities/cxxopts.hpp
+                )
     - repo: local
       hooks:
             - id: cmake-format
