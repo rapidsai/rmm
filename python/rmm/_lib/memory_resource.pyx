@@ -19,20 +19,13 @@ from collections import defaultdict
 from cython.operator cimport dereference as deref
 from libc.stdint cimport int8_t, int64_t, uintptr_t
 from libcpp cimport bool
-from libcpp.cast cimport dynamic_cast
-from libcpp.memory cimport make_shared, make_unique, shared_ptr, unique_ptr
+from libcpp.memory cimport make_unique, unique_ptr
 from libcpp.pair cimport pair
 from libcpp.string cimport string
 
 from cuda.cudart import cudaError_t
 
-from rmm._cuda.gpu import (
-    CUDARuntimeError,
-    driverGetVersion,
-    getDevice,
-    runtimeGetVersion,
-    setDevice,
-)
+from rmm._cuda.gpu import CUDARuntimeError, getDevice, setDevice
 
 from rmm._lib.cuda_stream_view cimport cuda_stream_view
 
@@ -527,8 +520,6 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
         bin_resource : DeviceMemoryResource
             The resource to use for this bin (optional)
         """
-        cdef DeviceMemoryResource _bin_resource
-
         if bin_resource is None:
             (<binning_memory_resource[device_memory_resource]*>(
                 self.c_obj.get()))[0].add_bin(allocation_size)
