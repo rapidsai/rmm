@@ -48,10 +48,6 @@ dependencies:
       - output_types: conda
         matrices:
           - matrix:
-              cuda: "11.0"
-            packages:
-              - cudatoolkit=11.0
-          - matrix:
               cuda: "11.2"
             packages:
               - cudatoolkit=11.2
