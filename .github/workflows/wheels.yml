@@ -17,7 +17,7 @@ jobs:
       package-name: "rmm"
 
       python-package-versioneer-override: "22.12.00a"
-      python-package-build-tag: "2"
+      python-package-build-tag: "3"
 
       skbuild-configure-options: "-DRMM_BUILD_WHEELS=ON"
 
