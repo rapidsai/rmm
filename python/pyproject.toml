@@ -129,6 +129,10 @@ skip = [
 
 [tool.setuptools]
 license-files = ["LICENSE"]
-package-dir = {"" = "."}
-packages = ["rmm"]
 zip-safe = false
+
+[tool.setuptools.packages.find]
+include = [
+    "rmm",
+    "rmm.*",
+]
