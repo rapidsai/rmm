@@ -381,7 +381,7 @@ class device_buffer {
    *
    * If no other rmm::device_buffer method that allocates memory is called
    * after this call with a different stream argument, then @p stream
-   * will be used for deallocation in the `rmm::device_uvector destructor.
+   * will be used for deallocation in the `rmm::device_uvector` destructor.
    * However, if either of `resize()` or `shrink_to_fit()` is called after this,
    * the later stream parameter will be stored and used in the destructor.
    */
