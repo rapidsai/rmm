@@ -4,6 +4,16 @@ on:
   push:
     branches:
       - 'pull-request/[0-9]+'
+  workflow_call:
+    inputs:
+      versioneer-override:
+        required: false
+        type: string
+        default: ''
+      build-tag:
+        required: false
+        type: string
+        default: ''
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
@@ -15,6 +25,9 @@ jobs:
     with:
       package-dir: python
       package-name: "rmm"
+
+      python-package-versioneer-override: "${{ inputs.versioneer-override }}"
+      python-package-build-tag: "${{ inputs.build-tag }}"
 
       skbuild-configure-options: "-DRMM_BUILD_WHEELS=ON"
 
