@@ -33,7 +33,7 @@ readme = { file = "README.md", content-type = "text/markdown" }
 authors = [
     { name = "NVIDIA Corporation" },
 ]
-license = { text = "Apache 2.0" }
+license = { file = "LICENSE" }
 requires-python = ">=3.8"
 dependencies = [
     "cuda-python>=11.7.1,<12.0",
@@ -128,7 +128,6 @@ skip = [
 ]
 
 [tool.setuptools]
-license-files = ["LICENSE"]
 zip-safe = false
 
 [tool.setuptools.packages.find]
