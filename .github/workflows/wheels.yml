@@ -7,11 +7,9 @@ on:
   workflow_call:
     inputs:
       versioneer-override:
-        required: false
         type: string
         default: ''
       build-tag:
-        required: false
         type: string
         default: ''
       branch:
