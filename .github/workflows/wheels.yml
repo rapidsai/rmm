@@ -26,7 +26,6 @@ jobs:
       package-dir: python
       package-name: "rmm"
 
-      # pass through user inputs
       python-package-versioneer-override: "${{ inputs.versioneer-override }}"
       python-package-build-tag: "${{ inputs.build-tag }}"
 
