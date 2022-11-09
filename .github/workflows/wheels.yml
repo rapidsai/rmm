@@ -14,6 +14,18 @@ on:
         required: false
         type: string
         default: ''
+      branch:
+        required: true
+        type: string
+      date:
+        required: true
+        type: string
+      sha:
+        required: true
+        type: string
+      build_type:
+        type: string
+        default: nightly
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
@@ -23,14 +35,17 @@ jobs:
   rmm-wheels:
     uses: rapidsai/shared-action-workflows/.github/workflows/wheels-manylinux.yml@feat/wheel-ci-actions-3
     with:
+      build_type: ${{ inputs.build_type || 'pull-request' }}
       repo: rapidsai/rmm
-      branch: pull-request/1148
+      branch: ${{ inputs.branch }}
+      date: ${{ inputs.date }}
+      sha: ${{ inputs.sha }}
 
       package-dir: python
       package-name: "rmm"
 
-      python-package-versioneer-override: "${{ inputs.versioneer-override }}"
-      python-package-build-tag: "${{ inputs.build-tag }}"
+      python-package-versioneer-override: ${{ inputs.versioneer-override }}
+      python-package-build-tag: ${{ inputs.build-tag }}
 
       skbuild-configure-options: "-DRMM_BUILD_WHEELS=ON"
 
