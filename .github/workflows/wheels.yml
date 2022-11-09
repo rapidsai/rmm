@@ -37,7 +37,7 @@ jobs:
     with:
       repo: rapidsai/rmm
 
-      build-type: ${{ inputs.build-type || 'pull-request' }}
+      build-type: ${{ inputs.build-type || "pull-request" }}
       branch: ${{ inputs.branch }}
       date: ${{ inputs.date }}
       sha: ${{ inputs.sha }}
