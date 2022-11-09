@@ -35,6 +35,7 @@ build:
 requirements:
   build:
     - cmake>=3.23.1
+    - ninja
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
     - {{ compiler('cuda') }} {{ cuda_version }}
