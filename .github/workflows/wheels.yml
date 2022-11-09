@@ -36,9 +36,9 @@ jobs:
       repo: rapidsai/rmm
 
       branch: ${{ inputs.branch }}
-      date: ${{ inputs.date }}
       sha: ${{ inputs.sha }}
       build-type: ${{ inputs.build-type || 'pull-request' }}
+      date: ${{ inputs.date }}
 
       package-dir: python
       package-name: "rmm"
