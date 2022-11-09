@@ -35,8 +35,9 @@ jobs:
   rmm-wheels:
     uses: rapidsai/shared-action-workflows/.github/workflows/wheels-manylinux.yml@feat/wheel-ci-actions-3
     with:
-      build-type: ${{ inputs.build-type || 'pull-request' }}
       repo: rapidsai/rmm
+
+      build-type: ${{ inputs.build-type || 'pull-request' }}
       branch: ${{ inputs.branch }}
       date: ${{ inputs.date }}
       sha: ${{ inputs.sha }}
