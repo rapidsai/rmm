@@ -23,6 +23,9 @@ jobs:
   rmm-wheels:
     uses: rapidsai/shared-action-workflows/.github/workflows/wheels-manylinux.yml@feat/wheel-ci-actions-3
     with:
+      repo: rapidsai/rmm
+      branch: pull-request/1148
+
       package-dir: python
       package-name: "rmm"
 
