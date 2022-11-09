@@ -31,7 +31,7 @@ concurrency:
 
 jobs:
   rmm-wheels:
-    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-manylinux.yml@feat/wheel-ci-actions-3
+    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-manylinux.yml
     with:
       repo: rapidsai/rmm
 
