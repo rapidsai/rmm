@@ -23,7 +23,7 @@ on:
       sha:
         required: true
         type: string
-      build_type:
+      build-type:
         type: string
         default: nightly
 
@@ -35,7 +35,7 @@ jobs:
   rmm-wheels:
     uses: rapidsai/shared-action-workflows/.github/workflows/wheels-manylinux.yml@feat/wheel-ci-actions-3
     with:
-      build_type: ${{ inputs.build_type || 'pull-request' }}
+      build-type: ${{ inputs.build-type || 'pull-request' }}
       repo: rapidsai/rmm
       branch: ${{ inputs.branch }}
       date: ${{ inputs.date }}
