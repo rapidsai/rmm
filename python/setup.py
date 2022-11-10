@@ -26,7 +26,7 @@ setup(
         "Programming Language :: Python :: 3.9",
     ],
     # Include the separately-compiled shared library
-    extras_require={"test": ["pytest", "pytest-xdist"]},
+    extras_require={"test": ["pytest"]},
     packages=find_packages(include=["rmm", "rmm.*"]),
     include_package_data=True,
     python_requires=">=3.8",

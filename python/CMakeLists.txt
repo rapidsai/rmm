@@ -31,7 +31,7 @@ project(
 
 option(FIND_RMM_CPP "Search for existing RMM C++ installations before defaulting to local files"
        OFF)
-option(RMM_BUILD_WHEELS "Whether we're building a wheel for pypi" OFF)
+option(RMM_BUILD_WHEELS "Whether this build is generating a Python wheel." OFF)
 
 # If the user requested it we attempt to find RMM.
 if(FIND_RMM_CPP)
