@@ -62,12 +62,12 @@ See the [Get RAPIDS version picker](https://rapids.ai/start.html) for more OS an
 Compiler requirements:
 
 * `gcc`     version 9.3+
-* `nvcc`    version 11.0+
+* `nvcc`    version 11.2+
 * `cmake`   version 3.23.1+
 
 CUDA/GPU requirements:
 
-* CUDA 11.0+
+* CUDA 11.2+
 * NVIDIA driver 450.51+
 * Pascal architecture or better
 
