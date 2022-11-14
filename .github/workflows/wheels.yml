@@ -23,7 +23,7 @@ on:
         default: nightly
 
 concurrency:
-  group: "${{ github.workflow }}-${{ github.ref }}"
+  group: "${{ github.repository }}-${{ github.workflow }}-${{ github.ref }}"
   cancel-in-progress: true
 
 jobs:
