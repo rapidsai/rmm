@@ -23,7 +23,9 @@ on:
         default: nightly
 
 concurrency:
-  group: "${{ github.repository }}-${{ github.workflow }}-${{ github.ref }}"
+  # Hardcode rmm rather than using github.repository to support calling this
+  # from other workflows that build multiple wheels.
+  group: "rmm-${{ github.workflow }}-${{ github.ref }}"
   cancel-in-progress: true
 
 jobs:
