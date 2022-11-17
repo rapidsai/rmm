@@ -10,14 +10,11 @@ import versioneer
 if "RAPIDS_PY_WHEEL_VERSIONEER_OVERRIDE" in os.environ:
     orig_get_versions = versioneer.get_versions
 
-    version_override = os.environ.get(
-        "RAPIDS_PY_WHEEL_VERSIONEER_OVERRIDE", ""
-    )
+    version_override = os.environ["RAPIDS_PY_WHEEL_VERSIONEER_OVERRIDE"]
 
     def get_versions():
         data = orig_get_versions()
-        if version_override != "":
-            data["version"] = version_override
+        data["version"] = version_override
         return data
 
     versioneer.get_versions = get_versions
