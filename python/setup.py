@@ -7,11 +7,21 @@ from skbuild import setup
 
 import versioneer
 
+if "RAPIDS_PY_WHEEL_VERSIONEER_OVERRIDE" in os.environ:
+    orig_get_versions = versioneer.get_versions
+
+    version_override = os.environ["RAPIDS_PY_WHEEL_VERSIONEER_OVERRIDE"]
+
+    def get_versions():
+        data = orig_get_versions()
+        data["version"] = version_override
+        return data
+
+    versioneer.get_versions = get_versions
+
 setup(
     name="rmm" + os.getenv("RAPIDS_PY_WHEEL_CUDA_SUFFIX", default=""),
-    version=os.getenv(
-        "RAPIDS_PY_WHEEL_VERSIONEER_OVERRIDE", default=versioneer.get_version()
-    ),
+    version=versioneer.get_version(),
     description="rmm - RAPIDS Memory Manager",
     url="https://github.com/rapidsai/rmm",
     author="NVIDIA Corporation",
