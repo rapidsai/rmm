@@ -238,36 +238,23 @@ def rmm_cupy_allocator(nbytes):
     return ptr
 
 
-def _set_pytorch_allocator():
-    try:
-        from torch.cuda.memory import (
-            CUDAPluggableAllocator,
-            change_current_allocator,
-        )
-    except ImportError:
-        return
-    else:
-        import rmm._lib.torch_allocator
+try:
+    from torch.cuda.memory import (
+        CUDAPluggableAllocator,
+        change_current_allocator,
+    )
+except ImportError:
+    rmm_torch_allocator = None
+else:
+    import rmm._lib.torch_allocator
 
-        alloc_free_lib_path = rmm._lib.torch_allocator.__file__
+    _alloc_free_lib_path = rmm._lib.torch_allocator.__file__
 
-        rmm_torch_allocator = CUDAPluggableAllocator(
-            alloc_free_lib_path,
-            alloc_fn_name="allocate",
-            free_fn_name="deallocate",
-        )
-
-        try:
-            change_current_allocator(rmm_torch_allocator)
-        except RuntimeError as e:
-            warnings.warn(
-                "RMM could not change the PyTorch CUDA allocator "
-                "because another allocator is already in use.",
-                RuntimeWarning,
-            )
-
-
-_set_pytorch_allocator()
+    rmm_torch_allocator = CUDAPluggableAllocator(
+        _alloc_free_lib_path,
+        alloc_fn_name="allocate",
+        free_fn_name="deallocate",
+    )
 
 
 def register_reinitialize_hook(func, *args, **kwargs):
