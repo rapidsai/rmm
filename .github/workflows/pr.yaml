@@ -62,4 +62,3 @@ jobs:
 
       test-extras: test
       test-unittest: "python -m pytest -v ./python/rmm/tests"
-    secrets: inherit
