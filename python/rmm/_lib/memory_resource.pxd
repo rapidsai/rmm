@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from cuda.ccudart cimport cudaStream_t
 from libc.stdint cimport int8_t
 from libcpp.memory cimport shared_ptr
 from libcpp.string cimport string
@@ -22,7 +23,9 @@ cdef extern from "rmm/mr/device/device_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass device_memory_resource:
         void* allocate(size_t bytes) except +
+        void* allocate(size_t bytes, cudaStream_t stream) except +
         void deallocate(void* ptr, size_t bytes) except +
+        void deallocate(void* ptr, size_t bytes, cudaStream_t stream) except +
 
 cdef class DeviceMemoryResource:
     cdef shared_ptr[device_memory_resource] c_obj
