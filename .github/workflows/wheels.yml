@@ -1,0 +1,52 @@
+name: RMM wheels
+
+on:
+  workflow_call:
+    inputs:
+      versioneer-override:
+        type: string
+        default: ''
+      build-tag:
+        type: string
+        default: ''
+      branch:
+        required: true
+        type: string
+      date:
+        required: true
+        type: string
+      sha:
+        required: true
+        type: string
+      build-type:
+        type: string
+        default: nightly
+
+concurrency:
+  # Hardcode rmm rather than using github.repository to support calling this
+  # from other workflows that build multiple wheels.
+  group: "rmm-${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  rmm-wheels:
+    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-manylinux.yml@main
+    with:
+      repo: rapidsai/rmm
+
+      build-type: ${{ inputs.build-type }}
+      branch: ${{ inputs.branch }}
+      sha: ${{ inputs.sha }}
+      date: ${{ inputs.date }}
+
+      package-dir: python
+      package-name: rmm
+
+      python-package-versioneer-override: ${{ inputs.versioneer-override }}
+      python-package-build-tag: ${{ inputs.build-tag }}
+
+      skbuild-configure-options: "-DRMM_BUILD_WHEELS=ON"
+
+      test-extras: test
+      test-unittest: "python -m pytest -v ./python/rmm/tests"
+    secrets: inherit
