@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import ctypes
-import warnings
 
 from cuda.cuda import CUdeviceptr, cuIpcGetMemHandle
 from numba import config, cuda
@@ -239,17 +238,11 @@ def rmm_cupy_allocator(nbytes):
 
 
 try:
-    from torch.cuda.memory import (
-        CUDAPluggableAllocator,
-        change_current_allocator,
-    )
+    from torch.cuda.memory import CUDAPluggableAllocator
 except ImportError:
     rmm_torch_allocator = None
 else:
-    import rmm._lib.torch_allocator
-
     _alloc_free_lib_path = rmm._lib.torch_allocator.__file__
-
     rmm_torch_allocator = CUDAPluggableAllocator(
         _alloc_free_lib_path,
         alloc_fn_name="allocate",
