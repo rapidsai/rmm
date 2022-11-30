@@ -604,20 +604,21 @@ def test_cuda_async_memory_resource_threshold(nelem, alloc):
     array_tester("u1", 2 * nelem, alloc)  # should trigger release
 
 
-def test_statistics_resource_adaptor():
-
-    cuda_mr = rmm.mr.CudaMemoryResource()
-
-    mr = rmm.mr.StatisticsResourceAdaptor(cuda_mr)
-
+@pytest.fixture
+def stats_mr():
+    mr = rmm.mr.StatisticsResourceAdaptor(rmm.mr.CudaMemoryResource())
     rmm.mr.set_current_device_resource(mr)
+    return mr
+
+
+def test_statistics_resource_adaptor(stats_mr):
 
     buffers = [rmm.DeviceBuffer(size=1000) for _ in range(10)]
 
     for i in range(9, 0, -2):
         del buffers[i]
 
-    assert mr.allocation_counts == {
+    assert stats_mr.allocation_counts == {
         "current_bytes": 5000,
         "current_count": 5,
         "peak_bytes": 10000,
@@ -627,7 +628,7 @@ def test_statistics_resource_adaptor():
     }
 
     # Push a new Tracking adaptor
-    mr2 = rmm.mr.StatisticsResourceAdaptor(mr)
+    mr2 = rmm.mr.StatisticsResourceAdaptor(stats_mr)
     rmm.mr.set_current_device_resource(mr2)
 
     for _ in range(2):
@@ -641,7 +642,7 @@ def test_statistics_resource_adaptor():
         "total_bytes": 2000,
         "total_count": 2,
     }
-    assert mr.allocation_counts == {
+    assert stats_mr.allocation_counts == {
         "current_bytes": 7000,
         "current_count": 7,
         "peak_bytes": 10000,
@@ -661,7 +662,7 @@ def test_statistics_resource_adaptor():
         "total_bytes": 2000,
         "total_count": 2,
     }
-    assert mr.allocation_counts == {
+    assert stats_mr.allocation_counts == {
         "current_bytes": 0,
         "current_count": 0,
         "peak_bytes": 10000,
@@ -669,10 +670,10 @@ def test_statistics_resource_adaptor():
         "total_bytes": 12000,
         "total_count": 12,
     }
+    gc.collect()
 
 
 def test_tracking_resource_adaptor():
-
     cuda_mr = rmm.mr.CudaMemoryResource()
 
     mr = rmm.mr.TrackingResourceAdaptor(cuda_mr, capture_stacks=True)
@@ -914,3 +915,39 @@ def test_rmm_device_buffer_copy(cuda_ary, make_copy):
     result = db_copy.copy_to_host()
 
     np.testing.assert_equal(expected, result)
+
+
+@pytest.fixture
+def torch_allocator():
+    try:
+        from torch.cuda.memory import change_current_allocator
+    except ImportError:
+        pytest.skip("pytorch pluggable allocator not available")
+
+    try:
+        change_current_allocator(rmm.rmm_torch_allocator)
+    except RuntimeError:
+        pass
+
+
+def test_rmm_torch_allocator(torch_allocator, stats_mr):
+    import torch
+
+    assert stats_mr.allocation_counts["current_bytes"] == 0
+    x = torch.tensor([1, 2]).cuda()
+    assert stats_mr.allocation_counts["current_bytes"] > 0
+    del x
+    assert stats_mr.allocation_counts["current_bytes"] == 0
+
+
+def test_rmm_torch_allocator_using_stream(torch_allocator, stats_mr):
+    import torch
+
+    assert stats_mr.allocation_counts["current_bytes"] == 0
+    s = torch.cuda.Stream()
+    with torch.cuda.stream(s):
+        x = torch.tensor([1, 2]).cuda()
+    torch.cuda.current_stream().wait_stream(s)
+    assert stats_mr.allocation_counts["current_bytes"] > 0
+    del x
+    assert stats_mr.allocation_counts["current_bytes"] == 0
