@@ -742,6 +742,13 @@ def test_failure_callback_resource_adaptor_error():
 
 
 def test_dev_buf_circle_ref_dealloc():
+    # This test creates a reference cycle containing a `DeviceBuffer`
+    # and ensure that the garbage collector does not clear it, i.e.,
+    # that the GC does not remove all references to other Python
+    # objects from it. The `DeviceBuffer` needs to keep its reference
+    # to the `DeviceMemoryResource` that was used to create it in
+    # order to be cleaned up properly. See GH #931.
+
     rmm.mr.set_current_device_resource(rmm.mr.CudaMemoryResource())
 
     dbuf1 = rmm.DeviceBuffer(size=1_000_000)
@@ -762,6 +769,20 @@ def test_dev_buf_circle_ref_dealloc():
     # `tp_clear` method.  Later, when `tp_dealloc` attemps to actually
     # deallocate `dbuf1` (which needs the MR alive), a segfault occurs.
 
+    gc.collect()
+
+
+def test_upstream_mr_circle_ref_dealloc():
+    # This test is just like the one above, except it tests that
+    # instances of `UpstreamResourceAdaptor` (such as
+    # `PoolMemoryResource`) are not cleared by the GC.
+
+    rmm.mr.set_current_device_resource(rmm.mr.CudaMemoryResource())
+    mr = rmm.mr.PoolMemoryResource(rmm.mr.get_current_device_resource())
+    l1 = [mr]
+    l1.append(l1)
+    del mr, l1
+    rmm.mr.set_current_device_resource(rmm.mr.CudaMemoryResource())
     gc.collect()
 
 
