@@ -39,7 +39,8 @@ set +e
 rapids-logger "pytest rmm"
 pytest \
   --cache-clear \
-  --junitxml="${RAPIDS_TESTS_DIR}/junit-rmm.xml" -v \
+  --junitxml="${RAPIDS_TESTS_DIR}/junit-rmm.xml" \
+  -v \
   --cov-config=.coveragerc \
   --cov=rmm \
   --cov-report=xml:"${RAPIDS_COVERAGE_DIR}/rmm-coverage.xml" \
