@@ -758,17 +758,13 @@ def test_dev_buf_circle_ref_dealloc():
     l1.append(l1)
 
     # due to the reference cycle, the device buffer doesn't actually get
-    # cleaned up until later, when we invoke `gc.collect()`:
+    # cleaned up until after `gc.collect()` is called.
     del dbuf1, l1
 
     rmm.mr.set_current_device_resource(rmm.mr.CudaMemoryResource())
 
-    # by now, the only remaining reference to the *original* memory
-    # resource should be in `dbuf1`. However, the cyclic garbage collector
-    # will eliminate that reference when it clears the object via its
-    # `tp_clear` method.  Later, when `tp_dealloc` attemps to actually
-    # deallocate `dbuf1` (which needs the MR alive), a segfault occurs.
-
+    # test that after the call to `gc.collect()`, the `DeviceBuffer`
+    # is deallocated successfully (i.e., without a segfault).
     gc.collect()
 
 
