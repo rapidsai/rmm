@@ -743,7 +743,7 @@ def test_failure_callback_resource_adaptor_error():
 
 def test_dev_buf_circle_ref_dealloc():
     # This test creates a reference cycle containing a `DeviceBuffer`
-    # and ensure that the garbage collector does not clear it, i.e.,
+    # and ensures that the garbage collector does not clear it, i.e.,
     # that the GC does not remove all references to other Python
     # objects from it. The `DeviceBuffer` needs to keep its reference
     # to the `DeviceMemoryResource` that was used to create it in
