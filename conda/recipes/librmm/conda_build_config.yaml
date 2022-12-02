@@ -13,5 +13,8 @@ cmake_version:
 gtest_version:
   - "=1.10.0"
 
+spdlog_version:
+  - "1.10"
+
 sysroot_version:
   - "2.17"
