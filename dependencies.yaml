@@ -27,6 +27,16 @@ files:
       - build
       - develop
       - py_version
+  librmm_build:
+    output: conda_meta
+    conda_meta_dir: conda/recipes/librmm
+    includes:
+      - librmm_conda_meta_build
+  librmm_host:
+    output: conda_meta
+    conda_meta_dir: conda/recipes/librmm
+    includes:
+      - librmm_conda_meta_host
 channels:
   - rapidsai
   - conda-forge
@@ -101,3 +111,18 @@ dependencies:
         packages:
           - pytest
           - pytest-cov
+  librmm_conda_meta_build:
+    common:
+      - output_types: [conda_meta]
+        packages:
+          - cmake {{ cmake_version }}
+          - ninja
+          - "{{ compiler('c') }}"
+          - "{{ compiler('cxx') }}"
+          - "{{ compiler('cuda') }} {{ cuda_version }}"
+          - sysroot_{{ target_platform }} {{ sysroot_version }}
+  librmm_conda_meta_host:
+    common:
+      - output_types: [conda_meta]
+        packages:
+          - cudatoolkit {{ cuda_version }}.*
