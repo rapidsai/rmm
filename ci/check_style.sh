@@ -6,8 +6,6 @@ set -euo pipefail
 rapids-logger "Create checks conda environment"
 . /opt/conda/etc/profile.d/conda.sh
 
-pip install git+https://github.com/vyasr/dependency-file-generator.git@feat/dep_gen_meta_yaml
-
 rapids-dependency-file-generator \
   --output conda \
   --file_key checks \
