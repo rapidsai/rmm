@@ -11,8 +11,8 @@ package:
 source:
   git_url: ../../..
 
-{% set build_requirements = load_file_data('librmm_build.yaml') %}
-{% set host_requirements = load_file_data('librmm_host.yaml') %}
+{% set build_requirements = load_file_data('conda/recipes/librmm/librmm_build.yaml') %}
+{% set host_requirements = load_file_data('conda/recipes/librmm/librmm_host.yaml') %}
 
 requirements:
   build:
