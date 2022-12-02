@@ -11,16 +11,18 @@ package:
 source:
   git_url: ../../..
 
+{% set build_requirements = load_file_data('librmm_build.yaml') %}
+{% set host_requirements = load_file_data('librmm_host.yaml') %}
+
 requirements:
   build:
-    - cmake {{ cmake_version }}
-    - ninja
-    - {{ compiler('c') }}
-    - {{ compiler('cxx') }}
-    - {{ compiler('cuda') }} {{ cuda_version }}
-    - sysroot_{{ target_platform }} {{ sysroot_version }}
+    {% for dep in build_requirements %}
+    - {{ dep }}
+    {% endfor %}
   host:
-    - cudatoolkit {{ cuda_version }}.*
+    {% for dep in host_requirements %}
+    - {{ dep }}
+    {% endfor %}
 
 build:
   script_env:
