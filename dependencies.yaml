@@ -43,7 +43,7 @@ dependencies:
           - scikit-build>=0.13.1
       - output_types: conda
         packages:
-          - spdlog=1.10
+          - spdlog>=1.8.5,<1.9
   cudatoolkit:
     specific:
       - output_types: conda

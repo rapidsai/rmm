@@ -13,7 +13,7 @@ repos:
       hooks:
           - id: black
             args: ["--config=python/pyproject.toml"]
-    - repo: https://github.com/PyCQA/flake8
+    - repo: https://gitlab.com/pycqa/flake8
       rev: 3.8.3
       hooks:
           - id: flake8

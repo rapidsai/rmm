@@ -53,7 +53,7 @@ outputs:
         - cmake {{ cmake_version }}
       run:
         - cudatoolkit {{ cuda_spec }}
-        - spdlog {{ spdlog_version }}
+        - spdlog>=1.8.5,<1.9
     test:
       commands:
         - test -f $PREFIX/include/rmm/thrust_rmm_allocator.h
