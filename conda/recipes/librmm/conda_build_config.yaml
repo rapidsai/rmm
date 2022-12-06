@@ -14,7 +14,7 @@ gtest_version:
   - "=1.10.0"
 
 spdlog_version:
-  - "1.10"
+  - ">=1.8.5,<1.9"
 
 sysroot_version:
   - "2.17"

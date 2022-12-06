@@ -22,5 +22,5 @@ dependencies:
 - pytest-cov
 - python>=3.8,<3.10
 - scikit-build>=0.13.1
-- spdlog=1.10
+- spdlog>=1.8.5,<1.9
 name: all_cuda-115_arch-x86_64
