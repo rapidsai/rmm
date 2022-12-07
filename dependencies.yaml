@@ -7,6 +7,7 @@ files:
       arch: [x86_64]
     includes:
       - build
+      - checks
       - cudatoolkit
       - develop
       - run
@@ -24,8 +25,7 @@ files:
   checks:
     output: none
     includes:
-      - build
-      - develop
+      - checks
       - py_version
 channels:
   - rapidsai
@@ -44,6 +44,11 @@ dependencies:
       - output_types: conda
         packages:
           - spdlog>=1.8.5,<1.9
+  checks:
+    common:
+      - output_types: [conda, requirements]
+        packages:
+          - pre-commit
   cudatoolkit:
     specific:
       - output_types: conda
@@ -68,7 +73,6 @@ dependencies:
     common:
       - output_types: [conda, requirements]
         packages:
-          - pre-commit
           - gcovr>=5.0
   py_version:
     specific:
