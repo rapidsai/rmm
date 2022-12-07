@@ -51,8 +51,11 @@ outputs:
     requirements:
       build:
         - cmake {{ cmake_version }}
+        - fmt {{ fmt_version }}
+        - spdlog {{ spdlog_version }}
       run:
         - cudatoolkit {{ cuda_spec }}
+        - fmt {{ fmt_version }}
         - spdlog {{ spdlog_version }}
     test:
       commands:

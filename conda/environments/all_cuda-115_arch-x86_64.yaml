@@ -13,6 +13,7 @@ dependencies:
 - cudatoolkit=11.5
 - cython>=0.29,<0.30
 - flake8=3.8.3
+- fmt>=9.1.0
 - gcovr>=5.0
 - isort=5.10.1
 - ninja
@@ -22,5 +23,5 @@ dependencies:
 - pytest-cov
 - python>=3.8,<3.10
 - scikit-build>=0.13.1
-- spdlog>=1.8.5,<1.9
+- spdlog>=1.11.0
 name: all_cuda-115_arch-x86_64
