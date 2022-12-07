@@ -59,7 +59,7 @@ test:
     - rmm
 
 about:
-  home: http://rapids.ai/
+  home: https://rapids.ai/
   license: Apache-2.0
   license_family: Apache
   license_file: LICENSE

@@ -51,6 +51,11 @@ outputs:
     requirements:
       build:
         - cmake {{ cmake_version }}
+        # We require spdlog and fmt (which was devendored from spdlog
+        # conda-forge packages in 1.11.0) so that the spdlog headers are not
+        # pulled by CPM and installed as a part of the rmm packages. However,
+        # building against librmm still requires these headers so they are also
+        # exported as a run requirement.
         - fmt {{ fmt_version }}
         - spdlog {{ spdlog_version }}
       run:
@@ -92,7 +97,7 @@ outputs:
         - test -f $PREFIX/include/rmm/mr/host/new_delete_resource.hpp
         - test -f $PREFIX/include/rmm/mr/host/pinned_memory_resource.hpp
     about:
-      home: http://rapids.ai/
+      home: https://rapids.ai/
       license: Apache-2.0
       summary: librmm library
   - name: librmm-tests
@@ -112,6 +117,6 @@ outputs:
         - gtest {{ gtest_version }}
         - gmock {{ gtest_version }}
     about:
-      home: http://rapids.ai/
+      home: https://rapids.ai/
       license: Apache-2.0
       summary: librmm test & benchmark executables
