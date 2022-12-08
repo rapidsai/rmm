@@ -1,7 +1,5 @@
 # <div align="left"><img src="img/rapids_logo.png" width="90px"/>&nbsp;RMM: RAPIDS Memory Manager</div>
 
-[![Build Status](https://gpuci.gpuopenanalytics.com/job/rapidsai/job/gpuci/job/rmm/job/branches/job/rmm-branch-pipeline/badge/icon)](https://gpuci.gpuopenanalytics.com/job/rapidsai/job/gpuci/job/rmm/job/branches/job/rmm-branch-pipeline/)
-
 **NOTE:** For the latest stable [README.md](https://github.com/rapidsai/rmm/blob/main/README.md) ensure you are on the `main` branch.
 
 ## Resources
@@ -64,16 +62,24 @@ See the [Get RAPIDS version picker](https://rapids.ai/start.html) for more OS an
 Compiler requirements:
 
 * `gcc`     version 9.3+
-* `nvcc`    version 11.0+
+* `nvcc`    version 11.2+
 * `cmake`   version 3.23.1+
 
 CUDA/GPU requirements:
 
-* CUDA 11.0+
+* CUDA 11.2+
 * NVIDIA driver 450.51+
 * Pascal architecture or better
 
 You can obtain CUDA from [https://developer.nvidia.com/cuda-downloads](https://developer.nvidia.com/cuda-downloads)
+
+Python requirements:
+* `scikit-build`
+* `cuda-python`
+* `cython`
+
+For more details, see [pyproject.toml](python/pyproject.toml)
+
 
 ### Script to build RMM from source
 
