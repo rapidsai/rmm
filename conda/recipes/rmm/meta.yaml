@@ -1,9 +1,9 @@
 # Copyright (c) 2019-2022, NVIDIA CORPORATION.
 
 {% set version = environ.get('GIT_DESCRIBE_TAG', '0.0.0.dev').lstrip('v') + environ.get('VERSION_SUFFIX', '') %}
-{% set py_version=environ.get('CONDA_PY', 35) %}
-{% set cuda_version='.'.join(environ.get('RAPIDS_CUDA_VERSION', '11.5.2').split('.')[:2]) %}
+{% set cuda_version = '.'.join(environ['RAPIDS_CUDA_VERSION'].split('.')[:2]) %}
 {% set cuda_major=cuda_version.split('.')[0] %}
+{% set py_version = environ.get('CONDA_PY', 38) %}
 
 package:
   name: rmm
@@ -17,7 +17,6 @@ build:
   string: cuda{{ cuda_major }}_py{{ py_version }}_{{ GIT_DESCRIBE_HASH }}_{{ GIT_DESCRIBE_NUMBER }}
   script_env:
     - RMM_BUILD_NO_GPU_TEST
-    - VERSION_SUFFIX
     - CMAKE_GENERATOR
     - CMAKE_C_COMPILER_LAUNCHER
     - CMAKE_CXX_COMPILER_LAUNCHER
