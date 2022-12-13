@@ -732,3 +732,18 @@ This can be done in two ways:
 **Note:** This only configures Numba to use the current RMM resource for allocations.
 It does not initialize nor change the current resource, e.g., enabling a memory pool.
 See [here](#memoryresource-objects) for more information on changing the current memory resource.
+
+### Using RMM with PyTorch
+
+[PyTorch](https://pytorch.org/docs/stable/notes/cuda.html) can use RMM for memory allocation.
+For example, to configure PyTorch to use an RMM-managed pool, you can do the following:
+
+```python
+import rmm
+import torch
+
+rmm.reinitialize(pool_allocator=True)
+torch.cuda.memory.change_current_allocator(rmm.rmm_torch_allocator)
+```
+
+PyTorch and RMM will now share the same memory pool.
