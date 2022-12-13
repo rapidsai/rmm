@@ -917,17 +917,13 @@ def test_rmm_device_buffer_copy(cuda_ary, make_copy):
     np.testing.assert_equal(expected, result)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def torch_allocator():
     try:
         from torch.cuda.memory import change_current_allocator
     except ImportError:
         pytest.skip("pytorch pluggable allocator not available")
-
-    try:
-        change_current_allocator(rmm.rmm_torch_allocator)
-    except RuntimeError:
-        pass
+    change_current_allocator(rmm.rmm_torch_allocator)
 
 
 def test_rmm_torch_allocator(torch_allocator, stats_mr):

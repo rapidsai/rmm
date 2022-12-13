@@ -242,6 +242,8 @@ try:
 except ImportError:
     rmm_torch_allocator = None
 else:
+    import rmm._lib.torch_allocator
+
     _alloc_free_lib_path = rmm._lib.torch_allocator.__file__
     rmm_torch_allocator = CUDAPluggableAllocator(
         _alloc_free_lib_path,
