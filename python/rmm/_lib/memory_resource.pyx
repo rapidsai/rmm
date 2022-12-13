@@ -16,6 +16,7 @@ import os
 import warnings
 from collections import defaultdict
 
+cimport cython
 from cython.operator cimport dereference as deref
 from libc.stdint cimport int8_t, int64_t, uintptr_t
 from libcpp cimport bool
@@ -247,6 +248,8 @@ cdef class DeviceMemoryResource:
         self.c_obj.get().deallocate(<void*>(ptr), nbytes)
 
 
+# See the note about `no_gc_clear` in `device_buffer.pyx`.
+@cython.no_gc_clear
 cdef class UpstreamResourceAdaptor(DeviceMemoryResource):
 
     def __cinit__(self, DeviceMemoryResource upstream_mr, *args, **kwargs):
