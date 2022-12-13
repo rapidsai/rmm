@@ -8,7 +8,7 @@ conda activate base
 rapids-dependency-file-generator \
   --output conda \
   --file_key test_cpp \
-  --matrix "cuda=${RAPIDS_CUDA_VERSION%.*}" > env.yaml
+  --matrix "cuda=${RAPIDS_CUDA_VERSION%.*}" | tee env.yaml
 
 rapids-mamba-retry env create --force -f env.yaml -n test
 conda activate test
@@ -21,8 +21,8 @@ rapids-mamba-retry install \
   -c "${CPP_CHANNEL}" \
   librmm librmm-tests
 
-TESTRESULTS_DIR=test-results
-mkdir -p ${TESTRESULTS_DIR}
+RAPIDS_TESTS_DIR=${RAPIDS_TESTS_DIR:-"${PWD}/test-results"}
+mkdir -p "${RAPIDS_TESTS_DIR}"
 SUITEERROR=0
 
 rapids-logger "Check GPU usage"
@@ -32,7 +32,7 @@ set +e
 
 rapids-logger "Running googletests"
 for gt in "$CONDA_PREFIX/bin/gtests/librmm/"* ; do
-    ${gt} --gtest_output=xml:${TESTRESULTS_DIR}/
+    ${gt} --gtest_output=xml:${RAPIDS_TESTS_DIR}/
     exitcode=$?
     if (( ${exitcode} != 0 )); then
         SUITEERROR=${exitcode}
