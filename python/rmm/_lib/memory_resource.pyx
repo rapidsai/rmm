@@ -35,6 +35,10 @@ from rmm._cuda.gpu import (
 )
 
 from rmm._lib.cuda_stream_view cimport cuda_stream_view
+from rmm._lib.per_device_resource cimport (
+    cuda_device_id,
+    set_per_device_resource as cpp_set_per_device_resource,
+)
 
 # Transparent handle of a C++ exception
 ctypedef pair[int, string] CppExcept
@@ -210,29 +214,6 @@ cdef extern from "rmm/mr/device/failure_callback_resource_adaptor.hpp" \
             failure_callback_t callback,
             void* callback_arg
         ) except +
-
-
-cdef extern from "rmm/mr/device/per_device_resource.hpp" namespace "rmm" nogil:
-
-    cdef cppclass cuda_device_id:
-        ctypedef int value_type
-
-        cuda_device_id(value_type id)
-
-        value_type value()
-
-    cdef device_memory_resource* _set_current_device_resource \
-        "rmm::mr::set_current_device_resource" (device_memory_resource* new_mr)
-    cdef device_memory_resource* _get_current_device_resource \
-        "rmm::mr::get_current_device_resource" ()
-
-    cdef device_memory_resource* _set_per_device_resource \
-        "rmm::mr::set_per_device_resource" (
-            cuda_device_id id,
-            device_memory_resource* new_mr
-        )
-    cdef device_memory_resource* _get_per_device_resource \
-        "rmm::mr::get_per_device_resource"(cuda_device_id id)
 
 
 cdef class DeviceMemoryResource:
@@ -973,7 +954,7 @@ cpdef set_per_device_resource(int device, DeviceMemoryResource mr):
     cdef unique_ptr[cuda_device_id] device_id = \
         make_unique[cuda_device_id](device)
 
-    _set_per_device_resource(deref(device_id), mr.get_mr())
+    cpp_set_per_device_resource(deref(device_id), mr.get_mr())
 
 
 cpdef set_current_device_resource(DeviceMemoryResource mr):
