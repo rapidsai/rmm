@@ -735,8 +735,9 @@ See [here](#memoryresource-objects) for more information on changing the current
 
 ### Using RMM with PyTorch
 
-[PyTorch](https://pytorch.org/docs/stable/notes/cuda.html) can use RMM for memory allocation.
-For example, to configure PyTorch to use an RMM-managed pool, you can do the following:
+[PyTorch](https://pytorch.org/docs/stable/notes/cuda.html) can use RMM
+for memory allocation.  For example, to configure PyTorch to use an
+RMM-managed pool:
 
 ```python
 import rmm
@@ -747,3 +748,31 @@ torch.cuda.memory.change_current_allocator(rmm.rmm_torch_allocator)
 ```
 
 PyTorch and RMM will now share the same memory pool.
+
+You can, of course, use a custom memory resource with PyTorch as well:
+
+```python
+import rmm
+import torch
+
+# configure RMM to use a managed memory resource, wrapped with a
+# statistics resource adaptor that can report information about the
+# amount of memory allocated:
+mr = rmm.mr.StatisticsResourceAdaptor(rmm.mr.ManagedMemoryResource())
+rmm.mr.set_current_device_resource(mr)
+
+# configure PyTorch to use RMM for allocations:
+torch.cuda.change_current_allocator(rmm.rmm_torch_allocator)
+
+x = torch.tensor([1, 2]).cuda()
+
+# the memory resource reports information about PyTorch allocations:
+mr.allocation_counts
+Out[6]:
+{'current_bytes': 16,
+ 'current_count': 1,
+ 'peak_bytes': 16,
+ 'peak_count': 1,
+ 'total_bytes': 16,
+ 'total_count': 1}
+```
