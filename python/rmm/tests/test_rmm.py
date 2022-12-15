@@ -42,17 +42,6 @@ _CUDAMALLOC_ASYNC_SUPPORTED = (_driver_version >= 11020) and (
 )
 
 
-@pytest.fixture(scope="function", autouse=True)
-def rmm_auto_reinitialize():
-
-    # Run the test
-    yield
-
-    # Automatically reinitialize the current memory resource after running each
-    # test
-    rmm.reinitialize()
-
-
 def array_tester(dtype, nelem, alloc):
     # data
     h_in = np.full(nelem, 3.2, dtype)
@@ -604,13 +593,6 @@ def test_cuda_async_memory_resource_threshold(nelem, alloc):
     array_tester("u1", 2 * nelem, alloc)  # should trigger release
 
 
-@pytest.fixture
-def stats_mr():
-    mr = rmm.mr.StatisticsResourceAdaptor(rmm.mr.CudaMemoryResource())
-    rmm.mr.set_current_device_resource(mr)
-    return mr
-
-
 def test_statistics_resource_adaptor(stats_mr):
 
     buffers = [rmm.DeviceBuffer(size=1000) for _ in range(10)]
@@ -915,35 +897,3 @@ def test_rmm_device_buffer_copy(cuda_ary, make_copy):
     result = db_copy.copy_to_host()
 
     np.testing.assert_equal(expected, result)
-
-
-@pytest.fixture(scope="session")
-def torch_allocator():
-    try:
-        from torch.cuda.memory import change_current_allocator
-    except ImportError:
-        pytest.skip("pytorch pluggable allocator not available")
-    change_current_allocator(rmm.rmm_torch_allocator)
-
-
-def test_rmm_torch_allocator(torch_allocator, stats_mr):
-    import torch
-
-    assert stats_mr.allocation_counts["current_bytes"] == 0
-    x = torch.tensor([1, 2]).cuda()
-    assert stats_mr.allocation_counts["current_bytes"] > 0
-    del x
-    assert stats_mr.allocation_counts["current_bytes"] == 0
-
-
-def test_rmm_torch_allocator_using_stream(torch_allocator, stats_mr):
-    import torch
-
-    assert stats_mr.allocation_counts["current_bytes"] == 0
-    s = torch.cuda.Stream()
-    with torch.cuda.stream(s):
-        x = torch.tensor([1, 2]).cuda()
-    torch.cuda.current_stream().wait_stream(s)
-    assert stats_mr.allocation_counts["current_bytes"] > 0
-    del x
-    assert stats_mr.allocation_counts["current_bytes"] == 0
