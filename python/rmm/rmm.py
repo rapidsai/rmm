@@ -278,3 +278,6 @@ def unregister_reinitialize_hook(func):
     """
     global _reinitialize_hooks
     _reinitialize_hooks = [x for x in _reinitialize_hooks if x[0] != func]
+
+
+# test
