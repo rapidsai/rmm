@@ -89,7 +89,7 @@ outputs:
         - test -f $PREFIX/include/rmm/mr/host/new_delete_resource.hpp
         - test -f $PREFIX/include/rmm/mr/host/pinned_memory_resource.hpp
     about:
-      home: http://rapids.ai/
+      home: https://rapids.ai/
       license: Apache-2.0
       summary: librmm library
   - name: librmm-tests
@@ -109,6 +109,6 @@ outputs:
         - gtest {{ gtest_version }}
         - gmock {{ gtest_version }}
     about:
-      home: http://rapids.ai/
+      home: https://rapids.ai/
       license: Apache-2.0
       summary: librmm test & benchmark executables
