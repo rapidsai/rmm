@@ -2,10 +2,9 @@
 
 import os
 
+import versioneer
 from setuptools import find_packages
 from skbuild import setup
-
-import versioneer
 
 if "RAPIDS_PY_WHEEL_VERSIONEER_OVERRIDE" in os.environ:
     orig_get_versions = versioneer.get_versions

@@ -30,4 +30,3 @@ A clear and concise description of what documentation is needed and why.
 
 **Steps taken to search for needed documentation**
 List any steps you have taken.
-
