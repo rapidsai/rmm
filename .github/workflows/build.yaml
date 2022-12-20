@@ -20,6 +20,12 @@ on:
       build_type:
         type: string
         default: nightly
+      wheel-versioneer-override:
+        type: string
+        default: ''
+      wheel-build-tag:
+        type: string
+        default: ''
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -55,3 +61,28 @@ jobs:
       branch: ${{ inputs.branch }}
       date: ${{ inputs.date }}
       sha: ${{ inputs.sha }}
+  wheel-build:
+    secrets: inherit
+    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-manylinux-build.yml@upkeep/manylinux-improvements
+    with:
+      build-type: ${{ inputs.build-type || 'branch' }}
+      repo: rapidsai/rmm
+      branch: ${{ inputs.branch }}
+      sha: ${{ inputs.sha }}
+      date: ${{ inputs.date }}
+      package-dir: python
+      package-name: rmm
+      python-package-versioneer-override: ${{ inputs.wheel-versioneer-override }}
+      skbuild-configure-options: "-DRMM_BUILD_WHEELS=ON"
+  wheel-publish:
+    secrets: inherit
+    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-manylinux-publish.yml@upkeep/manylinux-improvements
+    with:
+      build-type: ${{ inputs.build-type || 'branch' }}
+      repo: rapidsai/rmm
+      branch: ${{ inputs.branch }}
+      sha: ${{ inputs.sha }}
+      date: ${{ inputs.date }}
+      package-dir: python
+      package-name: rmm
+      python-package-build-tag: ${{ inputs.wheel-build-tag }}
