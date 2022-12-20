@@ -62,6 +62,5 @@ jobs:
     uses: rapidsai/shared-action-workflows/.github/workflows/wheels-manylinux-test.yml@upkeep/manylinux-improvements
     with:
       build_type: pull-request
-      package-dir: python
       package-name: rmm
       test-unittest: "python -m pytest -v ./python/rmm/tests"

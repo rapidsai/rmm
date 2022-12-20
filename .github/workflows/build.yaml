@@ -83,6 +83,5 @@ jobs:
       branch: ${{ inputs.branch }}
       sha: ${{ inputs.sha }}
       date: ${{ inputs.date }}
-      package-dir: python
       package-name: rmm
       python-package-build-tag: ${{ inputs.wheel_build_tag }}
