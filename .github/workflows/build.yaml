@@ -70,8 +70,8 @@ jobs:
       branch: ${{ inputs.branch }}
       sha: ${{ inputs.sha }}
       date: ${{ inputs.date }}
-      package-dir: python
       package-name: rmm
+      package-dir: python
       versioneer-override: ${{ inputs.wheel_versioneer_override }}
       skbuild-configure-options: "-DRMM_BUILD_WHEELS=ON"
   wheel-publish:
