@@ -75,6 +75,7 @@ jobs:
       python-package-versioneer-override: ${{ inputs.wheel_versioneer_override }}
       skbuild-configure-options: "-DRMM_BUILD_WHEELS=ON"
   wheel-publish:
+    needs: wheel-build
     secrets: inherit
     uses: rapidsai/shared-action-workflows/.github/workflows/wheels-publish.yml@upkeep/manylinux-improvements
     with:
