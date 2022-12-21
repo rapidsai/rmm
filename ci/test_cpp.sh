@@ -32,9 +32,9 @@ trap "EXITCODE=1" ERR
 set +e
 
 rapids-logger "Running googletests"
-for gt in "$CONDA_PREFIX/bin/gtests/librmm/"* ; do
-    ${gt} --gtest_output=xml:${RAPIDS_TESTS_DIR}/
-done
+cd $CONDA_PREFIX/bin/gtests/librmm/
+export GTEST_OUTPUT=xml:${RAPIDS_TESTS_DIR}/
+ctest -j20 --output-on-failure
 
 rapids-logger "Test script exiting with value: $EXITCODE"
 exit ${EXITCODE}
