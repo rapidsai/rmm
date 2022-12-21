@@ -1,6 +1,4 @@
 from cuda.ccudart cimport cudaStream_t
-from libc.stdint cimport uintptr_t
-from libc.stdio cimport printf
 
 from rmm._lib.memory_resource cimport device_memory_resource
 from rmm._lib.per_device_resource cimport get_current_device_resource
