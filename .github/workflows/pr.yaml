@@ -64,4 +64,4 @@ jobs:
       build_type: pull-request
       package-name: rmm
       test-unittest: "python -m pytest -v ./python/rmm/tests"
-      test-smoketest: "python -c 'import rmm; buf = rmm.DeviceBuffer(size=100); print(buf.size); print(buf.ptr); assert buf.size == 100'"
+      test-smoketest: "python ./ci/wheel_smoke_test.py"
