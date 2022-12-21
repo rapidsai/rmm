@@ -77,7 +77,7 @@ jobs:
   wheel-publish:
     needs: wheel-build
     secrets: inherit
-    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-publish.yml@upkeep/manylinux-improvements
+    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-manylinux-publish.yml@upkeep/manylinux-improvements
     with:
       build_type: ${{ inputs.build_type || 'branch' }}
       repo: rapidsai/rmm
