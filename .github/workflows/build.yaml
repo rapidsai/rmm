@@ -76,7 +76,7 @@ jobs:
       skbuild-configure-options: "-DRMM_BUILD_WHEELS=ON"
   wheel-publish:
     secrets: inherit
-    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-manylinux-publish.yml@upkeep/manylinux-improvements
+    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-publish.yml@upkeep/manylinux-improvements
     with:
       build_type: ${{ inputs.build_type || 'branch' }}
       repo: rapidsai/rmm
