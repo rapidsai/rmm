@@ -72,7 +72,7 @@ jobs:
       date: ${{ inputs.date }}
       package-dir: python
       package-name: rmm
-      python-package-versioneer-override: ${{ inputs.wheel_versioneer_override }}
+      versioneer-override: ${{ inputs.wheel_versioneer_override }}
       skbuild-configure-options: "-DRMM_BUILD_WHEELS=ON"
   wheel-publish:
     needs: wheel-build
