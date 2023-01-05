@@ -1,3 +1,5 @@
+import gc
+
 import pytest
 
 import rmm
@@ -15,18 +17,15 @@ def torch_allocator():
 
 
 def test_rmm_torch_allocator(torch_allocator, stats_mr):
-    import torch
-
     assert stats_mr.allocation_counts["current_bytes"] == 0
     x = torch.tensor([1, 2]).cuda()
     assert stats_mr.allocation_counts["current_bytes"] > 0
     del x
+    gc.collect()
     assert stats_mr.allocation_counts["current_bytes"] == 0
 
 
 def test_rmm_torch_allocator_using_stream(torch_allocator, stats_mr):
-    import torch
-
     assert stats_mr.allocation_counts["current_bytes"] == 0
     s = torch.cuda.Stream()
     with torch.cuda.stream(s):
@@ -34,4 +33,5 @@ def test_rmm_torch_allocator_using_stream(torch_allocator, stats_mr):
     torch.cuda.current_stream().wait_stream(s)
     assert stats_mr.allocation_counts["current_bytes"] > 0
     del x
+    gc.collect()
     assert stats_mr.allocation_counts["current_bytes"] == 0

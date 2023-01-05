@@ -755,14 +755,17 @@ You can, of course, use a custom memory resource with PyTorch as well:
 import rmm
 import torch
 
+# note that you can configure PyTorch to use RMM either before or
+# after changing RMM's memory resource.  PyTorch will use whatever
+# memory resource is configured to be the "current" memory resource at
+# the time of allocation.
+torch.cuda.change_current_allocator(rmm.rmm_torch_allocator)
+
 # configure RMM to use a managed memory resource, wrapped with a
 # statistics resource adaptor that can report information about the
 # amount of memory allocated:
 mr = rmm.mr.StatisticsResourceAdaptor(rmm.mr.ManagedMemoryResource())
 rmm.mr.set_current_device_resource(mr)
-
-# configure PyTorch to use RMM for allocations:
-torch.cuda.change_current_allocator(rmm.rmm_torch_allocator)
 
 x = torch.tensor([1, 2]).cuda()
 
