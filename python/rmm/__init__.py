@@ -25,6 +25,7 @@ from rmm.rmm import (
     register_reinitialize_hook,
     reinitialize,
     rmm_cupy_allocator,
+    rmm_torch_allocator,
     unregister_reinitialize_hook,
 )
 

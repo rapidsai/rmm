@@ -17,12 +17,20 @@ from libcpp.memory cimport shared_ptr
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 
+from rmm._lib.cuda_stream_view cimport cuda_stream_view
+
 
 cdef extern from "rmm/mr/device/device_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass device_memory_resource:
         void* allocate(size_t bytes) except +
+        void* allocate(size_t bytes, cuda_stream_view stream) except +
         void deallocate(void* ptr, size_t bytes) except +
+        void deallocate(
+            void* ptr,
+            size_t bytes,
+            cuda_stream_view stream
+        ) except +
 
 cdef class DeviceMemoryResource:
     cdef shared_ptr[device_memory_resource] c_obj
