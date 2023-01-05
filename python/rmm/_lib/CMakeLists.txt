@@ -12,7 +12,8 @@
 # the License.
 # =============================================================================
 
-set(cython_sources device_buffer.pyx lib.pyx memory_resource.pyx cuda_stream.pyx)
+set(cython_sources device_buffer.pyx lib.pyx memory_resource.pyx cuda_stream.pyx
+                   torch_allocator.pyx)
 set(linked_libraries rmm::rmm)
 
 # Build all of the Cython targets

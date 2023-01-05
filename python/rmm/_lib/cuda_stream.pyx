@@ -14,7 +14,6 @@
 
 cimport cython
 from cuda.ccudart cimport cudaStream_t
-from libc.stdint cimport uintptr_t
 from libcpp cimport bool
 
 

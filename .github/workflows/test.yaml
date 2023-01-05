@@ -1,7 +1,7 @@
 name: test
 
 on:
-  workflow_call:
+  workflow_dispatch:
     inputs:
       branch:
         required: true
@@ -16,19 +16,17 @@ on:
 jobs:
   cpp-tests:
     secrets: inherit
-    uses: rapidsai/shared-action-workflows/.github/workflows/conda-cpp-tests.yaml@main
+    uses: rapidsai/shared-action-workflows/.github/workflows/conda-cpp-tests.yaml@cuda-118
     with:
       build_type: nightly
-      repo: rapidsai/rmm
       branch: ${{ inputs.branch }}
       date: ${{ inputs.date }}
       sha: ${{ inputs.sha }}
   python-tests:
     secrets: inherit
-    uses: rapidsai/shared-action-workflows/.github/workflows/conda-python-tests.yaml@main
+    uses: rapidsai/shared-action-workflows/.github/workflows/conda-python-tests.yaml@cuda-118
     with:
       build_type: nightly
-      repo: rapidsai/rmm
       branch: ${{ inputs.branch }}
       date: ${{ inputs.date }}
       sha: ${{ inputs.sha }}

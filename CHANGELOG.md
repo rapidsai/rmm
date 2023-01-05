@@ -1,6 +1,38 @@
-# RMM 22.12.00 (Date TBD)
+# RMM 23.02.00 (Date TBD)
 
-Please see https://github.com/rapidsai/rmm/releases/tag/v22.12.00a for the latest changes to this development branch.
+Please see https://github.com/rapidsai/rmm/releases/tag/v23.02.00a for the latest changes to this development branch.
+
+# RMM 22.12.00 (8 Dec 2022)
+
+## 🐛 Bug Fixes
+
+- Don&#39;t use CMake 3.25.0 as it has a show stopping FindCUDAToolkit bug ([#1162](https://github.com/rapidsai/rmm/pull/1162)) [@robertmaynard](https://github.com/robertmaynard)
+- Relax test for async memory pool IPC handle support ([#1130](https://github.com/rapidsai/rmm/pull/1130)) [@bdice](https://github.com/bdice)
+
+## 📖 Documentation
+
+- Use rapidsai CODE_OF_CONDUCT.md ([#1159](https://github.com/rapidsai/rmm/pull/1159)) [@bdice](https://github.com/bdice)
+- Fix doxygen formatting for set_stream. ([#1153](https://github.com/rapidsai/rmm/pull/1153)) [@bdice](https://github.com/bdice)
+- Document required Python dependencies to build from source ([#1146](https://github.com/rapidsai/rmm/pull/1146)) [@ccoulombe](https://github.com/ccoulombe)
+- fix failed automerge (Branch 22.12 merge 22.10) ([#1131](https://github.com/rapidsai/rmm/pull/1131)) [@harrism](https://github.com/harrism)
+
+## 🚀 New Features
+
+- Add wheel builds to rmm ([#1148](https://github.com/rapidsai/rmm/pull/1148)) [@vyasr](https://github.com/vyasr)
+
+## 🛠️ Improvements
+
+- Align __version__ with wheel version ([#1161](https://github.com/rapidsai/rmm/pull/1161)) [@sevagh](https://github.com/sevagh)
+- Add `ninja` &amp; Update CI environment variables ([#1155](https://github.com/rapidsai/rmm/pull/1155)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Remove CUDA 11.0 from dependencies.yaml. ([#1152](https://github.com/rapidsai/rmm/pull/1152)) [@bdice](https://github.com/bdice)
+- Update dependencies schema. ([#1147](https://github.com/rapidsai/rmm/pull/1147)) [@bdice](https://github.com/bdice)
+- Enable sccache for python build ([#1145](https://github.com/rapidsai/rmm/pull/1145)) [@Ethyling](https://github.com/Ethyling)
+- Remove Jenkins scripts ([#1143](https://github.com/rapidsai/rmm/pull/1143)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Use `ninja` in GitHub Actions ([#1142](https://github.com/rapidsai/rmm/pull/1142)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Switch to using rapids-cmake for gbench. ([#1139](https://github.com/rapidsai/rmm/pull/1139)) [@vyasr](https://github.com/vyasr)
+- Remove stale labeler ([#1137](https://github.com/rapidsai/rmm/pull/1137)) [@raydouglass](https://github.com/raydouglass)
+- Add a public `copy` API to `DeviceBuffer` ([#1128](https://github.com/rapidsai/rmm/pull/1128)) [@galipremsagar](https://github.com/galipremsagar)
+- Format gdb script. ([#1127](https://github.com/rapidsai/rmm/pull/1127)) [@bdice](https://github.com/bdice)
 
 # RMM 22.10.00 (12 Oct 2022)
 

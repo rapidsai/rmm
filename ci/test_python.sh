@@ -24,8 +24,9 @@ rapids-mamba-retry install \
   -c "${PYTHON_CHANNEL}" \
   rmm librmm
 
-TESTRESULTS_DIR="${PWD}/test-results"
-mkdir -p "${TESTRESULTS_DIR}"
+RAPIDS_TESTS_DIR=${RAPIDS_TESTS_DIR:-"${PWD}/test-results"}
+RAPIDS_COVERAGE_DIR=${RAPIDS_COVERAGE_DIR:-"${PWD}/coverage-results"}
+mkdir -p "${RAPIDS_TESTS_DIR}" "${RAPIDS_COVERAGE_DIR}"
 SUITEERROR=0
 
 rapids-logger "Check GPU usage"
@@ -36,7 +37,15 @@ cd python
 set +e
 
 rapids-logger "pytest rmm"
-pytest --cache-clear --junitxml="${TESTRESULTS_DIR}/junit-rmm.xml" -v --cov-config=.coveragerc --cov=rmm --cov-report=xml:python/rmm-coverage.xml --cov-report term
+pytest \
+  --cache-clear \
+  --junitxml="${RAPIDS_TESTS_DIR}/junit-rmm.xml" \
+  -v \
+  --cov-config=.coveragerc \
+  --cov=rmm \
+  --cov-report=xml:"${RAPIDS_COVERAGE_DIR}/rmm-coverage.xml" \
+  --cov-report term
+
 exitcode=$?
 if (( ${exitcode} != 0 )); then
     SUITEERROR=${exitcode}
