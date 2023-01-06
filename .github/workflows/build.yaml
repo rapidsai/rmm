@@ -52,3 +52,26 @@ jobs:
       branch: ${{ inputs.branch }}
       date: ${{ inputs.date }}
       sha: ${{ inputs.sha }}
+  wheel-build:
+    secrets: inherit
+    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-manylinux-build.yml@main
+    with:
+      build_type: ${{ inputs.build_type || 'branch' }}
+      repo: rapidsai/rmm
+      branch: ${{ inputs.branch }}
+      sha: ${{ inputs.sha }}
+      date: ${{ inputs.date }}
+      package-name: rmm
+      package-dir: python
+      skbuild-configure-options: "-DRMM_BUILD_WHEELS=ON"
+  wheel-publish:
+    needs: wheel-build
+    secrets: inherit
+    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-manylinux-publish.yml@main
+    with:
+      build_type: ${{ inputs.build_type || 'branch' }}
+      repo: rapidsai/rmm
+      branch: ${{ inputs.branch }}
+      sha: ${{ inputs.sha }}
+      date: ${{ inputs.date }}
+      package-name: rmm
