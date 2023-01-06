@@ -48,7 +48,7 @@ conda install -c rapidsai -c conda-forge -c nvidia \
 We also provide [nightly Conda packages](https://anaconda.org/rapidsai-nightly) built from the HEAD
 of our latest development branch.
 
-Note: RMM is supported only on Linux, and only tested with Python versions 3.8 and 3.9.
+Note: RMM is supported only on Linux, and only tested with Python versions 3.8 and 3.10.
 
 
 Note: The RMM package from Conda requires building with GCC 9 or later. Otherwise, your application may fail to build.
@@ -732,3 +732,50 @@ This can be done in two ways:
 **Note:** This only configures Numba to use the current RMM resource for allocations.
 It does not initialize nor change the current resource, e.g., enabling a memory pool.
 See [here](#memoryresource-objects) for more information on changing the current memory resource.
+
+### Using RMM with PyTorch
+
+[PyTorch](https://pytorch.org/docs/stable/notes/cuda.html) can use RMM
+for memory allocation.  For example, to configure PyTorch to use an
+RMM-managed pool:
+
+```python
+import rmm
+import torch
+
+rmm.reinitialize(pool_allocator=True)
+torch.cuda.memory.change_current_allocator(rmm.rmm_torch_allocator)
+```
+
+PyTorch and RMM will now share the same memory pool.
+
+You can, of course, use a custom memory resource with PyTorch as well:
+
+```python
+import rmm
+import torch
+
+# note that you can configure PyTorch to use RMM either before or
+# after changing RMM's memory resource.  PyTorch will use whatever
+# memory resource is configured to be the "current" memory resource at
+# the time of allocation.
+torch.cuda.change_current_allocator(rmm.rmm_torch_allocator)
+
+# configure RMM to use a managed memory resource, wrapped with a
+# statistics resource adaptor that can report information about the
+# amount of memory allocated:
+mr = rmm.mr.StatisticsResourceAdaptor(rmm.mr.ManagedMemoryResource())
+rmm.mr.set_current_device_resource(mr)
+
+x = torch.tensor([1, 2]).cuda()
+
+# the memory resource reports information about PyTorch allocations:
+mr.allocation_counts
+Out[6]:
+{'current_bytes': 16,
+ 'current_count': 1,
+ 'peak_bytes': 16,
+ 'peak_count': 1,
+ 'total_bytes': 16,
+ 'total_count': 1}
+```
