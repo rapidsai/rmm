@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from cuda.ccudart cimport cudaStream_t
 from libc.stdint cimport uintptr_t
 from libcpp cimport bool
 
@@ -21,7 +22,6 @@ from rmm._lib.cuda_stream_view cimport (
     cuda_stream_per_thread,
     cuda_stream_view,
 )
-from rmm._lib.lib cimport cudaStream_t
 
 from numba import cuda
 

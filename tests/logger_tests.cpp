@@ -14,13 +14,19 @@
  * limitations under the License.
  */
 
+#include "./byte_literals.hpp"
 #include <benchmarks/utilities/log_parser.hpp>
+
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/logging_resource_adaptor.hpp>
-#include <thread>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+
+#include <thread>
+
+namespace rmm::test {
+namespace {
 
 class raii_restore_env {
  public:
@@ -210,6 +216,34 @@ TEST(Adaptor, EnvironmentPath)
   expect_log_events(filename, expected_events);
 }
 
+TEST(Adaptor, AllocateFailure)
+{
+  std::string filename{"logs/failure.txt"};
+  rmm::mr::cuda_memory_resource upstream;
+
+  auto log_mr = rmm::mr::make_logging_adaptor(&upstream, filename);
+
+  auto const size0{99};
+  auto const size1{1_TiB};
+
+  auto* ptr0 = log_mr.allocate(size0);
+  log_mr.deallocate(ptr0, size0);
+  try {
+    log_mr.allocate(size1);
+  } catch (...) {
+  }
+  log_mr.flush();
+
+  using rmm::detail::action;
+  using rmm::detail::event;
+
+  std::vector<event> expected_events{{action::ALLOCATE, size0, ptr0},
+                                     {action::FREE, size0, ptr0},
+                                     {action::ALLOCATE_FAILURE, size1, nullptr}};
+
+  expect_log_events(filename, expected_events);
+}
+
 TEST(Adaptor, STDOUT)
 {
   testing::internal::CaptureStdout();
@@ -245,3 +279,6 @@ TEST(Adaptor, STDERR)
   std::string header = output.substr(0, output.find('\n'));
   ASSERT_EQ(header, log_mr.header());
 }
+
+}  // namespace
+}  // namespace rmm::test

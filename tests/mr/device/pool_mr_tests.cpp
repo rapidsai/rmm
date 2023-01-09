@@ -26,6 +26,9 @@
 
 #include <gtest/gtest.h>
 
+// explicit instantiation for test coverage purposes
+template class rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>;
+
 namespace rmm::test {
 namespace {
 using cuda_mr     = rmm::mr::cuda_memory_resource;
@@ -80,13 +83,25 @@ TEST(PoolTest, TwoLargeBuffers)
 TEST(PoolTest, ForceGrowth)
 {
   cuda_mr cuda;
-  auto const max_size{6000};
-  limiting_mr limiter{&cuda, max_size};
-  pool_mr mr{&limiter, 0};
-  EXPECT_NO_THROW(mr.allocate(1000));
-  EXPECT_NO_THROW(mr.allocate(4000));
-  EXPECT_NO_THROW(mr.allocate(500));
-  EXPECT_THROW(mr.allocate(2000), rmm::bad_alloc);  // too much
+  {
+    auto const max_size{6000};
+    limiting_mr limiter{&cuda, max_size};
+    pool_mr mr{&limiter, 0};
+    EXPECT_NO_THROW(mr.allocate(1000));
+    EXPECT_NO_THROW(mr.allocate(4000));
+    EXPECT_NO_THROW(mr.allocate(500));
+    EXPECT_THROW(mr.allocate(2000), rmm::out_of_memory);  // too much
+  }
+  {
+    // with max pool size
+    auto const max_size{6000};
+    limiting_mr limiter{&cuda, max_size};
+    pool_mr mr{&limiter, 0, 8192};
+    EXPECT_NO_THROW(mr.allocate(1000));
+    EXPECT_THROW(mr.allocate(4000), rmm::out_of_memory);  // too much
+    EXPECT_NO_THROW(mr.allocate(500));
+    EXPECT_NO_THROW(mr.allocate(2000));  // fits
+  }
 }
 
 TEST(PoolTest, DeletedStream)
@@ -124,6 +139,15 @@ TEST(PoolTest, NonAlignedPoolSize)
       mr.allocate(1000);
     }(),
     rmm::logic_error);
+}
+
+TEST(PoolTest, UpstreamDoesntSupportMemInfo)
+{
+  cuda_mr cuda;
+  pool_mr mr1(&cuda);
+  pool_mr mr2(&mr1);
+  auto* ptr = mr2.allocate(1024);
+  mr2.deallocate(ptr, 1024);
 }
 
 }  // namespace

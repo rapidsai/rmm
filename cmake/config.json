@@ -9,7 +9,7 @@
           "VERSION": "?",
           "GIT_SHALLOW": "?",
           "OPTIONS": "*",
-          "FIND_PACKAGE_ARGUMENTS": "*" 
+          "FIND_PACKAGE_ARGUMENTS": "*"
         }
       },
       "ConfigureTest": {
@@ -28,7 +28,7 @@
     "max_pargs_hwrap": 999
   },
   "lint": {
-    "disabled_codes": ["C0301"],
+    "disabled_codes": ["C0301", "C0112"],
     "function_pattern": "[0-9A-z_]+",
     "macro_pattern": "[0-9A-z_]+",
     "global_var_pattern": "[A-z][0-9A-z_]+",

@@ -12,11 +12,13 @@
 # the License.
 # =============================================================================
 
-cmake_minimum_required(VERSION 3.20.1 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.23.1 FATAL_ERROR)
 
-file(DOWNLOAD https://raw.githubusercontent.com/rapidsai/rapids-cmake/branch-21.12/RAPIDS.cmake
-     ${CMAKE_BINARY_DIR}/RAPIDS.cmake)
-include(${CMAKE_BINARY_DIR}/RAPIDS.cmake)
+if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/RMM_RAPIDS.cmake)
+  file(DOWNLOAD https://raw.githubusercontent.com/rapidsai/rapids-cmake/branch-23.02/RAPIDS.cmake
+       ${CMAKE_CURRENT_BINARY_DIR}/RMM_RAPIDS.cmake)
+endif()
+include(${CMAKE_CURRENT_BINARY_DIR}/RMM_RAPIDS.cmake)
 
 include(rapids-cmake)
 include(rapids-cpm)
@@ -25,7 +27,7 @@ include(rapids-find)
 
 project(
   RMM
-  VERSION 21.12.00
+  VERSION 23.02.00
   LANGUAGES CXX)
 
 # Write the version header
@@ -69,6 +71,7 @@ target_include_directories(rmm INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOUR
 if(CUDA_STATIC_RUNTIME)
   message(STATUS "RMM: Enabling static linking of cudart")
   target_link_libraries(rmm INTERFACE CUDA::cudart_static)
+  target_compile_definitions(rmm INTERFACE RMM_STATIC_CUDART)
 else()
   target_link_libraries(rmm INTERFACE CUDA::cudart)
 endif()
@@ -99,11 +102,17 @@ endif()
 
 # optionally build benchmarks
 if(BUILD_BENCHMARKS AND CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
-  include(cmake/thirdparty/get_gbench.cmake)
+  include(${rapids-cmake-dir}/cpm/gbench.cmake)
+  rapids_cpm_gbench()
   add_subdirectory(benchmarks)
 endif()
 
 include(CPack)
+
+# optionally assemble Thrust pretty-printers
+if(Thrust_SOURCE_DIR)
+  configure_file(scripts/load-pretty-printers.in load-pretty-printers @ONLY)
+endif()
 
 # install export targets
 install(TARGETS rmm EXPORT rmm-exports)

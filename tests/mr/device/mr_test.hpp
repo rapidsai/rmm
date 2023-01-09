@@ -128,8 +128,15 @@ inline void test_various_allocations(rmm::mr::device_memory_resource* mr, cuda_s
   // should fail to allocate too much
   {
     void* ptr{nullptr};
-    EXPECT_THROW(ptr = mr->allocate(1_PiB, stream), rmm::bad_alloc);
+    EXPECT_THROW(ptr = mr->allocate(1_PiB, stream), rmm::out_of_memory);
     EXPECT_EQ(nullptr, ptr);
+
+    // test e.what();
+    try {
+      ptr = mr->allocate(1_PiB, stream);
+    } catch (rmm::out_of_memory const& e) {
+      EXPECT_NE(std::string{e.what()}.find("out_of_memory"), std::string::npos);
+    }
   }
 }
 
@@ -227,16 +234,29 @@ struct mr_test : public ::testing::TestWithParam<mr_factory> {
   {
     auto factory = GetParam().factory;
     mr           = factory();
+    if (mr == nullptr) {
+      GTEST_SKIP() << "Skipping tests since the memory resource is not supported with this CUDA "
+                   << "driver/runtime version";
+    }
   }
 
   std::shared_ptr<rmm::mr::device_memory_resource> mr;  ///< Pointer to resource to use in tests
   rmm::cuda_stream stream{};
 };
 
+struct mr_allocation_test : public mr_test {
+};
+
 /// MR factory functions
 inline auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>(); }
 
-inline auto make_cuda_async() { return std::make_shared<rmm::mr::cuda_async_memory_resource>(); }
+inline auto make_cuda_async()
+{
+  if (rmm::detail::async_alloc::is_supported()) {
+    return std::make_shared<rmm::mr::cuda_async_memory_resource>();
+  }
+  return std::shared_ptr<rmm::mr::cuda_async_memory_resource>{nullptr};
+}
 
 inline auto make_managed() { return std::make_shared<rmm::mr::managed_memory_resource>(); }
 

@@ -32,7 +32,8 @@ function(ConfigureBench BENCH_NAME)
     ${BENCH_NAME}
     PROPERTIES POSITION_INDEPENDENT_CODE ON
                RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${RMM_BINARY_DIR}/gbenchmarks>"
-               CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}")
+               CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
+               INSTALL_RPATH "\$ORIGIN/../../../lib")
   target_link_libraries(${BENCH_NAME} benchmark::benchmark pthread rmm)
   target_compile_definitions(${BENCH_NAME}
                              PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
@@ -41,8 +42,9 @@ function(ConfigureBench BENCH_NAME)
     target_compile_definitions(${BENCH_NAME} PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
   endif()
 
-  target_compile_options(${BENCH_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Wall -Werror
-                                              -Wno-error=deprecated-declarations>)
+  target_compile_options(
+    ${BENCH_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Wall -Werror
+                         -Wno-error=deprecated-declarations -Wno-unknown-pragmas>)
   if(DISABLE_DEPRECATION_WARNING)
     target_compile_options(
       ${BENCH_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-Wno-deprecated-declarations>)
@@ -50,6 +52,11 @@ function(ConfigureBench BENCH_NAME)
                            PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-declarations>)
   endif()
 
+  install(
+    TARGETS ${BENCH_NAME}
+    COMPONENT testing
+    DESTINATION bin/benchmarks/librmm
+    EXCLUDE_FROM_ALL)
 endfunction(ConfigureBench)
 
 # random allocations benchmark

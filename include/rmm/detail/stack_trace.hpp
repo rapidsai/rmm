@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <rmm/detail/error.hpp>
+
 // execinfo is a linux-only library, so stack traces will only be available on
 // linux systems.
 #if (defined(__GNUC__) && !defined(__MINGW32__) && !defined(__MINGW64__))
@@ -64,32 +66,29 @@ class stack_trace {
       backtrace_symbols(trace.stack_ptrs.data(), static_cast<int>(trace.stack_ptrs.size())),
       &::free);
 
-    if (strings == nullptr) {
-      os << "But no stack trace could be found!" << std::endl;
-    } else {
-      // Iterate over the stack pointers converting to a string
-      for (std::size_t i = 0; i < trace.stack_ptrs.size(); ++i) {
-        // Leading index
-        os << "#" << i << " in ";
+    RMM_EXPECTS(strings != nullptr, "Unexpected null stack trace symbols");
+    // Iterate over the stack pointers converting to a string
+    for (std::size_t i = 0; i < trace.stack_ptrs.size(); ++i) {
+      // Leading index
+      os << "#" << i << " in ";
 
-        auto const str = [&] {
-          Dl_info info;
-          if (dladdr(trace.stack_ptrs[i], &info) != 0) {
-            int status = -1;  // Demangle the name. This can occasionally fail
+      auto const str = [&] {
+        Dl_info info;
+        if (dladdr(trace.stack_ptrs[i], &info) != 0) {
+          int status = -1;  // Demangle the name. This can occasionally fail
 
-            std::unique_ptr<char, decltype(&::free)> demangled(
-              abi::__cxa_demangle(info.dli_sname, nullptr, nullptr, &status), &::free);
-            // If it fails, fallback to the dli_name.
-            if (status == 0 or (info.dli_sname != nullptr)) {
-              auto const* name = status == 0 ? demangled.get() : info.dli_sname;
-              return name + std::string(" from ") + info.dli_fname;
-            }
+          std::unique_ptr<char, decltype(&::free)> demangled(
+            abi::__cxa_demangle(info.dli_sname, nullptr, nullptr, &status), &::free);
+          // If it fails, fallback to the dli_name.
+          if (status == 0 or (info.dli_sname != nullptr)) {
+            auto const* name = status == 0 ? demangled.get() : info.dli_sname;
+            return name + std::string(" from ") + info.dli_fname;
           }
-          return std::string(strings.get()[i]);
-        }();
+        }
+        return std::string(strings.get()[i]);
+      }();
 
-        os << str << std::endl;
-      }
+      os << str << std::endl;
     }
 #else
     os << "stack traces disabled" << std::endl;

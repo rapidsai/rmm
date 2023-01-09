@@ -22,8 +22,27 @@ from rmm.rmm import (
     RMMNumbaManager,
     _numba_memory_manager,
     is_initialized,
+    register_reinitialize_hook,
     reinitialize,
     rmm_cupy_allocator,
+    rmm_torch_allocator,
+    unregister_reinitialize_hook,
 )
+
+__all__ = [
+    "DeviceBuffer",
+    "RMMError",
+    "RMMNumbaManager",
+    "disable_logging",
+    "enable_logging",
+    "get_log_filenames",
+    "get_versions",
+    "is_initialized",
+    "mr",
+    "register_reinitialize_hook",
+    "reinitialize",
+    "rmm_cupy_allocator",
+    "unregister_reinitialize_hook",
+]
 
 __version__ = get_versions()["version"]

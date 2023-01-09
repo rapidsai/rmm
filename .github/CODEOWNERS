@@ -11,7 +11,7 @@ python/            @rapidsai/rmm-python-codeowners
 **/cmake/          @rapidsai/rmm-cmake-codeowners
 
 #build/ops code owners
-.github/           @rapidsai/ops-codeowners 
+.github/           @rapidsai/ops-codeowners
 ci/                @rapidsai/ops-codeowners
 conda/             @rapidsai/ops-codeowners
 **/Dockerfile      @rapidsai/ops-codeowners

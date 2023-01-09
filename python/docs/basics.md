@@ -54,7 +54,7 @@ DeviceBuffers can also be created by copying data from host memory:
 >>> import rmm
 >>> import numpy as np
 >>> a = np.array([1, 2, 3], dtype='float64')
->>> buf = rmm.to_device(a.tobytes())
+>>> buf = rmm.DeviceBuffer.to_device(a.view("int8"))  # to_device expects an 8-bit type or `bytes`
 >>> buf.size
 24
 ```
@@ -146,13 +146,13 @@ allocations by setting the CuPy CUDA allocator to
 ### Using RMM with Numba
 
 You can configure Numba to use RMM for memory allocations using the
-Numba [EMM Plugin](http://numba.pydata.org/numba-doc/latest/cuda/external-memory.html#setting-the-emm-plugin).
+Numba [EMM Plugin](https://numba.readthedocs.io/en/stable/cuda/external-memory.html#setting-emm-plugin).
 
 This can be done in two ways:
 
 1. Setting the environment variable `NUMBA_CUDA_MEMORY_MANAGER`:
 
-  ```python
+  ```bash
   $ NUMBA_CUDA_MEMORY_MANAGER=rmm python (args)
   ```
 

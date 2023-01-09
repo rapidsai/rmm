@@ -23,6 +23,8 @@
 
 #include <gtest/gtest.h>
 
+#include <spdlog/sinks/ostream_sink.h>
+
 namespace rmm::test {
 namespace {
 
@@ -195,6 +197,34 @@ TEST(TrackingTest, DeallocWrongBytes)
 
   // Verify current allocations are correct despite the error
   EXPECT_EQ(mr.get_allocated_bytes(), 0);
+}
+
+TEST(TrackingTest, LogOutstandingAllocations)
+{
+  std::ostringstream oss;
+  auto oss_sink = std::make_shared<spdlog::sinks::ostream_sink_st>(oss);
+  rmm::logger().sinks().push_back(oss_sink);
+  auto old_level = rmm::logger().level();
+
+  tracking_adaptor mr{rmm::mr::get_current_device_resource()};
+  std::vector<void*> allocations;
+  for (std::size_t i = 0; i < num_allocations; ++i) {
+    allocations.push_back(mr.allocate(ten_MiB));
+  }
+
+  rmm::logger().set_level(spdlog::level::debug);
+  EXPECT_NO_THROW(mr.log_outstanding_allocations());
+
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_DEBUG
+  EXPECT_NE(oss.str().find("Outstanding Allocations"), std::string::npos);
+#endif
+
+  for (auto& allocation : allocations) {
+    mr.deallocate(allocation, ten_MiB);
+  }
+
+  rmm::logger().set_level(old_level);
+  rmm::logger().sinks().pop_back();
 }
 
 }  // namespace

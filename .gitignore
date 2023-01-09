@@ -50,6 +50,9 @@ pip-delete-this-directory.txt
 # Ignore dynamically generated .pxd files
 python/rmm/_cuda/gpu.pxd
 
+# Ignore _skbuild directory
+_skbuild/
+
 # Unit test / coverage reports
 htmlcov/
 .tox/
@@ -147,3 +150,6 @@ ENV/
 
 # RMM log files
 rmm_log.txt
+
+# cibuildwheel
+/wheelhouse

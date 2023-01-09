@@ -16,13 +16,17 @@
 function(find_and_configure_spdlog)
 
   include(${rapids-cmake-dir}/cpm/spdlog.cmake)
-  rapids_cpm_spdlog()
+  rapids_cpm_spdlog(INSTALL_EXPORT_SET rmm-exports)
+  rapids_export_package(BUILD spdlog rmm-exports)
 
   if(spdlog_ADDED)
-    install(TARGETS spdlog_header_only EXPORT rmm-exports)
-  else()
-    rapids_export_package(BUILD spdlog rmm-exports)
-    rapids_export_package(INSTALL spdlog rmm-exports)
+    rapids_export(
+      BUILD spdlog
+      EXPORT_SET spdlog
+      GLOBAL_TARGETS spdlog spdlog_header_only
+      NAMESPACE spdlog::)
+    include("${rapids-cmake-dir}/export/find_package_root.cmake")
+    rapids_export_find_package_root(BUILD spdlog [=[${CMAKE_CURRENT_LIST_DIR}]=] rmm-exports)
   endif()
 endfunction()
 

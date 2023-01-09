@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from cuda.ccudart cimport cudaStream_t
 from libcpp cimport bool
-
-from rmm._lib.lib cimport cudaStream_t
 
 
 cdef extern from "rmm/cuda_stream_view.hpp" namespace "rmm" nogil:

@@ -217,10 +217,11 @@ struct replay_benchmark {
           cv.wait(lock, [&]() { return event_index == event.index; });
         }
 
+        // rmm::detail::action::ALLOCATE_FAILURE is ignored.
         if (rmm::detail::action::ALLOCATE == event.act) {
           auto ptr = mr_->allocate(event.size);
           set_allocation(event.pointer, allocation{ptr, event.size});
-        } else {
+        } else if (rmm::detail::action::FREE == event.act) {
           auto alloc = remove_allocation(event.pointer);
           mr_->deallocate(alloc.ptr, event.size);
         }

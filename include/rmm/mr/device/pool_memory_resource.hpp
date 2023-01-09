@@ -24,6 +24,7 @@
 #include <rmm/mr/device/detail/stream_ordered_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
+#include <rmm/detail/thrust_namespace.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/optional.h>
@@ -129,6 +130,15 @@ class pool_memory_resource final
    */
   Upstream* get_upstream() const noexcept { return upstream_mr_; }
 
+  /**
+   * @brief Computes the size of the current pool
+   *
+   * Includes allocated as well as free memory.
+   *
+   * @return std::size_t The total size of the currently allocated pool.
+   */
+  [[nodiscard]] std::size_t pool_size() const noexcept { return current_pool_size_; }
+
  protected:
   using free_list  = detail::coalescing_free_list;
   using block_type = free_list::block_type;
@@ -180,7 +190,7 @@ class pool_memory_resource final
     RMM_LOG_ERROR("[A][Stream {}][Upstream {}B][FAILURE maximum pool size exceeded]",
                   fmt::ptr(stream.value()),
                   min_size);
-    RMM_FAIL("Maximum pool size exceeded", rmm::bad_alloc);
+    RMM_FAIL("Maximum pool size exceeded", rmm::out_of_memory);
   }
 
   /**
@@ -256,9 +266,9 @@ class pool_memory_resource final
   {
     if (maximum_pool_size_.has_value()) {
       auto const unaligned_remaining = maximum_pool_size_.value() - pool_size();
-      auto const remaining =
-        rmm::detail::align_up(unaligned_remaining, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
-      auto const aligned_size = rmm::detail::align_up(size, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
+      using rmm::detail::align_up;
+      auto const remaining = align_up(unaligned_remaining, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
+      auto const aligned_size = align_up(size, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
       return (aligned_size <= remaining) ? std::max(aligned_size, remaining / 2) : 0;
     }
     return std::max(size, pool_size());
@@ -278,7 +288,7 @@ class pool_memory_resource final
     if (size == 0) { return {}; }
 
     try {
-      void* ptr = upstream_mr_->allocate(size, stream);
+      void* ptr = get_upstream()->allocate(size, stream);
       return thrust::optional<block_type>{
         *upstream_blocks_.emplace(static_cast<char*>(ptr), size, true).first};
     } catch (std::exception const& e) {
@@ -339,15 +349,6 @@ class pool_memory_resource final
   }
 
   /**
-   * @brief Computes the size of the current pool
-   *
-   * Includes allocated as well as free memory.
-   *
-   * @return std::size_t The total size of the currently allocated pool.
-   */
-  [[nodiscard]] std::size_t pool_size() const noexcept { return current_pool_size_; }
-
-  /**
    * @brief Free all memory allocated from the upstream memory_resource.
    *
    */
@@ -356,7 +357,7 @@ class pool_memory_resource final
     lock_guard lock(this->get_mutex());
 
     for (auto block : upstream_blocks_) {
-      upstream_mr_->deallocate(block.pointer(), block.size());
+      get_upstream()->deallocate(block.pointer(), block.size());
     }
     upstream_blocks_.clear();
 #ifdef RMM_POOL_TRACK_ALLOCATIONS
@@ -366,6 +367,7 @@ class pool_memory_resource final
     current_pool_size_ = 0;
   }
 
+#ifdef RMM_DEBUG_PRINT
   /**
    * @brief Print debugging information about all blocks in the pool.
    *
@@ -376,7 +378,7 @@ class pool_memory_resource final
   {
     lock_guard lock(this->get_mutex());
 
-    auto const [free, total] = upstream_mr_->get_mem_info(0);
+    auto const [free, total] = upstream_mr_->get_mem_info(rmm::cuda_stream_default);
     std::cout << "GPU free memory: " << free << " total: " << total << "\n";
 
     std::cout << "upstream_blocks: " << upstream_blocks_.size() << "\n";
@@ -396,6 +398,7 @@ class pool_memory_resource final
 
     this->print_free_blocks();
   }
+#endif
 
   /**
    * @brief Get the largest available block size and total free size in the specified free list

@@ -1,8 +1,9 @@
-# Copyright (c) 2019-2021, NVIDIA CORPORATION.
+# Copyright (c) 2019-2022, NVIDIA CORPORATION.
 
 {% set version = environ.get('GIT_DESCRIBE_TAG', '0.0.0.dev').lstrip('v') + environ.get('VERSION_SUFFIX', '') %}
-{% set py_version=environ.get('CONDA_PY', 35) %}
-{% set cuda_version='.'.join(environ.get('CUDA', '10.1').split('.')[:2]) %}
+{% set cuda_version = '.'.join(environ['RAPIDS_CUDA_VERSION'].split('.')[:2]) %}
+{% set cuda_major = cuda_version.split('.')[0] %}
+{% set py_version = environ['CONDA_PY'] %}
 
 package:
   name: rmm
@@ -13,34 +14,50 @@ source:
 
 build:
   number: {{ GIT_DESCRIBE_NUMBER }}
-  string: cuda_{{ cuda_version }}_py{{ py_version }}_{{ GIT_DESCRIBE_HASH }}_{{ GIT_DESCRIBE_NUMBER }}
+  string: cuda{{ cuda_major }}_py{{ py_version }}_{{ GIT_DESCRIBE_HASH }}_{{ GIT_DESCRIBE_NUMBER }}
   script_env:
-    - RMM_BUILD_NO_GPU_TEST
-    - VERSION_SUFFIX
-    - CC
-    - CXX
-    - CUDAHOSTCXX
+    - CMAKE_GENERATOR
+    - CMAKE_C_COMPILER_LAUNCHER
+    - CMAKE_CXX_COMPILER_LAUNCHER
+    - CMAKE_CUDA_COMPILER_LAUNCHER
+    - SCCACHE_S3_KEY_PREFIX=rmm-aarch64 # [aarch64]
+    - SCCACHE_S3_KEY_PREFIX=rmm-linux64 # [linux64]
+    - SCCACHE_BUCKET
+    - SCCACHE_REGION
+    - SCCACHE_IDLE_TIMEOUT
+    - AWS_ACCESS_KEY_ID
+    - AWS_SECRET_ACCESS_KEY
+  ignore_run_exports_from:
+    - {{ compiler('cuda') }}
 
 requirements:
+  build:
+    - cmake >=3.23.1,!=3.25.0
+    - ninja
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+    - {{ compiler('cuda') }} {{ cuda_version }}
+    - sysroot_{{ target_platform }} {{ sysroot_version }}
   host:
-    - python
-    - librmm {{ version }}
-    - setuptools
+    - cuda-python >=11.7.1,<12.0
+    - cudatoolkit ={{ cuda_version }}
     - cython >=0.29,<0.30
-    - spdlog>=1.8.5,<2.0.0a0
-    - cudatoolkit {{ cuda_version }}.*
-  run:
+    - librmm ={{ version }}
     - python
+    - scikit-build >=0.13.1
+    - setuptools
+  run:
+    - cuda-python >=11.7.1,<12.0
     - numba >=0.49
-    - numpy
-    - {{ pin_compatible('cudatoolkit', max_pin='x.x') }}
+    - numpy >=1.19
+    - {{ pin_compatible('cudatoolkit', max_pin='x', min_pin='x') }}
 
 test:
-  commands:
-    - python -c "import rmm"
+  imports:
+    - rmm
 
 about:
-  home: http://rapids.ai/
+  home: https://rapids.ai/
   license: Apache-2.0
   license_family: Apache
   license_file: LICENSE

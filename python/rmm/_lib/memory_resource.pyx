@@ -1,16 +1,73 @@
-# Copyright (c) 2020, NVIDIA CORPORATION.
+# Copyright (c) 2020-2022, NVIDIA CORPORATION.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import os
 import warnings
 from collections import defaultdict
 
+cimport cython
 from cython.operator cimport dereference as deref
-from libc.stdint cimport int8_t, int64_t
+from libc.stdint cimport int8_t, int64_t, uintptr_t
 from libcpp cimport bool
-from libcpp.cast cimport dynamic_cast
-from libcpp.memory cimport make_shared, make_unique, shared_ptr, unique_ptr
+from libcpp.memory cimport make_unique, unique_ptr
+from libcpp.pair cimport pair
 from libcpp.string cimport string
 
-from rmm._cuda.gpu import CUDARuntimeError, cudaError, getDevice, setDevice
+from cuda.cudart import cudaError_t
+
+from rmm._cuda.gpu import CUDARuntimeError, getDevice, setDevice
+
+from rmm._lib.cuda_stream_view cimport cuda_stream_view
+from rmm._lib.per_device_resource cimport (
+    cuda_device_id,
+    set_per_device_resource as cpp_set_per_device_resource,
+)
+
+# Transparent handle of a C++ exception
+ctypedef pair[int, string] CppExcept
+
+cdef CppExcept translate_python_except_to_cpp(err: BaseException):
+    """Translate a Python exception into a C++ exception handle
+
+    The returned exception handle can then be thrown by `throw_cpp_except()`,
+    which MUST be done without holding the GIL.
+
+    This is useful when C++ calls a Python function and needs to catch or
+    propagate exceptions.
+    """
+    if isinstance(err, MemoryError):
+        return CppExcept(0, str.encode(str(err)))
+    return CppExcept(-1, str.encode(str(err)))
+
+# Implementation of `throw_cpp_except()`, which throws a given `CppExcept`.
+# This function MUST be called without the GIL otherwise the thrown C++
+# exception are translated back into a Python exception.
+cdef extern from *:
+    """
+    #include <stdexcept>
+    #include <utility>
+
+    void throw_cpp_except(std::pair<int, std::string> res) {
+        switch(res.first) {
+            case 0:
+                throw rmm::out_of_memory(res.second);
+            default:
+                throw std::runtime_error(res.second);
+        }
+    }
+    """
+    void throw_cpp_except(CppExcept) nogil
 
 
 # NOTE: Keep extern declarations in .pyx file as much as possible to avoid
@@ -40,9 +97,24 @@ cdef extern from "rmm/mr/device/managed_memory_resource.hpp" \
 
 cdef extern from "rmm/mr/device/cuda_async_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
+
     cdef cppclass cuda_async_memory_resource(device_memory_resource):
-        cuda_async_memory_resource(optional[size_t] initial_pool_size,
-                                   optional[size_t] release_threshold) except +
+        cuda_async_memory_resource(
+            optional[size_t] initial_pool_size,
+            optional[size_t] release_threshold,
+            optional[allocation_handle_type] export_handle_type) except +
+
+# TODO: when we adopt Cython 3.0 use enum class
+cdef extern from "rmm/mr/device/cuda_async_memory_resource.hpp" \
+        namespace \
+        "rmm::mr::cuda_async_memory_resource::allocation_handle_type" \
+        nogil:
+    enum allocation_handle_type \
+            "rmm::mr::cuda_async_memory_resource::allocation_handle_type":
+        none
+        posix_file_descriptor
+        win32
+        win32_kmt
 
 cdef extern from "rmm/mr/device/pool_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
@@ -51,6 +123,7 @@ cdef extern from "rmm/mr/device/pool_memory_resource.hpp" \
             Upstream* upstream_mr,
             optional[size_t] initial_pool_size,
             optional[size_t] maximum_pool_size) except +
+        size_t pool_size()
 
 cdef extern from "rmm/mr/device/fixed_size_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
@@ -59,6 +132,19 @@ cdef extern from "rmm/mr/device/fixed_size_memory_resource.hpp" \
             Upstream* upstream_mr,
             size_t block_size,
             size_t block_to_preallocate) except +
+
+cdef extern from "rmm/mr/device/callback_memory_resource.hpp" \
+        namespace "rmm::mr" nogil:
+    ctypedef void* (*allocate_callback_t)(size_t, void*)
+    ctypedef void (*deallocate_callback_t)(void*, size_t, void*)
+
+    cdef cppclass callback_memory_resource(device_memory_resource):
+        callback_memory_resource(
+            allocate_callback_t allocate_callback,
+            deallocate_callback_t deallocate_callback,
+            void* allocate_callback_arg,
+            void* deallocate_callback_arg
+        ) except +
 
 cdef extern from "rmm/mr/device/binning_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
@@ -111,27 +197,17 @@ cdef extern from "rmm/mr/device/tracking_resource_adaptor.hpp" \
         string get_outstanding_allocations_str() except +
         void log_outstanding_allocations() except +
 
-cdef extern from "rmm/mr/device/per_device_resource.hpp" namespace "rmm" nogil:
-
-    cdef cppclass cuda_device_id:
-        ctypedef int value_type
-
-        cuda_device_id(value_type id)
-
-        value_type value()
-
-    cdef device_memory_resource* _set_current_device_resource \
-        "rmm::mr::set_current_device_resource" (device_memory_resource* new_mr)
-    cdef device_memory_resource* _get_current_device_resource \
-        "rmm::mr::get_current_device_resource" ()
-
-    cdef device_memory_resource* _set_per_device_resource \
-        "rmm::mr::set_per_device_resource" (
-            cuda_device_id id,
-            device_memory_resource* new_mr
-        )
-    cdef device_memory_resource* _get_per_device_resource \
-        "rmm::mr::get_per_device_resource"(cuda_device_id id)
+cdef extern from "rmm/mr/device/failure_callback_resource_adaptor.hpp" \
+        namespace "rmm::mr" nogil:
+    ctypedef bool (*failure_callback_t)(size_t, void*)
+    cdef cppclass failure_callback_resource_adaptor[Upstream](
+        device_memory_resource
+    ):
+        failure_callback_resource_adaptor(
+            Upstream* upstream_mr,
+            failure_callback_t callback,
+            void* callback_arg
+        ) except +
 
 
 cdef class DeviceMemoryResource:
@@ -139,7 +215,15 @@ cdef class DeviceMemoryResource:
     cdef device_memory_resource* get_mr(self):
         return self.c_obj.get()
 
+    def allocate(self, size_t nbytes):
+        return <uintptr_t>self.c_obj.get().allocate(nbytes)
 
+    def deallocate(self, uintptr_t ptr, size_t nbytes):
+        self.c_obj.get().deallocate(<void*>(ptr), nbytes)
+
+
+# See the note about `no_gc_clear` in `device_buffer.pyx`.
+@cython.no_gc_clear
 cdef class UpstreamResourceAdaptor(DeviceMemoryResource):
 
     def __cinit__(self, DeviceMemoryResource upstream_mr, *args, **kwargs):
@@ -165,27 +249,36 @@ cdef class CudaMemoryResource(DeviceMemoryResource):
 
     def __init__(self):
         """
-        Memory resource that uses cudaMalloc/Free for allocation/deallocation
+        Memory resource that uses ``cudaMalloc``/``cudaFree`` for
+        allocation/deallocation.
         """
         pass
 
 
 cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
     """
-    Memory resource that uses cudaMallocAsync/Free for
+    Memory resource that uses ``cudaMallocAsync``/``cudaFreeAsync`` for
     allocation/deallocation.
 
     Parameters
     ----------
-    initial_pool_size : int,optional
+    initial_pool_size : int, optional
         Initial pool size in bytes. By default, half the available memory
         on the device is used.
     release_threshold: int, optional
         Release threshold in bytes. If the pool size grows beyond this
         value, unused memory held by the pool will be released at the
         next synchronization point.
+    enable_ipc: bool, optional
+        If True, enables export of POSIX file descriptor handles for the memory
+        allocated by this resource so that it can be used with CUDA IPC.
     """
-    def __cinit__(self, initial_pool_size=None, release_threshold=None):
+    def __cinit__(
+        self,
+        initial_pool_size=None,
+        release_threshold=None,
+        enable_ipc=False
+    ):
         cdef optional[size_t] c_initial_pool_size = (
             optional[size_t]()
             if initial_pool_size is None
@@ -198,10 +291,21 @@ cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
             else optional[size_t](release_threshold)
         )
 
+        # If IPC memory handles are not supported, the constructor below will
+        # raise an error from C++.
+        cdef optional[allocation_handle_type] c_export_handle_type = (
+            optional[allocation_handle_type](
+                posix_file_descriptor
+            )
+            if enable_ipc
+            else optional[allocation_handle_type]()
+        )
+
         self.c_obj.reset(
             new cuda_async_memory_resource(
                 c_initial_pool_size,
-                c_release_threshold
+                c_release_threshold,
+                c_export_handle_type
             )
         )
 
@@ -214,7 +318,7 @@ cdef class ManagedMemoryResource(DeviceMemoryResource):
 
     def __init__(self):
         """
-        Memory resource that uses cudaMallocManaged/Free for
+        Memory resource that uses ``cudaMallocManaged``/``cudaFree`` for
         allocation/deallocation.
         """
         pass
@@ -263,7 +367,7 @@ cdef class PoolMemoryResource(UpstreamResourceAdaptor):
         upstream_mr : DeviceMemoryResource
             The DeviceMemoryResource from which to allocate blocks for the
             pool.
-        initial_pool_size : int,optional
+        initial_pool_size : int, optional
             Initial pool size in bytes. By default, half the available memory
             on the device is used.
         maximum_pool_size : int, optional
@@ -271,6 +375,11 @@ cdef class PoolMemoryResource(UpstreamResourceAdaptor):
         """
         pass
 
+    def pool_size(self):
+        cdef pool_memory_resource[device_memory_resource]* c_mr = (
+            <pool_memory_resource[device_memory_resource]*>(self.get_mr())
+        )
+        return c_mr.pool_size()
 
 cdef class FixedSizeMemoryResource(UpstreamResourceAdaptor):
     def __cinit__(
@@ -322,7 +431,7 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
         int8_t max_size_exponent=-1,
     ):
 
-        self.bin_mrs = []
+        self._bin_mrs = []
 
         if (min_size_exponent == -1 or max_size_exponent == -1):
             self.c_obj.reset(
@@ -356,15 +465,15 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
 
         If min_size_exponent and max_size_exponent are specified, initializes
         with one or more FixedSizeMemoryResource bins in the range
-        [2^min_size_exponent, 2^max_size_exponent].
+        ``[2**min_size_exponent, 2**max_size_exponent]``.
 
-        Call add_bin to add additional bin allocators.
+        Call :py:meth:`~.add_bin` to add additional bin allocators.
 
         Parameters
         ----------
         upstream_mr : DeviceMemoryResource
             The memory resource to use for allocations larger than any of the
-            bins
+            bins.
         min_size_exponent : size_t
             The base-2 exponent of the minimum size FixedSizeMemoryResource
             bin to create.
@@ -395,19 +504,102 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
         bin_resource : DeviceMemoryResource
             The resource to use for this bin (optional)
         """
-        cdef DeviceMemoryResource _bin_resource
-
         if bin_resource is None:
             (<binning_memory_resource[device_memory_resource]*>(
                 self.c_obj.get()))[0].add_bin(allocation_size)
         else:
             # Save the ref to the new bin resource to ensure its lifetime
-            self.bin_mrs.append(bin_resource)
+            self._bin_mrs.append(bin_resource)
 
             (<binning_memory_resource[device_memory_resource]*>(
                 self.c_obj.get()))[0].add_bin(
                     allocation_size,
                     bin_resource.get_mr())
+
+    @property
+    def bin_mrs(self) -> list:
+        """Get the list of binned memory resources."""
+        return self._bin_mrs
+
+
+cdef void* _allocate_callback_wrapper(
+    size_t nbytes,
+    cuda_stream_view stream,
+    void* ctx
+) nogil:
+    cdef CppExcept err
+    with gil:
+        try:
+            return <void*><uintptr_t>((<object>ctx)(nbytes))
+        except BaseException as e:
+            err = translate_python_except_to_cpp(e)
+    throw_cpp_except(err)
+
+cdef void _deallocate_callback_wrapper(
+    void* ptr,
+    size_t nbytes,
+    cuda_stream_view stream,
+    void* ctx
+) with gil:
+    (<object>ctx)(<uintptr_t>(ptr), nbytes)
+
+
+cdef class CallbackMemoryResource(DeviceMemoryResource):
+    """
+    A memory resource that uses the user-provided callables to do
+    memory allocation and deallocation.
+
+    ``CallbackMemoryResource`` should really only be used for
+    debugging memory issues, as there is a significant performance
+    penalty associated with using a Python function for each memory
+    allocation and deallocation.
+
+    Parameters
+    ----------
+    allocate_func: callable
+        The allocation function must accept a single integer argument,
+        representing the number of bytes to allocate, and return an
+        integer representing the pointer to the allocated memory.
+    deallocate_func: callable
+        The deallocation function must accept two arguments, an integer
+        representing the pointer to the memory to free, and a second
+        integer representing the number of bytes to free.
+
+    Examples
+    --------
+    >>> import rmm
+    >>> base_mr = rmm.mr.CudaMemoryResource()
+    >>> def allocate_func(size):
+    ...     print(f"Allocating {size} bytes")
+    ...     return base_mr.allocate(size)
+    ...
+    >>> def deallocate_func(ptr, size):
+    ...     print(f"Deallocating {size} bytes")
+    ...     return base_mr.deallocate(ptr, size)
+    ...
+    >>> rmm.mr.set_current_device_resource(
+        rmm.mr.CallbackMemoryResource(allocate_func, deallocate_func)
+    )
+    >>> dbuf = rmm.DeviceBuffer(size=256)
+    Allocating 256 bytes
+    >>> del dbuf
+    Deallocating 256 bytes
+    """
+    def __init__(
+        self,
+        allocate_func,
+        deallocate_func,
+    ):
+        self._allocate_func = allocate_func
+        self._deallocate_func = deallocate_func
+        self.c_obj.reset(
+            new callback_memory_resource(
+                <allocate_callback_t>(_allocate_callback_wrapper),
+                <deallocate_callback_t>(_deallocate_callback_wrapper),
+                <void*>(allocate_func),
+                <void*>(deallocate_func)
+            )
+        )
 
 
 def _append_id(filename, id):
@@ -518,6 +710,9 @@ cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
         Gets the current, peak, and total allocated bytes and number of
         allocations.
 
+        The dictionary keys are ``current_bytes``, ``current_count``,
+        ``peak_bytes``, ``peak_count``, ``total_bytes``, and ``total_count``.
+
         Returns:
             dict: Dictionary containing allocation counts and bytes.
         """
@@ -601,6 +796,50 @@ cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
             self.c_obj.get()))[0].log_outstanding_allocations()
 
 
+cdef bool _oom_callback_function(size_t bytes, void *callback_arg) nogil:
+    cdef CppExcept err
+    with gil:
+        try:
+            return (<object>callback_arg)(bytes)
+        except BaseException as e:
+            err = translate_python_except_to_cpp(e)
+    throw_cpp_except(err)
+
+
+cdef class FailureCallbackResourceAdaptor(UpstreamResourceAdaptor):
+
+    def __cinit__(
+        self,
+        DeviceMemoryResource upstream_mr,
+        object callback,
+    ):
+        self._callback = callback
+        self.c_obj.reset(
+            new failure_callback_resource_adaptor[device_memory_resource](
+                upstream_mr.get_mr(),
+                <failure_callback_t>_oom_callback_function,
+                <void*>callback
+            )
+        )
+
+    def __init__(
+        self,
+        DeviceMemoryResource upstream_mr,
+        object callback,
+    ):
+        """
+        Memory resource that call callback when memory allocation fails.
+
+        Parameters
+        ----------
+        upstream : DeviceMemoryResource
+            The upstream memory resource.
+        callback : callable
+            Function called when memory allocation fails.
+        """
+        pass
+
+
 # Global per-device memory resources; dict of int:DeviceMemoryResource
 cdef _per_device_mrs = defaultdict(CudaMemoryResource)
 
@@ -641,7 +880,7 @@ cpdef void _initialize(
     try:
         original_device = getDevice()
     except CUDARuntimeError as e:
-        if e.status == cudaError.cudaErrorNoDevice:
+        if e.status == cudaError_t.cudaErrorNoDevice:
             warnings.warn(e.msg)
         else:
             raise e
@@ -709,7 +948,7 @@ cpdef set_per_device_resource(int device, DeviceMemoryResource mr):
     cdef unique_ptr[cuda_device_id] device_id = \
         make_unique[cuda_device_id](device)
 
-    _set_per_device_resource(deref(device_id), mr.get_mr())
+    cpp_set_per_device_resource(deref(device_id), mr.get_mr())
 
 
 cpdef set_current_device_resource(DeviceMemoryResource mr):

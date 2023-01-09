@@ -13,7 +13,7 @@
 # limitations under the License.
 
 cimport cython
-from libc.stdint cimport uintptr_t
+from cuda.ccudart cimport cudaStream_t
 from libcpp cimport bool
 
 

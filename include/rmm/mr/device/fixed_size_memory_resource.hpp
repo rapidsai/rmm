@@ -21,6 +21,7 @@
 #include <rmm/mr/device/detail/fixed_size_free_list.hpp>
 #include <rmm/mr/device/detail/stream_ordered_memory_resource.hpp>
 
+#include <rmm/detail/thrust_namespace.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 
@@ -100,7 +101,7 @@ class fixed_size_memory_resource
   /**
    * @brief Query whether the resource supports the get_mem_info API.
    *
-   * @return bool true if the resource supports get_mem_info, false otherwise.
+   * @return false
    */
   [[nodiscard]] bool supports_get_mem_info() const noexcept override { return false; }
 
@@ -158,7 +159,7 @@ class fixed_size_memory_resource
    */
   free_list blocks_from_upstream(cuda_stream_view stream)
   {
-    void* ptr = upstream_mr_->allocate(upstream_chunk_size_, stream);
+    void* ptr = get_upstream()->allocate(upstream_chunk_size_, stream);
     block_type block{ptr};
     upstream_blocks_.push_back(block);
 
@@ -215,8 +216,7 @@ class fixed_size_memory_resource
    * @param stream the stream being executed on
    * @return std::pair with available and free memory for resource
    */
-  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
-    cuda_stream_view stream) const override
+  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view) const override
   {
     return std::make_pair(0, 0);
   }
@@ -230,16 +230,17 @@ class fixed_size_memory_resource
     lock_guard lock(this->get_mutex());
 
     for (auto block : upstream_blocks_) {
-      upstream_mr_->deallocate(block.pointer(), upstream_chunk_size_);
+      get_upstream()->deallocate(block.pointer(), upstream_chunk_size_);
     }
     upstream_blocks_.clear();
   }
 
+#ifdef RMM_DEBUG_PRINT
   void print()
   {
     lock_guard lock(this->get_mutex());
 
-    auto const [free, total] = upstream_mr_->get_mem_info(0);
+    auto const [free, total] = get_upstream()->get_mem_info(rmm::cuda_stream_default);
     std::cout << "GPU free memory: " << free << " total: " << total << "\n";
 
     std::cout << "upstream_blocks: " << upstream_blocks_.size() << "\n";
@@ -253,6 +254,7 @@ class fixed_size_memory_resource
 
     this->print_free_blocks();
   }
+#endif
 
   /**
    * @brief Get the largest available block size and total free size in the specified free list

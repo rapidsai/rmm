@@ -1,6 +1,6 @@
 
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,10 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
+#include <rmm/mr/device/per_device_resource.hpp>
+
+// explicit instantiation for test coverage purposes.
+template class rmm::device_uvector<int32_t>;
 
 template <typename T>
 struct TypedUVectorTest : ::testing::Test {
@@ -29,6 +33,12 @@ struct TypedUVectorTest : ::testing::Test {
 using TestTypes = ::testing::Types<int8_t, int32_t, uint64_t, float, double>;
 
 TYPED_TEST_CASE(TypedUVectorTest, TestTypes);
+
+TYPED_TEST(TypedUVectorTest, MemoryResource)
+{
+  rmm::device_uvector<TypeParam> vec(128, this->stream());
+  EXPECT_EQ(vec.memory_resource(), rmm::mr::get_current_device_resource());
+}
 
 TYPED_TEST(TypedUVectorTest, ZeroSizeConstructor)
 {
@@ -42,7 +52,8 @@ TYPED_TEST(TypedUVectorTest, NonZeroSizeConstructor)
 {
   auto const size{12345};
   rmm::device_uvector<TypeParam> vec(size, this->stream());
-  EXPECT_EQ(vec.size(), 12345);
+  EXPECT_EQ(vec.size(), size);
+  EXPECT_EQ(vec.ssize(), size);
   EXPECT_NE(vec.data(), nullptr);
   EXPECT_EQ(vec.end(), vec.begin() + vec.size());
   EXPECT_FALSE(vec.is_empty());
@@ -106,6 +117,42 @@ TYPED_TEST(TypedUVectorTest, ResizeLarger)
   EXPECT_EQ(vec.capacity(), larger_size);
   EXPECT_EQ(vec.data(), larger_data);
   EXPECT_EQ(vec.begin(), larger_begin);
+}
+
+TYPED_TEST(TypedUVectorTest, ReserveSmaller)
+{
+  auto const original_size{12345};
+  rmm::device_uvector<TypeParam> vec(original_size, this->stream());
+  auto* const original_data    = vec.data();
+  auto* const original_begin   = vec.begin();
+  auto const original_capacity = vec.capacity();
+
+  auto const smaller_capacity = vec.capacity() - 1;
+  vec.reserve(smaller_capacity, this->stream());
+
+  EXPECT_EQ(vec.data(), original_data);
+  EXPECT_EQ(vec.begin(), original_begin);
+  EXPECT_EQ(vec.size(), original_size);
+  EXPECT_EQ(vec.capacity(), original_capacity);
+}
+
+TYPED_TEST(TypedUVectorTest, ReserveLarger)
+{
+  auto const original_size{12345};
+  rmm::device_uvector<TypeParam> vec(original_size, this->stream());
+  vec.set_element(0, 1, this->stream());
+  auto* const original_data  = vec.data();
+  auto* const original_begin = vec.begin();
+
+  auto const larger_capacity = vec.capacity() + 1;
+  vec.reserve(larger_capacity, this->stream());
+
+  EXPECT_NE(vec.data(), original_data);
+  EXPECT_NE(vec.begin(), original_begin);
+  EXPECT_EQ(vec.size(), original_size);
+  EXPECT_EQ(vec.capacity(), larger_capacity);
+  // The element should be copied
+  EXPECT_EQ(vec.element(0, this->stream()), 1);
 }
 
 TYPED_TEST(TypedUVectorTest, ResizeToZero)
@@ -206,4 +253,35 @@ TYPED_TEST(TypedUVectorTest, FrontBackElement)
 
   EXPECT_EQ(first, vec.front_element(this->stream()));
   EXPECT_EQ(last, vec.back_element(this->stream()));
+}
+
+TYPED_TEST(TypedUVectorTest, SetGetStream)
+{
+  auto const size{12345};
+  rmm::device_uvector<TypeParam> vec(size, this->stream());
+
+  EXPECT_EQ(vec.stream(), this->stream());
+
+  rmm::cuda_stream_view const otherstream{cudaStreamPerThread};
+  vec.set_stream(otherstream);
+
+  EXPECT_EQ(vec.stream(), otherstream);
+}
+
+TYPED_TEST(TypedUVectorTest, Iterators)
+{
+  auto const size{12345};
+  rmm::device_uvector<TypeParam> vec(size, this->stream());
+
+  EXPECT_EQ(vec.begin(), vec.data());
+  EXPECT_EQ(vec.cbegin(), vec.data());
+
+  auto const* const_begin = std::as_const(vec).begin();
+  EXPECT_EQ(const_begin, vec.cbegin());
+
+  EXPECT_EQ(std::distance(vec.begin(), vec.end()), vec.size());
+  EXPECT_EQ(std::distance(vec.cbegin(), vec.cend()), vec.size());
+
+  auto const* const_end = std::as_const(vec).end();
+  EXPECT_EQ(const_end, vec.cend());
 }

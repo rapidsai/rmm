@@ -16,10 +16,17 @@
 
 #include "mr_test.hpp"
 
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_vector.hpp>
+#include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/thrust_allocator_adaptor.hpp>
 
 #include <gtest/gtest.h>
+
+#include <thrust/reduce.h>
+
+// explicit instantiation for test coverage purposes
+template class rmm::mr::thrust_allocator<int>;
 
 namespace rmm::test {
 namespace {
@@ -34,11 +41,22 @@ TEST_P(allocator_test, first)
   EXPECT_EQ(num_ints, thrust::reduce(ints.begin(), ints.end()));
 }
 
+TEST_P(allocator_test, defaults)
+{
+  rmm::mr::thrust_allocator<int> allocator(rmm::cuda_stream_default);
+  EXPECT_EQ(allocator.stream(), rmm::cuda_stream_default);
+  EXPECT_EQ(allocator.resource(), rmm::mr::get_current_device_resource());
+}
+
 INSTANTIATE_TEST_CASE_P(ThrustAllocatorTests,
                         allocator_test,
                         ::testing::Values(mr_factory{"CUDA", &make_cuda},
+#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
+                                          mr_factory{"CUDA_Async", &make_cuda_async},
+#endif
                                           mr_factory{"Managed", &make_managed},
                                           mr_factory{"Pool", &make_pool},
+                                          mr_factory{"Arena", &make_arena},
                                           mr_factory{"Binning", &make_binning}),
                         [](auto const& info) { return info.param.name; });
 

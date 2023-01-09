@@ -26,6 +26,9 @@ cdef extern from "rmm/device_buffer.hpp" namespace "rmm" nogil:
         device_buffer(size_t size, cuda_stream_view stream) except +
         device_buffer(const void* source_data,
                       size_t size, cuda_stream_view stream) except +
+        device_buffer(const device_buffer buf,
+                      cuda_stream_view stream) except +
+        void reserve(size_t new_capacity, cuda_stream_view stream) except +
         void resize(size_t new_size, cuda_stream_view stream) except +
         void shrink_to_fit(cuda_stream_view stream) except +
         void* data()
@@ -57,6 +60,7 @@ cdef class DeviceBuffer:
     cpdef bytes tobytes(self, Stream stream=*)
 
     cdef size_t c_size(self) except *
+    cpdef void reserve(self, size_t new_capacity, Stream stream=*) except *
     cpdef void resize(self, size_t new_size, Stream stream=*) except *
     cpdef size_t capacity(self) except *
     cdef void* c_data(self) except *

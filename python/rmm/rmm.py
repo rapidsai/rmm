@@ -13,7 +13,8 @@
 # limitations under the License.
 import ctypes
 
-from numba import cuda
+from cuda.cuda import CUdeviceptr, cuIpcGetMemHandle
+from numba import config, cuda
 from numba.cuda import HostOnlyCUDAMemoryManager, IpcHandle, MemoryPointer
 
 import rmm
@@ -26,6 +27,9 @@ class RMMError(Exception):
     def __init__(self, errcode, msg):
         self.errcode = errcode
         super(RMMError, self).__init__(msg)
+
+
+_reinitialize_hooks = []
 
 
 def reinitialize(
@@ -62,25 +66,26 @@ def reinitialize(
     logging : bool, default False
         If True, enable run-time logging of all memory events
         (alloc, free, realloc).
-        This has significant performance impact.
+        This has a significant performance impact.
     log_file_name : str
         Name of the log file. If not specified, the environment variable
-        RMM_LOG_FILE is used. A ValueError is thrown if neither is available.
-        A separate log file is produced for each device,
-        and the suffix `".dev{id}"` is automatically added to the log file
-        name.
+        ``RMM_LOG_FILE`` is used. A ``ValueError`` is thrown if neither is
+        available. A separate log file is produced for each device, and the
+        suffix `".dev{id}"` is automatically added to the log file name.
 
     Notes
     -----
-    Note that if you use the environment variable CUDA_VISIBLE_DEVICES
-    with logging enabled, the suffix may not be what you expect. For
-    example, if you set CUDA_VISIBLE_DEVICES=1, the log file produced
-    will still have suffix `0`. Similarly, if you set
-    CUDA_VISIBLE_DEVICES=1,0 and use devices 0 and 1, the log file
-    with suffix `0` will correspond to the GPU with device ID `1`.
-    Use `rmm.get_log_filenames()` to get the log file names
-    corresponding to each device.
+    Note that if you use the environment variable ``CUDA_VISIBLE_DEVICES`` with
+    logging enabled, the suffix may not be what you expect. For example, if you
+    set ``CUDA_VISIBLE_DEVICES=1``, the log file produced will still have
+    suffix ``0``. Similarly, if you set ``CUDA_VISIBLE_DEVICES=1,0`` and use
+    devices 0 and 1, the log file with suffix ``0`` will correspond to the GPU
+    with device ID ``1``. Use `rmm.get_log_filenames()` to get the log file
+    names corresponding to each device.
     """
+    for func, args, kwargs in reversed(_reinitialize_hooks):
+        func(*args, **kwargs)
+
     rmm.mr._initialize(
         pool_allocator=pool_allocator,
         managed_memory=managed_memory,
@@ -94,7 +99,7 @@ def reinitialize(
 
 def is_initialized():
     """
-    Returns true if RMM has been initialized, false otherwise
+    Returns True if RMM has been initialized, False otherwise.
     """
     return rmm.mr.is_initialized()
 
@@ -104,7 +109,7 @@ class RMMNumbaManager(HostOnlyCUDAMemoryManager):
     External Memory Management Plugin implementation for Numba. Provides
     on-device allocation only.
 
-    See http://numba.pydata.org/numba-doc/latest/cuda/external-memory.html for
+    See https://numba.readthedocs.io/en/stable/cuda/external-memory.html for
     details of the interface being implemented here.
     """
 
@@ -118,14 +123,20 @@ class RMMNumbaManager(HostOnlyCUDAMemoryManager):
         """
         buf = librmm.DeviceBuffer(size=size)
         ctx = self.context
-        ptr = ctypes.c_uint64(int(buf.ptr))
-        finalizer = _make_emm_plugin_finalizer(ptr.value, self.allocations)
+
+        if config.CUDA_USE_NVIDIA_BINDING:
+            ptr = CUdeviceptr(int(buf.ptr))
+        else:
+            # expect ctypes bindings in numba
+            ptr = ctypes.c_uint64(int(buf.ptr))
+
+        finalizer = _make_emm_plugin_finalizer(int(buf.ptr), self.allocations)
 
         # self.allocations is initialized by the parent, HostOnlyCUDAManager,
         # and cleared upon context reset, so although we insert into it here
         # and delete from it in the finalizer, we need not do any other
         # housekeeping elsewhere.
-        self.allocations[ptr.value] = buf
+        self.allocations[int(buf.ptr)] = buf
 
         return MemoryPointer(ctx, ptr, size, finalizer=finalizer)
 
@@ -135,12 +146,19 @@ class RMMNumbaManager(HostOnlyCUDAMemoryManager):
         the RMM memory pool.
         """
         start, end = cuda.cudadrv.driver.device_extents(memory)
-        ipchandle = (ctypes.c_byte * 64)()  # IPC handle is 64 bytes
-        cuda.cudadrv.driver.driver.cuIpcGetMemHandle(
-            ctypes.byref(ipchandle), start,
-        )
+
+        if config.CUDA_USE_NVIDIA_BINDING:
+            _, ipchandle = cuIpcGetMemHandle(start)
+            offset = int(memory.handle) - int(start)
+        else:
+            ipchandle = (ctypes.c_byte * 64)()  # IPC handle is 64 bytes
+            cuda.cudadrv.driver.driver.cuIpcGetMemHandle(
+                ctypes.byref(ipchandle),
+                start,
+            )
+            offset = memory.handle.value - start
         source_info = cuda.current_context().device.get_device_identity()
-        offset = memory.handle.value - start
+
         return IpcHandle(
             memory, ipchandle, memory.size, source_info, offset=offset
         )
@@ -186,7 +204,7 @@ def _make_emm_plugin_finalizer(handle, allocations):
 
 # Enables the use of RMM for Numba via an environment variable setting,
 # NUMBA_CUDA_MEMORY_MANAGER=rmm. See:
-# http://numba.pydata.org/numba-doc/latest/cuda/external-memory.html#environment-variable
+# https://numba.readthedocs.io/en/stable/cuda/external-memory.html#environment-variable
 _numba_memory_manager = RMMNumbaManager
 
 try:
@@ -217,3 +235,61 @@ def rmm_cupy_allocator(nbytes):
     ptr = cupy.cuda.memory.MemoryPointer(mem, 0)
 
     return ptr
+
+
+try:
+    from torch.cuda.memory import CUDAPluggableAllocator
+except ImportError:
+    rmm_torch_allocator = None
+else:
+    import rmm._lib.torch_allocator
+
+    _alloc_free_lib_path = rmm._lib.torch_allocator.__file__
+    rmm_torch_allocator = CUDAPluggableAllocator(
+        _alloc_free_lib_path,
+        alloc_fn_name="allocate",
+        free_fn_name="deallocate",
+    )
+
+
+def register_reinitialize_hook(func, *args, **kwargs):
+    """
+    Add a function to the list of functions ("hooks") that will be
+    called before :py:func:`~rmm.reinitialize()`.
+
+    A user or library may register hooks to perform any necessary
+    cleanup before RMM is reinitialized. For example, a library with
+    an internal cache of objects that use device memory allocated by
+    RMM can register a hook to release those references before RMM is
+    reinitialized, thus ensuring that the relevant device memory
+    resource can be deallocated.
+
+    Hooks are called in the *reverse* order they are registered. This
+    is useful, for example, when a library registers multiple hooks
+    and needs them to run in a specific order for cleanup to be safe.
+    Hooks cannot rely on being registered in a particular order
+    relative to hooks registered by other packages, since that is
+    determined by package import ordering.
+
+    Parameters
+    ----------
+    func : callable
+        Function to be called before :py:func:`~rmm.reinitialize()`
+    args, kwargs
+        Positional and keyword arguments to be passed to `func`
+    """
+    global _reinitialize_hooks
+    _reinitialize_hooks.append((func, args, kwargs))
+    return func
+
+
+def unregister_reinitialize_hook(func):
+    """
+    Remove `func` from list of hooks that will be called before
+    :py:func:`~rmm.reinitialize()`.
+
+    If `func` was registered more than once, every instance of it will
+    be removed from the list of hooks.
+    """
+    global _reinitialize_hooks
+    _reinitialize_hooks = [x for x in _reinitialize_hooks if x[0] != func]

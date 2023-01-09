@@ -1,4 +1,18 @@
-# Copyright (c) 2020, NVIDIA CORPORATION.
+# Copyright (c) 2020-2022, NVIDIA CORPORATION.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import copy
 import gc
 import os
 import sys
@@ -26,17 +40,6 @@ _runtime_version = rmm._cuda.gpu.runtimeGetVersion()
 _CUDAMALLOC_ASYNC_SUPPORTED = (_driver_version >= 11020) and (
     _runtime_version >= 11020
 )
-
-
-@pytest.fixture(scope="function", autouse=True)
-def rmm_auto_reinitialize():
-
-    # Run the test
-    yield
-
-    # Automatically reinitialize the current memory resource after running each
-    # test
-    rmm.reinitialize()
 
 
 def array_tester(dtype, nelem, alloc):
@@ -479,7 +482,8 @@ def test_rmm_enable_disable_logging(dtype, nelem, alloc, tmpdir):
 def test_mr_devicebuffer_lifetime():
     # Test ensures MR/Stream lifetime is longer than DeviceBuffer. Even if all
     # references go out of scope
-    # Create new Pool MR
+    # It is necessary to verify that it also works when using an upstream :
+    # here a Pool MR with the current MR as upstream
     rmm.mr.set_current_device_resource(
         rmm.mr.PoolMemoryResource(rmm.mr.get_current_device_resource())
     )
@@ -512,7 +516,8 @@ def test_mr_upstream_lifetime():
 
 
 @pytest.mark.skipif(
-    not _CUDAMALLOC_ASYNC_SUPPORTED, reason="cudaMallocAsync not supported",
+    not _CUDAMALLOC_ASYNC_SUPPORTED,
+    reason="cudaMallocAsync not supported",
 )
 @pytest.mark.parametrize("dtype", _dtypes)
 @pytest.mark.parametrize("nelem", _nelems)
@@ -525,7 +530,39 @@ def test_cuda_async_memory_resource(dtype, nelem, alloc):
 
 
 @pytest.mark.skipif(
-    not _CUDAMALLOC_ASYNC_SUPPORTED, reason="cudaMallocAsync not supported",
+    not _CUDAMALLOC_ASYNC_SUPPORTED,
+    reason="cudaMallocAsync not supported",
+)
+def test_cuda_async_memory_resource_ipc():
+    # TODO: We don't have a great way to check if IPC is supported in Python,
+    # without using the C++ function
+    # rmm::detail::async_alloc::is_export_handle_type_supported. We can't
+    # accurately test driver and runtime versions for this via Python because
+    # cuda-python always has the IPC handle enum defined (which normally
+    # requires a CUDA 11.3 runtime) and the cuda-compat package in Docker
+    # containers prevents us from assuming that the driver we see actually
+    # supports IPC handles even if its reported version is new enough (we may
+    # see a newer driver than what is present on the host). We can only know
+    # the expected behavior by checking the C++ function mentioned above, which
+    # is then a redundant check because the CudaAsyncMemoryResource constructor
+    # follows the same logic. Therefore, we cannot easily ensure this test
+    # passes in certain expected configurations -- we can only ensure that if
+    # it fails, it fails in a predictable way.
+    try:
+        mr = rmm.mr.CudaAsyncMemoryResource(enable_ipc=True)
+    except RuntimeError as e:
+        # CUDA 11.3 is required for IPC memory handle support
+        assert str(e).endswith(
+            "Requested IPC memory handle type not supported"
+        )
+    else:
+        rmm.mr.set_current_device_resource(mr)
+        assert rmm.mr.get_current_device_resource_type() is type(mr)
+
+
+@pytest.mark.skipif(
+    not _CUDAMALLOC_ASYNC_SUPPORTED,
+    reason="cudaMallocAsync not supported",
 )
 @pytest.mark.parametrize("nelems", _nelems)
 def test_cuda_async_memory_resource_stream(nelems):
@@ -541,7 +578,8 @@ def test_cuda_async_memory_resource_stream(nelems):
 
 
 @pytest.mark.skipif(
-    not _CUDAMALLOC_ASYNC_SUPPORTED, reason="cudaMallocAsync not supported",
+    not _CUDAMALLOC_ASYNC_SUPPORTED,
+    reason="cudaMallocAsync not supported",
 )
 @pytest.mark.parametrize("nelem", _nelems)
 @pytest.mark.parametrize("alloc", _allocs)
@@ -555,20 +593,14 @@ def test_cuda_async_memory_resource_threshold(nelem, alloc):
     array_tester("u1", 2 * nelem, alloc)  # should trigger release
 
 
-def test_statistics_resource_adaptor():
-
-    cuda_mr = rmm.mr.CudaMemoryResource()
-
-    mr = rmm.mr.StatisticsResourceAdaptor(cuda_mr)
-
-    rmm.mr.set_current_device_resource(mr)
+def test_statistics_resource_adaptor(stats_mr):
 
     buffers = [rmm.DeviceBuffer(size=1000) for _ in range(10)]
 
     for i in range(9, 0, -2):
         del buffers[i]
 
-    assert mr.allocation_counts == {
+    assert stats_mr.allocation_counts == {
         "current_bytes": 5000,
         "current_count": 5,
         "peak_bytes": 10000,
@@ -578,7 +610,7 @@ def test_statistics_resource_adaptor():
     }
 
     # Push a new Tracking adaptor
-    mr2 = rmm.mr.StatisticsResourceAdaptor(mr)
+    mr2 = rmm.mr.StatisticsResourceAdaptor(stats_mr)
     rmm.mr.set_current_device_resource(mr2)
 
     for _ in range(2):
@@ -592,7 +624,7 @@ def test_statistics_resource_adaptor():
         "total_bytes": 2000,
         "total_count": 2,
     }
-    assert mr.allocation_counts == {
+    assert stats_mr.allocation_counts == {
         "current_bytes": 7000,
         "current_count": 7,
         "peak_bytes": 10000,
@@ -612,7 +644,7 @@ def test_statistics_resource_adaptor():
         "total_bytes": 2000,
         "total_count": 2,
     }
-    assert mr.allocation_counts == {
+    assert stats_mr.allocation_counts == {
         "current_bytes": 0,
         "current_count": 0,
         "peak_bytes": 10000,
@@ -620,10 +652,10 @@ def test_statistics_resource_adaptor():
         "total_bytes": 12000,
         "total_count": 12,
     }
+    gc.collect()
 
 
 def test_tracking_resource_adaptor():
-
     cuda_mr = rmm.mr.CudaMemoryResource()
 
     mr = rmm.mr.TrackingResourceAdaptor(cuda_mr, capture_stacks=True)
@@ -659,3 +691,226 @@ def test_tracking_resource_adaptor():
     # make sure the allocations string is now empty
     assert len(mr2.get_outstanding_allocations_str()) == 0
     assert len(mr.get_outstanding_allocations_str()) == 0
+
+
+def test_failure_callback_resource_adaptor():
+    retried = [False]
+
+    def callback(nbytes: int) -> bool:
+        if retried[0]:
+            return False
+        else:
+            retried[0] = True
+            return True
+
+    cuda_mr = rmm.mr.CudaMemoryResource()
+    mr = rmm.mr.FailureCallbackResourceAdaptor(cuda_mr, callback)
+    rmm.mr.set_current_device_resource(mr)
+
+    with pytest.raises(MemoryError):
+        rmm.DeviceBuffer(size=int(1e11))
+    assert retried[0]
+
+
+def test_failure_callback_resource_adaptor_error():
+    def callback(nbytes: int) -> bool:
+        raise RuntimeError("MyError")
+
+    cuda_mr = rmm.mr.CudaMemoryResource()
+    mr = rmm.mr.FailureCallbackResourceAdaptor(cuda_mr, callback)
+    rmm.mr.set_current_device_resource(mr)
+
+    with pytest.raises(RuntimeError, match="MyError"):
+        rmm.DeviceBuffer(size=int(1e11))
+
+
+def test_dev_buf_circle_ref_dealloc():
+    # This test creates a reference cycle containing a `DeviceBuffer`
+    # and ensures that the garbage collector does not clear it, i.e.,
+    # that the GC does not remove all references to other Python
+    # objects from it. The `DeviceBuffer` needs to keep its reference
+    # to the `DeviceMemoryResource` that was used to create it in
+    # order to be cleaned up properly. See GH #931.
+
+    rmm.mr.set_current_device_resource(rmm.mr.CudaMemoryResource())
+
+    dbuf1 = rmm.DeviceBuffer(size=1_000_000)
+
+    # Make dbuf1 part of a reference cycle:
+    l1 = [dbuf1]
+    l1.append(l1)
+
+    # due to the reference cycle, the device buffer doesn't actually get
+    # cleaned up until after `gc.collect()` is called.
+    del dbuf1, l1
+
+    rmm.mr.set_current_device_resource(rmm.mr.CudaMemoryResource())
+
+    # test that after the call to `gc.collect()`, the `DeviceBuffer`
+    # is deallocated successfully (i.e., without a segfault).
+    gc.collect()
+
+
+def test_upstream_mr_circle_ref_dealloc():
+    # This test is just like the one above, except it tests that
+    # instances of `UpstreamResourceAdaptor` (such as
+    # `PoolMemoryResource`) are not cleared by the GC.
+
+    rmm.mr.set_current_device_resource(rmm.mr.CudaMemoryResource())
+    mr = rmm.mr.PoolMemoryResource(rmm.mr.get_current_device_resource())
+    l1 = [mr]
+    l1.append(l1)
+    del mr, l1
+    rmm.mr.set_current_device_resource(rmm.mr.CudaMemoryResource())
+    gc.collect()
+
+
+def test_mr_allocate_deallocate():
+    mr = rmm.mr.TrackingResourceAdaptor(rmm.mr.get_current_device_resource())
+    size = 1 << 23  # 8 MiB
+    ptr = mr.allocate(size)
+    assert mr.get_allocated_bytes() == 1 << 23
+    mr.deallocate(ptr, size)
+    assert mr.get_allocated_bytes() == 0
+
+
+def test_custom_mr(capsys):
+    base_mr = rmm.mr.CudaMemoryResource()
+
+    def allocate_func(size):
+        print(f"Allocating {size} bytes")
+        return base_mr.allocate(size)
+
+    def deallocate_func(ptr, size):
+        print(f"Deallocating {size} bytes")
+        return base_mr.deallocate(ptr, size)
+
+    rmm.mr.set_current_device_resource(
+        rmm.mr.CallbackMemoryResource(allocate_func, deallocate_func)
+    )
+
+    rmm.DeviceBuffer(size=256)
+
+    captured = capsys.readouterr()
+    assert captured.out == "Allocating 256 bytes\nDeallocating 256 bytes\n"
+
+
+@pytest.mark.parametrize(
+    "err_raise,err_catch",
+    [
+        (MemoryError, MemoryError),
+        (RuntimeError, RuntimeError),
+        (Exception, RuntimeError),
+        (BaseException, RuntimeError),
+    ],
+)
+def test_callback_mr_error(err_raise, err_catch):
+    base_mr = rmm.mr.CudaMemoryResource()
+
+    def allocate_func(size):
+        raise err_raise("My alloc error")
+
+    def deallocate_func(ptr, size):
+        return base_mr.deallocate(ptr, size)
+
+    rmm.mr.set_current_device_resource(
+        rmm.mr.CallbackMemoryResource(allocate_func, deallocate_func)
+    )
+
+    with pytest.raises(err_catch, match="My alloc error"):
+        rmm.DeviceBuffer(size=256)
+
+
+@pytest.fixture
+def make_reinit_hook():
+    funcs = []
+
+    def _make_reinit_hook(func, *args, **kwargs):
+        funcs.append(func)
+        rmm.register_reinitialize_hook(func, *args, **kwargs)
+        return func
+
+    yield _make_reinit_hook
+    for func in funcs:
+        rmm.unregister_reinitialize_hook(func)
+
+
+def test_reinit_hooks_register(make_reinit_hook):
+    L = []
+    make_reinit_hook(lambda: L.append(1))
+    make_reinit_hook(lambda: L.append(2))
+    make_reinit_hook(lambda x: L.append(x), 3)
+
+    rmm.reinitialize()
+    assert L == [3, 2, 1]
+
+
+def test_reinit_hooks_unregister(make_reinit_hook):
+    L = []
+    one = make_reinit_hook(lambda: L.append(1))
+    make_reinit_hook(lambda: L.append(2))
+
+    rmm.unregister_reinitialize_hook(one)
+    rmm.reinitialize()
+    assert L == [2]
+
+
+def test_reinit_hooks_register_twice(make_reinit_hook):
+    L = []
+
+    def func_with_arg(x):
+        L.append(x)
+
+    def func_without_arg():
+        L.append(2)
+
+    make_reinit_hook(func_with_arg, 1)
+    make_reinit_hook(func_without_arg)
+    make_reinit_hook(func_with_arg, 3)
+    make_reinit_hook(func_without_arg)
+
+    rmm.reinitialize()
+    assert L == [2, 3, 2, 1]
+
+
+def test_reinit_hooks_unregister_twice_registered(make_reinit_hook):
+    # unregistering a twice-registered function
+    # should unregister both instances:
+    L = []
+
+    def func_with_arg(x):
+        L.append(x)
+
+    make_reinit_hook(func_with_arg, 1)
+    make_reinit_hook(lambda: L.append(2))
+    make_reinit_hook(func_with_arg, 3)
+
+    rmm.unregister_reinitialize_hook(func_with_arg)
+    rmm.reinitialize()
+    assert L == [2]
+
+
+@pytest.mark.parametrize(
+    "cuda_ary",
+    [
+        lambda: rmm.DeviceBuffer.to_device(b"abc"),
+        lambda: cuda.to_device(np.array([97, 98, 99, 0, 0], dtype="u1")),
+    ],
+)
+@pytest.mark.parametrize(
+    "make_copy", [lambda db: db.copy(), lambda db: copy.copy(db)]
+)
+def test_rmm_device_buffer_copy(cuda_ary, make_copy):
+    cuda_ary = cuda_ary()
+    db = rmm.DeviceBuffer.to_device(np.zeros(5, dtype="u1"))
+    db.copy_from_device(cuda_ary)
+    db_copy = make_copy(db)
+
+    assert db is not db_copy
+    assert db.ptr != db_copy.ptr
+    assert len(db) == len(db_copy)
+
+    expected = np.array([97, 98, 99, 0, 0], dtype="u1")
+    result = db_copy.copy_to_host()
+
+    np.testing.assert_equal(expected, result)

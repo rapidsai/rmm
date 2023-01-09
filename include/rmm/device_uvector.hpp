@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ namespace rmm {
  * `thrust::uninitialized_fill`.
  *
  * Example:
- * @code
+ * @code{c++}
  * rmm::mr::device_memory_resource * mr = new my_custom_resource();
  * rmm::cuda_stream_view s{};
  *
@@ -200,8 +200,8 @@ class device_uvector {
    * @throws rmm::out_of_range exception if `element_index >= size()`
    *
    * @param element_index Index of the target element
-   * @param v The value to copy to the specified element
-   * @param s The stream on which to perform the copy
+   * @param value The value to copy to the specified element
+   * @param stream The stream on which to perform the copy
    */
   void set_element_async(std::size_t element_index,
                          value_type const& value,
@@ -251,7 +251,7 @@ class device_uvector {
    * @throws rmm::out_of_range exception if `element_index >= size()`
    *
    * @param element_index Index of the target element
-   * @param s The stream on which to perform the copy
+   * @param stream The stream on which to perform the copy
    */
   void set_element_to_zero_async(std::size_t element_index, cuda_stream_view stream)
   {
@@ -352,6 +352,23 @@ class device_uvector {
   }
 
   /**
+   * @brief Increases the capacity of the vector to `new_capacity` elements.
+   *
+   * If `new_capacity <= capacity()`, no action is taken.
+   *
+   * If `new_capacity > capacity()`, a new allocation of size `new_capacity` is created, and the
+   * first `size()` elements from the current allocation are copied there as if by memcpy. Finally,
+   * the old allocation is freed and replaced by the new allocation.
+   *
+   * @param new_capacity The desired capacity (number of elements)
+   * @param stream The stream on which to perform the allocation/copy (if any)
+   */
+  void reserve(std::size_t new_capacity, cuda_stream_view stream)
+  {
+    _storage.reserve(elements_to_bytes(new_capacity), stream);
+  }
+
+  /**
    * @brief Resizes the vector to contain `new_size` elements.
    *
    * If `new_size > size()`, the additional elements are uninitialized.
@@ -360,7 +377,7 @@ class device_uvector {
    * memory is allocated nor copied. `shrink_to_fit()` may be used to force deallocation of unused
    * memory.
    *
-   * If `new_size > capacity()`, elements are copied as if by mempcy to a new allocation.
+   * If `new_size > capacity()`, elements are copied as if by memcpy to a new allocation.
    *
    * The invariant `size() <= capacity()` holds.
    *
@@ -480,11 +497,19 @@ class device_uvector {
   [[nodiscard]] const_iterator end() const noexcept { return cend(); }
 
   /**
-   * @brief Returns the number of elements in the vector.
-   *
-   * @return The number of elements.
+   * @brief Returns the number of elements.
    */
   [[nodiscard]] std::size_t size() const noexcept { return bytes_to_elements(_storage.size()); }
+
+  /**
+   * @brief Returns the signed number of elements.
+   */
+  [[nodiscard]] std::int64_t ssize() const noexcept
+  {
+    assert(size() < static_cast<std::size_t>(std::numeric_limits<int64_t>::max()) &&
+           "Size overflows signed integer");
+    return static_cast<int64_t>(size());
+  }
 
   /**
    * @brief Returns true if the vector contains no elements, i.e., `size() == 0`.
@@ -503,6 +528,22 @@ class device_uvector {
   {
     return _storage.memory_resource();
   }
+
+  /**
+   * @brief Returns stream most recently specified for allocation/deallocation
+   */
+  [[nodiscard]] cuda_stream_view stream() const noexcept { return _storage.stream(); }
+
+  /**
+   * @brief Sets the stream to be used for deallocation
+   *
+   * If no other rmm::device_uvector method that allocates memory is called
+   * after this call with a different stream argument, then @p stream
+   * will be used for deallocation in the `rmm::device_uvector destructor.
+   * However, if either of `resize()` or `shrink_to_fit()` is called after this,
+   * the later stream parameter will be stored and used in the destructor.
+   */
+  void set_stream(cuda_stream_view stream) noexcept { _storage.set_stream(stream); }
 
  private:
   device_buffer _storage{};  ///< Device memory storage for vector elements

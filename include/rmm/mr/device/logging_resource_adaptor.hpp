@@ -27,6 +27,7 @@
 #include <cstddef>
 #include <memory>
 #include <sstream>
+#include <string_view>
 
 namespace rmm::mr {
 /**
@@ -67,10 +68,7 @@ class logging_resource_adaptor final : public device_memory_resource {
   logging_resource_adaptor(Upstream* upstream,
                            std::string const& filename = get_default_filename(),
                            bool auto_flush             = false)
-    : logger_{std::make_shared<spdlog::logger>(
-        "RMM",
-        std::make_shared<spdlog::sinks::basic_file_sink_mt>(filename, true /*truncate file*/))},
-      upstream_{upstream}
+    : logger_{make_logger(filename)}, upstream_{upstream}
   {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
 
@@ -92,9 +90,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    * performance.
    */
   logging_resource_adaptor(Upstream* upstream, std::ostream& stream, bool auto_flush = false)
-    : logger_{std::make_shared<spdlog::logger>(
-        "RMM", std::make_shared<spdlog::sinks::ostream_sink_mt>(stream))},
-      upstream_{upstream}
+    : logger_{make_logger(stream)}, upstream_{upstream}
   {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
 
@@ -104,7 +100,7 @@ class logging_resource_adaptor final : public device_memory_resource {
   logging_resource_adaptor(Upstream* upstream,
                            spdlog::sinks_init_list sinks,
                            bool auto_flush = false)
-    : logger_{std::make_shared<spdlog::logger>("RMM", sinks)}, upstream_{upstream}
+    : logger_{make_logger(sinks)}, upstream_{upstream}
   {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
 
@@ -177,6 +173,23 @@ class logging_resource_adaptor final : public device_memory_resource {
     return std::string{filename};
   }
 
+  static auto make_logger(std::ostream& stream)
+  {
+    return std::make_shared<spdlog::logger>(
+      "RMM", std::make_shared<spdlog::sinks::ostream_sink_mt>(stream));
+  }
+
+  static auto make_logger(std::string const& filename)
+  {
+    return std::make_shared<spdlog::logger>(
+      "RMM", std::make_shared<spdlog::sinks::basic_file_sink_mt>(filename, true /*truncate file*/));
+  }
+
+  static auto make_logger(spdlog::sinks_init_list sinks)
+  {
+    return std::make_shared<spdlog::logger>("RMM", sinks);
+  }
+
   /**
    * @brief Initialize the logger.
    */
@@ -192,10 +205,16 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @brief Allocates memory of size at least `bytes` using the upstream
    * resource and logs the allocation.
    *
-   * If the upstream allocation is successful logs the
-   * following CSV formatted line to the file specified at construction:
+   * If the upstream allocation is successful, logs the following CSV formatted
+   * line to the file specified at construction:
    * ```
-   * thread_id,*TIMESTAMP*,"allocate",*bytes*,*stream*
+   * thread_id,*TIMESTAMP*,"allocate",*pointer*,*bytes*,*stream*
+   * ```
+   *
+   * If the upstream allocation failed, logs the following CSV formatted line
+   * to the file specified at construction:
+   * ```
+   * thread_id,*TIMESTAMP*,"allocate failure",0x0,*bytes*,*stream*
    * ```
    *
    * The returned pointer has at least 256B alignment.
@@ -209,9 +228,14 @@ class logging_resource_adaptor final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
-    auto const ptr = upstream_->allocate(bytes, stream);
-    logger_->info("allocate,{},{},{}", ptr, bytes, fmt::ptr(stream.value()));
-    return ptr;
+    try {
+      auto const ptr = upstream_->allocate(bytes, stream);
+      logger_->info("allocate,{},{},{}", ptr, bytes, fmt::ptr(stream.value()));
+      return ptr;
+    } catch (...) {
+      logger_->info("allocate failure,{},{},{}", nullptr, bytes, fmt::ptr(stream.value()));
+      throw;
+    }
   }
 
   /**

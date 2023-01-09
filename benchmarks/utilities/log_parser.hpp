@@ -33,7 +33,7 @@
 
 namespace rmm::detail {
 
-enum class action : bool { ALLOCATE, FREE };
+enum class action { ALLOCATE, FREE, ALLOCATE_FAILURE };
 
 /**
  * @brief Represents an allocation event
@@ -85,8 +85,13 @@ struct event {
 
 inline std::ostream& operator<<(std::ostream& os, event const& evt)
 {
-  const auto* act_string = (evt.act == action::ALLOCATE) ? "allocate" : "free";
-
+  const auto* act_string{[&evt] {
+    switch (evt.act) {
+      case action::ALLOCATE: return "allocate";
+      case action::FREE: return "free";
+      default: return "allocate failure";
+    }
+  }()};
   const auto format_width{9};
 
   os << "Thread: " << evt.thread_id << std::setw(format_width) << act_string
@@ -164,8 +169,14 @@ inline std::vector<event> parse_csv(std::string const& filename)
 
   for (std::size_t i = 0; i < actions.size(); ++i) {
     auto const& action = actions[i];
-    RMM_EXPECTS((action == "allocate") or (action == "free"), "Invalid action string.");
-    auto act  = (action == "allocate") ? action::ALLOCATE : action::FREE;
+    RMM_EXPECTS((action == "allocate") or (action == "allocate failure") or (action == "free"),
+                "Invalid action string.");
+    auto act{action::ALLOCATE_FAILURE};
+    if (action == "allocate") {
+      act = action::ALLOCATE;
+    } else if (action == "free") {
+      act = action::FREE;
+    }
     events[i] = event{tids[i], act, sizes[i], pointers[i], streams[i], i};
   }
   return events;

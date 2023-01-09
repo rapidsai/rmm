@@ -37,6 +37,9 @@ struct mr_test_mt : public mr_test {
 INSTANTIATE_TEST_CASE_P(MultiThreadResourceTests,
                         mr_test_mt,
                         ::testing::Values(mr_factory{"CUDA", &make_cuda},
+#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
+                                          mr_factory{"CUDA_Async", &make_cuda_async},
+#endif
                                           mr_factory{"Managed", &make_managed},
                                           mr_factory{"Pool", &make_pool},
                                           mr_factory{"Arena", &make_arena},
@@ -176,6 +179,8 @@ void allocate_loop(rmm::mr::device_memory_resource* mr,
                    std::size_t num_allocations,
                    std::list<allocation>& allocations,
                    std::mutex& mtx,
+                   std::condition_variable& allocations_ready,
+                   cudaEvent_t& event,
                    rmm::cuda_stream_view stream)
 {
   constexpr std::size_t max_size{1_MiB};
@@ -188,27 +193,35 @@ void allocate_loop(rmm::mr::device_memory_resource* mr,
     void* ptr        = mr->allocate(size, stream);
     {
       std::lock_guard<std::mutex> lock(mtx);
+      RMM_CUDA_TRY(cudaEventRecord(event, stream.value()));
       allocations.emplace_back(ptr, size);
     }
+    allocations_ready.notify_one();
   }
+  // Work around for threads going away before cudaEvent has finished async processing
+  cudaEventSynchronize(event);
 }
 
 void deallocate_loop(rmm::mr::device_memory_resource* mr,
                      std::size_t num_allocations,
                      std::list<allocation>& allocations,
                      std::mutex& mtx,
+                     std::condition_variable& allocations_ready,
+                     cudaEvent_t& event,
                      rmm::cuda_stream_view stream)
 {
-  for (std::size_t i = 0; i < num_allocations;) {
-    std::lock_guard<std::mutex> lock(mtx);
-    if (allocations.empty()) { continue; }
-    i++;
+  for (std::size_t i = 0; i < num_allocations; i++) {
+    std::unique_lock lock(mtx);
+    allocations_ready.wait(lock, [&allocations] { return !allocations.empty(); });
+    RMM_CUDA_TRY(cudaStreamWaitEvent(stream.value(), event));
     allocation alloc = allocations.front();
     allocations.pop_front();
     mr->deallocate(alloc.ptr, alloc.size, stream);
   }
-}
 
+  // Work around for threads going away before cudaEvent has finished async processing
+  cudaEventSynchronize(event);
+}
 void test_allocate_free_different_threads(rmm::mr::device_memory_resource* mr,
                                           rmm::cuda_stream_view streamA,
                                           rmm::cuda_stream_view streamB)
@@ -216,16 +229,34 @@ void test_allocate_free_different_threads(rmm::mr::device_memory_resource* mr,
   constexpr std::size_t num_allocations{100};
 
   std::mutex mtx;
+  std::condition_variable allocations_ready;
   std::list<allocation> allocations;
+  cudaEvent_t event;
 
-  std::thread producer(
-    allocate_loop, mr, num_allocations, std::ref(allocations), std::ref(mtx), streamA);
+  RMM_CUDA_TRY(cudaEventCreate(&event));
 
-  std::thread consumer(
-    deallocate_loop, mr, num_allocations, std::ref(allocations), std::ref(mtx), streamB);
+  std::thread producer(allocate_loop,
+                       mr,
+                       num_allocations,
+                       std::ref(allocations),
+                       std::ref(mtx),
+                       std::ref(allocations_ready),
+                       std::ref(event),
+                       streamA);
+
+  std::thread consumer(deallocate_loop,
+                       mr,
+                       num_allocations,
+                       std::ref(allocations),
+                       std::ref(mtx),
+                       std::ref(allocations_ready),
+                       std::ref(event),
+                       streamB);
 
   producer.join();
   consumer.join();
+
+  RMM_CUDA_TRY(cudaEventDestroy(event));
 }
 
 TEST_P(mr_test_mt, AllocFreeDifferentThreadsDefaultStream)

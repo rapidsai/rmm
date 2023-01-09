@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -237,6 +237,36 @@ class device_buffer {
   }
 
   /**
+   * @brief Increase the capacity of the device memory allocation
+   *
+   * If the requested `new_capacity` is less than or equal to `capacity()`, no
+   * action is taken.
+   *
+   * If `new_capacity` is larger than `capacity()`, a new allocation is made on
+   * `stream` to satisfy `new_capacity`, and the contents of the old allocation are
+   * copied on `stream` to the new allocation. The old allocation is then freed.
+   * The bytes from `[size(), new_capacity)` are uninitialized.
+   *
+   * @throws rmm::bad_alloc If creating the new allocation fails
+   * @throws rmm::cuda_error if the copy from the old to new allocation
+   * fails
+   *
+   * @param new_capacity The requested new capacity, in bytes
+   * @param stream The stream to use for allocation and copy
+   */
+  void reserve(std::size_t new_capacity, cuda_stream_view stream)
+  {
+    set_stream(stream);
+    if (new_capacity > capacity()) {
+      auto tmp            = device_buffer{new_capacity, stream, _mr};
+      auto const old_size = size();
+      RMM_CUDA_TRY(cudaMemcpyAsync(tmp.data(), data(), size(), cudaMemcpyDefault, stream.value()));
+      *this = std::move(tmp);
+      _size = old_size;
+    }
+  }
+
+  /**
    * @brief Resize the device memory allocation
    *
    * If the requested `new_size` is less than or equal to `capacity()`, no
@@ -256,7 +286,7 @@ class device_buffer {
    *
    * @throws rmm::bad_alloc If creating the new allocation fails
    * @throws rmm::cuda_error if the copy from the old to new allocation
-   *fails
+   * fails
    *
    * @param new_size The requested new size, in bytes
    * @param stream The stream to use for allocation and copy
@@ -269,13 +299,9 @@ class device_buffer {
     if (new_size <= capacity()) {
       _size = new_size;
     } else {
-      void* const new_data = _mr->allocate(new_size, this->stream());
-      RMM_CUDA_TRY(
-        cudaMemcpyAsync(new_data, data(), size(), cudaMemcpyDefault, this->stream().value()));
-      deallocate_async();
-      _data     = new_data;
-      _size     = new_size;
-      _capacity = new_size;
+      auto tmp = device_buffer{new_size, stream, _mr};
+      RMM_CUDA_TRY(cudaMemcpyAsync(tmp.data(), data(), size(), cudaMemcpyDefault, stream.value()));
+      *this = std::move(tmp);
     }
   }
 
@@ -285,7 +311,7 @@ class device_buffer {
    * Reallocates and copies on stream `stream` the contents of the device memory
    * allocation to reduce `capacity()` to `size()`.
    *
-   * If `size() == capacity()`, no allocations nor copies occur.
+   * If `size() == capacity()`, no allocations or copies occur.
    *
    * @throws rmm::bad_alloc If creating the new allocation fails
    * @throws rmm::cuda_error If the copy from the old to new allocation fails
@@ -315,13 +341,22 @@ class device_buffer {
   void* data() noexcept { return _data; }
 
   /**
-   * @brief Returns size in bytes that was requested for the device memory
-   * allocation
+   * @brief Returns the number of bytes.
    */
   [[nodiscard]] std::size_t size() const noexcept { return _size; }
 
   /**
-   * @brief Returns whether the size in bytes of the `device_buffer` is zero.
+   * @brief Returns the signed number of bytes.
+   */
+  [[nodiscard]] std::int64_t ssize() const noexcept
+  {
+    assert(size() < static_cast<std::size_t>(std::numeric_limits<int64_t>::max()) &&
+           "Size overflows signed integer");
+    return static_cast<int64_t>(size());
+  }
+
+  /**
+   * @brief returns the number of bytes that can be held in currently allocated storage.
    *
    * If `is_empty() == true`, the `device_buffer` may still hold an allocation
    * if `capacity() > 0`.
@@ -344,12 +379,11 @@ class device_buffer {
   /**
    * @brief Sets the stream to be used for deallocation
    *
-   * If no other rmm::device_buffer method that allocates or copies memory is
-   * called after this call with a different stream argument, then @p stream
-   * will be used for deallocation in the `rmm::device_buffer destructor.
-   * Otherwise, if another rmm::device_buffer method with a stream parameter is
-   * called after this, the later stream parameter will be stored and used in
-   * the destructor.
+   * If no other rmm::device_buffer method that allocates memory is called
+   * after this call with a different stream argument, then @p stream
+   * will be used for deallocation in the `rmm::device_uvector` destructor.
+   * However, if either of `resize()` or `shrink_to_fit()` is called after this,
+   * the later stream parameter will be stored and used in the destructor.
    */
   void set_stream(cuda_stream_view stream) noexcept { _stream = stream; }
 

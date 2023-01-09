@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2022, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,10 @@
 
 #include <thrust/equal.h>
 #include <thrust/sequence.h>
+namespace testing {
+namespace thrust = THRUST_NS_QUALIFIER;
+}
+using namespace testing;
 
 #include <cuda_runtime_api.h>
 
@@ -56,11 +60,18 @@ using resources = ::testing::Types<rmm::mr::cuda_memory_resource, rmm::mr::manag
 
 TYPED_TEST_CASE(DeviceBufferTest, resources);
 
+TYPED_TEST(DeviceBufferTest, EmptyBuffer)
+{
+  rmm::device_buffer buff(0, rmm::cuda_stream_view{});
+  EXPECT_TRUE(buff.is_empty());
+}
+
 TYPED_TEST(DeviceBufferTest, DefaultMemoryResource)
 {
   rmm::device_buffer buff(this->size, rmm::cuda_stream_view{});
   EXPECT_NE(nullptr, buff.data());
   EXPECT_EQ(this->size, buff.size());
+  EXPECT_EQ(this->size, buff.ssize());
   EXPECT_EQ(this->size, buff.capacity());
   EXPECT_EQ(rmm::mr::get_current_device_resource(), buff.memory_resource());
   EXPECT_EQ(rmm::cuda_stream_view{}, buff.stream());
@@ -449,4 +460,41 @@ TYPED_TEST(DeviceBufferTest, ResizeBigger)
   EXPECT_EQ(new_size, buff.capacity());
   // Resizing bigger means the data should point to a new allocation
   EXPECT_NE(old_data, buff.data());
+}
+
+TYPED_TEST(DeviceBufferTest, ReserveSmaller)
+{
+  rmm::device_buffer buff(this->size, rmm::cuda_stream_default, &this->mr);
+  auto* const old_data    = buff.data();
+  auto const old_capacity = buff.capacity();
+  auto const new_capacity = buff.capacity() - 1;
+  buff.reserve(new_capacity, rmm::cuda_stream_default);
+  EXPECT_EQ(this->size, buff.size());
+  EXPECT_EQ(old_capacity, buff.capacity());
+  // Reserving smaller means the allocation is unchanged
+  EXPECT_EQ(old_data, buff.data());
+}
+
+TYPED_TEST(DeviceBufferTest, ReserveBigger)
+{
+  rmm::device_buffer buff(this->size, rmm::cuda_stream_default, &this->mr);
+  auto* const old_data    = buff.data();
+  auto const new_capacity = buff.capacity() + 1;
+  buff.reserve(new_capacity, rmm::cuda_stream_default);
+  EXPECT_EQ(this->size, buff.size());
+  EXPECT_EQ(new_capacity, buff.capacity());
+  // Reserving bigger means the data should point to a new allocation
+  EXPECT_NE(old_data, buff.data());
+}
+
+TYPED_TEST(DeviceBufferTest, SetGetStream)
+{
+  rmm::device_buffer buff(this->size, rmm::cuda_stream_default, &this->mr);
+
+  EXPECT_EQ(buff.stream(), rmm::cuda_stream_default);
+
+  rmm::cuda_stream_view const otherstream{cudaStreamPerThread};
+  buff.set_stream(otherstream);
+
+  EXPECT_EQ(buff.stream(), otherstream);
 }

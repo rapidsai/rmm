@@ -47,7 +47,7 @@ class managed_memory_resource final : public device_memory_resource {
   /**
    * @brief Query whether the resource supports the get_mem_info API.
    *
-   * @return bool true if the resource supports get_mem_info, false otherwise.
+   * @return true
    */
   [[nodiscard]] bool supports_get_mem_info() const noexcept override { return true; }
 
@@ -71,7 +71,7 @@ class managed_memory_resource final : public device_memory_resource {
     if (bytes == 0) { return nullptr; }
 
     void* ptr{nullptr};
-    RMM_CUDA_TRY(cudaMallocManaged(&ptr, bytes), rmm::bad_alloc);
+    RMM_CUDA_TRY_ALLOC(cudaMallocManaged(&ptr, bytes));
     return ptr;
   }
 
@@ -114,8 +114,7 @@ class managed_memory_resource final : public device_memory_resource {
    * @param stream to execute on
    * @return std::pair contaiing free_size and total_size of memory
    */
-  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
-    cuda_stream_view stream) const override
+  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view) const override
   {
     std::size_t free_size{};
     std::size_t total_size{};

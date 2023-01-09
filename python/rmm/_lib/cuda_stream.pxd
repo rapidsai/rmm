@@ -13,11 +13,11 @@
 # limitations under the License.
 
 cimport cython
+from cuda.ccudart cimport cudaStream_t
 from libcpp cimport bool
 from libcpp.memory cimport unique_ptr
 
 from rmm._lib.cuda_stream_view cimport cuda_stream_view
-from rmm._lib.lib cimport cudaStream_t
 
 
 cdef extern from "rmm/cuda_stream.hpp" namespace "rmm" nogil:
