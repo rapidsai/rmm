@@ -147,7 +147,7 @@ latex_documents = [
         master_doc,
         "rmm.tex",
         "RMM Documentation",
-        "Continuum Analytics",
+        "NVIDIA Corporation",
         "manual",
     )
 ]
