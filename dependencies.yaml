@@ -27,10 +27,28 @@ files:
     includes:
       - checks
       - py_version
+  docs:
+    output: none
+    includes:
+      - cudatoolkit
+      - py_version
+      - docs_builds
 channels:
   - rapidsai
   - conda-forge
 dependencies:
+  docs_builds:
+    common:
+      - output_types: [conda, requirements]
+        packages:
+          - sphinx
+          - sphinx_rtd_theme
+          - sphinx-copybutton
+          - numpydoc
+          - sphinx-markdown-tables
+          - ipython
+          - nbsphinx
+          - doxygen=1.8.20
   build:
     common:
       - output_types: [conda, requirements]

@@ -17,6 +17,7 @@ jobs:
       - conda-cpp-tests
       - conda-python-build
       - conda-python-tests
+      - docs_build
       - wheel-build
       - wheel-tests
     secrets: inherit
@@ -48,6 +49,16 @@ jobs:
     uses: rapidsai/shared-action-workflows/.github/workflows/conda-python-tests.yaml@cuda-118
     with:
       build_type: pull-request
+  docs_build:
+    needs: conda-python-tests
+    secrets: inherit
+    uses: rapidsai/shared-action-workflows/.github/workflows/custom-job.yaml@cuda-118
+    with:
+      build_type: pull-request
+      node_type: "gpu-latest-1"
+      arch: "amd64"
+      container_image: "rapidsai/ci:latest"
+      run_script: "ci/build_docs.sh"
   wheel-build:
     needs: checks
     secrets: inherit
