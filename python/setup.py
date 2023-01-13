@@ -5,7 +5,6 @@ import os
 from setuptools import find_packages
 from skbuild import setup
 
-
 setup(
     name="rmm" + os.getenv("RAPIDS_PY_WHEEL_CUDA_SUFFIX", default=""),
     version="23.02.00",
