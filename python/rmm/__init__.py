@@ -11,11 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import weakref
 
 from rmm import mr
 from rmm._lib.device_buffer import DeviceBuffer
-from rmm._version import get_versions
 from rmm.mr import disable_logging, enable_logging, get_log_filenames
 from rmm.rmm import (
     RMMError,
@@ -45,4 +43,4 @@ __all__ = [
     "unregister_reinitialize_hook",
 ]
 
-__version__ = get_versions()["version"]
+__version__ = "23.02.00"
