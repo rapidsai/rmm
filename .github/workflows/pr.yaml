@@ -50,7 +50,7 @@ jobs:
     with:
       build_type: pull-request
   docs_build:
-    needs: conda-python-tests
+    needs: conda-python-build
     secrets: inherit
     uses: rapidsai/shared-action-workflows/.github/workflows/custom-job.yaml@cuda-118
     with:

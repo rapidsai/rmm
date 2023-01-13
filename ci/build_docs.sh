@@ -1,5 +1,7 @@
 #!/bin/bash
 
+VERSION_NUMBER=$(echo `git describe --abbrev=0 --tags` | grep -o -E '([0-9]+\.[0-9]+)')
+
 set -euo pipefail
 
 rapids-logger "Create test conda environment"
@@ -20,24 +22,23 @@ CPP_CHANNEL=$(rapids-download-conda-from-s3 cpp)
 PYTHON_CHANNEL=$(rapids-download-conda-from-s3 python)
 
 rapids-mamba-retry install \
-  -c "${CPP_CHANNEL}" \
-  -c "${PYTHON_CHANNEL}" \
+  --channel "${CPP_CHANNEL}" \
+  --channel "${PYTHON_CHANNEL}" \
   rmm librmm
 
-git clone https://github.com/rapidsai/rmm.git
-
 # Build CPP docs
-gpuci_logger "Build Doxygen docs"
+rapids-logger "Build Doxygen docs"
 cd ./doxygen
 doxygen Doxyfile
 
 # Build Python docs
-gpuci_logger "Build Python docs"
+rapids-logger "Build Python docs"
 cd ../python/docs
-sphinx-build -b html . _html
+sphinx-build -b dirhtml . _html
 sphinx-build -b text . _text
 
 if [[ ${RAPIDS_BUILD_TYPE} == "branch" ]]; then
-  aws s3 sync _html s3://rapidsai-docs/rmm/html
-  aws s3 sync _txt s3://rapidsai-docs/rmm/txt
+  aws s3 sync --delete _html "s3://rapidsai-docs/rmm/${VERSION_NUMBER}/html"
+  aws s3 sync --delete _text "s3://rapidsai-docs/rmm/${VERSION_NUMBER}/txt"
+  aws s3 sync --delete ../../doxygen/html "s3://rapidsai-docs/librmm/${VERSION_NUMBER}/html"
 fi
