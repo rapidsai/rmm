@@ -27,6 +27,12 @@ files:
     includes:
       - checks
       - py_version
+  docs:
+    output: none
+    includes:
+      - cudatoolkit
+      - docs
+      - py_version
 channels:
   - rapidsai
   - conda-forge
@@ -78,6 +84,19 @@ dependencies:
       - output_types: [conda, requirements]
         packages:
           - gcovr>=5.0
+  docs:
+    common:
+      - output_types: [conda]
+        packages:
+          - doxygen=1.8.20
+          - graphviz
+          - ipython
+          - nbsphinx
+          - numpydoc
+          - sphinx
+          - sphinx_rtd_theme
+          - sphinx-copybutton
+          - sphinx-markdown-tables
   py_version:
     specific:
       - output_types: conda

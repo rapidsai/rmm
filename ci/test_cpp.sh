@@ -18,7 +18,7 @@ rapids-print-env
 CPP_CHANNEL=$(rapids-download-conda-from-s3 cpp)
 
 rapids-mamba-retry install \
-  -c "${CPP_CHANNEL}" \
+  --channel "${CPP_CHANNEL}" \
   librmm librmm-tests
 
 RAPIDS_TESTS_DIR=${RAPIDS_TESTS_DIR:-"${PWD}/test-results"}
