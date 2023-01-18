@@ -26,7 +26,7 @@ rapids-mamba-retry install \
 
 # Build CPP docs
 rapids-logger "Build Doxygen docs"
-pushd ./doxygen
+pushd doxygen
 doxygen Doxyfile
 popd
 
