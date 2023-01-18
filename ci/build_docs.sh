@@ -9,8 +9,8 @@ rapids-dependency-file-generator \
   --file_key docs \
   --matrix "cuda=${RAPIDS_CUDA_VERSION%.*};arch=$(arch);py=${RAPIDS_PY_VERSION}" | tee env.yaml
 
-rapids-mamba-retry env create --force -f env.yaml -n test
-conda activate test
+rapids-mamba-retry env create --force -f env.yaml -n docs
+conda activate docs
 
 rapids-print-env
 
@@ -39,7 +39,7 @@ popd
 
 if [[ "${RAPIDS_BUILD_TYPE}" == "branch" ]]; then
   rapids-logger "Upload Docs to S3"
+  aws s3 sync --delete doxygen/html "s3://rapidsai-docs/librmm/${VERSION_NUMBER}/html"
   aws s3 sync --delete python/docs/_html "s3://rapidsai-docs/rmm/${VERSION_NUMBER}/html"
   aws s3 sync --delete python/docs/_text "s3://rapidsai-docs/rmm/${VERSION_NUMBER}/txt"
-  aws s3 sync --delete doxygen/html "s3://rapidsai-docs/librmm/${VERSION_NUMBER}/html"
 fi
