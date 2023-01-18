@@ -31,8 +31,8 @@ files:
     output: none
     includes:
       - cudatoolkit
+      - docs
       - py_version
-      - docs_builds
 channels:
   - rapidsai
   - conda-forge
@@ -84,7 +84,7 @@ dependencies:
       - output_types: [conda, requirements]
         packages:
           - gcovr>=5.0
-  docs_builds:
+  docs:
     common:
       - output_types: [conda]
         packages:
