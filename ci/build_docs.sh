@@ -37,7 +37,8 @@ sphinx-build -b dirhtml . _html
 sphinx-build -b text . _text
 popd
 
-if [[ ${RAPIDS_BUILD_TYPE} == "branch" ]]; then
+if [[ "${RAPIDS_BUILD_TYPE}" == "branch" ]]; then
+  rapids-logger "Upload Docs to S3"
   aws s3 sync --delete python/docs/_html "s3://rapidsai-docs/rmm/${VERSION_NUMBER}/html"
   aws s3 sync --delete python/docs/_text "s3://rapidsai-docs/rmm/${VERSION_NUMBER}/txt"
   aws s3 sync --delete doxygen/html "s3://rapidsai-docs/librmm/${VERSION_NUMBER}/html"
