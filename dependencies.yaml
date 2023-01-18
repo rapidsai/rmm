@@ -37,18 +37,6 @@ channels:
   - rapidsai
   - conda-forge
 dependencies:
-  docs_builds:
-    common:
-      - output_types: [conda, requirements]
-        packages:
-          - sphinx
-          - sphinx_rtd_theme
-          - sphinx-copybutton
-          - numpydoc
-          - sphinx-markdown-tables
-          - ipython
-          - nbsphinx
-          - doxygen=1.8.20
   build:
     common:
       - output_types: [conda, requirements]
@@ -96,6 +84,18 @@ dependencies:
       - output_types: [conda, requirements]
         packages:
           - gcovr>=5.0
+  docs_builds:
+    common:
+      - output_types: [conda]
+        packages:
+          - doxygen=1.8.20
+          - ipython
+          - nbsphinx
+          - numpydoc
+          - sphinx
+          - sphinx_rtd_theme
+          - sphinx-copybutton
+          - sphinx-markdown-tables
   py_version:
     specific:
       - output_types: conda
