@@ -51,11 +51,12 @@ outputs:
     requirements:
       build:
         - cmake {{ cmake_version }}
+      host:
         # We require spdlog and fmt (which was devendored from spdlog
         # conda-forge packages in 1.11.0) so that the spdlog headers are not
         # pulled by CPM and installed as a part of the rmm packages. However,
-        # building against librmm still requires these headers so they are also
-        # exported as a run requirement.
+        # building against librmm still requires these headers. They are also
+        # added as a run requirement via the packages' run_exports.
         - fmt {{ fmt_version }}
         - spdlog {{ spdlog_version }}
       run:
