@@ -84,7 +84,9 @@ struct bytes {
   }
 };
 
-template <> struct fmt::formatter<bytes> : fmt::ostream_formatter {};
+template <>
+struct fmt::formatter<bytes> : fmt::ostream_formatter {
+};
 
 }  // namespace detail
 
