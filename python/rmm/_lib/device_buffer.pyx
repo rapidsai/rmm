@@ -15,9 +15,8 @@ import numpy as np
 
 cimport cython
 from cpython.bytes cimport PyBytes_AS_STRING, PyBytes_FromStringAndSize
-from cython.operator cimport dereference
 from libc.stdint cimport uintptr_t
-from libcpp.memory cimport make_unique, unique_ptr
+from libcpp.memory cimport unique_ptr
 from libcpp.utility cimport move
 
 from rmm._cuda.stream cimport Stream
@@ -31,7 +30,6 @@ from cuda.ccudart cimport (
     cudaMemcpyAsync,
     cudaMemcpyKind,
     cudaStream_t,
-    cudaStreamSynchronize,
 )
 
 from rmm._lib.memory_resource cimport get_current_device_resource

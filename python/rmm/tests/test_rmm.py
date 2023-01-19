@@ -42,17 +42,6 @@ _CUDAMALLOC_ASYNC_SUPPORTED = (_driver_version >= 11020) and (
 )
 
 
-@pytest.fixture(scope="function", autouse=True)
-def rmm_auto_reinitialize():
-
-    # Run the test
-    yield
-
-    # Automatically reinitialize the current memory resource after running each
-    # test
-    rmm.reinitialize()
-
-
 def array_tester(dtype, nelem, alloc):
     # data
     h_in = np.full(nelem, 3.2, dtype)
@@ -604,20 +593,14 @@ def test_cuda_async_memory_resource_threshold(nelem, alloc):
     array_tester("u1", 2 * nelem, alloc)  # should trigger release
 
 
-def test_statistics_resource_adaptor():
-
-    cuda_mr = rmm.mr.CudaMemoryResource()
-
-    mr = rmm.mr.StatisticsResourceAdaptor(cuda_mr)
-
-    rmm.mr.set_current_device_resource(mr)
+def test_statistics_resource_adaptor(stats_mr):
 
     buffers = [rmm.DeviceBuffer(size=1000) for _ in range(10)]
 
     for i in range(9, 0, -2):
         del buffers[i]
 
-    assert mr.allocation_counts == {
+    assert stats_mr.allocation_counts == {
         "current_bytes": 5000,
         "current_count": 5,
         "peak_bytes": 10000,
@@ -627,7 +610,7 @@ def test_statistics_resource_adaptor():
     }
 
     # Push a new Tracking adaptor
-    mr2 = rmm.mr.StatisticsResourceAdaptor(mr)
+    mr2 = rmm.mr.StatisticsResourceAdaptor(stats_mr)
     rmm.mr.set_current_device_resource(mr2)
 
     for _ in range(2):
@@ -641,7 +624,7 @@ def test_statistics_resource_adaptor():
         "total_bytes": 2000,
         "total_count": 2,
     }
-    assert mr.allocation_counts == {
+    assert stats_mr.allocation_counts == {
         "current_bytes": 7000,
         "current_count": 7,
         "peak_bytes": 10000,
@@ -661,7 +644,7 @@ def test_statistics_resource_adaptor():
         "total_bytes": 2000,
         "total_count": 2,
     }
-    assert mr.allocation_counts == {
+    assert stats_mr.allocation_counts == {
         "current_bytes": 0,
         "current_count": 0,
         "peak_bytes": 10000,
@@ -669,10 +652,10 @@ def test_statistics_resource_adaptor():
         "total_bytes": 12000,
         "total_count": 12,
     }
+    gc.collect()
 
 
 def test_tracking_resource_adaptor():
-
     cuda_mr = rmm.mr.CudaMemoryResource()
 
     mr = rmm.mr.TrackingResourceAdaptor(cuda_mr, capture_stacks=True)
@@ -742,6 +725,13 @@ def test_failure_callback_resource_adaptor_error():
 
 
 def test_dev_buf_circle_ref_dealloc():
+    # This test creates a reference cycle containing a `DeviceBuffer`
+    # and ensures that the garbage collector does not clear it, i.e.,
+    # that the GC does not remove all references to other Python
+    # objects from it. The `DeviceBuffer` needs to keep its reference
+    # to the `DeviceMemoryResource` that was used to create it in
+    # order to be cleaned up properly. See GH #931.
+
     rmm.mr.set_current_device_resource(rmm.mr.CudaMemoryResource())
 
     dbuf1 = rmm.DeviceBuffer(size=1_000_000)
@@ -751,17 +741,27 @@ def test_dev_buf_circle_ref_dealloc():
     l1.append(l1)
 
     # due to the reference cycle, the device buffer doesn't actually get
-    # cleaned up until later, when we invoke `gc.collect()`:
+    # cleaned up until after `gc.collect()` is called.
     del dbuf1, l1
 
     rmm.mr.set_current_device_resource(rmm.mr.CudaMemoryResource())
 
-    # by now, the only remaining reference to the *original* memory
-    # resource should be in `dbuf1`. However, the cyclic garbage collector
-    # will eliminate that reference when it clears the object via its
-    # `tp_clear` method.  Later, when `tp_dealloc` attemps to actually
-    # deallocate `dbuf1` (which needs the MR alive), a segfault occurs.
+    # test that after the call to `gc.collect()`, the `DeviceBuffer`
+    # is deallocated successfully (i.e., without a segfault).
+    gc.collect()
 
+
+def test_upstream_mr_circle_ref_dealloc():
+    # This test is just like the one above, except it tests that
+    # instances of `UpstreamResourceAdaptor` (such as
+    # `PoolMemoryResource`) are not cleared by the GC.
+
+    rmm.mr.set_current_device_resource(rmm.mr.CudaMemoryResource())
+    mr = rmm.mr.PoolMemoryResource(rmm.mr.get_current_device_resource())
+    l1 = [mr]
+    l1.append(l1)
+    del mr, l1
+    rmm.mr.set_current_device_resource(rmm.mr.CudaMemoryResource())
     gc.collect()
 
 

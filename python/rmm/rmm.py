@@ -237,6 +237,21 @@ def rmm_cupy_allocator(nbytes):
     return ptr
 
 
+try:
+    from torch.cuda.memory import CUDAPluggableAllocator
+except ImportError:
+    rmm_torch_allocator = None
+else:
+    import rmm._lib.torch_allocator
+
+    _alloc_free_lib_path = rmm._lib.torch_allocator.__file__
+    rmm_torch_allocator = CUDAPluggableAllocator(
+        _alloc_free_lib_path,
+        alloc_fn_name="allocate",
+        free_fn_name="deallocate",
+    )
+
+
 def register_reinitialize_hook(func, *args, **kwargs):
     """
     Add a function to the list of functions ("hooks") that will be
