@@ -16,12 +16,7 @@
 
 #pragma once
 
-// If using GCC, temporary workaround for older libcudacxx defining _LIBCPP_VERSION
-// undefine it before including spdlog, due to fmtlib checking if it is defined
-// TODO: remove once libcudacxx is on Github and RAPIDS depends on it
-#ifdef __GNUG__
-#undef _LIBCPP_VERSION
-#endif
+#include <spdlog/fmt/ostr.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/spdlog.h>
 
@@ -88,6 +83,8 @@ struct bytes {
     return os << size << ' ' << units.at(index);
   }
 };
+
+template <> struct fmt::formatter<bytes> : fmt::ostream_formatter {};
 
 }  // namespace detail
 
