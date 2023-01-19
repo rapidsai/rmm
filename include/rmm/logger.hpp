@@ -84,10 +84,6 @@ struct bytes {
   }
 };
 
-template <>
-struct fmt::formatter<bytes> : fmt::ostream_formatter {
-};
-
 }  // namespace detail
 
 /**
@@ -114,3 +110,7 @@ inline spdlog::logger& logger()
 #define RMM_LOG_CRITICAL(...) SPDLOG_LOGGER_CRITICAL(&rmm::logger(), __VA_ARGS__)
 
 }  // namespace rmm
+
+template <>
+struct fmt::formatter<rmm::detail::bytes> : fmt::ostream_formatter {
+};
