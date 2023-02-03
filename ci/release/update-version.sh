@@ -46,3 +46,7 @@ sed_runner 's/'"PROJECT_NUMBER         = .*"'/'"PROJECT_NUMBER         = ${NEXT_
 # sphinx docs update
 sed_runner 's/'"version =.*"'/'"version = \"${NEXT_SHORT_TAG}\""'/g' python/docs/conf.py
 sed_runner 's/'"release =.*"'/'"release = \"${NEXT_FULL_TAG}\""'/g' python/docs/conf.py
+
+for FILE in .github/workflows/*.yaml; do
+  sed_runner "/shared-action-workflows/ s/@.*/@branch-${NEXT_SHORT_TAG}/g" "${FILE}"
+done
