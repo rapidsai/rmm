@@ -1,6 +1,11 @@
 #!/bin/bash
+# Copyright (c) 2020-2023, NVIDIA CORPORATION.
 
-set -euo pipefail
+# Any failing command will set EXITCODE to non-zero
+set -e           # abort the script on error, this will change for running tests (see below)
+set -o pipefail  # piped commands propagate their error
+set -E           # ERR traps are inherited by subcommands
+trap "EXITCODE=1" ERR
 
 . /opt/conda/etc/profile.d/conda.sh
 conda activate base
@@ -23,21 +28,20 @@ rapids-mamba-retry install \
 
 RAPIDS_TESTS_DIR=${RAPIDS_TESTS_DIR:-"${PWD}/test-results"}
 mkdir -p "${RAPIDS_TESTS_DIR}"
-SUITEERROR=0
+EXITCODE=0
 
 rapids-logger "Check GPU usage"
 nvidia-smi
 
+# Do not abort the script on error from this point on. This allows all tests to
+# run regardless of pass/fail, but relies on the ERR trap above to manage the
+# EXITCODE for the script.
 set +e
 
 rapids-logger "Running googletests"
 for gt in "$CONDA_PREFIX/bin/gtests/librmm/"* ; do
     ${gt} --gtest_output=xml:${RAPIDS_TESTS_DIR}/
-    exitcode=$?
-    if (( ${exitcode} != 0 )); then
-        SUITEERROR=${exitcode}
-        echo "FAILED: GTest ${gt}"
-    fi
 done
 
-exit ${SUITEERROR}
+echo "Test script exiting with value: $EXITCODE"
+exit ${EXITCODE}
