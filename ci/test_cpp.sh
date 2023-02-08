@@ -36,5 +36,5 @@ for gt in "$CONDA_PREFIX/bin/gtests/librmm/"* ; do
     ${gt} --gtest_output=xml:${RAPIDS_TESTS_DIR}/
 done
 
-echo "Test script exiting with value: $EXITCODE"
+rapids-logger "Test script exiting with value: $EXITCODE"
 exit ${EXITCODE}

@@ -47,5 +47,5 @@ pytest \
   --cov-report=xml:"${RAPIDS_COVERAGE_DIR}/rmm-coverage.xml" \
   --cov-report term
 
-echo "Test script exiting with value: $EXITCODE"
+rapids-logger "Test script exiting with value: $EXITCODE"
 exit ${EXITCODE}
