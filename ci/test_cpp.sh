@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# Copyright (c) 2020-2023, NVIDIA CORPORATION.
 set -euo pipefail
 
 . /opt/conda/etc/profile.d/conda.sh
@@ -23,21 +23,18 @@ rapids-mamba-retry install \
 
 RAPIDS_TESTS_DIR=${RAPIDS_TESTS_DIR:-"${PWD}/test-results"}
 mkdir -p "${RAPIDS_TESTS_DIR}"
-SUITEERROR=0
 
 rapids-logger "Check GPU usage"
 nvidia-smi
 
+EXITCODE=0
+trap "EXITCODE=1" ERR
 set +e
 
 rapids-logger "Running googletests"
 for gt in "$CONDA_PREFIX/bin/gtests/librmm/"* ; do
     ${gt} --gtest_output=xml:${RAPIDS_TESTS_DIR}/
-    exitcode=$?
-    if (( ${exitcode} != 0 )); then
-        SUITEERROR=${exitcode}
-        echo "FAILED: GTest ${gt}"
-    fi
 done
 
-exit ${SUITEERROR}
+rapids-logger "Test script exiting with value: $EXITCODE"
+exit ${EXITCODE}
