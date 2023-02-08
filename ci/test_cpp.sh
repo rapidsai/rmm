@@ -1,7 +1,6 @@
 #!/bin/bash
 # Copyright (c) 2020-2023, NVIDIA CORPORATION.
 set -euo pipefail
-trap "EXITCODE=1" ERR
 
 . /opt/conda/etc/profile.d/conda.sh
 conda activate base
@@ -24,11 +23,12 @@ rapids-mamba-retry install \
 
 RAPIDS_TESTS_DIR=${RAPIDS_TESTS_DIR:-"${PWD}/test-results"}
 mkdir -p "${RAPIDS_TESTS_DIR}"
-EXITCODE=0
 
 rapids-logger "Check GPU usage"
 nvidia-smi
 
+EXITCODE=0
+trap "EXITCODE=1" ERR
 set +e
 
 rapids-logger "Running googletests"
