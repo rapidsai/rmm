@@ -34,7 +34,6 @@ __all__ = [
     "disable_logging",
     "enable_logging",
     "get_log_filenames",
-    "get_versions",
     "is_initialized",
     "mr",
     "register_reinitialize_hook",
