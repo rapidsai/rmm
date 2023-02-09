@@ -1,3 +1,38 @@
+# RMM 23.02.00 (9 Feb 2023)
+
+## 🐛 Bug Fixes
+
+- pre-commit: Update isort version to 5.12.0 ([#1197](https://github.com/rapidsai/rmm/pull/1197)) [@wence-](https://github.com/wence-)
+- Revert &quot;Upgrade to spdlog 1.10 ([#1173)&quot; (#1176](https://github.com/rapidsai/rmm/pull/1173)&quot; (#1176)) [@bdice](https://github.com/bdice)
+- Ensure `UpstreamResourceAdaptor` is not cleared by the Python GC ([#1170](https://github.com/rapidsai/rmm/pull/1170)) [@shwina](https://github.com/shwina)
+
+## 📖 Documentation
+
+- Fix documentation author ([#1188](https://github.com/rapidsai/rmm/pull/1188)) [@bdice](https://github.com/bdice)
+
+## 🚀 New Features
+
+- Add RMM PyTorch allocator ([#1168](https://github.com/rapidsai/rmm/pull/1168)) [@shwina](https://github.com/shwina)
+
+## 🛠️ Improvements
+
+- Update shared workflow branches ([#1201](https://github.com/rapidsai/rmm/pull/1201)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Fix update-version.sh ([#1199](https://github.com/rapidsai/rmm/pull/1199)) [@raydouglass](https://github.com/raydouglass)
+- Use CTK 118/cp310 branch of wheel workflows ([#1193](https://github.com/rapidsai/rmm/pull/1193)) [@sevagh](https://github.com/sevagh)
+- Update `build.yaml` workflow to reduce verbosity ([#1192](https://github.com/rapidsai/rmm/pull/1192)) [@AyodeAwe](https://github.com/AyodeAwe)
+- Fix `build.yaml` workflow ([#1191](https://github.com/rapidsai/rmm/pull/1191)) [@ajschmidt8](https://github.com/ajschmidt8)
+- add docs_build step ([#1189](https://github.com/rapidsai/rmm/pull/1189)) [@AyodeAwe](https://github.com/AyodeAwe)
+- Upkeep/wheel param cleanup ([#1187](https://github.com/rapidsai/rmm/pull/1187)) [@sevagh](https://github.com/sevagh)
+- Update workflows for nightly tests ([#1186](https://github.com/rapidsai/rmm/pull/1186)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Build CUDA `11.8` and Python `3.10` Packages ([#1184](https://github.com/rapidsai/rmm/pull/1184)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Build wheels alongside conda CI ([#1182](https://github.com/rapidsai/rmm/pull/1182)) [@sevagh](https://github.com/sevagh)
+- Update conda recipes. ([#1180](https://github.com/rapidsai/rmm/pull/1180)) [@bdice](https://github.com/bdice)
+- Update PR Workflow ([#1174](https://github.com/rapidsai/rmm/pull/1174)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Upgrade to spdlog 1.10 ([#1173](https://github.com/rapidsai/rmm/pull/1173)) [@kkraus14](https://github.com/kkraus14)
+- Enable `codecov` ([#1171](https://github.com/rapidsai/rmm/pull/1171)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Add support for Python 3.10. ([#1166](https://github.com/rapidsai/rmm/pull/1166)) [@bdice](https://github.com/bdice)
+- Update pre-commit hooks ([#1154](https://github.com/rapidsai/rmm/pull/1154)) [@bdice](https://github.com/bdice)
+
 # RMM 22.12.00 (8 Dec 2022)
 
 ## 🐛 Bug Fixes

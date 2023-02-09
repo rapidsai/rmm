@@ -16,25 +16,23 @@ import os
 import warnings
 from collections import defaultdict
 
+cimport cython
 from cython.operator cimport dereference as deref
 from libc.stdint cimport int8_t, int64_t, uintptr_t
 from libcpp cimport bool
-from libcpp.cast cimport dynamic_cast
-from libcpp.memory cimport make_shared, make_unique, shared_ptr, unique_ptr
+from libcpp.memory cimport make_unique, unique_ptr
 from libcpp.pair cimport pair
 from libcpp.string cimport string
 
 from cuda.cudart import cudaError_t
 
-from rmm._cuda.gpu import (
-    CUDARuntimeError,
-    driverGetVersion,
-    getDevice,
-    runtimeGetVersion,
-    setDevice,
-)
+from rmm._cuda.gpu import CUDARuntimeError, getDevice, setDevice
 
 from rmm._lib.cuda_stream_view cimport cuda_stream_view
+from rmm._lib.per_device_resource cimport (
+    cuda_device_id,
+    set_per_device_resource as cpp_set_per_device_resource,
+)
 
 # Transparent handle of a C++ exception
 ctypedef pair[int, string] CppExcept
@@ -212,29 +210,6 @@ cdef extern from "rmm/mr/device/failure_callback_resource_adaptor.hpp" \
         ) except +
 
 
-cdef extern from "rmm/mr/device/per_device_resource.hpp" namespace "rmm" nogil:
-
-    cdef cppclass cuda_device_id:
-        ctypedef int value_type
-
-        cuda_device_id(value_type id)
-
-        value_type value()
-
-    cdef device_memory_resource* _set_current_device_resource \
-        "rmm::mr::set_current_device_resource" (device_memory_resource* new_mr)
-    cdef device_memory_resource* _get_current_device_resource \
-        "rmm::mr::get_current_device_resource" ()
-
-    cdef device_memory_resource* _set_per_device_resource \
-        "rmm::mr::set_per_device_resource" (
-            cuda_device_id id,
-            device_memory_resource* new_mr
-        )
-    cdef device_memory_resource* _get_per_device_resource \
-        "rmm::mr::get_per_device_resource"(cuda_device_id id)
-
-
 cdef class DeviceMemoryResource:
 
     cdef device_memory_resource* get_mr(self):
@@ -247,6 +222,8 @@ cdef class DeviceMemoryResource:
         self.c_obj.get().deallocate(<void*>(ptr), nbytes)
 
 
+# See the note about `no_gc_clear` in `device_buffer.pyx`.
+@cython.no_gc_clear
 cdef class UpstreamResourceAdaptor(DeviceMemoryResource):
 
     def __cinit__(self, DeviceMemoryResource upstream_mr, *args, **kwargs):
@@ -527,8 +504,6 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
         bin_resource : DeviceMemoryResource
             The resource to use for this bin (optional)
         """
-        cdef DeviceMemoryResource _bin_resource
-
         if bin_resource is None:
             (<binning_memory_resource[device_memory_resource]*>(
                 self.c_obj.get()))[0].add_bin(allocation_size)
@@ -973,7 +948,7 @@ cpdef set_per_device_resource(int device, DeviceMemoryResource mr):
     cdef unique_ptr[cuda_device_id] device_id = \
         make_unique[cuda_device_id](device)
 
-    _set_per_device_resource(deref(device_id), mr.get_mr())
+    cpp_set_per_device_resource(deref(device_id), mr.get_mr())
 
 
 cpdef set_current_device_resource(DeviceMemoryResource mr):

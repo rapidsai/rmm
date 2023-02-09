@@ -8,4 +8,3 @@ release_drafter: true
 copy_prs: true
 rerun_tests: true
 recently_updated: true
-

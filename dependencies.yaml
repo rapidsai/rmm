@@ -3,10 +3,11 @@ files:
   all:
     output: conda
     matrix:
-      cuda: ["11.5", "11.6"]
+      cuda: ["11.8"]
       arch: [x86_64]
     includes:
       - build
+      - checks
       - cudatoolkit
       - develop
       - run
@@ -24,8 +25,13 @@ files:
   checks:
     output: none
     includes:
-      - build
-      - develop
+      - checks
+      - py_version
+  docs:
+    output: none
+    includes:
+      - cudatoolkit
+      - docs
       - py_version
 channels:
   - rapidsai
@@ -39,11 +45,16 @@ dependencies:
           - cuda-python>=11.7.1,<12.0
           - cython>=0.29,<0.30
           - ninja
-          - python>=3.8,<3.10
+          - python>=3.8,<3.11
           - scikit-build>=0.13.1
       - output_types: conda
         packages:
           - spdlog>=1.8.5,<1.9
+  checks:
+    common:
+      - output_types: [conda, requirements]
+        packages:
+          - pre-commit
   cudatoolkit:
     specific:
       - output_types: conda
@@ -64,19 +75,28 @@ dependencies:
               cuda: "11.6"
             packages:
               - cudatoolkit=11.6
+          - matrix:
+              cuda: "11.8"
+            packages:
+              - cudatoolkit=11.8
   develop:
     common:
       - output_types: [conda, requirements]
         packages:
-          - black=22.3.0
-          - cmakelang=0.6.13
-          - flake8=3.8.3
           - gcovr>=5.0
-          - isort=5.10.1
-      - output_types: conda
+  docs:
+    common:
+      - output_types: [conda]
         packages:
-          - clang=11.1.0
-          - clang-tools=11.1.0
+          - doxygen=1.8.20
+          - graphviz
+          - ipython
+          - nbsphinx
+          - numpydoc
+          - sphinx
+          - sphinx_rtd_theme
+          - sphinx-copybutton
+          - sphinx-markdown-tables
   py_version:
     specific:
       - output_types: conda
@@ -89,6 +109,10 @@ dependencies:
               py: "3.9"
             packages:
               - python=3.9
+          - matrix:
+              py: "3.10"
+            packages:
+              - python=3.10
   run:
     common:
       - output_types: [conda, requirements]
