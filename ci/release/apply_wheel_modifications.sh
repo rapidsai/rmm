@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Usage: bash modify_wheel_build_version.sh <new_version>
+# Usage: bash apply_wheel_modifications.sh <new_version>
 
 VERSION=${1}
 
