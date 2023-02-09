@@ -1,4 +1,5 @@
 #!/bin/bash
+# Copyright (c) 2023, NVIDIA CORPORATION.
 #
 # Usage: bash apply_wheel_modifications.sh <new_version>
 
