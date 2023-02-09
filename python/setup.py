@@ -7,7 +7,7 @@ from skbuild import setup
 
 setup(
     name="rmm" + os.getenv("RAPIDS_PY_WHEEL_CUDA_SUFFIX", default=""),
-    version="23.02.00",
+    version="23.04.00",
     description="rmm - RAPIDS Memory Manager",
     url="https://github.com/rapidsai/rmm",
     author="NVIDIA Corporation",
