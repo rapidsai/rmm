@@ -38,7 +38,7 @@ sed_runner 's/'"rmm_version .*)"'/'"rmm_version ${NEXT_FULL_TAG})"'/g' python/CM
 sed_runner 's/'"branch-.*\/RAPIDS.cmake"'/'"branch-${NEXT_SHORT_TAG}\/RAPIDS.cmake"'/g' python/CMakeLists.txt
 
 # cmake-format rapids-cmake definitions
-sed_runner 's/'"branch-.*\/cmake-format-rapids-cmake.json"'/'"branch-${NEXT_SHORT_TAG}\/cmake-format-rapids-cmake.json"'/g' ci/checks/style.sh
+sed_runner 's/'"branch-.*\/cmake-format-rapids-cmake.json"'/'"branch-${NEXT_SHORT_TAG}\/cmake-format-rapids-cmake.json"'/g' ci/check_style.sh
 
 # doxyfile update
 sed_runner 's/'"PROJECT_NUMBER         = .*"'/'"PROJECT_NUMBER         = ${NEXT_SHORT_TAG}"'/g' doxygen/Doxyfile
@@ -46,3 +46,7 @@ sed_runner 's/'"PROJECT_NUMBER         = .*"'/'"PROJECT_NUMBER         = ${NEXT_
 # sphinx docs update
 sed_runner 's/'"version =.*"'/'"version = \"${NEXT_SHORT_TAG}\""'/g' python/docs/conf.py
 sed_runner 's/'"release =.*"'/'"release = \"${NEXT_FULL_TAG}\""'/g' python/docs/conf.py
+
+for FILE in .github/workflows/*.yaml; do
+  sed_runner "/shared-action-workflows/ s/@.*/@branch-${NEXT_SHORT_TAG}/g" "${FILE}"
+done

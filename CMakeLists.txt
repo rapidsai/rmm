@@ -19,7 +19,7 @@ set(rapids-cmake-repo "kkraus14/rapids-cmake")
 set(rapids-cmake-branch "spdlog_1.11_fmt")
 
 if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/RMM_RAPIDS.cmake)
-  file(DOWNLOAD https://raw.githubusercontent.com/rapidsai/rapids-cmake/branch-23.02/RAPIDS.cmake
+  file(DOWNLOAD https://raw.githubusercontent.com/rapidsai/rapids-cmake/branch-23.04/RAPIDS.cmake
        ${CMAKE_CURRENT_BINARY_DIR}/RMM_RAPIDS.cmake)
 endif()
 include(${CMAKE_CURRENT_BINARY_DIR}/RMM_RAPIDS.cmake)
@@ -31,7 +31,7 @@ include(rapids-find)
 
 project(
   RMM
-  VERSION 23.02.00
+  VERSION 23.04.00
   LANGUAGES CXX)
 
 # Write the version header
