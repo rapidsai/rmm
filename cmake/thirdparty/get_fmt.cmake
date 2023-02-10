@@ -22,7 +22,7 @@ function(find_and_configure_fmt)
   if(fmt_ADDED)
     rapids_export(
       BUILD fmt
-      EXPORT_SET fmt
+      EXPORT_SET fmt-targets
       GLOBAL_TARGETS fmt fmt-header-only
       NAMESPACE fmt::)
     include("${rapids-cmake-dir}/export/find_package_root.cmake")
