@@ -1,5 +1,5 @@
 # =============================================================================
-# Copyright (c) 2021-2023, NVIDIA CORPORATION.
+# Copyright (c) 2023, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -12,22 +12,22 @@
 # the License.
 # =============================================================================
 
-# Use CPM to find or clone speedlog
-function(find_and_configure_spdlog)
+# Use CPM to find or clone fmt
+function(find_and_configure_fmt)
 
-  include(${rapids-cmake-dir}/cpm/spdlog.cmake)
-  rapids_cpm_spdlog(FMT_OPTION "EXTERNAL_FMT_HO" INSTALL_EXPORT_SET rmm-exports)
-  rapids_export_package(BUILD spdlog rmm-exports)
+  include(${rapids-cmake-dir}/cpm/fmt.cmake)
+  rapids_cpm_fmt(INSTALL_EXPORT_SET rmm-exports)
+  rapids_export_package(BUILD fmt rmm-exports)
 
-  if(spdlog_ADDED)
+  if(fmt_ADDED)
     rapids_export(
-      BUILD spdlog
-      EXPORT_SET spdlog
-      GLOBAL_TARGETS spdlog spdlog_header_only
-      NAMESPACE spdlog::)
+      BUILD fmt
+      EXPORT_SET fmt
+      GLOBAL_TARGETS fmt fmt-header-only
+      NAMESPACE fmt::)
     include("${rapids-cmake-dir}/export/find_package_root.cmake")
-    rapids_export_find_package_root(BUILD spdlog [=[${CMAKE_CURRENT_LIST_DIR}]=] rmm-exports)
+    rapids_export_find_package_root(BUILD fmt [=[${CMAKE_CURRENT_LIST_DIR}]=] rmm-exports)
   endif()
 endfunction()
 
-find_and_configure_spdlog()
+find_and_configure_fmt()

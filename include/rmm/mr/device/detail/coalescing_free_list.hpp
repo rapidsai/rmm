@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,16 @@
 
 #pragma once
 
-#include <iterator>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/detail/free_list.hpp>
+
+#include <fmt/core.h>
 
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <iostream>
+#include <iterator>
 #include <list>
 
 namespace rmm::mr::detail {
