@@ -16,6 +16,10 @@ cmake_minimum_required(VERSION 3.23.1 FATAL_ERROR)
 
 set(rmm_version 23.04.00)
 
+# TODO(keith): REMOVE BEFORE MERGING
+set(rapids-cmake-repo "kkraus14/rapids-cmake")
+set(rapids-cmake-branch "spdlog_1.11_fmt")
+
 file(DOWNLOAD https://raw.githubusercontent.com/rapidsai/rapids-cmake/branch-23.04/RAPIDS.cmake
      ${CMAKE_BINARY_DIR}/RAPIDS.cmake)
 include(${CMAKE_BINARY_DIR}/RAPIDS.cmake)
