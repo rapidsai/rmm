@@ -49,7 +49,8 @@ dependencies:
           - scikit-build>=0.13.1
       - output_types: conda
         packages:
-          - spdlog>=1.8.5,<1.9
+          - fmt>=9.1.0,<10
+          - spdlog>=1.11.0,<1.12
   checks:
     common:
       - output_types: [conda, requirements]
