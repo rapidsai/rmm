@@ -16,18 +16,7 @@
 function(find_and_configure_fmt)
 
   include(${rapids-cmake-dir}/cpm/fmt.cmake)
-  rapids_cpm_fmt(INSTALL_EXPORT_SET rmm-exports)
-  rapids_export_package(BUILD fmt rmm-exports)
-
-  if(fmt_ADDED)
-    rapids_export(
-      BUILD fmt
-      EXPORT_SET fmt-targets
-      GLOBAL_TARGETS fmt fmt-header-only
-      NAMESPACE fmt::)
-    include("${rapids-cmake-dir}/export/find_package_root.cmake")
-    rapids_export_find_package_root(BUILD fmt [=[${CMAKE_CURRENT_LIST_DIR}]=] rmm-exports)
-  endif()
+  rapids_cpm_fmt(INSTALL_EXPORT_SET rmm-exports BUILD_EXPORT_SET rmm-exports)
 endfunction()
 
 find_and_configure_fmt()
