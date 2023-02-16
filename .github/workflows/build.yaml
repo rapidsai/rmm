@@ -74,7 +74,6 @@ jobs:
       package-name: rmm
       package-dir: python
       skbuild-configure-options: "-DRMM_BUILD_WHEELS=ON"
-      uses-versioneer: false
   wheel-publish:
     needs: wheel-build
     secrets: inherit
