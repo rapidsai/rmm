@@ -1,5 +1,5 @@
 # =============================================================================
-# Copyright (c) 2018-2021, NVIDIA CORPORATION.
+# Copyright (c) 2018-2023, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -58,6 +58,7 @@ rapids_find_package(
   BUILD_EXPORT_SET rmm-exports
   INSTALL_EXPORT_SET rmm-exports)
 rapids_cpm_init()
+include(cmake/thirdparty/get_fmt.cmake)
 include(cmake/thirdparty/get_spdlog.cmake)
 include(cmake/thirdparty/get_thrust.cmake)
 
@@ -77,6 +78,7 @@ else()
 endif()
 
 target_link_libraries(rmm INTERFACE rmm::Thrust)
+target_link_libraries(rmm INTERFACE fmt::fmt-header-only)
 target_link_libraries(rmm INTERFACE spdlog::spdlog_header_only)
 target_link_libraries(rmm INTERFACE dl)
 target_compile_features(rmm INTERFACE cxx_std_17 $<BUILD_INTERFACE:cuda_std_17>)
