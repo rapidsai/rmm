@@ -2,25 +2,12 @@
 
 import os
 
-import versioneer
 from setuptools import find_packages
 from skbuild import setup
 
-if "RAPIDS_PY_WHEEL_VERSIONEER_OVERRIDE" in os.environ:
-    orig_get_versions = versioneer.get_versions
-
-    version_override = os.environ["RAPIDS_PY_WHEEL_VERSIONEER_OVERRIDE"]
-
-    def get_versions():
-        data = orig_get_versions()
-        data["version"] = version_override
-        return data
-
-    versioneer.get_versions = get_versions
-
 setup(
     name="rmm" + os.getenv("RAPIDS_PY_WHEEL_CUDA_SUFFIX", default=""),
-    version=versioneer.get_version(),
+    version="23.04.00",
     description="rmm - RAPIDS Memory Manager",
     url="https://github.com/rapidsai/rmm",
     author="NVIDIA Corporation",
@@ -49,7 +36,6 @@ setup(
             include=["rmm._lib", "rmm._lib.includes", "rmm._cuda*"]
         )
     },
-    cmdclass=versioneer.get_cmdclass(),
     install_requires=[
         "cuda-python>=11.7.1,<12.0",
         "numpy>=1.19",
