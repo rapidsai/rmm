@@ -6,7 +6,7 @@ from setuptools import find_packages
 from skbuild import setup
 
 setup(
-    name="rmm" + os.getenv("RAPIDS_PY_WHEEL_CUDA_SUFFIX", default=""),
+    name="rmm",
     version="23.04.00",
     description="rmm - RAPIDS Memory Manager",
     url="https://github.com/rapidsai/rmm",

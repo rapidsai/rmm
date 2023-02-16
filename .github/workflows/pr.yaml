@@ -62,13 +62,14 @@ jobs:
   wheel-build:
     needs: checks
     secrets: inherit
-    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-manylinux-build.yml@branch-23.04
+    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-manylinux-build.yml@static_wheel_name
     with:
       build_type: pull-request
       package-dir: python
       package-name: rmm
       skbuild-configure-options: "-DRMM_BUILD_WHEELS=ON"
       uses-versioneer: false
+      uses-dynamic-name: false
   wheel-tests:
     needs: wheel-build
     secrets: inherit
