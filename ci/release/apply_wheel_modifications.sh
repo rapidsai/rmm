@@ -4,7 +4,7 @@
 # Usage: bash apply_wheel_modifications.sh <new_version>
 
 VERSION=${1}
-CUDA_SUFFIX=${1}
+CUDA_SUFFIX=${2}
 
 sed -i "s/__version__ = .*/__version__ = \"${VERSION}\"/g" python/rmm/__init__.py
 sed -i "s/version=.*,/version=\"${VERSION}\",/g" python/setup.py
