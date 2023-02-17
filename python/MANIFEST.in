@@ -3,7 +3,7 @@ recursive-include rmm *.pxd
 recursive-include rmm *.pyx
 
 # Build files
-recursive-include rmm CMakeLists.txt
+recursive-include . CMakeLists.txt
 
 # License
 include LICENSE
