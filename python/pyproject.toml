@@ -126,3 +126,12 @@ skip = [
     "dist",
     "__init__.py",
 ]
+
+[tool.setuptools]
+zip-safe = false
+
+[tool.setuptools.packages.find]
+include = [
+    "rmm",
+    "rmm.*",
+]
