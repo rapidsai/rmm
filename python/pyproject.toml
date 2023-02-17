@@ -129,9 +129,3 @@ skip = [
 
 [tool.setuptools]
 zip-safe = false
-
-[tool.setuptools.packages.find]
-include = [
-    "rmm",
-    "rmm.*",
-]
