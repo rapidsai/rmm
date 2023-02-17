@@ -2,8 +2,9 @@
 recursive-include rmm *.pxd
 recursive-include rmm *.pyx
 
-# Build files
-recursive-include . CMakeLists.txt
+# Build files. Don't use a recursive include on '.' in case the repo is dirty
+include . CMakeLists.txt
+recursive-include rmm CMakeLists.txt
 
 # License
 include LICENSE
