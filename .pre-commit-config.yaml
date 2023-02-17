@@ -5,6 +5,10 @@ repos:
       hooks:
           - id: trailing-whitespace
           - id: end-of-file-fixer
+    - repo: https://github.com/vyasr/dependency-file-generator
+      rev: feat/pre_commit_hook
+      hooks:
+          - id: rapids-dependency-file-generator
     - repo: https://github.com/PyCQA/isort
       rev: 5.12.0
       hooks:
