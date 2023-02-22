@@ -5,4 +5,5 @@ from skbuild import setup
 
 setup(
     packages=find_packages(include=["rmm", "rmm.*"]),
+    include_package_data=True,
 )
