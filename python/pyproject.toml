@@ -47,7 +47,6 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
 ]
 
@@ -87,18 +86,6 @@ include_trailing_comma = true
 force_grid_wrap = 0
 combine_as_imports = true
 order_by_type = true
-known_dask = [
-    "dask",
-    "distributed",
-    "dask_cuda",
-]
-known_rapids = [
-    "nvtext",
-    "cudf",
-    "cuml",
-    "cugraph",
-    "dask_cudf",
-]
 known_first_party = [
     "rmm",
 ]
