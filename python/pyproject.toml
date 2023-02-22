@@ -94,8 +94,6 @@ sections = [
     "FUTURE",
     "STDLIB",
     "THIRDPARTY",
-    "DASK",
-    "RAPIDS",
     "FIRSTPARTY",
     "LOCALFOLDER",
 ]
