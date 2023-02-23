@@ -16,16 +16,13 @@ from cuda.ccudart cimport cudaStream_t
 from libc.stdint cimport uintptr_t
 from libcpp cimport bool
 
+from rmm._lib.cuda_stream cimport CudaStream
 from rmm._lib.cuda_stream_view cimport (
     cuda_stream_default,
     cuda_stream_legacy,
     cuda_stream_per_thread,
     cuda_stream_view,
 )
-
-from numba import cuda
-
-from rmm._lib.cuda_stream cimport CudaStream
 
 from rmm._lib.cuda_stream import CudaStream
 
@@ -46,10 +43,11 @@ cdef class Stream:
             self._init_with_new_cuda_stream()
         elif isinstance(obj, Stream):
             self._init_from_stream(obj)
-        elif isinstance(obj, cuda.cudadrv.driver.Stream):
-            self._init_from_numba_stream(obj)
         else:
-            self._init_from_cupy_stream(obj)
+            try:
+                self._init_from_numba_stream(obj)
+            except TypeError:
+                self._init_from_cupy_stream(obj)
 
     @staticmethod
     cdef Stream _from_cudaStream_t(cudaStream_t s, object owner=None):
@@ -94,8 +92,12 @@ cdef class Stream:
         return self.c_is_default()
 
     def _init_from_numba_stream(self, obj):
-        self._cuda_stream = <cudaStream_t><uintptr_t>(int(obj))
-        self._owner = obj
+        from numba import cuda
+        if isinstance(obj, cuda.cudadrv.driver.Stream):
+            self._cuda_stream = <cudaStream_t><uintptr_t>(int(obj))
+            self._owner = obj
+        else:
+            raise TypeError(f"Cannot create stream from {type(obj)}")
 
     def _init_from_cupy_stream(self, obj):
         try:
