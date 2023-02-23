@@ -71,7 +71,7 @@ dependencies:
       - output_types: pyproject_build
         packages:
           - wheel
-          - setuptools
+          - setuptools>=61.0.0
   checks:
     common:
       - output_types: [conda, requirements]
@@ -143,7 +143,7 @@ dependencies:
           - numpy>=1.19
   cuda-python:
     common:
-      - output_types: [conda, requirements, pyproject_dependencies]
+      - output_types: [conda, requirements, pyproject_build, pyproject_dependencies]
         packages:
           - cuda-python>=11.7.1,<12.0
   test_python:
