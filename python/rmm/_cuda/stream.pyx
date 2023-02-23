@@ -24,8 +24,6 @@ from rmm._lib.cuda_stream_view cimport (
     cuda_stream_view,
 )
 
-from rmm._lib.cuda_stream import CudaStream
-
 
 cdef class Stream:
     def __init__(self, obj=None):
