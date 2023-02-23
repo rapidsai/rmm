@@ -21,7 +21,11 @@ requirements:
     - {{ compiler('cuda') }} {{ cuda_version }}
     - sysroot_{{ target_platform }} {{ sysroot_version }}
   host:
+    {% if cuda_major == 12 %}
+    - cuda-nvcc ={{ cuda_version }}
+    {% else %}
     - cudatoolkit ={{ cuda_version }}
+    {% endif %}
     # We require spdlog and fmt (which was devendored from spdlog
     # conda-forge packages in 1.11.0) so that the spdlog headers are not
     # pulled by CPM and installed as a part of the rmm packages. However,
@@ -60,7 +64,11 @@ outputs:
       build:
         - cmake {{ cmake_version }}
       run:
+        {% if cuda_major == 12 %}
+        - cuda-nvcc {{ cuda_spec }}
+        {% else %}
         - cudatoolkit {{ cuda_spec }}
+        {% endif %}
         - fmt {{ fmt_version }}
         - spdlog {{ spdlog_version }}
     test:
@@ -113,7 +121,11 @@ outputs:
       build:
         - cmake {{ cmake_version }}
       run:
+        {% if cuda_major == 12 %}
+        - cuda-nvcc {{ cuda_spec }}
+        {% else %}
         - cudatoolkit {{ cuda_spec }}
+        {% endif %}
         - {{ pin_subpackage('librmm', exact=True) }}
         - gtest {{ gtest_version }}
         - gmock {{ gtest_version }}

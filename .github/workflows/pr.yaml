@@ -14,6 +14,7 @@ jobs:
     needs:
       - checks
       - conda-cpp-build
+      - conda-cpp-build-cuda12
       - conda-cpp-tests
       - conda-python-build
       - conda-python-tests
@@ -31,6 +32,16 @@ jobs:
     uses: rapidsai/shared-action-workflows/.github/workflows/conda-cpp-build.yaml@branch-23.04
     with:
       build_type: pull-request
+  conda-cpp-build-cuda12:
+    needs: conda-python-build
+    secrets: inherit
+    uses: rapidsai/shared-action-workflows/.github/workflows/custom-job.yaml@branch-23.04
+    with:
+      build_type: pull-request
+      node_type: "gpu-v100-525-1"
+      arch: "amd64"
+      container_image: "rapidsai/ci:cuda12.0.0-ubuntu22.04-py3.10"
+      run_script: "ci/build_cpp.sh"
   conda-cpp-tests:
     needs: conda-cpp-build
     secrets: inherit
