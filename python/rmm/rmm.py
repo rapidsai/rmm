@@ -12,14 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import rmm
-from rmm import _lib as librmm
-from rmm._cuda.stream import Stream
-from rmm.allocators.cupy import rmm_cupy_allocator  # noqa: F401
-from rmm.allocators.numba import (  # noqa: F401
-    RMMNumbaManager,
-    _numba_memory_manager,
-)
-from rmm.allocators.torch import rmm_torch_allocator  # noqa: F401
 
 
 # Utility Functions

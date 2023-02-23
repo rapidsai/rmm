@@ -14,16 +14,15 @@
 
 from rmm import mr
 from rmm._lib.device_buffer import DeviceBuffer
+from rmm.allocators.cupy import rmm_cupy_allocator
+from rmm.allocators.numba import RMMNumbaManager, _numba_memory_manager
+from rmm.allocators.torch import rmm_torch_allocator
 from rmm.mr import disable_logging, enable_logging, get_log_filenames
 from rmm.rmm import (
     RMMError,
-    RMMNumbaManager,
-    _numba_memory_manager,
     is_initialized,
     register_reinitialize_hook,
     reinitialize,
-    rmm_cupy_allocator,
-    rmm_torch_allocator,
     unregister_reinitialize_hook,
 )
 
@@ -39,6 +38,7 @@ __all__ = [
     "register_reinitialize_hook",
     "reinitialize",
     "rmm_cupy_allocator",
+    "rmm_torch_allocator",
     "unregister_reinitialize_hook",
 ]
 
