@@ -26,7 +26,7 @@ def rmm_cupy_allocator(nbytes):
 
     Examples
     --------
-    >>> import rmm
+    >>> from rmm.allocators.cupy import rmm_cupy_allocator
     >>> import cupy
     >>> cupy.cuda.set_allocator(rmm.rmm_cupy_allocator)
     """

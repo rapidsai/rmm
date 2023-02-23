@@ -14,9 +14,6 @@
 
 from rmm import mr
 from rmm._lib.device_buffer import DeviceBuffer
-from rmm.allocators.cupy import rmm_cupy_allocator
-from rmm.allocators.numba import RMMNumbaManager, _numba_memory_manager
-from rmm.allocators.torch import rmm_torch_allocator
 from rmm.mr import disable_logging, enable_logging, get_log_filenames
 from rmm.rmm import (
     RMMError,
@@ -29,7 +26,6 @@ from rmm.rmm import (
 __all__ = [
     "DeviceBuffer",
     "RMMError",
-    "RMMNumbaManager",
     "disable_logging",
     "enable_logging",
     "get_log_filenames",
@@ -37,8 +33,6 @@ __all__ = [
     "mr",
     "register_reinitialize_hook",
     "reinitialize",
-    "rmm_cupy_allocator",
-    "rmm_torch_allocator",
     "unregister_reinitialize_hook",
 ]
 
