@@ -9,7 +9,7 @@ repos:
       rev: v1.4.0
       hooks:
           - id: rapids-dependency-file-generator
-          - args: ["--clean"]
+            args: ["--clean"]
     - repo: https://github.com/PyCQA/isort
       rev: 5.12.0
       hooks:
