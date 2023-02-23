@@ -15,7 +15,7 @@
 import copy
 import gc
 import os
-import sys
+import pickle
 from itertools import product
 
 import numpy as np
@@ -24,14 +24,6 @@ from numba import cuda
 
 import rmm
 import rmm._cuda.stream
-
-if sys.version_info < (3, 8):
-    try:
-        import pickle5 as pickle
-    except ImportError:
-        import pickle
-else:
-    import pickle
 
 cuda.set_memory_manager(rmm.RMMNumbaManager)
 
