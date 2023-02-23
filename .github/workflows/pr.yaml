@@ -33,7 +33,6 @@ jobs:
     with:
       build_type: pull-request
   conda-cpp-build-cuda12:
-    needs: conda-python-build
     secrets: inherit
     uses: rapidsai/shared-action-workflows/.github/workflows/custom-job.yaml@branch-23.04
     with:
