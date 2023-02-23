@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import rmm
+from . import mr
 
 
 # Utility Functions
@@ -78,7 +78,7 @@ def reinitialize(
     for func, args, kwargs in reversed(_reinitialize_hooks):
         func(*args, **kwargs)
 
-    rmm.mr._initialize(
+    mr._initialize(
         pool_allocator=pool_allocator,
         managed_memory=managed_memory,
         initial_pool_size=initial_pool_size,
@@ -93,7 +93,7 @@ def is_initialized():
     """
     Returns True if RMM has been initialized, False otherwise.
     """
-    return rmm.mr.is_initialized()
+    return mr.is_initialized()
 
 
 def register_reinitialize_hook(func, *args, **kwargs):
