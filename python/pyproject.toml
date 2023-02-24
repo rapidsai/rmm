@@ -114,4 +114,3 @@ skip = [
 
 [tool.setuptools]
 license-files = ["LICENSE"]
-zip-safe = false
