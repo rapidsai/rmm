@@ -28,7 +28,7 @@ def rmm_cupy_allocator(nbytes):
     --------
     >>> from rmm.allocators.cupy import rmm_cupy_allocator
     >>> import cupy
-    >>> cupy.cuda.set_allocator(rmm.rmm_cupy_allocator)
+    >>> cupy.cuda.set_allocator(rmm_cupy_allocator)
     """
     if cupy is None:
         raise ModuleNotFoundError("No module named 'cupy'")
