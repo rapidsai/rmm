@@ -693,7 +693,7 @@ See `help(rmm.mr)` for more information.
 
 ## Using RMM with third-party libraries
 
-#### Using RMM with CuPy
+### Using RMM with CuPy
 
 You can configure [CuPy](https://cupy.dev/) to use RMM for memory
 allocations by setting the CuPy CUDA allocator to

@@ -141,7 +141,7 @@ allocations. RMM provides implementations of these for
 to use whichever the _current_ RMM memory resource is for device
 allocations.
 
-#### Using RMM with CuPy
+### Using RMM with CuPy
 
 You can configure [CuPy](https://cupy.dev/) to use RMM for memory
 allocations by setting the CuPy CUDA allocator to
