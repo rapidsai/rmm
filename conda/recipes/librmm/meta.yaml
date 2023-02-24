@@ -27,6 +27,7 @@ requirements:
   host:
     {% if cuda_major == "12" %}
     - cuda-nvcc ={{ cuda_version }}
+    - cuda-cudart ={{ cuda_version }}
     {% else %}
     - cudatoolkit ={{ cuda_version }}
     {% endif %}
