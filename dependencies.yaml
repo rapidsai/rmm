@@ -47,6 +47,7 @@ dependencies:
           - ninja
           - python>=3.8,<3.11
           - scikit-build>=0.13.1
+          - tomli
       - output_types: conda
         packages:
           - fmt>=9.1.0,<10
