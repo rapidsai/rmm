@@ -96,19 +96,19 @@ class RMMNumbaManager(HostOnlyCUDAMemoryManager):
         start, end = cuda.cudadrv.driver.device_extents(memory)
 
         if config.CUDA_USE_NVIDIA_BINDING:
-            _, ipchandle = cuIpcGetMemHandle(start)
+            _, ipc_handle = cuIpcGetMemHandle(start)
             offset = int(memory.handle) - int(start)
         else:
-            ipchandle = (ctypes.c_byte * 64)()  # IPC handle is 64 bytes
+            ipc_handle = (ctypes.c_byte * 64)()  # IPC handle is 64 bytes
             cuda.cudadrv.driver.driver.cuIpcGetMemHandle(
-                ctypes.byref(ipchandle),
+                ctypes.byref(ipc_handle),
                 start,
             )
             offset = memory.handle.value - start
         source_info = cuda.current_context().device.get_device_identity()
 
         return IpcHandle(
-            memory, ipchandle, memory.size, source_info, offset=offset
+            memory, ipc_handle, memory.size, source_info, offset=offset
         )
 
     def get_memory_info(self):
