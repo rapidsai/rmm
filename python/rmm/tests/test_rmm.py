@@ -268,17 +268,16 @@ def test_rmm_device_buffer_pickle_roundtrip(hb):
     hb2 = db2.tobytes()
     assert hb == hb2
     # out-of-band
-    if pickle.HIGHEST_PROTOCOL >= 5:
-        db = rmm.DeviceBuffer.to_device(hb)
-        buffers = []
-        pb2 = pickle.dumps(db, protocol=5, buffer_callback=buffers.append)
-        del db
-        assert len(buffers) == 1
-        assert isinstance(buffers[0], pickle.PickleBuffer)
-        assert bytes(buffers[0]) == hb
-        db3 = pickle.loads(pb2, buffers=buffers)
-        hb3 = db3.tobytes()
-        assert hb3 == hb
+    db = rmm.DeviceBuffer.to_device(hb)
+    buffers = []
+    pb2 = pickle.dumps(db, protocol=5, buffer_callback=buffers.append)
+    del db
+    assert len(buffers) == 1
+    assert isinstance(buffers[0], pickle.PickleBuffer)
+    assert bytes(buffers[0]) == hb
+    db3 = pickle.loads(pb2, buffers=buffers)
+    hb3 = db3.tobytes()
+    assert hb3 == hb
 
 
 @pytest.mark.parametrize("stream", [cuda.default_stream(), cuda.stream()])
