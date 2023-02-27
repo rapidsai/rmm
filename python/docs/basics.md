@@ -138,7 +138,7 @@ allocations. RMM provides implementations of these for
 [CuPy](https://cupy.dev),
 [numba](https://numba.readthedocs.io/en/stable/), and [PyTorch](https://pytorch.org) in the
 `rmm.allocators` submodule. All these approaches configure the library
-to use whichever the _current_ RMM memory resource is for device
+to use the _current_ RMM memory resource for device
 allocations.
 
 ### Using RMM with CuPy
