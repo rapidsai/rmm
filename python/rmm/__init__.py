@@ -17,20 +17,15 @@ from rmm._lib.device_buffer import DeviceBuffer
 from rmm.mr import disable_logging, enable_logging, get_log_filenames
 from rmm.rmm import (
     RMMError,
-    RMMNumbaManager,
-    _numba_memory_manager,
     is_initialized,
     register_reinitialize_hook,
     reinitialize,
-    rmm_cupy_allocator,
-    rmm_torch_allocator,
     unregister_reinitialize_hook,
 )
 
 __all__ = [
     "DeviceBuffer",
     "RMMError",
-    "RMMNumbaManager",
     "disable_logging",
     "enable_logging",
     "get_log_filenames",
@@ -38,8 +33,35 @@ __all__ = [
     "mr",
     "register_reinitialize_hook",
     "reinitialize",
-    "rmm_cupy_allocator",
     "unregister_reinitialize_hook",
 ]
 
 __version__ = "23.04.00"
+
+
+_deprecated_names = {
+    "rmm_cupy_allocator": "cupy",
+    "rmm_torch_allocator": "torch",
+    "RMMNumbaManager": "numba",
+    "_numba_memory_manager": "numba",
+}
+
+
+def __getattr__(name):
+    if name in _deprecated_names:
+        import importlib
+        import warnings
+
+        package = _deprecated_names[name]
+        warnings.warn(
+            f"Use of 'rmm.{name}' is deprecated and will be removed. "
+            f"'{name}' now lives in the 'rmm.allocators.{package}' sub-module, "
+            "please update your imports.",
+            FutureWarning,
+        )
+        module = importlib.import_module(
+            f".allocators.{package}", package=__name__
+        )
+        return getattr(module, name)
+    else:
+        raise AttributeError(f"Module '{__name__}' has no attribute '{name}'")

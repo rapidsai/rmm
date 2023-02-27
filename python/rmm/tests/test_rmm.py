@@ -24,6 +24,8 @@ from numba import cuda
 
 import rmm
 import rmm._cuda.stream
+from rmm.allocators.cupy import rmm_cupy_allocator
+from rmm.allocators.numba import RMMNumbaManager
 
 if sys.version_info < (3, 8):
     try:
@@ -33,7 +35,7 @@ if sys.version_info < (3, 8):
 else:
     import pickle
 
-cuda.set_memory_manager(rmm.RMMNumbaManager)
+cuda.set_memory_manager(RMMNumbaManager)
 
 _driver_version = rmm._cuda.gpu.driverGetVersion()
 _runtime_version = rmm._cuda.gpu.runtimeGetVersion()
@@ -303,17 +305,17 @@ def test_rmm_pool_numba_stream(stream):
 def test_rmm_cupy_allocator():
     cupy = pytest.importorskip("cupy")
 
-    m = rmm.rmm_cupy_allocator(42)
+    m = rmm_cupy_allocator(42)
     assert m.mem.size == 42
     assert m.mem.ptr != 0
     assert isinstance(m.mem._owner, rmm.DeviceBuffer)
 
-    m = rmm.rmm_cupy_allocator(0)
+    m = rmm_cupy_allocator(0)
     assert m.mem.size == 0
     assert m.mem.ptr == 0
     assert isinstance(m.mem._owner, rmm.DeviceBuffer)
 
-    cupy.cuda.set_allocator(rmm.rmm_cupy_allocator)
+    cupy.cuda.set_allocator(rmm_cupy_allocator)
     a = cupy.arange(10)
     assert isinstance(a.data.mem._owner, rmm.DeviceBuffer)
 
@@ -323,7 +325,7 @@ def test_rmm_pool_cupy_allocator_with_stream(stream):
     cupy = pytest.importorskip("cupy")
 
     rmm.reinitialize(pool_allocator=True)
-    cupy.cuda.set_allocator(rmm.rmm_cupy_allocator)
+    cupy.cuda.set_allocator(rmm_cupy_allocator)
 
     if stream == "null":
         stream = cupy.cuda.stream.Stream.null
@@ -331,12 +333,12 @@ def test_rmm_pool_cupy_allocator_with_stream(stream):
         stream = cupy.cuda.stream.Stream()
 
     with stream:
-        m = rmm.rmm_cupy_allocator(42)
+        m = rmm_cupy_allocator(42)
         assert m.mem.size == 42
         assert m.mem.ptr != 0
         assert isinstance(m.mem._owner, rmm.DeviceBuffer)
 
-        m = rmm.rmm_cupy_allocator(0)
+        m = rmm_cupy_allocator(0)
         assert m.mem.size == 0
         assert m.mem.ptr == 0
         assert isinstance(m.mem._owner, rmm.DeviceBuffer)
@@ -355,7 +357,7 @@ def test_rmm_pool_cupy_allocator_stream_lifetime():
     cupy = pytest.importorskip("cupy")
 
     rmm.reinitialize(pool_allocator=True)
-    cupy.cuda.set_allocator(rmm.rmm_cupy_allocator)
+    cupy.cuda.set_allocator(rmm_cupy_allocator)
 
     stream = cupy.cuda.stream.Stream()
 
