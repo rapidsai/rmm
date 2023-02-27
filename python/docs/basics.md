@@ -131,21 +131,31 @@ resources
 MemoryResources are highly configurable and can be composed together in different ways.
 See `help(rmm.mr)` for more information.
 
+## Using RMM with third-party libraries
+
+A number of libraries provide hooks to control their device
+allocations. RMM provides implementations of these for
+[CuPy](https://cupy.dev),
+[numba](https://numba.readthedocs.io/en/stable/), and [PyTorch](https://pytorch.org) in the
+`rmm.allocators` submodule. All these approaches configure the library
+to use the _current_ RMM memory resource for device
+allocations.
+
 ### Using RMM with CuPy
 
 You can configure [CuPy](https://cupy.dev/) to use RMM for memory
 allocations by setting the CuPy CUDA allocator to
-`rmm_cupy_allocator`:
+`rmm.allocators.cupy.rmm_cupy_allocator`:
 
 ```python
->>> import rmm
+>>> from rmm.allocators.cupy import rmm_cupy_allocator
 >>> import cupy
->>> cupy.cuda.set_allocator(rmm.rmm_cupy_allocator)
+>>> cupy.cuda.set_allocator(rmm_cupy_allocator)
 ```
 
 ### Using RMM with Numba
 
-You can configure Numba to use RMM for memory allocations using the
+You can configure [Numba](https://numba.readthedocs.io/en/stable/) to use RMM for memory allocations using the
 Numba [EMM Plugin](https://numba.readthedocs.io/en/stable/cuda/external-memory.html#setting-emm-plugin).
 
 This can be done in two ways:
@@ -153,13 +163,27 @@ This can be done in two ways:
 1. Setting the environment variable `NUMBA_CUDA_MEMORY_MANAGER`:
 
   ```bash
-  $ NUMBA_CUDA_MEMORY_MANAGER=rmm python (args)
+  $ NUMBA_CUDA_MEMORY_MANAGER=rmm.allocators.numba python (args)
   ```
 
 2. Using the `set_memory_manager()` function provided by Numba:
 
   ```python
   >>> from numba import cuda
-  >>> import rmm
-  >>> cuda.set_memory_manager(rmm.RMMNumbaManager)
+  >>> from rmm.allocators.numba import RMMNumbaManager
+  >>> cuda.set_memory_manager(RMMNumbaManager)
   ```
+
+### Using RMM with PyTorch
+
+You can configure
+[PyTorch](https://pytorch.org/docs/stable/notes/cuda.html) to use RMM
+for memory allocations using their by configuring the current
+allocator.
+
+```python
+from rmm.allocators.torch import rmm_torch_allocator
+import torch
+
+torch.cuda.memory.change_current_allocator(rmm_torch_allocator)
+```
