@@ -158,9 +158,16 @@ cdef class DeviceBuffer:
         return self.copy()
 
     @staticmethod
-    cdef DeviceBuffer c_from_unique_ptr(unique_ptr[device_buffer] ptr):
+    cdef DeviceBuffer c_from_unique_ptr(
+        unique_ptr[device_buffer] ptr,
+        Stream stream=DEFAULT_STREAM
+    ):
         cdef DeviceBuffer buf = DeviceBuffer.__new__(DeviceBuffer)
+        if stream.c_is_default():
+            stream.c_synchronize()
         buf.c_obj = move(ptr)
+        buf.mr = get_current_device_resource()
+        buf.stream = stream
         return buf
 
     @staticmethod

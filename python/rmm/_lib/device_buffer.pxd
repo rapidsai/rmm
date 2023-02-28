@@ -49,7 +49,10 @@ cdef class DeviceBuffer:
     cdef Stream stream
 
     @staticmethod
-    cdef DeviceBuffer c_from_unique_ptr(unique_ptr[device_buffer] ptr)
+    cdef DeviceBuffer c_from_unique_ptr(
+        unique_ptr[device_buffer] ptr,
+        Stream stream=*
+    )
 
     @staticmethod
     cdef DeviceBuffer c_to_device(const unsigned char[::1] b,
