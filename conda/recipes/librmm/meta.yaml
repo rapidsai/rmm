@@ -20,8 +20,9 @@ requirements:
     - {{ compiler('cxx') }}
     {% if cuda_major == "12" %}
     - {{ compiler('cuda12') }} {{ cuda_version }}
-    - cuda-cudart-dev ={{ cuda_version }}
     - cuda-cudart ={{ cuda_version }}
+    - cuda-cudart-dev ={{ cuda_version }}
+    - cuda-cudart-static ={{ cuda_version }}
     {% else %}
     - {{ compiler('cuda11') }} {{ cuda_version }}
     {% endif %}
@@ -29,8 +30,9 @@ requirements:
   host:
     {% if cuda_major == "12" %}
     - cuda-nvcc ={{ cuda_version }}
-    - cuda-cudart-dev ={{ cuda_version }}
     - cuda-cudart ={{ cuda_version }}
+    - cuda-cudart-dev ={{ cuda_version }}
+    - cuda-cudart-static ={{ cuda_version }}
     {% else %}
     - cudatoolkit ={{ cuda_version }}
     {% endif %}
@@ -77,8 +79,9 @@ outputs:
         - cmake {{ cmake_version }}
       run:
         {% if cuda_major == "12" %}
-        - cuda-cudart-dev {{ cuda_spec }}
         - cuda-cudart {{ cuda_spec }}
+        - cuda-cudart-dev {{ cuda_spec }}
+        - cuda-cudart-static {{ cuda_spec }}
         {% else %}
         - cudatoolkit {{ cuda_spec }}
         {% endif %}
@@ -139,8 +142,9 @@ outputs:
         - cmake {{ cmake_version }}
       run:
         {% if cuda_major == "12" %}
-        - cuda-cudart-dev {{ cuda_spec }}
         - cuda-cudart {{ cuda_spec }}
+        - cuda-cudart-dev {{ cuda_spec }}
+        - cuda-cudart-static {{ cuda_spec }}
         {% else %}
         - cudatoolkit {{ cuda_spec }}
         {% endif %}
