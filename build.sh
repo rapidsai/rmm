@@ -176,5 +176,5 @@ fi
 # Build and install the rmm Python package
 if (( NUMARGS == 0 )) || hasArg rmm; then
     echo "building and installing rmm..."
-    SKBUILD_CONFIGURE_OPTIONS="${SKBUILD_EXTRA_CMAKE_ARGS}" python -m pip install --no-build-isolation --no-deps ${REPODIR}/python
+    SKBUILD_CMAKE_ARGS="${SKBUILD_EXTRA_CMAKE_ARGS}" python -m pip install --no-build-isolation --no-deps ${REPODIR}/python
 fi

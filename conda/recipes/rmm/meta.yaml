@@ -61,9 +61,7 @@ requirements:
     - cython >=3.0.0
     - librmm ={{ version }}
     - python
-    - scikit-build >=0.13.1
-    - setuptools >=61.0.0
-    - tomli  # [py<311]
+    - scikit-build-core
   run:
     {% if cuda_major == "11" %}
     - cudatoolkit

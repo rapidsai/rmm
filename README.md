@@ -67,7 +67,7 @@ CUDA/GPU requirements:
 You can obtain CUDA from [https://developer.nvidia.com/cuda-downloads](https://developer.nvidia.com/cuda-downloads)
 
 Python requirements:
-* `scikit-build`
+* `scikit-build-core`
 * `cuda-python`
 * `cython`
 

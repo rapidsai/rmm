@@ -62,22 +62,20 @@ dependencies:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
-          - &cmake_ver cmake>=3.26.4
           - cython>=3.0.0
-          - ninja
-          - scikit-build>=0.13.1
-          - tomli
       - output_types: conda
         packages:
           - c-compiler
+          - &cmake_ver cmake>=3.26.4
           - cxx-compiler
           - fmt>=10.1.1,<11
+          - ninja
+          - scikit-build-core>=0.7.0
           - spdlog>=1.12.0,<1.13
           - python>=3.9,<3.11
-      - output_types: pyproject
+      - output_types: [requirements, pyproject]
         packages:
-          - wheel
-          - setuptools>=61.0.0
+          - scikit-build-core[pyproject]>=0.7.0
     specific:
       - output_types: conda
         matrices:
