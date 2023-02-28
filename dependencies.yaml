@@ -81,6 +81,13 @@ dependencies:
               cuda: "11.8"
             packages:
               - cudatoolkit=11.8
+          - matrix:
+              cuda: "12.0"
+            packages:
+              - cuda-nvcc=12.0
+              - cuda-cudart=12.0
+              - cuda-cudart-dev=12.0
+              - cuda-cudart-static=12.0
   develop:
     common:
       - output_types: [conda, requirements]
