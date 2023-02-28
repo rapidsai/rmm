@@ -36,7 +36,7 @@ files:
       - cudatoolkit
       - docs
       - py_version
-  py_build_reqs:
+  py_build:
     output: pyproject
     extras:
       table: build-system
@@ -44,7 +44,7 @@ files:
     includes:
       - build
       - cuda-python
-  py_dependencies:
+  py_run:
     output: pyproject
     extras:
       table: project
@@ -52,7 +52,7 @@ files:
     includes:
       - run
       - cuda-python
-  py_optional_dependencies:
+  py_optional_test:
     output: pyproject
     extras:
       table: project.optional-dependencies
