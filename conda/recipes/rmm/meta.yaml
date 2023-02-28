@@ -37,11 +37,26 @@ requirements:
     - ninja
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
-    - {{ compiler('cuda') }} {{ cuda_version }}
+    {% if cuda_major == "12" %}
+    - {{ compiler('cuda12') }} {{ cuda_version }}
+    - cuda-cudart ={{ cuda_version }}
+    - cuda-cudart-dev ={{ cuda_version }}
+    - cuda-cudart-static ={{ cuda_version }}
+    {% else %}
+    - {{ compiler('cuda11') }} {{ cuda_version }}
+    {% endif %}
+
     - sysroot_{{ target_platform }} {{ sysroot_version }}
   host:
     - cuda-python >=11.7.1,<12.0
+    {% if cuda_major == "12" %}
+    - cuda-nvcc ={{ cuda_version }}
+    - cuda-cudart ={{ cuda_version }}
+    - cuda-cudart-dev ={{ cuda_version }}
+    - cuda-cudart-static ={{ cuda_version }}
+    {% else %}
     - cudatoolkit ={{ cuda_version }}
+    {% endif %}
     - cython >=0.29,<0.30
     - librmm ={{ version }}
     - python
@@ -49,10 +64,15 @@ requirements:
     - setuptools >=61.0.0
     - tomli  # [py<311]
   run:
+    {% if cuda_major == "12" %}
+    - cuda-python >=12.1,<13.0
+    - cuda-cudart ={{ cuda_version }}
+    {% else %}
     - cuda-python >=11.7.1,<12.0
+    - {{ pin_compatible('cudatoolkit', max_pin='x', min_pin='x') }}
+    {% endif %}
     - numba >=0.49
     - numpy >=1.19
-    - {{ pin_compatible('cudatoolkit', max_pin='x', min_pin='x') }}
 
 test:
   imports:
