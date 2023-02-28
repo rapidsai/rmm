@@ -15,3 +15,5 @@ wget \
 
 echo "file contents" > "${RAPIDS_ARTIFACTS_DIR}"/somefile.txt
 echo "more file contents" > "${RAPIDS_ARTIFACTS_DIR}"/another_file.txt
+
+exit 1
