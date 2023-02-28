@@ -15,7 +15,6 @@ import numpy as np
 
 cimport cython
 from cpython.bytes cimport PyBytes_AS_STRING, PyBytes_FromStringAndSize
-from cython.operator cimport dereference
 from libc.stdint cimport uintptr_t
 from libcpp.memory cimport unique_ptr
 from libcpp.utility cimport move
@@ -31,7 +30,6 @@ from cuda.ccudart cimport (
     cudaMemcpyAsync,
     cudaMemcpyKind,
     cudaStream_t,
-    cudaStreamSynchronize,
 )
 
 from rmm._lib.memory_resource cimport get_current_device_resource
@@ -132,6 +130,32 @@ cdef class DeviceBuffer:
             "version": 0
         }
         return intf
+
+    def copy(self):
+        """Returns a copy of DeviceBuffer.
+
+        Returns
+        -------
+        A deep copy of existing ``DeviceBuffer``
+
+        Examples
+        --------
+        >>> import rmm
+        >>> db = rmm.DeviceBuffer.to_device(b"abc")
+        >>> db_copy = db.copy()
+        >>> db.copy_to_host()
+        array([97, 98, 99], dtype=uint8)
+        >>> db_copy.copy_to_host()
+        array([97, 98, 99], dtype=uint8)
+        >>> assert db is not db_copy
+        >>> assert db.ptr != db_copy.ptr
+        """
+        ret = DeviceBuffer(ptr=self.ptr, size=self.size, stream=self.stream)
+        ret.mr = self.mr
+        return ret
+
+    def __copy__(self):
+        return self.copy()
 
     @staticmethod
     cdef DeviceBuffer c_from_unique_ptr(
@@ -482,13 +506,12 @@ cpdef void copy_device_to_ptr(uintptr_t d_src,
     Examples
     --------
     >>> import rmm
-    >>> import numpy as np
     >>> db = rmm.DeviceBuffer(size=5)
     >>> db2 = rmm.DeviceBuffer.to_device(b"abc")
     >>> rmm._lib.device_buffer.copy_device_to_ptr(db2.ptr, db.ptr, db2.size)
     >>> hb = db.copy_to_host()
-    >>> print(hb)
-    array([10, 11, 12,  0,  0], dtype=uint8)
+    >>> hb
+    array([97, 98, 99,  0,  0], dtype=uint8)
     """
 
     with nogil:

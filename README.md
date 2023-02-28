@@ -1,7 +1,5 @@
 # <div align="left"><img src="img/rapids_logo.png" width="90px"/>&nbsp;RMM: RAPIDS Memory Manager</div>
 
-[![Build Status](https://gpuci.gpuopenanalytics.com/job/rapidsai/job/gpuci/job/rmm/job/branches/job/rmm-branch-pipeline/badge/icon)](https://gpuci.gpuopenanalytics.com/job/rapidsai/job/gpuci/job/rmm/job/branches/job/rmm-branch-pipeline/)
-
 **NOTE:** For the latest stable [README.md](https://github.com/rapidsai/rmm/blob/main/README.md) ensure you are on the `main` branch.
 
 ## Resources
@@ -39,21 +37,18 @@ RMM can be installed with Conda ([miniconda](https://conda.io/miniconda.html), o
 [Anaconda distribution](https://www.anaconda.com/download)) from the `rapidsai` channel:
 
 ```bash
+# for CUDA 11.5
+conda install -c rapidsai -c conda-forge -c nvidia \
+    rmm cudatoolkit=11.5
 # for CUDA 11.2
-conda install -c nvidia -c rapidsai -c conda-forge \
+conda install -c rapidsai -c conda-forge -c nvidia \
     rmm cudatoolkit=11.2
-# for CUDA 11.1
-conda install -c nvidia -c rapidsai -c conda-forge \
-    rmm cudatoolkit=11.1
-# for CUDA 11.0
-conda install -c nvidia -c rapidsai -c conda-forge \
-    rmm cudatoolkit=11.0
 ```
 
 We also provide [nightly Conda packages](https://anaconda.org/rapidsai-nightly) built from the HEAD
 of our latest development branch.
 
-Note: RMM is supported only on Linux, and only tested with Python versions 3.8 and 3.9.
+Note: RMM is supported only on Linux, and only tested with Python versions 3.8 and 3.10.
 
 
 Note: The RMM package from Conda requires building with GCC 9 or later. Otherwise, your application may fail to build.
@@ -67,16 +62,24 @@ See the [Get RAPIDS version picker](https://rapids.ai/start.html) for more OS an
 Compiler requirements:
 
 * `gcc`     version 9.3+
-* `nvcc`    version 11.0+
+* `nvcc`    version 11.2+
 * `cmake`   version 3.23.1+
 
 CUDA/GPU requirements:
 
-* CUDA 11.0+
+* CUDA 11.2+
 * NVIDIA driver 450.51+
 * Pascal architecture or better
 
 You can obtain CUDA from [https://developer.nvidia.com/cuda-downloads](https://developer.nvidia.com/cuda-downloads)
+
+Python requirements:
+* `scikit-build`
+* `cuda-python`
+* `cython`
+
+For more details, see [pyproject.toml](python/pyproject.toml)
+
 
 ### Script to build RMM from source
 
@@ -91,7 +94,7 @@ $ cd rmm
 - Create the conda development environment `rmm_dev`
 ```bash
 # create the conda environment (assuming in base `rmm` directory)
-$ conda env create --name rmm_dev --file conda/environments/all_cuda-115_arch-x86_64.yaml
+$ conda env create --name rmm_dev --file conda/environments/all_cuda-118_arch-x86_64.yaml
 # activate the environment
 $ conda activate rmm_dev
 ```
@@ -688,6 +691,8 @@ resources
 MemoryResources are highly configurable and can be composed together in different ways.
 See `help(rmm.mr)` for more information.
 
+## Using RMM with third-party libraries
+
 ### Using RMM with CuPy
 
 You can configure [CuPy](https://cupy.dev/) to use RMM for memory
@@ -695,9 +700,9 @@ allocations by setting the CuPy CUDA allocator to
 `rmm_cupy_allocator`:
 
 ```python
->>> import rmm
+>>> from rmm.allocators.cupy import rmm_cupy_allocator
 >>> import cupy
->>> cupy.cuda.set_allocator(rmm.rmm_cupy_allocator)
+>>> cupy.cuda.set_allocator(rmm_cupy_allocator)
 ```
 
 
@@ -715,17 +720,66 @@ This can be done in two ways:
 1. Setting the environment variable `NUMBA_CUDA_MEMORY_MANAGER`:
 
   ```python
-  $ NUMBA_CUDA_MEMORY_MANAGER=rmm python (args)
+  $ NUMBA_CUDA_MEMORY_MANAGER=rmm.allocators.numba python (args)
   ```
 
 2. Using the `set_memory_manager()` function provided by Numba:
 
   ```python
   >>> from numba import cuda
-  >>> import rmm
-  >>> cuda.set_memory_manager(rmm.RMMNumbaManager)
+  >>> from rmm.allocators.numba import RMMNumbaManager
+  >>> cuda.set_memory_manager(RMMNumbaManager)
   ```
 
 **Note:** This only configures Numba to use the current RMM resource for allocations.
 It does not initialize nor change the current resource, e.g., enabling a memory pool.
 See [here](#memoryresource-objects) for more information on changing the current memory resource.
+
+### Using RMM with PyTorch
+
+[PyTorch](https://pytorch.org/docs/stable/notes/cuda.html) can use RMM
+for memory allocation.  For example, to configure PyTorch to use an
+RMM-managed pool:
+
+```python
+import rmm
+from rmm.allocators.torch import rmm_torch_allocator
+import torch
+
+rmm.reinitialize(pool_allocator=True)
+torch.cuda.memory.change_current_allocator(rmm_torch_allocator)
+```
+
+PyTorch and RMM will now share the same memory pool.
+
+You can, of course, use a custom memory resource with PyTorch as well:
+
+```python
+import rmm
+from rmm.allocators.torch import rmm_torch_allocator
+import torch
+
+# note that you can configure PyTorch to use RMM either before or
+# after changing RMM's memory resource.  PyTorch will use whatever
+# memory resource is configured to be the "current" memory resource at
+# the time of allocation.
+torch.cuda.change_current_allocator(rmm_torch_allocator)
+
+# configure RMM to use a managed memory resource, wrapped with a
+# statistics resource adaptor that can report information about the
+# amount of memory allocated:
+mr = rmm.mr.StatisticsResourceAdaptor(rmm.mr.ManagedMemoryResource())
+rmm.mr.set_current_device_resource(mr)
+
+x = torch.tensor([1, 2]).cuda()
+
+# the memory resource reports information about PyTorch allocations:
+mr.allocation_counts
+Out[6]:
+{'current_bytes': 16,
+ 'current_count': 1,
+ 'peak_bytes': 16,
+ 'peak_count': 1,
+ 'total_bytes': 16,
+ 'total_count': 1}
+```

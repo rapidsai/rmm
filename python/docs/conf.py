@@ -15,7 +15,7 @@ import os
 # -- Project information -----------------------------------------------------
 
 project = "rmm"
-copyright = "2020-2022, NVIDIA"
+copyright = "2020-2023, NVIDIA"
 author = "NVIDIA"
 
 # The version info for the project you're documenting, acts as replacement for
@@ -23,9 +23,9 @@ author = "NVIDIA"
 # built documents.
 #
 # The short X.Y version.
-version = "22.10"
+version = "23.04"
 # The full version, including alpha/beta/rc tags.
-release = "22.10.00"
+release = "23.04.00"
 
 
 # -- General configuration ---------------------------------------------------
@@ -147,7 +147,7 @@ latex_documents = [
         master_doc,
         "rmm.tex",
         "RMM Documentation",
-        "Continuum Analytics",
+        "NVIDIA Corporation",
         "manual",
     )
 ]

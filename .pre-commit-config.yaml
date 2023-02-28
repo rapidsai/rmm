@@ -1,31 +1,54 @@
+# Copyright (c) 2022-2023, NVIDIA CORPORATION.
 repos:
-    - repo: https://github.com/pycqa/isort
-      rev: 5.10.1
+    - repo: https://github.com/pre-commit/pre-commit-hooks
+      rev: v4.3.0
+      hooks:
+          - id: trailing-whitespace
+          - id: end-of-file-fixer
+    - repo: https://github.com/rapidsai/dependency-file-generator
+      rev: v1.4.0
+      hooks:
+          - id: rapids-dependency-file-generator
+            args: ["--clean"]
+    - repo: https://github.com/PyCQA/isort
+      rev: 5.12.0
       hooks:
           - id: isort
-            args: ["--settings-path=python/setup.cfg"]
+            args: ["--settings-path=python/pyproject.toml"]
             files: python/.*
-            exclude: __init__.py$
-            types: [text]
-            types_or: [python, cython]
+            types_or: [python, cython, pyi]
     - repo: https://github.com/ambv/black
       rev: 22.3.0
       hooks:
           - id: black
             args: ["--config=python/pyproject.toml"]
-    - repo: https://gitlab.com/pycqa/flake8
-      rev: 3.8.3
+    - repo: https://github.com/PyCQA/flake8
+      rev: 5.0.4
       hooks:
           - id: flake8
-            alias: flake8
-            name: flake8
             args: ["--config=python/.flake8"]
-            types: [python]
-          - id: flake8
-            alias: flake8-cython
-            name: flake8-cython
-            args: ["--config=python/.flake8.cython"]
-            types: [cython]
+            files: python/.*$
+            types: [file]
+            types_or: [python, cython]
+            additional_dependencies: ["flake8-force"]
+    - repo: https://github.com/MarcoGorelli/cython-lint
+      rev: v0.1.10
+      hooks:
+          - id: cython-lint
+    - repo: https://github.com/pre-commit/mirrors-clang-format
+      rev: v11.1.0
+      hooks:
+            - id: clang-format
+              types_or: [c, c++, cuda]
+              args: ["-fallback-style=none", "-style=file", "-i"]
+    - repo: https://github.com/sirosen/texthooks
+      rev: 0.4.0
+      hooks:
+            - id: fix-smartquotes
+              exclude: |
+                (?x)^(
+                  ^benchmarks/utilities/cxxopts.hpp
+                )
     - repo: local
       hooks:
             - id: cmake-format

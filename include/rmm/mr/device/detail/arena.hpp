@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2022, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,8 +24,8 @@
 
 #include <cuda_runtime_api.h>
 
+#include <fmt/core.h>
 #include <spdlog/common.h>
-#include <spdlog/fmt/ostr.h>
 
 #include <algorithm>
 #include <cstddef>

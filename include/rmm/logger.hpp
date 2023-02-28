@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,8 @@
 
 #pragma once
 
-// If using GCC, temporary workaround for older libcudacxx defining _LIBCPP_VERSION
-// undefine it before including spdlog, due to fmtlib checking if it is defined
-// TODO: remove once libcudacxx is on Github and RAPIDS depends on it
-#ifdef __GNUG__
-#undef _LIBCPP_VERSION
-#endif
+#include <fmt/format.h>
+#include <fmt/ostream.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/spdlog.h>
 
@@ -115,3 +111,7 @@ inline spdlog::logger& logger()
 #define RMM_LOG_CRITICAL(...) SPDLOG_LOGGER_CRITICAL(&rmm::logger(), __VA_ARGS__)
 
 }  // namespace rmm
+
+template <>
+struct fmt::formatter<rmm::detail::bytes> : fmt::ostream_formatter {
+};

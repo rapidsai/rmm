@@ -1,6 +1,5 @@
 # Copyright (c) 2020, NVIDIA CORPORATION.
 
-import numba.cuda
 from cuda import cuda, cudart
 
 
@@ -84,6 +83,8 @@ def runtimeGetVersion():
     """
     # TODO: Replace this with `cuda.cudart.cudaRuntimeGetVersion()` when the
     # limitation is fixed.
+    import numba.cuda
+
     major, minor = numba.cuda.runtime.get_version()
     return major * 1000 + minor * 10
 
@@ -142,7 +143,7 @@ def getDeviceProperties(device: int):
 
 def deviceGetName(device: int):
     """
-    Returns an identifer string for the device.
+    Returns an identifier string for the device.
 
     Parameters
     ----------

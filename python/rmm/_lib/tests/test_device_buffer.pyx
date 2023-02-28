@@ -12,11 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import cython
 import numpy as np
 
 from libcpp.memory cimport make_unique
-from libcpp.utility cimport move
 
 from rmm._lib.cuda_stream_view cimport cuda_stream_default
 from rmm._lib.device_buffer cimport DeviceBuffer, device_buffer

@@ -54,10 +54,9 @@ for PROJECT in ${PROJECTS[@]}; do
     if [ ! -d "api/$PROJECT/$BRANCH_VERSION" ]; then
         mkdir -p api/$PROJECT/$BRANCH_VERSION
     fi
-    rm -rf $DOCS_WORKSPACE/api/$PROJECT/$BRANCH_VERSION/*	
+    rm -rf $DOCS_WORKSPACE/api/$PROJECT/$BRANCH_VERSION/*
 done
 
 
 mv $PROJECT_WORKSPACE/doxygen/html/* $DOCS_WORKSPACE/api/librmm/$BRANCH_VERSION
 mv $PROJECT_WORKSPACE/python/docs/_build/html/* $DOCS_WORKSPACE/api/rmm/$BRANCH_VERSION
-
