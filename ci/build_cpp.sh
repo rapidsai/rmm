@@ -3,6 +3,9 @@
 
 set -euo pipefail
 
-rapids-print-env
+env | sort
+
+RAPIDS_ARTIFACTS_DIR=${RAPIDS_ARTIFACTS_DIR:-"${PWD}/artifacts"}
+mkdir -p "${RAPIDS_ARTIFACTS_DIR}"
 
 echo "file contents" > "${RAPIDS_ARTIFACTS_DIR}"/somefile.txt
