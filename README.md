@@ -691,6 +691,8 @@ resources
 MemoryResources are highly configurable and can be composed together in different ways.
 See `help(rmm.mr)` for more information.
 
+## Using RMM with third-party libraries
+
 ### Using RMM with CuPy
 
 You can configure [CuPy](https://cupy.dev/) to use RMM for memory
@@ -698,9 +700,9 @@ allocations by setting the CuPy CUDA allocator to
 `rmm_cupy_allocator`:
 
 ```python
->>> import rmm
+>>> from rmm.allocators.cupy import rmm_cupy_allocator
 >>> import cupy
->>> cupy.cuda.set_allocator(rmm.rmm_cupy_allocator)
+>>> cupy.cuda.set_allocator(rmm_cupy_allocator)
 ```
 
 
@@ -718,15 +720,15 @@ This can be done in two ways:
 1. Setting the environment variable `NUMBA_CUDA_MEMORY_MANAGER`:
 
   ```python
-  $ NUMBA_CUDA_MEMORY_MANAGER=rmm python (args)
+  $ NUMBA_CUDA_MEMORY_MANAGER=rmm.allocators.numba python (args)
   ```
 
 2. Using the `set_memory_manager()` function provided by Numba:
 
   ```python
   >>> from numba import cuda
-  >>> import rmm
-  >>> cuda.set_memory_manager(rmm.RMMNumbaManager)
+  >>> from rmm.allocators.numba import RMMNumbaManager
+  >>> cuda.set_memory_manager(RMMNumbaManager)
   ```
 
 **Note:** This only configures Numba to use the current RMM resource for allocations.
@@ -741,10 +743,11 @@ RMM-managed pool:
 
 ```python
 import rmm
+from rmm.allocators.torch import rmm_torch_allocator
 import torch
 
 rmm.reinitialize(pool_allocator=True)
-torch.cuda.memory.change_current_allocator(rmm.rmm_torch_allocator)
+torch.cuda.memory.change_current_allocator(rmm_torch_allocator)
 ```
 
 PyTorch and RMM will now share the same memory pool.
@@ -753,13 +756,14 @@ You can, of course, use a custom memory resource with PyTorch as well:
 
 ```python
 import rmm
+from rmm.allocators.torch import rmm_torch_allocator
 import torch
 
 # note that you can configure PyTorch to use RMM either before or
 # after changing RMM's memory resource.  PyTorch will use whatever
 # memory resource is configured to be the "current" memory resource at
 # the time of allocation.
-torch.cuda.change_current_allocator(rmm.rmm_torch_allocator)
+torch.cuda.change_current_allocator(rmm_torch_allocator)
 
 # configure RMM to use a managed memory resource, wrapped with a
 # statistics resource adaptor that can report information about the

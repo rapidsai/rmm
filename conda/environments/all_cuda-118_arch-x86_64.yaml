@@ -19,4 +19,5 @@ dependencies:
 - python>=3.8,<3.11
 - scikit-build>=0.13.1
 - spdlog>=1.11.0,<1.12
+- tomli
 name: all_cuda-118_arch-x86_64

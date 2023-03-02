@@ -2,7 +2,7 @@ import gc
 
 import pytest
 
-import rmm
+from rmm.allocators.torch import rmm_torch_allocator
 
 torch = pytest.importorskip("torch")
 
@@ -13,7 +13,7 @@ def torch_allocator():
         from torch.cuda.memory import change_current_allocator
     except ImportError:
         pytest.skip("pytorch pluggable allocator not available")
-    change_current_allocator(rmm.rmm_torch_allocator)
+    change_current_allocator(rmm_torch_allocator)
 
 
 def test_rmm_torch_allocator(torch_allocator, stats_mr):

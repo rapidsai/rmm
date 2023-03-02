@@ -25,6 +25,8 @@ jobs:
   checks:
     secrets: inherit
     uses: rapidsai/shared-action-workflows/.github/workflows/checks.yaml@aws-role
+    with:
+      enable_check_generated_files: false
   conda-cpp-build:
     needs: checks
     secrets: inherit
@@ -68,6 +70,7 @@ jobs:
       package-dir: python
       package-name: rmm
       skbuild-configure-options: "-DRMM_BUILD_WHEELS=ON"
+      uses-setup-env-vars: false
   wheel-tests:
     needs: wheel-build
     secrets: inherit
