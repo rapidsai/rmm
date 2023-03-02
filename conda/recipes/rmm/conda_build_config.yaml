@@ -4,7 +4,10 @@ c_compiler_version:
 cxx_compiler_version:
   - 11
 
-cuda_compiler:
+cuda12_compiler:
+  - cuda-nvcc
+
+cuda11_compiler:
   - nvcc
 
 sysroot_version:
