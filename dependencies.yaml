@@ -40,7 +40,6 @@ files:
     output: pyproject
     extras:
       table: build-system
-      key: requires
     includes:
       - build
       - cuda-python
@@ -48,7 +47,6 @@ files:
     output: pyproject
     extras:
       table: project
-      key: dependencies
     includes:
       - run
       - cuda-python
