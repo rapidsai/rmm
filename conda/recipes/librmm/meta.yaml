@@ -18,23 +18,23 @@ requirements:
     - ninja
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
-    {% if cuda_major == "12" %}
-    - {{ compiler('cuda12') }} {{ cuda_version }}
+    {% if cuda_major == "11" %}
+    - {{ compiler('cuda11') }} {{ cuda_version }}
+    {% else %}
+    - {{ compiler('cuda') }} {{ cuda_version }}
     - cuda-cudart ={{ cuda_version }}
     - cuda-cudart-dev ={{ cuda_version }}
     - cuda-cudart-static ={{ cuda_version }}
-    {% else %}
-    - {{ compiler('cuda11') }} {{ cuda_version }}
     {% endif %}
     - sysroot_{{ target_platform }} {{ sysroot_version }}
   host:
-    {% if cuda_major == "12" %}
+    {% if cuda_major == "11" %}
+    - cudatoolkit ={{ cuda_version }}
+    {% else %}
     - cuda-nvcc ={{ cuda_version }}
     - cuda-cudart ={{ cuda_version }}
     - cuda-cudart-dev ={{ cuda_version }}
     - cuda-cudart-static ={{ cuda_version }}
-    {% else %}
-    - cudatoolkit ={{ cuda_version }}
     {% endif %}
     # We require spdlog and fmt (which was devendored from spdlog
     # conda-forge packages in 1.11.0) so that the spdlog headers are not
@@ -69,21 +69,21 @@ outputs:
       run_exports:
         - {{ pin_subpackage("librmm", max_pin="x.x") }}
       ignore_run_exports_from:
-        {% if cuda_major == "12" %}
-        - {{ compiler('cuda12') }}
-        {% else %}
+        {% if cuda_major == "11" %}
         - {{ compiler('cuda11') }}
+        {% else %}
+        - {{ compiler('cuda') }}
         {% endif %}
     requirements:
       build:
         - cmake {{ cmake_version }}
       run:
-        {% if cuda_major == "12" %}
+        {% if cuda_major == "11" %}
+        - cudatoolkit {{ cuda_spec }}
+        {% else %}
         - cuda-cudart {{ cuda_spec }}
         - cuda-cudart-dev {{ cuda_spec }}
         - cuda-cudart-static {{ cuda_spec }}
-        {% else %}
-        - cudatoolkit {{ cuda_spec }}
         {% endif %}
         - fmt {{ fmt_version }}
         - spdlog {{ spdlog_version }}
@@ -132,21 +132,21 @@ outputs:
       number: {{ GIT_DESCRIBE_NUMBER }}
       string: cuda{{ cuda_major }}_{{ date_string }}_{{ GIT_DESCRIBE_HASH }}_{{ GIT_DESCRIBE_NUMBER }}
       ignore_run_exports_from:
-        {% if cuda_major == "12" %}
-        - {{ compiler('cuda12') }}
-        {% else %}
+        {% if cuda_major == "11" %}
         - {{ compiler('cuda11') }}
+        {% else %}
+        - {{ compiler('cuda') }}
         {% endif %}
     requirements:
       build:
         - cmake {{ cmake_version }}
       run:
-        {% if cuda_major == "12" %}
+        {% if cuda_major == "11" %}
+        - cudatoolkit {{ cuda_spec }}
+        {% else %}
         - cuda-cudart {{ cuda_spec }}
         - cuda-cudart-dev {{ cuda_spec }}
         - cuda-cudart-static {{ cuda_spec }}
-        {% else %}
-        - cudatoolkit {{ cuda_spec }}
         {% endif %}
         - {{ pin_subpackage('librmm', exact=True) }}
         - gtest {{ gtest_version }}
