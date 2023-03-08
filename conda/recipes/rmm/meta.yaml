@@ -49,7 +49,7 @@ requirements:
     - sysroot_{{ target_platform }} {{ sysroot_version }}
   host:
     {% if cuda_major == "12" %}
-    - cuda-nvcc ={{ cuda_version }}
+    - {{ compiler('cuda12') }} {{ cuda_version }}
     - cuda-cudart ={{ cuda_version }}
     - cuda-cudart-dev ={{ cuda_version }}
     - cuda-cudart-static ={{ cuda_version }}
