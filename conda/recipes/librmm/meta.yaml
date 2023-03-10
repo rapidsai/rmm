@@ -31,7 +31,6 @@ requirements:
     {% if cuda_major == "11" %}
     - cudatoolkit ={{ cuda_version }}
     {% else %}
-    - cuda-nvcc ={{ cuda_version }}
     - cuda-cudart ={{ cuda_version }}
     - cuda-cudart-dev ={{ cuda_version }}
     - cuda-cudart-static ={{ cuda_version }}
