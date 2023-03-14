@@ -39,7 +39,7 @@
 namespace rmm::detail {
 
 /**
- * @brief stack_trace is a class that will capture a stack on instatiation for output later.
+ * @brief stack_trace is a class that will capture a stack on instantiation for output later.
  * It can then be used in an output stream to display stack information.
  *
  * rmm::detail::stack_trace saved_stack;
