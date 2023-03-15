@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <rmm/cuda_event_view.hpp>
 #include <rmm/detail/error.hpp>
 
 #include <cuda_runtime_api.h>
@@ -25,6 +26,19 @@
 #include <cstdint>
 
 namespace rmm {
+
+enum cuda_stream_flags : unsigned int {
+  /** Default stream flag. */
+  STREAM_DEFAULT = cudaStreamDefault,
+  /** Stream does not synchronize with stream 0 (the NULL stream). */
+  STREAM_NON_BLOCKING = cudaStreamNonBlocking
+};
+
+constexpr inline cuda_stream_flags operator|(cuda_stream_flags a, cuda_stream_flags b)
+{
+  return static_cast<cuda_stream_flags>(static_cast<unsigned int>(a) |
+                                        static_cast<unsigned int>(b));
+}
 
 /**
  * @brief Strongly-typed non-owning wrapper for CUDA streams with default constructor.
@@ -72,6 +86,30 @@ class cuda_stream_view {
   [[nodiscard]] inline bool is_default() const noexcept;
 
   /**
+   *  @brief Tells if the viewed CUDA stream is implicitly synchronized with the given stream.
+   *
+   *  This can happen e.g.
+   *   if the two views point to the same stream
+   *   or sometimes when one of them is the legacy default stream.
+   */
+  bool is_implicitly_synchronized(cuda_stream_view other) const
+  {
+    // any stream is "synchronized" with itself
+    if (value() == other.value()) return true;
+    // legacy + blocking streams
+    unsigned int flags = 0;
+    if (is_default()) {
+      RMM_CUDA_TRY(cudaStreamGetFlags(other.value(), &flags));
+      if ((flags & rmm::STREAM_NON_BLOCKING) == 0) return true;
+    }
+    if (other.is_default()) {
+      RMM_CUDA_TRY(cudaStreamGetFlags(value(), &flags));
+      if ((flags & rmm::STREAM_NON_BLOCKING) == 0) return true;
+    }
+    return false;
+  }
+
+  /**
    * @brief Synchronize the viewed CUDA stream.
    *
    * Calls `cudaStreamSynchronize()`.
@@ -88,6 +126,81 @@ class cuda_stream_view {
   void synchronize_no_throw() const noexcept
   {
     RMM_ASSERT_CUDA_SUCCESS(cudaStreamSynchronize(stream_));
+  }
+
+  /**
+   * @brief Record the given CUDA event in the viewed CUDA stream.
+   *
+   * Calls `cudaEventRecord()`.
+   *
+   * @throw rmm::cuda_error if event recording fails
+   */
+  void record(cuda_event_view_ event) const
+  {
+    RMM_CUDA_TRY(cudaEventRecord(event.value(), value()));
+  }
+
+  /**
+   * @brief Record the given CUDA event in the viewed CUDA stream.
+   *
+   * Calls `cudaEventRecordWithFlags()`.
+   *
+   * @throw rmm::cuda_error if event recording fails
+   */
+  void record(cuda_event_view_ event, cuda_event_record_flags flags) const
+  {
+#if CUDART_VERSION < 11010
+    RMM_CUDA_TRY(cudaEventRecord(event.value(), value()));
+#else
+    RMM_CUDA_TRY(cudaEventRecordWithFlags(event.value(), value(), flags));
+#endif
+  }
+
+  /**
+   * @brief Record the given CUDA event in the viewed CUDA stream.
+   *
+   * Calls `cudaEventRecord()` asserting the CUDA_SUCCESS result.
+   */
+  void record_no_throw(cuda_event_view_ event) const noexcept
+  {
+    RMM_ASSERT_CUDA_SUCCESS(cudaEventRecord(event.value(), value()));
+  }
+
+  /**
+   * @brief Record the given CUDA event in the viewed CUDA stream.
+   *
+   * Calls `cudaEventRecordWithFlags()` asserting the CUDA_SUCCESS result.
+   */
+  void record_no_throw(cuda_event_view_ event, cuda_event_record_flags flags) const noexcept
+  {
+#if CUDART_VERSION < 11010
+    RMM_ASSERT_CUDA_SUCCESS(cudaEventRecord(event.value(), value()));
+#else
+    RMM_ASSERT_CUDA_SUCCESS(cudaEventRecordWithFlags(event.value(), value(), flags));
+#endif
+  }
+
+  /**
+   * @brief Wait for the given CUDA event in the viewed CUDA stream.
+   *
+   * Calls `cudaStreamWaitEvent()`.
+   *
+   * @throw rmm::cuda_error if event waiting fails
+   */
+  void wait(cuda_event_view_ event, cuda_event_wait_flags flags = EVENT_WAIT_DEFAULT) const
+  {
+    RMM_CUDA_TRY(cudaStreamWaitEvent(value(), event.value(), flags));
+  }
+
+  /**
+   * @brief Wait for the given CUDA event in the viewed CUDA stream.
+   *
+   * Calls `cudaStreamWaitEvent()` asserting the CUDA_SUCCESS result.
+   */
+  void wait_no_throw(cuda_event_view_ event,
+                     cuda_event_wait_flags flags = EVENT_WAIT_DEFAULT) const noexcept
+  {
+    RMM_ASSERT_CUDA_SUCCESS(cudaStreamWaitEvent(value(), event.value(), flags));
   }
 
  private:
