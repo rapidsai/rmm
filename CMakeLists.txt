@@ -82,8 +82,8 @@ message(STATUS "RMM: Use SPDLOG Compiled: ${RMM_SPDLOG_COMPILED}")
 
 target_link_libraries(rmm INTERFACE rmm::Thrust)
 target_link_libraries(rmm INTERFACE fmt::fmt-header-only)
-target_link_libraries(rmm INTERFACE $<$<BOOL:NOT 
-	                           ${RMM_SPDLOG_COMPILED}>:spdlog::spdlog_header_only>)
+target_link_libraries(rmm INTERFACE $<$<BOOL:NOT
+                                    ${RMM_SPDLOG_COMPILED}>:spdlog::spdlog_header_only>)
 target_link_libraries(rmm INTERFACE $<$<BOOL:${RMM_SPDLOG_COMPILED}>:spdlog::spdlog>)
 target_link_libraries(rmm INTERFACE dl)
 target_compile_features(rmm INTERFACE cxx_std_17 $<BUILD_INTERFACE:cuda_std_17>)
