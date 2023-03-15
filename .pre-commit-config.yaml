@@ -49,6 +49,15 @@ repos:
                 (?x)^(
                   ^benchmarks/utilities/cxxopts.hpp
                 )
+    - repo: https://github.com/codespell-project/codespell
+      rev: v2.2.4
+      hooks:
+            - id: codespell
+              exclude: |
+                (?x)^(
+                  pyproject.toml|
+                  benchmarks/utilities/cxxopts.hpp
+                )
     - repo: local
       hooks:
             - id: cmake-format

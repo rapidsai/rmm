@@ -438,7 +438,7 @@ TYPED_TEST(DeviceBufferTest, ResizeSmaller)
 
   buff.shrink_to_fit(rmm::cuda_stream_default);
   EXPECT_NE(nullptr, buff.data());
-  // A reallocation should have occured
+  // A reallocation should have occurred
   EXPECT_NE(old_data, buff.data());
   EXPECT_EQ(new_size, buff.size());
   EXPECT_EQ(buff.capacity(), buff.size());
