@@ -12,14 +12,12 @@ files:
       - develop
       - run
       - test_python
-      - test_python_cov
   test_python:
     output: none
     includes:
       - cudatoolkit
       - py_version
       - test_python
-      - test_python_cov
   test_cpp:
     output: none
     includes:
@@ -152,8 +150,4 @@ dependencies:
       - output_types: [conda, requirements, pyproject]
         packages:
           - pytest
-  test_python_cov:
-    common:
-      - output_types: [conda, requirements, pyproject]
-        packages:
           - pytest-cov
