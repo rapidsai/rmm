@@ -3,8 +3,11 @@
 from setuptools import find_packages
 from skbuild import setup
 
+packages = find_packages(include=["rmm*"])
 setup(
-    packages=find_packages(include=["rmm*"]),
-    package_data={"": ["*.pxd", "*.pyx", "CMakeLists.txt"]},
+    packages=packages,
+    package_data={
+        key: ["*.pxd", "*.pyx", "CMakeLists.txt"] for key in packages
+    },
     zip_safe=False,
 )
