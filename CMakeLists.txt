@@ -39,7 +39,8 @@ rapids_cmake_build_type(Release)
 # build options
 option(BUILD_TESTS "Configure CMake to build tests" ON)
 option(BUILD_BENCHMARKS "Configure CMake to build (google) benchmarks" OFF)
-option(RMM_COMPILED "Use spdlog compiled library. Header-only version is used otherwise" OFF)
+option(RMM_HEADER_ONLY_SPDLOG "Use spdlog header-only library. Compiled version is used otherwise"
+       ON)
 set(RMM_LOGGING_LEVEL
     "INFO"
     CACHE STRING "Choose the logging level.")
@@ -78,13 +79,12 @@ else()
   target_link_libraries(rmm INTERFACE CUDA::cudart)
 endif()
 
-message(STATUS "RMM: Use SPDLOG Compiled: ${RMM_SPDLOG_COMPILED}")
+message(STATUS "RMM: Using header-only SPDLOG: ${RMM_HEADER_ONLY_SPDLOG}")
 
 target_link_libraries(rmm INTERFACE rmm::Thrust)
 target_link_libraries(rmm INTERFACE fmt::fmt-header-only)
-target_link_libraries(rmm INTERFACE $<$<BOOL:NOT
-                                    ${RMM_SPDLOG_COMPILED}>:spdlog::spdlog_header_only>)
-target_link_libraries(rmm INTERFACE $<$<BOOL:${RMM_SPDLOG_COMPILED}>:spdlog::spdlog>)
+target_link_libraries(rmm INTERFACE $<$<BOOL:NOT ${RMM_HEADER_ONLY_SPDLOG}>:spdlog::spdlog>)
+target_link_libraries(rmm INTERFACE $<$<BOOL:${RMM_HEADER_ONLY_SPDLOG}>:spdlog::spdlog_header_only>)
 target_link_libraries(rmm INTERFACE dl)
 target_compile_features(rmm INTERFACE cxx_std_17 $<BUILD_INTERFACE:cuda_std_17>)
 
