@@ -5,5 +5,6 @@ from skbuild import setup
 
 setup(
     packages=find_packages(include=["rmm*"]),
+    package_data={"": ["*.pxd", "*.pyx", "CMakeLists.txt"]},
     zip_safe=False,
 )
