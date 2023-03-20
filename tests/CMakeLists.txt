@@ -16,6 +16,9 @@
 option(DISABLE_DEPRECATION_WARNING "Disable warnings generated from deprecated declarations." OFF)
 option(CODE_COVERAGE "Enable generating code coverage with gcov." OFF)
 
+include(rapids-test)
+rapids_test_init()
+
 # This function takes in a test name and test source and handles setting all of the associated
 # properties and linking to build the test
 function(ConfigureTestInternal TEST_NAME)
@@ -68,48 +71,68 @@ function(ConfigureTestInternal TEST_NAME)
       PROPERTY ADDITIONAL_CLEAN_FILES ${COVERAGE_CLEAN_FILES})
   endif()
 
-  add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
-
-  install(
-    TARGETS ${TEST_NAME}
-    COMPONENT testing
-    DESTINATION bin/gtests/librmm
-    EXCLUDE_FROM_ALL)
 endfunction()
 
 # Wrapper around `ConfigureTestInternal` that builds tests both with and without per thread default
 # stream
 function(ConfigureTest TEST_NAME)
+
+  set(options)
+  set(one_value GPUS PERCENT)
+  set(multi_value)
+  cmake_parse_arguments(_RMM_TEST "${options}" "${one_value}" "${multi_value}" ${ARGN})
+  if(NOT DEFINED _RMM_TEST_GPUS AND NOT DEFINED _RMM_TEST_PERCENT)
+    set(_RMM_TEST_GPUS 1)
+    set(_RMM_TEST_PERCENT 5)
+  endif()
+  if(NOT DEFINED _RMM_TEST_GPUS)
+    set(_RMM_TEST_GPUS 1)
+  endif()
+  if(NOT DEFINED _RMM_TEST_PERCENT)
+    set(_RMM_TEST_PERCENT 100)
+  endif()
+
   # Test with legacy default stream.
-  ConfigureTestInternal(${TEST_NAME} ${ARGN})
+  ConfigureTestInternal(${TEST_NAME} ${_RMM_TEST_UNPARSED_ARGUMENTS})
 
   # Test with per-thread default stream.
   string(REGEX REPLACE "_TEST$" "_PTDS_TEST" PTDS_TEST_NAME "${TEST_NAME}")
-  ConfigureTestInternal("${PTDS_TEST_NAME}" ${ARGN})
+  ConfigureTestInternal("${PTDS_TEST_NAME}" ${_RMM_TEST_UNPARSED_ARGUMENTS})
   target_compile_definitions("${PTDS_TEST_NAME}" PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
 
   # Test with custom thrust namespace
   string(REGEX REPLACE "_TEST$" "_NAMESPACE_TEST" NS_TEST_NAME "${TEST_NAME}")
-  ConfigureTestInternal("${NS_TEST_NAME}" ${ARGN})
+  ConfigureTestInternal("${NS_TEST_NAME}" ${_RMM_TEST_UNPARSED_ARGUMENTS})
   target_compile_definitions("${NS_TEST_NAME}" PUBLIC THRUST_WRAPPED_NAMESPACE=rmm_thrust)
+
+  foreach(name ${TEST_NAME} ${PTDS_TEST_NAME} ${NS_TEST_NAME})
+    rapids_test_add(
+      NAME ${name}
+      COMMAND ${TEST_NAME}
+      GPUS ${_RMM_TEST_GPUS}
+      PERCENT ${_RMM_TEST_PERCENT}
+      INSTALL_COMPONENT_SET testing)
+  endforeach()
+
 endfunction()
 
 # test sources
 
 # device mr tests
-ConfigureTest(DEVICE_MR_TEST mr/device/mr_tests.cpp mr/device/mr_multithreaded_tests.cpp)
+ConfigureTest(DEVICE_MR_TEST mr/device/mr_tests.cpp mr/device/mr_multithreaded_tests.cpp GPUS 1
+              PERCENT 90)
 
 # general adaptor tests
 ConfigureTest(ADAPTOR_TEST mr/device/adaptor_tests.cpp)
 
 # pool mr tests
-ConfigureTest(POOL_MR_TEST mr/device/pool_mr_tests.cpp)
+ConfigureTest(POOL_MR_TEST mr/device/pool_mr_tests.cpp GPUS 1 PERCENT 60)
 
 # cuda_async mr tests
-ConfigureTest(CUDA_ASYNC_MR_TEST mr/device/cuda_async_mr_tests.cpp)
+ConfigureTest(CUDA_ASYNC_MR_TEST mr/device/cuda_async_mr_tests.cpp GPUS 1 PERCENT 60)
 
 # thrust allocator tests
-ConfigureTest(THRUST_ALLOCATOR_TEST mr/device/thrust_allocator_tests.cu)
+ConfigureTest(THRUST_ALLOCATOR_TEST mr/device/thrust_allocator_tests.cu GPUS 1 PERCENT 60)
 
 # polymorphic allocator tests
 ConfigureTest(POLYMORPHIC_ALLOCATOR_TEST mr/device/polymorphic_allocator_tests.cpp)
@@ -148,13 +171,15 @@ ConfigureTest(DEVICE_SCALAR_TEST device_scalar_tests.cpp)
 ConfigureTest(LOGGER_TEST logger_tests.cpp)
 
 # uvector tests
-ConfigureTest(DEVICE_UVECTOR_TEST device_uvector_tests.cpp)
+ConfigureTest(DEVICE_UVECTOR_TEST device_uvector_tests.cpp GPUS 1 PERCENT 60)
 
 # arena MR tests
-ConfigureTest(ARENA_MR_TEST mr/device/arena_mr_tests.cpp)
+ConfigureTest(ARENA_MR_TEST mr/device/arena_mr_tests.cpp GPUS 1 PERCENT 60)
 
 # binning MR tests
 ConfigureTest(BINNING_MR_TEST mr/device/binning_mr_tests.cpp)
 
 # callback memory resource tests
 ConfigureTest(CALLBACK_MR_TEST mr/device/callback_mr_tests.cpp)
+
+rapids_test_install_relocatable(INSTALL_COMPONENT_SET testing DESTINATION bin/gtests/librmm)
