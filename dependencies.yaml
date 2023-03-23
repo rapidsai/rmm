@@ -76,7 +76,7 @@ dependencies:
           - wheel
           - setuptools>=61.0.0
     specific:
-      - output_types: [conda, requirements]
+      - output_types: [conda, requirements, pyproject]
         matrices:
           - matrix:
               cuda: "12.0"
