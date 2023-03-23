@@ -71,7 +71,7 @@ using Types = ::testing::Types<bool, int8_t, int16_t, int32_t, int64_t, float, d
 
 TYPED_TEST_CASE(DeviceScalarTest, Types);
 
-TYPED_TEST(DeviceScalarTest, Unitialized)
+TYPED_TEST(DeviceScalarTest, Uninitialized)
 {
   rmm::device_scalar<TypeParam> scalar{this->stream, this->mr};
   EXPECT_NE(nullptr, scalar.data());

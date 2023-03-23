@@ -58,7 +58,7 @@ struct crtp {
  * This base class uses CRTP (https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern)
  * to provide static polymorphism to enable defining suballocator resources that maintain separate
  * pools per stream. All of the stream-ordering logic is contained in this class, but the logic
- * to determine how memory pools are managed and the type of allocation is implented in a derived
+ * to determine how memory pools are managed and the type of allocation is implemented in a derived
  * class and in a free list class.
  *
  * For example, a coalescing pool memory resource uses a coalescing_free_list and maintains data

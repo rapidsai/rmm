@@ -6,7 +6,7 @@ repos:
           - id: trailing-whitespace
           - id: end-of-file-fixer
     - repo: https://github.com/rapidsai/dependency-file-generator
-      rev: v1.4.0
+      rev: v1.5.1
       hooks:
           - id: rapids-dependency-file-generator
             args: ["--clean"]
@@ -48,6 +48,15 @@ repos:
               exclude: |
                 (?x)^(
                   ^benchmarks/utilities/cxxopts.hpp
+                )
+    - repo: https://github.com/codespell-project/codespell
+      rev: v2.2.4
+      hooks:
+            - id: codespell
+              exclude: |
+                (?x)^(
+                  pyproject.toml|
+                  benchmarks/utilities/cxxopts.hpp
                 )
     - repo: local
       hooks:

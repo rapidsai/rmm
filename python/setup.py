@@ -1,10 +1,11 @@
-# Copyright (c) 2019-2022, NVIDIA CORPORATION.
+# Copyright (c) 2019-2023, NVIDIA CORPORATION.
 
 from setuptools import find_packages
 from skbuild import setup
 
+packages = find_packages(include=["rmm*"])
 setup(
-    packages=find_packages(include=["rmm", "rmm.*"]),
-    include_package_data=True,
+    packages=packages,
+    package_data={key: ["*.pxd"] for key in packages},
     zip_safe=False,
 )
