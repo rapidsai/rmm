@@ -76,6 +76,22 @@ dependencies:
           - wheel
           - setuptools>=61.0.0
     specific:
+      - output_types: conda
+        matrices:
+          - matrix:
+              arch: x86_64
+              cuda: "11.8"
+            packages:
+              - nvcc_linux-64=11.8
+          - matrix:
+              arch: aarch64
+              cuda: "11.8"
+            packages:
+              - nvcc_linux-aarch64=11.8
+          - matrix:
+              cuda: "12.0"
+            packages:
+              - cuda-nvcc=12.0
       - output_types: [conda, requirements, pyproject]
         matrices:
           - matrix:
@@ -117,7 +133,6 @@ dependencies:
           - matrix:
               cuda: "12.0"
             packages:
-              - cuda-nvcc=12.0
               - cuda-cudart=12.0
               - cuda-cudart-dev=12.0
               - cuda-cudart-static=12.0

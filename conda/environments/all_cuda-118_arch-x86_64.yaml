@@ -13,6 +13,7 @@ dependencies:
 - ninja
 - numba>=0.49
 - numpy>=1.19
+- nvcc_linux-64=11.8
 - pre-commit
 - pytest
 - pytest-cov
