@@ -34,7 +34,7 @@ function(ConfigureBench BENCH_NAME)
                RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${RMM_BINARY_DIR}/gbenchmarks>"
                CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
                INSTALL_RPATH "\$ORIGIN/../../../lib")
-  target_link_libraries(${BENCH_NAME} benchmark::benchmark pthread rmm)
+  target_link_libraries(${BENCH_NAME} benchmark::benchmark pthread rmm spdlog::spdlog)
   target_compile_definitions(${BENCH_NAME}
                              PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
 
