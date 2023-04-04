@@ -16,6 +16,7 @@
 #pragma once
 
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/logging_assert.hpp>
 #include <rmm/logger.hpp>
 #include <rmm/mr/device/detail/arena.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
