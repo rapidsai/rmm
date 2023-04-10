@@ -69,6 +69,7 @@ jobs:
       package-dir: python
       package-name: rmm
       skbuild-configure-options: "-DRMM_BUILD_WHEELS=ON"
+      matrix_filter: map(select(.arch != "amd64"))
   wheel-tests:
     needs: wheel-build
     secrets: inherit
@@ -78,3 +79,4 @@ jobs:
       package-name: rmm
       test-unittest: "python -m pytest -v ./python/rmm/tests"
       test-smoketest: "python ./ci/wheel_smoke_test.py"
+      matrix_filter: map(select(.arch != "amd64"))
