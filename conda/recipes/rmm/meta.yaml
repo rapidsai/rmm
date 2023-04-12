@@ -1,9 +1,10 @@
-# Copyright (c) 2019-2022, NVIDIA CORPORATION.
+# Copyright (c) 2019-2023, NVIDIA CORPORATION.
 
-{% set version = environ.get('GIT_DESCRIBE_TAG', '0.0.0.dev').lstrip('v') + environ.get('VERSION_SUFFIX', '') %}
+{% set version = environ.get('GIT_DESCRIBE_TAG', '0.0.0.dev').lstrip('v') %}
 {% set cuda_version = '.'.join(environ['RAPIDS_CUDA_VERSION'].split('.')[:2]) %}
 {% set cuda_major = cuda_version.split('.')[0] %}
 {% set py_version = environ['CONDA_PY'] %}
+{% set date_string = environ['RAPIDS_DATE_STRING'] %}
 
 package:
   name: rmm
@@ -14,19 +15,21 @@ source:
 
 build:
   number: {{ GIT_DESCRIBE_NUMBER }}
-  string: cuda{{ cuda_major }}_py{{ py_version }}_{{ GIT_DESCRIBE_HASH }}_{{ GIT_DESCRIBE_NUMBER }}
+  string: cuda{{ cuda_major }}_py{{ py_version }}_{{ date_string }}_{{ GIT_DESCRIBE_HASH }}_{{ GIT_DESCRIBE_NUMBER }}
   script_env:
-    - CMAKE_GENERATOR
-    - CMAKE_C_COMPILER_LAUNCHER
-    - CMAKE_CXX_COMPILER_LAUNCHER
-    - CMAKE_CUDA_COMPILER_LAUNCHER
-    - SCCACHE_S3_KEY_PREFIX=rmm-aarch64 # [aarch64]
-    - SCCACHE_S3_KEY_PREFIX=rmm-linux64 # [linux64]
-    - SCCACHE_BUCKET
-    - SCCACHE_REGION
-    - SCCACHE_IDLE_TIMEOUT
     - AWS_ACCESS_KEY_ID
     - AWS_SECRET_ACCESS_KEY
+    - AWS_SESSION_TOKEN
+    - CMAKE_C_COMPILER_LAUNCHER
+    - CMAKE_CUDA_COMPILER_LAUNCHER
+    - CMAKE_CXX_COMPILER_LAUNCHER
+    - CMAKE_GENERATOR
+    - SCCACHE_BUCKET
+    - SCCACHE_IDLE_TIMEOUT
+    - SCCACHE_REGION
+    - SCCACHE_S3_KEY_PREFIX=rmm-aarch64 # [aarch64]
+    - SCCACHE_S3_KEY_PREFIX=rmm-linux64 # [linux64]
+    - SCCACHE_S3_USE_SSL
   ignore_run_exports_from:
     - {{ compiler('cuda') }}
 
@@ -45,7 +48,8 @@ requirements:
     - librmm ={{ version }}
     - python
     - scikit-build >=0.13.1
-    - setuptools
+    - setuptools >=61.0.0
+    - tomli  # [py<311]
   run:
     - cuda-python >=11.7.1,<12.0
     - numba >=0.49

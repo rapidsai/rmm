@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# Copyright (c) 2020-2023, NVIDIA CORPORATION.
 set -euo pipefail
 
 rapids-logger "Create test conda environment"
@@ -27,13 +27,14 @@ rapids-mamba-retry install \
 RAPIDS_TESTS_DIR=${RAPIDS_TESTS_DIR:-"${PWD}/test-results"}
 RAPIDS_COVERAGE_DIR=${RAPIDS_COVERAGE_DIR:-"${PWD}/coverage-results"}
 mkdir -p "${RAPIDS_TESTS_DIR}" "${RAPIDS_COVERAGE_DIR}"
-SUITEERROR=0
 
 rapids-logger "Check GPU usage"
 nvidia-smi
 
 cd python
 
+EXITCODE=0
+trap "EXITCODE=1" ERR
 set +e
 
 rapids-logger "pytest rmm"
@@ -46,10 +47,5 @@ pytest \
   --cov-report=xml:"${RAPIDS_COVERAGE_DIR}/rmm-coverage.xml" \
   --cov-report term
 
-exitcode=$?
-if (( ${exitcode} != 0 )); then
-    SUITEERROR=${exitcode}
-    echo "FAILED: 1 or more tests in /rmm/python"
-fi
-
-exit ${SUITEERROR}
+rapids-logger "Test script exiting with value: $EXITCODE"
+exit ${EXITCODE}

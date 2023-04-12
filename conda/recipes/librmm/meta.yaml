@@ -1,9 +1,10 @@
-# Copyright (c) 2018-2022, NVIDIA CORPORATION.
+# Copyright (c) 2018-2023, NVIDIA CORPORATION.
 
-{% set version = environ.get('GIT_DESCRIBE_TAG', '0.0.0.dev').lstrip('v') + environ.get('VERSION_SUFFIX', '') %}
+{% set version = environ.get('GIT_DESCRIBE_TAG', '0.0.0.dev').lstrip('v') %}
 {% set cuda_version = '.'.join(environ['RAPIDS_CUDA_VERSION'].split('.')[:2]) %}
 {% set cuda_major = cuda_version.split('.')[0] %}
 {% set cuda_spec = ">=" + cuda_major ~ ",<" + (cuda_major | int + 1) ~ ".0a0" %} # i.e. >=11,<12.0a0
+{% set date_string = environ['RAPIDS_DATE_STRING'] %}
 
 package:
   name: librmm-split
@@ -20,22 +21,31 @@ requirements:
     - {{ compiler('cuda') }} {{ cuda_version }}
     - sysroot_{{ target_platform }} {{ sysroot_version }}
   host:
-    - cudatoolkit {{ cuda_version }}.*
+    - cudatoolkit ={{ cuda_version }}
+    # We require spdlog and fmt (which was devendored from spdlog
+    # conda-forge packages in 1.11.0) so that the spdlog headers are not
+    # pulled by CPM and installed as a part of the rmm packages. However,
+    # building against librmm still requires these headers. They are also
+    # added as a run requirement via the packages' run_exports.
+    - fmt {{ fmt_version }}
+    - spdlog {{ spdlog_version }}
 
 build:
   script_env:
-    - PARALLEL_LEVEL
-    - CMAKE_GENERATOR
-    - CMAKE_C_COMPILER_LAUNCHER
-    - CMAKE_CXX_COMPILER_LAUNCHER
-    - CMAKE_CUDA_COMPILER_LAUNCHER
-    - SCCACHE_S3_KEY_PREFIX=librmm-aarch64 # [aarch64]
-    - SCCACHE_S3_KEY_PREFIX=librmm-linux64 # [linux64]
-    - SCCACHE_BUCKET
-    - SCCACHE_REGION
-    - SCCACHE_IDLE_TIMEOUT
     - AWS_ACCESS_KEY_ID
     - AWS_SECRET_ACCESS_KEY
+    - AWS_SESSION_TOKEN
+    - CMAKE_C_COMPILER_LAUNCHER
+    - CMAKE_CUDA_COMPILER_LAUNCHER
+    - CMAKE_CXX_COMPILER_LAUNCHER
+    - CMAKE_GENERATOR
+    - PARALLEL_LEVEL
+    - SCCACHE_BUCKET
+    - SCCACHE_IDLE_TIMEOUT
+    - SCCACHE_REGION
+    - SCCACHE_S3_KEY_PREFIX=librmm-aarch64 # [aarch64]
+    - SCCACHE_S3_KEY_PREFIX=librmm-linux64 # [linux64]
+    - SCCACHE_S3_USE_SSL
 
 outputs:
   - name: librmm
@@ -43,7 +53,7 @@ outputs:
     script: install_librmm.sh
     build:
       number: {{ GIT_DESCRIBE_NUMBER }}
-      string: cuda{{ cuda_major }}_{{ GIT_DESCRIBE_HASH }}_{{ GIT_DESCRIBE_NUMBER }}
+      string: cuda{{ cuda_major }}_{{ date_string }}_{{ GIT_DESCRIBE_HASH }}_{{ GIT_DESCRIBE_NUMBER }}
       run_exports:
         - {{ pin_subpackage("librmm", max_pin="x.x") }}
       ignore_run_exports_from:
@@ -53,6 +63,7 @@ outputs:
         - cmake {{ cmake_version }}
       run:
         - cudatoolkit {{ cuda_spec }}
+        - fmt {{ fmt_version }}
         - spdlog {{ spdlog_version }}
     test:
       commands:
@@ -97,7 +108,7 @@ outputs:
     script: install_librmm_tests.sh
     build:
       number: {{ GIT_DESCRIBE_NUMBER }}
-      string: cuda{{ cuda_major }}_{{ GIT_DESCRIBE_HASH }}_{{ GIT_DESCRIBE_NUMBER }}
+      string: cuda{{ cuda_major }}_{{ date_string }}_{{ GIT_DESCRIBE_HASH }}_{{ GIT_DESCRIBE_NUMBER }}
       ignore_run_exports_from:
         - {{ compiler('cuda') }}
     requirements:

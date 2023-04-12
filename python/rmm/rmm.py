@@ -11,15 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import ctypes
-
-from cuda.cuda import CUdeviceptr, cuIpcGetMemHandle
-from numba import config, cuda
-from numba.cuda import HostOnlyCUDAMemoryManager, IpcHandle, MemoryPointer
-
-import rmm
-from rmm import _lib as librmm
-from rmm._cuda.stream import Stream
+from rmm import mr
 
 
 # Utility Functions
@@ -86,7 +78,7 @@ def reinitialize(
     for func, args, kwargs in reversed(_reinitialize_hooks):
         func(*args, **kwargs)
 
-    rmm.mr._initialize(
+    mr._initialize(
         pool_allocator=pool_allocator,
         managed_memory=managed_memory,
         initial_pool_size=initial_pool_size,
@@ -101,155 +93,7 @@ def is_initialized():
     """
     Returns True if RMM has been initialized, False otherwise.
     """
-    return rmm.mr.is_initialized()
-
-
-class RMMNumbaManager(HostOnlyCUDAMemoryManager):
-    """
-    External Memory Management Plugin implementation for Numba. Provides
-    on-device allocation only.
-
-    See https://numba.readthedocs.io/en/stable/cuda/external-memory.html for
-    details of the interface being implemented here.
-    """
-
-    def initialize(self):
-        # No special initialization needed to use RMM within a given context.
-        pass
-
-    def memalloc(self, size):
-        """
-        Allocate an on-device array from the RMM pool.
-        """
-        buf = librmm.DeviceBuffer(size=size)
-        ctx = self.context
-
-        if config.CUDA_USE_NVIDIA_BINDING:
-            ptr = CUdeviceptr(int(buf.ptr))
-        else:
-            # expect ctypes bindings in numba
-            ptr = ctypes.c_uint64(int(buf.ptr))
-
-        finalizer = _make_emm_plugin_finalizer(int(buf.ptr), self.allocations)
-
-        # self.allocations is initialized by the parent, HostOnlyCUDAManager,
-        # and cleared upon context reset, so although we insert into it here
-        # and delete from it in the finalizer, we need not do any other
-        # housekeeping elsewhere.
-        self.allocations[int(buf.ptr)] = buf
-
-        return MemoryPointer(ctx, ptr, size, finalizer=finalizer)
-
-    def get_ipc_handle(self, memory):
-        """
-        Get an IPC handle for the MemoryPointer memory with offset modified by
-        the RMM memory pool.
-        """
-        start, end = cuda.cudadrv.driver.device_extents(memory)
-
-        if config.CUDA_USE_NVIDIA_BINDING:
-            _, ipchandle = cuIpcGetMemHandle(start)
-            offset = int(memory.handle) - int(start)
-        else:
-            ipchandle = (ctypes.c_byte * 64)()  # IPC handle is 64 bytes
-            cuda.cudadrv.driver.driver.cuIpcGetMemHandle(
-                ctypes.byref(ipchandle),
-                start,
-            )
-            offset = memory.handle.value - start
-        source_info = cuda.current_context().device.get_device_identity()
-
-        return IpcHandle(
-            memory, ipchandle, memory.size, source_info, offset=offset
-        )
-
-    def get_memory_info(self):
-        raise NotImplementedError()
-
-    @property
-    def interface_version(self):
-        return 1
-
-
-def _make_emm_plugin_finalizer(handle, allocations):
-    """
-    Factory to make the finalizer function.
-    We need to bind *handle* and *allocations* into the actual finalizer, which
-    takes no args.
-    """
-
-    def finalizer():
-        """
-        Invoked when the MemoryPointer is freed
-        """
-        # At exit time (particularly in the Numba test suite) allocations may
-        # have already been cleaned up by a call to Context.reset() for the
-        # context, even if there are some DeviceNDArrays and their underlying
-        # allocations lying around. Finalizers then get called by weakref's
-        # atexit finalizer, at which point allocations[handle] no longer
-        # exists. This is harmless, except that a traceback is printed just
-        # prior to exit (without abnormally terminating the program), but is
-        # worrying for the user. To avoid the traceback, we check if
-        # allocations is already empty.
-        #
-        # In the case where allocations is not empty, but handle is not in
-        # allocations, then something has gone wrong - so we only guard against
-        # allocations being completely empty, rather than handle not being in
-        # allocations.
-        if allocations:
-            del allocations[handle]
-
-    return finalizer
-
-
-# Enables the use of RMM for Numba via an environment variable setting,
-# NUMBA_CUDA_MEMORY_MANAGER=rmm. See:
-# https://numba.readthedocs.io/en/stable/cuda/external-memory.html#environment-variable
-_numba_memory_manager = RMMNumbaManager
-
-try:
-    import cupy
-except Exception:
-    cupy = None
-
-
-def rmm_cupy_allocator(nbytes):
-    """
-    A CuPy allocator that makes use of RMM.
-
-    Examples
-    --------
-    >>> import rmm
-    >>> import cupy
-    >>> cupy.cuda.set_allocator(rmm.rmm_cupy_allocator)
-    """
-    if cupy is None:
-        raise ModuleNotFoundError("No module named 'cupy'")
-
-    stream = Stream(obj=cupy.cuda.get_current_stream())
-    buf = librmm.device_buffer.DeviceBuffer(size=nbytes, stream=stream)
-    dev_id = -1 if buf.ptr else cupy.cuda.device.get_device_id()
-    mem = cupy.cuda.UnownedMemory(
-        ptr=buf.ptr, size=buf.size, owner=buf, device_id=dev_id
-    )
-    ptr = cupy.cuda.memory.MemoryPointer(mem, 0)
-
-    return ptr
-
-
-try:
-    from torch.cuda.memory import CUDAPluggableAllocator
-except ImportError:
-    rmm_torch_allocator = None
-else:
-    import rmm._lib.torch_allocator
-
-    _alloc_free_lib_path = rmm._lib.torch_allocator.__file__
-    rmm_torch_allocator = CUDAPluggableAllocator(
-        _alloc_free_lib_path,
-        alloc_fn_name="allocate",
-        free_fn_name="deallocate",
-    )
+    return mr.is_initialized()
 
 
 def register_reinitialize_hook(func, *args, **kwargs):

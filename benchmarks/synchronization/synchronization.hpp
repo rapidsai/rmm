@@ -50,7 +50,7 @@
     }
 
     // Register the function as a benchmark. You will need to set the `UseManualTime()`
-    // flag in order to use the timer embeded in this class.
+    // flag in order to use the timer embedded in this class.
     BENCHMARK(sample_cuda_benchmark)->UseManualTime();
 
 
