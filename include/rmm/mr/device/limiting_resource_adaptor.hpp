@@ -57,11 +57,11 @@ class limiting_resource_adaptor final : public device_memory_resource {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
   }
 
-  limiting_resource_adaptor()                                     = delete;
-  ~limiting_resource_adaptor() override                           = default;
-  limiting_resource_adaptor(limiting_resource_adaptor const&)     = delete;
-  limiting_resource_adaptor(limiting_resource_adaptor&&) noexcept = default;
-  limiting_resource_adaptor& operator=(limiting_resource_adaptor const&) = delete;
+  limiting_resource_adaptor()                                                = delete;
+  ~limiting_resource_adaptor() override                                      = default;
+  limiting_resource_adaptor(limiting_resource_adaptor const&)                = delete;
+  limiting_resource_adaptor(limiting_resource_adaptor&&) noexcept            = default;
+  limiting_resource_adaptor& operator=(limiting_resource_adaptor const&)     = delete;
   limiting_resource_adaptor& operator=(limiting_resource_adaptor&&) noexcept = default;
 
   /**

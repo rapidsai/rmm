@@ -78,7 +78,7 @@ class device_buffer {
  public:
   // The copy constructor and copy assignment operator without a stream are deleted because they
   // provide no way to specify an explicit stream
-  device_buffer(device_buffer const& other) = delete;
+  device_buffer(device_buffer const& other)            = delete;
   device_buffer& operator=(device_buffer const& other) = delete;
 
   /**
@@ -394,10 +394,10 @@ class device_buffer {
   [[nodiscard]] mr::device_memory_resource* memory_resource() const noexcept { return _mr; }
 
  private:
-  void* _data{nullptr};        ///< Pointer to device memory allocation
-  std::size_t _size{};         ///< Requested size of the device memory allocation
-  std::size_t _capacity{};     ///< The actual size of the device memory allocation
-  cuda_stream_view _stream{};  ///< Stream to use for device memory deallocation
+  void* _data{nullptr};                  ///< Pointer to device memory allocation
+  std::size_t _size{};                   ///< Requested size of the device memory allocation
+  std::size_t _capacity{};               ///< The actual size of the device memory allocation
+  cuda_stream_view _stream{};            ///< Stream to use for device memory deallocation
   mr::device_memory_resource* _mr{
     mr::get_current_device_resource()};  ///< The memory resource used to
                                          ///< allocate/deallocate device memory

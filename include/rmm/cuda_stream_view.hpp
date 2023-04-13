@@ -33,12 +33,12 @@ namespace rmm {
  */
 class cuda_stream_view {
  public:
-  constexpr cuda_stream_view()                        = default;
-  constexpr cuda_stream_view(cuda_stream_view const&) = default;
-  constexpr cuda_stream_view(cuda_stream_view&&)      = default;
+  constexpr cuda_stream_view()                                   = default;
+  constexpr cuda_stream_view(cuda_stream_view const&)            = default;
+  constexpr cuda_stream_view(cuda_stream_view&&)                 = default;
   constexpr cuda_stream_view& operator=(cuda_stream_view const&) = default;
-  constexpr cuda_stream_view& operator=(cuda_stream_view&&) = default;
-  ~cuda_stream_view()                                       = default;
+  constexpr cuda_stream_view& operator=(cuda_stream_view&&)      = default;
+  ~cuda_stream_view()                                            = default;
 
   // Disable construction from literal 0
   constexpr cuda_stream_view(int)            = delete;  //< Prevent cast from 0

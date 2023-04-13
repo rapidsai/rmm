@@ -147,10 +147,10 @@ class cuda_async_memory_resource final : public device_memory_resource {
     RMM_ASSERT_CUDA_SUCCESS(rmm::detail::async_alloc::cudaMemPoolDestroy(pool_handle()));
 #endif
   }
-  cuda_async_memory_resource(cuda_async_memory_resource const&) = delete;
-  cuda_async_memory_resource(cuda_async_memory_resource&&)      = delete;
+  cuda_async_memory_resource(cuda_async_memory_resource const&)            = delete;
+  cuda_async_memory_resource(cuda_async_memory_resource&&)                 = delete;
   cuda_async_memory_resource& operator=(cuda_async_memory_resource const&) = delete;
-  cuda_async_memory_resource& operator=(cuda_async_memory_resource&&) = delete;
+  cuda_async_memory_resource& operator=(cuda_async_memory_resource&&)      = delete;
 
   /**
    * @brief Query whether the resource supports use of non-null CUDA streams for

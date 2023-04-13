@@ -113,5 +113,4 @@ inline spdlog::logger& logger()
 }  // namespace rmm
 
 template <>
-struct fmt::formatter<rmm::detail::bytes> : fmt::ostream_formatter {
-};
+struct fmt::formatter<rmm::detail::bytes> : fmt::ostream_formatter {};
