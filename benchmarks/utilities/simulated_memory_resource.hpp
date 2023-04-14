@@ -46,10 +46,10 @@ class simulated_memory_resource final : public device_memory_resource {
   ~simulated_memory_resource() override = default;
 
   // Disable copy (and move) semantics.
-  simulated_memory_resource(simulated_memory_resource const&) = delete;
+  simulated_memory_resource(simulated_memory_resource const&)            = delete;
   simulated_memory_resource& operator=(simulated_memory_resource const&) = delete;
   simulated_memory_resource(simulated_memory_resource&&)                 = delete;
-  simulated_memory_resource& operator=(simulated_memory_resource&&) = delete;
+  simulated_memory_resource& operator=(simulated_memory_resource&&)      = delete;
 
   /**
    * @brief Query whether the resource supports use of non-null CUDA streams for

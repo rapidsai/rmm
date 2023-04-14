@@ -48,10 +48,10 @@ class raii_restore_env {
     }
   }
 
-  raii_restore_env(raii_restore_env const&) = default;
+  raii_restore_env(raii_restore_env const&)            = default;
   raii_restore_env& operator=(raii_restore_env const&) = default;
   raii_restore_env(raii_restore_env&&)                 = default;
-  raii_restore_env& operator=(raii_restore_env&&) = default;
+  raii_restore_env& operator=(raii_restore_env&&)      = default;
 
  private:
   std::string name_{};

@@ -31,8 +31,7 @@ template class rmm::mr::thrust_allocator<int>;
 namespace rmm::test {
 namespace {
 
-struct allocator_test : public mr_test {
-};
+struct allocator_test : public mr_test {};
 
 TEST_P(allocator_test, first)
 {

@@ -30,12 +30,12 @@ namespace rmm::mr {
  */
 class new_delete_resource final : public host_memory_resource {
  public:
-  new_delete_resource()                           = default;
-  ~new_delete_resource() override                 = default;
-  new_delete_resource(new_delete_resource const&) = default;
-  new_delete_resource(new_delete_resource&&)      = default;
+  new_delete_resource()                                      = default;
+  ~new_delete_resource() override                            = default;
+  new_delete_resource(new_delete_resource const&)            = default;
+  new_delete_resource(new_delete_resource&&)                 = default;
   new_delete_resource& operator=(new_delete_resource const&) = default;
-  new_delete_resource& operator=(new_delete_resource&&) = default;
+  new_delete_resource& operator=(new_delete_resource&&)      = default;
 
  private:
   /**
