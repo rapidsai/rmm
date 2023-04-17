@@ -244,8 +244,7 @@ struct mr_test : public ::testing::TestWithParam<mr_factory> {
   rmm::cuda_stream stream{};
 };
 
-struct mr_allocation_test : public mr_test {
-};
+struct mr_allocation_test : public mr_test {};
 
 /// MR factory functions
 inline auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>(); }

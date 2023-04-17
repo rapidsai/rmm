@@ -87,11 +87,11 @@ class binning_memory_resource final : public device_memory_resource {
    */
   ~binning_memory_resource() override = default;
 
-  binning_memory_resource()                               = delete;
-  binning_memory_resource(binning_memory_resource const&) = delete;
-  binning_memory_resource(binning_memory_resource&&)      = delete;
+  binning_memory_resource()                                          = delete;
+  binning_memory_resource(binning_memory_resource const&)            = delete;
+  binning_memory_resource(binning_memory_resource&&)                 = delete;
   binning_memory_resource& operator=(binning_memory_resource const&) = delete;
-  binning_memory_resource& operator=(binning_memory_resource&&) = delete;
+  binning_memory_resource& operator=(binning_memory_resource&&)      = delete;
 
   /**
    * @brief Query whether the resource supports use of non-null streams for

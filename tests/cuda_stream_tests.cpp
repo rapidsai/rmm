@@ -24,8 +24,7 @@
 #include <gtest/gtest-death-test.h>
 #include <gtest/gtest.h>
 
-struct CudaStreamTest : public ::testing::Test {
-};
+struct CudaStreamTest : public ::testing::Test {};
 
 TEST_F(CudaStreamTest, Equality)
 {
