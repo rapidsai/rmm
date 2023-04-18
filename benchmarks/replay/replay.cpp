@@ -150,9 +150,9 @@ struct replay_benchmark {
   {
   }
 
-  ~replay_benchmark()                       = default;
-  replay_benchmark(replay_benchmark const&) = delete;
-  replay_benchmark& operator=(replay_benchmark const&) = delete;
+  ~replay_benchmark()                                            = default;
+  replay_benchmark(replay_benchmark const&)                      = delete;
+  replay_benchmark& operator=(replay_benchmark const&)           = delete;
   replay_benchmark& operator=(replay_benchmark&& other) noexcept = delete;
 
   /// Add an allocation to the map (NOT thread safe)

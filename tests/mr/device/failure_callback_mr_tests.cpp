@@ -40,7 +40,7 @@ bool failure_handler(std::size_t /*bytes*/, void* arg)
     retried = true;
     return true;  // First time we request an allocation retry
   }
-  return false;  // Second time we let the adaptor throw std::bad_alloc
+  return false;   // Second time we let the adaptor throw std::bad_alloc
 }
 
 TEST(FailureCallbackTest, RetryAllocationOnce)

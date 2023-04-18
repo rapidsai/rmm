@@ -99,9 +99,9 @@ class arena_memory_resource final : public device_memory_resource {
   ~arena_memory_resource() override = default;
 
   // Disable copy (and move) semantics.
-  arena_memory_resource(arena_memory_resource const&) = delete;
-  arena_memory_resource& operator=(arena_memory_resource const&) = delete;
-  arena_memory_resource(arena_memory_resource&&) noexcept        = delete;
+  arena_memory_resource(arena_memory_resource const&)                = delete;
+  arena_memory_resource& operator=(arena_memory_resource const&)     = delete;
+  arena_memory_resource(arena_memory_resource&&) noexcept            = delete;
   arena_memory_resource& operator=(arena_memory_resource&&) noexcept = delete;
 
   /**

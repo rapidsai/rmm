@@ -50,9 +50,9 @@ class cuda_stream_pool {
   }
   ~cuda_stream_pool() = default;
 
-  cuda_stream_pool(cuda_stream_pool&&)      = delete;
-  cuda_stream_pool(cuda_stream_pool const&) = delete;
-  cuda_stream_pool& operator=(cuda_stream_pool&&) = delete;
+  cuda_stream_pool(cuda_stream_pool&&)                 = delete;
+  cuda_stream_pool(cuda_stream_pool const&)            = delete;
+  cuda_stream_pool& operator=(cuda_stream_pool&&)      = delete;
   cuda_stream_pool& operator=(cuda_stream_pool const&) = delete;
 
   /**
