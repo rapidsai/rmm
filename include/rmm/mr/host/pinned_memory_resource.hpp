@@ -32,12 +32,12 @@ namespace rmm::mr {
  */
 class pinned_memory_resource final : public host_memory_resource {
  public:
-  pinned_memory_resource()                              = default;
-  ~pinned_memory_resource() override                    = default;
-  pinned_memory_resource(pinned_memory_resource const&) = default;
-  pinned_memory_resource(pinned_memory_resource&&)      = default;
+  pinned_memory_resource()                                         = default;
+  ~pinned_memory_resource() override                               = default;
+  pinned_memory_resource(pinned_memory_resource const&)            = default;
+  pinned_memory_resource(pinned_memory_resource&&)                 = default;
   pinned_memory_resource& operator=(pinned_memory_resource const&) = default;
-  pinned_memory_resource& operator=(pinned_memory_resource&&) = default;
+  pinned_memory_resource& operator=(pinned_memory_resource&&)      = default;
 
  private:
   /**

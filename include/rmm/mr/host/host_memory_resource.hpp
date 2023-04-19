@@ -46,11 +46,11 @@ namespace rmm::mr {
  */
 class host_memory_resource {
  public:
-  host_memory_resource()                            = default;
-  virtual ~host_memory_resource()                   = default;
-  host_memory_resource(host_memory_resource const&) = default;
-  host_memory_resource& operator=(host_memory_resource const&) = default;
-  host_memory_resource(host_memory_resource&&) noexcept        = default;
+  host_memory_resource()                                           = default;
+  virtual ~host_memory_resource()                                  = default;
+  host_memory_resource(host_memory_resource const&)                = default;
+  host_memory_resource& operator=(host_memory_resource const&)     = default;
+  host_memory_resource(host_memory_resource&&) noexcept            = default;
   host_memory_resource& operator=(host_memory_resource&&) noexcept = default;
 
   /**

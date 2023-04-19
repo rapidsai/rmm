@@ -175,10 +175,10 @@ struct coalescing_free_list : free_list<block> {
   coalescing_free_list()           = default;
   ~coalescing_free_list() override = default;
 
-  coalescing_free_list(coalescing_free_list const&) = delete;
+  coalescing_free_list(coalescing_free_list const&)            = delete;
   coalescing_free_list& operator=(coalescing_free_list const&) = delete;
   coalescing_free_list(coalescing_free_list&&)                 = delete;
-  coalescing_free_list& operator=(coalescing_free_list&&) = delete;
+  coalescing_free_list& operator=(coalescing_free_list&&)      = delete;
 
   /**
    * @brief Inserts a block into the `free_list` in the correct order, coalescing it with the

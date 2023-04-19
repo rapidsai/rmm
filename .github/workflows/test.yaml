@@ -39,4 +39,4 @@ jobs:
       date: ${{ inputs.date }}
       sha: ${{ inputs.sha }}
       package-name: rmm
-      test-unittest: "python -m pytest -v ./python/rmm/tests"
+      test-unittest: "python -m pytest ./python/rmm/tests"

@@ -48,7 +48,7 @@ class cuda_stream {
   cuda_stream& operator=(cuda_stream&&) = default;
   ~cuda_stream()                        = default;
   cuda_stream(cuda_stream const&)       = delete;  // Copying disallowed: one stream one owner
-  cuda_stream& operator=(cuda_stream&) = delete;
+  cuda_stream& operator=(cuda_stream&)  = delete;
 
   /**
    * @brief Construct a new cuda stream object
