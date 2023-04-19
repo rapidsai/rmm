@@ -77,5 +77,5 @@ jobs:
     with:
       build_type: pull-request
       package-name: rmm
-      test-unittest: "python -m pytest -v ./python/rmm/tests"
+      test-unittest: "python -m pytest ./python/rmm/tests"
       test-smoketest: "python ./ci/wheel_smoke_test.py"
