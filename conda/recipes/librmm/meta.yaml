@@ -21,19 +21,19 @@ requirements:
     {% if cuda_major == "11" %}
     - {{ compiler('cuda11') }} {{ cuda_version }}
     {% else %}
-    - {{ compiler('cuda') }} {{ cuda_version }}
-    - cuda-cudart ={{ cuda_version }}
-    - cuda-cudart-dev ={{ cuda_version }}
-    - cuda-cudart-static ={{ cuda_version }}
+    - {{ compiler('cuda') }} 12.0.76
+    - cuda-cudart =12.0.107
+    - cuda-cudart-dev =12.0.107
+    - cuda-cudart-static =12.0.107
     {% endif %}
     - sysroot_{{ target_platform }} {{ sysroot_version }}
   host:
     {% if cuda_major == "11" %}
     - cudatoolkit ={{ cuda_version }}
     {% else %}
-    - cuda-cudart ={{ cuda_version }}
-    - cuda-cudart-dev ={{ cuda_version }}
-    - cuda-cudart-static ={{ cuda_version }}
+    - cuda-cudart =12.0.107
+    - cuda-cudart-dev =12.0.107
+    - cuda-cudart-static =12.0.107
     {% endif %}
     # We require spdlog and fmt (which was devendored from spdlog
     # conda-forge packages in 1.11.0) so that the spdlog headers are not
