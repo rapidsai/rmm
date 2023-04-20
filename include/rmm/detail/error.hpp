@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include <rmm/logger.hpp>
-
 #include <cuda_runtime_api.h>
 
 #include <cassert>
@@ -244,25 +242,4 @@ class out_of_range : public std::out_of_range {
     /* NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-array-to-pointer-decay) */   \
     assert(status__ == cudaSuccess);                                            \
   } while (0)
-#endif
-
-/**
- * @brief Assertion that logs a CRITICAL log message on failure.
- */
-#ifdef NDEBUG
-#define RMM_LOGGING_ASSERT(_expr) (void)0
-#elif SPDLOG_ACTIVE_LEVEL < SPDLOG_LEVEL_OFF
-#define RMM_LOGGING_ASSERT(_expr)                                                                 \
-  do {                                                                                            \
-    bool const success = (_expr);                                                                 \
-    if (!success) {                                                                               \
-      RMM_LOG_CRITICAL(                                                                           \
-        "[" __FILE__ ":" RMM_STRINGIFY(__LINE__) "] Assertion " RMM_STRINGIFY(_expr) " failed."); \
-      rmm::logger().flush();                                                                      \
-      /* NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-array-to-pointer-decay) */                   \
-      assert(success);                                                                            \
-    }                                                                                             \
-  } while (0)
-#else
-#define RMM_LOGGING_ASSERT(_expr) assert((_expr));
 #endif
