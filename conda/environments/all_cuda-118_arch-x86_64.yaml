@@ -16,7 +16,7 @@ dependencies:
 - pre-commit
 - pytest
 - pytest-cov
-- python>=3.8,<3.11
+- python>=3.9,<3.11
 - scikit-build>=0.13.1
 - spdlog>=1.11.0,<1.12
 - tomli
