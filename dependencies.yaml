@@ -71,7 +71,7 @@ dependencies:
         packages:
           - fmt>=9.1.0,<10
           - spdlog>=1.11.0,<1.12
-          - python>=3.8,<3.11
+          - python>=3.9,<3.11
       - output_types: pyproject
         packages:
           - wheel
@@ -127,10 +127,6 @@ dependencies:
     specific:
       - output_types: conda
         matrices:
-          - matrix:
-              py: "3.8"
-            packages:
-              - python=3.8
           - matrix:
               py: "3.9"
             packages:
