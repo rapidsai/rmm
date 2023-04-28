@@ -53,12 +53,12 @@ jobs:
       date: ${{ inputs.date }}
       sha: ${{ inputs.sha }}
   docs-build:
-    if: github.ref_type == 'branch' && github.event_name == 'push'
+    if: github.ref_type == 'branch'
     needs: python-build
     secrets: inherit
     uses: rapidsai/shared-action-workflows/.github/workflows/custom-job.yaml@py-39
     with:
-      build_type: branch
+      build_type: ${{ inputs.build_type || 'branch' }}
       node_type: "gpu-v100-latest-1"
       arch: "amd64"
       container_image: "rapidsai/ci:latest"
