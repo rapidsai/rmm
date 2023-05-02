@@ -46,6 +46,7 @@ build:
     - SCCACHE_S3_KEY_PREFIX=librmm-aarch64 # [aarch64]
     - SCCACHE_S3_KEY_PREFIX=librmm-linux64 # [linux64]
     - SCCACHE_S3_USE_SSL
+    - SCCACHE_S3_NO_CREDENTIALS
 
 outputs:
   - name: librmm
