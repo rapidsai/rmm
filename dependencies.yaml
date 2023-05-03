@@ -65,7 +65,7 @@ dependencies:
           - &cuda_python cuda-python>=11.7.1,<12.0
           - cython>=0.29,<0.30
           - ninja
-          - scikit-build>=0.13.1
+          - scikit-build>=0.13.1,<0.17.2
           - tomli
       - output_types: conda
         packages:
