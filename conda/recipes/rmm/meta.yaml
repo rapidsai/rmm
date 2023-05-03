@@ -48,7 +48,7 @@ requirements:
     - cython >=0.29,<0.30
     - librmm ={{ version }}
     - python
-    - scikit-build >=0.13.1
+    - scikit-build >=0.13.1,<0.17.2
     - setuptools >=61.0.0
     - tomli  # [py<311]
   run:
