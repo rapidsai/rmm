@@ -29,6 +29,8 @@ requirements:
     # added as a run requirement via the packages' run_exports.
     - fmt {{ fmt_version }}
     - spdlog {{ spdlog_version }}
+    - gtest {{ gtest_version }}
+    - gmock {{ gtest_version }}
 
 build:
   script_env:
