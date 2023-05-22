@@ -32,7 +32,7 @@ jobs:
       sha: ${{ inputs.sha }}
   wheel-tests:
     secrets: inherit
-    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-manylinux-test.yml@heel-ctk-name-gen
+    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-manylinux-test.yml@wheel-ctk-name-gen
     with:
       build_type: nightly
       branch: ${{ inputs.branch }}
