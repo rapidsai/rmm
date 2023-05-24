@@ -30,6 +30,7 @@ build:
     - SCCACHE_S3_KEY_PREFIX=rmm-aarch64 # [aarch64]
     - SCCACHE_S3_KEY_PREFIX=rmm-linux64 # [linux64]
     - SCCACHE_S3_USE_SSL
+    - SCCACHE_S3_NO_CREDENTIALS
   ignore_run_exports_from:
     - {{ compiler('cuda') }}
 
@@ -63,7 +64,7 @@ requirements:
     - cython >=0.29,<0.30
     - librmm ={{ version }}
     - python
-    - scikit-build >=0.13.1
+    - scikit-build >=0.13.1,<0.17.2
     - setuptools >=61.0.0
     - tomli  # [py<311]
   run:
