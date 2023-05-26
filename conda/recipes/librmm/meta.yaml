@@ -140,7 +140,7 @@ outputs:
         {% if cuda_major == "11" %}
         - cudatoolkit {{ cuda_spec }}
         {% else %}
-        - cuda-version { cuda_spec }}
+        - cuda-version {{ cuda_spec }}
         {% endif %}
         - {{ pin_subpackage('librmm', exact=True) }}
         - gtest {{ gtest_version }}
