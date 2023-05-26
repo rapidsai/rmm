@@ -91,7 +91,8 @@ dependencies:
           - matrix:
               cuda: "12.0"
             packages:
-              - cuda-nvcc=12.0
+              - cuda-version=12.0
+              - cuda-nvcc
       - output_types: [conda, requirements, pyproject]
         matrices:
           - matrix:
@@ -133,9 +134,7 @@ dependencies:
           - matrix:
               cuda: "12.0"
             packages:
-              - cuda-cudart=12.0
-              - cuda-cudart-dev=12.0
-              - cuda-cudart-static=12.0
+              - cuda-version=12.0
   develop:
     common:
       - output_types: [conda, requirements]
