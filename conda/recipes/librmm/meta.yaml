@@ -22,20 +22,12 @@ requirements:
     - {{ compiler('cuda11') }} {{ cuda_version }}
     {% else %}
     - cuda-version {{ cuda_version }}
-    - {{ compiler('cuda') }} 12.0.76
-    - cuda-cudart
-    - cuda-cudart-dev
-    - cuda-cudart-static
+    - {{ compiler('cuda') }}
     {% endif %}
     - sysroot_{{ target_platform }} {{ sysroot_version }}
   host:
     {% if cuda_major == "11" %}
     - cudatoolkit ={{ cuda_version }}
-    {% else %}
-    - cuda-version {{ cuda_version }}
-    - cuda-cudart
-    - cuda-cudart-dev
-    - cuda-cudart-static
     {% endif %}
     # We require spdlog and fmt (which was devendored from spdlog
     # conda-forge packages in 1.11.0) so that the spdlog headers are not
@@ -87,9 +79,7 @@ outputs:
         {% if cuda_major == "11" %}
         - cudatoolkit {{ cuda_spec }}
         {% else %}
-        - cuda-cudart {{ cuda_spec }}
-        - cuda-cudart-dev {{ cuda_spec }}
-        - cuda-cudart-static {{ cuda_spec }}
+        - cuda-version {{ cuda_spec }}
         {% endif %}
         - fmt {{ fmt_version }}
         - spdlog {{ spdlog_version }}
@@ -150,9 +140,7 @@ outputs:
         {% if cuda_major == "11" %}
         - cudatoolkit {{ cuda_spec }}
         {% else %}
-        - cuda-cudart {{ cuda_spec }}
-        - cuda-cudart-dev {{ cuda_spec }}
-        - cuda-cudart-static {{ cuda_spec }}
+        - cuda-version { cuda_spec }}
         {% endif %}
         - {{ pin_subpackage('librmm', exact=True) }}
         - gtest {{ gtest_version }}
