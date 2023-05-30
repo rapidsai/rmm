@@ -77,10 +77,9 @@ outputs:
         - cmake {{ cmake_version }}
       run:
         {% if cuda_major == "11" %}
-        - cudatoolkit {{ cuda_spec }}
-        {% else %}
-        - cuda-version {{ cuda_spec }}
+        - cudatoolkit
         {% endif %}
+        - cuda-version {{ cuda_spec }}
         - fmt {{ fmt_version }}
         - spdlog {{ spdlog_version }}
     test:
@@ -138,10 +137,9 @@ outputs:
         - cmake {{ cmake_version }}
       run:
         {% if cuda_major == "11" %}
-        - cudatoolkit {{ cuda_spec }}
-        {% else %}
-        - cuda-version {{ cuda_spec }}
+        - cudatoolkit
         {% endif %}
+        - cuda-version {{ cuda_spec }}
         - {{ pin_subpackage('librmm', exact=True) }}
         - gtest {{ gtest_version }}
         - gmock {{ gtest_version }}
