@@ -105,7 +105,7 @@ class device_memory_resource {
    */
   void* allocate(std::size_t bytes, cuda_stream_view stream = cuda_stream_view{})
   {
-    return do_allocate(rmm::detail::align_up(bytes, allocation_size_alignment), stream);
+    return do_allocate(bytes, stream);
   }
 
   /**
@@ -128,7 +128,7 @@ class device_memory_resource {
    */
   void deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream = cuda_stream_view{})
   {
-    do_deallocate(ptr, rmm::detail::align_up(bytes, allocation_size_alignment), stream);
+    do_deallocate(ptr, bytes, stream);
   }
 
   /**
@@ -178,9 +178,6 @@ class device_memory_resource {
   }
 
  private:
-  // All allocations are padded to a multiple of allocation_size_alignment bytes.
-  static constexpr auto allocation_size_alignment = std::size_t{8};
-
   /**
    * @brief Allocates memory of size at least \p bytes.
    *
