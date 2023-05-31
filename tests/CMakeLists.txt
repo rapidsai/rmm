@@ -77,7 +77,7 @@ endfunction()
 # stream
 function(ConfigureTest TEST_NAME)
 
-  set(options NOT_PARALLEL_SAFE)
+  set(options)
   set(one_value GPUS PERCENT)
   set(multi_value)
   cmake_parse_arguments(_RMM_TEST "${options}" "${one_value}" "${multi_value}" ${ARGN})
@@ -90,11 +90,6 @@ function(ConfigureTest TEST_NAME)
   endif()
   if(NOT DEFINED _RMM_TEST_PERCENT)
     set(_RMM_TEST_PERCENT 100)
-  endif()
-
-  set(_RAPIDS_GPU_ALLOCATION)
-  if(NOT _RMM_TEST_NOT_PARALLEL_SAFE)
-  set(_RAPIDS_GPU_ALLOCATION "GPUS" ${_RMM_TEST_GPUS} "PERCENT" ${_RMM_TEST_PERCENT})
   endif()
 
   # Test with legacy default stream.
@@ -114,7 +109,8 @@ function(ConfigureTest TEST_NAME)
     rapids_test_add(
       NAME ${name}
       COMMAND ${TEST_NAME}
-      ${_RAPIDS_GPU_ALLOCATION}
+      GPUS ${_RMM_TEST_GPUS}
+      PERCENT ${_RMM_TEST_PERCENT}
       INSTALL_COMPONENT_SET testing)
   endforeach()
 
@@ -172,7 +168,7 @@ ConfigureTest(DEVICE_BUFFER_TEST device_buffer_tests.cu)
 ConfigureTest(DEVICE_SCALAR_TEST device_scalar_tests.cpp)
 
 # logger tests
-ConfigureTest(LOGGER_TEST logger_tests.cpp NOT_PARALLEL_SAFE)
+ConfigureTest(LOGGER_TEST logger_tests.cpp)
 
 # uvector tests
 ConfigureTest(DEVICE_UVECTOR_TEST device_uvector_tests.cpp GPUS 1 PERCENT 60)
