@@ -50,10 +50,10 @@ class raii_restore_env {
     }
   }
 
-  raii_restore_env(raii_restore_env const&)            = default;
+  raii_restore_env(raii_restore_env const&) = default;
   raii_restore_env& operator=(raii_restore_env const&) = default;
   raii_restore_env(raii_restore_env&&)                 = default;
-  raii_restore_env& operator=(raii_restore_env&&)      = default;
+  raii_restore_env& operator=(raii_restore_env&&) = default;
 
  private:
   std::string name_{};
@@ -62,19 +62,16 @@ class raii_restore_env {
 };
 
 class raii_temp_directory {
-public:
+ public:
   raii_temp_directory()
   {
-    directory_path_ = std::filesystem::temp_directory_path();
+    directory_path_             = std::filesystem::temp_directory_path();
     std::string unique_dir_name = "rmm_XXXXXX";
-    auto const ptr = mkdtemp(const_cast<char*>(unique_dir_name.data()));
-    EXPECT_TRUE( (ptr!=nullptr) );
+    auto const ptr              = mkdtemp(const_cast<char*>(unique_dir_name.data()));
+    EXPECT_TRUE((ptr != nullptr));
     directory_path_ /= unique_dir_name;
   }
-  ~raii_temp_directory()
-  {
-     std::filesystem::remove_all(directory_path_);
-  }
+  ~raii_temp_directory() { std::filesystem::remove_all(directory_path_); }
 
   raii_temp_directory& operator=(raii_temp_directory const&) = delete;
   raii_temp_directory(raii_temp_directory const&)            = delete;
@@ -83,7 +80,8 @@ public:
   {
     return directory_path_ / filename;
   }
-private:
+
+ private:
   std::filesystem::path directory_path_{};
 };
 
