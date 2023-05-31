@@ -23,6 +23,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <cstdlib>
+#include <filesystem>
 #include <thread>
 
 namespace rmm::test {
@@ -57,6 +59,32 @@ class raii_restore_env {
   std::string name_{};
   std::string value_{};
   bool is_set_{false};
+};
+
+class raii_temp_directory {
+public:
+  raii_temp_directory()
+  {
+    directory_path_ = std::filesystem::temp_directory_path();
+    std::string unique_dir_name = "rmm_XXXXXX";
+    auto const ptr = mkdtemp(const_cast<char*>(unique_dir_name.data()));
+    EXPECT_TRUE( (ptr!=nullptr) );
+    directory_path_ /= unique_dir_name;
+  }
+  ~raii_temp_directory()
+  {
+     std::filesystem::remove_all(directory_path_);
+  }
+
+  raii_temp_directory& operator=(raii_temp_directory const&) = delete;
+  raii_temp_directory(raii_temp_directory const&)            = delete;
+
+  [[nodiscard]] std::string generate_path(std::string filename) const
+  {
+    return directory_path_ / filename;
+  }
+private:
+  std::filesystem::path directory_path_{};
 };
 
 /**
@@ -95,7 +123,8 @@ void expect_log_events(std::string const& filename,
 
 TEST(Adaptor, FilenameConstructor)
 {
-  std::string filename{"logs/test1.txt"};
+  raii_temp_directory temp_dir;
+  std::string filename{temp_dir.generate_path("test.txt")};
   rmm::mr::cuda_memory_resource upstream;
   rmm::mr::logging_resource_adaptor<rmm::mr::cuda_memory_resource> log_mr{&upstream, filename};
 
@@ -121,8 +150,9 @@ TEST(Adaptor, FilenameConstructor)
 
 TEST(Adaptor, MultiSinkConstructor)
 {
-  std::string filename1{"logs/test_multi_1.txt"};
-  std::string filename2{"logs/test_multi_2.txt"};
+  raii_temp_directory temp_dir;
+  std::string filename1{temp_dir.generate_path("test_multi_1.txt")};
+  std::string filename2{temp_dir.generate_path("test_multi_2.txt")};
   rmm::mr::cuda_memory_resource upstream;
 
   auto file_sink1 = std::make_shared<spdlog::sinks::basic_file_sink_mt>(filename1, true);
@@ -154,7 +184,8 @@ TEST(Adaptor, MultiSinkConstructor)
 
 TEST(Adaptor, Factory)
 {
-  std::string filename{"logs/test2.txt"};
+  raii_temp_directory temp_dir;
+  std::string filename{temp_dir.generate_path("test.txt")};
   rmm::mr::cuda_memory_resource upstream;
 
   auto log_mr = rmm::mr::make_logging_adaptor(&upstream, filename);
@@ -181,6 +212,7 @@ TEST(Adaptor, Factory)
 
 TEST(Adaptor, EnvironmentPath)
 {
+  raii_temp_directory temp_dir;
   rmm::mr::cuda_memory_resource upstream;
 
   // restore the original value (or unset) after test
@@ -191,7 +223,7 @@ TEST(Adaptor, EnvironmentPath)
   // expect logging adaptor to fail if RMM_LOG_FILE is unset
   EXPECT_THROW(rmm::mr::make_logging_adaptor(&upstream), rmm::logic_error);
 
-  std::string filename("logs/envtest.txt");
+  std::string filename{temp_dir.generate_path("test.txt")};
 
   setenv("RMM_LOG_FILE", filename.c_str(), 1);
 
@@ -218,7 +250,8 @@ TEST(Adaptor, EnvironmentPath)
 
 TEST(Adaptor, AllocateFailure)
 {
-  std::string filename{"logs/failure.txt"};
+  raii_temp_directory temp_dir;
+  std::string filename{temp_dir.generate_path("failure.txt")};
   rmm::mr::cuda_memory_resource upstream;
 
   auto log_mr = rmm::mr::make_logging_adaptor(&upstream, filename);
