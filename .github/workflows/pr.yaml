@@ -64,7 +64,7 @@ jobs:
   wheel-build:
     needs: checks
     secrets: inherit
-    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-manylinux-build.yml@branch-23.08
+    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-manylinux-build.yml@new-wheel-containers
     with:
       build_type: pull-request
       package-dir: python
@@ -73,7 +73,7 @@ jobs:
   wheel-tests:
     needs: wheel-build
     secrets: inherit
-    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-manylinux-test.yml@branch-23.08
+    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-manylinux-test.yml@new-wheel-containers
     with:
       build_type: pull-request
       package-name: rmm
