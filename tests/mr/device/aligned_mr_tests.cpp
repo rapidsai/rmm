@@ -87,9 +87,8 @@ TEST(AlignedTest, DefaultAllocationAlignmentPassthrough)
   cuda_stream_view stream;
   void* const pointer = int_to_address(123);
 
-  // device_memory_resource aligns to 8.
   {
-    auto const size{8};
+    auto const size{5};
     EXPECT_CALL(mock, do_allocate(size, stream)).WillOnce(Return(pointer));
     EXPECT_CALL(mock, do_deallocate(pointer, size, stream)).Times(1);
   }
@@ -110,9 +109,8 @@ TEST(AlignedTest, BelowAlignmentThresholdPassthrough)
 
   cuda_stream_view stream;
   void* const pointer = int_to_address(123);
-  // device_memory_resource aligns to 8.
   {
-    auto const size{8};
+    auto const size{3};
     EXPECT_CALL(mock, do_allocate(size, stream)).WillOnce(Return(pointer));
     EXPECT_CALL(mock, do_deallocate(pointer, size, stream)).Times(1);
   }
