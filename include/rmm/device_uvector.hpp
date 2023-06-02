@@ -208,7 +208,7 @@ class device_uvector {
                          cuda_stream_view stream)
   {
     RMM_EXPECTS(
-      element_index < size(), rmm::out_of_range, "Attempt to access out of bounds element.");
+      element_index < size(), "Attempt to access out of bounds element.", rmm::out_of_range);
 
     if constexpr (std::is_same<value_type, bool>::value) {
       RMM_CUDA_TRY(
@@ -256,7 +256,7 @@ class device_uvector {
   void set_element_to_zero_async(std::size_t element_index, cuda_stream_view stream)
   {
     RMM_EXPECTS(
-      element_index < size(), rmm::out_of_range, "Attempt to access out of bounds element.");
+      element_index < size(), "Attempt to access out of bounds element.", rmm::out_of_range);
     RMM_CUDA_TRY(
       cudaMemsetAsync(element_ptr(element_index), 0, sizeof(value_type), stream.value()));
   }
@@ -311,7 +311,7 @@ class device_uvector {
   [[nodiscard]] value_type element(std::size_t element_index, cuda_stream_view stream) const
   {
     RMM_EXPECTS(
-      element_index < size(), rmm::out_of_range, "Attempt to access out of bounds element.");
+      element_index < size(), "Attempt to access out of bounds element.", rmm::out_of_range);
     value_type value;
     RMM_CUDA_TRY(cudaMemcpyAsync(
       &value, element_ptr(element_index), sizeof(value), cudaMemcpyDefault, stream.value()));
