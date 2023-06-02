@@ -95,27 +95,27 @@ class out_of_range : public std::out_of_range {
  * RMM_EXPECTS(p != nullptr, "Unexpected null pointer");
  *
  * // throws std::runtime_error
- * RMM_EXPECTS(p != nullptr, std::runtime_error, "Unexpected nullptr");
+ * RMM_EXPECTS(p != nullptr, "Unexpected nullptr", std::runtime_error);
  * ```
  * @param[in] _condition Expression that evaluates to true or false
+ * @param[in] _what  String literal description of why the exception was
+ *     thrown, i.e. why `_condition` was expected to be true.
  * @param[in] _expection_type The exception type to throw; must inherit
  *     `std::exception`. If not specified (i.e. if only two macro
  *     arguments are provided), defaults to `rmm::logic_error`
- * @param[in] _what  String literal description of why the exception was
- *     thrown, i.e. why `_condition` was expected to be true.
  * @throw `_exception_type` if the condition evaluates to 0 (false).
  */
 #define RMM_EXPECTS(...)                                           \
   GET_RMM_EXPECTS_MACRO(__VA_ARGS__, RMM_EXPECTS_3, RMM_EXPECTS_2) \
   (__VA_ARGS__)
 #define GET_RMM_EXPECTS_MACRO(_1, _2, _3, NAME, ...) NAME
-#define RMM_EXPECTS_3(_condition, _exception_type, _reason)                       \
+#define RMM_EXPECTS_3(_condition, _reason, _exception_type)                       \
   (!!(_condition)) ? static_cast<void>(0)                                         \
                    : throw _exception_type /*NOLINT(bugprone-macro-parentheses)*/ \
   {                                                                               \
     "RMM failure at: " __FILE__ ":" RMM_STRINGIFY(__LINE__) ": " _reason          \
   }
-#define RMM_EXPECTS_2(_condition, _reason) RMM_EXPECTS_3(_condition, rmm::logic_error, _reason)
+#define RMM_EXPECTS_2(_condition, _reason) RMM_EXPECTS_3(_condition, _reason, rmm::logic_error)
 
 /**
  * @brief Indicates that an erroneous code path has been taken.
