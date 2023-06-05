@@ -80,7 +80,7 @@ class simulated_memory_resource final : public device_memory_resource {
   void* do_allocate(std::size_t bytes, cuda_stream_view) override
   {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    RMM_EXPECTS(begin_ + bytes <= end_, rmm::bad_alloc, "Simulated memory size exceeded");
+    RMM_EXPECTS(begin_ + bytes <= end_, "Simulated memory size exceeded", rmm::bad_alloc);
     auto* ptr = static_cast<void*>(begin_);
     begin_ += bytes;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     return ptr;

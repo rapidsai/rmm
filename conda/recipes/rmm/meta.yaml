@@ -53,7 +53,7 @@ requirements:
     - cudatoolkit ={{ cuda_version }}
     - cuda-python >=11.7.1,<12.0
     {% else %}
-    - cuda-python >=12.1,<13.0
+    - cuda-python >=12.0,<13.0
     {% endif %}
     - cython >=0.29,<0.30
     - librmm ={{ version }}*=cuda{{ cuda_major }}*
@@ -66,10 +66,10 @@ requirements:
     - cuda-python >=11.7.1,<12.0
     - {{ pin_compatible('cudatoolkit', max_pin='x', min_pin='x') }}
     {% else %}
-    - cuda-python >=12.1,<13.0
+    - cuda-python >=12.0,<13.0
     {% endif %}
     - numba >=0.57
-    - numpy >=1.19
+    - numpy >=1.21
 
 test:
   imports:
