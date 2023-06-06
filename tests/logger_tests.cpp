@@ -65,11 +65,11 @@ class raii_temp_directory {
  public:
   raii_temp_directory()
   {
-    directory_path_             = std::filesystem::temp_directory_path();
-    std::string unique_dir_name = "rmm_XXXXXX";
-    auto const ptr              = mkdtemp(const_cast<char*>(unique_dir_name.data()));
+    std::string random_path{std::filesystem::temp_directory_path().string()};
+    random_path += "/rmm_XXXXXX";
+    auto const ptr = mkdtemp(const_cast<char*>(random_path.data()));
     EXPECT_TRUE((ptr != nullptr));
-    directory_path_ /= unique_dir_name;
+    directory_path_ = std::filesystem::path{random_path};
   }
   ~raii_temp_directory() { std::filesystem::remove_all(directory_path_); }
 
