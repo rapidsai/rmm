@@ -31,8 +31,7 @@
 namespace rmm::test {
 namespace {
 
-struct mr_test_mt : public mr_test {
-};
+struct mr_test_mt : public mr_test {};
 
 INSTANTIATE_TEST_CASE_P(MultiThreadResourceTests,
                         mr_test_mt,

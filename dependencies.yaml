@@ -65,13 +65,13 @@ dependencies:
           - &cuda_python cuda-python>=11.7.1,<12.0
           - cython>=0.29,<0.30
           - ninja
-          - scikit-build>=0.13.1
+          - scikit-build>=0.13.1,<0.17.2
           - tomli
       - output_types: conda
         packages:
           - fmt>=9.1.0,<10
           - spdlog>=1.11.0,<1.12
-          - python>=3.8,<3.11
+          - python>=3.9,<3.11
       - output_types: pyproject
         packages:
           - wheel
@@ -128,10 +128,6 @@ dependencies:
       - output_types: conda
         matrices:
           - matrix:
-              py: "3.8"
-            packages:
-              - python=3.8
-          - matrix:
               py: "3.9"
             packages:
               - python=3.9
@@ -143,8 +139,8 @@ dependencies:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
-          - numba>=0.49
-          - numpy>=1.19
+          - numba>=0.57
+          - numpy>=1.21
           - *cuda_python
   test_cpp:
     common:

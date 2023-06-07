@@ -90,10 +90,10 @@ class cuda_event_timer {
   ~cuda_event_timer();
 
   // disable copy and move
-  cuda_event_timer(cuda_event_timer const&) = delete;
+  cuda_event_timer(cuda_event_timer const&)            = delete;
   cuda_event_timer& operator=(cuda_event_timer const&) = delete;
   cuda_event_timer(cuda_event_timer&&)                 = delete;
-  cuda_event_timer& operator=(cuda_event_timer&&) = delete;
+  cuda_event_timer& operator=(cuda_event_timer&&)      = delete;
 
  private:
   cudaEvent_t start{};

@@ -14,7 +14,7 @@ fmt_version:
   - ">=9.1.0,<10"
 
 gtest_version:
-  - "=1.10.0"
+  - ">=1.13.0"
 
 spdlog_version:
   - ">=1.11.0,<1.12"

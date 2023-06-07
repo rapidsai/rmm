@@ -17,6 +17,7 @@
 
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/stack_trace.hpp>
+#include <rmm/logger.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <fmt/core.h>
@@ -83,11 +84,11 @@ class tracking_resource_adaptor final : public device_memory_resource {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
   }
 
-  tracking_resource_adaptor()                                 = delete;
-  ~tracking_resource_adaptor() override                       = default;
-  tracking_resource_adaptor(tracking_resource_adaptor const&) = delete;
-  tracking_resource_adaptor& operator=(tracking_resource_adaptor const&) = delete;
-  tracking_resource_adaptor(tracking_resource_adaptor&&) noexcept        = default;
+  tracking_resource_adaptor()                                                = delete;
+  ~tracking_resource_adaptor() override                                      = default;
+  tracking_resource_adaptor(tracking_resource_adaptor const&)                = delete;
+  tracking_resource_adaptor& operator=(tracking_resource_adaptor const&)     = delete;
+  tracking_resource_adaptor(tracking_resource_adaptor&&) noexcept            = default;
   tracking_resource_adaptor& operator=(tracking_resource_adaptor&&) noexcept = default;
 
   /**

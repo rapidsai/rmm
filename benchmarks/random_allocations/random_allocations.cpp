@@ -68,7 +68,7 @@ void random_allocation_free(rmm::mr::device_memory_resource& mr,
 {
   std::default_random_engine generator;
 
-  max_usage *= size_mb;  // convert to bytes
+  max_usage *= size_mb;                      // convert to bytes
 
   constexpr int allocation_probability{73};  // percent
   constexpr int max_op_chance{99};

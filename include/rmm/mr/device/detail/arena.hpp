@@ -20,6 +20,7 @@
 #include <rmm/detail/aligned.hpp>
 #include <rmm/detail/cuda_util.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/logging_assert.hpp>
 #include <rmm/logger.hpp>
 
 #include <cuda_runtime_api.h>
@@ -277,10 +278,10 @@ class superblock final : public byte_span {
   }
 
   // Disable copy semantics.
-  superblock(superblock const&) = delete;
+  superblock(superblock const&)            = delete;
   superblock& operator=(superblock const&) = delete;
   // Allow move semantics.
-  superblock(superblock&&) noexcept = default;
+  superblock(superblock&&) noexcept            = default;
   superblock& operator=(superblock&&) noexcept = default;
 
   ~superblock() = default;
@@ -515,9 +516,9 @@ class global_arena final {
   }
 
   // Disable copy (and move) semantics.
-  global_arena(global_arena const&) = delete;
-  global_arena& operator=(global_arena const&) = delete;
-  global_arena(global_arena&&) noexcept        = delete;
+  global_arena(global_arena const&)                = delete;
+  global_arena& operator=(global_arena const&)     = delete;
+  global_arena(global_arena&&) noexcept            = delete;
   global_arena& operator=(global_arena&&) noexcept = delete;
 
   /**
@@ -803,9 +804,9 @@ class arena {
   explicit arena(global_arena<Upstream>& global_arena) : global_arena_{global_arena} {}
 
   // Disable copy (and move) semantics.
-  arena(arena const&) = delete;
-  arena& operator=(arena const&) = delete;
-  arena(arena&&) noexcept        = delete;
+  arena(arena const&)                = delete;
+  arena& operator=(arena const&)     = delete;
+  arena(arena&&) noexcept            = delete;
   arena& operator=(arena&&) noexcept = delete;
 
   ~arena() = default;
@@ -979,10 +980,10 @@ class arena_cleaner {
   explicit arena_cleaner(std::shared_ptr<arena<Upstream>> const& arena) : arena_(arena) {}
 
   // Disable copy (and move) semantics.
-  arena_cleaner(arena_cleaner const&) = delete;
+  arena_cleaner(arena_cleaner const&)            = delete;
   arena_cleaner& operator=(arena_cleaner const&) = delete;
   arena_cleaner(arena_cleaner&&) noexcept        = delete;
-  arena_cleaner& operator=(arena_cleaner&&) = delete;
+  arena_cleaner& operator=(arena_cleaner&&)      = delete;
 
   ~arena_cleaner()
   {

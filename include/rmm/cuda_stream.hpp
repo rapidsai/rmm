@@ -16,8 +16,10 @@
 
 #pragma once
 
+#include <functional>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/logging_assert.hpp>
 
 #include <cuda_runtime_api.h>
 
@@ -48,7 +50,7 @@ class cuda_stream {
   cuda_stream& operator=(cuda_stream&&) = default;
   ~cuda_stream()                        = default;
   cuda_stream(cuda_stream const&)       = delete;  // Copying disallowed: one stream one owner
-  cuda_stream& operator=(cuda_stream&) = delete;
+  cuda_stream& operator=(cuda_stream&)  = delete;
 
   /**
    * @brief Construct a new cuda stream object

@@ -78,11 +78,11 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
  public:
   ~stream_ordered_memory_resource() override { release(); }
 
-  stream_ordered_memory_resource()                                      = default;
-  stream_ordered_memory_resource(stream_ordered_memory_resource const&) = delete;
-  stream_ordered_memory_resource(stream_ordered_memory_resource&&)      = delete;
+  stream_ordered_memory_resource()                                                 = default;
+  stream_ordered_memory_resource(stream_ordered_memory_resource const&)            = delete;
+  stream_ordered_memory_resource(stream_ordered_memory_resource&&)                 = delete;
   stream_ordered_memory_resource& operator=(stream_ordered_memory_resource const&) = delete;
-  stream_ordered_memory_resource& operator=(stream_ordered_memory_resource&&) = delete;
+  stream_ordered_memory_resource& operator=(stream_ordered_memory_resource&&)      = delete;
 
  protected:
   using free_list  = FreeListType;
@@ -269,10 +269,10 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     ~event_wrapper() { RMM_ASSERT_CUDA_SUCCESS(cudaEventDestroy(event)); }
     cudaEvent_t event{};
 
-    event_wrapper(event_wrapper const&) = delete;
+    event_wrapper(event_wrapper const&)            = delete;
     event_wrapper& operator=(event_wrapper const&) = delete;
     event_wrapper(event_wrapper&&) noexcept        = delete;
-    event_wrapper& operator=(event_wrapper&&) = delete;
+    event_wrapper& operator=(event_wrapper&&)      = delete;
   };
 
   /**

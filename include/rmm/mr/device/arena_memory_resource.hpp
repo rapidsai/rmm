@@ -16,6 +16,7 @@
 #pragma once
 
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/logging_assert.hpp>
 #include <rmm/logger.hpp>
 #include <rmm/mr/device/detail/arena.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
@@ -98,9 +99,9 @@ class arena_memory_resource final : public device_memory_resource {
   ~arena_memory_resource() override = default;
 
   // Disable copy (and move) semantics.
-  arena_memory_resource(arena_memory_resource const&) = delete;
-  arena_memory_resource& operator=(arena_memory_resource const&) = delete;
-  arena_memory_resource(arena_memory_resource&&) noexcept        = delete;
+  arena_memory_resource(arena_memory_resource const&)                = delete;
+  arena_memory_resource& operator=(arena_memory_resource const&)     = delete;
+  arena_memory_resource(arena_memory_resource&&) noexcept            = delete;
   arena_memory_resource& operator=(arena_memory_resource&&) noexcept = delete;
 
   /**

@@ -19,6 +19,7 @@
 #include <rmm/detail/aligned.hpp>
 #include <rmm/detail/cuda_util.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/logging_assert.hpp>
 #include <rmm/logger.hpp>
 #include <rmm/mr/device/detail/coalescing_free_list.hpp>
 #include <rmm/mr/device/detail/stream_ordered_memory_resource.hpp>
@@ -104,11 +105,11 @@ class pool_memory_resource final
    */
   ~pool_memory_resource() override { release(); }
 
-  pool_memory_resource()                            = delete;
-  pool_memory_resource(pool_memory_resource const&) = delete;
-  pool_memory_resource(pool_memory_resource&&)      = delete;
+  pool_memory_resource()                                       = delete;
+  pool_memory_resource(pool_memory_resource const&)            = delete;
+  pool_memory_resource(pool_memory_resource&&)                 = delete;
   pool_memory_resource& operator=(pool_memory_resource const&) = delete;
-  pool_memory_resource& operator=(pool_memory_resource&&) = delete;
+  pool_memory_resource& operator=(pool_memory_resource&&)      = delete;
 
   /**
    * @brief Queries whether the resource supports use of non-null CUDA streams for

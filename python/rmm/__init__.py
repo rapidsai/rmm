@@ -36,7 +36,7 @@ __all__ = [
     "unregister_reinitialize_hook",
 ]
 
-__version__ = "23.04.01"
+__version__ = "23.06.00"
 
 
 _deprecated_names = {

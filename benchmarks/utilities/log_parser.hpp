@@ -40,10 +40,10 @@ enum class action { ALLOCATE, FREE, ALLOCATE_FAILURE };
  *
  */
 struct event {
-  event()             = default;
-  event(event const&) = default;
-  event& operator=(event const&) = default;
-  event(event&&) noexcept        = default;
+  event()                            = default;
+  event(event const&)                = default;
+  event& operator=(event const&)     = default;
+  event(event&&) noexcept            = default;
   event& operator=(event&&) noexcept = default;
   ~event()                           = default;
   event(action act, std::size_t size, void const* ptr)

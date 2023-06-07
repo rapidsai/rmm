@@ -18,6 +18,7 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/logging_assert.hpp>
 #include <rmm/mr/device/detail/fixed_size_free_list.hpp>
 #include <rmm/mr/device/detail/stream_ordered_memory_resource.hpp>
 
@@ -84,11 +85,11 @@ class fixed_size_memory_resource
    */
   ~fixed_size_memory_resource() override { release(); }
 
-  fixed_size_memory_resource()                                  = delete;
-  fixed_size_memory_resource(fixed_size_memory_resource const&) = delete;
-  fixed_size_memory_resource(fixed_size_memory_resource&&)      = delete;
+  fixed_size_memory_resource()                                             = delete;
+  fixed_size_memory_resource(fixed_size_memory_resource const&)            = delete;
+  fixed_size_memory_resource(fixed_size_memory_resource&&)                 = delete;
   fixed_size_memory_resource& operator=(fixed_size_memory_resource const&) = delete;
-  fixed_size_memory_resource& operator=(fixed_size_memory_resource&&) = delete;
+  fixed_size_memory_resource& operator=(fixed_size_memory_resource&&)      = delete;
 
   /**
    * @brief Query whether the resource supports use of non-null streams for
@@ -271,7 +272,7 @@ class fixed_size_memory_resource
   }
 
  private:
-  Upstream* upstream_mr_;  // The resource from which to allocate new blocks
+  Upstream* upstream_mr_;                  // The resource from which to allocate new blocks
 
   std::size_t const block_size_;           // size of blocks this MR allocates
   std::size_t const upstream_chunk_size_;  // size of chunks allocated from heap MR
