@@ -3,6 +3,7 @@
 {% set version = environ.get('GIT_DESCRIBE_TAG', '0.0.0.dev').lstrip('v') %}
 {% set cuda_version = '.'.join(environ['RAPIDS_CUDA_VERSION'].split('.')[:2]) %}
 {% set cuda_major = cuda_version.split('.')[0] %}
+{% set cuda_spec = ">=" + cuda_major ~ ",<" + (cuda_major | int + 1) ~ ".0a0" %} # i.e. >=11,<12.0a0
 {% set py_version = environ['CONDA_PY'] %}
 {% set date_string = environ['RAPIDS_DATE_STRING'] %}
 
