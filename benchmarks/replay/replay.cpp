@@ -173,7 +173,7 @@ struct replay_benchmark {
   /// Create the memory resource shared by all threads before the benchmark runs
   void SetUp(const ::benchmark::State& state)
   {
-    if (state.thread_index == 0) {
+    if (state.thread_index() == 0) {
       rmm::logger().log(spdlog::level::info, "------ Start of Benchmark -----");
       mr_ = factory_(simulated_size_);
     }
@@ -182,7 +182,7 @@ struct replay_benchmark {
   /// Destroy the memory resource and count any unallocated memory
   void TearDown(const ::benchmark::State& state)
   {
-    if (state.thread_index == 0) {
+    if (state.thread_index() == 0) {
       rmm::logger().log(spdlog::level::info, "------ End of Benchmark -----");
       // clean up any leaked allocations
       std::size_t total_leaked{0};
@@ -207,7 +207,7 @@ struct replay_benchmark {
   {
     SetUp(state);
 
-    auto const& my_events = events_.at(state.thread_index);
+    auto const& my_events = events_.at(state.thread_index());
 
     for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
       std::for_each(my_events.begin(), my_events.end(), [this](auto event) {
