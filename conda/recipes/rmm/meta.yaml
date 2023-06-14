@@ -47,7 +47,6 @@ requirements:
     - cuda-version {{ cuda_version }}
     - {{ compiler('cuda') }}
     {% endif %}
-
     - sysroot_{{ target_platform }} {{ sysroot_version }}
   host:
     {% if cuda_major == "11" %}
