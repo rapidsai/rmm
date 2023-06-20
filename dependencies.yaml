@@ -98,10 +98,27 @@ dependencies:
           - matrix:
               cuda: "12.0"
             packages:
-              - &cuda_python12 cuda-python>=12.0,<13.0
-          - matrix: # All CUDA 11 versions
+              - &cuda_python12 cuda-python>=12.0,<13.0a0
+          - matrix:
+              cuda: "11.8"
             packages:
-              - &cuda_python11 cuda-python>=11.7.1,<12.0
+              - &cuda_python11 cuda-python>=11.7.1,<12.0a0
+          - matrix:
+              cuda: "11.6"
+            packages:
+              - &cuda_python11 cuda-python>=11.7.1,<12.0a0
+          - matrix:
+              cuda: "11.5"
+            packages:
+              - &cuda_python11 cuda-python>=11.7.1,<12.0a0
+          - matrix:
+              cuda: "11.4"
+            packages:
+              - &cuda_python11 cuda-python>=11.7.1,<12.0a0
+          - matrix:
+              cuda: "11.2"
+            packages:
+              - &cuda_python11 cuda-python>=11.7.1,<12.0a0
   checks:
     common:
       - output_types: [conda, requirements]
