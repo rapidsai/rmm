@@ -190,7 +190,31 @@ dependencies:
           - numpy>=1.21
     specific:
       - output_types: [conda, requirements, pyproject]
-        <<: *cuda_python_matrix
+        matrices: &cuda_python_matrix
+          - matrix:
+              cuda: "11.2"
+            packages:
+              - *cuda_python11
+          - matrix:
+              cuda: "11.4"
+            packages:
+              - *cuda_python11
+          - matrix:
+              cuda: "11.5"
+            packages:
+              - *cuda_python11
+          - matrix:
+              cuda: "11.6"
+            packages:
+              - *cuda_python11
+          - matrix:
+              cuda: "11.8"
+            packages:
+              - *cuda_python11
+          - matrix:
+              cuda: "12.0"
+            packages:
+              - *cuda_python12
   test_cpp:
     common:
       - output_types: conda
