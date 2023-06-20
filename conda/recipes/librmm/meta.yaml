@@ -137,7 +137,7 @@ outputs:
         - cmake {{ cmake_version }}
       run:
         {% if cuda_major == "11" %}
-        - cudatoolkit
+        - cudatoolkit {{ cuda_spec }}
         {% endif %}
         - cuda-version {{ cuda_spec }}
         - {{ pin_subpackage('librmm', exact=True) }}
