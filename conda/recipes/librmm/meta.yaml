@@ -21,9 +21,9 @@ requirements:
     {% if cuda_major == "11" %}
     - {{ compiler('cuda11') }} {{ cuda_version }}
     {% else %}
-    - cuda-version {{ cuda_version }}
     - {{ compiler('cuda') }}
     {% endif %}
+    - cuda-version ={{ cuda_version }}
     - sysroot_{{ target_platform }} {{ sysroot_version }}
   host:
     {% if cuda_major == "11" %}
@@ -77,7 +77,7 @@ outputs:
         - cmake {{ cmake_version }}
       run:
         {% if cuda_major == "11" %}
-        - cudatoolkit
+        - cudatoolkit {{ cuda_spec }}
         {% endif %}
         - cuda-version {{ cuda_spec }}
         - fmt {{ fmt_version }}

@@ -44,9 +44,9 @@ requirements:
     {% if cuda_major == "11" %}
     - {{ compiler('cuda11') }} {{ cuda_version }}
     {% else %}
-    - cuda-version {{ cuda_version }}
     - {{ compiler('cuda') }}
     {% endif %}
+    - cuda-version ={{ cuda_version }}
     - sysroot_{{ target_platform }} {{ sysroot_version }}
   host:
     {% if cuda_major == "11" %}
@@ -55,8 +55,9 @@ requirements:
     {% else %}
     - cuda-python >=12.0,<13.0a0
     {% endif %}
+    - cuda-version ={{ cuda_version }}
     - cython >=0.29,<0.30
-    - librmm ={{ version }}*=cuda{{ cuda_major }}*
+    - librmm ={{ version }}
     - python
     - scikit-build >=0.13.1
     - setuptools >=61.0.0
@@ -64,11 +65,12 @@ requirements:
   run:
     - cuda-version {{ cuda_spec }}
     {% if cuda_major == "11" %}
-    - cuda-python >=11.7.1,<12.0
+    - cuda-python >=11.7.1,<12.0a0
     - {{ pin_compatible('cudatoolkit', max_pin='x', min_pin='x') }}
     {% else %}
-    - cuda-python >=12.0,<13.0
+    - cuda-python >=12.0,<13.0a0
     {% endif %}
+    - {{ pin_compatible('cuda-version', max_pin='x', min_pin='x') }}
     - numba >=0.57
     - numpy >=1.21
 
