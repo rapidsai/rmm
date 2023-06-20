@@ -21,6 +21,7 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/spdlog.h>
 
+#include <array>
 #include <iostream>
 #include <string>
 
