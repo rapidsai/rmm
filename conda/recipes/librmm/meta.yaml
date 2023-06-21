@@ -133,6 +133,13 @@ outputs:
     requirements:
       build:
         - cmake {{ cmake_version }}
+      host:
+        - cuda-version ={{ cuda_version }}
+        {% if cuda_major == "11" %}
+        - cudatoolkit ={{ cuda_version }}
+        {% else %}
+        - cuda-cudart-dev
+        {% endif %}
       run:
         {% if cuda_major == "11" %}
         - cudatoolkit {{ cuda_spec }}
