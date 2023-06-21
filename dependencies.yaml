@@ -3,7 +3,7 @@ files:
   all:
     output: conda
     matrix:
-      cuda: ["11.8"]
+      cuda: ["11.8", "12.0"]
       arch: [x86_64]
     includes:
       - build
@@ -62,7 +62,6 @@ dependencies:
       - output_types: [conda, requirements, pyproject]
         packages:
           - &cmake_ver cmake>=3.26.4
-          - &cuda_python cuda-python>=11.7.1,<12.0
           - cython>=0.29,<0.30
           - ninja
           - scikit-build>=0.13.1
@@ -76,6 +75,33 @@ dependencies:
         packages:
           - wheel
           - setuptools>=61.0.0
+    specific:
+      - output_types: conda
+        matrices:
+          - matrix:
+              arch: x86_64
+              cuda: "11.8"
+            packages:
+              - nvcc_linux-64=11.8
+          - matrix:
+              arch: aarch64
+              cuda: "11.8"
+            packages:
+              - nvcc_linux-aarch64=11.8
+          - matrix:
+              cuda: "12.0"
+            packages:
+              - cuda-version=12.0
+              - cuda-nvcc
+      - output_types: [conda, requirements, pyproject]
+        matrices:
+          - matrix:
+              cuda: "12.0"
+            packages:
+              - &cuda_python12 cuda-python>=12.0,<13.0a0
+          - matrix: # All CUDA 11 versions
+            packages:
+              - &cuda_python11 cuda-python>=11.7.1,<12.0a0
   checks:
     common:
       - output_types: [conda, requirements]
@@ -105,6 +131,10 @@ dependencies:
               cuda: "11.8"
             packages:
               - cudatoolkit=11.8
+          - matrix:
+              cuda: "12.0"
+            packages:
+              - cuda-version=12.0
   develop:
     common:
       - output_types: [conda, requirements]
@@ -141,7 +171,16 @@ dependencies:
         packages:
           - numba>=0.57
           - numpy>=1.21
-          - *cuda_python
+    specific:
+      - output_types: [conda, requirements, pyproject]
+        matrices:
+          - matrix:
+              cuda: "12.0"
+            packages:
+              - *cuda_python12
+          - matrix: # All CUDA 11 versions
+            packages:
+              - *cuda_python11
   test_cpp:
     common:
       - output_types: conda

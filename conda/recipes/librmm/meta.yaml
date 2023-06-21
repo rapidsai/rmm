@@ -18,10 +18,15 @@ requirements:
     - ninja
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
-    - {{ compiler('cuda') }} {{ cuda_version }}
+    {% if cuda_major == "11" %}
+    - {{ compiler('cuda11') }} {{ cuda_version }}
+    {% else %}
+    - {{ compiler('cuda') }}
+    {% endif %}
+    - cuda-version ={{ cuda_version }}
     - sysroot_{{ target_platform }} {{ sysroot_version }}
   host:
-    - cudatoolkit ={{ cuda_version }}
+    - cuda-version ={{ cuda_version }}
     # We require spdlog and fmt (which was devendored from spdlog
     # conda-forge packages in 1.11.0) so that the spdlog headers are not
     # pulled by CPM and installed as a part of the rmm packages. However,
@@ -60,12 +65,17 @@ outputs:
       run_exports:
         - {{ pin_subpackage("librmm", max_pin="x.x") }}
       ignore_run_exports_from:
-        - {{ compiler('cuda') }}
+        {% if cuda_major == "11" %}
+        - {{ compiler('cuda11') }}
+        {% endif %}
     requirements:
       build:
         - cmake {{ cmake_version }}
       run:
+        {% if cuda_major == "11" %}
         - cudatoolkit {{ cuda_spec }}
+        {% endif %}
+        - cuda-version {{ cuda_spec }}
         - fmt {{ fmt_version }}
         - spdlog {{ spdlog_version }}
     test:
@@ -113,12 +123,24 @@ outputs:
       number: {{ GIT_DESCRIBE_NUMBER }}
       string: cuda{{ cuda_major }}_{{ date_string }}_{{ GIT_DESCRIBE_HASH }}_{{ GIT_DESCRIBE_NUMBER }}
       ignore_run_exports_from:
-        - {{ compiler('cuda') }}
+        {% if cuda_major == "11" %}
+        - {{ compiler('cuda11') }}
+        {% endif %}
     requirements:
       build:
         - cmake {{ cmake_version }}
+      host:
+        - cuda-version ={{ cuda_version }}
+        {% if cuda_major == "11" %}
+        - cudatoolkit ={{ cuda_version }}
+        {% else %}
+        - cuda-cudart-dev
+        {% endif %}
       run:
-        - cudatoolkit {{ cuda_spec }}
+        {% if cuda_major == "11" %}
+        - {{ pin_compatible('cudatoolkit', max_pin='x', min_pin='x') }}
+        {% endif %}
+        - {{ pin_compatible('cuda-version', max_pin='x', min_pin='x') }}
         - {{ pin_subpackage('librmm', exact=True) }}
         - gtest {{ gtest_version }}
         - gmock {{ gtest_version }}

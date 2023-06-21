@@ -32,7 +32,9 @@ build:
     - SCCACHE_S3_USE_SSL
     - SCCACHE_S3_NO_CREDENTIALS
   ignore_run_exports_from:
-    - {{ compiler('cuda') }}
+    {% if cuda_major == "11" %}
+    - {{ compiler('cuda11') }}
+    {% endif %}
 
 requirements:
   build:
@@ -40,11 +42,22 @@ requirements:
     - ninja
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
-    - {{ compiler('cuda') }} {{ cuda_version }}
+    {% if cuda_major == "11" %}
+    - {{ compiler('cuda11') }} {{ cuda_version }}
+    {% else %}
+    - {{ compiler('cuda') }}
+    {% endif %}
+    - cuda-version ={{ cuda_version }}
     - sysroot_{{ target_platform }} {{ sysroot_version }}
   host:
-    - cuda-python >=11.7.1,<12.0
+    - cuda-version ={{ cuda_version }}
+    {% if cuda_major == "11" %}
     - cudatoolkit ={{ cuda_version }}
+    - cuda-python ==11.7.1
+    {% else %}
+    - cuda-cudart-dev
+    - cuda-python ==12.0.0
+    {% endif %}
     - cython >=0.29,<0.30
     - librmm ={{ version }}
     - python
@@ -52,10 +65,12 @@ requirements:
     - setuptools >=61.0.0
     - tomli  # [py<311]
   run:
-    - cuda-python >=11.7.1,<12.0
+    {% if cuda_major == "11" %}
+    - {{ pin_compatible('cudatoolkit', max_pin='x', min_pin='x') }}
+    {% endif %}
+    - {{ pin_compatible('cuda-version', max_pin='x', min_pin='x') }}
     - numba >=0.57
     - numpy >=1.21
-    - {{ pin_compatible('cudatoolkit', max_pin='x', min_pin='x') }}
 
 test:
   imports:
