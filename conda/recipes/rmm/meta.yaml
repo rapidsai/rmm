@@ -52,10 +52,10 @@ requirements:
   host:
     {% if cuda_major == "11" %}
     - cudatoolkit ={{ cuda_version }}
-    - cuda-python 11.7.1
+    - cuda-python ==11.7.1
     {% else %}
     - cuda-cudart-dev
-    - cuda-python 12.0
+    - cuda-python ==12.0
     {% endif %}
     - cuda-version ={{ cuda_version }}
     - cython >=0.29,<0.30
