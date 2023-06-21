@@ -50,10 +50,10 @@ requirements:
   host:
     {% if cuda_major == "11" %}
     - cudatoolkit ={{ cuda_version }}
-    - cuda-python >=11.7.1,<12.0a0
+    - cuda-python 11.7.1
     {% else %}
     - cuda-cudart-dev
-    - cuda-python >=12.0,<13.0a0
+    - cuda-python 12.0
     {% endif %}
     - cuda-version ={{ cuda_version }}
     - cython >=0.29,<0.30
@@ -64,10 +64,7 @@ requirements:
     - tomli  # [py<311]
   run:
     {% if cuda_major == "11" %}
-    - cuda-python >=11.7.1,<12.0a0
     - {{ pin_compatible('cudatoolkit', max_pin='x', min_pin='x') }}
-    {% else %}
-    - cuda-python >=12.0,<13.0a0
     {% endif %}
     - {{ pin_compatible('cuda-version', max_pin='x', min_pin='x') }}
     - numba >=0.57
