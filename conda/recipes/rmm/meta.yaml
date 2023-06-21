@@ -52,6 +52,7 @@ requirements:
     - cudatoolkit ={{ cuda_version }}
     - cuda-python >=11.7.1,<12.0a0
     {% else %}
+    - cuda-cudart-dev
     - cuda-python >=12.0,<13.0a0
     {% endif %}
     - cuda-version ={{ cuda_version }}
