@@ -138,9 +138,9 @@ outputs:
         {% endif %}
       run:
         {% if cuda_major == "11" %}
-        - cudatoolkit {{ cuda_spec }}
+        - {{ pin_compatible('cudatoolkit', max_pin='x', min_pin='x') }}
         {% endif %}
-        - cuda-version {{ cuda_spec }}
+        - {{ pin_compatible('cuda-version', max_pin='x', min_pin='x') }}
         - {{ pin_subpackage('librmm', exact=True) }}
         - gtest {{ gtest_version }}
         - gmock {{ gtest_version }}
