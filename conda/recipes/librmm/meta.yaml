@@ -73,7 +73,7 @@ outputs:
         - cmake {{ cmake_version }}
       run:
         {% if cuda_major == "11" %}
-        - cudatoolkit {{ cuda_spec }}
+        - cudatoolkit
         {% endif %}
         - cuda-version {{ cuda_spec }}
         - fmt {{ fmt_version }}
@@ -132,13 +132,13 @@ outputs:
       host:
         - cuda-version ={{ cuda_version }}
         {% if cuda_major == "11" %}
-        - cudatoolkit ={{ cuda_version }}
+        - cudatoolkit
         {% else %}
         - cuda-cudart-dev
         {% endif %}
       run:
         {% if cuda_major == "11" %}
-        - {{ pin_compatible('cudatoolkit', max_pin='x', min_pin='x') }}
+        - cudatoolkit
         {% endif %}
         - {{ pin_compatible('cuda-version', max_pin='x', min_pin='x') }}
         - {{ pin_subpackage('librmm', exact=True) }}

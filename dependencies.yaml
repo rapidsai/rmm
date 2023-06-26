@@ -114,23 +114,28 @@ dependencies:
           - matrix:
               cuda: "11.2"
             packages:
-              - cudatoolkit=11.2
+              - cuda-version=11.2
+              - cudatoolkit
           - matrix:
               cuda: "11.4"
             packages:
-              - cudatoolkit=11.4
+              - cuda-version=11.4
+              - cudatoolkit
           - matrix:
               cuda: "11.5"
             packages:
-              - cudatoolkit=11.5
+              - cuda-version=11.5
+              - cudatoolkit
           - matrix:
               cuda: "11.6"
             packages:
-              - cudatoolkit=11.6
+              - cuda-version=11.6
+              - cudatoolkit
           - matrix:
               cuda: "11.8"
             packages:
-              - cudatoolkit=11.8
+              - cuda-version=11.8
+              - cudatoolkit
           - matrix:
               cuda: "12.0"
             packages:
