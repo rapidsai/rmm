@@ -6,7 +6,8 @@ channels:
 dependencies:
 - cmake>=3.26.4
 - cuda-python>=11.7.1,<12.0a0
-- cudatoolkit=11.8
+- cuda-version=11.8
+- cudatoolkit
 - cython>=0.29,<0.30
 - fmt>=9.1.0,<10
 - gcovr>=5.0
