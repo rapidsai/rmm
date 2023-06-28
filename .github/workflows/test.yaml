@@ -16,7 +16,7 @@ on:
 jobs:
   cpp-tests:
     secrets: inherit
-    uses: rapidsai/shared-action-workflows/.github/workflows/conda-cpp-tests.yaml@cuda-120
+    uses: rapidsai/shared-action-workflows/.github/workflows/conda-cpp-tests.yaml@new-wheel-containers-cuda-120
     with:
       build_type: nightly
       branch: ${{ inputs.branch }}
@@ -24,7 +24,7 @@ jobs:
       sha: ${{ inputs.sha }}
   python-tests:
     secrets: inherit
-    uses: rapidsai/shared-action-workflows/.github/workflows/conda-python-tests.yaml@cuda-120
+    uses: rapidsai/shared-action-workflows/.github/workflows/conda-python-tests.yaml@new-wheel-containers-cuda-120
     with:
       build_type: nightly
       branch: ${{ inputs.branch }}
@@ -32,7 +32,7 @@ jobs:
       sha: ${{ inputs.sha }}
   wheel-tests:
     secrets: inherit
-    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-manylinux-test.yml@cuda-120
+    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-manylinux-test.yml@new-wheel-containers-cuda-120
     with:
       build_type: nightly
       branch: ${{ inputs.branch }}
