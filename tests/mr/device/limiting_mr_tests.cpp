@@ -30,7 +30,7 @@ using Limiting_adaptor = rmm::mr::limiting_resource_adaptor<rmm::mr::device_memo
 TEST(LimitingTest, ThrowOnNullUpstream)
 {
   auto const max_size{5_MiB};
-  auto construct_nullptr = []() { Limiting_adaptor mr{nullptr, max_size}; };
+  auto construct_nullptr = [max_size]() { Limiting_adaptor mr{nullptr, max_size}; };
   EXPECT_THROW(construct_nullptr(), rmm::logic_error);
 }
 
