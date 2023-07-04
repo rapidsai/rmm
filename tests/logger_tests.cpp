@@ -26,7 +26,12 @@
 #include <cstdlib>
 #include <filesystem>
 #include <thread>
-
+void setenv(char const* name, char const* value, int v) {
+      _putenv_s(name, value);
+}
+void unsetenv(char const* name) {
+      _putenv_s(name, "");
+}
 namespace rmm::test {
 namespace {
 
@@ -67,9 +72,10 @@ class raii_temp_directory {
   {
     std::string random_path{std::filesystem::temp_directory_path().string()};
     random_path += "/rmm_XXXXXX";
-    auto const ptr = mkdtemp(const_cast<char*>(random_path.data()));
-    EXPECT_TRUE((ptr != nullptr));
+    // auto const ptr = mkdtemp(const_cast<char*>(random_path.data()));
+    // EXPECT_TRUE((ptr != nullptr));
     directory_path_ = std::filesystem::path{random_path};
+    EXPECT_TRUE(std::filesystem::create_directory(directory_path_));
   }
   ~raii_temp_directory() { std::filesystem::remove_all(directory_path_); }
 
@@ -78,7 +84,7 @@ class raii_temp_directory {
 
   [[nodiscard]] std::string generate_path(std::string filename) const
   {
-    return directory_path_ / filename;
+    return (directory_path_ / filename).string();
   }
 
  private:
@@ -289,7 +295,11 @@ TEST(Adaptor, STDOUT)
   log_mr.deallocate(ptr, size);
 
   std::string output = testing::internal::GetCapturedStdout();
+  #ifdef _WIN32
+  std::string header = output.substr(0, output.find('\r'));
+  #else
   std::string header = output.substr(0, output.find('\n'));
+  #endif
   ASSERT_EQ(header, log_mr.header());
 }
 
@@ -307,7 +317,11 @@ TEST(Adaptor, STDERR)
   log_mr.deallocate(ptr, size);
 
   std::string output = testing::internal::GetCapturedStderr();
+  #ifdef _WIN32
+  std::string header = output.substr(0, output.find('\r'));
+  #else
   std::string header = output.substr(0, output.find('\n'));
+  #endif
   ASSERT_EQ(header, log_mr.header());
 }
 
