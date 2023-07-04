@@ -52,61 +52,61 @@ inline std::size_t align_to_size_class(std::size_t value) noexcept
   static std::array<std::size_t, 117> size_classes{
     // clang-format off
     // Spacing 256:
-    256UL, 512UL, 768UL, 1024UL, 1280UL, 1536UL, 1792UL, 2048UL,
+    256ULL, 512ULL, 768ULL, 1024ULL, 1280ULL, 1536ULL, 1792ULL, 2048ULL,
     // Spacing 512:
-    2560UL, 3072UL, 3584UL, 4096UL,
+    2560ULL, 3072ULL, 3584ULL, 4096ULL,
     // Spacing 1 KiB:
-    5UL << 10, 6UL << 10, 7UL << 10, 8UL << 10,
+    5ULL << 10, 6ULL << 10, 7ULL << 10, 8ULL << 10,
     // Spacing 2 KiB:
-    10UL << 10, 12UL << 10, 14UL << 10, 16UL << 10,
+    10ULL << 10, 12ULL << 10, 14ULL << 10, 16ULL << 10,
     // Spacing 4 KiB:
-    20UL << 10, 24UL << 10, 28UL << 10, 32UL << 10,
+    20ULL << 10, 24ULL << 10, 28ULL << 10, 32ULL << 10,
     // Spacing 8 KiB:
-    40UL << 10, 48UL << 10, 54UL << 10, 64UL << 10,
+    40ULL << 10, 48ULL << 10, 54ULL << 10, 64ULL << 10,
     // Spacing 16 KiB:
-    80UL << 10, 96UL << 10, 112UL << 10, 128UL << 10,
+    80ULL << 10, 96ULL << 10, 112ULL << 10, 128ULL << 10,
     // Spacing 32 KiB:
-    160UL << 10, 192UL << 10, 224UL << 10, 256UL << 10,
+    160ULL << 10, 192ULL << 10, 224ULL << 10, 256ULL << 10,
     // Spacing 64 KiB:
-    320UL << 10, 384UL << 10, 448UL << 10, 512UL << 10,
+    320ULL << 10, 384ULL << 10, 448ULL << 10, 512ULL << 10,
     // Spacing 128 KiB:
-    640UL << 10, 768UL << 10, 896UL << 10, 1UL << 20,
+    640ULL << 10, 768ULL << 10, 896ULL << 10, 1ULL << 20,
     // Spacing 256 KiB:
-    1280UL << 10, 1536UL << 10, 1792UL << 10, 2UL << 20,
+    1280ULL << 10, 1536ULL << 10, 1792ULL << 10, 2ULL << 20,
     // Spacing 512 KiB:
-    2560UL << 10, 3UL << 20, 3584UL << 10, 4UL << 20,
+    2560ULL << 10, 3ULL << 20, 3584ULL << 10, 4ULL << 20,
     // Spacing 1 MiB:
-    5UL << 20, 6UL << 20, 7UL << 20, 8UL << 20,
+    5ULL << 20, 6ULL << 20, 7ULL << 20, 8ULL << 20,
     // Spacing 2 MiB:
-    10UL << 20, 12UL << 20, 14UL << 20, 16UL << 20,
+    10ULL << 20, 12ULL << 20, 14ULL << 20, 16ULL << 20,
     // Spacing 4 MiB:
-    20UL << 20, 24UL << 20, 28UL << 20, 32UL << 20,
+    20ULL << 20, 24ULL << 20, 28ULL << 20, 32ULL << 20,
     // Spacing 8 MiB:
-    40UL << 20, 48UL << 20, 56UL << 20, 64UL << 20,
+    40ULL << 20, 48ULL << 20, 56ULL << 20, 64ULL << 20,
     // Spacing 16 MiB:
-    80UL << 20, 96UL << 20, 112UL << 20, 128UL << 20,
+    80ULL << 20, 96ULL << 20, 112ULL << 20, 128ULL << 20,
     // Spacing 32 MiB:
-    160UL << 20, 192UL << 20, 224UL << 20, 256UL << 20,
+    160ULL << 20, 192ULL << 20, 224ULL << 20, 256ULL << 20,
     // Spacing 64 MiB:
-    320UL << 20, 384UL << 20, 448UL << 20, 512UL << 20,
+    320ULL << 20, 384ULL << 20, 448ULL << 20, 512ULL << 20,
     // Spacing 128 MiB:
-    640UL << 20, 768UL << 20, 896UL << 20, 1UL << 30,
+    640ULL << 20, 768ULL << 20, 896ULL << 20, 1ULL << 30,
     // Spacing 256 MiB:
-    1280UL << 20, 1536UL << 20, 1792UL << 20, 2UL << 30,
+    1280ULL << 20, 1536ULL << 20, 1792ULL << 20, 2ULL << 30,
     // Spacing 512 MiB:
-    2560UL << 20, 3UL << 30, 3584UL << 20, 4UL << 30,
+    2560ULL << 20, 3ULL << 30, 3584ULL << 20, 4ULL << 30,
     // Spacing 1 GiB:
-    5UL << 30, 6UL << 30, 7UL << 30, 8UL << 30,
+    5ULL << 30, 6ULL << 30, 7ULL << 30, 8ULL << 30,
     // Spacing 2 GiB:
-    10UL << 30, 12UL << 30, 14UL << 30, 16UL << 30,
+    10ULL << 30, 12ULL << 30, 14ULL << 30, 16ULL << 30,
     // Spacing 4 GiB:
-    20UL << 30, 24UL << 30, 28UL << 30, 32UL << 30,
+    20ULL << 30, 24ULL << 30, 28ULL << 30, 32ULL << 30,
     // Spacing 8 GiB:
-    40UL << 30, 48UL << 30, 56UL << 30, 64UL << 30,
+    40ULL << 30, 48ULL << 30, 56ULL << 30, 64ULL << 30,
     // Spacing 16 GiB:
-    80UL << 30, 96UL << 30, 112UL << 30, 128UL << 30,
+    80ULL << 30, 96ULL << 30, 112ULL << 30, 128ULL << 30,
     // Spacing 32 Gib:
-    160UL << 30, 192UL << 30, 224UL << 30, 256UL << 30,
+    160ULL << 30, 192ULL << 30, 224ULL << 30, 256ULL << 30,
     // Catch all:
     std::numeric_limits<std::size_t>::max()
     // clang-format on
@@ -255,9 +255,9 @@ inline bool block_size_compare(block const& lhs, block const& rhs)
 class superblock final : public byte_span {
  public:
   /// Minimum size of a superblock (1 MiB).
-  static constexpr std::size_t minimum_size{1UL << 20};
+  static constexpr std::size_t minimum_size{1ULL << 20};
   /// Maximum size of a superblock (1 TiB), as a sanity check.
-  static constexpr std::size_t maximum_size{1UL << 40};
+  static constexpr std::size_t maximum_size{1ULL << 40};
 
   /**
    * @brief Construct a default superblock.
