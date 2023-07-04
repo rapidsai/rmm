@@ -62,6 +62,13 @@ include(cmake/thirdparty/get_fmt.cmake)
 include(cmake/thirdparty/get_spdlog.cmake)
 include(cmake/thirdparty/get_thrust.cmake)
 
+# inlcude dlfcn.h wrapper
+if (WIN32)
+  find_package(dlfcn-win32 REQUIRED)
+  set(CMAKE_DL_LIBS dlfcn-win32::dl)
+endif ()  
+
+
 # library targets
 add_library(rmm INTERFACE)
 add_library(rmm::rmm ALIAS rmm)
@@ -80,7 +87,8 @@ endif()
 target_link_libraries(rmm INTERFACE rmm::Thrust)
 target_link_libraries(rmm INTERFACE fmt::fmt-header-only)
 target_link_libraries(rmm INTERFACE spdlog::spdlog_header_only)
-target_link_libraries(rmm INTERFACE dl)
+# target_link_libraries(rmm INTERFACE dl)
+target_link_libraries(rmm INTERFACE ${CMAKE_DL_LIBS})
 target_compile_features(rmm INTERFACE cxx_std_17 $<BUILD_INTERFACE:cuda_std_17>)
 
 if((BUILD_TESTS OR BUILD_BENCHMARKS) AND CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
