@@ -27,6 +27,7 @@
 #include <iostream>
 #include <iterator>
 #include <list>
+#include <ciso646>
 
 namespace rmm::mr::detail {
 

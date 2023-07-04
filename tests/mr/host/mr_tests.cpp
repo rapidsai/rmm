@@ -28,6 +28,7 @@
 #include <cstddef>
 #include <deque>
 #include <random>
+#include <ciso646>
 
 namespace rmm::test {
 namespace {
