@@ -145,18 +145,18 @@ class arena_memory_resource final : public device_memory_resource {
     auto& arena = get_arena(stream);
 
     {
-      std::shared_lock lock(mtx_);
+      auto lock = std::shared_lock(mtx_);
       void* pointer = arena.allocate(bytes);
       if (pointer != nullptr) { return pointer; }
     }
 
     {
-      std::unique_lock lock(mtx_);
+      auto lock = std::unique_lock(mtx_);
       defragment();
       void* pointer = arena.allocate(bytes);
       if (pointer == nullptr) {
         if (dump_log_on_failure_) { dump_memory_log(bytes); }
-        RMM_FAIL("Maximum pool size exceeded", rmm::out_of_memory);
+        RMM_FAIL_OOM("Maximum pool size exceeded", rmm::out_of_memory);
       }
       return pointer;
     }
@@ -195,7 +195,7 @@ class arena_memory_resource final : public device_memory_resource {
     auto& arena = get_arena(stream);
 
     {
-      std::shared_lock lock(mtx_);
+      auto lock = std::shared_lock(mtx_);
       // If the memory being freed does not belong to the arena, the following will return false.
       if (arena.deallocate(ptr, bytes, stream)) { return; }
     }
@@ -205,7 +205,7 @@ class arena_memory_resource final : public device_memory_resource {
       // stream is caught up.
       stream.synchronize_no_throw();
 
-      std::unique_lock lock(mtx_);
+      auto lock = std::unique_lock(mtx_);
       deallocate_from_other_arena(ptr, bytes, stream);
     }
   }
@@ -254,12 +254,12 @@ class arena_memory_resource final : public device_memory_resource {
   {
     auto const thread_id = std::this_thread::get_id();
     {
-      std::shared_lock lock(map_mtx_);
+      auto lock = std::shared_lock(map_mtx_);
       auto const iter = thread_arenas_.find(thread_id);
       if (iter != thread_arenas_.end()) { return *iter->second; }
     }
     {
-      std::unique_lock lock(map_mtx_);
+      auto lock = std::unique_lock(map_mtx_);
       auto thread_arena = std::make_shared<arena>(global_arena_);
       thread_arenas_.emplace(thread_id, thread_arena);
       thread_local detail::arena::arena_cleaner<Upstream> cleaner{thread_arena};
@@ -276,12 +276,12 @@ class arena_memory_resource final : public device_memory_resource {
   {
     RMM_LOGGING_ASSERT(!use_per_thread_arena(stream));
     {
-      std::shared_lock lock(map_mtx_);
+      auto lock = std::shared_lock(map_mtx_);
       auto const iter = stream_arenas_.find(stream.value());
       if (iter != stream_arenas_.end()) { return iter->second; }
     }
     {
-      std::unique_lock lock(map_mtx_);
+      auto lock = std::unique_lock(map_mtx_);
       stream_arenas_.emplace(stream.value(), global_arena_);
       return stream_arenas_.at(stream.value());
     }

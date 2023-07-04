@@ -527,7 +527,7 @@ class global_arena final {
    */
   ~global_arena()
   {
-    std::lock_guard lock(mtx_);
+    auto lock = std::lock_guard(mtx_);
     upstream_mr_->deallocate(upstream_block_.pointer(), upstream_block_.size());
   }
 
@@ -549,7 +549,7 @@ class global_arena final {
   {
     // Superblocks should only be acquired if the size is not directly handled by the global arena.
     RMM_LOGGING_ASSERT(!handles(size));
-    std::lock_guard lock(mtx_);
+    auto lock = std::lock_guard(mtx_);
     return first_fit(size);
   }
 
@@ -561,7 +561,7 @@ class global_arena final {
   void release(superblock&& sblk)
   {
     RMM_LOGGING_ASSERT(sblk.is_valid());
-    std::lock_guard lock(mtx_);
+    auto lock = std::lock_guard(mtx_);
     coalesce(std::move(sblk));
   }
 
@@ -572,7 +572,7 @@ class global_arena final {
    */
   void release(std::set<superblock>& superblocks)
   {
-    std::lock_guard lock(mtx_);
+    auto lock = std::lock_guard(mtx_);
     while (!superblocks.empty()) {
       auto sblk = std::move(superblocks.extract(superblocks.cbegin()).value());
       RMM_LOGGING_ASSERT(sblk.is_valid());
@@ -589,7 +589,7 @@ class global_arena final {
   void* allocate(std::size_t size)
   {
     RMM_LOGGING_ASSERT(handles(size));
-    std::lock_guard lock(mtx_);
+    auto lock = std::lock_guard(mtx_);
     auto sblk = first_fit(size);
     if (sblk.is_valid()) {
       auto blk = sblk.first_fit(size);
@@ -625,7 +625,7 @@ class global_arena final {
    */
   bool deallocate(void* ptr, std::size_t bytes)
   {
-    std::lock_guard lock(mtx_);
+    auto lock = std::lock_guard(mtx_);
 
     block const blk{ptr, bytes};
     auto const iter = std::find_if(superblocks_.cbegin(),
@@ -650,7 +650,7 @@ class global_arena final {
    */
   void dump_memory_log(std::shared_ptr<spdlog::logger> const& logger) const
   {
-    std::lock_guard lock(mtx_);
+    auto lock= std::lock_guard(mtx_);
 
     logger->info("  Arena size: {}", rmm::detail::bytes{upstream_block_.size()});
     logger->info("  # superblocks: {}", superblocks_.size());
@@ -820,7 +820,7 @@ class arena {
   void* allocate(std::size_t size)
   {
     if (global_arena_.handles(size)) { return global_arena_.allocate(size); }
-    std::lock_guard lock(mtx_);
+    auto lock = std::lock_guard(mtx_);
     return get_block(size).pointer();
   }
 
@@ -849,7 +849,7 @@ class arena {
    */
   bool deallocate(void* ptr, std::size_t size)
   {
-    std::lock_guard lock(mtx_);
+    auto lock = std::lock_guard(mtx_);
     return deallocate_from_superblock({ptr, size});
   }
 
@@ -858,7 +858,7 @@ class arena {
    */
   void clean()
   {
-    std::lock_guard lock(mtx_);
+    auto lock = std::lock_guard(mtx_);
     global_arena_.release(superblocks_);
     superblocks_.clear();
   }
@@ -868,7 +868,7 @@ class arena {
    */
   void defragment()
   {
-    std::lock_guard lock(mtx_);
+    auto lock = std::lock_guard(mtx_);
     while (true) {
       auto const iter = std::find_if(
         superblocks_.cbegin(), superblocks_.cend(), [](auto const& sblk) { return sblk.empty(); });
