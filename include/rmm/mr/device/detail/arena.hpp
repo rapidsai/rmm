@@ -113,7 +113,7 @@ inline std::size_t align_to_size_class(std::size_t value) noexcept
   };
   // NOLINTEND(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers)
 
-  auto* bound = std::lower_bound(size_classes.begin(), size_classes.end(), value);
+  auto bound = std::lower_bound(size_classes.begin(), size_classes.end(), value);
   RMM_LOGGING_ASSERT(bound != size_classes.end());
   return *bound;
 }
