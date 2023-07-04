@@ -278,7 +278,7 @@ class superblock final : public byte_span {
   }
 
   // Disable copy semantics.
-  superblock(superblock const&)            = delete;
+  superblock(superblock const&)            = default;  // This should not be done. need alternate workaround
   superblock& operator=(superblock const&) = delete;
   // Allow move semantics.
   superblock(superblock&&) noexcept            = default;
