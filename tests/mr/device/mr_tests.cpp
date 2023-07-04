@@ -23,8 +23,7 @@
 namespace rmm::test {
 namespace {
 
-INSTANTIATE_TEST_SUITE_P(ResourceTests,
-                         mr_test,
+auto const values_to_test = 
                          ::testing::Values(mr_factory{"CUDA", &make_cuda},
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
                                            mr_factory{"CUDA_Async", &make_cuda_async},
@@ -33,12 +32,12 @@ INSTANTIATE_TEST_SUITE_P(ResourceTests,
                                            mr_factory{"Pool", &make_pool},
                                            mr_factory{"Arena", &make_arena},
                                            mr_factory{"Binning", &make_binning},
-                                           mr_factory{"Fixed_Size", &make_fixed_size}),
+                                           mr_factory{"Fixed_Size", &make_fixed_size});
+INSTANTIATE_TEST_SUITE_P(ResourceTests,
+                         mr_test, values_to_test,
                          [](auto const& info) { return info.param.name; });
 
-// Leave out fixed-size MR here because it can't handle the dynamic allocation sizes
-INSTANTIATE_TEST_SUITE_P(ResourceAllocationTests,
-                         mr_allocation_test,
+auto const values2_to_test = 
                          ::testing::Values(mr_factory{"CUDA", &make_cuda},
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
                                            mr_factory{"CUDA_Async", &make_cuda_async},
@@ -46,7 +45,10 @@ INSTANTIATE_TEST_SUITE_P(ResourceAllocationTests,
                                            mr_factory{"Managed", &make_managed},
                                            mr_factory{"Pool", &make_pool},
                                            mr_factory{"Arena", &make_arena},
-                                           mr_factory{"Binning", &make_binning}),
+                                           mr_factory{"Binning", &make_binning});
+// Leave out fixed-size MR here because it can't handle the dynamic allocation sizes
+INSTANTIATE_TEST_SUITE_P(ResourceAllocationTests,
+                         mr_allocation_test, values2_to_test,
                          [](auto const& info) { return info.param.name; });
 
 TEST(DefaultTest, CurrentDeviceResourceIsCUDA)
