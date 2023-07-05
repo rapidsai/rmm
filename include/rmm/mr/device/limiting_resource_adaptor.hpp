@@ -140,7 +140,7 @@ class limiting_resource_adaptor final : public device_memory_resource {
     }
 
     allocated_bytes_ -= proposed_size;
-    RMM_FAIL_OOM("Exceeded memory limit", rmm::out_of_memory);
+    RMM_FAIL("Exceeded memory limit", rmm::out_of_memory);
   }
 
   /**

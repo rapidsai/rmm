@@ -193,7 +193,7 @@ class pool_memory_resource final
     RMM_LOG_ERROR("[A][Stream {}][Upstream {}B][FAILURE maximum pool size exceeded]",
                   fmt::ptr(stream.value()),
                   min_size);
-    RMM_FAIL_OOM("Maximum pool size exceeded", rmm::out_of_memory);
+    RMM_FAIL("Maximum pool size exceeded", rmm::out_of_memory);
   }
 
   /**
