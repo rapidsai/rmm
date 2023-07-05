@@ -28,15 +28,9 @@
 #include <thread>
 
 #ifdef _WIN32
-void setenv(char const* name, char const* value, int v) {
-      _putenv_s(name, value);
-}
-void unsetenv(char const* name) {
-      _putenv_s(name, "");
-}
-char* mkdtemp(char *nameTemplate) {
-return _mktemp(nameTemplate);
-}
+void setenv(char const* name, char const* value, int v) { _putenv_s(name, value); }
+void unsetenv(char const* name) { _putenv_s(name, ""); }
+char* mkdtemp(char* nameTemplate) { return _mktemp(nameTemplate); }
 #endif
 
 namespace rmm::test {
@@ -301,11 +295,11 @@ TEST(Adaptor, STDOUT)
   log_mr.deallocate(ptr, size);
 
   std::string output = testing::internal::GetCapturedStdout();
-  #ifdef _WIN32
+#ifdef _WIN32
   std::string header = output.substr(0, output.find('\r'));
-  #else
+#else
   std::string header = output.substr(0, output.find('\n'));
-  #endif
+#endif
   ASSERT_EQ(header, log_mr.header());
 }
 
@@ -323,11 +317,11 @@ TEST(Adaptor, STDERR)
   log_mr.deallocate(ptr, size);
 
   std::string output = testing::internal::GetCapturedStderr();
-  #ifdef _WIN32
+#ifdef _WIN32
   std::string header = output.substr(0, output.find('\r'));
-  #else
+#else
   std::string header = output.substr(0, output.find('\n'));
-  #endif
+#endif
   ASSERT_EQ(header, log_mr.header());
 }
 

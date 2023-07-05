@@ -33,18 +33,17 @@ namespace {
 
 struct mr_test_mt : public mr_test {};
 
-auto const values_to_test = 
-                        ::testing::Values(mr_factory{"CUDA", &make_cuda},
+auto const values_to_test = ::testing::Values(mr_factory{"CUDA", &make_cuda},
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
-                                          mr_factory{"CUDA_Async", &make_cuda_async},
+                                              mr_factory{"CUDA_Async", &make_cuda_async},
 #endif
-                                          mr_factory{"Managed", &make_managed},
-                                          mr_factory{"Pool", &make_pool},
-                                          mr_factory{"Arena", &make_arena},
-                                          mr_factory{"Binning", &make_binning});
-INSTANTIATE_TEST_CASE_P(MultiThreadResourceTests,
-                        mr_test_mt, values_to_test,
-                        [](auto const& info) { return info.param.name; });
+                                              mr_factory{"Managed", &make_managed},
+                                              mr_factory{"Pool", &make_pool},
+                                              mr_factory{"Arena", &make_arena},
+                                              mr_factory{"Binning", &make_binning});
+INSTANTIATE_TEST_CASE_P(MultiThreadResourceTests, mr_test_mt, values_to_test, [](auto const& info) {
+  return info.param.name;
+});
 
 template <typename Task, typename... Arguments>
 void spawn_n(std::size_t num_threads, Task task, Arguments&&... args)

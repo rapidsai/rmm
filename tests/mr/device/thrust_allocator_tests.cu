@@ -46,18 +46,17 @@ TEST_P(allocator_test, defaults)
   EXPECT_EQ(allocator.stream(), rmm::cuda_stream_default);
   EXPECT_EQ(allocator.resource(), rmm::mr::get_current_device_resource());
 }
-auto const test_values = 
-                        ::testing::Values(mr_factory{"CUDA", &make_cuda},
+auto const test_values = ::testing::Values(mr_factory{"CUDA", &make_cuda},
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
-                                          mr_factory{"CUDA_Async", &make_cuda_async},
+                                           mr_factory{"CUDA_Async", &make_cuda_async},
 #endif
-                                          mr_factory{"Managed", &make_managed},
-                                          mr_factory{"Pool", &make_pool},
-                                          mr_factory{"Arena", &make_arena},
-                                          mr_factory{"Binning", &make_binning});
-INSTANTIATE_TEST_CASE_P(ThrustAllocatorTests,
-                        allocator_test, test_values,
-                        [](auto const& info) { return info.param.name; });
+                                           mr_factory{"Managed", &make_managed},
+                                           mr_factory{"Pool", &make_pool},
+                                           mr_factory{"Arena", &make_arena},
+                                           mr_factory{"Binning", &make_binning});
+INSTANTIATE_TEST_CASE_P(ThrustAllocatorTests, allocator_test, test_values, [](auto const& info) {
+  return info.param.name;
+});
 
 }  // namespace
 }  // namespace rmm::test

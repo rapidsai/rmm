@@ -277,12 +277,12 @@ class superblock final : public byte_span {
     free_blocks_.emplace(pointer, size);
   }
 
-  // Disable copy semantics.
-  #ifdef _WIN32
-  superblock(superblock const&)            = default;  // This should not be done. need alternate workaround
-  #else
-  superblock(superblock const&)            = delete;
-  #endif
+// Disable copy semantics.
+#ifdef _WIN32
+  superblock(superblock const&) = default;  // This should not be done. need alternate workaround
+#else
+  superblock(superblock const&) = delete;
+#endif
   superblock& operator=(superblock const&) = delete;
   // Allow move semantics.
   superblock(superblock&&) noexcept            = default;
@@ -654,7 +654,7 @@ class global_arena final {
    */
   void dump_memory_log(std::shared_ptr<spdlog::logger> const& logger) const
   {
-    auto lock= std::lock_guard(mtx_);
+    auto lock = std::lock_guard(mtx_);
 
     logger->info("  Arena size: {}", rmm::detail::bytes{upstream_block_.size()});
     logger->info("  # superblocks: {}", superblocks_.size());

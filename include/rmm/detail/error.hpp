@@ -106,10 +106,11 @@ class out_of_range : public std::out_of_range {
  * @throw `_exception_type` if the condition evaluates to 0 (false).
  */
 #ifdef _WIN32
-// MSVC preprocessor backward compatibility workaround 
+// MSVC preprocessor backward compatibility workaround
 // https://developercommunity.visualstudio.com/t/-va-args-seems-to-be-trated-as-a-single-parameter/460154
 #define MSVC_COMPAT_RMM_EXPECTS(tuple) GET_RMM_EXPECTS_MACRO tuple
-#define RMM_EXPECTS(...) MSVC_COMPAT_RMM_EXPECTS((__VA_ARGS__, RMM_EXPECTS_3, RMM_EXPECTS_2)) \
+#define RMM_EXPECTS(...)                                               \
+  MSVC_COMPAT_RMM_EXPECTS((__VA_ARGS__, RMM_EXPECTS_3, RMM_EXPECTS_2)) \
   (__VA_ARGS__)
 #else
 #define RMM_EXPECTS(...)                                           \
@@ -138,9 +139,10 @@ class out_of_range : public std::out_of_range {
  * ```
  */
 #ifdef _WIN32
-// MSVC preprocessor backward compatibility workaround 
+// MSVC preprocessor backward compatibility workaround
 #define MSVC_COMPAT_RMM_FAIL(tuple) GET_RMM_FAIL_MACRO tuple
-#define RMM_FAIL(...) MSVC_COMPAT_RMM_FAIL((__VA_ARGS__, RMM_FAIL_2, RMM_FAIL_1)) \
+#define RMM_FAIL(...)                                         \
+  MSVC_COMPAT_RMM_FAIL((__VA_ARGS__, RMM_FAIL_2, RMM_FAIL_1)) \
   (__VA_ARGS__)
 #else
 #define RMM_FAIL(...)                                     \

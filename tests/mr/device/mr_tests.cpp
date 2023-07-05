@@ -23,32 +23,31 @@
 namespace rmm::test {
 namespace {
 
-auto const values_to_test = 
-                         ::testing::Values(mr_factory{"CUDA", &make_cuda},
+auto const values_to_test = ::testing::Values(mr_factory{"CUDA", &make_cuda},
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
-                                           mr_factory{"CUDA_Async", &make_cuda_async},
+                                              mr_factory{"CUDA_Async", &make_cuda_async},
 #endif
-                                           mr_factory{"Managed", &make_managed},
-                                           mr_factory{"Pool", &make_pool},
-                                           mr_factory{"Arena", &make_arena},
-                                           mr_factory{"Binning", &make_binning},
-                                           mr_factory{"Fixed_Size", &make_fixed_size});
-INSTANTIATE_TEST_SUITE_P(ResourceTests,
-                         mr_test, values_to_test,
-                         [](auto const& info) { return info.param.name; });
+                                              mr_factory{"Managed", &make_managed},
+                                              mr_factory{"Pool", &make_pool},
+                                              mr_factory{"Arena", &make_arena},
+                                              mr_factory{"Binning", &make_binning},
+                                              mr_factory{"Fixed_Size", &make_fixed_size});
+INSTANTIATE_TEST_SUITE_P(ResourceTests, mr_test, values_to_test, [](auto const& info) {
+  return info.param.name;
+});
 
-auto const values2_to_test = 
-                         ::testing::Values(mr_factory{"CUDA", &make_cuda},
+auto const values2_to_test = ::testing::Values(mr_factory{"CUDA", &make_cuda},
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
-                                           mr_factory{"CUDA_Async", &make_cuda_async},
+                                               mr_factory{"CUDA_Async", &make_cuda_async},
 #endif
-                                           mr_factory{"Managed", &make_managed},
-                                           mr_factory{"Pool", &make_pool},
-                                           mr_factory{"Arena", &make_arena},
-                                           mr_factory{"Binning", &make_binning});
+                                               mr_factory{"Managed", &make_managed},
+                                               mr_factory{"Pool", &make_pool},
+                                               mr_factory{"Arena", &make_arena},
+                                               mr_factory{"Binning", &make_binning});
 // Leave out fixed-size MR here because it can't handle the dynamic allocation sizes
 INSTANTIATE_TEST_SUITE_P(ResourceAllocationTests,
-                         mr_allocation_test, values2_to_test,
+                         mr_allocation_test,
+                         values2_to_test,
                          [](auto const& info) { return info.param.name; });
 
 TEST(DefaultTest, CurrentDeviceResourceIsCUDA)
