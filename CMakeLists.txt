@@ -62,12 +62,11 @@ include(cmake/thirdparty/get_fmt.cmake)
 include(cmake/thirdparty/get_spdlog.cmake)
 include(cmake/thirdparty/get_thrust.cmake)
 
-# inlcude dlfcn.h wrapper
+# include dlfcn.h wrapper
 if (WIN32)
   find_package(dlfcn-win32 REQUIRED)
   set(CMAKE_DL_LIBS dlfcn-win32::dl)
-endif ()  
-
+endif()
 
 # library targets
 add_library(rmm INTERFACE)

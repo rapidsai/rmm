@@ -20,6 +20,11 @@ if(PER_THREAD_DEFAULT_STREAM)
   message(STATUS "RMM: Building benchmarks with per-thread default stream")
 endif()
 
+set(CMAKE_PTHREAD_LIB pthread)
+if (WIN32)
+  set(CMAKE_PTHREAD_LIB pthreadVC3)
+endif()
+
 # compiler function
 
 # This function takes in a benchmark name and benchmark source and handles setting all of the
@@ -34,7 +39,7 @@ function(ConfigureBench BENCH_NAME)
                RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${RMM_BINARY_DIR}/gbenchmarks>"
                CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
                INSTALL_RPATH "\$ORIGIN/../../../lib")
-  target_link_libraries(${BENCH_NAME} benchmark::benchmark pthreadVC3 rmm)
+  target_link_libraries(${BENCH_NAME} benchmark::benchmark ${CMAKE_PTHREAD_LIB} rmm)
   target_compile_definitions(${BENCH_NAME}
                              PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
 

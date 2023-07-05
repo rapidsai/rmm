@@ -19,13 +19,18 @@ option(CODE_COVERAGE "Enable generating code coverage with gcov." OFF)
 include(rapids-test)
 rapids_test_init()
 
+set(CMAKE_PTHREAD_LIB pthread)
+if (WIN32)
+  set(CMAKE_PTHREAD_LIB pthreadVC3)
+endif()
+
 # This function takes in a test name and test source and handles setting all of the associated
 # properties and linking to build the test
 function(ConfigureTestInternal TEST_NAME)
   add_executable(${TEST_NAME} ${ARGN})
   target_include_directories(${TEST_NAME} PRIVATE "$<BUILD_INTERFACE:${RMM_SOURCE_DIR}>")
   target_link_libraries(${TEST_NAME} GTest::gmock GTest::gtest GTest::gmock_main GTest::gtest_main
-                        pthreadVC3 rmm)
+                        ${CMAKE_PTHREAD_LIB} rmm)
   set_target_properties(
     ${TEST_NAME}
     PROPERTIES POSITION_INDEPENDENT_CODE ON
