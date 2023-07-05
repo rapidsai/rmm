@@ -278,7 +278,11 @@ class superblock final : public byte_span {
   }
 
   // Disable copy semantics.
+  #ifdef _WIN32
   superblock(superblock const&)            = default;  // This should not be done. need alternate workaround
+  #else
+  superblock(superblock const&)            = delete;
+  #endif
   superblock& operator=(superblock const&) = delete;
   // Allow move semantics.
   superblock(superblock&&) noexcept            = default;

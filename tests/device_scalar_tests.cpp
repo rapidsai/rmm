@@ -69,7 +69,7 @@ struct DeviceScalarTest : public ::testing::Test {
 
 using Types = ::testing::Types<bool,
 #ifndef _WIN32
-// int8_t, 
+ int8_t,
 //because C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.36.32532\include\random(2007,5):
 //error C2338: static_assert failed: 'note: char, signed char, unsigned char, char8_t, int8_t, and uint8_t are not allowed'
 #endif

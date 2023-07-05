@@ -26,12 +26,19 @@
 #include <cstdlib>
 #include <filesystem>
 #include <thread>
+
+#ifdef _WIN32
 void setenv(char const* name, char const* value, int v) {
       _putenv_s(name, value);
 }
 void unsetenv(char const* name) {
       _putenv_s(name, "");
 }
+char* mkdtemp(char *nameTemplate) {
+return _mktemp(nameTemplate);
+}
+#endif
+
 namespace rmm::test {
 namespace {
 
@@ -72,10 +79,9 @@ class raii_temp_directory {
   {
     std::string random_path{std::filesystem::temp_directory_path().string()};
     random_path += "/rmm_XXXXXX";
-    // auto const ptr = mkdtemp(const_cast<char*>(random_path.data()));
-    // EXPECT_TRUE((ptr != nullptr));
+    auto const ptr = mkdtemp(const_cast<char*>(random_path.data()));
+    EXPECT_TRUE((ptr != nullptr));
     directory_path_ = std::filesystem::path{random_path};
-    EXPECT_TRUE(std::filesystem::create_directory(directory_path_));
   }
   ~raii_temp_directory() { std::filesystem::remove_all(directory_path_); }
 
