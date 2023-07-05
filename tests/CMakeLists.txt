@@ -20,7 +20,7 @@ include(rapids-test)
 rapids_test_init()
 
 set(CMAKE_PTHREAD_LIB pthread)
-if (WIN32)
+if(WIN32)
   set(CMAKE_PTHREAD_LIB pthreadVC3)
 endif()
 

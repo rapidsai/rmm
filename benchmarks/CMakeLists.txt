@@ -21,7 +21,7 @@ if(PER_THREAD_DEFAULT_STREAM)
 endif()
 
 set(CMAKE_PTHREAD_LIB pthread)
-if (WIN32)
+if(WIN32)
   set(CMAKE_PTHREAD_LIB pthreadVC3)
 endif()
 

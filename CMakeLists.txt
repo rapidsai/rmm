@@ -63,7 +63,7 @@ include(cmake/thirdparty/get_spdlog.cmake)
 include(cmake/thirdparty/get_thrust.cmake)
 
 # include dlfcn.h wrapper
-if (WIN32)
+if(WIN32)
   find_package(dlfcn-win32 REQUIRED)
   set(CMAKE_DL_LIBS dlfcn-win32::dl)
 endif()
