@@ -5,8 +5,8 @@ channels:
 - conda-forge
 dependencies:
 - cmake>=3.26.4
-#- cuda-nvcc
-#- cuda-python>=12.0,<13.0a0
+- cuda-nvcc
+- cuda-python>=12.0,<13.0a0
 - cuda-version=12.0
 - cython>=0.29,<0.30
 - fmt>=9.1.0,<10
@@ -21,5 +21,4 @@ dependencies:
 - scikit-build>=0.13.1
 - spdlog>=1.11.0,<1.12
 - tomli
-- dlfcn-win32
 name: all_cuda-120_arch-x86_64
