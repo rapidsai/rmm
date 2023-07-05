@@ -39,8 +39,13 @@ struct dynamic_load_runtime {
     auto open_cudart  = []() {
       ::dlerror();
       const int major               = CUDART_VERSION / 1000;
+      #ifndef _WIN32
       const std::string libname_ver = "libcudart.so." + std::to_string(major) + ".0";
       const std::string libname     = "libcudart.so";
+      #else
+      const std::string libname_ver = "cudart64_" +  std::to_string(major) + ".dll";
+      const std::string libname     = "cudart64.dll";
+      #endif
 
       auto ptr = ::dlopen(libname_ver.c_str(), RTLD_LAZY);
       if (!ptr) { ptr = ::dlopen(libname.c_str(), RTLD_LAZY); }
