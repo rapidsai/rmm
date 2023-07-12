@@ -27,7 +27,6 @@ HELP="$0 [clean] [librmm] [rmm] [-v] [-g] [-n] [-s] [--ptds] [--cmake-args=\"<ar
    tests                       - build tests
    -v                          - verbose build mode
    -g                          - build for debug
-   -n                          - no install step
    -s                          - statically link against cudart
    --ptds                      - enable per-thread default stream
    --cmake-args=\\\"<args>\\\" - pass arbitrary list of CMake configuration options (escape all quotes in argument)
@@ -42,12 +41,10 @@ BUILD_DIRS="${LIBRMM_BUILD_DIR} ${RMM_BUILD_DIR}"
 # Set defaults for vars modified by flags to this script
 VERBOSE_FLAG=""
 BUILD_TYPE=Release
-INSTALL_TARGET=install
 BUILD_BENCHMARKS=OFF
 BUILD_TESTS=OFF
 CUDA_STATIC_RUNTIME=OFF
 PER_THREAD_DEFAULT_STREAM=OFF
-RAN_CMAKE=0
 
 # Set defaults for vars that may not have been defined externally
 # If INSTALL_PREFIX is not set, check PREFIX, then check
@@ -82,24 +79,6 @@ function cmakeArgs {
 }
 
 
-# Runs cmake if it has not been run already for build directory
-# LIBRMM_BUILD_DIR
-function ensureCMakeRan {
-    mkdir -p "${LIBRMM_BUILD_DIR}"
-    if (( RAN_CMAKE == 0 )); then
-        echo "Executing cmake for librmm..."
-        cmake -B "${LIBRMM_BUILD_DIR}" -S . \
-              -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" \
-              -DCUDA_STATIC_RUNTIME="${CUDA_STATIC_RUNTIME}" \
-              -DPER_THREAD_DEFAULT_STREAM="${PER_THREAD_DEFAULT_STREAM}" \
-              -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
-              -DBUILD_TESTS=${BUILD_TESTS} \
-              -DBUILD_BENCHMARKS=${BUILD_BENCHMARKS} \
-              ${EXTRA_CMAKE_ARGS}
-        RAN_CMAKE=1
-    fi
-}
-
 if hasArg -h || hasArg --help; then
     echo "${HELP}"
     exit 0
@@ -125,9 +104,6 @@ fi
 if hasArg -g; then
     BUILD_TYPE=Debug
 fi
-if hasArg -n; then
-    INSTALL_TARGET=""
-fi
 if hasArg benchmarks; then
     BUILD_BENCHMARKS=ON
 fi
@@ -142,8 +118,9 @@ if hasArg --ptds; then
 fi
 
 # Append `-DFIND_RMM_CPP=ON` to CMAKE_ARGS unless a user specified the option.
+SKBUILD_EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS}"
 if [[ "${EXTRA_CMAKE_ARGS}" != *"DFIND_RMM_CPP"* ]]; then
-    EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DFIND_RMM_CPP=ON"
+    SKBUILD_EXTRA_CMAKE_ARGS="${SKBUILD_EXTRA_CMAKE_ARGS} -DFIND_RMM_CPP=ON"
 fi
 
 # If clean given, run it prior to any other steps
@@ -163,26 +140,22 @@ fi
 ################################################################################
 # Configure, build, and install librmm
 if (( NUMARGS == 0 )) || hasArg librmm; then
-    ensureCMakeRan
-    echo "building librmm..."
-    cmake --build "${LIBRMM_BUILD_DIR}" -j${PARALLEL_LEVEL} ${VERBOSE_FLAG}
-    if [[ ${INSTALL_TARGET} != "" ]]; then
-        echo "installing librmm..."
-        cmake --build "${LIBRMM_BUILD_DIR}" --target install -v ${VERBOSE_FLAG}
-    fi
+    echo "Executing cmake for librmm..."
+    cmake -B "${LIBRMM_BUILD_DIR}" -S . \
+            -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" \
+            -DCUDA_STATIC_RUNTIME="${CUDA_STATIC_RUNTIME}" \
+            -DPER_THREAD_DEFAULT_STREAM="${PER_THREAD_DEFAULT_STREAM}" \
+            -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+            -DBUILD_TESTS=${BUILD_TESTS} \
+            -DBUILD_BENCHMARKS=${BUILD_BENCHMARKS} \
+            ${EXTRA_CMAKE_ARGS}
+
+    echo "building and installing librmm..."
+    cmake --build "${LIBRMM_BUILD_DIR}" -j${PARALLEL_LEVEL} --target install ${VERBOSE_FLAG}
 fi
 
 # Build and install the rmm Python package
 if (( NUMARGS == 0 )) || hasArg rmm; then
-    cd "${REPODIR}/python"
-    export INSTALL_PREFIX
-    echo "building rmm..."
-
-    python setup.py build_ext --inplace -- -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX} ${EXTRA_CMAKE_ARGS}
-
-    if [[ ${INSTALL_TARGET} != "" ]]; then
-        echo "installing rmm..."
-        python setup.py install --single-version-externally-managed --record=record.txt -- -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX} ${EXTRA_CMAKE_ARGS}
-    fi
-
+    echo "building and installing rmm..."
+    SKBUILD_CONFIGURE_OPTIONS="${SKBUILD_EXTRA_CMAKE_ARGS}" python -m pip install --no-build-isolation --no-deps ${REPODIR}/python
 fi
