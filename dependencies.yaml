@@ -107,6 +107,7 @@ dependencies:
       - output_types: [conda, requirements]
         packages:
           - pre-commit
+          - identify>=2.5.20
   cudatoolkit:
     specific:
       - output_types: conda
