@@ -22,15 +22,6 @@ repos:
       hooks:
           - id: black
             args: ["--config=python/pyproject.toml"]
-    - repo: https://github.com/PyCQA/flake8
-      rev: 5.0.4
-      hooks:
-          - id: flake8
-            args: ["--config=python/.flake8"]
-            files: python/.*$
-            types: [file]
-            types_or: [python, cython]
-            additional_dependencies: ["flake8-force"]
     - repo: https://github.com/MarcoGorelli/cython-lint
       rev: v0.15.0
       hooks:
