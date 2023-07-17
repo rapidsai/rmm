@@ -78,6 +78,11 @@ repos:
               # of dependencies, so we'll have to update this manually.
               additional_dependencies:
                 - cmakelang==0.6.13
+    - repo: https://github.com/astral-sh/ruff-pre-commit
+      rev: v0.0.278
+      hooks:
+        - id: ruff
+          files: python/.*$
 
 default_language_version:
     python: python3
