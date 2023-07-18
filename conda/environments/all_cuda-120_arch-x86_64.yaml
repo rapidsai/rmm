@@ -4,12 +4,15 @@ channels:
 - rapidsai
 - conda-forge
 dependencies:
+- c-compiler
 - cmake>=3.26.4
 - cuda-nvcc
 - cuda-python>=12.0,<13.0a0
 - cuda-version=12.0
+- cxx-compiler
 - cython>=0.29,<0.30
 - fmt>=9.1.0,<10
+- gcc_linux-64=11.*
 - gcovr>=5.0
 - ninja
 - numba>=0.57
@@ -20,5 +23,6 @@ dependencies:
 - python>=3.9,<3.11
 - scikit-build>=0.13.1
 - spdlog>=1.11.0,<1.12
+- sysroot_linux-64==2.17
 - tomli
 name: all_cuda-120_arch-x86_64
