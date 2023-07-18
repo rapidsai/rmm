@@ -11,6 +11,7 @@ dependencies:
 - cython>=0.29,<0.30
 - fmt>=9.1.0,<10
 - gcovr>=5.0
+- identify>=2.5.20
 - ninja
 - numba>=0.57
 - numpy>=1.21
