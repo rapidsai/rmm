@@ -14,6 +14,7 @@ PIP_EXTRA_INDEX_URL="https://pypi.k8s.rapids.ai/simple"
 python -m pip install -v $(echo ./dist/rmm*.whl)[test]
 
 # Run smoke tests for aarch64 pull requests
+arch=$(uname -m)
 if [ "${arch}" == "aarch64" && ${RAPIDS_BUILD_TYPE} == "pull-request" ]; then
     python ./ci/wheel_smoke_test.py
 else
