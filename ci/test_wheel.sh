@@ -11,8 +11,9 @@ RAPIDS_PY_WHEEL_NAME="rmm_${RAPIDS_PY_CUDA_SUFFIX}" rapids-download-wheels-from-
 PIP_EXTRA_INDEX_URL="https://pypi.k8s.rapids.ai/simple"
 python -m pip install -v ./dist/rmm*.whl[test]
 
-if [ "${arch}" == "x86_64" ]; then
-    python -m pytest ./python/rmm/tests
-elif [ "${arch}" == "aarch64" ]; then
+# Run smoke tests for aarch64 pull requests
+if [ "${arch}" == "aarch64" && ${RAPIDS_BUILD_TYPE} == "pull-request" ]; then
     python ./ci/wheel_smoke_test.py
+else
+    python -m pytest ./python/rmm/tests
 fi
