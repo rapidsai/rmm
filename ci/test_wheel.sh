@@ -11,7 +11,7 @@ RAPIDS_PY_WHEEL_NAME="rmm_${RAPIDS_PY_CUDA_SUFFIX}" rapids-download-wheels-from-
 PIP_EXTRA_INDEX_URL="https://pypi.k8s.rapids.ai/simple"
 
 # echo to expand wildcard before adding `[extra]` requires for pip
-python -m pip install -v $(echo ./dist/${RAPIDS_PY_WHEEL_NAME}*.whl)[test]
+python -m pip install -v $(echo ./dist/rmm*.whl)[test]
 
 # Run smoke tests for aarch64 pull requests
 if [ "${arch}" == "aarch64" && ${RAPIDS_BUILD_TYPE} == "pull-request" ]; then
