@@ -18,7 +18,6 @@ git diff
 
 cd python
 
-# Hardcode the output dir
 SKBUILD_CONFIGURE_OPTIONS="-DRMM_BUILD_WHEELS=ON" python -m pip wheel . -w dist -vvv --no-deps --disable-pip-version-check
 
 mkdir -p final_dist
