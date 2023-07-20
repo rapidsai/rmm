@@ -67,10 +67,22 @@ jobs:
     uses: rapidsai/shared-action-workflows/.github/workflows/wheels-build.yaml@branch-23.08
     with:
       build_type: pull-request
-      build_script: ci/build_wheel.sh
+      script: ci/build_wheel.sh
   wheel-tests:
     needs: wheel-build
     secrets: inherit
     uses: rapidsai/shared-action-workflows/.github/workflows/wheels-test.yaml@feat/local-test
     with:
       build_type: pull-request
+      script: ci/test_wheel.sh
+  #       WARNING: REMOVE THIS WHEN SWITCHING BACK TO THE MAIN BRANCH AND MERGING THIS PR.
+  wheel-publish:
+    needs: wheel-build
+    secrets: inherit
+    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-publish.yml@local-test
+    with:
+      build_type: ${{ inputs.build_type || 'branch' }}
+      branch: ${{ inputs.branch }}
+      sha: ${{ inputs.sha }}
+      date: ${{ inputs.date }}
+      package-name: rmm
