@@ -20,6 +20,8 @@ jobs:
       - docs-build
       - wheel-build
       - wheel-tests
+  #       WARNING: REMOVE THIS WHEN SWITCHING BACK TO THE MAIN BRANCH AND MERGING THIS PR.
+      - wheel-publish
     secrets: inherit
     uses: rapidsai/shared-action-workflows/.github/workflows/pr-builder.yaml@branch-23.08
   checks:
