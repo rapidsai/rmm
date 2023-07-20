@@ -32,7 +32,7 @@ jobs:
       sha: ${{ inputs.sha }}
   wheel-tests:
     secrets: inherit
-    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-test.yml@local-test
+    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-test.yml@feat/local-test
     with:
       build_type: nightly
       branch: ${{ inputs.branch }}
