@@ -68,19 +68,17 @@ jobs:
       run_script: "ci/build_docs.sh"
   wheel-build:
     secrets: inherit
-    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-manylinux-build.yml@branch-23.10
+    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-build.yaml@branch-23.10
     with:
       build_type: ${{ inputs.build_type || 'branch' }}
       branch: ${{ inputs.branch }}
       sha: ${{ inputs.sha }}
       date: ${{ inputs.date }}
-      package-name: rmm
-      package-dir: python
-      skbuild-configure-options: "-DRMM_BUILD_WHEELS=ON"
+      script: ci/build_wheel.sh
   wheel-publish:
     needs: wheel-build
     secrets: inherit
-    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-manylinux-publish.yml@branch-23.10
+    uses: rapidsai/shared-action-workflows/.github/workflows/wheels-publish.yaml@branch-23.10
     with:
       build_type: ${{ inputs.build_type || 'branch' }}
       branch: ${{ inputs.branch }}
