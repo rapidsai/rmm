@@ -8,7 +8,7 @@ dependencies:
 - cuda-python>=11.7.1,<12.0a0
 - cuda-version=11.8
 - cudatoolkit
-- cython>=0.29,<0.30
+- cython>=3.0.0
 - fmt>=9.1.0,<10
 - gcovr>=5.0
 - identify>=2.5.20
