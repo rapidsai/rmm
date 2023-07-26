@@ -172,7 +172,7 @@ cdef class DeviceBuffer:
 
     @staticmethod
     cdef DeviceBuffer c_to_device(const unsigned char[::1] b,
-                                  Stream stream=DEFAULT_STREAM):
+                                  Stream stream=DEFAULT_STREAM) except *:
         """Calls ``to_device`` function on arguments provided"""
         return to_device(b, stream)
 

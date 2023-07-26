@@ -48,7 +48,7 @@ cdef class Stream:
                 self._init_from_cupy_stream(obj)
 
     @staticmethod
-    cdef Stream _from_cudaStream_t(cudaStream_t s, object owner=None):
+    cdef Stream _from_cudaStream_t(cudaStream_t s, object owner=None) except *:
         """
         Construct a Stream from a cudaStream_t.
         """
