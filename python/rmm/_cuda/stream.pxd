@@ -26,8 +26,8 @@ cdef class Stream:
     @staticmethod
     cdef Stream _from_cudaStream_t(cudaStream_t s, object owner=*)
 
-    cdef cuda_stream_view view(self) nogil except *
-    cdef void c_synchronize(self) nogil except *
-    cdef bool c_is_default(self) nogil except *
+    cdef cuda_stream_view view(self) except * nogil
+    cdef void c_synchronize(self) except * nogil
+    cdef bool c_is_default(self) except * nogil
     cdef void _init_with_new_cuda_stream(self) except *
     cdef void _init_from_stream(self, Stream stream) except *
