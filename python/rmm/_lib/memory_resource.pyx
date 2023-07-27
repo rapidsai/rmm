@@ -14,10 +14,12 @@
 
 import os
 import warnings
+from builtins import BaseException
 from collections import defaultdict
 
 cimport cython
 from cython.operator cimport dereference as deref
+from libc.stddef cimport size_t
 from libc.stdint cimport int8_t, int64_t, uintptr_t
 from libcpp cimport bool
 from libcpp.memory cimport make_unique, unique_ptr
