@@ -14,6 +14,7 @@ dependencies:
 - fmt>=9.1.0,<10
 - gcc_linux-64=11.*
 - gcovr>=5.0
+- identify>=2.5.20
 - ninja
 - numba>=0.57
 - numpy>=1.21
