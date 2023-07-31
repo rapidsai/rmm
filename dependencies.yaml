@@ -155,6 +155,7 @@ dependencies:
           - doxygen=1.8.20
           - graphviz
           - ipython
+          - make
           - nbsphinx
           - numpydoc
           - sphinx
