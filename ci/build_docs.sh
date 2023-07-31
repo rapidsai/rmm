@@ -37,8 +37,8 @@ popd
 
 rapids-logger "Build Python docs"
 pushd python/docs
-sphinx-build -b dirhtml . _html
-sphinx-build -b text . _text
+make dirhtml BUILDDIR=_html
+make text BUILDDIR=_text
 mkdir -p "${RAPIDS_DOCS_DIR}/rmm/"{html,txt}
 mv _html/* "${RAPIDS_DOCS_DIR}/rmm/html"
 mv _text/* "${RAPIDS_DOCS_DIR}/rmm/txt"
