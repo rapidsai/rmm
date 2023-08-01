@@ -90,11 +90,17 @@ class callback_memory_resource final : public device_memory_resource {
   {
   }
 
-  callback_memory_resource()                                               = delete;
-  ~callback_memory_resource() override                                     = default;
-  callback_memory_resource(callback_memory_resource const&)                = delete;
-  callback_memory_resource& operator=(callback_memory_resource const&)     = delete;
-  callback_memory_resource(callback_memory_resource&&) noexcept            = default;
+  callback_memory_resource()                                           = delete;
+  ~callback_memory_resource() override                                 = default;
+  callback_memory_resource(callback_memory_resource const&)            = delete;  ///< Non-copyable
+  callback_memory_resource& operator=(callback_memory_resource const&) = delete;  ///< Non-copyable
+  callback_memory_resource(callback_memory_resource&&) noexcept =
+    default;  ///< Default move constructor
+  /**
+   * @brief Default move assignment operator
+   *
+   * @return A reference to the assigned-to object.
+   */
   callback_memory_resource& operator=(callback_memory_resource&&) noexcept = default;
 
  private:

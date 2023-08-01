@@ -77,11 +77,27 @@ class cuda_async_view_memory_resource final : public device_memory_resource {
   [[nodiscard]] cudaMemPool_t pool_handle() const noexcept { return cuda_pool_handle_; }
 #endif
 
-  cuda_async_view_memory_resource()                                                  = default;
-  cuda_async_view_memory_resource(cuda_async_view_memory_resource const&)            = default;
-  cuda_async_view_memory_resource(cuda_async_view_memory_resource&&)                 = default;
+  cuda_async_view_memory_resource() = default;
+  /**
+   * @brief Default copy constructor
+   */
+  cuda_async_view_memory_resource(cuda_async_view_memory_resource const&) = default;
+  /**
+   * @brief Default move constructor
+   */
+  cuda_async_view_memory_resource(cuda_async_view_memory_resource&&) = default;
+  /**
+   * @brief Default copy assignment operator
+   *
+   * @returns Reference to the assigned-to object.
+   */
   cuda_async_view_memory_resource& operator=(cuda_async_view_memory_resource const&) = default;
-  cuda_async_view_memory_resource& operator=(cuda_async_view_memory_resource&&)      = default;
+  /**
+   * @brief Default move assignment operator
+   *
+   * @returns Reference to the assigned-to object.
+   */
+  cuda_async_view_memory_resource& operator=(cuda_async_view_memory_resource&&) = default;
 
   /**
    * @brief Query whether the resource supports use of non-null CUDA streams for

@@ -40,17 +40,24 @@ template <typename Upstream>
 class statistics_resource_adaptor final : public device_memory_resource {
  public:
   // can be a std::shared_mutex once C++17 is adopted
-  using read_lock_t  = std::shared_lock<std::shared_timed_mutex>;
-  using write_lock_t = std::unique_lock<std::shared_timed_mutex>;
+  using read_lock_t  = std::shared_lock<std::shared_timed_mutex>;  ///< RAII read lock
+  using write_lock_t = std::unique_lock<std::shared_timed_mutex>;  ///< RAII write lock
 
   /**
    * @brief Utility struct for counting the current, peak, and total value of a number
    */
   struct counter {
-    int64_t value{0};  // Current value
-    int64_t peak{0};   // Max value of `value`
-    int64_t total{0};  // Sum of all added values
+    int64_t value{0};  ///< Current value
+    int64_t peak{0};   ///< Max value of `value`
+    int64_t total{0};  ///< Sum of all added values
 
+    /**
+     * @brief Add `val` to the current value and update the peak value if
+     * necessary.
+     *
+     * @param val Value to add
+     * @return Reference to this object
+     */
     counter& operator+=(int64_t val)
     {
       value += val;
@@ -59,6 +66,13 @@ class statistics_resource_adaptor final : public device_memory_resource {
       return *this;
     }
 
+    /**
+     * @brief Subtract `val` from the current value and update the peak value if
+     * necessary.
+     *
+     * @param val Value to subtract
+     * @return Reference to this object
+     */
     counter& operator-=(int64_t val)
     {
       value -= val;
@@ -79,11 +93,18 @@ class statistics_resource_adaptor final : public device_memory_resource {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
   }
 
-  statistics_resource_adaptor()                                                  = delete;
-  ~statistics_resource_adaptor() override                                        = default;
-  statistics_resource_adaptor(statistics_resource_adaptor const&)                = delete;
-  statistics_resource_adaptor& operator=(statistics_resource_adaptor const&)     = delete;
-  statistics_resource_adaptor(statistics_resource_adaptor&&) noexcept            = default;
+  statistics_resource_adaptor()                                   = delete;
+  ~statistics_resource_adaptor() override                         = default;
+  statistics_resource_adaptor(statistics_resource_adaptor const&) = delete;  ///< non-copyable
+  statistics_resource_adaptor& operator=(statistics_resource_adaptor const&) =
+    delete;                                                                  ///< non-copyable
+  statistics_resource_adaptor(statistics_resource_adaptor&&) noexcept =
+    default;  ///< Default move constructor
+  /**
+   * @brief Move assignment operator
+   *
+   * @return Reference to this object
+   */
   statistics_resource_adaptor& operator=(statistics_resource_adaptor&&) noexcept = default;
 
   /**

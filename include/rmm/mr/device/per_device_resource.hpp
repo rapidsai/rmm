@@ -88,13 +88,24 @@ inline device_memory_resource* initial_resource()
   return &mr;
 }
 
+/**
+ * @brief Get a reference to the lock used to synchronize access to the device id -> resource map.
+ *
+ * @return Reference to the lock
+ */
 inline std::mutex& map_lock()
 {
   static std::mutex map_lock;
   return map_lock;
 }
 
-// Must have default visibility, see: https://github.com/rapidsai/rmm/issues/826
+/**
+ * @brief Get a reference map from device id -> resource.
+ *
+ * Must have default visibility, see: https://github.com/rapidsai/rmm/issues/826
+ *
+ * @return Reference to the map
+ */
 RMM_EXPORT inline auto& get_map()
 {
   static std::map<cuda_device_id::value_type, device_memory_resource*> device_id_to_resource;
@@ -121,7 +132,7 @@ RMM_EXPORT inline auto& get_map()
  * undefined if used while the active CUDA device is a different device from the one that was active
  * when the device_memory_resource was created.
  *
- * @param id The id of the target device
+ * @param device_id The id of the target device
  * @return Pointer to the current `device_memory_resource` for device `id`
  */
 inline device_memory_resource* get_per_device_resource(cuda_device_id device_id)
@@ -156,7 +167,7 @@ inline device_memory_resource* get_per_device_resource(cuda_device_id device_id)
  * undefined if used while the active CUDA device is a different device from the one that was active
  * when the device_memory_resource was created.
  *
- * @param id The id of the target device
+ * @param device_id The id of the target device
  * @param new_mr If not `nullptr`, pointer to new `device_memory_resource` to use as new resource
  * for `id`
  * @return Pointer to the previous memory resource for `id`

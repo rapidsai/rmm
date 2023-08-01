@@ -98,6 +98,14 @@ class logging_resource_adaptor final : public device_memory_resource {
     init_logger(auto_flush);
   }
 
+  /**
+   * @brief Construct a new logging resource adaptor using `upstream` to satisfy
+   *
+   * @param upstream The resource used for allocating/deallocating device memory
+   * @param sinks The sinks to write log info.
+   * @param auto_flush If true, flushes the log for every (de)allocation. Warning, this will degrade
+   * performance.
+   */
   logging_resource_adaptor(Upstream* upstream,
                            spdlog::sinks_init_list sinks,
                            bool auto_flush = false)
@@ -108,11 +116,17 @@ class logging_resource_adaptor final : public device_memory_resource {
     init_logger(auto_flush);
   }
 
-  logging_resource_adaptor()                                               = delete;
-  ~logging_resource_adaptor() override                                     = default;
-  logging_resource_adaptor(logging_resource_adaptor const&)                = delete;
-  logging_resource_adaptor& operator=(logging_resource_adaptor const&)     = delete;
-  logging_resource_adaptor(logging_resource_adaptor&&) noexcept            = default;
+  logging_resource_adaptor()                                           = delete;
+  ~logging_resource_adaptor() override                                 = default;
+  logging_resource_adaptor(logging_resource_adaptor const&)            = delete;  ///< non-copyable
+  logging_resource_adaptor& operator=(logging_resource_adaptor const&) = delete;  ///< non-copyable
+  logging_resource_adaptor(logging_resource_adaptor&&) noexcept =
+    default;  ///< Default move constructor
+  /**
+   * @brief Move assignment operator
+   *
+   * @return A reference to this object
+   */
   logging_resource_adaptor& operator=(logging_resource_adaptor&&) noexcept = default;
 
   /**

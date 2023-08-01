@@ -45,6 +45,7 @@ class limiting_resource_adaptor final : public device_memory_resource {
    *
    * @param upstream The resource used for allocating/deallocating device memory
    * @param allocation_limit Maximum memory allowed for this allocator.
+   * @param alignment Alignment in bytes for the start of each allocated buffer.
    */
   limiting_resource_adaptor(Upstream* upstream,
                             std::size_t allocation_limit,
@@ -57,11 +58,18 @@ class limiting_resource_adaptor final : public device_memory_resource {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
   }
 
-  limiting_resource_adaptor()                                                = delete;
-  ~limiting_resource_adaptor() override                                      = default;
-  limiting_resource_adaptor(limiting_resource_adaptor const&)                = delete;
-  limiting_resource_adaptor(limiting_resource_adaptor&&) noexcept            = default;
-  limiting_resource_adaptor& operator=(limiting_resource_adaptor const&)     = delete;
+  limiting_resource_adaptor()                                 = delete;
+  ~limiting_resource_adaptor() override                       = default;
+  limiting_resource_adaptor(limiting_resource_adaptor const&) = delete;  ///< Non-copyable
+  limiting_resource_adaptor(limiting_resource_adaptor&&) noexcept =
+    default;  ///< Default move constructor
+  limiting_resource_adaptor& operator=(limiting_resource_adaptor const&) =
+    delete;   ///< Non-copyable
+  /**
+   * @brief Default move assignment operator.
+   *
+   * @return Reference to this object.
+   */
   limiting_resource_adaptor& operator=(limiting_resource_adaptor&&) noexcept = default;
 
   /**

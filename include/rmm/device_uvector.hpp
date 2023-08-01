@@ -71,21 +71,27 @@ class device_uvector {
                 "device_uvector only supports types that are trivially copyable.");
 
  public:
-  using value_type      = T;
-  using size_type       = std::size_t;
-  using reference       = value_type&;
-  using const_reference = value_type const&;
-  using pointer         = value_type*;
-  using const_pointer   = value_type const*;
-  using iterator        = pointer;
-  using const_iterator  = const_pointer;
+  using value_type = T;            ///< Stored value type
+  using size_type  = std::size_t;  ///< The type used for the size of the vector
+  using reference  = value_type&;  ///< The type of the reference returned by operator[](size_type)
+  using const_reference =
+    value_type const&;  ///< The type of the reference returned by operator[](size_type) const
+  using pointer        = value_type*;        ///< The type of the pointer returned by data()
+  using const_pointer  = value_type const*;  ///< The type of the pointer returned by data() const
+  using iterator       = pointer;            ///< The type of the ietrator returned by begin()
+  using const_iterator = const_pointer;      ///< The type of the pointer returned by cbegin()
 
   RMM_EXEC_CHECK_DISABLE
   ~device_uvector() = default;
 
   RMM_EXEC_CHECK_DISABLE
-  device_uvector(device_uvector&&) noexcept = default;
+  device_uvector(device_uvector&&) noexcept = default;  ///< Default move constructor
 
+  /**
+   * @brief Default move assignment operator
+   *
+   * @return device_uvector& A reference to the assigned-to `device_uvector`
+   */
   device_uvector& operator=(device_uvector&&) noexcept = default;
 
   /**
@@ -498,11 +504,13 @@ class device_uvector {
 
   /**
    * @brief Returns the number of elements.
+   * @return The number of elements in the vector.
    */
   [[nodiscard]] std::size_t size() const noexcept { return bytes_to_elements(_storage.size()); }
 
   /**
    * @brief Returns the signed number of elements.
+   * @return The signed number of elements in the vector.
    */
   [[nodiscard]] std::int64_t ssize() const noexcept
   {
@@ -531,6 +539,7 @@ class device_uvector {
 
   /**
    * @brief Returns stream most recently specified for allocation/deallocation
+   * @return Stream most recently specified for allocation/deallocation
    */
   [[nodiscard]] cuda_stream_view stream() const noexcept { return _storage.stream(); }
 
@@ -542,6 +551,8 @@ class device_uvector {
    * will be used for deallocation in the `rmm::device_uvector destructor.
    * However, if either of `resize()` or `shrink_to_fit()` is called after this,
    * the later stream parameter will be stored and used in the destructor.
+   *
+   * @param stream The stream to use for deallocation
    */
   void set_stream(cuda_stream_view stream) noexcept { _storage.set_stream(stream); }
 

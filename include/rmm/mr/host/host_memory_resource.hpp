@@ -46,11 +46,21 @@ namespace rmm::mr {
  */
 class host_memory_resource {
  public:
-  host_memory_resource()                                           = default;
-  virtual ~host_memory_resource()                                  = default;
-  host_memory_resource(host_memory_resource const&)                = default;
-  host_memory_resource& operator=(host_memory_resource const&)     = default;
-  host_memory_resource(host_memory_resource&&) noexcept            = default;
+  host_memory_resource()                                = default;
+  virtual ~host_memory_resource()                       = default;
+  host_memory_resource(host_memory_resource const&)     = default;  ///< Default copy constructor
+  host_memory_resource(host_memory_resource&&) noexcept = default;  ///< Default move constructor
+  /**
+   * @brief Default copy assignment
+   *
+   * @return Reference to this object
+   */
+  host_memory_resource& operator=(host_memory_resource const&) = default;
+  /**
+   * @brief Default move assignment
+   *
+   * @return Reference to this object
+   */
   host_memory_resource& operator=(host_memory_resource&&) noexcept = default;
 
   /**
@@ -84,7 +94,6 @@ class host_memory_resource {
    *              that was passed to the `allocate` call that returned `ptr`.
    * @param alignment Alignment of the allocation. This must be equal to the value of `alignment`
    *                  that was passed to the `allocate` call that returned `ptr`.
-   * @param stream Stream on which to perform deallocation
    */
   void deallocate(void* ptr, std::size_t bytes, std::size_t alignment = alignof(std::max_align_t))
   {

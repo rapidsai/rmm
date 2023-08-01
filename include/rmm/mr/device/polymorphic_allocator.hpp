@@ -43,7 +43,7 @@ namespace rmm::mr {
 template <typename T>
 class polymorphic_allocator {
  public:
-  using value_type = T;
+  using value_type = T;  ///< The allocator's value type
   /**
    * @brief Construct a `polymorphic_allocator` using the return value of
    * `rmm::mr::get_current_device_resource()` as the underlying memory resource.
@@ -148,7 +148,8 @@ bool operator!=(polymorphic_allocator<T> const& lhs, polymorphic_allocator<U> co
 template <typename Allocator>
 class stream_allocator_adaptor {
  public:
-  using value_type = typename std::allocator_traits<Allocator>::value_type;
+  using value_type =
+    typename std::allocator_traits<Allocator>::value_type;  ///< The allocator's value type
 
   stream_allocator_adaptor() = delete;
 
@@ -187,8 +188,8 @@ class stream_allocator_adaptor {
    */
   template <typename T>
   struct rebind {
-    using other =
-      stream_allocator_adaptor<typename std::allocator_traits<Allocator>::template rebind_alloc<T>>;
+    using other = stream_allocator_adaptor<typename std::allocator_traits<
+      Allocator>::template rebind_alloc<T>>;  ///< The type to bind to
   };
 
   /**
@@ -214,12 +215,14 @@ class stream_allocator_adaptor {
   /**
    * @brief Returns the underlying stream on which calls to the underlying allocator are made.
    *
+   * @return The underlying stream
    */
   [[nodiscard]] cuda_stream_view stream() const noexcept { return stream_; }
 
   /**
    * @brief Returns the underlying stream-ordered allocator
    *
+   * @return The underlying allocator
    */
   [[nodiscard]] Allocator underlying_allocator() const noexcept { return alloc_; }
 
