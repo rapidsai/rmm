@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import ctypes
+import inspect
 
 from cuda.cuda import CUdeviceptr, cuIpcGetMemHandle
 from numba import config, cuda
@@ -123,6 +124,16 @@ class RMMNumbaManager(HostOnlyCUDAMemoryManager):
     @property
     def interface_version(self):
         return 1
+
+
+# The parent class docstrings contain references without fully qualified names,
+# so we need to replace them here for our Sphinx docs to render properly.
+for _, method in inspect.getmembers(RMMNumbaManager, inspect.isfunction):
+    if method.__doc__ is not None:
+        method.__doc__ = method.__doc__.replace(
+            ":class:`BaseCUDAMemoryManager`",
+            ":class:`numba.cuda.BaseCUDAMemoryManager`",
+        )
 
 
 # Enables the use of RMM for Numba via an environment variable setting,
