@@ -112,6 +112,12 @@ class RMMNumbaManager(HostOnlyCUDAMemoryManager):
         )
 
     def get_memory_info(self):
+        """Returns ``(free, total)`` memory in bytes in the context.
+
+        This implementation raises `NotImplementedError` because the allocation
+        will be performed using rmm's currently set default mr, which may be a
+        pool allocator.
+        """
         raise NotImplementedError()
 
     @property
