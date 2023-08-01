@@ -206,12 +206,15 @@ class fixed_size_memory_resource
     return block_type{ptr};
   }
 
+  // Unnamed parameters are not supported by doxygen,
+  // see https://github.com/doxygen/doxygen/issues/6926
+  // When/if it's supported, add.
+  // param cuda_stream_view the stream being executed on
   /**
    * @brief Get free and available memory for memory resource
    *
    * @throws std::runtime_error if we could not get free / total memory
    *
-   * @param cuda_stream_view the stream being executed on
    * @return std::pair with available and free memory for resource
    */
   [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view) const override
