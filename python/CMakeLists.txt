@@ -16,9 +16,7 @@ cmake_minimum_required(VERSION 3.26.4 FATAL_ERROR)
 
 set(rmm_version 23.10.00)
 
-file(DOWNLOAD https://raw.githubusercontent.com/rapidsai/rapids-cmake/branch-23.10/RAPIDS.cmake
-     ${CMAKE_BINARY_DIR}/RAPIDS.cmake)
-include(${CMAKE_BINARY_DIR}/RAPIDS.cmake)
+include(../fetch_rapids.cmake)
 
 project(
   rmm-python
