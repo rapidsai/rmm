@@ -10,6 +10,7 @@ files:
       - checks
       - cudatoolkit
       - develop
+      - docs
       - run
       - test_python
   test_python:
