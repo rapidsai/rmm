@@ -28,6 +28,7 @@ Memory Allocators
 
 .. automodule:: rmm.allocators.numba
    :members:
+   :inherited-members:
    :undoc-members:
    :show-inheritance:
 
