@@ -15,6 +15,7 @@ Memory Resources
 
 .. automodule:: rmm.mr
    :members:
+   :inherited-members:
    :undoc-members:
    :show-inheritance:
 
