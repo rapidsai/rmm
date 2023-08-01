@@ -29,14 +29,14 @@ struct cuda_device_id {
   using value_type = int;  ///< Integer type used for device identifier
 
   /**
-   * @brief Construct a `cuda_device_id` from the specified integer value
+   * @brief Construct a `cuda_device_id` from the specified integer value.
    *
    * @param dev_id The device's integer identifier
    */
   explicit constexpr cuda_device_id(value_type dev_id) noexcept : id_{dev_id} {}
 
   /**
-   * @brief Returns the wrapped integer value
+   * @brief Return the wrapped integer value.
    *
    * @return The wrapped integer value
    */

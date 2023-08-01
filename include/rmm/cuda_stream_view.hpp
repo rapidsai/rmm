@@ -55,23 +55,23 @@ class cuda_stream_view {
   constexpr cuda_stream_view(std::nullptr_t) = delete;  //< Prevent cast from nullptr
 
   /**
-   * @brief Implicit conversion from cudaStream_t.
+   * @brief Constructor from a cudaStream_t.
    *
-   * @param stream A cuda_stream_view that wraps the stream.
+   * @param stream The underlying stream for this view.
    */
   constexpr cuda_stream_view(cudaStream_t stream) noexcept : stream_{stream} {}
 
   /**
    * @brief Get the wrapped stream.
    *
-   * @return cudaStream_t The wrapped stream.
+   * @return cudaStream_t The underlying stream referenced by this cuda_stream_view
    */
   [[nodiscard]] constexpr cudaStream_t value() const noexcept { return stream_; }
 
   /**
    * @brief Implicit conversion to cudaStream_t.
    *
-   * @return cudaStream_t The wrapped stream.
+   * @return cudaStream_t The underlying stream referenced by this cuda_stream_view
    */
   constexpr operator cudaStream_t() const noexcept { return value(); }
 

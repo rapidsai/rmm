@@ -399,10 +399,10 @@ class device_buffer {
   void set_stream(cuda_stream_view stream) noexcept { _stream = stream; }
 
   /**
-   * @brief Returns pointer to the memory resource used to allocate and
-   * deallocate the device memory
+   * @brief Returns a pointer to the memory resource used to allocate and
+   * deallocate the device memory.
    *
-   * @return Pointer to the memory resource used to allocate and deallocate the
+   * @return Pointer to the memory resource used to allocate and deallocate
    */
   [[nodiscard]] mr::device_memory_resource* memory_resource() const noexcept { return _mr; }
 

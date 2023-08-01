@@ -84,9 +84,11 @@ class exec_policy_nosync : public thrust_exec_policy_nosync_t {
 
 #else
 
-using thrust_exec_policy_nosync_t = thrust_exec_policy_t;  ///< See above
-using exec_policy_nosync          = exec_policy;           ///< See above
-
+using thrust_exec_policy_nosync_t =
+  thrust_exec_policy_t;  ///< When used with Thrust < 1.16.0, thrust_exec_policy_nosync_t is an
+                         ///< alias for thrust_exec_policy_t
+using exec_policy_nosync =
+  exec_policy;           ///< When used with Thrust < 1.16.0, exec_policy_nosync is an alias for exec_policy
 #endif
 
 }  // namespace rmm
