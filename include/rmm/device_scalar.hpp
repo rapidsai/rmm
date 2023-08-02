@@ -53,7 +53,7 @@ class device_scalar {
   device_scalar(device_scalar&&) noexcept = default;  ///< Default move constructor
 
   /**
-   * @brief Move assignment operator is deleted as it doesn't allow a stream argument
+   * @brief Default move assignment operator
    *
    * @return device_scalar& A reference to the assigned-to object.
    */
