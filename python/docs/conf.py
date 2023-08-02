@@ -190,6 +190,11 @@ numpydoc_class_members_toctree = False
 
 autoclass_content = "init"
 
+nitpick_ignore = [
+    ("py:class", "size_t"),
+    ("py:class", "void"),
+]
+
 
 def setup(app):
     app.add_js_file("copybutton_pydocs.js")
