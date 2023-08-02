@@ -76,16 +76,12 @@ class cuda_stream_view {
   constexpr operator cudaStream_t() const noexcept { return value(); }
 
   /**
-   * @brief Return true if the wrapped stream is the CUDA per-thread default stream.
-   *
-   * @return true if the wrapped stream is the CUDA per-thread default stream.
+   * @briefreturn{true if the wrapped stream is the CUDA per-thread default stream.}
    */
   [[nodiscard]] inline bool is_per_thread_default() const noexcept;
 
   /**
-   * @brief Check if the wrapped stream is explicitly the CUDA legacy default stream.
-   *
-   * @return true if the wrapped stream is the CUDA legacy default stream.
+   * @briefreturn{true if the wrapped stream is explicitly the CUDA legacy default stream.}
    */
   [[nodiscard]] inline bool is_default() const noexcept;
 

@@ -253,9 +253,7 @@ class device_scalar {
   }
 
   /**
-   * @brief Returns stream most recently specified for allocation/deallocation
-   *
-   * @return Stream associated with the device memory allocation
+   * @briefreturn{Stream associated with the device memory allocation}
    */
   [[nodiscard]] cuda_stream_view stream() const noexcept { return _storage.stream(); }
 

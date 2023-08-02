@@ -503,14 +503,12 @@ class device_uvector {
   [[nodiscard]] const_iterator end() const noexcept { return cend(); }
 
   /**
-   * @brief Returns the number of elements.
-   * @return The number of elements in the vector.
+   * @briefreturn{The number of elements in the vector.}
    */
   [[nodiscard]] std::size_t size() const noexcept { return bytes_to_elements(_storage.size()); }
 
   /**
-   * @brief Returns the signed number of elements.
-   * @return The signed number of elements in the vector.
+   * @briefreturn{The signed number of elements in the vector.}
    */
   [[nodiscard]] std::int64_t ssize() const noexcept
   {
@@ -520,17 +518,12 @@ class device_uvector {
   }
 
   /**
-   * @brief Returns true if the vector contains no elements, i.e., `size() == 0`.
-   *
-   * @return true The vector is empty
-   * @return false The vector is not empty
+   * @briefreturn{true if the vector is empty and false if not}
    */
   [[nodiscard]] bool is_empty() const noexcept { return size() == 0; }
 
   /**
-   * @brief Returns pointer to the resource used to allocate and deallocate the device storage.
-   *
-   * @return Pointer to underlying resource
+   * @briefreturn{Pointer to underlying resource used to allocate and deallocate the device storage}
    */
   [[nodiscard]] mr::device_memory_resource* memory_resource() const noexcept
   {
@@ -538,8 +531,7 @@ class device_uvector {
   }
 
   /**
-   * @brief Returns stream most recently specified for allocation/deallocation
-   * @return Stream most recently specified for allocation/deallocation
+   * @briefreturn{Stream most recently specified for allocation/deallocation}
    */
   [[nodiscard]] cuda_stream_view stream() const noexcept { return _storage.stream(); }
 

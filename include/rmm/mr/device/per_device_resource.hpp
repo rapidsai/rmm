@@ -89,9 +89,7 @@ inline device_memory_resource* initial_resource()
 }
 
 /**
- * @brief Get a reference to the lock used to synchronize access to the device id -> resource map.
- *
- * @return Reference to the lock
+ * @briefreturn{Reference to the lock}
  */
 inline std::mutex& map_lock()
 {
@@ -99,12 +97,9 @@ inline std::mutex& map_lock()
   return map_lock;
 }
 
+// This symbol must have default visibility, see: https://github.com/rapidsai/rmm/issues/826
 /**
- * @brief Get a reference map from device id -> resource.
- *
- * Must have default visibility, see: https://github.com/rapidsai/rmm/issues/826
- *
- * @return Reference to the map
+ * @briefreturn{Reference to the map from device id -> resource.}
  */
 RMM_EXPORT inline auto& get_map()
 {

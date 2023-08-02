@@ -201,6 +201,7 @@ class device_buffer {
    * replaced by the `other.stream()`.
    *
    * @param other The `device_buffer` whose contents will be moved.
+   *
    * @return device_buffer& A reference to this `device_buffer`.
    */
   device_buffer& operator=(device_buffer&& other) noexcept
@@ -331,26 +332,22 @@ class device_buffer {
   }
 
   /**
-   * @brief Returns raw pointer to underlying device memory allocation
-   * @return Pointer to the device memory allocation
+   * @briefreturn{Const pointer to the device memory allocation}
    */
   [[nodiscard]] void const* data() const noexcept { return _data; }
 
   /**
-   * @brief Returns raw pointer to underlying device memory allocation
-   * @return Pointer to the device memory allocation
+   * @briefreturn{Pointer to the device memory allocation}
    */
   void* data() noexcept { return _data; }
 
   /**
-   * @brief Returns the number of bytes.
-   * @return The number of bytes
+   * @briefreturn{The number of bytes}
    */
   [[nodiscard]] std::size_t size() const noexcept { return _size; }
 
   /**
-   * @brief Returns the signed number of bytes.
-   * @return The signed number of bytes
+   * @briefreturn{The signed number of bytes}
    */
   [[nodiscard]] std::int64_t ssize() const noexcept
   {
@@ -379,9 +376,7 @@ class device_buffer {
   [[nodiscard]] std::size_t capacity() const noexcept { return _capacity; }
 
   /**
-   * @brief Returns stream most recently specified for allocation/deallocation
-   *
-   * @return The stream most recently specified for allocation/deallocation
+   * @briefreturn{The stream most recently specified for allocation/deallocation}
    */
   [[nodiscard]] cuda_stream_view stream() const noexcept { return _stream; }
 
@@ -399,10 +394,7 @@ class device_buffer {
   void set_stream(cuda_stream_view stream) noexcept { _stream = stream; }
 
   /**
-   * @brief Returns a pointer to the memory resource used to allocate and
-   * deallocate the device memory.
-   *
-   * @return Pointer to the memory resource used to allocate and deallocate
+   * @briefreturn{Pointer to the memory resource used to allocate and deallocate}
    */
   [[nodiscard]] mr::device_memory_resource* memory_resource() const noexcept { return _mr; }
 

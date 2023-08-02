@@ -113,16 +113,12 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
   }
 
   /**
-   * @brief Returns the device memory resource used by this allocator.
-   *
-   * @return The device memory resource used by this
+   * @briefreturn{The device memory resource used by this}
    */
   [[nodiscard]] device_memory_resource* resource() const noexcept { return _mr; }
 
   /**
-   * @brief Returns the stream used by this allocator.
-   *
-   * @return The stream used by this allocator
+   * @briefreturn{The stream used by this allocator}
    */
   [[nodiscard]] cuda_stream_view stream() const noexcept { return _stream; }
 

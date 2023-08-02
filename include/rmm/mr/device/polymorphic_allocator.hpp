@@ -213,16 +213,12 @@ class stream_allocator_adaptor {
   void deallocate(value_type* ptr, std::size_t num) { alloc_.deallocate(ptr, num, stream()); }
 
   /**
-   * @brief Returns the underlying stream on which calls to the underlying allocator are made.
-   *
-   * @return The underlying stream
+   * @briefreturn{The underlying stream on which calls to the underlying allocator are made.}
    */
   [[nodiscard]] cuda_stream_view stream() const noexcept { return stream_; }
 
   /**
-   * @brief Returns the underlying stream-ordered allocator
-   *
-   * @return The underlying allocator
+   * @briefreturn{The underlying allocator}
    */
   [[nodiscard]] Allocator underlying_allocator() const noexcept { return alloc_; }
 
