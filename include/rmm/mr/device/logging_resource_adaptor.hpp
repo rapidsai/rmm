@@ -121,13 +121,9 @@ class logging_resource_adaptor final : public device_memory_resource {
   logging_resource_adaptor(logging_resource_adaptor const&)            = delete;
   logging_resource_adaptor& operator=(logging_resource_adaptor const&) = delete;
   logging_resource_adaptor(logging_resource_adaptor&&) noexcept =
-    default;  ///< Default move constructor
-  /**
-   * @brief Move assignment operator
-   *
-   * @return A reference to this object
-   */
-  logging_resource_adaptor& operator=(logging_resource_adaptor&&) noexcept = default;
+    default;  ///< @default_move_constructor
+  logging_resource_adaptor& operator=(logging_resource_adaptor&&) noexcept =
+    default;  ///< @default_move_assignment{logging_resource_adaptor}
 
   /**
    * @brief Return pointer to the upstream resource.

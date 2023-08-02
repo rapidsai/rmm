@@ -34,21 +34,13 @@ namespace rmm {
 class cuda_stream_view {
  public:
   constexpr cuda_stream_view()                        = default;
-  constexpr cuda_stream_view(cuda_stream_view const&) = default;  ///< Default copy constructor
-  constexpr cuda_stream_view(cuda_stream_view&&)      = default;  ///< Default move constructor
-  /**
-   * @brief Default copy assignment operator
-   *
-   * @return cuda_stream_view& Reference to the assigned object
-   */
-  constexpr cuda_stream_view& operator=(cuda_stream_view const&) = default;
-  /**
-   * @brief Default move assignment operator
-   *
-   * @return cuda_stream_view& Reference to the assigned object
-   */
-  constexpr cuda_stream_view& operator=(cuda_stream_view&&) = default;
-  ~cuda_stream_view()                                       = default;
+  ~cuda_stream_view()                                 = default;
+  constexpr cuda_stream_view(cuda_stream_view const&) = default;  ///< @default_copy_constructor
+  constexpr cuda_stream_view(cuda_stream_view&&)      = default;  ///< @default_move_constructor
+  constexpr cuda_stream_view& operator=(cuda_stream_view const&) =
+    default;  ///< @default_copy_assignment{cuda_stream_view}
+  constexpr cuda_stream_view& operator=(cuda_stream_view&&) =
+    default;  ///< @default_move_assignment{cuda_stream_view}
 
   // Disable construction from literal 0
   constexpr cuda_stream_view(int)            = delete;  //< Prevent cast from 0

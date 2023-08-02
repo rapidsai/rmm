@@ -85,14 +85,10 @@ class device_uvector {
   ~device_uvector() = default;
 
   RMM_EXEC_CHECK_DISABLE
-  device_uvector(device_uvector&&) noexcept = default;  ///< Default move constructor
+  device_uvector(device_uvector&&) noexcept = default;  ///< @default_move_constructor
 
-  /**
-   * @brief Default move assignment operator
-   *
-   * @return device_uvector& A reference to the assigned-to `device_uvector`
-   */
-  device_uvector& operator=(device_uvector&&) noexcept = default;
+  device_uvector& operator=(device_uvector&&) noexcept =
+    default;  ///< @default_move_assignment{device_uvector}
 
   /**
    * @brief Copy ctor is deleted as it doesn't allow a stream argument

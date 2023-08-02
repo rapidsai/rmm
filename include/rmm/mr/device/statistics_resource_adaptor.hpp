@@ -98,18 +98,12 @@ class statistics_resource_adaptor final : public device_memory_resource {
   statistics_resource_adaptor(statistics_resource_adaptor const&)            = delete;
   statistics_resource_adaptor& operator=(statistics_resource_adaptor const&) = delete;
   statistics_resource_adaptor(statistics_resource_adaptor&&) noexcept =
-    default;  ///< Default move constructor
-  /**
-   * @brief Move assignment operator
-   *
-   * @return Reference to this object
-   */
-  statistics_resource_adaptor& operator=(statistics_resource_adaptor&&) noexcept = default;
+    default;  ///< @default_move_constructor
+  statistics_resource_adaptor& operator=(statistics_resource_adaptor&&) noexcept =
+    default;  ///< @default_move_assignment{statistics_resource_adaptor}
 
   /**
-   * @brief Return pointer to the upstream resource.
-   *
-   * @return Upstream* Pointer to the upstream resource.
+   * @briefreturn{Pointer to the upstream resource}
    */
   Upstream* get_upstream() const noexcept { return upstream_; }
 

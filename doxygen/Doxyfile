@@ -260,6 +260,10 @@ TAB_SIZE               = 4
 # a double escape (\\{ and \\})
 
 ALIASES                +=   "briefreturn{1}=@brief \1 @return \1"
+ALIASES                +=   "default_copy_constructor=Default copy constructor"
+ALIASES                +=   "default_move_constructor=Default move constructor"
+ALIASES                +=   "default_copy_assignment{1}=@brief Default copy assignment operator @return \1& Reference to the assigned object"
+ALIASES                +=   "default_move_assignment{1}=@brief Default move assignment operator @return \1& Reference to the assigned object"
 
 # Set the OPTIMIZE_OUTPUT_FOR_C tag to YES if your project consists of C sources
 # only. Doxygen will then generate output that is more tailored for C. For

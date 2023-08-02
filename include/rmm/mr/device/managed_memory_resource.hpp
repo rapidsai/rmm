@@ -31,20 +31,12 @@ class managed_memory_resource final : public device_memory_resource {
  public:
   managed_memory_resource()                               = default;
   ~managed_memory_resource() override                     = default;
-  managed_memory_resource(managed_memory_resource const&) = default;  ///< Default copy constructor
-  managed_memory_resource(managed_memory_resource&&)      = default;  ///< Default move constructor
-  /**
-   * @brief Default copy assignment
-   *
-   * @return Reference to this object
-   */
-  managed_memory_resource& operator=(managed_memory_resource const&) = default;
-  /**
-   * @brief Default move assignment
-   *
-   * @return Reference to this object
-   */
-  managed_memory_resource& operator=(managed_memory_resource&&) = default;
+  managed_memory_resource(managed_memory_resource const&) = default;  ///< @default_copy_constructor
+  managed_memory_resource(managed_memory_resource&&)      = default;  ///< @default_move_constructor
+  managed_memory_resource& operator=(managed_memory_resource const&) =
+    default;  ///< @default_copy_assignment{managed_memory_resource}
+  managed_memory_resource& operator=(managed_memory_resource&&) =
+    default;  ///< @default_move_assignment{managed_memory_resource}
 
   /**
    * @brief Query whether the resource supports use of non-null streams for

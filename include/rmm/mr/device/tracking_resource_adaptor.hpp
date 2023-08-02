@@ -94,19 +94,13 @@ class tracking_resource_adaptor final : public device_memory_resource {
   ~tracking_resource_adaptor() override                       = default;
   tracking_resource_adaptor(tracking_resource_adaptor const&) = delete;
   tracking_resource_adaptor(tracking_resource_adaptor&&) noexcept =
-    default;  ///< Default move constructor
+    default;  ///< @default_move_constructor
   tracking_resource_adaptor& operator=(tracking_resource_adaptor const&) = delete;
-  /**
-   * @brief Default move assignment
-   *
-   * @return Reference to this object
-   */
-  tracking_resource_adaptor& operator=(tracking_resource_adaptor&&) noexcept = default;
+  tracking_resource_adaptor& operator=(tracking_resource_adaptor&&) noexcept =
+    default;  ///< @default_move_assignment{tracking_resource_adaptor}
 
   /**
-   * @brief Return pointer to the upstream resource.
-   *
-   * @return Upstream* Pointer to the upstream resource.
+   * @briefreturn{Pointer to the upstream resource}
    */
   Upstream* get_upstream() const noexcept { return upstream_; }
 

@@ -95,13 +95,9 @@ class callback_memory_resource final : public device_memory_resource {
   callback_memory_resource(callback_memory_resource const&)            = delete;
   callback_memory_resource& operator=(callback_memory_resource const&) = delete;
   callback_memory_resource(callback_memory_resource&&) noexcept =
-    default;  ///< Default move constructor
-  /**
-   * @brief Default move assignment operator
-   *
-   * @return A reference to the assigned-to object.
-   */
-  callback_memory_resource& operator=(callback_memory_resource&&) noexcept = default;
+    default;  ///< @default_move_constructor
+  callback_memory_resource& operator=(callback_memory_resource&&) noexcept =
+    default;  ///< @default_move_assignment{callback_memory_resource}
 
  private:
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override

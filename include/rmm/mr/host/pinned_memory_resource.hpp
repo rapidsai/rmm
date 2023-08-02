@@ -34,20 +34,12 @@ class pinned_memory_resource final : public host_memory_resource {
  public:
   pinned_memory_resource()                              = default;
   ~pinned_memory_resource() override                    = default;
-  pinned_memory_resource(pinned_memory_resource const&) = default;  ///< Default copy constructor
-  pinned_memory_resource(pinned_memory_resource&&)      = default;  ///< Default move constructor
-  /**
-   * @brief Default copy assignment operator
-   *
-   * @return Reference to this object
-   */
-  pinned_memory_resource& operator=(pinned_memory_resource const&) = default;
-  /**
-   * @brief Default move assignment operator
-   *
-   * @return Reference to this object
-   */
-  pinned_memory_resource& operator=(pinned_memory_resource&&) = default;
+  pinned_memory_resource(pinned_memory_resource const&) = default;  ///< @default_copy_constructor
+  pinned_memory_resource(pinned_memory_resource&&)      = default;  ///< @default_move_constructor
+  pinned_memory_resource& operator=(pinned_memory_resource const&) =
+    default;  ///< @default_copy_assignment{pinned_memory_resource}
+  pinned_memory_resource& operator=(pinned_memory_resource&&) =
+    default;  ///< @default_move_assignment{pinned_memory_resource}
 
  private:
   /**

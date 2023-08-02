@@ -62,19 +62,13 @@ class limiting_resource_adaptor final : public device_memory_resource {
   ~limiting_resource_adaptor() override                       = default;
   limiting_resource_adaptor(limiting_resource_adaptor const&) = delete;
   limiting_resource_adaptor(limiting_resource_adaptor&&) noexcept =
-    default;  ///< Default move constructor
+    default;  ///< @default_move_constructor
   limiting_resource_adaptor& operator=(limiting_resource_adaptor const&) = delete;
-  /**
-   * @brief Default move assignment operator.
-   *
-   * @return Reference to this object.
-   */
-  limiting_resource_adaptor& operator=(limiting_resource_adaptor&&) noexcept = default;
+  limiting_resource_adaptor& operator=(limiting_resource_adaptor&&) noexcept =
+    default;  ///< @default_move_assignment{limiting_resource_adaptor}
 
   /**
-   * @brief Return pointer to the upstream resource.
-   *
-   * @return Upstream* Pointer to the upstream resource.
+   * @briefreturn{Pointer to the upstream resource}
    */
   [[nodiscard]] Upstream* get_upstream() const noexcept { return upstream_; }
 

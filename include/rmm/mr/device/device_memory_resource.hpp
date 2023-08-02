@@ -83,21 +83,13 @@ class device_memory_resource {
  public:
   device_memory_resource()                              = default;
   virtual ~device_memory_resource()                     = default;
-  device_memory_resource(device_memory_resource const&) = default;  ///< Default copy constructor
+  device_memory_resource(device_memory_resource const&) = default;  ///< @default_copy_constructor
   device_memory_resource(device_memory_resource&&) noexcept =
-    default;                                                        ///< Default move constructor
-  /**
-   * @brief Default copy assignment operator
-   *
-   * @return Reference to this object.
-   */
-  device_memory_resource& operator=(device_memory_resource const&) = default;
-  /**
-   * @brief Default move assignment operator
-   *
-   * @return Reference to this object.
-   */
-  device_memory_resource& operator=(device_memory_resource&&) noexcept = default;
+    default;                                                        ///< @default_move_constructor
+  device_memory_resource& operator=(device_memory_resource const&) =
+    default;  ///< @default_copy_assignment{device_memory_resource}
+  device_memory_resource& operator=(device_memory_resource&&) noexcept =
+    default;  ///< @default_move_assignment{device_memory_resource}
 
   /**
    * @brief Allocates memory of size at least \p bytes.
