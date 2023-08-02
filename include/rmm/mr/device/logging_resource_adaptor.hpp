@@ -118,8 +118,8 @@ class logging_resource_adaptor final : public device_memory_resource {
 
   logging_resource_adaptor()                                           = delete;
   ~logging_resource_adaptor() override                                 = default;
-  logging_resource_adaptor(logging_resource_adaptor const&)            = delete;  ///< non-copyable
-  logging_resource_adaptor& operator=(logging_resource_adaptor const&) = delete;  ///< non-copyable
+  logging_resource_adaptor(logging_resource_adaptor const&)            = delete;
+  logging_resource_adaptor& operator=(logging_resource_adaptor const&) = delete;
   logging_resource_adaptor(logging_resource_adaptor&&) noexcept =
     default;  ///< Default move constructor
   /**

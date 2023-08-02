@@ -60,11 +60,10 @@ class limiting_resource_adaptor final : public device_memory_resource {
 
   limiting_resource_adaptor()                                 = delete;
   ~limiting_resource_adaptor() override                       = default;
-  limiting_resource_adaptor(limiting_resource_adaptor const&) = delete;  ///< Non-copyable
+  limiting_resource_adaptor(limiting_resource_adaptor const&) = delete;
   limiting_resource_adaptor(limiting_resource_adaptor&&) noexcept =
     default;  ///< Default move constructor
-  limiting_resource_adaptor& operator=(limiting_resource_adaptor const&) =
-    delete;   ///< Non-copyable
+  limiting_resource_adaptor& operator=(limiting_resource_adaptor const&) = delete;
   /**
    * @brief Default move assignment operator.
    *

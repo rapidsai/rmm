@@ -105,12 +105,10 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
   }
 
-  failure_callback_resource_adaptor()           = delete;
-  ~failure_callback_resource_adaptor() override = default;
-  failure_callback_resource_adaptor(failure_callback_resource_adaptor const&) =
-    delete;   ///< Non-copyable
-  failure_callback_resource_adaptor& operator=(failure_callback_resource_adaptor const&) =
-    delete;   ///< Non-copyable
+  failure_callback_resource_adaptor()                                                    = delete;
+  ~failure_callback_resource_adaptor() override                                          = default;
+  failure_callback_resource_adaptor(failure_callback_resource_adaptor const&)            = delete;
+  failure_callback_resource_adaptor& operator=(failure_callback_resource_adaptor const&) = delete;
   failure_callback_resource_adaptor(failure_callback_resource_adaptor&&) noexcept =
     default;  ///< Default move constructor
   /**

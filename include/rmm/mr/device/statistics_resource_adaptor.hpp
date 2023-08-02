@@ -93,11 +93,10 @@ class statistics_resource_adaptor final : public device_memory_resource {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
   }
 
-  statistics_resource_adaptor()                                   = delete;
-  ~statistics_resource_adaptor() override                         = default;
-  statistics_resource_adaptor(statistics_resource_adaptor const&) = delete;  ///< non-copyable
-  statistics_resource_adaptor& operator=(statistics_resource_adaptor const&) =
-    delete;                                                                  ///< non-copyable
+  statistics_resource_adaptor()                                              = delete;
+  ~statistics_resource_adaptor() override                                    = default;
+  statistics_resource_adaptor(statistics_resource_adaptor const&)            = delete;
+  statistics_resource_adaptor& operator=(statistics_resource_adaptor const&) = delete;
   statistics_resource_adaptor(statistics_resource_adaptor&&) noexcept =
     default;  ///< Default move constructor
   /**

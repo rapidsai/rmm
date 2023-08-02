@@ -92,11 +92,10 @@ class tracking_resource_adaptor final : public device_memory_resource {
 
   tracking_resource_adaptor()                                 = delete;
   ~tracking_resource_adaptor() override                       = default;
-  tracking_resource_adaptor(tracking_resource_adaptor const&) = delete;  ///< Non-copyable
+  tracking_resource_adaptor(tracking_resource_adaptor const&) = delete;
   tracking_resource_adaptor(tracking_resource_adaptor&&) noexcept =
     default;  ///< Default move constructor
-  tracking_resource_adaptor& operator=(tracking_resource_adaptor const&) =
-    delete;   ///< Non-copyable
+  tracking_resource_adaptor& operator=(tracking_resource_adaptor const&) = delete;
   /**
    * @brief Default move assignment
    *

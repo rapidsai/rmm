@@ -92,8 +92,8 @@ class callback_memory_resource final : public device_memory_resource {
 
   callback_memory_resource()                                           = delete;
   ~callback_memory_resource() override                                 = default;
-  callback_memory_resource(callback_memory_resource const&)            = delete;  ///< Non-copyable
-  callback_memory_resource& operator=(callback_memory_resource const&) = delete;  ///< Non-copyable
+  callback_memory_resource(callback_memory_resource const&)            = delete;
+  callback_memory_resource& operator=(callback_memory_resource const&) = delete;
   callback_memory_resource(callback_memory_resource&&) noexcept =
     default;  ///< Default move constructor
   /**
