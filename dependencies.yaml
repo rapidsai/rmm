@@ -162,6 +162,10 @@ dependencies:
       - output_types: [conda, requirements]
         packages:
           - gcovr>=5.0
+      - output_types: conda
+        packages:
+          - clang=16.0.1
+          - clang-tools=16.0.1
   docs:
     common:
       - output_types: [conda]
