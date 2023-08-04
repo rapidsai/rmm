@@ -40,8 +40,8 @@ pushd python/docs
 make dirhtml
 make text
 mkdir -p "${RAPIDS_DOCS_DIR}/rmm/"{html,txt}
-mv dirhtml/* "${RAPIDS_DOCS_DIR}/rmm/html"
-mv txt/* "${RAPIDS_DOCS_DIR}/rmm/txt"
+mv _build/dirhtml/* "${RAPIDS_DOCS_DIR}/rmm/html"
+mv _build/text/* "${RAPIDS_DOCS_DIR}/rmm/txt"
 popd
 
 rapids-upload-docs
