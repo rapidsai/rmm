@@ -17,7 +17,7 @@ build-backend = "setuptools.build_meta"
 requires = [
     "cmake>=3.26.4",
     "cuda-python>=11.7.1,<12.0a0",
-    "cython>=0.29,<0.30",
+    "cython>=3.0.0",
     "ninja",
     "scikit-build>=0.13.1",
     "setuptools>=61.0.0",
