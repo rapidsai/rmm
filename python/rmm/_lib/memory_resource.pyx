@@ -14,6 +14,8 @@
 
 import os
 import warnings
+# This import is needed for Cython typing in translate_python_except_to_cpp
+# See https://github.com/cython/cython/issues/5589
 from builtins import BaseException
 from collections import defaultdict
 
