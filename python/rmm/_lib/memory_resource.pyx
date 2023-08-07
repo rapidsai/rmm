@@ -217,18 +217,41 @@ cdef extern from "rmm/mr/device/failure_callback_resource_adaptor.hpp" \
 cdef class DeviceMemoryResource:
 
     cdef device_memory_resource* get_mr(self):
+        """Get the underlying C++ memory resource object."""
         return self.c_obj.get()
 
     def allocate(self, size_t nbytes):
+        """Allocate ``nbytes`` bytes of memory.
+
+        Parameters
+        ----------
+        nbytes : size_t
+            The size of the allocation in bytes
+        """
         return <uintptr_t>self.c_obj.get().allocate(nbytes)
 
     def deallocate(self, uintptr_t ptr, size_t nbytes):
+        """Deallocate memory pointed to by ``ptr`` of size ``nbytes``.
+
+        Parameters
+        ----------
+        ptr : uintptr_t
+            Pointer to be deallocated
+        nbytes : size_t
+            Size of the allocation in bytes
+        """
         self.c_obj.get().deallocate(<void*>(ptr), nbytes)
 
 
 # See the note about `no_gc_clear` in `device_buffer.pyx`.
 @cython.no_gc_clear
 cdef class UpstreamResourceAdaptor(DeviceMemoryResource):
+    """Parent class for all memory resources that track an upstream.
+
+    Upstream resource tracking requires maintaining a reference to the upstream
+    mr so that it is kept alive and may be accessed by any downstream resource
+    adaptors.
+    """
 
     def __cinit__(self, DeviceMemoryResource upstream_mr, *args, **kwargs):
 

@@ -10,6 +10,7 @@ files:
       - checks
       - cudatoolkit
       - develop
+      - docs
       - run
       - test_python
   test_python:
@@ -155,6 +156,7 @@ dependencies:
           - doxygen=1.8.20
           - graphviz
           - ipython
+          - make
           - nbsphinx
           - numpydoc
           - sphinx
