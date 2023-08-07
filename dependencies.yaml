@@ -12,6 +12,7 @@ files:
       - develop
       - docs
       - run
+      - docs
       - test_python
   test_python:
     output: none
