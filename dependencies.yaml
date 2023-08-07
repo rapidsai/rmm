@@ -12,7 +12,6 @@ files:
       - develop
       - docs
       - run
-      - docs
       - test_python
   test_python:
     output: none
@@ -158,6 +157,7 @@ dependencies:
       - output_types: [conda]
         packages:
           - *doxygen
+          - breathe
           - graphviz
           - ipython
           - make
