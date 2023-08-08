@@ -56,7 +56,7 @@ cdef class DeviceBuffer:
 
     @staticmethod
     cdef DeviceBuffer c_to_device(const unsigned char[::1] b,
-                                  Stream stream=*)
+                                  Stream stream=*) except *
     cpdef copy_to_host(self, ary=*, Stream stream=*)
     cpdef copy_from_host(self, ary, Stream stream=*)
     cpdef copy_from_device(self, cuda_ary, Stream stream=*)
