@@ -156,3 +156,4 @@ rmm_log.txt
 
 # clang tooling
 compile_commands.json
+.clangd/
