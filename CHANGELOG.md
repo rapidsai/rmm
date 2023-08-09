@@ -1,3 +1,38 @@
+# RMM 23.08.00 (9 Aug 2023)
+
+## 🚨 Breaking Changes
+
+- Stop invoking setup.py ([#1300](https://github.com/rapidsai/rmm/pull/1300)) [@vyasr](https://github.com/vyasr)
+- Remove now-deprecated top-level allocator functions ([#1281](https://github.com/rapidsai/rmm/pull/1281)) [@wence-](https://github.com/wence-)
+- Remove padding from device_memory_resource ([#1278](https://github.com/rapidsai/rmm/pull/1278)) [@vyasr](https://github.com/vyasr)
+
+## 🐛 Bug Fixes
+
+- Fix typo in wheels-test.yaml. ([#1310](https://github.com/rapidsai/rmm/pull/1310)) [@bdice](https://github.com/bdice)
+- Add a missing &#39;#include &lt;array&gt;&#39; in logger.hpp ([#1295](https://github.com/rapidsai/rmm/pull/1295)) [@valgur](https://github.com/valgur)
+- Use gbench `thread_index()` accessor to fix replay bench compilation ([#1293](https://github.com/rapidsai/rmm/pull/1293)) [@harrism](https://github.com/harrism)
+- Ensure logger tests don&#39;t generate temp directories in build dir ([#1289](https://github.com/rapidsai/rmm/pull/1289)) [@robertmaynard](https://github.com/robertmaynard)
+
+## 🚀 New Features
+
+- Remove now-deprecated top-level allocator functions ([#1281](https://github.com/rapidsai/rmm/pull/1281)) [@wence-](https://github.com/wence-)
+
+## 🛠️ Improvements
+
+- Switch to new CI wheel building pipeline ([#1305](https://github.com/rapidsai/rmm/pull/1305)) [@vyasr](https://github.com/vyasr)
+- Revert CUDA 12.0 CI workflows to branch-23.08. ([#1303](https://github.com/rapidsai/rmm/pull/1303)) [@bdice](https://github.com/bdice)
+- Update linters: remove flake8, add ruff, update cython-lint ([#1302](https://github.com/rapidsai/rmm/pull/1302)) [@vyasr](https://github.com/vyasr)
+- Adding identify minimum version requirement ([#1301](https://github.com/rapidsai/rmm/pull/1301)) [@hyperbolic2346](https://github.com/hyperbolic2346)
+- Stop invoking setup.py ([#1300](https://github.com/rapidsai/rmm/pull/1300)) [@vyasr](https://github.com/vyasr)
+- Use cuda-version to constrain cudatoolkit. ([#1296](https://github.com/rapidsai/rmm/pull/1296)) [@bdice](https://github.com/bdice)
+- Update to CMake 3.26.4 ([#1291](https://github.com/rapidsai/rmm/pull/1291)) [@vyasr](https://github.com/vyasr)
+- use rapids-upload-docs script ([#1288](https://github.com/rapidsai/rmm/pull/1288)) [@AyodeAwe](https://github.com/AyodeAwe)
+- Reorder parameters in RMM_EXPECTS ([#1286](https://github.com/rapidsai/rmm/pull/1286)) [@vyasr](https://github.com/vyasr)
+- Remove documentation build scripts for Jenkins ([#1285](https://github.com/rapidsai/rmm/pull/1285)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Remove padding from device_memory_resource ([#1278](https://github.com/rapidsai/rmm/pull/1278)) [@vyasr](https://github.com/vyasr)
+- Unpin scikit-build upper bound ([#1275](https://github.com/rapidsai/rmm/pull/1275)) [@vyasr](https://github.com/vyasr)
+- RMM: Build CUDA 12 packages ([#1223](https://github.com/rapidsai/rmm/pull/1223)) [@bdice](https://github.com/bdice)
+
 # RMM 23.06.00 (7 Jun 2023)
 
 ## 🚨 Breaking Changes
