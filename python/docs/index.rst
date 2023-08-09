@@ -12,6 +12,7 @@ Welcome to rmm's documentation!
 
    basics.md
    api.rst
+   librmm_api.rst
 
 
 Indices and tables
