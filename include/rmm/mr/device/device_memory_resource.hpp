@@ -70,7 +70,7 @@ namespace rmm::mr {
  * pool_memory_resource objects for each device and sets them as the per-device resource for that
  * device.
  *
- * @code{c++}
+ * @code{.cpp}
  * std::vector<unique_ptr<pool_memory_resource>> per_device_pools;
  * for(int i = 0; i < N; ++i) {
  *   cudaSetDevice(i);

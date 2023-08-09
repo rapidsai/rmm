@@ -55,7 +55,7 @@ using failure_callback_t = std::function<bool(std::size_t, void*)>;
  * When implementing a callback function for allocation retry, care must be taken to avoid an
  * infinite loop. The following example makes sure to only retry the allocation once:
  *
- * @code{c++}
+ * @code{.cpp}
  * using failure_callback_adaptor =
  *   rmm::mr::failure_callback_resource_adaptor<rmm::mr::device_memory_resource>;
  *
