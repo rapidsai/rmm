@@ -36,32 +36,4 @@ __all__ = [
     "unregister_reinitialize_hook",
 ]
 
-__version__ = "23.06.00"
-
-
-_deprecated_names = {
-    "rmm_cupy_allocator": "cupy",
-    "rmm_torch_allocator": "torch",
-    "RMMNumbaManager": "numba",
-    "_numba_memory_manager": "numba",
-}
-
-
-def __getattr__(name):
-    if name in _deprecated_names:
-        import importlib
-        import warnings
-
-        package = _deprecated_names[name]
-        warnings.warn(
-            f"Use of 'rmm.{name}' is deprecated and will be removed. "
-            f"'{name}' now lives in the 'rmm.allocators.{package}' sub-module, "
-            "please update your imports.",
-            FutureWarning,
-        )
-        module = importlib.import_module(
-            f".allocators.{package}", package=__name__
-        )
-        return getattr(module, name)
-    else:
-        raise AttributeError(f"Module '{__name__}' has no attribute '{name}'")
+__version__ = "23.08.00"
