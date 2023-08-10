@@ -31,6 +31,5 @@ dependencies:
 - sphinx-copybutton
 - sphinx-markdown-tables
 - sphinx_rtd_theme
-- sphinxcontrib-jquery=3.0.0
 - tomli
 name: all_cuda-120_arch-x86_64

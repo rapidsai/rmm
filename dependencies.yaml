@@ -163,7 +163,6 @@ dependencies:
           - sphinx_rtd_theme
           - sphinx-copybutton
           - sphinx-markdown-tables
-          - sphinxcontrib-jquery=3.0.0
   py_version:
     specific:
       - output_types: conda
