@@ -35,6 +35,7 @@ release = "23.10.00"
 # ones.
 
 extensions = [
+    "sphinxcontrib.jquery",
     "sphinx.ext.intersphinx",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
