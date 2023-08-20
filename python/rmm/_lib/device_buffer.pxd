@@ -17,17 +17,23 @@ from libcpp.memory cimport unique_ptr
 
 from rmm._cuda.stream cimport Stream
 from rmm._lib.cuda_stream_view cimport cuda_stream_view
-from rmm._lib.memory_resource cimport DeviceMemoryResource
+from rmm._lib.memory_resource cimport (
+    DeviceMemoryResource,
+    device_memory_resource,
+)
 
 
 cdef extern from "rmm/device_buffer.hpp" namespace "rmm" nogil:
     cdef cppclass device_buffer:
         device_buffer()
-        device_buffer(size_t size, cuda_stream_view stream) except +
+        device_buffer(size_t size, cuda_stream_view stream,
+                      device_memory_resource* mr) except +
         device_buffer(const void* source_data,
-                      size_t size, cuda_stream_view stream) except +
+                      size_t size, cuda_stream_view stream,
+                      device_memory_resource* mr) except +
         device_buffer(const device_buffer buf,
-                      cuda_stream_view stream) except +
+                      cuda_stream_view stream,
+                      device_memory_resource* mr) except +
         void reserve(size_t new_capacity, cuda_stream_view stream) except +
         void resize(size_t new_size, cuda_stream_view stream) except +
         void shrink_to_fit(cuda_stream_view stream) except +
@@ -56,7 +62,7 @@ cdef class DeviceBuffer:
 
     @staticmethod
     cdef DeviceBuffer c_to_device(const unsigned char[::1] b,
-                                  Stream stream=*)
+                                  Stream stream=*, DeviceMemoryResource mr=*)
     cpdef copy_to_host(self, ary=*, Stream stream=*)
     cpdef copy_from_host(self, ary, Stream stream=*)
     cpdef copy_from_device(self, cuda_ary, Stream stream=*)
@@ -71,7 +77,7 @@ cdef class DeviceBuffer:
     cdef device_buffer c_release(self) except *
 
 cpdef DeviceBuffer to_device(const unsigned char[::1] b,
-                             Stream stream=*)
+                             Stream stream=*, DeviceMemoryResource mr=*)
 cpdef void copy_ptr_to_host(uintptr_t db,
                             unsigned char[::1] hb,
                             Stream stream=*) except *

@@ -45,7 +45,8 @@ cdef class DeviceBuffer:
     def __cinit__(self, *,
                   uintptr_t ptr=0,
                   size_t size=0,
-                  Stream stream=DEFAULT_STREAM):
+                  Stream stream=DEFAULT_STREAM,
+                  DeviceMemoryResource mr=None):
         """Construct a ``DeviceBuffer`` with optional size and data pointer
 
         Parameters
@@ -62,6 +63,9 @@ cdef class DeviceBuffer:
             scope while the DeviceBuffer is in use. Destroying the
             underlying stream while the DeviceBuffer is in use will
             result in undefined behavior.
+        mr : optional
+            Memory resource to use to allocate memory for the underlying
+            ``device_buffer``.
 
         Note
         ----
@@ -75,22 +79,31 @@ cdef class DeviceBuffer:
         >>> db = rmm.DeviceBuffer(size=5)
         """
         cdef const void* c_ptr
+        cdef device_memory_resource* c_mr
+
+        # Use default memory resource if none is specified.
+        # Also get C++ representation to call constructor below.
+        if mr is None:
+            mr = get_current_device_resource()
+        c_mr = mr.get_mr()
 
         with nogil:
             c_ptr = <const void*>ptr
 
             if size == 0:
-                self.c_obj.reset(new device_buffer())
+                self.c_obj.reset(new device_buffer(c_mr))
             elif c_ptr == NULL:
-                self.c_obj.reset(new device_buffer(size, stream.view()))
+                self.c_obj.reset(new device_buffer(size, stream.view(), c_mr))
             else:
-                self.c_obj.reset(new device_buffer(c_ptr, size, stream.view()))
+                self.c_obj.reset(
+                    new device_buffer(c_ptr, size, stream.view(), c_mr)
+                )
 
                 if stream.c_is_default():
                     stream.c_synchronize()
 
         # Save a reference to the MR and stream used for allocation
-        self.mr = get_current_device_resource()
+        self.mr = mr
         self.stream = stream
 
     def __len__(self):
@@ -131,7 +144,9 @@ cdef class DeviceBuffer:
         }
         return intf
 
-    def copy(self):
+    def copy(self, *,
+             Stream stream=DEFAULT_STREAM,
+             DeviceMemoryResource mr=None):
         """Returns a copy of DeviceBuffer.
 
         Returns
@@ -150,9 +165,9 @@ cdef class DeviceBuffer:
         >>> assert db is not db_copy
         >>> assert db.ptr != db_copy.ptr
         """
-        ret = DeviceBuffer(ptr=self.ptr, size=self.size, stream=self.stream)
-        ret.mr = self.mr
-        return ret
+        return DeviceBuffer(
+            ptr=self.ptr, size=self.size, stream=stream, mr=mr
+        )
 
     def __copy__(self):
         return self.copy()
@@ -172,15 +187,17 @@ cdef class DeviceBuffer:
 
     @staticmethod
     cdef DeviceBuffer c_to_device(const unsigned char[::1] b,
-                                  Stream stream=DEFAULT_STREAM):
+                                  Stream stream=DEFAULT_STREAM,
+                                  DeviceMemoryResource mr=None):
         """Calls ``to_device`` function on arguments provided"""
-        return to_device(b, stream)
+        return to_device(b, stream, mr)
 
     @staticmethod
     def to_device(const unsigned char[::1] b,
-                  Stream stream=DEFAULT_STREAM):
+                  Stream stream=DEFAULT_STREAM,
+                  DeviceMemoryResource mr=None):
         """Calls ``to_device`` function on arguments provided."""
-        return to_device(b, stream)
+        return to_device(b, stream, mr)
 
     cpdef copy_to_host(self, ary=None, Stream stream=DEFAULT_STREAM):
         """Copy from a ``DeviceBuffer`` to a buffer on host.
@@ -346,7 +363,8 @@ cdef class DeviceBuffer:
 
 @cython.boundscheck(False)
 cpdef DeviceBuffer to_device(const unsigned char[::1] b,
-                             Stream stream=DEFAULT_STREAM):
+                             Stream stream=DEFAULT_STREAM,
+                             DeviceMemoryResource mr=None):
     """Return a new ``DeviceBuffer`` with a copy of the data.
 
     Parameters
@@ -374,7 +392,7 @@ cpdef DeviceBuffer to_device(const unsigned char[::1] b,
 
     cdef uintptr_t p = <uintptr_t>&b[0]
     cdef size_t s = len(b)
-    return DeviceBuffer(ptr=p, size=s, stream=stream)
+    return DeviceBuffer(ptr=p, size=s, stream=stream, mr=mr)
 
 
 @cython.boundscheck(False)
