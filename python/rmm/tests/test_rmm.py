@@ -604,7 +604,7 @@ def test_limiting_resource_adaptor(mr):
 
     allocation_limit = 1 << 20
     num_buffers = 2
-    buffer_size = allocation_limit / num_buffers
+    buffer_size = allocation_limit // num_buffers
 
     mr = rmm.mr.LimitingResourceAdaptor(
         cuda_mr, allocation_limit=allocation_limit
