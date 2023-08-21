@@ -615,7 +615,7 @@ def test_limiting_resource_adaptor(mr):
 
     buffers = [rmm.DeviceBuffer(size=buffer_size) for _ in range(num_buffers)]
 
-    assert mr.get_allocated_bytes() == buffer_size * num_buffers
+    assert mr.get_allocated_bytes() == sum(b.size for b in buffers)
 
     with pytest.raises(MemoryError):
         rmm.DeviceBuffer(size=1)
