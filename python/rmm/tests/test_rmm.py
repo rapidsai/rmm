@@ -587,12 +587,19 @@ def test_cuda_async_memory_resource_threshold(nelem, alloc):
 
 
 @pytest.mark.parametrize(
-    "mr", [rmm.mr.CudaMemoryResource, rmm.mr.CudaAsyncMemoryResource]
+    "mr",
+    [
+        rmm.mr.CudaMemoryResource,
+        pytest.param(
+            rmm.mr.CudaAsyncMemoryResource,
+            marks=pytest.mark.skipif(
+                not _CUDAMALLOC_ASYNC_SUPPORTED,
+                reason="cudaMallocAsync not supported",
+            ),
+        ),
+    ],
 )
 def test_limiting_resource_adaptor(mr):
-    if not _CUDAMALLOC_ASYNC_SUPPORTED:
-        pytest.skip("cudaMallocAsync not supported")
-
     cuda_mr = mr()
 
     allocation_limit = 1 << 20
