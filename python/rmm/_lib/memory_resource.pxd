@@ -69,6 +69,9 @@ cdef class CallbackMemoryResource(DeviceMemoryResource):
     cdef object _allocate_func
     cdef object _deallocate_func
 
+cdef class LimitingResourceAdaptor(UpstreamResourceAdaptor):
+    pass
+
 cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
     cdef object _log_file_name
     cpdef get_file_name(self)
