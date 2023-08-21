@@ -27,7 +27,7 @@ HELP="$0 [clean] [librmm] [rmm] [-v] [-g] [-n] [-s] [--ptds] [--cmake-args=\"<ar
    tests                       - build tests
    -v                          - verbose build mode
    -g                          - build for debug
-   -n                          - no install step
+   -n                          - no install step (does not affect Python)
    -s                          - statically link against cudart
    --ptds                      - enable per-thread default stream
    --cmake-args=\\\"<args>\\\" - pass arbitrary list of CMake configuration options (escape all quotes in argument)
@@ -142,8 +142,9 @@ if hasArg --ptds; then
 fi
 
 # Append `-DFIND_RMM_CPP=ON` to CMAKE_ARGS unless a user specified the option.
+SKBUILD_EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS}"
 if [[ "${EXTRA_CMAKE_ARGS}" != *"DFIND_RMM_CPP"* ]]; then
-    EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DFIND_RMM_CPP=ON"
+    SKBUILD_EXTRA_CMAKE_ARGS="${SKBUILD_EXTRA_CMAKE_ARGS} -DFIND_RMM_CPP=ON"
 fi
 
 # If clean given, run it prior to any other steps
@@ -174,15 +175,6 @@ fi
 
 # Build and install the rmm Python package
 if (( NUMARGS == 0 )) || hasArg rmm; then
-    cd "${REPODIR}/python"
-    export INSTALL_PREFIX
-    echo "building rmm..."
-
-    python setup.py build_ext --inplace -- -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX} ${EXTRA_CMAKE_ARGS}
-
-    if [[ ${INSTALL_TARGET} != "" ]]; then
-        echo "installing rmm..."
-        python setup.py install --single-version-externally-managed --record=record.txt -- -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX} ${EXTRA_CMAKE_ARGS}
-    fi
-
+    echo "building and installing rmm..."
+    SKBUILD_CONFIGURE_OPTIONS="${SKBUILD_EXTRA_CMAKE_ARGS}" python -m pip install --no-build-isolation --no-deps ${REPODIR}/python
 fi

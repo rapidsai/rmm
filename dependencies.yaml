@@ -10,6 +10,7 @@ files:
       - checks
       - cudatoolkit
       - develop
+      - docs
       - run
       - test_python
   test_python:
@@ -62,7 +63,7 @@ dependencies:
       - output_types: [conda, requirements, pyproject]
         packages:
           - &cmake_ver cmake>=3.26.4
-          - cython>=0.29,<0.30
+          - cython>=3.0.0
           - ninja
           - scikit-build>=0.13.1
           - tomli
@@ -107,6 +108,9 @@ dependencies:
       - output_types: [conda, requirements]
         packages:
           - pre-commit
+          # pre-commit requires identify minimum version 1.0, but clang-format requires textproto support and that was
+          # added in 2.5.20, so we need to call out the minimum version needed for our plugins
+          - identify>=2.5.20
   cudatoolkit:
     specific:
       - output_types: conda
@@ -114,23 +118,28 @@ dependencies:
           - matrix:
               cuda: "11.2"
             packages:
-              - cudatoolkit=11.2
+              - cuda-version=11.2
+              - cudatoolkit
           - matrix:
               cuda: "11.4"
             packages:
-              - cudatoolkit=11.4
+              - cuda-version=11.4
+              - cudatoolkit
           - matrix:
               cuda: "11.5"
             packages:
-              - cudatoolkit=11.5
+              - cuda-version=11.5
+              - cudatoolkit
           - matrix:
               cuda: "11.6"
             packages:
-              - cudatoolkit=11.6
+              - cuda-version=11.6
+              - cudatoolkit
           - matrix:
               cuda: "11.8"
             packages:
-              - cudatoolkit=11.8
+              - cuda-version=11.8
+              - cudatoolkit
           - matrix:
               cuda: "12.0"
             packages:
@@ -147,6 +156,7 @@ dependencies:
           - doxygen=1.8.20
           - graphviz
           - ipython
+          - make
           - nbsphinx
           - numpydoc
           - sphinx
