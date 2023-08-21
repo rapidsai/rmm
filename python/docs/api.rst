@@ -15,6 +15,7 @@ Memory Resources
 
 .. automodule:: rmm.mr
    :members:
+   :inherited-members:
    :undoc-members:
    :show-inheritance:
 
@@ -28,6 +29,7 @@ Memory Allocators
 
 .. automodule:: rmm.allocators.numba
    :members:
+   :inherited-members:
    :undoc-members:
    :show-inheritance:
 

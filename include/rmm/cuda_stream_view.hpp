@@ -21,6 +21,7 @@
 #include <cuda_runtime_api.h>
 
 #include <atomic>
+#include <ciso646>
 #include <cstddef>
 #include <cstdint>
 

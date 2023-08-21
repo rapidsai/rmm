@@ -91,7 +91,7 @@ example, enabling the `ManagedMemoryResource` tells RMM to use
 > :warning: The default resource must be set for any device **before**
 > allocating any device memory on that device.  Setting or changing the
 > resource after device allocations have been made can lead to unexpected
-> behaviour or crashes. See [Multiple Devices](#multiple-devices)
+> behaviour or crashes.
 
 As another example, `PoolMemoryResource` allows you to allocate a
 large "pool" of device memory up-front. Subsequent allocations will

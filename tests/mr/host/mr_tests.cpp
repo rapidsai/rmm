@@ -25,6 +25,7 @@
 
 #include <gtest/gtest.h>
 
+#include <ciso646>
 #include <cstddef>
 #include <deque>
 #include <random>

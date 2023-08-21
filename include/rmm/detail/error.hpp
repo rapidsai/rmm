@@ -105,9 +105,18 @@ class out_of_range : public std::out_of_range {
  *     arguments are provided), defaults to `rmm::logic_error`
  * @throw `_exception_type` if the condition evaluates to 0 (false).
  */
+#ifdef _WIN32
+// MSVC preprocessor backward compatibility workaround
+// https://developercommunity.visualstudio.com/t/-va-args-seems-to-be-trated-as-a-single-parameter/460154
+#define MSVC_COMPAT_RMM_EXPECTS(tuple) GET_RMM_EXPECTS_MACRO tuple
+#define RMM_EXPECTS(...)                                               \
+  MSVC_COMPAT_RMM_EXPECTS((__VA_ARGS__, RMM_EXPECTS_3, RMM_EXPECTS_2)) \
+  (__VA_ARGS__)
+#else
 #define RMM_EXPECTS(...)                                           \
   GET_RMM_EXPECTS_MACRO(__VA_ARGS__, RMM_EXPECTS_3, RMM_EXPECTS_2) \
   (__VA_ARGS__)
+#endif
 #define GET_RMM_EXPECTS_MACRO(_1, _2, _3, NAME, ...) NAME
 #define RMM_EXPECTS_3(_condition, _reason, _exception_type)                       \
   (!!(_condition)) ? static_cast<void>(0)                                         \
@@ -129,9 +138,17 @@ class out_of_range : public std::out_of_range {
  * RMM_FAIL("Unsupported code path", std::runtime_error);
  * ```
  */
+#ifdef _WIN32
+// MSVC preprocessor backward compatibility workaround
+#define MSVC_COMPAT_RMM_FAIL(tuple) GET_RMM_FAIL_MACRO tuple
+#define RMM_FAIL(...)                                         \
+  MSVC_COMPAT_RMM_FAIL((__VA_ARGS__, RMM_FAIL_2, RMM_FAIL_1)) \
+  (__VA_ARGS__)
+#else
 #define RMM_FAIL(...)                                     \
   GET_RMM_FAIL_MACRO(__VA_ARGS__, RMM_FAIL_2, RMM_FAIL_1) \
   (__VA_ARGS__)
+#endif
 #define GET_RMM_FAIL_MACRO(_1, _2, NAME, ...) NAME
 #define RMM_FAIL_2(_what, _exception_type)       \
   /*NOLINTNEXTLINE(bugprone-macro-parentheses)*/ \

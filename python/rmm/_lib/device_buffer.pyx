@@ -172,7 +172,7 @@ cdef class DeviceBuffer:
 
     @staticmethod
     cdef DeviceBuffer c_to_device(const unsigned char[::1] b,
-                                  Stream stream=DEFAULT_STREAM):
+                                  Stream stream=DEFAULT_STREAM) except *:
         """Calls ``to_device`` function on arguments provided"""
         return to_device(b, stream)
 
@@ -382,7 +382,7 @@ cdef void _copy_async(const void* src,
                       void* dst,
                       size_t count,
                       ccudart.cudaMemcpyKind kind,
-                      cuda_stream_view stream) nogil except *:
+                      cuda_stream_view stream) except * nogil:
     """
     Asynchronously copy data between host and/or device pointers.
 

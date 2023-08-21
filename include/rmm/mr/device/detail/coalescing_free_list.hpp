@@ -23,6 +23,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <ciso646>
 #include <cstddef>
 #include <iostream>
 #include <iterator>

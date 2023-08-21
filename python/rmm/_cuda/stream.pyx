@@ -48,7 +48,7 @@ cdef class Stream:
                 self._init_from_cupy_stream(obj)
 
     @staticmethod
-    cdef Stream _from_cudaStream_t(cudaStream_t s, object owner=None):
+    cdef Stream _from_cudaStream_t(cudaStream_t s, object owner=None) except *:
         """
         Construct a Stream from a cudaStream_t.
         """
@@ -57,13 +57,13 @@ cdef class Stream:
         obj._owner = owner
         return obj
 
-    cdef cuda_stream_view view(self) nogil except *:
+    cdef cuda_stream_view view(self) except * nogil:
         """
         Generate a rmm::cuda_stream_view from this Stream instance
         """
         return cuda_stream_view(<cudaStream_t><uintptr_t>(self._cuda_stream))
 
-    cdef void c_synchronize(self) nogil except *:
+    cdef void c_synchronize(self) except * nogil:
         """
         Synchronize the CUDA stream.
         This function *must* be called in a `with nogil` block
@@ -77,7 +77,7 @@ cdef class Stream:
         with nogil:
             self.c_synchronize()
 
-    cdef bool c_is_default(self) nogil except *:
+    cdef bool c_is_default(self) except * nogil:
         """
         Check if we are the default CUDA stream
         """
