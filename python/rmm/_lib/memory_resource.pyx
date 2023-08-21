@@ -164,6 +164,16 @@ cdef extern from "rmm/mr/device/binning_memory_resource.hpp" \
             size_t allocation_size,
             device_memory_resource* bin_resource) except +
 
+cdef extern from "rmm/mr/device/limiting_resource_adaptor.hpp" \
+        namespace "rmm::mr" nogil:
+    cdef cppclass limiting_resource_adaptor[Upstream](device_memory_resource):
+        limiting_resource_adaptor(
+            Upstream* upstream_mr,
+            size_t allocation_limit) except +
+
+        size_t get_allocated_bytes() except +
+        size_t get_allocation_limit() except +
+
 cdef extern from "rmm/mr/device/logging_resource_adaptor.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass logging_resource_adaptor[Upstream](device_memory_resource):
@@ -647,6 +657,61 @@ def _append_id(filename, id):
     """
     name, ext = os.path.splitext(filename)
     return f"{name}.dev{id}{ext}"
+
+
+cdef class LimitingResourceAdaptor(UpstreamResourceAdaptor):
+
+    def __cinit__(
+        self,
+        DeviceMemoryResource upstream_mr,
+        size_t allocation_limit
+    ):
+        self.c_obj.reset(
+            new limiting_resource_adaptor[device_memory_resource](
+                upstream_mr.get_mr(),
+                allocation_limit
+            )
+        )
+
+    def __init__(
+        self,
+        DeviceMemoryResource upstream_mr,
+        size_t allocation_limit
+    ):
+        """
+        Memory resource that limits the total allocation amount possible
+        performed by an upstream memory resource.
+
+        Parameters
+        ----------
+        upstream_mr : DeviceMemoryResource
+            The upstream memory resource.
+        allocation_limit : size_t
+            Maximum memory allowed for this allocator.
+        """
+        pass
+
+    def get_allocated_bytes(self) -> size_t:
+        """
+        Query the number of bytes that have been allocated. Note that this can
+        not be used to know how large of an allocation is possible due to both
+        possible fragmentation and also internal page sizes and alignment that
+        is not tracked by this allocator.
+        """
+        return (<limiting_resource_adaptor[device_memory_resource]*>(
+            self.c_obj.get())
+        )[0].get_allocated_bytes()
+
+    def get_allocation_limit(self) -> size_t:
+        """
+        Query the maximum number of bytes that this allocator is allowed to
+        allocate. This is the limit on the allocator and not a representation
+        of the underlying device. The device may not be able to support this
+        limit.
+        """
+        return (<limiting_resource_adaptor[device_memory_resource]*>(
+            self.c_obj.get())
+        )[0].get_allocation_limit()
 
 
 cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
