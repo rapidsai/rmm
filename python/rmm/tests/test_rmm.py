@@ -618,7 +618,7 @@ def test_limiting_resource_adaptor(mr):
     assert mr.get_allocated_bytes() == buffer_size * num_buffers
 
     with pytest.raises(MemoryError):
-        buffers.append(rmm.DeviceBuffer(size=buffer_size))
+        rmm.DeviceBuffer(size=1)
 
 
 def test_statistics_resource_adaptor(stats_mr):
