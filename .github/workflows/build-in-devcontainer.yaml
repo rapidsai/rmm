@@ -50,11 +50,12 @@ jobs:
         with:
           node-version: '16'
       - if: ${{ env.HAS_DEVCONTAINER == 'true' }}
-        name: Symlink devcontainer.json file
+        name: Copy devcontainer.json file up one level
         run: |
-          ln -s \
+          cp \
             .devcontainer/cuda${{ matrix.cuda }}-${{ matrix.pkgr }}/devcontainer.json \
             .devcontainer/devcontainer.json
+          ls -all .
       - if: ${{ env.HAS_DEVCONTAINER == 'true' }}
         name: Run build in devcontainer
         uses: devcontainers/ci@v0.3
