@@ -48,9 +48,9 @@ jobs:
           push: never
           runCmd: "${{ inputs.build_command }}"
           subFolder: ".devcontainer/cuda${{ matrix.cuda }}-${{ matrix.pkgr }}"
-          env:
-            AWS_REGION: "${{ vars.AWS_REGION }}"
-            SCCACHE_REGION: "${{ vars.AWS_REGION }}"
-            AWS_ACCESS_KEY_ID: "${{ env.AWS_ACCESS_KEY_ID }}"
-            AWS_SESSION_TOKEN: "${{ env.AWS_SESSION_TOKEN }}"
-            AWS_SECRET_ACCESS_KEY: "${{ env.AWS_SECRET_ACCESS_KEY }}"
+          env: |
+            AWS_REGION="${{ vars.AWS_REGION }}"
+            SCCACHE_REGION="${{ vars.AWS_REGION }}"
+            AWS_ACCESS_KEY_ID="${{ env.AWS_ACCESS_KEY_ID }}"
+            AWS_SESSION_TOKEN="${{ env.AWS_SESSION_TOKEN }}"
+            AWS_SECRET_ACCESS_KEY="${{ env.AWS_SECRET_ACCESS_KEY }}"
