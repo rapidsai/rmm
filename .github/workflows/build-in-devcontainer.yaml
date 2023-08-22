@@ -45,6 +45,11 @@ jobs:
           aws-region: ${{ vars.AWS_REGION }}
           role-duration-seconds: 43200 # 12h
       - if: ${{ env.HAS_DEVCONTAINER == 'true' }}
+        name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+      - if: ${{ env.HAS_DEVCONTAINER == 'true' }}
         name: Run build in devcontainer
         uses: devcontainers/ci@v0.3
         with:
