@@ -27,6 +27,7 @@ jobs:
     uses: rapidsai/shared-action-workflows/.github/workflows/checks.yaml@branch-23.10
     with:
       enable_check_generated_files: false
+      enable_check_pr_job_dependencies: false
   conda-cpp-build:
     needs: checks
     secrets: inherit
