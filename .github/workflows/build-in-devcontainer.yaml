@@ -55,7 +55,6 @@ jobs:
           cp \
             .devcontainer/cuda${{ matrix.cuda }}-${{ matrix.pkgr }}/devcontainer.json \
             .devcontainer/devcontainer.json
-          ls -all .
       - if: ${{ env.HAS_DEVCONTAINER == 'true' }}
         name: Run build in devcontainer
         uses: devcontainers/ci@v0.3
@@ -63,7 +62,7 @@ jobs:
           push: never
           runCmd: "${{ inputs.build_command }}"
           env: |
-            "SCCACHE_REGION=${{ vars.AWS_REGION }}"
-            "AWS_ACCESS_KEY_ID=${{ env.AWS_ACCESS_KEY_ID }}"
-            "AWS_SESSION_TOKEN=${{ env.AWS_SESSION_TOKEN }}"
-            "AWS_SECRET_ACCESS_KEY=${{ env.AWS_SECRET_ACCESS_KEY }}"
+            SCCACHE_REGION=${{ vars.AWS_REGION }}
+            AWS_ACCESS_KEY_ID=${{ env.AWS_ACCESS_KEY_ID }}
+            AWS_SESSION_TOKEN=${{ env.AWS_SESSION_TOKEN }}
+            AWS_SECRET_ACCESS_KEY=${{ env.AWS_SECRET_ACCESS_KEY }}
