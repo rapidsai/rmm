@@ -7,7 +7,7 @@ on:
         type: string
       node_type:
         type: string
-        default: "cpu8"
+        default: "cpu4"
       build_command:
         type: string
         required: true
@@ -18,10 +18,8 @@ jobs:
       fail-fast: false
       matrix:
         arch: ["amd64"]
-        cuda: ["11.8"]
-        # cuda: ["11.8", "12.0"]
-        pkgr: ["conda"]
-        # pkgr: ["conda", "pip"]
+        cuda: ["11.8", "12.0"]
+        pkgr: ["conda", "pip"]
     runs-on: "linux-${{ matrix.arch }}-${{ inputs.node_type }}"
     permissions:
       id-token: write # This is required for configure-aws-credentials
