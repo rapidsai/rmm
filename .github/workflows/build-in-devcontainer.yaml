@@ -17,11 +17,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        arch: ["amd64"]
         cuda: ["11.8"]
         # cuda: ["11.8", "12.0"]
         pkgr: ["conda"]
         # pkgr: ["conda", "pip"]
-    runs-on: "linux-${{ matrix.ARCH }}-${{ inputs.node_type }}"
+    runs-on: "linux-${{ matrix.arch }}-${{ inputs.node_type }}"
     steps:
       - uses: actions/checkout@v3
         with:
