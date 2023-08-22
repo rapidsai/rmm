@@ -1,0 +1,56 @@
+on:
+  workflow_call:
+    inputs:
+      sha:
+        type: string
+      repo:
+        type: string
+      node_type:
+        type: string
+        default: "cpu8"
+      build_command:
+        type: string
+        required: true
+
+jobs:
+  build-in-devcontainer:
+    strategy:
+      fail-fast: false
+      matrix:
+        cuda: ["11.8"]
+        # cuda: ["11.8", "12.0"]
+        pkgr: ["conda"]
+        # pkgr: ["conda", "pip"]
+    runs-on: "linux-${{ matrix.ARCH }}-${{ inputs.node_type }}"
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          repository: ${{ inputs.repo }}
+          ref: ${{ inputs.sha }}
+          fetch-depth: 0
+      - name: Check if repo has devcontainer
+        run: |
+          if test -f .devcontainer/cuda${{ matrix.cuda }}-${{ matrix.pkgr }}/devcontainer.json; then
+            echo "HAS_DEVCONTAINER=true" >> "${GITHUB_ENV}";
+          else
+            echo "HAS_DEVCONTAINER=false" >> "${GITHUB_ENV}";
+          fi
+      - if: ${{ env.HAS_DEVCONTAINER == 'true' }}
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-duration-seconds: 43200 # 12h
+      - if: ${{ env.HAS_DEVCONTAINER == 'true' }}
+        name: Run make ci-build in dev container
+        uses: devcontainers/ci@v0.3
+        with:
+          push: never
+          runCmd: "${{ inputs.build_command }}"
+          subFolder: ".devcontainer/cuda${{ matrix.cuda }}-${{ matrix.pkgr }}"
+          env:
+            AWS_REGION: "${{ vars.AWS_REGION }}"
+            SCCACHE_REGION: "${{ vars.AWS_REGION }}"
+            AWS_ACCESS_KEY_ID: "${{ env.AWS_ACCESS_KEY_ID }}"
+            AWS_SESSION_TOKEN: "${{ env.AWS_SESSION_TOKEN }}"
+            AWS_SECRET_ACCESS_KEY: "${{ env.AWS_SECRET_ACCESS_KEY }}"
