@@ -50,12 +50,17 @@ jobs:
         with:
           node-version: '16'
       - if: ${{ env.HAS_DEVCONTAINER == 'true' }}
+        name: Symlink devcontainer.json file
+        run: |
+          ln -s \
+            .devcontainer/cuda${{ matrix.cuda }}-${{ matrix.pkgr }}/devcontainer.json \
+            .devcontainer/devcontainer.json
+      - if: ${{ env.HAS_DEVCONTAINER == 'true' }}
         name: Run build in devcontainer
         uses: devcontainers/ci@v0.3
         with:
           push: never
           runCmd: "${{ inputs.build_command }}"
-          subFolder: ".devcontainer/cuda${{ matrix.cuda }}-${{ matrix.pkgr }}"
           env: |
             "SCCACHE_REGION=${{ vars.AWS_REGION }}"
             "AWS_ACCESS_KEY_ID=${{ env.AWS_ACCESS_KEY_ID }}"
