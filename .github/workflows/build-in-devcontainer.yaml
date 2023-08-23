@@ -5,13 +5,7 @@ on:
         type: string
       repo:
         type: string
-      arch:
-        type: string
-        required: true
-      cuda:
-        type: string
-        required: true
-      pkgr:
+      matrix:
         type: string
         required: true
       node_type:
@@ -23,7 +17,10 @@ on:
 
 jobs:
   build:
-    runs-on: "linux-${{ inputs.arch }}-${{ inputs.node_type }}"
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(inputs.matrix) }}
+    runs-on: "linux-${{ matrix.arch }}-${{ inputs.node_type }}"
     permissions:
       id-token: write # This is required for configure-aws-credentials
     steps:
@@ -34,7 +31,7 @@ jobs:
           fetch-depth: 0
       - name: Check if repo has devcontainer
         run: |
-          if test -f .devcontainer/cuda${{ inputs.cuda }}-${{ inputs.pkgr }}/devcontainer.json; then
+          if test -f .devcontainer/cuda${{ matrix.cuda }}-${{ matrix.pkgr }}/devcontainer.json; then
             echo "HAS_DEVCONTAINER=true" >> "${GITHUB_ENV}";
           else
             echo "HAS_DEVCONTAINER=false" >> "${GITHUB_ENV}";
@@ -54,7 +51,7 @@ jobs:
         name: Copy devcontainer.json file up one level
         run: |
           cp \
-            .devcontainer/cuda${{ inputs.cuda }}-${{ inputs.pkgr }}/devcontainer.json \
+            .devcontainer/cuda${{ matrix.cuda }}-${{ matrix.pkgr }}/devcontainer.json \
             .devcontainer/devcontainer.json
       - if: ${{ env.HAS_DEVCONTAINER == 'true' }}
         name: Run build in devcontainer

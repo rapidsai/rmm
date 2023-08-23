@@ -79,16 +79,16 @@ jobs:
   devcontainer:
     secrets: inherit
     uses: ./.github/workflows/build-in-devcontainer.yaml
-    strategy:
-      fail-fast: false
-      matrix:
-        arch: ["amd64"]
-        cuda: ["12.0"]
-        pkgr: ["conda", "pip"]
     with:
-      arch: ${{ matrix.arch }}
-      cuda: ${{ matrix.cuda }}
-      pkgr: ${{ matrix.pkgr }}
+      # How to generate a JSON string from YAML:
+      # cat <<EOF | yq -Mo json | jq -cM
+      #   arch: ["amd64", "arm64"]
+      #   cuda: ["11.8", "12.0"]
+      #   pkgr: ["conda", "pip"]
+      #   exclude:
+      #     - { cuda: '12.0', arch: 'arm64', pkgr: 'conda' }
+      # EOF
+      matrix: '{"arch":["amd64"],"cuda":["12.0"],"pkgr":["conda","pip"]}'
       build_command: |
         build-rmm-cpp -DBUILD_BENCHMARKS=ON
         build-rmm-python
