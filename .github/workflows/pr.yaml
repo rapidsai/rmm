@@ -78,7 +78,7 @@ jobs:
       script: ci/test_wheel.sh
   devcontainer:
     secrets: inherit
-    uses: ./.github/workflows/build-in-devcontainer.yaml
+    uses: rapidsai/shared-action-workflows/.github/workflows//build-in-devcontainer.yaml@fea/devcontainers
     with:
       build_command: |
         build-rmm-cpp -DBUILD_BENCHMARKS=ON
