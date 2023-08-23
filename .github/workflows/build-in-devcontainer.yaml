@@ -5,6 +5,9 @@ on:
         type: string
       repo:
         type: string
+      matrix:
+        type: string
+        required: true
       node_type:
         type: string
         default: "cpu4"
@@ -16,12 +19,7 @@ jobs:
   build:
     strategy:
       fail-fast: false
-      matrix:
-        arch: ["amd64", "arm64"]
-        cuda: ["11.8", "12.0"]
-        pkgr: ["conda", "pip"]
-        exclude:
-          - { cuda: '12.0', arch: 'arm64', pkgr: 'conda' }
+      matrix: ${{ fromJSON(inputs.matrix) }}
     runs-on: "linux-${{ matrix.arch }}-${{ inputs.node_type }}"
     permissions:
       id-token: write # This is required for configure-aws-credentials
