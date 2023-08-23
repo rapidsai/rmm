@@ -20,6 +20,8 @@ jobs:
         arch: ["amd64", "arm64"]
         cuda: ["11.8", "12.0"]
         pkgr: ["conda", "pip"]
+        exclude:
+          - { cuda: '12.0', arch: 'arm64', pkgr: 'conda' }
     runs-on: "linux-${{ matrix.arch }}-${{ inputs.node_type }}"
     permissions:
       id-token: write # This is required for configure-aws-credentials
