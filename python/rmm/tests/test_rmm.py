@@ -586,6 +586,41 @@ def test_cuda_async_memory_resource_threshold(nelem, alloc):
     array_tester("u1", 2 * nelem, alloc)  # should trigger release
 
 
+@pytest.mark.parametrize(
+    "mr",
+    [
+        rmm.mr.CudaMemoryResource,
+        pytest.param(
+            rmm.mr.CudaAsyncMemoryResource,
+            marks=pytest.mark.skipif(
+                not _CUDAMALLOC_ASYNC_SUPPORTED,
+                reason="cudaMallocAsync not supported",
+            ),
+        ),
+    ],
+)
+def test_limiting_resource_adaptor(mr):
+    cuda_mr = mr()
+
+    allocation_limit = 1 << 20
+    num_buffers = 2
+    buffer_size = allocation_limit // num_buffers
+
+    mr = rmm.mr.LimitingResourceAdaptor(
+        cuda_mr, allocation_limit=allocation_limit
+    )
+    assert mr.get_allocation_limit() == allocation_limit
+
+    rmm.mr.set_current_device_resource(mr)
+
+    buffers = [rmm.DeviceBuffer(size=buffer_size) for _ in range(num_buffers)]
+
+    assert mr.get_allocated_bytes() == sum(b.size for b in buffers)
+
+    with pytest.raises(MemoryError):
+        rmm.DeviceBuffer(size=1)
+
+
 def test_statistics_resource_adaptor(stats_mr):
 
     buffers = [rmm.DeviceBuffer(size=1000) for _ in range(10)]

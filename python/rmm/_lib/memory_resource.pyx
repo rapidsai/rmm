@@ -14,10 +14,14 @@
 
 import os
 import warnings
+# This import is needed for Cython typing in translate_python_except_to_cpp
+# See https://github.com/cython/cython/issues/5589
+from builtins import BaseException
 from collections import defaultdict
 
 cimport cython
 from cython.operator cimport dereference as deref
+from libc.stddef cimport size_t
 from libc.stdint cimport int8_t, int64_t, uintptr_t
 from libcpp cimport bool
 from libcpp.memory cimport make_unique, unique_ptr
@@ -37,7 +41,7 @@ from rmm._lib.per_device_resource cimport (
 # Transparent handle of a C++ exception
 ctypedef pair[int, string] CppExcept
 
-cdef CppExcept translate_python_except_to_cpp(err: BaseException):
+cdef CppExcept translate_python_except_to_cpp(err: BaseException) noexcept:
     """Translate a Python exception into a C++ exception handle
 
     The returned exception handle can then be thrown by `throw_cpp_except()`,
@@ -160,6 +164,16 @@ cdef extern from "rmm/mr/device/binning_memory_resource.hpp" \
             size_t allocation_size,
             device_memory_resource* bin_resource) except +
 
+cdef extern from "rmm/mr/device/limiting_resource_adaptor.hpp" \
+        namespace "rmm::mr" nogil:
+    cdef cppclass limiting_resource_adaptor[Upstream](device_memory_resource):
+        limiting_resource_adaptor(
+            Upstream* upstream_mr,
+            size_t allocation_limit) except +
+
+        size_t get_allocated_bytes() except +
+        size_t get_allocation_limit() except +
+
 cdef extern from "rmm/mr/device/logging_resource_adaptor.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass logging_resource_adaptor[Upstream](device_memory_resource):
@@ -213,18 +227,41 @@ cdef extern from "rmm/mr/device/failure_callback_resource_adaptor.hpp" \
 cdef class DeviceMemoryResource:
 
     cdef device_memory_resource* get_mr(self):
+        """Get the underlying C++ memory resource object."""
         return self.c_obj.get()
 
     def allocate(self, size_t nbytes):
+        """Allocate ``nbytes`` bytes of memory.
+
+        Parameters
+        ----------
+        nbytes : size_t
+            The size of the allocation in bytes
+        """
         return <uintptr_t>self.c_obj.get().allocate(nbytes)
 
     def deallocate(self, uintptr_t ptr, size_t nbytes):
+        """Deallocate memory pointed to by ``ptr`` of size ``nbytes``.
+
+        Parameters
+        ----------
+        ptr : uintptr_t
+            Pointer to be deallocated
+        nbytes : size_t
+            Size of the allocation in bytes
+        """
         self.c_obj.get().deallocate(<void*>(ptr), nbytes)
 
 
 # See the note about `no_gc_clear` in `device_buffer.pyx`.
 @cython.no_gc_clear
 cdef class UpstreamResourceAdaptor(DeviceMemoryResource):
+    """Parent class for all memory resources that track an upstream.
+
+    Upstream resource tracking requires maintaining a reference to the upstream
+    mr so that it is kept alive and may be accessed by any downstream resource
+    adaptors.
+    """
 
     def __cinit__(self, DeviceMemoryResource upstream_mr, *args, **kwargs):
 
@@ -526,7 +563,10 @@ cdef void* _allocate_callback_wrapper(
     size_t nbytes,
     cuda_stream_view stream,
     void* ctx
-) nogil:
+    # Note that this function is specifically designed to rethrow Python
+    # exceptions as C++ exceptions when called as a callback from C++, so it is
+    # noexcept from Cython's perspective.
+) noexcept nogil:
     cdef CppExcept err
     with gil:
         try:
@@ -540,7 +580,7 @@ cdef void _deallocate_callback_wrapper(
     size_t nbytes,
     cuda_stream_view stream,
     void* ctx
-) with gil:
+) except * with gil:
     (<object>ctx)(<uintptr_t>(ptr), nbytes)
 
 
@@ -617,6 +657,61 @@ def _append_id(filename, id):
     """
     name, ext = os.path.splitext(filename)
     return f"{name}.dev{id}{ext}"
+
+
+cdef class LimitingResourceAdaptor(UpstreamResourceAdaptor):
+
+    def __cinit__(
+        self,
+        DeviceMemoryResource upstream_mr,
+        size_t allocation_limit
+    ):
+        self.c_obj.reset(
+            new limiting_resource_adaptor[device_memory_resource](
+                upstream_mr.get_mr(),
+                allocation_limit
+            )
+        )
+
+    def __init__(
+        self,
+        DeviceMemoryResource upstream_mr,
+        size_t allocation_limit
+    ):
+        """
+        Memory resource that limits the total allocation amount possible
+        performed by an upstream memory resource.
+
+        Parameters
+        ----------
+        upstream_mr : DeviceMemoryResource
+            The upstream memory resource.
+        allocation_limit : size_t
+            Maximum memory allowed for this allocator.
+        """
+        pass
+
+    def get_allocated_bytes(self) -> size_t:
+        """
+        Query the number of bytes that have been allocated. Note that this can
+        not be used to know how large of an allocation is possible due to both
+        possible fragmentation and also internal page sizes and alignment that
+        is not tracked by this allocator.
+        """
+        return (<limiting_resource_adaptor[device_memory_resource]*>(
+            self.c_obj.get())
+        )[0].get_allocated_bytes()
+
+    def get_allocation_limit(self) -> size_t:
+        """
+        Query the maximum number of bytes that this allocator is allowed to
+        allocate. This is the limit on the allocator and not a representation
+        of the underlying device. The device may not be able to support this
+        limit.
+        """
+        return (<limiting_resource_adaptor[device_memory_resource]*>(
+            self.c_obj.get())
+        )[0].get_allocation_limit()
 
 
 cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
@@ -796,7 +891,10 @@ cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
             self.c_obj.get()))[0].log_outstanding_allocations()
 
 
-cdef bool _oom_callback_function(size_t bytes, void *callback_arg) nogil:
+# Note that this function is specifically designed to rethrow Python exceptions
+# as C++ exceptions when called as a callback from C++, so it is noexcept from
+# Cython's perspective.
+cdef bool _oom_callback_function(size_t bytes, void *callback_arg) noexcept nogil:
     cdef CppExcept err
     with gil:
         try:
