@@ -147,7 +147,7 @@ class pool_memory_resource final
   using block_type = free_list::block_type;         ///< The type of block returned by the free list
   using typename detail::stream_ordered_memory_resource<pool_memory_resource<Upstream>,
                                                         detail::coalescing_free_list>::split_block;
-  using lock_guard = std::lock_guard<std::mutex>;  ///< RAII lock guard
+  using lock_guard = std::lock_guard<std::mutex>;  ///< Type of lock used to synchronize access
 
   /**
    * @brief Get the maximum size of allocations supported by this memory resource

@@ -357,12 +357,10 @@ class device_buffer {
   }
 
   /**
-   * @brief returns the number of bytes that can be held in currently allocated storage.
+   * @briefreturn{Whether or not the buffer currently holds any data}
    *
    * If `is_empty() == true`, the `device_buffer` may still hold an allocation
    * if `capacity() > 0`.
-   *
-   * @return The number of bytes that can be held in currently allocated storage.
    */
   [[nodiscard]] bool is_empty() const noexcept { return 0 == size(); }
 

@@ -35,9 +35,7 @@ struct cuda_device_id {
    */
   explicit constexpr cuda_device_id(value_type dev_id) noexcept : id_{dev_id} {}
 
-  /**
-   * @briefreturn{The wrapped integer value.}
-   */
+  /// @briefreturn{The wrapped integer value}
   [[nodiscard]] constexpr value_type value() const noexcept { return id_; }
 
  private:

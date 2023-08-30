@@ -73,13 +73,13 @@ class device_uvector {
  public:
   using value_type = T;            ///< T; stored value type
   using size_type  = std::size_t;  ///< The type used for the size of the vector
-  using reference  = value_type&;  ///< value_type&; reference type returned by operator[](size_type)
-  using const_reference =
-    value_type const&;  ///< value_type const&; constant reference type returned by operator[](size_type) const
-  using pointer        = value_type*;        ///< The type of the pointer returned by data()
-  using const_pointer  = value_type const*;  ///< The type of the pointer returned by data() const
-  using iterator       = pointer;            ///< The type of the iterator returned by begin()
-  using const_iterator = const_pointer;      ///< The type of the const iterator returned by cbegin()
+  using reference = value_type&;  ///< value_type&; reference type returned by operator[](size_type)
+  using const_reference = value_type const&;  ///< value_type const&; constant reference type
+                                              ///< returned by operator[](size_type) const
+  using pointer        = value_type*;         ///< The type of the pointer returned by data()
+  using const_pointer  = value_type const*;   ///< The type of the pointer returned by data() const
+  using iterator       = pointer;             ///< The type of the iterator returned by begin()
+  using const_iterator = const_pointer;  ///< The type of the const iterator returned by cbegin()
 
   RMM_EXEC_CHECK_DISABLE
   ~device_uvector() = default;
@@ -514,7 +514,7 @@ class device_uvector {
   }
 
   /**
-   * @briefreturn{true if the vector is empty and false if not}
+   * @briefreturn{true if the vector contains no elements, i.e. `size() == 0`}
    */
   [[nodiscard]] bool is_empty() const noexcept { return size() == 0; }
 

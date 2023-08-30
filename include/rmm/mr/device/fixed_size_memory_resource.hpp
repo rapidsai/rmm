@@ -51,9 +51,10 @@ class fixed_size_memory_resource
                                                       detail::fixed_size_free_list>;
 
   static constexpr std::size_t default_block_size = 1 << 20;  ///< Default allocation block size
-  static constexpr std::size_t default_blocks_to_preallocate =
-    128;  ///< This is the number of blocks that the pool starts out with, and also the number of
-          ///< blocks by which the pool grows when all of its current blocks are allocated
+
+  /// The number of blocks that the pool starts out with, and also the number of
+  /// blocks by which the pool grows when all of its current blocks are allocated
+  static constexpr std::size_t default_blocks_to_preallocate = 128;
 
   /**
    * @brief Construct a new `fixed_size_memory_resource` that allocates memory from
@@ -124,7 +125,7 @@ class fixed_size_memory_resource
   using block_type = free_list::block_type;         ///< The type of block managed by the free list
   using typename detail::stream_ordered_memory_resource<fixed_size_memory_resource<Upstream>,
                                                         detail::fixed_size_free_list>::split_block;
-  using lock_guard = std::lock_guard<std::mutex>;  ///< RAII lock guard
+  using lock_guard = std::lock_guard<std::mutex>;  ///< Type of lock used to synchronize access
 
   /**
    * @brief Get the (fixed) size of allocations supported by this memory resource

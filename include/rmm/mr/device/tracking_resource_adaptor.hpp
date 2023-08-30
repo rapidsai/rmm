@@ -48,9 +48,10 @@ template <typename Upstream>
 class tracking_resource_adaptor final : public device_memory_resource {
  public:
   // can be a std::shared_mutex once C++17 is adopted
-  using read_lock_t  = std::shared_lock<std::shared_timed_mutex>;  ///< RAII read lock
-  using write_lock_t = std::unique_lock<std::shared_timed_mutex>;  ///< RAII write lock
-
+  using read_lock_t =
+    std::shared_lock<std::shared_timed_mutex>;  ///< Type of lock used to synchronize read access
+  using write_lock_t =
+    std::unique_lock<std::shared_timed_mutex>;  ///< Type of lock used to synchronize write access
   /**
    * @brief Information stored about an allocation. Includes the size
    * and a stack trace if the `tracking_resource_adaptor` was initialized
