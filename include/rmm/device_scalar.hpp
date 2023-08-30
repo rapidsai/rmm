@@ -38,9 +38,9 @@ class device_scalar {
   static_assert(std::is_trivially_copyable<T>::value, "Scalar type must be trivially copyable");
 
   using value_type =
-    typename device_uvector<T>::value_type;  ///< The type of the elements in the scalar
-  using reference       = typename device_uvector<T>::reference;        ///< Not used
-  using const_reference = typename device_uvector<T>::const_reference;  ///< Not used
+    typename device_uvector<T>::value_type;  ///< T, the type of the scalar element
+  using reference       = typename device_uvector<T>::reference;        ///< value_type&
+  using const_reference = typename device_uvector<T>::const_reference;  ///< const value_type&
   using pointer =
     typename device_uvector<T>::pointer;  ///< The type of the pointer returned by data()
   using const_pointer = typename device_uvector<T>::const_pointer;  ///< The type of the iterator
@@ -245,7 +245,7 @@ class device_scalar {
    * streams (e.g. using `cudaStreamWaitEvent()` or `cudaStreamSynchronize()`), otherwise there may
    * be a race condition.
    *
-   * @return Constant pointer to underlying device memory
+   * @return Const pointer to underlying device memory
    */
   [[nodiscard]] const_pointer data() const noexcept
   {

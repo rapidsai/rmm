@@ -102,7 +102,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @brief Construct a new logging resource adaptor using `upstream` to satisfy
    *
    * @param upstream The resource used for allocating/deallocating device memory
-   * @param sinks The sinks to write log info.
+   * @param sinks A list of logging sinks to which log output will be written.
    * @param auto_flush If true, flushes the log for every (de)allocation. Warning, this will degrade
    * performance.
    */

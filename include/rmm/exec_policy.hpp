@@ -44,7 +44,7 @@ using thrust_exec_policy_t =
 class exec_policy : public thrust_exec_policy_t {
  public:
   /**
-   * @brief Construct a new exec policy object
+   * @brief Construct a new execution policy object
    *
    * @param stream The stream on which to allocate temporary memory
    * @param mr The resource to use for allocating temporary memory

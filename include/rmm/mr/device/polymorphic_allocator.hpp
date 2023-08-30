@@ -43,7 +43,7 @@ namespace rmm::mr {
 template <typename T>
 class polymorphic_allocator {
  public:
-  using value_type = T;  ///< The allocator's value type
+  using value_type = T;  ///< T, the value type of objects allocated by this allocator
   /**
    * @brief Construct a `polymorphic_allocator` using the return value of
    * `rmm::mr::get_current_device_resource()` as the underlying memory resource.
@@ -149,7 +149,7 @@ template <typename Allocator>
 class stream_allocator_adaptor {
  public:
   using value_type =
-    typename std::allocator_traits<Allocator>::value_type;  ///< The allocator's value type
+    typename std::allocator_traits<Allocator>::value_type;  ///< The value type of objects allocated by this allocator
 
   stream_allocator_adaptor() = delete;
 
@@ -213,7 +213,7 @@ class stream_allocator_adaptor {
   void deallocate(value_type* ptr, std::size_t num) { alloc_.deallocate(ptr, num, stream()); }
 
   /**
-   * @briefreturn{The underlying stream on which calls to the underlying allocator are made.}
+   * @briefreturn{The stream on which calls to the underlying allocator are made.}
    */
   [[nodiscard]] cuda_stream_view stream() const noexcept { return stream_; }
 

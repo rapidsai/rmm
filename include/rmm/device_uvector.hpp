@@ -71,15 +71,15 @@ class device_uvector {
                 "device_uvector only supports types that are trivially copyable.");
 
  public:
-  using value_type = T;            ///< Stored value type
+  using value_type = T;            ///< T; stored value type
   using size_type  = std::size_t;  ///< The type used for the size of the vector
-  using reference  = value_type&;  ///< The type of the reference returned by operator[](size_type)
+  using reference  = value_type&;  ///< value_type&; reference type returned by operator[](size_type)
   using const_reference =
-    value_type const&;  ///< The type of the reference returned by operator[](size_type) const
+    value_type const&;  ///< value_type const&; constant reference type returned by operator[](size_type) const
   using pointer        = value_type*;        ///< The type of the pointer returned by data()
   using const_pointer  = value_type const*;  ///< The type of the pointer returned by data() const
-  using iterator       = pointer;            ///< The type of the ietrator returned by begin()
-  using const_iterator = const_pointer;      ///< The type of the pointer returned by cbegin()
+  using iterator       = pointer;            ///< The type of the iterator returned by begin()
+  using const_iterator = const_pointer;      ///< The type of the const iterator returned by cbegin()
 
   RMM_EXEC_CHECK_DISABLE
   ~device_uvector() = default;
@@ -499,7 +499,7 @@ class device_uvector {
   [[nodiscard]] const_iterator end() const noexcept { return cend(); }
 
   /**
-   * @briefreturn{The number of elements in the vector.}
+   * @briefreturn{The number of elements in the vector}
    */
   [[nodiscard]] std::size_t size() const noexcept { return bytes_to_elements(_storage.size()); }
 
