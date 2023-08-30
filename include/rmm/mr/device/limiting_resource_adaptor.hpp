@@ -44,8 +44,8 @@ class limiting_resource_adaptor final : public device_memory_resource {
    * @throws `rmm::logic_error` if `upstream == nullptr`
    *
    * @param upstream The resource used for allocating/deallocating device memory
-   * @param allocation_limit Maximum memory allowed for this allocator.
-   * @param alignment Alignment in bytes for the start of each allocated buffer.
+   * @param allocation_limit Maximum memory allowed for this allocator
+   * @param alignment Alignment in bytes for the start of each allocated buffer
    */
   limiting_resource_adaptor(Upstream* upstream,
                             std::size_t allocation_limit,

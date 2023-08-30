@@ -53,8 +53,7 @@ class statistics_resource_adaptor final : public device_memory_resource {
     int64_t total{0};  ///< Sum of all added values
 
     /**
-     * @brief Add `val` to the current value and update the peak value if
-     * necessary.
+     * @brief Add `val` to the current value and update the peak value if necessary
      *
      * @param val Value to add
      * @return Reference to this object
@@ -68,8 +67,7 @@ class statistics_resource_adaptor final : public device_memory_resource {
     }
 
     /**
-     * @brief Subtract `val` from the current value and update the peak value if
-     * necessary.
+     * @brief Subtract `val` from the current value and update the peak value if necessary
      *
      * @param val Value to subtract
      * @return Reference to this object

@@ -504,7 +504,7 @@ class device_uvector {
   [[nodiscard]] std::size_t size() const noexcept { return bytes_to_elements(_storage.size()); }
 
   /**
-   * @briefreturn{The signed number of elements in the vector.}
+   * @briefreturn{The signed number of elements in the vector}
    */
   [[nodiscard]] std::int64_t ssize() const noexcept
   {

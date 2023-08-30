@@ -202,7 +202,7 @@ class device_buffer {
    *
    * @param other The `device_buffer` whose contents will be moved.
    *
-   * @return A reference to this `device_buffer`.
+   * @return A reference to this `device_buffer`
    */
   device_buffer& operator=(device_buffer&& other) noexcept
   {

@@ -31,7 +31,7 @@
 namespace rmm {
 
 /**
- * @brief Synchronous execution policy for allocations using thrust.
+ * @brief Synchronous execution policy for allocations using thrust
  */
 using thrust_exec_policy_t =
   thrust::detail::execute_with_allocator<rmm::mr::thrust_allocator<char>,
@@ -60,7 +60,7 @@ class exec_policy : public thrust_exec_policy_t {
 #if THRUST_VERSION >= 101600
 
 /**
- * @brief Asynchronous execution policy for allocations using thrust.
+ * @brief Asynchronous execution policy for allocations using thrust
  */
 using thrust_exec_policy_nosync_t =
   thrust::detail::execute_with_allocator<rmm::mr::thrust_allocator<char>,

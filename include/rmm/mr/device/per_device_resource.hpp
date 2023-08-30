@@ -99,7 +99,7 @@ inline std::mutex& map_lock()
 
 // This symbol must have default visibility, see: https://github.com/rapidsai/rmm/issues/826
 /**
- * @briefreturn{Reference to the map from device id -> resource.}
+ * @briefreturn{Reference to the map from device id -> resource}
  */
 RMM_EXPORT inline auto& get_map()
 {

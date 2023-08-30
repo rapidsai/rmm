@@ -37,9 +37,8 @@ class device_scalar {
  public:
   static_assert(std::is_trivially_copyable<T>::value, "Scalar type must be trivially copyable");
 
-  using value_type =
-    typename device_uvector<T>::value_type;  ///< T, the type of the scalar element
-  using reference       = typename device_uvector<T>::reference;        ///< value_type&
+  using value_type = typename device_uvector<T>::value_type;  ///< T, the type of the scalar element
+  using reference  = typename device_uvector<T>::reference;   ///< value_type&
   using const_reference = typename device_uvector<T>::const_reference;  ///< const value_type&
   using pointer =
     typename device_uvector<T>::pointer;  ///< The type of the pointer returned by data()
@@ -55,7 +54,7 @@ class device_scalar {
   /**
    * @brief Default move assignment operator
    *
-   * @return device_scalar& A reference to the assigned-to object.
+   * @return device_scalar& A reference to the assigned-to object
    */
   device_scalar& operator=(device_scalar&&) noexcept = default;
 

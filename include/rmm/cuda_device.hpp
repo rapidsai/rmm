@@ -29,7 +29,7 @@ struct cuda_device_id {
   using value_type = int;  ///< Integer type used for device identifier
 
   /**
-   * @brief Construct a `cuda_device_id` from the specified integer value.
+   * @brief Construct a `cuda_device_id` from the specified integer value
    *
    * @param dev_id The device's integer identifier
    */

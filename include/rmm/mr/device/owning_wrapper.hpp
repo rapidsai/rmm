@@ -117,12 +117,12 @@ class owning_wrapper : public device_memory_resource {
   }
 
   /**
-   * @briefreturn{A constant reference to the wrapped resource.}
+   * @briefreturn{A constant reference to the wrapped resource}
    */
   [[nodiscard]] Resource const& wrapped() const noexcept { return *wrapped_; }
 
   /**
-   * @briefreturn{A reference to the wrapped resource.}
+   * @briefreturn{A reference to the wrapped resource}
    */
   [[nodiscard]] Resource& wrapped() noexcept { return *wrapped_; }
 
@@ -135,7 +135,7 @@ class owning_wrapper : public device_memory_resource {
   }
 
   /**
-   * @briefreturn{true if the wrapped resource supports get_mem_info, false otherwise.}
+   * @briefreturn{true if the wrapped resource supports get_mem_info, false otherwise}
    */
   [[nodiscard]] bool supports_get_mem_info() const noexcept override
   {

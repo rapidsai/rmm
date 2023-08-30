@@ -47,9 +47,9 @@ class cuda_stream_view {
   constexpr cuda_stream_view(std::nullptr_t) = delete;  //< Prevent cast from nullptr
 
   /**
-   * @brief Constructor from a cudaStream_t.
+   * @brief Constructor from a cudaStream_t
    *
-   * @param stream The underlying stream for this view.
+   * @param stream The underlying stream for this view
    */
   constexpr cuda_stream_view(cudaStream_t stream) noexcept : stream_{stream} {}
 
@@ -68,12 +68,12 @@ class cuda_stream_view {
   constexpr operator cudaStream_t() const noexcept { return value(); }
 
   /**
-   * @briefreturn{true if the wrapped stream is the CUDA per-thread default stream.}
+   * @briefreturn{true if the wrapped stream is the CUDA per-thread default stream}
    */
   [[nodiscard]] inline bool is_per_thread_default() const noexcept;
 
   /**
-   * @briefreturn{true if the wrapped stream is explicitly the CUDA legacy default stream.}
+   * @briefreturn{true if the wrapped stream is explicitly the CUDA legacy default stream}
    */
   [[nodiscard]] inline bool is_default() const noexcept;
 
