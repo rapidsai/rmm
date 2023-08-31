@@ -31,7 +31,7 @@ TEST(PoolTest, UsePool)
 {
   cudaMemPool_t memPool{};
   RMM_CUDA_TRY(rmm::detail::async_alloc::cudaDeviceGetDefaultMemPool(
-    &memPool, rmm::detail::current_device().value()));
+    &memPool, rmm::get_current_cuda_device().value()));
 
   const auto pool_init_size{100};
   cuda_async_view_mr mr{memPool};
@@ -44,7 +44,7 @@ TEST(PoolTest, NotTakingOwnershipOfPool)
 {
   cudaMemPoolProps poolProps = {};
   poolProps.allocType        = cudaMemAllocationTypePinned;
-  poolProps.location.id      = rmm::detail::current_device().value();
+  poolProps.location.id      = rmm::get_current_cuda_device().value();
   poolProps.location.type    = cudaMemLocationTypeDevice;
 
   cudaMemPool_t memPool{};

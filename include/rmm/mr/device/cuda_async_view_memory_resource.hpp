@@ -60,7 +60,7 @@ class cuda_async_view_memory_resource final : public device_memory_resource {
       }()}
   {
     // Check if cudaMallocAsync Memory pool supported
-    auto const device = rmm::detail::current_device();
+    auto const device = rmm::get_current_cuda_device();
     int cuda_pool_supported{};
     auto result =
       cudaDeviceGetAttribute(&cuda_pool_supported, cudaDevAttrMemoryPoolsSupported, device.value());

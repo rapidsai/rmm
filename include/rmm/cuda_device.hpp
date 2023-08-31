@@ -42,7 +42,6 @@ struct cuda_device_id {
   value_type id_;
 };
 
-namespace detail {
 /**
  * @brief Returns a `cuda_device_id` for the current device
  *
@@ -50,11 +49,51 @@ namespace detail {
  *
  * @return `cuda_device_id` for the current device
  */
-inline cuda_device_id current_device()
+inline cuda_device_id get_current_cuda_device()
 {
-  int dev_id{};
-  RMM_CUDA_TRY(cudaGetDevice(&dev_id));
+  cuda_device_id::value_type dev_id{};
+  RMM_ASSERT_CUDA_SUCCESS(cudaGetDevice(&dev_id));
   return cuda_device_id{dev_id};
 }
-}  // namespace detail
+
+/**
+ * @brief Returns the number of CUDA devices in the system
+ *
+ * @return Number of CUDA devices in the system
+ */
+inline int get_num_cuda_devices()
+{
+  cuda_device_id::value_type num_dev{};
+  RMM_ASSERT_CUDA_SUCCESS(cudaGetDeviceCount(&num_dev));
+  return num_dev;
+}
+
+/**
+ * @brief RAII class that sets the current CUDA device to the specified device on construction
+ * and restores the previous device on destruction.
+ */
+struct cuda_set_device_raii {
+  /**
+   * @brief Construct a new cuda_set_device_raii object and sets the current CUDA device to `dev_id`
+   *
+   * @param dev_id The device to set as the current CUDA device
+   */
+  explicit cuda_set_device_raii(cuda_device_id dev_id) : old_device_{get_current_cuda_device()}
+  {
+    RMM_ASSERT_CUDA_SUCCESS(cudaSetDevice(dev_id.value()));
+  }
+  /**
+   * @brief Reactivates the previous CUDA device
+   */
+  ~cuda_set_device_raii() noexcept { RMM_ASSERT_CUDA_SUCCESS(cudaSetDevice(old_device_.value())); }
+
+  cuda_set_device_raii(cuda_set_device_raii const&)            = delete;
+  cuda_set_device_raii& operator=(cuda_set_device_raii const&) = delete;
+  cuda_set_device_raii(cuda_set_device_raii&&)                 = delete;
+  cuda_set_device_raii& operator=(cuda_set_device_raii&&)      = delete;
+
+ private:
+  cuda_device_id old_device_;
+};
+
 }  // namespace rmm
