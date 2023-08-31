@@ -113,8 +113,9 @@ struct async_alloc {
 
     static auto driver_supports_pool{[] {
       int cuda_pool_supported{};
-      auto result = cudaDeviceGetAttribute(
-        &cuda_pool_supported, cudaDevAttrMemoryPoolsSupported, rmm::get_current_cuda_device().value());
+      auto result = cudaDeviceGetAttribute(&cuda_pool_supported,
+                                           cudaDevAttrMemoryPoolsSupported,
+                                           rmm::get_current_cuda_device().value());
       return result == cudaSuccess and cuda_pool_supported == 1;
     }()};
     return runtime_supports_pool and driver_supports_pool;
