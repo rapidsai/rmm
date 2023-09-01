@@ -46,6 +46,8 @@ class cuda_stream {
    *
    * A moved-from cuda_stream is invalid and it is Undefined Behavior to call methods that access
    * the owned stream.
+   *
+   * @return A reference to this cuda_stream
    */
   cuda_stream& operator=(cuda_stream&&) = default;
   ~cuda_stream()                        = default;
