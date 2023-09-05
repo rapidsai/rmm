@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "rmm/cuda_device.hpp"
+#include <rmm/cuda_device.hpp>
 #include <rmm/detail/aligned.hpp>
 #include <rmm/detail/cuda_util.hpp>
 #include <rmm/detail/error.hpp>
@@ -102,7 +102,7 @@ TEST(PoolTest, ForceGrowth)
     EXPECT_NO_THROW(mr.allocate(1000));
     EXPECT_THROW(mr.allocate(4000), rmm::out_of_memory);  // too much
     EXPECT_NO_THROW(mr.allocate(500));
-    EXPECT_NO_THROW(mr.allocate(2000));                   // fits
+    EXPECT_NO_THROW(mr.allocate(2000));  // fits
   }
 }
 
