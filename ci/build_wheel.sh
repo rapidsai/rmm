@@ -3,6 +3,9 @@
 
 set -euo pipefail
 
+package_name="rmm"
+package_dir="python"
+
 source rapids-configure-sccache
 source rapids-date-string
 
@@ -12,11 +15,30 @@ version_override="$(rapids-pip-wheel-version ${RAPIDS_DATE_STRING})"
 
 RAPIDS_PY_CUDA_SUFFIX="$(rapids-wheel-ctk-name-gen ${RAPIDS_CUDA_VERSION})"
 
-ci/release/apply_wheel_modifications.sh ${version_override} "-${RAPIDS_PY_CUDA_SUFFIX}"
-echo "The package name and/or version was modified in the package source. The git diff is:"
-git diff
+# This is the version of the suffix with a preceding hyphen. It's used
+# everywhere except in the final wheel name.
+PACKAGE_CUDA_SUFFIX="-${RAPIDS_PY_CUDA_SUFFIX}"
 
-cd python
+# Patch project metadata files to include the CUDA version suffix and version override.
+pyproject_file="${package_dir}/pyproject.toml"
+
+sed -i "s/^version = .*/version = \"${version_override}\"/g" ${pyproject_file}
+sed -i "s/name = \"${package_name}\"/name = \"${package_name}${PACKAGE_CUDA_SUFFIX}\"/g" ${pyproject_file}
+
+# For nightlies we want to ensure that we're pulling in alphas as well. The
+# easiest way to do so is to augment the spec with a constraint containing a
+# min alpha version that doesn't affect the version bounds but does allow usage
+# of alpha versions for that dependency without --pre
+alpha_spec=''
+if ! rapids-is-release-build; then
+    alpha_spec=',>=0.0.0a0'
+fi
+
+if [[ $PACKAGE_CUDA_SUFFIX == "-cu12" ]]; then
+    sed -i "s/cuda-python[<=>\.,0-9a]*/cuda-python>=12.0,<13.0a0/g" ${pyproject_file}
+fi
+
+cd "${package_dir}"
 
 SKBUILD_CONFIGURE_OPTIONS="-DRMM_BUILD_WHEELS=ON" python -m pip wheel . -w dist -vvv --no-deps --disable-pip-version-check
 
