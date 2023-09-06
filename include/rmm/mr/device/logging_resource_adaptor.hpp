@@ -98,6 +98,20 @@ class logging_resource_adaptor final : public device_memory_resource {
     init_logger(auto_flush);
   }
 
+  /**
+   * @brief Construct a new logging resource adaptor using `upstream` to satisfy
+   * allocation requests and logging information about each allocation/free to
+   * the ostream specified by `stream`.
+   *
+   * The logfile will be written using CSV formatting.
+   *
+   * @throws `rmm::logic_error` if `upstream == nullptr`
+   *
+   * @param upstream The resource used for allocating/deallocating device memory
+   * @param sinks A list of logging sinks to which log output will be written.
+   * @param auto_flush If true, flushes the log for every (de)allocation. Warning, this will degrade
+   * performance.
+   */
   logging_resource_adaptor(Upstream* upstream,
                            spdlog::sinks_init_list sinks,
                            bool auto_flush = false)
@@ -108,12 +122,14 @@ class logging_resource_adaptor final : public device_memory_resource {
     init_logger(auto_flush);
   }
 
-  logging_resource_adaptor()                                               = delete;
-  ~logging_resource_adaptor() override                                     = default;
-  logging_resource_adaptor(logging_resource_adaptor const&)                = delete;
-  logging_resource_adaptor& operator=(logging_resource_adaptor const&)     = delete;
-  logging_resource_adaptor(logging_resource_adaptor&&) noexcept            = default;
-  logging_resource_adaptor& operator=(logging_resource_adaptor&&) noexcept = default;
+  logging_resource_adaptor()                                           = delete;
+  ~logging_resource_adaptor() override                                 = default;
+  logging_resource_adaptor(logging_resource_adaptor const&)            = delete;
+  logging_resource_adaptor& operator=(logging_resource_adaptor const&) = delete;
+  logging_resource_adaptor(logging_resource_adaptor&&) noexcept =
+    default;  ///< @default_move_constructor
+  logging_resource_adaptor& operator=(logging_resource_adaptor&&) noexcept =
+    default;  ///< @default_move_assignment{logging_resource_adaptor}
 
   /**
    * @brief Return pointer to the upstream resource.

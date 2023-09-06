@@ -29,12 +29,14 @@ namespace rmm::mr {
  */
 class cuda_memory_resource final : public device_memory_resource {
  public:
-  cuda_memory_resource()                                       = default;
-  ~cuda_memory_resource() override                             = default;
-  cuda_memory_resource(cuda_memory_resource const&)            = default;
-  cuda_memory_resource(cuda_memory_resource&&)                 = default;
-  cuda_memory_resource& operator=(cuda_memory_resource const&) = default;
-  cuda_memory_resource& operator=(cuda_memory_resource&&)      = default;
+  cuda_memory_resource()                            = default;
+  ~cuda_memory_resource() override                  = default;
+  cuda_memory_resource(cuda_memory_resource const&) = default;  ///< @default_copy_constructor
+  cuda_memory_resource(cuda_memory_resource&&)      = default;  ///< @default_move_constructor
+  cuda_memory_resource& operator=(cuda_memory_resource const&) =
+    default;  ///< @default_copy_assignment{cuda_memory_resource}
+  cuda_memory_resource& operator=(cuda_memory_resource&&) =
+    default;  ///< @default_move_assignment{cuda_memory_resource}
 
   /**
    * @brief Query whether the resource supports use of non-null CUDA streams for

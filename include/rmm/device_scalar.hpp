@@ -37,18 +37,25 @@ class device_scalar {
  public:
   static_assert(std::is_trivially_copyable<T>::value, "Scalar type must be trivially copyable");
 
-  using value_type      = typename device_uvector<T>::value_type;
-  using reference       = typename device_uvector<T>::reference;
-  using const_reference = typename device_uvector<T>::const_reference;
-  using pointer         = typename device_uvector<T>::pointer;
-  using const_pointer   = typename device_uvector<T>::const_pointer;
+  using value_type = typename device_uvector<T>::value_type;  ///< T, the type of the scalar element
+  using reference  = typename device_uvector<T>::reference;   ///< value_type&
+  using const_reference = typename device_uvector<T>::const_reference;  ///< const value_type&
+  using pointer =
+    typename device_uvector<T>::pointer;  ///< The type of the pointer returned by data()
+  using const_pointer = typename device_uvector<T>::const_pointer;  ///< The type of the iterator
+                                                                    ///< returned by data() const
 
   RMM_EXEC_CHECK_DISABLE
   ~device_scalar() = default;
 
   RMM_EXEC_CHECK_DISABLE
-  device_scalar(device_scalar&&) noexcept = default;
+  device_scalar(device_scalar&&) noexcept = default;  ///< Default move constructor
 
+  /**
+   * @brief Default move assignment operator
+   *
+   * @return device_scalar& A reference to the assigned-to object
+   */
   device_scalar& operator=(device_scalar&&) noexcept = default;
 
   /**
@@ -224,6 +231,8 @@ class device_scalar {
    * specified to the constructor, then appropriate dependencies must be inserted between the
    * streams (e.g. using `cudaStreamWaitEvent()` or `cudaStreamSynchronize()`), otherwise there may
    * be a race condition.
+   *
+   * @return Pointer to underlying device memory
    */
   [[nodiscard]] pointer data() noexcept { return static_cast<pointer>(_storage.data()); }
 
@@ -234,6 +243,8 @@ class device_scalar {
    * specified to the constructor, then appropriate dependencies must be inserted between the
    * streams (e.g. using `cudaStreamWaitEvent()` or `cudaStreamSynchronize()`), otherwise there may
    * be a race condition.
+   *
+   * @return Const pointer to underlying device memory
    */
   [[nodiscard]] const_pointer data() const noexcept
   {
@@ -241,12 +252,14 @@ class device_scalar {
   }
 
   /**
-   * @brief Returns stream most recently specified for allocation/deallocation
+   * @briefreturn{Stream associated with the device memory allocation}
    */
   [[nodiscard]] cuda_stream_view stream() const noexcept { return _storage.stream(); }
 
   /**
    * @brief Sets the stream to be used for deallocation
+   *
+   * @param stream Stream to be used for deallocation
    */
   void set_stream(cuda_stream_view stream) noexcept { _storage.set_stream(stream); }
 

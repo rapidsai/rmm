@@ -81,12 +81,15 @@ namespace rmm::mr {
  */
 class device_memory_resource {
  public:
-  device_memory_resource()                                             = default;
-  virtual ~device_memory_resource()                                    = default;
-  device_memory_resource(device_memory_resource const&)                = default;
-  device_memory_resource& operator=(device_memory_resource const&)     = default;
-  device_memory_resource(device_memory_resource&&) noexcept            = default;
-  device_memory_resource& operator=(device_memory_resource&&) noexcept = default;
+  device_memory_resource()                              = default;
+  virtual ~device_memory_resource()                     = default;
+  device_memory_resource(device_memory_resource const&) = default;  ///< @default_copy_constructor
+  device_memory_resource(device_memory_resource&&) noexcept =
+    default;                                                        ///< @default_move_constructor
+  device_memory_resource& operator=(device_memory_resource const&) =
+    default;  ///< @default_copy_assignment{device_memory_resource}
+  device_memory_resource& operator=(device_memory_resource&&) noexcept =
+    default;  ///< @default_move_assignment{device_memory_resource}
 
   /**
    * @brief Allocates memory of size at least \p bytes.
@@ -121,7 +124,7 @@ class device_memory_resource {
    *
    * @throws Nothing.
    *
-   * @param p Pointer to be deallocated
+   * @param ptr Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param stream Stream on which to perform deallocation
