@@ -1,8 +1,8 @@
 #!/bin/bash
-# Copyright (c) 2022, NVIDIA CORPORATION.
-###############################
-# cuDF doxygen warnings check #
-###############################
+# Copyright (c) 2023, NVIDIA CORPORATION.
+##############################
+# RMM doxygen warnings check #
+##############################
 
 # skip if doxygen is not installed
 if ! [ -x "$(command -v doxygen)" ]; then
