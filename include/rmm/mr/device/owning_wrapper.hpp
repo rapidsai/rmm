@@ -73,7 +73,8 @@ auto make_resource(std::tuple<std::shared_ptr<Upstreams>...> const& upstreams, A
 template <typename Resource, typename... Upstreams>
 class owning_wrapper : public device_memory_resource {
  public:
-  using upstream_tuple = std::tuple<std::shared_ptr<Upstreams>...>;
+  using upstream_tuple =
+    std::tuple<std::shared_ptr<Upstreams>...>;  ///< Tuple of upstream memory resources
 
   /**
    * @brief Constructs the wrapped resource using the provided upstreams and any additional
@@ -116,14 +117,12 @@ class owning_wrapper : public device_memory_resource {
   }
 
   /**
-   * @brief Returns a constant reference to the wrapped resource.
-   *
+   * @briefreturn{A constant reference to the wrapped resource}
    */
   [[nodiscard]] Resource const& wrapped() const noexcept { return *wrapped_; }
 
   /**
-   * @brief Returns reference to the wrapped resource.
-   *
+   * @briefreturn{A reference to the wrapped resource}
    */
   [[nodiscard]] Resource& wrapped() noexcept { return *wrapped_; }
 
@@ -136,9 +135,7 @@ class owning_wrapper : public device_memory_resource {
   }
 
   /**
-   * @brief Query whether the resource supports the get_mem_info API.
-   *
-   * @return true if the wrapped resource supports get_mem_info, false otherwise.
+   * @briefreturn{true if the wrapped resource supports get_mem_info, false otherwise}
    */
   [[nodiscard]] bool supports_get_mem_info() const noexcept override
   {

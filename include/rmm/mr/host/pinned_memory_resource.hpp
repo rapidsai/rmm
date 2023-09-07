@@ -24,7 +24,7 @@
 
 namespace rmm::mr {
 
-/*
+/**
  * @brief A `host_memory_resource` that uses `cudaMallocHost` to allocate
  * pinned/page-locked host memory.
  *
@@ -32,12 +32,14 @@ namespace rmm::mr {
  */
 class pinned_memory_resource final : public host_memory_resource {
  public:
-  pinned_memory_resource()                                         = default;
-  ~pinned_memory_resource() override                               = default;
-  pinned_memory_resource(pinned_memory_resource const&)            = default;
-  pinned_memory_resource(pinned_memory_resource&&)                 = default;
-  pinned_memory_resource& operator=(pinned_memory_resource const&) = default;
-  pinned_memory_resource& operator=(pinned_memory_resource&&)      = default;
+  pinned_memory_resource()                              = default;
+  ~pinned_memory_resource() override                    = default;
+  pinned_memory_resource(pinned_memory_resource const&) = default;  ///< @default_copy_constructor
+  pinned_memory_resource(pinned_memory_resource&&)      = default;  ///< @default_move_constructor
+  pinned_memory_resource& operator=(pinned_memory_resource const&) =
+    default;  ///< @default_copy_assignment{pinned_memory_resource}
+  pinned_memory_resource& operator=(pinned_memory_resource&&) =
+    default;  ///< @default_move_assignment{pinned_memory_resource}
 
  private:
   /**

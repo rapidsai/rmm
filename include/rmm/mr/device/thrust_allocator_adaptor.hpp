@@ -38,9 +38,9 @@ namespace rmm::mr {
 template <typename T>
 class thrust_allocator : public thrust::device_malloc_allocator<T> {
  public:
-  using Base      = thrust::device_malloc_allocator<T>;
-  using pointer   = typename Base::pointer;
-  using size_type = typename Base::size_type;
+  using Base      = thrust::device_malloc_allocator<T>;  ///< The base type of this allocator
+  using pointer   = typename Base::pointer;              ///< The pointer type
+  using size_type = typename Base::size_type;            ///< The size type
 
   /**
    * @brief Provides the type of a `thrust_allocator` instantiated with another
@@ -50,7 +50,7 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    */
   template <typename U>
   struct rebind {
-    using other = thrust_allocator<U>;
+    using other = thrust_allocator<U>;  ///< The type to bind to
   };
 
   /**
@@ -113,12 +113,12 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
   }
 
   /**
-   * @brief Returns the device memory resource used by this allocator.
+   * @briefreturn{The device memory resource used by this}
    */
   [[nodiscard]] device_memory_resource* resource() const noexcept { return _mr; }
 
   /**
-   * @brief Returns the stream used by this allocator.
+   * @briefreturn{The stream used by this allocator}
    */
   [[nodiscard]] cuda_stream_view stream() const noexcept { return _stream; }
 

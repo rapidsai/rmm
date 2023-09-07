@@ -259,7 +259,11 @@ TAB_SIZE               = 4
 # commands \{ and \} for these it is advised to use the version @{ and @} or use
 # a double escape (\\{ and \\})
 
-ALIASES                =
+ALIASES                +=   "briefreturn{1}=@brief \1 @return \1"
+ALIASES                +=   "default_copy_constructor=Default copy constructor"
+ALIASES                +=   "default_move_constructor=Default move constructor"
+ALIASES                +=   "default_copy_assignment{1}=@brief Default copy assignment operator @return \1& Reference to the assigned object"
+ALIASES                +=   "default_move_assignment{1}=@brief Default move assignment operator @return \1& Reference to the assigned object"
 
 # Set the OPTIMIZE_OUTPUT_FOR_C tag to YES if your project consists of C sources
 # only. Doxygen will then generate output that is more tailored for C. For
@@ -898,7 +902,7 @@ EXCLUDE_SYMLINKS       = NO
 # Note that the wildcards are matched against the file with absolute path, so to
 # exclude all test directories for example use the pattern */test/*
 
-EXCLUDE_PATTERNS       =
+EXCLUDE_PATTERNS       = */detail/*
 
 # The EXCLUDE_SYMBOLS tag can be used to specify one or more symbol names
 # (namespaces, classes, functions, etc.) that should be excluded from the
