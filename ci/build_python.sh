@@ -14,6 +14,6 @@ rapids-logger "Begin py build"
 CPP_CHANNEL=$(rapids-download-conda-from-s3 cpp)
 
 # This calls mambabuild when boa is installed (as is the case in the CI images)
-rapids-conda-retry build -c "${CPP_CHANNEL}" conda/recipes/rmm
+rapids-conda-retry mambabuild -c "${CPP_CHANNEL}" conda/recipes/rmm
 
 rapids-upload-conda-to-s3 python
