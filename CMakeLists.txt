@@ -95,6 +95,7 @@ target_link_libraries(rmm INTERFACE fmt::fmt-header-only)
 target_link_libraries(rmm INTERFACE spdlog::spdlog_header_only)
 target_link_libraries(rmm INTERFACE dl)
 target_compile_features(rmm INTERFACE cxx_std_17 $<BUILD_INTERFACE:cuda_std_17>)
+target_compile_definitions(rmm INTERFACE LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
 # ##################################################################################################
 # * tests and benchmarks ---------------------------------------------------------------------------
