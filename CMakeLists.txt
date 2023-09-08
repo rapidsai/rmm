@@ -70,6 +70,7 @@ rapids_cpm_init()
 
 include(cmake/thirdparty/get_fmt.cmake)
 include(cmake/thirdparty/get_spdlog.cmake)
+include(cmake/thirdparty/get_libcudacxx.cmake)
 include(cmake/thirdparty/get_thrust.cmake)
 
 # ##################################################################################################
@@ -89,6 +90,7 @@ else()
   target_link_libraries(rmm INTERFACE CUDA::cudart)
 endif()
 
+target_link_libraries(rmm INTERFACE libcudacxx::libcudacxx)
 target_link_libraries(rmm INTERFACE rmm::Thrust)
 target_link_libraries(rmm INTERFACE fmt::fmt-header-only)
 target_link_libraries(rmm INTERFACE spdlog::spdlog_header_only)
