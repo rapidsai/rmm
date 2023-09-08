@@ -18,6 +18,9 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/aligned.hpp>
 
+#include <cuda/memory_resource>
+#include <cuda/stream_ref>
+
 #include <cstddef>
 #include <utility>
 
@@ -158,6 +161,150 @@ class device_memory_resource {
   }
 
   /**
+   * @brief Allocates memory of size at least \p bytes.
+   *
+   * The returned pointer will have at minimum 256 byte alignment.
+   *
+   * If supported, this operation may optionally be executed on a stream.
+   * Otherwise, the stream is ignored and the null stream is used.
+   *
+   * @throws `rmm::bad_alloc` When the requested `bytes` cannot be allocated on
+   * the specified `stream`.
+   *
+   * @param bytes The size of the allocation
+   * @param alignment The expected alignment of the allocation
+   * @return void* Pointer to the newly allocated memory
+   */
+  void* allocate(std::size_t bytes, std::size_t alignment)
+  {
+    return do_allocate(rmm::detail::align_up(bytes, alignment), cuda_stream_view{});
+  }
+
+  /**
+   * @brief Deallocate memory pointed to by \p p.
+   *
+   * `p` must have been returned by a prior call to `allocate(bytes,stream)` on
+   * a `device_memory_resource` that compares equal to `*this`, and the storage
+   * it points to must not yet have been deallocated, otherwise behavior is
+   * undefined.
+   *
+   * If supported, this operation may optionally be executed on a stream.
+   * Otherwise, the stream is ignored and the null stream is used.
+   *
+   * @throws Nothing.
+   *
+   * @param p Pointer to be deallocated
+   * @param bytes The size in bytes of the allocation. This must be equal to the
+   * value of `bytes` that was passed to the `allocate` call that returned `p`.
+   * @param alignment The alignment that was passed to the `allocate` call that returned `p`
+   */
+  void deallocate(void* ptr, std::size_t bytes, std::size_t alignment)
+  {
+    do_deallocate(ptr, rmm::detail::align_up(bytes, alignment), cuda_stream_view{});
+  }
+
+  /**
+   * @brief Allocates memory of size at least \p bytes.
+   *
+   * The returned pointer will have at minimum 256 byte alignment.
+   *
+   * If supported, this operation may optionally be executed on a stream.
+   * Otherwise, the stream is ignored and the null stream is used.
+   *
+   * @throws `rmm::bad_alloc` When the requested `bytes` cannot be allocated on
+   * the specified `stream`.
+   *
+   * @param bytes The size of the allocation
+   * @param alignment The expected alignment of the allocation
+   * @param stream Stream on which to perform allocation
+   * @return void* Pointer to the newly allocated memory
+   */
+  void* allocate_async(std::size_t bytes, std::size_t alignment, cuda_stream_view stream)
+  {
+    return do_allocate(rmm::detail::align_up(bytes, alignment), stream);
+  }
+
+  /**
+   * @brief Allocates memory of size at least \p bytes.
+   *
+   * The returned pointer will have at minimum 256 byte alignment.
+   *
+   * If supported, this operation may optionally be executed on a stream.
+   * Otherwise, the stream is ignored and the null stream is used.
+   *
+   * @throws `rmm::bad_alloc` When the requested `bytes` cannot be allocated on
+   * the specified `stream`.
+   *
+   * @param bytes The size of the allocation
+   * @param stream Stream on which to perform allocation
+   * @return void* Pointer to the newly allocated memory
+   */
+  void* allocate_async(std::size_t bytes, cuda_stream_view stream)
+  {
+    return do_allocate(bytes, stream);
+  }
+
+  /**
+   * @brief Deallocate memory pointed to by \p p.
+   *
+   * `p` must have been returned by a prior call to `allocate(bytes,stream)` on
+   * a `device_memory_resource` that compares equal to `*this`, and the storage
+   * it points to must not yet have been deallocated, otherwise behavior is
+   * undefined.
+   *
+   * If supported, this operation may optionally be executed on a stream.
+   * Otherwise, the stream is ignored and the null stream is used.
+   *
+   * @throws Nothing.
+   *
+   * @param p Pointer to be deallocated
+   * @param bytes The size in bytes of the allocation. This must be equal to the
+   * value of `bytes` that was passed to the `allocate` call that returned `p`.
+   * @param alignment The alignment that was passed to the `allocate` call that returned `p`
+   * @param stream Stream on which to perform allocation
+   */
+  void deallocate_async(void* ptr,
+                        std::size_t bytes,
+                        std::size_t alignment,
+                        cuda_stream_view stream)
+  {
+    do_deallocate(ptr, rmm::detail::align_up(bytes, alignment), stream);
+  }
+
+  /**
+   * @brief Deallocate memory pointed to by \p p.
+   *
+   * `p` must have been returned by a prior call to `allocate(bytes,stream)` on
+   * a `device_memory_resource` that compares equal to `*this`, and the storage
+   * it points to must not yet have been deallocated, otherwise behavior is
+   * undefined.
+   *
+   * If supported, this operation may optionally be executed on a stream.
+   * Otherwise, the stream is ignored and the null stream is used.
+   *
+   * @throws Nothing.
+   *
+   * @param p Pointer to be deallocated
+   * @param bytes The size in bytes of the allocation. This must be equal to the
+   * value of `bytes` that was passed to the `allocate` call that returned `p`.
+   * @param stream Stream on which to perform allocation
+   */
+  void deallocate_async(void* ptr, std::size_t bytes, cuda_stream_view stream)
+  {
+    do_deallocate(ptr, bytes, stream);
+  }
+
+  [[nodiscard]] bool operator==(device_memory_resource const& other) const noexcept
+  {
+    return do_is_equal(other);
+  }
+
+  [[nodiscard]] bool operator!=(device_memory_resource const& other) const noexcept
+  {
+    return !do_is_equal(other);
+  }
+
+  /**
    * @brief Query whether the resource supports use of non-null CUDA streams for
    * allocation/deallocation.
    *
@@ -184,6 +331,8 @@ class device_memory_resource {
   {
     return do_get_mem_info(stream);
   }
+
+  friend void get_property(device_memory_resource const&, cuda::mr::device_accessible) noexcept {}
 
  private:
   /**
@@ -243,5 +392,6 @@ class device_memory_resource {
   [[nodiscard]] virtual std::pair<std::size_t, std::size_t> do_get_mem_info(
     cuda_stream_view stream) const = 0;
 };
+static_assert(cuda::mr::resource_with<device_memory_resource, cuda::mr::device_accessible>, "");
 /** @} */  // end of group
 }  // namespace rmm::mr

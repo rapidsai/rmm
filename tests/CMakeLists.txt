@@ -126,6 +126,10 @@ endfunction()
 ConfigureTest(DEVICE_MR_TEST mr/device/mr_tests.cpp mr/device/mr_multithreaded_tests.cpp GPUS 1
               PERCENT 90)
 
+# device mr tests
+ConfigureTest(DEVICE_MR_REF_TEST mr/device/mr_ref_tests.cpp
+              mr/device/mr_ref_multithreaded_tests.cpp)
+
 # general adaptor tests
 ConfigureTest(ADAPTOR_TEST mr/device/adaptor_tests.cpp)
 
@@ -161,6 +165,9 @@ ConfigureTest(LIMITING_TEST mr/device/limiting_mr_tests.cpp)
 
 # host mr tests
 ConfigureTest(HOST_MR_TEST mr/host/mr_tests.cpp)
+
+# host mr_ref tests
+ConfigureTest(HOST_MR_REF_TEST mr/host/mr_ref_tests.cpp)
 
 # cuda stream tests
 ConfigureTest(CUDA_STREAM_TEST cuda_stream_tests.cpp cuda_stream_pool_tests.cpp)
