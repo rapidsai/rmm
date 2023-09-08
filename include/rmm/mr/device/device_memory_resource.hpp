@@ -193,7 +193,7 @@ class device_memory_resource {
    *
    * @throws Nothing.
    *
-   * @param p Pointer to be deallocated
+   * @param ptr Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param alignment The alignment that was passed to the `allocate` call that returned `p`
@@ -257,7 +257,7 @@ class device_memory_resource {
    *
    * @throws Nothing.
    *
-   * @param p Pointer to be deallocated
+   * @param ptr Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param alignment The alignment that was passed to the `allocate` call that returned `p`
@@ -284,7 +284,7 @@ class device_memory_resource {
    *
    * @throws Nothing.
    *
-   * @param p Pointer to be deallocated
+   * @param ptr Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param stream Stream on which to perform allocation
@@ -294,11 +294,25 @@ class device_memory_resource {
     do_deallocate(ptr, bytes, stream);
   }
 
+  /**
+   * @brief Comparison operator with another device_memory_resource
+   *
+   * @param other The other resource to compare to
+   * @return true If the two resources are equivalent
+   * @return false If the two resources are not equivalent
+   */
   [[nodiscard]] bool operator==(device_memory_resource const& other) const noexcept
   {
     return do_is_equal(other);
   }
 
+  /**
+   * @brief Comparison operator with another device_memory_resource
+   *
+   * @param other The other resource to compare to
+   * @return false If the two resources are equivalent
+   * @return true If the two resources are not equivalent
+   */
   [[nodiscard]] bool operator!=(device_memory_resource const& other) const noexcept
   {
     return !do_is_equal(other);
@@ -332,6 +346,11 @@ class device_memory_resource {
     return do_get_mem_info(stream);
   }
 
+  /**
+   * @brief Enables the `cuda::mr::device_accessible` property
+   *
+   * This property declares that a `device_memory_resource` provides device accessible memory
+   */
   friend void get_property(device_memory_resource const&, cuda::mr::device_accessible) noexcept {}
 
  private:

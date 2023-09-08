@@ -24,6 +24,8 @@
 #include <map>
 #include <mutex>
 
+#include <cuda/memory_resource>
+
 /**
  * @file per_device_resource.hpp
  * @brief Management of per-device `device_memory_resource`s
@@ -233,4 +235,31 @@ inline device_memory_resource* set_current_device_resource(device_memory_resourc
 {
   return set_per_device_resource(rmm::get_current_cuda_device(), new_mr);
 }
+
+/**
+ * @brief Get the memory resource for the current device as a `cuda::mr::async_resource_ref`.
+ *
+ * Returns a `cuda::mr::async_resource_ref` from the memory_resource set for the current device.
+ * The initial resource is a `cuda_memory_resource`.
+ *
+ * The "current device" is the device returned by `cudaGetDevice`.
+ *
+ * This function is thread-safe with respect to concurrent calls to `set_per_device_resource`,
+ * `get_per_device_resource`, `get_current_device_resource`, and `set_current_device_resource`.
+ * Concurrent calls to any of these functions will result in a valid state, but the order of
+ * execution is undefined.
+ *
+ * @note The returned `cuda::mr::async_resource_ref` should only be used with the current CUDA
+ * device. Changing the current device (e.g. using `cudaSetDevice()`) and then using the returned
+ * resource can result in undefined behavior. The behavior of a device_memory_resource is undefined
+ * if used while the active CUDA device is a different device from the one that was active when the
+ * device_memory_resource was created.
+ *
+ * @return cuda::mr::async_resource_ref of the resource for the current device
+ */
+inline cuda::mr::async_resource_ref<cuda::mr::device_accessible> get_current_device_resource_ref()
+{
+  return cuda::mr::async_resource_ref<cuda::mr::device_accessible>{get_current_device_resource()};
+}
+
 }  // namespace rmm::mr
