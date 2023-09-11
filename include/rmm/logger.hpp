@@ -121,5 +121,8 @@ inline spdlog::logger& logger()
 
 }  // namespace rmm
 
+// Doxygen doesn't like this because we're overloading something from fmt
+//! @cond Doxygen_Suppress
 template <>
 struct fmt::formatter<rmm::detail::bytes> : fmt::ostream_formatter {};
+//! @endcond
