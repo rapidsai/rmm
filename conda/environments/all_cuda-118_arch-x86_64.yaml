@@ -13,7 +13,7 @@ dependencies:
 - cudatoolkit
 - cxx-compiler
 - cython>=3.0.0
-- doxygen=1.8.20
+- doxygen=1.9.1
 - fmt>=9.1.0,<10
 - gcc_linux-64=11.*
 - gcovr>=5.0

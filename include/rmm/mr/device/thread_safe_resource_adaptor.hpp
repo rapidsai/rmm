@@ -35,7 +35,7 @@ namespace rmm::mr {
 template <typename Upstream>
 class thread_safe_resource_adaptor final : public device_memory_resource {
  public:
-  using lock_t = std::lock_guard<std::mutex>;
+  using lock_t = std::lock_guard<std::mutex>;  ///< Type of lock used to synchronize access
 
   /**
    * @brief Construct a new thread safe resource adaptor using `upstream` to satisfy
