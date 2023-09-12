@@ -366,7 +366,7 @@ Note that the CUDA device that is current when creating a `device_memory_resourc
 current any time that `device_memory_resource` is used to deallocate memory, including in a
 destructor. This affects RAII classes like `rmm::device_buffer` and `rmm::device_uvector`. Here's an
 (incorrect) example that assumes the above example loop has been run to create a
-`pool_memory_resource` for each device. A correct example adds a call to `cudaSetDevice(1)` on the
+`pool_memory_resource` for each device. A correct example adds a call to `cudaSetDevice(0)` on the
 line of the error comment.
 
 ```c++
