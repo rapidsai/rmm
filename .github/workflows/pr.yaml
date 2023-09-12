@@ -20,6 +20,7 @@ jobs:
       - docs-build
       - wheel-build
       - wheel-tests
+      - build-in-devcontainer
     secrets: inherit
     uses: rapidsai/shared-action-workflows/.github/workflows/pr-builder.yaml@branch-23.10
   checks:
@@ -27,7 +28,6 @@ jobs:
     uses: rapidsai/shared-action-workflows/.github/workflows/checks.yaml@branch-23.10
     with:
       enable_check_generated_files: false
-      enable_check_pr_job_dependencies: false
   conda-cpp-build:
     needs: checks
     secrets: inherit
@@ -76,10 +76,11 @@ jobs:
     with:
       build_type: pull-request
       script: ci/test_wheel.sh
-  devcontainer:
+  build-in-devcontainer:
     secrets: inherit
     uses: rapidsai/shared-action-workflows/.github/workflows/build-in-devcontainer.yaml@fea/devcontainers
     with:
       build_command: |
-        build-rmm-cpp -DBUILD_BENCHMARKS=ON
-        build-rmm-python
+        sccache -z;
+        build-all -DBUILD_BENCHMARKS=ON;
+        sccache -s;

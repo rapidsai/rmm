@@ -22,6 +22,9 @@ NEXT_MAJOR=$(echo $NEXT_FULL_TAG | awk '{split($0, a, "."); print a[1]}')
 NEXT_MINOR=$(echo $NEXT_FULL_TAG | awk '{split($0, a, "."); print a[2]}')
 NEXT_SHORT_TAG=${NEXT_MAJOR}.${NEXT_MINOR}
 
+# Need to distutils-normalize the original version
+NEXT_SHORT_TAG_PEP440=$(python -c "from setuptools.extern import packaging; print(packaging.version.Version('${NEXT_SHORT_TAG}'))")
+
 echo "Preparing release $CURRENT_TAG => $NEXT_FULL_TAG"
 
 # Inplace sed replace; workaround for Linux and Mac
@@ -57,5 +60,7 @@ done
 sed_runner "s/RAPIDS_VERSION_NUMBER=\".*/RAPIDS_VERSION_NUMBER=\"${NEXT_SHORT_TAG}\"/g" ci/build_docs.sh
 
 # .devcontainer files
-sed_runner "s/ARG RAPIDS=${CURRENT_SHORT_TAG}/ARG RAPIDS=${NEXT_SHORT_TAG}/g" .devcontainer/Dockerfile
-find .devcontainer/ -type f -name devcontainer.json -exec sed -i "s/${CURRENT_SHORT_TAG}/${NEXT_SHORT_TAG}/g" {} \;
+find .devcontainer/ -type f -name devcontainer.json -print0 | while IFS= read -r -d '' filename; do
+    sed_runner "s@rapidsai/devcontainers:[0-9.]*@rapidsai/devcontainers:${NEXT_FULL_TAG}@g" "${filename}"
+    sed_runner "s@rapidsai/devcontainers/features/rapids-build-utils:[0-9.]*@rapidsai/devcontainers/features/rapids-build-utils:${NEXT_SHORT_TAG_PEP440}@"
+done
