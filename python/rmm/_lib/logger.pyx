@@ -41,15 +41,44 @@ def set_logging_level(level):
 
     Parameters
     ----------
-    level : int
-    The logging level. Valid values are 0 through 6 inclusive, where 0 is
-    the most verbose and 6 is the least verbose.
+    level : int or str
+        The debug logging level. Valid string names are (in decreasing order
+        of verbosity) "trace", "debug", "info", "warn", "err", "critical",
+        and "off", corresponding respectively to valid integer levels 0
+        through 6. Default is 2 (info).
+
+    See Also
+    --------
+    get_logging_level : Get the current debug logging level for the RMM
 
     Examples
     --------
     >>> import rmm
-    >>> rmm.set_logging_level(0) # set logging level to trace
+    >>> rmm.set_logging_level("debug") # set logging level to debug
+    >>> rmm.set_logging_level(3) # set logging level to warn
     """
+    def levels = {
+        0: "trace",
+        1: "debug",
+        2: "info",
+        3: "warn",
+        4: "err",
+        5: "critical",
+        6: "off",
+    }
+    if isinstance(level, str):
+        level = level.lower()
+        if level not in levels.values():
+            raise ValueError(
+                f"Invalid logging level '{level}'. Valid levels are "
+                f"{list(levels.values())}"
+            )
+        level = levels.index(level)
+    elif not isinstance(level, int):
+        raise TypeError(
+            f"Logging level must be an integer or string, not {type(level)}"
+        )
+
     logger().set_level(level)
 
 
@@ -63,6 +92,10 @@ def get_logging_level():
     The current debug logging level. Valid values are 0 through 6 inclusive,
     where 0 is the most verbose and 6 is the least verbose. Default is 2
     (info).
+
+    See Also
+    --------
+    set_logging_level : Set the debug logging level for the RMM library.
 
     Examples
     --------
