@@ -57,21 +57,21 @@ def set_logging_level(level):
     >>> rmm.set_logging_level("debug") # set logging level to debug
     >>> rmm.set_logging_level(3) # set logging level to warn
     """
-    def levels = {
-        0: "trace",
-        1: "debug",
-        2: "info",
-        3: "warn",
-        4: "err",
-        5: "critical",
-        6: "off",
-    }
+    levels = [
+        "trace",
+        "debug",
+        "info",
+        "warn",
+        "err",
+        "critical",
+        "off",
+    ]
     if isinstance(level, str):
         level = level.lower()
-        if level not in levels.values():
+        if level not in levels:
             raise ValueError(
-                f"Invalid logging level '{level}'. Valid levels are "
-                f"{list(levels.values())}"
+                f"Invalid logging level '{level}'. Valid levels are {levels} "
+                f"or integers 0 through {len(levels)-1}."
             )
         level = levels.index(level)
     elif not isinstance(level, int):
