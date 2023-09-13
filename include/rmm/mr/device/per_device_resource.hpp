@@ -202,7 +202,7 @@ inline device_memory_resource* set_per_device_resource(cuda_device_id device_id,
  */
 inline device_memory_resource* get_current_device_resource()
 {
-  return get_per_device_resource(rmm::detail::current_device());
+  return get_per_device_resource(rmm::get_current_cuda_device());
 }
 
 /**
@@ -231,6 +231,6 @@ inline device_memory_resource* get_current_device_resource()
  */
 inline device_memory_resource* set_current_device_resource(device_memory_resource* new_mr)
 {
-  return set_per_device_resource(rmm::detail::current_device(), new_mr);
+  return set_per_device_resource(rmm::get_current_cuda_device(), new_mr);
 }
 }  // namespace rmm::mr
