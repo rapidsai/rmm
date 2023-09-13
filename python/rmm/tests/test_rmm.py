@@ -942,3 +942,19 @@ def test_rmm_device_buffer_copy(cuda_ary, make_copy):
     result = db_copy.copy_to_host()
 
     np.testing.assert_equal(expected, result)
+
+
+@pytest.mark.parametrize(
+    "level", rmm.logging_levels)
+def test_valid_rmm_logging_level(level):
+    rmm.set_logging_level(level)
+    assert rmm.logging_levels[rmm.get_logging_level()] == level
+
+
+def test_invalid_rmm_logging_level():
+    with pytest.raises(ValueError):
+        rmm.set_logging_level('invalid')
+    with pytest.raises(ValueError):
+        rmm.set_logging_level(100)
+    with pytest.raises(TypeError):
+        rmm.set_logging_level(None)
