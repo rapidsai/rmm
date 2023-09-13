@@ -297,10 +297,9 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
       auto event = [&, device_id = this->device_id_]() {
         if (events_tls[device_id.value()]) { return events_tls[device_id.value()]->event; }
 
-        auto event                    = std::make_shared<event_wrapper>();
-        events_tls[device_id.value()] = event;
+        auto event = std::make_shared<event_wrapper>();
         this->default_stream_events.insert(event);
-        return event->event;
+        return (events_tls[device_id.value()] = std::move(event))->event;
       }();
       return stream_event_pair{stream.value(), event};
     }
