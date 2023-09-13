@@ -15,8 +15,11 @@
 from rmm import mr
 from rmm._lib.device_buffer import DeviceBuffer
 from rmm._lib.logger import (
+    flush_logger,
+    get_flush_level,
     get_logging_level,
     logging_levels,
+    set_flush_level,
     set_logging_level,
 )
 from rmm.mr import disable_logging, enable_logging, get_log_filenames
@@ -33,8 +36,11 @@ __all__ = [
     "RMMError",
     "disable_logging",
     "enable_logging",
+    "flush_logger",
     "get_log_filenames",
+    "get_flush_level",
     "get_logging_level",
+    "set_flush_level",
     "set_logging_level",
     "logging_levels",
     "is_initialized",
