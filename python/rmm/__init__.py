@@ -14,7 +14,11 @@
 
 from rmm import mr
 from rmm._lib.device_buffer import DeviceBuffer
-from rmm._lib.logger import set_logging_level
+from rmm._lib.logger import (
+  get_logging_level,
+  set_logging_level,
+  logging_levels,
+)
 from rmm.mr import disable_logging, enable_logging, get_log_filenames
 from rmm.rmm import (
     RMMError,
@@ -32,6 +36,7 @@ __all__ = [
     "get_log_filenames",
     "get_logging_level",
     "set_logging_level",
+    "logging_levels",
     "is_initialized",
     "mr",
     "register_reinitialize_hook",

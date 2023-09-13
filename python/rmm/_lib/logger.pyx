@@ -35,6 +35,17 @@ cdef extern from "rmm/logger.hpp" namespace "rmm" nogil:
     cdef spdlog_logger& logger() except +
 
 
+logging_levels = [
+    "trace",
+    "debug",
+    "info",
+    "warn",
+    "err",
+    "critical",
+    "off",
+]
+
+
 def set_logging_level(level):
     """
     Set the debug logging level for the RMM library.
@@ -44,8 +55,8 @@ def set_logging_level(level):
     level : int or str
         The debug logging level. Valid string names are (in decreasing order
         of verbosity) "trace", "debug", "info", "warn", "err", "critical",
-        and "off", corresponding respectively to valid integer levels 0
-        through 6. Default is 2 (info).
+        and "off", corresponding to valid integer levels 0 through 6. Default
+        is 2 (info).
 
     See Also
     --------
@@ -57,27 +68,23 @@ def set_logging_level(level):
     >>> rmm.set_logging_level("debug") # set logging level to debug
     >>> rmm.set_logging_level(3) # set logging level to warn
     """
-    levels = [
-        "trace",
-        "debug",
-        "info",
-        "warn",
-        "err",
-        "critical",
-        "off",
-    ]
     if isinstance(level, str):
-        level = level.lower()
-        if level not in levels:
+        try:
+            level = logging_levels.index(level.lower())
+        except ValueError:
             raise ValueError(
-                f"Invalid logging level '{level}'. Valid levels are {levels} "
-                f"or integers 0 through {len(levels)-1}."
+                f"Invalid logging level '{level}'. Valid levels are "
+                f"{logging_levels}."
             )
-        level = levels.index(level)
     elif not isinstance(level, int):
         raise TypeError(
             f"Logging level must be an integer or string, not {type(level)}"
         )
+    else:
+        if level < 0 or level >= len(logging_levels):
+            raise ValueError(
+                f"Logging level must be between 0 and {len(logging_levels)-1}"
+            )
 
     logger().set_level(level)
 
