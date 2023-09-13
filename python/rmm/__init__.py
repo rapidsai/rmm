@@ -15,9 +15,9 @@
 from rmm import mr
 from rmm._lib.device_buffer import DeviceBuffer
 from rmm._lib.logger import (
-  get_logging_level,
-  set_logging_level,
-  logging_levels,
+    get_logging_level,
+    logging_levels,
+    set_logging_level,
 )
 from rmm.mr import disable_logging, enable_logging, get_log_filenames
 from rmm.rmm import (
