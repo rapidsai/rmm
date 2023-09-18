@@ -271,7 +271,7 @@ class fixed_size_memory_resource
   }
 
  private:
-  Upstream* upstream_mr_;                  // The resource from which to allocate new blocks
+  Upstream* upstream_mr_;  // The resource from which to allocate new blocks
 
   std::size_t const block_size_;           // size of blocks this MR allocates
   std::size_t const upstream_chunk_size_;  // size of chunks allocated from heap MR
