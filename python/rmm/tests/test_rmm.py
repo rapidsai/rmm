@@ -17,6 +17,7 @@ import gc
 import os
 import pickle
 from itertools import product
+import warnings
 
 import numpy as np
 import pytest
@@ -944,31 +945,67 @@ def test_rmm_device_buffer_copy(cuda_ary, make_copy):
     np.testing.assert_equal(expected, result)
 
 
-@pytest.mark.parametrize("level", rmm.logging_levels)
+@pytest.mark.parametrize("level", rmm.logging_level)
 def test_valid_logging_level(level):
+    warnings.filterwarnings("ignore",
+                            message="RMM will not log warning level TRACE.")
+    warnings.filterwarnings("ignore",
+                            message="RMM will not log warning level DEBUG.")
     rmm.set_logging_level(level)
-    assert rmm.logging_levels[rmm.get_logging_level()] == level
+    assert rmm.get_logging_level() == level
+    # Also test setting using any value or name in the enum
+    rmm.set_logging_level(level.value)
+    assert rmm.get_logging_level() == level
+    rmm.set_logging_level(level.name)
+    assert rmm.get_logging_level() == level
+    # Test case insensitive
+    rmm.set_logging_level(level.name.title())
+    assert rmm.get_logging_level() == level
+    # reset to default
+    rmm.set_logging_level("INFO")
 
 
 def test_invalid_logging_level():
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
         rmm.set_logging_level("invalid")
     with pytest.raises(ValueError):
         rmm.set_logging_level(100)
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         rmm.set_logging_level(None)
+    with pytest.raises(ValueError):
+        rmm.set_logging_level(1.2345)
+    with pytest.raises(ValueError):
+        rmm.set_logging_level([1, 2, 3])
 
 
-@pytest.mark.parametrize("level", rmm.logging_levels)
+@pytest.mark.parametrize("level", rmm.logging_level)
 def test_valid_logging_flush_level(level):
+    warnings.filterwarnings("ignore",
+                            message="RMM will not log warning level TRACE.")
+    warnings.filterwarnings("ignore",
+                            message="RMM will not log warning level DEBUG.")
     rmm.set_flush_level(level)
-    assert rmm.logging_levels[rmm.get_flush_level()] == level
+    assert rmm.get_flush_level() == level
+    # Also test setting using any value or name in the enum
+    rmm.set_flush_level(level.value)
+    assert rmm.get_flush_level() == level
+    rmm.set_flush_level(level.name)
+    assert rmm.get_flush_level() == level
+    # Test case insensitive
+    rmm.set_flush_level(level.name.title())
+    assert rmm.get_flush_level() == level
+    # reset to default
+    rmm.set_flush_level("INFO")
 
 
 def test_invalid_logging_flush_level():
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
         rmm.set_flush_level("invalid")
     with pytest.raises(ValueError):
         rmm.set_flush_level(100)
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         rmm.set_flush_level(None)
+    with pytest.raises(ValueError):
+        rmm.set_flush_level(1.2345)
+    with pytest.raises(ValueError):
+        rmm.set_flush_level([1, 2, 3])
