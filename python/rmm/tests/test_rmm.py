@@ -16,8 +16,8 @@ import copy
 import gc
 import os
 import pickle
-from itertools import product
 import warnings
+from itertools import product
 
 import numpy as np
 import pytest
@@ -947,10 +947,12 @@ def test_rmm_device_buffer_copy(cuda_ary, make_copy):
 
 @pytest.mark.parametrize("level", rmm.logging_level)
 def test_valid_logging_level(level):
-    warnings.filterwarnings("ignore",
-                            message="RMM will not log warning level TRACE.")
-    warnings.filterwarnings("ignore",
-                            message="RMM will not log warning level DEBUG.")
+    warnings.filterwarnings(
+        "ignore", message="RMM will not log warning level TRACE."
+    )
+    warnings.filterwarnings(
+        "ignore", message="RMM will not log warning level DEBUG."
+    )
     rmm.set_logging_level(level)
     assert rmm.get_logging_level() == level
     # Also test setting using any value or name in the enum
@@ -980,10 +982,12 @@ def test_invalid_logging_level():
 
 @pytest.mark.parametrize("level", rmm.logging_level)
 def test_valid_logging_flush_level(level):
-    warnings.filterwarnings("ignore",
-                            message="RMM will not log warning level TRACE.")
-    warnings.filterwarnings("ignore",
-                            message="RMM will not log warning level DEBUG.")
+    warnings.filterwarnings(
+        "ignore", message="RMM will not log warning level TRACE."
+    )
+    warnings.filterwarnings(
+        "ignore", message="RMM will not log warning level DEBUG."
+    )
     rmm.set_flush_level(level)
     assert rmm.get_flush_level() == level
     # Also test setting using any value or name in the enum
