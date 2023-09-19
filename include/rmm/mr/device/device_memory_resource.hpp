@@ -85,7 +85,7 @@ class device_memory_resource {
   virtual ~device_memory_resource()                     = default;
   device_memory_resource(device_memory_resource const&) = default;  ///< @default_copy_constructor
   device_memory_resource(device_memory_resource&&) noexcept =
-    default;                                                        ///< @default_move_constructor
+    default;  ///< @default_move_constructor
   device_memory_resource& operator=(device_memory_resource const&) =
     default;  ///< @default_copy_assignment{device_memory_resource}
   device_memory_resource& operator=(device_memory_resource&&) noexcept =
