@@ -228,7 +228,8 @@ def flush_logger():
 
 def set_flush_level(level):
     """
-    Set the debug logging flush level for the RMM logger.
+    Set the debug logging flush level for the RMM logger. Messages of this
+    level or higher will automatically flush to the file.
 
     Debug logging prints messages to a log file. See
     `Debug Logging https://github.com/rapidsai/rmm#debug-logging`_ for more
@@ -272,7 +273,8 @@ def set_flush_level(level):
 
 def get_flush_level():
     """
-    Get the current debug logging flush level for the RMM logger.
+    Get the current debug logging flush level for the RMM logger. Messages of
+    this level or higher will automatically flush to the file.
 
     Debug logging prints messages to a log file. See
     `Debug Logging https://github.com/rapidsai/rmm#debug-logging`_ for more
