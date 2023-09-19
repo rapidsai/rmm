@@ -108,6 +108,7 @@ def _normalize_logging_level(level):
     else:
         return logging_level(level).value
 
+
 def should_log(level):
     """
     Check if a message at the given level would be logged.
