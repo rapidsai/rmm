@@ -13,116 +13,84 @@
 # limitations under the License.
 
 import warnings
-from enum import Enum, auto
 
 from libcpp cimport bool
 
 
 cdef extern from "spdlog/common.h" namespace "spdlog::level" nogil:
-    cdef enum level_enum:
-        trace = 0
-        debug = 1
-        info = 2
-        warn = 3
-        err = 4
-        critical = 5
-        off = 6
+    cpdef enum logging_level "spdlog::level::level_enum":
+        """
+        The debug logging level for RMM.
+
+        Debug logging prints messages to a log file. See
+        `Debug Logging https://github.com/rapidsai/rmm#debug-logging`_
+        for more information.
+
+        Valid levels, in decreasing order of verbosity, are TRACE, DEBUG,
+        INFO, WARN, ERR, CRITICAL, and OFF. Default is INFO.
+
+        Examples
+        --------
+        >>> import rmm
+        >>> rmm.logging_level.DEBUG
+        <logging_level.DEBUG: 1>
+        >>> rmm.logging_level.DEBUG.value
+        1
+        >>> rmm.logging_level.DEBUG.name
+        'DEBUG'
+
+        See Also
+        --------
+        set_logging_level : Set the debug logging level
+        get_logging_level : Get the current debug logging level
+        """
+        TRACE "spdlog::level::trace"
+        DEBUG "spdlog::level::debug"
+        INFO "spdlog::level::info"
+        WARN "spdlog::level::warn"
+        ERR "spdlog::level::err"
+        CRITICAL "spdlog::level::critical"
+        OFF "spdlog::level::off"
 
 
 cdef extern from "spdlog/spdlog.h" namespace "spdlog" nogil:
     cdef cppclass spdlog_logger "spdlog::logger":
         spdlog_logger() except +
-        void set_level(level_enum log_level)
-        level_enum level()
+        void set_level(logging_level level)
+        logging_level level()
         void flush() except +
-        void flush_on(level_enum log_level)
-        level_enum flush_level()
-        bool should_log(level_enum msg_level)
+        void flush_on(logging_level level)
+        logging_level flush_level()
+        bool should_log(logging_level msg_level)
 
 
 cdef extern from "rmm/logger.hpp" namespace "rmm" nogil:
     cdef spdlog_logger& logger() except +
 
 
-class logging_level(Enum):
-    """
-    The debug logging level for the RMM library.
-
-    Debug logging prints messages to a log file. See
-    `Debug Logging https://github.com/rapidsai/rmm#debug-logging`_ for more
-    information.
-
-    Valid levels, in decreasing order of verbosity, are TRACE, DEBUG, INFO,
-    WARN, ERR, CRITICAL, and OFF. Default is INFO.
-
-    Examples
-    --------
-    >>> import rmm
-    >>> rmm.logging_level.DEBUG
-    <logging_level.DEBUG: 1>
-    >>> rmm.logging_level.DEBUG.value
-    1
-    >>> rmm.logging_level.DEBUG.name
-    'DEBUG'
-
-    See Also
-    --------
-    set_logging_level : Set the debug logging level for the RMM library.
-    get_logging_level : Get the current debug logging level for the RMM
-    """
-    TRACE=0
-    DEBUG=auto()
-    INFO=auto()
-    WARN=auto()
-    ERR=auto()
-    CRITICAL=auto()
-    OFF=auto()
-
-
-def _normalize_logging_level(level):
-    """
-    Normalize the logging level to an integer.
-
-    Parameters
-    ----------
-    level : logging_level, int or str
-        The debug logging level. Valid values are instances of the
-        ``logging_level`` enum or any name (case-insensitive) or value of the
-        enum.
-
-    Returns
-    -------
-    level : int
-        The logging level as an integer.
-
-    Raises
-    ------
-    ValueError
-        If the logging level is invalid.
-    TypeError
-        If the logging level is not an instance of the ``logging_level`` enum,
-        an integer or a string.
-    """
-    if (isinstance(level, str)):
-        return logging_level[level.upper()].value
-    else:
-        return logging_level(level).value
+def _validate_level_type(level):
+    if not isinstance(level, logging_level):
+        raise TypeError("level must be an instance of the logging_level enum")
 
 
 def should_log(level):
     """
     Check if a message at the given level would be logged.
 
+    A message at the given level would be logged if the current debug logging
+    level is set to a level that is at least as verbose than the given level,
+    *and* the RMM module is compiled for a logging level at least as verbose.
+    If these conditions are not both met, this function will return false.
+
     Debug logging prints messages to a log file. See
-    `Debug Logging https://github.com/rapidsai/rmm#debug-logging`_ for more
-    information.
+    `Debug Logging https://github.com/rapidsai/rmm#debug-logging`_
+    for more information.
 
     Parameters
     ----------
-    level : logging_level, int or str
+    level : logging_level
         The debug logging level. Valid values are instances of the
-        ``logging_level`` enum or any name (case-insensitive) or value of the
-        enum.
+        ``logging_level`` enum.
 
     Returns
     -------
@@ -131,65 +99,57 @@ def should_log(level):
 
     Raises
     ------
-    ValueError
-        If the logging level is invalid.
     TypeError
-        If the logging level is not an instance of the ``logging_level`` enum,
-        an integer or a string.
+        If the logging level is not an instance of the ``logging_level`` enum.
     """
-    return logger().should_log(_normalize_logging_level(level))
+    _validate_level_type(level)
+    return logger().should_log(level)
 
 
 def set_logging_level(level):
     """
-    Set the debug logging level for the RMM library.
+    Set the debug logging level.
 
     Debug logging prints messages to a log file. See
-    `Debug Logging https://github.com/rapidsai/rmm#debug-logging`_ for more
-    information.
+    `Debug Logging https://github.com/rapidsai/rmm#debug-logging`_
+    for more information.
 
     Parameters
     ----------
     level : logging_level, int or str
         The debug logging level. Valid values are instances of the
-        ``logging_level`` enum or any name (case-insensitive) or value of the
-        enum.
+        ``logging_level`` enum.
 
     Raises
     ------
-    ValueError
-        If the logging level is invalid.
     TypeError
-        If the logging level is not an instance of the ``logging_level`` enum,
-        an integer or a string.
+        If the logging level is not an instance of the ``logging_level`` enum.
 
     See Also
     --------
-    get_logging_level : Get the current debug logging level for RMM.
+    get_logging_level : Get the current debug logging level.
 
     Examples
     --------
     >>> import rmm
-    >>> rmm.set_logging_level("debug") # set logging level to debug
-    >>> rmm.set_logging_level(3) # set logging level to warn
     >>> rmm.set_logging_level(rmm.logging_level.WARN) # set logging level to warn
     """
-    level = logging_level(_normalize_logging_level(level))
-    logger().set_level(level.value)
+    _validate_level_type(level)
+    logger().set_level(level)
 
     if not should_log(level):
-        warnings.warn(f"RMM will not log warning level {level.name}. This "
+        warnings.warn(f"RMM will not log logging_level.{level.name}. This "
                       "may be because the C++ library is compiled for a "
                       "less-verbose logging level.")
 
 
 def get_logging_level():
     """
-    Get the current debug logging level for the RMM library.
+    Get the current debug logging level.
 
     Debug logging prints messages to a log file. See
-    `Debug Logging https://github.com/rapidsai/rmm#debug-logging`_ for more
-    information.
+    `Debug Logging https://github.com/rapidsai/rmm#debug-logging`_
+    for more information.
 
     Returns
     -------
@@ -199,7 +159,7 @@ def get_logging_level():
 
     See Also
     --------
-    set_logging_level : Set the debug logging level for the RMM library.
+    set_logging_level : Set the debug logging level.
 
     Examples
     --------
@@ -212,12 +172,17 @@ def get_logging_level():
 
 def flush_logger():
     """
-    Flush the RMM debug logger. This will cause any buffered log messages to be
-    written immediately to the log file.
+    Flush the debug logger. This will cause any buffered log messages to
+    be written to the log file.
 
     Debug logging prints messages to a log file. See
-    `Debug Logging https://github.com/rapidsai/rmm#debug-logging`_ for more
-    information.
+    `Debug Logging https://github.com/rapidsai/rmm#debug-logging`_
+    for more information.
+
+    See Also
+    --------
+    set_flush_level : Set the flush level for the debug logger.
+    get_flush_level : Get the current debug logging flush level.
 
     Examples
     --------
@@ -229,45 +194,39 @@ def flush_logger():
 
 def set_flush_level(level):
     """
-    Set the debug logging flush level for the RMM logger. Messages of this
-    level or higher will automatically flush to the file.
+    Set the flush level for the debug logger. Messages of this level or higher
+    will automatically flush to the file.
 
     Debug logging prints messages to a log file. See
-    `Debug Logging https://github.com/rapidsai/rmm#debug-logging`_ for more
-    information.
+    `Debug Logging https://github.com/rapidsai/rmm#debug-logging`_
+    for more information.
 
     Parameters
     ----------
-    level : int or str
-        The flush level. Valid values are instances of the
-        ``logging_level`` enum or any name (case-insensitive) or value of the
-        enum.
+    level : logging_level, int or str
+        The debug logging level. Valid values are instances of the
+        ``logging_level`` enum.
 
     Raises
     ------
-    ValueError
-        If the logging level is invalid.
     TypeError
-        If the logging level is not an instance of the ``logging_level`` enum,
-        an integer or a string.
+        If the logging level is not an instance of the ``logging_level`` enum.
 
     See Also
     --------
-    get_logging_level : Get the current debug logging level for the RMM
-    set_logging_level : Set the debug logging level for the RMM library.
+    get_flush_level : Get the current debug logging flush level.
+    flush_logger : Flush the logger.
 
     Examples
     --------
     >>> import rmm
-    >>> rmm.flush_on("debug") # set flush level to debug
-    >>> rmm.flush_on(3) # set flush level to warn
     >>> rmm.flush_on(rmm.logging_level.WARN) # set flush level to warn
     """
-    level = logging_level(_normalize_logging_level(level))
-    logger().flush_on(level.value)
+    _validate_level_type(level)
+    logger().flush_on(level)
 
     if not should_log(level):
-        warnings.warn(f"RMM will not log warning level {level.name}. This "
+        warnings.warn(f"RMM will not log logging_level.{level.name}. This "
                       "may be because the C++ library is compiled for a "
                       "less-verbose logging level.")
 
@@ -278,8 +237,8 @@ def get_flush_level():
     this level or higher will automatically flush to the file.
 
     Debug logging prints messages to a log file. See
-    `Debug Logging https://github.com/rapidsai/rmm#debug-logging`_ for more
-    information.
+    `Debug Logging https://github.com/rapidsai/rmm#debug-logging`_
+    for more information.
 
     Returns
     -------
@@ -289,8 +248,8 @@ def get_flush_level():
 
     See Also
     --------
-    set_flush_level : Set the flush level for the RMM logger.
-    set_logging_level : Set the debug logging level for the RMM library.
+    set_flush_level : Set the flush level for the logger.
+    flush_logger : Flush the logger.
 
     Examples
     --------
