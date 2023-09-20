@@ -55,18 +55,17 @@ class cuda_memory_resource final : public device_memory_resource {
 
  private:
   /**
-   * @brief Allocates memory of size at least `bytes` using cudaMalloc.
+   * @brief Allocates memory of size at least \p bytes.
    *
-   * The returned pointer has at least 256B alignment.
+   * The returned pointer will have at minimum 256 byte alignment.
    *
-   * @note Stream argument is ignored
+   * The stream argument is ignored.
    *
-   * @throws `rmm::bad_alloc` if the requested allocation could not be fulfilled
-   *
-   * @param bytes The size, in bytes, of the allocation
+   * @param bytes The size of the allocation
+   * @param stream This argument is ignored
    * @return void* Pointer to the newly allocated memory
    */
-  void* do_allocate(std::size_t bytes, cuda_stream_view) override
+  void* do_allocate(std::size_t bytes, [[maybe_unused]] cuda_stream_view stream) override
   {
     void* ptr{nullptr};
     RMM_CUDA_TRY_ALLOC(cudaMalloc(&ptr, bytes));
@@ -76,13 +75,17 @@ class cuda_memory_resource final : public device_memory_resource {
   /**
    * @brief Deallocate memory pointed to by \p p.
    *
-   * @note Stream argument is ignored.
+   * If supported, this operation may optionally be executed on a stream.
+   * Otherwise, the stream is ignored and the null stream is used.
    *
-   * @throws Nothing.
-   *
-   * @param p Pointer to be deallocated
+   * @param ptr Pointer to be deallocated
+   * @param bytes The size in bytes of the allocation. This must be equal to the
+   * value of `bytes` that was passed to the `allocate` call that returned `p`.
+   * @param stream Stream on which to perform deallocation
    */
-  void do_deallocate(void* ptr, std::size_t, cuda_stream_view) override
+  void do_deallocate(void* ptr,
+                     [[maybe_unused]] std::size_t bytes,
+                     [[maybe_unused]] cuda_stream_view stream) override
   {
     RMM_ASSERT_CUDA_SUCCESS(cudaFree(ptr));
   }

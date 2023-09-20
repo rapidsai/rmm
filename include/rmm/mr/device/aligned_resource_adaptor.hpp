@@ -140,7 +140,7 @@ class aligned_resource_adaptor final : public device_memory_resource {
    *
    * @throws Nothing.
    *
-   * @param p Pointer to be deallocated
+   * @param ptr Pointer to be deallocated
    * @param bytes Size of the allocation
    * @param stream Stream on which to perform the deallocation
    */

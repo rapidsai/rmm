@@ -108,13 +108,12 @@ class cuda_async_view_memory_resource final : public device_memory_resource {
 #endif
 
   /**
-   * @brief Allocates memory of size at least `bytes` using cudaMalloc.
+   * @brief Allocates memory of size at least \p bytes.
    *
-   * The returned pointer has at least 256B alignment.
+   * The returned pointer will have at minimum 256 byte alignment.
    *
-   * @throws `rmm::bad_alloc` if the requested allocation could not be fulfilled
-   *
-   * @param bytes The size, in bytes, of the allocation
+   * @param bytes The size of the allocation
+   * @param stream Stream on which to perform allocation
    * @return void* Pointer to the newly allocated memory
    */
   void* do_allocate(std::size_t bytes, rmm::cuda_stream_view stream) override
@@ -135,11 +134,17 @@ class cuda_async_view_memory_resource final : public device_memory_resource {
   /**
    * @brief Deallocate memory pointed to by \p p.
    *
-   * @throws Nothing.
+   * If supported, this operation may optionally be executed on a stream.
+   * Otherwise, the stream is ignored and the null stream is used.
    *
-   * @param p Pointer to be deallocated
+   * @param ptr Pointer to be deallocated
+   * @param bytes The size in bytes of the allocation. This must be equal to the
+   * value of `bytes` that was passed to the `allocate` call that returned `p`.
+   * @param stream Stream on which to perform deallocation
    */
-  void do_deallocate(void* ptr, std::size_t, rmm::cuda_stream_view stream) override
+  void do_deallocate(void* ptr,
+                     [[maybe_unused]] std::size_t bytes,
+                     rmm::cuda_stream_view stream) override
   {
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
     if (ptr != nullptr) {
@@ -147,6 +152,7 @@ class cuda_async_view_memory_resource final : public device_memory_resource {
     }
 #else
     (void)ptr;
+    (void)bytes;
     (void)stream;
 #endif
   }

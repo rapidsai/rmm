@@ -100,11 +100,34 @@ class callback_memory_resource final : public device_memory_resource {
     default;  ///< @default_move_assignment{callback_memory_resource}
 
  private:
+  /**
+   * @brief Allocates memory of size at least \p bytes.
+   *
+   * The returned pointer will have at minimum 256 byte alignment.
+   *
+   * If supported, this operation may optionally be executed on a stream.
+   * Otherwise, the stream is ignored and the null stream is used.
+   *
+   * @param bytes The size of the allocation
+   * @param stream Stream on which to perform allocation
+   * @return void* Pointer to the newly allocated memory
+   */
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
     return allocate_callback_(bytes, stream, allocate_callback_arg_);
   }
 
+  /**
+   * @brief Deallocate memory pointed to by \p p.
+   *
+   * If supported, this operation may optionally be executed on a stream.
+   * Otherwise, the stream is ignored and the null stream is used.
+   *
+   * @param ptr Pointer to be deallocated
+   * @param bytes The size in bytes of the allocation. This must be equal to the
+   * value of `bytes` that was passed to the `allocate` call that returned `p`.
+   * @param stream Stream on which to perform deallocation
+   */
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
     deallocate_callback_(ptr, bytes, stream, deallocate_callback_arg_);

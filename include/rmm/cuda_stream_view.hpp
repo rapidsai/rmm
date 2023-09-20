@@ -166,7 +166,7 @@ inline bool operator!=(cuda_stream_view lhs, cuda_stream_view rhs) { return not(
  * @brief Output stream operator for printing / logging streams
  *
  * @param os The output ostream
- * @param sv The cuda_stream_view to output
+ * @param stream The cuda_stream_view to output
  * @return std::ostream& The output ostream
  */
 inline std::ostream& operator<<(std::ostream& os, cuda_stream_view stream)
