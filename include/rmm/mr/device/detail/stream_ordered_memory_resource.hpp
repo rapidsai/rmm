@@ -15,14 +15,15 @@
  */
 #pragma once
 
+#include <rmm/cuda_device.hpp>
 #include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/logger.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
-#include <fmt/core.h>
-
 #include <cuda_runtime_api.h>
+
+#include <fmt/core.h>
 
 #include <cstddef>
 #include <functional>
@@ -288,17 +289,25 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
   stream_event_pair get_event(cuda_stream_view stream)
   {
     if (stream.is_per_thread_default()) {
-      // Create a thread-local shared event wrapper. Shared pointers in the thread and in each MR
-      // instance ensures it is destroyed cleaned up only after all are finished with it.
-      thread_local auto event_tls = std::make_shared<event_wrapper>();
-      default_stream_events.insert(event_tls);
-      return stream_event_pair{stream.value(), event_tls->event};
+      // Create a thread-local shared event wrapper for each device. Shared pointers in the thread
+      // and in each MR instance ensure the wrappers are destroyed only after all are finished
+      // with them.
+      thread_local std::vector<std::shared_ptr<event_wrapper>> events_tls(
+        rmm::get_num_cuda_devices());
+      auto event = [&, device_id = this->device_id_]() {
+        if (events_tls[device_id.value()]) { return events_tls[device_id.value()]->event; }
+
+        auto event = std::make_shared<event_wrapper>();
+        this->default_stream_events.insert(event);
+        return (events_tls[device_id.value()] = std::move(event))->event;
+      }();
+      return stream_event_pair{stream.value(), event};
     }
     // We use cudaStreamLegacy as the event map key for the default stream for consistency between
     // PTDS and non-PTDS mode. In PTDS mode, the cudaStreamLegacy map key will only exist if the
     // user explicitly passes it, so it is used as the default location for the free list
-    // at construction. For consistency, the same key is used for null stream free lists in non-PTDS
-    // mode.
+    // at construction. For consistency, the same key is used for null stream free lists in
+    // non-PTDS mode.
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-cstyle-cast)
     auto* const stream_to_store = stream.is_default() ? cudaStreamLegacy : stream.value();
 
@@ -496,11 +505,13 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
   // bidirectional mapping between non-default streams and events
   std::unordered_map<cudaStream_t, stream_event_pair> stream_events_;
 
-  // shared pointers to events keeps the events alive as long as either the thread that created them
-  // or the MR that is using them exists.
+  // shared pointers to events keeps the events alive as long as either the thread that created
+  // them or the MR that is using them exists.
   std::set<std::shared_ptr<event_wrapper>> default_stream_events;
 
   std::mutex mtx_;  // mutex for thread-safe access
-};                  // namespace detail
+
+  rmm::cuda_device_id device_id_{rmm::get_current_cuda_device()};
+};  // namespace detail
 
 }  // namespace rmm::mr::detail

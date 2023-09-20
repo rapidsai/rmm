@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
+#include <rmm/cuda_device.hpp>
 #include <rmm/detail/aligned.hpp>
 #include <rmm/detail/cuda_util.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
+#include <rmm/device_uvector.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/limiting_resource_adaptor.hpp>
@@ -100,7 +102,7 @@ TEST(PoolTest, ForceGrowth)
     EXPECT_NO_THROW(mr.allocate(1000));
     EXPECT_THROW(mr.allocate(4000), rmm::out_of_memory);  // too much
     EXPECT_NO_THROW(mr.allocate(500));
-    EXPECT_NO_THROW(mr.allocate(2000));                   // fits
+    EXPECT_NO_THROW(mr.allocate(2000));  // fits
   }
 }
 
@@ -148,6 +150,43 @@ TEST(PoolTest, UpstreamDoesntSupportMemInfo)
   pool_mr mr2(&mr1);
   auto* ptr = mr2.allocate(1024);
   mr2.deallocate(ptr, 1024);
+}
+
+TEST(PoolTest, MultidevicePool)
+{
+  using MemoryResource = rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>;
+
+  // Get the number of cuda devices
+  int num_devices = rmm::get_num_cuda_devices();
+
+  // only run on multidevice systems
+  if (num_devices >= 2) {
+    rmm::mr::cuda_memory_resource general_mr;
+
+    // initializing pool_memory_resource of multiple devices
+    int devices      = 2;
+    size_t pool_size = 1024;
+    std::vector<std::shared_ptr<MemoryResource>> mrs;
+
+    for (int i = 0; i < devices; ++i) {
+      RMM_CUDA_TRY(cudaSetDevice(i));
+      auto mr = std::make_shared<MemoryResource>(&general_mr, pool_size, pool_size);
+      rmm::mr::set_per_device_resource(rmm::cuda_device_id{i}, mr.get());
+      mrs.emplace_back(mr);
+    }
+
+    {
+      RMM_CUDA_TRY(cudaSetDevice(0));
+      rmm::device_buffer buf_a(16, rmm::cuda_stream_per_thread, mrs[0].get());
+
+      {
+        RMM_CUDA_TRY(cudaSetDevice(1));
+        rmm::device_buffer buf_b(16, rmm::cuda_stream_per_thread, mrs[1].get());
+      }
+
+      RMM_CUDA_TRY(cudaSetDevice(0));
+    }
+  }
 }
 
 }  // namespace
