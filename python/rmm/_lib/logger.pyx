@@ -23,7 +23,7 @@ cdef extern from "spdlog/common.h" namespace "spdlog::level" nogil:
         The debug logging level for RMM.
 
         Debug logging prints messages to a log file. See
-        `Debug Logging https://github.com/rapidsai/rmm#debug-logging`_
+        `Debug Logging <https://github.com/rapidsai/rmm#debug-logging>`_
         for more information.
 
         Valid levels, in decreasing order of verbosity, are TRACE, DEBUG,
@@ -83,7 +83,7 @@ def should_log(level):
     If these conditions are not both met, this function will return false.
 
     Debug logging prints messages to a log file. See
-    `Debug Logging https://github.com/rapidsai/rmm#debug-logging`_
+    `Debug Logging <https://github.com/rapidsai/rmm#debug-logging>`_
     for more information.
 
     Parameters
@@ -111,7 +111,7 @@ def set_logging_level(level):
     Set the debug logging level.
 
     Debug logging prints messages to a log file. See
-    `Debug Logging https://github.com/rapidsai/rmm#debug-logging`_
+    `Debug Logging <https://github.com/rapidsai/rmm#debug-logging>`_
     for more information.
 
     Parameters
@@ -148,7 +148,7 @@ def get_logging_level():
     Get the current debug logging level.
 
     Debug logging prints messages to a log file. See
-    `Debug Logging https://github.com/rapidsai/rmm#debug-logging`_
+    `Debug Logging <https://github.com/rapidsai/rmm#debug-logging>`_
     for more information.
 
     Returns
@@ -176,7 +176,7 @@ def flush_logger():
     be written to the log file.
 
     Debug logging prints messages to a log file. See
-    `Debug Logging https://github.com/rapidsai/rmm#debug-logging`_
+    `Debug Logging <https://github.com/rapidsai/rmm#debug-logging>`_
     for more information.
 
     See Also
@@ -198,7 +198,7 @@ def set_flush_level(level):
     will automatically flush to the file.
 
     Debug logging prints messages to a log file. See
-    `Debug Logging https://github.com/rapidsai/rmm#debug-logging`_
+    `Debug Logging <https://github.com/rapidsai/rmm#debug-logging>`_
     for more information.
 
     Parameters
@@ -237,7 +237,7 @@ def get_flush_level():
     this level or higher will automatically flush to the file.
 
     Debug logging prints messages to a log file. See
-    `Debug Logging https://github.com/rapidsai/rmm#debug-logging`_
+    `Debug Logging <https://github.com/rapidsai/rmm#debug-logging>`_
     for more information.
 
     Returns
