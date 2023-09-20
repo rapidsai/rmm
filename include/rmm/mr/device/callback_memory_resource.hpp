@@ -105,8 +105,8 @@ class callback_memory_resource final : public device_memory_resource {
    *
    * The returned pointer will have at minimum 256 byte alignment.
    *
-   * If supported, this operation may optionally be executed on a stream.
-   * Otherwise, the stream is ignored and the null stream is used.
+   * If supported by the callback, this operation may optionally be executed on
+   * a stream.  Otherwise, the stream is ignored and the null stream is used.
    *
    * @param bytes The size of the allocation
    * @param stream Stream on which to perform allocation
@@ -120,8 +120,8 @@ class callback_memory_resource final : public device_memory_resource {
   /**
    * @brief Deallocate memory pointed to by \p p.
    *
-   * If supported, this operation may optionally be executed on a stream.
-   * Otherwise, the stream is ignored and the null stream is used.
+   * If supported by the callback, this operation may optionally be executed on
+   * a stream.  Otherwise, the stream is ignored and the null stream is used.
    *
    * @param ptr Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the
