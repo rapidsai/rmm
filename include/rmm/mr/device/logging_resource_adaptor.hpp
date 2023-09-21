@@ -317,8 +317,8 @@ class logging_resource_adaptor final : public device_memory_resource {
 
   std::shared_ptr<spdlog::logger> logger_;  ///< spdlog logger object
 
-  Upstream* upstream_;                      ///< The upstream resource used for satisfying
-                                            ///< allocation requests
+  Upstream* upstream_;  ///< The upstream resource used for satisfying
+                        ///< allocation requests
 };
 
 /**
