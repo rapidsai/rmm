@@ -116,7 +116,7 @@ def set_logging_level(level):
 
     Parameters
     ----------
-    level : logging_level, int or str
+    level : logging_level
         The debug logging level. Valid values are instances of the
         ``logging_level`` enum.
 
@@ -203,7 +203,7 @@ def set_flush_level(level):
 
     Parameters
     ----------
-    level : logging_level, int or str
+    level : logging_level
         The debug logging level. Valid values are instances of the
         ``logging_level`` enum.
 
@@ -242,7 +242,7 @@ def get_flush_level():
 
     Returns
     -------
-    level : logging_level
+    logging_level
         The current flush level, an instance of the ``logging_level``
         enum.
 
