@@ -958,31 +958,20 @@ def test_valid_logging_level(level):
         assert rmm.get_logging_level() == level
         rmm.set_logging_level(rmm.logging_level.INFO)  # reset to default
 
-
-invalid_logging_levels = ["INFO", 3, "invalid", 100, None, 1.2345, [1, 2, 3]]
-
-
-@pytest.mark.parametrize("level", invalid_logging_levels)
-def test_invalid_logging_level(level):
-    with pytest.raises(TypeError):
-        rmm.set_logging_level(level)
-
-
-@pytest.mark.parametrize("level", rmm.logging_level)
-def test_valid_logging_flush_level(level):
-    with warnings.catch_warnings():
-        warnings.filterwarnings(
-            "ignore", message="RMM will not log logging_level.TRACE."
-        )
-        warnings.filterwarnings(
-            "ignore", message="RMM will not log logging_level.DEBUG."
-        )
         rmm.set_flush_level(level)
         assert rmm.get_flush_level() == level
         rmm.set_flush_level(rmm.logging_level.INFO)  # reset to default
 
+        rmm.should_log(level)
 
-@pytest.mark.parametrize("level", invalid_logging_levels)
-def test_invalid_logging_flush_level(level):
+
+@pytest.mark.parametrize(
+    "level", ["INFO", 3, "invalid", 100, None, 1.2345, [1, 2, 3]]
+)
+def test_invalid_logging_level(level):
+    with pytest.raises(TypeError):
+        rmm.set_logging_level(level)
     with pytest.raises(TypeError):
         rmm.set_flush_level(level)
+    with pytest.raises(TypeError):
+        rmm.should_log(level)
