@@ -201,11 +201,10 @@ nitpick_ignore = [
 ]
 
 
-def on_missing_reference(app, env, node, contnode):
-    return contnode
-    if node["refdomain"] == "cpp":
-        return contnode
-    return None
+# def on_missing_reference(app, env, node, contnode):
+#     if node["refdomain"] == "cpp":
+#         return contnode
+#     return None
 
 
 def setup(app):
@@ -214,4 +213,4 @@ def setup(app):
     app.add_js_file(
         "https://docs.rapids.ai/assets/js/custom.js", loading_method="defer"
     )
-    app.connect("missing-reference", on_missing_reference)
+    # app.connect("missing-reference", on_missing_reference)
