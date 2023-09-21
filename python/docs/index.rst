@@ -10,9 +10,8 @@ Welcome to rmm's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   basics.md
-   api.rst
-   librmm_api.rst
+   Python <python.rst>
+   C++ <cpp.rst>
 
 
 Indices and tables
