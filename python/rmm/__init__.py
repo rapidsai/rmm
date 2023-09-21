@@ -23,6 +23,7 @@ from rmm._lib.logger import (
     set_logging_level,
     should_log,
 )
+from rmm._version import __version__
 from rmm.mr import disable_logging, enable_logging, get_log_filenames
 from rmm.rmm import (
     RMMError,
@@ -51,5 +52,3 @@ __all__ = [
     "should_log",
     "unregister_reinitialize_hook",
 ]
-
-__version__ = "23.12.00"
