@@ -25,14 +25,7 @@ pyproject_file="${package_dir}/pyproject.toml"
 sed -i "s/^version = .*/version = \"${version_override}\"/g" ${pyproject_file}
 sed -i "s/name = \"${package_name}\"/name = \"${package_name}${PACKAGE_CUDA_SUFFIX}\"/g" ${pyproject_file}
 
-# For nightlies we want to ensure that we're pulling in alphas as well. The
-# easiest way to do so is to augment the spec with a constraint containing a
-# min alpha version that doesn't affect the version bounds but does allow usage
-# of alpha versions for that dependency without --pre
-alpha_spec=''
-if ! rapids-is-release-build; then
-    alpha_spec=',>=0.0.0a0'
-fi
+./ci/replace_version.sh "${package_name}" "${package_dir}"
 
 if [[ $PACKAGE_CUDA_SUFFIX == "-cu12" ]]; then
     sed -i "s/cuda-python[<=>\.,0-9a]*/cuda-python>=12.0,<13.0a0/g" ${pyproject_file}
