@@ -9,8 +9,6 @@ package_dir="python"
 source rapids-configure-sccache
 source rapids-date-string
 
-# Use gha-tools rapids-pip-wheel-version to generate wheel version then
-# update the necessary files
 version_override=$(./ci/get_version.sh ${package_name} ${package_dir})
 
 RAPIDS_PY_CUDA_SUFFIX="$(rapids-wheel-ctk-name-gen ${RAPIDS_CUDA_VERSION})"

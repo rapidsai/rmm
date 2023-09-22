@@ -12,12 +12,12 @@ rapids-print-env
 package_name="rmm"
 package_dir="python"
 
-# Use gha-tools rapids-pip-wheel-version to generate wheel version then
-# update the necessary files
 version_override=$(./ci/get_version.sh ${package_name} ${package_dir})
 echo "__version__ = ${version_override}" > ${package_dir}/${package_name}/_version.py
 
 rapids-logger "Begin py build"
+
+CPP_CHANNEL=$(rapids-download-conda-from-s3 cpp)
 
 # This calls mambabuild when boa is installed (as is the case in the CI images)
 RAPIDS_PACKAGE_VERSION=${version_override} rapids-conda-retry mambabuild -c "${CPP_CHANNEL}" conda/recipes/rmm
