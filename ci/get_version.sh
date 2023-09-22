@@ -16,4 +16,4 @@ fi
 python -m pip install dunamai  > /dev/null # TODO: Install into images
 dunamai_version=$(python -m dunamai from git --format \"${dunamai_format}\")
 
-echo "__version__ = '$(dunamai from any)'" > ${package_dir}/${package_name}/_version.py
+echo -n ${dunamai_version}
