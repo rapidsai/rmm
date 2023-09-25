@@ -39,7 +39,7 @@ namespace rmm {
  * `thrust::uninitialized_fill`.
  *
  * Example:
- * @code{.cpp}
+ * @code{c++}
  * rmm::mr::device_memory_resource * mr = new my_custom_resource();
  * rmm::cuda_stream_view s{};
  *
