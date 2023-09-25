@@ -185,7 +185,8 @@ class limiting_resource_adaptor final : public device_memory_resource {
    * @param stream Stream on which to get the mem info.
    * @return std::pair contaiing free_size and total_size of memory
    */
-  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view) const override
+  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
+    [[maybe_unused]] cuda_stream_view stream) const override
   {
     return {allocation_limit_ - allocated_bytes_, allocation_limit_};
   }
@@ -209,7 +210,7 @@ class limiting_resource_adaptor final : public device_memory_resource {
  *
  * @tparam Upstream Type of the upstream `device_memory_resource`.
  * @param upstream Pointer to the upstream resource
- * @param limit Maximum amount of memory to allocate
+ * @param allocation_limit Maximum amount of memory to allocate
  */
 template <typename Upstream>
 limiting_resource_adaptor<Upstream> make_limiting_adaptor(Upstream* upstream,

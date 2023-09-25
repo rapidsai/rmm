@@ -293,7 +293,8 @@ class arena_memory_resource final : public device_memory_resource {
    * @param stream to execute on.
    * @return std::pair containing free_size and total_size of memory.
    */
-  std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view) const override
+  std::pair<std::size_t, std::size_t> do_get_mem_info(
+    [[maybe_unused]] cuda_stream_view stream) const override
   {
     return std::make_pair(0, 0);
   }

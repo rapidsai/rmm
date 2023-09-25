@@ -33,9 +33,9 @@ using exec_policy_t = std::unique_ptr<par_t, deleter_t>;
  * @brief Returns a unique_ptr to a Thrust CUDA execution policy that uses RMM
  * for temporary memory allocation.
  *
- * @Param stream The stream that the allocator will use
+ * @param stream The stream that the allocator will use
  *
- * @Returns A Thrust execution policy that will use RMM for temporary memory
+ * @return A Thrust execution policy that will use RMM for temporary memory
  * allocation.
  */
 [[deprecated("Use new exec_policy in rmm/exec_policy.hpp")]] inline exec_policy_t exec_policy(

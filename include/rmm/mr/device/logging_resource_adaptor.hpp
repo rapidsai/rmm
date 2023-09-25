@@ -329,6 +329,8 @@ class logging_resource_adaptor final : public device_memory_resource {
  * @param upstream Pointer to the upstream resource
  * @param filename Name of the file to write log info. If not specified,
  * retrieves the log file name from the environment variable "RMM_LOG_FILE".
+ * @param auto_flush If true, flushes the log for every (de)allocation. Warning, this will degrade
+ * performance.
  */
 template <typename Upstream>
 logging_resource_adaptor<Upstream> make_logging_adaptor(
@@ -346,6 +348,8 @@ logging_resource_adaptor<Upstream> make_logging_adaptor(
  * @tparam Upstream Type of the upstream `device_memory_resource`.
  * @param upstream Pointer to the upstream resource
  * @param stream The ostream to write log info.
+ * @param auto_flush If true, flushes the log for every (de)allocation. Warning, this will degrade
+ * performance.
  */
 template <typename Upstream>
 logging_resource_adaptor<Upstream> make_logging_adaptor(Upstream* upstream,
