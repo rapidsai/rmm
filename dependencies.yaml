@@ -111,6 +111,9 @@ dependencies:
           # pre-commit requires identify minimum version 1.0, but clang-format requires textproto support and that was
           # added in 2.5.20, so we need to call out the minimum version needed for our plugins
           - identify>=2.5.20
+      - output_types: conda
+        packages:
+          - &doxygen doxygen=1.9.1
   cudatoolkit:
     specific:
       - output_types: conda
@@ -153,7 +156,7 @@ dependencies:
     common:
       - output_types: [conda]
         packages:
-          - doxygen=1.8.20
+          - *doxygen
           - graphviz
           - ipython
           - make

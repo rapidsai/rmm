@@ -48,9 +48,10 @@ template <typename Upstream>
 class tracking_resource_adaptor final : public device_memory_resource {
  public:
   // can be a std::shared_mutex once C++17 is adopted
-  using read_lock_t  = std::shared_lock<std::shared_timed_mutex>;
-  using write_lock_t = std::unique_lock<std::shared_timed_mutex>;
-
+  using read_lock_t =
+    std::shared_lock<std::shared_timed_mutex>;  ///< Type of lock used to synchronize read access
+  using write_lock_t =
+    std::unique_lock<std::shared_timed_mutex>;  ///< Type of lock used to synchronize write access
   /**
    * @brief Information stored about an allocation. Includes the size
    * and a stack trace if the `tracking_resource_adaptor` was initialized
@@ -58,10 +59,16 @@ class tracking_resource_adaptor final : public device_memory_resource {
    *
    */
   struct allocation_info {
-    std::unique_ptr<rmm::detail::stack_trace> strace;
-    std::size_t allocation_size;
+    std::unique_ptr<rmm::detail::stack_trace> strace;  ///< Stack trace of the allocation
+    std::size_t allocation_size;                       ///< Size of the allocation
 
     allocation_info() = delete;
+    /**
+     * @brief Construct a new allocation info object
+     *
+     * @param size Size of the allocation
+     * @param capture_stack If true, capture the stack trace for the allocation
+     */
     allocation_info(std::size_t size, bool capture_stack)
       : strace{[&]() {
           return capture_stack ? std::make_unique<rmm::detail::stack_trace>() : nullptr;
@@ -84,17 +91,17 @@ class tracking_resource_adaptor final : public device_memory_resource {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
   }
 
-  tracking_resource_adaptor()                                                = delete;
-  ~tracking_resource_adaptor() override                                      = default;
-  tracking_resource_adaptor(tracking_resource_adaptor const&)                = delete;
-  tracking_resource_adaptor& operator=(tracking_resource_adaptor const&)     = delete;
-  tracking_resource_adaptor(tracking_resource_adaptor&&) noexcept            = default;
-  tracking_resource_adaptor& operator=(tracking_resource_adaptor&&) noexcept = default;
+  tracking_resource_adaptor()                                 = delete;
+  ~tracking_resource_adaptor() override                       = default;
+  tracking_resource_adaptor(tracking_resource_adaptor const&) = delete;
+  tracking_resource_adaptor(tracking_resource_adaptor&&) noexcept =
+    default;  ///< @default_move_constructor
+  tracking_resource_adaptor& operator=(tracking_resource_adaptor const&) = delete;
+  tracking_resource_adaptor& operator=(tracking_resource_adaptor&&) noexcept =
+    default;  ///< @default_move_assignment{tracking_resource_adaptor}
 
   /**
-   * @brief Return pointer to the upstream resource.
-   *
-   * @return Upstream* Pointer to the upstream resource.
+   * @briefreturn{Pointer to the upstream resource}
    */
   Upstream* get_upstream() const noexcept { return upstream_; }
 

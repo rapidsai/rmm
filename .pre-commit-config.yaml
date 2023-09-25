@@ -27,7 +27,7 @@ repos:
       hooks:
           - id: cython-lint
     - repo: https://github.com/pre-commit/mirrors-clang-format
-      rev: v16.0.1
+      rev: v16.0.6
       hooks:
             - id: clang-format
               types_or: [c, c++, cuda]
@@ -69,6 +69,13 @@ repos:
               # of dependencies, so we'll have to update this manually.
               additional_dependencies:
                 - cmakelang==0.6.13
+            - id: doxygen-check
+              name: doxygen-check
+              entry: ./scripts/doxygen.sh
+              types_or: [file]
+              language: system
+              pass_filenames: false
+              verbose: true
     - repo: https://github.com/astral-sh/ruff-pre-commit
       rev: v0.0.278
       hooks:

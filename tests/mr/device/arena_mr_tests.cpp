@@ -486,7 +486,7 @@ TEST_F(ArenaTest, SizeSmallerThanSuperblockSize)  // NOLINT
 
 TEST_F(ArenaTest, AllocateNinetyPercent)  // NOLINT
 {
-  EXPECT_NO_THROW([]() {                  // NOLINT(cppcoreguidelines-avoid-goto)
+  EXPECT_NO_THROW([]() {  // NOLINT(cppcoreguidelines-avoid-goto)
     auto const free = rmm::detail::available_device_memory().first;
     auto const ninety_percent =
       rmm::detail::align_up(static_cast<std::size_t>(static_cast<double>(free) * 0.9),
@@ -497,7 +497,7 @@ TEST_F(ArenaTest, AllocateNinetyPercent)  // NOLINT
 
 TEST_F(ArenaTest, SmallMediumLarge)  // NOLINT
 {
-  EXPECT_NO_THROW([]() {             // NOLINT(cppcoreguidelines-avoid-goto)
+  EXPECT_NO_THROW([]() {  // NOLINT(cppcoreguidelines-avoid-goto)
     arena_mr mr(rmm::mr::get_current_device_resource());
     auto* small     = mr.allocate(256);
     auto* medium    = mr.allocate(64_MiB);
@@ -511,7 +511,7 @@ TEST_F(ArenaTest, SmallMediumLarge)  // NOLINT
 
 TEST_F(ArenaTest, Defragment)  // NOLINT
 {
-  EXPECT_NO_THROW([]() {       // NOLINT(cppcoreguidelines-avoid-goto)
+  EXPECT_NO_THROW([]() {  // NOLINT(cppcoreguidelines-avoid-goto)
     auto const arena_size = superblock::minimum_size * 4;
     arena_mr mr(rmm::mr::get_current_device_resource(), arena_size);
     std::vector<std::thread> threads;

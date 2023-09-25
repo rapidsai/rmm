@@ -44,7 +44,8 @@ class limiting_resource_adaptor final : public device_memory_resource {
    * @throws `rmm::logic_error` if `upstream == nullptr`
    *
    * @param upstream The resource used for allocating/deallocating device memory
-   * @param allocation_limit Maximum memory allowed for this allocator.
+   * @param allocation_limit Maximum memory allowed for this allocator
+   * @param alignment Alignment in bytes for the start of each allocated buffer
    */
   limiting_resource_adaptor(Upstream* upstream,
                             std::size_t allocation_limit,
@@ -57,17 +58,17 @@ class limiting_resource_adaptor final : public device_memory_resource {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
   }
 
-  limiting_resource_adaptor()                                                = delete;
-  ~limiting_resource_adaptor() override                                      = default;
-  limiting_resource_adaptor(limiting_resource_adaptor const&)                = delete;
-  limiting_resource_adaptor(limiting_resource_adaptor&&) noexcept            = default;
-  limiting_resource_adaptor& operator=(limiting_resource_adaptor const&)     = delete;
-  limiting_resource_adaptor& operator=(limiting_resource_adaptor&&) noexcept = default;
+  limiting_resource_adaptor()                                 = delete;
+  ~limiting_resource_adaptor() override                       = default;
+  limiting_resource_adaptor(limiting_resource_adaptor const&) = delete;
+  limiting_resource_adaptor(limiting_resource_adaptor&&) noexcept =
+    default;  ///< @default_move_constructor
+  limiting_resource_adaptor& operator=(limiting_resource_adaptor const&) = delete;
+  limiting_resource_adaptor& operator=(limiting_resource_adaptor&&) noexcept =
+    default;  ///< @default_move_assignment{limiting_resource_adaptor}
 
   /**
-   * @brief Return pointer to the upstream resource.
-   *
-   * @return Upstream* Pointer to the upstream resource.
+   * @briefreturn{Pointer to the upstream resource}
    */
   [[nodiscard]] Upstream* get_upstream() const noexcept { return upstream_; }
 

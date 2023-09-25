@@ -29,7 +29,6 @@
 
 namespace rmm {
 /**
- * @file device_buffer.hpp
  * @brief RAII construct for device memory allocation
  *
  * This class allocates untyped and *uninitialized* device memory using a
@@ -202,6 +201,8 @@ class device_buffer {
    * replaced by the `other.stream()`.
    *
    * @param other The `device_buffer` whose contents will be moved.
+   *
+   * @return A reference to this `device_buffer`
    */
   device_buffer& operator=(device_buffer&& other) noexcept
   {
@@ -331,22 +332,22 @@ class device_buffer {
   }
 
   /**
-   * @brief Returns raw pointer to underlying device memory allocation
+   * @briefreturn{Const pointer to the device memory allocation}
    */
   [[nodiscard]] void const* data() const noexcept { return _data; }
 
   /**
-   * @brief Returns raw pointer to underlying device memory allocation
+   * @briefreturn{Pointer to the device memory allocation}
    */
   void* data() noexcept { return _data; }
 
   /**
-   * @brief Returns the number of bytes.
+   * @briefreturn{The number of bytes}
    */
   [[nodiscard]] std::size_t size() const noexcept { return _size; }
 
   /**
-   * @brief Returns the signed number of bytes.
+   * @briefreturn{The signed number of bytes}
    */
   [[nodiscard]] std::int64_t ssize() const noexcept
   {
@@ -356,11 +357,10 @@ class device_buffer {
   }
 
   /**
-   * @brief returns the number of bytes that can be held in currently allocated storage.
+   * @briefreturn{Whether or not the buffer currently holds any data}
    *
    * If `is_empty() == true`, the `device_buffer` may still hold an allocation
    * if `capacity() > 0`.
-   *
    */
   [[nodiscard]] bool is_empty() const noexcept { return 0 == size(); }
 
@@ -368,11 +368,13 @@ class device_buffer {
    * @brief Returns actual size in bytes of device memory allocation.
    *
    * The invariant `size() <= capacity()` holds.
+   *
+   * @return The actual size in bytes of the device memory allocation
    */
   [[nodiscard]] std::size_t capacity() const noexcept { return _capacity; }
 
   /**
-   * @brief Returns stream most recently specified for allocation/deallocation
+   * @briefreturn{The stream most recently specified for allocation/deallocation}
    */
   [[nodiscard]] cuda_stream_view stream() const noexcept { return _stream; }
 
@@ -384,20 +386,21 @@ class device_buffer {
    * will be used for deallocation in the `rmm::device_uvector` destructor.
    * However, if either of `resize()` or `shrink_to_fit()` is called after this,
    * the later stream parameter will be stored and used in the destructor.
+   *
+   * @param stream The stream to use for deallocation
    */
   void set_stream(cuda_stream_view stream) noexcept { _stream = stream; }
 
   /**
-   * @brief Returns pointer to the memory resource used to allocate and
-   * deallocate the device memory
+   * @briefreturn{Pointer to the memory resource used to allocate and deallocate}
    */
   [[nodiscard]] mr::device_memory_resource* memory_resource() const noexcept { return _mr; }
 
  private:
-  void* _data{nullptr};                  ///< Pointer to device memory allocation
-  std::size_t _size{};                   ///< Requested size of the device memory allocation
-  std::size_t _capacity{};               ///< The actual size of the device memory allocation
-  cuda_stream_view _stream{};            ///< Stream to use for device memory deallocation
+  void* _data{nullptr};        ///< Pointer to device memory allocation
+  std::size_t _size{};         ///< Requested size of the device memory allocation
+  std::size_t _capacity{};     ///< The actual size of the device memory allocation
+  cuda_stream_view _stream{};  ///< Stream to use for device memory deallocation
   mr::device_memory_resource* _mr{
     mr::get_current_device_resource()};  ///< The memory resource used to
                                          ///< allocate/deallocate device memory

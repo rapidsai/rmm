@@ -143,11 +143,11 @@ class pool_memory_resource final
   [[nodiscard]] std::size_t pool_size() const noexcept { return current_pool_size_; }
 
  protected:
-  using free_list  = detail::coalescing_free_list;
-  using block_type = free_list::block_type;
+  using free_list  = detail::coalescing_free_list;  ///< The free list implementation
+  using block_type = free_list::block_type;         ///< The type of block returned by the free list
   using typename detail::stream_ordered_memory_resource<pool_memory_resource<Upstream>,
                                                         detail::coalescing_free_list>::split_block;
-  using lock_guard = std::lock_guard<std::mutex>;
+  using lock_guard = std::lock_guard<std::mutex>;  ///< Type of lock used to synchronize access
 
   /**
    * @brief Get the maximum size of allocations supported by this memory resource
@@ -306,7 +306,6 @@ class pool_memory_resource final
    *
    * @param block The block to allocate from.
    * @param size The size in bytes of the requested allocation.
-   * @param stream_event The stream and associated event on which the allocation will be used.
    * @return A pair comprising the allocated pointer and any unallocated remainder of the input
    * block.
    */
@@ -329,7 +328,6 @@ class pool_memory_resource final
    *
    * @param ptr The pointer to the memory to free.
    * @param size The size of the memory to free. Must be equal to the original allocation size.
-   * @param stream The stream-event pair for the stream on which the memory was last used.
    * @return The (now freed) block associated with `p`. The caller is expected to return the block
    * to the pool.
    */

@@ -9,7 +9,7 @@ dependencies:
 - cuda-version=11.8
 - cudatoolkit
 - cython>=3.0.0
-- doxygen=1.8.20
+- doxygen=1.9.1
 - fmt>=9.1.0,<10
 - gcovr>=5.0
 - graphviz
