@@ -46,12 +46,8 @@ extensions = [
     "IPython.sphinxext.ipython_directive",
     "nbsphinx",
     "recommonmark",
-    "breathe",
 ]
 
-# Breathe Configuration
-breathe_projects = {"librmm": "../../doxygen/xml"}
-breathe_default_project = "librmm"
 
 copybutton_prompt_text = ">>> "
 
@@ -201,16 +197,9 @@ nitpick_ignore = [
 ]
 
 
-# def on_missing_reference(app, env, node, contnode):
-#     if node["refdomain"] == "cpp":
-#         return contnode
-#     return None
-
-
 def setup(app):
     app.add_js_file("copybutton_pydocs.js")
     app.add_css_file("https://docs.rapids.ai/assets/css/custom.css")
     app.add_js_file(
         "https://docs.rapids.ai/assets/js/custom.js", loading_method="defer"
     )
-    # app.connect("missing-reference", on_missing_reference)
