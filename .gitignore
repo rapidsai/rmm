@@ -154,3 +154,7 @@ rmm_log.txt
 
 # cibuildwheel
 /wheelhouse
+
+# clang tooling
+compile_commands.json
+.clangd/
