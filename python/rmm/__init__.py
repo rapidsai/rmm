@@ -14,6 +14,15 @@
 
 from rmm import mr
 from rmm._lib.device_buffer import DeviceBuffer
+from rmm._lib.logger import (
+    flush_logger,
+    get_flush_level,
+    get_logging_level,
+    logging_level,
+    set_flush_level,
+    set_logging_level,
+    should_log,
+)
 from rmm.mr import disable_logging, enable_logging, get_log_filenames
 from rmm.rmm import (
     RMMError,
@@ -25,14 +34,21 @@ from rmm.rmm import (
 
 __all__ = [
     "DeviceBuffer",
-    "RMMError",
     "disable_logging",
+    "RMMError",
     "enable_logging",
+    "flush_logger",
+    "get_flush_level",
     "get_log_filenames",
+    "get_logging_level",
     "is_initialized",
+    "logging_level",
     "mr",
     "register_reinitialize_hook",
     "reinitialize",
+    "set_flush_level",
+    "set_logging_level",
+    "should_log",
     "unregister_reinitialize_hook",
 ]
 
