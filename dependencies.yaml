@@ -69,6 +69,8 @@ dependencies:
           - tomli
       - output_types: conda
         packages:
+          - c-compiler
+          - cxx-compiler
           - fmt>=9.1.0,<10
           - spdlog>=1.11.0,<1.12
           - python>=3.9,<3.11
@@ -77,6 +79,18 @@ dependencies:
           - wheel
           - setuptools>=61.0.0
     specific:
+      - output_types: conda
+        matrices:
+          - matrix:
+              arch: x86_64
+            packages:
+              - gcc_linux-64=11.*
+              - sysroot_linux-64==2.17
+          - matrix:
+              arch: aarch64
+            packages:
+              - gcc_linux-aarch64=11.*
+              - sysroot_linux-aarch64==2.17
       - output_types: conda
         matrices:
           - matrix:
@@ -152,9 +166,13 @@ dependencies:
       - output_types: [conda, requirements]
         packages:
           - gcovr>=5.0
+      - output_types: conda
+        packages:
+          - clang==16.0.6
+          - clang-tools==16.0.6
   docs:
     common:
-      - output_types: [conda]
+      - output_types: conda
         packages:
           - *doxygen
           - graphviz

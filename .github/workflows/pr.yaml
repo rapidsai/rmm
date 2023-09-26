@@ -20,6 +20,7 @@ jobs:
       - docs-build
       - wheel-build
       - wheel-tests
+      - devcontainer
     secrets: inherit
     uses: rapidsai/shared-action-workflows/.github/workflows/pr-builder.yaml@branch-23.10
   checks:
@@ -59,7 +60,7 @@ jobs:
       build_type: pull-request
       node_type: "gpu-v100-latest-1"
       arch: "amd64"
-      container_image: "rapidsai/ci:latest"
+      container_image: "rapidsai/ci-conda:latest"
       run_script: "ci/build_docs.sh"
   wheel-build:
     needs: checks
@@ -75,3 +76,11 @@ jobs:
     with:
       build_type: pull-request
       script: ci/test_wheel.sh
+  devcontainer:
+    secrets: inherit
+    uses: rapidsai/shared-action-workflows/.github/workflows/build-in-devcontainer.yaml@branch-23.10
+    with:
+      build_command: |
+        sccache -z;
+        build-all -DBUILD_BENCHMARKS=ON --verbose;
+        sccache -s;
