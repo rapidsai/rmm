@@ -56,5 +56,7 @@ endif()
 include(rapids-cython)
 rapids_cython_init()
 
+add_compile_definitions("SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
+
 add_subdirectory(rmm/_cuda)
 add_subdirectory(rmm/_lib)

@@ -16,6 +16,7 @@ import copy
 import gc
 import os
 import pickle
+import warnings
 from itertools import product
 
 import numpy as np
@@ -942,3 +943,35 @@ def test_rmm_device_buffer_copy(cuda_ary, make_copy):
     result = db_copy.copy_to_host()
 
     np.testing.assert_equal(expected, result)
+
+
+@pytest.mark.parametrize("level", rmm.logging_level)
+def test_valid_logging_level(level):
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message="RMM will not log logging_level.TRACE."
+        )
+        warnings.filterwarnings(
+            "ignore", message="RMM will not log logging_level.DEBUG."
+        )
+        rmm.set_logging_level(level)
+        assert rmm.get_logging_level() == level
+        rmm.set_logging_level(rmm.logging_level.INFO)  # reset to default
+
+        rmm.set_flush_level(level)
+        assert rmm.get_flush_level() == level
+        rmm.set_flush_level(rmm.logging_level.INFO)  # reset to default
+
+        rmm.should_log(level)
+
+
+@pytest.mark.parametrize(
+    "level", ["INFO", 3, "invalid", 100, None, 1.2345, [1, 2, 3]]
+)
+def test_invalid_logging_level(level):
+    with pytest.raises(TypeError):
+        rmm.set_logging_level(level)
+    with pytest.raises(TypeError):
+        rmm.set_flush_level(level)
+    with pytest.raises(TypeError):
+        rmm.should_log(level)
