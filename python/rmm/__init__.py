@@ -23,7 +23,6 @@ from rmm._lib.logger import (
     set_logging_level,
     should_log,
 )
-from rmm._version import __version__
 from rmm.mr import disable_logging, enable_logging, get_log_filenames
 from rmm.rmm import (
     RMMError,
@@ -52,3 +51,9 @@ __all__ = [
     "should_log",
     "unregister_reinitialize_hook",
 ]
+
+# Note that it is important for this attribute to be specified in this module
+# (not in another module imported into this one) so that setuptools can parse
+# it statically without requiring the package to be importable at the time
+# metadata is processed.
+__version__ = "23.12.00"

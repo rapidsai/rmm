@@ -20,9 +20,8 @@ PACKAGE_CUDA_SUFFIX="-${RAPIDS_PY_CUDA_SUFFIX}"
 # Patch project metadata files to include the CUDA version suffix and version override.
 pyproject_file="${package_dir}/pyproject.toml"
 
-sed -i "s/^version = .*/version = ${version_override}/g" ${pyproject_file}
 sed -i "s/name = \"${package_name}\"/name = \"${package_name}${PACKAGE_CUDA_SUFFIX}\"/g" ${pyproject_file}
-echo "__version__ = ${version_override}" > ${package_dir}/${package_name}/_version.py
+sed -i "s/__version__ = .*/__version__ = ${version_override}/g" ${package_dir}/${package_name}/__init__.py
 
 if [[ $PACKAGE_CUDA_SUFFIX == "-cu12" ]]; then
     sed -i "s/cuda-python[<=>\.,0-9a]*/cuda-python>=12.0,<13.0a0/g" ${pyproject_file}

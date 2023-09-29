@@ -13,7 +13,7 @@ package_name="rmm"
 package_dir="python"
 
 version_override=$(./ci/get_version.sh ${package_name} ${package_dir})
-echo "__version__ = ${version_override}" > ${package_dir}/${package_name}/_version.py
+sed -i "s/__version__ = .*/__version__ = ${version_override}/g" ${package_dir}/${package_name}/__init__.py
 
 rapids-logger "Begin py build"
 
