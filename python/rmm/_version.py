@@ -12,8 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import dunamai as _dunamai
-
-_Version = _dunamai.Version.from_git()
-_format = "{base}{stage}{distance}+g{commit}"
-__version__ = _Version.serialize(format=_format)
+__version__ = "23.12.00"

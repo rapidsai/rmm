@@ -202,7 +202,6 @@ dependencies:
         packages:
           - numba>=0.57
           - numpy>=1.21
-          - dunamai
     specific:
       - output_types: [conda, requirements, pyproject]
         matrices:
