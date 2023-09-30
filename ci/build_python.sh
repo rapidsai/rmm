@@ -13,7 +13,10 @@ package_name="rmm"
 package_dir="python"
 
 version_override=$(./ci/get_version.sh ${package_name} ${package_dir})
+commit_override=$(python -m dunamai from git --full-commit --format "{commit}")
+
 sed -i "s/__version__ = .*/__version__ = ${version_override}/g" ${package_dir}/${package_name}/__init__.py
+sed -i "s/__git_commit__ = .*/__commit__ = \"${commit_override}\"/g" ${package_dir}/${package_name}/__init__.py
 
 rapids-logger "Begin py build"
 
