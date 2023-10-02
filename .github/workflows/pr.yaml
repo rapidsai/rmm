@@ -78,7 +78,7 @@ jobs:
       script: ci/test_wheel.sh
   devcontainer:
     secrets: inherit
-    uses: rapidsai/shared-action-workflows/.github/workflows/build-in-devcontainer.yaml@branch-23.10
+    uses: rapidsai/shared-action-workflows/.github/workflows/build-in-devcontainer.yaml@cuda-120-arm
     with:
       build_command: |
         sccache -z;
