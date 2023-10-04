@@ -9,8 +9,12 @@ package_dir="python"
 source rapids-configure-sccache
 source rapids-date-string
 
-version_override=$(./ci/get_version.sh ${package_name} ${package_dir})
-commit_override=$(python -m dunamai from git --full-commit --format "{commit}")
+if [[ ! -d "/tmp/gha-tools" ]]; then
+  git clone https://github.com/vyasr/gha-tools.git -b feat/generate_versions /tmp/gha-tools
+fi
+
+version_override=$(/tmp/gha-tools/tools/rapids-generate-version)
+commit_override=$(git rev-parse HEAD)
 
 RAPIDS_PY_CUDA_SUFFIX="$(rapids-wheel-ctk-name-gen ${RAPIDS_CUDA_VERSION})"
 

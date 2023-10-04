@@ -12,8 +12,12 @@ rapids-print-env
 package_name="rmm"
 package_dir="python"
 
-version_override=$(./ci/get_version.sh ${package_name} ${package_dir})
-commit_override=$(python -m dunamai from git --full-commit --format "{commit}")
+if [[ ! -d "/tmp/gha-tools" ]]; then
+  git clone https://github.com/vyasr/gha-tools.git -b feat/generate_versions /tmp/gha-tools
+fi
+
+version_override=$(/tmp/gha-tools/tools/rapids-generate-version)
+commit_override=$(git rev-parse HEAD)
 
 sed -i "s/__version__ = .*/__version__ = ${version_override}/g" ${package_dir}/${package_name}/__init__.py
 sed -i "s/__git_commit__ = .*/__commit__ = \"${commit_override}\"/g" ${package_dir}/${package_name}/__init__.py
