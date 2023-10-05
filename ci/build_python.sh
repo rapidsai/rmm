@@ -16,7 +16,7 @@ version_override=$(rapids-generate-version)
 commit_override=$(git rev-parse HEAD)
 
 sed -i "s/__version__ = .*/__version__ = ${version_override}/g" ${package_dir}/${package_name}/__init__.py
-sed -i "s/__git_commit__ = .*/__commit__ = \"${commit_override}\"/g" ${package_dir}/${package_name}/__init__.py
+sed -i "s/__git_commit__ = .*/__git_commit__ = \"${commit_override}\"/g" ${package_dir}/${package_name}/__init__.py
 
 rapids-logger "Begin py build"
 
