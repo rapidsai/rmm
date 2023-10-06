@@ -9,8 +9,8 @@ package_dir="python"
 source rapids-configure-sccache
 source rapids-date-string
 
-version_override=$(rapids-generate-version)
-commit_override=$(git rev-parse HEAD)
+version=$(rapids-generate-version)
+commit=$(git rev-parse HEAD)
 
 RAPIDS_PY_CUDA_SUFFIX="$(rapids-wheel-ctk-name-gen ${RAPIDS_CUDA_VERSION})"
 
@@ -23,8 +23,8 @@ pyproject_file="${package_dir}/pyproject.toml"
 init_file="${package_dir}/${package_name}/__init__.py"
 
 sed -i "s/name = \"${package_name}\"/name = \"${package_name}${PACKAGE_CUDA_SUFFIX}\"/g" ${pyproject_file}
-sed -i "s/__version__ = .*/__version__ = ${version_override}/g" ${init_file}
-sed -i "s/__git_commit__ = .*/__git_commit__ = \"${commit_override}\"/g" ${init_file}
+sed -i "/__version__/ s/= .*/= ${version}/g" ${init_file}
+sed -i "/__git_commit__/ s/= .*/= \"${git_commit}\"/g" ${init_file}
 
 if [[ $PACKAGE_CUDA_SUFFIX == "-cu12" ]]; then
     sed -i "s/cuda-python[<=>\.,0-9a]*/cuda-python>=12.0,<13.0a0/g" ${pyproject_file}
