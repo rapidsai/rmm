@@ -17,7 +17,7 @@ commit=$(git rev-parse HEAD)
 
 init_file="${package_dir}/${package_name}/__init__.py"
 sed -i "/__version__/ s/= .*/= ${version}/g" ${init_file}
-sed -i "/__git_commit__/ s/= .*/= \"${git_commit}\"/g" ${init_file}
+sed -i "/__git_commit__/ s/= .*/= \"${commit}\"/g" ${init_file}
 
 rapids-logger "Begin py build"
 

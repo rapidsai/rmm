@@ -24,7 +24,7 @@ init_file="${package_dir}/${package_name}/__init__.py"
 
 sed -i "s/name = \"${package_name}\"/name = \"${package_name}${PACKAGE_CUDA_SUFFIX}\"/g" ${pyproject_file}
 sed -i "/__version__/ s/= .*/= ${version}/g" ${init_file}
-sed -i "/__git_commit__/ s/= .*/= \"${git_commit}\"/g" ${init_file}
+sed -i "/__git_commit__/ s/= .*/= \"${commit}\"/g" ${init_file}
 
 if [[ $PACKAGE_CUDA_SUFFIX == "-cu12" ]]; then
     sed -i "s/cuda-python[<=>\.,0-9a]*/cuda-python>=12.0,<13.0a0/g" ${pyproject_file}
