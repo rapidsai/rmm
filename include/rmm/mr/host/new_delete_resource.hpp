@@ -23,6 +23,11 @@
 #include <utility>
 
 namespace rmm::mr {
+/**
+ * @addtogroup host_memory_resources
+ * @{
+ * @file
+ */
 
 /**
  * @brief A `host_memory_resource` that uses the global `operator new` and `operator delete` to
@@ -88,4 +93,5 @@ class new_delete_resource final : public host_memory_resource {
   }
 };
 
+/** @} */  // end of group
 }  // namespace rmm::mr
