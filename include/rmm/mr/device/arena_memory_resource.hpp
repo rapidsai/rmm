@@ -31,6 +31,11 @@
 #include <thread>
 
 namespace rmm::mr {
+/**
+ * @addtogroup device_memory_resources
+ * @{
+ * @file
+ */
 
 /**
  * @brief A suballocator that emphasizes fragmentation avoidance and scalable concurrency support.
@@ -343,4 +348,5 @@ class arena_memory_resource final : public device_memory_resource {
   mutable std::shared_mutex mtx_;
 };
 
+/** @} */  // end of group
 }  // namespace rmm::mr

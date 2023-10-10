@@ -35,6 +35,11 @@
 #endif
 
 namespace rmm::mr {
+/**
+ * @addtogroup device_memory_resources
+ * @{
+ * @file
+ */
 
 /**
  * @brief `device_memory_resource` derived class that uses `cudaMallocAsync`/`cudaFreeAsync` for
@@ -182,4 +187,5 @@ class cuda_async_view_memory_resource final : public device_memory_resource {
   }
 };
 
+/** @} */  // end of group
 }  // namespace rmm::mr
