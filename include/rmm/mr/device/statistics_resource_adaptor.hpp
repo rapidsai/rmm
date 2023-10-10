@@ -23,6 +23,11 @@
 
 namespace rmm::mr {
 /**
+ * @addtogroup device_resource_adaptors
+ * @{
+ * @file
+ */
+/**
  * @brief Resource that uses `Upstream` to allocate memory and tracks statistics
  * on memory allocations.
  *
@@ -253,4 +258,5 @@ statistics_resource_adaptor<Upstream> make_statistics_adaptor(Upstream* upstream
   return statistics_resource_adaptor<Upstream>{upstream};
 }
 
+/** @} */  // end of group
 }  // namespace rmm::mr

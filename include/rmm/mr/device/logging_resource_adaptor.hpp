@@ -32,6 +32,11 @@
 
 namespace rmm::mr {
 /**
+ * @addtogroup device_resource_adaptors
+ * @{
+ * @file
+ */
+/**
  * @brief Resource that uses `Upstream` to allocate memory and logs information
  * about the requested allocation/deallocations.
  *
@@ -359,4 +364,5 @@ logging_resource_adaptor<Upstream> make_logging_adaptor(Upstream* upstream,
   return logging_resource_adaptor<Upstream>{upstream, stream, auto_flush};
 }
 
+/** @} */  // end of group
 }  // namespace rmm::mr

@@ -33,5 +33,6 @@
  * @{
  *   @defgroup device_memory_resources Device Memory Resources
  *   @defgroup host_memory_resources Host Memory Resources
+ *   @defgroup device_resource_adaptors Device Resource Adaptors
  * @}
  */

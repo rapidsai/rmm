@@ -27,6 +27,11 @@
 
 namespace rmm::mr {
 /**
+ * @addtogroup device_resource_adaptors
+ * @{
+ * @file
+ */
+/**
  * @brief Resource that adapts `Upstream` memory resource to allocate memory in a specified
  * alignment size.
  *
@@ -214,4 +219,5 @@ class aligned_resource_adaptor final : public device_memory_resource {
   mutable std::mutex mtx_;           ///< Mutex for exclusive lock.
 };
 
+/** @} */  // end of group
 }  // namespace rmm::mr

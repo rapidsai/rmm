@@ -30,6 +30,11 @@
 
 namespace rmm::mr {
 /**
+ * @addtogroup device_resource_adaptors
+ * @{
+ * @file
+ */
+/**
  * @brief Resource that uses `Upstream` to allocate memory and tracks allocations.
  *
  * An instance of this resource can be constructed with an existing, upstream
@@ -309,4 +314,5 @@ tracking_resource_adaptor<Upstream> make_tracking_adaptor(Upstream* upstream)
   return tracking_resource_adaptor<Upstream>{upstream};
 }
 
+/** @} */  // end of group
 }  // namespace rmm::mr

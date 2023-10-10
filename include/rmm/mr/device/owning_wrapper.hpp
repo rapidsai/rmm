@@ -43,6 +43,11 @@ auto make_resource(std::tuple<std::shared_ptr<Upstreams>...> const& upstreams, A
 }  // namespace detail
 
 /**
+ * @addtogroup device_resource_adaptors
+ * @{
+ * @file
+ */
+/**
  * @brief Resource adaptor that maintains the lifetime of upstream resources.
  *
  * Many `device_memory_resource` derived types allocate memory from another "upstream" resource.
@@ -272,4 +277,5 @@ auto make_owning_wrapper(std::shared_ptr<Upstream> upstream, Args&&... args)
                                        std::forward<Args>(args)...);
 }
 
+/** @} */  // end of group
 }  // namespace rmm::mr

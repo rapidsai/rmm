@@ -26,6 +26,11 @@
 
 namespace rmm::mr {
 /**
+ * @addtogroup device_resource_adaptors
+ * @{
+ * @file
+ */
+/**
  * @brief An `allocator` compatible with Thrust containers and algorithms using
  * a `device_memory_resource` for memory (de)allocation.
  *
@@ -126,4 +131,5 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
   cuda_stream_view _stream{};
   device_memory_resource* _mr{rmm::mr::get_current_device_resource()};
 };
+/** @} */  // end of group
 }  // namespace rmm::mr
