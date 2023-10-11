@@ -29,7 +29,7 @@
 
 namespace rmm {
 /**
- * @addtogroup core_classes
+ * @addtogroup containers
  * @{
  * @file
  */

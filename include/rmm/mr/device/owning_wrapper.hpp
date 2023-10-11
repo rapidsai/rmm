@@ -25,7 +25,7 @@
 namespace rmm::mr {
 namespace detail {
 /**
- * @brief Converts a tuple into a parameter pack
+ * @brief Converts a tuple into a parameter pack.
  *
  * This helper function for make_resource allows passing the upstreams as a
  * list of arguments to the Resource's constructor.
@@ -37,7 +37,7 @@ namespace detail {
  * the same order as expected by `Resource`s constructor.
  * @param args Function parameter pack of arguments to forward to the Resource's
  * constructor
- * @return std::unique_ptr<Resource> A unique pointer to the created resource
+ * @return std::unique_ptr<Resource> A unique pointer to the created resource.
  */
 template <typename Resource, typename UpstreamTuple, std::size_t... Indices, typename... Args>
 auto make_resource_impl(UpstreamTuple const& upstreams,

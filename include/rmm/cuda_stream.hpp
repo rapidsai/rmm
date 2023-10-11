@@ -27,7 +27,7 @@
 
 namespace rmm {
 /**
- * @addtogroup strong_cuda_types
+ * @addtogroup cuda_streams
  * @{
  * @file
  */

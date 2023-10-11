@@ -26,7 +26,7 @@
 
 namespace rmm {
 /**
- * @addtogroup stream_pool
+ * @addtogroup cuda_streams
  * @{
  * @file
  */

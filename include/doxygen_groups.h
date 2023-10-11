@@ -35,9 +35,9 @@
  *   @defgroup host_memory_resources Host Memory Resources
  *   @defgroup device_resource_adaptors Device Resource Adaptors
  * @}
- * @defgroup strong_cuda_types Strong Type Wrappers for CUDA Typedefs
- * @defgroup core_classes Core Classes
+ * @defgroup cuda_device_management CUDA Device Management
+ * @defgroup cuda_streams CUDA Streams
+ * @defgroup containers Containers
  * @defgroup logging Logging
  * @defgroup thrust_integrations Thrust Integrations
- * @defgroup stream_pool Stream pool
  */
