@@ -25,6 +25,11 @@
 #include <vector>
 
 namespace rmm {
+/**
+ * @addtogroup stream_pool
+ * @{
+ * @file
+ */
 
 /**
  * @brief A pool of CUDA streams.
@@ -96,4 +101,5 @@ class cuda_stream_pool {
   mutable std::atomic_size_t next_stream{};
 };
 
+/** @} */  // end of group
 }  // namespace rmm

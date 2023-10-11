@@ -39,4 +39,5 @@
  * @defgroup core_classes Core Classes
  * @defgroup logging Logging
  * @defgroup thrust_integrations Thrust integrations
+ * @defgroup stream_pool Stream pool
  */
