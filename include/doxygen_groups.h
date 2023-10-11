@@ -38,6 +38,6 @@
  * @defgroup strong_cuda_types Strong Type Wrappers for CUDA Typedefs
  * @defgroup core_classes Core Classes
  * @defgroup logging Logging
- * @defgroup thrust_integrations Thrust integrations
+ * @defgroup thrust_integrations Thrust Integrations
  * @defgroup stream_pool Stream pool
  */
