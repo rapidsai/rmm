@@ -36,4 +36,5 @@
  *   @defgroup device_resource_adaptors Device Resource Adaptors
  * @}
  * @defgroup strong_cuda_types Strong Type Wrappers for CUDA Typedefs
+ * @defgroup core_classes Core Classes
  */
