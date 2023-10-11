@@ -109,14 +109,13 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
   ~failure_callback_resource_adaptor() override                                          = default;
   failure_callback_resource_adaptor(failure_callback_resource_adaptor const&)            = delete;
   failure_callback_resource_adaptor& operator=(failure_callback_resource_adaptor const&) = delete;
-  failure_callback_resource_adaptor(failure_callback_resource_adaptor&&) noexcept        = default;
+  failure_callback_resource_adaptor(failure_callback_resource_adaptor&&) noexcept =
+    default;  ///< @default_move_constructor
   failure_callback_resource_adaptor& operator=(failure_callback_resource_adaptor&&) noexcept =
-    default;
+    default;  ///< @default_move_assignment{failure_callback_resource_adaptor}
 
   /**
-   * @brief Return pointer to the upstream resource.
-   *
-   * @return Upstream* Pointer to the upstream resource.
+   * @briefreturn{Pointer to the upstream resource}
    */
   Upstream* get_upstream() const noexcept { return upstream_; }
 

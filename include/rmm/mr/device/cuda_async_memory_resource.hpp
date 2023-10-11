@@ -98,7 +98,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
     RMM_EXPECTS(rmm::detail::async_alloc::is_export_handle_type_supported(pool_props.handleTypes),
                 "Requested IPC memory handle type not supported");
     pool_props.location.type = cudaMemLocationTypeDevice;
-    pool_props.location.id   = rmm::detail::current_device().value();
+    pool_props.location.id   = rmm::get_current_cuda_device().value();
     cudaMemPool_t cuda_pool_handle{};
     RMM_CUDA_TRY(rmm::detail::async_alloc::cudaMemPoolCreate(&cuda_pool_handle, &pool_props));
     pool_ = cuda_async_view_memory_resource{cuda_pool_handle};

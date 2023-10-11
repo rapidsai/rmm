@@ -60,7 +60,7 @@ class cuda_async_view_memory_resource final : public device_memory_resource {
       }()}
   {
     // Check if cudaMallocAsync Memory pool supported
-    auto const device = rmm::detail::current_device();
+    auto const device = rmm::get_current_cuda_device();
     int cuda_pool_supported{};
     auto result =
       cudaDeviceGetAttribute(&cuda_pool_supported, cudaDevAttrMemoryPoolsSupported, device.value());
@@ -77,11 +77,15 @@ class cuda_async_view_memory_resource final : public device_memory_resource {
   [[nodiscard]] cudaMemPool_t pool_handle() const noexcept { return cuda_pool_handle_; }
 #endif
 
-  cuda_async_view_memory_resource()                                                  = default;
-  cuda_async_view_memory_resource(cuda_async_view_memory_resource const&)            = default;
-  cuda_async_view_memory_resource(cuda_async_view_memory_resource&&)                 = default;
-  cuda_async_view_memory_resource& operator=(cuda_async_view_memory_resource const&) = default;
-  cuda_async_view_memory_resource& operator=(cuda_async_view_memory_resource&&)      = default;
+  cuda_async_view_memory_resource() = default;
+  cuda_async_view_memory_resource(cuda_async_view_memory_resource const&) =
+    default;  ///< @default_copy_constructor
+  cuda_async_view_memory_resource(cuda_async_view_memory_resource&&) =
+    default;  ///< @default_move_constructor
+  cuda_async_view_memory_resource& operator=(cuda_async_view_memory_resource const&) =
+    default;  ///< @default_copy_assignment{cuda_async_view_memory_resource}
+  cuda_async_view_memory_resource& operator=(cuda_async_view_memory_resource&&) =
+    default;  ///< @default_move_assignment{cuda_async_view_memory_resource}
 
   /**
    * @brief Query whether the resource supports use of non-null CUDA streams for

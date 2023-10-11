@@ -50,10 +50,10 @@ class fixed_size_memory_resource
   friend class detail::stream_ordered_memory_resource<fixed_size_memory_resource<Upstream>,
                                                       detail::fixed_size_free_list>;
 
-  // A block is the fixed size this resource alloates
-  static constexpr std::size_t default_block_size = 1 << 20;  // 1 MiB
-  // This is the number of blocks that the pool starts out with, and also the number of
-  // blocks by which the pool grows when all of its current blocks are allocated
+  static constexpr std::size_t default_block_size = 1 << 20;  ///< Default allocation block size
+
+  /// The number of blocks that the pool starts out with, and also the number of
+  /// blocks by which the pool grows when all of its current blocks are allocated
   static constexpr std::size_t default_blocks_to_preallocate = 128;
 
   /**
@@ -121,11 +121,11 @@ class fixed_size_memory_resource
   [[nodiscard]] std::size_t get_block_size() const noexcept { return block_size_; }
 
  protected:
-  using free_list  = detail::fixed_size_free_list;
-  using block_type = free_list::block_type;
+  using free_list  = detail::fixed_size_free_list;  ///< The free list type
+  using block_type = free_list::block_type;         ///< The type of block managed by the free list
   using typename detail::stream_ordered_memory_resource<fixed_size_memory_resource<Upstream>,
                                                         detail::fixed_size_free_list>::split_block;
-  using lock_guard = std::lock_guard<std::mutex>;
+  using lock_guard = std::lock_guard<std::mutex>;  ///< Type of lock used to synchronize access
 
   /**
    * @brief Get the (fixed) size of allocations supported by this memory resource
@@ -142,6 +142,7 @@ class fixed_size_memory_resource
    * strategy (see `size_to_grow()`).
    *
    * @param size The minimum size to allocate
+   * @param blocks The set of blocks from which to allocate
    * @param stream The stream on which the memory is to be used.
    * @return block_type The allocated block
    */
@@ -154,7 +155,6 @@ class fixed_size_memory_resource
   /**
    * @brief Allocate blocks from upstream to expand the suballocation pool.
    *
-   * @param size The minimum size to allocate
    * @param stream The stream on which the memory is to be used.
    * @return block_type The allocated block
    */
@@ -182,7 +182,6 @@ class fixed_size_memory_resource
    *
    * @param block The block to allocate from.
    * @param size The size in bytes of the requested allocation.
-   * @param stream_event The stream and associated event on which the allocation will be used.
    * @return A pair comprising the allocated pointer and any unallocated remainder of the input
    * block.
    */
@@ -196,7 +195,6 @@ class fixed_size_memory_resource
    *
    * @param ptr The pointer to the memory to free.
    * @param size The size of the memory to free. Must be equal to the original allocation size.
-   * @param stream The stream-event pair for the stream on which the memory was last used.
    * @return The (now freed) block associated with `p`. The caller is expected to return the block
    * to the pool.
    */
@@ -217,7 +215,8 @@ class fixed_size_memory_resource
    * @param stream the stream being executed on
    * @return std::pair with available and free memory for resource
    */
-  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view) const override
+  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
+    [[maybe_unused]] cuda_stream_view stream) const override
   {
     return std::make_pair(0, 0);
   }
@@ -272,7 +271,7 @@ class fixed_size_memory_resource
   }
 
  private:
-  Upstream* upstream_mr_;                  // The resource from which to allocate new blocks
+  Upstream* upstream_mr_;  // The resource from which to allocate new blocks
 
   std::size_t const block_size_;           // size of blocks this MR allocates
   std::size_t const upstream_chunk_size_;  // size of chunks allocated from heap MR

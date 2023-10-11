@@ -43,9 +43,11 @@ inline std::string default_log_filename()
   return (filename == nullptr) ? std::string{"rmm_log.txt"} : std::string{filename};
 }
 
-// Simple wrapper around a spdlog::logger that performs RMM-specific initialization
+/**
+ * @brief Simple wrapper around a spdlog::logger that performs RMM-specific initialization
+ */
 struct logger_wrapper {
-  spdlog::logger logger_;
+  spdlog::logger logger_;  ///< The underlying logger
 
   logger_wrapper()
     : logger_{"RMM",
@@ -70,8 +72,14 @@ struct logger_wrapper {
  * @brief Represent a size in number of bytes.
  */
 struct bytes {
-  std::size_t value;
+  std::size_t value;  ///< The size in bytes
 
+  /**
+   * @brief Construct a new bytes object
+   *
+   * @param os The output stream
+   * @param value The size in bytes
+   */
   friend std::ostream& operator<<(std::ostream& os, bytes const& value)
   {
     static std::array units{"B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"};
@@ -113,5 +121,8 @@ inline spdlog::logger& logger()
 
 }  // namespace rmm
 
+// Doxygen doesn't like this because we're overloading something from fmt
+//! @cond Doxygen_Suppress
 template <>
 struct fmt::formatter<rmm::detail::bytes> : fmt::ostream_formatter {};
+//! @endcond

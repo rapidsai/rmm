@@ -354,11 +354,32 @@ objects for each device and sets them as the per-device resource for that device
 ```c++
 std::vector<unique_ptr<pool_memory_resource>> per_device_pools;
 for(int i = 0; i < N; ++i) {
-    cudaSetDevice(i); // set device i before creating MR
-    // Use a vector of unique_ptr to maintain the lifetime of the MRs
-    per_device_pools.push_back(std::make_unique<pool_memory_resource>());
-    // Set the per-device resource for device i
-    set_per_device_resource(cuda_device_id{i}, &per_device_pools.back());
+  cudaSetDevice(i); // set device i before creating MR
+  // Use a vector of unique_ptr to maintain the lifetime of the MRs
+  per_device_pools.push_back(std::make_unique<pool_memory_resource>());
+  // Set the per-device resource for device i
+  set_per_device_resource(cuda_device_id{i}, &per_device_pools.back());
+}
+```
+
+Note that the CUDA device that is current when creating a `device_memory_resource` must also be
+current any time that `device_memory_resource` is used to deallocate memory, including in a
+destructor. This affects RAII classes like `rmm::device_buffer` and `rmm::device_uvector`. Here's an
+(incorrect) example that assumes the above example loop has been run to create a
+`pool_memory_resource` for each device. A correct example adds a call to `cudaSetDevice(0)` on the
+line of the error comment.
+
+```c++
+{
+  RMM_CUDA_TRY(cudaSetDevice(0));
+  rmm::device_buffer buf_a(16);
+
+  {
+    RMM_CUDA_TRY(cudaSetDevice(1));
+    rmm::device_buffer buf_b(16);
+  }
+
+  // Error: when buf_a is destroyed, the current device must be 0, but it is 1
 }
 ```
 
@@ -560,9 +581,12 @@ of more detailed logging. The default is `INFO`. Available levels are `TRACE`, `
 
 The log relies on the [spdlog](https://github.com/gabime/spdlog.git) library.
 
-Note that to see logging below the `INFO` level, the C++ application must also call
-`rmm::logger().set_level()`, e.g. to enable all levels of logging down to `TRACE`, call
-`rmm::logger().set_level(spdlog::level::trace)` (and compile with `-DRMM_LOGGING_LEVEL=TRACE`).
+Note that to see logging below the `INFO` level, the application must also set the logging level at
+run time. C++ applications must must call `rmm::logger().set_level()`, for example to enable all
+levels of logging down to `TRACE`, call `rmm::logger().set_level(spdlog::level::trace)` (and compile
+librmm with `-DRMM_LOGGING_LEVEL=TRACE`). Python applications must call `rmm.set_logging_level()`,
+for example to enable all levels of logging down to `TRACE`, call `rmm.set_logging_level("trace")`
+(and compile the RMM Python module with `-DRMM_LOGGING_LEVEL=TRACE`).
 
 Note that debug logging is different from the CSV memory allocation logging provided by
 `rmm::mr::logging_resource_adapter`. The latter is for logging a history of allocation /

@@ -30,6 +30,9 @@
 
 namespace rmm {
 
+/**
+ * @brief Synchronous execution policy for allocations using thrust
+ */
 using thrust_exec_policy_t =
   thrust::detail::execute_with_allocator<rmm::mr::thrust_allocator<char>,
                                          thrust::cuda_cub::execute_on_stream_base>;
@@ -40,6 +43,12 @@ using thrust_exec_policy_t =
  */
 class exec_policy : public thrust_exec_policy_t {
  public:
+  /**
+   * @brief Construct a new execution policy object
+   *
+   * @param stream The stream on which to allocate temporary memory
+   * @param mr The resource to use for allocating temporary memory
+   */
   explicit exec_policy(cuda_stream_view stream             = cuda_stream_default,
                        rmm::mr::device_memory_resource* mr = mr::get_current_device_resource())
     : thrust_exec_policy_t(
@@ -50,6 +59,9 @@ class exec_policy : public thrust_exec_policy_t {
 
 #if THRUST_VERSION >= 101600
 
+/**
+ * @brief Asynchronous execution policy for allocations using thrust
+ */
 using thrust_exec_policy_nosync_t =
   thrust::detail::execute_with_allocator<rmm::mr::thrust_allocator<char>,
                                          thrust::cuda_cub::execute_on_stream_nosync_base>;
@@ -72,9 +84,11 @@ class exec_policy_nosync : public thrust_exec_policy_nosync_t {
 
 #else
 
-using thrust_exec_policy_nosync_t = thrust_exec_policy_t;
-using exec_policy_nosync          = exec_policy;
-
+using thrust_exec_policy_nosync_t =
+  thrust_exec_policy_t;  ///< When used with Thrust < 1.16.0, thrust_exec_policy_nosync_t is an
+                         ///< alias for thrust_exec_policy_t
+using exec_policy_nosync =
+  exec_policy;  ///< When used with Thrust < 1.16.0, exec_policy_nosync is an alias for exec_policy
 #endif
 
 }  // namespace rmm

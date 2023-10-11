@@ -1,3 +1,42 @@
+# RMM 23.10.00 (11 Oct 2023)
+
+## 🚨 Breaking Changes
+
+- Update to Cython 3.0.0 ([#1313](https://github.com/rapidsai/rmm/pull/1313)) [@vyasr](https://github.com/vyasr)
+
+## 🐛 Bug Fixes
+
+- Compile cdef public functions from torch_allocator with C ABI ([#1350](https://github.com/rapidsai/rmm/pull/1350)) [@wence-](https://github.com/wence-)
+- Make doxygen only a conda dependency. ([#1344](https://github.com/rapidsai/rmm/pull/1344)) [@bdice](https://github.com/bdice)
+- Use `conda mambabuild` not `mamba mambabuild` ([#1338](https://github.com/rapidsai/rmm/pull/1338)) [@wence-](https://github.com/wence-)
+- Fix stream_ordered_memory_resource attempt to record event in stream from another device ([#1333](https://github.com/rapidsai/rmm/pull/1333)) [@harrism](https://github.com/harrism)
+
+## 📖 Documentation
+
+- Clean up headers in CMakeLists.txt. ([#1341](https://github.com/rapidsai/rmm/pull/1341)) [@bdice](https://github.com/bdice)
+- Add pre-commit hook to validate doxygen ([#1334](https://github.com/rapidsai/rmm/pull/1334)) [@vyasr](https://github.com/vyasr)
+- Fix doxygen warnings ([#1317](https://github.com/rapidsai/rmm/pull/1317)) [@vyasr](https://github.com/vyasr)
+- Treat warnings as errors in Python documentation ([#1316](https://github.com/rapidsai/rmm/pull/1316)) [@vyasr](https://github.com/vyasr)
+
+## 🚀 New Features
+
+- Enable RMM Debug Logging via Python ([#1339](https://github.com/rapidsai/rmm/pull/1339)) [@harrism](https://github.com/harrism)
+
+## 🛠️ Improvements
+
+- Update image names ([#1346](https://github.com/rapidsai/rmm/pull/1346)) [@AyodeAwe](https://github.com/AyodeAwe)
+- Update to clang 16.0.6. ([#1343](https://github.com/rapidsai/rmm/pull/1343)) [@bdice](https://github.com/bdice)
+- Update doxygen to 1.9.1 ([#1337](https://github.com/rapidsai/rmm/pull/1337)) [@vyasr](https://github.com/vyasr)
+- Simplify wheel build scripts and allow alphas of RAPIDS dependencies ([#1335](https://github.com/rapidsai/rmm/pull/1335)) [@divyegala](https://github.com/divyegala)
+- Use `copy-pr-bot` ([#1329](https://github.com/rapidsai/rmm/pull/1329)) [@ajschmidt8](https://github.com/ajschmidt8)
+- Add RMM devcontainers ([#1328](https://github.com/rapidsai/rmm/pull/1328)) [@trxcllnt](https://github.com/trxcllnt)
+- Add Python bindings for `limiting_resource_adaptor` ([#1327](https://github.com/rapidsai/rmm/pull/1327)) [@pentschev](https://github.com/pentschev)
+- Fix missing jQuery error in docs ([#1321](https://github.com/rapidsai/rmm/pull/1321)) [@AyodeAwe](https://github.com/AyodeAwe)
+- Use fetch_rapids.cmake. ([#1319](https://github.com/rapidsai/rmm/pull/1319)) [@bdice](https://github.com/bdice)
+- Update to Cython 3.0.0 ([#1313](https://github.com/rapidsai/rmm/pull/1313)) [@vyasr](https://github.com/vyasr)
+- Branch 23.10 merge 23.08 ([#1312](https://github.com/rapidsai/rmm/pull/1312)) [@vyasr](https://github.com/vyasr)
+- Branch 23.10 merge 23.08 ([#1309](https://github.com/rapidsai/rmm/pull/1309)) [@vyasr](https://github.com/vyasr)
+
 # RMM 23.08.00 (9 Aug 2023)
 
 ## 🚨 Breaking Changes

@@ -16,6 +16,7 @@ import copy
 import gc
 import os
 import pickle
+import warnings
 from itertools import product
 
 import numpy as np
@@ -586,6 +587,41 @@ def test_cuda_async_memory_resource_threshold(nelem, alloc):
     array_tester("u1", 2 * nelem, alloc)  # should trigger release
 
 
+@pytest.mark.parametrize(
+    "mr",
+    [
+        rmm.mr.CudaMemoryResource,
+        pytest.param(
+            rmm.mr.CudaAsyncMemoryResource,
+            marks=pytest.mark.skipif(
+                not _CUDAMALLOC_ASYNC_SUPPORTED,
+                reason="cudaMallocAsync not supported",
+            ),
+        ),
+    ],
+)
+def test_limiting_resource_adaptor(mr):
+    cuda_mr = mr()
+
+    allocation_limit = 1 << 20
+    num_buffers = 2
+    buffer_size = allocation_limit // num_buffers
+
+    mr = rmm.mr.LimitingResourceAdaptor(
+        cuda_mr, allocation_limit=allocation_limit
+    )
+    assert mr.get_allocation_limit() == allocation_limit
+
+    rmm.mr.set_current_device_resource(mr)
+
+    buffers = [rmm.DeviceBuffer(size=buffer_size) for _ in range(num_buffers)]
+
+    assert mr.get_allocated_bytes() == sum(b.size for b in buffers)
+
+    with pytest.raises(MemoryError):
+        rmm.DeviceBuffer(size=1)
+
+
 def test_statistics_resource_adaptor(stats_mr):
 
     buffers = [rmm.DeviceBuffer(size=1000) for _ in range(10)]
@@ -907,3 +943,35 @@ def test_rmm_device_buffer_copy(cuda_ary, make_copy):
     result = db_copy.copy_to_host()
 
     np.testing.assert_equal(expected, result)
+
+
+@pytest.mark.parametrize("level", rmm.logging_level)
+def test_valid_logging_level(level):
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message="RMM will not log logging_level.TRACE."
+        )
+        warnings.filterwarnings(
+            "ignore", message="RMM will not log logging_level.DEBUG."
+        )
+        rmm.set_logging_level(level)
+        assert rmm.get_logging_level() == level
+        rmm.set_logging_level(rmm.logging_level.INFO)  # reset to default
+
+        rmm.set_flush_level(level)
+        assert rmm.get_flush_level() == level
+        rmm.set_flush_level(rmm.logging_level.INFO)  # reset to default
+
+        rmm.should_log(level)
+
+
+@pytest.mark.parametrize(
+    "level", ["INFO", 3, "invalid", 100, None, 1.2345, [1, 2, 3]]
+)
+def test_invalid_logging_level(level):
+    with pytest.raises(TypeError):
+        rmm.set_logging_level(level)
+    with pytest.raises(TypeError):
+        rmm.set_flush_level(level)
+    with pytest.raises(TypeError):
+        rmm.should_log(level)

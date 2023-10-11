@@ -88,13 +88,19 @@ inline device_memory_resource* initial_resource()
   return &mr;
 }
 
+/**
+ * @briefreturn{Reference to the lock}
+ */
 inline std::mutex& map_lock()
 {
   static std::mutex map_lock;
   return map_lock;
 }
 
-// Must have default visibility, see: https://github.com/rapidsai/rmm/issues/826
+// This symbol must have default visibility, see: https://github.com/rapidsai/rmm/issues/826
+/**
+ * @briefreturn{Reference to the map from device id -> resource}
+ */
 RMM_EXPORT inline auto& get_map()
 {
   static std::map<cuda_device_id::value_type, device_memory_resource*> device_id_to_resource;
@@ -121,7 +127,7 @@ RMM_EXPORT inline auto& get_map()
  * undefined if used while the active CUDA device is a different device from the one that was active
  * when the device_memory_resource was created.
  *
- * @param id The id of the target device
+ * @param device_id The id of the target device
  * @return Pointer to the current `device_memory_resource` for device `id`
  */
 inline device_memory_resource* get_per_device_resource(cuda_device_id device_id)
@@ -156,7 +162,7 @@ inline device_memory_resource* get_per_device_resource(cuda_device_id device_id)
  * undefined if used while the active CUDA device is a different device from the one that was active
  * when the device_memory_resource was created.
  *
- * @param id The id of the target device
+ * @param device_id The id of the target device
  * @param new_mr If not `nullptr`, pointer to new `device_memory_resource` to use as new resource
  * for `id`
  * @return Pointer to the previous memory resource for `id`
@@ -196,7 +202,7 @@ inline device_memory_resource* set_per_device_resource(cuda_device_id device_id,
  */
 inline device_memory_resource* get_current_device_resource()
 {
-  return get_per_device_resource(rmm::detail::current_device());
+  return get_per_device_resource(rmm::get_current_cuda_device());
 }
 
 /**
@@ -225,6 +231,6 @@ inline device_memory_resource* get_current_device_resource()
  */
 inline device_memory_resource* set_current_device_resource(device_memory_resource* new_mr)
 {
-  return set_per_device_resource(rmm::detail::current_device(), new_mr);
+  return set_per_device_resource(rmm::get_current_cuda_device(), new_mr);
 }
 }  // namespace rmm::mr

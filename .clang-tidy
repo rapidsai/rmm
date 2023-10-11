@@ -64,4 +64,6 @@ CheckOptions:
     value:           '1'
   - key:             readability-magic-numbers.IgnorePowersOf2IntegerValues
     value:           '1'
+  - key:             cppcoreguidelines-avoid-do-while.IgnoreMacros
+    value:           'true'
 ...

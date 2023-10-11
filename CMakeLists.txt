@@ -14,11 +14,7 @@
 
 cmake_minimum_required(VERSION 3.26.4 FATAL_ERROR)
 
-if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/RMM_RAPIDS.cmake)
-  file(DOWNLOAD https://raw.githubusercontent.com/rapidsai/rapids-cmake/branch-23.08/RAPIDS.cmake
-       ${CMAKE_CURRENT_BINARY_DIR}/RMM_RAPIDS.cmake)
-endif()
-include(${CMAKE_CURRENT_BINARY_DIR}/RMM_RAPIDS.cmake)
+include(fetch_rapids.cmake)
 
 include(rapids-cmake)
 include(rapids-cpm)
@@ -27,16 +23,21 @@ include(rapids-find)
 
 project(
   RMM
-  VERSION 23.08.00
+  VERSION 23.10.00
   LANGUAGES CXX)
 
 # Write the version header
 rapids_cmake_write_version_file(include/rmm/version_config.hpp)
 
+# ##################################################################################################
+# * build type -------------------------------------------------------------------------------------
+
 # Set a default build type if none was specified
 rapids_cmake_build_type(Release)
 
-# build options
+# ##################################################################################################
+# * build options ----------------------------------------------------------------------------------
+
 option(BUILD_TESTS "Configure CMake to build tests" ON)
 option(BUILD_BENCHMARKS "Configure CMake to build (google) benchmarks" OFF)
 set(RMM_LOGGING_LEVEL
@@ -52,17 +53,28 @@ message(STATUS "RMM: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'")
 # cudart can be statically linked or dynamically linked the python ecosystem wants dynamic linking
 option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
 
+# ##################################################################################################
+# * compiler options -------------------------------------------------------------------------------
+
 # find packages we depend on
 rapids_find_package(
   CUDAToolkit REQUIRED
   BUILD_EXPORT_SET rmm-exports
   INSTALL_EXPORT_SET rmm-exports)
+
+# ##################################################################################################
+# * dependencies -----------------------------------------------------------------------------------
+
+# add third party dependencies using CPM
 rapids_cpm_init()
+
 include(cmake/thirdparty/get_fmt.cmake)
 include(cmake/thirdparty/get_spdlog.cmake)
 include(cmake/thirdparty/get_thrust.cmake)
 
-# library targets
+# ##################################################################################################
+# * library targets --------------------------------------------------------------------------------
+
 add_library(rmm INTERFACE)
 add_library(rmm::rmm ALIAS rmm)
 
@@ -83,6 +95,9 @@ target_link_libraries(rmm INTERFACE spdlog::spdlog_header_only)
 target_link_libraries(rmm INTERFACE dl)
 target_compile_features(rmm INTERFACE cxx_std_17 $<BUILD_INTERFACE:cuda_std_17>)
 
+# ##################################################################################################
+# * tests and benchmarks ---------------------------------------------------------------------------
+
 if((BUILD_TESTS OR BUILD_BENCHMARKS) AND CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
   include(rapids-cuda)
   rapids_cuda_init_architectures(RMM)
@@ -94,7 +109,9 @@ if((BUILD_TESTS OR BUILD_BENCHMARKS) AND CMAKE_PROJECT_NAME STREQUAL PROJECT_NAM
   message(STATUS "RMM: Building benchmarks with GPU Architectures: ${CMAKE_CUDA_ARCHITECTURES}")
 endif()
 
-# optionally build tests
+# ##################################################################################################
+# * add tests --------------------------------------------------------------------------------------
+
 if(BUILD_TESTS AND CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
   include(cmake/thirdparty/get_gtest.cmake)
   include(CTest) # calls enable_testing()
@@ -102,19 +119,19 @@ if(BUILD_TESTS AND CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
   add_subdirectory(tests)
 endif()
 
-# optionally build benchmarks
+# ##################################################################################################
+# * add benchmarks ---------------------------------------------------------------------------------
+
 if(BUILD_BENCHMARKS AND CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
   include(${rapids-cmake-dir}/cpm/gbench.cmake)
   rapids_cpm_gbench()
   add_subdirectory(benchmarks)
 endif()
 
-include(CPack)
+# ##################################################################################################
+# * install targets --------------------------------------------------------------------------------
 
-# optionally assemble Thrust pretty-printers
-if(Thrust_SOURCE_DIR)
-  configure_file(scripts/load-pretty-printers.in load-pretty-printers @ONLY)
-endif()
+include(CPack)
 
 # install export targets
 install(TARGETS rmm EXPORT rmm-exports)
@@ -147,7 +164,9 @@ rapids_export(
   DOCUMENTATION doc_string
   FINAL_CODE_BLOCK code_string)
 
-# build export targets
+# ##################################################################################################
+# * build export -----------------------------------------------------------------------------------
+
 rapids_export(
   BUILD rmm
   EXPORT_SET rmm-exports
@@ -156,7 +175,8 @@ rapids_export(
   DOCUMENTATION doc_string
   FINAL_CODE_BLOCK code_string)
 
-# make documentation
+# ##################################################################################################
+# * make documentation -----------------------------------------------------------------------------
 
 add_custom_command(
   OUTPUT RMM_DOXYGEN
@@ -169,3 +189,11 @@ add_custom_target(
   rmm_doc
   DEPENDS RMM_DOXYGEN
   COMMENT "Target for the custom command to build the RMM doxygen docs")
+
+# ##################################################################################################
+# * make gdb helper scripts ------------------------------------------------------------------------
+
+# optionally assemble Thrust pretty-printers
+if(Thrust_SOURCE_DIR)
+  configure_file(scripts/load-pretty-printers.in load-pretty-printers @ONLY)
+endif()

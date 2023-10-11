@@ -14,6 +14,7 @@ DartConfiguration.tcl
 .DS_Store
 *.manifest
 *.spec
+compile_commands.json
 
 ## Python build directories & artifacts
 dist/
@@ -153,3 +154,7 @@ rmm_log.txt
 
 # cibuildwheel
 /wheelhouse
+
+# clang tooling
+compile_commands.json
+.clangd/
