@@ -23,10 +23,16 @@
 
 namespace rmm {
 /**
+ * @addtogroup thrust_integrations
+ * @{
+ * @file
+ */
+/**
  * @brief Alias for a thrust::device_vector that uses RMM for memory allocation.
  *
  */
 template <typename T>
 using device_vector = thrust::device_vector<T, rmm::mr::thrust_allocator<T>>;
 
+/** @} */  // end of group
 }  // namespace rmm
