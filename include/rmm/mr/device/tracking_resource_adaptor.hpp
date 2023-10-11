@@ -307,6 +307,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
  *
  * @tparam Upstream Type of the upstream `device_memory_resource`.
  * @param upstream Pointer to the upstream resource
+ * @return The new tracking resource adaptor
  */
 template <typename Upstream>
 tracking_resource_adaptor<Upstream> make_tracking_adaptor(Upstream* upstream)
