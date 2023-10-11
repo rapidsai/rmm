@@ -35,4 +35,5 @@
  *   @defgroup host_memory_resources Host Memory Resources
  *   @defgroup device_resource_adaptors Device Resource Adaptors
  * @}
+ * @defgroup strong_cuda_types Strong Type Wrappers for CUDA Typedefs
  */
