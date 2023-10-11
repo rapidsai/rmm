@@ -37,4 +37,5 @@
  * @}
  * @defgroup strong_cuda_types Strong Type Wrappers for CUDA Typedefs
  * @defgroup core_classes Core Classes
+ * @defgroup logging Logging
  */
