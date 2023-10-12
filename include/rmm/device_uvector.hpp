@@ -27,6 +27,11 @@
 #include <vector>
 
 namespace rmm {
+/**
+ * @addtogroup data_containers
+ * @{
+ * @file
+ */
 
 /**
  * @brief An *uninitialized* vector of elements in device memory.
@@ -557,4 +562,6 @@ class device_uvector {
     return num_bytes / sizeof(value_type);
   }
 };
+
+/** @} */  // end of group
 }  // namespace rmm

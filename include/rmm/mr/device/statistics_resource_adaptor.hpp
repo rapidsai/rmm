@@ -23,6 +23,11 @@
 
 namespace rmm::mr {
 /**
+ * @addtogroup device_resource_adaptors
+ * @{
+ * @file
+ */
+/**
  * @brief Resource that uses `Upstream` to allocate memory and tracks statistics
  * on memory allocations.
  *
@@ -246,6 +251,7 @@ class statistics_resource_adaptor final : public device_memory_resource {
  *
  * @tparam Upstream Type of the upstream `device_memory_resource`.
  * @param upstream Pointer to the upstream resource
+ * @return The new statistics resource adaptor
  */
 template <typename Upstream>
 statistics_resource_adaptor<Upstream> make_statistics_adaptor(Upstream* upstream)
@@ -253,4 +259,5 @@ statistics_resource_adaptor<Upstream> make_statistics_adaptor(Upstream* upstream
   return statistics_resource_adaptor<Upstream>{upstream};
 }
 
+/** @} */  // end of group
 }  // namespace rmm::mr

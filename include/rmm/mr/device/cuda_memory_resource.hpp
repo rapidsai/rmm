@@ -24,6 +24,11 @@
 
 namespace rmm::mr {
 /**
+ * @addtogroup device_memory_resources
+ * @{
+ * @file
+ */
+/**
  * @brief `device_memory_resource` derived class that uses cudaMalloc/Free for
  * allocation/deallocation.
  */
@@ -121,4 +126,5 @@ class cuda_memory_resource final : public device_memory_resource {
     return std::make_pair(free_size, total_size);
   }
 };
+/** @} */  // end of group
 }  // namespace rmm::mr

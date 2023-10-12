@@ -24,6 +24,11 @@
 #include <type_traits>
 
 namespace rmm {
+/**
+ * @addtogroup data_containers
+ * @{
+ * @file
+ */
 
 /**
  * @brief Container for a single object of type `T` in device memory.
@@ -266,4 +271,6 @@ class device_scalar {
  private:
   rmm::device_uvector<T> _storage;
 };
+
+/** @} */  // end of group
 }  // namespace rmm

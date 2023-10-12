@@ -23,6 +23,11 @@
 #include <utility>
 
 namespace rmm::mr {
+/**
+ * @addtogroup device_resource_adaptors
+ * @{
+ * @file
+ */
 
 /**
  * @brief Callback function type used by failure_callback_resource_adaptor
@@ -217,4 +222,5 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
   void* callback_arg_;
 };
 
+/** @} */  // end of group
 }  // namespace rmm::mr

@@ -32,6 +32,11 @@
 
 namespace rmm::mr {
 /**
+ * @addtogroup device_resource_adaptors
+ * @{
+ * @file
+ */
+/**
  * @brief Resource that uses `Upstream` to allocate memory and logs information
  * about the requested allocation/deallocations.
  *
@@ -331,6 +336,7 @@ class logging_resource_adaptor final : public device_memory_resource {
  * retrieves the log file name from the environment variable "RMM_LOG_FILE".
  * @param auto_flush If true, flushes the log for every (de)allocation. Warning, this will degrade
  * performance.
+ * @return The new logging resource adaptor
  */
 template <typename Upstream>
 logging_resource_adaptor<Upstream> make_logging_adaptor(
@@ -350,6 +356,7 @@ logging_resource_adaptor<Upstream> make_logging_adaptor(
  * @param stream The ostream to write log info.
  * @param auto_flush If true, flushes the log for every (de)allocation. Warning, this will degrade
  * performance.
+ * @return The new logging resource adaptor
  */
 template <typename Upstream>
 logging_resource_adaptor<Upstream> make_logging_adaptor(Upstream* upstream,
@@ -359,4 +366,5 @@ logging_resource_adaptor<Upstream> make_logging_adaptor(Upstream* upstream,
   return logging_resource_adaptor<Upstream>{upstream, stream, auto_flush};
 }
 
+/** @} */  // end of group
 }  // namespace rmm::mr
