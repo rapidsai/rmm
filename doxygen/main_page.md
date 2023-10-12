@@ -9,3 +9,5 @@ The goal of the RAPIDS Memory Manager (RMM) is to provide:
 - A common interface that allows customizing device and host memory allocation
 - A collection of implementations of the interface
 - A collection of data structures that use the interface for memory allocation
+
+\htmlonly For more information on APIs provided by rmm, see <a href="modules.html">the modules page</a>\endhtmlonly.
