@@ -29,6 +29,11 @@
 
 namespace rmm {
 /**
+ * @addtogroup data_containers
+ * @{
+ * @file
+ */
+/**
  * @brief RAII construct for device memory allocation
  *
  * This class allocates untyped and *uninitialized* device memory using a
@@ -459,4 +464,6 @@ class device_buffer {
     }
   }
 };
+
+/** @} */  // end of group
 }  // namespace rmm

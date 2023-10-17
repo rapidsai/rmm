@@ -24,6 +24,11 @@
 
 namespace rmm::mr {
 /**
+ * @addtogroup device_resource_adaptors
+ * @{
+ * @file
+ */
+/**
  * @brief Resource that adapts `Upstream` memory resource adaptor to be thread safe.
  *
  * An instance of this resource can be constructured with an existing, upstream resource in order
@@ -151,4 +156,5 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
   Upstream* upstream_;     ///< The upstream resource used for satisfying allocation requests
 };
 
+/** @} */  // end of group
 }  // namespace rmm::mr

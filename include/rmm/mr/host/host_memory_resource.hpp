@@ -19,6 +19,11 @@
 #include <utility>
 
 namespace rmm::mr {
+/**
+ * @addtogroup host_memory_resources
+ * @{
+ * @file
+ */
 
 /**
  * @brief Base class for host memory allocation.
@@ -161,4 +166,5 @@ class host_memory_resource {
     return this == &other;
   }
 };
+/** @} */  // end of group
 }  // namespace rmm::mr

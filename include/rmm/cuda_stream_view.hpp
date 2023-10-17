@@ -25,6 +25,11 @@
 #include <cstdint>
 
 namespace rmm {
+/**
+ * @addtogroup cuda_streams
+ * @{
+ * @file
+ */
 
 /**
  * @brief Strongly-typed non-owning wrapper for CUDA streams with default constructor.
@@ -175,4 +180,5 @@ inline std::ostream& operator<<(std::ostream& os, cuda_stream_view stream)
   return os;
 }
 
+/** @} */  // end of group
 }  // namespace rmm

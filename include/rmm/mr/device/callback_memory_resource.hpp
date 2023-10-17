@@ -22,6 +22,11 @@
 #include <utility>
 
 namespace rmm::mr {
+/**
+ * @addtogroup device_memory_resources
+ * @{
+ * @file
+ */
 
 /**
  * @brief Callback function type used by callback memory resource for allocation.
@@ -147,4 +152,5 @@ class callback_memory_resource final : public device_memory_resource {
   void* deallocate_callback_arg_;
 };
 
+/** @} */  // end of group
 }  // namespace rmm::mr

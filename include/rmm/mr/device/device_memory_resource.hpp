@@ -22,6 +22,11 @@
 #include <utility>
 
 namespace rmm::mr {
+/**
+ * @addtogroup device_memory_resources
+ * @{
+ * @file
+ */
 
 /**
  * @brief Base class for all libcudf device memory allocation.
@@ -238,4 +243,5 @@ class device_memory_resource {
   [[nodiscard]] virtual std::pair<std::size_t, std::size_t> do_get_mem_info(
     cuda_stream_view stream) const = 0;
 };
+/** @} */  // end of group
 }  // namespace rmm::mr
