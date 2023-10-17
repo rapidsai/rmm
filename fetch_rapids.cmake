@@ -11,6 +11,8 @@
 # or implied. See the License for the specific language governing permissions and limitations under
 # the License.
 # =============================================================================
+set(rapids-cmake-repo bdice/rapids-cmake)
+set(rapids-cmake-branch libcudacxx-memory-resource-patch)
 if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/RMM_RAPIDS.cmake)
   file(DOWNLOAD https://raw.githubusercontent.com/rapidsai/rapids-cmake/branch-23.12/RAPIDS.cmake
        ${CMAKE_CURRENT_BINARY_DIR}/RMM_RAPIDS.cmake)
