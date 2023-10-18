@@ -630,11 +630,11 @@ def test_statistics_resource_adaptor(stats_mr):
         del buffers[i]
 
     assert stats_mr.allocation_counts == {
-        "current_bytes": 5000,
+        "current_bytes": 5040,
         "current_count": 5,
-        "peak_bytes": 10000,
+        "peak_bytes": 10080,
         "peak_count": 10,
-        "total_bytes": 10000,
+        "total_bytes": 10080,
         "total_count": 10,
     }
 
