@@ -128,7 +128,7 @@ ConfigureTest(DEVICE_MR_TEST mr/device/mr_tests.cpp mr/device/mr_multithreaded_t
 
 # device mr tests
 ConfigureTest(DEVICE_MR_REF_TEST mr/device/mr_ref_tests.cpp
-              mr/device/mr_ref_multithreaded_tests.cpp)
+              mr/device/mr_ref_multithreaded_tests.cpp GPUS 1 PERCENT 50)
 
 # general adaptor tests
 ConfigureTest(ADAPTOR_TEST mr/device/adaptor_tests.cpp)
