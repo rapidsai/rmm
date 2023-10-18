@@ -126,7 +126,7 @@ class device_uvector {
    */
   explicit device_uvector(std::size_t size,
                           cuda_stream_view stream,
-                          async_resource_ref mr = rmm::mr::get_current_device_resource_ref())
+                          async_resource_ref mr = rmm::mr::get_current_device_resource())
     : _storage{elements_to_bytes(size), stream, mr}
   {
   }
@@ -142,7 +142,7 @@ class device_uvector {
    */
   explicit device_uvector(device_uvector const& other,
                           cuda_stream_view stream,
-                          async_resource_ref mr = rmm::mr::get_current_device_resource_ref())
+                          async_resource_ref mr = rmm::mr::get_current_device_resource())
     : _storage{other._storage, stream, mr}
   {
   }
@@ -525,7 +525,7 @@ class device_uvector {
   [[nodiscard]] bool is_empty() const noexcept { return size() == 0; }
 
   /**
-   * @briefreturn{Pointer to underlying resource used to allocate and deallocate the device storage}
+   * @briefreturn{The async_resource_ref used to allocate and deallocate the device storage}
    */
   [[nodiscard]] cuda::mr::async_resource_ref<cuda::mr::device_accessible> memory_resource()
     const noexcept

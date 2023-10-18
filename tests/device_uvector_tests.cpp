@@ -38,7 +38,7 @@ TYPED_TEST_CASE(TypedUVectorTest, TestTypes);
 TYPED_TEST(TypedUVectorTest, MemoryResource)
 {
   rmm::device_uvector<TypeParam> vec(128, this->stream());
-  EXPECT_EQ(vec.memory_resource(), rmm::mr::get_current_device_resource_ref());
+  EXPECT_EQ(vec.memory_resource(), async_resource_ref{rmm::mr::get_current_device_resource()});
 }
 
 TYPED_TEST(TypedUVectorTest, ZeroSizeConstructor)
