@@ -116,4 +116,4 @@ skip = [
 license-files = ["LICENSE"]
 
 [tool.setuptools.dynamic]
-version = {attr = "rmm._version.__version__"}
+version = {file = "rmm/VERSION"}
