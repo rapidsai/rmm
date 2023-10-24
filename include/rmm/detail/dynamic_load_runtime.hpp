@@ -38,13 +38,22 @@ struct dynamic_load_runtime {
     auto close_cudart = [](void* handle) { ::dlclose(handle); };
     auto open_cudart  = []() {
       ::dlerror();
-      const int major               = CUDART_VERSION / 1000;
-      const std::string libname_ver = "libcudart.so." + std::to_string(major);
-      const std::string libname     = "libcudart.so";
+      const int major = CUDART_VERSION / 1000;
 
-      auto ptr = ::dlopen(libname_ver.c_str(), RTLD_LAZY);
-      if (!ptr) { ptr = ::dlopen(libname.c_str(), RTLD_LAZY); }
-      if (ptr) { return ptr; }
+      // In CUDA 12 the SONAME is correctly defined as libcudart.12, but for
+      // CUDA<=11 it includes an extra 0 minor version e.g. libcudart.11.0. We
+      // also allow finding the linker name.
+      const std::string libname_ver_cuda_11 = "libcudart.so." + std::to_string(major) + ".0";
+      const std::string libname_ver_cuda_12 = "libcudart.so." + std::to_string(major);
+      const std::string libname             = "libcudart.so";
+
+      void* ptr = nullptr;
+      for (auto&& name : {libname_ver_cuda_12, libname_ver_cuda_11, libname}) {
+        ptr = dlopen(name.c_str(), RTLD_LAZY);
+        if (ptr != nullptr) break;
+      }
+
+      if (ptr != nullptr) { return ptr; }
 
       RMM_FAIL("Unable to dlopen cudart");
     };
