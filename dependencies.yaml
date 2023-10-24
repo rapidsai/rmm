@@ -223,3 +223,7 @@ dependencies:
         packages:
           - pytest
           - pytest-cov
+      - output_types: conda
+        packages:
+          # Needed for numba in tests
+          - cuda-nvcc
