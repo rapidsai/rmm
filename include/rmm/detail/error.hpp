@@ -26,13 +26,9 @@
 namespace rmm {
 
 /**
- * @addtogroup errors
- * @{
- * @file
- */
-
-/**
  * @brief Exception thrown when logical precondition is violated.
+ *
+ * @ingroup errors
  *
  * This exception should not be thrown directly and is instead thrown by the
  * RMM_EXPECTS macro.
@@ -45,6 +41,8 @@ struct logic_error : public std::logic_error {
 /**
  * @brief Exception thrown when a CUDA error is encountered.
  *
+ * @ingroup errors
+ *
  */
 struct cuda_error : public std::runtime_error {
   using std::runtime_error::runtime_error;
@@ -53,12 +51,28 @@ struct cuda_error : public std::runtime_error {
 /**
  * @brief Exception thrown when an RMM allocation fails
  *
+ * @ingroup errors
+ *
  */
 class bad_alloc : public std::bad_alloc {
  public:
+  /**
+   * @brief Constructs a bad_alloc with the error message.
+   *
+   * @param msg Message to be associated with the exception
+   */
   bad_alloc(const char* msg) : _what{std::string{std::bad_alloc::what()} + ": " + msg} {}
+
+  /**
+   * @brief Constructs a bad_alloc with the error message.
+   *
+   * @param msg Message to be associated with the exception
+   */
   bad_alloc(std::string const& msg) : bad_alloc{msg.c_str()} {}
 
+  /**
+   * @briefreturn{The explanatory string}
+   */
   [[nodiscard]] const char* what() const noexcept override { return _what.c_str(); }
 
  private:
@@ -68,23 +82,36 @@ class bad_alloc : public std::bad_alloc {
 /**
  * @brief Exception thrown when RMM runs out of memory
  *
+ * @ingroup errors
+ *
  * This error should only be thrown when we know for sure a resource is out of memory.
  */
 class out_of_memory : public bad_alloc {
  public:
+  /**
+   * @brief Constructs an out_of_memory with the error message.
+   *
+   * @param msg Message to be associated with the exception
+   */
   out_of_memory(const char* msg) : bad_alloc{std::string{"out_of_memory: "} + msg} {}
+
+  /**
+   * @brief Constructs an out_of_memory with the error message.
+   *
+   * @param msg Message to be associated with the exception
+   */
   out_of_memory(std::string const& msg) : out_of_memory{msg.c_str()} {}
 };
 
 /**
  * @brief Exception thrown when attempting to access outside of a defined range
  *
+ * @ingroup errors
+ *
  */
 class out_of_range : public std::out_of_range {
   using std::out_of_range::out_of_range;
 };
-
-/** @} */  // end of group
 
 }  // namespace rmm
 
@@ -106,12 +133,13 @@ class out_of_range : public std::out_of_range {
  * // throws std::runtime_error
  * RMM_EXPECTS(p != nullptr, "Unexpected nullptr", std::runtime_error);
  * ```
- * @param[in] _condition Expression that evaluates to true or false
- * @param[in] _what  String literal description of why the exception was
- *     thrown, i.e. why `_condition` was expected to be true.
- * @param[in] _expection_type The exception type to throw; must inherit
- *     std::exception. If not specified (i.e. if only two macro
- *     arguments are provided), defaults to rmm::logic_error
+ * @param ... This macro accepts either two or three arguments:
+ *   - The first argument must be an expression that evaluates to true or
+ *     false, and is the condition being checked.
+ *   - The second argument is a string literal used to construct the `what` of
+ *     the exception.
+ *   - When given, the third argument is the exception to be thrown. When not
+ *     specified, defaults to `rmm::logic_error`.
  * @throw `_exception_type` if the condition evaluates to 0 (false).
  */
 #define RMM_EXPECTS(...)                                           \
