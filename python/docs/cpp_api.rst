@@ -5,4 +5,4 @@ API Reference
    :maxdepth: 2
    :caption: Contents:
 
-   librmm_docs
+   librmm_docs/index
