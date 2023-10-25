@@ -1,4 +1,8 @@
 API Reference
 =============
 
-.. doxygennamespace:: rmm
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+
+   librmm_docs

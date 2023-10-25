@@ -1,0 +1,5 @@
+Logging
+=======
+
+.. doxygengroup:: logging
+   :members:
