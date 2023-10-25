@@ -220,8 +220,6 @@ class cuda_async_memory_resource final : public device_memory_resource {
   /**
    * @brief Compare this resource to another.
    *
-   * @throws Nothing.
-   *
    * @param other The other resource to compare to
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equal

@@ -91,8 +91,6 @@ class simulated_memory_resource final : public device_memory_resource {
    *
    * @note This call is ignored.
    *
-   * @throws Nothing.
-   *
    * @param ptr Pointer to be deallocated
    */
   void do_deallocate(void* ptr, std::size_t, cuda_stream_view) override {}

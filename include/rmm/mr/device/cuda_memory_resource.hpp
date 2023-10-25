@@ -100,8 +100,6 @@ class cuda_memory_resource final : public device_memory_resource {
    * Two cuda_memory_resources always compare equal, because they can each
    * deallocate memory allocated by the other.
    *
-   * @throws Nothing.
-   *
    * @param other The other resource to compare to
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equal

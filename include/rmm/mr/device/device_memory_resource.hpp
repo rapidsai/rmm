@@ -127,8 +127,6 @@ class device_memory_resource {
    * If supported, this operation may optionally be executed on a stream.
    * Otherwise, the stream is ignored and the null stream is used.
    *
-   * @throws Nothing.
-   *
    * @param ptr Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the
    * value of `bytes` that was passed to the `allocate` call that returned `p`.

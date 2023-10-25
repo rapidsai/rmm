@@ -175,8 +175,6 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
   /**
    * @brief Free allocation of size `bytes` pointed to by `ptr`
    *
-   * @throws Nothing.
-   *
    * @param ptr Pointer to be deallocated
    * @param bytes Size of the allocation
    * @param stream Stream on which to perform the deallocation
@@ -188,8 +186,6 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
 
   /**
    * @brief Compare the upstream resource to another.
-   *
-   * @throws Nothing.
    *
    * @param other The other resource to compare to
    * @return true If the two resources are equivalent

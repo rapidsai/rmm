@@ -194,8 +194,6 @@ class owning_wrapper : public device_memory_resource {
    *
    * `ptr` must have been returned from a prior call to `do_allocate(bytes)`.
    *
-   * @throws Nothing.
-   *
    * @param ptr Pointer to the allocation to free.
    * @param bytes Size of the allocation
    * @param stream Stream on which to deallocate the memory
@@ -209,8 +207,6 @@ class owning_wrapper : public device_memory_resource {
    * @brief Compare if this resource is equal to another.
    *
    * Two resources are equal if memory allocated by one resource can be freed by the other.
-   *
-   * @throws Nothing.
    *
    * @param other The other resource to compare to
    * @return true If the two resources are equal
