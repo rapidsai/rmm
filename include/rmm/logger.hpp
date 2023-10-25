@@ -97,14 +97,8 @@ struct bytes {
 }  // namespace detail
 
 /**
- * @addtogroup logging
- * @{
- * @file
- */
-
-/**
  * @brief Returns the global RMM logger
- *
+ * @addtogroup logging
  * This is a spdlog logger. The easiest way to log messages is to use the `RMM_LOG_*` macros.
  *
  * @return spdlog::logger& The logger.
@@ -136,5 +130,4 @@ inline spdlog::logger& logger()
 template <>
 struct fmt::formatter<rmm::detail::bytes> : fmt::ostream_formatter {};
 
-/** @} */  // end of group
 //! @endcond
