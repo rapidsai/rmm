@@ -13,10 +13,14 @@ librmm Documentation
    cuda_device_management
    cuda_streams
    data_containers
+   errors
    logging
    memory_resources
    thrust_integrations
 
+
+.. doxygennamespace:: rmm
+   :desc-only:
 
 Indices and tables
 ==================
