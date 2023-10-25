@@ -56,8 +56,8 @@ class aligned_resource_adaptor final : public device_memory_resource {
   /**
    * @brief Construct an aligned resource adaptor using `upstream` to satisfy allocation requests.
    *
-   * @throws `rmm::logic_error` if `upstream == nullptr`
-   * @throws `rmm::logic_error` if `allocation_alignment` is not a power of 2
+   * @throws rmm::logic_error if `upstream == nullptr`
+   * @throws rmm::logic_error if `allocation_alignment` is not a power of 2
    *
    * @param upstream The resource used for allocating/deallocating device memory.
    * @param alignment The size used for allocation alignment.
@@ -114,7 +114,7 @@ class aligned_resource_adaptor final : public device_memory_resource {
    * @brief Allocates memory of size at least `bytes` using the upstream resource with the specified
    * alignment.
    *
-   * @throws `rmm::bad_alloc` if the requested allocation could not be fulfilled
+   * @throws rmm::bad_alloc if the requested allocation could not be fulfilled
    * by the upstream resource.
    *
    * @param bytes The size, in bytes, of the allocation
@@ -184,7 +184,7 @@ class aligned_resource_adaptor final : public device_memory_resource {
    *
    * The free size may not be fully allocatable because of alignment requirements.
    *
-   * @throws `rmm::cuda_error` if unable to retrieve memory info.
+   * @throws rmm::cuda_error if unable to retrieve memory info.
    *
    * @param stream Stream on which to get the mem info.
    * @return std::pair containing free_size and total_size of memory

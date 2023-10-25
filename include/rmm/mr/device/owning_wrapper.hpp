@@ -177,7 +177,7 @@ class owning_wrapper : public device_memory_resource {
   /**
    * @brief Allocates memory using the wrapped resource.
    *
-   * @throws `rmm::bad_alloc` if the requested allocation could not be fulfilled by the wrapped
+   * @throws rmm::bad_alloc if the requested allocation could not be fulfilled by the wrapped
    * resource.
    *
    * @param bytes The size, in bytes, of the allocation
@@ -223,7 +223,7 @@ class owning_wrapper : public device_memory_resource {
   /**
    * @brief Get free and available memory from upstream resource.
    *
-   * @throws `rmm::cuda_error` if unable to retrieve memory info.
+   * @throws rmm::cuda_error if unable to retrieve memory info.
    *
    * @param stream Stream on which to get the mem info.
    * @return std::pair contaiing free_size and total_size of memory

@@ -72,7 +72,7 @@ class simulated_memory_resource final : public device_memory_resource {
    *
    * @note Stream argument is ignored
    *
-   * @throws `rmm::bad_alloc` if the requested allocation could not be fulfilled
+   * @throws rmm::bad_alloc if the requested allocation could not be fulfilled
    *
    * @param bytes The size, in bytes, of the allocation
    * @return void* Pointer to the newly allocated memory

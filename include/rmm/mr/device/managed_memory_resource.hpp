@@ -116,7 +116,7 @@ class managed_memory_resource final : public device_memory_resource {
   /**
    * @brief Get free and available memory for memory resource
    *
-   * @throws `rmm::cuda_error` if unable to retrieve memory info
+   * @throws rmm::cuda_error if unable to retrieve memory info
    *
    * @param stream to execute on
    * @return std::pair contaiing free_size and total_size of memory

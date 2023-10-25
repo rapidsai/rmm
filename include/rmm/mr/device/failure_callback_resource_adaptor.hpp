@@ -96,7 +96,7 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
    * @brief Construct a new `failure_callback_resource_adaptor` using `upstream` to satisfy
    * allocation requests.
    *
-   * @throws `rmm::logic_error` if `upstream == nullptr`
+   * @throws rmm::logic_error if `upstream == nullptr`
    *
    * @param upstream The resource used for allocating/deallocating device memory
    * @param callback Callback function @see failure_callback_t
@@ -202,7 +202,7 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
   /**
    * @brief Get free and available memory from upstream resource.
    *
-   * @throws `rmm::cuda_error` if unable to retrieve memory info.
+   * @throws rmm::cuda_error if unable to retrieve memory info.
    *
    * @param stream Stream on which to get the mem info.
    * @return std::pair contaiing free_size and total_size of memory

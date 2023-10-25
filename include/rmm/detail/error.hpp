@@ -95,7 +95,7 @@ class out_of_range : public std::out_of_range {
  * @brief Macro for checking (pre-)conditions that throws an exception when
  * a condition is violated.
  *
- * Defaults to throwing `rmm::logic_error`, but a custom exception may also be
+ * Defaults to throwing rmm::logic_error, but a custom exception may also be
  * specified.
  *
  * Example usage:
@@ -110,8 +110,8 @@ class out_of_range : public std::out_of_range {
  * @param[in] _what  String literal description of why the exception was
  *     thrown, i.e. why `_condition` was expected to be true.
  * @param[in] _expection_type The exception type to throw; must inherit
- *     `std::exception`. If not specified (i.e. if only two macro
- *     arguments are provided), defaults to `rmm::logic_error`
+ *     std::exception. If not specified (i.e. if only two macro
+ *     arguments are provided), defaults to rmm::logic_error
  * @throw `_exception_type` if the condition evaluates to 0 (false).
  */
 #define RMM_EXPECTS(...)                                           \
@@ -131,7 +131,7 @@ class out_of_range : public std::out_of_range {
  *
  * Example usage:
  * ```c++
- * // Throws `rmm::logic_error`
+ * // Throws rmm::logic_error
  * RMM_FAIL("Unsupported code path");
  *
  * // Throws `std::runtime_error`
@@ -154,16 +154,16 @@ class out_of_range : public std::out_of_range {
  * `cudaSuccess`, invokes cudaGetLastError() to clear the error and throws an
  * exception detailing the CUDA error that occurred
  *
- * Defaults to throwing `rmm::cuda_error`, but a custom exception may also be
+ * Defaults to throwing rmm::cuda_error, but a custom exception may also be
  * specified.
  *
  * Example:
  * ```c++
  *
- * // Throws `rmm::cuda_error` if `cudaMalloc` fails
+ * // Throws rmm::cuda_error if `cudaMalloc` fails
  * RMM_CUDA_TRY(cudaMalloc(&p, 100));
  *
- * // Throws `std::runtime_error` if `cudaMalloc` fails
+ * // Throws std::runtime_error if `cudaMalloc` fails
  * RMM_CUDA_TRY(cudaMalloc(&p, 100), std::runtime_error);
  * ```
  *
@@ -192,8 +192,8 @@ class out_of_range : public std::out_of_range {
  * `cudaSuccess`, invokes cudaGetLastError() to clear the error and throws an
  * exception detailing the CUDA error that occurred
  *
- * Defaults to throwing `rmm::bad_alloc`, but when `cudaErrorMemoryAllocation` is returned,
- * `rmm::out_of_memory` is thrown instead.
+ * Defaults to throwing rmm::bad_alloc, but when `cudaErrorMemoryAllocation` is returned,
+ * rmm::out_of_memory is thrown instead.
  */
 #define RMM_CUDA_TRY_ALLOC(_call)                                                                  \
   do {                                                                                             \
