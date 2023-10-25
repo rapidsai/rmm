@@ -24,6 +24,13 @@
 #include <string>
 
 namespace rmm {
+
+/**
+ * @addtogroup errors
+ * @{
+ * @file
+ */
+
 /**
  * @brief Exception thrown when logical precondition is violated.
  *
@@ -76,6 +83,8 @@ class out_of_memory : public bad_alloc {
 class out_of_range : public std::out_of_range {
   using std::out_of_range::out_of_range;
 };
+
+/** @} */  // end of group
 
 }  // namespace rmm
 
