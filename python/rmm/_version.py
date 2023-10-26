@@ -15,6 +15,6 @@
 import importlib.resources
 
 __version__ = (
-    importlib.resources.files("rmm").resource("VERSION").read_text().split()
+    importlib.resources.files("rmm").joinpath("VERSION").read_text().split()
 )
 __git_commit__ = ""
