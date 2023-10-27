@@ -62,8 +62,8 @@ class logging_resource_adaptor final : public device_memory_resource {
    * Creating multiple `logging_resource_adaptor`s with the same `filename` will
    * result in undefined behavior.
    *
-   * @throws `rmm::logic_error` if `upstream == nullptr`
-   * @throws `spdlog::spdlog_ex` if opening `filename` failed
+   * @throws rmm::logic_error if `upstream == nullptr`
+   * @throws spdlog::spdlog_ex if opening `filename` failed
    *
    * @param upstream The resource used for allocating/deallocating device memory
    * @param filename Name of file to write log info. If not specified, retrieves
@@ -88,7 +88,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    *
    * The logfile will be written using CSV formatting.
    *
-   * @throws `rmm::logic_error` if `upstream == nullptr`
+   * @throws rmm::logic_error if `upstream == nullptr`
    *
    * @param upstream The resource used for allocating/deallocating device memory
    * @param stream The ostream to write log info.
@@ -110,7 +110,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    *
    * The logfile will be written using CSV formatting.
    *
-   * @throws `rmm::logic_error` if `upstream == nullptr`
+   * @throws rmm::logic_error if `upstream == nullptr`
    *
    * @param upstream The resource used for allocating/deallocating device memory
    * @param sinks A list of logging sinks to which log output will be written.
@@ -183,7 +183,7 @@ class logging_resource_adaptor final : public device_memory_resource {
   /**
    * @brief Return the value of the environment variable RMM_LOG_FILE.
    *
-   * @throws `rmm::logic_error` if `RMM_LOG_FILE` is not set.
+   * @throws rmm::logic_error if `RMM_LOG_FILE` is not set.
    *
    * @return The value of RMM_LOG_FILE as `std::string`.
    */
@@ -241,7 +241,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    *
    * The returned pointer has at least 256B alignment.
    *
-   * @throws `rmm::bad_alloc` if the requested allocation could not be fulfilled
+   * @throws rmm::bad_alloc if the requested allocation could not be fulfilled
    * by the upstream resource.
    *
    * @param bytes The size, in bytes, of the allocation
@@ -270,8 +270,6 @@ class logging_resource_adaptor final : public device_memory_resource {
    * thread_id,*TIMESTAMP*,"free",*bytes*,*stream*
    * ```
    *
-   * @throws Nothing.
-   *
    * @param ptr Pointer to be deallocated
    * @param bytes Size of the allocation
    * @param stream Stream on which to perform the deallocation
@@ -284,8 +282,6 @@ class logging_resource_adaptor final : public device_memory_resource {
 
   /**
    * @brief Compare the upstream resource to another.
-   *
-   * @throws Nothing.
    *
    * @param other The other resource to compare to
    * @return true If the two resources are equivalent
@@ -302,7 +298,7 @@ class logging_resource_adaptor final : public device_memory_resource {
   /**
    * @brief Get free and available memory from upstream resource.
    *
-   * @throws `rmm::cuda_error` if unable to retrieve memory info.
+   * @throws rmm::cuda_error if unable to retrieve memory info.
    *
    * @param stream Stream on which to get the mem info.
    * @return std::pair contaiing free_size and total_size of memory

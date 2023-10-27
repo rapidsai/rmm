@@ -76,8 +76,6 @@ class new_delete_resource final : public host_memory_resource {
    * `host_memory_resource` that compares equal to `*this`, and the storage it points to must not
    * yet have been deallocated, otherwise behavior is undefined.
    *
-   * @throws Nothing.
-   *
    * @param ptr Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the value of `bytes`
    *              that was passed to the `allocate` call that returned `ptr`.

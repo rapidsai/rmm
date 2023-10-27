@@ -38,6 +38,7 @@
  * @defgroup cuda_device_management CUDA Device Management
  * @defgroup cuda_streams CUDA Streams
  * @defgroup data_containers Data Containers
+ * @defgroup errors Errors
  * @defgroup logging Logging
  * @defgroup thrust_integrations Thrust Integrations
  */
