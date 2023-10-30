@@ -22,7 +22,7 @@ PACKAGE_CUDA_SUFFIX="-${RAPIDS_PY_CUDA_SUFFIX}"
 pyproject_file="${package_dir}/pyproject.toml"
 
 sed -i "s/name = \"${package_name}\"/name = \"${package_name}${PACKAGE_CUDA_SUFFIX}\"/g" ${pyproject_file}
-echo "${version}" | tr -d '"' > VERSION
+echo "${version}" > VERSION
 sed -i "/^__git_commit__/ s/= .*/= \"${commit}\"/g" "${package_dir}/${package_name}/_version.py"
 
 if [[ $PACKAGE_CUDA_SUFFIX == "-cu12" ]]; then

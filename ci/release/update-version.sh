@@ -39,7 +39,7 @@ sed_runner 's/'"  VERSION .*"'/'"  VERSION ${NEXT_FULL_TAG}"'/g' CMakeLists.txt
 sed_runner 's/'"rmm_version .*)"'/'"rmm_version ${NEXT_FULL_TAG})"'/g' python/CMakeLists.txt
 
 # Centralized version file update
-echo "${NEXT_FULL_TAG}" | tr -d '"' > VERSION
+echo "${NEXT_FULL_TAG}" > VERSION
 
 # rapids-cmake version
 sed_runner 's/'"branch-.*\/RAPIDS.cmake"'/'"branch-${NEXT_SHORT_TAG}\/RAPIDS.cmake"'/g' fetch_rapids.cmake
