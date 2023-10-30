@@ -46,7 +46,7 @@ class limiting_resource_adaptor final : public device_memory_resource {
    * @brief Construct a new limiting resource adaptor using `upstream` to satisfy
    * allocation requests and limiting the total allocation amount possible.
    *
-   * @throws `rmm::logic_error` if `upstream == nullptr`
+   * @throws rmm::logic_error if `upstream == nullptr`
    *
    * @param upstream The resource used for allocating/deallocating device memory
    * @param allocation_limit Maximum memory allowed for this allocator
@@ -125,7 +125,7 @@ class limiting_resource_adaptor final : public device_memory_resource {
    *
    * The returned pointer has at least 256B alignment.
    *
-   * @throws `rmm::bad_alloc` if the requested allocation could not be fulfilled
+   * @throws rmm::bad_alloc if the requested allocation could not be fulfilled
    * by the upstream resource.
    *
    * @param bytes The size, in bytes, of the allocation
@@ -152,8 +152,6 @@ class limiting_resource_adaptor final : public device_memory_resource {
   /**
    * @brief Free allocation of size `bytes` pointed to by `ptr`
    *
-   * @throws Nothing.
-   *
    * @param ptr Pointer to be deallocated
    * @param bytes Size of the allocation
    * @param stream Stream on which to perform the deallocation
@@ -167,8 +165,6 @@ class limiting_resource_adaptor final : public device_memory_resource {
 
   /**
    * @brief Compare the upstream resource to another.
-   *
-   * @throws Nothing.
    *
    * @param other The other resource to compare to
    * @return true If the two resources are equivalent
@@ -185,7 +181,7 @@ class limiting_resource_adaptor final : public device_memory_resource {
   /**
    * @brief Get free and available memory from upstream resource.
    *
-   * @throws `rmm::cuda_error` if unable to retrieve memory info.
+   * @throws rmm::cuda_error if unable to retrieve memory info.
    *
    * @param stream Stream on which to get the mem info.
    * @return std::pair contaiing free_size and total_size of memory

@@ -177,8 +177,6 @@ class device_buffer {
    * valid, empty `device_buffer`, i.e., `data()` returns `nullptr`, and
    * `size()` and `capacity()` are zero.
    *
-   * @throws Nothing
-   *
    * @param other The `device_buffer` whose contents will be moved into the
    * newly constructed one.
    */
