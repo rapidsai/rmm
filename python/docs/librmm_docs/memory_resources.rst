@@ -5,7 +5,7 @@ Memory Resources
    :desc-only:
 
 .. doxygengroup:: memory_resources
-   :desc-only:
+   :members:
 
 .. doxygengroup:: device_memory_resources
    :members:
