@@ -10,13 +10,13 @@ librmm Documentation
    :maxdepth: 2
    :caption: Contents:
 
+   memory_resources   
+   data_containers
+   thrust_integrations
    cuda_device_management
    cuda_streams
-   data_containers
    errors
    logging
-   memory_resources
-   thrust_integrations
 
 
 .. doxygennamespace:: rmm
