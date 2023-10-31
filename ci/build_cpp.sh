@@ -9,9 +9,11 @@ export CMAKE_GENERATOR=Ninja
 
 rapids-print-env
 
+version=$(rapids-generate-version)
+
 rapids-logger "Begin cpp build"
 
 # This calls mambabuild when boa is installed (as is the case in the CI images)
-rapids-conda-retry mambabuild conda/recipes/librmm
+RAPIDS_PACKAGE_VERSION=${version} rapids-conda-retry mambabuild conda/recipes/librmm
 
 rapids-upload-conda-to-s3 cpp

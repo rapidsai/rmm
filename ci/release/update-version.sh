@@ -37,8 +37,9 @@ sed_runner 's/'"  VERSION .*"'/'"  VERSION ${NEXT_FULL_TAG}"'/g' CMakeLists.txt
 
 # Python update
 sed_runner 's/'"rmm_version .*)"'/'"rmm_version ${NEXT_FULL_TAG})"'/g' python/CMakeLists.txt
-sed_runner "s/__version__ = .*/__version__ = \"${NEXT_FULL_TAG}\"/g" python/rmm/__init__.py
-sed_runner "s/^version = .*/version = \"${NEXT_FULL_TAG}\"/g" python/pyproject.toml
+
+# Centralized version file update
+echo "${NEXT_FULL_TAG}" > VERSION
 
 # rapids-cmake version
 sed_runner 's/'"branch-.*\/RAPIDS.cmake"'/'"branch-${NEXT_SHORT_TAG}\/RAPIDS.cmake"'/g' fetch_rapids.cmake
