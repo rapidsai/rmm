@@ -27,7 +27,7 @@ requires = [
 
 [project]
 name = "rmm"
-version = "23.12.00"
+dynamic = ["version"]
 description = "rmm - RAPIDS Memory Manager"
 readme = { file = "README.md", content-type = "text/markdown" }
 authors = [
@@ -114,3 +114,6 @@ skip = [
 
 [tool.setuptools]
 license-files = ["LICENSE"]
+
+[tool.setuptools.dynamic]
+version = {file = "rmm/VERSION"}
