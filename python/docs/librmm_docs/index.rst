@@ -10,7 +10,7 @@ librmm Documentation
    :maxdepth: 2
    :caption: Contents:
 
-   memory_resources   
+   memory_resources
    data_containers
    thrust_integrations
    cuda_device_management
@@ -26,5 +26,4 @@ Indices and tables
 ==================
 
 * :ref:`genindex`
-* :ref:`modindex`
 * :ref:`search`
