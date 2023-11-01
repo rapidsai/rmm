@@ -195,7 +195,7 @@ class host_memory_resource {
     return this == &other;
   }
 };
-static_assert(cuda::mr::resource_with<host_memory_resource, cuda::mr::host_accessible>, "");
+static_assert(cuda::mr::resource_with<host_memory_resource, cuda::mr::host_accessible>);
 /** @} */  // end of group
 
 }  // namespace rmm::mr

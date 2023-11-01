@@ -19,7 +19,6 @@
 #include <rmm/detail/aligned.hpp>
 
 #include <cuda/memory_resource>
-#include <cuda/stream_ref>
 
 #include <cstddef>
 #include <utility>
@@ -409,6 +408,6 @@ class device_memory_resource {
   [[nodiscard]] virtual std::pair<std::size_t, std::size_t> do_get_mem_info(
     cuda_stream_view stream) const = 0;
 };
-static_assert(cuda::mr::resource_with<device_memory_resource, cuda::mr::device_accessible>, "");
+static_assert(cuda::mr::resource_with<device_memory_resource, cuda::mr::device_accessible>);
 /** @} */  // end of group
 }  // namespace rmm::mr
