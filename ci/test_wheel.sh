@@ -10,7 +10,7 @@ RAPIDS_PY_WHEEL_NAME="rmm_${RAPIDS_PY_CUDA_SUFFIX}" rapids-download-wheels-from-
 python -m pip install $(echo ./dist/rmm*.whl)[test]
 
 # Run smoke tests for aarch64 pull requests
-if [ "$(arch)" == "aarch64" && ${RAPIDS_BUILD_TYPE} == "pull-request" ]; then
+if [[ "$(arch)" == "aarch64" && ${RAPIDS_BUILD_TYPE} == "pull-request" ]]; then
     python ./ci/wheel_smoke_test.py
 else
     python -m pytest ./python/rmm/tests

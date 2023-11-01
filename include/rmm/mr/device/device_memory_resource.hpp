@@ -107,8 +107,8 @@ class device_memory_resource {
    * If supported, this operation may optionally be executed on a stream.
    * Otherwise, the stream is ignored and the null stream is used.
    *
-   * @throws `rmm::bad_alloc` When the requested `bytes` cannot be allocated on
-   * the specified `stream`.
+   * @throws rmm::bad_alloc When the requested `bytes` cannot be allocated on
+   * the specified @p stream.
    *
    * @param bytes The size of the allocation
    * @param stream Stream on which to perform allocation
@@ -129,8 +129,6 @@ class device_memory_resource {
    *
    * If supported, this operation may optionally be executed on a stream.
    * Otherwise, the stream is ignored and the null stream is used.
-   *
-   * @throws Nothing.
    *
    * @param ptr Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the
