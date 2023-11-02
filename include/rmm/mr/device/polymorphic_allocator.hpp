@@ -133,7 +133,7 @@ bool operator!=(polymorphic_allocator<T> const& lhs, polymorphic_allocator<U> co
  *`deallocate` functions.
  *
  * Example:
- *\code{c++}
+ *\code{.cpp}
  * my_stream_ordered_allocator<int> a{...};
  * cuda_stream_view s = // create stream;
  *

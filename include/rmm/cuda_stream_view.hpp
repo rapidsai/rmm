@@ -125,6 +125,9 @@ static const cuda_stream_view cuda_stream_per_thread{
   cudaStreamPerThread  // NOLINT(cppcoreguidelines-pro-type-cstyle-cast)
 };
 
+// Need to avoid putting is_per_thread_default and is_default into the group twice.
+/** @} */  // end of group
+
 [[nodiscard]] inline bool cuda_stream_view::is_per_thread_default() const noexcept
 {
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
@@ -134,9 +137,6 @@ static const cuda_stream_view cuda_stream_per_thread{
 #endif
 }
 
-/**
- * @brief Return true if the wrapped stream is explicitly the CUDA legacy default stream.
- */
 [[nodiscard]] inline bool cuda_stream_view::is_default() const noexcept
 {
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
@@ -145,6 +145,11 @@ static const cuda_stream_view cuda_stream_per_thread{
   return value() == cuda_stream_legacy || value() == nullptr;
 #endif
 }
+
+/**
+ * @addtogroup cuda_streams
+ * @{
+ */
 
 /**
  * @brief Equality comparison operator for streams
