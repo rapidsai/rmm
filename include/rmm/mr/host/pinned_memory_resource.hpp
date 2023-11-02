@@ -119,6 +119,13 @@ class pinned_memory_resource final : public host_memory_resource {
     do_deallocate(ptr, rmm::detail::align_up(bytes, alignment));
   }
 
+  /**
+   * @brief Enables the `cuda::mr::device_accessible` property
+   *
+   * This property declares that a `pinned_memory_resource` provides device accessible memory
+   */
+  friend void get_property(pinned_memory_resource const&, cuda::mr::device_accessible) noexcept {}
+
  private:
   /**
    * @brief Allocates pinned memory on the host of size at least `bytes` bytes.
@@ -172,6 +179,8 @@ class pinned_memory_resource final : public host_memory_resource {
       ptr, bytes, alignment, [](void* ptr) { RMM_ASSERT_CUDA_SUCCESS(cudaFreeHost(ptr)); });
   }
 };
-static_assert(cuda::mr::async_resource<pinned_memory_resource>);
+static_assert(cuda::mr::async_resource_with<pinned_memory_resource,
+                                            cuda::mr::host_accessible,
+                                            cuda::mr::device_accessible>);
 /** @} */  // end of group
 }  // namespace rmm::mr

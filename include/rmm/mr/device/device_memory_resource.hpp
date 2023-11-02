@@ -162,9 +162,6 @@ class device_memory_resource {
    *
    * The returned pointer will have at minimum 256 byte alignment.
    *
-   * If supported, this operation may optionally be executed on a stream.
-   * Otherwise, the stream is ignored and the null stream is used.
-   *
    * @throws `rmm::bad_alloc` When the requested `bytes` cannot be allocated on
    * the specified `stream`.
    *
@@ -185,9 +182,6 @@ class device_memory_resource {
    * it points to must not yet have been deallocated, otherwise behavior is
    * undefined.
    *
-   * If supported, this operation may optionally be executed on a stream.
-   * Otherwise, the stream is ignored and the null stream is used.
-   *
    * @throws Nothing.
    *
    * @param ptr Pointer to be deallocated
@@ -204,9 +198,6 @@ class device_memory_resource {
    * @brief Allocates memory of size at least \p bytes.
    *
    * The returned pointer will have at minimum 256 byte alignment.
-   *
-   * If supported, this operation may optionally be executed on a stream.
-   * Otherwise, the stream is ignored and the null stream is used.
    *
    * @throws `rmm::bad_alloc` When the requested `bytes` cannot be allocated on
    * the specified `stream`.
@@ -225,9 +216,6 @@ class device_memory_resource {
    * @brief Allocates memory of size at least \p bytes.
    *
    * The returned pointer will have at minimum 256 byte alignment.
-   *
-   * If supported, this operation may optionally be executed on a stream.
-   * Otherwise, the stream is ignored and the null stream is used.
    *
    * @throws `rmm::bad_alloc` When the requested `bytes` cannot be allocated on
    * the specified `stream`.
@@ -248,9 +236,6 @@ class device_memory_resource {
    * a `device_memory_resource` that compares equal to `*this`, and the storage
    * it points to must not yet have been deallocated, otherwise behavior is
    * undefined.
-   *
-   * If supported, this operation may optionally be executed on a stream.
-   * Otherwise, the stream is ignored and the null stream is used.
    *
    * @throws Nothing.
    *
@@ -275,9 +260,6 @@ class device_memory_resource {
    * a `device_memory_resource` that compares equal to `*this`, and the storage
    * it points to must not yet have been deallocated, otherwise behavior is
    * undefined.
-   *
-   * If supported, this operation may optionally be executed on a stream.
-   * Otherwise, the stream is ignored and the null stream is used.
    *
    * @throws Nothing.
    *

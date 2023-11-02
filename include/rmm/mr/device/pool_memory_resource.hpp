@@ -61,23 +61,24 @@ namespace detail {
  *
  * @tparam PoolResource the pool_memory_resource class
  * @tparam Upstream memory_resource to use for allocating the pool.
+ * @tparam Property The property we want to potentially remove.
  */
-template <class PoolResource, class Upstream, class = void>
+template <class PoolResource, class Upstream, class Property, class = void>
 struct maybe_remove_property {};
 
 /**
  * @brief Specialization of maybe_remove_property to not propagate non existing properties
  */
-template <class PoolResource, class Upstream>
-struct maybe_remove_property<
-  PoolResource,
-  Upstream,
-  cuda::std::enable_if_t<!cuda::has_property<Upstream, cuda::mr::device_accessible>>> {
+template <class PoolResource, class Upstream, class Property>
+struct maybe_remove_property<PoolResource,
+                             Upstream,
+                             Property,
+                             cuda::std::enable_if_t<!cuda::has_property<Upstream, Property>>> {
   /**
-   * @brief Explicit removal of the friend function so we do not pretent to provide device
+   * @brief Explicit removal of the friend function so we do not pretend to provide device
    * accessible memory
    */
-  friend void get_property(const PoolResource&, cuda::mr::device_accessible) = delete;
+  friend void get_property(const PoolResource&, Property) = delete;
 };
 }  // namespace detail
 
@@ -93,7 +94,8 @@ struct maybe_remove_property<
  */
 template <typename Upstream>
 class pool_memory_resource final
-  : public detail::maybe_remove_property<pool_memory_resource<Upstream>, Upstream>,
+  : public detail::
+      maybe_remove_property<pool_memory_resource<Upstream>, Upstream, cuda::mr::device_accessible>,
     public detail::stream_ordered_memory_resource<pool_memory_resource<Upstream>,
                                                   detail::coalescing_free_list>,
     public cuda::forward_property<pool_memory_resource<Upstream>, Upstream> {

@@ -24,8 +24,6 @@
 #include <map>
 #include <mutex>
 
-#include <cuda/memory_resource>
-
 /**
  * @file per_device_resource.hpp
  * @brief Management of per-device `device_memory_resource`s
