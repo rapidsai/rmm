@@ -211,6 +211,7 @@ class device_buffer {
   device_buffer& operator=(device_buffer&& other) noexcept
   {
     if (&other != this) {
+      cuda_set_device_raii dev{_device};
       deallocate_async();
 
       _data     = other._data;
@@ -465,6 +466,7 @@ class device_buffer {
   {
     if (bytes > 0) {
       RMM_EXPECTS(nullptr != source, "Invalid copy from nullptr.");
+      RMM_EXPECTS(nullptr != _data, "Invalid copy from nullptr.");
 
       RMM_CUDA_TRY(cudaMemcpyAsync(_data, source, bytes, cudaMemcpyDefault, stream().value()));
     }
