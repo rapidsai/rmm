@@ -106,9 +106,13 @@ class aligned_resource_adaptor final : public device_memory_resource {
     return upstream_->supports_get_mem_info();
   }
 
- private:
+  /**
+   * @brief The default alignment used by the adaptor.
+   */
   static constexpr std::size_t default_alignment_threshold = 0;
-  using lock_guard                                         = std::lock_guard<std::mutex>;
+
+ private:
+  using lock_guard = std::lock_guard<std::mutex>;
 
   /**
    * @brief Allocates memory of size at least `bytes` using the upstream resource with the specified
