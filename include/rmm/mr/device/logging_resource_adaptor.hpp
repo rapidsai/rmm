@@ -179,7 +179,6 @@ class logging_resource_adaptor final : public device_memory_resource {
     return std::string{"Thread,Time,Action,Pointer,Size,Stream"};
   }
 
- private:
   /**
    * @brief Return the value of the environment variable RMM_LOG_FILE.
    *
@@ -195,6 +194,7 @@ class logging_resource_adaptor final : public device_memory_resource {
     return std::string{filename};
   }
 
+ private:
   static auto make_logger(std::ostream& stream)
   {
     return std::make_shared<spdlog::logger>(
