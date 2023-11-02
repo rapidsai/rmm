@@ -38,6 +38,28 @@ struct cuda_device_id {
   /// @briefreturn{The wrapped integer value}
   [[nodiscard]] constexpr value_type value() const noexcept { return id_; }
 
+  /**
+   * @brief Equality comparison operator
+   *
+   * @param other The other `cuda_device_id` to compare to
+   * @return true if the two `cuda_device_id`s wrap the same integer value, false otherwise
+   */
+  [[nodiscard]] constexpr bool operator==(cuda_device_id const& other) const noexcept
+  {
+    return value() == other.value();
+  }
+
+  /**
+   * @brief Inequality comparison operator
+   *
+   * @param other The other `cuda_device_id` to compare to
+   * @return true if the two `cuda_device_id`s wrap different integer values, false otherwise
+   */
+  [[nodiscard]] constexpr bool operator!=(cuda_device_id const& other) const noexcept
+  {
+    return value() != other.value();
+  }
+
  private:
   value_type id_;
 };
@@ -79,16 +101,17 @@ struct cuda_set_device_raii {
    * @param dev_id The device to set as the current CUDA device
    */
   explicit cuda_set_device_raii(cuda_device_id dev_id)
-    : old_device_{get_current_cuda_device()}, needs_reset_{old_device_.value() != dev_id.value()}
+    : old_device_{get_current_cuda_device()},
+      needs_reset_{dev_id.value() >= 0 && old_device_.value() != dev_id.value()}
   {
-    if (needs_reset_) RMM_ASSERT_CUDA_SUCCESS(cudaSetDevice(dev_id.value()));
+    if (needs_reset_) { RMM_ASSERT_CUDA_SUCCESS(cudaSetDevice(dev_id.value())); }
   }
   /**
    * @brief Reactivates the previous CUDA device
    */
   ~cuda_set_device_raii() noexcept
   {
-    if (needs_reset_) RMM_ASSERT_CUDA_SUCCESS(cudaSetDevice(old_device_.value()));
+    if (needs_reset_) { RMM_ASSERT_CUDA_SUCCESS(cudaSetDevice(old_device_.value())); }
   }
 
   cuda_set_device_raii(cuda_set_device_raii const&)            = delete;
