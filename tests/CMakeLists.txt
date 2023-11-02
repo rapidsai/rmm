@@ -186,4 +186,7 @@ ConfigureTest(BINNING_MR_TEST mr/device/binning_mr_tests.cpp)
 # callback memory resource tests
 ConfigureTest(CALLBACK_MR_TEST mr/device/callback_mr_tests.cpp)
 
+# container multidevice tests
+ConfigureTest(CONTAINER_MULTIDEVICE_TEST container_multidevice_tests.cu)
+
 rapids_test_install_relocatable(INSTALL_COMPONENT_SET testing DESTINATION bin/gtests/librmm)
