@@ -26,6 +26,8 @@
 #include <cstddef>
 #include <vector>
 
+#include <cuda/memory_resource>
+
 namespace rmm {
 /**
  * @addtogroup data_containers
@@ -72,6 +74,7 @@ namespace rmm {
  */
 template <typename T>
 class device_uvector {
+  using async_resource_ref = cuda::mr::async_resource_ref<cuda::mr::device_accessible>;
   static_assert(std::is_trivially_copyable<T>::value,
                 "device_uvector only supports types that are trivially copyable.");
 
@@ -121,10 +124,9 @@ class device_uvector {
    * @param stream The stream on which to perform the allocation
    * @param mr The resource used to allocate the device storage
    */
-  explicit device_uvector(
-    std::size_t size,
-    cuda_stream_view stream,
-    rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource())
+  explicit device_uvector(std::size_t size,
+                          cuda_stream_view stream,
+                          async_resource_ref mr = rmm::mr::get_current_device_resource())
     : _storage{elements_to_bytes(size), stream, mr}
   {
   }
@@ -138,10 +140,9 @@ class device_uvector {
    * @param stream The stream on which to perform the copy
    * @param mr The resource used to allocate device memory for the new vector
    */
-  explicit device_uvector(
-    device_uvector const& other,
-    cuda_stream_view stream,
-    rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource())
+  explicit device_uvector(device_uvector const& other,
+                          cuda_stream_view stream,
+                          async_resource_ref mr = rmm::mr::get_current_device_resource())
     : _storage{other._storage, stream, mr}
   {
   }
@@ -526,10 +527,18 @@ class device_uvector {
   /**
    * @briefreturn{The async_resource_ref used to allocate and deallocate the device storage}
    */
-  [[nodiscard]] mr::device_memory_resource* memory_resource() const noexcept
+  [[nodiscard]] cuda::mr::async_resource_ref<cuda::mr::device_accessible> memory_resource()
+    const noexcept
   {
     return _storage.memory_resource();
   }
+
+  /**
+   * @brief Enables the `cuda::mr::device_accessible` property
+   *
+   * This property declares that a `device_uvector` provides device accessible memory
+   */
+  friend void get_property(device_uvector const&, cuda::mr::device_accessible) noexcept {}
 
   /**
    * @briefreturn{Stream most recently specified for allocation/deallocation}
