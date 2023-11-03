@@ -3,20 +3,27 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to rmm's documentation!
-===============================
+librmm Documentation
+====================
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   Python <python.rst>
-   C++ <cpp.rst>
+   memory_resources
+   data_containers
+   thrust_integrations
+   cuda_device_management
+   cuda_streams
+   errors
+   logging
 
+
+.. doxygennamespace:: rmm
+   :desc-only:
 
 Indices and tables
 ==================
 
 * :ref:`genindex`
-* :ref:`modindex`
 * :ref:`search`

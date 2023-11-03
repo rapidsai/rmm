@@ -75,7 +75,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
    * If the pool size grows beyond the release threshold, unused memory held by the pool will be
    * released at the next synchronization event.
    *
-   * @throws rmm::runtime_error if the CUDA version does not support `cudaMallocAsync`
+   * @throws rmm::logic_error if the CUDA version does not support `cudaMallocAsync`
    *
    * @param initial_pool_size Optional initial size in bytes of the pool. If no value is provided,
    * initial pool size is half of the available GPU memory.

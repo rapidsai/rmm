@@ -1,0 +1,5 @@
+Errors
+======
+
+.. doxygengroup:: errors
+   :members:

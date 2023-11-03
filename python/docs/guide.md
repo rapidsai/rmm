@@ -1,4 +1,4 @@
-# RMM - the RAPIDS Memory Manager
+# User Guide
 
 Achieving optimal performance in GPU-centric workflows frequently requires
 customizing how GPU ("device") memory is allocated.

@@ -98,7 +98,9 @@ struct bytes {
 
 /**
  * @brief Returns the global RMM logger
- * @addtogroup logging
+ *
+ * @ingroup logging
+ *
  * This is a spdlog logger. The easiest way to log messages is to use the `RMM_LOG_*` macros.
  *
  * @return spdlog::logger& The logger.
