@@ -222,8 +222,6 @@ def on_missing_reference(app, env, node, contnode):
         # Internal objects
         "detail",
         "RMM_EXEC_CHECK_DISABLE",
-        "default_alignment_threshold",
-        "get_default_filename",
         # Template types
         "Base",
     ]
