@@ -216,6 +216,18 @@ def on_missing_reference(app, env, node, contnode):
         "cudaStreamPerThread",
         "thrust",
         "spdlog",
+        "stream_ref",
+        # libcu++ names
+        "cuda",
+        "cuda::mr",
+        "resource",
+        "resource_ref",
+        "async_resource",
+        "async_resource_ref",
+        "device_accessible",
+        "host_accessible",
+        "forward_property",
+        "enable_if_t",
         # Unknown types
         "int64_t",
         "int8_t",
