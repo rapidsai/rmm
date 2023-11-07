@@ -185,7 +185,8 @@ class device_buffer {
       _size{other._size},
       _capacity{other._capacity},
       _stream{other.stream()},
-      _mr{other._mr}
+      _mr{other._mr},
+      _device{other._device}
   {
     other._data     = nullptr;
     other._size     = 0;
