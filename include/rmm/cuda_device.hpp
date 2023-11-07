@@ -29,7 +29,7 @@ struct cuda_device_id {
   using value_type = int;  ///< Integer type used for device identifier
 
   /**
-   * @brief Construct a `cuda_device_id` from the specified integer value
+   * @brief Construct a `cuda_device_id` from the specified integer value.
    *
    * @param dev_id The device's integer identifier
    */
@@ -42,10 +42,11 @@ struct cuda_device_id {
   value_type id_;
 
   /**
-   * @brief Equality comparison operator
+   * @brief Compare two `cuda_device_id`s for equality.
    *
-   * @param other The other `cuda_device_id` to compare to
-   * @return true if the two `cuda_device_id`s wrap the same integer value, false otherwise
+   * @param lhs The first `cuda_device_id` to compare.
+   * @param rhs The second `cuda_device_id` to compare.
+   * @return true if the two `cuda_device_id`s wrap the same integer value, false otherwise.
    */
   [[nodiscard]] friend constexpr bool operator==(cuda_device_id const& lhs,
                                                  cuda_device_id const& rhs) noexcept
@@ -54,10 +55,11 @@ struct cuda_device_id {
   }
 
   /**
-   * @brief Inequality comparison operator
+   * @brief Compare two `cuda_device_id`s for inequality.
    *
-   * @param other The other `cuda_device_id` to compare to
-   * @return true if the two `cuda_device_id`s wrap different integer values, false otherwise
+   * @param lhs The first `cuda_device_id` to compare.
+   * @param rhs The second `cuda_device_id` to compare.
+   * @return true if the two `cuda_device_id`s wrap different integer values, false otherwise.
    */
   [[nodiscard]] friend constexpr bool operator!=(cuda_device_id const& lhs,
                                                  cuda_device_id const& rhs) noexcept
