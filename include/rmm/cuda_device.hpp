@@ -38,15 +38,19 @@ struct cuda_device_id {
   /// @briefreturn{The wrapped integer value}
   [[nodiscard]] constexpr value_type value() const noexcept { return id_; }
 
+ private:
+  value_type id_;
+
   /**
    * @brief Equality comparison operator
    *
    * @param other The other `cuda_device_id` to compare to
    * @return true if the two `cuda_device_id`s wrap the same integer value, false otherwise
    */
-  [[nodiscard]] constexpr bool operator==(cuda_device_id const& other) const noexcept
+  [[nodiscard]] friend constexpr bool operator==(cuda_device_id const& lhs,
+                                                 cuda_device_id const& rhs) noexcept
   {
-    return value() == other.value();
+    return lhs.value() == rhs.value();
   }
 
   /**
@@ -55,13 +59,11 @@ struct cuda_device_id {
    * @param other The other `cuda_device_id` to compare to
    * @return true if the two `cuda_device_id`s wrap different integer values, false otherwise
    */
-  [[nodiscard]] constexpr bool operator!=(cuda_device_id const& other) const noexcept
+  [[nodiscard]] friend constexpr bool operator!=(cuda_device_id const& lhs,
+                                                 cuda_device_id const& rhs) noexcept
   {
-    return value() != other.value();
+    return lhs.value() != rhs.value();
   }
-
- private:
-  value_type id_;
 };
 
 /**
@@ -102,7 +104,7 @@ struct cuda_set_device_raii {
    */
   explicit cuda_set_device_raii(cuda_device_id dev_id)
     : old_device_{get_current_cuda_device()},
-      needs_reset_{dev_id.value() >= 0 && old_device_.value() != dev_id.value()}
+      needs_reset_{dev_id.value() >= 0 && old_device_ != dev_id}
   {
     if (needs_reset_) { RMM_ASSERT_CUDA_SUCCESS(cudaSetDevice(dev_id.value())); }
   }
