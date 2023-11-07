@@ -61,7 +61,7 @@ class cuda_stream_view {
   constexpr cuda_stream_view(cudaStream_t stream) noexcept : stream_{stream} {}
 
   /**
-   * @brief Implicit conversion from cuda::stream_ref.
+   * @brief Implicit conversion from stream_ref.
    *
    * @param stream The underlying stream for this view
    */
@@ -84,7 +84,7 @@ class cuda_stream_view {
   /**
    * @brief Implicit conversion to stream_ref.
    *
-   * @return cuda::stream_ref The underlying stream referenced by this cuda_stream_view
+   * @return stream_ref The underlying stream referenced by this cuda_stream_view
    */
   constexpr operator cuda::stream_ref() const noexcept { return value(); }
 

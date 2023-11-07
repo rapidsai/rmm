@@ -527,8 +527,7 @@ class device_uvector {
   /**
    * @briefreturn{The async_resource_ref used to allocate and deallocate the device storage}
    */
-  [[nodiscard]] cuda::mr::async_resource_ref<cuda::mr::device_accessible> memory_resource()
-    const noexcept
+  [[nodiscard]] async_resource_ref memory_resource() const noexcept
   {
     return _storage.memory_resource();
   }
