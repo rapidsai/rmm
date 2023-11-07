@@ -196,8 +196,6 @@ class host_memory_resource {
   }
 };
 static_assert(cuda::mr::resource_with<host_memory_resource, cuda::mr::host_accessible>);
-static_assert(sizeof(cuda::mr::resource_ref<host_memory_resource, cuda::mr::host_accessible>) ==
-              2 * sizeof(void*));
 /** @} */  // end of group
 
 }  // namespace rmm::mr

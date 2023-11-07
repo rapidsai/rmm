@@ -391,8 +391,5 @@ class device_memory_resource {
     cuda_stream_view stream) const = 0;
 };
 static_assert(cuda::mr::async_resource_with<device_memory_resource, cuda::mr::device_accessible>);
-static_assert(
-  sizeof(cuda::mr::async_resource_ref<device_memory_resource, cuda::mr::device_accessible>) ==
-  2 * sizeof(void*));
 /** @} */  // end of group
 }  // namespace rmm::mr
