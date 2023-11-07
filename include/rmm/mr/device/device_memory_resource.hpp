@@ -162,7 +162,7 @@ class device_memory_resource {
    *
    * The returned pointer will have at minimum 256 byte alignment.
    *
-   * @throws `rmm::bad_alloc` When the requested `bytes` cannot be allocated on
+   * @throws rmm::bad_alloc When the requested `bytes` cannot be allocated on
    * the specified `stream`.
    *
    * @param bytes The size of the allocation
@@ -182,8 +182,6 @@ class device_memory_resource {
    * it points to must not yet have been deallocated, otherwise behavior is
    * undefined.
    *
-   * @throws Nothing.
-   *
    * @param ptr Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
@@ -199,7 +197,7 @@ class device_memory_resource {
    *
    * The returned pointer will have at minimum 256 byte alignment.
    *
-   * @throws `rmm::bad_alloc` When the requested `bytes` cannot be allocated on
+   * @throws rmm::bad_alloc When the requested `bytes` cannot be allocated on
    * the specified `stream`.
    *
    * @param bytes The size of the allocation
@@ -217,7 +215,7 @@ class device_memory_resource {
    *
    * The returned pointer will have at minimum 256 byte alignment.
    *
-   * @throws `rmm::bad_alloc` When the requested `bytes` cannot be allocated on
+   * @throws rmm::bad_alloc When the requested `bytes` cannot be allocated on
    * the specified `stream`.
    *
    * @param bytes The size of the allocation
@@ -236,8 +234,6 @@ class device_memory_resource {
    * a `device_memory_resource` that compares equal to `*this`, and the storage
    * it points to must not yet have been deallocated, otherwise behavior is
    * undefined.
-   *
-   * @throws Nothing.
    *
    * @param ptr Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the
@@ -260,8 +256,6 @@ class device_memory_resource {
    * a `device_memory_resource` that compares equal to `*this`, and the storage
    * it points to must not yet have been deallocated, otherwise behavior is
    * undefined.
-   *
-   * @throws Nothing.
    *
    * @param ptr Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the
