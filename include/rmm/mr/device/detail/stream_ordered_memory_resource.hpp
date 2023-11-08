@@ -26,12 +26,8 @@
 #include <fmt/core.h>
 
 #include <cstddef>
-#include <functional>
-#include <limits>
 #include <map>
 #include <mutex>
-#include <set>
-#include <thread>
 #include <unordered_map>
 
 namespace rmm::mr::detail {
@@ -260,23 +256,6 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
 
  private:
   /**
-   * @brief RAII wrapper for a CUDA event.
-   */
-  struct event_wrapper {
-    event_wrapper()
-    {
-      RMM_ASSERT_CUDA_SUCCESS(cudaEventCreateWithFlags(&event, cudaEventDisableTiming));
-    }
-    ~event_wrapper() { RMM_ASSERT_CUDA_SUCCESS(cudaEventDestroy(event)); }
-    cudaEvent_t event{};
-
-    event_wrapper(event_wrapper const&)            = delete;
-    event_wrapper& operator=(event_wrapper const&) = delete;
-    event_wrapper(event_wrapper&&) noexcept        = delete;
-    event_wrapper& operator=(event_wrapper&&)      = delete;
-  };
-
-  /**
    * @brief get a unique CUDA event (possibly new) associated with `stream`
    *
    * The event is created on the first call, and it is not recorded. If compiled for per-thread
@@ -289,17 +268,17 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
   stream_event_pair get_event(cuda_stream_view stream)
   {
     if (stream.is_per_thread_default()) {
-      // Create a thread-local shared event wrapper for each device. Shared pointers in the thread
-      // and in each MR instance ensure the wrappers are destroyed only after all are finished
-      // with them.
-      thread_local std::vector<std::shared_ptr<event_wrapper>> events_tls(
-        rmm::get_num_cuda_devices());
-      auto event = [&, device_id = this->device_id_]() {
-        if (events_tls[device_id.value()]) { return events_tls[device_id.value()]->event; }
-
-        auto event = std::make_shared<event_wrapper>();
-        this->default_stream_events.insert(event);
-        return (events_tls[device_id.value()] = std::move(event))->event;
+      // Create a thread-local event for each device. These events are
+      // deliberately leaked since the destructor needs to call into
+      // the CUDA runtime and thread_local destructors (can) run below
+      // main: it is undefined behaviour to call into the CUDA
+      // runtime below main.
+      thread_local std::vector<cudaEvent_t> events_tls(rmm::get_num_cuda_devices());
+      auto event = [device_id = this->device_id_]() {
+        if (events_tls[device_id.value()]) { return events_tls[device_id.value()]; }
+        RMM_ASSERT_CUDA_SUCCESS(
+          cudaEventCreateWithFlags(&events_tls[device_id.value()], cudaEventDisableTiming));
+        return events_tls[device_id.value()];
       }();
       return stream_event_pair{stream.value(), event};
     }
@@ -504,10 +483,6 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
 
   // bidirectional mapping between non-default streams and events
   std::unordered_map<cudaStream_t, stream_event_pair> stream_events_;
-
-  // shared pointers to events keeps the events alive as long as either the thread that created
-  // them or the MR that is using them exists.
-  std::set<std::shared_ptr<event_wrapper>> default_stream_events;
 
   std::mutex mtx_;  // mutex for thread-safe access
 
