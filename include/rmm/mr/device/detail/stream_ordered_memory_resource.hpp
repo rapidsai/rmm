@@ -274,11 +274,14 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
       // main: it is undefined behaviour to call into the CUDA
       // runtime below main.
       thread_local std::vector<cudaEvent_t> events_tls(rmm::get_num_cuda_devices());
-      auto event = [device_id = this->device_id_]() {
-        if (events_tls[device_id.value()]) { return events_tls[device_id.value()]; }
-        RMM_ASSERT_CUDA_SUCCESS(
-          cudaEventCreateWithFlags(&events_tls[device_id.value()], cudaEventDisableTiming));
-        return events_tls[device_id.value()];
+    auto event = [device_id = this->device_id_]() {
+      auto& e = events_tls[device_id.value()];
+      if (!e) {
+          // These events are deliberately not destructed and therefore live until
+          // program exit.
+          RMM_ASSERT_CUDA_SUCCESS(cudaEventCreateWithFlags(&e, cudaEventDisableTiming));
+      }
+      return e;
       }();
       return stream_event_pair{stream.value(), event};
     }
