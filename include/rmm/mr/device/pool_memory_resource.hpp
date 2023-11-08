@@ -46,6 +46,11 @@
 #include <vector>
 
 namespace rmm::mr {
+/**
+ * @addtogroup device_memory_resources
+ * @{
+ * @file
+ */
 
 /**
  * @brief A coalescing best-fit suballocator which uses a pool of memory allocated from
@@ -448,4 +453,5 @@ class pool_memory_resource final
   std::set<block_type, rmm::mr::detail::compare_blocks<block_type>> upstream_blocks_;
 };  // namespace mr
 
+/** @} */  // end of group
 }  // namespace rmm::mr

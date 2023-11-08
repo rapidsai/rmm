@@ -26,6 +26,11 @@
 #include <memory>
 
 namespace rmm {
+/**
+ * @addtogroup cuda_streams
+ * @{
+ * @file
+ */
 
 /**
  * @brief Owning wrapper for a CUDA stream.
@@ -133,4 +138,5 @@ class cuda_stream {
   std::unique_ptr<cudaStream_t, std::function<void(cudaStream_t*)>> stream_;
 };
 
+/** @} */  // end of group
 }  // namespace rmm

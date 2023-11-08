@@ -30,6 +30,11 @@
 
 namespace rmm {
 /**
+ * @addtogroup data_containers
+ * @{
+ * @file
+ */
+/**
  * @brief RAII construct for device memory allocation
  *
  * This class allocates untyped and *uninitialized* device memory using a
@@ -174,8 +179,6 @@ class device_buffer {
    * After the new `device_buffer` is constructed, `other` is modified to be a
    * valid, empty `device_buffer`, i.e., `data()` returns `nullptr`, and
    * `size()` and `capacity()` are zero.
-   *
-   * @throws Nothing
    *
    * @param other The `device_buffer` whose contents will be moved into the
    * newly constructed one.
@@ -473,4 +476,6 @@ class device_buffer {
     }
   }
 };
+
+/** @} */  // end of group
 }  // namespace rmm

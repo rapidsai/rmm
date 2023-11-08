@@ -23,6 +23,11 @@
 #include <utility>
 
 namespace rmm::mr {
+/**
+ * @addtogroup host_memory_resources
+ * @{
+ * @file
+ */
 
 /**
  * @brief A `host_memory_resource` that uses `cudaMallocHost` to allocate
@@ -79,8 +84,6 @@ class pinned_memory_resource final : public host_memory_resource {
    * `host_memory_resource` that compares equal to `*this`, and the storage it points to must not
    * yet have been deallocated, otherwise behavior is undefined.
    *
-   * @throws Nothing.
-   *
    * @param ptr Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the value of `bytes`
    *               that was passed to the `allocate` call that returned `ptr`.
@@ -96,4 +99,5 @@ class pinned_memory_resource final : public host_memory_resource {
       ptr, bytes, alignment, [](void* ptr) { RMM_ASSERT_CUDA_SUCCESS(cudaFreeHost(ptr)); });
   }
 };
+/** @} */  // end of group
 }  // namespace rmm::mr

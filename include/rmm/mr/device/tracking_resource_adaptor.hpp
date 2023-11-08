@@ -30,6 +30,11 @@
 
 namespace rmm::mr {
 /**
+ * @addtogroup device_resource_adaptors
+ * @{
+ * @file
+ */
+/**
  * @brief Resource that uses `Upstream` to allocate memory and tracks allocations.
  *
  * An instance of this resource can be constructed with an existing, upstream
@@ -80,7 +85,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
    * @brief Construct a new tracking resource adaptor using `upstream` to satisfy
    * allocation requests.
    *
-   * @throws `rmm::logic_error` if `upstream == nullptr`
+   * @throws rmm::logic_error if `upstream == nullptr`
    *
    * @param upstream The resource used for allocating/deallocating device memory
    * @param capture_stacks If true, capture stacks for allocation calls
@@ -193,7 +198,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
    *
    * The returned pointer has at least 256B alignment.
    *
-   * @throws `rmm::bad_alloc` if the requested allocation could not be fulfilled
+   * @throws rmm::bad_alloc if the requested allocation could not be fulfilled
    * by the upstream resource.
    *
    * @param bytes The size, in bytes, of the allocation
@@ -216,8 +221,6 @@ class tracking_resource_adaptor final : public device_memory_resource {
 
   /**
    * @brief Free allocation of size `bytes` pointed to by `ptr`
-   *
-   * @throws Nothing.
    *
    * @param ptr Pointer to be deallocated
    * @param bytes Size of the allocation
@@ -262,8 +265,6 @@ class tracking_resource_adaptor final : public device_memory_resource {
   /**
    * @brief Compare the upstream resource to another.
    *
-   * @throws Nothing.
-   *
    * @param other The other resource to compare to
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equal
@@ -279,7 +280,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
   /**
    * @brief Get free and available memory from upstream resource.
    *
-   * @throws `rmm::cuda_error` if unable to retrieve memory info.
+   * @throws rmm::cuda_error if unable to retrieve memory info.
    *
    * @param stream Stream on which to get the mem info.
    * @return std::pair contaiing free_size and total_size of memory
@@ -302,6 +303,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
  *
  * @tparam Upstream Type of the upstream `device_memory_resource`.
  * @param upstream Pointer to the upstream resource
+ * @return The new tracking resource adaptor
  */
 template <typename Upstream>
 tracking_resource_adaptor<Upstream> make_tracking_adaptor(Upstream* upstream)
@@ -309,4 +311,5 @@ tracking_resource_adaptor<Upstream> make_tracking_adaptor(Upstream* upstream)
   return tracking_resource_adaptor<Upstream>{upstream};
 }
 
+/** @} */  // end of group
 }  // namespace rmm::mr

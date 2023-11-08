@@ -24,6 +24,11 @@
 #include <type_traits>
 
 namespace rmm {
+/**
+ * @addtogroup data_containers
+ * @{
+ * @file
+ */
 
 /**
  * @brief Container for a single object of type `T` in device memory.
@@ -82,7 +87,7 @@ class device_scalar {
    * stream, or on another stream only if a dependency is enforced (e.g. using
    * `cudaStreamWaitEvent()`).
    *
-   * @throws `rmm::bad_alloc` if allocating the device memory fails.
+   * @throws rmm::bad_alloc if allocating the device memory fails.
    *
    * @param stream Stream on which to perform asynchronous allocation.
    * @param mr Optional, resource with which to allocate.
@@ -103,8 +108,8 @@ class device_scalar {
    * stream, or on another stream only if a dependency is enforced (e.g. using
    * `cudaStreamWaitEvent()`).
    *
-   * @throws `rmm::bad_alloc` if allocating the device memory for `initial_value` fails.
-   * @throws `rmm::cuda_error` if copying `initial_value` to device memory fails.
+   * @throws rmm::bad_alloc if allocating the device memory for `initial_value` fails.
+   * @throws rmm::cuda_error if copying `initial_value` to device memory fails.
    *
    * @param initial_value The initial value of the object in device memory.
    * @param stream Optional, stream on which to perform allocation and copy.
@@ -148,8 +153,8 @@ class device_scalar {
    * (e.g. using `cudaStreamWaitEvent()` or `cudaStreamSynchronize()`) before calling this function,
    * otherwise there may be a race condition.
    *
-   * @throws `rmm::cuda_error` If the copy fails.
-   * @throws `rmm::cuda_error` If synchronizing `stream` fails.
+   * @throws rmm::cuda_error If the copy fails.
+   * @throws rmm::cuda_error If synchronizing `stream` fails.
    *
    * @return T The value of the scalar.
    * @param stream CUDA stream on which to perform the copy and synchronize.
@@ -191,7 +196,7 @@ class device_scalar {
    * v = 13;
    * \endcode
    *
-   * @throws `rmm::cuda_error` if copying `host_value` to device memory fails.
+   * @throws rmm::cuda_error if copying @p value to device memory fails.
    *
    * @param value The host value which will be copied to device
    * @param stream CUDA stream on which to perform the copy
@@ -266,4 +271,6 @@ class device_scalar {
  private:
   rmm::device_uvector<T> _storage;
 };
+
+/** @} */  // end of group
 }  // namespace rmm
