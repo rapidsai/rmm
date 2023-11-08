@@ -11,6 +11,7 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
+import re
 
 # -- Project information -----------------------------------------------------
 
@@ -46,8 +47,12 @@ extensions = [
     "IPython.sphinxext.ipython_directive",
     "nbsphinx",
     "recommonmark",
+    "breathe",
 ]
 
+# Breathe Configuration
+breathe_projects = {"librmm": "../../doxygen/xml"}
+breathe_default_project = "librmm"
 
 copybutton_prompt_text = ">>> "
 
@@ -197,9 +202,70 @@ nitpick_ignore = [
 ]
 
 
+def on_missing_reference(app, env, node, contnode):
+    if (refid := node.get("refid")) is not None and "hpp" in refid:
+        # We don't want to link to C++ header files directly from the
+        # Sphinx docs, those are pages that doxygen automatically
+        # generates. Adding those would clutter the Sphinx output.
+        return contnode
+
+    names_to_skip = [
+        # External names
+        "cudaStream_t",
+        "cudaStreamLegacy",
+        "cudaStreamPerThread",
+        "thrust",
+        "spdlog",
+        # Unknown types
+        "int64_t",
+        "int8_t",
+        # Internal objects
+        "detail",
+        "RMM_EXEC_CHECK_DISABLE",
+        # Template types
+        "Base",
+    ]
+    if (
+        node["refdomain"] == "cpp"
+        and (reftarget := node.get("reftarget")) is not None
+    ):
+        if any(toskip in reftarget for toskip in names_to_skip):
+            return contnode
+
+        # Strip template parameters and just use the base type.
+        if match := re.search("(.*)<.*>", reftarget):
+            reftarget = match.group(1)
+
+        # Try to find the target prefixed with e.g. namespaces in case that's
+        # all that's missing. Include the empty prefix in case we're searching
+        # for a stripped template.
+        extra_prefixes = ["rmm::", "rmm::mr::", "mr::", ""]
+        for (name, dispname, type, docname, anchor, priority) in env.domains[
+            "cpp"
+        ].get_objects():
+
+            for prefix in extra_prefixes:
+                if (
+                    name == f"{prefix}{reftarget}"
+                    or f"{prefix}{name}" == reftarget
+                ):
+                    return env.domains["cpp"].resolve_xref(
+                        env,
+                        docname,
+                        app.builder,
+                        node["reftype"],
+                        name,
+                        node,
+                        contnode,
+                    )
+
+    return None
+
+
 def setup(app):
     app.add_js_file("copybutton_pydocs.js")
     app.add_css_file("https://docs.rapids.ai/assets/css/custom.css")
     app.add_js_file(
         "https://docs.rapids.ai/assets/js/custom.js", loading_method="defer"
     )
+    app.connect("missing-reference", on_missing_reference)

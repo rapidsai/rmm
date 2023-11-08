@@ -28,6 +28,11 @@
 #include <vector>
 
 namespace rmm::mr {
+/**
+ * @addtogroup device_memory_resources
+ * @{
+ * @file
+ */
 
 /**
  * @brief Allocates memory from upstream resources associated with bin sizes.
@@ -214,4 +219,5 @@ class binning_memory_resource final : public device_memory_resource {
   std::map<std::size_t, device_memory_resource*> resource_bins_;
 };
 
+/** @} */  // end of group
 }  // namespace rmm::mr

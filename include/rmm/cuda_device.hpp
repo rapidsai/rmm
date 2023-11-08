@@ -22,6 +22,11 @@
 namespace rmm {
 
 /**
+ * @addtogroup cuda_device_management
+ * @{
+ * @file
+ */
+/**
  * @brief Strong type for a CUDA device identifier.
  *
  */
@@ -128,4 +133,5 @@ struct cuda_set_device_raii {
   bool needs_reset_;
 };
 
+/** @} */  // end of group
 }  // namespace rmm

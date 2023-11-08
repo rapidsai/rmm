@@ -23,6 +23,11 @@
 #include <utility>
 
 namespace rmm::mr {
+/**
+ * @addtogroup device_resource_adaptors
+ * @{
+ * @file
+ */
 
 /**
  * @brief Callback function type used by failure_callback_resource_adaptor
@@ -55,7 +60,7 @@ using failure_callback_t = std::function<bool(std::size_t, void*)>;
  * When implementing a callback function for allocation retry, care must be taken to avoid an
  * infinite loop. The following example makes sure to only retry the allocation once:
  *
- * @code{c++}
+ * @code{.cpp}
  * using failure_callback_adaptor =
  *   rmm::mr::failure_callback_resource_adaptor<rmm::mr::device_memory_resource>;
  *
@@ -91,7 +96,7 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
    * @brief Construct a new `failure_callback_resource_adaptor` using `upstream` to satisfy
    * allocation requests.
    *
-   * @throws `rmm::logic_error` if `upstream == nullptr`
+   * @throws rmm::logic_error if `upstream == nullptr`
    *
    * @param upstream The resource used for allocating/deallocating device memory
    * @param callback Callback function @see failure_callback_t
@@ -170,8 +175,6 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
   /**
    * @brief Free allocation of size `bytes` pointed to by `ptr`
    *
-   * @throws Nothing.
-   *
    * @param ptr Pointer to be deallocated
    * @param bytes Size of the allocation
    * @param stream Stream on which to perform the deallocation
@@ -183,8 +186,6 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
 
   /**
    * @brief Compare the upstream resource to another.
-   *
-   * @throws Nothing.
    *
    * @param other The other resource to compare to
    * @return true If the two resources are equivalent
@@ -201,7 +202,7 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
   /**
    * @brief Get free and available memory from upstream resource.
    *
-   * @throws `rmm::cuda_error` if unable to retrieve memory info.
+   * @throws rmm::cuda_error if unable to retrieve memory info.
    *
    * @param stream Stream on which to get the mem info.
    * @return std::pair contaiing free_size and total_size of memory
@@ -217,4 +218,5 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
   void* callback_arg_;
 };
 
+/** @} */  // end of group
 }  // namespace rmm::mr

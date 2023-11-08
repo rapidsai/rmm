@@ -24,6 +24,11 @@
 
 namespace rmm::mr {
 /**
+ * @addtogroup device_memory_resources
+ * @{
+ * @file
+ */
+/**
  * @brief `device_memory_resource` derived class that uses cudaMalloc/Free for
  * allocation/deallocation.
  */
@@ -95,8 +100,6 @@ class cuda_memory_resource final : public device_memory_resource {
    * Two cuda_memory_resources always compare equal, because they can each
    * deallocate memory allocated by the other.
    *
-   * @throws Nothing.
-   *
    * @param other The other resource to compare to
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equal
@@ -109,7 +112,7 @@ class cuda_memory_resource final : public device_memory_resource {
   /**
    * @brief Get free and available memory for memory resource
    *
-   * @throws `rmm::cuda_error` if unable to retrieve memory info.
+   * @throws rmm::cuda_error if unable to retrieve memory info.
    *
    * @return std::pair contaiing free_size and total_size of memory
    */
@@ -121,4 +124,5 @@ class cuda_memory_resource final : public device_memory_resource {
     return std::make_pair(free_size, total_size);
   }
 };
+/** @} */  // end of group
 }  // namespace rmm::mr

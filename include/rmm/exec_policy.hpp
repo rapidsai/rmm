@@ -29,6 +29,11 @@
 #include <thrust/version.h>
 
 namespace rmm {
+/**
+ * @addtogroup thrust_integrations
+ * @{
+ * @file
+ */
 
 /**
  * @brief Synchronous execution policy for allocations using thrust
@@ -91,4 +96,5 @@ using exec_policy_nosync =
   exec_policy;  ///< When used with Thrust < 1.16.0, exec_policy_nosync is an alias for exec_policy
 #endif
 
+/** @} */  // end of group
 }  // namespace rmm

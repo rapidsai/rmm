@@ -22,6 +22,11 @@
 #include <utility>
 
 namespace rmm::mr {
+/**
+ * @addtogroup device_memory_resources
+ * @{
+ * @file
+ */
 
 /**
  * @brief Base class for all libcudf device memory allocation.
@@ -70,7 +75,7 @@ namespace rmm::mr {
  * pool_memory_resource objects for each device and sets them as the per-device resource for that
  * device.
  *
- * @code{c++}
+ * @code{.cpp}
  * std::vector<unique_ptr<pool_memory_resource>> per_device_pools;
  * for(int i = 0; i < N; ++i) {
  *   cudaSetDevice(i);
@@ -99,8 +104,8 @@ class device_memory_resource {
    * If supported, this operation may optionally be executed on a stream.
    * Otherwise, the stream is ignored and the null stream is used.
    *
-   * @throws `rmm::bad_alloc` When the requested `bytes` cannot be allocated on
-   * the specified `stream`.
+   * @throws rmm::bad_alloc When the requested `bytes` cannot be allocated on
+   * the specified @p stream.
    *
    * @param bytes The size of the allocation
    * @param stream Stream on which to perform allocation
@@ -121,8 +126,6 @@ class device_memory_resource {
    *
    * If supported, this operation may optionally be executed on a stream.
    * Otherwise, the stream is ignored and the null stream is used.
-   *
-   * @throws Nothing.
    *
    * @param ptr Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the
@@ -238,4 +241,5 @@ class device_memory_resource {
   [[nodiscard]] virtual std::pair<std::size_t, std::size_t> do_get_mem_info(
     cuda_stream_view stream) const = 0;
 };
+/** @} */  // end of group
 }  // namespace rmm::mr

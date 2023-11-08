@@ -61,7 +61,7 @@
  * pool_memory_resource objects for each device and sets them as the per-device resource for that
  * device.
  *
- * @code{c++}
+ * @code{.cpp}
  * std::vector<unique_ptr<pool_memory_resource>> per_device_pools;
  * for(int i = 0; i < N; ++i) {
  *   cudaSetDevice(i);
@@ -72,6 +72,10 @@
  */
 
 namespace rmm::mr {
+/**
+ * @addtogroup memory_resources
+ * @{
+ */
 
 namespace detail {
 
@@ -233,4 +237,5 @@ inline device_memory_resource* set_current_device_resource(device_memory_resourc
 {
   return set_per_device_resource(rmm::get_current_cuda_device(), new_mr);
 }
+/** @} */  // end of group
 }  // namespace rmm::mr

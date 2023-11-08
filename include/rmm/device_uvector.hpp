@@ -27,6 +27,11 @@
 #include <vector>
 
 namespace rmm {
+/**
+ * @addtogroup data_containers
+ * @{
+ * @file
+ */
 
 /**
  * @brief An *uninitialized* vector of elements in device memory.
@@ -39,7 +44,7 @@ namespace rmm {
  * `thrust::uninitialized_fill`.
  *
  * Example:
- * @code{c++}
+ * @code{.cpp}
  * rmm::mr::device_memory_resource * mr = new my_custom_resource();
  * rmm::cuda_stream_view s{};
  *
@@ -557,4 +562,6 @@ class device_uvector {
     return num_bytes / sizeof(value_type);
   }
 };
+
+/** @} */  // end of group
 }  // namespace rmm
