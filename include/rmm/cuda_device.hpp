@@ -50,7 +50,7 @@ struct cuda_device_id {
    * @param rhs The second `cuda_device_id` to compare.
    * @return true if the two `cuda_device_id`s wrap the same integer value, false otherwise.
    */
-  [[nodiscard]] friend constexpr bool operator==(cuda_device_id const& lhs,
+  [[nodiscard]] constexpr friend bool operator==(cuda_device_id const& lhs,
                                                  cuda_device_id const& rhs) noexcept
   {
     return lhs.value() == rhs.value();
@@ -63,7 +63,7 @@ struct cuda_device_id {
    * @param rhs The second `cuda_device_id` to compare.
    * @return true if the two `cuda_device_id`s wrap different integer values, false otherwise.
    */
-  [[nodiscard]] friend constexpr bool operator!=(cuda_device_id const& lhs,
+  [[nodiscard]] constexpr friend bool operator!=(cuda_device_id const& lhs,
                                                  cuda_device_id const& rhs) noexcept
   {
     return lhs.value() != rhs.value();
