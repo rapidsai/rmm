@@ -43,9 +43,6 @@ struct cuda_device_id {
   /// @briefreturn{The wrapped integer value}
   [[nodiscard]] constexpr value_type value() const noexcept { return id_; }
 
- private:
-  value_type id_;
-
   /**
    * @brief Compare two `cuda_device_id`s for equality.
    *
@@ -71,6 +68,9 @@ struct cuda_device_id {
   {
     return lhs.value() != rhs.value();
   }
+
+ private:
+  value_type id_;
 };
 
 /**
