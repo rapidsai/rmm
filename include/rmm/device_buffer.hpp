@@ -470,7 +470,7 @@ class device_buffer {
   {
     if (bytes > 0) {
       RMM_EXPECTS(nullptr != source, "Invalid copy from nullptr.");
-      RMM_EXPECTS(nullptr != _data, "Invalid copy from nullptr.");
+      RMM_EXPECTS(nullptr != _data, "Invalid copy to nullptr.");
 
       RMM_CUDA_TRY(cudaMemcpyAsync(_data, source, bytes, cudaMemcpyDefault, stream().value()));
     }
