@@ -13,14 +13,15 @@ jobs:
   pr-builder:
     needs:
       - checks
-      - conda-cpp-build
-      - conda-cpp-tests
-      - conda-python-build
-      - conda-python-tests
-      - docs-build
+      # - conda-cpp-build
+      # - conda-cpp-tests
+      # - conda-python-build
+      # - conda-python-tests
+      # - docs-build
       - wheel-build
-      - wheel-tests
-      - devcontainer
+      - wheel-publish
+      # - wheel-tests
+      # - devcontainer
     secrets: inherit
     uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@branch-23.12
   checks:
@@ -28,40 +29,40 @@ jobs:
     uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@branch-23.12
     with:
       enable_check_generated_files: false
-  conda-cpp-build:
-    needs: checks
-    secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-build.yaml@branch-23.12
-    with:
-      build_type: pull-request
-  conda-cpp-tests:
-    needs: conda-cpp-build
-    secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-tests.yaml@branch-23.12
-    with:
-      build_type: pull-request
-  conda-python-build:
-    needs: conda-cpp-build
-    secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/conda-python-build.yaml@branch-23.12
-    with:
-      build_type: pull-request
-  conda-python-tests:
-    needs: conda-python-build
-    secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/conda-python-tests.yaml@branch-23.12
-    with:
-      build_type: pull-request
-  docs-build:
-    needs: conda-python-build
-    secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@branch-23.12
-    with:
-      build_type: pull-request
-      node_type: "gpu-v100-latest-1"
-      arch: "amd64"
-      container_image: "rapidsai/ci-conda:latest"
-      run_script: "ci/build_docs.sh"
+  # conda-cpp-build:
+  #   needs: checks
+  #   secrets: inherit
+  #   uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-build.yaml@branch-23.12
+  #   with:
+  #     build_type: pull-request
+  # conda-cpp-tests:
+  #   needs: conda-cpp-build
+  #   secrets: inherit
+  #   uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-tests.yaml@branch-23.12
+  #   with:
+  #     build_type: pull-request
+  # conda-python-build:
+  #   needs: conda-cpp-build
+  #   secrets: inherit
+  #   uses: rapidsai/shared-workflows/.github/workflows/conda-python-build.yaml@branch-23.12
+  #   with:
+  #     build_type: pull-request
+  # conda-python-tests:
+  #   needs: conda-python-build
+  #   secrets: inherit
+  #   uses: rapidsai/shared-workflows/.github/workflows/conda-python-tests.yaml@branch-23.12
+  #   with:
+  #     build_type: pull-request
+  # docs-build:
+  #   needs: conda-python-build
+  #   secrets: inherit
+  #   uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@branch-23.12
+  #   with:
+  #     build_type: pull-request
+  #     node_type: "gpu-v100-latest-1"
+  #     arch: "amd64"
+  #     container_image: "rapidsai/ci-conda:latest"
+  #     run_script: "ci/build_docs.sh"
   wheel-build:
     needs: checks
     secrets: inherit
@@ -69,18 +70,25 @@ jobs:
     with:
       build_type: pull-request
       script: ci/build_wheel.sh
-  wheel-tests:
+  wheel-publish:
     needs: wheel-build
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-test.yaml@branch-23.12
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-publish.yaml@modify_pipindex
     with:
       build_type: pull-request
-      script: ci/test_wheel.sh
-  devcontainer:
-    secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/build-in-devcontainer.yaml@branch-23.12
-    with:
-      build_command: |
-        sccache -z;
-        build-all -DBUILD_BENCHMARKS=ON --verbose;
-        sccache -s;
+      package-name: rmm
+  # wheel-tests:
+  #   needs: wheel-build
+  #   secrets: inherit
+  #   uses: rapidsai/shared-workflows/.github/workflows/wheels-test.yaml@branch-23.12
+  #   with:
+  #     build_type: pull-request
+  #     script: ci/test_wheel.sh
+  # devcontainer:
+  #   secrets: inherit
+  #   uses: rapidsai/shared-workflows/.github/workflows/build-in-devcontainer.yaml@branch-23.12
+  #   with:
+  #     build_command: |
+  #       sccache -z;
+  #       build-all -DBUILD_BENCHMARKS=ON --verbose;
+  #       sccache -s;
