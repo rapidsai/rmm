@@ -43,27 +43,29 @@ struct cuda_device_id {
   /// @briefreturn{The wrapped integer value}
   [[nodiscard]] constexpr value_type value() const noexcept { return id_; }
 
-  /**
+  // TODO re-add doxygen comment specifier /** for these hidden friend operators once this Breathe
+  // bug is fixed: https://github.com/breathe-doc/breathe/issues/916
+  /*
    * @brief Compare two `cuda_device_id`s for equality.
    *
    * @param lhs The first `cuda_device_id` to compare.
    * @param rhs The second `cuda_device_id` to compare.
    * @return true if the two `cuda_device_id`s wrap the same integer value, false otherwise.
    */
-  [[nodiscard]] friend constexpr bool operator==(cuda_device_id const& lhs,
+  [[nodiscard]] constexpr friend bool operator==(cuda_device_id const& lhs,
                                                  cuda_device_id const& rhs) noexcept
   {
     return lhs.value() == rhs.value();
   }
 
-  /**
+  /*
    * @brief Compare two `cuda_device_id`s for inequality.
    *
    * @param lhs The first `cuda_device_id` to compare.
    * @param rhs The second `cuda_device_id` to compare.
    * @return true if the two `cuda_device_id`s wrap different integer values, false otherwise.
    */
-  [[nodiscard]] friend constexpr bool operator!=(cuda_device_id const& lhs,
+  [[nodiscard]] constexpr friend bool operator!=(cuda_device_id const& lhs,
                                                  cuda_device_id const& rhs) noexcept
   {
     return lhs.value() != rhs.value();
