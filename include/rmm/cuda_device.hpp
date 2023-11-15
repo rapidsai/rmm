@@ -71,7 +71,7 @@ struct cuda_device_id {
   {
     return lhs.value() != rhs.value();
   }
-//! @endcond
+  //! @endcond
  private:
   value_type id_;
 };
