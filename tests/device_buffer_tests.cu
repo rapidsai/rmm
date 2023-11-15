@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-#include <gtest/gtest.h>
-
 #include <rmm/cuda_stream.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
@@ -29,9 +27,12 @@
 
 #include <thrust/equal.h>
 #include <thrust/sequence.h>
+
+#include <gtest/gtest.h>
+
 namespace testing {
 namespace thrust = THRUST_NS_QUALIFIER;
-}
+}  // namespace testing
 using namespace testing;
 
 #include <cuda_runtime_api.h>
