@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
@@ -109,6 +110,7 @@ class device_buffer {
                          mr::device_memory_resource* mr = mr::get_current_device_resource())
     : _stream{stream}, _mr{mr}
   {
+    cuda_set_device_raii dev{_device};
     allocate_async(size);
   }
 
@@ -137,6 +139,7 @@ class device_buffer {
                 mr::device_memory_resource* mr = mr::get_current_device_resource())
     : _stream{stream}, _mr{mr}
   {
+    cuda_set_device_raii dev{_device};
     allocate_async(size);
     copy_async(source_data, size);
   }
@@ -185,12 +188,14 @@ class device_buffer {
       _size{other._size},
       _capacity{other._capacity},
       _stream{other.stream()},
-      _mr{other._mr}
+      _mr{other._mr},
+      _device{other._device}
   {
     other._data     = nullptr;
     other._size     = 0;
     other._capacity = 0;
     other.set_stream(cuda_stream_view{});
+    other._device = cuda_device_id{-1};
   }
 
   /**
@@ -210,18 +215,21 @@ class device_buffer {
   device_buffer& operator=(device_buffer&& other) noexcept
   {
     if (&other != this) {
+      cuda_set_device_raii dev{_device};
       deallocate_async();
 
       _data     = other._data;
       _size     = other._size;
       _capacity = other._capacity;
       set_stream(other.stream());
-      _mr = other._mr;
+      _mr     = other._mr;
+      _device = other._device;
 
       other._data     = nullptr;
       other._size     = 0;
       other._capacity = 0;
       other.set_stream(cuda_stream_view{});
+      other._device = cuda_device_id{-1};
     }
     return *this;
   }
@@ -235,6 +243,7 @@ class device_buffer {
    */
   ~device_buffer() noexcept
   {
+    cuda_set_device_raii dev{_device};
     deallocate_async();
     _mr     = nullptr;
     _stream = cuda_stream_view{};
@@ -262,6 +271,7 @@ class device_buffer {
   {
     set_stream(stream);
     if (new_capacity > capacity()) {
+      cuda_set_device_raii dev{_device};
       auto tmp            = device_buffer{new_capacity, stream, _mr};
       auto const old_size = size();
       RMM_CUDA_TRY(cudaMemcpyAsync(tmp.data(), data(), size(), cudaMemcpyDefault, stream.value()));
@@ -303,6 +313,7 @@ class device_buffer {
     if (new_size <= capacity()) {
       _size = new_size;
     } else {
+      cuda_set_device_raii dev{_device};
       auto tmp = device_buffer{new_size, stream, _mr};
       RMM_CUDA_TRY(cudaMemcpyAsync(tmp.data(), data(), size(), cudaMemcpyDefault, stream.value()));
       *this = std::move(tmp);
@@ -326,6 +337,7 @@ class device_buffer {
   {
     set_stream(stream);
     if (size() != capacity()) {
+      cuda_set_device_raii dev{_device};
       // Invoke copy ctor on self which only copies `[0, size())` and swap it
       // with self. The temporary `device_buffer` will hold the old contents
       // which will then be destroyed
@@ -407,6 +419,7 @@ class device_buffer {
   mr::device_memory_resource* _mr{
     mr::get_current_device_resource()};  ///< The memory resource used to
                                          ///< allocate/deallocate device memory
+  cuda_device_id _device{get_current_cuda_device()};
 
   /**
    * @brief Allocates the specified amount of memory and updates the size/capacity accordingly.
@@ -457,6 +470,7 @@ class device_buffer {
   {
     if (bytes > 0) {
       RMM_EXPECTS(nullptr != source, "Invalid copy from nullptr.");
+      RMM_EXPECTS(nullptr != _data, "Invalid copy to nullptr.");
 
       RMM_CUDA_TRY(cudaMemcpyAsync(_data, source, bytes, cudaMemcpyDefault, stream().value()));
     }
