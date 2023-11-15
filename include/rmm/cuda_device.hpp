@@ -45,7 +45,8 @@ struct cuda_device_id {
 
   // TODO re-add doxygen comment specifier /** for these hidden friend operators once this Breathe
   // bug is fixed: https://github.com/breathe-doc/breathe/issues/916
-  /*
+  //! @conda Doxygen_Suppress
+  /**
    * @brief Compare two `cuda_device_id`s for equality.
    *
    * @param lhs The first `cuda_device_id` to compare.
@@ -58,7 +59,7 @@ struct cuda_device_id {
     return lhs.value() == rhs.value();
   }
 
-  /*
+  /**
    * @brief Compare two `cuda_device_id`s for inequality.
    *
    * @param lhs The first `cuda_device_id` to compare.
@@ -70,7 +71,7 @@ struct cuda_device_id {
   {
     return lhs.value() != rhs.value();
   }
-
+//! @endcond
  private:
   value_type id_;
 };
