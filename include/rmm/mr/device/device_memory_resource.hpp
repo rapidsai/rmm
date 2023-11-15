@@ -121,7 +121,7 @@ class device_memory_resource {
   /**
    * @brief Deallocate memory pointed to by \p p.
    *
-   * `p` must have been returned by a prior call to `allocate(bytes,stream)` on
+   * `p` must have been returned by a prior call to `allocate(bytes, stream)` on
    * a `device_memory_resource` that compares equal to `*this`, and the storage
    * it points to must not yet have been deallocated, otherwise behavior is
    * undefined.
@@ -177,7 +177,7 @@ class device_memory_resource {
   /**
    * @brief Deallocate memory pointed to by \p p.
    *
-   * `p` must have been returned by a prior call to `allocate(bytes,stream)` on
+   * `p` must have been returned by a prior call to `allocate(bytes, stream)` on
    * a `device_memory_resource` that compares equal to `*this`, and the storage
    * it points to must not yet have been deallocated, otherwise behavior is
    * undefined.
@@ -230,7 +230,7 @@ class device_memory_resource {
   /**
    * @brief Deallocate memory pointed to by \p p.
    *
-   * `p` must have been returned by a prior call to `allocate(bytes,stream)` on
+   * `p` must have been returned by a prior call to `allocate(bytes, stream)` on
    * a `device_memory_resource` that compares equal to `*this`, and the storage
    * it points to must not yet have been deallocated, otherwise behavior is
    * undefined.
@@ -252,7 +252,7 @@ class device_memory_resource {
   /**
    * @brief Deallocate memory pointed to by \p p.
    *
-   * `p` must have been returned by a prior call to `allocate(bytes,stream)` on
+   * `p` must have been returned by a prior call to `allocate(bytes, stream)` on
    * a `device_memory_resource` that compares equal to `*this`, and the storage
    * it points to must not yet have been deallocated, otherwise behavior is
    * undefined.

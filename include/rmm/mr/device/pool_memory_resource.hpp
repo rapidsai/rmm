@@ -56,7 +56,7 @@ namespace detail {
  * @brief A helper class to remove the device_accessible property
  *
  * We want to be able to use the pool_memory_resource with an upstream that may not
- * be device accessible. To avoid rewriting the world, we allow to conditionally remove
+ * be device accessible. To avoid rewriting the world, we allow conditionally removing
  * the cuda::mr::device_accessible property.
  *
  * @tparam PoolResource the pool_memory_resource class
@@ -67,7 +67,7 @@ template <class PoolResource, class Upstream, class Property, class = void>
 struct maybe_remove_property {};
 
 /**
- * @brief Specialization of maybe_remove_property to not propagate non existing properties
+ * @brief Specialization of maybe_remove_property to not propagate nonexistent properties
  */
 template <class PoolResource, class Upstream, class Property>
 struct maybe_remove_property<PoolResource,

@@ -76,7 +76,7 @@ class pinned_memory_resource final : public host_memory_resource {
   }
 
   /**
-   * @brief Pretent to support the allocate_async interface, falling back to stream 0
+   * @brief Pretend to support the allocate_async interface, falling back to stream 0
    *
    * @throws rmm::bad_alloc When the requested `bytes` cannot be allocated on
    * the specified `stream`.
@@ -91,7 +91,7 @@ class pinned_memory_resource final : public host_memory_resource {
   }
 
   /**
-   * @brief Pretent to support the allocate_async interface, falling back to stream 0
+   * @brief Pretend to support the allocate_async interface, falling back to stream 0
    *
    * @throws rmm::bad_alloc When the requested `bytes` cannot be allocated on
    * the specified `stream`.
@@ -105,7 +105,7 @@ class pinned_memory_resource final : public host_memory_resource {
   }
 
   /**
-   * @brief Pretent to support the deallocate_async interface, falling back to stream 0
+   * @brief Pretend to support the deallocate_async interface, falling back to stream 0
    *
    * @param ptr Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the
