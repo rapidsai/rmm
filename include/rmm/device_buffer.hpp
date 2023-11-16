@@ -414,13 +414,6 @@ class device_buffer {
    */
   [[nodiscard]] async_resource_ref memory_resource() const noexcept { return _mr; }
 
-  /**
-   * @brief Enables the `cuda::mr::device_accessible` property
-   *
-   * This property declares that a `device_buffer` provides device accessible memory
-   */
-  friend void get_property(device_buffer const&, cuda::mr::device_accessible) noexcept {}
-
  private:
   void* _data{nullptr};        ///< Pointer to device memory allocation
   std::size_t _size{};         ///< Requested size of the device memory allocation

@@ -533,13 +533,6 @@ class device_uvector {
   }
 
   /**
-   * @brief Enables the `cuda::mr::device_accessible` property
-   *
-   * This property declares that a `device_uvector` provides device accessible memory
-   */
-  friend void get_property(device_uvector const&, cuda::mr::device_accessible) noexcept {}
-
-  /**
    * @briefreturn{Stream most recently specified for allocation/deallocation}
    */
   [[nodiscard]] cuda_stream_view stream() const noexcept { return _storage.stream(); }
