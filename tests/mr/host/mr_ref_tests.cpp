@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,11 +43,7 @@ inline bool is_device_memory(void* ptr)
 {
   cudaPointerAttributes attributes{};
   if (cudaSuccess != cudaPointerGetAttributes(&attributes, ptr)) { return false; }
-#if CUDART_VERSION < 10000  // memoryType is deprecated in CUDA 10
-  return attributes.memoryType == cudaMemoryTypeDevice;
-#else
   return (attributes.type == cudaMemoryTypeDevice) or (attributes.type == cudaMemoryTypeManaged);
-#endif
 }
 
 /**
