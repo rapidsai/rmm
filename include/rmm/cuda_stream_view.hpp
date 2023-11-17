@@ -20,6 +20,8 @@
 
 #include <cuda_runtime_api.h>
 
+#include <cuda/stream_ref>
+
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
@@ -59,6 +61,13 @@ class cuda_stream_view {
   constexpr cuda_stream_view(cudaStream_t stream) noexcept : stream_{stream} {}
 
   /**
+   * @brief Implicit conversion from stream_ref.
+   *
+   * @param stream The underlying stream for this view
+   */
+  constexpr cuda_stream_view(cuda::stream_ref stream) noexcept : stream_{stream.get()} {}
+
+  /**
    * @brief Get the wrapped stream.
    *
    * @return cudaStream_t The underlying stream referenced by this cuda_stream_view
@@ -71,6 +80,13 @@ class cuda_stream_view {
    * @return cudaStream_t The underlying stream referenced by this cuda_stream_view
    */
   constexpr operator cudaStream_t() const noexcept { return value(); }
+
+  /**
+   * @brief Implicit conversion to stream_ref.
+   *
+   * @return stream_ref The underlying stream referenced by this cuda_stream_view
+   */
+  constexpr operator cuda::stream_ref() const noexcept { return value(); }
 
   /**
    * @briefreturn{true if the wrapped stream is the CUDA per-thread default stream}
