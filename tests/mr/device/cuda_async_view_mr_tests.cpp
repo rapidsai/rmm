@@ -18,12 +18,16 @@
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/cuda_async_view_memory_resource.hpp>
 
+#include <cuda/memory_resource>
+
 #include <gtest/gtest.h>
 
 namespace rmm::test {
 namespace {
 
 using cuda_async_view_mr = rmm::mr::cuda_async_view_memory_resource;
+static_assert(cuda::mr::resource_with<cuda_async_view_mr, cuda::mr::device_accessible>);
+static_assert(cuda::mr::async_resource_with<cuda_async_view_mr, cuda::mr::device_accessible>);
 
 #if defined(RMM_CUDA_MALLOC_ASYNC_SUPPORT)
 

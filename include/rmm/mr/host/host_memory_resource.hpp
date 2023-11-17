@@ -15,6 +15,8 @@
  */
 #pragma once
 
+#include <cuda/memory_resource>
+
 #include <cstddef>
 #include <utility>
 
@@ -112,6 +114,37 @@ class host_memory_resource {
     return do_is_equal(other);
   }
 
+  /**
+   * @brief Comparison operator with another device_memory_resource
+   *
+   * @param other The other resource to compare to
+   * @return true If the two resources are equivalent
+   * @return false If the two resources are not equivalent
+   */
+  [[nodiscard]] bool operator==(host_memory_resource const& other) const noexcept
+  {
+    return do_is_equal(other);
+  }
+
+  /**
+   * @brief Comparison operator with another device_memory_resource
+   *
+   * @param other The other resource to compare to
+   * @return false If the two resources are equivalent
+   * @return true If the two resources are not equivalent
+   */
+  [[nodiscard]] bool operator!=(host_memory_resource const& other) const noexcept
+  {
+    return !do_is_equal(other);
+  }
+
+  /**
+   * @brief Enables the `cuda::mr::host_accessible` property
+   *
+   * This property declares that a `host_memory_resource` provides host accessible memory
+   */
+  friend void get_property(host_memory_resource const&, cuda::mr::host_accessible) noexcept {}
+
  private:
   /**
    * @brief Allocates memory on the host of size at least `bytes` bytes.
@@ -162,5 +195,7 @@ class host_memory_resource {
     return this == &other;
   }
 };
+static_assert(cuda::mr::resource_with<host_memory_resource, cuda::mr::host_accessible>);
 /** @} */  // end of group
+
 }  // namespace rmm::mr
