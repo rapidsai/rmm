@@ -11,10 +11,13 @@
 # or implied. See the License for the specific language governing permissions and limitations under
 # the License.
 # =============================================================================
-set(rapids-cmake-repo kkraus14/rapids-cmake)
-set(rapids-cmake-branch spdlog_1.12_fmt_10)
-if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/RMM_RAPIDS.cmake)
-  file(DOWNLOAD https://raw.githubusercontent.com/rapidsai/rapids-cmake/branch-24.02/RAPIDS.cmake
-       ${CMAKE_CURRENT_BINARY_DIR}/RMM_RAPIDS.cmake)
-endif()
-include(${CMAKE_CURRENT_BINARY_DIR}/RMM_RAPIDS.cmake)
+
+# Use CPM to find or clone libcudacxx
+function(find_and_configure_libcudacxx)
+
+  include(${rapids-cmake-dir}/cpm/libcudacxx.cmake)
+  rapids_cpm_libcudacxx(BUILD_EXPORT_SET rmm-exports INSTALL_EXPORT_SET rmm-exports)
+
+endfunction()
+
+find_and_configure_libcudacxx()

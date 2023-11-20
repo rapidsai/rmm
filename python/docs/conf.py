@@ -24,9 +24,9 @@ author = "NVIDIA"
 # built documents.
 #
 # The short X.Y version.
-version = "23.12"
+version = "24.02"
 # The full version, including alpha/beta/rc tags.
-release = "23.12.00"
+release = "24.02.00"
 
 
 # -- General configuration ---------------------------------------------------
@@ -216,14 +216,24 @@ def on_missing_reference(app, env, node, contnode):
         "cudaStreamPerThread",
         "thrust",
         "spdlog",
+        "stream_ref",
+        # libcu++ names
+        "cuda",
+        "cuda::mr",
+        "resource",
+        "resource_ref",
+        "async_resource",
+        "async_resource_ref",
+        "device_accessible",
+        "host_accessible",
+        "forward_property",
+        "enable_if_t",
         # Unknown types
         "int64_t",
         "int8_t",
         # Internal objects
         "detail",
         "RMM_EXEC_CHECK_DISABLE",
-        "default_alignment_threshold",
-        "get_default_filename",
         # Template types
         "Base",
     ]

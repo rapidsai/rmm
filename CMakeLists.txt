@@ -23,7 +23,7 @@ include(rapids-find)
 
 project(
   RMM
-  VERSION 23.12.00
+  VERSION 24.02.00
   LANGUAGES CXX)
 
 # Write the version header
@@ -70,6 +70,7 @@ rapids_cpm_init()
 
 include(cmake/thirdparty/get_fmt.cmake)
 include(cmake/thirdparty/get_spdlog.cmake)
+include(cmake/thirdparty/get_libcudacxx.cmake)
 include(cmake/thirdparty/get_thrust.cmake)
 
 # ##################################################################################################
@@ -89,11 +90,13 @@ else()
   target_link_libraries(rmm INTERFACE CUDA::cudart)
 endif()
 
+target_link_libraries(rmm INTERFACE libcudacxx::libcudacxx)
 target_link_libraries(rmm INTERFACE rmm::Thrust)
 target_link_libraries(rmm INTERFACE fmt::fmt-header-only)
 target_link_libraries(rmm INTERFACE spdlog::spdlog_header_only)
 target_link_libraries(rmm INTERFACE dl)
 target_compile_features(rmm INTERFACE cxx_std_17 $<BUILD_INTERFACE:cuda_std_17>)
+target_compile_definitions(rmm INTERFACE LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
 # ##################################################################################################
 # * tests and benchmarks ---------------------------------------------------------------------------

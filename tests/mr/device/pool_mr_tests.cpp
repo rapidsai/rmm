@@ -55,6 +55,18 @@ TEST(PoolTest, ThrowMaxLessThanInitial)
   EXPECT_THROW(max_less_than_initial(), rmm::logic_error);
 }
 
+TEST(PoolTest, ReferenceThrowMaxLessThanInitial)
+{
+  // Make sure first argument is enough larger than the second that alignment rounding doesn't
+  // make them equal
+  auto max_less_than_initial = []() {
+    const auto initial{1024};
+    const auto maximum{256};
+    pool_mr mr{*rmm::mr::get_current_device_resource(), initial, maximum};
+  };
+  EXPECT_THROW(max_less_than_initial(), rmm::logic_error);
+}
+
 TEST(PoolTest, AllocateNinetyPercent)
 {
   auto allocate_ninety = []() {
@@ -190,4 +202,43 @@ TEST(PoolTest, MultidevicePool)
 }
 
 }  // namespace
+
+namespace test_properties {
+class fake_async_resource {
+ public:
+  // To model `async_resource`
+  void* allocate(std::size_t, std::size_t) { return nullptr; }
+  void deallocate(void* ptr, std::size_t, std::size_t) {}
+  void* allocate_async(std::size_t, std::size_t, cuda::stream_ref) { return nullptr; }
+  void deallocate_async(void* ptr, std::size_t, std::size_t, cuda::stream_ref) {}
+
+  bool operator==(const fake_async_resource& other) const { return true; }
+  bool operator!=(const fake_async_resource& other) const { return false; }
+
+  // To model stream_resource
+  [[nodiscard]] bool supports_streams() const noexcept { return false; }
+  [[nodiscard]] bool supports_get_mem_info() const noexcept { return false; }
+
+ private:
+  void* do_allocate(std::size_t bytes, cuda_stream_view) { return nullptr; }
+  void do_deallocate(void* ptr, std::size_t, cuda_stream_view) {}
+  [[nodiscard]] bool do_is_equal(fake_async_resource const& other) const noexcept { return true; }
+};
+static_assert(!cuda::has_property<fake_async_resource, cuda::mr::device_accessible>);
+static_assert(!cuda::has_property<rmm::mr::pool_memory_resource<fake_async_resource>,
+                                  cuda::mr::device_accessible>);
+
+// Ensure that we forward the property if it is there
+class fake_async_resource_device_accessible : public fake_async_resource {
+  friend void get_property(const fake_async_resource_device_accessible&,
+                           cuda::mr::device_accessible)
+  {
+  }
+};
+static_assert(
+  cuda::has_property<fake_async_resource_device_accessible, cuda::mr::device_accessible>);
+static_assert(
+  cuda::has_property<rmm::mr::pool_memory_resource<fake_async_resource_device_accessible>,
+                     cuda::mr::device_accessible>);
+}  // namespace test_properties
 }  // namespace rmm::test

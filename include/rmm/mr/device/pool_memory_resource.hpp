@@ -51,6 +51,43 @@ namespace rmm::mr {
  * @{
  * @file
  */
+namespace detail {
+/**
+ * @brief A helper class to remove the device_accessible property
+ *
+ * We want to be able to use the pool_memory_resource with an upstream that may not
+ * be device accessible. To avoid rewriting the world, we allow conditionally removing
+ * the cuda::mr::device_accessible property.
+ *
+ * @tparam PoolResource the pool_memory_resource class
+ * @tparam Upstream memory_resource to use for allocating the pool.
+ * @tparam Property The property we want to potentially remove.
+ */
+template <class PoolResource, class Upstream, class Property, class = void>
+struct maybe_remove_property {};
+
+/**
+ * @brief Specialization of maybe_remove_property to not propagate nonexistent properties
+ */
+template <class PoolResource, class Upstream, class Property>
+struct maybe_remove_property<PoolResource,
+                             Upstream,
+                             Property,
+                             cuda::std::enable_if_t<!cuda::has_property<Upstream, Property>>> {
+#ifdef __GNUC__  // GCC warns about compatibility issues with pre ISO C++ code
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnon-template-friend"
+#endif  // __GNUC__
+  /**
+   * @brief Explicit removal of the friend function so we do not pretend to provide device
+   * accessible memory
+   */
+  friend void get_property(const PoolResource&, Property) = delete;
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif  // __GNUC__
+};
+}  // namespace detail
 
 /**
  * @brief A coalescing best-fit suballocator which uses a pool of memory allocated from
@@ -64,8 +101,11 @@ namespace rmm::mr {
  */
 template <typename Upstream>
 class pool_memory_resource final
-  : public detail::stream_ordered_memory_resource<pool_memory_resource<Upstream>,
-                                                  detail::coalescing_free_list> {
+  : public detail::
+      maybe_remove_property<pool_memory_resource<Upstream>, Upstream, cuda::mr::device_accessible>,
+    public detail::stream_ordered_memory_resource<pool_memory_resource<Upstream>,
+                                                  detail::coalescing_free_list>,
+    public cuda::forward_property<pool_memory_resource<Upstream>, Upstream> {
  public:
   friend class detail::stream_ordered_memory_resource<pool_memory_resource<Upstream>,
                                                       detail::coalescing_free_list>;
@@ -105,6 +145,31 @@ class pool_memory_resource final
   }
 
   /**
+   * @brief Construct a `pool_memory_resource` and allocate the initial device memory pool using
+   * `upstream_mr`.
+   *
+   * @throws rmm::logic_error if `upstream_mr == nullptr`
+   * @throws rmm::logic_error if `initial_pool_size` is neither the default nor aligned to a
+   * multiple of pool_memory_resource::allocation_alignment bytes.
+   * @throws rmm::logic_error if `maximum_pool_size` is neither the default nor aligned to a
+   * multiple of pool_memory_resource::allocation_alignment bytes.
+   *
+   * @param upstream_mr The memory_resource from which to allocate blocks for the pool.
+   * @param initial_pool_size Minimum size, in bytes, of the initial pool. Defaults to half of the
+   * available memory on the current device.
+   * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to. Defaults to all
+   * of the available memory on the current device.
+   */
+  template <typename Upstream2                                               = Upstream,
+            cuda::std::enable_if_t<cuda::mr::async_resource<Upstream2>, int> = 0>
+  explicit pool_memory_resource(Upstream2& upstream_mr,
+                                thrust::optional<std::size_t> initial_pool_size = thrust::nullopt,
+                                thrust::optional<std::size_t> maximum_pool_size = thrust::nullopt)
+    : pool_memory_resource(cuda::std::addressof(upstream_mr), initial_pool_size, maximum_pool_size)
+  {
+  }
+
+  /**
    * @brief Destroy the `pool_memory_resource` and deallocate all memory it allocated using
    * the upstream resource.
    */
@@ -130,6 +195,13 @@ class pool_memory_resource final
    * @return bool false
    */
   [[nodiscard]] bool supports_get_mem_info() const noexcept override { return false; }
+
+  /**
+   * @brief Get the upstream memory_resource object.
+   *
+   * @return const reference to the upstream memory resource.
+   */
+  [[nodiscard]] const Upstream& upstream_resource() const noexcept { return *upstream_mr_; }
 
   /**
    * @brief Get the upstream memory_resource object.
@@ -296,7 +368,7 @@ class pool_memory_resource final
     if (size == 0) { return {}; }
 
     try {
-      void* ptr = get_upstream()->allocate(size, stream);
+      void* ptr = get_upstream()->allocate_async(size, stream);
       return thrust::optional<block_type>{
         *upstream_blocks_.emplace(static_cast<char*>(ptr), size, true).first};
     } catch (std::exception const& e) {
