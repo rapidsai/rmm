@@ -37,14 +37,13 @@ RMM can be installed with Conda ([miniconda](https://conda.io/miniconda.html), o
 [Anaconda distribution](https://www.anaconda.com/download)) from the `rapidsai` channel:
 
 ```bash
-conda install -c rapidsai -c conda-forge -c nvidia rmm cuda-version=11.8
+conda install -c rapidsai -c conda-forge -c nvidia rmm cuda-version=12.0
 ```
 
 We also provide [nightly Conda packages](https://anaconda.org/rapidsai-nightly) built from the HEAD
 of our latest development branch.
 
 Note: RMM is supported only on Linux, and only tested with Python versions 3.9 and 3.10.
-
 
 Note: The RMM package from Conda requires building with GCC 9 or later. Otherwise, your application may fail to build.
 
@@ -57,12 +56,12 @@ See the [Get RAPIDS version picker](https://rapids.ai/start.html) for more OS an
 Compiler requirements:
 
 * `gcc`     version 9.3+
-* `nvcc`    version 11.2+
+* `nvcc`    version 11.4+
 * `cmake`   version 3.26.4+
 
 CUDA/GPU requirements:
 
-* CUDA 11.2+
+* CUDA 11.4+
 * NVIDIA driver 450.51+
 * Pascal architecture or better
 
