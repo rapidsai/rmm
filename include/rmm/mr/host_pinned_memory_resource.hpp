@@ -1,0 +1,243 @@
+/*
+ * Copyright (c) 2023, NVIDIA CORPORATION.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#pragma once
+
+#include <rmm/detail/error.hpp>
+
+#include <cuda/memory_resource>
+
+#include <cuda_runtime_api.h>
+
+#include <cstddef>
+
+namespace rmm::mr {
+
+/**
+ * @brief Memory resource class for allocating pinned host memory.
+ *
+ * This class uses CUDA's `cudaHostAlloc` to allocate pinned host memory. It implements the
+ * `cuda::mr::memory_resource` and `cuda::mr::device_memory_resource` concepts, and
+ * the `cuda::mr::host_accessible` and `cuda::mr::device_accessible` properties.
+ */
+class pinned_host_memory_resource {
+ public:
+  // Disable clang-tidy complaining about the easily swappable size and alignment parameters
+  // of allocate and deallocate
+  // NOLINTBEGIN(bugprone-easily-swappable-parameters)
+
+  /**
+   * @brief Allocates pinned host memory of size at least \p bytes bytes.
+   *
+   * @throws `rmm::out_of_memory` if the requested allocation could not be fulfilled due to to a
+   * CUDA out of memory error.
+   * @throws `rmm::bad_alloc` if the requested allocation could not be fulfilled due to any other
+   * reason.
+   *
+   * @param bytes The size, in bytes, of the allocation.
+   * @return Pointer to the newly allocated memory.
+   */
+  static void* allocate(std::size_t bytes)
+  {
+    void* ptr{nullptr};
+    RMM_CUDA_TRY_ALLOC(cudaHostAlloc(&ptr, bytes, cudaHostAllocDefault));
+    return ptr;
+  }
+  /**
+   * @brief Allocates pinned host memory of size at least \p bytes bytes.
+   *
+   * @todo Alignment is not implemented yet.
+   *
+   * @throws `rmm::out_of_memory` if the requested allocation could not be fulfilled due to to a
+   * CUDA out of memory error.
+   * @throws `rmm::bad_alloc` if the requested allocation could not be fulfilled due to any other
+   * reason.
+   *
+   * @param bytes The size, in bytes, of the allocation.
+   * @param alignment Alignment in bytes.
+   * @return Pointer to the newly allocated memory.
+   */
+  static void* allocate(std::size_t bytes, [[maybe_unused]] std::size_t alignment)
+  {
+    return allocate(bytes);
+  }
+
+  /**
+   * @brief Deallocate memory pointed to by \p ptr of size \p bytes bytes.
+   *
+   * @throws Nothing.
+   *
+   * @param ptr Pointer to be deallocated.
+   * @param bytes Size of the allocation.
+   */
+  static void deallocate(void* ptr, [[maybe_unused]] std::size_t bytes) noexcept
+  {
+    RMM_ASSERT_CUDA_SUCCESS(cudaFreeHost(ptr));
+  }
+
+  /**
+   * @brief Deallocate memory pointed to by \p ptr of size \p bytes bytes and alignment \p
+   * alignment bytes.
+   *
+   * @todo Alignment is not implemented yet.
+   *
+   * @throws Nothing.
+   *
+   * @param ptr Pointer to be deallocated.
+   * @param bytes Size of the allocation.
+   * @param alignment Alignment in bytes.
+   */
+  static void deallocate(void* ptr, std::size_t bytes, std::size_t) noexcept
+  {
+    return deallocate(ptr, bytes);
+  }
+
+  /**
+   * @brief Allocates pinned host memory of size at least \p bytes bytes.
+   *
+   * @note Stream argument is ignored and behavior is identical to allocate.
+   *
+   * @throws `rmm::out_of_memory` if the requested allocation could not be fulfilled due to to a
+   * CUDA out of memory error.
+   * @throws `rmm::bad_alloc` if the requested allocation could not be fulfilled due to any other
+   * error.
+   *
+   * @param bytes The size, in bytes, of the allocation.
+   * @param stream CUDA stream on which to perform the allocation (ignored).
+   * @return Pointer to the newly allocated memory.
+   */
+  static void* allocate_async(std::size_t bytes, [[maybe_unused]] cuda::stream_ref stream)
+  {
+    return allocate(bytes);
+  }
+
+  /**
+   * @brief Allocates pinned host memory of size at least \p bytes bytes and alignment \p alignment.
+   *
+   * @note Stream argument is ignored and behavior is identical to allocate.
+   *
+   * @todo Alignment is not implemented yet.
+   *
+   * @throws `rmm::out_of_memory` if the requested allocation could not be fulfilled due to to a
+   * CUDA out of memory error.
+   * @throws `rmm::bad_alloc` if the requested allocation could not be fulfilled due to any other
+   * error.
+   *
+   * @param bytes The size, in bytes, of the allocation.
+   * @param alignment Alignment in bytes.
+   * @param stream CUDA stream on which to perform the allocation (ignored).
+   * @return Pointer to the newly allocated memory.
+   */
+  static void* allocate_async(std::size_t bytes,
+                              std::size_t alignment,
+                              [[maybe_unused]] cuda::stream_ref stream)
+  {
+    return allocate(bytes, alignment);
+  }
+
+  /**
+   * @brief Deallocate memory pointed to by \p ptr of size \p bytes bytes.
+   *
+   * @note Stream argument is ignored and behavior is identical to deallocate.
+   *
+   * @throws Nothing.
+   *
+   * @param ptr Pointer to be deallocated.
+   * @param bytes Size of the allocation.
+   * @param stream CUDA stream on which to perform the deallocation (ignored).
+   */
+  static void deallocate_async(void* ptr,
+                               std::size_t bytes,
+                               [[maybe_unused]] cuda::stream_ref stream) noexcept
+  {
+    return deallocate(ptr, bytes);
+  }
+
+  /**
+   * @brief Deallocate memory pointed to by \p ptr of size \p bytes bytes and alignment \p
+   * alignment bytes.
+   *
+   * @note Stream argument is ignored and behavior is identical to deallocate.
+   *
+   * @todo Alignment is not implemented yet.
+   *
+   * @throws Nothing.
+   *
+   * @param ptr Pointer to be deallocated.
+   * @param bytes Size of the allocation.
+   * @param alignment Alignment in bytes.
+   * @param stream CUDA stream on which to perform the deallocation (ignored).
+   */
+  static void deallocate_async(void* ptr,
+                               std::size_t bytes,
+                               std::size_t alignment,
+                               [[maybe_unused]] cuda::stream_ref stream) noexcept
+  {
+    return deallocate(ptr, bytes, alignment);
+  }
+  // NOLINTEND(bugprone-easily-swappable-parameters)
+
+  /**
+   * @briefreturn returns true if the specified resource is the same type as this resource, else
+   * false.
+   */
+  bool operator==(const pinned_host_memory_resource&) const { return true; }
+
+  /**
+   * @briefreturn returns true if the specified resource is not the same type as this resource, else
+   * false.
+   */
+  bool operator!=(const pinned_host_memory_resource&) const { return false; }
+
+  /**
+   * @brief Query whether the resource supports reporting free and available memory.
+   *
+   * @return false
+   */
+  static bool supports_get_mem_info() { return false; }
+
+  /**
+   * @brief Query the total amount of memory and free memory available for allocation by this
+   * resource.
+   *
+   * @throws nothing
+   *
+   * @return std::pair containing 0 for both total and free memory.
+   */
+  [[nodiscard]] static std::pair<std::size_t, std::size_t> get_mem_info(cuda::stream_ref) noexcept
+  {
+    return {0, 0};
+  }
+
+  /**
+   * @brief Enables the `cuda::mr::device_accessible` property
+   *
+   * This property declares that a `pinned_host_memory_resource` provides device accessible memory
+   */
+  friend void get_property(pinned_host_memory_resource const&, cuda::mr::device_accessible) noexcept
+  {
+  }
+
+  /**
+   * @brief Enables the `cuda::mr::host_accessible` property
+   *
+   * This property declares that a `pinned_host_memory_resource` provides host accessible memory
+   */
+  friend void get_property(pinned_host_memory_resource const&, cuda::mr::host_accessible) noexcept
+  {
+  }
+};
+
+}  // namespace rmm::mr

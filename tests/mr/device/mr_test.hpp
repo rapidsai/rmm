@@ -31,6 +31,7 @@
 #include <rmm/mr/device/owning_wrapper.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
+#include <rmm/mr/host_pinned_memory_resource.hpp>
 
 #include <gtest/gtest.h>
 
@@ -52,7 +53,8 @@ inline bool is_device_memory(void* ptr)
 {
   cudaPointerAttributes attributes{};
   if (cudaSuccess != cudaPointerGetAttributes(&attributes, ptr)) { return false; }
-  return (attributes.type == cudaMemoryTypeDevice) or (attributes.type == cudaMemoryTypeManaged);
+  return (attributes.type == cudaMemoryTypeDevice) or (attributes.type == cudaMemoryTypeManaged) or
+         ((attributes.type == cudaMemoryTypeHost) and (attributes.devicePointer != nullptr));
 }
 
 enum size_in_bytes : size_t {};
@@ -245,6 +247,8 @@ struct mr_allocation_test : public mr_test {};
 /// MR factory functions
 inline auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>(); }
 
+inline auto make_host_pinned() { return std::make_shared<rmm::mr::pinned_host_memory_resource>(); }
+
 inline auto make_cuda_async()
 {
   if (rmm::detail::async_alloc::is_supported()) {
@@ -258,6 +262,12 @@ inline auto make_managed() { return std::make_shared<rmm::mr::managed_memory_res
 inline auto make_pool()
 {
   return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_cuda());
+}
+
+inline auto make_host_pinned_pool()
+{
+  return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(
+    make_host_pinned(), 2_GiB, 8_GiB);
 }
 
 inline auto make_arena()
