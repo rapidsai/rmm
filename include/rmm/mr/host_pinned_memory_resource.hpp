@@ -99,7 +99,9 @@ class pinned_host_memory_resource {
    * @param bytes Size of the allocation.
    * @param alignment Alignment in bytes.
    */
-  static void deallocate(void* ptr, std::size_t bytes, std::size_t) noexcept
+  static void deallocate(void* ptr,
+                         std::size_t bytes,
+                         [[maybe_unused]] std::size_t alignment) noexcept
   {
     return deallocate(ptr, bytes);
   }
@@ -190,14 +192,14 @@ class pinned_host_memory_resource {
   // NOLINTEND(bugprone-easily-swappable-parameters)
 
   /**
-   * @briefreturn returns true if the specified resource is the same type as this resource, else
-   * false.
+   * @briefreturn{true if the specified resource is the same type as this resource, otherwise
+   * false.}
    */
   bool operator==(const pinned_host_memory_resource&) const { return true; }
 
   /**
-   * @briefreturn returns true if the specified resource is not the same type as this resource, else
-   * false.
+   * @briefreturn{true if the specified resource is not the same type as this resource, otherwise
+   * false.}
    */
   bool operator!=(const pinned_host_memory_resource&) const { return false; }
 
