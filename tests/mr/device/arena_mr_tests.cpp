@@ -543,11 +543,11 @@ TEST_F(ArenaTest, PerThreadToStreamDealloc)  // NOLINT
   arena_mr mr(rmm::mr::get_current_device_resource(), arena_size);
   auto per_thread_stream = rmm::cuda_stream_per_thread;
   // Create an allocation from a per thread arena
-  void* thread_ptr       = mr.allocate(256, per_thread_stream);
+  void* thread_ptr = mr.allocate(256, per_thread_stream);
   // Create an allocation in a stream arena to force global arena
   // to be empty
   cuda_stream stream{};
-  void *ptr = mr.allocate(32_KiB, stream);
+  void* ptr = mr.allocate(32_KiB, stream);
   mr.deallocate(ptr, 32_KiB, stream);
   // at this point the global arena doesn't have any superblocks so
   // the next allocation causes defrag. Defrag causes all superblocks
