@@ -535,37 +535,38 @@ TEST_F(ArenaTest, Defragment)  // NOLINT
 
 TEST_F(ArenaTest, PerThreadAndStreamArenas)  // NOLINT
 {
-    auto const arena_size = superblock::minimum_size * 4;
-    arena_mr mr(rmm::mr::get_current_device_resource(), arena_size);
-    std::vector<std::thread> threads;
-    std::size_t num_threads{3};
-    auto view = std::make_shared<rmm::cuda_stream_view>(rmm::cuda_stream_per_thread);
-    void* thread_ptr = mr.allocate(256, view->value());
-    threads.reserve(num_threads);
-    for (std::size_t i = 0; i < num_threads; ++i) {
-      threads.emplace_back(std::thread([&] {
-        cuda_stream stream{};
-        void* ptr = mr.allocate(32_KiB, stream);
-        mr.deallocate(ptr, 32_KiB, stream);
-      }));
-    }
-    for (auto& thread : threads) {
-      thread.join();
-    }
-    // The next allocation causes defrag, which causes all superblocks
-    // from the arenas allocated above to go back to global arena.
-    // Then we want to allocate all from global arena to make sure
-    // the superblock where the stream per thread allocated from is now
-    // owned by a stream arena instead of a thread arena or the global arena.
-    auto* ptr1 = mr.allocate(superblock::minimum_size);
-    auto* ptr2 = mr.allocate(superblock::minimum_size);
-    auto* ptr3 = mr.allocate(superblock::minimum_size);
-    auto* ptr4 = mr.allocate(32_KiB);
-    EXPECT_NO_THROW(mr.deallocate(thread_ptr, 256, view->value()));
-    mr.deallocate(ptr1, superblock::minimum_size);
-    mr.deallocate(ptr2, superblock::minimum_size);
-    mr.deallocate(ptr3, superblock::minimum_size);
-    mr.deallocate(ptr4, 32_KiB);
+  auto const arena_size = superblock::minimum_size * 4;
+  arena_mr mr(rmm::mr::get_current_device_resource(), arena_size);
+  std::vector<std::thread> threads;
+  std::size_t num_threads{3};
+  auto view = std::make_shared<rmm::cuda_stream_view>(rmm::cuda_stream_per_thread);
+  void* thread_ptr = mr.allocate(256, view->value());
+  threads.reserve(num_threads);
+  for (std::size_t i = 0; i < num_threads; ++i) {
+    threads.emplace_back(std::thread([&] {
+      cuda_stream stream{};
+      void* ptr = mr.allocate(32_KiB, stream);
+      mr.deallocate(ptr, 32_KiB, stream);
+    }));
+  }
+  for (auto& thread : threads) {
+    thread.join();
+  }
+  // The next allocation causes defrag, which causes all superblocks
+  // from the arenas allocated above to go back to global arena.
+  // Then we want to allocate all from global arena to make sure
+  // the superblock where the stream per thread allocated from is now
+  // owned by a stream arena instead of a thread arena or the global arena.
+  auto* ptr1 = mr.allocate(superblock::minimum_size);
+  auto* ptr2 = mr.allocate(superblock::minimum_size);
+  auto* ptr3 = mr.allocate(superblock::minimum_size);
+  auto* ptr4 = mr.allocate(32_KiB);
+  // NOLINTNEXTLINE(cppcoreguidelines-avoid-goto)
+  EXPECT_NO_THROW(mr.deallocate(thread_ptr, 256, view->value()));
+  mr.deallocate(ptr1, superblock::minimum_size);
+  mr.deallocate(ptr2, superblock::minimum_size);
+  mr.deallocate(ptr3, superblock::minimum_size);
+  mr.deallocate(ptr4, 32_KiB);
 }
 
 TEST_F(ArenaTest, DumpLogOnFailure)  // NOLINT
