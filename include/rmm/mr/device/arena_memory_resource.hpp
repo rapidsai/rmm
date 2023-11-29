@@ -241,7 +241,7 @@ class arena_memory_resource final : public device_memory_resource {
       // into the global arena during a defragmentation and then move down into another arena
       // type. For instance, thread arena -> global arena -> stream arena. If this happens and
       // there was an allocation from it while it was a thread arena, we now have to check to
-      // see if the allocation is part of a stream arena.
+      // see if the allocation is part of a stream arena, and vice versa.
       // Only do this in exceptional cases to not affect performance and have to check all
       // arenas all the time.
       if (use_per_thread_arena(stream)) {
