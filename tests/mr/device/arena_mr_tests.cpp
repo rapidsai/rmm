@@ -533,40 +533,37 @@ TEST_F(ArenaTest, Defragment)  // NOLINT
   }());
 }
 
-TEST_F(ArenaTest, PerThreadAndStreamArenas)  // NOLINT
+TEST_F(ArenaTest, PerThreadToStreamDealloc)  // NOLINT
 {
-  auto const arena_size = superblock::minimum_size * 4;
+  // this is testing that deallocation of a ptr still works when
+  // it was originally allocated in a superblock was in a thread
+  // arena that then moved to global arena during a defragmentation
+  // and then moved to a stream arena.
+  auto const arena_size = superblock::minimum_size * 2;
   arena_mr mr(rmm::mr::get_current_device_resource(), arena_size);
-  std::vector<std::thread> threads;
-  std::size_t num_threads{3};
-  auto view        = std::make_shared<rmm::cuda_stream_view>(rmm::cuda_stream_per_thread);
-  void* thread_ptr = mr.allocate(256, view->value());
-  threads.reserve(num_threads);
-  for (std::size_t i = 0; i < num_threads; ++i) {
-    threads.emplace_back(std::thread([&] {
-      cuda_stream stream{};
-      void* ptr = mr.allocate(32_KiB, stream);
-      mr.deallocate(ptr, 32_KiB, stream);
-    }));
-  }
-  for (auto& thread : threads) {
-    thread.join();
-  }
-  // The next allocation causes defrag, which causes all superblocks
-  // from the arenas allocated above to go back to global arena.
-  // Then we want to allocate all from global arena to make sure
-  // the superblock where the stream per thread allocated from is now
-  // owned by a stream arena instead of a thread arena or the global arena.
+  auto per_thread_stream = rmm::cuda_stream_per_thread;
+  // Create an allocation from a per thread arena
+  void* thread_ptr       = mr.allocate(256, per_thread_stream);
+  // Create an allocation in a stream arena to force global arena
+  // to be empty
+  cuda_stream stream{};
+  void *ptr = mr.allocate(32_KiB, stream);
+  mr.deallocate(ptr, 32_KiB, stream);
+  // at this point the global arena doesn't have any superblocks so
+  // the next allocation causes defrag. Defrag causes all superblocks
+  // from the thread and stream arena allocated above to go back to
+  // global arena and it allocates one superblock to the stream arena.
   auto* ptr1 = mr.allocate(superblock::minimum_size);
-  auto* ptr2 = mr.allocate(superblock::minimum_size);
-  auto* ptr3 = mr.allocate(superblock::minimum_size);
-  auto* ptr4 = mr.allocate(32_KiB);
+  // Allocate again to make sure all superblocks from
+  // global arena are owned by a stream arena instead of a thread arena
+  // or the global arena.
+  auto* ptr2 = mr.allocate(32_KiB);
+  // The original thread ptr is now owned by a stream arena so make
+  // sure deallocation works.
   // NOLINTNEXTLINE(cppcoreguidelines-avoid-goto)
-  EXPECT_NO_THROW(mr.deallocate(thread_ptr, 256, view->value()));
+  EXPECT_NO_THROW(mr.deallocate(thread_ptr, 256, per_thread_stream));
   mr.deallocate(ptr1, superblock::minimum_size);
-  mr.deallocate(ptr2, superblock::minimum_size);
-  mr.deallocate(ptr3, superblock::minimum_size);
-  mr.deallocate(ptr4, 32_KiB);
+  mr.deallocate(ptr2, 32_KiB);
 }
 
 TEST_F(ArenaTest, DumpLogOnFailure)  // NOLINT
