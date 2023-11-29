@@ -539,7 +539,7 @@ TEST_F(ArenaTest, PerThreadAndStreamArenas)  // NOLINT
   arena_mr mr(rmm::mr::get_current_device_resource(), arena_size);
   std::vector<std::thread> threads;
   std::size_t num_threads{3};
-  auto view = std::make_shared<rmm::cuda_stream_view>(rmm::cuda_stream_per_thread);
+  auto view        = std::make_shared<rmm::cuda_stream_view>(rmm::cuda_stream_per_thread);
   void* thread_ptr = mr.allocate(256, view->value());
   threads.reserve(num_threads);
   for (std::size_t i = 0; i < num_threads; ++i) {
