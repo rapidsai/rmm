@@ -236,7 +236,7 @@ class arena_memory_resource final : public device_memory_resource {
     }
 
     if (!global_arena_.deallocate(ptr, bytes)) {
-      // It's now possible to use per thread default streams along with another pool of streams.
+      // It's possible to use per thread default streams along with another pool of streams.
       // This means that it's possible for an arena to move from a thread or stream arena back
       // into the global arena during a defragmentation and then move down into another arena
       // type. For instance, thread arena -> global arena -> stream arena. If this happens and
