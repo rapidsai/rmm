@@ -535,8 +535,8 @@ TEST_F(ArenaTest, Defragment)  // NOLINT
 
 TEST_F(ArenaTest, PerThreadToStreamDealloc)  // NOLINT
 {
-  // this is testing that deallocation of a ptr still works when
-  // it was originally allocated in a superblock was in a thread
+  // This is testing that deallocation of a ptr still works when
+  // it was originally allocated in a superblock that was in a thread
   // arena that then moved to global arena during a defragmentation
   // and then moved to a stream arena.
   auto const arena_size = superblock::minimum_size * 2;
