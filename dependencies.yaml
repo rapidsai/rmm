@@ -71,8 +71,8 @@ dependencies:
         packages:
           - c-compiler
           - cxx-compiler
-          - fmt>=9.1.0,<10
-          - spdlog>=1.11.0,<1.12
+          - fmt>=10.1.1,<11
+          - spdlog>=1.12.0,<1.13
           - python>=3.9,<3.11
       - output_types: pyproject
         packages:

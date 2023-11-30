@@ -14,13 +14,13 @@ cmake_version:
   - ">=3.26.4"
 
 fmt_version:
-  - ">=9.1.0,<10"
+  - ">=10.1.1,<11"
 
 gtest_version:
   - ">=1.13.0"
 
 spdlog_version:
-  - ">=1.11.0,<1.12"
+  - ">=1.12.0,<1.13"
 
 sysroot_version:
   - "2.17"
