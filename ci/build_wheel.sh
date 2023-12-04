@@ -31,7 +31,7 @@ fi
 
 cd "${package_dir}"
 
-SKBUILD_CONFIGURE_OPTIONS="-DRMM_BUILD_WHEELS=ON" python -m pip wheel . -w dist -vvv --no-deps --disable-pip-version-check
+python -m pip wheel . -w dist -vvv --no-deps --disable-pip-version-check
 
 mkdir -p final_dist
 python -m auditwheel repair -w final_dist dist/*

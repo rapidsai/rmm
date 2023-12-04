@@ -29,7 +29,6 @@ project(
 
 option(FIND_RMM_CPP "Search for existing RMM C++ installations before defaulting to local files"
        OFF)
-option(RMM_BUILD_WHEELS "Whether this build is generating a Python wheel." OFF)
 
 # If the user requested it we attempt to find RMM.
 if(FIND_RMM_CPP)
@@ -41,16 +40,9 @@ endif()
 if(NOT rmm_FOUND)
   set(BUILD_TESTS OFF)
   set(BUILD_BENCHMARKS OFF)
+  set(CUDA_STATIC_RUNTIME ON)
 
-  set(_exclude_from_all "")
-  if(RMM_BUILD_WHEELS)
-    # Statically link dependencies if building wheels
-    set(CUDA_STATIC_RUNTIME ON)
-    # Don't install the rmm C++ targets into wheels
-    set(_exclude_from_all EXCLUDE_FROM_ALL)
-  endif()
-
-  add_subdirectory(../ rmm-cpp ${_exclude_from_all})
+  add_subdirectory(../ rmm-cpp EXCLUDE_FROM_ALL)
 endif()
 
 include(rapids-cython)
