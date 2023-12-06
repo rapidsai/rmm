@@ -28,6 +28,11 @@
 #include <vector>
 
 namespace rmm::mr {
+/**
+ * @addtogroup device_memory_resources
+ * @{
+ * @file
+ */
 
 /**
  * @brief Allocates memory from upstream resources associated with bin sizes.
@@ -182,7 +187,7 @@ class binning_memory_resource final : public device_memory_resource {
    *
    * @throws nothing
    *
-   * @param p Pointer to be deallocated
+   * @param ptr Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param stream Stream on which to perform deallocation
@@ -201,7 +206,8 @@ class binning_memory_resource final : public device_memory_resource {
    * @param stream the stream being executed on
    * @return std::pair with available and free memory for resource
    */
-  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view) const override
+  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
+    [[maybe_unused]] cuda_stream_view stream) const override
   {
     return std::make_pair(0, 0);
   }
@@ -213,4 +219,5 @@ class binning_memory_resource final : public device_memory_resource {
   std::map<std::size_t, device_memory_resource*> resource_bins_;
 };
 
+/** @} */  // end of group
 }  // namespace rmm::mr

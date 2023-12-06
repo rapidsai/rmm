@@ -91,6 +91,7 @@ thirdparty/googletest/
 
 ## Doxygen
 doxygen/html
+doxygen/xml
 
 #Java
 target

@@ -24,6 +24,11 @@
 
 namespace rmm::mr {
 /**
+ * @addtogroup device_memory_resources
+ * @{
+ * @file
+ */
+/**
  * @brief `device_memory_resource` derived class that uses cudaMalloc/Free for
  * allocation/deallocation.
  */
@@ -55,18 +60,17 @@ class cuda_memory_resource final : public device_memory_resource {
 
  private:
   /**
-   * @brief Allocates memory of size at least `bytes` using cudaMalloc.
+   * @brief Allocates memory of size at least \p bytes.
    *
-   * The returned pointer has at least 256B alignment.
+   * The returned pointer will have at minimum 256 byte alignment.
    *
-   * @note Stream argument is ignored
+   * The stream argument is ignored.
    *
-   * @throws `rmm::bad_alloc` if the requested allocation could not be fulfilled
-   *
-   * @param bytes The size, in bytes, of the allocation
+   * @param bytes The size of the allocation
+   * @param stream This argument is ignored
    * @return void* Pointer to the newly allocated memory
    */
-  void* do_allocate(std::size_t bytes, cuda_stream_view) override
+  void* do_allocate(std::size_t bytes, [[maybe_unused]] cuda_stream_view stream) override
   {
     void* ptr{nullptr};
     RMM_CUDA_TRY_ALLOC(cudaMalloc(&ptr, bytes));
@@ -76,13 +80,16 @@ class cuda_memory_resource final : public device_memory_resource {
   /**
    * @brief Deallocate memory pointed to by \p p.
    *
-   * @note Stream argument is ignored.
+   * The stream argument is ignored.
    *
-   * @throws Nothing.
-   *
-   * @param p Pointer to be deallocated
+   * @param ptr Pointer to be deallocated
+   * @param bytes The size in bytes of the allocation. This must be equal to the
+   * value of `bytes` that was passed to the `allocate` call that returned `p`.
+   * @param stream This argument is ignored.
    */
-  void do_deallocate(void* ptr, std::size_t, cuda_stream_view) override
+  void do_deallocate(void* ptr,
+                     [[maybe_unused]] std::size_t bytes,
+                     [[maybe_unused]] cuda_stream_view stream) override
   {
     RMM_ASSERT_CUDA_SUCCESS(cudaFree(ptr));
   }
@@ -92,8 +99,6 @@ class cuda_memory_resource final : public device_memory_resource {
    *
    * Two cuda_memory_resources always compare equal, because they can each
    * deallocate memory allocated by the other.
-   *
-   * @throws Nothing.
    *
    * @param other The other resource to compare to
    * @return true If the two resources are equivalent
@@ -107,7 +112,7 @@ class cuda_memory_resource final : public device_memory_resource {
   /**
    * @brief Get free and available memory for memory resource
    *
-   * @throws `rmm::cuda_error` if unable to retrieve memory info.
+   * @throws rmm::cuda_error if unable to retrieve memory info.
    *
    * @return std::pair contaiing free_size and total_size of memory
    */
@@ -119,4 +124,5 @@ class cuda_memory_resource final : public device_memory_resource {
     return std::make_pair(free_size, total_size);
   }
 };
+/** @} */  // end of group
 }  // namespace rmm::mr

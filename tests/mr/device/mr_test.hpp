@@ -52,11 +52,7 @@ inline bool is_device_memory(void* ptr)
 {
   cudaPointerAttributes attributes{};
   if (cudaSuccess != cudaPointerGetAttributes(&attributes, ptr)) { return false; }
-#if CUDART_VERSION < 10000  // memoryType is deprecated in CUDA 10
-  return attributes.memoryType == cudaMemoryTypeDevice;
-#else
   return (attributes.type == cudaMemoryTypeDevice) or (attributes.type == cudaMemoryTypeManaged);
-#endif
 }
 
 enum size_in_bytes : size_t {};

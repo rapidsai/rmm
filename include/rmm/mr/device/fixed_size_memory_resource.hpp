@@ -36,6 +36,11 @@
 #include <vector>
 
 namespace rmm::mr {
+/**
+ * @addtogroup device_memory_resources
+ * @{
+ * @file
+ */
 
 /**
  * @brief A `device_memory_resource` which allocates memory blocks of a single fixed size.
@@ -280,4 +285,5 @@ class fixed_size_memory_resource
   std::vector<block_type> upstream_blocks_;
 };
 
+/** @} */  // end of group
 }  // namespace rmm::mr

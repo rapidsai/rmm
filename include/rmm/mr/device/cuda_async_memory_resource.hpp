@@ -38,6 +38,11 @@
 #endif
 
 namespace rmm::mr {
+/**
+ * @addtogroup device_memory_resources
+ * @{
+ * @file
+ */
 
 /**
  * @brief `device_memory_resource` derived class that uses `cudaMallocAsync`/`cudaFreeAsync` for
@@ -70,7 +75,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
    * If the pool size grows beyond the release threshold, unused memory held by the pool will be
    * released at the next synchronization event.
    *
-   * @throws rmm::runtime_error if the CUDA version does not support `cudaMallocAsync`
+   * @throws rmm::logic_error if the CUDA version does not support `cudaMallocAsync`
    *
    * @param initial_pool_size Optional initial size in bytes of the pool. If no value is provided,
    * initial pool size is half of the available GPU memory.
@@ -173,13 +178,12 @@ class cuda_async_memory_resource final : public device_memory_resource {
 #endif
 
   /**
-   * @brief Allocates memory of size at least `bytes` using cudaMalloc.
+   * @brief Allocates memory of size at least \p bytes.
    *
-   * The returned pointer has at least 256B alignment.
+   * The returned pointer will have at minimum 256 byte alignment.
    *
-   * @throws `rmm::bad_alloc` if the requested allocation could not be fulfilled
-   *
-   * @param bytes The size, in bytes, of the allocation
+   * @param bytes The size of the allocation
+   * @param stream Stream on which to perform allocation
    * @return void* Pointer to the newly allocated memory
    */
   void* do_allocate(std::size_t bytes, rmm::cuda_stream_view stream) override
@@ -197,25 +201,24 @@ class cuda_async_memory_resource final : public device_memory_resource {
   /**
    * @brief Deallocate memory pointed to by \p p.
    *
-   * @throws Nothing.
-   *
-   * @param p Pointer to be deallocated
+   * @param ptr Pointer to be deallocated
+   * @param bytes The size in bytes of the allocation. This must be equal to the
+   * value of `bytes` that was passed to the `allocate` call that returned `p`.
+   * @param stream Stream on which to perform deallocation
    */
-  void do_deallocate(void* ptr, std::size_t size, rmm::cuda_stream_view stream) override
+  void do_deallocate(void* ptr, std::size_t bytes, rmm::cuda_stream_view stream) override
   {
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
-    pool_.deallocate(ptr, size, stream);
+    pool_.deallocate(ptr, bytes, stream);
 #else
     (void)ptr;
-    (void)size;
+    (void)bytes;
     (void)stream;
 #endif
   }
 
   /**
    * @brief Compare this resource to another.
-   *
-   * @throws Nothing.
    *
    * @param other The other resource to compare to
    * @return true If the two resources are equivalent
@@ -234,7 +237,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
   /**
    * @brief Get free and available memory for memory resource
    *
-   * @throws `rmm::cuda_error` if unable to retrieve memory info.
+   * @throws rmm::cuda_error if unable to retrieve memory info.
    *
    * @return std::pair contaiing free_size and total_size of memory
    */
@@ -245,4 +248,5 @@ class cuda_async_memory_resource final : public device_memory_resource {
   }
 };
 
+/** @} */  // end of group
 }  // namespace rmm::mr

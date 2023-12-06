@@ -20,11 +20,18 @@
 
 #include <cuda_runtime_api.h>
 
+#include <cuda/stream_ref>
+
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
 
 namespace rmm {
+/**
+ * @addtogroup cuda_streams
+ * @{
+ * @file
+ */
 
 /**
  * @brief Strongly-typed non-owning wrapper for CUDA streams with default constructor.
@@ -54,6 +61,13 @@ class cuda_stream_view {
   constexpr cuda_stream_view(cudaStream_t stream) noexcept : stream_{stream} {}
 
   /**
+   * @brief Implicit conversion from stream_ref.
+   *
+   * @param stream The underlying stream for this view
+   */
+  constexpr cuda_stream_view(cuda::stream_ref stream) noexcept : stream_{stream.get()} {}
+
+  /**
    * @brief Get the wrapped stream.
    *
    * @return cudaStream_t The underlying stream referenced by this cuda_stream_view
@@ -66,6 +80,13 @@ class cuda_stream_view {
    * @return cudaStream_t The underlying stream referenced by this cuda_stream_view
    */
   constexpr operator cudaStream_t() const noexcept { return value(); }
+
+  /**
+   * @brief Implicit conversion to stream_ref.
+   *
+   * @return stream_ref The underlying stream referenced by this cuda_stream_view
+   */
+  constexpr operator cuda::stream_ref() const noexcept { return value(); }
 
   /**
    * @briefreturn{true if the wrapped stream is the CUDA per-thread default stream}
@@ -120,6 +141,9 @@ static const cuda_stream_view cuda_stream_per_thread{
   cudaStreamPerThread  // NOLINT(cppcoreguidelines-pro-type-cstyle-cast)
 };
 
+// Need to avoid putting is_per_thread_default and is_default into the group twice.
+/** @} */  // end of group
+
 [[nodiscard]] inline bool cuda_stream_view::is_per_thread_default() const noexcept
 {
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
@@ -129,9 +153,6 @@ static const cuda_stream_view cuda_stream_per_thread{
 #endif
 }
 
-/**
- * @brief Return true if the wrapped stream is explicitly the CUDA legacy default stream.
- */
 [[nodiscard]] inline bool cuda_stream_view::is_default() const noexcept
 {
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
@@ -140,6 +161,11 @@ static const cuda_stream_view cuda_stream_per_thread{
   return value() == cuda_stream_legacy || value() == nullptr;
 #endif
 }
+
+/**
+ * @addtogroup cuda_streams
+ * @{
+ */
 
 /**
  * @brief Equality comparison operator for streams
@@ -166,7 +192,7 @@ inline bool operator!=(cuda_stream_view lhs, cuda_stream_view rhs) { return not(
  * @brief Output stream operator for printing / logging streams
  *
  * @param os The output ostream
- * @param sv The cuda_stream_view to output
+ * @param stream The cuda_stream_view to output
  * @return std::ostream& The output ostream
  */
 inline std::ostream& operator<<(std::ostream& os, cuda_stream_view stream)
@@ -175,4 +201,5 @@ inline std::ostream& operator<<(std::ostream& os, cuda_stream_view stream)
   return os;
 }
 
+/** @} */  // end of group
 }  // namespace rmm

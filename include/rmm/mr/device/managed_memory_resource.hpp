@@ -24,6 +24,11 @@
 
 namespace rmm::mr {
 /**
+ * @addtogroup device_memory_resources
+ * @{
+ * @file
+ */
+/**
  * @brief `device_memory_resource` derived class that uses
  * cudaMallocManaged/Free for allocation/deallocation.
  */
@@ -55,18 +60,17 @@ class managed_memory_resource final : public device_memory_resource {
 
  private:
   /**
-   * @brief Allocates memory of size at least `bytes` using cudaMallocManaged.
+   * @brief Allocates memory of size at least \p bytes.
    *
-   * The returned pointer has at least 256B alignment.
+   * The returned pointer will have at minimum 256 byte alignment.
    *
-   * @note Stream argument is ignored
+   * The stream is ignored.
    *
-   * @throws `rmm::bad_alloc` if the requested allocation could not be fulfilled
-   *
-   * @param bytes The size, in bytes, of the allocation
+   * @param bytes The size of the allocation
+   * @param stream This argument is ignored
    * @return void* Pointer to the newly allocated memory
    */
-  void* do_allocate(std::size_t bytes, cuda_stream_view) override
+  void* do_allocate(std::size_t bytes, [[maybe_unused]] cuda_stream_view stream) override
   {
     // FIXME: Unlike cudaMalloc, cudaMallocManaged will throw an error for 0
     // size allocations.
@@ -78,15 +82,18 @@ class managed_memory_resource final : public device_memory_resource {
   }
 
   /**
-   * @brief Deallocate memory pointed to by `ptr`.
+   * @brief Deallocate memory pointed to by \p p.
    *
-   * @note Stream argument is ignored.
-   *
-   * @throws Nothing.
+   * The stream is ignored.
    *
    * @param ptr Pointer to be deallocated
+   * @param bytes The size in bytes of the allocation. This must be equal to the
+   * value of `bytes` that was passed to the `allocate` call that returned `p`.
+   * @param stream This argument is ignored
    */
-  void do_deallocate(void* ptr, std::size_t, cuda_stream_view) override
+  void do_deallocate(void* ptr,
+                     [[maybe_unused]] std::size_t bytes,
+                     [[maybe_unused]] cuda_stream_view stream) override
   {
     RMM_ASSERT_CUDA_SUCCESS(cudaFree(ptr));
   }
@@ -96,8 +103,6 @@ class managed_memory_resource final : public device_memory_resource {
    *
    * Two `managed_memory_resources` always compare equal, because they can each
    * deallocate memory allocated by the other.
-   *
-   * @throws Nothing.
    *
    * @param other The other resource to compare to
    * @return true If the two resources are equivalent
@@ -111,12 +116,13 @@ class managed_memory_resource final : public device_memory_resource {
   /**
    * @brief Get free and available memory for memory resource
    *
-   * @throws `rmm::cuda_error` if unable to retrieve memory info
+   * @throws rmm::cuda_error if unable to retrieve memory info
    *
    * @param stream to execute on
    * @return std::pair contaiing free_size and total_size of memory
    */
-  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view) const override
+  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
+    [[maybe_unused]] cuda_stream_view stream) const override
   {
     std::size_t free_size{};
     std::size_t total_size{};
@@ -125,4 +131,5 @@ class managed_memory_resource final : public device_memory_resource {
   }
 };
 
+/** @} */  // end of group
 }  // namespace rmm::mr

@@ -15,10 +15,17 @@
  */
 #pragma once
 
+#include <cuda/memory_resource>
+
 #include <cstddef>
 #include <utility>
 
 namespace rmm::mr {
+/**
+ * @addtogroup host_memory_resources
+ * @{
+ * @file
+ */
 
 /**
  * @brief Base class for host memory allocation.
@@ -79,8 +86,6 @@ class host_memory_resource {
    * `host_memory_resource` that compares equal to `*this`, and the storage it points to must not
    * yet have been deallocated, otherwise behavior is undefined.
    *
-   * @throws Nothing.
-   *
    * @param ptr Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the value of `bytes`
    *              that was passed to the `allocate` call that returned `ptr`.
@@ -109,6 +114,37 @@ class host_memory_resource {
     return do_is_equal(other);
   }
 
+  /**
+   * @brief Comparison operator with another device_memory_resource
+   *
+   * @param other The other resource to compare to
+   * @return true If the two resources are equivalent
+   * @return false If the two resources are not equivalent
+   */
+  [[nodiscard]] bool operator==(host_memory_resource const& other) const noexcept
+  {
+    return do_is_equal(other);
+  }
+
+  /**
+   * @brief Comparison operator with another device_memory_resource
+   *
+   * @param other The other resource to compare to
+   * @return false If the two resources are equivalent
+   * @return true If the two resources are not equivalent
+   */
+  [[nodiscard]] bool operator!=(host_memory_resource const& other) const noexcept
+  {
+    return !do_is_equal(other);
+  }
+
+  /**
+   * @brief Enables the `cuda::mr::host_accessible` property
+   *
+   * This property declares that a `host_memory_resource` provides host accessible memory
+   */
+  friend void get_property(host_memory_resource const&, cuda::mr::host_accessible) noexcept {}
+
  private:
   /**
    * @brief Allocates memory on the host of size at least `bytes` bytes.
@@ -131,8 +167,6 @@ class host_memory_resource {
    * `ptr` must have been returned by a prior call to `allocate(bytes,alignment)` on a
    * `host_memory_resource` that compares equal to `*this`, and the storage it points to must not
    * yet have been deallocated, otherwise behavior is undefined.
-   *
-   * @throws Nothing.
    *
    * @param ptr Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the value of `bytes`
@@ -161,4 +195,7 @@ class host_memory_resource {
     return this == &other;
   }
 };
+static_assert(cuda::mr::resource_with<host_memory_resource, cuda::mr::host_accessible>);
+/** @} */  // end of group
+
 }  // namespace rmm::mr

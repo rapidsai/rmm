@@ -99,6 +99,8 @@ struct bytes {
 /**
  * @brief Returns the global RMM logger
  *
+ * @ingroup logging
+ *
  * This is a spdlog logger. The easiest way to log messages is to use the `RMM_LOG_*` macros.
  *
  * @return spdlog::logger& The logger.
@@ -109,6 +111,8 @@ inline spdlog::logger& logger()
   return wrapped.logger_;
 }
 
+//! @cond Doxygen_Suppress
+//
 // The default is INFO, but it should be used sparingly, so that by default a log file is only
 // output if there is important information, warnings, errors, and critical failures
 // Log messages that require computation should only be used at level TRACE and DEBUG
@@ -119,10 +123,13 @@ inline spdlog::logger& logger()
 #define RMM_LOG_ERROR(...)    SPDLOG_LOGGER_ERROR(&rmm::logger(), __VA_ARGS__)
 #define RMM_LOG_CRITICAL(...) SPDLOG_LOGGER_CRITICAL(&rmm::logger(), __VA_ARGS__)
 
+//! @endcond
+
 }  // namespace rmm
 
 // Doxygen doesn't like this because we're overloading something from fmt
 //! @cond Doxygen_Suppress
 template <>
 struct fmt::formatter<rmm::detail::bytes> : fmt::ostream_formatter {};
+
 //! @endcond

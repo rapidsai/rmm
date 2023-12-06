@@ -27,6 +27,11 @@
 
 namespace rmm::mr {
 /**
+ * @addtogroup device_resource_adaptors
+ * @{
+ * @file
+ */
+/**
  * @brief Resource that adapts `Upstream` memory resource to allocate memory in a specified
  * alignment size.
  *
@@ -51,8 +56,8 @@ class aligned_resource_adaptor final : public device_memory_resource {
   /**
    * @brief Construct an aligned resource adaptor using `upstream` to satisfy allocation requests.
    *
-   * @throws `rmm::logic_error` if `upstream == nullptr`
-   * @throws `rmm::logic_error` if `allocation_alignment` is not a power of 2
+   * @throws rmm::logic_error if `upstream == nullptr`
+   * @throws rmm::logic_error if `allocation_alignment` is not a power of 2
    *
    * @param upstream The resource used for allocating/deallocating device memory.
    * @param alignment The size used for allocation alignment.
@@ -101,15 +106,19 @@ class aligned_resource_adaptor final : public device_memory_resource {
     return upstream_->supports_get_mem_info();
   }
 
- private:
+  /**
+   * @brief The default alignment used by the adaptor.
+   */
   static constexpr std::size_t default_alignment_threshold = 0;
-  using lock_guard                                         = std::lock_guard<std::mutex>;
+
+ private:
+  using lock_guard = std::lock_guard<std::mutex>;
 
   /**
    * @brief Allocates memory of size at least `bytes` using the upstream resource with the specified
    * alignment.
    *
-   * @throws `rmm::bad_alloc` if the requested allocation could not be fulfilled
+   * @throws rmm::bad_alloc if the requested allocation could not be fulfilled
    * by the upstream resource.
    *
    * @param bytes The size, in bytes, of the allocation
@@ -138,9 +147,7 @@ class aligned_resource_adaptor final : public device_memory_resource {
   /**
    * @brief Free allocation of size `bytes` pointed to to by `p` and log the deallocation.
    *
-   * @throws Nothing.
-   *
-   * @param p Pointer to be deallocated
+   * @param ptr Pointer to be deallocated
    * @param bytes Size of the allocation
    * @param stream Stream on which to perform the deallocation
    */
@@ -164,8 +171,6 @@ class aligned_resource_adaptor final : public device_memory_resource {
   /**
    * @brief Compare this resource to another.
    *
-   * @throws Nothing.
-   *
    * @param other The other resource to compare to
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equivalent
@@ -183,7 +188,7 @@ class aligned_resource_adaptor final : public device_memory_resource {
    *
    * The free size may not be fully allocatable because of alignment requirements.
    *
-   * @throws `rmm::cuda_error` if unable to retrieve memory info.
+   * @throws rmm::cuda_error if unable to retrieve memory info.
    *
    * @param stream Stream on which to get the mem info.
    * @return std::pair containing free_size and total_size of memory
@@ -214,4 +219,5 @@ class aligned_resource_adaptor final : public device_memory_resource {
   mutable std::mutex mtx_;           ///< Mutex for exclusive lock.
 };
 
+/** @} */  // end of group
 }  // namespace rmm::mr

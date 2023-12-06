@@ -26,7 +26,14 @@
 #include <cstddef>
 #include <vector>
 
+#include <cuda/memory_resource>
+
 namespace rmm {
+/**
+ * @addtogroup data_containers
+ * @{
+ * @file
+ */
 
 /**
  * @brief An *uninitialized* vector of elements in device memory.
@@ -39,7 +46,7 @@ namespace rmm {
  * `thrust::uninitialized_fill`.
  *
  * Example:
- * @code{c++}
+ * @code{.cpp}
  * rmm::mr::device_memory_resource * mr = new my_custom_resource();
  * rmm::cuda_stream_view s{};
  *
@@ -67,6 +74,7 @@ namespace rmm {
  */
 template <typename T>
 class device_uvector {
+  using async_resource_ref = cuda::mr::async_resource_ref<cuda::mr::device_accessible>;
   static_assert(std::is_trivially_copyable<T>::value,
                 "device_uvector only supports types that are trivially copyable.");
 
@@ -116,10 +124,9 @@ class device_uvector {
    * @param stream The stream on which to perform the allocation
    * @param mr The resource used to allocate the device storage
    */
-  explicit device_uvector(
-    std::size_t size,
-    cuda_stream_view stream,
-    rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource())
+  explicit device_uvector(std::size_t size,
+                          cuda_stream_view stream,
+                          async_resource_ref mr = rmm::mr::get_current_device_resource())
     : _storage{elements_to_bytes(size), stream, mr}
   {
   }
@@ -133,10 +140,9 @@ class device_uvector {
    * @param stream The stream on which to perform the copy
    * @param mr The resource used to allocate device memory for the new vector
    */
-  explicit device_uvector(
-    device_uvector const& other,
-    cuda_stream_view stream,
-    rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource())
+  explicit device_uvector(device_uvector const& other,
+                          cuda_stream_view stream,
+                          async_resource_ref mr = rmm::mr::get_current_device_resource())
     : _storage{other._storage, stream, mr}
   {
   }
@@ -519,9 +525,9 @@ class device_uvector {
   [[nodiscard]] bool is_empty() const noexcept { return size() == 0; }
 
   /**
-   * @briefreturn{Pointer to underlying resource used to allocate and deallocate the device storage}
+   * @briefreturn{The async_resource_ref used to allocate and deallocate the device storage}
    */
-  [[nodiscard]] mr::device_memory_resource* memory_resource() const noexcept
+  [[nodiscard]] async_resource_ref memory_resource() const noexcept
   {
     return _storage.memory_resource();
   }
@@ -557,4 +563,6 @@ class device_uvector {
     return num_bytes / sizeof(value_type);
   }
 };
+
+/** @} */  // end of group
 }  // namespace rmm

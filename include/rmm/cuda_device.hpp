@@ -22,6 +22,11 @@
 namespace rmm {
 
 /**
+ * @addtogroup cuda_device_management
+ * @{
+ * @file
+ */
+/**
  * @brief Strong type for a CUDA device identifier.
  *
  */
@@ -29,7 +34,7 @@ struct cuda_device_id {
   using value_type = int;  ///< Integer type used for device identifier
 
   /**
-   * @brief Construct a `cuda_device_id` from the specified integer value
+   * @brief Construct a `cuda_device_id` from the specified integer value.
    *
    * @param dev_id The device's integer identifier
    */
@@ -38,6 +43,35 @@ struct cuda_device_id {
   /// @briefreturn{The wrapped integer value}
   [[nodiscard]] constexpr value_type value() const noexcept { return id_; }
 
+  // TODO re-add doxygen comment specifier /** for these hidden friend operators once this Breathe
+  // bug is fixed: https://github.com/breathe-doc/breathe/issues/916
+  //! @cond Doxygen_Suppress
+  /**
+   * @brief Compare two `cuda_device_id`s for equality.
+   *
+   * @param lhs The first `cuda_device_id` to compare.
+   * @param rhs The second `cuda_device_id` to compare.
+   * @return true if the two `cuda_device_id`s wrap the same integer value, false otherwise.
+   */
+  [[nodiscard]] constexpr friend bool operator==(cuda_device_id const& lhs,
+                                                 cuda_device_id const& rhs) noexcept
+  {
+    return lhs.value() == rhs.value();
+  }
+
+  /**
+   * @brief Compare two `cuda_device_id`s for inequality.
+   *
+   * @param lhs The first `cuda_device_id` to compare.
+   * @param rhs The second `cuda_device_id` to compare.
+   * @return true if the two `cuda_device_id`s wrap different integer values, false otherwise.
+   */
+  [[nodiscard]] constexpr friend bool operator!=(cuda_device_id const& lhs,
+                                                 cuda_device_id const& rhs) noexcept
+  {
+    return lhs.value() != rhs.value();
+  }
+  //! @endcond
  private:
   value_type id_;
 };
@@ -79,16 +113,17 @@ struct cuda_set_device_raii {
    * @param dev_id The device to set as the current CUDA device
    */
   explicit cuda_set_device_raii(cuda_device_id dev_id)
-    : old_device_{get_current_cuda_device()}, needs_reset_{old_device_.value() != dev_id.value()}
+    : old_device_{get_current_cuda_device()},
+      needs_reset_{dev_id.value() >= 0 && old_device_ != dev_id}
   {
-    if (needs_reset_) RMM_ASSERT_CUDA_SUCCESS(cudaSetDevice(dev_id.value()));
+    if (needs_reset_) { RMM_ASSERT_CUDA_SUCCESS(cudaSetDevice(dev_id.value())); }
   }
   /**
    * @brief Reactivates the previous CUDA device
    */
   ~cuda_set_device_raii() noexcept
   {
-    if (needs_reset_) RMM_ASSERT_CUDA_SUCCESS(cudaSetDevice(old_device_.value()));
+    if (needs_reset_) { RMM_ASSERT_CUDA_SUCCESS(cudaSetDevice(old_device_.value())); }
   }
 
   cuda_set_device_raii(cuda_set_device_raii const&)            = delete;
@@ -101,4 +136,5 @@ struct cuda_set_device_raii {
   bool needs_reset_;
 };
 
+/** @} */  // end of group
 }  // namespace rmm

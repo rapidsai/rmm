@@ -22,6 +22,11 @@
 #include <utility>
 
 namespace rmm::mr {
+/**
+ * @addtogroup device_memory_resources
+ * @{
+ * @file
+ */
 
 /**
  * @brief Callback function type used by callback memory resource for allocation.
@@ -100,11 +105,34 @@ class callback_memory_resource final : public device_memory_resource {
     default;  ///< @default_move_assignment{callback_memory_resource}
 
  private:
+  /**
+   * @brief Allocates memory of size at least \p bytes.
+   *
+   * The returned pointer will have at minimum 256 byte alignment.
+   *
+   * If supported by the callback, this operation may optionally be executed on
+   * a stream.  Otherwise, the stream is ignored and the null stream is used.
+   *
+   * @param bytes The size of the allocation
+   * @param stream Stream on which to perform allocation
+   * @return void* Pointer to the newly allocated memory
+   */
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
     return allocate_callback_(bytes, stream, allocate_callback_arg_);
   }
 
+  /**
+   * @brief Deallocate memory pointed to by \p p.
+   *
+   * If supported by the callback, this operation may optionally be executed on
+   * a stream.  Otherwise, the stream is ignored and the null stream is used.
+   *
+   * @param ptr Pointer to be deallocated
+   * @param bytes The size in bytes of the allocation. This must be equal to the
+   * value of `bytes` that was passed to the `allocate` call that returned `p`.
+   * @param stream Stream on which to perform deallocation
+   */
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
     deallocate_callback_(ptr, bytes, stream, deallocate_callback_arg_);
@@ -115,8 +143,8 @@ class callback_memory_resource final : public device_memory_resource {
     throw std::runtime_error("cannot get free / total memory");
   }
 
-  [[nodiscard]] virtual bool supports_streams() const noexcept { return false; }
-  [[nodiscard]] virtual bool supports_get_mem_info() const noexcept { return false; }
+  [[nodiscard]] bool supports_streams() const noexcept override { return false; }
+  [[nodiscard]] bool supports_get_mem_info() const noexcept override { return false; }
 
   allocate_callback_t allocate_callback_;
   deallocate_callback_t deallocate_callback_;
@@ -124,4 +152,5 @@ class callback_memory_resource final : public device_memory_resource {
   void* deallocate_callback_arg_;
 };
 
+/** @} */  // end of group
 }  // namespace rmm::mr

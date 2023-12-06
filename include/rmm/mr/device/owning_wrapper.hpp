@@ -24,7 +24,21 @@
 
 namespace rmm::mr {
 namespace detail {
-/// Converts a tuple into a parameter pack
+/**
+ * @brief Converts a tuple into a parameter pack.
+ *
+ * This helper function for make_resource allows passing the upstreams as a
+ * list of arguments to the Resource's constructor.
+ *
+ * @tparam Resource The resource type to create
+ * @tparam UpstreamTuple A tuple of shared pointers of the types of the upstream resources
+ * @tparam Args The types of the arguments to the resource's constructor
+ * @param upstreams Tuple of `std::shared_ptr`s to the upstreams used by the wrapped resource, in
+ * the same order as expected by `Resource`s constructor.
+ * @param args Function parameter pack of arguments to forward to the Resource's
+ * constructor
+ * @return std::unique_ptr<Resource> A unique pointer to the created resource.
+ */
 template <typename Resource, typename UpstreamTuple, std::size_t... Indices, typename... Args>
 auto make_resource_impl(UpstreamTuple const& upstreams,
                         std::index_sequence<Indices...>,
@@ -34,6 +48,18 @@ auto make_resource_impl(UpstreamTuple const& upstreams,
                                     std::forward<Args>(args)...);
 }
 
+/**
+ * @brief Create a `std::unique_ptr` to a `Resource` with the given upstreams and arguments
+ *
+ * @tparam Resource The resource type to create
+ * @tparam Upstreams The types of the upstream resources
+ * @tparam Args The types of the arguments to the resource's constructor
+ * @param upstreams Tuple of `std::shared_ptr`s to the upstreams used by the wrapped resource, in
+ * the same order as expected by `Resource`s constructor.
+ * @param args Function parameter pack of arguments to forward to the wrapped resource's
+ * constructor
+ * @return std::unique_ptr<Resource> A unique pointer to the created resource
+ */
 template <typename Resource, typename... Upstreams, typename... Args>
 auto make_resource(std::tuple<std::shared_ptr<Upstreams>...> const& upstreams, Args&&... args)
 {
@@ -42,6 +68,11 @@ auto make_resource(std::tuple<std::shared_ptr<Upstreams>...> const& upstreams, A
 }
 }  // namespace detail
 
+/**
+ * @addtogroup device_resource_adaptors
+ * @{
+ * @file
+ */
 /**
  * @brief Resource adaptor that maintains the lifetime of upstream resources.
  *
@@ -146,7 +177,7 @@ class owning_wrapper : public device_memory_resource {
   /**
    * @brief Allocates memory using the wrapped resource.
    *
-   * @throws `rmm::bad_alloc` if the requested allocation could not be fulfilled by the wrapped
+   * @throws rmm::bad_alloc if the requested allocation could not be fulfilled by the wrapped
    * resource.
    *
    * @param bytes The size, in bytes, of the allocation
@@ -163,8 +194,6 @@ class owning_wrapper : public device_memory_resource {
    *
    * `ptr` must have been returned from a prior call to `do_allocate(bytes)`.
    *
-   * @throws Nothing.
-   *
    * @param ptr Pointer to the allocation to free.
    * @param bytes Size of the allocation
    * @param stream Stream on which to deallocate the memory
@@ -178,8 +207,6 @@ class owning_wrapper : public device_memory_resource {
    * @brief Compare if this resource is equal to another.
    *
    * Two resources are equal if memory allocated by one resource can be freed by the other.
-   *
-   * @throws Nothing.
    *
    * @param other The other resource to compare to
    * @return true If the two resources are equal
@@ -196,7 +223,7 @@ class owning_wrapper : public device_memory_resource {
   /**
    * @brief Get free and available memory from upstream resource.
    *
-   * @throws `rmm::cuda_error` if unable to retrieve memory info.
+   * @throws rmm::cuda_error if unable to retrieve memory info.
    *
    * @param stream Stream on which to get the mem info.
    * @return std::pair contaiing free_size and total_size of memory
@@ -272,4 +299,5 @@ auto make_owning_wrapper(std::shared_ptr<Upstream> upstream, Args&&... args)
                                        std::forward<Args>(args)...);
 }
 
+/** @} */  // end of group
 }  // namespace rmm::mr
