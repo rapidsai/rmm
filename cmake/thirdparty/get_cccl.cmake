@@ -16,9 +16,7 @@
 function(find_and_configure_cccl)
 
   include(${rapids-cmake-dir}/cpm/cccl.cmake)
-  rapids_cpm_cccl(
-    BUILD_EXPORT_SET rmm-exports
-    INSTALL_EXPORT_SET rmm-exports)
+  rapids_cpm_cccl(BUILD_EXPORT_SET rmm-exports INSTALL_EXPORT_SET rmm-exports)
 
 endfunction()
 
