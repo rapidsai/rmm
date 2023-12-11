@@ -151,20 +151,12 @@ The goal of the [RMM](https://github.com/rapidsai/rmm) is to provide:
   A collection of data structures that use the interface for memory allocation
 ]=])
 
-set(code_string
-    [=[
-if(NOT TARGET rmm::Thrust)
-  thrust_create_target(rmm::Thrust FROM_OPTIONS)
-endif()
-]=])
-
 rapids_export(
   INSTALL rmm
   EXPORT_SET rmm-exports
   GLOBAL_TARGETS rmm
   NAMESPACE rmm::
-  DOCUMENTATION doc_string
-  FINAL_CODE_BLOCK code_string)
+  DOCUMENTATION doc_string)
 
 # ##################################################################################################
 # * build export -----------------------------------------------------------------------------------
@@ -174,8 +166,7 @@ rapids_export(
   EXPORT_SET rmm-exports
   GLOBAL_TARGETS rmm
   NAMESPACE rmm::
-  DOCUMENTATION doc_string
-  FINAL_CODE_BLOCK code_string)
+  DOCUMENTATION doc_string)
 
 # ##################################################################################################
 # * make documentation -----------------------------------------------------------------------------
@@ -196,6 +187,6 @@ add_custom_target(
 # * make gdb helper scripts ------------------------------------------------------------------------
 
 # optionally assemble Thrust pretty-printers
-if(Thrust_SOURCE_DIR)
+if(CCCL_SOURCE_DIR)
   configure_file(scripts/load-pretty-printers.in load-pretty-printers @ONLY)
 endif()
