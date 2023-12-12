@@ -22,6 +22,7 @@ rmm.egg-info/
 python/build
 python/*/build
 python/rmm/**/_lib/**/*.cpp
+!python/rmm/_lib/_torch_allocator.cpp
 python/rmm/**/_lib/**/*.h
 python/rmm/**/_lib/.nfs*
 python/rmm/_cuda/*.cpp
