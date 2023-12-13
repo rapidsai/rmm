@@ -23,7 +23,7 @@
 // These signatures must match those required by CUDAPluggableAllocator in
 // github.com/pytorch/pytorch/blob/main/torch/csrc/cuda/CUDAPluggableAllocator.h
 // Since the loading is done at runtime via dlopen, no error checking
-// can before performed.
+// can be performed for mismatching signatures.
 
 /**
  * @brief Allocate memory of at least \p size bytes.
