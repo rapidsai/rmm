@@ -19,8 +19,10 @@ set(linked_libraries rmm::rmm)
 rapids_cython_create_modules(SOURCE_FILES "${cython_sources}" LINKED_LIBRARIES "${linked_libraries}"
                                                                                CXX)
 
-add_library(torch_allocator SHARED _torch_allocator.cpp)
-target_link_libraries(torch_allocator PRIVATE rmm::rmm)
+add_library(_torch_allocator SHARED _torch_allocator.cpp)
+# Want the output to be called _torch_allocator.so
+set_target_properties(_torch_allocator PROPERTIES PREFIX "" SUFFIX ".so")
+target_link_libraries(_torch_allocator PRIVATE rmm::rmm)
 cmake_path(RELATIVE_PATH CMAKE_CURRENT_SOURCE_DIR BASE_DIRECTORY "${PROJECT_SOURCE_DIR}"
            OUTPUT_VARIABLE _torch_allocator_location)
-install(TARGETS torch_allocator DESTINATION "${_torch_allocator_location}")
+install(TARGETS _torch_allocator DESTINATION "${_torch_allocator_location}")

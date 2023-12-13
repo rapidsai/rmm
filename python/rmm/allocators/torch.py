@@ -18,12 +18,12 @@ except ImportError:
 else:
     import pathlib
 
+    sofile = (
+        pathlib.Path(__file__).parent.parent / "_lib" / "_torch_allocator.so"
+    )
     rmm_torch_allocator = CUDAPluggableAllocator(
-        pathlib.Path(__file__).absolute().parent
-        / ".."
-        / "_lib"
-        / "libtorch_allocator.so",
+        str(sofile.absolute()),
         alloc_fn_name="allocate",
         free_fn_name="deallocate",
     )
-    del pathlib
+    del pathlib, sofile
