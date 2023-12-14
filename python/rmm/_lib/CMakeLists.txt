@@ -12,12 +12,17 @@
 # the License.
 # =============================================================================
 
-set(cython_sources device_buffer.pyx lib.pyx logger.pyx memory_resource.pyx cuda_stream.pyx
-                   torch_allocator.pyx)
+set(cython_sources device_buffer.pyx lib.pyx logger.pyx memory_resource.pyx cuda_stream.pyx)
 set(linked_libraries rmm::rmm)
 
 # Build all of the Cython targets
 rapids_cython_create_modules(SOURCE_FILES "${cython_sources}" LINKED_LIBRARIES "${linked_libraries}"
                                                                                CXX)
-# The cdef public functions in this file need to have a C ABI
-target_compile_definitions(torch_allocator PRIVATE CYTHON_EXTERN_C=extern\ "C")
+
+add_library(_torch_allocator SHARED _torch_allocator.cpp)
+# Want the output to be called _torch_allocator.so
+set_target_properties(_torch_allocator PROPERTIES PREFIX "" SUFFIX ".so")
+target_link_libraries(_torch_allocator PRIVATE rmm::rmm)
+cmake_path(RELATIVE_PATH CMAKE_CURRENT_SOURCE_DIR BASE_DIRECTORY "${PROJECT_SOURCE_DIR}"
+           OUTPUT_VARIABLE _torch_allocator_location)
+install(TARGETS _torch_allocator DESTINATION "${_torch_allocator_location}")

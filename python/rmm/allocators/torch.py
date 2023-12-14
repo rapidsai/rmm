@@ -16,11 +16,14 @@ try:
 except ImportError:
     rmm_torch_allocator = None
 else:
-    import rmm._lib.torch_allocator
+    import pathlib
 
-    _alloc_free_lib_path = rmm._lib.torch_allocator.__file__
+    sofile = (
+        pathlib.Path(__file__).parent.parent / "_lib" / "_torch_allocator.so"
+    )
     rmm_torch_allocator = CUDAPluggableAllocator(
-        _alloc_free_lib_path,
+        str(sofile.absolute()),
         alloc_fn_name="allocate",
         free_fn_name="deallocate",
     )
+    del pathlib, sofile
