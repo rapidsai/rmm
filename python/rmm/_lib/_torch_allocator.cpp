@@ -33,7 +33,7 @@
  * @param size The number of bytes to allocate
  * @param device The device whose memory resource one should use
  * @param stream CUDA stream to perform allocation on
- * @return void* Pointer to the newly allocated memory
+ * @return Pointer to the newly allocated memory
  */
 extern "C" void* allocate(std::size_t size, int device, void* stream)
 {
