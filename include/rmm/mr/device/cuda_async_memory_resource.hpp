@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022, NVIDIA CORPORATION.
+ * Copyright (c) 2021-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -120,7 +120,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
         pool_handle(), cudaMemPoolReuseAllowOpportunistic, &disabled));
     }
 
-    auto const [free, total] = rmm::detail::available_device_memory();
+    auto const [free, total] = rmm::available_device_memory();
 
     // Need an l-value to take address to pass to cudaMemPoolSetAttribute
     uint64_t threshold = release_threshold.value_or(total);

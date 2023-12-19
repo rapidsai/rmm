@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 #include "../synchronization/synchronization.hpp"
 
+#include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_uvector.hpp>
@@ -38,7 +39,8 @@
 void BM_UvectorSizeConstruction(benchmark::State& state)
 {
   rmm::mr::cuda_memory_resource cuda_mr{};
-  rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource> mr{&cuda_mr};
+  rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource> mr{
+    &cuda_mr, rmm::fraction_of_free_device_memory(1. / 2)};
   rmm::mr::set_current_device_resource(&mr);
 
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
@@ -59,7 +61,8 @@ BENCHMARK(BM_UvectorSizeConstruction)
 void BM_ThrustVectorSizeConstruction(benchmark::State& state)
 {
   rmm::mr::cuda_memory_resource cuda_mr{};
-  rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource> mr{&cuda_mr};
+  rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource> mr{
+    &cuda_mr, rmm::fraction_of_free_device_memory(1. / 2)};
   rmm::mr::set_current_device_resource(&mr);
 
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)

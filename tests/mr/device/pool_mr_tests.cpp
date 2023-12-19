@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ using limiting_mr = rmm::mr::limiting_resource_adaptor<rmm::mr::cuda_memory_reso
 
 TEST(PoolTest, ThrowOnNullUpstream)
 {
-  auto construct_nullptr = []() { pool_mr mr{nullptr}; };
+  auto construct_nullptr = []() { pool_mr mr{nullptr, 0}; };
   EXPECT_THROW(construct_nullptr(), rmm::logic_error);
 }
 
@@ -70,7 +70,7 @@ TEST(PoolTest, ReferenceThrowMaxLessThanInitial)
 TEST(PoolTest, AllocateNinetyPercent)
 {
   auto allocate_ninety = []() {
-    auto const [free, total] = rmm::detail::available_device_memory();
+    auto const [free, total] = rmm::available_device_memory();
     (void)total;
     auto const ninety_percent_pool =
       rmm::detail::align_up(static_cast<std::size_t>(static_cast<double>(free) * 0.9),
@@ -85,7 +85,7 @@ TEST(PoolTest, TwoLargeBuffers)
   auto two_large = []() {
     auto const [free, total] = rmm::detail::available_device_memory();
     (void)total;
-    pool_mr mr{rmm::mr::get_current_device_resource()};
+    pool_mr mr{rmm::mr::get_current_device_resource(), rmm::fraction_of_free_device_memory(1. / 2)};
     auto* ptr1 = mr.allocate(free / 4);
     auto* ptr2 = mr.allocate(free / 4);
     mr.deallocate(ptr1, free / 4);
@@ -158,8 +158,8 @@ TEST(PoolTest, NonAlignedPoolSize)
 TEST(PoolTest, UpstreamDoesntSupportMemInfo)
 {
   cuda_mr cuda;
-  pool_mr mr1(&cuda);
-  pool_mr mr2(&mr1);
+  pool_mr mr1(&cuda, 0);
+  pool_mr mr2(&mr1, 0);
   auto* ptr = mr2.allocate(1024);
   mr2.deallocate(ptr, 1024);
 }
