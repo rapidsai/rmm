@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
 
 #include <cuda_runtime_api.h>
@@ -100,6 +101,34 @@ inline int get_num_cuda_devices()
   cuda_device_id::value_type num_dev{-1};
   RMM_ASSERT_CUDA_SUCCESS(cudaGetDeviceCount(&num_dev));
   return num_dev;
+}
+
+/**
+ * @brief Returns the available and total device memory in bytes for the current device
+ *
+ * @return The available and total device memory in bytes for the current device as a std::pair.
+ */
+inline std::pair<std::size_t, std::size_t> available_device_memory()
+{
+  std::size_t free{};
+  std::size_t total{};
+  RMM_CUDA_TRY(cudaMemGetInfo(&free, &total));
+  return {free, total};
+}
+
+/**
+ * @brief Returns the specified fraction of free device memory on the current CUDA device, aligned
+ * to the nearest CUDA allocation size.
+ *
+ * @return std::size_t The recommended initial device memory pool size in bytes.
+ */
+inline std::size_t fraction_of_free_device_memory(double fraction = 1. / 2)
+{
+  auto const [free, total] = rmm::available_device_memory();
+
+  return rmm::detail::align_up(
+    std::min(free, static_cast<std::size_t>(static_cast<double>(total) * fraction)),
+    rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
 }
 
 /**
