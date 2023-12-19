@@ -61,10 +61,12 @@ Compiler requirements:
 
 CUDA/GPU requirements:
 
-* CUDA 11.4+
-* Pascal architecture or better
+* CUDA 11.4+. You can obtain CUDA from
+  [https://developer.nvidia.com/cuda-downloads](https://developer.nvidia.com/cuda-downloads)
 
-You can obtain CUDA from [https://developer.nvidia.com/cuda-downloads](https://developer.nvidia.com/cuda-downloads)
+GPU Support:
+* RMM is tested and supported only on Volta architecture and newer (Compute Capability 7.0+). It
+  may work on earlier architectures.
 
 Python requirements:
 * `scikit-build-core`
