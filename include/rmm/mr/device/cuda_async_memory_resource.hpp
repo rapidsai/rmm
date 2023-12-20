@@ -17,7 +17,6 @@
 
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream_view.hpp>
-#include <rmm/detail/cuda_util.hpp>
 #include <rmm/detail/dynamic_load_runtime.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/cuda_async_view_memory_resource.hpp>
