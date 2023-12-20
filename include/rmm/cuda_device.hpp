@@ -117,14 +117,18 @@ inline std::pair<std::size_t, std::size_t> available_device_memory()
 }
 
 /**
- * @brief Returns the specified fraction of free device memory on the current CUDA device, aligned
- * to the nearest CUDA allocation size.
+ * @brief Returns the approximate specified percent of free device memory on the current CUDA
+ * device, aligned to the nearest CUDA allocation size.
  *
- * @return std::size_t The recommended initial device memory pool size in bytes.
+ * @param percent The percent of free memory to return. Defaults to 50%.
+ *
+ * @return The recommended initial device memory pool size in bytes.
  */
-inline std::size_t fraction_of_free_device_memory(double fraction = 1. / 2)
+inline std::size_t percent_of_free_device_memory(int percent = 50)
 {
   auto const [free, total] = rmm::available_device_memory();
+
+  double fraction = static_cast<double>(percent) / 100;
 
   return rmm::detail::align_up(
     std::min(free, static_cast<std::size_t>(static_cast<double>(total) * fraction)),

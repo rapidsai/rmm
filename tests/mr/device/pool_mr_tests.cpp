@@ -16,7 +16,6 @@
 
 #include <rmm/cuda_device.hpp>
 #include <rmm/detail/aligned.hpp>
-#include <rmm/detail/cuda_util.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/device_uvector.hpp>
@@ -83,9 +82,9 @@ TEST(PoolTest, AllocateNinetyPercent)
 TEST(PoolTest, TwoLargeBuffers)
 {
   auto two_large = []() {
-    auto const [free, total] = rmm::detail::available_device_memory();
+    auto const [free, total] = rmm::available_device_memory();
     (void)total;
-    pool_mr mr{rmm::mr::get_current_device_resource(), rmm::fraction_of_free_device_memory(1. / 2)};
+    pool_mr mr{rmm::mr::get_current_device_resource(), rmm::percent_of_free_device_memory(50)};
     auto* ptr1 = mr.allocate(free / 4);
     auto* ptr2 = mr.allocate(free / 4);
     mr.deallocate(ptr1, free / 4);

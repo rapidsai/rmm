@@ -40,7 +40,7 @@ void BM_UvectorSizeConstruction(benchmark::State& state)
 {
   rmm::mr::cuda_memory_resource cuda_mr{};
   rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource> mr{
-    &cuda_mr, rmm::fraction_of_free_device_memory(1. / 2)};
+    &cuda_mr, rmm::percent_of_free_device_memory(1. / 2)};
   rmm::mr::set_current_device_resource(&mr);
 
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
@@ -62,7 +62,7 @@ void BM_ThrustVectorSizeConstruction(benchmark::State& state)
 {
   rmm::mr::cuda_memory_resource cuda_mr{};
   rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource> mr{
-    &cuda_mr, rmm::fraction_of_free_device_memory(1. / 2)};
+    &cuda_mr, rmm::percent_of_free_device_memory(50)};
   rmm::mr::set_current_device_resource(&mr);
 
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
