@@ -19,7 +19,6 @@
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream.hpp>
 #include <rmm/detail/aligned.hpp>
-#include <rmm/detail/cuda_util.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/arena_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>

@@ -16,7 +16,6 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/aligned.hpp>
-#include <rmm/detail/cuda_util.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>

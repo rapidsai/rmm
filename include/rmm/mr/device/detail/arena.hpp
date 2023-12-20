@@ -19,7 +19,6 @@
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/aligned.hpp>
-#include <rmm/detail/cuda_util.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/logging_assert.hpp>
 #include <rmm/logger.hpp>

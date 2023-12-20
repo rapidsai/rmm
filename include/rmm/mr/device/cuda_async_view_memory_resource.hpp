@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, NVIDIA CORPORATION.
+ * Copyright (c) 2021-2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream_view.hpp>
-#include <rmm/detail/cuda_util.hpp>
 #include <rmm/detail/dynamic_load_runtime.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
