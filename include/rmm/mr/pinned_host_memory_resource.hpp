@@ -161,8 +161,8 @@ class pinned_host_memory_resource {
    */
   static void deallocate_async(void* ptr,
                                std::size_t bytes,
-                               std::size_t alignment = rmm::detail::RMM_DEFAULT_HOST_ALIGNMENT,
-                               [[maybe_unused]] cuda::stream_ref stream = {}) noexcept
+                               std::size_t alignment,
+                               [[maybe_unused]] cuda::stream_ref stream) noexcept
   {
     return deallocate(ptr, bytes, alignment);
   }
