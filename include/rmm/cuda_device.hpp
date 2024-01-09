@@ -121,7 +121,7 @@ namespace detail {
 /**
  * @brief Returns the available and total device memory in bytes for the current device
  *
- * @deprecated Use rmm::available_device_memory instead.
+ * @deprecated Use rmm::available_device_memory() instead.
  *
  * @return The available and total device memory in bytes for the current device as a std::pair.
  */
