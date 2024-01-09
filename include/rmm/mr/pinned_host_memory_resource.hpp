@@ -52,6 +52,8 @@ class pinned_host_memory_resource {
    * reason.
    *
    * @param bytes The size, in bytes, of the allocation.
+   * @param alignment Alignment in bytes. Default alignment is used if unspecified.
+   *
    * @return Pointer to the newly allocated memory.
    */
   static void* allocate(
@@ -72,6 +74,7 @@ class pinned_host_memory_resource {
    *
    * @param ptr Pointer to be deallocated.
    * @param bytes Size of the allocation.
+   * @param alignment Alignment in bytes. Default alignment is used if unspecified.
    */
   static void deallocate(
     void* ptr,
