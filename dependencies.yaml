@@ -8,8 +8,8 @@ files:
     includes:
       - build
       - checks
-      - cuda_version
       - cuda
+      - cuda_version
       - develop
       - docs
       - py_version
