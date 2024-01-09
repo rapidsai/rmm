@@ -116,6 +116,12 @@ inline std::pair<std::size_t, std::size_t> available_device_memory()
   return {free, total};
 }
 
+// TODO: temporary alias for backward compatibility. Remove once dependent libraries like cuGraph
+// and cuDF are fixed to not use the old `rmm::defail::available_device_memory` function.
+namespace detail {
+const auto available_device_memory = rmm::available_device_memory;
+}
+
 /**
  * @brief Returns the approximate specified percent of free device memory on the current CUDA
  * device, aligned to the nearest CUDA allocation size.
