@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, NVIDIA CORPORATION.
+ * Copyright (c) 2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/aligned.hpp>
-#include <rmm/detail/cuda_util.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
@@ -33,7 +32,7 @@ using pool_mr = rmm::mr::pool_memory_resource<rmm::mr::pinned_memory_resource>;
 
 TEST(PinnedPoolTest, ThrowOnNullUpstream)
 {
-  auto construct_nullptr = []() { pool_mr mr{nullptr}; };
+  auto construct_nullptr = []() { pool_mr mr{nullptr, 0}; };
   EXPECT_THROW(construct_nullptr(), rmm::logic_error);
 }
 

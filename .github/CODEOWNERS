@@ -14,5 +14,4 @@ python/            @rapidsai/rmm-python-codeowners
 .github/           @rapidsai/ops-codeowners
 ci/                @rapidsai/ops-codeowners
 conda/             @rapidsai/ops-codeowners
-**/Dockerfile      @rapidsai/ops-codeowners
-**/.dockerignore   @rapidsai/ops-codeowners
+dependencies.yaml  @rapidsai/ops-codeowners

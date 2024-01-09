@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2022, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 #include <benchmarks/utilities/cxxopts.hpp>
 
+#include <rmm/cuda_device.hpp>
 #include <rmm/mr/device/arena_memory_resource.hpp>
 #include <rmm/mr/device/binning_memory_resource.hpp>
 #include <rmm/mr/device/cuda_async_memory_resource.hpp>
@@ -170,7 +171,7 @@ inline auto make_pool()
 
 inline auto make_arena()
 {
-  auto free = rmm::detail::available_device_memory().first;
+  auto free = rmm::available_device_memory().first;
   constexpr auto reserve{64UL << 20};  // Leave some space for CUDA overhead.
   return rmm::mr::make_owning_wrapper<rmm::mr::arena_memory_resource>(make_cuda(), free - reserve);
 }

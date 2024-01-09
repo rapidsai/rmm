@@ -1,3 +1,43 @@
+# RMM 23.12.00 (6 Dec 2023)
+
+## 🚨 Breaking Changes
+
+- Document minimum CUDA version of 11.4 ([#1385](https://github.com/rapidsai/rmm/pull/1385)) [@harrism](https://github.com/harrism)
+- Store and set the correct CUDA device in device_buffer ([#1370](https://github.com/rapidsai/rmm/pull/1370)) [@harrism](https://github.com/harrism)
+- Use `cuda::mr::memory_resource` instead of raw `device_memory_resource` ([#1095](https://github.com/rapidsai/rmm/pull/1095)) [@miscco](https://github.com/miscco)
+
+## 🐛 Bug Fixes
+
+- Update actions/labeler to v4 ([#1397](https://github.com/rapidsai/rmm/pull/1397)) [@raydouglass](https://github.com/raydouglass)
+- Backport arena MR fix for simultaneous access by PTDS and other streams ([#1396](https://github.com/rapidsai/rmm/pull/1396)) [@bdice](https://github.com/bdice)
+- Deliberately leak PTDS thread_local events in stream ordered mr ([#1375](https://github.com/rapidsai/rmm/pull/1375)) [@wence-](https://github.com/wence-)
+- Add missing CUDA 12 dependencies and fix dlopen library names ([#1366](https://github.com/rapidsai/rmm/pull/1366)) [@vyasr](https://github.com/vyasr)
+
+## 📖 Documentation
+
+- Document minimum CUDA version of 11.4 ([#1385](https://github.com/rapidsai/rmm/pull/1385)) [@harrism](https://github.com/harrism)
+- Fix more doxygen issues ([#1367](https://github.com/rapidsai/rmm/pull/1367)) [@vyasr](https://github.com/vyasr)
+- Add groups to the doxygen docs ([#1358](https://github.com/rapidsai/rmm/pull/1358)) [@vyasr](https://github.com/vyasr)
+- Enable doxygen XML and fix issues ([#1348](https://github.com/rapidsai/rmm/pull/1348)) [@vyasr](https://github.com/vyasr)
+
+## 🚀 New Features
+
+- Make internally stored default argument values public ([#1373](https://github.com/rapidsai/rmm/pull/1373)) [@vyasr](https://github.com/vyasr)
+- Store and set the correct CUDA device in device_buffer ([#1370](https://github.com/rapidsai/rmm/pull/1370)) [@harrism](https://github.com/harrism)
+- Update rapids-cmake functions to non-deprecated signatures ([#1357](https://github.com/rapidsai/rmm/pull/1357)) [@robertmaynard](https://github.com/robertmaynard)
+- Generate unified Python/C++ docs ([#1324](https://github.com/rapidsai/rmm/pull/1324)) [@vyasr](https://github.com/vyasr)
+- Use `cuda::mr::memory_resource` instead of raw `device_memory_resource` ([#1095](https://github.com/rapidsai/rmm/pull/1095)) [@miscco](https://github.com/miscco)
+
+## 🛠️ Improvements
+
+- Silence false gcc warning ([#1381](https://github.com/rapidsai/rmm/pull/1381)) [@miscco](https://github.com/miscco)
+- Build concurrency for nightly and merge triggers ([#1380](https://github.com/rapidsai/rmm/pull/1380)) [@bdice](https://github.com/bdice)
+- Update `shared-action-workflows` references ([#1363](https://github.com/rapidsai/rmm/pull/1363)) [@AyodeAwe](https://github.com/AyodeAwe)
+- Use branch-23.12 workflows. ([#1360](https://github.com/rapidsai/rmm/pull/1360)) [@bdice](https://github.com/bdice)
+- Update devcontainers to 23.12 ([#1355](https://github.com/rapidsai/rmm/pull/1355)) [@raydouglass](https://github.com/raydouglass)
+- Generate proper, consistent nightly versions for pip and conda packages ([#1347](https://github.com/rapidsai/rmm/pull/1347)) [@vyasr](https://github.com/vyasr)
+- RMM: Build CUDA 12.0 ARM conda packages. ([#1330](https://github.com/rapidsai/rmm/pull/1330)) [@bdice](https://github.com/bdice)
+
 # RMM 23.10.00 (11 Oct 2023)
 
 ## 🚨 Breaking Changes
