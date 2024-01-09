@@ -113,6 +113,8 @@ class pool_memory_resource final
    * @brief [DEPRECATED] Construct a `pool_memory_resource` and allocate the initial device memory
    * pool using `upstream_mr`.
    *
+   * @deprecated Use the constructor that takes an explicit initial pool size instead.
+   *
    * @throws rmm::logic_error if `upstream_mr == nullptr`
    * @throws rmm::logic_error if `initial_pool_size` is neither the default nor aligned to a
    * multiple of pool_memory_resource::allocation_alignment bytes.
@@ -135,6 +137,8 @@ class pool_memory_resource final
   /**
    * @brief Construct a `pool_memory_resource` and allocate the initial device memory pool using
    * `upstream_mr`.
+   *
+   * @deprecated Use the constructor that takes an explicit initial size instead.
    *
    * @throws rmm::logic_error if `upstream_mr == nullptr`
    * @throws rmm::logic_error if `initial_pool_size` is neither the default nor aligned to a
@@ -320,16 +324,11 @@ class pool_memory_resource final
   /**
    * @brief Allocate initial memory for the pool
    *
-   * If initial_size is unset, then queries the upstream memory resource for available memory if
-   * upstream supports `get_mem_info`, or queries the device (using CUDA API) for available memory
-   * if not. Then attempts to initialize to half the available memory.
-   *
-   * If initial_size is set, then tries to initialize the pool to that size.
-   *
    * @param initial_size The optional initial size for the pool
    * @param maximum_size The optional maximum size for the pool
+   *
+   * @throws logic_error if @p initial_size is larger than @p maximum_size (if set).
    */
-  // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
   void initialize_pool(std::size_t initial_size, thrust::optional<std::size_t> maximum_size)
   {
     current_pool_size_ = 0;  // try_to_expand will set this if it succeeds
