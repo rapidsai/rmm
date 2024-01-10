@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#pragma once
+
 #include <cassert>
 #include <cstddef>
 
@@ -46,7 +48,7 @@ constexpr bool is_supported_alignment(std::size_t alignment) { return is_pow2(al
 /**
  * @brief Align up to nearest multiple of specified power of 2
  *
- * @param[in] v value to align
+ * @param[in] value value to align
  * @param[in] alignment amount, in bytes, must be a power of 2
  *
  * @return Return the aligned value, as one would expect
@@ -60,7 +62,7 @@ constexpr std::size_t align_up(std::size_t value, std::size_t alignment) noexcep
 /**
  * @brief Align down to the nearest multiple of specified power of 2
  *
- * @param[in] v value to align
+ * @param[in] value value to align
  * @param[in] alignment amount, in bytes, must be a power of 2
  *
  * @return Return the aligned value, as one would expect
@@ -74,7 +76,7 @@ constexpr std::size_t align_down(std::size_t value, std::size_t alignment) noexc
 /**
  * @brief Checks whether a value is aligned to a multiple of a specified power of 2
  *
- * @param[in] v value to check for alignment
+ * @param[in] value value to check for alignment
  * @param[in] alignment amount, in bytes, must be a power of 2
  *
  * @return true if aligned

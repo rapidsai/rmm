@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <rmm/detail/aligned.hpp>
+#include <rmm/aligned.hpp>
 #include <rmm/detail/error.hpp>
 
 #include <cuda_runtime_api.h>
@@ -145,9 +145,9 @@ inline std::size_t percent_of_free_device_memory(int percent = 50)
 
   double const fraction = static_cast<double>(percent) / 100.0;
 
-  return rmm::detail::align_up(
+  return rmm::align_up(
     std::min(free, static_cast<std::size_t>(static_cast<double>(total) * fraction)),
-    rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
+    rmm::CUDA_ALLOCATION_ALIGNMENT);
 }
 
 /**

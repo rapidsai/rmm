@@ -16,9 +16,9 @@
 
 #pragma once
 
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream_view.hpp>
-#include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/logging_assert.hpp>
 #include <rmm/logger.hpp>
@@ -508,8 +508,8 @@ class global_arena final {
     : upstream_mr_{upstream_mr}
   {
     RMM_EXPECTS(nullptr != upstream_mr_, "Unexpected null upstream pointer.");
-    auto const size = rmm::detail::align_down(arena_size.value_or(default_size()),
-                                              rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
+    auto const size =
+      rmm::align_down(arena_size.value_or(default_size()), rmm::CUDA_ALLOCATION_ALIGNMENT);
     RMM_EXPECTS(size >= superblock::minimum_size,
                 "Arena size smaller than minimum superblock size.");
     initialize(size);

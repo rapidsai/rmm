@@ -15,8 +15,8 @@
  */
 #pragma once
 
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_stream_view.hpp>
-#include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/logging_assert.hpp>
 #include <rmm/logger.hpp>
@@ -126,7 +126,7 @@ class pool_memory_resource final
    * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to. Defaults to all
    * of the available memory from the upstream resource.
    */
-  [[deprecated("Must specify initial_pool_size")]]  //
+  //[[deprecated("Must specify initial_pool_size")]]  //
   explicit pool_memory_resource(Upstream* upstream_mr,
                                 thrust::optional<std::size_t> initial_pool_size = thrust::nullopt,
                                 thrust::optional<std::size_t> maximum_pool_size = thrust::nullopt)
@@ -153,7 +153,7 @@ class pool_memory_resource final
    */
   template <typename Upstream2                                               = Upstream,
             cuda::std::enable_if_t<cuda::mr::async_resource<Upstream2>, int> = 0>
-  [[deprecated("Must specify initial_pool_size")]]  //
+  //[[deprecated("Must specify initial_pool_size")]]  //
   explicit pool_memory_resource(Upstream2& upstream_mr,
                                 thrust::optional<std::size_t> initial_pool_size = thrust::nullopt,
                                 thrust::optional<std::size_t> maximum_pool_size = thrust::nullopt)
@@ -184,10 +184,9 @@ class pool_memory_resource final
         return upstream_mr;
       }()}
   {
-    RMM_EXPECTS(rmm::detail::is_aligned(initial_pool_size, rmm::detail::CUDA_ALLOCATION_ALIGNMENT),
+    RMM_EXPECTS(rmm::is_aligned(initial_pool_size, rmm::CUDA_ALLOCATION_ALIGNMENT),
                 "Error, Initial pool size required to be a multiple of 256 bytes");
-    RMM_EXPECTS(rmm::detail::is_aligned(maximum_pool_size.value_or(0),
-                                        rmm::detail::CUDA_ALLOCATION_ALIGNMENT),
+    RMM_EXPECTS(rmm::is_aligned(maximum_pool_size.value_or(0), rmm::CUDA_ALLOCATION_ALIGNMENT),
                 "Error, Maximum pool size required to be a multiple of 256 bytes");
 
     initialize_pool(initial_pool_size, maximum_pool_size);
@@ -378,9 +377,9 @@ class pool_memory_resource final
   {
     if (maximum_pool_size_.has_value()) {
       auto const unaligned_remaining = maximum_pool_size_.value() - pool_size();
-      using rmm::detail::align_up;
-      auto const remaining = align_up(unaligned_remaining, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
-      auto const aligned_size = align_up(size, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
+      using rmm::align_up;
+      auto const remaining    = align_up(unaligned_remaining, rmm::CUDA_ALLOCATION_ALIGNMENT);
+      auto const aligned_size = align_up(size, rmm::CUDA_ALLOCATION_ALIGNMENT);
       return (aligned_size <= remaining) ? std::max(aligned_size, remaining / 2) : 0;
     }
     return std::max(size, pool_size());
@@ -448,7 +447,7 @@ class pool_memory_resource final
     RMM_LOGGING_ASSERT(iter != allocated_blocks_.end());
 
     auto block = *iter;
-    RMM_LOGGING_ASSERT(block.size() == rmm::detail::align_up(size, allocation_alignment));
+    RMM_LOGGING_ASSERT(block.size() == rmm::align_up(size, allocation_alignment));
     allocated_blocks_.erase(iter);
 
     return block;

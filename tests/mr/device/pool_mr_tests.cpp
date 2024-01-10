@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
-#include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/device_uvector.hpp>
@@ -71,9 +71,8 @@ TEST(PoolTest, AllocateNinetyPercent)
   auto allocate_ninety = []() {
     auto const [free, total] = rmm::available_device_memory();
     (void)total;
-    auto const ninety_percent_pool =
-      rmm::detail::align_up(static_cast<std::size_t>(static_cast<double>(free) * 0.9),
-                            rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
+    auto const ninety_percent_pool = rmm::align_up(
+      static_cast<std::size_t>(static_cast<double>(free) * 0.9), rmm::CUDA_ALLOCATION_ALIGNMENT);
     pool_mr mr{rmm::mr::get_current_device_resource(), ninety_percent_pool};
   };
   EXPECT_NO_THROW(allocate_ninety());

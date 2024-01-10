@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,9 @@
 
 #include "../../byte_literals.hpp"
 
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_stream.hpp>
 #include <rmm/cuda_stream_view.hpp>
-#include <rmm/detail/aligned.hpp>
 #include <rmm/mr/device/arena_memory_resource.hpp>
 #include <rmm/mr/device/binning_memory_resource.hpp>
 #include <rmm/mr/device/cuda_async_memory_resource.hpp>
@@ -74,7 +74,7 @@ inline void test_get_current_device_resource()
   EXPECT_NE(nullptr, rmm::mr::get_current_device_resource());
   void* ptr = rmm::mr::get_current_device_resource()->allocate(1_MiB);
   EXPECT_NE(nullptr, ptr);
-  EXPECT_TRUE(rmm::detail::is_pointer_aligned(ptr));
+  EXPECT_TRUE(rmm::is_pointer_aligned(ptr));
   EXPECT_TRUE(is_device_memory(ptr));
   rmm::mr::get_current_device_resource()->deallocate(ptr, 1_MiB);
 }
@@ -86,7 +86,7 @@ inline void test_allocate(rmm::mr::device_memory_resource* mr,
   void* ptr = mr->allocate(bytes);
   if (not stream.is_default()) { stream.synchronize(); }
   EXPECT_NE(nullptr, ptr);
-  EXPECT_TRUE(rmm::detail::is_pointer_aligned(ptr));
+  EXPECT_TRUE(rmm::is_pointer_aligned(ptr));
   EXPECT_TRUE(is_device_memory(ptr));
   mr->deallocate(ptr, bytes);
   if (not stream.is_default()) { stream.synchronize(); }
@@ -154,7 +154,7 @@ inline void test_random_allocations(rmm::mr::device_memory_resource* mr,
                   EXPECT_NO_THROW(alloc.ptr = mr->allocate(alloc.size, stream));
                   if (not stream.is_default()) { stream.synchronize(); }
                   EXPECT_NE(nullptr, alloc.ptr);
-                  EXPECT_TRUE(rmm::detail::is_pointer_aligned(alloc.ptr));
+                  EXPECT_TRUE(rmm::is_pointer_aligned(alloc.ptr));
                 });
 
   std::for_each(allocations.begin(), allocations.end(), [stream, mr](allocation& alloc) {
@@ -196,7 +196,7 @@ inline void test_mixed_random_allocation_free(rmm::mr::device_memory_resource* m
       EXPECT_NO_THROW(allocations.emplace_back(mr->allocate(size, stream), size));
       auto new_allocation = allocations.back();
       EXPECT_NE(nullptr, new_allocation.ptr);
-      EXPECT_TRUE(rmm::detail::is_pointer_aligned(new_allocation.ptr));
+      EXPECT_TRUE(rmm::is_pointer_aligned(new_allocation.ptr));
     } else {
       auto const index = static_cast<int>(index_distribution(generator) % active_allocations);
       active_allocations--;

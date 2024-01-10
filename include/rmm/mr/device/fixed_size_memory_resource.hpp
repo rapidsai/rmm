@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
  */
 #pragma once
 
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_stream_view.hpp>
-#include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/logging_assert.hpp>
 #include <rmm/mr/device/detail/fixed_size_free_list.hpp>
@@ -77,7 +77,7 @@ class fixed_size_memory_resource
     std::size_t block_size            = default_block_size,
     std::size_t blocks_to_preallocate = default_blocks_to_preallocate)
     : upstream_mr_{upstream_mr},
-      block_size_{rmm::detail::align_up(block_size, rmm::detail::CUDA_ALLOCATION_ALIGNMENT)},
+      block_size_{rmm::align_up(block_size, rmm::CUDA_ALLOCATION_ALIGNMENT)},
       upstream_chunk_size_{block_size * blocks_to_preallocate}
   {
     // allocate initial blocks and insert into free list
@@ -207,8 +207,7 @@ class fixed_size_memory_resource
   {
     // Deallocating a fixed-size block just inserts it in the free list, which is
     // handled by the parent class
-    RMM_LOGGING_ASSERT(rmm::detail::align_up(size, rmm::detail::CUDA_ALLOCATION_ALIGNMENT) <=
-                       block_size_);
+    RMM_LOGGING_ASSERT(rmm::align_up(size, rmm::CUDA_ALLOCATION_ALIGNMENT) <= block_size_);
     return block_type{ptr};
   }
 
