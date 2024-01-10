@@ -17,9 +17,9 @@
 #pragma once
 
 #include "../../byte_literals.hpp"
-#include "rmm/cuda_device.hpp"
 
 #include <rmm/aligned.hpp>
+#include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/mr/device/arena_memory_resource.hpp>

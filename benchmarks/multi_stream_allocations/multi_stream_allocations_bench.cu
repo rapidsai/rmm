@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include "rmm/cuda_device.hpp"
 #include <benchmarks/utilities/cxxopts.hpp>
 
+#include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream.hpp>
 #include <rmm/cuda_stream_pool.hpp>
 #include <rmm/device_uvector.hpp>
