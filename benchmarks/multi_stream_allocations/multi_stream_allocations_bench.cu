@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, NVIDIA CORPORATION.
+ * Copyright (c) 2021-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "rmm/cuda_device.hpp"
 #include <benchmarks/utilities/cxxopts.hpp>
 
 #include <rmm/cuda_stream.hpp>
@@ -100,7 +101,8 @@ inline auto make_cuda_async() { return std::make_shared<rmm::mr::cuda_async_memo
 
 inline auto make_pool()
 {
-  return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_cuda());
+  return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(
+    make_cuda(), rmm::percent_of_free_device_memory(50));
 }
 
 inline auto make_arena()

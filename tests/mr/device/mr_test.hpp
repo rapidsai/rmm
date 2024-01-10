@@ -17,6 +17,7 @@
 #pragma once
 
 #include "../../byte_literals.hpp"
+#include "rmm/cuda_device.hpp"
 
 #include <rmm/aligned.hpp>
 #include <rmm/cuda_stream.hpp>
@@ -257,7 +258,8 @@ inline auto make_managed() { return std::make_shared<rmm::mr::managed_memory_res
 
 inline auto make_pool()
 {
-  return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_cuda());
+  return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(
+    make_cuda(), rmm::percent_of_free_device_memory(50));
 }
 
 inline auto make_arena()

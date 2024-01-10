@@ -71,8 +71,7 @@ TEST(PoolTest, AllocateNinetyPercent)
   auto allocate_ninety = []() {
     auto const [free, total] = rmm::available_device_memory();
     (void)total;
-    auto const ninety_percent_pool = rmm::align_up(
-      static_cast<std::size_t>(static_cast<double>(free) * 0.9), rmm::CUDA_ALLOCATION_ALIGNMENT);
+    auto const ninety_percent_pool = rmm::percent_of_free_device_memory(90);
     pool_mr mr{rmm::mr::get_current_device_resource(), ninety_percent_pool};
   };
   EXPECT_NO_THROW(allocate_ninety());
@@ -81,8 +80,7 @@ TEST(PoolTest, AllocateNinetyPercent)
 TEST(PoolTest, TwoLargeBuffers)
 {
   auto two_large = []() {
-    auto const [free, total] = rmm::available_device_memory();
-    (void)total;
+    [[maybe_unused]] auto const [free, total] = rmm::available_device_memory();
     pool_mr mr{rmm::mr::get_current_device_resource(), rmm::percent_of_free_device_memory(50)};
     auto* ptr1 = mr.allocate(free / 4);
     auto* ptr2 = mr.allocate(free / 4);
