@@ -110,7 +110,7 @@ class pool_memory_resource final
                                                       detail::coalescing_free_list>;
 
   /**
-   * @brief [DEPRECATED] Construct a `pool_memory_resource` and allocate the initial device memory
+   * @brief Construct a `pool_memory_resource` and allocate the initial device memory
    * pool using `upstream_mr`.
    *
    * @deprecated Use the constructor that takes an explicit initial pool size instead.
