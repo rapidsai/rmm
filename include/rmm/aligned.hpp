@@ -18,6 +18,7 @@
 
 #include <cassert>
 #include <cstddef>
+#include <cstdint>
 
 namespace rmm {
 
@@ -37,7 +38,7 @@ static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
  * @brief Returns whether or not `n` is a power of 2.
  *
  */
-constexpr bool is_pow2(std::size_t value) { return (0 == (value & (value - 1))); }
+constexpr bool is_pow2(std::size_t value) { return (value != 0U) && ((value & (value - 1)) == 0U); }
 
 /**
  * @brief Returns whether or not `alignment` is a valid memory alignment.
@@ -90,7 +91,7 @@ constexpr bool is_aligned(std::size_t value, std::size_t alignment) noexcept
 inline bool is_pointer_aligned(void* ptr, std::size_t alignment = CUDA_ALLOCATION_ALIGNMENT)
 {
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-  return is_aligned(reinterpret_cast<ptrdiff_t>(ptr), alignment);
+  return is_aligned(reinterpret_cast<std::uintptr_t>(ptr), alignment);
 }
 
 }  // namespace rmm
