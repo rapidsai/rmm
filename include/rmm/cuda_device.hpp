@@ -141,7 +141,8 @@ const auto available_device_memory = rmm::available_device_memory;
 inline std::size_t percent_of_free_device_memory(int percent)
 {
   [[maybe_unused]] auto const [free, total] = rmm::available_device_memory();
-  return rmm::align_down(static_cast<std::size_t>(static_cast<double>(free) * percent / 100.0),
+  auto fraction                             = static_cast<double>(percent) / 100.0;
+  return rmm::align_down(static_cast<std::size_t>(static_cast<double>(free) * fraction),
                          rmm::CUDA_ALLOCATION_ALIGNMENT);
 }
 
