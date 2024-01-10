@@ -32,7 +32,7 @@ using pool_mr = rmm::mr::pool_memory_resource<rmm::mr::pinned_memory_resource>;
 
 TEST(PinnedPoolTest, ThrowOnNullUpstream)
 {
-  auto construct_nullptr = []() { pool_mr mr{nullptr, 0}; };
+  auto construct_nullptr = []() { pool_mr mr{nullptr, 1024}; };
   EXPECT_THROW(construct_nullptr(), rmm::logic_error);
 }
 
