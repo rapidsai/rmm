@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,6 +66,16 @@
  * for(int i = 0; i < N; ++i) {
  *   cudaSetDevice(i);
  *   per_device_pools.push_back(std::make_unique<pool_memory_resource>());
+ *   set_per_device_resource(cuda_device_id{i}, &per_device_pools.back());
+ * }
+ * @endcode
+ * @code{.cpp}
+ * using pool_mr = rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>;
+ * std::vector<unique_ptr<pool_mr>> per_device_pools;
+ * for(int i = 0; i < N; ++i) {
+ *   cudaSetDevice(i);
+ *   // Note: for brevity, omitting creation of upstream and computing initial_size
+ *   per_device_pools.push_back(std::make_unique<pool_mr>(upstream, initial_size));
  *   set_per_device_resource(cuda_device_id{i}, &per_device_pools.back());
  * }
  * @endcode

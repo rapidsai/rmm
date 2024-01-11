@@ -16,9 +16,9 @@
 
 #include "../../byte_literals.hpp"
 
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream.hpp>
-#include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/arena_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
@@ -488,10 +488,9 @@ TEST_F(ArenaTest, SizeSmallerThanSuperblockSize)  // NOLINT
 TEST_F(ArenaTest, AllocateNinetyPercent)  // NOLINT
 {
   EXPECT_NO_THROW([]() {  // NOLINT(cppcoreguidelines-avoid-goto)
-    auto const free = rmm::available_device_memory().first;
-    auto const ninety_percent =
-      rmm::detail::align_up(static_cast<std::size_t>(static_cast<double>(free) * 0.9),
-                            rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
+    auto const free           = rmm::available_device_memory().first;
+    auto const ninety_percent = rmm::align_up(
+      static_cast<std::size_t>(static_cast<double>(free) * 0.9), rmm::CUDA_ALLOCATION_ALIGNMENT);
     arena_mr mr(rmm::mr::get_current_device_resource(), ninety_percent);
   }());
 }

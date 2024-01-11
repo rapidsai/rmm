@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <rmm/detail/aligned.hpp>
+#include <rmm/aligned.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/fixed_size_memory_resource.hpp>
 
@@ -138,8 +138,7 @@ class binning_memory_resource final : public device_memory_resource {
    */
   void add_bin(std::size_t allocation_size, device_memory_resource* bin_resource = nullptr)
   {
-    allocation_size =
-      rmm::detail::align_up(allocation_size, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
+    allocation_size = rmm::align_up(allocation_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
 
     if (nullptr != bin_resource) {
       resource_bins_.insert({allocation_size, bin_resource});

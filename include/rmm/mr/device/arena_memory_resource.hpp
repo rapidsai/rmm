@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include <rmm/aligned.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/logging_assert.hpp>
 #include <rmm/logger.hpp>
@@ -145,7 +146,7 @@ class arena_memory_resource final : public device_memory_resource {
 #ifdef RMM_ARENA_USE_SIZE_CLASSES
     bytes = rmm::mr::detail::arena::align_to_size_class(bytes);
 #else
-    bytes = rmm::detail::align_up(bytes, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
+    bytes = rmm::align_up(bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
 #endif
     auto& arena = get_arena(stream);
 
@@ -195,7 +196,7 @@ class arena_memory_resource final : public device_memory_resource {
 #ifdef RMM_ARENA_USE_SIZE_CLASSES
     bytes = rmm::mr::detail::arena::align_to_size_class(bytes);
 #else
-    bytes = rmm::detail::align_up(bytes, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
+    bytes = rmm::align_up(bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
 #endif
     auto& arena = get_arena(stream);
 

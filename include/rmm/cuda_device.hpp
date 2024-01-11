@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <rmm/detail/aligned.hpp>
+#include <rmm/aligned.hpp>
 #include <rmm/detail/error.hpp>
 
 #include <cuda_runtime_api.h>
@@ -121,33 +121,29 @@ namespace detail {
 /**
  * @brief Returns the available and total device memory in bytes for the current device
  *
- * @deprecated Use rmm::available_device_memory instead.
+ * @deprecated Use rmm::available_device_memory() instead.
  *
  * @return The available and total device memory in bytes for the current device as a std::pair.
  */
-[[deprecated("Use `rmm::available_device_memory` instead.")]]  //
+//[[deprecated("Use `rmm::available_device_memory` instead.")]]  //
 const auto available_device_memory = rmm::available_device_memory;
 
 }  // namespace detail
 
 /**
- * @brief Returns the approximate specified percent of total device memory on the current CUDA
- * device or the total free device memory (whichever is smaller), aligned to the nearest CUDA
- * allocation size.
+ * @brief Returns the approximate specified percent of available device memory on the current CUDA
+ * device, aligned (down) to the nearest CUDA allocation size.
  *
- * @param percent The percent of free memory to return. Defaults to 50%.
+ * @param percent The percent of free memory to return.
  *
  * @return The recommended initial device memory pool size in bytes.
  */
-inline std::size_t percent_of_free_device_memory(int percent = 50)
+inline std::size_t percent_of_free_device_memory(int percent)
 {
-  auto const [free, total] = rmm::available_device_memory();
-
-  double const fraction = static_cast<double>(percent) / 100.0;
-
-  return rmm::detail::align_up(
-    std::min(free, static_cast<std::size_t>(static_cast<double>(total) * fraction)),
-    rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
+  [[maybe_unused]] auto const [free, total] = rmm::available_device_memory();
+  auto fraction                             = static_cast<double>(percent) / 100.0;
+  return rmm::align_down(static_cast<std::size_t>(static_cast<double>(free) * fraction),
+                         rmm::CUDA_ALLOCATION_ALIGNMENT);
 }
 
 /**
