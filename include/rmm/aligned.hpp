@@ -20,12 +20,13 @@
 #include <cstddef>
 #include <cstdint>
 
+namespace rmm {
+
 /**
  * @addtogroup utilities
  * @{
+ * @file
  */
-
-namespace rmm {
 
 /**
  * @brief Default alignment used for host memory allocated by RMM.
@@ -40,14 +41,20 @@ static constexpr std::size_t RMM_DEFAULT_HOST_ALIGNMENT{alignof(std::max_align_t
 static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
 
 /**
- * @brief Returns whether or not `n` is a power of 2.
+ * @brief Returns whether or not `value` is a power of 2.
  *
+ * @param[in] value to check.
+ *
+ * @return Whether the input a power of two with non-negative exponent
  */
 constexpr bool is_pow2(std::size_t value) { return (value != 0U) && ((value & (value - 1)) == 0U); }
 
 /**
  * @brief Returns whether or not `alignment` is a valid memory alignment.
  *
+ * @param[in] alignment to check
+ *
+ * @return Whether the alignment is valid
  */
 constexpr bool is_supported_alignment(std::size_t alignment) { return is_pow2(alignment); }
 
@@ -93,12 +100,20 @@ constexpr bool is_aligned(std::size_t value, std::size_t alignment) noexcept
   return value == align_down(value, alignment);
 }
 
+/**
+ * @brief Checks whether the provided pointer is aligned to a specified @p alignment
+ *
+ * @param[in] ptr pointer to check for alignment
+ * @param[in] alignment required alignment in bytes, must be a power of 2
+ *
+ * @return true if the pointer is aligned
+ */
 inline bool is_pointer_aligned(void* ptr, std::size_t alignment = CUDA_ALLOCATION_ALIGNMENT)
 {
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
   return is_aligned(reinterpret_cast<std::uintptr_t>(ptr), alignment);
 }
 
-}  // namespace rmm
-
 /** @} */  // end of group
+
+}  // namespace rmm
