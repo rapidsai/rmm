@@ -20,6 +20,11 @@
 #include <cstddef>
 #include <cstdint>
 
+/**
+ * @addtogroup utilities
+ * @{
+ */
+
 namespace rmm {
 
 /**
@@ -95,3 +100,5 @@ inline bool is_pointer_aligned(void* ptr, std::size_t alignment = CUDA_ALLOCATIO
 }
 
 }  // namespace rmm
+
+/** @} */  // end of group
