@@ -17,6 +17,7 @@ librmm Documentation
    cuda_streams
    errors
    logging
+   utilities
    deprecated
 
 
