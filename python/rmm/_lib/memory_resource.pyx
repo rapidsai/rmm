@@ -120,12 +120,15 @@ cdef extern from "rmm/mr/device/cuda_async_memory_resource.hpp" \
         win32
         win32_kmt
 
+cdef extern from "rmm/cuda_device.hpp" namespace "rmm" nogil:
+    size_t percent_of_free_device_memory(int percent) except +
+
 cdef extern from "rmm/mr/device/pool_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass pool_memory_resource[Upstream](device_memory_resource):
         pool_memory_resource(
             Upstream* upstream_mr,
-            optional[size_t] initial_pool_size,
+            size_t initial_pool_size,
             optional[size_t] maximum_pool_size) except +
         size_t pool_size()
 
@@ -369,12 +372,12 @@ cdef class PoolMemoryResource(UpstreamResourceAdaptor):
             initial_pool_size=None,
             maximum_pool_size=None
     ):
-        cdef optional[size_t] c_initial_pool_size
+        cdef size_t c_initial_pool_size
         cdef optional[size_t] c_maximum_pool_size
         c_initial_pool_size = (
-            optional[size_t]() if
+            percent_of_free_device_memory(50) if
             initial_pool_size is None
-            else make_optional[size_t](initial_pool_size)
+            else initial_pool_size
         )
         c_maximum_pool_size = (
             optional[size_t]() if

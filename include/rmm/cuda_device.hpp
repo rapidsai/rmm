@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, NVIDIA CORPORATION.
+ * Copyright (c) 2021-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include <rmm/aligned.hpp>
 #include <rmm/detail/error.hpp>
 
 #include <cuda_runtime_api.h>
@@ -100,6 +101,49 @@ inline int get_num_cuda_devices()
   cuda_device_id::value_type num_dev{-1};
   RMM_ASSERT_CUDA_SUCCESS(cudaGetDeviceCount(&num_dev));
   return num_dev;
+}
+
+/**
+ * @brief Returns the available and total device memory in bytes for the current device
+ *
+ * @return The available and total device memory in bytes for the current device as a std::pair.
+ */
+inline std::pair<std::size_t, std::size_t> available_device_memory()
+{
+  std::size_t free{};
+  std::size_t total{};
+  RMM_CUDA_TRY(cudaMemGetInfo(&free, &total));
+  return {free, total};
+}
+
+namespace detail {
+
+/**
+ * @brief Returns the available and total device memory in bytes for the current device
+ *
+ * @deprecated Use rmm::available_device_memory() instead.
+ *
+ * @return The available and total device memory in bytes for the current device as a std::pair.
+ */
+//[[deprecated("Use `rmm::available_device_memory` instead.")]]  //
+const auto available_device_memory = rmm::available_device_memory;
+
+}  // namespace detail
+
+/**
+ * @brief Returns the approximate specified percent of available device memory on the current CUDA
+ * device, aligned (down) to the nearest CUDA allocation size.
+ *
+ * @param percent The percent of free memory to return.
+ *
+ * @return The recommended initial device memory pool size in bytes.
+ */
+inline std::size_t percent_of_free_device_memory(int percent)
+{
+  [[maybe_unused]] auto const [free, total] = rmm::available_device_memory();
+  auto fraction                             = static_cast<double>(percent) / 100.0;
+  return rmm::align_down(static_cast<std::size_t>(static_cast<double>(free) * fraction),
+                         rmm::CUDA_ALLOCATION_ALIGNMENT);
 }
 
 /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, NVIDIA CORPORATION.
+ * Copyright (c) 2021-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <rmm/detail/aligned.hpp>
+#include <rmm/aligned.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
@@ -54,7 +54,7 @@ class limiting_resource_adaptor final : public device_memory_resource {
    */
   limiting_resource_adaptor(Upstream* upstream,
                             std::size_t allocation_limit,
-                            std::size_t alignment = rmm::detail::CUDA_ALLOCATION_ALIGNMENT)
+                            std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
     : allocation_limit_{allocation_limit},
       allocated_bytes_(0),
       alignment_(alignment),
@@ -134,7 +134,7 @@ class limiting_resource_adaptor final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
-    auto const proposed_size = rmm::detail::align_up(bytes, alignment_);
+    auto const proposed_size = rmm::align_up(bytes, alignment_);
     auto const old           = allocated_bytes_.fetch_add(proposed_size);
     if (old + proposed_size <= allocation_limit_) {
       try {
@@ -158,7 +158,7 @@ class limiting_resource_adaptor final : public device_memory_resource {
    */
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
-    std::size_t allocated_size = rmm::detail::align_up(bytes, alignment_);
+    std::size_t allocated_size = rmm::align_up(bytes, alignment_);
     upstream_->deallocate(ptr, bytes, stream);
     allocated_bytes_ -= allocated_size;
   }
