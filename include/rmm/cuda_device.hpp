@@ -125,7 +125,7 @@ namespace detail {
  *
  * @return The available and total device memory in bytes for the current device as a std::pair.
  */
-//[[deprecated("Use `rmm::available_device_memory` instead.")]]  //
+[[deprecated("Use `rmm::available_device_memory` instead.")]]  //
 const auto available_device_memory = rmm::available_device_memory;
 
 }  // namespace detail
