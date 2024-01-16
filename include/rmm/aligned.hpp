@@ -47,7 +47,10 @@ static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
  *
  * @return Whether the input a power of two with non-negative exponent
  */
-constexpr bool is_pow2(std::size_t value) { return (value != 0U) && ((value & (value - 1)) == 0U); }
+constexpr bool is_pow2(std::size_t value) noexcept
+{
+  return (value != 0U) && ((value & (value - 1)) == 0U);
+}
 
 /**
  * @brief Returns whether or not `alignment` is a valid memory alignment.
@@ -56,7 +59,7 @@ constexpr bool is_pow2(std::size_t value) { return (value != 0U) && ((value & (v
  *
  * @return Whether the alignment is valid
  */
-constexpr bool is_supported_alignment(std::size_t alignment) { return is_pow2(alignment); }
+constexpr bool is_supported_alignment(std::size_t alignment) noexcept { return is_pow2(alignment); }
 
 /**
  * @brief Align up to nearest multiple of specified power of 2
@@ -108,7 +111,8 @@ constexpr bool is_aligned(std::size_t value, std::size_t alignment) noexcept
  *
  * @return true if the pointer is aligned
  */
-inline bool is_pointer_aligned(void* ptr, std::size_t alignment = CUDA_ALLOCATION_ALIGNMENT)
+inline bool is_pointer_aligned(void* ptr,
+                               std::size_t alignment = CUDA_ALLOCATION_ALIGNMENT) noexcept
 {
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
   return is_aligned(reinterpret_cast<std::uintptr_t>(ptr), alignment);
