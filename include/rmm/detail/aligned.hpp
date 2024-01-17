@@ -114,6 +114,7 @@ inline bool is_pointer_aligned(void* ptr, std::size_t alignment = CUDA_ALLOCATIO
  * from `alloc`.
  *
  * If `alignment` is not a power of 2, behavior is undefined.
+ * If `Alloc` does not allocate host-accessible memory, behavior is undefined.
  *
  * @param bytes The desired size of the allocation
  * @param alignment Desired alignment of allocation
@@ -126,7 +127,7 @@ inline bool is_pointer_aligned(void* ptr, std::size_t alignment = CUDA_ALLOCATIO
 template <typename Alloc>
 void* aligned_allocate(std::size_t bytes, std::size_t alignment, Alloc alloc)
 {
-  assert(is_pow2(alignment));
+  assert(is_supported_alignment(alignment));
 
   // allocate memory for bytes, plus potential alignment correction,
   // plus store of the correction offset
@@ -168,9 +169,12 @@ void* aligned_allocate(std::size_t bytes, std::size_t alignment, Alloc alloc)
  */
 template <typename Dealloc>
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-void aligned_deallocate(void* ptr, std::size_t bytes, std::size_t alignment, Dealloc dealloc)
+void aligned_deallocate(void* ptr,
+                        [[maybe_unused]] std::size_t bytes,
+                        [[maybe_unused]] std::size_t alignment,
+                        Dealloc dealloc) noexcept
 {
-  (void)alignment;
+  assert(is_supported_alignment(alignment));
 
   // Get offset from the location immediately prior to the aligned pointer
   // NOLINTNEXTLINE
