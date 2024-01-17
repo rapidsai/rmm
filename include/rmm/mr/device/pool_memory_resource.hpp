@@ -126,7 +126,7 @@ class pool_memory_resource final
    * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to. Defaults to all
    * of the available memory from the upstream resource.
    */
-  //[[deprecated("Must specify initial_pool_size")]]  //
+  [[deprecated("Must specify initial_pool_size")]]  //
   explicit pool_memory_resource(Upstream* upstream_mr,
                                 thrust::optional<std::size_t> initial_pool_size = thrust::nullopt,
                                 thrust::optional<std::size_t> maximum_pool_size = thrust::nullopt)
@@ -153,7 +153,7 @@ class pool_memory_resource final
    */
   template <typename Upstream2                                               = Upstream,
             cuda::std::enable_if_t<cuda::mr::async_resource<Upstream2>, int> = 0>
-  //[[deprecated("Must specify initial_pool_size")]]  //
+  [[deprecated("Must specify initial_pool_size")]]  //
   explicit pool_memory_resource(Upstream2& upstream_mr,
                                 thrust::optional<std::size_t> initial_pool_size = thrust::nullopt,
                                 thrust::optional<std::size_t> maximum_pool_size = thrust::nullopt)

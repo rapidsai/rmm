@@ -173,7 +173,7 @@ class device_memory_resource {
    */
   void* allocate(std::size_t bytes, std::size_t alignment)
   {
-    return do_allocate(rmm::detail::align_up(bytes, alignment), cuda_stream_view{});
+    return do_allocate(rmm::align_up(bytes, alignment), cuda_stream_view{});
   }
 
   /**
@@ -191,7 +191,7 @@ class device_memory_resource {
    */
   void deallocate(void* ptr, std::size_t bytes, std::size_t alignment)
   {
-    do_deallocate(ptr, rmm::detail::align_up(bytes, alignment), cuda_stream_view{});
+    do_deallocate(ptr, rmm::align_up(bytes, alignment), cuda_stream_view{});
   }
 
   /**
@@ -209,7 +209,7 @@ class device_memory_resource {
    */
   void* allocate_async(std::size_t bytes, std::size_t alignment, cuda_stream_view stream)
   {
-    return do_allocate(rmm::detail::align_up(bytes, alignment), stream);
+    return do_allocate(rmm::align_up(bytes, alignment), stream);
   }
 
   /**
@@ -248,7 +248,7 @@ class device_memory_resource {
                         std::size_t alignment,
                         cuda_stream_view stream)
   {
-    do_deallocate(ptr, rmm::detail::align_up(bytes, alignment), stream);
+    do_deallocate(ptr, rmm::align_up(bytes, alignment), stream);
   }
 
   /**
