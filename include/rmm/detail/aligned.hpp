@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <rmm/aligned.hpp>
+
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -28,25 +30,34 @@ namespace rmm::detail {
  * @brief Default alignment used for host memory allocated by RMM.
  *
  */
-static constexpr std::size_t RMM_DEFAULT_HOST_ALIGNMENT{alignof(std::max_align_t)};
+[[deprecated("Use rmm::RMM_DEFAULT_HOST_ALIGNMENT instead.")]] static constexpr std::size_t
+  RMM_DEFAULT_HOST_ALIGNMENT{rmm::RMM_DEFAULT_HOST_ALIGNMENT};
 
 /**
  * @brief Default alignment used for CUDA memory allocation.
  *
  */
-static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
+[[deprecated("Use rmm::CUDA_ALLOCATION_ALIGNMENT instead.")]] static constexpr std::size_t
+  CUDA_ALLOCATION_ALIGNMENT{rmm::CUDA_ALLOCATION_ALIGNMENT};
 
 /**
  * @brief Returns whether or not `n` is a power of 2.
  *
  */
-constexpr bool is_pow2(std::size_t value) { return (value != 0U) && ((value & (value - 1)) == 0U); }
+[[deprecated("Use rmm::is_pow2 instead.")]] constexpr bool is_pow2(std::size_t value) noexcept
+{
+  return rmm::is_pow2(value);
+}
 
 /**
  * @brief Returns whether or not `alignment` is a valid memory alignment.
  *
  */
-constexpr bool is_supported_alignment(std::size_t alignment) { return is_pow2(alignment); }
+[[deprecated("Use rmm::is_supported_alignment instead.")]] constexpr bool is_supported_alignment(
+  std::size_t alignment) noexcept
+{
+  return rmm::is_pow2(alignment);
+}
 
 /**
  * @brief Align up to nearest multiple of specified power of 2
@@ -56,10 +67,10 @@ constexpr bool is_supported_alignment(std::size_t alignment) { return is_pow2(al
  *
  * @return Return the aligned value, as one would expect
  */
-constexpr std::size_t align_up(std::size_t value, std::size_t alignment) noexcept
+[[deprecated("Use rmm::align_up instead.")]] constexpr std::size_t align_up(
+  std::size_t value, std::size_t alignment) noexcept
 {
-  assert(is_supported_alignment(alignment));
-  return (value + (alignment - 1)) & ~(alignment - 1);
+  return rmm::align_up(value, alignment);
 }
 
 /**
@@ -70,10 +81,10 @@ constexpr std::size_t align_up(std::size_t value, std::size_t alignment) noexcep
  *
  * @return Return the aligned value, as one would expect
  */
-constexpr std::size_t align_down(std::size_t value, std::size_t alignment) noexcept
+[[deprecated("Use rmm::align_down instead.")]] constexpr std::size_t align_down(
+  std::size_t value, std::size_t alignment) noexcept
 {
-  assert(is_supported_alignment(alignment));
-  return value & ~(alignment - 1);
+  return rmm::align_down(value, alignment);
 }
 
 /**
@@ -84,16 +95,16 @@ constexpr std::size_t align_down(std::size_t value, std::size_t alignment) noexc
  *
  * @return true if aligned
  */
-constexpr bool is_aligned(std::size_t value, std::size_t alignment) noexcept
+[[deprecated("Use rmm::is_aligned instead.")]] constexpr bool is_aligned(
+  std::size_t value, std::size_t alignment) noexcept
 {
-  assert(is_supported_alignment(alignment));
-  return value == align_down(value, alignment);
+  return rmm::is_aligned(value, alignment);
 }
 
-inline bool is_pointer_aligned(void* ptr, std::size_t alignment = CUDA_ALLOCATION_ALIGNMENT)
+[[deprecated("Use rmm::is_pointer_aligned instead.")]] inline bool is_pointer_aligned(
+  void* ptr, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
 {
-  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-  return rmm::detail::is_aligned(reinterpret_cast<std::uintptr_t>(ptr), alignment);
+  return rmm::is_pointer_aligned(ptr, alignment);
 }
 
 /**
@@ -127,7 +138,7 @@ inline bool is_pointer_aligned(void* ptr, std::size_t alignment = CUDA_ALLOCATIO
 template <typename Alloc>
 void* aligned_allocate(std::size_t bytes, std::size_t alignment, Alloc alloc)
 {
-  assert(is_supported_alignment(alignment));
+  assert(rmm::is_supported_alignment(alignment));
 
   // allocate memory for bytes, plus potential alignment correction,
   // plus store of the correction offset
@@ -174,7 +185,7 @@ void aligned_deallocate(void* ptr,
                         [[maybe_unused]] std::size_t alignment,
                         Dealloc dealloc) noexcept
 {
-  assert(is_supported_alignment(alignment));
+  assert(rmm::is_supported_alignment(alignment));
 
   // Get offset from the location immediately prior to the aligned pointer
   // NOLINTNEXTLINE
