@@ -45,7 +45,7 @@ static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
  *
  * @param[in] value value to check.
  *
- * @return True if the input a power of two with non-negative exponent, false otherwise.
+ * @return True if the input is a power of two with non-negative integer exponent, false otherwise.
  */
 [[nodiscard]] constexpr bool is_pow2(std::size_t value) noexcept
 {
