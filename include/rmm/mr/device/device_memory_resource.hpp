@@ -306,7 +306,8 @@ class device_memory_resource {
    *
    * @return bool true if the resource supports get_mem_info, false otherwise.
    */
-  [[nodiscard]] virtual bool supports_get_mem_info() const noexcept = 0;
+  //[[deprecated("Use rmm::available_device_memory())")]]  //
+  [[nodiscard]] virtual bool supports_get_mem_info() const noexcept { return false; };
 
   /**
    * @brief Queries the amount of free and total memory for the resource.
@@ -316,6 +317,7 @@ class device_memory_resource {
    * @returns a pair containing the free memory in bytes in .first and total amount of memory in
    * .second
    */
+  //[[deprecated("Use rmm::available_device_memory())")]]  //
   [[nodiscard]] std::pair<std::size_t, std::size_t> get_mem_info(cuda_stream_view stream) const
   {
     return do_get_mem_info(stream);
@@ -384,7 +386,10 @@ class device_memory_resource {
    * @return std::pair with available and free memory for resource
    */
   [[nodiscard]] virtual std::pair<std::size_t, std::size_t> do_get_mem_info(
-    cuda_stream_view stream) const = 0;
+    cuda_stream_view stream) const
+  {
+    return {0, 0};
+  }
 };
 static_assert(cuda::mr::async_resource_with<device_memory_resource, cuda::mr::device_accessible>);
 /** @} */  // end of group
