@@ -61,7 +61,7 @@ class pinned_host_memory_resource {
     // don't allocate anything if the user requested zero bytes
     if (0 == bytes) { return nullptr; }
 
-    return rmm::detail::aligned_allocate(bytes, alignment, [](std::size_t size) {
+    return rmm::detail::aligned_host_allocate(bytes, alignment, [](std::size_t size) {
       void* ptr{nullptr};
       RMM_CUDA_TRY_ALLOC(cudaHostAlloc(&ptr, size, cudaHostAllocDefault));
       return ptr;
@@ -81,7 +81,7 @@ class pinned_host_memory_resource {
                          std::size_t bytes,
                          std::size_t alignment = rmm::RMM_DEFAULT_HOST_ALIGNMENT) noexcept
   {
-    rmm::detail::aligned_deallocate(
+    rmm::detail::aligned_host_deallocate(
       ptr, bytes, alignment, [](void* ptr) { RMM_ASSERT_CUDA_SUCCESS(cudaFreeHost(ptr)); });
   }
 
