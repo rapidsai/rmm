@@ -71,9 +71,7 @@ inline bool is_host_memory(void* ptr)
 
 inline bool is_properly_aligned(void* ptr)
 {
-  if (is_host_memory(ptr)) {
-    return rmm::detail::is_pointer_aligned(ptr, rmm::RMM_DEFAULT_HOST_ALIGNMENT);
-  }
+  if (is_host_memory(ptr)) { return rmm::is_pointer_aligned(ptr, rmm::RMM_DEFAULT_HOST_ALIGNMENT); }
   return rmm::is_pointer_aligned(ptr, rmm::CUDA_ALLOCATION_ALIGNMENT);
 }
 
