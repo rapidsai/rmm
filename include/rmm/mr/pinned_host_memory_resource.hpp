@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include <rmm/aligned.hpp>
 #include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
 
@@ -54,9 +55,8 @@ class pinned_host_memory_resource {
    *
    * @return Pointer to the newly allocated memory.
    */
-  static void* allocate(
-    std::size_t bytes,
-    [[maybe_unused]] std::size_t alignment = rmm::detail::RMM_DEFAULT_HOST_ALIGNMENT)
+  static void* allocate(std::size_t bytes,
+                        [[maybe_unused]] std::size_t alignment = rmm::RMM_DEFAULT_HOST_ALIGNMENT)
   {
     // don't allocate anything if the user requested zero bytes
     if (0 == bytes) { return nullptr; }
@@ -79,7 +79,7 @@ class pinned_host_memory_resource {
    */
   static void deallocate(void* ptr,
                          std::size_t bytes,
-                         std::size_t alignment = rmm::detail::RMM_DEFAULT_HOST_ALIGNMENT) noexcept
+                         std::size_t alignment = rmm::RMM_DEFAULT_HOST_ALIGNMENT) noexcept
   {
     rmm::detail::aligned_deallocate(
       ptr, bytes, alignment, [](void* ptr) { RMM_ASSERT_CUDA_SUCCESS(cudaFreeHost(ptr)); });
@@ -217,4 +217,7 @@ class pinned_host_memory_resource {
   }
 };
 
+static_assert(cuda::mr::async_resource_with<pinned_host_memory_resource,
+                                            cuda::mr::device_accessible,
+                                            cuda::mr::host_accessible>);
 }  // namespace rmm::mr
