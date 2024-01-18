@@ -43,9 +43,9 @@ static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
 /**
  * @brief Returns whether or not `value` is a power of 2.
  *
- * @param[in] value to check.
+ * @param[in] value value to check.
  *
- * @return Whether the input a power of two with non-negative exponent
+ * @return True if the input is a power of two with non-negative integer exponent, false otherwise.
  */
 [[nodiscard]] constexpr bool is_pow2(std::size_t value) noexcept
 {
@@ -57,7 +57,7 @@ static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
  *
  * @param[in] alignment to check
  *
- * @return Whether the alignment is valid
+ * @return True if the alignment is valid, false otherwise.
  */
 [[nodiscard]] constexpr bool is_supported_alignment(std::size_t alignment) noexcept
 {
@@ -70,7 +70,7 @@ static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
  * @param[in] value value to align
  * @param[in] alignment amount, in bytes, must be a power of 2
  *
- * @return Return the aligned value, as one would expect
+ * @return the aligned value
  */
 [[nodiscard]] constexpr std::size_t align_up(std::size_t value, std::size_t alignment) noexcept
 {
@@ -84,7 +84,7 @@ static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
  * @param[in] value value to align
  * @param[in] alignment amount, in bytes, must be a power of 2
  *
- * @return Return the aligned value, as one would expect
+ * @return the aligned value
  */
 [[nodiscard]] constexpr std::size_t align_down(std::size_t value, std::size_t alignment) noexcept
 {
