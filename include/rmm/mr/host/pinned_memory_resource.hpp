@@ -57,26 +57,6 @@ class pinned_memory_resource final : public host_memory_resource {
   [[nodiscard]] bool supports_streams() const noexcept { return false; }
 
   /**
-   * @brief Query whether the resource supports the get_mem_info API.
-   *
-   * @return bool false.
-   */
-  [[nodiscard]] bool supports_get_mem_info() const noexcept { return false; }
-
-  /**
-   * @brief Queries the amount of free and total memory for the resource.
-   *
-   * @param stream the stream whose memory manager we want to retrieve
-   *
-   * @returns a pair containing the free memory in bytes in .first and total amount of memory in
-   * .second
-   */
-  [[nodiscard]] std::pair<std::size_t, std::size_t> get_mem_info(cuda_stream_view stream) const
-  {
-    return std::make_pair(0, 0);
-  }
-
-  /**
    * @brief Pretend to support the allocate_async interface, falling back to stream 0
    *
    * @throws rmm::bad_alloc When the requested `bytes` cannot be allocated on

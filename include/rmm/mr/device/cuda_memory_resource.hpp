@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,13 +51,6 @@ class cuda_memory_resource final : public device_memory_resource {
    */
   [[nodiscard]] bool supports_streams() const noexcept override { return false; }
 
-  /**
-   * @brief Query whether the resource supports the get_mem_info API.
-   *
-   * @return true
-   */
-  [[nodiscard]] bool supports_get_mem_info() const noexcept override { return true; }
-
  private:
   /**
    * @brief Allocates memory of size at least \p bytes.
@@ -107,21 +100,6 @@ class cuda_memory_resource final : public device_memory_resource {
   [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
   {
     return dynamic_cast<cuda_memory_resource const*>(&other) != nullptr;
-  }
-
-  /**
-   * @brief Get free and available memory for memory resource
-   *
-   * @throws rmm::cuda_error if unable to retrieve memory info.
-   *
-   * @return std::pair contaiing free_size and total_size of memory
-   */
-  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view) const override
-  {
-    std::size_t free_size{};
-    std::size_t total_size{};
-    RMM_CUDA_TRY(cudaMemGetInfo(&free_size, &total_size));
-    return std::make_pair(free_size, total_size);
   }
 };
 /** @} */  // end of group

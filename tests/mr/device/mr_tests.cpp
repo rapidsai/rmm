@@ -95,31 +95,6 @@ TEST_P(mr_test, SupportsStreams)
   }
 }
 
-TEST_P(mr_test, GetMemInfo)
-{
-  if (this->mr->supports_get_mem_info()) {
-    const auto allocation_size{16 * 256};
-    {
-      auto const [free, total] = this->mr->get_mem_info(rmm::cuda_stream_view{});
-      EXPECT_TRUE(free >= allocation_size);
-    }
-
-    void* ptr{nullptr};
-    ptr = this->mr->allocate(allocation_size);
-
-    {
-      auto const [free, total] = this->mr->get_mem_info(rmm::cuda_stream_view{});
-      EXPECT_TRUE(free >= allocation_size);
-    }
-
-    this->mr->deallocate(ptr, allocation_size);
-  } else {
-    auto const [free, total] = this->mr->get_mem_info(rmm::cuda_stream_view{});
-    EXPECT_EQ(free, 0);
-    EXPECT_EQ(total, 0);
-  }
-}
-
 // Simple reproducer for https://github.com/rapidsai/rmm/issues/861
 TEST_P(mr_test, AllocationsAreDifferentDefaultStream)
 {
