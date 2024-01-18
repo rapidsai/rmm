@@ -167,8 +167,7 @@ class pinned_host_memory_resource {
   // NOLINTEND(bugprone-easily-swappable-parameters)
 
   /**
-   * @briefreturn{true if the specified resource is the same type as this resource, otherwise
-   * false.}
+   * @briefreturn{true if the specified resource is the same type as this resource.}
    */
   bool operator==(const pinned_host_memory_resource&) const { return true; }
 
