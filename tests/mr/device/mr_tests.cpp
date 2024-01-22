@@ -31,6 +31,7 @@ INSTANTIATE_TEST_SUITE_P(ResourceTests,
 #endif
                                            mr_factory{"Managed", &make_managed},
                                            mr_factory{"Pool", &make_pool},
+                                           mr_factory{"HostPinnedPool", &make_host_pinned_pool},
                                            mr_factory{"Arena", &make_arena},
                                            mr_factory{"Binning", &make_binning},
                                            mr_factory{"Fixed_Size", &make_fixed_size}),
@@ -45,6 +46,7 @@ INSTANTIATE_TEST_SUITE_P(ResourceAllocationTests,
 #endif
                                            mr_factory{"Managed", &make_managed},
                                            mr_factory{"Pool", &make_pool},
+                                           mr_factory{"HostPinnedPool", &make_host_pinned_pool},
                                            mr_factory{"Arena", &make_arena},
                                            mr_factory{"Binning", &make_binning}),
                          [](auto const& info) { return info.param.name; });

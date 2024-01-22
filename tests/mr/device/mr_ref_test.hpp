@@ -17,6 +17,7 @@
 #pragma once
 
 #include "../../byte_literals.hpp"
+#include "test_utils.hpp"
 
 #include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
@@ -35,8 +36,6 @@
 
 #include <gtest/gtest.h>
 
-#include <cuda_runtime_api.h>
-
 #include <cuda/memory_resource>
 
 #include <cstddef>
@@ -49,17 +48,6 @@ using resource_ref       = cuda::mr::resource_ref<cuda::mr::device_accessible>;
 using async_resource_ref = cuda::mr::async_resource_ref<cuda::mr::device_accessible>;
 
 namespace rmm::test {
-
-/**
- * @brief Returns if a pointer points to a device memory or managed memory
- * allocation.
- */
-inline bool is_device_memory(void* ptr)
-{
-  cudaPointerAttributes attributes{};
-  if (cudaSuccess != cudaPointerGetAttributes(&attributes, ptr)) { return false; }
-  return (attributes.type == cudaMemoryTypeDevice) or (attributes.type == cudaMemoryTypeManaged);
-}
 
 enum size_in_bytes : size_t {};
 
@@ -79,8 +67,8 @@ inline void test_allocate(resource_ref ref, std::size_t bytes)
   try {
     void* ptr = ref.allocate(bytes);
     EXPECT_NE(nullptr, ptr);
-    EXPECT_TRUE(rmm::is_pointer_aligned(ptr));
-    EXPECT_TRUE(is_device_memory(ptr));
+    EXPECT_TRUE(is_properly_aligned(ptr));
+    EXPECT_TRUE(is_device_accessible_memory(ptr));
     ref.deallocate(ptr, bytes);
   } catch (rmm::out_of_memory const& e) {
     EXPECT_NE(std::string{e.what()}.find("out_of_memory"), std::string::npos);
@@ -95,8 +83,8 @@ inline void test_allocate_async(async_resource_ref ref,
     void* ptr = ref.allocate_async(bytes, stream);
     if (not stream.is_default()) { stream.synchronize(); }
     EXPECT_NE(nullptr, ptr);
-    EXPECT_TRUE(rmm::is_pointer_aligned(ptr));
-    EXPECT_TRUE(is_device_memory(ptr));
+    EXPECT_TRUE(is_properly_aligned(ptr));
+    EXPECT_TRUE(is_device_accessible_memory(ptr));
     ref.deallocate_async(ptr, bytes, stream);
     if (not stream.is_default()) { stream.synchronize(); }
   } catch (rmm::out_of_memory const& e) {
@@ -203,7 +191,7 @@ inline void test_random_allocations(resource_ref ref,
       alloc.size = distribution(generator);
       EXPECT_NO_THROW(alloc.ptr = ref.allocate(alloc.size));
       EXPECT_NE(nullptr, alloc.ptr);
-      EXPECT_TRUE(rmm::is_pointer_aligned(alloc.ptr));
+      EXPECT_TRUE(is_properly_aligned(alloc.ptr));
     });
 
   std::for_each(allocations.begin(), allocations.end(), [&ref](allocation& alloc) {
@@ -229,7 +217,7 @@ inline void test_random_async_allocations(async_resource_ref ref,
                   EXPECT_NO_THROW(alloc.ptr = ref.allocate(alloc.size));
                   if (not stream.is_default()) { stream.synchronize(); }
                   EXPECT_NE(nullptr, alloc.ptr);
-                  EXPECT_TRUE(rmm::is_pointer_aligned(alloc.ptr));
+                  EXPECT_TRUE(is_properly_aligned(alloc.ptr));
                 });
 
   std::for_each(allocations.begin(), allocations.end(), [stream, &ref](allocation& alloc) {
@@ -270,7 +258,7 @@ inline void test_mixed_random_allocation_free(resource_ref ref,
       EXPECT_NO_THROW(allocations.emplace_back(ref.allocate(size), size));
       auto new_allocation = allocations.back();
       EXPECT_NE(nullptr, new_allocation.ptr);
-      EXPECT_TRUE(rmm::is_pointer_aligned(new_allocation.ptr));
+      EXPECT_TRUE(is_properly_aligned(new_allocation.ptr));
     } else {
       auto const index = static_cast<int>(index_distribution(generator) % active_allocations);
       active_allocations--;
@@ -317,7 +305,7 @@ inline void test_mixed_random_async_allocation_free(async_resource_ref ref,
       EXPECT_NO_THROW(allocations.emplace_back(ref.allocate_async(size, stream), size));
       auto new_allocation = allocations.back();
       EXPECT_NE(nullptr, new_allocation.ptr);
-      EXPECT_TRUE(rmm::is_pointer_aligned(new_allocation.ptr));
+      EXPECT_TRUE(is_properly_aligned(new_allocation.ptr));
     } else {
       auto const index = static_cast<int>(index_distribution(generator) % active_allocations);
       active_allocations--;
