@@ -306,7 +306,6 @@ class device_memory_resource {
    *
    * @return bool true if the resource supports get_mem_info, false otherwise.
    */
-  //[[deprecated("Use rmm::available_device_memory())")]]  //
   [[nodiscard]] virtual bool supports_get_mem_info() const noexcept { return false; };
 
   /**
@@ -317,7 +316,6 @@ class device_memory_resource {
    * @returns a pair containing the free memory in bytes in .first and total amount of memory in
    * .second
    */
-  //[[deprecated("Use rmm::available_device_memory())")]]  //
   [[nodiscard]] std::pair<std::size_t, std::size_t> get_mem_info(cuda_stream_view stream) const
   {
     return do_get_mem_info(stream);
