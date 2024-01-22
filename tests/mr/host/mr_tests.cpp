@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 #include "../../byte_literals.hpp"
 
-#include <rmm/detail/aligned.hpp>
+#include <rmm/aligned.hpp>
 #include <rmm/mr/host/host_memory_resource.hpp>
 #include <rmm/mr/host/new_delete_resource.hpp>
 #include <rmm/mr/host/pinned_memory_resource.hpp>
@@ -35,7 +35,7 @@ namespace rmm::test {
 namespace {
 inline bool is_aligned(void* ptr, std::size_t alignment = alignof(std::max_align_t))
 {
-  return rmm::detail::is_pointer_aligned(ptr, alignment);
+  return rmm::is_pointer_aligned(ptr, alignment);
 }
 
 // Returns true if a pointer points to a device memory or managed memory allocation.

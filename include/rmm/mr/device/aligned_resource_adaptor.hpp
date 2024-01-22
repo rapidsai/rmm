@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, NVIDIA CORPORATION.
+ * Copyright (c) 2021-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
  */
 #pragma once
 
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_stream_view.hpp>
-#include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
@@ -65,12 +65,12 @@ class aligned_resource_adaptor final : public device_memory_resource {
    * are aligned.
    */
   explicit aligned_resource_adaptor(Upstream* upstream,
-                                    std::size_t alignment = rmm::detail::CUDA_ALLOCATION_ALIGNMENT,
+                                    std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT,
                                     std::size_t alignment_threshold = default_alignment_threshold)
     : upstream_{upstream}, alignment_{alignment}, alignment_threshold_{alignment_threshold}
   {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
-    RMM_EXPECTS(rmm::detail::is_supported_alignment(alignment),
+    RMM_EXPECTS(rmm::is_supported_alignment(alignment),
                 "Allocation alignment is not a power of 2.");
   }
 
@@ -127,14 +127,14 @@ class aligned_resource_adaptor final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
-    if (alignment_ == rmm::detail::CUDA_ALLOCATION_ALIGNMENT || bytes < alignment_threshold_) {
+    if (alignment_ == rmm::CUDA_ALLOCATION_ALIGNMENT || bytes < alignment_threshold_) {
       return upstream_->allocate(bytes, stream);
     }
     auto const size = upstream_allocation_size(bytes);
     void* pointer   = upstream_->allocate(size, stream);
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     auto const address         = reinterpret_cast<std::size_t>(pointer);
-    auto const aligned_address = rmm::detail::align_up(address, alignment_);
+    auto const aligned_address = rmm::align_up(address, alignment_);
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast,performance-no-int-to-ptr)
     void* aligned_pointer = reinterpret_cast<void*>(aligned_address);
     if (pointer != aligned_pointer) {
@@ -153,7 +153,7 @@ class aligned_resource_adaptor final : public device_memory_resource {
    */
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
-    if (alignment_ == rmm::detail::CUDA_ALLOCATION_ALIGNMENT || bytes < alignment_threshold_) {
+    if (alignment_ == rmm::CUDA_ALLOCATION_ALIGNMENT || bytes < alignment_threshold_) {
       upstream_->deallocate(ptr, bytes, stream);
     } else {
       {
@@ -208,8 +208,8 @@ class aligned_resource_adaptor final : public device_memory_resource {
    */
   std::size_t upstream_allocation_size(std::size_t bytes) const
   {
-    auto const aligned_size = rmm::detail::align_up(bytes, alignment_);
-    return aligned_size + alignment_ - rmm::detail::CUDA_ALLOCATION_ALIGNMENT;
+    auto const aligned_size = rmm::align_up(bytes, alignment_);
+    return aligned_size + alignment_ - rmm::CUDA_ALLOCATION_ALIGNMENT;
   }
 
   Upstream* upstream_;  ///< The upstream resource used for satisfying allocation requests

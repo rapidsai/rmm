@@ -62,8 +62,8 @@ CheckOptions:
     value:           'alignment'
   - key:             cppcoreguidelines-avoid-magic-numbers.IgnorePowersOf2IntegerValues
     value:           '1'
-  - key:             readability-magic-numbers.IgnorePowersOf2IntegerValues
-    value:           '1'
+  - key:             cppcoreguidelines-avoid-magic-numbers.IgnoredIntegerValues
+    value:           "0;1;2;3;4;50;100"
   - key:             cppcoreguidelines-avoid-do-while.IgnoreMacros
     value:           'true'
 ...

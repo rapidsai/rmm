@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,8 @@
  */
 #pragma once
 
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_stream_view.hpp>
-#include <rmm/detail/aligned.hpp>
-#include <rmm/detail/cuda_util.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/logging_assert.hpp>
 #include <rmm/logger.hpp>
@@ -111,8 +110,10 @@ class pool_memory_resource final
                                                       detail::coalescing_free_list>;
 
   /**
-   * @brief Construct a `pool_memory_resource` and allocate the initial device memory pool using
-   * `upstream_mr`.
+   * @brief Construct a `pool_memory_resource` and allocate the initial device memory
+   * pool using `upstream_mr`.
+   *
+   * @deprecated Use the constructor that takes an explicit initial pool size instead.
    *
    * @throws rmm::logic_error if `upstream_mr == nullptr`
    * @throws rmm::logic_error if `initial_pool_size` is neither the default nor aligned to a
@@ -121,24 +122,71 @@ class pool_memory_resource final
    * multiple of pool_memory_resource::allocation_alignment bytes.
    *
    * @param upstream_mr The memory_resource from which to allocate blocks for the pool.
-   * @param initial_pool_size Minimum size, in bytes, of the initial pool. Defaults to half of the
-   * available memory on the current device.
+   * @param initial_pool_size Minimum size, in bytes, of the initial pool. Defaults to zero.
    * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to. Defaults to all
-   * of the available memory on the current device.
+   * of the available memory from the upstream resource.
    */
+  [[deprecated("Must specify initial_pool_size")]]  //
   explicit pool_memory_resource(Upstream* upstream_mr,
                                 thrust::optional<std::size_t> initial_pool_size = thrust::nullopt,
+                                thrust::optional<std::size_t> maximum_pool_size = thrust::nullopt)
+    : pool_memory_resource(upstream_mr, initial_pool_size.value_or(0), maximum_pool_size)
+  {
+  }
+
+  /**
+   * @brief Construct a `pool_memory_resource` and allocate the initial device memory pool using
+   * `upstream_mr`.
+   *
+   * @deprecated Use the constructor that takes an explicit initial pool size instead.
+   *
+   * @throws rmm::logic_error if `upstream_mr == nullptr`
+   * @throws rmm::logic_error if `initial_pool_size` is neither the default nor aligned to a
+   * multiple of pool_memory_resource::allocation_alignment bytes.
+   * @throws rmm::logic_error if `maximum_pool_size` is neither the default nor aligned to a
+   * multiple of pool_memory_resource::allocation_alignment bytes.
+   *
+   * @param upstream_mr The memory_resource from which to allocate blocks for the pool.
+   * @param initial_pool_size Minimum size, in bytes, of the initial pool. Defaults to zero.
+   * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to. Defaults to all
+   * of the available memory from the upstream resource.
+   */
+  template <typename Upstream2                                               = Upstream,
+            cuda::std::enable_if_t<cuda::mr::async_resource<Upstream2>, int> = 0>
+  [[deprecated("Must specify initial_pool_size")]]  //
+  explicit pool_memory_resource(Upstream2& upstream_mr,
+                                thrust::optional<std::size_t> initial_pool_size = thrust::nullopt,
+                                thrust::optional<std::size_t> maximum_pool_size = thrust::nullopt)
+    : pool_memory_resource(upstream_mr, initial_pool_size.value_or(0), maximum_pool_size)
+  {
+  }
+
+  /**
+   * @brief Construct a `pool_memory_resource` and allocate the initial device memory pool using
+   * `upstream_mr`.
+   *
+   * @throws rmm::logic_error if `upstream_mr == nullptr`
+   * @throws rmm::logic_error if `initial_pool_size` is not aligned to a multiple of
+   * pool_memory_resource::allocation_alignment bytes.
+   * @throws rmm::logic_error if `maximum_pool_size` is neither the default nor aligned to a
+   * multiple of pool_memory_resource::allocation_alignment bytes.
+   *
+   * @param upstream_mr The memory_resource from which to allocate blocks for the pool.
+   * @param initial_pool_size Minimum size, in bytes, of the initial pool.
+   * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to. Defaults to all
+   * of the available from the upstream resource.
+   */
+  explicit pool_memory_resource(Upstream* upstream_mr,
+                                std::size_t initial_pool_size,
                                 thrust::optional<std::size_t> maximum_pool_size = thrust::nullopt)
     : upstream_mr_{[upstream_mr]() {
         RMM_EXPECTS(nullptr != upstream_mr, "Unexpected null upstream pointer.");
         return upstream_mr;
       }()}
   {
-    RMM_EXPECTS(rmm::detail::is_aligned(initial_pool_size.value_or(0),
-                                        rmm::detail::CUDA_ALLOCATION_ALIGNMENT),
+    RMM_EXPECTS(rmm::is_aligned(initial_pool_size, rmm::CUDA_ALLOCATION_ALIGNMENT),
                 "Error, Initial pool size required to be a multiple of 256 bytes");
-    RMM_EXPECTS(rmm::detail::is_aligned(maximum_pool_size.value_or(0),
-                                        rmm::detail::CUDA_ALLOCATION_ALIGNMENT),
+    RMM_EXPECTS(rmm::is_aligned(maximum_pool_size.value_or(0), rmm::CUDA_ALLOCATION_ALIGNMENT),
                 "Error, Maximum pool size required to be a multiple of 256 bytes");
 
     initialize_pool(initial_pool_size, maximum_pool_size);
@@ -149,21 +197,20 @@ class pool_memory_resource final
    * `upstream_mr`.
    *
    * @throws rmm::logic_error if `upstream_mr == nullptr`
-   * @throws rmm::logic_error if `initial_pool_size` is neither the default nor aligned to a
-   * multiple of pool_memory_resource::allocation_alignment bytes.
+   * @throws rmm::logic_error if `initial_pool_size` is not aligned to a multiple of
+   * pool_memory_resource::allocation_alignment bytes.
    * @throws rmm::logic_error if `maximum_pool_size` is neither the default nor aligned to a
    * multiple of pool_memory_resource::allocation_alignment bytes.
    *
    * @param upstream_mr The memory_resource from which to allocate blocks for the pool.
-   * @param initial_pool_size Minimum size, in bytes, of the initial pool. Defaults to half of the
-   * available memory on the current device.
+   * @param initial_pool_size Minimum size, in bytes, of the initial pool.
    * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to. Defaults to all
-   * of the available memory on the current device.
+   * of the available memory from the upstream resource.
    */
   template <typename Upstream2                                               = Upstream,
             cuda::std::enable_if_t<cuda::mr::async_resource<Upstream2>, int> = 0>
   explicit pool_memory_resource(Upstream2& upstream_mr,
-                                thrust::optional<std::size_t> initial_pool_size = thrust::nullopt,
+                                std::size_t initial_pool_size,
                                 thrust::optional<std::size_t> maximum_pool_size = thrust::nullopt)
     : pool_memory_resource(cuda::std::addressof(upstream_mr), initial_pool_size, maximum_pool_size)
   {
@@ -276,38 +323,22 @@ class pool_memory_resource final
   /**
    * @brief Allocate initial memory for the pool
    *
-   * If initial_size is unset, then queries the upstream memory resource for available memory if
-   * upstream supports `get_mem_info`, or queries the device (using CUDA API) for available memory
-   * if not. Then attempts to initialize to half the available memory.
-   *
-   * If initial_size is set, then tries to initialize the pool to that size.
-   *
    * @param initial_size The optional initial size for the pool
    * @param maximum_size The optional maximum size for the pool
+   *
+   * @throws logic_error if @p initial_size is larger than @p maximum_size (if set).
    */
-  // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-  void initialize_pool(thrust::optional<std::size_t> initial_size,
-                       thrust::optional<std::size_t> maximum_size)
+  void initialize_pool(std::size_t initial_size, thrust::optional<std::size_t> maximum_size)
   {
-    auto const try_size = [&]() {
-      if (not initial_size.has_value()) {
-        auto const [free, total] = (get_upstream()->supports_get_mem_info())
-                                     ? get_upstream()->get_mem_info(cuda_stream_legacy)
-                                     : rmm::detail::available_device_memory();
-        return rmm::detail::align_up(std::min(free, total / 2),
-                                     rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
-      }
-      return initial_size.value();
-    }();
-
     current_pool_size_ = 0;  // try_to_expand will set this if it succeeds
     maximum_pool_size_ = maximum_size;
 
-    RMM_EXPECTS(try_size <= maximum_pool_size_.value_or(std::numeric_limits<std::size_t>::max()),
-                "Initial pool size exceeds the maximum pool size!");
+    RMM_EXPECTS(
+      initial_size <= maximum_pool_size_.value_or(std::numeric_limits<std::size_t>::max()),
+      "Initial pool size exceeds the maximum pool size!");
 
-    if (try_size > 0) {
-      auto const block = try_to_expand(try_size, try_size, cuda_stream_legacy);
+    if (initial_size > 0) {
+      auto const block = try_to_expand(initial_size, initial_size, cuda_stream_legacy);
       this->insert_block(block, cuda_stream_legacy);
     }
   }
@@ -346,9 +377,9 @@ class pool_memory_resource final
   {
     if (maximum_pool_size_.has_value()) {
       auto const unaligned_remaining = maximum_pool_size_.value() - pool_size();
-      using rmm::detail::align_up;
-      auto const remaining = align_up(unaligned_remaining, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
-      auto const aligned_size = align_up(size, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
+      using rmm::align_up;
+      auto const remaining    = align_up(unaligned_remaining, rmm::CUDA_ALLOCATION_ALIGNMENT);
+      auto const aligned_size = align_up(size, rmm::CUDA_ALLOCATION_ALIGNMENT);
       return (aligned_size <= remaining) ? std::max(aligned_size, remaining / 2) : 0;
     }
     return std::max(size, pool_size());
@@ -416,7 +447,7 @@ class pool_memory_resource final
     RMM_LOGGING_ASSERT(iter != allocated_blocks_.end());
 
     auto block = *iter;
-    RMM_LOGGING_ASSERT(block.size() == rmm::detail::align_up(size, allocation_alignment));
+    RMM_LOGGING_ASSERT(block.size() == rmm::align_up(size, allocation_alignment));
     allocated_blocks_.erase(iter);
 
     return block;

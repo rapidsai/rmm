@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,10 +78,12 @@ namespace rmm::mr {
  * device.
  *
  * @code{.cpp}
- * std::vector<unique_ptr<pool_memory_resource>> per_device_pools;
+ * using pool_mr = rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>;
+ * std::vector<unique_ptr<pool_mr>> per_device_pools;
  * for(int i = 0; i < N; ++i) {
  *   cudaSetDevice(i);
- *   per_device_pools.push_back(std::make_unique<pool_memory_resource>());
+ *   // Note: for brevity, omitting creation of upstream and computing initial_size
+ *   per_device_pools.push_back(std::make_unique<pool_mr>(upstream, initial_size));
  *   set_per_device_resource(cuda_device_id{i}, &per_device_pools.back());
  * }
  * @endcode
@@ -171,7 +173,7 @@ class device_memory_resource {
    */
   void* allocate(std::size_t bytes, std::size_t alignment)
   {
-    return do_allocate(rmm::detail::align_up(bytes, alignment), cuda_stream_view{});
+    return do_allocate(rmm::align_up(bytes, alignment), cuda_stream_view{});
   }
 
   /**
@@ -189,7 +191,7 @@ class device_memory_resource {
    */
   void deallocate(void* ptr, std::size_t bytes, std::size_t alignment)
   {
-    do_deallocate(ptr, rmm::detail::align_up(bytes, alignment), cuda_stream_view{});
+    do_deallocate(ptr, rmm::align_up(bytes, alignment), cuda_stream_view{});
   }
 
   /**
@@ -207,7 +209,7 @@ class device_memory_resource {
    */
   void* allocate_async(std::size_t bytes, std::size_t alignment, cuda_stream_view stream)
   {
-    return do_allocate(rmm::detail::align_up(bytes, alignment), stream);
+    return do_allocate(rmm::align_up(bytes, alignment), stream);
   }
 
   /**
@@ -246,7 +248,7 @@ class device_memory_resource {
                         std::size_t alignment,
                         cuda_stream_view stream)
   {
-    do_deallocate(ptr, rmm::detail::align_up(bytes, alignment), stream);
+    do_deallocate(ptr, rmm::align_up(bytes, alignment), stream);
   }
 
   /**

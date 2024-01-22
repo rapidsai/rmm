@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,12 @@
 #pragma once
 
 #include "../../byte_literals.hpp"
+#include "test_utils.hpp"
 
+#include <rmm/aligned.hpp>
+#include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream.hpp>
 #include <rmm/cuda_stream_view.hpp>
-#include <rmm/detail/aligned.hpp>
 #include <rmm/mr/device/arena_memory_resource.hpp>
 #include <rmm/mr/device/binning_memory_resource.hpp>
 #include <rmm/mr/device/cuda_async_memory_resource.hpp>
@@ -31,10 +33,9 @@
 #include <rmm/mr/device/owning_wrapper.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
+#include <rmm/mr/pinned_host_memory_resource.hpp>
 
 #include <gtest/gtest.h>
-
-#include <cuda_runtime_api.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -43,17 +44,6 @@
 #include <utility>
 
 namespace rmm::test {
-
-/**
- * @brief Returns if a pointer points to a device memory or managed memory
- * allocation.
- */
-inline bool is_device_memory(void* ptr)
-{
-  cudaPointerAttributes attributes{};
-  if (cudaSuccess != cudaPointerGetAttributes(&attributes, ptr)) { return false; }
-  return (attributes.type == cudaMemoryTypeDevice) or (attributes.type == cudaMemoryTypeManaged);
-}
 
 enum size_in_bytes : size_t {};
 
@@ -74,8 +64,8 @@ inline void test_get_current_device_resource()
   EXPECT_NE(nullptr, rmm::mr::get_current_device_resource());
   void* ptr = rmm::mr::get_current_device_resource()->allocate(1_MiB);
   EXPECT_NE(nullptr, ptr);
-  EXPECT_TRUE(rmm::detail::is_pointer_aligned(ptr));
-  EXPECT_TRUE(is_device_memory(ptr));
+  EXPECT_TRUE(is_properly_aligned(ptr));
+  EXPECT_TRUE(is_device_accessible_memory(ptr));
   rmm::mr::get_current_device_resource()->deallocate(ptr, 1_MiB);
 }
 
@@ -86,8 +76,8 @@ inline void test_allocate(rmm::mr::device_memory_resource* mr,
   void* ptr = mr->allocate(bytes);
   if (not stream.is_default()) { stream.synchronize(); }
   EXPECT_NE(nullptr, ptr);
-  EXPECT_TRUE(rmm::detail::is_pointer_aligned(ptr));
-  EXPECT_TRUE(is_device_memory(ptr));
+  EXPECT_TRUE(is_properly_aligned(ptr));
+  EXPECT_TRUE(is_device_accessible_memory(ptr));
   mr->deallocate(ptr, bytes);
   if (not stream.is_default()) { stream.synchronize(); }
 }
@@ -154,7 +144,7 @@ inline void test_random_allocations(rmm::mr::device_memory_resource* mr,
                   EXPECT_NO_THROW(alloc.ptr = mr->allocate(alloc.size, stream));
                   if (not stream.is_default()) { stream.synchronize(); }
                   EXPECT_NE(nullptr, alloc.ptr);
-                  EXPECT_TRUE(rmm::detail::is_pointer_aligned(alloc.ptr));
+                  EXPECT_TRUE(is_properly_aligned(alloc.ptr));
                 });
 
   std::for_each(allocations.begin(), allocations.end(), [stream, mr](allocation& alloc) {
@@ -196,7 +186,7 @@ inline void test_mixed_random_allocation_free(rmm::mr::device_memory_resource* m
       EXPECT_NO_THROW(allocations.emplace_back(mr->allocate(size, stream), size));
       auto new_allocation = allocations.back();
       EXPECT_NE(nullptr, new_allocation.ptr);
-      EXPECT_TRUE(rmm::detail::is_pointer_aligned(new_allocation.ptr));
+      EXPECT_TRUE(is_properly_aligned(new_allocation.ptr));
     } else {
       auto const index = static_cast<int>(index_distribution(generator) % active_allocations);
       active_allocations--;
@@ -245,6 +235,8 @@ struct mr_allocation_test : public mr_test {};
 /// MR factory functions
 inline auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>(); }
 
+inline auto make_host_pinned() { return std::make_shared<rmm::mr::pinned_host_memory_resource>(); }
+
 inline auto make_cuda_async()
 {
   if (rmm::detail::async_alloc::is_supported()) {
@@ -257,7 +249,14 @@ inline auto make_managed() { return std::make_shared<rmm::mr::managed_memory_res
 
 inline auto make_pool()
 {
-  return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_cuda());
+  return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(
+    make_cuda(), rmm::percent_of_free_device_memory(50));
+}
+
+inline auto make_host_pinned_pool()
+{
+  return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(
+    make_host_pinned(), 2_GiB, 8_GiB);
 }
 
 inline auto make_arena()
