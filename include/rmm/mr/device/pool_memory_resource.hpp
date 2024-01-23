@@ -237,13 +237,6 @@ class pool_memory_resource final
   [[nodiscard]] bool supports_streams() const noexcept override { return true; }
 
   /**
-   * @brief Query whether the resource supports the get_mem_info API.
-   *
-   * @return bool false
-   */
-  [[nodiscard]] bool supports_get_mem_info() const noexcept override { return false; }
-
-  /**
    * @brief Get the upstream memory_resource object.
    *
    * @return const reference to the upstream memory resource.
@@ -487,7 +480,7 @@ class pool_memory_resource final
   {
     lock_guard lock(this->get_mutex());
 
-    auto const [free, total] = upstream_mr_->get_mem_info(rmm::cuda_stream_default);
+    auto const [free, total] = rmm::available_device_memory();
     std::cout << "GPU free memory: " << free << " total: " << total << "\n";
 
     std::cout << "upstream_blocks: " << upstream_blocks_.size() << "\n";
@@ -526,21 +519,6 @@ class pool_memory_resource final
       largest = std::max(largest, block.size());
     });
     return {largest, total};
-  }
-
-  /**
-   * @brief Get free and available memory for memory resource
-   *
-   * @throws nothing
-   *
-   * @param stream to execute on
-   * @return std::pair contaiing free_size and total_size of memory
-   */
-  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
-    cuda_stream_view stream) const override
-  {
-    // TODO implement this
-    return {0, 0};
   }
 
  private:

@@ -61,14 +61,8 @@ class always_throw_memory_resource final : public mr::device_memory_resource {
     throw ExceptionType{"foo"};
   }
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override{};
-  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
-    cuda_stream_view stream) const override
-  {
-    return {0, 0};
-  }
 
   [[nodiscard]] bool supports_streams() const noexcept override { return false; }
-  [[nodiscard]] bool supports_get_mem_info() const noexcept override { return false; }
 };
 
 TEST(FailureCallbackTest, DifferentExceptionTypes)

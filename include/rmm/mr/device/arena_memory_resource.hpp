@@ -118,13 +118,6 @@ class arena_memory_resource final : public device_memory_resource {
    */
   bool supports_streams() const noexcept override { return true; }
 
-  /**
-   * @brief Query whether the resource supports the get_mem_info API.
-   *
-   * @return bool false.
-   */
-  bool supports_get_mem_info() const noexcept override { return false; }
-
  private:
   using global_arena = rmm::mr::detail::arena::global_arena<Upstream>;
   using arena        = rmm::mr::detail::arena::arena<Upstream>;
@@ -310,18 +303,6 @@ class arena_memory_resource final : public device_memory_resource {
       stream_arenas_.emplace(stream.value(), global_arena_);
       return stream_arenas_.at(stream.value());
     }
-  }
-
-  /**
-   * @brief Get free and available memory for memory resource.
-   *
-   * @param stream to execute on.
-   * @return std::pair containing free_size and total_size of memory.
-   */
-  std::pair<std::size_t, std::size_t> do_get_mem_info(
-    [[maybe_unused]] cuda_stream_view stream) const override
-  {
-    return std::make_pair(0, 0);
   }
 
   /**

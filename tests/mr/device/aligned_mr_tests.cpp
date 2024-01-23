@@ -72,12 +72,6 @@ TEST(AlignedTest, SupportsGetMemInfo)
 {
   mock_resource mock;
   aligned_mock mr{&mock};
-
-  EXPECT_CALL(mock, supports_get_mem_info()).WillOnce(Return(true));
-  EXPECT_TRUE(mr.supports_get_mem_info());
-
-  EXPECT_CALL(mock, supports_get_mem_info()).WillOnce(Return(false));
-  EXPECT_FALSE(mr.supports_get_mem_info());
 }
 
 TEST(AlignedTest, DefaultAllocationAlignmentPassthrough)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -155,16 +155,6 @@ class logging_resource_adaptor final : public device_memory_resource {
   }
 
   /**
-   * @brief Query whether the resource supports the get_mem_info API.
-   *
-   * @return bool true if the upstream resource supports get_mem_info, false otherwise.
-   */
-  [[nodiscard]] bool supports_get_mem_info() const noexcept override
-  {
-    return upstream_->supports_get_mem_info();
-  }
-
-  /**
    * @brief Flush logger contents.
    */
   void flush() { logger_->flush(); }
@@ -293,20 +283,6 @@ class logging_resource_adaptor final : public device_memory_resource {
     auto const* cast = dynamic_cast<logging_resource_adaptor<Upstream> const*>(&other);
     if (cast != nullptr) { return upstream_->is_equal(*cast->get_upstream()); }
     return upstream_->is_equal(other);
-  }
-
-  /**
-   * @brief Get free and available memory from upstream resource.
-   *
-   * @throws rmm::cuda_error if unable to retrieve memory info.
-   *
-   * @param stream Stream on which to get the mem info.
-   * @return std::pair contaiing free_size and total_size of memory
-   */
-  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
-    cuda_stream_view stream) const override
-  {
-    return upstream_->get_mem_info(stream);
   }
 
   // make_logging_adaptor needs access to private get_default_filename

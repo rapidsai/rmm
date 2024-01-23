@@ -99,13 +99,6 @@ class cuda_async_view_memory_resource final : public device_memory_resource {
    */
   [[nodiscard]] bool supports_streams() const noexcept override { return true; }
 
-  /**
-   * @brief Query whether the resource supports the get_mem_info API.
-   *
-   * @return true
-   */
-  [[nodiscard]] bool supports_get_mem_info() const noexcept override { return false; }
-
  private:
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
   cudaMemPool_t cuda_pool_handle_{};
@@ -168,19 +161,6 @@ class cuda_async_view_memory_resource final : public device_memory_resource {
   [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
   {
     return dynamic_cast<cuda_async_view_memory_resource const*>(&other) != nullptr;
-  }
-
-  /**
-   * @brief Get free and available memory for memory resource
-   *
-   * @throws rmm::cuda_error if unable to retrieve memory info.
-   *
-   * @return std::pair contaiing free_size and total_size of memory
-   */
-  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
-    rmm::cuda_stream_view) const override
-  {
-    return std::make_pair(0, 0);
   }
 };
 

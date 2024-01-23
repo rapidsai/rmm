@@ -213,7 +213,6 @@ class fake_async_resource {
 
   // To model stream_resource
   [[nodiscard]] bool supports_streams() const noexcept { return false; }
-  [[nodiscard]] bool supports_get_mem_info() const noexcept { return false; }
 
  private:
   void* do_allocate(std::size_t bytes, cuda_stream_view) { return nullptr; }

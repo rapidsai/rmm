@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -165,14 +165,6 @@ class owning_wrapper : public device_memory_resource {
     return wrapped().supports_streams();
   }
 
-  /**
-   * @briefreturn{true if the wrapped resource supports get_mem_info, false otherwise}
-   */
-  [[nodiscard]] bool supports_get_mem_info() const noexcept override
-  {
-    return wrapped().supports_get_mem_info();
-  }
-
  private:
   /**
    * @brief Allocates memory using the wrapped resource.
@@ -218,20 +210,6 @@ class owning_wrapper : public device_memory_resource {
     auto casted = dynamic_cast<owning_wrapper<Resource, Upstreams...> const*>(&other);
     if (nullptr != casted) { return wrapped().is_equal(casted->wrapped()); }
     return wrapped().is_equal(other);
-  }
-
-  /**
-   * @brief Get free and available memory from upstream resource.
-   *
-   * @throws rmm::cuda_error if unable to retrieve memory info.
-   *
-   * @param stream Stream on which to get the mem info.
-   * @return std::pair contaiing free_size and total_size of memory
-   */
-  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
-    cuda_stream_view stream) const override
-  {
-    return wrapped().get_mem_info(stream);
   }
 
   upstream_tuple upstreams_;           ///< The owned upstream resources
