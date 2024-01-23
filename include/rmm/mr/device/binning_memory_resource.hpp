@@ -107,13 +107,6 @@ class binning_memory_resource final : public device_memory_resource {
   [[nodiscard]] bool supports_streams() const noexcept override { return true; }
 
   /**
-   * @brief Query whether the resource supports the get_mem_info API.
-   *
-   * @return false
-   */
-  [[nodiscard]] bool supports_get_mem_info() const noexcept override { return false; }
-
-  /**
    * @brief Get the upstream memory_resource object.
    *
    * @return UpstreamResource* the upstream memory resource.
@@ -195,20 +188,6 @@ class binning_memory_resource final : public device_memory_resource {
   {
     auto res = get_resource(bytes);
     if (res != nullptr) { res->deallocate(ptr, bytes, stream); }
-  }
-
-  /**
-   * @brief Get free and available memory for memory resource
-   *
-   * @throws std::runtime_error if we could not get free / total memory
-   *
-   * @param stream the stream being executed on
-   * @return std::pair with available and free memory for resource
-   */
-  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
-    [[maybe_unused]] cuda_stream_view stream) const override
-  {
-    return std::make_pair(0, 0);
   }
 
   Upstream* upstream_mr_;  // The upstream memory_resource from which to allocate blocks.

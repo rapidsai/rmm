@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,13 +59,6 @@ class simulated_memory_resource final : public device_memory_resource {
    */
   [[nodiscard]] bool supports_streams() const noexcept override { return false; }
 
-  /**
-   * @brief Query whether the resource supports the get_mem_info API.
-   *
-   * @return false
-   */
-  [[nodiscard]] bool supports_get_mem_info() const noexcept override { return false; }
-
  private:
   /**
    * @brief Allocates memory of size at least `bytes`.
@@ -94,18 +87,6 @@ class simulated_memory_resource final : public device_memory_resource {
    * @param ptr Pointer to be deallocated
    */
   void do_deallocate(void* ptr, std::size_t, cuda_stream_view) override {}
-
-  /**
-   * @brief Get free and available memory for memory resource.
-   *
-   * @param stream to execute on.
-   * @return std::pair containing free_size and total_size of memory.
-   */
-  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
-    cuda_stream_view stream) const override
-  {
-    return std::make_pair(0, 0);
-  }
 
   char* begin_{};
   char* end_{};

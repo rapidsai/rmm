@@ -596,10 +596,6 @@ TEST_F(ArenaTest, FeatureSupport)  // NOLINT
 {
   arena_mr mr{rmm::mr::get_current_device_resource(), 1_MiB};
   EXPECT_TRUE(mr.supports_streams());
-  EXPECT_FALSE(mr.supports_get_mem_info());
-  auto [free, total] = mr.get_mem_info(rmm::cuda_stream_default);
-  EXPECT_EQ(free, 0);
-  EXPECT_EQ(total, 0);
 }
 
 }  // namespace

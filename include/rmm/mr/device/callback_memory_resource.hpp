@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -138,13 +138,7 @@ class callback_memory_resource final : public device_memory_resource {
     deallocate_callback_(ptr, bytes, stream, deallocate_callback_arg_);
   }
 
-  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view) const override
-  {
-    throw std::runtime_error("cannot get free / total memory");
-  }
-
   [[nodiscard]] bool supports_streams() const noexcept override { return false; }
-  [[nodiscard]] bool supports_get_mem_info() const noexcept override { return false; }
 
   allocate_callback_t allocate_callback_;
   deallocate_callback_t deallocate_callback_;
