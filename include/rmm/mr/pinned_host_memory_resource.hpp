@@ -178,26 +178,6 @@ class pinned_host_memory_resource {
   bool operator!=(const pinned_host_memory_resource&) const { return false; }
 
   /**
-   * @brief Query whether the resource supports reporting free and available memory.
-   *
-   * @return false
-   */
-  static bool supports_get_mem_info() { return false; }
-
-  /**
-   * @brief Query the total amount of memory and free memory available for allocation by this
-   * resource.
-   *
-   * @throws nothing
-   *
-   * @return std::pair containing 0 for both total and free memory.
-   */
-  [[nodiscard]] static std::pair<std::size_t, std::size_t> get_mem_info(cuda::stream_ref) noexcept
-  {
-    return {0, 0};
-  }
-
-  /**
    * @brief Enables the `cuda::mr::device_accessible` property
    *
    * This property declares that a `pinned_host_memory_resource` provides device accessible memory
