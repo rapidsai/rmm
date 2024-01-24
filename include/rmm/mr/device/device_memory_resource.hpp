@@ -299,7 +299,7 @@ class device_memory_resource {
    *
    * @returns bool true if the resource supports non-null CUDA streams.
    */
-  [[nodiscard]] virtual bool supports_streams() const noexcept = 0;
+  [[nodiscard]] virtual bool supports_streams() const noexcept { return false; }
 
   /**
    * @brief Query whether the resource supports the get_mem_info API.
