@@ -304,6 +304,8 @@ class device_memory_resource {
   /**
    * @brief Query whether the resource supports the get_mem_info API.
    *
+   * @deprecated Use rmm::available_device_memory instead.
+   *
    * @return bool true if the resource supports get_mem_info, false otherwise.
    */
   [[deprecated("Use rmm::available_device_memory instead.")]]  //
@@ -315,6 +317,8 @@ class device_memory_resource {
 
   /**
    * @brief Queries the amount of free and total memory for the resource.
+   *
+   * @deprecated Use rmm::available_device_memory instead.
    *
    * @param stream the stream whose memory manager we want to retrieve
    *
