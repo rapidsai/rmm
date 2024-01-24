@@ -211,9 +211,6 @@ class fake_async_resource {
   bool operator==(const fake_async_resource& other) const { return true; }
   bool operator!=(const fake_async_resource& other) const { return false; }
 
-  // To model stream_resource
-  [[nodiscard]] bool supports_streams() const noexcept { return false; }
-
  private:
   void* do_allocate(std::size_t bytes, cuda_stream_view) { return nullptr; }
   void do_deallocate(void* ptr, std::size_t, cuda_stream_view) {}

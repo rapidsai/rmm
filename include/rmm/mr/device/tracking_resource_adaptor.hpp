@@ -111,14 +111,6 @@ class tracking_resource_adaptor final : public device_memory_resource {
   Upstream* get_upstream() const noexcept { return upstream_; }
 
   /**
-   * @brief Checks whether the upstream resource supports streams.
-   *
-   * @return true The upstream resource supports streams
-   * @return false The upstream resource does not support streams.
-   */
-  bool supports_streams() const noexcept override { return upstream_->supports_streams(); }
-
-  /**
    * @brief Get the outstanding allocations map
    *
    * @return std::map<void*, allocation_info> const& of a map of allocations. The key

@@ -51,14 +51,6 @@ class simulated_memory_resource final : public device_memory_resource {
   simulated_memory_resource(simulated_memory_resource&&)                 = delete;
   simulated_memory_resource& operator=(simulated_memory_resource&&)      = delete;
 
-  /**
-   * @brief Query whether the resource supports use of non-null CUDA streams for
-   * allocation/deallocation.
-   *
-   * @returns bool false
-   */
-  [[nodiscard]] bool supports_streams() const noexcept override { return false; }
-
  private:
   /**
    * @brief Allocates memory of size at least `bytes`.

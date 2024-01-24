@@ -110,14 +110,6 @@ class arena_memory_resource final : public device_memory_resource {
   arena_memory_resource(arena_memory_resource&&) noexcept            = delete;
   arena_memory_resource& operator=(arena_memory_resource&&) noexcept = delete;
 
-  /**
-   * @brief Queries whether the resource supports use of non-null CUDA streams for
-   * allocation/deallocation.
-   *
-   * @returns bool true.
-   */
-  bool supports_streams() const noexcept override { return true; }
-
  private:
   using global_arena = rmm::mr::detail::arena::global_arena<Upstream>;
   using arena        = rmm::mr::detail::arena::arena<Upstream>;

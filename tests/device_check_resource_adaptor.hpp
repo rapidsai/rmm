@@ -27,11 +27,6 @@ class device_check_resource_adaptor final : public rmm::mr::device_memory_resour
   {
   }
 
-  [[nodiscard]] bool supports_streams() const noexcept override
-  {
-    return upstream_->supports_streams();
-  }
-
   [[nodiscard]] device_memory_resource* get_upstream() const noexcept { return upstream_; }
 
  private:

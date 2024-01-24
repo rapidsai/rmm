@@ -156,14 +156,6 @@ class cuda_async_memory_resource final : public device_memory_resource {
   cuda_async_memory_resource& operator=(cuda_async_memory_resource const&) = delete;
   cuda_async_memory_resource& operator=(cuda_async_memory_resource&&)      = delete;
 
-  /**
-   * @brief Query whether the resource supports use of non-null CUDA streams for
-   * allocation/deallocation. `cuda_memory_resource` does not support streams.
-   *
-   * @returns bool true
-   */
-  [[nodiscard]] bool supports_streams() const noexcept override { return true; }
-
  private:
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
   cuda_async_view_memory_resource pool_{};

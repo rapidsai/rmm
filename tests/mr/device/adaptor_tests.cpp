@@ -142,11 +142,6 @@ TYPED_TEST(AdaptorTest, GetUpstream)
   }
 }
 
-TYPED_TEST(AdaptorTest, SupportsStreams)
-{
-  EXPECT_EQ(this->mr->supports_streams(), this->cuda.supports_streams());
-}
-
 TYPED_TEST(AdaptorTest, AllocFree)
 {
   void* ptr{nullptr};
