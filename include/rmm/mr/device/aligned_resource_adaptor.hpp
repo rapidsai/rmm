@@ -97,16 +97,6 @@ class aligned_resource_adaptor final : public device_memory_resource {
   }
 
   /**
-   * @brief Query whether the resource supports the get_mem_info API.
-   *
-   * @return bool true if the upstream resource supports get_mem_info, false otherwise.
-   */
-  [[nodiscard]] bool supports_get_mem_info() const noexcept override
-  {
-    return upstream_->supports_get_mem_info();
-  }
-
-  /**
    * @brief The default alignment used by the adaptor.
    */
   static constexpr std::size_t default_alignment_threshold = 0;
@@ -181,22 +171,6 @@ class aligned_resource_adaptor final : public device_memory_resource {
     auto cast = dynamic_cast<aligned_resource_adaptor<Upstream> const*>(&other);
     return cast != nullptr && upstream_->is_equal(*cast->get_upstream()) &&
            alignment_ == cast->alignment_ && alignment_threshold_ == cast->alignment_threshold_;
-  }
-
-  /**
-   * @brief Get free and available memory from upstream resource.
-   *
-   * The free size may not be fully allocatable because of alignment requirements.
-   *
-   * @throws rmm::cuda_error if unable to retrieve memory info.
-   *
-   * @param stream Stream on which to get the mem info.
-   * @return std::pair containing free_size and total_size of memory
-   */
-  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
-    cuda_stream_view stream) const override
-  {
-    return upstream_->get_mem_info(stream);
   }
 
   /**

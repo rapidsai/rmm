@@ -89,16 +89,6 @@ class limiting_resource_adaptor final : public device_memory_resource {
   }
 
   /**
-   * @brief Query whether the resource supports the get_mem_info API.
-   *
-   * @return bool true if the upstream resource supports get_mem_info, false otherwise.
-   */
-  [[nodiscard]] bool supports_get_mem_info() const noexcept override
-  {
-    return upstream_->supports_get_mem_info();
-  }
-
-  /**
    * @brief Query the number of bytes that have been allocated. Note that
    * this can not be used to know how large of an allocation is possible due
    * to both possible fragmentation and also internal page sizes and alignment
@@ -176,20 +166,6 @@ class limiting_resource_adaptor final : public device_memory_resource {
     auto const* cast = dynamic_cast<limiting_resource_adaptor<Upstream> const*>(&other);
     if (cast != nullptr) { return upstream_->is_equal(*cast->get_upstream()); }
     return upstream_->is_equal(other);
-  }
-
-  /**
-   * @brief Get free and available memory from upstream resource.
-   *
-   * @throws rmm::cuda_error if unable to retrieve memory info.
-   *
-   * @param stream Stream on which to get the mem info.
-   * @return std::pair contaiing free_size and total_size of memory
-   */
-  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
-    [[maybe_unused]] cuda_stream_view stream) const override
-  {
-    return {allocation_limit_ - allocated_bytes_, allocation_limit_};
   }
 
   // maximum bytes this allocator is allowed to allocate.
