@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "rmm/error.hpp"
+#include <rmm/error.hpp>
 
 #include <cuda_runtime_api.h>
 
