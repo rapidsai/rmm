@@ -78,17 +78,6 @@ class limiting_resource_adaptor final : public device_memory_resource {
   [[nodiscard]] Upstream* get_upstream() const noexcept { return upstream_; }
 
   /**
-   * @brief Checks whether the upstream resource supports streams.
-   *
-   * @return true The upstream resource supports streams
-   * @return false The upstream resource does not support streams.
-   */
-  [[nodiscard]] bool supports_streams() const noexcept override
-  {
-    return upstream_->supports_streams();
-  }
-
-  /**
    * @brief Query the number of bytes that have been allocated. Note that
    * this can not be used to know how large of an allocation is possible due
    * to both possible fragmentation and also internal page sizes and alignment

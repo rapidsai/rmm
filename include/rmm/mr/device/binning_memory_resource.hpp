@@ -99,14 +99,6 @@ class binning_memory_resource final : public device_memory_resource {
   binning_memory_resource& operator=(binning_memory_resource&&)      = delete;
 
   /**
-   * @brief Query whether the resource supports use of non-null streams for
-   * allocation/deallocation.
-   *
-   * @returns true
-   */
-  [[nodiscard]] bool supports_streams() const noexcept override { return true; }
-
-  /**
    * @brief Get the upstream memory_resource object.
    *
    * @return UpstreamResource* the upstream memory resource.

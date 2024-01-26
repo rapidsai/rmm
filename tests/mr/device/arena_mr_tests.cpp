@@ -592,11 +592,5 @@ TEST_F(ArenaTest, DumpLogOnFailure)  // NOLINT
   EXPECT_GE(file_status.st_size, 0);
 }
 
-TEST_F(ArenaTest, FeatureSupport)  // NOLINT
-{
-  arena_mr mr{rmm::mr::get_current_device_resource(), 1_MiB};
-  EXPECT_TRUE(mr.supports_streams());
-}
-
 }  // namespace
 }  // namespace rmm::test

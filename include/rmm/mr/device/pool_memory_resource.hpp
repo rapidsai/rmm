@@ -229,14 +229,6 @@ class pool_memory_resource final
   pool_memory_resource& operator=(pool_memory_resource&&)      = delete;
 
   /**
-   * @brief Queries whether the resource supports use of non-null CUDA streams for
-   * allocation/deallocation.
-   *
-   * @returns bool true.
-   */
-  [[nodiscard]] bool supports_streams() const noexcept override { return true; }
-
-  /**
    * @brief Get the upstream memory_resource object.
    *
    * @return const reference to the upstream memory resource.
