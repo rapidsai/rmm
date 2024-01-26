@@ -304,21 +304,32 @@ class device_memory_resource {
   /**
    * @brief Query whether the resource supports the get_mem_info API.
    *
+   * @deprecated Use rmm::available_device_memory instead.
+   *
    * @return bool true if the resource supports get_mem_info, false otherwise.
    */
-  [[nodiscard]] virtual bool supports_get_mem_info() const noexcept { return false; };
+  [[deprecated("Use rmm::available_device_memory instead.")]]  //
+  [[nodiscard]] virtual bool
+  supports_get_mem_info() const noexcept
+  {
+    return false;
+  };
 
   /**
    * @brief Queries the amount of free and total memory for the resource.
+   *
+   * @deprecated Use rmm::available_device_memory instead.
    *
    * @param stream the stream whose memory manager we want to retrieve
    *
    * @returns a pair containing the free memory in bytes in .first and total amount of memory in
    * .second
    */
-  [[nodiscard]] std::pair<std::size_t, std::size_t> get_mem_info(cuda_stream_view stream) const
+  [[deprecated("Use rmm::available_device_memory instead.")]]  //
+  [[nodiscard]] std::pair<std::size_t, std::size_t>
+  get_mem_info(cuda_stream_view stream) const
   {
-    return do_get_mem_info(stream);
+    return {0, 0};
   }
 
   /**
@@ -373,20 +384,6 @@ class device_memory_resource {
   [[nodiscard]] virtual bool do_is_equal(device_memory_resource const& other) const noexcept
   {
     return this == &other;
-  }
-
-  /**
-   * @brief Get free and available memory for memory resource
-   *
-   * @throws std::runtime_error if we could not get free / total memory
-   *
-   * @param stream the stream being executed on
-   * @return std::pair with available and free memory for resource
-   */
-  [[nodiscard]] virtual std::pair<std::size_t, std::size_t> do_get_mem_info(
-    cuda_stream_view stream) const
-  {
-    return {0, 0};
   }
 };
 static_assert(cuda::mr::async_resource_with<device_memory_resource, cuda::mr::device_accessible>);
