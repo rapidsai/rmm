@@ -57,26 +57,6 @@ class pinned_memory_resource final : public host_memory_resource {
   [[nodiscard]] bool supports_streams() const noexcept { return false; }
 
   /**
-   * @brief Query whether the resource supports the get_mem_info API.
-   *
-   * @return bool false.
-   */
-  [[nodiscard]] bool supports_get_mem_info() const noexcept { return false; }
-
-  /**
-   * @brief Queries the amount of free and total memory for the resource.
-   *
-   * @param stream the stream whose memory manager we want to retrieve
-   *
-   * @returns a pair containing the free memory in bytes in .first and total amount of memory in
-   * .second
-   */
-  [[nodiscard]] std::pair<std::size_t, std::size_t> get_mem_info(cuda_stream_view stream) const
-  {
-    return std::make_pair(0, 0);
-  }
-
-  /**
    * @brief Pretend to support the allocate_async interface, falling back to stream 0
    *
    * @throws rmm::bad_alloc When the requested `bytes` cannot be allocated on
@@ -147,7 +127,7 @@ class pinned_memory_resource final : public host_memory_resource {
     alignment =
       (rmm::is_supported_alignment(alignment)) ? alignment : rmm::RMM_DEFAULT_HOST_ALIGNMENT;
 
-    return rmm::detail::aligned_allocate(bytes, alignment, [](std::size_t size) {
+    return rmm::detail::aligned_host_allocate(bytes, alignment, [](std::size_t size) {
       void* ptr{nullptr};
       auto status = cudaMallocHost(&ptr, size);
       if (cudaSuccess != status) { throw std::bad_alloc{}; }
@@ -173,7 +153,7 @@ class pinned_memory_resource final : public host_memory_resource {
                      std::size_t alignment = alignof(std::max_align_t)) override
   {
     if (nullptr == ptr) { return; }
-    rmm::detail::aligned_deallocate(
+    rmm::detail::aligned_host_deallocate(
       ptr, bytes, alignment, [](void* ptr) { RMM_ASSERT_CUDA_SUCCESS(cudaFreeHost(ptr)); });
   }
 };

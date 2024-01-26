@@ -31,6 +31,7 @@ INSTANTIATE_TEST_SUITE_P(ResourceTests,
 #endif
                                            mr_factory{"Managed", &make_managed},
                                            mr_factory{"Pool", &make_pool},
+                                           mr_factory{"HostPinnedPool", &make_host_pinned_pool},
                                            mr_factory{"Arena", &make_arena},
                                            mr_factory{"Binning", &make_binning},
                                            mr_factory{"Fixed_Size", &make_fixed_size}),
@@ -45,6 +46,7 @@ INSTANTIATE_TEST_SUITE_P(ResourceAllocationTests,
 #endif
                                            mr_factory{"Managed", &make_managed},
                                            mr_factory{"Pool", &make_pool},
+                                           mr_factory{"HostPinnedPool", &make_host_pinned_pool},
                                            mr_factory{"Arena", &make_arena},
                                            mr_factory{"Binning", &make_binning}),
                          [](auto const& info) { return info.param.name; });
@@ -92,31 +94,6 @@ TEST_P(mr_test, SupportsStreams)
     EXPECT_FALSE(this->mr->supports_streams());
   } else {
     EXPECT_TRUE(this->mr->supports_streams());
-  }
-}
-
-TEST_P(mr_test, GetMemInfo)
-{
-  if (this->mr->supports_get_mem_info()) {
-    const auto allocation_size{16 * 256};
-    {
-      auto const [free, total] = this->mr->get_mem_info(rmm::cuda_stream_view{});
-      EXPECT_TRUE(free >= allocation_size);
-    }
-
-    void* ptr{nullptr};
-    ptr = this->mr->allocate(allocation_size);
-
-    {
-      auto const [free, total] = this->mr->get_mem_info(rmm::cuda_stream_view{});
-      EXPECT_TRUE(free >= allocation_size);
-    }
-
-    this->mr->deallocate(ptr, allocation_size);
-  } else {
-    auto const [free, total] = this->mr->get_mem_info(rmm::cuda_stream_view{});
-    EXPECT_EQ(free, 0);
-    EXPECT_EQ(total, 0);
   }
 }
 

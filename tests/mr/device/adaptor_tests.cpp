@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, NVIDIA CORPORATION.
+ * Copyright (c) 2021-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -145,20 +145,6 @@ TYPED_TEST(AdaptorTest, GetUpstream)
 TYPED_TEST(AdaptorTest, SupportsStreams)
 {
   EXPECT_EQ(this->mr->supports_streams(), this->cuda.supports_streams());
-}
-
-TYPED_TEST(AdaptorTest, MemInfo)
-{
-  EXPECT_EQ(this->mr->supports_get_mem_info(), this->cuda.supports_get_mem_info());
-
-  auto [free, total] = this->mr->get_mem_info(rmm::cuda_stream_default);
-
-  if (this->mr->supports_get_mem_info()) {
-    EXPECT_NE(total, 0);
-  } else {
-    EXPECT_EQ(free, 0);
-    EXPECT_EQ(total, 0);
-  }
 }
 
 TYPED_TEST(AdaptorTest, AllocFree)

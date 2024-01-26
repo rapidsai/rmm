@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -120,16 +120,6 @@ class statistics_resource_adaptor final : public device_memory_resource {
   bool supports_streams() const noexcept override { return upstream_->supports_streams(); }
 
   /**
-   * @brief Query whether the resource supports the get_mem_info API.
-   *
-   * @return bool true if the upstream resource supports get_mem_info, false otherwise.
-   */
-  bool supports_get_mem_info() const noexcept override
-  {
-    return upstream_->supports_get_mem_info();
-  }
-
-  /**
    * @brief Returns a `counter` struct for this adaptor containing the current,
    * peak, and total number of allocated bytes for this
    * adaptor since it was created.
@@ -220,19 +210,6 @@ class statistics_resource_adaptor final : public device_memory_resource {
     auto cast = dynamic_cast<statistics_resource_adaptor<Upstream> const*>(&other);
     return cast != nullptr ? upstream_->is_equal(*cast->get_upstream())
                            : upstream_->is_equal(other);
-  }
-
-  /**
-   * @brief Get free and available memory from upstream resource.
-   *
-   * @throws rmm::cuda_error if unable to retrieve memory info.
-   *
-   * @param stream Stream on which to get the mem info.
-   * @return std::pair contaiing free_size and total_size of memory
-   */
-  std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view stream) const override
-  {
-    return upstream_->get_mem_info(stream);
   }
 
   counter bytes_;                        // peak, current and total allocated bytes

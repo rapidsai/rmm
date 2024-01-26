@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,16 +76,6 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
    */
   bool supports_streams() const noexcept override { return upstream_->supports_streams(); }
 
-  /**
-   * @brief Query whether the resource supports the get_mem_info API.
-   *
-   * @return bool true if the upstream resource supports get_mem_info, false otherwise.
-   */
-  bool supports_get_mem_info() const noexcept override
-  {
-    return upstream_->supports_get_mem_info();
-  }
-
  private:
   /**
    * @brief Allocates memory of size at least `bytes` using the upstream
@@ -132,20 +122,6 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
       return upstream_->is_equal(*thread_safe_other->get_upstream());
     }
     return upstream_->is_equal(other);
-  }
-
-  /**
-   * @brief Get free and available memory from upstream resource.
-   *
-   * @throws rmm::cuda_error if unable to retrieve memory info.
-   *
-   * @param stream Stream on which to get the mem info.
-   * @return std::pair contaiing free_size and total_size of memory
-   */
-  std::pair<std::size_t, std::size_t> do_get_mem_info(cuda_stream_view stream) const override
-  {
-    lock_t lock(mtx);
-    return upstream_->get_mem_info(stream);
   }
 
   std::mutex mutable mtx;  // mutex for thread safe access to upstream

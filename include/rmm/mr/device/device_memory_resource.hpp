@@ -173,7 +173,7 @@ class device_memory_resource {
    */
   void* allocate(std::size_t bytes, std::size_t alignment)
   {
-    return do_allocate(rmm::detail::align_up(bytes, alignment), cuda_stream_view{});
+    return do_allocate(rmm::align_up(bytes, alignment), cuda_stream_view{});
   }
 
   /**
@@ -191,7 +191,7 @@ class device_memory_resource {
    */
   void deallocate(void* ptr, std::size_t bytes, std::size_t alignment)
   {
-    do_deallocate(ptr, rmm::detail::align_up(bytes, alignment), cuda_stream_view{});
+    do_deallocate(ptr, rmm::align_up(bytes, alignment), cuda_stream_view{});
   }
 
   /**
@@ -209,7 +209,7 @@ class device_memory_resource {
    */
   void* allocate_async(std::size_t bytes, std::size_t alignment, cuda_stream_view stream)
   {
-    return do_allocate(rmm::detail::align_up(bytes, alignment), stream);
+    return do_allocate(rmm::align_up(bytes, alignment), stream);
   }
 
   /**
@@ -248,7 +248,7 @@ class device_memory_resource {
                         std::size_t alignment,
                         cuda_stream_view stream)
   {
-    do_deallocate(ptr, rmm::detail::align_up(bytes, alignment), stream);
+    do_deallocate(ptr, rmm::align_up(bytes, alignment), stream);
   }
 
   /**
@@ -306,7 +306,7 @@ class device_memory_resource {
    *
    * @return bool true if the resource supports get_mem_info, false otherwise.
    */
-  [[nodiscard]] virtual bool supports_get_mem_info() const noexcept = 0;
+  [[nodiscard]] virtual bool supports_get_mem_info() const noexcept { return false; };
 
   /**
    * @brief Queries the amount of free and total memory for the resource.
@@ -384,7 +384,10 @@ class device_memory_resource {
    * @return std::pair with available and free memory for resource
    */
   [[nodiscard]] virtual std::pair<std::size_t, std::size_t> do_get_mem_info(
-    cuda_stream_view stream) const = 0;
+    cuda_stream_view stream) const
+  {
+    return {0, 0};
+  }
 };
 static_assert(cuda::mr::async_resource_with<device_memory_resource, cuda::mr::device_accessible>);
 /** @} */  // end of group
