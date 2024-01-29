@@ -157,14 +157,6 @@ class owning_wrapper : public device_memory_resource {
    */
   [[nodiscard]] Resource& wrapped() noexcept { return *wrapped_; }
 
-  /**
-   * @copydoc rmm::mr::device_memory_resource::supports_streams()
-   */
-  [[nodiscard]] bool supports_streams() const noexcept override
-  {
-    return wrapped().supports_streams();
-  }
-
  private:
   /**
    * @brief Allocates memory using the wrapped resource.
