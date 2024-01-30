@@ -30,6 +30,12 @@
 namespace rmm::mr {
 
 /**
+ * @addtogroup memory_resources
+ * @{
+ * @file
+ */
+
+/**
  * @brief Memory resource class for allocating pinned host memory.
  *
  * This class uses CUDA's `cudaHostAlloc` to allocate pinned host memory. It implements the
@@ -199,4 +205,6 @@ class pinned_host_memory_resource {
 static_assert(cuda::mr::async_resource_with<pinned_host_memory_resource,
                                             cuda::mr::device_accessible,
                                             cuda::mr::host_accessible>);
+
+/** @} */  // end of group
 }  // namespace rmm::mr
