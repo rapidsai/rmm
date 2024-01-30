@@ -57,7 +57,6 @@ requirements:
     - cudatoolkit
     - cuda-python >=11.7.1,<12.0a0
     {% else %}
-    - cuda-cudart-dev
     - cuda-python >=12.0,<13.0a0
     {% endif %}
     - cython >=3.0.0
@@ -67,6 +66,8 @@ requirements:
   run:
     {% if cuda_major == "11" %}
     - cudatoolkit
+    {% else %}
+    - cuda-cudart
     {% endif %}
     - {{ pin_compatible('cuda-version', max_pin='x', min_pin='x') }}
     - numba >=0.57

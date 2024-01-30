@@ -137,12 +137,12 @@ outputs:
         - cuda-version ={{ cuda_version }}
         {% if cuda_major == "11" %}
         - cudatoolkit
-        {% else %}
-        - cuda-cudart-dev
         {% endif %}
       run:
         {% if cuda_major == "11" %}
         - cudatoolkit
+        {% else %}
+        - cuda-cudart
         {% endif %}
         - {{ pin_compatible('cuda-version', max_pin='x', min_pin='x') }}
         - {{ pin_subpackage('librmm', exact=True) }}
