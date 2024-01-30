@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,9 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
-#include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
+
+#include <cuda/memory_resource>
 
 #include <type_traits>
 
@@ -39,6 +40,8 @@ namespace rmm {
  */
 template <typename T>
 class device_scalar {
+  using async_resource_ref = cuda::mr::async_resource_ref<cuda::mr::device_accessible>;
+
  public:
   static_assert(std::is_trivially_copyable<T>::value, "Scalar type must be trivially copyable");
 
@@ -92,9 +95,8 @@ class device_scalar {
    * @param stream Stream on which to perform asynchronous allocation.
    * @param mr Optional, resource with which to allocate.
    */
-  explicit device_scalar(
-    cuda_stream_view stream,
-    rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource())
+  explicit device_scalar(cuda_stream_view stream,
+                         async_resource_ref mr = rmm::mr::get_current_device_resource())
     : _storage{1, stream, mr}
   {
   }
@@ -115,10 +117,9 @@ class device_scalar {
    * @param stream Optional, stream on which to perform allocation and copy.
    * @param mr Optional, resource with which to allocate.
    */
-  explicit device_scalar(
-    value_type const& initial_value,
-    cuda_stream_view stream,
-    rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource())
+  explicit device_scalar(value_type const& initial_value,
+                         cuda_stream_view stream,
+                         async_resource_ref mr = rmm::mr::get_current_device_resource())
     : _storage{1, stream, mr}
   {
     set_value_async(initial_value, stream);
@@ -138,7 +139,7 @@ class device_scalar {
    */
   device_scalar(device_scalar const& other,
                 cuda_stream_view stream,
-                rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource())
+                async_resource_ref mr = rmm::mr::get_current_device_resource())
     : _storage{other._storage, stream, mr}
   {
   }
