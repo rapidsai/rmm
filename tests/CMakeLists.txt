@@ -122,10 +122,6 @@ endfunction()
 
 # test sources
 
-# device mr tests
-ConfigureTest(DEVICE_MR_TEST mr/device/mr_tests.cpp mr/device/mr_multithreaded_tests.cpp GPUS 1
-              PERCENT 90)
-
 # device mr_ref tests
 ConfigureTest(DEVICE_MR_REF_TEST mr/device/mr_ref_tests.cpp
               mr/device/mr_ref_multithreaded_tests.cpp GPUS 1 PERCENT 100)
@@ -162,9 +158,6 @@ ConfigureTest(ALIGNED_TEST mr/device/aligned_mr_tests.cpp)
 
 # limiting adaptor tests
 ConfigureTest(LIMITING_TEST mr/device/limiting_mr_tests.cpp)
-
-# host mr tests
-ConfigureTest(HOST_MR_TEST mr/host/mr_tests.cpp)
 
 # host mr_ref tests
 ConfigureTest(HOST_MR_REF_TEST mr/host/mr_ref_tests.cpp)
