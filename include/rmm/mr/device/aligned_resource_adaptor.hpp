@@ -89,14 +89,6 @@ class aligned_resource_adaptor final : public device_memory_resource {
   Upstream* get_upstream() const noexcept { return upstream_; }
 
   /**
-   * @copydoc rmm::mr::device_memory_resource::supports_streams()
-   */
-  [[nodiscard]] bool supports_streams() const noexcept override
-  {
-    return upstream_->supports_streams();
-  }
-
-  /**
    * @brief The default alignment used by the adaptor.
    */
   static constexpr std::size_t default_alignment_threshold = 0;

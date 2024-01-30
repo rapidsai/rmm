@@ -71,11 +71,6 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
    */
   Upstream* get_upstream() const noexcept { return upstream_; }
 
-  /**
-   * @copydoc rmm::mr::device_memory_resource::supports_streams()
-   */
-  bool supports_streams() const noexcept override { return upstream_->supports_streams(); }
-
  private:
   /**
    * @brief Allocates memory of size at least `bytes` using the upstream

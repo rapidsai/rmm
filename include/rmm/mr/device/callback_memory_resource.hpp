@@ -138,8 +138,6 @@ class callback_memory_resource final : public device_memory_resource {
     deallocate_callback_(ptr, bytes, stream, deallocate_callback_arg_);
   }
 
-  [[nodiscard]] bool supports_streams() const noexcept override { return false; }
-
   allocate_callback_t allocate_callback_;
   deallocate_callback_t deallocate_callback_;
   void* allocate_callback_arg_;

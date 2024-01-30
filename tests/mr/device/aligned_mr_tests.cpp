@@ -56,18 +56,6 @@ TEST(AlignedTest, ThrowOnInvalidAllocationAlignment)
   EXPECT_THROW(construct_alignment(&mock, 768), rmm::logic_error);
 }
 
-TEST(AlignedTest, SupportsStreams)
-{
-  mock_resource mock;
-  aligned_mock mr{&mock};
-
-  EXPECT_CALL(mock, supports_streams()).WillOnce(Return(true));
-  EXPECT_TRUE(mr.supports_streams());
-
-  EXPECT_CALL(mock, supports_streams()).WillOnce(Return(false));
-  EXPECT_FALSE(mr.supports_streams());
-}
-
 TEST(AlignedTest, SupportsGetMemInfo)
 {
   mock_resource mock;

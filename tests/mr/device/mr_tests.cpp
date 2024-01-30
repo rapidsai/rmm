@@ -87,16 +87,6 @@ TEST_P(mr_test, SetCurrentDeviceResource)
 
 TEST_P(mr_test, SelfEquality) { EXPECT_TRUE(this->mr->is_equal(*this->mr)); }
 
-TEST_P(mr_test, SupportsStreams)
-{
-  if (this->mr->is_equal(rmm::mr::cuda_memory_resource{}) ||
-      this->mr->is_equal(rmm::mr::managed_memory_resource{})) {
-    EXPECT_FALSE(this->mr->supports_streams());
-  } else {
-    EXPECT_TRUE(this->mr->supports_streams());
-  }
-}
-
 // Simple reproducer for https://github.com/rapidsai/rmm/issues/861
 TEST_P(mr_test, AllocationsAreDifferentDefaultStream)
 {

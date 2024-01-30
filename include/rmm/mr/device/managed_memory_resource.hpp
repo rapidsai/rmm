@@ -43,14 +43,6 @@ class managed_memory_resource final : public device_memory_resource {
   managed_memory_resource& operator=(managed_memory_resource&&) =
     default;  ///< @default_move_assignment{managed_memory_resource}
 
-  /**
-   * @brief Query whether the resource supports use of non-null streams for
-   * allocation/deallocation.
-   *
-   * @returns false
-   */
-  [[nodiscard]] bool supports_streams() const noexcept override { return false; }
-
  private:
   /**
    * @brief Allocates memory of size at least \p bytes.

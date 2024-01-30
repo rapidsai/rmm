@@ -112,14 +112,6 @@ class statistics_resource_adaptor final : public device_memory_resource {
   Upstream* get_upstream() const noexcept { return upstream_; }
 
   /**
-   * @brief Checks whether the upstream resource supports streams.
-   *
-   * @return true The upstream resource supports streams
-   * @return false The upstream resource does not support streams.
-   */
-  bool supports_streams() const noexcept override { return upstream_->supports_streams(); }
-
-  /**
    * @brief Returns a `counter` struct for this adaptor containing the current,
    * peak, and total number of allocated bytes for this
    * adaptor since it was created.
