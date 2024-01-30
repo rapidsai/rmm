@@ -17,7 +17,7 @@
 
 #include <cuda/memory_resource>
 
-namespace rmm::mr {
+namespace rmm {
 
 /**
  * @addtogroup memory_resources
@@ -32,4 +32,4 @@ namespace rmm::mr {
 using device_async_resource_ref = cuda::mr::async_resource_ref<cuda::mr::device_accessible>;
 
 /** @} */  // end of group
-}  // namespace rmm::mr
+}  // namespace rmm

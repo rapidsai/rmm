@@ -20,7 +20,7 @@
 #include <rmm/device_vector.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/thrust_allocator_adaptor.hpp>
-#include <rmm/mr/resource_ref.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <gtest/gtest.h>
 
@@ -33,7 +33,7 @@ namespace rmm::test {
 namespace {
 
 struct allocator_test : public mr_test {};
-using async_resource_ref = rmm::mr::device_async_resource_ref;
+using async_resource_ref = rmm::device_async_resource_ref;
 
 TEST_P(allocator_test, first)
 {
