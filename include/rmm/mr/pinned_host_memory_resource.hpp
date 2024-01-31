@@ -77,7 +77,7 @@ class pinned_host_memory_resource {
   /**
    * @brief Deallocate memory pointed to by \p ptr of size \p bytes bytes.
    *
-   * @throws Nothing.
+   * @throws nothing
    *
    * @param ptr Pointer to be deallocated.
    * @param bytes Size of the allocation.
@@ -137,7 +137,7 @@ class pinned_host_memory_resource {
    *
    * @note Stream argument is ignored and behavior is identical to deallocate.
    *
-   * @throws Nothing.
+   * @throws nothing
    *
    * @param ptr Pointer to be deallocated.
    * @param bytes Size of the allocation.
@@ -156,7 +156,7 @@ class pinned_host_memory_resource {
    *
    * @note Stream argument is ignored and behavior is identical to deallocate.
    *
-   * @throws Nothing.
+   * @throws nothing
    *
    * @param ptr Pointer to be deallocated.
    * @param bytes Size of the allocation.
