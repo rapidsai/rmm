@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2022, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@
 #include <rmm/mr/device/managed_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <thrust/equal.h>
 #include <thrust/sequence.h>
@@ -58,7 +59,7 @@ struct DeviceBufferTest : public ::testing::Test {
 };
 
 using resources = ::testing::Types<rmm::mr::cuda_memory_resource, rmm::mr::managed_memory_resource>;
-using async_resource_ref = cuda::mr::async_resource_ref<cuda::mr::device_accessible>;
+using async_resource_ref = rmm::device_async_resource_ref;
 
 TYPED_TEST_CASE(DeviceBufferTest, resources);
 
