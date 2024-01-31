@@ -77,8 +77,6 @@ class pinned_host_memory_resource {
   /**
    * @brief Deallocate memory pointed to by \p ptr of size \p bytes bytes.
    *
-   * @throws nothing
-   *
    * @param ptr Pointer to be deallocated.
    * @param bytes Size of the allocation.
    * @param alignment Alignment in bytes. Default alignment is used if unspecified.
@@ -137,8 +135,6 @@ class pinned_host_memory_resource {
    *
    * @note Stream argument is ignored and behavior is identical to deallocate.
    *
-   * @throws nothing
-   *
    * @param ptr Pointer to be deallocated.
    * @param bytes Size of the allocation.
    * @param stream CUDA stream on which to perform the deallocation (ignored).
@@ -155,8 +151,6 @@ class pinned_host_memory_resource {
    * alignment bytes.
    *
    * @note Stream argument is ignored and behavior is identical to deallocate.
-   *
-   * @throws nothing
    *
    * @param ptr Pointer to be deallocated.
    * @param bytes Size of the allocation.
