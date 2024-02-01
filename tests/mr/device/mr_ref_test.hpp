@@ -34,6 +34,7 @@
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
 #include <rmm/mr/pinned_host_memory_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <gtest/gtest.h>
 
@@ -46,7 +47,7 @@
 #include <utility>
 
 using resource_ref       = cuda::mr::resource_ref<cuda::mr::device_accessible>;
-using async_resource_ref = cuda::mr::async_resource_ref<cuda::mr::device_accessible>;
+using async_resource_ref = rmm::device_async_resource_ref;
 
 namespace rmm::test {
 

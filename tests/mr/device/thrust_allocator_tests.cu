@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@
 #include <rmm/device_vector.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/thrust_allocator_adaptor.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <gtest/gtest.h>
 
@@ -32,7 +33,7 @@ namespace rmm::test {
 namespace {
 
 struct allocator_test : public mr_ref_test {};
-using async_resource_ref = cuda::mr::async_resource_ref<cuda::mr::device_accessible>;
+using async_resource_ref = rmm::device_async_resource_ref;
 
 TEST_P(allocator_test, first)
 {
