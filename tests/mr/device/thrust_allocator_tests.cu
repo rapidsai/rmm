@@ -33,7 +33,6 @@ namespace rmm::test {
 namespace {
 
 struct allocator_test : public mr_test {};
-using async_resource_ref = rmm::device_async_resource_ref;
 
 TEST_P(allocator_test, first)
 {
@@ -47,7 +46,7 @@ TEST_P(allocator_test, defaults)
   rmm::mr::thrust_allocator<int> allocator(rmm::cuda_stream_default);
   EXPECT_EQ(allocator.stream(), rmm::cuda_stream_default);
   EXPECT_EQ(allocator.memory_resource(),
-            async_resource_ref{rmm::mr::get_current_device_resource()});
+            rmm::device_async_resource_ref{rmm::mr::get_current_device_resource()});
 }
 
 INSTANTIATE_TEST_CASE_P(ThrustAllocatorTests,

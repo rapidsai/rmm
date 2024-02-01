@@ -45,8 +45,7 @@
 #include <random>
 #include <utility>
 
-using resource_ref       = cuda::mr::resource_ref<cuda::mr::device_accessible>;
-using async_resource_ref = rmm::device_async_resource_ref;
+using resource_ref = cuda::mr::resource_ref<cuda::mr::device_accessible>;
 
 namespace rmm::test {
 
@@ -76,7 +75,7 @@ inline void test_allocate(resource_ref ref, std::size_t bytes)
   }
 }
 
-inline void test_allocate_async(async_resource_ref ref,
+inline void test_allocate_async(rmm::device_async_resource_ref ref,
                                 std::size_t bytes,
                                 cuda_stream_view stream = {})
 {
@@ -106,7 +105,7 @@ inline void concurrent_allocations_are_different(resource_ref ref)
   ref.deallocate(ptr2, size);
 }
 
-inline void concurrent_async_allocations_are_different(async_resource_ref ref,
+inline void concurrent_async_allocations_are_different(rmm::device_async_resource_ref ref,
                                                        cuda_stream_view stream)
 {
   const auto size{8_B};
@@ -147,7 +146,8 @@ inline void test_various_allocations(resource_ref ref)
   }
 }
 
-inline void test_various_async_allocations(async_resource_ref ref, cuda_stream_view stream)
+inline void test_various_async_allocations(rmm::device_async_resource_ref ref,
+                                           cuda_stream_view stream)
 {
   // test allocating zero bytes on non-default stream
   {
@@ -200,7 +200,7 @@ inline void test_random_allocations(resource_ref ref,
   });
 }
 
-inline void test_random_async_allocations(async_resource_ref ref,
+inline void test_random_async_allocations(rmm::device_async_resource_ref ref,
                                           std::size_t num_allocations = default_num_allocations,
                                           size_in_bytes max_size      = default_max_size,
                                           cuda_stream_view stream     = {})
@@ -273,7 +273,7 @@ inline void test_mixed_random_allocation_free(resource_ref ref,
   EXPECT_EQ(allocations.size(), active_allocations);
 }
 
-inline void test_mixed_random_async_allocation_free(async_resource_ref ref,
+inline void test_mixed_random_async_allocation_free(rmm::device_async_resource_ref ref,
                                                     size_in_bytes max_size  = default_max_size,
                                                     cuda_stream_view stream = {})
 {
@@ -344,11 +344,11 @@ struct mr_ref_test : public ::testing::TestWithParam<mr_factory> {
       GTEST_SKIP() << "Skipping tests since the memory resource is not supported with this CUDA "
                    << "driver/runtime version";
     }
-    ref = async_resource_ref{*mr};
+    ref = rmm::device_async_resource_ref{*mr};
   }
 
   std::shared_ptr<rmm::mr::device_memory_resource> mr;  ///< Pointer to resource to use in tests
-  async_resource_ref ref{*mr};
+  rmm::device_async_resource_ref ref{*mr};
   rmm::cuda_stream stream{};
 };
 
