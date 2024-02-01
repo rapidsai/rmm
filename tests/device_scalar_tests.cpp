@@ -20,6 +20,7 @@
 #include <rmm/device_scalar.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <cuda_runtime_api.h>
 
@@ -35,12 +36,10 @@ template class rmm::device_scalar<int>;
 
 template <typename T>
 struct DeviceScalarTest : public ::testing::Test {
-  using async_resource_ref = cuda::mr::async_resource_ref<cuda::mr::device_accessible>;
-
   std::default_random_engine generator{};
   T value{};
   rmm::cuda_stream stream{};
-  async_resource_ref mr{rmm::mr::get_current_device_resource()};
+  rmm::device_async_resource_ref mr{rmm::mr::get_current_device_resource()};
 
   DeviceScalarTest() : value{random_value()} {}
 
