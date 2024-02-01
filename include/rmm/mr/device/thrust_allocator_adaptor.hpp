@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
@@ -35,9 +34,9 @@ namespace rmm::mr {
  */
 /**
  * @brief An `allocator` compatible with Thrust containers and algorithms using
- * a `device_memory_resource` for memory (de)allocation.
+ * a `device_async_resource_ref` for memory (de)allocation.
  *
- * Unlike a `device_memory_resource`, `thrust_allocator` is typed and bound to
+ * Unlike a `device_async_resource_ref`, `thrust_allocator` is typed and bound to
  * allocate objects of a specific type `T`, but can be freely rebound to other
  * types.
  *

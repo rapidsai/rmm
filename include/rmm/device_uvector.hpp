@@ -20,7 +20,6 @@
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/exec_check_disable.hpp>
 #include <rmm/device_buffer.hpp>
-#include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 

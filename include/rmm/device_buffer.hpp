@@ -18,7 +18,6 @@
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
-#include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
@@ -41,7 +40,7 @@ namespace rmm {
  * @brief RAII construct for device memory allocation
  *
  * This class allocates untyped and *uninitialized* device memory using a
- * `device_memory_resource`. If not explicitly specified, the memory resource
+ * `device_async_resource_ref`. If not explicitly specified, the memory resource
  * returned from `get_current_device_resource()` is used.
  *
  * @note Unlike `std::vector` or `thrust::device_vector`, the device memory
