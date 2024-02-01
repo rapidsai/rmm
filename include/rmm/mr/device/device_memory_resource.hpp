@@ -297,9 +297,16 @@ class device_memory_resource {
    * @brief Query whether the resource supports use of non-null CUDA streams for
    * allocation/deallocation.
    *
+   * @deprecated Functionality removed in favor of cuda::mr::async_memory_resource.
+   *
    * @returns bool true if the resource supports non-null CUDA streams.
    */
-  [[nodiscard]] virtual bool supports_streams() const noexcept { return false; }
+  [[deprecated("Functionality removed in favor of cuda::mr::async_memory_resource.")]]  //
+  [[nodiscard]] virtual bool
+  supports_streams() const noexcept
+  {
+    return false;
+  }
 
   /**
    * @brief Query whether the resource supports the get_mem_info API.
