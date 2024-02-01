@@ -109,7 +109,7 @@ class device_buffer {
    */
   explicit device_buffer(std::size_t size,
                          cuda_stream_view stream,
-                         rmm::device_async_resource_ref mr = mr::get_current_device_resource())
+                         device_async_resource_ref mr = mr::get_current_device_resource())
     : _stream{stream}, _mr{mr}
   {
     cuda_set_device_raii dev{_device};
@@ -138,7 +138,7 @@ class device_buffer {
   device_buffer(void const* source_data,
                 std::size_t size,
                 cuda_stream_view stream,
-                rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource())
+                device_async_resource_ref mr = mr::get_current_device_resource())
     : _stream{stream}, _mr{mr}
   {
     cuda_set_device_raii dev{_device};
@@ -169,7 +169,7 @@ class device_buffer {
    */
   device_buffer(device_buffer const& other,
                 cuda_stream_view stream,
-                rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource())
+                device_async_resource_ref mr = mr::get_current_device_resource())
     : device_buffer{other.data(), other.size(), stream, mr}
   {
   }

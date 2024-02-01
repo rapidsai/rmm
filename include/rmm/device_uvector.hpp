@@ -123,10 +123,9 @@ class device_uvector {
    * @param stream The stream on which to perform the allocation
    * @param mr The resource used to allocate the device storage
    */
-  explicit device_uvector(
-    std::size_t size,
-    cuda_stream_view stream,
-    rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource())
+  explicit device_uvector(std::size_t size,
+                          cuda_stream_view stream,
+                          device_async_resource_ref mr = mr::get_current_device_resource())
     : _storage{elements_to_bytes(size), stream, mr}
   {
   }
@@ -140,10 +139,9 @@ class device_uvector {
    * @param stream The stream on which to perform the copy
    * @param mr The resource used to allocate device memory for the new vector
    */
-  explicit device_uvector(
-    device_uvector const& other,
-    cuda_stream_view stream,
-    rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource())
+  explicit device_uvector(device_uvector const& other,
+                          cuda_stream_view stream,
+                          device_async_resource_ref mr = mr::get_current_device_resource())
     : _storage{other._storage, stream, mr}
   {
   }
