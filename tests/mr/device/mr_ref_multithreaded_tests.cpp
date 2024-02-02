@@ -118,7 +118,7 @@ TEST_P(mr_ref_test_mt, MixedRandomAllocationFreeStream)
   spawn(test_mixed_random_async_allocation_free, this->ref, default_max_size, this->stream.view());
 }
 
-void allocate_async_loop(async_resource_ref ref,
+void allocate_async_loop(rmm::device_async_resource_ref ref,
                          std::size_t num_allocations,
                          std::list<allocation>& allocations,
                          std::mutex& mtx,
@@ -146,7 +146,7 @@ void allocate_async_loop(async_resource_ref ref,
   cudaEventSynchronize(event);
 }
 
-void deallocate_async_loop(async_resource_ref ref,
+void deallocate_async_loop(rmm::device_async_resource_ref ref,
                            std::size_t num_allocations,
                            std::list<allocation>& allocations,
                            std::mutex& mtx,
@@ -167,7 +167,7 @@ void deallocate_async_loop(async_resource_ref ref,
   cudaEventSynchronize(event);
 }
 
-void test_allocate_async_free_different_threads(async_resource_ref ref,
+void test_allocate_async_free_different_threads(rmm::device_async_resource_ref ref,
                                                 rmm::cuda_stream_view streamA,
                                                 rmm::cuda_stream_view streamB)
 {
