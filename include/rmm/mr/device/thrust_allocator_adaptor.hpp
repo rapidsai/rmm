@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <rmm/detail/thrust_namespace.h>
 #include <thrust/device_malloc_allocator.h>
@@ -34,9 +34,9 @@ namespace rmm::mr {
  */
 /**
  * @brief An `allocator` compatible with Thrust containers and algorithms using
- * a `device_memory_resource` for memory (de)allocation.
+ * a `device_async_resource_ref` for memory (de)allocation.
  *
- * Unlike a `device_memory_resource`, `thrust_allocator` is typed and bound to
+ * Unlike a `device_async_resource_ref`, `thrust_allocator` is typed and bound to
  * allocate objects of a specific type `T`, but can be freely rebound to other
  * types.
  *
@@ -44,8 +44,6 @@ namespace rmm::mr {
  */
 template <typename T>
 class thrust_allocator : public thrust::device_malloc_allocator<T> {
-  using async_resource_ref = cuda::mr::async_resource_ref<cuda::mr::device_accessible>;
-
  public:
   using Base      = thrust::device_malloc_allocator<T>;  ///< The base type of this allocator
   using pointer   = typename Base::pointer;              ///< The pointer type
@@ -83,7 +81,10 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    * @param mr The resource to be used for device memory allocation
    * @param stream The stream to be used for device memory (de)allocation
    */
-  thrust_allocator(cuda_stream_view stream, async_resource_ref mr) : _stream{stream}, _mr(mr) {}
+  thrust_allocator(cuda_stream_view stream, rmm::device_async_resource_ref mr)
+    : _stream{stream}, _mr(mr)
+  {
+  }
 
   /**
    * @brief Copy constructor. Copies the resource pointer and stream.
@@ -121,9 +122,9 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
   }
 
   /**
-   * @briefreturn{The async_resource_ref used to allocate and deallocate}
+   * @briefreturn{The resource used to allocate and deallocate}
    */
-  [[nodiscard]] async_resource_ref memory_resource() const noexcept { return _mr; }
+  [[nodiscard]] rmm::device_async_resource_ref memory_resource() const noexcept { return _mr; }
 
   /**
    * @briefreturn{The stream used by this allocator}
@@ -139,7 +140,7 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
 
  private:
   cuda_stream_view _stream{};
-  async_resource_ref _mr{rmm::mr::get_current_device_resource()};
+  rmm::device_async_resource_ref _mr{rmm::mr::get_current_device_resource()};
 };
 /** @} */  // end of group
 }  // namespace rmm::mr
