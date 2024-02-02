@@ -21,6 +21,7 @@
 #include <rmm/detail/logging_assert.hpp>
 #include <rmm/mr/device/detail/fixed_size_free_list.hpp>
 #include <rmm/mr/device/detail/stream_ordered_memory_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <rmm/detail/thrust_namespace.h>
 #include <thrust/iterator/counting_iterator.h>
@@ -97,11 +98,17 @@ class fixed_size_memory_resource
   fixed_size_memory_resource& operator=(fixed_size_memory_resource&&)      = delete;
 
   /**
-   * @brief Get the upstream memory_resource object.
-   *
-   * @return UpstreamResource* the upstream memory resource.
+   * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
    */
-  Upstream* get_upstream() const noexcept { return upstream_mr_; }
+  [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
+  {
+    return upstream_mr_;
+  }
+
+  /**
+   * @briefreturn{Upstream* to the upstream memory resource}
+   */
+  [[nodiscard]] Upstream* get_upstream() const noexcept { return upstream_mr_; }
 
   /**
    * @brief Get the size of blocks allocated by this memory resource.

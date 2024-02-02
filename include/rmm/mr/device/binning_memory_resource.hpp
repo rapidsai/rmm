@@ -18,6 +18,7 @@
 #include <rmm/aligned.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/fixed_size_memory_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <cuda_runtime_api.h>
 
@@ -99,9 +100,15 @@ class binning_memory_resource final : public device_memory_resource {
   binning_memory_resource& operator=(binning_memory_resource&&)      = delete;
 
   /**
-   * @brief Get the upstream memory_resource object.
-   *
-   * @return UpstreamResource* the upstream memory resource.
+   * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
+   */
+  [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
+  {
+    return upstream_mr_;
+  }
+
+  /**
+   * @briefreturn{Upstream* to the upstream memory resource}
    */
   [[nodiscard]] Upstream* get_upstream() const noexcept { return upstream_mr_; }
 

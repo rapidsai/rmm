@@ -23,6 +23,7 @@
 #include <rmm/mr/device/detail/coalescing_free_list.hpp>
 #include <rmm/mr/device/detail/stream_ordered_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <rmm/detail/thrust_namespace.h>
 #include <thrust/iterator/counting_iterator.h>
@@ -236,11 +237,17 @@ class pool_memory_resource final
   [[nodiscard]] const Upstream& upstream_resource() const noexcept { return *upstream_mr_; }
 
   /**
-   * @brief Get the upstream memory_resource object.
-   *
-   * @return UpstreamResource* the upstream memory resource.
+   * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
    */
-  Upstream* get_upstream() const noexcept { return upstream_mr_; }
+  [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
+  {
+    return upstream_mr_;
+  }
+
+  /**
+   * @briefreturn{Upstream* to the upstream memory resource}
+   */
+  [[nodiscard]] Upstream* get_upstream() const noexcept { return upstream_mr_; }
 
   /**
    * @brief Computes the size of the current pool
