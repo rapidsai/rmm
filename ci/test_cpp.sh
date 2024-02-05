@@ -26,7 +26,6 @@ rapids-print-env
 
 rapids-mamba-retry install \
   --channel "${CPP_CHANNEL}" \
-  cuda-version=${RAPIDS_CUDA_VERSION%.*} \
   librmm librmm-tests
 
 rapids-logger "Check GPU usage"

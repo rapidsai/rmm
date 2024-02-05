@@ -24,7 +24,6 @@ PYTHON_CHANNEL=$(rapids-download-conda-from-s3 python)
 rapids-mamba-retry install \
   --channel "${CPP_CHANNEL}" \
   --channel "${PYTHON_CHANNEL}" \
-  cuda-version=${RAPIDS_CUDA_VERSION%.*} \
   rmm librmm
 
 RAPIDS_TESTS_DIR=${RAPIDS_TESTS_DIR:-"${PWD}/test-results"}
