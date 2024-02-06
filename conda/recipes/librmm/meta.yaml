@@ -3,7 +3,6 @@
 {% set version = environ['RAPIDS_PACKAGE_VERSION'].lstrip('v') %}
 {% set cuda_version = '.'.join(environ['RAPIDS_CUDA_VERSION'].split('.')[:2]) %}
 {% set cuda_major = cuda_version.split('.')[0] %}
-{% set cuda_spec = ">=" + cuda_major ~ ",<" + (cuda_major | int + 1) ~ ".0a0" %} # i.e. >=11,<12.0a0
 {% set date_string = environ['RAPIDS_DATE_STRING'] %}
 
 package:
@@ -73,11 +72,13 @@ outputs:
     requirements:
       build:
         - cmake {{ cmake_version }}
+      host:
+        - cuda-version ={{ cuda_version }}
       run:
+        - {{ pin_compatible('cuda-version', max_pin='x', min_pin='x') }}
         {% if cuda_major == "11" %}
         - cudatoolkit
         {% endif %}
-        - cuda-version {{ cuda_spec }}
         - fmt {{ fmt_version }}
         - spdlog {{ spdlog_version }}
     test:
