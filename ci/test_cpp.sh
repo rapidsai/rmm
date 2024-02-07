@@ -4,7 +4,7 @@
 set -euo pipefail
 
 # Support invoking test_cpp.sh outside the script directory
-cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")";
+cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")"/../
 
 . /opt/conda/etc/profile.d/conda.sh
 
@@ -38,7 +38,7 @@ nvidia-smi
 rapids-logger "Run gtests"
 
 export GTEST_OUTPUT=xml:${RAPIDS_TESTS_DIR}/
-./run_ctests.sh -j20 && EXITCODE=$? || EXITCODE=$?;
+./ci/run_ctests.sh -j20 && EXITCODE=$? || EXITCODE=$?;
 
 rapids-logger "Test script exiting with value: $EXITCODE"
 exit ${EXITCODE}
