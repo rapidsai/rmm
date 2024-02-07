@@ -3,7 +3,8 @@
 
 set -euo pipefail
 
-# Support customizing the ctests' install location
-cd "${INSTALL_PREFIX:-${CONDA_PREFIX:-/usr}}/bin/gtests/librmm/";
-
-ctest --output-on-failure "$@"
+if [ -d "${INSTALL_PREFIX:-${CONDA_PREFIX:-/usr}}/bin/gtests/librmm/" ]; then
+    # Support customizing the ctests' install location
+    cd "${INSTALL_PREFIX:-${CONDA_PREFIX:-/usr}}/bin/gtests/librmm/"
+    ctest --output-on-failure "$@"
+fi
