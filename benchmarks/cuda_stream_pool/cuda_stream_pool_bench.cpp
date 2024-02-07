@@ -17,8 +17,9 @@
 #include <rmm/cuda_stream_pool.hpp>
 #include <rmm/detail/error.hpp>
 
-#include <benchmark/benchmark.h>
 #include <cuda_runtime_api.h>
+
+#include <benchmark/benchmark.h>
 
 #include <stdexcept>
 

@@ -19,6 +19,7 @@
 #include <rmm/device_buffer.hpp>
 
 #include <cuda_runtime_api.h>
+
 #include <gtest/gtest-death-test.h>
 #include <gtest/gtest.h>
 

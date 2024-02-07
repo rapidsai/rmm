@@ -19,6 +19,7 @@
 #include <rmm/device_uvector.hpp>
 
 #include <cuda_runtime_api.h>
+
 #include <gtest/gtest.h>
 
 struct CudaStreamPoolTest : public ::testing::Test {

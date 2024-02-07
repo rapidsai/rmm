@@ -21,8 +21,8 @@
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
-
 #include <cuda_runtime_api.h>
+
 #include <gtest/gtest.h>
 
 #include <chrono>

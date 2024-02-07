@@ -22,6 +22,7 @@
 #include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <cuda_runtime_api.h>
+
 #include <fmt/core.h>
 
 #include <cstddef>

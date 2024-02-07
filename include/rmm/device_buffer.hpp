@@ -22,7 +22,6 @@
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
-
 #include <cuda_runtime_api.h>
 
 #include <cassert>

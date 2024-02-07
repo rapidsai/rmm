@@ -18,6 +18,7 @@
 #include <rmm/cuda_device.hpp>
 
 #include <cuda_runtime_api.h>
+
 #include <dlfcn.h>
 
 #include <memory>

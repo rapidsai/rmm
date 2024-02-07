@@ -26,9 +26,10 @@
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
 
+#include <cuda_runtime_api.h>
+
 #include <benchmark/benchmark.h>
 #include <benchmarks/utilities/cxxopts.hpp>
-#include <cuda_runtime_api.h>
 
 #include <cstddef>
 

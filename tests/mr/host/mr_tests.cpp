@@ -22,8 +22,8 @@
 #include <rmm/mr/host/pinned_memory_resource.hpp>
 
 #include <cuda/memory_resource>
-
 #include <cuda_runtime_api.h>
+
 #include <gtest/gtest.h>
 
 #include <cstddef>

@@ -26,9 +26,10 @@
 #include <rmm/mr/device/pool_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
-#include <gtest/gtest.h>
 #include <thrust/equal.h>
 #include <thrust/sequence.h>
+
+#include <gtest/gtest.h>
 
 namespace testing {
 namespace thrust = THRUST_NS_QUALIFIER;
