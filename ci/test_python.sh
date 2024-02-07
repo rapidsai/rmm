@@ -4,7 +4,7 @@
 set -euo pipefail
 
 # Support invoking test_python.sh outside the script directory
-cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")";
+cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")"/../;
 
 rapids-logger "Create test conda environment"
 . /opt/conda/etc/profile.d/conda.sh
@@ -39,7 +39,7 @@ nvidia-smi
 
 rapids-logger "pytest rmm"
 
-./run_pytests.sh \
+./ci/run_pytests.sh \
     --junitxml="${RAPIDS_TESTS_DIR}/junit-rmm.xml" \
     --cov-config=.coveragerc \
     --cov=rmm \
