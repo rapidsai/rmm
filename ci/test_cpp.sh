@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2020-2023, NVIDIA CORPORATION.
+# Copyright (c) 2020-2024, NVIDIA CORPORATION.
 
 set -euo pipefail
 
@@ -31,16 +31,14 @@ rapids-mamba-retry install \
 rapids-logger "Check GPU usage"
 nvidia-smi
 
-EXITCODE=0
-trap "EXITCODE=1" ERR
-set +e
-
 # Run librmm gtests from librmm-tests package
 rapids-logger "Run gtests"
 
-cd $CONDA_PREFIX/bin/gtests/librmm/
 export GTEST_OUTPUT=xml:${RAPIDS_TESTS_DIR}/
-ctest -j20 --output-on-failure
+# Support invoking test_cpp.sh outside the script directory
+"$(dirname "$(realpath "${BASH_SOURCE[0]}")")"/run_ctests.sh \
+    -j20 \
+ && EXITCODE=$? || EXITCODE=$?;
 
 rapids-logger "Test script exiting with value: $EXITCODE"
 exit ${EXITCODE}

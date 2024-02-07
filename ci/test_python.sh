@@ -1,5 +1,6 @@
 #!/bin/bash
-# Copyright (c) 2020-2023, NVIDIA CORPORATION.
+# Copyright (c) 2020-2024, NVIDIA CORPORATION.
+
 set -euo pipefail
 
 rapids-logger "Create test conda environment"
@@ -33,21 +34,16 @@ mkdir -p "${RAPIDS_TESTS_DIR}" "${RAPIDS_COVERAGE_DIR}"
 rapids-logger "Check GPU usage"
 nvidia-smi
 
-cd python
-
-EXITCODE=0
-trap "EXITCODE=1" ERR
-set +e
-
 rapids-logger "pytest rmm"
-pytest \
-  --cache-clear \
-  --junitxml="${RAPIDS_TESTS_DIR}/junit-rmm.xml" \
-  -v \
-  --cov-config=.coveragerc \
-  --cov=rmm \
-  --cov-report=xml:"${RAPIDS_COVERAGE_DIR}/rmm-coverage.xml" \
-  --cov-report term
+
+# Support invoking test_python.sh outside the script directory
+"$(dirname "$(realpath "${BASH_SOURCE[0]}")")"/run_pytests.sh \
+    --junitxml="${RAPIDS_TESTS_DIR}/junit-rmm.xml" \
+    --cov-config=.coveragerc \
+    --cov=rmm \
+    --cov-report=xml:"${RAPIDS_COVERAGE_DIR}/rmm-coverage.xml" \
+    --cov-report term \
+ && EXITCODE=$? || EXITCODE=$?;
 
 rapids-logger "Test script exiting with value: $EXITCODE"
 exit ${EXITCODE}
