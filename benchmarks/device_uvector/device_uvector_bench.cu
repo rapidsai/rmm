@@ -27,9 +27,7 @@
 #include <rmm/mr/device/pool_memory_resource.hpp>
 
 #include <benchmark/benchmark.h>
-
 #include <cuda_runtime_api.h>
-
 #include <thrust/device_vector.h>
 #include <thrust/memory.h>
 

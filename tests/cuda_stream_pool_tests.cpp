@@ -18,9 +18,8 @@
 #include <rmm/detail/error.hpp>
 #include <rmm/device_uvector.hpp>
 
-#include <gtest/gtest.h>
-
 #include <cuda_runtime_api.h>
+#include <gtest/gtest.h>
 
 struct CudaStreamPoolTest : public ::testing::Test {
   rmm::cuda_stream_pool pool{};

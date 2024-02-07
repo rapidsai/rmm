@@ -16,8 +16,6 @@
 
 #include "mr_ref_test.hpp"
 
-#include <gtest/gtest.h>
-
 #include <rmm/cuda_stream.hpp>
 #include <rmm/mr/device/arena_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
@@ -26,6 +24,8 @@
 #include <rmm/mr/device/pool_memory_resource.hpp>
 
 #include <cuda/memory_resource>
+
+#include <gtest/gtest.h>
 
 #include <thread>
 #include <vector>

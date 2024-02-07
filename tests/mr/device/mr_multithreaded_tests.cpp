@@ -16,14 +16,14 @@
 
 #include "mr_test.hpp"
 
-#include <gtest/gtest.h>
-
 #include <rmm/cuda_stream.hpp>
 #include <rmm/mr/device/arena_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
+
+#include <gtest/gtest.h>
 
 #include <thread>
 #include <vector>

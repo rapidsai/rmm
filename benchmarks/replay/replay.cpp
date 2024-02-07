@@ -14,10 +14,6 @@
  * limitations under the License.
  */
 
-#include <benchmarks/utilities/cxxopts.hpp>
-#include <benchmarks/utilities/log_parser.hpp>
-#include <benchmarks/utilities/simulated_memory_resource.hpp>
-
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/arena_memory_resource.hpp>
@@ -27,14 +23,15 @@
 #include <rmm/mr/device/owning_wrapper.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
 
+#include <benchmark/benchmark.h>
+#include <benchmarks/utilities/cxxopts.hpp>
+#include <benchmarks/utilities/log_parser.hpp>
+#include <benchmarks/utilities/simulated_memory_resource.hpp>
+#include <spdlog/common.h>
 #include <thrust/execution_policy.h>
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/reduce.h>
-
-#include <benchmark/benchmark.h>
-
-#include <spdlog/common.h>
 
 #include <atomic>
 #include <chrono>

@@ -14,17 +14,16 @@
  * limitations under the License.
  */
 
-#include <gtest/gtest.h>
-
 #include <rmm/cuda_stream.hpp>
 #include <rmm/device_scalar.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
-#include <cuda_runtime_api.h>
-
 #include <cuda/memory_resource>
+
+#include <cuda_runtime_api.h>
+#include <gtest/gtest.h>
 
 #include <chrono>
 #include <cstddef>

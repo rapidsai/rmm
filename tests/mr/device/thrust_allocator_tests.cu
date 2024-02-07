@@ -23,7 +23,6 @@
 #include <rmm/resource_ref.hpp>
 
 #include <gtest/gtest.h>
-
 #include <thrust/reduce.h>
 
 // explicit instantiation for test coverage purposes
