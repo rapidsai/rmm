@@ -13,6 +13,5 @@ python -m pip install $(echo ./dist/rmm*.whl)[test]
 if [[ "$(arch)" == "aarch64" && ${RAPIDS_BUILD_TYPE} == "pull-request" ]]; then
     python ./ci/wheel_smoke_test.py
 else
-    # Support invoking test_wheel.sh outside the script directory
-    "$(dirname "$(realpath "${BASH_SOURCE[0]}")")"/run_pytests.sh
+    python -m pytest ./python/rmm/tests
 fi
