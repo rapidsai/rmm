@@ -23,12 +23,12 @@
 #include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <rmm/detail/thrust_namespace.h>
-#include <thrust/optional.h>
 
 #include <cuda_runtime_api.h>
 
 #include <cstddef>
 #include <limits>
+#include <optional>
 
 #if CUDART_VERSION >= 11020  // 11.2 introduced cudaMallocAsync
 #ifndef RMM_DISABLE_CUDA_MALLOC_ASYNC
@@ -85,9 +85,9 @@ class cuda_async_memory_resource final : public device_memory_resource {
    * `cudaMemHandleTypeNone` for no IPC support.
    */
   // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-  cuda_async_memory_resource(thrust::optional<std::size_t> initial_pool_size             = {},
-                             thrust::optional<std::size_t> release_threshold             = {},
-                             thrust::optional<allocation_handle_type> export_handle_type = {})
+  cuda_async_memory_resource(std::optional<std::size_t> initial_pool_size             = {},
+                             std::optional<std::size_t> release_threshold             = {},
+                             std::optional<allocation_handle_type> export_handle_type = {})
   {
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
     // Check if cudaMallocAsync Memory pool supported

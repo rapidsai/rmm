@@ -76,7 +76,7 @@ cdef extern from *:
 
 # NOTE: Keep extern declarations in .pyx file as much as possible to avoid
 # leaking dependencies when importing RMM Cython .pxd files
-cdef extern from "thrust/optional.h" namespace "thrust" nogil:
+cdef extern from "optional" namespace "std" nogil:
 
     struct nullopt_t:
         pass
