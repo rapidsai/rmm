@@ -130,6 +130,7 @@ outputs:
         - {{ compiler('cuda11') }}
         {% else %}
         - {{ compiler('cuda') }}
+        - cuda-cudart-dev
         {% endif %}
     requirements:
       build:
@@ -138,6 +139,8 @@ outputs:
         - cuda-version ={{ cuda_version }}
         {% if cuda_major == "11" %}
         - cudatoolkit
+        {% else %}
+        - cuda-cudart-dev
         {% endif %}
       run:
         {% if cuda_major == "11" %}
