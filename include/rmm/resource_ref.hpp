@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,17 +15,21 @@
  */
 #pragma once
 
-#include <rmm/mr/device/device_memory_resource.hpp>
+#include <cuda/memory_resource>
 
-#include <gmock/gmock.h>
+namespace rmm {
 
-namespace rmm::test {
+/**
+ * @addtogroup memory_resources
+ * @{
+ * @file
+ */
 
-class mock_resource : public rmm::mr::device_memory_resource {
- public:
-  MOCK_METHOD(void*, do_allocate, (std::size_t, cuda_stream_view), (override));
-  MOCK_METHOD(void, do_deallocate, (void*, std::size_t, cuda_stream_view), (override));
-  using size_pair = std::pair<std::size_t, std::size_t>;
-};
+/**
+ * @brief Alias for a `cuda::mr::async_resource_ref` with the property
+ * `cuda::mr::device_accessible`.
+ */
+using device_async_resource_ref = cuda::mr::async_resource_ref<cuda::mr::device_accessible>;
 
-}  // namespace rmm::test
+/** @} */  // end of group
+}  // namespace rmm

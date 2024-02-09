@@ -1,6 +1,6 @@
 
 /*
- * Copyright (c) 2020-2022, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,13 @@
  * limitations under the License.
  */
 
-#include <gtest/gtest.h>
-#include <gtest/internal/gtest-type-util.h>
-
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
+#include <rmm/resource_ref.hpp>
+
+#include <gtest/gtest.h>
+#include <gtest/internal/gtest-type-util.h>
 
 // explicit instantiation for test coverage purposes.
 template class rmm::device_uvector<int32_t>;
@@ -30,15 +31,15 @@ struct TypedUVectorTest : ::testing::Test {
   [[nodiscard]] rmm::cuda_stream_view stream() const noexcept { return rmm::cuda_stream_view{}; }
 };
 
-using TestTypes          = ::testing::Types<int8_t, int32_t, uint64_t, float, double>;
-using async_resource_ref = cuda::mr::async_resource_ref<cuda::mr::device_accessible>;
+using TestTypes = ::testing::Types<int8_t, int32_t, uint64_t, float, double>;
 
 TYPED_TEST_CASE(TypedUVectorTest, TestTypes);
 
 TYPED_TEST(TypedUVectorTest, MemoryResource)
 {
   rmm::device_uvector<TypeParam> vec(128, this->stream());
-  EXPECT_EQ(vec.memory_resource(), async_resource_ref{rmm::mr::get_current_device_resource()});
+  EXPECT_EQ(vec.memory_resource(),
+            rmm::device_async_resource_ref{rmm::mr::get_current_device_resource()});
 }
 
 TYPED_TEST(TypedUVectorTest, ZeroSizeConstructor)
