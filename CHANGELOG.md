@@ -1,3 +1,47 @@
+# RMM 24.02.00 (12 Feb 2024)
+
+## 🚨 Breaking Changes
+
+- Make device_memory_resource::do_get_mem_info() and supports_get_mem_info() not pure virtual. Remove derived implementations and calls in RMM ([#1430](https://github.com/rapidsai/rmm/pull/1430)) [@harrism](https://github.com/harrism)
+- Deprecate detail::available_device_memory, most detail/aligned.hpp utilities, and optional pool_memory_resource initial size ([#1424](https://github.com/rapidsai/rmm/pull/1424)) [@harrism](https://github.com/harrism)
+- Require explicit pool size in `pool_memory_resource` and move some things out of detail namespace ([#1417](https://github.com/rapidsai/rmm/pull/1417)) [@harrism](https://github.com/harrism)
+- Remove HTML builds of librmm ([#1415](https://github.com/rapidsai/rmm/pull/1415)) [@vyasr](https://github.com/vyasr)
+- Update to CCCL 2.2.0. ([#1404](https://github.com/rapidsai/rmm/pull/1404)) [@bdice](https://github.com/bdice)
+- Switch to scikit-build-core ([#1287](https://github.com/rapidsai/rmm/pull/1287)) [@vyasr](https://github.com/vyasr)
+
+## 🐛 Bug Fixes
+
+- Exclude tests from builds ([#1459](https://github.com/rapidsai/rmm/pull/1459)) [@vyasr](https://github.com/vyasr)
+- Update CODEOWNERS ([#1410](https://github.com/rapidsai/rmm/pull/1410)) [@raydouglass](https://github.com/raydouglass)
+- Correct signatures for torch allocator plug in ([#1407](https://github.com/rapidsai/rmm/pull/1407)) [@wence-](https://github.com/wence-)
+- Fix Arena MR to support simultaneous access by PTDS and other streams ([#1395](https://github.com/rapidsai/rmm/pull/1395)) [@tgravescs](https://github.com/tgravescs)
+- Fix else-after-throw clang tidy error ([#1391](https://github.com/rapidsai/rmm/pull/1391)) [@harrism](https://github.com/harrism)
+
+## 📖 Documentation
+
+- remove references to setup.py in docs ([#1420](https://github.com/rapidsai/rmm/pull/1420)) [@jameslamb](https://github.com/jameslamb)
+- Remove HTML builds of librmm ([#1415](https://github.com/rapidsai/rmm/pull/1415)) [@vyasr](https://github.com/vyasr)
+- Update GPU support docs to drop Pascal ([#1413](https://github.com/rapidsai/rmm/pull/1413)) [@harrism](https://github.com/harrism)
+
+## 🚀 New Features
+
+- Make device_memory_resource::do_get_mem_info() and supports_get_mem_info() not pure virtual. Remove derived implementations and calls in RMM ([#1430](https://github.com/rapidsai/rmm/pull/1430)) [@harrism](https://github.com/harrism)
+- Deprecate detail::available_device_memory, most detail/aligned.hpp utilities, and optional pool_memory_resource initial size ([#1424](https://github.com/rapidsai/rmm/pull/1424)) [@harrism](https://github.com/harrism)
+- Add a host-pinned memory resource that can be used as upstream for `pool_memory_resource`. ([#1392](https://github.com/rapidsai/rmm/pull/1392)) [@harrism](https://github.com/harrism)
+
+## 🛠️ Improvements
+
+- Remove usages of rapids-env-update ([#1423](https://github.com/rapidsai/rmm/pull/1423)) [@KyleFromNVIDIA](https://github.com/KyleFromNVIDIA)
+- Refactor CUDA versions in dependencies.yaml. ([#1422](https://github.com/rapidsai/rmm/pull/1422)) [@bdice](https://github.com/bdice)
+- Require explicit pool size in `pool_memory_resource` and move some things out of detail namespace ([#1417](https://github.com/rapidsai/rmm/pull/1417)) [@harrism](https://github.com/harrism)
+- Update dependencies.yaml to support CUDA 12.*. ([#1414](https://github.com/rapidsai/rmm/pull/1414)) [@bdice](https://github.com/bdice)
+- Define python dependency range as a matrix fallback. ([#1409](https://github.com/rapidsai/rmm/pull/1409)) [@bdice](https://github.com/bdice)
+- Use latest cuda-python within CUDA major version. ([#1406](https://github.com/rapidsai/rmm/pull/1406)) [@bdice](https://github.com/bdice)
+- Update to CCCL 2.2.0. ([#1404](https://github.com/rapidsai/rmm/pull/1404)) [@bdice](https://github.com/bdice)
+- Remove RMM_BUILD_WHEELS and standardize Python builds ([#1401](https://github.com/rapidsai/rmm/pull/1401)) [@vyasr](https://github.com/vyasr)
+- Update to fmt 10.1.1 and spdlog 1.12.0. ([#1374](https://github.com/rapidsai/rmm/pull/1374)) [@bdice](https://github.com/bdice)
+- Switch to scikit-build-core ([#1287](https://github.com/rapidsai/rmm/pull/1287)) [@vyasr](https://github.com/vyasr)
+
 # RMM 23.12.00 (6 Dec 2023)
 
 ## 🚨 Breaking Changes
