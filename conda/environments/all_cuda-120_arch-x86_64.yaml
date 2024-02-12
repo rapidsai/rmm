@@ -15,7 +15,7 @@ dependencies:
 - cxx-compiler
 - cython>=3.0.0
 - doxygen=1.9.1
-- fmt>=9.1.0,<10
+- fmt>=10.1.1,<11
 - gcc_linux-64=11.*
 - gcovr>=5.0
 - graphviz
@@ -31,12 +31,11 @@ dependencies:
 - pytest
 - pytest-cov
 - python>=3.9,<3.11
-- scikit-build>=0.13.1
-- spdlog>=1.11.0,<1.12
+- scikit-build-core>=0.7.0
+- spdlog>=1.12.0,<1.13
 - sphinx
 - sphinx-copybutton
 - sphinx-markdown-tables
 - sphinx_rtd_theme
 - sysroot_linux-64==2.17
-- tomli
 name: all_cuda-120_arch-x86_64

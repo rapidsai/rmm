@@ -25,14 +25,12 @@ rapids-mamba-retry install \
   --channel "${PYTHON_CHANNEL}" \
   rmm librmm
 
-export RAPIDS_VERSION_NUMBER="23.12"
+export RAPIDS_VERSION_NUMBER="24.02"
 export RAPIDS_DOCS_DIR="$(mktemp -d)"
 
 rapids-logger "Build CPP docs"
 pushd doxygen
 doxygen Doxyfile
-mkdir -p "${RAPIDS_DOCS_DIR}/librmm/html"
-mv html/* "${RAPIDS_DOCS_DIR}/librmm/html"
 popd
 
 rapids-logger "Build Python docs"

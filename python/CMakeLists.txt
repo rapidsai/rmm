@@ -14,22 +14,17 @@
 
 cmake_minimum_required(VERSION 3.26.4 FATAL_ERROR)
 
-set(rmm_version 23.12.00)
+set(rmm_version 24.02.00)
 
 include(../fetch_rapids.cmake)
 
 project(
   rmm-python
   VERSION ${rmm_version}
-  LANGUAGES # TODO: Building Python extension modules via the python_extension_module requires the C
-            # language to be enabled here. The test project that is built in scikit-build to verify
-            # various linking options for the python library is hardcoded to build with C, so until
-            # that is fixed we need to keep C.
-            C CXX)
+  LANGUAGES CXX)
 
 option(FIND_RMM_CPP "Search for existing RMM C++ installations before defaulting to local files"
        OFF)
-option(RMM_BUILD_WHEELS "Whether this build is generating a Python wheel." OFF)
 
 # If the user requested it we attempt to find RMM.
 if(FIND_RMM_CPP)
@@ -41,19 +36,12 @@ endif()
 if(NOT rmm_FOUND)
   set(BUILD_TESTS OFF)
   set(BUILD_BENCHMARKS OFF)
+  set(CUDA_STATIC_RUNTIME ON)
 
-  set(_exclude_from_all "")
-  if(RMM_BUILD_WHEELS)
-    # Statically link dependencies if building wheels
-    set(CUDA_STATIC_RUNTIME ON)
-    # Don't install the rmm C++ targets into wheels
-    set(_exclude_from_all EXCLUDE_FROM_ALL)
-  endif()
-
-  add_subdirectory(../ rmm-cpp ${_exclude_from_all})
+  add_subdirectory(../ rmm-cpp EXCLUDE_FROM_ALL)
 endif()
 
-include(rapids-cython)
+include(rapids-cython-core)
 rapids_cython_init()
 
 add_compile_definitions("SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")

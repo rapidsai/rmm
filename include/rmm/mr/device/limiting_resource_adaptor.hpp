@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, NVIDIA CORPORATION.
+ * Copyright (c) 2021-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <rmm/detail/aligned.hpp>
+#include <rmm/aligned.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
@@ -54,7 +54,7 @@ class limiting_resource_adaptor final : public device_memory_resource {
    */
   limiting_resource_adaptor(Upstream* upstream,
                             std::size_t allocation_limit,
-                            std::size_t alignment = rmm::detail::CUDA_ALLOCATION_ALIGNMENT)
+                            std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
     : allocation_limit_{allocation_limit},
       allocated_bytes_(0),
       alignment_(alignment),
@@ -86,16 +86,6 @@ class limiting_resource_adaptor final : public device_memory_resource {
   [[nodiscard]] bool supports_streams() const noexcept override
   {
     return upstream_->supports_streams();
-  }
-
-  /**
-   * @brief Query whether the resource supports the get_mem_info API.
-   *
-   * @return bool true if the upstream resource supports get_mem_info, false otherwise.
-   */
-  [[nodiscard]] bool supports_get_mem_info() const noexcept override
-  {
-    return upstream_->supports_get_mem_info();
   }
 
   /**
@@ -134,7 +124,7 @@ class limiting_resource_adaptor final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
-    auto const proposed_size = rmm::detail::align_up(bytes, alignment_);
+    auto const proposed_size = rmm::align_up(bytes, alignment_);
     auto const old           = allocated_bytes_.fetch_add(proposed_size);
     if (old + proposed_size <= allocation_limit_) {
       try {
@@ -158,7 +148,7 @@ class limiting_resource_adaptor final : public device_memory_resource {
    */
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
-    std::size_t allocated_size = rmm::detail::align_up(bytes, alignment_);
+    std::size_t allocated_size = rmm::align_up(bytes, alignment_);
     upstream_->deallocate(ptr, bytes, stream);
     allocated_bytes_ -= allocated_size;
   }
@@ -176,20 +166,6 @@ class limiting_resource_adaptor final : public device_memory_resource {
     auto const* cast = dynamic_cast<limiting_resource_adaptor<Upstream> const*>(&other);
     if (cast != nullptr) { return upstream_->is_equal(*cast->get_upstream()); }
     return upstream_->is_equal(other);
-  }
-
-  /**
-   * @brief Get free and available memory from upstream resource.
-   *
-   * @throws rmm::cuda_error if unable to retrieve memory info.
-   *
-   * @param stream Stream on which to get the mem info.
-   * @return std::pair contaiing free_size and total_size of memory
-   */
-  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
-    [[maybe_unused]] cuda_stream_view stream) const override
-  {
-    return {allocation_limit_ - allocated_bytes_, allocation_limit_};
   }
 
   // maximum bytes this allocator is allowed to allocate.

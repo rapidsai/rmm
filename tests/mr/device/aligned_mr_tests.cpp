@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022, NVIDIA CORPORATION.
+ * Copyright (c) 2021-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,8 @@
  */
 
 #include "../../mock_resource.hpp"
-#include <rmm/detail/aligned.hpp>
+
+#include <rmm/aligned.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/aligned_resource_adaptor.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
@@ -71,12 +72,6 @@ TEST(AlignedTest, SupportsGetMemInfo)
 {
   mock_resource mock;
   aligned_mock mr{&mock};
-
-  EXPECT_CALL(mock, supports_get_mem_info()).WillOnce(Return(true));
-  EXPECT_TRUE(mr.supports_get_mem_info());
-
-  EXPECT_CALL(mock, supports_get_mem_info()).WillOnce(Return(false));
-  EXPECT_FALSE(mr.supports_get_mem_info());
 }
 
 TEST(AlignedTest, DefaultAllocationAlignmentPassthrough)
@@ -223,7 +218,7 @@ TEST(AlignedTest, AlignRealPointer)
   auto const threshold{65536};
   aligned_real mr{rmm::mr::get_current_device_resource(), alignment, threshold};
   void* alloc = mr.allocate(threshold);
-  EXPECT_TRUE(rmm::detail::is_pointer_aligned(alloc, alignment));
+  EXPECT_TRUE(rmm::is_pointer_aligned(alloc, alignment));
   mr.deallocate(alloc, threshold);
 }
 

@@ -230,11 +230,8 @@ class out_of_range : public std::out_of_range {
       cudaGetLastError();                                                                          \
       auto const msg = std::string{"CUDA error at: "} + __FILE__ + ":" + RMM_STRINGIFY(__LINE__) + \
                        ": " + cudaGetErrorName(error) + " " + cudaGetErrorString(error);           \
-      if (cudaErrorMemoryAllocation == error) {                                                    \
-        throw rmm::out_of_memory{msg};                                                             \
-      } else {                                                                                     \
-        throw rmm::bad_alloc{msg};                                                                 \
-      }                                                                                            \
+      if (cudaErrorMemoryAllocation == error) { throw rmm::out_of_memory{msg}; }                   \
+      throw rmm::bad_alloc{msg};                                                                   \
     }                                                                                              \
   } while (0)
 

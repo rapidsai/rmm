@@ -24,9 +24,9 @@ author = "NVIDIA"
 # built documents.
 #
 # The short X.Y version.
-version = "23.12"
+version = "24.02"
 # The full version, including alpha/beta/rc tags.
-release = "23.12.00"
+release = "24.02.00"
 
 
 # -- General configuration ---------------------------------------------------
@@ -248,14 +248,16 @@ def on_missing_reference(app, env, node, contnode):
         if match := re.search("(.*)<.*>", reftarget):
             reftarget = match.group(1)
 
+        # This is the document we're linking _from_, and hence where
+        # we should try and resolve the xref wrt.
+        refdoc = node.get("refdoc")
         # Try to find the target prefixed with e.g. namespaces in case that's
         # all that's missing. Include the empty prefix in case we're searching
         # for a stripped template.
         extra_prefixes = ["rmm::", "rmm::mr::", "mr::", ""]
-        for (name, dispname, type, docname, anchor, priority) in env.domains[
+        for (name, dispname, typ, docname, anchor, priority) in env.domains[
             "cpp"
         ].get_objects():
-
             for prefix in extra_prefixes:
                 if (
                     name == f"{prefix}{reftarget}"
@@ -263,7 +265,7 @@ def on_missing_reference(app, env, node, contnode):
                 ):
                     return env.domains["cpp"].resolve_xref(
                         env,
-                        docname,
+                        refdoc,
                         app.builder,
                         node["reftype"],
                         name,

@@ -61,13 +61,15 @@ Compiler requirements:
 
 CUDA/GPU requirements:
 
-* CUDA 11.4+
-* Pascal architecture or better
+* CUDA 11.4+. You can obtain CUDA from
+  [https://developer.nvidia.com/cuda-downloads](https://developer.nvidia.com/cuda-downloads)
 
-You can obtain CUDA from [https://developer.nvidia.com/cuda-downloads](https://developer.nvidia.com/cuda-downloads)
+GPU Support:
+* RMM is tested and supported only on Volta architecture and newer (Compute Capability 7.0+). It
+  may work on earlier architectures.
 
 Python requirements:
-* `scikit-build`
+* `scikit-build-core`
 * `cuda-python`
 * `cython`
 
@@ -125,8 +127,7 @@ $ make test
 
 - Build, install, and test the `rmm` python package, in the `python` folder:
 ```bash
-$ python setup.py build_ext --inplace
-$ python setup.py install
+$ python -m pip install -e ./python
 $ pytest -v
 ```
 
@@ -331,7 +332,9 @@ Accessing and modifying the default resource is done through two functions:
 ```c++
 rmm::mr::cuda_memory_resource cuda_mr;
 // Construct a resource that uses a coalescing best-fit pool allocator
-rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource> pool_mr{&cuda_mr};
+// With the pool initially half of available device memory
+auto initial_size = rmm::percent_of_free_device_memory(50);
+rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource> pool_mr{&cuda_mr, initial_size};
 rmm::mr::set_current_device_resource(&pool_mr); // Updates the current device resource pointer to `pool_mr`
 rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource(); // Points to `pool_mr`
 ```
@@ -350,11 +353,13 @@ per-device resources. Here is an example loop that creates `unique_ptr`s to `poo
 objects for each device and sets them as the per-device resource for that device.
 
 ```c++
-std::vector<unique_ptr<pool_memory_resource>> per_device_pools;
+using pool_mr = rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>;
+std::vector<unique_ptr<pool_mr>> per_device_pools;
 for(int i = 0; i < N; ++i) {
   cudaSetDevice(i); // set device i before creating MR
   // Use a vector of unique_ptr to maintain the lifetime of the MRs
-  per_device_pools.push_back(std::make_unique<pool_memory_resource>());
+  // Note: for brevity, omitting creation of upstream and computing initial_size
+  per_device_pools.push_back(std::make_unique<pool_mr>(upstream, initial_size));
   // Set the per-device resource for device i
   set_per_device_resource(cuda_device_id{i}, &per_device_pools.back());
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
-#include <rmm/detail/aligned.hpp>
-#include <rmm/detail/cuda_util.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/device_uvector.hpp>
@@ -39,7 +38,7 @@ using limiting_mr = rmm::mr::limiting_resource_adaptor<rmm::mr::cuda_memory_reso
 
 TEST(PoolTest, ThrowOnNullUpstream)
 {
-  auto construct_nullptr = []() { pool_mr mr{nullptr}; };
+  auto construct_nullptr = []() { pool_mr mr{nullptr, 0}; };
   EXPECT_THROW(construct_nullptr(), rmm::logic_error);
 }
 
@@ -70,11 +69,9 @@ TEST(PoolTest, ReferenceThrowMaxLessThanInitial)
 TEST(PoolTest, AllocateNinetyPercent)
 {
   auto allocate_ninety = []() {
-    auto const [free, total] = rmm::detail::available_device_memory();
+    auto const [free, total] = rmm::available_device_memory();
     (void)total;
-    auto const ninety_percent_pool =
-      rmm::detail::align_up(static_cast<std::size_t>(static_cast<double>(free) * 0.9),
-                            rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
+    auto const ninety_percent_pool = rmm::percent_of_free_device_memory(90);
     pool_mr mr{rmm::mr::get_current_device_resource(), ninety_percent_pool};
   };
   EXPECT_NO_THROW(allocate_ninety());
@@ -83,9 +80,8 @@ TEST(PoolTest, AllocateNinetyPercent)
 TEST(PoolTest, TwoLargeBuffers)
 {
   auto two_large = []() {
-    auto const [free, total] = rmm::detail::available_device_memory();
-    (void)total;
-    pool_mr mr{rmm::mr::get_current_device_resource()};
+    [[maybe_unused]] auto const [free, total] = rmm::available_device_memory();
+    pool_mr mr{rmm::mr::get_current_device_resource(), rmm::percent_of_free_device_memory(50)};
     auto* ptr1 = mr.allocate(free / 4);
     auto* ptr2 = mr.allocate(free / 4);
     mr.deallocate(ptr1, free / 4);
@@ -158,8 +154,8 @@ TEST(PoolTest, NonAlignedPoolSize)
 TEST(PoolTest, UpstreamDoesntSupportMemInfo)
 {
   cuda_mr cuda;
-  pool_mr mr1(&cuda);
-  pool_mr mr2(&mr1);
+  pool_mr mr1(&cuda, 0);
+  pool_mr mr2(&mr1, 0);
   auto* ptr = mr2.allocate(1024);
   mr2.deallocate(ptr, 1024);
 }
@@ -217,7 +213,6 @@ class fake_async_resource {
 
   // To model stream_resource
   [[nodiscard]] bool supports_streams() const noexcept { return false; }
-  [[nodiscard]] bool supports_get_mem_info() const noexcept { return false; }
 
  private:
   void* do_allocate(std::size_t bytes, cuda_stream_view) { return nullptr; }

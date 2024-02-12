@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, NVIDIA CORPORATION.
+ * Copyright (c) 2021-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,16 @@
  */
 
 #include "../../byte_literals.hpp"
-#include "rmm/cuda_stream_view.hpp"
-#include "rmm/mr/device/device_memory_resource.hpp"
 
-#include <cstddef>
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
+#include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/failure_callback_resource_adaptor.hpp>
 
 #include <gtest/gtest.h>
+
+#include <cstddef>
 
 namespace rmm::test {
 namespace {
@@ -60,14 +61,8 @@ class always_throw_memory_resource final : public mr::device_memory_resource {
     throw ExceptionType{"foo"};
   }
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override{};
-  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
-    cuda_stream_view stream) const override
-  {
-    return {0, 0};
-  }
 
   [[nodiscard]] bool supports_streams() const noexcept override { return false; }
-  [[nodiscard]] bool supports_get_mem_info() const noexcept override { return false; }
 };
 
 TEST(FailureCallbackTest, DifferentExceptionTypes)

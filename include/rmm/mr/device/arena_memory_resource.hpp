@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include <rmm/aligned.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/logging_assert.hpp>
 #include <rmm/logger.hpp>
@@ -117,13 +118,6 @@ class arena_memory_resource final : public device_memory_resource {
    */
   bool supports_streams() const noexcept override { return true; }
 
-  /**
-   * @brief Query whether the resource supports the get_mem_info API.
-   *
-   * @return bool false.
-   */
-  bool supports_get_mem_info() const noexcept override { return false; }
-
  private:
   using global_arena = rmm::mr::detail::arena::global_arena<Upstream>;
   using arena        = rmm::mr::detail::arena::arena<Upstream>;
@@ -145,7 +139,7 @@ class arena_memory_resource final : public device_memory_resource {
 #ifdef RMM_ARENA_USE_SIZE_CLASSES
     bytes = rmm::mr::detail::arena::align_to_size_class(bytes);
 #else
-    bytes = rmm::detail::align_up(bytes, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
+    bytes = rmm::align_up(bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
 #endif
     auto& arena = get_arena(stream);
 
@@ -195,7 +189,7 @@ class arena_memory_resource final : public device_memory_resource {
 #ifdef RMM_ARENA_USE_SIZE_CLASSES
     bytes = rmm::mr::detail::arena::align_to_size_class(bytes);
 #else
-    bytes = rmm::detail::align_up(bytes, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
+    bytes = rmm::align_up(bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
 #endif
     auto& arena = get_arena(stream);
 
@@ -309,18 +303,6 @@ class arena_memory_resource final : public device_memory_resource {
       stream_arenas_.emplace(stream.value(), global_arena_);
       return stream_arenas_.at(stream.value());
     }
-  }
-
-  /**
-   * @brief Get free and available memory for memory resource.
-   *
-   * @param stream to execute on.
-   * @return std::pair containing free_size and total_size of memory.
-   */
-  std::pair<std::size_t, std::size_t> do_get_mem_info(
-    [[maybe_unused]] cuda_stream_view stream) const override
-  {
-    return std::make_pair(0, 0);
   }
 
   /**

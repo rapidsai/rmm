@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <rmm/detail/aligned.hpp>
+#include <rmm/aligned.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/fixed_size_memory_resource.hpp>
 
@@ -107,13 +107,6 @@ class binning_memory_resource final : public device_memory_resource {
   [[nodiscard]] bool supports_streams() const noexcept override { return true; }
 
   /**
-   * @brief Query whether the resource supports the get_mem_info API.
-   *
-   * @return false
-   */
-  [[nodiscard]] bool supports_get_mem_info() const noexcept override { return false; }
-
-  /**
    * @brief Get the upstream memory_resource object.
    *
    * @return UpstreamResource* the upstream memory resource.
@@ -138,8 +131,7 @@ class binning_memory_resource final : public device_memory_resource {
    */
   void add_bin(std::size_t allocation_size, device_memory_resource* bin_resource = nullptr)
   {
-    allocation_size =
-      rmm::detail::align_up(allocation_size, rmm::detail::CUDA_ALLOCATION_ALIGNMENT);
+    allocation_size = rmm::align_up(allocation_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
 
     if (nullptr != bin_resource) {
       resource_bins_.insert({allocation_size, bin_resource});
@@ -196,20 +188,6 @@ class binning_memory_resource final : public device_memory_resource {
   {
     auto res = get_resource(bytes);
     if (res != nullptr) { res->deallocate(ptr, bytes, stream); }
-  }
-
-  /**
-   * @brief Get free and available memory for memory resource
-   *
-   * @throws std::runtime_error if we could not get free / total memory
-   *
-   * @param stream the stream being executed on
-   * @return std::pair with available and free memory for resource
-   */
-  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
-    [[maybe_unused]] cuda_stream_view stream) const override
-  {
-    return std::make_pair(0, 0);
   }
 
   Upstream* upstream_mr_;  // The upstream memory_resource from which to allocate blocks.

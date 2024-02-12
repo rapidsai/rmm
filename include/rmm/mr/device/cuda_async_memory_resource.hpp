@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022, NVIDIA CORPORATION.
+ * Copyright (c) 2021-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream_view.hpp>
-#include <rmm/detail/cuda_util.hpp>
 #include <rmm/detail/dynamic_load_runtime.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/cuda_async_view_memory_resource.hpp>
@@ -120,7 +119,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
         pool_handle(), cudaMemPoolReuseAllowOpportunistic, &disabled));
     }
 
-    auto const [free, total] = rmm::detail::available_device_memory();
+    auto const [free, total] = rmm::available_device_memory();
 
     // Need an l-value to take address to pass to cudaMemPoolSetAttribute
     uint64_t threshold = release_threshold.value_or(total);
@@ -164,13 +163,6 @@ class cuda_async_memory_resource final : public device_memory_resource {
    * @returns bool true
    */
   [[nodiscard]] bool supports_streams() const noexcept override { return true; }
-
-  /**
-   * @brief Query whether the resource supports the get_mem_info API.
-   *
-   * @return false
-   */
-  [[nodiscard]] bool supports_get_mem_info() const noexcept override { return false; }
 
  private:
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
@@ -232,19 +224,6 @@ class cuda_async_memory_resource final : public device_memory_resource {
 #else
     return async_mr != nullptr;
 #endif
-  }
-
-  /**
-   * @brief Get free and available memory for memory resource
-   *
-   * @throws rmm::cuda_error if unable to retrieve memory info.
-   *
-   * @return std::pair contaiing free_size and total_size of memory
-   */
-  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
-    rmm::cuda_stream_view) const override
-  {
-    return std::make_pair(0, 0);
   }
 };
 

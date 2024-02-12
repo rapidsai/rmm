@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,11 +32,6 @@ class device_check_resource_adaptor final : public rmm::mr::device_memory_resour
     return upstream_->supports_streams();
   }
 
-  [[nodiscard]] bool supports_get_mem_info() const noexcept override
-  {
-    return upstream_->supports_get_mem_info();
-  }
-
   [[nodiscard]] device_memory_resource* get_upstream() const noexcept { return upstream_; }
 
  private:
@@ -64,12 +59,6 @@ class device_check_resource_adaptor final : public rmm::mr::device_memory_resour
     auto const* cast = dynamic_cast<device_check_resource_adaptor const*>(&other);
     if (cast != nullptr) { return upstream_->is_equal(*cast->get_upstream()); }
     return upstream_->is_equal(other);
-  }
-
-  [[nodiscard]] std::pair<std::size_t, std::size_t> do_get_mem_info(
-    rmm::cuda_stream_view stream) const override
-  {
-    return upstream_->get_mem_info(stream);
   }
 
   rmm::cuda_device_id device_id;
