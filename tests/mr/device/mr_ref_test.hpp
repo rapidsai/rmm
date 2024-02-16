@@ -33,6 +33,7 @@
 #include <rmm/mr/device/owning_wrapper.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
+#include <rmm/mr/pinned_host_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <gtest/gtest.h>
@@ -62,6 +63,17 @@ struct allocation {
 };
 
 // Various test functions, shared between single-threaded and multithreaded tests.
+
+inline void test_get_current_device_resource()
+{
+  EXPECT_NE(nullptr, rmm::mr::get_current_device_resource());
+  void* ptr = rmm::mr::get_current_device_resource()->allocate(1_MiB);
+  EXPECT_NE(nullptr, ptr);
+  EXPECT_TRUE(is_properly_aligned(ptr));
+  EXPECT_TRUE(is_device_accessible_memory(ptr));
+  rmm::mr::get_current_device_resource()->deallocate(ptr, 1_MiB);
+}
+
 inline void test_allocate(resource_ref ref, std::size_t bytes)
 {
   try {
@@ -357,6 +369,8 @@ struct mr_ref_allocation_test : public mr_ref_test {};
 /// MR factory functions
 inline auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>(); }
 
+inline auto make_host_pinned() { return std::make_shared<rmm::mr::pinned_host_memory_resource>(); }
+
 inline auto make_cuda_async()
 {
   if (rmm::detail::async_alloc::is_supported()) {
@@ -371,6 +385,12 @@ inline auto make_pool()
 {
   return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(
     make_cuda(), rmm::percent_of_free_device_memory(50));
+}
+
+inline auto make_host_pinned_pool()
+{
+  return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(
+    make_host_pinned(), 2_GiB, 8_GiB);
 }
 
 inline auto make_arena()
