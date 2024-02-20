@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2020-2023, NVIDIA CORPORATION.
+# Copyright (c) 2020-2024, NVIDIA CORPORATION.
 
 set -euo pipefail
 
@@ -40,7 +40,7 @@ rapids-logger "Run gtests"
 
 cd $CONDA_PREFIX/bin/gtests/librmm/
 export GTEST_OUTPUT=xml:${RAPIDS_TESTS_DIR}/
-ctest -j20 --output-on-failure
+ctest -j20 --output-on-failure --no-tests=error
 
 rapids-logger "Test script exiting with value: $EXITCODE"
 exit ${EXITCODE}
