@@ -31,5 +31,17 @@ namespace rmm {
  */
 using device_async_resource_ref = cuda::mr::async_resource_ref<cuda::mr::device_accessible>;
 
+/**
+ * @brief Alias for a `cuda::mr::resource_ref` with the property
+ * `cuda::mr::host_accessible`.
+ */
+using host_resource_ref = cuda::mr::resource_ref<cuda::mr::host_accessible>;
+
+/**
+ * @brief Alias for a `cuda::mr::async_resource_ref` with the property
+ * `cuda::mr::host_accessible`.
+ */
+using host_async_resource_ref = cuda::mr::async_resource_ref<cuda::mr::host_accessible>;
+
 /** @} */  // end of group
 }  // namespace rmm
