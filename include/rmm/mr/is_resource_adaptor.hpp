@@ -27,7 +27,8 @@ namespace rmm::mr {
  */
 
 /**
- * @brief Concept to check whether a resource is a resource adaptor by checking for `get_upstream_resource`.
+ * @brief Concept to check whether a resource is a resource adaptor by checking for
+ * `get_upstream_resource`.
  */
 template <class Resource, class = void>
 inline constexpr bool is_resource_adaptor = false;

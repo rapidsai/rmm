@@ -229,13 +229,6 @@ class pool_memory_resource final
   pool_memory_resource& operator=(pool_memory_resource&&)      = delete;
 
   /**
-   * @brief Get the upstream memory_resource object.
-   *
-   * @return const reference to the upstream memory resource.
-   */
-  [[nodiscard]] const Upstream& upstream_resource() const noexcept { return *upstream_mr_; }
-
-  /**
    * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
    */
   [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
