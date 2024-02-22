@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-#include <memory>
-
-#include <gtest/gtest.h>
 #include <rmm/cuda_stream.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/polymorphic_allocator.hpp>
+
+#include <gtest/gtest.h>
+
+#include <memory>
 
 namespace {
 
