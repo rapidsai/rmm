@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "mr_test.hpp"
+#include "mr_ref_test.hpp"
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_vector.hpp>
@@ -22,9 +22,9 @@
 #include <rmm/mr/device/thrust_allocator_adaptor.hpp>
 #include <rmm/resource_ref.hpp>
 
-#include <gtest/gtest.h>
-
 #include <thrust/reduce.h>
+
+#include <gtest/gtest.h>
 
 // explicit instantiation for test coverage purposes
 template class rmm::mr::thrust_allocator<int>;
@@ -32,7 +32,7 @@ template class rmm::mr::thrust_allocator<int>;
 namespace rmm::test {
 namespace {
 
-struct allocator_test : public mr_test {};
+struct allocator_test : public mr_ref_test {};
 
 TEST_P(allocator_test, first)
 {
