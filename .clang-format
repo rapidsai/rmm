@@ -71,8 +71,20 @@ ForEachMacros:
   - foreach
   - Q_FOREACH
   - BOOST_FOREACH
-IncludeBlocks: Preserve
-IncludeIsMainRegex: '([-_](test|unittest))?$'
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex:           '^"' # quoted includes
+    Priority:        1
+  - Regex:           '^<rmm/' # RMM includes
+    Priority:        2
+  - Regex:           '^<(thrust|cub|cuda)/' # CCCL includes
+    Priority:        3
+  - Regex:           '^<(cooperative_groups|cuco|cuda.h|cuda_runtime|device_types|math_constants|nvtx3)' # CUDA includes
+    Priority:        3
+  - Regex:           '^<.*\..*' # other system includes (e.g. with a '.')
+    Priority:        4
+  - Regex:           '^<[^.]+' # STL includes (no '.')
+    Priority:        5
 IndentCaseLabels: true
 IndentPPDirectives: None
 IndentWidth:     2
