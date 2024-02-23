@@ -109,6 +109,7 @@ class pool_memory_resource final
  public:
   friend class detail::stream_ordered_memory_resource<pool_memory_resource<Upstream>,
                                                       detail::coalescing_free_list>;
+
   /**
    * @brief Construct a `pool_memory_resource` and allocate the initial device memory
    * pool using `upstream_mr`.

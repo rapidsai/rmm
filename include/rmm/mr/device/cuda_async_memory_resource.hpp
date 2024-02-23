@@ -67,6 +67,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
     win32     = 0x2,              ///< Allows a Win32 NT handle to be used for exporting. (HANDLE)
     win32_kmt = 0x4  ///< Allows a Win32 KMT handle to be used for exporting. (D3DKMT_HANDLE)
   };
+
   /**
    * @brief Constructs a cuda_async_memory_resource with the optionally specified initial pool size
    * and release threshold.
