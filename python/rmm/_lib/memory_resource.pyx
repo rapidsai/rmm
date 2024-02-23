@@ -25,6 +25,7 @@ from libc.stddef cimport size_t
 from libc.stdint cimport int8_t, int64_t, uintptr_t
 from libcpp cimport bool
 from libcpp.memory cimport make_unique, unique_ptr
+from libcpp.optional cimport make_optional, optional
 from libcpp.pair cimport pair
 from libcpp.string cimport string
 
@@ -76,19 +77,6 @@ cdef extern from *:
 
 # NOTE: Keep extern declarations in .pyx file as much as possible to avoid
 # leaking dependencies when importing RMM Cython .pxd files
-cdef extern from "optional" namespace "std" nogil:
-
-    struct nullopt_t:
-        pass
-
-    cdef nullopt_t nullopt
-
-    cdef cppclass optional[T]:
-        optional()
-        optional(T v)
-
-    cdef optional[T] make_optional[T](T v)
-
 cdef extern from "rmm/mr/device/cuda_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass cuda_memory_resource(device_memory_resource):
