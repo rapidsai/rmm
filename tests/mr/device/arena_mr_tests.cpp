@@ -26,10 +26,9 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-
-#include <memory>
 #include <sys/stat.h>
 
+#include <memory>
 #include <thread>
 #include <vector>
 

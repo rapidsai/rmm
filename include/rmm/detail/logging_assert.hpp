@@ -20,9 +20,10 @@
 // logger can be extremely expensive to compile, so we want to avoid including
 // it.
 #if !defined(NDEBUG)
-#include <cassert>
 #include <rmm/detail/error.hpp>
 #include <rmm/logger.hpp>
+
+#include <cassert>
 #endif
 
 /**
