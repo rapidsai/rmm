@@ -25,7 +25,7 @@ from libc.stddef cimport size_t
 from libc.stdint cimport int8_t, int64_t, uintptr_t
 from libcpp cimport bool
 from libcpp.memory cimport make_unique, unique_ptr
-from libcpp.optional cimport make_optional, optional
+from libcpp.optional cimport optional
 from libcpp.pair cimport pair
 from libcpp.string cimport string
 
@@ -310,13 +310,13 @@ cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
         cdef optional[size_t] c_initial_pool_size = (
             optional[size_t]()
             if initial_pool_size is None
-            else optional[size_t](initial_pool_size)
+            else optional[size_t](<size_t> initial_pool_size)
         )
 
         cdef optional[size_t] c_release_threshold = (
             optional[size_t]()
             if release_threshold is None
-            else optional[size_t](release_threshold)
+            else optional[size_t](<size_t> release_threshold)
         )
 
         # If IPC memory handles are not supported, the constructor below will
@@ -370,7 +370,7 @@ cdef class PoolMemoryResource(UpstreamResourceAdaptor):
         c_maximum_pool_size = (
             optional[size_t]() if
             maximum_pool_size is None
-            else make_optional[size_t](maximum_pool_size)
+            else optional[size_t](<size_t> maximum_pool_size)
         )
         self.c_obj.reset(
             new pool_memory_resource[device_memory_resource](
