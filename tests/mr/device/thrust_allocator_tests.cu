@@ -22,9 +22,9 @@
 #include <rmm/mr/device/thrust_allocator_adaptor.hpp>
 #include <rmm/resource_ref.hpp>
 
-#include <gtest/gtest.h>
-
 #include <thrust/reduce.h>
+
+#include <gtest/gtest.h>
 
 // explicit instantiation for test coverage purposes
 template class rmm::mr::thrust_allocator<int>;

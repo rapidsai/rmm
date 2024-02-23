@@ -16,15 +16,14 @@
 
 #pragma once
 
+#include <rmm/detail/thrust_namespace.h>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
-#include <rmm/detail/thrust_namespace.h>
+#include <cuda/memory_resource>
 #include <thrust/device_malloc_allocator.h>
 #include <thrust/device_ptr.h>
 #include <thrust/memory.h>
-
-#include <cuda/memory_resource>
 
 namespace rmm::mr {
 /**

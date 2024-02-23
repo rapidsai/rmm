@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-#include <cuda_runtime_api.h>
-
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
+
+#include <cuda_runtime_api.h>
 
 // These signatures must match those required by CUDAPluggableAllocator in
 // github.com/pytorch/pytorch/blob/main/torch/csrc/cuda/CUDAPluggableAllocator.h

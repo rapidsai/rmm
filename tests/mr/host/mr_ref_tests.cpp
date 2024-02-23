@@ -21,9 +21,8 @@
 #include <rmm/mr/host/new_delete_resource.hpp>
 #include <rmm/mr/host/pinned_memory_resource.hpp>
 
-#include <cuda_runtime_api.h>
-
 #include <cuda/memory_resource>
+#include <cuda_runtime_api.h>
 
 #include <gtest/gtest.h>
 
