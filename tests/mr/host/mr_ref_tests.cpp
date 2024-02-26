@@ -20,6 +20,7 @@
 #include <rmm/mr/host/host_memory_resource.hpp>
 #include <rmm/mr/host/new_delete_resource.hpp>
 #include <rmm/mr/host/pinned_memory_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
 #include <cuda_runtime_api.h>
@@ -72,7 +73,7 @@ struct allocation {
 template <typename MemoryResourceType>
 struct MRRefTest : public ::testing::Test {
   MemoryResourceType mr;
-  cuda::mr::resource_ref<cuda::mr::host_accessible> ref;
+  rmm::host_resource_ref ref;
 
   MRRefTest() : mr{}, ref{mr} {}
 };
@@ -248,7 +249,7 @@ TYPED_TEST(MRRefTest, UnsupportedAlignmentTest)
 TEST(PinnedResource, isPinned)
 {
   rmm::mr::pinned_memory_resource mr;
-  cuda::mr::resource_ref<cuda::mr::host_accessible> ref{mr};
+  rmm::host_resource_ref ref{mr};
   void* ptr{nullptr};
   EXPECT_NO_THROW(ptr = ref.allocate(100));
   EXPECT_TRUE(is_pinned_memory(ptr));

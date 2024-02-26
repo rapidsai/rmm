@@ -26,10 +26,42 @@ namespace rmm {
  */
 
 /**
+ * @brief Alias for a `cuda::mr::resource_ref` with the property
+ * `cuda::mr::device_accessible`.
+ */
+using device_resource_ref = cuda::mr::resource_ref<cuda::mr::device_accessible>;
+
+/**
  * @brief Alias for a `cuda::mr::async_resource_ref` with the property
  * `cuda::mr::device_accessible`.
  */
 using device_async_resource_ref = cuda::mr::async_resource_ref<cuda::mr::device_accessible>;
+
+/**
+ * @brief Alias for a `cuda::mr::resource_ref` with the property
+ * `cuda::mr::host_accessible`.
+ */
+using host_resource_ref = cuda::mr::resource_ref<cuda::mr::host_accessible>;
+
+/**
+ * @brief Alias for a `cuda::mr::async_resource_ref` with the property
+ * `cuda::mr::host_accessible`.
+ */
+using host_async_resource_ref = cuda::mr::async_resource_ref<cuda::mr::host_accessible>;
+
+/**
+ * @brief Alias for a `cuda::mr::resource_ref` with the properties
+ * `cuda::mr::host_accessible` and `cuda::mr::device_accessible`.
+ */
+using host_device_resource_ref =
+  cuda::mr::resource_ref<cuda::mr::host_accessible, cuda::mr::device_accessible>;
+
+/**
+ * @brief Alias for a `cuda::mr::async_resource_ref` with the properties
+ * `cuda::mr::host_accessible` and `cuda::mr::device_accessible`.
+ */
+using host_device_async_resource_ref =
+  cuda::mr::async_resource_ref<cuda::mr::host_accessible, cuda::mr::device_accessible>;
 
 /** @} */  // end of group
 }  // namespace rmm
