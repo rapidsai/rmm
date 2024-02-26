@@ -61,8 +61,9 @@
 #include <rmm/cuda_stream_view.hpp>
 
 // Google Benchmark library
-#include <benchmark/benchmark.h>
 #include <cuda_runtime_api.h>
+
+#include <benchmark/benchmark.h>
 
 class cuda_event_timer {
  public:

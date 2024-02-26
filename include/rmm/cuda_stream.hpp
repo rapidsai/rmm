@@ -16,13 +16,13 @@
 
 #pragma once
 
-#include <functional>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/logging_assert.hpp>
 
 #include <cuda_runtime_api.h>
 
+#include <functional>
 #include <memory>
 
 namespace rmm {

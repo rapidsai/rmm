@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-#include <benchmarks/utilities/cxxopts.hpp>
-
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream.hpp>
 #include <rmm/cuda_stream_pool.hpp>
@@ -31,6 +29,7 @@
 #include <cuda_runtime_api.h>
 
 #include <benchmark/benchmark.h>
+#include <benchmarks/utilities/cxxopts.hpp>
 
 #include <cstddef>
 

@@ -16,18 +16,18 @@
 
 #include "../../byte_literals.hpp"
 #include "../../mock_resource.hpp"
+
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/mr/device/callback_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
-#include <cstddef>
-
 #include <fmt/core.h>
-
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+
+#include <cstddef>
 
 namespace rmm::test {
 namespace {
