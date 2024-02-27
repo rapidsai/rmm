@@ -145,10 +145,10 @@ ConfigureTest(POLYMORPHIC_ALLOCATOR_TEST mr/device/polymorphic_allocator_tests.c
 ConfigureTest(STREAM_ADAPTOR_TEST mr/device/stream_allocator_adaptor_tests.cpp)
 
 # statistics adaptor tests
-ConfigureTest(STATISTICS_TEST mr/device/statistics_mr_tests.cpp)
+ConfigureTest(STATISTICS_TEST mr/device/statistics_mr_tests.cpp GPUS 1 PERCENT 100)
 
 # tracking adaptor tests
-ConfigureTest(TRACKING_TEST mr/device/tracking_mr_tests.cpp)
+ConfigureTest(TRACKING_TEST mr/device/tracking_mr_tests.cpp GPUS 1 PERCENT 100)
 
 # out-of-memory callback adaptor tests
 ConfigureTest(FAILURE_CALLBACK_TEST mr/device/failure_callback_mr_tests.cpp)
