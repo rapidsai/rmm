@@ -24,6 +24,7 @@
 #include <rmm/mr/device/detail/coalescing_free_list.hpp>
 #include <rmm/mr/device/detail/stream_ordered_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <cuda/std/type_traits>
 #include <cuda_runtime_api.h>
@@ -348,18 +349,17 @@ class pool_memory_resource final
   pool_memory_resource& operator=(pool_memory_resource&&)      = delete;
 
   /**
-   * @brief Get the upstream memory_resource object.
-   *
-   * @return const reference to the upstream memory resource.
+   * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
    */
-  [[nodiscard]] const Upstream& upstream_resource() const noexcept { return *upstream_mr_; }
+  [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
+  {
+    return upstream_mr_;
+  }
 
   /**
-   * @brief Get the upstream memory_resource object.
-   *
-   * @return UpstreamResource* the upstream memory resource.
+   * @briefreturn{Upstream* to the upstream memory resource}
    */
-  Upstream* get_upstream() const noexcept { return upstream_mr_; }
+  [[nodiscard]] Upstream* get_upstream() const noexcept { return upstream_mr_; }
 
   /**
    * @brief Computes the size of the current pool

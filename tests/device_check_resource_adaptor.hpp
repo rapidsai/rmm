@@ -17,6 +17,7 @@
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <gtest/gtest.h>
 
@@ -27,6 +28,17 @@ class device_check_resource_adaptor final : public rmm::mr::device_memory_resour
   {
   }
 
+  /**
+   * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
+   */
+  [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
+  {
+    return upstream_;
+  }
+
+  /**
+   * @briefreturn{device_memory_resource* to the upstream memory resource}
+   */
   [[nodiscard]] device_memory_resource* get_upstream() const noexcept { return upstream_; }
 
  private:
