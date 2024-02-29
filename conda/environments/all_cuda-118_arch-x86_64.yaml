@@ -26,13 +26,13 @@ dependencies:
 - nbsphinx
 - ninja
 - numba>=0.57
-- numpy>=1.21
+- numpy>=1.23
 - numpydoc
 - nvcc_linux-64=11.8
 - pre-commit
 - pytest
 - pytest-cov
-- python>=3.9,<3.11
+- python>=3.9,<3.12
 - scikit-build-core>=0.7.0
 - spdlog>=1.12.0,<1.13
 - sphinx
