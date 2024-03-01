@@ -93,7 +93,11 @@ class aligned_resource_adaptor final : public device_memory_resource {
   /**
    * @briefreturn{Upstream* to the upstream memory resource}
    */
-  [[nodiscard]] Upstream* get_upstream() const noexcept { return upstream_; }
+  [[deprecated("Use get_upstream_resource instead")]] [[nodiscard]] Upstream* get_upstream()
+    const noexcept
+  {
+    return upstream_;
+  }
 
   /**
    * @brief The default alignment used by the adaptor.
@@ -168,7 +172,8 @@ class aligned_resource_adaptor final : public device_memory_resource {
   {
     if (this == &other) { return true; }
     auto cast = dynamic_cast<aligned_resource_adaptor<Upstream> const*>(&other);
-    return cast != nullptr && upstream_->is_equal(*cast->get_upstream()) &&
+    if (cast == nullptr) { return false; }
+    return get_upstream_resource() == cast->get_upstream_resource() &&
            alignment_ == cast->alignment_ && alignment_threshold_ == cast->alignment_threshold_;
   }
 

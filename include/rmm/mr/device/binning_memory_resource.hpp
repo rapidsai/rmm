@@ -110,7 +110,11 @@ class binning_memory_resource final : public device_memory_resource {
   /**
    * @briefreturn{Upstream* to the upstream memory resource}
    */
-  [[nodiscard]] Upstream* get_upstream() const noexcept { return upstream_mr_; }
+  [[deprecated("Use get_upstream_resource instead")]] [[nodiscard]] Upstream* get_upstream()
+    const noexcept
+  {
+    return upstream_mr_;
+  }
 
   /**
    * @brief Add a bin allocator to this resource
@@ -151,11 +155,11 @@ class binning_memory_resource final : public device_memory_resource {
    * @param bytes Requested allocation size in bytes
    * @return rmm::mr::device_memory_resource& memory_resource that can allocate the requested size.
    */
-  device_memory_resource* get_resource(std::size_t bytes)
+  rmm::device_async_resource_ref get_resource_ref(std::size_t bytes)
   {
     auto iter = resource_bins_.lower_bound(bytes);
-    return (iter != resource_bins_.cend()) ? iter->second
-                                           : static_cast<device_memory_resource*>(get_upstream());
+    return (iter != resource_bins_.cend()) ? rmm::device_async_resource_ref{iter->second}
+                                           : get_upstream_resource();
   }
 
   /**
@@ -170,7 +174,7 @@ class binning_memory_resource final : public device_memory_resource {
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
     if (bytes <= 0) { return nullptr; }
-    return get_resource(bytes)->allocate(bytes, stream);
+    return get_resource_ref(bytes).allocate_async(bytes, stream);
   }
 
   /**
@@ -183,8 +187,7 @@ class binning_memory_resource final : public device_memory_resource {
    */
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
-    auto res = get_resource(bytes);
-    if (res != nullptr) { res->deallocate(ptr, bytes, stream); }
+    get_resource_ref(bytes).deallocate_async(ptr, bytes, stream);
   }
 
   Upstream* upstream_mr_;  // The upstream memory_resource from which to allocate blocks.

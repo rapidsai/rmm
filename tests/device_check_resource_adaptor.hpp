@@ -39,7 +39,11 @@ class device_check_resource_adaptor final : public rmm::mr::device_memory_resour
   /**
    * @briefreturn{device_memory_resource* to the upstream memory resource}
    */
-  [[nodiscard]] device_memory_resource* get_upstream() const noexcept { return upstream_; }
+  [[deprecated("Use get_upstream_resource instead")]] [[nodiscard]] device_memory_resource*
+  get_upstream() const noexcept
+  {
+    return upstream_;
+  }
 
  private:
   [[nodiscard]] bool check_device_id() const { return device_id == rmm::get_current_cuda_device(); }
@@ -64,8 +68,8 @@ class device_check_resource_adaptor final : public rmm::mr::device_memory_resour
   {
     if (this == &other) { return true; }
     auto const* cast = dynamic_cast<device_check_resource_adaptor const*>(&other);
-    if (cast != nullptr) { return upstream_->is_equal(*cast->get_upstream()); }
-    return upstream_->is_equal(other);
+    if (cast == nullptr) { return upstream_->is_equal(other); }
+    return get_upstream_resource() == cast->get_upstream_resource();
   }
 
   rmm::cuda_device_id device_id;

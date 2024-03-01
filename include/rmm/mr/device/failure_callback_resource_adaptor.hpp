@@ -131,7 +131,11 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
   /**
    * @briefreturn{Upstream* to the upstream memory resource}
    */
-  [[nodiscard]] Upstream* get_upstream() const noexcept { return upstream_; }
+  [[deprecated("Use get_upstream_resource instead")]] [[nodiscard]] Upstream* get_upstream()
+    const noexcept
+  {
+    return upstream_;
+  }
 
  private:
   /**
@@ -183,8 +187,8 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
   {
     if (this == &other) { return true; }
     auto cast = dynamic_cast<failure_callback_resource_adaptor<Upstream> const*>(&other);
-    return cast != nullptr ? upstream_->is_equal(*cast->get_upstream())
-                           : upstream_->is_equal(other);
+    if (cast == nullptr) { return upstream_->is_equal(other); }
+    return get_upstream_resource() == cast->get_upstream_resource();
   }
 
   Upstream* upstream_;  // the upstream resource used for satisfying allocation requests
