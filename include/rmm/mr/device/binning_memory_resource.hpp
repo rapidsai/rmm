@@ -110,11 +110,7 @@ class binning_memory_resource final : public device_memory_resource {
   /**
    * @briefreturn{Upstream* to the upstream memory resource}
    */
-  [[deprecated("Use get_upstream_resource instead")]] [[nodiscard]] Upstream* get_upstream()
-    const noexcept
-  {
-    return upstream_mr_;
-  }
+  [[nodiscard]] Upstream* get_upstream() const noexcept { return upstream_mr_; }
 
   /**
    * @brief Add a bin allocator to this resource

@@ -93,11 +93,7 @@ class aligned_resource_adaptor final : public device_memory_resource {
   /**
    * @briefreturn{Upstream* to the upstream memory resource}
    */
-  [[deprecated("Use get_upstream_resource instead")]] [[nodiscard]] Upstream* get_upstream()
-    const noexcept
-  {
-    return upstream_;
-  }
+  [[nodiscard]] Upstream* get_upstream() const noexcept { return upstream_; }
 
   /**
    * @brief The default alignment used by the adaptor.

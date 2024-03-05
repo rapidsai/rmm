@@ -107,11 +107,7 @@ class fixed_size_memory_resource
   /**
    * @briefreturn{Upstream* to the upstream memory resource}
    */
-  [[deprecated("Use get_upstream_resource instead")]] [[nodiscard]] Upstream* get_upstream()
-    const noexcept
-  {
-    return upstream_mr_;
-  }
+  [[nodiscard]] Upstream* get_upstream() const noexcept { return upstream_mr_; }
 
   /**
    * @brief Get the size of blocks allocated by this memory resource.
