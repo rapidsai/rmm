@@ -31,7 +31,9 @@ RMM_VERSION = Version(rmm.__version__)
 # The short X.Y version.
 version = f"{RMM_VERSION.major:02}.{RMM_VERSION.minor:02}"
 # The full version, including alpha/beta/rc tags.
-release = f"{RMM_VERSION.major:02}.{RMM_VERSION.minor:02}.{RMM_VERSION.micro:02}"
+release = (
+    f"{RMM_VERSION.major:02}.{RMM_VERSION.minor:02}.{RMM_VERSION.micro:02}"
+)
 
 
 # -- General configuration ---------------------------------------------------
