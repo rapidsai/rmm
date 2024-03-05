@@ -14,7 +14,7 @@
 
 cmake_minimum_required(VERSION 3.26.4 FATAL_ERROR)
 
-include(fetch_rapids.cmake)
+include(rapids_config.cmake)
 
 include(rapids-cmake)
 include(rapids-cpm)
@@ -23,7 +23,7 @@ include(rapids-find)
 
 project(
   RMM
-  VERSION 24.04.00
+  VERSION "${RAPIDS_VERSION}"
   LANGUAGES CXX)
 
 # Write the version header

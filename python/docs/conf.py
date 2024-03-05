@@ -13,6 +13,10 @@
 import os
 import re
 
+from packaging.version import Version
+
+import rmm
+
 # -- Project information -----------------------------------------------------
 
 project = "rmm"
@@ -23,10 +27,11 @@ author = "NVIDIA"
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
+RMM_VERSION = Version(rmm.__version__)
 # The short X.Y version.
-version = "24.04"
+version = f"{RMM_VERSION.major:02}.{RMM_VERSION.minor:02}"
 # The full version, including alpha/beta/rc tags.
-release = "24.04.00"
+release = f"{RMM_VERSION.major:02}.{RMM_VERSION.minor:02}.{RMM_VERSION.micro:02}"
 
 
 # -- General configuration ---------------------------------------------------
