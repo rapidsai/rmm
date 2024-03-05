@@ -32,7 +32,8 @@ from libcpp.string cimport string
 from cuda.cudart import cudaError_t
 
 from rmm._cuda.gpu import CUDARuntimeError, getDevice, setDevice
-
+from rmm._cuda.stream cimport Stream
+from rmm._cuda.stream import DEFAULT_STREAM
 from rmm._lib.cuda_stream_view cimport cuda_stream_view
 from rmm._lib.per_device_resource cimport (
     cuda_device_id,
@@ -130,8 +131,8 @@ cdef extern from "rmm/mr/device/fixed_size_memory_resource.hpp" \
 
 cdef extern from "rmm/mr/device/callback_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
-    ctypedef void* (*allocate_callback_t)(size_t, void*)
-    ctypedef void (*deallocate_callback_t)(void*, size_t, void*)
+    ctypedef void* (*allocate_callback_t)(size_t, cuda_stream_view, void*)
+    ctypedef void (*deallocate_callback_t)(void*, size_t, cuda_stream_view, void*)
 
     cdef cppclass callback_memory_resource(device_memory_resource):
         callback_memory_resource(
@@ -221,17 +222,19 @@ cdef class DeviceMemoryResource:
         """Get the underlying C++ memory resource object."""
         return self.c_obj.get()
 
-    def allocate(self, size_t nbytes):
+    def allocate(self, size_t nbytes, Stream stream=DEFAULT_STREAM):
         """Allocate ``nbytes`` bytes of memory.
 
         Parameters
         ----------
         nbytes : size_t
             The size of the allocation in bytes
+        stream : Stream
+            Optional stream for the allocation
         """
-        return <uintptr_t>self.c_obj.get().allocate(nbytes)
+        return <uintptr_t>self.c_obj.get().allocate(nbytes, stream.view())
 
-    def deallocate(self, uintptr_t ptr, size_t nbytes):
+    def deallocate(self, uintptr_t ptr, size_t nbytes, Stream stream=DEFAULT_STREAM):
         """Deallocate memory pointed to by ``ptr`` of size ``nbytes``.
 
         Parameters
@@ -240,8 +243,10 @@ cdef class DeviceMemoryResource:
             Pointer to be deallocated
         nbytes : size_t
             Size of the allocation in bytes
+        stream : Stream
+            Optional stream for the deallocation
         """
-        self.c_obj.get().deallocate(<void*>(ptr), nbytes)
+        self.c_obj.get().deallocate(<void*>(ptr), nbytes, stream.view())
 
 
 # See the note about `no_gc_clear` in `device_buffer.pyx`.
@@ -561,7 +566,10 @@ cdef void* _allocate_callback_wrapper(
     cdef CppExcept err
     with gil:
         try:
-            return <void*><uintptr_t>((<object>ctx)(nbytes))
+            return <void*><uintptr_t>((<object>ctx)(
+                nbytes,
+                Stream._from_cudaStream_t(stream.value())
+            ))
         except BaseException as e:
             err = translate_python_except_to_cpp(e)
     throw_cpp_except(err)
@@ -572,7 +580,7 @@ cdef void _deallocate_callback_wrapper(
     cuda_stream_view stream,
     void* ctx
 ) except * with gil:
-    (<object>ctx)(<uintptr_t>(ptr), nbytes)
+    (<object>ctx)(<uintptr_t>(ptr), nbytes, Stream._from_cudaStream_t(stream.value()))
 
 
 cdef class CallbackMemoryResource(DeviceMemoryResource):
@@ -588,25 +596,27 @@ cdef class CallbackMemoryResource(DeviceMemoryResource):
     Parameters
     ----------
     allocate_func: callable
-        The allocation function must accept a single integer argument,
-        representing the number of bytes to allocate, and return an
-        integer representing the pointer to the allocated memory.
+        The allocation function must accept two arguments. An integer
+        representing the number of bytes to allocate and a Stream on
+        which to perform the allocation, and return an integer
+        representing the pointer to the allocated memory.
     deallocate_func: callable
-        The deallocation function must accept two arguments, an integer
-        representing the pointer to the memory to free, and a second
-        integer representing the number of bytes to free.
+        The deallocation function must accept three arguments. an integer
+        representing the pointer to the memory to free, a second
+        integer representing the number of bytes to free, and a Stream
+        on which to perform the deallocation.
 
     Examples
     --------
     >>> import rmm
     >>> base_mr = rmm.mr.CudaMemoryResource()
-    >>> def allocate_func(size):
+    >>> def allocate_func(size, stream):
     ...     print(f"Allocating {size} bytes")
-    ...     return base_mr.allocate(size)
+    ...     return base_mr.allocate(size, stream)
     ...
-    >>> def deallocate_func(ptr, size):
+    >>> def deallocate_func(ptr, size, stream):
     ...     print(f"Deallocating {size} bytes")
-    ...     return base_mr.deallocate(ptr, size)
+    ...     return base_mr.deallocate(ptr, size, stream)
     ...
     >>> rmm.mr.set_current_device_resource(
         rmm.mr.CallbackMemoryResource(allocate_func, deallocate_func)
