@@ -209,7 +209,15 @@ def on_missing_reference(app, env, node, contnode):
         # generates. Adding those would clutter the Sphinx output.
         return contnode
 
-    names_to_skip = [
+    python_names_to_skip = [x for x in dir(int) if not x.startswith("__")]
+    if (
+        node["refdomain"] == "py"
+        and (reftarget := node.get("reftarget")) is not None
+        and any(toskip in reftarget for toskip in python_names_to_skip)
+    ):
+        return contnode
+
+    cpp_names_to_skip = [
         # External names
         "cudaStream_t",
         "cudaStreamLegacy",
@@ -241,7 +249,7 @@ def on_missing_reference(app, env, node, contnode):
         node["refdomain"] == "cpp"
         and (reftarget := node.get("reftarget")) is not None
     ):
-        if any(toskip in reftarget for toskip in names_to_skip):
+        if any(toskip in reftarget for toskip in cpp_names_to_skip):
             return contnode
 
         # Strip template parameters and just use the base type.
