@@ -121,9 +121,12 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
   }
 
   /**
-   * @briefreturn{The resource used to allocate and deallocate}
+   * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
    */
-  [[nodiscard]] rmm::device_async_resource_ref memory_resource() const noexcept { return _mr; }
+  [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
+  {
+    return _mr;
+  }
 
   /**
    * @briefreturn{The stream used by this allocator}

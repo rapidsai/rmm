@@ -19,6 +19,7 @@
 #include <rmm/detail/stack_trace.hpp>
 #include <rmm/logger.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <fmt/core.h>
 
@@ -106,9 +107,17 @@ class tracking_resource_adaptor final : public device_memory_resource {
     default;  ///< @default_move_assignment{tracking_resource_adaptor}
 
   /**
-   * @briefreturn{Pointer to the upstream resource}
+   * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
    */
-  Upstream* get_upstream() const noexcept { return upstream_; }
+  [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
+  {
+    return upstream_;
+  }
+
+  /**
+   * @briefreturn{Upstream* to the upstream memory resource}
+   */
+  [[nodiscard]] Upstream* get_upstream() const noexcept { return upstream_; }
 
   /**
    * @brief Get the outstanding allocations map
