@@ -4,7 +4,7 @@ channels:
 - rapidsai
 - conda-forge
 dependencies:
-- breathe
+- breathe>=4.35.0
 - c-compiler
 - clang-tools==16.0.6
 - clang==16.0.6
