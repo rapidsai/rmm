@@ -173,7 +173,7 @@ rapids_export(
 add_custom_command(
   OUTPUT RMM_DOXYGEN
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/doxygen
-  COMMAND doxygen Doxyfile
+  COMMAND ${CMAKE_COMMAND} -E env "RAPIDS_VERSION=${RAPIDS_VERSION}" "RAPIDS_VERSION_MAJOR_MINOR=${RAPIDS_VERSION_MAJOR_MINOR}" doxygen Doxyfile
   VERBATIM
   COMMENT "Custom command for RMM doxygen docs")
 

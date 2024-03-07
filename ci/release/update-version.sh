@@ -35,9 +35,6 @@ function sed_runner() {
 # Centralized version file update
 echo "${NEXT_FULL_TAG}" > VERSION
 
-# doxyfile update
-sed_runner 's/'"PROJECT_NUMBER         = .*"'/'"PROJECT_NUMBER         = ${NEXT_SHORT_TAG}"'/g' doxygen/Doxyfile
-
 # CI files
 for FILE in .github/workflows/*.yaml; do
   sed_runner "/shared-workflows/ s/@.*/@branch-${NEXT_SHORT_TAG}/g" "${FILE}"
