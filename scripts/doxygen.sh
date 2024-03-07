@@ -21,8 +21,8 @@ if [ ! $(version "$DOXYGEN_VERSION") -eq $(version "1.9.1") ] ; then
   exit 0
 fi
 
-export RAPIDS_VERSION="$(sed -E -e 's/^([0-9]{2})\.([0-9]{2})\.([0-9]{2}).*$/\1.\2.\3/')"
-export RAPIDS_VERSION_MAJOR_MINOR="$(sed -E -e 's/^([0-9]{2})\.([0-9]{2})\.([0-9]{2}).*$/\1.\2/')"
+export RAPIDS_VERSION="$(sed -E -e 's/^([0-9]{2})\.([0-9]{2})\.([0-9]{2}).*$/\1.\2.\3/' VERSION)"
+export RAPIDS_VERSION_MAJOR_MINOR="$(sed -E -e 's/^([0-9]{2})\.([0-9]{2})\.([0-9]{2}).*$/\1.\2/' VERSION)"
 
 # Run doxygen, ignore missing tag files error
 TAG_ERROR1="error: Tag file '.*.tag' does not exist or is not a file. Skipping it..."
