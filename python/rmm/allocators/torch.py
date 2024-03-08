@@ -25,7 +25,7 @@ else:
         import pathlib
 
         # To support editable installs, we cannot search for the compiled torch
-        # allocator so relative to the current file because the current files
+        # allocator .so relative to the current file because the current file
         # is pure Python and will therefore be in the source directory.
         # Instead, we search relative to an arbitrary file in the compiled
         # package. We use the _lib.lib module because it is small.
