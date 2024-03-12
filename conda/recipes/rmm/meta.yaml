@@ -73,7 +73,7 @@ requirements:
     {% endif %}
     - {{ pin_compatible('cuda-version', max_pin='x', min_pin='x') }}
     - numba >=0.57
-    - numpy >=1.23
+    - numpy >=1.23,<2.0a0
 
 test:
   imports:
