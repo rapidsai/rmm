@@ -13,6 +13,7 @@ files:
       - develop
       - docs
       - py_version
+      - rapids_build
       - run
       - test_python
   test_python:
@@ -42,6 +43,13 @@ files:
     extras:
       table: build-system
     includes:
+      - rapids_build
+  py_rapids_build:
+    output: pyproject
+    extras:
+      table: tool.rapids_builder
+      key: requires
+    includes:
       - build
   py_run:
     output: pyproject
@@ -60,6 +68,16 @@ channels:
   - rapidsai
   - conda-forge
 dependencies:
+  rapids_build:
+    common:
+      - output_types: conda
+        packages:
+          # TODO: Enable once packages are available
+          #- rapids-build-backend
+          - scikit-build-core>=0.7.0
+      - output_types: [requirements, pyproject]
+        packages:
+          - rapids-build-backend[scikit-build-core]
   build:
     common:
       - output_types: [conda, requirements, pyproject]
@@ -72,11 +90,7 @@ dependencies:
           - c-compiler
           - cxx-compiler
           - fmt>=10.1.1,<11
-          - scikit-build-core>=0.7.0
           - spdlog>=1.12.0,<1.13
-      - output_types: [requirements, pyproject]
-        packages:
-          - scikit-build-core[pyproject]>=0.7.0
     specific:
       - output_types: conda
         matrices:

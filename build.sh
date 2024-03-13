@@ -161,6 +161,12 @@ if hasArg clean; then
     done
 fi
 
+# For testing, will be removed when the package is released
+git clone https://github.com/rapidsai/rapids-build-backend.git
+pushd rapids-build-backend
+python -m pip wheel . --no-deps
+popd
+
 ################################################################################
 # Configure, build, and install librmm
 if (( NUMARGS == 0 )) || hasArg librmm; then
