@@ -101,7 +101,8 @@ TEST(TrackingTest, AllocationsLeftWithoutStacks)
 
 TEST(TrackingTest, MultiTracking)
 {
-  tracking_adaptor mr{rmm::mr::get_current_device_resource(), true};
+  auto* orig_device_resource = rmm::mr::get_current_device_resource();
+  tracking_adaptor mr{orig_device_resource, true};
   rmm::mr::set_current_device_resource(&mr);
 
   std::vector<std::shared_ptr<rmm::device_buffer>> allocations;
@@ -140,7 +141,7 @@ TEST(TrackingTest, MultiTracking)
   EXPECT_EQ(inner_mr.get_allocated_bytes(), 0);
 
   // Reset the current device resource
-  rmm::mr::set_current_device_resource(mr.get_upstream());
+  rmm::mr::set_current_device_resource(orig_device_resource);
 }
 
 TEST(TrackingTest, NegativeInnerTracking)

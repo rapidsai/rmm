@@ -135,15 +135,6 @@ TYPED_TEST(AdaptorTest, Equality)
   }
 }
 
-TYPED_TEST(AdaptorTest, GetUpstream)
-{
-  if constexpr (std::is_same_v<TypeParam, owning_wrapper>) {
-    EXPECT_TRUE(this->mr->wrapped().get_upstream()->is_equal(this->cuda));
-  } else {
-    EXPECT_TRUE(this->mr->get_upstream()->is_equal(this->cuda));
-  }
-}
-
 TYPED_TEST(AdaptorTest, GetUpstreamResource)
 {
   rmm::device_async_resource_ref expected{this->cuda};

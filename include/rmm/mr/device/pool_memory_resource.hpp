@@ -503,7 +503,7 @@ class pool_memory_resource final
     if (size == 0) { return {}; }
 
     try {
-      void* ptr = get_upstream()->allocate_async(size, stream);
+      void* ptr = get_upstream_resource().allocate_async(size, stream);
       return std::optional<block_type>{
         *upstream_blocks_.emplace(static_cast<char*>(ptr), size, true).first};
     } catch (std::exception const& e) {
@@ -570,7 +570,7 @@ class pool_memory_resource final
     lock_guard lock(this->get_mutex());
 
     for (auto block : upstream_blocks_) {
-      get_upstream()->deallocate(block.pointer(), block.size());
+      get_upstream_resource().deallocate(block.pointer(), block.size());
     }
     upstream_blocks_.clear();
 #ifdef RMM_POOL_TRACK_ALLOCATIONS
