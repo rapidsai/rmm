@@ -162,8 +162,8 @@ class limiting_resource_adaptor final : public device_memory_resource {
   {
     if (this == &other) { return true; }
     auto const* cast = dynamic_cast<limiting_resource_adaptor<Upstream> const*>(&other);
-    if (cast != nullptr) { return upstream_->is_equal(*cast->get_upstream()); }
-    return upstream_->is_equal(other);
+    if (cast == nullptr) { return upstream_->is_equal(other); }
+    return get_upstream_resource() == cast->get_upstream_resource();
   }
 
   // maximum bytes this allocator is allowed to allocate.

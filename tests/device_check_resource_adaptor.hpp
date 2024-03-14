@@ -64,8 +64,8 @@ class device_check_resource_adaptor final : public rmm::mr::device_memory_resour
   {
     if (this == &other) { return true; }
     auto const* cast = dynamic_cast<device_check_resource_adaptor const*>(&other);
-    if (cast != nullptr) { return upstream_->is_equal(*cast->get_upstream()); }
-    return upstream_->is_equal(other);
+    if (cast == nullptr) { return upstream_->is_equal(other); }
+    return get_upstream_resource() == cast->get_upstream_resource();
   }
 
   rmm::cuda_device_id device_id;
