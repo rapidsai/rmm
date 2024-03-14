@@ -149,7 +149,7 @@ class binning_memory_resource final : public device_memory_resource {
    * Chooses a memory_resource that allocates the smallest blocks at least as large as `bytes`.
    *
    * @param bytes Requested allocation size in bytes
-   * @return rmm::mr::device_memory_resource& memory_resource that can allocate the requested size.
+   * @return Get the resource reference for the requested size.
    */
   rmm::device_async_resource_ref get_resource_ref(std::size_t bytes)
   {
