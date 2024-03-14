@@ -13,7 +13,7 @@ files:
       - develop
       - docs
       - py_version
-      - rapids_build
+      - rapids_build_backend
       - run
       - test_python
   test_python:
@@ -43,11 +43,11 @@ files:
     extras:
       table: build-system
     includes:
-      - rapids_build
+      - rapids_build_backend
   py_rapids_build:
     output: pyproject
     extras:
-      table: tool.rapids_builder
+      table: tool.rapids_build_backend
       key: requires
     includes:
       - build
@@ -68,14 +68,14 @@ channels:
   - rapidsai
   - conda-forge
 dependencies:
-  rapids_build:
+  rapids_build_backend:
     common:
       - output_types: conda
         packages:
           # TODO: Enable once packages are available
           #- rapids-build-backend
           - scikit-build-core>=0.7.0
-      - output_types: [requirements, pyproject]
+      - output_types: pyproject # TODO: Enable requirements once packages are available
         packages:
           - rapids-build-backend[scikit-build-core]
   build:
