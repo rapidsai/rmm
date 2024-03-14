@@ -47,7 +47,7 @@ files:
   py_rapids_build:
     output: pyproject
     extras:
-      table: tool.rapids_build_backend
+      table: tool.rapids-build-backend
       key: requires
     includes:
       - build
