@@ -75,10 +75,6 @@ dependencies:
           # TODO: Enable once packages are available
           #- rapids-build-backend
           - scikit-build-core>=0.7.0
-      # TODO: Enable once packages are available
-      #- output_types: [requirements, pyproject]
-      #  packages:
-      #    - rapids-build-backend[scikit-build-core]
   build:
     common:
       - output_types: [conda, requirements, pyproject]

@@ -13,7 +13,7 @@ version=$(rapids-generate-version)
 echo "${version}" > VERSION
 
 if rapids-is-release-build; then
-    export RAPIDS_ONLY_RELEASE_DEPS=1
+    export RAPIDS_ALLOW_NIGHTLY_DEPS=0
 fi
 
 # Need to manually patch the cuda-python version for CUDA 12.
