@@ -70,10 +70,10 @@ channels:
 dependencies:
   rapids_build_backend:
     common:
-      # TODO: Enable once packages are available
-      #- output_types: [conda, requirements, pyproject]
-      #  packages:
-      #    - rapids-build-backend
+      # TODO: Enable all output types once packages are available
+      - output_types: pyproject # [conda, requirements, pyproject]
+        packages:
+          - rapids-build-backend
       - output_types: conda
         packages:
           - scikit-build-core>=0.7.0
