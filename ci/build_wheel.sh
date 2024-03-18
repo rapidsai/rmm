@@ -24,13 +24,7 @@ fi
 
 cd "${package_dir}"
 
-# For testing, will be removed when the package is released
-git clone https://github.com/rapidsai/rapids-build-backend.git
-pushd rapids-build-backend
-python -m pip wheel . --no-deps
-popd
-
-PIP_FIND_LINKS="file://${PWD}/rapids-build-backend/" python -m pip wheel . -w dist -vvv --no-deps --disable-pip-version-check
+python -m pip wheel . -w dist -vvv --no-deps --disable-pip-version-check
 
 mkdir -p final_dist
 python -m auditwheel repair -w final_dist dist/*
