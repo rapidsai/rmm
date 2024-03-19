@@ -15,6 +15,9 @@ rapids-print-env
 
 version=$(rapids-generate-version)
 
+PARALLEL_LEVEL="$(nproc)"
+export PARALLEL_LEVEL
+
 rapids-logger "Begin cpp build"
 
 # This calls mambabuild when boa is installed (as is the case in the CI images)
