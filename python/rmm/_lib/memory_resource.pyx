@@ -113,6 +113,10 @@ cdef extern from "rmm/cuda_device.hpp" namespace "rmm" nogil:
     size_t percent_of_free_device_memory(int percent) except +
 
 cdef extern from "rmm/mr/device/pool_memory_resource.hpp" \
+        namespace "rmm::mr::detail" nogil:
+    ctypedef bool (*expand_callback_t)(size_t, void*)
+
+cdef extern from "rmm/mr/device/pool_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass pool_memory_resource[Upstream](device_memory_resource):
         pool_memory_resource(
@@ -120,6 +124,7 @@ cdef extern from "rmm/mr/device/pool_memory_resource.hpp" \
             size_t initial_pool_size,
             optional[size_t] maximum_pool_size) except +
         size_t pool_size()
+        void set_expand_callback(expand_callback_t func, void* args) except +
 
 cdef extern from "rmm/mr/device/fixed_size_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
@@ -214,6 +219,19 @@ cdef extern from "rmm/mr/device/failure_callback_resource_adaptor.hpp" \
             failure_callback_t callback,
             void* callback_arg
         ) except +
+
+
+# Note that this function is specifically designed to rethrow Python exceptions
+# as C++ exceptions when called as a callback from C++, so it is noexcept from
+# Cython's perspective.
+cdef bool _retry_callback_function(size_t nbytes, void *callback_arg) noexcept nogil:
+    cdef CppExcept err
+    with gil:
+        try:
+            return (<object>callback_arg)(nbytes)
+        except BaseException as e:
+            err = translate_python_except_to_cpp(e)
+    throw_cpp_except(err)
 
 
 cdef class DeviceMemoryResource:
@@ -413,6 +431,16 @@ cdef class PoolMemoryResource(UpstreamResourceAdaptor):
             <pool_memory_resource[device_memory_resource]*>(self.get_mr())
         )
         return c_mr.pool_size()
+
+    def set_expand_callback(self, object callback):
+        cdef pool_memory_resource[device_memory_resource]* c_mr = (
+            <pool_memory_resource[device_memory_resource]*>(self.get_mr())
+        )
+        self._callback = callback
+        c_mr.set_expand_callback(
+            <expand_callback_t>_retry_callback_function,
+            <void*>callback
+        )
 
 cdef class FixedSizeMemoryResource(UpstreamResourceAdaptor):
     def __cinit__(
@@ -892,19 +920,6 @@ cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
             self.c_obj.get()))[0].log_outstanding_allocations()
 
 
-# Note that this function is specifically designed to rethrow Python exceptions
-# as C++ exceptions when called as a callback from C++, so it is noexcept from
-# Cython's perspective.
-cdef bool _oom_callback_function(size_t bytes, void *callback_arg) noexcept nogil:
-    cdef CppExcept err
-    with gil:
-        try:
-            return (<object>callback_arg)(bytes)
-        except BaseException as e:
-            err = translate_python_except_to_cpp(e)
-    throw_cpp_except(err)
-
-
 cdef class FailureCallbackResourceAdaptor(UpstreamResourceAdaptor):
 
     def __cinit__(
@@ -916,7 +931,7 @@ cdef class FailureCallbackResourceAdaptor(UpstreamResourceAdaptor):
         self.c_obj.reset(
             new failure_callback_resource_adaptor[device_memory_resource](
                 upstream_mr.get_mr(),
-                <failure_callback_t>_oom_callback_function,
+                <failure_callback_t>_retry_callback_function,
                 <void*>callback
             )
         )

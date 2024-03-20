@@ -32,6 +32,8 @@
 
 namespace rmm::mr::detail {
 
+using expand_callback_t = std::function<bool(std::size_t, void*)>;
+
 /**
  * @brief A CRTP helper function
  *
@@ -80,6 +82,12 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
   stream_ordered_memory_resource(stream_ordered_memory_resource&&)                 = delete;
   stream_ordered_memory_resource& operator=(stream_ordered_memory_resource const&) = delete;
   stream_ordered_memory_resource& operator=(stream_ordered_memory_resource&&)      = delete;
+
+  void set_expand_callback(expand_callback_t func, void* args)
+  {
+    expand_callback_      = func;
+    expand_callback_args_ = args;
+  }
 
  protected:
   using free_list  = FreeListType;
@@ -203,7 +211,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
 
     if (size <= 0) { return nullptr; }
 
-    lock_guard lock(mtx_);
+    // lock_guard lock(mtx_);
 
     auto stream_event = get_event(stream);
 
@@ -236,7 +244,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
 
     if (size <= 0 || ptr == nullptr) { return; }
 
-    lock_guard lock(mtx_);
+    // lock_guard lock(mtx_);
     auto stream_event = get_event(stream);
 
     size             = rmm::align_up(size, rmm::CUDA_ALLOCATION_ALIGNMENT);
@@ -318,14 +326,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     return allocated;
   }
 
-  /**
-   * @brief Get an available memory block of at least `size` bytes
-   *
-   * @param size The number of bytes to allocate
-   * @param stream_event The stream and associated event on which the allocation will be used.
-   * @return block_type A block of memory of at least `size` bytes
-   */
-  block_type get_block(std::size_t size, stream_event_pair stream_event)
+  block_type get_block_no_expand(std::size_t size, stream_event_pair stream_event)
   {
     // Try to find a satisfactory block in free list for the same stream (no sync required)
     auto iter = stream_free_blocks_.find(stream_event);
@@ -344,13 +345,39 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     }
 
     // no large enough blocks available on other streams, so sync and merge until we find one
+    return get_block_from_other_stream(size, stream_event, blocks, true);
+  }
+
+  /**
+   * @brief Get an available memory block of at least `size` bytes
+   *
+   * @param size The number of bytes to allocate
+   * @param stream_event The stream and associated event on which the allocation will be used.
+   * @return block_type A block of memory of at least `size` bytes
+   */
+  block_type get_block(std::size_t size, stream_event_pair stream_event)
+  {
     {
-      block_type const block = get_block_from_other_stream(size, stream_event, blocks, true);
+      block_type const block = get_block_no_expand(size, stream_event);
       if (block.is_valid()) { return block; }
     }
 
-    log_summary_trace();
+    // std::cout << "get_block(no free blocks) - size: " << size << std::endl;
+    if (expand_callback_.has_value()) {
+      while (expand_callback_.value()(size, expand_callback_args_)) {
+        // Let's try one more time
+        // std::cout << "get_block_no_expand() - size: " << size << std::endl;
+        block_type const block = get_block_no_expand(size, stream_event);
+        if (block.is_valid()) { return block; }
+      }
+    }
 
+    auto iter = stream_free_blocks_.find(stream_event);
+    free_list& blocks =
+      (iter != stream_free_blocks_.end()) ? iter->second : stream_free_blocks_[stream_event];
+
+    log_summary_trace();
+    // std::cout << "get_block(spilling didn't help) - size: " << size << std::endl;
     // no large enough blocks available after merging, so grow the pool
     block_type const block =
       this->underlying().expand_pool(size, blocks, cuda_stream_view{stream_event.stream});
@@ -488,6 +515,10 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
   std::mutex mtx_;  // mutex for thread-safe access
 
   rmm::cuda_device_id device_id_{rmm::get_current_cuda_device()};
+
+  std::optional<expand_callback_t> expand_callback_;
+  void* expand_callback_args_ = nullptr;
+
 };  // namespace detail
 
 }  // namespace rmm::mr::detail
