@@ -66,6 +66,7 @@ files:
       - test_python
 channels:
   - rapidsai
+  - rapidsai-nightly
   - conda-forge
 dependencies:
   rapids_build_backend:
