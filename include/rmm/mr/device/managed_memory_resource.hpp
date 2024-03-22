@@ -62,6 +62,14 @@ class managed_memory_resource final : public device_memory_resource {
 
     void* ptr{nullptr};
     RMM_CUDA_TRY_ALLOC(cudaMallocManaged(&ptr, bytes));
+
+    static bool has_not_prefetched_once_before = true;
+    if (has_not_prefetched_once_before) {
+      has_not_prefetched_once_before = false;
+      std::cout << "do_allocate(managed) - prefetched to device bytes: " << bytes << std::endl;
+      RMM_CUDA_TRY_ALLOC(
+        cudaMemPrefetchAsync(ptr, bytes, get_current_cuda_device().value(), stream));
+    }
     return ptr;
   }
 
