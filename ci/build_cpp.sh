@@ -16,6 +16,7 @@ rapids-print-env
 version=$(rapids-generate-version)
 
 rapids-logger "Begin cpp build"
+conda config --set path_conflict prevent
 
 # This calls mambabuild when boa is installed (as is the case in the CI images)
 RAPIDS_PACKAGE_VERSION=${version} rapids-conda-retry mambabuild conda/recipes/librmm
