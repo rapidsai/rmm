@@ -37,8 +37,13 @@ nvidia-smi
 # Run librmm gtests from librmm-tests package
 rapids-logger "Run gtests"
 
+set +e
+
 export GTEST_OUTPUT=xml:${RAPIDS_TESTS_DIR}/
 ./ci/run_ctests.sh -j20 && EXITCODE=$? || EXITCODE=$?;
+
+
+sleep 10h
 
 rapids-logger "Test script exiting with value: $EXITCODE"
 exit ${EXITCODE}
