@@ -25,6 +25,7 @@ sed -i "/^__git_commit__/ s/= .*/= \"${commit}\"/g" "${package_dir}/${package_na
 rapids-logger "Begin py build"
 
 CPP_CHANNEL=$(rapids-download-conda-from-s3 cpp)
+conda config --set path_conflict prevent
 
 # This calls mambabuild when boa is installed (as is the case in the CI images)
 RAPIDS_PACKAGE_VERSION=${version} rapids-conda-retry mambabuild -c "${CPP_CHANNEL}" conda/recipes/rmm
