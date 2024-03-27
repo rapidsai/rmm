@@ -51,6 +51,7 @@ cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
     pass
 
 cdef class PoolMemoryResource(UpstreamResourceAdaptor):
+    cdef object _callback
     pass
 
 cdef class FixedSizeMemoryResource(UpstreamResourceAdaptor):
