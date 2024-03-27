@@ -20,13 +20,13 @@
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/exec_check_disable.hpp>
 #include <rmm/device_buffer.hpp>
-#include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
+#include <rmm/resource_ref.hpp>
+
+#include <cuda/memory_resource>
 
 #include <cstddef>
 #include <vector>
-
-#include <cuda/memory_resource>
 
 namespace rmm {
 /**
@@ -74,7 +74,6 @@ namespace rmm {
  */
 template <typename T>
 class device_uvector {
-  using async_resource_ref = cuda::mr::async_resource_ref<cuda::mr::device_accessible>;
   static_assert(std::is_trivially_copyable<T>::value,
                 "device_uvector only supports types that are trivially copyable.");
 
@@ -126,7 +125,7 @@ class device_uvector {
    */
   explicit device_uvector(std::size_t size,
                           cuda_stream_view stream,
-                          async_resource_ref mr = rmm::mr::get_current_device_resource())
+                          device_async_resource_ref mr = mr::get_current_device_resource())
     : _storage{elements_to_bytes(size), stream, mr}
   {
   }
@@ -142,7 +141,7 @@ class device_uvector {
    */
   explicit device_uvector(device_uvector const& other,
                           cuda_stream_view stream,
-                          async_resource_ref mr = rmm::mr::get_current_device_resource())
+                          device_async_resource_ref mr = mr::get_current_device_resource())
     : _storage{other._storage, stream, mr}
   {
   }
@@ -525,9 +524,10 @@ class device_uvector {
   [[nodiscard]] bool is_empty() const noexcept { return size() == 0; }
 
   /**
-   * @briefreturn{The async_resource_ref used to allocate and deallocate the device storage}
+   * @briefreturn{The resource used to allocate and deallocate the device
+   * storage}
    */
-  [[nodiscard]] async_resource_ref memory_resource() const noexcept
+  [[nodiscard]] rmm::device_async_resource_ref memory_resource() const noexcept
   {
     return _storage.memory_resource();
   }

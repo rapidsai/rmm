@@ -806,13 +806,13 @@ def test_mr_allocate_deallocate():
 def test_custom_mr(capsys):
     base_mr = rmm.mr.CudaMemoryResource()
 
-    def allocate_func(size):
+    def allocate_func(size, stream):
         print(f"Allocating {size} bytes")
-        return base_mr.allocate(size)
+        return base_mr.allocate(size, stream)
 
-    def deallocate_func(ptr, size):
+    def deallocate_func(ptr, size, stream):
         print(f"Deallocating {size} bytes")
-        return base_mr.deallocate(ptr, size)
+        return base_mr.deallocate(ptr, size, stream)
 
     rmm.mr.set_current_device_resource(
         rmm.mr.CallbackMemoryResource(allocate_func, deallocate_func)
@@ -836,10 +836,10 @@ def test_custom_mr(capsys):
 def test_callback_mr_error(err_raise, err_catch):
     base_mr = rmm.mr.CudaMemoryResource()
 
-    def allocate_func(size):
+    def allocate_func(size, stream):
         raise err_raise("My alloc error")
 
-    def deallocate_func(ptr, size):
+    def deallocate_func(ptr, size, stream):
         return base_mr.deallocate(ptr, size)
 
     rmm.mr.set_current_device_resource(

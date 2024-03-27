@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-#include <benchmarks/utilities/cxxopts.hpp>
-
 #include <rmm/cuda_device.hpp>
 #include <rmm/mr/device/arena_memory_resource.hpp>
 #include <rmm/mr/device/binning_memory_resource.hpp>
@@ -26,6 +24,7 @@
 #include <rmm/mr/device/pool_memory_resource.hpp>
 
 #include <benchmark/benchmark.h>
+#include <benchmarks/utilities/cxxopts.hpp>
 
 #include <array>
 #include <cstddef>

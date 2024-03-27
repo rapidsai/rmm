@@ -19,14 +19,14 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/logging_assert.hpp>
+#include <rmm/detail/thrust_namespace.h>
 #include <rmm/mr/device/detail/fixed_size_free_list.hpp>
 #include <rmm/mr/device/detail/stream_ordered_memory_resource.hpp>
-
-#include <rmm/detail/thrust_namespace.h>
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/transform_iterator.h>
+#include <rmm/resource_ref.hpp>
 
 #include <cuda_runtime_api.h>
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/transform_iterator.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -97,19 +97,17 @@ class fixed_size_memory_resource
   fixed_size_memory_resource& operator=(fixed_size_memory_resource&&)      = delete;
 
   /**
-   * @brief Query whether the resource supports use of non-null streams for
-   * allocation/deallocation.
-   *
-   * @returns true
+   * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
    */
-  [[nodiscard]] bool supports_streams() const noexcept override { return true; }
+  [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
+  {
+    return upstream_mr_;
+  }
 
   /**
-   * @brief Get the upstream memory_resource object.
-   *
-   * @return UpstreamResource* the upstream memory resource.
+   * @briefreturn{Upstream* to the upstream memory resource}
    */
-  Upstream* get_upstream() const noexcept { return upstream_mr_; }
+  [[nodiscard]] Upstream* get_upstream() const noexcept { return upstream_mr_; }
 
   /**
    * @brief Get the size of blocks allocated by this memory resource.
@@ -158,7 +156,7 @@ class fixed_size_memory_resource
    */
   free_list blocks_from_upstream(cuda_stream_view stream)
   {
-    void* ptr = get_upstream()->allocate(upstream_chunk_size_, stream);
+    void* ptr = get_upstream_resource().allocate_async(upstream_chunk_size_, stream);
     block_type block{ptr};
     upstream_blocks_.push_back(block);
 
@@ -213,7 +211,7 @@ class fixed_size_memory_resource
     lock_guard lock(this->get_mutex());
 
     for (auto block : upstream_blocks_) {
-      get_upstream()->deallocate(block.pointer(), upstream_chunk_size_);
+      get_upstream_resource().deallocate(block.pointer(), upstream_chunk_size_);
     }
     upstream_blocks_.clear();
   }

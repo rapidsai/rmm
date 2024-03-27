@@ -49,14 +49,6 @@ class pinned_memory_resource final : public host_memory_resource {
     default;  ///< @default_move_assignment{pinned_memory_resource}
 
   /**
-   * @brief Query whether the pinned_memory_resource supports use of non-null CUDA streams for
-   * allocation/deallocation.
-   *
-   * @returns bool false.
-   */
-  [[nodiscard]] bool supports_streams() const noexcept { return false; }
-
-  /**
    * @brief Pretend to support the allocate_async interface, falling back to stream 0
    *
    * @throws rmm::bad_alloc When the requested `bytes` cannot be allocated on

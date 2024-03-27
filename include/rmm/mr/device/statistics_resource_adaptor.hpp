@@ -16,6 +16,7 @@
 #pragma once
 
 #include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <cstddef>
 #include <mutex>
@@ -107,17 +108,17 @@ class statistics_resource_adaptor final : public device_memory_resource {
     default;  ///< @default_move_assignment{statistics_resource_adaptor}
 
   /**
-   * @briefreturn{Pointer to the upstream resource}
+   * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
    */
-  Upstream* get_upstream() const noexcept { return upstream_; }
+  [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
+  {
+    return upstream_;
+  }
 
   /**
-   * @brief Checks whether the upstream resource supports streams.
-   *
-   * @return true The upstream resource supports streams
-   * @return false The upstream resource does not support streams.
+   * @briefreturn{Upstream* to the upstream memory resource}
    */
-  bool supports_streams() const noexcept override { return upstream_->supports_streams(); }
+  [[nodiscard]] Upstream* get_upstream() const noexcept { return upstream_; }
 
   /**
    * @brief Returns a `counter` struct for this adaptor containing the current,
@@ -208,8 +209,8 @@ class statistics_resource_adaptor final : public device_memory_resource {
   {
     if (this == &other) { return true; }
     auto cast = dynamic_cast<statistics_resource_adaptor<Upstream> const*>(&other);
-    return cast != nullptr ? upstream_->is_equal(*cast->get_upstream())
-                           : upstream_->is_equal(other);
+    if (cast == nullptr) { return upstream_->is_equal(other); }
+    return get_upstream_resource() == cast->get_upstream_resource();
   }
 
   counter bytes_;                        // peak, current and total allocated bytes

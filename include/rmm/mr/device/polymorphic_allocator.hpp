@@ -19,6 +19,7 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <cstddef>
 #include <memory>
@@ -97,6 +98,14 @@ class polymorphic_allocator {
   void deallocate(value_type* ptr, std::size_t num, cuda_stream_view stream)
   {
     resource()->deallocate(ptr, num * sizeof(T), stream);
+  }
+
+  /**
+   * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
+   */
+  [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
+  {
+    return mr_;
   }
 
   /**

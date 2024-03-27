@@ -116,20 +116,6 @@ inline std::pair<std::size_t, std::size_t> available_device_memory()
   return {free, total};
 }
 
-namespace detail {
-
-/**
- * @brief Returns the available and total device memory in bytes for the current device
- *
- * @deprecated Use rmm::available_device_memory() instead.
- *
- * @return The available and total device memory in bytes for the current device as a std::pair.
- */
-[[deprecated("Use `rmm::available_device_memory` instead.")]]  //
-const auto available_device_memory = rmm::available_device_memory;
-
-}  // namespace detail
-
 /**
  * @brief Returns the approximate specified percent of available device memory on the current CUDA
  * device, aligned (down) to the nearest CUDA allocation size.

@@ -19,6 +19,7 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <cstddef>
 #include <mutex>
@@ -82,19 +83,17 @@ class aligned_resource_adaptor final : public device_memory_resource {
   aligned_resource_adaptor& operator=(aligned_resource_adaptor&&)      = delete;
 
   /**
-   * @brief Get the upstream memory resource.
-   *
-   * @return Upstream* pointer to a memory resource object.
+   * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
    */
-  Upstream* get_upstream() const noexcept { return upstream_; }
+  [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
+  {
+    return upstream_;
+  }
 
   /**
-   * @copydoc rmm::mr::device_memory_resource::supports_streams()
+   * @briefreturn{Upstream* to the upstream memory resource}
    */
-  [[nodiscard]] bool supports_streams() const noexcept override
-  {
-    return upstream_->supports_streams();
-  }
+  [[nodiscard]] Upstream* get_upstream() const noexcept { return upstream_; }
 
   /**
    * @brief The default alignment used by the adaptor.
@@ -169,7 +168,8 @@ class aligned_resource_adaptor final : public device_memory_resource {
   {
     if (this == &other) { return true; }
     auto cast = dynamic_cast<aligned_resource_adaptor<Upstream> const*>(&other);
-    return cast != nullptr && upstream_->is_equal(*cast->get_upstream()) &&
+    if (cast == nullptr) { return false; }
+    return get_upstream_resource() == cast->get_upstream_resource() &&
            alignment_ == cast->alignment_ && alignment_threshold_ == cast->alignment_threshold_;
   }
 

@@ -18,9 +18,8 @@
 
 #include <rmm/detail/error.hpp>
 
-#include <cuda_runtime_api.h>
-
 #include <cuda/stream_ref>
+#include <cuda_runtime_api.h>
 
 #include <atomic>
 #include <cstddef>

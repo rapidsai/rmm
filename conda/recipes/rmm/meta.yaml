@@ -34,6 +34,9 @@ build:
   ignore_run_exports_from:
     {% if cuda_major == "11" %}
     - {{ compiler('cuda11') }}
+    {% else %}
+    - {{ compiler('cuda') }}
+    - cuda-cudart-dev
     {% endif %}
 
 requirements:
@@ -65,10 +68,12 @@ requirements:
   run:
     {% if cuda_major == "11" %}
     - cudatoolkit
+    {% else %}
+    - cuda-cudart
     {% endif %}
     - {{ pin_compatible('cuda-version', max_pin='x', min_pin='x') }}
     - numba >=0.57
-    - numpy >=1.21
+    - numpy >=1.23,<2.0a0
 
 test:
   imports:

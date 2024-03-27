@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
-#include <gtest/gtest.h>
-
 #include <rmm/cuda_stream.hpp>
 #include <rmm/device_scalar.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
+#include <cuda/memory_resource>
 #include <cuda_runtime_api.h>
+
+#include <gtest/gtest.h>
 
 #include <chrono>
 #include <cstddef>
@@ -36,7 +38,7 @@ struct DeviceScalarTest : public ::testing::Test {
   std::default_random_engine generator{};
   T value{};
   rmm::cuda_stream stream{};
-  rmm::mr::device_memory_resource* mr{rmm::mr::get_current_device_resource()};
+  rmm::device_async_resource_ref mr{rmm::mr::get_current_device_resource()};
 
   DeviceScalarTest() : value{random_value()} {}
 

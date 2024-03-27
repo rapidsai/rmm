@@ -11,7 +11,7 @@ rapids-dependency-file-generator \
   --file_key docs \
   --matrix "cuda=${RAPIDS_CUDA_VERSION%.*};arch=$(arch);py=${RAPIDS_PY_VERSION}" | tee env.yaml
 
-rapids-mamba-retry env create --force -f env.yaml -n docs
+rapids-mamba-retry env create --yes -f env.yaml -n docs
 conda activate docs
 
 rapids-print-env
@@ -25,7 +25,9 @@ rapids-mamba-retry install \
   --channel "${PYTHON_CHANNEL}" \
   rmm librmm
 
-export RAPIDS_VERSION_NUMBER="24.02"
+export RAPIDS_VERSION="$(rapids-version)"
+export RAPIDS_VERSION_MAJOR_MINOR="$(rapids-version-major-minor)"
+export RAPIDS_VERSION_NUMBER="$RAPIDS_VERSION_MAJOR_MINOR"
 export RAPIDS_DOCS_DIR="$(mktemp -d)"
 
 rapids-logger "Build CPP docs"

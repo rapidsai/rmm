@@ -33,6 +33,7 @@ INSTANTIATE_TEST_SUITE_P(ResourceTests,
 #endif
                                            mr_factory{"Managed", &make_managed},
                                            mr_factory{"Pool", &make_pool},
+                                           mr_factory{"HostPinnedPool", &make_host_pinned_pool},
                                            mr_factory{"Arena", &make_arena},
                                            mr_factory{"Binning", &make_binning},
                                            mr_factory{"Fixed_Size", &make_fixed_size}),
@@ -47,9 +48,45 @@ INSTANTIATE_TEST_SUITE_P(ResourceAllocationTests,
 #endif
                                            mr_factory{"Managed", &make_managed},
                                            mr_factory{"Pool", &make_pool},
+                                           mr_factory{"HostPinnedPool", &make_host_pinned_pool},
                                            mr_factory{"Arena", &make_arena},
                                            mr_factory{"Binning", &make_binning}),
                          [](auto const& info) { return info.param.name; });
+
+TEST(DefaultTest, CurrentDeviceResourceIsCUDA)
+{
+  EXPECT_NE(nullptr, rmm::mr::get_current_device_resource());
+  EXPECT_TRUE(rmm::mr::get_current_device_resource()->is_equal(rmm::mr::cuda_memory_resource{}));
+}
+
+TEST(DefaultTest, UseCurrentDeviceResource) { test_get_current_device_resource(); }
+
+TEST(DefaultTest, GetCurrentDeviceResource)
+{
+  auto* mr = rmm::mr::get_current_device_resource();
+  EXPECT_NE(nullptr, mr);
+  EXPECT_TRUE(mr->is_equal(rmm::mr::cuda_memory_resource{}));
+}
+
+TEST_P(mr_ref_test, SetCurrentDeviceResource)
+{
+  rmm::mr::device_memory_resource* old{};
+  old = rmm::mr::set_current_device_resource(this->mr.get());
+  EXPECT_NE(nullptr, old);
+
+  // old mr should equal a cuda mr
+  EXPECT_TRUE(old->is_equal(rmm::mr::cuda_memory_resource{}));
+
+  // current dev resource should equal this resource
+  EXPECT_TRUE(this->mr->is_equal(*rmm::mr::get_current_device_resource()));
+
+  test_get_current_device_resource();
+
+  // setting to `nullptr` should reset to initial cuda resource
+  rmm::mr::set_current_device_resource(nullptr);
+  EXPECT_TRUE(rmm::mr::get_current_device_resource()->is_equal(rmm::mr::cuda_memory_resource{}));
+}
+
 TEST_P(mr_ref_test, SelfEquality) { EXPECT_TRUE(this->ref == this->ref); }
 
 // Simple reproducer for https://github.com/rapidsai/rmm/issues/861

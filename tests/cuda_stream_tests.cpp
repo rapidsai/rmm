@@ -17,12 +17,13 @@
 #include <rmm/cuda_stream.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_buffer.hpp>
-#include <sstream>
 
 #include <cuda_runtime_api.h>
 
 #include <gtest/gtest-death-test.h>
 #include <gtest/gtest.h>
+
+#include <sstream>
 
 struct CudaStreamTest : public ::testing::Test {};
 

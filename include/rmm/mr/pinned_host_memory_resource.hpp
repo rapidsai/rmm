@@ -21,13 +21,18 @@
 
 #include <cuda/memory_resource>
 #include <cuda/stream_ref>
-
 #include <cuda_runtime_api.h>
 
 #include <cstddef>
 #include <utility>
 
 namespace rmm::mr {
+
+/**
+ * @addtogroup memory_resources
+ * @{
+ * @file
+ */
 
 /**
  * @brief Memory resource class for allocating pinned host memory.
@@ -45,9 +50,9 @@ class pinned_host_memory_resource {
   /**
    * @brief Allocates pinned host memory of size at least \p bytes bytes.
    *
-   * @throws `rmm::out_of_memory` if the requested allocation could not be fulfilled due to to a
+   * @throws rmm::out_of_memory if the requested allocation could not be fulfilled due to to a
    * CUDA out of memory error.
-   * @throws `rmm::bad_alloc` if the requested allocation could not be fulfilled due to any other
+   * @throws rmm::bad_alloc if the requested allocation could not be fulfilled due to any other
    * reason.
    *
    * @param bytes The size, in bytes, of the allocation.
@@ -71,8 +76,6 @@ class pinned_host_memory_resource {
   /**
    * @brief Deallocate memory pointed to by \p ptr of size \p bytes bytes.
    *
-   * @throws Nothing.
-   *
    * @param ptr Pointer to be deallocated.
    * @param bytes Size of the allocation.
    * @param alignment Alignment in bytes. Default alignment is used if unspecified.
@@ -90,9 +93,9 @@ class pinned_host_memory_resource {
    *
    * @note Stream argument is ignored and behavior is identical to allocate.
    *
-   * @throws `rmm::out_of_memory` if the requested allocation could not be fulfilled due to to a
+   * @throws rmm::out_of_memory if the requested allocation could not be fulfilled due to to a
    * CUDA out of memory error.
-   * @throws `rmm::bad_alloc` if the requested allocation could not be fulfilled due to any other
+   * @throws rmm::bad_alloc if the requested allocation could not be fulfilled due to any other
    * error.
    *
    * @param bytes The size, in bytes, of the allocation.
@@ -109,9 +112,9 @@ class pinned_host_memory_resource {
    *
    * @note Stream argument is ignored and behavior is identical to allocate.
    *
-   * @throws `rmm::out_of_memory` if the requested allocation could not be fulfilled due to to a
+   * @throws rmm::out_of_memory if the requested allocation could not be fulfilled due to to a
    * CUDA out of memory error.
-   * @throws `rmm::bad_alloc` if the requested allocation could not be fulfilled due to any other
+   * @throws rmm::bad_alloc if the requested allocation could not be fulfilled due to any other
    * error.
    *
    * @param bytes The size, in bytes, of the allocation.
@@ -131,8 +134,6 @@ class pinned_host_memory_resource {
    *
    * @note Stream argument is ignored and behavior is identical to deallocate.
    *
-   * @throws Nothing.
-   *
    * @param ptr Pointer to be deallocated.
    * @param bytes Size of the allocation.
    * @param stream CUDA stream on which to perform the deallocation (ignored).
@@ -149,8 +150,6 @@ class pinned_host_memory_resource {
    * alignment bytes.
    *
    * @note Stream argument is ignored and behavior is identical to deallocate.
-   *
-   * @throws Nothing.
    *
    * @param ptr Pointer to be deallocated.
    * @param bytes Size of the allocation.
@@ -178,26 +177,6 @@ class pinned_host_memory_resource {
   bool operator!=(const pinned_host_memory_resource&) const { return false; }
 
   /**
-   * @brief Query whether the resource supports reporting free and available memory.
-   *
-   * @return false
-   */
-  static bool supports_get_mem_info() { return false; }
-
-  /**
-   * @brief Query the total amount of memory and free memory available for allocation by this
-   * resource.
-   *
-   * @throws nothing
-   *
-   * @return std::pair containing 0 for both total and free memory.
-   */
-  [[nodiscard]] static std::pair<std::size_t, std::size_t> get_mem_info(cuda::stream_ref) noexcept
-  {
-    return {0, 0};
-  }
-
-  /**
    * @brief Enables the `cuda::mr::device_accessible` property
    *
    * This property declares that a `pinned_host_memory_resource` provides device accessible memory
@@ -219,4 +198,6 @@ class pinned_host_memory_resource {
 static_assert(cuda::mr::async_resource_with<pinned_host_memory_resource,
                                             cuda::mr::device_accessible,
                                             cuda::mr::host_accessible>);
+
+/** @} */  // end of group
 }  // namespace rmm::mr

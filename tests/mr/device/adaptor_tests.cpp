@@ -28,6 +28,8 @@
 #include <rmm/mr/device/statistics_resource_adaptor.hpp>
 #include <rmm/mr/device/thread_safe_resource_adaptor.hpp>
 #include <rmm/mr/device/tracking_resource_adaptor.hpp>
+#include <rmm/mr/is_resource_adaptor.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
 
@@ -133,18 +135,16 @@ TYPED_TEST(AdaptorTest, Equality)
   }
 }
 
-TYPED_TEST(AdaptorTest, GetUpstream)
+TYPED_TEST(AdaptorTest, GetUpstreamResource)
 {
+  rmm::device_async_resource_ref expected{this->cuda};
   if constexpr (std::is_same_v<TypeParam, owning_wrapper>) {
-    EXPECT_TRUE(this->mr->wrapped().get_upstream()->is_equal(this->cuda));
+    EXPECT_TRUE(this->mr->wrapped().get_upstream_resource() == expected);
+    EXPECT_TRUE(rmm::mr::is_resource_adaptor<decltype(this->mr->wrapped())>);
   } else {
-    EXPECT_TRUE(this->mr->get_upstream()->is_equal(this->cuda));
+    EXPECT_TRUE(this->mr->get_upstream_resource() == expected);
+    EXPECT_TRUE(rmm::mr::is_resource_adaptor<decltype(*this->mr)>);
   }
-}
-
-TYPED_TEST(AdaptorTest, SupportsStreams)
-{
-  EXPECT_EQ(this->mr->supports_streams(), this->cuda.supports_streams());
 }
 
 TYPED_TEST(AdaptorTest, AllocFree)

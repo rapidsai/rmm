@@ -19,12 +19,11 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/dynamic_load_runtime.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/thrust_namespace.h>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
-#include <rmm/detail/thrust_namespace.h>
-#include <thrust/optional.h>
-
 #include <cuda_runtime_api.h>
+#include <thrust/optional.h>
 
 #include <cstddef>
 #include <limits>
@@ -90,14 +89,6 @@ class cuda_async_view_memory_resource final : public device_memory_resource {
     default;  ///< @default_copy_assignment{cuda_async_view_memory_resource}
   cuda_async_view_memory_resource& operator=(cuda_async_view_memory_resource&&) =
     default;  ///< @default_move_assignment{cuda_async_view_memory_resource}
-
-  /**
-   * @brief Query whether the resource supports use of non-null CUDA streams for
-   * allocation/deallocation. `cuda_memory_resource` does not support streams.
-   *
-   * @returns bool true
-   */
-  [[nodiscard]] bool supports_streams() const noexcept override { return true; }
 
  private:
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT

@@ -3,7 +3,7 @@ files:
   all:
     output: conda
     matrix:
-      cuda: ["11.8", "12.0"]
+      cuda: ["11.8", "12.2"]
       arch: [x86_64]
     includes:
       - build
@@ -154,6 +154,10 @@ dependencies:
               cuda: "12.0"
             packages:
               - cuda-version=12.0
+          - matrix:
+              cuda: "12.2"
+            packages:
+              - cuda-version=12.2
   cuda:
     specific:
       - output_types: conda
@@ -178,7 +182,7 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - breathe
+          - breathe>=4.35.0
           - *doxygen
           - graphviz
           - ipython
@@ -202,14 +206,18 @@ dependencies:
             packages:
               - python=3.10
           - matrix:
+              py: "3.11"
             packages:
-              - python>=3.9,<3.11
+              - python=3.11
+          - matrix:
+            packages:
+              - python>=3.9,<3.12
   run:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
           - numba>=0.57
-          - numpy>=1.21
+          - numpy>=1.23,<2.0a0
     specific:
       - output_types: [conda, requirements, pyproject]
         matrices:

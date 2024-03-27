@@ -16,12 +16,12 @@
 
 #pragma once
 
-#include <chrono>
+#include "rapidcsv.h"
+
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
-#include "rapidcsv.h"
-
+#include <chrono>
 #include <cstdint>
 #include <iomanip>
 #include <limits>

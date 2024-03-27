@@ -33,10 +33,12 @@
 #include <rmm/mr/device/owning_wrapper.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
-
-#include <gtest/gtest.h>
+#include <rmm/mr/pinned_host_memory_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
+
+#include <gtest/gtest.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -44,8 +46,7 @@
 #include <random>
 #include <utility>
 
-using resource_ref       = cuda::mr::resource_ref<cuda::mr::device_accessible>;
-using async_resource_ref = cuda::mr::async_resource_ref<cuda::mr::device_accessible>;
+using resource_ref = cuda::mr::resource_ref<cuda::mr::device_accessible>;
 
 namespace rmm::test {
 
@@ -62,6 +63,17 @@ struct allocation {
 };
 
 // Various test functions, shared between single-threaded and multithreaded tests.
+
+inline void test_get_current_device_resource()
+{
+  EXPECT_NE(nullptr, rmm::mr::get_current_device_resource());
+  void* ptr = rmm::mr::get_current_device_resource()->allocate(1_MiB);
+  EXPECT_NE(nullptr, ptr);
+  EXPECT_TRUE(is_properly_aligned(ptr));
+  EXPECT_TRUE(is_device_accessible_memory(ptr));
+  rmm::mr::get_current_device_resource()->deallocate(ptr, 1_MiB);
+}
+
 inline void test_allocate(resource_ref ref, std::size_t bytes)
 {
   try {
@@ -75,7 +87,7 @@ inline void test_allocate(resource_ref ref, std::size_t bytes)
   }
 }
 
-inline void test_allocate_async(async_resource_ref ref,
+inline void test_allocate_async(rmm::device_async_resource_ref ref,
                                 std::size_t bytes,
                                 cuda_stream_view stream = {})
 {
@@ -105,7 +117,7 @@ inline void concurrent_allocations_are_different(resource_ref ref)
   ref.deallocate(ptr2, size);
 }
 
-inline void concurrent_async_allocations_are_different(async_resource_ref ref,
+inline void concurrent_async_allocations_are_different(rmm::device_async_resource_ref ref,
                                                        cuda_stream_view stream)
 {
   const auto size{8_B};
@@ -146,7 +158,8 @@ inline void test_various_allocations(resource_ref ref)
   }
 }
 
-inline void test_various_async_allocations(async_resource_ref ref, cuda_stream_view stream)
+inline void test_various_async_allocations(rmm::device_async_resource_ref ref,
+                                           cuda_stream_view stream)
 {
   // test allocating zero bytes on non-default stream
   {
@@ -199,7 +212,7 @@ inline void test_random_allocations(resource_ref ref,
   });
 }
 
-inline void test_random_async_allocations(async_resource_ref ref,
+inline void test_random_async_allocations(rmm::device_async_resource_ref ref,
                                           std::size_t num_allocations = default_num_allocations,
                                           size_in_bytes max_size      = default_max_size,
                                           cuda_stream_view stream     = {})
@@ -272,7 +285,7 @@ inline void test_mixed_random_allocation_free(resource_ref ref,
   EXPECT_EQ(allocations.size(), active_allocations);
 }
 
-inline void test_mixed_random_async_allocation_free(async_resource_ref ref,
+inline void test_mixed_random_async_allocation_free(rmm::device_async_resource_ref ref,
                                                     size_in_bytes max_size  = default_max_size,
                                                     cuda_stream_view stream = {})
 {
@@ -343,11 +356,11 @@ struct mr_ref_test : public ::testing::TestWithParam<mr_factory> {
       GTEST_SKIP() << "Skipping tests since the memory resource is not supported with this CUDA "
                    << "driver/runtime version";
     }
-    ref = async_resource_ref{*mr};
+    ref = rmm::device_async_resource_ref{*mr};
   }
 
   std::shared_ptr<rmm::mr::device_memory_resource> mr;  ///< Pointer to resource to use in tests
-  async_resource_ref ref{*mr};
+  rmm::device_async_resource_ref ref{*mr};
   rmm::cuda_stream stream{};
 };
 
@@ -355,6 +368,8 @@ struct mr_ref_allocation_test : public mr_ref_test {};
 
 /// MR factory functions
 inline auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>(); }
+
+inline auto make_host_pinned() { return std::make_shared<rmm::mr::pinned_host_memory_resource>(); }
 
 inline auto make_cuda_async()
 {
@@ -370,6 +385,12 @@ inline auto make_pool()
 {
   return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(
     make_cuda(), rmm::percent_of_free_device_memory(50));
+}
+
+inline auto make_host_pinned_pool()
+{
+  return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(
+    make_host_pinned(), 2_GiB, 8_GiB);
 }
 
 inline auto make_arena()

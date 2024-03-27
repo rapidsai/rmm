@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2022, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@
 #include <rmm/mr/device/managed_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <thrust/equal.h>
 #include <thrust/sequence.h>
@@ -58,7 +59,6 @@ struct DeviceBufferTest : public ::testing::Test {
 };
 
 using resources = ::testing::Types<rmm::mr::cuda_memory_resource, rmm::mr::managed_memory_resource>;
-using async_resource_ref = cuda::mr::async_resource_ref<cuda::mr::device_accessible>;
 
 TYPED_TEST_CASE(DeviceBufferTest, resources);
 
@@ -75,7 +75,8 @@ TYPED_TEST(DeviceBufferTest, DefaultMemoryResource)
   EXPECT_EQ(this->size, buff.size());
   EXPECT_EQ(this->size, buff.ssize());
   EXPECT_EQ(this->size, buff.capacity());
-  EXPECT_EQ(async_resource_ref{rmm::mr::get_current_device_resource()}, buff.memory_resource());
+  EXPECT_EQ(rmm::device_async_resource_ref{rmm::mr::get_current_device_resource()},
+            buff.memory_resource());
   EXPECT_EQ(rmm::cuda_stream_view{}, buff.stream());
 }
 
@@ -86,7 +87,8 @@ TYPED_TEST(DeviceBufferTest, DefaultMemoryResourceStream)
   EXPECT_NE(nullptr, buff.data());
   EXPECT_EQ(this->size, buff.size());
   EXPECT_EQ(this->size, buff.capacity());
-  EXPECT_EQ(async_resource_ref{rmm::mr::get_current_device_resource()}, buff.memory_resource());
+  EXPECT_EQ(rmm::device_async_resource_ref{rmm::mr::get_current_device_resource()},
+            buff.memory_resource());
   EXPECT_EQ(this->stream, buff.stream());
 }
 
@@ -96,7 +98,7 @@ TYPED_TEST(DeviceBufferTest, ExplicitMemoryResource)
   EXPECT_NE(nullptr, buff.data());
   EXPECT_EQ(this->size, buff.size());
   EXPECT_EQ(this->size, buff.capacity());
-  EXPECT_EQ(async_resource_ref{this->mr}, buff.memory_resource());
+  EXPECT_EQ(rmm::device_async_resource_ref{this->mr}, buff.memory_resource());
   EXPECT_EQ(rmm::cuda_stream_view{}, buff.stream());
 }
 
@@ -107,7 +109,7 @@ TYPED_TEST(DeviceBufferTest, ExplicitMemoryResourceStream)
   EXPECT_NE(nullptr, buff.data());
   EXPECT_EQ(this->size, buff.size());
   EXPECT_EQ(this->size, buff.capacity());
-  EXPECT_EQ(async_resource_ref{this->mr}, buff.memory_resource());
+  EXPECT_EQ(rmm::device_async_resource_ref{this->mr}, buff.memory_resource());
   EXPECT_EQ(this->stream, buff.stream());
 }
 
@@ -119,7 +121,8 @@ TYPED_TEST(DeviceBufferTest, CopyFromRawDevicePointer)
   EXPECT_NE(nullptr, buff.data());
   EXPECT_EQ(this->size, buff.size());
   EXPECT_EQ(this->size, buff.capacity());
-  EXPECT_EQ(async_resource_ref{rmm::mr::get_current_device_resource()}, buff.memory_resource());
+  EXPECT_EQ(rmm::device_async_resource_ref{rmm::mr::get_current_device_resource()},
+            buff.memory_resource());
   EXPECT_EQ(rmm::cuda_stream_view{}, buff.stream());
 
   // TODO check for equality between the contents of the two allocations
@@ -135,7 +138,8 @@ TYPED_TEST(DeviceBufferTest, CopyFromRawHostPointer)
   EXPECT_NE(nullptr, buff.data());
   EXPECT_EQ(this->size, buff.size());
   EXPECT_EQ(this->size, buff.capacity());
-  EXPECT_EQ(async_resource_ref{rmm::mr::get_current_device_resource()}, buff.memory_resource());
+  EXPECT_EQ(rmm::device_async_resource_ref{rmm::mr::get_current_device_resource()},
+            buff.memory_resource());
   EXPECT_EQ(rmm::cuda_stream_view{}, buff.stream());
   buff.stream().synchronize();
   // TODO check for equality between the contents of the two allocations
@@ -148,7 +152,8 @@ TYPED_TEST(DeviceBufferTest, CopyFromNullptr)
   EXPECT_EQ(nullptr, buff.data());
   EXPECT_EQ(0, buff.size());
   EXPECT_EQ(0, buff.capacity());
-  EXPECT_EQ(async_resource_ref{rmm::mr::get_current_device_resource()}, buff.memory_resource());
+  EXPECT_EQ(rmm::device_async_resource_ref{rmm::mr::get_current_device_resource()},
+            buff.memory_resource());
   EXPECT_EQ(rmm::cuda_stream_view{}, buff.stream());
 }
 
@@ -175,7 +180,7 @@ TYPED_TEST(DeviceBufferTest, CopyConstructor)
   EXPECT_EQ(buff.size(), buff_copy.size());
   EXPECT_EQ(buff.capacity(), buff_copy.capacity());
   EXPECT_EQ(buff_copy.memory_resource(),
-            async_resource_ref{rmm::mr::get_current_device_resource()});
+            rmm::device_async_resource_ref{rmm::mr::get_current_device_resource()});
   EXPECT_EQ(buff_copy.stream(), rmm::cuda_stream_view{});
 
   EXPECT_TRUE(thrust::equal(rmm::exec_policy(rmm::cuda_stream_default),
@@ -218,7 +223,7 @@ TYPED_TEST(DeviceBufferTest, CopyCapacityLargerThanSize)
   // The capacity of the copy should be equal to the `size()` of the original
   EXPECT_EQ(new_size, buff_copy.capacity());
   EXPECT_EQ(buff_copy.memory_resource(),
-            async_resource_ref{rmm::mr::get_current_device_resource()});
+            rmm::device_async_resource_ref{rmm::mr::get_current_device_resource()});
   EXPECT_EQ(buff_copy.stream(), rmm::cuda_stream_view{});
 
   EXPECT_TRUE(thrust::equal(rmm::exec_policy(rmm::cuda_stream_default),

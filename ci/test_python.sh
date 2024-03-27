@@ -1,6 +1,10 @@
 #!/bin/bash
-# Copyright (c) 2020-2023, NVIDIA CORPORATION.
+# Copyright (c) 2020-2024, NVIDIA CORPORATION.
+
 set -euo pipefail
+
+# Support invoking test_python.sh outside the script directory
+cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")"/../
 
 rapids-logger "Create test conda environment"
 . /opt/conda/etc/profile.d/conda.sh
@@ -10,7 +14,7 @@ rapids-dependency-file-generator \
   --file_key test_python \
   --matrix "cuda=${RAPIDS_CUDA_VERSION%.*};arch=$(arch);py=${RAPIDS_PY_VERSION}" | tee env.yaml
 
-rapids-mamba-retry env create --force -f env.yaml -n test
+rapids-mamba-retry env create --yes -f env.yaml -n test
 set +u
 conda activate test
 set -u
@@ -33,21 +37,15 @@ mkdir -p "${RAPIDS_TESTS_DIR}" "${RAPIDS_COVERAGE_DIR}"
 rapids-logger "Check GPU usage"
 nvidia-smi
 
-cd python
-
-EXITCODE=0
-trap "EXITCODE=1" ERR
-set +e
-
 rapids-logger "pytest rmm"
-pytest \
-  --cache-clear \
-  --junitxml="${RAPIDS_TESTS_DIR}/junit-rmm.xml" \
-  -v \
-  --cov-config=.coveragerc \
-  --cov=rmm \
-  --cov-report=xml:"${RAPIDS_COVERAGE_DIR}/rmm-coverage.xml" \
-  --cov-report term
+
+./ci/run_pytests.sh \
+    --junitxml="${RAPIDS_TESTS_DIR}/junit-rmm.xml" \
+    --cov-config=.coveragerc \
+    --cov=rmm \
+    --cov-report=xml:"${RAPIDS_COVERAGE_DIR}/rmm-coverage.xml" \
+    --cov-report term \
+ && EXITCODE=$? || EXITCODE=$?;
 
 rapids-logger "Test script exiting with value: $EXITCODE"
 exit ${EXITCODE}

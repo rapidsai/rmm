@@ -14,13 +14,11 @@
 
 cmake_minimum_required(VERSION 3.26.4 FATAL_ERROR)
 
-set(rmm_version 24.02.00)
-
-include(../fetch_rapids.cmake)
+include(../rapids_config.cmake)
 
 project(
   rmm-python
-  VERSION ${rmm_version}
+  VERSION "${RAPIDS_VERSION}"
   LANGUAGES CXX)
 
 option(FIND_RMM_CPP "Search for existing RMM C++ installations before defaulting to local files"
@@ -28,7 +26,7 @@ option(FIND_RMM_CPP "Search for existing RMM C++ installations before defaulting
 
 # If the user requested it we attempt to find RMM.
 if(FIND_RMM_CPP)
-  find_package(rmm ${rmm_version})
+  find_package(rmm "${RAPIDS_VERSION}")
 else()
   set(rmm_FOUND OFF)
 endif()

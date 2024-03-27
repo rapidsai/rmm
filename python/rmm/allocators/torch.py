@@ -11,19 +11,31 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+rmm_torch_allocator = None
+
 try:
     from torch.cuda.memory import CUDAPluggableAllocator
 except ImportError:
-    rmm_torch_allocator = None
+    pass
 else:
-    import pathlib
+    from torch.cuda import is_available
 
-    sofile = (
-        pathlib.Path(__file__).parent.parent / "_lib" / "_torch_allocator.so"
-    )
-    rmm_torch_allocator = CUDAPluggableAllocator(
-        str(sofile.absolute()),
-        alloc_fn_name="allocate",
-        free_fn_name="deallocate",
-    )
-    del pathlib, sofile
+    if is_available():
+        import pathlib
+
+        # To support editable installs, we cannot search for the compiled torch
+        # allocator .so relative to the current file because the current file
+        # is pure Python and will therefore be in the source directory.
+        # Instead, we search relative to an arbitrary file in the compiled
+        # package. We use the _lib.lib module because it is small.
+        from rmm._lib import lib
+
+        sofile = pathlib.Path(lib.__file__).parent / "_torch_allocator.so"
+        rmm_torch_allocator = CUDAPluggableAllocator(
+            str(sofile.absolute()),
+            alloc_fn_name="allocate",
+            free_fn_name="deallocate",
+        )
+        del pathlib, sofile
+    del is_available

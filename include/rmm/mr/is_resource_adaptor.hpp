@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NVIDIA CORPORATION.
+ * Copyright (c) 2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,26 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #pragma once
 
-#include <rmm/detail/thrust_namespace.h>
-#include <rmm/mr/device/thrust_allocator_adaptor.hpp>
+#include <cuda/memory_resource>
+#include <cuda/std/type_traits>
 
-#include <thrust/device_vector.h>
+namespace rmm::mr {
 
-namespace rmm {
 /**
- * @addtogroup thrust_integrations
+ * @addtogroup memory_resources
  * @{
  * @file
  */
+
 /**
- * @brief Alias for a thrust::device_vector that uses RMM for memory allocation.
- *
+ * @brief Concept to check whether a resource is a resource adaptor by checking for
+ * `get_upstream_resource`.
  */
-template <typename T>
-using device_vector = thrust::device_vector<T, rmm::mr::thrust_allocator<T>>;
+template <class Resource, class = void>
+inline constexpr bool is_resource_adaptor = false;
+
+template <class Resource>
+inline constexpr bool is_resource_adaptor<
+  Resource,
+  cuda::std::void_t<decltype(cuda::std::declval<Resource>().get_upstream_resource())>> =
+  cuda::mr::resource<Resource>;
 
 /** @} */  // end of group
-}  // namespace rmm
+}  // namespace rmm::mr

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_uvector.hpp>
-#include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <type_traits>
 
@@ -92,9 +92,8 @@ class device_scalar {
    * @param stream Stream on which to perform asynchronous allocation.
    * @param mr Optional, resource with which to allocate.
    */
-  explicit device_scalar(
-    cuda_stream_view stream,
-    rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource())
+  explicit device_scalar(cuda_stream_view stream,
+                         device_async_resource_ref mr = mr::get_current_device_resource())
     : _storage{1, stream, mr}
   {
   }
@@ -115,10 +114,9 @@ class device_scalar {
    * @param stream Optional, stream on which to perform allocation and copy.
    * @param mr Optional, resource with which to allocate.
    */
-  explicit device_scalar(
-    value_type const& initial_value,
-    cuda_stream_view stream,
-    rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource())
+  explicit device_scalar(value_type const& initial_value,
+                         cuda_stream_view stream,
+                         device_async_resource_ref mr = mr::get_current_device_resource())
     : _storage{1, stream, mr}
   {
     set_value_async(initial_value, stream);
@@ -138,7 +136,7 @@ class device_scalar {
    */
   device_scalar(device_scalar const& other,
                 cuda_stream_view stream,
-                rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource())
+                device_async_resource_ref mr = mr::get_current_device_resource())
     : _storage{other._storage, stream, mr}
   {
   }
