@@ -21,23 +21,7 @@ project(
   VERSION "${RAPIDS_VERSION}"
   LANGUAGES CXX)
 
-option(FIND_RMM_CPP "Search for existing RMM C++ installations before defaulting to local files"
-       OFF)
-
-# If the user requested it we attempt to find RMM.
-if(FIND_RMM_CPP)
-  find_package(rmm "${RAPIDS_VERSION}")
-else()
-  set(rmm_FOUND OFF)
-endif()
-
-if(NOT rmm_FOUND)
-  set(BUILD_TESTS OFF)
-  set(BUILD_BENCHMARKS OFF)
-  set(CUDA_STATIC_RUNTIME ON)
-
-  add_subdirectory(../.. rmm-cpp EXCLUDE_FROM_ALL)
-endif()
+find_package(rmm "${RAPIDS_VERSION}" REQUIRED)
 
 include(rapids-cython-core)
 rapids_cython_init()
