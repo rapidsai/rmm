@@ -1,10 +1,10 @@
 #!/bin/bash
-# Copyright (c) 2023, NVIDIA CORPORATION.
+# Copyright (c) 2024, NVIDIA CORPORATION.
 
 set -euo pipefail
 
-package_name="rmm"
-package_dir="python/rmm"
+package_name="librmm"
+package_dir="python/librmm"
 
 source rapids-configure-sccache
 source rapids-date-string
@@ -24,15 +24,12 @@ sed -i "s/name = \"${package_name}\"/name = \"${package_name}${PACKAGE_CUDA_SUFF
 echo "${version}" > VERSION
 sed -i "/^__git_commit__/ s/= .*/= \"${commit}\"/g" "${package_dir}/${package_name}/_version.py"
 
-if [[ $PACKAGE_CUDA_SUFFIX == "-cu12" ]]; then
-    sed -i "s/cuda-python[<=>\.,0-9a]*/cuda-python>=12.0,<13.0a0/g" ${pyproject_file}
-fi
-
 cd "${package_dir}"
 
 python -m pip wheel . -w dist -vvv --no-deps --disable-pip-version-check
 
-mkdir -p final_dist
-python -m auditwheel repair -w final_dist dist/*
-
-RAPIDS_PY_WHEEL_NAME="${package_name}_${RAPIDS_PY_CUDA_SUFFIX}" rapids-upload-wheels-to-s3 final_dist
+if [[ ! -d "/tmp/gha-tools" ]]; then
+    git clone https://github.com/msarahan/gha-tools.git -b get-pr-wheel-artifact /tmp/gha-tools
+    export PATH="/tmp/gha-tools/tools:${PATH}"
+fi
+RAPIDS_PY_WHEEL_NAME="${package_name}_${RAPIDS_PY_CUDA_SUFFIX}" rapids-upload-wheels-to-s3 cpp dist

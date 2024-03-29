@@ -17,16 +17,12 @@ cmake_minimum_required(VERSION 3.26.4 FATAL_ERROR)
 include(../../rapids_config.cmake)
 
 project(
-  rmm-python
+  librmm-python
   VERSION "${RAPIDS_VERSION}"
   LANGUAGES CXX)
 
-find_package(rmm "${RAPIDS_VERSION}" REQUIRED)
+set(BUILD_TESTS OFF)
+set(BUILD_BENCHMARKS OFF)
+set(CUDA_STATIC_RUNTIME ON)
 
-include(rapids-cython-core)
-rapids_cython_init()
-
-add_compile_definitions("SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
-
-add_subdirectory(rmm/_cuda)
-add_subdirectory(rmm/_lib)
+add_subdirectory(../.. rmm-cpp)

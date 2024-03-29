@@ -38,6 +38,13 @@ files:
       - cuda_version
       - docs
       - py_version
+  py_cpp_build:
+    output: pyproject
+    pyproject_dir: python/librmm
+    extras:
+      table: build-system
+    includes:
+      - build
   py_build:
     output: pyproject
     pyproject_dir: python/rmm
@@ -115,6 +122,11 @@ dependencies:
       - output_types: [conda, requirements, pyproject]
         packages:
           - cython>=3.0.0
+      # TODO: Currently this is a hack for devcontainers. Need to figure out the best solution.
+      #- output_types: [requirements, pyproject]
+      - output_types: [pyproject]
+        packages:
+          - librmm==24.6.*
     specific:
       - output_types: [conda, requirements, pyproject]
         matrices:
