@@ -40,7 +40,7 @@
 - Use `conda env create --yes` instead of `--force` ([#1509](https://github.com/rapidsai/rmm/pull/1509)) [@bdice](https://github.com/bdice)
 - Add upper bound to prevent usage of NumPy 2 ([#1501](https://github.com/rapidsai/rmm/pull/1501)) [@bdice](https://github.com/bdice)
 - Remove hard-coding of RAPIDS version where possible ([#1496](https://github.com/rapidsai/rmm/pull/1496)) [@KyleFromNVIDIA](https://github.com/KyleFromNVIDIA)
-- Requre NumPy 1.23+ ([#1488](https://github.com/rapidsai/rmm/pull/1488)) [@jakirkham](https://github.com/jakirkham)
+- Require NumPy 1.23+ ([#1488](https://github.com/rapidsai/rmm/pull/1488)) [@jakirkham](https://github.com/jakirkham)
 - Use `rmm::device_async_resource_ref` in multi_stream_allocation benchmark ([#1482](https://github.com/rapidsai/rmm/pull/1482)) [@miscco](https://github.com/miscco)
 - Update devcontainers to CUDA Toolkit 12.2 ([#1470](https://github.com/rapidsai/rmm/pull/1470)) [@trxcllnt](https://github.com/trxcllnt)
 - Add support for Python 3.11 ([#1469](https://github.com/rapidsai/rmm/pull/1469)) [@jameslamb](https://github.com/jameslamb)
