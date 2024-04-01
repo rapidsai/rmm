@@ -12,7 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This file is simply used to make librmm a real package rather than a namespace
-# package to work around https://github.com/scikit-build/scikit-build-core/issues/682.
-# Since we have it, we may as well also set up some helpful metadata.
 from librmm._version import __git_commit__, __version__
