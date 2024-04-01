@@ -13,7 +13,8 @@ version=$(rapids-generate-version)
 commit=$(git rev-parse HEAD)
 
 RAPIDS_PY_CUDA_SUFFIX="$(rapids-wheel-ctk-name-gen ${RAPIDS_CUDA_VERSION})"
-RAPIDS_CPP_WHEEL_NAME="librmm_${RAPIDS_PY_CUDA_SUFFIX}" rapids-download-wheels-from-s3 ./dist
+# TODO: Need to update rapids-download-wheels-from-s3 to support a Python version-agnostic wheel
+RAPIDS_PY_WHEEL_NAME="librmm_${RAPIDS_PY_CUDA_SUFFIX}" RAPIDS_PY_VERSION="3.11" rapids-download-wheels-from-s3 ./dist
 
 # This is the version of the suffix with a preceding hyphen. It's used
 # everywhere except in the final wheel name.
