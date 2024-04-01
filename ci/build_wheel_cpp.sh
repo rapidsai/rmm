@@ -1,10 +1,10 @@
 #!/bin/bash
-# Copyright (c) 2023, NVIDIA CORPORATION.
+# Copyright (c) 2024, NVIDIA CORPORATION.
 
 set -euo pipefail
 
-package_name="rmm"
-package_dir="python/rmm"
+package_name="librmm"
+package_dir="python/librmm"
 
 source rapids-configure-sccache
 source rapids-date-string
@@ -24,10 +24,6 @@ pyproject_file="${package_dir}/pyproject.toml"
 sed -i "s/name = \"${package_name}\"/name = \"${package_name}${PACKAGE_CUDA_SUFFIX}\"/g" ${pyproject_file}
 echo "${version}" > VERSION
 sed -i "/^__git_commit__/ s/= .*/= \"${commit}\"/g" "${package_dir}/${package_name}/_version.py"
-
-if [[ $PACKAGE_CUDA_SUFFIX == "-cu12" ]]; then
-    sed -i "s/cuda-python[<=>\.,0-9a]*/cuda-python>=12.0,<13.0a0/g" ${pyproject_file}
-fi
 
 cd "${package_dir}"
 
