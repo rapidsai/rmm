@@ -207,37 +207,6 @@ alignment argument. All allocations are required to be aligned to at least 256B.
 `device_memory_resource` adds an additional `cuda_stream_view` argument to allow specifying the stream
 on which to perform the (de)allocation.
 
-## `cuda_stream_view` and `cuda_stream`
-
-`rmm::cuda_stream_view` is a simple non-owning wrapper around a CUDA `cudaStream_t`. This wrapper's
-purpose is to provide strong type safety for stream types. (`cudaStream_t` is an alias for a pointer,
-which can lead to ambiguity in APIs when it is assigned `0`.)  All RMM stream-ordered APIs take a
-`rmm::cuda_stream_view` argument.
-
-`rmm::cuda_stream` is a simple owning wrapper around a CUDA `cudaStream_t`. This class provides
-RAII semantics (constructor creates the CUDA stream, destructor destroys it). An `rmm::cuda_stream`
-can never represent the CUDA default stream or per-thread default stream; it only ever represents
-a single non-default stream. `rmm::cuda_stream` cannot be copied, but can be moved.
-
-## `cuda_stream_pool`
-
-`rmm::cuda_stream_pool` provides fast access to a pool of CUDA streams. This class can be used to
-create a set of `cuda_stream` objects whose lifetime is equal to the `cuda_stream_pool`. Using the
-stream pool can be faster than creating the streams on the fly. The size of the pool is configurable.
-Depending on this size, multiple calls to `cuda_stream_pool::get_stream()` may return instances of
-`rmm::cuda_stream_view` that represent identical CUDA streams.
-
-### Thread Safety
-
-All current device memory resources are thread safe unless documented otherwise. More specifically,
-calls to memory resource `allocate()` and `deallocate()` methods are safe with respect to calls to
-either of these functions from other threads. They are _not_ thread safe with respect to
-construction and destruction of the memory resource object.
-
-Note that a class `thread_safe_resource_adapter` is provided which can be used to adapt a memory
-resource that is not thread safe to be thread safe (as described above). This adapter is not needed
-with any current RMM device memory resources.
-
 ### Stream-ordered Memory Allocation
 
 `rmm::mr::device_memory_resource` is a base class that provides stream-ordered memory allocation.
@@ -386,17 +355,48 @@ line of the error comment.
 }
 ```
 
-### Allocators
+## `cuda_stream_view` and `cuda_stream`
+
+`rmm::cuda_stream_view` is a simple non-owning wrapper around a CUDA `cudaStream_t`. This wrapper's
+purpose is to provide strong type safety for stream types. (`cudaStream_t` is an alias for a pointer,
+which can lead to ambiguity in APIs when it is assigned `0`.)  All RMM stream-ordered APIs take a
+`rmm::cuda_stream_view` argument.
+
+`rmm::cuda_stream` is a simple owning wrapper around a CUDA `cudaStream_t`. This class provides
+RAII semantics (constructor creates the CUDA stream, destructor destroys it). An `rmm::cuda_stream`
+can never represent the CUDA default stream or per-thread default stream; it only ever represents
+a single non-default stream. `rmm::cuda_stream` cannot be copied, but can be moved.
+
+## `cuda_stream_pool`
+
+`rmm::cuda_stream_pool` provides fast access to a pool of CUDA streams. This class can be used to
+create a set of `cuda_stream` objects whose lifetime is equal to the `cuda_stream_pool`. Using the
+stream pool can be faster than creating the streams on the fly. The size of the pool is configurable.
+Depending on this size, multiple calls to `cuda_stream_pool::get_stream()` may return instances of
+`rmm::cuda_stream_view` that represent identical CUDA streams.
+
+## Thread Safety
+
+All current device memory resources are thread safe unless documented otherwise. More specifically,
+calls to memory resource `allocate()` and `deallocate()` methods are safe with respect to calls to
+either of these functions from other threads. They are _not_ thread safe with respect to
+construction and destruction of the memory resource object.
+
+Note that a class `thread_safe_resource_adapter` is provided which can be used to adapt a memory
+resource that is not thread safe to be thread safe (as described above). This adapter is not needed
+with any current RMM device memory resources.
+
+## Allocators
 
 C++ interfaces commonly allow customizable memory allocation through an [`Allocator`](https://en.cppreference.com/w/cpp/named_req/Allocator) object.
 RMM provides several `Allocator` and `Allocator`-like classes.
 
-#### `polymorphic_allocator`
+### `polymorphic_allocator`
 
 A [stream-ordered](#stream-ordered-memory-allocation) allocator similar to [`std::pmr::polymorphic_allocator`](https://en.cppreference.com/w/cpp/memory/polymorphic_allocator).
 Unlike the standard C++ `Allocator` interface, the `allocate` and `deallocate` functions take a `cuda_stream_view` indicating the stream on which the (de)allocation occurs.
 
-#### `stream_allocator_adaptor`
+### `stream_allocator_adaptor`
 
 `stream_allocator_adaptor` can be used to adapt a stream-ordered allocator to present a standard `Allocator` interface to consumers that may not be designed to work with a stream-ordered interface.
 
@@ -415,7 +415,7 @@ auto p = adapted.allocate(100);
 adapted.deallocate(p,100);
 ```
 
-#### `thrust_allocator`
+### `thrust_allocator`
 
 `thrust_allocator` is a device memory allocator that uses the strongly typed `thrust::device_ptr`, making it usable with containers like `thrust::device_vector`.
 
