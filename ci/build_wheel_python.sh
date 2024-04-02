@@ -13,8 +13,12 @@ version=$(rapids-generate-version)
 commit=$(git rev-parse HEAD)
 
 RAPIDS_PY_CUDA_SUFFIX="$(rapids-wheel-ctk-name-gen ${RAPIDS_CUDA_VERSION})"
-# TODO: Need to update rapids-download-wheels-from-s3 to support a Python version-agnostic wheel
-RAPIDS_PY_WHEEL_NAME="librmm_${RAPIDS_PY_CUDA_SUFFIX}" RAPIDS_PY_VERSION="3.11" rapids-download-wheels-from-s3 /tmp/librmm_dist
+
+if [[ ! -d "/tmp/gha-tools" ]]; then
+    git clone https://github.com/msarahan/gha-tools.git -b get-pr-wheel-artifact /tmp/gha-tools
+fi
+
+RAPIDS_PY_WHEEL_NAME="librmm_${RAPIDS_PY_CUDA_SUFFIX}" /tmp/gha-tools/rapids-download-wheels-from-s3 cpp /tmp/librmm_dist
 
 # This is the version of the suffix with a preceding hyphen. It's used
 # everywhere except in the final wheel name.
@@ -43,4 +47,4 @@ PIP_FIND_LINKS="/tmp/librmm_dist" python -m pip wheel . -w dist -vvv --no-deps -
 mkdir -p final_dist
 python -m auditwheel repair -w final_dist dist/*
 
-RAPIDS_PY_WHEEL_NAME="${package_name}_${RAPIDS_PY_CUDA_SUFFIX}" rapids-upload-wheels-to-s3 final_dist
+RAPIDS_PY_WHEEL_NAME="${package_name}_${RAPIDS_PY_CUDA_SUFFIX}" rapids-upload-wheels-to-s3 python final_dist
