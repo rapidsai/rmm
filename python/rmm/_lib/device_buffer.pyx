@@ -32,7 +32,10 @@ from cuda.ccudart cimport (
     cudaStream_t,
 )
 
-from rmm._lib.memory_resource cimport get_current_device_resource
+from rmm._lib.memory_resource cimport (
+    device_memory_resource,
+    get_current_device_resource,
+)
 
 
 # The DeviceMemoryResource attribute could be released prematurely
@@ -75,23 +78,22 @@ cdef class DeviceBuffer:
         >>> db = rmm.DeviceBuffer(size=5)
         """
         cdef const void* c_ptr
-
-        with nogil:
-            c_ptr = <const void*>ptr
-
-            if size == 0:
-                self.c_obj.reset(new device_buffer())
-            elif c_ptr == NULL:
-                self.c_obj.reset(new device_buffer(size, stream.view()))
-            else:
-                self.c_obj.reset(new device_buffer(c_ptr, size, stream.view()))
-
-                if stream.c_is_default():
-                    stream.c_synchronize()
-
+        cdef device_memory_resource * mr_ptr
         # Save a reference to the MR and stream used for allocation
         self.mr = get_current_device_resource()
         self.stream = stream
+
+        mr_ptr = self.mr.get_mr()
+        with nogil:
+            c_ptr = <const void*>ptr
+
+            if c_ptr == NULL or size == 0:
+                self.c_obj.reset(new device_buffer(size, stream.view(), mr_ptr))
+            else:
+                self.c_obj.reset(new device_buffer(c_ptr, size, stream.view(), mr_ptr))
+
+                if stream.c_is_default():
+                    stream.c_synchronize()
 
     def __len__(self):
         return self.size

@@ -218,7 +218,7 @@ cdef extern from "rmm/mr/device/failure_callback_resource_adaptor.hpp" \
 
 cdef class DeviceMemoryResource:
 
-    cdef device_memory_resource* get_mr(self):
+    cdef device_memory_resource* get_mr(self) noexcept nogil:
         """Get the underlying C++ memory resource object."""
         return self.c_obj.get()
 
