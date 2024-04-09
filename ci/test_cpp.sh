@@ -9,6 +9,7 @@ cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")"/../
 . /opt/conda/etc/profile.d/conda.sh
 
 rapids-logger "Print network info"
+apt update
 apt install -y iproute2
 ip a
 
