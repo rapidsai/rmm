@@ -119,11 +119,9 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
   bool do_is_equal(device_memory_resource const& other) const noexcept override
   {
     if (this == &other) { return true; }
-    auto thread_safe_other = dynamic_cast<thread_safe_resource_adaptor<Upstream> const*>(&other);
-    if (thread_safe_other != nullptr) {
-      return upstream_->is_equal(*thread_safe_other->get_upstream());
-    }
-    return upstream_->is_equal(other);
+    auto cast = dynamic_cast<thread_safe_resource_adaptor<Upstream> const*>(&other);
+    if (cast == nullptr) { return upstream_->is_equal(other); }
+    return get_upstream_resource() == cast->get_upstream_resource();
   }
 
   std::mutex mutable mtx;  // mutex for thread safe access to upstream

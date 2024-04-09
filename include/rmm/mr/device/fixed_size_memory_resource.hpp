@@ -156,7 +156,7 @@ class fixed_size_memory_resource
    */
   free_list blocks_from_upstream(cuda_stream_view stream)
   {
-    void* ptr = get_upstream()->allocate(upstream_chunk_size_, stream);
+    void* ptr = get_upstream_resource().allocate_async(upstream_chunk_size_, stream);
     block_type block{ptr};
     upstream_blocks_.push_back(block);
 
@@ -211,7 +211,7 @@ class fixed_size_memory_resource
     lock_guard lock(this->get_mutex());
 
     for (auto block : upstream_blocks_) {
-      get_upstream()->deallocate(block.pointer(), upstream_chunk_size_);
+      get_upstream_resource().deallocate(block.pointer(), upstream_chunk_size_);
     }
     upstream_blocks_.clear();
   }

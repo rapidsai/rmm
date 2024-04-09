@@ -236,7 +236,7 @@ cdef bool _retry_callback_function(size_t nbytes, void *callback_arg) noexcept n
 
 cdef class DeviceMemoryResource:
 
-    cdef device_memory_resource* get_mr(self):
+    cdef device_memory_resource* get_mr(self) noexcept nogil:
         """Get the underlying C++ memory resource object."""
         return self.c_obj.get()
 

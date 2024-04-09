@@ -127,7 +127,8 @@ TEST(StatisticsTest, PeakAllocations)
 
 TEST(StatisticsTest, MultiTracking)
 {
-  statistics_adaptor mr{rmm::mr::get_current_device_resource()};
+  auto* orig_device_resource = rmm::mr::get_current_device_resource();
+  statistics_adaptor mr{orig_device_resource};
   rmm::mr::set_current_device_resource(&mr);
 
   std::vector<std::shared_ptr<rmm::device_buffer>> allocations;
@@ -171,7 +172,7 @@ TEST(StatisticsTest, MultiTracking)
   EXPECT_EQ(inner_mr.get_allocations_counter().peak, 5);
 
   // Reset the current device resource
-  rmm::mr::set_current_device_resource(mr.get_upstream());
+  rmm::mr::set_current_device_resource(orig_device_resource);
 }
 
 TEST(StatisticsTest, NegativeInnerTracking)
