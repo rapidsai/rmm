@@ -1,7 +1,10 @@
 #!/bin/bash
-# Copyright (c) 2020-2023, NVIDIA CORPORATION.
+# Copyright (c) 2020-2024, NVIDIA CORPORATION.
 
 set -euo pipefail
+
+# Support invoking test_cpp.sh outside the script directory
+cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")"/../
 
 . /opt/conda/etc/profile.d/conda.sh
 
@@ -11,7 +14,7 @@ rapids-dependency-file-generator \
   --file_key test_cpp \
   --matrix "cuda=${RAPIDS_CUDA_VERSION%.*};arch=$(arch)" | tee env.yaml
 
-rapids-mamba-retry env create --force -f env.yaml -n test
+rapids-mamba-retry env create --yes -f env.yaml -n test
 
 # Temporarily allow unbound variables for conda activation.
 set +u
@@ -31,16 +34,11 @@ rapids-mamba-retry install \
 rapids-logger "Check GPU usage"
 nvidia-smi
 
-EXITCODE=0
-trap "EXITCODE=1" ERR
-set +e
-
 # Run librmm gtests from librmm-tests package
 rapids-logger "Run gtests"
 
-cd $CONDA_PREFIX/bin/gtests/librmm/
 export GTEST_OUTPUT=xml:${RAPIDS_TESTS_DIR}/
-ctest -j20 --output-on-failure
+./ci/run_ctests.sh -j20 && EXITCODE=$? || EXITCODE=$?;
 
 rapids-logger "Test script exiting with value: $EXITCODE"
 exit ${EXITCODE}

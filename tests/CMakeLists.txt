@@ -122,10 +122,6 @@ endfunction()
 
 # test sources
 
-# device mr tests
-ConfigureTest(DEVICE_MR_TEST mr/device/mr_tests.cpp mr/device/mr_multithreaded_tests.cpp GPUS 1
-              PERCENT 90)
-
 # device mr_ref tests
 ConfigureTest(DEVICE_MR_REF_TEST mr/device/mr_ref_tests.cpp
               mr/device/mr_ref_multithreaded_tests.cpp GPUS 1 PERCENT 100)
@@ -149,10 +145,10 @@ ConfigureTest(POLYMORPHIC_ALLOCATOR_TEST mr/device/polymorphic_allocator_tests.c
 ConfigureTest(STREAM_ADAPTOR_TEST mr/device/stream_allocator_adaptor_tests.cpp)
 
 # statistics adaptor tests
-ConfigureTest(STATISTICS_TEST mr/device/statistics_mr_tests.cpp)
+ConfigureTest(STATISTICS_TEST mr/device/statistics_mr_tests.cpp GPUS 1 PERCENT 100)
 
 # tracking adaptor tests
-ConfigureTest(TRACKING_TEST mr/device/tracking_mr_tests.cpp)
+ConfigureTest(TRACKING_TEST mr/device/tracking_mr_tests.cpp GPUS 1 PERCENT 100)
 
 # out-of-memory callback adaptor tests
 ConfigureTest(FAILURE_CALLBACK_TEST mr/device/failure_callback_mr_tests.cpp)
@@ -162,9 +158,6 @@ ConfigureTest(ALIGNED_TEST mr/device/aligned_mr_tests.cpp)
 
 # limiting adaptor tests
 ConfigureTest(LIMITING_TEST mr/device/limiting_mr_tests.cpp)
-
-# host mr tests
-ConfigureTest(HOST_MR_TEST mr/host/mr_tests.cpp)
 
 # host mr_ref tests
 ConfigureTest(HOST_MR_REF_TEST mr/host/mr_ref_tests.cpp)

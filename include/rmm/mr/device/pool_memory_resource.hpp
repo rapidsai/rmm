@@ -19,19 +19,20 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/logging_assert.hpp>
+#include <rmm/detail/thrust_namespace.h>
 #include <rmm/logger.hpp>
 #include <rmm/mr/device/detail/coalescing_free_list.hpp>
 #include <rmm/mr/device/detail/stream_ordered_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
-#include <rmm/detail/thrust_namespace.h>
+#include <cuda/std/type_traits>
+#include <cuda_runtime_api.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/optional.h>
 
 #include <fmt/core.h>
-
-#include <cuda_runtime_api.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -39,6 +40,7 @@
 #include <map>
 #include <mutex>
 #include <numeric>
+#include <optional>
 #include <set>
 #include <thread>
 #include <unordered_map>
@@ -126,11 +128,73 @@ class pool_memory_resource final
    * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to. Defaults to all
    * of the available memory from the upstream resource.
    */
+  template <class Optional,
+            cuda::std::enable_if_t<cuda::std::is_same_v<cuda::std::remove_cvref_t<Optional>,
+                                                        thrust::optional<std::size_t>>,
+                                   int> = 0>
+  [[deprecated(
+    "Must specify initial_pool_size and use std::optional instead of thrust::optional.")]]  //
+  explicit pool_memory_resource(Upstream* upstream_mr,
+                                Optional initial_pool_size,
+                                Optional maximum_pool_size = thrust::nullopt)
+    : pool_memory_resource(
+        upstream_mr, initial_pool_size.value_or(0), maximum_pool_size.value_or(std::nullopt))
+  {
+  }
+
+  /**
+   * @brief Construct a `pool_memory_resource` and allocate the initial device memory
+   * pool using `upstream_mr`.
+   *
+   * @deprecated Use the constructor that takes an explicit initial pool size instead.
+   *
+   * @throws rmm::logic_error if `upstream_mr == nullptr`
+   * @throws rmm::logic_error if `initial_pool_size` is neither the default nor aligned to a
+   * multiple of pool_memory_resource::allocation_alignment bytes.
+   * @throws rmm::logic_error if `maximum_pool_size` is neither the default nor aligned to a
+   * multiple of pool_memory_resource::allocation_alignment bytes.
+   *
+   * @param upstream_mr The memory_resource from which to allocate blocks for the pool.
+   * @param initial_pool_size Minimum size, in bytes, of the initial pool. Defaults to zero.
+   * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to. Defaults to all
+   * of the available memory from the upstream resource.
+   */
   [[deprecated("Must specify initial_pool_size")]]  //
   explicit pool_memory_resource(Upstream* upstream_mr,
-                                thrust::optional<std::size_t> initial_pool_size = thrust::nullopt,
-                                thrust::optional<std::size_t> maximum_pool_size = thrust::nullopt)
+                                std::optional<std::size_t> initial_pool_size = std::nullopt,
+                                std::optional<std::size_t> maximum_pool_size = std::nullopt)
     : pool_memory_resource(upstream_mr, initial_pool_size.value_or(0), maximum_pool_size)
+  {
+  }
+
+  /**
+   * @brief Construct a `pool_memory_resource` and allocate the initial device memory pool using
+   * `upstream_mr`.
+   *
+   * @deprecated Use the constructor that takes an explicit initial pool size instead.
+   *
+   * @throws rmm::logic_error if `upstream_mr == nullptr`
+   * @throws rmm::logic_error if `initial_pool_size` is neither the default nor aligned to a
+   * multiple of pool_memory_resource::allocation_alignment bytes.
+   * @throws rmm::logic_error if `maximum_pool_size` is neither the default nor aligned to a
+   * multiple of pool_memory_resource::allocation_alignment bytes.
+   *
+   * @param upstream_mr The memory_resource from which to allocate blocks for the pool.
+   * @param initial_pool_size Minimum size, in bytes, of the initial pool. Defaults to zero.
+   * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to. Defaults to all
+   * of the available memory from the upstream resource.
+   */
+  template <class Optional,
+            cuda::std::enable_if_t<cuda::std::is_same_v<cuda::std::remove_cvref_t<Optional>,
+                                                        thrust::optional<std::size_t>>,
+                                   int> = 0>
+  [[deprecated(
+    "Must specify initial_pool_size and use std::optional instead of thrust::optional.")]]  //
+  explicit pool_memory_resource(Upstream& upstream_mr,
+                                Optional initial_pool_size,
+                                Optional maximum_pool_size = thrust::nullopt)
+    : pool_memory_resource(
+        upstream_mr, initial_pool_size.value_or(0), maximum_pool_size.value_or(std::nullopt))
   {
   }
 
@@ -155,9 +219,36 @@ class pool_memory_resource final
             cuda::std::enable_if_t<cuda::mr::async_resource<Upstream2>, int> = 0>
   [[deprecated("Must specify initial_pool_size")]]  //
   explicit pool_memory_resource(Upstream2& upstream_mr,
-                                thrust::optional<std::size_t> initial_pool_size = thrust::nullopt,
-                                thrust::optional<std::size_t> maximum_pool_size = thrust::nullopt)
+                                std::optional<std::size_t> initial_pool_size = std::nullopt,
+                                std::optional<std::size_t> maximum_pool_size = std::nullopt)
     : pool_memory_resource(upstream_mr, initial_pool_size.value_or(0), maximum_pool_size)
+  {
+  }
+
+  /**
+   * @brief Construct a `pool_memory_resource` and allocate the initial device memory pool using
+   * `upstream_mr`.
+   *
+   * @throws rmm::logic_error if `upstream_mr == nullptr`
+   * @throws rmm::logic_error if `initial_pool_size` is not aligned to a multiple of
+   * pool_memory_resource::allocation_alignment bytes.
+   * @throws rmm::logic_error if `maximum_pool_size` is neither the default nor aligned to a
+   * multiple of pool_memory_resource::allocation_alignment bytes.
+   *
+   * @param upstream_mr The memory_resource from which to allocate blocks for the pool.
+   * @param initial_pool_size Minimum size, in bytes, of the initial pool.
+   * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to. Defaults to all
+   * of the available from the upstream resource.
+   */
+  template <class Optional,
+            cuda::std::enable_if_t<cuda::std::is_same_v<cuda::std::remove_cvref_t<Optional>,
+                                                        thrust::optional<std::size_t>>,
+                                   int> = 0>
+  [[deprecated("Use std::optional instead of thrust::optional.")]]  //
+  explicit pool_memory_resource(Upstream* upstream_mr,
+                                std::size_t initial_pool_size,
+                                Optional maximum_pool_size)
+    : pool_memory_resource(upstream_mr, initial_pool_size, maximum_pool_size.value_or(std::nullopt))
   {
   }
 
@@ -178,7 +269,7 @@ class pool_memory_resource final
    */
   explicit pool_memory_resource(Upstream* upstream_mr,
                                 std::size_t initial_pool_size,
-                                thrust::optional<std::size_t> maximum_pool_size = thrust::nullopt)
+                                std::optional<std::size_t> maximum_pool_size = std::nullopt)
     : upstream_mr_{[upstream_mr]() {
         RMM_EXPECTS(nullptr != upstream_mr, "Unexpected null upstream pointer.");
         return upstream_mr;
@@ -207,11 +298,40 @@ class pool_memory_resource final
    * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to. Defaults to all
    * of the available memory from the upstream resource.
    */
+  template <class Optional,
+            cuda::std::enable_if_t<cuda::std::is_same_v<cuda::std::remove_cvref_t<Optional>,
+                                                        thrust::optional<std::size_t>>,
+                                   int> = 0>
+  [[deprecated("Use std::optional instead of thrust::optional.")]]  //
+  explicit pool_memory_resource(Upstream& upstream_mr,
+                                std::size_t initial_pool_size,
+                                Optional maximum_pool_size)
+    : pool_memory_resource(cuda::std::addressof(upstream_mr),
+                           initial_pool_size,
+                           maximum_pool_size.value_or(std::nullopt))
+  {
+  }
+
+  /**
+   * @brief Construct a `pool_memory_resource` and allocate the initial device memory pool using
+   * `upstream_mr`.
+   *
+   * @throws rmm::logic_error if `upstream_mr == nullptr`
+   * @throws rmm::logic_error if `initial_pool_size` is not aligned to a multiple of
+   * pool_memory_resource::allocation_alignment bytes.
+   * @throws rmm::logic_error if `maximum_pool_size` is neither the default nor aligned to a
+   * multiple of pool_memory_resource::allocation_alignment bytes.
+   *
+   * @param upstream_mr The memory_resource from which to allocate blocks for the pool.
+   * @param initial_pool_size Minimum size, in bytes, of the initial pool.
+   * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to. Defaults to all
+   * of the available memory from the upstream resource.
+   */
   template <typename Upstream2                                               = Upstream,
             cuda::std::enable_if_t<cuda::mr::async_resource<Upstream2>, int> = 0>
   explicit pool_memory_resource(Upstream2& upstream_mr,
                                 std::size_t initial_pool_size,
-                                thrust::optional<std::size_t> maximum_pool_size = thrust::nullopt)
+                                std::optional<std::size_t> maximum_pool_size = std::nullopt)
     : pool_memory_resource(cuda::std::addressof(upstream_mr), initial_pool_size, maximum_pool_size)
   {
   }
@@ -229,26 +349,17 @@ class pool_memory_resource final
   pool_memory_resource& operator=(pool_memory_resource&&)      = delete;
 
   /**
-   * @brief Queries whether the resource supports use of non-null CUDA streams for
-   * allocation/deallocation.
-   *
-   * @returns bool true.
+   * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
    */
-  [[nodiscard]] bool supports_streams() const noexcept override { return true; }
+  [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
+  {
+    return upstream_mr_;
+  }
 
   /**
-   * @brief Get the upstream memory_resource object.
-   *
-   * @return const reference to the upstream memory resource.
+   * @briefreturn{Upstream* to the upstream memory resource}
    */
-  [[nodiscard]] const Upstream& upstream_resource() const noexcept { return *upstream_mr_; }
-
-  /**
-   * @brief Get the upstream memory_resource object.
-   *
-   * @return UpstreamResource* the upstream memory resource.
-   */
-  Upstream* get_upstream() const noexcept { return upstream_mr_; }
+  [[nodiscard]] Upstream* get_upstream() const noexcept { return upstream_mr_; }
 
   /**
    * @brief Computes the size of the current pool
@@ -321,7 +432,7 @@ class pool_memory_resource final
    *
    * @throws logic_error if @p initial_size is larger than @p maximum_size (if set).
    */
-  void initialize_pool(std::size_t initial_size, thrust::optional<std::size_t> maximum_size)
+  void initialize_pool(std::size_t initial_size, std::optional<std::size_t> maximum_size)
   {
     current_pool_size_ = 0;  // try_to_expand will set this if it succeeds
     maximum_pool_size_ = maximum_size;
@@ -385,18 +496,18 @@ class pool_memory_resource final
    * @param stream The stream on which the memory is to be used.
    * @return block_type The allocated block
    */
-  thrust::optional<block_type> block_from_upstream(std::size_t size, cuda_stream_view stream)
+  std::optional<block_type> block_from_upstream(std::size_t size, cuda_stream_view stream)
   {
     RMM_LOG_DEBUG("[A][Stream {}][Upstream {}B]", fmt::ptr(stream.value()), size);
 
     if (size == 0) { return {}; }
 
     try {
-      void* ptr = get_upstream()->allocate_async(size, stream);
-      return thrust::optional<block_type>{
+      void* ptr = get_upstream_resource().allocate_async(size, stream);
+      return std::optional<block_type>{
         *upstream_blocks_.emplace(static_cast<char*>(ptr), size, true).first};
     } catch (std::exception const& e) {
-      return thrust::nullopt;
+      return std::nullopt;
     }
   }
 
@@ -459,7 +570,7 @@ class pool_memory_resource final
     lock_guard lock(this->get_mutex());
 
     for (auto block : upstream_blocks_) {
-      get_upstream()->deallocate(block.pointer(), block.size());
+      get_upstream_resource().deallocate(block.pointer(), block.size());
     }
     upstream_blocks_.clear();
 #ifdef RMM_POOL_TRACK_ALLOCATIONS
@@ -524,7 +635,7 @@ class pool_memory_resource final
  private:
   Upstream* upstream_mr_;  // The "heap" to allocate the pool from
   std::size_t current_pool_size_{};
-  thrust::optional<std::size_t> maximum_pool_size_{};
+  std::optional<std::size_t> maximum_pool_size_{};
 
 #ifdef RMM_POOL_TRACK_ALLOCATIONS
   std::set<block_type, rmm::mr::detail::compare_blocks<block_type>> allocated_blocks_;

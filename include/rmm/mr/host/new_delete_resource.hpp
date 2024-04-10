@@ -15,10 +15,9 @@
  */
 #pragma once
 
-#include <rmm/mr/host/host_memory_resource.hpp>
-
 #include <rmm/aligned.hpp>
 #include <rmm/detail/aligned.hpp>
+#include <rmm/mr/host/host_memory_resource.hpp>
 
 #include <cstddef>
 #include <utility>

@@ -15,10 +15,9 @@
  */
 #pragma once
 
-#include <rmm/mr/device/device_memory_resource.hpp>
-
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <cstddef>
 
@@ -42,14 +41,6 @@ class managed_memory_resource final : public device_memory_resource {
     default;  ///< @default_copy_assignment{managed_memory_resource}
   managed_memory_resource& operator=(managed_memory_resource&&) =
     default;  ///< @default_move_assignment{managed_memory_resource}
-
-  /**
-   * @brief Query whether the resource supports use of non-null streams for
-   * allocation/deallocation.
-   *
-   * @returns false
-   */
-  [[nodiscard]] bool supports_streams() const noexcept override { return false; }
 
  private:
   /**

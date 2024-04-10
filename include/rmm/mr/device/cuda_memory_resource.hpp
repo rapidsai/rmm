@@ -15,10 +15,9 @@
  */
 #pragma once
 
-#include <rmm/mr/device/device_memory_resource.hpp>
-
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <cstddef>
 
@@ -42,14 +41,6 @@ class cuda_memory_resource final : public device_memory_resource {
     default;  ///< @default_copy_assignment{cuda_memory_resource}
   cuda_memory_resource& operator=(cuda_memory_resource&&) =
     default;  ///< @default_move_assignment{cuda_memory_resource}
-
-  /**
-   * @brief Query whether the resource supports use of non-null CUDA streams for
-   * allocation/deallocation. `cuda_memory_resource` does not support streams.
-   *
-   * @returns bool false
-   */
-  [[nodiscard]] bool supports_streams() const noexcept override { return false; }
 
  private:
   /**

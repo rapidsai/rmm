@@ -18,6 +18,7 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <fmt/core.h>
 #include <spdlog/common.h>
@@ -137,22 +138,17 @@ class logging_resource_adaptor final : public device_memory_resource {
     default;  ///< @default_move_assignment{logging_resource_adaptor}
 
   /**
-   * @brief Return pointer to the upstream resource.
-   *
-   * @return Upstream* Pointer to the upstream resource.
+   * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
    */
-  [[nodiscard]] Upstream* get_upstream() const noexcept { return upstream_; }
+  [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
+  {
+    return upstream_;
+  }
 
   /**
-   * @brief Checks whether the upstream resource supports streams.
-   *
-   * @return true The upstream resource supports streams
-   * @return false The upstream resource does not support streams.
+   * @briefreturn{Upstream* to the upstream memory resource}
    */
-  [[nodiscard]] bool supports_streams() const noexcept override
-  {
-    return upstream_->supports_streams();
-  }
+  [[nodiscard]] Upstream* get_upstream() const noexcept { return upstream_; }
 
   /**
    * @brief Flush logger contents.
@@ -281,8 +277,8 @@ class logging_resource_adaptor final : public device_memory_resource {
   {
     if (this == &other) { return true; }
     auto const* cast = dynamic_cast<logging_resource_adaptor<Upstream> const*>(&other);
-    if (cast != nullptr) { return upstream_->is_equal(*cast->get_upstream()); }
-    return upstream_->is_equal(other);
+    if (cast == nullptr) { return upstream_->is_equal(other); }
+    return get_upstream_resource() == cast->get_upstream_resource();
   }
 
   // make_logging_adaptor needs access to private get_default_filename

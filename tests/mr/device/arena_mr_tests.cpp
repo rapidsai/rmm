@@ -26,10 +26,9 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-
-#include <memory>
 #include <sys/stat.h>
 
+#include <memory>
 #include <thread>
 #include <vector>
 
@@ -590,12 +589,6 @@ TEST_F(ArenaTest, DumpLogOnFailure)  // NOLINT
   struct stat file_status {};
   EXPECT_EQ(stat("rmm_arena_memory_dump.log", &file_status), 0);
   EXPECT_GE(file_status.st_size, 0);
-}
-
-TEST_F(ArenaTest, FeatureSupport)  // NOLINT
-{
-  arena_mr mr{rmm::mr::get_current_device_resource(), 1_MiB};
-  EXPECT_TRUE(mr.supports_streams());
 }
 
 }  // namespace
