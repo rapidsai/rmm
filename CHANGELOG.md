@@ -1,3 +1,57 @@
+# RMM 24.04.00 (10 Apr 2024)
+
+## 🚨 Breaking Changes
+
+- Accept stream argument in DeviceMemoryResource allocate/deallocate ([#1494](https://github.com/rapidsai/rmm/pull/1494)) [@wence-](https://github.com/wence-)
+- Replace all internal usage of `get_upstream` with `get_upstream_resource` ([#1491](https://github.com/rapidsai/rmm/pull/1491)) [@miscco](https://github.com/miscco)
+- Deprecate rmm::mr::device_memory_resource::supports_streams() ([#1452](https://github.com/rapidsai/rmm/pull/1452)) [@harrism](https://github.com/harrism)
+- Remove deprecated rmm::detail::available_device_memory ([#1438](https://github.com/rapidsai/rmm/pull/1438)) [@harrism](https://github.com/harrism)
+- Make device_memory_resource::supports_streams() not pure virtual. Remove derived implementations and calls in RMM ([#1437](https://github.com/rapidsai/rmm/pull/1437)) [@harrism](https://github.com/harrism)
+- Deprecate rmm::mr::device_memory_resource::get_mem_info() and supports_get_mem_info(). ([#1436](https://github.com/rapidsai/rmm/pull/1436)) [@harrism](https://github.com/harrism)
+
+## 🐛 Bug Fixes
+
+- Fix search path for torch allocator in editable installs and ensure CUDA support is available ([#1498](https://github.com/rapidsai/rmm/pull/1498)) [@vyasr](https://github.com/vyasr)
+- Accept stream argument in DeviceMemoryResource allocate/deallocate ([#1494](https://github.com/rapidsai/rmm/pull/1494)) [@wence-](https://github.com/wence-)
+- Run STATISTICS_TEST and TRACKING_TEST in serial to avoid OOM errors. ([#1487](https://github.com/rapidsai/rmm/pull/1487)) [@bdice](https://github.com/bdice)
+
+## 📖 Documentation
+
+- Pin to recent breathe, to prevent getting an unsupported sphinx version. ([#1495](https://github.com/rapidsai/rmm/pull/1495)) [@bdice](https://github.com/bdice)
+
+## 🚀 New Features
+
+- Replace all internal usage of `get_upstream` with `get_upstream_resource` ([#1491](https://github.com/rapidsai/rmm/pull/1491)) [@miscco](https://github.com/miscco)
+- Add complete set of resource ref aliases ([#1479](https://github.com/rapidsai/rmm/pull/1479)) [@nvdbaranec](https://github.com/nvdbaranec)
+- Automate include grouping using clang-format ([#1463](https://github.com/rapidsai/rmm/pull/1463)) [@harrism](https://github.com/harrism)
+- Add `get_upstream_resource` to resource adaptors ([#1456](https://github.com/rapidsai/rmm/pull/1456)) [@miscco](https://github.com/miscco)
+- Deprecate rmm::mr::device_memory_resource::supports_streams() ([#1452](https://github.com/rapidsai/rmm/pull/1452)) [@harrism](https://github.com/harrism)
+- Remove duplicated memory_resource_tests ([#1451](https://github.com/rapidsai/rmm/pull/1451)) [@miscco](https://github.com/miscco)
+- Change `rmm::exec_policy` to take `async_resource_ref` ([#1449](https://github.com/rapidsai/rmm/pull/1449)) [@miscco](https://github.com/miscco)
+- Change `device_scalar` to take `async_resource_ref` ([#1447](https://github.com/rapidsai/rmm/pull/1447)) [@miscco](https://github.com/miscco)
+- Add device_async_resource_ref convenience alias ([#1441](https://github.com/rapidsai/rmm/pull/1441)) [@harrism](https://github.com/harrism)
+- Remove deprecated rmm::detail::available_device_memory ([#1438](https://github.com/rapidsai/rmm/pull/1438)) [@harrism](https://github.com/harrism)
+- Make device_memory_resource::supports_streams() not pure virtual. Remove derived implementations and calls in RMM ([#1437](https://github.com/rapidsai/rmm/pull/1437)) [@harrism](https://github.com/harrism)
+- Deprecate rmm::mr::device_memory_resource::get_mem_info() and supports_get_mem_info(). ([#1436](https://github.com/rapidsai/rmm/pull/1436)) [@harrism](https://github.com/harrism)
+- Support CUDA 12.2 ([#1419](https://github.com/rapidsai/rmm/pull/1419)) [@jameslamb](https://github.com/jameslamb)
+
+## 🛠️ Improvements
+
+- Use `conda env create --yes` instead of `--force` ([#1509](https://github.com/rapidsai/rmm/pull/1509)) [@bdice](https://github.com/bdice)
+- Add upper bound to prevent usage of NumPy 2 ([#1501](https://github.com/rapidsai/rmm/pull/1501)) [@bdice](https://github.com/bdice)
+- Remove hard-coding of RAPIDS version where possible ([#1496](https://github.com/rapidsai/rmm/pull/1496)) [@KyleFromNVIDIA](https://github.com/KyleFromNVIDIA)
+- Requre NumPy 1.23+ ([#1488](https://github.com/rapidsai/rmm/pull/1488)) [@jakirkham](https://github.com/jakirkham)
+- Use `rmm::device_async_resource_ref` in multi_stream_allocation benchmark ([#1482](https://github.com/rapidsai/rmm/pull/1482)) [@miscco](https://github.com/miscco)
+- Update devcontainers to CUDA Toolkit 12.2 ([#1470](https://github.com/rapidsai/rmm/pull/1470)) [@trxcllnt](https://github.com/trxcllnt)
+- Add support for Python 3.11 ([#1469](https://github.com/rapidsai/rmm/pull/1469)) [@jameslamb](https://github.com/jameslamb)
+- target branch-24.04 for GitHub Actions workflows ([#1468](https://github.com/rapidsai/rmm/pull/1468)) [@jameslamb](https://github.com/jameslamb)
+- [FEA]: Use `std::optional` instead of `thrust::optional` ([#1464](https://github.com/rapidsai/rmm/pull/1464)) [@miscco](https://github.com/miscco)
+- Add environment-agnostic scripts for running ctests and pytests ([#1462](https://github.com/rapidsai/rmm/pull/1462)) [@trxcllnt](https://github.com/trxcllnt)
+- Ensure that `ctest` is called with `--no-tests=error`. ([#1460](https://github.com/rapidsai/rmm/pull/1460)) [@bdice](https://github.com/bdice)
+- Update ops-bot.yaml ([#1458](https://github.com/rapidsai/rmm/pull/1458)) [@AyodeAwe](https://github.com/AyodeAwe)
+- Adopt the `rmm::device_async_resource_ref` alias ([#1454](https://github.com/rapidsai/rmm/pull/1454)) [@miscco](https://github.com/miscco)
+- Refactor error.hpp out of detail ([#1439](https://github.com/rapidsai/rmm/pull/1439)) [@lamarrr](https://github.com/lamarrr)
+
 # RMM 24.02.00 (12 Feb 2024)
 
 ## 🚨 Breaking Changes
