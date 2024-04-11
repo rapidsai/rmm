@@ -336,17 +336,15 @@ for(int i = 0; i < N; ++i) {
 
 Note that the CUDA device that is current when creating a `device_memory_resource` must also be
 current any time that `device_memory_resource` is used to deallocate memory, including in a
-destructor. The RAII class `rmm::device_buffer` and classes that use
-it as a backing store (`rmm::device_scalar` and `rmm::device_uvector`)
-handle this by storing the active device when the constructor is
-called, and then ensuring that the stored device is active whenever an
-allocation or deallocation is performed (including in the destructor).
-The user must therefore only ensure that the device active during
-_creation_ of an `rmm::device_buffer` matches the active device of the
+destructor. The RAII class `rmm::device_buffer` and classes that use it as a backing store
+(`rmm::device_scalar` and `rmm::device_uvector`) handle this by storing the active device when the
+constructor is called, and then ensuring that the stored device is active whenever an allocation or
+deallocation is performed (including in the destructor). The user must therefore only ensure that
+the device active during _creation_ of an `rmm::device_buffer` matches the active device of the
 memory resource being used.
 
-Here is an incorrect example that creates a memory resource on device
-zero and then uses it to allocate a `device_buffer` on device one:
+Here is an incorrect example that creates a memory resource on device zero and then uses it to
+allocate a `device_buffer` on device one:
 
 ```c++
 {
@@ -360,10 +358,10 @@ zero and then uses it to allocate a `device_buffer` on device one:
 }
 ```
 
-A correct example creates the device buffer with device zero active.
-After that it is safe to switch devices and let the buffer go out of
-scope and destruct with a different device active. For example, this
-code is correct:
+A correct example creates the device buffer with device zero active. After that it is safe to switch
+devices and let the buffer go out of scope and destruct with a different device active. For example,
+this code is correct:
+
 ```c++
 {
   RMM_CUDA_TRY(cudaSetDevice(0));
@@ -377,16 +375,13 @@ code is correct:
 
 #### Use of `rmm::device_vector` with multiple devices
 
-> [!CAUTION]
-> In contrast to the uninitialized `rmm:device_uvector`,
-> `rmm::device_vector` **DOES NOT** store the active device during
-> construction, and therefore cannot arrange for it to be active when
-> the destructor runs. It is therefore the responsibility of the user
-> to ensure the currently active device is correct.
+> [!CAUTION] In contrast to the uninitialized `rmm:device_uvector`, `rmm::device_vector` **DOES
+> NOT** store the active device during construction, and therefore cannot arrange for it to be
+> active when the destructor runs. It is therefore the responsibility of the user to ensure the
+> currently active device is correct.
 
-`rmm::device_vector` is therefore slightly less ergonomic to use in a
-multiple device setting since the caller must arrange that active
-devices on allocation and deallocation match. Recapitulating the
+`rmm::device_vector` is therefore slightly less ergonomic to use in a multiple device setting since
+the caller must arrange that active devices on allocation and deallocation match. Recapitulating the
 previous example using `rmm::device_vector`:
 
 ```c++
@@ -399,8 +394,9 @@ previous example using `rmm::device_vector`:
   // ERROR: ~vec runs with device 1 active, but needs device 0 to be active
 }
 ```
-A correct example adds a call to `cudaSetDevice(0)` on the line of the
-error comment before the dtor for `~vec` runs.
+
+A correct example adds a call to `cudaSetDevice(0)` on the line of the error comment before the dtor
+for `~vec` runs.
 
 ## `cuda_stream_view` and `cuda_stream`
 
