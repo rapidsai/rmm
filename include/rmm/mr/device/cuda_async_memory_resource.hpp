@@ -95,10 +95,16 @@ class cuda_async_memory_resource final : public device_memory_resource {
     Optional initial_pool_size,
     Optional release_threshold                                  = {},
     thrust::optional<allocation_handle_type> export_handle_type = {})
-    : cuda_async_memory_resource(initial_pool_size.value_or(std::nullopt),
-                                 release_threshold.value_or(std::nullopt),
-                                 export_handle_type.value_or(std::nullopt))
-
+    : cuda_async_memory_resource(
+        std::optional<size_t>(initial_pool_size.has_value()
+                                ? std::make_optional(initial_pool_size.value())
+                                : std::nullopt),
+        std::optional<size_t>(release_threshold.has_value()
+                                ? std::make_optional(release_threshold.value())
+                                : std::nullopt),
+        std::optional<allocation_handle_type>(export_handle_type.has_value()
+                                                ? std::make_optional(export_handle_type.value())
+                                                : std::nullopt))
   {
   }
 
