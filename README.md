@@ -397,6 +397,13 @@ For example, recapitulating the previous example using `rmm::device_vector`:
 }
 ```
 
+> [!NOTE]
+> Although allocation and deallocation in the `thrust_allocator` run with the correct active device,
+> modification of `rmm::device_vector` might necessitate a kernel launch, and this must run with the
+> correct device active. For example, `.resize()` might both allocate _and_ launch a kernel to
+> initialize new elements. The user must arrange for this to happen with the correct device for the
+> memory resource active.
+
 ## `cuda_stream_view` and `cuda_stream`
 
 `rmm::cuda_stream_view` is a simple non-owning wrapper around a CUDA `cudaStream_t`. This wrapper's
