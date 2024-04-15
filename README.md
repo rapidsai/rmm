@@ -375,14 +375,16 @@ this code is correct:
 
 #### Use of `rmm::device_vector` with multiple devices
 
-> [!CAUTION] In contrast to the uninitialized `rmm:device_uvector`, `rmm::device_vector` **DOES
-> NOT** store the active device during construction, and therefore cannot arrange for it to be
-> active when the destructor runs. It is therefore the responsibility of the user to ensure the
-> currently active device is correct.
+`rmm:device_vector` uses an `rmm::mr::thrust_allocator` to enable `thrust::device_vector` to
+allocate and deallocate memory using RMM. As such, the usual rules for usage of the backing memory
+resource apply: the active device must match the active device at resource construction time. To
+facilitate use in an RAII setting, `rmm::mr::thrust_allocator` records the active device at
+construction time and ensure that that device is active whenever it allocates or deallocates memory.
+Usage of `rmm::device_vector` with multiple devices is therefore the same as `rmm::device_buffer`.
+One must _create_ `device_vector`s with the correct device active, but it is always safe to destruct
+with a different active device.
 
-`rmm::device_vector` is therefore slightly less ergonomic to use in a multiple device setting since
-the caller must arrange that active devices on allocation and deallocation match. Recapitulating the
-previous example using `rmm::device_vector`:
+For example, recapitulating the previous example using `rmm::device_vector`:
 
 ```c++
 {
@@ -391,12 +393,9 @@ previous example using `rmm::device_vector`:
   rmm::device_vector<int> vec(16, rmm::mr::thrust_allocator<int>(rmm::cuda_stream_default, &mr));
   RMM_CUDA_TRY(cudaSetDevice(1));
   ...
-  // ERROR: ~vec runs with device 1 active, but needs device 0 to be active
+  // No need to switch back to device 0 before ~vec runs
 }
 ```
-
-A correct example adds a call to `cudaSetDevice(0)` on the line of the error comment before the dtor
-for `~vec` runs.
 
 ## `cuda_stream_view` and `cuda_stream`
 
