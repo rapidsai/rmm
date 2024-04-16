@@ -58,7 +58,7 @@ extensions = [
 ]
 
 # Breathe Configuration
-breathe_projects = {"librmm": "../../doxygen/xml"}
+breathe_projects = {"librmm": "../../../doxygen/xml"}
 breathe_default_project = "librmm"
 
 copybutton_prompt_text = ">>> "

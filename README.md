@@ -207,38 +207,7 @@ alignment argument. All allocations are required to be aligned to at least 256B.
 `device_memory_resource` adds an additional `cuda_stream_view` argument to allow specifying the stream
 on which to perform the (de)allocation.
 
-## `cuda_stream_view` and `cuda_stream`
-
-`rmm::cuda_stream_view` is a simple non-owning wrapper around a CUDA `cudaStream_t`. This wrapper's
-purpose is to provide strong type safety for stream types. (`cudaStream_t` is an alias for a pointer,
-which can lead to ambiguity in APIs when it is assigned `0`.)  All RMM stream-ordered APIs take a
-`rmm::cuda_stream_view` argument.
-
-`rmm::cuda_stream` is a simple owning wrapper around a CUDA `cudaStream_t`. This class provides
-RAII semantics (constructor creates the CUDA stream, destructor destroys it). An `rmm::cuda_stream`
-can never represent the CUDA default stream or per-thread default stream; it only ever represents
-a single non-default stream. `rmm::cuda_stream` cannot be copied, but can be moved.
-
-## `cuda_stream_pool`
-
-`rmm::cuda_stream_pool` provides fast access to a pool of CUDA streams. This class can be used to
-create a set of `cuda_stream` objects whose lifetime is equal to the `cuda_stream_pool`. Using the
-stream pool can be faster than creating the streams on the fly. The size of the pool is configurable.
-Depending on this size, multiple calls to `cuda_stream_pool::get_stream()` may return instances of
-`rmm::cuda_stream_view` that represent identical CUDA streams.
-
-### Thread Safety
-
-All current device memory resources are thread safe unless documented otherwise. More specifically,
-calls to memory resource `allocate()` and `deallocate()` methods are safe with respect to calls to
-either of these functions from other threads. They are _not_ thread safe with respect to
-construction and destruction of the memory resource object.
-
-Note that a class `thread_safe_resource_adapter` is provided which can be used to adapt a memory
-resource that is not thread safe to be thread safe (as described above). This adapter is not needed
-with any current RMM device memory resources.
-
-### Stream-ordered Memory Allocation
+## Stream-ordered Memory Allocation
 
 `rmm::mr::device_memory_resource` is a base class that provides stream-ordered memory allocation.
 This allows optimizations such as re-using memory deallocated on the same stream without the
@@ -270,16 +239,16 @@ For further information about stream-ordered memory allocation semantics, read
 Allocator](https://developer.nvidia.com/blog/using-cuda-stream-ordered-memory-allocator-part-1/)
 on the NVIDIA Developer Blog.
 
-### Available Resources
+## Available Device Resources
 
 RMM provides several `device_memory_resource` derived classes to satisfy various user requirements.
 For more detailed information about these resources, see their respective documentation.
 
-#### `cuda_memory_resource`
+### `cuda_memory_resource`
 
 Allocates and frees device memory using `cudaMalloc` and `cudaFree`.
 
-#### `managed_memory_resource`
+### `managed_memory_resource`
 
 Allocates and frees device memory using `cudaMallocManaged` and `cudaFree`.
 
@@ -287,22 +256,22 @@ Note that `managed_memory_resource` cannot be used with NVIDIA Virtual GPU Softw
 with virtual machines or hypervisors) because [NVIDIA CUDA Unified Memory is not supported by
 NVIDIA vGPU](https://docs.nvidia.com/grid/latest/grid-vgpu-user-guide/index.html#cuda-open-cl-support-vgpu).
 
-#### `pool_memory_resource`
+### `pool_memory_resource`
 
 A coalescing, best-fit pool sub-allocator.
 
-#### `fixed_size_memory_resource`
+### `fixed_size_memory_resource`
 
 A memory resource that can only allocate a single fixed size. Average allocation and deallocation
 cost is constant.
 
-#### `binning_memory_resource`
+### `binning_memory_resource`
 
 Configurable to use multiple upstream memory resources for allocations that fall within different
 bin sizes. Often configured with multiple bins backed by `fixed_size_memory_resource`s and a single
 `pool_memory_resource` for allocations larger than the largest bin size.
 
-### Default Resources and Per-device Resources
+## Default Resources and Per-device Resources
 
 RMM users commonly need to configure a `device_memory_resource` object to use for all allocations
 where another resource has not explicitly been provided. A common example is configuring a
@@ -327,7 +296,7 @@ Accessing and modifying the default resource is done through two functions:
      `get_current_device_resource()`
    - For more explicit control, you can use `set_per_device_resource()`, which takes a device ID.
 
-#### Example
+### Example
 
 ```c++
 rmm::mr::cuda_memory_resource cuda_mr;
@@ -339,7 +308,7 @@ rmm::mr::set_current_device_resource(&pool_mr); // Updates the current device re
 rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource(); // Points to `pool_mr`
 ```
 
-#### Multiple Devices
+### Multiple Devices
 
 A `device_memory_resource` should only be used when the active CUDA device is the same device
 that was active when the `device_memory_resource` was created. Otherwise behavior is undefined.
@@ -367,36 +336,110 @@ for(int i = 0; i < N; ++i) {
 
 Note that the CUDA device that is current when creating a `device_memory_resource` must also be
 current any time that `device_memory_resource` is used to deallocate memory, including in a
-destructor. This affects RAII classes like `rmm::device_buffer` and `rmm::device_uvector`. Here's an
-(incorrect) example that assumes the above example loop has been run to create a
-`pool_memory_resource` for each device. A correct example adds a call to `cudaSetDevice(0)` on the
-line of the error comment.
+destructor. The RAII class `rmm::device_buffer` and classes that use it as a backing store
+(`rmm::device_scalar` and `rmm::device_uvector`) handle this by storing the active device when the
+constructor is called, and then ensuring that the stored device is active whenever an allocation or
+deallocation is performed (including in the destructor). The user must therefore only ensure that
+the device active during _creation_ of an `rmm::device_buffer` matches the active device of the
+memory resource being used.
+
+Here is an incorrect example that creates a memory resource on device zero and then uses it to
+allocate a `device_buffer` on device one:
 
 ```c++
 {
   RMM_CUDA_TRY(cudaSetDevice(0));
-  rmm::device_buffer buf_a(16);
-
+  auto mr = rmm::mr::cuda_memory_resource{};
   {
     RMM_CUDA_TRY(cudaSetDevice(1));
-    rmm::device_buffer buf_b(16);
+    // Invalid, current device is 1, but MR is only valid for device 0
+    rmm::device_buffer buf(16, rmm::cuda_stream_default, &mr);
   }
-
-  // Error: when buf_a is destroyed, the current device must be 0, but it is 1
 }
 ```
 
-### Allocators
+A correct example creates the device buffer with device zero active. After that it is safe to switch
+devices and let the buffer go out of scope and destruct with a different device active. For example,
+this code is correct:
+
+```c++
+{
+  RMM_CUDA_TRY(cudaSetDevice(0));
+  auto mr = rmm::mr::cuda_memory_resource{};
+  rmm::device_buffer buf(16, rmm::cuda_stream_default, &mr);
+  RMM_CUDA_TRY(cudaSetDevice(1));
+  ...
+  // No need to switch back to device 0 before ~buf runs
+}
+```
+
+#### Use of `rmm::device_vector` with multiple devices
+
+> [!CAUTION] In contrast to the uninitialized `rmm:device_uvector`, `rmm::device_vector` **DOES
+> NOT** store the active device during construction, and therefore cannot arrange for it to be
+> active when the destructor runs. It is therefore the responsibility of the user to ensure the
+> currently active device is correct.
+
+`rmm::device_vector` is therefore slightly less ergonomic to use in a multiple device setting since
+the caller must arrange that active devices on allocation and deallocation match. Recapitulating the
+previous example using `rmm::device_vector`:
+
+```c++
+{
+  RMM_CUDA_TRY(cudaSetDevice(0));
+  auto mr = rmm::mr::cuda_memory_resource{};
+  rmm::device_vector<int> vec(16, rmm::mr::thrust_allocator<int>(rmm::cuda_stream_default, &mr));
+  RMM_CUDA_TRY(cudaSetDevice(1));
+  ...
+  // ERROR: ~vec runs with device 1 active, but needs device 0 to be active
+}
+```
+
+A correct example adds a call to `cudaSetDevice(0)` on the line of the error comment before the dtor
+for `~vec` runs.
+
+## `cuda_stream_view` and `cuda_stream`
+
+`rmm::cuda_stream_view` is a simple non-owning wrapper around a CUDA `cudaStream_t`. This wrapper's
+purpose is to provide strong type safety for stream types. (`cudaStream_t` is an alias for a pointer,
+which can lead to ambiguity in APIs when it is assigned `0`.)  All RMM stream-ordered APIs take a
+`rmm::cuda_stream_view` argument.
+
+`rmm::cuda_stream` is a simple owning wrapper around a CUDA `cudaStream_t`. This class provides
+RAII semantics (constructor creates the CUDA stream, destructor destroys it). An `rmm::cuda_stream`
+can never represent the CUDA default stream or per-thread default stream; it only ever represents
+a single non-default stream. `rmm::cuda_stream` cannot be copied, but can be moved.
+
+## `cuda_stream_pool`
+
+`rmm::cuda_stream_pool` provides fast access to a pool of CUDA streams. This class can be used to
+create a set of `cuda_stream` objects whose lifetime is equal to the `cuda_stream_pool`. Using the
+stream pool can be faster than creating the streams on the fly. The size of the pool is configurable.
+Depending on this size, multiple calls to `cuda_stream_pool::get_stream()` may return instances of
+`rmm::cuda_stream_view` that represent identical CUDA streams.
+
+## Thread Safety
+
+All current device memory resources are thread safe unless documented otherwise. More specifically,
+calls to memory resource `allocate()` and `deallocate()` methods are safe with respect to calls to
+either of these functions from other threads. They are _not_ thread safe with respect to
+construction and destruction of the memory resource object.
+
+Note that a class `thread_safe_resource_adapter` is provided which can be used to adapt a memory
+resource that is not thread safe to be thread safe (as described above). This adapter is not needed
+with any current RMM device memory resources.
+
+## Allocators
 
 C++ interfaces commonly allow customizable memory allocation through an [`Allocator`](https://en.cppreference.com/w/cpp/named_req/Allocator) object.
 RMM provides several `Allocator` and `Allocator`-like classes.
 
-#### `polymorphic_allocator`
+### `polymorphic_allocator`
 
 A [stream-ordered](#stream-ordered-memory-allocation) allocator similar to [`std::pmr::polymorphic_allocator`](https://en.cppreference.com/w/cpp/memory/polymorphic_allocator).
 Unlike the standard C++ `Allocator` interface, the `allocate` and `deallocate` functions take a `cuda_stream_view` indicating the stream on which the (de)allocation occurs.
 
-#### `stream_allocator_adaptor`
+### `stream_allocator_adaptor`
 
 `stream_allocator_adaptor` can be used to adapt a stream-ordered allocator to present a standard `Allocator` interface to consumers that may not be designed to work with a stream-ordered interface.
 
@@ -415,7 +458,7 @@ auto p = adapted.allocate(100);
 adapted.deallocate(p,100);
 ```
 
-#### `thrust_allocator`
+### `thrust_allocator`
 
 `thrust_allocator` is a device memory allocator that uses the strongly typed `thrust::device_ptr`, making it usable with containers like `thrust::device_vector`.
 
@@ -497,13 +540,13 @@ Similar to `device_memory_resource`, it has two key functions for (de)allocation
 Unlike `device_memory_resource`, the `host_memory_resource` interface and behavior is identical to
 `std::pmr::memory_resource`.
 
-### Available Resources
+## Available Host Resources
 
-#### `new_delete_resource`
+### `new_delete_resource`
 
 Uses the global `operator new` and `operator delete` to allocate host memory.
 
-#### `pinned_memory_resource`
+### `pinned_memory_resource`
 
 Allocates "pinned" host memory using `cuda(Malloc/Free)Host`.
 
@@ -611,7 +654,7 @@ resources are detectable with Compute Sanitizer Memcheck.
 It may be possible in the future to add support for memory bounds checking with other memory
 resources using NVTX APIs.
 
-## Using RMM in Python Code
+# Using RMM in Python
 
 There are two ways to use RMM in Python code:
 
@@ -622,7 +665,7 @@ There are two ways to use RMM in Python code:
 RMM provides a `MemoryResource` abstraction to control _how_ device
 memory is allocated in both the above uses.
 
-### DeviceBuffers
+## DeviceBuffer
 
 A DeviceBuffer represents an **untyped, uninitialized device memory
 allocation**.  DeviceBuffers can be created by providing the
@@ -662,7 +705,7 @@ host:
 array([1., 2., 3.])
 ```
 
-### MemoryResource objects
+## MemoryResource objects
 
 `MemoryResource` objects are used to configure how device memory allocations are made by
 RMM.
