@@ -379,9 +379,9 @@ this code is correct:
 allocate and deallocate memory using RMM. As such, the usual rules for usage of the backing memory
 resource apply: the active device must match the active device at resource construction time. To
 facilitate use in an RAII setting, `rmm::mr::thrust_allocator` records the active device at
-construction time and ensure that that device is active whenever it allocates or deallocates memory.
+construction time and ensures that that device is active whenever it allocates or deallocates memory.
 Usage of `rmm::device_vector` with multiple devices is therefore the same as `rmm::device_buffer`.
-One must _create_ `device_vector`s with the correct device active, but it is always safe to destruct
+One must _create_ `device_vector`s with the correct device active, but it is safe to destroy them
 with a different active device.
 
 For example, recapitulating the previous example using `rmm::device_vector`:
