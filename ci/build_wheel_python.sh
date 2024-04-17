@@ -14,8 +14,6 @@ commit=$(git rev-parse HEAD)
 
 RAPIDS_PY_CUDA_SUFFIX="$(rapids-wheel-ctk-name-gen ${RAPIDS_CUDA_VERSION})"
 
-RAPIDS_PY_WHEEL_NAME="librmm_${RAPIDS_PY_CUDA_SUFFIX}" rapids-download-wheels-from-s3 cpp /tmp/librmm_dist
-
 # This is the version of the suffix with a preceding hyphen. It's used
 # everywhere except in the final wheel name.
 PACKAGE_CUDA_SUFFIX="-${RAPIDS_PY_CUDA_SUFFIX}"
@@ -38,9 +36,14 @@ fi
 
 cd "${package_dir}"
 
-PIP_FIND_LINKS="/tmp/librmm_dist" python -m pip wheel . -w dist -vvv --no-deps --disable-pip-version-check
+# TODO: Remove RAPIDS_PY_WHEEL_NAME once gha-tools includes the cuda version in the artifact name.
+# TODO: Remove the final argument once rapids-download-wheels-from-s3 is updated to construct the directory.
+CPP_WHEELHOUSE=$(RAPIDS_PY_WHEEL_NAME="${RAPIDS_PY_CUDA_SUFFIX}" rapids-download-wheels-from-s3 cpp /tmp/librmm_dist)
+
+python -m pip wheel . -w dist -vvv --no-deps --disable-pip-version-check --find-links "${CPP_WHEELHOUSE}"
 
 mkdir -p final_dist
 python -m auditwheel repair -w final_dist dist/*
 
-RAPIDS_PY_WHEEL_NAME="${package_name}_${RAPIDS_PY_CUDA_SUFFIX}" rapids-upload-wheels-to-s3 python final_dist
+# TODO: Remove RAPIDS_PY_WHEEL_NAME once gha-tools includes the cuda version in the artifact name.
+RAPIDS_PY_WHEEL_NAME="${RAPIDS_PY_CUDA_SUFFIX}" rapids-upload-wheels-to-s3 python final_dist
