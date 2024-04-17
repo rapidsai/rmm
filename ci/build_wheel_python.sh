@@ -14,11 +14,6 @@ commit=$(git rev-parse HEAD)
 
 RAPIDS_PY_CUDA_SUFFIX="$(rapids-wheel-ctk-name-gen ${RAPIDS_CUDA_VERSION})"
 
-if [[ ! -d "/tmp/gha-tools" ]]; then
-    git clone https://github.com/msarahan/gha-tools.git -b get-pr-wheel-artifact /tmp/gha-tools
-    export PATH="/tmp/gha-tools/tools:${PATH}"
-fi
-
 RAPIDS_PY_WHEEL_NAME="librmm_${RAPIDS_PY_CUDA_SUFFIX}" rapids-download-wheels-from-s3 cpp /tmp/librmm_dist
 
 # This is the version of the suffix with a preceding hyphen. It's used

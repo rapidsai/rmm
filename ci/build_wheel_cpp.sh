@@ -28,8 +28,4 @@ cd "${package_dir}"
 
 python -m pip wheel . -w dist -vvv --no-deps --disable-pip-version-check
 
-if [[ ! -d "/tmp/gha-tools" ]]; then
-    git clone https://github.com/msarahan/gha-tools.git -b get-pr-wheel-artifact /tmp/gha-tools
-    export PATH="/tmp/gha-tools/tools:${PATH}"
-fi
 RAPIDS_PY_WHEEL_NAME="${package_name}_${RAPIDS_PY_CUDA_SUFFIX}" rapids-upload-wheels-to-s3 cpp dist
