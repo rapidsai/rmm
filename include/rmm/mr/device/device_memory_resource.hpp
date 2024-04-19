@@ -294,52 +294,6 @@ class device_memory_resource {
   }
 
   /**
-   * @brief Query whether the resource supports use of non-null CUDA streams for
-   * allocation/deallocation.
-   *
-   * @deprecated Functionality removed in favor of cuda::mr::async_memory_resource.
-   *
-   * @returns bool true if the resource supports non-null CUDA streams.
-   */
-  [[deprecated("Functionality removed in favor of cuda::mr::async_memory_resource.")]]  //
-  [[nodiscard]] virtual bool
-  supports_streams() const noexcept
-  {
-    return false;
-  }
-
-  /**
-   * @brief Query whether the resource supports the get_mem_info API.
-   *
-   * @deprecated Use rmm::available_device_memory instead.
-   *
-   * @return bool true if the resource supports get_mem_info, false otherwise.
-   */
-  [[deprecated("Use rmm::available_device_memory instead.")]]  //
-  [[nodiscard]] virtual bool
-  supports_get_mem_info() const noexcept
-  {
-    return false;
-  };
-
-  /**
-   * @brief Queries the amount of free and total memory for the resource.
-   *
-   * @deprecated Use rmm::available_device_memory instead.
-   *
-   * @param stream the stream whose memory manager we want to retrieve
-   *
-   * @returns a pair containing the free memory in bytes in .first and total amount of memory in
-   * .second
-   */
-  [[deprecated("Use rmm::available_device_memory instead.")]]  //
-  [[nodiscard]] std::pair<std::size_t, std::size_t>
-  get_mem_info(cuda_stream_view stream) const
-  {
-    return {0, 0};
-  }
-
-  /**
    * @brief Enables the `cuda::mr::device_accessible` property
    *
    * This property declares that a `device_memory_resource` provides device accessible memory

@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <rmm/cuda_device.hpp>
 #include <rmm/detail/thrust_namespace.h>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
@@ -38,6 +39,9 @@ namespace rmm::mr {
  * Unlike a `device_async_resource_ref`, `thrust_allocator` is typed and bound to
  * allocate objects of a specific type `T`, but can be freely rebound to other
  * types.
+ *
+ * The allocator records the current cuda device and may only be used with a backing
+ * `device_async_resource_ref` valid for the same device.
  *
  * @tparam T The type of the objects that will be allocated by this allocator
  */
@@ -92,7 +96,7 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    */
   template <typename U>
   thrust_allocator(thrust_allocator<U> const& other)
-    : _mr(other.resource()), _stream{other.stream()}
+    : _mr(other.resource()), _stream{other.stream()}, _device{other._device}
   {
   }
 
@@ -104,6 +108,7 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    */
   pointer allocate(size_type num)
   {
+    cuda_set_device_raii dev{_device};
     return thrust::device_pointer_cast(
       static_cast<T*>(_mr.allocate_async(num * sizeof(T), _stream)));
   }
@@ -117,6 +122,7 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    */
   void deallocate(pointer ptr, size_type num)
   {
+    cuda_set_device_raii dev{_device};
     return _mr.deallocate_async(thrust::raw_pointer_cast(ptr), num * sizeof(T), _stream);
   }
 
@@ -143,6 +149,7 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
  private:
   cuda_stream_view _stream{};
   rmm::device_async_resource_ref _mr{rmm::mr::get_current_device_resource()};
+  cuda_device_id _device{get_current_cuda_device()};
 };
 /** @} */  // end of group
 }  // namespace rmm::mr
