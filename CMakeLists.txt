@@ -114,7 +114,8 @@ endif()
 # * add tests --------------------------------------------------------------------------------------
 
 if(BUILD_TESTS AND CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
-  include(cmake/thirdparty/get_gtest.cmake)
+  include(${rapids-cmake-dir}/cpm/gtest.cmake)
+  rapids_cpm_gtest(BUILD_STATIC)
   include(CTest) # calls enable_testing()
 
   add_subdirectory(tests)

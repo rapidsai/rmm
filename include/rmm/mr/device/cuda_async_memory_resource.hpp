@@ -25,7 +25,6 @@
 
 #include <cuda/std/type_traits>
 #include <cuda_runtime_api.h>
-#include <thrust/optional.h>
 
 #include <cstddef>
 #include <limits>
