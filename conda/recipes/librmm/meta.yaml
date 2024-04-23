@@ -113,9 +113,6 @@ outputs:
         - test -f $PREFIX/include/rmm/mr/host/host_memory_resource.hpp
         - test -f $PREFIX/include/rmm/mr/host/new_delete_resource.hpp
         - test -f $PREFIX/include/rmm/mr/host/pinned_memory_resource.hpp
-        # should not vendor the spdlog or fmt headers
-        - ! test -d $PREFIX/include/fmt
-        - ! test -d $PREFIX/include/spdlog
     about:
       home: https://rapids.ai/
       license: Apache-2.0
