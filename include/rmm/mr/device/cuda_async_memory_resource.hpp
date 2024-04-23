@@ -86,40 +86,6 @@ class cuda_async_memory_resource final : public device_memory_resource {
    * `cudaMemHandleTypeNone` for no IPC support.
    */
   // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-  template <class Optional,
-            cuda::std::enable_if_t<cuda::std::is_same_v<cuda::std::remove_cvref_t<Optional>,
-                                                        thrust::optional<std::size_t>>,
-                                   int> = 0>
-  [[deprecated("Use std::optional instead of thrust::optional.")]]  //
-  explicit cuda_async_memory_resource(
-    Optional initial_pool_size,
-    Optional release_threshold                                  = {},
-    thrust::optional<allocation_handle_type> export_handle_type = {})
-    : cuda_async_memory_resource(initial_pool_size.value_or(std::nullopt),
-                                 release_threshold.value_or(std::nullopt),
-                                 export_handle_type.value_or(std::nullopt))
-
-  {
-  }
-
-  /**
-   * @brief Constructs a cuda_async_memory_resource with the optionally specified initial pool size
-   * and release threshold.
-   *
-   * If the pool size grows beyond the release threshold, unused memory held by the pool will be
-   * released at the next synchronization event.
-   *
-   * @throws rmm::logic_error if the CUDA version does not support `cudaMallocAsync`
-   *
-   * @param initial_pool_size Optional initial size in bytes of the pool. If no value is provided,
-   * initial pool size is half of the available GPU memory.
-   * @param release_threshold Optional release threshold size in bytes of the pool. If no value is
-   * provided, the release threshold is set to the total amount of memory on the current device.
-   * @param export_handle_type Optional `cudaMemAllocationHandleType` that allocations from this
-   * resource should support interprocess communication (IPC). Default is
-   * `cudaMemHandleTypeNone` for no IPC support.
-   */
-  // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
   cuda_async_memory_resource(std::optional<std::size_t> initial_pool_size             = {},
                              std::optional<std::size_t> release_threshold             = {},
                              std::optional<allocation_handle_type> export_handle_type = {})
