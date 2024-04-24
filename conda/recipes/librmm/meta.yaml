@@ -23,7 +23,7 @@ requirements:
     - {{ compiler('cuda') }}
     {% endif %}
     - cuda-version ={{ cuda_version }}
-    - sysroot_{{ target_platform }} {{ sysroot_version }}
+    - {{ stdlib("c") }}
   host:
     - cuda-version ={{ cuda_version }}
     # We require spdlog and fmt (which was devendored from spdlog
