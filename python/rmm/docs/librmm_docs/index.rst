@@ -20,6 +20,7 @@ librmm Documentation
    utilities
    deprecated
 
+
 .. doxygennamespace:: rmm
    :desc-only:
 
