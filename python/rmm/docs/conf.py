@@ -89,6 +89,16 @@ language = "en"
 # This patterns also effect to html_static_path and html_extra_path
 exclude_patterns = []
 
+# List of warnings to suppress
+suppress_warnings = []
+
+# if the file deprecated.xml does not exist in the doxygen xml output, breathe
+# will fail to build the docs, so we conditionally add "breathe.rst" to the
+# exclude_patterns list
+if not os.path.exists(breathe_projects["librmm"] + "/deprecated.xml"):
+    exclude_patterns.append("librmm_docs/deprecated.rst")
+    suppress_warnings = ['toc.excluded']
+
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = "sphinx"
 
