@@ -18,10 +18,7 @@ librmm Documentation
    errors
    logging
    utilities
-.. Rename deprecated.rst.bak to deprecated.rst and uncomment the
-.. following if there are any [[deprecated]] C++ APIs
-.. deprecated
-
+   deprecated
 
 .. doxygennamespace:: rmm
    :desc-only:
