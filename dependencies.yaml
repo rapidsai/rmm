@@ -75,9 +75,9 @@ dependencies:
         packages:
           - c-compiler
           - cxx-compiler
-          - fmt>=10.1.1,<11
+          - fmt>=10.2.1,<11
           - scikit-build-core>=0.7.0
-          - spdlog>=1.12.0,<1.13
+          - spdlog>=1.13.0,<1.14
       - output_types: [requirements, pyproject]
         packages:
           - scikit-build-core[pyproject]>=0.7.0
