@@ -95,7 +95,7 @@ suppress_warnings = []
 # if the file deprecated.xml does not exist in the doxygen xml output, breathe
 # will fail to build the docs, so we conditionally add "deprecated.rst" to the
 # exclude_patterns list
-if not os.path.exists(breathe_projects["librmm"] + "/deprecated.xml"):
+if not os.path.exists(os.path.join(breathe_projects["librmm"], "deprecated.xml")):
     exclude_patterns.append("librmm_docs/deprecated.rst")
     suppress_warnings.append("toc.excluded")
 
