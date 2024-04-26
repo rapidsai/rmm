@@ -14,7 +14,7 @@
 import numpy as np
 
 cimport cython
-from cpython.bytes cimport PyBytes_AS_STRING, PyBytes_FromStringAndSize
+from cpython.bytes cimport PyBytes_AsString, PyBytes_FromStringAndSize
 from libc.stdint cimport uintptr_t
 from libcpp.memory cimport unique_ptr
 from libcpp.utility cimport move
@@ -314,7 +314,7 @@ cdef class DeviceBuffer:
         cdef size_t s = dbp.size()
 
         cdef bytes b = PyBytes_FromStringAndSize(NULL, s)
-        cdef unsigned char* p = <unsigned char*>PyBytes_AS_STRING(b)
+        cdef unsigned char* p = <unsigned char*>PyBytes_AsString(b)
         cdef unsigned char[::1] mv = (<unsigned char[:(s + 1):1]>p)[:s]
         self.copy_to_host(mv, stream)
 
