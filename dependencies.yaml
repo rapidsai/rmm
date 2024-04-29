@@ -7,6 +7,7 @@ files:
       arch: [x86_64]
     includes:
       - build
+      - cython_build
       - checks
       - cuda
       - cuda_version
@@ -39,18 +40,22 @@ files:
       - py_version
   py_build:
     output: pyproject
+    pyproject_dir: python/rmm
     extras:
       table: build-system
     includes:
       - build
+      - cython_build
   py_run:
     output: pyproject
+    pyproject_dir: python/rmm
     extras:
       table: project
     includes:
       - run
   py_optional_test:
     output: pyproject
+    pyproject_dir: python/rmm
     extras:
       table: project.optional-dependencies
       key: test
@@ -65,7 +70,6 @@ dependencies:
       - output_types: [conda, requirements, pyproject]
         packages:
           - &cmake_ver cmake>=3.26.4
-          - cython>=3.0.0
           - ninja
       - output_types: conda
         packages:
@@ -106,6 +110,12 @@ dependencies:
               cuda: "12.*"
             packages:
               - cuda-nvcc
+  cython_build:
+    common:
+      - output_types: [conda, requirements, pyproject]
+        packages:
+          - cython>=3.0.0
+    specific:
       - output_types: [conda, requirements, pyproject]
         matrices:
           - matrix:

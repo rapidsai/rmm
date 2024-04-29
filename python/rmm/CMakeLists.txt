@@ -14,7 +14,7 @@
 
 cmake_minimum_required(VERSION 3.26.4 FATAL_ERROR)
 
-include(../rapids_config.cmake)
+include(../../rapids_config.cmake)
 
 project(
   rmm-python
@@ -36,7 +36,7 @@ if(NOT rmm_FOUND)
   set(BUILD_BENCHMARKS OFF)
   set(CUDA_STATIC_RUNTIME ON)
 
-  add_subdirectory(../ rmm-cpp EXCLUDE_FROM_ALL)
+  add_subdirectory(../../ rmm-cpp EXCLUDE_FROM_ALL)
 endif()
 
 include(rapids-cython-core)

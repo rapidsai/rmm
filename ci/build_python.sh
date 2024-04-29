@@ -14,7 +14,7 @@ export CMAKE_GENERATOR=Ninja
 rapids-print-env
 
 package_name="rmm"
-package_dir="python"
+package_dir="python/rmm"
 
 version=$(rapids-generate-version)
 commit=$(git rev-parse HEAD)

@@ -182,8 +182,8 @@ for memory allocations using their by configuring the current
 allocator.
 
 ```python
-from rmm.allocators.torch import rmm_torch_allocator
-import torch
+>>> from rmm.allocators.torch import rmm_torch_allocator
+>>> import torch
 
-torch.cuda.memory.change_current_allocator(rmm_torch_allocator)
+>>> torch.cuda.memory.change_current_allocator(rmm_torch_allocator)
 ```
