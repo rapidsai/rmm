@@ -33,8 +33,6 @@ requirements:
     # added as a run requirement via the packages' run_exports.
     - fmt {{ fmt_version }}
     - spdlog {{ spdlog_version }}
-    - gtest {{ gtest_version }}
-    - gmock {{ gtest_version }}
 
 build:
   script_env:
@@ -150,8 +148,6 @@ outputs:
         {% endif %}
         - {{ pin_compatible('cuda-version', max_pin='x', min_pin='x') }}
         - {{ pin_subpackage('librmm', exact=True) }}
-        - gtest {{ gtest_version }}
-        - gmock {{ gtest_version }}
     about:
       home: https://rapids.ai/
       license: Apache-2.0
