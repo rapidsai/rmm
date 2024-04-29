@@ -21,6 +21,16 @@ project(
   VERSION "${RAPIDS_VERSION}"
   LANGUAGES CXX)
 
+# Check if rmm is already available. If so, it is the user's responsibility to ensure that the CMake
+# package is also available at build time of the Python rmm package.
+find_package(rmm "${RAPIDS_VERSION}")
+
+if(rmm_FOUND)
+  return()
+endif()
+
+unset(rmm_FOUND)
+
 set(BUILD_TESTS OFF)
 set(BUILD_BENCHMARKS OFF)
 set(CUDA_STATIC_RUNTIME ON)

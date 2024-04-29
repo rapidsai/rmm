@@ -122,9 +122,7 @@ dependencies:
       - output_types: [conda, requirements, pyproject]
         packages:
           - cython>=3.0.0
-      # TODO: Currently this is a hack for devcontainers. Need to figure out the best solution.
-      #- output_types: [requirements, pyproject]
-      - output_types: [pyproject]
+      - output_types: [requirements, pyproject]
         packages:
           - librmm==24.6.*
     specific:
