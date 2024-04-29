@@ -141,12 +141,6 @@ if hasArg --ptds; then
     PER_THREAD_DEFAULT_STREAM=ON
 fi
 
-# Append `-DFIND_RMM_CPP=ON` to CMAKE_ARGS unless a user specified the option.
-SKBUILD_EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS}"
-if [[ "${EXTRA_CMAKE_ARGS}" != *"DFIND_RMM_CPP"* ]]; then
-    SKBUILD_EXTRA_CMAKE_ARGS="${SKBUILD_EXTRA_CMAKE_ARGS} -DFIND_RMM_CPP=ON"
-fi
-
 # If clean given, run it prior to any other steps
 if hasArg clean; then
     # If the dirs to clean are mounted dirs in a container, the
@@ -176,5 +170,5 @@ fi
 # Build and install the rmm Python package
 if (( NUMARGS == 0 )) || hasArg rmm; then
     echo "building and installing rmm..."
-    SKBUILD_CMAKE_ARGS="${SKBUILD_EXTRA_CMAKE_ARGS}" python -m pip install --no-build-isolation --no-deps ${REPODIR}/python/rmm
+    SKBUILD_CMAKE_ARGS="${EXTRA_CMAKE_ARGS}" python -m pip install --no-build-isolation --no-deps ${REPODIR}/python/rmm
 fi
