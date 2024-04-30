@@ -81,7 +81,6 @@ outputs:
         - spdlog {{ spdlog_version }}
     test:
       commands:
-        - test -f $PREFIX/include/rmm/thrust_rmm_allocator.h
         - test -f $PREFIX/include/rmm/logger.hpp
         - test -f $PREFIX/include/rmm/cuda_stream.hpp
         - test -f $PREFIX/include/rmm/cuda_stream_view.hpp
