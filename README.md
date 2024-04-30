@@ -127,7 +127,8 @@ $ make test
 
 - Build, install, and test the `rmm` python package, in the `python` folder:
 ```bash
-$ python -m pip install -e ./python
+# In the root rmm directory
+$ python -m pip install -e ./python/rmm
 $ pytest -v
 ```
 
