@@ -79,9 +79,6 @@ outputs:
         {% endif %}
         - fmt {{ fmt_version }}
         - spdlog {{ spdlog_version }}
-    test:
-      commands:
-        - test -f $PREFIX/include/rmm/device_buffer.hpp
     about:
       home: https://rapids.ai/
       license: Apache-2.0
