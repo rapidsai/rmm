@@ -79,6 +79,9 @@ outputs:
         {% endif %}
         - fmt {{ fmt_version }}
         - spdlog {{ spdlog_version }}
+    test:
+      commands:
+        - test -d "${PREFIX}/include/rmm"
     about:
       home: https://rapids.ai/
       license: Apache-2.0
