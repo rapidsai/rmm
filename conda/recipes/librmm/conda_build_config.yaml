@@ -16,9 +16,6 @@ cmake_version:
 fmt_version:
   - ">=10.1.1,<11"
 
-gtest_version:
-  - ">=1.13.0"
-
 spdlog_version:
   - ">=1.12.0,<1.13"
 

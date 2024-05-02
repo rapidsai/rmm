@@ -4,7 +4,7 @@
 set -euo pipefail
 
 package_name="rmm"
-package_dir="python"
+package_dir="python/rmm"
 
 source rapids-configure-sccache
 source rapids-date-string
