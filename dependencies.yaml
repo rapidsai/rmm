@@ -48,6 +48,7 @@ files:
       - rapids_build_backend
   py_rapids_build:
     output: pyproject
+    pyproject_dir: python/rmm
     extras:
       table: tool.rapids-build-backend
       key: requires
