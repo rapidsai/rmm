@@ -2,3 +2,4 @@
 [run]
 include = rmm/*
 omit = rmm/tests/*
+disable_warnings=include-ignored
