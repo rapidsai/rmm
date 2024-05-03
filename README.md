@@ -73,7 +73,7 @@ Python requirements:
 * `cuda-python`
 * `cython`
 
-For more details, see [pyproject.toml](python/pyproject.toml)
+For more details, see [pyproject.toml](python/rmm/pyproject.toml)
 
 
 ### Script to build RMM from source
