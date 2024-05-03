@@ -161,6 +161,20 @@ if hasArg clean; then
     done
 fi
 
+# TODO: remove before merging (when new rapids-build-backend is released)
+if [[ ! -d /tmp/delete-me/rapids-build-backend ]]; then
+    git clone \
+        -b main \
+        https://github.com/rapidsai/rapids-build-backend.git \
+        /tmp/delete-me/rapids-build-backend
+
+    pushd /tmp/delete-me/rapids-build-backend
+    sed -e 's/^version =.*/version = "0.0.2"/' -i ./python/rmm/pyproject.toml
+    python -m pip install .
+    popd
+fi
+export PIP_FIND_LINKS="file:///tmp/delete-me/rapids-build-backend"
+
 ################################################################################
 # Configure, build, and install librmm
 if (( NUMARGS == 0 )) || hasArg librmm; then

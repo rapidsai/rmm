@@ -11,7 +11,7 @@ if [[ ! -d /tmp/delete-me/rapids-build-backend ]]; then
         /tmp/delete-me/rapids-build-backend
 
     pushd /tmp/delete-me/rapids-build-backend
-    sed -e 's/^version =.*/version = "0.0.2"/' -i pyproject.toml
+    sed -e 's/^version =.*/version = "0.0.2"/' -i ./python/rmm/pyproject.toml
     python -m pip install .
     popd
 fi
@@ -38,7 +38,8 @@ fi
 
 cd "${package_dir}"
 
-python -m pip wheel . -w dist -vvv --no-deps --disable-pip-version-check
+pip install 'scikit-build-core[pyproject]>=0.7.0'
+python -m pip wheel . -w dist -vvv --no-deps --no-build-isolation --disable-pip-version-check
 
 mkdir -p final_dist
 python -m auditwheel repair -w final_dist dist/*
