@@ -15,6 +15,7 @@ files:
       - docs
       - py_version
       - rapids_build_backend
+      - scikit_build_core
       - run
       - test_python
   test_python:
@@ -46,6 +47,7 @@ files:
       table: build-system
     includes:
       - build
+      - scikit_build_core
   py_build:
     output: pyproject
     pyproject_dir: python/rmm
@@ -53,6 +55,7 @@ files:
       table: build-system
     includes:
       - rapids_build_backend
+      - scikit_build_core
   py_rapids_build:
     output: pyproject
     pyproject_dir: python/rmm
@@ -82,17 +85,19 @@ channels:
   - rapidsai-nightly
   - conda-forge
 dependencies:
-  rapids_build_backend:
+  scikit_build_core:
     common:
-      - output_types: [conda, requirements, pyproject]
-        packages:
-          - rapids-build-backend
       - output_types: conda
         packages:
           - scikit-build-core>=0.7.0
       - output_types: [requirements, pyproject]
         packages:
           - scikit-build-core[pyproject]>=0.7.0
+  rapids_build_backend:
+    common:
+      - output_types: [conda, requirements, pyproject]
+        packages:
+          - rapids-build-backend
   build:
     common:
       - output_types: [conda, requirements, pyproject]
