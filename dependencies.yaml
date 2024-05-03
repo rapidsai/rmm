@@ -39,6 +39,13 @@ files:
       - cuda_version
       - docs
       - py_version
+  py_cpp_build:
+    output: pyproject
+    pyproject_dir: python/librmm
+    extras:
+      table: build-system
+    includes:
+      - build
   py_build:
     output: pyproject
     pyproject_dir: python/rmm
@@ -142,6 +149,19 @@ dependencies:
           - matrix: # All CUDA 11 versions
             packages:
               - &cuda_python11 cuda-python>=11.7.1,<12.0a0
+      - output_types: [requirements, pyproject]
+        matrices:
+            - matrix:
+                cuda: "12.*"
+              packages:
+                - librmm-cu12==24.6.*
+            - matrix:
+                cuda: "11.*"
+              packages:
+                - librmm-cu11==24.6.*
+            - matrix:
+              packages:
+                - librmm==24.6.*
   checks:
     common:
       - output_types: [conda, requirements]
