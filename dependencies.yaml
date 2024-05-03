@@ -122,9 +122,19 @@ dependencies:
       - output_types: [conda, requirements, pyproject]
         packages:
           - cython>=3.0.0
-      - output_types: [requirements, pyproject]
+      - output_types: pyproject
         packages:
           - librmm==24.6.*
+    specific:
+      - output_types: [requirements, pyproject]
+        matrices:
+            - matrix: {cuda: "12.*"}
+              packages:
+                - librmm-cu12==24.6.*
+            - matrix: {cuda: "11.*"}
+              packages:
+                - librmm-cu11==24.6.*
+            - {matrix: null, packages: [librmm==24.6.*] }
     specific:
       - output_types: [conda, requirements, pyproject]
         matrices:
