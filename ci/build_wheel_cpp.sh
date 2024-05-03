@@ -28,5 +28,5 @@ cd "${package_dir}"
 
 python -m pip wheel . -w dist -vvv --no-deps --disable-pip-version-check
 python -m pip install wheel
-python -m wheel tags --platform manylinux dist/* --remove
+python -m wheel tags --platform any dist/* --remove
 RAPIDS_PY_WHEEL_NAME="rmm_${RAPIDS_PY_CUDA_SUFFIX}" rapids-upload-wheels-to-s3 cpp dist
