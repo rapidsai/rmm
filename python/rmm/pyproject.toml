@@ -124,6 +124,7 @@ regex = "(?P<value>.*)"
 [tool.rapids-build-backend]
 build-backend = "scikit_build_core.build"
 commit-file = "rmm/GIT_COMMIT"
+dependencies-file = "../../dependencies.yaml"
 requires = [
     "cmake>=3.26.4",
     "cuda-python>=11.7.1,<12.0a0",
