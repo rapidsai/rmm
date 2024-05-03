@@ -65,7 +65,8 @@ cdef class DeviceBuffer:
     @staticmethod
     cdef DeviceBuffer c_from_unique_ptr(
         unique_ptr[device_buffer] ptr,
-        Stream stream=*
+        Stream stream=*,
+        DeviceMemoryResource mr=*,
     )
 
     @staticmethod
