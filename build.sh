@@ -169,7 +169,7 @@ if [[ ! -d /tmp/delete-me/rapids-build-backend ]]; then
         /tmp/delete-me/rapids-build-backend
 
     pushd /tmp/delete-me/rapids-build-backend
-    sed -e 's/^version =.*/version = "0.0.2"/' -i ./python/rmm/pyproject.toml
+    sed -e 's/^version =.*/version = "0.0.2"/' -i pyproject.toml
     python -m pip install .
     popd
 fi
