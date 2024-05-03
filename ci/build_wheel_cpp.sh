@@ -27,5 +27,6 @@ sed -i "/^__git_commit__/ s/= .*/= \"${commit}\"/g" "${package_dir}/${package_na
 cd "${package_dir}"
 
 python -m pip wheel . -w dist -vvv --no-deps --disable-pip-version-check
+python -m pip install wheel
 python -m wheel tags --platform manylinux dist/* --remove
 RAPIDS_PY_WHEEL_NAME="rmm_${RAPIDS_PY_CUDA_SUFFIX}" rapids-upload-wheels-to-s3 cpp dist
