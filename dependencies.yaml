@@ -166,7 +166,6 @@ dependencies:
                 - librmm-cu11==24.6.*
             - matrix:
               packages:
-                - librmm==24.6.*
   checks:
     common:
       - output_types: [conda, requirements]
