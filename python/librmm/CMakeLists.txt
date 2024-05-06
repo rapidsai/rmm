@@ -1,5 +1,5 @@
 # =============================================================================
-# Copyright (c) 2022, NVIDIA CORPORATION.
+# Copyright (c) 2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -21,7 +21,7 @@ project(
   VERSION "${RAPIDS_VERSION}"
   LANGUAGES CXX)
 
-# Check if rmm is already available. If so, it is the user's responsibility to ensure that the CMake
+# Check if rmm is already available. If so, it's the user's responsibility to ensure that the CMake
 # package is also available at build time of the Python rmm package.
 find_package(rmm "${RAPIDS_VERSION}")
 

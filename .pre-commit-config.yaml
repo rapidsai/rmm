@@ -81,6 +81,10 @@ repos:
       hooks:
         - id: ruff
           files: python/.*$
+    - repo: https://github.com/rapidsai/pre-commit-hooks
+      rev: v0.0.3
+      hooks:
+        - id: verify-copyright
 
 default_language_version:
     python: python3
