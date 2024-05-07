@@ -17,7 +17,6 @@
 #pragma once
 
 #include <rmm/cuda_stream_view.hpp>
-#include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
@@ -55,11 +54,11 @@ class polymorphic_allocator {
   /**
    * @brief Construct a `polymorphic_allocator` using the provided memory resource.
    *
-   * This constructor provides an implicit conversion from `memory_resource*`.
+   * This constructor provides an implicit conversion from `device_async_resource_ref`.
    *
    * @param mr The `device_memory_resource` to use as the underlying resource.
    */
-  polymorphic_allocator(device_memory_resource* mr) : mr_{mr} {}
+  polymorphic_allocator(device_async_resource_ref mr) : mr_{mr} {}
 
   /**
    * @brief Construct a `polymorphic_allocator` using `other.resource()` as the underlying memory
@@ -82,7 +81,7 @@ class polymorphic_allocator {
    */
   value_type* allocate(std::size_t num, cuda_stream_view stream)
   {
-    return static_cast<value_type*>(resource()->allocate(num * sizeof(T), stream));
+    return static_cast<value_type*>(resource().allocate_async(num * sizeof(T), stream));
   }
 
   /**
@@ -97,7 +96,7 @@ class polymorphic_allocator {
    */
   void deallocate(value_type* ptr, std::size_t num, cuda_stream_view stream)
   {
-    resource()->deallocate(ptr, num * sizeof(T), stream);
+    resource().deallocate_async(ptr, num * sizeof(T), stream);
   }
 
   /**
@@ -113,17 +112,17 @@ class polymorphic_allocator {
    *
    * @return Pointer to the underlying resource.
    */
-  [[nodiscard]] device_memory_resource* resource() const noexcept { return mr_; }
+  [[nodiscard]] rmm::device_async_resource_ref resource() const noexcept { return mr_; }
 
  private:
-  device_memory_resource* mr_{
+  rmm::device_async_resource_ref mr_{
     get_current_device_resource()};  ///< Underlying resource used for (de)allocation
 };
 
 template <typename T, typename U>
 bool operator==(polymorphic_allocator<T> const& lhs, polymorphic_allocator<U> const& rhs)
 {
-  return lhs.resource()->is_equal(*rhs.resource());
+  return lhs.resource() == rhs.resource();
 }
 
 template <typename T, typename U>
