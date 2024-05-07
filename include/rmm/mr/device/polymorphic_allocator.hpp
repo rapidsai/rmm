@@ -108,19 +108,6 @@ class polymorphic_allocator {
     return mr_;
   }
 
-  /**
-   * @brief Returns pointer to the underlying `rmm::mr::device_memory_resource`.
-   *
-   * @deprecated Use get_upstream_resource instead.
-   *
-   * @return Reference to the underlying resource.
-   */
-  [[deprecated("Use get_upstream_resource instead.")]] [[nodiscard]]
-  rmm::device_async_resource_ref resource() const noexcept
-  {
-    return mr_;
-  }
-
  private:
   rmm::device_async_resource_ref mr_{
     get_current_device_resource()};  ///< Underlying resource used for (de)allocation
