@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import copy
+import functools
 import gc
 import os
 import pickle
@@ -496,6 +497,32 @@ def test_mr_devicebuffer_lifetime():
 
     # Delete a. Used to crash before. Pool MR should still be alive
     del a
+
+
+def test_device_buffer_with_mr():
+    allocations = []
+    base = rmm.mr.CudaMemoryResource()
+    rmm.mr.set_current_device_resource(base)
+
+    def alloc_cb(size, stream, *, base):
+        allocations.append(size)
+        return base.allocate(size, stream)
+
+    def dealloc_cb(ptr, size, stream, *, base):
+        return base.deallocate(ptr, size, stream)
+
+    cb_mr = rmm.mr.CallbackMemoryResource(
+        functools.partial(alloc_cb, base=base),
+        functools.partial(dealloc_cb, base=base),
+    )
+    rmm.DeviceBuffer(size=10)
+    assert len(allocations) == 0
+    buf = rmm.DeviceBuffer(size=256, mr=cb_mr)
+    assert len(allocations) == 1
+    assert allocations[0] == 256
+    del cb_mr
+    gc.collect()
+    del buf
 
 
 def test_mr_upstream_lifetime():
