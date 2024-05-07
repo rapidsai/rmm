@@ -50,7 +50,7 @@ set_property(CACHE RMM_LOGGING_LEVEL PROPERTY STRINGS "TRACE" "DEBUG" "INFO" "WA
 # build type for cmake-gui
 message(STATUS "RMM: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'")
 
-# cudart can be statically linked or dynamically linked the python ecosystem wants dynamic linking
+# cudart can be linked statically or dynamically
 option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
 
 # ##################################################################################################

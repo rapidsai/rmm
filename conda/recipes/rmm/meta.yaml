@@ -51,7 +51,7 @@ requirements:
     - {{ compiler('cuda') }}
     {% endif %}
     - cuda-version ={{ cuda_version }}
-    - sysroot_{{ target_platform }} {{ sysroot_version }}
+    - {{ stdlib("c") }}
   host:
     - cuda-version ={{ cuda_version }}
     {% if cuda_major == "11" %}
