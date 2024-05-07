@@ -6,8 +6,8 @@ set -euo pipefail
 # TODO: remove before merging (when new rapids-build-backend is released)
 if [[ ! -d /tmp/delete-me/rapids-build-backend ]]; then
     git clone \
-        -b main \
-        https://github.com/rapidsai/rapids-build-backend.git \
+        -b jlamb-test \
+        https://github.com/jameslamb/rapids-build-backend.git \
         /tmp/delete-me/rapids-build-backend
 
     pushd /tmp/delete-me/rapids-build-backend
