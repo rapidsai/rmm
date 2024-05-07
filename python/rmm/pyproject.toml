@@ -125,6 +125,7 @@ regex = "(?P<value>.*)"
 build-backend = "scikit_build_core.build"
 commit-file = "rmm/GIT_COMMIT"
 dependencies-file = "../../dependencies.yaml"
+require-cuda = true
 requires = [
     "cmake>=3.26.4",
     "cuda-python>=11.7.1,<12.0a0",
