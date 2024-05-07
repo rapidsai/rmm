@@ -21,6 +21,7 @@ dist/
 rmm.egg-info/
 python/build
 python/*/build
+python/rmm/docs/_build
 python/rmm/**/_lib/**/*.cpp
 !python/rmm/_lib/_torch_allocator.cpp
 python/rmm/**/_lib/**/*.h
