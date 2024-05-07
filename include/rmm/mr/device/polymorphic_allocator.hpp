@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,14 +81,15 @@ class polymorphic_allocator {
    */
   value_type* allocate(std::size_t num, cuda_stream_view stream)
   {
-    return static_cast<value_type*>(resource().allocate_async(num * sizeof(T), stream));
+    return static_cast<value_type*>(
+      get_upstream_resource().allocate_async(num * sizeof(T), stream));
   }
 
   /**
    * @brief Deallocates storage pointed to by `ptr`.
    *
-   * `ptr` must have been allocated from a `rmm::mr::device_memory_resource` `r` that compares equal
-   * to `*resource()` using `r.allocate(n * sizeof(T))`.
+   * `ptr` must have been allocated from a memory resource `r` that compares equal
+   * to `get_upstream_resource()` using `r.allocate(n * sizeof(T))`.
    *
    * @param ptr Pointer to memory to deallocate
    * @param num Number of objects originally allocated
@@ -96,7 +97,7 @@ class polymorphic_allocator {
    */
   void deallocate(value_type* ptr, std::size_t num, cuda_stream_view stream)
   {
-    resource().deallocate_async(ptr, num * sizeof(T), stream);
+    get_upstream_resource().deallocate_async(ptr, num * sizeof(T), stream);
   }
 
   /**
@@ -110,9 +111,15 @@ class polymorphic_allocator {
   /**
    * @brief Returns pointer to the underlying `rmm::mr::device_memory_resource`.
    *
+   * @deprecated Use `get_upstream_resource()` instead.
+   *
    * @return Pointer to the underlying resource.
    */
-  [[nodiscard]] rmm::device_async_resource_ref resource() const noexcept { return mr_; }
+  [[deprecated("Use `get_upstream_resource()` instead.")]] [[nodiscard]]
+  rmm::device_async_resource_ref resource() const noexcept
+  {
+    return mr_;
+  }
 
  private:
   rmm::device_async_resource_ref mr_{
@@ -122,7 +129,7 @@ class polymorphic_allocator {
 template <typename T, typename U>
 bool operator==(polymorphic_allocator<T> const& lhs, polymorphic_allocator<U> const& rhs)
 {
-  return lhs.resource() == rhs.resource();
+  return lhs.get_upstream_resource() == rhs.get_upstream_resource();
 }
 
 template <typename T, typename U>
