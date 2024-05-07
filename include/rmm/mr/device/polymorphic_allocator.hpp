@@ -56,7 +56,7 @@ class polymorphic_allocator {
    *
    * This constructor provides an implicit conversion from `device_async_resource_ref`.
    *
-   * @param mr The `device_memory_resource` to use as the underlying resource.
+   * @param mr The upstream memory resource to use for allocation.
    */
   polymorphic_allocator(device_async_resource_ref mr) : mr_{mr} {}
 
@@ -111,11 +111,11 @@ class polymorphic_allocator {
   /**
    * @brief Returns pointer to the underlying `rmm::mr::device_memory_resource`.
    *
-   * @deprecated Use `get_upstream_resource()` instead.
+   * @deprecated Use get_upstream_resource instead.
    *
-   * @return Pointer to the underlying resource.
+   * @return Reference to the underlying resource.
    */
-  [[deprecated("Use `get_upstream_resource()` instead.")]] [[nodiscard]]
+  [[deprecated("Use get_upstream_resource instead.")]] [[nodiscard]]
   rmm::device_async_resource_ref resource() const noexcept
   {
     return mr_;
