@@ -17,12 +17,6 @@ import importlib.resources
 __version__ = (
     importlib.resources.files("rmm").joinpath("VERSION").read_text().strip()
 )
-try:
-    __git_commit__ = (
-        importlib.resources.files("rmm")
-        .joinpath("GIT_COMMIT")
-        .read_text()
-        .strip()
-    )
-except FileNotFoundError:
-    __git_commit__ = ""
+__git_commit__ = (
+    importlib.resources.files("rmm").joinpath("GIT_COMMIT").read_text().strip()
+)
