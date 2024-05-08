@@ -32,7 +32,7 @@ dependencies:
 - pytest
 - pytest-cov
 - python>=3.9,<3.12
-- rapids-build-backend==0.2.0
+- rapids-build-backend==0.0.2
 - scikit-build-core>=0.7.0
 - spdlog>=1.12.0,<1.13
 - sphinx

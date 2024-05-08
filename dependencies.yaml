@@ -98,7 +98,7 @@ dependencies:
       - output_types: [conda, requirements, pyproject]
         packages:
           # TODO: change this pin to a floor once we have packages
-          - rapids-build-backend==0.2.0
+          - rapids-build-backend==0.0.2
   build:
     common:
       - output_types: [conda, requirements, pyproject]
