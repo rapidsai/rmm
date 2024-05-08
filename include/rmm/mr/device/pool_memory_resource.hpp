@@ -75,18 +75,19 @@ struct maybe_remove_property<PoolResource,
                              Upstream,
                              Property,
                              cuda::std::enable_if_t<!cuda::has_property<Upstream, Property>>> {
-#ifdef __GNUC__  // GCC warns about compatibility issues with pre ISO C++ code
+#if defined(__GNUC__) && !defined(__clang__)  // GCC warns about compatibility
+                                              // issues with pre ISO C++ code
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-template-friend"
-#endif  // __GNUC__
+#endif  // __GNUC__ and not __clang__
   /**
    * @brief Explicit removal of the friend function so we do not pretend to provide device
    * accessible memory
    */
   friend void get_property(const PoolResource&, Property) = delete;
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic pop
-#endif  // __GNUC__
+#endif  // __GNUC__ and not __clang__
 };
 }  // namespace detail
 
