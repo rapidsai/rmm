@@ -13,15 +13,15 @@ jobs:
   pr-builder:
     needs:
       - checks
-      # - conda-cpp-build
-      # - conda-cpp-tests
-      # - conda-python-build
-      # - conda-python-tests
-      # - docs-build
+      - conda-cpp-build
+      - conda-cpp-tests
+      - conda-python-build
+      - conda-python-tests
+      - docs-build
       - wheel-build-cpp
       - wheel-build-python
       - wheel-tests
-      # - devcontainer
+      - devcontainer
     secrets: inherit
     uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@branch-24.06
   checks:
@@ -29,40 +29,40 @@ jobs:
     uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@branch-24.06
     with:
       enable_check_generated_files: false
-  # conda-cpp-build:
-  #   needs: checks
-  #   secrets: inherit
-  #   uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-build.yaml@branch-24.06
-  #   with:
-  #     build_type: pull-request
-  # conda-cpp-tests:
-  #   needs: conda-cpp-build
-  #   secrets: inherit
-  #   uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-tests.yaml@branch-24.06
-  #   with:
-  #     build_type: pull-request
-  # conda-python-build:
-  #   needs: conda-cpp-build
-  #   secrets: inherit
-  #   uses: rapidsai/shared-workflows/.github/workflows/conda-python-build.yaml@branch-24.06
-  #   with:
-  #     build_type: pull-request
-  # conda-python-tests:
-  #   needs: conda-python-build
-  #   secrets: inherit
-  #   uses: rapidsai/shared-workflows/.github/workflows/conda-python-tests.yaml@branch-24.06
-  #   with:
-  #     build_type: pull-request
-  # docs-build:
-  #   needs: conda-python-build
-  #   secrets: inherit
-  #   uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@branch-24.06
-  #   with:
-  #     build_type: pull-request
-  #     node_type: "gpu-v100-latest-1"
-  #     arch: "amd64"
-  #     container_image: "rapidsai/ci-conda:latest"
-  #     run_script: "ci/build_docs.sh"
+  conda-cpp-build:
+    needs: checks
+    secrets: inherit
+    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-build.yaml@branch-24.06
+    with:
+      build_type: pull-request
+  conda-cpp-tests:
+    needs: conda-cpp-build
+    secrets: inherit
+    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-tests.yaml@branch-24.06
+    with:
+      build_type: pull-request
+  conda-python-build:
+    needs: conda-cpp-build
+    secrets: inherit
+    uses: rapidsai/shared-workflows/.github/workflows/conda-python-build.yaml@branch-24.06
+    with:
+      build_type: pull-request
+  conda-python-tests:
+    needs: conda-python-build
+    secrets: inherit
+    uses: rapidsai/shared-workflows/.github/workflows/conda-python-tests.yaml@branch-24.06
+    with:
+      build_type: pull-request
+  docs-build:
+    needs: conda-python-build
+    secrets: inherit
+    uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@branch-24.06
+    with:
+      build_type: pull-request
+      node_type: "gpu-v100-latest-1"
+      arch: "amd64"
+      container_image: "rapidsai/ci-conda:latest"
+      run_script: "ci/build_docs.sh"
   wheel-build-cpp:
     needs: checks
     secrets: inherit
@@ -85,26 +85,26 @@ jobs:
     with:
       build_type: pull-request
       script: ci/test_wheel.sh
-  # devcontainer:
-  #   secrets: inherit
-  #   uses: rapidsai/shared-workflows/.github/workflows/build-in-devcontainer.yaml@branch-24.06
-  #   with:
-  #     arch: '["amd64"]'
-  #     cuda: '["12.2"]'
-  #     build_command: |
-  #       # TODO: remove before merging (when new rapids-build-backend is released)
-  #       if [[ ! -d /tmp/delete-me/rapids-build-backend ]]; then
-  #           git clone \
-  #               -b main \
-  #               https://github.com/rapidsai/rapids-build-backend.git \
-  #               /tmp/delete-me/rapids-build-backend
+  devcontainer:
+    secrets: inherit
+    uses: rapidsai/shared-workflows/.github/workflows/build-in-devcontainer.yaml@branch-24.06
+    with:
+      arch: '["amd64"]'
+      cuda: '["12.2"]'
+      build_command: |
+        # TODO: remove before merging (when new rapids-build-backend is released)
+        if [[ ! -d /tmp/delete-me/rapids-build-backend ]]; then
+            git clone \
+                -b main \
+                https://github.com/rapidsai/rapids-build-backend.git \
+                /tmp/delete-me/rapids-build-backend
 
-  #           pushd /tmp/delete-me/rapids-build-backend
-  #           sed -e 's/^version =.*/version = "0.0.2"/' -i pyproject.toml
-  #           python -m pip install .
-  #           popd
-  #       fi
-  #       export PIP_FIND_LINKS="file:///tmp/delete-me/rapids-build-backend"
-  #       sccache -z;
-  #       build-all -DBUILD_BENCHMARKS=ON --verbose;
-  #       sccache -s;
+            pushd /tmp/delete-me/rapids-build-backend
+            sed -e 's/^version =.*/version = "0.0.2"/' -i pyproject.toml
+            python -m pip wheel --no-deps -w ./dist .
+            popd
+        fi
+        export PIP_FIND_LINKS="file:///tmp/delete-me/rapids-build-backend/dist"
+        sccache -z;
+        build-all -DBUILD_BENCHMARKS=ON --verbose;
+        sccache -s;
