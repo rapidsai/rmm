@@ -117,12 +117,35 @@ class polymorphic_allocator {
     get_current_device_resource()};  ///< Underlying resource used for (de)allocation
 };
 
+/**
+ * @brief Compare two `polymorphic_allocator`s for equality.
+ *
+ * Two `polymorphic_allocator`s are equal if their underlying memory resources compare equal.
+ *
+ * @tparam T Type of the first allocator
+ * @tparam U Type of the second allocator
+ * @param lhs The first allocator to compare
+ * @param rhs The second allocator to compare
+ * @return true if the two allocators are equal, false otherwise
+ */
 template <typename T, typename U>
 bool operator==(polymorphic_allocator<T> const& lhs, polymorphic_allocator<U> const& rhs)
 {
   return lhs.get_upstream_resource() == rhs.get_upstream_resource();
 }
 
+/**
+ * @brief Compare two `polymorphic_allocator`s for inequality.
+ *
+ * Two `polymorphic_allocator`s are not equal if their underlying memory resources compare not
+ * equal.
+ *
+ * @tparam T Type of the first allocator
+ * @tparam U Type of the second allocator
+ * @param lhs The first allocator to compare
+ * @param rhs The second allocator to compare
+ * @return true if the two allocators are not equal, false otherwise
+ */
 template <typename T, typename U>
 bool operator!=(polymorphic_allocator<T> const& lhs, polymorphic_allocator<U> const& rhs)
 {
@@ -234,12 +257,34 @@ class stream_allocator_adaptor {
   cuda_stream_view stream_;  ///< Stream on which (de)allocations are performed
 };
 
+/**
+ * @brief Compare two `stream_allocator_adaptor`s for equality.
+ *
+ * Two `stream_allocator_adaptor`s are equal if their underlying allocators compare equal.
+ *
+ * @tparam A Type of the first allocator
+ * @tparam O Type of the second allocator
+ * @param lhs The first allocator to compare
+ * @param rhs The second allocator to compare
+ * @return true if the two allocators are equal, false otherwise
+ */
 template <typename A, typename O>
 bool operator==(stream_allocator_adaptor<A> const& lhs, stream_allocator_adaptor<O> const& rhs)
 {
   return lhs.underlying_allocator() == rhs.underlying_allocator();
 }
 
+/**
+ * @brief Compare two `stream_allocator_adaptor`s for inequality.
+ *
+ * Two `stream_allocator_adaptor`s are not equal if their underlying allocators compare not equal.
+ *
+ * @tparam A Type of the first allocator
+ * @tparam O Type of the second allocator
+ * @param lhs The first allocator to compare
+ * @param rhs The second allocator to compare
+ * @return true if the two allocators are not equal, false otherwise
+ */
 template <typename A, typename O>
 bool operator!=(stream_allocator_adaptor<A> const& lhs, stream_allocator_adaptor<O> const& rhs)
 {
