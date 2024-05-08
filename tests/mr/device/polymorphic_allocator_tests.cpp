@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,14 +33,15 @@ struct allocator_test : public ::testing::Test {
 TEST_F(allocator_test, default_resource)
 {
   rmm::mr::polymorphic_allocator<int> allocator{};
-  EXPECT_EQ(allocator.resource(), rmm::mr::get_current_device_resource());
+  EXPECT_EQ(allocator.get_upstream_resource(),
+            rmm::device_async_resource_ref{rmm::mr::get_current_device_resource()});
 }
 
 TEST_F(allocator_test, custom_resource)
 {
   rmm::mr::cuda_memory_resource mr;
   rmm::mr::polymorphic_allocator<int> allocator{&mr};
-  EXPECT_EQ(allocator.resource(), &mr);
+  EXPECT_EQ(allocator.get_upstream_resource(), rmm::device_async_resource_ref{mr});
 }
 
 void test_conversion(rmm::mr::polymorphic_allocator<int> /*unused*/) {}
@@ -48,7 +49,7 @@ void test_conversion(rmm::mr::polymorphic_allocator<int> /*unused*/) {}
 TEST_F(allocator_test, implicit_conversion)
 {
   rmm::mr::cuda_memory_resource mr;
-  test_conversion(&mr);
+  test_conversion(rmm::device_async_resource_ref{mr});
 }
 
 TEST_F(allocator_test, self_equality)
@@ -84,7 +85,7 @@ TEST_F(allocator_test, copy_ctor_same_type)
   rmm::mr::polymorphic_allocator<int> alloc0;
   rmm::mr::polymorphic_allocator<int> alloc1{alloc0};
   EXPECT_EQ(alloc0, alloc1);
-  EXPECT_EQ(alloc0.resource(), alloc1.resource());
+  EXPECT_EQ(alloc0.get_upstream_resource(), alloc1.get_upstream_resource());
 }
 
 TEST_F(allocator_test, copy_ctor_different_type)
@@ -92,7 +93,7 @@ TEST_F(allocator_test, copy_ctor_different_type)
   rmm::mr::polymorphic_allocator<int> alloc0;
   rmm::mr::polymorphic_allocator<double> alloc1{alloc0};
   EXPECT_EQ(alloc0, alloc1);
-  EXPECT_EQ(alloc0.resource(), alloc1.resource());
+  EXPECT_EQ(alloc0.get_upstream_resource(), alloc1.get_upstream_resource());
 }
 
 TEST_F(allocator_test, rebind)
