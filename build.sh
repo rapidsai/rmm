@@ -163,7 +163,7 @@ git clone \
 
 pushd /tmp/delete-me/rapids-build-backend
 sed -e 's/^version =.*/version = "0.0.2"/' -i pyproject.toml
-python -m pip wheel --no-deps -w ./dist .
+python -m pip install .
 popd
 
 export PIP_FIND_LINKS="file:///tmp/delete-me/rapids-build-backend/dist"
