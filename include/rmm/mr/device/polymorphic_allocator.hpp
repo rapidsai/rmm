@@ -25,7 +25,11 @@
 #include <type_traits>
 
 namespace rmm::mr {
-
+/**
+ * @addtogroup device_memory_resources
+ * @{
+ * @file
+ */
 /**
  * @brief A stream ordered Allocator using a `rmm::mr::device_memory_resource` to satisfy
  * (de)allocations.
@@ -61,14 +65,14 @@ class polymorphic_allocator {
   polymorphic_allocator(device_async_resource_ref mr) : mr_{mr} {}
 
   /**
-   * @brief Construct a `polymorphic_allocator` using `other.resource()` as the underlying memory
-   * resource.
+   * @brief Construct a `polymorphic_allocator` using the underlying memory resource of `other`.
    *
-   * @param other The `polymorphic_resource` whose `resource()` will be used as the underlying
+   * @param other The `polymorphic_allocator` whose memory resource will be used as the underlying
    * resource of the new `polymorphic_allocator`.
    */
   template <typename U>
-  polymorphic_allocator(polymorphic_allocator<U> const& other) noexcept : mr_{other.resource()}
+  polymorphic_allocator(polymorphic_allocator<U> const& other) noexcept
+    : mr_{other.get_upstream_resource()}
   {
   }
 
@@ -257,5 +261,5 @@ auto make_stream_allocator_adaptor(Allocator const& allocator, cuda_stream_view 
 {
   return stream_allocator_adaptor<Allocator>{allocator, stream};
 }
-
+/** @} */  // end of group
 }  // namespace rmm::mr
