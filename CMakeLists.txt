@@ -1,5 +1,5 @@
 # =============================================================================
-# Copyright (c) 2018-2023, NVIDIA CORPORATION.
+# Copyright (c) 2018-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -102,9 +102,8 @@ target_compile_definitions(rmm INTERFACE LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_R
 
 # Disable NVTX if necessary
 if(NOT USE_NVTX)
-  target_compile_definitions(cudf PUBLIC NVTX_DISABLE)
+  target_compile_definitions(rmm PUBLIC NVTX_DISABLE)
 endif()
-
 
 # ##################################################################################################
 # * tests and benchmarks ---------------------------------------------------------------------------

@@ -20,8 +20,7 @@ function(find_and_configure_nvtx)
     CPM_ARGS
     GIT_REPOSITORY https://github.com/NVIDIA/NVTX.git
     GIT_TAG v3.1.0
-    GIT_SHALLOW TRUE SOURCE_SUBDIR c
-  )
+    GIT_SHALLOW TRUE SOURCE_SUBDIR c)
 endfunction()
 
 find_and_configure_nvtx()
