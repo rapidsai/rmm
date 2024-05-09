@@ -1,4 +1,5 @@
 #!/bin/bash
+# Copyright (c) 2024, NVIDIA CORPORATION.
 
 # This script is a wrapper for cmakelang that may be used with pre-commit. The
 # wrapping is necessary because RAPIDS libraries split configuration for
@@ -43,6 +44,7 @@ fi
 
 DEFAULT_FORMAT_FILE_LOCATIONS=(
   "${RMM_BUILD_DIR}/_deps/rapids-cmake-src/cmake-format-rapids-cmake.json"
+  "${RMM_BUILD_DIR:-build}/latest/_deps/rapids-cmake-src/cmake-format-rapids-cmake.json"
 )
 
 if [ -z ${RAPIDS_CMAKE_FORMAT_FILE:+PLACEHOLDER} ]; then
