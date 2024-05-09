@@ -62,13 +62,7 @@ requirements:
     - cuda-python >=12.0,<13.0a0
     {% endif %}
     - cython >=3.0.0
-    # TODO: Add rapids-build-backend once the package exists. Then we can remove dependencies up to the next TODO.
-    #- rapids-build-backend
-    - tomli
-    - tomli-w
-    - packaging
-    - rapids-dependency-file-generator
-    # TODO: Remove above dependencies after rapids-build-backend packages exist
+    - rapids-build-backend >= 0.1.1
     - librmm ={{ version }}
     - python
     - scikit-build-core >=0.7.0
