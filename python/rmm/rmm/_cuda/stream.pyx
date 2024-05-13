@@ -100,7 +100,8 @@ cdef class Stream:
     def _init_from_cupy_stream(self, obj):
         try:
             import cupy
-            if isinstance(obj, (cupy.cuda.stream.Stream, cupy.cuda.stream.ExternalStream)):
+            if isinstance(obj, (cupy.cuda.stream.Stream,
+                                cupy.cuda.stream.ExternalStream)):
                 self._cuda_stream = <cudaStream_t><uintptr_t>(obj.ptr)
                 self._owner = obj
                 return
