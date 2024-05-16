@@ -21,6 +21,7 @@
 #include <cstddef>
 #include <mutex>
 #include <shared_mutex>
+#include <stack>
 
 namespace rmm::mr {
 /**
@@ -82,6 +83,24 @@ class statistics_resource_adaptor final : public device_memory_resource {
       value -= val;
       return *this;
     }
+
+    /**
+     * @brief Add `val` to the current value and update the peak value if necessary
+     *
+     * @note When updating the peak value, we assume that `val` is the inner counter of
+     * `this` on the counter stack so its peak value becomes `this->value + val.peak`.
+     *
+     * @param val Value to add
+     * @return Reference to this object
+     */
+    counter& operator+=(const counter& val)
+    {
+      // We count the peak from value
+      peak = std::max(value + val.peak, peak);
+      value += val.value;
+      total += val.total;
+      return *this;
+    }
   };
 
   /**
@@ -95,6 +114,8 @@ class statistics_resource_adaptor final : public device_memory_resource {
   statistics_resource_adaptor(Upstream* upstream) : upstream_{upstream}
   {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
+    // Initially, we push a single counter pair on the stack
+    push_counters();
   }
 
   statistics_resource_adaptor()                                              = delete;
@@ -130,7 +151,7 @@ class statistics_resource_adaptor final : public device_memory_resource {
   {
     read_lock_t lock(mtx_);
 
-    return bytes_;
+    return counter_stack_.top().first;
   }
 
   /**
@@ -144,7 +165,29 @@ class statistics_resource_adaptor final : public device_memory_resource {
   {
     read_lock_t lock(mtx_);
 
-    return allocations_;
+    return counter_stack_.top().second;
+  }
+
+  std::pair<counter, counter> push_counters()
+  {
+    write_lock_t lock(mtx_);
+    // auto [bytes, allocations] = counter_stack_.top();
+    // bytes.
+    auto ret = counter_stack_.top();
+    counter_stack_.push(std::make_pair(counter{}, counter{}));
+    return ret;
+  }
+
+  std::pair<counter, counter> pop_counters()
+  {
+    write_lock_t lock(mtx_);
+    if (counter_stack_.size() < 2) { throw std::out_of_range("cannot pop the last counter pair"); }
+    auto ret = counter_stack_.top();
+    counter_stack_.pop();
+    // The new top inherits the statistics
+    counter_stack_.top().first += ret.first;
+    counter_stack_.top().second += ret.second;
+    return ret;
   }
 
  private:
@@ -170,8 +213,8 @@ class statistics_resource_adaptor final : public device_memory_resource {
       write_lock_t lock(mtx_);
 
       // Increment the allocation_count_ while we have the lock
-      bytes_ += bytes;
-      allocations_ += 1;
+      counter_stack_.top().first += bytes;
+      counter_stack_.top().second += 1;
     }
 
     return ptr;
@@ -192,8 +235,8 @@ class statistics_resource_adaptor final : public device_memory_resource {
       write_lock_t lock(mtx_);
 
       // Decrement the current allocated counts.
-      bytes_ -= bytes;
-      allocations_ -= 1;
+      counter_stack_.top().first -= bytes;
+      counter_stack_.top().second -= 1;
     }
   }
 
@@ -212,10 +255,10 @@ class statistics_resource_adaptor final : public device_memory_resource {
     return get_upstream_resource() == cast->get_upstream_resource();
   }
 
-  counter bytes_;                        // peak, current and total allocated bytes
-  counter allocations_;                  // peak, current and total allocation count
-  std::shared_timed_mutex mutable mtx_;  // mutex for thread safe access to allocations_
-  Upstream* upstream_;  // the upstream resource used for satisfying allocation requests
+  // Stack of counter pairs <bytes, allocations>
+  std::stack<std::pair<counter, counter>> counter_stack_;
+  std::shared_mutex mutable mtx_;  // mutex for thread safe access to allocations_
+  Upstream* upstream_;             // the upstream resource used for satisfying allocation requests
 };
 
 /**
