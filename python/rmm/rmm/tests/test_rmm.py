@@ -708,7 +708,77 @@ def test_statistics_resource_adaptor(stats_mr):
         "total_bytes": 12096,
         "total_count": 12,
     }
+
+    # Test the counter stack
+    # push returns the stats from the top before the push
+    assert stats_mr.push_counters() == {  # stats from stack level 0
+        "current_bytes": 0,
+        "current_count": 0,
+        "peak_bytes": 10080,
+        "peak_count": 10,
+        "total_bytes": 12096,
+        "total_count": 12,
+    }
+    b1 = rmm.DeviceBuffer(size=10)
+    assert stats_mr.push_counters() == {  # stats from stack level 1
+        "current_bytes": 16,
+        "current_count": 1,
+        "peak_bytes": 16,
+        "peak_count": 1,
+        "total_bytes": 16,
+        "total_count": 1,
+    }
+    del b1
     gc.collect()
+    # pop returns the stats from the top before the pop. Note, the bytes and
+    # count become negative since we are only deleted `b1` above.
+    assert stats_mr.pop_counters() == {  # stats from stack level 2
+        "current_bytes": -16,
+        "current_count": -1,
+        "peak_bytes": 0,
+        "peak_count": 0,
+        "total_bytes": 0,
+        "total_count": 0,
+    }
+    b1 = rmm.DeviceBuffer(size=10)
+    assert stats_mr.push_counters() == {  # stats from stack level 1
+        "current_bytes": 16,
+        "current_count": 1,
+        "peak_bytes": 16,
+        "peak_count": 1,
+        "total_bytes": 32,
+        "total_count": 2,
+    }
+    b2 = rmm.DeviceBuffer(size=10)
+    assert stats_mr.pop_counters() == {  # stats from stack level 2
+        "current_bytes": 16,
+        "current_count": 1,
+        "peak_bytes": 16,
+        "peak_count": 1,
+        "total_bytes": 16,
+        "total_count": 1,
+    }
+    assert stats_mr.pop_counters() == {  # stats from stack level 1
+        "current_bytes": 32,
+        "current_count": 2,
+        "peak_bytes": 32,
+        "peak_count": 2,
+        "total_bytes": 48,
+        "total_count": 3,
+    }
+    del b1
+    del b2
+    gc.collect()
+    assert stats_mr.allocation_counts == {  # stats from stack level 0
+        "current_bytes": 0,
+        "current_count": 0,
+        "peak_bytes": 10080,
+        "peak_count": 10,
+        "total_bytes": 12144,
+        "total_count": 15,
+    }
+    with pytest.raises(IndexError, match="cannot pop the last counter pair"):
+        stats_mr.pop_counters()
 
 
 def test_tracking_resource_adaptor():
