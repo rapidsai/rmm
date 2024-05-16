@@ -73,7 +73,7 @@ Python requirements:
 * `cuda-python`
 * `cython`
 
-For more details, see [pyproject.toml](python/pyproject.toml)
+For more details, see [pyproject.toml](python/rmm/pyproject.toml)
 
 
 ### Script to build RMM from source
@@ -855,3 +855,94 @@ Out[6]:
  'total_bytes': 16,
  'total_count': 1}
 ```
+
+## Taking ownership of C++ objects from Python.
+
+When interacting with a C++ library that uses RMM from Python, one
+must be careful when taking ownership of `rmm::device_buffer` objects
+on the Python side. The `rmm::device_buffer` does not contain an
+owning reference to the memory resource used for its allocation (only
+a `device_async_resource_ref`), and the allocating user is expected to
+keep this memory resource alive for at least the lifetime of the
+buffer. When taking ownership of such a buffer in Python, we have no
+way (in the general case) of ensuring that the memory resource will
+outlive the buffer we are now holding.
+
+To avoid any issues, we need two things:
+
+1. The C++ library we are interfacing with should accept a memory
+   resource that is used for allocations that are returned to the
+   user.
+2. When calling into the library from python, we should provide a
+   memory resource whose lifetime we control. This memory resource
+   should then be provided when we take ownership of any allocated
+   `rmm::device_buffer`s.
+
+For example, suppose we have a C++ function that allocates
+`device_buffer`s, which has a utility overload that defaults the
+memory resource to the current device resource:
+
+```c++
+std::unique_ptr<rmm::device_buffer> allocate(
+  std::size_t size,
+  rmm::mr::device_async_resource_ref mr = get_current_device_resource())
+{
+    return std::make_unique<rmm::device_buffer>(size, rmm::cuda_stream_default, mr);
+}
+```
+
+The Python `DeviceBuffer` class has a convenience Cython function,
+`c_from_unique_ptr` to construct a `DeviceBuffer` from a
+`unique_ptr<rmm::device_buffer>`, taking ownership of it. To do this
+safely, we must ensure that the allocation that was done on the C++
+side uses a memory resource we control. So:
+
+```cython
+# Bad, doesn't control lifetime
+buffer_bad = DeviceBuffer.c_from_unique_ptr(allocate(10))
+
+# Good, allocation happens with a memory resource we control
+# mr is a DeviceMemoryResource
+buffer_good = DeviceBuffer.c_from_unique_ptr(
+    allocate(10, mr.get_mr()),
+    mr=mr,
+)
+```
+
+Note two differences between the bad and good cases:
+
+1. In the good case we pass the memory resource to the allocation
+   function.
+2. In the good case, we pass _the same_ memory resource to the
+   `DeviceBuffer` constructor so that its lifetime is tied to the
+   lifetime of the buffer.
+
+### Potential pitfalls of relying on `get_current_device_resource`
+
+Functions in both the C++ and Python APIs that perform allocation
+typically default the memory resource argument to the value of
+`get_current_device_resource`. This is to simplify the interface for
+callers. When using a C++ library from Python, this defaulting is
+safe, _as long as_ it is only the Python process that ever calls
+`set_current_device_resource`.
+
+This is because the current device resource on the C++ side has a
+lifetime which is expected to be managed by the user. The resources
+set by `rmm::mr::set_current_device_resource` are stored in a static
+`std::map` whose keys are device ids and values are raw pointers to
+the memory resources. Consequently,
+`rmm::mr::get_current_device_resource` returns an object with no
+lifetime provenance. This is, for the reasons discussed above, not
+usable from Python. To handle this on the Python side, the
+Python-level `set_current_device_resource` sets the C++ resource _and_
+stores the Python object in a static global dictionary. The Python
+`get_current_device_resource` then _does not use_
+`rmm::mr::get_current_device_resource` and instead looks up the
+current device resource in this global dictionary.
+
+Hence, if the C++ library we are interfacing with calls
+`rmm::mr::set_current_device_resource`, the C++ and Python sides of
+the program can disagree on what `get_current_device_resource`
+returns. The only safe thing to do if using the simplified interfaces
+is therefore to ensure that `set_current_device_resource` is only ever
+called on the Python side.
