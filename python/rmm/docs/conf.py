@@ -1,3 +1,5 @@
+# Copyright (c) 2020-2024, NVIDIA CORPORATION.
+
 # Configuration file for the Sphinx documentation builder.
 #
 # This file only contains a selection of the most common options. For a full
