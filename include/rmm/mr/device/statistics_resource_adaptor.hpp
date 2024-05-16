@@ -45,11 +45,10 @@ namespace rmm::mr {
 template <typename Upstream>
 class statistics_resource_adaptor final : public device_memory_resource {
  public:
-  // can be a std::shared_mutex once C++17 is adopted
   using read_lock_t =
-    std::shared_lock<std::shared_timed_mutex>;  ///< Type of lock used to synchronize read access
+    std::shared_lock<std::shared_mutex>;  ///< Type of lock used to synchronize read access
   using write_lock_t =
-    std::unique_lock<std::shared_timed_mutex>;  ///< Type of lock used to synchronize write access
+    std::unique_lock<std::shared_mutex>;  ///< Type of lock used to synchronize write access
   /**
    * @brief Utility struct for counting the current, peak, and total value of a number
    */
