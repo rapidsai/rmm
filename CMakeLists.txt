@@ -47,7 +47,7 @@ set_property(CACHE RMM_LOGGING_LEVEL PROPERTY STRINGS "TRACE" "DEBUG" "INFO" "WA
                                               "CRITICAL" "OFF")
 
 # Set logging level. Must go before including gtests and benchmarks. Set the possible values of
-# build type for cmake-gui
+# build type for cmake-gui.
 message(STATUS "RMM: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'")
 
 # cudart can be linked statically or dynamically

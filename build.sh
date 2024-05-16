@@ -6,7 +6,7 @@
 
 # This script is used to build the component(s) in this repo from
 # source, and can be called with various options to customize the
-# build as needed (see the help output for details)
+# build as needed (see the help output for details).
 
 # Abort script on first error
 set -e

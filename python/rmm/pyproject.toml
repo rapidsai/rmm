@@ -126,6 +126,7 @@ input = "rmm/VERSION"
 regex = "(?P<value>.*)"
 
 [tool.pytest.ini_options]
+# treat warnings as errors
 filterwarnings = [
     "error",
 ]
