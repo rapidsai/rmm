@@ -189,6 +189,8 @@ cdef extern from "rmm/mr/device/statistics_resource_adaptor.hpp" \
 
         counter get_bytes_counter() except +
         counter get_allocations_counter() except +
+        pair[counter, counter] pop_counters() except +
+        pair[counter, counter] push_counters() except +
 
 cdef extern from "rmm/mr/device/tracking_resource_adaptor.hpp" \
         namespace "rmm::mr" nogil:
@@ -791,6 +793,9 @@ cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
         allocations/deallocations performed by an upstream memory resource.
         Includes the ability to query these statistics at any time.
 
+        The resource maintains a stack of counters, use `.push_counters()`
+        and `.pop_counters()` to record statistics at different nested levels.
+
         Parameters
         ----------
         upstream : DeviceMemoryResource
@@ -822,6 +827,41 @@ cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
             "peak_count": counts.peak,
             "total_bytes": byte_counts.total,
             "total_count": counts.total,
+        }
+
+    def pop_counters(self) -> dict:
+        """
+        Pop a counter pair (bytes and allocations) from the stack
+        """
+        cdef statistics_resource_adaptor[device_memory_resource]* mr = \
+            <statistics_resource_adaptor[device_memory_resource]*> self.c_obj.get()
+
+        bytes_and_allocs = deref(mr).pop_counters()
+        return {
+            "current_bytes": bytes_and_allocs.first.value,
+            "current_count": bytes_and_allocs.second.value,
+            "peak_bytes": bytes_and_allocs.first.peak,
+            "peak_count": bytes_and_allocs.second.peak,
+            "total_bytes": bytes_and_allocs.first.total,
+            "total_count": bytes_and_allocs.second.total,
+        }
+
+    def push_counters(self) -> dict:
+        """
+        Push a new counter pair (bytes and allocations) on the stack
+        """
+
+        cdef statistics_resource_adaptor[device_memory_resource]* mr = \
+            <statistics_resource_adaptor[device_memory_resource]*> self.c_obj.get()
+
+        bytes_and_allocs = deref(mr).push_counters()
+        return {
+            "current_bytes": bytes_and_allocs.first.value,
+            "current_count": bytes_and_allocs.second.value,
+            "peak_bytes": bytes_and_allocs.first.peak,
+            "peak_count": bytes_and_allocs.second.peak,
+            "total_bytes": bytes_and_allocs.first.total,
+            "total_count": bytes_and_allocs.second.total,
         }
 
 cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
