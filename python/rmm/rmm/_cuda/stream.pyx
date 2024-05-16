@@ -1,4 +1,4 @@
-# Copyright (c) 2020, NVIDIA CORPORATION.
+# Copyright (c) 2020-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -100,7 +100,8 @@ cdef class Stream:
     def _init_from_cupy_stream(self, obj):
         try:
             import cupy
-            if isinstance(obj, cupy.cuda.stream.Stream):
+            if isinstance(obj, (cupy.cuda.stream.Stream,
+                                cupy.cuda.stream.ExternalStream)):
                 self._cuda_stream = <cudaStream_t><uintptr_t>(obj.ptr)
                 self._owner = obj
                 return
