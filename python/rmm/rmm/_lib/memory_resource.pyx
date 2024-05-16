@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2022, NVIDIA CORPORATION.
+# Copyright (c) 2020-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -177,8 +177,7 @@ cdef extern from "rmm/mr/device/logging_resource_adaptor.hpp" \
 
 cdef extern from "rmm/mr/device/statistics_resource_adaptor.hpp" \
         namespace "rmm::mr" nogil:
-    cdef cppclass statistics_resource_adaptor[Upstream](
-            device_memory_resource):
+    cdef cppclass statistics_resource_adaptor[Upstream](device_memory_resource):
         struct counter:
             counter()
 
@@ -186,8 +185,7 @@ cdef extern from "rmm/mr/device/statistics_resource_adaptor.hpp" \
             int64_t peak
             int64_t total
 
-        statistics_resource_adaptor(
-            Upstream* upstream_mr) except +
+        statistics_resource_adaptor(Upstream* upstream_mr) except +
 
         counter get_bytes_counter() except +
         counter get_allocations_counter() except +
@@ -812,12 +810,11 @@ cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
         Returns:
             dict: Dictionary containing allocation counts and bytes.
         """
+        cdef statistics_resource_adaptor[device_memory_resource]* mr = \
+            <statistics_resource_adaptor[device_memory_resource]*> self.c_obj.get()
 
-        counts = (<statistics_resource_adaptor[device_memory_resource]*>(
-            self.c_obj.get()))[0].get_allocations_counter()
-        byte_counts = (<statistics_resource_adaptor[device_memory_resource]*>(
-            self.c_obj.get()))[0].get_bytes_counter()
-
+        counts = deref(mr).get_allocations_counter()
+        byte_counts = deref(mr).get_bytes_counter()
         return {
             "current_bytes": byte_counts.value,
             "current_count": counts.value,
