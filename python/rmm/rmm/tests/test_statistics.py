@@ -30,13 +30,46 @@ def stats_mr():
 
 
 def test_context():
-    prior_mr = rmm.mr.get_current_device_resource()
+    mr0 = rmm.mr.get_current_device_resource()
+    assert get_statistics() is None
     with statistics():
+        mr1 = rmm.mr.get_current_device_resource()
         assert isinstance(
             rmm.mr.get_current_device_resource(),
             rmm.mr.StatisticsResourceAdaptor,
         )
-    assert rmm.mr.get_current_device_resource() is prior_mr
+        b1 = rmm.DeviceBuffer(size=20)
+        assert get_statistics() == {
+            "current_bytes": 32,
+            "current_count": 1,
+            "peak_bytes": 32,
+            "peak_count": 1,
+            "total_bytes": 32,
+            "total_count": 1,
+        }
+        with statistics():
+            mr2 = rmm.mr.get_current_device_resource()
+            assert mr1 is mr2
+            b2 = rmm.DeviceBuffer(size=10)
+            assert get_statistics() == {
+                "current_bytes": 16,
+                "current_count": 1,
+                "peak_bytes": 16,
+                "peak_count": 1,
+                "total_bytes": 16,
+                "total_count": 1,
+            }
+        assert get_statistics() == {
+            "current_bytes": 48,
+            "current_count": 2,
+            "peak_bytes": 48,
+            "peak_count": 2,
+            "total_bytes": 48,
+            "total_count": 2,
+        }
+        del b1
+        del b2
+    assert rmm.mr.get_current_device_resource() is mr0
 
 
 def test_multiple_mr(stats_mr):

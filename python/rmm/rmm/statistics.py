@@ -38,37 +38,6 @@ def enable_statistics() -> None:
         )
 
 
-@contextmanager
-def statistics():
-    """Context to enable allocation statistics temporarily.
-
-    Warning
-    -------
-    This modifies the current RMM memory resource. StatisticsResourceAdaptor
-    is pushed onto the current RMM memory resource stack when entering the
-    context and popped again when exiting. If statistics has been enabled for
-    the current RMM resource stack already, this is a no-op.
-
-    Raises
-    ------
-    ValueError
-        If the RMM memory source stack was changed while in the context.
-    """
-
-    # Save the current memory resource for later cleanup
-    prior_mr = rmm.mr.get_current_device_resource()
-    enable_statistics()
-    try:
-        current_mr = rmm.mr.get_current_device_resource()
-        yield
-    finally:
-        if current_mr is not rmm.mr.get_current_device_resource():
-            raise ValueError(
-                "RMM memory source stack was changed while in the context"
-            )
-        rmm.mr.set_current_device_resource(prior_mr)
-
-
 def get_statistics() -> Optional[Dict[str, int]]:
     """Get the current allocation statistics
 
@@ -90,7 +59,7 @@ def push_statistics() -> Optional[Dict[str, int]]:
     of zero counters on the stack of statistics.
 
     If statistics are disabled (the current memory resource is not an
-    instance of `StatisticsResourceAdaptor`), this function is a no-op.
+    instance of StatisticsResourceAdaptor), this function is a no-op.
 
     Return
     ------
@@ -110,7 +79,7 @@ def pop_statistics() -> Optional[Dict[str, int]]:
     them from the stack.
 
     If statistics are disabled (the current memory resource is not an
-    instance of `StatisticsResourceAdaptor`), this function is a no-op.
+    instance of StatisticsResourceAdaptor), this function is a no-op.
 
     Return
     ------
@@ -121,3 +90,44 @@ def pop_statistics() -> Optional[Dict[str, int]]:
     if isinstance(mr, rmm.mr.StatisticsResourceAdaptor):
         return mr.pop_counters()
     return None
+
+
+@contextmanager
+def statistics():
+    """Context to enable allocation statistics.
+
+    If statistics has been enabled already (the current memory resource is an
+    instance of StatisticsResourceAdaptor), new counters are pushed on the
+    current allocation statistics stack when entering the context and popped
+    again when exiting using `push_statistics()` and `push_statistics()`.
+
+    If statistics has not been enabled, StatisticsResourceAdaptor is set as
+    the current RMM memory resource when entering the context and removed
+    again when exiting.
+
+    Raises
+    ------
+    ValueError
+        If the current RMM memory source was changed while in the context.
+    """
+
+    if push_statistics() is None:
+        # Save the current non-statistics memory resource for later cleanup
+        prior_non_stats_mr = rmm.mr.get_current_device_resource()
+        enable_statistics()
+    else:
+        prior_non_stats_mr = None
+
+    try:
+        current_mr = rmm.mr.get_current_device_resource()
+        yield
+    finally:
+        if current_mr is not rmm.mr.get_current_device_resource():
+            raise ValueError(
+                "RMM memory source stack was changed "
+                "while in the statistics context"
+            )
+        if prior_non_stats_mr is None:
+            pop_statistics()
+        else:
+            rmm.mr.set_current_device_resource(prior_non_stats_mr)
