@@ -57,46 +57,45 @@ def test_multiple_mr(stats_mr):
     # Push a new Tracking adaptor
     mr2 = rmm.mr.StatisticsResourceAdaptor(stats_mr)
     rmm.mr.set_current_device_resource(mr2)
+    try:
+        for _ in range(2):
+            buffers.append(rmm.DeviceBuffer(size=1000))
 
-    for _ in range(2):
-        buffers.append(rmm.DeviceBuffer(size=1000))
-
-    assert mr2.allocation_counts == {
-        "current_bytes": 2016,
-        "current_count": 2,
-        "peak_bytes": 2016,
-        "peak_count": 2,
-        "total_bytes": 2016,
-        "total_count": 2,
-    }
-    assert stats_mr.allocation_counts == {
-        "current_bytes": 7056,
-        "current_count": 7,
-        "peak_bytes": 10080,
-        "peak_count": 10,
-        "total_bytes": 12096,
-        "total_count": 12,
-    }
-
-    del buffers
-
-    assert mr2.allocation_counts == {
-        "current_bytes": 0,
-        "current_count": 0,
-        "peak_bytes": 2016,
-        "peak_count": 2,
-        "total_bytes": 2016,
-        "total_count": 2,
-    }
-    assert stats_mr.allocation_counts == {
-        "current_bytes": 0,
-        "current_count": 0,
-        "peak_bytes": 10080,
-        "peak_count": 10,
-        "total_bytes": 12096,
-        "total_count": 12,
-    }
-    rmm.mr.set_current_device_resource(stats_mr)
+        assert mr2.allocation_counts == {
+            "current_bytes": 2016,
+            "current_count": 2,
+            "peak_bytes": 2016,
+            "peak_count": 2,
+            "total_bytes": 2016,
+            "total_count": 2,
+        }
+        assert stats_mr.allocation_counts == {
+            "current_bytes": 7056,
+            "current_count": 7,
+            "peak_bytes": 10080,
+            "peak_count": 10,
+            "total_bytes": 12096,
+            "total_count": 12,
+        }
+        del buffers
+        assert mr2.allocation_counts == {
+            "current_bytes": 0,
+            "current_count": 0,
+            "peak_bytes": 2016,
+            "peak_count": 2,
+            "total_bytes": 2016,
+            "total_count": 2,
+        }
+        assert stats_mr.allocation_counts == {
+            "current_bytes": 0,
+            "current_count": 0,
+            "peak_bytes": 10080,
+            "peak_count": 10,
+            "total_bytes": 12096,
+            "total_count": 12,
+        }
+    finally:
+        rmm.mr.set_current_device_resource(stats_mr)
 
 
 def test_counter_stack(stats_mr):

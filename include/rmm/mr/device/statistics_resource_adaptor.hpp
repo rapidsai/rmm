@@ -99,7 +99,6 @@ class statistics_resource_adaptor final : public device_memory_resource {
      */
     counter& operator+=(const counter& val)
     {
-      // We count the peak from value
       peak = std::max(value + val.peak, peak);
       value += val.value;
       total += val.total;
