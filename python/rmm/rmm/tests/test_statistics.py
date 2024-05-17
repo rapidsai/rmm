@@ -15,7 +15,12 @@
 import pytest
 
 import rmm.mr
-from rmm.statistics import statistics
+from rmm.statistics import (
+    get_statistics,
+    pop_statistics,
+    push_statistics,
+    statistics,
+)
 
 
 @pytest.fixture
@@ -116,7 +121,7 @@ def test_counter_stack(stats_mr):
         "total_count": 1,
     }
     del b1
-    # pop returns the stats from the top before the pop.
+    # pop returns the popped stats
     # Note, the bytes and counts can be negative
     assert stats_mr.pop_counters() == {  # stats from stack level 2
         "current_bytes": -16,
@@ -165,3 +170,48 @@ def test_counter_stack(stats_mr):
     del buffers
     with pytest.raises(IndexError, match="cannot pop the last counter pair"):
         stats_mr.pop_counters()
+
+
+def test_current_statistics(stats_mr):
+    b1 = rmm.DeviceBuffer(size=10)
+    assert get_statistics() == {
+        "current_bytes": 16,
+        "current_count": 1,
+        "peak_bytes": 16,
+        "peak_count": 1,
+        "total_bytes": 16,
+        "total_count": 1,
+    }
+    b2 = rmm.DeviceBuffer(size=20)
+    assert push_statistics() == {
+        "current_bytes": 48,
+        "current_count": 2,
+        "peak_bytes": 48,
+        "peak_count": 2,
+        "total_bytes": 48,
+        "total_count": 2,
+    }
+    del b1
+    assert pop_statistics() == {
+        "current_bytes": -16,
+        "current_count": -1,
+        "peak_bytes": 0,
+        "peak_count": 0,
+        "total_bytes": 0,
+        "total_count": 0,
+    }
+    del b2
+    assert get_statistics() == {
+        "current_bytes": 0,
+        "current_count": 0,
+        "peak_bytes": 48,
+        "peak_count": 2,
+        "total_bytes": 48,
+        "total_count": 2,
+    }
+
+
+def test_statistics_disabled():
+    assert get_statistics() is None
+    assert push_statistics() is None
+    assert get_statistics() is None

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from contextlib import contextmanager
+from typing import Dict, Optional
 
 import rmm.mr
 
@@ -66,3 +67,57 @@ def statistics():
                 "RMM memory source stack was changed while in the context"
             )
         rmm.mr.set_current_device_resource(prior_mr)
+
+
+def get_statistics() -> Optional[Dict[str, int]]:
+    """Get the current allocation statistics
+
+    Return
+    ------
+    If enabled, returns the current tracked statistics.
+    If disabled, returns None.
+    """
+    mr = rmm.mr.get_current_device_resource()
+    if isinstance(mr, rmm.mr.StatisticsResourceAdaptor):
+        return mr.allocation_counts
+    return None
+
+
+def push_statistics() -> Optional[Dict[str, int]]:
+    """Push new counters on the current allocation statistics stack
+
+    This returns the current tracked statistics and push a new set
+    of zero counters on the stack of statistics.
+
+    If statistics are disabled (the current memory resource is not an
+    instance of `StatisticsResourceAdaptor`), this function is a no-op.
+
+    Return
+    ------
+    If enabled, returns the current tracked statistics _before_ the pop.
+    If disabled, returns None.
+    """
+    mr = rmm.mr.get_current_device_resource()
+    if isinstance(mr, rmm.mr.StatisticsResourceAdaptor):
+        return mr.push_counters()
+    return None
+
+
+def pop_statistics() -> Optional[Dict[str, int]]:
+    """Pop the counters of the current allocation statistics stack
+
+    This returns the counters of current tracked statistics and pops
+    them from the stack.
+
+    If statistics are disabled (the current memory resource is not an
+    instance of `StatisticsResourceAdaptor`), this function is a no-op.
+
+    Return
+    ------
+    If enabled, returns the popped counters.
+    If disabled, returns None.
+    """
+    mr = rmm.mr.get_current_device_resource()
+    if isinstance(mr, rmm.mr.StatisticsResourceAdaptor):
+        return mr.pop_counters()
+    return None
