@@ -37,8 +37,12 @@ namespace rmm::mr {
  * resource in order to satisfy allocation requests, but any existing
  * allocations will be untracked. Tracking statistics stores the current, peak
  * and total memory allocations for both the number of bytes and number of calls
- * to the memory resource. `statistics_resource_adaptor` is intended as a debug
- * adaptor and shouldn't be used in performance-sensitive code.
+ * to the memory resource.
+ * A stack of counters is maintained, use `.push_counters()` and `.pop_counters()`
+ * to track statistics at different nesting levels.
+ *
+ * `statistics_resource_adaptor` is intended as a debug adaptor and shouldn't be
+ * used in performance-sensitive code.
  *
  * @tparam Upstream Type of the upstream resource used for
  * allocation/deallocation.
@@ -168,6 +172,12 @@ class statistics_resource_adaptor final : public device_memory_resource {
     return counter_stack_.top().second;
   }
 
+  /**
+   * @brief Push a pair of zero counters on the stack, which becomes the new
+   * counters returned by `get_bytes_counter()` and `get_allocations_counter()`
+   *
+   * @return pair of counters <bytes, allocations> from the stack _before_ the push
+   */
   std::pair<counter, counter> push_counters()
   {
     write_lock_t lock(mtx_);
@@ -178,6 +188,11 @@ class statistics_resource_adaptor final : public device_memory_resource {
     return ret;
   }
 
+  /**
+   * @brief Pop a pair of counters from the stack
+   *
+   * @return pair of counters <bytes, allocations> from the stack _before_ the pop
+   */
   std::pair<counter, counter> pop_counters()
   {
     write_lock_t lock(mtx_);
