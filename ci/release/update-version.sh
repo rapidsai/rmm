@@ -47,3 +47,15 @@ find .devcontainer/ -type f -name devcontainer.json -print0 | while IFS= read -r
     sed_runner "s@rapidsai/devcontainers/features/rapids-build-utils:[0-9.]*@rapidsai/devcontainers/features/rapids-build-utils:${NEXT_SHORT_TAG_PEP440}@" "${filename}"
     sed_runner "s@rapids-\${localWorkspaceFolderBasename}-[0-9.]*@rapids-\${localWorkspaceFolderBasename}-${NEXT_SHORT_TAG}@g" "${filename}"
 done
+
+DEPENDENCIES=(
+  librmm
+)
+for DEP in "${DEPENDENCIES[@]}"; do
+  for FILE in dependencies.yaml conda/environments/*.yaml; do
+    sed_runner "/-.* ${DEP}\(-cu[[:digit:]]\{2\}\)\{0,1\}==/ s/==.*/==${NEXT_SHORT_TAG_PEP440}.*/g" "${FILE}"
+  done
+  for FILE in python/*/pyproject.toml; do
+    sed_runner "/\"${DEP}==/ s/==.*\"/==${NEXT_SHORT_TAG_PEP440}.*\"/g" "${FILE}"
+  done
+done
