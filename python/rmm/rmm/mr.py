@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2021, NVIDIA CORPORATION.
+# Copyright (c) 2020-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ from rmm._lib.memory_resource import (
     enable_logging,
     get_current_device_resource,
     get_current_device_resource_type,
+    get_free_device_memory,
     get_log_filenames,
     get_per_device_resource,
     get_per_device_resource_type,
@@ -65,6 +66,7 @@ __all__ = [
     "get_current_device_resource",
     "get_per_device_resource_type",
     "get_current_device_resource_type",
+    "get_free_device_memory",
     "get_log_filenames",
     "is_initialized",
 ]
