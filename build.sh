@@ -53,7 +53,7 @@ RAN_CMAKE=0
 # If INSTALL_PREFIX is not set, check PREFIX, then check
 # CONDA_PREFIX, then fall back to install inside of $LIBRMM_BUILD_DIR
 INSTALL_PREFIX=${INSTALL_PREFIX:=${PREFIX:=${CONDA_PREFIX:=$LIBRMM_BUILD_DIR/install}}}
-export PARALLEL_LEVEL=${PARALLEL_LEVEL:=$(nproc)}
+export PARALLEL_LEVEL=${PARALLEL_LEVEL:=$(nproc --all)}
 
 function hasArg {
     (( NUMARGS != 0 )) && (echo " ${ARGS} " | grep -q " $1 ")
