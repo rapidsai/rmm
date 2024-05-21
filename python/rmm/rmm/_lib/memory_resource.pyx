@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2022, NVIDIA CORPORATION.
+# Copyright (c) 2020-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -1188,3 +1188,10 @@ def get_log_filenames():
         else None
         for i, each_mr in _per_device_mrs.items()
     }
+
+
+def get_free_device_memory(percent):
+    """
+    Returns the percentage of the free memory available
+    """
+    return percent_of_free_device_memory(percent)

@@ -1002,3 +1002,10 @@ def test_invalid_logging_level(level):
         rmm.set_flush_level(level)
     with pytest.raises(TypeError):
         rmm.should_log(level)
+
+
+def test_get_free_device_memory():
+    from rmm._lib.memory_resource import get_free_device_memory
+
+    memory = get_free_device_memory(percent=10)
+    assert memory != 0
