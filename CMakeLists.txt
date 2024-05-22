@@ -102,7 +102,7 @@ target_compile_definitions(rmm INTERFACE LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_R
 
 # Disable NVTX if necessary
 if(NOT USE_NVTX)
-  target_compile_definitions(rmm PUBLIC NVTX_DISABLE)
+  target_compile_definitions(rmm INTERFACE NVTX_DISABLE)
 endif()
 
 # ##################################################################################################
