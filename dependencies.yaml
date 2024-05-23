@@ -94,11 +94,11 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - rapids-build-backend ~=0.2.1
+          - rapids-build-backend ~=0.3.0
           - scikit-build-core >=0.7.0
       - output_types: [requirements, pyproject]
         packages:
-          - rapids-build-backend>=0.2.1,<0.3.0.dev0
+          - rapids-build-backend>=0.3.0,<0.4.0.dev0
           - scikit-build-core[pyproject]>=0.7.0
   build:
     common:
@@ -168,7 +168,7 @@ dependencies:
                 - librmm-cu11==24.8.*,>=0.0.0a0
             - matrix:
               packages:
-                - librmm==24.8.*
+                - librmm==24.8.*,>=0.0.0a0
   checks:
     common:
       - output_types: [conda, requirements]
