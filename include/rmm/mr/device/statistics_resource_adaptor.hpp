@@ -38,8 +38,12 @@ namespace rmm::mr {
  * allocations will be untracked. Tracking statistics stores the current, peak
  * and total memory allocations for both the number of bytes and number of calls
  * to the memory resource.
- * A stack of counters is maintained, use `.push_counters()` and `.pop_counters()`
- * to track statistics at different nesting levels.
+ *
+ * This resource supports nested statistics, which makes it possible to track statistics
+ * of a code block. Use `.push_counters()` to start tracking statistics on a code block
+ * and use `.pop_counters()` to stop the tracking. The nested statistics are cascading
+ * such that the statistics tracked by a code block includes the statistics tracked in
+ * all its tracked sub code block.
  *
  * `statistics_resource_adaptor` is intended as a debug adaptor and shouldn't be
  * used in performance-sensitive code.
@@ -91,18 +95,19 @@ class statistics_resource_adaptor final : public device_memory_resource {
     /**
      * @brief Add `val` to the current value and update the peak value if necessary
      *
-     * @note When updating the peak value, we assume that `val` is the inner counter of
-     * `this` on the counter stack so its peak value becomes `this->value + val.peak`.
+     * When updating the peak value, we assume that `val` is tracking a code block inside the
+     * code block tracked by `this`. Because nested statistics are cascading, we have to convert
+     * `val.peak` to the peak it would have been if it was part of the statistics tracked by `this`.
+     * We do this by adding the current value that was active when `val` started tracking such that
+     * we get `std::max(value + val.peak, peak)`.
      *
      * @param val Value to add
-     * @return Reference to this object
      */
-    counter& operator+=(const counter& val)
+    void add_counters_from_tracked_sub_block(const counter& val)
     {
       peak = std::max(value + val.peak, peak);
       value += val.value;
       total += val.total;
-      return *this;
     }
   };
 
@@ -198,9 +203,9 @@ class statistics_resource_adaptor final : public device_memory_resource {
     if (counter_stack_.size() < 2) { throw std::out_of_range("cannot pop the last counter pair"); }
     auto ret = counter_stack_.top();
     counter_stack_.pop();
-    // The new top inherits the statistics
-    counter_stack_.top().first += ret.first;
-    counter_stack_.top().second += ret.second;
+    // Update the new top pair of counters
+    counter_stack_.top().first.add_counters_from_tracked_sub_block(ret.first);
+    counter_stack_.top().second.add_counters_from_tracked_sub_block(ret.second);
     return ret;
   }
 
