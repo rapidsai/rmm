@@ -38,6 +38,7 @@ rapids_cmake_build_type(Release)
 # ##################################################################################################
 # * build options ----------------------------------------------------------------------------------
 
+option(USE_NVTX "Build with NVTX support" ON)
 option(BUILD_TESTS "Configure CMake to build tests" ON)
 option(BUILD_BENCHMARKS "Configure CMake to build (google) benchmarks" OFF)
 set(RMM_LOGGING_LEVEL
@@ -46,6 +47,7 @@ set(RMM_LOGGING_LEVEL
 set_property(CACHE RMM_LOGGING_LEVEL PROPERTY STRINGS "TRACE" "DEBUG" "INFO" "WARN" "ERROR"
                                               "CRITICAL" "OFF")
 
+message(VERBOSE "RMM: Build with NVTX support: ${USE_NVTX}")
 # Set logging level. Must go before including gtests and benchmarks. Set the possible values of
 # build type for cmake-gui.
 message(STATUS "RMM: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'")
@@ -71,6 +73,7 @@ rapids_cpm_init()
 include(cmake/thirdparty/get_fmt.cmake)
 include(cmake/thirdparty/get_spdlog.cmake)
 include(cmake/thirdparty/get_cccl.cmake)
+include(cmake/thirdparty/get_nvtx.cmake)
 
 # ##################################################################################################
 # * library targets --------------------------------------------------------------------------------
@@ -93,8 +96,14 @@ target_link_libraries(rmm INTERFACE CCCL::CCCL)
 target_link_libraries(rmm INTERFACE fmt::fmt-header-only)
 target_link_libraries(rmm INTERFACE spdlog::spdlog_header_only)
 target_link_libraries(rmm INTERFACE dl)
+target_link_libraries(rmm INTERFACE nvtx3::nvtx3-cpp)
 target_compile_features(rmm INTERFACE cxx_std_17 $<BUILD_INTERFACE:cuda_std_17>)
 target_compile_definitions(rmm INTERFACE LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
+
+# Disable NVTX if necessary
+if(NOT USE_NVTX)
+  target_compile_definitions(rmm INTERFACE NVTX_DISABLE)
+endif()
 
 # ##################################################################################################
 # * tests and benchmarks ---------------------------------------------------------------------------
