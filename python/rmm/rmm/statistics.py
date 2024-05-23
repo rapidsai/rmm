@@ -55,7 +55,7 @@ def get_statistics() -> Optional[Dict[str, int]]:
 def push_statistics() -> Optional[Dict[str, int]]:
     """Push new counters on the current allocation statistics stack
 
-    This returns the current tracked statistics and push a new set
+    This returns the current tracked statistics and pushes a new set
     of zero counters on the stack of statistics.
 
     If statistics are disabled (the current memory resource is not an

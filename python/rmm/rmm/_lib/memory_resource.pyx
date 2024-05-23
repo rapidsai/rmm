@@ -793,7 +793,7 @@ cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
         allocations/deallocations performed by an upstream memory resource.
         Includes the ability to query these statistics at any time.
 
-        A stack of counters is maintained, use `.push_counters()` and
+        A stack of counters is maintained. Use `.push_counters()` and
         `.pop_counters()` to track statistics at different nesting levels.
 
         Parameters
