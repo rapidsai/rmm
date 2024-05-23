@@ -175,13 +175,12 @@ class statistics_resource_adaptor final : public device_memory_resource {
    * @brief Push a pair of zero counters on the stack, which becomes the new
    * counters returned by `get_bytes_counter()` and `get_allocations_counter()`
    *
-   * @return pair of counters <bytes, allocations> from the stack _before_ the push
+   * @return top pair of counters <bytes, allocations> from the stack _before_
+   * the push
    */
   std::pair<counter, counter> push_counters()
   {
     write_lock_t lock(mtx_);
-    // auto [bytes, allocations] = counter_stack_.top();
-    // bytes.
     auto ret = counter_stack_.top();
     counter_stack_.push(std::make_pair(counter{}, counter{}));
     return ret;
@@ -190,7 +189,8 @@ class statistics_resource_adaptor final : public device_memory_resource {
   /**
    * @brief Pop a pair of counters from the stack
    *
-   * @return pair of counters <bytes, allocations> from the stack _before_ the pop
+   * @return top pair of counters <bytes, allocations> from the stack _before_
+   * the pop
    */
   std::pair<counter, counter> pop_counters()
   {
