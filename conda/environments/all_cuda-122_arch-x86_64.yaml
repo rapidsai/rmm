@@ -15,7 +15,7 @@ dependencies:
 - cxx-compiler
 - cython>=3.0.0
 - doxygen=1.9.1
-- fmt>=10.1.1,<11
+- fmt>=10.2.1,<11
 - gcc_linux-64=11.*
 - gcovr>=5.0
 - graphviz
@@ -32,7 +32,7 @@ dependencies:
 - pytest-cov
 - python>=3.9,<3.12
 - scikit-build-core>=0.7.0
-- spdlog>=1.12.0,<1.13
+- spdlog>=1.13.0,<1.14
 - sphinx
 - sphinx-copybutton
 - sphinx-markdown-tables
