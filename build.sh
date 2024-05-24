@@ -173,6 +173,6 @@ if (( NUMARGS == 0 )) || hasArg rmm; then
     SKBUILD_CMAKE_ARGS="${EXTRA_CMAKE_ARGS}" python -m pip install \
         --no-build-isolation \
         --no-deps \
-        --config-setting rapidsai.disable-cuda=true \
+        --config-settings rapidsai.disable-cuda=true \
         ${REPODIR}/python/rmm
 fi
