@@ -16,9 +16,11 @@ import pytest
 
 import rmm.mr
 from rmm.statistics import (
+    ProfilerRecords,
     Statistics,
     get_statistics,
     pop_statistics,
+    profiler,
     push_statistics,
     statistics,
 )
@@ -251,3 +253,51 @@ def test_statistics_disabled():
     assert get_statistics() is None
     assert push_statistics() is None
     assert get_statistics() is None
+
+
+def test_function_statistics(stats_mr):
+    profiler_records = ProfilerRecords()
+    assert len(profiler_records.records) == 0
+    assert "No data" in profiler_records.pretty_print()
+
+    @profiler(profiler_records)
+    def f1():
+        b1 = rmm.DeviceBuffer(size=10)
+        b2 = rmm.DeviceBuffer(size=10)
+        del b1
+        return b2
+
+    b1 = f1()
+    b2 = f1()
+
+    @profiler(profiler_records)
+    def f2():
+        b1 = rmm.DeviceBuffer(size=10)
+
+        @profiler(profiler_records)
+        def g2(b1):
+            b2 = rmm.DeviceBuffer(size=10)
+            del b1
+            return b2
+
+        return g2(b1)
+
+    f2()
+    del b1
+    del b2
+
+    @profiler(profiler_records)
+    def f3():
+        return [rmm.DeviceBuffer(size=100) for _ in range(100)]
+
+    f3()
+
+    assert profiler_records.records[f1.__qualname__] == ProfilerRecords.Data(
+        num_calls=2, memory_total=32, memory_peak=32
+    )
+    assert profiler_records.records[f2.__qualname__] == ProfilerRecords.Data(
+        num_calls=1, memory_total=16, memory_peak=32
+    )
+    assert profiler_records.records[f3.__qualname__] == ProfilerRecords.Data(
+        num_calls=1, memory_total=11200, memory_peak=11200
+    )

@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Optional
+from functools import wraps
+from typing import Dict, Literal, Optional
 
 import rmm.mr
 
@@ -160,3 +162,116 @@ def statistics():
             pop_statistics()
         else:
             rmm.mr.set_current_device_resource(prior_non_stats_mr)
+
+
+class ProfilerRecords:
+    """Records of the memory statistics recorded by a profiler"""
+
+    @dataclass
+    class Data:
+        """Memory statistics of a single function"""
+
+        num_calls: int = 0
+        memory_total: int = 0
+        memory_peak: int = 0
+
+        def add(self, memory_total: int, memory_peak: int):
+            self.num_calls += 1
+            self.memory_total += memory_total
+            self.memory_peak = max(self.memory_peak, memory_peak)
+
+    def __init__(self) -> None:
+        self._records: Dict[str, ProfilerRecords.Data] = defaultdict(
+            ProfilerRecords.Data
+        )
+
+    def add(self, name: str, data: Statistics) -> None:
+        """Add memory statistics of the function named `name`
+
+        Parameters
+        ----------
+        name
+            Name of the function
+        data
+            Memory statistics of `name`
+        """
+        self._records[name].add(
+            memory_total=data.current_bytes, memory_peak=data.peak_bytes
+        )
+
+    @property
+    def records(self) -> Dict[str, Data]:
+        """Dictionary mapping function names to their memory statistics"""
+        return dict(self._records)
+
+    def pretty_print(
+        self,
+        ordered_by: Literal[
+            "num_calls", "memory_peak", "memory_total"
+        ] = "memory_peak",
+    ) -> str:
+        """Pretty format the recorded memory statistics
+
+        Parameters
+        ----------
+        ordered_by
+            Sort the statistics by this attribute.
+
+        Return
+        ------
+        The pretty formatted string of the memory statistics
+        """
+
+        # Sort by `ordered_by`
+        records = sorted(
+            ((name, data) for name, data in self.records.items()),
+            key=lambda x: getattr(x[1], ordered_by),
+            reverse=True,
+        )
+        ret = "Memory Profiling\n"
+        ret += "================\n\n"
+        if len(records) == 0:
+            return ret + "No data, maybe profiling wasn't enabled?"
+        ret += f"Ordered by: {ordered_by}\n\n"
+        ret += "ncalls     memory_peak    memory_total  filename\n"
+        for name, data in records:
+            ret += f"{data.num_calls:6,d} {data.memory_peak:15,d} "
+            ret += f"{data.memory_total:15,d}  {name}\n"
+        return ret[:-1]  # Remove the final newline
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.records})"
+
+    def __str__(self) -> str:
+        return self.pretty_print()
+
+
+def profiler(profiler_records: ProfilerRecords):
+    """Decorator to memory profile function
+
+    If statistics are enabled (the current memory resource is not an
+    instance of StatisticsResourceAdaptor), this decorator records the
+    memory statistics of the decorated function.
+
+    If statistics are disabled, this decorator is a no-op.
+
+    Parameters
+    ----------
+    profiler_records
+        The profiler records that the memory statistics are written to.
+    """
+
+    def f(func: callable):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                push_statistics()
+                ret = func(*args, **kwargs)
+            finally:
+                if (stats := pop_statistics()) is not None:
+                    profiler_records.add(name=func.__qualname__, data=stats)
+                return ret
+
+        return wrapper
+
+    return f
