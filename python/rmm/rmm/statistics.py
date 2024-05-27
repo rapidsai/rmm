@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import inspect
+import threading
 from collections import defaultdict
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -182,12 +183,15 @@ class ProfilerRecords:
             self.memory_peak = max(self.memory_peak, memory_peak)
 
     def __init__(self) -> None:
+        self._lock = threading.Lock()
         self._records: Dict[str, ProfilerRecords.Data] = defaultdict(
             ProfilerRecords.Data
         )
 
     def add(self, name: str, data: Statistics) -> None:
         """Add memory statistics to the record named `name`
+
+        This method is thread-safe.
 
         Parameters
         ----------
@@ -196,9 +200,10 @@ class ProfilerRecords:
         data
             Memory statistics of `name`
         """
-        self._records[name].add(
-            memory_total=data.total_bytes, memory_peak=data.peak_bytes
-        )
+        with self._lock:
+            self._records[name].add(
+                memory_total=data.total_bytes, memory_peak=data.peak_bytes
+            )
 
     @property
     def records(self) -> Dict[str, Data]:
@@ -267,7 +272,10 @@ def get_descriptive_name_of_object(obj: object) -> str:
     return f"{filepath}:{linenumber}({obj.__qualname__})"
 
 
-def profiler(profiler_records: ProfilerRecords):
+default_profiler_records = ProfilerRecords()
+
+
+def profiler(profiler_records: ProfilerRecords = default_profiler_records):
     """Decorator to memory profile function
 
     If statistics are enabled (the current memory resource is not an
@@ -279,7 +287,8 @@ def profiler(profiler_records: ProfilerRecords):
     Parameters
     ----------
     profiler_records
-        The profiler records that the memory statistics are written to.
+        The profiler records that the memory statistics are written to. If
+        not set, a default profiler records are used.
     """
 
     def f(func: callable):

@@ -18,6 +18,7 @@ import rmm.mr
 from rmm.statistics import (
     ProfilerRecords,
     Statistics,
+    default_profiler_records,
     get_descriptive_name_of_object,
     get_statistics,
     pop_statistics,
@@ -295,7 +296,12 @@ def test_profiler(stats_mr):
 
     f3()
 
-    print(profiler_records)
+    @profiler()  # use the default profiler records
+    def f4():
+        return [rmm.DeviceBuffer(size=10) for _ in range(10)]
+
+    f4()
+
     records = profiler_records.records
     assert records[get_descriptive_name_of_object(f1)] == ProfilerRecords.Data(
         num_calls=2, memory_total=64, memory_peak=32
@@ -305,4 +311,8 @@ def test_profiler(stats_mr):
     )
     assert records[get_descriptive_name_of_object(f3)] == ProfilerRecords.Data(
         num_calls=1, memory_total=11200, memory_peak=11200
+    )
+    records = default_profiler_records.records
+    assert records[get_descriptive_name_of_object(f4)] == ProfilerRecords.Data(
+        num_calls=1, memory_total=160, memory_peak=160
     )
