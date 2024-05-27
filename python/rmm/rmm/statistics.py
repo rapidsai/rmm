@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import inspect
 from collections import defaultdict
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -169,7 +170,7 @@ class ProfilerRecords:
 
     @dataclass
     class Data:
-        """Memory statistics of a single function"""
+        """Single record of memory statistics"""
 
         num_calls: int = 0
         memory_total: int = 0
@@ -186,12 +187,12 @@ class ProfilerRecords:
         )
 
     def add(self, name: str, data: Statistics) -> None:
-        """Add memory statistics of the function named `name`
+        """Add memory statistics to the record named `name`
 
         Parameters
         ----------
         name
-            Name of the function
+            Name of the record
         data
             Memory statistics of `name`
         """
@@ -201,7 +202,7 @@ class ProfilerRecords:
 
     @property
     def records(self) -> Dict[str, Data]:
-        """Dictionary mapping function names to their memory statistics"""
+        """Dictionary mapping record names to their memory statistics"""
         return dict(self._records)
 
     def pretty_print(
@@ -233,7 +234,8 @@ class ProfilerRecords:
         if len(records) == 0:
             return ret + "No data, maybe profiling wasn't enabled?"
         ret += f"Ordered by: {ordered_by}\n\n"
-        ret += "ncalls     memory_peak    memory_total  filename\n"
+        ret += "ncalls     memory_peak    memory_total  "
+        ret += "filename:lineno(function)\n"
         for name, data in records:
             ret += f"{data.num_calls:6,d} {data.memory_peak:15,d} "
             ret += f"{data.memory_total:15,d}  {name}\n"
@@ -244,6 +246,25 @@ class ProfilerRecords:
 
     def __str__(self) -> str:
         return self.pretty_print()
+
+
+def get_descriptive_name_of_object(obj: object) -> str:
+    """Get name of object, which include filename, sourceline, and object name
+
+    Parameters
+    ----------
+    obj
+        Object in question
+
+    Return
+    ------
+    Descriptive name of the object
+    """
+
+    obj = inspect.unwrap(obj)
+    _, linenumber = inspect.getsourcelines(obj)
+    filepath = inspect.getfile(obj)
+    return f"{filepath}:{linenumber}({obj.__qualname__})"
 
 
 def profiler(profiler_records: ProfilerRecords):
@@ -262,6 +283,8 @@ def profiler(profiler_records: ProfilerRecords):
     """
 
     def f(func: callable):
+        name = get_descriptive_name_of_object(func)
+
         @wraps(func)
         def wrapper(*args, **kwargs):
             try:
@@ -269,7 +292,7 @@ def profiler(profiler_records: ProfilerRecords):
                 ret = func(*args, **kwargs)
             finally:
                 if (stats := pop_statistics()) is not None:
-                    profiler_records.add(name=func.__qualname__, data=stats)
+                    profiler_records.add(name=name, data=stats)
                 return ret
 
         return wrapper

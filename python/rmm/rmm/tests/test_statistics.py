@@ -18,6 +18,7 @@ import rmm.mr
 from rmm.statistics import (
     ProfilerRecords,
     Statistics,
+    get_descriptive_name_of_object,
     get_statistics,
     pop_statistics,
     profiler,
@@ -283,8 +284,10 @@ def test_profiler(stats_mr):
         return g2(b1)
 
     f2()
+    f2()
     del b1
     del b2
+    f2()
 
     @profiler(profiler_records)
     def f3():
@@ -292,12 +295,14 @@ def test_profiler(stats_mr):
 
     f3()
 
-    assert profiler_records.records[f1.__qualname__] == ProfilerRecords.Data(
+    print(profiler_records)
+    records = profiler_records.records
+    assert records[get_descriptive_name_of_object(f1)] == ProfilerRecords.Data(
         num_calls=2, memory_total=64, memory_peak=32
     )
-    assert profiler_records.records[f2.__qualname__] == ProfilerRecords.Data(
-        num_calls=1, memory_total=32, memory_peak=32
+    assert records[get_descriptive_name_of_object(f2)] == ProfilerRecords.Data(
+        num_calls=3, memory_total=96, memory_peak=32
     )
-    assert profiler_records.records[f3.__qualname__] == ProfilerRecords.Data(
+    assert records[get_descriptive_name_of_object(f3)] == ProfilerRecords.Data(
         num_calls=1, memory_total=11200, memory_peak=11200
     )
