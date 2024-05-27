@@ -293,10 +293,10 @@ def test_profiler(stats_mr):
     f3()
 
     assert profiler_records.records[f1.__qualname__] == ProfilerRecords.Data(
-        num_calls=2, memory_total=32, memory_peak=32
+        num_calls=2, memory_total=64, memory_peak=32
     )
     assert profiler_records.records[f2.__qualname__] == ProfilerRecords.Data(
-        num_calls=1, memory_total=16, memory_peak=32
+        num_calls=1, memory_total=32, memory_peak=32
     )
     assert profiler_records.records[f3.__qualname__] == ProfilerRecords.Data(
         num_calls=1, memory_total=11200, memory_peak=11200

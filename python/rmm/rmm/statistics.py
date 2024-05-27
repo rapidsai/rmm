@@ -196,7 +196,7 @@ class ProfilerRecords:
             Memory statistics of `name`
         """
         self._records[name].add(
-            memory_total=data.current_bytes, memory_peak=data.peak_bytes
+            memory_total=data.total_bytes, memory_peak=data.peak_bytes
         )
 
     @property
