@@ -34,6 +34,7 @@ from cuda.cudart import cudaError_t
 from rmm._cuda.gpu import CUDARuntimeError, getDevice, setDevice
 from rmm._cuda.stream cimport Stream
 from rmm._cuda.stream import DEFAULT_STREAM
+from rmm.statistics import Statistics
 from rmm._lib.cuda_stream_view cimport cuda_stream_view
 from rmm._lib.per_device_resource cimport (
     cuda_device_id,
@@ -804,7 +805,7 @@ cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
         pass
 
     @property
-    def allocation_counts(self) -> dict:
+    def allocation_counts(self) -> Statistics:
         """
         Gets the current, peak, and total allocated bytes and number of
         allocations.
@@ -820,16 +821,16 @@ cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
 
         counts = deref(mr).get_allocations_counter()
         byte_counts = deref(mr).get_bytes_counter()
-        return {
-            "current_bytes": byte_counts.value,
-            "current_count": counts.value,
-            "peak_bytes": byte_counts.peak,
-            "peak_count": counts.peak,
-            "total_bytes": byte_counts.total,
-            "total_count": counts.total,
-        }
+        return Statistics(
+            current_bytes=byte_counts.value,
+            current_count=counts.value,
+            peak_bytes=byte_counts.peak,
+            peak_count=counts.peak,
+            total_bytes=byte_counts.total,
+            total_count=counts.total,
+        )
 
-    def pop_counters(self) -> dict:
+    def pop_counters(self) -> Statistics:
         """
         Pop a counter pair (bytes and allocations) from the stack
         """
@@ -837,16 +838,16 @@ cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
             <statistics_resource_adaptor[device_memory_resource]*> self.c_obj.get()
 
         bytes_and_allocs = deref(mr).pop_counters()
-        return {
-            "current_bytes": bytes_and_allocs.first.value,
-            "current_count": bytes_and_allocs.second.value,
-            "peak_bytes": bytes_and_allocs.first.peak,
-            "peak_count": bytes_and_allocs.second.peak,
-            "total_bytes": bytes_and_allocs.first.total,
-            "total_count": bytes_and_allocs.second.total,
-        }
+        return Statistics(
+            current_bytes=bytes_and_allocs.first.value,
+            current_count=bytes_and_allocs.second.value,
+            peak_bytes=bytes_and_allocs.first.peak,
+            peak_count=bytes_and_allocs.second.peak,
+            total_bytes=bytes_and_allocs.first.total,
+            total_count=bytes_and_allocs.second.total,
+        )
 
-    def push_counters(self) -> dict:
+    def push_counters(self) -> Statistics:
         """
         Push a new counter pair (bytes and allocations) on the stack
         """
@@ -855,14 +856,14 @@ cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
             <statistics_resource_adaptor[device_memory_resource]*> self.c_obj.get()
 
         bytes_and_allocs = deref(mr).push_counters()
-        return {
-            "current_bytes": bytes_and_allocs.first.value,
-            "current_count": bytes_and_allocs.second.value,
-            "peak_bytes": bytes_and_allocs.first.peak,
-            "peak_count": bytes_and_allocs.second.peak,
-            "total_bytes": bytes_and_allocs.first.total,
-            "total_count": bytes_and_allocs.second.total,
-        }
+        return Statistics(
+            current_bytes=bytes_and_allocs.first.value,
+            current_count=bytes_and_allocs.second.value,
+            peak_bytes=bytes_and_allocs.first.peak,
+            peak_count=bytes_and_allocs.second.peak,
+            total_bytes=bytes_and_allocs.first.total,
+            total_count=bytes_and_allocs.second.total,
+        )
 
 cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
 

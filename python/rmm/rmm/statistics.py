@@ -13,9 +13,38 @@
 # limitations under the License.
 
 from contextlib import contextmanager
-from typing import Dict, Optional
+from dataclasses import dataclass
+from typing import Optional
 
 import rmm.mr
+
+
+@dataclass
+class Statistics:
+    """Statistics returned by `{get,push,pop}_statistics()`
+
+    Attributes
+    ----------
+    current_bytes
+        Current number of bytes allocated
+    current_count
+        Current number of allocations allocated
+    peak_bytes
+        Peak number of bytes allocated
+    peak_count
+        Peak number of allocations allocated
+    total_bytes
+        Total number of bytes allocated
+    total_count
+        Total number of allocations allocated
+    """
+
+    current_bytes: int
+    current_count: int
+    peak_bytes: int
+    peak_count: int
+    total_bytes: int
+    total_count: int
 
 
 def enable_statistics() -> None:
@@ -38,7 +67,7 @@ def enable_statistics() -> None:
         )
 
 
-def get_statistics() -> Optional[Dict[str, int]]:
+def get_statistics() -> Optional[Statistics]:
     """Get the current allocation statistics
 
     Return
@@ -52,7 +81,7 @@ def get_statistics() -> Optional[Dict[str, int]]:
     return None
 
 
-def push_statistics() -> Optional[Dict[str, int]]:
+def push_statistics() -> Optional[Statistics]:
     """Push new counters on the current allocation statistics stack
 
     This returns the current tracked statistics and pushes a new set
@@ -72,7 +101,7 @@ def push_statistics() -> Optional[Dict[str, int]]:
     return None
 
 
-def pop_statistics() -> Optional[Dict[str, int]]:
+def pop_statistics() -> Optional[Statistics]:
     """Pop the counters of the current allocation statistics stack
 
     This returns the counters of current tracked statistics and pops
