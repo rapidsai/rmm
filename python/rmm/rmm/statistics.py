@@ -319,11 +319,10 @@ def profiler(
             def wrapper(*args, **kwargs):
                 push_statistics()
                 try:
-                    ret = func(*args, **kwargs)
+                    return func(*args, **kwargs)
                 finally:
                     if (stats := pop_statistics()) is not None:
                         records.add(name=_name, data=stats)
-                    return ret
 
             return wrapper
 
