@@ -28,12 +28,6 @@ from rmm.statistics import (
 )
 
 
-@pytest.fixture
-def stats_mr():
-    with statistics():
-        yield rmm.mr.get_current_device_resource()
-
-
 def test_context():
     mr0 = rmm.mr.get_current_device_resource()
     assert get_statistics() is None
