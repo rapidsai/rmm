@@ -1194,4 +1194,4 @@ def get_free_device_memory():
     """
     Return the number of bytes of available device memory.
     """
-    return percent_of_free_device_memory(percent)
+    return percent_of_free_device_memory(100)
