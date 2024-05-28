@@ -57,8 +57,8 @@ def enable_statistics() -> None:
     This function is idempotent, if statistics has been enabled for the
     current RMM resource stack, this is a no-op.
 
-    Warning
-    -------
+    Warnings
+    --------
     This modifies the current RMM memory resource. StatisticsResourceAdaptor
     is pushed onto the current RMM memory resource stack and must remain the
     the top must resource throughout the statistics gathering.
