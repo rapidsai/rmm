@@ -15,6 +15,11 @@
 import importlib.resources
 
 __version__ = (
-    importlib.resources.files("librmm").joinpath("VERSION").read_text().strip()
+    importlib.resources.files(__package__)
+    .joinpath("VERSION")
+    .read_text()
+    .strip()
 )
 __git_commit__ = ""
+
+__all__ = ["__git_commit__", "__version__"]

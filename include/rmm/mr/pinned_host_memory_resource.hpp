@@ -18,6 +18,7 @@
 #include <rmm/aligned.hpp>
 #include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/nvtx/ranges.hpp>
 
 #include <cuda/memory_resource>
 #include <cuda/stream_ref>
@@ -63,6 +64,8 @@ class pinned_host_memory_resource {
   static void* allocate(std::size_t bytes,
                         [[maybe_unused]] std::size_t alignment = rmm::RMM_DEFAULT_HOST_ALIGNMENT)
   {
+    RMM_FUNC_RANGE();
+
     // don't allocate anything if the user requested zero bytes
     if (0 == bytes) { return nullptr; }
 
@@ -84,6 +87,8 @@ class pinned_host_memory_resource {
                          std::size_t bytes,
                          std::size_t alignment = rmm::RMM_DEFAULT_HOST_ALIGNMENT) noexcept
   {
+    RMM_FUNC_RANGE();
+
     rmm::detail::aligned_host_deallocate(
       ptr, bytes, alignment, [](void* ptr) { RMM_ASSERT_CUDA_SUCCESS(cudaFreeHost(ptr)); });
   }
@@ -104,6 +109,8 @@ class pinned_host_memory_resource {
    */
   static void* allocate_async(std::size_t bytes, [[maybe_unused]] cuda::stream_ref stream)
   {
+    RMM_FUNC_RANGE();
+
     return allocate(bytes);
   }
 
@@ -126,6 +133,8 @@ class pinned_host_memory_resource {
                               std::size_t alignment,
                               [[maybe_unused]] cuda::stream_ref stream)
   {
+    RMM_FUNC_RANGE();
+
     return allocate(bytes, alignment);
   }
 
@@ -142,6 +151,8 @@ class pinned_host_memory_resource {
                                std::size_t bytes,
                                [[maybe_unused]] cuda::stream_ref stream) noexcept
   {
+    RMM_FUNC_RANGE();
+
     return deallocate(ptr, bytes);
   }
 
@@ -161,6 +172,8 @@ class pinned_host_memory_resource {
                                std::size_t alignment,
                                [[maybe_unused]] cuda::stream_ref stream) noexcept
   {
+    RMM_FUNC_RANGE();
+
     return deallocate(ptr, bytes, alignment);
   }
   // NOLINTEND(bugprone-easily-swappable-parameters)
