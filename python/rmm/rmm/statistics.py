@@ -171,7 +171,17 @@ class ProfilerRecords:
 
     @dataclass
     class Data:
-        """Single record of memory statistics"""
+        """Memory statistics of a single code block
+
+        Attributes
+        ----------
+        num_calls
+            Number of times this code block was evoked.
+        memory_total
+            Total number of bytes allocated
+        memory_peak
+            Peak number of bytes allocated
+        """
 
         num_calls: int = 0
         memory_total: int = 0
