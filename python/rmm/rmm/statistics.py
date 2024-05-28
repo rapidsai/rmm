@@ -291,13 +291,13 @@ def profiler(
     records: ProfilerRecords = default_profiler_records,
     name: str = "",
 ):
-    """Decorator to memory profile function
+    """Decorator and context to profile function or code block
 
     If statistics are enabled (the current memory resource is not an
     instance of StatisticsResourceAdaptor), this decorator records the
-    memory statistics of the decorated function.
+    memory statistics of the decorated function or code block.
 
-    If statistics are disabled, this decorator is a no-op.
+    If statistics are disabled, this decorator/context is a no-op.
 
     Parameters
     ----------
@@ -305,23 +305,40 @@ def profiler(
         The profiler records that the memory statistics are written to. If
         not set, a default profiler records are used.
     name
-        The name of the memory profile. If None, a descriptive name is used.
-        Typically includes the filename and line number.
+        The name of the memory profile, which is mandatory when the profiler
+        is used as a context manager. If used as a decorator, an empty name
+        is allowed. In this case, the name is the filename, line number, and
+        function name.
     """
 
-    def f(func: callable):
-        _name = name or get_descriptive_name_of_object(func)
+    class ProfilerContext:
+        def __call__(self, func: callable) -> callable:
+            _name = name or get_descriptive_name_of_object(func)
 
-        @wraps(func)
-        def wrapper(*args, **kwargs):
+            @wraps(func)
+            def wrapper(*args, **kwargs):
+                push_statistics()
+                try:
+                    ret = func(*args, **kwargs)
+                finally:
+                    if (stats := pop_statistics()) is not None:
+                        records.add(name=_name, data=stats)
+                    return ret
+
+            return wrapper
+
+        def __enter__(self):
+            if not name:
+                raise ValueError(
+                    "when profiler is used as a context mamanger, "
+                    "a name must be provided"
+                )
             push_statistics()
-            try:
-                ret = func(*args, **kwargs)
-            finally:
-                if (stats := pop_statistics()) is not None:
-                    records.add(name=_name, data=stats)
-                return ret
+            return self
 
-        return wrapper
+        def __exit__(self, *exc):
+            if (stats := pop_statistics()) is not None:
+                records.add(name=name, data=stats)
+            return False
 
-    return f
+    return ProfilerContext()

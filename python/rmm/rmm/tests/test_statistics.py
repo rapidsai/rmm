@@ -290,12 +290,6 @@ def test_profiler(stats_mr):
 
     f3()
 
-    @profiler()  # use the default profiler records
-    def f4():
-        return [rmm.DeviceBuffer(size=10) for _ in range(10)]
-
-    f4()
-
     records = profiler_records.records
     assert records[get_descriptive_name_of_object(f1)] == ProfilerRecords.Data(
         num_calls=2, memory_total=64, memory_peak=32
@@ -309,7 +303,27 @@ def test_profiler(stats_mr):
     assert records[get_descriptive_name_of_object(f3)] == ProfilerRecords.Data(
         num_calls=1, memory_total=11200, memory_peak=11200
     )
+
+    @profiler()  # use the default profiler records
+    def f4():
+        return [rmm.DeviceBuffer(size=10) for _ in range(10)]
+
+    f4()
+
+    with profiler(name="b1 and b2"):  # use the profiler as a context manager
+        b1 = rmm.DeviceBuffer(size=100)
+        b2 = rmm.DeviceBuffer(size=100)
+        with profiler(name="del b1 and b2"):
+            del b1
+            del b2
+
     records = default_profiler_records.records
     assert records[get_descriptive_name_of_object(f4)] == ProfilerRecords.Data(
         num_calls=1, memory_total=160, memory_peak=160
+    )
+    assert records["b1 and b2"] == ProfilerRecords.Data(
+        num_calls=1, memory_total=224, memory_peak=224
+    )
+    assert records["del b1 and b2"] == ProfilerRecords.Data(
+        num_calls=1, memory_total=0, memory_peak=0
     )
