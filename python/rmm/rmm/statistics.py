@@ -238,7 +238,8 @@ class ProfilerRecords:
         ret += "================\n\n"
         if len(records) == 0:
             return ret + "No data, maybe profiling wasn't enabled?"
-        ret += f"Ordered by: {ordered_by}\n\n"
+        ret += f"Ordered by:   {ordered_by}\n"
+        ret += "Memory units: bytes\n\n"
         ret += "ncalls     memory_peak    memory_total  "
         ret += "filename:lineno(function)\n"
         for name, data in records:
