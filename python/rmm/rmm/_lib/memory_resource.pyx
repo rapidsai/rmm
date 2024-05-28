@@ -111,6 +111,7 @@ cdef extern from "rmm/mr/device/cuda_async_memory_resource.hpp" \
 
 cdef extern from "rmm/cuda_device.hpp" namespace "rmm" nogil:
     size_t percent_of_free_device_memory(int percent) except +
+    size_t available_device_memory() expect +
 
 cdef extern from "rmm/mr/device/pool_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
@@ -1194,4 +1195,4 @@ def get_free_device_memory():
     """
     Return the number of bytes of available device memory.
     """
-    return percent_of_free_device_memory(100)
+    return available_device_memory()
