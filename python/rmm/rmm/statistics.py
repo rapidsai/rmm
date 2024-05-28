@@ -248,9 +248,15 @@ class ProfilerRecords:
         ret += "================\n\n"
         if len(records) == 0:
             return ret + "No data, maybe profiling wasn't enabled?"
-        ret += f"Ordered by:   {ordered_by}\n"
-        ret += "Memory units: bytes\n\n"
-        ret += "ncalls     memory_peak    memory_total  "
+        ret += (
+            "Legends:\n"
+            "  ncalls       - number of time the function or code block "
+            "was called\n"
+            "  memory_peak  - peak memory allocated in bytes\n"
+            "  memory_total - total memory allocated in bytes\n"
+        )
+        ret += f"\nOrdered by: {ordered_by}\n"
+        ret += "\nncalls     memory_peak    memory_total  "
         ret += "filename:lineno(function)\n"
         for name, data in records:
             ret += f"{data.num_calls:6,d} {data.memory_peak:15,d} "
