@@ -1190,8 +1190,8 @@ def get_log_filenames():
     }
 
 
-def get_free_device_memory(percent):
+def get_free_device_memory():
     """
-    Returns the percentage of the free memory available
+    Return the number of bytes of available device memory.
     """
     return percent_of_free_device_memory(percent)

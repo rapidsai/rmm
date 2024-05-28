@@ -1007,5 +1007,5 @@ def test_invalid_logging_level(level):
 def test_get_free_device_memory():
     from rmm._lib.memory_resource import get_free_device_memory
 
-    memory = get_free_device_memory(percent=10)
+    memory = get_free_device_memory()
     assert memory != 0
