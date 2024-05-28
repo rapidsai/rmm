@@ -256,7 +256,7 @@ def test_profiler(stats_mr):
     assert len(profiler_records.records) == 0
     assert "No data" in profiler_records.pretty_print()
 
-    @profiler(profiler_records)
+    @profiler(records=profiler_records)
     def f1():
         b1 = rmm.DeviceBuffer(size=10)
         b2 = rmm.DeviceBuffer(size=10)
@@ -266,11 +266,11 @@ def test_profiler(stats_mr):
     b1 = f1()
     b2 = f1()
 
-    @profiler(profiler_records)
+    @profiler(records=profiler_records)
     def f2():
         b1 = rmm.DeviceBuffer(size=10)
 
-        @profiler(profiler_records)
+        @profiler(records=profiler_records, name="g2")
         def g2(b1):
             b2 = rmm.DeviceBuffer(size=10)
             del b1
@@ -284,7 +284,7 @@ def test_profiler(stats_mr):
     del b2
     f2()
 
-    @profiler(profiler_records)
+    @profiler(records=profiler_records)
     def f3():
         return [rmm.DeviceBuffer(size=100) for _ in range(100)]
 
@@ -302,6 +302,9 @@ def test_profiler(stats_mr):
     )
     assert records[get_descriptive_name_of_object(f2)] == ProfilerRecords.Data(
         num_calls=3, memory_total=96, memory_peak=32
+    )
+    assert records["g2"] == ProfilerRecords.Data(
+        num_calls=3, memory_total=48, memory_peak=16
     )
     assert records[get_descriptive_name_of_object(f3)] == ProfilerRecords.Data(
         num_calls=1, memory_total=11200, memory_peak=11200

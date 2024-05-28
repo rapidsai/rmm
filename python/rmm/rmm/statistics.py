@@ -265,7 +265,7 @@ class ProfilerRecords:
 
 
 def get_descriptive_name_of_object(obj: object) -> str:
-    """Get name of object, which include filename, sourceline, and object name
+    """Get name of object, which include filename, line number, and object name
 
     Parameters
     ----------
@@ -286,7 +286,11 @@ def get_descriptive_name_of_object(obj: object) -> str:
 default_profiler_records = ProfilerRecords()
 
 
-def profiler(profiler_records: ProfilerRecords = default_profiler_records):
+def profiler(
+    *,
+    records: ProfilerRecords = default_profiler_records,
+    name: str = "",
+):
     """Decorator to memory profile function
 
     If statistics are enabled (the current memory resource is not an
@@ -297,22 +301,25 @@ def profiler(profiler_records: ProfilerRecords = default_profiler_records):
 
     Parameters
     ----------
-    profiler_records
+    records
         The profiler records that the memory statistics are written to. If
         not set, a default profiler records are used.
+    name
+        The name of the memory profile. If None, a descriptive name is used.
+        Typically includes the filename and line number.
     """
 
     def f(func: callable):
-        name = get_descriptive_name_of_object(func)
+        _name = name or get_descriptive_name_of_object(func)
 
         @wraps(func)
         def wrapper(*args, **kwargs):
+            push_statistics()
             try:
-                push_statistics()
                 ret = func(*args, **kwargs)
             finally:
                 if (stats := pop_statistics()) is not None:
-                    profiler_records.add(name=name, data=stats)
+                    records.add(name=_name, data=stats)
                 return ret
 
         return wrapper
