@@ -61,7 +61,7 @@ def enable_statistics() -> None:
     --------
     This modifies the current RMM memory resource. StatisticsResourceAdaptor
     is pushed onto the current RMM memory resource stack and must remain the
-    the topmost resource throughout the statistics gathering.
+    topmost resource throughout the statistics gathering.
     """
 
     mr = rmm.mr.get_current_device_resource()

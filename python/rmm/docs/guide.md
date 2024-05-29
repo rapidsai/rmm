@@ -187,3 +187,81 @@ allocator.
 
 >>> torch.cuda.memory.change_current_allocator(rmm_torch_allocator)
 ```
+
+
+
+## Memory statistics and profiling
+
+RMM has a tool for tracking memory statistics and memory profiling. It can be enabled in two ways:
+  - Use the context manager `rmm.statistics.statistics()` to enable statistics tracking for a specific code block.
+  - Call `rmm.statistics.enable_statistics()` to enable statistics tracking globally.
+
+Common for both are that they modifies the current RMM memory resource. `StatisticsResourceAdaptor` is pushed onto the current RMM memory resource stack and must remain the topmost resource throughout the statistics tracking.
+
+```python
+>>> import rmm.statistics
+
+>>> # We start with the default cuda memory resource
+>>> rmm.mr.get_current_device_resource()
+<rmm._lib.memory_resource.CudaMemoryResource at 0x7f7e6c0a1ce0>
+
+>>> # When using statistics, we get a StatisticsResourceAdaptor with the context
+>>> with rmm.statistics.statistics():
+...     rmm.mr.get_current_device_resource()
+<rmm._lib.memory_resource.StatisticsResourceAdaptor at 0x7f7e6c524900>
+
+>>> # We can also enable statistics globally
+>>> rmm.statistics.enable_statistics()
+>>> print(rmm.mr.get_current_device_resource())
+<rmm._lib.memory_resource.StatisticsResourceAdaptor at 0x7f662c2bb3c0>
+```
+
+When statistic is enabled, we can get statistics of all allocations done through the current RMM memory resource.
+```python
+>>> buf = rmm.DeviceBuffer(size=10)
+>>> rmm.statistics.get_statistics()
+Statistics(current_bytes=16, current_count=1, peak_bytes=16, peak_count=1, total_bytes=16, total_count=1)
+```
+
+Maybe more useful, we can profile code blocks when memory statistics is enabled. One way to do this is using `profiler` as a function decorator.
+```python
+>>> @rmm.statistics.profiler()
+... def f(size):
+...   rmm.DeviceBuffer(size=size)
+>>> f(1000)
+
+>>> # By default, the profiler write to rmm.statistics.default_profiler_records
+>>> print(rmm.statistics.default_profiler_records.report())
+Memory Profiling
+================
+
+Legends:
+  ncalls       - number of times the function or code block was called
+  memory_peak  - peak memory allocated in function or code block (in bytes)
+  memory_total - total memory allocated in function or code block (in bytes)
+
+Ordered by: memory_peak
+
+ncalls     memory_peak    memory_total  filename:lineno(function)
+     1           1,008           1,008  <ipython-input-11-5fc63161ac29>:1(f)
+```
+
+We can also profile a code block by using `profiler` as a context manager.
+```python
+>>> with rmm.statistics.profiler(name="my code block"):
+...     rmm.DeviceBuffer(size=20)
+>>> print(rmm.statistics.default_profiler_records.report())
+Memory Profiling
+================
+
+Legends:
+  ncalls       - number of times the function or code block was called
+  memory_peak  - peak memory allocated in function or code block (in bytes)
+  memory_total - total memory allocated in function or code block (in bytes)
+
+Ordered by: memory_peak
+
+ncalls     memory_peak    memory_total  filename:lineno(function)
+     1           1,008           1,008  <ipython-input-11-5fc63161ac29>:1(f)
+     1              32              32  my code block
+```
