@@ -833,6 +833,10 @@ cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
     def pop_counters(self) -> Statistics:
         """
         Pop a counter pair (bytes and allocations) from the stack
+
+        Returns
+        -------
+        The popped statistics
         """
         cdef statistics_resource_adaptor[device_memory_resource]* mr = \
             <statistics_resource_adaptor[device_memory_resource]*> self.c_obj.get()
@@ -850,6 +854,10 @@ cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
     def push_counters(self) -> Statistics:
         """
         Push a new counter pair (bytes and allocations) on the stack
+
+        Returns
+        -------
+        The statistics _before_ the push
         """
 
         cdef statistics_resource_adaptor[device_memory_resource]* mr = \
