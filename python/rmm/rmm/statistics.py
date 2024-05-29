@@ -219,7 +219,7 @@ class ProfilerRecords:
         """Dictionary mapping record names to their memory statistics"""
         return dict(self._records)
 
-    def pretty_print(
+    def report(
         self,
         ordered_by: Literal[
             "num_calls", "memory_peak", "memory_total"
@@ -266,7 +266,7 @@ class ProfilerRecords:
         return f"{self.__class__.__name__}({self.records})"
 
     def __str__(self) -> str:
-        return self.pretty_print()
+        return self.report()
 
 
 def _get_descriptive_name_of_object(obj: object) -> str:

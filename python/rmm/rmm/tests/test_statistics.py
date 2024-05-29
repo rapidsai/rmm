@@ -253,7 +253,7 @@ def test_statistics_disabled():
 def test_profiler(stats_mr):
     profiler_records = ProfilerRecords()
     assert len(profiler_records.records) == 0
-    assert "No data" in profiler_records.pretty_print()
+    assert "No data" in profiler_records.report()
 
     @profiler(records=profiler_records)
     def f1():
