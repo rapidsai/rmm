@@ -77,14 +77,13 @@ def test_multiple_mr(stats_mr):
     for i in range(9, 0, -2):
         del buffers[i]
 
-    assert stats_mr.allocation_counts == Statistics(
-        current_bytes=5040,
-        current_count=5,
-        peak_bytes=10080,
-        peak_count=10,
-        total_bytes=10080,
-        total_count=10,
-    )
+    stats = stats_mr.allocation_counts
+    assert stats.current_bytes == 5040
+    assert stats.current_count == 5
+    assert stats.peak_bytes == 10080
+    assert stats.peak_count == 10
+    assert stats.total_bytes == 10080
+    assert stats.total_count == 10
 
     # Push a new Tracking adaptor
     mr2 = rmm.mr.StatisticsResourceAdaptor(stats_mr)

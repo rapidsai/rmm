@@ -42,8 +42,8 @@ namespace rmm::mr {
  * This resource supports nested statistics, which makes it possible to track statistics
  * of a code block. Use `.push_counters()` to start tracking statistics on a code block
  * and use `.pop_counters()` to stop the tracking. The nested statistics are cascading
- * such that the statistics tracked by a code block includes the statistics tracked in
- * all its tracked sub code block.
+ * such that the statistics tracked by a code block include the statistics tracked in
+ * all its tracked sub code blocks.
  *
  * `statistics_resource_adaptor` is intended as a debug adaptor and shouldn't be
  * used in performance-sensitive code.

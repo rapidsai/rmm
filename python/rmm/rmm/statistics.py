@@ -25,7 +25,7 @@ import rmm.mr
 
 @dataclass
 class Statistics:
-    """Statistics returned by `{get,push,pop}_statistics()`
+    """Statistics returned by ``{get,push,pop}_statistics()``
 
     Attributes
     ----------
@@ -54,14 +54,14 @@ class Statistics:
 def enable_statistics() -> None:
     """Enable allocation statistics
 
-    This function is idempotent, if statistics has been enabled for the
+    This function is idempotent. If statistics have been enabled for the
     current RMM resource stack, this is a no-op.
 
     Warnings
     --------
     This modifies the current RMM memory resource. StatisticsResourceAdaptor
     is pushed onto the current RMM memory resource stack and must remain the
-    the top must resource throughout the statistics gathering.
+    the topmost resource throughout the statistics gathering.
     """
 
     mr = rmm.mr.get_current_device_resource()
@@ -144,12 +144,11 @@ def statistics():
         If the current RMM memory source was changed while in the context.
     """
 
+    prior_non_stats_mr = None
     if push_statistics() is None:
         # Save the current non-statistics memory resource for later cleanup
         prior_non_stats_mr = rmm.mr.get_current_device_resource()
         enable_statistics()
-    else:
-        prior_non_stats_mr = None
 
     try:
         current_mr = rmm.mr.get_current_device_resource()
@@ -176,7 +175,7 @@ class ProfilerRecords:
         Attributes
         ----------
         num_calls
-            Number of times this code block was evoked.
+            Number of times this code block was invoked.
         memory_total
             Total number of bytes allocated
         memory_peak
@@ -270,7 +269,7 @@ class ProfilerRecords:
         return self.pretty_print()
 
 
-def get_descriptive_name_of_object(obj: object) -> str:
+def _get_descriptive_name_of_object(obj: object) -> str:
     """Get name of object, which include filename, line number, and object name
 
     Parameters
@@ -335,7 +334,7 @@ def profiler(
         def __enter__(self):
             if not name:
                 raise ValueError(
-                    "when profiler is used as a context mamanger, "
+                    "When profiler is used as a context manager, "
                     "a name must be provided"
                 )
             push_statistics()
