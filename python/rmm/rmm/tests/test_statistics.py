@@ -17,9 +17,8 @@ import pytest
 import rmm.mr
 from rmm.statistics import (
     ProfilerRecords,
-    Statistics,
+    _get_descriptive_name_of_object,
     default_profiler_records,
-    get_descriptive_name_of_object,
     get_statistics,
     pop_statistics,
     profiler,
@@ -38,34 +37,34 @@ def test_context():
             rmm.mr.StatisticsResourceAdaptor,
         )
         b1 = rmm.DeviceBuffer(size=20)
-        assert get_statistics() == Statistics(
-            current_bytes=32,
-            current_count=1,
-            peak_bytes=32,
-            peak_count=1,
-            total_bytes=32,
-            total_count=1,
-        )
+        stats = get_statistics()
+        assert stats.current_bytes == 32
+        assert stats.current_count == 1
+        assert stats.peak_bytes == 32
+        assert stats.peak_count == 1
+        assert stats.total_bytes == 32
+        assert stats.total_count == 1
+
         with statistics():
             mr2 = rmm.mr.get_current_device_resource()
             assert mr1 is mr2
             b2 = rmm.DeviceBuffer(size=10)
-            assert get_statistics() == Statistics(
-                current_bytes=16,
-                current_count=1,
-                peak_bytes=16,
-                peak_count=1,
-                total_bytes=16,
-                total_count=1,
-            )
-        assert get_statistics() == Statistics(
-            current_bytes=48,
-            current_count=2,
-            peak_bytes=48,
-            peak_count=2,
-            total_bytes=48,
-            total_count=2,
-        )
+            stats = get_statistics()
+            assert stats.current_bytes == 16
+            assert stats.current_count == 1
+            assert stats.peak_bytes == 16
+            assert stats.peak_count == 1
+            assert stats.total_bytes == 16
+            assert stats.total_count == 1
+
+        stats = get_statistics()
+        assert stats.current_bytes == 48
+        assert stats.current_count == 2
+        assert stats.peak_bytes == 48
+        assert stats.peak_count == 2
+        assert stats.total_bytes == 48
+        assert stats.total_count == 2
+
         del b1
         del b2
     assert rmm.mr.get_current_device_resource() is mr0
@@ -92,39 +91,39 @@ def test_multiple_mr(stats_mr):
         for _ in range(2):
             buffers.append(rmm.DeviceBuffer(size=1000))
 
-        assert mr2.allocation_counts == Statistics(
-            current_bytes=2016,
-            current_count=2,
-            peak_bytes=2016,
-            peak_count=2,
-            total_bytes=2016,
-            total_count=2,
-        )
-        assert stats_mr.allocation_counts == Statistics(
-            current_bytes=7056,
-            current_count=7,
-            peak_bytes=10080,
-            peak_count=10,
-            total_bytes=12096,
-            total_count=12,
-        )
+        stats = mr2.allocation_counts
+        assert stats.current_bytes == 2016
+        assert stats.current_count == 2
+        assert stats.peak_bytes == 2016
+        assert stats.peak_count == 2
+        assert stats.total_bytes == 2016
+        assert stats.total_count == 2
+
+        stats = stats_mr.allocation_counts
+        assert stats.current_bytes == 7056
+        assert stats.current_count == 7
+        assert stats.peak_bytes == 10080
+        assert stats.peak_count == 10
+        assert stats.total_bytes == 12096
+        assert stats.total_count == 12
+
         del buffers
-        assert mr2.allocation_counts == Statistics(
-            current_bytes=0,
-            current_count=0,
-            peak_bytes=2016,
-            peak_count=2,
-            total_bytes=2016,
-            total_count=2,
-        )
-        assert stats_mr.allocation_counts == Statistics(
-            current_bytes=0,
-            current_count=0,
-            peak_bytes=10080,
-            peak_count=10,
-            total_bytes=12096,
-            total_count=12,
-        )
+        stats = mr2.allocation_counts
+        assert stats.current_bytes == 0
+        assert stats.current_count == 0
+        assert stats.peak_bytes == 2016
+        assert stats.peak_count == 2
+        assert stats.total_bytes == 2016
+        assert stats.total_count == 2
+
+        stats = stats_mr.allocation_counts
+        assert stats.current_bytes == 0
+        assert stats.current_count == 0
+        assert stats.peak_bytes == 10080
+        assert stats.peak_count == 10
+        assert stats.total_bytes == 12096
+        assert stats.total_count == 12
+
     finally:
         rmm.mr.set_current_device_resource(stats_mr)
 
@@ -133,73 +132,75 @@ def test_counter_stack(stats_mr):
     buffers = [rmm.DeviceBuffer(size=10) for _ in range(10)]
 
     # push returns the stats from the top before the push
-    assert stats_mr.push_counters() == Statistics(  # stats from stack level 0
-        current_bytes=160,
-        current_count=10,
-        peak_bytes=160,
-        peak_count=10,
-        total_bytes=160,
-        total_count=10,
-    )
+    stats = stats_mr.push_counters()  # stats from stack level 0
+    assert stats.current_bytes == 160
+    assert stats.current_count == 10
+    assert stats.peak_bytes == 160
+    assert stats.peak_count == 10
+    assert stats.total_bytes == 160
+    assert stats.total_count == 10
+
     b1 = rmm.DeviceBuffer(size=10)
-    assert stats_mr.push_counters() == Statistics(  # stats from stack level 1
-        current_bytes=16,
-        current_count=1,
-        peak_bytes=16,
-        peak_count=1,
-        total_bytes=16,
-        total_count=1,
-    )
+
+    stats = stats_mr.push_counters()  # stats from stack level 1
+    assert stats.current_bytes == 16
+    assert stats.current_count == 1
+    assert stats.peak_bytes == 16
+    assert stats.peak_count == 1
+    assert stats.total_bytes == 16
+    assert stats.total_count == 1
+
     del b1
+
     # pop returns the popped stats
     # Note, the bytes and counts can be negative
-    assert stats_mr.pop_counters() == Statistics(  # stats from stack level 2
-        current_bytes=-16,
-        current_count=-1,
-        peak_bytes=0,
-        peak_count=0,
-        total_bytes=0,
-        total_count=0,
-    )
+    stats = stats_mr.pop_counters()  # stats from stack level 2
+    assert stats.current_bytes == -16
+    assert stats.current_count == -1
+    assert stats.peak_bytes == 0
+    assert stats.peak_count == 0
+    assert stats.total_bytes == 0
+    assert stats.total_count == 0
+
     b1 = rmm.DeviceBuffer(size=10)
-    assert stats_mr.push_counters() == Statistics(  # stats from stack level 1
-        current_bytes=16,
-        current_count=1,
-        peak_bytes=16,
-        peak_count=1,
-        total_bytes=32,
-        total_count=2,
-    )
+
+    stats = stats_mr.push_counters()  # stats from stack level 1
+    assert stats.current_bytes == 16
+    assert stats.current_count == 1
+    assert stats.peak_bytes == 16
+    assert stats.peak_count == 1
+    assert stats.total_bytes == 32
+    assert stats.total_count == 2
+
     b2 = rmm.DeviceBuffer(size=10)
-    assert stats_mr.pop_counters() == Statistics(  # stats from stack level 2
-        current_bytes=16,
-        current_count=1,
-        peak_bytes=16,
-        peak_count=1,
-        total_bytes=16,
-        total_count=1,
-    )
-    assert stats_mr.pop_counters() == Statistics(  # stats from stack level 1
-        current_bytes=32,
-        current_count=2,
-        peak_bytes=32,
-        peak_count=2,
-        total_bytes=48,
-        total_count=3,
-    )
+
+    stats = stats_mr.pop_counters()  # stats from stack level 2
+    assert stats.current_bytes == 16
+    assert stats.current_count == 1
+    assert stats.peak_bytes == 16
+    assert stats.peak_count == 1
+    assert stats.total_bytes == 16
+    assert stats.total_count == 1
+
+    stats = stats_mr.pop_counters()  # stats from stack level 1
+    assert stats.current_bytes == 32
+    assert stats.current_count == 2
+    assert stats.peak_bytes == 32
+    assert stats.peak_count == 2
+    assert stats.total_bytes == 48
+    assert stats.total_count == 3
+
     del b1
     del b2
-    assert (
-        stats_mr.allocation_counts
-        == Statistics(  # stats from stack level 0
-            current_bytes=160,
-            current_count=10,
-            peak_bytes=192,
-            peak_count=12,
-            total_bytes=208,
-            total_count=13,
-        )
-    )
+
+    stats = stats_mr.allocation_counts  # stats from stack level 0
+    assert stats.current_bytes == 160
+    assert stats.current_count == 10
+    assert stats.peak_bytes == 192
+    assert stats.peak_count == 12
+    assert stats.total_bytes == 208
+    assert stats.total_count == 13
+
     del buffers
     with pytest.raises(IndexError, match="cannot pop the last counter pair"):
         stats_mr.pop_counters()
@@ -207,41 +208,40 @@ def test_counter_stack(stats_mr):
 
 def test_current_statistics(stats_mr):
     b1 = rmm.DeviceBuffer(size=10)
-    assert get_statistics() == Statistics(
-        current_bytes=16,
-        current_count=1,
-        peak_bytes=16,
-        peak_count=1,
-        total_bytes=16,
-        total_count=1,
-    )
+    stats = get_statistics()
+    assert stats.current_bytes == 16
+    assert stats.current_count == 1
+    assert stats.peak_bytes == 16
+    assert stats.peak_count == 1
+    assert stats.total_bytes == 16
+    assert stats.total_count == 1
+
     b2 = rmm.DeviceBuffer(size=20)
-    assert push_statistics() == Statistics(
-        current_bytes=48,
-        current_count=2,
-        peak_bytes=48,
-        peak_count=2,
-        total_bytes=48,
-        total_count=2,
-    )
+    stats = push_statistics()
+    assert stats.current_bytes == 48
+    assert stats.current_count == 2
+    assert stats.peak_bytes == 48
+    assert stats.peak_count == 2
+    assert stats.total_bytes == 48
+    assert stats.total_count == 2
+
     del b1
-    assert pop_statistics() == Statistics(
-        current_bytes=-16,
-        current_count=-1,
-        peak_bytes=0,
-        peak_count=0,
-        total_bytes=0,
-        total_count=0,
-    )
+    stats = pop_statistics()
+    assert stats.current_bytes == -16
+    assert stats.current_count == -1
+    assert stats.peak_bytes == 0
+    assert stats.peak_count == 0
+    assert stats.total_bytes == 0
+    assert stats.total_count == 0
+
     del b2
-    assert get_statistics() == Statistics(
-        current_bytes=0,
-        current_count=0,
-        peak_bytes=48,
-        peak_count=2,
-        total_bytes=48,
-        total_count=2,
-    )
+    stats = get_statistics()
+    assert stats.current_bytes == 0
+    assert stats.current_count == 0
+    assert stats.peak_bytes == 48
+    assert stats.peak_count == 2
+    assert stats.total_bytes == 48
+    assert stats.total_count == 2
 
 
 def test_statistics_disabled():
@@ -290,16 +290,18 @@ def test_profiler(stats_mr):
     f3()
 
     records = profiler_records.records
-    assert records[get_descriptive_name_of_object(f1)] == ProfilerRecords.Data(
-        num_calls=2, memory_total=64, memory_peak=32
-    )
-    assert records[get_descriptive_name_of_object(f2)] == ProfilerRecords.Data(
-        num_calls=3, memory_total=96, memory_peak=32
-    )
+    assert records[
+        _get_descriptive_name_of_object(f1)
+    ] == ProfilerRecords.Data(num_calls=2, memory_total=64, memory_peak=32)
+    assert records[
+        _get_descriptive_name_of_object(f2)
+    ] == ProfilerRecords.Data(num_calls=3, memory_total=96, memory_peak=32)
     assert records["g2"] == ProfilerRecords.Data(
         num_calls=3, memory_total=48, memory_peak=16
     )
-    assert records[get_descriptive_name_of_object(f3)] == ProfilerRecords.Data(
+    assert records[
+        _get_descriptive_name_of_object(f3)
+    ] == ProfilerRecords.Data(
         num_calls=1, memory_total=11200, memory_peak=11200
     )
 
@@ -317,9 +319,9 @@ def test_profiler(stats_mr):
             del b2
 
     records = default_profiler_records.records
-    assert records[get_descriptive_name_of_object(f4)] == ProfilerRecords.Data(
-        num_calls=1, memory_total=160, memory_peak=160
-    )
+    assert records[
+        _get_descriptive_name_of_object(f4)
+    ] == ProfilerRecords.Data(num_calls=1, memory_total=160, memory_peak=160)
     assert records["b1 and b2"] == ProfilerRecords.Data(
         num_calls=1, memory_total=224, memory_peak=224
     )

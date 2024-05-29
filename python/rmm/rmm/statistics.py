@@ -318,7 +318,7 @@ def profiler(
 
     class ProfilerContext:
         def __call__(self, func: callable) -> callable:
-            _name = name or get_descriptive_name_of_object(func)
+            _name = name or _get_descriptive_name_of_object(func)
 
             @wraps(func)
             def wrapper(*args, **kwargs):
