@@ -249,10 +249,12 @@ class ProfilerRecords:
             return ret + "No data, maybe profiling wasn't enabled?"
         ret += (
             "Legends:\n"
-            "  ncalls       - number of time the function or code block "
+            "  ncalls       - number of times the function or code block "
             "was called\n"
-            "  memory_peak  - peak memory allocated in bytes\n"
-            "  memory_total - total memory allocated in bytes\n"
+            "  memory_peak  - peak memory allocated in function or code "
+            "block (in bytes)\n"
+            "  memory_total - total memory allocated in function or code "
+            "block (in bytes)\n"
         )
         ret += f"\nOrdered by: {ordered_by}\n"
         ret += "\nncalls     memory_peak    memory_total  "
