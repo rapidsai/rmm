@@ -292,16 +292,20 @@ def test_profiler(stats_mr):
     records = profiler_records.records
     assert records[
         _get_descriptive_name_of_object(f1)
-    ] == ProfilerRecords.Data(num_calls=2, memory_total=64, memory_peak=32)
+    ] == ProfilerRecords.MemoryRecord(
+        num_calls=2, memory_total=64, memory_peak=32
+    )
     assert records[
         _get_descriptive_name_of_object(f2)
-    ] == ProfilerRecords.Data(num_calls=3, memory_total=96, memory_peak=32)
-    assert records["g2"] == ProfilerRecords.Data(
+    ] == ProfilerRecords.MemoryRecord(
+        num_calls=3, memory_total=96, memory_peak=32
+    )
+    assert records["g2"] == ProfilerRecords.MemoryRecord(
         num_calls=3, memory_total=48, memory_peak=16
     )
     assert records[
         _get_descriptive_name_of_object(f3)
-    ] == ProfilerRecords.Data(
+    ] == ProfilerRecords.MemoryRecord(
         num_calls=1, memory_total=11200, memory_peak=11200
     )
 
@@ -321,10 +325,12 @@ def test_profiler(stats_mr):
     records = default_profiler_records.records
     assert records[
         _get_descriptive_name_of_object(f4)
-    ] == ProfilerRecords.Data(num_calls=1, memory_total=160, memory_peak=160)
-    assert records["b1 and b2"] == ProfilerRecords.Data(
+    ] == ProfilerRecords.MemoryRecord(
+        num_calls=1, memory_total=160, memory_peak=160
+    )
+    assert records["b1 and b2"] == ProfilerRecords.MemoryRecord(
         num_calls=1, memory_total=224, memory_peak=224
     )
-    assert records["del b1 and b2"] == ProfilerRecords.Data(
+    assert records["del b1 and b2"] == ProfilerRecords.MemoryRecord(
         num_calls=1, memory_total=0, memory_peak=0
     )

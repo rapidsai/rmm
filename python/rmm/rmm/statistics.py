@@ -169,7 +169,7 @@ class ProfilerRecords:
     """Records of the memory statistics recorded by a profiler"""
 
     @dataclass
-    class Data:
+    class MemoryRecord:
         """Memory statistics of a single code block
 
         Attributes
@@ -193,8 +193,8 @@ class ProfilerRecords:
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
-        self._records: Dict[str, ProfilerRecords.Data] = defaultdict(
-            ProfilerRecords.Data
+        self._records: Dict[str, ProfilerRecords.MemoryRecord] = defaultdict(
+            ProfilerRecords.MemoryRecord
         )
 
     def add(self, name: str, data: Statistics) -> None:
@@ -215,7 +215,7 @@ class ProfilerRecords:
             )
 
     @property
-    def records(self) -> Dict[str, Data]:
+    def records(self) -> Dict[str, MemoryRecord]:
         """Dictionary mapping record names to their memory statistics"""
         return dict(self._records)
 
