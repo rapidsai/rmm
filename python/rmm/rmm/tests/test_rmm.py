@@ -1004,8 +1004,13 @@ def test_invalid_logging_level(level):
         rmm.should_log(level)
 
 
-def test_get_free_device_memory():
-    from rmm._lib.memory_resource import get_free_device_memory
+def test_available_device_memory():
+    from rmm._lib.memory_resource import available_device_memory
 
-    memory = get_free_device_memory()
-    assert memory != 0
+    initial_memory = available_device_memory()
+    device_buffer = rmm.DeviceBuffer.to_device(  # noqa: F841
+        np.zeros(10000, dtype="u1")
+    )
+    final_memory = available_device_memory()
+    assert initial_memory[1] == final_memory[1]
+    assert initial_memory[0] > final_memory[0]

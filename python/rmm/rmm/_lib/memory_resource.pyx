@@ -32,9 +32,16 @@ from libcpp.string cimport string
 from cuda.cudart import cudaError_t
 
 from rmm._cuda.gpu import CUDARuntimeError, getDevice, setDevice
+
 from rmm._cuda.stream cimport Stream
+
 from rmm._cuda.stream import DEFAULT_STREAM
+
 from rmm._lib.cuda_stream_view cimport cuda_stream_view
+from rmm._lib.memory_resource cimport (
+    available_device_memory as c_available_device_memory,
+    percent_of_free_device_memory as c_percent_of_free_device_memory,
+)
 from rmm._lib.per_device_resource cimport (
     cuda_device_id,
     set_per_device_resource as cpp_set_per_device_resource,
@@ -109,9 +116,6 @@ cdef extern from "rmm/mr/device/cuda_async_memory_resource.hpp" \
         win32
         win32_kmt
 
-cdef extern from "rmm/cuda_device.hpp" namespace "rmm" nogil:
-    size_t percent_of_free_device_memory(int percent) except +
-    size_t available_device_memory() expect +
 
 cdef extern from "rmm/mr/device/pool_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
@@ -369,7 +373,7 @@ cdef class PoolMemoryResource(UpstreamResourceAdaptor):
         cdef size_t c_initial_pool_size
         cdef optional[size_t] c_maximum_pool_size
         c_initial_pool_size = (
-            percent_of_free_device_memory(50) if
+            c_percent_of_free_device_memory(50) if
             initial_pool_size is None
             else initial_pool_size
         )
@@ -1191,8 +1195,10 @@ def get_log_filenames():
     }
 
 
-def get_free_device_memory():
+def available_device_memory():
     """
-    Return the number of bytes of available device memory.
+    Returns a tuple of free and total device memory memory.
     """
-    return available_device_memory()
+    cdef pair[size_t, size_t] res
+    res = c_available_device_memory()
+    return (res.first, res.second)
