@@ -25,7 +25,7 @@ import rmm.mr
 
 @dataclass
 class Statistics:
-    """Statistics returned by ``{get,push,pop}_statistics()``
+    """Statistics returned by ``{get,push,pop}_statistics()``.
 
     Attributes
     ----------
@@ -52,7 +52,7 @@ class Statistics:
 
 
 def enable_statistics() -> None:
-    """Enable allocation statistics
+    """Enable allocation statistics.
 
     This function is idempotent. If statistics have been enabled for the
     current RMM resource stack, this is a no-op.
@@ -72,7 +72,7 @@ def enable_statistics() -> None:
 
 
 def get_statistics() -> Optional[Statistics]:
-    """Get the current allocation statistics
+    """Get the current allocation statistics.
 
     Return
     ------
@@ -86,7 +86,7 @@ def get_statistics() -> Optional[Statistics]:
 
 
 def push_statistics() -> Optional[Statistics]:
-    """Push new counters on the current allocation statistics stack
+    """Push new counters on the current allocation statistics stack.
 
     This returns the current tracked statistics and pushes a new set
     of zero counters on the stack of statistics.
@@ -106,7 +106,7 @@ def push_statistics() -> Optional[Statistics]:
 
 
 def pop_statistics() -> Optional[Statistics]:
-    """Pop the counters of the current allocation statistics stack
+    """Pop the counters of the current allocation statistics stack.
 
     This returns the counters of current tracked statistics and pops
     them from the stack.
@@ -166,20 +166,20 @@ def statistics():
 
 
 class ProfilerRecords:
-    """Records of the memory statistics recorded by a profiler"""
+    """Records of the memory statistics recorded by a profiler."""
 
     @dataclass
     class MemoryRecord:
-        """Memory statistics of a single code block
+        """Memory statistics of a single code block.
 
         Attributes
         ----------
         num_calls
             Number of times this code block was invoked.
         memory_total
-            Total number of bytes allocated
+            Total number of bytes allocated.
         memory_peak
-            Peak number of bytes allocated
+            Peak number of bytes allocated.
         """
 
         num_calls: int = 0
@@ -198,16 +198,16 @@ class ProfilerRecords:
         )
 
     def add(self, name: str, data: Statistics) -> None:
-        """Add memory statistics to the record named `name`
+        """Add memory statistics to the record named `name`.
 
         This method is thread-safe.
 
         Parameters
         ----------
         name
-            Name of the record
+            Name of the record.
         data
-            Memory statistics of `name`
+            Memory statistics of `name`.
         """
         with self._lock:
             self._records[name].add(
@@ -216,7 +216,7 @@ class ProfilerRecords:
 
     @property
     def records(self) -> Dict[str, MemoryRecord]:
-        """Dictionary mapping record names to their memory statistics"""
+        """Dictionary mapping record names to their memory statistics."""
         return dict(self._records)
 
     def report(
@@ -225,7 +225,7 @@ class ProfilerRecords:
             "num_calls", "memory_peak", "memory_total"
         ] = "memory_peak",
     ) -> str:
-        """Pretty format the recorded memory statistics
+        """Pretty format the recorded memory statistics.
 
         Parameters
         ----------
@@ -270,7 +270,7 @@ class ProfilerRecords:
 
 
 def _get_descriptive_name_of_object(obj: object) -> str:
-    """Get name of object, which include filename, line number, and object name
+    """Get descriptive name of object.
 
     Parameters
     ----------
@@ -279,7 +279,7 @@ def _get_descriptive_name_of_object(obj: object) -> str:
 
     Return
     ------
-    Descriptive name of the object
+    A string including filename, line number, and object name.
     """
 
     obj = inspect.unwrap(obj)
@@ -296,7 +296,7 @@ def profiler(
     records: ProfilerRecords = default_profiler_records,
     name: str = "",
 ):
-    """Decorator and context to profile function or code block
+    """Decorator and context to profile function or code block.
 
     If statistics are enabled (the current memory resource is not an
     instance of StatisticsResourceAdaptor), this decorator records the
