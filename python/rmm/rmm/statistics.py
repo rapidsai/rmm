@@ -134,8 +134,8 @@ def statistics():
     current allocation statistics stack when entering the context and popped
     again when exiting using `push_statistics()` and `push_statistics()`.
 
-    If statistics have not been enabled, a new StatisticsResourceAdaptor is set as
-    the current RMM memory resource when entering the context and removed
+    If statistics have not been enabled, a new StatisticsResourceAdaptor is set
+    as the current RMM memory resource when entering the context and removed
     again when exiting.
 
     Raises
