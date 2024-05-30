@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2022, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -355,6 +355,22 @@ class device_buffer {
    * @briefreturn{Pointer to the device memory allocation}
    */
   void* data() noexcept { return _data; }
+
+  /**
+    @brief Prefetch data for this buffer to the specified device on the specified stream.
+
+    @throw rmm::cuda_error if the prefetch fails.
+
+    @param device The device to prefetch to
+    @param stream The stream to use for the prefetch
+  */
+  void prefetch(rmm::cuda_device_id device, rmm::cuda_stream_view stream) const
+  {
+    auto result = cudaMemPrefetchAsync(data(), size(), device.value(), stream.value());
+    // InvalidValue error is raised when non-managed memory is passed to cudaMemPrefetchAsync
+    // We should treat this as a no-op
+    if (result != cudaErrorInvalidValue && result != cudaSuccess) { RMM_CUDA_TRY(result); }
+  }
 
   /**
    * @briefreturn{The number of bytes}

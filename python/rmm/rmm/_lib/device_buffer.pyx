@@ -138,6 +138,14 @@ cdef class DeviceBuffer:
         }
         return intf
 
+    def prefetch(self, device=None, stream=DEFAULT_STREAM):
+        """Prefetch buffer data to the specified device on the specified stream.
+        """
+        if device is None:
+            self.c_prefetch(get_current_cuda_device(), stream)
+        else:
+            self.c_prefetch(cuda_device_id(device), stream)
+
     def copy(self):
         """Returns a copy of DeviceBuffer.
 
@@ -344,6 +352,11 @@ cdef class DeviceBuffer:
 
     cdef void* c_data(self) except *:
         return self.c_obj.get()[0].data()
+
+    cdef void c_prefetch(self,
+                         cuda_device_id device,
+                         Stream stream=DEFAULT_STREAM) except *:
+        self.c_obj.get()[0].prefetch(device, stream.view())
 
     cdef device_buffer c_release(self) except *:
         """
