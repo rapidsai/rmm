@@ -129,12 +129,12 @@ def pop_statistics() -> Optional[Statistics]:
 def statistics():
     """Context to enable allocation statistics.
 
-    If statistics has been enabled already (the current memory resource is an
+    If statistics have been enabled already (the current memory resource is an
     instance of StatisticsResourceAdaptor), new counters are pushed on the
     current allocation statistics stack when entering the context and popped
     again when exiting using `push_statistics()` and `push_statistics()`.
 
-    If statistics has not been enabled, StatisticsResourceAdaptor is set as
+    If statistics have not been enabled, a new StatisticsResourceAdaptor is set as
     the current RMM memory resource when entering the context and removed
     again when exiting.
 
@@ -300,7 +300,7 @@ def profiler(
 ):
     """Decorator and context to profile function or code block.
 
-    If statistics are enabled (the current memory resource is not an
+    If statistics are enabled (the current memory resource is an
     instance of StatisticsResourceAdaptor), this decorator records the
     memory statistics of the decorated function or code block.
 
@@ -312,7 +312,7 @@ def profiler(
         The profiler records that the memory statistics are written to. If
         not set, a default profiler records are used.
     name
-        The name of the memory profile, which is mandatory when the profiler
+        The name of the memory profile, mandatory when the profiler
         is used as a context manager. If used as a decorator, an empty name
         is allowed. In this case, the name is the filename, line number, and
         function name.

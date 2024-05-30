@@ -196,7 +196,7 @@ RMM has a tool for tracking memory statistics and memory profiling. It can be en
   - Use the context manager `rmm.statistics.statistics()` to enable statistics tracking for a specific code block.
   - Call `rmm.statistics.enable_statistics()` to enable statistics tracking globally.
 
-Common for both are that they modifies the current RMM memory resource. `StatisticsResourceAdaptor` is pushed onto the current RMM memory resource stack and must remain the topmost resource throughout the statistics tracking.
+Common to both usages is that they modify the currently active RMM memory resource. A `StatisticsResourceAdaptor` is pushed onto the current RMM memory resource stack and must remain the topmost resource throughout the statistics tracking.
 
 ```python
 >>> import rmm.statistics
@@ -216,7 +216,7 @@ Common for both are that they modifies the current RMM memory resource. `Statist
 <rmm._lib.memory_resource.StatisticsResourceAdaptor at 0x7f662c2bb3c0>
 ```
 
-When statistic is enabled, we can get statistics of all allocations done through the current RMM memory resource.
+When statistics are enabled, we can get statistics of all allocations performed by the current RMM memory resource.
 ```python
 >>> buf = rmm.DeviceBuffer(size=10)
 >>> rmm.statistics.get_statistics()
