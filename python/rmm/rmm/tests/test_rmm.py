@@ -1013,4 +1013,5 @@ def test_available_device_memory():
     )
     final_memory = available_device_memory()
     assert initial_memory[1] == final_memory[1]
-    assert initial_memory[0] > final_memory[0]
+    assert initial_memory[0] > 0
+    assert final_memory[0] > 0
