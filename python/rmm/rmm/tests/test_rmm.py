@@ -1005,7 +1005,7 @@ def test_invalid_logging_level(level):
 
 
 def test_available_device_memory():
-    from rmm._lib.memory_resource import available_device_memory
+    from rmm.mr import available_device_memory
 
     initial_memory = available_device_memory()
     device_buffer = rmm.DeviceBuffer.to_device(  # noqa: F841
