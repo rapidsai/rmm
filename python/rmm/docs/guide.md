@@ -192,11 +192,11 @@ allocator.
 
 ## Memory statistics and profiling
 
-RMM has a tool for tracking memory statistics and memory profiling. It can be enabled in two ways:
+RMM can profile memory usage and track memory statistics by using either of the following:
   - Use the context manager `rmm.statistics.statistics()` to enable statistics tracking for a specific code block.
   - Call `rmm.statistics.enable_statistics()` to enable statistics tracking globally.
 
-Common to both usages is that they modify the currently active RMM memory resource. A `StatisticsResourceAdaptor` is pushed onto the current RMM memory resource stack and must remain the topmost resource throughout the statistics tracking:
+Both methods modify the currently active RMM memory resource. A `StatisticsResourceAdaptor` is pushed onto the current RMM memory resource stack and must remain the topmost resource throughout the statistics tracking:
 ```python
 >>> import rmm
 >>> import rmm.statistics
@@ -216,7 +216,7 @@ Common to both usages is that they modify the currently active RMM memory resour
 <rmm._lib.memory_resource.StatisticsResourceAdaptor at 0x7f662c2bb3c0>
 ```
 
-When statistics are enabled, we can get statistics of all allocations performed by the current RMM memory resource:
+With statistics enabled, you can query statistics of the current and peak bytes and number of allocations performed by the current RMM memory resource:
 ```python
 >>> buf = rmm.DeviceBuffer(size=10)
 >>> rmm.statistics.get_statistics()
@@ -224,9 +224,7 @@ Statistics(current_bytes=16, current_count=1, peak_bytes=16, peak_count=1, total
 ```
 
 ### Memory Profiler
-It is also possible to profile a specific block of code. It requires that memory statistics has been enabled e.g. by calling `rmm.statistics.enable_statistics()`.
-
-To profile a function, we can use the `profiler` as a function decorator like:
+To profile a specific block of code, first enable memory statistics by calling `rmm.statistics.enable_statistics()`. To profile a function, use `profiler` as a function decorator:
 ```python
 >>> @rmm.statistics.profiler()
 ... def f(size):
@@ -249,7 +247,7 @@ ncalls     memory_peak    memory_total  filename:lineno(function)
      1           1,008           1,008  <ipython-input-11-5fc63161ac29>:1(f)
 ```
 
-We can also profile a code block by using `profiler` as a context manager:
+To profile a code block, use `profiler` as a context manager:
 ```python
 >>> with rmm.statistics.profiler(name="my code block"):
 ...     rmm.DeviceBuffer(size=20)
@@ -269,7 +267,7 @@ ncalls     memory_peak    memory_total  filename:lineno(function)
      1              32              32  my code block
 ```
 
-The `profiler` support nesting:
+The `profiler` supports nesting:
 ```python
 >>> with rmm.statistics.profiler(name="outer"):
 ...     buf1 = rmm.DeviceBuffer(size=10)
