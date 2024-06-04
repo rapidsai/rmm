@@ -14,6 +14,7 @@ files:
       - develop
       - docs
       - py_version
+      - rapids_build_skbuild
       - run
       - test_python
   test_python:
@@ -44,12 +45,28 @@ files:
     extras:
       table: build-system
     includes:
+      - rapids_build_skbuild
+  py_cpp_rapids_build:
+    output: pyproject
+    pyproject_dir: python/librmm
+    extras:
+      table: tool.rapids-build-backend
+      key: requires
+    includes:
       - build
   py_build:
     output: pyproject
     pyproject_dir: python/rmm
     extras:
       table: build-system
+    includes:
+      - rapids_build_skbuild
+  py_rapids_build:
+    output: pyproject
+    pyproject_dir: python/rmm
+    extras:
+      table: tool.rapids-build-backend
+      key: requires
     includes:
       - build
       - cython_build
@@ -70,8 +87,20 @@ files:
       - test_python
 channels:
   - rapidsai
+  - rapidsai-nightly
   - conda-forge
 dependencies:
+  rapids_build_skbuild:
+    common:
+      - output_types: [conda, requirements, pyproject]
+        packages:
+          - rapids-build-backend>=0.3.0,<0.4.0.dev0
+      - output_types: conda
+        packages:
+          - scikit-build-core >=0.7.0
+      - output_types: [requirements, pyproject]
+        packages:
+          - scikit-build-core[pyproject]>=0.7.0
   build:
     common:
       - output_types: [conda, requirements, pyproject]
@@ -83,11 +112,7 @@ dependencies:
           - c-compiler
           - cxx-compiler
           - fmt>=10.1.1,<11
-          - scikit-build-core>=0.7.0
           - spdlog>=1.12.0,<1.13
-      - output_types: [requirements, pyproject]
-        packages:
-          - scikit-build-core[pyproject]>=0.7.0
     specific:
       - output_types: conda
         matrices:
@@ -137,14 +162,14 @@ dependencies:
             - matrix:
                 cuda: "12.*"
               packages:
-                - librmm-cu12==24.8.*
+                - librmm-cu12==24.8.*,>=0.0.0a0
             - matrix:
                 cuda: "11.*"
               packages:
-                - librmm-cu11==24.8.*
+                - librmm-cu11==24.8.*,>=0.0.0a0
             - matrix:
               packages:
-                - librmm==24.8.*
+                - librmm==24.8.*,>=0.0.0a0
   checks:
     common:
       - output_types: [conda, requirements]
