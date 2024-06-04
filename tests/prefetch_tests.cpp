@@ -48,38 +48,35 @@ using resources = ::testing::Types<rmm::mr::cuda_memory_resource, rmm::mr::manag
 
 TYPED_TEST_CASE(PrefetchTest, resources);
 
-TYPED_TEST(PrefetchTest, Pointer)
+// The following tests simply test compilation and that there are no exceptions thrown
+// due to prefetching non-managed memory.
+
+TYPED_TEST(PrefetchTest, PointerAndSize)
 {
   rmm::device_buffer buff(this->size, this->stream, &this->mr);
-
-  // Prefetching is a no-op on non-managed memory, test for no throw
   rmm::prefetch(buff.data(), buff.size(), rmm::get_current_cuda_device(), this->stream);
 }
 
 TYPED_TEST(PrefetchTest, DeviceBuffer)
 {
   rmm::device_buffer buff(this->size, this->stream, &this->mr);
-
-  // Prefetching is a no-op on non-managed memory, test for no throw
-  rmm::prefetch(buff, rmm::get_current_cuda_device(), this->stream);
+  rmm::prefetch<char>(buff, rmm::get_current_cuda_device(), this->stream);
+  rmm::prefetch<char const>(buff, rmm::get_current_cuda_device(), this->stream);  // const version
 }
 
 TYPED_TEST(PrefetchTest, DeviceUVector)
 {
   rmm::device_uvector<int> uvec(this->size, this->stream, &this->mr);
+  rmm::prefetch<int>(uvec, rmm::get_current_cuda_device(), this->stream);
 
-  // test iterator range
-  rmm::prefetch(
-    uvec.begin(), std::next(uvec.begin()), rmm::get_current_cuda_device(), this->stream);
-
-  // Prefetching is a no-op on non-managed memory, test for no throw
-  rmm::prefetch(uvec, rmm::get_current_cuda_device(), this->stream);
+  // test iterator range of part of the vector (implicitly constructs a span)
+  rmm::prefetch<int>({uvec.begin(), std::next(uvec.begin(), this->size / 2)},
+                     rmm::get_current_cuda_device(),
+                     this->stream);
 }
 
 TYPED_TEST(PrefetchTest, DeviceScalar)
 {
   rmm::device_scalar<int> scalar(this->stream, &this->mr);
-
-  // Prefetching is a no-op on non-managed memory, test for no throw
-  rmm::prefetch(scalar, rmm::get_current_cuda_device(), this->stream);
+  rmm::prefetch<int>(scalar, rmm::get_current_cuda_device(), this->stream);
 }
