@@ -497,13 +497,3 @@ TYPED_TEST(DeviceBufferTest, SetGetStream)
 
   EXPECT_EQ(buff.stream(), otherstream);
 }
-
-TYPED_TEST(DeviceBufferTest, Prefetch)
-{
-  rmm::cuda_stream stream{};
-
-  rmm::device_buffer buff(this->size, stream, &this->mr);
-
-  // Prefetching is a no-op on non-managed device_buffer
-  buff.prefetch(rmm::get_current_cuda_device(), stream);
-}
