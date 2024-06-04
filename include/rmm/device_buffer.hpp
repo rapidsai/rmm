@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2022, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
+#include <cuda/std/span>
 #include <cuda_runtime_api.h>
 
 #include <cassert>
@@ -247,6 +248,26 @@ class device_buffer {
     cuda_set_device_raii dev{_device};
     deallocate_async();
     _stream = cuda_stream_view{};
+  }
+
+  /**
+   * @briefreturn{A span covering the data in memory}
+   */
+  template <class T, std::enable_if_t<sizeof(T) == sizeof(char), bool> = true>
+  [[nodiscard]] operator cuda::std::span<T>() noexcept
+  {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    return {reinterpret_cast<T*>(data()), size()};
+  }
+
+  /**
+   * @briefreturn{A constant span covering the data in memory}
+   */
+  template <class T, std::enable_if_t<sizeof(T) == sizeof(char), bool> = true>
+  [[nodiscard]] operator cuda::std::span<T>() const noexcept
+  {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    return {reinterpret_cast<T const*>(data()), size()};
   }
 
   /**
