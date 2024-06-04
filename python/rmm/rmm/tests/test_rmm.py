@@ -1002,3 +1002,16 @@ def test_invalid_logging_level(level):
         rmm.set_flush_level(level)
     with pytest.raises(TypeError):
         rmm.should_log(level)
+
+
+def test_available_device_memory():
+    from rmm.mr import available_device_memory
+
+    initial_memory = available_device_memory()
+    device_buffer = rmm.DeviceBuffer.to_device(  # noqa: F841
+        np.zeros(10000, dtype="u1")
+    )
+    final_memory = available_device_memory()
+    assert initial_memory[1] == final_memory[1]
+    assert initial_memory[0] > 0
+    assert final_memory[0] > 0
