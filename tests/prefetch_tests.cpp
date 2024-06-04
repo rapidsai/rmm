@@ -16,6 +16,7 @@
 
 #include <rmm/cuda_stream.hpp>
 #include <rmm/device_buffer.hpp>
+#include <rmm/device_scalar.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
@@ -73,4 +74,12 @@ TYPED_TEST(PrefetchTest, DeviceUVector)
 
   // Prefetching is a no-op on non-managed memory, test for no throw
   rmm::prefetch(uvec, rmm::get_current_cuda_device(), this->stream);
+}
+
+TYPED_TEST(PrefetchTest, DeviceScalar)
+{
+  rmm::device_scalar<int> scalar(this->stream, &this->mr);
+
+  // Prefetching is a no-op on non-managed memory, test for no throw
+  rmm::prefetch(scalar, rmm::get_current_cuda_device(), this->stream);
 }

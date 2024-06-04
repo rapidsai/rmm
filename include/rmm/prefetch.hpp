@@ -19,6 +19,7 @@
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_buffer.hpp>
+#include <rmm/device_scalar.hpp>
 #include <rmm/error.hpp>
 
 #include <iterator>
@@ -45,24 +46,6 @@ void prefetch(T* ptr, std::size_t size, rmm::cuda_device_id device, rmm::cuda_st
   // InvalidValue error is raised when non-managed memory is passed to cudaMemPrefetchAsync
   // We should treat this as a no-op
   if (result != cudaErrorInvalidValue && result != cudaSuccess) { RMM_CUDA_TRY(result); }
-}
-
-/**
-    @brief Prefetch an rmm::device_buffer to the specified device on the specified stream.
-
-    This function is a no-op if the buffer is not backed by CUDA managed memory.
-
-    @throw rmm::cuda_error if the prefetch fails.
-
-    @param buffer The buffer to prefetch
-    @param device The device to prefetch to
-    @param stream The stream to use for the prefetch
- */
-void prefetch(rmm::device_buffer const& buffer,
-              rmm::cuda_device_id device,
-              rmm::cuda_stream_view stream)
-{
-  prefetch(buffer.data(), buffer.size(), device, stream);
 }
 
 /**
@@ -105,6 +88,45 @@ template <typename Container>
 void prefetch(Container const& container, rmm::cuda_device_id device, rmm::cuda_stream_view stream)
 {
   prefetch(container.begin(), container.end(), device, stream);
+}
+
+/**
+    @brief Prefetch the storage for a rmm::device_buffer to the specified device on the specified
+   stream.
+
+    This function is a no-op if the buffer is not backed by CUDA managed memory.
+
+    @throw rmm::cuda_error if the prefetch fails.
+
+    @param buffer The buffer to prefetch
+    @param device The device to prefetch to
+    @param stream The stream to use for the prefetch
+ */
+void prefetch(rmm::device_buffer const& buffer,
+              rmm::cuda_device_id device,
+              rmm::cuda_stream_view stream)
+{
+  prefetch(buffer.data(), buffer.size(), device, stream);
+}
+
+/**
+    @brief Prefetch the storage for a rmm::device_scalar to the specified device on the specified
+   stream.
+
+    This function is a no-op if the buffer is not backed by CUDA managed memory.
+
+    @throw rmm::cuda_error if the prefetch fails.
+
+    @param scalar The device_scalar to prefetch
+    @param device The device to prefetch to
+    @param stream The stream to use for the prefetch
+ */
+template <typename T>
+void prefetch(rmm::device_scalar<T> const& scalar,
+              rmm::cuda_device_id device,
+              rmm::cuda_stream_view stream)
+{
+  prefetch(scalar.data(), sizeof(T), device, stream);
 }
 
 }  // namespace rmm
