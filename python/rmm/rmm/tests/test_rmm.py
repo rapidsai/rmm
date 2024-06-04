@@ -284,6 +284,15 @@ def test_rmm_device_buffer_pickle_roundtrip(hb):
     assert hb3 == hb
 
 
+@pytest.mark.parametrize(
+    "managed, pool", list(product([False, True], [False, True]))
+)
+def test_rmm_device_buffer_prefetch(pool, managed):
+    rmm.reinitialize(pool_allocator=pool, managed_memory=managed)
+    db = rmm.DeviceBuffer.to_device(np.zeros(256, dtype="u1"))
+    db.prefetch()  # just test that it doesn't throw even without managed memory
+
+
 @pytest.mark.parametrize("stream", [cuda.default_stream(), cuda.stream()])
 def test_rmm_pool_numba_stream(stream):
     rmm.reinitialize(pool_allocator=True)

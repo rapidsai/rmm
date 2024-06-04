@@ -356,7 +356,10 @@ cdef class DeviceBuffer:
     cdef void c_prefetch(self,
                          cuda_device_id device,
                          Stream stream=DEFAULT_STREAM) except *:
-        self.c_obj.get()[0].prefetch(device, stream.view())
+        prefetch(self.c_obj.get()[0].data(),
+                 self.c_obj.get()[0].size(),
+                 device,
+                 stream.view())
 
     cdef device_buffer c_release(self) except *:
         """

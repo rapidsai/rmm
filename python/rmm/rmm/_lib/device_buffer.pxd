@@ -33,6 +33,12 @@ cdef extern from "rmm/mr/device/per_device_resource.hpp" namespace "rmm" nogil:
 
     cdef cuda_device_id get_current_cuda_device()
 
+cdef extern from "rmm/prefetch.hpp" namespace "rmm" nogil:
+    cdef void prefetch[T](const T* ptr,
+                          size_t bytes,
+                          cuda_device_id device,
+                          cuda_stream_view stream) except +
+
 cdef extern from "rmm/device_buffer.hpp" namespace "rmm" nogil:
     cdef cppclass device_buffer:
         device_buffer()
@@ -56,7 +62,6 @@ cdef extern from "rmm/device_buffer.hpp" namespace "rmm" nogil:
         void resize(size_t new_size, cuda_stream_view stream) except +
         void shrink_to_fit(cuda_stream_view stream) except +
         void* data()
-        void prefetch(cuda_device_id device, cuda_stream_view stream) except +
         size_t size()
         size_t capacity()
 
