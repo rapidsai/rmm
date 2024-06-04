@@ -26,23 +26,22 @@
 namespace rmm {
 
 /**
-    @brief Prefetch data for this buffer to the specified device on the specified stream.
-
-    This function is a no-op if the pointer is not to CUDA managed memory.
-
-    @throw rmm::cuda_error if the prefetch fails.
-
-    @tparam T The type of the elements pointed to by `ptr`.
-    @param device The device to prefetch to
-    @param stream The stream to use for the prefetch
-  */
+ * @brief Prefetch data for this buffer to the specified device on the specified stream.
+ *
+ * This function is a no-op if the pointer is not to CUDA managed memory.
+ *
+ * @throw rmm::cuda_error if the prefetch fails.
+ *
+ * @tparam T The type of the elements pointed to by `ptr`.
+ * @param ptr The pointer to the memory to prefetch
+ * @param size The number of bytes to prefetch
+ * @param device The device to prefetch to
+ * @param stream The stream to use for the prefetch
+ */
 template <typename T>
-void prefetch(T* ptr,
-              std::size_t num_bytes,
-              rmm::cuda_device_id device,
-              rmm::cuda_stream_view stream)
+void prefetch(T* ptr, std::size_t size, rmm::cuda_device_id device, rmm::cuda_stream_view stream)
 {
-  auto result = cudaMemPrefetchAsync(ptr, num_bytes, device.value(), stream.value());
+  auto result = cudaMemPrefetchAsync(ptr, size, device.value(), stream.value());
   // InvalidValue error is raised when non-managed memory is passed to cudaMemPrefetchAsync
   // We should treat this as a no-op
   if (result != cudaErrorInvalidValue && result != cudaSuccess) { RMM_CUDA_TRY(result); }
@@ -67,18 +66,18 @@ void prefetch(rmm::device_buffer const& buffer,
 }
 
 /**
-    @brief Prefetch a range of memory to the specified device on the specified stream.
-
-    This function is a no-op if the Iterators do not reference CUDA managed memory.
-
-    @throw rmm::cuda_error if the prefetch fails.
-
-    @tparam Iterator The type of the iterator parameters
-    @param begin The beginning of the range to prefetch
-    @param end The end of the range to prefetch
-    @param device The device to prefetch to
-    @param stream The stream to use for the prefetch
-  */
+ * @brief Prefetch a range of memory to the specified device on the specified stream.
+ *
+ * This function is a no-op if the Iterators do not reference CUDA managed memory.
+ *
+ * @throw rmm::cuda_error if the prefetch fails.
+ *
+ * @tparam Iterator The type of the iterator parameters
+ * @param begin The beginning of the range to prefetch
+ * @param end The end of the range to prefetch
+ * @param device The device to prefetch to
+ * @param stream The stream to use for the prefetch
+ */
 template <typename Iterator>
 void prefetch(Iterator begin,
               Iterator end,
@@ -90,19 +89,18 @@ void prefetch(Iterator begin,
 }
 
 /**
-    @brief Prefetch the storage for a container to the specified device on the specified stream.
-
-    This function is a no-op if the container is not backed by CUDA managed memory.
-    This function requires the container to implement `begin()` and `end()` which return iterators.
-
-    @throw rmm::cuda_error if the prefetch fails.
-
-    @tparam Container The type of the container parameter
-    @param begin The beginning of the range to prefetch
-    @param end The end of the range to prefetch
-    @param device The device to prefetch to
-    @param stream The stream to use for the prefetch
-  */
+ * @brief Prefetch the storage for a container to the specified device on the specified stream.
+ *
+ * This function is a no-op if the container is not backed by CUDA managed memory.
+ * This function requires the container to implement `begin()` and `end()` which return iterators.
+ *
+ * @throw rmm::cuda_error if the prefetch fails.
+ *
+ * @tparam Container The type of the container parameter
+ * @param container The container to prefetch
+ * @param device The device to prefetch to
+ * @param stream The stream to use for the prefetch
+ */
 template <typename Container>
 void prefetch(Container const& container, rmm::cuda_device_id device, rmm::cuda_stream_view stream)
 {
