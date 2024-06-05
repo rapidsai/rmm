@@ -25,6 +25,12 @@
 namespace rmm {
 
 /**
+ * @addtogroup utilities
+ * @{
+ * @file
+ */
+
+/**
  * @brief Prefetch data for this buffer to the specified device on the specified stream.
  *
  * This function is a no-op if the pointer is not to CUDA managed memory.
@@ -62,5 +68,7 @@ void prefetch(cuda::std::span<T> data, rmm::cuda_device_id device, rmm::cuda_str
 {
   prefetch(data.data(), data.size_bytes(), device, stream);
 }
+
+/** @} */  // end of group
 
 }  // namespace rmm
