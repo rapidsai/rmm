@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2021, NVIDIA CORPORATION.
+# Copyright (c) 2020-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ from rmm._lib.memory_resource import (
     UpstreamResourceAdaptor,
     _flush_logs,
     _initialize,
+    available_device_memory,
     disable_logging,
     enable_logging,
     get_current_device_resource,
@@ -57,6 +58,7 @@ __all__ = [
     "UpstreamResourceAdaptor",
     "_flush_logs",
     "_initialize",
+    "available_device_memory",
     "set_per_device_resource",
     "enable_logging",
     "disable_logging",
