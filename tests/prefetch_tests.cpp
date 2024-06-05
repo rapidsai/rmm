@@ -57,13 +57,6 @@ TYPED_TEST(PrefetchTest, PointerAndSize)
   rmm::prefetch(buff.data(), buff.size(), rmm::get_current_cuda_device(), this->stream);
 }
 
-TYPED_TEST(PrefetchTest, DeviceBuffer)
-{
-  rmm::device_buffer buff(this->size, this->stream, &this->mr);
-  rmm::prefetch<char>(buff, rmm::get_current_cuda_device(), this->stream);
-  rmm::prefetch<char const>(buff, rmm::get_current_cuda_device(), this->stream);  // const version
-}
-
 TYPED_TEST(PrefetchTest, DeviceUVector)
 {
   rmm::device_uvector<int> uvec(this->size, this->stream, &this->mr);

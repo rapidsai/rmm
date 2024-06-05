@@ -251,26 +251,6 @@ class device_buffer {
   }
 
   /**
-   * @briefreturn{A span covering the data in memory}
-   */
-  template <class T, std::enable_if_t<sizeof(T) == sizeof(char), bool> = true>
-  [[nodiscard]] operator cuda::std::span<T>() noexcept
-  {
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    return {reinterpret_cast<T*>(data()), size()};
-  }
-
-  /**
-   * @briefreturn{A constant span covering the data in memory}
-   */
-  template <class T, std::enable_if_t<sizeof(T) == sizeof(char), bool> = true>
-  [[nodiscard]] operator cuda::std::span<T>() const noexcept
-  {
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    return {reinterpret_cast<T const*>(data()), size()};
-  }
-
-  /**
    * @brief Increase the capacity of the device memory allocation
    *
    * If the requested `new_capacity` is less than or equal to `capacity()`, no
