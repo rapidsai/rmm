@@ -31,7 +31,7 @@ namespace rmm {
  */
 
 /**
- * @brief Prefetch data for this buffer to the specified device on the specified stream.
+ * @brief Prefetch memory to the specified device on the specified stream.
  *
  * This function is a no-op if the pointer is not to CUDA managed memory.
  *
@@ -53,7 +53,7 @@ void prefetch(T* ptr, std::size_t size, rmm::cuda_device_id device, rmm::cuda_st
 }
 
 /**
- * @brief Prefetch a span of data to the specified device on the specified stream.
+ * @brief Prefetch a span of memory to the specified device on the specified stream.
  *
  * This function is a no-op if the buffer is not backed by CUDA managed memory.
  *
