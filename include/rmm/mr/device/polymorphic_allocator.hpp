@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 #pragma once
 
 #include <rmm/cuda_stream_view.hpp>
-#include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
@@ -26,7 +25,11 @@
 #include <type_traits>
 
 namespace rmm::mr {
-
+/**
+ * @addtogroup device_memory_resources
+ * @{
+ * @file
+ */
 /**
  * @brief A stream ordered Allocator using a `rmm::mr::device_memory_resource` to satisfy
  * (de)allocations.
@@ -55,21 +58,21 @@ class polymorphic_allocator {
   /**
    * @brief Construct a `polymorphic_allocator` using the provided memory resource.
    *
-   * This constructor provides an implicit conversion from `memory_resource*`.
+   * This constructor provides an implicit conversion from `device_async_resource_ref`.
    *
-   * @param mr The `device_memory_resource` to use as the underlying resource.
+   * @param mr The upstream memory resource to use for allocation.
    */
-  polymorphic_allocator(device_memory_resource* mr) : mr_{mr} {}
+  polymorphic_allocator(device_async_resource_ref mr) : mr_{mr} {}
 
   /**
-   * @brief Construct a `polymorphic_allocator` using `other.resource()` as the underlying memory
-   * resource.
+   * @brief Construct a `polymorphic_allocator` using the underlying memory resource of `other`.
    *
-   * @param other The `polymorphic_resource` whose `resource()` will be used as the underlying
+   * @param other The `polymorphic_allocator` whose memory resource will be used as the underlying
    * resource of the new `polymorphic_allocator`.
    */
   template <typename U>
-  polymorphic_allocator(polymorphic_allocator<U> const& other) noexcept : mr_{other.resource()}
+  polymorphic_allocator(polymorphic_allocator<U> const& other) noexcept
+    : mr_{other.get_upstream_resource()}
   {
   }
 
@@ -82,14 +85,15 @@ class polymorphic_allocator {
    */
   value_type* allocate(std::size_t num, cuda_stream_view stream)
   {
-    return static_cast<value_type*>(resource()->allocate(num * sizeof(T), stream));
+    return static_cast<value_type*>(
+      get_upstream_resource().allocate_async(num * sizeof(T), stream));
   }
 
   /**
    * @brief Deallocates storage pointed to by `ptr`.
    *
-   * `ptr` must have been allocated from a `rmm::mr::device_memory_resource` `r` that compares equal
-   * to `*resource()` using `r.allocate(n * sizeof(T))`.
+   * `ptr` must have been allocated from a memory resource `r` that compares equal
+   * to `get_upstream_resource()` using `r.allocate(n * sizeof(T))`.
    *
    * @param ptr Pointer to memory to deallocate
    * @param num Number of objects originally allocated
@@ -97,7 +101,7 @@ class polymorphic_allocator {
    */
   void deallocate(value_type* ptr, std::size_t num, cuda_stream_view stream)
   {
-    resource()->deallocate(ptr, num * sizeof(T), stream);
+    get_upstream_resource().deallocate_async(ptr, num * sizeof(T), stream);
   }
 
   /**
@@ -108,24 +112,40 @@ class polymorphic_allocator {
     return mr_;
   }
 
-  /**
-   * @brief Returns pointer to the underlying `rmm::mr::device_memory_resource`.
-   *
-   * @return Pointer to the underlying resource.
-   */
-  [[nodiscard]] device_memory_resource* resource() const noexcept { return mr_; }
-
  private:
-  device_memory_resource* mr_{
+  rmm::device_async_resource_ref mr_{
     get_current_device_resource()};  ///< Underlying resource used for (de)allocation
 };
 
+/**
+ * @brief Compare two `polymorphic_allocator`s for equality.
+ *
+ * Two `polymorphic_allocator`s are equal if their underlying memory resources compare equal.
+ *
+ * @tparam T Type of the first allocator
+ * @tparam U Type of the second allocator
+ * @param lhs The first allocator to compare
+ * @param rhs The second allocator to compare
+ * @return true if the two allocators are equal, false otherwise
+ */
 template <typename T, typename U>
 bool operator==(polymorphic_allocator<T> const& lhs, polymorphic_allocator<U> const& rhs)
 {
-  return lhs.resource()->is_equal(*rhs.resource());
+  return lhs.get_upstream_resource() == rhs.get_upstream_resource();
 }
 
+/**
+ * @brief Compare two `polymorphic_allocator`s for inequality.
+ *
+ * Two `polymorphic_allocator`s are not equal if their underlying memory resources compare not
+ * equal.
+ *
+ * @tparam T Type of the first allocator
+ * @tparam U Type of the second allocator
+ * @param lhs The first allocator to compare
+ * @param rhs The second allocator to compare
+ * @return true if the two allocators are not equal, false otherwise
+ */
 template <typename T, typename U>
 bool operator!=(polymorphic_allocator<T> const& lhs, polymorphic_allocator<U> const& rhs)
 {
@@ -237,12 +257,34 @@ class stream_allocator_adaptor {
   cuda_stream_view stream_;  ///< Stream on which (de)allocations are performed
 };
 
+/**
+ * @brief Compare two `stream_allocator_adaptor`s for equality.
+ *
+ * Two `stream_allocator_adaptor`s are equal if their underlying allocators compare equal.
+ *
+ * @tparam A Type of the first allocator
+ * @tparam O Type of the second allocator
+ * @param lhs The first allocator to compare
+ * @param rhs The second allocator to compare
+ * @return true if the two allocators are equal, false otherwise
+ */
 template <typename A, typename O>
 bool operator==(stream_allocator_adaptor<A> const& lhs, stream_allocator_adaptor<O> const& rhs)
 {
   return lhs.underlying_allocator() == rhs.underlying_allocator();
 }
 
+/**
+ * @brief Compare two `stream_allocator_adaptor`s for inequality.
+ *
+ * Two `stream_allocator_adaptor`s are not equal if their underlying allocators compare not equal.
+ *
+ * @tparam A Type of the first allocator
+ * @tparam O Type of the second allocator
+ * @param lhs The first allocator to compare
+ * @param rhs The second allocator to compare
+ * @return true if the two allocators are not equal, false otherwise
+ */
 template <typename A, typename O>
 bool operator!=(stream_allocator_adaptor<A> const& lhs, stream_allocator_adaptor<O> const& rhs)
 {
@@ -264,5 +306,5 @@ auto make_stream_allocator_adaptor(Allocator const& allocator, cuda_stream_view 
 {
   return stream_allocator_adaptor<Allocator>{allocator, stream};
 }
-
+/** @} */  // end of group
 }  // namespace rmm::mr

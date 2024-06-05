@@ -1,5 +1,5 @@
 # =============================================================================
-# Copyright (c) 2022, NVIDIA CORPORATION.
+# Copyright (c) 2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -14,35 +14,25 @@
 
 cmake_minimum_required(VERSION 3.26.4 FATAL_ERROR)
 
-include(../rapids_config.cmake)
+include(../../rapids_config.cmake)
 
 project(
-  rmm-python
+  librmm-python
   VERSION "${RAPIDS_VERSION}"
   LANGUAGES CXX)
 
-option(FIND_RMM_CPP "Search for existing RMM C++ installations before defaulting to local files"
-       OFF)
+# Check if rmm is already available. If so, it's the user's responsibility to ensure that the CMake
+# package is also available at build time of the Python rmm package.
+find_package(rmm "${RAPIDS_VERSION}")
 
-# If the user requested it we attempt to find RMM.
-if(FIND_RMM_CPP)
-  find_package(rmm "${RAPIDS_VERSION}")
-else()
-  set(rmm_FOUND OFF)
+if(rmm_FOUND)
+  return()
 endif()
 
-if(NOT rmm_FOUND)
-  set(BUILD_TESTS OFF)
-  set(BUILD_BENCHMARKS OFF)
-  set(CUDA_STATIC_RUNTIME ON)
+unset(rmm_FOUND)
 
-  add_subdirectory(../ rmm-cpp EXCLUDE_FROM_ALL)
-endif()
+set(BUILD_TESTS OFF)
+set(BUILD_BENCHMARKS OFF)
+set(CUDA_STATIC_RUNTIME ON)
 
-include(rapids-cython-core)
-rapids_cython_init()
-
-add_compile_definitions("SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
-
-add_subdirectory(rmm/_cuda)
-add_subdirectory(rmm/_lib)
+add_subdirectory(../.. rmm-cpp)

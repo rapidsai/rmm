@@ -36,7 +36,7 @@ doxygen Doxyfile
 popd
 
 rapids-logger "Build Python docs"
-pushd python/docs
+pushd python/rmm/docs
 make dirhtml
 make text
 mkdir -p "${RAPIDS_DOCS_DIR}/rmm/"{html,txt}

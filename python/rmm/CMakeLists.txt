@@ -1,5 +1,5 @@
 # =============================================================================
-# Copyright (c) 2021, NVIDIA CORPORATION.
+# Copyright (c) 2022-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -12,11 +12,22 @@
 # the License.
 # =============================================================================
 
-# Use CPM to find or clone gtest
-function(find_and_configure_gtest)
-  include(${rapids-cmake-dir}/cpm/gtest.cmake)
-  rapids_cpm_gtest()
+cmake_minimum_required(VERSION 3.26.4 FATAL_ERROR)
 
-endfunction()
+include(../../rapids_config.cmake)
 
-find_and_configure_gtest()
+project(
+  rmm-python
+  VERSION "${RAPIDS_VERSION}"
+  LANGUAGES CXX)
+
+find_package(rmm "${RAPIDS_VERSION}" REQUIRED)
+
+include(rapids-cython-core)
+rapids_cython_init()
+
+# pass through logging level to spdlog
+add_compile_definitions("SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
+
+add_subdirectory(rmm/_cuda)
+add_subdirectory(rmm/_lib)

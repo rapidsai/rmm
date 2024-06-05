@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 #pragma once
+
+#include <rmm/detail/nvtx/ranges.hpp>
 
 #include <cuda/memory_resource>
 
@@ -76,6 +78,7 @@ class host_memory_resource {
    */
   void* allocate(std::size_t bytes, std::size_t alignment = alignof(std::max_align_t))
   {
+    RMM_FUNC_RANGE();
     return do_allocate(bytes, alignment);
   }
 
@@ -94,6 +97,7 @@ class host_memory_resource {
    */
   void deallocate(void* ptr, std::size_t bytes, std::size_t alignment = alignof(std::max_align_t))
   {
+    RMM_FUNC_RANGE();
     do_deallocate(ptr, bytes, alignment);
   }
 
