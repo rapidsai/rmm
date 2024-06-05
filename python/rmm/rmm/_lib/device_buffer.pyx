@@ -138,7 +138,7 @@ cdef class DeviceBuffer:
         }
         return intf
 
-    def prefetch(self, device=None, stream=self.stream):
+    def prefetch(self, device=None, stream=None):
         """Prefetch buffer data to the specified device on the specified stream.
 
         Assumes the storage for this DeviceBuffer is CUDA managed memory
@@ -148,9 +148,11 @@ cdef class DeviceBuffer:
         ----------
         device: optional
             The CUDA device to which to prefetch the memory for this buffer.
+            Defaults to the current CUDA device.
         stream : optional
             CUDA stream to use for prefetching. Defaults to self.stream
         """
+        stream = self.stream if stream is None else stream
         if device is None:
             self.c_prefetch(get_current_cuda_device(), stream)
         else:
