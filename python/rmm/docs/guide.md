@@ -99,7 +99,6 @@ destination device ID and stream are optional parameters.
 `DeviceBuffer.prefetch()` is a no-op if the DeviceBuffer is not backed
 by managed memory.
 
-
 ### MemoryResource objects
 
 `MemoryResource` objects are used to configure how device memory allocations are made by
