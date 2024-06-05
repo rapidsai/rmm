@@ -69,11 +69,11 @@ array([1., 2., 3.])
 
 ## Prefetching DeviceBuffers Backed by Managed Memory
 
-CUDA Unified Memory, also known as managed memory, can be allocated using
-rmm.ManagedMemoryResource explicitly, or by calling `rmm.reinitialize` with
+CUDA Unified Memory, also known as managed memory, can be allocated using an
+`rmm.mr.ManagedMemoryResource` explicitly, or by calling `rmm.reinitialize` with
 `managed_memory=True`.
 
-A DeviceBuffer backed by managed memory may be prefetched to a specified
+A `DeviceBuffer` backed by managed memory may be prefetched to a specified
 device:
 
 ```python
@@ -83,8 +83,8 @@ device:
 >>> buf.prefetch()
 ```
 
-The above example prefetches the DeviceBuffer memory to the current CUDA device
-on the stream that the DeviceBuffer last used (e.g. at construction). The
+The above example prefetches the `DeviceBuffer` memory to the current CUDA device
+on the stream that the `DeviceBuffer` last used (e.g. at construction). The
 destination device ID and stream are optional parameters.
 
 ```python
@@ -92,11 +92,11 @@ destination device ID and stream are optional parameters.
 >>> rmm.reinitialize(managed_memory=True)
 >>> from rmm._cuda.stream import Stream
 >>> stream = Stream()
->>> buf = rmm.DeviceBuffer(size=100, stream)
->>> buf.prefetch(device=3, stream) # prefetch to device on stream.
+>>> buf = rmm.DeviceBuffer(size=100, stream=stream)
+>>> buf.prefetch(device=3, stream=stream) # prefetch to device on stream.
 ```
 
-`DeviceBuffer.prefetch()` is a no-op if the DeviceBuffer is not backed
+`DeviceBuffer.prefetch()` is a no-op if the `DeviceBuffer` is not backed
 by managed memory.
 
 ### MemoryResource objects
