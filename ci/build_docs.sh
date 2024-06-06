@@ -38,10 +38,8 @@ popd
 rapids-logger "Build Python docs"
 pushd python/rmm/docs
 make dirhtml
-make text
-mkdir -p "${RAPIDS_DOCS_DIR}/rmm/"{html,txt}
+mkdir -p "${RAPIDS_DOCS_DIR}/rmm/"html
 mv _build/dirhtml/* "${RAPIDS_DOCS_DIR}/rmm/html"
-mv _build/text/* "${RAPIDS_DOCS_DIR}/rmm/txt"
 popd
 
 rapids-upload-docs
