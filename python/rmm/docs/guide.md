@@ -188,8 +188,6 @@ allocator.
 >>> torch.cuda.memory.change_current_allocator(rmm_torch_allocator)
 ```
 
-
-
 ## Memory statistics and profiling
 
 RMM can profile memory usage and track memory statistics by using either of the following:
