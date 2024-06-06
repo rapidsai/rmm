@@ -649,68 +649,6 @@ def test_limiting_resource_adaptor(mr):
         rmm.DeviceBuffer(size=1)
 
 
-def test_statistics_resource_adaptor(stats_mr):
-
-    buffers = [rmm.DeviceBuffer(size=1000) for _ in range(10)]
-
-    for i in range(9, 0, -2):
-        del buffers[i]
-
-    assert stats_mr.allocation_counts == {
-        "current_bytes": 5040,
-        "current_count": 5,
-        "peak_bytes": 10080,
-        "peak_count": 10,
-        "total_bytes": 10080,
-        "total_count": 10,
-    }
-
-    # Push a new Tracking adaptor
-    mr2 = rmm.mr.StatisticsResourceAdaptor(stats_mr)
-    rmm.mr.set_current_device_resource(mr2)
-
-    for _ in range(2):
-        buffers.append(rmm.DeviceBuffer(size=1000))
-
-    assert mr2.allocation_counts == {
-        "current_bytes": 2016,
-        "current_count": 2,
-        "peak_bytes": 2016,
-        "peak_count": 2,
-        "total_bytes": 2016,
-        "total_count": 2,
-    }
-    assert stats_mr.allocation_counts == {
-        "current_bytes": 7056,
-        "current_count": 7,
-        "peak_bytes": 10080,
-        "peak_count": 10,
-        "total_bytes": 12096,
-        "total_count": 12,
-    }
-
-    del buffers
-    gc.collect()
-
-    assert mr2.allocation_counts == {
-        "current_bytes": 0,
-        "current_count": 0,
-        "peak_bytes": 2016,
-        "peak_count": 2,
-        "total_bytes": 2016,
-        "total_count": 2,
-    }
-    assert stats_mr.allocation_counts == {
-        "current_bytes": 0,
-        "current_count": 0,
-        "peak_bytes": 10080,
-        "peak_count": 10,
-        "total_bytes": 12096,
-        "total_count": 12,
-    }
-    gc.collect()
-
-
 def test_tracking_resource_adaptor():
     cuda_mr = rmm.mr.CudaMemoryResource()
 

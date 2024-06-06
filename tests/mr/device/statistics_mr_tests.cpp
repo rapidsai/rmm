@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -232,6 +232,48 @@ TEST(StatisticsTest, NegativeInnerTracking)
 
   EXPECT_EQ(mr.get_allocations_counter().total, 15);
   EXPECT_EQ(inner_mr.get_allocations_counter().total, 5);
+}
+
+TEST(StatisticsTest, Nested)
+{
+  statistics_adaptor mr{rmm::mr::get_current_device_resource()};
+  void* a0 = mr.allocate(ten_MiB);
+  EXPECT_EQ(mr.get_bytes_counter().value, ten_MiB);
+  EXPECT_EQ(mr.get_allocations_counter().value, 1);
+  {
+    auto [bytes, allocs] = mr.push_counters();
+    EXPECT_EQ(bytes.value, ten_MiB);
+    EXPECT_EQ(allocs.value, 1);
+  }
+  EXPECT_EQ(mr.get_bytes_counter().value, 0);
+  EXPECT_EQ(mr.get_allocations_counter().value, 0);
+  void* a1 = mr.allocate(ten_MiB);
+  mr.push_counters();
+  EXPECT_EQ(mr.get_bytes_counter().value, 0);
+  EXPECT_EQ(mr.get_allocations_counter().value, 0);
+  void* a2 = mr.allocate(ten_MiB);
+  mr.deallocate(a2, ten_MiB);
+  EXPECT_EQ(mr.get_bytes_counter().value, 0);
+  EXPECT_EQ(mr.get_bytes_counter().peak, ten_MiB);
+  EXPECT_EQ(mr.get_allocations_counter().value, 0);
+  EXPECT_EQ(mr.get_allocations_counter().peak, 1);
+  {
+    auto [bytes, allocs] = mr.pop_counters();
+    EXPECT_EQ(bytes.value, 0);
+    EXPECT_EQ(bytes.peak, ten_MiB);
+    EXPECT_EQ(allocs.value, 0);
+    EXPECT_EQ(allocs.peak, 1);
+  }
+  mr.deallocate(a0, ten_MiB);
+  {
+    auto [bytes, allocs] = mr.pop_counters();
+    EXPECT_EQ(bytes.value, 0);
+    EXPECT_EQ(bytes.peak, ten_MiB * 2);
+    EXPECT_EQ(allocs.value, 0);
+    EXPECT_EQ(allocs.peak, 2);
+  }
+  mr.deallocate(a1, ten_MiB);
+  EXPECT_THROW(mr.pop_counters(), std::out_of_range);
 }
 
 }  // namespace
