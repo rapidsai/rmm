@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#include "driver_types.h"
+#include "rmm/cuda_device.hpp"
+
 #include <rmm/cuda_stream.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/device_scalar.hpp>
@@ -42,6 +45,21 @@ struct PrefetchTest : public ::testing::Test {
     std::uniform_int_distribution<std::size_t> distribution(range_min, range_max);
     size = distribution(generator);
   }
+
+  // Test that the memory range was last prefetched to the specified device
+  void expect_prefetched(void const* ptr, std::size_t size, rmm::cuda_device_id device)
+  {
+    if constexpr (std::is_same_v<MemoryResourceType, rmm::mr::managed_memory_resource>) {
+      int prefetch_location{0};
+      RMM_CUDA_TRY(
+        cudaMemRangeGetAttribute(&prefetch_location,
+                                 4,
+                                 cudaMemRangeAttribute::cudaMemRangeAttributeLastPrefetchLocation,
+                                 ptr,
+                                 size));
+      EXPECT_EQ(prefetch_location, device.value());
+    }
+  }
 };
 
 using resources = ::testing::Types<rmm::mr::cuda_memory_resource, rmm::mr::managed_memory_resource>;
@@ -54,22 +72,35 @@ TYPED_TEST_CASE(PrefetchTest, resources);
 TYPED_TEST(PrefetchTest, PointerAndSize)
 {
   rmm::device_buffer buff(this->size, this->stream, &this->mr);
+  // verify not prefetched before prefetching
+  this->expect_prefetched(buff.data(), buff.size(), rmm::cuda_device_id(cudaInvalidDeviceId));
   rmm::prefetch(buff.data(), buff.size(), rmm::get_current_cuda_device(), this->stream);
+  // verify data range has been prefetched
+  this->expect_prefetched(buff.data(), buff.size(), rmm::get_current_cuda_device());
 }
 
 TYPED_TEST(PrefetchTest, DeviceUVector)
 {
-  rmm::device_uvector<int> uvec(this->size, this->stream, &this->mr);
-  rmm::prefetch<int>(uvec, rmm::get_current_cuda_device(), this->stream);
+  {
+    rmm::device_uvector<int> uvec(this->size, this->stream, &this->mr);
+    rmm::prefetch<int>(uvec, rmm::get_current_cuda_device(), this->stream);
+    this->expect_prefetched(uvec.data(), uvec.size() * sizeof(int), rmm::get_current_cuda_device());
+  }
 
   // test iterator range of part of the vector (implicitly constructs a span)
-  rmm::prefetch<int>({uvec.begin(), std::next(uvec.begin(), this->size / 2)},
-                     rmm::get_current_cuda_device(),
-                     this->stream);
+  {
+    rmm::device_uvector<int> uvec(this->size, this->stream, &this->mr);
+    rmm::prefetch<int>({uvec.begin(), std::next(uvec.begin(), this->size / 2)},  // span
+                       rmm::get_current_cuda_device(),
+                       this->stream);
+    this->expect_prefetched(
+      uvec.data(), this->size / 2 * sizeof(int), rmm::get_current_cuda_device());
+  }
 }
 
 TYPED_TEST(PrefetchTest, DeviceScalar)
 {
   rmm::device_scalar<int> scalar(this->stream, &this->mr);
   rmm::prefetch<int>(scalar, rmm::get_current_cuda_device(), this->stream);
+  this->expect_prefetched(scalar.data(), sizeof(int), rmm::get_current_cuda_device());
 }
