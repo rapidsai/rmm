@@ -27,10 +27,10 @@ There are two ways to use RMM in Python code:
 RMM provides a `MemoryResource` abstraction to control _how_ device
 memory is allocated in both the above uses.
 
-### DeviceBuffers
+### `DeviceBuffer` Objects
 
-A DeviceBuffer represents an **untyped, uninitialized device memory
-allocation**.  DeviceBuffers can be created by providing the
+A `DeviceBuffer` represents an **untyped, uninitialized device memory
+allocation**.  `DeviceBuffer`s can be created by providing the
 size of the allocation in bytes:
 
 ```python
@@ -48,7 +48,7 @@ can be accessed via the `.size` and `.ptr` attributes respectively:
 140202544726016
 ```
 
-DeviceBuffers can also be created by copying data from host memory:
+`DeviceBuffer`s can also be created by copying data from host memory:
 
 ```python
 >>> import rmm
@@ -59,22 +59,25 @@ DeviceBuffers can also be created by copying data from host memory:
 24
 ```
 
-Conversely, the data underlying a DeviceBuffer can be copied to the
-host:
+Conversely, the data underlying a `DeviceBuffer` can be copied to the host:
 
 ```python
 >>> np.frombuffer(buf.tobytes())
 array([1., 2., 3.])
 ```
 
-## Prefetching DeviceBuffers Backed by Managed Memory
+#### Prefetching a `DeviceBuffer`
 
-CUDA Unified Memory, also known as managed memory, can be allocated using an
-`rmm.mr.ManagedMemoryResource` explicitly, or by calling `rmm.reinitialize` with
-`managed_memory=True`.
+[CUDA Unified Memory](
+  https://developer.nvidia.com/blog/unified-memory-cuda-beginners/
+), also known as managed memory, can be allocated using an
+`rmm.mr.ManagedMemoryResource` explicitly, or by calling `rmm.reinitialize`
+with `managed_memory=True`.
 
-A `DeviceBuffer` backed by managed memory may be prefetched to a specified
-device:
+A `DeviceBuffer` backed by managed memory or other
+migratable memory (such as
+[HMM/ATS](https://developer.nvidia.com/blog/simplifying-gpu-application-development-with-heterogeneous-memory-management/)
+memory) may be prefetched to a specified device, for example to reduce or eliminate page faults.
 
 ```python
 >>> import rmm
@@ -97,9 +100,9 @@ destination device ID and stream are optional parameters.
 ```
 
 `DeviceBuffer.prefetch()` is a no-op if the `DeviceBuffer` is not backed
-by managed memory.
+by migratable memory.
 
-### MemoryResource objects
+### `MemoryResource` objects
 
 `MemoryResource` objects are used to configure how device memory allocations are made by
 RMM.
@@ -154,13 +157,13 @@ Similarly, to use a pool of managed memory:
 >>> rmm.mr.set_current_device_resource(pool)
 ```
 
-Other MemoryResources include:
+Other `MemoryResource`s include:
 
 * `FixedSizeMemoryResource` for allocating fixed blocks of memory
 * `BinningMemoryResource` for allocating blocks within specified "bin" sizes from different memory
 resources
 
-MemoryResources are highly configurable and can be composed together in different ways.
+`MemoryResource`s are highly configurable and can be composed together in different ways.
 See `help(rmm.mr)` for more information.
 
 ## Using RMM with third-party libraries
