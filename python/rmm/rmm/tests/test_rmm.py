@@ -283,6 +283,15 @@ def test_rmm_device_buffer_pickle_roundtrip(hb):
     hb3 = db3.tobytes()
     assert hb3 == hb
 
+import cuda.cudart as cudart
+
+def assert_prefetched(buffer, device_id):
+    err, dev = cudart.cudaMemRangeGetAttribute(4, 
+                                          cudart.cudaMemRangeAttribute.cudaMemRangeAttributeLastPrefetchLocation,
+                                          buffer.ptr,
+                                          buffer.size)
+    assert err == cudart.cudaError_t.cudaSuccess
+    assert dev == device_id
 
 @pytest.mark.parametrize(
     "managed, pool", list(product([False, True], [False, True]))
@@ -290,7 +299,13 @@ def test_rmm_device_buffer_pickle_roundtrip(hb):
 def test_rmm_device_buffer_prefetch(pool, managed):
     rmm.reinitialize(pool_allocator=pool, managed_memory=managed)
     db = rmm.DeviceBuffer.to_device(np.zeros(256, dtype="u1"))
+    if managed:
+        assert_prefetched(db, cudart.cudaInvalidDeviceId)
     db.prefetch()  # just test that it doesn't throw
+    if managed:
+        err, device = cudart.cudaGetDevice()
+        assert err == cudart.cudaError_t.cudaSuccess
+        assert_prefetched(db, device)
 
 
 @pytest.mark.parametrize("stream", [cuda.default_stream(), cuda.stream()])
