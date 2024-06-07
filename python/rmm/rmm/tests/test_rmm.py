@@ -20,6 +20,7 @@ import pickle
 import warnings
 from itertools import product
 
+import cuda.cudart as cudart
 import numpy as np
 import pytest
 from numba import cuda
@@ -283,15 +284,17 @@ def test_rmm_device_buffer_pickle_roundtrip(hb):
     hb3 = db3.tobytes()
     assert hb3 == hb
 
-import cuda.cudart as cudart
 
 def assert_prefetched(buffer, device_id):
-    err, dev = cudart.cudaMemRangeGetAttribute(4, 
-                                          cudart.cudaMemRangeAttribute.cudaMemRangeAttributeLastPrefetchLocation,
-                                          buffer.ptr,
-                                          buffer.size)
+    err, dev = cudart.cudaMemRangeGetAttribute(
+        4,
+        cudart.cudaMemRangeAttribute.cudaMemRangeAttributeLastPrefetchLocation,
+        buffer.ptr,
+        buffer.size,
+    )
     assert err == cudart.cudaError_t.cudaSuccess
     assert dev == device_id
+
 
 @pytest.mark.parametrize(
     "managed, pool", list(product([False, True], [False, True]))
