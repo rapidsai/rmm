@@ -33,10 +33,10 @@ cdef extern from "rmm/mr/device/per_device_resource.hpp" namespace "rmm" nogil:
     cdef cuda_device_id get_current_cuda_device()
 
 cdef extern from "rmm/prefetch.hpp" namespace "rmm" nogil:
-    cdef void prefetch[T](const T* ptr,
-                          size_t bytes,
-                          cuda_device_id device,
-                          cuda_stream_view stream) except +
+    cdef void prefetch(const void* ptr,
+                       size_t bytes,
+                       cuda_device_id device,
+                       cuda_stream_view stream) except +
 
 cdef extern from "rmm/device_buffer.hpp" namespace "rmm" nogil:
     cdef cppclass device_buffer:
