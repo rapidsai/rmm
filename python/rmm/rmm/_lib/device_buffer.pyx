@@ -152,11 +152,15 @@ cdef class DeviceBuffer:
         stream : optional
             CUDA stream to use for prefetching. Defaults to self.stream
         """
-        stream = self.stream if stream is None else stream
-        if device is None:
-            self.c_prefetch(get_current_cuda_device(), stream)
-        else:
-            self.c_prefetch(cuda_device_id(device), stream)
+        cdef cuda_device_id dev = (get_current_cuda_device()
+                                   if device is None
+                                   else cuda_device_id(device))
+        cdef Stream strm = self.stream if stream is None else stream
+        with nogil:
+            prefetch(self.c_obj.get()[0].data(),
+                     self.c_obj.get()[0].size(),
+                     dev,
+                     strm.view())
 
     def copy(self):
         """Returns a copy of DeviceBuffer.
@@ -364,14 +368,6 @@ cdef class DeviceBuffer:
 
     cdef void* c_data(self) except *:
         return self.c_obj.get()[0].data()
-
-    cdef void c_prefetch(self,
-                         cuda_device_id device,
-                         Stream stream=DEFAULT_STREAM) except *:
-        prefetch(self.c_obj.get()[0].data(),
-                 self.c_obj.get()[0].size(),
-                 device,
-                 stream.view())
 
     cdef device_buffer c_release(self) except *:
         """

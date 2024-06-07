@@ -26,9 +26,8 @@ from rmm._lib.memory_resource cimport (
 cdef extern from "rmm/mr/device/per_device_resource.hpp" namespace "rmm" nogil:
     cdef cppclass cuda_device_id:
         ctypedef int value_type
-
+        cuda_device_id()
         cuda_device_id(value_type id)
-
         value_type value()
 
     cdef cuda_device_id get_current_cuda_device()
@@ -98,7 +97,6 @@ cdef class DeviceBuffer:
     cpdef void resize(self, size_t new_size, Stream stream=*) except *
     cpdef size_t capacity(self) except *
     cdef void* c_data(self) except *
-    cdef void c_prefetch(self, cuda_device_id device, Stream stream=*) except *
 
     cdef device_buffer c_release(self) except *
 
