@@ -146,7 +146,7 @@ cdef class DeviceBuffer:
 
         Parameters
         ----------
-        device: optional
+        device : optional
             The CUDA device to which to prefetch the memory for this buffer.
             Defaults to the current CUDA device.
         stream : optional
