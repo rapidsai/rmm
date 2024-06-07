@@ -37,14 +37,15 @@ namespace rmm {
  *
  * @throw rmm::cuda_error if the prefetch fails.
  *
- * @tparam T The type of the elements pointed to by `ptr`.
  * @param ptr The pointer to the memory to prefetch
  * @param size The number of bytes to prefetch
  * @param device The device to prefetch to
  * @param stream The stream to use for the prefetch
  */
-template <typename T>
-void prefetch(T* ptr, std::size_t size, rmm::cuda_device_id device, rmm::cuda_stream_view stream)
+void prefetch(void const* ptr,
+              std::size_t size,
+              rmm::cuda_device_id device,
+              rmm::cuda_stream_view stream)
 {
   auto result = cudaMemPrefetchAsync(ptr, size, device.value(), stream.value());
   // InvalidValue error is raised when non-managed memory is passed to cudaMemPrefetchAsync
@@ -64,7 +65,9 @@ void prefetch(T* ptr, std::size_t size, rmm::cuda_device_id device, rmm::cuda_st
  * @param stream The stream to use for the prefetch
  */
 template <typename T>
-void prefetch(cuda::std::span<T> data, rmm::cuda_device_id device, rmm::cuda_stream_view stream)
+void prefetch(cuda::std::span<T const> data,
+              rmm::cuda_device_id device,
+              rmm::cuda_stream_view stream)
 {
   prefetch(data.data(), data.size_bytes(), device, stream);
 }
