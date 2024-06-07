@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2020-2023, NVIDIA CORPORATION.
+# Copyright (c) 2020-2024, NVIDIA CORPORATION.
 
 set -euo pipefail
 
@@ -38,10 +38,8 @@ popd
 rapids-logger "Build Python docs"
 pushd python/rmm/docs
 make dirhtml
-make text
-mkdir -p "${RAPIDS_DOCS_DIR}/rmm/"{html,txt}
+mkdir -p "${RAPIDS_DOCS_DIR}/rmm/html"
 mv _build/dirhtml/* "${RAPIDS_DOCS_DIR}/rmm/html"
-mv _build/text/* "${RAPIDS_DOCS_DIR}/rmm/txt"
 popd
 
 rapids-upload-docs
