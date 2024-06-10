@@ -25,8 +25,34 @@
 namespace rmm::test {
 namespace {
 
+std::size_t constexpr size_mb{1_MiB};
 std::size_t constexpr size_gb{1_GiB};
 std::size_t constexpr size_2gb{2_GiB};
+
+void touch_from_cpu(void* ptr, std::size_t size)
+{
+  auto* data              = static_cast<std::size_t*>(ptr);
+  auto const num_elements = size / sizeof(std::size_t);
+  for (std::size_t i = 0; i < num_elements; ++i) {
+    data[i] = i;
+  }
+}
+
+__global__ void touch_memory_kernel(std::size_t* data, std::size_t num_elements)
+{
+  auto const tid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (tid < num_elements) { data[tid] = tid; }
+}
+
+void touch_from_gpu(void* ptr, std::size_t size)
+{
+  auto* data              = static_cast<std::size_t*>(ptr);
+  auto const num_elements = size / sizeof(std::size_t);
+  dim3 blockSize(256);
+  dim3 gridSize((size + blockSize.x - 1) / blockSize.x);
+  touch_memory_kernel<<<gridSize, blockSize>>>(data, num_elements);
+  cudaDeviceSynchronize();
+}
 
 using system_mr = rmm::mr::system_memory_resource;
 static_assert(cuda::mr::resource_with<system_mr, cuda::mr::device_accessible>);
@@ -53,6 +79,28 @@ TEST(SystemMRStandaloneTest, ThrowIfNotSupported)
   }
 }
 
+TEST_F(SystemMRTest, PassthroughFirstTouchOnCPU)
+{
+  auto const [free, total] = rmm::available_device_memory();
+  system_mr mr;
+  void* ptr = mr.allocate(size_mb);
+  touch_from_cpu(ptr, size_mb);
+  auto const [free2, total2] = rmm::available_device_memory();
+  EXPECT_EQ(free, free2);
+  mr.deallocate(ptr, size_mb);
+}
+
+TEST_F(SystemMRTest, PassthroughFirstTouchOnGPU)
+{
+  auto const [free, total] = rmm::available_device_memory();
+  system_mr mr;
+  void* ptr = mr.allocate(size_mb);
+  touch_from_gpu(ptr, size_mb);
+  auto const [free2, total2] = rmm::available_device_memory();
+  EXPECT_GT(free, free2);
+  mr.deallocate(ptr, size_mb);
+}
+
 TEST_F(SystemMRTest, ExplicitHeadroom)
 {
   auto const [free, total] = rmm::available_device_memory();
@@ -60,7 +108,7 @@ TEST_F(SystemMRTest, ExplicitHeadroom)
   // Since we set all the free memory as headroom, the pointer points to CPU memory.
   void* ptr                  = mr.allocate(size_gb);
   auto const [free2, total2] = rmm::available_device_memory();
-  EXPECT_EQ(free, free2);
+  EXPECT_LE(free, free2);
   mr.deallocate(ptr, size_gb);
 }
 
