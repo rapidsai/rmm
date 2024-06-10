@@ -27,7 +27,7 @@ using cuda_async_mr = rmm::mr::cuda_async_memory_resource;
 static_assert(cuda::mr::resource_with<cuda_async_mr, cuda::mr::device_accessible>);
 static_assert(cuda::mr::async_resource_with<cuda_async_mr, cuda::mr::device_accessible>);
 
-class AsyncMRTest : public ::testing::Test {
+class SystemMRTest : public ::testing::Test {
  protected:
   void SetUp() override
   {
@@ -38,7 +38,7 @@ class AsyncMRTest : public ::testing::Test {
   }
 };
 
-TEST_F(AsyncMRTest, ThrowIfNotSupported)
+TEST_F(SystemMRTest, ThrowIfNotSupported)
 {
   auto construct_mr = []() { cuda_async_mr mr; };
 #ifndef RMM_CUDA_MALLOC_ASYNC_SUPPORT
@@ -49,7 +49,7 @@ TEST_F(AsyncMRTest, ThrowIfNotSupported)
 }
 
 #if defined(RMM_CUDA_MALLOC_ASYNC_SUPPORT)
-TEST_F(AsyncMRTest, ExplicitInitialPoolSize)
+TEST_F(SystemMRTest, ExplicitInitialPoolSize)
 {
   const auto pool_init_size{100};
   cuda_async_mr mr{pool_init_size};
@@ -58,7 +58,7 @@ TEST_F(AsyncMRTest, ExplicitInitialPoolSize)
   RMM_CUDA_TRY(cudaDeviceSynchronize());
 }
 
-TEST_F(AsyncMRTest, ExplicitReleaseThreshold)
+TEST_F(SystemMRTest, ExplicitReleaseThreshold)
 {
   const auto pool_init_size{100};
   const auto pool_release_threshold{1000};
@@ -68,7 +68,7 @@ TEST_F(AsyncMRTest, ExplicitReleaseThreshold)
   RMM_CUDA_TRY(cudaDeviceSynchronize());
 }
 
-TEST_F(AsyncMRTest, DifferentPoolsUnequal)
+TEST_F(SystemMRTest, DifferentPoolsUnequal)
 {
   const auto pool_init_size{100};
   const auto pool_release_threshold{1000};
