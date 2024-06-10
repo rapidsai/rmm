@@ -52,7 +52,9 @@ class system_memory_resource final : public device_memory_resource {
   explicit system_memory_resource(std::optional<std::size_t> headroom_size  = std::nullopt,
                                   std::optional<std::size_t> threshold_size = std::nullopt)
   {
-    headroom_size_  = rmm::align_down(headroom_size.value_or(0), rmm::CUDA_ALLOCATION_ALIGNMENT);
+    RMM_EXPECTS(rmm::mr::detail::sam::is_supported(),
+                "System memory allocator is not supported with this hardware/software version.");
+    headroom_size_  = rmm::align_up(headroom_size.value_or(0), rmm::CUDA_ALLOCATION_ALIGNMENT);
     threshold_size_ = threshold_size.value_or(std::numeric_limits<std::size_t>::max());
   }
 

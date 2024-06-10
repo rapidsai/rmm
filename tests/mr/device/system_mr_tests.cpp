@@ -37,16 +37,20 @@ class SystemMRTest : public ::testing::Test {
   void SetUp() override
   {
     if (!rmm::mr::detail::sam::is_supported()) {
-      GTEST_SKIP() << "Skipping tests since system memory allocator not supported with this CUDA "
-                   << "driver/runtime version";
+      GTEST_SKIP() << "Skipping tests since system memory allocator not supported with this "
+                      "hardware/software version";
     }
   }
 };
 
-TEST_F(SystemMRTest, NoThrowIfSupported)
+TEST(SystemMRStandaloneTest, ThrowIfNotSupported)
 {
   auto construct_mr = []() { system_mr mr; };
-  EXPECT_NO_THROW(construct_mr());
+  if (rmm::mr::detail::sam::is_supported()) {
+    EXPECT_NO_THROW(construct_mr());
+  } else {
+    EXPECT_THROW(construct_mr(), rmm::logic_error);
+  }
 }
 
 TEST_F(SystemMRTest, ExplicitHeadroom)
