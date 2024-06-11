@@ -1,3 +1,55 @@
+# rmm 24.06.00 (5 Jun 2024)
+
+## 🚨 Breaking Changes
+
+- Refactor polymorphic allocator to use device_async_resource_ref ([#1555](https://github.com/rapidsai/rmm/pull/1555)) [@harrism](https://github.com/harrism)
+- Remove deprecated functionality ([#1537](https://github.com/rapidsai/rmm/pull/1537)) [@harrism](https://github.com/harrism)
+- Remove deprecated cuda_async_memory_resource constructor that takes thrust::optional parameters ([#1535](https://github.com/rapidsai/rmm/pull/1535)) [@harrism](https://github.com/harrism)
+- Remove deprecated supports_streams and get_mem_info methods. ([#1519](https://github.com/rapidsai/rmm/pull/1519)) [@harrism](https://github.com/harrism)
+
+## 🐛 Bug Fixes
+
+- rmm needs to link to nvtx3::nvtx3-cpp to support installed nvtx3 ([#1569](https://github.com/rapidsai/rmm/pull/1569)) [@robertmaynard](https://github.com/robertmaynard)
+- Make sure rmm wheel dependency on librmm is updated [skip ci] ([#1565](https://github.com/rapidsai/rmm/pull/1565)) [@raydouglass](https://github.com/raydouglass)
+- Don&#39;t ignore GCC-specific warning under Clang ([#1557](https://github.com/rapidsai/rmm/pull/1557)) [@aaronmondal](https://github.com/aaronmondal)
+- Add publish jobs for C++ wheels ([#1554](https://github.com/rapidsai/rmm/pull/1554)) [@vyasr](https://github.com/vyasr)
+- Explicitly use the current device resource in DeviceBuffer ([#1514](https://github.com/rapidsai/rmm/pull/1514)) [@wence-](https://github.com/wence-)
+
+## 📖 Documentation
+
+- Allow specifying mr in DeviceBuffer construction, and document ownership requirements in Python/C++ interfacing ([#1552](https://github.com/rapidsai/rmm/pull/1552)) [@wence-](https://github.com/wence-)
+- Fix Python install instruction ([#1547](https://github.com/rapidsai/rmm/pull/1547)) [@wence-](https://github.com/wence-)
+- Update multi-gpu discussion for device_buffer and device_vector dtors ([#1524](https://github.com/rapidsai/rmm/pull/1524)) [@wence-](https://github.com/wence-)
+- Fix ordering / heading levels in README.md and python example in guide.md ([#1513](https://github.com/rapidsai/rmm/pull/1513)) [@harrism](https://github.com/harrism)
+
+## 🚀 New Features
+
+- Add NVTX support and RMM_FUNC_RANGE() macro ([#1558](https://github.com/rapidsai/rmm/pull/1558)) [@harrism](https://github.com/harrism)
+- Always use a static gtest ([#1532](https://github.com/rapidsai/rmm/pull/1532)) [@robertmaynard](https://github.com/robertmaynard)
+- Build C++ wheel ([#1529](https://github.com/rapidsai/rmm/pull/1529)) [@vyasr](https://github.com/vyasr)
+- Remove deprecated supports_streams and get_mem_info methods. ([#1519](https://github.com/rapidsai/rmm/pull/1519)) [@harrism](https://github.com/harrism)
+
+## 🛠️ Improvements
+
+- update copyright dates ([#1564](https://github.com/rapidsai/rmm/pull/1564)) [@jameslamb](https://github.com/jameslamb)
+- Overhaul ops-codeowners ([#1561](https://github.com/rapidsai/rmm/pull/1561)) [@raydouglass](https://github.com/raydouglass)
+- Adding support for cupy.cuda.stream.ExternalStream ([#1559](https://github.com/rapidsai/rmm/pull/1559)) [@lilohuang](https://github.com/lilohuang)
+- Refactor polymorphic allocator to use device_async_resource_ref ([#1555](https://github.com/rapidsai/rmm/pull/1555)) [@harrism](https://github.com/harrism)
+- add RAPIDS copyright pre-commit hook ([#1553](https://github.com/rapidsai/rmm/pull/1553)) [@jameslamb](https://github.com/jameslamb)
+- Enable warnings as errors for Python tests ([#1551](https://github.com/rapidsai/rmm/pull/1551)) [@mroeschke](https://github.com/mroeschke)
+- Remove header existence tests. ([#1550](https://github.com/rapidsai/rmm/pull/1550)) [@bdice](https://github.com/bdice)
+- Only use functions in the limited API ([#1545](https://github.com/rapidsai/rmm/pull/1545)) [@vyasr](https://github.com/vyasr)
+- Migrate to `{{ stdlib(&quot;c&quot;) }}` ([#1543](https://github.com/rapidsai/rmm/pull/1543)) [@hcho3](https://github.com/hcho3)
+- Fix `cuda11.8` nvcc dependency ([#1542](https://github.com/rapidsai/rmm/pull/1542)) [@trxcllnt](https://github.com/trxcllnt)
+- add --rm and --name to devcontainer run args ([#1539](https://github.com/rapidsai/rmm/pull/1539)) [@trxcllnt](https://github.com/trxcllnt)
+- Remove deprecated functionality ([#1537](https://github.com/rapidsai/rmm/pull/1537)) [@harrism](https://github.com/harrism)
+- Remove deprecated cuda_async_memory_resource constructor that takes thrust::optional parameters ([#1535](https://github.com/rapidsai/rmm/pull/1535)) [@harrism](https://github.com/harrism)
+- Make thrust_allocator deallocate safe in multi-device setting ([#1533](https://github.com/rapidsai/rmm/pull/1533)) [@wence-](https://github.com/wence-)
+- Move rmm Python package to subdirectory ([#1526](https://github.com/rapidsai/rmm/pull/1526)) [@vyasr](https://github.com/vyasr)
+- Remove a file not being used ([#1521](https://github.com/rapidsai/rmm/pull/1521)) [@galipremsagar](https://github.com/galipremsagar)
+- Remove unneeded `update-version.sh` update ([#1520](https://github.com/rapidsai/rmm/pull/1520)) [@AyodeAwe](https://github.com/AyodeAwe)
+- Enable all tests for `arm` arch ([#1510](https://github.com/rapidsai/rmm/pull/1510)) [@galipremsagar](https://github.com/galipremsagar)
+
 # RMM 24.04.00 (10 Apr 2024)
 
 ## 🚨 Breaking Changes

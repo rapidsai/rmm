@@ -37,3 +37,12 @@ Memory Allocators
    :members:
    :undoc-members:
    :show-inheritance:
+
+Memory Statistics
+-----------------
+
+.. automodule:: rmm.statistics
+   :members:
+   :inherited-members:
+   :undoc-members:
+   :show-inheritance:
