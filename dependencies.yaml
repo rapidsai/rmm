@@ -294,10 +294,12 @@ dependencies:
         packages:
           - pytest
           - pytest-cov
-    # Needed for numba in tests
     specific:
       - output_types: conda
         matrices:
+          # Needed for numba in tests on CUDA 12+ since Conda CI environments
+          # do not have a CUDA compiler preinstalled. Wheel tests are run on
+          # images that supply a CUDA compiler.
           - matrix:
               cuda: "12.*"
             packages:
