@@ -17,7 +17,6 @@
 #pragma once
 
 #include <rmm/cuda_device.hpp>
-#include <rmm/detail/thrust_namespace.h>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
