@@ -26,31 +26,28 @@ namespace rmm::test {
 namespace {
 
 std::size_t constexpr size_mb{1_MiB};
+std::size_t constexpr size_2mb{2_MiB};
 std::size_t constexpr size_gb{1_GiB};
-std::size_t constexpr size_2gb{2_GiB};
 
-void touch_from_cpu(void* ptr, std::size_t size)
+void touch_on_cpu(void* ptr, std::size_t size)
 {
-  auto* data              = static_cast<std::size_t*>(ptr);
-  auto const num_elements = size / sizeof(std::size_t);
-  for (std::size_t i = 0; i < num_elements; ++i) {
-    data[i] = i;
+  auto* data = static_cast<char*>(ptr);
+  for (std::size_t i = 0; i < size; ++i) {
+    data[i] = static_cast<char>(i);
   }
 }
 
-__global__ void touch_memory_kernel(std::size_t* data, std::size_t num_elements)
+__global__ void touch_memory_kernel(char* data, std::size_t size)
 {
   auto const tid = blockIdx.x * blockDim.x + threadIdx.x;
-  if (tid < num_elements) { data[tid] = tid; }
+  if (tid < size) { data[tid] = static_cast<char>(tid); }
 }
 
-void touch_from_gpu(void* ptr, std::size_t size)
+void touch_on_gpu(void* ptr, std::size_t size)
 {
-  auto* data              = static_cast<std::size_t*>(ptr);
-  auto const num_elements = size / sizeof(std::size_t);
   dim3 blockSize(256);
   dim3 gridSize((size + blockSize.x - 1) / blockSize.x);
-  touch_memory_kernel<<<gridSize, blockSize>>>(data, num_elements);
+  touch_memory_kernel<<<gridSize, blockSize>>>(static_cast<char*>(ptr), size);
   cudaDeviceSynchronize();
 }
 
@@ -81,53 +78,64 @@ TEST(SystemMRStandaloneTest, ThrowIfNotSupported)
 
 TEST_F(SystemMRTest, PassthroughFirstTouchOnCPU)
 {
-  auto const [free, total] = rmm::available_device_memory();
+  auto const free = rmm::available_device_memory().first;
   system_mr mr;
   void* ptr = mr.allocate(size_mb);
-  touch_from_cpu(ptr, size_mb);
-  auto const [free2, total2] = rmm::available_device_memory();
+  touch_on_cpu(ptr, size_mb);
+  auto const free2 = rmm::available_device_memory().first;
   EXPECT_EQ(free, free2);
   mr.deallocate(ptr, size_mb);
 }
 
 TEST_F(SystemMRTest, PassthroughFirstTouchOnGPU)
 {
-  auto const [free, total] = rmm::available_device_memory();
+  auto const free = rmm::available_device_memory().first;
   system_mr mr;
   void* ptr = mr.allocate(size_mb);
-  touch_from_gpu(ptr, size_mb);
-  auto const [free2, total2] = rmm::available_device_memory();
-  EXPECT_GT(free, free2);
+  touch_on_gpu(ptr, size_mb);
+  auto const free2 = rmm::available_device_memory().first;
+  EXPECT_LT(free2, free);
   mr.deallocate(ptr, size_mb);
 }
 
 TEST_F(SystemMRTest, ExplicitHeadroom)
 {
-  auto const [free, total] = rmm::available_device_memory();
-  system_mr mr{free, 0};
-  // Since we set all the free memory as headroom, the pointer points to CPU memory.
-  void* ptr                  = mr.allocate(size_gb);
-  auto const [free2, total2] = rmm::available_device_memory();
-  EXPECT_LE(free, free2);
+  auto const free = rmm::available_device_memory().first;
+  // All the free GPU memory is set as headroom, so allocation is only on the CPU.
+  system_mr mr{free};
+  void* ptr = mr.allocate(size_mb);
+  touch_on_gpu(ptr, size_mb);
+  auto const free2 = rmm::available_device_memory().first;
+  EXPECT_GE(free2, free);
+  mr.deallocate(ptr, size_mb);
+}
+
+TEST_F(SystemMRTest, BelowThreshold)
+{
+  auto const free = rmm::available_device_memory().first;
+  system_mr mr{size_gb, size_gb};
+  void* ptr = mr.allocate(size_mb);
+  touch_on_cpu(ptr, size_mb);
+  auto const free2 = rmm::available_device_memory().first;
+  EXPECT_GE(free2, free);
   mr.deallocate(ptr, size_gb);
 }
 
 TEST_F(SystemMRTest, AboveThreshold)
 {
-  auto const [free, total] = rmm::available_device_memory();
-  system_mr mr{free, size_gb};
-  // Since we set all the free memory as headroom, and the allocation size is above the threshold,
-  // the pointer points to CPU memory.
-  void* ptr                  = mr.allocate(size_2gb);
-  auto const [free2, total2] = rmm::available_device_memory();
-  EXPECT_EQ(free, free2);
-  mr.deallocate(ptr, size_gb);
+  auto const free = rmm::available_device_memory().first;
+  system_mr mr{size_mb, size_mb};
+  void* ptr = mr.allocate(size_2mb);
+  touch_on_gpu(ptr, size_2mb);
+  auto const free2 = rmm::available_device_memory().first;
+  EXPECT_LE(free2, free);
+  mr.deallocate(ptr, size_2mb);
 }
 
 TEST_F(SystemMRTest, DifferentParametersUnequal)
 {
-  system_mr mr1{size_gb, 0};
-  system_mr mr2{size_2gb, 0};
+  system_mr mr1{size_mb, 0};
+  system_mr mr2{size_gb, 0};
   EXPECT_FALSE(mr1.is_equal(mr2));
 }
 }  // namespace
