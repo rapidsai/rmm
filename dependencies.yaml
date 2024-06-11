@@ -300,6 +300,16 @@ dependencies:
         matrices:
           - matrix:
               arch: x86_64
+              cuda: "11.4"
+            packages:
+              - nvcc_linux-64=11.4
+          - matrix:
+              arch: aarch64
+              cuda: "11.4"
+            packages:
+              - nvcc_linux-aarch64=11.4
+          - matrix:
+              arch: x86_64
               cuda: "11.8"
             packages:
               - nvcc_linux-64=11.8
