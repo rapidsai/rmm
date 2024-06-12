@@ -1,5 +1,5 @@
 # =============================================================================
-# Copyright (c) 2018-2023, NVIDIA CORPORATION.
+# Copyright (c) 2018-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -174,11 +174,14 @@ ConfigureTest(DEVICE_BUFFER_TEST device_buffer_tests.cu)
 # device scalar tests
 ConfigureTest(DEVICE_SCALAR_TEST device_scalar_tests.cpp)
 
-# logger tests
-ConfigureTest(LOGGER_TEST logger_tests.cpp)
-
 # uvector tests
 ConfigureTest(DEVICE_UVECTOR_TEST device_uvector_tests.cpp GPUS 1 PERCENT 60)
+
+# prefetch tests
+ConfigureTest(PREFETCH_TEST prefetch_tests.cpp)
+
+# logger tests
+ConfigureTest(LOGGER_TEST logger_tests.cpp)
 
 # arena MR tests
 ConfigureTest(ARENA_MR_TEST mr/device/arena_mr_tests.cpp GPUS 1 PERCENT 60)
