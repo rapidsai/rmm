@@ -101,6 +101,10 @@ TYPED_TEST(PrefetchTest, DeviceUVector)
 TYPED_TEST(PrefetchTest, DeviceScalar)
 {
   rmm::device_scalar<int> scalar(this->stream, &this->mr);
-  rmm::prefetch<int>(scalar, rmm::get_current_cuda_device(), this->stream);
+  // TODO once we update to a version of CCCL with https://github.com/NVIDIA/cccl/pull/1836,
+  // remove this explicit conversion to span
+  rmm::prefetch<int>(cuda::std::span<int const>{scalar.data(), scalar.size()},
+                     rmm::get_current_cuda_device(),
+                     this->stream);
   this->expect_prefetched(scalar.data(), sizeof(int), rmm::get_current_cuda_device());
 }
