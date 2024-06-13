@@ -63,7 +63,7 @@ class SystemMRTest : public ::testing::Test {
  protected:
   void SetUp() override
   {
-    if (!rmm::mr::detail::sam::is_supported()) {
+    if (!rmm::mr::detail::sam::is_supported(rmm::get_current_cuda_device())) {
       GTEST_SKIP() << "Skipping tests since system memory allocator not supported with this "
                       "hardware/software version";
     }

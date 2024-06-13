@@ -98,7 +98,7 @@ class sam_headroom_resource_adaptor final : public device_memory_resource {
 
     if (bytes >= threshold_) {
       auto const free        = rmm::available_device_memory().first;
-      auto const allocatable = std::max(free - headroom_, 0UL);
+      auto const allocatable = free > headroom_ ? free - headroom_ : 0UL;
       auto const gpu_portion =
         rmm::align_down(std::min(allocatable, aligned), rmm::CUDA_ALLOCATION_ALIGNMENT);
       auto const cpu_portion = aligned - gpu_portion;

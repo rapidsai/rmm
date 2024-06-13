@@ -23,13 +23,13 @@
 namespace rmm::mr {
 
 namespace detail {
+/** @brief Struct to check if system allocated memory (SAM) is supported. */
 struct sam {
-  static bool is_supported()
+  static bool is_supported(cuda_device_id device_id)
   {
     int pageableMemoryAccess;
-    RMM_CUDA_TRY(cudaDeviceGetAttribute(&pageableMemoryAccess,
-                                        cudaDevAttrPageableMemoryAccess,
-                                        rmm::get_current_cuda_device().value()));
+    RMM_CUDA_TRY(cudaDeviceGetAttribute(
+      &pageableMemoryAccess, cudaDevAttrPageableMemoryAccess, device_id.value()));
     return pageableMemoryAccess == 1;
   }
 };
@@ -66,7 +66,7 @@ class system_memory_resource final : public device_memory_resource {
  public:
   system_memory_resource()
   {
-    RMM_EXPECTS(rmm::mr::detail::sam::is_supported(),
+    RMM_EXPECTS(rmm::mr::detail::sam::is_supported(rmm::get_current_cuda_device()),
                 "System memory allocator is not supported with this hardware/software version.");
   }
   ~system_memory_resource() override                               = default;
