@@ -30,11 +30,17 @@ namespace rmm::mr {
 /**
  * @brief Resource that adapts system memory resource to allocate memory with a headroom.
  *
- * When GPU memory is over-subscribed, system allocated memory (SAM) will migrate to the GPU
- * and cannot migrate back, thus causing other CUDA calls to fail with out-of-memory errors. To
- * work around this problem, we can reserve some GPU memory as headroom for other CUDA calls.
- * Doing this check can be expensive, so only large buffers above the given threshold will be
- * checked.
+ * System allocated memory (SAM) can be migrated to the GPU, but is never migrated back the host. If
+ * GPU memory is over-subscribed, this can cause other CUDA calls to fail with out-of-memory errors.
+ * To work around this problem, when using a system memory resource, we reserve some GPU memory as
+ * headroom for other CUDA calls, and only conditionally set its preferred location to the GPU if
+ * the allocation would not eat in to the headroom. Since doing this check on every allocation can
+ * be expensive, checking whether to set the preferred location is only done above the specified
+ * allocation threshold size.
+ *
+ * Note that if threshold size is non-zero, then an application making many small allocations can
+ * eat into the headroom, and run out of memory for other CUDA calls, even when using this resource
+ * adaptor.
  *
  * @tparam Upstream Type of the upstream resource used for allocation/deallocation. Must be
  *                  `system_memory_resource`.
