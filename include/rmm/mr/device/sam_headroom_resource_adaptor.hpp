@@ -53,8 +53,8 @@ class sam_headroom_resource_adaptor final : public device_memory_resource {
    *
    * @param upstream The resource used for allocating/deallocating device memory. Must be
    *                 `system_memory_resource`.
-   * @param headroom_size Size of the reserved GPU memory as headroom
-   * @param threshold_size Size of the allocation above which to check for headroom
+   * @param headroom Size of the reserved GPU memory as headroom
+   * @param threshold Size of the allocation above which to check for headroom
    */
   explicit sam_headroom_resource_adaptor(Upstream* upstream,
                                          std::size_t headroom,

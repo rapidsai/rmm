@@ -25,6 +25,12 @@ namespace rmm::mr {
 namespace detail {
 /** @brief Struct to check if system allocated memory (SAM) is supported. */
 struct sam {
+  /**
+   * @brief Check if system allocated memory (SAM) is supported on the specified device.
+   *
+   * @param device_id The device to check
+   * @return true if SAM is supported on the device, false otherwise
+   */
   static bool is_supported(cuda_device_id device_id)
   {
     int pageableMemoryAccess;
@@ -69,11 +75,13 @@ class system_memory_resource final : public device_memory_resource {
     RMM_EXPECTS(rmm::mr::detail::sam::is_supported(rmm::get_current_cuda_device()),
                 "System memory allocator is not supported with this hardware/software version.");
   }
-  ~system_memory_resource() override                               = default;
-  system_memory_resource(system_memory_resource const&)            = default;
-  system_memory_resource(system_memory_resource&&)                 = default;
-  system_memory_resource& operator=(system_memory_resource const&) = default;
-  system_memory_resource& operator=(system_memory_resource&&)      = default;
+  ~system_memory_resource() override                    = default;
+  system_memory_resource(system_memory_resource const&) = default;  ///< @default_copy_constructor
+  system_memory_resource(system_memory_resource&&)      = default;  ///< @default_copy_constructor
+  system_memory_resource& operator=(system_memory_resource const&) =
+    default;  ///< @default_copy_assignment{system_memory_resource}
+  system_memory_resource& operator=(system_memory_resource&&) =
+    default;  ///< @default_move_assignment{system_memory_resource}
 
  private:
   /**
