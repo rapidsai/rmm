@@ -99,7 +99,9 @@ class sam_headroom_resource_adaptor final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, [[maybe_unused]] cuda_stream_view stream) override
   {
-    void* pointer = get_upstream_resource().allocate_async(bytes, rmm::CUDA_ALLOCATION_ALIGNMENT, stream);
+    auto const aligned{rmm::align_up(bytes, rmm::CUDA_ALLOCATION_ALIGNMENT)};
+    void* pointer =
+      get_upstream_resource().allocate_async(aligned, rmm::CUDA_ALLOCATION_ALIGNMENT, stream);
 
     if (bytes >= threshold_) {
       auto const free        = rmm::available_device_memory().first;
@@ -137,7 +139,7 @@ class sam_headroom_resource_adaptor final : public device_memory_resource {
                      [[maybe_unused]] std::size_t bytes,
                      [[maybe_unused]] cuda_stream_view stream) override
   {
-    get_upstream_resource()->deallocate_async(ptr, rmm::CUDA_ALLOCATION_ALIGNMENT, stream);
+    get_upstream_resource().deallocate_async(ptr, rmm::CUDA_ALLOCATION_ALIGNMENT, stream);
   }
 
   /**
