@@ -34,7 +34,7 @@ namespace rmm::mr {
  * GPU memory is over-subscribed, this can cause other CUDA calls to fail with out-of-memory errors.
  * To work around this problem, when using a system memory resource, we reserve some GPU memory as
  * headroom for other CUDA calls, and only conditionally set its preferred location to the GPU if
- * the allocation would not eat in to the headroom. Since doing this check on every allocation can
+ * the allocation would not eat into the headroom. Since doing this check on every allocation can
  * be expensive, checking whether to set the preferred location is only done above the specified
  * allocation threshold size.
  *
@@ -99,8 +99,7 @@ class sam_headroom_resource_adaptor final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, [[maybe_unused]] cuda_stream_view stream) override
   {
-    auto const aligned{rmm::align_up(bytes, rmm::CUDA_ALLOCATION_ALIGNMENT)};
-    void* pointer = upstream_->allocate(aligned, stream);
+    void* pointer = get_upstream_resource().allocate_async(bytes, rmm::CUDA_ALLOCATION_ALIGNMENT, stream);
 
     if (bytes >= threshold_) {
       auto const free        = rmm::available_device_memory().first;
@@ -138,7 +137,7 @@ class sam_headroom_resource_adaptor final : public device_memory_resource {
                      [[maybe_unused]] std::size_t bytes,
                      [[maybe_unused]] cuda_stream_view stream) override
   {
-    upstream_->deallocate(ptr, bytes, stream);
+    get_upstream_resource()->deallocate_async(ptr, rmm::CUDA_ALLOCATION_ALIGNMENT, stream);
   }
 
   /**

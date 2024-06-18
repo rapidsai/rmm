@@ -131,6 +131,23 @@ class system_memory_resource final : public device_memory_resource {
   {
     return dynamic_cast<system_memory_resource const*>(&other) != nullptr;
   }
+  /**
+   * @brief Enables the `cuda::mr::device_accessible` property
+   *
+   * This property declares that a `system_memory_resource` provides device-accessible memory
+   */
+  friend void get_property(system_memory_resource const&, cuda::mr::device_accessible) noexcept {}
+
+  /**
+   * @brief Enables the `cuda::mr::device_accessible` property
+   *
+   * This property declares that a `system_memory_resource` provides host-accessible memory
+   */
+  friend void get_property(system_memory_resource const&, cuda::mr::host_accessible) noexcept {}
 };
+
+// static property checks
+static_assert(cuda::mr::async_resource_with<system_memory_resource, cuda::mr::device_accessible>);
+static_assert(cuda::mr::async_resource_with<system_memory_resource, cuda::mr::host_accessible>);
 /** @} */  // end of group
 }  // namespace rmm::mr
