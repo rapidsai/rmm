@@ -40,7 +40,7 @@ classifiers = [
 # (just trying to generate a wheel with unsatisfiable dependencies)
 dependencies = [
     "setuptools<65",
-    "setuptools>70"
+    "setuptools>66"
 ]
 
 [project.urls]
