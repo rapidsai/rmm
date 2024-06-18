@@ -36,12 +36,6 @@ classifiers = [
     "Programming Language :: C++",
     "Environment :: GPU :: NVIDIA CUDA",
 ]
-# TODO: remove this before merging
-# (just trying to generate a wheel with unsatisfiable dependencies)
-dependencies = [
-    "setuptools<65",
-    "setuptools>66"
-]
 
 [project.urls]
 Homepage = "https://github.com/rapidsai/rmm"
