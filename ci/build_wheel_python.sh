@@ -19,7 +19,7 @@ CPP_WHEELHOUSE=$(RAPIDS_PY_WHEEL_NAME="rmm_${RAPIDS_PY_CUDA_SUFFIX}" rapids-down
 # ensure 'rmm' wheel builds always use the 'librmm' just built in the same CI run
 echo "librmm-${RAPIDS_PY_CUDA_SUFFIX} @ file://$(echo ${CPP_WHEELHOUSE}/librmm_${RAPIDS_PY_CUDA_SUFFIX}*.whl)" > ./build-constraints.txt
 
-python -m pip wheel . -w dist -vvv --no-deps --disable-pip-version-check --constraints "${PWD}/build-constraints.txt"
+python -m pip wheel . -w dist -vvv --no-deps --disable-pip-version-check --constraint "${PWD}/build-constraints.txt"
 
 mkdir -p final_dist
 python -m auditwheel repair -w final_dist dist/*
