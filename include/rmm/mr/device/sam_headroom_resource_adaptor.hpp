@@ -34,13 +34,11 @@ namespace rmm::mr {
  * GPU memory is over-subscribed, this can cause other CUDA calls to fail with out-of-memory errors.
  * To work around this problem, when using a system memory resource, we reserve some GPU memory as
  * headroom for other CUDA calls, and only conditionally set its preferred location to the GPU if
- * the allocation would not eat into the headroom. Since doing this check on every allocation can
- * be expensive, checking whether to set the preferred location is only done above the specified
- * allocation threshold size.
+ * the allocation would not eat into the headroom.
  *
- * Note that if threshold size is non-zero, then an application making many small allocations can
- * eat into the headroom, and run out of memory for other CUDA calls, even when using this resource
- * adaptor.
+ * Since doing this check on every allocation can be expensive, the caller may choose to use other
+ * allocators (e.g. `binning_memory_resource`) for small allocations, and use this allocator for
+ * large allocations only.
  *
  * @tparam Upstream Type of the upstream resource used for allocation/deallocation. Must be
  *                  `system_memory_resource`.
@@ -54,12 +52,9 @@ class sam_headroom_resource_adaptor final : public device_memory_resource {
    * @param upstream The resource used for allocating/deallocating device memory. Must be
    *                 `system_memory_resource`.
    * @param headroom Size of the reserved GPU memory as headroom
-   * @param threshold Size of the allocation above which to check for headroom
    */
-  explicit sam_headroom_resource_adaptor(Upstream* upstream,
-                                         std::size_t headroom,
-                                         std::size_t threshold)
-    : upstream_{upstream}, headroom_{headroom}, threshold_{threshold}
+  explicit sam_headroom_resource_adaptor(Upstream* upstream, std::size_t headroom)
+    : upstream_{upstream}, headroom_{headroom}
   {
     static_assert(std::is_same_v<system_memory_resource, Upstream>,
                   "Upstream must be rmm::mr::system_memory_resource");
@@ -99,28 +94,25 @@ class sam_headroom_resource_adaptor final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, [[maybe_unused]] cuda_stream_view stream) override
   {
-    auto const aligned{rmm::align_up(bytes, rmm::CUDA_ALLOCATION_ALIGNMENT)};
     void* pointer =
-      get_upstream_resource().allocate_async(aligned, rmm::CUDA_ALLOCATION_ALIGNMENT, stream);
+      get_upstream_resource().allocate_async(bytes, rmm::CUDA_ALLOCATION_ALIGNMENT, stream);
 
-    if (bytes >= threshold_) {
-      auto const free        = rmm::available_device_memory().first;
-      auto const allocatable = free > headroom_ ? free - headroom_ : 0UL;
-      auto const gpu_portion =
-        rmm::align_down(std::min(allocatable, aligned), rmm::CUDA_ALLOCATION_ALIGNMENT);
-      auto const cpu_portion = aligned - gpu_portion;
-      if (gpu_portion != 0) {
-        RMM_CUDA_TRY(cudaMemAdvise(pointer,
-                                   gpu_portion,
-                                   cudaMemAdviseSetPreferredLocation,
-                                   rmm::get_current_cuda_device().value()));
-      }
-      if (cpu_portion != 0) {
-        RMM_CUDA_TRY(cudaMemAdvise(static_cast<char*>(pointer) + gpu_portion,
-                                   cpu_portion,
-                                   cudaMemAdviseSetPreferredLocation,
-                                   cudaCpuDeviceId));
-      }
+    auto const free        = rmm::available_device_memory().first;
+    auto const allocatable = free > headroom_ ? free - headroom_ : 0UL;
+    auto const gpu_portion =
+      rmm::align_down(std::min(allocatable, bytes), rmm::CUDA_ALLOCATION_ALIGNMENT);
+    auto const cpu_portion = bytes - gpu_portion;
+    if (gpu_portion != 0) {
+      RMM_CUDA_TRY(cudaMemAdvise(pointer,
+                                 gpu_portion,
+                                 cudaMemAdviseSetPreferredLocation,
+                                 rmm::get_current_cuda_device().value()));
+    }
+    if (cpu_portion != 0) {
+      RMM_CUDA_TRY(cudaMemAdvise(static_cast<char*>(pointer) + gpu_portion,
+                                 cpu_portion,
+                                 cudaMemAdviseSetPreferredLocation,
+                                 cudaCpuDeviceId));
     }
 
     return pointer;
@@ -154,13 +146,11 @@ class sam_headroom_resource_adaptor final : public device_memory_resource {
     if (this == &other) { return true; }
     auto cast = dynamic_cast<sam_headroom_resource_adaptor const*>(&other);
     if (cast == nullptr) { return false; }
-    return get_upstream_resource() == cast->get_upstream_resource() &&
-           headroom_ == cast->headroom_ && threshold_ == cast->threshold_;
+    return get_upstream_resource() == cast->get_upstream_resource() && headroom_ == cast->headroom_;
   }
 
-  Upstream* upstream_;     ///< The upstream resource used for satisfying allocation requests
-  std::size_t headroom_;   ///< Size of GPU memory reserved as headroom
-  std::size_t threshold_;  ///< The size above which allocations should be checked for headroom
+  Upstream* upstream_;    ///< The upstream resource used for satisfying allocation requests
+  std::size_t headroom_;  ///< Size of GPU memory reserved as headroom
 };
 /** @} */  // end of group
 }  // namespace rmm::mr

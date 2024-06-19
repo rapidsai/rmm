@@ -23,22 +23,19 @@
 namespace rmm::mr {
 
 namespace detail {
-/** @brief Struct to check if system allocated memory (SAM) is supported. */
-struct sam {
-  /**
-   * @brief Check if system allocated memory (SAM) is supported on the specified device.
-   *
-   * @param device_id The device to check
-   * @return true if SAM is supported on the device, false otherwise
-   */
-  static bool is_supported(cuda_device_id device_id)
-  {
-    int pageableMemoryAccess;
-    RMM_CUDA_TRY(cudaDeviceGetAttribute(
-      &pageableMemoryAccess, cudaDevAttrPageableMemoryAccess, device_id.value()));
-    return pageableMemoryAccess == 1;
-  }
-};
+/**
+ * @brief Check if system allocated memory (SAM) is supported on the specified device.
+ *
+ * @param device_id The device to check
+ * @return true if SAM is supported on the device, false otherwise
+ */
+static bool is_system_memory_supported(cuda_device_id device_id)
+{
+  int pageableMemoryAccess;
+  RMM_CUDA_TRY(cudaDeviceGetAttribute(
+    &pageableMemoryAccess, cudaDevAttrPageableMemoryAccess, device_id.value()));
+  return pageableMemoryAccess == 1;
+}
 }  // namespace detail
 
 /**
@@ -72,7 +69,7 @@ class system_memory_resource final : public device_memory_resource {
  public:
   system_memory_resource()
   {
-    RMM_EXPECTS(rmm::mr::detail::sam::is_supported(rmm::get_current_cuda_device()),
+    RMM_EXPECTS(rmm::mr::detail::is_system_memory_supported(rmm::get_current_cuda_device()),
                 "System memory allocator is not supported with this hardware/software version.");
   }
   ~system_memory_resource() override                    = default;
@@ -97,8 +94,9 @@ class system_memory_resource final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, [[maybe_unused]] cuda_stream_view stream) override
   {
-    auto const aligned{rmm::align_up(bytes, rmm::CUDA_ALLOCATION_ALIGNMENT)};
-    return malloc(aligned);
+    void* ptr{malloc(bytes)};
+    RMM_EXPECTS(ptr != nullptr, "Failed to allocate system memory");
+    return ptr;
   }
 
   /**

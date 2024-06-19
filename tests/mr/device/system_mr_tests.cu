@@ -27,7 +27,6 @@ namespace rmm::test {
 namespace {
 
 std::size_t constexpr size_mb{1_MiB};
-std::size_t constexpr size_2mb{2_MiB};
 std::size_t constexpr size_gb{1_GiB};
 
 void touch_on_cpu(void* ptr, std::size_t size)
@@ -63,7 +62,7 @@ class SystemMRTest : public ::testing::Test {
  protected:
   void SetUp() override
   {
-    if (!rmm::mr::detail::sam::is_supported(rmm::get_current_cuda_device())) {
+    if (!rmm::mr::detail::is_system_memory_supported(rmm::get_current_cuda_device())) {
       GTEST_SKIP() << "Skipping tests since system memory allocator not supported with this "
                       "hardware/software version";
     }
@@ -73,7 +72,20 @@ class SystemMRTest : public ::testing::Test {
 TEST(SystemMRSimpleTest, ThrowIfNotSupported)
 {
   auto construct_mr = []() { system_mr mr; };
-  if (rmm::mr::detail::sam::is_supported(rmm::get_current_cuda_device())) {
+  if (rmm::mr::detail::is_system_memory_supported(rmm::get_current_cuda_device())) {
+    EXPECT_NO_THROW(construct_mr());
+  } else {
+    EXPECT_THROW(construct_mr(), rmm::logic_error);
+  }
+}
+
+TEST(SAMHeadroomAdaptorTest, ThrowIfNotSupported)
+{
+  auto construct_mr = []() {
+    system_mr mr;
+    headroom_adaptor adaptor{&mr, 0};
+  };
+  if (rmm::mr::detail::is_system_memory_supported(rmm::get_current_cuda_device())) {
     EXPECT_NO_THROW(construct_mr());
   } else {
     EXPECT_THROW(construct_mr(), rmm::logic_error);
@@ -102,25 +114,12 @@ TEST_F(SystemMRTest, FirstTouchOnGPU)
   mr.deallocate(ptr, size_mb);
 }
 
-TEST(SAMHeadroomAdaptorTest, ThrowIfNotSupported)
-{
-  auto construct_mr = []() {
-    system_mr mr;
-    headroom_adaptor adaptor{&mr, 0, 0};
-  };
-  if (rmm::mr::detail::sam::is_supported(rmm::get_current_cuda_device())) {
-    EXPECT_NO_THROW(construct_mr());
-  } else {
-    EXPECT_THROW(construct_mr(), rmm::logic_error);
-  }
-}
-
 TEST_F(SystemMRTest, AdaptorReserveAllFreeMemory)
 {
   auto const free = rmm::available_device_memory().first;
   system_mr mr;
   // All the free GPU memory is set as headroom, so allocation is only on the CPU.
-  headroom_adaptor adaptor{&mr, free + size_gb, 0};
+  headroom_adaptor adaptor{&mr, free + size_gb};
   void* ptr = adaptor.allocate(size_mb);
   touch_on_cpu(ptr, size_mb);
   auto const free2 = rmm::available_device_memory().first;
@@ -128,35 +127,11 @@ TEST_F(SystemMRTest, AdaptorReserveAllFreeMemory)
   adaptor.deallocate(ptr, size_mb);
 }
 
-TEST_F(SystemMRTest, AdaptorBelowThreshold)
-{
-  auto const free = rmm::available_device_memory().first;
-  system_mr mr;
-  headroom_adaptor adaptor{&mr, size_gb, size_gb};
-  void* ptr = adaptor.allocate(size_mb);
-  touch_on_cpu(ptr, size_mb);
-  auto const free2 = rmm::available_device_memory().first;
-  EXPECT_GE(free2, free);
-  adaptor.deallocate(ptr, size_gb);
-}
-
-TEST_F(SystemMRTest, AdaptorAboveThreshold)
-{
-  auto const free = rmm::available_device_memory().first;
-  system_mr mr;
-  headroom_adaptor adaptor{&mr, size_mb, size_mb};
-  void* ptr = adaptor.allocate(size_2mb);
-  touch_on_gpu(ptr, size_2mb);
-  auto const free2 = rmm::available_device_memory().first;
-  EXPECT_LE(free2, free);
-  adaptor.deallocate(ptr, size_2mb);
-}
-
 TEST_F(SystemMRTest, AdaptorDifferentParametersUnequal)
 {
   system_mr mr;
-  headroom_adaptor adaptor1{&mr, size_mb, 0};
-  headroom_adaptor adaptor2{&mr, size_gb, 0};
+  headroom_adaptor adaptor1{&mr, size_mb};
+  headroom_adaptor adaptor2{&mr, size_gb};
   EXPECT_FALSE(adaptor1.is_equal(adaptor2));
 }
 }  // namespace
