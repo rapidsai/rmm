@@ -94,9 +94,8 @@ class system_memory_resource final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, [[maybe_unused]] cuda_stream_view stream) override
   {
-    void* ptr{malloc(bytes)};
-    RMM_EXPECTS(ptr != nullptr, "Failed to allocate system memory");
-    return ptr;
+    return rmm::detail::aligned_host_allocate(
+      bytes, CUDA_ALLOCATION_ALIGNMENT, [](std::size_t size) { return ::operator new(size); });
   }
 
   /**
@@ -105,14 +104,16 @@ class system_memory_resource final : public device_memory_resource {
    * The stream argument is ignored.
    *
    * @param ptr Pointer to be deallocated
-   * @param bytes This argument is ignored
+   * @param bytes The size in bytes of the allocation. This must be equal to the value of `bytes`
+   *              that was passed to the `allocate` call that returned `ptr`.
    * @param stream This argument is ignored
    */
   void do_deallocate(void* ptr,
                      [[maybe_unused]] std::size_t bytes,
                      [[maybe_unused]] cuda_stream_view stream) override
   {
-    free(ptr);
+    rmm::detail::aligned_host_deallocate(
+      ptr, bytes, CUDA_ALLOCATION_ALIGNMENT, [](void* ptr) { ::operator delete(ptr); });
   }
 
   /**
