@@ -137,7 +137,7 @@ class system_memory_resource final : public device_memory_resource {
   friend void get_property(system_memory_resource const&, cuda::mr::device_accessible) noexcept {}
 
   /**
-   * @brief Enables the `cuda::mr::device_accessible` property
+   * @brief Enables the `cuda::mr::host_accessible` property
    *
    * This property declares that a `system_memory_resource` provides host-accessible memory
    */
