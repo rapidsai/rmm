@@ -382,7 +382,8 @@ inline auto make_cuda_async()
 
 inline auto make_managed() { return std::make_shared<rmm::mr::managed_memory_resource>(); }
 
-inline auto make_system() {
+inline auto make_system()
+{
   if (rmm::mr::detail::is_system_memory_supported(rmm::get_current_cuda_device())) {
     return std::make_shared<rmm::mr::system_memory_resource>();
   } else {
