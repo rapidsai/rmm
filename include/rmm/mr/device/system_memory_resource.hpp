@@ -94,8 +94,12 @@ class system_memory_resource final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, [[maybe_unused]] cuda_stream_view stream) override
   {
-    return rmm::detail::aligned_host_allocate(
-      bytes, CUDA_ALLOCATION_ALIGNMENT, [](std::size_t size) { return ::operator new(size); });
+    try {
+      return rmm::detail::aligned_host_allocate(
+        bytes, CUDA_ALLOCATION_ALIGNMENT, [](std::size_t size) { return ::operator new(size); });
+    } catch (std::bad_alloc const&) {
+      RMM_FAIL("Failed to allocate memory", rmm::out_of_memory);
+    }
   }
 
   /**

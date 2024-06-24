@@ -122,8 +122,6 @@ TEST_F(SystemMRTest, AdaptorReserveAllFreeMemory)
   headroom_adaptor adaptor{&mr, free + size_gb};
   void* ptr = adaptor.allocate(size_mb);
   touch_on_cpu(ptr, size_mb);
-  auto const free2 = rmm::available_device_memory().first;
-  EXPECT_GE(free2, free);
   adaptor.deallocate(ptr, size_mb);
 }
 

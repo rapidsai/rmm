@@ -104,16 +104,19 @@ TEST_P(mr_ref_test, AsyncAllocationsAreDifferent)
   concurrent_async_allocations_are_different(this->ref, this->stream);
 }
 
-TEST_P(mr_ref_allocation_test, AllocateDefault) { test_various_allocations(this->ref); }
+TEST_P(mr_ref_allocation_test, AllocateDefault)
+{
+  test_various_allocations(this->ref, this->is_system_mr);
+}
 
 TEST_P(mr_ref_allocation_test, AllocateDefaultStream)
 {
-  test_various_async_allocations(this->ref, cuda_stream_view{});
+  test_various_async_allocations(this->ref, cuda_stream_view{}, this->is_system_mr);
 }
 
 TEST_P(mr_ref_allocation_test, AllocateOnStream)
 {
-  test_various_async_allocations(this->ref, this->stream);
+  test_various_async_allocations(this->ref, this->stream, this->is_system_mr);
 }
 
 TEST_P(mr_ref_allocation_test, RandomAllocations) { test_random_allocations(this->ref); }

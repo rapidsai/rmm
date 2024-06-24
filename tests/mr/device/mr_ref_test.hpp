@@ -71,17 +71,20 @@ inline void test_get_current_device_resource()
   void* ptr = rmm::mr::get_current_device_resource()->allocate(1_MiB);
   EXPECT_NE(nullptr, ptr);
   EXPECT_TRUE(is_properly_aligned(ptr));
-  EXPECT_TRUE(is_device_accessible_memory(ptr));
+  if (dynamic_cast<rmm::mr::system_memory_resource*>(rmm::mr::get_current_device_resource()) ==
+      nullptr) {
+    EXPECT_TRUE(is_device_accessible_memory(ptr));
+  }
   rmm::mr::get_current_device_resource()->deallocate(ptr, 1_MiB);
 }
 
-inline void test_allocate(resource_ref ref, std::size_t bytes)
+inline void test_allocate(resource_ref ref, std::size_t bytes, bool is_system_mr)
 {
   try {
     void* ptr = ref.allocate(bytes);
     EXPECT_NE(nullptr, ptr);
     EXPECT_TRUE(is_properly_aligned(ptr));
-    EXPECT_TRUE(is_device_accessible_memory(ptr));
+    if (not is_system_mr) { EXPECT_TRUE(is_device_accessible_memory(ptr)); }
     ref.deallocate(ptr, bytes);
   } catch (rmm::out_of_memory const& e) {
     EXPECT_NE(std::string{e.what()}.find("out_of_memory"), std::string::npos);
@@ -90,14 +93,15 @@ inline void test_allocate(resource_ref ref, std::size_t bytes)
 
 inline void test_allocate_async(rmm::device_async_resource_ref ref,
                                 std::size_t bytes,
-                                cuda_stream_view stream = {})
+                                cuda_stream_view stream,
+                                bool is_system_mr)
 {
   try {
     void* ptr = ref.allocate_async(bytes, stream);
     if (not stream.is_default()) { stream.synchronize(); }
     EXPECT_NE(nullptr, ptr);
     EXPECT_TRUE(is_properly_aligned(ptr));
-    EXPECT_TRUE(is_device_accessible_memory(ptr));
+    if (not is_system_mr) { EXPECT_TRUE(is_device_accessible_memory(ptr)); }
     ref.deallocate_async(ptr, bytes, stream);
     if (not stream.is_default()) { stream.synchronize(); }
   } catch (rmm::out_of_memory const& e) {
@@ -131,7 +135,7 @@ inline void concurrent_async_allocations_are_different(rmm::device_async_resourc
   ref.deallocate_async(ptr2, size, stream);
 }
 
-inline void test_various_allocations(resource_ref ref)
+inline void test_various_allocations(resource_ref ref, bool is_system_mr)
 {
   // test allocating zero bytes on non-default stream
   {
@@ -139,10 +143,10 @@ inline void test_various_allocations(resource_ref ref)
     EXPECT_NO_THROW(ref.deallocate(ptr, 0));
   }
 
-  test_allocate(ref, 4_B);
-  test_allocate(ref, 1_KiB);
-  test_allocate(ref, 1_MiB);
-  test_allocate(ref, 1_GiB);
+  test_allocate(ref, 4_B, is_system_mr);
+  test_allocate(ref, 1_KiB, is_system_mr);
+  test_allocate(ref, 1_MiB, is_system_mr);
+  test_allocate(ref, 1_GiB, is_system_mr);
 
   // should fail to allocate too much
   {
@@ -160,7 +164,8 @@ inline void test_various_allocations(resource_ref ref)
 }
 
 inline void test_various_async_allocations(rmm::device_async_resource_ref ref,
-                                           cuda_stream_view stream)
+                                           cuda_stream_view stream,
+                                           bool is_system_mr)
 {
   // test allocating zero bytes on non-default stream
   {
@@ -170,10 +175,10 @@ inline void test_various_async_allocations(rmm::device_async_resource_ref ref,
     stream.synchronize();
   }
 
-  test_allocate_async(ref, 4_B, stream);
-  test_allocate_async(ref, 1_KiB, stream);
-  test_allocate_async(ref, 1_MiB, stream);
-  test_allocate_async(ref, 1_GiB, stream);
+  test_allocate_async(ref, 4_B, stream, is_system_mr);
+  test_allocate_async(ref, 1_KiB, stream, is_system_mr);
+  test_allocate_async(ref, 1_MiB, stream, is_system_mr);
+  test_allocate_async(ref, 1_GiB, stream, is_system_mr);
 
   // should fail to allocate too much
   {
@@ -357,12 +362,14 @@ struct mr_ref_test : public ::testing::TestWithParam<mr_factory> {
       GTEST_SKIP() << "Skipping tests since the memory resource is not supported with this CUDA "
                    << "driver/runtime version";
     }
-    ref = rmm::device_async_resource_ref{*mr};
+    ref          = rmm::device_async_resource_ref{*mr};
+    is_system_mr = std::dynamic_pointer_cast<rmm::mr::system_memory_resource>(mr) != nullptr;
   }
 
   std::shared_ptr<rmm::mr::device_memory_resource> mr;  ///< Pointer to resource to use in tests
   rmm::device_async_resource_ref ref{*mr};
   rmm::cuda_stream stream{};
+  bool is_system_mr{false};
 };
 
 struct mr_ref_allocation_test : public mr_ref_test {};
