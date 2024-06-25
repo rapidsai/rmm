@@ -97,8 +97,8 @@ class system_memory_resource final : public device_memory_resource {
     try {
       return rmm::detail::aligned_host_allocate(
         bytes, CUDA_ALLOCATION_ALIGNMENT, [](std::size_t size) { return ::operator new(size); });
-    } catch (std::bad_alloc const&) {
-      RMM_FAIL("Failed to allocate memory", rmm::out_of_memory);
+    } catch (std::bad_alloc const& e) {
+      RMM_FAIL("Failed to allocate memory: " + std::string{e.what()}, rmm::out_of_memory);
     }
   }
 
