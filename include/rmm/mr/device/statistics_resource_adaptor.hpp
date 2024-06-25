@@ -110,7 +110,7 @@ class statistics_resource_adaptor final : public device_memory_resource {
       total += val.total;
     }
   };
-
+  
   /**
    * @brief Construct a new statistics resource adaptor using `upstream` to satisfy
    * allocation requests.
@@ -186,8 +186,8 @@ class statistics_resource_adaptor final : public device_memory_resource {
   std::pair<counter, counter> push_counters()
   {
     write_lock_t lock(mtx_);
-    auto ret = counter_stack_.top();
-    counter_stack_.push(std::make_pair(counter{}, counter{}));
+    auto ret = counter_stack_.empty() ? std::make_pair(counter{}, counter{}) : counter_stack_.top();
+    counter_stack_.push({counter{}, counter{}});
     return ret;
   }
 
