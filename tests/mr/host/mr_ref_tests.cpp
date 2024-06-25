@@ -17,7 +17,6 @@
 #include "../../byte_literals.hpp"
 
 #include <rmm/aligned.hpp>
-#include <rmm/mr/host/host_memory_resource.hpp>
 #include <rmm/mr/host/new_delete_resource.hpp>
 #include <rmm/mr/host/pinned_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
