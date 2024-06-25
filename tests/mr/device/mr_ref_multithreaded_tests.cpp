@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2023, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -137,16 +137,16 @@ TEST_P(mr_ref_test_mt, SetCurrentDeviceResourcePerThread_mt)
   }
 }
 
-TEST_P(mr_ref_test_mt, Allocate) { spawn(test_various_allocations, this->ref, this->is_system_mr); }
+TEST_P(mr_ref_test_mt, Allocate) { spawn(test_various_allocations, this->ref); }
 
 TEST_P(mr_ref_test_mt, AllocateDefaultStream)
 {
-  spawn(test_various_async_allocations, this->ref, rmm::cuda_stream_view{}, this->is_system_mr);
+  spawn(test_various_async_allocations, this->ref, rmm::cuda_stream_view{});
 }
 
 TEST_P(mr_ref_test_mt, AllocateOnStream)
 {
-  spawn(test_various_async_allocations, this->ref, this->stream.view(), this->is_system_mr);
+  spawn(test_various_async_allocations, this->ref, this->stream.view());
 }
 
 TEST_P(mr_ref_test_mt, RandomAllocations)
