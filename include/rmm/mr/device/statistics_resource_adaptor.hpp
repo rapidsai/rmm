@@ -110,7 +110,7 @@ class statistics_resource_adaptor final : public device_memory_resource {
       total += val.total;
     }
   };
-  
+
   /**
    * @brief Construct a new statistics resource adaptor using `upstream` to satisfy
    * allocation requests.
