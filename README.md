@@ -169,7 +169,7 @@ automatically pulls in `Thrust` by means of a dependency on the
 `rmm::Thrust` target. By default it uses the standard configuration of
 Thrust. If you want to customize it, you can set the variables
 `THRUST_HOST_SYSTEM` and `THRUST_DEVICE_SYSTEM`; see
-[Thrust's CMake documentation](https://github.com/NVIDIA/thrust/blob/main/thrust/cmake/README.md).
+[Thrust's CMake documentation](https://github.com/NVIDIA/cccl/blob/main/thrust/thrust/cmake/README.md).
 
 # Using RMM in C++
 
