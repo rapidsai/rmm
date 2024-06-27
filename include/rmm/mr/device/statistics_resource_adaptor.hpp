@@ -122,8 +122,6 @@ class statistics_resource_adaptor final : public device_memory_resource {
   statistics_resource_adaptor(Upstream* upstream) : upstream_{upstream}
   {
     RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
-    // Initially, we push a single counter pair on the stack
-    push_counters();
   }
 
   statistics_resource_adaptor()                                              = delete;
@@ -187,7 +185,7 @@ class statistics_resource_adaptor final : public device_memory_resource {
   {
     write_lock_t lock(mtx_);
     auto ret = counter_stack_.top();
-    counter_stack_.push(std::make_pair(counter{}, counter{}));
+    counter_stack_.push({counter{}, counter{}});
     return ret;
   }
 
@@ -196,6 +194,7 @@ class statistics_resource_adaptor final : public device_memory_resource {
    *
    * @return top pair of counters <bytes, allocations> from the stack _before_
    * the pop
+   * @throws std::out_of_range if the counter stack has fewer than two entries.
    */
   std::pair<counter, counter> pop_counters()
   {
@@ -275,7 +274,8 @@ class statistics_resource_adaptor final : public device_memory_resource {
   }
 
   // Stack of counter pairs <bytes, allocations>
-  std::stack<std::pair<counter, counter>> counter_stack_;
+  // Invariant: the stack always contains at least one entry
+  std::stack<std::pair<counter, counter>> counter_stack_{{std::make_pair(counter{}, counter{})}};
   std::shared_mutex mutable mtx_;  // mutex for thread safe access to allocations_
   Upstream* upstream_;             // the upstream resource used for satisfying allocation requests
 };
