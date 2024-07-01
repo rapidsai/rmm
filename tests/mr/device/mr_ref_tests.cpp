@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ INSTANTIATE_TEST_SUITE_P(ResourceTests,
                                            mr_factory{"CUDA_Async", &make_cuda_async},
 #endif
                                            mr_factory{"Managed", &make_managed},
+                                           mr_factory{"System", &make_system},
                                            mr_factory{"Pool", &make_pool},
                                            mr_factory{"HostPinnedPool", &make_host_pinned_pool},
                                            mr_factory{"Arena", &make_arena},
@@ -47,6 +48,7 @@ INSTANTIATE_TEST_SUITE_P(ResourceAllocationTests,
                                            mr_factory{"CUDA_Async", &make_cuda_async},
 #endif
                                            mr_factory{"Managed", &make_managed},
+                                           mr_factory{"System", &make_system},
                                            mr_factory{"Pool", &make_pool},
                                            mr_factory{"HostPinnedPool", &make_host_pinned_pool},
                                            mr_factory{"Arena", &make_arena},
