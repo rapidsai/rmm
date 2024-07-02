@@ -15,6 +15,8 @@
  */
 
 #include "mr_ref_test.hpp"
+#include "rmm/mr/device/cuda_memory_resource.hpp"
+#include "rmm/resource_ref.hpp"
 
 #include <rmm/mr/device/per_device_resource.hpp>
 
@@ -55,40 +57,36 @@ INSTANTIATE_TEST_SUITE_P(ResourceAllocationTests,
                                            "Binning"),
                          [](auto const& info) { return info.param; });
 
-TEST(DefaultTest, CurrentDeviceResourceIsCUDA)
-{
-  EXPECT_NE(nullptr, rmm::mr::get_current_device_resource());
-  EXPECT_TRUE(rmm::mr::get_current_device_resource()->is_equal(rmm::mr::cuda_memory_resource{}));
-}
+TEST(DefaultTest, UseCurrentDeviceResourceRef) { test_get_current_device_resource_ref(); }
 
-TEST(DefaultTest, UseCurrentDeviceResource) { test_get_current_device_resource(); }
-
-TEST(DefaultTest, GetCurrentDeviceResource)
+TEST(DefaultTest, GetCurrentDeviceResourceRef)
 {
-  auto* mr = rmm::mr::get_current_device_resource();
-  EXPECT_NE(nullptr, mr);
-  EXPECT_TRUE(mr->is_equal(rmm::mr::cuda_memory_resource{}));
+  auto mr = rmm::mr::get_current_device_resource_ref();
+  EXPECT_EQ(mr, rmm::device_async_resource_ref{rmm::mr::detail::initial_resource()});
 }
 
 // Disable until we support resource_ref with set_current_device_resource
-/*TEST_P(mr_ref_test, SetCurrentDeviceResource)
+TEST_P(mr_ref_test, SetCurrentDeviceResourceRef)
 {
-  rmm::mr::device_memory_resource* old{};
-  old = rmm::mr::set_current_device_resource(this->mr.get());
-  EXPECT_NE(nullptr, old);
+  rmm::mr::cuda_memory_resource cuda_mr{};
+  auto cuda_ref = rmm::device_async_resource_ref{cuda_mr};
+
+  rmm::mr::set_current_device_resource_ref(cuda_ref);
+  auto old = rmm::mr::set_current_device_resource_ref(this->ref);
 
   // old mr should equal a cuda mr
-  EXPECT_TRUE(old->is_equal(rmm::mr::cuda_memory_resource{}));
+  EXPECT_EQ(old, cuda_ref);
 
   // current dev resource should equal this resource
-  EXPECT_TRUE(this->mr->is_equal(*rmm::mr::get_current_device_resource()));
+  EXPECT_EQ(this->ref, rmm::mr::get_current_device_resource_ref());
 
-  test_get_current_device_resource();
+  test_get_current_device_resource_ref();
 
-  // setting to `nullptr` should reset to initial cuda resource
-  rmm::mr::set_current_device_resource(nullptr);
-  EXPECT_TRUE(rmm::mr::get_current_device_resource()->is_equal(rmm::mr::cuda_memory_resource{}));
-}*/
+  // Resetting should reset to initial cuda resource
+  rmm::mr::reset_current_device_resource_ref();
+  EXPECT_EQ(rmm::device_async_resource_ref{rmm::mr::detail::initial_resource()},
+            rmm::mr::get_current_device_resource_ref());
+}
 
 TEST_P(mr_ref_test, SelfEquality) { EXPECT_TRUE(this->ref == this->ref); }
 

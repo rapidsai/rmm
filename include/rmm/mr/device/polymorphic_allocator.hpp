@@ -50,7 +50,7 @@ class polymorphic_allocator {
   using value_type = T;  ///< T, the value type of objects allocated by this allocator
   /**
    * @brief Construct a `polymorphic_allocator` using the return value of
-   * `rmm::mr::get_current_device_resource()` as the underlying memory resource.
+   * `rmm::mr::get_current_device_resource_ref()` as the underlying memory resource.
    *
    */
   polymorphic_allocator() = default;
@@ -114,7 +114,7 @@ class polymorphic_allocator {
 
  private:
   rmm::device_async_resource_ref mr_{
-    get_current_device_resource()};  ///< Underlying resource used for (de)allocation
+    get_current_device_resource_ref()};  ///< Underlying resource used for (de)allocation
 };
 
 /**

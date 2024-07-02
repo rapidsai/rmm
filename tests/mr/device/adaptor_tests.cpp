@@ -114,7 +114,9 @@ TYPED_TEST_CASE(AdaptorTest, adaptors);
 
 TYPED_TEST(AdaptorTest, NullUpstream)
 {
-  if constexpr (not std::is_same_v<TypeParam, owning_wrapper>) {
+  if constexpr (not std::is_same_v<TypeParam, owning_wrapper> and
+                not std::is_same_v<TypeParam, statistics_resource_adaptor<cuda_mr>> and
+                not std::is_same_v<TypeParam, tracking_resource_adaptor<cuda_mr>>) {
     EXPECT_THROW(this->make_adaptor(nullptr), rmm::logic_error);
   }
 }

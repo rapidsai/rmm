@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,15 +34,9 @@ constexpr auto num_allocations{10};
 constexpr auto num_more_allocations{5};
 constexpr auto ten_MiB{10_MiB};
 
-TEST(TrackingTest, ThrowOnNullUpstream)
-{
-  auto construct_nullptr = []() { tracking_adaptor mr{nullptr}; };
-  EXPECT_THROW(construct_nullptr(), rmm::logic_error);
-}
-
 TEST(TrackingTest, Empty)
 {
-  tracking_adaptor mr{rmm::mr::get_current_device_resource()};
+  tracking_adaptor mr{rmm::mr::get_current_device_resource_ref()};
   EXPECT_EQ(mr.get_outstanding_allocations().size(), 0);
   EXPECT_EQ(mr.get_allocated_bytes(), 0);
 }
@@ -101,9 +95,9 @@ TEST(TrackingTest, AllocationsLeftWithoutStacks)
 
 TEST(TrackingTest, MultiTracking)
 {
-  auto* orig_device_resource = rmm::mr::get_current_device_resource();
+  auto orig_device_resource = rmm::mr::get_current_device_resource_ref();
   tracking_adaptor mr{orig_device_resource, true};
-  rmm::mr::set_current_device_resource(&mr);
+  rmm::mr::set_current_device_resource_ref(mr);
 
   std::vector<std::shared_ptr<rmm::device_buffer>> allocations;
   for (std::size_t i = 0; i < num_allocations; ++i) {
@@ -113,8 +107,8 @@ TEST(TrackingTest, MultiTracking)
 
   EXPECT_EQ(mr.get_outstanding_allocations().size(), num_allocations);
 
-  tracking_adaptor inner_mr{rmm::mr::get_current_device_resource()};
-  rmm::mr::set_current_device_resource(&inner_mr);
+  tracking_adaptor inner_mr{rmm::mr::get_current_device_resource_ref()};
+  rmm::mr::set_current_device_resource_ref(inner_mr);
 
   for (std::size_t i = 0; i < num_more_allocations; ++i) {
     allocations.emplace_back(
@@ -141,7 +135,7 @@ TEST(TrackingTest, MultiTracking)
   EXPECT_EQ(inner_mr.get_allocated_bytes(), 0);
 
   // Reset the current device resource
-  rmm::mr::set_current_device_resource(orig_device_resource);
+  rmm::mr::set_current_device_resource_ref(orig_device_resource);
 }
 
 TEST(TrackingTest, NegativeInnerTracking)

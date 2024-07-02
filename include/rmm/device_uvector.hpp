@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -125,7 +125,7 @@ class device_uvector {
    */
   explicit device_uvector(std::size_t size,
                           cuda_stream_view stream,
-                          device_async_resource_ref mr = mr::get_current_device_resource())
+                          device_async_resource_ref mr = mr::get_current_device_resource_ref())
     : _storage{elements_to_bytes(size), stream, mr}
   {
   }
@@ -141,7 +141,7 @@ class device_uvector {
    */
   explicit device_uvector(device_uvector const& other,
                           cuda_stream_view stream,
-                          device_async_resource_ref mr = mr::get_current_device_resource())
+                          device_async_resource_ref mr = mr::get_current_device_resource_ref())
     : _storage{other._storage, stream, mr}
   {
   }

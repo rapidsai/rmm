@@ -63,14 +63,13 @@ struct allocation {
 
 // Various test functions, shared between single-threaded and multithreaded tests.
 
-inline void test_get_current_device_resource()
+inline void test_get_current_device_resource_ref()
 {
-  EXPECT_NE(nullptr, rmm::mr::get_current_device_resource());
-  void* ptr = rmm::mr::get_current_device_resource()->allocate(1_MiB);
+  void* ptr = rmm::mr::get_current_device_resource_ref().allocate(1_MiB);
   EXPECT_NE(nullptr, ptr);
   EXPECT_TRUE(is_properly_aligned(ptr));
   EXPECT_TRUE(is_device_accessible_memory(ptr));
-  rmm::mr::get_current_device_resource()->deallocate(ptr, 1_MiB);
+  rmm::mr::get_current_device_resource_ref().deallocate(ptr, 1_MiB);
 }
 
 inline void test_allocate(resource_ref ref, std::size_t bytes)
@@ -392,7 +391,7 @@ inline auto make_binning()
 
 struct mr_factory_base {
   std::string name{};  ///< Name to associate with tests that use this factory
-  resource_ref mr{rmm::mr::get_current_device_resource()};
+  resource_ref mr{rmm::mr::get_current_device_resource_ref()};
   bool skip_test{false};
 };
 
@@ -468,7 +467,7 @@ struct mr_ref_test : public ::testing::TestWithParam<std::string> {
   }
 
   std::shared_ptr<mr_factory_base> factory_obj{};
-  resource_ref ref{rmm::mr::get_current_device_resource()};
+  resource_ref ref{rmm::mr::get_current_device_resource_ref()};
   rmm::cuda_stream stream{};
 };
 

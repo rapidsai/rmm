@@ -37,9 +37,9 @@ namespace {
 struct allocator_test : public mr_ref_test {};
 
 // Disable until we support resource_ref with set_current_device_resource
-/*TEST_P(allocator_test, first)
+TEST_P(allocator_test, first)
 {
-  rmm::mr::set_current_device_resource(this->mr.get());
+  rmm::mr::set_current_device_resource_ref(this->ref);
   auto const num_ints{100};
   rmm::device_vector<int> ints(num_ints, 1);
   EXPECT_EQ(num_ints, thrust::reduce(ints.begin(), ints.end()));
@@ -47,12 +47,11 @@ struct allocator_test : public mr_ref_test {};
 
 TEST_P(allocator_test, defaults)
 {
-  rmm::mr::set_current_device_resource(this->mr.get());
+  rmm::mr::set_current_device_resource_ref(this->ref);
   rmm::mr::thrust_allocator<int> allocator(rmm::cuda_stream_default);
   EXPECT_EQ(allocator.stream(), rmm::cuda_stream_default);
-  EXPECT_EQ(allocator.get_upstream_resource(),
-            rmm::device_async_resource_ref{rmm::mr::get_current_device_resource()});
-}*/
+  EXPECT_EQ(allocator.get_upstream_resource(), rmm::mr::get_current_device_resource_ref());
+}
 
 TEST_P(allocator_test, multi_device)
 {

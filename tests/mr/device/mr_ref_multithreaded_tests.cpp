@@ -19,9 +19,9 @@
 #include <rmm/cuda_stream.hpp>
 #include <rmm/mr/device/arena_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
-#include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
 
@@ -67,76 +67,75 @@ void spawn(Task task, Arguments&&... args)
   spawn_n(4, task, std::forward<Arguments>(args)...);
 }
 
-TEST(DefaultTest, UseCurrentDeviceResource_mt) { spawn(test_get_current_device_resource); }
+TEST(DefaultTest, UseCurrentDeviceResource_mt) { spawn(test_get_current_device_resource_ref); }
 
-TEST(DefaultTest, CurrentDeviceResourceIsCUDA_mt)
+TEST(DefaultTest, CurrentDeviceResourceRefIsCUDA_mt)
 {
   spawn([]() {
-    EXPECT_NE(nullptr, rmm::mr::get_current_device_resource());
-    EXPECT_TRUE(rmm::mr::get_current_device_resource()->is_equal(rmm::mr::cuda_memory_resource{}));
+    EXPECT_EQ(rmm::mr::get_current_device_resource_ref(),
+              rmm::device_async_resource_ref{rmm::mr::detail::initial_resource()});
   });
 }
 
-TEST(DefaultTest, GetCurrentDeviceResource_mt)
+TEST(DefaultTest, GetCurrentDeviceResourceRef_mt)
 {
   spawn([]() {
-    rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource();
-    EXPECT_NE(nullptr, mr);
-    EXPECT_TRUE(mr->is_equal(rmm::mr::cuda_memory_resource{}));
+    auto mr = rmm::mr::get_current_device_resource_ref();
+    EXPECT_EQ(mr, rmm::device_async_resource_ref{rmm::mr::detail::initial_resource()});
   });
 }
 
 // Disable until we support resource_ref with set_current_device_resource
-/*TEST_P(mr_ref_test_mt, SetCurrentDeviceResource_mt)
+TEST_P(mr_ref_test_mt, SetCurrentDeviceResourceRef_mt)
 {
   // single thread changes default resource, then multiple threads use it
+  auto old = rmm::mr::set_current_device_resource_ref(this->ref);
 
-  rmm::mr::device_memory_resource* old = rmm::mr::set_current_device_resource(this->mr.get());
-  EXPECT_NE(nullptr, old);
-
-  spawn([mr = this->mr.get()]() {
-    EXPECT_EQ(mr, rmm::mr::get_current_device_resource());
-    test_get_current_device_resource();  // test allocating with the new default resource
+  spawn([mr = this->ref]() {
+    EXPECT_EQ(mr, rmm::mr::get_current_device_resource_ref());
+    test_get_current_device_resource_ref();  // test allocating with the new default resource
   });
 
-  // setting default resource w/ nullptr should reset to initial
-  rmm::mr::set_current_device_resource(nullptr);
-  EXPECT_TRUE(old->is_equal(*rmm::mr::get_current_device_resource()));
-}*/
+  // resetting default resource should reset to initial
+  rmm::mr::reset_current_device_resource_ref();
+  EXPECT_EQ(old, rmm::mr::get_current_device_resource_ref());
+}
 
-/*TEST_P(mr_ref_test_mt, SetCurrentDeviceResourcePerThread_mt)
+TEST_P(mr_ref_test_mt, SetCurrentDeviceResourceRefPerThread_mt)
 {
   int num_devices{};
   RMM_CUDA_TRY(cudaGetDeviceCount(&num_devices));
 
   std::vector<std::thread> threads;
   threads.reserve(num_devices);
+
+  auto mr = this->ref;
+
   for (int i = 0; i < num_devices; ++i) {
-    threads.emplace_back(std::thread{[mr = this->mr.get()](auto dev_id) {
-                                       RMM_CUDA_TRY(cudaSetDevice(dev_id));
-                                       rmm::mr::device_memory_resource* old =
-                                         rmm::mr::set_current_device_resource(mr);
-                                       EXPECT_NE(nullptr, old);
-                                       // initial resource for this device should be CUDA mr
-                                       EXPECT_TRUE(old->is_equal(rmm::mr::cuda_memory_resource{}));
-                                       // get_current_device_resource should equal the resource we
-                                       // just set
-                                       EXPECT_EQ(mr, rmm::mr::get_current_device_resource());
-                                       // Setting current dev resource to nullptr should reset to
-                                       // cuda MR and return the MR we previously set
-                                       old = rmm::mr::set_current_device_resource(nullptr);
-                                       EXPECT_NE(nullptr, old);
-                                       EXPECT_EQ(old, mr);
-                                       EXPECT_TRUE(rmm::mr::get_current_device_resource()->is_equal(
-                                         rmm::mr::cuda_memory_resource{}));
-                                     },
-                                     i});
+    threads.emplace_back(
+      [mr](auto dev_id) {
+        RMM_CUDA_TRY(cudaSetDevice(dev_id));
+        auto cuda_ref = rmm::mr::get_current_device_resource_ref();
+        auto old      = rmm::mr::set_current_device_resource_ref(mr);
+
+        // initial resource for this device should be CUDA mr
+        EXPECT_EQ(old, cuda_ref);
+        // get_current_device_resource_ref should equal the resource we
+        // just set
+        EXPECT_EQ(mr, rmm::mr::get_current_device_resource_ref());
+        // Resetting current dev resource ref should make it
+        // cuda MR and return the MR we previously set
+        old = rmm::mr::reset_current_device_resource_ref();
+        EXPECT_EQ(old, mr);
+        EXPECT_EQ(cuda_ref, rmm::mr::get_current_device_resource_ref());
+      },
+      i);
   }
 
   for (auto& thread : threads) {
     thread.join();
   }
-}*/
+}
 
 TEST_P(mr_ref_test_mt, Allocate) { spawn(test_various_allocations, this->ref); }
 
@@ -247,7 +246,7 @@ void test_allocate_async_free_different_threads(rmm::device_async_resource_ref r
   std::mutex mtx;
   std::condition_variable allocations_ready;
   std::list<allocation> allocations;
-  cudaEvent_t event;
+  cudaEvent_t event{};
 
   RMM_CUDA_TRY(cudaEventCreate(&event));
 
