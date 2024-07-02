@@ -136,7 +136,7 @@ Done! You are ready to develop for the RMM OSS project.
 
 ### Caching third-party dependencies
 
-RMM uses [CPM.cmake](https://github.com/TheLartians/CPM.cmake) to
+RMM uses [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake) to
 handle third-party dependencies like spdlog, Thrust, GoogleTest,
 GoogleBenchmark. In general you won't have to worry about it. If CMake
 finds an appropriate version on your system, it uses it (you can
@@ -156,7 +156,7 @@ integrate RMM into your own CMake project. In your `CMakeLists.txt`, just add
 ```cmake
 find_package(rmm [VERSION])
 # ...
-target_link_libraries(<your-target> (PRIVATE|PUBLIC) rmm::rmm)
+target_link_libraries(<your-target> (PRIVATE|PUBLIC|INTERFACE) rmm::rmm)
 ```
 
 Since RMM is a header-only library, this does not actually link RMM,
@@ -170,6 +170,27 @@ automatically pulls in `Thrust` by means of a dependency on the
 Thrust. If you want to customize it, you can set the variables
 `THRUST_HOST_SYSTEM` and `THRUST_DEVICE_SYSTEM`; see
 [Thrust's CMake documentation](https://github.com/NVIDIA/cccl/blob/main/thrust/thrust/cmake/README.md).
+
+### Using CPM to manage RMM
+
+Just like RMM uses [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake)
+to manage its dependencies on CCCL and others, you can use it for your
+project's dependecy on RMM itself.
+
+There is an issue with using CPM's *single-argument compact syntax* for
+RMM/CCCL as it transitively marks targets as `SYSTEM` dependencies.
+This causes the CCCL headers pulled in through CPM to be of lower priority
+to the preprocessor than the (potentially outdated) CCCL headers provided
+by the CUDA SDK. To avoid this issue, use CPM's *multi-argument syntax*
+instead:
+
+```cmake
+CPMAddPackage(NAME rmm [VERSION]
+              GITHUB_REPOSITORY rapidsai/rmm
+              SYSTEM Off)
+# ...
+target_link_libraries(<your-target> (PRIVATE|PUBLIC|INTERFACE) rmm::rmm)
+```
 
 # Using RMM in C++
 
