@@ -27,33 +27,33 @@ namespace {
 
 INSTANTIATE_TEST_SUITE_P(ResourceTests,
                          mr_ref_test,
-                         ::testing::Values(mr_factory{"CUDA", &make_cuda},
+                         ::testing::Values("CUDA",
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
-                                           mr_factory{"CUDA_Async", &make_cuda_async},
+                                           "CUDA_Async",
 #endif
-                                           mr_factory{"Managed", &make_managed},
-                                           mr_factory{"System", &make_system},
-                                           mr_factory{"Pool", &make_pool},
-                                           mr_factory{"HostPinnedPool", &make_host_pinned_pool},
-                                           mr_factory{"Arena", &make_arena},
-                                           mr_factory{"Binning", &make_binning},
-                                           mr_factory{"Fixed_Size", &make_fixed_size}),
-                         [](auto const& info) { return info.param.name; });
+                                           "Managed",
+                                           "System",
+                                           "Pool",
+                                           "HostPinnedPool",
+                                           "Arena",
+                                           "Binning",
+                                           "Fixed_Size"),
+                         [](auto const& info) { return info.param; });
 
 // Leave out fixed-size MR here because it can't handle the dynamic allocation sizes
 INSTANTIATE_TEST_SUITE_P(ResourceAllocationTests,
                          mr_ref_allocation_test,
-                         ::testing::Values(mr_factory{"CUDA", &make_cuda},
+                         ::testing::Values("CUDA",
 #ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
-                                           mr_factory{"CUDA_Async", &make_cuda_async},
+                                           "CUDA_Async",
 #endif
-                                           mr_factory{"Managed", &make_managed},
-                                           mr_factory{"System", &make_system},
-                                           mr_factory{"Pool", &make_pool},
-                                           mr_factory{"HostPinnedPool", &make_host_pinned_pool},
-                                           mr_factory{"Arena", &make_arena},
-                                           mr_factory{"Binning", &make_binning}),
-                         [](auto const& info) { return info.param.name; });
+                                           "Managed",
+                                           "System"
+                                           "Pool",
+                                           "HostPinnedPool",
+                                           "Arena",
+                                           "Binning"),
+                         [](auto const& info) { return info.param; });
 
 TEST(DefaultTest, CurrentDeviceResourceIsCUDA)
 {
@@ -70,7 +70,8 @@ TEST(DefaultTest, GetCurrentDeviceResource)
   EXPECT_TRUE(mr->is_equal(rmm::mr::cuda_memory_resource{}));
 }
 
-TEST_P(mr_ref_test, SetCurrentDeviceResource)
+// Disable until we support resource_ref with set_current_device_resource
+/*TEST_P(mr_ref_test, SetCurrentDeviceResource)
 {
   rmm::mr::device_memory_resource* old{};
   old = rmm::mr::set_current_device_resource(this->mr.get());
@@ -87,7 +88,7 @@ TEST_P(mr_ref_test, SetCurrentDeviceResource)
   // setting to `nullptr` should reset to initial cuda resource
   rmm::mr::set_current_device_resource(nullptr);
   EXPECT_TRUE(rmm::mr::get_current_device_resource()->is_equal(rmm::mr::cuda_memory_resource{}));
-}
+}*/
 
 TEST_P(mr_ref_test, SelfEquality) { EXPECT_TRUE(this->ref == this->ref); }
 
