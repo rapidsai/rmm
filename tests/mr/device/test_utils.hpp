@@ -17,6 +17,7 @@
 #pragma once
 
 #include <rmm/aligned.hpp>
+#include <rmm/mr/device/system_memory_resource.hpp>
 
 #include <cuda_runtime_api.h>
 
@@ -31,7 +32,9 @@ inline bool is_device_accessible_memory(void* ptr)
   cudaPointerAttributes attributes{};
   if (cudaSuccess != cudaPointerGetAttributes(&attributes, ptr)) { return false; }
   return (attributes.type == cudaMemoryTypeDevice) or (attributes.type == cudaMemoryTypeManaged) or
-         ((attributes.type == cudaMemoryTypeHost) and (attributes.devicePointer != nullptr));
+         ((attributes.type == cudaMemoryTypeHost) and (attributes.devicePointer != nullptr)) or
+         ((attributes.type == cudaMemoryTypeUnregistered) and
+          (rmm::mr::detail::is_system_memory_supported(rmm::get_current_cuda_device())));
 }
 
 inline bool is_host_memory(void* ptr)

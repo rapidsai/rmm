@@ -32,6 +32,7 @@
 #include <rmm/mr/device/owning_wrapper.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
+#include <rmm/mr/device/system_memory_resource.hpp>
 #include <rmm/mr/pinned_host_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
@@ -345,6 +346,15 @@ inline auto make_cuda_async()
 
 inline auto make_managed() { return std::make_shared<rmm::mr::managed_memory_resource>(); }
 
+inline auto make_system()
+{
+  if (rmm::mr::detail::is_system_memory_supported(rmm::get_current_cuda_device())) {
+    return std::make_shared<rmm::mr::system_memory_resource>();
+  } else {
+    return std::shared_ptr<rmm::mr::system_memory_resource>{nullptr};
+  }
+}
+
 inline auto make_pool()
 {
   return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(
@@ -405,6 +415,7 @@ using cuda_mr        = rmm::mr::cuda_memory_resource;
 using pinned_mr      = rmm::mr::pinned_host_memory_resource;
 using cuda_async_mr  = rmm::mr::cuda_async_memory_resource;
 using managed_mr     = rmm::mr::managed_memory_resource;
+using system_mr      = rmm::mr::system_memory_resource;
 using pool_mr        = rmm::mr::pool_memory_resource<cuda_mr>;
 using pinned_pool_mr = rmm::mr::pool_memory_resource<pinned_mr>;
 using arena_mr       = rmm::mr::arena_memory_resource<cuda_mr>;
@@ -424,6 +435,8 @@ inline std::shared_ptr<mr_factory_base> mr_factory_dispatch(std::string name)
   } else if (name == "Managed") {
     return std::make_shared<mr_factory<managed_mr, decltype(make_managed)>>("Managed",
                                                                             make_managed);
+  } else if (name == "System") {
+    return std::make_shared<mr_factory<system_mr, decltype(make_system)>>("System", make_system);
   } else if (name == "Pool") {
     return std::make_shared<mr_factory<pool_mr, decltype(make_pool)>>("Pool", make_pool);
   } else if (name == "Host_Pinned_Pool") {
@@ -448,7 +461,7 @@ struct mr_ref_test : public ::testing::TestWithParam<std::string> {
   {
     factory_obj = mr_factory_dispatch(GetParam());
     if (factory_obj->skip_test) {
-      GTEST_SKIP() << "Skipping tests since the memory resource is not supported with this CUDA"
+      GTEST_SKIP() << "Skipping tests since the memory resource is not supported with this CUDA "
                    << "driver/runtime version";
     }
     ref = factory_obj->mr;

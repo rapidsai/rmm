@@ -32,6 +32,7 @@ INSTANTIATE_TEST_SUITE_P(ResourceTests,
                                            "CUDA_Async",
 #endif
                                            "Managed",
+                                           "System",
                                            "Pool",
                                            "HostPinnedPool",
                                            "Arena",
@@ -47,6 +48,7 @@ INSTANTIATE_TEST_SUITE_P(ResourceAllocationTests,
                                            "CUDA_Async",
 #endif
                                            "Managed",
+                                           "System"
                                            "Pool",
                                            "HostPinnedPool",
                                            "Arena",

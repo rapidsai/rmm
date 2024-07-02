@@ -187,6 +187,9 @@ ConfigureTest(BINNING_MR_TEST mr/device/binning_mr_tests.cpp)
 # callback memory resource tests
 ConfigureTest(CALLBACK_MR_TEST mr/device/callback_mr_tests.cpp)
 
+# system memory resource tests
+ConfigureTest(SYSTEM_MR_TEST mr/device/system_mr_tests.cu)
+
 # container multidevice tests
 ConfigureTest(CONTAINER_MULTIDEVICE_TEST container_multidevice_tests.cu)
 
