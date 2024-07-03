@@ -24,6 +24,7 @@
 #include <rmm/mr/device/detail/coalescing_free_list.hpp>
 #include <rmm/mr/device/detail/stream_ordered_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/std/type_traits>
@@ -127,12 +128,40 @@ class pool_memory_resource final
    * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to. Defaults to all
    * of the available from the upstream resource.
    */
+  explicit pool_memory_resource(device_async_resource_ref upstream_mr,
+                                std::size_t initial_pool_size,
+                                std::optional<std::size_t> maximum_pool_size = std::nullopt)
+    : upstream_mr_{upstream_mr}
+  {
+    RMM_EXPECTS(rmm::is_aligned(initial_pool_size, rmm::CUDA_ALLOCATION_ALIGNMENT),
+                "Error, Initial pool size required to be a multiple of 256 bytes");
+    RMM_EXPECTS(rmm::is_aligned(maximum_pool_size.value_or(0), rmm::CUDA_ALLOCATION_ALIGNMENT),
+                "Error, Maximum pool size required to be a multiple of 256 bytes");
+
+    initialize_pool(initial_pool_size, maximum_pool_size);
+  }
+
+  /**
+   * @brief Construct a `pool_memory_resource` and allocate the initial device memory pool using
+   * `upstream_mr`.
+   *
+   * @throws rmm::logic_error if `upstream_mr == nullptr`
+   * @throws rmm::logic_error if `initial_pool_size` is not aligned to a multiple of
+   * pool_memory_resource::allocation_alignment bytes.
+   * @throws rmm::logic_error if `maximum_pool_size` is neither the default nor aligned to a
+   * multiple of pool_memory_resource::allocation_alignment bytes.
+   *
+   * @param upstream_mr The memory_resource from which to allocate blocks for the pool.
+   * @param initial_pool_size Minimum size, in bytes, of the initial pool.
+   * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to. Defaults to all
+   * of the available from the upstream resource.
+   */
   explicit pool_memory_resource(Upstream* upstream_mr,
                                 std::size_t initial_pool_size,
                                 std::optional<std::size_t> maximum_pool_size = std::nullopt)
     : upstream_mr_{[upstream_mr]() {
         RMM_EXPECTS(nullptr != upstream_mr, "Unexpected null upstream pointer.");
-        return upstream_mr;
+        return device_async_resource_ref{*upstream_mr};
       }()}
   {
     RMM_EXPECTS(rmm::is_aligned(initial_pool_size, rmm::CUDA_ALLOCATION_ALIGNMENT),
@@ -182,15 +211,10 @@ class pool_memory_resource final
   /**
    * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
    */
-  [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
+  [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept
   {
     return upstream_mr_;
   }
-
-  /**
-   * @briefreturn{Upstream* to the upstream memory resource}
-   */
-  [[nodiscard]] Upstream* get_upstream() const noexcept { return upstream_mr_; }
 
   /**
    * @brief Computes the size of the current pool
@@ -464,7 +488,8 @@ class pool_memory_resource final
   }
 
  private:
-  Upstream* upstream_mr_;  // The "heap" to allocate the pool from
+  // The "heap" to allocate the pool from
+  device_async_resource_ref upstream_mr_;
   std::size_t current_pool_size_{};
   std::optional<std::size_t> maximum_pool_size_{};
 

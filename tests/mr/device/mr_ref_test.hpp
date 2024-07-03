@@ -65,12 +65,11 @@ struct allocation {
 
 inline void test_get_current_device_resource()
 {
-  EXPECT_NE(nullptr, rmm::mr::get_current_device_resource());
-  void* ptr = rmm::mr::get_current_device_resource()->allocate(1_MiB);
+  void* ptr = rmm::mr::get_current_device_resource().allocate(1_MiB);
   EXPECT_NE(nullptr, ptr);
   EXPECT_TRUE(is_properly_aligned(ptr));
   EXPECT_TRUE(is_device_accessible_memory(ptr));
-  rmm::mr::get_current_device_resource()->deallocate(ptr, 1_MiB);
+  rmm::mr::get_current_device_resource().deallocate(ptr, 1_MiB);
 }
 
 inline void test_allocate(resource_ref ref, std::size_t bytes)

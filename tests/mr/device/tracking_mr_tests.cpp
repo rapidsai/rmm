@@ -101,7 +101,7 @@ TEST(TrackingTest, AllocationsLeftWithoutStacks)
 
 TEST(TrackingTest, MultiTracking)
 {
-  auto* orig_device_resource = rmm::mr::get_current_device_resource();
+  auto orig_device_resource = rmm::mr::get_current_device_resource();
   tracking_adaptor mr{orig_device_resource, true};
   rmm::mr::set_current_device_resource(&mr);
 

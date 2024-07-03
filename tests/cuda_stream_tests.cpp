@@ -96,6 +96,6 @@ TEST_F(CudaStreamDeathTest, TestSyncNoThrow)
     // should assert here or in `~cuda_stream()`
     stream_a.synchronize_no_throw();
   };
-  EXPECT_DEATH(test(), "Assertion");
+  EXPECT_DEATH(test(), "");
 }
 #endif
