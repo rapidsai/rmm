@@ -38,8 +38,7 @@ rapids_cmake_build_type(Release)
 # ##################################################################################################
 # * build options ----------------------------------------------------------------------------------
 
-option(USE_NVTX "Legacy NVTX control (used if RMM_USE_NVTX is not set)" ON)
-option(RMM_USE_NVTX "Build RMM with NVTX support" ${USE_NVTX})
+option(RMM_USE_NVTX "Build RMM with NVTX support" ON)
 option(BUILD_TESTS "Configure CMake to build tests" ON)
 option(BUILD_BENCHMARKS "Configure CMake to build (google) benchmarks" OFF)
 set(RMM_LOGGING_LEVEL
@@ -101,11 +100,9 @@ target_link_libraries(rmm INTERFACE nvtx3::nvtx3-cpp)
 target_compile_features(rmm INTERFACE cxx_std_17 $<BUILD_INTERFACE:cuda_std_17>)
 target_compile_definitions(rmm INTERFACE LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
-# NVTX enable/disable
-if(RMM_USE_NVTX)
-  target_compile_definitions(rmm INTERFACE RMM_USE_NVTX)
-elseif(NOT USE_NVTX)
-  target_compile_definitions(rmm INTERFACE NVTX_DISABLE)
+# Disable NVTX if necessary
+if(NOT RMM_USE_NVTX)
+  target_compile_definitions(rmm INTERFACE RMM_DISABLE_NVTX)
 endif()
 
 # ##################################################################################################
