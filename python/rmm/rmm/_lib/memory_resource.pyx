@@ -1066,6 +1066,9 @@ cpdef void _initialize(
     """
     Initializes RMM library using the options passed
     """
+    if managed_memory and system_memory:
+        raise ValueError("managed_memory and system_memory cannot both be True")
+
     if managed_memory:
         upstream = ManagedMemoryResource
     elif system_memory:

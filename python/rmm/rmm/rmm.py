@@ -85,6 +85,9 @@ def reinitialize(
     with device ID ``1``. Use `rmm.get_log_filenames()` to get the log file
     names corresponding to each device.
     """
+    if managed_memory and system_memory:
+        raise ValueError("managed_memory and system_memory cannot both be True")
+
     for func, args, kwargs in reversed(_reinitialize_hooks):
         func(*args, **kwargs)
 

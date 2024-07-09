@@ -38,6 +38,10 @@ _CUDAMALLOC_ASYNC_SUPPORTED = (_driver_version >= 11020) and (
     _runtime_version >= 11020
 )
 
+_SYSTEM_MEMORY_SUPPORTED = rmm._cuda.gpu.getDeviceAttribute(
+    cudart.cudaDeviceAttr.cudaDevAttrPageableMemoryAccess,
+    rmm._cuda.gpu.getDevice()
+)
 
 def array_tester(dtype, nelem, alloc):
     # data
