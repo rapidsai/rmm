@@ -94,6 +94,11 @@ cdef extern from "rmm/mr/device/managed_memory_resource.hpp" \
     cdef cppclass managed_memory_resource(device_memory_resource):
         managed_memory_resource() except +
 
+cdef extern from "rmm/mr/device/system_memory_resource.hpp" \
+        namespace "rmm::mr" nogil:
+    cdef cppclass system_memory_resource(device_memory_resource):
+        system_memory_resource() except +
+
 cdef extern from "rmm/mr/device/cuda_async_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
 
@@ -169,6 +174,13 @@ cdef extern from "rmm/mr/device/limiting_resource_adaptor.hpp" \
 
         size_t get_allocated_bytes() except +
         size_t get_allocation_limit() except +
+
+cdef extern from "rmm/mr/device/sam_headroom_resource_adaptor.hpp" \
+        namespace "rmm::mr" nogil:
+    cdef cppclass sam_headroom_resource_adaptor[Upstream](device_memory_resource):
+        sam_headroom_resource_adaptor(
+            Upstream* upstream_mr,
+            size_t headroom) except +
 
 cdef extern from "rmm/mr/device/logging_resource_adaptor.hpp" \
         namespace "rmm::mr" nogil:
@@ -356,6 +368,20 @@ cdef class ManagedMemoryResource(DeviceMemoryResource):
     def __init__(self):
         """
         Memory resource that uses ``cudaMallocManaged``/``cudaFree`` for
+        allocation/deallocation.
+        """
+        pass
+
+
+cdef class SystemMemoryResource(DeviceMemoryResource):
+    def __cinit__(self):
+        self.c_obj.reset(
+            new system_memory_resource()
+        )
+
+    def __init__(self):
+        """
+        Memory resource that uses ``malloc``/``free`` for
         allocation/deallocation.
         """
         pass
@@ -718,6 +744,40 @@ cdef class LimitingResourceAdaptor(UpstreamResourceAdaptor):
             self.c_obj.get())
         )[0].get_allocation_limit()
 
+cdef class SamHeadroomResourceAdaptor(UpstreamResourceAdaptor):
+    def __cinit__(
+        self,
+        DeviceMemoryResource upstream_mr,
+        size_t headroom
+    ):
+        if not isinstance(upstream_mr, SystemMemoryResource):
+            raise TypeError("SamHeadroomResourceAdaptor requires a SystemMemoryResource")
+        cdef system_memory_resource *sys_mr = <system_memory_resource *> upstream_mr.get_mr()
+        self.c_obj.reset(
+            new sam_headroom_resource_adaptor[system_memory_resource](
+                sys_mr,
+                headroom
+            )
+        )
+
+    def __init__(
+        self,
+        DeviceMemoryResource upstream_mr,
+        size_t headroom
+    ):
+        """
+        Memory resource that adapts system memory resource to allocate memory
+        with a headroom.
+
+        Parameters
+        ----------
+        upstream_mr : DeviceMemoryResource
+            The upstream memory resource.
+        headroom : size_t
+            Size of the reserved GPU memory as headroom
+        """
+        pass
+
 
 cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
     def __cinit__(
@@ -995,8 +1055,10 @@ cdef _per_device_mrs = defaultdict(CudaMemoryResource)
 cpdef void _initialize(
     bool pool_allocator=False,
     bool managed_memory=False,
+    bool system_memory=False,
     object initial_pool_size=None,
     object maximum_pool_size=None,
+    object system_memory_headroom_size=None,
     object devices=0,
     bool logging=False,
     object log_file_name=None,
@@ -1006,20 +1068,10 @@ cpdef void _initialize(
     """
     if managed_memory:
         upstream = ManagedMemoryResource
+    elif system_memory:
+        upstream = SystemMemoryResource
     else:
         upstream = CudaMemoryResource
-
-    if pool_allocator:
-        typ = PoolMemoryResource
-        args = (upstream(),)
-        kwargs = dict(
-            initial_pool_size=initial_pool_size,
-            maximum_pool_size=maximum_pool_size
-        )
-    else:
-        typ = upstream
-        args = ()
-        kwargs = {}
 
     cdef DeviceMemoryResource mr
     cdef int original_device
@@ -1046,13 +1098,30 @@ cpdef void _initialize(
         for device in devices:
             setDevice(device)
 
+            base_mr = upstream()
+
+            if system_memory and system_memory_headroom_size is not None:
+                base_mr = SamHeadroomResourceAdaptor(
+                    base_mr,
+                    system_memory_headroom_size
+                )
+            else:
+                base_mr = upstream()
+
+            if pool_allocator:
+                base_mr = PoolMemoryResource(
+                    base_mr,
+                    initial_pool_size=initial_pool_size,
+                    maximum_pool_size=maximum_pool_size
+                )
+
             if logging:
                 mr = LoggingResourceAdaptor(
-                    typ(*args, **kwargs),
+                    base_mr,
                     log_file_name
                 )
             else:
-                mr = typ(*args, **kwargs)
+                mr = base_mr
 
             set_per_device_resource(device, mr)
 
