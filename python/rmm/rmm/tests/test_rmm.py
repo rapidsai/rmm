@@ -40,8 +40,9 @@ _CUDAMALLOC_ASYNC_SUPPORTED = (_driver_version >= 11020) and (
 
 _SYSTEM_MEMORY_SUPPORTED = rmm._cuda.gpu.getDeviceAttribute(
     cudart.cudaDeviceAttr.cudaDevAttrPageableMemoryAccess,
-    rmm._cuda.gpu.getDevice()
+    rmm._cuda.gpu.getDevice(),
 )
+
 
 def array_tester(dtype, nelem, alloc):
     # data
@@ -435,11 +436,12 @@ def test_pool_memory_resource(dtype, nelem, alloc):
     [
         lambda: rmm.mr.CudaMemoryResource(),
         lambda: rmm.mr.ManagedMemoryResource(),
-    ] + (
+    ]
+    + (
         [lambda: rmm.mr.SystemMemoryResource()]
         if _SYSTEM_MEMORY_SUPPORTED
         else []
-    )
+    ),
 )
 def test_fixed_size_memory_resource(dtype, nelem, alloc, upstream):
     mr = rmm.mr.FixedSizeMemoryResource(
@@ -461,11 +463,12 @@ def test_fixed_size_memory_resource(dtype, nelem, alloc, upstream):
         lambda: rmm.mr.PoolMemoryResource(
             rmm.mr.CudaMemoryResource(), 1 << 20
         ),
-    ] + (
+    ]
+    + (
         [lambda: rmm.mr.SystemMemoryResource()]
         if _SYSTEM_MEMORY_SUPPORTED
         else []
-    )
+    ),
 )
 def test_binning_memory_resource(dtype, nelem, alloc, upstream_mr):
     upstream = upstream_mr()
