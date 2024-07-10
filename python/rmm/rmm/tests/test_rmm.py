@@ -95,6 +95,27 @@ def test_rmm_modes(dtype, nelem, alloc, managed, pool):
     array_tester(dtype, nelem, alloc)
 
 
+@pytest.mark.skipif(
+    not _SYSTEM_MEMORY_SUPPORTED,
+    reason="System memory not supported",
+)
+@pytest.mark.parametrize("dtype", _dtypes)
+@pytest.mark.parametrize("nelem", _nelems)
+@pytest.mark.parametrize("alloc", _allocs)
+@pytest.mark.parametrize(
+    "system, pool", list(product([False, True], [False, True]))
+)
+def test_rmm_modes_system_memory(dtype, nelem, alloc, system, pool):
+    assert rmm.is_initialized()
+    array_tester(dtype, nelem, alloc)
+
+    rmm.reinitialize(pool_allocator=pool, system_memory=system)
+
+    assert rmm.is_initialized()
+
+    array_tester(dtype, nelem, alloc)
+
+
 @pytest.mark.parametrize("dtype", _dtypes)
 @pytest.mark.parametrize("nelem", _nelems)
 @pytest.mark.parametrize("alloc", _allocs)
@@ -414,7 +435,9 @@ def test_pool_memory_resource(dtype, nelem, alloc):
     [
         lambda: rmm.mr.CudaMemoryResource(),
         lambda: rmm.mr.ManagedMemoryResource(),
-    ],
+    ] + (
+        [lambda: rmm.mr.SystemMemoryResource()] if _SYSTEM_MEMORY_SUPPORTED else []
+    )
 )
 def test_fixed_size_memory_resource(dtype, nelem, alloc, upstream):
     mr = rmm.mr.FixedSizeMemoryResource(
@@ -436,7 +459,9 @@ def test_fixed_size_memory_resource(dtype, nelem, alloc, upstream):
         lambda: rmm.mr.PoolMemoryResource(
             rmm.mr.CudaMemoryResource(), 1 << 20
         ),
-    ],
+    ] + (
+        [lambda: rmm.mr.SystemMemoryResource()] if _SYSTEM_MEMORY_SUPPORTED else []
+    )
 )
 def test_binning_memory_resource(dtype, nelem, alloc, upstream_mr):
     upstream = upstream_mr()
@@ -478,6 +503,12 @@ def test_reinitialize_initial_pool_size_gt_max():
             maximum_pool_size=1 << 10,
         )
     assert "Initial pool size exceeds the maximum pool size" in str(e.value)
+
+
+def test_reinitialize_both_managed_and_system():
+    with pytest.raises(ValueError) as e:
+        rmm.reinitialize(managed_memory=True, system_memory=True)
+    assert "managed_memory and system_memory cannot both be True" in str(e.value)
 
 
 @pytest.mark.parametrize("dtype", _dtypes)
