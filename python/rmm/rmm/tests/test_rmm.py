@@ -436,7 +436,9 @@ def test_pool_memory_resource(dtype, nelem, alloc):
         lambda: rmm.mr.CudaMemoryResource(),
         lambda: rmm.mr.ManagedMemoryResource(),
     ] + (
-        [lambda: rmm.mr.SystemMemoryResource()] if _SYSTEM_MEMORY_SUPPORTED else []
+        [lambda: rmm.mr.SystemMemoryResource()]
+        if _SYSTEM_MEMORY_SUPPORTED
+        else []
     )
 )
 def test_fixed_size_memory_resource(dtype, nelem, alloc, upstream):
@@ -460,7 +462,9 @@ def test_fixed_size_memory_resource(dtype, nelem, alloc, upstream):
             rmm.mr.CudaMemoryResource(), 1 << 20
         ),
     ] + (
-        [lambda: rmm.mr.SystemMemoryResource()] if _SYSTEM_MEMORY_SUPPORTED else []
+        [lambda: rmm.mr.SystemMemoryResource()]
+        if _SYSTEM_MEMORY_SUPPORTED
+        else []
     )
 )
 def test_binning_memory_resource(dtype, nelem, alloc, upstream_mr):
@@ -508,7 +512,9 @@ def test_reinitialize_initial_pool_size_gt_max():
 def test_reinitialize_both_managed_and_system():
     with pytest.raises(ValueError) as e:
         rmm.reinitialize(managed_memory=True, system_memory=True)
-    assert "managed_memory and system_memory cannot both be True" in str(e.value)
+    assert "managed_memory and system_memory cannot both be True" in str(
+        e.value
+    )
 
 
 @pytest.mark.parametrize("dtype", _dtypes)

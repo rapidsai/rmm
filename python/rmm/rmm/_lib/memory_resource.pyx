@@ -751,8 +751,11 @@ cdef class SamHeadroomResourceAdaptor(UpstreamResourceAdaptor):
         size_t headroom
     ):
         if not isinstance(upstream_mr, SystemMemoryResource):
-            raise TypeError("SamHeadroomResourceAdaptor requires a SystemMemoryResource")
-        cdef system_memory_resource *sys_mr = <system_memory_resource *> upstream_mr.get_mr()
+            raise TypeError(
+                "SamHeadroomResourceAdaptor requires a SystemMemoryResource"
+            )
+        cdef system_memory_resource *sys_mr =\
+            <system_memory_resource *> upstream_mr.get_mr()
         self.c_obj.reset(
             new sam_headroom_resource_adaptor[system_memory_resource](
                 sys_mr,
