@@ -175,7 +175,7 @@ Thrust. If you want to customize it, you can set the variables
 
 RMM uses [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake) to manage
 its dependencies on [CCCL](https://github.com/nvidia/cccl) and others,
-you can use it for your project's dependecy on RMM itself.
+you can use it for your project's dependency on RMM itself.
 
 There is an issue with using CPM's *single-argument compact syntax* for
 RMM/CCCL as it transitively marks targets as `SYSTEM` dependencies.
