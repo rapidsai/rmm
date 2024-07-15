@@ -272,7 +272,7 @@ dependencies:
       - output_types: [conda, requirements, pyproject]
         packages:
           - numba>=0.57
-          - numpy>=1.23,<2.0a0
+          - numpy>=1.23,<3
     specific:
       - output_types: [conda, requirements, pyproject]
         matrices:
