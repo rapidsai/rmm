@@ -12,6 +12,7 @@ PIP_PACKAGE=$(echo "${WHEELHOUSE}"/rmm_"${RAPIDS_PY_CUDA_SUFFIX}"*.whl | head -n
 if [[ $RAPIDS_DEPENDENCIES != "oldest" ]]; then
   python -m pip install -v "${PIP_PACKAGE}[test]"
 else
+  python -m pip install rapids-dependency-file-generator && pyenv rehash  # TODO: include in image
   rapids-dependency-file-generator \
       --output requirements \
       --file-key test_python \
