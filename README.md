@@ -69,6 +69,7 @@ GPU Support:
   may work on earlier architectures.
 
 Python requirements:
+* `rapids-build-backend` (available from PyPI or the `rapidsai` conda channel)
 * `scikit-build-core`
 * `cuda-python`
 * `cython`
