@@ -91,4 +91,7 @@ cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
 cdef class FailureCallbackResourceAdaptor(UpstreamResourceAdaptor):
     cdef object _callback
 
+cdef class PrefetchResourceAdaptor(UpstreamResourceAdaptor):
+    pass
+
 cpdef DeviceMemoryResource get_current_device_resource()
