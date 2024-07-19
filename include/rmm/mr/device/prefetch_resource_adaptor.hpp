@@ -79,6 +79,8 @@ class prefetch_resource_adaptor final : public device_memory_resource {
    * @brief Allocates memory of size at least `bytes` using the upstream
    * resource as long as it fits inside the allocation limit.
    *
+   * @note The allocation is always prefetched to the current device.
+   *
    * @throws rmm::bad_alloc if the requested allocation could not be fulfilled
    * by the upstream resource.
    *
