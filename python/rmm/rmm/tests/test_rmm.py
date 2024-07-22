@@ -777,6 +777,30 @@ def test_failure_callback_resource_adaptor():
     assert retried[0]
 
 
+@pytest.mark.parametrize("managed", [True, False])
+def test_prefetch_resource_adaptor(managed):
+    if managed:
+        upstream_mr = rmm.mr.ManagedMemoryResource()
+    else:
+        upstream_mr = rmm.mr.CudaMemoryResource()
+    mr = rmm.mr.PrefetchResourceAdaptor(upstream_mr)
+    rmm.mr.set_current_device_resource(mr)
+
+    # This allocation should be prefetched
+    db = rmm.DeviceBuffer.to_device(np.zeros(256, dtype="u1"))
+
+    err, device = cudart.cudaGetDevice()
+    assert err == cudart.cudaError_t.cudaSuccess
+
+    if managed:
+        assert_prefetched(db, device)
+    db.prefetch()  # just test that it doesn't throw
+    if managed:
+        err, device = cudart.cudaGetDevice()
+        assert err == cudart.cudaError_t.cudaSuccess
+        assert_prefetched(db, device)
+
+
 def test_failure_callback_resource_adaptor_error():
     def callback(nbytes: int) -> bool:
         raise RuntimeError("MyError")
