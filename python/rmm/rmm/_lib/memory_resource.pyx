@@ -752,25 +752,18 @@ cdef class LimitingResourceAdaptor(UpstreamResourceAdaptor):
 cdef class SamHeadroomResourceAdaptor(UpstreamResourceAdaptor):
     def __cinit__(
         self,
-        DeviceMemoryResource upstream_mr,
         size_t headroom
     ):
-        if not isinstance(upstream_mr, SystemMemoryResource):
-            raise TypeError(
-                "SamHeadroomResourceAdaptor requires a SystemMemoryResource"
-            )
-        cdef system_memory_resource *sys_mr =\
-            <system_memory_resource *> upstream_mr.get_mr()
+        self.upstream_mr = SystemMemoryResource()
         self.c_obj.reset(
             new sam_headroom_resource_adaptor[system_memory_resource](
-                sys_mr,
+                <system_memory_resource*> self.upstream_mr.get_mr(),
                 headroom
             )
         )
 
     def __init__(
         self,
-        DeviceMemoryResource upstream_mr,
         size_t headroom
     ):
         """
@@ -779,8 +772,6 @@ cdef class SamHeadroomResourceAdaptor(UpstreamResourceAdaptor):
 
         Parameters
         ----------
-        upstream_mr : DeviceMemoryResource
-            The upstream memory resource.
         headroom : size_t
             Size of the reserved GPU memory as headroom
         """
@@ -1135,11 +1126,8 @@ cpdef void _initialize(
         for device in devices:
             setDevice(device)
 
-            base_mr = upstream()
-
             if system_memory and system_memory_headroom_size is not None:
                 base_mr = SamHeadroomResourceAdaptor(
-                    base_mr,
                     system_memory_headroom_size
                 )
             else:
