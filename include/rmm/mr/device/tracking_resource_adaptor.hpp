@@ -283,6 +283,8 @@ class tracking_resource_adaptor final : public device_memory_resource {
  * @return The new tracking resource adaptor
  */
 template <typename Upstream>
+[[deprecated(
+  "make_tracking_adaptor is deprecated. Use the tracking_resource_adaptor constructor instead.")]]
 tracking_resource_adaptor<Upstream> make_tracking_adaptor(Upstream* upstream)
 {
   return tracking_resource_adaptor<Upstream>{upstream};

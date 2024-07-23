@@ -302,6 +302,9 @@ bool operator!=(stream_allocator_adaptor<A> const& lhs, stream_allocator_adaptor
  * @return A `stream_allocator_adaptor` wrapping `allocator` and `s`
  */
 template <typename Allocator>
+[[deprecated(
+  "make_stream_allocator_adaptor is deprecated. Use the stream_allocator_adaptor constructor "
+  "instead.")]]
 auto make_stream_allocator_adaptor(Allocator const& allocator, cuda_stream_view stream)
 {
   return stream_allocator_adaptor<Allocator>{allocator, stream};
