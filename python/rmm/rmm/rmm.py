@@ -27,10 +27,8 @@ _reinitialize_hooks = []
 def reinitialize(
     pool_allocator=False,
     managed_memory=False,
-    system_memory=False,
     initial_pool_size=None,
     maximum_pool_size=None,
-    system_memory_headroom_size=None,
     devices=0,
     logging=False,
     log_file_name=None,
@@ -47,8 +45,6 @@ def reinitialize(
         performance.
     managed_memory : bool, default False
         If True, use managed memory for device memory allocation
-    system_memory : bool, default False
-        If True, use system allocated memory for device memory allocation
     initial_pool_size : int, default None
         When `pool_allocator` is True, this indicates the initial pool size in
         bytes. By default, 1/2 of the total GPU memory is used.
@@ -57,12 +53,6 @@ def reinitialize(
         When `pool_allocator` is True, this indicates the maximum pool size in
         bytes. By default, the total available memory on the GPU is used.
         When `pool_allocator` is False, this argument is ignored if provided.
-    system_memory_headroom_size : int, default None
-        When `system_memory` is True, this indicates the headroom size in bytes
-        to be reserved for CUDA calls not using system memory. By default, the
-        headroom is 0 and the total available memory on the GPU can be used by
-        system memory.
-        When `system_allocator` is False, this argument is ignored if provided.
     devices : int or List[int], default 0
         GPU device  IDs to register. By default registers only GPU 0.
     logging : bool, default False
@@ -85,21 +75,14 @@ def reinitialize(
     with device ID ``1``. Use `rmm.get_log_filenames()` to get the log file
     names corresponding to each device.
     """
-    if managed_memory and system_memory:
-        raise ValueError(
-            "managed_memory and system_memory cannot both be True"
-        )
-
     for func, args, kwargs in reversed(_reinitialize_hooks):
         func(*args, **kwargs)
 
     mr._initialize(
         pool_allocator=pool_allocator,
         managed_memory=managed_memory,
-        system_memory=system_memory,
         initial_pool_size=initial_pool_size,
         maximum_pool_size=maximum_pool_size,
-        system_memory_headroom_size=system_memory_headroom_size,
         devices=devices,
         logging=logging,
         log_file_name=log_file_name,

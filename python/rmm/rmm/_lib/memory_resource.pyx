@@ -392,6 +392,35 @@ cdef class SystemMemoryResource(DeviceMemoryResource):
         pass
 
 
+cdef class SamHeadroomResourceAdaptor(DeviceMemoryResource):
+    def __cinit__(
+        self,
+        size_t headroom
+    ):
+        self.system_mr = SystemMemoryResource()
+        self.c_obj.reset(
+            new sam_headroom_resource_adaptor[system_memory_resource](
+                <system_memory_resource*> self.system_mr.get_mr(),
+                headroom
+            )
+        )
+
+    def __init__(
+        self,
+        size_t headroom
+    ):
+        """
+        Memory resource that adapts system memory resource to allocate memory
+        with a headroom.
+
+        Parameters
+        ----------
+        headroom : size_t
+            Size of the reserved GPU memory as headroom
+        """
+        pass
+
+
 cdef class PoolMemoryResource(UpstreamResourceAdaptor):
 
     def __cinit__(
@@ -749,34 +778,6 @@ cdef class LimitingResourceAdaptor(UpstreamResourceAdaptor):
             self.c_obj.get())
         )[0].get_allocation_limit()
 
-cdef class SamHeadroomResourceAdaptor(UpstreamResourceAdaptor):
-    def __cinit__(
-        self,
-        size_t headroom
-    ):
-        self.upstream_mr = SystemMemoryResource()
-        self.c_obj.reset(
-            new sam_headroom_resource_adaptor[system_memory_resource](
-                <system_memory_resource*> self.upstream_mr.get_mr(),
-                headroom
-            )
-        )
-
-    def __init__(
-        self,
-        size_t headroom
-    ):
-        """
-        Memory resource that adapts system memory resource to allocate memory
-        with a headroom.
-
-        Parameters
-        ----------
-        headroom : size_t
-            Size of the reserved GPU memory as headroom
-        """
-        pass
-
 
 cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
     def __cinit__(
@@ -1080,10 +1081,8 @@ cdef _per_device_mrs = defaultdict(CudaMemoryResource)
 cpdef void _initialize(
     bool pool_allocator=False,
     bool managed_memory=False,
-    bool system_memory=False,
     object initial_pool_size=None,
     object maximum_pool_size=None,
-    object system_memory_headroom_size=None,
     object devices=0,
     bool logging=False,
     object log_file_name=None,
@@ -1091,15 +1090,22 @@ cpdef void _initialize(
     """
     Initializes RMM library using the options passed
     """
-    if managed_memory and system_memory:
-        raise ValueError("managed_memory and system_memory cannot both be True")
-
     if managed_memory:
         upstream = ManagedMemoryResource
-    elif system_memory:
-        upstream = SystemMemoryResource
     else:
         upstream = CudaMemoryResource
+
+    if pool_allocator:
+        typ = PoolMemoryResource
+        args = (upstream(),)
+        kwargs = dict(
+            initial_pool_size=initial_pool_size,
+            maximum_pool_size=maximum_pool_size
+        )
+    else:
+        typ = upstream
+        args = ()
+        kwargs = {}
 
     cdef DeviceMemoryResource mr
     cdef int original_device
@@ -1126,27 +1132,13 @@ cpdef void _initialize(
         for device in devices:
             setDevice(device)
 
-            if system_memory and system_memory_headroom_size is not None:
-                base_mr = SamHeadroomResourceAdaptor(
-                    system_memory_headroom_size
-                )
-            else:
-                base_mr = upstream()
-
-            if pool_allocator:
-                base_mr = PoolMemoryResource(
-                    base_mr,
-                    initial_pool_size=initial_pool_size,
-                    maximum_pool_size=maximum_pool_size
-                )
-
             if logging:
                 mr = LoggingResourceAdaptor(
-                    base_mr,
+                    typ(*args, **kwargs),
                     log_file_name
                 )
             else:
-                mr = base_mr
+                mr = typ(*args, **kwargs)
 
             set_per_device_resource(device, mr)
 

@@ -55,6 +55,9 @@ cdef class ManagedMemoryResource(DeviceMemoryResource):
 cdef class SystemMemoryResource(DeviceMemoryResource):
     pass
 
+cdef class SamHeadroomResourceAdaptor(DeviceMemoryResource):
+    cdef readonly DeviceMemoryResource system_mr
+
 cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
     pass
 
@@ -78,9 +81,6 @@ cdef class CallbackMemoryResource(DeviceMemoryResource):
     cdef object _deallocate_func
 
 cdef class LimitingResourceAdaptor(UpstreamResourceAdaptor):
-    pass
-
-cdef class SamHeadroomResourceAdaptor(UpstreamResourceAdaptor):
     pass
 
 cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
