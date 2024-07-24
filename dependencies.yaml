@@ -165,21 +165,11 @@ dependencies:
               packages:
                 - librmm-cu12==24.8.*,>=0.0.0a0
             - matrix:
-                cuda: "12.*"
-                cuda_suffixed: "false"
-              packages:
-                - &librmm_unsuffixed librmm==24.8.*,>=0.0.0a0
-            - matrix:
                 cuda: "11.*"
                 cuda_suffixed: "true"
               packages:
                 - librmm-cu11==24.8.*,>=0.0.0a0
-            - matrix:
-                cuda: "11.*"
-                cuda_suffixed: "false"
-              packages: &cython_build_cu11_unsuffixed
-                - *librmm_unsuffixed
-            - {matrix: null, packages: *cython_build_cu11_unsuffixed}
+            - {matrix: null, packages: ['librmm==24.8.*,>=0.0.0a0']}
   checks:
     common:
       - output_types: [conda, requirements]
