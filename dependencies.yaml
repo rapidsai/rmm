@@ -169,7 +169,9 @@ dependencies:
                 cuda_suffixed: "true"
               packages:
                 - librmm-cu11==24.8.*,>=0.0.0a0
-            - {matrix: null, packages: ['librmm==24.8.*,>=0.0.0a0']}
+            - matrix: null
+              packages:
+                - librmm==24.8.*,>=0.0.0a0
   checks:
     common:
       - output_types: [conda, requirements]
