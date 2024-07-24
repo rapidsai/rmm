@@ -23,12 +23,12 @@
 
 namespace rmm::mr {
 /**
- * @addtogroup device_resource_adaptors
+ * @addtogroup device_memory_resources
  * @{
  * @file
  */
 /**
- * @brief Resource that adapts system memory resource to allocate memory with a headroom.
+ * @brief Resource that uses system memory resource to allocate memory with a headroom.
  *
  * System allocated memory (SAM) can be migrated to the GPU, but is never migrated back the host. If
  * GPU memory is over-subscribed, this can cause other CUDA calls to fail with out-of-memory errors.
@@ -39,46 +39,22 @@ namespace rmm::mr {
  * Since doing this check on every allocation can be expensive, the caller may choose to use other
  * allocators (e.g. `binning_memory_resource`) for small allocations, and use this allocator for
  * large allocations only.
- *
- * @tparam Upstream Type of the upstream resource used for allocation/deallocation. Must be
- *                  `system_memory_resource`.
  */
-template <typename Upstream>
-class sam_headroom_resource_adaptor final : public device_memory_resource {
+class sam_headroom_memory_resource final : public device_memory_resource {
  public:
   /**
-   * @brief Construct a headroom adaptor using `upstream` to satisfy allocation requests.
+   * @brief Construct a headroom memory resource.
    *
-   * @param upstream The resource used for allocating/deallocating device memory. Must be
-   *                 `system_memory_resource`.
    * @param headroom Size of the reserved GPU memory as headroom
    */
-  explicit sam_headroom_resource_adaptor(Upstream* upstream, std::size_t headroom)
-    : upstream_{upstream}, headroom_{headroom}
-  {
-    static_assert(std::is_same_v<system_memory_resource, Upstream>,
-                  "Upstream must be rmm::mr::system_memory_resource");
-  }
+  explicit sam_headroom_memory_resource(std::size_t headroom) : system_mr_{}, headroom_{headroom} {}
 
-  sam_headroom_resource_adaptor()                                                = delete;
-  ~sam_headroom_resource_adaptor() override                                      = default;
-  sam_headroom_resource_adaptor(sam_headroom_resource_adaptor const&)            = delete;
-  sam_headroom_resource_adaptor(sam_headroom_resource_adaptor&&)                 = delete;
-  sam_headroom_resource_adaptor& operator=(sam_headroom_resource_adaptor const&) = delete;
-  sam_headroom_resource_adaptor& operator=(sam_headroom_resource_adaptor&&)      = delete;
-
-  /**
-   * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
-   */
-  [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
-  {
-    return upstream_;
-  }
-
-  /**
-   * @briefreturn{Upstream* to the upstream memory resource}
-   */
-  [[nodiscard]] Upstream* get_upstream() const noexcept { return upstream_; }
+  sam_headroom_memory_resource()                                               = delete;
+  ~sam_headroom_memory_resource() override                                     = default;
+  sam_headroom_memory_resource(sam_headroom_memory_resource const&)            = delete;
+  sam_headroom_memory_resource(sam_headroom_memory_resource&&)                 = delete;
+  sam_headroom_memory_resource& operator=(sam_headroom_memory_resource const&) = delete;
+  sam_headroom_memory_resource& operator=(sam_headroom_memory_resource&&)      = delete;
 
  private:
   /**
@@ -94,8 +70,7 @@ class sam_headroom_resource_adaptor final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, [[maybe_unused]] cuda_stream_view stream) override
   {
-    void* pointer =
-      get_upstream_resource().allocate_async(bytes, rmm::CUDA_ALLOCATION_ALIGNMENT, stream);
+    void* pointer = system_mr_.allocate_async(bytes, rmm::CUDA_ALLOCATION_ALIGNMENT, stream);
 
     auto const free        = rmm::available_device_memory().first;
     auto const allocatable = free > headroom_ ? free - headroom_ : 0UL;
@@ -131,7 +106,7 @@ class sam_headroom_resource_adaptor final : public device_memory_resource {
                      [[maybe_unused]] std::size_t bytes,
                      [[maybe_unused]] cuda_stream_view stream) override
   {
-    get_upstream_resource().deallocate_async(ptr, rmm::CUDA_ALLOCATION_ALIGNMENT, stream);
+    system_mr_.deallocate_async(ptr, rmm::CUDA_ALLOCATION_ALIGNMENT, stream);
   }
 
   /**
@@ -144,12 +119,13 @@ class sam_headroom_resource_adaptor final : public device_memory_resource {
   [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
   {
     if (this == &other) { return true; }
-    auto cast = dynamic_cast<sam_headroom_resource_adaptor const*>(&other);
+    auto cast = dynamic_cast<sam_headroom_memory_resource const*>(&other);
     if (cast == nullptr) { return false; }
-    return get_upstream_resource() == cast->get_upstream_resource() && headroom_ == cast->headroom_;
+    return headroom_ == cast->headroom_;
   }
 
-  Upstream* upstream_;    ///< The upstream resource used for satisfying allocation requests
+  system_memory_resource
+    system_mr_;           ///< The system memory resource used for satisfying allocation requests
   std::size_t headroom_;  ///< Size of GPU memory reserved as headroom
 };
 /** @} */  // end of group

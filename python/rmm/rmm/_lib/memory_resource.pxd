@@ -55,9 +55,6 @@ cdef class ManagedMemoryResource(DeviceMemoryResource):
 cdef class SystemMemoryResource(DeviceMemoryResource):
     pass
 
-cdef class SamHeadroomResourceAdaptor(DeviceMemoryResource):
-    cdef readonly DeviceMemoryResource system_mr
-
 cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
     pass
 

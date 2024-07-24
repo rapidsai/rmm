@@ -99,6 +99,11 @@ cdef extern from "rmm/mr/device/system_memory_resource.hpp" \
     cdef cppclass system_memory_resource(device_memory_resource):
         system_memory_resource() except +
 
+cdef extern from "rmm/mr/device/sam_headroom_memory_resource.hpp" \
+        namespace "rmm::mr" nogil:
+    cdef cppclass sam_headroom_memory_resource(device_memory_resource):
+        sam_headroom_memory_resource(size_t headroom) except +
+
 cdef extern from "rmm/mr/device/cuda_async_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
 
@@ -174,13 +179,6 @@ cdef extern from "rmm/mr/device/limiting_resource_adaptor.hpp" \
 
         size_t get_allocated_bytes() except +
         size_t get_allocation_limit() except +
-
-cdef extern from "rmm/mr/device/sam_headroom_resource_adaptor.hpp" \
-        namespace "rmm::mr" nogil:
-    cdef cppclass sam_headroom_resource_adaptor[Upstream](device_memory_resource):
-        sam_headroom_resource_adaptor(
-            Upstream* upstream_mr,
-            size_t headroom) except +
 
 cdef extern from "rmm/mr/device/logging_resource_adaptor.hpp" \
         namespace "rmm::mr" nogil:
@@ -379,39 +377,28 @@ cdef class ManagedMemoryResource(DeviceMemoryResource):
 
 
 cdef class SystemMemoryResource(DeviceMemoryResource):
-    def __cinit__(self):
-        self.c_obj.reset(
-            new system_memory_resource()
-        )
-
-    def __init__(self):
-        """
-        Memory resource that uses ``malloc``/``free`` for
-        allocation/deallocation.
-        """
-        pass
-
-
-cdef class SamHeadroomResourceAdaptor(DeviceMemoryResource):
     def __cinit__(
         self,
-        size_t headroom
+        headroom=None
     ):
-        self.system_mr = SystemMemoryResource()
-        self.c_obj.reset(
-            new sam_headroom_resource_adaptor[system_memory_resource](
-                <system_memory_resource*> self.system_mr.get_mr(),
-                headroom
+        if headroom is None:
+            self.c_obj.reset(
+                new system_memory_resource()
             )
-        )
+        else:
+            self.c_obj.reset(
+                new sam_headroom_memory_resource(
+                    <size_t> headroom
+                )
+            )
 
     def __init__(
         self,
-        size_t headroom
+        headroom=None
     ):
         """
-        Memory resource that adapts system memory resource to allocate memory
-        with a headroom.
+        Memory resource that uses ``malloc``/``free`` for
+        allocation/deallocation.
 
         Parameters
         ----------
