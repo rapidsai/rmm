@@ -124,9 +124,10 @@ class sam_headroom_memory_resource final : public device_memory_resource {
     return headroom_ == cast->headroom_;
   }
 
-  system_memory_resource
-    system_mr_;           ///< The system memory resource used for satisfying allocation requests
-  std::size_t headroom_;  ///< Size of GPU memory reserved as headroom
+  ///< The system memory resource used for satisfying allocation requests
+  system_memory_resource system_mr_;
+  ///< Size of GPU memory reserved as headroom
+  std::size_t headroom_;
 };
 /** @} */  // end of group
 }  // namespace rmm::mr
