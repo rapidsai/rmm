@@ -104,7 +104,8 @@ def test_rmm_modes(dtype, nelem, alloc, managed, pool):
 @pytest.mark.parametrize("nelem", _nelems)
 @pytest.mark.parametrize("alloc", _allocs)
 @pytest.mark.parametrize(
-    "system, pool, headroom", list(product([False, True], [False, True], [False, True]))
+    "system, pool, headroom",
+    list(product([False, True], [False, True], [False, True])),
 )
 def test_rmm_modes_system_memory(dtype, nelem, alloc, system, pool, headroom):
     assert rmm.is_initialized()
@@ -448,8 +449,10 @@ def test_pool_memory_resource(dtype, nelem, alloc):
         lambda: rmm.mr.ManagedMemoryResource(),
     ]
     + (
-        [lambda: rmm.mr.SystemMemoryResource(),
-         lambda: rmm.mr.SamHeadroomResourceAdaptor(headroom=1 << 20)]
+        [
+            lambda: rmm.mr.SystemMemoryResource(),
+            lambda: rmm.mr.SamHeadroomResourceAdaptor(headroom=1 << 20),
+        ]
         if _SYSTEM_MEMORY_SUPPORTED
         else []
     ),
@@ -476,8 +479,10 @@ def test_fixed_size_memory_resource(dtype, nelem, alloc, upstream):
         ),
     ]
     + (
-        [lambda: rmm.mr.SystemMemoryResource(),
-         lambda: rmm.mr.SamHeadroomResourceAdaptor(headroom=1 << 20)]
+        [
+            lambda: rmm.mr.SystemMemoryResource(),
+            lambda: rmm.mr.SamHeadroomResourceAdaptor(headroom=1 << 20),
+        ]
         if _SYSTEM_MEMORY_SUPPORTED
         else []
     ),
