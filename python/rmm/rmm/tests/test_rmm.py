@@ -112,9 +112,10 @@ def test_rmm_modes_system_memory(dtype, nelem, alloc, system, pool, headroom):
     array_tester(dtype, nelem, alloc)
 
     if system:
-        base_mr = rmm.mr.SystemMemoryResource(
-            headroom=1 << 20 if headroom else None
-        )
+        if headroom:
+            base_mr = rmm.mr.SamHeadroomMemoryResource(headroom=1 << 20)
+        else:
+            base_mr = rmm.mr.SystemMemoryResource()
     else:
         base_mr = rmm.mr.CudaMemoryResource()
     if pool:
@@ -451,7 +452,7 @@ def test_pool_memory_resource(dtype, nelem, alloc):
     + (
         [
             lambda: rmm.mr.SystemMemoryResource(),
-            lambda: rmm.mr.SystemMemoryResource(headroom=1 << 20),
+            lambda: rmm.mr.SamHeadroomMemoryResource(headroom=1 << 20),
         ]
         if _SYSTEM_MEMORY_SUPPORTED
         else []
@@ -481,7 +482,7 @@ def test_fixed_size_memory_resource(dtype, nelem, alloc, upstream):
     + (
         [
             lambda: rmm.mr.SystemMemoryResource(),
-            lambda: rmm.mr.SystemMemoryResource(headroom=1 << 20),
+            lambda: rmm.mr.SamHeadroomMemoryResource(headroom=1 << 20),
         ]
         if _SYSTEM_MEMORY_SUPPORTED
         else []

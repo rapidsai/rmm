@@ -55,6 +55,9 @@ cdef class ManagedMemoryResource(DeviceMemoryResource):
 cdef class SystemMemoryResource(DeviceMemoryResource):
     pass
 
+cdef class SamHeadroomMemoryResource(DeviceMemoryResource):
+    pass
+
 cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
     pass
 

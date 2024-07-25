@@ -377,24 +377,29 @@ cdef class ManagedMemoryResource(DeviceMemoryResource):
 
 
 cdef class SystemMemoryResource(DeviceMemoryResource):
+    def __cinit__(self):
+        self.c_obj.reset(
+            new system_memory_resource()
+        )
+
+    def __init__(self):
+        """
+        Memory resource that uses ``malloc``/``free`` for
+        allocation/deallocation.
+        """
+        pass
+
+
+cdef class SamHeadroomMemoryResource(DeviceMemoryResource):
     def __cinit__(
         self,
-        headroom=None
+        size_t headroom
     ):
-        if headroom is None:
-            self.c_obj.reset(
-                new system_memory_resource()
-            )
-        else:
-            self.c_obj.reset(
-                new sam_headroom_memory_resource(
-                    <size_t> headroom
-                )
-            )
+        self.c_obj.reset(new sam_headroom_memory_resource(headroom))
 
     def __init__(
         self,
-        headroom=None
+        size_t headroom
     ):
         """
         Memory resource that uses ``malloc``/``free`` for
