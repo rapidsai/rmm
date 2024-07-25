@@ -94,6 +94,16 @@ cdef extern from "rmm/mr/device/managed_memory_resource.hpp" \
     cdef cppclass managed_memory_resource(device_memory_resource):
         managed_memory_resource() except +
 
+cdef extern from "rmm/mr/device/system_memory_resource.hpp" \
+        namespace "rmm::mr" nogil:
+    cdef cppclass system_memory_resource(device_memory_resource):
+        system_memory_resource() except +
+
+cdef extern from "rmm/mr/device/sam_headroom_memory_resource.hpp" \
+        namespace "rmm::mr" nogil:
+    cdef cppclass sam_headroom_memory_resource(device_memory_resource):
+        sam_headroom_memory_resource(size_t headroom) except +
+
 cdef extern from "rmm/mr/device/cuda_async_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
 
@@ -362,6 +372,43 @@ cdef class ManagedMemoryResource(DeviceMemoryResource):
         """
         Memory resource that uses ``cudaMallocManaged``/``cudaFree`` for
         allocation/deallocation.
+        """
+        pass
+
+
+cdef class SystemMemoryResource(DeviceMemoryResource):
+    def __cinit__(self):
+        self.c_obj.reset(
+            new system_memory_resource()
+        )
+
+    def __init__(self):
+        """
+        Memory resource that uses ``malloc``/``free`` for
+        allocation/deallocation.
+        """
+        pass
+
+
+cdef class SamHeadroomMemoryResource(DeviceMemoryResource):
+    def __cinit__(
+        self,
+        size_t headroom
+    ):
+        self.c_obj.reset(new sam_headroom_memory_resource(headroom))
+
+    def __init__(
+        self,
+        size_t headroom
+    ):
+        """
+        Memory resource that uses ``malloc``/``free`` for
+        allocation/deallocation.
+
+        Parameters
+        ----------
+        headroom : size_t
+            Size of the reserved GPU memory as headroom
         """
         pass
 
