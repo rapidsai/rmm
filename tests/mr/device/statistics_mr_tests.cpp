@@ -32,15 +32,9 @@ constexpr auto num_allocations{10};
 constexpr auto num_more_allocations{5};
 constexpr auto ten_MiB{10_MiB};
 
-TEST(StatisticsTest, ThrowOnNullUpstream)
-{
-  auto construct_nullptr = []() { statistics_adaptor mr{nullptr}; };
-  EXPECT_THROW(construct_nullptr(), rmm::logic_error);
-}
-
 TEST(StatisticsTest, Empty)
 {
-  statistics_adaptor mr{rmm::mr::get_current_device_resource()};
+  statistics_adaptor mr{rmm::mr::get_current_device_resource_ref()};
 
   EXPECT_EQ(mr.get_bytes_counter().peak, 0);
   EXPECT_EQ(mr.get_bytes_counter().total, 0);
@@ -127,9 +121,9 @@ TEST(StatisticsTest, PeakAllocations)
 
 TEST(StatisticsTest, MultiTracking)
 {
-  auto* orig_device_resource = rmm::mr::get_current_device_resource();
+  auto orig_device_resource = rmm::mr::get_current_device_resource_ref();
   statistics_adaptor mr{orig_device_resource};
-  rmm::mr::set_current_device_resource(&mr);
+  rmm::mr::set_current_device_resource_ref(mr);
 
   std::vector<std::shared_ptr<rmm::device_buffer>> allocations;
   for (std::size_t i = 0; i < num_allocations; ++i) {
@@ -139,8 +133,8 @@ TEST(StatisticsTest, MultiTracking)
 
   EXPECT_EQ(mr.get_allocations_counter().value, 10);
 
-  statistics_adaptor inner_mr{rmm::mr::get_current_device_resource()};
-  rmm::mr::set_current_device_resource(&inner_mr);
+  statistics_adaptor inner_mr{rmm::mr::get_current_device_resource_ref()};
+  rmm::mr::set_current_device_resource_ref(inner_mr);
 
   for (std::size_t i = 0; i < num_more_allocations; ++i) {
     allocations.emplace_back(
@@ -172,7 +166,7 @@ TEST(StatisticsTest, MultiTracking)
   EXPECT_EQ(inner_mr.get_allocations_counter().peak, 5);
 
   // Reset the current device resource
-  rmm::mr::set_current_device_resource(orig_device_resource);
+  rmm::mr::set_current_device_resource_ref(orig_device_resource);
 }
 
 TEST(StatisticsTest, NegativeInnerTracking)
