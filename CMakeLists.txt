@@ -148,7 +148,8 @@ include(CPack)
 # install export targets
 install(TARGETS rmm EXPORT rmm-exports)
 install(DIRECTORY include/rmm/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/rmm)
-install(FILES ${RMM_BINARY_DIR}/include/rmm/version_config.hpp DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/rmm)
+install(FILES ${RMM_BINARY_DIR}/include/rmm/version_config.hpp
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/rmm)
 
 set(doc_string
     [=[
