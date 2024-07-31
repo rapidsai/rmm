@@ -52,6 +52,12 @@ cdef class CudaMemoryResource(DeviceMemoryResource):
 cdef class ManagedMemoryResource(DeviceMemoryResource):
     pass
 
+cdef class SystemMemoryResource(DeviceMemoryResource):
+    pass
+
+cdef class SamHeadroomMemoryResource(DeviceMemoryResource):
+    pass
+
 cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
     pass
 
@@ -90,5 +96,8 @@ cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
 
 cdef class FailureCallbackResourceAdaptor(UpstreamResourceAdaptor):
     cdef object _callback
+
+cdef class PrefetchResourceAdaptor(UpstreamResourceAdaptor):
+    pass
 
 cpdef DeviceMemoryResource get_current_device_resource()

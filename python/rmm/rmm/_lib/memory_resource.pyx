@@ -94,6 +94,16 @@ cdef extern from "rmm/mr/device/managed_memory_resource.hpp" \
     cdef cppclass managed_memory_resource(device_memory_resource):
         managed_memory_resource() except +
 
+cdef extern from "rmm/mr/device/system_memory_resource.hpp" \
+        namespace "rmm::mr" nogil:
+    cdef cppclass system_memory_resource(device_memory_resource):
+        system_memory_resource() except +
+
+cdef extern from "rmm/mr/device/sam_headroom_memory_resource.hpp" \
+        namespace "rmm::mr" nogil:
+    cdef cppclass sam_headroom_memory_resource(device_memory_resource):
+        sam_headroom_memory_resource(size_t headroom) except +
+
 cdef extern from "rmm/mr/device/cuda_async_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
 
@@ -218,6 +228,11 @@ cdef extern from "rmm/mr/device/failure_callback_resource_adaptor.hpp" \
             failure_callback_t callback,
             void* callback_arg
         ) except +
+
+cdef extern from "rmm/mr/device/prefetch_resource_adaptor.hpp" \
+        namespace "rmm::mr" nogil:
+    cdef cppclass prefetch_resource_adaptor[Upstream](device_memory_resource):
+        prefetch_resource_adaptor(Upstream* upstream_mr) except +
 
 
 cdef class DeviceMemoryResource:
@@ -357,6 +372,43 @@ cdef class ManagedMemoryResource(DeviceMemoryResource):
         """
         Memory resource that uses ``cudaMallocManaged``/``cudaFree`` for
         allocation/deallocation.
+        """
+        pass
+
+
+cdef class SystemMemoryResource(DeviceMemoryResource):
+    def __cinit__(self):
+        self.c_obj.reset(
+            new system_memory_resource()
+        )
+
+    def __init__(self):
+        """
+        Memory resource that uses ``malloc``/``free`` for
+        allocation/deallocation.
+        """
+        pass
+
+
+cdef class SamHeadroomMemoryResource(DeviceMemoryResource):
+    def __cinit__(
+        self,
+        size_t headroom
+    ):
+        self.c_obj.reset(new sam_headroom_memory_resource(headroom))
+
+    def __init__(
+        self,
+        size_t headroom
+    ):
+        """
+        Memory resource that uses ``malloc``/``free`` for
+        allocation/deallocation.
+
+        Parameters
+        ----------
+        headroom : size_t
+            Size of the reserved GPU memory as headroom
         """
         pass
 
@@ -984,6 +1036,32 @@ cdef class FailureCallbackResourceAdaptor(UpstreamResourceAdaptor):
             The upstream memory resource.
         callback : callable
             Function called when memory allocation fails.
+        """
+        pass
+
+cdef class PrefetchResourceAdaptor(UpstreamResourceAdaptor):
+
+    def __cinit__(
+        self,
+        DeviceMemoryResource upstream_mr
+    ):
+        self.c_obj.reset(
+            new prefetch_resource_adaptor[device_memory_resource](
+                upstream_mr.get_mr()
+            )
+        )
+
+    def __init__(
+        self,
+        DeviceMemoryResource upstream_mr
+    ):
+        """
+        Memory resource that prefetches all allocations.
+
+        Parameters
+        ----------
+        upstream : DeviceMemoryResource
+            The upstream memory resource.
         """
         pass
 

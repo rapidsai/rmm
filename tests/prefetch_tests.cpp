@@ -49,11 +49,16 @@ struct PrefetchTest : public ::testing::Test {
   // Test that the memory range was last prefetched to the specified device
   void expect_prefetched(void const* ptr, std::size_t size, rmm::cuda_device_id device)
   {
+    // See the CUDA documentation for cudaMemRangeGetAttribute
+    // https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY.html#group__CUDART__MEMORY_1g8048f6ea5ad77917444567656c140c5a
+    // specifically for when cudaMemRangeAttribute::cudaMemRangeAttributeLastPrefetchLocation is
+    // used.
+    constexpr size_t prefetch_data_size = 4;
     if constexpr (std::is_same_v<MemoryResourceType, rmm::mr::managed_memory_resource>) {
       int prefetch_location{0};
       RMM_CUDA_TRY(
         cudaMemRangeGetAttribute(&prefetch_location,
-                                 4,
+                                 prefetch_data_size,
                                  cudaMemRangeAttribute::cudaMemRangeAttributeLastPrefetchLocation,
                                  ptr,
                                  size));

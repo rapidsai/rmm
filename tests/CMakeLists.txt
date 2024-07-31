@@ -148,6 +148,9 @@ ConfigureTest(TRACKING_TEST mr/device/tracking_mr_tests.cpp GPUS 1 PERCENT 100)
 # out-of-memory callback adaptor tests
 ConfigureTest(FAILURE_CALLBACK_TEST mr/device/failure_callback_mr_tests.cpp)
 
+# prefetch adaptor tests
+ConfigureTest(PREFETCH_ADAPTOR_TEST mr/device/prefetch_resource_adaptor_tests.cpp)
+
 # aligned adaptor tests
 ConfigureTest(ALIGNED_TEST mr/device/aligned_mr_tests.cpp)
 
