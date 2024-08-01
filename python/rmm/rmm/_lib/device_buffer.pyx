@@ -149,7 +149,7 @@ cdef class DeviceBuffer:
         device : optional
             The CUDA device to which to prefetch the memory for this buffer.
             Defaults to the current CUDA device. To prefetch to the CPU, pass
-            `~cuda.cudart.cudaCpuDeviceId` as the device.
+            :py:`~cuda.cudart.cudaCpuDeviceId` as the device.
         stream : optional
             CUDA stream to use for prefetching. Defaults to self.stream
         """
