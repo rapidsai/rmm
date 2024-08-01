@@ -19,6 +19,7 @@ from libcpp.string cimport string
 from libcpp.vector cimport vector
 
 from rmm._lib.cuda_stream_view cimport cuda_stream_view
+from rmm._lib.resource_ref cimport device_async_resource_ref
 
 
 cdef extern from "rmm/mr/device/device_memory_resource.hpp" \
@@ -33,13 +34,26 @@ cdef extern from "rmm/mr/device/device_memory_resource.hpp" \
             cuda_stream_view stream
         ) except +
 
+cdef extern from "rmm/mr/device/cuda_memory_resource.hpp" \
+        namespace "rmm::mr" nogil:
+    cdef cppclass cuda_memory_resource:
+        void* allocate(size_t bytes) except +
+        void* allocate(size_t bytes, cuda_stream_view stream) except +
+        void deallocate(void* ptr, size_t bytes) except +
+        void deallocate(
+            void* ptr,
+            size_t bytes,
+            cuda_stream_view stream
+        ) except +  
+
 cdef extern from "rmm/cuda_device.hpp" namespace "rmm" nogil:
     size_t percent_of_free_device_memory(int percent) except +
     pair[size_t, size_t] available_device_memory() except +
 
 cdef class DeviceMemoryResource:
-    cdef shared_ptr[device_memory_resource] c_obj
-    cdef device_memory_resource* get_mr(self) noexcept nogil
+    #cdef shared_ptr[device_memory_resource] c_obj
+    #cdef device_memory_resource* get_mr(self) noexcept nogil
+    cdef device_async_resource_ref get_ref(self) noexcept nogil
 
 cdef class UpstreamResourceAdaptor(DeviceMemoryResource):
     cdef readonly DeviceMemoryResource upstream_mr
@@ -47,7 +61,8 @@ cdef class UpstreamResourceAdaptor(DeviceMemoryResource):
     cpdef DeviceMemoryResource get_upstream(self)
 
 cdef class CudaMemoryResource(DeviceMemoryResource):
-    pass
+    cdef shared_ptr[cuda_memory_resource] c_obj
+    cdef inline device_async_resource_ref get_ref(self) noexcept nogil: return self.c_obj.get()
 
 cdef class ManagedMemoryResource(DeviceMemoryResource):
     pass
