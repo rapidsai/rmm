@@ -290,7 +290,8 @@ class statistics_resource_adaptor final : public device_memory_resource {
  */
 template <typename Upstream>
 [[deprecated(
-  "make_statistics_adaptor is deprecated. Use the statistics_resource_adaptor constructor "
+  "make_statistics_adaptor is deprecated in RMM 24.10. Use the statistics_resource_adaptor "
+  "constructor "
   "instead.")]]
 statistics_resource_adaptor<Upstream> make_statistics_adaptor(Upstream* upstream)
 {

@@ -190,7 +190,8 @@ class limiting_resource_adaptor final : public device_memory_resource {
  */
 template <typename Upstream>
 [[deprecated(
-  "make_limiting_adaptor is deprecated. Use the limiting_resource_adaptor constructor instead.")]]
+  "make_limiting_adaptor is deprecated in RMM 24.10. Use the limiting_resource_adaptor constructor "
+  "instead.")]]
 limiting_resource_adaptor<Upstream> make_limiting_adaptor(Upstream* upstream,
                                                           std::size_t allocation_limit)
 {

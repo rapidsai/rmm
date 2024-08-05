@@ -166,7 +166,7 @@ bool operator!=(polymorphic_allocator<T> const& lhs, polymorphic_allocator<U> co
  * my_stream_ordered_allocator<int> a{...};
  * cuda_stream_view s = // create stream;
  *
- * auto adapted = make_stream_allocator_adaptor(a, s);
+ * auto adapted = stream_allocator_adaptor(a, s);
  *
  * // Allocates storage for `n` int's on stream `s`
  * int * p = std::allocator_traits<decltype(adapted)>::allocate(adapted, n);
@@ -303,7 +303,8 @@ bool operator!=(stream_allocator_adaptor<A> const& lhs, stream_allocator_adaptor
  */
 template <typename Allocator>
 [[deprecated(
-  "make_stream_allocator_adaptor is deprecated. Use the stream_allocator_adaptor constructor "
+  "make_stream_allocator_adaptor is deprecated in RMM 24.10. Use the stream_allocator_adaptor "
+  "constructor "
   "instead.")]]
 auto make_stream_allocator_adaptor(Allocator const& allocator, cuda_stream_view stream)
 {
