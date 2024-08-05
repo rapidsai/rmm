@@ -125,19 +125,5 @@ class prefetch_resource_adaptor final : public device_memory_resource {
   Upstream* upstream_;  // the upstream resource used for satisfying allocation requests
 };
 
-/**
- * @brief Convenience factory to return a `prefetch_resource_adaptor` around the
- * upstream resource `upstream`.
- *
- * @tparam Upstream Type of the upstream `device_memory_resource`.
- * @param upstream Pointer to the upstream resource
- * @return The new prefetch resource adaptor
- */
-template <typename Upstream>
-prefetch_resource_adaptor<Upstream> make_prefetch_adaptor(Upstream* upstream)
-{
-  return prefetch_resource_adaptor<Upstream>{upstream};
-}
-
 /** @} */  // end of group
 }  // namespace rmm::mr
