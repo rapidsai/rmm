@@ -100,7 +100,7 @@ dependencies:
           - scikit-build-core >=0.7.0
       - output_types: [requirements, pyproject]
         packages:
-          - git+https://github.com/scikit-build/scikit-build-core.git@henryiii/fix/minversionlogic
+          - 'scikit-build-core @ git+https://github.com/scikit-build/scikit-build-core.git@henryiii/fix/minversionlogic'
   build:
     common:
       - output_types: [conda, requirements, pyproject]
