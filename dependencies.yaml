@@ -163,15 +163,15 @@ dependencies:
                 cuda: "12.*"
                 cuda_suffixed: "true"
               packages:
-                - librmm-cu12==24.8.*,>=0.0.0a0
+                - librmm-cu12==24.8.*
             - matrix:
                 cuda: "11.*"
                 cuda_suffixed: "true"
               packages:
-                - librmm-cu11==24.8.*,>=0.0.0a0
+                - librmm-cu11==24.8.*
             - matrix: null
               packages:
-                - librmm==24.8.*,>=0.0.0a0
+                - librmm==24.8.*
   checks:
     common:
       - output_types: [conda, requirements]
