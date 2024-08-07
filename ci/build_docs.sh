@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2020-2023, NVIDIA CORPORATION.
+# Copyright (c) 2020-2024, NVIDIA CORPORATION.
 
 set -euo pipefail
 
@@ -8,7 +8,7 @@ rapids-logger "Create test conda environment"
 
 rapids-dependency-file-generator \
   --output conda \
-  --file_key docs \
+  --file-key docs \
   --matrix "cuda=${RAPIDS_CUDA_VERSION%.*};arch=$(arch);py=${RAPIDS_PY_VERSION}" | tee env.yaml
 
 rapids-mamba-retry env create --yes -f env.yaml -n docs
@@ -33,15 +33,15 @@ export RAPIDS_DOCS_DIR="$(mktemp -d)"
 rapids-logger "Build CPP docs"
 pushd doxygen
 doxygen Doxyfile
+mkdir -p "${RAPIDS_DOCS_DIR}/librmm/html"
+mv html/* "${RAPIDS_DOCS_DIR}/librmm/html"
 popd
 
 rapids-logger "Build Python docs"
 pushd python/rmm/docs
 make dirhtml
-make text
-mkdir -p "${RAPIDS_DOCS_DIR}/rmm/"{html,txt}
+mkdir -p "${RAPIDS_DOCS_DIR}/rmm/html"
 mv _build/dirhtml/* "${RAPIDS_DOCS_DIR}/rmm/html"
-mv _build/text/* "${RAPIDS_DOCS_DIR}/rmm/txt"
 popd
 
 rapids-upload-docs

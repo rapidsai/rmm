@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2022, NVIDIA CORPORATION.
+# Copyright (c) 2020-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@
 
 from libc.stdint cimport int8_t
 from libcpp.memory cimport shared_ptr
+from libcpp.pair cimport pair
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 
@@ -32,6 +33,10 @@ cdef extern from "rmm/mr/device/device_memory_resource.hpp" \
             cuda_stream_view stream
         ) except +
 
+cdef extern from "rmm/cuda_device.hpp" namespace "rmm" nogil:
+    size_t percent_of_free_device_memory(int percent) except +
+    pair[size_t, size_t] available_device_memory() except +
+
 cdef class DeviceMemoryResource:
     cdef shared_ptr[device_memory_resource] c_obj
     cdef device_memory_resource* get_mr(self) noexcept nogil
@@ -45,6 +50,12 @@ cdef class CudaMemoryResource(DeviceMemoryResource):
     pass
 
 cdef class ManagedMemoryResource(DeviceMemoryResource):
+    pass
+
+cdef class SystemMemoryResource(DeviceMemoryResource):
+    pass
+
+cdef class SamHeadroomMemoryResource(DeviceMemoryResource):
     pass
 
 cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
@@ -85,5 +96,8 @@ cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
 
 cdef class FailureCallbackResourceAdaptor(UpstreamResourceAdaptor):
     cdef object _callback
+
+cdef class PrefetchResourceAdaptor(UpstreamResourceAdaptor):
+    pass
 
 cpdef DeviceMemoryResource get_current_device_resource()

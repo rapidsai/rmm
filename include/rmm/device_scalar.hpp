@@ -43,6 +43,7 @@ class device_scalar {
   static_assert(std::is_trivially_copyable<T>::value, "Scalar type must be trivially copyable");
 
   using value_type = typename device_uvector<T>::value_type;  ///< T, the type of the scalar element
+  using size_type  = typename device_uvector<T>::size_type;   ///< The type used for the size
   using reference  = typename device_uvector<T>::reference;   ///< value_type&
   using const_reference = typename device_uvector<T>::const_reference;  ///< const value_type&
   using pointer =
@@ -253,6 +254,11 @@ class device_scalar {
   {
     return static_cast<const_pointer>(_storage.data());
   }
+
+  /**
+   * @briefreturn{The size of the scalar: always 1}
+   */
+  [[nodiscard]] constexpr size_type size() const noexcept { return 1; }
 
   /**
    * @briefreturn{Stream associated with the device memory allocation}

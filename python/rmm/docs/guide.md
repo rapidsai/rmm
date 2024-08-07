@@ -27,10 +27,10 @@ There are two ways to use RMM in Python code:
 RMM provides a `MemoryResource` abstraction to control _how_ device
 memory is allocated in both the above uses.
 
-### DeviceBuffers
+### `DeviceBuffer` Objects
 
-A DeviceBuffer represents an **untyped, uninitialized device memory
-allocation**.  DeviceBuffers can be created by providing the
+A `DeviceBuffer` represents an **untyped, uninitialized device memory
+allocation**.  `DeviceBuffer`s can be created by providing the
 size of the allocation in bytes:
 
 ```python
@@ -48,7 +48,7 @@ can be accessed via the `.size` and `.ptr` attributes respectively:
 140202544726016
 ```
 
-DeviceBuffers can also be created by copying data from host memory:
+`DeviceBuffer`s can also be created by copying data from host memory:
 
 ```python
 >>> import rmm
@@ -59,15 +59,50 @@ DeviceBuffers can also be created by copying data from host memory:
 24
 ```
 
-Conversely, the data underlying a DeviceBuffer can be copied to the
-host:
+Conversely, the data underlying a `DeviceBuffer` can be copied to the host:
 
 ```python
 >>> np.frombuffer(buf.tobytes())
 array([1., 2., 3.])
 ```
 
-### MemoryResource objects
+#### Prefetching a `DeviceBuffer`
+
+[CUDA Unified Memory](
+  https://developer.nvidia.com/blog/unified-memory-cuda-beginners/
+), also known as managed memory, can be allocated using an
+`rmm.mr.ManagedMemoryResource` explicitly, or by calling `rmm.reinitialize`
+with `managed_memory=True`.
+
+A `DeviceBuffer` backed by managed memory or other
+migratable memory (such as
+[HMM/ATS](https://developer.nvidia.com/blog/simplifying-gpu-application-development-with-heterogeneous-memory-management/)
+memory) may be prefetched to a specified device, for example to reduce or eliminate page faults.
+
+```python
+>>> import rmm
+>>> rmm.reinitialize(managed_memory=True)
+>>> buf = rmm.DeviceBuffer(size=100)
+>>> buf.prefetch()
+```
+
+The above example prefetches the `DeviceBuffer` memory to the current CUDA device
+on the stream that the `DeviceBuffer` last used (e.g. at construction). The
+destination device ID and stream are optional parameters.
+
+```python
+>>> import rmm
+>>> rmm.reinitialize(managed_memory=True)
+>>> from rmm._cuda.stream import Stream
+>>> stream = Stream()
+>>> buf = rmm.DeviceBuffer(size=100, stream=stream)
+>>> buf.prefetch(device=3, stream=stream) # prefetch to device on stream.
+```
+
+`DeviceBuffer.prefetch()` is a no-op if the `DeviceBuffer` is not backed
+by migratable memory.
+
+### `MemoryResource` objects
 
 `MemoryResource` objects are used to configure how device memory allocations are made by
 RMM.
@@ -122,13 +157,13 @@ Similarly, to use a pool of managed memory:
 >>> rmm.mr.set_current_device_resource(pool)
 ```
 
-Other MemoryResources include:
+Other `MemoryResource`s include:
 
 * `FixedSizeMemoryResource` for allocating fixed blocks of memory
 * `BinningMemoryResource` for allocating blocks within specified "bin" sizes from different memory
 resources
 
-MemoryResources are highly configurable and can be composed together in different ways.
+`MemoryResource`s are highly configurable and can be composed together in different ways.
 See `help(rmm.mr)` for more information.
 
 ## Using RMM with third-party libraries
@@ -186,4 +221,105 @@ allocator.
 >>> import torch
 
 >>> torch.cuda.memory.change_current_allocator(rmm_torch_allocator)
+```
+
+## Memory statistics and profiling
+
+RMM can profile memory usage and track memory statistics by using either of the following:
+  - Use the context manager `rmm.statistics.statistics()` to enable statistics tracking for a specific code block.
+  - Call `rmm.statistics.enable_statistics()` to enable statistics tracking globally.
+
+Common to both usages is that they modify the currently active RMM memory resource. The current device resource is wrapped with a `StatisticsResourceAdaptor` which must remain the topmost resource throughout the statistics tracking:
+```python
+>>> import rmm
+>>> import rmm.statistics
+
+>>> # We start with the default cuda memory resource
+>>> rmm.mr.get_current_device_resource()
+<rmm._lib.memory_resource.CudaMemoryResource at 0x7f7e6c0a1ce0>
+
+>>> # When using statistics, we get a StatisticsResourceAdaptor with the context
+>>> with rmm.statistics.statistics():
+...     rmm.mr.get_current_device_resource()
+<rmm._lib.memory_resource.StatisticsResourceAdaptor at 0x7f7e6c524900>
+
+>>> # We can also enable statistics globally
+>>> rmm.statistics.enable_statistics()
+>>> print(rmm.mr.get_current_device_resource())
+<rmm._lib.memory_resource.StatisticsResourceAdaptor at 0x7f662c2bb3c0>
+```
+
+With statistics enabled, you can query statistics of the current and peak bytes and number of allocations performed by the current RMM memory resource:
+```python
+>>> buf = rmm.DeviceBuffer(size=10)
+>>> rmm.statistics.get_statistics()
+Statistics(current_bytes=16, current_count=1, peak_bytes=16, peak_count=1, total_bytes=16, total_count=1)
+```
+
+### Memory Profiler
+To profile a specific block of code, first enable memory statistics by calling `rmm.statistics.enable_statistics()`. To profile a function, use `profiler` as a function decorator:
+```python
+>>> @rmm.statistics.profiler()
+... def f(size):
+...   rmm.DeviceBuffer(size=size)
+>>> f(1000)
+
+>>> # By default, the profiler write to rmm.statistics.default_profiler_records
+>>> print(rmm.statistics.default_profiler_records.report())
+Memory Profiling
+================
+
+Legends:
+  ncalls       - number of times the function or code block was called
+  memory_peak  - peak memory allocated in function or code block (in bytes)
+  memory_total - total memory allocated in function or code block (in bytes)
+
+Ordered by: memory_peak
+
+ncalls     memory_peak    memory_total  filename:lineno(function)
+     1           1,008           1,008  <ipython-input-11-5fc63161ac29>:1(f)
+```
+
+To profile a code block, use `profiler` as a context manager:
+```python
+>>> with rmm.statistics.profiler(name="my code block"):
+...     rmm.DeviceBuffer(size=20)
+>>> print(rmm.statistics.default_profiler_records.report())
+Memory Profiling
+================
+
+Legends:
+  ncalls       - number of times the function or code block was called
+  memory_peak  - peak memory allocated in function or code block (in bytes)
+  memory_total - total memory allocated in function or code block (in bytes)
+
+Ordered by: memory_peak
+
+ncalls     memory_peak    memory_total  filename:lineno(function)
+     1           1,008           1,008  <ipython-input-11-5fc63161ac29>:1(f)
+     1              32              32  my code block
+```
+
+The `profiler` supports nesting:
+```python
+>>> with rmm.statistics.profiler(name="outer"):
+...     buf1 = rmm.DeviceBuffer(size=10)
+...     with rmm.statistics.profiler(name="inner"):
+...         buf2 = rmm.DeviceBuffer(size=10)
+>>> print(rmm.statistics.default_profiler_records.report())
+Memory Profiling
+================
+
+Legends:
+  ncalls       - number of times the function or code block was called
+  memory_peak  - peak memory allocated in function or code block (in bytes)
+  memory_total - total memory allocated in function or code block (in bytes)
+
+Ordered by: memory_peak
+
+ncalls     memory_peak    memory_total  filename:lineno(function)
+     1           1,008           1,008  <ipython-input-4-865fbe04e29f>:1(f)
+     1              32              32  my code block
+     1              32              32  outer
+     1              16              16  inner
 ```

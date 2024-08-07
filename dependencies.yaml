@@ -3,7 +3,7 @@ files:
   all:
     output: conda
     matrix:
-      cuda: ["11.8", "12.2"]
+      cuda: ["11.8", "12.5"]
       arch: [x86_64]
     includes:
       - build
@@ -14,6 +14,7 @@ files:
       - develop
       - docs
       - py_version
+      - rapids_build_skbuild
       - run
       - test_python
   test_python:
@@ -44,12 +45,28 @@ files:
     extras:
       table: build-system
     includes:
+      - rapids_build_skbuild
+  py_cpp_rapids_build:
+    output: pyproject
+    pyproject_dir: python/librmm
+    extras:
+      table: tool.rapids-build-backend
+      key: requires
+    includes:
       - build
   py_build:
     output: pyproject
     pyproject_dir: python/rmm
     extras:
       table: build-system
+    includes:
+      - rapids_build_skbuild
+  py_rapids_build:
+    output: pyproject
+    pyproject_dir: python/rmm
+    extras:
+      table: tool.rapids-build-backend
+      key: requires
     includes:
       - build
       - cython_build
@@ -70,24 +87,32 @@ files:
       - test_python
 channels:
   - rapidsai
+  - rapidsai-nightly
   - conda-forge
 dependencies:
+  rapids_build_skbuild:
+    common:
+      - output_types: [conda, requirements, pyproject]
+        packages:
+          - rapids-build-backend>=0.3.0,<0.4.0.dev0
+      - output_types: conda
+        packages:
+          - scikit-build-core >=0.7.0
+      - output_types: [requirements, pyproject]
+        packages:
+          - scikit-build-core[pyproject]>=0.7.0
   build:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
-          - &cmake_ver cmake>=3.26.4
+          - &cmake_ver cmake>=3.26.4,!=3.30.0
           - ninja
       - output_types: conda
         packages:
           - c-compiler
           - cxx-compiler
           - fmt>=10.1.1,<11
-          - scikit-build-core>=0.7.0
           - spdlog>=1.12.0,<1.13
-      - output_types: [requirements, pyproject]
-        packages:
-          - scikit-build-core[pyproject]>=0.7.0
     specific:
       - output_types: conda
         matrices:
@@ -136,15 +161,17 @@ dependencies:
         matrices:
             - matrix:
                 cuda: "12.*"
+                cuda_suffixed: "true"
               packages:
-                - librmm-cu12==24.6.*
+                - librmm-cu12==24.8.*
             - matrix:
                 cuda: "11.*"
+                cuda_suffixed: "true"
               packages:
-                - librmm-cu11==24.6.*
-            - matrix:
+                - librmm-cu11==24.8.*
+            - matrix: null
               packages:
-                - librmm==24.6.*
+                - librmm==24.8.*
   checks:
     common:
       - output_types: [conda, requirements]
@@ -188,6 +215,10 @@ dependencies:
               cuda: "12.2"
             packages:
               - cuda-version=12.2
+          - matrix:
+              cuda: "12.5"
+            packages:
+              - cuda-version=12.5
   cuda:
     specific:
       - output_types: conda
@@ -269,21 +300,15 @@ dependencies:
         packages:
           - pytest
           - pytest-cov
-    # Needed for numba in tests
     specific:
       - output_types: conda
         matrices:
-          - matrix:
-              arch: x86_64
-              cuda: "11.8"
-            packages:
-              - nvcc_linux-64=11.8
-          - matrix:
-              arch: aarch64
-              cuda: "11.8"
-            packages:
-              - nvcc_linux-aarch64=11.8
+          # Needed for numba in tests on CUDA 12+ since Conda CI environments
+          # do not have a CUDA compiler preinstalled. Wheel tests are run on
+          # images that supply a CUDA compiler.
           - matrix:
               cuda: "12.*"
             packages:
               - cuda-nvcc
+          - matrix:
+            packages:

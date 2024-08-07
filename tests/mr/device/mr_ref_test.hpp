@@ -27,12 +27,12 @@
 #include <rmm/mr/device/binning_memory_resource.hpp>
 #include <rmm/mr/device/cuda_async_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
-#include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/fixed_size_memory_resource.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
 #include <rmm/mr/device/owning_wrapper.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
+#include <rmm/mr/device/system_memory_resource.hpp>
 #include <rmm/mr/pinned_host_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
@@ -41,12 +41,11 @@
 #include <gtest/gtest.h>
 
 #include <cstddef>
-#include <cstdint>
-#include <functional>
 #include <random>
+#include <string>
 #include <utility>
 
-using resource_ref = cuda::mr::resource_ref<cuda::mr::device_accessible>;
+using resource_ref = rmm::device_async_resource_ref;
 
 namespace rmm::test {
 
@@ -332,40 +331,6 @@ inline void test_mixed_random_async_allocation_free(rmm::device_async_resource_r
   EXPECT_EQ(allocations.size(), active_allocations);
 }
 
-using MRFactoryFunc = std::function<std::shared_ptr<rmm::mr::device_memory_resource>()>;
-
-/// Encapsulates a `device_memory_resource` factory function and associated name
-struct mr_factory {
-  mr_factory(std::string name, MRFactoryFunc factory)
-    : name{std::move(name)}, factory{std::move(factory)}
-  {
-  }
-
-  std::string name;       ///< Name to associate with tests that use this factory
-  MRFactoryFunc factory;  ///< Factory function that returns shared_ptr to `device_memory_resource`
-                          ///< instance to use in test
-};
-
-/// Test fixture class value-parameterized on different `mr_factory`s
-struct mr_ref_test : public ::testing::TestWithParam<mr_factory> {
-  void SetUp() override
-  {
-    auto factory = GetParam().factory;
-    mr           = factory();
-    if (mr == nullptr) {
-      GTEST_SKIP() << "Skipping tests since the memory resource is not supported with this CUDA "
-                   << "driver/runtime version";
-    }
-    ref = rmm::device_async_resource_ref{*mr};
-  }
-
-  std::shared_ptr<rmm::mr::device_memory_resource> mr;  ///< Pointer to resource to use in tests
-  rmm::device_async_resource_ref ref{*mr};
-  rmm::cuda_stream stream{};
-};
-
-struct mr_ref_allocation_test : public mr_ref_test {};
-
 /// MR factory functions
 inline auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>(); }
 
@@ -380,6 +345,15 @@ inline auto make_cuda_async()
 }
 
 inline auto make_managed() { return std::make_shared<rmm::mr::managed_memory_resource>(); }
+
+inline auto make_system()
+{
+  if (rmm::mr::detail::is_system_memory_supported(rmm::get_current_cuda_device())) {
+    return std::make_shared<rmm::mr::system_memory_resource>();
+  } else {
+    return std::shared_ptr<rmm::mr::system_memory_resource>{nullptr};
+  }
+}
 
 inline auto make_pool()
 {
@@ -415,5 +389,89 @@ inline auto make_binning()
     pool, bin_range_start, bin_range_end);
   return mr;
 }
+
+struct mr_factory_base {
+  std::string name{};  ///< Name to associate with tests that use this factory
+  resource_ref mr{rmm::mr::get_current_device_resource()};
+  bool skip_test{false};
+};
+
+/// Encapsulates a memory resource factory function and associated name
+template <class Resource, typename MRFactoryFunc>
+struct mr_factory : mr_factory_base {
+  mr_factory(std::string_view name, MRFactoryFunc factory)
+    : mr_factory_base{std::string{name}}, owned_mr{std::move(factory())}
+  {
+    if (owned_mr == nullptr) { skip_test = true; }
+
+    mr = *owned_mr;
+  }
+
+  // Owned resource to use in tests, type determined by the type of factory function
+  std::invoke_result_t<MRFactoryFunc> owned_mr;
+};
+
+using cuda_mr        = rmm::mr::cuda_memory_resource;
+using pinned_mr      = rmm::mr::pinned_host_memory_resource;
+using cuda_async_mr  = rmm::mr::cuda_async_memory_resource;
+using managed_mr     = rmm::mr::managed_memory_resource;
+using system_mr      = rmm::mr::system_memory_resource;
+using pool_mr        = rmm::mr::pool_memory_resource<cuda_mr>;
+using pinned_pool_mr = rmm::mr::pool_memory_resource<pinned_mr>;
+using arena_mr       = rmm::mr::arena_memory_resource<cuda_mr>;
+using fixed_mr       = rmm::mr::fixed_size_memory_resource<cuda_mr>;
+using binning_mr     = rmm::mr::binning_memory_resource<pool_mr>;
+
+inline std::shared_ptr<mr_factory_base> mr_factory_dispatch(std::string name)
+{
+  if (name == "CUDA") {
+    return std::make_shared<mr_factory<cuda_mr, decltype(make_cuda)>>("CUDA", make_cuda);
+  } else if (name == "Host_Pinned") {
+    return std::make_shared<mr_factory<pinned_mr, decltype(make_host_pinned)>>("Host_Pinned",
+                                                                               make_host_pinned);
+  } else if (name == "CUDA_Async") {
+    return std::make_shared<mr_factory<cuda_async_mr, decltype(make_cuda_async)>>("CUDA_Async",
+                                                                                  make_cuda_async);
+  } else if (name == "Managed") {
+    return std::make_shared<mr_factory<managed_mr, decltype(make_managed)>>("Managed",
+                                                                            make_managed);
+  } else if (name == "System") {
+    return std::make_shared<mr_factory<system_mr, decltype(make_system)>>("System", make_system);
+  } else if (name == "Pool") {
+    return std::make_shared<mr_factory<pool_mr, decltype(make_pool)>>("Pool", make_pool);
+  } else if (name == "Host_Pinned_Pool") {
+    return std::make_shared<mr_factory<pinned_pool_mr, decltype(make_host_pinned_pool)>>(
+      "Host_Pinned_Pool", make_host_pinned_pool);
+  } else if (name == "Arena") {
+    return std::make_shared<mr_factory<arena_mr, decltype(make_arena)>>("Arena", make_arena);
+  } else if (name == "Binning") {
+    return std::make_shared<mr_factory<binning_mr, decltype(make_binning)>>("Binning",
+                                                                            make_binning);
+  } else if (name == "Fixed_Size") {
+    return std::make_shared<mr_factory<fixed_mr, decltype(make_fixed_size)>>("Fixed_Size",
+                                                                             make_fixed_size);
+  } else {
+    return std::make_shared<mr_factory<cuda_mr, decltype(make_cuda)>>("Error", make_cuda);
+  }
+}
+
+/// Test fixture class value-parameterized on different `mr_factory`s
+struct mr_ref_test : public ::testing::TestWithParam<std::string> {
+  void SetUp() override
+  {
+    factory_obj = mr_factory_dispatch(GetParam());
+    if (factory_obj->skip_test) {
+      GTEST_SKIP() << "Skipping tests since the memory resource is not supported with this CUDA "
+                   << "driver/runtime version";
+    }
+    ref = factory_obj->mr;
+  }
+
+  std::shared_ptr<mr_factory_base> factory_obj{};
+  resource_ref ref{rmm::mr::get_current_device_resource()};
+  rmm::cuda_stream stream{};
+};
+
+struct mr_ref_allocation_test : public mr_ref_test {};
 
 }  // namespace rmm::test

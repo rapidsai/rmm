@@ -53,11 +53,10 @@ namespace rmm::mr {
 template <typename Upstream>
 class tracking_resource_adaptor final : public device_memory_resource {
  public:
-  // can be a std::shared_mutex once C++17 is adopted
   using read_lock_t =
-    std::shared_lock<std::shared_timed_mutex>;  ///< Type of lock used to synchronize read access
+    std::shared_lock<std::shared_mutex>;  ///< Type of lock used to synchronize read access
   using write_lock_t =
-    std::unique_lock<std::shared_timed_mutex>;  ///< Type of lock used to synchronize write access
+    std::unique_lock<std::shared_mutex>;  ///< Type of lock used to synchronize write access
   /**
    * @brief Information stored about an allocation. Includes the size
    * and a stack trace if the `tracking_resource_adaptor` was initialized
@@ -271,7 +270,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
   bool capture_stacks_;                           // whether or not to capture call stacks
   std::map<void*, allocation_info> allocations_;  // map of active allocations
   std::atomic<std::size_t> allocated_bytes_;      // number of bytes currently allocated
-  std::shared_timed_mutex mutable mtx_;           // mutex for thread safe access to allocations_
+  std::shared_mutex mutable mtx_;                 // mutex for thread safe access to allocations_
   Upstream* upstream_;  // the upstream resource used for satisfying allocation requests
 };
 

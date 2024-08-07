@@ -1,5 +1,5 @@
 # =============================================================================
-# Copyright (c) 2018-2023, NVIDIA CORPORATION.
+# Copyright (c) 2018-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -104,11 +104,6 @@ function(ConfigureTest TEST_NAME)
   ConfigureTestInternal("${PTDS_TEST_NAME}" ${_RMM_TEST_UNPARSED_ARGUMENTS})
   target_compile_definitions("${PTDS_TEST_NAME}" PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
 
-  # Test with custom thrust namespace
-  string(REGEX REPLACE "_TEST$" "_NAMESPACE_TEST" NS_TEST_NAME "${TEST_NAME}")
-  ConfigureTestInternal("${NS_TEST_NAME}" ${_RMM_TEST_UNPARSED_ARGUMENTS})
-  target_compile_definitions("${NS_TEST_NAME}" PUBLIC THRUST_WRAPPED_NAMESPACE=rmm_thrust)
-
   foreach(name ${TEST_NAME} ${PTDS_TEST_NAME} ${NS_TEST_NAME})
     rapids_test_add(
       NAME ${name}
@@ -153,6 +148,9 @@ ConfigureTest(TRACKING_TEST mr/device/tracking_mr_tests.cpp GPUS 1 PERCENT 100)
 # out-of-memory callback adaptor tests
 ConfigureTest(FAILURE_CALLBACK_TEST mr/device/failure_callback_mr_tests.cpp)
 
+# prefetch adaptor tests
+ConfigureTest(PREFETCH_ADAPTOR_TEST mr/device/prefetch_resource_adaptor_tests.cpp)
+
 # aligned adaptor tests
 ConfigureTest(ALIGNED_TEST mr/device/aligned_mr_tests.cpp)
 
@@ -174,11 +172,14 @@ ConfigureTest(DEVICE_BUFFER_TEST device_buffer_tests.cu)
 # device scalar tests
 ConfigureTest(DEVICE_SCALAR_TEST device_scalar_tests.cpp)
 
-# logger tests
-ConfigureTest(LOGGER_TEST logger_tests.cpp)
-
 # uvector tests
 ConfigureTest(DEVICE_UVECTOR_TEST device_uvector_tests.cpp GPUS 1 PERCENT 60)
+
+# prefetch tests
+ConfigureTest(PREFETCH_TEST prefetch_tests.cpp)
+
+# logger tests
+ConfigureTest(LOGGER_TEST logger_tests.cpp)
 
 # arena MR tests
 ConfigureTest(ARENA_MR_TEST mr/device/arena_mr_tests.cpp GPUS 1 PERCENT 60)
@@ -188,6 +189,9 @@ ConfigureTest(BINNING_MR_TEST mr/device/binning_mr_tests.cpp)
 
 # callback memory resource tests
 ConfigureTest(CALLBACK_MR_TEST mr/device/callback_mr_tests.cpp)
+
+# system memory resource tests
+ConfigureTest(SYSTEM_MR_TEST mr/device/system_mr_tests.cu)
 
 # container multidevice tests
 ConfigureTest(CONTAINER_MULTIDEVICE_TEST container_multidevice_tests.cu)

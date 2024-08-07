@@ -22,6 +22,9 @@
 
 namespace rmm {
 
+struct cuda_device_id;
+inline cuda_device_id get_current_cuda_device();
+
 /**
  * @addtogroup cuda_device_management
  * @{
@@ -33,6 +36,11 @@ namespace rmm {
  */
 struct cuda_device_id {
   using value_type = int;  ///< Integer type used for device identifier
+
+  /**
+   * @brief Construct a `cuda_device_id` from the current device
+   */
+  cuda_device_id() noexcept : id_{get_current_cuda_device().value()} {}
 
   /**
    * @brief Construct a `cuda_device_id` from the specified integer value.

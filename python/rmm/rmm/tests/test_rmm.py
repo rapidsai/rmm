@@ -20,6 +20,7 @@ import pickle
 import warnings
 from itertools import product
 
+import cuda.cudart as cudart
 import numpy as np
 import pytest
 from numba import cuda
@@ -35,6 +36,11 @@ _driver_version = rmm._cuda.gpu.driverGetVersion()
 _runtime_version = rmm._cuda.gpu.runtimeGetVersion()
 _CUDAMALLOC_ASYNC_SUPPORTED = (_driver_version >= 11020) and (
     _runtime_version >= 11020
+)
+
+_SYSTEM_MEMORY_SUPPORTED = rmm._cuda.gpu.getDeviceAttribute(
+    cudart.cudaDeviceAttr.cudaDevAttrPageableMemoryAccess,
+    rmm._cuda.gpu.getDevice(),
 )
 
 
@@ -84,6 +90,39 @@ def test_rmm_modes(dtype, nelem, alloc, managed, pool):
     array_tester(dtype, nelem, alloc)
 
     rmm.reinitialize(pool_allocator=pool, managed_memory=managed)
+
+    assert rmm.is_initialized()
+
+    array_tester(dtype, nelem, alloc)
+
+
+@pytest.mark.skipif(
+    not _SYSTEM_MEMORY_SUPPORTED,
+    reason="System memory not supported",
+)
+@pytest.mark.parametrize("dtype", _dtypes)
+@pytest.mark.parametrize("nelem", _nelems)
+@pytest.mark.parametrize("alloc", _allocs)
+@pytest.mark.parametrize(
+    "system, pool, headroom",
+    list(product([False, True], [False, True], [False, True])),
+)
+def test_rmm_modes_system_memory(dtype, nelem, alloc, system, pool, headroom):
+    assert rmm.is_initialized()
+    array_tester(dtype, nelem, alloc)
+
+    if system:
+        if headroom:
+            base_mr = rmm.mr.SamHeadroomMemoryResource(headroom=1 << 20)
+        else:
+            base_mr = rmm.mr.SystemMemoryResource()
+    else:
+        base_mr = rmm.mr.CudaMemoryResource()
+    if pool:
+        mr = rmm.mr.PoolMemoryResource(base_mr)
+    else:
+        mr = base_mr
+    rmm.mr.set_current_device_resource(mr)
 
     assert rmm.is_initialized()
 
@@ -284,6 +323,32 @@ def test_rmm_device_buffer_pickle_roundtrip(hb):
     assert hb3 == hb
 
 
+def assert_prefetched(buffer, device_id):
+    err, dev = cudart.cudaMemRangeGetAttribute(
+        4,
+        cudart.cudaMemRangeAttribute.cudaMemRangeAttributeLastPrefetchLocation,
+        buffer.ptr,
+        buffer.size,
+    )
+    assert err == cudart.cudaError_t.cudaSuccess
+    assert dev == device_id
+
+
+@pytest.mark.parametrize(
+    "managed, pool", list(product([False, True], [False, True]))
+)
+def test_rmm_device_buffer_prefetch(pool, managed):
+    rmm.reinitialize(pool_allocator=pool, managed_memory=managed)
+    db = rmm.DeviceBuffer.to_device(np.zeros(256, dtype="u1"))
+    if managed:
+        assert_prefetched(db, cudart.cudaInvalidDeviceId)
+    db.prefetch()  # just test that it doesn't throw
+    if managed:
+        err, device = cudart.cudaGetDevice()
+        assert err == cudart.cudaError_t.cudaSuccess
+        assert_prefetched(db, device)
+
+
 @pytest.mark.parametrize("stream", [cuda.default_stream(), cuda.stream()])
 def test_rmm_pool_numba_stream(stream):
     rmm.reinitialize(pool_allocator=True)
@@ -383,7 +448,15 @@ def test_pool_memory_resource(dtype, nelem, alloc):
     [
         lambda: rmm.mr.CudaMemoryResource(),
         lambda: rmm.mr.ManagedMemoryResource(),
-    ],
+    ]
+    + (
+        [
+            lambda: rmm.mr.SystemMemoryResource(),
+            lambda: rmm.mr.SamHeadroomMemoryResource(headroom=1 << 20),
+        ]
+        if _SYSTEM_MEMORY_SUPPORTED
+        else []
+    ),
 )
 def test_fixed_size_memory_resource(dtype, nelem, alloc, upstream):
     mr = rmm.mr.FixedSizeMemoryResource(
@@ -405,7 +478,15 @@ def test_fixed_size_memory_resource(dtype, nelem, alloc, upstream):
         lambda: rmm.mr.PoolMemoryResource(
             rmm.mr.CudaMemoryResource(), 1 << 20
         ),
-    ],
+    ]
+    + (
+        [
+            lambda: rmm.mr.SystemMemoryResource(),
+            lambda: rmm.mr.SamHeadroomMemoryResource(headroom=1 << 20),
+        ]
+        if _SYSTEM_MEMORY_SUPPORTED
+        else []
+    ),
 )
 def test_binning_memory_resource(dtype, nelem, alloc, upstream_mr):
     upstream = upstream_mr()
@@ -649,68 +730,6 @@ def test_limiting_resource_adaptor(mr):
         rmm.DeviceBuffer(size=1)
 
 
-def test_statistics_resource_adaptor(stats_mr):
-
-    buffers = [rmm.DeviceBuffer(size=1000) for _ in range(10)]
-
-    for i in range(9, 0, -2):
-        del buffers[i]
-
-    assert stats_mr.allocation_counts == {
-        "current_bytes": 5040,
-        "current_count": 5,
-        "peak_bytes": 10080,
-        "peak_count": 10,
-        "total_bytes": 10080,
-        "total_count": 10,
-    }
-
-    # Push a new Tracking adaptor
-    mr2 = rmm.mr.StatisticsResourceAdaptor(stats_mr)
-    rmm.mr.set_current_device_resource(mr2)
-
-    for _ in range(2):
-        buffers.append(rmm.DeviceBuffer(size=1000))
-
-    assert mr2.allocation_counts == {
-        "current_bytes": 2016,
-        "current_count": 2,
-        "peak_bytes": 2016,
-        "peak_count": 2,
-        "total_bytes": 2016,
-        "total_count": 2,
-    }
-    assert stats_mr.allocation_counts == {
-        "current_bytes": 7056,
-        "current_count": 7,
-        "peak_bytes": 10080,
-        "peak_count": 10,
-        "total_bytes": 12096,
-        "total_count": 12,
-    }
-
-    del buffers
-    gc.collect()
-
-    assert mr2.allocation_counts == {
-        "current_bytes": 0,
-        "current_count": 0,
-        "peak_bytes": 2016,
-        "peak_count": 2,
-        "total_bytes": 2016,
-        "total_count": 2,
-    }
-    assert stats_mr.allocation_counts == {
-        "current_bytes": 0,
-        "current_count": 0,
-        "peak_bytes": 10080,
-        "peak_count": 10,
-        "total_bytes": 12096,
-        "total_count": 12,
-    }
-    gc.collect()
-
-
 def test_tracking_resource_adaptor():
     cuda_mr = rmm.mr.CudaMemoryResource()
 
@@ -766,6 +785,30 @@ def test_failure_callback_resource_adaptor():
     with pytest.raises(MemoryError):
         rmm.DeviceBuffer(size=int(1e11))
     assert retried[0]
+
+
+@pytest.mark.parametrize("managed", [True, False])
+def test_prefetch_resource_adaptor(managed):
+    if managed:
+        upstream_mr = rmm.mr.ManagedMemoryResource()
+    else:
+        upstream_mr = rmm.mr.CudaMemoryResource()
+    mr = rmm.mr.PrefetchResourceAdaptor(upstream_mr)
+    rmm.mr.set_current_device_resource(mr)
+
+    # This allocation should be prefetched
+    db = rmm.DeviceBuffer.to_device(np.zeros(256, dtype="u1"))
+
+    err, device = cudart.cudaGetDevice()
+    assert err == cudart.cudaError_t.cudaSuccess
+
+    if managed:
+        assert_prefetched(db, device)
+    db.prefetch()  # just test that it doesn't throw
+    if managed:
+        err, device = cudart.cudaGetDevice()
+        assert err == cudart.cudaError_t.cudaSuccess
+        assert_prefetched(db, device)
 
 
 def test_failure_callback_resource_adaptor_error():
@@ -1002,3 +1045,16 @@ def test_invalid_logging_level(level):
         rmm.set_flush_level(level)
     with pytest.raises(TypeError):
         rmm.should_log(level)
+
+
+def test_available_device_memory():
+    from rmm.mr import available_device_memory
+
+    initial_memory = available_device_memory()
+    device_buffer = rmm.DeviceBuffer.to_device(  # noqa: F841
+        np.zeros(10000, dtype="u1")
+    )
+    final_memory = available_device_memory()
+    assert initial_memory[1] == final_memory[1]
+    assert initial_memory[0] > 0
+    assert final_memory[0] > 0
