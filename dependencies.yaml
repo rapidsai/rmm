@@ -312,3 +312,14 @@ dependencies:
               - cuda-nvcc
           - matrix:
             packages:
+    specific:
+      - output_types: [conda, requirements, pyproject]
+        matrices:
+          - matrix:
+              dependencies: "earliest"
+            packages:
+              - numba==0.57.*
+              - numpy==1.23.*
+          # No pinnings except for earliest dependencies
+          - matrix:
+            packages:
