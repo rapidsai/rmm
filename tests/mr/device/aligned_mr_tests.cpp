@@ -59,13 +59,13 @@ TEST(AlignedTest, ThrowOnInvalidAllocationAlignment)
 TEST(AlignedTest, SupportsGetMemInfo)
 {
   mock_resource mock;
-  aligned_mock mr{&mock};
+  aligned_mock mr{mock};
 }
 
 TEST(AlignedTest, DefaultAllocationAlignmentPassthrough)
 {
   mock_resource mock;
-  aligned_mock mr{&mock};
+  aligned_mock mr{mock};
 
   cuda_stream_view stream;
   void* const pointer = int_to_address(123);

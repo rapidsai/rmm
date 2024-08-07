@@ -61,7 +61,7 @@ TEST(PoolTest, ReferenceThrowMaxLessThanInitial)
   auto max_less_than_initial = []() {
     const auto initial{1024};
     const auto maximum{256};
-    pool_mr mr{*rmm::mr::get_current_device_resource(), initial, maximum};
+    pool_mr mr{rmm::mr::get_current_device_resource(), initial, maximum};
   };
   EXPECT_THROW(max_less_than_initial(), rmm::logic_error);
 }

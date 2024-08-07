@@ -21,6 +21,7 @@
 #include <rmm/logger.hpp>
 #include <rmm/mr/device/detail/arena.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <cuda_runtime_api.h>
 
@@ -83,6 +84,26 @@ class arena_memory_resource final : public device_memory_resource {
   /**
    * @brief Construct an `arena_memory_resource`.
    *
+   * @param upstream_mr The memory resource from which to allocate blocks for the global arena.
+   * @param arena_size Size in bytes of the global arena. Defaults to half of the available
+   * memory on the current device.
+   * @param dump_log_on_failure If true, dump memory log when running out of memory.
+   */
+  explicit arena_memory_resource(device_async_resource_ref upstream_mr,
+                                 std::optional<std::size_t> arena_size = std::nullopt,
+                                 bool dump_log_on_failure              = false)
+    : global_arena_{upstream_mr, arena_size}, dump_log_on_failure_{dump_log_on_failure}
+  {
+    if (dump_log_on_failure_) {
+      logger_ = spdlog::basic_logger_mt("arena_memory_dump", "rmm_arena_memory_dump.log");
+      // Set the level to `debug` for more detailed output.
+      logger_->set_level(spdlog::level::info);
+    }
+  }
+
+  /**
+   * @brief Construct an `arena_memory_resource`.
+   *
    * @throws rmm::logic_error if `upstream_mr == nullptr`.
    *
    * @param upstream_mr The memory resource from which to allocate blocks for the global arena.
@@ -93,7 +114,13 @@ class arena_memory_resource final : public device_memory_resource {
   explicit arena_memory_resource(Upstream* upstream_mr,
                                  std::optional<std::size_t> arena_size = std::nullopt,
                                  bool dump_log_on_failure              = false)
-    : global_arena_{upstream_mr, arena_size}, dump_log_on_failure_{dump_log_on_failure}
+    : global_arena_{[upstream_mr]() {
+                      RMM_EXPECTS(upstream_mr != nullptr,
+                                  "Unexpected null upstream memory resource.");
+                      return device_async_resource_ref{*upstream_mr};
+                    }(),
+                    arena_size},
+      dump_log_on_failure_{dump_log_on_failure}
   {
     if (dump_log_on_failure_) {
       logger_ = spdlog::basic_logger_mt("arena_memory_dump", "rmm_arena_memory_dump.log");
@@ -111,8 +138,8 @@ class arena_memory_resource final : public device_memory_resource {
   arena_memory_resource& operator=(arena_memory_resource&&) noexcept = delete;
 
  private:
-  using global_arena = rmm::mr::detail::arena::global_arena<Upstream>;
-  using arena        = rmm::mr::detail::arena::arena<Upstream>;
+  using global_arena = rmm::mr::detail::arena::global_arena;
+  using arena        = rmm::mr::detail::arena::arena;
 
   /**
    * @brief Allocates memory of size at least `bytes`.
@@ -272,7 +299,7 @@ class arena_memory_resource final : public device_memory_resource {
       std::unique_lock lock(map_mtx_);
       auto thread_arena = std::make_shared<arena>(global_arena_);
       thread_arenas_.emplace(thread_id, thread_arena);
-      thread_local detail::arena::arena_cleaner<Upstream> cleaner{thread_arena};
+      thread_local detail::arena::arena_cleaner cleaner{thread_arena};
       return *thread_arena;
     }
   }

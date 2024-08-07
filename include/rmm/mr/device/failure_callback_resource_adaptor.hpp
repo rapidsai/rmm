@@ -17,6 +17,7 @@
 
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <cstddef>
@@ -103,12 +104,33 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
    * @param callback Callback function @see failure_callback_t
    * @param callback_arg Extra argument passed to `callback`
    */
-  failure_callback_resource_adaptor(Upstream* upstream,
+  failure_callback_resource_adaptor(device_async_resource_ref upstream,
                                     failure_callback_t callback,
                                     void* callback_arg)
     : upstream_{upstream}, callback_{std::move(callback)}, callback_arg_{callback_arg}
   {
-    RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
+  }
+
+  /**
+   * @brief Construct a new `failure_callback_resource_adaptor` using `upstream` to satisfy
+   * allocation requests.
+   *
+   * @throws rmm::logic_error if `upstream == nullptr`
+   *
+   * @param upstream The resource used for allocating/deallocating device memory
+   * @param callback Callback function @see failure_callback_t
+   * @param callback_arg Extra argument passed to `callback`
+   */
+  failure_callback_resource_adaptor(Upstream* upstream,
+                                    failure_callback_t callback,
+                                    void* callback_arg)
+    : upstream_{[upstream]() {
+        RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
+        return device_async_resource_ref{*upstream};
+      }()},
+      callback_{std::move(callback)},
+      callback_arg_{callback_arg}
+  {
   }
 
   failure_callback_resource_adaptor()                                                    = delete;
@@ -128,11 +150,6 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
     return upstream_;
   }
 
-  /**
-   * @briefreturn{Upstream* to the upstream memory resource}
-   */
-  [[nodiscard]] Upstream* get_upstream() const noexcept { return upstream_; }
-
  private:
   /**
    * @brief Allocates memory of size at least `bytes` using the upstream
@@ -151,7 +168,7 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
 
     while (true) {
       try {
-        ret = upstream_->allocate(bytes, stream);
+        ret = get_upstream_resource().allocate_async(bytes, stream);
         break;
       } catch (exception_type const& e) {
         if (!callback_(bytes, callback_arg_)) { throw; }
@@ -169,7 +186,7 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
    */
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
-    upstream_->deallocate(ptr, bytes, stream);
+    get_upstream_resource().deallocate_async(ptr, bytes, stream);
   }
 
   /**
@@ -183,11 +200,12 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
   {
     if (this == &other) { return true; }
     auto cast = dynamic_cast<failure_callback_resource_adaptor<Upstream> const*>(&other);
-    if (cast == nullptr) { return upstream_->is_equal(other); }
+    if (cast == nullptr) { return false; }
     return get_upstream_resource() == cast->get_upstream_resource();
   }
 
-  Upstream* upstream_;  // the upstream resource used for satisfying allocation requests
+  // the upstream resource used for satisfying allocation requests
+  device_async_resource_ref upstream_{rmm::mr::get_current_device_resource()};
   failure_callback_t callback_;
   void* callback_arg_;
 };
