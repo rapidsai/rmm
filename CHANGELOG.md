@@ -1,3 +1,51 @@
+# rmm 24.08.00 (7 Aug 2024)
+
+## 🚨 Breaking Changes
+
+- Add a stack to the statistics resource ([#1563](https://github.com/rapidsai/rmm/pull/1563)) [@madsbk](https://github.com/madsbk)
+
+## 🐛 Bug Fixes
+
+- Rename `.devcontainer`s for CUDA 12.5 ([#1615](https://github.com/rapidsai/rmm/pull/1615)) [@jakirkham](https://github.com/jakirkham)
+- Avoid accessing statistics_resource_adaptor stack top if it is empty ([#1588](https://github.com/rapidsai/rmm/pull/1588)) [@harrism](https://github.com/harrism)
+- Avoid `--find-links`. ([#1583](https://github.com/rapidsai/rmm/pull/1583)) [@bdice](https://github.com/bdice)
+- Fix test_python matrix ([#1579](https://github.com/rapidsai/rmm/pull/1579)) [@KyleFromNVIDIA](https://github.com/KyleFromNVIDIA)
+- Allow anonymous user in devcontainer name ([#1576](https://github.com/rapidsai/rmm/pull/1576)) [@bdice](https://github.com/bdice)
+
+## 📖 Documentation
+
+- Instruct to create associated issue in PR template. ([#1624](https://github.com/rapidsai/rmm/pull/1624)) [@harrism](https://github.com/harrism)
+- add rapids-build-backend to docs ([#1614](https://github.com/rapidsai/rmm/pull/1614)) [@jameslamb](https://github.com/jameslamb)
+- Revert &quot;Remove HTML builds of librmm ([#1415)&quot; (#1604](https://github.com/rapidsai/rmm/pull/1415)&quot; (#1604)) [@bdice](https://github.com/bdice)
+- Add documentation for CPM usage ([#1600](https://github.com/rapidsai/rmm/pull/1600)) [@pauleonix](https://github.com/pauleonix)
+- Update Thrust CMake Guide link in README.md ([#1593](https://github.com/rapidsai/rmm/pull/1593)) [@pauleonix](https://github.com/pauleonix)
+
+## 🚀 New Features
+
+- Prefetch resource adaptor ([#1608](https://github.com/rapidsai/rmm/pull/1608)) [@bdice](https://github.com/bdice)
+- Add python wrapper for system memory resource ([#1605](https://github.com/rapidsai/rmm/pull/1605)) [@rongou](https://github.com/rongou)
+- Refactor mr_ref_tests to not depend on MR base classes ([#1589](https://github.com/rapidsai/rmm/pull/1589)) [@harrism](https://github.com/harrism)
+- Add system memory resource ([#1581](https://github.com/rapidsai/rmm/pull/1581)) [@rongou](https://github.com/rongou)
+- Add rmm::prefetch() and  DeviceBuffer.prefetch() ([#1573](https://github.com/rapidsai/rmm/pull/1573)) [@harrism](https://github.com/harrism)
+
+## 🛠️ Improvements
+
+- split up CUDA-suffixed dependencies in dependencies.yaml ([#1627](https://github.com/rapidsai/rmm/pull/1627)) [@jameslamb](https://github.com/jameslamb)
+- Remove prefetch factory. ([#1625](https://github.com/rapidsai/rmm/pull/1625)) [@bdice](https://github.com/bdice)
+- Use workflow branch 24.08 again ([#1617](https://github.com/rapidsai/rmm/pull/1617)) [@KyleFromNVIDIA](https://github.com/KyleFromNVIDIA)
+- Build and test with CUDA 12.5.1 ([#1607](https://github.com/rapidsai/rmm/pull/1607)) [@KyleFromNVIDIA](https://github.com/KyleFromNVIDIA)
+- skip CMake 3.30.0 ([#1603](https://github.com/rapidsai/rmm/pull/1603)) [@jameslamb](https://github.com/jameslamb)
+- Add RMM_USE_NVTX cmake option to provide localized control of NVTX for RMM ([#1602](https://github.com/rapidsai/rmm/pull/1602)) [@jlowe](https://github.com/jlowe)
+- Use verify-alpha-spec hook ([#1601](https://github.com/rapidsai/rmm/pull/1601)) [@KyleFromNVIDIA](https://github.com/KyleFromNVIDIA)
+- Avoid --find-links in wheel jobs ([#1586](https://github.com/rapidsai/rmm/pull/1586)) [@jameslamb](https://github.com/jameslamb)
+- resolve dependency-file-generator warning, remove unnecessary rapids-build-backend configuration ([#1582](https://github.com/rapidsai/rmm/pull/1582)) [@jameslamb](https://github.com/jameslamb)
+- Remove THRUST_WRAPPED_NAMESPACE and tests ([#1578](https://github.com/rapidsai/rmm/pull/1578)) [@harrism](https://github.com/harrism)
+- Remove text builds of documentation ([#1575](https://github.com/rapidsai/rmm/pull/1575)) [@vyasr](https://github.com/vyasr)
+- ensure update-version.sh preserves alpha specs ([#1572](https://github.com/rapidsai/rmm/pull/1572)) [@jameslamb](https://github.com/jameslamb)
+- Add `available_device_memory` to fetch free amount of memory on a GPU ([#1567](https://github.com/rapidsai/rmm/pull/1567)) [@galipremsagar](https://github.com/galipremsagar)
+- Add a stack to the statistics resource ([#1563](https://github.com/rapidsai/rmm/pull/1563)) [@madsbk](https://github.com/madsbk)
+- Use rapids-build-backend. ([#1502](https://github.com/rapidsai/rmm/pull/1502)) [@bdice](https://github.com/bdice)
+
 # rmm 24.06.00 (5 Jun 2024)
 
 ## 🚨 Breaking Changes
