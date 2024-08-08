@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2023, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 #pragma once
 
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/export.hpp>
 #include <rmm/mr/device/detail/free_list.hpp>
 
 #include <fmt/core.h>
@@ -28,7 +29,7 @@
 #include <iterator>
 #include <list>
 
-namespace rmm::mr::detail {
+namespace RMM_EXPORT rmm::mr::detail {
 
 /**
  * @brief A simple block structure specifying the size and location of a block

@@ -15,10 +15,12 @@
  */
 #pragma once
 
+#include <rmm/detail/export.hpp>
+
 #include <cuda/memory_resource>
 #include <cuda/std/type_traits>
 
-namespace rmm::mr {
+namespace RMM_EXPORT rmm::mr {
 
 /**
  * @addtogroup memory_resources
