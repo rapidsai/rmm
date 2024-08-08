@@ -81,7 +81,7 @@
  * @endcode
  */
 
-namespace rmm::mr {
+namespace RMM_EXPORT rmm::mr {
 /**
  * @addtogroup memory_resources
  * @{

@@ -18,6 +18,7 @@
 #include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/export.hpp>
 #include <rmm/logger.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
@@ -30,7 +31,7 @@
 #include <mutex>
 #include <unordered_map>
 
-namespace rmm::mr::detail {
+namespace RMM_EXPORT rmm::mr::detail {
 
 /**
  * @brief A CRTP helper function

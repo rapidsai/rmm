@@ -17,6 +17,7 @@
 #pragma once
 
 #include <rmm/aligned.hpp>
+#include <rmm/detail/export.hpp>
 
 #include <cassert>
 #include <cstddef>
@@ -24,7 +25,7 @@
 #include <memory>
 #include <new>
 
-namespace rmm::detail {
+namespace RMM_EXPORT rmm::detail {
 
 /**
  * @brief Allocates sufficient host-accessible memory to satisfy the requested size `bytes` with

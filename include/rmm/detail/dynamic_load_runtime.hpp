@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 #pragma once
 
 #include <rmm/cuda_device.hpp>
+#include <rmm/detail/export.hpp>
 
 #include <cuda_runtime_api.h>
 
@@ -24,7 +25,7 @@
 #include <memory>
 #include <optional>
 
-namespace rmm::detail {
+namespace RMM_EXPORT rmm::detail {
 
 /**
  * @brief `dynamic_load_runtime` loads the cuda runtime library at runtime

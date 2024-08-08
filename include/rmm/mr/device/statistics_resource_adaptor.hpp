@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include <rmm/detail/export.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
@@ -23,7 +24,7 @@
 #include <shared_mutex>
 #include <stack>
 
-namespace rmm::mr {
+namespace RMM_EXPORT rmm::mr {
 /**
  * @addtogroup device_resource_adaptors
  * @{

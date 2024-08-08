@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include <rmm/detail/export.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <functional>
@@ -22,7 +23,7 @@
 #include <memory>
 #include <utility>
 
-namespace rmm::mr {
+namespace RMM_EXPORT rmm::mr {
 namespace detail {
 /**
  * @brief Converts a tuple into a parameter pack.

@@ -17,12 +17,13 @@
 
 #include <rmm/aligned.hpp>
 #include <rmm/detail/aligned.hpp>
+#include <rmm/detail/export.hpp>
 #include <rmm/mr/host/host_memory_resource.hpp>
 
 #include <cstddef>
 #include <utility>
 
-namespace rmm::mr {
+namespace RMM_EXPORT rmm::mr {
 /**
  * @addtogroup host_memory_resources
  * @{

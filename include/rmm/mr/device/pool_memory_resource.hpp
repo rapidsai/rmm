@@ -18,6 +18,7 @@
 #include <rmm/aligned.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/export.hpp>
 #include <rmm/detail/logging_assert.hpp>
 #include <rmm/detail/thrust_namespace.h>
 #include <rmm/logger.hpp>
@@ -46,7 +47,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace rmm::mr {
+namespace RMM_EXPORT rmm::mr {
 /**
  * @addtogroup device_memory_resources
  * @{

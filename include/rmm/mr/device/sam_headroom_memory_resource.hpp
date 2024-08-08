@@ -17,11 +17,12 @@
 
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream_view.hpp>
+#include <rmm/detail/export.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/system_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
-namespace rmm::mr {
+namespace RMM_EXPORT rmm::mr {
 /**
  * @addtogroup device_memory_resources
  * @{

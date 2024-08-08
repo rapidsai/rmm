@@ -16,6 +16,7 @@
 #pragma once
 
 #include <rmm/aligned.hpp>
+#include <rmm/detail/export.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/fixed_size_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
@@ -28,7 +29,7 @@
 #include <memory>
 #include <vector>
 
-namespace rmm::mr {
+namespace RMM_EXPORT rmm::mr {
 /**
  * @addtogroup device_memory_resources
  * @{

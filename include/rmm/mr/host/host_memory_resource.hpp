@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include <rmm/detail/export.hpp>
 #include <rmm/detail/nvtx/ranges.hpp>
 
 #include <cuda/memory_resource>
@@ -22,7 +23,7 @@
 #include <cstddef>
 #include <utility>
 
-namespace rmm::mr {
+namespace RMM_EXPORT rmm::mr {
 /**
  * @addtogroup host_memory_resources
  * @{

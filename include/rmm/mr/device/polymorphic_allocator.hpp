@@ -17,6 +17,7 @@
 #pragma once
 
 #include <rmm/cuda_stream_view.hpp>
+#include <rmm/detail/export.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
@@ -24,7 +25,7 @@
 #include <memory>
 #include <type_traits>
 
-namespace rmm::mr {
+namespace RMM_EXPORT rmm::mr {
 /**
  * @addtogroup device_memory_resources
  * @{

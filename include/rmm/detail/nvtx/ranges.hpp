@@ -16,9 +16,11 @@
 
 #pragma once
 
+#include <rmm/detail/export.hpp>
+
 #include <nvtx3/nvtx3.hpp>
 
-namespace rmm {
+namespace RMM_EXPORT rmm {
 /**
  * @brief Tag type for librmm's NVTX domain.
  */
@@ -41,7 +43,7 @@ struct librmm_domain {
  */
 using scoped_range = ::nvtx3::scoped_range_in<librmm_domain>;
 
-}  // namespace rmm
+}  // namespace RMM_EXPORT rmm
 
 /**
  * @brief Convenience macro for generating an NVTX range in the `librmm` domain
