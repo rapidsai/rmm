@@ -17,7 +17,6 @@
 #pragma once
 
 #include <rmm/cuda_device.hpp>
-#include <rmm/detail/export.hpp>
 #include <rmm/detail/thrust_namespace.h>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
@@ -27,7 +26,7 @@
 #include <thrust/device_ptr.h>
 #include <thrust/memory.h>
 
-namespace RMM_EXPORT rmm::mr {
+namespace rmm::mr {
 /**
  * @addtogroup device_resource_adaptors
  * @{

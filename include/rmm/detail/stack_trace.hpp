@@ -17,7 +17,6 @@
 #pragma once
 
 #include <rmm/detail/error.hpp>
-#include <rmm/detail/export.hpp>
 
 // execinfo is a linux-only library, so stack traces will only be available on
 // linux systems.
@@ -37,7 +36,7 @@
 #include <vector>
 #endif
 
-namespace RMM_EXPORT rmm::detail {
+namespace rmm::detail {
 
 /**
  * @brief stack_trace is a class that will capture a stack on instantiation for output later.

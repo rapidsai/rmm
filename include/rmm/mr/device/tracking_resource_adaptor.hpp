@@ -16,7 +16,6 @@
 #pragma once
 
 #include <rmm/detail/error.hpp>
-#include <rmm/detail/export.hpp>
 #include <rmm/detail/stack_trace.hpp>
 #include <rmm/logger.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
@@ -30,7 +29,7 @@
 #include <shared_mutex>
 #include <sstream>
 
-namespace RMM_EXPORT rmm::mr {
+namespace rmm::mr {
 /**
  * @addtogroup device_resource_adaptors
  * @{

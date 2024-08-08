@@ -16,7 +16,6 @@
 #pragma once
 
 #include <rmm/cuda_device.hpp>
-#include <rmm/detail/export.hpp>
 
 #include <cuda_runtime_api.h>
 
@@ -25,7 +24,7 @@
 #include <memory>
 #include <optional>
 
-namespace RMM_EXPORT rmm::detail {
+namespace rmm::detail {
 
 /**
  * @brief `dynamic_load_runtime` loads the cuda runtime library at runtime

@@ -19,13 +19,12 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
-#include <rmm/detail/export.hpp>
 #include <rmm/mr/host/host_memory_resource.hpp>
 
 #include <cstddef>
 #include <utility>
 
-namespace RMM_EXPORT rmm::mr {
+namespace rmm::mr {
 /**
  * @addtogroup host_memory_resources
  * @{

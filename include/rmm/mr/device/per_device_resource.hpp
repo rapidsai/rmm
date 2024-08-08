@@ -17,7 +17,6 @@
 #pragma once
 
 #include <rmm/cuda_device.hpp>
-#include <rmm/detail/export.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
@@ -81,7 +80,7 @@
  * @endcode
  */
 
-namespace RMM_EXPORT rmm::mr {
+namespace rmm::mr {
 /**
  * @addtogroup memory_resources
  * @{

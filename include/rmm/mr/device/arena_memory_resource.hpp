@@ -17,7 +17,6 @@
 
 #include <rmm/aligned.hpp>
 #include <rmm/detail/error.hpp>
-#include <rmm/detail/export.hpp>
 #include <rmm/detail/logging_assert.hpp>
 #include <rmm/logger.hpp>
 #include <rmm/mr/device/detail/arena.hpp>
@@ -32,7 +31,7 @@
 #include <shared_mutex>
 #include <thread>
 
-namespace RMM_EXPORT rmm::mr {
+namespace rmm::mr {
 /**
  * @addtogroup device_memory_resources
  * @{

@@ -20,7 +20,6 @@
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
-#include <rmm/detail/export.hpp>
 #include <rmm/detail/logging_assert.hpp>
 #include <rmm/logger.hpp>
 
@@ -38,7 +37,7 @@
 #include <optional>
 #include <set>
 
-namespace RMM_EXPORT rmm::mr::detail::arena {
+namespace rmm::mr::detail::arena {
 
 /**
  * @brief Align up to nearest size class.

@@ -19,7 +19,6 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/dynamic_load_runtime.hpp>
 #include <rmm/detail/error.hpp>
-#include <rmm/detail/export.hpp>
 #include <rmm/detail/thrust_namespace.h>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
@@ -32,7 +31,7 @@
 #define RMM_CUDA_MALLOC_ASYNC_SUPPORT
 #endif
 
-namespace RMM_EXPORT rmm::mr {
+namespace rmm::mr {
 /**
  * @addtogroup device_memory_resources
  * @{

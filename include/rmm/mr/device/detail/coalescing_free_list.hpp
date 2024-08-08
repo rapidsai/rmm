@@ -17,7 +17,6 @@
 #pragma once
 
 #include <rmm/detail/error.hpp>
-#include <rmm/detail/export.hpp>
 #include <rmm/mr/device/detail/free_list.hpp>
 
 #include <fmt/core.h>
@@ -29,7 +28,7 @@
 #include <iterator>
 #include <list>
 
-namespace RMM_EXPORT rmm::mr::detail {
+namespace rmm::mr::detail {
 
 /**
  * @brief A simple block structure specifying the size and location of a block

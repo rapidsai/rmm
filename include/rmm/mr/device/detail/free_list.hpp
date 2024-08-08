@@ -16,13 +16,11 @@
 
 #pragma once
 
-#include <rmm/detail/export.hpp>
-
 #include <algorithm>
 #include <iostream>
 #include <list>
 
-namespace RMM_EXPORT rmm::mr::detail {
+namespace rmm::mr::detail {
 
 struct block_base {
   void* ptr{};  ///< Raw memory pointer

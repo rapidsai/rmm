@@ -16,13 +16,12 @@
 
 #pragma once
 
-rmm::mr::detail
 #include <rmm/mr/device/detail/free_list.hpp>
 
 #include <cstddef>
 #include <iostream>
 
-  namespace RMM_EXPORT rmm::mr::detail
+  namespace rmm::mr::detail
 {
   struct fixed_size_free_list : free_list<block_base> {
     fixed_size_free_list()           = default;
@@ -76,4 +75,4 @@ rmm::mr::detail
     }
   };
 
-}  // namespace RMM_EXPORT rmm::mr::detail
+}  // namespace rmm::mr::detail
