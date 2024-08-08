@@ -284,6 +284,9 @@ class logging_resource_adaptor final : public device_memory_resource {
   // make_logging_adaptor needs access to private get_default_filename
   template <typename T>
   // NOLINTNEXTLINE(readability-redundant-declaration)
+  [[deprecated(
+    "make_logging_adaptor is deprecated in RMM 24.10. Use the logging_resource_adaptor constructor "
+    "instead.")]]
   friend logging_resource_adaptor<T> make_logging_adaptor(T* upstream,
                                                           std::string const& filename,
                                                           bool auto_flush);
@@ -307,6 +310,9 @@ class logging_resource_adaptor final : public device_memory_resource {
  * @return The new logging resource adaptor
  */
 template <typename Upstream>
+[[deprecated(
+  "make_logging_adaptor is deprecated in RMM 24.10. Use the logging_resource_adaptor constructor "
+  "instead.")]]
 logging_resource_adaptor<Upstream> make_logging_adaptor(
   Upstream* upstream,
   std::string const& filename = logging_resource_adaptor<Upstream>::get_default_filename(),
@@ -327,6 +333,9 @@ logging_resource_adaptor<Upstream> make_logging_adaptor(
  * @return The new logging resource adaptor
  */
 template <typename Upstream>
+[[deprecated(
+  "make_logging_adaptor is deprecated in RMM 24.10. Use the logging_resource_adaptor constructor "
+  "instead.")]]
 logging_resource_adaptor<Upstream> make_logging_adaptor(Upstream* upstream,
                                                         std::ostream& stream,
                                                         bool auto_flush = false)
