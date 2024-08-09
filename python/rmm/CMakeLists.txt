@@ -29,5 +29,9 @@ rapids_cython_init()
 # pass through logging level to spdlog
 add_compile_definitions("SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
 
+# mark all symbols hidden by default
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+set(CMAKE_C_VISIBILITY_PRESET hidden)
+
 add_subdirectory(rmm/_cuda)
 add_subdirectory(rmm/_lib)
