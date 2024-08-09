@@ -19,7 +19,7 @@
 
 #include <cuda/memory_resource>
 
-namespace rmm {
+namespace RMM_EXPORT rmm {
 
 /**
  * @addtogroup memory_resources
@@ -66,4 +66,4 @@ using host_device_async_resource_ref =
   cuda::mr::async_resource_ref<cuda::mr::host_accessible, cuda::mr::device_accessible>;
 
 /** @} */  // end of group
-}  // namespace rmm
+}  // namespace RMM_EXPORT rmm

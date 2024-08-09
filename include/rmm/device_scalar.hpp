@@ -24,7 +24,7 @@
 
 #include <type_traits>
 
-namespace rmm {
+namespace RMM_EXPORT rmm {
 /**
  * @addtogroup data_containers
  * @{
@@ -278,4 +278,4 @@ class device_scalar {
 };
 
 /** @} */  // end of group
-}  // namespace rmm
+}  // namespace RMM_EXPORT rmm

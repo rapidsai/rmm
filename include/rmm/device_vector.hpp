@@ -22,7 +22,7 @@
 
 #include <thrust/device_vector.h>
 
-namespace rmm {
+namespace RMM_EXPORT rmm {
 /**
  * @addtogroup thrust_integrations
  * @{
@@ -36,4 +36,4 @@ template <typename T>
 using device_vector = thrust::device_vector<T, rmm::mr::thrust_allocator<T>>;
 
 /** @} */  // end of group
-}  // namespace rmm
+}  // namespace RMM_EXPORT rmm

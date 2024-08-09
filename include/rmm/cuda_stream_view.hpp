@@ -26,7 +26,7 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace rmm {
+namespace RMM_EXPORT rmm {
 /**
  * @addtogroup cuda_streams
  * @{
@@ -202,4 +202,4 @@ inline std::ostream& operator<<(std::ostream& os, cuda_stream_view stream)
 }
 
 /** @} */  // end of group
-}  // namespace rmm
+}  // namespace RMM_EXPORT rmm
