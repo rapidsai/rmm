@@ -22,8 +22,8 @@ rapids_cython_create_modules(SOURCE_FILES "${cython_sources}" LINKED_LIBRARIES "
 # mark all symbols in these Cython targets "hidden" by default, so they won't
 # collide with symbols loaded from other DSOs
 foreach(_cython_target IN LISTS RAPIDS_CYTHON_CREATED_TARGETS)
-    set_target_properties(${_cython_target} PROPERTIES C_VISIBILITY_PRESET hidden
-                                                       CXX_VISIBILITY_PRESET hidden)
+  set_target_properties(${_cython_target} PROPERTIES C_VISIBILITY_PRESET hidden
+                                                     CXX_VISIBILITY_PRESET hidden)
 endforeach()
 
 add_library(_torch_allocator SHARED _torch_allocator.cpp)
