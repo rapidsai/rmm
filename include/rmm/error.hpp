@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include <rmm/detail/export.hpp>
-
 #include <stdexcept>
 #include <string>
 

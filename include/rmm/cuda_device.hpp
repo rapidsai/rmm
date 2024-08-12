@@ -15,7 +15,6 @@
  */
 #pragma once
 
-#include <rmm/aligned.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
 

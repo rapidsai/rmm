@@ -18,7 +18,6 @@
 
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream_view.hpp>
-#include <rmm/detail/export.hpp>
 #include <rmm/error.hpp>
 
 #include <cuda/std/span>

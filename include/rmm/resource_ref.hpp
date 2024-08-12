@@ -15,8 +15,6 @@
  */
 #pragma once
 
-#include <rmm/detail/export.hpp>
-
 #include <cuda/memory_resource>
 
 namespace rmm {

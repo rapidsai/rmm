@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include <rmm/detail/export.hpp>
-
 #include <nvtx3/nvtx3.hpp>
 
 namespace rmm {

@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include <rmm/detail/export.hpp>
-
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
