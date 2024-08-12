@@ -27,7 +27,7 @@
 #include <iostream>
 #include <string>
 
-namespace RMM_EXPORT rmm {
+namespace rmm {
 
 namespace detail {
 
@@ -127,7 +127,7 @@ inline spdlog::logger& logger()
 
 //! @endcond
 
-}  // namespace RMM_EXPORT rmm
+}  // namespace rmm
 
 // Doxygen doesn't like this because we're overloading something from fmt
 //! @cond Doxygen_Suppress

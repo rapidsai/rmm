@@ -29,7 +29,7 @@
 #include <cstddef>
 #include <vector>
 
-namespace RMM_EXPORT rmm {
+namespace rmm {
 /**
  * @addtogroup data_containers
  * @{
@@ -566,4 +566,4 @@ class device_uvector {
 };
 
 /** @} */  // end of group
-}  // namespace RMM_EXPORT rmm
+}  // namespace rmm
