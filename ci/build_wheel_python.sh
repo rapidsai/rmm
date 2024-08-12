@@ -32,4 +32,4 @@ RAPIDS_PY_WHEEL_NAME="${package_name}_${RAPIDS_PY_CUDA_SUFFIX}" rapids-upload-wh
 
 # switch back to the root of the repo and check symbol visibility
 cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")"/../
-ci/check_symbols.sh "$(echo ${package_dir}/final_dist/*.whl)"
+ci/check_symbols.sh "$(echo ${package_dir}/final_dist/rmm_*.whl)"
