@@ -1,4 +1,4 @@
-# Copyright (c) 2020, NVIDIA CORPORATION.
+# Copyright (c) 2020-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ from libc.stdint cimport uintptr_t
 from libcpp cimport bool
 
 from rmm._lib.cuda_stream_view cimport cuda_stream_view
+from rmm._lib.resource_ref cimport stream_ref
 
 
 cdef class Stream:
@@ -27,6 +28,7 @@ cdef class Stream:
     cdef Stream _from_cudaStream_t(cudaStream_t s, object owner=*)
 
     cdef cuda_stream_view view(self) except * nogil
+    cdef stream_ref ref(self) except * nogil
     cdef void c_synchronize(self) except * nogil
     cdef bool c_is_default(self) except * nogil
     cdef void _init_with_new_cuda_stream(self) except *

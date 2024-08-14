@@ -13,76 +13,102 @@
 # limitations under the License.
 
 from libc.stdint cimport int8_t
-from libcpp.memory cimport shared_ptr
+from libcpp.memory cimport shared_ptr, make_shared
 from libcpp.pair cimport pair
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 
 from rmm._lib.cuda_stream_view cimport cuda_stream_view
-from rmm._lib.resource_ref cimport device_async_resource_ref
+from rmm._lib.resource_ref cimport device_async_resource_ref, stream_ref, CUDA_ALLOCATION_ALIGNMENT
 
+include "extern_memory_resources.pxd"
 
-cdef extern from "rmm/mr/device/device_memory_resource.hpp" \
-        namespace "rmm::mr" nogil:
-    cdef cppclass device_memory_resource:
-        void* allocate(size_t bytes) except +
-        void* allocate(size_t bytes, cuda_stream_view stream) except +
-        void deallocate(void* ptr, size_t bytes) except +
-        void deallocate(
-            void* ptr,
-            size_t bytes,
-            cuda_stream_view stream
-        ) except +
+cdef extern from *:
+    """
+    template <typename T>
+    rmm::device_async_resource_ref as_ref(T *p) { return p; }
+    """
 
-cdef extern from "rmm/mr/device/cuda_memory_resource.hpp" \
-        namespace "rmm::mr" nogil:
-    cdef cppclass cuda_memory_resource:
-        void* allocate(size_t bytes) except +
-        void* allocate(size_t bytes, cuda_stream_view stream) except +
-        void deallocate(void* ptr, size_t bytes) except +
-        void deallocate(
-            void* ptr,
-            size_t bytes,
-            cuda_stream_view stream
-        ) except +  
+    device_async_resource_ref as_ref[T](T *p) noexcept nogil
+
 
 cdef extern from "rmm/cuda_device.hpp" namespace "rmm" nogil:
     size_t percent_of_free_device_memory(int percent) except +
     pair[size_t, size_t] available_device_memory() except +
 
+
 cdef class DeviceMemoryResource:
-    #cdef shared_ptr[device_memory_resource] c_obj
-    #cdef device_memory_resource* get_mr(self) noexcept nogil
-    cdef device_async_resource_ref get_ref(self) noexcept nogil
+    cdef device_memory_resource* get_mr(self) noexcept nogil
+    cdef shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil
+
 
 cdef class UpstreamResourceAdaptor(DeviceMemoryResource):
     cdef readonly DeviceMemoryResource upstream_mr
-
     cpdef DeviceMemoryResource get_upstream(self)
+
 
 cdef class CudaMemoryResource(DeviceMemoryResource):
     cdef shared_ptr[cuda_memory_resource] c_obj
-    cdef inline device_async_resource_ref get_ref(self) noexcept nogil: return self.c_obj.get()
+    cdef inline device_memory_resource* get_mr(self) noexcept nogil:
+        return self.c_obj.get()
+    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil: 
+        return make_shared[device_async_resource_ref](as_ref(self.c_obj.get()))
+
 
 cdef class ManagedMemoryResource(DeviceMemoryResource):
-    pass
+    cdef shared_ptr[managed_memory_resource] c_obj
+    cdef inline device_memory_resource* get_mr(self) noexcept nogil:
+        return self.c_obj.get()
+    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil: 
+        return make_shared[device_async_resource_ref](as_ref(self.c_obj.get()))
+
 
 cdef class SystemMemoryResource(DeviceMemoryResource):
-    pass
+    cdef shared_ptr[system_memory_resource] c_obj
+    cdef inline device_memory_resource* get_mr(self) noexcept nogil:
+        return self.c_obj.get()
+    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil: 
+        return make_shared[device_async_resource_ref](as_ref(self.c_obj.get()))
+
 
 cdef class SamHeadroomMemoryResource(DeviceMemoryResource):
-    pass
+    cdef shared_ptr[sam_headroom_memory_resource] c_obj
+    cdef inline device_memory_resource* get_mr(self) noexcept nogil:
+        return self.c_obj.get()
+    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil: 
+        return make_shared[device_async_resource_ref](as_ref(self.c_obj.get()))
+
 
 cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
-    pass
+    cdef shared_ptr[cuda_async_memory_resource] c_obj
+    cdef inline device_memory_resource* get_mr(self) noexcept nogil:
+        return self.c_obj.get()
+    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil: 
+        return make_shared[device_async_resource_ref](as_ref(self.c_obj.get()))
+
 
 cdef class PoolMemoryResource(UpstreamResourceAdaptor):
-    pass
+    cdef shared_ptr[pool_memory_resource[device_memory_resource]] c_obj
+    cdef inline device_memory_resource* get_mr(self) noexcept nogil:
+        return self.c_obj.get()
+    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil: 
+        return make_shared[device_async_resource_ref](as_ref(self.c_obj.get()))
+
 
 cdef class FixedSizeMemoryResource(UpstreamResourceAdaptor):
-    pass
+    cdef shared_ptr[fixed_size_memory_resource[device_memory_resource]] c_obj
+    cdef inline device_memory_resource* get_mr(self) noexcept nogil:
+        return self.c_obj.get()
+    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil: 
+        return make_shared[device_async_resource_ref](as_ref(self.c_obj.get()))
+
 
 cdef class BinningMemoryResource(UpstreamResourceAdaptor):
+    cdef shared_ptr[binning_memory_resource[device_memory_resource]] c_obj
+    cdef inline device_memory_resource* get_mr(self) noexcept nogil:
+        return self.c_obj.get()
+    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil: 
+        return make_shared[device_async_resource_ref](as_ref(self.c_obj.get()))
 
     cdef readonly list _bin_mrs
 
@@ -92,27 +118,68 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
         DeviceMemoryResource bin_resource=*)
 
 cdef class CallbackMemoryResource(DeviceMemoryResource):
+    cdef shared_ptr[callback_memory_resource] c_obj
+    cdef inline device_memory_resource* get_mr(self) noexcept nogil:
+        return self.c_obj.get()
+    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil: 
+        return make_shared[device_async_resource_ref](as_ref(self.c_obj.get()))
+
+
     cdef object _allocate_func
     cdef object _deallocate_func
 
 cdef class LimitingResourceAdaptor(UpstreamResourceAdaptor):
-    pass
+    cdef shared_ptr[limiting_resource_adaptor[device_memory_resource]] c_obj
+    cdef inline device_memory_resource* get_mr(self) noexcept nogil:
+        return self.c_obj.get()
+    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil: 
+        return make_shared[device_async_resource_ref](as_ref(self.c_obj.get()))
+
 
 cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
+    cdef shared_ptr[logging_resource_adaptor[device_memory_resource]] c_obj
+    cdef inline device_memory_resource* get_mr(self) noexcept nogil:
+        return self.c_obj.get()
+    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil: 
+        return make_shared[device_async_resource_ref](as_ref(self.c_obj.get()))
+
+
     cdef object _log_file_name
     cpdef get_file_name(self)
     cpdef flush(self)
 
 cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
-    pass
+    cdef shared_ptr[statistics_resource_adaptor[device_memory_resource]] c_obj
+    cdef inline device_memory_resource* get_mr(self) noexcept nogil:
+        return self.c_obj.get()
+    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil: 
+        return make_shared[device_async_resource_ref](as_ref(self.c_obj.get()))
+
 
 cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
-    pass
+    cdef shared_ptr[tracking_resource_adaptor[device_memory_resource]] c_obj
+    cdef inline device_memory_resource* get_mr(self) noexcept nogil:
+        return self.c_obj.get()
+    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil: 
+        return make_shared[device_async_resource_ref](as_ref(self.c_obj.get()))
+
 
 cdef class FailureCallbackResourceAdaptor(UpstreamResourceAdaptor):
+    cdef shared_ptr[failure_callback_resource_adaptor[device_memory_resource]] c_obj
+    cdef inline device_memory_resource* get_mr(self) noexcept nogil:
+        return self.c_obj.get()
+    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil: 
+        return make_shared[device_async_resource_ref](as_ref(self.c_obj.get()))
+
+
     cdef object _callback
 
 cdef class PrefetchResourceAdaptor(UpstreamResourceAdaptor):
-    pass
+    cdef shared_ptr[prefetch_resource_adaptor[device_memory_resource]] c_obj
+    cdef inline device_memory_resource* get_mr(self) noexcept nogil:
+        return self.c_obj.get()
+    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil: 
+        return make_shared[device_async_resource_ref](as_ref(self.c_obj.get()))
+
 
 cpdef DeviceMemoryResource get_current_device_resource()
