@@ -1,5 +1,5 @@
 # =============================================================================
-# Copyright (c) 2022, NVIDIA CORPORATION.
+# Copyright (c) 2022-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -17,3 +17,10 @@ set(linked_libraries rmm::rmm)
 
 rapids_cython_create_modules(SOURCE_FILES "${cython_sources}" LINKED_LIBRARIES "${linked_libraries}"
                                                                                CXX)
+
+# mark all symbols in these Cython targets "hidden" by default, so they won't collide with symbols
+# loaded from other DSOs
+foreach(_cython_target IN LISTS RAPIDS_CYTHON_CREATED_TARGETS)
+  set_target_properties(${_cython_target} PROPERTIES C_VISIBILITY_PRESET hidden
+                                                     CXX_VISIBILITY_PRESET hidden)
+endforeach()
