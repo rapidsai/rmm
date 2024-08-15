@@ -128,7 +128,6 @@ cdef class CallbackMemoryResource(DeviceMemoryResource):
     cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil:
         return make_shared[device_async_resource_ref](as_ref(self.c_obj.get()))
 
-
     cdef object _allocate_func
     cdef object _deallocate_func
 
@@ -146,7 +145,6 @@ cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
         return self.c_obj.get()
     cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil:
         return make_shared[device_async_resource_ref](as_ref(self.c_obj.get()))
-
 
     cdef object _log_file_name
     cpdef get_file_name(self)
@@ -175,8 +173,8 @@ cdef class FailureCallbackResourceAdaptor(UpstreamResourceAdaptor):
     cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil:
         return make_shared[device_async_resource_ref](as_ref(self.c_obj.get()))
 
-
     cdef object _callback
+
 
 cdef class PrefetchResourceAdaptor(UpstreamResourceAdaptor):
     cdef shared_ptr[prefetch_resource_adaptor[device_memory_resource]] c_obj

@@ -58,12 +58,14 @@ cdef extern from "rmm/mr/device/system_memory_resource.hpp" namespace "rmm::mr" 
 
         system_memory_resource() except +
 
-cdef extern from "rmm/mr/device/sam_headroom_memory_resource.hpp" namespace "rmm::mr" nogil:
+cdef extern from "rmm/mr/device/sam_headroom_memory_resource.hpp" \
+        namespace "rmm::mr" nogil:
     cdef cppclass sam_headroom_memory_resource(device_memory_resource):
 
         sam_headroom_memory_resource(size_t headroom) except +
 
-cdef extern from "rmm/mr/device/cuda_async_memory_resource.hpp" namespace "rmm::mr" nogil:
+cdef extern from "rmm/mr/device/cuda_async_memory_resource.hpp" \
+        namespace "rmm::mr" nogil:
     cdef cppclass cuda_async_memory_resource(device_memory_resource):
 
         cuda_async_memory_resource(
@@ -83,7 +85,8 @@ cdef extern from "rmm/mr/device/pool_memory_resource.hpp" namespace "rmm::mr" no
             optional[size_t] maximum_pool_size
         ) except +
 
-cdef extern from "rmm/mr/device/fixed_size_memory_resource.hpp" namespace "rmm::mr" nogil:
+cdef extern from "rmm/mr/device/fixed_size_memory_resource.hpp" \
+        namespace "rmm::mr" nogil:
     cdef cppclass fixed_size_memory_resource[Upstream](device_memory_resource):
 
         fixed_size_memory_resource(
@@ -107,7 +110,8 @@ cdef extern from "rmm/mr/device/binning_memory_resource.hpp" namespace "rmm::mr"
 
         binning_memory_resource(Upstream* upstream_mr) except +
 
-cdef extern from "rmm/mr/device/callback_memory_resource.hpp" namespace "rmm::mr" nogil:
+cdef extern from "rmm/mr/device/callback_memory_resource.hpp" \
+        namespace "rmm::mr" nogil:
     cdef cppclass callback_memory_resource(device_memory_resource):
 
         callback_memory_resource(
@@ -117,15 +121,20 @@ cdef extern from "rmm/mr/device/callback_memory_resource.hpp" namespace "rmm::mr
             void* deallocate_callback_arg
         ) except +
 
-cdef extern from "rmm/mr/device/limiting_resource_adaptor.hpp" namespace "rmm::mr" nogil:
+cdef extern from "rmm/mr/device/limiting_resource_adaptor.hpp" \
+        namespace "rmm::mr" nogil:
     cdef cppclass limiting_resource_adaptor[Upstream](device_memory_resource):
 
         size_t get_allocated_bytes() except +
         size_t get_allocation_limit() except +
 
-        limiting_resource_adaptor(Upstream* upstream_mr, size_t allocation_limit) except +
+        limiting_resource_adaptor(
+            Upstream* upstream_mr,
+            size_t allocation_limit
+        ) except +
 
-cdef extern from "rmm/mr/device/logging_resource_adaptor.hpp" namespace "rmm::mr" nogil:
+cdef extern from "rmm/mr/device/logging_resource_adaptor.hpp" \
+        namespace "rmm::mr" nogil:
     cdef cppclass logging_resource_adaptor[Upstream](device_memory_resource):
 
         void flush() except +
@@ -135,7 +144,8 @@ cdef extern from "rmm/mr/device/logging_resource_adaptor.hpp" namespace "rmm::mr
             string filename
         ) except +
 
-cdef extern from "rmm/mr/device/statistics_resource_adaptor.hpp" namespace "rmm::mr" nogil:
+cdef extern from "rmm/mr/device/statistics_resource_adaptor.hpp" \
+        namespace "rmm::mr" nogil:
     cdef cppclass statistics_resource_adaptor[Upstream](device_memory_resource):
 
         struct counter:
@@ -152,7 +162,8 @@ cdef extern from "rmm/mr/device/statistics_resource_adaptor.hpp" namespace "rmm:
 
         statistics_resource_adaptor(Upstream* upstream_mr) except +
 
-cdef extern from "rmm/mr/device/tracking_resource_adaptor.hpp" namespace "rmm::mr" nogil:
+cdef extern from "rmm/mr/device/tracking_resource_adaptor.hpp" \
+        namespace "rmm::mr" nogil:
     cdef cppclass tracking_resource_adaptor[Upstream](device_memory_resource):
 
         size_t get_allocated_bytes() except +
@@ -164,7 +175,8 @@ cdef extern from "rmm/mr/device/tracking_resource_adaptor.hpp" namespace "rmm::m
             bool capture_stacks
         ) except +
 
-cdef extern from "rmm/mr/device/failure_callback_resource_adaptor.hpp" namespace "rmm::mr" nogil:
+cdef extern from "rmm/mr/device/failure_callback_resource_adaptor.hpp" \
+        namespace "rmm::mr" nogil:
     cdef cppclass failure_callback_resource_adaptor[Upstream](device_memory_resource):
 
         failure_callback_resource_adaptor(
@@ -173,7 +185,8 @@ cdef extern from "rmm/mr/device/failure_callback_resource_adaptor.hpp" namespace
             void* callback_arg
         ) except +
 
-cdef extern from "rmm/mr/device/prefetch_resource_adaptor.hpp" namespace "rmm::mr" nogil:
+cdef extern from "rmm/mr/device/prefetch_resource_adaptor.hpp" \
+        namespace "rmm::mr" nogil:
     cdef cppclass prefetch_resource_adaptor[Upstream](device_memory_resource):
 
         prefetch_resource_adaptor(Upstream* upstream_mr) except +

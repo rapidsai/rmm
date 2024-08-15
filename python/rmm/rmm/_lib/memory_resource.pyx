@@ -22,9 +22,8 @@ from collections import defaultdict
 cimport cython
 from cython.operator cimport dereference as deref
 from libc.stddef cimport size_t
-from libc.stdint cimport int8_t, int64_t, uintptr_t
+from libc.stdint cimport int8_t, uintptr_t
 from libcpp cimport bool
-from libcpp.memory cimport make_unique, unique_ptr
 from libcpp.optional cimport optional
 from libcpp.pair cimport pair
 from libcpp.string cimport string
@@ -91,10 +90,10 @@ cdef class DeviceMemoryResource:
     # it is only used for passing upstream resources to C++, which will
     # become resource_ref (type erased)
     cdef device_memory_resource* get_mr(self) noexcept nogil:
-        pass #raise NotImplementedError("get_mr() must be implemented by subclasses")
+        pass
 
     cdef shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil:
-        pass #raise NotImplementedError("get_ref() must be implemented by subclasses")
+        pass
 
     def allocate(self, size_t nbytes, Stream stream=DEFAULT_STREAM):
         """Allocate ``nbytes`` bytes of memory.
