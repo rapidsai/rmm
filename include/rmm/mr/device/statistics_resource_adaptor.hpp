@@ -112,6 +112,14 @@ class statistics_resource_adaptor final : public device_memory_resource {
     }
   };
 
+  /**
+   * @brief Construct a new statistics resource adaptor using `upstream` to satisfy
+   * allocation requests.
+   *
+   * @throws rmm::logic_error if `upstream == nullptr`
+   *
+   * @param upstream Reference to the resource used for allocating/deallocating device memory
+   */
   statistics_resource_adaptor(device_async_resource_ref upstream) : upstream_{upstream} {}
 
   /**
