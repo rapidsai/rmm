@@ -13,13 +13,17 @@
 # limitations under the License.
 
 from libc.stdint cimport int8_t
-from libcpp.memory cimport shared_ptr, make_shared
+from libcpp.memory cimport make_shared, shared_ptr
 from libcpp.pair cimport pair
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 
 from rmm._lib.cuda_stream_view cimport cuda_stream_view
-from rmm._lib.resource_ref cimport device_async_resource_ref, stream_ref, CUDA_ALLOCATION_ALIGNMENT
+from rmm._lib.resource_ref cimport (
+    CUDA_ALLOCATION_ALIGNMENT,
+    device_async_resource_ref,
+    stream_ref,
+)
 
 include "extern_memory_resources.pxd"
 
@@ -51,7 +55,7 @@ cdef class CudaMemoryResource(DeviceMemoryResource):
     cdef shared_ptr[cuda_memory_resource] c_obj
     cdef inline device_memory_resource* get_mr(self) noexcept nogil:
         return self.c_obj.get()
-    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil: 
+    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil:
         return make_shared[device_async_resource_ref](as_ref(self.c_obj.get()))
 
 
@@ -59,7 +63,7 @@ cdef class ManagedMemoryResource(DeviceMemoryResource):
     cdef shared_ptr[managed_memory_resource] c_obj
     cdef inline device_memory_resource* get_mr(self) noexcept nogil:
         return self.c_obj.get()
-    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil: 
+    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil:
         return make_shared[device_async_resource_ref](as_ref(self.c_obj.get()))
 
 
@@ -67,7 +71,7 @@ cdef class SystemMemoryResource(DeviceMemoryResource):
     cdef shared_ptr[system_memory_resource] c_obj
     cdef inline device_memory_resource* get_mr(self) noexcept nogil:
         return self.c_obj.get()
-    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil: 
+    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil:
         return make_shared[device_async_resource_ref](as_ref(self.c_obj.get()))
 
 
@@ -75,7 +79,7 @@ cdef class SamHeadroomMemoryResource(DeviceMemoryResource):
     cdef shared_ptr[sam_headroom_memory_resource] c_obj
     cdef inline device_memory_resource* get_mr(self) noexcept nogil:
         return self.c_obj.get()
-    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil: 
+    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil:
         return make_shared[device_async_resource_ref](as_ref(self.c_obj.get()))
 
 
@@ -83,7 +87,7 @@ cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
     cdef shared_ptr[cuda_async_memory_resource] c_obj
     cdef inline device_memory_resource* get_mr(self) noexcept nogil:
         return self.c_obj.get()
-    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil: 
+    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil:
         return make_shared[device_async_resource_ref](as_ref(self.c_obj.get()))
 
 
@@ -91,7 +95,7 @@ cdef class PoolMemoryResource(UpstreamResourceAdaptor):
     cdef shared_ptr[pool_memory_resource[device_memory_resource]] c_obj
     cdef inline device_memory_resource* get_mr(self) noexcept nogil:
         return self.c_obj.get()
-    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil: 
+    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil:
         return make_shared[device_async_resource_ref](as_ref(self.c_obj.get()))
 
 
@@ -99,7 +103,7 @@ cdef class FixedSizeMemoryResource(UpstreamResourceAdaptor):
     cdef shared_ptr[fixed_size_memory_resource[device_memory_resource]] c_obj
     cdef inline device_memory_resource* get_mr(self) noexcept nogil:
         return self.c_obj.get()
-    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil: 
+    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil:
         return make_shared[device_async_resource_ref](as_ref(self.c_obj.get()))
 
 
@@ -107,7 +111,7 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
     cdef shared_ptr[binning_memory_resource[device_memory_resource]] c_obj
     cdef inline device_memory_resource* get_mr(self) noexcept nogil:
         return self.c_obj.get()
-    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil: 
+    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil:
         return make_shared[device_async_resource_ref](as_ref(self.c_obj.get()))
 
     cdef readonly list _bin_mrs
@@ -121,7 +125,7 @@ cdef class CallbackMemoryResource(DeviceMemoryResource):
     cdef shared_ptr[callback_memory_resource] c_obj
     cdef inline device_memory_resource* get_mr(self) noexcept nogil:
         return self.c_obj.get()
-    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil: 
+    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil:
         return make_shared[device_async_resource_ref](as_ref(self.c_obj.get()))
 
 
@@ -132,7 +136,7 @@ cdef class LimitingResourceAdaptor(UpstreamResourceAdaptor):
     cdef shared_ptr[limiting_resource_adaptor[device_memory_resource]] c_obj
     cdef inline device_memory_resource* get_mr(self) noexcept nogil:
         return self.c_obj.get()
-    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil: 
+    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil:
         return make_shared[device_async_resource_ref](as_ref(self.c_obj.get()))
 
 
@@ -140,7 +144,7 @@ cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
     cdef shared_ptr[logging_resource_adaptor[device_memory_resource]] c_obj
     cdef inline device_memory_resource* get_mr(self) noexcept nogil:
         return self.c_obj.get()
-    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil: 
+    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil:
         return make_shared[device_async_resource_ref](as_ref(self.c_obj.get()))
 
 
@@ -152,7 +156,7 @@ cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
     cdef shared_ptr[statistics_resource_adaptor[device_memory_resource]] c_obj
     cdef inline device_memory_resource* get_mr(self) noexcept nogil:
         return self.c_obj.get()
-    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil: 
+    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil:
         return make_shared[device_async_resource_ref](as_ref(self.c_obj.get()))
 
 
@@ -160,7 +164,7 @@ cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
     cdef shared_ptr[tracking_resource_adaptor[device_memory_resource]] c_obj
     cdef inline device_memory_resource* get_mr(self) noexcept nogil:
         return self.c_obj.get()
-    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil: 
+    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil:
         return make_shared[device_async_resource_ref](as_ref(self.c_obj.get()))
 
 
@@ -168,7 +172,7 @@ cdef class FailureCallbackResourceAdaptor(UpstreamResourceAdaptor):
     cdef shared_ptr[failure_callback_resource_adaptor[device_memory_resource]] c_obj
     cdef inline device_memory_resource* get_mr(self) noexcept nogil:
         return self.c_obj.get()
-    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil: 
+    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil:
         return make_shared[device_async_resource_ref](as_ref(self.c_obj.get()))
 
 
@@ -178,7 +182,7 @@ cdef class PrefetchResourceAdaptor(UpstreamResourceAdaptor):
     cdef shared_ptr[prefetch_resource_adaptor[device_memory_resource]] c_obj
     cdef inline device_memory_resource* get_mr(self) noexcept nogil:
         return self.c_obj.get()
-    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil: 
+    cdef inline shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil:
         return make_shared[device_async_resource_ref](as_ref(self.c_obj.get()))
 
 

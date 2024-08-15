@@ -32,7 +32,9 @@ from libcpp.string cimport string
 from cuda.cudart import cudaError_t
 
 from rmm._cuda.gpu import CUDARuntimeError, getDevice, setDevice
+
 from rmm._cuda.stream cimport Stream
+
 from rmm._cuda.stream import DEFAULT_STREAM
 
 from rmm._lib.cuda_stream_view cimport cuda_stream_view
@@ -44,8 +46,8 @@ from rmm._lib.per_device_resource cimport (
     cuda_device_id,
     set_per_device_resource as cpp_set_per_device_resource,
 )
-from rmm.statistics import Statistics
 
+from rmm.statistics import Statistics
 
 # Transparent handle of a C++ exception
 ctypedef pair[int, string] CppExcept
@@ -96,7 +98,7 @@ cdef class DeviceMemoryResource:
 
     def allocate(self, size_t nbytes, Stream stream=DEFAULT_STREAM):
         """Allocate ``nbytes`` bytes of memory.
-        
+
         Parameters
         ----------
         nbytes : size_t

@@ -15,6 +15,7 @@
 from rmm._lib.memory_resource cimport device_memory_resource
 from rmm._lib.resource_ref cimport device_async_resource_ref
 
+
 cdef extern from "rmm/cuda_device.hpp" namespace "rmm" nogil:
     cdef cppclass cuda_device_id:
         ctypedef int value_type
@@ -28,4 +29,3 @@ cdef extern from "rmm/mr/device/per_device_resource.hpp" \
         cuda_device_id id,
         device_async_resource_ref new_mr
     )
-

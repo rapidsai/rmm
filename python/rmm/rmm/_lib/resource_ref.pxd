@@ -14,6 +14,7 @@
 
 from cuda.ccudart cimport cudaStream_t
 
+
 cdef extern from "cuda/memory_resource" namespace "cuda" nogil:
     cdef cppclass stream_ref:
         stream_ref() except +
@@ -27,8 +28,8 @@ cdef extern from "rmm/resource_ref.hpp" namespace "rmm" nogil:
         void* allocate(size_t bytes, size_t alignment) except +
         void deallocate(void* ptr, size_t bytes, size_t alignment) except +
         void* allocate_async(
-            size_t bytes, 
-            size_t alignment, 
+            size_t bytes,
+            size_t alignment,
             stream_ref stream) except +
         void deallocate_async(
             void* ptr,

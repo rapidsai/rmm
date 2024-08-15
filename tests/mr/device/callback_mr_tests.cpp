@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ using ::testing::_;
 
 TEST(CallbackTest, TestCallbacksAreInvoked)
 {
-  auto base_mr = mock_resource();
+  auto base_mr  = mock_resource();
   auto base_ref = device_async_resource_ref{base_mr};
   EXPECT_CALL(base_mr, do_allocate(10_MiB, cuda_stream_view{})).Times(1);
   EXPECT_CALL(base_mr, do_deallocate(_, 10_MiB, cuda_stream_view{})).Times(1);
