@@ -289,10 +289,14 @@ class statistics_resource_adaptor final : public device_memory_resource {
  * @param upstream Pointer to the upstream resource
  * @return The new statistics resource adaptor
  */
-inline statistics_resource_adaptor<rmm::mr::device_memory_resource> make_statistics_adaptor(
-  device_async_resource_ref upstream)
+template <typename Upstream>
+[[deprecated(
+  "make_statistics_adaptor is deprecated in RMM 24.10. Use the statistics_resource_adaptor "
+  "constructor "
+  "instead.")]]
+statistics_resource_adaptor<Upstream> make_statistics_adaptor(Upstream* upstream)
 {
-  return statistics_resource_adaptor<rmm::mr::device_memory_resource>{upstream};
+  return statistics_resource_adaptor<Upstream>{upstream};
 }
 
 /** @} */  // end of group

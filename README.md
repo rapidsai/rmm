@@ -478,7 +478,7 @@ rmm::cuda_stream stream;
 rmm::mr::polymorphic_allocator<int> stream_alloc;
 
 // Constructs an adaptor that forwards all (de)allocations to `stream_alloc` on `stream`.
-auto adapted = rmm::mr::make_stream_allocator_adaptor(stream_alloc, stream);
+auto adapted = rmm::mr::stream_allocator_adaptor(stream_alloc, stream);
 
 // Allocates 100 bytes using `stream_alloc` on `stream`
 auto p = adapted.allocate(100);
