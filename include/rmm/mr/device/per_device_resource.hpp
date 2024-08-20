@@ -89,6 +89,12 @@ namespace rmm::mr {
 
 namespace detail {
 
+// These symbols must have default visibility so that when they are
+// referenced in multiple different DSOs the linker correctly
+// determines that there is only a single unique reference to the
+// function symbols (and hence they return unique static references
+// across different DSOs).
+// See also https://github.com/rapidsai/rmm/issues/826
 /**
  * @brief Returns a pointer to the initial resource.
  *
@@ -96,7 +102,7 @@ namespace detail {
  *
  * @return Pointer to the static cuda_memory_resource used as the initial, default resource
  */
-inline device_memory_resource* initial_resource()
+RMM_EXPORT inline device_memory_resource* initial_resource()
 {
   static cuda_memory_resource mr{};
   return &mr;
@@ -105,13 +111,12 @@ inline device_memory_resource* initial_resource()
 /**
  * @briefreturn{Reference to the lock}
  */
-inline std::mutex& map_lock()
+RMM_EXPORT inline std::mutex& map_lock()
 {
   static std::mutex map_lock;
   return map_lock;
 }
 
-// This symbol must have default visibility, see: https://github.com/rapidsai/rmm/issues/826
 /**
  * @briefreturn{Reference to the map from device id -> resource}
  */
