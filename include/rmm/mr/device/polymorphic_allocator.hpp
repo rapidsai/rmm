@@ -25,7 +25,8 @@
 #include <memory>
 #include <type_traits>
 
-namespace RMM_EXPORT rmm::mr {
+namespace RMM_EXPORT rmm {
+namespace mr {
 /**
  * @addtogroup device_memory_resources
  * @{
@@ -312,4 +313,5 @@ auto make_stream_allocator_adaptor(Allocator const& allocator, cuda_stream_view 
   return stream_allocator_adaptor<Allocator>{allocator, stream};
 }
 /** @} */  // end of group
-}  // namespace rmm::mr
+}  // namespace mr
+}  // namespace RMM_EXPORT rmm

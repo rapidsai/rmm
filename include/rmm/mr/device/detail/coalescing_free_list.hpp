@@ -29,7 +29,8 @@
 #include <iterator>
 #include <list>
 
-namespace RMM_EXPORT rmm::mr::detail {
+namespace RMM_EXPORT rmm {
+namespace mr::detail {
 
 /**
  * @brief A simple block structure specifying the size and location of a block
@@ -268,4 +269,5 @@ struct coalescing_free_list : free_list<block> {
 #endif
 };  // coalescing_free_list
 
-}  // namespace rmm::mr::detail
+}  // namespace mr::detail
+}  // namespace RMM_EXPORT rmm

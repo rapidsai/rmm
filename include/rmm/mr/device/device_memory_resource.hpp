@@ -25,7 +25,8 @@
 #include <cstddef>
 #include <utility>
 
-namespace RMM_EXPORT rmm::mr {
+namespace RMM_EXPORT rmm {
+namespace mr {
 /**
  * @addtogroup device_memory_resources
  * @{
@@ -359,4 +360,5 @@ class device_memory_resource {
 };
 static_assert(cuda::mr::async_resource_with<device_memory_resource, cuda::mr::device_accessible>);
 /** @} */  // end of group
-}  // namespace rmm::mr
+}  // namespace mr
+}  // namespace RMM_EXPORT rmm

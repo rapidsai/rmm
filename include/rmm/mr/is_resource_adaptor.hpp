@@ -20,7 +20,8 @@
 #include <cuda/memory_resource>
 #include <cuda/std/type_traits>
 
-namespace RMM_EXPORT rmm::mr {
+namespace RMM_EXPORT rmm {
+namespace mr {
 
 /**
  * @addtogroup memory_resources
@@ -42,4 +43,5 @@ inline constexpr bool is_resource_adaptor<
   cuda::mr::resource<Resource>;
 
 /** @} */  // end of group
-}  // namespace rmm::mr
+}  // namespace mr
+}  // namespace RMM_EXPORT rmm

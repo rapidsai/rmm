@@ -23,7 +23,8 @@
 #include <memory>
 #include <utility>
 
-namespace RMM_EXPORT rmm::mr {
+namespace RMM_EXPORT rmm {
+namespace mr {
 namespace detail {
 /**
  * @brief Converts a tuple into a parameter pack.
@@ -271,4 +272,5 @@ auto make_owning_wrapper(std::shared_ptr<Upstream> upstream, Args&&... args)
 }
 
 /** @} */  // end of group
-}  // namespace rmm::mr
+}  // namespace mr
+}  // namespace RMM_EXPORT rmm

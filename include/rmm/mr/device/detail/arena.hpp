@@ -38,7 +38,8 @@
 #include <optional>
 #include <set>
 
-namespace RMM_EXPORT rmm::mr::detail::arena {
+namespace RMM_EXPORT rmm {
+namespace mr::detail::arena {
 
 /**
  * @brief Align up to nearest size class.
@@ -999,4 +1000,5 @@ class arena_cleaner {
   std::weak_ptr<arena<Upstream>> arena_;
 };
 
-}  // namespace rmm::mr::detail::arena
+}  // namespace mr::detail::arena
+}  // namespace RMM_EXPORT rmm

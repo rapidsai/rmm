@@ -31,7 +31,8 @@
 #include <mutex>
 #include <unordered_map>
 
-namespace RMM_EXPORT rmm::mr::detail {
+namespace RMM_EXPORT rmm {
+namespace mr::detail {
 
 /**
  * @brief A CRTP helper function
@@ -491,4 +492,5 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
   rmm::cuda_device_id device_id_{rmm::get_current_cuda_device()};
 };  // namespace detail
 
-}  // namespace rmm::mr::detail
+}  // namespace mr::detail
+}  // namespace RMM_EXPORT rmm

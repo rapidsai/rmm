@@ -22,7 +22,8 @@
 #include <rmm/mr/device/system_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
-namespace RMM_EXPORT rmm::mr {
+namespace RMM_EXPORT rmm {
+namespace mr {
 /**
  * @addtogroup device_memory_resources
  * @{
@@ -131,4 +132,5 @@ class sam_headroom_memory_resource final : public device_memory_resource {
   std::size_t headroom_;
 };
 /** @} */  // end of group
-}  // namespace rmm::mr
+}  // namespace mr
+}  // namespace RMM_EXPORT rmm

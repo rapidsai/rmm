@@ -30,7 +30,8 @@
 #include <shared_mutex>
 #include <sstream>
 
-namespace RMM_EXPORT rmm::mr {
+namespace RMM_EXPORT rmm {
+namespace mr {
 /**
  * @addtogroup device_resource_adaptors
  * @{
@@ -293,4 +294,5 @@ tracking_resource_adaptor<Upstream> make_tracking_adaptor(Upstream* upstream)
 }
 
 /** @} */  // end of group
-}  // namespace rmm::mr
+}  // namespace mr
+}  // namespace RMM_EXPORT rmm

@@ -27,7 +27,8 @@
 #include <optional>
 #include <unordered_map>
 
-namespace RMM_EXPORT rmm::mr {
+namespace RMM_EXPORT rmm {
+namespace mr {
 /**
  * @addtogroup device_resource_adaptors
  * @{
@@ -195,4 +196,5 @@ class aligned_resource_adaptor final : public device_memory_resource {
 };
 
 /** @} */  // end of group
-}  // namespace rmm::mr
+}  // namespace mr
+}  // namespace RMM_EXPORT rmm

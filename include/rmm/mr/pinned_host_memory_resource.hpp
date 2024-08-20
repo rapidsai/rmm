@@ -28,7 +28,8 @@
 #include <cstddef>
 #include <utility>
 
-namespace RMM_EXPORT rmm::mr {
+namespace RMM_EXPORT rmm {
+namespace mr {
 
 /**
  * @addtogroup memory_resources
@@ -214,4 +215,5 @@ static_assert(cuda::mr::async_resource_with<pinned_host_memory_resource,
                                             cuda::mr::host_accessible>);
 
 /** @} */  // end of group
-}  // namespace rmm::mr
+}  // namespace mr
+}  // namespace RMM_EXPORT rmm

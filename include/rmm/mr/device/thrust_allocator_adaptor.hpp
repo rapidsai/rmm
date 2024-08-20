@@ -27,7 +27,8 @@
 #include <thrust/device_ptr.h>
 #include <thrust/memory.h>
 
-namespace RMM_EXPORT rmm::mr {
+namespace RMM_EXPORT rmm {
+namespace mr {
 /**
  * @addtogroup device_resource_adaptors
  * @{
@@ -153,4 +154,5 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
   cuda_device_id _device{get_current_cuda_device()};
 };
 /** @} */  // end of group
-}  // namespace rmm::mr
+}  // namespace mr
+}  // namespace RMM_EXPORT rmm

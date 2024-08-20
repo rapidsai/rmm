@@ -22,7 +22,8 @@
 #include <iostream>
 #include <list>
 
-namespace RMM_EXPORT rmm::mr::detail {
+namespace RMM_EXPORT rmm {
+namespace mr::detail {
 
 struct block_base {
   void* ptr{};  ///< Raw memory pointer
@@ -181,4 +182,5 @@ class free_list {
   list_type blocks;  // The internal container of blocks
 };
 
-}  // namespace rmm::mr::detail
+}  // namespace mr::detail
+}  // namespace RMM_EXPORT rmm
