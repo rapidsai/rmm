@@ -53,8 +53,15 @@
  * `get_per_device_resource(id)` will return a pointer to a `cuda_memory_resource`.
  *
  * To fetch and modify the resource for the current CUDA device, `get_current_device_resource()` and
- * `set_current_device_resource()` will automatically use the current CUDA device id from
+ * `set_current_device_resource()` automatically use the current CUDA device id from
  * `cudaGetDevice()`.
+ *
+ * RMM is in transition to use `cuda::mr::async_resource_ref` in place of raw pointers to
+ * `device_memory_resource`. The `set_per_device_resource_ref`, `get_per_device_resource_ref`,
+ * `get_current_device_resource_ref`, `set_current_device_resource_ref`, and
+ * `reset_current_device_resource_ref` functions provide the same functionality as their
+ * `device_memory_resource` counterparts, but with `device_async_resource_ref` objects.
+ * The raw pointer versions are expected to be deprecated and removed in a future release.
  *
  * Creating a device_memory_resource for each device requires care to set the current device
  * before creating each resource, and to maintain the lifetime of the resources as long as they
