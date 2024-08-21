@@ -132,7 +132,7 @@ RMM_EXPORT inline auto& get_map()
 /**
  * @briefreturn{Reference to the lock}
  */
-inline std::mutex& ref_map_lock()
+RMM_EXPORT inline std::mutex& ref_map_lock()
 {
   static std::mutex ref_map_lock;
   return ref_map_lock;
