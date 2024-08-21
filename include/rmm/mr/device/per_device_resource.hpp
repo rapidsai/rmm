@@ -104,7 +104,7 @@ namespace detail {
  *
  * @return Pointer to the static cuda_memory_resource used as the initial, default resource
  */
-inline device_memory_resource* initial_resource()
+RMM_EXPORT inline device_memory_resource* initial_resource()
 {
   static cuda_memory_resource mr{};
   return &mr;
@@ -113,7 +113,7 @@ inline device_memory_resource* initial_resource()
 /**
  * @briefreturn{Reference to the lock}
  */
-inline std::mutex& map_lock()
+RMM_EXPORT inline std::mutex& map_lock()
 {
   static std::mutex map_lock;
   return map_lock;
@@ -287,8 +287,8 @@ inline device_memory_resource* set_current_device_resource(device_memory_resourc
  *
  * This function is thread-safe with respect to concurrent calls to `set_per_device_resource_ref`,
  * `get_per_device_resource_ref`, `get_current_device_resource_ref`,
- * `set_current_device_resource_ref` and `reset_current_device_resource_ref`. Concurrent calls to any
- * of these functions will result in a valid state, but the order of execution is undefined.
+ * `set_current_device_resource_ref` and `reset_current_device_resource_ref`. Concurrent calls to
+ * any of these functions will result in a valid state, but the order of execution is undefined.
  *
  * @note The returned `device_async_resource_ref` should only be used when CUDA device `device_id`
  * is the current device  (e.g. set using `cudaSetDevice()`). The behavior of a
