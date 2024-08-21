@@ -81,7 +81,7 @@
  * @endcode
  */
 
-namespace RMM_EXPORT rmm {
+namespace RMM_NAMESPACE {
 namespace mr {
 /**
  * @addtogroup memory_resources
@@ -250,4 +250,4 @@ inline device_memory_resource* set_current_device_resource(device_memory_resourc
 }
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_EXPORT rmm
+}  // namespace RMM_NAMESPACE

@@ -32,7 +32,7 @@
 #define RMM_CUDA_MALLOC_ASYNC_SUPPORT
 #endif
 
-namespace RMM_EXPORT rmm {
+namespace RMM_NAMESPACE {
 namespace mr {
 /**
  * @addtogroup device_memory_resources
@@ -158,4 +158,4 @@ class cuda_async_view_memory_resource final : public device_memory_resource {
 
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_EXPORT rmm
+}  // namespace RMM_NAMESPACE

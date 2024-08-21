@@ -22,7 +22,7 @@
 #include <cstddef>
 #include <iostream>
 
-namespace RMM_EXPORT rmm {
+namespace RMM_NAMESPACE {
 namespace mr::detail {
 
 struct fixed_size_free_list : free_list<block_base> {
@@ -78,4 +78,4 @@ struct fixed_size_free_list : free_list<block_base> {
 };
 
 }  // namespace mr::detail
-}  // namespace RMM_EXPORT rmm
+}  // namespace RMM_NAMESPACE

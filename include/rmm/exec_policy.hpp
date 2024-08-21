@@ -30,7 +30,7 @@
 #include <thrust/system/cuda/execution_policy.h>
 #include <thrust/version.h>
 
-namespace RMM_EXPORT rmm {
+namespace RMM_NAMESPACE {
 /**
  * @addtogroup thrust_integrations
  * @{
@@ -98,4 +98,4 @@ using exec_policy_nosync =
 #endif
 
 /** @} */  // end of group
-}  // namespace RMM_EXPORT rmm
+}  // namespace RMM_NAMESPACE

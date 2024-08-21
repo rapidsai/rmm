@@ -22,7 +22,7 @@
 #include <rmm/mr/device/system_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
-namespace RMM_EXPORT rmm {
+namespace RMM_NAMESPACE {
 namespace mr {
 /**
  * @addtogroup device_memory_resources
@@ -133,4 +133,4 @@ class sam_headroom_memory_resource final : public device_memory_resource {
 };
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_EXPORT rmm
+}  // namespace RMM_NAMESPACE

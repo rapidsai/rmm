@@ -47,7 +47,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace RMM_EXPORT rmm {
+namespace RMM_NAMESPACE {
 namespace mr {
 /**
  * @addtogroup device_memory_resources
@@ -480,4 +480,4 @@ class pool_memory_resource final
 
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_EXPORT rmm
+}  // namespace RMM_NAMESPACE

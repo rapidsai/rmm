@@ -22,7 +22,7 @@
 #include <iostream>
 #include <list>
 
-namespace RMM_EXPORT rmm {
+namespace RMM_NAMESPACE {
 namespace mr::detail {
 
 struct block_base {
@@ -183,4 +183,4 @@ class free_list {
 };
 
 }  // namespace mr::detail
-}  // namespace RMM_EXPORT rmm
+}  // namespace RMM_NAMESPACE

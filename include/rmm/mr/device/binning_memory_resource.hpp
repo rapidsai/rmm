@@ -29,7 +29,7 @@
 #include <memory>
 #include <vector>
 
-namespace RMM_EXPORT rmm {
+namespace RMM_NAMESPACE {
 namespace mr {
 /**
  * @addtogroup device_memory_resources
@@ -197,4 +197,4 @@ class binning_memory_resource final : public device_memory_resource {
 
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_EXPORT rmm
+}  // namespace RMM_NAMESPACE

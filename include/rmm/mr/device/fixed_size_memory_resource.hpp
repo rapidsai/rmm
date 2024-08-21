@@ -36,7 +36,7 @@
 #include <utility>
 #include <vector>
 
-namespace RMM_EXPORT rmm {
+namespace RMM_NAMESPACE {
 namespace mr {
 /**
  * @addtogroup device_memory_resources
@@ -265,4 +265,4 @@ class fixed_size_memory_resource
 
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_EXPORT rmm
+}  // namespace RMM_NAMESPACE

@@ -23,7 +23,7 @@
 #include <cstddef>
 #include <utility>
 
-namespace RMM_EXPORT rmm {
+namespace RMM_NAMESPACE {
 namespace mr {
 /**
  * @addtogroup host_memory_resources
@@ -205,4 +205,4 @@ static_assert(cuda::mr::resource_with<host_memory_resource, cuda::mr::host_acces
 /** @} */  // end of group
 
 }  // namespace mr
-}  // namespace RMM_EXPORT rmm
+}  // namespace RMM_NAMESPACE

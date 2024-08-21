@@ -28,7 +28,7 @@
 #include <cstddef>
 #include <utility>
 
-namespace RMM_EXPORT rmm {
+namespace RMM_NAMESPACE {
 namespace mr {
 
 /**
@@ -216,4 +216,4 @@ static_assert(cuda::mr::async_resource_with<pinned_host_memory_resource,
 
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_EXPORT rmm
+}  // namespace RMM_NAMESPACE

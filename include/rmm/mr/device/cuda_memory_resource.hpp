@@ -22,7 +22,7 @@
 
 #include <cstddef>
 
-namespace RMM_EXPORT rmm {
+namespace RMM_NAMESPACE {
 namespace mr {
 /**
  * @addtogroup device_memory_resources
@@ -97,4 +97,4 @@ class cuda_memory_resource final : public device_memory_resource {
 };
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_EXPORT rmm
+}  // namespace RMM_NAMESPACE

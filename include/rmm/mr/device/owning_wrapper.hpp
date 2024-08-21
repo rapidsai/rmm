@@ -23,7 +23,7 @@
 #include <memory>
 #include <utility>
 
-namespace RMM_EXPORT rmm {
+namespace RMM_NAMESPACE {
 namespace mr {
 namespace detail {
 /**
@@ -273,4 +273,4 @@ auto make_owning_wrapper(std::shared_ptr<Upstream> upstream, Args&&... args)
 
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_EXPORT rmm
+}  // namespace RMM_NAMESPACE

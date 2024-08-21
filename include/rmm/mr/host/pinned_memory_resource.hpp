@@ -25,7 +25,7 @@
 #include <cstddef>
 #include <utility>
 
-namespace RMM_EXPORT rmm {
+namespace RMM_NAMESPACE {
 namespace mr {
 /**
  * @addtogroup host_memory_resources
@@ -156,4 +156,4 @@ static_assert(cuda::mr::async_resource_with<pinned_memory_resource,
                                             cuda::mr::device_accessible>);
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_EXPORT rmm
+}  // namespace RMM_NAMESPACE

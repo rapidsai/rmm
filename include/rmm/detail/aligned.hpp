@@ -25,7 +25,7 @@
 #include <memory>
 #include <new>
 
-namespace RMM_EXPORT rmm {
+namespace RMM_NAMESPACE {
 namespace detail {
 
 /**
@@ -115,4 +115,4 @@ void aligned_host_deallocate(void* ptr,
   dealloc(original);
 }
 }  // namespace detail
-}  // namespace RMM_EXPORT rmm
+}  // namespace RMM_NAMESPACE

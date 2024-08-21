@@ -25,7 +25,7 @@
 #include <memory>
 #include <optional>
 
-namespace RMM_EXPORT rmm {
+namespace RMM_NAMESPACE {
 namespace detail {
 
 /**
@@ -188,4 +188,4 @@ struct async_alloc {
 
 #undef RMM_CUDART_API_WRAPPER
 }  // namespace detail
-}  // namespace RMM_EXPORT rmm
+}  // namespace RMM_NAMESPACE

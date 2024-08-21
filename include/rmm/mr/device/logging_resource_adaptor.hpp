@@ -32,7 +32,7 @@
 #include <sstream>
 #include <string_view>
 
-namespace RMM_EXPORT rmm {
+namespace RMM_NAMESPACE {
 namespace mr {
 /**
  * @addtogroup device_resource_adaptors
@@ -347,4 +347,4 @@ logging_resource_adaptor<Upstream> make_logging_adaptor(Upstream* upstream,
 
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_EXPORT rmm
+}  // namespace RMM_NAMESPACE

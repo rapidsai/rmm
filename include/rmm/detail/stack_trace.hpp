@@ -37,7 +37,7 @@
 #include <vector>
 #endif
 
-namespace RMM_EXPORT rmm {
+namespace RMM_NAMESPACE {
 namespace detail {
 
 /**
@@ -105,4 +105,4 @@ class stack_trace {
 };
 
 }  // namespace detail
-}  // namespace RMM_EXPORT rmm
+}  // namespace RMM_NAMESPACE

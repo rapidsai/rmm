@@ -27,7 +27,7 @@
 #include <thrust/device_ptr.h>
 #include <thrust/memory.h>
 
-namespace RMM_EXPORT rmm {
+namespace RMM_NAMESPACE {
 namespace mr {
 /**
  * @addtogroup device_resource_adaptors
@@ -155,4 +155,4 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
 };
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_EXPORT rmm
+}  // namespace RMM_NAMESPACE

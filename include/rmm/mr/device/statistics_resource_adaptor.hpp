@@ -24,7 +24,7 @@
 #include <shared_mutex>
 #include <stack>
 
-namespace RMM_EXPORT rmm {
+namespace RMM_NAMESPACE {
 namespace mr {
 /**
  * @addtogroup device_resource_adaptors
@@ -302,4 +302,4 @@ statistics_resource_adaptor<Upstream> make_statistics_adaptor(Upstream* upstream
 
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_EXPORT rmm
+}  // namespace RMM_NAMESPACE

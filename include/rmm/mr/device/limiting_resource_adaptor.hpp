@@ -23,7 +23,7 @@
 
 #include <cstddef>
 
-namespace RMM_EXPORT rmm {
+namespace RMM_NAMESPACE {
 namespace mr {
 /**
  * @addtogroup device_resource_adaptors
@@ -202,4 +202,4 @@ limiting_resource_adaptor<Upstream> make_limiting_adaptor(Upstream* upstream,
 
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_EXPORT rmm
+}  // namespace RMM_NAMESPACE

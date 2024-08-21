@@ -30,7 +30,7 @@
 #include <stdexcept>
 #include <utility>
 
-namespace RMM_EXPORT rmm {
+namespace RMM_NAMESPACE {
 /**
  * @addtogroup data_containers
  * @{
@@ -480,4 +480,4 @@ class device_buffer {
 };
 
 /** @} */  // end of group
-}  // namespace RMM_EXPORT rmm
+}  // namespace RMM_NAMESPACE

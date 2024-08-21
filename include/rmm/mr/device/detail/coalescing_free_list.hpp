@@ -29,7 +29,7 @@
 #include <iterator>
 #include <list>
 
-namespace RMM_EXPORT rmm {
+namespace RMM_NAMESPACE {
 namespace mr::detail {
 
 /**
@@ -270,4 +270,4 @@ struct coalescing_free_list : free_list<block> {
 };  // coalescing_free_list
 
 }  // namespace mr::detail
-}  // namespace RMM_EXPORT rmm
+}  // namespace RMM_NAMESPACE

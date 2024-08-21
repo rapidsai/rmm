@@ -23,7 +23,7 @@
 #include <cstddef>
 #include <utility>
 
-namespace RMM_EXPORT rmm {
+namespace RMM_NAMESPACE {
 namespace mr {
 /**
  * @addtogroup host_memory_resources
@@ -94,4 +94,4 @@ class new_delete_resource final : public host_memory_resource {
 
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_EXPORT rmm
+}  // namespace RMM_NAMESPACE

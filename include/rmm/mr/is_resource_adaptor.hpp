@@ -20,7 +20,7 @@
 #include <cuda/memory_resource>
 #include <cuda/std/type_traits>
 
-namespace RMM_EXPORT rmm {
+namespace RMM_NAMESPACE {
 namespace mr {
 
 /**
@@ -44,4 +44,4 @@ inline constexpr bool is_resource_adaptor<
 
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_EXPORT rmm
+}  // namespace RMM_NAMESPACE

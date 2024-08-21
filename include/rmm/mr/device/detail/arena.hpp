@@ -38,7 +38,7 @@
 #include <optional>
 #include <set>
 
-namespace RMM_EXPORT rmm {
+namespace RMM_NAMESPACE {
 namespace mr::detail::arena {
 
 /**
@@ -1001,4 +1001,4 @@ class arena_cleaner {
 };
 
 }  // namespace mr::detail::arena
-}  // namespace RMM_EXPORT rmm
+}  // namespace RMM_NAMESPACE

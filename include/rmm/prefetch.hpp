@@ -23,7 +23,7 @@
 
 #include <cuda/std/span>
 
-namespace RMM_EXPORT rmm {
+namespace RMM_NAMESPACE {
 
 /**
  * @addtogroup utilities
@@ -75,4 +75,4 @@ void prefetch(cuda::std::span<T const> data,
 
 /** @} */  // end of group
 
-}  // namespace RMM_EXPORT rmm
+}  // namespace RMM_NAMESPACE

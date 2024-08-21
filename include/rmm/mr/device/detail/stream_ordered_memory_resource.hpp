@@ -31,7 +31,7 @@
 #include <mutex>
 #include <unordered_map>
 
-namespace RMM_EXPORT rmm {
+namespace RMM_NAMESPACE {
 namespace mr::detail {
 
 /**
@@ -493,4 +493,4 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
 };  // namespace detail
 
 }  // namespace mr::detail
-}  // namespace RMM_EXPORT rmm
+}  // namespace RMM_NAMESPACE

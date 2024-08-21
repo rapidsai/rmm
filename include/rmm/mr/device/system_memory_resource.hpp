@@ -21,7 +21,7 @@
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
-namespace RMM_EXPORT rmm {
+namespace RMM_NAMESPACE {
 namespace mr {
 
 namespace detail {
@@ -156,4 +156,4 @@ static_assert(cuda::mr::async_resource_with<system_memory_resource, cuda::mr::de
 static_assert(cuda::mr::async_resource_with<system_memory_resource, cuda::mr::host_accessible>);
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_EXPORT rmm
+}  // namespace RMM_NAMESPACE
