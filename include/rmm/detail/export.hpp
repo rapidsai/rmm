@@ -18,8 +18,8 @@
 
 // Macros used for defining symbol visibility, only GLIBC is supported
 #if (defined(__GNUC__) && !defined(__MINGW32__) && !defined(__MINGW64__))
-#define RMM_EXPORT __attribute__((visibility("default")))
-#define RMM_HIDDEN __attribute__((visibility("hidden")))
+#define RMM_EXPORT    __attribute__((visibility("default")))
+#define RMM_HIDDEN    __attribute__((visibility("hidden")))
 #define RMM_NAMESPACE RMM_EXPORT rmm
 #else
 #define RMM_EXPORT
