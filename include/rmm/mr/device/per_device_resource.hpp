@@ -60,8 +60,10 @@
  * `device_memory_resource`. The `set_per_device_resource_ref`, `get_per_device_resource_ref`,
  * `get_current_device_resource_ref`, `set_current_device_resource_ref`, and
  * `reset_current_device_resource_ref` functions provide the same functionality as their
- * `device_memory_resource` counterparts, but with `device_async_resource_ref` objects.
- * The raw pointer versions are expected to be deprecated and removed in a future release.
+ * `device_memory_resource` counterparts, but with `device_async_resource_ref` objects. The raw
+ * pointer versions and the `resource_ref` versions maintain distinc state and are not
+ * interchangeable. The raw pointer versions are expected to be deprecated and removed in a future
+ * release.
  *
  * Creating a device_memory_resource for each device requires care to set the current device
  * before creating each resource, and to maintain the lifetime of the resources as long as they
