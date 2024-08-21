@@ -132,7 +132,7 @@ RMM_EXPORT inline auto& get_map()
 /**
  * @briefreturn{Reference to the lock}
  */
-inline std::mutex& ref_map_lock()
+RMM_EXPORT inline std::mutex& ref_map_lock()
 {
   static std::mutex ref_map_lock;
   return ref_map_lock;
@@ -277,7 +277,7 @@ inline device_memory_resource* set_current_device_resource(device_memory_resourc
 }
 
 /**
- * @brief Get the `device_async_resource_ref for the specified device.
+ * @brief Get the `device_async_resource_ref` for the specified device.
  *
  * Returns a `device_async_resource_ref` for the specified device. The initial resource_ref
  * references a `cuda_memory_resource`.
@@ -287,7 +287,7 @@ inline device_memory_resource* set_current_device_resource(device_memory_resourc
  *
  * This function is thread-safe with respect to concurrent calls to `set_per_device_resource_ref`,
  * `get_per_device_resource_ref`, `get_current_device_resource_ref`,
- * `set_current_device_resource_ref` and `reset_current_device_resource_ref. Concurrent calls to any
+ * `set_current_device_resource_ref` and `reset_current_device_resource_ref`. Concurrent calls to any
  * of these functions will result in a valid state, but the order of execution is undefined.
  *
  * @note The returned `device_async_resource_ref` should only be used when CUDA device `device_id`
@@ -305,7 +305,6 @@ inline device_async_resource_ref get_per_device_resource_ref(cuda_device_id devi
   // If a resource was never set for `id`, set to the initial resource
   auto const found = map.find(device_id.value());
   if (found == map.end()) {
-    //
     auto item = map.insert({device_id.value(), detail::initial_resource()});
     return item.first->second;
   }
@@ -342,11 +341,10 @@ inline device_async_resource_ref set_per_device_resource_ref(
   std::lock_guard<std::mutex> lock{detail::ref_map_lock()};
   auto& map          = detail::get_ref_map();
   auto const old_itr = map.find(device_id.value());
-  // If a resource didn't previously exist for `id`, return pointer to initial_resource
+  // If a resource didn't previously exist for `device_id`, return pointer to initial_resource
   // Note: because resource_ref is not default-constructible, we can't use std::map::operator[]
   if (old_itr == map.end()) {
     map.insert({device_id.value(), new_resource_ref});
-    std::cout << "returning initial resource in set_per_device_resource_ref\n";
     return device_async_resource_ref{detail::initial_resource()};
   }
 
