@@ -482,7 +482,7 @@ TEST_F(ArenaTest, ThrowOnNullUpstream)  // NOLINT
 
 TEST_F(ArenaTest, SizeSmallerThanSuperblockSize)  // NOLINT
 {
-  auto construct_small = []() { arena_mr mr{rmm::mr::get_current_device_resource(), 256}; };
+  auto construct_small = []() { arena_mr mr{rmm::mr::get_current_device_resource_ref(), 256}; };
   // NOLINTNEXTLINE(cppcoreguidelines-avoid-goto)
   EXPECT_THROW(construct_small(), rmm::logic_error);
 }
@@ -493,14 +493,14 @@ TEST_F(ArenaTest, AllocateNinetyPercent)  // NOLINT
     auto const free           = rmm::available_device_memory().first;
     auto const ninety_percent = rmm::align_up(
       static_cast<std::size_t>(static_cast<double>(free) * 0.9), rmm::CUDA_ALLOCATION_ALIGNMENT);
-    arena_mr mr(rmm::mr::get_current_device_resource(), ninety_percent);
+    arena_mr mr(rmm::mr::get_current_device_resource_ref(), ninety_percent);
   }());
 }
 
 TEST_F(ArenaTest, SmallMediumLarge)  // NOLINT
 {
   EXPECT_NO_THROW([]() {  // NOLINT(cppcoreguidelines-avoid-goto)
-    arena_mr mr(rmm::mr::get_current_device_resource());
+    arena_mr mr(rmm::mr::get_current_device_resource_ref());
     auto* small     = mr.allocate(256);
     auto* medium    = mr.allocate(64_MiB);
     auto const free = rmm::available_device_memory().first;
@@ -515,7 +515,7 @@ TEST_F(ArenaTest, Defragment)  // NOLINT
 {
   EXPECT_NO_THROW([]() {  // NOLINT(cppcoreguidelines-avoid-goto)
     auto const arena_size = superblock::minimum_size * 4;
-    arena_mr mr(rmm::mr::get_current_device_resource(), arena_size);
+    arena_mr mr(rmm::mr::get_current_device_resource_ref(), arena_size);
     std::vector<std::thread> threads;
     std::size_t num_threads{4};
     threads.reserve(num_threads);
@@ -542,7 +542,7 @@ TEST_F(ArenaTest, PerThreadToStreamDealloc)  // NOLINT
   // arena that then moved to global arena during a defragmentation
   // and then moved to a stream arena.
   auto const arena_size = superblock::minimum_size * 2;
-  arena_mr mr(rmm::mr::get_current_device_resource(), arena_size);
+  arena_mr mr(rmm::mr::get_current_device_resource_ref(), arena_size);
   // Create an allocation from a per thread arena
   void* thread_ptr = mr.allocate(256, rmm::cuda_stream_per_thread);
   // Create an allocation in a stream arena to force global arena
@@ -568,7 +568,7 @@ TEST_F(ArenaTest, PerThreadToStreamDealloc)  // NOLINT
 
 TEST_F(ArenaTest, DumpLogOnFailure)  // NOLINT
 {
-  arena_mr mr{rmm::mr::get_current_device_resource(), 1_MiB, true};
+  arena_mr mr{rmm::mr::get_current_device_resource_ref(), 1_MiB, true};
 
   {  // make the log interesting
     std::vector<std::thread> threads;

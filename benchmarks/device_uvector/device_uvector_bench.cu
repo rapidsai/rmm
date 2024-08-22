@@ -40,7 +40,7 @@ void BM_UvectorSizeConstruction(benchmark::State& state)
   rmm::mr::cuda_memory_resource cuda_mr{};
   rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource> mr{
     &cuda_mr, rmm::percent_of_free_device_memory(50)};
-  rmm::mr::set_current_device_resource(&mr);
+  rmm::mr::set_current_device_resource_ref(&mr);
 
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
     rmm::device_uvector<std::int32_t> vec(state.range(0), rmm::cuda_stream_view{});
@@ -49,7 +49,7 @@ void BM_UvectorSizeConstruction(benchmark::State& state)
 
   state.SetItemsProcessed(static_cast<std::int64_t>(state.iterations()));
 
-  rmm::mr::set_current_device_resource(nullptr);
+  rmm::mr::reset_current_device_resource_ref();
 }
 
 BENCHMARK(BM_UvectorSizeConstruction)
@@ -62,7 +62,7 @@ void BM_ThrustVectorSizeConstruction(benchmark::State& state)
   rmm::mr::cuda_memory_resource cuda_mr{};
   rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource> mr{
     &cuda_mr, rmm::percent_of_free_device_memory(50)};
-  rmm::mr::set_current_device_resource(&mr);
+  rmm::mr::set_current_device_resource_ref(&mr);
 
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
     rmm::device_vector<std::int32_t> vec(state.range(0));
@@ -71,7 +71,7 @@ void BM_ThrustVectorSizeConstruction(benchmark::State& state)
 
   state.SetItemsProcessed(static_cast<std::int64_t>(state.iterations()));
 
-  rmm::mr::set_current_device_resource(nullptr);
+  rmm::mr::reset_current_device_resource_ref();
 }
 
 BENCHMARK(BM_ThrustVectorSizeConstruction)
@@ -140,7 +140,7 @@ template <typename Vector>
 void BM_VectorWorkflow(benchmark::State& state)
 {
   rmm::mr::cuda_async_memory_resource cuda_async_mr{};
-  rmm::mr::set_current_device_resource(&cuda_async_mr);
+  rmm::mr::set_current_device_resource_ref(&cuda_async_mr);
 
   rmm::cuda_stream input_stream;
   std::vector<rmm::cuda_stream> streams(4);
@@ -158,7 +158,7 @@ void BM_VectorWorkflow(benchmark::State& state)
   auto const bytes            = num_elements * sizeof(std::int32_t) * num_accesses;
   state.SetBytesProcessed(static_cast<std::int64_t>(state.iterations() * bytes));
 
-  rmm::mr::set_current_device_resource(nullptr);
+  rmm::mr::reset_current_device_resource_ref();
 }
 
 BENCHMARK_TEMPLATE(BM_VectorWorkflow, thrust_vector)  // NOLINT
@@ -167,9 +167,9 @@ BENCHMARK_TEMPLATE(BM_VectorWorkflow, thrust_vector)  // NOLINT
   ->Unit(benchmark::kMicrosecond)
   ->UseManualTime();
 
-// The only difference here is that `rmm::device_vector` uses `rmm::current_device_resource()`
-// for allocation while `thrust::device_vector` uses cudaMalloc/cudaFree. In the benchmarks we use
-// `cuda_async_memory_resource`, which is faster.
+// The only difference here is that `rmm::device_vector` uses
+// `rmm::get_current_device_resource_ref()` for allocation while `thrust::device_vector` uses
+// cudaMalloc/cudaFree. In the benchmarks we use `cuda_async_memory_resource`, which is faster.
 BENCHMARK_TEMPLATE(BM_VectorWorkflow, rmm_vector)  // NOLINT
   ->RangeMultiplier(10)                            // NOLINT
   ->Range(100'000, 100'000'000)                    // NOLINT

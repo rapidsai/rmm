@@ -82,7 +82,7 @@ using failure_callback_t = std::function<bool(std::size_t, void*)>;
  *   failure_callback_adaptor mr{
  *     rmm::mr::get_current_device_resource_ref(), failure_handler, &retried
  *   };
- *   rmm::mr::set_current_device_resource(&mr);
+ *   rmm::mr::set_current_device_resource_ref(&mr);
  * }
  * @endcode
  *

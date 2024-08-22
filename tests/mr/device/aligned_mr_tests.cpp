@@ -204,7 +204,7 @@ TEST(AlignedTest, AlignRealPointer)
 {
   auto const alignment{4096};
   auto const threshold{65536};
-  aligned_real mr{rmm::mr::get_current_device_resource(), alignment, threshold};
+  aligned_real mr{rmm::mr::get_current_device_resource_ref(), alignment, threshold};
   void* alloc = mr.allocate(threshold);
   EXPECT_TRUE(rmm::is_pointer_aligned(alloc, alignment));
   mr.deallocate(alloc, threshold);
