@@ -81,7 +81,8 @@
  * @endcode
  */
 
-namespace rmm::mr {
+namespace RMM_NAMESPACE {
+namespace mr {
 /**
  * @addtogroup memory_resources
  * @{
@@ -248,4 +249,5 @@ inline device_memory_resource* set_current_device_resource(device_memory_resourc
   return set_per_device_resource(rmm::get_current_cuda_device(), new_mr);
 }
 /** @} */  // end of group
-}  // namespace rmm::mr
+}  // namespace mr
+}  // namespace RMM_NAMESPACE
