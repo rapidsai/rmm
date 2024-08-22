@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 #pragma once
 
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/export.hpp>
 
 #include <cuda/stream_ref>
 #include <cuda_runtime_api.h>
@@ -25,7 +26,7 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace rmm {
+namespace RMM_NAMESPACE {
 /**
  * @addtogroup cuda_streams
  * @{
@@ -201,4 +202,4 @@ inline std::ostream& operator<<(std::ostream& os, cuda_stream_view stream)
 }
 
 /** @} */  // end of group
-}  // namespace rmm
+}  // namespace RMM_NAMESPACE

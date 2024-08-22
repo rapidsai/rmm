@@ -18,9 +18,11 @@
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/export.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
-namespace rmm::mr {
+namespace RMM_NAMESPACE {
+namespace mr {
 
 namespace detail {
 /**
@@ -153,4 +155,5 @@ class system_memory_resource final : public device_memory_resource {
 static_assert(cuda::mr::async_resource_with<system_memory_resource, cuda::mr::device_accessible>);
 static_assert(cuda::mr::async_resource_with<system_memory_resource, cuda::mr::host_accessible>);
 /** @} */  // end of group
-}  // namespace rmm::mr
+}  // namespace mr
+}  // namespace RMM_NAMESPACE

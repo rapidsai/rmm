@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include <rmm/detail/export.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
@@ -23,7 +24,8 @@
 #include <shared_mutex>
 #include <stack>
 
-namespace rmm::mr {
+namespace RMM_NAMESPACE {
+namespace mr {
 /**
  * @addtogroup device_resource_adaptors
  * @{
@@ -299,4 +301,5 @@ statistics_resource_adaptor<Upstream> make_statistics_adaptor(Upstream* upstream
 }
 
 /** @} */  // end of group
-}  // namespace rmm::mr
+}  // namespace mr
+}  // namespace RMM_NAMESPACE

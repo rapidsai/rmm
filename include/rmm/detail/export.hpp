@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, NVIDIA CORPORATION.
+ * Copyright (c) 2021-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,9 @@
 
 // Macros used for defining symbol visibility, only GLIBC is supported
 #if (defined(__GNUC__) && !defined(__MINGW32__) && !defined(__MINGW64__))
-#define RMM_EXPORT __attribute__((visibility("default")))
-#define RMM_HIDDEN __attribute__((visibility("hidden")))
+#define RMM_EXPORT    __attribute__((visibility("default")))
+#define RMM_HIDDEN    __attribute__((visibility("hidden")))
+#define RMM_NAMESPACE RMM_EXPORT rmm
 #else
 #define RMM_EXPORT
 #define RMM_HIDDEN

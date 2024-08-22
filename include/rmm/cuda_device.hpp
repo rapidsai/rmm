@@ -17,10 +17,11 @@
 
 #include <rmm/aligned.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/export.hpp>
 
 #include <cuda_runtime_api.h>
 
-namespace rmm {
+namespace RMM_NAMESPACE {
 
 struct cuda_device_id;
 inline cuda_device_id get_current_cuda_device();
@@ -175,4 +176,4 @@ struct cuda_set_device_raii {
 };
 
 /** @} */  // end of group
-}  // namespace rmm
+}  // namespace RMM_NAMESPACE

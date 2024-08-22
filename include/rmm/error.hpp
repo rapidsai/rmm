@@ -16,10 +16,12 @@
 
 #pragma once
 
+#include <rmm/detail/export.hpp>
+
 #include <stdexcept>
 #include <string>
 
-namespace rmm {
+namespace RMM_NAMESPACE {
 
 /**
  * @brief Exception thrown when logical precondition is violated.
@@ -109,4 +111,4 @@ class out_of_range : public std::out_of_range {
   using std::out_of_range::out_of_range;
 };
 
-}  // namespace rmm
+}  // namespace RMM_NAMESPACE
