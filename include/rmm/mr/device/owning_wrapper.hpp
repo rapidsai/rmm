@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include <rmm/detail/export.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <functional>
@@ -22,7 +23,8 @@
 #include <memory>
 #include <utility>
 
-namespace rmm::mr {
+namespace RMM_NAMESPACE {
+namespace mr {
 namespace detail {
 /**
  * @brief Converts a tuple into a parameter pack.
@@ -270,4 +272,5 @@ auto make_owning_wrapper(std::shared_ptr<Upstream> upstream, Args&&... args)
 }
 
 /** @} */  // end of group
-}  // namespace rmm::mr
+}  // namespace mr
+}  // namespace RMM_NAMESPACE

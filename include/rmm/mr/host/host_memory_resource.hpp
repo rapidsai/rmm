@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include <rmm/detail/export.hpp>
 #include <rmm/detail/nvtx/ranges.hpp>
 
 #include <cuda/memory_resource>
@@ -22,7 +23,8 @@
 #include <cstddef>
 #include <utility>
 
-namespace rmm::mr {
+namespace RMM_NAMESPACE {
+namespace mr {
 /**
  * @addtogroup host_memory_resources
  * @{
@@ -202,4 +204,5 @@ class host_memory_resource {
 static_assert(cuda::mr::resource_with<host_memory_resource, cuda::mr::host_accessible>);
 /** @} */  // end of group
 
-}  // namespace rmm::mr
+}  // namespace mr
+}  // namespace RMM_NAMESPACE

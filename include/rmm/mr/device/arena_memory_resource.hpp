@@ -17,6 +17,7 @@
 
 #include <rmm/aligned.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/export.hpp>
 #include <rmm/detail/logging_assert.hpp>
 #include <rmm/logger.hpp>
 #include <rmm/mr/device/detail/arena.hpp>
@@ -31,7 +32,8 @@
 #include <shared_mutex>
 #include <thread>
 
-namespace rmm::mr {
+namespace RMM_NAMESPACE {
+namespace mr {
 /**
  * @addtogroup device_memory_resources
  * @{
@@ -342,4 +344,5 @@ class arena_memory_resource final : public device_memory_resource {
 };
 
 /** @} */  // end of group
-}  // namespace rmm::mr
+}  // namespace mr
+}  // namespace RMM_NAMESPACE
