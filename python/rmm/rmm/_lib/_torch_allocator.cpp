@@ -39,8 +39,9 @@ extern "C" void* allocate(std::size_t size, int device, void* stream)
 {
   rmm::cuda_device_id const device_id{device};
   rmm::cuda_set_device_raii with_device{device_id};
-  auto mr = rmm::mr::get_per_device_resource(device_id);
-  return mr->allocate(size, rmm::cuda_stream_view{static_cast<cudaStream_t>(stream)});
+  auto mr = rmm::mr::get_per_device_resource_ref(device_id);
+  return mr.allocate_async(
+    size, rmm::CUDA_ALLOCATION_ALIGNMENT, rmm::cuda_stream_view{static_cast<cudaStream_t>(stream)});
 }
 
 /**
@@ -55,6 +56,9 @@ extern "C" void deallocate(void* ptr, std::size_t size, int device, void* stream
 {
   rmm::cuda_device_id const device_id{device};
   rmm::cuda_set_device_raii with_device{device_id};
-  auto mr = rmm::mr::get_per_device_resource(device_id);
-  mr->deallocate(ptr, size, rmm::cuda_stream_view{static_cast<cudaStream_t>(stream)});
+  auto mr = rmm::mr::get_per_device_resource_ref(device_id);
+  mr.deallocate_async(ptr,
+                      size,
+                      rmm::CUDA_ALLOCATION_ALIGNMENT,
+                      rmm::cuda_stream_view{static_cast<cudaStream_t>(stream)});
 }
