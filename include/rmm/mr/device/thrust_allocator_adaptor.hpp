@@ -148,7 +148,7 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
 
  private:
   cuda_stream_view _stream{};
-  rmm::device_async_resource_ref _mr{rmm::mr::get_current_device_resource()};
+  rmm::device_async_resource_ref _mr{rmm::mr::get_current_device_resource_ref()};
   cuda_device_id _device{get_current_cuda_device()};
 };
 /** @} */  // end of group
