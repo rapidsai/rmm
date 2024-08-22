@@ -17,6 +17,7 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/aligned.hpp>
+#include <rmm/detail/export.hpp>
 #include <rmm/detail/nvtx/ranges.hpp>
 
 #include <cuda/memory_resource>
@@ -24,7 +25,8 @@
 #include <cstddef>
 #include <utility>
 
-namespace rmm::mr {
+namespace RMM_NAMESPACE {
+namespace mr {
 /**
  * @addtogroup device_memory_resources
  * @{
@@ -358,4 +360,5 @@ class device_memory_resource {
 };
 static_assert(cuda::mr::async_resource_with<device_memory_resource, cuda::mr::device_accessible>);
 /** @} */  // end of group
-}  // namespace rmm::mr
+}  // namespace mr
+}  // namespace RMM_NAMESPACE

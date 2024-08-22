@@ -16,11 +16,13 @@
 
 #pragma once
 
+#include <rmm/detail/export.hpp>
+
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
 
-namespace rmm {
+namespace RMM_NAMESPACE {
 
 /**
  * @addtogroup utilities
@@ -123,4 +125,4 @@ static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
 
 /** @} */  // end of group
 
-}  // namespace rmm
+}  // namespace RMM_NAMESPACE

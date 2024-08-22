@@ -17,12 +17,14 @@
 
 #include <rmm/aligned.hpp>
 #include <rmm/detail/aligned.hpp>
+#include <rmm/detail/export.hpp>
 #include <rmm/mr/host/host_memory_resource.hpp>
 
 #include <cstddef>
 #include <utility>
 
-namespace rmm::mr {
+namespace RMM_NAMESPACE {
+namespace mr {
 /**
  * @addtogroup host_memory_resources
  * @{
@@ -91,4 +93,5 @@ class new_delete_resource final : public host_memory_resource {
 };
 
 /** @} */  // end of group
-}  // namespace rmm::mr
+}  // namespace mr
+}  // namespace RMM_NAMESPACE

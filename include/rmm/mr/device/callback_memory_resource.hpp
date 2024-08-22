@@ -15,13 +15,15 @@
  */
 #pragma once
 
+#include <rmm/detail/export.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <cstddef>
 #include <functional>
 #include <utility>
 
-namespace rmm::mr {
+namespace RMM_NAMESPACE {
+namespace mr {
 /**
  * @addtogroup device_memory_resources
  * @{
@@ -145,4 +147,5 @@ class callback_memory_resource final : public device_memory_resource {
 };
 
 /** @} */  // end of group
-}  // namespace rmm::mr
+}  // namespace mr
+}  // namespace RMM_NAMESPACE

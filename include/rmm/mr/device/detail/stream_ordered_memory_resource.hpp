@@ -18,6 +18,7 @@
 #include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/export.hpp>
 #include <rmm/logger.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
@@ -30,7 +31,8 @@
 #include <mutex>
 #include <unordered_map>
 
-namespace rmm::mr::detail {
+namespace RMM_NAMESPACE {
+namespace mr::detail {
 
 /**
  * @brief A CRTP helper function
@@ -490,4 +492,5 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
   rmm::cuda_device_id device_id_{rmm::get_current_cuda_device()};
 };  // namespace detail
 
-}  // namespace rmm::mr::detail
+}  // namespace mr::detail
+}  // namespace RMM_NAMESPACE
