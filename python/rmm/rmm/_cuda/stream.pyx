@@ -23,6 +23,7 @@ from rmm._lib.cuda_stream_view cimport (
     cuda_stream_per_thread,
     cuda_stream_view,
 )
+from rmm._lib.resource_ref cimport stream_ref
 
 
 cdef class Stream:
@@ -62,6 +63,12 @@ cdef class Stream:
         Generate a rmm::cuda_stream_view from this Stream instance
         """
         return cuda_stream_view(<cudaStream_t><uintptr_t>(self._cuda_stream))
+
+    cdef stream_ref ref(self) except * nogil:
+        """
+        Generate a cuda::stream_ref from this Stream instance
+        """
+        return stream_ref(<cudaStream_t><uintptr_t>(self._cuda_stream))
 
     cdef void c_synchronize(self) except * nogil:
         """

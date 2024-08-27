@@ -22,9 +22,8 @@ from collections import defaultdict
 cimport cython
 from cython.operator cimport dereference as deref
 from libc.stddef cimport size_t
-from libc.stdint cimport int8_t, int64_t, uintptr_t
+from libc.stdint cimport int8_t, uintptr_t
 from libcpp cimport bool
-from libcpp.memory cimport make_unique, unique_ptr
 from libcpp.optional cimport optional
 from libcpp.pair cimport pair
 from libcpp.string cimport string
@@ -32,7 +31,9 @@ from libcpp.string cimport string
 from cuda.cudart import cudaError_t
 
 from rmm._cuda.gpu import CUDARuntimeError, getDevice, setDevice
+
 from rmm._cuda.stream cimport Stream
+
 from rmm._cuda.stream import DEFAULT_STREAM
 
 from rmm._lib.cuda_stream_view cimport cuda_stream_view
@@ -44,6 +45,7 @@ from rmm._lib.per_device_resource cimport (
     cuda_device_id,
     set_per_device_resource as cpp_set_per_device_resource,
 )
+
 from rmm.statistics import Statistics
 
 # Transparent handle of a C++ exception
@@ -82,164 +84,16 @@ cdef extern from *:
     void throw_cpp_except(CppExcept) nogil
 
 
-# NOTE: Keep extern declarations in .pyx file as much as possible to avoid
-# leaking dependencies when importing RMM Cython .pxd files
-cdef extern from "rmm/mr/device/cuda_memory_resource.hpp" \
-        namespace "rmm::mr" nogil:
-    cdef cppclass cuda_memory_resource(device_memory_resource):
-        cuda_memory_resource() except +
-
-cdef extern from "rmm/mr/device/managed_memory_resource.hpp" \
-        namespace "rmm::mr" nogil:
-    cdef cppclass managed_memory_resource(device_memory_resource):
-        managed_memory_resource() except +
-
-cdef extern from "rmm/mr/device/system_memory_resource.hpp" \
-        namespace "rmm::mr" nogil:
-    cdef cppclass system_memory_resource(device_memory_resource):
-        system_memory_resource() except +
-
-cdef extern from "rmm/mr/device/sam_headroom_memory_resource.hpp" \
-        namespace "rmm::mr" nogil:
-    cdef cppclass sam_headroom_memory_resource(device_memory_resource):
-        sam_headroom_memory_resource(size_t headroom) except +
-
-cdef extern from "rmm/mr/device/cuda_async_memory_resource.hpp" \
-        namespace "rmm::mr" nogil:
-
-    cdef cppclass cuda_async_memory_resource(device_memory_resource):
-        cuda_async_memory_resource(
-            optional[size_t] initial_pool_size,
-            optional[size_t] release_threshold,
-            optional[allocation_handle_type] export_handle_type) except +
-
-# TODO: when we adopt Cython 3.0 use enum class
-cdef extern from "rmm/mr/device/cuda_async_memory_resource.hpp" \
-        namespace \
-        "rmm::mr::cuda_async_memory_resource::allocation_handle_type" \
-        nogil:
-    enum allocation_handle_type \
-            "rmm::mr::cuda_async_memory_resource::allocation_handle_type":
-        none
-        posix_file_descriptor
-        win32
-        win32_kmt
-
-
-cdef extern from "rmm/mr/device/pool_memory_resource.hpp" \
-        namespace "rmm::mr" nogil:
-    cdef cppclass pool_memory_resource[Upstream](device_memory_resource):
-        pool_memory_resource(
-            Upstream* upstream_mr,
-            size_t initial_pool_size,
-            optional[size_t] maximum_pool_size) except +
-        size_t pool_size()
-
-cdef extern from "rmm/mr/device/fixed_size_memory_resource.hpp" \
-        namespace "rmm::mr" nogil:
-    cdef cppclass fixed_size_memory_resource[Upstream](device_memory_resource):
-        fixed_size_memory_resource(
-            Upstream* upstream_mr,
-            size_t block_size,
-            size_t block_to_preallocate) except +
-
-cdef extern from "rmm/mr/device/callback_memory_resource.hpp" \
-        namespace "rmm::mr" nogil:
-    ctypedef void* (*allocate_callback_t)(size_t, cuda_stream_view, void*)
-    ctypedef void (*deallocate_callback_t)(void*, size_t, cuda_stream_view, void*)
-
-    cdef cppclass callback_memory_resource(device_memory_resource):
-        callback_memory_resource(
-            allocate_callback_t allocate_callback,
-            deallocate_callback_t deallocate_callback,
-            void* allocate_callback_arg,
-            void* deallocate_callback_arg
-        ) except +
-
-cdef extern from "rmm/mr/device/binning_memory_resource.hpp" \
-        namespace "rmm::mr" nogil:
-    cdef cppclass binning_memory_resource[Upstream](device_memory_resource):
-        binning_memory_resource(Upstream* upstream_mr) except +
-        binning_memory_resource(
-            Upstream* upstream_mr,
-            int8_t min_size_exponent,
-            int8_t max_size_exponent) except +
-
-        void add_bin(size_t allocation_size) except +
-        void add_bin(
-            size_t allocation_size,
-            device_memory_resource* bin_resource) except +
-
-cdef extern from "rmm/mr/device/limiting_resource_adaptor.hpp" \
-        namespace "rmm::mr" nogil:
-    cdef cppclass limiting_resource_adaptor[Upstream](device_memory_resource):
-        limiting_resource_adaptor(
-            Upstream* upstream_mr,
-            size_t allocation_limit) except +
-
-        size_t get_allocated_bytes() except +
-        size_t get_allocation_limit() except +
-
-cdef extern from "rmm/mr/device/logging_resource_adaptor.hpp" \
-        namespace "rmm::mr" nogil:
-    cdef cppclass logging_resource_adaptor[Upstream](device_memory_resource):
-        logging_resource_adaptor(
-            Upstream* upstream_mr,
-            string filename) except +
-
-        void flush() except +
-
-cdef extern from "rmm/mr/device/statistics_resource_adaptor.hpp" \
-        namespace "rmm::mr" nogil:
-    cdef cppclass statistics_resource_adaptor[Upstream](device_memory_resource):
-        struct counter:
-            counter()
-
-            int64_t value
-            int64_t peak
-            int64_t total
-
-        statistics_resource_adaptor(Upstream* upstream_mr) except +
-
-        counter get_bytes_counter() except +
-        counter get_allocations_counter() except +
-        pair[counter, counter] pop_counters() except +
-        pair[counter, counter] push_counters() except +
-
-cdef extern from "rmm/mr/device/tracking_resource_adaptor.hpp" \
-        namespace "rmm::mr" nogil:
-    cdef cppclass tracking_resource_adaptor[Upstream](device_memory_resource):
-        tracking_resource_adaptor(
-            Upstream* upstream_mr,
-            bool capture_stacks) except +
-
-        size_t get_allocated_bytes() except +
-        string get_outstanding_allocations_str() except +
-        void log_outstanding_allocations() except +
-
-cdef extern from "rmm/mr/device/failure_callback_resource_adaptor.hpp" \
-        namespace "rmm::mr" nogil:
-    ctypedef bool (*failure_callback_t)(size_t, void*)
-    cdef cppclass failure_callback_resource_adaptor[Upstream](
-        device_memory_resource
-    ):
-        failure_callback_resource_adaptor(
-            Upstream* upstream_mr,
-            failure_callback_t callback,
-            void* callback_arg
-        ) except +
-
-cdef extern from "rmm/mr/device/prefetch_resource_adaptor.hpp" \
-        namespace "rmm::mr" nogil:
-    cdef cppclass prefetch_resource_adaptor[Upstream](device_memory_resource):
-        prefetch_resource_adaptor(Upstream* upstream_mr) except +
-
-
 cdef class DeviceMemoryResource:
 
+    # TODO this will be removed once the C++ base class is removed
+    # it is only used for passing upstream resources to C++, which will
+    # become resource_ref (type erased)
     cdef device_memory_resource* get_mr(self) noexcept nogil:
-        """Get the underlying C++ memory resource object."""
-        return self.c_obj.get()
+        pass
+
+    cdef shared_ptr[device_async_resource_ref] get_ref(self) noexcept nogil:
+        pass
 
     def allocate(self, size_t nbytes, Stream stream=DEFAULT_STREAM):
         """Allocate ``nbytes`` bytes of memory.
@@ -251,7 +105,11 @@ cdef class DeviceMemoryResource:
         stream : Stream
             Optional stream for the allocation
         """
-        return <uintptr_t>self.c_obj.get().allocate(nbytes, stream.view())
+        return <uintptr_t>deref(self.get_ref()).allocate_async(
+            nbytes,
+            CUDA_ALLOCATION_ALIGNMENT,
+            stream.ref()
+        )
 
     def deallocate(self, uintptr_t ptr, size_t nbytes, Stream stream=DEFAULT_STREAM):
         """Deallocate memory pointed to by ``ptr`` of size ``nbytes``.
@@ -265,7 +123,12 @@ cdef class DeviceMemoryResource:
         stream : Stream
             Optional stream for the deallocation
         """
-        self.c_obj.get().deallocate(<void*>(ptr), nbytes, stream.view())
+        deref(self.get_ref()).deallocate_async(
+            <void*>(ptr),
+            nbytes,
+            CUDA_ALLOCATION_ALIGNMENT,
+            stream.ref()
+        )
 
 
 # See the note about `no_gc_clear` in `device_buffer.pyx`.
@@ -284,10 +147,6 @@ cdef class UpstreamResourceAdaptor(DeviceMemoryResource):
             raise Exception("Argument `upstream_mr` must not be None")
 
         self.upstream_mr = upstream_mr
-
-    def __dealloc__(self):
-        # Must cleanup the base MR before any upstream MR
-        self.c_obj.reset()
 
     cpdef DeviceMemoryResource get_upstream(self):
         return self.upstream_mr
@@ -435,7 +294,7 @@ cdef class PoolMemoryResource(UpstreamResourceAdaptor):
         )
         self.c_obj.reset(
             new pool_memory_resource[device_memory_resource](
-                upstream_mr.get_mr(),
+                deref(upstream_mr.get_ref()),
                 c_initial_pool_size,
                 c_maximum_pool_size
             )
@@ -465,10 +324,7 @@ cdef class PoolMemoryResource(UpstreamResourceAdaptor):
         pass
 
     def pool_size(self):
-        cdef pool_memory_resource[device_memory_resource]* c_mr = (
-            <pool_memory_resource[device_memory_resource]*>(self.get_mr())
-        )
-        return c_mr.pool_size()
+        return self.c_obj.get().pool_size()
 
 cdef class FixedSizeMemoryResource(UpstreamResourceAdaptor):
     def __cinit__(
@@ -1169,12 +1025,7 @@ cpdef set_per_device_resource(int device, DeviceMemoryResource mr):
     global _per_device_mrs
     _per_device_mrs[device] = mr
 
-    # Since cuda_device_id does not have a default constructor, it must be heap
-    # allocated
-    cdef unique_ptr[cuda_device_id] device_id = \
-        make_unique[cuda_device_id](device)
-
-    cpp_set_per_device_resource(deref(device_id), mr.get_mr())
+    cpp_set_per_device_resource(cuda_device_id(device), deref(mr.get_ref()))
 
 
 cpdef set_current_device_resource(DeviceMemoryResource mr):

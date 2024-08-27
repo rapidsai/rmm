@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,7 +101,7 @@ TEST(TrackingTest, AllocationsLeftWithoutStacks)
 
 TEST(TrackingTest, MultiTracking)
 {
-  auto* orig_device_resource = rmm::mr::get_current_device_resource();
+  auto orig_device_resource = rmm::mr::get_current_device_resource();
   tracking_adaptor mr{orig_device_resource, true};
   rmm::mr::set_current_device_resource(&mr);
 
