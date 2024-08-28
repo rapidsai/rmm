@@ -48,7 +48,7 @@ namespace RMM_NAMESPACE {
  *
  * Example:
  * @code{.cpp}
- * rmm::mr::device_memory_resource * mr = new my_custom_resource();
+ * auto mr = new my_custom_resource();
  * rmm::cuda_stream_view s{};
  *
  * // Allocates *uninitialized* device memory on stream `s` sufficient for 100 ints using the
