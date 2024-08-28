@@ -16,6 +16,7 @@
 #pragma once
 
 #include <rmm/aligned.hpp>
+#include <rmm/detail/export.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/fixed_size_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
@@ -28,7 +29,8 @@
 #include <memory>
 #include <vector>
 
-namespace rmm::mr {
+namespace RMM_NAMESPACE {
+namespace mr {
 /**
  * @addtogroup device_memory_resources
  * @{
@@ -194,4 +196,5 @@ class binning_memory_resource final : public device_memory_resource {
 };
 
 /** @} */  // end of group
-}  // namespace rmm::mr
+}  // namespace mr
+}  // namespace RMM_NAMESPACE

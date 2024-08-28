@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 #pragma once
 
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/export.hpp>
 
 // execinfo is a linux-only library, so stack traces will only be available on
 // linux systems.
@@ -36,7 +37,8 @@
 #include <vector>
 #endif
 
-namespace rmm::detail {
+namespace RMM_NAMESPACE {
+namespace detail {
 
 /**
  * @brief stack_trace is a class that will capture a stack on instantiation for output later.
@@ -102,4 +104,5 @@ class stack_trace {
 #endif  // RMM_ENABLE_STACK_TRACES
 };
 
-}  // namespace rmm::detail
+}  // namespace detail
+}  // namespace RMM_NAMESPACE

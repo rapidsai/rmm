@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <rmm/detail/export.hpp>
+
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 #include <spdlog/sinks/basic_file_sink.h>
@@ -25,7 +27,7 @@
 #include <iostream>
 #include <string>
 
-namespace rmm {
+namespace RMM_NAMESPACE {
 
 namespace detail {
 
@@ -125,7 +127,7 @@ inline spdlog::logger& logger()
 
 //! @endcond
 
-}  // namespace rmm
+}  // namespace RMM_NAMESPACE
 
 // Doxygen doesn't like this because we're overloading something from fmt
 //! @cond Doxygen_Suppress

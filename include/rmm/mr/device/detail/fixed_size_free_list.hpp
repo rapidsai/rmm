@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,14 @@
 
 #pragma once
 
+#include <rmm/detail/export.hpp>
 #include <rmm/mr/device/detail/free_list.hpp>
 
 #include <cstddef>
 #include <iostream>
 
-namespace rmm::mr::detail {
+namespace RMM_NAMESPACE {
+namespace mr::detail {
 
 struct fixed_size_free_list : free_list<block_base> {
   fixed_size_free_list()           = default;
@@ -75,4 +77,5 @@ struct fixed_size_free_list : free_list<block_base> {
   }
 };
 
-}  // namespace rmm::mr::detail
+}  // namespace mr::detail
+}  // namespace RMM_NAMESPACE
