@@ -239,6 +239,8 @@ inline device_async_resource_ref set_per_device_resource_ref_unsafe(
 inline device_memory_resource* set_per_device_resource(cuda_device_id device_id,
                                                        device_memory_resource* new_mr)
 {
+  std::lock_guard<std::mutex> lock{detail::map_lock()};
+
   // Note: even though set_per_device_resource() and set_per_device_resource_ref() are not
   // interchangeable, we call the latter from the former to maintain resource_ref
   // state consistent with the resource pointer state. This is necessary because the
@@ -246,7 +248,6 @@ inline device_memory_resource* set_per_device_resource(cuda_device_id device_id,
   // resource_ref, this call can be removed.
   detail::set_per_device_resource_ref_unsafe(device_id, new_mr);
 
-  std::lock_guard<std::mutex> lock{detail::map_lock()};
   auto& map          = detail::get_map();
   auto const old_itr = map.find(device_id.value());
   // If a resource didn't previously exist for `id`, return pointer to initial_resource
