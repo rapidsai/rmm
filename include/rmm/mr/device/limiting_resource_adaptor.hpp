@@ -17,13 +17,15 @@
 
 #include <rmm/aligned.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/export.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <cstddef>
 
-namespace rmm::mr {
+namespace RMM_NAMESPACE {
+namespace mr {
 /**
  * @addtogroup device_resource_adaptors
  * @{
@@ -217,4 +219,5 @@ limiting_resource_adaptor<Upstream> make_limiting_adaptor(Upstream* upstream,
 }
 
 /** @} */  // end of group
-}  // namespace rmm::mr
+}  // namespace mr
+}  // namespace RMM_NAMESPACE

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 #pragma once
 
 #include <rmm/cuda_device.hpp>
+#include <rmm/detail/export.hpp>
 #include <rmm/detail/thrust_namespace.h>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
@@ -26,7 +27,8 @@
 #include <thrust/device_ptr.h>
 #include <thrust/memory.h>
 
-namespace rmm::mr {
+namespace RMM_NAMESPACE {
+namespace mr {
 /**
  * @addtogroup device_resource_adaptors
  * @{
@@ -152,4 +154,5 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
   cuda_device_id _device{get_current_cuda_device()};
 };
 /** @} */  // end of group
-}  // namespace rmm::mr
+}  // namespace mr
+}  // namespace RMM_NAMESPACE

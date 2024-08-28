@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/exec_check_disable.hpp>
+#include <rmm/detail/export.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
@@ -28,7 +29,7 @@
 #include <cstddef>
 #include <vector>
 
-namespace rmm {
+namespace RMM_NAMESPACE {
 /**
  * @addtogroup data_containers
  * @{
@@ -565,4 +566,4 @@ class device_uvector {
 };
 
 /** @} */  // end of group
-}  // namespace rmm
+}  // namespace RMM_NAMESPACE

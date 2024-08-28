@@ -20,6 +20,7 @@
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/export.hpp>
 #include <rmm/detail/logging_assert.hpp>
 #include <rmm/logger.hpp>
 #include <rmm/resource_ref.hpp>
@@ -38,7 +39,8 @@
 #include <optional>
 #include <set>
 
-namespace rmm::mr::detail::arena {
+namespace RMM_NAMESPACE {
+namespace mr::detail::arena {
 
 /**
  * @brief Align up to nearest size class.
@@ -997,4 +999,5 @@ class arena_cleaner {
   std::weak_ptr<arena> arena_;
 };
 
-}  // namespace rmm::mr::detail::arena
+}  // namespace mr::detail::arena
+}  // namespace RMM_NAMESPACE

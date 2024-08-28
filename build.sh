@@ -36,7 +36,7 @@ HELP="$0 [clean] [librmm] [rmm] [-v] [-g] [-n] [-s] [--ptds] [--cmake-args=\"<ar
    default action (no args) is to build and install 'librmm' and 'rmm' targets
 "
 LIBRMM_BUILD_DIR=${LIBRMM_BUILD_DIR:=${REPODIR}/build}
-RMM_BUILD_DIR="${REPODIR}/python/build ${REPODIR}/python/_skbuild"
+RMM_BUILD_DIR="${REPODIR}/python/rmm/build"
 BUILD_DIRS="${LIBRMM_BUILD_DIR} ${RMM_BUILD_DIR}"
 
 # Set defaults for vars modified by flags to this script

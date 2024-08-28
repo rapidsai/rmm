@@ -17,6 +17,7 @@
 #pragma once
 
 #include <rmm/cuda_stream_view.hpp>
+#include <rmm/detail/export.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
@@ -24,7 +25,8 @@
 #include <memory>
 #include <type_traits>
 
-namespace rmm::mr {
+namespace RMM_NAMESPACE {
+namespace mr {
 /**
  * @addtogroup device_memory_resources
  * @{
@@ -311,4 +313,5 @@ auto make_stream_allocator_adaptor(Allocator const& allocator, cuda_stream_view 
   return stream_allocator_adaptor<Allocator>{allocator, stream};
 }
 /** @} */  // end of group
-}  // namespace rmm::mr
+}  // namespace mr
+}  // namespace RMM_NAMESPACE

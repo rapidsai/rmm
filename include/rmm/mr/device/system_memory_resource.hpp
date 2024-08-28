@@ -18,9 +18,11 @@
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/export.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
-namespace rmm::mr {
+namespace RMM_NAMESPACE {
+namespace mr {
 
 namespace detail {
 /**
@@ -105,17 +107,23 @@ class system_memory_resource final : public device_memory_resource {
   /**
    * @brief Deallocate memory pointed to by \p p.
    *
-   * The stream argument is ignored.
+   * This function synchronizes the stream before deallocating the memory.
    *
    * @param ptr Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the value of `bytes`
    *              that was passed to the `allocate` call that returned `ptr`.
-   * @param stream This argument is ignored
+   * @param stream The stream in which to order this deallocation
    */
   void do_deallocate(void* ptr,
                      [[maybe_unused]] std::size_t bytes,
-                     [[maybe_unused]] cuda_stream_view stream) override
+                     cuda_stream_view stream) override
   {
+    // With `cudaFree`, the CUDA runtime keeps track of dependent operations and does implicit
+    // synchronization. However, with SAM, since `free` is immediate, we need to wait for in-flight
+    // CUDA operations to finish before freeing the memory, to avoid potential use-after-free errors
+    // or race conditions.
+    stream.synchronize();
+
     rmm::detail::aligned_host_deallocate(
       ptr, bytes, CUDA_ALLOCATION_ALIGNMENT, [](void* ptr) { ::operator delete(ptr); });
   }
@@ -153,4 +161,5 @@ class system_memory_resource final : public device_memory_resource {
 static_assert(cuda::mr::async_resource_with<system_memory_resource, cuda::mr::device_accessible>);
 static_assert(cuda::mr::async_resource_with<system_memory_resource, cuda::mr::host_accessible>);
 /** @} */  // end of group
-}  // namespace rmm::mr
+}  // namespace mr
+}  // namespace RMM_NAMESPACE

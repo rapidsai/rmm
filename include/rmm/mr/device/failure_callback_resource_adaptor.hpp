@@ -16,6 +16,7 @@
 #pragma once
 
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/export.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
@@ -24,7 +25,8 @@
 #include <functional>
 #include <utility>
 
-namespace rmm::mr {
+namespace RMM_NAMESPACE {
+namespace mr {
 /**
  * @addtogroup device_resource_adaptors
  * @{
@@ -211,4 +213,5 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
 };
 
 /** @} */  // end of group
-}  // namespace rmm::mr
+}  // namespace mr
+}  // namespace RMM_NAMESPACE

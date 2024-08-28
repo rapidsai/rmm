@@ -18,6 +18,7 @@
 #include <rmm/aligned.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/export.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
@@ -27,7 +28,8 @@
 #include <optional>
 #include <unordered_map>
 
-namespace rmm::mr {
+namespace RMM_NAMESPACE {
+namespace mr {
 /**
  * @addtogroup device_resource_adaptors
  * @{
@@ -215,4 +217,5 @@ class aligned_resource_adaptor final : public device_memory_resource {
 };
 
 /** @} */  // end of group
-}  // namespace rmm::mr
+}  // namespace mr
+}  // namespace RMM_NAMESPACE
