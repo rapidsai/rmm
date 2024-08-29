@@ -15,7 +15,6 @@
  */
 
 #include "../../byte_literals.hpp"
-#include "cuda/stream_ref"
 
 #include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
@@ -25,6 +24,8 @@
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
+
+#include <cuda/stream_ref>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
