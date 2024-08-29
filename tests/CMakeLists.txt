@@ -40,6 +40,7 @@ function(ConfigureTestInternal TEST_NAME)
                              PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
   target_compile_options(${TEST_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Wall -Werror
                                              -Wno-error=deprecated-declarations>)
+  target_compile_options(${TEST_NAME} PUBLIC "$<$<CONFIG:Debug>:-O0>")
 
   if(DISABLE_DEPRECATION_WARNING)
     target_compile_options(
@@ -47,6 +48,8 @@ function(ConfigureTestInternal TEST_NAME)
     target_compile_options(${TEST_NAME}
                            PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-declarations>)
   endif()
+
+  
 
   if(CODE_COVERAGE)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
