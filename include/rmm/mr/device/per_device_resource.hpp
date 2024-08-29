@@ -191,6 +191,7 @@ namespace detail {
 // we need to call this function from two places: the thread-safe version of
 // `set_per_device_resource_ref` and the thread-safe version of `set_per_device_resource`,
 // both of which take the lock, so we need an implementation that doesn't take the lock.
+/// @private
 inline device_async_resource_ref set_per_device_resource_ref_unsafe(
   cuda_device_id device_id, device_async_resource_ref new_resource_ref)
 {

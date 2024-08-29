@@ -91,10 +91,7 @@ class aligned_resource_adaptor final : public device_memory_resource {
   explicit aligned_resource_adaptor(Upstream* upstream,
                                     std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT,
                                     std::size_t alignment_threshold = default_alignment_threshold)
-    : upstream_{[upstream]() {
-        RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
-        return device_async_resource_ref{*upstream};
-      }()},
+    : upstream_{to_device_async_resource_ref_checked(upstream)},
       alignment_{alignment},
       alignment_threshold_{alignment_threshold}
   {
@@ -209,7 +206,7 @@ class aligned_resource_adaptor final : public device_memory_resource {
   }
 
   /// The upstream resource used for satisfying allocation requests
-  device_async_resource_ref upstream_{rmm::mr::get_current_device_resource_ref()};
+  device_async_resource_ref upstream_;
   std::unordered_map<void*, void*> pointers_;  ///< Map of aligned pointers to upstream pointers.
   std::size_t alignment_;                      ///< The size used for allocation alignment
   std::size_t alignment_threshold_;  ///< The size above which allocations should be aligned

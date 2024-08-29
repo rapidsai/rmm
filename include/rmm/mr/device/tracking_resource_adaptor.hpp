@@ -88,8 +88,6 @@ class tracking_resource_adaptor final : public device_memory_resource {
    * @brief Construct a new tracking resource adaptor using `upstream` to satisfy
    * allocation requests.
    *
-   * @throws rmm::logic_error if `upstream == nullptr`
-   *
    * @param upstream The resource used for allocating/deallocating device memory
    * @param capture_stacks If true, capture stacks for allocation calls
    */
@@ -108,10 +106,9 @@ class tracking_resource_adaptor final : public device_memory_resource {
    * @param capture_stacks If true, capture stacks for allocation calls
    */
   tracking_resource_adaptor(Upstream* upstream, bool capture_stacks = false)
-    : capture_stacks_{capture_stacks}, allocated_bytes_{0}, upstream_{[upstream]() {
-        RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
-        return device_async_resource_ref{*upstream};
-      }()}
+    : capture_stacks_{capture_stacks},
+      allocated_bytes_{0},
+      upstream_{to_device_async_resource_ref_checked(upstream)}
   {
   }
 
@@ -211,7 +208,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
-    void* ptr = upstream_.allocate_async(bytes, stream);
+    void* ptr = get_upstream_resource().allocate_async(bytes, stream);
     // track it.
     {
       write_lock_t lock(mtx_);
@@ -231,7 +228,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
    */
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
-    upstream_.deallocate_async(ptr, bytes, stream);
+    get_upstream_resource().deallocate_async(ptr, bytes, stream);
     {
       write_lock_t lock(mtx_);
 
@@ -284,8 +281,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
   std::map<void*, allocation_info> allocations_;  // map of active allocations
   std::atomic<std::size_t> allocated_bytes_;      // number of bytes currently allocated
   std::shared_mutex mutable mtx_;                 // mutex for thread safe access to allocations_
-  device_async_resource_ref upstream_{
-    rmm::mr::get_current_device_resource_ref()};  // the upstream resource used for satisfying
+  device_async_resource_ref upstream_;            // the upstream resource used for satisfying
                                                   // allocation requests
 };
 

@@ -116,12 +116,7 @@ class arena_memory_resource final : public device_memory_resource {
   explicit arena_memory_resource(Upstream* upstream_mr,
                                  std::optional<std::size_t> arena_size = std::nullopt,
                                  bool dump_log_on_failure              = false)
-    : global_arena_{[upstream_mr]() {
-                      RMM_EXPECTS(upstream_mr != nullptr,
-                                  "Unexpected null upstream memory resource.");
-                      return device_async_resource_ref{*upstream_mr};
-                    }(),
-                    arena_size},
+    : global_arena_{to_device_async_resource_ref_checked(upstream_mr), arena_size},
       dump_log_on_failure_{dump_log_on_failure}
   {
     if (dump_log_on_failure_) {

@@ -161,10 +161,7 @@ class pool_memory_resource final
   explicit pool_memory_resource(Upstream* upstream_mr,
                                 std::size_t initial_pool_size,
                                 std::optional<std::size_t> maximum_pool_size = std::nullopt)
-    : upstream_mr_{[upstream_mr]() {
-        RMM_EXPECTS(nullptr != upstream_mr, "Unexpected null upstream pointer.");
-        return device_async_resource_ref{*upstream_mr};
-      }()}
+    : upstream_mr_{to_device_async_resource_ref_checked(upstream_mr)}
   {
     RMM_EXPECTS(rmm::is_aligned(initial_pool_size, rmm::CUDA_ALLOCATION_ALIGNMENT),
                 "Error, Initial pool size required to be a multiple of 256 bytes");

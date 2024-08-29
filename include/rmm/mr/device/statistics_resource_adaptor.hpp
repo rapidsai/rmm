@@ -114,6 +114,12 @@ class statistics_resource_adaptor final : public device_memory_resource {
     }
   };
 
+  /**
+   * @brief Construct a new statistics resource adaptor using `upstream` to satisfy
+   * allocation requests.
+   *
+   * @param upstream The resource_ref used for allocating/deallocating device memory.
+   */
   statistics_resource_adaptor(device_async_resource_ref upstream) : upstream_{upstream} {}
 
   /**
@@ -122,13 +128,10 @@ class statistics_resource_adaptor final : public device_memory_resource {
    *
    * @throws rmm::logic_error if `upstream == nullptr`
    *
-   * @param upstream The resource used for allocating/deallocating device memory
+   * @param upstream The resource used for allocating/deallocating device memory.
    */
   statistics_resource_adaptor(Upstream* upstream)
-    : upstream_{[upstream]() {
-        RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
-        return device_async_resource_ref{*upstream};
-      }()}
+    : upstream_{to_device_async_resource_ref_checked(upstream)}
   {
   }
 
@@ -227,7 +230,7 @@ class statistics_resource_adaptor final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
-    void* ptr = upstream_.allocate_async(bytes, stream);
+    void* ptr = get_upstream_resource().allocate_async(bytes, stream);
 
     // increment the stats
     {
@@ -250,7 +253,7 @@ class statistics_resource_adaptor final : public device_memory_resource {
    */
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
-    upstream_.deallocate_async(ptr, bytes, stream);
+    get_upstream_resource().deallocate_async(ptr, bytes, stream);
 
     {
       write_lock_t lock(mtx_);
@@ -281,7 +284,7 @@ class statistics_resource_adaptor final : public device_memory_resource {
   std::stack<std::pair<counter, counter>> counter_stack_{{std::make_pair(counter{}, counter{})}};
   std::shared_mutex mutable mtx_;  // mutex for thread safe access to allocations_
   // the upstream resource used for satisfying allocation requests
-  device_async_resource_ref upstream_{rmm::mr::get_current_device_resource_ref()};
+  device_async_resource_ref upstream_;
 };
 
 /**

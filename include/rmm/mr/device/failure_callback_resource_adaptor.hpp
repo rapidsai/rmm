@@ -126,10 +126,7 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
   failure_callback_resource_adaptor(Upstream* upstream,
                                     failure_callback_t callback,
                                     void* callback_arg)
-    : upstream_{[upstream]() {
-        RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
-        return device_async_resource_ref{*upstream};
-      }()},
+    : upstream_{to_device_async_resource_ref_checked(upstream)},
       callback_{std::move(callback)},
       callback_arg_{callback_arg}
   {
@@ -207,7 +204,7 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
   }
 
   // the upstream resource used for satisfying allocation requests
-  device_async_resource_ref upstream_{rmm::mr::get_current_device_resource_ref()};
+  device_async_resource_ref upstream_;
   failure_callback_t callback_;
   void* callback_arg_;
 };

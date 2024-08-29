@@ -57,10 +57,7 @@ class binning_memory_resource final : public device_memory_resource {
    * @param upstream_resource The upstream memory resource used to allocate bin pools.
    */
   explicit binning_memory_resource(Upstream* upstream_resource)
-    : upstream_mr_{[upstream_resource]() {
-        RMM_EXPECTS(nullptr != upstream_resource, "Unexpected null upstream pointer.");
-        return upstream_resource;
-      }()}
+    : upstream_mr_{to_device_async_resource_ref_checked(upstream_resource)}
   {
   }
 
@@ -79,10 +76,7 @@ class binning_memory_resource final : public device_memory_resource {
   binning_memory_resource(Upstream* upstream_resource,
                           int8_t min_size_exponent,  // NOLINT(bugprone-easily-swappable-parameters)
                           int8_t max_size_exponent)
-    : upstream_mr_{[upstream_resource]() {
-        RMM_EXPECTS(nullptr != upstream_resource, "Unexpected null upstream pointer.");
-        return upstream_resource;
-      }()}
+    : upstream_mr_{to_device_async_resource_ref_checked(upstream_resource)}
   {
     for (auto i = min_size_exponent; i <= max_size_exponent; i++) {
       add_bin(1 << i);
@@ -102,17 +96,12 @@ class binning_memory_resource final : public device_memory_resource {
   binning_memory_resource& operator=(binning_memory_resource&&)      = delete;
 
   /**
-   * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
+   * @briefreturn{device_async_resource_ref to the upstream resource}
    */
-  [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
+  [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept
   {
     return upstream_mr_;
   }
-
-  /**
-   * @briefreturn{Upstream* to the upstream memory resource}
-   */
-  [[nodiscard]] Upstream* get_upstream() const noexcept { return upstream_mr_; }
 
   /**
    * @brief Add a bin allocator to this resource
@@ -132,7 +121,7 @@ class binning_memory_resource final : public device_memory_resource {
    */
   void add_bin(std::size_t allocation_size, device_memory_resource* bin_resource = nullptr)
   {
-    allocation_size = rmm::align_up(allocation_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+    allocation_size = align_up(allocation_size, CUDA_ALLOCATION_ALIGNMENT);
 
     if (nullptr != bin_resource) {
       resource_bins_.insert({allocation_size, bin_resource});
@@ -153,10 +142,10 @@ class binning_memory_resource final : public device_memory_resource {
    * @param bytes Requested allocation size in bytes
    * @return Get the resource reference for the requested size.
    */
-  rmm::device_async_resource_ref get_resource_ref(std::size_t bytes)
+  device_async_resource_ref get_resource_ref(std::size_t bytes)
   {
     auto iter = resource_bins_.lower_bound(bytes);
-    return (iter != resource_bins_.cend()) ? rmm::device_async_resource_ref{iter->second}
+    return (iter != resource_bins_.cend()) ? device_async_resource_ref{iter->second}
                                            : get_upstream_resource();
   }
 
@@ -188,7 +177,8 @@ class binning_memory_resource final : public device_memory_resource {
     get_resource_ref(bytes).deallocate_async(ptr, bytes, stream);
   }
 
-  Upstream* upstream_mr_;  // The upstream memory_resource from which to allocate blocks.
+  device_async_resource_ref
+    upstream_mr_;  // The upstream memory_resource from which to allocate blocks.
 
   std::vector<std::unique_ptr<fixed_size_memory_resource<Upstream>>> owned_bin_resources_;
 

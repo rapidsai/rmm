@@ -65,5 +65,5 @@ class device_check_resource_adaptor final : public rmm::mr::device_memory_resour
   }
 
   rmm::cuda_device_id device_id;
-  rmm::device_async_resource_ref upstream_{rmm::mr::get_current_device_resource_ref()};
+  rmm::device_async_resource_ref upstream_;
 };
