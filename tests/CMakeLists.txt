@@ -49,8 +49,6 @@ function(ConfigureTestInternal TEST_NAME)
                            PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-declarations>)
   endif()
 
-  
-
   if(CODE_COVERAGE)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 
