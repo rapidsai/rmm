@@ -97,6 +97,9 @@ cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
 cdef class FailureCallbackResourceAdaptor(UpstreamResourceAdaptor):
     cdef object _callback
 
+cdef class FailureAlternateResourceAdaptor(UpstreamResourceAdaptor):
+    pass
+
 cdef class PrefetchResourceAdaptor(UpstreamResourceAdaptor):
     pass
 

@@ -229,6 +229,16 @@ cdef extern from "rmm/mr/device/failure_callback_resource_adaptor.hpp" \
             void* callback_arg
         ) except +
 
+cdef extern from "rmm/mr/device/failure_alternate_resource_adaptor.hpp" \
+        namespace "rmm::mr" nogil:
+    cdef cppclass failure_alternate_resource_adaptor[Upstream](
+        device_memory_resource
+    ):
+        failure_alternate_resource_adaptor(
+            Upstream* upstream_mr,
+            Upstream* alternate_upstream_mr,
+        ) except +
+
 cdef extern from "rmm/mr/device/prefetch_resource_adaptor.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass prefetch_resource_adaptor[Upstream](device_memory_resource):
@@ -1038,6 +1048,32 @@ cdef class FailureCallbackResourceAdaptor(UpstreamResourceAdaptor):
             Function called when memory allocation fails.
         """
         pass
+
+
+cdef class FailureAlternateResourceAdaptor(UpstreamResourceAdaptor):
+
+    def __cinit__(
+        self,
+        DeviceMemoryResource upstream_mr,
+        DeviceMemoryResource alternate_upstream_mr,
+    ):
+        self.c_obj.reset(
+            new failure_alternate_resource_adaptor[device_memory_resource](
+                upstream_mr.get_mr(),
+                alternate_upstream_mr.get_mr(),
+            )
+        )
+
+    def __init__(
+        self,
+        DeviceMemoryResource upstream_mr,
+        DeviceMemoryResource alternate_upstream_mr,
+    ):
+        """
+        TODO
+        """
+        pass
+
 
 cdef class PrefetchResourceAdaptor(UpstreamResourceAdaptor):
 

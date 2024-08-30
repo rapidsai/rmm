@@ -787,6 +787,50 @@ def test_failure_callback_resource_adaptor():
     assert retried[0]
 
 
+def test_failure_alternate_resource_adaptor():
+    base = rmm.mr.CudaMemoryResource()
+
+    def alloc_cb(size, stream, *, track: list[int], limit: int):
+        if size > limit:
+            raise MemoryError()
+        ret = base.allocate(size, stream)
+        track.append(ret)
+        return ret
+
+    def dealloc_cb(ptr, size, stream, *, track: list[int]):
+        track.append(ptr)
+        return base.deallocate(ptr, size, stream)
+
+    main_track = []
+    main_mr = rmm.mr.CallbackMemoryResource(
+        functools.partial(alloc_cb, track=main_track, limit=200),
+        functools.partial(dealloc_cb, track=main_track),
+    )
+    alternate_track = []
+    alternate_mr = rmm.mr.CallbackMemoryResource(
+        functools.partial(alloc_cb, track=alternate_track, limit=1000),
+        functools.partial(dealloc_cb, track=alternate_track),
+    )
+    mr = rmm.mr.FailureAlternateResourceAdaptor(main_mr, alternate_mr)
+
+    # Buffer size within the limit of `main_mr`
+    rmm.DeviceBuffer(size=100, mr=mr)
+    # we expect an alloc and a dealloc of the same buffer in
+    # `main_track` and an empty `alternate_track`
+    assert len(main_track) == 2
+    assert main_track[0] == main_track[1]
+    assert len(alternate_track) == 0
+
+    # Buffer size outside the limit of `main_mr`
+    rmm.DeviceBuffer(size=500, mr=mr)
+    # we expect an alloc and a dealloc of the same buffer in
+    # `alternate_track` and an unchanged `main_mr`
+    assert len(main_track) == 2
+    assert main_track[0] == main_track[1]
+    assert len(alternate_track) == 2
+    assert alternate_track[0] == alternate_track[1]
+
+
 @pytest.mark.parametrize("managed", [True, False])
 def test_prefetch_resource_adaptor(managed):
     if managed:
