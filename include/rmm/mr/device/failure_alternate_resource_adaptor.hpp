@@ -39,15 +39,9 @@ namespace mr {
  * An instance of this resource must be constructed with two existing upstream resource to
  * satisfy allocation requests.
  *
- * @tparam PrimaryUpstream The type of the primary upstream resource used for
- * allocation/deallocation.
- * @tparam AlternateUpstream The type of the alternate upstream resource used for
- * allocation/deallocation when the primary fails.
  * @tparam ExceptionType The type of exception that this adaptor should respond to.
  */
-template <typename PrimaryUpstream,
-          typename AlternateUpstream,
-          typename ExceptionType = rmm::out_of_memory>
+template <typename ExceptionType = rmm::out_of_memory>
 class failure_alternate_resource_adaptor final : public device_memory_resource {
  public:
   using exception_type = ExceptionType;  ///< The type of exception this object catches/throws
@@ -57,18 +51,14 @@ class failure_alternate_resource_adaptor final : public device_memory_resource {
    * primary resource to satisfy allocation requests and if that fails, use `alternate_upstream`
    * as an alternate
    *
-   * @throws rmm::logic_error if `primary_upstream == nullptr` or `alternate_upstream == nullptr`
-   *
    * @param primary_upstream The primary resource used for allocating/deallocating device memory
    * @param alternate_upstream The alternate resource used for allocating/deallocating device memory
    * memory
    */
-  failure_alternate_resource_adaptor(PrimaryUpstream* primary_upstream,
-                                     AlternateUpstream* alternate_upstream)
+  failure_alternate_resource_adaptor(device_async_resource_ref primary_upstream,
+                                     device_async_resource_ref alternate_upstream)
     : primary_upstream_{primary_upstream}, alternate_upstream_{alternate_upstream}
   {
-    RMM_EXPECTS(nullptr != primary_upstream, "Unexpected null upstream resource pointer.");
-    RMM_EXPECTS(nullptr != alternate_upstream, "Unexpected null upstream resource pointer.");
   }
 
   failure_alternate_resource_adaptor()                                          = delete;
@@ -96,19 +86,6 @@ class failure_alternate_resource_adaptor final : public device_memory_resource {
     return alternate_upstream_;
   }
 
-  /**
-   * @briefreturn{PrimaryUpstream* to the upstream memory resource}
-   */
-  [[nodiscard]] PrimaryUpstream* get_upstream() const noexcept { return primary_upstream_; }
-
-  /**
-   * @briefreturn{AlternateUpstream* to the alternate upstream memory resource}
-   */
-  [[nodiscard]] AlternateUpstream* get_alternate_upstream() const noexcept
-  {
-    return alternate_upstream_;
-  }
-
  private:
   /**
    * @brief Allocates memory of size at least `bytes` using the upstream
@@ -125,9 +102,9 @@ class failure_alternate_resource_adaptor final : public device_memory_resource {
   {
     void* ret{};
     try {
-      ret = primary_upstream_->allocate(bytes, stream);
+      ret = primary_upstream_.allocate_async(bytes, stream);
     } catch (exception_type const& e) {
-      ret = alternate_upstream_->allocate(bytes, stream);
+      ret = alternate_upstream_.allocate_async(bytes, stream);
       std::lock_guard<std::mutex> lock(mtx_);
       alternate_allocations_.insert(ret);
     }
@@ -149,9 +126,9 @@ class failure_alternate_resource_adaptor final : public device_memory_resource {
       count = alternate_allocations_.erase(ptr);
     }
     if (count > 0) {
-      alternate_upstream_->deallocate(ptr, bytes, stream);
+      alternate_upstream_.deallocate_async(ptr, bytes, stream);
     } else {
-      primary_upstream_->deallocate(ptr, bytes, stream);
+      primary_upstream_.deallocate_async(ptr, bytes, stream);
     }
   }
 
@@ -165,16 +142,14 @@ class failure_alternate_resource_adaptor final : public device_memory_resource {
   [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
   {
     if (this == &other) { return true; }
-    auto cast =
-      dynamic_cast<failure_alternate_resource_adaptor<PrimaryUpstream, AlternateUpstream> const*>(
-        &other);
-    if (cast == nullptr) { return primary_upstream_->is_equal(other); }
+    auto cast = dynamic_cast<failure_alternate_resource_adaptor const*>(&other);
+    if (cast == nullptr) { return false; }
     return get_upstream_resource() == cast->get_upstream_resource() &&
            get_alternate_upstream_resource() == cast->get_alternate_upstream_resource();
   }
 
-  PrimaryUpstream* primary_upstream_;                // the primary upstream
-  AlternateUpstream* alternate_upstream_;            // the alternate upstream
+  device_async_resource_ref primary_upstream_;       // the primary upstream
+  device_async_resource_ref alternate_upstream_;     // the alternate upstream
   std::unordered_set<void*> alternate_allocations_;  // set of alternate allocations
   mutable std::mutex mtx_;                           // Mutex for exclusive lock.
 };

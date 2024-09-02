@@ -32,7 +32,9 @@ from libcpp.string cimport string
 from cuda.cudart import cudaError_t
 
 from rmm._cuda.gpu import CUDARuntimeError, getDevice, setDevice
+
 from rmm._cuda.stream cimport Stream
+
 from rmm._cuda.stream import DEFAULT_STREAM
 
 from rmm._lib.cuda_stream_view cimport cuda_stream_view
@@ -44,6 +46,7 @@ from rmm._lib.per_device_resource cimport (
     cuda_device_id,
     set_per_device_resource as cpp_set_per_device_resource,
 )
+
 from rmm.statistics import Statistics
 
 # Transparent handle of a C++ exception
@@ -84,6 +87,10 @@ cdef extern from *:
 
 # NOTE: Keep extern declarations in .pyx file as much as possible to avoid
 # leaking dependencies when importing RMM Cython .pxd files
+
+cdef extern from "rmm/error.hpp" namespace "rmm" nogil:
+    cdef cppclass out_of_memory
+
 cdef extern from "rmm/mr/device/cuda_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass cuda_memory_resource(device_memory_resource):
@@ -124,7 +131,6 @@ cdef extern from "rmm/mr/device/cuda_async_memory_resource.hpp" \
         posix_file_descriptor
         win32
         win32_kmt
-
 
 cdef extern from "rmm/mr/device/pool_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
@@ -231,12 +237,15 @@ cdef extern from "rmm/mr/device/failure_callback_resource_adaptor.hpp" \
 
 cdef extern from "rmm/mr/device/failure_alternate_resource_adaptor.hpp" \
         namespace "rmm::mr" nogil:
-    cdef cppclass failure_alternate_resource_adaptor[
-        PrimaryUpstream, AlternateUpstream
-    ](device_memory_resource):
+    cdef cppclass failure_alternate_resource_adaptor[ExceptionType](
+        device_memory_resource
+    ):
+        # Notice, `failure_alternate_resource_adaptor` takes `device_async_resource_ref`
+        # as upstream arguments but we define them as `device_memory_resource*` and
+        # rely on implicit type conversion.
         failure_alternate_resource_adaptor(
-            PrimaryUpstream* upstream_mr,
-            AlternateUpstream* alternate_upstream_mr,
+            device_memory_resource* upstream_mr,
+            device_memory_resource* alternate_upstream_mr,
         ) except +
 
 cdef extern from "rmm/mr/device/prefetch_resource_adaptor.hpp" \
@@ -1061,9 +1070,7 @@ cdef class FailureAlternateResourceAdaptor(UpstreamResourceAdaptor):
         self.alternate_upstream_mr = alternate_upstream_mr
 
         self.c_obj.reset(
-            new failure_alternate_resource_adaptor[
-                device_memory_resource, device_memory_resource
-            ](
+            new failure_alternate_resource_adaptor[out_of_memory](
                 upstream_mr.get_mr(),
                 alternate_upstream_mr.get_mr(),
             )
