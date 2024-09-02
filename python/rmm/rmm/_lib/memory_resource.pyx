@@ -231,12 +231,12 @@ cdef extern from "rmm/mr/device/failure_callback_resource_adaptor.hpp" \
 
 cdef extern from "rmm/mr/device/failure_alternate_resource_adaptor.hpp" \
         namespace "rmm::mr" nogil:
-    cdef cppclass failure_alternate_resource_adaptor[Upstream](
-        device_memory_resource
-    ):
+    cdef cppclass failure_alternate_resource_adaptor[
+        PrimaryUpstream, AlternateUpstream
+    ](device_memory_resource):
         failure_alternate_resource_adaptor(
-            Upstream* upstream_mr,
-            Upstream* alternate_upstream_mr,
+            PrimaryUpstream* upstream_mr,
+            AlternateUpstream* alternate_upstream_mr,
         ) except +
 
 cdef extern from "rmm/mr/device/prefetch_resource_adaptor.hpp" \
@@ -1061,7 +1061,9 @@ cdef class FailureAlternateResourceAdaptor(UpstreamResourceAdaptor):
         self.alternate_upstream_mr = alternate_upstream_mr
 
         self.c_obj.reset(
-            new failure_alternate_resource_adaptor[device_memory_resource](
+            new failure_alternate_resource_adaptor[
+                device_memory_resource, device_memory_resource
+            ](
                 upstream_mr.get_mr(),
                 alternate_upstream_mr.get_mr(),
             )
@@ -1079,7 +1081,6 @@ cdef class FailureAlternateResourceAdaptor(UpstreamResourceAdaptor):
 
     cpdef DeviceMemoryResource get_alternate_upstream(self):
         return self.alternate_upstream_mr
-
 
 
 cdef class PrefetchResourceAdaptor(UpstreamResourceAdaptor):
