@@ -289,7 +289,6 @@ cdef class UpstreamResourceAdaptor(DeviceMemoryResource):
     """
 
     def __cinit__(self, DeviceMemoryResource upstream_mr, *args, **kwargs):
-
         if (upstream_mr is None):
             raise Exception("Argument `upstream_mr` must not be None")
 
@@ -1057,6 +1056,10 @@ cdef class FailureAlternateResourceAdaptor(UpstreamResourceAdaptor):
         DeviceMemoryResource upstream_mr,
         DeviceMemoryResource alternate_upstream_mr,
     ):
+        if (alternate_upstream_mr is None):
+            raise Exception("Argument `alternate_upstream_mr` must not be None")
+        self.alternate_upstream_mr = alternate_upstream_mr
+
         self.c_obj.reset(
             new failure_alternate_resource_adaptor[device_memory_resource](
                 upstream_mr.get_mr(),
@@ -1070,9 +1073,13 @@ cdef class FailureAlternateResourceAdaptor(UpstreamResourceAdaptor):
         DeviceMemoryResource alternate_upstream_mr,
     ):
         """
-        TODO
+        TODO: doc
         """
         pass
+
+    cpdef DeviceMemoryResource get_alternate_upstream(self):
+        return self.alternate_upstream_mr
+
 
 
 cdef class PrefetchResourceAdaptor(UpstreamResourceAdaptor):

@@ -98,7 +98,10 @@ cdef class FailureCallbackResourceAdaptor(UpstreamResourceAdaptor):
     cdef object _callback
 
 cdef class FailureAlternateResourceAdaptor(UpstreamResourceAdaptor):
-    pass
+    cdef readonly DeviceMemoryResource alternate_upstream_mr
+
+    cpdef DeviceMemoryResource get_alternate_upstream(self)
+
 
 cdef class PrefetchResourceAdaptor(UpstreamResourceAdaptor):
     pass

@@ -812,6 +812,13 @@ def test_failure_alternate_resource_adaptor():
         functools.partial(dealloc_cb, track=alternate_track),
     )
     mr = rmm.mr.FailureAlternateResourceAdaptor(main_mr, alternate_mr)
+    assert main_mr is mr.get_upstream()
+    assert alternate_mr is mr.get_alternate_upstream()
+
+    # Delete the upstream memory resources here to check that they are
+    # kept alive by `mr`
+    del main_mr
+    del alternate_mr
 
     # Buffer size within the limit of `main_mr`
     rmm.DeviceBuffer(size=100, mr=mr)
