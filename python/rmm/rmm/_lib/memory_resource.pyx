@@ -241,7 +241,7 @@ cdef extern from "rmm/mr/device/failure_alternate_resource_adaptor.hpp" \
         device_memory_resource
     ):
         # Notice, `failure_alternate_resource_adaptor` takes `device_async_resource_ref`
-        # as upstream arguments but we define them as `device_memory_resource*` and
+        # as upstream arguments but we define them here as `device_memory_resource*` and
         # rely on implicit type conversion.
         failure_alternate_resource_adaptor(
             device_memory_resource* upstream_mr,
