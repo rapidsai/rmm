@@ -1082,7 +1082,14 @@ cdef class FailureAlternateResourceAdaptor(UpstreamResourceAdaptor):
         DeviceMemoryResource alternate_upstream_mr,
     ):
         """
-        TODO: doc
+        A memory resource that use an alternate resource when memory allocation fails.
+
+        Parameters
+        ----------
+        upstream : DeviceMemoryResource
+            The primary resource used for allocating/deallocating device memory
+        alternate_upstream : DeviceMemoryResource
+            The alternate resource used when the premary fails
         """
         pass
 
