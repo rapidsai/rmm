@@ -36,7 +36,7 @@ namespace mr {
  * @brief A device memory resource that use an alternate upstream resource when the primary throw a
  * specified exception type.
  *
- * An instance of this resource must be constructed with two existing upstream resource in order to
+ * An instance of this resource must be constructed with two existing upstream resource to
  * satisfy allocation requests.
  *
  * @tparam PrimaryUpstream The type of the primary upstream resource used for
@@ -53,23 +53,22 @@ class failure_alternate_resource_adaptor final : public device_memory_resource {
   using exception_type = ExceptionType;  ///< The type of exception this object catches/throws
 
   /**
-   * @brief Construct a new `failure_alternate_resource_adaptor` using `upstream` as the
+   * @brief Construct a new `failure_alternate_resource_adaptor` using `primary_upstream` as the
    * primary resource to satisfy allocation requests and if that fails, use `alternate_upstream`
    * as an alternate
    *
-   * @throws rmm::logic_error if `upstream == nullptr` or `alternate_upstream == nullptr`
+   * @throws rmm::logic_error if `primary_upstream == nullptr` or `alternate_upstream == nullptr`
    *
-   * @param upstream The resource used for allocating/deallocating device memory
-   * @param alternate_upstream  The resource used for alternate allocating/deallocating device
+   * @param primary_upstream The primary resource used for allocating/deallocating device memory
+   * @param alternate_upstream The alternate resource used for allocating/deallocating device memory
    * memory
    */
-  failure_alternate_resource_adaptor(PrimaryUpstream* upstream,
+  failure_alternate_resource_adaptor(PrimaryUpstream* primary_upstream,
                                      AlternateUpstream* alternate_upstream)
-    : primary_upstream_{upstream}, alternate_upstream_{alternate_upstream}
+    : primary_upstream_{primary_upstream}, alternate_upstream_{alternate_upstream}
   {
-    RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
-    RMM_EXPECTS(nullptr != alternate_upstream,
-                "Unexpected null alternate upstream resource pointer.");
+    RMM_EXPECTS(nullptr != primary_upstream, "Unexpected null upstream resource pointer.");
+    RMM_EXPECTS(nullptr != alternate_upstream, "Unexpected null upstream resource pointer.");
   }
 
   failure_alternate_resource_adaptor()                                          = delete;
@@ -157,7 +156,7 @@ class failure_alternate_resource_adaptor final : public device_memory_resource {
   }
 
   /**
-   * @brief Compare the upstream resource to another.
+   * @brief Compare the resource to another.
    *
    * @param other The other resource to compare to
    * @return true If the two resources are equivalent
