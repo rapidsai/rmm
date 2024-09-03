@@ -33,11 +33,11 @@ namespace mr {
  */
 
 /**
- * @brief A device memory resource that use an alternate upstream resource when the primary throw a
- * specified exception type.
+ * @brief A device memory resource that uses an alternate upstream resource when the primary upstream
+ * resource throws a specified exception type.
  *
- * An instance of this resource must be constructed with two existing upstream resource to
- * satisfy allocation requests.
+ * An instance of this resource must be constructed with two upstream resources to satisfy allocation
+ * requests.
  *
  * @tparam ExceptionType The type of exception that this adaptor should respond to.
  */
@@ -47,9 +47,8 @@ class failure_alternate_resource_adaptor final : public device_memory_resource {
   using exception_type = ExceptionType;  ///< The type of exception this object catches/throws
 
   /**
-   * @brief Construct a new `failure_alternate_resource_adaptor` using `primary_upstream` as the
-   * primary resource to satisfy allocation requests and if that fails, use `alternate_upstream`
-   * as an alternate
+   * @brief Construct a new `failure_alternate_resource_adaptor` that uses `primary_upstream`
+   * to satisfy allocation requests and if that fails with `ExceptionType`, uses `alternate_upstream`.
    *
    * @param primary_upstream The primary resource used for allocating/deallocating device memory
    * @param alternate_upstream The alternate resource used for allocating/deallocating device memory
