@@ -91,8 +91,8 @@ class failure_alternate_resource_adaptor final : public device_memory_resource {
    * @brief Allocates memory of size at least `bytes` using the upstream
    * resource.
    *
-   * @throws `exception_type` if the requested allocation could not be fulfilled
-   * by the primary or the alternate upstream resource.
+   * @throws any exceptions thrown from the upstream resources, only `exception_type`
+   * thrown by the primary upstream is caught.
    *
    * @param bytes The size, in bytes, of the allocation
    * @param stream Stream on which to perform the allocation
@@ -148,10 +148,10 @@ class failure_alternate_resource_adaptor final : public device_memory_resource {
            get_alternate_upstream_resource() == cast->get_alternate_upstream_resource();
   }
 
-  device_async_resource_ref primary_upstream_;       // the primary upstream
-  device_async_resource_ref alternate_upstream_;     // the alternate upstream
-  std::unordered_set<void*> alternate_allocations_;  // set of alternate allocations
-  mutable std::mutex mtx_;                           // Mutex for exclusive lock.
+  device_async_resource_ref primary_upstream_;
+  device_async_resource_ref alternate_upstream_;
+  std::unordered_set<void*> alternate_allocations_;
+  mutable std::mutex mtx_;
 };
 
 /** @} */  // end of group
