@@ -69,38 +69,36 @@ struct dynamic_load_runtime {
   template <typename signature>
   static std::optional<signature> function(const char* func_name)
   {
-    auto* runtime = get_cuda_runtime_handle();
-    auto* handle  = ::dlsym(runtime, func_name);
-    if (!handle) { return std::nullopt; }
+    // query if the function has already been loaded by the program
+    auto* handle = ::dlsym(RTLD_DEFAULT, func_name);
+    auto* error  = dlerror();
+
+    // throw rmm::logic_error{std::string{"dlysm: "} + error};
+    if (error != nullptr) {
+      // function hasn't been loaded already, load it from CUDA runtime
+      auto* runtime = get_cuda_runtime_handle();
+      handle        = ::dlsym(runtime, func_name);
+      error         = dlerror();
+    }
+    if (error != nullptr) { return std::nullopt; }
     auto* function_ptr = reinterpret_cast<signature>(handle);
     return std::optional<signature>(function_ptr);
   }
 };
 
-#if defined(RMM_STATIC_CUDART)
-// clang-format off
-#define RMM_CUDART_API_WRAPPER(name, signature)                               \
-  template <typename... Args>                                                 \
-  static cudaError_t name(Args... args)                                       \
-  {                                                                           \
-    _Pragma("GCC diagnostic push")                                            \
-    _Pragma("GCC diagnostic ignored \"-Waddress\"")                           \
-    static_assert(static_cast<signature>(::name),                             \
-                  "Failed to find #name function with arguments #signature"); \
-    _Pragma("GCC diagnostic pop")                                             \
-    return ::name(args...);                                                   \
+#define RMM_CUDART_API_WRAPPER(name, signature)                                  \
+  template <typename... Args>                                                    \
+  static cudaError_t name(Args... args)                                          \
+  {                                                                              \
+    auto* p = static_cast<signature>(::name);                                    \
+    if (p != nullptr) {                                                          \
+      return (*p)(args...);                                                      \
+    } else {                                                                     \
+      static const auto func = dynamic_load_runtime::function<signature>(#name); \
+      if (func) { return (*func)(args...); }                                     \
+      RMM_FAIL("Failed to find #name function in libcudart.so");                 \
+    }                                                                            \
   }
-// clang-format on
-#else
-#define RMM_CUDART_API_WRAPPER(name, signature)                                \
-  template <typename... Args>                                                  \
-  static cudaError_t name(Args... args)                                        \
-  {                                                                            \
-    static const auto func = dynamic_load_runtime::function<signature>(#name); \
-    if (func) { return (*func)(args...); }                                     \
-    RMM_FAIL("Failed to find #name function in libcudart.so");                 \
-  }
-#endif
 
 #if CUDART_VERSION >= 11020  // 11.2 introduced cudaMallocAsync
 /**
@@ -110,17 +108,31 @@ struct dynamic_load_runtime {
  * This allows RMM users to compile/link against CUDA 11.2+ and run with
  * < CUDA 11.2 runtime as these functions are found at call time.
  */
+
+
+extern "C" {
+cudaError_t cudaMemPoolCreate(cudaMemPool_t*, const cudaMemPoolProps*) __attribute((weak));
+cudaError_t cudaMemPoolSetAttribute(cudaMemPool_t, cudaMemPoolAttr, void*) __attribute((weak));
+cudaError_t cudaMemPoolDestroy(cudaMemPool_t) __attribute((weak));
+cudaError_t cudaMallocFromPoolAsync(void**, size_t, cudaMemPool_t, cudaStream_t)
+  __attribute((weak));
+cudaError_t cudaFreeAsync(void*, cudaStream_t) __attribute((weak));
+cudaError_t cudaDeviceGetDefaultMemPool_sig(cudaMemPool_t*, int) __attribute((weak));
+}
+
 struct async_alloc {
   static bool is_supported()
   {
-#if defined(RMM_STATIC_CUDART)
-    static bool runtime_supports_pool = (CUDART_VERSION >= 11020);
-#else
-    static bool runtime_supports_pool =
-      dynamic_load_runtime::function<dynamic_load_runtime::function_sig<void*, cudaStream_t>>(
-        "cudaFreeAsync")
-        .has_value();
-#endif
+    static bool runtime_supports_pool{[] {
+      using cuda_free_async_sig      = dynamic_load_runtime::function_sig<void*, cudaStream_t>;
+      bool cuda_free_async_supported = true;
+      auto* p                        = static_cast<cuda_free_async_sig>(::cudaFreeAsync);
+      if (p == nullptr) {
+        cuda_free_async_supported =
+          dynamic_load_runtime::function<cuda_free_async_sig>("cudaFreeAsync").has_value();
+      }
+      return cuda_free_async_supported;
+    }()};
 
     static auto driver_supports_pool{[] {
       int cuda_pool_supported{};
