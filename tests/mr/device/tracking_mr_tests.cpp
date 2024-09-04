@@ -103,7 +103,7 @@ TEST(TrackingTest, MultiTracking)
 {
   auto orig_device_resource = rmm::mr::get_current_device_resource_ref();
   tracking_adaptor mr{orig_device_resource, true};
-  rmm::mr::set_current_device_resource_ref(&mr);
+  rmm::mr::set_current_device_resource_ref(mr);
 
   std::vector<std::shared_ptr<rmm::device_buffer>> allocations;
   for (std::size_t i = 0; i < num_allocations; ++i) {
@@ -114,7 +114,7 @@ TEST(TrackingTest, MultiTracking)
   EXPECT_EQ(mr.get_outstanding_allocations().size(), num_allocations);
 
   tracking_adaptor inner_mr{rmm::mr::get_current_device_resource_ref()};
-  rmm::mr::set_current_device_resource_ref(&inner_mr);
+  rmm::mr::set_current_device_resource_ref(inner_mr);
 
   for (std::size_t i = 0; i < num_more_allocations; ++i) {
     allocations.emplace_back(

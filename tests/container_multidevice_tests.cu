@@ -71,7 +71,7 @@ TYPED_TEST(ContainerMultiDeviceTest, CreateMoveDestroyDifferentActiveDevice)
     rmm::cuda_set_device_raii dev{rmm::cuda_device_id{0}};
     auto orig_mr  = rmm::mr::get_current_device_resource_ref();
     auto check_mr = device_check_resource_adaptor{orig_mr};
-    rmm::mr::set_current_device_resource_ref(&check_mr);
+    rmm::mr::set_current_device_resource_ref(check_mr);
 
     {
       auto buf_1 = []() {
@@ -111,7 +111,7 @@ TYPED_TEST(ContainerMultiDeviceTest, ResizeDifferentActiveDevice)
     rmm::cuda_set_device_raii dev{rmm::cuda_device_id{0}};
     auto orig_mr  = rmm::mr::get_current_device_resource_ref();
     auto check_mr = device_check_resource_adaptor{orig_mr};
-    rmm::mr::set_current_device_resource_ref(&check_mr);
+    rmm::mr::set_current_device_resource_ref(check_mr);
 
     if constexpr (not std::is_same_v<TypeParam, rmm::device_scalar<int>>) {
       auto buf = TypeParam(128, rmm::cuda_stream_view{});
@@ -134,7 +134,7 @@ TYPED_TEST(ContainerMultiDeviceTest, ShrinkDifferentActiveDevice)
     rmm::cuda_set_device_raii dev{rmm::cuda_device_id{0}};
     auto orig_mr  = rmm::mr::get_current_device_resource_ref();
     auto check_mr = device_check_resource_adaptor{orig_mr};
-    rmm::mr::set_current_device_resource_ref(&check_mr);
+    rmm::mr::set_current_device_resource_ref(check_mr);
 
     if constexpr (not std::is_same_v<TypeParam, rmm::device_scalar<int>>) {
       auto buf = TypeParam(128, rmm::cuda_stream_view{});
