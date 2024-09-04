@@ -59,7 +59,7 @@ struct throw_at_limit_resource final : public mr::device_memory_resource {
   std::unordered_set<void*> allocs{};
 };
 
-TEST(FailureAlternateTest, TrackkBothUpstreams)
+TEST(FailureAlternateTest, TrackBothUpstreams)
 {
   throw_at_limit_resource<rmm::out_of_memory> primary_mr{100};
   throw_at_limit_resource<rmm::out_of_memory> alternate_mr{1000};
