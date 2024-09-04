@@ -31,7 +31,7 @@ dependencies:
 - pre-commit
 - pytest
 - pytest-cov
-- python>=3.10,<3.12
+- python>=3.10,<3.13
 - rapids-build-backend>=0.3.0,<0.4.0.dev0
 - scikit-build-core >=0.10.0
 - spdlog>=1.12.0,<1.13
