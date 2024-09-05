@@ -77,7 +77,7 @@ using host_device_async_resource_ref =
 template <class Resource>
 device_async_resource_ref to_device_async_resource_ref_checked(Resource* res)
 {
-  RMM_EXPECTS(nullptr != res, "Unexpected null resource pointer.");
+  RMM_EXPECTS(res, "Unexpected null resource pointer.");
   return device_async_resource_ref{*res};
 }
 
