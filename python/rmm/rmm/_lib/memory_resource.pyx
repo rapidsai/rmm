@@ -23,6 +23,7 @@ cimport cython
 from cython.operator cimport dereference as deref
 from libc.stddef cimport size_t
 from libc.stdint cimport int8_t, int64_t, uintptr_t
+from libc.stdlib cimport atof
 from libcpp cimport bool
 from libcpp.memory cimport make_unique, unique_ptr
 from libcpp.optional cimport optional
@@ -32,7 +33,9 @@ from libcpp.string cimport string
 from cuda.cudart import cudaError_t
 
 from rmm._cuda.gpu import CUDARuntimeError, getDevice, setDevice
+
 from rmm._cuda.stream cimport Stream
+
 from rmm._cuda.stream import DEFAULT_STREAM
 
 from rmm._lib.cuda_stream_view cimport cuda_stream_view
@@ -44,6 +47,7 @@ from rmm._lib.per_device_resource cimport (
     cuda_device_id,
     set_per_device_resource as cpp_set_per_device_resource,
 )
+
 from rmm.statistics import Statistics
 
 # Transparent handle of a C++ exception
@@ -314,7 +318,7 @@ cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
 
     Parameters
     ----------
-    initial_pool_size : int, optional
+    initial_pool_size : int | str, optional
         Initial pool size in bytes. By default, half the available memory
         on the device is used.
     release_threshold: int, optional
@@ -334,7 +338,7 @@ cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
         cdef optional[size_t] c_initial_pool_size = (
             optional[size_t]()
             if initial_pool_size is None
-            else optional[size_t](<size_t> initial_pool_size)
+            else optional[size_t](<size_t> parse_bytes(initial_pool_size))
         )
 
         cdef optional[size_t] c_release_threshold = (
@@ -426,12 +430,12 @@ cdef class PoolMemoryResource(UpstreamResourceAdaptor):
         c_initial_pool_size = (
             c_percent_of_free_device_memory(50) if
             initial_pool_size is None
-            else initial_pool_size
+            else parse_bytes(initial_pool_size)
         )
         c_maximum_pool_size = (
             optional[size_t]() if
             maximum_pool_size is None
-            else optional[size_t](<size_t> maximum_pool_size)
+            else optional[size_t](<size_t> parse_bytes(maximum_pool_size))
         )
         self.c_obj.reset(
             new pool_memory_resource[device_memory_resource](
@@ -456,10 +460,10 @@ cdef class PoolMemoryResource(UpstreamResourceAdaptor):
         upstream_mr : DeviceMemoryResource
             The DeviceMemoryResource from which to allocate blocks for the
             pool.
-        initial_pool_size : int, optional
+        initial_pool_size : int | str, optional
             Initial pool size in bytes. By default, half the available memory
             on the device is used.
-        maximum_pool_size : int, optional
+        maximum_pool_size : int | str, optional
             Maximum size in bytes, that the pool can grow to.
         """
         pass
@@ -1091,8 +1095,10 @@ cpdef void _initialize(
         typ = PoolMemoryResource
         args = (upstream(),)
         kwargs = dict(
-            initial_pool_size=initial_pool_size,
-            maximum_pool_size=maximum_pool_size
+            initial_pool_size=None if initial_pool_size is None
+            else parse_bytes(initial_pool_size),
+            maximum_pool_size=None if maximum_pool_size is None
+            else parse_bytes(maximum_pool_size)
         )
     else:
         typ = upstream
@@ -1324,3 +1330,87 @@ def available_device_memory():
     cdef pair[size_t, size_t] res
     res = c_available_device_memory()
     return (res.first, res.second)
+
+
+cdef dict byte_sizes = {
+    "kB": 10 ** 3,
+    "MB": 10 ** 6,
+    "GB": 10 ** 9,
+    "TB": 10 ** 12,
+    "PB": 10 ** 15,
+    "KiB": 2 ** 10,
+    "MiB": 2 ** 20,
+    "GiB": 2 ** 30,
+    "TiB": 2 ** 40,
+    "PiB": 2 ** 50,
+    "B": 1,
+    "": 1,
+}
+
+byte_sizes.update({k.lower(): v for k, v in byte_sizes.items()})
+byte_sizes.update({k[0]: v for k, v in byte_sizes.items() if k and "i" not in k})
+byte_sizes.update({k[:-1]: v for k, v in byte_sizes.items() if k and "i" in k})
+
+cdef int parse_bytes(object s):
+    """ Parse byte string to numbers
+
+    Parameters
+    ----------
+    s : int | str
+        Size of the pool in bytes (shorthand)
+
+    >>> parse_bytes('100')
+    100
+    >>> parse_bytes('100 MB')
+    100000000
+    >>> parse_bytes('100M')
+    100000000
+    >>> parse_bytes('5kB')
+    5000
+    >>> parse_bytes('5.4 kB')
+    5400
+    >>> parse_bytes('1kiB')
+    1024
+    >>> parse_bytes('1e6')
+    1000000
+    >>> parse_bytes('1e6 kB')
+    1000000000
+    >>> parse_bytes('MB')
+    1000000
+    >>> parse_bytes(123)
+    123
+    >>> parse_bytes('5 foos')  # doctest: +SKIP
+    ValueError: Could not interpret 'foos' as a byte unit
+    """
+    cdef double n
+    cdef int multiplier
+    cdef int result
+
+    if isinstance(s, (int, float)):
+        return int(s)
+
+    s = str(s).replace(" ", "")
+    if not s[0].isdigit():
+        s = "1" + s
+
+    cdef int i
+    for i in range(len(s) - 1, -1, -1):
+        if not s[i].isalpha():
+            break
+    index = i + 1
+
+    prefix = s[:index]
+    suffix = s[index:]
+
+    try:
+        n = atof(prefix.encode())
+    except ValueError:
+        raise ValueError(f"Could not interpret '{prefix}' as a number")
+
+    try:
+        multiplier = byte_sizes[suffix.lower()]
+    except KeyError:
+        raise ValueError(f"Could not interpret '{suffix}' as a byte unit")
+
+    result = int(n * multiplier)
+    return result

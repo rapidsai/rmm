@@ -1,4 +1,4 @@
-# Copyright (c) 2019, NVIDIA CORPORATION.
+# Copyright (c) 2019-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -45,11 +45,11 @@ def reinitialize(
         performance.
     managed_memory : bool, default False
         If True, use managed memory for device memory allocation
-    initial_pool_size : int, default None
+    initial_pool_size : int | str, default None
         When `pool_allocator` is True, this indicates the initial pool size in
         bytes. By default, 1/2 of the total GPU memory is used.
         When `pool_allocator` is False, this argument is ignored if provided.
-    maximum_pool_size : int, default None
+    maximum_pool_size : int | str, default None
         When `pool_allocator` is True, this indicates the maximum pool size in
         bytes. By default, the total available memory on the GPU is used.
         When `pool_allocator` is False, this argument is ignored if provided.
