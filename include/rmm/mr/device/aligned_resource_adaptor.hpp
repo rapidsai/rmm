@@ -60,7 +60,6 @@ class aligned_resource_adaptor final : public device_memory_resource {
   /**
    * @brief Construct an aligned resource adaptor using `upstream` to satisfy allocation requests.
    *
-   * @throws rmm::logic_error if `upstream == nullptr`
    * @throws rmm::logic_error if `allocation_alignment` is not a power of 2
    *
    * @param upstream The resource used for allocating/deallocating device memory.
@@ -81,7 +80,7 @@ class aligned_resource_adaptor final : public device_memory_resource {
    * @brief Construct an aligned resource adaptor using `upstream` to satisfy allocation requests.
    *
    * @throws rmm::logic_error if `upstream == nullptr`
-   * @throws rmm::logic_error if `allocation_alignment` is not a power of 2
+   * @throws rmm::logic_error if `alignment` is not a power of 2
    *
    * @param upstream The resource used for allocating/deallocating device memory.
    * @param alignment The size used for allocation alignment.

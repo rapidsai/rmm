@@ -500,8 +500,6 @@ class global_arena final {
   /**
    * @brief Construct a global arena.
    *
-   * @throws rmm::logic_error if `upstream_mr == nullptr`.
-   *
    * @param upstream_mr The memory resource from which to allocate blocks for the pool
    * @param arena_size Size in bytes of the global arena. Defaults to half of the available memory
    * on the current device.

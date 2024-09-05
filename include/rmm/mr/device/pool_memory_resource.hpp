@@ -119,7 +119,6 @@ class pool_memory_resource final
    * @brief Construct a `pool_memory_resource` and allocate the initial device memory pool using
    * `upstream_mr`.
    *
-   * @throws rmm::logic_error if `upstream_mr == nullptr`
    * @throws rmm::logic_error if `initial_pool_size` is not aligned to a multiple of
    * pool_memory_resource::allocation_alignment bytes.
    * @throws rmm::logic_error if `maximum_pool_size` is neither the default nor aligned to a

@@ -50,8 +50,6 @@ class limiting_resource_adaptor final : public device_memory_resource {
    * @brief Construct a new limiting resource adaptor using `upstream` to satisfy
    * allocation requests and limiting the total allocation amount possible.
    *
-   * @throws rmm::logic_error if `upstream == nullptr`
-   *
    * @param upstream The resource used for allocating/deallocating device memory
    * @param allocation_limit Maximum memory allowed for this allocator
    * @param alignment Alignment in bytes for the start of each allocated buffer

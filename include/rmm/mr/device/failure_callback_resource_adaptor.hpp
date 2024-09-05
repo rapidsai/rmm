@@ -100,8 +100,6 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
    * @brief Construct a new `failure_callback_resource_adaptor` using `upstream` to satisfy
    * allocation requests.
    *
-   * @throws rmm::logic_error if `upstream == nullptr`
-   *
    * @param upstream The resource used for allocating/deallocating device memory
    * @param callback Callback function @see failure_callback_t
    * @param callback_arg Extra argument passed to `callback`
