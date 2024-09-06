@@ -94,8 +94,11 @@ namespace detail {
 // referenced in multiple different DSOs the linker correctly
 // determines that there is only a single unique reference to the
 // function symbols (and hence they return unique static references
-// across different DSOs).
-// See also https://github.com/rapidsai/rmm/issues/826
+// across different DSOs). See also
+// https://github.com/rapidsai/rmm/issues/826
+// Although currently the entire RMM namespace is RMM_EXPORT, we
+// explicitly mark these functions as exported in case the namespace
+// export changes.
 /**
  * @brief Returns a pointer to the initial resource.
  *
