@@ -107,7 +107,7 @@ struct bytes {
  *
  * @return spdlog::logger& The logger.
  */
-inline spdlog::logger& logger()
+RMM_EXPORT inline spdlog::logger& logger()
 {
   static detail::logger_wrapper wrapped{};
   return wrapped.logger_;
