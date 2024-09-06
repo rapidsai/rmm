@@ -102,7 +102,6 @@ cdef class FallbackResourceAdaptor(UpstreamResourceAdaptor):
 
     cpdef DeviceMemoryResource get_alternate_upstream(self)
 
-
 cdef class PrefetchResourceAdaptor(UpstreamResourceAdaptor):
     pass
 
