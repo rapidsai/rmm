@@ -283,16 +283,6 @@ class logging_resource_adaptor final : public device_memory_resource {
     return get_upstream_resource() == cast->get_upstream_resource();
   }
 
-  // make_logging_adaptor needs access to private get_default_filename
-  template <typename T>
-  // NOLINTNEXTLINE(readability-redundant-declaration)
-  [[deprecated(
-    "make_logging_adaptor is deprecated in RMM 24.10. Use the logging_resource_adaptor constructor "
-    "instead.")]]
-  friend logging_resource_adaptor<T> make_logging_adaptor(T* upstream,
-                                                          std::string const& filename,
-                                                          bool auto_flush);
-
   std::shared_ptr<spdlog::logger> logger_;  ///< spdlog logger object
 
   Upstream* upstream_;  ///< The upstream resource used for satisfying
