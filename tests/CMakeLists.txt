@@ -148,8 +148,8 @@ ConfigureTest(TRACKING_TEST mr/device/tracking_mr_tests.cpp GPUS 1 PERCENT 100)
 # failure callback adaptor tests
 ConfigureTest(FAILURE_CALLBACK_TEST mr/device/failure_callback_mr_tests.cpp)
 
-# failure alternate adaptor tests
-ConfigureTest(FAILURE_ALTERNATE_TEST mr/device/failure_alternate_mr_tests.cpp)
+# failure fallback adaptor tests
+ConfigureTest(FAILURE_ALTERNATE_TEST mr/device/fallback_mr_tests.cpp)
 
 # prefetch adaptor tests
 ConfigureTest(PREFETCH_ADAPTOR_TEST mr/device/prefetch_resource_adaptor_tests.cpp)
