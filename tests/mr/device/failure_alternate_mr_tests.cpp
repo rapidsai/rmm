@@ -20,7 +20,7 @@
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
-#include <rmm/mr/device/failure_alternate_resource_adaptor.hpp>
+#include <rmm/mr/device/fallback_resource_adapater.hpp>
 
 #include <gtest/gtest.h>
 
@@ -63,7 +63,7 @@ TEST(FailureAlternateTest, TrackBothUpstreams)
 {
   throw_at_limit_resource<rmm::out_of_memory> primary_mr{100};
   throw_at_limit_resource<rmm::out_of_memory> alternate_mr{1000};
-  rmm::mr::failure_alternate_resource_adaptor<rmm::out_of_memory> mr{primary_mr, alternate_mr};
+  rmm::mr::fallback_resource_adapater<rmm::out_of_memory> mr{primary_mr, alternate_mr};
 
   // Check that a small allocation goes to the primary resource
   {
@@ -93,7 +93,7 @@ TEST(FailureAlternateTest, DifferentExceptionTypes)
 {
   throw_at_limit_resource<std::invalid_argument> primary_mr{100};
   throw_at_limit_resource<rmm::out_of_memory> alternate_mr{1000};
-  rmm::mr::failure_alternate_resource_adaptor<rmm::out_of_memory> mr{primary_mr, alternate_mr};
+  rmm::mr::fallback_resource_adapater<rmm::out_of_memory> mr{primary_mr, alternate_mr};
 
   // Check that only `rmm::out_of_memory` exceptions are caught
   EXPECT_THROW(mr.allocate(200), std::invalid_argument);

@@ -787,7 +787,7 @@ def test_failure_callback_resource_adaptor():
     assert retried[0]
 
 
-def test_failure_alternate_resource_adaptor():
+def test_fallback_resource_adapater():
     base = rmm.mr.CudaMemoryResource()
 
     def alloc_cb(size, stream, *, track: list[int], limit: int):
@@ -811,7 +811,7 @@ def test_failure_alternate_resource_adaptor():
         functools.partial(alloc_cb, track=alternate_track, limit=1000),
         functools.partial(dealloc_cb, track=alternate_track),
     )
-    mr = rmm.mr.FailureAlternateResourceAdaptor(main_mr, alternate_mr)
+    mr = rmm.mr.FallbackResourceAdaptor(main_mr, alternate_mr)
     assert main_mr is mr.get_upstream()
     assert alternate_mr is mr.get_alternate_upstream()
 

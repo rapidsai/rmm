@@ -235,15 +235,15 @@ cdef extern from "rmm/mr/device/failure_callback_resource_adaptor.hpp" \
             void* callback_arg
         ) except +
 
-cdef extern from "rmm/mr/device/failure_alternate_resource_adaptor.hpp" \
+cdef extern from "rmm/mr/device/fallback_resource_adapater.hpp" \
         namespace "rmm::mr" nogil:
-    cdef cppclass failure_alternate_resource_adaptor[ExceptionType](
+    cdef cppclass fallback_resource_adapater[ExceptionType](
         device_memory_resource
     ):
-        # Notice, `failure_alternate_resource_adaptor` takes `device_async_resource_ref`
+        # Notice, `fallback_resource_adapater` takes `device_async_resource_ref`
         # as upstream arguments but we define them here as `device_memory_resource*` and
         # rely on implicit type conversion.
-        failure_alternate_resource_adaptor(
+        fallback_resource_adapater(
             device_memory_resource* upstream_mr,
             device_memory_resource* alternate_upstream_mr,
         ) except +
@@ -1058,7 +1058,7 @@ cdef class FailureCallbackResourceAdaptor(UpstreamResourceAdaptor):
         pass
 
 
-cdef class FailureAlternateResourceAdaptor(UpstreamResourceAdaptor):
+cdef class FallbackResourceAdaptor(UpstreamResourceAdaptor):
 
     def __cinit__(
         self,
@@ -1070,7 +1070,7 @@ cdef class FailureAlternateResourceAdaptor(UpstreamResourceAdaptor):
         self.alternate_upstream_mr = alternate_upstream_mr
 
         self.c_obj.reset(
-            new failure_alternate_resource_adaptor[out_of_memory](
+            new fallback_resource_adapater[out_of_memory](
                 upstream_mr.get_mr(),
                 alternate_upstream_mr.get_mr(),
             )
