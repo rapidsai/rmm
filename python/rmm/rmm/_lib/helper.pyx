@@ -16,33 +16,34 @@
 
 import re
 
-from libc.stdlib cimport atof
-
 
 cdef dict BYTE_SIZES = {
     'b': 1,
     '': 1,
     'kb': 1000,
-    'mb': 1000000,
-    'gb': 1000000000,
-    'tb': 1000000000000,
-    'pb': 1000000000000000,
+    'mb': 1000**2,
+    'gb': 1000**3,
+    'tb': 1000**4,
+    'pb': 1000**5,
     'k': 1000,
-    'm': 1000000,
-    'g': 1000000000,
-    't': 1000000000000,
-    'p': 1000000000000000,
+    'm': 1000**2,
+    'g': 1000**3,
+    't': 1000**4,
+    'p': 1000**5,
     'kib': 1024,
-    'mib': 1048576,
-    'gib': 1073741824,
-    'tib': 1099511627776,
-    'pib': 1125899906842624,
+    'mib': 1024**2,
+    'gib': 1024**3,
+    'tib': 1024**4,
+    'pib': 1024**5,
     'ki': 1024,
-    'mi': 1048576,
-    'gi': 1073741824,
-    'ti': 1099511627776,
-    'pi': 1125899906842624,
+    'mi': 1024**2,
+    'gi': 1024**3,
+    'ti': 1024**4,
+    'pi': 1024**5,
 }
+
+
+pattern = re.compile(r"^([0-9]+(?:\.[0-9]*)?)[\t ]*((?i:(?:[kmgtp]i?)?b)?)$")
 
 
 cdef object parse_bytes(object s):
@@ -60,13 +61,12 @@ cdef object parse_bytes(object s):
     if isinstance(s, int):
         return int(s)
 
-    pattern = re.compile(r"^([0-9]+(?:\.[0-9]*)?)[\t ]*((?i:(?:[kmgtp]i?)?b)?)$")
     match = pattern.match(s)
 
     if match is None:
         raise ValueError(f"Could not parse {s} as a byte specification")
 
-    n = atof(match.group(1).encode())
+    n = float(match.group(1))
 
     suffix = match.group(2)
     if suffix is None:
