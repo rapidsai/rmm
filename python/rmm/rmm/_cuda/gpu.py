@@ -77,9 +77,6 @@ def runtimeGetVersion():
     Returns the version number of the current CUDA Runtime instance.
     The version is returned as (1000 major + 10 minor). For example,
     CUDA 9.2 would be represented by 9020.
-
-    This calls numba.cuda.runtime.get_version() rather than cuda-python due to
-    current limitations in cuda-python.
     """
     return cudart.getLocalRuntimeVersion()[1]
 
