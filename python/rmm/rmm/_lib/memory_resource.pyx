@@ -320,7 +320,7 @@ cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
     ----------
     initial_pool_size : int | str, optional
         Initial pool size in bytes. By default, half the available memory
-        on the device is used.
+        on the device is used. A string argument is parsed using `parse_bytes`.
     release_threshold: int, optional
         Release threshold in bytes. If the pool size grows beyond this
         value, unused memory held by the pool will be released at the

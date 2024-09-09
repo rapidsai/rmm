@@ -36,19 +36,30 @@ cdef dict BYTE_SIZES = {
 pattern = re.compile(r"^([0-9]+(?:\.[0-9]*)?)[\t ]*((?i:(?:[kmgtp]i?)?b))?$")
 
 cdef object parse_bytes(object s):
-    """ Parse byte string to numbers
+    """Parse a string or integer into a number of bytes.
 
     Parameters
     ----------
     s : int | str
-        Size in bytes
+        Size in bytes. If an integer is provided, it is returned as-is.
+        A string is parsed as a floating point number with an (optional,
+        case-insensitive) byte-specifier, both SI prefixes (kb, mb, ..., pb)
+        and binary prefixes (kib, mib, ..., pib) are supported.
+
+     Returns
+     -------
+     Requested size in bytes as an integer.
+     Raises
+     ------
+     ValueError
+         If it is not possible to parse the input as a byte specification.
     """
     cdef str suffix
     cdef double n
     cdef int multiplier
 
     if isinstance(s, int):
-        return int(s)
+        return s
 
     match = pattern.match(s)
 
