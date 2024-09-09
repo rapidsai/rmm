@@ -17,13 +17,14 @@
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <gtest/gtest.h>
 
 class device_check_resource_adaptor final : public rmm::mr::device_memory_resource {
  public:
-  device_check_resource_adaptor(rmm::mr::device_memory_resource* upstream)
+  device_check_resource_adaptor(rmm::device_async_resource_ref upstream)
     : device_id{rmm::get_current_cuda_device()}, upstream_(upstream)
   {
   }
@@ -36,11 +37,6 @@ class device_check_resource_adaptor final : public rmm::mr::device_memory_resour
     return upstream_;
   }
 
-  /**
-   * @briefreturn{device_memory_resource* to the upstream memory resource}
-   */
-  [[nodiscard]] device_memory_resource* get_upstream() const noexcept { return upstream_; }
-
  private:
   [[nodiscard]] bool check_device_id() const { return device_id == rmm::get_current_cuda_device(); }
 
@@ -48,7 +44,7 @@ class device_check_resource_adaptor final : public rmm::mr::device_memory_resour
   {
     bool const is_correct_device = check_device_id();
     EXPECT_TRUE(is_correct_device);
-    if (is_correct_device) { return upstream_->allocate(bytes, stream); }
+    if (is_correct_device) { return get_upstream_resource().allocate_async(bytes, stream); }
     return nullptr;
   }
 
@@ -56,7 +52,7 @@ class device_check_resource_adaptor final : public rmm::mr::device_memory_resour
   {
     bool const is_correct_device = check_device_id();
     EXPECT_TRUE(is_correct_device);
-    if (is_correct_device) { upstream_->deallocate(ptr, bytes, stream); }
+    if (is_correct_device) { get_upstream_resource().deallocate_async(ptr, bytes, stream); }
   }
 
   [[nodiscard]] bool do_is_equal(
@@ -64,10 +60,10 @@ class device_check_resource_adaptor final : public rmm::mr::device_memory_resour
   {
     if (this == &other) { return true; }
     auto const* cast = dynamic_cast<device_check_resource_adaptor const*>(&other);
-    if (cast == nullptr) { return upstream_->is_equal(other); }
+    if (cast == nullptr) { return false; }
     return get_upstream_resource() == cast->get_upstream_resource();
   }
 
   rmm::cuda_device_id device_id;
-  rmm::mr::device_memory_resource* upstream_{};
+  rmm::device_async_resource_ref upstream_;
 };

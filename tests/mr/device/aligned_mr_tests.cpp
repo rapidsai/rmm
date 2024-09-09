@@ -59,13 +59,13 @@ TEST(AlignedTest, ThrowOnInvalidAllocationAlignment)
 TEST(AlignedTest, SupportsGetMemInfo)
 {
   mock_resource mock;
-  aligned_mock mr{&mock};
+  aligned_mock mr{mock};
 }
 
 TEST(AlignedTest, DefaultAllocationAlignmentPassthrough)
 {
   mock_resource mock;
-  aligned_mock mr{&mock};
+  aligned_mock mr{mock};
 
   cuda_stream_view stream;
   void* const pointer = int_to_address(123);
@@ -204,7 +204,7 @@ TEST(AlignedTest, AlignRealPointer)
 {
   auto const alignment{4096};
   auto const threshold{65536};
-  aligned_real mr{rmm::mr::get_current_device_resource(), alignment, threshold};
+  aligned_real mr{rmm::mr::get_current_device_resource_ref(), alignment, threshold};
   void* alloc = mr.allocate(threshold);
   EXPECT_TRUE(rmm::is_pointer_aligned(alloc, alignment));
   mr.deallocate(alloc, threshold);

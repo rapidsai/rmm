@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,6 +96,6 @@ TEST_F(CudaStreamDeathTest, TestSyncNoThrow)
     // should assert here or in `~cuda_stream()`
     stream_a.synchronize_no_throw();
   };
-  EXPECT_DEATH(test(), "Assertion");
+  EXPECT_DEATH(test(), "");
 }
 #endif

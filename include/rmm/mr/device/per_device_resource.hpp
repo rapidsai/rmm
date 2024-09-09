@@ -193,6 +193,31 @@ inline device_memory_resource* get_per_device_resource(cuda_device_id device_id)
                               : found->second;
 }
 
+namespace detail {
+
+// The non-thread-safe implementation of `set_per_device_resource_ref`. This exists because
+// we need to call this function from two places: the thread-safe version of
+// `set_per_device_resource_ref` and the thread-safe version of `set_per_device_resource`,
+// both of which take the lock, so we need an implementation that doesn't take the lock.
+/// @private
+inline device_async_resource_ref set_per_device_resource_ref_unsafe(
+  cuda_device_id device_id, device_async_resource_ref new_resource_ref)
+{
+  auto& map          = detail::get_ref_map();
+  auto const old_itr = map.find(device_id.value());
+  // If a resource didn't previously exist for `device_id`, return pointer to initial_resource
+  // Note: because resource_ref is not default-constructible, we can't use std::map::operator[]
+  if (old_itr == map.end()) {
+    map.insert({device_id.value(), new_resource_ref});
+    return device_async_resource_ref{detail::initial_resource()};
+  }
+
+  auto old_resource_ref = old_itr->second;
+  old_itr->second       = new_resource_ref;  // update map directly via iterator
+  return old_resource_ref;
+}
+}  // namespace detail
+
 /**
  * @brief Set the `device_memory_resource` for the specified device.
  *
@@ -224,6 +249,14 @@ inline device_memory_resource* set_per_device_resource(cuda_device_id device_id,
                                                        device_memory_resource* new_mr)
 {
   std::lock_guard<std::mutex> lock{detail::map_lock()};
+
+  // Note: even though set_per_device_resource() and set_per_device_resource_ref() are not
+  // interchangeable, we call the latter from the former to maintain resource_ref
+  // state consistent with the resource pointer state. This is necessary because the
+  // Python API still uses the raw pointer API. Once the Python API is updated to use
+  // resource_ref, this call can be removed.
+  detail::set_per_device_resource_ref_unsafe(device_id, new_mr);
+
   auto& map          = detail::get_map();
   auto const old_itr = map.find(device_id.value());
   // If a resource didn't previously exist for `id`, return pointer to initial_resource
@@ -350,18 +383,7 @@ inline device_async_resource_ref set_per_device_resource_ref(
   cuda_device_id device_id, device_async_resource_ref new_resource_ref)
 {
   std::lock_guard<std::mutex> lock{detail::ref_map_lock()};
-  auto& map          = detail::get_ref_map();
-  auto const old_itr = map.find(device_id.value());
-  // If a resource didn't previously exist for `device_id`, return pointer to initial_resource
-  // Note: because resource_ref is not default-constructible, we can't use std::map::operator[]
-  if (old_itr == map.end()) {
-    map.insert({device_id.value(), new_resource_ref});
-    return device_async_resource_ref{detail::initial_resource()};
-  }
-
-  auto old_resource_ref = old_itr->second;
-  old_itr->second       = new_resource_ref;  // update map directly via iterator
-  return old_resource_ref;
+  return detail::set_per_device_resource_ref_unsafe(device_id, new_resource_ref);
 }
 
 /**

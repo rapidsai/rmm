@@ -51,13 +51,23 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
    *
    * All allocations and frees are protected by a mutex lock
    *
+   * @param upstream The resource used for allocating/deallocating device memory.
+   */
+  thread_safe_resource_adaptor(device_async_resource_ref upstream) : upstream_{upstream} {}
+
+  /**
+   * @brief Construct a new thread safe resource adaptor using `upstream` to satisfy
+   * allocation requests.
+   *
+   * All allocations and frees are protected by a mutex lock
+   *
    * @throws rmm::logic_error if `upstream == nullptr`
    *
    * @param upstream The resource used for allocating/deallocating device memory.
    */
-  thread_safe_resource_adaptor(Upstream* upstream) : upstream_{upstream}
+  thread_safe_resource_adaptor(Upstream* upstream)
+    : upstream_{to_device_async_resource_ref_checked(upstream)}
   {
-    RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
   }
 
   thread_safe_resource_adaptor()                                               = delete;
@@ -75,11 +85,6 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
     return upstream_;
   }
 
-  /**
-   * @briefreturn{Upstream* to the upstream memory resource}
-   */
-  [[nodiscard]] Upstream* get_upstream() const noexcept { return upstream_; }
-
  private:
   /**
    * @brief Allocates memory of size at least `bytes` using the upstream
@@ -95,7 +100,7 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
     lock_t lock(mtx);
-    return upstream_->allocate(bytes, stream);
+    return get_upstream_resource().allocate_async(bytes, stream);
   }
 
   /**
@@ -108,7 +113,7 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
     lock_t lock(mtx);
-    upstream_->deallocate(ptr, bytes, stream);
+    get_upstream_resource().deallocate_async(ptr, bytes, stream);
   }
 
   /**
@@ -122,12 +127,13 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
   {
     if (this == &other) { return true; }
     auto cast = dynamic_cast<thread_safe_resource_adaptor<Upstream> const*>(&other);
-    if (cast == nullptr) { return upstream_->is_equal(other); }
+    if (cast == nullptr) { return false; }
     return get_upstream_resource() == cast->get_upstream_resource();
   }
 
   std::mutex mutable mtx;  // mutex for thread safe access to upstream
-  Upstream* upstream_;     ///< The upstream resource used for satisfying allocation requests
+  device_async_resource_ref
+    upstream_;  ///< The upstream resource used for satisfying allocation requests
 };
 
 /** @} */  // end of group

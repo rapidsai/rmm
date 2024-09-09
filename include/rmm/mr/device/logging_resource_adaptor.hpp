@@ -77,10 +77,8 @@ class logging_resource_adaptor final : public device_memory_resource {
   logging_resource_adaptor(Upstream* upstream,
                            std::string const& filename = get_default_filename(),
                            bool auto_flush             = false)
-    : logger_{make_logger(filename)}, upstream_{upstream}
+    : logger_{make_logger(filename)}, upstream_{to_device_async_resource_ref_checked(upstream)}
   {
-    RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
-
     init_logger(auto_flush);
   }
 
@@ -99,10 +97,8 @@ class logging_resource_adaptor final : public device_memory_resource {
    * performance.
    */
   logging_resource_adaptor(Upstream* upstream, std::ostream& stream, bool auto_flush = false)
-    : logger_{make_logger(stream)}, upstream_{upstream}
+    : logger_{make_logger(stream)}, upstream_{to_device_async_resource_ref_checked(upstream)}
   {
-    RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
-
     init_logger(auto_flush);
   }
 
@@ -123,10 +119,76 @@ class logging_resource_adaptor final : public device_memory_resource {
   logging_resource_adaptor(Upstream* upstream,
                            spdlog::sinks_init_list sinks,
                            bool auto_flush = false)
+    : logger_{make_logger(sinks)}, upstream_{to_device_async_resource_ref_checked(upstream)}
+  {
+    init_logger(auto_flush);
+  }
+
+  /**
+   * @brief Construct a new logging resource adaptor using `upstream` to satisfy
+   * allocation requests and logging information about each allocation/free to
+   * the file specified by `filename`.
+   *
+   * The logfile will be written using CSV formatting.
+   *
+   * Clears the contents of `filename` if it already exists.
+   *
+   * Creating multiple `logging_resource_adaptor`s with the same `filename` will
+   * result in undefined behavior.
+   *
+   * @throws spdlog::spdlog_ex if opening `filename` failed
+   *
+   * @param upstream The resource_ref used for allocating/deallocating device memory.
+   * @param filename Name of file to write log info. If not specified, retrieves
+   * the file name from the environment variable "RMM_LOG_FILE".
+   * @param auto_flush If true, flushes the log for every (de)allocation. Warning, this will degrade
+   * performance.
+   */
+  logging_resource_adaptor(device_async_resource_ref upstream,
+                           std::string const& filename = get_default_filename(),
+                           bool auto_flush             = false)
+    : logger_{make_logger(filename)}, upstream_{upstream}
+  {
+    init_logger(auto_flush);
+  }
+
+  /**
+   * @brief Construct a new logging resource adaptor using `upstream` to satisfy
+   * allocation requests and logging information about each allocation/free to
+   * the ostream specified by `stream`.
+   *
+   * The logfile will be written using CSV formatting.
+   *
+   * @param upstream The resource_ref used for allocating/deallocating device memory.
+   * @param stream The ostream to write log info.
+   * @param auto_flush If true, flushes the log for every (de)allocation. Warning, this will degrade
+   * performance.
+   */
+  logging_resource_adaptor(device_async_resource_ref upstream,
+                           std::ostream& stream,
+                           bool auto_flush = false)
+    : logger_{make_logger(stream)}, upstream_{upstream}
+  {
+    init_logger(auto_flush);
+  }
+
+  /**
+   * @brief Construct a new logging resource adaptor using `upstream` to satisfy
+   * allocation requests and logging information about each allocation/free to
+   * the ostream specified by `stream`.
+   *
+   * The logfile will be written using CSV formatting.
+   *
+   * @param upstream The resource_ref used for allocating/deallocating device memory.
+   * @param sinks A list of logging sinks to which log output will be written.
+   * @param auto_flush If true, flushes the log for every (de)allocation. Warning, this will degrade
+   * performance.
+   */
+  logging_resource_adaptor(device_async_resource_ref upstream,
+                           spdlog::sinks_init_list sinks,
+                           bool auto_flush = false)
     : logger_{make_logger(sinks)}, upstream_{upstream}
   {
-    RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
-
     init_logger(auto_flush);
   }
 
@@ -146,11 +208,6 @@ class logging_resource_adaptor final : public device_memory_resource {
   {
     return upstream_;
   }
-
-  /**
-   * @briefreturn{Upstream* to the upstream memory resource}
-   */
-  [[nodiscard]] Upstream* get_upstream() const noexcept { return upstream_; }
 
   /**
    * @brief Flush logger contents.
@@ -239,7 +296,7 @@ class logging_resource_adaptor final : public device_memory_resource {
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
     try {
-      auto const ptr = upstream_->allocate(bytes, stream);
+      auto const ptr = get_upstream_resource().allocate_async(bytes, stream);
       logger_->info("allocate,{},{},{}", ptr, bytes, fmt::ptr(stream.value()));
       return ptr;
     } catch (...) {
@@ -265,7 +322,7 @@ class logging_resource_adaptor final : public device_memory_resource {
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
     logger_->info("free,{},{},{}", ptr, bytes, fmt::ptr(stream.value()));
-    upstream_->deallocate(ptr, bytes, stream);
+    get_upstream_resource().deallocate_async(ptr, bytes, stream);
   }
 
   /**
@@ -279,14 +336,14 @@ class logging_resource_adaptor final : public device_memory_resource {
   {
     if (this == &other) { return true; }
     auto const* cast = dynamic_cast<logging_resource_adaptor<Upstream> const*>(&other);
-    if (cast == nullptr) { return upstream_->is_equal(other); }
+    if (cast == nullptr) { return false; }
     return get_upstream_resource() == cast->get_upstream_resource();
   }
 
   std::shared_ptr<spdlog::logger> logger_;  ///< spdlog logger object
 
-  Upstream* upstream_;  ///< The upstream resource used for satisfying
-                        ///< allocation requests
+  device_async_resource_ref upstream_;  ///< The upstream resource used for satisfying
+                                        ///< allocation requests
 };
 
 /**
