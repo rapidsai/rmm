@@ -100,6 +100,15 @@ namespace mr {
 
 namespace detail {
 
+// These symbols must have default visibility so that when they are
+// referenced in multiple different DSOs the linker correctly
+// determines that there is only a single unique reference to the
+// function symbols (and hence they return unique static references
+// across different DSOs). See also
+// https://github.com/rapidsai/rmm/issues/826
+// Although currently the entire RMM namespace is RMM_EXPORT, we
+// explicitly mark these functions as exported in case the namespace
+// export changes.
 /**
  * @brief Returns a pointer to the initial resource.
  *
@@ -122,7 +131,6 @@ RMM_EXPORT inline std::mutex& map_lock()
   return map_lock;
 }
 
-// This symbol must have default visibility, see: https://github.com/rapidsai/rmm/issues/826
 /**
  * @briefreturn{Reference to the map from device id -> resource}
  */
