@@ -1,4 +1,4 @@
-# Copyright (c) 2020, NVIDIA CORPORATION.
+# Copyright (c) 2020-2024, NVIDIA CORPORATION.
 
 from cuda import cuda, cudart
 
@@ -81,12 +81,7 @@ def runtimeGetVersion():
     This calls numba.cuda.runtime.get_version() rather than cuda-python due to
     current limitations in cuda-python.
     """
-    # TODO: Replace this with `cuda.cudart.cudaRuntimeGetVersion()` when the
-    # limitation is fixed.
-    import numba.cuda
-
-    major, minor = numba.cuda.runtime.get_version()
-    return major * 1000 + minor * 10
+    return cudart.getLocalRuntimeVersion()[1]
 
 
 def getDeviceCount():
