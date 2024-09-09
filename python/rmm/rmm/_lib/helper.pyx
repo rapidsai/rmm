@@ -49,7 +49,7 @@ cdef object parse_bytes(object s):
      Returns
      -------
      Requested size in bytes as an integer.
-     
+
      Raises
      ------
      ValueError
