@@ -12,7 +12,8 @@
 # the License.
 # =============================================================================
 
-set(cython_sources device_buffer.pyx lib.pyx logger.pyx memory_resource.pyx cuda_stream.pyx)
+set(cython_sources device_buffer.pyx lib.pyx logger.pyx memory_resource.pyx cuda_stream.pyx
+                   helper.pyx)
 set(linked_libraries rmm::rmm)
 
 # Build all of the Cython targets

@@ -139,8 +139,8 @@ of 1 GiB and a maximum size of 4 GiB. The pool uses
 >>> import rmm
 >>> pool = rmm.mr.PoolMemoryResource(
 ...     rmm.mr.CudaMemoryResource(),
-...     initial_pool_size=2**30,
-...     maximum_pool_size=2**32
+...     initial_pool_size="1GiB", # equivalent to initial_pool_size=2**30
+...     maximum_pool_size="4GiB"
 ... )
 >>> rmm.mr.set_current_device_resource(pool)
 ```
@@ -151,8 +151,8 @@ Similarly, to use a pool of managed memory:
 >>> import rmm
 >>> pool = rmm.mr.PoolMemoryResource(
 ...     rmm.mr.ManagedMemoryResource(),
-...     initial_pool_size=2**30,
-...     maximum_pool_size=2**32
+...     initial_pool_size="1GiB",
+...     maximum_pool_size="4GiB"
 ... )
 >>> rmm.mr.set_current_device_resource(pool)
 ```
