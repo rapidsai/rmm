@@ -24,4 +24,5 @@
 #else
 #define RMM_EXPORT
 #define RMM_HIDDEN
+#define RMM_NAMESPACE rmm
 #endif

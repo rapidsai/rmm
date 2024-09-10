@@ -48,7 +48,7 @@ namespace RMM_NAMESPACE {
  *
  * Example:
  * @code{.cpp}
- * rmm::mr::device_memory_resource * mr = new my_custom_resource();
+ * auto mr = new my_custom_resource();
  * rmm::cuda_stream_view s{};
  *
  * // Allocates *uninitialized* device memory on stream `s` sufficient for 100 ints using the
@@ -126,7 +126,7 @@ class device_uvector {
    */
   explicit device_uvector(std::size_t size,
                           cuda_stream_view stream,
-                          device_async_resource_ref mr = mr::get_current_device_resource())
+                          device_async_resource_ref mr = mr::get_current_device_resource_ref())
     : _storage{elements_to_bytes(size), stream, mr}
   {
   }
@@ -142,7 +142,7 @@ class device_uvector {
    */
   explicit device_uvector(device_uvector const& other,
                           cuda_stream_view stream,
-                          device_async_resource_ref mr = mr::get_current_device_resource())
+                          device_async_resource_ref mr = mr::get_current_device_resource_ref())
     : _storage{other._storage, stream, mr}
   {
   }

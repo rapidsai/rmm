@@ -40,7 +40,7 @@ TEST(StatisticsTest, ThrowOnNullUpstream)
 
 TEST(StatisticsTest, Empty)
 {
-  statistics_adaptor mr{rmm::mr::get_current_device_resource()};
+  statistics_adaptor mr{rmm::mr::get_current_device_resource_ref()};
 
   EXPECT_EQ(mr.get_bytes_counter().peak, 0);
   EXPECT_EQ(mr.get_bytes_counter().total, 0);
@@ -53,7 +53,7 @@ TEST(StatisticsTest, Empty)
 
 TEST(StatisticsTest, AllFreed)
 {
-  statistics_adaptor mr{rmm::mr::get_current_device_resource()};
+  statistics_adaptor mr{rmm::mr::get_current_device_resource_ref()};
   std::vector<void*> allocations;
 
   allocations.reserve(num_allocations);
@@ -71,7 +71,7 @@ TEST(StatisticsTest, AllFreed)
 
 TEST(StatisticsTest, PeakAllocations)
 {
-  statistics_adaptor mr{rmm::mr::get_current_device_resource()};
+  statistics_adaptor mr{rmm::mr::get_current_device_resource_ref()};
   std::vector<void*> allocations;
 
   for (std::size_t i = 0; i < num_allocations; ++i) {
@@ -127,9 +127,9 @@ TEST(StatisticsTest, PeakAllocations)
 
 TEST(StatisticsTest, MultiTracking)
 {
-  auto* orig_device_resource = rmm::mr::get_current_device_resource();
+  auto orig_device_resource = rmm::mr::get_current_device_resource_ref();
   statistics_adaptor mr{orig_device_resource};
-  rmm::mr::set_current_device_resource(&mr);
+  rmm::mr::set_current_device_resource_ref(mr);
 
   std::vector<std::shared_ptr<rmm::device_buffer>> allocations;
   for (std::size_t i = 0; i < num_allocations; ++i) {
@@ -139,8 +139,8 @@ TEST(StatisticsTest, MultiTracking)
 
   EXPECT_EQ(mr.get_allocations_counter().value, 10);
 
-  statistics_adaptor inner_mr{rmm::mr::get_current_device_resource()};
-  rmm::mr::set_current_device_resource(&inner_mr);
+  statistics_adaptor inner_mr{rmm::mr::get_current_device_resource_ref()};
+  rmm::mr::set_current_device_resource_ref(inner_mr);
 
   for (std::size_t i = 0; i < num_more_allocations; ++i) {
     allocations.emplace_back(
@@ -172,7 +172,7 @@ TEST(StatisticsTest, MultiTracking)
   EXPECT_EQ(inner_mr.get_allocations_counter().peak, 5);
 
   // Reset the current device resource
-  rmm::mr::set_current_device_resource(orig_device_resource);
+  rmm::mr::set_current_device_resource_ref(orig_device_resource);
 }
 
 TEST(StatisticsTest, NegativeInnerTracking)
@@ -180,7 +180,7 @@ TEST(StatisticsTest, NegativeInnerTracking)
   // This tests the unlikely scenario where pointers are deallocated on an inner
   // wrapped memory resource. This can happen if the MR is not saved with the
   // memory pointer
-  statistics_adaptor mr{rmm::mr::get_current_device_resource()};
+  statistics_adaptor mr{rmm::mr::get_current_device_resource_ref()};
   std::vector<void*> allocations;
   for (std::size_t i = 0; i < num_allocations; ++i) {
     allocations.push_back(mr.allocate(ten_MiB));
@@ -236,7 +236,7 @@ TEST(StatisticsTest, NegativeInnerTracking)
 
 TEST(StatisticsTest, Nested)
 {
-  statistics_adaptor mr{rmm::mr::get_current_device_resource()};
+  statistics_adaptor mr{rmm::mr::get_current_device_resource_ref()};
   void* a0 = mr.allocate(ten_MiB);
   EXPECT_EQ(mr.get_bytes_counter().value, ten_MiB);
   EXPECT_EQ(mr.get_allocations_counter().value, 1);

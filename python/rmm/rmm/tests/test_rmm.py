@@ -432,8 +432,8 @@ def test_rmm_pool_cupy_allocator_stream_lifetime():
 def test_pool_memory_resource(dtype, nelem, alloc):
     mr = rmm.mr.PoolMemoryResource(
         rmm.mr.CudaMemoryResource(),
-        initial_pool_size=1 << 22,
-        maximum_pool_size=1 << 23,
+        initial_pool_size="4MiB",
+        maximum_pool_size="8MiB",
     )
     rmm.mr.set_current_device_resource(mr)
     assert rmm.mr.get_current_device_resource_type() is type(mr)
@@ -507,7 +507,7 @@ def test_binning_memory_resource(dtype, nelem, alloc, upstream_mr):
 
 def test_reinitialize_max_pool_size():
     rmm.reinitialize(
-        pool_allocator=True, initial_pool_size=0, maximum_pool_size=1 << 23
+        pool_allocator=True, initial_pool_size=0, maximum_pool_size="8MiB"
     )
     rmm.DeviceBuffer().resize((1 << 23) - 1)
 
@@ -528,6 +528,24 @@ def test_reinitialize_initial_pool_size_gt_max():
             maximum_pool_size=1 << 10,
         )
     assert "Initial pool size exceeds the maximum pool size" in str(e.value)
+
+
+def test_reinitialize_with_valid_str_arg_pool_size():
+    rmm.reinitialize(
+        pool_allocator=True,
+        initial_pool_size="2kib",
+        maximum_pool_size="8kib",
+    )
+
+
+def test_reinitialize_with_invalid_str_arg_pool_size():
+    with pytest.raises(ValueError) as e:
+        rmm.reinitialize(
+            pool_allocator=True,
+            initial_pool_size="2k",  # 2kb valid, not 2k
+            maximum_pool_size="8k",
+        )
+    assert "Could not parse" in str(e.value)
 
 
 @pytest.mark.parametrize("dtype", _dtypes)
