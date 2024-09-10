@@ -787,7 +787,7 @@ def test_failure_callback_resource_adaptor():
     assert retried[0]
 
 
-def test_fallback_resource_adapater():
+def test_fallback_resource_adaptor():
     base = rmm.mr.CudaMemoryResource()
 
     def alloc_cb(size, stream, *, track: list[int], limit: int):

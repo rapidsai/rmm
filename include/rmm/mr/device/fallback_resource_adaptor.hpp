@@ -42,12 +42,12 @@ namespace mr {
  * @tparam ExceptionType The type of exception that this adaptor should respond to.
  */
 template <typename ExceptionType = rmm::out_of_memory>
-class fallback_resource_adapater final : public device_memory_resource {
+class fallback_resource_adaptor final : public device_memory_resource {
  public:
   using exception_type = ExceptionType;  ///< The type of exception this object catches/throws
 
   /**
-   * @brief Construct a new `fallback_resource_adapater` that uses `primary_upstream`
+   * @brief Construct a new `fallback_resource_adaptor` that uses `primary_upstream`
    * to satisfy allocation requests and if that fails with `ExceptionType`, uses
    * `alternate_upstream`.
    *
@@ -55,20 +55,20 @@ class fallback_resource_adapater final : public device_memory_resource {
    * @param alternate_upstream The alternate resource used for allocating/deallocating device memory
    * memory
    */
-  fallback_resource_adapater(device_async_resource_ref primary_upstream,
-                             device_async_resource_ref alternate_upstream)
+  fallback_resource_adaptor(device_async_resource_ref primary_upstream,
+                            device_async_resource_ref alternate_upstream)
     : primary_upstream_{primary_upstream}, alternate_upstream_{alternate_upstream}
   {
   }
 
-  fallback_resource_adapater()                                             = delete;
-  ~fallback_resource_adapater() override                                   = default;
-  fallback_resource_adapater(fallback_resource_adapater const&)            = delete;
-  fallback_resource_adapater& operator=(fallback_resource_adapater const&) = delete;
-  fallback_resource_adapater(fallback_resource_adapater&&) noexcept =
+  fallback_resource_adaptor()                                            = delete;
+  ~fallback_resource_adaptor() override                                  = default;
+  fallback_resource_adaptor(fallback_resource_adaptor const&)            = delete;
+  fallback_resource_adaptor& operator=(fallback_resource_adaptor const&) = delete;
+  fallback_resource_adaptor(fallback_resource_adaptor&&) noexcept =
     default;  ///< @default_move_constructor
-  fallback_resource_adapater& operator=(fallback_resource_adapater&&) noexcept =
-    default;  ///< @default_move_assignment{fallback_resource_adapater}
+  fallback_resource_adaptor& operator=(fallback_resource_adaptor&&) noexcept =
+    default;  ///< @default_move_assignment{fallback_resource_adaptor}
 
   /**
    * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
@@ -142,7 +142,7 @@ class fallback_resource_adapater final : public device_memory_resource {
   [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
   {
     if (this == &other) { return true; }
-    auto cast = dynamic_cast<fallback_resource_adapater const*>(&other);
+    auto cast = dynamic_cast<fallback_resource_adaptor const*>(&other);
     if (cast == nullptr) { return false; }
     return get_upstream_resource() == cast->get_upstream_resource() &&
            get_alternate_upstream_resource() == cast->get_alternate_upstream_resource();
