@@ -12,24 +12,17 @@
 # the License.
 # =============================================================================
 
-cmake_minimum_required(VERSION 3.26.4 FATAL_ERROR)
+set(cython_sources device_buffer.pyx lib.pyx logger.pyx memory_resource.pyx cuda_stream.pyx
+                   helper.pyx)
+set(linked_libraries rmm::rmm)
 
-include(../../rapids_config.cmake)
+# Build all of the Cython targets
+rapids_cython_create_modules(SOURCE_FILES "${cython_sources}" LINKED_LIBRARIES "${linked_libraries}"
+                                                                               CXX)
 
-project(
-  rmm-python
-  VERSION "${RAPIDS_VERSION}"
-  LANGUAGES CXX)
-
-find_package(rmm "${RAPIDS_VERSION}" REQUIRED)
-
-include(rapids-cython-core)
-rapids_cython_init()
-
-# pass through logging level to spdlog
-add_compile_definitions("SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
-
-add_subdirectory(rmm/_cuda)
-# add_subdirectory(rmm/_lib)
-add_subdirectory(rmm/cpp)
-add_subdirectory(rmm/python)
+# mark all symbols in these Cython targets "hidden" by default, so they won't collide with symbols
+# loaded from other DSOs
+foreach(_cython_target IN LISTS RAPIDS_CYTHON_CREATED_TARGETS)
+  set_target_properties(${_cython_target} PROPERTIES C_VISIBILITY_PRESET hidden
+                                                     CXX_VISIBILITY_PRESET hidden)
+endforeach()
