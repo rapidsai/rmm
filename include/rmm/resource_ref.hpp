@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
 
 #include <cuda/memory_resource>
