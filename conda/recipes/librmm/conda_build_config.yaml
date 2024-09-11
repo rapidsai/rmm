@@ -14,10 +14,10 @@ cmake_version:
   - ">=3.26.4,!=3.30.0"
 
 fmt_version:
-  - ">=10.1.1,<11"
+  - ">=11.0.2,<12"
 
 spdlog_version:
-  - ">=1.12.0,<1.13"
+  - ">=1.14.1,<15"
 
 c_stdlib:
   - sysroot
