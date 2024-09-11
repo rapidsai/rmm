@@ -35,7 +35,7 @@ dependencies:
 - python>=3.10,<3.13
 - rapids-build-backend>=0.3.0,<0.4.0.dev0
 - scikit-build-core >=0.10.0
-- spdlog>=1.14.1,<15
+- spdlog>=1.14.1,<1.15
 - sphinx
 - sphinx-copybutton
 - sphinx-markdown-tables
