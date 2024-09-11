@@ -17,7 +17,7 @@ fmt_version:
   - ">=11.0.2,<12"
 
 spdlog_version:
-  - ">=1.14.1,<15"
+  - ">=1.14.1,<1.15"
 
 c_stdlib:
   - sysroot
