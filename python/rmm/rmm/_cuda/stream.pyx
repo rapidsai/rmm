@@ -16,13 +16,13 @@ from cuda.ccudart cimport cudaStream_t
 from libc.stdint cimport uintptr_t
 from libcpp cimport bool
 
-from rmm._lib.cuda_stream cimport CudaStream
-from rmm._lib.cuda_stream_view cimport (
+from rmm.cpp.cuda_stream_view cimport (
     cuda_stream_default,
     cuda_stream_legacy,
     cuda_stream_per_thread,
     cuda_stream_view,
 )
+from rmm.python.cuda_stream cimport CudaStream
 
 
 cdef class Stream:

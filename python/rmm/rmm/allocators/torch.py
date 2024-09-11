@@ -1,4 +1,4 @@
-# Copyright (c) 2023, NVIDIA CORPORATION.
+# Copyright (c) 2023-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ else:
         # is pure Python and will therefore be in the source directory.
         # Instead, we search relative to an arbitrary file in the compiled
         # package. We use the _lib.lib module because it is small.
-        from rmm._lib import lib
+        from rmm.cpp import lib
 
         sofile = pathlib.Path(lib.__file__).parent / "_torch_allocator.so"
         rmm_torch_allocator = CUDAPluggableAllocator(

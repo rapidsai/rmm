@@ -14,7 +14,7 @@
 
 from libcpp.memory cimport shared_ptr
 
-from rmm.cpp.cpp_memory_resource cimport device_memory_resource
+from rmm.cpp.memory_resource cimport device_memory_resource
 
 
 cdef class DeviceMemoryResource:

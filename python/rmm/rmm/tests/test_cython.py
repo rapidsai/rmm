@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2021, NVIDIA CORPORATION.
+# Copyright (c) 2020-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ def py_func(func):
     return wrapped
 
 
-cython_test_modules = ["rmm._lib.tests.test_device_buffer"]
+cython_test_modules = ["rmm.python.tests.test_device_buffer"]
 
 
 for mod in cython_test_modules:

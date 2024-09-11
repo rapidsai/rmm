@@ -13,7 +13,10 @@
 # limitations under the License.
 
 import warnings
-from rmm.cpp.cpp_logging cimport logging_level, logger
+
+from rmm.cpp._logger cimport logger
+
+from rmm.cpp._logger import logging_level
 
 
 def _validate_level_type(level):

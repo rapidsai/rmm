@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2021, NVIDIA CORPORATION.
+# Copyright (c) 2018-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,8 +13,10 @@
 # limitations under the License.
 
 from rmm import mr
-from rmm._lib.device_buffer import DeviceBuffer
-from rmm._lib.logger import (
+from rmm._version import __git_commit__, __version__
+from rmm.mr import disable_logging, enable_logging, get_log_filenames
+from rmm.python.device_buffer import DeviceBuffer
+from rmm.python.logger import (
     flush_logger,
     get_flush_level,
     get_logging_level,
@@ -23,8 +25,6 @@ from rmm._lib.logger import (
     set_logging_level,
     should_log,
 )
-from rmm._version import __git_commit__, __version__
-from rmm.mr import disable_logging, enable_logging, get_log_filenames
 from rmm.rmm import (
     RMMError,
     is_initialized,

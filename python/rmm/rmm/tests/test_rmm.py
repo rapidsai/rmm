@@ -354,7 +354,7 @@ def test_rmm_pool_numba_stream(stream):
     rmm.reinitialize(pool_allocator=True)
 
     stream = rmm._cuda.stream.Stream(stream)
-    a = rmm._lib.device_buffer.DeviceBuffer(size=3, stream=stream)
+    a = rmm.python.device_buffer.DeviceBuffer(size=3, stream=stream)
 
     assert a.size == 3
     assert a.ptr != 0
