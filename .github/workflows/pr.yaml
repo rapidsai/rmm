@@ -26,7 +26,7 @@ jobs:
     uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@python-3.12
   checks:
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@python-3.12
+    uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@update-get-pr-info
     with:
       enable_check_generated_files: false
   conda-cpp-build:
@@ -56,7 +56,7 @@ jobs:
   docs-build:
     needs: conda-python-build
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@python-3.12
+    uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@update-get-pr-info
     with:
       build_type: pull-request
       node_type: "gpu-v100-latest-1"
