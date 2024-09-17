@@ -19,7 +19,7 @@ from cuda.cuda import CUdeviceptr, cuIpcGetMemHandle
 from numba import config, cuda
 from numba.cuda import HostOnlyCUDAMemoryManager, IpcHandle, MemoryPointer
 
-from rmm import python as librmm
+from rmm import python as pylibrmm
 
 
 def _make_emm_plugin_finalizer(handle, allocations):
@@ -70,7 +70,7 @@ class RMMNumbaManager(HostOnlyCUDAMemoryManager):
         """
         Allocate an on-device array from the RMM pool.
         """
-        buf = librmm.DeviceBuffer(size=size)
+        buf = pylibrmm.DeviceBuffer(size=size)
         ctx = self.context
 
         if config.CUDA_USE_NVIDIA_BINDING:
