@@ -33,19 +33,20 @@ For a walkthrough about the design of the RAPIDS Memory Manager, read [Fast, Fle
 
 ### Conda
 
-RMM can be installed with Conda ([miniconda](https://conda.io/miniconda.html), or the full
-[Anaconda distribution](https://www.anaconda.com/download)) from the `rapidsai` channel:
+RMM can be installed with conda. You can get a minimal conda installation with [miniforge](https://github.com/conda-forge/miniforge).
+
+Install RMM with:
 
 ```bash
 conda install -c rapidsai -c conda-forge -c nvidia rmm cuda-version=12.0
 ```
 
-We also provide [nightly Conda packages](https://anaconda.org/rapidsai-nightly) built from the HEAD
+We also provide [nightly conda packages](https://anaconda.org/rapidsai-nightly) built from the HEAD
 of our latest development branch.
 
 Note: RMM is supported only on Linux, and only tested with Python versions 3.10, 3.11, and 3.12.
 
-Note: The RMM package from Conda requires building with GCC 9 or later. Otherwise, your application may fail to build.
+Note: The RMM package from conda requires building with GCC 9 or later. Otherwise, your application may fail to build.
 
 See the [Get RAPIDS version picker](https://rapids.ai/start.html) for more OS and version info.
 
