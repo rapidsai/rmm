@@ -20,6 +20,7 @@ function(find_and_configure_spdlog)
     FMT_OPTION "EXTERNAL_FMT_HO"
     INSTALL_EXPORT_SET rmm-exports
     BUILD_EXPORT_SET rmm-exports)
+  rapids_export_package(BUILD spdlog rmm-exports)
 endfunction()
 
 find_and_configure_spdlog()
