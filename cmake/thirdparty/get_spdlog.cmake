@@ -22,6 +22,17 @@ function(find_and_configure_spdlog)
     INSTALL_EXPORT_SET rmm-exports
     BUILD_EXPORT_SET rmm-exports)
 
+  if(spdlog_ADDED)
+    rapids_export(
+      BUILD spdlog
+      EXPORT_SET rmm-exports
+      GLOBAL_TARGETS spdlog spdlog_header_only
+      NAMESPACE spdlog::)
+    include("${rapids-cmake-dir}/export/find_package_root.cmake")
+    rapids_export_find_package_root(BUILD spdlog [=[${CMAKE_CURRENT_LIST_DIR}]=]
+                                    EXPORT_SET rmm-exports)
+  endif()
+
 endfunction()
 
 find_and_configure_spdlog()
