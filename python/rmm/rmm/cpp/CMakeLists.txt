@@ -12,7 +12,7 @@
 # the License.
 # =============================================================================
 
-set(cython_sources lib.pyx _logger.pyx)
+set(cython_sources _logger.pyx)
 set(linked_libraries rmm::rmm)
 
 # Build all of the Cython targets
