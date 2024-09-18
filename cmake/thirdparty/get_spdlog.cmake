@@ -13,7 +13,6 @@
 # =============================================================================
 
 # Use CPM to find or clone speedlog
-# Use CPM to find or clone speedlog
 function(find_and_configure_spdlog)
 
   include(${rapids-cmake-dir}/cpm/spdlog.cmake)
