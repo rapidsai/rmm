@@ -12,4 +12,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from rmm.librmm.cuda_stream cimport cuda_stream
 from rmm.pylibrmm.cuda_stream cimport CudaStream

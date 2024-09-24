@@ -28,7 +28,7 @@ else:
         # allocator .so relative to the current file because the current file
         # is pure Python and will therefore be in the source directory.
         # Instead, we search relative to an arbitrary file in the compiled
-        # package. We use the cpp._logger module because it is small.
+        # package. We use the librmm._logger module because it is small.
         from rmm.librmm import _logger
 
         sofile = pathlib.Path(_logger.__file__).parent / "_torch_allocator.so"

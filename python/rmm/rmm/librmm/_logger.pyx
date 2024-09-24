@@ -12,4 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ._logger cimport logging_level  # no-cython-lint
+from rmm.librmm._logger cimport logging_level  # no-cython-lint

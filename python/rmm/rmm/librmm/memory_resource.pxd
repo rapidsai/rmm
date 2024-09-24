@@ -79,8 +79,6 @@ cdef extern from *:
     void throw_cpp_except(CppExcept) nogil
 
 
-# NOTE: Keep extern declarations in .pyx file as much as possible to avoid
-# leaking dependencies when importing RMM Cython .pxd files
 cdef extern from "rmm/mr/device/cuda_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass cuda_memory_resource(device_memory_resource):
