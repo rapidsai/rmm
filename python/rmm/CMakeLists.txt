@@ -30,5 +30,5 @@ rapids_cython_init()
 add_compile_definitions("SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
 
 add_subdirectory(rmm/_cuda)
-add_subdirectory(rmm/cpp)
-add_subdirectory(rmm/python)
+add_subdirectory(rmm/librmm)
+add_subdirectory(rmm/pylibrmm)

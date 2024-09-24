@@ -36,16 +36,16 @@ from rmm._cuda.stream cimport Stream
 
 from rmm._cuda.stream import DEFAULT_STREAM
 
-from rmm.cpp.cuda_stream_view cimport cuda_stream_view
-from rmm.cpp.per_device_resource cimport (
+from rmm.librmm.cuda_stream_view cimport cuda_stream_view
+from rmm.librmm.per_device_resource cimport (
     cuda_device_id,
     set_per_device_resource as cpp_set_per_device_resource,
 )
-from rmm.python.helper cimport parse_bytes
+from rmm.pylibrmm.helper cimport parse_bytes
 
 from rmm.statistics import Statistics
 
-from rmm.cpp.memory_resource cimport (
+from rmm.librmm.memory_resource cimport (
     CppExcept,
     allocate_callback_t,
     allocation_handle_type,

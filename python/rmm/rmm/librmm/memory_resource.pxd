@@ -23,8 +23,8 @@ from libcpp.optional cimport optional
 from libcpp.pair cimport pair
 from libcpp.string cimport string
 
-from rmm.cpp.cuda_stream_view cimport cuda_stream_view
-from rmm.cpp.memory_resource cimport device_memory_resource
+from rmm.librmm.cuda_stream_view cimport cuda_stream_view
+from rmm.librmm.memory_resource cimport device_memory_resource
 
 
 cdef extern from "rmm/mr/device/device_memory_resource.hpp" \

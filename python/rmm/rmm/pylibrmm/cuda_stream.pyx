@@ -16,7 +16,7 @@ cimport cython
 from cuda.ccudart cimport cudaStream_t
 from libcpp cimport bool
 
-from rmm.cpp.cuda_stream cimport cuda_stream
+from rmm.librmm.cuda_stream cimport cuda_stream
 
 
 @cython.final

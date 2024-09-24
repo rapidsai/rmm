@@ -15,8 +15,8 @@
 from rmm import mr
 from rmm._version import __git_commit__, __version__
 from rmm.mr import disable_logging, enable_logging, get_log_filenames
-from rmm.python.device_buffer import DeviceBuffer
-from rmm.python.logger import (
+from rmm.pylibrmm.device_buffer import DeviceBuffer
+from rmm.pylibrmm.logger import (
     flush_logger,
     get_flush_level,
     get_logging_level,
@@ -60,10 +60,10 @@ def __getattr__(name):
         import warnings
 
         warnings.warn(
-            "The `rmm._lib` module is deprecated in will be removed in a future release. Use `rmm.python` instead.",
+            "The `rmm._lib` module is deprecated in will be removed in a future release. Use `rmm.pylibrmm` instead.",
             FutureWarning,
         )
-        module = importlib.import_module("rmm.python")
+        module = importlib.import_module("rmm.pylibrmm")
         return module
     else:
         raise AttributeError(f"Module '{__name__}' has no attribute '{name}'")

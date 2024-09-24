@@ -29,7 +29,7 @@ def py_func(func):
     return wrapped
 
 
-cython_test_modules = ["rmm.python.tests.test_device_buffer"]
+cython_test_modules = ["rmm.pylibrmm.tests.test_device_buffer"]
 
 
 for mod in cython_test_modules:

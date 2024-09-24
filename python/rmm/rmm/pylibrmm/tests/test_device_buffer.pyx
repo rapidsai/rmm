@@ -16,9 +16,9 @@ import numpy as np
 
 from libcpp.memory cimport make_unique
 
-from rmm.cpp.cuda_stream_view cimport cuda_stream_default
-from rmm.cpp.device_buffer cimport device_buffer
-from rmm.python.device_buffer cimport DeviceBuffer
+from rmm.librmm.cuda_stream_view cimport cuda_stream_default
+from rmm.librmm.device_buffer cimport device_buffer
+from rmm.pylibrmm.device_buffer cimport DeviceBuffer
 
 
 def test_release():

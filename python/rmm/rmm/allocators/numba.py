@@ -19,7 +19,7 @@ from cuda.cuda import CUdeviceptr, cuIpcGetMemHandle
 from numba import config, cuda
 from numba.cuda import HostOnlyCUDAMemoryManager, IpcHandle, MemoryPointer
 
-from rmm import python as pylibrmm
+from rmm import pylibrmm
 
 
 def _make_emm_plugin_finalizer(handle, allocations):

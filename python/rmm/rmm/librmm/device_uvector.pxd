@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rmm.cpp.cuda_stream_view cimport cuda_stream_view
-from rmm.cpp.device_buffer cimport device_buffer
-from rmm.cpp.memory_resource cimport device_memory_resource
+from rmm.librmm.cuda_stream_view cimport cuda_stream_view
+from rmm.librmm.device_buffer cimport device_buffer
+from rmm.librmm.memory_resource cimport device_memory_resource
 
 
 cdef extern from "rmm/device_buffer.hpp" namespace "rmm" nogil:

@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024, NVIDIA CORPORATION.
+# Copyright (c) 2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import warnings
-
-warnings.warn(
-    "The `rmm._lib` module is deprecated in will be removed in a future release. Use `rmm.pylibrmm` instead.",
-    FutureWarning,
+from rmm.pylibrmm.device_buffer cimport (
+    DeviceBuffer,
+    copy_device_to_ptr,
+    copy_host_to_ptr,
+    copy_ptr_to_host,
+    to_device,
 )
-
-from rmm.pylibrmm import *

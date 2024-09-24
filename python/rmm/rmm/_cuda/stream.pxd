@@ -16,7 +16,7 @@ from cuda.ccudart cimport cudaStream_t
 from libc.stdint cimport uintptr_t
 from libcpp cimport bool
 
-from rmm.cpp.cuda_stream_view cimport cuda_stream_view
+from rmm.librmm.cuda_stream_view cimport cuda_stream_view
 
 
 cdef class Stream:

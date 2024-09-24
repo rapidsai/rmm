@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rmm.cpp.cuda_stream_view cimport cuda_stream_view
-from rmm.cpp.memory_resource cimport device_memory_resource
+from rmm.librmm.cuda_stream_view cimport cuda_stream_view
+from rmm.librmm.memory_resource cimport device_memory_resource
 
 
 cdef extern from "rmm/mr/device/per_device_resource.hpp" namespace "rmm" nogil:
