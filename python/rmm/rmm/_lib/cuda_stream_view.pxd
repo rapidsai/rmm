@@ -12,4 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rmm.librmm.cuda_stream_view cimport cuda_stream_view
+from rmm.librmm.cuda_stream_view cimport (
+    cuda_stream_default,
+    cuda_stream_legacy,
+    cuda_stream_per_thread,
+    cuda_stream_view,
+)
