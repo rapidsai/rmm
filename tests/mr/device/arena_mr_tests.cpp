@@ -491,9 +491,7 @@ TEST_F(ArenaTest, SizeSmallerThanSuperblockSize)  // NOLINT
 TEST_F(ArenaTest, AllocateNinetyPercent)  // NOLINT
 {
   EXPECT_NO_THROW([]() {  // NOLINT(cppcoreguidelines-avoid-goto)
-    auto const free           = rmm::available_device_memory().first;
-    auto const ninety_percent = rmm::align_up(
-      static_cast<std::size_t>(static_cast<double>(free) * 0.9), rmm::CUDA_ALLOCATION_ALIGNMENT);
+    auto const ninety_percent = rmm::percent_of_free_device_memory(90);
     arena_mr mr(rmm::mr::get_current_device_resource_ref(), ninety_percent);
   }());
 }
