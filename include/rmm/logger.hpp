@@ -107,7 +107,10 @@ struct bytes {
  *
  * @return spdlog::logger& The logger.
  */
-RMM_EXPORT inline spdlog::logger& logger()
+[[deprecated(
+  "Support for direct access to spdlog loggers in rmm is planned for "
+  "removal")]] RMM_EXPORT inline spdlog::logger&
+logger()
 {
   static detail::logger_wrapper wrapped{};
   return wrapped.logger_;
