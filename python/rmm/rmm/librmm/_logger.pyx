@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2020, NVIDIA CORPORATION.
+# Copyright (c) 2023-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,9 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from libc.stdint cimport uintptr_t
-from libcpp cimport bool
-from libcpp.utility cimport pair
-from libcpp.vector cimport vector
-
-ctypedef pair[const char*, unsigned int] caller_pair
+from rmm.librmm._logger cimport logging_level  # no-cython-lint

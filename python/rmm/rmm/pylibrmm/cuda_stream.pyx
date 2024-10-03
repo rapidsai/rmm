@@ -1,4 +1,4 @@
-# Copyright (c) 2024, NVIDIA CORPORATION.
+# Copyright (c) 2020-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,5 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+cimport cython
+from cuda.ccudart cimport cudaStream_t
+from libcpp cimport bool
+
 from rmm.librmm.cuda_stream cimport cuda_stream
-from rmm.pylibrmm.cuda_stream cimport CudaStream
+
+
+@cython.final
+cdef class CudaStream:
+    """
+    Wrapper around a CUDA stream with RAII semantics.
+    When a CudaStream instance is GC'd, the underlying
+    CUDA stream is destroyed.
+    """
+    def __cinit__(self):
+        self.c_obj.reset(new cuda_stream())
+
+    cdef cudaStream_t value(self) except * nogil:
+        return self.c_obj.get()[0].value()
+
+    cdef bool is_valid(self) except * nogil:
+        return self.c_obj.get()[0].is_valid()

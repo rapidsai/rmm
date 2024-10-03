@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2024, NVIDIA CORPORATION.
+# Copyright (c) 2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,92 +12,50 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from libc.stdint cimport int8_t
-from libcpp.memory cimport shared_ptr
-from libcpp.pair cimport pair
-from libcpp.string cimport string
-from libcpp.vector cimport vector
-
-from rmm._lib.cuda_stream_view cimport cuda_stream_view
-
-
-cdef extern from "rmm/mr/device/device_memory_resource.hpp" \
-        namespace "rmm::mr" nogil:
-    cdef cppclass device_memory_resource:
-        void* allocate(size_t bytes) except +
-        void* allocate(size_t bytes, cuda_stream_view stream) except +
-        void deallocate(void* ptr, size_t bytes) except +
-        void deallocate(
-            void* ptr,
-            size_t bytes,
-            cuda_stream_view stream
-        ) except +
-
-cdef extern from "rmm/cuda_device.hpp" namespace "rmm" nogil:
-    size_t percent_of_free_device_memory(int percent) except +
-    pair[size_t, size_t] available_device_memory() except +
-
-cdef class DeviceMemoryResource:
-    cdef shared_ptr[device_memory_resource] c_obj
-    cdef device_memory_resource* get_mr(self) noexcept nogil
-
-cdef class UpstreamResourceAdaptor(DeviceMemoryResource):
-    cdef readonly DeviceMemoryResource upstream_mr
-
-    cpdef DeviceMemoryResource get_upstream(self)
-
-cdef class CudaMemoryResource(DeviceMemoryResource):
-    pass
-
-cdef class ManagedMemoryResource(DeviceMemoryResource):
-    pass
-
-cdef class SystemMemoryResource(DeviceMemoryResource):
-    pass
-
-cdef class SamHeadroomMemoryResource(DeviceMemoryResource):
-    pass
-
-cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
-    pass
-
-cdef class PoolMemoryResource(UpstreamResourceAdaptor):
-    pass
-
-cdef class FixedSizeMemoryResource(UpstreamResourceAdaptor):
-    pass
-
-cdef class BinningMemoryResource(UpstreamResourceAdaptor):
-
-    cdef readonly list _bin_mrs
-
-    cpdef add_bin(
-        self,
-        size_t allocation_size,
-        DeviceMemoryResource bin_resource=*)
-
-cdef class CallbackMemoryResource(DeviceMemoryResource):
-    cdef object _allocate_func
-    cdef object _deallocate_func
-
-cdef class LimitingResourceAdaptor(UpstreamResourceAdaptor):
-    pass
-
-cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
-    cdef object _log_file_name
-    cpdef get_file_name(self)
-    cpdef flush(self)
-
-cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
-    pass
-
-cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
-    pass
-
-cdef class FailureCallbackResourceAdaptor(UpstreamResourceAdaptor):
-    cdef object _callback
-
-cdef class PrefetchResourceAdaptor(UpstreamResourceAdaptor):
-    pass
-
-cpdef DeviceMemoryResource get_current_device_resource()
+from rmm.librmm.memory_resource cimport (
+    CppExcept,
+    allocate_callback_t,
+    allocation_handle_type,
+    available_device_memory,
+    binning_memory_resource,
+    callback_memory_resource,
+    cuda_async_memory_resource,
+    cuda_memory_resource,
+    deallocate_callback_t,
+    device_memory_resource,
+    failure_callback_resource_adaptor,
+    failure_callback_t,
+    fixed_size_memory_resource,
+    limiting_resource_adaptor,
+    logging_resource_adaptor,
+    managed_memory_resource,
+    percent_of_free_device_memory,
+    pool_memory_resource,
+    prefetch_resource_adaptor,
+    sam_headroom_memory_resource,
+    statistics_resource_adaptor,
+    system_memory_resource,
+    throw_cpp_except,
+    tracking_resource_adaptor,
+    translate_python_except_to_cpp,
+)
+from rmm.pylibrmm.memory_resource cimport (
+    BinningMemoryResource,
+    CallbackMemoryResource,
+    CudaAsyncMemoryResource,
+    CudaMemoryResource,
+    DeviceMemoryResource,
+    FailureCallbackResourceAdaptor,
+    FixedSizeMemoryResource,
+    LimitingResourceAdaptor,
+    LoggingResourceAdaptor,
+    ManagedMemoryResource,
+    PoolMemoryResource,
+    PrefetchResourceAdaptor,
+    SamHeadroomMemoryResource,
+    StatisticsResourceAdaptor,
+    SystemMemoryResource,
+    TrackingResourceAdaptor,
+    UpstreamResourceAdaptor,
+    get_current_device_resource,
+)
