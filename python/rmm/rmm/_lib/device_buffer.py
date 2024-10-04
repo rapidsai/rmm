@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from rmm.pylibrmm.device_buffer import (  # noqa: F401
-    _copy_async,
     copy_device_to_ptr,
     copy_host_to_ptr,
     copy_ptr_to_host,
