@@ -39,6 +39,7 @@ jobs:
           - '!.pre-commit-config.yaml'
           - '!CONTRIBUTING.md'
           - '!README.md'
+          - '!img/**'
           - '!python/**'
           # TODO: Remove this before merging
           - '!.github/workflows/**'
@@ -48,6 +49,7 @@ jobs:
           - '!.pre-commit-config.yaml'
           - '!CONTRIBUTING.md'
           - '!README.md'
+          - '!img/**'
           # TODO: Remove this before merging
           - '!.github/workflows/**'
   checks:
