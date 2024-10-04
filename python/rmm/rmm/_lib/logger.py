@@ -11,3 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+from rmm.librmm._logger import logging_level  # noqa: F401
+from rmm.pylibrmm.logger import (  # noqa: F401
+    _validate_level_type,
+    flush_logger,
+    get_flush_level,
+    get_logging_level,
+    set_flush_level,
+    set_logging_level,
+    should_log,
+)

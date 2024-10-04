@@ -11,3 +11,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+from rmm.pylibrmm.memory_resource import (  # noqa: F401
+    BinningMemoryResource,
+    CallbackMemoryResource,
+    CudaAsyncMemoryResource,
+    CudaMemoryResource,
+    DeviceMemoryResource,
+    FailureCallbackResourceAdaptor,
+    FixedSizeMemoryResource,
+    LimitingResourceAdaptor,
+    LoggingResourceAdaptor,
+    ManagedMemoryResource,
+    PoolMemoryResource,
+    PrefetchResourceAdaptor,
+    SamHeadroomMemoryResource,
+    StatisticsResourceAdaptor,
+    SystemMemoryResource,
+    TrackingResourceAdaptor,
+    UpstreamResourceAdaptor,
+    get_current_device_resource,
+)
