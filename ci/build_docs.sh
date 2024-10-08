@@ -6,6 +6,8 @@ set -euo pipefail
 rapids-logger "Create test conda environment"
 . /opt/conda/etc/profile.d/conda.sh
 
+RAPIDS_VERSION_MAJOR_MINOR="$(rapids-version-major-minor)"
+
 rapids-dependency-file-generator \
   --output conda \
   --file-key docs \
@@ -23,7 +25,8 @@ PYTHON_CHANNEL=$(rapids-download-conda-from-s3 python)
 rapids-mamba-retry install \
   --channel "${CPP_CHANNEL}" \
   --channel "${PYTHON_CHANNEL}" \
-  rmm librmm
+  "rmm=${RAPIDS_VERSION_MAJOR_MINOR}" \
+  "librmm=${RAPIDS_VERSION_MAJOR_MINOR}"
 
 export RAPIDS_VERSION="$(rapids-version)"
 export RAPIDS_VERSION_MAJOR_MINOR="$(rapids-version-major-minor)"
