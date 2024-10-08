@@ -6,7 +6,10 @@ set -euo pipefail
 rapids-logger "Create test conda environment"
 . /opt/conda/etc/profile.d/conda.sh
 
-RAPIDS_VERSION_MAJOR_MINOR="$(rapids-version-major-minor)"
+export RAPIDS_VERSION="$(rapids-version)"
+export RAPIDS_VERSION_MAJOR_MINOR="$(rapids-version-major-minor)"
+export RAPIDS_VERSION_NUMBER="$RAPIDS_VERSION_MAJOR_MINOR"
+export RAPIDS_DOCS_DIR="$(mktemp -d)"
 
 rapids-dependency-file-generator \
   --output conda \
@@ -27,11 +30,6 @@ rapids-mamba-retry install \
   --channel "${PYTHON_CHANNEL}" \
   "rmm=${RAPIDS_VERSION_MAJOR_MINOR}" \
   "librmm=${RAPIDS_VERSION_MAJOR_MINOR}"
-
-export RAPIDS_VERSION="$(rapids-version)"
-export RAPIDS_VERSION_MAJOR_MINOR="$(rapids-version-major-minor)"
-export RAPIDS_VERSION_NUMBER="$RAPIDS_VERSION_MAJOR_MINOR"
-export RAPIDS_DOCS_DIR="$(mktemp -d)"
 
 rapids-logger "Build CPP docs"
 pushd doxygen
