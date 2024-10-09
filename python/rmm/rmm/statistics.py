@@ -74,8 +74,8 @@ def enable_statistics() -> None:
 def get_statistics() -> Optional[Statistics]:
     """Get the current allocation statistics.
 
-    Return
-    ------
+    Returns
+    -------
     If enabled, returns the current tracked statistics.
     If disabled, returns None.
     """
@@ -94,8 +94,8 @@ def push_statistics() -> Optional[Statistics]:
     If statistics are disabled (the current memory resource is not an
     instance of StatisticsResourceAdaptor), this function is a no-op.
 
-    Return
-    ------
+    Returns
+    -------
     If enabled, returns the current tracked statistics _before_ the pop.
     If disabled, returns None.
     """
@@ -114,8 +114,8 @@ def pop_statistics() -> Optional[Statistics]:
     If statistics are disabled (the current memory resource is not an
     instance of StatisticsResourceAdaptor), this function is a no-op.
 
-    Return
-    ------
+    Returns
+    -------
     If enabled, returns the popped counters.
     If disabled, returns None.
     """
@@ -232,8 +232,8 @@ class ProfilerRecords:
         ordered_by
             Sort the statistics by this attribute.
 
-        Return
-        ------
+        Returns
+        -------
         The pretty formatted string of the memory statistics
         """
 
@@ -279,8 +279,8 @@ def _get_descriptive_name_of_object(obj: object) -> str:
     obj
         Object in question
 
-    Return
-    ------
+    Returns
+    -------
     A string including filename, line number, and object name.
     """
 
