@@ -65,7 +65,7 @@ requirements:
     - rapids-build-backend >=0.3.0,<0.4.0.dev0
     - librmm ={{ version }}
     - python
-    - scikit-build-core >=0.7.0
+    - scikit-build-core >=0.10.0
   run:
     {% if cuda_major == "11" %}
     - cudatoolkit
@@ -74,7 +74,7 @@ requirements:
     {% endif %}
     - {{ pin_compatible('cuda-version', max_pin='x', min_pin='x') }}
     - numba >=0.57
-    - numpy >=1.23,<2.0a0
+    - numpy >=1.23,<3.0a0
 
 test:
   imports:

@@ -25,7 +25,12 @@ class mock_resource : public rmm::mr::device_memory_resource {
  public:
   MOCK_METHOD(void*, do_allocate, (std::size_t, cuda_stream_view), (override));
   MOCK_METHOD(void, do_deallocate, (void*, std::size_t, cuda_stream_view), (override));
+  bool operator==(mock_resource const&) const noexcept { return true; }
+  bool operator!=(mock_resource const&) const { return false; }
+  friend void get_property(mock_resource const&, cuda::mr::device_accessible) noexcept {}
   using size_pair = std::pair<std::size_t, std::size_t>;
 };
+
+static_assert(cuda::mr::async_resource_with<mock_resource, cuda::mr::device_accessible>);
 
 }  // namespace rmm::test

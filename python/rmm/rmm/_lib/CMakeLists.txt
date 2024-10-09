@@ -1,5 +1,5 @@
 # =============================================================================
-# Copyright (c) 2022, NVIDIA CORPORATION.
+# Copyright (c) 2022-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -12,12 +12,20 @@
 # the License.
 # =============================================================================
 
-set(cython_sources device_buffer.pyx lib.pyx logger.pyx memory_resource.pyx cuda_stream.pyx)
+set(cython_sources device_buffer.pyx lib.pyx logger.pyx memory_resource.pyx cuda_stream.pyx
+                   helper.pyx)
 set(linked_libraries rmm::rmm)
 
 # Build all of the Cython targets
 rapids_cython_create_modules(SOURCE_FILES "${cython_sources}" LINKED_LIBRARIES "${linked_libraries}"
                                                                                CXX)
+
+# mark all symbols in these Cython targets "hidden" by default, so they won't collide with symbols
+# loaded from other DSOs
+foreach(_cython_target IN LISTS RAPIDS_CYTHON_CREATED_TARGETS)
+  set_target_properties(${_cython_target} PROPERTIES C_VISIBILITY_PRESET hidden
+                                                     CXX_VISIBILITY_PRESET hidden)
+endforeach()
 
 add_library(_torch_allocator SHARED _torch_allocator.cpp)
 # Want the output to be called _torch_allocator.so

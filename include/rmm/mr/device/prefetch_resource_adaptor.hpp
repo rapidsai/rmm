@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include <rmm/detail/export.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/prefetch.hpp>
 #include <rmm/resource_ref.hpp>
@@ -24,7 +25,8 @@
 #include <shared_mutex>
 #include <stack>
 
-namespace rmm::mr {
+namespace RMM_NAMESPACE {
+namespace mr {
 /**
  * @addtogroup device_resource_adaptors
  * @{
@@ -43,13 +45,21 @@ class prefetch_resource_adaptor final : public device_memory_resource {
    * @brief Construct a new prefetch resource adaptor using `upstream` to satisfy
    * allocation requests.
    *
+   * @param upstream The resource_ref used for allocating/deallocating device memory
+   */
+  prefetch_resource_adaptor(device_async_resource_ref upstream) : upstream_{upstream} {}
+
+  /**
+   * @brief Construct a new prefetch resource adaptor using `upstream` to satisfy
+   * allocation requests.
+   *
    * @throws rmm::logic_error if `upstream == nullptr`
    *
    * @param upstream The resource used for allocating/deallocating device memory
    */
-  prefetch_resource_adaptor(Upstream* upstream) : upstream_{upstream}
+  prefetch_resource_adaptor(Upstream* upstream)
+    : upstream_{to_device_async_resource_ref_checked(upstream)}
   {
-    RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
   }
 
   prefetch_resource_adaptor()                                            = delete;
@@ -69,11 +79,6 @@ class prefetch_resource_adaptor final : public device_memory_resource {
     return upstream_;
   }
 
-  /**
-   * @briefreturn{Upstream* to the upstream memory resource}
-   */
-  [[nodiscard]] Upstream* get_upstream() const noexcept { return upstream_; }
-
  private:
   /**
    * @brief Allocates memory of size at least `bytes` using the upstream
@@ -90,7 +95,7 @@ class prefetch_resource_adaptor final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
-    void* ptr = upstream_->allocate(bytes, stream);
+    void* ptr = get_upstream_resource().allocate_async(bytes, stream);
     rmm::prefetch(ptr, bytes, rmm::get_current_cuda_device(), stream);
     return ptr;
   }
@@ -104,7 +109,7 @@ class prefetch_resource_adaptor final : public device_memory_resource {
    */
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
-    upstream_->deallocate(ptr, bytes, stream);
+    get_upstream_resource().deallocate_async(ptr, bytes, stream);
   }
 
   /**
@@ -118,12 +123,14 @@ class prefetch_resource_adaptor final : public device_memory_resource {
   {
     if (this == &other) { return true; }
     auto cast = dynamic_cast<prefetch_resource_adaptor<Upstream> const*>(&other);
-    if (cast == nullptr) { return upstream_->is_equal(other); }
+    if (cast == nullptr) { return false; }
     return get_upstream_resource() == cast->get_upstream_resource();
   }
 
-  Upstream* upstream_;  // the upstream resource used for satisfying allocation requests
+  // the upstream resource used for satisfying allocation requests
+  device_async_resource_ref upstream_;
 };
 
 /** @} */  // end of group
-}  // namespace rmm::mr
+}  // namespace mr
+}  // namespace RMM_NAMESPACE

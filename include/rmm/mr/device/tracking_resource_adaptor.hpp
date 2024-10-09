@@ -16,9 +16,11 @@
 #pragma once
 
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/export.hpp>
 #include <rmm/detail/stack_trace.hpp>
 #include <rmm/logger.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <fmt/core.h>
@@ -29,7 +31,8 @@
 #include <shared_mutex>
 #include <sstream>
 
-namespace rmm::mr {
+namespace RMM_NAMESPACE {
+namespace mr {
 /**
  * @addtogroup device_resource_adaptors
  * @{
@@ -85,15 +88,28 @@ class tracking_resource_adaptor final : public device_memory_resource {
    * @brief Construct a new tracking resource adaptor using `upstream` to satisfy
    * allocation requests.
    *
+   * @param upstream The resource used for allocating/deallocating device memory
+   * @param capture_stacks If true, capture stacks for allocation calls
+   */
+  tracking_resource_adaptor(device_async_resource_ref upstream, bool capture_stacks = false)
+    : capture_stacks_{capture_stacks}, allocated_bytes_{0}, upstream_{upstream}
+  {
+  }
+
+  /**
+   * @brief Construct a new tracking resource adaptor using `upstream` to satisfy
+   * allocation requests.
+   *
    * @throws rmm::logic_error if `upstream == nullptr`
    *
    * @param upstream The resource used for allocating/deallocating device memory
    * @param capture_stacks If true, capture stacks for allocation calls
    */
   tracking_resource_adaptor(Upstream* upstream, bool capture_stacks = false)
-    : capture_stacks_{capture_stacks}, allocated_bytes_{0}, upstream_{upstream}
+    : capture_stacks_{capture_stacks},
+      allocated_bytes_{0},
+      upstream_{to_device_async_resource_ref_checked(upstream)}
   {
-    RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
   }
 
   tracking_resource_adaptor()                                 = delete;
@@ -112,11 +128,6 @@ class tracking_resource_adaptor final : public device_memory_resource {
   {
     return upstream_;
   }
-
-  /**
-   * @briefreturn{Upstream* to the upstream memory resource}
-   */
-  [[nodiscard]] Upstream* get_upstream() const noexcept { return upstream_; }
 
   /**
    * @brief Get the outstanding allocations map
@@ -197,8 +208,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
-    void* ptr = upstream_->allocate(bytes, stream);
-
+    void* ptr = get_upstream_resource().allocate_async(bytes, stream);
     // track it.
     {
       write_lock_t lock(mtx_);
@@ -218,7 +228,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
    */
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
-    upstream_->deallocate(ptr, bytes, stream);
+    get_upstream_resource().deallocate_async(ptr, bytes, stream);
     {
       write_lock_t lock(mtx_);
 
@@ -263,7 +273,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
   {
     if (this == &other) { return true; }
     auto cast = dynamic_cast<tracking_resource_adaptor<Upstream> const*>(&other);
-    if (cast == nullptr) { return upstream_->is_equal(other); }
+    if (cast == nullptr) { return false; }
     return get_upstream_resource() == cast->get_upstream_resource();
   }
 
@@ -271,7 +281,8 @@ class tracking_resource_adaptor final : public device_memory_resource {
   std::map<void*, allocation_info> allocations_;  // map of active allocations
   std::atomic<std::size_t> allocated_bytes_;      // number of bytes currently allocated
   std::shared_mutex mutable mtx_;                 // mutex for thread safe access to allocations_
-  Upstream* upstream_;  // the upstream resource used for satisfying allocation requests
+  device_async_resource_ref upstream_;            // the upstream resource used for satisfying
+                                                  // allocation requests
 };
 
 /**
@@ -283,10 +294,14 @@ class tracking_resource_adaptor final : public device_memory_resource {
  * @return The new tracking resource adaptor
  */
 template <typename Upstream>
+[[deprecated(
+  "make_tracking_adaptor is deprecated in RMM 24.10. Use the tracking_resource_adaptor constructor "
+  "instead.")]]
 tracking_resource_adaptor<Upstream> make_tracking_adaptor(Upstream* upstream)
 {
   return tracking_resource_adaptor<Upstream>{upstream};
 }
 
 /** @} */  // end of group
-}  // namespace rmm::mr
+}  // namespace mr
+}  // namespace RMM_NAMESPACE

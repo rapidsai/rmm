@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ struct allocator_test : public ::testing::Test {
 TEST_F(allocator_test, factory)
 {
   using Adaptor = rmm::mr::stream_allocator_adaptor<decltype(allocator)>;
-  auto adapted  = rmm::mr::make_stream_allocator_adaptor(allocator, stream);
+  auto adapted  = rmm::mr::stream_allocator_adaptor(allocator, stream);
   static_assert((std::is_same<decltype(adapted), Adaptor>::value));
   EXPECT_EQ(adapted.underlying_allocator(), allocator);
   EXPECT_EQ(adapted.stream(), stream);
@@ -42,7 +42,7 @@ TEST_F(allocator_test, factory)
 
 TEST_F(allocator_test, self_equality)
 {
-  auto adapted = rmm::mr::make_stream_allocator_adaptor(allocator, stream);
+  auto adapted = rmm::mr::stream_allocator_adaptor(allocator, stream);
   EXPECT_EQ(adapted, adapted);
   EXPECT_FALSE(adapted != adapted);
 }
@@ -50,10 +50,10 @@ TEST_F(allocator_test, self_equality)
 TEST_F(allocator_test, equal_allocators)
 {
   rmm::mr::polymorphic_allocator<int> alloc0;
-  auto adapted0 = rmm::mr::make_stream_allocator_adaptor(alloc0, stream);
+  auto adapted0 = rmm::mr::stream_allocator_adaptor(alloc0, stream);
 
   rmm::mr::polymorphic_allocator<int> alloc1;
-  auto adapted1 = rmm::mr::make_stream_allocator_adaptor(alloc1, stream);
+  auto adapted1 = rmm::mr::stream_allocator_adaptor(alloc1, stream);
 
   EXPECT_EQ(adapted0, adapted1);
   EXPECT_FALSE(adapted0 != adapted1);
@@ -63,11 +63,11 @@ TEST_F(allocator_test, unequal_resources)
 {
   rmm::mr::cuda_memory_resource mr0;
   rmm::mr::polymorphic_allocator<int> alloc0{&mr0};
-  auto adapted0 = rmm::mr::make_stream_allocator_adaptor(alloc0, stream);
+  auto adapted0 = rmm::mr::stream_allocator_adaptor(alloc0, stream);
 
   rmm::mr::managed_memory_resource mr1;
   rmm::mr::polymorphic_allocator<int> alloc1{&mr1};
-  auto adapted1 = rmm::mr::make_stream_allocator_adaptor(alloc1, stream);
+  auto adapted1 = rmm::mr::stream_allocator_adaptor(alloc1, stream);
 
   EXPECT_NE(adapted0, adapted1);
 }
@@ -75,7 +75,7 @@ TEST_F(allocator_test, unequal_resources)
 TEST_F(allocator_test, copy_ctor_same_type)
 {
   rmm::mr::polymorphic_allocator<int> alloc0;
-  auto adapted0 = rmm::mr::make_stream_allocator_adaptor(alloc0, stream);
+  auto adapted0 = rmm::mr::stream_allocator_adaptor(alloc0, stream);
 
   using Adaptor = rmm::mr::stream_allocator_adaptor<decltype(alloc0)>;
   Adaptor adapted1{adapted0};
@@ -86,7 +86,7 @@ TEST_F(allocator_test, copy_ctor_same_type)
 TEST_F(allocator_test, copy_ctor_different_type)
 {
   rmm::mr::polymorphic_allocator<int> alloc0;
-  auto adapted0 = rmm::mr::make_stream_allocator_adaptor(alloc0, stream);
+  auto adapted0 = rmm::mr::stream_allocator_adaptor(alloc0, stream);
 
   using Adaptor = rmm::mr::stream_allocator_adaptor<rmm::mr::polymorphic_allocator<double>>;
   Adaptor adapted1{adapted0};
@@ -96,7 +96,7 @@ TEST_F(allocator_test, copy_ctor_different_type)
 
 TEST_F(allocator_test, rebind)
 {
-  auto adapted  = rmm::mr::make_stream_allocator_adaptor(allocator, stream);
+  auto adapted  = rmm::mr::stream_allocator_adaptor(allocator, stream);
   using Rebound = std::allocator_traits<decltype(adapted)>::rebind_alloc<double>;
   static_assert((std::is_same<std::allocator_traits<Rebound>::value_type, double>::value));
   static_assert(
@@ -108,7 +108,7 @@ TEST_F(allocator_test, rebind)
 
 TEST_F(allocator_test, allocate_deallocate)
 {
-  auto adapted = rmm::mr::make_stream_allocator_adaptor(allocator, stream);
+  auto adapted = rmm::mr::stream_allocator_adaptor(allocator, stream);
   auto const size{1000};
   auto* ptr = adapted.allocate(size);
   EXPECT_NE(ptr, nullptr);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/exec_check_disable.hpp>
+#include <rmm/detail/export.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
@@ -28,7 +29,7 @@
 #include <cstddef>
 #include <vector>
 
-namespace rmm {
+namespace RMM_NAMESPACE {
 /**
  * @addtogroup data_containers
  * @{
@@ -47,7 +48,7 @@ namespace rmm {
  *
  * Example:
  * @code{.cpp}
- * rmm::mr::device_memory_resource * mr = new my_custom_resource();
+ * auto mr = new my_custom_resource();
  * rmm::cuda_stream_view s{};
  *
  * // Allocates *uninitialized* device memory on stream `s` sufficient for 100 ints using the
@@ -125,7 +126,7 @@ class device_uvector {
    */
   explicit device_uvector(std::size_t size,
                           cuda_stream_view stream,
-                          device_async_resource_ref mr = mr::get_current_device_resource())
+                          device_async_resource_ref mr = mr::get_current_device_resource_ref())
     : _storage{elements_to_bytes(size), stream, mr}
   {
   }
@@ -141,7 +142,7 @@ class device_uvector {
    */
   explicit device_uvector(device_uvector const& other,
                           cuda_stream_view stream,
-                          device_async_resource_ref mr = mr::get_current_device_resource())
+                          device_async_resource_ref mr = mr::get_current_device_resource_ref())
     : _storage{other._storage, stream, mr}
   {
   }
@@ -565,4 +566,4 @@ class device_uvector {
 };
 
 /** @} */  // end of group
-}  // namespace rmm
+}  // namespace RMM_NAMESPACE

@@ -49,19 +49,7 @@ TEST(PoolTest, ThrowMaxLessThanInitial)
   auto max_less_than_initial = []() {
     const auto initial{1024};
     const auto maximum{256};
-    pool_mr mr{rmm::mr::get_current_device_resource(), initial, maximum};
-  };
-  EXPECT_THROW(max_less_than_initial(), rmm::logic_error);
-}
-
-TEST(PoolTest, ReferenceThrowMaxLessThanInitial)
-{
-  // Make sure first argument is enough larger than the second that alignment rounding doesn't
-  // make them equal
-  auto max_less_than_initial = []() {
-    const auto initial{1024};
-    const auto maximum{256};
-    pool_mr mr{*rmm::mr::get_current_device_resource(), initial, maximum};
+    pool_mr mr{rmm::mr::get_current_device_resource_ref(), initial, maximum};
   };
   EXPECT_THROW(max_less_than_initial(), rmm::logic_error);
 }
@@ -72,7 +60,7 @@ TEST(PoolTest, AllocateNinetyPercent)
     auto const [free, total] = rmm::available_device_memory();
     (void)total;
     auto const ninety_percent_pool = rmm::percent_of_free_device_memory(90);
-    pool_mr mr{rmm::mr::get_current_device_resource(), ninety_percent_pool};
+    pool_mr mr{rmm::mr::get_current_device_resource_ref(), ninety_percent_pool};
   };
   EXPECT_NO_THROW(allocate_ninety());
 }
@@ -81,7 +69,7 @@ TEST(PoolTest, TwoLargeBuffers)
 {
   auto two_large = []() {
     [[maybe_unused]] auto const [free, total] = rmm::available_device_memory();
-    pool_mr mr{rmm::mr::get_current_device_resource(), rmm::percent_of_free_device_memory(50)};
+    pool_mr mr{rmm::mr::get_current_device_resource_ref(), rmm::percent_of_free_device_memory(50)};
     auto* ptr1 = mr.allocate(free / 4);
     auto* ptr2 = mr.allocate(free / 4);
     mr.deallocate(ptr1, free / 4);
@@ -116,7 +104,7 @@ TEST(PoolTest, ForceGrowth)
 
 TEST(PoolTest, DeletedStream)
 {
-  pool_mr mr{rmm::mr::get_current_device_resource(), 0};
+  pool_mr mr{rmm::mr::get_current_device_resource_ref(), 0};
   cudaStream_t stream{};  // we don't use rmm::cuda_stream here to make destruction more explicit
   const int size = 10000;
   EXPECT_EQ(cudaSuccess, cudaStreamCreate(&stream));
@@ -129,7 +117,7 @@ TEST(PoolTest, DeletedStream)
 TEST(PoolTest, InitialAndMaxPoolSizeEqual)
 {
   EXPECT_NO_THROW([]() {
-    pool_mr mr(rmm::mr::get_current_device_resource(), 1000192, 1000192);
+    pool_mr mr(rmm::mr::get_current_device_resource_ref(), 1000192, 1000192);
     mr.allocate(1000);
   }());
 }
@@ -138,14 +126,14 @@ TEST(PoolTest, NonAlignedPoolSize)
 {
   EXPECT_THROW(
     []() {
-      pool_mr mr(rmm::mr::get_current_device_resource(), 1000031, 1000192);
+      pool_mr mr(rmm::mr::get_current_device_resource_ref(), 1000031, 1000192);
       mr.allocate(1000);
     }(),
     rmm::logic_error);
 
   EXPECT_THROW(
     []() {
-      pool_mr mr(rmm::mr::get_current_device_resource(), 1000192, 1000200);
+      pool_mr mr(rmm::mr::get_current_device_resource_ref(), 1000192, 1000200);
       mr.allocate(1000);
     }(),
     rmm::logic_error);
@@ -203,18 +191,18 @@ namespace test_properties {
 class fake_async_resource {
  public:
   // To model `async_resource`
-  void* allocate(std::size_t, std::size_t) { return nullptr; }
-  void deallocate(void* ptr, std::size_t, std::size_t) {}
-  void* allocate_async(std::size_t, std::size_t, cuda::stream_ref) { return nullptr; }
-  void deallocate_async(void* ptr, std::size_t, std::size_t, cuda::stream_ref) {}
+  static void* allocate(std::size_t, std::size_t) { return nullptr; }
+  static void deallocate(void* ptr, std::size_t, std::size_t) {}
+  static void* allocate_async(std::size_t, std::size_t, cuda::stream_ref) { return nullptr; }
+  static void deallocate_async(void* ptr, std::size_t, std::size_t, cuda::stream_ref) {}
 
   bool operator==(const fake_async_resource& other) const { return true; }
   bool operator!=(const fake_async_resource& other) const { return false; }
 
  private:
-  void* do_allocate(std::size_t bytes, cuda_stream_view) { return nullptr; }
-  void do_deallocate(void* ptr, std::size_t, cuda_stream_view) {}
-  [[nodiscard]] bool do_is_equal(fake_async_resource const& other) const noexcept { return true; }
+  static void* do_allocate(std::size_t bytes, cuda_stream_view) { return nullptr; }
+  static void do_deallocate(void* ptr, std::size_t, cuda_stream_view) {}
+  [[nodiscard]] static bool do_is_equal(fake_async_resource const& other) noexcept { return true; }
 };
 static_assert(!cuda::has_property<fake_async_resource, cuda::mr::device_accessible>);
 static_assert(!cuda::has_property<rmm::mr::pool_memory_resource<fake_async_resource>,

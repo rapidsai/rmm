@@ -17,13 +17,14 @@
 #pragma once
 
 #include <rmm/cuda_stream_view.hpp>
+#include <rmm/detail/export.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <type_traits>
 
-namespace rmm {
+namespace RMM_NAMESPACE {
 /**
  * @addtogroup data_containers
  * @{
@@ -94,7 +95,7 @@ class device_scalar {
    * @param mr Optional, resource with which to allocate.
    */
   explicit device_scalar(cuda_stream_view stream,
-                         device_async_resource_ref mr = mr::get_current_device_resource())
+                         device_async_resource_ref mr = mr::get_current_device_resource_ref())
     : _storage{1, stream, mr}
   {
   }
@@ -117,7 +118,7 @@ class device_scalar {
    */
   explicit device_scalar(value_type const& initial_value,
                          cuda_stream_view stream,
-                         device_async_resource_ref mr = mr::get_current_device_resource())
+                         device_async_resource_ref mr = mr::get_current_device_resource_ref())
     : _storage{1, stream, mr}
   {
     set_value_async(initial_value, stream);
@@ -137,7 +138,7 @@ class device_scalar {
    */
   device_scalar(device_scalar const& other,
                 cuda_stream_view stream,
-                device_async_resource_ref mr = mr::get_current_device_resource())
+                device_async_resource_ref mr = mr::get_current_device_resource_ref())
     : _storage{other._storage, stream, mr}
   {
   }
@@ -277,4 +278,4 @@ class device_scalar {
 };
 
 /** @} */  // end of group
-}  // namespace rmm
+}  // namespace RMM_NAMESPACE

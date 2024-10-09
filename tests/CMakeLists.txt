@@ -40,6 +40,7 @@ function(ConfigureTestInternal TEST_NAME)
                              PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
   target_compile_options(${TEST_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Wall -Werror
                                              -Wno-error=deprecated-declarations>)
+  target_compile_options(${TEST_NAME} PUBLIC "$<$<CONFIG:Debug>:-O0>")
 
   if(DISABLE_DEPRECATION_WARNING)
     target_compile_options(
@@ -125,7 +126,7 @@ ConfigureTest(DEVICE_MR_REF_TEST mr/device/mr_ref_tests.cpp
 ConfigureTest(ADAPTOR_TEST mr/device/adaptor_tests.cpp)
 
 # pool mr tests
-ConfigureTest(POOL_MR_TEST mr/device/pool_mr_tests.cpp GPUS 1 PERCENT 60)
+ConfigureTest(POOL_MR_TEST mr/device/pool_mr_tests.cpp GPUS 1 PERCENT 100)
 
 # cuda_async mr tests
 ConfigureTest(CUDA_ASYNC_MR_TEST mr/device/cuda_async_mr_tests.cpp GPUS 1 PERCENT 60)
@@ -140,10 +141,10 @@ ConfigureTest(POLYMORPHIC_ALLOCATOR_TEST mr/device/polymorphic_allocator_tests.c
 ConfigureTest(STREAM_ADAPTOR_TEST mr/device/stream_allocator_adaptor_tests.cpp)
 
 # statistics adaptor tests
-ConfigureTest(STATISTICS_TEST mr/device/statistics_mr_tests.cpp GPUS 1 PERCENT 100)
+ConfigureTest(STATISTICS_TEST mr/device/statistics_mr_tests.cpp)
 
 # tracking adaptor tests
-ConfigureTest(TRACKING_TEST mr/device/tracking_mr_tests.cpp GPUS 1 PERCENT 100)
+ConfigureTest(TRACKING_TEST mr/device/tracking_mr_tests.cpp)
 
 # out-of-memory callback adaptor tests
 ConfigureTest(FAILURE_CALLBACK_TEST mr/device/failure_callback_mr_tests.cpp)
@@ -182,7 +183,7 @@ ConfigureTest(PREFETCH_TEST prefetch_tests.cpp)
 ConfigureTest(LOGGER_TEST logger_tests.cpp)
 
 # arena MR tests
-ConfigureTest(ARENA_MR_TEST mr/device/arena_mr_tests.cpp GPUS 1 PERCENT 60)
+ConfigureTest(ARENA_MR_TEST mr/device/arena_mr_tests.cpp GPUS 1 PERCENT 100)
 
 # binning MR tests
 ConfigureTest(BINNING_MR_TEST mr/device/binning_mr_tests.cpp)

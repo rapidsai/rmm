@@ -32,10 +32,13 @@ from libcpp.string cimport string
 from cuda.cudart import cudaError_t
 
 from rmm._cuda.gpu import CUDARuntimeError, getDevice, setDevice
+
 from rmm._cuda.stream cimport Stream
+
 from rmm._cuda.stream import DEFAULT_STREAM
 
 from rmm._lib.cuda_stream_view cimport cuda_stream_view
+from rmm._lib.helper cimport parse_bytes
 from rmm._lib.memory_resource cimport (
     available_device_memory as c_available_device_memory,
     percent_of_free_device_memory as c_percent_of_free_device_memory,
@@ -44,6 +47,7 @@ from rmm._lib.per_device_resource cimport (
     cuda_device_id,
     set_per_device_resource as cpp_set_per_device_resource,
 )
+
 from rmm.statistics import Statistics
 
 # Transparent handle of a C++ exception
@@ -314,9 +318,9 @@ cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
 
     Parameters
     ----------
-    initial_pool_size : int, optional
+    initial_pool_size : int | str, optional
         Initial pool size in bytes. By default, half the available memory
-        on the device is used.
+        on the device is used. A string argument is parsed using `parse_bytes`.
     release_threshold: int, optional
         Release threshold in bytes. If the pool size grows beyond this
         value, unused memory held by the pool will be released at the
@@ -334,7 +338,7 @@ cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
         cdef optional[size_t] c_initial_pool_size = (
             optional[size_t]()
             if initial_pool_size is None
-            else optional[size_t](<size_t> initial_pool_size)
+            else optional[size_t](<size_t> parse_bytes(initial_pool_size))
         )
 
         cdef optional[size_t] c_release_threshold = (
@@ -426,12 +430,12 @@ cdef class PoolMemoryResource(UpstreamResourceAdaptor):
         c_initial_pool_size = (
             c_percent_of_free_device_memory(50) if
             initial_pool_size is None
-            else initial_pool_size
+            else parse_bytes(initial_pool_size)
         )
         c_maximum_pool_size = (
             optional[size_t]() if
             maximum_pool_size is None
-            else optional[size_t](<size_t> maximum_pool_size)
+            else optional[size_t](<size_t> parse_bytes(maximum_pool_size))
         )
         self.c_obj.reset(
             new pool_memory_resource[device_memory_resource](
@@ -456,10 +460,10 @@ cdef class PoolMemoryResource(UpstreamResourceAdaptor):
         upstream_mr : DeviceMemoryResource
             The DeviceMemoryResource from which to allocate blocks for the
             pool.
-        initial_pool_size : int, optional
+        initial_pool_size : int | str, optional
             Initial pool size in bytes. By default, half the available memory
             on the device is used.
-        maximum_pool_size : int, optional
+        maximum_pool_size : int | str, optional
             Maximum size in bytes, that the pool can grow to.
         """
         pass
@@ -1091,8 +1095,10 @@ cpdef void _initialize(
         typ = PoolMemoryResource
         args = (upstream(),)
         kwargs = dict(
-            initial_pool_size=initial_pool_size,
-            maximum_pool_size=maximum_pool_size
+            initial_pool_size=None if initial_pool_size is None
+            else parse_bytes(initial_pool_size),
+            maximum_pool_size=None if maximum_pool_size is None
+            else parse_bytes(maximum_pool_size)
         )
     else:
         typ = upstream

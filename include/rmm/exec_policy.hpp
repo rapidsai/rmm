@@ -22,6 +22,7 @@
 #pragma once
 
 #include <rmm/cuda_stream_view.hpp>
+#include <rmm/detail/export.hpp>
 #include <rmm/detail/thrust_namespace.h>
 #include <rmm/mr/device/thrust_allocator_adaptor.hpp>
 #include <rmm/resource_ref.hpp>
@@ -29,7 +30,7 @@
 #include <thrust/system/cuda/execution_policy.h>
 #include <thrust/version.h>
 
-namespace rmm {
+namespace RMM_NAMESPACE {
 /**
  * @addtogroup thrust_integrations
  * @{
@@ -56,7 +57,7 @@ class exec_policy : public thrust_exec_policy_t {
    * @param mr The resource to use for allocating temporary memory
    */
   explicit exec_policy(cuda_stream_view stream      = cuda_stream_default,
-                       device_async_resource_ref mr = mr::get_current_device_resource())
+                       device_async_resource_ref mr = mr::get_current_device_resource_ref())
     : thrust_exec_policy_t(
         thrust::cuda::par(mr::thrust_allocator<char>(stream, mr)).on(stream.value()))
   {
@@ -80,7 +81,7 @@ using thrust_exec_policy_nosync_t =
 class exec_policy_nosync : public thrust_exec_policy_nosync_t {
  public:
   explicit exec_policy_nosync(cuda_stream_view stream      = cuda_stream_default,
-                              device_async_resource_ref mr = mr::get_current_device_resource())
+                              device_async_resource_ref mr = mr::get_current_device_resource_ref())
     : thrust_exec_policy_nosync_t(
         thrust::cuda::par_nosync(mr::thrust_allocator<char>(stream, mr)).on(stream.value()))
   {
@@ -97,4 +98,4 @@ using exec_policy_nosync =
 #endif
 
 /** @} */  // end of group
-}  // namespace rmm
+}  // namespace RMM_NAMESPACE

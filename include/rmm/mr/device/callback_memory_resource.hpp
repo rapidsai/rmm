@@ -15,13 +15,15 @@
  */
 #pragma once
 
+#include <rmm/detail/export.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <cstddef>
 #include <functional>
 #include <utility>
 
-namespace rmm::mr {
+namespace RMM_NAMESPACE {
+namespace mr {
 /**
  * @addtogroup device_memory_resources
  * @{
@@ -84,12 +86,13 @@ class callback_memory_resource final : public device_memory_resource {
    * It is the caller's responsibility to maintain the lifetime of the pointed-to data
    * for the duration of the lifetime of the `callback_memory_resource`.
    */
-  callback_memory_resource(allocate_callback_t allocate_callback,
-                           deallocate_callback_t deallocate_callback,
-                           void* allocate_callback_arg   = nullptr,
-                           void* deallocate_callback_arg = nullptr) noexcept
-    : allocate_callback_(allocate_callback),
-      deallocate_callback_(deallocate_callback),
+  callback_memory_resource(
+    allocate_callback_t allocate_callback,
+    deallocate_callback_t deallocate_callback,
+    void* allocate_callback_arg   = nullptr,  // NOLINT(bugprone-easily-swappable-parameters)
+    void* deallocate_callback_arg = nullptr) noexcept
+    : allocate_callback_(std::move(allocate_callback)),
+      deallocate_callback_(std::move(deallocate_callback)),
       allocate_callback_arg_(allocate_callback_arg),
       deallocate_callback_arg_(deallocate_callback_arg)
   {
@@ -145,4 +148,5 @@ class callback_memory_resource final : public device_memory_resource {
 };
 
 /** @} */  // end of group
-}  // namespace rmm::mr
+}  // namespace mr
+}  // namespace RMM_NAMESPACE

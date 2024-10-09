@@ -15,9 +15,12 @@
  */
 #pragma once
 
+#include <rmm/detail/error.hpp>
+#include <rmm/detail/export.hpp>
+
 #include <cuda/memory_resource>
 
-namespace rmm {
+namespace RMM_NAMESPACE {
 
 /**
  * @addtogroup memory_resources
@@ -63,5 +66,21 @@ using host_device_resource_ref =
 using host_device_async_resource_ref =
   cuda::mr::async_resource_ref<cuda::mr::host_accessible, cuda::mr::device_accessible>;
 
+/**
+ * @brief Convert pointer to memory resource into `device_async_resource_ref`, checking for
+ * `nullptr`
+ *
+ * @tparam Resource The type of the memory resource.
+ * @param res A pointer to the memory resource.
+ * @return A `device_async_resource_ref` to the memory resource.
+ * @throws std::logic_error if the memory resource pointer is null.
+ */
+template <class Resource>
+device_async_resource_ref to_device_async_resource_ref_checked(Resource* res)
+{
+  RMM_EXPECTS(res, "Unexpected null resource pointer.");
+  return device_async_resource_ref{*res};
+}
+
 /** @} */  // end of group
-}  // namespace rmm
+}  // namespace RMM_NAMESPACE
