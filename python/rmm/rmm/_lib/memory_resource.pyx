@@ -88,6 +88,10 @@ cdef extern from *:
 
 # NOTE: Keep extern declarations in .pyx file as much as possible to avoid
 # leaking dependencies when importing RMM Cython .pxd files
+
+cdef extern from "rmm/error.hpp" namespace "rmm" nogil:
+    cdef cppclass out_of_memory
+
 cdef extern from "rmm/mr/device/cuda_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass cuda_memory_resource(device_memory_resource):
@@ -128,7 +132,6 @@ cdef extern from "rmm/mr/device/cuda_async_memory_resource.hpp" \
         posix_file_descriptor
         win32
         win32_kmt
-
 
 cdef extern from "rmm/mr/device/pool_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
@@ -233,6 +236,19 @@ cdef extern from "rmm/mr/device/failure_callback_resource_adaptor.hpp" \
             void* callback_arg
         ) except +
 
+cdef extern from "rmm/mr/device/fallback_resource_adaptor.hpp" \
+        namespace "rmm::mr" nogil:
+    cdef cppclass fallback_resource_adaptor[ExceptionType](
+        device_memory_resource
+    ):
+        # Notice, `fallback_resource_adaptor` takes `device_async_resource_ref`
+        # as upstream arguments but we define them here as `device_memory_resource*` and
+        # rely on implicit type conversion.
+        fallback_resource_adaptor(
+            device_memory_resource* upstream_mr,
+            device_memory_resource* alternate_upstream_mr,
+        ) except +
+
 cdef extern from "rmm/mr/device/prefetch_resource_adaptor.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass prefetch_resource_adaptor[Upstream](device_memory_resource):
@@ -283,7 +299,6 @@ cdef class UpstreamResourceAdaptor(DeviceMemoryResource):
     """
 
     def __cinit__(self, DeviceMemoryResource upstream_mr, *args, **kwargs):
-
         if (upstream_mr is None):
             raise Exception("Argument `upstream_mr` must not be None")
 
@@ -1042,6 +1057,46 @@ cdef class FailureCallbackResourceAdaptor(UpstreamResourceAdaptor):
             Function called when memory allocation fails.
         """
         pass
+
+
+cdef class FallbackResourceAdaptor(UpstreamResourceAdaptor):
+
+    def __cinit__(
+        self,
+        DeviceMemoryResource upstream_mr,
+        DeviceMemoryResource alternate_upstream_mr,
+    ):
+        if (alternate_upstream_mr is None):
+            raise Exception("Argument `alternate_upstream_mr` must not be None")
+        self.alternate_upstream_mr = alternate_upstream_mr
+
+        self.c_obj.reset(
+            new fallback_resource_adaptor[out_of_memory](
+                upstream_mr.get_mr(),
+                alternate_upstream_mr.get_mr(),
+            )
+        )
+
+    def __init__(
+        self,
+        DeviceMemoryResource upstream_mr,
+        DeviceMemoryResource alternate_upstream_mr,
+    ):
+        """
+        A memory resource that uses an alternate resource when memory allocation fails.
+
+        Parameters
+        ----------
+        upstream : DeviceMemoryResource
+            The primary resource used for allocating/deallocating device memory
+        alternate_upstream : DeviceMemoryResource
+            The alternate resource used when the primary fails to allocate
+        """
+        pass
+
+    cpdef DeviceMemoryResource get_alternate_upstream(self):
+        return self.alternate_upstream_mr
+
 
 cdef class PrefetchResourceAdaptor(UpstreamResourceAdaptor):
 
