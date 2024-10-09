@@ -35,6 +35,11 @@ namespace mr {
 /**
  * @brief Resource that prefetches all memory allocations.
  *
+ * Note that prefetching is a no-op if the upstream resource is not using
+ * managed memory or the device does not support managed memory. In those
+ * cases, this adapter does nothing. Therefore it is only recommended to use
+ * this adapter with a managed memory resource on a supported system.
+ *
  * @tparam Upstream Type of the upstream resource used for
  * allocation/deallocation.
  */
