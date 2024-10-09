@@ -1,3 +1,50 @@
+# rmm 24.10.00 (9 Oct 2024)
+
+## 🚨 Breaking Changes
+
+- Inline functions that return static references must have default visibility ([#1653](https://github.com/rapidsai/rmm/pull/1653)) [@wence-](https://github.com/wence-)
+- Hide visibility of non-public symbols ([#1644](https://github.com/rapidsai/rmm/pull/1644)) [@jameslamb](https://github.com/jameslamb)
+- Deprecate adaptor factories. ([#1626](https://github.com/rapidsai/rmm/pull/1626)) [@bdice](https://github.com/bdice)
+
+## 🐛 Bug Fixes
+
+- Add missing include to `resource_ref.hpp` ([#1677](https://github.com/rapidsai/rmm/pull/1677)) [@miscco](https://github.com/miscco)
+- Remove the friend declaration with an attribute ([#1669](https://github.com/rapidsai/rmm/pull/1669)) [@kingcrimsontianyu](https://github.com/kingcrimsontianyu)
+- Fix `build.sh clean` to delete python build directory ([#1658](https://github.com/rapidsai/rmm/pull/1658)) [@rongou](https://github.com/rongou)
+- Stream synchronize before deallocating SAM ([#1655](https://github.com/rapidsai/rmm/pull/1655)) [@rongou](https://github.com/rongou)
+- Explicitly mark RMM headers with `RMM_EXPORT` ([#1654](https://github.com/rapidsai/rmm/pull/1654)) [@robertmaynard](https://github.com/robertmaynard)
+- Inline functions that return static references must have default visibility ([#1653](https://github.com/rapidsai/rmm/pull/1653)) [@wence-](https://github.com/wence-)
+- Use `tool.scikit-build.cmake.version` ([#1637](https://github.com/rapidsai/rmm/pull/1637)) [@KyleFromNVIDIA](https://github.com/KyleFromNVIDIA)
+
+## 📖 Documentation
+
+- Recommend `miniforge` for conda install. ([#1681](https://github.com/rapidsai/rmm/pull/1681)) [@bdice](https://github.com/bdice)
+- Fix docs cross reference in DeviceBuffer.prefetch ([#1636](https://github.com/rapidsai/rmm/pull/1636)) [@bdice](https://github.com/bdice)
+
+## 🚀 New Features
+
+- [FEA] Allow setting `*_pool_size` with human-readable string ([#1670](https://github.com/rapidsai/rmm/pull/1670)) [@Matt711](https://github.com/Matt711)
+- Update RMM adaptors, containers and tests to use get/set_current_device_resource_ref() ([#1661](https://github.com/rapidsai/rmm/pull/1661)) [@harrism](https://github.com/harrism)
+- Deprecate adaptor factories. ([#1626](https://github.com/rapidsai/rmm/pull/1626)) [@bdice](https://github.com/bdice)
+- Allow testing of earliest/latest dependencies ([#1613](https://github.com/rapidsai/rmm/pull/1613)) [@seberg](https://github.com/seberg)
+- Add resource_ref versions of get/set_current_device_resource ([#1598](https://github.com/rapidsai/rmm/pull/1598)) [@harrism](https://github.com/harrism)
+
+## 🛠️ Improvements
+
+- Update update-version.sh to use packaging lib ([#1685](https://github.com/rapidsai/rmm/pull/1685)) [@AyodeAwe](https://github.com/AyodeAwe)
+- Use CI workflow branch &#39;branch-24.10&#39; again ([#1683](https://github.com/rapidsai/rmm/pull/1683)) [@jameslamb](https://github.com/jameslamb)
+- Update fmt (to 11.0.2) and spdlog (to 1.14.1). ([#1678](https://github.com/rapidsai/rmm/pull/1678)) [@jameslamb](https://github.com/jameslamb)
+- Attempt to address oom failures in test suite ([#1672](https://github.com/rapidsai/rmm/pull/1672)) [@wence-](https://github.com/wence-)
+- Add support for Python 3.12 ([#1666](https://github.com/rapidsai/rmm/pull/1666)) [@jameslamb](https://github.com/jameslamb)
+- Update rapidsai/pre-commit-hooks ([#1663](https://github.com/rapidsai/rmm/pull/1663)) [@KyleFromNVIDIA](https://github.com/KyleFromNVIDIA)
+- Drop Python 3.9 support ([#1659](https://github.com/rapidsai/rmm/pull/1659)) [@jameslamb](https://github.com/jameslamb)
+- Remove NumPy &lt;2 pin ([#1650](https://github.com/rapidsai/rmm/pull/1650)) [@seberg](https://github.com/seberg)
+- Hide visibility of non-public symbols ([#1644](https://github.com/rapidsai/rmm/pull/1644)) [@jameslamb](https://github.com/jameslamb)
+- Update pre-commit hooks ([#1643](https://github.com/rapidsai/rmm/pull/1643)) [@KyleFromNVIDIA](https://github.com/KyleFromNVIDIA)
+- Improve update-version.sh ([#1640](https://github.com/rapidsai/rmm/pull/1640)) [@bdice](https://github.com/bdice)
+- Install headers into `${CMAKE_INSTALL_INCLUDEDIR}` ([#1633](https://github.com/rapidsai/rmm/pull/1633)) [@KyleFromNVIDIA](https://github.com/KyleFromNVIDIA)
+- Merge branch-24.08 into branch-24.10 ([#1631](https://github.com/rapidsai/rmm/pull/1631)) [@jameslamb](https://github.com/jameslamb)
+
 # rmm 24.08.00 (7 Aug 2024)
 
 ## 🚨 Breaking Changes
