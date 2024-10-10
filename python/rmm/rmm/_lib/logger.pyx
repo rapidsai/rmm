@@ -1,4 +1,4 @@
-# Copyright (c) 2023, NVIDIA CORPORATION.
+# Copyright (c) 2023-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -64,7 +64,7 @@ cdef extern from "spdlog/spdlog.h" namespace "spdlog" nogil:
         bool should_log(logging_level msg_level)
 
 
-cdef extern from "rmm/logger.hpp" namespace "rmm" nogil:
+cdef extern from "rmm/logger.hpp" namespace "rmm::detail" nogil:
     cdef spdlog_logger& logger() except +
 
 
