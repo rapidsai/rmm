@@ -9,7 +9,7 @@ cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")"/../
 rapids-logger "Create test conda environment"
 . /opt/conda/etc/profile.d/conda.sh
 
-RAPIDS_VERSION_MAJOR_MINOR="$(rapids-version)"
+RAPIDS_VERSION="$(rapids-version)"
 
 rapids-dependency-file-generator \
   --output conda \
