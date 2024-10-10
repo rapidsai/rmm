@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2024, NVIDIA CORPORATION.
+# Copyright (c) 2020, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,21 +13,20 @@
 # limitations under the License.
 
 from cuda.ccudart cimport cudaStream_t
-from libc.stdint cimport uintptr_t
 from libcpp cimport bool
 
-from rmm.librmm.cuda_stream_view cimport cuda_stream_view
 
+cdef extern from "rmm/cuda_stream_view.hpp" namespace "rmm" nogil:
+    cdef cppclass cuda_stream_view:
+        cuda_stream_view()
+        cuda_stream_view(cudaStream_t)
+        cudaStream_t value()
+        bool is_default()
+        bool is_per_thread_default()
+        void synchronize() except +
 
-cdef class Stream:
-    cdef cudaStream_t _cuda_stream
-    cdef object _owner
+    cdef bool operator==(cuda_stream_view const, cuda_stream_view const)
 
-    @staticmethod
-    cdef Stream _from_cudaStream_t(cudaStream_t s, object owner=*)
-
-    cdef cuda_stream_view view(self) except * nogil
-    cdef void c_synchronize(self) except * nogil
-    cdef bool c_is_default(self) except * nogil
-    cdef void _init_with_new_cuda_stream(self) except *
-    cdef void _init_from_stream(self, Stream stream) except *
+    const cuda_stream_view cuda_stream_default
+    const cuda_stream_view cuda_stream_legacy
+    const cuda_stream_view cuda_stream_per_thread

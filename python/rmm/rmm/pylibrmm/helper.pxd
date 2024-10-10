@@ -12,16 +12,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rmm.librmm.device_buffer cimport (
-    cuda_device_id,
-    device_buffer,
-    get_current_cuda_device,
-    prefetch,
-)
-from rmm.pylibrmm.device_buffer cimport (
-    DeviceBuffer,
-    copy_device_to_ptr,
-    copy_host_to_ptr,
-    copy_ptr_to_host,
-    to_device,
-)
+
+cdef object parse_bytes(object s) except *

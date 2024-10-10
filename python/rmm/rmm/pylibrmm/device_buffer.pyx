@@ -32,9 +32,16 @@ from cuda.ccudart cimport (
     cudaStream_t,
 )
 
-from rmm._lib.memory_resource cimport (
+from rmm.librmm.cuda_stream_view cimport cuda_stream_view
+from rmm.librmm.device_buffer cimport (
+    cuda_device_id,
+    device_buffer,
+    get_current_cuda_device,
+    prefetch,
+)
+from rmm.librmm.memory_resource cimport device_memory_resource
+from rmm.pylibrmm.memory_resource cimport (
     DeviceMemoryResource,
-    device_memory_resource,
     get_current_device_resource,
 )
 
@@ -149,7 +156,7 @@ cdef class DeviceBuffer:
         device : optional
             The CUDA device to which to prefetch the memory for this buffer.
             Defaults to the current CUDA device. To prefetch to the CPU, pass
-            :py:attr:`~cuda.cudart.cudaCpuDeviceId` as the device.
+            :py:attr:`~cuda.bindings.runtime.cudaCpuDeviceId` as the device.
         stream : optional
             CUDA stream to use for prefetching. Defaults to self.stream
         """
@@ -394,7 +401,7 @@ cpdef DeviceBuffer to_device(const unsigned char[::1] b,
     Examples
     --------
     >>> import rmm
-    >>> db = rmm._lib.device_buffer.to_device(b"abc")
+    >>> db = rmm.pylibrmm.device_buffer.to_device(b"abc")
     >>> print(bytes(db))
     b'abc'
     """
@@ -460,7 +467,7 @@ cpdef void copy_ptr_to_host(uintptr_t db,
     >>> import rmm
     >>> db = rmm.DeviceBuffer.to_device(b"abc")
     >>> hb = bytearray(db.nbytes)
-    >>> rmm._lib.device_buffer.copy_ptr_to_host(db.ptr, hb)
+    >>> rmm.pylibrmm.device_buffer.copy_ptr_to_host(db.ptr, hb)
     >>> print(hb)
     bytearray(b'abc')
     """
@@ -502,7 +509,7 @@ cpdef void copy_host_to_ptr(const unsigned char[::1] hb,
     >>> import rmm
     >>> db = rmm.DeviceBuffer(size=10)
     >>> hb = b"abc"
-    >>> rmm._lib.device_buffer.copy_host_to_ptr(hb, db.ptr)
+    >>> rmm.pylibrmm.device_buffer.copy_host_to_ptr(hb, db.ptr)
     >>> hb = db.copy_to_host()
     >>> print(hb)
     array([97, 98, 99,  0,  0,  0,  0,  0,  0,  0], dtype=uint8)
@@ -541,7 +548,7 @@ cpdef void copy_device_to_ptr(uintptr_t d_src,
     >>> import rmm
     >>> db = rmm.DeviceBuffer(size=5)
     >>> db2 = rmm.DeviceBuffer.to_device(b"abc")
-    >>> rmm._lib.device_buffer.copy_device_to_ptr(db2.ptr, db.ptr, db2.size)
+    >>> rmm.pylibrmm.device_buffer.copy_device_to_ptr(db2.ptr, db.ptr, db2.size)
     >>> hb = db.copy_to_host()
     >>> hb
     array([97, 98, 99,  0,  0], dtype=uint8)

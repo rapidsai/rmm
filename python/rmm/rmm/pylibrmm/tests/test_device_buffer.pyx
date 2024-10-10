@@ -1,4 +1,4 @@
-# Copyright (c) 2020, NVIDIA CORPORATION.
+# Copyright (c) 2020-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,8 +16,9 @@ import numpy as np
 
 from libcpp.memory cimport make_unique
 
-from rmm._lib.cuda_stream_view cimport cuda_stream_default
-from rmm._lib.device_buffer cimport DeviceBuffer, device_buffer
+from rmm.librmm.cuda_stream_view cimport cuda_stream_default
+from rmm.librmm.device_buffer cimport device_buffer
+from rmm.pylibrmm.device_buffer cimport DeviceBuffer
 
 
 def test_release():
