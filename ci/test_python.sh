@@ -9,7 +9,7 @@ cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")"/../
 rapids-logger "Create test conda environment"
 . /opt/conda/etc/profile.d/conda.sh
 
-RAPIDS_VERSION_MAJOR_MINOR="$(rapids-version-major-minor)"
+RAPIDS_VERSION="$(rapids-version)"
 
 rapids-dependency-file-generator \
   --output conda \
@@ -30,8 +30,8 @@ PYTHON_CHANNEL=$(rapids-download-conda-from-s3 python)
 rapids-mamba-retry install \
   --channel "${CPP_CHANNEL}" \
   --channel "${PYTHON_CHANNEL}" \
-  "rmm=${RAPIDS_VERSION_MAJOR_MINOR}" \
-  "librmm=${RAPIDS_VERSION_MAJOR_MINOR}"
+  "rmm=${RAPIDS_VERSION}" \
+  "librmm=${RAPIDS_VERSION}"
 
 RAPIDS_TESTS_DIR=${RAPIDS_TESTS_DIR:-"${PWD}/test-results"}
 RAPIDS_COVERAGE_DIR=${RAPIDS_COVERAGE_DIR:-"${PWD}/coverage-results"}

@@ -6,8 +6,8 @@ set -euo pipefail
 rapids-logger "Create test conda environment"
 . /opt/conda/etc/profile.d/conda.sh
 
-RAPIDS_VERSION_MAJOR_MINOR="$(rapids-version-major-minor)"
-export RAPIDS_VERSION_NUMBER="$RAPIDS_VERSION_MAJOR_MINOR"
+RAPIDS_VERSION="$(rapids-version)"
+export RAPIDS_VERSION_MAJOR_MINOR="$(rapids-version-major-minor)"
 
 rapids-dependency-file-generator \
   --output conda \
@@ -26,8 +26,8 @@ PYTHON_CHANNEL=$(rapids-download-conda-from-s3 python)
 rapids-mamba-retry install \
   --channel "${CPP_CHANNEL}" \
   --channel "${PYTHON_CHANNEL}" \
-  "rmm=${RAPIDS_VERSION_MAJOR_MINOR}" \
-  "librmm=${RAPIDS_VERSION_MAJOR_MINOR}"
+  "rmm=${RAPIDS_VERSION}" \
+  "librmm=${RAPIDS_VERSION}"
 
 export RAPIDS_DOCS_DIR="$(mktemp -d)"
 
@@ -45,4 +45,4 @@ mkdir -p "${RAPIDS_DOCS_DIR}/rmm/html"
 mv _build/dirhtml/* "${RAPIDS_DOCS_DIR}/rmm/html"
 popd
 
-rapids-upload-docs
+RAPIDS_VERSION_NUMBER="${RAPIDS_VERSION_MAJOR_MINOR}" rapids-upload-docs
