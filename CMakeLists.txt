@@ -87,7 +87,6 @@ target_include_directories(rmm INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOUR
 if(CUDA_STATIC_RUNTIME)
   message(STATUS "RMM: Enabling static linking of cudart")
   target_link_libraries(rmm INTERFACE CUDA::cudart_static)
-  target_compile_definitions(rmm INTERFACE RMM_STATIC_CUDART)
 else()
   target_link_libraries(rmm INTERFACE CUDA::cudart)
 endif()
