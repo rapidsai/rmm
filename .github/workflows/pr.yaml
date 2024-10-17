@@ -9,11 +9,41 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  OTEL_SERVICE_NAME: 'pr-rmm'
+  # TODO: this should be set as an org-wide variable
+  OTEL_EXPORTER_OTLP_ENDPOINT: https://136.49.91.190:4318
+  # These are where the secrets in github env vars are written to files. These files don't
+  # exist unless you explicitly write them in a step.
+  # The purpose of setting the environment variable is to tell OpenTelemetry tools where to find them.
+  #     We abuse it a bit by also using it as the write destination for the certificate files.
+  OTEL_EXPORTER_OTLP_CERTIFICATE: "/tmp/certs/ca.crt"
+  OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE: "/tmp/certs/client.crt"
+  OTEL_EXPORTER_OTLP_CLIENT_KEY: "/tmp/certs/client.key"
+  OTEL_EXPORTER_OTLP_PROTOCOL: "http/protobuf"
+  OTEL_EXPORTER_OTLP_HEADERS: ${{ secrets.OTEL_EXPORTER_OTLP_HEADERS }}
+  OTEL_RESOURCE_ATTRIBUTES: "github.repository=${{github.repository}},github.ref=${{github.ref}},github.job_link=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }},github.sha=${{github.sha}}"
+
 jobs:
+  telemetry-setup:
+    runs-on: ubuntu-latest
+    outputs:
+      endpoint: ${{ steps.var-reexports.outputs.endpoint }}
+      top_level_service_name: ${{ steps.var-reexports.outputs.service_name }}
+      resource_attributes: ${{ steps.var-reexports.outputs.resource_attributes }}
+    steps:
+      - name: Echo endpoint to make it available to shared workflows
+        # https://stackoverflow.com/questions/73305126/passing-env-variable-inputs-to-a-reusable-workflow
+        id: var-reexports
+        run: |
+          echo endpoint="${OTEL_EXPORTER_OTLP_ENDPOINT}" >> ${GITHUB_OUTPUT}
+          echo service_name="${OTEL_SERVICE_NAME}" >> ${GITHUB_OUTPUT}
+          echo resource_attributes="${OTEL_RESOURCE_ATTRIBUTES}" >> ${GITHUB_OUTPUT}
   pr-builder:
     needs:
       - changed-files
       - checks
+      - telemetry-setup
       - conda-cpp-build
       - conda-cpp-tests
       - conda-python-build
@@ -24,14 +54,17 @@ jobs:
       - wheel-tests
       - devcontainer
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@branch-24.12
+    uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@add-telemetry
     if: always()
     with:
       needs: ${{ toJSON(needs) }}
   changed-files:
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/changed-files.yaml@branch-24.12
+    needs: telemetry-setup
+    uses: rapidsai/shared-workflows/.github/workflows/changed-files.yaml@add-telemetry
     with:
+      default_endpoint: "${{needs.telemetry-setup.outputs.endpoint}}"
+      resource_attributes: "${{needs.telemetry-setup.outputs.resource_attributes}}"
       files_yaml: |
         test_cpp:
           - '**'
@@ -50,74 +83,107 @@ jobs:
           - '!img/**'
   checks:
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@branch-24.12
+    needs: telemetry-setup
+    uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@add-telemetry
     with:
       enable_check_generated_files: false
+      default_endpoint: "${{needs.telemetry-setup.outputs.endpoint}}"
+      resource_attributes: "${{needs.telemetry-setup.outputs.resource_attributes}}"
   conda-cpp-build:
-    needs: checks
+    needs:
+      - telemetry-setup
+      - checks
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-build.yaml@branch-24.12
+    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-build.yaml@add-telemetry
     with:
       build_type: pull-request
+      default_endpoint: "${{needs.telemetry-setup.outputs.endpoint}}"
+      resource_attributes: "${{needs.telemetry-setup.outputs.resource_attributes}}"
   conda-cpp-tests:
-    needs: [conda-cpp-build, changed-files]
+    needs: [conda-cpp-build, changed-files, telemetry-setup]
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-tests.yaml@branch-24.12
+    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-tests.yaml@add-telemetry
     if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_cpp
     with:
       build_type: pull-request
+      default_endpoint: "${{needs.telemetry-setup.outputs.endpoint}}"
+      resource_attributes: "${{needs.telemetry-setup.outputs.resource_attributes}}"
   conda-python-build:
-    needs: conda-cpp-build
+    needs:
+      - conda-cpp-build
+      - telemetry-setup
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/conda-python-build.yaml@branch-24.12
+    uses: rapidsai/shared-workflows/.github/workflows/conda-python-build.yaml@add-telemetry
     with:
       build_type: pull-request
+      default_endpoint: "${{needs.telemetry-setup.outputs.endpoint}}"
+      resource_attributes: "${{needs.telemetry-setup.outputs.resource_attributes}}"
   conda-python-tests:
-    needs: [conda-python-build, changed-files]
+    needs: [conda-python-build, changed-files, telemetry-setup]
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/conda-python-tests.yaml@branch-24.12
+    uses: rapidsai/shared-workflows/.github/workflows/conda-python-tests.yaml@add-telemetry
     if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_python
     with:
       build_type: pull-request
+      default_endpoint: "${{needs.telemetry-setup.outputs.endpoint}}"
+      resource_attributes: "${{needs.telemetry-setup.outputs.resource_attributes}}"
   docs-build:
-    needs: conda-python-build
+    needs:
+      - conda-python-build
+      - telemetry-setup
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@branch-24.12
+    uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@add-telemetry
     with:
       build_type: pull-request
       node_type: "gpu-v100-latest-1"
       arch: "amd64"
       container_image: "rapidsai/ci-conda:latest"
       run_script: "ci/build_docs.sh"
+      default_endpoint: "${{needs.telemetry-setup.outputs.endpoint}}"
+      resource_attributes: "${{needs.telemetry-setup.outputs.resource_attributes}}"
   wheel-build-cpp:
-    needs: checks
+    needs:
+      - checks
+      - telemetry-setup
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@branch-24.12
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@add-telemetry
     with:
       matrix_filter: group_by([.ARCH, (.CUDA_VER|split(".")|map(tonumber)|.[0])]) | map(max_by(.PY_VER|split(".")|map(tonumber)))
       build_type: pull-request
       script: ci/build_wheel_cpp.sh
+      default_endpoint: "${{needs.telemetry-setup.outputs.endpoint}}"
+      resource_attributes: "${{needs.telemetry-setup.outputs.resource_attributes}}"
   wheel-build-python:
-    needs: wheel-build-cpp
+    needs:
+      - wheel-build-cpp
+      - telemetry-setup
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@branch-24.12
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@add-telemetry
     with:
       build_type: pull-request
       script: ci/build_wheel_python.sh
+      default_endpoint: "${{needs.telemetry-setup.outputs.endpoint}}"
+      resource_attributes: "${{needs.telemetry-setup.outputs.resource_attributes}}"
   wheel-tests:
-    needs: [wheel-build-python, changed-files]
+    needs: [wheel-build-python, changed-files, telemetry-setup]
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-test.yaml@branch-24.12
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-test.yaml@add-telemetry
     if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_python
     with:
       build_type: pull-request
       script: ci/test_wheel.sh
+      default_endpoint: "${{needs.telemetry-setup.outputs.endpoint}}"
+      resource_attributes: "${{needs.telemetry-setup.outputs.resource_attributes}}"
   devcontainer:
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/build-in-devcontainer.yaml@branch-24.12
+    uses: rapidsai/shared-workflows/.github/workflows/build-in-devcontainer.yaml@add-telemetry
+    needs:
+      - telemetry-setup
     with:
       arch: '["amd64"]'
       cuda: '["12.5"]'
+      default_endpoint: "${{needs.telemetry-setup.outputs.endpoint}}"
+      resource_attributes: "${{needs.telemetry-setup.outputs.resource_attributes}}"
       build_command: |
         sccache -z;
         build-all -DBUILD_BENCHMARKS=ON --verbose;
