@@ -19,13 +19,16 @@ option(CODE_COVERAGE "Enable generating code coverage with gcov." OFF)
 include(rapids-test)
 rapids_test_init()
 
+# Ensure tests are using the conda env, so they have the correct release/debug compile flags
+rapids_cmake_support_conda_env(conda_env)
+
 # This function takes in a test name and test source and handles setting all of the associated
 # properties and linking to build the test
 function(ConfigureTestInternal TEST_NAME)
   add_executable(${TEST_NAME} ${ARGN})
   target_include_directories(${TEST_NAME} PRIVATE "$<BUILD_INTERFACE:${RMM_SOURCE_DIR}>")
   target_link_libraries(${TEST_NAME} GTest::gmock GTest::gtest GTest::gmock_main GTest::gtest_main
-                        pthread rmm)
+                        pthread rmm $<TARGET_NAME_IF_EXISTS:conda_env>)
   set_target_properties(
     ${TEST_NAME}
     PROPERTIES POSITION_INDEPENDENT_CODE ON
@@ -40,7 +43,6 @@ function(ConfigureTestInternal TEST_NAME)
                              PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
   target_compile_options(${TEST_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Wall -Werror
                                              -Wno-error=deprecated-declarations>)
-  target_compile_options(${TEST_NAME} PUBLIC "$<$<CONFIG:Debug>:-O0>")
 
   if(DISABLE_DEPRECATION_WARNING)
     target_compile_options(
