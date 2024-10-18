@@ -9,11 +9,64 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  OTEL_SERVICE_NAME: 'pr-rmm'
+  # TODO: this should be set as an org-wide variable
+  OTEL_EXPORTER_OTLP_ENDPOINT: https://136.49.91.190:4318
+  # These are where the secrets in github env vars are written to files. These files don't
+  # exist unless you explicitly write them in a step.
+  # The purpose of setting the environment variable is to tell OpenTelemetry tools where to find them.
+  #     We abuse it a bit by also using it as the write destination for the certificate files.
+  OTEL_EXPORTER_OTLP_CERTIFICATE: "/tmp/certs/ca.crt"
+  OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE: "/tmp/certs/client.crt"
+  OTEL_EXPORTER_OTLP_CLIENT_KEY: "/tmp/certs/client.key"
+  OTEL_EXPORTER_OTLP_PROTOCOL: "http/protobuf"
+  OTEL_EXPORTER_OTLP_HEADERS: ${{ secrets.OTEL_EXPORTER_OTLP_HEADERS }}
+
 jobs:
+  telemetry-setup:
+    runs-on: ubuntu-latest
+    outputs:
+      start_time: ${{ steps.timestamp.outputs.START_TIME }}
+      traceparent: ${{ steps.telemetry-setup.outputs.traceparent }}
+      endpoint: ${{ steps.var-reexports.outputs.endpoint }}
+      top_level_service_name: ${{ steps.var-reexports.outputs.service_name }}
+    steps:
+      - name: Get starting timestamp
+        id: timestamp
+        run:
+            echo "START_TIME=$(date +%s.%N)" >> ${GITHUB_OUTPUT}
+      - name: Echo endpoint to make it available to shared workflows
+        id: var-reexports
+        run: |
+          echo endpoint="${OTEL_EXPORTER_OTLP_ENDPOINT}" >> ${GITHUB_OUTPUT}
+          echo service_name="${OTEL_SERVICE_NAME}" >> ${GITHUB_OUTPUT}
+      - name: Write certificate files for mTLS
+        run: |
+          mkdir -p /tmp/certs
+          cat << EOF > "${OTEL_EXPORTER_OTLP_CERTIFICATE}"
+          ${{ secrets.OTEL_EXPORTER_OTLP_CA_CERTIFICATE }}
+          EOF
+          cat << EOF > "${OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE}"
+          ${{ secrets.OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE }}
+          EOF
+          cat << EOF > "${OTEL_EXPORTER_OTLP_CLIENT_KEY}"
+          ${{ secrets.OTEL_EXPORTER_OTLP_CLIENT_KEY }}
+          EOF
+      - name: Telemetry setup
+        id: telemetry-setup
+        uses: rapidsai/shared-actions/telemetry-traceparent@add-telemetry
+      - name: Start root span
+        uses: rapidsai/shared-actions/telemetry-create-span@add-telemetry
+        with:
+            name: "root span"
+            traceparent: ${{steps.telemetry-setup.outputs.traceparent}}
+            start_time: ${{steps.timestamp.outputs.start_time}}
   pr-builder:
     needs:
       - changed-files
       - checks
+      - telemetry-setup
       - conda-cpp-build
       - conda-cpp-tests
       - conda-python-build
@@ -24,14 +77,17 @@ jobs:
       - wheel-tests
       - devcontainer
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@branch-24.12
+    uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@add-telemetry
     if: always()
     with:
       needs: ${{ toJSON(needs) }}
   changed-files:
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/changed-files.yaml@branch-24.12
+    needs: telemetry-setup
+    uses: rapidsai/shared-workflows/.github/workflows/changed-files.yaml@add-telemetry
     with:
+      default_endpoint: "${{needs.telemetry-setup.outputs.endpoint}}"
+      traceparent: ${{ needs.telemetry-setup.outputs.traceparent }}
       files_yaml: |
         test_cpp:
           - '**'
@@ -50,75 +106,136 @@ jobs:
           - '!img/**'
   checks:
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@branch-24.12
+    needs: telemetry-setup
+    uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@add-telemetry
     with:
       enable_check_generated_files: false
+      default_endpoint: "${{needs.telemetry-setup.outputs.endpoint}}"
+      traceparent: ${{ needs.telemetry-setup.outputs.traceparent }}
+      ignored_pr_jobs: "final_span_update"
   conda-cpp-build:
-    needs: checks
+    needs:
+      - telemetry-setup
+      - checks
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-build.yaml@branch-24.12
+    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-build.yaml@add-telemetry
     with:
       build_type: pull-request
+      default_endpoint: "${{needs.telemetry-setup.outputs.endpoint}}"
+      traceparent: ${{ needs.telemetry-setup.outputs.traceparent }}
   conda-cpp-tests:
-    needs: [conda-cpp-build, changed-files]
+    needs: [conda-cpp-build, changed-files, telemetry-setup]
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-tests.yaml@branch-24.12
+    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-tests.yaml@add-telemetry
     if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_cpp
     with:
       build_type: pull-request
+      default_endpoint: "${{needs.telemetry-setup.outputs.endpoint}}"
+      traceparent: ${{ needs.telemetry-setup.outputs.traceparent }}
   conda-python-build:
-    needs: conda-cpp-build
+    needs:
+      - conda-cpp-build
+      - telemetry-setup
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/conda-python-build.yaml@branch-24.12
+    uses: rapidsai/shared-workflows/.github/workflows/conda-python-build.yaml@add-telemetry
     with:
       build_type: pull-request
+      default_endpoint: "${{needs.telemetry-setup.outputs.endpoint}}"
+      traceparent: ${{ needs.telemetry-setup.outputs.traceparent }}
   conda-python-tests:
-    needs: [conda-python-build, changed-files]
+    needs: [conda-python-build, changed-files, telemetry-setup]
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/conda-python-tests.yaml@branch-24.12
+    uses: rapidsai/shared-workflows/.github/workflows/conda-python-tests.yaml@add-telemetry
     if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_python
     with:
       build_type: pull-request
+      default_endpoint: "${{needs.telemetry-setup.outputs.endpoint}}"
+      traceparent: ${{ needs.telemetry-setup.outputs.traceparent }}
   docs-build:
-    needs: conda-python-build
+    needs:
+      - conda-python-build
+      - telemetry-setup
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@branch-24.12
+    uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@add-telemetry
     with:
       build_type: pull-request
       node_type: "gpu-v100-latest-1"
       arch: "amd64"
       container_image: "rapidsai/ci-conda:latest"
       run_script: "ci/build_docs.sh"
+      default_endpoint: "${{needs.telemetry-setup.outputs.endpoint}}"
+      traceparent: ${{ needs.telemetry-setup.outputs.traceparent }}
   wheel-build-cpp:
-    needs: checks
+    needs:
+      - checks
+      - telemetry-setup
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@branch-24.12
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@add-telemetry
     with:
       matrix_filter: group_by([.ARCH, (.CUDA_VER|split(".")|map(tonumber)|.[0])]) | map(max_by(.PY_VER|split(".")|map(tonumber)))
       build_type: pull-request
       script: ci/build_wheel_cpp.sh
+      default_endpoint: "${{needs.telemetry-setup.outputs.endpoint}}"
+      traceparent: ${{ needs.telemetry-setup.outputs.traceparent }}
   wheel-build-python:
-    needs: wheel-build-cpp
+    needs:
+      - wheel-build-cpp
+      - telemetry-setup
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@branch-24.12
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@add-telemetry
     with:
       build_type: pull-request
       script: ci/build_wheel_python.sh
+      default_endpoint: "${{needs.telemetry-setup.outputs.endpoint}}"
+      traceparent: ${{ needs.telemetry-setup.outputs.traceparent }}
   wheel-tests:
-    needs: [wheel-build-python, changed-files]
+    needs: [wheel-build-python, changed-files, telemetry-setup]
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-test.yaml@branch-24.12
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-test.yaml@add-telemetry
     if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_python
     with:
       build_type: pull-request
       script: ci/test_wheel.sh
+      default_endpoint: "${{needs.telemetry-setup.outputs.endpoint}}"
+      traceparent: ${{ needs.telemetry-setup.outputs.traceparent }}
   devcontainer:
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/build-in-devcontainer.yaml@branch-24.12
+    uses: rapidsai/shared-workflows/.github/workflows/build-in-devcontainer.yaml@add-telemetry
+    needs:
+      - telemetry-setup
     with:
       arch: '["amd64"]'
       cuda: '["12.5"]'
+      default_endpoint: "${{needs.telemetry-setup.outputs.endpoint}}"
+      traceparent: ${{ needs.telemetry-setup.outputs.traceparent }}
       build_command: |
         sccache -z;
         build-all -DBUILD_BENCHMARKS=ON --verbose;
         sccache -s;
+  final_span_update:
+    runs-on: ubuntu-latest
+    needs: [pr-builder, telemetry-setup]
+    steps:
+      - name: Get final timestamp
+        id: timestamp
+        run:
+            echo "FINAL_TIME=$(date +%s.%N)" >> ${GITHUB_OUTPUT}
+      - name: Write certificate files for mTLS
+        run: |
+          mkdir -p /tmp/certs
+          cat << EOF > ${OTEL_EXPORTER_OTLP_CERTIFICATE}
+          ${{ secrets.OTEL_EXPORTER_OTLP_CA_CERTIFICATE }}
+          EOF
+          cat << EOF > ${OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE}
+          ${{ secrets.OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE }}
+          EOF
+          cat << EOF > ${OTEL_EXPORTER_OTLP_CLIENT_KEY}
+          ${{ secrets.OTEL_EXPORTER_OTLP_CLIENT_KEY }}
+          EOF
+      - name: Update root span with final completion time
+        if: always()
+        uses: rapidsai/shared-actions/telemetry-create-span@add-telemetry
+        with:
+            traceparent: ${{needs.telemetry-setup.outputs.traceparent}}
+            start_time: ${{needs.telemetry-setup.outputs.start_time}}
+            end_time: ${{steps.timestamp.outputs.FINAL_TIME}}
