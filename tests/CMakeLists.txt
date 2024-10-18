@@ -19,8 +19,7 @@ option(CODE_COVERAGE "Enable generating code coverage with gcov." OFF)
 include(rapids-test)
 rapids_test_init()
 
-# Make sure tests are using the conda env, and properly
-# getting the correct release/debug compile flags
+# Ensure tests are using the conda env, so they have the correct release/debug compile flags
 rapids_cmake_support_conda_env(conda_env)
 
 # This function takes in a test name and test source and handles setting all of the associated
