@@ -16,6 +16,6 @@ rapids-print-env
 rapids-logger "Begin cpp build"
 
 # This calls mambabuild when boa is installed (as is the case in the CI images)
-RAPIDS_PACKAGE_VERSION=$(rapids-generate-version) rapids-conda-retry mambabuild conda/recipes/librmm
+RAPIDS_PACKAGE_VERSION=$(rapids-generate-version) rapids-conda-retry build conda/recipes/librmm
 
 rapids-upload-conda-to-s3 cpp
