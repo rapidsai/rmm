@@ -39,9 +39,7 @@
 #include <optional>
 #include <set>
 
-namespace RMM_NAMESPACE {
-namespace mr::detail::arena {
-
+namespace rmm::mr::detail::arena {
 /**
  * @brief Align up to nearest size class.
  *
@@ -495,7 +493,7 @@ inline auto max_free_size(std::set<superblock> const& superblocks)
  * @tparam Upstream Memory resource to use for allocating the arena. Implements
  * rmm::mr::device_memory_resource interface.
  */
-class RMM_HIDDEN global_arena final {
+class global_arena final {
  public:
   /**
    * @brief Construct a global arena.
@@ -996,6 +994,4 @@ class arena_cleaner {
   /// A non-owning pointer to the arena that may need cleaning.
   std::weak_ptr<arena> arena_;
 };
-
-}  // namespace mr::detail::arena
-}  // namespace RMM_NAMESPACE
+}  // namespace rmm::mr::detail::arena
