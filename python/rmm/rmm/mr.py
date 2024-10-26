@@ -46,6 +46,7 @@ from rmm.pylibrmm.memory_resource import (
 )
 
 __all__ = [
+    "ArenaMemoryResource",
     "BinningMemoryResource",
     "CallbackMemoryResource",
     "CudaAsyncMemoryResource",
