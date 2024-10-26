@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,129 +16,267 @@
 
 #pragma once
 
-#include <rmm/detail/export.hpp>
+// TODO: Add RMM_EXPORT tags or equivalent
+// TODO: Remove, just here so vim shows everything
+#define SUPPORTS_LOGGING
+#define LOGGER_NAMESPACE rmm
 
-#include <fmt/format.h>
-#include <fmt/ostream.h>
-#include <spdlog/sinks/basic_file_sink.h>
+// TODO: Remove this, right now it's just here so that logger() can return a
+// spdlog::logger for backwards-compat testing.
 #include <spdlog/spdlog.h>
 
-#include <array>
-#include <iostream>
+#include <memory>
 #include <string>
 
-namespace RMM_NAMESPACE {
+namespace LOGGER_NAMESPACE {
 
 namespace detail {
 
 /**
- * @brief Returns the default log filename for the RMM global logger.
- *
- * If the environment variable `RMM_DEBUG_LOG_FILE` is defined, its value is used as the path and
- * name of the log file. Otherwise, the file `rmm_log.txt` in the current working directory is used.
- *
- * @return std::string The default log file name.
+ * @class fake_logger_impl
+ * @brief The fake implementation of the logger that performs no-ops.
+ * This is the default behavior if real logging is not enabled.
  */
-inline std::string default_log_filename()
-{
-  auto* filename = std::getenv("RMM_DEBUG_LOG_FILE");
-  return (filename == nullptr) ? std::string{"rmm_log.txt"} : std::string{filename};
-}
+class fake_impl {
+ public:
+  fake_impl() = default;
 
-/**
- * @brief Simple wrapper around a spdlog::logger that performs RMM-specific initialization
- */
-struct logger_wrapper {
-  spdlog::logger logger_;  ///< The underlying logger
-
-  logger_wrapper()
-    : logger_{"RMM",
-              std::make_shared<spdlog::sinks::basic_file_sink_mt>(
-                default_log_filename(), true  // truncate file
-                )}
+  template <typename... Args>
+  void log(Args&&... args)
   {
-    logger_.set_pattern("[%6t][%H:%M:%S:%f][%-6l] %v");
-    logger_.flush_on(spdlog::level::warn);
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_INFO
-#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-    logger_.info("----- RMM LOG BEGIN [PTDS ENABLED] -----");
-#else
-    logger_.info("----- RMM LOG BEGIN [PTDS DISABLED] -----");
-#endif
-    logger_.flush();
-#endif
   }
 };
 
-/**
- * @brief Represent a size in number of bytes.
- */
-struct bytes {
-  std::size_t value;  ///< The size in bytes
+// Forward declaration of the real implementation
+struct impl;
 
-  /**
-   * @brief Construct a new bytes object
-   *
-   * @param os The output stream
-   * @param value The size in bytes
-   */
-  friend std::ostream& operator<<(std::ostream& os, bytes const& value)
-  {
-    static std::array units{"B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"};
-
-    int index = 0;
-    auto size = static_cast<double>(value.value);
-    while (size > 1024) {
-      size /= 1024;
-      index++;
-    }
-    return os << size << ' ' << units.at(index);
-  }
-};
-
-inline spdlog::logger& logger()
-{
-  static detail::logger_wrapper wrapped{};
-  return wrapped.logger_;
-}
 }  // namespace detail
 
+// These defines must be kept in sync with spdlog or bad things will happen!
+#define RMM_LEVEL_TRACE    0
+#define RMM_LEVEL_DEBUG    1
+#define RMM_LEVEL_INFO     2
+#define RMM_LEVEL_WARN     3
+#define RMM_LEVEL_ERROR    4
+#define RMM_LEVEL_CRITICAL 5
+#define RMM_LEVEL_OFF      6
+
+enum class level_enum : int32_t {
+  trace    = RMM_LEVEL_TRACE,
+  debug    = RMM_LEVEL_DEBUG,
+  info     = RMM_LEVEL_INFO,
+  warn     = RMM_LEVEL_WARN,
+  error    = RMM_LEVEL_ERROR,
+  critical = RMM_LEVEL_CRITICAL,
+  off      = RMM_LEVEL_OFF,
+  n_levels
+};
+
 /**
- * @brief Returns the global RMM logger
- *
- * @ingroup logging
- *
- * This is a spdlog logger. The easiest way to log messages is to use the `RMM_LOG_*` macros.
- *
- * @return spdlog::logger& The logger.
+ * @class logger
+ * @brief A logger class that either uses the real implementation (via spdlog) or performs no-ops if
+ * not supported.
  */
+class logger {
+ public:
+  /**
+   * @brief Constructor for logger.
+   * Initializes the logger based on whether logging is supported.
+   */
+#ifdef SUPPORTS_LOGGING
+  logger(std::string name, std::string filename);
+#else
+  logger(std::string name, std::string filename) {}
+#endif
+
+  // Not default constructible.
+  inline logger() = delete;
+
+  // TODO: Remove inline, see below
+  /**
+   * @brief Destructor for logger.
+   */
+#ifdef SUPPORTS_LOGGING
+  inline ~logger();
+#else
+  inline ~logger() = default;
+#endif
+
+  /**
+   * @brief Copy constructor for logger.
+   */
+  logger(logger const&) = delete;
+  // delete copy assignment operator
+  logger& operator=(logger const&) = delete;
+  // TODO: These functions shouldn't be inline, but are for the moment until
+  // we switch over to a compiled component for the impl.
+  // default move constructor
+  inline logger(logger&&) = default;
+  // default move assignment operator
+  inline logger& operator=(logger&&) = default;
+
+  template <typename... Args>
+  void log(level_enum lvl, std::string const& format, Args&&... args)
+  {
+    auto size = static_cast<size_t>(std::snprintf(nullptr, 0, format.c_str(), args...) + 1);
+    if (size <= 0) { throw std::runtime_error("Error during formatting."); }
+    std::unique_ptr<char[]> buf(new char[size]);
+    std::snprintf(buf.get(), size, format.c_str(), args...);
+    log(lvl, {buf.get(), buf.get() + size - 1});
+  }
+
+  // TODO: Remove inline, see above.
+  inline void log(level_enum lvl, std::string const& message);
+
+  template <typename... Args>
+  void trace(std::string const& format, Args&&... args)
+  {
+    log(level_enum::trace, format, std::forward<Args>(args)...);
+  }
+
+  template <typename... Args>
+  void debug(std::string const& format, Args&&... args)
+  {
+    log(level_enum::debug, format, std::forward<Args>(args)...);
+  }
+
+  template <typename... Args>
+  void info(std::string const& format, Args&&... args)
+  {
+    log(level_enum::info, format, std::forward<Args>(args)...);
+  }
+
+  template <typename... Args>
+  void warn(std::string const& format, Args&&... args)
+  {
+    log(level_enum::warn, format, std::forward<Args>(args)...);
+  }
+
+  template <typename... Args>
+  void error(std::string const& format, Args&&... args)
+  {
+    log(level_enum::error, format, std::forward<Args>(args)...);
+  }
+
+  template <typename... Args>
+  void critical(std::string const& format, Args&&... args)
+  {
+    log(level_enum::critical, format, std::forward<Args>(args)...);
+  }
+
+  /**
+   * @brief Check at compile-time whether logging is supported.
+   * @return `true` if logging is supported, `false` otherwise.
+   */
+  static constexpr bool supports_logging()
+  {
+#ifdef SUPPORTS_LOGGING
+    return true;
+#else
+    return false;
+#endif
+  }
+
+// TODO: Make this private once we don't need to access the impl for
+// backwards-compat with legacy rmm.
+// private:
+// TODO: Support args to the impl constructor
+#ifdef SUPPORTS_LOGGING
+  std::unique_ptr<detail::impl> pImpl{};
+#else
+  std::unique_ptr<detail::fake_impl> pImpl{};
+#endif
+};
+
+namespace detail {
+
+#ifdef SUPPORTS_LOGGING
+inline logger& default_logger();
+#else
+inline logger& default_logger()
+{
+  // This is a no-op so pass empty args.
+  static class logger logger {
+    "", ""
+  };
+  return logger;
+}
+#endif
+
+// TODO: This only exists for backwards compat and should eventually be removed.
+#ifdef SUPPORTS_LOGGING
+inline spdlog::logger& logger();
+#else
+inline spdlog::logger& logger()
+{
+  // This branch won't compile. It's not worth supporting since it's not a
+  // real backwards-compat path.
+}
+#endif
+
+}  // namespace detail
+
+inline logger& default_logger() { return detail::default_logger(); }
+
 [[deprecated(
   "Support for direct access to spdlog loggers in rmm is planned for "
-  "removal")]] RMM_EXPORT inline spdlog::logger&
+  "removal")]] inline spdlog::logger&
 logger()
 {
   return detail::logger();
 }
 
-//! @cond Doxygen_Suppress
-//
-// The default is INFO, but it should be used sparingly, so that by default a log file is only
-// output if there is important information, warnings, errors, and critical failures
-// Log messages that require computation should only be used at level TRACE and DEBUG
-#define RMM_LOG_TRACE(...)    SPDLOG_LOGGER_TRACE(&rmm::detail::logger(), __VA_ARGS__)
-#define RMM_LOG_DEBUG(...)    SPDLOG_LOGGER_DEBUG(&rmm::detail::logger(), __VA_ARGS__)
-#define RMM_LOG_INFO(...)     SPDLOG_LOGGER_INFO(&rmm::detail::logger(), __VA_ARGS__)
-#define RMM_LOG_WARN(...)     SPDLOG_LOGGER_WARN(&rmm::detail::logger(), __VA_ARGS__)
-#define RMM_LOG_ERROR(...)    SPDLOG_LOGGER_ERROR(&rmm::detail::logger(), __VA_ARGS__)
-#define RMM_LOG_CRITICAL(...) SPDLOG_LOGGER_CRITICAL(&rmm::detail::logger(), __VA_ARGS__)
+// Macros for easier logging, similar to spdlog.
+// TODO: Assumes that we want to respect spdlog's own logging macro settings.
+// TODO: We need a way to rename these from RMM to something else. I don't know
+// if that can be done in the code, though, and we might have to do it in the
+// build system via configure_file.
+// TODO: Should we switch this to use _LOGGER_ instead of _LOG_ to match SPDLOG
+// instead of rmm? If we do that will be a breaking change for rmm.
+// TODO: Should we support other signatures for log?
+#define RMM_LOGGER_CALL(logger, level, ...) (logger).log(level, __VA_ARGS__)
 
-//! @endcond
+// TODO: Need to define our own levels to map to spdlogs.
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+#define RMM_LOG_TRACE(...) \
+  RMM_LOGGER_CALL(rmm::default_logger(), rmm::level_enum::trace, __VA_ARGS__)
+#else
+#define RMM_LOG_TRACE(...) (void)0
+#endif
 
-}  // namespace RMM_NAMESPACE
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_DEBUG
+#define RMM_LOG_DEBUG(...) \
+  RMM_LOGGER_CALL(rmm::default_logger(), rmm::level_enum::debug, __VA_ARGS__)
+#else
+#define RMM_LOG_DEBUG(...) (void)0
+#endif
 
-// Doxygen doesn't like this because we're overloading something from fmt
-//! @cond Doxygen_Suppress
-template <>
-struct fmt::formatter<rmm::detail::bytes> : fmt::ostream_formatter {};
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_INFO
+#define RMM_LOG_INFO(...) RMM_LOGGER_CALL(rmm::default_logger(), rmm::level_enum::info, __VA_ARGS__)
+#else
+#define RMM_LOG_INFO(...) (void)0
+#endif
 
-//! @endcond
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_WARN
+#define RMM_LOG_WARN(...) RMM_LOGGER_CALL(rmm::default_logger(), rmm::level_enum::warn, __VA_ARGS__)
+#else
+#define RMM_LOG_WARN(...) (void)0
+#endif
+
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_ERROR
+#define RMM_LOG_ERROR(...) \
+  RMM_LOGGER_CALL(rmm::default_logger(), rmm::level_enum::error, __VA_ARGS__)
+#else
+#define RMM_LOG_ERROR(...) (void)0
+#endif
+
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_CRITICAL
+#define RMM_LOG_CRITICAL(...) \
+  RMM_LOGGER_CALL(rmm::default_logger(), rmm::level_enum::critical, __VA_ARGS__)
+#else
+#define RMM_LOG_CRITICAL(...) (void)0
+#endif
+
+}  // namespace LOGGER_NAMESPACE
+
+#include <rmm/logger_impl.hpp>
