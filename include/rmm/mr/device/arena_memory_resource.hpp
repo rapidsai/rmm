@@ -273,7 +273,7 @@ class arena_memory_resource final : public device_memory_resource {
    * @param stream The stream associated with the arena.
    * @return arena& The arena associated with the current thread or the given stream.
    */
-  arena& get_arena(cuda_stream_view stream)
+  RMM_HIDDEN arena& get_arena(cuda_stream_view stream)
   {
     if (use_per_thread_arena(stream)) { return get_thread_arena(); }
     return get_stream_arena(stream);
