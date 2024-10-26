@@ -16,10 +16,19 @@
 
 #pragma once
 
-// TODO: Once we move to proper impl
-// #include <rmm/rapids_logger.hpp>
+// TODO: For convenience, I'm defining all the macros here that we need for vim
+// to render the desired bits of code.
 #define SUPPORTS_LOGGING
+#define LOGGER_NAMESPACE rmm
+#define RMM_BACKWARDS_COMPATIBILITY
 
+// We'll flip the include once this
+#ifndef RMM_BACKWARDS_COMPATIBILITY
+#include <rmm/rapids_logger.hpp>
+#endif
+
+// In the long run this shouldn't be necessary because the file will only be
+// compiled if SUPPORTS_LOGGING is enabled.
 #ifdef SUPPORTS_LOGGING
 
 #include <fmt/format.h>
@@ -102,7 +111,6 @@ struct bytes {
 
 }  // namespace detail
 
-// TODO: Probably don't want to default construct here for the underlying spdlog logger.
 inline logger::logger(std::string name, std::string filename)
   : pImpl{std::make_unique<detail::impl>(name, filename)}
 {
@@ -112,8 +120,7 @@ inline logger::~logger() = default;
 
 inline void logger::log(level_enum lvl, std::string const& message) { pImpl->log(lvl, message); }
 
-// TODO: The detail implementations are just for backwards compat of the spdlog
-// version and should be removed.
+#ifdef RMM_BACKWARDS_COMPATIBILITY
 namespace detail {
 
 inline class logger& default_logger()
@@ -137,6 +144,7 @@ inline class logger& default_logger()
 inline class spdlog::logger& logger() { return default_logger().pImpl->underlying; }
 
 }  // namespace detail
+#endif
 
 // TODO: We can't macro this comment, maybe another reason to use configure_file.
 }  // namespace LOGGER_NAMESPACE

@@ -14,16 +14,19 @@
  * limitations under the License.
  */
 
+// TODO: Add RMM_EXPORT tags or equivalent
+
 #pragma once
 
-// TODO: Add RMM_EXPORT tags or equivalent
-// TODO: Remove, just here so vim shows everything
+// TODO: For convenience, I'm defining all the macros here that we need for vim
+// to render the desired bits of code.
 #define SUPPORTS_LOGGING
 #define LOGGER_NAMESPACE rmm
+#define RMM_BACKWARDS_COMPATIBILITY
 
-// TODO: Remove this, right now it's just here so that logger() can return a
-// spdlog::logger for backwards-compat testing.
+#ifdef RMM_BACKWARDS_COMPATIBILITY
 #include <spdlog/spdlog.h>
+#endif
 
 #include <memory>
 #include <string>
@@ -90,16 +93,19 @@ class logger {
 #endif
 
   // Not default constructible.
-  inline logger() = delete;
+  logger() = delete;
 
-  // TODO: Remove inline, see below
   /**
    * @brief Destructor for logger.
    */
 #ifdef SUPPORTS_LOGGING
+#ifdef RMM_BACKWARDS_COMPATIBILITY
   inline ~logger();
 #else
-  inline ~logger() = default;
+  ~logger();
+#endif
+#else
+  ~logger() = default;
 #endif
 
   /**
@@ -108,12 +114,10 @@ class logger {
   logger(logger const&) = delete;
   // delete copy assignment operator
   logger& operator=(logger const&) = delete;
-  // TODO: These functions shouldn't be inline, but are for the moment until
-  // we switch over to a compiled component for the impl.
   // default move constructor
-  inline logger(logger&&) = default;
+  logger(logger&&) = default;
   // default move assignment operator
-  inline logger& operator=(logger&&) = default;
+  logger& operator=(logger&&) = default;
 
   template <typename... Args>
   void log(level_enum lvl, std::string const& format, Args&&... args)
@@ -125,8 +129,11 @@ class logger {
     log(lvl, {buf.get(), buf.get() + size - 1});
   }
 
-  // TODO: Remove inline, see above.
+#ifdef RMM_BACKWARDS_COMPATIBILITY
   inline void log(level_enum lvl, std::string const& message);
+#else
+  void log(level_enum lvl, std::string const& message);
+#endif
 
   template <typename... Args>
   void trace(std::string const& format, Args&&... args)
@@ -177,9 +184,9 @@ class logger {
 #endif
   }
 
-// TODO: Make this private once we don't need to access the impl for
-// backwards-compat with legacy rmm.
-// private:
+#ifndef RMM_BACKWARDS_COMPATIBILITY
+ private:
+#endif
 // TODO: Support args to the impl constructor
 #ifdef SUPPORTS_LOGGING
   std::unique_ptr<detail::impl> pImpl{};
@@ -190,6 +197,7 @@ class logger {
 
 namespace detail {
 
+#ifdef RMM_BACKWARDS_COMPATIBILITY
 #ifdef SUPPORTS_LOGGING
 inline logger& default_logger();
 #else
@@ -203,7 +211,6 @@ inline logger& default_logger()
 }
 #endif
 
-// TODO: This only exists for backwards compat and should eventually be removed.
 #ifdef SUPPORTS_LOGGING
 inline spdlog::logger& logger();
 #else
@@ -213,9 +220,11 @@ inline spdlog::logger& logger()
   // real backwards-compat path.
 }
 #endif
+#endif
 
 }  // namespace detail
 
+#ifdef RMM_BACKWARDS_COMPATIBILITY
 inline logger& default_logger() { return detail::default_logger(); }
 
 [[deprecated(
@@ -225,6 +234,9 @@ logger()
 {
   return detail::logger();
 }
+#else
+// TODO: Move the detail implementation of default_logger here.
+#endif
 
 // Macros for easier logging, similar to spdlog.
 // TODO: Assumes that we want to respect spdlog's own logging macro settings.
@@ -279,4 +291,6 @@ logger()
 
 }  // namespace LOGGER_NAMESPACE
 
+#ifdef RMM_BACKWARDS_COMPATIBILITY
 #include <rmm/logger_impl.hpp>
+#endif
