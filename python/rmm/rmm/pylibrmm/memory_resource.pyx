@@ -313,7 +313,9 @@ cdef class PoolMemoryResource(UpstreamResourceAdaptor):
 
 cdef class ArenaMemoryResource(UpstreamResourceAdaptor):
     def __cinit__(
-        self, DeviceMemoryResource upstream_mr, arena_size=None, dump_log_on_failure=False
+        self, DeviceMemoryResource upstream_mr,
+        arena_size=None,
+        dump_log_on_failure=False
     ):
         cdef optional[size_t] c_arena_size = (
             optional[size_t]() if
@@ -335,7 +337,8 @@ cdef class ArenaMemoryResource(UpstreamResourceAdaptor):
         bool dump_log_on_failure=False
     ):
         """
-        A suballocator that emphasizes fragmentation avoidance and scalable concurrency support.
+        A suballocator that emphasizes fragmentation avoidance and scalable concurrency
+        support.
 
         Parameters
         ----------
@@ -346,6 +349,7 @@ cdef class ArenaMemoryResource(UpstreamResourceAdaptor):
             memory on the device is used.
         dump_log_on_failure : bool, optional
             Whether to dump the arena on allocation failure.
+
         """
         pass
 
