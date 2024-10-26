@@ -102,6 +102,7 @@ class arena_memory_resource final : public device_memory_resource {
                                          std::make_shared<spdlog::sinks::basic_file_sink_mt>(
                                            "rmm_arena_memory_dump.log", true /*truncate file*/));
       // Set the level to `debug` for more detailed output.
+      logger_->set_level(spdlog::level::info);
     }
   }
 
@@ -127,6 +128,7 @@ class arena_memory_resource final : public device_memory_resource {
                                          std::make_shared<spdlog::sinks::basic_file_sink_mt>(
                                            "rmm_arena_memory_dump.log", true /*truncate file*/));
       // Set the level to `debug` for more detailed output.
+      logger_->set_level(spdlog::level::info);
     }
   }
 
