@@ -64,6 +64,7 @@ from rmm.librmm.memory_resource cimport (
     managed_memory_resource,
     percent_of_free_device_memory as c_percent_of_free_device_memory,
     pool_memory_resource,
+    arena_memory_resource,
     posix_file_descriptor,
     prefetch_resource_adaptor,
     sam_headroom_memory_resource,
@@ -309,6 +310,45 @@ cdef class PoolMemoryResource(UpstreamResourceAdaptor):
             <pool_memory_resource[device_memory_resource]*>(self.get_mr())
         )
         return c_mr.pool_size()
+
+cdef class ArenaMemoryResource(UpstreamResourceAdaptor):
+    def __cinit__(
+        self, DeviceMemoryResource upstream_mr, arena_size=None, dump_log_on_failure=False
+    ):
+        cdef optional[size_t] c_arena_size = (
+            optional[size_t]() if
+            arena_size is None
+            else optional[size_t](<size_t> parse_bytes(arena_size))
+        )
+        self.c_obj.reset(
+            new arena_memory_resource[device_memory_resource](
+                upstream_mr.get_mr(),
+                c_arena_size,
+                dump_log_on_failure,
+            )
+        )
+
+    def __init__(
+        self,
+        DeviceMemoryResource upstream_mr,
+        object arena_size=None,
+        bool dump_log_on_failure=False
+    ):
+        """
+        A suballocator that emphasizes fragmentation avoidance and scalable concurrency support.
+
+        Parameters
+        ----------
+        upstream_mr : DeviceMemoryResource
+            The DeviceMemoryResource from which to allocate memory for arenas.
+        arena_size : int, optional
+            The size of each arena in bytes. By default, half the available
+            memory on the device is used.
+        dump_log_on_failure : bool, optional
+            Whether to dump the arena on allocation failure.
+        """
+        pass
+
 
 cdef class FixedSizeMemoryResource(UpstreamResourceAdaptor):
     def __cinit__(
