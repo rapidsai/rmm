@@ -495,7 +495,7 @@ inline auto max_free_size(std::set<superblock> const& superblocks)
  * @tparam Upstream Memory resource to use for allocating the arena. Implements
  * rmm::mr::device_memory_resource interface.
  */
-class global_arena final {
+RMM_HIDDEN class global_arena final {
  public:
   /**
    * @brief Construct a global arena.
