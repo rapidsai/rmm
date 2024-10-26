@@ -157,9 +157,7 @@ class arena_memory_resource final : public device_memory_resource {
       std::unique_lock lock(mtx_);
       defragment();
       void* pointer = arena.allocate(bytes);
-      if (pointer == nullptr) {
-        RMM_FAIL("Maximum pool size exceeded", rmm::out_of_memory);
-      }
+      if (pointer == nullptr) { RMM_FAIL("Maximum pool size exceeded", rmm::out_of_memory); }
       return pointer;
     }
   }
