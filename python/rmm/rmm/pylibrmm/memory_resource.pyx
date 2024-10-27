@@ -345,8 +345,8 @@ cdef class ArenaMemoryResource(UpstreamResourceAdaptor):
         upstream_mr : DeviceMemoryResource
             The DeviceMemoryResource from which to allocate memory for arenas.
         arena_size : int, optional
-            The size of each arena in bytes. By default, half the available
-            memory on the device is used.
+            Size in bytes of the global arena. Defaults to half of the available memory
+            on the current device.
         dump_log_on_failure : bool, optional
             Whether to dump the arena on allocation failure.
 
