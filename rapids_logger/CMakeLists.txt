@@ -42,18 +42,47 @@ function(rapids_make_logger)
   list(APPEND CMAKE_MESSAGE_CONTEXT "rapids_make_logger")
 
   set(_rapids_options)
-  set(_rapids_one_value LOGGER_HEADER_DIR LOGGER_NAMESPACE LOGGER_MACRO_PREFIX)
+  # TODO: Check for required options
+  set(_rapids_one_value BUILD_EXPORT_SET INSTALL_EXPORT_SET LOGGER_TARGET LOGGER_HEADER_DIR
+                        LOGGER_NAMESPACE LOGGER_MACRO_PREFIX CMAKE_NAMESPACE)
   set(_rapids_multi_value)
   cmake_parse_arguments(_RAPIDS "${_rapids_options}" "${_rapids_one_value}"
                         "${_rapids_multi_value}" ${ARGN})
 
-  # TODO: If we make rapids_logger its own project then PROJECT_BINARY_DIR won't be quite right,
-  # we'll have to get it from the top-level project.
-  set(LOGGER_OUTPUT_FILE ${PROJECT_BINARY_DIR}/${_RAPIDS_LOGGER_HEADER_DIR}/logger.hpp)
-  configure_file(${CMAKE_CURRENT_FUNCTION_LIST_DIR}/logger.hpp.in ${LOGGER_OUTPUT_FILE})
-  install(FILES ${LOGGER_OUTPUT_FILE} DESTINATION ${_RAPIDS_LOGGER_HEADER_DIR})
+  # All paths are computed relative to the current source/binary dir of the file from which the
+  # function is invoked. As a result we cannot use relative paths here because CMake will root these
+  # paths incorrectly for configure_file/install.
+  set(BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR}/${_RAPIDS_LOGGER_HEADER_DIR})
+  set(INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/${_RAPIDS_LOGGER_HEADER_DIR})
 
-  set(LOGGER_IMPL_OUTPUT_FILE ${PROJECT_BINARY_DIR}/${_RAPIDS_LOGGER_HEADER_DIR}/logger_impl.hpp)
-  configure_file(${CMAKE_CURRENT_FUNCTION_LIST_DIR}/logger_impl.hpp.in ${LOGGER_IMPL_OUTPUT_FILE})
-  install(FILES ${LOGGER_IMPL_OUTPUT_FILE} DESTINATION ${_RAPIDS_LOGGER_HEADER_DIR})
+  configure_file(${CMAKE_CURRENT_FUNCTION_LIST_DIR}/logger.hpp.in ${BUILD_DIR}/logger.hpp)
+  install(FILES ${LOGGER_OUTPUT_FILE} DESTINATION ${INSTALL_DIR})
+
+  configure_file(${CMAKE_CURRENT_FUNCTION_LIST_DIR}/logger_impl.hpp.in ${BUILD_DIR}/logger_impl.hpp)
+  install(FILES ${LOGGER_IMPL_OUTPUT_FILE} DESTINATION ${INSTALL_DIR})
+
+  add_library(${_RAPIDS_LOGGER_TARGET} INTERFACE)
+  include(GNUInstallDirs)
+  # Note: The BUILD_INTERFACE setting assumes that LOGGER_HEADER_DIR is the subdirectory of
+  # CMAKE_INSTALL_INCLUDEDIR relative to which all includes are rooted in the C++ code files. I
+  # think that is a safe assumption though since if it were violated then the INSTALL_INTERFACE
+  # would not only be incorrect (if computed using LOGGER_HEADER_DIR), but it would also break
+  # consumers of the installed package who expect to be able to write `#include
+  # <${LOGGER_HEADER_DIR/include\//}/logger.hpp>` and have it work.
+  target_include_directories(
+    ${_RAPIDS_LOGGER_TARGET}
+    INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_INCLUDEDIR}>"
+              "$<INSTALL_INTERFACE:${_RAPIDS_LOGGER_HEADER_DIR}>")
+  if(_RAPIDS_LOGGER_CMAKE_NAMESPACE)
+    set(CMAKE_NAMESPACE "NAMESPACE ${_RAPIDS_LOGGER_CMAKE_NAMESPACE}")
+  endif()
+  if(_RAPIDS_INSTALL_EXPORT_SET)
+    install(
+      TARGETS ${_RAPIDS_LOGGER_TARGET}
+      EXPORT ${_RAPIDS_INSTALL_EXPORT_SET}
+      ${CMAKE_NAMESPACE})
+  endif()
+  if(_RAPIDS_BUILD_EXPORT_SET)
+    export(EXPORT ${_RAPIDS_BUILD_EXPORT_SET} ${CMAKE_NAMESPACE})
+  endif()
 endfunction()

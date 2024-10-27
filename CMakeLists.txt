@@ -58,11 +58,10 @@ message(STATUS "RMM: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'")
 # cudart can be linked statically or dynamically
 option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
 
-if(NOT RMM_GENERATED_INCLUDE_DIR)
-  set(RMM_GENERATED_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/include")
-endif()
 add_subdirectory(rapids_logger)
-rapids_make_logger(LOGGER_HEADER_DIR include/rmm LOGGER_NAMESPACE rmm LOGGER_MACRO_PREFIX RMM)
+rapids_make_logger(
+  LOGGER_TARGET rmm_logger LOGGER_HEADER_DIR include/rmm LOGGER_NAMESPACE rmm LOGGER_MACRO_PREFIX
+  RMM BUILD_EXPORT_SET rmm-exports INSTALL_EXPORT_SET rmm-exports CMAKE_NAMESPACE rmm::)
 
 # ##################################################################################################
 # * compiler options -------------------------------------------------------------------------------
@@ -90,12 +89,8 @@ include(cmake/thirdparty/get_nvtx.cmake)
 add_library(rmm INTERFACE)
 add_library(rmm::rmm ALIAS rmm)
 
-target_include_directories(
-  rmm
-  INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-            # TODO: This should be handled by the generated target.
-            "$<BUILD_INTERFACE:${RMM_GENERATED_INCLUDE_DIR}>"
-            "$<INSTALL_INTERFACE:include>")
+target_include_directories(rmm INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+                                         "$<INSTALL_INTERFACE:include>")
 
 if(CUDA_STATIC_RUNTIME)
   message(STATUS "RMM: Enabling static linking of cudart")
@@ -105,6 +100,7 @@ else()
   target_link_libraries(rmm INTERFACE CUDA::cudart)
 endif()
 
+target_link_libraries(rmm INTERFACE rmm_logger)
 target_link_libraries(rmm INTERFACE CCCL::CCCL)
 target_link_libraries(rmm INTERFACE fmt::fmt-header-only)
 target_link_libraries(rmm INTERFACE spdlog::spdlog_header_only)
