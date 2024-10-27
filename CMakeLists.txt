@@ -60,8 +60,24 @@ option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
 
 add_subdirectory(rapids_logger)
 rapids_make_logger(
-  LOGGER_TARGET rmm_logger LOGGER_HEADER_DIR include/rmm LOGGER_NAMESPACE rmm LOGGER_MACRO_PREFIX
-  RMM BUILD_EXPORT_SET rmm-exports INSTALL_EXPORT_SET rmm-exports CMAKE_NAMESPACE rmm::)
+  LOGGER_TARGET
+  rmm_logger
+  LOGGER_HEADER_DIR
+  include/rmm
+  LOGGER_NAMESPACE
+  rmm
+  LOGGER_MACRO_PREFIX
+  RMM
+  BUILD_EXPORT_SET
+  rmm-exports
+  INSTALL_EXPORT_SET
+  rmm-exports
+  CMAKE_NAMESPACE
+  rmm::
+  # TODO: Make this configurable in rmm. Once we switch fully over to the new implementation, the
+  # default here should be off, but turning it on should activate the compilation of a separate TU.
+  SUPPORTS_LOGGING
+  RMM_BACKWARDS_COMPATIBILITY)
 
 # ##################################################################################################
 # * compiler options -------------------------------------------------------------------------------

@@ -16,11 +16,6 @@
 
 #pragma once
 
-// TODO: For convenience, I'm defining all the macros here that we need for vim
-// to render the desired bits of code.
-#define SUPPORTS_LOGGING
-#define RMM_BACKWARDS_COMPATIBILITY
-
 // We'll flip the include once this
 #ifndef RMM_BACKWARDS_COMPATIBILITY
 #include <rmm/rapids_logger.hpp>

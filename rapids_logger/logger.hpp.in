@@ -18,11 +18,6 @@
 
 #pragma once
 
-// TODO: For convenience, I'm defining all the macros here that we need for vim
-// to render the desired bits of code.
-#define SUPPORTS_LOGGING
-#define RMM_BACKWARDS_COMPATIBILITY
-
 #ifdef RMM_BACKWARDS_COMPATIBILITY
 #include <spdlog/spdlog.h>
 #endif
