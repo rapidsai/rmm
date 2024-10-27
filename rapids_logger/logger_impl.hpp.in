@@ -19,7 +19,6 @@
 // TODO: For convenience, I'm defining all the macros here that we need for vim
 // to render the desired bits of code.
 #define SUPPORTS_LOGGING
-#define LOGGER_NAMESPACE rmm
 #define RMM_BACKWARDS_COMPATIBILITY
 
 // We'll flip the include once this
@@ -38,7 +37,7 @@
 
 #include <memory>
 
-namespace LOGGER_NAMESPACE {
+namespace @_RAPIDS_LOGGER_NAMESPACE@ {
 
 namespace detail {
 
@@ -146,8 +145,7 @@ inline class spdlog::logger& logger() { return default_logger().pImpl->underlyin
 }  // namespace detail
 #endif
 
-// TODO: We can't macro this comment, maybe another reason to use configure_file.
-}  // namespace LOGGER_NAMESPACE
+}  // namespace @_RAPIDS_LOGGER_NAMESPACE@
 
 // Doxygen doesn't like this because we're overloading something from fmt
 //! @cond Doxygen_Suppress

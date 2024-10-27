@@ -37,12 +37,23 @@
 # we'll need to both not specify an export set and EXCLUDE_FROM_ALL.
 # include(../cmake/thirdparty/get_fmt.cmake) include(../cmake/thirdparty/get_spdlog.cmake)
 
-# TODO: Make the dir configurable
-set(LOGGER_OUTPUT_DIR ${RMM_BINARY_DIR}/include/rmm)
-set(LOGGER_OUTPUT_FILE ${LOGGER_OUTPUT_DIR}/logger.hpp)
-configure_file(logger.hpp.in ${LOGGER_OUTPUT_FILE})
-install(FILES ${LOGGER_OUTPUT_FILE} DESTINATION include/rmm)
+# Generate and install the logger files
+function(rapids_make_logger)
+  list(APPEND CMAKE_MESSAGE_CONTEXT "rapids_make_logger")
 
-set(LOGGER_IMPL_OUTPUT_FILE ${LOGGER_OUTPUT_DIR}/logger_impl.hpp)
-configure_file(logger_impl.hpp.in ${LOGGER_IMPL_OUTPUT_FILE})
-install(FILES ${LOGGER_IMPL_OUTPUT_FILE} DESTINATION include/rmm)
+  set(_rapids_options)
+  set(_rapids_one_value LOGGER_HEADER_DIR LOGGER_NAMESPACE LOGGER_MACRO_PREFIX)
+  set(_rapids_multi_value)
+  cmake_parse_arguments(_RAPIDS "${_rapids_options}" "${_rapids_one_value}"
+                        "${_rapids_multi_value}" ${ARGN})
+
+  # TODO: If we make rapids_logger its own project then PROJECT_BINARY_DIR won't be quite right,
+  # we'll have to get it from the top-level project.
+  set(LOGGER_OUTPUT_FILE ${PROJECT_BINARY_DIR}/${_RAPIDS_LOGGER_HEADER_DIR}/logger.hpp)
+  configure_file(${CMAKE_CURRENT_FUNCTION_LIST_DIR}/logger.hpp.in ${LOGGER_OUTPUT_FILE})
+  install(FILES ${LOGGER_OUTPUT_FILE} DESTINATION ${_RAPIDS_LOGGER_HEADER_DIR})
+
+  set(LOGGER_IMPL_OUTPUT_FILE ${PROJECT_BINARY_DIR}/${_RAPIDS_LOGGER_HEADER_DIR}/logger_impl.hpp)
+  configure_file(${CMAKE_CURRENT_FUNCTION_LIST_DIR}/logger_impl.hpp.in ${LOGGER_IMPL_OUTPUT_FILE})
+  install(FILES ${LOGGER_IMPL_OUTPUT_FILE} DESTINATION ${_RAPIDS_LOGGER_HEADER_DIR})
+endfunction()

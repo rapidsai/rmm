@@ -62,6 +62,7 @@ if(NOT RMM_GENERATED_INCLUDE_DIR)
   set(RMM_GENERATED_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/include")
 endif()
 add_subdirectory(rapids_logger)
+rapids_make_logger(LOGGER_HEADER_DIR include/rmm LOGGER_NAMESPACE rmm LOGGER_MACRO_PREFIX RMM)
 
 # ##################################################################################################
 # * compiler options -------------------------------------------------------------------------------

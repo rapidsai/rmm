@@ -21,7 +21,6 @@
 // TODO: For convenience, I'm defining all the macros here that we need for vim
 // to render the desired bits of code.
 #define SUPPORTS_LOGGING
-#define LOGGER_NAMESPACE rmm
 #define RMM_BACKWARDS_COMPATIBILITY
 
 #ifdef RMM_BACKWARDS_COMPATIBILITY
@@ -31,7 +30,7 @@
 #include <memory>
 #include <string>
 
-namespace LOGGER_NAMESPACE {
+namespace @_RAPIDS_LOGGER_NAMESPACE@ {
 
 namespace detail {
 
@@ -56,22 +55,22 @@ struct impl;
 }  // namespace detail
 
 // These defines must be kept in sync with spdlog or bad things will happen!
-#define RMM_LEVEL_TRACE    0
-#define RMM_LEVEL_DEBUG    1
-#define RMM_LEVEL_INFO     2
-#define RMM_LEVEL_WARN     3
-#define RMM_LEVEL_ERROR    4
-#define RMM_LEVEL_CRITICAL 5
-#define RMM_LEVEL_OFF      6
+#define @_RAPIDS_LOGGER_MACRO_PREFIX@_LEVEL_TRACE    0
+#define @_RAPIDS_LOGGER_MACRO_PREFIX@_LEVEL_DEBUG    1
+#define @_RAPIDS_LOGGER_MACRO_PREFIX@_LEVEL_INFO     2
+#define @_RAPIDS_LOGGER_MACRO_PREFIX@_LEVEL_WARN     3
+#define @_RAPIDS_LOGGER_MACRO_PREFIX@_LEVEL_ERROR    4
+#define @_RAPIDS_LOGGER_MACRO_PREFIX@_LEVEL_CRITICAL 5
+#define @_RAPIDS_LOGGER_MACRO_PREFIX@_LEVEL_OFF      6
 
 enum class level_enum : int32_t {
-  trace    = RMM_LEVEL_TRACE,
-  debug    = RMM_LEVEL_DEBUG,
-  info     = RMM_LEVEL_INFO,
-  warn     = RMM_LEVEL_WARN,
-  error    = RMM_LEVEL_ERROR,
-  critical = RMM_LEVEL_CRITICAL,
-  off      = RMM_LEVEL_OFF,
+  trace    = @_RAPIDS_LOGGER_MACRO_PREFIX@_LEVEL_TRACE,
+  debug    = @_RAPIDS_LOGGER_MACRO_PREFIX@_LEVEL_DEBUG,
+  info     = @_RAPIDS_LOGGER_MACRO_PREFIX@_LEVEL_INFO,
+  warn     = @_RAPIDS_LOGGER_MACRO_PREFIX@_LEVEL_WARN,
+  error    = @_RAPIDS_LOGGER_MACRO_PREFIX@_LEVEL_ERROR,
+  critical = @_RAPIDS_LOGGER_MACRO_PREFIX@_LEVEL_CRITICAL,
+  off      = @_RAPIDS_LOGGER_MACRO_PREFIX@_LEVEL_OFF,
   n_levels
 };
 
@@ -240,9 +239,6 @@ logger()
 
 // Macros for easier logging, similar to spdlog.
 // TODO: Assumes that we want to respect spdlog's own logging macro settings.
-// TODO: We need a way to rename these from RMM to something else. I don't know
-// if that can be done in the code, though, and we might have to do it in the
-// build system via configure_file.
 // TODO: Should we switch this to use _LOGGER_ instead of _LOG_ to match SPDLOG
 // instead of rmm? If we do that will be a breaking change for rmm.
 // TODO: Should we support other signatures for log?
@@ -250,47 +246,47 @@ logger()
 
 // TODO: Need to define our own levels to map to spdlogs.
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
-#define RMM_LOG_TRACE(...) \
-  RMM_LOGGER_CALL(rmm::default_logger(), rmm::level_enum::trace, __VA_ARGS__)
+#define @_RAPIDS_LOGGER_MACRO_PREFIX@_LOG_TRACE(...) \
+  @_RAPIDS_LOGGER_MACRO_PREFIX@_LOGGER_CALL(@_RAPIDS_LOGGER_NAMESPACE@::default_logger(), @_RAPIDS_LOGGER_NAMESPACE@::level_enum::trace, __VA_ARGS__)
 #else
-#define RMM_LOG_TRACE(...) (void)0
+#define @_RAPIDS_LOGGER_MACRO_PREFIX@_LOG_TRACE(...) (void)0
 #endif
 
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_DEBUG
-#define RMM_LOG_DEBUG(...) \
-  RMM_LOGGER_CALL(rmm::default_logger(), rmm::level_enum::debug, __VA_ARGS__)
+#define @_RAPIDS_LOGGER_MACRO_PREFIX@_LOG_DEBUG(...) \
+  @_RAPIDS_LOGGER_MACRO_PREFIX@_LOGGER_CALL(@_RAPIDS_LOGGER_NAMESPACE@::default_logger(), @_RAPIDS_LOGGER_NAMESPACE@::level_enum::debug, __VA_ARGS__)
 #else
-#define RMM_LOG_DEBUG(...) (void)0
+#define @_RAPIDS_LOGGER_MACRO_PREFIX@_LOG_DEBUG(...) (void)0
 #endif
 
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_INFO
-#define RMM_LOG_INFO(...) RMM_LOGGER_CALL(rmm::default_logger(), rmm::level_enum::info, __VA_ARGS__)
+#define @_RAPIDS_LOGGER_MACRO_PREFIX@_LOG_INFO(...) @_RAPIDS_LOGGER_MACRO_PREFIX@_LOGGER_CALL(@_RAPIDS_LOGGER_NAMESPACE@::default_logger(), @_RAPIDS_LOGGER_NAMESPACE@::level_enum::info, __VA_ARGS__)
 #else
-#define RMM_LOG_INFO(...) (void)0
+#define @_RAPIDS_LOGGER_MACRO_PREFIX@_LOG_INFO(...) (void)0
 #endif
 
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_WARN
-#define RMM_LOG_WARN(...) RMM_LOGGER_CALL(rmm::default_logger(), rmm::level_enum::warn, __VA_ARGS__)
+#define @_RAPIDS_LOGGER_MACRO_PREFIX@_LOG_WARN(...) @_RAPIDS_LOGGER_MACRO_PREFIX@_LOGGER_CALL(@_RAPIDS_LOGGER_NAMESPACE@::default_logger(), @_RAPIDS_LOGGER_NAMESPACE@::level_enum::warn, __VA_ARGS__)
 #else
-#define RMM_LOG_WARN(...) (void)0
+#define @_RAPIDS_LOGGER_MACRO_PREFIX@_LOG_WARN(...) (void)0
 #endif
 
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_ERROR
-#define RMM_LOG_ERROR(...) \
-  RMM_LOGGER_CALL(rmm::default_logger(), rmm::level_enum::error, __VA_ARGS__)
+#define @_RAPIDS_LOGGER_MACRO_PREFIX@_LOG_ERROR(...) \
+  @_RAPIDS_LOGGER_MACRO_PREFIX@_LOGGER_CALL(@_RAPIDS_LOGGER_NAMESPACE@::default_logger(), @_RAPIDS_LOGGER_NAMESPACE@::level_enum::error, __VA_ARGS__)
 #else
-#define RMM_LOG_ERROR(...) (void)0
+#define @_RAPIDS_LOGGER_MACRO_PREFIX@_LOG_ERROR(...) (void)0
 #endif
 
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_CRITICAL
-#define RMM_LOG_CRITICAL(...) \
-  RMM_LOGGER_CALL(rmm::default_logger(), rmm::level_enum::critical, __VA_ARGS__)
+#define @_RAPIDS_LOGGER_MACRO_PREFIX@_LOG_CRITICAL(...) \
+  @_RAPIDS_LOGGER_MACRO_PREFIX@_LOGGER_CALL(@_RAPIDS_LOGGER_NAMESPACE@::default_logger(), @_RAPIDS_LOGGER_NAMESPACE@::level_enum::critical, __VA_ARGS__)
 #else
-#define RMM_LOG_CRITICAL(...) (void)0
+#define @_RAPIDS_LOGGER_MACRO_PREFIX@_LOG_CRITICAL(...) (void)0
 #endif
 
-}  // namespace LOGGER_NAMESPACE
+}  // namespace @_RAPIDS_LOGGER_NAMESPACE@
 
-#ifdef RMM_BACKWARDS_COMPATIBILITY
+#ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_BACKWARDS_COMPATIBILITY
 #include <rmm/logger_impl.hpp>
 #endif
