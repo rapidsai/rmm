@@ -109,7 +109,6 @@ struct dynamic_load_runtime {
  * < CUDA 11.2 runtime as these functions are found at call time.
  */
 
-
 extern "C" {
 cudaError_t cudaMemPoolCreate(cudaMemPool_t*, const cudaMemPoolProps*) __attribute((weak));
 cudaError_t cudaMemPoolSetAttribute(cudaMemPool_t, cudaMemPoolAttr, void*) __attribute((weak));
