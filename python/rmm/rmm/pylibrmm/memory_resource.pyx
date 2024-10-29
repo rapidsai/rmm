@@ -349,7 +349,6 @@ cdef class ArenaMemoryResource(UpstreamResourceAdaptor):
             on the current device.
         dump_log_on_failure : bool, optional
             Whether to dump the arena on allocation failure.
-
         """
         pass
 
