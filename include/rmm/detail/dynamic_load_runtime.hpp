@@ -120,13 +120,11 @@ struct async_alloc {
   {
     static bool runtime_supports_pool{[] {
       using cuda_free_async_sig      = dynamic_load_runtime::function_sig<void*, cudaStream_t>;
-      bool cuda_free_async_supported = true;
       auto* p                        = static_cast<cuda_free_async_sig>(::cudaFreeAsync);
       if (p == nullptr) {
-        cuda_free_async_supported =
-          dynamic_load_runtime::function<cuda_free_async_sig>("cudaFreeAsync").has_value();
+        return dynamic_load_runtime::function<cuda_free_async_sig>("cudaFreeAsync").has_value();
       }
-      return cuda_free_async_supported;
+      return true;
     }()};
 
     static auto driver_supports_pool{[] {
