@@ -37,7 +37,6 @@ cudaError_t cudaDeviceGetDefaultMemPool(cudaMemPool_t*, int) __attribute((weak))
 }
 #endif
 
-
 namespace RMM_NAMESPACE {
 namespace detail {
 
