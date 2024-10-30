@@ -71,16 +71,12 @@ struct dynamic_load_runtime {
   {
     // query if the function has already been loaded by the program
     auto* handle = ::dlsym(RTLD_DEFAULT, func_name);
-    auto* error  = dlerror();
-
-    // throw rmm::logic_error{std::string{"dlysm: "} + error};
-    if (error != nullptr) {
+    if (!handle) {
       // function hasn't been loaded already, load it from CUDA runtime
       auto* runtime = get_cuda_runtime_handle();
       handle        = ::dlsym(runtime, func_name);
-      error         = dlerror();
     }
-    if (error != nullptr) { return std::nullopt; }
+    if (!handle) { return std::nullopt; }
     auto* function_ptr = reinterpret_cast<signature>(handle);
     return std::optional<signature>(function_ptr);
   }
