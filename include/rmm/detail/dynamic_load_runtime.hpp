@@ -25,6 +25,19 @@
 #include <memory>
 #include <optional>
 
+#if CUDART_VERSION >= 11020  // 11.2 introduced cudaMallocAsync
+extern "C" {
+cudaError_t cudaMemPoolCreate(cudaMemPool_t*, const cudaMemPoolProps*) __attribute((weak));
+cudaError_t cudaMemPoolSetAttribute(cudaMemPool_t, cudaMemPoolAttr, void*) __attribute((weak));
+cudaError_t cudaMemPoolDestroy(cudaMemPool_t) __attribute((weak));
+cudaError_t cudaMallocFromPoolAsync(void**, size_t, cudaMemPool_t, cudaStream_t)
+  __attribute((weak));
+cudaError_t cudaFreeAsync(void*, cudaStream_t) __attribute((weak));
+cudaError_t cudaDeviceGetDefaultMemPool(cudaMemPool_t*, int) __attribute((weak));
+}
+#endif
+
+
 namespace RMM_NAMESPACE {
 namespace detail {
 
@@ -104,16 +117,6 @@ struct dynamic_load_runtime {
  * This allows RMM users to compile/link against CUDA 11.2+ and run with
  * < CUDA 11.2 runtime as these functions are found at call time.
  */
-
-extern "C" {
-cudaError_t cudaMemPoolCreate(cudaMemPool_t*, const cudaMemPoolProps*) __attribute((weak));
-cudaError_t cudaMemPoolSetAttribute(cudaMemPool_t, cudaMemPoolAttr, void*) __attribute((weak));
-cudaError_t cudaMemPoolDestroy(cudaMemPool_t) __attribute((weak));
-cudaError_t cudaMallocFromPoolAsync(void**, size_t, cudaMemPool_t, cudaStream_t)
-  __attribute((weak));
-cudaError_t cudaFreeAsync(void*, cudaStream_t) __attribute((weak));
-cudaError_t cudaDeviceGetDefaultMemPool(cudaMemPool_t*, int) __attribute((weak));
-}
 
 struct async_alloc {
   static bool is_supported()
