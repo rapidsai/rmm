@@ -122,8 +122,8 @@ struct async_alloc {
   static bool is_supported()
   {
     static bool runtime_supports_pool{[] {
-      using cuda_free_async_sig      = dynamic_load_runtime::function_sig<void*, cudaStream_t>;
-      auto* p                        = static_cast<cuda_free_async_sig>(::cudaFreeAsync);
+      using cuda_free_async_sig = dynamic_load_runtime::function_sig<void*, cudaStream_t>;
+      auto* p                   = static_cast<cuda_free_async_sig>(::cudaFreeAsync);
       if (p == nullptr) {
         return dynamic_load_runtime::function<cuda_free_async_sig>("cudaFreeAsync").has_value();
       }
