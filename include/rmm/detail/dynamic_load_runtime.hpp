@@ -112,7 +112,7 @@ cudaError_t cudaMemPoolDestroy(cudaMemPool_t) __attribute((weak));
 cudaError_t cudaMallocFromPoolAsync(void**, size_t, cudaMemPool_t, cudaStream_t)
   __attribute((weak));
 cudaError_t cudaFreeAsync(void*, cudaStream_t) __attribute((weak));
-cudaError_t cudaDeviceGetDefaultMemPool_sig(cudaMemPool_t*, int) __attribute((weak));
+cudaError_t cudaDeviceGetDefaultMemPool(cudaMemPool_t*, int) __attribute((weak));
 }
 
 struct async_alloc {
