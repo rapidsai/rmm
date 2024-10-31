@@ -36,17 +36,11 @@ namespace {
 
 struct mr_ref_test_mt : public mr_ref_test {};
 
-INSTANTIATE_TEST_CASE_P(MultiThreadResourceTests,
-                        mr_ref_test_mt,
-                        ::testing::Values("CUDA",
-#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
-                                          "CUDA_Async",
-#endif
-                                          "Managed",
-                                          "Pool",
-                                          "Arena",
-                                          "Binning"),
-                        [](auto const& info) { return info.param; });
+INSTANTIATE_TEST_CASE_P(
+  MultiThreadResourceTests,
+  mr_ref_test_mt,
+  ::testing::Values("CUDA", "CUDA_Async", "Managed", "Pool", "Arena", "Binning"),
+  [](auto const& info) { return info.param; });
 
 template <typename Task, typename... Arguments>
 void spawn_n(std::size_t num_threads, Task task, Arguments&&... args)
@@ -160,12 +154,12 @@ TEST_P(mr_ref_test_mt, Allocate) { spawn(test_various_allocations, this->ref); }
 
 TEST_P(mr_ref_test_mt, AllocateDefaultStream)
 {
-  spawn(test_various_async_allocations, this->ref, rmm::cuda_stream_view{});
+  spawn(test_various_runtime_async_allocations, this->ref, rmm::cuda_stream_view{});
 }
 
 TEST_P(mr_ref_test_mt, AllocateOnStream)
 {
-  spawn(test_various_async_allocations, this->ref, this->stream.view());
+  spawn(test_various_runtime_async_allocations, this->ref, this->stream.view());
 }
 
 TEST_P(mr_ref_test_mt, RandomAllocations)
@@ -175,7 +169,7 @@ TEST_P(mr_ref_test_mt, RandomAllocations)
 
 TEST_P(mr_ref_test_mt, RandomAllocationsDefaultStream)
 {
-  spawn(test_random_async_allocations,
+  spawn(test_random_runtime_async_allocations,
         this->ref,
         default_num_allocations,
         default_max_size,
@@ -184,7 +178,7 @@ TEST_P(mr_ref_test_mt, RandomAllocationsDefaultStream)
 
 TEST_P(mr_ref_test_mt, RandomAllocationsStream)
 {
-  spawn(test_random_async_allocations,
+  spawn(test_random_runtime_async_allocations,
         this->ref,
         default_num_allocations,
         default_max_size,
@@ -198,13 +192,18 @@ TEST_P(mr_ref_test_mt, MixedRandomAllocationFree)
 
 TEST_P(mr_ref_test_mt, MixedRandomAllocationFreeDefaultStream)
 {
-  spawn(
-    test_mixed_random_async_allocation_free, this->ref, default_max_size, rmm::cuda_stream_view{});
+  spawn(test_mixed_random_runtime_async_allocation_free,
+        this->ref,
+        default_max_size,
+        rmm::cuda_stream_view{});
 }
 
 TEST_P(mr_ref_test_mt, MixedRandomAllocationFreeStream)
 {
-  spawn(test_mixed_random_async_allocation_free, this->ref, default_max_size, this->stream.view());
+  spawn(test_mixed_random_runtime_async_allocation_free,
+        this->ref,
+        default_max_size,
+        this->stream.view());
 }
 
 void allocate_async_loop(rmm::device_async_resource_ref ref,

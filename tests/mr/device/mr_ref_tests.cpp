@@ -30,9 +30,7 @@ namespace {
 INSTANTIATE_TEST_SUITE_P(ResourceTests,
                          mr_ref_test,
                          ::testing::Values("CUDA",
-#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
                                            "CUDA_Async",
-#endif
                                            "Managed",
                                            "System",
                                            "Pool",
@@ -46,9 +44,7 @@ INSTANTIATE_TEST_SUITE_P(ResourceTests,
 INSTANTIATE_TEST_SUITE_P(ResourceAllocationTests,
                          mr_ref_allocation_test,
                          ::testing::Values("CUDA",
-#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
                                            "CUDA_Async",
-#endif
                                            "Managed",
                                            "System"
                                            "Pool",
@@ -109,37 +105,37 @@ TEST_P(mr_ref_test, AllocationsAreDifferent) { concurrent_allocations_are_differ
 
 TEST_P(mr_ref_test, AsyncAllocationsAreDifferentDefaultStream)
 {
-  concurrent_async_allocations_are_different(this->ref, cuda_stream_view{});
+  concurrent_runtime_async_allocations_are_different(this->ref, cuda_stream_view{});
 }
 
 TEST_P(mr_ref_test, AsyncAllocationsAreDifferent)
 {
-  concurrent_async_allocations_are_different(this->ref, this->stream);
+  concurrent_runtime_async_allocations_are_different(this->ref, this->stream);
 }
 
 TEST_P(mr_ref_allocation_test, AllocateDefault) { test_various_allocations(this->ref); }
 
 TEST_P(mr_ref_allocation_test, AllocateDefaultStream)
 {
-  test_various_async_allocations(this->ref, cuda_stream_view{});
+  test_various_runtime_async_allocations(this->ref, cuda_stream_view{});
 }
 
 TEST_P(mr_ref_allocation_test, AllocateOnStream)
 {
-  test_various_async_allocations(this->ref, this->stream);
+  test_various_runtime_async_allocations(this->ref, this->stream);
 }
 
 TEST_P(mr_ref_allocation_test, RandomAllocations) { test_random_allocations(this->ref); }
 
 TEST_P(mr_ref_allocation_test, RandomAllocationsDefaultStream)
 {
-  test_random_async_allocations(
+  test_random_runtime_async_allocations(
     this->ref, default_num_allocations, default_max_size, cuda_stream_view{});
 }
 
 TEST_P(mr_ref_allocation_test, RandomAllocationsStream)
 {
-  test_random_async_allocations(this->ref, default_num_allocations, default_max_size, this->stream);
+  test_random_runtime_async_allocations(this->ref, default_num_allocations, default_max_size, this->stream);
 }
 
 TEST_P(mr_ref_allocation_test, MixedRandomAllocationFree)
@@ -149,12 +145,12 @@ TEST_P(mr_ref_allocation_test, MixedRandomAllocationFree)
 
 TEST_P(mr_ref_allocation_test, MixedRandomAllocationFreeDefaultStream)
 {
-  test_mixed_random_async_allocation_free(this->ref, default_max_size, cuda_stream_view{});
+  test_mixed_random_runtime_async_allocation_free(this->ref, default_max_size, cuda_stream_view{});
 }
 
 TEST_P(mr_ref_allocation_test, MixedRandomAllocationFreeStream)
 {
-  test_mixed_random_async_allocation_free(this->ref, default_max_size, this->stream);
+  test_mixed_random_runtime_async_allocation_free(this->ref, default_max_size, this->stream);
 }
 
 }  // namespace

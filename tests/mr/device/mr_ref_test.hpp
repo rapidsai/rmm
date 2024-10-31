@@ -125,8 +125,8 @@ inline void concurrent_allocations_are_different(resource_ref ref)
   ref.deallocate(ptr2, size);
 }
 
-inline void concurrent_async_allocations_are_different(rmm::device_async_resource_ref ref,
-                                                       cuda_stream_view stream)
+inline void concurrent_runtime_async_allocations_are_different(rmm::device_async_resource_ref ref,
+                                                               cuda_stream_view stream)
 {
   const auto size{8_B};
   void* ptr1 = ref.allocate_async(size, stream);
@@ -166,8 +166,8 @@ inline void test_various_allocations(resource_ref ref)
   }
 }
 
-inline void test_various_async_allocations(rmm::device_async_resource_ref ref,
-                                           cuda_stream_view stream)
+inline void test_various_runtime_async_allocations(rmm::device_async_resource_ref ref,
+                                                   cuda_stream_view stream)
 {
   // test allocating zero bytes on non-default stream
   {
@@ -220,10 +220,11 @@ inline void test_random_allocations(resource_ref ref,
   });
 }
 
-inline void test_random_async_allocations(rmm::device_async_resource_ref ref,
-                                          std::size_t num_allocations = default_num_allocations,
-                                          size_in_bytes max_size      = default_max_size,
-                                          cuda_stream_view stream     = {})
+inline void test_random_runtime_async_allocations(
+  rmm::device_async_resource_ref ref,
+  std::size_t num_allocations = default_num_allocations,
+  size_in_bytes max_size      = default_max_size,
+  cuda_stream_view stream     = {})
 {
   std::vector<allocation> allocations(num_allocations);
 
@@ -293,9 +294,10 @@ inline void test_mixed_random_allocation_free(resource_ref ref,
   EXPECT_EQ(allocations.size(), active_allocations);
 }
 
-inline void test_mixed_random_async_allocation_free(rmm::device_async_resource_ref ref,
-                                                    size_in_bytes max_size  = default_max_size,
-                                                    cuda_stream_view stream = {})
+inline void test_mixed_random_runtime_async_allocation_free(
+  rmm::device_async_resource_ref ref,
+  size_in_bytes max_size  = default_max_size,
+  cuda_stream_view stream = {})
 {
   std::default_random_engine generator;
   constexpr std::size_t num_allocations{100};
@@ -347,7 +349,7 @@ inline auto make_host_pinned() { return std::make_shared<rmm::mr::pinned_host_me
 
 inline auto make_cuda_async()
 {
-  if (rmm::detail::async_alloc::is_supported()) {
+  if (rmm::detail::runtime_async_alloc::is_supported()) {
     return std::make_shared<rmm::mr::cuda_async_memory_resource>();
   }
   return std::shared_ptr<rmm::mr::cuda_async_memory_resource>{nullptr};

@@ -34,9 +34,7 @@ cuda.set_memory_manager(RMMNumbaManager)
 
 _driver_version = rmm._cuda.gpu.driverGetVersion()
 _runtime_version = rmm._cuda.gpu.runtimeGetVersion()
-_CUDAMALLOC_ASYNC_SUPPORTED = (_driver_version >= 11020) and (
-    _runtime_version >= 11020
-)
+_CUDAMALLOC_ASYNC_SUPPORTED = _driver_version >= 11020
 
 _SYSTEM_MEMORY_SUPPORTED = rmm._cuda.gpu.getDeviceAttribute(
     cudart.cudaDeviceAttr.cudaDevAttrPageableMemoryAccess,
@@ -656,7 +654,7 @@ def test_cuda_async_memory_resource(dtype, nelem, alloc):
 def test_cuda_async_memory_resource_ipc():
     # TODO: We don't have a great way to check if IPC is supported in Python,
     # without using the C++ function
-    # rmm::detail::async_alloc::is_export_handle_type_supported. We can't
+    # rmm::detail::runtime_async_alloc::is_export_handle_type_supported. We can't
     # accurately test driver and runtime versions for this via Python because
     # cuda-python always has the IPC handle enum defined (which normally
     # requires a CUDA 11.3 runtime) and the cuda-compat package in Docker

@@ -133,9 +133,7 @@ static void benchmark_range(benchmark::internal::Benchmark* bench)
 MRFactoryFunc get_mr_factory(std::string const& resource_name)
 {
   if (resource_name == "cuda") { return &make_cuda; }
-#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
   if (resource_name == "cuda_async") { return &make_cuda_async; }
-#endif
   if (resource_name == "pool") { return &make_pool; }
   if (resource_name == "arena") { return &make_arena; }
   if (resource_name == "binning") { return &make_binning; }
@@ -153,13 +151,11 @@ void declare_benchmark(std::string const& name)
     return;
   }
 
-#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
   if (name == "cuda_async") {
     BENCHMARK_CAPTURE(BM_MultiStreamAllocations, cuda_async, &make_cuda_async)  //
       ->Apply(benchmark_range);
     return;
   }
-#endif
 
   if (name == "pool") {
     BENCHMARK_CAPTURE(BM_MultiStreamAllocations, pool_mr, &make_pool)  //
@@ -248,9 +244,7 @@ int main(int argc, char** argv)
         resource_names.emplace_back(args["resource"].as<std::string>());
       } else {
         resource_names.emplace_back("cuda");
-#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
         resource_names.emplace_back("cuda_async");
-#endif
         resource_names.emplace_back("pool");
         resource_names.emplace_back("arena");
         resource_names.emplace_back("binning");
