@@ -135,7 +135,8 @@ TEST_P(mr_ref_allocation_test, RandomAllocationsDefaultStream)
 
 TEST_P(mr_ref_allocation_test, RandomAllocationsStream)
 {
-  test_random_runtime_async_allocations(this->ref, default_num_allocations, default_max_size, this->stream);
+  test_random_runtime_async_allocations(
+    this->ref, default_num_allocations, default_max_size, this->stream);
 }
 
 TEST_P(mr_ref_allocation_test, MixedRandomAllocationFree)
