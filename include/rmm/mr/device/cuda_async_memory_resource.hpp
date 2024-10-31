@@ -132,6 +132,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
   /**
    * @brief Returns the underlying native handle to the CUDA pool
    *
+   * @return cudaMemPool_t Handle to the underlying CUDA pool
    */
   [[nodiscard]] cudaMemPool_t pool_handle() const noexcept { return pool_.pool_handle(); }
 
