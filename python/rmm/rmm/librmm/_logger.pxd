@@ -62,5 +62,5 @@ cdef extern from "spdlog/spdlog.h" namespace "spdlog" nogil:
         bool should_log(logging_level msg_level)
 
 
-cdef extern from "rmm/logger.hpp" namespace "rmm" nogil:
+cdef extern from "rmm/logger.hpp" namespace "rmm::detail" nogil:
     cdef spdlog_logger& logger() except +
