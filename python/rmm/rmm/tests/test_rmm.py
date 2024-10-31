@@ -654,8 +654,8 @@ def test_cuda_async_memory_resource(dtype, nelem, alloc):
 def test_cuda_async_memory_resource_ipc():
     # TODO: We don't have a great way to check if IPC is supported in Python,
     # without using the C++ function
-    # rmm::detail::runtime_async_alloc::is_export_handle_type_supported. We can't
-    # accurately test driver and runtime versions for this via Python because
+    # rmm::detail::runtime_async_alloc::is_export_handle_type_supported.
+    # We can't accurately test this via Python because
     # cuda-python always has the IPC handle enum defined (which normally
     # requires a CUDA 11.3 runtime) and the cuda-compat package in Docker
     # containers prevents us from assuming that the driver we see actually
