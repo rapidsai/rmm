@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import warnings
+
 from rmm import mr
 from rmm._version import __git_commit__, __version__
 from rmm.mr import disable_logging, enable_logging, get_log_filenames
@@ -32,8 +34,6 @@ from rmm.rmm import (
     reinitialize,
     unregister_reinitialize_hook,
 )
-import warnings
-
 
 __all__ = [
     "DeviceBuffer",
