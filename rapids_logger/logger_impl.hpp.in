@@ -18,7 +18,7 @@
 
 // We'll flip the include once this
 #ifndef RMM_BACKWARDS_COMPATIBILITY
-#include <rmm/rapids_logger.hpp>
+#include "../logger.hpp"
 #endif
 
 // In the long run this shouldn't be necessary because the file will only be
@@ -40,14 +40,14 @@ namespace detail {
  * @brief Returns the default log filename for the RMM global logger.
  *
  * If the environment variable `RAPIDS_DEBUG_LOG_FILE` is defined, its value is used as the path and
- * name of the log file. Otherwise, the file `rmm_log.txt` in the current working directory is used.
+ * name of the log file. Otherwise, the file `@_RAPIDS_LOGGER_NAMESPACE@_log.txt` in the current working directory is used.
  *
  * @return std::string The default log file name.
  */
 inline std::string default_log_filename()
 {
-  auto* filename = std::getenv("RAPIDS_DEBUG_LOG_FILE");
-  return (filename == nullptr) ? std::string{"rapids_log.txt"} : std::string{filename};
+  auto* filename = std::getenv("@_RAPIDS_LOGGER_MACRO_PREFIX@_DEBUG_LOG_FILE");
+  return (filename == nullptr) ? std::string{"@_RAPIDS_LOGGER_NAMESPACE@_log.txt"} : std::string{filename};
 }
 
 /**
@@ -145,6 +145,6 @@ inline class spdlog::logger& logger() { return default_logger().pImpl->underlyin
 // Doxygen doesn't like this because we're overloading something from fmt
 //! @cond Doxygen_Suppress
 template <>
-struct fmt::formatter<rmm::detail::bytes> : fmt::ostream_formatter {};
+struct fmt::formatter<@_RAPIDS_LOGGER_NAMESPACE@::detail::bytes> : fmt::ostream_formatter {};
 
 #endif

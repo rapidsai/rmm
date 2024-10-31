@@ -233,13 +233,9 @@ logger()
 #endif
 
 // Macros for easier logging, similar to spdlog.
-// TODO: Assumes that we want to respect spdlog's own logging macro settings.
-// TODO: Should we switch this to use _LOGGER_ instead of _LOG_ to match SPDLOG
-// instead of rmm? If we do that will be a breaking change for rmm.
-// TODO: Should we support other signatures for log?
+// TODO: Assumes that we want to respect spdlog's own logging macro level settings.
 #define RMM_LOGGER_CALL(logger, level, ...) (logger).log(level, __VA_ARGS__)
 
-// TODO: Need to define our own levels to map to spdlogs.
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
 #define @_RAPIDS_LOGGER_MACRO_PREFIX@_LOG_TRACE(...) \
   @_RAPIDS_LOGGER_MACRO_PREFIX@_LOGGER_CALL(@_RAPIDS_LOGGER_NAMESPACE@::default_logger(), @_RAPIDS_LOGGER_NAMESPACE@::level_enum::trace, __VA_ARGS__)
@@ -283,5 +279,5 @@ logger()
 }  // namespace @_RAPIDS_LOGGER_NAMESPACE@
 
 #ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_BACKWARDS_COMPATIBILITY
-#include <rmm/logger_impl.hpp>
+#include "logger_impl/logger_impl.hpp"
 #endif

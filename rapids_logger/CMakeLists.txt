@@ -58,8 +58,9 @@ function(rapids_make_logger)
   configure_file(${CMAKE_CURRENT_FUNCTION_LIST_DIR}/logger.hpp.in ${BUILD_DIR}/logger.hpp)
   install(FILES ${LOGGER_OUTPUT_FILE} DESTINATION ${INSTALL_DIR})
 
-  configure_file(${CMAKE_CURRENT_FUNCTION_LIST_DIR}/logger_impl.hpp.in ${BUILD_DIR}/logger_impl.hpp)
-  install(FILES ${LOGGER_IMPL_OUTPUT_FILE} DESTINATION ${INSTALL_DIR})
+  configure_file(${CMAKE_CURRENT_FUNCTION_LIST_DIR}/logger_impl.hpp.in
+                 ${BUILD_DIR}/logger_impl/logger_impl.hpp)
+  install(FILES ${LOGGER_IMPL_OUTPUT_FILE} DESTINATION ${INSTALL_DIR}/logger_impl)
 
   add_library(${_RAPIDS_LOGGER_TARGET} INTERFACE)
   include(GNUInstallDirs)
