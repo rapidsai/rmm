@@ -39,7 +39,9 @@
 #include <optional>
 #include <set>
 
-namespace rmm::mr::detail::arena {
+namespace RMM_NAMESPACE {
+namespace mr::detail::arena {
+
 /**
  * @brief Align up to nearest size class.
  *
@@ -645,7 +647,7 @@ class global_arena final {
    *
    * @param logger the spdlog logger to use
    */
-  void dump_memory_log(std::shared_ptr<spdlog::logger> const& logger) const
+  RMM_HIDDEN void dump_memory_log(std::shared_ptr<spdlog::logger> const& logger) const
   {
     std::lock_guard lock(mtx_);
 
@@ -994,4 +996,6 @@ class arena_cleaner {
   /// A non-owning pointer to the arena that may need cleaning.
   std::weak_ptr<arena> arena_;
 };
-}  // namespace rmm::mr::detail::arena
+
+}  // namespace mr::detail::arena
+}  // namespace RMM_NAMESPACE
