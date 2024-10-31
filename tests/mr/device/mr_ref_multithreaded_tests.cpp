@@ -167,7 +167,7 @@ TEST_P(mr_ref_test_mt, Allocate)
   RMM_CUDA_TRY(cudaGetDevice(&device));
 
   auto mr = this->ref;
-  spawn([device,mr]() {
+  spawn([device, mr]() {
     RMM_CUDA_TRY(cudaSetDevice(device));
     test_various_allocations(mr);
   });
