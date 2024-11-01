@@ -30,6 +30,46 @@ namespace @_RAPIDS_LOGGER_NAMESPACE@ {
 namespace detail {
 
 /**
+ * @brief Returns the default log filename for the RMM global logger.
+ *
+ * If the environment variable `RAPIDS_DEBUG_LOG_FILE` is defined, its value is used as the path and
+ * name of the log file. Otherwise, the file `@_RAPIDS_LOGGER_NAMESPACE@_log.txt` in the current working directory is used.
+ *
+ * @return std::string The default log file name.
+ */
+inline std::string default_log_filename()
+{
+  auto* filename = std::getenv("@_RAPIDS_LOGGER_MACRO_PREFIX@_DEBUG_LOG_FILE");
+  return (filename == nullptr) ? std::string{"@_RAPIDS_LOGGER_NAMESPACE@_log.txt"} : std::string{filename};
+}
+
+/**
+ * @brief Represent a size in number of bytes.
+ */
+struct bytes {
+  std::size_t value;  ///< The size in bytes
+
+  /**
+   * @brief Construct a new bytes object
+   *
+   * @param os The output stream
+   * @param value The size in bytes
+   */
+  friend std::ostream& operator<<(std::ostream& os, bytes const& value)
+  {
+    static std::array units{"B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"};
+
+    int index = 0;
+    auto size = static_cast<double>(value.value);
+    while (size > 1024) {
+      size /= 1024;
+      index++;
+    }
+    return os << size << ' ' << units.at(index);
+  }
+};
+
+/**
  * @class fake_logger_impl
  * @brief The fake implementation of the logger that performs no-ops.
  * This is the default behavior if real logging is not enabled.
@@ -201,7 +241,23 @@ logger()
   return detail::logger();
 }
 #else
-// TODO: Move the detail implementation of default_logger here.
+inline logger& default_logger()
+{
+  static logger logger_ = [] {
+    logger logger_ {
+      "RAPIDS", detail::default_log_filename()
+    };
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_INFO
+#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
+    logger_.info("----- RAPIDS LOG BEGIN [PTDS ENABLED] -----");
+#else
+    logger_.info("----- RAPIDS LOG BEGIN [PTDS DISABLED] -----");
+#endif
+#endif
+    return logger_;
+  }();
+  return logger_;
+}
 #endif
 
 // Macros for easier logging, similar to spdlog.

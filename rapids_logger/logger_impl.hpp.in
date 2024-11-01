@@ -37,20 +37,6 @@ namespace @_RAPIDS_LOGGER_NAMESPACE@ {
 namespace detail {
 
 /**
- * @brief Returns the default log filename for the RMM global logger.
- *
- * If the environment variable `RAPIDS_DEBUG_LOG_FILE` is defined, its value is used as the path and
- * name of the log file. Otherwise, the file `@_RAPIDS_LOGGER_NAMESPACE@_log.txt` in the current working directory is used.
- *
- * @return std::string The default log file name.
- */
-inline std::string default_log_filename()
-{
-  auto* filename = std::getenv("@_RAPIDS_LOGGER_MACRO_PREFIX@_DEBUG_LOG_FILE");
-  return (filename == nullptr) ? std::string{"@_RAPIDS_LOGGER_NAMESPACE@_log.txt"} : std::string{filename};
-}
-
-/**
  * @struct impl
  * @brief The real implementation of the logger using spdlog with a basic file sink.
  */
@@ -74,32 +60,6 @@ struct impl {
   void log(level_enum lvl, const std::string& message)
   {
     underlying.log(static_cast<spdlog::level::level_enum>(static_cast<int32_t>(lvl)), message);
-  }
-};
-
-/**
- * @brief Represent a size in number of bytes.
- */
-struct bytes {
-  std::size_t value;  ///< The size in bytes
-
-  /**
-   * @brief Construct a new bytes object
-   *
-   * @param os The output stream
-   * @param value The size in bytes
-   */
-  friend std::ostream& operator<<(std::ostream& os, bytes const& value)
-  {
-    static std::array units{"B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"};
-
-    int index = 0;
-    auto size = static_cast<double>(value.value);
-    while (size > 1024) {
-      size /= 1024;
-      index++;
-    }
-    return os << size << ' ' << units.at(index);
   }
 };
 
