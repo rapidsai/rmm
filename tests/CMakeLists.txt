@@ -44,6 +44,13 @@ function(ConfigureTestInternal TEST_NAME)
   target_compile_options(${TEST_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Wall -Werror
                                              -Wno-error=deprecated-declarations>)
 
+  # When not building in compatibility mode, each test has to recompile the headers. TODO: For the
+  # tests, consider building an object library that can be reused. This is separate from what the
+  # main library does (providing an interface lib).
+  if(NOT LOGGING_COMPATIBILITY)
+    target_link_libraries(${TEST_NAME} rmm_logger_impl)
+  endif()
+
   if(DISABLE_DEPRECATION_WARNING)
     target_compile_options(
       ${TEST_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-Wno-deprecated-declarations>)

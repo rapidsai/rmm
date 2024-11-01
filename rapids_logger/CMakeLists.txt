@@ -72,10 +72,32 @@ function(rapids_make_logger)
     INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_INCLUDEDIR}>"
               "$<INSTALL_INTERFACE:${_RAPIDS_LOGGER_HEADER_DIR}>")
   if(_RAPIDS_RMM_BACKWARDS_COMPATIBILITY)
+    if(NOT _RAPIDS_SUPPORTS_LOGGING)
+      message(STATUS "RMM_BACKWARDS_COMPATIBILITY requires SUPPORTS_LOGGING, turning it on")
+      set(_RAPIDS_SUPPORTS_LOGGING ON)
+    endif()
     target_compile_definitions(${_RAPIDS_LOGGER_TARGET} INTERFACE RMM_BACKWARDS_COMPATIBILITY)
   endif()
   if(_RAPIDS_SUPPORTS_LOGGING)
     target_compile_definitions(${_RAPIDS_LOGGER_TARGET} INTERFACE SUPPORTS_LOGGING)
+
+    if(NOT _RAPIDS_RMM_BACKWARDS_COMPATIBILITY)
+      # Create an interface target that will trigger compilation of the logger implementation in any
+      # target that is linked to it.
+      set(LOGGER_IMPL_SRC_OUTPUT_FILE ${BUILD_DIR}/logger_impl/logger.cpp)
+      configure_file(${CMAKE_CURRENT_FUNCTION_LIST_DIR}/logger.cpp.in
+                     ${LOGGER_IMPL_SRC_OUTPUT_FILE})
+      install(FILES ${LOGGER_IMPL_SRC_OUTPUT_FILE} DESTINATION ${INSTALL_DIR}/logger_impl)
+
+      # Note that we cannot specify the source files directly in add_library, see the CMake
+      # documentation explaining that these do not populate INTERFACE_SOURCES.
+      # https://cmake.org/cmake/help/latest/command/add_library.html#interface-with-sources
+      add_library(${_RAPIDS_LOGGER_TARGET}_impl INTERFACE)
+      target_sources(
+        ${_RAPIDS_LOGGER_TARGET}_impl
+        INTERFACE $<BUILD_INTERFACE:${LOGGER_IMPL_SRC_OUTPUT_FILE}>
+                  $<INSTALL_INTERFACE:${_RAPIDS_LOGGER_HEADER_DIR}/logger_impl/logger.cpp>)
+    endif()
   endif()
 
   if(_RAPIDS_LOGGER_CMAKE_NAMESPACE)

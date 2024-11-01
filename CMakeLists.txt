@@ -58,6 +58,9 @@ message(STATUS "RMM: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'")
 # cudart can be linked statically or dynamically
 option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
 
+# option(SUPPORTS_LOGGING "Enable logging support" ON)
+set(LOGGING_COMPATIBILITY OFF)
+
 # ##################################################################################################
 # * compiler options -------------------------------------------------------------------------------
 
@@ -74,23 +77,42 @@ rapids_find_package(
 rapids_cpm_init()
 
 add_subdirectory(rapids_logger)
-rapids_make_logger(
-  LOGGER_TARGET
-  rmm_logger
-  LOGGER_HEADER_DIR
-  include/rmm
-  LOGGER_NAMESPACE
-  rmm
-  LOGGER_MACRO_PREFIX
-  RMM
-  BUILD_EXPORT_SET
-  rmm-exports
-  INSTALL_EXPORT_SET
-  rmm-exports
-  CMAKE_NAMESPACE
-  rmm::
-  SUPPORTS_LOGGING
-  RMM_BACKWARDS_COMPATIBILITY)
+if(LOGGING_COMPATIBILITY)
+  rapids_make_logger(
+    LOGGER_TARGET
+    rmm_logger
+    LOGGER_HEADER_DIR
+    include/rmm
+    LOGGER_NAMESPACE
+    rmm
+    LOGGER_MACRO_PREFIX
+    RMM
+    BUILD_EXPORT_SET
+    rmm-exports
+    INSTALL_EXPORT_SET
+    rmm-exports
+    CMAKE_NAMESPACE
+    rmm::
+    SUPPORTS_LOGGING
+    RMM_BACKWARDS_COMPATIBILITY)
+else()
+  rapids_make_logger(
+    LOGGER_TARGET
+    rmm_logger
+    LOGGER_HEADER_DIR
+    include/rmm
+    LOGGER_NAMESPACE
+    rmm
+    LOGGER_MACRO_PREFIX
+    RMM
+    BUILD_EXPORT_SET
+    rmm-exports
+    INSTALL_EXPORT_SET
+    rmm-exports
+    CMAKE_NAMESPACE
+    rmm::
+    SUPPORTS_LOGGING)
+endif()
 
 include(cmake/thirdparty/get_cccl.cmake)
 include(cmake/thirdparty/get_nvtx.cmake)

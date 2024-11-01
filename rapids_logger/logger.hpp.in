@@ -22,8 +22,31 @@
 #include <spdlog/spdlog.h>
 #endif
 
+// We only define functions as inline when in backwards compatibility mode
+// because in that mode those functions are included in the header, just
+// defined out of band by the include of logger_impl.hpp into this file. In the
+// new mode the functions are defined in their own TU.
+#ifdef RMM_BACKWARDS_COMPATIBILITY
+#define BACKWARDS_COMPAT_INLINE inline
+#else
+#define BACKWARDS_COMPAT_INLINE
+#endif
+
 #include <memory>
+#include <ostream>
 #include <string>
+
+#ifdef SUPPORTS_LOGGING
+#include <initializer_list>
+
+namespace spdlog {
+namespace sinks {
+class sink;
+} // namespace sinks
+using sink_ptr = std::shared_ptr<sinks::sink>;
+}  // namespace spdlog
+
+#endif
 
 namespace @_RAPIDS_LOGGER_NAMESPACE@ {
 
@@ -69,6 +92,8 @@ struct bytes {
   }
 };
 
+// TODO: Check if we really need the fake_impl or if we can just not store
+// anything at all in the parent class.
 /**
  * @class fake_logger_impl
  * @brief The fake implementation of the logger that performs no-ops.
@@ -121,7 +146,7 @@ class logger {
    * Initializes the logger based on whether logging is supported.
    */
 #ifdef SUPPORTS_LOGGING
-  logger(std::string name, std::string filename);
+  BACKWARDS_COMPAT_INLINE logger(std::string name, std::string filename);
 #else
   logger(std::string name, std::string filename) {}
 #endif
@@ -133,7 +158,7 @@ class logger {
    * @brief Destructor for logger.
    */
 #ifdef SUPPORTS_LOGGING
-  inline ~logger();
+  BACKWARDS_COMPAT_INLINE ~logger();
 #else
   ~logger() = default;
 #endif
@@ -145,9 +170,9 @@ class logger {
   // delete copy assignment operator
   logger& operator=(logger const&) = delete;
   // default move constructor
-  inline logger(logger&&);
+  BACKWARDS_COMPAT_INLINE logger(logger&&);
   // default move assignment operator
-  inline logger& operator=(logger&&);
+  BACKWARDS_COMPAT_INLINE logger& operator=(logger&&);
 
   template <typename... Args>
   void log(level_enum lvl, std::string const& format, Args&&... args)
@@ -159,7 +184,7 @@ class logger {
     log(lvl, {buf.get(), buf.get() + size - 1});
   }
 
-  inline void log(level_enum lvl, std::string const& message);
+  BACKWARDS_COMPAT_INLINE void log(level_enum lvl, std::string const& message);
 
   template <typename... Args>
   void trace(std::string const& format, Args&&... args)
@@ -196,6 +221,28 @@ class logger {
   {
     log(level_enum::critical, format, std::forward<Args>(args)...);
   }
+
+#ifdef SUPPORTS_LOGGING
+  BACKWARDS_COMPAT_INLINE void add_sink(spdlog::sink_ptr sink);
+  BACKWARDS_COMPAT_INLINE void remove_sink(spdlog::sink_ptr sink);
+#else
+  // When logging is not supported we won't have a spdlog sink_ptr type defined
+  // when this function is, so a template is used to capture the user's type.
+  template<typename Sink>
+  void add_sink(Sink sink) {}
+  template<typename Sink>
+  void remove_sink(Sink sink) {}
+#endif
+
+#ifdef SUPPORTS_LOGGING
+  BACKWARDS_COMPAT_INLINE level_enum level() const;
+  BACKWARDS_COMPAT_INLINE void set_level(level_enum log_level);
+  BACKWARDS_COMPAT_INLINE void flush();
+#else
+  BACKWARDS_COMPAT_INLINE level_enum level() const { return level_enum::off; }
+  void set_level(level::level_enum log_level) {}
+  void flush() {}
+#endif
 
   /**
    * @brief Check at compile-time whether logging is supported.

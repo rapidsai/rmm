@@ -647,7 +647,11 @@ class global_arena final {
    *
    * @param logger the spdlog logger to use
    */
+#ifdef RMM_BACKWARDS_COMPATIBILITY
   RMM_HIDDEN void dump_memory_log(std::shared_ptr<spdlog::logger> const& logger) const
+#else
+  void dump_memory_log(std::shared_ptr<logger> const& logger) const
+#endif
   {
     std::lock_guard lock(mtx_);
 

@@ -61,22 +61,52 @@ struct impl {
   {
     underlying.log(static_cast<spdlog::level::level_enum>(static_cast<int32_t>(lvl)), message);
   }
+
+  void set_level(level_enum log_level)
+  {
+    underlying.set_level(static_cast<spdlog::level::level_enum>(static_cast<int32_t>(log_level)));
+  }
+
+  void flush()
+  {
+    underlying.flush();
+  }
+
+  void add_sink(spdlog::sink_ptr sink) {
+      underlying.sinks().push_back(sink);
+  }
+
+  void remove_sink(spdlog::sink_ptr sink) {
+      auto& sinks = underlying.sinks();
+      sinks.erase(std::remove(sinks.begin(), sinks.end(), sink), sinks.end());
+  }
+
+  level_enum level() const
+  {
+    return static_cast<level_enum>(static_cast<int32_t>(underlying.level()));
+  }
 };
 
 }  // namespace detail
 
-// TODO: Many of the inline and class keywords are likely unnecessary in the
-// non-backwards compatibility version.
-inline logger::logger(std::string name, std::string filename)
+// TODO: Many of the class keywords are likely unnecessary in the non-backwards
+// compatibility version.
+BACKWARDS_COMPAT_INLINE logger::logger(std::string name, std::string filename)
   : pImpl{std::make_unique<detail::impl>(name, filename)}
 {
 }
 
-inline logger::~logger() = default;
-inline logger::logger(logger&&) = default;
-inline class logger& logger::operator=(logger&&) = default;
+BACKWARDS_COMPAT_INLINE logger::~logger() = default;
+BACKWARDS_COMPAT_INLINE logger::logger(logger&&) = default;
+BACKWARDS_COMPAT_INLINE class logger& logger::operator=(logger&&) = default;
 
-inline void logger::log(level_enum lvl, std::string const& message) { pImpl->log(lvl, message); }
+BACKWARDS_COMPAT_INLINE void logger::log(level_enum lvl, std::string const& message) { pImpl->log(lvl, message); }
+
+BACKWARDS_COMPAT_INLINE void logger::set_level(level_enum log_level) { pImpl->set_level(log_level); }
+BACKWARDS_COMPAT_INLINE void logger::flush() { pImpl->flush(); }
+BACKWARDS_COMPAT_INLINE void logger::add_sink(spdlog::sink_ptr sink) { pImpl->add_sink(sink); }
+BACKWARDS_COMPAT_INLINE void logger::remove_sink(spdlog::sink_ptr sink) { pImpl->remove_sink(sink); }
+BACKWARDS_COMPAT_INLINE level_enum logger::level() const { return pImpl->level(); }
 
 #ifdef RMM_BACKWARDS_COMPATIBILITY
 namespace detail {

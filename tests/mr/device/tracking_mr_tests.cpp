@@ -204,8 +204,13 @@ TEST(TrackingTest, LogOutstandingAllocations)
 {
   std::ostringstream oss;
   auto oss_sink = std::make_shared<spdlog::sinks::ostream_sink_st>(oss);
+#ifdef RMM_BACKWARDS_COMPATIBILITY
   rmm::detail::logger().sinks().push_back(oss_sink);
   auto old_level = rmm::detail::logger().level();
+#else
+  auto old_level = rmm::default_logger().level();
+  rmm::default_logger().add_sink(oss_sink);
+#endif
 
   tracking_adaptor mr{rmm::mr::get_current_device_resource_ref()};
   std::vector<void*> allocations;
@@ -213,7 +218,11 @@ TEST(TrackingTest, LogOutstandingAllocations)
     allocations.push_back(mr.allocate(ten_MiB));
   }
 
+#ifdef RMM_BACKWARDS_COMPATIBILITY
   rmm::detail::logger().set_level(spdlog::level::debug);
+#else
+  rmm::default_logger().set_level(rmm::level_enum::debug);
+#endif
   EXPECT_NO_THROW(mr.log_outstanding_allocations());
 
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_DEBUG
@@ -224,8 +233,13 @@ TEST(TrackingTest, LogOutstandingAllocations)
     mr.deallocate(allocation, ten_MiB);
   }
 
+#ifdef RMM_BACKWARDS_COMPATIBILITY
   rmm::detail::logger().set_level(old_level);
   rmm::detail::logger().sinks().pop_back();
+#else
+  rmm::default_logger().set_level(old_level);
+  rmm::default_logger().remove_sink(oss_sink);
+#endif
 }
 
 }  // namespace
