@@ -58,6 +58,21 @@ message(STATUS "RMM: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'")
 # cudart can be linked statically or dynamically
 option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
 
+# ##################################################################################################
+# * compiler options -------------------------------------------------------------------------------
+
+# find packages we depend on
+rapids_find_package(
+  CUDAToolkit REQUIRED
+  BUILD_EXPORT_SET rmm-exports
+  INSTALL_EXPORT_SET rmm-exports)
+
+# ##################################################################################################
+# * dependencies -----------------------------------------------------------------------------------
+
+# add third party dependencies using CPM
+rapids_cpm_init()
+
 add_subdirectory(rapids_logger)
 rapids_make_logger(
   LOGGER_TARGET
@@ -74,28 +89,9 @@ rapids_make_logger(
   rmm-exports
   CMAKE_NAMESPACE
   rmm::
-  # TODO: Make this configurable in rmm. Once we switch fully over to the new implementation, the
-  # default here should be off, but turning it on should activate the compilation of a separate TU.
   SUPPORTS_LOGGING
   RMM_BACKWARDS_COMPATIBILITY)
 
-# ##################################################################################################
-# * compiler options -------------------------------------------------------------------------------
-
-# find packages we depend on
-rapids_find_package(
-  CUDAToolkit REQUIRED
-  BUILD_EXPORT_SET rmm-exports
-  INSTALL_EXPORT_SET rmm-exports)
-
-# ##################################################################################################
-# * dependencies -----------------------------------------------------------------------------------
-
-# add third party dependencies using CPM
-rapids_cpm_init()
-
-include(cmake/thirdparty/get_fmt.cmake)
-include(cmake/thirdparty/get_spdlog.cmake)
 include(cmake/thirdparty/get_cccl.cmake)
 include(cmake/thirdparty/get_nvtx.cmake)
 
