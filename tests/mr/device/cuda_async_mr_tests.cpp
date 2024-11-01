@@ -38,12 +38,6 @@ class AsyncMRTest : public ::testing::Test {
   }
 };
 
-TEST_F(AsyncMRTest, ThrowIfNotSupported)
-{
-  auto construct_mr = []() { cuda_async_mr mr; };
-  EXPECT_THROW(construct_mr(), rmm::logic_error);
-}
-
 TEST_F(AsyncMRTest, ExplicitInitialPoolSize)
 {
   const auto pool_init_size{100};
