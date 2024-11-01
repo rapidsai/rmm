@@ -656,7 +656,7 @@ class global_arena final {
     std::lock_guard lock(mtx_);
 
     logger->info("  Arena size: {}", rmm::detail::bytes{upstream_block_.size()});
-    logger->info("  # superblocks: {}", superblocks_.size());
+    logger->info("  # superblocks: %d", superblocks_.size());
     if (!superblocks_.empty()) {
       logger->debug("  Total size of superblocks: {}",
                     rmm::detail::bytes{total_memory_size(superblocks_)});
@@ -665,14 +665,14 @@ class global_arena final {
       auto const fragmentation = (1 - max_free / static_cast<double>(total_free)) * 100;
       logger->info("  Total free memory: {}", rmm::detail::bytes{total_free});
       logger->info("  Largest block of free memory: {}", rmm::detail::bytes{max_free});
-      logger->info("  Fragmentation: {:.2f}%", fragmentation);
+      logger->info("  Fragmentation: %0.2f%%", fragmentation);
 
       auto index = 0;
       char* prev_end{};
       for (auto const& sblk : superblocks_) {
         if (prev_end == nullptr) { prev_end = sblk.pointer(); }
         logger->debug(
-          "    Superblock {}: start={}, end={}, size={}, empty={}, # free blocks={}, max free={}, "
+          "    Superblock %d: start=%p, end=%p, size={}, empty=%d, # free blocks=%d, max free={}, "
           "gap={}",
           index,
           fmt::ptr(sblk.pointer()),
