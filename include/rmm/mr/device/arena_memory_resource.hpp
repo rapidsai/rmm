@@ -119,17 +119,9 @@ class arena_memory_resource final : public device_memory_resource {
   explicit arena_memory_resource(Upstream* upstream_mr,
                                  std::optional<std::size_t> arena_size = std::nullopt,
                                  bool dump_log_on_failure              = false)
-    : global_arena_{to_device_async_resource_ref_checked(upstream_mr), arena_size},
-      dump_log_on_failure_{dump_log_on_failure}
+    : arena_memory_resource{
+        to_device_async_resource_ref_checked(upstream_mr), arena_size, dump_log_on_failure}
   {
-    if (dump_log_on_failure_) {
-      logger_ =
-        std::make_shared<spdlog::logger>("arena_memory_dump",
-                                         std::make_shared<spdlog::sinks::basic_file_sink_mt>(
-                                           "rmm_arena_memory_dump.log", true /*truncate file*/));
-      // Set the level to `debug` for more detailed output.
-      logger_->set_level(spdlog::level::info);
-    }
   }
 
   ~arena_memory_resource() override = default;
