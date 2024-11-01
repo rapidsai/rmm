@@ -105,12 +105,16 @@ struct bytes {
 
 }  // namespace detail
 
+// TODO: Many of the inline and class keywords are likely unnecessary in the
+// non-backwards compatibility version.
 inline logger::logger(std::string name, std::string filename)
   : pImpl{std::make_unique<detail::impl>(name, filename)}
 {
 }
 
 inline logger::~logger() = default;
+inline logger::logger(logger&&) = default;
+inline class logger& logger::operator=(logger&&) = default;
 
 inline void logger::log(level_enum lvl, std::string const& message) { pImpl->log(lvl, message); }
 

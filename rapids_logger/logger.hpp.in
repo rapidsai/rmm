@@ -93,11 +93,7 @@ class logger {
    * @brief Destructor for logger.
    */
 #ifdef SUPPORTS_LOGGING
-#ifdef RMM_BACKWARDS_COMPATIBILITY
   inline ~logger();
-#else
-  ~logger();
-#endif
 #else
   ~logger() = default;
 #endif
@@ -109,9 +105,9 @@ class logger {
   // delete copy assignment operator
   logger& operator=(logger const&) = delete;
   // default move constructor
-  logger(logger&&) = default;
+  inline logger(logger&&);
   // default move assignment operator
-  logger& operator=(logger&&) = default;
+  inline logger& operator=(logger&&);
 
   template <typename... Args>
   void log(level_enum lvl, std::string const& format, Args&&... args)
@@ -123,11 +119,7 @@ class logger {
     log(lvl, {buf.get(), buf.get() + size - 1});
   }
 
-#ifdef RMM_BACKWARDS_COMPATIBILITY
   inline void log(level_enum lvl, std::string const& message);
-#else
-  void log(level_enum lvl, std::string const& message);
-#endif
 
   template <typename... Args>
   void trace(std::string const& format, Args&&... args)
@@ -192,28 +184,8 @@ class logger {
 namespace detail {
 
 #ifdef RMM_BACKWARDS_COMPATIBILITY
-#ifdef SUPPORTS_LOGGING
 inline logger& default_logger();
-#else
-inline logger& default_logger()
-{
-  // This is a no-op so pass empty args.
-  static class logger logger {
-    "", ""
-  };
-  return logger;
-}
-#endif
-
-#ifdef SUPPORTS_LOGGING
 inline spdlog::logger& logger();
-#else
-inline spdlog::logger& logger()
-{
-  // This branch won't compile. It's not worth supporting since it's not a
-  // real backwards-compat path.
-}
-#endif
 #endif
 
 }  // namespace detail
