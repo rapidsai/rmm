@@ -51,11 +51,12 @@ function(rapids_make_logger)
   set(BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR}/${_RAPIDS_LOGGER_HEADER_DIR})
   set(INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/${_RAPIDS_LOGGER_HEADER_DIR})
 
-  configure_file(${CMAKE_CURRENT_FUNCTION_LIST_DIR}/logger.hpp.in ${BUILD_DIR}/logger.hpp)
+  set(LOGGER_OUTPUT_FILE ${BUILD_DIR}/logger.hpp)
+  configure_file(${CMAKE_CURRENT_FUNCTION_LIST_DIR}/logger.hpp.in ${LOGGER_OUTPUT_FILE})
   install(FILES ${LOGGER_OUTPUT_FILE} DESTINATION ${INSTALL_DIR})
 
-  configure_file(${CMAKE_CURRENT_FUNCTION_LIST_DIR}/logger_impl.hpp.in
-                 ${BUILD_DIR}/logger_impl/logger_impl.hpp)
+  set(LOGGER_IMPL_OUTPUT_FILE ${BUILD_DIR}/logger_impl/logger_impl.hpp)
+  configure_file(${CMAKE_CURRENT_FUNCTION_LIST_DIR}/logger_impl.hpp.in ${LOGGER_IMPL_OUTPUT_FILE})
   install(FILES ${LOGGER_IMPL_OUTPUT_FILE} DESTINATION ${INSTALL_DIR}/logger_impl)
 
   add_library(${_RAPIDS_LOGGER_TARGET} INTERFACE)
