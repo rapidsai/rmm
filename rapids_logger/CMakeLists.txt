@@ -97,6 +97,7 @@ function(rapids_make_logger)
         ${_RAPIDS_LOGGER_TARGET}_impl
         INTERFACE $<BUILD_INTERFACE:${LOGGER_IMPL_SRC_OUTPUT_FILE}>
                   $<INSTALL_INTERFACE:${_RAPIDS_LOGGER_HEADER_DIR}/logger_impl/logger.cpp>)
+      target_link_libraries(${_RAPIDS_LOGGER_TARGET}_impl INTERFACE ${_RAPIDS_LOGGER_TARGET})
     endif()
   endif()
 

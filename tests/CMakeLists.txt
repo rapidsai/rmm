@@ -44,11 +44,11 @@ function(ConfigureTestInternal TEST_NAME)
   target_compile_options(${TEST_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Wall -Werror
                                              -Wno-error=deprecated-declarations>)
 
-  # When not building in compatibility mode, each test has to recompile the headers. TODO: For the
-  # tests, consider building an object library that can be reused. This is separate from what the
-  # main library does (providing an interface lib).
+  # When not building in compatibility mode, each test has to recompile the headers. TODO: This
+  # assumes that rmm does not currently expose a build where compatibility mode is off but
+  # SUPPORTS_LOGGING is also false (in which case the impl target won't be created).
   if(NOT LOGGING_COMPATIBILITY)
-    target_link_libraries(${TEST_NAME} rmm_logger_impl)
+    target_link_libraries(${TEST_NAME} rmm_test_logger)
   endif()
 
   if(DISABLE_DEPRECATION_WARNING)
@@ -124,6 +124,10 @@ function(ConfigureTest TEST_NAME)
   endforeach()
 
 endfunction()
+
+# Create an object library for the logger so that we don't have to recompile it.
+add_library(rmm_test_logger OBJECT)
+target_link_libraries(rmm_test_logger PRIVATE rmm_logger_impl)
 
 # test sources
 
