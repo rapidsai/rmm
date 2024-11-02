@@ -21,12 +21,10 @@
 #include "../logger.hpp"
 #endif
 
-// In the long run this shouldn't be necessary because the file will only be
-// compiled if SUPPORTS_LOGGING is enabled.
-#ifdef SUPPORTS_LOGGING
-
+#ifdef RMM_BACKWARDS_COMPATIBILITY
 #include <fmt/format.h>
 #include <fmt/ostream.h>
+#endif
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/spdlog.h>
 
@@ -136,9 +134,9 @@ inline class spdlog::logger& logger() { return default_logger().pImpl->underlyin
 
 }  // namespace @_RAPIDS_LOGGER_NAMESPACE@
 
+#ifdef RMM_BACKWARDS_COMPATIBILITY
 // Doxygen doesn't like this because we're overloading something from fmt
 //! @cond Doxygen_Suppress
 template <>
 struct fmt::formatter<@_RAPIDS_LOGGER_NAMESPACE@::detail::bytes> : fmt::ostream_formatter {};
-
 #endif

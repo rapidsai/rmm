@@ -37,7 +37,6 @@
 #include <string>
 
 #ifdef SUPPORTS_LOGGING
-#include <initializer_list>
 
 namespace spdlog {
 namespace sinks {
@@ -148,27 +147,16 @@ enum class level_enum : int32_t {
  */
 class logger {
  public:
-  /**
-   * @brief Constructor for logger.
-   * Initializes the logger based on whether logging is supported.
-   */
 #ifdef SUPPORTS_LOGGING
   BACKWARDS_COMPAT_INLINE logger(std::string name, std::string filename);
+  BACKWARDS_COMPAT_INLINE ~logger();
 #else
   logger(std::string name, std::string filename) {}
+  ~logger() = default;
 #endif
 
   // Not default constructible.
   logger() = delete;
-
-  /**
-   * @brief Destructor for logger.
-   */
-#ifdef SUPPORTS_LOGGING
-  BACKWARDS_COMPAT_INLINE ~logger();
-#else
-  ~logger() = default;
-#endif
 
   /**
    * @brief Copy constructor for logger.
@@ -180,6 +168,29 @@ class logger {
   BACKWARDS_COMPAT_INLINE logger(logger&&);
   // default move assignment operator
   BACKWARDS_COMPAT_INLINE logger& operator=(logger&&);
+
+#ifdef SUPPORTS_LOGGING
+  BACKWARDS_COMPAT_INLINE void log(level_enum lvl, std::string const& message);
+  BACKWARDS_COMPAT_INLINE void add_sink(spdlog::sink_ptr sink);
+  BACKWARDS_COMPAT_INLINE void remove_sink(spdlog::sink_ptr sink);
+  BACKWARDS_COMPAT_INLINE level_enum level() const;
+  BACKWARDS_COMPAT_INLINE void set_level(level_enum log_level);
+  BACKWARDS_COMPAT_INLINE void flush();
+  static constexpr bool supports_logging() { return true; }
+#else
+  void log(level_enum lvl, std::string const& message) {}
+  // When logging is not supported we won't have a spdlog sink_ptr type defined
+  // when this function is, so a template is used to capture the user's type.
+  template<typename Sink>
+  void add_sink(Sink sink) {}
+  template<typename Sink>
+  void remove_sink(Sink sink);
+  level_enum level() const { return level_enum::off; }
+  void set_level(level::level_enum log_level) {}
+  void flush() {}
+  void remove_sink(Sink sink) {}
+  static constexpr bool supports_logging() { return false; }
+#endif
 
   // This public log API allows users to pass format arguments to this function
   // a la printf.
@@ -196,12 +207,6 @@ class logger {
 
     this->_log(lvl, format, convert_to_string(std::forward<Args>(args))...);
   };
-
-#ifdef SUPPORTS_LOGGING
-  BACKWARDS_COMPAT_INLINE void log(level_enum lvl, std::string const& message);
-#else
-  void log(level_enum lvl, std::string const& message) {}
-#endif
 
   template <typename... Args>
   void trace(std::string const& format, Args&&... args)
@@ -237,41 +242,6 @@ class logger {
   void critical(std::string const& format, Args&&... args)
   {
     log(level_enum::critical, format, std::forward<Args>(args)...);
-  }
-
-#ifdef SUPPORTS_LOGGING
-  BACKWARDS_COMPAT_INLINE void add_sink(spdlog::sink_ptr sink);
-  BACKWARDS_COMPAT_INLINE void remove_sink(spdlog::sink_ptr sink);
-#else
-  // When logging is not supported we won't have a spdlog sink_ptr type defined
-  // when this function is, so a template is used to capture the user's type.
-  template<typename Sink>
-  void add_sink(Sink sink) {}
-  template<typename Sink>
-  void remove_sink(Sink sink) {}
-#endif
-
-#ifdef SUPPORTS_LOGGING
-  BACKWARDS_COMPAT_INLINE level_enum level() const;
-  BACKWARDS_COMPAT_INLINE void set_level(level_enum log_level);
-  BACKWARDS_COMPAT_INLINE void flush();
-#else
-  BACKWARDS_COMPAT_INLINE level_enum level() const { return level_enum::off; }
-  void set_level(level::level_enum log_level) {}
-  void flush() {}
-#endif
-
-  /**
-   * @brief Check at compile-time whether logging is supported.
-   * @return `true` if logging is supported, `false` otherwise.
-   */
-  static constexpr bool supports_logging()
-  {
-#ifdef SUPPORTS_LOGGING
-    return true;
-#else
-    return false;
-#endif
   }
 
 #ifndef RMM_BACKWARDS_COMPATIBILITY
