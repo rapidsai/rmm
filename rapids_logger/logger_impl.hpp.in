@@ -52,7 +52,7 @@ struct impl {
                                                             )}
   {
     underlying.set_pattern("[%6t][%H:%M:%S:%f][%-6l] %v");
-    underlying.flush_on(spdlog::level::warn);
+    flush_on(level_enum::warn);
   }
 
   /**
@@ -82,6 +82,30 @@ struct impl {
   void flush()
   {
     underlying.flush();
+  }
+
+  /**
+   * @brief Flush all writes on the specified level or higher.
+   */
+  void flush_on(level_enum log_level)
+  {
+    underlying.flush_on(static_cast<spdlog::level::level_enum>(static_cast<int32_t>(log_level)));
+  }
+
+  /**
+   * @brief Get the flush level.
+   *
+   * @return The flush level.
+   */
+  level_enum flush_level() const
+  {
+      return static_cast<level_enum>(static_cast<int32_t>(underlying.flush_level()));
+  }
+
+  // TODO: Add conversion functions for spdlog::level::level_enum
+  bool should_log(level_enum lvl) const
+  {
+    return underlying.should_log(static_cast<spdlog::level::level_enum>(static_cast<int32_t>(lvl)));
   }
 
   /**
@@ -133,6 +157,9 @@ BACKWARDS_COMPAT_INLINE void logger::log(level_enum lvl, std::string const& mess
 
 BACKWARDS_COMPAT_INLINE void logger::set_level(level_enum log_level) { pImpl->set_level(log_level); }
 BACKWARDS_COMPAT_INLINE void logger::flush() { pImpl->flush(); }
+BACKWARDS_COMPAT_INLINE void logger::flush_on(level_enum log_level) { pImpl->flush_on(log_level); }
+BACKWARDS_COMPAT_INLINE level_enum logger::flush_level() const { return pImpl->level(); }
+BACKWARDS_COMPAT_INLINE bool logger::should_log(level_enum lvl) const { return pImpl->should_log(lvl); }
 BACKWARDS_COMPAT_INLINE void logger::add_sink(spdlog::sink_ptr sink) { pImpl->add_sink(sink); }
 BACKWARDS_COMPAT_INLINE void logger::remove_sink(spdlog::sink_ptr sink) { pImpl->remove_sink(sink); }
 BACKWARDS_COMPAT_INLINE level_enum logger::level() const { return pImpl->level(); }

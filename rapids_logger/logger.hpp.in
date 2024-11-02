@@ -232,6 +232,24 @@ class logger {
   BACKWARDS_COMPAT_INLINE void flush();
 
   /**
+   * @brief Flush all writes on the specified level or above.
+   */
+  BACKWARDS_COMPAT_INLINE void flush_on(level_enum log_level);
+
+  /**
+   * @brief Get the current flush level.
+   */
+  BACKWARDS_COMPAT_INLINE level_enum flush_level() const;
+
+  /**
+   * @brief Check if the logger should log a message at the specified level.
+   *
+   * @param msg_level The level of the message
+   * @return true if the message should be logged, false otherwise
+   */
+  BACKWARDS_COMPAT_INLINE bool should_log(level_enum msg_level) const;
+
+  /**
    * @brief Check if the logger supports logging.
    *
    * @return true if the logger supports logging, false otherwise
@@ -248,6 +266,9 @@ class logger {
   level_enum level() const { return level_enum::off; }
   void set_level(level_enum log_level) {}
   void flush() {}
+  void flush_on(level_enum log_level) {}
+  level_enum flush_level() { return level_enum::off; }
+  bool should_log(level_enum msg_level) const { return false; }
   static constexpr bool supports_logging() { return false; }
 #endif
 

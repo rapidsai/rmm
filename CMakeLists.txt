@@ -58,7 +58,7 @@ message(STATUS "RMM: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'")
 # cudart can be linked statically or dynamically
 option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
 
-option(LOGGING_COMPATIBILITY "Enable backwards compatibility with older logging macros" ON)
+option(LOGGING_COMPATIBILITY "Enable backwards compatibility with older logging macros" OFF)
 option(SUPPORTS_LOGGING "Enable logging support" ON)
 if(LOGGING_COMPATIBILITY)
   if(NOT SUPPORTS_LOGGING)
