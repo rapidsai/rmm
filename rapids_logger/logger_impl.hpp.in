@@ -87,8 +87,6 @@ struct impl {
 
 }  // namespace detail
 
-// TODO: Many of the class keywords are likely unnecessary in the non-backwards
-// compatibility version.
 BACKWARDS_COMPAT_INLINE logger::logger(std::string name, std::string filename)
   : pImpl{std::make_unique<detail::impl>(name, filename)}
 {
@@ -96,7 +94,11 @@ BACKWARDS_COMPAT_INLINE logger::logger(std::string name, std::string filename)
 
 BACKWARDS_COMPAT_INLINE logger::~logger() = default;
 BACKWARDS_COMPAT_INLINE logger::logger(logger&&) = default;
+#ifdef RMM_BACKWARDS_COMPATIBILITY
 BACKWARDS_COMPAT_INLINE class logger& logger::operator=(logger&&) = default;
+#else
+BACKWARDS_COMPAT_INLINE logger& logger::operator=(logger&&) = default;
+#endif
 
 BACKWARDS_COMPAT_INLINE void logger::log(level_enum lvl, std::string const& message) { pImpl->log(lvl, message); }
 

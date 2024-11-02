@@ -246,7 +246,6 @@ class logger {
 #ifndef RMM_BACKWARDS_COMPATIBILITY
  private:
 #endif
-// TODO: Support args to the impl constructor
 #ifdef SUPPORTS_LOGGING
   std::unique_ptr<detail::impl> pImpl{};
 #endif
@@ -324,7 +323,8 @@ inline logger& default_logger()
 #endif
 
 // Macros for easier logging, similar to spdlog.
-// TODO: Assumes that we want to respect spdlog's own logging macro level settings.
+// TODO: The macros below assume that we want to respect spdlog's level macros
+// rather than the ones defined by this file.
 #define RMM_LOGGER_CALL(logger, level, ...) (logger).log(level, __VA_ARGS__)
 
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
