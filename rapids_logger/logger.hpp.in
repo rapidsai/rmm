@@ -72,6 +72,7 @@ inline std::string default_log_filename()
 struct bytes {
   std::size_t value;  ///< The size in bytes
 
+#ifdef RMM_BACKWARDS_COMPATIBILITY
   /**
    * @brief Construct a new bytes object
    *
@@ -90,6 +91,21 @@ struct bytes {
     }
     return os << size << ' ' << units.at(index);
   }
+#else
+  std::string to_string() const
+  {
+    static std::array units{"B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"};
+
+    int index = 0;
+    auto size = static_cast<double>(value);
+    while (size > 1024) {
+      size /= 1024;
+      index++;
+    }
+    return std::to_string(size) + ' ' + units.at(index);
+  }
+
+#endif
 };
 
 // TODO: Check if we really need the fake_impl or if we can just not store
@@ -111,6 +127,14 @@ class fake_impl {
 
 // Forward declaration of the real implementation
 struct impl;
+
+// Trait to check if T has a to_string() method that returns std::string
+template <typename, typename = std::void_t<>>
+struct has_to_string : std::false_type {};
+
+template <typename T>
+struct has_to_string<T, std::void_t<decltype(std::declval<T>().to_string())>>
+    : std::is_same<decltype(std::declval<T>().to_string()), std::string> {};
 
 }  // namespace detail
 
@@ -174,15 +198,21 @@ class logger {
   // default move assignment operator
   BACKWARDS_COMPAT_INLINE logger& operator=(logger&&);
 
-  template <typename... Args>
-  void log(level_enum lvl, std::string const& format, Args&&... args)
-  {
-    auto size = static_cast<size_t>(std::snprintf(nullptr, 0, format.c_str(), args...) + 1);
-    if (size <= 0) { throw std::runtime_error("Error during formatting."); }
-    std::unique_ptr<char[]> buf(new char[size]);
-    std::snprintf(buf.get(), size, format.c_str(), args...);
-    log(lvl, {buf.get(), buf.get() + size - 1});
-  }
+  // This public log API allows users to pass format arguments to this function
+  // a la printf.
+  template<typename... Args>
+  void log(level_enum lvl, std::string const& format, Args&&... args) {
+    auto convert_to_string = [](auto&& arg) -> decltype(auto) {
+      using ArgType = std::decay_t<decltype(arg)>;
+      if constexpr (detail::has_to_string<ArgType>::value) {
+        return arg.to_string();
+      } else {
+        return std::forward<decltype(arg)>(arg);
+      }
+    };
+
+    this->_log(lvl, format, convert_to_string(std::forward<Args>(args))...);
+  };
 
   BACKWARDS_COMPAT_INLINE void log(level_enum lvl, std::string const& message);
 
@@ -266,6 +296,38 @@ class logger {
 #else
   std::unique_ptr<detail::fake_impl> pImpl{};
 #endif
+
+#ifdef RMM_BACKWARDS_COMPATIBILITY
+ private:
+#endif
+  // TODO: When we migrate to C++20 we can use std::format and format strings
+  // instead of the printf-style printing used here.
+  template <typename... Args>
+  void formatted_log(level_enum lvl, std::string const& format, Args&&... args) {
+    auto size = static_cast<size_t>(std::snprintf(nullptr, 0, format.c_str(), args...) + 1);
+    if (size <= 0) { throw std::runtime_error("Error during formatting."); }
+    std::unique_ptr<char[]> buf(new char[size]);
+    std::snprintf(buf.get(), size, format.c_str(), args...);
+    log(lvl, {buf.get(), buf.get() + size - 1});
+  }
+
+  // This second level of indirection preserves the lifetime of string
+  // temporaries created in the log() call so that the c_str pointers are valid
+  // in the subsequent formatted_log call.
+  template<typename... Args>
+  void _log(level_enum lvl, std::string const& format, Args&&... args) {
+    auto convert_to_c_string = [](auto&& arg) -> decltype(auto) {
+      using ArgType = std::decay_t<decltype(arg)>;
+      if constexpr (std::is_same_v<ArgType, std::string>) {
+        return arg.c_str();
+      } else {
+        return std::forward<decltype(arg)>(arg);
+      }
+    };
+
+    this->formatted_log(lvl, format, convert_to_c_string(std::forward<Args>(args))...);
+  };
+
 };
 
 namespace detail {
