@@ -35,7 +35,6 @@ namespace @_RAPIDS_LOGGER_NAMESPACE@ {
 namespace detail {
 
 /**
- * @struct impl
  * @brief The real implementation of the logger using spdlog with a basic file sink.
  */
 struct impl {
@@ -43,6 +42,7 @@ struct impl {
 
   /**
    * @brief Constructor for the real implementation of the logger.
+   *
    * Initializes the logger with a basic file sink.
    */
   impl(std::string name, std::string filename)
@@ -55,30 +55,59 @@ struct impl {
     underlying.flush_on(spdlog::level::warn);
   }
 
+  /**
+   * @brief Log a message at the specified level.
+   *
+   * @param lvl The level at which to log the message.
+   * @param message The message to log.
+   */
   void log(level_enum lvl, const std::string& message)
   {
     underlying.log(static_cast<spdlog::level::level_enum>(static_cast<int32_t>(lvl)), message);
   }
 
+  /**
+   * @brief Set the logging level.
+   *
+   * @param log_level The new logging level.
+   */
   void set_level(level_enum log_level)
   {
     underlying.set_level(static_cast<spdlog::level::level_enum>(static_cast<int32_t>(log_level)));
   }
 
+  /**
+   * @brief Flush the logger.
+   */
   void flush()
   {
     underlying.flush();
   }
 
+  /**
+   * @brief Add a sink to the logger.
+   *
+   * @param sink The sink to add.
+   */
   void add_sink(spdlog::sink_ptr sink) {
       underlying.sinks().push_back(sink);
   }
 
+  /**
+   * @brief Remove a sink from the logger.
+   *
+   * @param sink The sink to remove.
+   */
   void remove_sink(spdlog::sink_ptr sink) {
       auto& sinks = underlying.sinks();
       sinks.erase(std::remove(sinks.begin(), sinks.end(), sink), sinks.end());
   }
 
+  /**
+   * @brief Get the current logging level.
+   *
+   * @return The current logging level.
+   */
   level_enum level() const
   {
     return static_cast<level_enum>(static_cast<int32_t>(underlying.level()));

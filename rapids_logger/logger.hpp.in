@@ -38,6 +38,7 @@
 
 #ifdef SUPPORTS_LOGGING
 
+// Forward declare spdlog types that are part of our public API.
 namespace spdlog {
 namespace sinks {
 class sink;
@@ -91,6 +92,11 @@ struct bytes {
     return os << size << ' ' << units.at(index);
   }
 #else
+  /**
+   * @brief Convert the size to a string representation.
+   *
+   * @return std::string The size as a string.
+   */
   std::string to_string() const
   {
     static std::array units{"B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"};
@@ -110,7 +116,11 @@ struct bytes {
 // Forward declaration of the real implementation
 struct impl;
 
-// Trait to check if T has a to_string() method that returns std::string
+/**
+ * @brief Trait to check if a type has a `to_string()` method that returns a `std::string`.
+ *
+ * @tparam T The type to check.
+ */
 template <typename, typename = std::void_t<>>
 struct has_to_string : std::false_type {};
 
@@ -120,7 +130,7 @@ struct has_to_string<T, std::void_t<decltype(std::declval<T>().to_string())>>
 
 }  // namespace detail
 
-// These defines must be kept in sync with spdlog or bad things will happen!
+// These values must be kept in sync with spdlog!
 #define @_RAPIDS_LOGGER_MACRO_PREFIX@_LEVEL_TRACE    0
 #define @_RAPIDS_LOGGER_MACRO_PREFIX@_LEVEL_DEBUG    1
 #define @_RAPIDS_LOGGER_MACRO_PREFIX@_LEVEL_INFO     2
@@ -129,6 +139,11 @@ struct has_to_string<T, std::void_t<decltype(std::declval<T>().to_string())>>
 #define @_RAPIDS_LOGGER_MACRO_PREFIX@_LEVEL_CRITICAL 5
 #define @_RAPIDS_LOGGER_MACRO_PREFIX@_LEVEL_OFF      6
 
+/**
+ * @brief The log levels supported by the logger.
+ *
+ * These levels correspond to the levels defined by spdlog.
+ */
 enum class level_enum : int32_t {
   trace    = @_RAPIDS_LOGGER_MACRO_PREFIX@_LEVEL_TRACE,
   debug    = @_RAPIDS_LOGGER_MACRO_PREFIX@_LEVEL_DEBUG,
@@ -148,34 +163,79 @@ enum class level_enum : int32_t {
 class logger {
  public:
 #ifdef SUPPORTS_LOGGING
+  /**
+   * @brief Construct a new logger object
+   *
+   * @param name The name of the logger
+   * @param filename The name of the log file
+   */
   BACKWARDS_COMPAT_INLINE logger(std::string name, std::string filename);
+
+  /**
+   * @brief Destroy the logger object
+   */
   BACKWARDS_COMPAT_INLINE ~logger();
 #else
   logger(std::string name, std::string filename) {}
   ~logger() = default;
 #endif
 
-  // Not default constructible.
-  logger() = delete;
+  logger() = delete;  ///< Not default constructible
+  logger(logger const&) = delete;  ///< Not copy constructible
+  logger& operator=(logger const&) = delete;  ///< Not copy assignable
 
-  /**
-   * @brief Copy constructor for logger.
-   */
-  logger(logger const&) = delete;
-  // delete copy assignment operator
-  logger& operator=(logger const&) = delete;
-  // default move constructor
-  BACKWARDS_COMPAT_INLINE logger(logger&&);
-  // default move assignment operator
-  BACKWARDS_COMPAT_INLINE logger& operator=(logger&&);
+  BACKWARDS_COMPAT_INLINE logger(logger&&);  ///< @default_move_constructor
+  BACKWARDS_COMPAT_INLINE logger& operator=(logger&&);  ///< @default_move_assignment{logger}
 
 #ifdef SUPPORTS_LOGGING
+  /**
+   * @brief Log a message at the specified level.
+   *
+   * This is the core logging routine that dispatches to spdlog.
+   *
+   * @param lvl The log level
+   * @param message The message to log
+   */
   BACKWARDS_COMPAT_INLINE void log(level_enum lvl, std::string const& message);
+
+  /**
+   * @brief Add a sink to the logger.
+   *
+   * @param sink The sink to add
+   */
   BACKWARDS_COMPAT_INLINE void add_sink(spdlog::sink_ptr sink);
+
+  /**
+   * @brief Remove a sink from the logger.
+   *
+   * @param sink The sink to remove
+   */
   BACKWARDS_COMPAT_INLINE void remove_sink(spdlog::sink_ptr sink);
+
+  /**
+   * @brief Get the current log level.
+   *
+   * @return The current log level
+   */
   BACKWARDS_COMPAT_INLINE level_enum level() const;
+
+  /**
+   * @brief Set the log level.
+   *
+   * @param log_level The new log level
+   */
   BACKWARDS_COMPAT_INLINE void set_level(level_enum log_level);
+
+  /**
+   * @brief Flush the logger.
+   */
   BACKWARDS_COMPAT_INLINE void flush();
+
+  /**
+   * @brief Check if the logger supports logging.
+   *
+   * @return true if the logger supports logging, false otherwise
+   */
   static constexpr bool supports_logging() { return true; }
 #else
   void log(level_enum lvl, std::string const& message) {}
@@ -191,8 +251,18 @@ class logger {
   static constexpr bool supports_logging() { return false; }
 #endif
 
-  // This public log API allows users to pass format arguments to this function
-  // a la printf.
+  /**
+   * @brief Log a message at the specified level.
+   *
+   * This public log API allows users to pass format arguments to this function
+   * a la printf. Any custom objects may be logged as long as the type
+   * implements a `to_string` method. The corresponding format specifier in the
+   * format string should simply be `%s` like for a normal string.
+   *
+   * @param lvl The log level
+   * @param format The format string
+   * @param args The format arguments
+   */
   template<typename... Args>
   void log(level_enum lvl, std::string const& format, Args&&... args) {
     auto convert_to_string = [](auto&& arg) -> decltype(auto) {
@@ -207,36 +277,72 @@ class logger {
     this->_log(lvl, format, convert_to_string(std::forward<Args>(args))...);
   };
 
+  /**
+   * @brief Log a message at the TRACE level.
+   *
+   * @param format The format string
+   * @param args The format arguments
+   */
   template <typename... Args>
   void trace(std::string const& format, Args&&... args)
   {
     log(level_enum::trace, format, std::forward<Args>(args)...);
   }
 
+  /**
+   * @brief Log a message at the DEBUG level.
+   *
+   * @param format The format string
+   * @param args The format arguments
+   */
   template <typename... Args>
   void debug(std::string const& format, Args&&... args)
   {
     log(level_enum::debug, format, std::forward<Args>(args)...);
   }
 
+  /**
+   * @brief Log a message at the INFO level.
+   *
+   * @param format The format string
+   * @param args The format arguments
+   */
   template <typename... Args>
   void info(std::string const& format, Args&&... args)
   {
     log(level_enum::info, format, std::forward<Args>(args)...);
   }
 
+  /**
+   * @brief Log a message at the WARN level.
+   *
+   * @param format The format string
+   * @param args The format arguments
+   */
   template <typename... Args>
   void warn(std::string const& format, Args&&... args)
   {
     log(level_enum::warn, format, std::forward<Args>(args)...);
   }
 
+  /**
+   * @brief Log a message at the ERROR level.
+   *
+   * @param format The format string
+   * @param args The format arguments
+   */
   template <typename... Args>
   void error(std::string const& format, Args&&... args)
   {
     log(level_enum::error, format, std::forward<Args>(args)...);
   }
 
+  /**
+   * @brief Log a message at the CRITICAL level.
+   *
+   * @param format The format string
+   * @param args The format arguments
+   */
   template <typename... Args>
   void critical(std::string const& format, Args&&... args)
   {
@@ -247,7 +353,7 @@ class logger {
  private:
 #endif
 #ifdef SUPPORTS_LOGGING
-  std::unique_ptr<detail::impl> pImpl{};
+  std::unique_ptr<detail::impl> pImpl{};  ///< pimpl idiom
 #endif
 
 #ifdef RMM_BACKWARDS_COMPATIBILITY
@@ -255,6 +361,17 @@ class logger {
 #endif
   // TODO: When we migrate to C++20 we can use std::format and format strings
   // instead of the printf-style printing used here.
+  /**
+   * @brief Format and log a message.
+   *
+   * This function performs printf-style formatting to avoid the need for fmt
+   * or spdlog's own templated APIs (which would require exposing spdlog
+   * symbols publicly) and then logs the formatted message.
+   *
+   * @param lvl The log level
+   * @param format The format string
+   * @param args The format arguments
+   */
   template <typename... Args>
   void formatted_log(level_enum lvl, std::string const& format, Args&&... args) {
     auto size = static_cast<size_t>(std::snprintf(nullptr, 0, format.c_str(), args...) + 1);
@@ -264,9 +381,18 @@ class logger {
     log(lvl, {buf.get(), buf.get() + size - 1});
   }
 
-  // This second level of indirection preserves the lifetime of string
-  // temporaries created in the log() call so that the c_str pointers are valid
-  // in the subsequent formatted_log call.
+  /**
+   * @brief Log a message at the specified level.
+   *
+   * This function only exists to provide a level of indirection underneath the
+   * public templated log API to preserve the lifetime of string temporaries
+   * created in the log() call so that the c_str pointers are valid in the
+   * subsequent formatted_log call.
+   *
+   * @param lvl The log level
+   * @param format The format string
+   * @param args The format arguments
+   */
   template<typename... Args>
   void _log(level_enum lvl, std::string const& format, Args&&... args) {
     auto convert_to_c_string = [](auto&& arg) -> decltype(auto) {
@@ -283,14 +409,29 @@ class logger {
 
 };
 
+#ifdef RMM_BACKWARDS_COMPATIBILITY
 namespace detail {
 
-#ifdef RMM_BACKWARDS_COMPATIBILITY
+/**
+ * @brief Get the default logger.
+ *
+ * @deprecated Will be removed in 25.02.
+ *
+ * @return logger& The default logger
+ */
 inline logger& default_logger();
+
+/**
+ * @brief Get the default logger.
+ *
+ * @deprecated Will be removed in 25.02.
+ *
+ * @return spdlog::logger& The default logger's underlying spdlog logger
+ */
 inline spdlog::logger& logger();
-#endif
 
 }  // namespace detail
+#endif
 
 #ifdef RMM_BACKWARDS_COMPATIBILITY
 inline logger& default_logger() { return detail::default_logger(); }
@@ -303,6 +444,11 @@ logger()
   return detail::logger();
 }
 #else
+/**
+ * @brief Get the default logger.
+ *
+ * @return logger& The default logger
+ */
 inline logger& default_logger()
 {
   static logger logger_ = [] {
