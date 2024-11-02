@@ -58,8 +58,14 @@ message(STATUS "RMM: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'")
 # cudart can be linked statically or dynamically
 option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
 
-# option(SUPPORTS_LOGGING "Enable logging support" ON)
-set(LOGGING_COMPATIBILITY OFF)
+option(LOGGING_COMPATIBILITY "Enable backwards compatibility with older logging macros" OFF)
+option(SUPPORTS_LOGGING "Enable logging support" OFF)
+if(LOGGING_COMPATIBILITY)
+  if(NOT SUPPORTS_LOGGING)
+    message(STATUS "LOGGING_COMPATIBILITY requires SUPPORTS_LOGGING to be enabled")
+    set(SUPPORTS_LOGGING ON)
+  endif()
+endif()
 
 # ##################################################################################################
 # * compiler options -------------------------------------------------------------------------------
@@ -96,6 +102,10 @@ if(LOGGING_COMPATIBILITY)
     SUPPORTS_LOGGING
     RMM_BACKWARDS_COMPATIBILITY)
 else()
+  set(_logging_support_flag)
+  if(SUPPORTS_LOGGING)
+    set(_logging_support_flag "SUPPORTS_LOGGING")
+  endif()
   rapids_make_logger(
     LOGGER_TARGET
     rmm_logger
@@ -111,7 +121,7 @@ else()
     rmm-exports
     CMAKE_NAMESPACE
     rmm::
-    SUPPORTS_LOGGING)
+    ${_logging_support_flag})
 endif()
 
 include(cmake/thirdparty/get_cccl.cmake)

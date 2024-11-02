@@ -181,14 +181,13 @@ class logger {
   void log(level_enum lvl, std::string const& message) {}
   // When logging is not supported we won't have a spdlog sink_ptr type defined
   // when this function is, so a template is used to capture the user's type.
-  template<typename Sink>
+  template <typename Sink>
   void add_sink(Sink sink) {}
-  template<typename Sink>
-  void remove_sink(Sink sink);
-  level_enum level() const { return level_enum::off; }
-  void set_level(level::level_enum log_level) {}
-  void flush() {}
+  template <typename Sink>
   void remove_sink(Sink sink) {}
+  level_enum level() const { return level_enum::off; }
+  void set_level(level_enum log_level) {}
+  void flush() {}
   static constexpr bool supports_logging() { return false; }
 #endif
 
