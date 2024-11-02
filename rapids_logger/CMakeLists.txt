@@ -12,6 +12,10 @@
 # the License.
 # =============================================================================
 
+# cmake-lint: disable=R0915
+
+include_guard(GLOBAL)
+
 cmake_minimum_required(VERSION 3.26.4 FATAL_ERROR)
 
 include(../rapids_config.cmake)
@@ -34,16 +38,29 @@ include(../cmake/thirdparty/get_fmt.cmake)
 include(../cmake/thirdparty/get_spdlog.cmake)
 
 # Generate and install the logger files
-function(rapids_make_logger)
+function(rapids_make_logger logger_namespace)
   list(APPEND CMAKE_MESSAGE_CONTEXT "rapids_make_logger")
 
   set(_rapids_options RMM_BACKWARDS_COMPATIBILITY SUPPORTS_LOGGING)
-  # TODO: Check for required options
-  set(_rapids_one_value BUILD_EXPORT_SET INSTALL_EXPORT_SET LOGGER_TARGET LOGGER_HEADER_DIR
-                        LOGGER_NAMESPACE LOGGER_MACRO_PREFIX CMAKE_NAMESPACE)
+  set(_rapids_one_value EXPORT_SET LOGGER_TARGET LOGGER_HEADER_DIR LOGGER_MACRO_PREFIX)
   set(_rapids_multi_value)
   cmake_parse_arguments(_RAPIDS "${_rapids_options}" "${_rapids_one_value}"
                         "${_rapids_multi_value}" ${ARGN})
+
+  # Most arguments are optional and can be inferred from the namespace by default.
+  set(_RAPIDS_LOGGER_NAMESPACE ${logger_namespace})
+  if(NOT _RAPIDS_EXPORT_SET)
+    set(_RAPIDS_EXPORT_SET "${logger_namespace}-exports")
+  endif()
+  if(NOT _RAPIDS_LOGGER_TARGET)
+    set(_RAPIDS_LOGGER_TARGET "${logger_namespace}_logger")
+  endif()
+  if(NOT _RAPIDS_LOGGER_HEADER_DIR)
+    set(_RAPIDS_LOGGER_HEADER_DIR "include/${logger_namespace}")
+  endif()
+  if(NOT _RAPIDS_LOGGER_MACRO_PREFIX)
+    string(TOUPPER ${logger_namespace} _RAPIDS_LOGGER_MACRO_PREFIX)
+  endif()
 
   # All paths are computed relative to the current source/binary dir of the file from which the
   # function is invoked. As a result we cannot use relative paths here because CMake will root these
@@ -101,16 +118,11 @@ function(rapids_make_logger)
     endif()
   endif()
 
-  if(_RAPIDS_LOGGER_CMAKE_NAMESPACE)
-    set(CMAKE_NAMESPACE "NAMESPACE ${_RAPIDS_LOGGER_CMAKE_NAMESPACE}")
+  set(_install_export)
+  if(_RAPIDS_EXPORT_SET)
+    set(_install_export EXPORT ${_RAPIDS_EXPORT_SET})
   endif()
-  if(_RAPIDS_INSTALL_EXPORT_SET)
-    install(
-      TARGETS ${_RAPIDS_LOGGER_TARGET}
-      EXPORT ${_RAPIDS_INSTALL_EXPORT_SET}
-      ${CMAKE_NAMESPACE})
-  endif()
-  if(_RAPIDS_BUILD_EXPORT_SET)
-    export(EXPORT ${_RAPIDS_BUILD_EXPORT_SET} ${CMAKE_NAMESPACE})
-  endif()
+
+  install(TARGETS ${_RAPIDS_LOGGER_TARGET} ${_install_export})
+
 endfunction()

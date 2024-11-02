@@ -59,7 +59,7 @@ message(STATUS "RMM: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'")
 option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
 
 option(LOGGING_COMPATIBILITY "Enable backwards compatibility with older logging macros" OFF)
-option(SUPPORTS_LOGGING "Enable logging support" OFF)
+option(SUPPORTS_LOGGING "Enable logging support")
 if(LOGGING_COMPATIBILITY)
   if(NOT SUPPORTS_LOGGING)
     message(STATUS "LOGGING_COMPATIBILITY requires SUPPORTS_LOGGING to be enabled")
@@ -84,44 +84,13 @@ rapids_cpm_init()
 
 add_subdirectory(rapids_logger)
 if(LOGGING_COMPATIBILITY)
-  rapids_make_logger(
-    LOGGER_TARGET
-    rmm_logger
-    LOGGER_HEADER_DIR
-    include/rmm
-    LOGGER_NAMESPACE
-    rmm
-    LOGGER_MACRO_PREFIX
-    RMM
-    BUILD_EXPORT_SET
-    rmm-exports
-    INSTALL_EXPORT_SET
-    rmm-exports
-    CMAKE_NAMESPACE
-    rmm::
-    SUPPORTS_LOGGING
-    RMM_BACKWARDS_COMPATIBILITY)
+  rapids_make_logger(rmm SUPPORTS_LOGGING RMM_BACKWARDS_COMPATIBILITY)
 else()
   set(_logging_support_flag)
   if(SUPPORTS_LOGGING)
     set(_logging_support_flag "SUPPORTS_LOGGING")
   endif()
-  rapids_make_logger(
-    LOGGER_TARGET
-    rmm_logger
-    LOGGER_HEADER_DIR
-    include/rmm
-    LOGGER_NAMESPACE
-    rmm
-    LOGGER_MACRO_PREFIX
-    RMM
-    BUILD_EXPORT_SET
-    rmm-exports
-    INSTALL_EXPORT_SET
-    rmm-exports
-    CMAKE_NAMESPACE
-    rmm::
-    ${_logging_support_flag})
+  rapids_make_logger(rmm ${_logging_support_flag})
 endif()
 
 include(cmake/thirdparty/get_cccl.cmake)
