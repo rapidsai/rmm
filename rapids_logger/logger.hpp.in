@@ -108,23 +108,6 @@ struct bytes {
 #endif
 };
 
-// TODO: Check if we really need the fake_impl or if we can just not store
-// anything at all in the parent class.
-/**
- * @class fake_logger_impl
- * @brief The fake implementation of the logger that performs no-ops.
- * This is the default behavior if real logging is not enabled.
- */
-class fake_impl {
- public:
-  fake_impl() = default;
-
-  template <typename... Args>
-  void log(Args&&... args)
-  {
-  }
-};
-
 // Forward declaration of the real implementation
 struct impl;
 
@@ -214,7 +197,11 @@ class logger {
     this->_log(lvl, format, convert_to_string(std::forward<Args>(args))...);
   };
 
+#ifdef SUPPORTS_LOGGING
   BACKWARDS_COMPAT_INLINE void log(level_enum lvl, std::string const& message);
+#else
+  void log(level_enum lvl, std::string const& message) {}
+#endif
 
   template <typename... Args>
   void trace(std::string const& format, Args&&... args)
@@ -293,8 +280,6 @@ class logger {
 // TODO: Support args to the impl constructor
 #ifdef SUPPORTS_LOGGING
   std::unique_ptr<detail::impl> pImpl{};
-#else
-  std::unique_ptr<detail::fake_impl> pImpl{};
 #endif
 
 #ifdef RMM_BACKWARDS_COMPATIBILITY
