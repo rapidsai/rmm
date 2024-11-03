@@ -25,3 +25,7 @@ foreach(_cython_target IN LISTS RAPIDS_CYTHON_CREATED_TARGETS)
   set_target_properties(${_cython_target} PROPERTIES C_VISIBILITY_PRESET hidden
                                                      CXX_VISIBILITY_PRESET hidden)
 endforeach()
+
+if(TARGET rmm::rmm_logger_impl)
+  target_link_libraries(logger PRIVATE rmm::rmm_logger_impl)
+endif()

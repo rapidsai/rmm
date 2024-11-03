@@ -180,12 +180,13 @@ function(rapids_make_logger logger_namespace)
       # Note that we cannot specify the source files directly in add_library, see the CMake
       # documentation explaining that these do not populate INTERFACE_SOURCES.
       # https://cmake.org/cmake/help/latest/command/add_library.html#interface-with-sources
-      add_library(${_RAPIDS_LOGGER_TARGET}_impl INTERFACE)
+      set(impl_target ${_RAPIDS_LOGGER_TARGET}_impl)
+      add_library(${impl_target} INTERFACE)
       target_sources(
-        ${_RAPIDS_LOGGER_TARGET}_impl
+        ${impl_target}
         INTERFACE $<BUILD_INTERFACE:${LOGGER_IMPL_SRC_OUTPUT_FILE}>
                   $<INSTALL_INTERFACE:${_RAPIDS_LOGGER_HEADER_DIR}/logger_impl/logger.cpp>)
-      target_link_libraries(${_RAPIDS_LOGGER_TARGET}_impl INTERFACE ${_RAPIDS_LOGGER_TARGET})
+      target_link_libraries(${impl_target} INTERFACE ${_RAPIDS_LOGGER_TARGET})
     endif()
   endif()
 
@@ -195,5 +196,8 @@ function(rapids_make_logger logger_namespace)
   endif()
 
   install(TARGETS ${_RAPIDS_LOGGER_TARGET} ${_install_export})
+  if(TARGET ${impl_target})
+    install(TARGETS ${impl_target} ${_install_export})
+  endif()
 
 endfunction()

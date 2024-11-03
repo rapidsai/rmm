@@ -14,14 +14,27 @@
 
 import warnings
 
-from rmm.librmm._logger cimport logger
+# Note: This must match the LOGGING_COMPATIBILITY setting in CMakeLists.txt for
+# the C++ build or the build will fail since the expected symbols will not exist.
+DEF LOGGING_COMPATIBILITY = False
 
-from rmm.librmm._logger import logging_level
+IF LOGGING_COMPATIBILITY:
+    from rmm.librmm._logger cimport logger
+
+    from rmm.librmm._logger import logging_level
+ELSE:
+    from rmm.librmm._logger cimport default_logger as logger
+
+    from rmm.librmm._logger import level_enum
 
 
 def _validate_level_type(level):
-    if not isinstance(level, logging_level):
-        raise TypeError("level must be an instance of the logging_level enum")
+    IF LOGGING_COMPATIBILITY:
+        if not isinstance(level, logging_level):
+            raise TypeError("level must be an instance of the logging_level enum")
+    ELSE:
+        if not isinstance(level, level_enum):
+            raise TypeError("level must be an instance of the level_enum enum")
 
 
 def should_log(level):
@@ -118,7 +131,7 @@ def get_logging_level():
     >>> rmm.get_logging_level() # get current logging level
     <logging_level.INFO: 2>
     """
-    return logging_level(logger().level())
+    return logger().level()
 
 
 def flush_logger():
@@ -208,4 +221,4 @@ def get_flush_level():
     >>> rmm.flush_level() # get current flush level
     <logging_level.INFO: 2>
     """
-    return logging_level(logger().flush_level())
+    return logger().flush_level()
