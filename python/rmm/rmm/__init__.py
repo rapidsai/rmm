@@ -27,6 +27,7 @@ from rmm.pylibrmm.logger import (
     should_log,
 )
 
+# TODO: Clean up after we remove legacy logging.
 try:
     from rmm.pylibrmm.logger import logging_level
 

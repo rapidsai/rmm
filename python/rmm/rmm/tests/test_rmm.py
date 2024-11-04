@@ -30,6 +30,13 @@ import rmm._cuda.stream
 from rmm.allocators.cupy import rmm_cupy_allocator
 from rmm.allocators.numba import RMMNumbaManager
 
+# TODO: Clean up after we remove legacy logging.
+try:
+    from rmm.pylibrmm.logger import logging_level
+except ImportError:
+    from rmm.pylibrmm.logger import level_enum as logging_level
+
+
 cuda.set_memory_manager(RMMNumbaManager)
 
 _driver_version = rmm._cuda.gpu.driverGetVersion()
@@ -1055,8 +1062,12 @@ def test_rmm_device_buffer_copy(cuda_ary, make_copy):
     np.testing.assert_equal(expected, result)
 
 
-@pytest.mark.parametrize("level", rmm.logging_level)
+@pytest.mark.parametrize("level", logging_level)
 def test_valid_logging_level(level):
+    # TODO: Clean up after we remove legacy logging.
+    default_level = getattr(
+        logging_level, "INFO", getattr(logging_level, "info")
+    )
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore", message="RMM will not log logging_level.TRACE."
@@ -1066,11 +1077,11 @@ def test_valid_logging_level(level):
         )
         rmm.set_logging_level(level)
         assert rmm.get_logging_level() == level
-        rmm.set_logging_level(rmm.logging_level.INFO)  # reset to default
+        rmm.set_logging_level(default_level)  # reset to default
 
         rmm.set_flush_level(level)
         assert rmm.get_flush_level() == level
-        rmm.set_flush_level(rmm.logging_level.INFO)  # reset to default
+        rmm.set_flush_level(default_level)  # reset to default
 
         rmm.should_log(level)
 

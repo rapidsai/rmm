@@ -158,7 +158,7 @@ BACKWARDS_COMPAT_INLINE void logger::log(level_enum lvl, std::string const& mess
 BACKWARDS_COMPAT_INLINE void logger::set_level(level_enum log_level) { pImpl->set_level(log_level); }
 BACKWARDS_COMPAT_INLINE void logger::flush() { pImpl->flush(); }
 BACKWARDS_COMPAT_INLINE void logger::flush_on(level_enum log_level) { pImpl->flush_on(log_level); }
-BACKWARDS_COMPAT_INLINE level_enum logger::flush_level() const { return pImpl->level(); }
+BACKWARDS_COMPAT_INLINE level_enum logger::flush_level() const { return pImpl->flush_level(); }
 BACKWARDS_COMPAT_INLINE bool logger::should_log(level_enum lvl) const { return pImpl->should_log(lvl); }
 BACKWARDS_COMPAT_INLINE void logger::add_sink(spdlog::sink_ptr sink) { pImpl->add_sink(sink); }
 BACKWARDS_COMPAT_INLINE void logger::remove_sink(spdlog::sink_ptr sink) { pImpl->remove_sink(sink); }
