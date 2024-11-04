@@ -47,7 +47,7 @@ class cuda_async_view_memory_resource final : public device_memory_resource {
    * The provided pool is not owned by cuda_async_view_memory_resource and must remain valid
    * during the lifetime of the memory resource.
    *
-   * @throws rmm::runtime_error if the CUDA version does not support `cudaMallocAsync`
+   * @throws rmm::logic_error if the CUDA version does not support `cudaMallocAsync`
    *
    * @param valid_pool_handle Handle to a CUDA memory pool which will be used to
    * serve allocation requests.
