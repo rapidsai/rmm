@@ -13,7 +13,7 @@
 # =============================================================================
 
 set(cython_sources device_buffer.pyx logger.pyx memory_resource.pyx cuda_stream.pyx helper.pyx)
-set(linked_libraries rmm::rmm)
+set(linked_libraries rmm::rmm cpp_logger)
 
 # Build all of the Cython targets
 rapids_cython_create_modules(SOURCE_FILES "${cython_sources}" LINKED_LIBRARIES "${linked_libraries}"
@@ -25,7 +25,3 @@ foreach(_cython_target IN LISTS RAPIDS_CYTHON_CREATED_TARGETS)
   set_target_properties(${_cython_target} PROPERTIES C_VISIBILITY_PRESET hidden
                                                      CXX_VISIBILITY_PRESET hidden)
 endforeach()
-
-if(TARGET rmm::rmm_logger_impl)
-  target_link_libraries(logger PRIVATE rmm::rmm_logger_impl)
-endif()

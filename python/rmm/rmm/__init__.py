@@ -22,11 +22,20 @@ from rmm.pylibrmm.logger import (
     flush_logger,
     get_flush_level,
     get_logging_level,
-    logging_level,
     set_flush_level,
     set_logging_level,
     should_log,
 )
+
+try:
+    from rmm.pylibrmm.logger import logging_level
+
+    logging_level_var = "logging_level"
+except ImportError:
+    from rmm.pylibrmm.logger import level_enum
+
+    logging_level_var = "level_enum"
+
 from rmm.rmm import (
     RMMError,
     is_initialized,
@@ -45,7 +54,7 @@ __all__ = [
     "get_log_filenames",
     "get_logging_level",
     "is_initialized",
-    "logging_level",
+    logging_level_var,
     "mr",
     "register_reinitialize_hook",
     "reinitialize",

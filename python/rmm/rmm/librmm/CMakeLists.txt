@@ -13,7 +13,7 @@
 # =============================================================================
 
 set(cython_sources _logger.pyx)
-set(linked_libraries rmm::rmm)
+set(linked_libraries rmm::rmm cpp_logger)
 
 # Build all of the Cython targets
 rapids_cython_create_modules(SOURCE_FILES "${cython_sources}" LINKED_LIBRARIES "${linked_libraries}"
@@ -33,7 +33,3 @@ target_link_libraries(_torch_allocator PRIVATE rmm::rmm)
 cmake_path(RELATIVE_PATH CMAKE_CURRENT_SOURCE_DIR BASE_DIRECTORY "${PROJECT_SOURCE_DIR}"
            OUTPUT_VARIABLE _torch_allocator_location)
 install(TARGETS _torch_allocator DESTINATION "${_torch_allocator_location}")
-
-if(TARGET rmm::rmm_logger_impl)
-  target_link_libraries(_logger PRIVATE rmm::rmm_logger_impl)
-endif()

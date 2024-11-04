@@ -29,6 +29,14 @@ rapids_cython_init()
 # pass through logging level to spdlog
 add_compile_definitions("SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
 
+# Create an object library for the logger so that we don't have to recompile it. This assumes that
+# we always have logging enabled when we built the C++ library since the targets that are created
+# when we find_package(rmm) already have that setting baked in. TODO: Figure out how to use
+# define_property in the C++ build to make SUPPORTS_LOGGING a queryable property that can be checked
+# here.
+add_library(cpp_logger OBJECT)
+target_link_libraries(cpp_logger PRIVATE rmm::rmm_logger_impl)
+
 add_subdirectory(rmm/_cuda)
 add_subdirectory(rmm/librmm)
 add_subdirectory(rmm/pylibrmm)
