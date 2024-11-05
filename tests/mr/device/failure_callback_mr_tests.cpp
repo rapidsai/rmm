@@ -47,7 +47,8 @@ bool failure_handler(std::size_t /*bytes*/, void* arg)
 TEST(FailureCallbackTest, RetryAllocationOnce)
 {
   bool retried{false};
-  failure_callback_adaptor<> mr{rmm::mr::get_current_device_resource(), failure_handler, &retried};
+  failure_callback_adaptor<> mr{
+    rmm::mr::get_current_device_resource_ref(), failure_handler, &retried};
   EXPECT_EQ(retried, false);
   EXPECT_THROW(mr.allocate(512_GiB), std::bad_alloc);
   EXPECT_EQ(retried, true);

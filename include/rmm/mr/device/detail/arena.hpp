@@ -23,6 +23,7 @@
 #include <rmm/detail/export.hpp>
 #include <rmm/detail/logging_assert.hpp>
 #include <rmm/logger.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <cuda_runtime_api.h>
 
@@ -494,22 +495,18 @@ inline auto max_free_size(std::set<superblock> const& superblocks)
  * @tparam Upstream Memory resource to use for allocating the arena. Implements
  * rmm::mr::device_memory_resource interface.
  */
-template <typename Upstream>
 class global_arena final {
  public:
   /**
    * @brief Construct a global arena.
    *
-   * @throws rmm::logic_error if `upstream_mr == nullptr`.
-   *
    * @param upstream_mr The memory resource from which to allocate blocks for the pool
    * @param arena_size Size in bytes of the global arena. Defaults to half of the available memory
    * on the current device.
    */
-  global_arena(Upstream* upstream_mr, std::optional<std::size_t> arena_size)
+  global_arena(device_async_resource_ref upstream_mr, std::optional<std::size_t> arena_size)
     : upstream_mr_{upstream_mr}
   {
-    RMM_EXPECTS(nullptr != upstream_mr_, "Unexpected null upstream pointer.");
     auto const size =
       rmm::align_down(arena_size.value_or(default_size()), rmm::CUDA_ALLOCATION_ALIGNMENT);
     RMM_EXPECTS(size >= superblock::minimum_size,
@@ -530,7 +527,7 @@ class global_arena final {
   ~global_arena()
   {
     std::lock_guard lock(mtx_);
-    upstream_mr_->deallocate(upstream_block_.pointer(), upstream_block_.size());
+    upstream_mr_.deallocate(upstream_block_.pointer(), upstream_block_.size());
   }
 
   /**
@@ -539,7 +536,7 @@ class global_arena final {
    * @param size The size in bytes of the allocation.
    * @return bool True if the allocation should be handled by the global arena.
    */
-  bool handles(std::size_t size) const { return size > superblock::minimum_size; }
+  static bool handles(std::size_t size) { return size > superblock::minimum_size; }
 
   /**
    * @brief Acquire a superblock that can fit a block of the given size.
@@ -610,7 +607,7 @@ class global_arena final {
    * @param stream Stream on which to perform deallocation.
    * @return bool true if the allocation is found, false otherwise.
    */
-  bool deallocate(void* ptr, std::size_t size, cuda_stream_view stream)
+  bool deallocate_async(void* ptr, std::size_t size, cuda_stream_view stream)
   {
     RMM_LOGGING_ASSERT(handles(size));
     stream.synchronize_no_throw();
@@ -650,7 +647,7 @@ class global_arena final {
    *
    * @param logger the spdlog logger to use
    */
-  void dump_memory_log(std::shared_ptr<spdlog::logger> const& logger) const
+  RMM_HIDDEN void dump_memory_log(std::shared_ptr<spdlog::logger> const& logger) const
   {
     std::lock_guard lock(mtx_);
 
@@ -692,7 +689,7 @@ class global_arena final {
    * @brief Default size of the global arena if unspecified.
    * @return the default global arena size.
    */
-  constexpr std::size_t default_size() const
+  static std::size_t default_size()
   {
     auto const [free, total] = rmm::available_device_memory();
     return free / 2;
@@ -705,7 +702,7 @@ class global_arena final {
    */
   void initialize(std::size_t size)
   {
-    upstream_block_ = {upstream_mr_->allocate(size), size};
+    upstream_block_ = {upstream_mr_.allocate(size), size};
     superblocks_.emplace(upstream_block_.pointer(), size);
   }
 
@@ -777,7 +774,7 @@ class global_arena final {
   }
 
   /// The upstream resource to allocate memory from.
-  Upstream* upstream_mr_;
+  device_async_resource_ref upstream_mr_;
   /// Block allocated from upstream so that it can be quickly freed.
   block upstream_block_;
   /// Address-ordered set of superblocks.
@@ -795,7 +792,6 @@ class global_arena final {
  * @tparam Upstream Memory resource to use for allocating the global arena. Implements
  * rmm::mr::device_memory_resource interface.
  */
-template <typename Upstream>
 class arena {
  public:
   /**
@@ -803,7 +799,7 @@ class arena {
    *
    * @param global_arena The global arena from which to allocate superblocks.
    */
-  explicit arena(global_arena<Upstream>& global_arena) : global_arena_{global_arena} {}
+  explicit arena(global_arena& global_arena) : global_arena_{global_arena} {}
 
   // Disable copy (and move) semantics.
   arena(arena const&)                = delete;
@@ -837,7 +833,9 @@ class arena {
    */
   bool deallocate(void* ptr, std::size_t size, cuda_stream_view stream)
   {
-    if (global_arena_.handles(size) && global_arena_.deallocate(ptr, size, stream)) { return true; }
+    if (global_arena::handles(size) && global_arena_.deallocate_async(ptr, size, stream)) {
+      return true;
+    }
     return deallocate(ptr, size);
   }
 
@@ -961,7 +959,7 @@ class arena {
   }
 
   /// The global arena to allocate superblocks from.
-  global_arena<Upstream>& global_arena_;
+  global_arena& global_arena_;
   /// Acquired superblocks.
   std::set<superblock> superblocks_;
   /// Mutex for exclusive lock.
@@ -976,10 +974,9 @@ class arena {
  * @tparam Upstream Memory resource to use for allocating the global arena. Implements
  * rmm::mr::device_memory_resource interface.
  */
-template <typename Upstream>
 class arena_cleaner {
  public:
-  explicit arena_cleaner(std::shared_ptr<arena<Upstream>> const& arena) : arena_(arena) {}
+  explicit arena_cleaner(std::shared_ptr<arena> const& arena) : arena_(arena) {}
 
   // Disable copy (and move) semantics.
   arena_cleaner(arena_cleaner const&)            = delete;
@@ -997,7 +994,7 @@ class arena_cleaner {
 
  private:
   /// A non-owning pointer to the arena that may need cleaning.
-  std::weak_ptr<arena<Upstream>> arena_;
+  std::weak_ptr<arena> arena_;
 };
 
 }  // namespace mr::detail::arena

@@ -139,8 +139,8 @@ of 1 GiB and a maximum size of 4 GiB. The pool uses
 >>> import rmm
 >>> pool = rmm.mr.PoolMemoryResource(
 ...     rmm.mr.CudaMemoryResource(),
-...     initial_pool_size=2**30,
-...     maximum_pool_size=2**32
+...     initial_pool_size="1GiB", # equivalent to initial_pool_size=2**30
+...     maximum_pool_size="4GiB"
 ... )
 >>> rmm.mr.set_current_device_resource(pool)
 ```
@@ -151,8 +151,8 @@ Similarly, to use a pool of managed memory:
 >>> import rmm
 >>> pool = rmm.mr.PoolMemoryResource(
 ...     rmm.mr.ManagedMemoryResource(),
-...     initial_pool_size=2**30,
-...     maximum_pool_size=2**32
+...     initial_pool_size="1GiB",
+...     maximum_pool_size="4GiB"
 ... )
 >>> rmm.mr.set_current_device_resource(pool)
 ```
@@ -236,17 +236,17 @@ Common to both usages is that they modify the currently active RMM memory resour
 
 >>> # We start with the default cuda memory resource
 >>> rmm.mr.get_current_device_resource()
-<rmm._lib.memory_resource.CudaMemoryResource at 0x7f7e6c0a1ce0>
+<rmm.pylibrmm.memory_resource.CudaMemoryResource object at 0x7fa0da48a8e0>
 
 >>> # When using statistics, we get a StatisticsResourceAdaptor with the context
 >>> with rmm.statistics.statistics():
 ...     rmm.mr.get_current_device_resource()
-<rmm._lib.memory_resource.StatisticsResourceAdaptor at 0x7f7e6c524900>
+<rmm.pylibrmm.memory_resource.StatisticsResourceAdaptor object at 0x7fa0dd6e4a40>
 
 >>> # We can also enable statistics globally
 >>> rmm.statistics.enable_statistics()
 >>> print(rmm.mr.get_current_device_resource())
-<rmm._lib.memory_resource.StatisticsResourceAdaptor at 0x7f662c2bb3c0>
+<rmm.pylibrmm.memory_resource.StatisticsResourceAdaptor object at 0x7f9a11340a40>
 ```
 
 With statistics enabled, you can query statistics of the current and peak bytes and number of allocations performed by the current RMM memory resource:

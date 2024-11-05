@@ -129,8 +129,7 @@ TYPED_TEST(AdaptorTest, Equality)
   }
 
   {
-    rmm::mr::device_memory_resource* device_mr = &this->cuda;
-    auto other_mr = aligned_resource_adaptor<rmm::mr::device_memory_resource>{device_mr};
+    auto other_mr = aligned_resource_adaptor<rmm::mr::device_memory_resource>{&this->cuda};
     EXPECT_FALSE(this->mr->is_equal(other_mr));
   }
 }

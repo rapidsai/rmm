@@ -65,7 +65,31 @@ class fixed_size_memory_resource
 
   /**
    * @brief Construct a new `fixed_size_memory_resource` that allocates memory from
-   * `upstream_resource`.
+   * `upstream_mr`.
+   *
+   * When the pool of blocks is all allocated, grows the pool by allocating
+   * `blocks_to_preallocate` more blocks from `upstream_mr`.
+   *
+   * @param upstream_mr The device_async_resource_ref from which to allocate blocks for the pool.
+   * @param block_size The size of blocks to allocate.
+   * @param blocks_to_preallocate The number of blocks to allocate to initialize the pool.
+   */
+  explicit fixed_size_memory_resource(
+    device_async_resource_ref upstream_mr,
+    // NOLINTNEXTLINE bugprone-easily-swappable-parameters
+    std::size_t block_size            = default_block_size,
+    std::size_t blocks_to_preallocate = default_blocks_to_preallocate)
+    : upstream_mr_{upstream_mr},
+      block_size_{align_up(block_size, CUDA_ALLOCATION_ALIGNMENT)},
+      upstream_chunk_size_{block_size_ * blocks_to_preallocate}
+  {
+    // allocate initial blocks and insert into free list
+    this->insert_blocks(std::move(blocks_from_upstream(cuda_stream_legacy)), cuda_stream_legacy);
+  }
+
+  /**
+   * @brief Construct a new `fixed_size_memory_resource` that allocates memory from
+   * `upstream_mr`.
    *
    * When the pool of blocks is all allocated, grows the pool by allocating
    * `blocks_to_preallocate` more blocks from `upstream_mr`.
@@ -76,11 +100,12 @@ class fixed_size_memory_resource
    */
   explicit fixed_size_memory_resource(
     Upstream* upstream_mr,
+    // NOLINTNEXTLINE bugprone-easily-swappable-parameters
     std::size_t block_size            = default_block_size,
     std::size_t blocks_to_preallocate = default_blocks_to_preallocate)
-    : upstream_mr_{upstream_mr},
-      block_size_{rmm::align_up(block_size, rmm::CUDA_ALLOCATION_ALIGNMENT)},
-      upstream_chunk_size_{block_size * blocks_to_preallocate}
+    : upstream_mr_{to_device_async_resource_ref_checked(upstream_mr)},
+      block_size_{align_up(block_size, CUDA_ALLOCATION_ALIGNMENT)},
+      upstream_chunk_size_{block_size_ * blocks_to_preallocate}
   {
     // allocate initial blocks and insert into free list
     this->insert_blocks(std::move(blocks_from_upstream(cuda_stream_legacy)), cuda_stream_legacy);
@@ -99,17 +124,12 @@ class fixed_size_memory_resource
   fixed_size_memory_resource& operator=(fixed_size_memory_resource&&)      = delete;
 
   /**
-   * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
+   * @briefreturn{device_async_resource_ref to the upstream resource}
    */
-  [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
+  [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept
   {
     return upstream_mr_;
   }
-
-  /**
-   * @briefreturn{Upstream* to the upstream memory resource}
-   */
-  [[nodiscard]] Upstream* get_upstream() const noexcept { return upstream_mr_; }
 
   /**
    * @brief Get the size of blocks allocated by this memory resource.
@@ -200,7 +220,7 @@ class fixed_size_memory_resource
   {
     // Deallocating a fixed-size block just inserts it in the free list, which is
     // handled by the parent class
-    RMM_LOGGING_ASSERT(rmm::align_up(size, rmm::CUDA_ALLOCATION_ALIGNMENT) <= block_size_);
+    RMM_LOGGING_ASSERT(align_up(size, CUDA_ALLOCATION_ALIGNMENT) <= block_size_);
     return block_type{ptr};
   }
 
@@ -254,10 +274,10 @@ class fixed_size_memory_resource
   }
 
  private:
-  Upstream* upstream_mr_;  // The resource from which to allocate new blocks
+  device_async_resource_ref upstream_mr_;  // The resource from which to allocate new blocks
 
-  std::size_t const block_size_;           // size of blocks this MR allocates
-  std::size_t const upstream_chunk_size_;  // size of chunks allocated from heap MR
+  std::size_t block_size_;           // size of blocks this MR allocates
+  std::size_t upstream_chunk_size_;  // size of chunks allocated from heap MR
 
   // blocks allocated from heap: so they can be easily freed
   std::vector<block_type> upstream_blocks_;

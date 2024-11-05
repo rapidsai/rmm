@@ -96,6 +96,11 @@ struct bytes {
   }
 };
 
+inline spdlog::logger& logger()
+{
+  static detail::logger_wrapper wrapped{};
+  return wrapped.logger_;
+}
 }  // namespace detail
 
 /**
@@ -107,10 +112,12 @@ struct bytes {
  *
  * @return spdlog::logger& The logger.
  */
-RMM_EXPORT inline spdlog::logger& logger()
+[[deprecated(
+  "Support for direct access to spdlog loggers in rmm is planned for "
+  "removal")]] RMM_EXPORT inline spdlog::logger&
+logger()
 {
-  static detail::logger_wrapper wrapped{};
-  return wrapped.logger_;
+  return detail::logger();
 }
 
 //! @cond Doxygen_Suppress
@@ -118,12 +125,12 @@ RMM_EXPORT inline spdlog::logger& logger()
 // The default is INFO, but it should be used sparingly, so that by default a log file is only
 // output if there is important information, warnings, errors, and critical failures
 // Log messages that require computation should only be used at level TRACE and DEBUG
-#define RMM_LOG_TRACE(...)    SPDLOG_LOGGER_TRACE(&rmm::logger(), __VA_ARGS__)
-#define RMM_LOG_DEBUG(...)    SPDLOG_LOGGER_DEBUG(&rmm::logger(), __VA_ARGS__)
-#define RMM_LOG_INFO(...)     SPDLOG_LOGGER_INFO(&rmm::logger(), __VA_ARGS__)
-#define RMM_LOG_WARN(...)     SPDLOG_LOGGER_WARN(&rmm::logger(), __VA_ARGS__)
-#define RMM_LOG_ERROR(...)    SPDLOG_LOGGER_ERROR(&rmm::logger(), __VA_ARGS__)
-#define RMM_LOG_CRITICAL(...) SPDLOG_LOGGER_CRITICAL(&rmm::logger(), __VA_ARGS__)
+#define RMM_LOG_TRACE(...)    SPDLOG_LOGGER_TRACE(&rmm::detail::logger(), __VA_ARGS__)
+#define RMM_LOG_DEBUG(...)    SPDLOG_LOGGER_DEBUG(&rmm::detail::logger(), __VA_ARGS__)
+#define RMM_LOG_INFO(...)     SPDLOG_LOGGER_INFO(&rmm::detail::logger(), __VA_ARGS__)
+#define RMM_LOG_WARN(...)     SPDLOG_LOGGER_WARN(&rmm::detail::logger(), __VA_ARGS__)
+#define RMM_LOG_ERROR(...)    SPDLOG_LOGGER_ERROR(&rmm::detail::logger(), __VA_ARGS__)
+#define RMM_LOG_CRITICAL(...) SPDLOG_LOGGER_CRITICAL(&rmm::detail::logger(), __VA_ARGS__)
 
 //! @endcond
 

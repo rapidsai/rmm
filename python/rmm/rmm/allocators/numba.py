@@ -1,4 +1,4 @@
-# Copyright (c) 2023, NVIDIA CORPORATION.
+# Copyright (c) 2023-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ from cuda.cuda import CUdeviceptr, cuIpcGetMemHandle
 from numba import config, cuda
 from numba.cuda import HostOnlyCUDAMemoryManager, IpcHandle, MemoryPointer
 
-from rmm import _lib as librmm
+from rmm import pylibrmm
 
 
 def _make_emm_plugin_finalizer(handle, allocations):
@@ -70,7 +70,7 @@ class RMMNumbaManager(HostOnlyCUDAMemoryManager):
         """
         Allocate an on-device array from the RMM pool.
         """
-        buf = librmm.DeviceBuffer(size=size)
+        buf = pylibrmm.DeviceBuffer(size=size)
         ctx = self.context
 
         if config.CUDA_USE_NVIDIA_BINDING:

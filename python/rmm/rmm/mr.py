@@ -11,7 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from rmm._lib.memory_resource import (
+from rmm.pylibrmm.memory_resource import (
+    ArenaMemoryResource,
     BinningMemoryResource,
     CallbackMemoryResource,
     CudaAsyncMemoryResource,
@@ -45,6 +46,7 @@ from rmm._lib.memory_resource import (
 )
 
 __all__ = [
+    "ArenaMemoryResource",
     "BinningMemoryResource",
     "CallbackMemoryResource",
     "CudaAsyncMemoryResource",

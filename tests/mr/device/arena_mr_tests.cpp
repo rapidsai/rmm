@@ -23,6 +23,9 @@
 #include <rmm/mr/device/arena_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
+#include <rmm/resource_ref.hpp>
+
+#include <cuda/stream_ref>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -37,15 +40,22 @@ namespace {
 
 class mock_memory_resource {
  public:
-  MOCK_METHOD(void*, allocate, (std::size_t));
-  MOCK_METHOD(void, deallocate, (void*, std::size_t));
+  MOCK_METHOD(void*, allocate, (std::size_t, std::size_t));
+  MOCK_METHOD(void, deallocate, (void*, std::size_t, std::size_t));
+  MOCK_METHOD(void*, allocate_async, (std::size_t, std::size_t, cuda::stream_ref));
+  MOCK_METHOD(void, deallocate_async, (void*, std::size_t, std::size_t, cuda::stream_ref));
+  bool operator==(mock_memory_resource const&) const noexcept { return true; }
+  bool operator!=(mock_memory_resource const&) const { return false; }
+  friend void get_property(mock_memory_resource const&, cuda::mr::device_accessible) noexcept {}
 };
+
+static_assert(cuda::mr::async_resource_with<mock_memory_resource, cuda::mr::device_accessible>);
 
 using rmm::mr::detail::arena::block;
 using rmm::mr::detail::arena::byte_span;
 using rmm::mr::detail::arena::superblock;
-using global_arena = rmm::mr::detail::arena::global_arena<mock_memory_resource>;
-using arena        = rmm::mr::detail::arena::arena<mock_memory_resource>;
+using global_arena = rmm::mr::detail::arena::global_arena;
+using arena        = rmm::mr::detail::arena::arena;
 using arena_mr     = rmm::mr::arena_memory_resource<rmm::mr::device_memory_resource>;
 using ::testing::Return;
 
@@ -59,9 +69,10 @@ auto const fake_address4 = reinterpret_cast<void*>(superblock::minimum_size * 2)
 struct ArenaTest : public ::testing::Test {
   void SetUp() override
   {
-    EXPECT_CALL(mock_mr, allocate(arena_size)).WillOnce(Return(fake_address3));
-    EXPECT_CALL(mock_mr, deallocate(fake_address3, arena_size));
-    global     = std::make_unique<global_arena>(&mock_mr, arena_size);
+    EXPECT_CALL(mock_mr, allocate(arena_size, ::testing::_)).WillOnce(Return(fake_address3));
+    EXPECT_CALL(mock_mr, deallocate(fake_address3, arena_size, ::testing::_));
+
+    global     = std::make_unique<global_arena>(mock_mr, arena_size);
     per_thread = std::make_unique<arena>(*global);
   }
 
@@ -293,13 +304,6 @@ TEST_F(ArenaTest, SuperblockMaxFreeSizeWhenFull)  // NOLINT
 /**
  * Test global_arena.
  */
-
-TEST_F(ArenaTest, GlobalArenaNullUpstream)  // NOLINT
-{
-  auto construct_nullptr = []() { global_arena global{nullptr, std::nullopt}; };
-  EXPECT_THROW(construct_nullptr(), rmm::logic_error);  // NOLINT(cppcoreguidelines-avoid-goto)
-}
-
 TEST_F(ArenaTest, GlobalArenaAcquire)  // NOLINT
 {
   auto const sblk = global->acquire(256);
@@ -378,7 +382,7 @@ TEST_F(ArenaTest, GlobalArenaDeallocate)  // NOLINT
 {
   auto* ptr = global->allocate(superblock::minimum_size * 2);
   EXPECT_EQ(ptr, fake_address3);
-  global->deallocate(ptr, superblock::minimum_size * 2, {});
+  global->deallocate_async(ptr, superblock::minimum_size * 2, {});
   ptr = global->allocate(superblock::minimum_size * 2);
   EXPECT_EQ(ptr, fake_address3);
 }
@@ -387,8 +391,8 @@ TEST_F(ArenaTest, GlobalArenaDeallocateAlignUp)  // NOLINT
 {
   auto* ptr  = global->allocate(superblock::minimum_size + 256);
   auto* ptr2 = global->allocate(superblock::minimum_size + 512);
-  global->deallocate(ptr, superblock::minimum_size + 256, {});
-  global->deallocate(ptr2, superblock::minimum_size + 512, {});
+  global->deallocate_async(ptr, superblock::minimum_size + 256, {});
+  global->deallocate_async(ptr2, superblock::minimum_size + 512, {});
   EXPECT_EQ(global->allocate(arena_size), fake_address3);
 }
 
@@ -479,7 +483,7 @@ TEST_F(ArenaTest, ThrowOnNullUpstream)  // NOLINT
 
 TEST_F(ArenaTest, SizeSmallerThanSuperblockSize)  // NOLINT
 {
-  auto construct_small = []() { arena_mr mr{rmm::mr::get_current_device_resource(), 256}; };
+  auto construct_small = []() { arena_mr mr{rmm::mr::get_current_device_resource_ref(), 256}; };
   // NOLINTNEXTLINE(cppcoreguidelines-avoid-goto)
   EXPECT_THROW(construct_small(), rmm::logic_error);
 }
@@ -487,17 +491,15 @@ TEST_F(ArenaTest, SizeSmallerThanSuperblockSize)  // NOLINT
 TEST_F(ArenaTest, AllocateNinetyPercent)  // NOLINT
 {
   EXPECT_NO_THROW([]() {  // NOLINT(cppcoreguidelines-avoid-goto)
-    auto const free           = rmm::available_device_memory().first;
-    auto const ninety_percent = rmm::align_up(
-      static_cast<std::size_t>(static_cast<double>(free) * 0.9), rmm::CUDA_ALLOCATION_ALIGNMENT);
-    arena_mr mr(rmm::mr::get_current_device_resource(), ninety_percent);
+    auto const ninety_percent = rmm::percent_of_free_device_memory(90);
+    arena_mr mr(rmm::mr::get_current_device_resource_ref(), ninety_percent);
   }());
 }
 
 TEST_F(ArenaTest, SmallMediumLarge)  // NOLINT
 {
   EXPECT_NO_THROW([]() {  // NOLINT(cppcoreguidelines-avoid-goto)
-    arena_mr mr(rmm::mr::get_current_device_resource());
+    arena_mr mr(rmm::mr::get_current_device_resource_ref());
     auto* small     = mr.allocate(256);
     auto* medium    = mr.allocate(64_MiB);
     auto const free = rmm::available_device_memory().first;
@@ -512,7 +514,7 @@ TEST_F(ArenaTest, Defragment)  // NOLINT
 {
   EXPECT_NO_THROW([]() {  // NOLINT(cppcoreguidelines-avoid-goto)
     auto const arena_size = superblock::minimum_size * 4;
-    arena_mr mr(rmm::mr::get_current_device_resource(), arena_size);
+    arena_mr mr(rmm::mr::get_current_device_resource_ref(), arena_size);
     std::vector<std::thread> threads;
     std::size_t num_threads{4};
     threads.reserve(num_threads);
@@ -539,7 +541,7 @@ TEST_F(ArenaTest, PerThreadToStreamDealloc)  // NOLINT
   // arena that then moved to global arena during a defragmentation
   // and then moved to a stream arena.
   auto const arena_size = superblock::minimum_size * 2;
-  arena_mr mr(rmm::mr::get_current_device_resource(), arena_size);
+  arena_mr mr(rmm::mr::get_current_device_resource_ref(), arena_size);
   // Create an allocation from a per thread arena
   void* thread_ptr = mr.allocate(256, rmm::cuda_stream_per_thread);
   // Create an allocation in a stream arena to force global arena
@@ -565,7 +567,7 @@ TEST_F(ArenaTest, PerThreadToStreamDealloc)  // NOLINT
 
 TEST_F(ArenaTest, DumpLogOnFailure)  // NOLINT
 {
-  arena_mr mr{rmm::mr::get_current_device_resource(), 1_MiB, true};
+  arena_mr mr{rmm::mr::get_current_device_resource_ref(), 1_MiB, true};
 
   {  // make the log interesting
     std::vector<std::thread> threads;

@@ -41,7 +41,7 @@ namespace RMM_NAMESPACE {
  *
  * This class allocates untyped and *uninitialized* device memory using a
  * `device_async_resource_ref`. If not explicitly specified, the memory resource
- * returned from `get_current_device_resource()` is used.
+ * returned from `get_current_device_resource_ref()` is used.
  *
  * @note Unlike `std::vector` or `thrust::device_vector`, the device memory
  * allocated by a `device_buffer` is uninitialized. Therefore, it is undefined
@@ -95,7 +95,7 @@ class device_buffer {
   // `__host__ __device__` specifiers to the defaulted constructor when it is called within the
   // context of both host and device functions. Specifically, the `cudf::type_dispatcher` is a host-
   // device function. This causes warnings/errors because this ctor invokes host-only functions.
-  device_buffer() : _mr{rmm::mr::get_current_device_resource()} {}
+  device_buffer() : _mr{rmm::mr::get_current_device_resource_ref()} {}
 
   /**
    * @brief Constructs a new device buffer of `size` uninitialized bytes
@@ -109,7 +109,7 @@ class device_buffer {
    */
   explicit device_buffer(std::size_t size,
                          cuda_stream_view stream,
-                         device_async_resource_ref mr = mr::get_current_device_resource())
+                         device_async_resource_ref mr = mr::get_current_device_resource_ref())
     : _stream{stream}, _mr{mr}
   {
     cuda_set_device_raii dev{_device};
@@ -138,7 +138,7 @@ class device_buffer {
   device_buffer(void const* source_data,
                 std::size_t size,
                 cuda_stream_view stream,
-                device_async_resource_ref mr = mr::get_current_device_resource())
+                device_async_resource_ref mr = mr::get_current_device_resource_ref())
     : _stream{stream}, _mr{mr}
   {
     cuda_set_device_raii dev{_device};
@@ -169,7 +169,7 @@ class device_buffer {
    */
   device_buffer(device_buffer const& other,
                 cuda_stream_view stream,
-                device_async_resource_ref mr = mr::get_current_device_resource())
+                device_async_resource_ref mr = mr::get_current_device_resource_ref())
     : device_buffer{other.data(), other.size(), stream, mr}
   {
   }
@@ -419,8 +419,8 @@ class device_buffer {
   cuda_stream_view _stream{};  ///< Stream to use for device memory deallocation
 
   rmm::device_async_resource_ref _mr{
-    rmm::mr::get_current_device_resource()};  ///< The memory resource used to
-                                              ///< allocate/deallocate device memory
+    rmm::mr::get_current_device_resource_ref()};  ///< The memory resource used to
+                                                  ///< allocate/deallocate device memory
   cuda_device_id _device{get_current_cuda_device()};
 
   /**

@@ -1,4 +1,4 @@
-# Copyright (c) 2020, NVIDIA CORPORATION.
+# Copyright (c) 2020-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@ from cuda.ccudart cimport cudaStream_t
 from libc.stdint cimport uintptr_t
 from libcpp cimport bool
 
-from rmm._lib.cuda_stream_view cimport cuda_stream_view
+from rmm.librmm.cuda_stream_view cimport cuda_stream_view
 
 
 cdef class Stream:

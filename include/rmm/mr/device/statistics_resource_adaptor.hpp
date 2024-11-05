@@ -17,6 +17,7 @@
 
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <cstddef>
@@ -117,13 +118,21 @@ class statistics_resource_adaptor final : public device_memory_resource {
    * @brief Construct a new statistics resource adaptor using `upstream` to satisfy
    * allocation requests.
    *
+   * @param upstream The resource_ref used for allocating/deallocating device memory.
+   */
+  statistics_resource_adaptor(device_async_resource_ref upstream) : upstream_{upstream} {}
+
+  /**
+   * @brief Construct a new statistics resource adaptor using `upstream` to satisfy
+   * allocation requests.
+   *
    * @throws rmm::logic_error if `upstream == nullptr`
    *
-   * @param upstream The resource used for allocating/deallocating device memory
+   * @param upstream The resource used for allocating/deallocating device memory.
    */
-  statistics_resource_adaptor(Upstream* upstream) : upstream_{upstream}
+  statistics_resource_adaptor(Upstream* upstream)
+    : upstream_{to_device_async_resource_ref_checked(upstream)}
   {
-    RMM_EXPECTS(nullptr != upstream, "Unexpected null upstream resource pointer.");
   }
 
   statistics_resource_adaptor()                                              = delete;
@@ -142,11 +151,6 @@ class statistics_resource_adaptor final : public device_memory_resource {
   {
     return upstream_;
   }
-
-  /**
-   * @briefreturn{Upstream* to the upstream memory resource}
-   */
-  [[nodiscard]] Upstream* get_upstream() const noexcept { return upstream_; }
 
   /**
    * @brief Returns a `counter` struct for this adaptor containing the current,
@@ -226,7 +230,7 @@ class statistics_resource_adaptor final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
-    void* ptr = upstream_->allocate(bytes, stream);
+    void* ptr = get_upstream_resource().allocate_async(bytes, stream);
 
     // increment the stats
     {
@@ -249,7 +253,7 @@ class statistics_resource_adaptor final : public device_memory_resource {
    */
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
-    upstream_->deallocate(ptr, bytes, stream);
+    get_upstream_resource().deallocate_async(ptr, bytes, stream);
 
     {
       write_lock_t lock(mtx_);
@@ -271,7 +275,7 @@ class statistics_resource_adaptor final : public device_memory_resource {
   {
     if (this == &other) { return true; }
     auto cast = dynamic_cast<statistics_resource_adaptor<Upstream> const*>(&other);
-    if (cast == nullptr) { return upstream_->is_equal(other); }
+    if (cast == nullptr) { return false; }
     return get_upstream_resource() == cast->get_upstream_resource();
   }
 
@@ -279,14 +283,14 @@ class statistics_resource_adaptor final : public device_memory_resource {
   // Invariant: the stack always contains at least one entry
   std::stack<std::pair<counter, counter>> counter_stack_{{std::make_pair(counter{}, counter{})}};
   std::shared_mutex mutable mtx_;  // mutex for thread safe access to allocations_
-  Upstream* upstream_;             // the upstream resource used for satisfying allocation requests
+  // the upstream resource used for satisfying allocation requests
+  device_async_resource_ref upstream_;
 };
 
 /**
  * @brief Convenience factory to return a `statistics_resource_adaptor` around the
  * upstream resource `upstream`.
  *
- * @tparam Upstream Type of the upstream `device_memory_resource`.
  * @param upstream Pointer to the upstream resource
  * @return The new statistics resource adaptor
  */
@@ -297,7 +301,7 @@ template <typename Upstream>
   "instead.")]]
 statistics_resource_adaptor<Upstream> make_statistics_adaptor(Upstream* upstream)
 {
-  return statistics_resource_adaptor<Upstream>{upstream};
+  return statistics_resource_adaptor<rmm::mr::device_memory_resource>{upstream};
 }
 
 /** @} */  // end of group

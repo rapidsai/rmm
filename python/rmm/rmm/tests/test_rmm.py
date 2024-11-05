@@ -354,7 +354,7 @@ def test_rmm_pool_numba_stream(stream):
     rmm.reinitialize(pool_allocator=True)
 
     stream = rmm._cuda.stream.Stream(stream)
-    a = rmm._lib.device_buffer.DeviceBuffer(size=3, stream=stream)
+    a = rmm.pylibrmm.device_buffer.DeviceBuffer(size=3, stream=stream)
 
     assert a.size == 3
     assert a.ptr != 0
@@ -432,8 +432,8 @@ def test_rmm_pool_cupy_allocator_stream_lifetime():
 def test_pool_memory_resource(dtype, nelem, alloc):
     mr = rmm.mr.PoolMemoryResource(
         rmm.mr.CudaMemoryResource(),
-        initial_pool_size=1 << 22,
-        maximum_pool_size=1 << 23,
+        initial_pool_size="4MiB",
+        maximum_pool_size="8MiB",
     )
     rmm.mr.set_current_device_resource(mr)
     assert rmm.mr.get_current_device_resource_type() is type(mr)
@@ -505,9 +505,31 @@ def test_binning_memory_resource(dtype, nelem, alloc, upstream_mr):
     array_tester(dtype, nelem, alloc)
 
 
+@pytest.mark.parametrize("dtype", _dtypes)
+@pytest.mark.parametrize("nelem", _nelems)
+@pytest.mark.parametrize("alloc", _allocs)
+@pytest.mark.parametrize(
+    "upstream_mr",
+    [
+        lambda: rmm.mr.CudaMemoryResource(),
+        lambda: rmm.mr.ManagedMemoryResource(),
+        lambda: rmm.mr.PoolMemoryResource(
+            rmm.mr.CudaMemoryResource(), 1 << 20
+        ),
+    ],
+)
+def test_arena_memory_resource(dtype, nelem, alloc, upstream_mr):
+    upstream = upstream_mr()
+    mr = rmm.mr.ArenaMemoryResource(upstream)
+
+    rmm.mr.set_current_device_resource(mr)
+    assert rmm.mr.get_current_device_resource_type() is type(mr)
+    array_tester(dtype, nelem, alloc)
+
+
 def test_reinitialize_max_pool_size():
     rmm.reinitialize(
-        pool_allocator=True, initial_pool_size=0, maximum_pool_size=1 << 23
+        pool_allocator=True, initial_pool_size=0, maximum_pool_size="8MiB"
     )
     rmm.DeviceBuffer().resize((1 << 23) - 1)
 
@@ -528,6 +550,24 @@ def test_reinitialize_initial_pool_size_gt_max():
             maximum_pool_size=1 << 10,
         )
     assert "Initial pool size exceeds the maximum pool size" in str(e.value)
+
+
+def test_reinitialize_with_valid_str_arg_pool_size():
+    rmm.reinitialize(
+        pool_allocator=True,
+        initial_pool_size="2kib",
+        maximum_pool_size="8kib",
+    )
+
+
+def test_reinitialize_with_invalid_str_arg_pool_size():
+    with pytest.raises(ValueError) as e:
+        rmm.reinitialize(
+            pool_allocator=True,
+            initial_pool_size="2k",  # 2kb valid, not 2k
+            maximum_pool_size="8k",
+        )
+    assert "Could not parse" in str(e.value)
 
 
 @pytest.mark.parametrize("dtype", _dtypes)
@@ -1058,3 +1098,9 @@ def test_available_device_memory():
     assert initial_memory[1] == final_memory[1]
     assert initial_memory[0] > 0
     assert final_memory[0] > 0
+
+
+# TODO: Remove test when rmm._lib is removed in 25.02
+def test_deprecate_rmm_lib():
+    with pytest.warns(FutureWarning):
+        rmm._lib.device_buffer.DeviceBuffer(size=100)
