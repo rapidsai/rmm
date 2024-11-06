@@ -10,7 +10,7 @@ dependencies:
 - clang-tools==16.0.6
 - clang==16.0.6
 - cmake>=3.26.4,!=3.30.0
-- cuda-python>=11.7.1,<12.0a0
+- cuda-python>=11.7.1,<12.0a0,!=11.8.4
 - cuda-version=11.8
 - cudatoolkit
 - cxx-compiler
