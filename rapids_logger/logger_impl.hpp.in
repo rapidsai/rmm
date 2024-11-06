@@ -29,10 +29,28 @@
 #include <spdlog/spdlog.h>
 
 #include <memory>
+#include <sstream>
+
 
 namespace @_RAPIDS_LOGGER_NAMESPACE@ {
 
 namespace detail {
+
+level_enum string_to_level(std::string_view const env_lvl_str)
+{
+    if (env_lvl_str == "TRACE") return level_enum::trace;
+    if (env_lvl_str == "DEBUG") return level_enum::debug;
+    if (env_lvl_str == "INFO") return level_enum::info;
+    if (env_lvl_str == "WARN") return level_enum::warn;
+    if (env_lvl_str == "ERROR") return level_enum::error;
+    if (env_lvl_str == "CRITICAL") return level_enum::critical;
+    if (env_lvl_str == "OFF") return level_enum::off;
+    std::ostringstream os{};
+    os << "Invalid logging level: " << env_lvl_str;
+    throw std::invalid_argument(os.str());
+}
+
+
 
 /**
  * @brief The real implementation of the logger using spdlog with a basic file sink.
@@ -52,7 +70,14 @@ struct impl {
                                                             )}
   {
     underlying.set_pattern("[%6t][%H:%M:%S:%f][%-6l] %v");
-    flush_on(level_enum::warn);
+    auto const env_logging_level = std::getenv("@_RAPIDS_LOGGER_MACRO_PREFIX@_DEFAULT_LOGGING_LEVEL");
+    if (env_logging_level != nullptr) {
+      set_level(string_to_level(env_logging_level));
+    }
+    auto const env_flush_level = std::getenv("@_RAPIDS_LOGGER_MACRO_PREFIX@_DEFAULT_FLUSH_LEVEL");
+    if (env_flush_level != nullptr) {
+      flush_on(string_to_level(env_flush_level));
+    }
   }
 
   /**
@@ -156,7 +181,7 @@ BACKWARDS_COMPAT_INLINE logger::logger(std::string name, std::string filename)
 
 BACKWARDS_COMPAT_INLINE logger::~logger() = default;
 BACKWARDS_COMPAT_INLINE logger::logger(logger&&) = default;
-#ifdef RMM_BACKWARDS_COMPATIBILITY
+#ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_BACKWARDS_COMPATIBILITY
 BACKWARDS_COMPAT_INLINE class logger& logger::operator=(logger&&) = default;
 #else
 BACKWARDS_COMPAT_INLINE logger& logger::operator=(logger&&) = default;
@@ -173,10 +198,10 @@ BACKWARDS_COMPAT_INLINE void logger::add_sink(spdlog::sink_ptr sink) { pImpl->ad
 BACKWARDS_COMPAT_INLINE void logger::remove_sink(spdlog::sink_ptr sink) { pImpl->remove_sink(sink); }
 BACKWARDS_COMPAT_INLINE level_enum logger::level() const { return pImpl->level(); }
 
-#ifdef RMM_BACKWARDS_COMPATIBILITY
+#ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_BACKWARDS_COMPATIBILITY
 namespace detail {
 
-inline class logger& default_logger()
+class logger& default_logger()
 {
   static class logger logger_ = [] {
     class logger logger_ {
@@ -194,7 +219,7 @@ inline class logger& default_logger()
   return logger_;
 }
 
-inline class spdlog::logger& logger() { return default_logger().pImpl->underlying; }
+class spdlog::logger& logger() { return default_logger().pImpl->underlying; }
 
 }  // namespace detail
 #endif

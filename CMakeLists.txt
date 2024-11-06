@@ -84,13 +84,16 @@ rapids_cpm_init()
 
 add_subdirectory(rapids_logger)
 if(LOGGING_COMPATIBILITY)
-  rapids_make_logger(rmm EXPORT_SET rmm-exports SUPPORTS_LOGGING RMM_BACKWARDS_COMPATIBILITY)
+  rapids_make_logger(
+    rmm EXPORT_SET rmm-exports VISIBILITY_MACRO "__attribute__((visibility(\"default\")))"
+    SUPPORTS_LOGGING RMM_BACKWARDS_COMPATIBILITY)
 else()
   set(_logging_support_flag)
   if(SUPPORTS_LOGGING)
     set(_logging_support_flag "SUPPORTS_LOGGING")
   endif()
-  rapids_make_logger(rmm EXPORT_SET rmm-exports ${_logging_support_flag})
+  rapids_make_logger(rmm EXPORT_SET rmm-exports VISIBILITY_MACRO
+                     "__attribute__((visibility(\"default\")))" ${_logging_support_flag})
 endif()
 
 include(cmake/thirdparty/get_cccl.cmake)

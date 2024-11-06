@@ -14,11 +14,9 @@
  * limitations under the License.
  */
 
-// TODO: Add RMM_EXPORT tags or equivalent
-
 #pragma once
 
-#ifdef RMM_BACKWARDS_COMPATIBILITY
+#ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_BACKWARDS_COMPATIBILITY
 #include <spdlog/spdlog.h>
 #endif
 
@@ -48,7 +46,7 @@ using sink_ptr = std::shared_ptr<sinks::sink>;
 
 #endif
 
-namespace @_RAPIDS_LOGGER_NAMESPACE@ {
+namespace @_RAPIDS_VISIBILITY_MACRO@ @_RAPIDS_LOGGER_NAMESPACE@ {
 
 namespace detail {
 
@@ -63,6 +61,8 @@ namespace detail {
 inline std::string default_log_filename()
 {
   auto* filename = std::getenv("@_RAPIDS_LOGGER_MACRO_PREFIX@_DEBUG_LOG_FILE");
+  // TODO: Do we prefer rmm's default (a file rmm_log.txt) or cudf's default (a
+  // stderr sink)? I think the latter is better.
   return (filename == nullptr) ? std::string{"@_RAPIDS_LOGGER_NAMESPACE@_log.txt"} : std::string{filename};
 }
 
@@ -370,14 +370,14 @@ class logger {
     log(level_enum::critical, format, std::forward<Args>(args)...);
   }
 
-#ifndef RMM_BACKWARDS_COMPATIBILITY
+#ifndef @_RAPIDS_LOGGER_MACRO_PREFIX@_BACKWARDS_COMPATIBILITY
  private:
 #endif
 #ifdef SUPPORTS_LOGGING
   std::unique_ptr<detail::impl> pImpl{};  ///< pimpl idiom
 #endif
 
-#ifdef RMM_BACKWARDS_COMPATIBILITY
+#ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_BACKWARDS_COMPATIBILITY
  private:
 #endif
   // TODO: When we migrate to C++20 we can use std::format and format strings
@@ -430,7 +430,7 @@ class logger {
 
 };
 
-#ifdef RMM_BACKWARDS_COMPATIBILITY
+#ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_BACKWARDS_COMPATIBILITY
 namespace detail {
 
 /**
@@ -440,7 +440,7 @@ namespace detail {
  *
  * @return logger& The default logger
  */
-inline logger& default_logger();
+logger& default_logger();
 
 /**
  * @brief Get the default logger.
@@ -449,12 +449,12 @@ inline logger& default_logger();
  *
  * @return spdlog::logger& The default logger's underlying spdlog logger
  */
-inline spdlog::logger& logger();
+spdlog::logger& logger();
 
 }  // namespace detail
 #endif
 
-#ifdef RMM_BACKWARDS_COMPATIBILITY
+#ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_BACKWARDS_COMPATIBILITY
 inline logger& default_logger() { return detail::default_logger(); }
 
 [[deprecated(
@@ -492,7 +492,7 @@ inline logger& default_logger()
 // Macros for easier logging, similar to spdlog.
 // TODO: The macros below assume that we want to respect spdlog's level macros
 // rather than the ones defined by this file.
-#define RMM_LOGGER_CALL(logger, level, ...) (logger).log(level, __VA_ARGS__)
+#define @_RAPIDS_LOGGER_MACRO_PREFIX@_LOGGER_CALL(logger, level, ...) (logger).log(level, __VA_ARGS__)
 
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
 #define @_RAPIDS_LOGGER_MACRO_PREFIX@_LOG_TRACE(...) \
@@ -536,6 +536,6 @@ inline logger& default_logger()
 
 }  // namespace @_RAPIDS_LOGGER_NAMESPACE@
 
-#ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_BACKWARDS_COMPATIBILITY
+#ifdef RMM_BACKWARDS_COMPATIBILITY
 #include "logger_impl/logger_impl.hpp"
 #endif

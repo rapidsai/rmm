@@ -50,8 +50,10 @@ Generate a logger implementation customized for the specified namespace.
     [LOGGER_TARGET <logger-target-name>]
     [LOGGER_HEADER_DIR <header-dir>]
     [LOGGER_MACRO_PREFIX <macro-prefix>]
+    [VISIBILITY_MACRO <visibility-macro>]
     [SUPPORTS_LOGGING]
     [RMM_BACKWARDS_COMPATIBILITY]
+    [CUDF_BACKWARDS_COMPATIBILITY]
   )
 
 This function produces an interface target named <logger-target-name> that, when linked to by other targets, provides them a header file that defines a logger interface for the specified namespace. The logger is generated from the provided template files and is configured to use the specified namespace and macro prefix. The generated logger is placed in the specified header directory.
@@ -76,11 +78,17 @@ When not using backwards compatibility mode, the logger implementation (which li
 ``LOGGER_MACRO_PREFIX``
   The prefix to use for the logger macros. If not specified, the macro prefix is the uppercase version of the logger namespace.
 
+``VISIBILITY_MACRO``
+  The macro to use for visibility annotations. If not specified, no visibility annotations are added to the logger interface.
+
 ``SUPPORTS_LOGGING``
   If specified, the logger target is configured to support logging. If not specified, the resulting logger is entirely nonfunctional. In that case, all operations are still defined (as no-ops) so that consumers may write the same logging code regardless of whether logging is enabled or disabled. This setting is required for the logger implementation to be generated. It will be automatically turned on if `RMM_BACKWARDS_COMPATIBILITY` is specified.
 
 ``RMM_BACKWARDS_COMPATIBILITY``
-  If specified, the logger target is configured to support backwards compatibility with RMM. In backwards-compatibility mode, the logger implementation is entirely header-only and including it is sufficient for downstream consumers to support logging. In this mode, `SUPPORTS_LOGGING` is always true.
+  If specified, the logger target is configured to support backwards compatibility with RMM. In backwards-compatibility mode, the logger implementation is entirely header-only and including it is sufficient for downstream consumers to support logging. In this mode, `SUPPORTS_LOGGING` is always true. In addition, the underlying spdlog logger is exposed in public APIs when this flag is enabled (with suitable deprecation warnings).
+
+``CUDF_BACKWARDS_COMPATIBILITY``
+  If specified, the underlying spdlog logger is exposed in public APIs when this flag is enabled (with suitable deprecation warnings).
 
 
 Result Targets
@@ -115,8 +123,9 @@ Example on how to use :cmake:command:`rapids_make_logger`.
 function(rapids_make_logger logger_namespace)
   list(APPEND CMAKE_MESSAGE_CONTEXT "rapids_make_logger")
 
-  set(_rapids_options RMM_BACKWARDS_COMPATIBILITY SUPPORTS_LOGGING)
-  set(_rapids_one_value EXPORT_SET LOGGER_TARGET LOGGER_HEADER_DIR LOGGER_MACRO_PREFIX)
+  set(_rapids_options RMM_BACKWARDS_COMPATIBILITY CUDF_BACKWARDS_COMPATIBILITY SUPPORTS_LOGGING)
+  set(_rapids_one_value EXPORT_SET LOGGER_TARGET LOGGER_HEADER_DIR LOGGER_MACRO_PREFIX
+                        VISIBILITY_MACRO)
   set(_rapids_multi_value)
   cmake_parse_arguments(_RAPIDS "${_rapids_options}" "${_rapids_one_value}"
                         "${_rapids_multi_value}" ${ARGN})
@@ -165,6 +174,9 @@ function(rapids_make_logger logger_namespace)
       set(_RAPIDS_SUPPORTS_LOGGING ON)
     endif()
     target_compile_definitions(${_RAPIDS_LOGGER_TARGET} INTERFACE RMM_BACKWARDS_COMPATIBILITY)
+  endif()
+  if(_RAPIDS_CUDF_BACKWARDS_COMPATIBILITY)
+    target_compile_definitions(${_RAPIDS_LOGGER_TARGET} INTERFACE CUDF_BACKWARDS_COMPATIBILITY)
   endif()
   if(_RAPIDS_SUPPORTS_LOGGING)
     target_compile_definitions(${_RAPIDS_LOGGER_TARGET} INTERFACE SUPPORTS_LOGGING)
