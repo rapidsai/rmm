@@ -34,12 +34,11 @@ build:
   ignore_run_exports_from:
     {% if cuda_major == "11" %}
     - {{ compiler('cuda11') }}
-    - cuda-python
     {% else %}
     - {{ compiler('cuda') }}
     - cuda-cudart-dev
-    - cuda-python
     {% endif %}
+    - cuda-python
 
 requirements:
   build:
