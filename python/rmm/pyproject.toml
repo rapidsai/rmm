@@ -138,4 +138,5 @@ requires = [
 # treat warnings as errors
 filterwarnings = [
     "error",
+    "ignore:.*cuda.cudart module is deprecated.*:DeprecationWarning"
 ]
