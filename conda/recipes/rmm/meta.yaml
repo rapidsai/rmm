@@ -68,7 +68,7 @@ requirements:
     - scikit-build-core >=0.10.0
   run:
     # cuda-python runtime pin mostly comes from its run exports,
-    # but addition != pins below avoid specific known-incompatible-with-this-project versions
+    # but additional pins below avoid specific known-incompatible-with-this-project versions
     # ref: https://github.com/rapidsai/rmm/pull/1720#pullrequestreview-2418705718
     {% if cuda_major == "11" %}
     - cudatoolkit
