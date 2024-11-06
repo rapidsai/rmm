@@ -3,6 +3,9 @@
 
 set -euo pipefail
 
+# TESTING error handling - just error out immediately
+exit 1
+
 rapids-configure-conda-channels
 
 source rapids-configure-sccache
