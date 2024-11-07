@@ -58,12 +58,12 @@ message(STATUS "RMM: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'")
 # cudart can be linked statically or dynamically
 option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
 
-option(LOGGING_COMPATIBILITY "Enable backwards compatibility with older logging macros" ON)
-option(SUPPORTS_LOGGING "Enable logging support" ON)
-if(LOGGING_COMPATIBILITY)
-  if(NOT SUPPORTS_LOGGING)
-    message(STATUS "LOGGING_COMPATIBILITY requires SUPPORTS_LOGGING to be enabled")
-    set(SUPPORTS_LOGGING ON)
+option(RMM_LOGGING_COMPATIBILITY "Enable backwards compatibility with older logging macros" ON)
+option(RMM_SUPPORTS_LOGGING "Enable logging support" ON)
+if(RMM_LOGGING_COMPATIBILITY)
+  if(NOT RMM_SUPPORTS_LOGGING)
+    message(STATUS "RMM_LOGGING_COMPATIBILITY requires RMM_SUPPORTS_LOGGING to be enabled")
+    set(RMM_SUPPORTS_LOGGING ON)
   endif()
 endif()
 
@@ -83,13 +83,13 @@ rapids_find_package(
 rapids_cpm_init()
 
 add_subdirectory(rapids_logger)
-if(LOGGING_COMPATIBILITY)
+if(RMM_LOGGING_COMPATIBILITY)
   rapids_make_logger(
     rmm EXPORT_SET rmm-exports VISIBILITY_MACRO "__attribute__((visibility(\"default\")))"
     SUPPORTS_LOGGING RMM_BACKWARDS_COMPATIBILITY)
 else()
   set(_logging_support_flag)
-  if(SUPPORTS_LOGGING)
+  if(RMM_SUPPORTS_LOGGING)
     set(_logging_support_flag "SUPPORTS_LOGGING")
   endif()
   rapids_make_logger(rmm EXPORT_SET rmm-exports VISIBILITY_MACRO

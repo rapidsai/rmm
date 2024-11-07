@@ -34,7 +34,7 @@
 #include <ostream>
 #include <string>
 
-#ifdef SUPPORTS_LOGGING
+#ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_SUPPORTS_LOGGING
 
 // Forward declare spdlog types that are part of our public API.
 namespace spdlog {
@@ -162,7 +162,7 @@ enum class level_enum : int32_t {
  */
 class logger {
  public:
-#ifdef SUPPORTS_LOGGING
+#ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_SUPPORTS_LOGGING
   /**
    * @brief Construct a new logger object
    *
@@ -187,7 +187,7 @@ class logger {
   BACKWARDS_COMPAT_INLINE logger(logger&&);  ///< @default_move_constructor
   BACKWARDS_COMPAT_INLINE logger& operator=(logger&&);  ///< @default_move_assignment{logger}
 
-#ifdef SUPPORTS_LOGGING
+#ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_SUPPORTS_LOGGING
   /**
    * @brief Log a message at the specified level.
    *
@@ -373,7 +373,7 @@ class logger {
 #ifndef @_RAPIDS_LOGGER_MACRO_PREFIX@_BACKWARDS_COMPATIBILITY
  private:
 #endif
-#ifdef SUPPORTS_LOGGING
+#ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_SUPPORTS_LOGGING
   std::unique_ptr<detail::impl> pImpl{};  ///< pimpl idiom
 #endif
 

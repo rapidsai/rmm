@@ -125,7 +125,7 @@ endfunction()
 
 # Create an object library for the logger so that we don't have to recompile it. This is not
 # necessary if logging is unsupported since then the header-only implementation is sufficient.
-if(SUPPORTS_LOGGING AND NOT LOGGING_COMPATIBILITY)
+if(SUPPORTS_LOGGING AND NOT RMM_LOGGING_COMPATIBILITY)
   add_library(rmm_test_logger OBJECT)
   target_link_libraries(rmm_test_logger PRIVATE rmm_logger_impl)
 endif()

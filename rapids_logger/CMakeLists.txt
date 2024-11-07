@@ -180,7 +180,8 @@ function(rapids_make_logger logger_namespace)
     target_compile_definitions(${_RAPIDS_LOGGER_TARGET} INTERFACE CUDF_BACKWARDS_COMPATIBILITY)
   endif()
   if(_RAPIDS_SUPPORTS_LOGGING)
-    target_compile_definitions(${_RAPIDS_LOGGER_TARGET} INTERFACE SUPPORTS_LOGGING)
+    target_compile_definitions(${_RAPIDS_LOGGER_TARGET}
+                               INTERFACE "${_RAPIDS_LOGGER_MACRO_PREFIX}_SUPPORTS_LOGGING")
 
     if(NOT _RAPIDS_RMM_BACKWARDS_COMPATIBILITY)
       # Create an interface target that will trigger compilation of the logger implementation in any
