@@ -27,8 +27,9 @@ rapids_cmake_support_conda_env(conda_env)
 function(ConfigureTestInternal TEST_NAME)
   add_executable(${TEST_NAME} ${ARGN})
   target_include_directories(${TEST_NAME} PRIVATE "$<BUILD_INTERFACE:${RMM_SOURCE_DIR}>")
-  target_link_libraries(${TEST_NAME} GTest::gmock GTest::gtest GTest::gmock_main GTest::gtest_main
-                        pthread rmm $<TARGET_NAME_IF_EXISTS:conda_env>)
+  target_link_libraries(
+    ${TEST_NAME} PRIVATE GTest::gmock GTest::gtest GTest::gmock_main GTest::gtest_main pthread rmm
+                         $<TARGET_NAME_IF_EXISTS:conda_env>)
   set_target_properties(
     ${TEST_NAME}
     PROPERTIES POSITION_INDEPENDENT_CODE ON
@@ -44,7 +45,7 @@ function(ConfigureTestInternal TEST_NAME)
   target_compile_options(${TEST_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Wall -Werror
                                              -Wno-error=deprecated-declarations>)
 
-  # When not building in compatibility mode, each test has to recompile the headers.
+  # When not building in compatibility mode, each testhas to recompile the logger.
   if(TARGET rmm_test_logger)
     target_link_libraries(${TEST_NAME} PRIVATE rmm_test_logger)
   endif()
@@ -125,7 +126,7 @@ endfunction()
 
 # Create an object library for the logger so that we don't have to recompile it. This is not
 # necessary if logging is unsupported since then the header-only implementation is sufficient.
-if(SUPPORTS_LOGGING AND NOT RMM_LOGGING_COMPATIBILITY)
+if(RMM_SUPPORTS_LOGGING AND NOT RMM_LOGGING_COMPATIBILITY)
   add_library(rmm_test_logger OBJECT)
   target_link_libraries(rmm_test_logger PRIVATE rmm_logger_impl)
 endif()

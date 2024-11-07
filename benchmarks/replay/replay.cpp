@@ -32,10 +32,14 @@
 #include <benchmarks/utilities/cxxopts.hpp>
 #include <benchmarks/utilities/log_parser.hpp>
 #include <benchmarks/utilities/simulated_memory_resource.hpp>
+
+#ifdef RMM_BACKWARDS_COMPATIBILITY
 #include <spdlog/common.h>
+#endif
 
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <iterator>
 #include <memory>
 #include <numeric>
@@ -172,7 +176,11 @@ struct replay_benchmark {
   void SetUp(const ::benchmark::State& state)
   {
     if (state.thread_index() == 0) {
+#ifdef RMM_BACKWARDS_COMPATIBILITY
       rmm::detail::logger().log(spdlog::level::info, "------ Start of Benchmark -----");
+#else
+      rmm::default_logger().log(rmm::level_enum::info, "------ Start of Benchmark -----");
+#endif
       mr_ = factory_(simulated_size_);
     }
   }
@@ -181,7 +189,11 @@ struct replay_benchmark {
   void TearDown(const ::benchmark::State& state)
   {
     if (state.thread_index() == 0) {
+#ifdef RMM_BACKWARDS_COMPATIBILITY
       rmm::detail::logger().log(spdlog::level::info, "------ End of Benchmark -----");
+#else
+      rmm::default_logger().log(rmm::level_enum::info, "------ End of Benchmark -----");
+#endif
       // clean up any leaked allocations
       std::size_t total_leaked{0};
       std::size_t num_leaked{0};

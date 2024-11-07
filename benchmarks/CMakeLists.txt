@@ -1,5 +1,5 @@
 # =============================================================================
-# Copyright (c) 2018-2020, NVIDIA CORPORATION.
+# Copyright (c) 2018-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -34,7 +34,7 @@ function(ConfigureBench BENCH_NAME)
                RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${RMM_BINARY_DIR}/gbenchmarks>"
                CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
                INSTALL_RPATH "\$ORIGIN/../../../lib")
-  target_link_libraries(${BENCH_NAME} benchmark::benchmark pthread rmm)
+  target_link_libraries(${BENCH_NAME} PRIVATE benchmark::benchmark pthread rmm)
   target_compile_definitions(${BENCH_NAME}
                              PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
 
@@ -45,6 +45,12 @@ function(ConfigureBench BENCH_NAME)
   target_compile_options(
     ${BENCH_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Wall -Werror
                          -Wno-error=deprecated-declarations -Wno-unknown-pragmas>)
+
+  # When not building in compatibility mode, each benchmark has to recompile the logger.
+  if(TARGET rmm_bench_logger)
+    target_link_libraries(${BENCH_NAME} PRIVATE rmm_bench_logger)
+  endif()
+
   if(DISABLE_DEPRECATION_WARNING)
     target_compile_options(
       ${BENCH_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-Wno-deprecated-declarations>)
@@ -58,6 +64,13 @@ function(ConfigureBench BENCH_NAME)
     DESTINATION bin/benchmarks/librmm
     EXCLUDE_FROM_ALL)
 endfunction(ConfigureBench)
+
+# Create an object library for the logger so that we don't have to recompile it. This is not
+# necessary if logging is unsupported since then the header-only implementation is sufficient.
+if(RMM_SUPPORTS_LOGGING AND NOT RMM_LOGGING_COMPATIBILITY)
+  add_library(rmm_bench_logger OBJECT)
+  target_link_libraries(rmm_bench_logger PRIVATE rmm_logger_impl)
+endif()
 
 # random allocations benchmark
 ConfigureBench(RANDOM_ALLOCATIONS_BENCH random_allocations/random_allocations.cpp)

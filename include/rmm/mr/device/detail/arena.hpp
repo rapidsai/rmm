@@ -28,7 +28,9 @@
 #include <cuda_runtime_api.h>
 
 #include <fmt/core.h>
+#ifdef RMM_BACKWARDS_COMPATIBILITY
 #include <spdlog/common.h>
+#endif
 
 #include <algorithm>
 #include <cstddef>
