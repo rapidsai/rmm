@@ -23,6 +23,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <cstdio>
 #include <cstdlib>
 #include <filesystem>
 #include <thread>
@@ -112,7 +113,6 @@ void expect_log_events(std::string const& filename,
                // EXPECT_EQ(expected.thread_id, actual.thread_id);
                // EXPECT_EQ(expected.stream, actual.stream);
                EXPECT_EQ(expected.act, actual.act);
-               // device_memory_resource automatically pads an allocation to a multiple of 8 bytes
                EXPECT_EQ(expected.size, actual.size);
                EXPECT_EQ(expected.pointer, actual.pointer);
                return true;

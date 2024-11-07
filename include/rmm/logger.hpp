@@ -16,15 +16,12 @@
 
 #pragma once
 
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/export.hpp>
 
-#include <fmt/format.h>
-#include <fmt/ostream.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/spdlog.h>
 
-#include <array>
-#include <iostream>
 #include <string>
 
 namespace RMM_NAMESPACE {
@@ -70,32 +67,6 @@ struct logger_wrapper {
   }
 };
 
-/**
- * @brief Represent a size in number of bytes.
- */
-struct bytes {
-  std::size_t value;  ///< The size in bytes
-
-  /**
-   * @brief Construct a new bytes object
-   *
-   * @param os The output stream
-   * @param value The size in bytes
-   */
-  friend std::ostream& operator<<(std::ostream& os, bytes const& value)
-  {
-    static std::array units{"B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"};
-
-    int index = 0;
-    auto size = static_cast<double>(value.value);
-    while (size > 1024) {
-      size /= 1024;
-      index++;
-    }
-    return os << size << ' ' << units.at(index);
-  }
-};
-
 inline spdlog::logger& logger()
 {
   static detail::logger_wrapper wrapped{};
@@ -135,10 +106,5 @@ logger()
 //! @endcond
 
 }  // namespace RMM_NAMESPACE
-
-// Doxygen doesn't like this because we're overloading something from fmt
-//! @cond Doxygen_Suppress
-template <>
-struct fmt::formatter<rmm::detail::bytes> : fmt::ostream_formatter {};
 
 //! @endcond

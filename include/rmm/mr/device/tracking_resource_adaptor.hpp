@@ -23,8 +23,6 @@
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
-#include <fmt/core.h>
-
 #include <cstddef>
 #include <map>
 #include <mutex>
@@ -239,9 +237,9 @@ class tracking_resource_adaptor final : public device_memory_resource {
         // Don't throw but log an error. Throwing in a descructor (or any noexcept) will call
         // std::terminate
         RMM_LOG_ERROR(
-          "Deallocating a pointer that was not tracked. Ptr: {:p} [{}B], Current Num. Allocations: "
+          "Deallocating a pointer that was not tracked. Ptr: {} [{}B], Current Num. Allocations: "
           "{}",
-          fmt::ptr(ptr),
+          ptr,
           bytes,
           this->allocations_.size());
       } else {

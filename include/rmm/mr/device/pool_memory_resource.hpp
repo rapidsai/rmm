@@ -19,6 +19,7 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
+#include <rmm/detail/format.hpp>
 #include <rmm/detail/logging_assert.hpp>
 #include <rmm/detail/thrust_namespace.h>
 #include <rmm/logger.hpp>
@@ -33,8 +34,6 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/optional.h>
-
-#include <fmt/core.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -272,7 +271,7 @@ class pool_memory_resource final
       try_size = std::max(min_size, try_size / 2);
     }
     RMM_LOG_ERROR("[A][Stream {}][Upstream {}B][FAILURE maximum pool size exceeded]",
-                  fmt::ptr(stream.value()),
+                  rmm::detail::format_stream(stream),
                   min_size);
     RMM_FAIL("Maximum pool size exceeded", rmm::out_of_memory);
   }
@@ -351,7 +350,7 @@ class pool_memory_resource final
    */
   std::optional<block_type> block_from_upstream(std::size_t size, cuda_stream_view stream)
   {
-    RMM_LOG_DEBUG("[A][Stream {}][Upstream {}B]", fmt::ptr(stream.value()), size);
+    RMM_LOG_DEBUG("[A][Stream {}][Upstream {}B]", rmm::detail::format_stream(stream), size);
 
     if (size == 0) { return {}; }
 
