@@ -432,8 +432,6 @@ class logger {
 
 #ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_BACKWARDS_COMPATIBILITY
 namespace detail {
-// TODO: These functions need to be inline for rmm but they cannot be for cudf.
-// This is only relevant in backwards compatibility mode, though.
 
 /**
  * @brief Get the default logger.
@@ -442,7 +440,7 @@ namespace detail {
  *
  * @return logger& The default logger
  */
-inline logger& default_logger();
+@_RAPIDS_DETAIL_FUNCTION_INLINE@ logger& default_logger();
 
 /**
  * @brief Get the default logger.
@@ -451,7 +449,7 @@ inline logger& default_logger();
  *
  * @return spdlog::logger& The default logger's underlying spdlog logger
  */
-inline spdlog::logger& logger();
+@_RAPIDS_DETAIL_FUNCTION_INLINE@ spdlog::logger& logger();
 
 }  // namespace detail
 #endif
