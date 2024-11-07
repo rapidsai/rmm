@@ -16,7 +16,7 @@ import warnings
 
 # Note: This must match the LOGGING_COMPATIBILITY setting in CMakeLists.txt for
 # the C++ build or the build will fail since the expected symbols will not exist.
-DEF LOGGING_COMPATIBILITY = False
+DEF LOGGING_COMPATIBILITY = True
 
 IF LOGGING_COMPATIBILITY:
     from rmm.librmm._logger cimport logger

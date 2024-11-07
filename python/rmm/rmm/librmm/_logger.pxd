@@ -17,7 +17,7 @@ from libcpp.string cimport string
 
 # Note: This must match the LOGGING_COMPATIBILITY setting in CMakeLists.txt for
 # the C++ build or the build will fail since the expected symbols will not exist.
-DEF LOGGING_COMPATIBILITY = False
+DEF LOGGING_COMPATIBILITY = True
 
 # Conditional compilation in Cython is deprecated, but we will remove the need
 # for it here before that becomes an issue; this conditional just exists to
