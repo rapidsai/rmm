@@ -35,22 +35,15 @@ inline std::string format_bytes(std::size_t value)
     size /= 1024;
     index++;
   }
-  try {
-    return std::to_string(value) + ' ' + units.at(index);
-  } catch (std::out_of_range const& e) {
-    return {std::string{"value out of range: "} + e.what()};
-  }
+
+  return std::to_string(value) + ' ' + units.at(index);
 }
 
 // Stringify a stream ID
 inline std::string format_stream(rmm::cuda_stream_view stream)
 {
-  try {
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    return std::to_string(reinterpret_cast<std::uintptr_t>(stream.value()));
-  } catch (std::exception const& e) {
-    return {std::string{"Exception: "} + e.what()};
-  }
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+  return std::to_string(reinterpret_cast<std::uintptr_t>(stream.value()));
 }
 
 }  // namespace detail
