@@ -168,6 +168,7 @@ function(rapids_make_logger logger_namespace)
     ${_RAPIDS_LOGGER_TARGET}
     INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_INCLUDEDIR}>"
               "$<INSTALL_INTERFACE:${_RAPIDS_LOGGER_HEADER_DIR}>")
+  target_compile_features(${_RAPIDS_LOGGER_TARGET} INTERFACE cxx_std_17)
   if(_RAPIDS_RMM_BACKWARDS_COMPATIBILITY)
     if(NOT _RAPIDS_SUPPORTS_LOGGING)
       message(STATUS "RMM_BACKWARDS_COMPATIBILITY requires SUPPORTS_LOGGING, turning it on")
@@ -198,7 +199,10 @@ function(rapids_make_logger logger_namespace)
         ${impl_target}
         INTERFACE $<BUILD_INTERFACE:${LOGGER_IMPL_SRC_OUTPUT_FILE}>
                   $<INSTALL_INTERFACE:${_RAPIDS_LOGGER_HEADER_DIR}/logger_impl/logger.cpp>)
-      target_link_libraries(${impl_target} INTERFACE ${_RAPIDS_LOGGER_TARGET})
+      target_link_libraries(${impl_target} INTERFACE ${_RAPIDS_LOGGER_TARGET}
+                                                     spdlog::spdlog_header_only)
+    else()
+      target_link_libraries(${_RAPIDS_LOGGER_TARGET} INTERFACE spdlog::spdlog_header_only)
     endif()
   endif()
 

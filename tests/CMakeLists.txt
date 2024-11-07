@@ -46,7 +46,7 @@ function(ConfigureTestInternal TEST_NAME)
 
   # When not building in compatibility mode, each test has to recompile the headers.
   if(TARGET rmm_test_logger)
-    target_link_libraries(${TEST_NAME} rmm_test_logger)
+    target_link_libraries(${TEST_NAME} PRIVATE rmm_test_logger)
   endif()
 
   if(DISABLE_DEPRECATION_WARNING)
