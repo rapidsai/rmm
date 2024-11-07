@@ -1065,8 +1065,10 @@ def test_rmm_device_buffer_copy(cuda_ary, make_copy):
 @pytest.mark.parametrize("level", logging_level)
 def test_valid_logging_level(level):
     # TODO: Clean up after we remove legacy logging.
-    default_level = getattr(
-        logging_level, "INFO", getattr(logging_level, "info")
+    # Note that we cannot specify the default value to getattr since that would
+    # always be run, but with `or` we can rely on short-circuiting.
+    default_level = getattr(logging_level, "INFO") or getattr(
+        logging_level, "info"
     )
     with warnings.catch_warnings():
         warnings.filterwarnings(
