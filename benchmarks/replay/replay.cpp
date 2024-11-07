@@ -172,7 +172,7 @@ struct replay_benchmark {
   void SetUp(const ::benchmark::State& state)
   {
     if (state.thread_index() == 0) {
-      rmm::logger().log(spdlog::level::info, "------ Start of Benchmark -----");
+      rmm::detail::logger().log(spdlog::level::info, "------ Start of Benchmark -----");
       mr_ = factory_(simulated_size_);
     }
   }
@@ -181,7 +181,7 @@ struct replay_benchmark {
   void TearDown(const ::benchmark::State& state)
   {
     if (state.thread_index() == 0) {
-      rmm::logger().log(spdlog::level::info, "------ End of Benchmark -----");
+      rmm::detail::logger().log(spdlog::level::info, "------ End of Benchmark -----");
       // clean up any leaked allocations
       std::size_t total_leaked{0};
       std::size_t num_leaked{0};
@@ -402,7 +402,7 @@ int main(int argc, char** argv)
     auto const num_threads = per_thread_events.size();
 
     // Uncomment to enable / change default log level
-    // rmm::logger().set_level(spdlog::level::trace);
+    // rmm::detail::logger().set_level(spdlog::level::trace);
 
     if (args.count("resource") > 0) {
       std::string mr_name = args["resource"].as<std::string>();
