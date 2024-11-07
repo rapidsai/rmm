@@ -130,6 +130,15 @@ cdef extern from "rmm/mr/device/pool_memory_resource.hpp" \
             optional[size_t] maximum_pool_size) except +
         size_t pool_size()
 
+cdef extern from "rmm/mr/device/arena_memory_resource.hpp" \
+        namespace "rmm::mr" nogil:
+    cdef cppclass arena_memory_resource[Upstream](device_memory_resource):
+        arena_memory_resource(
+            Upstream* upstream_mr,
+            optional[size_t] arena_size,
+            bool dump_log_on_failure
+        ) except +
+
 cdef extern from "rmm/mr/device/fixed_size_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass fixed_size_memory_resource[Upstream](device_memory_resource):

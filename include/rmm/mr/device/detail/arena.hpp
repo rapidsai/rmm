@@ -647,7 +647,7 @@ class global_arena final {
    *
    * @param logger the spdlog logger to use
    */
-  void dump_memory_log(std::shared_ptr<spdlog::logger> const& logger) const
+  RMM_HIDDEN void dump_memory_log(std::shared_ptr<spdlog::logger> const& logger) const
   {
     std::lock_guard lock(mtx_);
 

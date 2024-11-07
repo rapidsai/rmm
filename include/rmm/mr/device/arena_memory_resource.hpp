@@ -97,7 +97,10 @@ class arena_memory_resource final : public device_memory_resource {
     : global_arena_{upstream_mr, arena_size}, dump_log_on_failure_{dump_log_on_failure}
   {
     if (dump_log_on_failure_) {
-      logger_ = spdlog::basic_logger_mt("arena_memory_dump", "rmm_arena_memory_dump.log");
+      logger_ =
+        std::make_shared<spdlog::logger>("arena_memory_dump",
+                                         std::make_shared<spdlog::sinks::basic_file_sink_mt>(
+                                           "rmm_arena_memory_dump.log", true /*truncate file*/));
       // Set the level to `debug` for more detailed output.
       logger_->set_level(spdlog::level::info);
     }
@@ -120,7 +123,10 @@ class arena_memory_resource final : public device_memory_resource {
       dump_log_on_failure_{dump_log_on_failure}
   {
     if (dump_log_on_failure_) {
-      logger_ = spdlog::basic_logger_mt("arena_memory_dump", "rmm_arena_memory_dump.log");
+      logger_ =
+        std::make_shared<spdlog::logger>("arena_memory_dump",
+                                         std::make_shared<spdlog::sinks::basic_file_sink_mt>(
+                                           "rmm_arena_memory_dump.log", true /*truncate file*/));
       // Set the level to `debug` for more detailed output.
       logger_->set_level(spdlog::level::info);
     }
