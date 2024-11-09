@@ -250,6 +250,13 @@ class logger {
   BACKWARDS_COMPAT_INLINE bool should_log(level_enum msg_level) const;
 
   /**
+   * @brief Set the pattern for the logger.
+   *
+   * @param pattern The pattern to use
+   */
+  BACKWARDS_COMPAT_INLINE void set_pattern(std::string pattern);
+
+  /**
    * @brief Check if the logger supports logging.
    *
    * @return true if the logger supports logging, false otherwise
@@ -269,6 +276,7 @@ class logger {
   void flush_on(level_enum log_level) {}
   level_enum flush_level() { return level_enum::off; }
   bool should_log(level_enum msg_level) const { return false; }
+  void set_pattern(std::string pattern) {}
   static constexpr bool supports_logging() { return false; }
 #endif
 

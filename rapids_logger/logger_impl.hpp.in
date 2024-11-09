@@ -30,6 +30,7 @@
 
 #include <memory>
 #include <sstream>
+#include <string>
 
 
 namespace @_RAPIDS_LOGGER_NAMESPACE@ {
@@ -78,6 +79,15 @@ struct impl {
     if (env_flush_level != nullptr) {
       flush_on(string_to_level(env_flush_level));
     }
+  }
+
+  /**
+   * @brief Set the pattern for the logger.
+   *
+   * @param pattern The pattern to use for the logger.
+   */
+  void set_pattern(std::string pattern) {
+    underlying.set_pattern(pattern);
   }
 
   /**
@@ -197,6 +207,7 @@ BACKWARDS_COMPAT_INLINE bool logger::should_log(level_enum lvl) const { return p
 BACKWARDS_COMPAT_INLINE void logger::add_sink(spdlog::sink_ptr sink) { pImpl->add_sink(sink); }
 BACKWARDS_COMPAT_INLINE void logger::remove_sink(spdlog::sink_ptr sink) { pImpl->remove_sink(sink); }
 BACKWARDS_COMPAT_INLINE level_enum logger::level() const { return pImpl->level(); }
+BACKWARDS_COMPAT_INLINE void set_pattern(std::string pattern) { pImpl->set_pattern(pattern); }
 
 #ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_BACKWARDS_COMPATIBILITY
 namespace detail {
