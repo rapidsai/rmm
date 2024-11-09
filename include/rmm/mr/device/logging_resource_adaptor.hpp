@@ -77,9 +77,8 @@ class logging_resource_adaptor final : public device_memory_resource {
   logging_resource_adaptor(Upstream* upstream,
                            std::string const& filename = get_default_filename(),
                            bool auto_flush             = false)
-    : logger_{make_logger(filename)}, upstream_{to_device_async_resource_ref_checked(upstream)}
+    : logging_resource_adaptor(to_device_async_resource_ref_checked(upstream), filename, auto_flush)
   {
-    init_logger(auto_flush);
   }
 
   /**
@@ -97,9 +96,8 @@ class logging_resource_adaptor final : public device_memory_resource {
    * performance.
    */
   logging_resource_adaptor(Upstream* upstream, std::ostream& stream, bool auto_flush = false)
-    : logger_{make_logger(stream)}, upstream_{to_device_async_resource_ref_checked(upstream)}
+    : logging_resource_adaptor(to_device_async_resource_ref_checked(upstream), stream, auto_flush)
   {
-    init_logger(auto_flush);
   }
 
   /**
@@ -119,9 +117,8 @@ class logging_resource_adaptor final : public device_memory_resource {
   logging_resource_adaptor(Upstream* upstream,
                            spdlog::sinks_init_list sinks,
                            bool auto_flush = false)
-    : logger_{make_logger(sinks)}, upstream_{to_device_async_resource_ref_checked(upstream)}
+    : logging_resource_adaptor{to_device_async_resource_ref_checked(upstream), sinks, auto_flush}
   {
-    init_logger(auto_flush);
   }
 
   /**
@@ -147,9 +144,8 @@ class logging_resource_adaptor final : public device_memory_resource {
   logging_resource_adaptor(device_async_resource_ref upstream,
                            std::string const& filename = get_default_filename(),
                            bool auto_flush             = false)
-    : logger_{make_logger(filename)}, upstream_{upstream}
+    : logging_resource_adaptor{make_logger(filename), upstream, auto_flush}
   {
-    init_logger(auto_flush);
   }
 
   /**
@@ -167,9 +163,8 @@ class logging_resource_adaptor final : public device_memory_resource {
   logging_resource_adaptor(device_async_resource_ref upstream,
                            std::ostream& stream,
                            bool auto_flush = false)
-    : logger_{make_logger(stream)}, upstream_{upstream}
+    : logging_resource_adaptor{make_logger(stream), upstream, auto_flush}
   {
-    init_logger(auto_flush);
   }
 
   /**
@@ -187,9 +182,8 @@ class logging_resource_adaptor final : public device_memory_resource {
   logging_resource_adaptor(device_async_resource_ref upstream,
                            spdlog::sinks_init_list sinks,
                            bool auto_flush = false)
-    : logger_{make_logger(sinks)}, upstream_{upstream}
+    : logging_resource_adaptor{make_logger(sinks), upstream, auto_flush}
   {
-    init_logger(auto_flush);
   }
 
   logging_resource_adaptor()                                           = delete;
@@ -257,10 +251,10 @@ class logging_resource_adaptor final : public device_memory_resource {
     return std::make_shared<spdlog::logger>("RMM", sinks);
   }
 
-  /**
-   * @brief Initialize the logger.
-   */
-  void init_logger(bool auto_flush)
+  logging_resource_adaptor(std::shared_ptr<spdlog::logger> logger,
+                           device_async_resource_ref upstream,
+                           bool auto_flush)
+    : logger_{logger}, upstream_{upstream}
   {
     if (auto_flush) { logger_->flush_on(spdlog::level::info); }
     logger_->set_pattern("%v");
