@@ -38,6 +38,7 @@
 
 // Forward declare spdlog types that are part of our public API.
 namespace spdlog {
+class logger;
 namespace sinks {
 class sink;
 } // namespace sinks
@@ -112,9 +113,6 @@ struct bytes {
 
 #endif
 };
-
-// Forward declaration of the real implementation
-struct impl;
 
 /**
  * @brief Trait to check if a type has a `to_string()` method that returns a `std::string`.
@@ -382,7 +380,7 @@ class logger {
  private:
 #endif
 #ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_SUPPORTS_LOGGING
-  std::unique_ptr<detail::impl> pImpl{};  ///< pimpl idiom
+  std::unique_ptr<spdlog::logger> impl{};
 #endif
 
 #ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_BACKWARDS_COMPATIBILITY

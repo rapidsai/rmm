@@ -51,143 +51,34 @@ inline level_enum string_to_level(std::string_view const env_lvl_str)
     throw std::invalid_argument(os.str());
 }
 
+spdlog::level::level_enum to_spdlog_level(level_enum lvl)
+{
+  return static_cast<spdlog::level::level_enum>(static_cast<int32_t>(lvl));
+}
 
-
-/**
- * @brief The real implementation of the logger using spdlog with a basic file sink.
- */
-struct impl {
-  spdlog::logger underlying;  ///< spdlog logger instance
-
-  /**
-   * @brief Constructor for the real implementation of the logger.
-   *
-   * Initializes the logger with a basic file sink.
-   */
-  impl(std::string name, std::string filename)
-    : underlying{
-        name,
-        std::make_shared<spdlog::sinks::basic_file_sink_mt>(filename, true  // truncate file
-                                                            )}
-  {
-    underlying.set_pattern("[%6t][%H:%M:%S:%f][%-6l] %v");
-    auto const env_logging_level = std::getenv("@_RAPIDS_LOGGER_MACRO_PREFIX@_DEFAULT_LOGGING_LEVEL");
-    if (env_logging_level != nullptr) {
-      set_level(string_to_level(env_logging_level));
-    }
-    auto const env_flush_level = std::getenv("@_RAPIDS_LOGGER_MACRO_PREFIX@_DEFAULT_FLUSH_LEVEL");
-    if (env_flush_level != nullptr) {
-      flush_on(string_to_level(env_flush_level));
-    }
-  }
-
-  /**
-   * @brief Set the pattern for the logger.
-   *
-   * @param pattern The pattern to use for the logger.
-   */
-  void set_pattern(std::string pattern) {
-    underlying.set_pattern(pattern);
-  }
-
-  /**
-   * @brief Log a message at the specified level.
-   *
-   * @param lvl The level at which to log the message.
-   * @param message The message to log.
-   */
-  void log(level_enum lvl, const std::string& message)
-  {
-    underlying.log(to_spdlog_level(lvl), message);
-  }
-
-  /**
-   * @brief Set the logging level.
-   *
-   * @param log_level The new logging level.
-   */
-  void set_level(level_enum log_level)
-  {
-    underlying.set_level(to_spdlog_level(log_level));
-  }
-
-  /**
-   * @brief Flush the logger.
-   */
-  void flush()
-  {
-    underlying.flush();
-  }
-
-  /**
-   * @brief Flush all writes on the specified level or higher.
-   */
-  void flush_on(level_enum log_level)
-  {
-    underlying.flush_on(to_spdlog_level(log_level));
-  }
-
-  /**
-   * @brief Get the flush level.
-   *
-   * @return The flush level.
-   */
-  level_enum flush_level() const
-  {
-      return from_spdlog_level(underlying.flush_level());
-  }
-
-  bool should_log(level_enum lvl) const
-  {
-    return underlying.should_log(to_spdlog_level(lvl));
-  }
-
-  /**
-   * @brief Add a sink to the logger.
-   *
-   * @param sink The sink to add.
-   */
-  void add_sink(spdlog::sink_ptr sink) {
-      underlying.sinks().push_back(sink);
-  }
-
-  /**
-   * @brief Remove a sink from the logger.
-   *
-   * @param sink The sink to remove.
-   */
-  void remove_sink(spdlog::sink_ptr sink) {
-      auto& sinks = underlying.sinks();
-      sinks.erase(std::remove(sinks.begin(), sinks.end(), sink), sinks.end());
-  }
-
-  /**
-   * @brief Get the current logging level.
-   *
-   * @return The current logging level.
-   */
-  level_enum level() const
-  {
-    return from_spdlog_level(underlying.level());
-  }
-
-  spdlog::level::level_enum to_spdlog_level(level_enum lvl) const
-  {
-    return static_cast<spdlog::level::level_enum>(static_cast<int32_t>(lvl));
-  }
-
-  level_enum from_spdlog_level(spdlog::level::level_enum lvl) const
-  {
-    return static_cast<level_enum>(static_cast<int32_t>(lvl));
-  }
-};
+level_enum from_spdlog_level(spdlog::level::level_enum lvl)
+{
+  return static_cast<level_enum>(static_cast<int32_t>(lvl));
+}
 
 }  // namespace detail
 
 BACKWARDS_COMPAT_INLINE logger::logger(std::string name, std::string filename)
-  : pImpl{std::make_unique<detail::impl>(name, filename)}
+  : impl{std::make_unique<spdlog::logger>(
+        name,
+        std::make_shared<spdlog::sinks::basic_file_sink_mt>(filename, true  // truncate file
+                                                            ))}
 {
-}
+    impl->set_pattern("[%6t][%H:%M:%S:%f][%-6l] %v");
+    auto const env_logging_level = std::getenv("@_RAPIDS_LOGGER_MACRO_PREFIX@_DEFAULT_LOGGING_LEVEL");
+    if (env_logging_level != nullptr) {
+      set_level(detail::string_to_level(env_logging_level));
+    }
+    auto const env_flush_level = std::getenv("@_RAPIDS_LOGGER_MACRO_PREFIX@_DEFAULT_FLUSH_LEVEL");
+    if (env_flush_level != nullptr) {
+      flush_on(detail::string_to_level(env_flush_level));
+    }
+  }
 
 BACKWARDS_COMPAT_INLINE logger::~logger() = default;
 BACKWARDS_COMPAT_INLINE logger::logger(logger&&) = default;
@@ -197,17 +88,20 @@ BACKWARDS_COMPAT_INLINE class logger& logger::operator=(logger&&) = default;
 BACKWARDS_COMPAT_INLINE logger& logger::operator=(logger&&) = default;
 #endif
 
-BACKWARDS_COMPAT_INLINE void logger::log(level_enum lvl, std::string const& message) { pImpl->log(lvl, message); }
+BACKWARDS_COMPAT_INLINE void logger::log(level_enum lvl, std::string const& message) { impl->log(detail::to_spdlog_level(lvl), message); }
 
-BACKWARDS_COMPAT_INLINE void logger::set_level(level_enum log_level) { pImpl->set_level(log_level); }
-BACKWARDS_COMPAT_INLINE void logger::flush() { pImpl->flush(); }
-BACKWARDS_COMPAT_INLINE void logger::flush_on(level_enum log_level) { pImpl->flush_on(log_level); }
-BACKWARDS_COMPAT_INLINE level_enum logger::flush_level() const { return pImpl->flush_level(); }
-BACKWARDS_COMPAT_INLINE bool logger::should_log(level_enum lvl) const { return pImpl->should_log(lvl); }
-BACKWARDS_COMPAT_INLINE void logger::add_sink(spdlog::sink_ptr sink) { pImpl->add_sink(sink); }
-BACKWARDS_COMPAT_INLINE void logger::remove_sink(spdlog::sink_ptr sink) { pImpl->remove_sink(sink); }
-BACKWARDS_COMPAT_INLINE level_enum logger::level() const { return pImpl->level(); }
-BACKWARDS_COMPAT_INLINE void set_pattern(std::string pattern) { pImpl->set_pattern(pattern); }
+BACKWARDS_COMPAT_INLINE void logger::set_level(level_enum log_level) { impl->set_level(detail::to_spdlog_level(log_level)); }
+BACKWARDS_COMPAT_INLINE void logger::flush() { impl->flush(); }
+BACKWARDS_COMPAT_INLINE void logger::flush_on(level_enum log_level) { impl->flush_on(detail::to_spdlog_level(log_level)); }
+BACKWARDS_COMPAT_INLINE level_enum logger::flush_level() const { return detail::from_spdlog_level(impl->flush_level()); }
+BACKWARDS_COMPAT_INLINE bool logger::should_log(level_enum lvl) const { return impl->should_log(detail::to_spdlog_level(lvl)); }
+BACKWARDS_COMPAT_INLINE void logger::add_sink(spdlog::sink_ptr sink) { impl->sinks().push_back(sink); }
+BACKWARDS_COMPAT_INLINE void logger::remove_sink(spdlog::sink_ptr sink) {
+  auto& sinks = impl->sinks();
+  sinks.erase(std::remove(sinks.begin(), sinks.end(), sink), sinks.end());
+}
+BACKWARDS_COMPAT_INLINE level_enum logger::level() const { return detail::from_spdlog_level(impl->level()); }
+BACKWARDS_COMPAT_INLINE void logger::set_pattern(std::string pattern) { impl->set_pattern(pattern); }
 
 #ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_BACKWARDS_COMPATIBILITY
 namespace detail {
