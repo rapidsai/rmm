@@ -101,6 +101,7 @@ class raii_temp_directory {
 void expect_log_events(std::string const& filename,
                        std::vector<rmm::detail::event> const& expected_events)
 {
+#ifdef SUPPORTS_LOGGING
   auto actual_events = rmm::detail::parse_csv(filename);
 
   std::equal(expected_events.begin(),
@@ -118,6 +119,7 @@ void expect_log_events(std::string const& filename,
                EXPECT_EQ(expected.pointer, actual.pointer);
                return true;
              });
+#endif
 }
 
 TEST(Adaptor, FilenameConstructor)
@@ -291,7 +293,9 @@ TEST(Adaptor, STDOUT)
 
   std::string output = testing::internal::GetCapturedStdout();
   std::string header = output.substr(0, output.find('\n'));
+#ifdef SUPPORTS_LOGGING
   ASSERT_EQ(header, log_mr.header());
+#endif
 }
 
 TEST(Adaptor, STDERR)
@@ -309,7 +313,9 @@ TEST(Adaptor, STDERR)
 
   std::string output = testing::internal::GetCapturedStderr();
   std::string header = output.substr(0, output.find('\n'));
+#ifdef SUPPORTS_LOGGING
   ASSERT_EQ(header, log_mr.header());
+#endif
 }
 
 }  // namespace
