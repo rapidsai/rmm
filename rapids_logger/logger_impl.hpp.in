@@ -26,6 +26,7 @@
 #include <fmt/ostream.h>
 #endif
 #include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/ostream_sink.h>
 #include <spdlog/spdlog.h>
 
 #include <memory>
@@ -63,12 +64,40 @@ level_enum from_spdlog_level(spdlog::level::level_enum lvl)
 
 }  // namespace detail
 
+
+// Sink methods
+BACKWARDS_COMPAT_INLINE sink::sink(spdlog::sink_ptr sink) : impl{sink} {}
+
+// Logger methods
 BACKWARDS_COMPAT_INLINE logger::logger(std::string name, std::string filename)
   : impl{std::make_unique<spdlog::logger>(
         name,
         std::make_shared<spdlog::sinks::basic_file_sink_mt>(filename, true  // truncate file
                                                             ))}
 {
+  init_logger();
+}
+
+BACKWARDS_COMPAT_INLINE logger::logger(std::string name, std::ostream& stream)
+  : impl{std::make_unique<spdlog::logger>(
+        name,
+        std::make_shared<spdlog::sinks::ostream_sink_mt>(stream))}
+{
+    init_logger();
+}
+
+BACKWARDS_COMPAT_INLINE logger::logger(std::string name, std::vector<std::shared_ptr<sink>> sinks)
+{
+  std::vector<spdlog::sink_ptr> spdlog_sinks;
+  spdlog_sinks.reserve(sinks.size());
+  for (auto const& s : sinks) {
+    spdlog_sinks.emplace_back(s->impl);
+  }
+  impl = std::make_unique<spdlog::logger>(name, spdlog_sinks.begin(), spdlog_sinks.end());
+  init_logger();
+}
+
+BACKWARDS_COMPAT_INLINE void logger::init_logger() {
     impl->set_pattern("[%6t][%H:%M:%S:%f][%-6l] %v");
     auto const env_logging_level = std::getenv("@_RAPIDS_LOGGER_MACRO_PREFIX@_DEFAULT_LOGGING_LEVEL");
     if (env_logging_level != nullptr) {

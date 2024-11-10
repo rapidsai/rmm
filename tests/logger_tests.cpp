@@ -22,6 +22,7 @@
 #include <benchmarks/utilities/log_parser.hpp>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <spdlog/sinks/basic_file_sink.h>
 
 #include <cstdlib>
 #include <filesystem>

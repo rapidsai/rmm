@@ -33,6 +33,7 @@
 #include <memory>
 #include <ostream>
 #include <string>
+#include <vector>
 
 #ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_SUPPORTS_LOGGING
 
@@ -153,6 +154,22 @@ enum class level_enum : int32_t {
   n_levels
 };
 
+
+class sink {
+#ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_SUPPORTS_LOGGING
+ public:
+  BACKWARDS_COMPAT_INLINE sink(spdlog::sink_ptr);
+ private:
+  spdlog::sink_ptr impl;
+#else
+ public:
+  // Use a template to avoid needing a definition of spdlog's sink_ptr type.
+  template <typename Sink>
+  BACKWARDS_COMPAT_INLINE sink(Sink) {}
+#endif
+  friend class logger;
+};
+
 /**
  * @class logger
  * @brief A logger class that either uses the real implementation (via spdlog) or performs no-ops if
@@ -170,11 +187,34 @@ class logger {
   BACKWARDS_COMPAT_INLINE logger(std::string name, std::string filename);
 
   /**
+   * @brief Construct a new logger object
+   *
+   * @param name The name of the logger
+   * @param stream The stream to log to
+   */
+  BACKWARDS_COMPAT_INLINE logger(std::string name, std::ostream& stream);
+
+  /**
+   * @brief Construct a new logger object
+   *
+   * @param name The name of the logger
+   * @param sinks The sinks to log to
+   *
+   * Note that we must use a vector because initializer_lists are not flexible
+   * enough to support programmatic construction in callers, and an
+   * iterator-based API would require templating and thus exposing spdlog
+   * types.
+   */
+  BACKWARDS_COMPAT_INLINE logger(std::string name, std::vector<std::shared_ptr<sink>> sinks);
+
+  /**
    * @brief Destroy the logger object
    */
   BACKWARDS_COMPAT_INLINE ~logger();
 #else
   logger(std::string name, std::string filename) {}
+  logger(std::string name, std::ostream& stream) {}
+  logger(std::string name, std::vector<std::shared_ptr<sink>> sinks) {}
   ~logger() = default;
 #endif
 
@@ -434,6 +474,11 @@ class logger {
     this->formatted_log(lvl, format, convert_to_c_string(std::forward<Args>(args))...);
   };
 
+#ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_SUPPORTS_LOGGING
+  BACKWARDS_COMPAT_INLINE void init_logger();
+#else
+  void init_logger() {}
+#endif
 };
 
 #ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_BACKWARDS_COMPATIBILITY
