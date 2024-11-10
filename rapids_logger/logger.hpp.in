@@ -341,7 +341,7 @@ class logger {
       }
     };
 
-    this->_log(lvl, format, convert_to_string(std::forward<Args>(args))...);
+    this->formatted_log(lvl, format, convert_to_string(std::forward<Args>(args))...);
   };
 
   /**
@@ -441,27 +441,6 @@ class logger {
    */
   template <typename... Args>
   void formatted_log(level_enum lvl, std::string const& format, Args&&... args) {
-    auto size = static_cast<size_t>(std::snprintf(nullptr, 0, format.c_str(), args...) + 1);
-    if (size <= 0) { throw std::runtime_error("Error during formatting."); }
-    std::unique_ptr<char[]> buf(new char[size]);
-    std::snprintf(buf.get(), size, format.c_str(), args...);
-    log(lvl, {buf.get(), buf.get() + size - 1});
-  }
-
-  /**
-   * @brief Log a message at the specified level.
-   *
-   * This function only exists to provide a level of indirection underneath the
-   * public templated log API to preserve the lifetime of string temporaries
-   * created in the log() call so that the c_str pointers are valid in the
-   * subsequent formatted_log call.
-   *
-   * @param lvl The log level
-   * @param format The format string
-   * @param args The format arguments
-   */
-  template<typename... Args>
-  void _log(level_enum lvl, std::string const& format, Args&&... args) {
     auto convert_to_c_string = [](auto&& arg) -> decltype(auto) {
       using ArgType = std::decay_t<decltype(arg)>;
       if constexpr (std::is_same_v<ArgType, std::string>) {
@@ -471,8 +450,12 @@ class logger {
       }
     };
 
-    this->formatted_log(lvl, format, convert_to_c_string(std::forward<Args>(args))...);
-  };
+    auto size = static_cast<size_t>(std::snprintf(nullptr, 0, format.c_str(), convert_to_c_string(std::forward<Args>(args))...) + 1);
+    if (size <= 0) { throw std::runtime_error("Error during formatting."); }
+    std::unique_ptr<char[]> buf(new char[size]);
+    std::snprintf(buf.get(), size, format.c_str(), convert_to_c_string(std::forward<Args>(args))...);
+    log(lvl, {buf.get(), buf.get() + size - 1});
+  }
 
 #ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_SUPPORTS_LOGGING
   BACKWARDS_COMPAT_INLINE void init_logger();
