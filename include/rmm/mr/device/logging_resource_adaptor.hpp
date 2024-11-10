@@ -335,14 +335,14 @@ class logging_resource_adaptor final : public device_memory_resource {
 #ifdef RMM_BACKWARDS_COMPATIBILITY
       logger_->info("allocate failure,{},{},{}", ptr, bytes, fmt::ptr(stream.value()));
 #else
-      logger_->info("allocate failure,%p,%s,%p", ptr, bytes, fmt::ptr(stream.value()));
+      logger_->info("allocate failure,%p,%zu,%p", ptr, bytes, fmt::ptr(stream.value()));
 #endif
       return ptr;
     } catch (...) {
 #ifdef RMM_BACKWARDS_COMPATIBILITY
       logger_->info("allocate failure,{},{},{}", nullptr, bytes, fmt::ptr(stream.value()));
 #else
-      logger_->info("allocate failure,%p,%s,%p", nullptr, bytes, fmt::ptr(stream.value()));
+      logger_->info("allocate failure,%p,%zu,%p", nullptr, bytes, fmt::ptr(stream.value()));
 #endif
       throw;
     }
@@ -367,7 +367,7 @@ class logging_resource_adaptor final : public device_memory_resource {
 #ifdef RMM_BACKWARDS_COMPATIBILITY
     logger_->info("free,{},{},{}", ptr, bytes, fmt::ptr(stream.value()));
 #else
-    logger_->info("free,%p,%s,%p", ptr, bytes, fmt::ptr(stream.value()));
+    logger_->info("free,%p,%zu,%p", ptr, bytes, fmt::ptr(stream.value()));
 #endif
     get_upstream_resource().deallocate_async(ptr, bytes, stream);
   }
