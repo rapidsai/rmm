@@ -52,12 +52,12 @@ inline level_enum string_to_level(std::string_view const env_lvl_str)
     throw std::invalid_argument(os.str());
 }
 
-spdlog::level::level_enum to_spdlog_level(level_enum lvl)
+BACKWARDS_COMPAT_INLINE spdlog::level::level_enum to_spdlog_level(level_enum lvl)
 {
   return static_cast<spdlog::level::level_enum>(static_cast<int32_t>(lvl));
 }
 
-level_enum from_spdlog_level(spdlog::level::level_enum lvl)
+BACKWARDS_COMPAT_INLINE level_enum from_spdlog_level(spdlog::level::level_enum lvl)
 {
   return static_cast<level_enum>(static_cast<int32_t>(lvl));
 }
@@ -135,7 +135,7 @@ BACKWARDS_COMPAT_INLINE void logger::set_pattern(std::string pattern) { impl->se
 #ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_BACKWARDS_COMPATIBILITY
 namespace detail {
 
-class logger& default_logger()
+@_RAPIDS_DETAIL_FUNCTION_INLINE@ class logger& default_logger()
 {
   static class logger logger_ = [] {
     class logger logger_ {
@@ -153,7 +153,7 @@ class logger& default_logger()
   return logger_;
 }
 
-class spdlog::logger& logger() { return default_logger().pImpl->underlying; }
+@_RAPIDS_DETAIL_FUNCTION_INLINE@ class spdlog::logger& logger() { return *(default_logger().impl); }
 
 }  // namespace detail
 #endif

@@ -118,6 +118,14 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @param auto_flush If true, flushes the log for every (de)allocation. Warning, this will degrade
    * performance.
    */
+#ifdef RMM_BACKWARDS_COMPATIBILITY
+  logging_resource_adaptor(Upstream* upstream,
+                           spdlog::sinks_init_list sinks,
+                           bool auto_flush = false)
+    : logging_resource_adaptor{to_device_async_resource_ref_checked(upstream), sinks, auto_flush}
+  {
+  }
+#else
   template <typename SinkPtr>
   logging_resource_adaptor(Upstream* upstream,
                            std::initializer_list<SinkPtr> sinks,
@@ -125,6 +133,7 @@ class logging_resource_adaptor final : public device_memory_resource {
     : logging_resource_adaptor{to_device_async_resource_ref_checked(upstream), sinks, auto_flush}
   {
   }
+#endif
 
   /**
    * @brief Construct a new logging resource adaptor using `upstream` to satisfy
@@ -184,6 +193,14 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @param auto_flush If true, flushes the log for every (de)allocation. Warning, this will degrade
    * performance.
    */
+#ifdef RMM_BACKWARDS_COMPATIBILITY
+  logging_resource_adaptor(device_async_resource_ref upstream,
+                           spdlog::sinks_init_list sinks,
+                           bool auto_flush = false)
+    : logging_resource_adaptor{make_logger(sinks), upstream, auto_flush}
+  {
+  }
+#else
   template <typename SinkPtr>
   logging_resource_adaptor(device_async_resource_ref upstream,
                            std::initializer_list<SinkPtr> sinks,
@@ -191,6 +208,7 @@ class logging_resource_adaptor final : public device_memory_resource {
     : logging_resource_adaptor{make_logger(sinks), upstream, auto_flush}
   {
   }
+#endif
 
   logging_resource_adaptor()                                           = delete;
   ~logging_resource_adaptor() override                                 = default;

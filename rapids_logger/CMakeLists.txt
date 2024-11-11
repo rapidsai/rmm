@@ -142,6 +142,11 @@ function(rapids_make_logger logger_namespace)
     string(TOUPPER ${logger_namespace} _RAPIDS_LOGGER_MACRO_PREFIX)
   endif()
 
+  set(_RAPIDS_DETAIL_FUNCTION_INLINE)
+  if(_RAPIDS_RMM_BACKWARDS_COMPATIBILITY)
+    set(_RAPIDS_DETAIL_FUNCTION_INLINE inline)
+  endif()
+
   # All paths are computed relative to the current source/binary dir of the file from which the
   # function is invoked. As a result we cannot use relative paths here because CMake will root these
   # paths incorrectly for configure_file/install.
@@ -175,11 +180,9 @@ function(rapids_make_logger logger_namespace)
       set(_RAPIDS_SUPPORTS_LOGGING ON)
     endif()
     target_compile_definitions(${_RAPIDS_LOGGER_TARGET} INTERFACE RMM_BACKWARDS_COMPATIBILITY)
-    set(_RAPIDS_DETAIL_FUNCTION_INLINE inline)
   endif()
   if(_RAPIDS_CUDF_BACKWARDS_COMPATIBILITY)
     target_compile_definitions(${_RAPIDS_LOGGER_TARGET} INTERFACE CUDF_BACKWARDS_COMPATIBILITY)
-    set(_RAPIDS_DETAIL_FUNCTION_INLINE)
   endif()
   if(_RAPIDS_SUPPORTS_LOGGING)
     target_compile_definitions(${_RAPIDS_LOGGER_TARGET}
