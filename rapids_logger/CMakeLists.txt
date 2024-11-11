@@ -207,6 +207,9 @@ function(rapids_make_logger logger_namespace)
                   $<INSTALL_INTERFACE:${_RAPIDS_LOGGER_HEADER_DIR}/logger_impl/logger.cpp>)
       target_link_libraries(${impl_target} INTERFACE ${_RAPIDS_LOGGER_TARGET}
                                                      spdlog::spdlog_header_only)
+      # TODO: When we drop backwards compatibility mode, stop linking to the header-only spdlog and
+      # use the static library instead. spdlog::spdlog) See get_spdlog.cmake for details.
+      # target_link_options(${impl_target} INTERFACE "LINKER:--exclude-libs,libspdlog")
     else()
       target_link_libraries(${_RAPIDS_LOGGER_TARGET} INTERFACE spdlog::spdlog_header_only)
     endif()
