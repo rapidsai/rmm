@@ -270,7 +270,7 @@ class pool_memory_resource final
       }
       try_size = std::max(min_size, try_size / 2);
     }
-    RMM_LOG_ERROR("[A][Stream {}][Upstream {}B][FAILURE maximum pool size exceeded]",
+    RMM_LOG_ERROR("[A][Stream %s][Upstream %dB][FAILURE maximum pool size exceeded]",
                   rmm::detail::format_stream(stream),
                   min_size);
     RMM_FAIL("Maximum pool size exceeded", rmm::out_of_memory);
@@ -350,7 +350,7 @@ class pool_memory_resource final
    */
   std::optional<block_type> block_from_upstream(std::size_t size, cuda_stream_view stream)
   {
-    RMM_LOG_DEBUG("[A][Stream {}][Upstream {}B]", rmm::detail::format_stream(stream), size);
+    RMM_LOG_DEBUG("[A][Stream %s][Upstream %dB]", rmm::detail::format_stream(stream), size);
 
     if (size == 0) { return {}; }
 

@@ -298,11 +298,12 @@ class logging_resource_adaptor final : public device_memory_resource {
   {
     try {
       auto const ptr = get_upstream_resource().allocate_async(bytes, stream);
-      logger_->info("allocate,{},{},{}", ptr, bytes, rmm::detail::format_stream(stream));
+      logger_->info(
+        rmm::detail::formatted_log("allocate,%p,%lld,%lld", ptr, bytes, stream.value()));
       return ptr;
     } catch (...) {
-      logger_->info(
-        "allocate failure,{},{},{}", nullptr, bytes, rmm::detail::format_stream(stream));
+      logger_->info(rmm::detail::formatted_log(
+        "allocate failure,%p,%lld,%lld", nullptr, bytes, stream.value()));
       throw;
     }
   }
@@ -323,7 +324,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    */
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
-    logger_->info("free,{},{},{}", ptr, bytes, rmm::detail::format_stream(stream));
+    logger_->info(rmm::detail::formatted_log("free,%p,%d,%d", ptr, bytes, stream.value()));
     get_upstream_resource().deallocate_async(ptr, bytes, stream);
   }
 

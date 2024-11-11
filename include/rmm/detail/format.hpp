@@ -19,10 +19,35 @@
 #include <rmm/cuda_stream_view.hpp>
 
 #include <array>
+#include <cstdio>
+#include <memory>
+#include <stdexcept>
 #include <string>
 
 namespace RMM_NAMESPACE {
 namespace detail {
+
+/**
+ * @brief Format a message string with printf-style formatting
+ *
+ * This function performs printf-style formatting to avoid the need for fmt
+ * or spdlog's own templated APIs (which would require exposing spdlog
+ * symbols publicly) and returns the formatted message as a `std::string`.
+ *
+ * @param format The format string
+ * @param args The format arguments
+ */
+template <typename... Args>
+std::string formatted_log(std::string const& format, Args&&... args)
+{
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
+  auto size = static_cast<size_t>(std::snprintf(nullptr, 0, format.c_str(), args...) + 1);
+  if (size <= 0) { throw std::runtime_error("Error during formatting."); }
+  std::unique_ptr<char[]> buf(new char[size]);
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
+  std::snprintf(buf.get(), size, format.c_str(), args...);
+  return {buf.get(), buf.get() + size - 1};  // drop '\0'
+}
 
 // Stringify a size in bytes to a human-readable value
 inline std::string format_bytes(std::size_t value)

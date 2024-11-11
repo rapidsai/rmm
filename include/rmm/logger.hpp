@@ -18,6 +18,7 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/export.hpp>
+#include <rmm/detail/format.hpp>
 
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/spdlog.h>
@@ -96,12 +97,18 @@ logger()
 // The default is INFO, but it should be used sparingly, so that by default a log file is only
 // output if there is important information, warnings, errors, and critical failures
 // Log messages that require computation should only be used at level TRACE and DEBUG
-#define RMM_LOG_TRACE(...)    SPDLOG_LOGGER_TRACE(&rmm::detail::logger(), __VA_ARGS__)
-#define RMM_LOG_DEBUG(...)    SPDLOG_LOGGER_DEBUG(&rmm::detail::logger(), __VA_ARGS__)
-#define RMM_LOG_INFO(...)     SPDLOG_LOGGER_INFO(&rmm::detail::logger(), __VA_ARGS__)
-#define RMM_LOG_WARN(...)     SPDLOG_LOGGER_WARN(&rmm::detail::logger(), __VA_ARGS__)
-#define RMM_LOG_ERROR(...)    SPDLOG_LOGGER_ERROR(&rmm::detail::logger(), __VA_ARGS__)
-#define RMM_LOG_CRITICAL(...) SPDLOG_LOGGER_CRITICAL(&rmm::detail::logger(), __VA_ARGS__)
+#define RMM_LOG_TRACE(...) \
+  SPDLOG_LOGGER_TRACE(&rmm::detail::logger(), rmm::detail::formatted_log(__VA_ARGS__))
+#define RMM_LOG_DEBUG(...) \
+  SPDLOG_LOGGER_DEBUG(&rmm::detail::logger(), rmm::detail::formatted_log(__VA_ARGS__))
+#define RMM_LOG_INFO(...) \
+  SPDLOG_LOGGER_INFO(&rmm::detail::logger(), rmm::detail::formatted_log(__VA_ARGS__))
+#define RMM_LOG_WARN(...) \
+  SPDLOG_LOGGER_WARN(&rmm::detail::logger(), rmm::detail::formatted_log(__VA_ARGS__))
+#define RMM_LOG_ERROR(...) \
+  SPDLOG_LOGGER_ERROR(&rmm::detail::logger(), rmm::detail::formatted_log(__VA_ARGS__))
+#define RMM_LOG_CRITICAL(...) \
+  SPDLOG_LOGGER_CRITICAL(&rmm::detail::logger(), rmm::detail::formatted_log(__VA_ARGS__))
 
 //! @endcond
 
