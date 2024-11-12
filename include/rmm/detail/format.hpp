@@ -36,13 +36,17 @@ namespace detail {
  *
  * @param format The format string
  * @param args The format arguments
+ * @return The formatted message
+ * @throw rmm::logic_error if an error occurs during formatting
  */
 template <typename... Args>
 std::string formatted_log(std::string const& format, Args&&... args)
 {
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
-  auto size = static_cast<size_t>(std::snprintf(nullptr, 0, format.c_str(), args...) + 1);
-  if (size <= 0) { throw std::runtime_error("Error during formatting."); }
+  auto size = std::snprintf(nullptr, 0, format.c_str(), args...) + 1;
+  RMM_EXPECTS(size >= 0, "Error during formatting.");
+  if (size == 0) { return {}; }
+  // NOLINTNEXTLINE(modernize-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays)
   std::unique_ptr<char[]> buf(new char[size]);
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
   std::snprintf(buf.get(), size, format.c_str(), args...);
