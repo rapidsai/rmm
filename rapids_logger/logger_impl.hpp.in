@@ -34,7 +34,7 @@
 #include <string>
 
 
-namespace @_RAPIDS_LOGGER_NAMESPACE@ {
+namespace __attribute__((visibility("hidden"))) @_RAPIDS_LOGGER_NAMESPACE@ {
 
 namespace detail {
 
