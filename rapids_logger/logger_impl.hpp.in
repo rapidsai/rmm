@@ -69,6 +69,16 @@ BACKWARDS_COMPAT_INLINE level_enum from_spdlog_level(spdlog::level::level_enum l
 BACKWARDS_COMPAT_INLINE sink::sink(spdlog::sink_ptr sink) : impl{sink} {}
 
 // Logger methods
+// TODO: This constructor and the one below introduce some undesirable
+// vtable/typeinfo public symbols for basic_file_sink and ostream_sink. I'm not
+// sure how to avoid this since they come from std::shared_ptr having inline
+// methods that require injection into the global symbol table for
+// disambiguation across TUs. I'm also not sure that we entirely need to
+// support this kind of constructor, so we might just want to remove it. At
+// minimum we will always have to expose the
+// std::shared_ptr<spdlog::sinks::sink> add_sink/remove_sink functions, but
+// those don't introduce any vtable or tbypeinfo entries (presumably because
+// the class doesn't actually implement any virtual functions).
 BACKWARDS_COMPAT_INLINE logger::logger(std::string name, std::string filename)
   : impl{std::make_unique<spdlog::logger>(
         name,

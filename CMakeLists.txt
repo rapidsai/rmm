@@ -60,6 +60,9 @@ option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
 
 option(RMM_LOGGING_COMPATIBILITY "Enable backwards compatibility with older logging macros" ON)
 option(RMM_SUPPORTS_LOGGING "Enable logging support" ON)
+# cmake-format: off
+#option(RMM_SPDLOG_DYNAMIC "Use dynamic linking for spdlog" OFF)
+# cmake-format: on
 if(RMM_LOGGING_COMPATIBILITY)
   if(NOT RMM_SUPPORTS_LOGGING)
     message(STATUS "RMM_LOGGING_COMPATIBILITY requires RMM_SUPPORTS_LOGGING to be enabled")
