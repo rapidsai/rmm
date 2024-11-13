@@ -197,7 +197,7 @@ texinfo_documents = [
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "numba": ("https://numba.readthedocs.io/en/stable", None),
-    "cuda-python": ("https://nvidia.github.io/cuda-python/", None),
+    "cuda-python": ("https://nvidia.github.io/cuda-python/cuda-bindings/", None),
 }
 
 # Config numpydoc
