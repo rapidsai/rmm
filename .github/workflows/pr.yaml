@@ -14,11 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
         OTEL_SERVICE_NAME: "pr-rmm"
-        # SHARED_ACTIONS_REPO should default to rapids/shared-actions
-        SHARED_ACTIONS_REF: "telemetry-dispatch-actions"
     steps:
       - name: Telemetry setup
-        uses: rapidsai/shared-actions/telemetry-dispatch-stash-base-env-vars@telemetry-dispatch-actions
+        uses: rapidsai/shared-actions/telemetry-dispatch-stash-base-env-vars@main
 
   pr-builder:
     needs:
@@ -148,10 +146,10 @@ jobs:
     continue-on-error: true
     steps:
       - name: Load stashed telemetry env vars
-        uses: rapidsai/shared-actions/telemetry-dispatch-load-base-env-vars@telemetry-dispatch-actions
+        uses: rapidsai/shared-actions/telemetry-dispatch-load-base-env-vars@main
         with:
             load_service_name: true
       - name: Telemetry summarize
-        uses: rapidsai/shared-actions/telemetry-dispatch-write-summary@telemetry-dispatch-actions
+        uses: rapidsai/shared-actions/telemetry-dispatch-write-summary@main
         with:
-          cert_concat: "${{ secrets.OTEL_EXPORTER_OTLP_CA_CERTIFICATE }};${{ secrets.OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE }};${{ secrets.OTEL_EXPORTER_OTLP_CLIENT_KEY }}"
+          cert_concat: join(fromJSON('["${{ secrets.OTEL_EXPORTER_OTLP_CA_CERTIFICATE }}", "${{ secrets.OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE }}", "${{ secrets.OTEL_EXPORTER_OTLP_CLIENT_KEY }}"]'), ';')
