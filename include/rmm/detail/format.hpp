@@ -46,9 +46,10 @@ template <typename... Args>
 std::string formatted_log(std::string const& format, Args&&... args)
 {
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
-  auto size = std::snprintf(nullptr, 0, format.c_str(), args...) + 1;
-  RMM_EXPECTS(size >= 0, "Error during formatting.");
-  if (size == 0) { return {}; }
+  auto retsize = std::snprintf(nullptr, 0, format.c_str(), args...);
+  RMM_EXPECTS(retsize >= 0, "Error during formatting.");
+  if (retsize == 0) { return {}; }
+  auto size = static_cast<std::size_t>(retsize) + 1;  // for null terminator
   // NOLINTNEXTLINE(modernize-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays)
   std::unique_ptr<char[]> buf(new char[size]);
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
