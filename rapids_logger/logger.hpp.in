@@ -420,7 +420,7 @@ class logger {
  private:
 #endif
 #ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_SUPPORTS_LOGGING
-  std::unique_ptr<spdlog::logger> impl{};
+  std::unique_ptr<spdlog::logger> impl;
 #endif
 
 #ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_BACKWARDS_COMPATIBILITY
