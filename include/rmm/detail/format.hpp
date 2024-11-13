@@ -56,6 +56,13 @@ std::string formatted_log(std::string const& format, Args&&... args)
   return {buf.get(), buf.get() + size - 1};  // drop '\0'
 }
 
+// specialization for no arguments
+template <>
+inline std::string formatted_log(std::string const& format)
+{
+  return format;
+}
+
 // Stringify a size in bytes to a human-readable value
 inline std::string format_bytes(std::size_t value)
 {
