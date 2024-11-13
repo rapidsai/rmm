@@ -20,6 +20,7 @@
 
 #include <array>
 #include <cstdio>
+#include <ios>
 #include <iostream>
 #include <memory>
 #include <sstream>
@@ -73,7 +74,7 @@ inline std::string format_bytes(std::size_t value)
 // Stringify a stream ID
 inline std::string format_stream(rmm::cuda_stream_view stream)
 {
-  std::stringstream sstr;
+  std::stringstream sstr{};
   sstr << std::hex << stream.value();
   return sstr.str();
 }
