@@ -20,7 +20,9 @@
 
 #include <array>
 #include <cstdio>
+#include <iostream>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 
@@ -65,14 +67,15 @@ inline std::string format_bytes(std::size_t value)
     index++;
   }
 
-  return std::to_string(value) + ' ' + units.at(index);
+  return std::to_string(size) + ' ' + units.at(index);
 }
 
 // Stringify a stream ID
 inline std::string format_stream(rmm::cuda_stream_view stream)
 {
-  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-  return std::to_string(reinterpret_cast<std::uintptr_t>(stream.value()));
+  std::stringstream sstr;
+  sstr << std::hex << stream.value();
+  return sstr.str();
 }
 
 }  // namespace detail
