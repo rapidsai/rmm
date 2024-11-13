@@ -200,7 +200,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    */
   void* do_allocate(std::size_t size, cuda_stream_view stream) override
   {
-    RMM_LOG_TRACE("[A][stream %s][%dB]", rmm::detail::format_stream(stream), size);
+    RMM_LOG_TRACE("[A][stream %s][%zuB]", rmm::detail::format_stream(stream), size);
 
     if (size <= 0) { return nullptr; }
 
@@ -214,7 +214,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
                 rmm::out_of_memory);
     auto const block = this->underlying().get_block(size, stream_event);
 
-    RMM_LOG_TRACE("[A][stream %s][%dB][%p]",
+    RMM_LOG_TRACE("[A][stream %s][%zuB][%p]",
                   rmm::detail::format_stream(stream_event.stream),
                   size,
                   block.pointer());
@@ -233,7 +233,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    */
   void do_deallocate(void* ptr, std::size_t size, cuda_stream_view stream) override
   {
-    RMM_LOG_TRACE("[D][stream %s][%dB][%p]", rmm::detail::format_stream(stream), size, ptr);
+    RMM_LOG_TRACE("[D][stream %s][%zuB][%p]", rmm::detail::format_stream(stream), size, ptr);
 
     if (size <= 0 || ptr == nullptr) { return; }
 
@@ -383,7 +383,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
       if (merge_first) {
         merge_lists(stream_event, blocks, other_event, std::move(other_blocks));
 
-        RMM_LOG_DEBUG("[A][Stream %s][%dB][Merged stream %s]",
+        RMM_LOG_DEBUG("[A][Stream %s][%zuB][Merged stream %s]",
                       rmm::detail::format_stream(stream_event.stream),
                       size,
                       rmm::detail::format_stream(iter->first.stream));
@@ -413,8 +413,8 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
         block_type const block = find_block(iter);
 
         if (block.is_valid()) {
-          RMM_LOG_DEBUG((merge_first) ? "[A][Stream %s][%dB][Found after merging stream %s]"
-                                      : "[A][Stream %s][%dB][Taken from stream %s]",
+          RMM_LOG_DEBUG((merge_first) ? "[A][Stream %s][%zuB][Found after merging stream %s]"
+                                      : "[A][Stream %s][%zuB][Taken from stream %s]",
                         rmm::detail::format_stream(stream_event.stream),
                         size,
                         rmm::detail::format_stream(iter->first.stream));
@@ -470,7 +470,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
                     max_block    = std::max(summary.first, max_block);
                     free_mem += summary.second;
                   });
-    RMM_LOG_TRACE("[Summary][Free lists: %d][Blocks: %d][Max Block: %d][Total Free: %d]",
+    RMM_LOG_TRACE("[Summary][Free lists: %zu][Blocks: %zu][Max Block: %zu][Total Free: %zu]",
                   stream_free_blocks_.size(),
                   num_blocks,
                   max_block,
