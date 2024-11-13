@@ -22,4 +22,7 @@ sccache --show-adv-stats
 
 python -m pip install wheel
 python -m wheel tags --platform any dist/* --remove
+
+./ci/validate_wheel.sh dist
+
 RAPIDS_PY_WHEEL_NAME="rmm_${RAPIDS_PY_CUDA_SUFFIX}" rapids-upload-wheels-to-s3 cpp dist

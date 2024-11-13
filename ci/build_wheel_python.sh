@@ -32,6 +32,8 @@ sccache --show-adv-stats
 mkdir -p final_dist
 python -m auditwheel repair -w final_dist dist/*
 
+./ci/validate_wheel.sh final_dist
+
 RAPIDS_PY_WHEEL_NAME="${package_name}_${RAPIDS_PY_CUDA_SUFFIX}" rapids-upload-wheels-to-s3 python final_dist
 
 # switch back to the root of the repo and check symbol visibility
