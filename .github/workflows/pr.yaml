@@ -12,6 +12,7 @@ concurrency:
 jobs:
   telemetry-setup:
     runs-on: ubuntu-latest
+    continue-on-error: true
     env:
         OTEL_SERVICE_NAME: "pr-rmm"
     steps:
