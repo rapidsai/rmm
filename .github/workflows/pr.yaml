@@ -10,15 +10,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  telemetry-setup:
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    env:
-        OTEL_SERVICE_NAME: "pr-rmm"
-    steps:
-      - name: Telemetry setup
-        uses: rapidsai/shared-actions/telemetry-dispatch-stash-base-env-vars@main
-
   pr-builder:
     needs:
       - changed-files
@@ -38,6 +29,14 @@ jobs:
     if: always()
     with:
       needs: ${{ toJSON(needs) }}
+  telemetry-setup:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+        OTEL_SERVICE_NAME: "pr-rmm"
+    steps:
+      - name: Telemetry setup
+        uses: rapidsai/shared-actions/telemetry-dispatch-stash-base-env-vars@main
   changed-files:
     needs:
       - telemetry-setup
