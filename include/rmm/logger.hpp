@@ -16,15 +16,13 @@
 
 #pragma once
 
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/export.hpp>
+#include <rmm/detail/format.hpp>
 
-#include <fmt/format.h>
-#include <fmt/ostream.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/spdlog.h>
 
-#include <array>
-#include <iostream>
 #include <string>
 
 namespace RMM_NAMESPACE {
@@ -70,32 +68,6 @@ struct logger_wrapper {
   }
 };
 
-/**
- * @brief Represent a size in number of bytes.
- */
-struct bytes {
-  std::size_t value;  ///< The size in bytes
-
-  /**
-   * @brief Construct a new bytes object
-   *
-   * @param os The output stream
-   * @param value The size in bytes
-   */
-  friend std::ostream& operator<<(std::ostream& os, bytes const& value)
-  {
-    static std::array units{"B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"};
-
-    int index = 0;
-    auto size = static_cast<double>(value.value);
-    while (size > 1024) {
-      size /= 1024;
-      index++;
-    }
-    return os << size << ' ' << units.at(index);
-  }
-};
-
 inline spdlog::logger& logger()
 {
   static detail::logger_wrapper wrapped{};
@@ -125,20 +97,21 @@ logger()
 // The default is INFO, but it should be used sparingly, so that by default a log file is only
 // output if there is important information, warnings, errors, and critical failures
 // Log messages that require computation should only be used at level TRACE and DEBUG
-#define RMM_LOG_TRACE(...)    SPDLOG_LOGGER_TRACE(&rmm::detail::logger(), __VA_ARGS__)
-#define RMM_LOG_DEBUG(...)    SPDLOG_LOGGER_DEBUG(&rmm::detail::logger(), __VA_ARGS__)
-#define RMM_LOG_INFO(...)     SPDLOG_LOGGER_INFO(&rmm::detail::logger(), __VA_ARGS__)
-#define RMM_LOG_WARN(...)     SPDLOG_LOGGER_WARN(&rmm::detail::logger(), __VA_ARGS__)
-#define RMM_LOG_ERROR(...)    SPDLOG_LOGGER_ERROR(&rmm::detail::logger(), __VA_ARGS__)
-#define RMM_LOG_CRITICAL(...) SPDLOG_LOGGER_CRITICAL(&rmm::detail::logger(), __VA_ARGS__)
+#define RMM_LOG_TRACE(...) \
+  SPDLOG_LOGGER_TRACE(&rmm::detail::logger(), rmm::detail::formatted_log(__VA_ARGS__))
+#define RMM_LOG_DEBUG(...) \
+  SPDLOG_LOGGER_DEBUG(&rmm::detail::logger(), rmm::detail::formatted_log(__VA_ARGS__))
+#define RMM_LOG_INFO(...) \
+  SPDLOG_LOGGER_INFO(&rmm::detail::logger(), rmm::detail::formatted_log(__VA_ARGS__))
+#define RMM_LOG_WARN(...) \
+  SPDLOG_LOGGER_WARN(&rmm::detail::logger(), rmm::detail::formatted_log(__VA_ARGS__))
+#define RMM_LOG_ERROR(...) \
+  SPDLOG_LOGGER_ERROR(&rmm::detail::logger(), rmm::detail::formatted_log(__VA_ARGS__))
+#define RMM_LOG_CRITICAL(...) \
+  SPDLOG_LOGGER_CRITICAL(&rmm::detail::logger(), rmm::detail::formatted_log(__VA_ARGS__))
 
 //! @endcond
 
 }  // namespace RMM_NAMESPACE
-
-// Doxygen doesn't like this because we're overloading something from fmt
-//! @cond Doxygen_Suppress
-template <>
-struct fmt::formatter<rmm::detail::bytes> : fmt::ostream_formatter {};
 
 //! @endcond

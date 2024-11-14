@@ -18,6 +18,7 @@
 #include <rmm/aligned.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
+#include <rmm/detail/format.hpp>
 #include <rmm/detail/logging_assert.hpp>
 #include <rmm/logger.hpp>
 #include <rmm/mr/device/detail/arena.hpp>
@@ -335,7 +336,8 @@ class arena_memory_resource final : public device_memory_resource {
   void dump_memory_log(size_t bytes)
   {
     logger_->info("**************************************************");
-    logger_->info("Ran out of memory trying to allocate {}.", rmm::detail::bytes{bytes});
+    logger_->info(rmm::detail::formatted_log("Ran out of memory trying to allocate %s.",
+                                             rmm::detail::format_bytes(bytes)));
     logger_->info("**************************************************");
     logger_->info("Global arena:");
     global_arena_.dump_memory_log(logger_);

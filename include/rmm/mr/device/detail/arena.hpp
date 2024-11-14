@@ -21,13 +21,13 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
+#include <rmm/detail/format.hpp>
 #include <rmm/detail/logging_assert.hpp>
 #include <rmm/logger.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <cuda_runtime_api.h>
 
-#include <fmt/core.h>
 #include <spdlog/common.h>
 
 #include <algorithm>
@@ -651,33 +651,38 @@ class global_arena final {
   {
     std::lock_guard lock(mtx_);
 
-    logger->info("  Arena size: {}", rmm::detail::bytes{upstream_block_.size()});
-    logger->info("  # superblocks: {}", superblocks_.size());
+    logger->info(rmm::detail::formatted_log("  Arena size: %s",
+                                            rmm::detail::format_bytes(upstream_block_.size())));
+    logger->info(rmm::detail::formatted_log("  # superblocks: %zu", superblocks_.size()));
     if (!superblocks_.empty()) {
-      logger->debug("  Total size of superblocks: {}",
-                    rmm::detail::bytes{total_memory_size(superblocks_)});
+      logger->debug(
+        rmm::detail::formatted_log("  Total size of superblocks: %s",
+                                   rmm::detail::format_bytes(total_memory_size(superblocks_))));
       auto const total_free    = total_free_size(superblocks_);
       auto const max_free      = max_free_size(superblocks_);
       auto const fragmentation = (1 - max_free / static_cast<double>(total_free)) * 100;
-      logger->info("  Total free memory: {}", rmm::detail::bytes{total_free});
-      logger->info("  Largest block of free memory: {}", rmm::detail::bytes{max_free});
-      logger->info("  Fragmentation: {:.2f}%", fragmentation);
+      logger->info(rmm::detail::formatted_log("  Total free memory: %s",
+                                              rmm::detail::format_bytes(total_free)));
+      logger->info(rmm::detail::formatted_log("  Largest block of free memory: %s",
+                                              rmm::detail::format_bytes(max_free)));
+      logger->info(rmm::detail::formatted_log("  Fragmentation: %0.2f", fragmentation));
 
-      auto index = 0;
+      auto index = decltype(superblocks_.size()){0};
       char* prev_end{};
       for (auto const& sblk : superblocks_) {
         if (prev_end == nullptr) { prev_end = sblk.pointer(); }
-        logger->debug(
-          "    Superblock {}: start={}, end={}, size={}, empty={}, # free blocks={}, max free={}, "
-          "gap={}",
+        logger->debug(rmm::detail::formatted_log(
+          "    Superblock %zu: start=%p, end=%p, size=%s, empty=%s, # free blocks=%zu, max "
+          "free=%s, "
+          "gap=%s",
           index,
-          fmt::ptr(sblk.pointer()),
-          fmt::ptr(sblk.end()),
-          rmm::detail::bytes{sblk.size()},
-          sblk.empty(),
+          sblk.pointer(),
+          sblk.end(),
+          rmm::detail::format_bytes(sblk.size()),
+          sblk.empty() ? "T" : "F",
           sblk.free_blocks(),
-          rmm::detail::bytes{sblk.max_free_size()},
-          rmm::detail::bytes{static_cast<size_t>(sblk.pointer() - prev_end)});
+          rmm::detail::format_bytes(sblk.max_free_size()),
+          rmm::detail::format_bytes(static_cast<size_t>(sblk.pointer() - prev_end))));
         prev_end = sblk.end();
         index++;
       }
