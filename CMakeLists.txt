@@ -41,8 +41,8 @@ rapids_cmake_build_type(Release)
 option(RMM_NVTX "Build RMM with NVTX support" OFF)
 option(BUILD_TESTS "Configure CMake to build tests" ON)
 option(BUILD_BENCHMARKS "Configure CMake to build (google) benchmarks" OFF)
-# This is mostly so that dependent libraries, such as fmt, are configured in shared mode for
-# downstream dependents of RMM that get their common dependencies transitively.
+# This is mostly so that dependent libraries are configured in shared mode for downstream dependents
+# of RMM that get their common dependencies transitively.
 option(BUILD_SHARED_LIBS "Build RMM shared libraries" ON)
 set(RMM_LOGGING_LEVEL
     "INFO"
@@ -121,7 +121,6 @@ endif()
 
 target_link_libraries(rmm INTERFACE rmm_logger)
 target_link_libraries(rmm INTERFACE CCCL::CCCL)
-target_link_libraries(rmm INTERFACE fmt::fmt-header-only)
 target_link_libraries(rmm INTERFACE dl)
 target_link_libraries(rmm INTERFACE nvtx3::nvtx3-cpp)
 target_compile_features(rmm INTERFACE cxx_std_17 $<BUILD_INTERFACE:cuda_std_17>)

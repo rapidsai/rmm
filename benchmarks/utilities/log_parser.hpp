@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -151,7 +151,7 @@ inline std::vector<event> parse_csv(std::string const& filename)
 
   auto parse_pointer = [](std::string const& str, uintptr_t& ptr) {
     auto const base{16};
-    ptr = std::stoll(str, nullptr, base);
+    ptr = (str == "(nil)") ? 0 : std::stoll(str, nullptr, base);
   };
 
   std::vector<uintptr_t> pointers = csv.GetColumn<uintptr_t>("Pointer", parse_pointer);

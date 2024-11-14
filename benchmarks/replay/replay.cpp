@@ -16,6 +16,7 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/logger.hpp>
 #include <rmm/mr/device/arena_memory_resource.hpp>
 #include <rmm/mr/device/binning_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
@@ -176,11 +177,7 @@ struct replay_benchmark {
   void SetUp(const ::benchmark::State& state)
   {
     if (state.thread_index() == 0) {
-#ifdef RMM_BACKWARDS_COMPATIBILITY
-      rmm::detail::logger().log(spdlog::level::info, "------ Start of Benchmark -----");
-#else
-      rmm::default_logger().log(rmm::level_enum::info, "------ Start of Benchmark -----");
-#endif
+      RMM_LOG_INFO("------ Start of Benchmark -----");
       mr_ = factory_(simulated_size_);
     }
   }
@@ -189,11 +186,7 @@ struct replay_benchmark {
   void TearDown(const ::benchmark::State& state)
   {
     if (state.thread_index() == 0) {
-#ifdef RMM_BACKWARDS_COMPATIBILITY
-      rmm::detail::logger().log(spdlog::level::info, "------ End of Benchmark -----");
-#else
-      rmm::default_logger().log(rmm::level_enum::info, "------ End of Benchmark -----");
-#endif
+      RMM_LOG_INFO("------ End of Benchmark -----");
       // clean up any leaked allocations
       std::size_t total_leaked{0};
       std::size_t num_leaked{0};

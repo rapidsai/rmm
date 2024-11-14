@@ -23,8 +23,6 @@
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
-#include <fmt/core.h>
-
 #include <cstddef>
 #include <map>
 #include <mutex>
@@ -188,7 +186,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
   void log_outstanding_allocations() const
   {
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_DEBUG
-    RMM_LOG_DEBUG("Outstanding Allocations: {}", get_outstanding_allocations_str());
+    RMM_LOG_DEBUG("Outstanding Allocations: %s", get_outstanding_allocations_str());
 #endif  // SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_DEBUG
   }
 
@@ -236,12 +234,12 @@ class tracking_resource_adaptor final : public device_memory_resource {
 
       // Ensure the allocation is found and the number of bytes match
       if (found == allocations_.end()) {
-        // Don't throw but log an error. Throwing in a descructor (or any noexcept) will call
+        // Don't throw but log an error. Throwing in a destructor (or any noexcept) will call
         // std::terminate
         RMM_LOG_ERROR(
-          "Deallocating a pointer that was not tracked. Ptr: {:p} [{}B], Current Num. Allocations: "
-          "{}",
-          fmt::ptr(ptr),
+          "Deallocating a pointer that was not tracked. Ptr: %p [%zuB], Current Num. Allocations: "
+          "%zu",
+          ptr,
           bytes,
           this->allocations_.size());
       } else {
@@ -250,10 +248,10 @@ class tracking_resource_adaptor final : public device_memory_resource {
         auto allocated_bytes = found->second.allocation_size;
 
         if (allocated_bytes != bytes) {
-          // Don't throw but log an error. Throwing in a descructor (or any noexcept) will call
+          // Don't throw but log an error. Throwing in a destructor (or any noexcept) will call
           // std::terminate
           RMM_LOG_ERROR(
-            "Alloc bytes ({}) and Dealloc bytes ({}) do not match", allocated_bytes, bytes);
+            "Alloc bytes (%zu) and Dealloc bytes (%zu) do not match", allocated_bytes, bytes);
 
           bytes = allocated_bytes;
         }

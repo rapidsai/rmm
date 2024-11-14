@@ -34,7 +34,6 @@ rapids_cpm_init()
 
 # Make sure install logic is handled correctly, namely that nothing is installed from these. I think
 # we'll need to both not specify an export set and EXCLUDE_FROM_ALL.
-include(../cmake/thirdparty/get_fmt.cmake)
 include(../cmake/thirdparty/get_spdlog.cmake)
 
 #[=======================================================================[.rst:

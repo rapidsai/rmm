@@ -40,8 +40,6 @@ function(find_and_configure_spdlog)
   #endif()
 # cmake-format: on
   rapids_cpm_spdlog(
-    # TODO: We can drop this when we stop using header-only spdlog.
-    FMT_OPTION "EXTERNAL_FMT_HO"
     INSTALL_EXPORT_SET rmm-exports
     BUILD_EXPORT_SET rmm-exports # cmake-format: off
     #OPTIONS "SPDLOG_BUILD_SHARED OFF" "BUILD_SHARED_LIBS OFF"

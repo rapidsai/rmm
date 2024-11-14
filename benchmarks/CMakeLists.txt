@@ -42,9 +42,8 @@ function(ConfigureBench BENCH_NAME)
     target_compile_definitions(${BENCH_NAME} PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
   endif()
 
-  target_compile_options(
-    ${BENCH_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Wall -Werror
-                         -Wno-error=deprecated-declarations -Wno-unknown-pragmas>)
+  target_compile_options(${BENCH_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Wall -Werror
+                                              -Wno-unknown-pragmas>)
 
   # When not building in compatibility mode, each benchmark has to recompile the logger.
   if(TARGET rmm_bench_logger)

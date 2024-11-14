@@ -18,11 +18,11 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
+#include <rmm/detail/format.hpp>
 #include <rmm/logger.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
-#include <fmt/core.h>
 #ifdef RMM_BACKWARDS_COMPATIBILITY
 #include <spdlog/common.h>
 #include <spdlog/sinks/basic_file_sink.h>
@@ -31,6 +31,7 @@
 #endif
 
 #include <cstddef>
+#include <cstdio>
 #include <memory>
 #include <sstream>
 #include <string_view>
@@ -350,18 +351,12 @@ class logging_resource_adaptor final : public device_memory_resource {
   {
     try {
       auto const ptr = get_upstream_resource().allocate_async(bytes, stream);
-#ifdef RMM_BACKWARDS_COMPATIBILITY
-      logger_->info("allocate,{},{},{}", ptr, bytes, fmt::ptr(stream.value()));
-#else
-      logger_->info("allocate,%llx,%zu,%llx", ptr, bytes, stream.value());
-#endif
+      logger_->info(rmm::detail::formatted_log(
+        "allocate,%p,%zu,%s", ptr, bytes, rmm::detail::format_stream(stream)));
       return ptr;
     } catch (...) {
-#ifdef RMM_BACKWARDS_COMPATIBILITY
-      logger_->info("allocate failure,{},{},{}", nullptr, bytes, fmt::ptr(stream.value()));
-#else
-      logger_->info("allocate failure,%llx,%zu,%llx", nullptr, bytes, stream.value());
-#endif
+      logger_->info(rmm::detail::formatted_log(
+        "allocate failure,%p,%zu,%s", nullptr, bytes, rmm::detail::format_stream(stream)));
       throw;
     }
   }
@@ -382,11 +377,8 @@ class logging_resource_adaptor final : public device_memory_resource {
    */
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
-#ifdef RMM_BACKWARDS_COMPATIBILITY
-    logger_->info("free,{},{},{}", ptr, bytes, fmt::ptr(stream.value()));
-#else
-    logger_->info("free,%llx,%zu,%llx", ptr, bytes, stream.value());
-#endif
+    logger_->info(
+      rmm::detail::formatted_log("free,%p,%zu,%s", ptr, bytes, rmm::detail::format_stream(stream)));
     get_upstream_resource().deallocate_async(ptr, bytes, stream);
   }
 
