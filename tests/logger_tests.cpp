@@ -23,7 +23,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include <cstdio>
 #include <cstdlib>
 #include <filesystem>
 #include <thread>
