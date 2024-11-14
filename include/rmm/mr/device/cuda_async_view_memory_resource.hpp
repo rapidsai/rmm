@@ -19,7 +19,6 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
-#include <rmm/detail/runtime_async_alloc.hpp>
 #include <rmm/detail/thrust_namespace.h>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
