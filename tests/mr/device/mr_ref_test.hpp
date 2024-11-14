@@ -293,10 +293,9 @@ inline void test_mixed_random_allocation_free(resource_ref ref,
   EXPECT_EQ(allocations.size(), active_allocations);
 }
 
-inline void test_mixed_random_async_allocation_free(
-  rmm::device_async_resource_ref ref,
-  size_in_bytes max_size  = default_max_size,
-  cuda_stream_view stream = {})
+inline void test_mixed_random_async_allocation_free(rmm::device_async_resource_ref ref,
+                                                    size_in_bytes max_size  = default_max_size,
+                                                    cuda_stream_view stream = {})
 {
   std::default_random_engine generator;
   constexpr std::size_t num_allocations{100};
