@@ -651,20 +651,20 @@ class global_arena final {
   {
     std::lock_guard lock(mtx_);
 
-    logger->info(rmm::detail::formatted_log(
-      "  Arena size: %s", rmm::detail::format_bytes(upstream_block_.size()).c_str()));
+    logger->info(rmm::detail::formatted_log("  Arena size: %s",
+                                            rmm::detail::format_bytes(upstream_block_.size())));
     logger->info(rmm::detail::formatted_log("  # superblocks: %zu", superblocks_.size()));
     if (!superblocks_.empty()) {
-      logger->debug(rmm::detail::formatted_log(
-        "  Total size of superblocks: %s",
-        rmm::detail::format_bytes(total_memory_size(superblocks_)).c_str()));
+      logger->debug(
+        rmm::detail::formatted_log("  Total size of superblocks: %s",
+                                   rmm::detail::format_bytes(total_memory_size(superblocks_))));
       auto const total_free    = total_free_size(superblocks_);
       auto const max_free      = max_free_size(superblocks_);
       auto const fragmentation = (1 - max_free / static_cast<double>(total_free)) * 100;
       logger->info(rmm::detail::formatted_log("  Total free memory: %s",
-                                              rmm::detail::format_bytes(total_free).c_str()));
+                                              rmm::detail::format_bytes(total_free)));
       logger->info(rmm::detail::formatted_log("  Largest block of free memory: %s",
-                                              rmm::detail::format_bytes(max_free).c_str()));
+                                              rmm::detail::format_bytes(max_free)));
       logger->info(rmm::detail::formatted_log("  Fragmentation: %0.2f", fragmentation));
 
       auto index = decltype(superblocks_.size()){0};
@@ -678,11 +678,11 @@ class global_arena final {
           index,
           sblk.pointer(),
           sblk.end(),
-          rmm::detail::format_bytes(sblk.size()).c_str(),
+          rmm::detail::format_bytes(sblk.size()),
           sblk.empty() ? "T" : "F",
           sblk.free_blocks(),
-          rmm::detail::format_bytes(sblk.max_free_size()).c_str(),
-          rmm::detail::format_bytes(static_cast<size_t>(sblk.pointer() - prev_end)).c_str()));
+          rmm::detail::format_bytes(sblk.max_free_size()),
+          rmm::detail::format_bytes(static_cast<size_t>(sblk.pointer() - prev_end))));
         prev_end = sblk.end();
         index++;
       }

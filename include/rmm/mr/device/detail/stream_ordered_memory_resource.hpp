@@ -200,7 +200,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    */
   void* do_allocate(std::size_t size, cuda_stream_view stream) override
   {
-    RMM_LOG_TRACE("[A][stream %s][%zuB]", rmm::detail::format_stream(stream).c_str(), size);
+    RMM_LOG_TRACE("[A][stream %s][%zuB]", rmm::detail::format_stream(stream), size);
 
     if (size <= 0) { return nullptr; }
 
@@ -215,7 +215,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     auto const block = this->underlying().get_block(size, stream_event);
 
     RMM_LOG_TRACE("[A][stream %s][%zuB][%p]",
-                  rmm::detail::format_stream(stream_event.stream).c_str(),
+                  rmm::detail::format_stream(stream_event.stream),
                   size,
                   block.pointer());
 
@@ -233,8 +233,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    */
   void do_deallocate(void* ptr, std::size_t size, cuda_stream_view stream) override
   {
-    RMM_LOG_TRACE(
-      "[D][stream %s][%zuB][%p]", rmm::detail::format_stream(stream).c_str(), size, ptr);
+    RMM_LOG_TRACE("[D][stream %s][%zuB][%p]", rmm::detail::format_stream(stream), size, ptr);
 
     if (size <= 0 || ptr == nullptr) { return; }
 
@@ -385,9 +384,9 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
         merge_lists(stream_event, blocks, other_event, std::move(other_blocks));
 
         RMM_LOG_DEBUG("[A][Stream %s][%zuB][Merged stream %s]",
-                      rmm::detail::format_stream(stream_event.stream).c_str(),
+                      rmm::detail::format_stream(stream_event.stream),
                       size,
-                      rmm::detail::format_stream(iter->first.stream).c_str());
+                      rmm::detail::format_stream(iter->first.stream));
 
         stream_free_blocks_.erase(iter);
 
@@ -416,9 +415,9 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
         if (block.is_valid()) {
           RMM_LOG_DEBUG((merge_first) ? "[A][Stream %s][%zuB][Found after merging stream %s]"
                                       : "[A][Stream %s][%zuB][Taken from stream %s]",
-                        rmm::detail::format_stream(stream_event.stream).c_str(),
+                        rmm::detail::format_stream(stream_event.stream),
                         size,
-                        rmm::detail::format_stream(iter->first.stream).c_str());
+                        rmm::detail::format_stream(iter->first.stream));
           return block;
         }
       }

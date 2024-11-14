@@ -45,15 +45,25 @@ namespace detail {
 template <typename... Args>
 std::string formatted_log(std::string const& format, Args&&... args)
 {
-  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
-  auto retsize = std::snprintf(nullptr, 0, format.c_str(), args...);
+  auto convert_to_c_string = [](auto&& arg) -> decltype(auto) {
+    using ArgType = std::decay_t<decltype(arg)>;
+    if constexpr (std::is_same_v<ArgType, std::string>) {
+      return arg.c_str();
+    } else {
+      return std::forward<decltype(arg)>(arg);
+    }
+  };
+
+  // NOLINTBEGIN(cppcoreguidelines-pro-type-vararg)
+  auto retsize =
+    std::snprintf(nullptr, 0, format.c_str(), convert_to_c_string(std::forward<Args>(args))...);
   RMM_EXPECTS(retsize >= 0, "Error during formatting.");
   if (retsize == 0) { return {}; }
   auto size = static_cast<std::size_t>(retsize) + 1;  // for null terminator
   // NOLINTNEXTLINE(modernize-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays)
   std::unique_ptr<char[]> buf(new char[size]);
-  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
-  std::snprintf(buf.get(), size, format.c_str(), args...);
+  std::snprintf(buf.get(), size, format.c_str(), convert_to_c_string(std::forward<Args>(args))...);
+  // NOLINTEND(cppcoreguidelines-pro-type-vararg)
   return {buf.get(), buf.get() + size - 1};  // drop '\0'
 }
 
