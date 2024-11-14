@@ -154,12 +154,12 @@ TEST_P(mr_ref_test_mt, Allocate) { spawn(test_various_allocations, this->ref); }
 
 TEST_P(mr_ref_test_mt, AllocateDefaultStream)
 {
-  spawn(test_various_runtime_async_allocations, this->ref, rmm::cuda_stream_view{});
+  spawn(test_various_async_allocations, this->ref, rmm::cuda_stream_view{});
 }
 
 TEST_P(mr_ref_test_mt, AllocateOnStream)
 {
-  spawn(test_various_runtime_async_allocations, this->ref, this->stream.view());
+  spawn(test_various_async_allocations, this->ref, this->stream.view());
 }
 
 TEST_P(mr_ref_test_mt, RandomAllocations)
@@ -169,7 +169,7 @@ TEST_P(mr_ref_test_mt, RandomAllocations)
 
 TEST_P(mr_ref_test_mt, RandomAllocationsDefaultStream)
 {
-  spawn(test_random_runtime_async_allocations,
+  spawn(test_random_async_allocations,
         this->ref,
         default_num_allocations,
         default_max_size,
@@ -178,7 +178,7 @@ TEST_P(mr_ref_test_mt, RandomAllocationsDefaultStream)
 
 TEST_P(mr_ref_test_mt, RandomAllocationsStream)
 {
-  spawn(test_random_runtime_async_allocations,
+  spawn(test_random_async_allocations,
         this->ref,
         default_num_allocations,
         default_max_size,
@@ -192,7 +192,7 @@ TEST_P(mr_ref_test_mt, MixedRandomAllocationFree)
 
 TEST_P(mr_ref_test_mt, MixedRandomAllocationFreeDefaultStream)
 {
-  spawn(test_mixed_random_runtime_async_allocation_free,
+  spawn(test_mixed_random_async_allocation_free,
         this->ref,
         default_max_size,
         rmm::cuda_stream_view{});
@@ -200,7 +200,7 @@ TEST_P(mr_ref_test_mt, MixedRandomAllocationFreeDefaultStream)
 
 TEST_P(mr_ref_test_mt, MixedRandomAllocationFreeStream)
 {
-  spawn(test_mixed_random_runtime_async_allocation_free,
+  spawn(test_mixed_random_async_allocation_free,
         this->ref,
         default_max_size,
         this->stream.view());
