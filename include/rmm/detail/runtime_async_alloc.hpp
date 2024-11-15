@@ -53,9 +53,6 @@ struct runtime_async_alloc {
    * @brief Check whether the specified `cudaMemAllocationHandleType` is supported on the present
    * CUDA driver/runtime version.
    *
-   * @note This query was introduced in CUDA 11.3 so on CUDA 11.2 this function will only return
-   * true for `cudaMemHandleTypeNone`.
-   *
    * @param handle_type An IPC export handle type to check for support.
    * @return true if supported
    * @return false if unsupported
@@ -63,7 +60,6 @@ struct runtime_async_alloc {
   static bool is_export_handle_type_supported(cudaMemAllocationHandleType handle_type)
   {
     int supported_handle_types_bitmask{};
-#if CUDART_VERSION >= 11030  // 11.3 introduced cudaDevAttrMemoryPoolSupportedHandleTypes
     if (cudaMemHandleTypeNone != handle_type) {
       auto const result = cudaDeviceGetAttribute(&supported_handle_types_bitmask,
                                                  cudaDevAttrMemoryPoolSupportedHandleTypes,
@@ -75,7 +71,6 @@ struct runtime_async_alloc {
       // throw any other error that may have occurred
       RMM_CUDA_TRY(result);
     }
-#endif
     return (supported_handle_types_bitmask & handle_type) == handle_type;
   }
 };
