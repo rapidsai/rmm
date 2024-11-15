@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from rmm.pylibrmm.memory_resource import (  # noqa: F401
+    ArenaMemoryResource,
     BinningMemoryResource,
     CallbackMemoryResource,
     CudaAsyncMemoryResource,

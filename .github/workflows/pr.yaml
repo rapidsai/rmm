@@ -19,6 +19,7 @@ jobs:
       - conda-python-build
       - conda-python-tests
       - docs-build
+      - telemetry-setup
       - wheel-build-cpp
       - wheel-build-python
       - wheel-tests
@@ -28,7 +29,17 @@ jobs:
     if: always()
     with:
       needs: ${{ toJSON(needs) }}
+  telemetry-setup:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+        OTEL_SERVICE_NAME: "pr-rmm"
+    steps:
+      - name: Telemetry setup
+        uses: rapidsai/shared-actions/telemetry-dispatch-stash-base-env-vars@main
   changed-files:
+    needs:
+      - telemetry-setup
     secrets: inherit
     uses: rapidsai/shared-workflows/.github/workflows/changed-files.yaml@branch-24.12
     with:
@@ -50,9 +61,12 @@ jobs:
           - '!img/**'
   checks:
     secrets: inherit
+    needs:
+      - telemetry-setup
     uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@branch-24.12
     with:
       enable_check_generated_files: false
+      ignored_pr_jobs: telemetry-summarize
   conda-cpp-build:
     needs: checks
     secrets: inherit
@@ -114,6 +128,8 @@ jobs:
       script: ci/test_wheel.sh
   devcontainer:
     secrets: inherit
+    needs:
+      - telemetry-setup
     uses: rapidsai/shared-workflows/.github/workflows/build-in-devcontainer.yaml@branch-24.12
     with:
       arch: '["amd64"]'
@@ -122,3 +138,18 @@ jobs:
         sccache -z;
         build-all -DBUILD_BENCHMARKS=ON --verbose;
         sccache -s;
+
+  telemetry-summarize:
+    runs-on: ubuntu-latest
+    needs: pr-builder
+    if: always()
+    continue-on-error: true
+    steps:
+      - name: Load stashed telemetry env vars
+        uses: rapidsai/shared-actions/telemetry-dispatch-load-base-env-vars@main
+        with:
+            load_service_name: true
+      - name: Telemetry summarize
+        uses: rapidsai/shared-actions/telemetry-dispatch-write-summary@main
+        with:
+          cert_concat: "${{ secrets.OTEL_EXPORTER_OTLP_CA_CERTIFICATE }};${{ secrets.OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE }};${{ secrets.OTEL_EXPORTER_OTLP_CLIENT_KEY }}"

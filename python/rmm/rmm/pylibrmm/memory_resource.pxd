@@ -26,6 +26,9 @@ cdef class UpstreamResourceAdaptor(DeviceMemoryResource):
 
     cpdef DeviceMemoryResource get_upstream(self)
 
+cdef class ArenaMemoryResource(UpstreamResourceAdaptor):
+    pass
+
 cdef class CudaMemoryResource(DeviceMemoryResource):
     pass
 
