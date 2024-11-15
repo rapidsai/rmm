@@ -717,9 +717,7 @@ def test_cuda_async_memory_resource_threshold(nelem, alloc):
     "mr",
     [
         rmm.mr.CudaMemoryResource,
-        pytest.param(
-            rmm.mr.CudaAsyncMemoryResource
-        ),
+        pytest.param(rmm.mr.CudaAsyncMemoryResource),
     ],
 )
 def test_limiting_resource_adaptor(mr):
