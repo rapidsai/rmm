@@ -330,6 +330,10 @@ class logger {
    * @return true if the logger supports logging, false otherwise
    */
   static constexpr bool supports_logging() { return true; }
+
+ private:
+  std::unique_ptr<spdlog::logger> impl;  ///< The spdlog logger
+  void init_logger();
 #else
   logger(std::string name, std::string filename) {}
   logger(std::string name, std::ostream& stream) {}
@@ -350,14 +354,6 @@ class logger {
   bool should_log(level_enum msg_level) const { return false; }
   void set_pattern(std::string pattern) {}
   static constexpr bool supports_logging() { return false; }
-#endif
-
- private:
-#ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_SUPPORTS_LOGGING
-  std::unique_ptr<spdlog::logger> impl;  ///< The spdlog logger
-  void init_logger();
-#else
-  void init_logger() {}
 #endif
 };
 
