@@ -16,20 +16,6 @@
 
 #pragma once
 
-#ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_BACKWARDS_COMPATIBILITY
-#include <spdlog/spdlog.h>
-#endif
-
-// We only define functions as inline when in backwards compatibility mode
-// because in that mode those functions are included in the header, just
-// defined out of band by the include of logger_impl.hpp into this file. In the
-// new mode the functions are defined in their own TU.
-#ifdef RMM_BACKWARDS_COMPATIBILITY
-#define BACKWARDS_COMPAT_INLINE inline
-#else
-#define BACKWARDS_COMPAT_INLINE
-#endif
-
 #include <memory>
 #include <ostream>
 #include <string>
@@ -74,26 +60,6 @@ inline std::string default_log_filename()
 struct bytes {
   std::size_t value;  ///< The size in bytes
 
-#ifdef RMM_BACKWARDS_COMPATIBILITY
-  /**
-   * @brief Construct a new bytes object
-   *
-   * @param os The output stream
-   * @param value The size in bytes
-   */
-  friend std::ostream& operator<<(std::ostream& os, bytes const& value)
-  {
-    static std::array units{"B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"};
-
-    int index = 0;
-    auto size = static_cast<double>(value.value);
-    while (size > 1024) {
-      size /= 1024;
-      index++;
-    }
-    return os << size << ' ' << units.at(index);
-  }
-#else
   /**
    * @brief Convert the size to a string representation.
    *
@@ -112,7 +78,6 @@ struct bytes {
     return std::to_string(size) + ' ' + units.at(index);
   }
 
-#endif
 };
 
 /**
@@ -158,14 +123,14 @@ enum class level_enum : int32_t {
 class sink {
 #ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_SUPPORTS_LOGGING
  public:
-  BACKWARDS_COMPAT_INLINE sink(spdlog::sink_ptr);
+  sink(spdlog::sink_ptr);
  private:
   spdlog::sink_ptr impl;
 #else
  public:
   // Use a template to avoid needing a definition of spdlog's sink_ptr type.
   template <typename Sink>
-  BACKWARDS_COMPAT_INLINE sink(Sink) {}
+  sink(Sink) {}
 #endif
   friend class logger;
 };
@@ -184,7 +149,7 @@ class logger {
    * @param name The name of the logger
    * @param filename The name of the log file
    */
-  BACKWARDS_COMPAT_INLINE logger(std::string name, std::string filename);
+  logger(std::string name, std::string filename);
 
   /**
    * @brief Construct a new logger object
@@ -192,7 +157,7 @@ class logger {
    * @param name The name of the logger
    * @param stream The stream to log to
    */
-  BACKWARDS_COMPAT_INLINE logger(std::string name, std::ostream& stream);
+  logger(std::string name, std::ostream& stream);
 
   /**
    * @brief Construct a new logger object
@@ -205,12 +170,12 @@ class logger {
    * iterator-based API would require templating and thus exposing spdlog
    * types.
    */
-  BACKWARDS_COMPAT_INLINE logger(std::string name, std::vector<std::shared_ptr<sink>> sinks);
+  logger(std::string name, std::vector<std::shared_ptr<sink>> sinks);
 
   /**
    * @brief Destroy the logger object
    */
-  BACKWARDS_COMPAT_INLINE ~logger();
+  ~logger();
 #else
   logger(std::string name, std::string filename) {}
   logger(std::string name, std::ostream& stream) {}
@@ -222,8 +187,8 @@ class logger {
   logger(logger const&) = delete;  ///< Not copy constructible
   logger& operator=(logger const&) = delete;  ///< Not copy assignable
 
-  BACKWARDS_COMPAT_INLINE logger(logger&&);  ///< @default_move_constructor
-  BACKWARDS_COMPAT_INLINE logger& operator=(logger&&);  ///< @default_move_assignment{logger}
+  logger(logger&&);  ///< @default_move_constructor
+  logger& operator=(logger&&);  ///< @default_move_assignment{logger}
 
 #ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_SUPPORTS_LOGGING
   /**
@@ -234,50 +199,50 @@ class logger {
    * @param lvl The log level
    * @param message The message to log
    */
-  BACKWARDS_COMPAT_INLINE void log(level_enum lvl, std::string const& message);
+  void log(level_enum lvl, std::string const& message);
 
   /**
    * @brief Add a sink to the logger.
    *
    * @param sink The sink to add
    */
-  BACKWARDS_COMPAT_INLINE void add_sink(spdlog::sink_ptr sink);
+  void add_sink(spdlog::sink_ptr sink);
 
   /**
    * @brief Remove a sink from the logger.
    *
    * @param sink The sink to remove
    */
-  BACKWARDS_COMPAT_INLINE void remove_sink(spdlog::sink_ptr sink);
+  void remove_sink(spdlog::sink_ptr sink);
 
   /**
    * @brief Get the current log level.
    *
    * @return The current log level
    */
-  BACKWARDS_COMPAT_INLINE level_enum level() const;
+  level_enum level() const;
 
   /**
    * @brief Set the log level.
    *
    * @param log_level The new log level
    */
-  BACKWARDS_COMPAT_INLINE void set_level(level_enum log_level);
+  void set_level(level_enum log_level);
 
   /**
    * @brief Flush the logger.
    */
-  BACKWARDS_COMPAT_INLINE void flush();
+  void flush();
 
   /**
    * @brief Flush all writes on the specified level or above.
    */
-  BACKWARDS_COMPAT_INLINE void flush_on(level_enum log_level);
+  void flush_on(level_enum log_level);
 
   /**
    * @brief Get the current flush level.
    */
-  BACKWARDS_COMPAT_INLINE level_enum flush_level() const;
+  level_enum flush_level() const;
 
   /**
    * @brief Check if the logger should log a message at the specified level.
@@ -285,14 +250,14 @@ class logger {
    * @param msg_level The level of the message
    * @return true if the message should be logged, false otherwise
    */
-  BACKWARDS_COMPAT_INLINE bool should_log(level_enum msg_level) const;
+  bool should_log(level_enum msg_level) const;
 
   /**
    * @brief Set the pattern for the logger.
    *
    * @param pattern The pattern to use
    */
-  BACKWARDS_COMPAT_INLINE void set_pattern(std::string pattern);
+  void set_pattern(std::string pattern);
 
   /**
    * @brief Check if the logger supports logging.
@@ -416,16 +381,11 @@ class logger {
     log(level_enum::critical, format, std::forward<Args>(args)...);
   }
 
-#ifndef @_RAPIDS_LOGGER_MACRO_PREFIX@_BACKWARDS_COMPATIBILITY
  private:
-#endif
 #ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_SUPPORTS_LOGGING
   std::unique_ptr<spdlog::logger> impl;
 #endif
 
-#ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_BACKWARDS_COMPATIBILITY
- private:
-#endif
   // TODO: When we migrate to C++20 we can use std::format and format strings
   // instead of the printf-style printing used here.
   /**
@@ -458,47 +418,12 @@ class logger {
   }
 
 #ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_SUPPORTS_LOGGING
-  BACKWARDS_COMPAT_INLINE void init_logger();
+  void init_logger();
 #else
   void init_logger() {}
 #endif
 };
 
-#ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_BACKWARDS_COMPATIBILITY
-namespace detail {
-
-/**
- * @brief Get the default logger.
- *
- * @deprecated Will be removed in 25.02.
- *
- * @return logger& The default logger
- */
-@_RAPIDS_DETAIL_FUNCTION_INLINE@ logger& default_logger();
-
-/**
- * @brief Get the default logger.
- *
- * @deprecated Will be removed in 25.02.
- *
- * @return spdlog::logger& The default logger's underlying spdlog logger
- */
-@_RAPIDS_DETAIL_FUNCTION_INLINE@ spdlog::logger& logger();
-
-}  // namespace detail
-#endif
-
-#ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_BACKWARDS_COMPATIBILITY
-inline logger& default_logger() { return detail::default_logger(); }
-
-[[deprecated(
-  "Support for direct access to spdlog loggers in rmm is planned for "
-  "removal")]] inline spdlog::logger&
-logger()
-{
-  return detail::logger();
-}
-#else
 /**
  * @brief Get the default logger.
  *
@@ -521,7 +446,6 @@ inline logger& default_logger()
   }();
   return logger_;
 }
-#endif
 
 // Macros for easier logging, similar to spdlog.
 // TODO: The macros below assume that we want to respect spdlog's level macros
@@ -569,7 +493,3 @@ inline logger& default_logger()
 #endif
 
 }  // namespace @_RAPIDS_LOGGER_NAMESPACE@
-
-#ifdef RMM_BACKWARDS_COMPATIBILITY
-#include "logger_impl/logger_impl.hpp"
-#endif

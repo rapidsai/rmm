@@ -28,10 +28,6 @@
 
 #include <cuda_runtime_api.h>
 
-#ifdef RMM_BACKWARDS_COMPATIBILITY
-#include <spdlog/common.h>
-#endif
-
 #include <algorithm>
 #include <cstddef>
 #include <limits>
@@ -647,13 +643,9 @@ class global_arena final {
   /**
    * @brief Dump memory to log.
    *
-   * @param logger the spdlog logger to use
+   * @param logger the logger to use
    */
-#ifdef RMM_BACKWARDS_COMPATIBILITY
-  RMM_HIDDEN void dump_memory_log(std::shared_ptr<spdlog::logger> const& logger) const
-#else
   void dump_memory_log(std::shared_ptr<logger> const& logger) const
-#endif
   {
     std::lock_guard lock(mtx_);
 

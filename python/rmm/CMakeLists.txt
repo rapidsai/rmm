@@ -34,8 +34,9 @@ add_compile_definitions("SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
 # when we find_package(rmm) already have that setting baked in. TODO: Figure out how to use
 # define_property in the C++ build to make SUPPORTS_LOGGING a queryable property that can be checked
 # here. Otherwise we just assume that the Python package is never built against a C++ rmm without
-# logging support. add_library(cpp_logger OBJECT) target_link_libraries(cpp_logger PRIVATE
-# rmm::rmm_logger_impl)
+# logging support.
+add_library(cpp_logger OBJECT)
+target_link_libraries(cpp_logger PRIVATE rmm::rmm_logger_impl)
 
 add_subdirectory(rmm/_cuda)
 add_subdirectory(rmm/librmm)

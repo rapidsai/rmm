@@ -44,7 +44,6 @@ function(ConfigureTestInternal TEST_NAME)
                              PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
   target_compile_options(${TEST_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Wall -Werror>)
 
-  # When not building in compatibility mode, each testhas to recompile the logger.
   if(TARGET rmm_test_logger)
     target_link_libraries(${TEST_NAME} PRIVATE rmm_test_logger)
   endif()
@@ -125,7 +124,7 @@ endfunction()
 
 # Create an object library for the logger so that we don't have to recompile it. This is not
 # necessary if logging is unsupported since then the header-only implementation is sufficient.
-if(RMM_SUPPORTS_LOGGING AND NOT RMM_LOGGING_COMPATIBILITY)
+if(RMM_SUPPORTS_LOGGING)
   add_library(rmm_test_logger OBJECT)
   target_link_libraries(rmm_test_logger PRIVATE rmm_logger_impl)
 endif()

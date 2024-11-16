@@ -27,10 +27,6 @@
 
 #include <cuda_runtime_api.h>
 
-#ifdef RMM_BACKWARDS_COMPATIBILITY
-#include <spdlog/common.h>
-#endif
-
 #include <cstddef>
 #include <map>
 #include <shared_mutex>
@@ -100,18 +96,9 @@ class arena_memory_resource final : public device_memory_resource {
     : global_arena_{upstream_mr, arena_size}, dump_log_on_failure_{dump_log_on_failure}
   {
     if (dump_log_on_failure_) {
-#ifdef RMM_BACKWARDS_COMPATIBILITY
-      logger_ =
-        std::make_shared<spdlog::logger>("arena_memory_dump",
-                                         std::make_shared<spdlog::sinks::basic_file_sink_mt>(
-                                           "rmm_arena_memory_dump.log", true /*truncate file*/));
-      // Set the level to `debug` for more detailed output.
-      logger_->set_level(spdlog::level::info);
-#else
       logger_ = std::make_shared<logger>("arena_memory_dump", "rmm_arena_memory_dump.log");
       // Set the level to `debug` for more detailed output.
       logger_->set_level(level_enum::info);
-#endif
     }
   }
 
@@ -366,11 +353,7 @@ class arena_memory_resource final : public device_memory_resource {
   /// If true, dump memory information to log on allocation failure.
   bool dump_log_on_failure_{};
   /// The logger for memory dump.
-#ifdef RMM_BACKWARDS_COMPATIBILITY
-  std::shared_ptr<spdlog::logger> logger_{};
-#else
   std::shared_ptr<logger> logger_{};
-#endif
   /// Mutex for read and write locks on arena maps.
   mutable std::shared_mutex map_mtx_;
   /// Mutex for shared and unique locks on the mr.

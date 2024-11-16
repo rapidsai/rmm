@@ -34,10 +34,6 @@
 #include <benchmarks/utilities/log_parser.hpp>
 #include <benchmarks/utilities/simulated_memory_resource.hpp>
 
-#ifdef RMM_BACKWARDS_COMPATIBILITY
-#include <spdlog/common.h>
-#endif
-
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
@@ -407,7 +403,7 @@ int main(int argc, char** argv)
     auto const num_threads = per_thread_events.size();
 
     // Uncomment to enable / change default log level
-    // rmm::detail::logger().set_level(spdlog::level::trace);
+    // rmm::logger().set_level(rmm::level_enum::trace);
 
     if (args.count("resource") > 0) {
       std::string mr_name = args["resource"].as<std::string>();

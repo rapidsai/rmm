@@ -16,15 +16,8 @@
 
 #pragma once
 
-// We'll flip the include once this
-#ifndef RMM_BACKWARDS_COMPATIBILITY
 #include "../logger.hpp"
-#endif
 
-#ifdef RMM_BACKWARDS_COMPATIBILITY
-#include <fmt/format.h>
-#include <fmt/ostream.h>
-#endif
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/ostream_sink.h>
 #include <spdlog/spdlog.h>
@@ -52,12 +45,12 @@ inline level_enum string_to_level(std::string_view const env_lvl_str)
     throw std::invalid_argument(os.str());
 }
 
-BACKWARDS_COMPAT_INLINE spdlog::level::level_enum to_spdlog_level(level_enum lvl)
+spdlog::level::level_enum to_spdlog_level(level_enum lvl)
 {
   return static_cast<spdlog::level::level_enum>(static_cast<int32_t>(lvl));
 }
 
-BACKWARDS_COMPAT_INLINE level_enum from_spdlog_level(spdlog::level::level_enum lvl)
+level_enum from_spdlog_level(spdlog::level::level_enum lvl)
 {
   return static_cast<level_enum>(static_cast<int32_t>(lvl));
 }
@@ -66,7 +59,7 @@ BACKWARDS_COMPAT_INLINE level_enum from_spdlog_level(spdlog::level::level_enum l
 
 
 // Sink methods
-BACKWARDS_COMPAT_INLINE sink::sink(spdlog::sink_ptr sink) : impl{sink} {}
+sink::sink(spdlog::sink_ptr sink) : impl{sink} {}
 
 // Logger methods
 // TODO: This constructor and the one below introduce some undesirable
@@ -79,7 +72,7 @@ BACKWARDS_COMPAT_INLINE sink::sink(spdlog::sink_ptr sink) : impl{sink} {}
 // std::shared_ptr<spdlog::sinks::sink> add_sink/remove_sink functions, but
 // those don't introduce any vtable or tbypeinfo entries (presumably because
 // the class doesn't actually implement any virtual functions).
-BACKWARDS_COMPAT_INLINE logger::logger(std::string name, std::string filename)
+logger::logger(std::string name, std::string filename)
   : impl{std::make_unique<spdlog::logger>(
         name,
         std::make_shared<spdlog::sinks::basic_file_sink_mt>(filename, true  // truncate file
@@ -88,7 +81,7 @@ BACKWARDS_COMPAT_INLINE logger::logger(std::string name, std::string filename)
   init_logger();
 }
 
-BACKWARDS_COMPAT_INLINE logger::logger(std::string name, std::ostream& stream)
+logger::logger(std::string name, std::ostream& stream)
   : impl{std::make_unique<spdlog::logger>(
         name,
         std::make_shared<spdlog::sinks::ostream_sink_mt>(stream))}
@@ -96,7 +89,7 @@ BACKWARDS_COMPAT_INLINE logger::logger(std::string name, std::ostream& stream)
     init_logger();
 }
 
-BACKWARDS_COMPAT_INLINE logger::logger(std::string name, std::vector<std::shared_ptr<sink>> sinks)
+logger::logger(std::string name, std::vector<std::shared_ptr<sink>> sinks)
 {
   std::vector<spdlog::sink_ptr> spdlog_sinks;
   spdlog_sinks.reserve(sinks.size());
@@ -107,7 +100,7 @@ BACKWARDS_COMPAT_INLINE logger::logger(std::string name, std::vector<std::shared
   init_logger();
 }
 
-BACKWARDS_COMPAT_INLINE void logger::init_logger() {
+void logger::init_logger() {
     impl->set_pattern("[%6t][%H:%M:%S:%f][%-6l] %v");
     auto const env_logging_level = std::getenv("@_RAPIDS_LOGGER_MACRO_PREFIX@_DEFAULT_LOGGING_LEVEL");
     if (env_logging_level != nullptr) {
@@ -119,60 +112,23 @@ BACKWARDS_COMPAT_INLINE void logger::init_logger() {
     }
   }
 
-BACKWARDS_COMPAT_INLINE logger::~logger() = default;
-BACKWARDS_COMPAT_INLINE logger::logger(logger&&) = default;
-#ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_BACKWARDS_COMPATIBILITY
-BACKWARDS_COMPAT_INLINE class logger& logger::operator=(logger&&) = default;
-#else
-BACKWARDS_COMPAT_INLINE logger& logger::operator=(logger&&) = default;
-#endif
+logger::~logger() = default;
+logger::logger(logger&&) = default;
+logger& logger::operator=(logger&&) = default;
 
-BACKWARDS_COMPAT_INLINE void logger::log(level_enum lvl, std::string const& message) { impl->log(detail::to_spdlog_level(lvl), message); }
+void logger::log(level_enum lvl, std::string const& message) { impl->log(detail::to_spdlog_level(lvl), message); }
 
-BACKWARDS_COMPAT_INLINE void logger::set_level(level_enum log_level) { impl->set_level(detail::to_spdlog_level(log_level)); }
-BACKWARDS_COMPAT_INLINE void logger::flush() { impl->flush(); }
-BACKWARDS_COMPAT_INLINE void logger::flush_on(level_enum log_level) { impl->flush_on(detail::to_spdlog_level(log_level)); }
-BACKWARDS_COMPAT_INLINE level_enum logger::flush_level() const { return detail::from_spdlog_level(impl->flush_level()); }
-BACKWARDS_COMPAT_INLINE bool logger::should_log(level_enum lvl) const { return impl->should_log(detail::to_spdlog_level(lvl)); }
-BACKWARDS_COMPAT_INLINE void logger::add_sink(spdlog::sink_ptr sink) { impl->sinks().push_back(sink); }
-BACKWARDS_COMPAT_INLINE void logger::remove_sink(spdlog::sink_ptr sink) {
+void logger::set_level(level_enum log_level) { impl->set_level(detail::to_spdlog_level(log_level)); }
+void logger::flush() { impl->flush(); }
+void logger::flush_on(level_enum log_level) { impl->flush_on(detail::to_spdlog_level(log_level)); }
+level_enum logger::flush_level() const { return detail::from_spdlog_level(impl->flush_level()); }
+bool logger::should_log(level_enum lvl) const { return impl->should_log(detail::to_spdlog_level(lvl)); }
+void logger::add_sink(spdlog::sink_ptr sink) { impl->sinks().push_back(sink); }
+void logger::remove_sink(spdlog::sink_ptr sink) {
   auto& sinks = impl->sinks();
   sinks.erase(std::remove(sinks.begin(), sinks.end(), sink), sinks.end());
 }
-BACKWARDS_COMPAT_INLINE level_enum logger::level() const { return detail::from_spdlog_level(impl->level()); }
-BACKWARDS_COMPAT_INLINE void logger::set_pattern(std::string pattern) { impl->set_pattern(pattern); }
-
-#ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_BACKWARDS_COMPATIBILITY
-namespace detail {
-
-@_RAPIDS_DETAIL_FUNCTION_INLINE@ class logger& default_logger()
-{
-  static class logger logger_ = [] {
-    class logger logger_ {
-      "RAPIDS", detail::default_log_filename()
-    };
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_INFO
-#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-    logger_.info("----- RAPIDS LOG BEGIN [PTDS ENABLED] -----");
-#else
-    logger_.info("----- RAPIDS LOG BEGIN [PTDS DISABLED] -----");
-#endif
-#endif
-    return logger_;
-  }();
-  return logger_;
-}
-
-@_RAPIDS_DETAIL_FUNCTION_INLINE@ class spdlog::logger& logger() { return *(default_logger().impl); }
-
-}  // namespace detail
-#endif
+level_enum logger::level() const { return detail::from_spdlog_level(impl->level()); }
+void logger::set_pattern(std::string pattern) { impl->set_pattern(pattern); }
 
 }  // namespace @_RAPIDS_LOGGER_NAMESPACE@
-
-#ifdef RMM_BACKWARDS_COMPATIBILITY
-// Doxygen doesn't like this because we're overloading something from fmt
-//! @cond Doxygen_Suppress
-template <>
-struct fmt::formatter<@_RAPIDS_LOGGER_NAMESPACE@::detail::bytes> : fmt::ostream_formatter {};
-#endif

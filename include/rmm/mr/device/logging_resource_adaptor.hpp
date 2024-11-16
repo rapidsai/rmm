@@ -23,13 +23,6 @@
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
-#ifdef RMM_BACKWARDS_COMPATIBILITY
-#include <spdlog/common.h>
-#include <spdlog/sinks/basic_file_sink.h>
-#include <spdlog/sinks/ostream_sink.h>
-#include <spdlog/spdlog.h>
-#endif
-
 #include <cstddef>
 #include <cstdio>
 #include <memory>
@@ -119,14 +112,6 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @param auto_flush If true, flushes the log for every (de)allocation. Warning, this will degrade
    * performance.
    */
-#ifdef RMM_BACKWARDS_COMPATIBILITY
-  logging_resource_adaptor(Upstream* upstream,
-                           spdlog::sinks_init_list sinks,
-                           bool auto_flush = false)
-    : logging_resource_adaptor{to_device_async_resource_ref_checked(upstream), sinks, auto_flush}
-  {
-  }
-#else
   template <typename SinkPtr>
   logging_resource_adaptor(Upstream* upstream,
                            std::initializer_list<SinkPtr> sinks,
@@ -134,7 +119,6 @@ class logging_resource_adaptor final : public device_memory_resource {
     : logging_resource_adaptor{to_device_async_resource_ref_checked(upstream), sinks, auto_flush}
   {
   }
-#endif
 
   /**
    * @brief Construct a new logging resource adaptor using `upstream` to satisfy
@@ -194,14 +178,6 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @param auto_flush If true, flushes the log for every (de)allocation. Warning, this will degrade
    * performance.
    */
-#ifdef RMM_BACKWARDS_COMPATIBILITY
-  logging_resource_adaptor(device_async_resource_ref upstream,
-                           spdlog::sinks_init_list sinks,
-                           bool auto_flush = false)
-    : logging_resource_adaptor{make_logger(sinks), upstream, auto_flush}
-  {
-  }
-#else
   template <typename SinkPtr>
   logging_resource_adaptor(device_async_resource_ref upstream,
                            std::initializer_list<SinkPtr> sinks,
@@ -209,7 +185,6 @@ class logging_resource_adaptor final : public device_memory_resource {
     : logging_resource_adaptor{make_logger(sinks), upstream, auto_flush}
   {
   }
-#endif
 
   logging_resource_adaptor()                                           = delete;
   ~logging_resource_adaptor() override                                 = default;
@@ -259,24 +234,11 @@ class logging_resource_adaptor final : public device_memory_resource {
   }
 
  private:
-  static auto make_logger(std::ostream& stream)
-  {
-#ifdef RMM_BACKWARDS_COMPATIBILITY
-    return std::make_shared<spdlog::logger>(
-      "RMM", std::make_shared<spdlog::sinks::ostream_sink_mt>(stream));
-#else
-    return std::make_shared<logger>("RMM", stream);
-#endif
-  }
+  static auto make_logger(std::ostream& stream) { return std::make_shared<logger>("RMM", stream); }
 
   static auto make_logger(std::string const& filename)
   {
-#ifdef RMM_BACKWARDS_COMPATIBILITY
-    return std::make_shared<spdlog::logger>(
-      "RMM", std::make_shared<spdlog::sinks::basic_file_sink_mt>(filename, true /*truncate file*/));
-#else
     return std::make_shared<logger>("RMM", filename);
-#endif
   }
 
   // TODO: See if there is a way to make this function only valid for our sink
@@ -286,9 +248,6 @@ class logging_resource_adaptor final : public device_memory_resource {
   template <typename SinkPtr>
   static auto make_logger(std::initializer_list<SinkPtr> sinks)
   {
-#ifdef RMM_BACKWARDS_COMPATIBILITY
-    return std::make_shared<spdlog::logger>("RMM", sinks);
-#else
     // Support passing either
     if constexpr (std::is_same_v<SinkPtr, sink>) {
       return std::make_shared<logger>("RMM", sinks);
@@ -300,23 +259,14 @@ class logging_resource_adaptor final : public device_memory_resource {
       }
       return std::make_shared<logger>("RMM", std::move(rmm_sinks));
     }
-#endif
   }
 
-#ifdef RMM_BACKWARDS_COMPATIBILITY
-  logging_resource_adaptor(std::shared_ptr<spdlog::logger> logger,
-#else
   logging_resource_adaptor(std::shared_ptr<logger> logger,
-#endif
                            device_async_resource_ref upstream,
                            bool auto_flush)
     : logger_{logger}, upstream_{upstream}
   {
-#ifdef RMM_BACKWARDS_COMPATIBILITY
-    if (auto_flush) { logger_->flush_on(spdlog::level::info); }
-#else
     if (auto_flush) { logger_->flush_on(level_enum::info); }
-#endif
     logger_->set_pattern("%v");
     logger_->info(header());
     logger_->set_pattern("%t,%H:%M:%S.%f,%v");
@@ -397,11 +347,7 @@ class logging_resource_adaptor final : public device_memory_resource {
     return get_upstream_resource() == cast->get_upstream_resource();
   }
 
-#ifdef RMM_BACKWARDS_COMPATIBILITY
-  std::shared_ptr<spdlog::logger> logger_;  ///< spdlog logger object
-#else
   std::shared_ptr<logger> logger_{};
-#endif
 
   device_async_resource_ref upstream_;  ///< The upstream resource used for satisfying
                                         ///< allocation requests

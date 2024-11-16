@@ -13,11 +13,7 @@
 # =============================================================================
 
 set(cython_sources device_buffer.pyx logger.pyx memory_resource.pyx cuda_stream.pyx helper.pyx)
-if(TARGET cpp_logger)
-  set(linked_libraries rmm::rmm cpp_logger)
-else()
-  set(linked_libraries rmm::rmm)
-endif()
+set(linked_libraries rmm::rmm cpp_logger)
 
 # Build all of the Cython targets
 rapids_cython_create_modules(SOURCE_FILES "${cython_sources}" LINKED_LIBRARIES "${linked_libraries}"

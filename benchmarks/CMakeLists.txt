@@ -45,7 +45,6 @@ function(ConfigureBench BENCH_NAME)
   target_compile_options(${BENCH_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Wall -Werror
                                               -Wno-unknown-pragmas>)
 
-  # When not building in compatibility mode, each benchmark has to recompile the logger.
   if(TARGET rmm_bench_logger)
     target_link_libraries(${BENCH_NAME} PRIVATE rmm_bench_logger)
   endif()
@@ -66,7 +65,7 @@ endfunction(ConfigureBench)
 
 # Create an object library for the logger so that we don't have to recompile it. This is not
 # necessary if logging is unsupported since then the header-only implementation is sufficient.
-if(RMM_SUPPORTS_LOGGING AND NOT RMM_LOGGING_COMPATIBILITY)
+if(RMM_SUPPORTS_LOGGING)
   add_library(rmm_bench_logger OBJECT)
   target_link_libraries(rmm_bench_logger PRIVATE rmm_logger_impl)
 endif()

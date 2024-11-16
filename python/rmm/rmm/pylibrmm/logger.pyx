@@ -14,27 +14,14 @@
 
 import warnings
 
-# Note: This must match the LOGGING_COMPATIBILITY setting in CMakeLists.txt for
-# the C++ build or the build will fail since the expected symbols will not exist.
-DEF LOGGING_COMPATIBILITY = True
+from rmm.librmm._logger cimport default_logger
 
-IF LOGGING_COMPATIBILITY:
-    from rmm.librmm._logger cimport logger
-
-    from rmm.librmm._logger import logging_level
-ELSE:
-    from rmm.librmm._logger cimport default_logger as logger
-
-    from rmm.librmm._logger import level_enum
+from rmm.librmm._logger import level_enum
 
 
 def _validate_level_type(level):
-    IF LOGGING_COMPATIBILITY:
-        if not isinstance(level, logging_level):
-            raise TypeError("level must be an instance of the logging_level enum")
-    ELSE:
-        if not isinstance(level, level_enum):
-            raise TypeError("level must be an instance of the level_enum enum")
+    if not isinstance(level, level_enum):
+        raise TypeError("level must be an instance of the level_enum enum")
 
 
 def should_log(level):
@@ -67,7 +54,7 @@ def should_log(level):
         If the logging level is not an instance of the ``logging_level`` enum.
     """
     _validate_level_type(level)
-    return logger().should_log(level)
+    return default_logger().should_log(level)
 
 
 def set_logging_level(level):
@@ -99,10 +86,10 @@ def set_logging_level(level):
     >>> rmm.set_logging_level(rmm.logging_level.WARN) # set logging level to warn
     """
     _validate_level_type(level)
-    logger().set_level(level)
+    default_logger().set_level(level)
 
     if not should_log(level):
-        warnings.warn(f"RMM will not log logging_level.{level.name}. This "
+        warnings.warn(f"RMM will not log level_enum.{level.name}. This "
                       "may be because the C++ library is compiled for a "
                       "less-verbose logging level.")
 
@@ -131,7 +118,7 @@ def get_logging_level():
     >>> rmm.get_logging_level() # get current logging level
     <logging_level.INFO: 2>
     """
-    return logger().level()
+    return default_logger().level()
 
 
 def flush_logger():
@@ -153,7 +140,7 @@ def flush_logger():
     >>> import rmm
     >>> rmm.flush_logger() # flush the logger
     """
-    logger().flush()
+    default_logger().flush()
 
 
 def set_flush_level(level):
@@ -187,10 +174,10 @@ def set_flush_level(level):
     >>> rmm.flush_on(rmm.logging_level.WARN) # set flush level to warn
     """
     _validate_level_type(level)
-    logger().flush_on(level)
+    default_logger().flush_on(level)
 
     if not should_log(level):
-        warnings.warn(f"RMM will not log logging_level.{level.name}. This "
+        warnings.warn(f"RMM will not log level_enum.{level.name}. This "
                       "may be because the C++ library is compiled for a "
                       "less-verbose logging level.")
 
@@ -221,4 +208,4 @@ def get_flush_level():
     >>> rmm.flush_level() # get current flush level
     <logging_level.INFO: 2>
     """
-    return logger().flush_level()
+    return default_logger().flush_level()

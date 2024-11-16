@@ -29,13 +29,7 @@ import rmm
 import rmm._cuda.stream
 from rmm.allocators.cupy import rmm_cupy_allocator
 from rmm.allocators.numba import RMMNumbaManager
-
-# TODO: Clean up after we remove legacy logging.
-try:
-    from rmm.pylibrmm.logger import logging_level
-except ImportError:
-    from rmm.pylibrmm.logger import level_enum as logging_level
-
+from rmm.pylibrmm.logger import level_enum
 
 cuda.set_memory_manager(RMMNumbaManager)
 
@@ -1071,20 +1065,15 @@ def test_rmm_device_buffer_copy(cuda_ary, make_copy):
 # TODO: This won't work when logging is disabled in C++, but I think we should
 # assume that the Python package is always built against a librmm with logging
 # support.
-@pytest.mark.parametrize("level", logging_level)
+@pytest.mark.parametrize("level", level_enum)
 def test_valid_logging_level(level):
-    # TODO: Clean up after we remove legacy logging.
-    # Note that we cannot specify the default value to getattr since that would
-    # always be run, but with `or` we can rely on short-circuiting.
-    default_level = getattr(logging_level, "INFO", None) or getattr(
-        logging_level, "info"
-    )
+    default_level = level_enum.info
     with warnings.catch_warnings():
         warnings.filterwarnings(
-            "ignore", message="RMM will not log logging_level.TRACE."
+            "ignore", message="RMM will not log level_enum.trace."
         )
         warnings.filterwarnings(
-            "ignore", message="RMM will not log logging_level.DEBUG."
+            "ignore", message="RMM will not log level_enum.debug."
         )
         rmm.set_logging_level(level)
         assert rmm.get_logging_level() == level
