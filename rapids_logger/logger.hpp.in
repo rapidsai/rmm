@@ -201,18 +201,20 @@ class logger {
   // TODO: When we migrate to C++20 we can use std::format and format strings
   // instead of the printf-style printing used here.
   /**
-   * @brief Format and log a message.
+   * @brief Format a message string with printf-style formatting
    *
    * This function performs printf-style formatting to avoid the need for fmt
    * or spdlog's own templated APIs (which would require exposing spdlog
-   * symbols publicly) and then logs the formatted message.
+   * symbols publicly) and returns the formatted message as a `std::string`.
    *
-   * @param lvl The log level
    * @param format The format string
    * @param args The format arguments
+   * @return The formatted message
+   * @throw rmm::logic_error if an error occurs during formatting
    */
   template <typename... Args>
-  void formatted_log(level_enum lvl, std::string const& format, Args&&... args) {
+  void formatted_log(level_enum lvl, std::string const& format, Args&&... args)
+  {
     auto convert_to_c_string = [](auto&& arg) -> decltype(auto) {
       using ArgType = std::decay_t<decltype(arg)>;
       if constexpr (std::is_same_v<ArgType, std::string>) {
@@ -222,11 +224,17 @@ class logger {
       }
     };
 
-    auto size = static_cast<size_t>(std::snprintf(nullptr, 0, format.c_str(), convert_to_c_string(std::forward<Args>(args))...) + 1);
-    if (size <= 0) { throw std::runtime_error("Error during formatting."); }
+    // NOLINTBEGIN(cppcoreguidelines-pro-type-vararg)
+    auto formatted_size =
+      std::snprintf(nullptr, 0, format.c_str(), convert_to_c_string(std::forward<Args>(args))...);
+    RMM_EXPECTS(formatted_size >= 0, "Error during formatting.");
+    if (formatted_size == 0) { log(lvl, {}); }
+    auto size = static_cast<std::size_t>(formatted_size) + 1;  // for null terminator
+    // NOLINTNEXTLINE(modernize-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays)
     std::unique_ptr<char[]> buf(new char[size]);
     std::snprintf(buf.get(), size, format.c_str(), convert_to_c_string(std::forward<Args>(args))...);
-    log(lvl, {buf.get(), buf.get() + size - 1});
+    // NOLINTEND(cppcoreguidelines-pro-type-vararg)
+    log(lvl, {buf.get(), buf.get() + size - 1});  // drop '\0'
   }
 
   // Everything below here is conditionally compiled based on whether logging is supported.
