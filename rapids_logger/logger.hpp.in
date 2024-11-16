@@ -138,7 +138,7 @@ class logger {
     // NOLINTBEGIN(cppcoreguidelines-pro-type-vararg)
     auto formatted_size =
       std::snprintf(nullptr, 0, format.c_str(), convert_to_c_string(std::forward<Args>(args))...);
-    RMM_EXPECTS(formatted_size >= 0, "Error during formatting.");
+    if (formatted_size < 0) { throw std::runtime_error("Error during formatting."); }
     if (formatted_size == 0) { log(lvl, {}); }
     auto size = static_cast<std::size_t>(formatted_size) + 1;  // for null terminator
     // NOLINTNEXTLINE(modernize-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays)
