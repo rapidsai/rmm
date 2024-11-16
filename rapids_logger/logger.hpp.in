@@ -36,26 +36,6 @@ using sink_ptr = std::shared_ptr<sinks::sink>;
 
 namespace @_RAPIDS_VISIBILITY_MACRO@ @_RAPIDS_LOGGER_NAMESPACE@ {
 
-namespace detail {
-
-/**
- * @brief Returns the default log filename for the RMM global logger.
- *
- * If the environment variable `RAPIDS_DEBUG_LOG_FILE` is defined, its value is used as the path and
- * name of the log file. Otherwise, the file `@_RAPIDS_LOGGER_NAMESPACE@_log.txt` in the current working directory is used.
- *
- * @return std::string The default log file name.
- */
-inline std::string default_log_filename()
-{
-  auto* filename = std::getenv("@_RAPIDS_LOGGER_MACRO_PREFIX@_DEBUG_LOG_FILE");
-  // TODO: Do we prefer rmm's default (a file rmm_log.txt) or cudf's default (a
-  // stderr sink)? I think the latter is better.
-  return (filename == nullptr) ? std::string{"@_RAPIDS_LOGGER_NAMESPACE@_log.txt"} : std::string{filename};
-}
-
-}  // namespace detail
-
 // These values must be kept in sync with spdlog!
 #define @_RAPIDS_LOGGER_MACRO_PREFIX@_LEVEL_TRACE    0
 #define @_RAPIDS_LOGGER_MACRO_PREFIX@_LEVEL_DEBUG    1
@@ -359,6 +339,22 @@ class logger {
 
 
 /**
+ * @brief Returns the default log filename for the global logger.
+ *
+ * If the environment variable `@_RAPIDS_LOGGER_NAMESPACE@_DEBUG_LOG_FILE` is defined, its value is used as the path and
+ * name of the log file. Otherwise, the file `@_RAPIDS_LOGGER_NAMESPACE@_log.txt` in the current working directory is used.
+ *
+ * @return std::string The default log file name.
+ */
+inline std::string default_log_filename()
+{
+  auto* filename = std::getenv("@_RAPIDS_LOGGER_MACRO_PREFIX@_DEBUG_LOG_FILE");
+  // TODO: Do we prefer rmm's default (a file rmm_log.txt) or cudf's default (a
+  // stderr sink)? I think the latter is better.
+  return (filename == nullptr) ? std::string{"@_RAPIDS_LOGGER_NAMESPACE@_log.txt"} : std::string{filename};
+}
+
+/**
  * @brief Get the default logger.
  *
  * @return logger& The default logger
@@ -367,7 +363,7 @@ inline logger& default_logger()
 {
   static logger logger_ = [] {
     logger logger_ {
-      "RAPIDS", detail::default_log_filename()
+      "RAPIDS", default_log_filename()
     };
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_INFO
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
