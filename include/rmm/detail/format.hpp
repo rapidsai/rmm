@@ -20,11 +20,7 @@
 
 #include <array>
 #include <cstdio>
-#include <ios>
-#include <iostream>
-#include <memory>
 #include <sstream>
-#include <stdexcept>
 #include <string>
 
 namespace RMM_NAMESPACE {
