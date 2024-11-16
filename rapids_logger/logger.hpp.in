@@ -119,7 +119,6 @@ enum class level_enum : int32_t {
   n_levels
 };
 
-
 class sink {
 #ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_SUPPORTS_LOGGING
  public:
@@ -142,146 +141,12 @@ class sink {
  */
 class logger {
  public:
-#ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_SUPPORTS_LOGGING
-  /**
-   * @brief Construct a new logger object
-   *
-   * @param name The name of the logger
-   * @param filename The name of the log file
-   */
-  logger(std::string name, std::string filename);
-
-  /**
-   * @brief Construct a new logger object
-   *
-   * @param name The name of the logger
-   * @param stream The stream to log to
-   */
-  logger(std::string name, std::ostream& stream);
-
-  /**
-   * @brief Construct a new logger object
-   *
-   * @param name The name of the logger
-   * @param sinks The sinks to log to
-   *
-   * Note that we must use a vector because initializer_lists are not flexible
-   * enough to support programmatic construction in callers, and an
-   * iterator-based API would require templating and thus exposing spdlog
-   * types.
-   */
-  logger(std::string name, std::vector<std::shared_ptr<sink>> sinks);
-
-  /**
-   * @brief Destroy the logger object
-   */
-  ~logger();
-#else
-  logger(std::string name, std::string filename) {}
-  logger(std::string name, std::ostream& stream) {}
-  logger(std::string name, std::vector<std::shared_ptr<sink>> sinks) {}
-  ~logger() = default;
-#endif
-
   logger() = delete;  ///< Not default constructible
   logger(logger const&) = delete;  ///< Not copy constructible
   logger& operator=(logger const&) = delete;  ///< Not copy assignable
 
   logger(logger&&);  ///< @default_move_constructor
   logger& operator=(logger&&);  ///< @default_move_assignment{logger}
-
-#ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_SUPPORTS_LOGGING
-  /**
-   * @brief Log a message at the specified level.
-   *
-   * This is the core logging routine that dispatches to spdlog.
-   *
-   * @param lvl The log level
-   * @param message The message to log
-   */
-  void log(level_enum lvl, std::string const& message);
-
-  /**
-   * @brief Add a sink to the logger.
-   *
-   * @param sink The sink to add
-   */
-  void add_sink(spdlog::sink_ptr sink);
-
-  /**
-   * @brief Remove a sink from the logger.
-   *
-   * @param sink The sink to remove
-   */
-  void remove_sink(spdlog::sink_ptr sink);
-
-  /**
-   * @brief Get the current log level.
-   *
-   * @return The current log level
-   */
-  level_enum level() const;
-
-  /**
-   * @brief Set the log level.
-   *
-   * @param log_level The new log level
-   */
-  void set_level(level_enum log_level);
-
-  /**
-   * @brief Flush the logger.
-   */
-  void flush();
-
-  /**
-   * @brief Flush all writes on the specified level or above.
-   */
-  void flush_on(level_enum log_level);
-
-  /**
-   * @brief Get the current flush level.
-   */
-  level_enum flush_level() const;
-
-  /**
-   * @brief Check if the logger should log a message at the specified level.
-   *
-   * @param msg_level The level of the message
-   * @return true if the message should be logged, false otherwise
-   */
-  bool should_log(level_enum msg_level) const;
-
-  /**
-   * @brief Set the pattern for the logger.
-   *
-   * @param pattern The pattern to use
-   */
-  void set_pattern(std::string pattern);
-
-  /**
-   * @brief Check if the logger supports logging.
-   *
-   * @return true if the logger supports logging, false otherwise
-   */
-  static constexpr bool supports_logging() { return true; }
-#else
-  void log(level_enum lvl, std::string const& message) {}
-  // When logging is not supported we won't have a spdlog sink_ptr type defined
-  // when this function is, so a template is used to capture the user's type.
-  template <typename Sink>
-  void add_sink(Sink sink) {}
-  template <typename Sink>
-  void remove_sink(Sink sink) {}
-  level_enum level() const { return level_enum::off; }
-  void set_level(level_enum log_level) {}
-  void flush() {}
-  void flush_on(level_enum log_level) {}
-  level_enum flush_level() { return level_enum::off; }
-  bool should_log(level_enum msg_level) const { return false; }
-  void set_pattern(std::string pattern) {}
-  static constexpr bool supports_logging() { return false; }
-#endif
 
   /**
    * @brief Log a message at the specified level.
@@ -382,10 +247,6 @@ class logger {
   }
 
  private:
-#ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_SUPPORTS_LOGGING
-  std::unique_ptr<spdlog::logger> impl;
-#endif
-
   // TODO: When we migrate to C++20 we can use std::format and format strings
   // instead of the printf-style printing used here.
   /**
@@ -417,12 +278,148 @@ class logger {
     log(lvl, {buf.get(), buf.get() + size - 1});
   }
 
+  // Everything below here is conditionally compiled based on whether logging is supported.
+ public:
 #ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_SUPPORTS_LOGGING
+  /**
+   * @brief Construct a new logger object
+   *
+   * @param name The name of the logger
+   * @param filename The name of the log file
+   */
+  logger(std::string name, std::string filename);
+
+  /**
+   * @brief Construct a new logger object
+   *
+   * @param name The name of the logger
+   * @param stream The stream to log to
+   */
+  logger(std::string name, std::ostream& stream);
+
+  /**
+   * @brief Construct a new logger object
+   *
+   * @param name The name of the logger
+   * @param sinks The sinks to log to
+   *
+   * Note that we must use a vector because initializer_lists are not flexible
+   * enough to support programmatic construction in callers, and an
+   * iterator-based API would require templating and thus exposing spdlog
+   * types.
+   */
+  logger(std::string name, std::vector<std::shared_ptr<sink>> sinks);
+
+  /**
+   * @brief Destroy the logger object
+   */
+  ~logger();
+
+  /**
+   * @brief Log a message at the specified level.
+   *
+   * This is the core logging routine that dispatches to spdlog.
+   *
+   * @param lvl The log level
+   * @param message The message to log
+   */
+  void log(level_enum lvl, std::string const& message);
+
+  /**
+   * @brief Add a sink to the logger.
+   *
+   * @param sink The sink to add
+   */
+  void add_sink(spdlog::sink_ptr sink);
+
+  /**
+   * @brief Remove a sink from the logger.
+   *
+   * @param sink The sink to remove
+   */
+  void remove_sink(spdlog::sink_ptr sink);
+
+  /**
+   * @brief Get the current log level.
+   *
+   * @return The current log level
+   */
+  level_enum level() const;
+
+  /**
+   * @brief Set the log level.
+   *
+   * @param log_level The new log level
+   */
+  void set_level(level_enum log_level);
+
+  /**
+   * @brief Flush the logger.
+   */
+  void flush();
+
+  /**
+   * @brief Flush all writes on the specified level or above.
+   */
+  void flush_on(level_enum log_level);
+
+  /**
+   * @brief Get the current flush level.
+   */
+  level_enum flush_level() const;
+
+  /**
+   * @brief Check if the logger should log a message at the specified level.
+   *
+   * @param msg_level The level of the message
+   * @return true if the message should be logged, false otherwise
+   */
+  bool should_log(level_enum msg_level) const;
+
+  /**
+   * @brief Set the pattern for the logger.
+   *
+   * @param pattern The pattern to use
+   */
+  void set_pattern(std::string pattern);
+
+  /**
+   * @brief Check if the logger supports logging.
+   *
+   * @return true if the logger supports logging, false otherwise
+   */
+  static constexpr bool supports_logging() { return true; }
+#else
+  logger(std::string name, std::string filename) {}
+  logger(std::string name, std::ostream& stream) {}
+  logger(std::string name, std::vector<std::shared_ptr<sink>> sinks) {}
+  ~logger() = default;
+  void log(level_enum lvl, std::string const& message) {}
+  // When logging is not supported we won't have a spdlog sink_ptr type defined
+  // when this function is, so a template is used to capture the user's type.
+  template <typename Sink>
+  void add_sink(Sink sink) {}
+  template <typename Sink>
+  void remove_sink(Sink sink) {}
+  level_enum level() const { return level_enum::off; }
+  void set_level(level_enum log_level) {}
+  void flush() {}
+  void flush_on(level_enum log_level) {}
+  level_enum flush_level() { return level_enum::off; }
+  bool should_log(level_enum msg_level) const { return false; }
+  void set_pattern(std::string pattern) {}
+  static constexpr bool supports_logging() { return false; }
+#endif
+
+ private:
+#ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_SUPPORTS_LOGGING
+  std::unique_ptr<spdlog::logger> impl;  ///< The spdlog logger
   void init_logger();
 #else
   void init_logger() {}
 #endif
 };
+
 
 /**
  * @brief Get the default logger.
