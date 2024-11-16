@@ -110,11 +110,15 @@ class logger {
   logger(logger&&);  ///< @default_move_constructor
   logger& operator=(logger&&);  ///< @default_move_assignment{logger}
 
+  // TODO: When we migrate to C++20 we can use std::format and format strings
+  // instead of the printf-style printing used here.
   /**
-   * @brief Log a message at the specified level.
+   * @brief Format and log a message at the specified level.
    *
-   * This public log API allows users to pass format arguments to this function
-   * a la printf.
+   * This function performs printf-style formatting to avoid the need for fmt
+   * or spdlog's own templated APIs (which would require exposing spdlog
+   * symbols publicly) and then invokes the base implementation with the
+   * preformatted string.
    *
    * @param lvl The log level
    * @param format The format string
@@ -122,7 +126,26 @@ class logger {
    */
   template<typename... Args>
   void log(level_enum lvl, std::string const& format, Args&&... args) {
-    this->formatted_log(lvl, format, std::forward<Args>(args)...);
+    auto convert_to_c_string = [](auto&& arg) -> decltype(auto) {
+      using ArgType = std::decay_t<decltype(arg)>;
+      if constexpr (std::is_same_v<ArgType, std::string>) {
+        return arg.c_str();
+      } else {
+        return std::forward<decltype(arg)>(arg);
+      }
+    };
+
+    // NOLINTBEGIN(cppcoreguidelines-pro-type-vararg)
+    auto formatted_size =
+      std::snprintf(nullptr, 0, format.c_str(), convert_to_c_string(std::forward<Args>(args))...);
+    RMM_EXPECTS(formatted_size >= 0, "Error during formatting.");
+    if (formatted_size == 0) { log(lvl, {}); }
+    auto size = static_cast<std::size_t>(formatted_size) + 1;  // for null terminator
+    // NOLINTNEXTLINE(modernize-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays)
+    std::unique_ptr<char[]> buf(new char[size]);
+    std::snprintf(buf.get(), size, format.c_str(), convert_to_c_string(std::forward<Args>(args))...);
+    // NOLINTEND(cppcoreguidelines-pro-type-vararg)
+    log(lvl, {buf.get(), buf.get() + size - 1});  // drop '\0'
   };
 
   /**
@@ -197,48 +220,7 @@ class logger {
     log(level_enum::critical, format, std::forward<Args>(args)...);
   }
 
- private:
-  // TODO: When we migrate to C++20 we can use std::format and format strings
-  // instead of the printf-style printing used here.
-  /**
-   * @brief Format a message string with printf-style formatting
-   *
-   * This function performs printf-style formatting to avoid the need for fmt
-   * or spdlog's own templated APIs (which would require exposing spdlog
-   * symbols publicly) and returns the formatted message as a `std::string`.
-   *
-   * @param format The format string
-   * @param args The format arguments
-   * @return The formatted message
-   * @throw rmm::logic_error if an error occurs during formatting
-   */
-  template <typename... Args>
-  void formatted_log(level_enum lvl, std::string const& format, Args&&... args)
-  {
-    auto convert_to_c_string = [](auto&& arg) -> decltype(auto) {
-      using ArgType = std::decay_t<decltype(arg)>;
-      if constexpr (std::is_same_v<ArgType, std::string>) {
-        return arg.c_str();
-      } else {
-        return std::forward<decltype(arg)>(arg);
-      }
-    };
-
-    // NOLINTBEGIN(cppcoreguidelines-pro-type-vararg)
-    auto formatted_size =
-      std::snprintf(nullptr, 0, format.c_str(), convert_to_c_string(std::forward<Args>(args))...);
-    RMM_EXPECTS(formatted_size >= 0, "Error during formatting.");
-    if (formatted_size == 0) { log(lvl, {}); }
-    auto size = static_cast<std::size_t>(formatted_size) + 1;  // for null terminator
-    // NOLINTNEXTLINE(modernize-avoid-c-arrays, cppcoreguidelines-avoid-c-arrays)
-    std::unique_ptr<char[]> buf(new char[size]);
-    std::snprintf(buf.get(), size, format.c_str(), convert_to_c_string(std::forward<Args>(args))...);
-    // NOLINTEND(cppcoreguidelines-pro-type-vararg)
-    log(lvl, {buf.get(), buf.get() + size - 1});  // drop '\0'
-  }
-
   // Everything below here is conditionally compiled based on whether logging is supported.
- public:
 #ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_SUPPORTS_LOGGING
   /**
    * @brief Construct a new logger object
