@@ -54,44 +54,6 @@ inline std::string default_log_filename()
   return (filename == nullptr) ? std::string{"@_RAPIDS_LOGGER_NAMESPACE@_log.txt"} : std::string{filename};
 }
 
-/**
- * @brief Represent a size in number of bytes.
- */
-struct bytes {
-  std::size_t value;  ///< The size in bytes
-
-  /**
-   * @brief Convert the size to a string representation.
-   *
-   * @return std::string The size as a string.
-   */
-  std::string to_string() const
-  {
-    static std::array units{"B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"};
-
-    int index = 0;
-    auto size = static_cast<double>(value);
-    while (size > 1024) {
-      size /= 1024;
-      index++;
-    }
-    return std::to_string(size) + ' ' + units.at(index);
-  }
-
-};
-
-/**
- * @brief Trait to check if a type has a `to_string()` method that returns a `std::string`.
- *
- * @tparam T The type to check.
- */
-template <typename, typename = std::void_t<>>
-struct has_to_string : std::false_type {};
-
-template <typename T>
-struct has_to_string<T, std::void_t<decltype(std::declval<T>().to_string())>>
-    : std::is_same<decltype(std::declval<T>().to_string()), std::string> {};
-
 }  // namespace detail
 
 // These values must be kept in sync with spdlog!
@@ -152,9 +114,7 @@ class logger {
    * @brief Log a message at the specified level.
    *
    * This public log API allows users to pass format arguments to this function
-   * a la printf. Any custom objects may be logged as long as the type
-   * implements a `to_string` method. The corresponding format specifier in the
-   * format string should simply be `%s` like for a normal string.
+   * a la printf.
    *
    * @param lvl The log level
    * @param format The format string
@@ -162,16 +122,7 @@ class logger {
    */
   template<typename... Args>
   void log(level_enum lvl, std::string const& format, Args&&... args) {
-    auto convert_to_string = [](auto&& arg) -> decltype(auto) {
-      using ArgType = std::decay_t<decltype(arg)>;
-      if constexpr (detail::has_to_string<ArgType>::value) {
-        return arg.to_string();
-      } else {
-        return std::forward<decltype(arg)>(arg);
-      }
-    };
-
-    this->formatted_log(lvl, format, convert_to_string(std::forward<Args>(args))...);
+    this->formatted_log(lvl, format, std::forward<Args>(args)...);
   };
 
   /**
