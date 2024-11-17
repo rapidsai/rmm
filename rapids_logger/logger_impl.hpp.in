@@ -31,7 +31,7 @@ namespace __attribute__((visibility("hidden"))) @_RAPIDS_LOGGER_NAMESPACE@ {
 
 namespace detail {
 
-inline level_enum string_to_level(std::string_view const env_lvl_str)
+level_enum string_to_level(std::string_view const env_lvl_str)
 {
     if (env_lvl_str == "TRACE") return level_enum::trace;
     if (env_lvl_str == "DEBUG") return level_enum::debug;
