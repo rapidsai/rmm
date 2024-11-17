@@ -31,7 +31,7 @@
  */
 #ifdef NDEBUG
 #define RMM_LOGGING_ASSERT(_expr) (void)0
-#elif SPDLOG_ACTIVE_LEVEL < SPDLOG_LEVEL_OFF
+#elif RMM_LOG_ACTIVE_LEVEL < RMM_LOG_LEVEL_OFF
 #define RMM_LOGGING_ASSERT(_expr)                                                                 \
   do {                                                                                            \
     bool const success = (_expr);                                                                 \

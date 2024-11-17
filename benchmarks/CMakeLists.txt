@@ -36,7 +36,7 @@ function(ConfigureBench BENCH_NAME)
                INSTALL_RPATH "\$ORIGIN/../../../lib")
   target_link_libraries(${BENCH_NAME} PRIVATE benchmark::benchmark pthread rmm)
   target_compile_definitions(${BENCH_NAME}
-                             PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
+                             PUBLIC "RMM_LOG_ACTIVE_LEVEL=RMM_LOG_LEVEL_${RMM_LOGGING_LEVEL}")
 
   if(PER_THREAD_DEFAULT_STREAM)
     target_compile_definitions(${BENCH_NAME} PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)

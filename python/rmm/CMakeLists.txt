@@ -27,7 +27,7 @@ include(rapids-cython-core)
 rapids_cython_init()
 
 # pass through logging level to spdlog
-add_compile_definitions("SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
+add_compile_definitions("RMM_LOG_ACTIVE_LEVEL=RMM_LOG_LEVEL_${RMM_LOGGING_LEVEL}")
 
 # Create an object library for the logger so that we don't have to recompile it. This assumes that
 # we always have logging enabled when we built the C++ library since the targets that are created

@@ -216,7 +216,7 @@ TEST(TrackingTest, LogOutstandingAllocations)
   rmm::default_logger().set_level(rmm::level_enum::debug);
   EXPECT_NO_THROW(mr.log_outstanding_allocations());
 
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_DEBUG
+#if RMM_LOG_ACTIVE_LEVEL <= RMM_LOG_LEVEL_DEBUG
   EXPECT_NE(oss.str().find("Outstanding Allocations"), std::string::npos);
 #endif
 
