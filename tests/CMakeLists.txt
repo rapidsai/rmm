@@ -142,7 +142,6 @@ ConfigureTest(DEVICE_MR_REF_TEST mr/device/mr_ref_tests.cpp
 
 # general adaptor tests
 ConfigureTest(ADAPTOR_TEST mr/device/adaptor_tests.cpp)
-target_link_libraries(ADAPTOR_TEST PRIVATE spdlog::spdlog)
 
 # pool mr tests
 ConfigureTest(POOL_MR_TEST mr/device/pool_mr_tests.cpp GPUS 1 PERCENT 100)
@@ -164,6 +163,7 @@ ConfigureTest(STATISTICS_TEST mr/device/statistics_mr_tests.cpp)
 
 # tracking adaptor tests
 ConfigureTest(TRACKING_TEST mr/device/tracking_mr_tests.cpp)
+target_link_libraries(TRACKING_TEST PRIVATE spdlog::spdlog)
 
 # out-of-memory callback adaptor tests
 ConfigureTest(FAILURE_CALLBACK_TEST mr/device/failure_callback_mr_tests.cpp)
