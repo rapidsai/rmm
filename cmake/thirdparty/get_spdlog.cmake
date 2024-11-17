@@ -34,12 +34,12 @@ function(find_and_configure_spdlog)
       INSTALL_EXPORT_SET rmm-exports
       BUILD_EXPORT_SET rmm-exports OPTIONS "SPDLOG_BUILD_SHARED OFF" "BUILD_SHARED_LIBS OFF"
                                    EXCLUDE_FROM_ALL)
-    set_target_properties(
-      spdlog
-      PROPERTIES CXX_VISIBILITY_PRESET hidden
-                 VISIBILITY_INLINES_HIDDEN ON
-                 POSITION_INDEPENDENT_CODE ON)
+    # Can't make both cmake-format and cmake-lint happy here.
+    # cmake-format: off
+    set_target_properties(spdlog PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)
+    # cmake-format: on
   endif()
+  set_target_properties(spdlog PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endfunction()
 
 find_and_configure_spdlog()
