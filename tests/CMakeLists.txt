@@ -129,6 +129,11 @@ if(RMM_SUPPORTS_LOGGING)
   target_link_libraries(rmm_test_logger PRIVATE rmm_logger_impl)
 endif()
 
+# TODO: Should we use CPM here, or since it's just tests should we assume spdlog is provided in the
+# environment? Even if we want to use CPM, we should probably simplify the logic to not need to
+# recompile spdlog with the same flags as rmm.
+include(../cmake/thirdparty/get_spdlog.cmake)
+
 # test sources
 
 # device mr_ref tests
@@ -137,6 +142,7 @@ ConfigureTest(DEVICE_MR_REF_TEST mr/device/mr_ref_tests.cpp
 
 # general adaptor tests
 ConfigureTest(ADAPTOR_TEST mr/device/adaptor_tests.cpp)
+target_link_libraries(ADAPTOR_TEST PRIVATE spdlog::spdlog)
 
 # pool mr tests
 ConfigureTest(POOL_MR_TEST mr/device/pool_mr_tests.cpp GPUS 1 PERCENT 100)
@@ -194,6 +200,7 @@ ConfigureTest(PREFETCH_TEST prefetch_tests.cpp)
 
 # logger tests
 ConfigureTest(LOGGER_TEST logger_tests.cpp)
+target_link_libraries(LOGGER_TEST PRIVATE spdlog::spdlog)
 
 # arena MR tests
 ConfigureTest(ARENA_MR_TEST mr/device/arena_mr_tests.cpp GPUS 1 PERCENT 100)
