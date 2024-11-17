@@ -378,6 +378,10 @@ inline logger& default_logger()
 }
 
 // Macros for easier logging, similar to spdlog.
+#if !defined(@_RAPIDS_LOGGER_MACRO_PREFIX@_LOG_ACTIVE_LEVEL)
+#define @_RAPIDS_LOGGER_MACRO_PREFIX@_LOG_ACTIVE_LEVEL @_RAPIDS_LOGGER_MACRO_PREFIX@_LOG_LEVEL_INFO
+#endif
+
 #define @_RAPIDS_LOGGER_MACRO_PREFIX@_LOGGER_CALL(logger, level, ...) (logger).log(level, __VA_ARGS__)
 
 #if @_RAPIDS_LOGGER_MACRO_PREFIX@_LOG_ACTIVE_LEVEL <= @_RAPIDS_LOGGER_MACRO_PREFIX@_LOG_LEVEL_TRACE
