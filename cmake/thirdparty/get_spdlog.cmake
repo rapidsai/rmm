@@ -30,7 +30,6 @@ function(find_and_configure_spdlog)
     # pre-built libraries. It's quick enough to build that there is no real benefit to supporting
     # the alternative.
     set(CPM_DOWNLOAD_spdlog ON)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden -fvisibility-inlines-hidden")
     rapids_cpm_spdlog(
       INSTALL_EXPORT_SET rmm-exports
       BUILD_EXPORT_SET rmm-exports OPTIONS "SPDLOG_BUILD_SHARED OFF" "BUILD_SHARED_LIBS OFF"
