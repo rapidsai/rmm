@@ -177,6 +177,7 @@ function(rapids_make_logger logger_namespace)
     set_target_properties(
       ${impl_target}
       PROPERTIES POSITION_INDEPENDENT_CODE ON
+                 INTERFACE_POSITION_INDEPENDENT_CODE ON
                  CXX_VISIBILITY_PRESET hidden
                  VISIBILITY_INLINES_HIDDEN ON)
   endif()
