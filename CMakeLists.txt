@@ -59,9 +59,7 @@ message(STATUS "RMM: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'")
 option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
 
 option(RMM_SUPPORTS_LOGGING "Enable logging support" ON)
-# cmake-format: off
-#option(RMM_SPDLOG_DYNAMIC "Use dynamic linking for spdlog" OFF)
-# cmake-format: on
+option(RMM_SPDLOG_DYNAMIC "Use dynamic linking for spdlog" OFF)
 
 # ##################################################################################################
 # * compiler options -------------------------------------------------------------------------------
