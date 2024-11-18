@@ -363,13 +363,13 @@ inline logger& default_logger()
 {
   static logger logger_ = [] {
     logger logger_ {
-      "RAPIDS", default_log_filename()
+      "@_RAPIDS_LOGGER_MACRO_PREFIX@", default_log_filename()
     };
 #if @_RAPIDS_LOGGER_MACRO_PREFIX@_LOG_ACTIVE_LEVEL <= @_RAPIDS_LOGGER_MACRO_PREFIX@_LOG_LEVEL_INFO
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-    logger_.info("----- RAPIDS LOG BEGIN [PTDS ENABLED] -----");
+    logger_.info("----- @_RAPIDS_LOGGER_MACRO_PREFIX@ LOG BEGIN [PTDS ENABLED] -----");
 #else
-    logger_.info("----- RAPIDS LOG BEGIN [PTDS DISABLED] -----");
+    logger_.info("----- @_RAPIDS_LOGGER_MACRO_PREFIX@ LOG BEGIN [PTDS DISABLED] -----");
 #endif
 #endif
     return logger_;
