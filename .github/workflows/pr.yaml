@@ -34,6 +34,7 @@ jobs:
     continue-on-error: true
     env:
         OTEL_SERVICE_NAME: "pr-rmm"
+        OTEL_EXPORTER_OTLP_ENDPOINT: "https://fb.local.gha-runners.nvidia.com:4318/"
     steps:
       - name: Telemetry setup
         uses: rapidsai/shared-actions/telemetry-dispatch-stash-base-env-vars@main
@@ -73,6 +74,7 @@ jobs:
     uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-build.yaml@branch-24.12
     with:
       build_type: pull-request
+      node_type: cpu4-test-west
   conda-cpp-tests:
     needs: [conda-cpp-build, changed-files]
     secrets: inherit
