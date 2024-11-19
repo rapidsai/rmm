@@ -795,8 +795,26 @@ def test_failure_callback_resource_adaptor():
     rmm.mr.set_current_device_resource(mr)
 
     with pytest.raises(MemoryError):
-        rmm.DeviceBuffer(size=int(1e11))
+        from rmm.mr import available_device_memory
+
+        total_memory = available_device_memory()[1]
+        rmm.DeviceBuffer(size=total_memory * 2)
     assert retried[0]
+
+
+def test_failure_callback_resource_adaptor_error():
+    def callback(nbytes: int) -> bool:
+        raise RuntimeError("MyError")
+
+    cuda_mr = rmm.mr.CudaMemoryResource()
+    mr = rmm.mr.FailureCallbackResourceAdaptor(cuda_mr, callback)
+    rmm.mr.set_current_device_resource(mr)
+
+    with pytest.raises(RuntimeError, match="MyError"):
+        from rmm.mr import available_device_memory
+
+        total_memory = available_device_memory()[1]
+        rmm.DeviceBuffer(size=total_memory * 2)
 
 
 @pytest.mark.parametrize("managed", [True, False])
@@ -821,18 +839,6 @@ def test_prefetch_resource_adaptor(managed):
         err, device = cudart.cudaGetDevice()
         assert err == cudart.cudaError_t.cudaSuccess
         assert_prefetched(db, device)
-
-
-def test_failure_callback_resource_adaptor_error():
-    def callback(nbytes: int) -> bool:
-        raise RuntimeError("MyError")
-
-    cuda_mr = rmm.mr.CudaMemoryResource()
-    mr = rmm.mr.FailureCallbackResourceAdaptor(cuda_mr, callback)
-    rmm.mr.set_current_device_resource(mr)
-
-    with pytest.raises(RuntimeError, match="MyError"):
-        rmm.DeviceBuffer(size=int(1e11))
 
 
 def test_dev_buf_circle_ref_dealloc():
