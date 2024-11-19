@@ -25,4 +25,3 @@ jobs:
     uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-build.yaml@no-certs
     with:
       build_type: pull-request
-      node_type: cpu4-test-west
