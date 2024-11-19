@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, NVIDIA CORPORATION.
+ * Copyright (c) 2021-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,13 +29,10 @@ using cuda_async_view_mr = rmm::mr::cuda_async_view_memory_resource;
 static_assert(cuda::mr::resource_with<cuda_async_view_mr, cuda::mr::device_accessible>);
 static_assert(cuda::mr::async_resource_with<cuda_async_view_mr, cuda::mr::device_accessible>);
 
-#if defined(RMM_CUDA_MALLOC_ASYNC_SUPPORT)
-
 TEST(PoolTest, UsePool)
 {
   cudaMemPool_t memPool{};
-  RMM_CUDA_TRY(rmm::detail::async_alloc::cudaDeviceGetDefaultMemPool(
-    &memPool, rmm::get_current_cuda_device().value()));
+  RMM_CUDA_TRY(cudaDeviceGetDefaultMemPool(&memPool, rmm::get_current_cuda_device().value()));
 
   const auto pool_init_size{100};
   cuda_async_view_mr mr{memPool};
@@ -53,7 +50,7 @@ TEST(PoolTest, NotTakingOwnershipOfPool)
 
   cudaMemPool_t memPool{};
 
-  RMM_CUDA_TRY(rmm::detail::async_alloc::cudaMemPoolCreate(&memPool, &poolProps));
+  RMM_CUDA_TRY(cudaMemPoolCreate(&memPool, &poolProps));
 
   {
     const auto pool_init_size{100};
@@ -64,7 +61,7 @@ TEST(PoolTest, NotTakingOwnershipOfPool)
   }
 
   auto destroy_valid_pool = [&]() {
-    auto result = rmm::detail::async_alloc::cudaMemPoolDestroy(memPool);
+    auto result = cudaMemPoolDestroy(memPool);
     RMM_EXPECTS(result == cudaSuccess, "Pool wrapper did destroy pool");
   };
 
@@ -80,8 +77,6 @@ TEST(PoolTest, ThrowIfNullptrPool)
 
   EXPECT_THROW(construct_mr(), rmm::logic_error);
 }
-
-#endif
 
 }  // namespace
 }  // namespace rmm::test

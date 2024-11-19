@@ -36,17 +36,11 @@ namespace {
 
 struct mr_ref_test_mt : public mr_ref_test {};
 
-INSTANTIATE_TEST_CASE_P(MultiThreadResourceTests,
-                        mr_ref_test_mt,
-                        ::testing::Values("CUDA",
-#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
-                                          "CUDA_Async",
-#endif
-                                          "Managed",
-                                          "Pool",
-                                          "Arena",
-                                          "Binning"),
-                        [](auto const& info) { return info.param; });
+INSTANTIATE_TEST_CASE_P(
+  MultiThreadResourceTests,
+  mr_ref_test_mt,
+  ::testing::Values("CUDA", "CUDA_Async", "Managed", "Pool", "Arena", "Binning"),
+  [](auto const& info) { return info.param; });
 
 template <typename Task, typename... Arguments>
 void spawn_n(std::size_t num_threads, Task task, Arguments&&... args)
