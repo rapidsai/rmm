@@ -347,7 +347,7 @@ inline auto make_host_pinned() { return std::make_shared<rmm::mr::pinned_host_me
 
 inline auto make_cuda_async()
 {
-  if (rmm::detail::async_alloc::is_supported()) {
+  if (rmm::detail::runtime_async_alloc::is_supported()) {
     return std::make_shared<rmm::mr::cuda_async_memory_resource>();
   }
   return std::shared_ptr<rmm::mr::cuda_async_memory_resource>{nullptr};

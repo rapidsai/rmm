@@ -84,7 +84,7 @@ endfunction()
 function(ConfigureTest TEST_NAME)
 
   set(options)
-  set(one_value GPUS PERCENT)
+  set(one_value CUDART GPUS PERCENT)
   set(multi_value)
   cmake_parse_arguments(_RMM_TEST "${options}" "${one_value}" "${multi_value}" ${ARGN})
   if(NOT DEFINED _RMM_TEST_GPUS AND NOT DEFINED _RMM_TEST_PERCENT)
@@ -98,13 +98,23 @@ function(ConfigureTest TEST_NAME)
     set(_RMM_TEST_PERCENT 100)
   endif()
 
+  if(_RMM_TEST_CUDART STREQUAL SHARED)
+    set(cudart_link_libs $<COMPILE_ONLY:rmm> CUDA::cudart)
+  elseif(_RMM_TEST_CUDART STREQUAL STATIC)
+    set(cudart_link_libs $<COMPILE_ONLY:rmm> CUDA::cudart_static)
+  else()
+    set(cudart_link_libs rmm)
+  endif()
+
   # Test with legacy default stream.
   ConfigureTestInternal(${TEST_NAME} ${_RMM_TEST_UNPARSED_ARGUMENTS})
+  target_link_libraries(${TEST_NAME} ${cudart_link_libs})
 
   # Test with per-thread default stream.
   string(REGEX REPLACE "_TEST$" "_PTDS_TEST" PTDS_TEST_NAME "${TEST_NAME}")
   ConfigureTestInternal("${PTDS_TEST_NAME}" ${_RMM_TEST_UNPARSED_ARGUMENTS})
   target_compile_definitions("${PTDS_TEST_NAME}" PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
+  target_link_libraries(${PTDS_TEST_NAME} ${cudart_link_libs})
 
   foreach(name ${TEST_NAME} ${PTDS_TEST_NAME} ${NS_TEST_NAME})
     rapids_test_add(
@@ -130,7 +140,10 @@ ConfigureTest(ADAPTOR_TEST mr/device/adaptor_tests.cpp)
 ConfigureTest(POOL_MR_TEST mr/device/pool_mr_tests.cpp GPUS 1 PERCENT 100)
 
 # cuda_async mr tests
-ConfigureTest(CUDA_ASYNC_MR_TEST mr/device/cuda_async_mr_tests.cpp GPUS 1 PERCENT 60)
+ConfigureTest(CUDA_ASYNC_MR_STATIC_CUDART_TEST mr/device/cuda_async_mr_tests.cpp GPUS 1 PERCENT 60
+              CUDART STATIC)
+ConfigureTest(CUDA_ASYNC_MR_SHARED_CUDART_TEST mr/device/cuda_async_mr_tests.cpp GPUS 1 PERCENT 60
+              CUDART SHARED)
 
 # thrust allocator tests
 ConfigureTest(THRUST_ALLOCATOR_TEST mr/device/thrust_allocator_tests.cu GPUS 1 PERCENT 60)
