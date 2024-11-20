@@ -129,7 +129,8 @@ function(rapids_make_logger logger_namespace)
   # function is invoked. As a result we cannot use relative paths here because CMake will root these
   # paths incorrectly for configure_file/install.
   set(BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR}/${_RAPIDS_LOGGER_HEADER_DIR})
-  set(INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/${_RAPIDS_LOGGER_HEADER_DIR})
+  # TODO: Verify that installation works correctly with prefix removed.
+  set(INSTALL_DIR ${_RAPIDS_LOGGER_HEADER_DIR})
 
   set(LOGGER_OUTPUT_FILE ${BUILD_DIR}/logger.hpp)
   configure_file(${CMAKE_CURRENT_FUNCTION_LIST_DIR}/logger.hpp.in ${LOGGER_OUTPUT_FILE})
