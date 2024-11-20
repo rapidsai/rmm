@@ -24,6 +24,7 @@ jobs:
         uses: rapidsai/shared-actions/telemetry-dispatch-stash-base-env-vars@main
   conda-cpp-build:
     secrets: inherit
+    needs: telemetry-setup
     uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-build.yaml@no-certs
     with:
       build_type: pull-request
