@@ -26,3 +26,11 @@ jobs:
     with:
       build_type: pull-request
       node_type: cpu4-test-west
+  telemetry-summarize:
+    runs-on: ubuntu-latest
+    needs: conda-cpp-build
+    if: always()
+    continue-on-error: true
+    steps:
+      - name: Telemetry summarize
+        uses: rapidsai/shared-actions/telemetry-dispatch-write-summary@main
