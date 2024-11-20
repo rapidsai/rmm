@@ -9,6 +9,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  SHARED_ACTIONS_REF: empty-certs
+
 jobs:
   telemetry-setup:
     runs-on: ubuntu-latest
@@ -16,7 +19,6 @@ jobs:
     env:
         OTEL_SERVICE_NAME: "pr-rmm"
         OTEL_EXPORTER_OTLP_ENDPOINT: "https://fb.local.gha-runners.nvidia.com:4318/"
-        SHARED_ACTIONS_REF: empty-certs
     steps:
       - name: Telemetry setup
         uses: rapidsai/shared-actions/telemetry-dispatch-stash-base-env-vars@main
