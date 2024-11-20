@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  SHARED_ACTIONS_REF: empty-certs
+    SHARED_ACTIONS_REF: empty-certs
 
 jobs:
   telemetry-setup:
@@ -19,6 +19,7 @@ jobs:
     env:
         OTEL_SERVICE_NAME: "pr-rmm"
         OTEL_EXPORTER_OTLP_ENDPOINT: "https://fb.local.gha-runners.nvidia.com:4318/"
+        SHARED_ACTIONS_REF: empty-certs
     steps:
       - name: Telemetry setup
         uses: rapidsai/shared-actions/telemetry-dispatch-stash-base-env-vars@main
@@ -34,6 +35,8 @@ jobs:
     needs: conda-cpp-build
     if: always()
     continue-on-error: true
+    env:
+      SHARED_ACTIONS_REF: empty-certs
     steps:
       - name: Telemetry summarize
-        uses: rapidsai/shared-actions/telemetry-dispatch-write-summary@main
+        uses: rapidsai/shared-actions/telemetry-dispatch-write-summary@empty-certs
