@@ -76,6 +76,8 @@ class sink {
   friend class logger;
 };
 
+typedef void (*CallbackType)(int lvl, const char* msg);
+
 /**
  * @class logger
  * @brief A logger class that either uses the real implementation (via spdlog) or performs no-ops if
@@ -254,11 +256,23 @@ class logger {
   void add_sink(spdlog::sink_ptr sink);
 
   /**
+   * @brief Add a sink calling this callback to the logger.
+   *
+   * @param callback The callable to invoke
+   */
+  void set_callback(CallbackType callback);
+
+  /**
    * @brief Remove a sink from the logger.
    *
    * @param sink The sink to remove
    */
   void remove_sink(spdlog::sink_ptr sink);
+
+  /**
+   * @brief Remove the callback sink from the logger.
+   */
+  void remove_callback();
 
   /**
    * @brief Get the current log level.
@@ -313,6 +327,7 @@ class logger {
 
  private:
   std::unique_ptr<spdlog::logger> impl;  ///< The spdlog logger
+  spdlog::sink_ptr callback_sink;  ///< The callback sink
   void init_logger();
 #else
   logger(std::string name, std::string filename) {}
@@ -324,8 +339,10 @@ class logger {
   // when this function is, so a template is used to capture the user's type.
   template <typename Sink>
   void add_sink(Sink sink) {}
+  void set_callback(CallbackType callback) {}
   template <typename Sink>
   void remove_sink(Sink sink) {}
+  void remove_callback() {}
   level_enum level() const { return level_enum::off; }
   void set_level(level_enum log_level) {}
   void flush() {}
@@ -353,6 +370,13 @@ inline std::string default_log_filename()
   // stderr sink)? I think the latter is better.
   return (filename == nullptr) ? std::string{"@_RAPIDS_LOGGER_NAMESPACE@_log.txt"} : std::string{filename};
 }
+
+/**
+ * @brief Returns the default log pattern for the global logger.
+ *
+ * @return std::string The default log pattern.
+ */
+inline std::string default_pattern() { return "[%6t][%H:%M:%S:%f][%-6l] %v"; }
 
 /**
  * @brief Get the default logger.
