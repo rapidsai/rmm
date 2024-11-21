@@ -22,7 +22,7 @@ jobs:
         SHARED_ACTIONS_REF: empty-certs
     steps:
       - name: Telemetry setup
-        uses: rapidsai/shared-actions/telemetry-dispatch-stash-base-env-vars@main
+        uses: rapidsai/shared-actions/telemetry-dispatch-stash-base-env-vars@empty-certs
   conda-cpp-build:
     secrets: inherit
     needs: telemetry-setup
