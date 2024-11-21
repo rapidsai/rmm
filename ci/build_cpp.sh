@@ -3,6 +3,8 @@
 
 set -euo pipefail
 
+exit 1
+
 rapids-configure-conda-channels
 
 source rapids-configure-sccache
