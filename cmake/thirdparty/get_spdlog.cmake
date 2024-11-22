@@ -21,29 +21,21 @@
 function(find_and_configure_spdlog)
 
   include(${rapids-cmake-dir}/cpm/spdlog.cmake)
-  if(RMM_SPDLOG_DYNAMIC)
-    rapids_cpm_spdlog(
-      FMT_OPTION "BUNDLED"
-      INSTALL_EXPORT_SET rmm-exports
-      BUILD_EXPORT_SET rmm-exports OPTIONS "SPDLOG_BUILD_SHARED ON" "BUILD_SHARED_LIBS ON")
-  else()
-    # For static spdlog usage assume that we want to hide as many symbols as possible, so do not use
-    # pre-built libraries. It's quick enough to build that there is no real benefit to supporting
-    # the alternative.
-    set(CPM_DOWNLOAD_spdlog ON)
-    rapids_cpm_spdlog(
-      # TODO: Is this safe to set up for all projects? Do we have to worry about the fmt patch
-      # currently in rapids-cmake? We should never be compiling files using spdlog under nvcc
-      # anymore.
-      FMT_OPTION "BUNDLED"
-      INSTALL_EXPORT_SET rmm-exports
-      BUILD_EXPORT_SET rmm-exports OPTIONS "SPDLOG_BUILD_SHARED OFF" "BUILD_SHARED_LIBS OFF"
-                                   EXCLUDE_FROM_ALL)
-    # Can't make both cmake-format and cmake-lint happy here.
-    # cmake-format: off
-    set_target_properties(spdlog PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)
-    # cmake-format: on
-  endif()
+  # For static spdlog usage assume that we want to hide as many symbols as possible, so do not use
+  # pre-built libraries. It's quick enough to build that there is no real benefit to supporting the
+  # alternative.
+  set(CPM_DOWNLOAD_spdlog ON)
+  rapids_cpm_spdlog(
+    # TODO: Is this safe to set up for all projects? Do we have to worry about the fmt patch
+    # currently in rapids-cmake? We should never be compiling files using spdlog under nvcc anymore.
+    FMT_OPTION "BUNDLED"
+    INSTALL_EXPORT_SET rmm-exports
+    BUILD_EXPORT_SET rmm-exports OPTIONS "SPDLOG_BUILD_SHARED OFF" "BUILD_SHARED_LIBS OFF"
+                                 EXCLUDE_FROM_ALL)
+  # Can't make both cmake-format and cmake-lint happy here.
+  # cmake-format: off
+  set_target_properties(spdlog PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)
+  # cmake-format: on
   set_target_properties(spdlog PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endfunction()
 
