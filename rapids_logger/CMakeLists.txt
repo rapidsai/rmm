@@ -164,9 +164,8 @@ function(rapids_make_logger logger_namespace)
     ${impl_target}
     INTERFACE $<BUILD_INTERFACE:${LOGGER_IMPL_SRC_OUTPUT_FILE}>
               $<INSTALL_INTERFACE:${_RAPIDS_LOGGER_HEADER_DIR}/logger_impl/logger.cpp>)
-  target_link_libraries(${impl_target} INTERFACE ${_RAPIDS_LOGGER_TARGET} spdlog::spdlog)
-  # TODO: Figure out whether to use this or the visibility settings at compile-time or both.
-  target_link_options(${impl_target} INTERFACE "LINKER:--exclude-libs,libspdlog")
+  target_link_libraries(${impl_target} INTERFACE ${_RAPIDS_LOGGER_TARGET}
+                                                 spdlog::spdlog_header_only)
   set_target_properties(
     ${impl_target}
     PROPERTIES POSITION_INDEPENDENT_CODE ON

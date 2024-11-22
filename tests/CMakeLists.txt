@@ -124,9 +124,6 @@ endfunction()
 add_library(rmm_test_logger OBJECT)
 target_link_libraries(rmm_test_logger PRIVATE rmm_logger_impl)
 
-# TODO: Should we use CPM here, or since it's just tests should we assume spdlog is provided in the
-# environment? Even if we want to use CPM, we should probably simplify the logic to not need to
-# recompile spdlog with the same flags as rmm.
 include(../cmake/thirdparty/get_spdlog.cmake)
 
 # test sources
@@ -158,8 +155,8 @@ ConfigureTest(STATISTICS_TEST mr/device/statistics_mr_tests.cpp)
 
 # tracking adaptor tests
 ConfigureTest(TRACKING_TEST mr/device/tracking_mr_tests.cpp)
-target_link_libraries(TRACKING_TEST PRIVATE spdlog::spdlog)
-target_link_libraries(TRACKING_PTDS_TEST PRIVATE spdlog::spdlog)
+target_link_libraries(TRACKING_TEST PRIVATE spdlog::spdlog_header_only)
+target_link_libraries(TRACKING_PTDS_TEST PRIVATE spdlog::spdlog_header_only)
 
 # out-of-memory callback adaptor tests
 ConfigureTest(FAILURE_CALLBACK_TEST mr/device/failure_callback_mr_tests.cpp)
@@ -196,8 +193,8 @@ ConfigureTest(PREFETCH_TEST prefetch_tests.cpp)
 
 # logger tests
 ConfigureTest(LOGGER_TEST logger_tests.cpp)
-target_link_libraries(LOGGER_TEST PRIVATE spdlog::spdlog)
-target_link_libraries(LOGGER_PTDS_TEST PRIVATE spdlog::spdlog)
+target_link_libraries(LOGGER_TEST PRIVATE spdlog::spdlog_header_only)
+target_link_libraries(LOGGER_PTDS_TEST PRIVATE spdlog::spdlog_header_only)
 
 # arena MR tests
 ConfigureTest(ARENA_MR_TEST mr/device/arena_mr_tests.cpp GPUS 1 PERCENT 100)
