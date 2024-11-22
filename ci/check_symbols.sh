@@ -18,8 +18,7 @@ See https://cmake.org/cmake/help/latest/prop_tgt/LANG_VISIBILITY_PRESET.html and
 
     echo ""
     echo "${err_msg}"
-    # TODO: Put this back once we decide what to check.
-    #exit 1
+    exit 1
 }
 
 WHEEL_EXPORT_DIR="$(mktemp -d)"
