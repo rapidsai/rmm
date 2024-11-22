@@ -12,10 +12,6 @@ It uses CMake and template C++ files to generate a public header file to describ
 To simplify usage, each invocation of the function produces two CMake targets, one representing the public header and one representing a trivial source file including the inline header.
 Projects using `rapids-logger` should make the first target part of their public link interface while the latter should be linked to privately so that it is compiled into the project's library without public exposure.
 
-To support transitive usage in header-only libraries that may not wish to enforce the spdlog requirement on their consumers, `rapids-logger` may be compiled with `SUPPORTS_LOGGING=OFF`, in which case a nonfunctional logger is produced instead.
-In this case the inline header is never used, and spdlog is not required at build-time.
-All logging functions and macros are defined, so any code written using the logger will still compile, but no actual logging will take place (and any code that assumes logs have been written will fail at runtime).
-
 To mirror spdlog, each generated logger also ships with a set of logging macros `<project-name>_LOG_<log-level>` that may be used to control logging at compile-time as well as runtime using a compile-time variable `<project-name>_LOG_ACTIVE_LEVEL`.
 For example, a project called "rapids" will be able to write code like this:
 ```

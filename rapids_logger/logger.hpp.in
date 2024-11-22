@@ -21,8 +21,6 @@
 #include <string>
 #include <vector>
 
-#ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_SUPPORTS_LOGGING
-
 // Forward declare spdlog types that are part of our public API.
 namespace spdlog {
 class logger;
@@ -31,8 +29,6 @@ class sink;
 } // namespace sinks
 using sink_ptr = std::shared_ptr<sinks::sink>;
 }  // namespace spdlog
-
-#endif
 
 namespace @_RAPIDS_VISIBILITY_MACRO@ @_RAPIDS_LOGGER_NAMESPACE@ {
 
@@ -62,17 +58,10 @@ enum class level_enum : int32_t {
 };
 
 class sink {
-#ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_SUPPORTS_LOGGING
  public:
   sink(spdlog::sink_ptr);
  private:
   spdlog::sink_ptr impl;
-#else
- public:
-  // Use a template to avoid needing a definition of spdlog's sink_ptr type.
-  template <typename Sink>
-  sink(Sink) {}
-#endif
   friend class logger;
 };
 
@@ -203,7 +192,6 @@ class logger {
   }
 
   // Everything below here is conditionally compiled based on whether logging is supported.
-#ifdef @_RAPIDS_LOGGER_MACRO_PREFIX@_SUPPORTS_LOGGING
   /**
    * @brief Construct a new logger object
    *
@@ -329,29 +317,6 @@ class logger {
   std::unique_ptr<spdlog::logger> impl;  ///< The spdlog logger
   spdlog::sink_ptr callback_sink;  ///< The callback sink
   void init_logger();
-#else
-  logger(std::string name, std::string filename) {}
-  logger(std::string name, std::ostream& stream) {}
-  logger(std::string name, std::vector<std::shared_ptr<sink>> sinks) {}
-  ~logger() = default;
-  void log(level_enum lvl, std::string const& message) {}
-  // When logging is not supported we won't have a spdlog sink_ptr type defined
-  // when this function is, so a template is used to capture the user's type.
-  template <typename Sink>
-  void add_sink(Sink sink) {}
-  void set_callback(CallbackType callback) {}
-  template <typename Sink>
-  void remove_sink(Sink sink) {}
-  void remove_callback() {}
-  level_enum level() const { return level_enum::off; }
-  void set_level(level_enum log_level) {}
-  void flush() {}
-  void flush_on(level_enum log_level) {}
-  level_enum flush_level() { return level_enum::off; }
-  bool should_log(level_enum msg_level) const { return false; }
-  void set_pattern(std::string pattern) {}
-  static constexpr bool supports_logging() { return false; }
-#endif
 };
 
 

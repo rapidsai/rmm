@@ -45,9 +45,7 @@ function(ConfigureBench BENCH_NAME)
   target_compile_options(${BENCH_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Wall -Werror
                                               -Wno-unknown-pragmas>)
 
-  if(TARGET rmm_bench_logger)
-    target_link_libraries(${BENCH_NAME} PRIVATE rmm_bench_logger)
-  endif()
+  target_link_libraries(${BENCH_NAME} PRIVATE rmm_bench_logger)
 
   if(DISABLE_DEPRECATION_WARNING)
     target_compile_options(
@@ -63,12 +61,9 @@ function(ConfigureBench BENCH_NAME)
     EXCLUDE_FROM_ALL)
 endfunction(ConfigureBench)
 
-# Create an object library for the logger so that we don't have to recompile it. This is not
-# necessary if logging is unsupported since then the header-only implementation is sufficient.
-if(RMM_SUPPORTS_LOGGING)
-  add_library(rmm_bench_logger OBJECT)
-  target_link_libraries(rmm_bench_logger PRIVATE rmm_logger_impl)
-endif()
+# Create an object library for the logger so that we don't have to recompile it.
+add_library(rmm_bench_logger OBJECT)
+target_link_libraries(rmm_bench_logger PRIVATE rmm_logger_impl)
 
 # random allocations benchmark
 ConfigureBench(RANDOM_ALLOCATIONS_BENCH random_allocations/random_allocations.cpp)

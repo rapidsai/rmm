@@ -58,8 +58,6 @@ message(STATUS "RMM: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'")
 # cudart can be linked statically or dynamically
 option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
 
-option(RMM_SUPPORTS_LOGGING "Enable logging support" ON)
-
 # ##################################################################################################
 # * compiler options -------------------------------------------------------------------------------
 
@@ -76,12 +74,8 @@ rapids_find_package(
 rapids_cpm_init()
 
 add_subdirectory(rapids_logger)
-set(_logging_support_flag)
-if(RMM_SUPPORTS_LOGGING)
-  set(_logging_support_flag "SUPPORTS_LOGGING")
-endif()
 rapids_make_logger(rmm EXPORT_SET rmm-exports VISIBILITY_MACRO
-                   "__attribute__((visibility(\"default\")))" ${_logging_support_flag})
+                   "__attribute__((visibility(\"default\")))")
 
 include(cmake/thirdparty/get_cccl.cmake)
 include(cmake/thirdparty/get_nvtx.cmake)

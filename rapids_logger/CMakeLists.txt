@@ -48,12 +48,11 @@ Generate a logger implementation customized for the specified namespace.
     [LOGGER_HEADER_DIR <header-dir>]
     [LOGGER_MACRO_PREFIX <macro-prefix>]
     [VISIBILITY_MACRO <visibility-macro>]
-    [SUPPORTS_LOGGING]
   )
 
 This function produces an interface target named <logger-target-name> that, when linked to by other targets, provides them a header file that defines a logger interface for the specified namespace. The logger is generated from the provided template files and is configured to use the specified namespace and macro prefix. The generated logger is placed in the specified header directory.
 
-The logger implementation lives in a separate header file that is not included in the declaration header. If `SUPPORTS_LOGGING` is off, the logger target is entirely nonfunctional. In that case, all operations are still defined (as no-ops) so that consumers may write the same logging code regardless of whether logging is enabled or disabled. If `SUPPORTS_LOGGING` is on, the logger implementation is compiled into a separate target that must be linked to by any target that uses the logger.
+The logger implementation lives in a separate header file that is not included in the declaration header. The logger implementation is compiled into a separate target that must be linked to by any target that uses the logger.
 
 
 ``logger_namespace``
@@ -74,14 +73,11 @@ The logger implementation lives in a separate header file that is not included i
 ``VISIBILITY_MACRO``
   The macro to use for visibility annotations. If not specified, no visibility annotations are added to the logger interface.
 
-``SUPPORTS_LOGGING``
-  If specified, the logger target is configured to support logging. If not specified, the resulting logger is entirely nonfunctional. In that case, all operations are still defined (as no-ops) so that consumers may write the same logging code regardless of whether logging is enabled or disabled. This setting is required for the logger implementation to be generated.
-
 Result Targets
 ^^^^^^^^^^^^^^^^
   <logger-target-name> is an interface target that provides the logger interface for the specified namespace.
 
-  <logger-target-name>_impl is an interface target that provides the logger implementation for the specified namespace. This target must be linked to by any target that uses the logger. It is only defined `SUPPORTS_LOGGING` is on. Targets linking to this target will have the logger implementation compiled into them.
+  <logger-target-name>_impl is an interface target that provides the logger implementation for the specified namespace. This target must be linked to by any target that uses the logger. Targets linking to this target will have the logger implementation compiled into them.
 
 Examples
 ^^^^^^^^
@@ -94,7 +90,6 @@ Example on how to use :cmake:command:`rapids_make_logger`.
   # Generate a logger for the namespace "rapids" and associate it with the
   # export set "rapids-exports".
   rapids_make_logger(rapids
-    SUPPORTS_LOGGING
     EXPORT_SET rapids-exports
   )
 
@@ -106,7 +101,7 @@ Example on how to use :cmake:command:`rapids_make_logger`.
 function(rapids_make_logger logger_namespace)
   list(APPEND CMAKE_MESSAGE_CONTEXT "rapids_make_logger")
 
-  set(_rapids_options SUPPORTS_LOGGING)
+  set(_rapids_options)
   set(_rapids_one_value EXPORT_SET LOGGER_TARGET LOGGER_HEADER_DIR LOGGER_MACRO_PREFIX
                         VISIBILITY_MACRO)
   set(_rapids_multi_value)
@@ -153,35 +148,31 @@ function(rapids_make_logger logger_namespace)
     INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_INCLUDEDIR}>"
               "$<INSTALL_INTERFACE:${_RAPIDS_LOGGER_HEADER_DIR}>")
   target_compile_features(${_RAPIDS_LOGGER_TARGET} INTERFACE cxx_std_17)
-  if(_RAPIDS_SUPPORTS_LOGGING)
-    target_compile_definitions(${_RAPIDS_LOGGER_TARGET}
-                               INTERFACE "${_RAPIDS_LOGGER_MACRO_PREFIX}_SUPPORTS_LOGGING")
 
-    # Create an interface target that will trigger compilation of the logger implementation in any
-    # target that is linked to it.
-    set(LOGGER_IMPL_SRC_OUTPUT_FILE ${BUILD_DIR}/logger_impl/logger.cpp)
-    configure_file(${CMAKE_CURRENT_FUNCTION_LIST_DIR}/logger.cpp.in ${LOGGER_IMPL_SRC_OUTPUT_FILE})
-    install(FILES ${LOGGER_IMPL_SRC_OUTPUT_FILE} DESTINATION ${INSTALL_DIR}/logger_impl)
+  # Create an interface target that will trigger compilation of the logger implementation in any
+  # target that is linked to it.
+  set(LOGGER_IMPL_SRC_OUTPUT_FILE ${BUILD_DIR}/logger_impl/logger.cpp)
+  configure_file(${CMAKE_CURRENT_FUNCTION_LIST_DIR}/logger.cpp.in ${LOGGER_IMPL_SRC_OUTPUT_FILE})
+  install(FILES ${LOGGER_IMPL_SRC_OUTPUT_FILE} DESTINATION ${INSTALL_DIR}/logger_impl)
 
-    # Note that we cannot specify the source files directly in add_library, see the CMake
-    # documentation explaining that these do not populate INTERFACE_SOURCES.
-    # https://cmake.org/cmake/help/latest/command/add_library.html#interface-with-sources
-    set(impl_target ${_RAPIDS_LOGGER_TARGET}_impl)
-    add_library(${impl_target} INTERFACE)
-    target_sources(
-      ${impl_target}
-      INTERFACE $<BUILD_INTERFACE:${LOGGER_IMPL_SRC_OUTPUT_FILE}>
-                $<INSTALL_INTERFACE:${_RAPIDS_LOGGER_HEADER_DIR}/logger_impl/logger.cpp>)
-    target_link_libraries(${impl_target} INTERFACE ${_RAPIDS_LOGGER_TARGET} spdlog::spdlog)
-    # TODO: Figure out whether to use this or the visibility settings at compile-time or both.
-    target_link_options(${impl_target} INTERFACE "LINKER:--exclude-libs,libspdlog")
-    set_target_properties(
-      ${impl_target}
-      PROPERTIES POSITION_INDEPENDENT_CODE ON
-                 INTERFACE_POSITION_INDEPENDENT_CODE ON
-                 CXX_VISIBILITY_PRESET hidden
-                 VISIBILITY_INLINES_HIDDEN ON)
-  endif()
+  # Note that we cannot specify the source files directly in add_library, see the CMake
+  # documentation explaining that these do not populate INTERFACE_SOURCES.
+  # https://cmake.org/cmake/help/latest/command/add_library.html#interface-with-sources
+  set(impl_target ${_RAPIDS_LOGGER_TARGET}_impl)
+  add_library(${impl_target} INTERFACE)
+  target_sources(
+    ${impl_target}
+    INTERFACE $<BUILD_INTERFACE:${LOGGER_IMPL_SRC_OUTPUT_FILE}>
+              $<INSTALL_INTERFACE:${_RAPIDS_LOGGER_HEADER_DIR}/logger_impl/logger.cpp>)
+  target_link_libraries(${impl_target} INTERFACE ${_RAPIDS_LOGGER_TARGET} spdlog::spdlog)
+  # TODO: Figure out whether to use this or the visibility settings at compile-time or both.
+  target_link_options(${impl_target} INTERFACE "LINKER:--exclude-libs,libspdlog")
+  set_target_properties(
+    ${impl_target}
+    PROPERTIES POSITION_INDEPENDENT_CODE ON
+               INTERFACE_POSITION_INDEPENDENT_CODE ON
+               CXX_VISIBILITY_PRESET hidden
+               VISIBILITY_INLINES_HIDDEN ON)
 
   set(_install_export)
   if(_RAPIDS_EXPORT_SET)

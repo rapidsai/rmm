@@ -130,9 +130,6 @@ def test_rmm_modes_system_memory(dtype, nelem, alloc, system, pool, headroom):
     array_tester(dtype, nelem, alloc)
 
 
-# TODO: This won't work when logging is disabled in C++, but I think we should
-# assume that the Python package is always built against a librmm with logging
-# support.
 @pytest.mark.parametrize("dtype", _dtypes)
 @pytest.mark.parametrize("nelem", _nelems)
 @pytest.mark.parametrize("alloc", _allocs)
@@ -574,9 +571,6 @@ def test_reinitialize_with_invalid_str_arg_pool_size():
     assert "Could not parse" in str(e.value)
 
 
-# TODO: This won't work when logging is disabled in C++, but I think we should
-# assume that the Python package is always built against a librmm with logging
-# support.
 @pytest.mark.parametrize("dtype", _dtypes)
 @pytest.mark.parametrize("nelem", _nelems)
 @pytest.mark.parametrize("alloc", _allocs)
@@ -1062,9 +1056,6 @@ def test_rmm_device_buffer_copy(cuda_ary, make_copy):
     np.testing.assert_equal(expected, result)
 
 
-# TODO: This won't work when logging is disabled in C++, but I think we should
-# assume that the Python package is always built against a librmm with logging
-# support.
 @pytest.mark.parametrize("level", level_enum)
 def test_valid_logging_level(level):
     default_level = level_enum.info

@@ -12,12 +12,7 @@
 # the License.
 # =============================================================================
 
-# Use CPM to find or clone speedlog TODO: The logic here should be upstreamed into rapids-logger and
-# probably removed from rapids-cmake. Note that it is not possible to build with two different modes
-# for different projects in the same build environment, so this functionality must be kept
-# independent of the rapids_make_logger function. Alternatively, we could update the cpm calls for
-# spdlog to not promote targets to global scope and instead allow each project to find and configure
-# spdlog independently.
+# Use CPM to find or clone speedlog.
 function(find_and_configure_spdlog)
 
   include(${rapids-cmake-dir}/cpm/spdlog.cmake)

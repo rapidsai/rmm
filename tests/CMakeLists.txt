@@ -44,9 +44,7 @@ function(ConfigureTestInternal TEST_NAME)
                              PUBLIC "RMM_LOG_ACTIVE_LEVEL=RMM_LOG_LEVEL_${RMM_LOGGING_LEVEL}")
   target_compile_options(${TEST_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Wall -Werror>)
 
-  if(TARGET rmm_test_logger)
-    target_link_libraries(${TEST_NAME} PRIVATE rmm_test_logger)
-  endif()
+  target_link_libraries(${TEST_NAME} PRIVATE rmm_test_logger)
 
   if(DISABLE_DEPRECATION_WARNING)
     target_compile_options(
@@ -122,12 +120,9 @@ function(ConfigureTest TEST_NAME)
 
 endfunction()
 
-# Create an object library for the logger so that we don't have to recompile it. This is not
-# necessary if logging is unsupported since then the header-only implementation is sufficient.
-if(RMM_SUPPORTS_LOGGING)
-  add_library(rmm_test_logger OBJECT)
-  target_link_libraries(rmm_test_logger PRIVATE rmm_logger_impl)
-endif()
+# Create an object library for the logger so that we don't have to recompile it.
+add_library(rmm_test_logger OBJECT)
+target_link_libraries(rmm_test_logger PRIVATE rmm_logger_impl)
 
 # TODO: Should we use CPM here, or since it's just tests should we assume spdlog is provided in the
 # environment? Even if we want to use CPM, we should probably simplify the logic to not need to
