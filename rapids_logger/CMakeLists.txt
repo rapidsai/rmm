@@ -172,6 +172,11 @@ function(rapids_make_logger logger_namespace)
                INTERFACE_POSITION_INDEPENDENT_CODE ON
                CXX_VISIBILITY_PRESET hidden
                VISIBILITY_INLINES_HIDDEN ON)
+  target_link_options(${impl_target} INTERFACE
+                      "$<$<COMPILE_LANGUAGE:CXX>:-fvisibility=hidden;-fvisibility-inlines-hidden>")
+  target_compile_options(
+    ${impl_target}
+    INTERFACE "$<$<COMPILE_LANGUAGE:CXX>:-fvisibility=hidden;-fvisibility-inlines-hidden>")
 
   set(_install_export)
   if(_RAPIDS_EXPORT_SET)
