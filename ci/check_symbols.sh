@@ -18,8 +18,7 @@ See https://cmake.org/cmake/help/latest/prop_tgt/LANG_VISIBILITY_PRESET.html and
 
     echo ""
     echo "${err_msg}"
-    # TODO: Put this back once we decide what to check.
-    #exit 1
+    exit 1
 }
 
 WHEEL_EXPORT_DIR="$(mktemp -d)"
@@ -72,7 +71,8 @@ for dso_file in ${dso_files}; do
     #
     echo "checking for 'spdlog::' symbols..."
     if grep -E 'spdlog\:\:' < "${symbol_file}" \
-        | grep -v 'std\:\:_Destroy_aux'
+        | grep -v 'std\:\:_Destroy_aux' \
+        | grep -v 'rmm::.*spdlog'
     then
         raise-symbols-found-error 'spdlog::'
     fi
