@@ -166,14 +166,31 @@ function(rapids_make_logger logger_namespace)
               $<INSTALL_INTERFACE:${_RAPIDS_LOGGER_HEADER_DIR}/logger_impl/logger.cpp>)
   target_link_libraries(${impl_target} INTERFACE ${_RAPIDS_LOGGER_TARGET}
                                                  spdlog::spdlog_header_only)
-  set_target_properties(
-    ${impl_target}
-    PROPERTIES POSITION_INDEPENDENT_CODE ON
-               INTERFACE_POSITION_INDEPENDENT_CODE ON
-               CXX_VISIBILITY_PRESET hidden
-               VISIBILITY_INLINES_HIDDEN ON)
+  set_target_properties(${impl_target} PROPERTIES POSITION_INDEPENDENT_CODE ON
+                                                  INTERFACE_POSITION_INDEPENDENT_CODE ON)
+  # cmake-format: off
+  # This is what I want to do, but the scope isn't large enough to propagate to targets linking to
+  # impl_target
+  # set_source_files_properties(
+  #     $<BUILD_INTERFACE:${LOGGER_IMPL_SRC_OUTPUT_FILE}>
+  #     TARGET ${impl_target} "$<$<COMPILE_LANGUAGE:CXX>:-fvisibility=hidden;-fvisibility-inlines-hidden>")
+  # set_source_files_properties(
+  #     $<INSTALL_INTERFACE:${_RAPIDS_LOGGER_HEADER_DIR}/logger_impl/logger.cpp>
+  #     TARGET ${impl_target} "$<$<COMPILE_LANGUAGE:CXX>:-fvisibility=hidden;-fvisibility-inlines-hidden>")
+  # The below works, but breaks any consumer linking to the impl target that
+  # does not have proper visibility markup set because the visibility flags are
+  # set on that target too. I thought linking to this target via LINK_ONLY
+  # could work to preserve these flags for these files without propagating to
+  # consumers, but in practice I think LINK_ONLY also drops INTERFACE_SOURCES
+  # so we lose the main thing that we want to propagate. In the worst case I
+  # can require creating an intermediate OBJECT target that links to the impl
+  # target privately and then linking to that target to avoid undesirable
+  # propagation of the flags.
+  # cmake-format: on
   target_compile_options(
     ${impl_target}
+    # What I want is "PRIVATE" in the sense of "apply only to the files specified in these
+    # INTERFACE_SOURCES", not "PRIVATE" in the sense of "apply only to this target's SOURCES".
     INTERFACE "$<$<COMPILE_LANGUAGE:CXX>:-fvisibility=hidden;-fvisibility-inlines-hidden>")
 
   set(_install_export)
