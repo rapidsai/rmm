@@ -57,12 +57,17 @@ enum class level_enum : int32_t {
   n_levels
 };
 
+namespace detail {
+// Forward declare the logger implementation class.
+class logger_impl;
+}
+
 class sink {
  public:
   sink(spdlog::sink_ptr);
  private:
   spdlog::sink_ptr impl;
-  friend class logger;
+  friend class detail::logger_impl;
 };
 
 /**
@@ -300,8 +305,7 @@ class logger {
   static constexpr bool supports_logging() { return true; }
 
  private:
-  std::unique_ptr<spdlog::logger> impl;  ///< The spdlog logger
-  void init_logger();
+  std::unique_ptr<detail::logger_impl> impl;  ///< The logger implementation
 };
 
 
