@@ -297,13 +297,6 @@ class logger {
    */
   void set_pattern(std::string pattern);
 
-  /**
-   * @brief Check if the logger supports logging.
-   *
-   * @return true if the logger supports logging, false otherwise
-   */
-  static constexpr bool supports_logging() { return true; }
-
  private:
   std::unique_ptr<detail::logger_impl> impl;  ///< The logger implementation
 };
