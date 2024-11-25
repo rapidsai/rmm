@@ -574,10 +574,10 @@ TEST_F(ArenaTest, DumpLogOnFailure)  // NOLINT
     std::size_t num_threads{4};
     threads.reserve(num_threads);
     for (std::size_t i = 0; i < num_threads; ++i) {
-      threads.emplace_back(std::thread([&] {
+      threads.emplace_back([&] {
         void* ptr = mr.allocate(32_KiB);
         mr.deallocate(ptr, 32_KiB);
-      }));
+      });
     }
 
     for (auto& thread : threads) {

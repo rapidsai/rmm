@@ -12,4 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import warnings
+
 from rmm.pylibrmm import *
+
+warnings.warn(
+    "The `rmm._lib` module is deprecated in will be removed in a future release. Use `rmm.pylibrmm` instead.",
+    FutureWarning,
+    stacklevel=2,
+)

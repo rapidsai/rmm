@@ -40,6 +40,7 @@ from rmm.librmm.memory_resource cimport (
     translate_python_except_to_cpp,
 )
 from rmm.pylibrmm.memory_resource cimport (
+    ArenaMemoryResource,
     BinningMemoryResource,
     CallbackMemoryResource,
     CudaAsyncMemoryResource,

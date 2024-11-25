@@ -20,8 +20,6 @@
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/device/detail/free_list.hpp>
 
-#include <fmt/core.h>
-
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
@@ -131,10 +129,7 @@ struct block : public block_base {
   /**
    * @brief Print this block. For debugging.
    */
-  inline void print() const
-  {
-    std::cout << fmt::format("{} {} B", fmt::ptr(pointer()), size()) << std::endl;
-  }
+  inline void print() const { std::cout << pointer() << " " << size() << " B" << std::endl; }
 #endif
 
  private:
@@ -146,7 +141,7 @@ struct block : public block_base {
 /// Print block on an ostream
 inline std::ostream& operator<<(std::ostream& out, const block& blk)
 {
-  out << fmt::format("{} {} B\n", fmt::ptr(blk.pointer()), blk.size());
+  out << blk.pointer() << " " << blk.size() << " B" << std::endl;
   return out;
 }
 #endif

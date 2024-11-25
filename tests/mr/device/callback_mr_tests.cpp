@@ -23,11 +23,11 @@
 #include <rmm/mr/device/callback_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
-#include <fmt/core.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <cstddef>
+#include <string>
 
 namespace rmm::test {
 namespace {
@@ -78,8 +78,9 @@ TEST(CallbackTest, LoggingTest)
   auto* ptr       = mr.allocate(size);
   mr.deallocate(ptr, size);
 
-  std::string output = testing::internal::GetCapturedStdout();
-  std::string expect = fmt::format("Allocating {} bytes\nDeallocating {} bytes\n", size, size);
+  auto output = testing::internal::GetCapturedStdout();
+  auto expect = std::string("Allocating ") + std::to_string(size) + " bytes\nDeallocating " +
+                std::to_string(size) + " bytes\n";
   ASSERT_EQ(expect, output);
 }
 

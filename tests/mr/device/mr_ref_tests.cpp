@@ -30,9 +30,7 @@ namespace {
 INSTANTIATE_TEST_SUITE_P(ResourceTests,
                          mr_ref_test,
                          ::testing::Values("CUDA",
-#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
                                            "CUDA_Async",
-#endif
                                            "Managed",
                                            "System",
                                            "Pool",
@@ -46,9 +44,7 @@ INSTANTIATE_TEST_SUITE_P(ResourceTests,
 INSTANTIATE_TEST_SUITE_P(ResourceAllocationTests,
                          mr_ref_allocation_test,
                          ::testing::Values("CUDA",
-#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
                                            "CUDA_Async",
-#endif
                                            "Managed",
                                            "System"
                                            "Pool",
