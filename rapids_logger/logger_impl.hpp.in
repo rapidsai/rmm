@@ -30,6 +30,7 @@
 namespace __attribute__((visibility("hidden"))) @_RAPIDS_LOGGER_NAMESPACE@ {
 
 namespace detail {
+namespace {
 
 level_enum string_to_level(std::string_view const env_lvl_str)
 {
@@ -53,6 +54,7 @@ spdlog::level::level_enum to_spdlog_level(level_enum lvl)
 level_enum from_spdlog_level(spdlog::level::level_enum lvl)
 {
   return static_cast<level_enum>(static_cast<int32_t>(lvl));
+}
 }
 
 // Define a logger_impl class with all of the methods that the logger exposes. All the implementations should be trivial pass-throughs to the owned instance of the spdlog::logger class. The only exception is that all of the log level inputs should be our log level and they should be converted via to_spdlog_level, and all returned log levels should be converted via from_spdlog_level.
@@ -102,7 +104,7 @@ public:
 
 private:
   std::unique_ptr<spdlog::logger> underlying;  ///< The spdlog logger
-                                               ///
+
   void init_logger() {
     underlying->set_pattern("[%6t][%H:%M:%S:%f][%-6l] %v");
     auto const env_logging_level = std::getenv("@_RAPIDS_LOGGER_MACRO_PREFIX@_DEFAULT_LOGGING_LEVEL");
