@@ -57,6 +57,12 @@ level_enum from_spdlog_level(spdlog::level::level_enum lvl)
 }
 }
 
+class sink_impl {
+private:
+  std::shared_ptr<spdlog::sinks::sink> underlying;
+  friend class detail::logger_impl;
+};
+
 // Define a logger_impl class with all of the methods that the logger exposes. All the implementations should be trivial pass-throughs to the owned instance of the spdlog::logger class. The only exception is that all of the log level inputs should be our log level and they should be converted via to_spdlog_level, and all returned log levels should be converted via from_spdlog_level.
 class logger_impl {
 public:
@@ -77,12 +83,12 @@ public:
       init_logger();
   }
 
-  logger_impl(std::string name, std::vector<std::shared_ptr<sink>> sinks)
+  logger_impl(std::string name, std::vector<sink_ptr> sinks)
   {
     std::vector<spdlog::sink_ptr> spdlog_sinks;
     spdlog_sinks.reserve(sinks.size());
     for (auto const& s : sinks) {
-      spdlog_sinks.emplace_back(s->impl);
+      spdlog_sinks.emplace_back(s->impl->underlying);
     }
     underlying = std::make_unique<spdlog::logger>(name, spdlog_sinks.begin(), spdlog_sinks.end());
     init_logger();
@@ -94,15 +100,11 @@ public:
   void flush_on(level_enum log_level) { underlying->flush_on(to_spdlog_level(log_level)); }
   level_enum flush_level() const { return from_spdlog_level(underlying->flush_level()); }
   bool should_log(level_enum lvl) const { return underlying->should_log(to_spdlog_level(lvl)); }
-  void add_sink(spdlog::sink_ptr sink) { underlying->sinks().push_back(sink); }
-  void remove_sink(spdlog::sink_ptr sink) {
-    auto& sinks = underlying->sinks();
-    sinks.erase(std::remove(sinks.begin(), sinks.end(), sink), sinks.end());
-  }
   level_enum level() const { return from_spdlog_level(underlying->level()); }
   void set_pattern(std::string pattern) { underlying->set_pattern(pattern); }
 
 private:
+  // TODO: Could this be stack-allocated?
   std::unique_ptr<spdlog::logger> underlying;  ///< The spdlog logger
 
   void init_logger() {
@@ -122,7 +124,6 @@ private:
 
 
 // Sink methods
-sink::sink(spdlog::sink_ptr sink) : impl{sink} {}
 
 // Logger methods
 logger::logger(std::string name, std::string filename)
@@ -131,8 +132,8 @@ logger::logger(std::string name, std::string filename)
 logger::logger(std::string name, std::ostream& stream)
   : impl{std::make_unique<detail::logger_impl>(name, stream)} {}
 
-logger::logger(std::string name, std::vector<std::shared_ptr<sink>> sinks)
-    : impl{std::make_unique<detail::logger_impl>(name, sinks)} {}
+logger::logger(std::string name, std::vector<sink_ptr> sinks)
+  : impl{std::make_unique<detail::logger_impl>(name, sinks)} {}
 
 logger::~logger() = default;
 logger::logger(logger&&) = default;
@@ -144,8 +145,6 @@ void logger::flush() { impl->flush(); }
 void logger::flush_on(level_enum log_level) { impl->flush_on(log_level); }
 level_enum logger::flush_level() const { return impl->flush_level(); }
 bool logger::should_log(level_enum lvl) const { return impl->should_log(lvl); }
-void logger::add_sink(spdlog::sink_ptr sink) { impl->add_sink(sink); }
-void logger::remove_sink(spdlog::sink_ptr sink) { impl->remove_sink(sink); }
 level_enum logger::level() const { return impl->level(); }
 void logger::set_pattern(std::string pattern) { impl->set_pattern(pattern); }
 

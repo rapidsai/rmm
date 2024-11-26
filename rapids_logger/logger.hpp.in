@@ -21,15 +21,6 @@
 #include <string>
 #include <vector>
 
-// Forward declare spdlog types that are part of our public API.
-namespace spdlog {
-class logger;
-namespace sinks {
-class sink;
-} // namespace sinks
-using sink_ptr = std::shared_ptr<sinks::sink>;
-}  // namespace spdlog
-
 namespace @_RAPIDS_VISIBILITY_MACRO@ @_RAPIDS_LOGGER_NAMESPACE@ {
 
 // These values must be kept in sync with spdlog!
@@ -60,15 +51,21 @@ enum class level_enum : int32_t {
 namespace detail {
 // Forward declare the logger implementation class.
 class logger_impl;
+class sink_impl;
 }
 
+// Forward declare for the sink to make it a friend.
+class logger;
+
 class sink {
- public:
-  sink(spdlog::sink_ptr);
  private:
-  spdlog::sink_ptr impl;
+  std::unique_ptr<detail::sink_impl> impl;
+  // TODO: Determine if we really need both friends.
+  friend class logger;
   friend class detail::logger_impl;
 };
+
+using sink_ptr = std::shared_ptr<sink>;
 
 /**
  * @class logger
@@ -222,7 +219,7 @@ class logger {
    * iterator-based API would require templating and thus exposing spdlog
    * types.
    */
-  logger(std::string name, std::vector<std::shared_ptr<sink>> sinks);
+  logger(std::string name, std::vector<sink_ptr> sinks);
 
   /**
    * @brief Destroy the logger object
@@ -238,20 +235,6 @@ class logger {
    * @param message The message to log
    */
   void log(level_enum lvl, std::string const& message);
-
-  /**
-   * @brief Add a sink to the logger.
-   *
-   * @param sink The sink to add
-   */
-  void add_sink(spdlog::sink_ptr sink);
-
-  /**
-   * @brief Remove a sink from the logger.
-   *
-   * @param sink The sink to remove
-   */
-  void remove_sink(spdlog::sink_ptr sink);
 
   /**
    * @brief Get the current log level.
