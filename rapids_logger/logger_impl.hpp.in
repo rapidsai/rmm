@@ -32,6 +32,13 @@ namespace __attribute__((visibility("hidden"))) @_RAPIDS_LOGGER_NAMESPACE@ {
 namespace detail {
 namespace {
 
+/**
+ * @brief Convert a string to a log level.
+ *
+ * This function is used to process env-var specifications of log levels.
+ * @param env_lvl_str The string to convert.
+ * @return The log level.
+ */
 level_enum string_to_level(std::string_view const env_lvl_str)
 {
     if (env_lvl_str == "TRACE") return level_enum::trace;
@@ -46,17 +53,34 @@ level_enum string_to_level(std::string_view const env_lvl_str)
     throw std::invalid_argument(os.str());
 }
 
+/**
+ * @brief Convert a log level to an spdlog log level.
+ *
+ * @param lvl The log level to convert.
+ * @return The spdlog log level.
+ */
 spdlog::level::level_enum to_spdlog_level(level_enum lvl)
 {
   return static_cast<spdlog::level::level_enum>(static_cast<int32_t>(lvl));
 }
 
+/**
+ * @brief Convert an spdlog log level to a log level.
+ *
+ * @param lvl The spdlog log level to convert.
+ * @return The log level.
+ */
 level_enum from_spdlog_level(spdlog::level::level_enum lvl)
 {
   return static_cast<level_enum>(static_cast<int32_t>(lvl));
 }
 }
 
+/**
+ * @brief The sink_impl class is a wrapper around an spdlog sink.
+ *
+ * This class is the impl part of the PImpl for the sink.
+ */
 class sink_impl {
 public:
   sink_impl(std::shared_ptr<spdlog::sinks::sink> sink) : underlying{sink} {}
@@ -66,7 +90,11 @@ private:
   friend class logger::sink_vector;
 };
 
-// Define a logger_impl class with all of the methods that the logger exposes. All the implementations should be trivial pass-throughs to the owned instance of the spdlog::logger class. The only exception is that all of the log level inputs should be our log level and they should be converted via to_spdlog_level, and all returned log levels should be converted via from_spdlog_level.
+/**
+ * @brief The logger_impl class is a wrapper around an spdlog logger.
+ *
+ * This class is the impl part of the PImpl for the logger.
+ */
 class logger_impl {
 public:
   logger_impl(std::string name) : underlying{spdlog::logger{name}}

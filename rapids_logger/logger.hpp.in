@@ -79,23 +79,85 @@ class logger {
    */
   class sink_vector {
    public:
-    using Iterator = std::vector<sink_ptr>::iterator;
-    using ConstIterator = std::vector<sink_ptr>::const_iterator;
+    using Iterator = std::vector<sink_ptr>::iterator;  ///< The iterator type
+    using ConstIterator = std::vector<sink_ptr>::const_iterator;  ///< The const iterator type
 
+    /**
+     * @brief Construct a new sink_vector object
+     *
+     * @param parent The logger whose sinks are being managed
+     * @param sinks The sinks to manage
+     */
     explicit sink_vector(logger& parent, std::vector<sink_ptr> sinks={}) : parent{parent}, sinks_{sinks} {}
+
+    /**
+     * @brief Add a sink to the vector.
+     *
+     * @param sink The sink to add
+     */
     void push_back(sink_ptr const& sink);
+
+    /**
+     * @brief Add a sink to the vector.
+     *
+     * @param sink The sink to add
+     */
     void push_back(sink_ptr&& sink);
+
+    /**
+     * @brief Remove the last sink from the vector.
+     */
     void pop_back();
+
+    /**
+     * @brief Remove all sinks from the vector.
+     */
     void clear();
+
+    /**
+     * @brief Get an iterator to the beginning of the vector.
+     *
+     * @return Iterator The iterator
+     */
     Iterator begin() { return sinks_.begin(); }
+
+    /**
+     * @brief Get an iterator to the end of the vector.
+     *
+     * @return Iterator The iterator
+     */
     Iterator end() { return sinks_.end(); }
+
+    /**
+     * @brief Get a const iterator to the beginning of the vector.
+     *
+     * @return ConstIterator The const iterator
+     */
     ConstIterator begin() const { return sinks_.begin(); }
+
+    /**
+     * @brief Get a const iterator to the end of the vector.
+     *
+     * @return ConstIterator The const iterator
+     */
     ConstIterator end() const { return sinks_.end(); }
+
+    /**
+     * @brief Get a const iterator to the beginning of the vector.
+     *
+     * @return ConstIterator The const iterator
+     */
     ConstIterator cbegin() const { return sinks_.cbegin(); }
+
+    /**
+     * @brief Get a const iterator to the end of the vector.
+     *
+     * @return ConstIterator The const iterator
+     */
     ConstIterator cend() const { return sinks_.cend(); }
    private:
-    logger& parent;
-    std::vector<sink_ptr> sinks_;
+    logger& parent;  ///< The logger this vector belongs to
+    std::vector<sink_ptr> sinks_; ///< The sinks
   };
 
   // TODO: When we migrate to C++20 we can use std::format and format strings
@@ -302,18 +364,35 @@ class logger {
   sink_vector sinks_;  ///< The sinks for the logger
 };
 
+/**
+ * @brief A sink for the logger.
+ *
+ * These sinks are wrappers around the spdlog sinks that allow us to keep the
+ * spdlog types private and avoid exposing them in the public API.
+ */
 class sink {
  protected:
   explicit sink(std::unique_ptr<detail::sink_impl> impl) : impl{std::move(impl)} {}
   std::unique_ptr<detail::sink_impl> impl;
+  // The sink vector needs to be able to pass the underlying sink to the spdlog logger.
   friend class logger::sink_vector;
 };
 
+/**
+ * @brief A sink that writes to a file.
+ *
+ * See spdlog::sinks::basic_file_sink_mt for more information.
+ */
 class basic_file_sink_mt : public sink {
  public:
   basic_file_sink_mt(std::string const& filename, bool truncate = false);
 };
 
+/**
+ * @brief A sink that writes to an ostream.
+ *
+ * See spdlog::sinks::ostream_sink_mt for more information.
+ */
 class ostream_sink_mt : public sink {
  public:
   ostream_sink_mt(std::ostream& stream, bool force_flush = false);
