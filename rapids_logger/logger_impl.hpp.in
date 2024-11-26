@@ -177,7 +177,7 @@ logger::logger(std::string name, std::vector<sink_ptr> sinks)
 logger::~logger() = default;
 logger::logger(logger&& other) = default;
 logger& logger::operator=(logger&& other) {
-  impl = std::move(impl);
+  impl = std::move(other.impl);
   sinks_.clear();
   for (auto const& s : other.sinks_) {
     sinks_.push_back(s);
