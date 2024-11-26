@@ -62,8 +62,7 @@ public:
   sink_impl(std::shared_ptr<spdlog::sinks::sink> sink) : underlying{sink} {}
 private:
   std::shared_ptr<spdlog::sinks::sink> underlying;
-  // TODO: Reassess all friends, too much is leaking everywhere.
-  friend class detail::logger_impl;
+  // The sink_vector needs to be able to pass the underlying sink to the spdlog logger.
   friend class logger::sink_vector;
 };
 
