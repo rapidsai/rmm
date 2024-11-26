@@ -112,9 +112,8 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @param auto_flush If true, flushes the log for every (de)allocation. Warning, this will degrade
    * performance.
    */
-  template <typename SinkPtr>
   logging_resource_adaptor(Upstream* upstream,
-                           std::initializer_list<SinkPtr> sinks,
+                           std::initializer_list<sink_ptr> sinks,
                            bool auto_flush = false)
     : logging_resource_adaptor{to_device_async_resource_ref_checked(upstream), sinks, auto_flush}
   {
@@ -178,9 +177,8 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @param auto_flush If true, flushes the log for every (de)allocation. Warning, this will degrade
    * performance.
    */
-  template <typename SinkPtr>
   logging_resource_adaptor(device_async_resource_ref upstream,
-                           std::initializer_list<SinkPtr> sinks,
+                           std::initializer_list<sink_ptr> sinks,
                            bool auto_flush = false)
     : logging_resource_adaptor{make_logger(sinks), upstream, auto_flush}
   {
@@ -241,24 +239,9 @@ class logging_resource_adaptor final : public device_memory_resource {
     return std::make_shared<logger>("RMM", filename);
   }
 
-  // TODO: See if there is a way to make this function only valid for our sink
-  // or spdlog's without leaking spdlog symbols. When logging isn't enabled our
-  // sink type is constructible from anything, so that sort of analysis won't
-  // help (and fixing that would require the same ideas as fixing this).
-  template <typename SinkPtr>
-  static auto make_logger(std::initializer_list<SinkPtr> sinks)
+  static auto make_logger(std::initializer_list<sink_ptr> sinks)
   {
-    // Support passing either
-    if constexpr (std::is_same_v<SinkPtr, sink>) {
-      return std::make_shared<logger>("RMM", sinks);
-    } else {
-      std::vector<std::shared_ptr<sink>> rmm_sinks;
-      rmm_sinks.reserve(sinks.size());
-      for (const auto& s : sinks) {
-        rmm_sinks.push_back(std::make_shared<sink>(s));
-      }
-      return std::make_shared<logger>("RMM", std::move(rmm_sinks));
-    }
+    return std::make_shared<logger>("RMM", sinks);
   }
 
   logging_resource_adaptor(std::shared_ptr<logger> logger,
