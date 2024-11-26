@@ -21,7 +21,7 @@
 #include <string>
 #include <vector>
 
-namespace @_RAPIDS_VISIBILITY_MACRO@ @_RAPIDS_LOGGER_NAMESPACE@ {
+namespace __attribute__((visibility("default"))) @_RAPIDS_LOGGER_NAMESPACE@ {
 
 // These values must be kept in sync with spdlog!
 #define @_RAPIDS_LOGGER_MACRO_PREFIX@_LOG_LEVEL_TRACE    0

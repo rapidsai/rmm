@@ -47,7 +47,6 @@ Generate a logger implementation customized for the specified namespace.
     [LOGGER_TARGET <logger-target-name>]
     [LOGGER_HEADER_DIR <header-dir>]
     [LOGGER_MACRO_PREFIX <macro-prefix>]
-    [VISIBILITY_MACRO <visibility-macro>]
   )
 
 This function produces an interface target named <logger-target-name> that, when linked to by other targets, provides them a header file that defines a logger interface for the specified namespace. The logger is generated from the provided template files and is configured to use the specified namespace and macro prefix. The generated logger is placed in the specified header directory.
@@ -69,9 +68,6 @@ The logger implementation lives in a separate header file that is not included i
 
 ``LOGGER_MACRO_PREFIX``
   The prefix to use for the logger macros. If not specified, the macro prefix is the uppercase version of the logger namespace.
-
-``VISIBILITY_MACRO``
-  The macro to use for visibility annotations. If not specified, no visibility annotations are added to the logger interface.
 
 Result Targets
 ^^^^^^^^^^^^^^^^
@@ -102,8 +98,7 @@ function(rapids_make_logger logger_namespace)
   list(APPEND CMAKE_MESSAGE_CONTEXT "rapids_make_logger")
 
   set(_rapids_options)
-  set(_rapids_one_value EXPORT_SET LOGGER_TARGET LOGGER_HEADER_DIR LOGGER_MACRO_PREFIX
-                        VISIBILITY_MACRO)
+  set(_rapids_one_value EXPORT_SET LOGGER_TARGET LOGGER_HEADER_DIR LOGGER_MACRO_PREFIX)
   set(_rapids_multi_value)
   cmake_parse_arguments(_RAPIDS "${_rapids_options}" "${_rapids_one_value}"
                         "${_rapids_multi_value}" ${ARGN})
@@ -168,30 +163,6 @@ function(rapids_make_logger logger_namespace)
                                                  spdlog::spdlog_header_only)
   set_target_properties(${impl_target} PROPERTIES POSITION_INDEPENDENT_CODE ON
                                                   INTERFACE_POSITION_INDEPENDENT_CODE ON)
-  # cmake-format: off
-  # This is what I want to do, but the scope isn't large enough to propagate to targets linking to
-  # impl_target
-  # set_source_files_properties(
-  #     $<BUILD_INTERFACE:${LOGGER_IMPL_SRC_OUTPUT_FILE}>
-  #     TARGET ${impl_target} "$<$<COMPILE_LANGUAGE:CXX>:-fvisibility=hidden;-fvisibility-inlines-hidden>")
-  # set_source_files_properties(
-  #     $<INSTALL_INTERFACE:${_RAPIDS_LOGGER_HEADER_DIR}/logger_impl/logger.cpp>
-  #     TARGET ${impl_target} "$<$<COMPILE_LANGUAGE:CXX>:-fvisibility=hidden;-fvisibility-inlines-hidden>")
-  # The below works, but breaks any consumer linking to the impl target that
-  # does not have proper visibility markup set because the visibility flags are
-  # set on that target too. I thought linking to this target via LINK_ONLY
-  # could work to preserve these flags for these files without propagating to
-  # consumers, but in practice I think LINK_ONLY also drops INTERFACE_SOURCES
-  # so we lose the main thing that we want to propagate. In the worst case I
-  # can require creating an intermediate OBJECT target that links to the impl
-  # target privately and then linking to that target to avoid undesirable
-  # propagation of the flags.
-  # cmake-format: on
-  target_compile_options(
-    ${impl_target}
-    # What I want is "PRIVATE" in the sense of "apply only to the files specified in these
-    # INTERFACE_SOURCES", not "PRIVATE" in the sense of "apply only to this target's SOURCES".
-    INTERFACE "$<$<COMPILE_LANGUAGE:CXX>:-fvisibility=hidden;-fvisibility-inlines-hidden>")
 
   set(_install_export)
   if(_RAPIDS_EXPORT_SET)

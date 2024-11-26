@@ -74,8 +74,7 @@ rapids_find_package(
 rapids_cpm_init()
 
 add_subdirectory(rapids_logger)
-rapids_make_logger(rmm EXPORT_SET rmm-exports VISIBILITY_MACRO
-                   "__attribute__((visibility(\"default\")))")
+rapids_make_logger(rmm EXPORT_SET rmm-exports)
 
 include(cmake/thirdparty/get_cccl.cmake)
 include(cmake/thirdparty/get_nvtx.cmake)
