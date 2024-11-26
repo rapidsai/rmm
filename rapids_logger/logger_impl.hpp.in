@@ -18,16 +18,18 @@
 
 #include "../logger.hpp"
 
-#include <spdlog/sinks/basic_file_sink.h>
-#include <spdlog/sinks/ostream_sink.h>
-#include <spdlog/spdlog.h>
 
 #include <memory>
 #include <sstream>
 #include <string>
 
+#pragma GCC visibility push(hidden)
 
-namespace __attribute__((visibility("hidden"))) @_RAPIDS_LOGGER_NAMESPACE@ {
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/ostream_sink.h>
+#include <spdlog/spdlog.h>
+
+namespace @_RAPIDS_LOGGER_NAMESPACE@ {
 
 namespace detail {
 namespace {
@@ -193,3 +195,4 @@ const logger::sink_vector& logger::sinks() const { return sinks_; }
 logger::sink_vector& logger::sinks() { return sinks_; }
 
 }  // namespace @_RAPIDS_LOGGER_NAMESPACE@
+#pragma GCC visibility pop
