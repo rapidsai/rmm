@@ -23,7 +23,6 @@
 #include <rmm/mr/device/tracking_resource_adaptor.hpp>
 
 #include <gtest/gtest.h>
-#include <spdlog/sinks/ostream_sink.h>
 
 namespace rmm::test {
 namespace {
