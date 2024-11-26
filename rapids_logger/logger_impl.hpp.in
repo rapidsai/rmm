@@ -70,28 +70,27 @@ private:
 // Define a logger_impl class with all of the methods that the logger exposes. All the implementations should be trivial pass-throughs to the owned instance of the spdlog::logger class. The only exception is that all of the log level inputs should be our log level and they should be converted via to_spdlog_level, and all returned log levels should be converted via from_spdlog_level.
 class logger_impl {
 public:
-  logger_impl(std::string name) : underlying{std::make_unique<spdlog::logger>(name)}
+  logger_impl(std::string name) : underlying{spdlog::logger{name}}
   {
     init_logger();
   }
 
-  void log(level_enum lvl, std::string const& message) { underlying->log(to_spdlog_level(lvl), message); }
-  void set_level(level_enum log_level) { underlying->set_level(to_spdlog_level(log_level)); }
-  void flush() { underlying->flush(); }
-  void flush_on(level_enum log_level) { underlying->flush_on(to_spdlog_level(log_level)); }
-  level_enum flush_level() const { return from_spdlog_level(underlying->flush_level()); }
-  bool should_log(level_enum lvl) const { return underlying->should_log(to_spdlog_level(lvl)); }
-  level_enum level() const { return from_spdlog_level(underlying->level()); }
-  void set_pattern(std::string pattern) { underlying->set_pattern(pattern); }
-  const std::vector<spdlog::sink_ptr> &sinks() const { return underlying->sinks(); }
-  std::vector<spdlog::sink_ptr> &sinks() { return underlying->sinks(); }
+  void log(level_enum lvl, std::string const& message) { underlying.log(to_spdlog_level(lvl), message); }
+  void set_level(level_enum log_level) { underlying.set_level(to_spdlog_level(log_level)); }
+  void flush() { underlying.flush(); }
+  void flush_on(level_enum log_level) { underlying.flush_on(to_spdlog_level(log_level)); }
+  level_enum flush_level() const { return from_spdlog_level(underlying.flush_level()); }
+  bool should_log(level_enum lvl) const { return underlying.should_log(to_spdlog_level(lvl)); }
+  level_enum level() const { return from_spdlog_level(underlying.level()); }
+  void set_pattern(std::string pattern) { underlying.set_pattern(pattern); }
+  const std::vector<spdlog::sink_ptr> &sinks() const { return underlying.sinks(); }
+  std::vector<spdlog::sink_ptr> &sinks() { return underlying.sinks(); }
 
 private:
-  // TODO: Could this be stack-allocated?
-  std::unique_ptr<spdlog::logger> underlying;  ///< The spdlog logger
+  spdlog::logger underlying;  ///< The spdlog logger
 
   void init_logger() {
-    underlying->set_pattern("[%6t][%H:%M:%S:%f][%-6l] %v");
+    underlying.set_pattern("[%6t][%H:%M:%S:%f][%-6l] %v");
     auto const env_logging_level = std::getenv("@_RAPIDS_LOGGER_MACRO_PREFIX@_DEFAULT_LOGGING_LEVEL");
     if (env_logging_level != nullptr) {
       set_level(detail::string_to_level(env_logging_level));
