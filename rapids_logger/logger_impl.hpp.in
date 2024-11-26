@@ -18,16 +18,21 @@
 
 #include "../logger.hpp"
 
-
-#include <memory>
-#include <sstream>
-#include <string>
+// Include C headers for which we need symbols to be made public and don't want
+// the below symbol hiding pattern to apply.
+#include <sys/stat.h>
+#include <sys/syscall.h>
+#include <unistd.h>
 
 #pragma GCC visibility push(hidden)
 
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/ostream_sink.h>
 #include <spdlog/spdlog.h>
+
+#include <memory>
+#include <sstream>
+#include <string>
 
 namespace @_RAPIDS_LOGGER_NAMESPACE@ {
 
