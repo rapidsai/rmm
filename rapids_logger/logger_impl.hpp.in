@@ -24,6 +24,7 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 
+// Start hiding before including spdlog headers.
 #pragma GCC visibility push(hidden)
 
 #include <spdlog/sinks/basic_file_sink.h>
@@ -200,4 +201,5 @@ const logger::sink_vector& logger::sinks() const { return sinks_; }
 logger::sink_vector& logger::sinks() { return sinks_; }
 
 }  // namespace @_RAPIDS_LOGGER_NAMESPACE@
+// This visibility pragma must be here so that both our logger types and those coming from includes are hidden.
 #pragma GCC visibility pop
