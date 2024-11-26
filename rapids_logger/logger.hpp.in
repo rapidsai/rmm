@@ -81,6 +81,11 @@ class logger {
   logger(logger&& other);  ///< @default_move_constructor
   logger& operator=(logger&& other);  ///< @default_move_assignment{logger}
 
+  /**
+   * @brief A class to manage a vector of sinks.
+   *
+   * This class is used internally by the logger class to manage its sinks. It handles synchronization of the sinks with the sinks in the underlying spdlog logger such that all vector-like operations performed on this class are reflected in the underlying spdlog logger's set of sinks.
+   */
   class sink_vector {
    public:
     explicit sink_vector(logger& parent, std::vector<sink_ptr> sinks={}) : parent{parent}, sinks_{sinks} {}
