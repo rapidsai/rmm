@@ -320,14 +320,14 @@ class logger {
    *
    * @return The sinks
    */
-  const std::vector<sink_ptr> &sinks() const;
+  const sink_vector& sinks() const;
 
   /**
    * @brief Get the sinks for the logger.
    *
    * @return The sinks
    */
-  std::vector<sink_ptr> &sinks();
+  sink_vector& sinks();
 
   /**
    * @brief Get the current log level.

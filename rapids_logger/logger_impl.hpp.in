@@ -189,5 +189,7 @@ level_enum logger::flush_level() const { return impl->flush_level(); }
 bool logger::should_log(level_enum lvl) const { return impl->should_log(lvl); }
 level_enum logger::level() const { return impl->level(); }
 void logger::set_pattern(std::string pattern) { impl->set_pattern(pattern); }
+const logger::sink_vector& logger::sinks() const { return sinks_; }
+logger::sink_vector& logger::sinks() { return sinks_; }
 
 }  // namespace @_RAPIDS_LOGGER_NAMESPACE@
