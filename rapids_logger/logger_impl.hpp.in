@@ -122,22 +122,21 @@ void logger::sink_vector::clear() {
 }
 
 // Sink methods
+basic_file_sink_mt::basic_file_sink_mt(std::string const& filename, bool truncate)
+  : sink{std::make_unique<detail::sink_impl>(std::make_shared<spdlog::sinks::basic_file_sink_mt>(filename, truncate))} {}
+
+ostream_sink_mt::ostream_sink_mt(std::ostream& stream, bool force_flush)
+  : sink{std::make_unique<detail::sink_impl>(std::make_shared<spdlog::sinks::ostream_sink_mt>(stream, force_flush))} {}
 
 // Logger methods
 logger::logger(std::string name, std::string filename)
   : impl{std::make_unique<detail::logger_impl>(name)}, sinks_{*this} {
-  auto s = std::make_shared<sink>();
-  auto spdlog_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(filename, true);
-  s->impl = std::make_unique<detail::sink_impl>(spdlog_sink);;
-  sinks_.push_back(s);
+  sinks_.push_back(std::make_shared<basic_file_sink_mt>(filename, true));
 }
 
 logger::logger(std::string name, std::ostream& stream)
   : impl{std::make_unique<detail::logger_impl>(name)}, sinks_{*this} {
-  auto s = std::make_shared<sink>();
-  auto spdlog_sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(stream);
-  s->impl = std::make_unique<detail::sink_impl>(spdlog_sink);;
-  sinks_.push_back(s);
+  sinks_.push_back(std::make_shared<ostream_sink_mt>(stream));
 }
 
 logger::logger(std::string name, std::vector<sink_ptr> sinks)

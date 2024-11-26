@@ -55,15 +55,7 @@ class sink_impl;
 }
 
 // Forward declare for the sink to make it a friend.
-class logger;
-
-class sink {
- private:
-  std::unique_ptr<detail::sink_impl> impl;
-  // TODO: Determine if we really need both friends.
-  friend class logger;
-};
-
+class sink;
 using sink_ptr = std::shared_ptr<sink>;
 
 /**
@@ -308,6 +300,23 @@ class logger {
  private:
   std::unique_ptr<detail::logger_impl> impl;  ///< The logger implementation
   sink_vector sinks_;  ///< The sinks for the logger
+};
+
+class sink {
+ protected:
+  explicit sink(std::unique_ptr<detail::sink_impl> impl) : impl{std::move(impl)} {}
+  std::unique_ptr<detail::sink_impl> impl;
+  friend class logger::sink_vector;
+};
+
+class basic_file_sink_mt : public sink {
+ public:
+  basic_file_sink_mt(std::string const& filename, bool truncate = false);
+};
+
+class ostream_sink_mt : public sink {
+ public:
+  ostream_sink_mt(std::ostream& stream, bool force_flush = false);
 };
 
 
