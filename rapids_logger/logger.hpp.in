@@ -78,8 +78,24 @@ class logger {
   logger(logger const&) = delete;  ///< Not copy constructible
   logger& operator=(logger const&) = delete;  ///< Not copy assignable
 
-  logger(logger&&);  ///< @default_move_constructor
-  logger& operator=(logger&&);  ///< @default_move_assignment{logger}
+  logger(logger&& other);  ///< @default_move_constructor
+  logger& operator=(logger&& other);  ///< @default_move_assignment{logger}
+
+  class sink_vector {
+   public:
+    explicit sink_vector(logger& parent, std::vector<sink_ptr> sinks={}) : parent{parent}, sinks_{sinks} {}
+    void push_back(sink_ptr const& sink);
+    void push_back(sink_ptr&& sink);
+    void pop_back();
+   private:
+    logger& parent;
+    std::vector<sink_ptr> sinks_;
+    // TODO: Can we do without this? The place it's used is in the assignment
+    // operator for the logger, but in that case I don't think implementing a
+    // corresponding assignment for sink_vector makes sense because we want the
+    // parent attribute to remain different but the sinks_ to be copied over.
+    friend class logger;
+  };
 
   // TODO: When we migrate to C++20 we can use std::format and format strings
   // instead of the printf-style printing used here.
@@ -282,6 +298,7 @@ class logger {
 
  private:
   std::unique_ptr<detail::logger_impl> impl;  ///< The logger implementation
+  sink_vector sinks_;  ///< The sinks for the logger
 };
 
 

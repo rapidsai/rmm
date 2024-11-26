@@ -58,39 +58,20 @@ level_enum from_spdlog_level(spdlog::level::level_enum lvl)
 }
 
 class sink_impl {
+public:
+  sink_impl(std::shared_ptr<spdlog::sinks::sink> sink) : underlying{sink} {}
 private:
   std::shared_ptr<spdlog::sinks::sink> underlying;
+  // TODO: Reassess all friends, too much is leaking everywhere.
   friend class detail::logger_impl;
+  friend class logger::sink_vector;
 };
 
 // Define a logger_impl class with all of the methods that the logger exposes. All the implementations should be trivial pass-throughs to the owned instance of the spdlog::logger class. The only exception is that all of the log level inputs should be our log level and they should be converted via to_spdlog_level, and all returned log levels should be converted via from_spdlog_level.
 class logger_impl {
 public:
-  logger_impl(std::string name, std::string filename)
-    : underlying{std::make_unique<spdlog::logger>(
-          name,
-          std::make_shared<spdlog::sinks::basic_file_sink_mt>(filename, true  // truncate file
-                                                              ))}
+  logger_impl(std::string name) : underlying{std::make_unique<spdlog::logger>(name)}
   {
-    init_logger();
-  }
-
-  logger_impl(std::string name, std::ostream& stream)
-    : underlying{std::make_unique<spdlog::logger>(
-          name,
-          std::make_shared<spdlog::sinks::ostream_sink_mt>(stream))}
-  {
-      init_logger();
-  }
-
-  logger_impl(std::string name, std::vector<sink_ptr> sinks)
-  {
-    std::vector<spdlog::sink_ptr> spdlog_sinks;
-    spdlog_sinks.reserve(sinks.size());
-    for (auto const& s : sinks) {
-      spdlog_sinks.emplace_back(s->impl->underlying);
-    }
-    underlying = std::make_unique<spdlog::logger>(name, spdlog_sinks.begin(), spdlog_sinks.end());
     init_logger();
   }
 
@@ -102,6 +83,8 @@ public:
   bool should_log(level_enum lvl) const { return underlying->should_log(to_spdlog_level(lvl)); }
   level_enum level() const { return from_spdlog_level(underlying->level()); }
   void set_pattern(std::string pattern) { underlying->set_pattern(pattern); }
+  const std::vector<spdlog::sink_ptr> &sinks() const { return underlying->sinks(); }
+  std::vector<spdlog::sink_ptr> &sinks() { return underlying->sinks(); }
 
 private:
   // TODO: Could this be stack-allocated?
@@ -122,22 +105,53 @@ private:
 
 }  // namespace detail
 
+// Sink vector functions
+void logger::sink_vector::push_back(sink_ptr const& sink) {
+  sinks_.push_back(sink);
+  parent.impl->sinks().push_back(sink->impl->underlying);
+}
+void logger::sink_vector::push_back(sink_ptr&& sink) {
+  sinks_.push_back(sink);
+  parent.impl->sinks().push_back(sink->impl->underlying);
+}
+void logger::sink_vector::pop_back() {
+  sinks_.pop_back();
+  parent.impl->sinks().pop_back();
+}
 
 // Sink methods
 
 // Logger methods
 logger::logger(std::string name, std::string filename)
-  : impl{std::make_unique<detail::logger_impl>(name, filename)} {}
+  : impl{std::make_unique<detail::logger_impl>(name)}, sinks_{*this} {
+  auto s = std::make_shared<sink>();
+  auto spdlog_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(filename, true);
+  s->impl = std::make_unique<detail::sink_impl>(spdlog_sink);;
+  sinks_.push_back(s);
+}
 
 logger::logger(std::string name, std::ostream& stream)
-  : impl{std::make_unique<detail::logger_impl>(name, stream)} {}
+  : impl{std::make_unique<detail::logger_impl>(name)}, sinks_{*this} {
+  auto s = std::make_shared<sink>();
+  auto spdlog_sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(stream);
+  s->impl = std::make_unique<detail::sink_impl>(spdlog_sink);;
+  sinks_.push_back(s);
+}
 
 logger::logger(std::string name, std::vector<sink_ptr> sinks)
-  : impl{std::make_unique<detail::logger_impl>(name, sinks)} {}
+  : impl{std::make_unique<detail::logger_impl>(name)}, sinks_{*this} {
+  for (auto const& s : sinks) {
+    sinks_.push_back(s);
+  }
+}
 
 logger::~logger() = default;
-logger::logger(logger&&) = default;
-logger& logger::operator=(logger&&) = default;
+logger::logger(logger&& other) = default;
+logger& logger::operator=(logger&& other) {
+  impl = std::move(impl);
+  sinks_.sinks_ = other.sinks_.sinks_;
+  return *this;
+}
 
 void logger::log(level_enum lvl, std::string const& message) { impl->log(lvl, message); }
 void logger::set_level(level_enum log_level) { impl->set_level(log_level); }
