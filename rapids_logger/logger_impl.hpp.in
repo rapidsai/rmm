@@ -142,6 +142,10 @@ void logger::sink_vector::clear() {
 }
 
 // Sink methods
+sink::sink(std::unique_ptr<detail::sink_impl> impl) : impl{std::move(impl)} {}
+
+sink::~sink() = default;
+
 basic_file_sink_mt::basic_file_sink_mt(std::string const& filename, bool truncate)
   : sink{std::make_unique<detail::sink_impl>(std::make_shared<spdlog::sinks::basic_file_sink_mt>(filename, truncate))} {}
 

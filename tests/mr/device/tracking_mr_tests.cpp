@@ -203,9 +203,9 @@ TEST(TrackingTest, DeallocWrongBytes)
 TEST(TrackingTest, LogOutstandingAllocations)
 {
   std::ostringstream oss;
-  auto oss_sink  = std::make_shared<spdlog::sinks::ostream_sink_st>(oss);
+  auto oss_sink  = std::make_shared<rmm::ostream_sink_mt>(oss);
   auto old_level = rmm::default_logger().level();
-  rmm::default_logger().add_sink(oss_sink);
+  rmm::default_logger().sinks().push_back(oss_sink);
 
   tracking_adaptor mr{rmm::mr::get_current_device_resource_ref()};
   std::vector<void*> allocations;
@@ -225,7 +225,7 @@ TEST(TrackingTest, LogOutstandingAllocations)
   }
 
   rmm::default_logger().set_level(old_level);
-  rmm::default_logger().remove_sink(oss_sink);
+  rmm::default_logger().sinks().pop_back();
 }
 
 }  // namespace

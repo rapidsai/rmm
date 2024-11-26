@@ -316,6 +316,20 @@ class logger {
   void log(level_enum lvl, std::string const& message);
 
   /**
+   * @brief Get the sinks for the logger.
+   *
+   * @return The sinks
+   */
+  const std::vector<sink_ptr> &sinks() const;
+
+  /**
+   * @brief Get the sinks for the logger.
+   *
+   * @return The sinks
+   */
+  std::vector<sink_ptr> &sinks();
+
+  /**
    * @brief Get the current log level.
    *
    * @return The current log level
@@ -371,8 +385,10 @@ class logger {
  * spdlog types private and avoid exposing them in the public API.
  */
 class sink {
+ public:
+  ~sink();
  protected:
-  explicit sink(std::unique_ptr<detail::sink_impl> impl) : impl{std::move(impl)} {}
+  explicit sink(std::unique_ptr<detail::sink_impl> impl);
   std::unique_ptr<detail::sink_impl> impl;
   // The sink vector needs to be able to pass the underlying sink to the spdlog logger.
   friend class logger::sink_vector;
