@@ -49,12 +49,12 @@ enum class level_enum : int32_t {
 };
 
 namespace detail {
-// Forward declare the logger implementation class.
+// Forward declare the implementation classes.
 class logger_impl;
 class sink_impl;
 }
 
-// Forward declare for the sink to make it a friend.
+// Forward declare for the sink for the logger to use.
 class sink;
 using sink_ptr = std::shared_ptr<sink>;
 
