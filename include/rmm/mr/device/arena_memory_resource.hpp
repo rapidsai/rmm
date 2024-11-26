@@ -27,8 +27,6 @@
 
 #include <cuda_runtime_api.h>
 
-#include <spdlog/common.h>
-
 #include <cstddef>
 #include <map>
 #include <shared_mutex>
@@ -98,12 +96,9 @@ class arena_memory_resource final : public device_memory_resource {
     : global_arena_{upstream_mr, arena_size}, dump_log_on_failure_{dump_log_on_failure}
   {
     if (dump_log_on_failure_) {
-      logger_ =
-        std::make_shared<spdlog::logger>("arena_memory_dump",
-                                         std::make_shared<spdlog::sinks::basic_file_sink_mt>(
-                                           "rmm_arena_memory_dump.log", true /*truncate file*/));
+      logger_ = std::make_shared<logger>("arena_memory_dump", "rmm_arena_memory_dump.log");
       // Set the level to `debug` for more detailed output.
-      logger_->set_level(spdlog::level::info);
+      logger_->set_level(level_enum::info);
     }
   }
 
@@ -120,17 +115,9 @@ class arena_memory_resource final : public device_memory_resource {
   explicit arena_memory_resource(Upstream* upstream_mr,
                                  std::optional<std::size_t> arena_size = std::nullopt,
                                  bool dump_log_on_failure              = false)
-    : global_arena_{to_device_async_resource_ref_checked(upstream_mr), arena_size},
-      dump_log_on_failure_{dump_log_on_failure}
+    : arena_memory_resource{
+        to_device_async_resource_ref_checked(upstream_mr), arena_size, dump_log_on_failure}
   {
-    if (dump_log_on_failure_) {
-      logger_ =
-        std::make_shared<spdlog::logger>("arena_memory_dump",
-                                         std::make_shared<spdlog::sinks::basic_file_sink_mt>(
-                                           "rmm_arena_memory_dump.log", true /*truncate file*/));
-      // Set the level to `debug` for more detailed output.
-      logger_->set_level(spdlog::level::info);
-    }
   }
 
   ~arena_memory_resource() override = default;
@@ -336,8 +323,7 @@ class arena_memory_resource final : public device_memory_resource {
   void dump_memory_log(size_t bytes)
   {
     logger_->info("**************************************************");
-    logger_->info(rmm::detail::formatted_log("Ran out of memory trying to allocate %s.",
-                                             rmm::detail::format_bytes(bytes)));
+    logger_->info("Ran out of memory trying to allocate %s.", rmm::detail::format_bytes(bytes));
     logger_->info("**************************************************");
     logger_->info("Global arena:");
     global_arena_.dump_memory_log(logger_);
@@ -366,7 +352,7 @@ class arena_memory_resource final : public device_memory_resource {
   /// If true, dump memory information to log on allocation failure.
   bool dump_log_on_failure_{};
   /// The logger for memory dump.
-  std::shared_ptr<spdlog::logger> logger_{};
+  std::shared_ptr<logger> logger_{};
   /// Mutex for read and write locks on arena maps.
   mutable std::shared_mutex map_mtx_;
   /// Mutex for shared and unique locks on the mr.

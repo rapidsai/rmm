@@ -27,8 +27,9 @@ rapids_cmake_support_conda_env(conda_env)
 function(ConfigureTestInternal TEST_NAME)
   add_executable(${TEST_NAME} ${ARGN})
   target_include_directories(${TEST_NAME} PRIVATE "$<BUILD_INTERFACE:${RMM_SOURCE_DIR}>")
-  target_link_libraries(${TEST_NAME} GTest::gmock GTest::gtest GTest::gmock_main GTest::gtest_main
-                        pthread rmm $<TARGET_NAME_IF_EXISTS:conda_env>)
+  target_link_libraries(
+    ${TEST_NAME} PRIVATE GTest::gmock GTest::gtest GTest::gmock_main GTest::gtest_main pthread rmm
+                         $<TARGET_NAME_IF_EXISTS:conda_env>)
   set_target_properties(
     ${TEST_NAME}
     PROPERTIES POSITION_INDEPENDENT_CODE ON
@@ -40,8 +41,10 @@ function(ConfigureTestInternal TEST_NAME)
                CUDA_STANDARD 17
                CUDA_STANDARD_REQUIRED ON)
   target_compile_definitions(${TEST_NAME}
-                             PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
+                             PUBLIC "RMM_LOG_ACTIVE_LEVEL=RMM_LOG_LEVEL_${RMM_LOGGING_LEVEL}")
   target_compile_options(${TEST_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Wall -Werror>)
+
+  target_link_libraries(${TEST_NAME} PRIVATE rmm_test_logger)
 
   if(DISABLE_DEPRECATION_WARNING)
     target_compile_options(
@@ -127,6 +130,12 @@ function(ConfigureTest TEST_NAME)
 
 endfunction()
 
+# Create an object library for the logger so that we don't have to recompile it.
+add_library(rmm_test_logger OBJECT)
+target_link_libraries(rmm_test_logger PRIVATE rmm_logger_impl)
+
+include(../cmake/thirdparty/get_spdlog.cmake)
+
 # test sources
 
 # device mr_ref tests
@@ -159,6 +168,8 @@ ConfigureTest(STATISTICS_TEST mr/device/statistics_mr_tests.cpp)
 
 # tracking adaptor tests
 ConfigureTest(TRACKING_TEST mr/device/tracking_mr_tests.cpp)
+target_link_libraries(TRACKING_TEST PRIVATE spdlog::spdlog_header_only)
+target_link_libraries(TRACKING_PTDS_TEST PRIVATE spdlog::spdlog_header_only)
 
 # out-of-memory callback adaptor tests
 ConfigureTest(FAILURE_CALLBACK_TEST mr/device/failure_callback_mr_tests.cpp)
@@ -195,6 +206,8 @@ ConfigureTest(PREFETCH_TEST prefetch_tests.cpp)
 
 # logger tests
 ConfigureTest(LOGGER_TEST logger_tests.cpp)
+target_link_libraries(LOGGER_TEST PRIVATE spdlog::spdlog_header_only)
+target_link_libraries(LOGGER_PTDS_TEST PRIVATE spdlog::spdlog_header_only)
 
 # arena MR tests
 ConfigureTest(ARENA_MR_TEST mr/device/arena_mr_tests.cpp GPUS 1 PERCENT 100)

@@ -29,6 +29,7 @@ import rmm
 import rmm._cuda.stream
 from rmm.allocators.cupy import rmm_cupy_allocator
 from rmm.allocators.numba import RMMNumbaManager
+from rmm.pylibrmm.logger import level_enum
 
 cuda.set_memory_manager(RMMNumbaManager)
 
@@ -1033,22 +1034,23 @@ def test_rmm_device_buffer_copy(cuda_ary, make_copy):
     np.testing.assert_equal(expected, result)
 
 
-@pytest.mark.parametrize("level", rmm.logging_level)
+@pytest.mark.parametrize("level", level_enum)
 def test_valid_logging_level(level):
+    default_level = level_enum.info
     with warnings.catch_warnings():
         warnings.filterwarnings(
-            "ignore", message="RMM will not log logging_level.TRACE."
+            "ignore", message="RMM will not log level_enum.trace."
         )
         warnings.filterwarnings(
-            "ignore", message="RMM will not log logging_level.DEBUG."
+            "ignore", message="RMM will not log level_enum.debug."
         )
         rmm.set_logging_level(level)
         assert rmm.get_logging_level() == level
-        rmm.set_logging_level(rmm.logging_level.INFO)  # reset to default
+        rmm.set_logging_level(default_level)  # reset to default
 
         rmm.set_flush_level(level)
         assert rmm.get_flush_level() == level
-        rmm.set_flush_level(rmm.logging_level.INFO)  # reset to default
+        rmm.set_flush_level(default_level)  # reset to default
 
         rmm.should_log(level)
 

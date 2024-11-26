@@ -12,7 +12,7 @@
 # the License.
 # =============================================================================
 
-# Use CPM to find or clone speedlog
+# Use CPM to find or clone speedlog.
 function(find_and_configure_spdlog)
 
   include(${rapids-cmake-dir}/cpm/spdlog.cmake)
@@ -20,7 +20,6 @@ function(find_and_configure_spdlog)
     FMT_OPTION "EXTERNAL_FMT_HO"
     INSTALL_EXPORT_SET rmm-exports
     BUILD_EXPORT_SET rmm-exports)
-
 endfunction()
 
 find_and_configure_spdlog()

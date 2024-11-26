@@ -47,32 +47,13 @@ for dso_file in ${dso_files}; do
     echo "  * WEAK: $(grep --count -E '  WEAK '    < ${symbol_file})"
     echo "  * LOCAL: $(grep --count -E '  LOCAL '  < ${symbol_file})"
 
-    # Explanation for '-v' uses here:
-    #
-    #   * 'format_error' symbols are intentionally exported, that type of error
-    #      can be thrown across library boundaries. See "Problems with C++ exceptions"
-    #      at https://gcc.gnu.org/wiki/Visibility.
     echo "checking for 'fmt::' symbols..."
-    if grep -E 'fmt\:\:' < "${symbol_file}" \
-        | grep -v 'format_error'
-    then
+    if grep -E 'fmt\:\:' < "${symbol_file}"; then
         raise-symbols-found-error 'fmt::'
     fi
 
-    # Explanation for '-v' uses here:
-    #
-    #  * trivially-destructible objects sometimes get an entry in the symbol table
-    #    for a specialization of `std::_Destroy_aux()` called to destroy them.
-    #    There is one for `spdlog::details::log_msg_buffer like that:
-    #
-    #       'std::_Destroy_aux<false>::__destroy<spdlog::details::log_msg_buffer*>'
-    #
-    #    That should be safe to export.
-    #
     echo "checking for 'spdlog::' symbols..."
-    if grep -E 'spdlog\:\:' < "${symbol_file}" \
-        | grep -v 'std\:\:_Destroy_aux'
-    then
+    if grep -E 'spdlog\:\:' < "${symbol_file}"; then
         raise-symbols-found-error 'spdlog::'
     fi
     echo "No symbol visibility issues found"

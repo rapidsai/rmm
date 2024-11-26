@@ -13,7 +13,7 @@
 # =============================================================================
 
 set(cython_sources _logger.pyx)
-set(linked_libraries rmm::rmm)
+set(linked_libraries rmm::rmm cpp_logger)
 
 # Build all of the Cython targets
 rapids_cython_create_modules(SOURCE_FILES "${cython_sources}" LINKED_LIBRARIES "${linked_libraries}"
