@@ -116,6 +116,10 @@ void logger::sink_vector::pop_back() {
   sinks_.pop_back();
   parent.impl->sinks().pop_back();
 }
+void logger::sink_vector::clear() {
+  sinks_.clear();
+  parent.impl->sinks().clear();
+}
 
 // Sink methods
 
@@ -147,7 +151,10 @@ logger::~logger() = default;
 logger::logger(logger&& other) = default;
 logger& logger::operator=(logger&& other) {
   impl = std::move(impl);
-  sinks_.sinks_ = other.sinks_.sinks_;
+  sinks_.clear();
+  for (auto const& s : other.sinks_) {
+    sinks_.push_back(s);
+  }
   return *this;
 }
 

@@ -62,7 +62,6 @@ class sink {
   std::unique_ptr<detail::sink_impl> impl;
   // TODO: Determine if we really need both friends.
   friend class logger;
-  friend class detail::logger_impl;
 };
 
 using sink_ptr = std::shared_ptr<sink>;
@@ -88,18 +87,23 @@ class logger {
    */
   class sink_vector {
    public:
+    using Iterator = std::vector<sink_ptr>::iterator;
+    using ConstIterator = std::vector<sink_ptr>::const_iterator;
+
     explicit sink_vector(logger& parent, std::vector<sink_ptr> sinks={}) : parent{parent}, sinks_{sinks} {}
     void push_back(sink_ptr const& sink);
     void push_back(sink_ptr&& sink);
     void pop_back();
+    void clear();
+    Iterator begin() { return sinks_.begin(); }
+    Iterator end() { return sinks_.end(); }
+    ConstIterator begin() const { return sinks_.begin(); }
+    ConstIterator end() const { return sinks_.end(); }
+    ConstIterator cbegin() const { return sinks_.cbegin(); }
+    ConstIterator cend() const { return sinks_.cend(); }
    private:
     logger& parent;
     std::vector<sink_ptr> sinks_;
-    // TODO: Can we do without this? The place it's used is in the assignment
-    // operator for the logger, but in that case I don't think implementing a
-    // corresponding assignment for sink_vector makes sense because we want the
-    // parent attribute to remain different but the sinks_ to be copied over.
-    friend class logger;
   };
 
   // TODO: When we migrate to C++20 we can use std::format and format strings
