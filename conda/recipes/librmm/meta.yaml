@@ -26,6 +26,13 @@ requirements:
     - {{ stdlib("c") }}
   host:
     - cuda-version ={{ cuda_version }}
+    # We need fmt here for now because the conda spdlog package is hard-coded
+    # to use fmt as a compiled library, not header-only, so we must ensure that
+    # the library is present for now so that if a downstream library tries to
+    # build against rmm and some other package in its build environment uses
+    # fmt (or spdlog) that the default rmm build is consistent with such
+    # environments.
+    - fmt {{ fmt_version }}
 
 build:
   script_env:
@@ -70,6 +77,8 @@ outputs:
         {% if cuda_major == "11" %}
         - cudatoolkit
         {% endif %}
+        # See comment about fmt in the build section above.
+        - fmt {{ fmt_version }}
     test:
       commands:
         - test -d "${PREFIX}/include/rmm"
