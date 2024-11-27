@@ -12,22 +12,53 @@
 # the License.
 # =============================================================================
 
-# Use CPM to find or clone speedlog.
+# Use CPM to find or clone spdlog.
 function(find_and_configure_spdlog)
 
   include(${rapids-cmake-dir}/cpm/spdlog.cmake)
-  rapids_cpm_spdlog(
-    # The conda package for fmt is hard-coded to assume that we use a preexisting fmt library. This
-    # is why we have always had a libfmt linkage despite choosing to specify the header-only version
-    # of fmt. We need a more robust way of modifying this to support fully self-contained build and
-    # usage even in environments where fmt and/or spdlog are already present. The crudest solution
-    # would be to modify the interface compile definitions and link libraries of the spdlog target,
-    # if necessary. For now I'm specifying EXTERNAL_FMT_HO here so that in environments where spdlog
-    # is cloned and built from source we wind up with the behavior that we expect, but we'll have to
-    # resolve this properly eventually.
-    FMT_OPTION "EXTERNAL_FMT_HO"
-    INSTALL_EXPORT_SET rmm-exports
-    BUILD_EXPORT_SET rmm-exports)
+  rapids_cpm_spdlog(FMT_OPTION "EXTERNAL_FMT_HO")
+
+  include(${rapids-cmake-dir}/export/cpm.cmake)
+  include(${rapids-cmake-dir}/cpm/detail/package_details.cmake)
+  rapids_cpm_package_details(spdlog version repository tag shallow exclude)
+
+  # TODO: Switch to EXCLUDE_FROM_ALL once we have a way to handle the fmt linkage issue. TODO: We
+  # shouldn't have to repeat all the information from inside rapids-cmake here. Fixing that may have
+  # to wait until we upstream rapids-logger logic to rapids-cmake, though.
+  rapids_export_cpm(
+    BUILD spdlog rmm-exports DEFAULT_DOWNLOAD_OPTION "RMM_DOWNLOAD_SPDLOG"
+    CPM_ARGS NAME
+             spdlog
+             VERSION
+             ${version}
+             GIT_REPOSITORY
+             ${repository}
+             GIT_TAG
+             ${tag}
+             GIT_SHALLOW
+             ${shallow}
+             EXCLUDE_FROM_ALL
+             ${exclude}
+             OPTIONS
+             "SPDLOG_INSTALL ON"
+             "SPDLOG_FMT_EXTERNAL_HO ON")
+  rapids_export_cpm(
+    BUILD spdlog rmm-exports DEFAULT_DOWNLOAD_OPTION "RMM_DOWNLOAD_SPDLOG"
+    CPM_ARGS NAME
+             spdlog
+             VERSION
+             ${version}
+             GIT_REPOSITORY
+             ${repository}
+             GIT_TAG
+             ${tag}
+             GIT_SHALLOW
+             ${shallow}
+             EXCLUDE_FROM_ALL
+             ${exclude}
+             OPTIONS
+             "SPDLOG_INSTALL ON"
+             "SPDLOG_FMT_EXTERNAL_HO ON")
 endfunction()
 
 find_and_configure_spdlog()
