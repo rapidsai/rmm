@@ -26,13 +26,6 @@ requirements:
     - {{ stdlib("c") }}
   host:
     - cuda-version ={{ cuda_version }}
-    # We require spdlog and fmt (which was de-vendored from spdlog
-    # conda-forge packages in 1.11.0) so that the spdlog headers are not
-    # pulled by CPM and installed as a part of the rmm packages. However,
-    # building against librmm still requires these headers. They are also
-    # added as a run requirement via the packages' run_exports.
-    - fmt {{ fmt_version }}
-    - spdlog {{ spdlog_version }}
 
 build:
   script_env:
@@ -77,8 +70,6 @@ outputs:
         {% if cuda_major == "11" %}
         - cudatoolkit
         {% endif %}
-        - fmt {{ fmt_version }}
-        - spdlog {{ spdlog_version }}
     test:
       commands:
         - test -d "${PREFIX}/include/rmm"
