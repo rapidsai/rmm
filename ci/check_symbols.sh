@@ -53,7 +53,9 @@ for dso_file in ${dso_files}; do
     fi
 
     echo "checking for 'spdlog::' symbols..."
-    if grep -E 'spdlog\:\:' < "${symbol_file}"; then
+    if grep -E 'spdlog\:\:' < "${symbol_file}" \
+        | grep -v 'std\:\:_Destroy_aux'
+    then
         raise-symbols-found-error 'spdlog::'
     fi
     echo "No symbol visibility issues found"

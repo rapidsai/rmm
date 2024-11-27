@@ -17,6 +17,14 @@ function(find_and_configure_spdlog)
 
   include(${rapids-cmake-dir}/cpm/spdlog.cmake)
   rapids_cpm_spdlog(
+    # The conda package for fmt is hard-coded to assume that we use a preexisting fmt library. This
+    # is why we have always had a libfmt linkage despite choosing to specify the header-only version
+    # of fmt. We need a more robust way of modifying this to support fully self-contained build and
+    # usage even in environments where fmt and/or spdlog are already present. The crudest solution
+    # would be to modify the interface compile definitions and link libraries of the spdlog target,
+    # if necessary. For now I'm specifying EXTERNAL_FMT_HO here so that in environments where spdlog
+    # is cloned and built from source we wind up with the behavior that we expect, but we'll have to
+    # resolve this properly eventually.
     FMT_OPTION "EXTERNAL_FMT_HO"
     INSTALL_EXPORT_SET rmm-exports
     BUILD_EXPORT_SET rmm-exports)
