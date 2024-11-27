@@ -16,7 +16,10 @@
 function(find_and_configure_spdlog)
 
   include(${rapids-cmake-dir}/cpm/spdlog.cmake)
-  rapids_cpm_spdlog(FMT_OPTION "EXTERNAL_FMT_HO" INSTALL_EXPORT_SET rmm-exports)
+  rapids_cpm_spdlog(
+    FMT_OPTION "EXTERNAL_FMT_HO"
+    BUILD_EXPORT_SET rmm-exports
+    INSTALL_EXPORT_SET rmm-exports)
 
   include(${rapids-cmake-dir}/export/cpm.cmake)
   include(${rapids-cmake-dir}/cpm/detail/package_details.cmake)
