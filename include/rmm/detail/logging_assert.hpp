@@ -38,7 +38,7 @@
     if (!success) {                                                                               \
       RMM_LOG_CRITICAL(                                                                           \
         "[" __FILE__ ":" RMM_STRINGIFY(__LINE__) "] Assertion " RMM_STRINGIFY(_expr) " failed."); \
-      rmm::logger().flush();                                                                      \
+      rmm::default_logger().flush();                                                              \
       /* NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-array-to-pointer-decay) */                   \
       assert(success);                                                                            \
     }                                                                                             \
