@@ -75,6 +75,8 @@ rapids_cpm_init()
 
 add_subdirectory(rapids_logger)
 rapids_make_logger(rmm EXPORT_SET rmm-exports)
+add_library(rmm::rmm_logger ALIAS rmm_logger)
+add_library(rmm::rmm_logger_impl ALIAS rmm_logger_impl)
 
 include(cmake/thirdparty/get_cccl.cmake)
 include(cmake/thirdparty/get_nvtx.cmake)
