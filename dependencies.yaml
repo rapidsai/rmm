@@ -111,7 +111,6 @@ dependencies:
         packages:
           - c-compiler
           - cxx-compiler
-          - fmt>=11.0.2,<12
     specific:
       - output_types: conda
         matrices:
