@@ -13,12 +13,6 @@ cuda11_compiler:
 cmake_version:
   - ">=3.26.4,!=3.30.0"
 
-fmt_version:
-  - ">=11.0.2,<12"
-
-spdlog_version:
-  - ">=1.14.1,<1.15"
-
 c_stdlib:
   - sysroot
 c_stdlib_version:
