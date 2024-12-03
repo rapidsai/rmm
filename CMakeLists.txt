@@ -73,7 +73,11 @@ rapids_find_package(
 # add third party dependencies using CPM
 rapids_cpm_init()
 
-include(cmake/thirdparty/get_spdlog.cmake)
+add_subdirectory(rapids_logger)
+rapids_make_logger(rmm EXPORT_SET rmm-exports)
+add_library(rmm::rmm_logger ALIAS rmm_logger)
+add_library(rmm::rmm_logger_impl ALIAS rmm_logger_impl)
+
 include(cmake/thirdparty/get_cccl.cmake)
 include(cmake/thirdparty/get_nvtx.cmake)
 
@@ -93,8 +97,8 @@ else()
   target_link_libraries(rmm INTERFACE CUDA::cudart)
 endif()
 
+target_link_libraries(rmm INTERFACE rmm_logger)
 target_link_libraries(rmm INTERFACE CCCL::CCCL)
-target_link_libraries(rmm INTERFACE spdlog::spdlog_header_only)
 target_link_libraries(rmm INTERFACE dl)
 target_link_libraries(rmm INTERFACE nvtx3::nvtx3-cpp)
 target_compile_features(rmm INTERFACE cxx_std_17 $<BUILD_INTERFACE:cuda_std_17>)

@@ -31,14 +31,14 @@
  */
 #ifdef NDEBUG
 #define RMM_LOGGING_ASSERT(_expr) (void)0
-#elif SPDLOG_ACTIVE_LEVEL < SPDLOG_LEVEL_OFF
+#elif RMM_LOG_ACTIVE_LEVEL < RMM_LOG_LEVEL_OFF
 #define RMM_LOGGING_ASSERT(_expr)                                                                 \
   do {                                                                                            \
     bool const success = (_expr);                                                                 \
     if (!success) {                                                                               \
       RMM_LOG_CRITICAL(                                                                           \
         "[" __FILE__ ":" RMM_STRINGIFY(__LINE__) "] Assertion " RMM_STRINGIFY(_expr) " failed."); \
-      rmm::detail::logger().flush();                                                              \
+      rmm::default_logger().flush();                                                              \
       /* NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-array-to-pointer-decay) */                   \
       assert(success);                                                                            \
     }                                                                                             \

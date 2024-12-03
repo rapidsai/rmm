@@ -238,6 +238,8 @@ def on_missing_reference(app, env, node, contnode):
         "thrust",
         "spdlog",
         "stream_ref",
+        # logger names (we may eventually want to link out for those)
+        "sink_ptr",
         # libcu++ names
         "cuda",
         "cuda::mr",

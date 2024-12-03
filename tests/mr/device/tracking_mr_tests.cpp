@@ -23,7 +23,6 @@
 #include <rmm/mr/device/tracking_resource_adaptor.hpp>
 
 #include <gtest/gtest.h>
-#include <spdlog/sinks/ostream_sink.h>
 
 namespace rmm::test {
 namespace {
@@ -203,9 +202,9 @@ TEST(TrackingTest, DeallocWrongBytes)
 TEST(TrackingTest, LogOutstandingAllocations)
 {
   std::ostringstream oss;
-  auto oss_sink = std::make_shared<spdlog::sinks::ostream_sink_st>(oss);
-  rmm::detail::logger().sinks().push_back(oss_sink);
-  auto old_level = rmm::detail::logger().level();
+  auto oss_sink  = std::make_shared<rmm::ostream_sink_mt>(oss);
+  auto old_level = rmm::default_logger().level();
+  rmm::default_logger().sinks().push_back(oss_sink);
 
   tracking_adaptor mr{rmm::mr::get_current_device_resource_ref()};
   std::vector<void*> allocations;
@@ -213,10 +212,10 @@ TEST(TrackingTest, LogOutstandingAllocations)
     allocations.push_back(mr.allocate(ten_MiB));
   }
 
-  rmm::detail::logger().set_level(spdlog::level::debug);
+  rmm::default_logger().set_level(rmm::level_enum::debug);
   EXPECT_NO_THROW(mr.log_outstanding_allocations());
 
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_DEBUG
+#if RMM_LOG_ACTIVE_LEVEL <= RMM_LOG_LEVEL_DEBUG
   EXPECT_NE(oss.str().find("Outstanding Allocations"), std::string::npos);
 #endif
 
@@ -224,8 +223,8 @@ TEST(TrackingTest, LogOutstandingAllocations)
     mr.deallocate(allocation, ten_MiB);
   }
 
-  rmm::detail::logger().set_level(old_level);
-  rmm::detail::logger().sinks().pop_back();
+  rmm::default_logger().set_level(old_level);
+  rmm::default_logger().sinks().pop_back();
 }
 
 }  // namespace

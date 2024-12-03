@@ -458,7 +458,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
 
   void log_summary_trace()
   {
-#if (SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE)
+#if (RMM_LOG_ACTIVE_LEVEL <= RMM_LOG_LEVEL_TRACE)
     std::size_t num_blocks{0};
     std::size_t max_block{0};
     std::size_t free_mem{0};

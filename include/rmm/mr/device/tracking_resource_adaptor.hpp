@@ -185,9 +185,9 @@ class tracking_resource_adaptor final : public device_memory_resource {
    */
   void log_outstanding_allocations() const
   {
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_DEBUG
+#if RMM_LOG_ACTIVE_LEVEL <= RMM_LOG_LEVEL_DEBUG
     RMM_LOG_DEBUG("Outstanding Allocations: %s", get_outstanding_allocations_str());
-#endif  // SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_DEBUG
+#endif  // RMM_LOG_ACTIVE_LEVEL <= RMM_LOG_LEVEL_DEBUG
   }
 
  private:

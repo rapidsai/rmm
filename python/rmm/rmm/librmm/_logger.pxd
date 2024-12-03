@@ -13,54 +13,27 @@
 # limitations under the License.
 
 from libcpp cimport bool
+from libcpp.string cimport string
 
 
-cdef extern from "spdlog/common.h" namespace "spdlog::level" nogil:
-    cpdef enum logging_level "spdlog::level::level_enum":
-        """
-        The debug logging level for RMM.
+cdef extern from "rmm/logger.hpp" namespace "rmm" nogil:
+    cpdef enum class level_enum:
+        trace
+        debug
+        info
+        warn
+        error
+        critical
+        off
+        n_levels
 
-        Debug logging prints messages to a log file. See
-        `Debug Logging <https://github.com/rapidsai/rmm#debug-logging>`_
-        for more information.
-
-        Valid levels, in decreasing order of verbosity, are TRACE, DEBUG,
-        INFO, WARN, ERR, CRITICAL, and OFF. Default is INFO.
-
-        Examples
-        --------
-        >>> import rmm
-        >>> rmm.logging_level.DEBUG
-        <logging_level.DEBUG: 1>
-        >>> rmm.logging_level.DEBUG.value
-        1
-        >>> rmm.logging_level.DEBUG.name
-        'DEBUG'
-
-        See Also
-        --------
-        set_logging_level : Set the debug logging level
-        get_logging_level : Get the current debug logging level
-        """
-        TRACE "spdlog::level::trace"
-        DEBUG "spdlog::level::debug"
-        INFO "spdlog::level::info"
-        WARN "spdlog::level::warn"
-        ERR "spdlog::level::err"
-        CRITICAL "spdlog::level::critical"
-        OFF "spdlog::level::off"
-
-
-cdef extern from "spdlog/spdlog.h" namespace "spdlog" nogil:
-    cdef cppclass spdlog_logger "spdlog::logger":
-        spdlog_logger() except +
-        void set_level(logging_level level)
-        logging_level level()
+    cdef cppclass logger:
+        logger(string name, string filename) except +
+        void set_level(level_enum log_level) except +
+        level_enum level() except +
         void flush() except +
-        void flush_on(logging_level level)
-        logging_level flush_level()
-        bool should_log(logging_level msg_level)
+        void flush_on(level_enum level) except +
+        level_enum flush_level() except +
+        bool should_log(level_enum msg_level) except +
 
-
-cdef extern from "rmm/logger.hpp" namespace "rmm::detail" nogil:
-    cdef spdlog_logger& logger() except +
+    cdef logger& default_logger() except +
