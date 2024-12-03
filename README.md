@@ -658,8 +658,8 @@ of more detailed logging. The default is `INFO`. Available levels are `TRACE`, `
 The log relies on the [spdlog](https://github.com/gabime/spdlog.git) library.
 
 Note that to see logging below the `INFO` level, the application must also set the logging level at
-run time. C++ applications must must call `rmm::logger().set_level()`, for example to enable all
-levels of logging down to `TRACE`, call `rmm::logger().set_level(spdlog::level::trace)` (and compile
+run time. C++ applications must must call `rmm::default_logger().set_level()`, for example to enable all
+levels of logging down to `TRACE`, call `rmm::default_logger().set_level(spdlog::level::trace)` (and compile
 librmm with `-DRMM_LOGGING_LEVEL=TRACE`). Python applications must call `rmm.set_logging_level()`,
 for example to enable all levels of logging down to `TRACE`, call `rmm.set_logging_level("trace")`
 (and compile the RMM Python module with `-DRMM_LOGGING_LEVEL=TRACE`).

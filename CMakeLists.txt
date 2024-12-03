@@ -73,7 +73,11 @@ rapids_find_package(
 # add third party dependencies using CPM
 rapids_cpm_init()
 
-include(cmake/thirdparty/get_spdlog.cmake)
+add_subdirectory(rapids_logger)
+rapids_make_logger(rmm EXPORT_SET rmm-exports)
+add_library(rmm::rmm_logger ALIAS rmm_logger)
+add_library(rmm::rmm_logger_impl ALIAS rmm_logger_impl)
+
 include(cmake/thirdparty/get_cccl.cmake)
 include(cmake/thirdparty/get_nvtx.cmake)
 
@@ -89,13 +93,12 @@ target_include_directories(rmm INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOUR
 if(CUDA_STATIC_RUNTIME)
   message(STATUS "RMM: Enabling static linking of cudart")
   target_link_libraries(rmm INTERFACE CUDA::cudart_static)
-  target_compile_definitions(rmm INTERFACE RMM_STATIC_CUDART)
 else()
   target_link_libraries(rmm INTERFACE CUDA::cudart)
 endif()
 
+target_link_libraries(rmm INTERFACE rmm_logger)
 target_link_libraries(rmm INTERFACE CCCL::CCCL)
-target_link_libraries(rmm INTERFACE spdlog::spdlog_header_only)
 target_link_libraries(rmm INTERFACE dl)
 target_link_libraries(rmm INTERFACE nvtx3::nvtx3-cpp)
 target_compile_features(rmm INTERFACE cxx_std_17 $<BUILD_INTERFACE:cuda_std_17>)

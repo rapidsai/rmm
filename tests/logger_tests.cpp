@@ -152,8 +152,8 @@ TEST(Adaptor, MultiSinkConstructor)
   std::string filename2{temp_dir.generate_path("test_multi_2.txt")};
   rmm::mr::cuda_memory_resource upstream;
 
-  auto file_sink1 = std::make_shared<spdlog::sinks::basic_file_sink_mt>(filename1, true);
-  auto file_sink2 = std::make_shared<spdlog::sinks::basic_file_sink_mt>(filename2, true);
+  auto file_sink1 = std::make_shared<basic_file_sink_mt>(filename1, true);
+  auto file_sink2 = std::make_shared<basic_file_sink_mt>(filename2, true);
 
   rmm::mr::logging_resource_adaptor<rmm::mr::cuda_memory_resource> log_mr{&upstream,
                                                                           {file_sink1, file_sink2}};

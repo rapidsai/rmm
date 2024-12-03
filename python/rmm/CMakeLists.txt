@@ -27,7 +27,11 @@ include(rapids-cython-core)
 rapids_cython_init()
 
 # pass through logging level to spdlog
-add_compile_definitions("SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
+add_compile_definitions("RMM_LOG_ACTIVE_LEVEL=RMM_LOG_LEVEL_${RMM_LOGGING_LEVEL}")
+
+# Create an object library for the logger so that we don't have to recompile it.
+add_library(cpp_logger OBJECT)
+target_link_libraries(cpp_logger PRIVATE rmm::rmm_logger_impl)
 
 add_subdirectory(rmm/_cuda)
 add_subdirectory(rmm/librmm)

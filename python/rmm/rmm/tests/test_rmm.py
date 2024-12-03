@@ -29,14 +29,9 @@ import rmm
 import rmm._cuda.stream
 from rmm.allocators.cupy import rmm_cupy_allocator
 from rmm.allocators.numba import RMMNumbaManager
+from rmm.pylibrmm.logger import level_enum
 
 cuda.set_memory_manager(RMMNumbaManager)
-
-_driver_version = rmm._cuda.gpu.driverGetVersion()
-_runtime_version = rmm._cuda.gpu.runtimeGetVersion()
-_CUDAMALLOC_ASYNC_SUPPORTED = (_driver_version >= 11020) and (
-    _runtime_version >= 11020
-)
 
 _SYSTEM_MEMORY_SUPPORTED = rmm._cuda.gpu.getDeviceAttribute(
     cudart.cudaDeviceAttr.cudaDevAttrPageableMemoryAccess,
@@ -657,10 +652,6 @@ def test_mr_upstream_lifetime():
     del pool_mr
 
 
-@pytest.mark.skipif(
-    not _CUDAMALLOC_ASYNC_SUPPORTED,
-    reason="cudaMallocAsync not supported",
-)
 @pytest.mark.parametrize("dtype", _dtypes)
 @pytest.mark.parametrize("nelem", _nelems)
 @pytest.mark.parametrize("alloc", _allocs)
@@ -671,15 +662,11 @@ def test_cuda_async_memory_resource(dtype, nelem, alloc):
     array_tester(dtype, nelem, alloc)
 
 
-@pytest.mark.skipif(
-    not _CUDAMALLOC_ASYNC_SUPPORTED,
-    reason="cudaMallocAsync not supported",
-)
 def test_cuda_async_memory_resource_ipc():
     # TODO: We don't have a great way to check if IPC is supported in Python,
     # without using the C++ function
-    # rmm::detail::async_alloc::is_export_handle_type_supported. We can't
-    # accurately test driver and runtime versions for this via Python because
+    # rmm::detail::runtime_async_alloc::is_export_handle_type_supported.
+    # We can't accurately test this via Python because
     # cuda-python always has the IPC handle enum defined (which normally
     # requires a CUDA 11.3 runtime) and the cuda-compat package in Docker
     # containers prevents us from assuming that the driver we see actually
@@ -702,10 +689,6 @@ def test_cuda_async_memory_resource_ipc():
         assert rmm.mr.get_current_device_resource_type() is type(mr)
 
 
-@pytest.mark.skipif(
-    not _CUDAMALLOC_ASYNC_SUPPORTED,
-    reason="cudaMallocAsync not supported",
-)
 @pytest.mark.parametrize("nelems", _nelems)
 def test_cuda_async_memory_resource_stream(nelems):
     # test that using CudaAsyncMemoryResource
@@ -719,10 +702,6 @@ def test_cuda_async_memory_resource_stream(nelems):
     np.testing.assert_equal(expected, result)
 
 
-@pytest.mark.skipif(
-    not _CUDAMALLOC_ASYNC_SUPPORTED,
-    reason="cudaMallocAsync not supported",
-)
 @pytest.mark.parametrize("nelem", _nelems)
 @pytest.mark.parametrize("alloc", _allocs)
 def test_cuda_async_memory_resource_threshold(nelem, alloc):
@@ -739,13 +718,7 @@ def test_cuda_async_memory_resource_threshold(nelem, alloc):
     "mr",
     [
         rmm.mr.CudaMemoryResource,
-        pytest.param(
-            rmm.mr.CudaAsyncMemoryResource,
-            marks=pytest.mark.skipif(
-                not _CUDAMALLOC_ASYNC_SUPPORTED,
-                reason="cudaMallocAsync not supported",
-            ),
-        ),
+        pytest.param(rmm.mr.CudaAsyncMemoryResource),
     ],
 )
 def test_limiting_resource_adaptor(mr):
@@ -823,8 +796,26 @@ def test_failure_callback_resource_adaptor():
     rmm.mr.set_current_device_resource(mr)
 
     with pytest.raises(MemoryError):
-        rmm.DeviceBuffer(size=int(1e11))
+        from rmm.mr import available_device_memory
+
+        total_memory = available_device_memory()[1]
+        rmm.DeviceBuffer(size=total_memory * 2)
     assert retried[0]
+
+
+def test_failure_callback_resource_adaptor_error():
+    def callback(nbytes: int) -> bool:
+        raise RuntimeError("MyError")
+
+    cuda_mr = rmm.mr.CudaMemoryResource()
+    mr = rmm.mr.FailureCallbackResourceAdaptor(cuda_mr, callback)
+    rmm.mr.set_current_device_resource(mr)
+
+    with pytest.raises(RuntimeError, match="MyError"):
+        from rmm.mr import available_device_memory
+
+        total_memory = available_device_memory()[1]
+        rmm.DeviceBuffer(size=total_memory * 2)
 
 
 @pytest.mark.parametrize("managed", [True, False])
@@ -849,18 +840,6 @@ def test_prefetch_resource_adaptor(managed):
         err, device = cudart.cudaGetDevice()
         assert err == cudart.cudaError_t.cudaSuccess
         assert_prefetched(db, device)
-
-
-def test_failure_callback_resource_adaptor_error():
-    def callback(nbytes: int) -> bool:
-        raise RuntimeError("MyError")
-
-    cuda_mr = rmm.mr.CudaMemoryResource()
-    mr = rmm.mr.FailureCallbackResourceAdaptor(cuda_mr, callback)
-    rmm.mr.set_current_device_resource(mr)
-
-    with pytest.raises(RuntimeError, match="MyError"):
-        rmm.DeviceBuffer(size=int(1e11))
 
 
 def test_dev_buf_circle_ref_dealloc():
@@ -1055,22 +1034,23 @@ def test_rmm_device_buffer_copy(cuda_ary, make_copy):
     np.testing.assert_equal(expected, result)
 
 
-@pytest.mark.parametrize("level", rmm.logging_level)
+@pytest.mark.parametrize("level", level_enum)
 def test_valid_logging_level(level):
+    default_level = level_enum.info
     with warnings.catch_warnings():
         warnings.filterwarnings(
-            "ignore", message="RMM will not log logging_level.TRACE."
+            "ignore", message="RMM will not log level_enum.trace."
         )
         warnings.filterwarnings(
-            "ignore", message="RMM will not log logging_level.DEBUG."
+            "ignore", message="RMM will not log level_enum.debug."
         )
         rmm.set_logging_level(level)
         assert rmm.get_logging_level() == level
-        rmm.set_logging_level(rmm.logging_level.INFO)  # reset to default
+        rmm.set_logging_level(default_level)  # reset to default
 
         rmm.set_flush_level(level)
         assert rmm.get_flush_level() == level
-        rmm.set_flush_level(rmm.logging_level.INFO)  # reset to default
+        rmm.set_flush_level(default_level)  # reset to default
 
         rmm.should_log(level)
 

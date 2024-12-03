@@ -316,9 +316,7 @@ int main(int argc, char** argv)
       std::map<std::string, MRFactoryFunc> const funcs({{"arena", &make_arena},
                                                         {"binning", &make_binning},
                                                         {"cuda", &make_cuda},
-#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
                                                         {"cuda_async", &make_cuda_async},
-#endif
                                                         {"pool", &make_pool}});
       auto resource = args["resource"].as<std::string>();
 
@@ -340,11 +338,7 @@ int main(int argc, char** argv)
         std::string mr_name = args["resource"].as<std::string>();
         declare_benchmark(mr_name);
       } else {
-#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
         std::vector<std::string> mrs{"pool", "binning", "arena", "cuda_async", "cuda"};
-#else
-        std::vector<std::string> mrs{"pool", "binning", "arena", "cuda"};
-#endif
         std::for_each(
           std::cbegin(mrs), std::cend(mrs), [](auto const& mr) { declare_benchmark(mr); });
       }

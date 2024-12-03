@@ -17,7 +17,6 @@
 
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream_view.hpp>
-#include <rmm/detail/dynamic_load_runtime.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/detail/thrust_namespace.h>
@@ -27,10 +26,6 @@
 
 #include <cstddef>
 #include <limits>
-
-#if CUDART_VERSION >= 11020  // 11.2 introduced cudaMallocAsync
-#define RMM_CUDA_MALLOC_ASYNC_SUPPORT
-#endif
 
 namespace RMM_NAMESPACE {
 namespace mr {
@@ -46,13 +41,12 @@ namespace mr {
  */
 class cuda_async_view_memory_resource final : public device_memory_resource {
  public:
-#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
   /**
    * @brief Constructs a cuda_async_view_memory_resource which uses an existing CUDA memory pool.
    * The provided pool is not owned by cuda_async_view_memory_resource and must remain valid
    * during the lifetime of the memory resource.
    *
-   * @throws rmm::runtime_error if the CUDA version does not support `cudaMallocAsync`
+   * @throws rmm::logic_error if the CUDA version does not support `cudaMallocAsync`
    *
    * @param valid_pool_handle Handle to a CUDA memory pool which will be used to
    * serve allocation requests.
@@ -71,15 +65,13 @@ class cuda_async_view_memory_resource final : public device_memory_resource {
     RMM_EXPECTS(result == cudaSuccess && cuda_pool_supported,
                 "cudaMallocAsync not supported with this CUDA driver/runtime version");
   }
-#endif
 
-#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
   /**
    * @brief Returns the underlying native handle to the CUDA pool
    *
+   * @return cudaMemPool_t Handle to the underlying CUDA pool
    */
   [[nodiscard]] cudaMemPool_t pool_handle() const noexcept { return cuda_pool_handle_; }
-#endif
 
   cuda_async_view_memory_resource() = default;
   cuda_async_view_memory_resource(cuda_async_view_memory_resource const&) =
@@ -92,9 +84,7 @@ class cuda_async_view_memory_resource final : public device_memory_resource {
     default;  ///< @default_move_assignment{cuda_async_view_memory_resource}
 
  private:
-#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
   cudaMemPool_t cuda_pool_handle_{};
-#endif
 
   /**
    * @brief Allocates memory of size at least \p bytes.
@@ -108,15 +98,9 @@ class cuda_async_view_memory_resource final : public device_memory_resource {
   void* do_allocate(std::size_t bytes, rmm::cuda_stream_view stream) override
   {
     void* ptr{nullptr};
-#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
     if (bytes > 0) {
-      RMM_CUDA_TRY_ALLOC(rmm::detail::async_alloc::cudaMallocFromPoolAsync(
-        &ptr, bytes, pool_handle(), stream.value()));
+      RMM_CUDA_TRY_ALLOC(cudaMallocFromPoolAsync(&ptr, bytes, pool_handle(), stream.value()));
     }
-#else
-    (void)bytes;
-    (void)stream;
-#endif
     return ptr;
   }
 
@@ -132,15 +116,7 @@ class cuda_async_view_memory_resource final : public device_memory_resource {
                      [[maybe_unused]] std::size_t bytes,
                      rmm::cuda_stream_view stream) override
   {
-#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
-    if (ptr != nullptr) {
-      RMM_ASSERT_CUDA_SUCCESS(rmm::detail::async_alloc::cudaFreeAsync(ptr, stream.value()));
-    }
-#else
-    (void)ptr;
-    (void)bytes;
-    (void)stream;
-#endif
+    if (ptr != nullptr) { RMM_ASSERT_CUDA_SUCCESS(cudaFreeAsync(ptr, stream.value())); }
   }
 
   /**

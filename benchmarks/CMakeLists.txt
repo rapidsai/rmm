@@ -34,9 +34,9 @@ function(ConfigureBench BENCH_NAME)
                RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${RMM_BINARY_DIR}/gbenchmarks>"
                CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
                INSTALL_RPATH "\$ORIGIN/../../../lib")
-  target_link_libraries(${BENCH_NAME} benchmark::benchmark pthread rmm)
+  target_link_libraries(${BENCH_NAME} PRIVATE benchmark::benchmark pthread rmm)
   target_compile_definitions(${BENCH_NAME}
-                             PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
+                             PUBLIC "RMM_LOG_ACTIVE_LEVEL=RMM_LOG_LEVEL_${RMM_LOGGING_LEVEL}")
 
   if(PER_THREAD_DEFAULT_STREAM)
     target_compile_definitions(${BENCH_NAME} PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
@@ -44,6 +44,9 @@ function(ConfigureBench BENCH_NAME)
 
   target_compile_options(${BENCH_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Wall -Werror
                                               -Wno-unknown-pragmas>)
+
+  target_link_libraries(${BENCH_NAME} PRIVATE rmm_bench_logger)
+
   if(DISABLE_DEPRECATION_WARNING)
     target_compile_options(
       ${BENCH_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-Wno-deprecated-declarations>)
@@ -57,6 +60,10 @@ function(ConfigureBench BENCH_NAME)
     DESTINATION bin/benchmarks/librmm
     EXCLUDE_FROM_ALL)
 endfunction(ConfigureBench)
+
+# Create an object library for the logger so that we don't have to recompile it.
+add_library(rmm_bench_logger OBJECT)
+target_link_libraries(rmm_bench_logger PRIVATE rmm_logger_impl)
 
 # random allocations benchmark
 ConfigureBench(RANDOM_ALLOCATIONS_BENCH random_allocations/random_allocations.cpp)
