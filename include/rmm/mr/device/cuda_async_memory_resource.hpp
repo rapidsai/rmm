@@ -67,14 +67,14 @@ class cuda_async_memory_resource final : public device_memory_resource {
   /**
    * @brief Flags for specifying the memory pool accessibility from other devices.
    *
-   * @note The default, `prot_none`, marks the pool's memory as private to the device in
-   * which it was created. `prod_read_write` should only be used if memory sharing among
+   * @note The default, `none`, marks the pool's memory as private to the device in
+   * which it was created. `read_write` should only be used if memory sharing among
    * devices is required. Note that there is a `cudaMemAccessFlagsProtRead` documented,
    * but memory pools don't support read-only access, so it has been omitted.
    */
   enum class access_flags {
-    prot_none       = 0,  ///< Default, make pool not accessible. (cudaMemAccessFlagsProtNone)
-    prot_read_write = 3   ///< Make pool read-write accessible. (cudaMemAccessFlagsProtReadWrite)
+    none       = 0,  ///< Default, make pool not accessible.
+    read_write = 3   ///< Make pool read-write accessible.
   };
 
   /**
@@ -133,9 +133,10 @@ class cuda_async_memory_resource final : public device_memory_resource {
     }
 
     if (access_flag) {
-      cudaMemAccessDesc desc;
-      desc.location = pool_props.location;
-      desc.flags = static_cast<cudaMemAccessFlags>(access_flag.value_or(access_flags::prot_none));
+      cudaMemAccessDesc desc = {
+        .location = pool_props.location,
+        .flags = static_cast<cudaMemAccessFlags>(*access_flag)
+      };
       RMM_CUDA_TRY(cudaMemPoolSetAccess(pool_handle(), &desc, 1));
     }
 

@@ -98,7 +98,7 @@ TEST_F(AsyncMRFabricTest, FabricHandlesSupportReadWriteShareable)
   cuda_async_mr mr{pool_init_size,
                    pool_release_threshold,
                    rmm::mr::cuda_async_memory_resource::allocation_handle_type::fabric,
-                   rmm::mr::cuda_async_memory_resource::access_flags::prot_read_write};
+                   rmm::mr::cuda_async_memory_resource::access_flags::read_write};
   void* ptr = mr.allocate(pool_init_size);
   mr.deallocate(ptr, pool_init_size);
   RMM_CUDA_TRY(cudaDeviceSynchronize());
