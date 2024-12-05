@@ -53,7 +53,8 @@ class cuda_async_memory_resource final : public device_memory_resource {
    * memory pools (CUDA 11.2) did not support these flags, so we need a placeholder that can be
    * used consistently in the constructor of `cuda_async_memory_resource` with all versions of
    * CUDA >= 11.2. See the `cudaMemAllocationHandleType` docs at
-   * https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html
+   * https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html and ensure the enum
+   * values are kept in sync with the CUDA documentation.
    */
   enum class allocation_handle_type {
     none                  = 0x0,  ///< Does not allow any export mechanism.
@@ -67,10 +68,12 @@ class cuda_async_memory_resource final : public device_memory_resource {
   /**
    * @brief Flags for specifying the memory pool accessibility from other devices.
    *
-   * @note The default, `none`, marks the pool's memory as private to the device in
-   * which it was created. `read_write` should only be used if memory sharing among
-   * devices is required. Note that there is a `cudaMemAccessFlagsProtRead` documented,
-   * but memory pools don't support read-only access, so it has been omitted.
+   * @note These values are exact copies from `cudaMemAccessFlags`. See the `cudaMemAccessFlags`
+   * docs at https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html and ensure the
+   * enum values are kept in sync with the CUDA documentation. The default, `none`, marks the pool's
+   * memory as private to the device in which it was created. `read_write` should only be used if
+   * memory sharing among devices is required. Note that there is a `cudaMemAccessFlagsProtRead`
+   * documented, but memory pools don't support read-only access, so it has been omitted.
    */
   enum class access_flags {
     none       = 0,  ///< Default, make pool not accessible.
@@ -133,10 +136,8 @@ class cuda_async_memory_resource final : public device_memory_resource {
     }
 
     if (access_flag) {
-      cudaMemAccessDesc desc = {
-        .location = pool_props.location,
-        .flags = static_cast<cudaMemAccessFlags>(*access_flag)
-      };
+      cudaMemAccessDesc desc = {.location = pool_props.location,
+                                .flags    = static_cast<cudaMemAccessFlags>(*access_flag)};
       RMM_CUDA_TRY(cudaMemPoolSetAccess(pool_handle(), &desc, 1));
     }
 
