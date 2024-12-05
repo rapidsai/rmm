@@ -366,8 +366,8 @@ deallocation is performed (including in the destructor). The user must therefore
 the device active during _creation_ of an `rmm::device_buffer` matches the active device of the
 memory resource being used.
 
-Here is an incorrect example that creates a memory resource on device 0 and then uses it to
-allocate a `device_buffer` on device 1:
+Here is an incorrect example that creates a memory resource on device `0` and then uses it to
+allocate a `device_buffer` on device `1`:
 
 ```c++
 {
@@ -381,7 +381,7 @@ allocate a `device_buffer` on device 1:
 }
 ```
 
-A correct example creates the device buffer with device 0 active. After that it is safe to switch
+A correct example creates the device buffer with device `0` active. After that it is safe to switch
 devices and let the buffer go out of scope and destruct with a different device active. For example,
 this code is correct:
 
