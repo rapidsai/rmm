@@ -35,6 +35,7 @@ jobs:
     env:
       OTEL_SERVICE_NAME: "pr-rmm"
       SHARED_ACTIONS_REF: empty-certs
+      TELEMETRY_ENABLED: true
     steps:
       - name: Telemetry setup
         if: ${{ vars.TELEMETRY_ENABLED == 'true' }}
