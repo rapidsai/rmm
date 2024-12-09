@@ -28,7 +28,7 @@ from libcpp.memory cimport make_unique, unique_ptr
 from libcpp.optional cimport optional
 from libcpp.pair cimport pair
 
-from cuda.cudart import cudaError_t
+from cuda.bindings.runtime import cudaError_t
 
 from rmm._cuda.gpu import CUDARuntimeError, getDevice, setDevice
 

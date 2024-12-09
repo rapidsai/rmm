@@ -13,7 +13,7 @@
 # limitations under the License.
 
 cimport cython
-from cuda.ccudart cimport cudaStream_t
+from cuda.bindings.cyruntime cimport cudaStream_t
 from libcpp cimport bool
 
 from rmm.librmm.cuda_stream cimport cuda_stream

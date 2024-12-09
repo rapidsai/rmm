@@ -15,7 +15,7 @@
 import ctypes
 import inspect
 
-from cuda.cuda import CUdeviceptr, cuIpcGetMemHandle
+from cuda.bindings.driver import CUdeviceptr, cuIpcGetMemHandle
 from numba import config, cuda
 from numba.cuda import HostOnlyCUDAMemoryManager, IpcHandle, MemoryPointer
 

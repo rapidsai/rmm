@@ -23,8 +23,7 @@ from rmm._cuda.stream cimport Stream
 
 from rmm._cuda.stream import DEFAULT_STREAM
 
-cimport cuda.ccudart as ccudart
-from cuda.ccudart cimport (
+from cuda.bindings.cyruntime cimport (
     cudaError,
     cudaError_t,
     cudaMemcpyAsync,
@@ -421,7 +420,7 @@ cpdef DeviceBuffer to_device(const unsigned char[::1] b,
 cdef void _copy_async(const void* src,
                       void* dst,
                       size_t count,
-                      ccudart.cudaMemcpyKind kind,
+                      cudaMemcpyKind kind,
                       cuda_stream_view stream) except * nogil:
     """
     Asynchronously copy data between host and/or device pointers.
