@@ -9,6 +9,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  SHARED_ACTIONS_REF: empty-certs
+
 jobs:
   pr-builder:
     needs:
@@ -34,8 +37,6 @@ jobs:
     continue-on-error: true
     env:
       OTEL_SERVICE_NAME: "pr-rmm"
-      SHARED_ACTIONS_REF: empty-certs
-      TELEMETRY_ENABLED: true
     steps:
       - name: Telemetry setup
         if: ${{ vars.TELEMETRY_ENABLED == 'true' }}
@@ -147,8 +148,6 @@ jobs:
     needs: pr-builder
     if: ${{ vars.TELEMETRY_ENABLED == 'true' && !cancelled() }}
     continue-on-error: true
-    env:
-      SHARED_ACTIONS_REF: empty-certs
     steps:
       - name: Telemetry summarize
         uses: rapidsai/shared-actions/telemetry-dispatch-summarize@empty-certs
