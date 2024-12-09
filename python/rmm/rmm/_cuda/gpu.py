@@ -75,15 +75,16 @@ def setDevice(device: int):
 
 def runtimeGetVersion():
     """
-    Returns the version number of the current CUDA Runtime instance.
-    The version is returned as (1000 major + 10 minor). For example,
-    CUDA 9.2 would be represented by 9020.
+    Returns the version number of the local CUDA runtime.
+
+    The version is returned as ``(1000 * major + 10 * minor)``. For example,
+    CUDA 12.5 would be represented by 12050.
 
     This function automatically raises CUDARuntimeError with error message
     and status code.
     """
-    status, version = cudart.getLocalRuntimeVersion()
-    if status != cudart.cudaError_t.cudaSuccess:
+    status, version = runtime.getLocalRuntimeVersion()
+    if status != runtime.cudaError_t.cudaSuccess:
         raise CUDARuntimeError(status)
     return version
 
