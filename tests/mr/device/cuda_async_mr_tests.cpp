@@ -66,5 +66,43 @@ TEST_F(AsyncMRTest, DifferentPoolsUnequal)
   EXPECT_FALSE(mr1.is_equal(mr2));
 }
 
+class AsyncMRFabricTest : public AsyncMRTest {
+  void SetUp() override
+  {
+    AsyncMRTest::SetUp();
+
+    auto handle_type = static_cast<cudaMemAllocationHandleType>(
+      rmm::mr::cuda_async_memory_resource::allocation_handle_type::fabric);
+    if (!rmm::detail::runtime_async_alloc::is_export_handle_type_supported(handle_type)) {
+      GTEST_SKIP() << "Fabric handles are not supported in this environment. Skipping test.";
+    }
+  }
+};
+
+TEST_F(AsyncMRFabricTest, FabricHandlesSupport)
+{
+  const auto pool_init_size{100};
+  const auto pool_release_threshold{1000};
+  cuda_async_mr mr{pool_init_size,
+                   pool_release_threshold,
+                   rmm::mr::cuda_async_memory_resource::allocation_handle_type::fabric};
+  void* ptr = mr.allocate(pool_init_size);
+  mr.deallocate(ptr, pool_init_size);
+  RMM_CUDA_TRY(cudaDeviceSynchronize());
+}
+
+TEST_F(AsyncMRFabricTest, FabricHandlesSupportReadWriteShareable)
+{
+  const auto pool_init_size{100};
+  const auto pool_release_threshold{1000};
+  cuda_async_mr mr{pool_init_size,
+                   pool_release_threshold,
+                   rmm::mr::cuda_async_memory_resource::allocation_handle_type::fabric,
+                   rmm::mr::cuda_async_memory_resource::access_flags::read_write};
+  void* ptr = mr.allocate(pool_init_size);
+  mr.deallocate(ptr, pool_init_size);
+  RMM_CUDA_TRY(cudaDeviceSynchronize());
+}
+
 }  // namespace
 }  // namespace rmm::test
