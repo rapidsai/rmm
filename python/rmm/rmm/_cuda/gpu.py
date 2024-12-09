@@ -1,7 +1,6 @@
 # Copyright (c) 2020-2024, NVIDIA CORPORATION.
 
-import cuda.bindings.driver as driver
-import cuda.bindings.runtime as runtime
+from cuda.bindings import driver, runtime
 
 
 class CUDARuntimeError(RuntimeError):
