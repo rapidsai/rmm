@@ -39,6 +39,8 @@ jobs:
       OTEL_SERVICE_NAME: "pr-rmm"
     steps:
       - name: Telemetry setup
+        # This gate is here and not at the job level because we need the job to not be skipped,
+        # since other jobs depend on it.
         if: ${{ vars.TELEMETRY_ENABLED == 'true' }}
         uses: rapidsai/shared-actions/telemetry-dispatch-stash-base-env-vars@empty-certs
   changed-files:
