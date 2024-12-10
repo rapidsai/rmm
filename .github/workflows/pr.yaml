@@ -146,6 +146,8 @@ jobs:
         sccache -s;
 
   telemetry-summarize:
+    # It is essential that this job run on a self-hosted runner. Otherwise, the job
+    # won't be able to communicate with FluentBit, and you won't be recording anything.
     runs-on: linux-amd64-cpu4
     needs: pr-builder
     if: ${{ vars.TELEMETRY_ENABLED == 'true' && !cancelled() }}
