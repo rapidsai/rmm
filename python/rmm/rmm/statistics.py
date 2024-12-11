@@ -18,7 +18,7 @@ from collections import defaultdict
 from contextlib import contextmanager
 from dataclasses import dataclass
 from functools import wraps
-from typing import Dict, Literal, Optional
+from typing import Literal
 
 import rmm.mr
 
@@ -71,7 +71,7 @@ def enable_statistics() -> None:
         )
 
 
-def get_statistics() -> Optional[Statistics]:
+def get_statistics() -> Statistics | None:
     """Get the current allocation statistics.
 
     Returns
@@ -85,7 +85,7 @@ def get_statistics() -> Optional[Statistics]:
     return None
 
 
-def push_statistics() -> Optional[Statistics]:
+def push_statistics() -> Statistics | None:
     """Push new counters on the current allocation statistics stack.
 
     This returns the current tracked statistics and pushes a new set
@@ -105,7 +105,7 @@ def push_statistics() -> Optional[Statistics]:
     return None
 
 
-def pop_statistics() -> Optional[Statistics]:
+def pop_statistics() -> Statistics | None:
     """Pop the counters of the current allocation statistics stack.
 
     This returns the counters of current tracked statistics and pops
@@ -193,7 +193,7 @@ class ProfilerRecords:
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
-        self._records: Dict[str, ProfilerRecords.MemoryRecord] = defaultdict(
+        self._records: dict[str, ProfilerRecords.MemoryRecord] = defaultdict(
             ProfilerRecords.MemoryRecord
         )
 
@@ -215,7 +215,7 @@ class ProfilerRecords:
             )
 
     @property
-    def records(self) -> Dict[str, MemoryRecord]:
+    def records(self) -> dict[str, MemoryRecord]:
         """Dictionary mapping record names to their memory statistics."""
         return dict(self._records)
 
