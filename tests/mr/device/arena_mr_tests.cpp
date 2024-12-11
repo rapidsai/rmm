@@ -491,9 +491,7 @@ TEST_F(ArenaTest, SizeSmallerThanSuperblockSize)  // NOLINT
 TEST_F(ArenaTest, AllocateNinetyPercent)  // NOLINT
 {
   EXPECT_NO_THROW([]() {  // NOLINT(cppcoreguidelines-avoid-goto)
-    auto const free           = rmm::available_device_memory().first;
-    auto const ninety_percent = rmm::align_up(
-      static_cast<std::size_t>(static_cast<double>(free) * 0.9), rmm::CUDA_ALLOCATION_ALIGNMENT);
+    auto const ninety_percent = rmm::percent_of_free_device_memory(90);
     arena_mr mr(rmm::mr::get_current_device_resource_ref(), ninety_percent);
   }());
 }
@@ -576,10 +574,10 @@ TEST_F(ArenaTest, DumpLogOnFailure)  // NOLINT
     std::size_t num_threads{4};
     threads.reserve(num_threads);
     for (std::size_t i = 0; i < num_threads; ++i) {
-      threads.emplace_back(std::thread([&] {
+      threads.emplace_back([&] {
         void* ptr = mr.allocate(32_KiB);
         mr.deallocate(ptr, 32_KiB);
-      }));
+      });
     }
 
     for (auto& thread : threads) {

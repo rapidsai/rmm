@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2024, NVIDIA CORPORATION.
+# Copyright (c) 2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,105 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from libc.stdint cimport uintptr_t
-from libcpp.memory cimport unique_ptr
-
-from rmm._cuda.stream cimport Stream
-from rmm._lib.cuda_stream_view cimport cuda_stream_view
-from rmm._lib.memory_resource cimport (
-    DeviceMemoryResource,
-    device_memory_resource,
+from rmm.librmm.device_buffer cimport (
+    cuda_device_id,
+    device_buffer,
+    get_current_cuda_device,
+    prefetch,
 )
-
-
-cdef extern from "rmm/mr/device/per_device_resource.hpp" namespace "rmm" nogil:
-    cdef cppclass cuda_device_id:
-        ctypedef int value_type
-        cuda_device_id()
-        cuda_device_id(value_type id)
-        value_type value()
-
-    cdef cuda_device_id get_current_cuda_device()
-
-cdef extern from "rmm/prefetch.hpp" namespace "rmm" nogil:
-    cdef void prefetch(const void* ptr,
-                       size_t bytes,
-                       cuda_device_id device,
-                       cuda_stream_view stream) except +
-
-cdef extern from "rmm/device_buffer.hpp" namespace "rmm" nogil:
-    cdef cppclass device_buffer:
-        device_buffer()
-        device_buffer(
-            size_t size,
-            cuda_stream_view stream,
-            device_memory_resource *
-        ) except +
-        device_buffer(
-            const void* source_data,
-            size_t size,
-            cuda_stream_view stream,
-            device_memory_resource *
-        ) except +
-        device_buffer(
-            const device_buffer buf,
-            cuda_stream_view stream,
-            device_memory_resource *
-        ) except +
-        void reserve(size_t new_capacity, cuda_stream_view stream) except +
-        void resize(size_t new_size, cuda_stream_view stream) except +
-        void shrink_to_fit(cuda_stream_view stream) except +
-        void* data()
-        size_t size()
-        size_t capacity()
-
-
-cdef class DeviceBuffer:
-    cdef unique_ptr[device_buffer] c_obj
-
-    # Holds a reference to the DeviceMemoryResource used for allocation.
-    # Ensures the MR does not get destroyed before this DeviceBuffer. `mr` is
-    # needed for deallocation
-    cdef DeviceMemoryResource mr
-
-    # Holds a reference to the stream used by the underlying `device_buffer`.
-    # Ensures the stream does not get destroyed before this DeviceBuffer
-    cdef Stream stream
-
-    @staticmethod
-    cdef DeviceBuffer c_from_unique_ptr(
-        unique_ptr[device_buffer] ptr,
-        Stream stream=*,
-        DeviceMemoryResource mr=*,
-    )
-
-    @staticmethod
-    cdef DeviceBuffer c_to_device(const unsigned char[::1] b,
-                                  Stream stream=*) except *
-    cpdef copy_to_host(self, ary=*, Stream stream=*)
-    cpdef copy_from_host(self, ary, Stream stream=*)
-    cpdef copy_from_device(self, cuda_ary, Stream stream=*)
-    cpdef bytes tobytes(self, Stream stream=*)
-
-    cdef size_t c_size(self) except *
-    cpdef void reserve(self, size_t new_capacity, Stream stream=*) except *
-    cpdef void resize(self, size_t new_size, Stream stream=*) except *
-    cpdef size_t capacity(self) except *
-    cdef void* c_data(self) except *
-
-    cdef device_buffer c_release(self) except *
-
-cpdef DeviceBuffer to_device(const unsigned char[::1] b,
-                             Stream stream=*)
-cpdef void copy_ptr_to_host(uintptr_t db,
-                            unsigned char[::1] hb,
-                            Stream stream=*) except *
-
-cpdef void copy_host_to_ptr(const unsigned char[::1] hb,
-                            uintptr_t db,
-                            Stream stream=*) except *
-
-cpdef void copy_device_to_ptr(uintptr_t d_src,
-                              uintptr_t d_dst,
-                              size_t count,
-                              Stream stream=*) except *
+from rmm.pylibrmm.device_buffer cimport (
+    DeviceBuffer,
+    copy_device_to_ptr,
+    copy_host_to_ptr,
+    copy_ptr_to_host,
+    to_device,
+)

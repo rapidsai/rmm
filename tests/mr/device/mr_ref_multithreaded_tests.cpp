@@ -36,17 +36,11 @@ namespace {
 
 struct mr_ref_test_mt : public mr_ref_test {};
 
-INSTANTIATE_TEST_CASE_P(MultiThreadResourceTests,
-                        mr_ref_test_mt,
-                        ::testing::Values("CUDA",
-#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
-                                          "CUDA_Async",
-#endif
-                                          "Managed",
-                                          "Pool",
-                                          "Arena",
-                                          "Binning"),
-                        [](auto const& info) { return info.param; });
+INSTANTIATE_TEST_CASE_P(
+  MultiThreadResourceTests,
+  mr_ref_test_mt,
+  ::testing::Values("CUDA", "CUDA_Async", "Managed", "Pool", "Arena", "Binning"),
+  [](auto const& info) { return info.param; });
 
 template <typename Task, typename... Arguments>
 void spawn_n(std::size_t num_threads, Task task, Arguments&&... args)
@@ -109,8 +103,13 @@ TEST_P(mr_ref_test_mt, SetCurrentDeviceResourceRef_mt)
 {
   // single thread changes default resource, then multiple threads use it
   auto old = rmm::mr::set_current_device_resource_ref(this->ref);
+  test_get_current_device_resource_ref();
 
-  spawn([mr = this->ref]() {
+  int device;
+  RMM_CUDA_TRY(cudaGetDevice(&device));
+
+  spawn([device, mr = this->ref]() {
+    RMM_CUDA_TRY(cudaSetDevice(device));
     EXPECT_EQ(mr, rmm::mr::get_current_device_resource_ref());
     test_get_current_device_resource_ref();  // test allocating with the new default resource
   });
@@ -156,7 +155,17 @@ TEST_P(mr_ref_test_mt, SetCurrentDeviceResourceRefPerThread_mt)
   }
 }
 
-TEST_P(mr_ref_test_mt, Allocate) { spawn(test_various_allocations, this->ref); }
+TEST_P(mr_ref_test_mt, Allocate)
+{
+  int device;
+  RMM_CUDA_TRY(cudaGetDevice(&device));
+
+  auto mr = this->ref;
+  spawn([device, mr]() {
+    RMM_CUDA_TRY(cudaSetDevice(device));
+    test_various_allocations(mr);
+  });
+}
 
 TEST_P(mr_ref_test_mt, AllocateDefaultStream)
 {

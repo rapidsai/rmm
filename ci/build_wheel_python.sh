@@ -22,11 +22,17 @@ CPP_WHEELHOUSE=$(RAPIDS_PY_WHEEL_NAME="rmm_${RAPIDS_PY_CUDA_SUFFIX}" rapids-down
 # are used when created the isolated build environment
 echo "librmm-${RAPIDS_PY_CUDA_SUFFIX} @ file://$(echo ${CPP_WHEELHOUSE}/librmm_${RAPIDS_PY_CUDA_SUFFIX}*.whl)" > ./build-constraints.txt
 
+sccache --zero-stats
+
 PIP_CONSTRAINT="${PWD}/build-constraints.txt" \
-    python -m pip wheel . -w dist -vvv --no-deps --disable-pip-version-check
+    python -m pip wheel . -w dist -v --no-deps --disable-pip-version-check
+
+sccache --show-adv-stats
 
 mkdir -p final_dist
 python -m auditwheel repair -w final_dist dist/*
+
+../../ci/validate_wheel.sh final_dist
 
 RAPIDS_PY_WHEEL_NAME="${package_name}_${RAPIDS_PY_CUDA_SUFFIX}" rapids-upload-wheels-to-s3 python final_dist
 

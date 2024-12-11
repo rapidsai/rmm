@@ -19,13 +19,16 @@ option(CODE_COVERAGE "Enable generating code coverage with gcov." OFF)
 include(rapids-test)
 rapids_test_init()
 
+# Ensure tests are using the conda env, so they have the correct release/debug compile flags
+rapids_cmake_support_conda_env(conda_env)
+
 # This function takes in a test name and test source and handles setting all of the associated
 # properties and linking to build the test
 function(ConfigureTestInternal TEST_NAME)
   add_executable(${TEST_NAME} ${ARGN})
   target_include_directories(${TEST_NAME} PRIVATE "$<BUILD_INTERFACE:${RMM_SOURCE_DIR}>")
   target_link_libraries(${TEST_NAME} GTest::gmock GTest::gtest GTest::gmock_main GTest::gtest_main
-                        pthread rmm)
+                        pthread rmm $<TARGET_NAME_IF_EXISTS:conda_env>)
   set_target_properties(
     ${TEST_NAME}
     PROPERTIES POSITION_INDEPENDENT_CODE ON
@@ -38,9 +41,7 @@ function(ConfigureTestInternal TEST_NAME)
                CUDA_STANDARD_REQUIRED ON)
   target_compile_definitions(${TEST_NAME}
                              PUBLIC "SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${RMM_LOGGING_LEVEL}")
-  target_compile_options(${TEST_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Wall -Werror
-                                             -Wno-error=deprecated-declarations>)
-  target_compile_options(${TEST_NAME} PUBLIC "$<$<CONFIG:Debug>:-O0>")
+  target_compile_options(${TEST_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Wall -Werror>)
 
   if(DISABLE_DEPRECATION_WARNING)
     target_compile_options(
@@ -83,7 +84,7 @@ endfunction()
 function(ConfigureTest TEST_NAME)
 
   set(options)
-  set(one_value GPUS PERCENT)
+  set(one_value CUDART GPUS PERCENT)
   set(multi_value)
   cmake_parse_arguments(_RMM_TEST "${options}" "${one_value}" "${multi_value}" ${ARGN})
   if(NOT DEFINED _RMM_TEST_GPUS AND NOT DEFINED _RMM_TEST_PERCENT)
@@ -97,13 +98,23 @@ function(ConfigureTest TEST_NAME)
     set(_RMM_TEST_PERCENT 100)
   endif()
 
+  if(_RMM_TEST_CUDART STREQUAL SHARED)
+    set(cudart_link_libs $<COMPILE_ONLY:rmm> CUDA::cudart)
+  elseif(_RMM_TEST_CUDART STREQUAL STATIC)
+    set(cudart_link_libs $<COMPILE_ONLY:rmm> CUDA::cudart_static)
+  else()
+    set(cudart_link_libs rmm)
+  endif()
+
   # Test with legacy default stream.
   ConfigureTestInternal(${TEST_NAME} ${_RMM_TEST_UNPARSED_ARGUMENTS})
+  target_link_libraries(${TEST_NAME} ${cudart_link_libs})
 
   # Test with per-thread default stream.
   string(REGEX REPLACE "_TEST$" "_PTDS_TEST" PTDS_TEST_NAME "${TEST_NAME}")
   ConfigureTestInternal("${PTDS_TEST_NAME}" ${_RMM_TEST_UNPARSED_ARGUMENTS})
   target_compile_definitions("${PTDS_TEST_NAME}" PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
+  target_link_libraries(${PTDS_TEST_NAME} ${cudart_link_libs})
 
   foreach(name ${TEST_NAME} ${PTDS_TEST_NAME} ${NS_TEST_NAME})
     rapids_test_add(
@@ -129,7 +140,10 @@ ConfigureTest(ADAPTOR_TEST mr/device/adaptor_tests.cpp)
 ConfigureTest(POOL_MR_TEST mr/device/pool_mr_tests.cpp GPUS 1 PERCENT 100)
 
 # cuda_async mr tests
-ConfigureTest(CUDA_ASYNC_MR_TEST mr/device/cuda_async_mr_tests.cpp GPUS 1 PERCENT 60)
+ConfigureTest(CUDA_ASYNC_MR_STATIC_CUDART_TEST mr/device/cuda_async_mr_tests.cpp GPUS 1 PERCENT 60
+              CUDART STATIC)
+ConfigureTest(CUDA_ASYNC_MR_SHARED_CUDART_TEST mr/device/cuda_async_mr_tests.cpp GPUS 1 PERCENT 60
+              CUDART SHARED)
 
 # thrust allocator tests
 ConfigureTest(THRUST_ALLOCATOR_TEST mr/device/thrust_allocator_tests.cu GPUS 1 PERCENT 60)

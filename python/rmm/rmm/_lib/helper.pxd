@@ -12,5 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-cdef object parse_bytes(object s) except *
+from rmm.pylibrmm.helper cimport parse_bytes

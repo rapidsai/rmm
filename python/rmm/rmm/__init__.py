@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2021, NVIDIA CORPORATION.
+# Copyright (c) 2018-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,9 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import warnings
+
 from rmm import mr
-from rmm._lib.device_buffer import DeviceBuffer
-from rmm._lib.logger import (
+from rmm._version import __git_commit__, __version__
+from rmm.mr import disable_logging, enable_logging, get_log_filenames
+from rmm.pylibrmm.device_buffer import DeviceBuffer
+from rmm.pylibrmm.logger import (
     flush_logger,
     get_flush_level,
     get_logging_level,
@@ -23,8 +27,6 @@ from rmm._lib.logger import (
     set_logging_level,
     should_log,
 )
-from rmm._version import __git_commit__, __version__
-from rmm.mr import disable_logging, enable_logging, get_log_filenames
 from rmm.rmm import (
     RMMError,
     is_initialized,
@@ -52,3 +54,19 @@ __all__ = [
     "should_log",
     "unregister_reinitialize_hook",
 ]
+
+
+def __getattr__(name):
+    if name == "_lib":
+        import importlib
+
+        warnings.warn(
+            "The `rmm._lib` module is deprecated in will be removed in a future release. Use `rmm.pylibrmm` instead.",
+            FutureWarning,
+            stacklevel=2,
+        )
+
+        module = importlib.import_module("rmm.pylibrmm")
+        return module
+    else:
+        raise AttributeError(f"Module '{__name__}' has no attribute '{name}'")

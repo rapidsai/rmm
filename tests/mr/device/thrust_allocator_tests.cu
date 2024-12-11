@@ -69,17 +69,11 @@ TEST_P(allocator_test, multi_device)
   }());
 }
 
-INSTANTIATE_TEST_CASE_P(ThrustAllocatorTests,
-                        allocator_test,
-                        ::testing::Values("CUDA",
-#ifdef RMM_CUDA_MALLOC_ASYNC_SUPPORT
-                                          "CUDA_Async",
-#endif
-                                          "Managed",
-                                          "Pool",
-                                          "Arena",
-                                          "Binning"),
-                        [](auto const& info) { return info.param; });
+INSTANTIATE_TEST_CASE_P(
+  ThrustAllocatorTests,
+  allocator_test,
+  ::testing::Values("CUDA", "CUDA_Async", "Managed", "Pool", "Arena", "Binning"),
+  [](auto const& info) { return info.param; });
 
 }  // namespace
 }  // namespace rmm::test

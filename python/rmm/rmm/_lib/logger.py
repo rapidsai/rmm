@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2020, NVIDIA CORPORATION.
+# Copyright (c) 2018-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,9 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from libc.stdint cimport uintptr_t
-from libcpp cimport bool
-from libcpp.utility cimport pair
-from libcpp.vector cimport vector
-
-ctypedef pair[const char*, unsigned int] caller_pair
+from rmm.librmm._logger import logging_level  # noqa: F401
+from rmm.pylibrmm.logger import (  # noqa: F401
+    _validate_level_type,
+    flush_logger,
+    get_flush_level,
+    get_logging_level,
+    set_flush_level,
+    set_logging_level,
+    should_log,
+)

@@ -41,6 +41,9 @@ rapids_cmake_build_type(Release)
 option(RMM_NVTX "Build RMM with NVTX support" OFF)
 option(BUILD_TESTS "Configure CMake to build tests" ON)
 option(BUILD_BENCHMARKS "Configure CMake to build (google) benchmarks" OFF)
+# This is mostly so that dependent libraries are configured in shared mode for downstream dependents
+# of RMM that get their common dependencies transitively.
+option(BUILD_SHARED_LIBS "Build RMM shared libraries" ON)
 set(RMM_LOGGING_LEVEL
     "INFO"
     CACHE STRING "Choose the logging level.")
@@ -70,7 +73,6 @@ rapids_find_package(
 # add third party dependencies using CPM
 rapids_cpm_init()
 
-include(cmake/thirdparty/get_fmt.cmake)
 include(cmake/thirdparty/get_spdlog.cmake)
 include(cmake/thirdparty/get_cccl.cmake)
 include(cmake/thirdparty/get_nvtx.cmake)
@@ -87,13 +89,11 @@ target_include_directories(rmm INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOUR
 if(CUDA_STATIC_RUNTIME)
   message(STATUS "RMM: Enabling static linking of cudart")
   target_link_libraries(rmm INTERFACE CUDA::cudart_static)
-  target_compile_definitions(rmm INTERFACE RMM_STATIC_CUDART)
 else()
   target_link_libraries(rmm INTERFACE CUDA::cudart)
 endif()
 
 target_link_libraries(rmm INTERFACE CCCL::CCCL)
-target_link_libraries(rmm INTERFACE fmt::fmt-header-only)
 target_link_libraries(rmm INTERFACE spdlog::spdlog_header_only)
 target_link_libraries(rmm INTERFACE dl)
 target_link_libraries(rmm INTERFACE nvtx3::nvtx3-cpp)

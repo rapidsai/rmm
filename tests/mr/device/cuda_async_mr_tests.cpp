@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022, NVIDIA CORPORATION.
+ * Copyright (c) 2021-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,24 +31,13 @@ class AsyncMRTest : public ::testing::Test {
  protected:
   void SetUp() override
   {
-    if (!rmm::detail::async_alloc::is_supported()) {
+    if (!rmm::detail::runtime_async_alloc::is_supported()) {
       GTEST_SKIP() << "Skipping tests since cudaMallocAsync not supported with this CUDA "
                    << "driver/runtime version";
     }
   }
 };
 
-TEST_F(AsyncMRTest, ThrowIfNotSupported)
-{
-  auto construct_mr = []() { cuda_async_mr mr; };
-#ifndef RMM_CUDA_MALLOC_ASYNC_SUPPORT
-  EXPECT_THROW(construct_mr(), rmm::logic_error);
-#else
-  EXPECT_NO_THROW(construct_mr());
-#endif
-}
-
-#if defined(RMM_CUDA_MALLOC_ASYNC_SUPPORT)
 TEST_F(AsyncMRTest, ExplicitInitialPoolSize)
 {
   const auto pool_init_size{100};
@@ -76,8 +65,6 @@ TEST_F(AsyncMRTest, DifferentPoolsUnequal)
   cuda_async_mr mr2{pool_init_size, pool_release_threshold};
   EXPECT_FALSE(mr1.is_equal(mr2));
 }
-
-#endif
 
 }  // namespace
 }  // namespace rmm::test
