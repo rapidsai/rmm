@@ -74,11 +74,6 @@ repos:
         language: system
         pass_filenames: false
         verbose: true
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.2
-    hooks:
-    - id: ruff
-      files: python/.*$
   - repo: https://github.com/rapidsai/pre-commit-hooks
     rev: v0.4.0
     hooks:
