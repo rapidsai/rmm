@@ -148,3 +148,14 @@ filterwarnings = [
     "error",
     "ignore:.*cuda..* module is deprecated.*:DeprecationWarning"
 ]
+
+[tool.ruff]
+extend = "../../pyproject.toml"
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+known-first-party = ["rmm"]
+section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["E402", "F401"]
