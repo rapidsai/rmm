@@ -20,18 +20,6 @@ repos:
       - id: ruff
         args: ["--fix"]
       - id: ruff-format
-  - repo: https://github.com/PyCQA/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
-        args: ["--settings-path=python/rmm/pyproject.toml"]
-        files: python/.*
-        types_or: [python, cython, pyi]
-  - repo: https://github.com/ambv/black
-    rev: 24.10.0
-    hooks:
-      - id: black
-        args: ["--config=python/rmm/pyproject.toml"]
   - repo: https://github.com/MarcoGorelli/cython-lint
     rev: v0.16.6
     hooks:
