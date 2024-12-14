@@ -1078,9 +1078,3 @@ def test_available_device_memory():
     assert initial_memory[1] == final_memory[1]
     assert initial_memory[0] > 0
     assert final_memory[0] > 0
-
-
-# TODO: Remove test when rmm._lib is removed in 25.02
-def test_deprecate_rmm_lib():
-    with pytest.warns(FutureWarning):
-        rmm._lib.device_buffer.DeviceBuffer(size=100)
