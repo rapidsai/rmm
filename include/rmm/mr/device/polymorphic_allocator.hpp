@@ -293,25 +293,6 @@ bool operator!=(stream_allocator_adaptor<A> const& lhs, stream_allocator_adaptor
   return not(lhs == rhs);
 }
 
-/**
- * @brief Factory to construct a `stream_allocator_adaptor` from an existing stream-ordered
- * allocator.
- *
- * @tparam Allocator Type of the stream-ordered allocator
- * @param allocator The allocator to use as the underlying allocator of the
- * `stream_allocator_adaptor`
- * @param stream The stream on which the `stream_allocator_adaptor` will perform (de)allocations
- * @return A `stream_allocator_adaptor` wrapping `allocator` and `s`
- */
-template <typename Allocator>
-[[deprecated(
-  "make_stream_allocator_adaptor is deprecated in RMM 24.10. Use the stream_allocator_adaptor "
-  "constructor "
-  "instead.")]]
-auto make_stream_allocator_adaptor(Allocator const& allocator, cuda_stream_view stream)
-{
-  return stream_allocator_adaptor<Allocator>{allocator, stream};
-}
 /** @} */  // end of group
 }  // namespace mr
 }  // namespace RMM_NAMESPACE

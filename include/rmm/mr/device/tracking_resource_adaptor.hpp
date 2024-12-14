@@ -283,23 +283,6 @@ class tracking_resource_adaptor final : public device_memory_resource {
                                                   // allocation requests
 };
 
-/**
- * @brief Convenience factory to return a `tracking_resource_adaptor` around the
- * upstream resource `upstream`.
- *
- * @tparam Upstream Type of the upstream `device_memory_resource`.
- * @param upstream Pointer to the upstream resource
- * @return The new tracking resource adaptor
- */
-template <typename Upstream>
-[[deprecated(
-  "make_tracking_adaptor is deprecated in RMM 24.10. Use the tracking_resource_adaptor constructor "
-  "instead.")]]
-tracking_resource_adaptor<Upstream> make_tracking_adaptor(Upstream* upstream)
-{
-  return tracking_resource_adaptor<Upstream>{upstream};
-}
-
 /** @} */  // end of group
 }  // namespace mr
 }  // namespace RMM_NAMESPACE
