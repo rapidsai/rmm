@@ -6,7 +6,7 @@
 skip = "./.git,./build,./python/_skbuild/,.*egg-info.*,./.mypy_cache,./pyproject.toml,./benchmarks/utilities/cxxopts.hpp"
 # ignore short words, and typename parameters like OffsetT
 ignore-regex = "\\b(.{1,4}|[A-Z]\\w*T)\\b"
-ignore-words-list = "inout,thirdparty,couldn"
+ignore-words-list = "thirdparty,couldn"
 builtin = "clear"
 quiet-level = 3
 
