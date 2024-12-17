@@ -20,9 +20,9 @@ import pickle
 import warnings
 from itertools import product
 
-import cuda.cudart as cudart
 import numpy as np
 import pytest
+from cuda.bindings import runtime
 from numba import cuda
 
 import rmm
@@ -34,7 +34,7 @@ from rmm.pylibrmm.logger import level_enum
 cuda.set_memory_manager(RMMNumbaManager)
 
 _SYSTEM_MEMORY_SUPPORTED = rmm._cuda.gpu.getDeviceAttribute(
-    cudart.cudaDeviceAttr.cudaDevAttrPageableMemoryAccess,
+    runtime.cudaDeviceAttr.cudaDevAttrPageableMemoryAccess,
     rmm._cuda.gpu.getDevice(),
 )
 
@@ -319,13 +319,13 @@ def test_rmm_device_buffer_pickle_roundtrip(hb):
 
 
 def assert_prefetched(buffer, device_id):
-    err, dev = cudart.cudaMemRangeGetAttribute(
+    err, dev = runtime.cudaMemRangeGetAttribute(
         4,
-        cudart.cudaMemRangeAttribute.cudaMemRangeAttributeLastPrefetchLocation,
+        runtime.cudaMemRangeAttribute.cudaMemRangeAttributeLastPrefetchLocation,
         buffer.ptr,
         buffer.size,
     )
-    assert err == cudart.cudaError_t.cudaSuccess
+    assert err == runtime.cudaError_t.cudaSuccess
     assert dev == device_id
 
 
@@ -336,11 +336,11 @@ def test_rmm_device_buffer_prefetch(pool, managed):
     rmm.reinitialize(pool_allocator=pool, managed_memory=managed)
     db = rmm.DeviceBuffer.to_device(np.zeros(256, dtype="u1"))
     if managed:
-        assert_prefetched(db, cudart.cudaInvalidDeviceId)
+        assert_prefetched(db, runtime.cudaInvalidDeviceId)
     db.prefetch()  # just test that it doesn't throw
     if managed:
-        err, device = cudart.cudaGetDevice()
-        assert err == cudart.cudaError_t.cudaSuccess
+        err, device = runtime.cudaGetDevice()
+        assert err == runtime.cudaError_t.cudaSuccess
         assert_prefetched(db, device)
 
 
@@ -830,15 +830,15 @@ def test_prefetch_resource_adaptor(managed):
     # This allocation should be prefetched
     db = rmm.DeviceBuffer.to_device(np.zeros(256, dtype="u1"))
 
-    err, device = cudart.cudaGetDevice()
-    assert err == cudart.cudaError_t.cudaSuccess
+    err, device = runtime.cudaGetDevice()
+    assert err == runtime.cudaError_t.cudaSuccess
 
     if managed:
         assert_prefetched(db, device)
     db.prefetch()  # just test that it doesn't throw
     if managed:
-        err, device = cudart.cudaGetDevice()
-        assert err == cudart.cudaError_t.cudaSuccess
+        err, device = runtime.cudaGetDevice()
+        assert err == runtime.cudaError_t.cudaSuccess
         assert_prefetched(db, device)
 
 
@@ -1078,9 +1078,3 @@ def test_available_device_memory():
     assert initial_memory[1] == final_memory[1]
     assert initial_memory[0] > 0
     assert final_memory[0] > 0
-
-
-# TODO: Remove test when rmm._lib is removed in 25.02
-def test_deprecate_rmm_lib():
-    with pytest.warns(FutureWarning):
-        rmm._lib.device_buffer.DeviceBuffer(size=100)

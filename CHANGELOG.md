@@ -1,3 +1,48 @@
+# rmm 24.12.00 (11 Dec 2024)
+
+## 🚨 Breaking Changes
+
+- Deprecate support for directly accessing logger ([#1690](https://github.com/rapidsai/rmm/pull/1690)) [@vyasr](https://github.com/vyasr)
+
+## 🐛 Bug Fixes
+
+- Query total memory in failure_callback_resource_adaptor tests ([#1734](https://github.com/rapidsai/rmm/pull/1734)) [@harrism](https://github.com/harrism)
+- Treat deprecation warnings as errors and fix deprecation warnings in replay benchmark ([#1728](https://github.com/rapidsai/rmm/pull/1728)) [@harrism](https://github.com/harrism)
+- Disallow cuda-python 12.6.1 and 11.8.4 ([#1720](https://github.com/rapidsai/rmm/pull/1720)) [@bdice](https://github.com/bdice)
+- Fix typos in .gitignore ([#1697](https://github.com/rapidsai/rmm/pull/1697)) [@charlesbluca](https://github.com/charlesbluca)
+- Fix `rmm ._lib` imports ([#1693](https://github.com/rapidsai/rmm/pull/1693)) [@Matt711](https://github.com/Matt711)
+
+## 📖 Documentation
+
+- Fix docs warning ([#1706](https://github.com/rapidsai/rmm/pull/1706)) [@bdice](https://github.com/bdice)
+- Update cross-link to cuda-python object ([#1699](https://github.com/rapidsai/rmm/pull/1699)) [@wence-](https://github.com/wence-)
+
+## 🚀 New Features
+
+- Correct rmm tests for validity of device pointers ([#1714](https://github.com/rapidsai/rmm/pull/1714)) [@robertmaynard](https://github.com/robertmaynard)
+- Update rmm tests to use rapids_cmake_support_conda_env ([#1707](https://github.com/rapidsai/rmm/pull/1707)) [@robertmaynard](https://github.com/robertmaynard)
+- adding telemetry ([#1692](https://github.com/rapidsai/rmm/pull/1692)) [@msarahan](https://github.com/msarahan)
+- Make `cudaMallocAsync` logic non-optional as we require CUDA 11.2+ ([#1667](https://github.com/rapidsai/rmm/pull/1667)) [@robertmaynard](https://github.com/robertmaynard)
+
+## 🛠️ Improvements
+
+- enforce wheel size limits, README formatting in CI ([#1726](https://github.com/rapidsai/rmm/pull/1726)) [@jameslamb](https://github.com/jameslamb)
+- Remove all explicit usage of fmtlib ([#1724](https://github.com/rapidsai/rmm/pull/1724)) [@harrism](https://github.com/harrism)
+- WIP: put a ceiling on cuda-python ([#1723](https://github.com/rapidsai/rmm/pull/1723)) [@jameslamb](https://github.com/jameslamb)
+- use rapids-generate-pip-constraints to pin to oldest dependencies in CI ([#1716](https://github.com/rapidsai/rmm/pull/1716)) [@jameslamb](https://github.com/jameslamb)
+- Deprecate `rmm._lib` ([#1713](https://github.com/rapidsai/rmm/pull/1713)) [@Matt711](https://github.com/Matt711)
+- print sccache stats in builds ([#1712](https://github.com/rapidsai/rmm/pull/1712)) [@jameslamb](https://github.com/jameslamb)
+- [fea] Expose the arena mr to the Python interface. ([#1711](https://github.com/rapidsai/rmm/pull/1711)) [@trivialfis](https://github.com/trivialfis)
+- devcontainer: replace `VAULT_HOST` with `AWS_ROLE_ARN` ([#1708](https://github.com/rapidsai/rmm/pull/1708)) [@jjacobelli](https://github.com/jjacobelli)
+- make conda installs in CI stricter (part 2) ([#1703](https://github.com/rapidsai/rmm/pull/1703)) [@jameslamb](https://github.com/jameslamb)
+- Add BUILD_SHARED_LIBS option defaulting to ON ([#1702](https://github.com/rapidsai/rmm/pull/1702)) [@wence-](https://github.com/wence-)
+- make conda installs in CI stricter ([#1696](https://github.com/rapidsai/rmm/pull/1696)) [@jameslamb](https://github.com/jameslamb)
+- Prune workflows based on changed files ([#1695](https://github.com/rapidsai/rmm/pull/1695)) [@KyleFromNVIDIA](https://github.com/KyleFromNVIDIA)
+- Deprecate support for directly accessing logger ([#1690](https://github.com/rapidsai/rmm/pull/1690)) [@vyasr](https://github.com/vyasr)
+- Use `rmm::percent_of_free_device_memory` in arena test ([#1689](https://github.com/rapidsai/rmm/pull/1689)) [@wence-](https://github.com/wence-)
+- exclude &#39;gcovr&#39; from list of development pip packages ([#1688](https://github.com/rapidsai/rmm/pull/1688)) [@jameslamb](https://github.com/jameslamb)
+- [Improvement] Reorganize Cython to separate C++ bindings and make Cython classes public ([#1676](https://github.com/rapidsai/rmm/pull/1676)) [@Matt711](https://github.com/Matt711)
+
 # rmm 24.10.00 (9 Oct 2024)
 
 ## 🚨 Breaking Changes

@@ -62,6 +62,7 @@ def getDevice():
 def setDevice(device: int):
     """
     Set the current CUDA device
+
     Parameters
     ----------
     device : int
