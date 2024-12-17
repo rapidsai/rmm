@@ -22,30 +22,23 @@ from itertools import product
 
 import numpy as np
 import pytest
+from conftest import system_memory_supported
 from cuda.bindings import runtime
-from numba import cuda
 
 import rmm
 import rmm._cuda.stream
 from rmm.allocators.cupy import rmm_cupy_allocator
-from rmm.allocators.numba import RMMNumbaManager
 from rmm.pylibrmm.logger import level_enum
 
-cuda.set_memory_manager(RMMNumbaManager)
 
-_SYSTEM_MEMORY_SUPPORTED = rmm._cuda.gpu.getDeviceAttribute(
-    runtime.cudaDeviceAttr.cudaDevAttrPageableMemoryAccess,
-    rmm._cuda.gpu.getDevice(),
-)
-
-
-def array_tester(dtype, nelem, alloc):
+def array_tester(dtype, nelem):
+    cuda = pytest.importorskip("numba.cuda")
     # data
     h_in = np.full(nelem, 3.2, dtype)
     h_result = np.empty(nelem, dtype)
 
-    d_in = alloc.to_device(h_in)
-    d_result = alloc.device_array_like(d_in)
+    d_in = cuda.to_device(h_in)
+    d_result = cuda.device_array_like(d_in)
 
     d_result.copy_to_device(d_in)
     h_result = d_result.copy_to_host()
@@ -63,48 +56,44 @@ _dtypes = [
     np.bool_,
 ]
 _nelems = [1, 2, 7, 8, 9, 32, 128]
-_allocs = [cuda]
 
 
 @pytest.mark.parametrize("dtype", _dtypes)
 @pytest.mark.parametrize("nelem", _nelems)
-@pytest.mark.parametrize("alloc", _allocs)
-def test_rmm_alloc(dtype, nelem, alloc):
-    array_tester(dtype, nelem, alloc)
+def test_rmm_alloc(dtype, nelem):
+    array_tester(dtype, nelem)
 
 
 # Test all combinations of default/managed and pooled/non-pooled allocation
 @pytest.mark.parametrize("dtype", _dtypes)
 @pytest.mark.parametrize("nelem", _nelems)
-@pytest.mark.parametrize("alloc", _allocs)
 @pytest.mark.parametrize(
     "managed, pool", list(product([False, True], [False, True]))
 )
-def test_rmm_modes(dtype, nelem, alloc, managed, pool):
+def test_rmm_modes(dtype, nelem, managed, pool):
     assert rmm.is_initialized()
-    array_tester(dtype, nelem, alloc)
+    array_tester(dtype, nelem)
 
     rmm.reinitialize(pool_allocator=pool, managed_memory=managed)
 
     assert rmm.is_initialized()
 
-    array_tester(dtype, nelem, alloc)
+    array_tester(dtype, nelem)
 
 
 @pytest.mark.skipif(
-    not _SYSTEM_MEMORY_SUPPORTED,
+    not system_memory_supported(),
     reason="System memory not supported",
 )
 @pytest.mark.parametrize("dtype", _dtypes)
 @pytest.mark.parametrize("nelem", _nelems)
-@pytest.mark.parametrize("alloc", _allocs)
 @pytest.mark.parametrize(
     "system, pool, headroom",
     list(product([False, True], [False, True], [False, True])),
 )
-def test_rmm_modes_system_memory(dtype, nelem, alloc, system, pool, headroom):
+def test_rmm_modes_system_memory(dtype, nelem, system, pool, headroom):
     assert rmm.is_initialized()
-    array_tester(dtype, nelem, alloc)
+    array_tester(dtype, nelem)
 
     if system:
         if headroom:
@@ -121,18 +110,17 @@ def test_rmm_modes_system_memory(dtype, nelem, alloc, system, pool, headroom):
 
     assert rmm.is_initialized()
 
-    array_tester(dtype, nelem, alloc)
+    array_tester(dtype, nelem)
 
 
 @pytest.mark.parametrize("dtype", _dtypes)
 @pytest.mark.parametrize("nelem", _nelems)
-@pytest.mark.parametrize("alloc", _allocs)
-def test_rmm_csv_log(dtype, nelem, alloc, tmpdir):
+def test_rmm_csv_log(dtype, nelem, tmpdir):
     suffix = ".csv"
 
     base_name = str(tmpdir.join("rmm_log.csv"))
     rmm.reinitialize(logging=True, log_file_name=base_name)
-    array_tester(dtype, nelem, alloc)
+    array_tester(dtype, nelem)
     rmm.mr._flush_logs()
 
     # Need to open separately because the device ID is appended to filename
@@ -279,15 +267,8 @@ def test_rmm_device_buffer_copy_from_host(hb):
     np.testing.assert_equal(expected, result)
 
 
-@pytest.mark.parametrize(
-    "cuda_ary",
-    [
-        lambda: rmm.DeviceBuffer.to_device(b"abc"),
-        lambda: cuda.to_device(np.array([97, 98, 99], dtype="u1")),
-    ],
-)
-def test_rmm_device_buffer_copy_from_device(cuda_ary):
-    cuda_ary = cuda_ary()
+def test_rmm_device_buffer_copy_from_device():
+    cuda_ary = rmm.DeviceBuffer.to_device(b"abc")
     db = rmm.DeviceBuffer.to_device(np.zeros(10, dtype="u1"))
     db.copy_from_device(cuda_ary)
 
@@ -342,17 +323,6 @@ def test_rmm_device_buffer_prefetch(pool, managed):
         err, device = runtime.cudaGetDevice()
         assert err == runtime.cudaError_t.cudaSuccess
         assert_prefetched(db, device)
-
-
-@pytest.mark.parametrize("stream", [cuda.default_stream(), cuda.stream()])
-def test_rmm_pool_numba_stream(stream):
-    rmm.reinitialize(pool_allocator=True)
-
-    stream = rmm._cuda.stream.Stream(stream)
-    a = rmm.pylibrmm.device_buffer.DeviceBuffer(size=3, stream=stream)
-
-    assert a.size == 3
-    assert a.ptr != 0
 
 
 def test_rmm_cupy_allocator():
@@ -423,8 +393,7 @@ def test_rmm_pool_cupy_allocator_stream_lifetime():
 
 @pytest.mark.parametrize("dtype", _dtypes)
 @pytest.mark.parametrize("nelem", _nelems)
-@pytest.mark.parametrize("alloc", _allocs)
-def test_pool_memory_resource(dtype, nelem, alloc):
+def test_pool_memory_resource(dtype, nelem):
     mr = rmm.mr.PoolMemoryResource(
         rmm.mr.CudaMemoryResource(),
         initial_pool_size="4MiB",
@@ -432,12 +401,11 @@ def test_pool_memory_resource(dtype, nelem, alloc):
     )
     rmm.mr.set_current_device_resource(mr)
     assert rmm.mr.get_current_device_resource_type() is type(mr)
-    array_tester(dtype, nelem, alloc)
+    array_tester(dtype, nelem)
 
 
 @pytest.mark.parametrize("dtype", _dtypes)
 @pytest.mark.parametrize("nelem", _nelems)
-@pytest.mark.parametrize("alloc", _allocs)
 @pytest.mark.parametrize(
     "upstream",
     [
@@ -449,22 +417,21 @@ def test_pool_memory_resource(dtype, nelem, alloc):
             lambda: rmm.mr.SystemMemoryResource(),
             lambda: rmm.mr.SamHeadroomMemoryResource(headroom=1 << 20),
         ]
-        if _SYSTEM_MEMORY_SUPPORTED
+        if system_memory_supported()
         else []
     ),
 )
-def test_fixed_size_memory_resource(dtype, nelem, alloc, upstream):
+def test_fixed_size_memory_resource(dtype, nelem, upstream):
     mr = rmm.mr.FixedSizeMemoryResource(
         upstream(), block_size=1 << 20, blocks_to_preallocate=128
     )
     rmm.mr.set_current_device_resource(mr)
     assert rmm.mr.get_current_device_resource_type() is type(mr)
-    array_tester(dtype, nelem, alloc)
+    array_tester(dtype, nelem)
 
 
 @pytest.mark.parametrize("dtype", _dtypes)
 @pytest.mark.parametrize("nelem", _nelems)
-@pytest.mark.parametrize("alloc", _allocs)
 @pytest.mark.parametrize(
     "upstream_mr",
     [
@@ -479,11 +446,11 @@ def test_fixed_size_memory_resource(dtype, nelem, alloc, upstream):
             lambda: rmm.mr.SystemMemoryResource(),
             lambda: rmm.mr.SamHeadroomMemoryResource(headroom=1 << 20),
         ]
-        if _SYSTEM_MEMORY_SUPPORTED
+        if system_memory_supported()
         else []
     ),
 )
-def test_binning_memory_resource(dtype, nelem, alloc, upstream_mr):
+def test_binning_memory_resource(dtype, nelem, upstream_mr):
     upstream = upstream_mr()
 
     # Add fixed-size bins 256KiB, 512KiB, 1MiB, 2MiB, 4MiB
@@ -497,12 +464,11 @@ def test_binning_memory_resource(dtype, nelem, alloc, upstream_mr):
 
     rmm.mr.set_current_device_resource(mr)
     assert rmm.mr.get_current_device_resource_type() is type(mr)
-    array_tester(dtype, nelem, alloc)
+    array_tester(dtype, nelem)
 
 
 @pytest.mark.parametrize("dtype", _dtypes)
 @pytest.mark.parametrize("nelem", _nelems)
-@pytest.mark.parametrize("alloc", _allocs)
 @pytest.mark.parametrize(
     "upstream_mr",
     [
@@ -513,13 +479,13 @@ def test_binning_memory_resource(dtype, nelem, alloc, upstream_mr):
         ),
     ],
 )
-def test_arena_memory_resource(dtype, nelem, alloc, upstream_mr):
+def test_arena_memory_resource(dtype, nelem, upstream_mr):
     upstream = upstream_mr()
     mr = rmm.mr.ArenaMemoryResource(upstream)
 
     rmm.mr.set_current_device_resource(mr)
     assert rmm.mr.get_current_device_resource_type() is type(mr)
-    array_tester(dtype, nelem, alloc)
+    array_tester(dtype, nelem)
 
 
 def test_reinitialize_max_pool_size():
@@ -567,15 +533,14 @@ def test_reinitialize_with_invalid_str_arg_pool_size():
 
 @pytest.mark.parametrize("dtype", _dtypes)
 @pytest.mark.parametrize("nelem", _nelems)
-@pytest.mark.parametrize("alloc", _allocs)
-def test_rmm_enable_disable_logging(dtype, nelem, alloc, tmpdir):
+def test_rmm_enable_disable_logging(dtype, nelem, tmpdir):
     suffix = ".csv"
 
     base_name = str(tmpdir.join("rmm_log.csv"))
 
     rmm.enable_logging(log_file_name=base_name)
     print(rmm.mr.get_per_device_resource(0))
-    array_tester(dtype, nelem, alloc)
+    array_tester(dtype, nelem)
     rmm.mr._flush_logs()
 
     # Need to open separately because the device ID is appended to filename
@@ -654,12 +619,11 @@ def test_mr_upstream_lifetime():
 
 @pytest.mark.parametrize("dtype", _dtypes)
 @pytest.mark.parametrize("nelem", _nelems)
-@pytest.mark.parametrize("alloc", _allocs)
-def test_cuda_async_memory_resource(dtype, nelem, alloc):
+def test_cuda_async_memory_resource(dtype, nelem):
     mr = rmm.mr.CudaAsyncMemoryResource()
     rmm.mr.set_current_device_resource(mr)
     assert rmm.mr.get_current_device_resource_type() is type(mr)
-    array_tester(dtype, nelem, alloc)
+    array_tester(dtype, nelem)
 
 
 def test_cuda_async_memory_resource_ipc():
@@ -703,15 +667,14 @@ def test_cuda_async_memory_resource_stream(nelems):
 
 
 @pytest.mark.parametrize("nelem", _nelems)
-@pytest.mark.parametrize("alloc", _allocs)
-def test_cuda_async_memory_resource_threshold(nelem, alloc):
+def test_cuda_async_memory_resource_threshold(nelem):
     # initial pool size == 0
     mr = rmm.mr.CudaAsyncMemoryResource(
         initial_pool_size=0, release_threshold=nelem
     )
     rmm.mr.set_current_device_resource(mr)
-    array_tester("u1", nelem, alloc)  # should not trigger release
-    array_tester("u1", 2 * nelem, alloc)  # should trigger release
+    array_tester("u1", nelem)  # should not trigger release
+    array_tester("u1", 2 * nelem)  # should trigger release
 
 
 @pytest.mark.parametrize(
@@ -1009,17 +972,10 @@ def test_reinit_hooks_unregister_twice_registered(make_reinit_hook):
 
 
 @pytest.mark.parametrize(
-    "cuda_ary",
-    [
-        lambda: rmm.DeviceBuffer.to_device(b"abc"),
-        lambda: cuda.to_device(np.array([97, 98, 99, 0, 0], dtype="u1")),
-    ],
-)
-@pytest.mark.parametrize(
     "make_copy", [lambda db: db.copy(), lambda db: copy.copy(db)]
 )
-def test_rmm_device_buffer_copy(cuda_ary, make_copy):
-    cuda_ary = cuda_ary()
+def test_rmm_device_buffer_copy(make_copy):
+    cuda_ary = rmm.DeviceBuffer.to_device(b"abc")
     db = rmm.DeviceBuffer.to_device(np.zeros(5, dtype="u1"))
     db.copy_from_device(cuda_ary)
     db_copy = make_copy(db)
