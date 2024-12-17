@@ -12,21 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import functools
-
 import pytest
-from cuda.bindings import runtime
 
 import rmm
 import rmm.statistics
-
-
-@functools.cache
-def system_memory_supported():
-    return rmm._cuda.gpu.getDeviceAttribute(
-        runtime.cudaDeviceAttr.cudaDevAttrPageableMemoryAccess,
-        rmm._cuda.gpu.getDevice(),
-    )
 
 
 @pytest.fixture(scope="function", autouse=True)
