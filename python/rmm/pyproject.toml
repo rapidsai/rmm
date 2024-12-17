@@ -93,7 +93,6 @@ max_allowed_size_compressed = '75M'
 # treat warnings as errors
 filterwarnings = [
     "error",
-    "ignore:.*cuda..* module is deprecated.*:DeprecationWarning"
 ]
 
 [tool.ruff]
