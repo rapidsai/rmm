@@ -42,6 +42,8 @@ repos:
     rev: v2.3.0
     hooks:
       - id: codespell
+        additional_dependencies: [tomli]
+        args: ["--toml", "pyproject.toml"]
         exclude: |
           (?x)^(
             pyproject.toml|
