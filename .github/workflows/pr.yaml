@@ -9,26 +9,25 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  SHARED_ACTIONS_REF: empty-certs
+
 
 jobs:
   pr-builder:
     needs:
       - changed-files
       - checks
-    #   - conda-cpp-build
-    #   - conda-cpp-tests
-    #   - conda-python-build
-    #   - conda-python-tests
-    #   - docs-build
-    #   - wheel-build-cpp
-    #   - wheel-build-python
-    #   - wheel-tests
-    #   - devcontainer
+      - conda-cpp-build
+      - conda-cpp-tests
+      - conda-python-build
+      - conda-python-tests
+      - docs-build
+      - wheel-build-cpp
+      - wheel-build-python
+      - wheel-tests
+      - devcontainer
       - telemetry-setup
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@no-certs
+    uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@branch-25.02
     if: always()
     with:
       needs: ${{ toJSON(needs) }}
@@ -42,12 +41,12 @@ jobs:
         # This gate is here and not at the job level because we need the job to not be skipped,
         # since other jobs depend on it.
         if: ${{ vars.TELEMETRY_ENABLED == 'true' }}
-        uses: rapidsai/shared-actions/telemetry-dispatch-stash-base-env-vars@empty-certs
+        uses: rapidsai/shared-actions/telemetry-dispatch-stash-base-env-vars@main
   changed-files:
     needs:
       - telemetry-setup
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/changed-files.yaml@no-certs
+    uses: rapidsai/shared-workflows/.github/workflows/changed-files.yaml@branch-25.02
     with:
       files_yaml: |
         test_cpp:
@@ -69,81 +68,81 @@ jobs:
     secrets: inherit
     needs:
       - telemetry-setup
-    uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@no-certs
+    uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@branch-25.02
     with:
       enable_check_generated_files: false
       ignored_pr_jobs: telemetry-summarize
-#   conda-cpp-build:
-#     needs: checks
-#     secrets: inherit
-#     uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-build.yaml@no-certs
-#     with:
-#       build_type: pull-request
-#   conda-cpp-tests:
-#     needs: [conda-cpp-build, changed-files]
-#     secrets: inherit
-#     uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-tests.yaml@no-certs
-#     if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_cpp
-#     with:
-#       build_type: pull-request
-#   conda-python-build:
-#     needs: conda-cpp-build
-#     secrets: inherit
-#     uses: rapidsai/shared-workflows/.github/workflows/conda-python-build.yaml@no-certs
-#     with:
-#       build_type: pull-request
-#   conda-python-tests:
-#     needs: [conda-python-build, changed-files]
-#     secrets: inherit
-#     uses: rapidsai/shared-workflows/.github/workflows/conda-python-tests.yaml@no-certs
-#     if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_python
-#     with:
-#       build_type: pull-request
-#   docs-build:
-#     needs: conda-python-build
-#     secrets: inherit
-#     uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@no-certs
-#     with:
-#       build_type: pull-request
-#       node_type: "gpu-v100-latest-1"
-#       arch: "amd64"
-#       container_image: "rapidsai/ci-conda:latest"
-#       run_script: "ci/build_docs.sh"
-#   wheel-build-cpp:
-#     needs: checks
-#     secrets: inherit
-#     uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@no-certs
-#     with:
-#       matrix_filter: group_by([.ARCH, (.CUDA_VER|split(".")|map(tonumber)|.[0])]) | map(max_by(.PY_VER|split(".")|map(tonumber)))
-#       build_type: pull-request
-#       script: ci/build_wheel_cpp.sh
-#   wheel-build-python:
-#     needs: wheel-build-cpp
-#     secrets: inherit
-#     uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@no-certs
-#     with:
-#       build_type: pull-request
-#       script: ci/build_wheel_python.sh
-#   wheel-tests:
-#     needs: [wheel-build-python, changed-files]
-#     secrets: inherit
-#     uses: rapidsai/shared-workflows/.github/workflows/wheels-test.yaml@no-certs
-#     if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_python
-#     with:
-#       build_type: pull-request
-#       script: ci/test_wheel.sh
-#   devcontainer:
-#     secrets: inherit
-#     needs:
-#       - telemetry-setup
-#     uses: rapidsai/shared-workflows/.github/workflows/build-in-devcontainer.yaml@no-certs
-#     with:
-#       arch: '["amd64"]'
-#       cuda: '["12.5"]'
-#       build_command: |
-#         sccache -z;
-#         build-all -DBUILD_BENCHMARKS=ON --verbose;
-#         sccache -s;
+  conda-cpp-build:
+    needs: checks
+    secrets: inherit
+    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-build.yaml@branch-25.02
+    with:
+      build_type: pull-request
+  conda-cpp-tests:
+    needs: [conda-cpp-build, changed-files]
+    secrets: inherit
+    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-tests.yaml@branch-25.02
+    if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_cpp
+    with:
+      build_type: pull-request
+  conda-python-build:
+    needs: conda-cpp-build
+    secrets: inherit
+    uses: rapidsai/shared-workflows/.github/workflows/conda-python-build.yaml@branch-25.02
+    with:
+      build_type: pull-request
+  conda-python-tests:
+    needs: [conda-python-build, changed-files]
+    secrets: inherit
+    uses: rapidsai/shared-workflows/.github/workflows/conda-python-tests.yaml@branch-25.02
+    if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_python
+    with:
+      build_type: pull-request
+  docs-build:
+    needs: conda-python-build
+    secrets: inherit
+    uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@branch-25.02
+    with:
+      build_type: pull-request
+      node_type: "gpu-v100-latest-1"
+      arch: "amd64"
+      container_image: "rapidsai/ci-conda:latest"
+      run_script: "ci/build_docs.sh"
+  wheel-build-cpp:
+    needs: checks
+    secrets: inherit
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@branch-25.02
+    with:
+      matrix_filter: group_by([.ARCH, (.CUDA_VER|split(".")|map(tonumber)|.[0])]) | map(max_by(.PY_VER|split(".")|map(tonumber)))
+      build_type: pull-request
+      script: ci/build_wheel_cpp.sh
+  wheel-build-python:
+    needs: wheel-build-cpp
+    secrets: inherit
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@branch-25.02
+    with:
+      build_type: pull-request
+      script: ci/build_wheel_python.sh
+  wheel-tests:
+    needs: [wheel-build-python, changed-files]
+    secrets: inherit
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-test.yaml@branch-25.02
+    if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_python
+    with:
+      build_type: pull-request
+      script: ci/test_wheel.sh
+  devcontainer:
+    secrets: inherit
+    needs:
+      - telemetry-setup
+    uses: rapidsai/shared-workflows/.github/workflows/build-in-devcontainer.yaml@branch-25.02
+    with:
+      arch: '["amd64"]'
+      cuda: '["12.5"]'
+      build_command: |
+        sccache -z;
+        build-all -DBUILD_BENCHMARKS=ON --verbose;
+        sccache -s;
 
   telemetry-summarize:
     # It is essential that this job run on a self-hosted runner. Otherwise, the job
@@ -154,4 +153,4 @@ jobs:
     continue-on-error: true
     steps:
       - name: Telemetry summarize
-        uses: rapidsai/shared-actions/telemetry-dispatch-summarize@empty-certs
+        uses: rapidsai/shared-actions/telemetry-dispatch-summarize@main
