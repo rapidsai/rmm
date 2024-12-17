@@ -49,6 +49,10 @@ set(RMM_LOGGING_LEVEL
     CACHE STRING "Choose the logging level.")
 set_property(CACHE RMM_LOGGING_LEVEL PROPERTY STRINGS "TRACE" "DEBUG" "INFO" "WARN" "ERROR"
                                               "CRITICAL" "OFF")
+option(RMM_CLONE_SPDLOG "Force RMM to clone spdlog instead of using an existing package" ON)
+if(RMM_CLONE_SPDLOG)
+  set(CPM_DOWNLOAD_spdlog ON)
+endif()
 
 message(VERBOSE "RMM: Build with NVTX support: ${RMM_NVTX}")
 # Set logging level. Must go before including gtests and benchmarks. Set the possible values of
