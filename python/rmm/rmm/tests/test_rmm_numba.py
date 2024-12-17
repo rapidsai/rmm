@@ -14,14 +14,13 @@
 
 import copy
 
+import numba.cuda as numba_cuda
 import numpy as np
 import pytest
 
 import rmm
 import rmm._cuda.stream
 from rmm.allocators.numba import RMMNumbaManager
-
-numba_cuda = pytest.importorskip("numba.cuda")
 
 
 @pytest.fixture(scope="session")
