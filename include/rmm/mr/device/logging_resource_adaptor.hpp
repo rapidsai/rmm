@@ -334,52 +334,6 @@ class logging_resource_adaptor final : public device_memory_resource {
                                         ///< allocation requests
 };
 
-/**
- * @brief Convenience factory to return a `logging_resource_adaptor` around the
- * upstream resource `upstream`.
- *
- * @tparam Upstream Type of the upstream `device_memory_resource`.
- * @param upstream Pointer to the upstream resource
- * @param filename Name of the file to write log info. If not specified,
- * retrieves the log file name from the environment variable "RMM_LOG_FILE".
- * @param auto_flush If true, flushes the log for every (de)allocation. Warning, this will degrade
- * performance.
- * @return The new logging resource adaptor
- */
-template <typename Upstream>
-[[deprecated(
-  "make_logging_adaptor is deprecated in RMM 24.10. Use the logging_resource_adaptor constructor "
-  "instead.")]]
-logging_resource_adaptor<Upstream> make_logging_adaptor(
-  Upstream* upstream,
-  std::string const& filename = logging_resource_adaptor<Upstream>::get_default_filename(),
-  bool auto_flush             = false)
-{
-  return logging_resource_adaptor<Upstream>{upstream, filename, auto_flush};
-}
-
-/**
- * @brief Convenience factory to return a `logging_resource_adaptor` around the
- * upstream resource `upstream`.
- *
- * @tparam Upstream Type of the upstream `device_memory_resource`.
- * @param upstream Pointer to the upstream resource
- * @param stream The ostream to write log info.
- * @param auto_flush If true, flushes the log for every (de)allocation. Warning, this will degrade
- * performance.
- * @return The new logging resource adaptor
- */
-template <typename Upstream>
-[[deprecated(
-  "make_logging_adaptor is deprecated in RMM 24.10. Use the logging_resource_adaptor constructor "
-  "instead.")]]
-logging_resource_adaptor<Upstream> make_logging_adaptor(Upstream* upstream,
-                                                        std::ostream& stream,
-                                                        bool auto_flush = false)
-{
-  return logging_resource_adaptor<Upstream>{upstream, stream, auto_flush};
-}
-
 /** @} */  // end of group
 }  // namespace mr
 }  // namespace RMM_NAMESPACE
