@@ -32,10 +32,10 @@
 #include <dlfcn.h>
 #include <execinfo.h>
 
+#include <array>
 #include <cstddef>
 #include <memory>
 #include <vector>
-#include <array>
 #endif
 
 namespace RMM_NAMESPACE {
