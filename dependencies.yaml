@@ -274,7 +274,6 @@ dependencies:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
-          - numba>=0.57
           - numpy>=1.23,<3.0a0
     specific:
       - output_types: [conda, requirements, pyproject]
@@ -295,6 +294,7 @@ dependencies:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
+          - numba>=0.57
           - pytest
           - pytest-cov
     specific:
@@ -309,7 +309,7 @@ dependencies:
               - cuda-nvcc
           - matrix:
             packages:
-      - output_types: [conda, requirements]
+      - output_types: [conda, requirements, pyproject]
         # Define additional constraints for testing with oldest dependencies.
         matrices:
           - matrix:
