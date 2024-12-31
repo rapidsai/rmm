@@ -75,7 +75,7 @@ rapids_cpm_init()
 
 CPMAddPackage(
   NAME rapids_logger GITHUB_REPOSITORY rapidsai/rapids-logger GIT_SHALLOW FALSE GIT_TAG
-  4df3ee70c6746fd1b6c0dc14209dae2e2d4378c6 VERSION 4df3ee70c6746fd1b6c0dc14209dae2e2d4378c6)
+  1043e0f3989d75ad52f5212544b8154777e86fc9 VERSION 1043e0f3989d75ad52f5212544b8154777e86fc9)
 rapids_make_logger(rmm EXPORT_SET rmm-exports)
 
 include(cmake/thirdparty/get_cccl.cmake)
