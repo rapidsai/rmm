@@ -73,6 +73,7 @@ rapids_find_package(
 # add third party dependencies using CPM
 rapids_cpm_init()
 
+include(${rapids-cmake-dir}/cpm/logger.cmake)
 rapids_cpm_logger()
 rapids_make_logger(rmm EXPORT_SET rmm-exports)
 
