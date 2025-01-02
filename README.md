@@ -647,8 +647,8 @@ set to `True`. The log file name can be set using the `log_file_name` parameter.
 
 RMM includes a debug logger which can be enabled to log trace and debug information to a file. This
 information can show when errors occur, when additional memory is allocated from upstream resources,
-etc. The default log file is `rmm_log.txt` in the current working directory, but the environment
-variable `RMM_DEBUG_LOG_FILE` can be set to specify the path and file name.
+etc. By default output is logged to stderr, but the environment variable
+`RMM_DEBUG_LOG_FILE` can be set to specify a path and file name to dump the logs to instead.
 
 There is a CMake configuration variable `RMM_LOGGING_LEVEL`, which can be set to enable compilation
 of more detailed logging. The default is `INFO`. Available levels are `TRACE`, `DEBUG`, `INFO`,
