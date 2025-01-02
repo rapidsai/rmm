@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2024, NVIDIA CORPORATION.
+# Copyright (c) 2019-2025, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 from libc.stdint cimport uintptr_t
 from libcpp.memory cimport unique_ptr
 
-from rmm._cuda.stream cimport Stream
+from rmm.pylibrmm.stream cimport Stream
 from rmm.librmm.device_buffer cimport device_buffer
 from rmm.pylibrmm.memory_resource cimport DeviceMemoryResource
 

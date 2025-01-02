@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2024, NVIDIA CORPORATION.
+# Copyright (c) 2020-2025, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ from cuda.bindings import runtime
 from numba import cuda
 
 import rmm
-import rmm._cuda.stream
+import rmm.pylibrmm.stream
 from rmm.allocators.cupy import rmm_cupy_allocator
 from rmm.allocators.numba import RMMNumbaManager
 from rmm.pylibrmm.logger import level_enum
@@ -348,7 +348,7 @@ def test_rmm_device_buffer_prefetch(pool, managed):
 def test_rmm_pool_numba_stream(stream):
     rmm.reinitialize(pool_allocator=True)
 
-    stream = rmm._cuda.stream.Stream(stream)
+    stream = rmm.pylibrmm.stream.Stream(stream)
     a = rmm.pylibrmm.device_buffer.DeviceBuffer(size=3, stream=stream)
 
     assert a.size == 3
@@ -600,7 +600,7 @@ def test_mr_devicebuffer_lifetime():
     )
 
     # Creates a new non-default stream
-    stream = rmm._cuda.stream.Stream()
+    stream = rmm.pylibrmm.stream.Stream()
 
     # Allocate DeviceBuffer with Pool and Stream
     a = rmm.DeviceBuffer(size=10, stream=stream)
@@ -695,7 +695,7 @@ def test_cuda_async_memory_resource_stream(nelems):
     # with a non-default stream works
     mr = rmm.mr.CudaAsyncMemoryResource()
     rmm.mr.set_current_device_resource(mr)
-    stream = rmm._cuda.stream.Stream()
+    stream = rmm.pylibrmm.stream.Stream()
     expected = np.full(nelems, 5, dtype="u1")
     dbuf = rmm.DeviceBuffer.to_device(expected, stream=stream)
     result = np.asarray(dbuf.copy_to_host())
