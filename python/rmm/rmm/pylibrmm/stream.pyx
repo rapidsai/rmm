@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2024, NVIDIA CORPORATION.
+# Copyright (c) 2020-2025, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -34,18 +34,81 @@ cdef class Stream:
         ----------
         obj: optional
             * If None (the default), a new CUDA stream is created.
+            * If a stream that implements the __cuda_stream__ protocol
+              is provided, we use it.
             * If a Numba or CuPy stream is provided, we make a thin
               wrapper around it.
         """
         if obj is None:
             self._init_with_new_cuda_stream()
-        elif isinstance(obj, Stream):
-            self._init_from_stream(obj)
+            return
+        elif hasattr(obj, "__cuda_stream__"):
+            protocol = getattr(obj, "__cuda_stream__")
+            if protocol[0] != 0:
+                raise ValueError("Only protocol version 0 is supported")
+            self._cuda_stream = <cudaStream_t>obj
+            self.owner = obj
         else:
+            # TODO: Remove this branch when numba and cupy
+            # streams implement __cuda_stream__
             try:
                 self._init_from_numba_stream(obj)
             except TypeError:
                 self._init_from_cupy_stream(obj)
+
+    @property
+    def __cuda_stream__(self):
+        """Return an instance of a __cuda_stream__ protocol."""
+        return (0, self.handle)
+
+    @property
+    def handle(self) -> int:
+        """Return the underlying cudaStream_t pointer address as Python int."""
+        return int(<uintptr_t>self._cuda_stream)
+
+    # @singledispatchmethod
+    # def _init_from_stream(self, obj):
+    #     if obj is None:
+    #         self._init_with_new_cuda_stream()
+    #         return
+    #     try:
+    #         protocol = getattr(obj, "__cuda_stream__")
+    #     except AttributeError:
+    #         raise ValueError(
+    #             "Argument must be None, a Stream, or implement __cuda_stream__"
+    #         )
+    #     if protocol[0] != 0:
+    #         raise ValueError("Only protocol version 0 is supported")
+
+    #     self._cuda_stream = <cudaStream_t>obj
+    #     self.owner = obj
+
+    # @_init_from_stream.register
+    # def _(self, stream: Stream):
+    #     self._cuda_stream, self._owner = stream._cuda_stream, stream._owner
+
+    # try:
+    #     from numba import cuda
+    #     @_init_from_stream.register
+    #     def _(self, obj: cuda.cudadrv.driver.Stream):
+    #         self._cuda_stream = <cudaStream_t><uintptr_t>(int(obj))
+    #         self._owner = obj
+    # except ImportError:
+    #     pass
+
+    # try:
+    #     import cupy
+    #     @_init_from_stream.register(cupy.cuda.stream.Stream)
+    #     def _(self, obj):
+    #         self._cuda_stream = <cudaStream_t><uintptr_t>(obj.ptr)
+    #         self._owner = obj
+
+    #     @_init_from_stream.register(cupy.cuda.stream.ExternalStream)
+    #     def _(self, obj):
+    #         self._cuda_stream = <cudaStream_t><uintptr_t>(obj.ptr)
+    #         self._owner = obj
+    # except ImportError:
+    #     pass
 
     @staticmethod
     cdef Stream _from_cudaStream_t(cudaStream_t s, object owner=None) except *:
@@ -116,9 +179,6 @@ cdef class Stream:
         cdef CudaStream stream = CudaStream()
         self._cuda_stream = stream.value()
         self._owner = stream
-
-    cdef void _init_from_stream(self, Stream stream) except *:
-        self._cuda_stream, self._owner = stream._cuda_stream, stream._owner
 
 
 DEFAULT_STREAM = Stream._from_cudaStream_t(cuda_stream_default.value())
