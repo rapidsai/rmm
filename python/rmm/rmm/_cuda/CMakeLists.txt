@@ -12,7 +12,6 @@
 # the License.
 # =============================================================================
 
-# set(cython_sources stream.pyx)
 set(linked_libraries rmm::rmm cpp_logger)
 
 rapids_cython_create_modules(SOURCE_FILES "${cython_sources}" LINKED_LIBRARIES "${linked_libraries}"
