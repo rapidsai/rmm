@@ -73,9 +73,8 @@ rapids_find_package(
 # add third party dependencies using CPM
 rapids_cpm_init()
 
-CPMAddPackage(
-  NAME rapids_logger GITHUB_REPOSITORY rapidsai/rapids-logger GIT_SHALLOW FALSE GIT_TAG
-  1043e0f3989d75ad52f5212544b8154777e86fc9 VERSION 1043e0f3989d75ad52f5212544b8154777e86fc9)
+include(${rapids-cmake-dir}/cpm/rapids_logger.cmake)
+rapids_cpm_rapids_logger()
 rapids_make_logger(rmm EXPORT_SET rmm-exports)
 
 include(cmake/thirdparty/get_cccl.cmake)
