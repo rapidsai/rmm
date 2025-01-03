@@ -17,7 +17,7 @@ dependencies:
 - cython>=3.0.0
 - doxygen=1.9.1
 - fmt>=11.0.2,<12
-- gcc_linux-64=11.*
+- gcc_linux-64>=11,<14
 - gcovr>=5.0
 - graphviz
 - identify>=2.5.20
