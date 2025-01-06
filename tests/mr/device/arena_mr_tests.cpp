@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2021-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -588,7 +588,7 @@ TEST_F(ArenaTest, DumpLogOnFailure)  // NOLINT
   // NOLINTNEXTLINE(cppcoreguidelines-avoid-goto)
   EXPECT_THROW(mr.allocate(8_MiB), rmm::out_of_memory);
 
-  struct stat file_status {};
+  struct stat file_status{};
   EXPECT_EQ(stat("rmm_arena_memory_dump.log", &file_status), 0);
   EXPECT_GE(file_status.st_size, 0);
 }
