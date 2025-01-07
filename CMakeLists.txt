@@ -49,10 +49,8 @@ set(RMM_LOGGING_LEVEL
     CACHE STRING "Choose the logging level.")
 set_property(CACHE RMM_LOGGING_LEVEL PROPERTY STRINGS "TRACE" "DEBUG" "INFO" "WARN" "ERROR"
                                               "CRITICAL" "OFF")
-option(RMM_CLONE_SPDLOG "Force RMM to clone spdlog instead of using an existing package" ON)
-if(RMM_CLONE_SPDLOG)
-  set(CPM_DOWNLOAD_spdlog ON)
-endif()
+# option(RMM_CLONE_SPDLOG "Force RMM to clone spdlog instead of using an existing package" ON)
+# if(RMM_CLONE_SPDLOG) set(CPM_DOWNLOAD_spdlog ON) endif()
 
 message(VERBOSE "RMM: Build with NVTX support: ${RMM_NVTX}")
 # Set logging level. Must go before including gtests and benchmarks. Set the possible values of
@@ -78,8 +76,9 @@ rapids_find_package(
 rapids_cpm_init()
 
 include(${rapids-cmake-dir}/cpm/rapids_logger.cmake)
-rapids_cpm_rapids_logger()
-rapids_make_logger(rmm EXPORT_SET rmm-exports)
+set(RAPIDS_LOGGER_HIDE_ALL_SPDLOG_SYMBOLS ON)
+rapids_cpm_rapids_logger(BUILD_EXPORT_SET rmm-exports INSTALL_EXPORT_SET rmm-exports)
+rapids_make_logger(rmm EXPORT_SET rmm-exports HIDE_ALL_SPDLOG_SYMBOLS)
 
 include(cmake/thirdparty/get_cccl.cmake)
 include(cmake/thirdparty/get_nvtx.cmake)
