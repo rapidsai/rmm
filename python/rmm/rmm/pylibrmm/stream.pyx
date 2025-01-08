@@ -66,50 +66,6 @@ cdef class Stream:
         """Return the underlying cudaStream_t pointer address as Python int."""
         return int(<uintptr_t>self._cuda_stream)
 
-    # @singledispatchmethod
-    # def _init_from_stream(self, obj):
-    #     if obj is None:
-    #         self._init_with_new_cuda_stream()
-    #         return
-    #     try:
-    #         protocol = getattr(obj, "__cuda_stream__")
-    #     except AttributeError:
-    #         raise ValueError(
-    #             "Argument must be None, a Stream, or implement __cuda_stream__"
-    #         )
-    #     if protocol[0] != 0:
-    #         raise ValueError("Only protocol version 0 is supported")
-
-    #     self._cuda_stream = <cudaStream_t>obj
-    #     self.owner = obj
-
-    # @_init_from_stream.register
-    # def _(self, stream: Stream):
-    #     self._cuda_stream, self._owner = stream._cuda_stream, stream._owner
-
-    # try:
-    #     from numba import cuda
-    #     @_init_from_stream.register
-    #     def _(self, obj: cuda.cudadrv.driver.Stream):
-    #         self._cuda_stream = <cudaStream_t><uintptr_t>(int(obj))
-    #         self._owner = obj
-    # except ImportError:
-    #     pass
-
-    # try:
-    #     import cupy
-    #     @_init_from_stream.register(cupy.cuda.stream.Stream)
-    #     def _(self, obj):
-    #         self._cuda_stream = <cudaStream_t><uintptr_t>(obj.ptr)
-    #         self._owner = obj
-
-    #     @_init_from_stream.register(cupy.cuda.stream.ExternalStream)
-    #     def _(self, obj):
-    #         self._cuda_stream = <cudaStream_t><uintptr_t>(obj.ptr)
-    #         self._owner = obj
-    # except ImportError:
-    #     pass
-
     @staticmethod
     cdef Stream _from_cudaStream_t(cudaStream_t s, object owner=None) except *:
         """
