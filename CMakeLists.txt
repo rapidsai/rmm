@@ -1,5 +1,5 @@
 # =============================================================================
-# Copyright (c) 2018-2024, NVIDIA CORPORATION.
+# Copyright (c) 2018-2025, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -73,10 +73,9 @@ rapids_find_package(
 # add third party dependencies using CPM
 rapids_cpm_init()
 
-add_subdirectory(rapids_logger)
+include(${rapids-cmake-dir}/cpm/rapids_logger.cmake)
+rapids_cpm_rapids_logger()
 rapids_make_logger(rmm EXPORT_SET rmm-exports)
-add_library(rmm::rmm_logger ALIAS rmm_logger)
-add_library(rmm::rmm_logger_impl ALIAS rmm_logger_impl)
 
 include(cmake/thirdparty/get_cccl.cmake)
 include(cmake/thirdparty/get_nvtx.cmake)
