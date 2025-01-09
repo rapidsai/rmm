@@ -15,9 +15,9 @@
 from libc.stdint cimport uintptr_t
 from libcpp.memory cimport unique_ptr
 
-from rmm.pylibrmm.stream cimport Stream
 from rmm.librmm.device_buffer cimport device_buffer
 from rmm.pylibrmm.memory_resource cimport DeviceMemoryResource
+from rmm.pylibrmm.stream cimport Stream
 
 
 cdef class DeviceBuffer:

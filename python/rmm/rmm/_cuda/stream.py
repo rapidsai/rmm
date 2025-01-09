@@ -22,10 +22,10 @@ from rmm.pylibrmm.stream import (
 )
 
 __all__ = [
-    DEFAULT_STREAM,
-    LEGACY_DEFAULT_STREAM,
-    PER_THREAD_DEFAULT_STREAM,
-    Stream,
+    "DEFAULT_STREAM",
+    "LEGACY_DEFAULT_STREAM",
+    "PER_THREAD_DEFAULT_STREAM",
+    "Stream",
 ]
 
 warnings.warn(

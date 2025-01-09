@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025, NVIDIA CORPORATION.
+# Copyright (c) 2020-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,3 +30,4 @@ cdef class Stream:
     cdef void c_synchronize(self) except * nogil
     cdef bool c_is_default(self) except * nogil
     cdef void _init_with_new_cuda_stream(self) except *
+    cdef void _init_from_stream(self, Stream stream) except *

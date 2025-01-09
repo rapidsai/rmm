@@ -26,10 +26,10 @@ from cuda.bindings import runtime
 from numba import cuda
 
 import rmm
-import rmm.pylibrmm.stream
 from rmm.allocators.cupy import rmm_cupy_allocator
 from rmm.allocators.numba import RMMNumbaManager
 from rmm.pylibrmm.logger import level_enum
+from rmm.pylibrmm.stream import Stream
 
 cuda.set_memory_manager(RMMNumbaManager)
 
@@ -348,8 +348,8 @@ def test_rmm_device_buffer_prefetch(pool, managed):
 def test_rmm_pool_numba_stream(stream):
     rmm.reinitialize(pool_allocator=True)
 
-    stream = rmm.pylibrmm.stream.Stream(stream)
-    a = rmm.pylibrmm.device_buffer.DeviceBuffer(size=3, stream=stream)
+    stream = Stream(stream)
+    a = rmm.DeviceBuffer(size=3, stream=stream)
 
     assert a.size == 3
     assert a.ptr != 0
@@ -695,7 +695,7 @@ def test_cuda_async_memory_resource_stream(nelems):
     # with a non-default stream works
     mr = rmm.mr.CudaAsyncMemoryResource()
     rmm.mr.set_current_device_resource(mr)
-    stream = rmm.pylibrmm.stream.Stream()
+    stream = Stream()
     expected = np.full(nelems, 5, dtype="u1")
     dbuf = rmm.DeviceBuffer.to_device(expected, stream=stream)
     result = np.asarray(dbuf.copy_to_host())
