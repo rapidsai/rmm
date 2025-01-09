@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2025, NVIDIA CORPORATION.
+# Copyright (c) 2020-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,7 +39,6 @@ cdef class Stream:
         """
         if obj is None:
             self._init_with_new_cuda_stream()
-            return
         elif isinstance(obj, Stream):
             self._init_from_stream(obj)
         else:
