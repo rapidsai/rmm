@@ -155,9 +155,6 @@ ENV/
 # mypy
 .mypy_cache/
 
-# RMM log files
-rmm_log.txt
-
 # cibuildwheel
 /wheelhouse
 
