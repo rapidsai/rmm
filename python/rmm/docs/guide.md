@@ -93,7 +93,7 @@ destination device ID and stream are optional parameters.
 ```python
 >>> import rmm
 >>> rmm.reinitialize(managed_memory=True)
->>> from rmm._cuda.stream import Stream
+>>> from rmm.pylibrmm.stream import Stream
 >>> stream = Stream()
 >>> buf = rmm.DeviceBuffer(size=100, stream=stream)
 >>> buf.prefetch(device=3, stream=stream) # prefetch to device on stream.
