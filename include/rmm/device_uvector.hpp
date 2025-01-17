@@ -95,6 +95,7 @@ class device_uvector {
   RMM_EXEC_CHECK_DISABLE
   device_uvector(device_uvector&&) noexcept = default;  ///< @default_move_constructor
 
+  RMM_EXEC_CHECK_DISABLE
   device_uvector& operator=(device_uvector&&) noexcept =
     default;  ///< @default_move_assignment{device_uvector}
 
