@@ -1,11 +1,12 @@
 #!/bin/bash
-# Copyright (c) 2020-2024, NVIDIA CORPORATION.
+# Copyright (c) 2020-2025, NVIDIA CORPORATION.
 
 set -euo pipefail
 
 # Support invoking test_cpp.sh outside the script directory
 cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")"/../
 
+# shellcheck source=/dev/null
 . /opt/conda/etc/profile.d/conda.sh
 
 RAPIDS_VERSION="$(rapids-version)"
@@ -44,4 +45,4 @@ export GTEST_OUTPUT=xml:${RAPIDS_TESTS_DIR}/
 ./ci/run_ctests.sh -j20 && EXITCODE=$? || EXITCODE=$?;
 
 rapids-logger "Test script exiting with value: $EXITCODE"
-exit ${EXITCODE}
+exit "${EXITCODE}"

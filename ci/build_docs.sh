@@ -1,13 +1,16 @@
 #!/bin/bash
-# Copyright (c) 2020-2024, NVIDIA CORPORATION.
+# Copyright (c) 2020-2025, NVIDIA CORPORATION.
 
 set -euo pipefail
 
 rapids-logger "Create test conda environment"
+
+# shellcheck source=/dev/null
 . /opt/conda/etc/profile.d/conda.sh
 
 RAPIDS_VERSION="$(rapids-version)"
-export RAPIDS_VERSION_MAJOR_MINOR="$(rapids-version-major-minor)"
+RAPIDS_VERSION_MAJOR_MINOR="$(rapids-version-major-minor)"
+export RAPIDS_VERSION_MAJOR_MINOR
 
 rapids-dependency-file-generator \
   --output conda \
@@ -29,7 +32,9 @@ rapids-mamba-retry install \
   "rmm=${RAPIDS_VERSION}" \
   "librmm=${RAPIDS_VERSION}"
 
-export RAPIDS_DOCS_DIR="$(mktemp -d)"
+RAPIDS_DOCS_DIR="$(mktemp -d)"
+export RAPIDS_DOCS_DIR
+
 
 rapids-logger "Build CPP docs"
 pushd doxygen

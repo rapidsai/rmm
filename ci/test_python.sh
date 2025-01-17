@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2020-2024, NVIDIA CORPORATION.
+# Copyright (c) 2020-2025, NVIDIA CORPORATION.
 
 set -euo pipefail
 
@@ -7,6 +7,8 @@ set -euo pipefail
 cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")"/../
 
 rapids-logger "Create test conda environment"
+
+# shellcheck source=/dev/null
 . /opt/conda/etc/profile.d/conda.sh
 
 RAPIDS_VERSION="$(rapids-version)"
@@ -51,4 +53,4 @@ rapids-logger "pytest rmm"
  && EXITCODE=$? || EXITCODE=$?;
 
 rapids-logger "Test script exiting with value: $EXITCODE"
-exit ${EXITCODE}
+exit "${EXITCODE}"
