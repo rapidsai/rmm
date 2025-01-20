@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2024, NVIDIA CORPORATION.
+# Copyright (c) 2020-2025, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -119,6 +119,7 @@ cdef extern from "rmm/mr/device/cuda_async_memory_resource.hpp" \
         posix_file_descriptor
         win32
         win32_kmt
+        fabric
 
 
 cdef extern from "rmm/mr/device/pool_memory_resource.hpp" \
