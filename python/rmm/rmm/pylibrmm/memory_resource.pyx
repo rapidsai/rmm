@@ -22,7 +22,7 @@ from collections import defaultdict
 cimport cython
 from cython.operator cimport dereference as deref
 from libc.stddef cimport size_t
-from libc.stdint cimport int8_t, uintptr_t
+from libc.stdint cimport int8_t, int32_t, uintptr_t
 from libcpp cimport bool
 from libcpp.memory cimport make_unique, unique_ptr
 from libcpp.optional cimport optional
@@ -57,17 +57,14 @@ from rmm.librmm.memory_resource cimport (
     cuda_memory_resource,
     deallocate_callback_t,
     device_memory_resource,
-    fabric as c_allocation_handle_type_fabric,
     failure_callback_resource_adaptor,
     failure_callback_t,
     fixed_size_memory_resource,
     limiting_resource_adaptor,
     logging_resource_adaptor,
     managed_memory_resource,
-    none as c_allocation_handle_type_none,
     percent_of_free_device_memory as c_percent_of_free_device_memory,
     pool_memory_resource,
-    posix_file_descriptor as c_allocation_handle_type_posix_file_descriptor,
     prefetch_resource_adaptor,
     sam_headroom_memory_resource,
     statistics_resource_adaptor,
@@ -192,16 +189,16 @@ cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
 
         # If IPC or fabric memory handles are enabled but not supported, the
         # constructor below will raise an error from C++.
-        cdef allocation_handle_type descriptor = c_allocation_handle_type_none
+        cdef allocation_handle_type descriptor = allocation_handle_type.none
         if enable_ipc:
             descriptor = <allocation_handle_type>(
-                <int>descriptor |
-                <int>c_allocation_handle_type_posix_file_descriptor
+                <int32_t?>descriptor |
+                <int32_t?>allocation_handle_type.posix_file_descriptor
             )
         if enable_fabric:
             descriptor = <allocation_handle_type>(
-                <int>descriptor |
-                <int>c_allocation_handle_type_fabric
+                <int32_t?>descriptor |
+                <int32_t?>allocation_handle_type.fabric
             )
 
         cdef optional[allocation_handle_type] c_export_handle_type = (
