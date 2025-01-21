@@ -8,7 +8,6 @@ cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")"/../
 
 rapids-logger "Create test conda environment"
 
-# shellcheck source=/dev/null
 . /opt/conda/etc/profile.d/conda.sh
 
 RAPIDS_VERSION="$(rapids-version)"

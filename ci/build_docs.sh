@@ -5,7 +5,6 @@ set -euo pipefail
 
 rapids-logger "Create test conda environment"
 
-# shellcheck source=/dev/null
 . /opt/conda/etc/profile.d/conda.sh
 
 RAPIDS_VERSION="$(rapids-version)"

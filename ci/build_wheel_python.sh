@@ -6,9 +6,7 @@ set -euo pipefail
 package_name="rmm"
 package_dir="python/rmm"
 
-# shellcheck source=/dev/null
 source rapids-configure-sccache
-# shellcheck source=/dev/null
 source rapids-date-string
 
 rapids-generate-version > ./VERSION

@@ -5,7 +5,6 @@ set -euo pipefail
 
 rapids-logger "Create checks conda environment"
 
-# shellcheck source=/dev/null
 . /opt/conda/etc/profile.d/conda.sh
 
 rapids-dependency-file-generator \
