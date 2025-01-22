@@ -330,7 +330,7 @@ dependencies:
           - matrix:
               dependencies: "oldest"
             packages:
-              - numba==0.59.1.*
+              - numba==0.59.1
               - numpy==1.23.*
           - matrix:
             packages:
