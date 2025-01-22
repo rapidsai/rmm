@@ -25,7 +25,7 @@ dependencies:
 - make
 - nbsphinx
 - ninja
-- numba>=0.57
+- numba>=0.59.1,<0.61.0a0
 - numpy>=1.23,<3.0a0
 - numpydoc
 - nvcc_linux-64=11.8

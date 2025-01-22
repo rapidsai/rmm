@@ -309,7 +309,7 @@ dependencies:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
-          - numba>=0.57
+          - numba>=0.59.1,<0.61.0a0
           - pytest
           - pytest-cov
     specific:
@@ -330,7 +330,7 @@ dependencies:
           - matrix:
               dependencies: "oldest"
             packages:
-              - numba==0.57.*
+              - numba==0.59.1
               - numpy==1.23.*
           - matrix:
             packages:
