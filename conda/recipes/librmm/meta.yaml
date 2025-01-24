@@ -17,11 +17,7 @@ requirements:
     - ninja
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
-    {% if cuda_major == "11" %}
     - {{ compiler('cuda') }} {{ cuda_version }}
-    {% else %}
-    - {{ compiler('cuda') }}
-    {% endif %}
     - cuda-version ={{ cuda_version }}
     - {{ stdlib("c") }}
   host:
@@ -65,9 +61,7 @@ outputs:
         - cuda-version ={{ cuda_version }}
       run:
         - {{ pin_compatible('cuda-version', max_pin='x', min_pin='x') }}
-        {% if cuda_major == "11" %}
-        - cudatoolkit
-        {% endif %}
+        - {{ "cudatoolkit" if cuda_major == "11" else "cuda-version" }} 
         - fmt {{ fmt_version }}
         - spdlog {{ spdlog_version }}
     test:
@@ -85,25 +79,15 @@ outputs:
       string: cuda{{ cuda_major }}_{{ date_string }}_{{ GIT_DESCRIBE_HASH }}_{{ GIT_DESCRIBE_NUMBER }}
       ignore_run_exports_from:
         - {{ compiler('cuda') }}
-        {% if cuda_major != "11" %}
-        - cuda-cudart-dev
-        {% endif %}
+        - {{ "cuda-cudart-dev" if cuda_major == "12" else "cuda-version" }}
     requirements:
       build:
         - cmake {{ cmake_version }}
       host:
         - cuda-version ={{ cuda_version }}
-        {% if cuda_major == "11" %}
-        - cudatoolkit
-        {% else %}
-        - cuda-cudart-dev
-        {% endif %}
+        - {{ "cudatoolkit" if cuda_major == "11" else "cuda-cudart-dev" }} 
       run:
-        {% if cuda_major == "11" %}
-        - cudatoolkit
-        {% else %}
-        - cuda-cudart
-        {% endif %}
+        - {{ "cudatoolkit" if cuda_major == "11" else "cuda-cudart" }} 
         - {{ pin_compatible('cuda-version', max_pin='x', min_pin='x') }}
         - {{ pin_subpackage('librmm', exact=True) }}
     about:

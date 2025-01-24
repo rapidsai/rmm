@@ -1,0 +1,109 @@
+# Copyright (c) 2018-2025, NVIDIA CORPORATION.
+schema_version: 1
+
+context:
+  version: ${{ env.get("RAPIDS_PACKAGE_VERSION") }}
+  cuda_version: ${{ (env.get('RAPIDS_CUDA_VERSION') | split('.'))[:2] | join(".") }}
+  cuda_major: ${{ (env.get('RAPIDS_CUDA_VERSION') | split('.'))[0] }}
+  date_string: ${{ env.get("RAPIDS_DATE_STRING") }}
+
+recipe:
+  name: librmm-split
+
+source:
+  path: ../../..
+
+build:
+  script:
+    secrets:
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_SESSION_TOKEN
+      - CMAKE_C_COMPILER_LAUNCHER
+      - CMAKE_CUDA_COMPILER_LAUNCHER
+      - CMAKE_CXX_COMPILER_LAUNCHER
+      - CMAKE_GENERATOR
+      - PARALLEL_LEVEL
+      - SCCACHE_BUCKET
+      - SCCACHE_IDLE_TIMEOUT
+      - SCCACHE_REGION
+      - SCCACHE_S3_USE_SSL
+      - SCCACHE_S3_NO_CREDENTIALS
+      - if: linux64
+        then:
+          - SCCACHE_S3_KEY_PREFIX=librmm-linux64
+      - if: aarch64
+        then:
+          - SCCACHE_S3_KEY_PREFIX=librmm-aarch64
+
+outputs:
+  - package:
+      name: librmm
+      version: ${{ version }}
+    build:
+      number: ${{ GIT_DESCRIBE_NUMBER }}
+      string: cuda${{ cuda_major }}_${{ date_string }}_${{ GIT_DESCRIBE_HASH }}_${{ GIT_DESCRIBE_NUMBER }}
+      script: install_librmm.sh
+    requirements:
+      build:
+        - cmake ${{ cmake_version }}
+        - ninja
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - ${{ compiler('cuda') }} =${{ cuda_version }}
+        - cuda-version =${{ cuda_version }}
+        - ${{ stdlib("c") }}
+      host:
+        - cuda-version =${{ cuda_version }}
+        - fmt ${{ fmt_version }}
+        - spdlog ${{ spdlog_version }}
+      run:
+        - ${{ pin_compatible('cuda-version', upper_bound='x', lower_bound='x') }}
+        - ${{ "cudatoolkit" if cuda_major == "11" else "cuda-version" }}
+        - fmt ${{ fmt_version }}
+        - spdlog ${{ spdlog_version }}
+      run_exports:
+        - ${{ pin_subpackage("librmm", upper_bound="x.x") }}
+      ignore_run_exports:
+        from_package:
+          - ${{ compiler('cuda') }}
+    tests:
+      - script:
+          - "test -d \"${PREFIX}/include/rmm\""
+    about:
+      license: Apache-2.0
+      summary: librmm library
+      homepage: https://rapids.ai/
+  - package:
+      name: librmm-tests
+      version: ${{ version }}
+    build:
+      number: ${{ GIT_DESCRIBE_NUMBER }}
+      string: cuda${{ cuda_major }}_${{ date_string }}_${{ GIT_DESCRIBE_HASH }}_${{ GIT_DESCRIBE_NUMBER }}
+      script: install_librmm_tests.sh
+    requirements:
+      build:
+        - cmake ${{ cmake_version }}
+        - ninja
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - ${{ compiler('cuda') }} =${{ cuda_version }}
+        - cuda-version =${{ cuda_version }}
+        - ${{ stdlib("c") }}
+      host:
+        - cuda-version =${{ cuda_version }}
+        - ${{ "cudatoolkit" if cuda_major == "11" else "cuda-cudart-dev" }}
+        - fmt ${{ fmt_version }}
+        - spdlog ${{ spdlog_version }}
+      run:
+        - ${{ "cudatoolkit" if cuda_major == "11" else "cuda-cudart" }}
+        - ${{ pin_compatible('cuda-version', upper_bound='x', lower_bound='x') }}
+        - ${{ pin_subpackage('librmm', exact=True) }}
+      ignore_run_exports:
+        from_package:
+         - ${{ compiler('cuda') }}
+         - ${{ "cuda-cudart-dev" if cuda_major == "12" else "cuda-version" }}
+    about:
+      license: Apache-2.0
+      summary: librmm test & benchmark executables
+      homepage: https://rapids.ai/
