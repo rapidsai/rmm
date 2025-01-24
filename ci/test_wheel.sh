@@ -1,9 +1,9 @@
 #!/bin/bash
-# Copyright (c) 2023-2024, NVIDIA CORPORATION.
+# Copyright (c) 2023-2025, NVIDIA CORPORATION.
 
 set -eou pipefail
 
-RAPIDS_PY_CUDA_SUFFIX="$(rapids-wheel-ctk-name-gen ${RAPIDS_CUDA_VERSION})"
+RAPIDS_PY_CUDA_SUFFIX="$(rapids-wheel-ctk-name-gen "${RAPIDS_CUDA_VERSION}")"
 WHEELHOUSE="${PWD}/dist/"
 RAPIDS_PY_WHEEL_NAME="rmm_${RAPIDS_PY_CUDA_SUFFIX}" rapids-download-wheels-from-s3 python "${WHEELHOUSE}"
 
@@ -14,6 +14,6 @@ rapids-generate-pip-constraints test_python ./constraints.txt
 python -m pip install \
     -v \
     --constraint ./constraints.txt \
-    "$(echo "${WHEELHOUSE}"/rmm_${RAPIDS_PY_CUDA_SUFFIX}*.whl)[test]"
+    "$(echo "${WHEELHOUSE}"/rmm_"${RAPIDS_PY_CUDA_SUFFIX}"*.whl)[test]"
 
 python -m pytest ./python/rmm/rmm/tests
