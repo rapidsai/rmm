@@ -121,7 +121,7 @@ class host_memory_resource {
   }
 
   /**
-   * @brief Comparison operator with another device_memory_resource
+   * @brief Comparison operator with another host_memory_resource
    *
    * @param other The other resource to compare to
    * @return true If the two resources are equivalent
@@ -133,7 +133,7 @@ class host_memory_resource {
   }
 
   /**
-   * @brief Comparison operator with another device_memory_resource
+   * @brief Comparison operator with another host_memory_resource
    *
    * @param other The other resource to compare to
    * @return false If the two resources are equivalent
