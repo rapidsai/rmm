@@ -79,7 +79,7 @@ outputs:
       string: cuda{{ cuda_major }}_{{ date_string }}_{{ GIT_DESCRIBE_HASH }}_{{ GIT_DESCRIBE_NUMBER }}
       ignore_run_exports_from:
         - {{ compiler('cuda') }}
-        - {{ "cudatoolkit" if not (cuda_major == "12") else "cuda-version" }}
+        - {{ "cuda-cudart-dev" if not (cuda_major == "11") else "cuda-version" }}
     requirements:
       build:
         - cmake {{ cmake_version }}
