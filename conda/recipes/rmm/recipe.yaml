@@ -1,17 +1,27 @@
 # Copyright (c) 2019-2025, NVIDIA CORPORATION.
 
+# bashlet to use for this:
+# IFS=- read -r RAW_VERSION GIT_DESCRIBE_NUMBER GIT_DESCRIBE_HASH <<< $(git describe --tags)
+# Takes string like "v25.02.00a-49-g77dadb88" and splits on the `-` and drops the result into three variables
+
 context:
   version: ${{ env.get("RAPIDS_PACKAGE_VERSION") }}
   cuda_version: ${{ (env.get('RAPIDS_CUDA_VERSION') | split('.'))[:2] | join(".") }}
   cuda_major: ${{ (env.get('RAPIDS_CUDA_VERSION') | split('.'))[0] }}
   date_string: ${{ env.get("RAPIDS_DATE_STRING") }}
+  GIT_DESCRIBE_HASH: ${{ env.get("GIT_DESCRIBE_HASH") }}
+  GIT_DESCRIBE_NUMBER: ${{ env.get("GIT_DESCRIBE_NUMBER") }}
 
 package:
   name: rmm
   version: ${{ version }}
 
 source:
-  path: ../../..
+  - path: ../../..
+    # Either gitignore is misconfigured or rattler-build doesn't respect
+    # the negation for this file, so explicitly copy it in
+  - path: ../../../python/rmm/rmm/librmm/_torch_allocator.cpp
+    target_directory: python/rmm/rmm/librmm/
 
 build:
   number: ${{ GIT_DESCRIBE_NUMBER }}
@@ -63,7 +73,7 @@ requirements:
     - cython >=3.0.0
     - rapids-build-backend >=0.3.0,<0.4.0.dev0
     - librmm =${{ version }}
-    - python
+    - python >=3.7,<3.12
     - pip
     - scikit-build-core >=0.10.0
   run:
@@ -77,7 +87,7 @@ requirements:
     - ${{ pin_compatible('cuda-version', upper_bound='x', lower_bound='x') }}
     - numba >=0.59.1,<0.61.0a0
     - numpy >=1.23,<3.0a0
-    - python
+    - python >=3.7,<3.12
   ignore_run_exports:
     from_package:
       - ${{ compiler('cuda') }}
@@ -86,6 +96,7 @@ requirements:
         then: "cuda-cudart-dev"
         else: "cuda-version"
 
+# TODO: get tests working without strict priority
 # Can build package with
 # rattler-build build --recipe conda/recipes/rmm --experimental --no-build-id -c rapidsai -c conda-forge -c nvidia --channel-priority disabled
 # but these tests fail because it can't solve the test environment b/c of strict priority

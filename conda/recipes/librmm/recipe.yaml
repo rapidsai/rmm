@@ -1,13 +1,18 @@
 # Copyright (c) 2018-2025, NVIDIA CORPORATION.
 schema_version: 1
 
+
+# bashlet to use for this:
+# IFS=- read -r RAW_VERSION GIT_DESCRIBE_NUMBER GIT_DESCRIBE_HASH <<< $(git describe --tags)
+# Takes string like "v25.02.00a-49-g77dadb88" and splits on the `-` and drops the result into three variables
+
 context:
   version: ${{ env.get("RAPIDS_PACKAGE_VERSION") }}
   cuda_version: ${{ (env.get('RAPIDS_CUDA_VERSION') | split('.'))[:2] | join(".") }}
   cuda_major: ${{ (env.get('RAPIDS_CUDA_VERSION') | split('.'))[0] }}
   date_string: ${{ env.get("RAPIDS_DATE_STRING") }}
-
-# TODO: define GIT_DESCRIBE_NUMBER and GIT_DESCRIBE_HASH manually
+  GIT_DESCRIBE_HASH: ${{ env.get("GIT_DESCRIBE_HASH") }}
+  GIT_DESCRIBE_NUMBER: ${{ env.get("GIT_DESCRIBE_NUMBER") }}
 
 recipe:
   name: librmm-split
