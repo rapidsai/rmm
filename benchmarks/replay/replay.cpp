@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -403,7 +403,7 @@ int main(int argc, char** argv)
     auto const num_threads = per_thread_events.size();
 
     // Uncomment to enable / change default log level
-    // rmm::logger().set_level(rmm::level_enum::trace);
+    // rmm::logger().set_level(rapids_logger::level_enum::trace);
 
     if (args.count("resource") > 0) {
       std::string mr_name = args["resource"].as<std::string>();
