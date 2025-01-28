@@ -74,7 +74,7 @@ rapids_find_package(
 rapids_cpm_init()
 
 include(${rapids-cmake-dir}/cpm/rapids_logger.cmake)
-rapids_cpm_rapids_logger()
+rapids_cpm_rapids_logger(BUILD_EXPORT_SET rmm-exports INSTALL_EXPORT_SET rmm-exports)
 create_logger_macros(RMM "rmm::default_logger()" include/rmm)
 
 include(cmake/thirdparty/get_cccl.cmake)

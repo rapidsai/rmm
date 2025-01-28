@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <rmm/detail/export.hpp>
 #include <rmm/logger_macros.hpp>
 
 #include <rapids_logger/logger.hpp>
