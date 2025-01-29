@@ -161,9 +161,3 @@ ENV/
 # clang tooling
 compile_commands.json
 .clangd/
-
-# This name can (and probably should) be changed
-# but whatever the desired output directory for `rattler-build`, it needs to be ignored here
-# so that it doesn't get copied by `rattler` -- this leads to recursive copying
-# and eventually a `File Too Long error` which is hard to diagnose
-output/
