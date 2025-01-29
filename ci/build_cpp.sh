@@ -32,10 +32,8 @@ mamba install rattler-build -c conda-forge -y
 rattler-build build --recipe conda/recipes/librmm \
                     --experimental \
                     --no-build-id \
-                    --channel-priority disabled
-
-                    # This is probably set via `CONDA_BLD_PATH`
-                    # --output_dir /tmp/conda-bld-output
+                    --channel-priority disabled \
+                    --output-dir /tmp/conda-bld-output
                     # These are probably set via `rapids-configure-conda-channels`
                     # -c rapidsai \
                     # -c conda-forge \

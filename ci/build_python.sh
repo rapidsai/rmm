@@ -37,11 +37,10 @@ rattler-build build --recipe conda/recipes/rmm \
                     --experimental \
                     --no-build-id \
                     --channel-priority disabled \
+                    --output-dir /tmp/conda-bld-output \
                     -c "${CPP_CHANNEL}"
                     # ^^^ Probably need this, but locally `rattler-build` finds the CPP builds automatically
                     #
-                    # This is probably set via `CONDA_BLD_PATH`
-                    # --output_dir /tmp/conda-bld-output
                     # These are probably set via `rapids-configure-conda-channels`
                     # -c rapidsai \
                     # -c conda-forge \
