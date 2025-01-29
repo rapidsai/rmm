@@ -33,7 +33,7 @@ rattler-build build --recipe conda/recipes/librmm \
                     --experimental \
                     --no-build-id \
                     --channel-priority disabled \
-                    --output-dir /tmp/conda-bld-output
+                    --output-dir "$RAPIDS_CONDA_BLD_OUTPUT_DIR"
                     # These are probably set via `rapids-configure-conda-channels`
                     # -c rapidsai \
                     # -c conda-forge \
