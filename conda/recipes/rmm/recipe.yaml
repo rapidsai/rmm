@@ -18,10 +18,6 @@ package:
 
 source:
   - path: ../../..
-    # Either gitignore is misconfigured or rattler-build doesn't respect
-    # the negation for this file, so explicitly copy it in
-  - path: ../../../python/rmm/rmm/librmm/_torch_allocator.cpp
-    target_directory: python/rmm/rmm/librmm/
 
 build:
   number: ${{ GIT_DESCRIBE_NUMBER }}
