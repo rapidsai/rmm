@@ -92,14 +92,11 @@ requirements:
         then: "cuda-cudart-dev"
         else: "cuda-version"
 
-# TODO: get tests working without strict priority
-# Can build package with
-# rattler-build build --recipe conda/recipes/rmm --experimental --no-build-id -c rapidsai -c conda-forge -c nvidia --channel-priority disabled
-# but these tests fail because it can't solve the test environment b/c of strict priority
-# tests:
-#   - python:
-#       imports:
-#         - rmm
+tests:
+  - python:
+      imports:
+        - rmm
+      pip_check: false
 
 about:
   homepage: https://rapids.ai/
