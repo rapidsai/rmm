@@ -24,12 +24,12 @@
 namespace RMM_NAMESPACE {
 
 /**
- * @brief Returns the default log filename for the global logger.
+ * @brief Returns the default sink for the global logger.
  *
- * If the environment variable `RMM_DEBUG_LOG_FILE` is defined, its value is used as the path and
- * name of the log file. Otherwise, the file `RMM_log.txt` in the current working directory is used.
+ * If the environment variable `RMM_DEBUG_LOG_FILE` is defined, the default sink is a sink to that
+ * file. Otherwise, the default is to dump to stderr.
  *
- * @return std::string The default log file name.
+ * @return sink_ptr The sink to use
  */
 inline rapids_logger::sink_ptr default_sink()
 {
