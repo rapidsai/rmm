@@ -47,6 +47,7 @@ build:
 requirements:
   build:
     - cmake ${{ cmake_version }}
+    - make
     - ninja
     - ${{ compiler('c') }}
     - ${{ compiler('cxx') }}
