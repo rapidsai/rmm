@@ -20,8 +20,30 @@ CPP_CHANNEL=$(rapids-download-conda-from-s3 cpp)
 
 sccache --zero-stats
 
-# This calls mambabuild when boa is installed (as is the case in the CI images)
-RAPIDS_PACKAGE_VERSION=$(head -1 ./VERSION) rapids-conda-retry mambabuild -c "${CPP_CHANNEL}" conda/recipes/rmm
+RAPIDS_PACKAGE_VERSION=$(head -1 ./VERSION)
+export RAPIDS_PACKAGE_VERSION
+
+# rattler-build doesn't have built-in support for GIT_DESCRIBE_NUMBER and
+# GIT_DESCRIBE_HASH so we set them in the environment first
+# shellcheck disable=SC2034
+IFS=- read -r TAG_VERSION GIT_DESCRIBE_NUMBER GIT_DESCRIBE_HASH <<< "$(git describe --tags)"
+unset TAG_VERSION
+export GIT_DESCRIBE_NUMBER
+export GIT_DESCRIBE_HASH
+
+rattler-build build --recipe conda/recipes/rmm \
+                    --experimental \
+                    --no-build-id \
+                    --channel-priority disabled \
+                    -c "${CPP_CHANNEL}"
+                    # ^^^ Probably need this, but locally `rattler-build` finds the CPP builds automatically
+                    #
+                    # This is probably set via `CONDA_BLD_PATH`
+                    # --output_dir /tmp/conda-bld-output
+                    # These are probably set via `rapids-configure-conda-channels`
+                    # -c rapidsai \
+                    # -c conda-forge \
+                    # -c nvidia
 
 sccache --show-adv-stats
 

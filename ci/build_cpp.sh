@@ -16,8 +16,28 @@ rapids-logger "Begin cpp build"
 
 sccache --zero-stats
 
-# This calls mambabuild when boa is installed (as is the case in the CI images)
-RAPIDS_PACKAGE_VERSION=$(rapids-generate-version) rapids-conda-retry mambabuild conda/recipes/librmm
+RAPIDS_PACKAGE_VERSION=$(rapids-generate-version)
+export RAPIDS_PACKAGE_VERSION
+
+# rattler-build doesn't have built-in support for GIT_DESCRIBE_NUMBER and
+# GIT_DESCRIBE_HASH so we set them in the environment first
+# shellcheck disable=SC2034
+IFS=- read -r TAG_VERSION GIT_DESCRIBE_NUMBER GIT_DESCRIBE_HASH <<< "$(git describe --tags)"
+unset TAG_VERSION
+export GIT_DESCRIBE_NUMBER
+export GIT_DESCRIBE_HASH
+
+rattler-build build --recipe conda/recipes/librmm \
+                    --experimental \
+                    --no-build-id \
+                    --channel-priority disabled
+
+                    # This is probably set via `CONDA_BLD_PATH`
+                    # --output_dir /tmp/conda-bld-output
+                    # These are probably set via `rapids-configure-conda-channels`
+                    # -c rapidsai \
+                    # -c conda-forge \
+                    # -c nvidia
 
 sccache --show-adv-stats
 
