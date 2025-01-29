@@ -66,6 +66,7 @@ outputs:
       script: install_librmm.sh
     requirements:
       host:
+        - cmake ${{ cmake_version }}
         - cuda-version =${{ cuda_version }}
         - fmt ${{ fmt_version }}
         - spdlog ${{ spdlog_version }}
@@ -95,6 +96,7 @@ outputs:
       script: install_librmm_tests.sh
     requirements:
       host:
+        - cmake ${{ cmake_version }}
         - cuda-version =${{ cuda_version }}
         - ${{ "cudatoolkit" if cuda_major == "11" else "cuda-cudart-dev" }}
         - fmt ${{ fmt_version }}
