@@ -27,6 +27,8 @@ unset TAG_VERSION
 export GIT_DESCRIBE_NUMBER
 export GIT_DESCRIBE_HASH
 
+mamba install rattler-build -c conda-forge -y
+
 rattler-build build --recipe conda/recipes/librmm \
                     --experimental \
                     --no-build-id \
