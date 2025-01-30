@@ -112,10 +112,10 @@ outputs:
         - ${{ pin_subpackage('librmm', exact=True) }}
       ignore_run_exports:
         from_package:
-         - ${{ compiler('cuda') }}
-        - if: cuda_major == "11"
-          then: cuda-cudart-dev
-          else: cuda-version
+          - ${{ compiler('cuda') }}
+          - if: cuda_major == "11"
+            then: cuda-cudart-dev
+            else: cuda-version
     about:
       license: Apache-2.0
       summary: librmm test & benchmark executables
