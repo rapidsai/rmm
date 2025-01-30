@@ -38,13 +38,11 @@ rattler-build build --recipe conda/recipes/rmm \
                     --no-build-id \
                     --channel-priority disabled \
                     --output-dir "$RAPIDS_CONDA_BLD_OUTPUT_DIR" \
-                    -c "${CPP_CHANNEL}"
-                    # ^^^ Probably need this, but locally `rattler-build` finds the CPP builds automatically
-                    #
-                    # These are probably set via `rapids-configure-conda-channels`
-                    # -c rapidsai \
-                    # -c conda-forge \
-                    # -c nvidia
+                    -c "${CPP_CHANNEL}" \
+                    -c rapidsai \
+                    -c rapidsai-nightly \
+                    -c conda-forge \
+                    -c nvidia
 
 sccache --show-adv-stats
 
