@@ -72,7 +72,8 @@ outputs:
         - spdlog ${{ spdlog_version }}
       run:
         - ${{ pin_compatible('cuda-version', upper_bound='x', lower_bound='x') }}
-        - ${{ "cudatoolkit" if cuda_major == "11" else "cuda-version" }}
+        - if: cuda_major == "11"
+          then: cudatoolkit
         - fmt ${{ fmt_version }}
         - spdlog ${{ spdlog_version }}
       run_exports:
@@ -98,17 +99,23 @@ outputs:
       host:
         - cmake ${{ cmake_version }}
         - cuda-version =${{ cuda_version }}
-        - ${{ "cudatoolkit" if cuda_major == "11" else "cuda-cudart-dev" }}
+        - if: cuda_major == "11"
+          then: cudatoolkit
+          else: cuda-cudart-dev
         - fmt ${{ fmt_version }}
         - spdlog ${{ spdlog_version }}
       run:
-        - ${{ "cudatoolkit" if cuda_major == "11" else "cuda-cudart" }}
+        - if: cuda_major == "11"
+          then: cudatoolkit
+          else: cuda-cudart
         - ${{ pin_compatible('cuda-version', upper_bound='x', lower_bound='x') }}
         - ${{ pin_subpackage('librmm', exact=True) }}
       ignore_run_exports:
         from_package:
          - ${{ compiler('cuda') }}
-         - ${{ "cuda-cudart-dev" if not (cuda_major == "11") else "cuda-version" }}
+        - if: cuda_major == "11"
+          then: cuda-cudart-dev
+          else: cuda-version
     about:
       license: Apache-2.0
       summary: librmm test & benchmark executables
