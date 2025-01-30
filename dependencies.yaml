@@ -188,7 +188,7 @@ dependencies:
                 - librmm==25.4.*,>=0.0.0a0
   checks:
     common:
-      - output_types: [conda, requirements]
+      - output_types: [conda, requirements, pyproject]
         packages:
           - pre-commit
           # pre-commit requires identify minimum version 1.0, but clang-format requires textproto support and that was
