@@ -116,3 +116,47 @@ outputs:
       home: https://rapids.ai/
       license: Apache-2.0
       summary: librmm test & benchmark executables
+  - name: librmm-example
+    version: {{ version }}
+    script: install_librmm_example.sh
+    build:
+      number: {{ GIT_DESCRIBE_NUMBER }}
+      string: cuda{{ cuda_major }}_{{ date_string }}_{{ GIT_DESCRIBE_HASH }}_{{ GIT_DESCRIBE_NUMBER }}
+      ignore_run_exports_from:
+        {% if cuda_major == "11" %}
+        - {{ compiler('cuda11') }}
+        {% else %}
+        - {{ compiler('cuda') }}
+        - cuda-cudart-dev
+        {% endif %}
+    requirements:
+      build:
+        - cmake {{ cmake_version }}
+        - {{ compiler('c') }}
+        - {{ compiler('cxx') }}
+        {% if cuda_major == "11" %}
+        - {{ compiler('cuda11') }} ={{ cuda_version }}
+        {% else %}
+        - {{ compiler('cuda') }}
+        {% endif %}
+        - cuda-version ={{ cuda_version }}
+        - ninja
+        - {{ stdlib("c") }}
+      host:
+        - {{ pin_subpackage('librmm', exact=True) }}
+        - cuda-version ={{ cuda_version }}
+        {% if cuda_major != "11" %}
+        - cuda-cudart-dev
+        {% endif %}
+      run:
+        - {{ pin_subpackage('librmm', exact=True) }}
+        - {{ pin_compatible('cuda-version', max_pin='x', min_pin='x') }}
+        {% if cuda_major == "11" %}
+        - cudatoolkit
+        {% else %}
+        - cuda-cudart
+        {% endif %}
+    about:
+      home: https://rapids.ai/
+      license: Apache-2.0
+      summary: librmm example executables
