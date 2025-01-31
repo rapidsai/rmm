@@ -1,4 +1,4 @@
-# Copyright (c) 2024, NVIDIA CORPORATION.
+# Copyright (c) 2024-2025, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ build-dir = "build/{wheel_tag}"
 cmake.build-type = "Release"
 cmake.version = "CMakeLists.txt"
 minimum-version = "build-system.requires"
-ninja.make-fallback = true
+ninja.make-fallback = false
 sdist.reproducible = true
 wheel.packages = ["librmm"]
 wheel.install-dir = "librmm"
