@@ -28,12 +28,7 @@ build:
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
       - AWS_SESSION_TOKEN
-      - if: linux64
-        then:
-          - SCCACHE_S3_KEY_PREFIX=rmm-linux64
-      - if: aarch64
-        then:
-          - SCCACHE_S3_KEY_PREFIX=rmm-aarch64
+
     env:
       CMAKE_C_COMPILER_LAUNCHER: ${{ env.get("CMAKE_C_COMPILER_LAUNCHER", default="sccache") }}
       CMAKE_CUDA_COMPILER_LAUNCHER: ${{ env.get("CMAKE_CUDA_COMPILER_LAUNCHER", default="sccache") }}
@@ -44,6 +39,7 @@ build:
       SCCACHE_REGION: ${{ env.get("SCCACHE_REGION", default="") }}
       SCCACHE_S3_USE_SSL: ${{ env.get("SCCACHE_S3_USE_SSL", default="") }}
       SCCACHE_S3_NO_CREDENTIALS: ${{ env.get("SCCACHE_S3_NO_CREDENTIALS", default="") }}
+      SCCACHE_S3_KEY_PREFIX: rmm-${{ env.get("RUNNER_ARCH", default="X64") | replace("X64", "linux64") | replace("ARM64", "aarch64") | lower }}
 
 requirements:
   build:
