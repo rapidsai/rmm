@@ -11,6 +11,7 @@ files:
       - checks
       - cuda
       - cuda_version
+      - depends_on_librapids-logger
       - develop
       - docs
       - py_version
@@ -54,6 +55,7 @@ files:
       key: requires
     includes:
       - build
+      - depends_on_librapids-logger
   py_build:
     output: pyproject
     pyproject_dir: python/rmm
@@ -336,3 +338,14 @@ dependencies:
               - numpy==1.23.*
           - matrix:
             packages:
+  depends_on_librapids-logger:
+    common:
+      - output_types: [conda, requirements, pyproject]
+        packages:
+          - rapids-logger==0.1.*,>=0.0.0a0
+      - output_types: requirements
+        packages:
+          # pip recognizes the index as a global option for the requirements.txt file
+          # This index is needed for rapids-logger
+          - --extra-index-url=https://pypi.nvidia.com
+          - --extra-index-url=https://pypi.anaconda.org/rapidsai-wheels-nightly/simple

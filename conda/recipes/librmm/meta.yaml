@@ -1,6 +1,7 @@
 # Copyright (c) 2018-2025, NVIDIA CORPORATION.
 
 {% set version = environ['RAPIDS_PACKAGE_VERSION'].lstrip('v') %}
+{% set minor_version = version.split('.')[0] + '.' + version.split('.')[1] %}
 {% set cuda_version = '.'.join(environ['RAPIDS_CUDA_VERSION'].split('.')[:2]) %}
 {% set cuda_major = cuda_version.split('.')[0] %}
 {% set date_string = environ['RAPIDS_DATE_STRING'] %}
@@ -26,6 +27,7 @@ requirements:
     - {{ stdlib("c") }}
   host:
     - cuda-version ={{ cuda_version }}
+    - rapids-logger ={{ minor_version }}
 
 build:
   script_env:
@@ -66,6 +68,7 @@ outputs:
         {% if cuda_major == "11" %}
         - cudatoolkit
         {% endif %}
+        - rapids-logger ={{ minor_version }}
     test:
       commands:
         - test -d "${PREFIX}/include/rmm"
