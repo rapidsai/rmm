@@ -27,7 +27,7 @@ requirements:
     - {{ stdlib("c") }}
   host:
     - cuda-version ={{ cuda_version }}
-    - rapids-logger ={{ minor_version }}
+    - rapids-logger =0.1
 
 build:
   script_env:
@@ -68,7 +68,7 @@ outputs:
         {% if cuda_major == "11" %}
         - cudatoolkit
         {% endif %}
-        - rapids-logger ={{ minor_version }}
+        - rapids-logger =0.1
     test:
       commands:
         - test -d "${PREFIX}/include/rmm"
