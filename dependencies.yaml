@@ -11,7 +11,7 @@ files:
       - checks
       - cuda
       - cuda_version
-      - depends_on_librapids-logger
+      - depends_on_rapids-logger
       - develop
       - docs
       - py_version
@@ -55,7 +55,7 @@ files:
       key: requires
     includes:
       - build
-      - depends_on_librapids-logger
+      - depends_on_rapids-logger
   py_build:
     output: pyproject
     pyproject_dir: python/rmm
@@ -338,7 +338,7 @@ dependencies:
               - numpy==1.23.*
           - matrix:
             packages:
-  depends_on_librapids-logger:
+  depends_on_rapids-logger:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
