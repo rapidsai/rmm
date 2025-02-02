@@ -56,6 +56,13 @@ files:
     includes:
       - build
       - depends_on_rapids-logger
+  py_cpp_run:
+    output: pyproject
+    pyproject_dir: python/librmm
+    extras:
+      table: project
+    includes:
+      - depends_on_rapids-logger
   py_build:
     output: pyproject
     pyproject_dir: python/rmm
