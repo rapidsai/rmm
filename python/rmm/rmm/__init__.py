@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2025, NVIDIA CORPORATION.
+# Copyright (c) 2018-2024, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,14 +13,6 @@
 # limitations under the License.
 
 import warnings
-
-try:
-    import rapids_logger
-except ModuleNotFoundError:
-    pass
-else:
-    rapids_logger.load_library()
-    del rapids_logger
 
 from rmm import mr
 from rmm._version import __git_commit__, __version__
