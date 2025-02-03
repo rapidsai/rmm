@@ -24,7 +24,7 @@ jobs:
       # - wheel-build-python
       # - wheel-tests
       # - devcontainer
-      # - telemetry-setup
+      - telemetry-setup
     secrets: inherit
     uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@nvks-runners
     if: always()
