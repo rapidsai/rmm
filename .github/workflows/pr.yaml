@@ -86,7 +86,7 @@ jobs:
   conda-cpp-build:
     needs: checks
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-build.yaml@nvks-runners
+    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-build.yaml@github-artifact-store
     with:
       build_type: pull-request
   conda-cpp-tests:
