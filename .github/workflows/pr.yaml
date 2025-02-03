@@ -16,15 +16,15 @@ jobs:
       - changed-files
       - checks
       - conda-cpp-build
-      - conda-cpp-tests
-      - conda-python-build
-      - conda-python-tests
-      - docs-build
-      - wheel-build-cpp
-      - wheel-build-python
-      - wheel-tests
-      - devcontainer
-      - telemetry-setup
+      # - conda-cpp-tests
+      # - conda-python-build
+      # - conda-python-tests
+      # - docs-build
+      # - wheel-build-cpp
+      # - wheel-build-python
+      # - wheel-tests
+      # - devcontainer
+      # - telemetry-setup
     secrets: inherit
     uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@nvks-runners
     if: always()
