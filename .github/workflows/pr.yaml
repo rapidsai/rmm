@@ -26,7 +26,7 @@ jobs:
       # - devcontainer
       - telemetry-setup
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@nvks-runners
+    uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@test-github-artifacts
     if: always()
     with:
       needs: ${{ toJSON(needs) }}
@@ -57,7 +57,7 @@ jobs:
     needs:
       - telemetry-setup
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/changed-files.yaml@nvks-runners
+    uses: rapidsai/shared-workflows/.github/workflows/changed-files.yaml@test-github-artifacts
     with:
       files_yaml: |
         test_cpp:
@@ -79,7 +79,7 @@ jobs:
     secrets: inherit
     needs:
       - telemetry-setup
-    uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@nvks-runners
+    uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@test-github-artifacts
     with:
       enable_check_generated_files: false
       ignored_pr_jobs: telemetry-summarize
@@ -144,18 +144,18 @@ jobs:
     with:
       build_type: pull-request
       script: ci/test_wheel.sh
-  # devcontainer:
-  #   secrets: inherit
-  #   needs:
-  #     - telemetry-setup
-  #   uses: rapidsai/shared-workflows/.github/workflows/build-in-devcontainer.yaml@test-github-artifacts
-  #   with:
-  #     arch: '["amd64"]'
-  #     cuda: '["12.8"]'
-  #     build_command: |
-  #       sccache -z;
-  #       build-all -DBUILD_BENCHMARKS=ON --verbose;
-  #       sccache -s;
+  devcontainer:
+    secrets: inherit
+    needs:
+      - telemetry-setup
+    uses: rapidsai/shared-workflows/.github/workflows/build-in-devcontainer.yaml@test-github-artifacts
+    with:
+      arch: '["amd64"]'
+      cuda: '["12.8"]'
+      build_command: |
+        sccache -z;
+        build-all -DBUILD_BENCHMARKS=ON --verbose;
+        sccache -s;
 
   telemetry-summarize:
     # This job must use a self-hosted runner to record telemetry traces.

@@ -19,7 +19,7 @@ on:
 jobs:
   cpp-tests:
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-tests.yaml@nvks-runners
+    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-tests.yaml@use-nightly-matrix-for-branch-tests
     with:
       build_type: ${{ inputs.build_type }}
       branch: ${{ inputs.branch }}
@@ -27,7 +27,7 @@ jobs:
       sha: ${{ inputs.sha }}
   python-tests:
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/conda-python-tests.yaml@nvks-runners
+    uses: rapidsai/shared-workflows/.github/workflows/conda-python-tests.yaml@use-nightly-matrix-for-branch-tests
     with:
       build_type: ${{ inputs.build_type }}
       branch: ${{ inputs.branch }}
@@ -35,7 +35,7 @@ jobs:
       sha: ${{ inputs.sha }}
   wheel-tests:
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-test.yaml@nvks-runners
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-test.yaml@use-nightly-matrix-for-branch-tests
     with:
       build_type: ${{ inputs.build_type }}
       branch: ${{ inputs.branch }}
