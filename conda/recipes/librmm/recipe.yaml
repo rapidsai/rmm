@@ -23,7 +23,7 @@ cache:
       - ${{ compiler('c') }}
       - ${{ compiler('cxx') }}
       - ${{ compiler('cuda') }}
-      - cuda-version =${{ cuda_version }
+      - cuda-version =${{ cuda_version }}
       - ${{ stdlib("c") }}
 
   build:
