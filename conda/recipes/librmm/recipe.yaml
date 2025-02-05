@@ -22,8 +22,8 @@ cache:
       - ninja
       - ${{ compiler('c') }}
       - ${{ compiler('cxx') }}
-      - ${{ compiler('cuda') }} =${{ cuda_version }}
-      - cuda-version =${{ cuda_version }}
+      - ${{ compiler('cuda') }}
+      - cuda-version =${{ cuda_version }
       - ${{ stdlib("c") }}
 
   build:
