@@ -11,7 +11,7 @@ RAPIDS_PY_WHEEL_NAME="rmm_${RAPIDS_PY_CUDA_SUFFIX}" rapids-download-wheels-from-
 rapids-generate-pip-constraints test_python ./constraints.txt
 
 # echo to expand wildcard before adding '[extra]' requires for pip
-python -m pip install \
+rapids-pip-retry install \
     -v \
     --constraint ./constraints.txt \
     "$(echo "${WHEELHOUSE}"/rmm_"${RAPIDS_PY_CUDA_SUFFIX}"*.whl)[test]"
