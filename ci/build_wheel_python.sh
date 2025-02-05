@@ -25,7 +25,7 @@ echo "librmm-${RAPIDS_PY_CUDA_SUFFIX} @ file://$(echo "${CPP_WHEELHOUSE}"/librmm
 sccache --zero-stats
 
 PIP_CONSTRAINT="${PWD}/build-constraints.txt" \
-    python -m pip wheel . -w dist -v --no-deps --disable-pip-version-check
+    rapids-pip-retry wheel . -w dist -v --no-deps --disable-pip-version-check
 
 sccache --show-adv-stats
 

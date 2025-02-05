@@ -16,7 +16,7 @@ cd "${package_dir}"
 
 sccache --zero-stats
 
-python -m pip wheel . -w dist -v --no-deps --disable-pip-version-check
+rapids-pip-retry wheel . -w dist -v --no-deps --disable-pip-version-check
 
 sccache --show-adv-stats
 
