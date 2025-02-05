@@ -23,7 +23,7 @@ jobs:
       - wheel-build-cpp
       - wheel-build-python
       - wheel-tests
-      # - devcontainer
+      - devcontainer
       - telemetry-setup
     secrets: inherit
     uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@test-github-artifacts
