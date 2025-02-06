@@ -30,7 +30,10 @@ PIP_CONSTRAINT="${PWD}/build-constraints.txt" \
 sccache --show-adv-stats
 
 mkdir -p final_dist
-python -m auditwheel repair --exclude librapids_logger.so -w final_dist dist/*
+EXCLUDE_ARGS=(
+  --exclude "librapids_logger.so"
+)
+python -m auditwheel repair --exclude "${EXCLUDE_ARGS[@]}" -w final_dist dist/*
 
 ../../ci/validate_wheel.sh final_dist
 
