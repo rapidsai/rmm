@@ -43,11 +43,7 @@ requirements:
     - ninja
     - ${{ compiler('c') }}
     - ${{ compiler('cxx') }}
-    - if: cuda_major == "11"
-      then:
-        - ${{ compiler('cuda') }} =${{ cuda_version }}
-      else:
-        - ${{ compiler('cuda') }}
+    - ${{ compiler('cuda') }}
     - cuda-version =${{ cuda_version }}
     - ${{ stdlib("c") }}
   host:
