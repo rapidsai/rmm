@@ -27,7 +27,7 @@ sccache --zero-stats
 PIP_CONSTRAINT="${PWD}/build-constraints.txt" \
     rapids-pip-retry wheel . -w dist -v --no-deps --disable-pip-version-check
 
-sccache --show-adv-stats
+sccache --show-adv-stats | tee telemetry-artifacts/sccache-stats.txt
 
 mkdir -p final_dist
 python -m auditwheel repair -w final_dist dist/*
