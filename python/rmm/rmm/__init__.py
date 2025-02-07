@@ -14,6 +14,7 @@
 
 import warnings
 
+# This path is only taken for wheels where librmm is a separate Python package.
 try:
     import librmm
 except ModuleNotFoundError:
