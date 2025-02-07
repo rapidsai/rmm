@@ -25,6 +25,9 @@ export RAPIDS_PACKAGE_VERSION
 
 source rapids-configure-rattler
 
+# --no-build-id allows for caching with `sccache`
+# more info is available at
+# https://rattler.build/latest/tips_and_tricks/#using-sccache-or-ccache-with-rattler-build
 rattler-build build --recipe conda/recipes/rmm \
                     --experimental \
                     --no-build-id \
@@ -37,5 +40,7 @@ rattler-build build --recipe conda/recipes/rmm \
                     -c nvidia
 
 sccache --show-adv-stats
+
+rm -rf "$RAPIDS_CONDA_BLD_OUTPUT_DIR"/build_cache
 
 rapids-upload-conda-to-s3 python
