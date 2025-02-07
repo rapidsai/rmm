@@ -19,6 +19,7 @@ try:
 except ModuleNotFoundError:
     pass
 else:
+    librmm.load_library()
     del librmm
 
 from rmm import mr
