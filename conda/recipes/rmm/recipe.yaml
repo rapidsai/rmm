@@ -77,7 +77,6 @@ requirements:
       - cuda-python
       - if: not (cuda_major == "11")
         then: "cuda-cudart-dev"
-        else: "cuda-version"
 
 tests:
   - python:
