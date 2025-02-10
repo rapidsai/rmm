@@ -34,7 +34,7 @@ namespace RMM_NAMESPACE {
 inline rapids_logger::sink_ptr default_sink()
 {
   auto* filename = std::getenv("RMM_DEBUG_LOG_FILE");
-  if (filename == nullptr) {
+  if (filename != nullptr) {
     return std::make_shared<rapids_logger::basic_file_sink_mt>(filename, true);
   }
   return std::make_shared<rapids_logger::stderr_sink_mt>();
