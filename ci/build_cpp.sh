@@ -26,7 +26,11 @@ rattler-build build --recipe conda/recipes/librmm \
                     --experimental \
                     --no-build-id \
                     --channel-priority disabled \
-                    --output-dir "$RAPIDS_CONDA_BLD_OUTPUT_DIR"
+                    --output-dir "$RAPIDS_CONDA_BLD_OUTPUT_DIR" \
+                    -c rapidsai \
+                    -c rapidsai-nightly \
+                    -c conda-forge \
+                    -c nvidia
 
 sccache --show-adv-stats
 
