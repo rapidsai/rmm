@@ -5,8 +5,6 @@ context:
   cuda_version: ${{ (env.get('RAPIDS_CUDA_VERSION') | split('.'))[:2] | join(".") }}
   cuda_major: ${{ (env.get('RAPIDS_CUDA_VERSION') | split('.'))[0] }}
   date_string: ${{ env.get("RAPIDS_DATE_STRING") }}
-  GIT_DESCRIBE_HASH: ${{ env.get("GIT_DESCRIBE_HASH") }}
-  GIT_DESCRIBE_NUMBER: ${{ env.get("GIT_DESCRIBE_NUMBER") }}
 
 package:
   name: rmm
@@ -16,8 +14,7 @@ source:
   - path: ../../..
 
 build:
-  number: ${{ GIT_DESCRIBE_NUMBER }}
-  string: cuda${{ cuda_major }}_py${{ py_version }}_${{ date_string }}_${{ GIT_DESCRIBE_HASH }}_${{ GIT_DESCRIBE_NUMBER }}
+  string: cuda${{ cuda_major }}_py${{ py_version }}_${{ date_string }}
   script:
     file: build.sh
     secrets:

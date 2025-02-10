@@ -19,8 +19,6 @@ sccache --zero-stats
 RAPIDS_PACKAGE_VERSION=$(rapids-generate-version)
 export RAPIDS_PACKAGE_VERSION
 
-source rapids-configure-rattler
-
 # --no-build-id allows for caching with `sccache`
 # more info is available at
 # https://rattler.build/latest/tips_and_tricks/#using-sccache-or-ccache-with-rattler-build
