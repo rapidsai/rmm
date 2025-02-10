@@ -167,5 +167,3 @@ jobs:
     steps:
       - name: Telemetry summarize
         uses: rapidsai/shared-actions/telemetry-dispatch-summarize@better-download-error-handling
-        with:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
