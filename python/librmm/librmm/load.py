@@ -1,4 +1,4 @@
-# Copyright (c) 2024-2025, NVIDIA CORPORATION.
+# Copyright (c) 2025, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,8 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
 
-from librmm._version import __git_commit__, __version__
-from librmm.load import load_library
 
-__all__ = ["__git_commit__", "__version__", "load_library"]
+def load_library():
+    """Librmm is header-only, this function loads its (non-header-only) dependencies"""
+    try:
+        import rapids_logger
+    except ModuleNotFoundError:
+        pass
+    else:
+        rapids_logger.load_library()
+        del rapids_logger

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,9 +96,10 @@ class arena_memory_resource final : public device_memory_resource {
     : global_arena_{upstream_mr, arena_size}, dump_log_on_failure_{dump_log_on_failure}
   {
     if (dump_log_on_failure_) {
-      logger_ = std::make_shared<logger>("arena_memory_dump", "rmm_arena_memory_dump.log");
+      logger_ =
+        std::make_shared<rapids_logger::logger>("arena_memory_dump", "rmm_arena_memory_dump.log");
       // Set the level to `debug` for more detailed output.
-      logger_->set_level(level_enum::info);
+      logger_->set_level(rapids_logger::level_enum::info);
     }
   }
 
@@ -352,7 +353,7 @@ class arena_memory_resource final : public device_memory_resource {
   /// If true, dump memory information to log on allocation failure.
   bool dump_log_on_failure_{};
   /// The logger for memory dump.
-  std::shared_ptr<logger> logger_{};
+  std::shared_ptr<rapids_logger::logger> logger_{};
   /// Mutex for read and write locks on arena maps.
   mutable std::shared_mutex map_mtx_;
   /// Mutex for shared and unique locks on the mr.
