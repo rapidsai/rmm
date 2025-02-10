@@ -35,7 +35,7 @@ build:
       SCCACHE_REGION: ${{ env.get("SCCACHE_REGION", default="") }}
       SCCACHE_S3_USE_SSL: ${{ env.get("SCCACHE_S3_USE_SSL", default="") }}
       SCCACHE_S3_NO_CREDENTIALS: ${{ env.get("SCCACHE_S3_NO_CREDENTIALS", default="") }}
-      SCCACHE_S3_KEY_PREFIX: rmm-${{ env.get("RUNNER_ARCH", default="X64") | replace("X64", "linux64") | replace("ARM64", "aarch64") | lower }}
+      SCCACHE_S3_KEY_PREFIX: rmm-${{ env.get("RAPIDS_CONDA_ARCH", default="") }}
 
 requirements:
   build:
