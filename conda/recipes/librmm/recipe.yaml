@@ -73,9 +73,9 @@ outputs:
       - script:
           - "test -d \"${PREFIX}/include/rmm\""
     about:
-      license: Apache-2.0
-      summary: librmm library
-      homepage: https://rapids.ai/
+      homepage: ${{ load_from_file("python/librmm/pyproject.toml").project.urls.Homepage }}
+      license: ${{ load_from_file("python/librmm/pyproject.toml").project.license.text | replace(" ", "-") }}
+      summary: ${{ load_from_file("python/librmm/pyproject.toml").project.description }}
   - package:
       name: librmm-tests
       version: ${{ version }}
@@ -104,6 +104,6 @@ outputs:
             then: cuda-cudart-dev
             else: cuda-version
     about:
-      license: Apache-2.0
+      homepage: ${{ load_from_file("python/librmm/pyproject.toml").project.urls.Homepage }}
+      license: ${{ load_from_file("python/librmm/pyproject.toml").project.license.text | replace(" ", "-") }}
       summary: librmm test & benchmark executables
-      homepage: https://rapids.ai/

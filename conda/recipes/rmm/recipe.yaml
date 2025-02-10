@@ -85,8 +85,6 @@ tests:
       pip_check: false
 
 about:
-  homepage: https://rapids.ai/
-  license: Apache-2.0
-  license_family: Apache
-  license_file: LICENSE
-  summary: rmm library
+  homepage: ${{ load_from_file("python/rmm/pyproject.toml").project.urls.Homepage }}
+  license: ${{ load_from_file("python/rmm/pyproject.toml").project.license.text | replace(" ", "-") }}
+  summary: ${{ load_from_file("python/rmm/pyproject.toml").project.description }}
