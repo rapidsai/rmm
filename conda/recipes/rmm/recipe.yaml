@@ -2,8 +2,8 @@
 
 context:
   version: ${{ env.get("RAPIDS_PACKAGE_VERSION") }}
-  cuda_version: ${{ (env.get('RAPIDS_CUDA_VERSION') | split('.'))[:2] | join(".") }}
-  cuda_major: ${{ (env.get('RAPIDS_CUDA_VERSION') | split('.'))[0] }}
+  cuda_version: ${{ (env.get("RAPIDS_CUDA_VERSION") | split("."))[:2] | join(".") }}
+  cuda_major: ${{ (env.get("RAPIDS_CUDA_VERSION") | split("."))[0] }}
   date_string: ${{ env.get("RAPIDS_DATE_STRING") }}
 
 package:
@@ -38,9 +38,9 @@ requirements:
   build:
     - cmake ${{ cmake_version }}
     - ninja
-    - ${{ compiler('c') }}
-    - ${{ compiler('cxx') }}
-    - ${{ compiler('cuda') }}
+    - ${{ compiler("c") }}
+    - ${{ compiler("cxx") }}
+    - ${{ compiler("cuda") }}
     - cuda-version =${{ cuda_version }}
     - ${{ stdlib("c") }}
   host:
@@ -66,13 +66,13 @@ requirements:
       else:
         - cuda-cudart
         - cuda-python >=12.6.2,<13.0a0
-    - ${{ pin_compatible('cuda-version', upper_bound='x', lower_bound='x') }}
+    - ${{ pin_compatible("cuda-version", upper_bound="x", lower_bound="x") }}
     - numba >=0.59.1,<0.61.0a0
     - numpy >=1.23,<3.0a0
     - python >=3.7,<3.12
   ignore_run_exports:
     from_package:
-      - ${{ compiler('cuda') }}
+      - ${{ compiler("cuda") }}
       - cuda-python
       - if: not (cuda_major == "11")
         then: "cuda-cudart-dev"

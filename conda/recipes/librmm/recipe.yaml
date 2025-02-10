@@ -3,8 +3,8 @@ schema_version: 1
 
 context:
   version: ${{ env.get("RAPIDS_PACKAGE_VERSION") }}
-  cuda_version: ${{ (env.get('RAPIDS_CUDA_VERSION') | split('.'))[:2] | join(".") }}
-  cuda_major: ${{ (env.get('RAPIDS_CUDA_VERSION') | split('.'))[0] }}
+  cuda_version: ${{ (env.get("RAPIDS_CUDA_VERSION") | split("."))[:2] | join(".") }}
+  cuda_major: ${{ (env.get("RAPIDS_CUDA_VERSION") | split("."))[0] }}
   date_string: ${{ env.get("RAPIDS_DATE_STRING") }}
 
 recipe:
@@ -18,9 +18,9 @@ cache:
     build:
       - cmake ${{ cmake_version }}
       - ninja
-      - ${{ compiler('c') }}
-      - ${{ compiler('cxx') }}
-      - ${{ compiler('cuda') }}
+      - ${{ compiler("c") }}
+      - ${{ compiler("cxx") }}
+      - ${{ compiler("cuda") }}
       - cuda-version =${{ cuda_version }}
       - ${{ stdlib("c") }}
 
@@ -59,7 +59,7 @@ outputs:
         - fmt ${{ fmt_version }}
         - spdlog ${{ spdlog_version }}
       run:
-        - ${{ pin_compatible('cuda-version', upper_bound='x', lower_bound='x') }}
+        - ${{ pin_compatible("cuda-version", upper_bound="x", lower_bound="x") }}
         - if: cuda_major == "11"
           then: cudatoolkit
         - fmt ${{ fmt_version }}
@@ -68,7 +68,7 @@ outputs:
         - ${{ pin_subpackage("librmm", upper_bound="x.x") }}
       ignore_run_exports:
         from_package:
-          - ${{ compiler('cuda') }}
+          - ${{ compiler("cuda") }}
     tests:
       - script:
           - "test -d \"${PREFIX}/include/rmm\""
@@ -95,11 +95,11 @@ outputs:
         - if: cuda_major == "11"
           then: cudatoolkit
           else: cuda-cudart
-        - ${{ pin_compatible('cuda-version', upper_bound='x', lower_bound='x') }}
-        - ${{ pin_subpackage('librmm', exact=True) }}
+        - ${{ pin_compatible("cuda-version", upper_bound="x", lower_bound="x") }}
+        - ${{ pin_subpackage("librmm", exact=True) }}
       ignore_run_exports:
         from_package:
-          - ${{ compiler('cuda') }}
+          - ${{ compiler("cuda") }}
           - if: cuda_major == "11"
             then: cuda-cudart-dev
             else: cuda-version
