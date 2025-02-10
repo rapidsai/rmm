@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2024, NVIDIA CORPORATION.
+# Copyright (c) 2023-2025, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@ from libcpp cimport bool
 from libcpp.string cimport string
 
 
-cdef extern from "rmm/logger.hpp" namespace "rmm" nogil:
+cdef extern from "rapids_logger/logger.hpp" namespace "rapids_logger" nogil:
     cpdef enum class level_enum:
         trace
         debug
@@ -36,4 +36,6 @@ cdef extern from "rmm/logger.hpp" namespace "rmm" nogil:
         level_enum flush_level() except +
         bool should_log(level_enum msg_level) except +
 
+
+cdef extern from "rmm/logger.hpp" namespace "rmm" nogil:
     cdef logger& default_logger() except +
