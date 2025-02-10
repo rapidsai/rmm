@@ -56,7 +56,7 @@ requirements:
     - cython >=3.0.0
     - rapids-build-backend >=0.3.0,<0.4.0.dev0
     - librmm =${{ version }}
-    - python >=3.7,<3.12
+    - python
     - pip
     - scikit-build-core >=0.10.0
   run:
@@ -70,7 +70,7 @@ requirements:
     - ${{ pin_compatible("cuda-version", upper_bound="x", lower_bound="x") }}
     - numba >=0.59.1,<0.61.0a0
     - numpy >=1.23,<3.0a0
-    - python >=3.7,<3.12
+    - python
   ignore_run_exports:
     from_package:
       - ${{ compiler("cuda") }}
