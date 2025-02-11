@@ -87,5 +87,5 @@ tests:
 
 about:
   homepage: ${{ load_from_file("python/rmm/pyproject.toml").project.urls.Homepage }}
-  license: ${{ load_from_file("python/rmm/pyproject.toml").project.license.text | replace(" ", "-") }}
+  license: ${{ load_from_file("python/rmm/pyproject.toml").project.license.text }}
   summary: ${{ load_from_file("python/rmm/pyproject.toml").project.description }}
