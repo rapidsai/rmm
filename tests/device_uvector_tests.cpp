@@ -1,6 +1,6 @@
 
 /*
- * Copyright (c) 2020-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,10 @@
 #include <gtest/gtest.h>
 #include <gtest/internal/gtest-type-util.h>
 
+#include <cstdint>
+#include <iterator>
+#include <utility>
+
 // explicit instantiation for test coverage purposes.
 template class rmm::device_uvector<int32_t>;
 
@@ -33,7 +37,7 @@ struct TypedUVectorTest : ::testing::Test {
 
 using TestTypes = ::testing::Types<int8_t, int32_t, uint64_t, float, double>;
 
-TYPED_TEST_CASE(TypedUVectorTest, TestTypes);
+TYPED_TEST_SUITE(TypedUVectorTest, TestTypes);
 
 TYPED_TEST(TypedUVectorTest, MemoryResource)
 {

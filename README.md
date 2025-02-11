@@ -37,7 +37,7 @@ RMM can be installed with conda. You can get a minimal conda installation with [
 Install RMM with:
 
 ```bash
-conda install -c rapidsai -c conda-forge -c nvidia rmm cuda-version=12.0
+conda install -c rapidsai -c conda-forge -c nvidia rmm cuda-version=12.8
 ```
 
 We also provide [nightly conda packages](https://anaconda.org/rapidsai-nightly) built from the HEAD
@@ -90,7 +90,7 @@ $ cd rmm
 - Create the conda development environment `rmm_dev`
 ```bash
 # create the conda environment (assuming in base `rmm` directory)
-$ conda env create --name rmm_dev --file conda/environments/all_cuda-125_arch-x86_64.yaml
+$ conda env create --name rmm_dev --file conda/environments/all_cuda-128_arch-x86_64.yaml
 # activate the environment
 $ conda activate rmm_dev
 ```
@@ -645,16 +645,15 @@ set to `True`. The log file name can be set using the `log_file_name` parameter.
 
 ### Debug Logging
 
-RMM includes a debug logger which can be enabled to log trace and debug information to a file. This
-information can show when errors occur, when additional memory is allocated from upstream resources,
-etc. By default output is logged to stderr, but the environment variable
-`RMM_DEBUG_LOG_FILE` can be set to specify a path and file name to dump the logs to instead.
+RMM leverages [`rapids-logger`](https://github.com/rapidsai/rapids-logger) to log trace and debug
+information to a file. This information can show when errors occur, when additional memory is
+allocated from upstream resources, etc. By default output is logged to stderr, but the environment
+variable `RMM_DEBUG_LOG_FILE` can be set to specify a path and file name to dump the logs to
+instead.
 
 There is a CMake configuration variable `RMM_LOGGING_LEVEL`, which can be set to enable compilation
 of more detailed logging. The default is `INFO`. Available levels are `TRACE`, `DEBUG`, `INFO`,
 `WARN`, `ERROR`, `CRITICAL` and `OFF`.
-
-The log relies on the [spdlog](https://github.com/gabime/spdlog.git) library.
 
 Note that to see logging below the `INFO` level, the application must also set the logging level at
 run time. C++ applications must must call `rmm::default_logger().set_level()`, for example to enable all

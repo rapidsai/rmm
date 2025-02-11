@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,12 @@
 #include <rmm/device_uvector.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 
+#include <cuda_runtime_api.h>
+
 #include <gtest/gtest.h>
 
 #include <type_traits>
+#include <utility>
 
 template <typename ContainerType>
 struct ContainerMultiDeviceTest : public ::testing::Test {};
@@ -32,7 +35,7 @@ struct ContainerMultiDeviceTest : public ::testing::Test {};
 using containers =
   ::testing::Types<rmm::device_buffer, rmm::device_uvector<int>, rmm::device_scalar<int>>;
 
-TYPED_TEST_CASE(ContainerMultiDeviceTest, containers);
+TYPED_TEST_SUITE(ContainerMultiDeviceTest, containers);
 
 TYPED_TEST(ContainerMultiDeviceTest, CreateDestroyDifferentActiveDevice)
 {

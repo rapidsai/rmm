@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2023-2024, NVIDIA CORPORATION.
+# Copyright (c) 2023-2025, NVIDIA CORPORATION.
 
 set -euo pipefail
 
@@ -13,24 +13,27 @@ rapids-generate-version > ./VERSION
 
 pushd "${package_dir}"
 
-RAPIDS_PY_CUDA_SUFFIX="$(rapids-wheel-ctk-name-gen ${RAPIDS_CUDA_VERSION})"
+RAPIDS_PY_CUDA_SUFFIX=$(rapids-wheel-ctk-name-gen "${RAPIDS_CUDA_VERSION}")
 CPP_WHEELHOUSE=$(RAPIDS_PY_WHEEL_NAME="rmm_${RAPIDS_PY_CUDA_SUFFIX}" rapids-download-wheels-from-s3 cpp /tmp/librmm_dist)
 
 # ensure 'rmm' wheel builds always use the 'librmm' just built in the same CI run
 #
 # using env variable PIP_CONSTRAINT is necessary to ensure the constraints
 # are used when created the isolated build environment
-echo "librmm-${RAPIDS_PY_CUDA_SUFFIX} @ file://$(echo ${CPP_WHEELHOUSE}/librmm_${RAPIDS_PY_CUDA_SUFFIX}*.whl)" > ./build-constraints.txt
+echo "librmm-${RAPIDS_PY_CUDA_SUFFIX} @ file://$(echo "${CPP_WHEELHOUSE}"/librmm_"${RAPIDS_PY_CUDA_SUFFIX}"*.whl)" > ./build-constraints.txt
 
 sccache --zero-stats
 
 PIP_CONSTRAINT="${PWD}/build-constraints.txt" \
-    python -m pip wheel . -w dist -v --no-deps --disable-pip-version-check
+    rapids-pip-retry wheel . -w dist -v --no-deps --disable-pip-version-check
 
 sccache --show-adv-stats
 
 mkdir -p final_dist
-python -m auditwheel repair -w final_dist dist/*
+EXCLUDE_ARGS=(
+  --exclude "librapids_logger.so"
+)
+python -m auditwheel repair "${EXCLUDE_ARGS[@]}" -w final_dist dist/*
 
 ../../ci/validate_wheel.sh final_dist
 

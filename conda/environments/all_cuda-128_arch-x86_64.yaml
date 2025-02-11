@@ -12,12 +12,11 @@ dependencies:
 - cmake>=3.26.4,!=3.30.0
 - cuda-nvcc
 - cuda-python>=12.6.2,<13.0a0
-- cuda-version=12.5
+- cuda-version=12.8
 - cxx-compiler
 - cython>=3.0.0
 - doxygen=1.9.1
-- fmt>=11.0.2,<12
-- gcc_linux-64=11.*
+- gcc_linux-64=13.*
 - gcovr>=5.0
 - graphviz
 - identify>=2.5.20
@@ -25,7 +24,7 @@ dependencies:
 - make
 - nbsphinx
 - ninja
-- numba>=0.57
+- numba>=0.59.1,<0.61.0a0
 - numpy>=1.23,<3.0a0
 - numpydoc
 - pre-commit
@@ -33,11 +32,11 @@ dependencies:
 - pytest-cov
 - python>=3.10,<3.13
 - rapids-build-backend>=0.3.0,<0.4.0.dev0
+- rapids-logger==0.1.*,>=0.0.0a0
 - scikit-build-core >=0.10.0
-- spdlog>=1.14.1,<1.15
 - sphinx
 - sphinx-copybutton
 - sphinx-markdown-tables
 - sphinx_rtd_theme
-- sysroot_linux-64==2.17
-name: all_cuda-125_arch-x86_64
+- sysroot_linux-64==2.28
+name: all_cuda-128_arch-x86_64

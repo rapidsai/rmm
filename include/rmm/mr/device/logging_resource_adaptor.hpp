@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,9 +25,10 @@
 
 #include <cstddef>
 #include <cstdio>
+#include <initializer_list>
 #include <memory>
-#include <sstream>
-#include <string_view>
+#include <ostream>
+#include <string>
 
 namespace RMM_NAMESPACE {
 namespace mr {
@@ -113,7 +114,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    * performance.
    */
   logging_resource_adaptor(Upstream* upstream,
-                           std::initializer_list<sink_ptr> sinks,
+                           std::initializer_list<rapids_logger::sink_ptr> sinks,
                            bool auto_flush = false)
     : logging_resource_adaptor{to_device_async_resource_ref_checked(upstream), sinks, auto_flush}
   {
@@ -178,7 +179,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    * performance.
    */
   logging_resource_adaptor(device_async_resource_ref upstream,
-                           std::initializer_list<sink_ptr> sinks,
+                           std::initializer_list<rapids_logger::sink_ptr> sinks,
                            bool auto_flush = false)
     : logging_resource_adaptor{make_logger(sinks), upstream, auto_flush}
   {
@@ -232,24 +233,27 @@ class logging_resource_adaptor final : public device_memory_resource {
   }
 
  private:
-  static auto make_logger(std::ostream& stream) { return std::make_shared<logger>("RMM", stream); }
+  static auto make_logger(std::ostream& stream)
+  {
+    return std::make_shared<rapids_logger::logger>("RMM", stream);
+  }
 
   static auto make_logger(std::string const& filename)
   {
-    return std::make_shared<logger>("RMM", filename);
+    return std::make_shared<rapids_logger::logger>("RMM", filename);
   }
 
-  static auto make_logger(std::initializer_list<sink_ptr> sinks)
+  static auto make_logger(std::initializer_list<rapids_logger::sink_ptr> sinks)
   {
-    return std::make_shared<logger>("RMM", sinks);
+    return std::make_shared<rapids_logger::logger>("RMM", sinks);
   }
 
-  logging_resource_adaptor(std::shared_ptr<logger> logger,
+  logging_resource_adaptor(std::shared_ptr<rapids_logger::logger> logger,
                            device_async_resource_ref upstream,
                            bool auto_flush)
     : logger_{logger}, upstream_{upstream}
   {
-    if (auto_flush) { logger_->flush_on(level_enum::info); }
+    if (auto_flush) { logger_->flush_on(rapids_logger::level_enum::info); }
     logger_->set_pattern("%v");
     logger_->info(header());
     logger_->set_pattern("%t,%H:%M:%S.%f,%v");
@@ -328,7 +332,7 @@ class logging_resource_adaptor final : public device_memory_resource {
     return get_upstream_resource() == cast->get_upstream_resource();
   }
 
-  std::shared_ptr<logger> logger_{};
+  std::shared_ptr<rapids_logger::logger> logger_{};
 
   device_async_resource_ref upstream_;  ///< The upstream resource used for satisfying
                                         ///< allocation requests

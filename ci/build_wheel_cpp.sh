@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2024, NVIDIA CORPORATION.
+# Copyright (c) 2024-2025, NVIDIA CORPORATION.
 
 set -euo pipefail
 
@@ -10,13 +10,13 @@ source rapids-date-string
 
 rapids-generate-version > ./VERSION
 
-RAPIDS_PY_CUDA_SUFFIX="$(rapids-wheel-ctk-name-gen ${RAPIDS_CUDA_VERSION})"
+RAPIDS_PY_CUDA_SUFFIX=$(rapids-wheel-ctk-name-gen "${RAPIDS_CUDA_VERSION}")
 
 cd "${package_dir}"
 
 sccache --zero-stats
 
-python -m pip wheel . -w dist -v --no-deps --disable-pip-version-check
+rapids-pip-retry wheel . -w dist -v --no-deps --disable-pip-version-check
 
 sccache --show-adv-stats
 
