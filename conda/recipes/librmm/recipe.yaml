@@ -53,7 +53,8 @@ outputs:
       version: ${{ version }}
     build:
       string: cuda${{ cuda_major }}_${{ date_string }}_${{ head_rev }}
-      script: install_librmm.sh
+      script:
+        - cmake --install build
     requirements:
       host:
         - cmake ${{ cmake_version }}
@@ -80,7 +81,8 @@ outputs:
       version: ${{ version }}
     build:
       string: cuda${{ cuda_major }}_${{ date_string }}_${{ head_rev }}
-      script: install_librmm_tests.sh
+      script:
+        - cmake --install build --component testing
     requirements:
       host:
         - cmake ${{ cmake_version }}
