@@ -35,7 +35,7 @@ mkdir -p final_dist
 EXCLUDE_ARGS=(
   --exclude "librapids_logger.so"
 )
-python -m auditwheel repair "${EXCLUDE_ARGS[@]}" -w final_dist dist/*
+python -m auditwheel repair "${EXCLUDE_ARGS[@]}" -w "${wheel_dir}" dist/*
 
 ../../ci/validate_wheel.sh "${wheel_dir}"
 
