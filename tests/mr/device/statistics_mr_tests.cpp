@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,16 @@
 #include "../../byte_literals.hpp"
 
 #include <rmm/cuda_stream_view.hpp>
-#include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
+#include <rmm/error.hpp>
 #include <rmm/mr/device/statistics_resource_adaptor.hpp>
 
 #include <gtest/gtest.h>
+
+#include <cstddef>
+#include <memory>
+#include <stdexcept>
+#include <vector>
 
 namespace rmm::test {
 namespace {

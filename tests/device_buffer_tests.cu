@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ struct DeviceBufferTest : public ::testing::Test {
 
 using resources = ::testing::Types<rmm::mr::cuda_memory_resource, rmm::mr::managed_memory_resource>;
 
-TYPED_TEST_CASE(DeviceBufferTest, resources);
+TYPED_TEST_SUITE(DeviceBufferTest, resources);
 
 TYPED_TEST(DeviceBufferTest, EmptyBuffer)
 {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@
 #include <cuda/memory_resource>
 
 #include <cstddef>
-#include <utility>
 
 namespace RMM_NAMESPACE {
 namespace mr {
@@ -121,7 +120,7 @@ class host_memory_resource {
   }
 
   /**
-   * @brief Comparison operator with another device_memory_resource
+   * @brief Comparison operator with another host_memory_resource
    *
    * @param other The other resource to compare to
    * @return true If the two resources are equivalent
@@ -133,7 +132,7 @@ class host_memory_resource {
   }
 
   /**
-   * @brief Comparison operator with another device_memory_resource
+   * @brief Comparison operator with another host_memory_resource
    *
    * @param other The other resource to compare to
    * @return false If the two resources are equivalent

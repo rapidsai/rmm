@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2024, NVIDIA CORPORATION.
+# Copyright (c) 2020-2025, NVIDIA CORPORATION.
 
 # Configuration file for the Sphinx documentation builder.
 #
@@ -238,8 +238,8 @@ def on_missing_reference(app, env, node, contnode):
         "thrust",
         "spdlog",
         "stream_ref",
-        # logger names (we may eventually want to link out for those)
-        "sink_ptr",
+        # rapids_logger names
+        "rapids_logger",
         # libcu++ names
         "cuda",
         "cuda::mr",

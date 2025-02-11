@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024, NVIDIA CORPORATION.
+# Copyright (c) 2018-2025, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,6 +13,15 @@
 # limitations under the License.
 
 import warnings
+
+# This path is only taken for wheels where librmm is a separate Python package.
+try:
+    import librmm
+except ModuleNotFoundError:
+    pass
+else:
+    librmm.load_library()
+    del librmm
 
 from rmm import mr
 from rmm._version import __git_commit__, __version__

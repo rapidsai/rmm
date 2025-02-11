@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@
 #include <gtest/gtest.h>
 
 #include <memory>
+#include <type_traits>
 
 namespace {
 
@@ -103,7 +104,7 @@ TEST_F(allocator_test, rebind)
 
   using Rebound = std::allocator_traits<Allocator>::rebind_alloc<double>;
 
-  EXPECT_TRUE((std::is_same<std::allocator_traits<Rebound>::value_type, double>::value));
+  EXPECT_TRUE((std::is_same_v<std::allocator_traits<Rebound>::value_type, double>));
 }
 
 TEST_F(allocator_test, allocate_deallocate)
