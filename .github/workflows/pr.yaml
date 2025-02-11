@@ -20,10 +20,10 @@ jobs:
       - conda-python-build
       - conda-python-tests
       - docs-build
-      # - wheel-build-cpp
-      # - wheel-build-python
-      # - wheel-tests
-      # - devcontainer
+      - wheel-build-cpp
+      - wheel-build-python
+      - wheel-tests
+      - devcontainer
       - telemetry-setup
     secrets: inherit
     uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@nvks-runners
@@ -119,48 +119,50 @@ jobs:
       arch: "amd64"
       container_image: "rapidsai/ci-conda:latest"
       run_script: "ci/build_docs.sh"
-  # wheel-build-cpp:
-  #   needs: checks
-  #   secrets: inherit
-  #   uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@nvks-runners
-  #   with:
-  #     matrix_filter: group_by([.ARCH, (.CUDA_VER|split(".")|map(tonumber)|.[0])]) | map(max_by(.PY_VER|split(".")|map(tonumber)))
-  #     build_type: pull-request
-  #     script: ci/build_wheel_cpp.sh
-  # wheel-build-python:
-  #   needs: wheel-build-cpp
-  #   secrets: inherit
-  #   uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@nvks-runners
-  #   with:
-  #     build_type: pull-request
-  #     script: ci/build_wheel_python.sh
-  # wheel-tests:
-  #   needs: [wheel-build-python, changed-files]
-  #   secrets: inherit
-  #   uses: rapidsai/shared-workflows/.github/workflows/wheels-test.yaml@nvks-runners
-  #   if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_python
-  #   with:
-  #     build_type: pull-request
-  #     script: ci/test_wheel.sh
-  # devcontainer:
-  #   secrets: inherit
-  #   needs:
-  #     - telemetry-setup
-  #   uses: rapidsai/shared-workflows/.github/workflows/build-in-devcontainer.yaml@nvks-runners
-  #   with:
-  #     arch: '["amd64"]'
-  #     cuda: '["12.8"]'
-  #     build_command: |
-  #       sccache -z;
-  #       build-all -DBUILD_BENCHMARKS=ON --verbose;
-  #       sccache -s;
+  wheel-build-cpp:
+    needs: checks
+    secrets: inherit
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@test-github-artifacts
+    with:
+      matrix_filter: group_by([.ARCH, (.CUDA_VER|split(".")|map(tonumber)|.[0])]) | map(max_by(.PY_VER|split(".")|map(tonumber)))
+      build_type: pull-request
+      script: ci/build_wheel_cpp.sh
+      wheel_type: cpp
+  wheel-build-python:
+    needs: wheel-build-cpp
+    secrets: inherit
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@test-github-artifacts
+    with:
+      build_type: pull-request
+      script: ci/build_wheel_python.sh
+      wheel_type: python
+  wheel-tests:
+    needs: [wheel-build-python, changed-files]
+    secrets: inherit
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-test.yaml@test-github-artifacts
+    if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_python
+    with:
+      build_type: pull-request
+      script: ci/test_wheel.sh
+  devcontainer:
+    secrets: inherit
+    needs:
+      - telemetry-setup
+    uses: rapidsai/shared-workflows/.github/workflows/build-in-devcontainer.yaml@test-github-artifacts
+    with:
+      arch: '["amd64"]'
+      cuda: '["12.8"]'
+      build_command: |
+        sccache -z;
+        build-all -DBUILD_BENCHMARKS=ON --verbose;
+        sccache -s;
 
-  # telemetry-summarize:
-  #   # This job must use a self-hosted runner to record telemetry traces.
-  #   runs-on: linux-amd64-cpu4
-  #   needs: pr-builder
-  #   if: ${{ vars.TELEMETRY_ENABLED == 'true' && !cancelled() }}
-  #   continue-on-error: true
-  #   steps:
-  #     - name: Telemetry summarize
-  #       uses: rapidsai/shared-actions/telemetry-dispatch-summarize@main
+  telemetry-summarize:
+    # This job must use a self-hosted runner to record telemetry traces.
+    runs-on: linux-amd64-cpu4
+    needs: pr-builder
+    if: ${{ vars.TELEMETRY_ENABLED == 'true' && !cancelled() }}
+    continue-on-error: true
+    steps:
+      - name: Telemetry summarize
+        uses: rapidsai/shared-actions/telemetry-dispatch-summarize@main

@@ -25,4 +25,4 @@ RAPIDS_PACKAGE_VERSION=$(head -1 ./VERSION) rapids-conda-retry mambabuild -c "${
 
 sccache --show-adv-stats
 
-rapids-upload-conda-to-s3 python
+# rapids-upload-conda-to-s3 python
