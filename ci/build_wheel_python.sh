@@ -25,12 +25,15 @@ echo "librmm-${RAPIDS_PY_CUDA_SUFFIX} @ file://$(echo "${CPP_WHEELHOUSE}"/librmm
 sccache --zero-stats
 
 PIP_CONSTRAINT="${PWD}/build-constraints.txt" \
-    python -m pip wheel . -w dist -v --no-deps --disable-pip-version-check
+    rapids-pip-retry wheel . -w dist -v --no-deps --disable-pip-version-check
 
 sccache --show-adv-stats
 
 mkdir -p final_dist
-python -m auditwheel repair -w final_dist dist/*
+EXCLUDE_ARGS=(
+  --exclude "librapids_logger.so"
+)
+python -m auditwheel repair "${EXCLUDE_ARGS[@]}" -w final_dist dist/*
 
 ../../ci/validate_wheel.sh final_dist
 
