@@ -207,6 +207,11 @@ dependencies:
           - matrix:
             packages:
               - *librmm_unsuffixed
+  depends_on_rmm:
+    common:
+      - output_types: conda
+        packages:
+          - rmm=25.4.*,>=0.0.0a0
   checks:
     common:
       - output_types: [conda, requirements]
