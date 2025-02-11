@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2021-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-#include <rmm/cuda_device.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/cuda_async_memory_resource.hpp>
+
+#include <cuda_runtime_api.h>
 
 #include <gtest/gtest.h>
 

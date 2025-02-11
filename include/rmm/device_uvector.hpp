@@ -75,7 +75,7 @@ namespace RMM_NAMESPACE {
  */
 template <typename T>
 class device_uvector {
-  static_assert(std::is_trivially_copyable<T>::value,
+  static_assert(std::is_trivially_copyable_v<T>,
                 "device_uvector only supports types that are trivially copyable.");
 
  public:
