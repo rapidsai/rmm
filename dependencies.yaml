@@ -24,6 +24,8 @@ files:
       - cuda_version
       - py_version
       - test_python
+      - depends_on_librmm
+      - depends_on_rmm
   test_cpp:
     output: none
     includes:
