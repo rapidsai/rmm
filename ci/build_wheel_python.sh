@@ -3,7 +3,7 @@
 
 set -euo pipefail
 
-package_name="rmm"
+# package_name="rmm"
 package_dir="python/rmm"
 
 wheel_dir=${RAPIDS_WHEEL_DIR:-"final_dist"}
