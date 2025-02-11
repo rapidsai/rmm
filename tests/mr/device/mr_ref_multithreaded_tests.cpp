@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ namespace {
 
 struct mr_ref_test_mt : public mr_ref_test {};
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
   MultiThreadResourceTests,
   mr_ref_test_mt,
   ::testing::Values("CUDA", "CUDA_Async", "Managed", "Pool", "Arena", "Binning"),

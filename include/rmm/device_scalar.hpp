@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ namespace RMM_NAMESPACE {
 template <typename T>
 class device_scalar {
  public:
-  static_assert(std::is_trivially_copyable<T>::value, "Scalar type must be trivially copyable");
+  static_assert(std::is_trivially_copyable_v<T>, "Scalar type must be trivially copyable");
 
   using value_type = typename device_uvector<T>::value_type;  ///< T, the type of the scalar element
   using size_type  = typename device_uvector<T>::size_type;   ///< The type used for the size

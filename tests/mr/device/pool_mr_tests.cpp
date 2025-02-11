@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,9 @@
  * limitations under the License.
  */
 
-#include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
-#include <rmm/device_uvector.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/limiting_resource_adaptor.hpp>
@@ -26,6 +24,10 @@
 #include <rmm/mr/device/pool_memory_resource.hpp>
 
 #include <gtest/gtest.h>
+
+#include <cstddef>
+#include <memory>
+#include <vector>
 
 // explicit instantiation for test coverage purposes
 template class rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>;

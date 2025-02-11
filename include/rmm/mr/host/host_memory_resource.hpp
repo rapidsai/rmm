@@ -21,7 +21,6 @@
 #include <cuda/memory_resource>
 
 #include <cstddef>
-#include <utility>
 
 namespace RMM_NAMESPACE {
 namespace mr {
