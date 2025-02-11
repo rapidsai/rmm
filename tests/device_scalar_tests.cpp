@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,16 +42,15 @@ struct DeviceScalarTest : public ::testing::Test {
 
   DeviceScalarTest() : value{random_value()} {}
 
-  template <typename U = T, std::enable_if_t<std::is_same<U, bool>::value, bool> = true>
+  template <typename U = T, std::enable_if_t<std::is_same_v<U, bool>, bool> = true>
   U random_value()
   {
     static std::bernoulli_distribution distribution{};
     return distribution(generator);
   }
 
-  template <
-    typename U                                                                               = T,
-    std::enable_if_t<(std::is_integral<U>::value && not std::is_same<U, bool>::value), bool> = true>
+  template <typename U                                                                     = T,
+            std::enable_if_t<(std::is_integral_v<U> && not std::is_same_v<U, bool>), bool> = true>
   U random_value()
   {
     static std::uniform_int_distribution<U> distribution{std::numeric_limits<T>::lowest(),
@@ -59,7 +58,7 @@ struct DeviceScalarTest : public ::testing::Test {
     return distribution(generator);
   }
 
-  template <typename U = T, std::enable_if_t<std::is_floating_point<U>::value, bool> = true>
+  template <typename U = T, std::enable_if_t<std::is_floating_point_v<U>, bool> = true>
   U random_value()
   {
     auto const mean{100};
@@ -71,7 +70,7 @@ struct DeviceScalarTest : public ::testing::Test {
 
 using Types = ::testing::Types<bool, int8_t, int16_t, int32_t, int64_t, float, double>;
 
-TYPED_TEST_CASE(DeviceScalarTest, Types);
+TYPED_TEST_SUITE(DeviceScalarTest, Types);
 
 TYPED_TEST(DeviceScalarTest, Uninitialized)
 {

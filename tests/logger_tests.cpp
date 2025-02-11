@@ -20,12 +20,15 @@
 #include <rmm/mr/device/logging_resource_adaptor.hpp>
 
 #include <benchmarks/utilities/log_parser.hpp>
-#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <cstdlib>
 #include <filesystem>
-#include <thread>
+#include <iostream>
+#include <memory>
+#include <string>
+#include <vector>
 
 namespace rmm::test {
 namespace {

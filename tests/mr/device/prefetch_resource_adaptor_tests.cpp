@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, NVIDIA CORPORATION.
+ * Copyright (c) 2024-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,7 +69,7 @@ struct PrefetchAdaptorTest : public ::testing::Test {
 
 using resources = ::testing::Types<rmm::mr::cuda_memory_resource, rmm::mr::managed_memory_resource>;
 
-TYPED_TEST_CASE(PrefetchAdaptorTest, resources);
+TYPED_TEST_SUITE(PrefetchAdaptorTest, resources);
 
 // The following tests simply test compilation and that there are no exceptions thrown
 // due to prefetching non-managed memory.

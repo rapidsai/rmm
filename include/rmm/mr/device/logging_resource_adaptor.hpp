@@ -25,9 +25,10 @@
 
 #include <cstddef>
 #include <cstdio>
+#include <initializer_list>
 #include <memory>
-#include <sstream>
-#include <string_view>
+#include <ostream>
+#include <string>
 
 namespace RMM_NAMESPACE {
 namespace mr {
