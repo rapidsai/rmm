@@ -18,7 +18,7 @@ sccache --zero-stats
 
 rapids-pip-retry wheel . -w dist -v --no-deps --disable-pip-version-check
 
-sccache --show-adv-stats | tee telemetry-artifacts/sccache-stats.txt
+sccache --show-adv-stats | tee ../../telemetry-artifacts/sccache-stats.txt
 
 python -m wheel tags --platform any dist/* --remove
 
