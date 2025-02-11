@@ -23,6 +23,12 @@ sccache --zero-stats
 RAPIDS_PACKAGE_VERSION=$(head -1 ./VERSION)
 export RAPIDS_PACKAGE_VERSION
 
+if rapids-is-release-build; then
+    RAPIDS_CHANNEL=rapidsai
+else
+    RAPIDS_CHANNEL=rapidsai-nightly
+fi
+
 # --no-build-id allows for caching with `sccache`
 # more info is available at
 # https://rattler.build/latest/tips_and_tricks/#using-sccache-or-ccache-with-rattler-build
@@ -32,8 +38,7 @@ rattler-build build --recipe conda/recipes/rmm \
                     --channel-priority disabled \
                     --output-dir "$RAPIDS_CONDA_BLD_OUTPUT_DIR" \
                     -c "${CPP_CHANNEL}" \
-                    -c rapidsai \
-                    -c rapidsai-nightly \
+                    -c ${RAPIDS_CHANNEL} \
                     -c conda-forge \
                     -c nvidia
 
