@@ -46,6 +46,8 @@ done
 
 DEPENDENCIES=(
   librmm
+  librmm-tests
+  rmm
 )
 for DEP in "${DEPENDENCIES[@]}"; do
   for FILE in dependencies.yaml conda/environments/*.yaml; do
