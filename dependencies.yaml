@@ -286,6 +286,7 @@ dependencies:
           - ipython
           - make
           - nbsphinx
+          - numba>=0.59.1,<0.61.0a0
           - numpydoc
           - sphinx
           - sphinx_rtd_theme
