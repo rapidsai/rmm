@@ -31,6 +31,8 @@ files:
     includes:
       - cuda_version
       - test_cpp
+      - depends_on_librmm
+      - depends_on_librmm_tests
   checks:
     output: none
     includes:
@@ -214,6 +216,11 @@ dependencies:
       - output_types: conda
         packages:
           - rmm=25.4.*,>=0.0.0a0
+  depends_on_librmm_tests:
+    common:
+      - output_types: conda
+        packages:
+          - librmm-tests=25.4.*,>=0.0.0a0
   checks:
     common:
       - output_types: [conda, requirements]
