@@ -19,11 +19,8 @@ sccache --zero-stats
 RAPIDS_PACKAGE_VERSION=$(rapids-generate-version)
 export RAPIDS_PACKAGE_VERSION
 
-if rapids-is-release-build; then
-    RAPIDS_CHANNEL=rapidsai
-else
-    RAPIDS_CHANNEL=rapidsai-nightly
-fi
+# Creates and exports $RATTLER_CHANNELS
+source rapids-rattler-channel-string
 
 # --no-build-id allows for caching with `sccache`
 # more info is available at
@@ -33,9 +30,7 @@ rattler-build build --recipe conda/recipes/librmm \
                     --no-build-id \
                     --channel-priority disabled \
                     --output-dir "$RAPIDS_CONDA_BLD_OUTPUT_DIR" \
-                    -c ${RAPIDS_CHANNEL} \
-                    -c conda-forge \
-                    -c nvidia
+                    "${RATTLER_CHANNELS[@]}"
 
 sccache --show-adv-stats
 
