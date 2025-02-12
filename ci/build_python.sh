@@ -21,7 +21,7 @@ CPP_CHANNEL=$(rapids-download-conda-from-s3 cpp)
 sccache --zero-stats
 
 # This calls mambabuild when boa is installed (as is the case in the CI images)
-RAPIDS_PACKAGE_VERSION=$(head -1 ./VERSION) rapids-conda-retry mambabuild -c "${CPP_CHANNEL}" conda/recipes/rmm
+RAPIDS_PACKAGE_VERSION=$(head -1 ./VERSION) rapids-conda-retry mambabuild -c "${CPP_CHANNEL}" conda/recipes/rmm 2>&1 | tee telemetry-artifacts/build.log
 
 sccache --show-adv-stats | tee telemetry-artifacts/sccache-stats.txt
 
