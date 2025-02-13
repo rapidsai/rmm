@@ -123,7 +123,7 @@ class pinned_memory_resource final : public host_memory_resource {
     return rmm::detail::aligned_host_allocate(bytes, alignment, [](std::size_t size) {
       void* ptr{nullptr};
       auto status = cudaMallocHost(&ptr, size);
-      if (cudaSuccess != status) { throw std::bad_alloc{}; }
+      if (cudaSuccess != status) { throw rmm::bad_alloc(cudaGetErrorString(cudaGetLastError())); }
       return ptr;
     });
   }
