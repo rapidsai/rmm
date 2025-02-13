@@ -166,7 +166,9 @@ class arena_memory_resource final : public device_memory_resource {
       void* pointer = arena.allocate(bytes);
       if (pointer == nullptr) {
         if (dump_log_on_failure_) { dump_memory_log(bytes); }
-        RMM_FAIL("Maximum pool size exceeded", rmm::out_of_memory);
+        auto const msg = std::string("Maximum pool size exceeded (failed to allocate ") +
+                         rmm::detail::format_bytes(bytes) + ")";
+        RMM_FAIL(msg.c_str(), rmm::out_of_memory);
       }
       return pointer;
     }

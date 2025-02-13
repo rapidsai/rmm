@@ -252,21 +252,28 @@ class pool_memory_resource final
    */
   block_type try_to_expand(std::size_t try_size, std::size_t min_size, cuda_stream_view stream)
   {
+    std::exception upstream_error{};
     while (try_size >= min_size) {
-      auto block = block_from_upstream(try_size, stream);
-      if (block.has_value()) {
-        current_pool_size_ += block.value().size();
-        return block.value();
+      try {
+        auto block = block_from_upstream(try_size, stream);
+        current_pool_size_ += block.size();
+        return block;
+      } catch (std::exception const& e) {
+        upstream_error = e;
       }
       if (try_size == min_size) {
         break;  // only try `size` once
       }
       try_size = std::max(min_size, try_size / 2);
     }
-    RMM_LOG_ERROR("[A][Stream %s][Upstream %zuB][FAILURE maximum pool size exceeded]",
+    RMM_LOG_ERROR("[A][Stream %s][Upstream %zuB][FAILURE maximum pool size exceeded: %s]",
                   rmm::detail::format_stream(stream),
-                  min_size);
-    RMM_FAIL("Maximum pool size exceeded", rmm::out_of_memory);
+                  min_size,
+                  upstream_error.what());
+    auto const msg = std::string("Maximum pool size exceeded (failed to allocate ") +
+                     rmm::detail::format_bytes(try_size) + std::string("): ") +
+                     upstream_error.what();
+    RMM_FAIL(msg.c_str(), rmm::out_of_memory);
   }
 
   /**
@@ -341,19 +348,14 @@ class pool_memory_resource final
    * @param stream The stream on which the memory is to be used.
    * @return block_type The allocated block
    */
-  std::optional<block_type> block_from_upstream(std::size_t size, cuda_stream_view stream)
+  block_type block_from_upstream(std::size_t size, cuda_stream_view stream)
   {
     RMM_LOG_DEBUG("[A][Stream %s][Upstream %zuB]", rmm::detail::format_stream(stream), size);
 
     if (size == 0) { return {}; }
 
-    try {
-      void* ptr = get_upstream_resource().allocate_async(size, stream);
-      return std::optional<block_type>{
-        *upstream_blocks_.emplace(static_cast<char*>(ptr), size, true).first};
-    } catch (std::exception const& e) {
-      return std::nullopt;
-    }
+    void* ptr = get_upstream_resource().allocate_async(size, stream);
+    return *upstream_blocks_.emplace(static_cast<char*>(ptr), size, true).first;
   }
 
   /**
