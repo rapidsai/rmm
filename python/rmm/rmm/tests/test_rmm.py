@@ -689,6 +689,33 @@ def test_cuda_async_memory_resource_ipc():
         assert rmm.mr.get_current_device_resource_type() is type(mr)
 
 
+def test_cuda_async_memory_resource_fabric():
+    # TODO: We don't have a great way to check if fabric is supported in Python,
+    # without using the C++ function
+    # rmm::detail::runtime_async_alloc::is_export_handle_type_supported.
+    # We can't accurately test this via Python because
+    # cuda-python always has the fabric handle enum defined (which normally
+    # requires a CUDA 12.3 runtime) and the cuda-compat package in Docker
+    # containers prevents us from assuming that the driver we see actually
+    # supports fabric handles even if its reported version is new enough (we may
+    # see a newer driver than what is present on the host). We can only know
+    # the expected behavior by checking the C++ function mentioned above, which
+    # is then a redundant check because the CudaAsyncMemoryResource constructor
+    # follows the same logic. Therefore, we cannot easily ensure this test
+    # passes in certain expected configurations -- we can only ensure that if
+    # it fails, it fails in a predictable way.
+    try:
+        mr = rmm.mr.CudaAsyncMemoryResource(enable_fabric=True)
+    except RuntimeError as e:
+        # CUDA 12.3 is required for fabric memory handle support
+        assert str(e).endswith(
+            "Requested IPC memory handle type not supported"
+        )
+    else:
+        rmm.mr.set_current_device_resource(mr)
+        assert rmm.mr.get_current_device_resource_type() is type(mr)
+
+
 @pytest.mark.parametrize("nelems", _nelems)
 def test_cuda_async_memory_resource_stream(nelems):
     # test that using CudaAsyncMemoryResource
