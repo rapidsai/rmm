@@ -3,7 +3,7 @@ files:
   all:
     output: conda
     matrix:
-      cuda: ["11.8", "12.5"]
+      cuda: ["11.8", "12.8"]
       arch: [x86_64]
     includes:
       - build
@@ -118,14 +118,28 @@ dependencies:
         matrices:
           - matrix:
               arch: x86_64
+              cuda: "11.*"
             packages:
               - gcc_linux-64=11.*
-              - sysroot_linux-64==2.17
+              - &sysroot_x86_64 sysroot_linux-64==2.28
+          - matrix:
+              arch: x86_64
+              cuda: "12.*"
+            packages:
+              - gcc_linux-64=13.*
+              - *sysroot_x86_64
           - matrix:
               arch: aarch64
+              cuda: "11.*"
             packages:
               - gcc_linux-aarch64=11.*
-              - sysroot_linux-aarch64==2.17
+              - &sysroot_aarch64 sysroot_linux-aarch64==2.28
+          - matrix:
+              arch: aarch64
+              cuda: "12.*"
+            packages:
+              - gcc_linux-aarch64=13.*
+              - *sysroot_aarch64
       - output_types: conda
         matrices:
           - matrix:
@@ -153,25 +167,25 @@ dependencies:
           - matrix:
               cuda: "12.*"
             packages:
-              - &cuda_python12 cuda-python>=12.0,<13.0a0,<=12.6.0
+              - &cuda_python12 cuda-python>=12.6.2,<13.0a0
           - matrix: # All CUDA 11 versions
             packages:
-              - &cuda_python11 cuda-python>=11.7.1,<12.0a0,<=11.8.3
+              - &cuda_python11 cuda-python>=11.8.5,<12.0a0
       - output_types: [requirements, pyproject]
         matrices:
             - matrix:
                 cuda: "12.*"
                 cuda_suffixed: "true"
               packages:
-                - librmm-cu12==24.12.*
+                - librmm-cu12==25.2.*,>=0.0.0a0
             - matrix:
                 cuda: "11.*"
                 cuda_suffixed: "true"
               packages:
-                - librmm-cu11==24.12.*
+                - librmm-cu11==25.2.*,>=0.0.0a0
             - matrix: null
               packages:
-                - librmm==24.12.*
+                - librmm==25.2.*,>=0.0.0a0
   checks:
     common:
       - output_types: [conda, requirements]
@@ -219,6 +233,10 @@ dependencies:
               cuda: "12.5"
             packages:
               - cuda-version=12.5
+          - matrix:
+              cuda: "12.8"
+            packages:
+              - cuda-version=12.8
   cuda:
     specific:
       - output_types: conda
@@ -275,7 +293,6 @@ dependencies:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
-          - numba>=0.57
           - numpy>=1.23,<3.0a0
     specific:
       - output_types: [conda, requirements, pyproject]
@@ -296,6 +313,7 @@ dependencies:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
+          - numba>=0.59.1,<0.61.0a0
           - pytest
           - pytest-cov
     specific:
@@ -310,13 +328,13 @@ dependencies:
               - cuda-nvcc
           - matrix:
             packages:
-      - output_types: [conda, requirements]
+      - output_types: [conda, requirements, pyproject]
         # Define additional constraints for testing with oldest dependencies.
         matrices:
           - matrix:
               dependencies: "oldest"
             packages:
-              - numba==0.57.*
+              - numba==0.59.1
               - numpy==1.23.*
           - matrix:
             packages:

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cuda.ccudart cimport cudaStream_t
+from cuda.bindings.cyruntime cimport cudaStream_t
 from libc.stdint cimport uintptr_t
 from libcpp cimport bool
 
@@ -90,12 +90,15 @@ cdef class Stream:
         return self.c_is_default()
 
     def _init_from_numba_stream(self, obj):
-        from numba import cuda
-        if isinstance(obj, cuda.cudadrv.driver.Stream):
-            self._cuda_stream = <cudaStream_t><uintptr_t>(int(obj))
-            self._owner = obj
-        else:
-            raise TypeError(f"Cannot create stream from {type(obj)}")
+        try:
+            from numba import cuda
+            if isinstance(obj, cuda.cudadrv.driver.Stream):
+                self._cuda_stream = <cudaStream_t><uintptr_t>(int(obj))
+                self._owner = obj
+                return
+        except ImportError:
+            pass
+        raise TypeError(f"Cannot create stream from {type(obj)}")
 
     def _init_from_cupy_stream(self, obj):
         try:

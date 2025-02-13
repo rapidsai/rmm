@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2024, NVIDIA CORPORATION.
+# Copyright (c) 2020-2025, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,13 +28,13 @@ from libcpp.memory cimport make_unique, unique_ptr
 from libcpp.optional cimport optional
 from libcpp.pair cimport pair
 
-from cuda.cudart import cudaError_t
+from cuda.bindings.runtime import cudaError_t
 
 from rmm._cuda.gpu import CUDARuntimeError, getDevice, setDevice
 
-from rmm._cuda.stream cimport Stream
+from rmm.pylibrmm.stream cimport Stream
 
-from rmm._cuda.stream import DEFAULT_STREAM
+from rmm.pylibrmm.stream import DEFAULT_STREAM
 
 from rmm.librmm.cuda_stream_view cimport cuda_stream_view
 from rmm.librmm.per_device_resource cimport (

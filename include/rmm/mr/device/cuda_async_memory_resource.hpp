@@ -53,14 +53,16 @@ class cuda_async_memory_resource final : public device_memory_resource {
    * memory pools (CUDA 11.2) did not support these flags, so we need a placeholder that can be
    * used consistently in the constructor of `cuda_async_memory_resource` with all versions of
    * CUDA >= 11.2. See the `cudaMemAllocationHandleType` docs at
-   * https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html
+   * https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html and ensure the enum
+   * values are kept in sync with the CUDA documentation.
    */
   enum class allocation_handle_type {
     none                  = 0x0,  ///< Does not allow any export mechanism.
     posix_file_descriptor = 0x1,  ///< Allows a file descriptor to be used for exporting. Permitted
                                   ///< only on POSIX systems.
     win32     = 0x2,              ///< Allows a Win32 NT handle to be used for exporting. (HANDLE)
-    win32_kmt = 0x4  ///< Allows a Win32 KMT handle to be used for exporting. (D3DKMT_HANDLE)
+    win32_kmt = 0x4,  ///< Allows a Win32 KMT handle to be used for exporting. (D3DKMT_HANDLE)
+    fabric    = 0x8   ///< Allows a fabric handle to be used for exporting. (cudaMemFabricHandle_t)
   };
 
   /**
@@ -77,8 +79,8 @@ class cuda_async_memory_resource final : public device_memory_resource {
    * @param release_threshold Optional release threshold size in bytes of the pool. If no value is
    * provided, the release threshold is set to the total amount of memory on the current device.
    * @param export_handle_type Optional `cudaMemAllocationHandleType` that allocations from this
-   * resource should support interprocess communication (IPC). Default is
-   * `cudaMemHandleTypeNone` for no IPC support.
+   * resource should support interprocess communication (IPC). Default is `cudaMemHandleTypeNone`
+   * for no IPC support.
    */
   // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
   cuda_async_memory_resource(std::optional<std::size_t> initial_pool_size             = {},

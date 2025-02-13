@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2024, NVIDIA CORPORATION.
+# Copyright (c) 2020-2025, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,20 +20,21 @@ import pickle
 import warnings
 from itertools import product
 
-import cuda.cudart as cudart
 import numpy as np
 import pytest
+from cuda.bindings import runtime
 from numba import cuda
 
 import rmm
-import rmm._cuda.stream
 from rmm.allocators.cupy import rmm_cupy_allocator
 from rmm.allocators.numba import RMMNumbaManager
+from rmm.pylibrmm.logger import level_enum
+from rmm.pylibrmm.stream import Stream
 
 cuda.set_memory_manager(RMMNumbaManager)
 
 _SYSTEM_MEMORY_SUPPORTED = rmm._cuda.gpu.getDeviceAttribute(
-    cudart.cudaDeviceAttr.cudaDevAttrPageableMemoryAccess,
+    runtime.cudaDeviceAttr.cudaDevAttrPageableMemoryAccess,
     rmm._cuda.gpu.getDevice(),
 )
 
@@ -318,13 +319,13 @@ def test_rmm_device_buffer_pickle_roundtrip(hb):
 
 
 def assert_prefetched(buffer, device_id):
-    err, dev = cudart.cudaMemRangeGetAttribute(
+    err, dev = runtime.cudaMemRangeGetAttribute(
         4,
-        cudart.cudaMemRangeAttribute.cudaMemRangeAttributeLastPrefetchLocation,
+        runtime.cudaMemRangeAttribute.cudaMemRangeAttributeLastPrefetchLocation,
         buffer.ptr,
         buffer.size,
     )
-    assert err == cudart.cudaError_t.cudaSuccess
+    assert err == runtime.cudaError_t.cudaSuccess
     assert dev == device_id
 
 
@@ -335,11 +336,11 @@ def test_rmm_device_buffer_prefetch(pool, managed):
     rmm.reinitialize(pool_allocator=pool, managed_memory=managed)
     db = rmm.DeviceBuffer.to_device(np.zeros(256, dtype="u1"))
     if managed:
-        assert_prefetched(db, cudart.cudaInvalidDeviceId)
+        assert_prefetched(db, runtime.cudaInvalidDeviceId)
     db.prefetch()  # just test that it doesn't throw
     if managed:
-        err, device = cudart.cudaGetDevice()
-        assert err == cudart.cudaError_t.cudaSuccess
+        err, device = runtime.cudaGetDevice()
+        assert err == runtime.cudaError_t.cudaSuccess
         assert_prefetched(db, device)
 
 
@@ -347,8 +348,8 @@ def test_rmm_device_buffer_prefetch(pool, managed):
 def test_rmm_pool_numba_stream(stream):
     rmm.reinitialize(pool_allocator=True)
 
-    stream = rmm._cuda.stream.Stream(stream)
-    a = rmm.pylibrmm.device_buffer.DeviceBuffer(size=3, stream=stream)
+    stream = Stream(stream)
+    a = rmm.DeviceBuffer(size=3, stream=stream)
 
     assert a.size == 3
     assert a.ptr != 0
@@ -599,7 +600,7 @@ def test_mr_devicebuffer_lifetime():
     )
 
     # Creates a new non-default stream
-    stream = rmm._cuda.stream.Stream()
+    stream = rmm.pylibrmm.stream.Stream()
 
     # Allocate DeviceBuffer with Pool and Stream
     a = rmm.DeviceBuffer(size=10, stream=stream)
@@ -694,7 +695,7 @@ def test_cuda_async_memory_resource_stream(nelems):
     # with a non-default stream works
     mr = rmm.mr.CudaAsyncMemoryResource()
     rmm.mr.set_current_device_resource(mr)
-    stream = rmm._cuda.stream.Stream()
+    stream = Stream()
     expected = np.full(nelems, 5, dtype="u1")
     dbuf = rmm.DeviceBuffer.to_device(expected, stream=stream)
     result = np.asarray(dbuf.copy_to_host())
@@ -829,15 +830,15 @@ def test_prefetch_resource_adaptor(managed):
     # This allocation should be prefetched
     db = rmm.DeviceBuffer.to_device(np.zeros(256, dtype="u1"))
 
-    err, device = cudart.cudaGetDevice()
-    assert err == cudart.cudaError_t.cudaSuccess
+    err, device = runtime.cudaGetDevice()
+    assert err == runtime.cudaError_t.cudaSuccess
 
     if managed:
         assert_prefetched(db, device)
     db.prefetch()  # just test that it doesn't throw
     if managed:
-        err, device = cudart.cudaGetDevice()
-        assert err == cudart.cudaError_t.cudaSuccess
+        err, device = runtime.cudaGetDevice()
+        assert err == runtime.cudaError_t.cudaSuccess
         assert_prefetched(db, device)
 
 
@@ -1033,22 +1034,23 @@ def test_rmm_device_buffer_copy(cuda_ary, make_copy):
     np.testing.assert_equal(expected, result)
 
 
-@pytest.mark.parametrize("level", rmm.logging_level)
+@pytest.mark.parametrize("level", level_enum)
 def test_valid_logging_level(level):
+    default_level = level_enum.info
     with warnings.catch_warnings():
         warnings.filterwarnings(
-            "ignore", message="RMM will not log logging_level.TRACE."
+            "ignore", message="RMM will not log level_enum.trace."
         )
         warnings.filterwarnings(
-            "ignore", message="RMM will not log logging_level.DEBUG."
+            "ignore", message="RMM will not log level_enum.debug."
         )
         rmm.set_logging_level(level)
         assert rmm.get_logging_level() == level
-        rmm.set_logging_level(rmm.logging_level.INFO)  # reset to default
+        rmm.set_logging_level(default_level)  # reset to default
 
         rmm.set_flush_level(level)
         assert rmm.get_flush_level() == level
-        rmm.set_flush_level(rmm.logging_level.INFO)  # reset to default
+        rmm.set_flush_level(default_level)  # reset to default
 
         rmm.should_log(level)
 
@@ -1076,9 +1078,3 @@ def test_available_device_memory():
     assert initial_memory[1] == final_memory[1]
     assert initial_memory[0] > 0
     assert final_memory[0] > 0
-
-
-# TODO: Remove test when rmm._lib is removed in 25.02
-def test_deprecate_rmm_lib():
-    with pytest.warns(FutureWarning):
-        rmm._lib.device_buffer.DeviceBuffer(size=100)

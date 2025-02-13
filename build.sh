@@ -170,7 +170,7 @@ fi
 # Build and install the rmm Python package
 if (( NUMARGS == 0 )) || hasArg rmm; then
     echo "building and installing rmm..."
-    SKBUILD_CMAKE_ARGS="${EXTRA_CMAKE_ARGS}" python -m pip install \
+    SKBUILD_CMAKE_ARGS="-DCMAKE_PREFIX_PATH=${INSTALL_PREFIX};${EXTRA_CMAKE_ARGS}" python -m pip install \
         --no-build-isolation \
         --no-deps \
         --config-settings rapidsai.disable-cuda=true \

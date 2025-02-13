@@ -1,4 +1,4 @@
-# Copyright (c) 2019-2024, NVIDIA CORPORATION.
+# Copyright (c) 2019-2025, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,12 +19,11 @@ from libc.stdint cimport uintptr_t
 from libcpp.memory cimport unique_ptr
 from libcpp.utility cimport move
 
-from rmm._cuda.stream cimport Stream
+from rmm.pylibrmm.stream cimport Stream
 
-from rmm._cuda.stream import DEFAULT_STREAM
+from rmm.pylibrmm.stream import DEFAULT_STREAM
 
-cimport cuda.ccudart as ccudart
-from cuda.ccudart cimport (
+from cuda.bindings.cyruntime cimport (
     cudaError,
     cudaError_t,
     cudaMemcpyAsync,
@@ -421,7 +420,7 @@ cpdef DeviceBuffer to_device(const unsigned char[::1] b,
 cdef void _copy_async(const void* src,
                       void* dst,
                       size_t count,
-                      ccudart.cudaMemcpyKind kind,
+                      cudaMemcpyKind kind,
                       cuda_stream_view stream) except * nogil:
     """
     Asynchronously copy data between host and/or device pointers.

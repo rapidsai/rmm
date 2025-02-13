@@ -19,13 +19,9 @@
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/detail/format.hpp>
+#include <rmm/logger.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
-
-#include <spdlog/common.h>
-#include <spdlog/sinks/basic_file_sink.h>
-#include <spdlog/sinks/ostream_sink.h>
-#include <spdlog/spdlog.h>
 
 #include <cstddef>
 #include <cstdio>
@@ -35,6 +31,7 @@
 
 namespace RMM_NAMESPACE {
 namespace mr {
+
 /**
  * @addtogroup device_resource_adaptors
  * @{
@@ -78,9 +75,8 @@ class logging_resource_adaptor final : public device_memory_resource {
   logging_resource_adaptor(Upstream* upstream,
                            std::string const& filename = get_default_filename(),
                            bool auto_flush             = false)
-    : logger_{make_logger(filename)}, upstream_{to_device_async_resource_ref_checked(upstream)}
+    : logging_resource_adaptor(to_device_async_resource_ref_checked(upstream), filename, auto_flush)
   {
-    init_logger(auto_flush);
   }
 
   /**
@@ -98,9 +94,8 @@ class logging_resource_adaptor final : public device_memory_resource {
    * performance.
    */
   logging_resource_adaptor(Upstream* upstream, std::ostream& stream, bool auto_flush = false)
-    : logger_{make_logger(stream)}, upstream_{to_device_async_resource_ref_checked(upstream)}
+    : logging_resource_adaptor(to_device_async_resource_ref_checked(upstream), stream, auto_flush)
   {
-    init_logger(auto_flush);
   }
 
   /**
@@ -118,11 +113,10 @@ class logging_resource_adaptor final : public device_memory_resource {
    * performance.
    */
   logging_resource_adaptor(Upstream* upstream,
-                           spdlog::sinks_init_list sinks,
+                           std::initializer_list<sink_ptr> sinks,
                            bool auto_flush = false)
-    : logger_{make_logger(sinks)}, upstream_{to_device_async_resource_ref_checked(upstream)}
+    : logging_resource_adaptor{to_device_async_resource_ref_checked(upstream), sinks, auto_flush}
   {
-    init_logger(auto_flush);
   }
 
   /**
@@ -148,9 +142,8 @@ class logging_resource_adaptor final : public device_memory_resource {
   logging_resource_adaptor(device_async_resource_ref upstream,
                            std::string const& filename = get_default_filename(),
                            bool auto_flush             = false)
-    : logger_{make_logger(filename)}, upstream_{upstream}
+    : logging_resource_adaptor{make_logger(filename), upstream, auto_flush}
   {
-    init_logger(auto_flush);
   }
 
   /**
@@ -168,9 +161,8 @@ class logging_resource_adaptor final : public device_memory_resource {
   logging_resource_adaptor(device_async_resource_ref upstream,
                            std::ostream& stream,
                            bool auto_flush = false)
-    : logger_{make_logger(stream)}, upstream_{upstream}
+    : logging_resource_adaptor{make_logger(stream), upstream, auto_flush}
   {
-    init_logger(auto_flush);
   }
 
   /**
@@ -186,11 +178,10 @@ class logging_resource_adaptor final : public device_memory_resource {
    * performance.
    */
   logging_resource_adaptor(device_async_resource_ref upstream,
-                           spdlog::sinks_init_list sinks,
+                           std::initializer_list<sink_ptr> sinks,
                            bool auto_flush = false)
-    : logger_{make_logger(sinks)}, upstream_{upstream}
+    : logging_resource_adaptor{make_logger(sinks), upstream, auto_flush}
   {
-    init_logger(auto_flush);
   }
 
   logging_resource_adaptor()                                           = delete;
@@ -241,29 +232,24 @@ class logging_resource_adaptor final : public device_memory_resource {
   }
 
  private:
-  static auto make_logger(std::ostream& stream)
-  {
-    return std::make_shared<spdlog::logger>(
-      "RMM", std::make_shared<spdlog::sinks::ostream_sink_mt>(stream));
-  }
+  static auto make_logger(std::ostream& stream) { return std::make_shared<logger>("RMM", stream); }
 
   static auto make_logger(std::string const& filename)
   {
-    return std::make_shared<spdlog::logger>(
-      "RMM", std::make_shared<spdlog::sinks::basic_file_sink_mt>(filename, true /*truncate file*/));
+    return std::make_shared<logger>("RMM", filename);
   }
 
-  static auto make_logger(spdlog::sinks_init_list sinks)
+  static auto make_logger(std::initializer_list<sink_ptr> sinks)
   {
-    return std::make_shared<spdlog::logger>("RMM", sinks);
+    return std::make_shared<logger>("RMM", sinks);
   }
 
-  /**
-   * @brief Initialize the logger.
-   */
-  void init_logger(bool auto_flush)
+  logging_resource_adaptor(std::shared_ptr<logger> logger,
+                           device_async_resource_ref upstream,
+                           bool auto_flush)
+    : logger_{logger}, upstream_{upstream}
   {
-    if (auto_flush) { logger_->flush_on(spdlog::level::info); }
+    if (auto_flush) { logger_->flush_on(level_enum::info); }
     logger_->set_pattern("%v");
     logger_->info(header());
     logger_->set_pattern("%t,%H:%M:%S.%f,%v");
@@ -298,12 +284,11 @@ class logging_resource_adaptor final : public device_memory_resource {
   {
     try {
       auto const ptr = get_upstream_resource().allocate_async(bytes, stream);
-      logger_->info(rmm::detail::formatted_log(
-        "allocate,%p,%zu,%s", ptr, bytes, rmm::detail::format_stream(stream)));
+      logger_->info("allocate,%p,%zu,%s", ptr, bytes, rmm::detail::format_stream(stream));
       return ptr;
     } catch (...) {
-      logger_->info(rmm::detail::formatted_log(
-        "allocate failure,%p,%zu,%s", nullptr, bytes, rmm::detail::format_stream(stream)));
+      logger_->info(
+        "allocate failure,%p,%zu,%s", nullptr, bytes, rmm::detail::format_stream(stream));
       throw;
     }
   }
@@ -324,8 +309,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    */
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
   {
-    logger_->info(
-      rmm::detail::formatted_log("free,%p,%zu,%s", ptr, bytes, rmm::detail::format_stream(stream)));
+    logger_->info("free,%p,%zu,%s", ptr, bytes, rmm::detail::format_stream(stream));
     get_upstream_resource().deallocate_async(ptr, bytes, stream);
   }
 
@@ -344,57 +328,11 @@ class logging_resource_adaptor final : public device_memory_resource {
     return get_upstream_resource() == cast->get_upstream_resource();
   }
 
-  std::shared_ptr<spdlog::logger> logger_;  ///< spdlog logger object
+  std::shared_ptr<logger> logger_{};
 
   device_async_resource_ref upstream_;  ///< The upstream resource used for satisfying
                                         ///< allocation requests
 };
-
-/**
- * @brief Convenience factory to return a `logging_resource_adaptor` around the
- * upstream resource `upstream`.
- *
- * @tparam Upstream Type of the upstream `device_memory_resource`.
- * @param upstream Pointer to the upstream resource
- * @param filename Name of the file to write log info. If not specified,
- * retrieves the log file name from the environment variable "RMM_LOG_FILE".
- * @param auto_flush If true, flushes the log for every (de)allocation. Warning, this will degrade
- * performance.
- * @return The new logging resource adaptor
- */
-template <typename Upstream>
-[[deprecated(
-  "make_logging_adaptor is deprecated in RMM 24.10. Use the logging_resource_adaptor constructor "
-  "instead.")]]
-logging_resource_adaptor<Upstream> make_logging_adaptor(
-  Upstream* upstream,
-  std::string const& filename = logging_resource_adaptor<Upstream>::get_default_filename(),
-  bool auto_flush             = false)
-{
-  return logging_resource_adaptor<Upstream>{upstream, filename, auto_flush};
-}
-
-/**
- * @brief Convenience factory to return a `logging_resource_adaptor` around the
- * upstream resource `upstream`.
- *
- * @tparam Upstream Type of the upstream `device_memory_resource`.
- * @param upstream Pointer to the upstream resource
- * @param stream The ostream to write log info.
- * @param auto_flush If true, flushes the log for every (de)allocation. Warning, this will degrade
- * performance.
- * @return The new logging resource adaptor
- */
-template <typename Upstream>
-[[deprecated(
-  "make_logging_adaptor is deprecated in RMM 24.10. Use the logging_resource_adaptor constructor "
-  "instead.")]]
-logging_resource_adaptor<Upstream> make_logging_adaptor(Upstream* upstream,
-                                                        std::ostream& stream,
-                                                        bool auto_flush = false)
-{
-  return logging_resource_adaptor<Upstream>{upstream, stream, auto_flush};
-}
 
 /** @} */  // end of group
 }  // namespace mr

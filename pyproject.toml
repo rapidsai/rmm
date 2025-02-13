@@ -1,22 +1,108 @@
+# Copyright (c) 2024, NVIDIA CORPORATION.
+
 [tool.codespell]
 # note: pre-commit passes explicit lists of files here, which this skip file list doesn't override -
 # this is only to allow you to run codespell interactively
-skip = "./pyproject.toml,./.git,./.github,./cpp/build,.*egg-info.*,./.mypy_cache,./benchmarks/utilities/cxxopts.hpp"
+skip = "./.git,./build,./python/_skbuild/,.*egg-info.*,./.mypy_cache,./pyproject.toml,./benchmarks/utilities/cxxopts.hpp"
 # ignore short words, and typename parameters like OffsetT
 ignore-regex = "\\b(.{1,4}|[A-Z]\\w*T)\\b"
-ignore-words-list = "inout"
+ignore-words-list = "thirdparty,couldn"
 builtin = "clear"
 quiet-level = 3
 
 [tool.ruff]
-select = ["E", "F", "W"]
+line-length = 79
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    # pycodestyle Error
+    "E",
+    # Pyflakes
+    "F",
+    # pycodestyle Warning
+    "W",
+    # isort
+    "I",
+    # no-blank-line-before-function
+    "D201",
+    # one-blank-line-after-class
+    "D204",
+    # indent-with-spaces
+    "D206",
+    # under-indentation
+    "D207",
+    # over-indentation
+    "D208",
+    # new-line-after-last-paragraph
+    "D209",
+    # surrounding-whitespace
+    "D210",
+    # blank-line-before-class
+    "D211",
+    # section-not-over-indented
+    "D214",
+    # section-underline-not-over-indented
+    "D215",
+    # triple-single-quotes
+    "D300",
+    # escape-sequence-in-docstring
+    "D301",
+    # first-line-capitalized
+    "D403",
+    # capitalize-section-name
+    "D405",
+    # new-line-after-section-name
+    "D406",
+    # dashed-underline-after-section
+    "D407",
+    # section-underline-after-name
+    "D408",
+    # section-underline-matches-section-length
+    "D409",
+    # no-blank-line-after-section
+    "D410",
+    # no-blank-line-before-section
+    "D411",
+    # blank-lines-between-header-and-content
+    "D412",
+    # empty-docstring-section
+    "D414",
+    # overload-with-docstring
+    "D418",
+    # flake8-type-checking
+    "TCH",
+    # flake8-future-annotations
+    "FA",
+    # non-pep585-annotation
+    "UP006",
+    # non-pep604-annotation
+    "UP007",
+    # Import from `collections.abc` instead: `Callable`
+    "UP035",
+    # usage of legacy `np.random` function calls
+    "NPY002",
+    # Ruff-specific rules
+    "RUF",
+]
 ignore = [
     # whitespace before :
     "E203",
+    # line-too-long (due to Copyright header)
+    "E501",
+    # type-comparison, disabled because we compare types to numpy dtypes
+    "E721",
+    # String contains ambiguous character
+    "RUF001",
+    # Parenthesize `a and b` expressions when chaining `and` and `or`
+    # together, to make the precedence clear
+    "RUF021",
+    # Mutable class attributes should be annotated with
+    # `typing.ClassVar`
+    "RUF012",
 ]
 fixable = ["ALL"]
 exclude = [
     # TODO: Remove this in a follow-up where we fix __all__.
     "__init__.py",
 ]
-line-length = 79

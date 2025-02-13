@@ -22,7 +22,7 @@ from rmm.pylibrmm.logger import (
     flush_logger,
     get_flush_level,
     get_logging_level,
-    logging_level,
+    level_enum,
     set_flush_level,
     set_logging_level,
     should_log,
@@ -45,7 +45,7 @@ __all__ = [
     "get_log_filenames",
     "get_logging_level",
     "is_initialized",
-    "logging_level",
+    "level_enum",
     "mr",
     "register_reinitialize_hook",
     "reinitialize",
@@ -54,19 +54,3 @@ __all__ = [
     "should_log",
     "unregister_reinitialize_hook",
 ]
-
-
-def __getattr__(name):
-    if name == "_lib":
-        import importlib
-
-        warnings.warn(
-            "The `rmm._lib` module is deprecated in will be removed in a future release. Use `rmm.pylibrmm` instead.",
-            FutureWarning,
-            stacklevel=2,
-        )
-
-        module = importlib.import_module("rmm.pylibrmm")
-        return module
-    else:
-        raise AttributeError(f"Module '{__name__}' has no attribute '{name}'")

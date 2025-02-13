@@ -185,9 +185,9 @@ class tracking_resource_adaptor final : public device_memory_resource {
    */
   void log_outstanding_allocations() const
   {
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_DEBUG
+#if RMM_LOG_ACTIVE_LEVEL <= RMM_LOG_LEVEL_DEBUG
     RMM_LOG_DEBUG("Outstanding Allocations: %s", get_outstanding_allocations_str());
-#endif  // SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_DEBUG
+#endif  // RMM_LOG_ACTIVE_LEVEL <= RMM_LOG_LEVEL_DEBUG
   }
 
  private:
@@ -282,23 +282,6 @@ class tracking_resource_adaptor final : public device_memory_resource {
   device_async_resource_ref upstream_;            // the upstream resource used for satisfying
                                                   // allocation requests
 };
-
-/**
- * @brief Convenience factory to return a `tracking_resource_adaptor` around the
- * upstream resource `upstream`.
- *
- * @tparam Upstream Type of the upstream `device_memory_resource`.
- * @param upstream Pointer to the upstream resource
- * @return The new tracking resource adaptor
- */
-template <typename Upstream>
-[[deprecated(
-  "make_tracking_adaptor is deprecated in RMM 24.10. Use the tracking_resource_adaptor constructor "
-  "instead.")]]
-tracking_resource_adaptor<Upstream> make_tracking_adaptor(Upstream* upstream)
-{
-  return tracking_resource_adaptor<Upstream>{upstream};
-}
 
 /** @} */  // end of group
 }  // namespace mr

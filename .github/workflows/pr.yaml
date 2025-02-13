@@ -12,6 +12,7 @@ concurrency:
 jobs:
   pr-builder:
     needs:
+      - check-nightly-ci
       - changed-files
       - checks
       - conda-cpp-build
@@ -19,13 +20,13 @@ jobs:
       - conda-python-build
       - conda-python-tests
       - docs-build
-      - telemetry-setup
       - wheel-build-cpp
       - wheel-build-python
       - wheel-tests
       - devcontainer
+      - telemetry-setup
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@branch-24.12
+    uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@branch-25.02
     if: always()
     with:
       needs: ${{ toJSON(needs) }}
@@ -33,15 +34,30 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     env:
-        OTEL_SERVICE_NAME: "pr-rmm"
+      OTEL_SERVICE_NAME: "pr-rmm"
     steps:
       - name: Telemetry setup
+        # This gate is here and not at the job level because we need the job to not be skipped,
+        # since other jobs depend on it.
+        if: ${{ vars.TELEMETRY_ENABLED == 'true' }}
         uses: rapidsai/shared-actions/telemetry-dispatch-stash-base-env-vars@main
+  check-nightly-ci:
+    # Switch to ubuntu-latest once it defaults to a version of Ubuntu that
+    # provides at least Python 3.11 (see
+    # https://docs.python.org/3/library/datetime.html#datetime.date.fromisoformat)
+    runs-on: ubuntu-24.04
+    env:
+      RAPIDS_GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Check if nightly CI is passing
+        uses: rapidsai/shared-actions/check_nightly_success/dispatch@main
+        with:
+          repo: rmm
   changed-files:
     needs:
       - telemetry-setup
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/changed-files.yaml@branch-24.12
+    uses: rapidsai/shared-workflows/.github/workflows/changed-files.yaml@branch-25.02
     with:
       files_yaml: |
         test_cpp:
@@ -63,40 +79,40 @@ jobs:
     secrets: inherit
     needs:
       - telemetry-setup
-    uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@branch-24.12
+    uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@branch-25.02
     with:
       enable_check_generated_files: false
       ignored_pr_jobs: telemetry-summarize
   conda-cpp-build:
     needs: checks
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-build.yaml@branch-24.12
+    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-build.yaml@branch-25.02
     with:
       build_type: pull-request
   conda-cpp-tests:
     needs: [conda-cpp-build, changed-files]
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-tests.yaml@branch-24.12
+    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-tests.yaml@branch-25.02
     if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_cpp
     with:
       build_type: pull-request
   conda-python-build:
     needs: conda-cpp-build
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/conda-python-build.yaml@branch-24.12
+    uses: rapidsai/shared-workflows/.github/workflows/conda-python-build.yaml@branch-25.02
     with:
       build_type: pull-request
   conda-python-tests:
     needs: [conda-python-build, changed-files]
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/conda-python-tests.yaml@branch-24.12
+    uses: rapidsai/shared-workflows/.github/workflows/conda-python-tests.yaml@branch-25.02
     if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_python
     with:
       build_type: pull-request
   docs-build:
     needs: conda-python-build
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@branch-24.12
+    uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@branch-25.02
     with:
       build_type: pull-request
       node_type: "gpu-v100-latest-1"
@@ -106,7 +122,7 @@ jobs:
   wheel-build-cpp:
     needs: checks
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@branch-24.12
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@branch-25.02
     with:
       matrix_filter: group_by([.ARCH, (.CUDA_VER|split(".")|map(tonumber)|.[0])]) | map(max_by(.PY_VER|split(".")|map(tonumber)))
       build_type: pull-request
@@ -114,14 +130,14 @@ jobs:
   wheel-build-python:
     needs: wheel-build-cpp
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@branch-24.12
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@branch-25.02
     with:
       build_type: pull-request
       script: ci/build_wheel_python.sh
   wheel-tests:
     needs: [wheel-build-python, changed-files]
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-test.yaml@branch-24.12
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-test.yaml@branch-25.02
     if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_python
     with:
       build_type: pull-request
@@ -130,26 +146,21 @@ jobs:
     secrets: inherit
     needs:
       - telemetry-setup
-    uses: rapidsai/shared-workflows/.github/workflows/build-in-devcontainer.yaml@branch-24.12
+    uses: rapidsai/shared-workflows/.github/workflows/build-in-devcontainer.yaml@branch-25.02
     with:
       arch: '["amd64"]'
-      cuda: '["12.5"]'
+      cuda: '["12.8"]'
       build_command: |
         sccache -z;
         build-all -DBUILD_BENCHMARKS=ON --verbose;
         sccache -s;
 
   telemetry-summarize:
-    runs-on: ubuntu-latest
+    # This job must use a self-hosted runner to record telemetry traces.
+    runs-on: linux-amd64-cpu4
     needs: pr-builder
-    if: always()
+    if: ${{ vars.TELEMETRY_ENABLED == 'true' && !cancelled() }}
     continue-on-error: true
     steps:
-      - name: Load stashed telemetry env vars
-        uses: rapidsai/shared-actions/telemetry-dispatch-load-base-env-vars@main
-        with:
-            load_service_name: true
       - name: Telemetry summarize
-        uses: rapidsai/shared-actions/telemetry-dispatch-write-summary@main
-        with:
-          cert_concat: "${{ secrets.OTEL_EXPORTER_OTLP_CA_CERTIFICATE }};${{ secrets.OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE }};${{ secrets.OTEL_EXPORTER_OTLP_CLIENT_KEY }}"
+        uses: rapidsai/shared-actions/telemetry-dispatch-summarize@main

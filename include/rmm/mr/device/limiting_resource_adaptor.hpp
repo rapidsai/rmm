@@ -194,25 +194,6 @@ class limiting_resource_adaptor final : public device_memory_resource {
   std::size_t alignment_;
 };
 
-/**
- * @brief Convenience factory to return a `limiting_resource_adaptor` around the
- * upstream resource `upstream`.
- *
- * @tparam Upstream Type of the upstream `device_memory_resource`.
- * @param upstream Pointer to the upstream resource
- * @param allocation_limit Maximum amount of memory to allocate
- * @return The new limiting resource adaptor
- */
-template <typename Upstream>
-[[deprecated(
-  "make_limiting_adaptor is deprecated in RMM 24.10. Use the limiting_resource_adaptor constructor "
-  "instead.")]]
-limiting_resource_adaptor<Upstream> make_limiting_adaptor(Upstream* upstream,
-                                                          std::size_t allocation_limit)
-{
-  return limiting_resource_adaptor<Upstream>{upstream, allocation_limit};
-}
-
 /** @} */  // end of group
 }  // namespace mr
 }  // namespace RMM_NAMESPACE

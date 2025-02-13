@@ -238,6 +238,8 @@ def on_missing_reference(app, env, node, contnode):
         "thrust",
         "spdlog",
         "stream_ref",
+        # logger names (we may eventually want to link out for those)
+        "sink_ptr",
         # libcu++ names
         "cuda",
         "cuda::mr",
@@ -276,7 +278,7 @@ def on_missing_reference(app, env, node, contnode):
         # all that's missing. Include the empty prefix in case we're searching
         # for a stripped template.
         extra_prefixes = ["rmm::", "rmm::mr::", "mr::", ""]
-        for (name, dispname, typ, docname, anchor, priority) in env.domains[
+        for name, dispname, typ, docname, anchor, priority in env.domains[
             "cpp"
         ].get_objects():
             for prefix in extra_prefixes:

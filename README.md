@@ -4,12 +4,11 @@
 
 ## Resources
 
-- [RMM Reference Documentation](https://docs.rapids.ai/api/rmm/stable/): Python API reference, tutorials, and topic guides.
-- [librmm Reference Documentation](https://docs.rapids.ai/api/librmm/stable/): C/C++ CUDA library API reference.
-- [Getting Started](https://rapids.ai/start.html): Instructions for installing RMM.
-- [RAPIDS Community](https://rapids.ai/community.html): Get help, contribute, and collaborate.
-- [GitHub repository](https://github.com/rapidsai/rmm): Download the RMM source code.
-- [Issue tracker](https://github.com/rapidsai/rmm/issues): Report issues or request features.
+- [RMM Reference Documentation](https://docs.rapids.ai/api/rmm/stable/): Python and C++ API references, tutorials, and topic guides.
+- [RAPIDS Installation Guide](https://docs.rapids.ai/install/): Instructions for installing RMM.
+- [GitHub Repository](https://github.com/rapidsai/rmm): Download the RMM source code.
+- [Issue Tracker](https://github.com/rapidsai/rmm/issues): Report issues or request features.
+- [RAPIDS Community](https://rapids.ai/learn-more/#get-involved): Get help, contribute, and collaborate.
 
 ## Overview
 
@@ -38,7 +37,7 @@ RMM can be installed with conda. You can get a minimal conda installation with [
 Install RMM with:
 
 ```bash
-conda install -c rapidsai -c conda-forge -c nvidia rmm cuda-version=12.0
+conda install -c rapidsai -c conda-forge -c nvidia rmm cuda-version=12.8
 ```
 
 We also provide [nightly conda packages](https://anaconda.org/rapidsai-nightly) built from the HEAD
@@ -48,7 +47,7 @@ Note: RMM is supported only on Linux, and only tested with Python versions 3.10,
 
 Note: The RMM package from conda requires building with GCC 9 or later. Otherwise, your application may fail to build.
 
-See the [Get RAPIDS version picker](https://rapids.ai/start.html) for more OS and version info.
+See the [RAPIDS Installation Guide](https://docs.rapids.ai/install/) for system requirements.
 
 ## Building from Source
 
@@ -82,16 +81,16 @@ For more details, see [pyproject.toml](python/rmm/pyproject.toml)
 
 To install RMM from source, ensure the dependencies are met and follow the steps below:
 
-- Clone the repository and submodules
+- Clone the repository
 ```bash
-$ git clone --recurse-submodules https://github.com/rapidsai/rmm.git
+$ git clone https://github.com/rapidsai/rmm.git
 $ cd rmm
 ```
 
 - Create the conda development environment `rmm_dev`
 ```bash
 # create the conda environment (assuming in base `rmm` directory)
-$ conda env create --name rmm_dev --file conda/environments/all_cuda-118_arch-x86_64.yaml
+$ conda env create --name rmm_dev --file conda/environments/all_cuda-128_arch-x86_64.yaml
 # activate the environment
 $ conda activate rmm_dev
 ```
@@ -153,7 +152,7 @@ directory to avoid repeated downloads of the third-party dependencies.
 ## Using RMM in a downstream CMake project
 
 The installed RMM library provides a set of config files that makes it easy to
-integrate RMM into your own CMake project. In your `CMakeLists.txt`, just add
+integrate RMM into your own CMake project. Add the following to `CMakeLists.txt`:
 
 ```cmake
 find_package(rmm [VERSION])
@@ -367,8 +366,8 @@ deallocation is performed (including in the destructor). The user must therefore
 the device active during _creation_ of an `rmm::device_buffer` matches the active device of the
 memory resource being used.
 
-Here is an incorrect example that creates a memory resource on device zero and then uses it to
-allocate a `device_buffer` on device one:
+Here is an incorrect example that creates a memory resource on device `0` and then uses it to
+allocate a `device_buffer` on device `1`:
 
 ```c++
 {
@@ -382,7 +381,7 @@ allocate a `device_buffer` on device one:
 }
 ```
 
-A correct example creates the device buffer with device zero active. After that it is safe to switch
+A correct example creates the device buffer with device `0` active. After that it is safe to switch
 devices and let the buffer go out of scope and destruct with a different device active. For example,
 this code is correct:
 
@@ -648,8 +647,8 @@ set to `True`. The log file name can be set using the `log_file_name` parameter.
 
 RMM includes a debug logger which can be enabled to log trace and debug information to a file. This
 information can show when errors occur, when additional memory is allocated from upstream resources,
-etc. The default log file is `rmm_log.txt` in the current working directory, but the environment
-variable `RMM_DEBUG_LOG_FILE` can be set to specify the path and file name.
+etc. By default output is logged to stderr, but the environment variable
+`RMM_DEBUG_LOG_FILE` can be set to specify a path and file name to dump the logs to instead.
 
 There is a CMake configuration variable `RMM_LOGGING_LEVEL`, which can be set to enable compilation
 of more detailed logging. The default is `INFO`. Available levels are `TRACE`, `DEBUG`, `INFO`,
@@ -658,8 +657,8 @@ of more detailed logging. The default is `INFO`. Available levels are `TRACE`, `
 The log relies on the [spdlog](https://github.com/gabime/spdlog.git) library.
 
 Note that to see logging below the `INFO` level, the application must also set the logging level at
-run time. C++ applications must must call `rmm::logger().set_level()`, for example to enable all
-levels of logging down to `TRACE`, call `rmm::logger().set_level(spdlog::level::trace)` (and compile
+run time. C++ applications must must call `rmm::default_logger().set_level()`, for example to enable all
+levels of logging down to `TRACE`, call `rmm::default_logger().set_level(spdlog::level::trace)` (and compile
 librmm with `-DRMM_LOGGING_LEVEL=TRACE`). Python applications must call `rmm.set_logging_level()`,
 for example to enable all levels of logging down to `TRACE`, call `rmm.set_logging_level("trace")`
 (and compile the RMM Python module with `-DRMM_LOGGING_LEVEL=TRACE`).
@@ -879,7 +878,7 @@ Out[6]:
  'total_count': 1}
 ```
 
-## Taking ownership of C++ objects from Python.
+## Taking ownership of C++ objects from Python
 
 When interacting with a C++ library that uses RMM from Python, one
 must be careful when taking ownership of `rmm::device_buffer` objects
