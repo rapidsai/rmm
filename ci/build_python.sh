@@ -20,9 +20,27 @@ CPP_CHANNEL=$(rapids-download-conda-from-s3 cpp)
 
 sccache --zero-stats
 
-# This calls mambabuild when boa is installed (as is the case in the CI images)
-RAPIDS_PACKAGE_VERSION=$(head -1 ./VERSION) rapids-conda-retry mambabuild -c "${CPP_CHANNEL}" conda/recipes/rmm 2>&1 | tee telemetry-artifacts/build.log
+RAPIDS_PACKAGE_VERSION=$(head -1 ./VERSION)
+export RAPIDS_PACKAGE_VERSION
+
+# Creates and exports $RATTLER_CHANNELS
+source rapids-rattler-channel-string
+
+# --no-build-id allows for caching with `sccache`
+# more info is available at
+# https://rattler.build/latest/tips_and_tricks/#using-sccache-or-ccache-with-rattler-build
+rattler-build build --recipe conda/recipes/rmm \
+                    --experimental \
+                    --no-build-id \
+                    --channel-priority disabled \
+                    --output-dir "$RAPIDS_CONDA_BLD_OUTPUT_DIR" \
+                    -c "${CPP_CHANNEL}" \
+                    "${RATTLER_CHANNELS[@]}" \
+                     2>&1 | tee telemetry-artifacts/build.log
 
 sccache --show-adv-stats | tee telemetry-artifacts/sccache-stats.txt
+
+# See https://github.com/prefix-dev/rattler-build/issues/1424
+rm -rf "$RAPIDS_CONDA_BLD_OUTPUT_DIR"/build_cache
 
 rapids-upload-conda-to-s3 python
