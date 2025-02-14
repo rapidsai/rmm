@@ -133,16 +133,18 @@
  * Defaults to throwing rmm::bad_alloc, but when `cudaErrorMemoryAllocation` is returned,
  * rmm::out_of_memory is thrown instead.
  */
-#define RMM_CUDA_TRY_ALLOC(_call)                                                                  \
-  do {                                                                                             \
-    cudaError_t const error = (_call);                                                             \
-    if (cudaSuccess != error) {                                                                    \
-      cudaGetLastError();                                                                          \
-      auto const msg = std::string{"CUDA error at: "} + __FILE__ + ":" + RMM_STRINGIFY(__LINE__) + \
-                       ": " + cudaGetErrorName(error) + " " + cudaGetErrorString(error);           \
-      if (cudaErrorMemoryAllocation == error) { throw rmm::out_of_memory{msg}; }                   \
-      throw rmm::bad_alloc{msg};                                                                   \
-    }                                                                                              \
+#define RMM_CUDA_TRY_ALLOC(_call, num_bytes)                                            \
+  do {                                                                                  \
+    cudaError_t const error = (_call);                                                  \
+    if (cudaSuccess != error) {                                                         \
+      cudaGetLastError();                                                               \
+      auto const msg = std::string{"CUDA error (failed to allocate "} +                 \
+                       std::to_string(num_bytes) + " bytes) at: " + __FILE__ + ":" +    \
+                       RMM_STRINGIFY(__LINE__) + ": " + cudaGetErrorName(error) + " " + \
+                       cudaGetErrorString(error);                                       \
+      if (cudaErrorMemoryAllocation == error) { throw rmm::out_of_memory{msg}; }        \
+      throw rmm::bad_alloc{msg};                                                        \
+    }                                                                                   \
   } while (0)
 
 /**
