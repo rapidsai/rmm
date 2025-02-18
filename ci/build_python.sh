@@ -24,5 +24,3 @@ sccache --zero-stats
 RAPIDS_PACKAGE_VERSION=$(head -1 ./VERSION) rapids-conda-retry mambabuild -c "${CPP_CHANNEL}" conda/recipes/rmm
 
 sccache --show-adv-stats
-
-# rapids-upload-conda-to-s3 python

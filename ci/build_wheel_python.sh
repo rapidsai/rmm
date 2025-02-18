@@ -3,7 +3,6 @@
 
 set -euo pipefail
 
-# package_name="rmm"
 package_dir="python/rmm"
 
 wheel_dir=${RAPIDS_WHEEL_DIR:-"final_dist"}
@@ -38,8 +37,6 @@ EXCLUDE_ARGS=(
 python -m auditwheel repair "${EXCLUDE_ARGS[@]}" -w "${wheel_dir}" dist/*
 
 ../../ci/validate_wheel.sh "${wheel_dir}"
-
-# RAPIDS_PY_WHEEL_NAME="${package_name}_${RAPIDS_PY_CUDA_SUFFIX}" rapids-upload-wheels-to-s3 python final_dist
 
 absolute_wheel_dir=$(realpath "${wheel_dir}")
 # switch back to the root of the repo and check symbol visibility

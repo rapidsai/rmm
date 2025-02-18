@@ -11,8 +11,6 @@ source rapids-date-string
 
 rapids-generate-version > ./VERSION
 
-# RAPIDS_PY_CUDA_SUFFIX=$(rapids-wheel-ctk-name-gen "${RAPIDS_CUDA_VERSION}")
-
 cd "${package_dir}"
 
 sccache --zero-stats
@@ -24,5 +22,3 @@ sccache --show-adv-stats
 python -m wheel tags --platform any "${wheel_dir}"/* --remove
 
 ../../ci/validate_wheel.sh "${wheel_dir}"
-
-# RAPIDS_PY_WHEEL_NAME="rmm_${RAPIDS_PY_CUDA_SUFFIX}" rapids-upload-wheels-to-s3 cpp dist
