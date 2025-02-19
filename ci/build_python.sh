@@ -16,7 +16,7 @@ rapids-generate-version > ./VERSION
 
 rapids-logger "Begin py build"
 
-CPP_CHANNEL=$(rapids-download-conda-from-s3 cpp)
+CPP_CHANNEL=$(rapids-download-conda-from-github cpp)
 
 sccache --zero-stats
 
@@ -41,5 +41,3 @@ sccache --show-adv-stats
 
 # See https://github.com/prefix-dev/rattler-build/issues/1424
 rm -rf "$RAPIDS_CONDA_BLD_OUTPUT_DIR"/build_cache
-
-rapids-upload-conda-to-s3 python
