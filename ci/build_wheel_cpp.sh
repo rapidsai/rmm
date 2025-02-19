@@ -16,9 +16,9 @@ cd "${package_dir}"
 
 sccache --zero-stats
 
-rapids-pip-retry wheel . -w dist -v --no-deps --disable-pip-version-check
+rapids-pip-retry wheel . -w dist -v --no-deps --disable-pip-version-check 2>&1 | tee ../../telemetry-artifacts/build.log
 
-sccache --show-adv-stats
+sccache --show-adv-stats | tee ../../telemetry-artifacts/sccache-stats.txt
 
 python -m wheel tags --platform any dist/* --remove
 
