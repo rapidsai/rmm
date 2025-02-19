@@ -44,6 +44,8 @@ files:
       - cuda_version
       - docs
       - py_version
+      - depends_on_rmm
+      - depends_on_librmm
   py_cpp_build:
     output: pyproject
     pyproject_dir: python/librmm
@@ -300,6 +302,7 @@ dependencies:
           - ipython
           - make
           - nbsphinx
+          - numba>=0.59.1,<0.61.0a0
           - numpydoc
           - sphinx
           - sphinx_rtd_theme
