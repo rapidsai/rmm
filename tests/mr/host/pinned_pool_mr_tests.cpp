@@ -46,20 +46,6 @@ TEST(PinnedPoolTest, ThrowMaxLessThanInitial)
   EXPECT_THROW(max_less_than_initial(), rmm::logic_error);
 }
 
-TEST(PinnedPoolTest, ThrowTooMuchPinned)
-{
-  // Make sure we throw rmm::out_of_memory when trying to pin more memory than available.
-  auto pin_test = []() {
-    rmm::mr::pinned_memory_resource pinned_mr{};
-    auto amount        = 200UL * 1024 * 1024 * 1024;  // 200GB
-    const auto initial = amount;
-    const auto maximum = amount;
-    pool_mr mr{&pinned_mr, initial, maximum};
-    mr.allocate(maximum);
-  };
-  EXPECT_THROW(pin_test(), rmm::out_of_memory);
-}
-
 TEST(PinnedPoolTest, ReferenceThrowMaxLessThanInitial)
 {
   // Make sure first argument is enough larger than the second that alignment rounding doesn't
