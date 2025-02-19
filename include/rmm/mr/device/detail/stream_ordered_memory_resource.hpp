@@ -214,7 +214,8 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
 
     size = rmm::align_up(size, rmm::CUDA_ALLOCATION_ALIGNMENT);
     RMM_EXPECTS(size <= this->underlying().get_maximum_allocation_size(),
-                "Maximum allocation size exceeded",
+                std::string("Maximum allocation size exceeded (failed to allocate ") +
+                  rmm::detail::format_bytes(size) + ")",
                 rmm::out_of_memory);
     auto const block = this->underlying().get_block(size, stream_event);
 

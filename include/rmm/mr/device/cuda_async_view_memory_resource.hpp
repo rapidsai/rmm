@@ -98,7 +98,8 @@ class cuda_async_view_memory_resource final : public device_memory_resource {
   {
     void* ptr{nullptr};
     if (bytes > 0) {
-      RMM_CUDA_TRY_ALLOC(cudaMallocFromPoolAsync(&ptr, bytes, pool_handle(), stream.value()));
+      RMM_CUDA_TRY_ALLOC(cudaMallocFromPoolAsync(&ptr, bytes, pool_handle(), stream.value()),
+                         bytes);
     }
     return ptr;
   }
