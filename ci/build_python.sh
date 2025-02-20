@@ -26,6 +26,9 @@ export RAPIDS_PACKAGE_VERSION
 # Creates and exports $RATTLER_CHANNELS
 source rapids-rattler-channel-string
 
+# Creates artifacts directory for telemetry
+source rapids-telemetry-setup
+
 # --no-build-id allows for caching with `sccache`
 # more info is available at
 # https://rattler.build/latest/tips_and_tricks/#using-sccache-or-ccache-with-rattler-build
@@ -35,9 +38,9 @@ rattler-build build --recipe conda/recipes/rmm \
                     --channel-priority disabled \
                     --output-dir "$RAPIDS_CONDA_BLD_OUTPUT_DIR" \
                     -c "${CPP_CHANNEL}" \
-                    "${RATTLER_CHANNELS[@]}" 2>&1 | tee telemetry-artifacts/build.log
+                    "${RATTLER_CHANNELS[@]}" 2>&1 | tee ${GITHUB_WORKSPACE}/telemetry-artifacts/build.log
 
-sccache --show-adv-stats | tee telemetry-artifacts/sccache-stats.txt
+sccache --show-adv-stats | tee ${GITHUB_WORKSPACE}/telemetry-artifacts/sccache-stats.txt
 
 # See https://github.com/prefix-dev/rattler-build/issues/1424
 rm -rf "$RAPIDS_CONDA_BLD_OUTPUT_DIR"/build_cache
