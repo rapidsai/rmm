@@ -304,7 +304,7 @@ dependencies:
           - nbsphinx
           - numba>=0.59.1,<0.61.0a0
           - numpydoc
-          - sphinx<=8.2.0
+          - sphinx<8.2.0
           - sphinx_rtd_theme
           - sphinx-copybutton
           - sphinx-markdown-tables
