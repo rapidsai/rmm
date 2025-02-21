@@ -19,12 +19,12 @@ source:
 build:
   string: cuda${{ cuda_major }}_py${{ py_version }}_${{ date_string }}_${{ head_rev }}
   script:
-    file: build.sh
+    content:
+      - ./build.sh -v clean rmm --cmake-args=\"-DCMAKE_INSTALL_LIBDIR=lib\"
     secrets:
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
       - AWS_SESSION_TOKEN
-
     env:
       CMAKE_C_COMPILER_LAUNCHER: ${{ env.get("CMAKE_C_COMPILER_LAUNCHER") }}
       CMAKE_CUDA_COMPILER_LAUNCHER: ${{ env.get("CMAKE_CUDA_COMPILER_LAUNCHER") }}
