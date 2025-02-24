@@ -14,7 +14,7 @@
 
 include(${CMAKE_CURRENT_LIST_DIR}/versions.cmake)
 
-set(CPM_DOWNLOAD_VERSION v0.38.5)
+set(CPM_DOWNLOAD_VERSION v0.40.5)
 file(
   DOWNLOAD
   https://github.com/cpm-cmake/CPM.cmake/releases/download/${CPM_DOWNLOAD_VERSION}/get_cpm.cmake
