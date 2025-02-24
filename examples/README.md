@@ -1,10 +1,7 @@
-# Libcudf Examples
+# RMM C++ Examples
 
-This folder contains examples to demonstrate libcudf use cases. Running `build.sh` builds all
-libcudf examples.
+This folder contains examples to demonstrate librmm use cases. Running `build.sh` builds all examples.
 
 Current examples:
 
-- Basic: demonstrates a basic use case with libcudf and building a custom application with libcudf
-- Strings: demonstrates using libcudf for accessing and creating strings columns and for building custom kernels for strings
-- Nested Types: demonstrates using libcudf for some operations on nested types
+- Basic: demonstrates memory resource construction and allocating a `device_uvector` on a stream.
