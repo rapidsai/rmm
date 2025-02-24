@@ -30,9 +30,9 @@ rattler-build build --recipe conda/recipes/librmm \
                     --no-build-id \
                     --channel-priority disabled \
                     --output-dir "$RAPIDS_CONDA_BLD_OUTPUT_DIR" \
-                    "${RATTLER_CHANNELS[@]}"
+                    "${RATTLER_CHANNELS[@]}" 2>&1 | tee telemetry-artifacts/build.log
 
-sccache --show-adv-stats
+sccache --show-adv-stats | tee telemetry-artifacts/sccache-stats.txt
 
 # remove build_cache directory
 rm -rf "$RAPIDS_CONDA_BLD_OUTPUT_DIR"/build_cache
