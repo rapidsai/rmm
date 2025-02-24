@@ -46,6 +46,8 @@ cache:
       - ${{ compiler("cuda") }}
       - cuda-version =${{ cuda_version }}
       - ${{ stdlib("c") }}
+    host:
+      - rapids-logger =0.1
 
 outputs:
   - package:
