@@ -92,8 +92,6 @@ outputs:
       script: cmake --install build --component testing
       dynamic_linking:
         overlinking_behavior: "error"
-        missing_dso_allowlist:
-          - "libbenchmark.so*"
     requirements:
       build:
         - ${{ compiler("c") }}
