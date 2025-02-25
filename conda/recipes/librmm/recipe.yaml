@@ -76,16 +76,6 @@ outputs:
           - cuda-version
           - if: cuda_major == "11"
             then: cudatoolkit
-          - if: linux
-            then:
-              - __glibc
-              - libgcc
-              - libstdcxx
-              - if: cuda_major == "11"
-                then:
-                  - libgcc-ng
-                  - libstdcxx-ng
-                  - sysroot_linux-64
     tests:
       - script:
           - "test -d \"${PREFIX}/include/rmm\""
@@ -106,7 +96,9 @@ outputs:
           - "libbenchmark.so*"
     requirements:
       build:
-        - ${{ compiler('c') }}
+        - ${{ compiler("c") }}
+        - ${{ compiler("cxx") }}
+        - ${{ compiler("cuda") }}
         - cmake ${{ cmake_version }}
       host:
         - ${{ pin_subpackage("librmm", exact=True) }}
@@ -127,19 +119,8 @@ outputs:
             then: cuda-cudart-dev
         by_name:
           - cuda-version
-          - librmm
           - if: cuda_major == "11"
             then: cudatoolkit
-          - if: linux
-            then:
-              - __glibc
-              - libgcc
-              - libstdcxx
-              - if: cuda_major == "11"
-                then:
-                  - libgcc-ng
-                  - libstdcxx-ng
-                  - sysroot_linux-64
     about:
       homepage: ${{ load_from_file("python/librmm/pyproject.toml").project.urls.Homepage }}
       license: ${{ load_from_file("python/librmm/pyproject.toml").project.license.text | replace(" ", "-") }}
