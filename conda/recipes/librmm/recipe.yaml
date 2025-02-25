@@ -95,7 +95,7 @@ outputs:
     requirements:
       build:
         - cmake ${{ cmake_version }}
-        - ${{ stdlib('c') }}  # this is here to help with overlinking errors against libm.so.6 and friends
+        - ${{ stdlib("c") }}  # this is here to help with overlinking errors against libm.so.6 and friends
       host:
         - ${{ pin_subpackage("librmm", exact=True) }}
         - cuda-version =${{ cuda_version }}
