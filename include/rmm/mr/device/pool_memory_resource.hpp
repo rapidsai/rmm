@@ -310,6 +310,18 @@ class pool_memory_resource final
     // limit each time. If it is not set, grow exponentially, e.g. by doubling the pool size each
     // time. Upon failure, attempt to back off exponentially, e.g. by half the attempted size,
     // until either success or the attempt is less than the requested size.
+
+    if (maximum_pool_size_.has_value()) {
+      auto const max_size = maximum_pool_size_.value();
+      if (size > max_size) {
+        auto const msg = std::string("Maximum pool size exceeded (failed to allocate ") +
+                         rmm::detail::format_bytes(size) +
+                         std::string("): Request larger than capacity (") +
+                         rmm::detail::format_bytes(max_size) + std::string(")");
+        RMM_FAIL(msg.c_str(), rmm::out_of_memory);
+      }
+    }
+
     return try_to_expand(size_to_grow(size), size, stream);
   }
 
