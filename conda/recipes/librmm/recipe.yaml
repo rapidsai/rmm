@@ -94,9 +94,6 @@ outputs:
         overlinking_behavior: "error"
     requirements:
       build:
-        - ${{ compiler("c") }}
-        - ${{ compiler("cxx") }}
-        - ${{ compiler("cuda") }}
         - cmake ${{ cmake_version }}
       host:
         - ${{ pin_subpackage("librmm", exact=True) }}
