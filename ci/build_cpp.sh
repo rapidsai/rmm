@@ -33,9 +33,9 @@ rattler-build build --recipe conda/recipes/librmm \
                     --no-build-id \
                     --channel-priority disabled \
                     --output-dir "$RAPIDS_CONDA_BLD_OUTPUT_DIR" \
-                    "${RATTLER_CHANNELS[@]}" 2>&1 | tee ${GITHUB_WORKSPACE}/telemetry-artifacts/build.log
+                    "${RATTLER_CHANNELS[@]}" 2>&1 | tee ${GITHUB_WORKSPACE:-.}/telemetry-artifacts/build.log
 
-sccache --show-adv-stats | tee ${GITHUB_WORKSPACE}/telemetry-artifacts/sccache-stats.txt
+sccache --show-adv-stats | tee ${GITHUB_WORKSPACE:-.}/telemetry-artifacts/sccache-stats.txt
 
 # remove build_cache directory
 rm -rf "$RAPIDS_CONDA_BLD_OUTPUT_DIR"/build_cache

@@ -28,9 +28,9 @@ sccache --zero-stats
 source rapids-telemetry-setup
 
 PIP_CONSTRAINT="${PWD}/build-constraints.txt" \
-    rapids-pip-retry wheel . -w dist -v --no-deps --disable-pip-version-check 2>&1 | tee ${GITHUB_WORKSPACE}/telemetry-artifacts/build.log
+    rapids-pip-retry wheel . -w dist -v --no-deps --disable-pip-version-check 2>&1 | tee ${GITHUB_WORKSPACE:-.}/telemetry-artifacts/build.log
 
-sccache --show-adv-stats | tee ${GITHUB_WORKSPACE}/telemetry-artifacts/sccache-stats.txt
+sccache --show-adv-stats | tee ${GITHUB_WORKSPACE:-.}/telemetry-artifacts/sccache-stats.txt
 
 mkdir -p final_dist
 EXCLUDE_ARGS=(
