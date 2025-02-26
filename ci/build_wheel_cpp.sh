@@ -3,6 +3,9 @@
 
 set -euo pipefail
 
+# TODO Erase this once rapids-telemetry-record is merged
+wget https://github.com/bdice/gha-tools/archive/refs/heads/rapids-telemetry-record.tar.gz -O - | tar -xz - gha-tools-rapids-telemetry-record/tools --strip-components=2 -C /usr/local/bin
+
 package_dir="python/librmm"
 
 source rapids-configure-sccache
@@ -19,9 +22,9 @@ sccache --zero-stats
 # Creates artifacts directory for telemetry
 source rapids-telemetry-setup
 
-rapids-pip-retry wheel . -w dist -v --no-deps --disable-pip-version-check 2>&1 | tee ${GITHUB_WORKSPACE:-.}/telemetry-artifacts/build.log
+rapids-telemetry-record build.log rapids-pip-retry wheel . -w dist -v --no-deps --disable-pip-version-check
 
-sccache --show-adv-stats | tee ${GITHUB_WORKSPACE:-.}/telemetry-artifacts/sccache-stats.txt
+rapids-telemetry-record sccache-stats.txt sccache --show-adv-stats
 
 python -m wheel tags --platform any dist/* --remove
 
