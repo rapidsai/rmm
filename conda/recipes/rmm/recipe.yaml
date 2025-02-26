@@ -6,7 +6,8 @@ context:
   cuda_version: ${{ (env.get("RAPIDS_CUDA_VERSION") | split("."))[:2] | join(".") }}
   cuda_major: '${{ (env.get("RAPIDS_CUDA_VERSION") | split("."))[0] }}'
   date_string: '${{ env.get("RAPIDS_DATE_STRING") }}'
-  py_version: ${{ env.get("RAPIDS_PY_VERSION") | version_to_buildstring }}
+  py_version: ${{ env.get("RAPIDS_PY_VERSION") }}
+  py_buildstring : ${{ py_version | version_to_buildstring }}
   head_rev: ${{ git.head_rev(".")[:8] }}
 
 package:
@@ -17,7 +18,7 @@ source:
   - path: ../../..
 
 build:
-  string: cuda${{ cuda_major }}_py${{ py_version }}_${{ date_string }}_${{ head_rev }}
+  string: cuda${{ cuda_major }}_py${{ py_buildstring }}_${{ date_string }}_${{ head_rev }}
   script:
     content:
       - ./build.sh -v clean rmm --cmake-args=\"-DCMAKE_INSTALL_LIBDIR=lib\"
@@ -58,7 +59,7 @@ requirements:
     - cython >=3.0.0
     - rapids-build-backend >=0.3.0,<0.4.0.dev0
     - librmm =${{ version }}
-    - python
+    - python =${{ py_version }}
     - pip
     - scikit-build-core >=0.10.0
   run:
@@ -76,7 +77,6 @@ requirements:
     from_package:
       - ${{ compiler("cuda") }}
       - cuda-python
-      - python  # required to avoid an incorrect runtime python_abi requirement from `host`
       - if: not (cuda_major == "11")
         then: "cuda-cudart-dev"
 
