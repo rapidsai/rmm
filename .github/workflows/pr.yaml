@@ -9,6 +9,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  SHARED_ACTIONS_REF: add-actions-summary
+
 jobs:
   pr-builder:
     needs:
@@ -163,4 +166,4 @@ jobs:
     continue-on-error: true
     steps:
       - name: Telemetry summarize
-        uses: rapidsai/shared-actions/telemetry-dispatch-summarize@add-actions-summary
+        uses: rapidsai/shared-actions/telemetry-dispatch-summarize@main
