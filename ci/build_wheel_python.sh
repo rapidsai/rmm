@@ -4,7 +4,7 @@
 set -euo pipefail
 
 # TODO Erase this once rapids-telemetry-record is merged
-wget https://github.com/bdice/gha-tools/archive/refs/heads/rapids-telemetry-record.tar.gz -O - | tar -xz - gha-tools-rapids-telemetry-record/tools --strip-components=2 -C /usr/local/bin
+wget https://github.com/bdice/gha-tools/archive/refs/heads/rapids-telemetry-record.tar.gz -O - | tar -xz gha-tools-rapids-telemetry-record/tools --strip-components=2 -C /usr/local/bin
 
 package_name="rmm"
 package_dir="python/rmm"
