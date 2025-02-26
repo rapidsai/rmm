@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,11 +55,11 @@
   GET_RMM_EXPECTS_MACRO(__VA_ARGS__, RMM_EXPECTS_3, RMM_EXPECTS_2) \
   (__VA_ARGS__)
 #define GET_RMM_EXPECTS_MACRO(_1, _2, _3, NAME, ...) NAME
-#define RMM_EXPECTS_3(_condition, _reason, _exception_type)                             \
-  (!!(_condition)) ? static_cast<void>(0)                                               \
-                   : throw _exception_type /*NOLINT(bugprone-macro-parentheses)*/       \
-  {                                                                                     \
-    std::string("RMM failure at: " __FILE__ ":" RMM_STRINGIFY(__LINE__) ": ") + _reason \
+#define RMM_EXPECTS_3(_condition, _reason, _exception_type)                       \
+  (!!(_condition)) ? static_cast<void>(0)                                         \
+                   : throw _exception_type /*NOLINT(bugprone-macro-parentheses)*/ \
+  {                                                                               \
+    "RMM failure at: " __FILE__ ":" RMM_STRINGIFY(__LINE__) ": " _reason          \
   }
 #define RMM_EXPECTS_2(_condition, _reason) RMM_EXPECTS_3(_condition, _reason, rmm::logic_error)
 
@@ -79,10 +79,9 @@
   GET_RMM_FAIL_MACRO(__VA_ARGS__, RMM_FAIL_2, RMM_FAIL_1) \
   (__VA_ARGS__)
 #define GET_RMM_FAIL_MACRO(_1, _2, NAME, ...) NAME
-#define RMM_FAIL_2(_what, _exception_type)                                                         \
-  /*NOLINTNEXTLINE(bugprone-macro-parentheses)*/                                                   \
-  throw _exception_type{std::string{"RMM failure at:" __FILE__ ":" RMM_STRINGIFY(__LINE__) ": "} + \
-                        _what};
+#define RMM_FAIL_2(_what, _exception_type)       \
+  /*NOLINTNEXTLINE(bugprone-macro-parentheses)*/ \
+  throw _exception_type{"RMM failure at:" __FILE__ ":" RMM_STRINGIFY(__LINE__) ": " _what};
 #define RMM_FAIL_1(_what) RMM_FAIL_2(_what, rmm::logic_error)
 
 /**
@@ -133,18 +132,16 @@
  * Defaults to throwing rmm::bad_alloc, but when `cudaErrorMemoryAllocation` is returned,
  * rmm::out_of_memory is thrown instead.
  */
-#define RMM_CUDA_TRY_ALLOC(_call, num_bytes)                                            \
-  do {                                                                                  \
-    cudaError_t const error = (_call);                                                  \
-    if (cudaSuccess != error) {                                                         \
-      cudaGetLastError();                                                               \
-      auto const msg = std::string{"CUDA error (failed to allocate "} +                 \
-                       std::to_string(num_bytes) + " bytes) at: " + __FILE__ + ":" +    \
-                       RMM_STRINGIFY(__LINE__) + ": " + cudaGetErrorName(error) + " " + \
-                       cudaGetErrorString(error);                                       \
-      if (cudaErrorMemoryAllocation == error) { throw rmm::out_of_memory{msg}; }        \
-      throw rmm::bad_alloc{msg};                                                        \
-    }                                                                                   \
+#define RMM_CUDA_TRY_ALLOC(_call)                                                                  \
+  do {                                                                                             \
+    cudaError_t const error = (_call);                                                             \
+    if (cudaSuccess != error) {                                                                    \
+      cudaGetLastError();                                                                          \
+      auto const msg = std::string{"CUDA error at: "} + __FILE__ + ":" + RMM_STRINGIFY(__LINE__) + \
+                       ": " + cudaGetErrorName(error) + " " + cudaGetErrorString(error);           \
+      if (cudaErrorMemoryAllocation == error) { throw rmm::out_of_memory{msg}; }                   \
+      throw rmm::bad_alloc{msg};                                                                   \
+    }                                                                                              \
   } while (0)
 
 /**

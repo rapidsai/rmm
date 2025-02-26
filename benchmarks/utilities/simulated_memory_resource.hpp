@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,10 +65,7 @@ class simulated_memory_resource final : public device_memory_resource {
   void* do_allocate(std::size_t bytes, cuda_stream_view) override
   {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    RMM_EXPECTS(begin_ + bytes <= end_,
-                "Simulated memory size exceeded (failed to allocate " +
-                  rmm::detail::format_bytes(bytes) + ")",
-                rmm::bad_alloc);
+    RMM_EXPECTS(begin_ + bytes <= end_, "Simulated memory size exceeded", rmm::bad_alloc);
     auto* ptr = static_cast<void*>(begin_);
     begin_ += bytes;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     return ptr;

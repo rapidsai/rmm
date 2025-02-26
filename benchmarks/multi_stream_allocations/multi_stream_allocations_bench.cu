@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2025, NVIDIA CORPORATION.
+ * Copyright (c) 2021-2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -138,7 +138,9 @@ MRFactoryFunc get_mr_factory(std::string const& resource_name)
   if (resource_name == "arena") { return &make_arena; }
   if (resource_name == "binning") { return &make_binning; }
 
-  RMM_FAIL("Invalid memory_resource name: " + resource_name);
+  std::cout << "Error: invalid memory_resource name: " << resource_name << std::endl;
+
+  RMM_FAIL();
 }
 
 void declare_benchmark(std::string const& name)
@@ -173,7 +175,7 @@ void declare_benchmark(std::string const& name)
     return;
   }
 
-  RMM_FAIL("Invalid memory_resource name: " + name);
+  std::cout << "Error: invalid memory_resource name: " << name << std::endl;
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
