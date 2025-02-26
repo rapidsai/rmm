@@ -76,6 +76,7 @@ requirements:
     from_package:
       - ${{ compiler("cuda") }}
       - cuda-python
+      - python  # required to avoid an incorrect runtime python_abi requirement from `host`
       - if: not (cuda_major == "11")
         then: "cuda-cudart-dev"
 
