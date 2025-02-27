@@ -9,9 +9,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  SHARED_ACTIONS_REF: add-actions-summary
-
 jobs:
   pr-builder:
     needs:

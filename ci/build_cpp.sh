@@ -3,9 +3,6 @@
 
 set -euo pipefail
 
-# TODO Erase this once rapids-telemetry-record is merged
-wget https://github.com/bdice/gha-tools/archive/refs/heads/rapids-telemetry-record.tar.gz -O - | tar -xz -C /usr/local/bin --strip-components=2 gha-tools-rapids-telemetry-record/tools/*
-
 rapids-configure-conda-channels
 
 source rapids-configure-sccache
