@@ -19,9 +19,9 @@ sccache --zero-stats
 # Creates artifacts directory for telemetry
 source rapids-telemetry-setup
 
-rapids-pip-retry wheel . -w dist -v --no-deps --disable-pip-version-check 2>&1 | tee ${GITHUB_WORKSPACE}/telemetry-artifacts/build.log
+rapids-telemetry-record build.log rapids-pip-retry wheel . -w dist -v --no-deps --disable-pip-version-check
 
-sccache --show-adv-stats | tee ${GITHUB_WORKSPACE}/telemetry-artifacts/sccache-stats.txt
+rapids-telemetry-record sccache-stats.txt sccache --show-adv-stats
 
 python -m wheel tags --platform any dist/* --remove
 

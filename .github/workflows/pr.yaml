@@ -159,7 +159,7 @@ jobs:
     # This job must use a self-hosted runner to record telemetry traces.
     runs-on: linux-amd64-cpu4
     needs: pr-builder
-    if: ${{ vars.TELEMETRY_ENABLED == 'true' && !cancelled() }}
+    if: ${{ vars.TELEMETRY_ENABLED == 'true' && !cancelled() && github.run_attempt == '1' }}
     continue-on-error: true
     steps:
       - name: Telemetry summarize

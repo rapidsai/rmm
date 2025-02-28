@@ -28,14 +28,15 @@ source rapids-telemetry-setup
 # --no-build-id allows for caching with `sccache`
 # more info is available at
 # https://rattler.build/latest/tips_and_tricks/#using-sccache-or-ccache-with-rattler-build
-rattler-build build --recipe conda/recipes/librmm \
-                    --experimental \
-                    --no-build-id \
-                    --channel-priority disabled \
-                    --output-dir "$RAPIDS_CONDA_BLD_OUTPUT_DIR" \
-                    "${RATTLER_CHANNELS[@]}" 2>&1 | tee ${GITHUB_WORKSPACE}/telemetry-artifacts/build.log
+rapids-telemetry-record build.log rattler-build build \
+    --recipe conda/recipes/librmm \
+    --experimental \
+    --no-build-id \
+    --channel-priority disabled \
+    --output-dir "$RAPIDS_CONDA_BLD_OUTPUT_DIR" \
+    "${RATTLER_CHANNELS[@]}"
 
-sccache --show-adv-stats | tee ${GITHUB_WORKSPACE}/telemetry-artifacts/sccache-stats.txt
+rapids-telemetry-record sccache-stats.txt sccache --show-adv-stats
 
 # remove build_cache directory
 rm -rf "$RAPIDS_CONDA_BLD_OUTPUT_DIR"/build_cache
