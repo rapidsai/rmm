@@ -18,7 +18,6 @@
 #include <rmm/aligned.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
-#include <rmm/detail/format.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
@@ -151,9 +150,7 @@ class limiting_resource_adaptor final : public device_memory_resource {
     }
 
     allocated_bytes_ -= proposed_size;
-    auto const msg = std::string("Exceeded memory limit (failed to allocate ") +
-                     rmm::detail::format_bytes(bytes) + ")";
-    RMM_FAIL(msg.c_str(), rmm::out_of_memory);
+    RMM_FAIL("Exceeded memory limit", rmm::out_of_memory);
   }
 
   /**

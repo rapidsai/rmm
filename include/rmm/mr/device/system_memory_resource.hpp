@@ -19,7 +19,6 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
-#include <rmm/detail/format.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 
 #include <cstddef>
@@ -104,9 +103,7 @@ class system_memory_resource final : public device_memory_resource {
       return rmm::detail::aligned_host_allocate(
         bytes, CUDA_ALLOCATION_ALIGNMENT, [](std::size_t size) { return ::operator new(size); });
     } catch (std::bad_alloc const& e) {
-      auto const msg = std::string("Failed to allocate ") + rmm::detail::format_bytes(bytes) +
-                       std::string("of memory: ") + e.what();
-      RMM_FAIL(msg.c_str(), rmm::out_of_memory);
+      RMM_FAIL("Failed to allocate memory: " + std::string{e.what()}, rmm::out_of_memory);
     }
   }
 
