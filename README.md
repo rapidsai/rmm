@@ -57,7 +57,7 @@ Compiler requirements:
 
 * `gcc`     version 9.3+
 * `nvcc`    version 11.4+
-* `cmake`   version 3.26.4+
+* `cmake`   version 3.30.4+
 
 CUDA/GPU requirements:
 

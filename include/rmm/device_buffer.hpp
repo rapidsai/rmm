@@ -92,8 +92,7 @@ class device_buffer {
    */
   // Note: we cannot use `device_buffer() = default;` because nvcc implicitly adds
   // `__host__ __device__` specifiers to the defaulted constructor when it is called within the
-  // context of both host and device functions. Specifically, the `cudf::type_dispatcher` is a host-
-  // device function. This causes warnings/errors because this ctor invokes host-only functions.
+  // context of both host and device functions.
   device_buffer() : _mr{rmm::mr::get_current_device_resource_ref()} {}
 
   /**

@@ -33,7 +33,7 @@ namespace mr {
  */
 
 /**
- * @brief Base class for all libcudf device memory allocation.
+ * @brief Base class for all librmm device memory allocation.
  *
  * This class serves as the interface that all custom device memory
  * implementations must satisfy.
