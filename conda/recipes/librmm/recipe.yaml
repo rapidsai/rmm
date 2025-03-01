@@ -18,8 +18,8 @@ cache:
 
   build:
     script:
-      content:
-        - ./build.sh -n -v clean librmm tests benchmarks --cmake-args=\"-DCMAKE_INSTALL_LIBDIR=lib\"
+      content: |
+        ./build.sh -n -v clean librmm tests benchmarks --cmake-args=\"-DCMAKE_INSTALL_LIBDIR=lib\"
       secrets:
         - AWS_ACCESS_KEY_ID
         - AWS_SECRET_ACCESS_KEY
@@ -121,14 +121,15 @@ outputs:
       homepage: ${{ load_from_file("python/librmm/pyproject.toml").project.urls.Homepage }}
       license: ${{ load_from_file("python/librmm/pyproject.toml").project.license.text | replace(" ", "-") }}
       summary: librmm test & benchmark executables
+
   - package:
       name: librmm-example
       version: ${{ version }}
     build:
       string: cuda${{ cuda_major }}_${{ date_string }}_${{ head_rev }}
       script:
-        content:
-          - ./examples/build.sh --install
+        content: |
+          ./examples/build.sh --install
         env:
           CMAKE_C_COMPILER_LAUNCHER: ${{ env.get("CMAKE_C_COMPILER_LAUNCHER") }}
           CMAKE_CUDA_COMPILER_LAUNCHER: ${{ env.get("CMAKE_CUDA_COMPILER_LAUNCHER") }}
