@@ -18,8 +18,8 @@ cache:
 
   build:
     script:
-      content:
-        - ./build.sh -n -v clean librmm tests benchmarks --cmake-args=\"-DCMAKE_INSTALL_LIBDIR=lib\"
+      content: |
+        ./build.sh -n -v clean librmm tests benchmarks --cmake-args=\"-DCMAKE_INSTALL_LIBDIR=lib\"
       secrets:
         - AWS_ACCESS_KEY_ID
         - AWS_SECRET_ACCESS_KEY
@@ -121,3 +121,55 @@ outputs:
       homepage: ${{ load_from_file("python/librmm/pyproject.toml").project.urls.Homepage }}
       license: ${{ load_from_file("python/librmm/pyproject.toml").project.license.text | replace(" ", "-") }}
       summary: librmm test & benchmark executables
+
+  - package:
+      name: librmm-example
+      version: ${{ version }}
+    build:
+      string: cuda${{ cuda_major }}_${{ date_string }}_${{ head_rev }}
+      script:
+        content: |
+          ./examples/build.sh --install
+        env:
+          CMAKE_C_COMPILER_LAUNCHER: ${{ env.get("CMAKE_C_COMPILER_LAUNCHER") }}
+          CMAKE_CUDA_COMPILER_LAUNCHER: ${{ env.get("CMAKE_CUDA_COMPILER_LAUNCHER") }}
+          CMAKE_CXX_COMPILER_LAUNCHER: ${{ env.get("CMAKE_CXX_COMPILER_LAUNCHER") }}
+          CMAKE_GENERATOR: ${{ env.get("CMAKE_GENERATOR") }}
+          PARALLEL_LEVEL: ${{ env.get("PARALLEL_LEVEL") }}
+          SCCACHE_BUCKET: ${{ env.get("SCCACHE_BUCKET") }}
+          SCCACHE_IDLE_TIMEOUT: ${{ env.get("SCCACHE_IDLE_TIMEOUT") }}
+          SCCACHE_REGION: ${{ env.get("SCCACHE_REGION") }}
+          SCCACHE_S3_USE_SSL: ${{ env.get("SCCACHE_S3_USE_SSL") }}
+          SCCACHE_S3_NO_CREDENTIALS: ${{ env.get("SCCACHE_S3_NO_CREDENTIALS") }}
+          SCCACHE_S3_KEY_PREFIX: librmm-${{ env.get("RAPIDS_CONDA_ARCH") }}
+    requirements:
+      build:
+        - cmake ${{ cmake_version }}
+        - ninja
+        - ${{ compiler("c") }}
+        - ${{ compiler("cxx") }}
+        - ${{ compiler("cuda") }}
+        - cuda-version =${{ cuda_version }}
+      host:
+        - cuda-version =${{ cuda_version }}
+        - if: cuda_major == "11"
+          then: cudatoolkit
+          else: cuda-cudart-dev
+        - ${{ pin_subpackage("librmm", exact=True) }}
+      run:
+        - if: cuda_major == "11"
+          then: cudatoolkit
+          else: cuda-cudart
+        - ${{ pin_compatible("cuda-version", upper_bound="x", lower_bound="x") }}
+        - ${{ pin_subpackage("librmm", exact=True) }}
+      ignore_run_exports:
+        from_package:
+          - if: cuda_major != "11"
+            then: cuda-cudart-dev
+        by_name:
+          - cuda-version
+          - librmm
+    about:
+      homepage: ${{ load_from_file("python/librmm/pyproject.toml").project.urls.Homepage }}
+      license: ${{ load_from_file("python/librmm/pyproject.toml").project.license.text | replace(" ", "-") }}
+      summary: librmm example executables
