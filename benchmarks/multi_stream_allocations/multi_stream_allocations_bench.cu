@@ -138,9 +138,7 @@ MRFactoryFunc get_mr_factory(std::string const& resource_name)
   if (resource_name == "arena") { return &make_arena; }
   if (resource_name == "binning") { return &make_binning; }
 
-  std::cout << "Error: invalid memory_resource name: " << resource_name << std::endl;
-
-  RMM_FAIL();
+  RMM_FAIL("Invalid memory_resource name: " + resource_name);
 }
 
 void declare_benchmark(std::string const& name)
@@ -175,7 +173,7 @@ void declare_benchmark(std::string const& name)
     return;
   }
 
-  std::cout << "Error: invalid memory_resource name: " << name << std::endl;
+  RMM_FAIL("Invalid memory_resource name: " + name);
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)

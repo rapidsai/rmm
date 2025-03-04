@@ -59,7 +59,7 @@ class cuda_memory_resource final : public device_memory_resource {
   void* do_allocate(std::size_t bytes, [[maybe_unused]] cuda_stream_view stream) override
   {
     void* ptr{nullptr};
-    RMM_CUDA_TRY_ALLOC(cudaMalloc(&ptr, bytes));
+    RMM_CUDA_TRY_ALLOC(cudaMalloc(&ptr, bytes), bytes);
     return ptr;
   }
 
