@@ -38,5 +38,16 @@ rapids-logger "Run gtests"
 export GTEST_OUTPUT=xml:${RAPIDS_TESTS_DIR}/
 ./ci/run_ctests.sh -j20 && EXITCODE=$? || EXITCODE=$?;
 
+# Run basic example from librmm-example package
+if [ $EXITCODE -eq 0 ]; then
+  rapids-logger "Run basic example"
+  ${CONDA_PREFIX}/bin/examples/librmm/basic_example && EXAMPLE_EXITCODE=$? || EXAMPLE_EXITCODE=$?;
+
+  if [ $EXAMPLE_EXITCODE -ne 0 ]; then
+    rapids-logger "Basic example failed with exit code: $EXAMPLE_EXITCODE"
+    EXITCODE=$EXAMPLE_EXITCODE
+  fi
+fi
+
 rapids-logger "Test script exiting with value: $EXITCODE"
 exit "${EXITCODE}"
