@@ -212,4 +212,7 @@ ConfigureTest(SYSTEM_MR_TEST mr/device/system_mr_tests.cu)
 # container multidevice tests
 ConfigureTest(CONTAINER_MULTIDEVICE_TEST container_multidevice_tests.cu)
 
+# error macros tests
+ConfigureTest(ERROR_MACROS_TEST error_macros_tests.cpp)
+
 rapids_test_install_relocatable(INSTALL_COMPONENT_SET testing DESTINATION bin/gtests/librmm)
