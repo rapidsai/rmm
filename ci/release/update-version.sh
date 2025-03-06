@@ -50,6 +50,7 @@ done
 DEPENDENCIES=(
   librmm
   librmm-tests
+  librmm-example
   rmm
 )
 for DEP in "${DEPENDENCIES[@]}"; do

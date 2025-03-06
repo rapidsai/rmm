@@ -33,6 +33,7 @@ files:
       - test_cpp
       - depends_on_librmm
       - depends_on_librmm_tests
+      - depends_on_librmm_example
   checks:
     output: none
     includes:
@@ -223,6 +224,11 @@ dependencies:
       - output_types: conda
         packages:
           - librmm-tests=25.4.*,>=0.0.0a0
+  depends_on_librmm_example:
+    common:
+      - output_types: conda
+        packages:
+          - librmm-example=25.4.*,>=0.0.0a0
   checks:
     common:
       - output_types: [conda, requirements]
