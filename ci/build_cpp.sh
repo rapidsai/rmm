@@ -42,3 +42,7 @@ rapids-telemetry-record sccache-stats.txt sccache --show-adv-stats
 rm -rf "$RAPIDS_CONDA_BLD_OUTPUT_DIR"/build_cache
 
 rapids-upload-conda-to-s3 cpp
+
+# Run the libcudacxx flag test at build time, since compilers are available
+rapids-logger "Run libcudacxx_flag_test"
+./tests/libcudacxx_flag_test/libcudacxx_flag_test.sh
