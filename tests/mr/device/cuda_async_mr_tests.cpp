@@ -67,6 +67,21 @@ TEST_F(AsyncMRTest, DifferentPoolsUnequal)
   EXPECT_FALSE(mr1.is_equal(mr2));
 }
 
+TEST_F(AsyncMRTest, HWDecompressEnabled)
+{
+  const auto pool_init_size{100};
+  cuda_async_mr mr{pool_init_size};
+  void* ptr = mr.allocate(pool_init_size);
+  int driver_version{};
+  RMM_CUDA_TRY(cudaDriverGetVersion(&driver_version));
+  auto const min_hw_decompress_version{12080};
+  if (driver_version >= min_hw_decompress_version) {
+    // TODO: check allocated property includes support for hw compression.
+  }
+  mr.deallocate(ptr, pool_init_size);
+  RMM_CUDA_TRY(cudaDeviceSynchronize());
+}
+
 class AsyncMRFabricTest : public AsyncMRTest {
   void SetUp() override
   {
