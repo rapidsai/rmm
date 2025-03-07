@@ -64,11 +64,16 @@ class cuda_async_memory_resource final : public device_memory_resource {
     fabric    = 0x8   ///< Allows a fabric handle to be used for exporting. (cudaMemFabricHandle_t)
   };
 
-  enum class mempool_usage {
-    none          = 0x0, ///< No specific usage.
-    hw_decompress = 0x2, ///< If set indicates that the memory will be
-                         ///< used as a buffer for hardware accelerated
-                         ///< decompression.
+  /**
+   * @brief Flags for specifying memory pool usage.
+   *
+   * @note These values are exact copies from the runtime API. The only value so far is
+   * `cudaMemPoolCreateUsageHwDecompress`
+   */
+  enum class mempool_usage : unsigned short {
+    none          = 0x0,  ///< No specific usage requested.
+    hw_decompress = 0x2,  ///< If set indicates that the memory can be used as a buffer for hardware
+                          ///< accelerated decompression.
   };
 
   /**
@@ -105,7 +110,9 @@ class cuda_async_memory_resource final : public device_memory_resource {
     pool_props.allocType   = cudaMemAllocationTypePinned;
     pool_props.handleTypes = static_cast<cudaMemAllocationHandleType>(
       export_handle_type.value_or(allocation_handle_type::none));
-    pool_props.usage = driver_version >= min_hw_decompress_version ? mempool_usage::hw_decompress : mempool_usage::none;
+    pool_props.usage = static_cast<unsigned short>(driver_version >= min_hw_decompress_version
+                                                     ? mempool_usage::hw_decompress
+                                                     : mempool_usage::none);
     RMM_EXPECTS(
       rmm::detail::runtime_async_alloc::is_export_handle_type_supported(pool_props.handleTypes),
       "Requested IPC memory handle type not supported");
