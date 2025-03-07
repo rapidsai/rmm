@@ -64,6 +64,13 @@ class cuda_async_memory_resource final : public device_memory_resource {
     fabric    = 0x8   ///< Allows a fabric handle to be used for exporting. (cudaMemFabricHandle_t)
   };
 
+  enum class mempool_usage {
+    none          = 0x0, ///< No specific usage.
+    hw_decompress = 0x2, ///< If set indicates that the memory will be
+                         ///< used as a buffer for hardware accelerated
+                         ///< decompression.
+  };
+
   /**
    * @brief Constructs a cuda_async_memory_resource with the optionally specified initial pool size
    * and release threshold.
@@ -90,11 +97,15 @@ class cuda_async_memory_resource final : public device_memory_resource {
     RMM_EXPECTS(rmm::detail::runtime_async_alloc::is_supported(),
                 "cudaMallocAsync not supported with this CUDA driver/runtime version");
 
+    int driver_version{};
+    RMM_CUDA_TRY(cudaDriverGetVersion(&driver_version));
+    constexpr auto min_hw_decompress_version{12080};
     // Construct explicit pool
     cudaMemPoolProps pool_props{};
     pool_props.allocType   = cudaMemAllocationTypePinned;
     pool_props.handleTypes = static_cast<cudaMemAllocationHandleType>(
       export_handle_type.value_or(allocation_handle_type::none));
+    pool_props.usage = driver_version >= min_hw_decompress_version ? mempool_usage::hw_decompress : mempool_usage::none;
     RMM_EXPECTS(
       rmm::detail::runtime_async_alloc::is_export_handle_type_supported(pool_props.handleTypes),
       "Requested IPC memory handle type not supported");
@@ -107,8 +118,6 @@ class cuda_async_memory_resource final : public device_memory_resource {
     // CUDA drivers before 11.5 have known incompatibilities with the async allocator.
     // We'll disable `cudaMemPoolReuseAllowOpportunistic` if cuda driver < 11.5.
     // See https://github.com/NVIDIA/spark-rapids/issues/4710.
-    int driver_version{};
-    RMM_CUDA_TRY(cudaDriverGetVersion(&driver_version));
     constexpr auto min_async_version{11050};
     if (driver_version < min_async_version) {
       int disabled{0};
