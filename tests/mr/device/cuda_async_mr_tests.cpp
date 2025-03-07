@@ -17,6 +17,7 @@
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/cuda_async_memory_resource.hpp>
 
+#include <cuda.h>
 #include <cuda_runtime_api.h>
 
 #include <gtest/gtest.h>
@@ -76,7 +77,13 @@ TEST_F(AsyncMRTest, HWDecompressEnabled)
   RMM_CUDA_TRY(cudaDriverGetVersion(&driver_version));
   auto const min_hw_decompress_version{12080};
   if (driver_version >= min_hw_decompress_version) {
-    // TODO: check allocated property includes support for hw compression.
+    bool is_capable{};
+    auto err = cuPointerGetAttribute(static_cast<void*>(&is_capable),
+                                     CU_POINTER_ATTRIBUTE_IS_HW_DECOMPRESS_CAPABLE,
+                                     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+                                     reinterpret_cast<CUdeviceptr>(ptr));
+    EXPECT_EQ(err, CUDA_SUCCESS);
+    EXPECT_TRUE(is_capable);
   }
   mr.deallocate(ptr, pool_init_size);
   RMM_CUDA_TRY(cudaDeviceSynchronize());
