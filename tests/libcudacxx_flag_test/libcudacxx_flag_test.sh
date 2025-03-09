@@ -25,8 +25,7 @@ else
   # Check if the error message contains the expected text
   if grep -q "RMM requires LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE to be defined" "${ERROR_FILE}"; then
     echo "Test passed: Compilation failed with the expected error message"
-    echo "Error message:"
-    cat "${ERROR_FILE}"
+    # Don't show the error message, to avoid confusing it with a real error in the CI logs.
   else
     echo "Test failed: Compilation failed but with an unexpected error message:"
     cat "${ERROR_FILE}"
