@@ -18,7 +18,7 @@
 // Check if LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE is defined
 #ifndef LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 #error \
-  "RMM requires LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE to be defined. This is typically done by the build system. If you're seeing this error, you may be using a custom build setup that doesn't define this flag. Please add -DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE to your compiler flags."
+  "RMM requires LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE to be defined. Please add -DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE to the compiler flags (this is done automatically when using RMM via CMake)."
 #endif
 
 #include <cuda/memory_resource>
