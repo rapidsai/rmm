@@ -53,7 +53,6 @@ cache:
       - ${{ compiler("cxx") }}
       - ${{ compiler("cuda") }}
       - cuda-version =${{ cuda_version }}
-      - cuda-driver-dev
       - ${{ stdlib("c") }}
     host:
       - rapids-logger =0.1
@@ -104,6 +103,7 @@ outputs:
     requirements:
       build:
         - cmake ${{ cmake_version }}
+        - cuda-driver-dev
         - ${{ stdlib("c") }}  # this is here to help with overlinking errors against libm.so.6 and friends
       host:
         - ${{ pin_subpackage("librmm", exact=True) }}
