@@ -115,7 +115,7 @@ outputs:
         - ${{ pin_compatible("cuda-version", upper_bound="x", lower_bound="x") }}
         - ${{ pin_subpackage("librmm", exact=True) }}
         - rapids-logger =0.1
-        - cuda-driver-dev
+        - cuda-compat
         - if: cuda_major == "11"
           then: cudatoolkit
           else: cuda-cudart
