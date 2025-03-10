@@ -1,5 +1,5 @@
 # =============================================================================
-# Copyright (c) 2024-2025, NVIDIA CORPORATION.
+# Copyright (c) 2025, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -12,27 +12,19 @@
 # the License.
 # =============================================================================
 
-cmake_minimum_required(VERSION 3.30.4 FATAL_ERROR)
+include(${CMAKE_CURRENT_LIST_DIR}/versions.cmake)
 
-include(../../rapids_config.cmake)
+set(CPM_DOWNLOAD_VERSION v0.40.5)
+file(
+  DOWNLOAD
+  https://github.com/cpm-cmake/CPM.cmake/releases/download/${CPM_DOWNLOAD_VERSION}/get_cpm.cmake
+  ${CMAKE_BINARY_DIR}/cmake/get_cpm.cmake)
+include(${CMAKE_BINARY_DIR}/cmake/get_cpm.cmake)
 
-project(
-  librmm-python
-  VERSION "${RAPIDS_VERSION}"
-  LANGUAGES CXX)
-
-# Check if rmm is already available. If so, it's the user's responsibility to ensure that the CMake
-# package is also available at build time of the Python rmm package.
-find_package(rmm "${RAPIDS_VERSION}")
-
-if(rmm_FOUND)
-  return()
-endif()
-
-unset(rmm_FOUND)
-
-set(BUILD_TESTS OFF)
-set(BUILD_BENCHMARKS OFF)
-set(CUDA_STATIC_RUNTIME ON)
-
-add_subdirectory(../.. rmm-cpp)
+# find or build it via CPM
+CPMFindPackage(
+  NAME rmm
+  FIND_PACKAGE_ARGUMENTS "PATHS ${rmm_ROOT} ${rmm_ROOT}/latest" GIT_REPOSITORY
+                         https://github.com/rapidsai/rmm
+  GIT_TAG ${RMM_TAG}
+  GIT_SHALLOW TRUE)

@@ -82,7 +82,7 @@ jobs:
     uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@test-github-artifacts
     with:
       enable_check_generated_files: false
-      ignored_pr_jobs: telemetry-summarize
+      ignored_pr_jobs: "telemetry-summarize"
   conda-cpp-build:
     needs: checks
     secrets: inherit
@@ -153,15 +153,15 @@ jobs:
       arch: '["amd64"]'
       cuda: '["12.8"]'
       build_command: |
-        sccache -z;
-        build-all -DBUILD_BENCHMARKS=ON --verbose;
-        sccache -s;
+        sccache --zero-stats;
+        build-all -DBUILD_BENCHMARKS=ON --verbose 2>&1 | tee telemetry-artifacts/build.log;
+        sccache --show-adv-stats | tee telemetry-artifacts/sccache-stats.txt;
 
   telemetry-summarize:
     # This job must use a self-hosted runner to record telemetry traces.
     runs-on: linux-amd64-cpu4
     needs: pr-builder
-    if: ${{ vars.TELEMETRY_ENABLED == 'true' && !cancelled() }}
+    if: ${{ vars.TELEMETRY_ENABLED == 'true' && !cancelled() && github.run_attempt == '1' }}
     continue-on-error: true
     steps:
       - name: Telemetry summarize

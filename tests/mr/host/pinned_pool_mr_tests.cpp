@@ -88,5 +88,16 @@ TEST(PinnedPoolTest, NonAlignedPoolSize)
     rmm::logic_error);
 }
 
+TEST(PinnedPoolTest, ThrowOutOfMemory)
+{
+  rmm::mr::pinned_memory_resource pinned_mr{};
+  const auto initial{0};
+  const auto maximum{1024};
+  pool_mr mr{pinned_mr, initial, maximum};
+  mr.allocate(1024);
+
+  EXPECT_THROW(mr.allocate(1024), rmm::out_of_memory);
+}
+
 }  // namespace
 }  // namespace rmm::test

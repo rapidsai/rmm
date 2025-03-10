@@ -25,10 +25,13 @@ echo "librmm-${RAPIDS_PY_CUDA_SUFFIX} @ file://$(echo "${CPP_WHEELHOUSE}"/librmm
 
 sccache --zero-stats
 
-PIP_CONSTRAINT="${PWD}/build-constraints.txt" \
-    rapids-pip-retry wheel . -w dist -v --no-deps --disable-pip-version-check
+# Creates artifacts directory for telemetry
+source rapids-telemetry-setup
 
-sccache --show-adv-stats
+PIP_CONSTRAINT="${PWD}/build-constraints.txt" \
+    rapids-telemetry-record build.log rapids-pip-retry wheel . -w dist -v --no-deps --disable-pip-version-check
+
+rapids-telemetry-record sccache-stats.txt sccache --show-adv-stats
 
 mkdir -p final_dist
 EXCLUDE_ARGS=(

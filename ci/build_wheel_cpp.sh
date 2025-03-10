@@ -15,9 +15,12 @@ cd "${package_dir}"
 
 sccache --zero-stats
 
-rapids-pip-retry wheel . -w "${wheel_dir}" -v --no-deps --disable-pip-version-check
+# Creates artifacts directory for telemetry
+source rapids-telemetry-setup
 
-sccache --show-adv-stats
+rapids-telemetry-record build.log rapids-pip-retry wheel . -w "${wheel_dir}" -v --no-deps --disable-pip-version-check
+
+rapids-telemetry-record sccache-stats.txt sccache --show-adv-stats
 
 python -m wheel tags --platform any "${wheel_dir}"/* --remove
 

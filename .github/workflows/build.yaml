@@ -26,7 +26,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  telemetry-setup:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      OTEL_SERVICE_NAME: "build-rmm"
+    steps:
+      - name: Telemetry setup
+        # This gate is here and not at the job level because we need the job to not be skipped,
+        # since other jobs depend on it.
+        if: ${{ vars.TELEMETRY_ENABLED == 'true' }}
+        uses: rapidsai/shared-actions/telemetry-dispatch-stash-base-env-vars@main
   cpp-build:
+    needs: [telemetry-setup]
     secrets: inherit
     uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-build.yaml@branch-25.04
     with:
@@ -35,7 +47,7 @@ jobs:
       date: ${{ inputs.date }}
       sha: ${{ inputs.sha }}
   python-build:
-    needs: [cpp-build]
+    needs: [telemetry-setup, cpp-build]
     secrets: inherit
     uses: rapidsai/shared-workflows/.github/workflows/conda-python-build.yaml@branch-25.04
     with:
@@ -54,7 +66,7 @@ jobs:
       sha: ${{ inputs.sha }}
   docs-build:
     if: github.ref_type == 'branch'
-    needs: python-build
+    needs: [python-build]
     secrets: inherit
     uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@branch-25.04
     with:
@@ -67,6 +79,7 @@ jobs:
       container_image: "rapidsai/ci-conda:latest"
       run_script: "ci/build_docs.sh"
   wheel-build-cpp:
+    needs: [telemetry-setup]
     secrets: inherit
     uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@branch-25.04
     with:
@@ -77,7 +90,7 @@ jobs:
       date: ${{ inputs.date }}
       script: ci/build_wheel_cpp.sh
   wheel-build-python:
-    needs: wheel-build-cpp
+    needs: [telemetry-setup, wheel-build-cpp]
     secrets: inherit
     uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@branch-25.04
     with:
@@ -108,3 +121,12 @@ jobs:
       date: ${{ inputs.date }}
       package-name: rmm
       package-type: python
+  telemetry-summarize:
+    # This job must use a self-hosted runner to record telemetry traces.
+    runs-on: linux-amd64-cpu4
+    needs: [wheel-publish-cpp, wheel-publish-python, upload-conda, docs-build]
+    if: ${{ vars.TELEMETRY_ENABLED == 'true' && !cancelled() }}
+    continue-on-error: true
+    steps:
+      - name: Telemetry summarize
+        uses: rapidsai/shared-actions/telemetry-dispatch-summarize@main
