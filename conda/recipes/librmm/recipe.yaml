@@ -103,10 +103,10 @@ outputs:
     requirements:
       build:
         - cmake ${{ cmake_version }}
-        - cuda-driver-dev
         - ${{ stdlib("c") }}  # this is here to help with overlinking errors against libm.so.6 and friends
       host:
         - ${{ pin_subpackage("librmm", exact=True) }}
+        - cuda-driver-dev
         - cuda-version =${{ cuda_version }}
         - if: cuda_major == "11"
           then: cudatoolkit
@@ -115,6 +115,7 @@ outputs:
         - ${{ pin_compatible("cuda-version", upper_bound="x", lower_bound="x") }}
         - ${{ pin_subpackage("librmm", exact=True) }}
         - rapids-logger =0.1
+        - cuda-driver-dev
         - if: cuda_major == "11"
           then: cudatoolkit
           else: cuda-cudart
