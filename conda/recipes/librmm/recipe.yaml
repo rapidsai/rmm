@@ -107,6 +107,7 @@ outputs:
       host:
         - ${{ pin_subpackage("librmm", exact=True) }}
         - cuda-driver-dev
+        - cuda-compat
         - cuda-version =${{ cuda_version }}
         - if: cuda_major == "11"
           then: cudatoolkit
