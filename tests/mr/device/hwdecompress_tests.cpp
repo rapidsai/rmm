@@ -34,6 +34,7 @@ class HWDecompressTest : public ::testing::Test {
     RMM_CUDA_TRY(cudaDriverGetVersion(&driver_version));
     auto const min_hw_decompress_version{12080};
     if (driver_version >= min_hw_decompress_version) {
+#if defined(CUDA_VERSION) && CUDA_VERSION >= 12080
       bool is_capable{};
       auto err =
         cuPointerGetAttribute(static_cast<void*>(&is_capable),
@@ -42,6 +43,7 @@ class HWDecompressTest : public ::testing::Test {
                               reinterpret_cast<CUdeviceptr>(ptr));
       EXPECT_EQ(err, CUDA_SUCCESS);
       EXPECT_TRUE(is_capable);
+#endif
     }
   }
 };
