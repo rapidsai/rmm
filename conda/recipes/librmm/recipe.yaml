@@ -53,6 +53,7 @@ cache:
       - ${{ compiler("cxx") }}
       - ${{ compiler("cuda") }}
       - cuda-version =${{ cuda_version }}
+      - cuda-driver-dev
       - ${{ stdlib("c") }}
     host:
       - rapids-logger =0.1
