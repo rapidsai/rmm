@@ -71,7 +71,6 @@ class cuda_async_memory_resource final : public device_memory_resource {
    * `cudaMemPoolCreateUsageHwDecompress`
    */
   enum class mempool_usage : unsigned short {
-    none          = 0x0,  ///< No specific usage requested.
     hw_decompress = 0x2,  ///< If set indicates that the memory can be used as a buffer for hardware
                           ///< accelerated decompression.
   };
@@ -104,15 +103,14 @@ class cuda_async_memory_resource final : public device_memory_resource {
 
     int driver_version{};
     RMM_CUDA_TRY(cudaDriverGetVersion(&driver_version));
-    constexpr auto min_hw_decompress_version{12080};
     // Construct explicit pool
     cudaMemPoolProps pool_props{};
     pool_props.allocType   = cudaMemAllocationTypePinned;
     pool_props.handleTypes = static_cast<cudaMemAllocationHandleType>(
       export_handle_type.value_or(allocation_handle_type::none));
-    pool_props.usage = static_cast<unsigned short>(driver_version >= min_hw_decompress_version
-                                                     ? mempool_usage::hw_decompress
-                                                     : mempool_usage::none);
+#if defined(CUDART_VERSION) && CUDART_VERSION >= 12080
+    pool_props.usage = static_cast<unsigned short>(mempool_usage::hw_decompress);
+#endif
     RMM_EXPECTS(
       rmm::detail::runtime_async_alloc::is_export_handle_type_supported(pool_props.handleTypes),
       "Requested IPC memory handle type not supported");
