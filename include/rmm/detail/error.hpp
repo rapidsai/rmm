@@ -24,6 +24,7 @@
 #include <exception>
 #include <iostream>
 #include <string>
+#include <type_traits>
 
 #define STRINGIFY_DETAIL(x) #x
 #define RMM_STRINGIFY(x)    STRINGIFY_DETAIL(x)
