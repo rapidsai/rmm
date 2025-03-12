@@ -21,6 +21,7 @@
 #include <cuda_runtime_api.h>
 
 #include <cassert>
+#include <exception>
 #include <iostream>
 #include <string>
 
