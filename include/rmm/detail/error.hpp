@@ -55,12 +55,13 @@
   GET_RMM_EXPECTS_MACRO(__VA_ARGS__, RMM_EXPECTS_3, RMM_EXPECTS_2) \
   (__VA_ARGS__)
 #define GET_RMM_EXPECTS_MACRO(_1, _2, _3, NAME, ...) NAME
-#define RMM_EXPECTS_3(_condition, _reason, _exception_type)                             \
-  (!!(_condition)) ? static_cast<void>(0)                                               \
-                   : throw _exception_type /*NOLINT(bugprone-macro-parentheses)*/       \
-  {                                                                                     \
-    std::string("RMM failure at: " __FILE__ ":" RMM_STRINGIFY(__LINE__) ": ") + _reason \
-  }
+#define RMM_EXPECTS_3(_condition, _reason, _exception_type)                    \
+  do {                                                                          \
+    static_assert(std::is_base_of_v<std::exception, _exception_type>);          \
+    (_condition) ? static_cast<void>(0)                                         \
+                 : throw _exception_type /*NOLINT(bugprone-macro-parentheses)*/ \
+      {"CUDF failure at: " __FILE__ ":" RMM_STRINGIFY(__LINE__) ": " _reason}; \
+  } while (0)
 #define RMM_EXPECTS_2(_condition, _reason) RMM_EXPECTS_3(_condition, _reason, rmm::logic_error)
 
 /**
