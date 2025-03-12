@@ -61,8 +61,8 @@
   do {                                                                                      \
     static_assert(std::is_base_of_v<std::exception, _exception_type>);                      \
     (_condition) ? static_cast<void>(0)                                                     \
-                 : throw _exception_type{ std::string{"RMM failure at: "} + __FILE__ +      \
-                                         ":" + RMM_STRINGIFY(__LINE__) + ": " + _reason };  \
+                 : throw _exception_type{std::string{"RMM failure at: "} + __FILE__ + ":" + \
+                                         RMM_STRINGIFY(__LINE__) + ": " + _reason};         \
   } while (0)
 #define RMM_EXPECTS_2(_condition, _reason) RMM_EXPECTS_3(_condition, _reason, rmm::logic_error)
 
@@ -82,9 +82,12 @@
   GET_RMM_FAIL_MACRO(__VA_ARGS__, RMM_FAIL_2, RMM_FAIL_1) \
   (__VA_ARGS__)
 #define GET_RMM_FAIL_MACRO(_1, _2, NAME, ...) NAME
-#define RMM_FAIL_2(_what, _exception_type)       \
-  /*NOLINTNEXTLINE(bugprone-macro-parentheses)*/ \
-  throw _exception_type{ std::string{"RMM failure at:"} + __FILE__ + ":" + RMM_STRINGIFY(__LINE__) + ": " + _what }
+#define RMM_FAIL_2(_what, _exception_type)                                                   \
+  /*NOLINTNEXTLINE(bugprone-macro-parentheses)*/                                             \
+  throw _exception_type                                                                      \
+  {                                                                                          \
+    std::string{"RMM failure at:"} + __FILE__ + ":" + RMM_STRINGIFY(__LINE__) + ": " + _what \
+  }
 #define RMM_FAIL_1(_what) RMM_FAIL_2(_what, rmm::logic_error)
 
 /**
