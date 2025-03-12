@@ -62,7 +62,7 @@
     static_assert(std::is_base_of_v<std::exception, _exception_type>);          \
     (_condition) ? static_cast<void>(0)                                         \
                  : throw _exception_type /*NOLINT(bugprone-macro-parentheses)*/ \
-      {"CUDF failure at: " __FILE__ ":" RMM_STRINGIFY(__LINE__) ": " _reason};  \
+      {"RMM failure at: " __FILE__ ":" RMM_STRINGIFY(__LINE__) ": " _reason};  \
   } while (0)
 #define RMM_EXPECTS_2(_condition, _reason) RMM_EXPECTS_3(_condition, _reason, rmm::logic_error)
 
