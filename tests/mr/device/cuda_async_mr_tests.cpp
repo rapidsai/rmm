@@ -17,7 +17,6 @@
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/device/cuda_async_memory_resource.hpp>
 
-#include <cuda.h>
 #include <cuda_runtime_api.h>
 
 #include <gtest/gtest.h>
