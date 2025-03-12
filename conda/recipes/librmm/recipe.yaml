@@ -56,6 +56,8 @@ cache:
       - ${{ stdlib("c") }}
     host:
       - rapids-logger =0.1
+      - if: cuda_major != "11"
+        then: cuda-driver-dev
 
 outputs:
   - package:
@@ -106,7 +108,8 @@ outputs:
         - ${{ stdlib("c") }}  # this is here to help with overlinking errors against libm.so.6 and friends
       host:
         - ${{ pin_subpackage("librmm", exact=True) }}
-        - cuda-driver-dev
+        - if: cuda_major != "11"
+          then: cuda-driver-dev
         - cuda-version =${{ cuda_version }}
         - if: cuda_major == "11"
           then: cudatoolkit
@@ -115,7 +118,6 @@ outputs:
         - ${{ pin_compatible("cuda-version", upper_bound="x", lower_bound="x") }}
         - ${{ pin_subpackage("librmm", exact=True) }}
         - rapids-logger =0.1
-        - cuda-compat-impl
         - if: cuda_major == "11"
           then: cudatoolkit
           else: cuda-cudart
