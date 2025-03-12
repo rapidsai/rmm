@@ -82,7 +82,7 @@
   GET_RMM_FAIL_MACRO(__VA_ARGS__, RMM_FAIL_2, RMM_FAIL_1) \
   (__VA_ARGS__)
 #define GET_RMM_FAIL_MACRO(_1, _2, NAME, ...) NAME
-#define RMM_FAIL_2(_what, _exception_type)      \
+#define RMM_FAIL_2(_what, _exception_type)       \
   /*NOLINTNEXTLINE(bugprone-macro-parentheses)*/ \
   throw _exception_type { "RMM failure at:" __FILE__ ":" RMM_STRINGIFY(__LINE__) ": " _what }
 #define RMM_FAIL_1(_what) RMM_FAIL_2(_what, rmm::logic_error)
