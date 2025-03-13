@@ -60,8 +60,8 @@
 #define RMM_EXPECTS_3(_condition, _reason, _exception_type)                                 \
   do {                                                                                      \
     static_assert(std::is_base_of_v<std::exception, _exception_type>);                      \
-  /*NOLINTNEXTLINE(bugprone-macro-parentheses)*/                                                \
-    (!!(_condition)) ? static_cast<void>(0)                                                     \
+  /*NOLINTNEXTLINE(bugprone-macro-parentheses)*/                                            \
+    (!!(_condition)) ? static_cast<void>(0)                                                 \
                  : throw _exception_type{std::string{"RMM failure at: "} + __FILE__ + ":" + \
                                          RMM_STRINGIFY(__LINE__) + ": " + _reason};         \
   } while (0)
