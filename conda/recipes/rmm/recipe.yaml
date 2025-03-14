@@ -29,6 +29,13 @@ build:
         export CXXFLAGS=$(echo $CXXFLAGS | sed -E 's@\-fdebug\-prefix\-map[^ ]*@@g')
         set +x
 
+        # Use relative paths for `__FILE__` by passing `-fmacro-prefix-map`
+        # https://gcc.gnu.org/onlinedocs/gcc-13.3.0/gcc/Preprocessor-Options.html#index-fmacro-prefix-map
+        set -x
+        export CFLAGS="${CFLAGS} -fmacro-prefix-map=$(pwd)/=''"
+        export CXXFLAGS="${CXXFLAGS} -fmacro-prefix-map=$(pwd)/=''"
+        set +x
+
       - ./build.sh -v clean rmm --cmake-args=\"-DCMAKE_INSTALL_LIBDIR=lib\"
     secrets:
       - AWS_ACCESS_KEY_ID
