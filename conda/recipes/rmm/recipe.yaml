@@ -21,6 +21,14 @@ build:
   string: cuda${{ cuda_major }}_py${{ py_buildstring }}_${{ date_string }}_${{ head_rev }}
   script:
     content:
+        # Remove `-fdebug-prefix-map` line from CFLAGS and CXXFLAGS so the
+        # incrementing version number in the compile line doesn't break the
+        # cache
+        set -x
+        export CFLAGS=$(echo $CFLAGS | sed -E 's@\-fdebug\-prefix\-map[^ ]*@@g')
+        export CXXFLAGS=$(echo $CXXFLAGS | sed -E 's@\-fdebug\-prefix\-map[^ ]*@@g')
+        set +x
+
       - ./build.sh -v clean rmm --cmake-args=\"-DCMAKE_INSTALL_LIBDIR=lib\"
     secrets:
       - AWS_ACCESS_KEY_ID
