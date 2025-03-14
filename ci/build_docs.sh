@@ -30,6 +30,7 @@ rapids-print-env
 RAPIDS_DOCS_DIR="$(mktemp -d)"
 export RAPIDS_DOCS_DIR
 
+
 rapids-logger "Build CPP docs"
 pushd doxygen
 doxygen Doxyfile
