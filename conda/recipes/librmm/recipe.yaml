@@ -177,6 +177,8 @@ outputs:
         by_name:
           - cuda-version
           - librmm
+          - if: cuda_major == "11"
+            then: cudatoolkit
     about:
       homepage: ${{ load_from_file("python/librmm/pyproject.toml").project.urls.Homepage }}
       license: ${{ load_from_file("python/librmm/pyproject.toml").project.license.text | replace(" ", "-") }}
