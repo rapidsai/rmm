@@ -29,7 +29,7 @@ from libcpp.optional cimport optional
 from libcpp.pair cimport pair
 
 from cuda.bindings cimport cyruntime
-from cuda.bindings import runtime
+from cuda.bindings import driver, runtime
 
 from rmm._cuda.gpu import CUDARuntimeError, getDevice, setDevice
 
@@ -225,10 +225,17 @@ cdef class CudaAsyncViewMemoryResource(DeviceMemoryResource):
         self,
         valid_pool_handle
     ):
-        cdef cyruntime.cudaMemPool_t c_memory_pool_handle = \
-            <cyruntime.cudaMemPool_t>valid_pool_handle
+        # Convert the valid_pool_handle to a cyruntime.cudaMemPool_t
+        cdef cyruntime.cudaMemPool_t c_valid_pool_handle
+        if isinstance(valid_pool_handle, (runtime.cudaMemPool_t, driver.CUmemoryPool)):
+            raw_pool_handle = int(valid_pool_handle)
+            c_valid_pool_handle = <cyruntime.cudaMemPool_t><uintptr_t>raw_pool_handle
+        else:
+            raw_pool_handle = int(runtime.cudaMemPool_t(valid_pool_handle))
+            c_valid_pool_handle = <cyruntime.cudaMemPool_t><uintptr_t>raw_pool_handle
+
         self.c_obj.reset(
-            new cuda_async_view_memory_resource(c_memory_pool_handle)
+            new cuda_async_view_memory_resource(c_valid_pool_handle)
         )
 
     def pool_handle(self):
