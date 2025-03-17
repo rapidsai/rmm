@@ -72,7 +72,8 @@ class cuda_async_view_memory_resource final : public device_memory_resource {
    */
   [[nodiscard]] cudaMemPool_t pool_handle() const noexcept { return cuda_pool_handle_; }
 
-  cuda_async_view_memory_resource() = default;
+  cuda_async_view_memory_resource()  = default;
+  ~cuda_async_view_memory_resource() = default;  ///< @default_destructor
   cuda_async_view_memory_resource(cuda_async_view_memory_resource const&) =
     default;  ///< @default_copy_constructor
   cuda_async_view_memory_resource(cuda_async_view_memory_resource&&) =
