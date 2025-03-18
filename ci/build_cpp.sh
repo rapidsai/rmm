@@ -3,8 +3,6 @@
 
 set -euo pipefail
 
-rapids-configure-conda-channels
-
 source rapids-configure-sccache
 source rapids-date-string
 
@@ -32,7 +30,6 @@ rapids-telemetry-record build.log rattler-build build \
     --recipe conda/recipes/librmm \
     --experimental \
     --no-build-id \
-    --channel-priority disabled \
     --output-dir "$RAPIDS_CONDA_BLD_OUTPUT_DIR" \
     "${RATTLER_CHANNELS[@]}"
 
