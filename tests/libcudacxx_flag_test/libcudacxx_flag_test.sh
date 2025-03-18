@@ -21,20 +21,19 @@ trap 'rm -f "${ERROR_FILE}"' EXIT
 set +e
 g++ -std=c++17 -I"${RMM_INCLUDE_DIR}" libcudacxx_flag_test.cpp -o libcudacxx_flag_test 2> "${ERROR_FILE}"
 set -e
+
 if $?; then
   echo "Test failed: Compilation succeeded when it should have failed"
   exit 1
-else
-  # Check if the error message contains the expected text
-  if grep -q "RMM requires LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE to be defined" "${ERROR_FILE}"; then
-    echo "Test passed: Compilation failed with the expected error message"
-    # Don't show the error message, to avoid confusing it with a real error in the CI logs.
-  else
-    echo "Test failed: Compilation failed but with an unexpected error message:"
-    cat "${ERROR_FILE}"
-    exit 1
-  fi
 fi
 
-echo "Test completed successfully"
+# Check if the error message contains the expected text
+if ! grep -q "RMM requires LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE to be defined" "${ERROR_FILE}"; then
+  echo "Test failed: Compilation failed but with an unexpected error message:"
+  cat "${ERROR_FILE}"
+  exit 1
+fi
+
+# Don't show the error message, to avoid confusing it with a real error in the CI logs.
+echo "Test passed: Compilation failed with the expected error message"
 exit 0
