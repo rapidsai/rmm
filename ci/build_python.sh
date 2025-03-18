@@ -36,7 +36,7 @@ rapids-telemetry-record build.log rattler-build build \
     --recipe conda/recipes/rmm \
     --experimental \
     --no-build-id \
-    --channel-priority disabled \
+    --channel-priority strict \
     --output-dir "$RAPIDS_CONDA_BLD_OUTPUT_DIR" \
     -c "${CPP_CHANNEL}" \
     "${RATTLER_CHANNELS[@]}"
