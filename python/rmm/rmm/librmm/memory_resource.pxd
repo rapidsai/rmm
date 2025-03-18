@@ -115,7 +115,7 @@ cdef extern from "rmm/mr/device/cuda_async_view_memory_resource.hpp" \
 
     cdef cppclass cuda_async_view_memory_resource(device_memory_resource):
         cuda_async_view_memory_resource(
-            cudaMemPool_t valid_pool_handle) except +
+            cudaMemPool_t pool_handle) except +
         cudaMemPool_t pool_handle() const
 
 # TODO: when we adopt Cython 3.0 use enum class

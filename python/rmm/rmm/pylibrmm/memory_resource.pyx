@@ -215,27 +215,28 @@ cdef class CudaAsyncViewMemoryResource(DeviceMemoryResource):
     applications that already use a CUDA memory pool, or customizing the flags
     used by the memory pool.
 
+    The memory pool passed in must not be destroyed during the lifetime of this
+    memory resource.
+
     Parameters
     ----------
-    valid_pool_handle : cudaMemPool_t
+    pool_handle : cudaMemPool_t or CUmemoryPool
         Handle to a CUDA memory pool which will be used to serve allocation
         requests.
     """
     def __cinit__(
         self,
-        valid_pool_handle
+        pool_handle
     ):
-        # Convert the valid_pool_handle to a cyruntime.cudaMemPool_t
-        cdef cyruntime.cudaMemPool_t c_valid_pool_handle
-        if isinstance(valid_pool_handle, (runtime.cudaMemPool_t, driver.CUmemoryPool)):
-            raw_pool_handle = int(valid_pool_handle)
-            c_valid_pool_handle = <cyruntime.cudaMemPool_t><uintptr_t>raw_pool_handle
-        else:
-            raw_pool_handle = int(runtime.cudaMemPool_t(valid_pool_handle))
-            c_valid_pool_handle = <cyruntime.cudaMemPool_t><uintptr_t>raw_pool_handle
+        # Convert the pool_handle to a cyruntime.cudaMemPool_t
+        if not isinstance(pool_handle, (runtime.cudaMemPool_t, driver.CUmemoryPool)):
+            raise ValueError("pool_handle must be a cudaMemPool_t or CUmemoryPool")
+
+        cdef cyruntime.cudaMemPool_t c_pool_handle
+        c_pool_handle = <cyruntime.cudaMemPool_t><uintptr_t>int(pool_handle)
 
         self.c_obj.reset(
-            new cuda_async_view_memory_resource(c_valid_pool_handle)
+            new cuda_async_view_memory_resource(c_pool_handle)
         )
 
     def pool_handle(self):

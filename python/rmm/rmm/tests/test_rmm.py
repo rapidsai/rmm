@@ -1111,3 +1111,9 @@ def test_cuda_async_view_memory_resource_custom_pool(dtype, nelem, alloc):
     rmm.mr.set_current_device_resource(mr)
     assert rmm.mr.get_current_device_resource_type() is type(mr)
     array_tester(dtype, nelem, alloc)
+
+    # After the pool is destroyed, new allocations should raise
+    (err,) = runtime.cudaMemPoolDestroy(pool)
+    assert err == runtime.cudaError_t.cudaSuccess
+    with pytest.raises(MemoryError):
+        array_tester(dtype, nelem, alloc)
