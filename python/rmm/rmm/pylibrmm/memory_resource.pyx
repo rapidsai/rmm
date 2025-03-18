@@ -28,7 +28,8 @@ from libcpp.memory cimport make_unique, unique_ptr
 from libcpp.optional cimport optional
 from libcpp.pair cimport pair
 
-from cuda.bindings.runtime import cudaError_t
+from cuda.bindings cimport cyruntime
+from cuda.bindings import driver, runtime
 
 from rmm._cuda.gpu import CUDARuntimeError, getDevice, setDevice
 
@@ -54,6 +55,7 @@ from rmm.librmm.memory_resource cimport (
     binning_memory_resource,
     callback_memory_resource,
     cuda_async_memory_resource,
+    cuda_async_view_memory_resource,
     cuda_memory_resource,
     deallocate_callback_t,
     device_memory_resource,
@@ -201,6 +203,46 @@ cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
                 c_export_handle_type
             )
         )
+
+
+cdef class CudaAsyncViewMemoryResource(DeviceMemoryResource):
+    """
+    Memory resource that uses ``cudaMallocAsync``/``cudaFreeAsync`` for
+    allocation/deallocation with an existing CUDA memory pool.
+
+    This resource uses an existing CUDA memory pool handle (such as the default pool)
+    instead of creating a new one. This is useful for integrating with existing GPU
+    applications that already use a CUDA memory pool, or customizing the flags
+    used by the memory pool.
+
+    The memory pool passed in must not be destroyed during the lifetime of this
+    memory resource.
+
+    Parameters
+    ----------
+    pool_handle : cudaMemPool_t or CUmemoryPool
+        Handle to a CUDA memory pool which will be used to serve allocation
+        requests.
+    """
+    def __cinit__(
+        self,
+        pool_handle
+    ):
+        # Convert the pool_handle to a cyruntime.cudaMemPool_t
+        if not isinstance(pool_handle, (runtime.cudaMemPool_t, driver.CUmemoryPool)):
+            raise ValueError("pool_handle must be a cudaMemPool_t or CUmemoryPool")
+
+        cdef cyruntime.cudaMemPool_t c_pool_handle
+        c_pool_handle = <cyruntime.cudaMemPool_t><uintptr_t>int(pool_handle)
+
+        self.c_obj.reset(
+            new cuda_async_view_memory_resource(c_pool_handle)
+        )
+
+    def pool_handle(self):
+        cdef cuda_async_view_memory_resource* c_mr = \
+            <cuda_async_view_memory_resource*>self.c_obj.get()
+        return <uintptr_t>c_mr.pool_handle()
 
 
 cdef class ManagedMemoryResource(DeviceMemoryResource):
@@ -991,7 +1033,7 @@ cpdef void _initialize(
     try:
         original_device = getDevice()
     except CUDARuntimeError as e:
-        if e.status == cudaError_t.cudaErrorNoDevice:
+        if e.status == runtime.cudaError_t.cudaErrorNoDevice:
             warnings.warn(e.msg)
         else:
             raise e
