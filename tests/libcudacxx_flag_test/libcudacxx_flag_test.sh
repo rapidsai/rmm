@@ -18,7 +18,9 @@ ERROR_FILE=$(mktemp)
 trap 'rm -f "${ERROR_FILE}"' EXIT
 
 # Try to compile the file without defining LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
+set +e
 g++ -std=c++17 -I"${RMM_INCLUDE_DIR}" libcudacxx_flag_test.cpp -o libcudacxx_flag_test 2> "${ERROR_FILE}"
+set -e
 if $?; then
   echo "Test failed: Compilation succeeded when it should have failed"
   exit 1
