@@ -84,7 +84,7 @@ endfunction()
 # stream
 function(ConfigureTest TEST_NAME)
 
-  set(options OPTIONAL LINK_DRIVER)
+  set(options)
   set(one_value CUDART GPUS PERCENT)
   set(multi_value)
   cmake_parse_arguments(_RMM_TEST "${options}" "${one_value}" "${multi_value}" ${ARGN})
@@ -110,17 +110,12 @@ function(ConfigureTest TEST_NAME)
   # Test with legacy default stream.
   ConfigureTestInternal(${TEST_NAME} ${_RMM_TEST_UNPARSED_ARGUMENTS})
   target_link_libraries(${TEST_NAME} PRIVATE ${cudart_link_libs})
-  if(_RMM_TEST_LINK_DRIVER)
-    target_link_libraries(${TEST_NAME} PRIVATE CUDA::cuda_driver)
-  endif()
+
   # Test with per-thread default stream.
   string(REGEX REPLACE "_TEST$" "_PTDS_TEST" PTDS_TEST_NAME "${TEST_NAME}")
   ConfigureTestInternal("${PTDS_TEST_NAME}" ${_RMM_TEST_UNPARSED_ARGUMENTS})
   target_compile_definitions("${PTDS_TEST_NAME}" PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
   target_link_libraries(${PTDS_TEST_NAME} PRIVATE ${cudart_link_libs})
-  if(_RMM_TEST_LINK_DRIVER)
-    target_link_libraries(${PTDS_TEST_NAME} PRIVATE CUDA::cuda_driver)
-  endif()
 
   foreach(name ${TEST_NAME} ${PTDS_TEST_NAME} ${NS_TEST_NAME})
     rapids_test_add(
@@ -144,8 +139,6 @@ ConfigureTest(ADAPTOR_TEST mr/device/adaptor_tests.cpp)
 
 # pool mr tests
 ConfigureTest(POOL_MR_TEST mr/device/pool_mr_tests.cpp GPUS 1 PERCENT 100)
-
-ConfigureTest(HWDECOMPRESS_TEST mr/device/hwdecompress_tests.cpp LINK_DRIVER)
 
 # cuda_async mr tests
 ConfigureTest(CUDA_ASYNC_MR_STATIC_CUDART_TEST mr/device/cuda_async_mr_tests.cpp GPUS 1 PERCENT 60
