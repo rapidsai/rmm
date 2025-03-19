@@ -65,17 +65,6 @@ class cuda_async_memory_resource final : public device_memory_resource {
   };
 
   /**
-   * @brief Flags for specifying memory pool usage.
-   *
-   * @note These values are exact copies from the runtime API. The only value so far is
-   * `cudaMemPoolCreateUsageHwDecompress`
-   */
-  enum class mempool_usage : unsigned short {
-    hw_decompress = 0x2,  ///< If set indicates that the memory can be used as a buffer for hardware
-                          ///< accelerated decompression.
-  };
-
-  /**
    * @brief Constructs a cuda_async_memory_resource with the optionally specified initial pool size
    * and release threshold.
    *
@@ -101,16 +90,11 @@ class cuda_async_memory_resource final : public device_memory_resource {
     RMM_EXPECTS(rmm::detail::runtime_async_alloc::is_supported(),
                 "cudaMallocAsync not supported with this CUDA driver/runtime version");
 
-    int driver_version{};
-    RMM_CUDA_TRY(cudaDriverGetVersion(&driver_version));
     // Construct explicit pool
     cudaMemPoolProps pool_props{};
     pool_props.allocType   = cudaMemAllocationTypePinned;
     pool_props.handleTypes = static_cast<cudaMemAllocationHandleType>(
       export_handle_type.value_or(allocation_handle_type::none));
-#if defined(CUDART_VERSION) && CUDART_VERSION >= 12080
-    pool_props.usage = static_cast<unsigned short>(mempool_usage::hw_decompress);
-#endif
     RMM_EXPECTS(
       rmm::detail::runtime_async_alloc::is_export_handle_type_supported(pool_props.handleTypes),
       "Requested IPC memory handle type not supported");
@@ -123,6 +107,8 @@ class cuda_async_memory_resource final : public device_memory_resource {
     // CUDA drivers before 11.5 have known incompatibilities with the async allocator.
     // We'll disable `cudaMemPoolReuseAllowOpportunistic` if cuda driver < 11.5.
     // See https://github.com/NVIDIA/spark-rapids/issues/4710.
+    int driver_version{};
+    RMM_CUDA_TRY(cudaDriverGetVersion(&driver_version));
     constexpr auto min_async_version{11050};
     if (driver_version < min_async_version) {
       int disabled{0};
