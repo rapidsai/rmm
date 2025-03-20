@@ -17,10 +17,9 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/aligned.hpp>
+#include <rmm/detail/cuda_memory_resource.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/detail/nvtx/ranges.hpp>
-
-#include <cuda/memory_resource>
 
 #include <cstddef>
 

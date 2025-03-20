@@ -16,6 +16,7 @@
 
 #include "../../byte_literals.hpp"
 
+#include <rmm/detail/cuda_memory_resource.hpp>
 #include <rmm/error.hpp>
 #include <rmm/mr/device/aligned_resource_adaptor.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
@@ -29,8 +30,6 @@
 #include <rmm/mr/device/tracking_resource_adaptor.hpp>
 #include <rmm/mr/is_resource_adaptor.hpp>
 #include <rmm/resource_ref.hpp>
-
-#include <cuda/memory_resource>
 
 #include <gtest/gtest.h>
 
