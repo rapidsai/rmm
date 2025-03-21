@@ -4,7 +4,7 @@
 set -euo pipefail
 
 package_dir="python/librmm"
-wheel_dir=${RAPIDS_WHEEL_BLD_OUTPUT_DIR:-"dist"}
+wheel_dir=${RAPIDS_WHEEL_BLD_OUTPUT_DIR}
 
 source rapids-configure-sccache
 source rapids-date-string

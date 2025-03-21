@@ -6,7 +6,7 @@ set -euo pipefail
 package_name="rmm"
 package_dir="python/rmm"
 
-wheel_dir=${RAPIDS_WHEEL_BLD_OUTPUT_DIR:-"final_dist"}
+wheel_dir=${RAPIDS_WHEEL_BLD_OUTPUT_DIR}
 
 source rapids-configure-sccache
 source rapids-date-string
@@ -34,7 +34,6 @@ PIP_CONSTRAINT="${PWD}/build-constraints.txt" \
 
 rapids-telemetry-record sccache-stats.txt sccache --show-adv-stats
 
-mkdir -p final_dist
 EXCLUDE_ARGS=(
   --exclude "librapids_logger.so"
 )
