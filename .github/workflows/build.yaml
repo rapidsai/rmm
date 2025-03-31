@@ -89,6 +89,7 @@ jobs:
       sha: ${{ inputs.sha }}
       date: ${{ inputs.date }}
       script: ci/build_wheel_cpp.sh
+      package-type: cpp
   wheel-build-python:
     needs: [telemetry-setup, wheel-build-cpp]
     secrets: inherit
@@ -99,6 +100,7 @@ jobs:
       sha: ${{ inputs.sha }}
       date: ${{ inputs.date }}
       script: ci/build_wheel_python.sh
+      package-type: python
   wheel-publish-cpp:
     needs: wheel-build-cpp
     secrets: inherit
