@@ -113,7 +113,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
 #if defined(CUDART_VERSION) && CUDART_VERSION >= 12080
     // Enable hardware decompression if supported (requires CUDA 12.8 driver or higher)
     constexpr auto min_hw_decompress_driver_version{12080};
-    if (runtime_version >= min_hw_decompress_driver_version) {
+    if (driver_version >= min_hw_decompress_driver_version) {
       pool_props.usage = static_cast<unsigned short>(mempool_usage::hw_decompress);
     }
 #endif
