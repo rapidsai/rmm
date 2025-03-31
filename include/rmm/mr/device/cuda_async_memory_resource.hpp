@@ -106,12 +106,17 @@ class cuda_async_memory_resource final : public device_memory_resource {
     pool_props.allocType   = cudaMemAllocationTypePinned;
     pool_props.handleTypes = static_cast<cudaMemAllocationHandleType>(
       export_handle_type.value_or(allocation_handle_type::none));
+
+#if defined(CUDART_VERSION) && CUDART_VERSION >= 12080
+    // Enable hardware decompression on CUDA 12 if supported
     int runtime_version{};
     RMM_CUDA_TRY(cudaRuntimeGetVersion(&runtime_version));
     constexpr auto min_hw_decompress_runtime_version{12080};
     if (runtime_version >= min_hw_decompress_runtime_version) {
       pool_props.usage = static_cast<unsigned short>(mempool_usage::hw_decompress);
     }
+#endif
+
     RMM_EXPECTS(
       rmm::detail::runtime_async_alloc::is_export_handle_type_supported(pool_props.handleTypes),
       "Requested IPC memory handle type not supported");
