@@ -54,7 +54,7 @@ can be accessed via the `.size` and `.ptr` attributes respectively:
 >>> import rmm
 >>> import numpy as np
 >>> a = np.array([1, 2, 3], dtype='float64')
->>> buf = rmm.DeviceBuffer.to_device(a.view("int8"))  # to_device expects an 8-bit type or `bytes`
+>>> buf = rmm.DeviceBuffer.to_device(a.view("uint8"))  # to_device expects an unsigned 8-bit dtype
 >>> buf.size
 24
 ```
