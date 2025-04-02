@@ -2180,7 +2180,11 @@ INCLUDE_FILE_PATTERNS  =
 # Since we are excluding detail files in EXCLUDE_PATTERNS there
 # appears to be no way of getting doxygen to still parse that file and
 # make the definitions available via the preprocessor :(
-PREDEFINED             = RMM_EXPORT RMM_HIDDEN RMM_EXEC_CHECK_DISABLE RMM_NAMESPACE=rmm
+PREDEFINED             = RMM_EXEC_CHECK_DISABLE \
+                         RMM_EXPORT \
+                         RMM_HIDDEN \
+                         RMM_MIN_HWDECOMPRESS_CUDA_DRIVER_VERSION \
+                         RMM_NAMESPACE=rmm
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then this
 # tag can be used to specify a list of macro names that should be expanded. The
