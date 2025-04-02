@@ -107,16 +107,10 @@ class cuda_async_memory_resource final : public device_memory_resource {
     pool_props.handleTypes = static_cast<cudaMemAllocationHandleType>(
       export_handle_type.value_or(allocation_handle_type::none));
 
-    int driver_version{};
-    RMM_CUDA_TRY(cudaDriverGetVersion(&driver_version));
-
-#if defined(CUDART_VERSION) && CUDART_VERSION >= 12080
     // Enable hardware decompression if supported (requires CUDA 12.8 driver or higher)
-    constexpr auto min_hw_decompress_driver_version{12080};
-    if (driver_version >= min_hw_decompress_driver_version) {
+    if (rmm::detail::runtime_async_alloc::is_hwdecompress_supported()) {
       pool_props.usage = static_cast<unsigned short>(mempool_usage::hw_decompress);
     }
-#endif
 
     RMM_EXPECTS(
       rmm::detail::runtime_async_alloc::is_export_handle_type_supported(pool_props.handleTypes),
@@ -130,6 +124,8 @@ class cuda_async_memory_resource final : public device_memory_resource {
     // CUDA drivers before 11.5 have known incompatibilities with the async allocator.
     // We'll disable `cudaMemPoolReuseAllowOpportunistic` if cuda driver < 11.5.
     // See https://github.com/NVIDIA/spark-rapids/issues/4710.
+    int driver_version{};
+    RMM_CUDA_TRY(cudaDriverGetVersion(&driver_version));
     constexpr auto min_async_driver_version{11050};
     if (driver_version < min_async_driver_version) {
       int disabled{0};

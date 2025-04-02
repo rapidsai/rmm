@@ -70,6 +70,31 @@ struct runtime_async_alloc {
     }
     return (supported_handle_types_bitmask & handle_type) == handle_type;
   }
+
+  /**
+   * @brief Check whether `cudaMemPoolCreateUsageHwDecompress` is a supported
+   * pool property on the present CUDA driver version.
+   *
+   * Requires RMM to be built with a supported CUDA version 12.8+, otherwise
+   * this always returns false.
+   *
+   * @return true if supported
+   * @return false if unsupported
+   */
+  static bool is_hwdecompress_supported()
+  {
+    int driver_version{};
+    RMM_CUDA_TRY(cudaDriverGetVersion(&driver_version));
+
+#define RMM_MIN_HWDECOMPRESS_CUDA_DRIVER_VERSION 12080
+#if defined(CUDA_VERSION) && CUDA_VERSION >= RMM_MIN_HWDECOMPRESS_CUDA_DRIVER_VERSION
+    // Check if hardware decompression is supported (requires CUDA 12.8 driver or higher)
+    return driver_version >= RMM_MIN_HWDECOMPRESS_CUDA_DRIVER_VERSION;
+#else
+    return false;
+#endif
+#undef RMM_MIN_HWDECOMPRESS_CUDA_DRIVER_VERSION
+  }
 };
 
 }  // namespace detail

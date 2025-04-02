@@ -30,11 +30,7 @@ class HWDecompressTest : public ::testing::Test {
  protected:
   static void check_decompress_capable(void* ptr)
   {
-    int driver_version{};
-    RMM_CUDA_TRY(cudaDriverGetVersion(&driver_version));
-    auto const min_hw_decompress_version{12080};
-    if (driver_version >= min_hw_decompress_version) {
-#if defined(CUDA_VERSION) && CUDA_VERSION >= 12080
+    if (rmm::detail::runtime_async_alloc::is_hwdecompress_supported()) {
       bool is_capable{};
       auto err =
         cuPointerGetAttribute(static_cast<void*>(&is_capable),
@@ -43,7 +39,10 @@ class HWDecompressTest : public ::testing::Test {
                               reinterpret_cast<CUdeviceptr>(ptr));
       EXPECT_EQ(err, CUDA_SUCCESS);
       EXPECT_TRUE(is_capable);
-#endif
+    } else {
+      GTEST_SKIP() << "Skipping since cudaMemPoolCreateUsageHwDecompress "
+                   << "is not supported by the CUDA version used to build RMM "
+                   << "or by the current CUDA driver.";
     }
   }
 };
