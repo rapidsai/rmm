@@ -26,6 +26,11 @@ namespace RMM_NAMESPACE {
 namespace detail {
 
 /**
+ * @brief Minimum CUDA driver version for hardware decompression support
+ */
+#define RMM_MIN_HWDECOMPRESS_CUDA_DRIVER_VERSION 12080
+
+/**
  * @brief Determine at runtime if the CUDA driver supports the stream-ordered
  * memory allocator functions.
  *
@@ -86,14 +91,12 @@ struct runtime_async_alloc {
     int driver_version{};
     RMM_CUDA_TRY(cudaDriverGetVersion(&driver_version));
 
-#define RMM_MIN_HWDECOMPRESS_CUDA_DRIVER_VERSION 12080
 #if defined(CUDA_VERSION) && CUDA_VERSION >= RMM_MIN_HWDECOMPRESS_CUDA_DRIVER_VERSION
     // Check if hardware decompression is supported (requires CUDA 12.8 driver or higher)
     return driver_version >= RMM_MIN_HWDECOMPRESS_CUDA_DRIVER_VERSION;
 #else
     return false;
 #endif
-#undef RMM_MIN_HWDECOMPRESS_CUDA_DRIVER_VERSION
   }
 };
 

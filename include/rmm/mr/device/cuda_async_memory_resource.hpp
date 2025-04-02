@@ -107,14 +107,12 @@ class cuda_async_memory_resource final : public device_memory_resource {
     pool_props.handleTypes = static_cast<cudaMemAllocationHandleType>(
       export_handle_type.value_or(allocation_handle_type::none));
 
-#define RMM_MIN_HWDECOMPRESS_CUDA_DRIVER_VERSION 12080
 #if defined(CUDA_VERSION) && CUDA_VERSION >= RMM_MIN_HWDECOMPRESS_CUDA_DRIVER_VERSION
     // Enable hardware decompression if supported (requires CUDA 12.8 driver or higher)
     if (rmm::detail::runtime_async_alloc::is_hwdecompress_supported()) {
       pool_props.usage = static_cast<unsigned short>(mempool_usage::hw_decompress);
     }
 #endif
-#undef RMM_MIN_HWDECOMPRESS_CUDA_DRIVER_VERSION
 
     RMM_EXPECTS(
       rmm::detail::runtime_async_alloc::is_export_handle_type_supported(pool_props.handleTypes),
