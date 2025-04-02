@@ -15,6 +15,7 @@
  */
 
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/runtime_async_alloc.hpp>
 #include <rmm/mr/device/cuda_async_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 
@@ -30,6 +31,7 @@ class HWDecompressTest : public ::testing::Test {
  protected:
   static void check_decompress_capable(void* ptr)
   {
+#if defined(CUDA_VERSION) && CUDA_VERSION >= RMM_MIN_HWDECOMPRESS_CUDA_DRIVER_VERSION
     if (rmm::detail::runtime_async_alloc::is_hwdecompress_supported()) {
       bool is_capable{};
       auto err =
@@ -40,10 +42,13 @@ class HWDecompressTest : public ::testing::Test {
       EXPECT_EQ(err, CUDA_SUCCESS);
       EXPECT_TRUE(is_capable);
     } else {
-      GTEST_SKIP() << "Skipping since cudaMemPoolCreateUsageHwDecompress "
-                   << "is not supported by the CUDA version used to build RMM "
-                   << "or by the current CUDA driver.";
+      GTEST_SKIP() << "Skipping since hardware decompression is not supported "
+                   << "by the current CUDA driver.";
     }
+#else
+    GTEST_SKIP() << "Skipping since hardware decompression is not supported "
+                 << "by the CUDA version used to build RMM.";
+#endif
   }
 };
 
