@@ -36,7 +36,7 @@ repos:
       - id: fix-smartquotes
         exclude: |
           (?x)^(
-            ^benchmarks/utilities/cxxopts.hpp
+            ^cpp/benchmarks/utilities/cxxopts.hpp
           )
   - repo: https://github.com/codespell-project/codespell
     rev: v2.3.0
@@ -46,14 +46,14 @@ repos:
         args: ["--toml", "pyproject.toml"]
         exclude: |
           (?x)^(
-            pyproject.toml|
-            benchmarks/utilities/cxxopts.hpp
+            ^pyproject.toml|
+            ^cpp/benchmarks/utilities/cxxopts.hpp
           )
   - repo: local
     hooks:
       - id: cmake-format
         name: cmake-format
-        entry: ./scripts/run-cmake-format.sh cmake-format
+        entry: ./cpp/scripts/run-cmake-format.sh cmake-format
         language: python
         types: [cmake]
         # Note that pre-commit autoupdate does not update the versions
@@ -62,7 +62,7 @@ repos:
         - cmakelang==0.6.13
       - id: cmake-lint
         name: cmake-lint
-        entry: ./scripts/run-cmake-format.sh cmake-lint
+        entry: ./cpp/scripts/run-cmake-format.sh cmake-lint
         language: python
         types: [cmake]
         # Note that pre-commit autoupdate does not update the versions
@@ -71,7 +71,7 @@ repos:
         - cmakelang==0.6.13
       - id: doxygen-check
         name: doxygen-check
-        entry: ./scripts/doxygen.sh
+        entry: ./cpp/scripts/doxygen.sh
         types_or: [file]
         language: system
         pass_filenames: false

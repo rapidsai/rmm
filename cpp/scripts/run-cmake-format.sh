@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2024, NVIDIA CORPORATION.
+# Copyright (c) 2024-2025, NVIDIA CORPORATION.
 
 # This script is a wrapper for cmakelang that may be used with pre-commit. The
 # wrapping is necessary because RAPIDS libraries split configuration for
@@ -26,7 +26,7 @@
 
 status=0
 if [ -z ${RMM_ROOT:+PLACEHOLDER} ]; then
-    RMM_BUILD_DIR=$(git rev-parse --show-toplevel 2>&1)/build
+    RMM_BUILD_DIR=$(git rev-parse --show-toplevel 2>&1)/cpp/build
     status=$?
 else
     RMM_BUILD_DIR=${RMM_ROOT}
@@ -68,7 +68,7 @@ else
 fi
 
 if [[ $1 == "cmake-format" ]]; then
-  cmake-format -i --config-files cmake/config.json ${RAPIDS_CMAKE_FORMAT_FILE} -- ${@:2}
+  cmake-format -i --config-files cpp/cmake/config.json ${RAPIDS_CMAKE_FORMAT_FILE} -- ${@:2}
 elif [[ $1 == "cmake-lint" ]]; then
-  cmake-lint --config-files cmake/config.json ${RAPIDS_CMAKE_FORMAT_FILE} -- ${@:2}
+  cmake-lint --config-files cpp/cmake/config.json ${RAPIDS_CMAKE_FORMAT_FILE} -- ${@:2}
 fi
