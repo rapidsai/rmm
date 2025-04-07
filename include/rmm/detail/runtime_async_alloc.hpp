@@ -91,9 +91,9 @@ struct runtime_async_alloc {
 #if defined(CUDA_VERSION) && CUDA_VERSION >= RMM_MIN_HWDECOMPRESS_CUDA_DRIVER_VERSION
     // Check if hardware decompression is supported (requires CUDA 12.8 driver or higher)
     static bool is_supported = []() {
-        int driver_version{};
-        RMM_CUDA_TRY(cudaDriverGetVersion(&driver_version));
-        return driver_version >= RMM_MIN_HWDECOMPRESS_CUDA_DRIVER_VERSION;
+      int driver_version{};
+      RMM_CUDA_TRY(cudaDriverGetVersion(&driver_version));
+      return driver_version >= RMM_MIN_HWDECOMPRESS_CUDA_DRIVER_VERSION;
     }();
     return is_supported;
 #else
