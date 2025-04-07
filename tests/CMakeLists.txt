@@ -84,7 +84,7 @@ endfunction()
 # stream
 function(ConfigureTest TEST_NAME)
 
-  set(options OPTIONAL LINK_DRIVER)
+  set(options LINK_DRIVER)
   set(one_value CUDART GPUS PERCENT)
   set(multi_value)
   cmake_parse_arguments(_RMM_TEST "${options}" "${one_value}" "${multi_value}" ${ARGN})
