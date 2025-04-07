@@ -35,8 +35,8 @@ function(ConfigureBench BENCH_NAME)
                CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
                INSTALL_RPATH "\$ORIGIN/../../../lib")
   target_link_libraries(${BENCH_NAME} PRIVATE benchmark::benchmark pthread rmm)
-  target_compile_definitions(${BENCH_NAME}
-                             PUBLIC "RMM_LOG_ACTIVE_LEVEL=RMM_LOG_LEVEL_${RMM_LOGGING_LEVEL}")
+  target_compile_definitions(
+    ${BENCH_NAME} PUBLIC "RMM_LOG_ACTIVE_LEVEL=RAPIDS_LOGGER_LOG_LEVEL_${RMM_LOGGING_LEVEL}")
 
   if(PER_THREAD_DEFAULT_STREAM)
     target_compile_definitions(${BENCH_NAME} PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
