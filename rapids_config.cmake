@@ -12,10 +12,6 @@
 # the License.
 # =============================================================================
 
-# TODO: Revert this before merging
-set(rapids-cmake-repo pentschev/rapids-cmake)
-set(rapids-cmake-branch download-retry)
-
 # Enforce the minimum required CMake version for all users
 cmake_minimum_required(VERSION 3.30.4 FATAL_ERROR)
 
