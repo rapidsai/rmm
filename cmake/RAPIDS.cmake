@@ -20,7 +20,7 @@ cmake_minimum_required(VERSION 3.30.4 FATAL_ERROR)
 # Allow users to control which version is used
 if(NOT rapids-cmake-version)
   # Define a default version if the user doesn't set one
-  set(rapids-cmake-version 25.06)
+  set(rapids-cmake-version ${RAPIDS_VERSION_MAJOR_MINOR})
 endif()
 
 # Allow users to control which GitHub repo is fetched
