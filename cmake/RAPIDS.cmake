@@ -1,5 +1,5 @@
 # =============================================================================
-# Copyright (c) 2018-2025, NVIDIA CORPORATION.
+# Copyright (c) 2021-2025, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -11,28 +11,16 @@
 # or implied. See the License for the specific language governing permissions and limitations under
 # the License.
 # =============================================================================
-
+#
+# This is the preferred entry point for projects using rapids-cmake
+#
 # Enforce the minimum required CMake version for all users
 cmake_minimum_required(VERSION 3.30.4 FATAL_ERROR)
-
-file(READ "${CMAKE_CURRENT_LIST_DIR}/VERSION" _rapids_version)
-if(_rapids_version MATCHES [[^([0-9][0-9])\.([0-9][0-9])\.([0-9][0-9])]])
-  set(RAPIDS_VERSION_MAJOR "${CMAKE_MATCH_1}")
-  set(RAPIDS_VERSION_MINOR "${CMAKE_MATCH_2}")
-  set(RAPIDS_VERSION_PATCH "${CMAKE_MATCH_3}")
-  set(RAPIDS_VERSION_MAJOR_MINOR "${RAPIDS_VERSION_MAJOR}.${RAPIDS_VERSION_MINOR}")
-  set(RAPIDS_VERSION "${RAPIDS_VERSION_MAJOR}.${RAPIDS_VERSION_MINOR}.${RAPIDS_VERSION_PATCH}")
-else()
-  string(REPLACE "\n" "\n  " _rapids_version_formatted "  ${_rapids_version}")
-  message(
-    FATAL_ERROR
-      "Could not determine RAPIDS version. Contents of VERSION file:\n${_rapids_version_formatted}")
-endif()
 
 # Allow users to control which version is used
 if(NOT rapids-cmake-version)
   # Define a default version if the user doesn't set one
-  set(rapids-cmake-version ${RAPIDS_VERSION_MAJOR_MINOR})
+  set(rapids-cmake-version 25.06)
 endif()
 
 # Allow users to control which GitHub repo is fetched
