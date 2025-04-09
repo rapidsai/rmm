@@ -191,7 +191,7 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - &librmm_unsuffixed librmm==25.4.*,>=0.0.0a0
+          - &librmm_unsuffixed librmm==25.4.*
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -205,12 +205,12 @@ dependencies:
               cuda: "12.*"
               cuda_suffixed: "true"
             packages:
-              - librmm-cu12==25.4.*,>=0.0.0a0
+              - librmm-cu12==25.4.*
           - matrix:
               cuda: "11.*"
               cuda_suffixed: "true"
             packages:
-              - librmm-cu11==25.4.*,>=0.0.0a0
+              - librmm-cu11==25.4.*
           - matrix:
             packages:
               - *librmm_unsuffixed
@@ -218,7 +218,7 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - rmm==25.4.*,>=0.0.0a0
+          - rmm==25.4.*
   depends_on_librmm_tests:
     common:
       - output_types: conda
@@ -387,7 +387,7 @@ dependencies:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
-          - rapids-logger==0.1.*,>=0.0.0a0
+          - rapids-logger==0.1.*
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
