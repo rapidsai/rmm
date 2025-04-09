@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,11 @@
 #include <rmm/mr/device/tracking_resource_adaptor.hpp>
 
 #include <gtest/gtest.h>
+
+#include <cstddef>
+#include <memory>
+#include <string>
+#include <vector>
 
 namespace rmm::test {
 namespace {
@@ -202,7 +207,7 @@ TEST(TrackingTest, DeallocWrongBytes)
 TEST(TrackingTest, LogOutstandingAllocations)
 {
   std::ostringstream oss;
-  auto oss_sink  = std::make_shared<rmm::ostream_sink_mt>(oss);
+  auto oss_sink  = std::make_shared<rapids_logger::ostream_sink_mt>(oss);
   auto old_level = rmm::default_logger().level();
   rmm::default_logger().sinks().push_back(oss_sink);
 
@@ -212,7 +217,7 @@ TEST(TrackingTest, LogOutstandingAllocations)
     allocations.push_back(mr.allocate(ten_MiB));
   }
 
-  rmm::default_logger().set_level(rmm::level_enum::debug);
+  rmm::default_logger().set_level(rapids_logger::level_enum::debug);
   EXPECT_NO_THROW(mr.log_outstanding_allocations());
 
 #if RMM_LOG_ACTIVE_LEVEL <= RMM_LOG_LEVEL_DEBUG

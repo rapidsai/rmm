@@ -11,6 +11,7 @@ files:
       - checks
       - cuda
       - cuda_version
+      - depends_on_rapids_logger
       - develop
       - docs
       - py_version
@@ -23,11 +24,16 @@ files:
       - cuda_version
       - py_version
       - test_python
+      - depends_on_librmm
+      - depends_on_rmm
   test_cpp:
     output: none
     includes:
       - cuda_version
       - test_cpp
+      - depends_on_librmm
+      - depends_on_librmm_tests
+      - depends_on_librmm_example
   checks:
     output: none
     includes:
@@ -39,6 +45,8 @@ files:
       - cuda_version
       - docs
       - py_version
+      - depends_on_rmm
+      - depends_on_librmm
   py_cpp_build:
     output: pyproject
     pyproject_dir: python/librmm
@@ -54,6 +62,14 @@ files:
       key: requires
     includes:
       - build
+      - depends_on_rapids_logger
+  py_cpp_run:
+    output: pyproject
+    pyproject_dir: python/librmm
+    extras:
+      table: project
+    includes:
+      - depends_on_rapids_logger
   py_build:
     output: pyproject
     pyproject_dir: python/rmm
@@ -70,6 +86,7 @@ files:
     includes:
       - build
       - cython_build
+      - depends_on_librmm
   py_run:
     output: pyproject
     pyproject_dir: python/rmm
@@ -77,6 +94,7 @@ files:
       table: project
     includes:
       - run
+      - depends_on_librmm
   py_optional_test:
     output: pyproject
     pyproject_dir: python/rmm
@@ -105,14 +123,12 @@ dependencies:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
-          - &cmake_ver cmake>=3.26.4,!=3.30.0
+          - &cmake_ver cmake>=3.30.4
           - ninja
       - output_types: conda
         packages:
           - c-compiler
           - cxx-compiler
-          - fmt>=11.0.2,<12
-          - spdlog>=1.14.1,<1.15
     specific:
       - output_types: conda
         matrices:
@@ -171,21 +187,48 @@ dependencies:
           - matrix: # All CUDA 11 versions
             packages:
               - &cuda_python11 cuda-python>=11.8.5,<12.0a0
+  depends_on_librmm:
+    common:
+      - output_types: conda
+        packages:
+          - &librmm_unsuffixed librmm==25.4.*,>=0.0.0a0
+      - output_types: requirements
+        packages:
+          # pip recognizes the index as a global option for the requirements.txt file
+          # This index is needed for librmm-cu{11,12}.
+          - --extra-index-url=https://pypi.nvidia.com
+          - --extra-index-url=https://pypi.anaconda.org/rapidsai-wheels-nightly/simple
+    specific:
       - output_types: [requirements, pyproject]
         matrices:
-            - matrix:
-                cuda: "12.*"
-                cuda_suffixed: "true"
-              packages:
-                - librmm-cu12==25.2.*
-            - matrix:
-                cuda: "11.*"
-                cuda_suffixed: "true"
-              packages:
-                - librmm-cu11==25.2.*
-            - matrix: null
-              packages:
-                - librmm==25.2.*
+          - matrix:
+              cuda: "12.*"
+              cuda_suffixed: "true"
+            packages:
+              - librmm-cu12==25.4.*,>=0.0.0a0
+          - matrix:
+              cuda: "11.*"
+              cuda_suffixed: "true"
+            packages:
+              - librmm-cu11==25.4.*,>=0.0.0a0
+          - matrix:
+            packages:
+              - *librmm_unsuffixed
+  depends_on_rmm:
+    common:
+      - output_types: conda
+        packages:
+          - rmm==25.4.*,>=0.0.0a0
+  depends_on_librmm_tests:
+    common:
+      - output_types: conda
+        packages:
+          - librmm-tests==25.4.*,>=0.0.0a0
+  depends_on_librmm_example:
+    common:
+      - output_types: conda
+        packages:
+          - librmm-example==25.4.*,>=0.0.0a0
   checks:
     common:
       - output_types: [conda, requirements]
@@ -265,8 +308,10 @@ dependencies:
           - ipython
           - make
           - nbsphinx
+          - numba>=0.59.1,<0.61.0a0
           - numpydoc
-          - sphinx
+          # this pin can be reverted when https://github.com/spatialaudio/nbsphinx/issues/825 is resolved
+          - sphinx<8.2.0
           - sphinx_rtd_theme
           - sphinx-copybutton
           - sphinx-markdown-tables
@@ -338,3 +383,12 @@ dependencies:
               - numpy==1.23.*
           - matrix:
             packages:
+  depends_on_rapids_logger:
+    common:
+      - output_types: [conda, requirements, pyproject]
+        packages:
+          - rapids-logger==0.1.*,>=0.0.0a0
+      - output_types: requirements
+        packages:
+          # pip recognizes the index as a global option for the requirements.txt file
+          - --extra-index-url=https://pypi.anaconda.org/rapidsai-wheels-nightly/simple

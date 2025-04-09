@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, NVIDIA CORPORATION.
+ * Copyright (c) 2024-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,16 +17,15 @@
 
 #include <rmm/aligned.hpp>
 #include <rmm/detail/aligned.hpp>
+#include <rmm/detail/cuda_memory_resource.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/detail/nvtx/ranges.hpp>
 
-#include <cuda/memory_resource>
 #include <cuda/stream_ref>
 #include <cuda_runtime_api.h>
 
 #include <cstddef>
-#include <utility>
 
 namespace RMM_NAMESPACE {
 namespace mr {
@@ -73,7 +72,7 @@ class pinned_host_memory_resource {
 
     return rmm::detail::aligned_host_allocate(bytes, alignment, [](std::size_t size) {
       void* ptr{nullptr};
-      RMM_CUDA_TRY_ALLOC(cudaHostAlloc(&ptr, size, cudaHostAllocDefault));
+      RMM_CUDA_TRY_ALLOC(cudaHostAlloc(&ptr, size, cudaHostAllocDefault), size);
       return ptr;
     });
   }

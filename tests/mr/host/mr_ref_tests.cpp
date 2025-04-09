@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,11 @@
 #include "../../byte_literals.hpp"
 
 #include <rmm/aligned.hpp>
+#include <rmm/detail/cuda_memory_resource.hpp>
 #include <rmm/mr/host/new_delete_resource.hpp>
 #include <rmm/mr/host/pinned_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
-#include <cuda/memory_resource>
 #include <cuda_runtime_api.h>
 
 #include <gtest/gtest.h>
@@ -81,7 +81,7 @@ using resources = ::testing::Types<rmm::mr::new_delete_resource, rmm::mr::pinned
 static_assert(cuda::mr::resource_with<rmm::mr::new_delete_resource, cuda::mr::host_accessible>);
 static_assert(cuda::mr::resource_with<rmm::mr::pinned_memory_resource, cuda::mr::host_accessible>);
 
-TYPED_TEST_CASE(MRRefTest, resources);
+TYPED_TEST_SUITE(MRRefTest, resources);
 
 TYPED_TEST(MRRefTest, SelfEquality) { EXPECT_TRUE(this->ref == this->ref); }
 

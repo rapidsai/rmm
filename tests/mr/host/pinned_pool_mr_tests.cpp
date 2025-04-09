@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, NVIDIA CORPORATION.
+ * Copyright (c) 2024-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,7 @@
  * limitations under the License.
  */
 
-#include <rmm/cuda_stream_view.hpp>
-#include <rmm/detail/aligned.hpp>
-#include <rmm/detail/error.hpp>
-#include <rmm/device_buffer.hpp>
+#include <rmm/error.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
 #include <rmm/mr/host/pinned_memory_resource.hpp>
 
@@ -89,6 +86,17 @@ TEST(PinnedPoolTest, NonAlignedPoolSize)
       mr.allocate(1000);
     }(),
     rmm::logic_error);
+}
+
+TEST(PinnedPoolTest, ThrowOutOfMemory)
+{
+  rmm::mr::pinned_memory_resource pinned_mr{};
+  const auto initial{0};
+  const auto maximum{1024};
+  pool_mr mr{pinned_mr, initial, maximum};
+  mr.allocate(1024);
+
+  EXPECT_THROW(mr.allocate(1024), rmm::out_of_memory);
 }
 
 }  // namespace

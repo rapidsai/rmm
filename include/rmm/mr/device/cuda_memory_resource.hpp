@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,7 +59,7 @@ class cuda_memory_resource final : public device_memory_resource {
   void* do_allocate(std::size_t bytes, [[maybe_unused]] cuda_stream_view stream) override
   {
     void* ptr{nullptr};
-    RMM_CUDA_TRY_ALLOC(cudaMalloc(&ptr, bytes));
+    RMM_CUDA_TRY_ALLOC(cudaMalloc(&ptr, bytes), bytes);
     return ptr;
   }
 

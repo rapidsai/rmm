@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,15 @@
 #include <rmm/mr/device/logging_resource_adaptor.hpp>
 
 #include <benchmarks/utilities/log_parser.hpp>
-#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <cstdlib>
 #include <filesystem>
-#include <thread>
+#include <iostream>
+#include <memory>
+#include <string>
+#include <vector>
 
 namespace rmm::test {
 namespace {
@@ -152,8 +155,8 @@ TEST(Adaptor, MultiSinkConstructor)
   std::string filename2{temp_dir.generate_path("test_multi_2.txt")};
   rmm::mr::cuda_memory_resource upstream;
 
-  auto file_sink1 = std::make_shared<basic_file_sink_mt>(filename1, true);
-  auto file_sink2 = std::make_shared<basic_file_sink_mt>(filename2, true);
+  auto file_sink1 = std::make_shared<rapids_logger::basic_file_sink_mt>(filename1, true);
+  auto file_sink2 = std::make_shared<rapids_logger::basic_file_sink_mt>(filename2, true);
 
   rmm::mr::logging_resource_adaptor<rmm::mr::cuda_memory_resource> log_mr{&upstream,
                                                                           {file_sink1, file_sink2}};

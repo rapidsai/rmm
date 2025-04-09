@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2021-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,12 @@
 #include <rmm/aligned.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
+#include <rmm/detail/format.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
+#include <atomic>
 #include <cstddef>
 
 namespace RMM_NAMESPACE {
@@ -149,7 +151,9 @@ class limiting_resource_adaptor final : public device_memory_resource {
     }
 
     allocated_bytes_ -= proposed_size;
-    RMM_FAIL("Exceeded memory limit", rmm::out_of_memory);
+    auto const msg = std::string("Exceeded memory limit (failed to allocate ") +
+                     rmm::detail::format_bytes(bytes) + ")";
+    RMM_FAIL(msg.c_str(), rmm::out_of_memory);
   }
 
   /**

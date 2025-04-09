@@ -24,10 +24,9 @@
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
-#include <cuda/memory_resource>
-
 #include <cstddef>
-#include <vector>
+#include <type_traits>
+#include <utility>
 
 namespace RMM_NAMESPACE {
 /**
@@ -75,7 +74,7 @@ namespace RMM_NAMESPACE {
  */
 template <typename T>
 class device_uvector {
-  static_assert(std::is_trivially_copyable<T>::value,
+  static_assert(std::is_trivially_copyable_v<T>,
                 "device_uvector only supports types that are trivially copyable.");
 
  public:
@@ -219,13 +218,13 @@ class device_uvector {
     RMM_EXPECTS(
       element_index < size(), "Attempt to access out of bounds element.", rmm::out_of_range);
 
-    if constexpr (std::is_same<value_type, bool>::value) {
+    if constexpr (std::is_same_v<value_type, bool>) {
       RMM_CUDA_TRY(
         cudaMemsetAsync(element_ptr(element_index), value, sizeof(value), stream.value()));
       return;
     }
 
-    if constexpr (std::is_fundamental<value_type>::value) {
+    if constexpr (std::is_fundamental_v<value_type>) {
       if (value == value_type{0}) {
         set_element_to_zero_async(element_index, stream);
         return;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,19 +33,12 @@
 #include <cuda_runtime_api.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
-#include <thrust/optional.h>
 
 #include <algorithm>
 #include <cstddef>
-#include <iostream>
-#include <map>
 #include <mutex>
-#include <numeric>
 #include <optional>
 #include <set>
-#include <thread>
-#include <unordered_map>
-#include <vector>
 
 namespace RMM_NAMESPACE {
 namespace mr {
@@ -249,8 +242,8 @@ class pool_memory_resource final
    * Attempts to allocate `try_size` bytes from upstream. If it fails, it iteratively reduces the
    * attempted size by half until `min_size`, returning the allocated block once it succeeds.
    *
-   * @throws rmm::bad_alloc if `min_size` bytes cannot be allocated from upstream or maximum pool
-   * size is exceeded.
+   * @throws rmm::out_of_memory if `min_size` bytes cannot be allocated from upstream or maximum
+   * pool size is exceeded.
    *
    * @param try_size The initial requested size to try allocating.
    * @param min_size The minimum requested size to try allocating.
@@ -259,21 +252,34 @@ class pool_memory_resource final
    */
   block_type try_to_expand(std::size_t try_size, std::size_t min_size, cuda_stream_view stream)
   {
+    auto report_error = [&](const char* reason) {
+      RMM_LOG_ERROR("[A][Stream %s][Upstream %zuB][FAILURE maximum pool size exceeded: %s]",
+                    rmm::detail::format_stream(stream),
+                    min_size,
+                    reason);
+      auto const msg = std::string("Maximum pool size exceeded (failed to allocate ") +
+                       rmm::detail::format_bytes(min_size) + std::string("): ") + reason;
+      RMM_FAIL(msg.c_str(), rmm::out_of_memory);
+    };
+
     while (try_size >= min_size) {
-      auto block = block_from_upstream(try_size, stream);
-      if (block.has_value()) {
-        current_pool_size_ += block.value().size();
-        return block.value();
-      }
-      if (try_size == min_size) {
-        break;  // only try `size` once
+      try {
+        auto block = block_from_upstream(try_size, stream);
+        current_pool_size_ += block.size();
+        return block;
+      } catch (std::exception const& e) {
+        if (try_size == min_size) { report_error(e.what()); }
       }
       try_size = std::max(min_size, try_size / 2);
     }
-    RMM_LOG_ERROR("[A][Stream %s][Upstream %zuB][FAILURE maximum pool size exceeded]",
-                  rmm::detail::format_stream(stream),
-                  min_size);
-    RMM_FAIL("Maximum pool size exceeded", rmm::out_of_memory);
+
+    auto const max_size = maximum_pool_size_.value_or(std::numeric_limits<std::size_t>::max());
+    auto const msg      = std::string("Not enough room to grow, current/max/try size = ") +
+                     rmm::detail::format_bytes(pool_size()) + ", " +
+                     rmm::detail::format_bytes(max_size) + ", " +
+                     rmm::detail::format_bytes(min_size);
+    report_error(msg.c_str());
+    return {};
   }
 
   /**
@@ -314,6 +320,7 @@ class pool_memory_resource final
     // limit each time. If it is not set, grow exponentially, e.g. by doubling the pool size each
     // time. Upon failure, attempt to back off exponentially, e.g. by half the attempted size,
     // until either success or the attempt is less than the requested size.
+
     return try_to_expand(size_to_grow(size), size, stream);
   }
 
@@ -346,21 +353,17 @@ class pool_memory_resource final
    *
    * @param size The size in bytes to allocate from the upstream resource
    * @param stream The stream on which the memory is to be used.
+   * @throws if call to allocate_async() throws
    * @return block_type The allocated block
    */
-  std::optional<block_type> block_from_upstream(std::size_t size, cuda_stream_view stream)
+  block_type block_from_upstream(std::size_t size, cuda_stream_view stream)
   {
     RMM_LOG_DEBUG("[A][Stream %s][Upstream %zuB]", rmm::detail::format_stream(stream), size);
 
     if (size == 0) { return {}; }
 
-    try {
-      void* ptr = get_upstream_resource().allocate_async(size, stream);
-      return std::optional<block_type>{
-        *upstream_blocks_.emplace(static_cast<char*>(ptr), size, true).first};
-    } catch (std::exception const& e) {
-      return std::nullopt;
-    }
+    void* ptr = get_upstream_resource().allocate_async(size, stream);
+    return *upstream_blocks_.emplace(static_cast<char*>(ptr), size, true).first;
   }
 
   /**

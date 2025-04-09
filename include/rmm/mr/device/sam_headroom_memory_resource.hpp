@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, NVIDIA CORPORATION.
+ * Copyright (c) 2024-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,9 @@
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/system_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
+
+#include <algorithm>
+#include <cstddef>
 
 namespace RMM_NAMESPACE {
 namespace mr {

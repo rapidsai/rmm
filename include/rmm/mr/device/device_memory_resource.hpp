@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,11 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/aligned.hpp>
+#include <rmm/detail/cuda_memory_resource.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/detail/nvtx/ranges.hpp>
 
-#include <cuda/memory_resource>
-
 #include <cstddef>
-#include <utility>
 
 namespace RMM_NAMESPACE {
 namespace mr {
@@ -34,7 +32,7 @@ namespace mr {
  */
 
 /**
- * @brief Base class for all libcudf device memory allocation.
+ * @brief Base class for all librmm device memory allocation.
  *
  * This class serves as the interface that all custom device memory
  * implementations must satisfy.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2021-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 
 #include "../../byte_literals.hpp"
 
-#include <rmm/cuda_stream_view.hpp>
-#include <rmm/detail/error.hpp>
+#include <rmm/detail/cuda_memory_resource.hpp>
+#include <rmm/error.hpp>
 #include <rmm/mr/device/aligned_resource_adaptor.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
@@ -31,11 +31,10 @@
 #include <rmm/mr/is_resource_adaptor.hpp>
 #include <rmm/resource_ref.hpp>
 
-#include <cuda/memory_resource>
-
 #include <gtest/gtest.h>
 
 #include <cstddef>
+#include <memory>
 #include <type_traits>
 
 using cuda_mr = rmm::mr::cuda_memory_resource;
@@ -110,7 +109,7 @@ struct AdaptorTest : public ::testing::Test {
   }
 };
 
-TYPED_TEST_CASE(AdaptorTest, adaptors);
+TYPED_TEST_SUITE(AdaptorTest, adaptors);
 
 TYPED_TEST(AdaptorTest, NullUpstream)
 {

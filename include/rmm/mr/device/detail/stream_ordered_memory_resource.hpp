@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,10 +25,14 @@
 
 #include <cuda_runtime_api.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <map>
 #include <mutex>
 #include <unordered_map>
+#ifdef RMM_DEBUG_PRINT
+#include <iostream>
+#endif
 
 namespace RMM_NAMESPACE {
 namespace mr::detail {
@@ -210,7 +214,8 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
 
     size = rmm::align_up(size, rmm::CUDA_ALLOCATION_ALIGNMENT);
     RMM_EXPECTS(size <= this->underlying().get_maximum_allocation_size(),
-                "Maximum allocation size exceeded",
+                std::string("Maximum allocation size exceeded (failed to allocate ") +
+                  rmm::detail::format_bytes(size) + ")",
                 rmm::out_of_memory);
     auto const block = this->underlying().get_block(size, stream_event);
 

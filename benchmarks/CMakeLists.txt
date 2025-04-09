@@ -1,5 +1,5 @@
 # =============================================================================
-# Copyright (c) 2018-2024, NVIDIA CORPORATION.
+# Copyright (c) 2018-2025, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -45,8 +45,6 @@ function(ConfigureBench BENCH_NAME)
   target_compile_options(${BENCH_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Wall -Werror
                                               -Wno-unknown-pragmas>)
 
-  target_link_libraries(${BENCH_NAME} PRIVATE rmm_bench_logger)
-
   if(DISABLE_DEPRECATION_WARNING)
     target_compile_options(
       ${BENCH_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-Wno-deprecated-declarations>)
@@ -60,10 +58,6 @@ function(ConfigureBench BENCH_NAME)
     DESTINATION bin/benchmarks/librmm
     EXCLUDE_FROM_ALL)
 endfunction(ConfigureBench)
-
-# Create an object library for the logger so that we don't have to recompile it.
-add_library(rmm_bench_logger OBJECT)
-target_link_libraries(rmm_bench_logger PRIVATE rmm_logger_impl)
 
 # random allocations benchmark
 ConfigureBench(RANDOM_ALLOCATIONS_BENCH random_allocations/random_allocations.cpp)

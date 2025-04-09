@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, NVIDIA CORPORATION.
+ * Copyright (c) 2024-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,11 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
+#include <rmm/detail/format.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+
+#include <cstddef>
+#include <string>
 
 namespace RMM_NAMESPACE {
 namespace mr {
@@ -100,7 +104,9 @@ class system_memory_resource final : public device_memory_resource {
       return rmm::detail::aligned_host_allocate(
         bytes, CUDA_ALLOCATION_ALIGNMENT, [](std::size_t size) { return ::operator new(size); });
     } catch (std::bad_alloc const& e) {
-      RMM_FAIL("Failed to allocate memory: " + std::string{e.what()}, rmm::out_of_memory);
+      auto const msg = std::string("Failed to allocate ") + rmm::detail::format_bytes(bytes) +
+                       std::string("of memory: ") + e.what();
+      RMM_FAIL(msg.c_str(), rmm::out_of_memory);
     }
   }
 

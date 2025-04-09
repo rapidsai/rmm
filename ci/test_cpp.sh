@@ -8,13 +8,17 @@ cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")"/../
 
 . /opt/conda/etc/profile.d/conda.sh
 
-RAPIDS_VERSION="$(rapids-version)"
+CPP_CHANNEL=$(rapids-download-conda-from-s3 cpp)
+RAPIDS_TESTS_DIR=${RAPIDS_TESTS_DIR:-"${PWD}/test-results"}/
+mkdir -p "${RAPIDS_TESTS_DIR}"
 
 rapids-logger "Generate C++ testing dependencies"
 rapids-dependency-file-generator \
   --output conda \
   --file-key test_cpp \
-  --matrix "cuda=${RAPIDS_CUDA_VERSION%.*};arch=$(arch)" | tee env.yaml
+  --matrix "cuda=${RAPIDS_CUDA_VERSION%.*};arch=$(arch)" \
+  --prepend-channel "${CPP_CHANNEL}" \
+  | tee env.yaml
 
 rapids-mamba-retry env create --yes -f env.yaml -n test
 
@@ -23,16 +27,7 @@ set +u
 conda activate test
 set -u
 
-CPP_CHANNEL=$(rapids-download-conda-from-s3 cpp)
-RAPIDS_TESTS_DIR=${RAPIDS_TESTS_DIR:-"${PWD}/test-results"}/
-mkdir -p "${RAPIDS_TESTS_DIR}"
-
 rapids-print-env
-
-rapids-mamba-retry install \
-  --channel "${CPP_CHANNEL}" \
-  "librmm=${RAPIDS_VERSION}" \
-  "librmm-tests=${RAPIDS_VERSION}"
 
 rapids-logger "Check GPU usage"
 nvidia-smi
@@ -42,6 +37,19 @@ rapids-logger "Run gtests"
 
 export GTEST_OUTPUT=xml:${RAPIDS_TESTS_DIR}/
 ./ci/run_ctests.sh -j20 && EXITCODE=$? || EXITCODE=$?;
+
+# Run all examples from librmm-example package
+for example in ${CONDA_PREFIX}/bin/examples/librmm/*; do
+    if [ -x "$example" ]; then
+        rapids-logger "Running example: $(basename "$example")"
+        "$example" && EXAMPLE_EXITCODE=$? || EXAMPLE_EXITCODE=$?;
+        if [ $EXAMPLE_EXITCODE -ne 0 ]; then
+            rapids-logger "Example $(basename "$example") failed with exit code: $EXAMPLE_EXITCODE"
+            EXITCODE=$EXAMPLE_EXITCODE
+            break
+        fi
+    fi
+done
 
 rapids-logger "Test script exiting with value: $EXITCODE"
 exit "${EXITCODE}"

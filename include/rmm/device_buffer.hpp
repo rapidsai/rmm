@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,12 +22,10 @@
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
-#include <cuda/memory_resource>
 #include <cuda_runtime_api.h>
 
 #include <cassert>
 #include <cstddef>
-#include <stdexcept>
 #include <utility>
 
 namespace RMM_NAMESPACE {
@@ -93,8 +91,7 @@ class device_buffer {
    */
   // Note: we cannot use `device_buffer() = default;` because nvcc implicitly adds
   // `__host__ __device__` specifiers to the defaulted constructor when it is called within the
-  // context of both host and device functions. Specifically, the `cudf::type_dispatcher` is a host-
-  // device function. This causes warnings/errors because this ctor invokes host-only functions.
+  // context of both host and device functions.
   device_buffer() : _mr{rmm::mr::get_current_device_resource_ref()} {}
 
   /**

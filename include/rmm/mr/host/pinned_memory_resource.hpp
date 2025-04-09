@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@
 #include <rmm/mr/host/host_memory_resource.hpp>
 
 #include <cstddef>
-#include <utility>
 
 namespace RMM_NAMESPACE {
 namespace mr {
@@ -123,8 +122,7 @@ class pinned_memory_resource final : public host_memory_resource {
 
     return rmm::detail::aligned_host_allocate(bytes, alignment, [](std::size_t size) {
       void* ptr{nullptr};
-      auto status = cudaMallocHost(&ptr, size);
-      if (cudaSuccess != status) { throw std::bad_alloc{}; }
+      RMM_CUDA_TRY_ALLOC(cudaMallocHost(&ptr, size), size);
       return ptr;
     });
   }

@@ -12,7 +12,7 @@
 # the License.
 # =============================================================================
 
-cmake_minimum_required(VERSION 3.26.4 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.30.4 FATAL_ERROR)
 
 include(rapids_config.cmake)
 
@@ -74,8 +74,8 @@ rapids_find_package(
 rapids_cpm_init()
 
 include(${rapids-cmake-dir}/cpm/rapids_logger.cmake)
-rapids_cpm_rapids_logger()
-rapids_make_logger(rmm EXPORT_SET rmm-exports)
+rapids_cpm_rapids_logger(BUILD_EXPORT_SET rmm-exports INSTALL_EXPORT_SET rmm-exports)
+create_logger_macros(RMM "rmm::default_logger()" include/rmm)
 
 include(cmake/thirdparty/get_cccl.cmake)
 include(cmake/thirdparty/get_nvtx.cmake)
@@ -86,8 +86,10 @@ include(cmake/thirdparty/get_nvtx.cmake)
 add_library(rmm INTERFACE)
 add_library(rmm::rmm ALIAS rmm)
 
-target_include_directories(rmm INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-                                         "$<INSTALL_INTERFACE:include>")
+target_include_directories(
+  rmm
+  INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+            "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>" "$<INSTALL_INTERFACE:include>")
 
 if(CUDA_STATIC_RUNTIME)
   message(STATUS "RMM: Enabling static linking of cudart")
@@ -96,10 +98,10 @@ else()
   target_link_libraries(rmm INTERFACE CUDA::cudart)
 endif()
 
-target_link_libraries(rmm INTERFACE rmm_logger)
 target_link_libraries(rmm INTERFACE CCCL::CCCL)
 target_link_libraries(rmm INTERFACE dl)
 target_link_libraries(rmm INTERFACE nvtx3::nvtx3-cpp)
+target_link_libraries(rmm INTERFACE rapids_logger::rapids_logger)
 target_compile_features(rmm INTERFACE cxx_std_17 $<BUILD_INTERFACE:cuda_std_17>)
 target_compile_definitions(rmm INTERFACE LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
@@ -138,7 +140,7 @@ endif()
 
 if(BUILD_BENCHMARKS AND CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
   include(${rapids-cmake-dir}/cpm/gbench.cmake)
-  rapids_cpm_gbench()
+  rapids_cpm_gbench(BUILD_STATIC)
   add_subdirectory(benchmarks)
 endif()
 
