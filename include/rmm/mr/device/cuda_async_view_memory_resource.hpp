@@ -47,13 +47,13 @@ class cuda_async_view_memory_resource final : public device_memory_resource {
    *
    * @throws rmm::logic_error if the CUDA version does not support `cudaMallocAsync`
    *
-   * @param valid_pool_handle Handle to a CUDA memory pool which will be used to
+   * @param pool_handle Handle to a CUDA memory pool which will be used to
    * serve allocation requests.
    */
-  cuda_async_view_memory_resource(cudaMemPool_t valid_pool_handle)
-    : cuda_pool_handle_{[valid_pool_handle]() {
-        RMM_EXPECTS(nullptr != valid_pool_handle, "Unexpected null pool handle.");
-        return valid_pool_handle;
+  cuda_async_view_memory_resource(cudaMemPool_t pool_handle)
+    : cuda_pool_handle_{[pool_handle]() {
+        RMM_EXPECTS(nullptr != pool_handle, "Unexpected null pool handle.");
+        return pool_handle;
       }()}
   {
     // Check if cudaMallocAsync Memory pool supported
@@ -72,7 +72,8 @@ class cuda_async_view_memory_resource final : public device_memory_resource {
    */
   [[nodiscard]] cudaMemPool_t pool_handle() const noexcept { return cuda_pool_handle_; }
 
-  cuda_async_view_memory_resource() = default;
+  cuda_async_view_memory_resource()  = default;
+  ~cuda_async_view_memory_resource() = default;
   cuda_async_view_memory_resource(cuda_async_view_memory_resource const&) =
     default;  ///< @default_copy_constructor
   cuda_async_view_memory_resource(cuda_async_view_memory_resource&&) =

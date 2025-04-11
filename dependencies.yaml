@@ -218,17 +218,17 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - rmm=25.4.*,>=0.0.0a0
+          - rmm==25.4.*,>=0.0.0a0
   depends_on_librmm_tests:
     common:
       - output_types: conda
         packages:
-          - librmm-tests=25.4.*,>=0.0.0a0
+          - librmm-tests==25.4.*,>=0.0.0a0
   depends_on_librmm_example:
     common:
       - output_types: conda
         packages:
-          - librmm-example=25.4.*,>=0.0.0a0
+          - librmm-example==25.4.*,>=0.0.0a0
   checks:
     common:
       - output_types: [conda, requirements]
