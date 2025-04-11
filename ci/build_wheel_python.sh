@@ -6,6 +6,8 @@ set -euo pipefail
 package_name="rmm"
 package_dir="python/rmm"
 
+wheel_dir=${RAPIDS_WHEEL_BLD_OUTPUT_DIR}
+
 source rapids-configure-sccache
 source rapids-date-string
 
@@ -32,16 +34,16 @@ PIP_CONSTRAINT="${PWD}/build-constraints.txt" \
 
 rapids-telemetry-record sccache-stats.txt sccache --show-adv-stats
 
-mkdir -p final_dist
 EXCLUDE_ARGS=(
   --exclude "librapids_logger.so"
 )
-python -m auditwheel repair "${EXCLUDE_ARGS[@]}" -w final_dist dist/*
+python -m auditwheel repair "${EXCLUDE_ARGS[@]}" -w "${wheel_dir}" dist/*
 
-../../ci/validate_wheel.sh final_dist
+../../ci/validate_wheel.sh "${wheel_dir}"
 
-RAPIDS_PY_WHEEL_NAME="${package_name}_${RAPIDS_PY_CUDA_SUFFIX}" rapids-upload-wheels-to-s3 python final_dist
+RAPIDS_PY_WHEEL_NAME="${package_name}_${RAPIDS_PY_CUDA_SUFFIX}" rapids-upload-wheels-to-s3 python "${wheel_dir}"
 
+absolute_wheel_dir=$(realpath "${wheel_dir}")
 # switch back to the root of the repo and check symbol visibility
 popd
-ci/check_symbols.sh "$(echo ${package_dir}/final_dist/rmm_*.whl)"
+ci/check_symbols.sh "$(echo ${absolute_wheel_dir}/rmm_*.whl)"
