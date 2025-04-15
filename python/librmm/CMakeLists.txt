@@ -35,4 +35,4 @@ set(BUILD_TESTS OFF)
 set(BUILD_BENCHMARKS OFF)
 set(CUDA_STATIC_RUNTIME ON)
 
-add_subdirectory(../.. rmm-cpp)
+add_subdirectory(../../cpp rmm-cpp)

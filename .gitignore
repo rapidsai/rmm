@@ -95,8 +95,8 @@ thirdparty/googletest/
 *.iws
 
 ## Doxygen
-doxygen/html
-doxygen/xml
+cpp/doxygen/html
+cpp/doxygen/xml
 
 #Java
 target
