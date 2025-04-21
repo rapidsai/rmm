@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2023, NVIDIA CORPORATION.
+# Copyright (c) 2023-2025, NVIDIA CORPORATION.
 ##############################
 # RMM doxygen warnings check #
 ##############################
@@ -27,7 +27,7 @@ export RAPIDS_VERSION_MAJOR_MINOR="$(sed -E -e 's/^([0-9]{2})\.([0-9]{2})\.([0-9
 # Run doxygen, ignore missing tag files error
 TAG_ERROR1="error: Tag file '.*.tag' does not exist or is not a file. Skipping it..."
 TAG_ERROR2="error: cannot open tag file .*.tag for writing"
-DOXYGEN_STDERR=`cd doxygen && { cat Doxyfile ; echo QUIET = YES; echo GENERATE_HTML = NO; }  | doxygen - 2>&1 | sed "/\($TAG_ERROR1\|$TAG_ERROR2\)/d"`
+DOXYGEN_STDERR=`cd cpp/doxygen && { cat Doxyfile ; echo QUIET = YES; echo GENERATE_HTML = NO; }  | doxygen - 2>&1 | sed "/\($TAG_ERROR1\|$TAG_ERROR2\)/d"`
 RETVAL=$?
 
 if [ "$RETVAL" != "0" ] || [ ! -z "$DOXYGEN_STDERR" ]; then
