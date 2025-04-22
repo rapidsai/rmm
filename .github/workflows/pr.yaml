@@ -155,7 +155,6 @@ jobs:
       arch: '["amd64"]'
       cuda: '["12.8"]'
       build_command: |
-        mkdir -p telemetry-artifacts;
         sccache --zero-stats;
         build-all -DBUILD_BENCHMARKS=ON --verbose 2>&1 | tee telemetry-artifacts/build.log;
         sccache --show-adv-stats | tee telemetry-artifacts/sccache-stats.txt;
