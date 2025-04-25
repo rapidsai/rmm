@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2024, NVIDIA CORPORATION.
+# Copyright (c) 2024-2025, NVIDIA CORPORATION.
 
 set -eEuo pipefail
 
@@ -47,17 +47,6 @@ for dso_file in ${dso_files}; do
     echo "  * WEAK: $(grep --count -E '  WEAK '    < ${symbol_file})"
     echo "  * LOCAL: $(grep --count -E '  LOCAL '  < ${symbol_file})"
 
-    echo "checking for 'fmt::' symbols..."
-    if grep -E 'fmt\:\:' < "${symbol_file}"; then
-        raise-symbols-found-error 'fmt::'
-    fi
-
-    echo "checking for 'spdlog::' symbols..."
-    if grep -E 'spdlog\:\:' < "${symbol_file}" \
-        | grep -v 'std\:\:_Destroy_aux'
-    then
-        raise-symbols-found-error 'spdlog::'
-    fi
     echo "No symbol visibility issues found"
 done
 

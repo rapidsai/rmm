@@ -1,5 +1,5 @@
 # =============================================================================
-# Copyright (c) 2022-2024, NVIDIA CORPORATION.
+# Copyright (c) 2022-2025, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -12,9 +12,9 @@
 # the License.
 # =============================================================================
 
-cmake_minimum_required(VERSION 3.26.4 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.30.4 FATAL_ERROR)
 
-include(../../rapids_config.cmake)
+include(../../cmake/rapids_config.cmake)
 
 project(
   rmm-python
@@ -27,11 +27,7 @@ include(rapids-cython-core)
 rapids_cython_init()
 
 # pass through logging level to spdlog
-add_compile_definitions("RMM_LOG_ACTIVE_LEVEL=RMM_LOG_LEVEL_${RMM_LOGGING_LEVEL}")
-
-# Create an object library for the logger so that we don't have to recompile it.
-add_library(cpp_logger OBJECT)
-target_link_libraries(cpp_logger PRIVATE rmm::rmm_logger_impl)
+add_compile_definitions("RMM_LOG_ACTIVE_LEVEL=RAPIDS_LOGGER_LOG_LEVEL_${RMM_LOGGING_LEVEL}")
 
 add_subdirectory(rmm/_cuda)
 add_subdirectory(rmm/librmm)

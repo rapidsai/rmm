@@ -1,3 +1,122 @@
+# rmm 25.04.00 (9 Apr 2025)
+
+## 🚨 Breaking Changes
+
+- Add OOM fail reason, attempted allocation size to exception messages (retry) ([#1844](https://github.com/rapidsai/rmm/pull/1844)) [@pmattione-nvidia](https://github.com/pmattione-nvidia)
+- Use new rapids-logger library ([#1808](https://github.com/rapidsai/rmm/pull/1808)) [@vyasr](https://github.com/vyasr)
+
+## 🐛 Bug Fixes
+
+- Revert &quot;Set mempool hw_decompress flag if driver supports it ([#1854)&quot; (#1873](https://github.com/rapidsai/rmm/pull/1854)&quot; (#1873)) [@wence-](https://github.com/wence-)
+- Fix run export on cudatoolkit ([#1862](https://github.com/rapidsai/rmm/pull/1862)) [@vyasr](https://github.com/vyasr)
+- Fix dependencies.yaml for update-version.sh ([#1859](https://github.com/rapidsai/rmm/pull/1859)) [@raydouglass](https://github.com/raydouglass)
+- Embed `__FILE__` as C-string for prefix replacement ([#1858](https://github.com/rapidsai/rmm/pull/1858)) [@jakirkham](https://github.com/jakirkham)
+- Add OOM fail reason, attempted allocation size to exception messages (retry) ([#1844](https://github.com/rapidsai/rmm/pull/1844)) [@pmattione-nvidia](https://github.com/pmattione-nvidia)
+- Revert &quot;Add OOM fail reason, attempted allocation size to exception messages&quot; ([#1843](https://github.com/rapidsai/rmm/pull/1843)) [@pmattione-nvidia](https://github.com/pmattione-nvidia)
+- fix GITHUB_WORKSPACE not being present locally ([#1841](https://github.com/rapidsai/rmm/pull/1841)) [@msarahan](https://github.com/msarahan)
+- Add telemetry setup to build workflows ([#1838](https://github.com/rapidsai/rmm/pull/1838)) [@bdice](https://github.com/bdice)
+- Use static gbench ([#1837](https://github.com/rapidsai/rmm/pull/1837)) [@bdice](https://github.com/bdice)
+- Fixes for rattler recipe ([#1835](https://github.com/rapidsai/rmm/pull/1835)) [@bdice](https://github.com/bdice)
+- Depend on rapids-logger in host to prevent redistribution ([#1834](https://github.com/rapidsai/rmm/pull/1834)) [@bdice](https://github.com/bdice)
+- Add OOM fail reason, attempted allocation size to exception messages ([#1827](https://github.com/rapidsai/rmm/pull/1827)) [@pmattione-nvidia](https://github.com/pmattione-nvidia)
+
+## 📖 Documentation
+
+- mr/host: fix incorrect docs usage of device_memory_resource ([#1809](https://github.com/rapidsai/rmm/pull/1809)) [@ghost](https://github.com/ghost)
+
+## 🚀 New Features
+
+- Add async view memory resource bindings to Python. ([#1864](https://github.com/rapidsai/rmm/pull/1864)) [@bdice](https://github.com/bdice)
+- Run examples in CI ([#1850](https://github.com/rapidsai/rmm/pull/1850)) [@bdice](https://github.com/bdice)
+- Add tests for RMM internal macros. ([#1847](https://github.com/rapidsai/rmm/pull/1847)) [@bdice](https://github.com/bdice)
+- Add basic example. ([#1800](https://github.com/rapidsai/rmm/pull/1800)) [@bdice](https://github.com/bdice)
+
+## 🛠️ Improvements
+
+- Set mempool hw_decompress flag if driver supports it ([#1854](https://github.com/rapidsai/rmm/pull/1854)) [@wence-](https://github.com/wence-)
+- Error if LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE is not defined. ([#1852](https://github.com/rapidsai/rmm/pull/1852)) [@bdice](https://github.com/bdice)
+- Fix for -fdebug-prefix-map breaking sccache ([#1846](https://github.com/rapidsai/rmm/pull/1846)) [@bdice](https://github.com/bdice)
+- fix(rattler): force `cuda_major` and `date_string` to be strings ([#1842](https://github.com/rapidsai/rmm/pull/1842)) [@gforsyth](https://github.com/gforsyth)
+- use gha-tools rapids-telemetry-setup for mkdir -p ([#1839](https://github.com/rapidsai/rmm/pull/1839)) [@msarahan](https://github.com/msarahan)
+- fix(rattler): resolve all overlinking errors ([#1836](https://github.com/rapidsai/rmm/pull/1836)) [@gforsyth](https://github.com/gforsyth)
+- Update rattler-build recipe with assorted small fixes ([#1832](https://github.com/rapidsai/rmm/pull/1832)) [@gforsyth](https://github.com/gforsyth)
+- Sccache stats telemetry ([#1830](https://github.com/rapidsai/rmm/pull/1830)) [@msarahan](https://github.com/msarahan)
+- Consolidate more Conda solves in CI ([#1828](https://github.com/rapidsai/rmm/pull/1828)) [@KyleFromNVIDIA](https://github.com/KyleFromNVIDIA)
+- Require CMake 3.30.4 ([#1826](https://github.com/rapidsai/rmm/pull/1826)) [@robertmaynard](https://github.com/robertmaynard)
+- Create Conda CI test env in one step ([#1824](https://github.com/rapidsai/rmm/pull/1824)) [@KyleFromNVIDIA](https://github.com/KyleFromNVIDIA)
+- Apply IWYU changes and fix deprecated GTest usage ([#1821](https://github.com/rapidsai/rmm/pull/1821)) [@bdice](https://github.com/bdice)
+- Remove unnecessary index ([#1820](https://github.com/rapidsai/rmm/pull/1820)) [@vyasr](https://github.com/vyasr)
+- Use shared-workflows branch-25.04 ([#1816](https://github.com/rapidsai/rmm/pull/1816)) [@bdice](https://github.com/bdice)
+- Use `rapids-pip-retry` in CI jobs that might need retries ([#1814](https://github.com/rapidsai/rmm/pull/1814)) [@gforsyth](https://github.com/gforsyth)
+- Use nightly matrix for branch tests. ([#1813](https://github.com/rapidsai/rmm/pull/1813)) [@bdice](https://github.com/bdice)
+- Use build_type input ([#1812](https://github.com/rapidsai/rmm/pull/1812)) [@bdice](https://github.com/bdice)
+- Add `build_type` to workflow inputs ([#1811](https://github.com/rapidsai/rmm/pull/1811)) [@gforsyth](https://github.com/gforsyth)
+- Use new rapids-logger library ([#1808](https://github.com/rapidsai/rmm/pull/1808)) [@vyasr](https://github.com/vyasr)
+- Forward-merge branch-25.02 to branch-25.04 ([#1806](https://github.com/rapidsai/rmm/pull/1806)) [@bdice](https://github.com/bdice)
+- disallow fallback to Make in wheel builds ([#1804](https://github.com/rapidsai/rmm/pull/1804)) [@jameslamb](https://github.com/jameslamb)
+- Migrate to NVKS for amd64 CI runners ([#1803](https://github.com/rapidsai/rmm/pull/1803)) [@bdice](https://github.com/bdice)
+- Branch 25.04 merge branch 25.02 ([#1799](https://github.com/rapidsai/rmm/pull/1799)) [@vyasr](https://github.com/vyasr)
+- Port to rattler-build ([#1796](https://github.com/rapidsai/rmm/pull/1796)) [@gforsyth](https://github.com/gforsyth)
+
+# rmm 25.02.00 (13 Feb 2025)
+
+## 🚨 Breaking Changes
+
+- Switch to using separate rapids-logger repo ([#1774](https://github.com/rapidsai/rmm/pull/1774)) [@vyasr](https://github.com/vyasr)
+- Remove deprecated factory functions from resource adaptors. ([#1767](https://github.com/rapidsai/rmm/pull/1767)) [@bdice](https://github.com/bdice)
+- Remove `rmm._lib` ([#1765](https://github.com/rapidsai/rmm/pull/1765)) [@Matt711](https://github.com/Matt711)
+- Remove memory access flags from cuda_async_memory_resource ([#1754](https://github.com/rapidsai/rmm/pull/1754)) [@abellina](https://github.com/abellina)
+- Create logger wrapper around spdlog that can be easily reused in other libraries ([#1722](https://github.com/rapidsai/rmm/pull/1722)) [@vyasr](https://github.com/vyasr)
+
+## 🐛 Bug Fixes
+
+- Add missing array header include ([#1771](https://github.com/rapidsai/rmm/pull/1771)) [@robertmaynard](https://github.com/robertmaynard)
+- Remove memory access flags from cuda_async_memory_resource ([#1754](https://github.com/rapidsai/rmm/pull/1754)) [@abellina](https://github.com/abellina)
+- Update build.sh ([#1749](https://github.com/rapidsai/rmm/pull/1749)) [@vyasr](https://github.com/vyasr)
+- Fix some logger issues ([#1739](https://github.com/rapidsai/rmm/pull/1739)) [@vyasr](https://github.com/vyasr)
+- Use consistent signature for target_link_libraries ([#1738](https://github.com/rapidsai/rmm/pull/1738)) [@vyasr](https://github.com/vyasr)
+
+## 📖 Documentation
+
+- Revise README. ([#1747](https://github.com/rapidsai/rmm/pull/1747)) [@bdice](https://github.com/bdice)
+
+## 🚀 New Features
+
+- Make the stream module a part of the public API ([#1775](https://github.com/rapidsai/rmm/pull/1775)) [@Matt711](https://github.com/Matt711)
+- Remove deprecated factory functions from resource adaptors. ([#1767](https://github.com/rapidsai/rmm/pull/1767)) [@bdice](https://github.com/bdice)
+- Remove `rmm._lib` ([#1765](https://github.com/rapidsai/rmm/pull/1765)) [@Matt711](https://github.com/Matt711)
+- Reduce dependencies on numba. ([#1761](https://github.com/rapidsai/rmm/pull/1761)) [@bdice](https://github.com/bdice)
+- Use ruff, remove isort and black. ([#1759](https://github.com/rapidsai/rmm/pull/1759)) [@bdice](https://github.com/bdice)
+- Use bindings layout for all cuda-python imports. ([#1756](https://github.com/rapidsai/rmm/pull/1756)) [@bdice](https://github.com/bdice)
+- Add configuration for pre-commit.ci, update pre-commit hooks ([#1746](https://github.com/rapidsai/rmm/pull/1746)) [@bdice](https://github.com/bdice)
+- Adds fabric handle and memory protection flags to cuda_async_memory_resource ([#1743](https://github.com/rapidsai/rmm/pull/1743)) [@abellina](https://github.com/abellina)
+- Remove upper bounds on cuda-python to allow 12.6.2 and 11.8.5 ([#1729](https://github.com/rapidsai/rmm/pull/1729)) [@bdice](https://github.com/bdice)
+
+## 🛠️ Improvements
+
+- Revert CUDA 12.8 shared workflow branch changes ([#1805](https://github.com/rapidsai/rmm/pull/1805)) [@vyasr](https://github.com/vyasr)
+- Build and test with CUDA 12.8.0 ([#1797](https://github.com/rapidsai/rmm/pull/1797)) [@bdice](https://github.com/bdice)
+- Disable exec checks for `device_uvector::operator=` ([#1790](https://github.com/rapidsai/rmm/pull/1790)) [@miscco](https://github.com/miscco)
+- Add upper bound to prevent usage of numba 0.61.0 ([#1789](https://github.com/rapidsai/rmm/pull/1789)) [@galipremsagar](https://github.com/galipremsagar)
+- Add shellcheck to pre-commit and fix warnings ([#1788](https://github.com/rapidsai/rmm/pull/1788)) [@gforsyth](https://github.com/gforsyth)
+- Add spdlog back as a requirement for now ([#1780](https://github.com/rapidsai/rmm/pull/1780)) [@vyasr](https://github.com/vyasr)
+- [pre-commit.ci] pre-commit autoupdate ([#1778](https://github.com/rapidsai/rmm/pull/1778)) [@pre-commit-ci[bot]](https://github.com/pre-commit-ci[bot])
+- Use rapids-cmake for the logger ([#1776](https://github.com/rapidsai/rmm/pull/1776)) [@vyasr](https://github.com/vyasr)
+- Switch to using separate rapids-logger repo ([#1774](https://github.com/rapidsai/rmm/pull/1774)) [@vyasr](https://github.com/vyasr)
+- Use GCC 13 in CUDA 12 conda builds. ([#1773](https://github.com/rapidsai/rmm/pull/1773)) [@bdice](https://github.com/bdice)
+- Check if nightlies have succeeded recently enough ([#1772](https://github.com/rapidsai/rmm/pull/1772)) [@vyasr](https://github.com/vyasr)
+- Fix codespell behavior. ([#1769](https://github.com/rapidsai/rmm/pull/1769)) [@bdice](https://github.com/bdice)
+- Remove ignored cuda-python deprecation warning. ([#1768](https://github.com/rapidsai/rmm/pull/1768)) [@bdice](https://github.com/bdice)
+- Forward-merge branch-24.12 to branch-25.02 ([#1766](https://github.com/rapidsai/rmm/pull/1766)) [@bdice](https://github.com/bdice)
+- Update version references in workflow ([#1757](https://github.com/rapidsai/rmm/pull/1757)) [@AyodeAwe](https://github.com/AyodeAwe)
+- gate telemetry dispatch calls on TELEMETRY_ENABLED env var ([#1752](https://github.com/rapidsai/rmm/pull/1752)) [@msarahan](https://github.com/msarahan)
+- Update cuda-python lower bounds to 12.6.2 / 11.8.5 ([#1751](https://github.com/rapidsai/rmm/pull/1751)) [@bdice](https://github.com/bdice)
+- remove certs and simplify telemetry summarize ([#1750](https://github.com/rapidsai/rmm/pull/1750)) [@msarahan](https://github.com/msarahan)
+- stop installing &#39;wheel&#39; in wheel-building script ([#1748](https://github.com/rapidsai/rmm/pull/1748)) [@jameslamb](https://github.com/jameslamb)
+- Require approval to run CI on draft PRs ([#1737](https://github.com/rapidsai/rmm/pull/1737)) [@bdice](https://github.com/bdice)
+- Create logger wrapper around spdlog that can be easily reused in other libraries ([#1722](https://github.com/rapidsai/rmm/pull/1722)) [@vyasr](https://github.com/vyasr)
+- Add breaking change workflow trigger ([#1719](https://github.com/rapidsai/rmm/pull/1719)) [@AyodeAwe](https://github.com/AyodeAwe)
+
 # rmm 24.12.00 (11 Dec 2024)
 
 ## 🚨 Breaking Changes

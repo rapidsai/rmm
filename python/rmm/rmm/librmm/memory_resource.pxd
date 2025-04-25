@@ -23,6 +23,8 @@ from libcpp.optional cimport optional
 from libcpp.pair cimport pair
 from libcpp.string cimport string
 
+from cuda.bindings.cyruntime cimport cudaMemPool_t
+
 from rmm.librmm.cuda_stream_view cimport cuda_stream_view
 from rmm.librmm.memory_resource cimport device_memory_resource
 
@@ -107,6 +109,14 @@ cdef extern from "rmm/mr/device/cuda_async_memory_resource.hpp" \
             optional[size_t] initial_pool_size,
             optional[size_t] release_threshold,
             optional[allocation_handle_type] export_handle_type) except +
+
+cdef extern from "rmm/mr/device/cuda_async_view_memory_resource.hpp" \
+        namespace "rmm::mr" nogil:
+
+    cdef cppclass cuda_async_view_memory_resource(device_memory_resource):
+        cuda_async_view_memory_resource(
+            cudaMemPool_t pool_handle) except +
+        cudaMemPool_t pool_handle() const
 
 cdef extern from "rmm/mr/device/cuda_async_memory_resource.hpp" \
         namespace \

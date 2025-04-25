@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2024, NVIDIA CORPORATION.
+# Copyright (c) 2024-2025, NVIDIA CORPORATION.
 
 set -euo pipefail
 
@@ -10,18 +10,21 @@ source rapids-date-string
 
 rapids-generate-version > ./VERSION
 
-RAPIDS_PY_CUDA_SUFFIX="$(rapids-wheel-ctk-name-gen ${RAPIDS_CUDA_VERSION})"
+RAPIDS_PY_CUDA_SUFFIX=$(rapids-wheel-ctk-name-gen "${RAPIDS_CUDA_VERSION}")
 
 cd "${package_dir}"
 
 sccache --zero-stats
 
-python -m pip wheel . -w dist -v --no-deps --disable-pip-version-check
+# Creates artifacts directory for telemetry
+source rapids-telemetry-setup
 
-sccache --show-adv-stats
+rapids-telemetry-record build.log rapids-pip-retry wheel . -w "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}" -v --no-deps --disable-pip-version-check
 
-python -m wheel tags --platform any dist/* --remove
+rapids-telemetry-record sccache-stats.txt sccache --show-adv-stats
 
-../../ci/validate_wheel.sh dist
+python -m wheel tags --platform any "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}"/* --remove
 
-RAPIDS_PY_WHEEL_NAME="rmm_${RAPIDS_PY_CUDA_SUFFIX}" rapids-upload-wheels-to-s3 cpp dist
+../../ci/validate_wheel.sh "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}"
+
+RAPIDS_PY_WHEEL_NAME="rmm_${RAPIDS_PY_CUDA_SUFFIX}" rapids-upload-wheels-to-s3 cpp "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}"

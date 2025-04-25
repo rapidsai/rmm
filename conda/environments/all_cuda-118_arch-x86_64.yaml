@@ -9,14 +9,13 @@ dependencies:
 - c-compiler
 - clang-tools==16.0.6
 - clang==16.0.6
-- cmake>=3.26.4,!=3.30.0
+- cmake>=3.30.4
 - cuda-python>=11.8.5,<12.0a0
 - cuda-version=11.8
 - cudatoolkit
 - cxx-compiler
 - cython>=3.0.0
 - doxygen=1.9.1
-- fmt>=11.0.2,<12
 - gcc_linux-64=11.*
 - gcovr>=5.0
 - graphviz
@@ -25,7 +24,7 @@ dependencies:
 - make
 - nbsphinx
 - ninja
-- numba>=0.57
+- numba>=0.59.1,<0.61.0a0
 - numpy>=1.23,<3.0a0
 - numpydoc
 - nvcc_linux-64=11.8
@@ -34,11 +33,11 @@ dependencies:
 - pytest-cov
 - python>=3.10,<3.13
 - rapids-build-backend>=0.3.0,<0.4.0.dev0
+- rapids-logger==0.1.*,>=0.0.0a0
 - scikit-build-core >=0.10.0
-- spdlog>=1.14.1,<1.15
-- sphinx
 - sphinx-copybutton
 - sphinx-markdown-tables
+- sphinx<8.2.0
 - sphinx_rtd_theme
 - sysroot_linux-64==2.28
 name: all_cuda-118_arch-x86_64
