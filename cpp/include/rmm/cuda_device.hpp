@@ -21,7 +21,7 @@
 #include <cstddef>
 #include <utility>
 
-namespace RMM_NAMESPACE {
+namespace RMM_EXPORT rmm {
 
 struct cuda_device_id;
 RMM_EXPORT cuda_device_id get_current_cuda_device();
@@ -146,4 +146,4 @@ struct cuda_set_device_raii {
 };
 
 /** @} */  // end of group
-}  // namespace RMM_NAMESPACE
+}  // namespace RMM_EXPORT rmm

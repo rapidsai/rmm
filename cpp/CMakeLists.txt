@@ -84,7 +84,7 @@ include(cmake/thirdparty/get_nvtx.cmake)
 # * library targets --------------------------------------------------------------------------------
 
 add_library(rmm SHARED src/aligned.cpp src/cuda_device.cpp src/cuda_stream_pool.cpp
-                       src/cuda_stream_view.cpp)
+                       src/cuda_stream_view.cpp src/cuda_stream.cpp)
 add_library(rmm::rmm ALIAS rmm)
 
 target_include_directories(

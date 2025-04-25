@@ -24,7 +24,7 @@
 #include <cstddef>
 #include <ostream>
 
-namespace RMM_NAMESPACE {
+namespace RMM_EXPORT rmm {
 /**
  * @addtogroup cuda_streams
  * @{
@@ -163,4 +163,4 @@ bool operator!=(cuda_stream_view lhs, cuda_stream_view rhs);
 std::ostream& operator<<(std::ostream& os, cuda_stream_view stream);
 
 /** @} */  // end of group
-}  // namespace RMM_NAMESPACE
+}  // namespace RMM_EXPORT rmm

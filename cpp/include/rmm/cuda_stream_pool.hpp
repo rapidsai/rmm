@@ -24,7 +24,7 @@
 #include <cstddef>
 #include <vector>
 
-namespace RMM_NAMESPACE {
+namespace RMM_EXPORT rmm {
 /**
  * @addtogroup cuda_streams
  * @{
@@ -93,4 +93,4 @@ class cuda_stream_pool {
 };
 
 /** @} */  // end of group
-}  // namespace RMM_NAMESPACE
+}  // namespace RMM_EXPORT rmm

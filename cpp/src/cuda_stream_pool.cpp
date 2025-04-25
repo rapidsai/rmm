@@ -20,7 +20,7 @@
 
 #include <cstddef>
 
-namespace RMM_NAMESPACE {
+namespace rmm {
 
 cuda_stream_pool::cuda_stream_pool(std::size_t pool_size) : streams_(pool_size)
 {
@@ -39,4 +39,4 @@ rmm::cuda_stream_view cuda_stream_pool::get_stream(std::size_t stream_id) const
 
 std::size_t cuda_stream_pool::get_pool_size() const noexcept { return streams_.size(); }
 
-}  // namespace RMM_NAMESPACE
+}  // namespace rmm

@@ -23,7 +23,7 @@
 #include <cstddef>
 #include <utility>
 
-namespace RMM_NAMESPACE {
+namespace rmm {
 
 cuda_device_id get_current_cuda_device()
 {
@@ -67,4 +67,4 @@ cuda_set_device_raii::~cuda_set_device_raii() noexcept
   if (needs_reset_) { RMM_ASSERT_CUDA_SUCCESS(cudaSetDevice(old_device_.value())); }
 }
 
-}  // namespace RMM_NAMESPACE
+}  // namespace rmm

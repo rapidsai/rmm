@@ -23,7 +23,7 @@
 
 #include <ostream>
 
-namespace RMM_NAMESPACE {
+namespace rmm {
 
 cuda_stream_view::cuda_stream_view(cudaStream_t stream) noexcept : stream_{stream} {}
 
@@ -70,4 +70,4 @@ std::ostream& operator<<(std::ostream& os, cuda_stream_view stream)
   return os;
 }
 
-}  // namespace RMM_NAMESPACE
+}  // namespace rmm
