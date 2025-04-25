@@ -56,14 +56,14 @@ class cuda_stream_view {
    *
    * @param stream The underlying stream for this view
    */
-  explicit cuda_stream_view(cudaStream_t stream) noexcept;
+  cuda_stream_view(cudaStream_t stream) noexcept;
 
   /**
    * @brief Implicit conversion from stream_ref.
    *
    * @param stream The underlying stream for this view
    */
-  explicit cuda_stream_view(cuda::stream_ref stream) noexcept;
+  cuda_stream_view(cuda::stream_ref stream) noexcept;
 
   /**
    * @brief Get the wrapped stream.
