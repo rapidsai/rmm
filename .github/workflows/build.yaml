@@ -89,6 +89,7 @@ jobs:
       sha: ${{ inputs.sha }}
       date: ${{ inputs.date }}
       script: ci/build_wheel_cpp.sh
+      package-name: rmm
       package-type: cpp
   wheel-build-python:
     needs: [telemetry-setup, wheel-build-cpp]
@@ -100,6 +101,7 @@ jobs:
       sha: ${{ inputs.sha }}
       date: ${{ inputs.date }}
       script: ci/build_wheel_python.sh
+      package-name: rmm
       package-type: python
   wheel-publish-cpp:
     needs: wheel-build-cpp

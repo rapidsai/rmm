@@ -66,7 +66,7 @@ outputs:
     build:
       string: cuda${{ cuda_major }}_${{ date_string }}_${{ head_rev }}
       script:
-        - cmake --install build
+        - cmake --install cpp/build
       dynamic_linking:
         overlinking_behavior: "error"
     requirements:
@@ -99,7 +99,7 @@ outputs:
       version: ${{ version }}
     build:
       string: cuda${{ cuda_major }}_${{ date_string }}_${{ head_rev }}
-      script: cmake --install build --component testing
+      script: cmake --install cpp/build --component testing
       dynamic_linking:
         overlinking_behavior: "error"
         missing_dso_allowlist:
@@ -143,7 +143,7 @@ outputs:
       string: cuda${{ cuda_major }}_${{ date_string }}_${{ head_rev }}
       script:
         content: |
-          ./examples/build.sh --install
+          ./cpp/examples/build.sh --install
         env:
           CMAKE_C_COMPILER_LAUNCHER: ${{ env.get("CMAKE_C_COMPILER_LAUNCHER") }}
           CMAKE_CUDA_COMPILER_LAUNCHER: ${{ env.get("CMAKE_CUDA_COMPILER_LAUNCHER") }}
