@@ -69,9 +69,14 @@ outputs:
         - cmake --install cpp/build
       dynamic_linking:
         overlinking_behavior: "error"
+      prefix_detection:
+        ignore:
+          # See https://github.com/rapidsai/build-planning/issues/160
+          - lib/librmm.so
     requirements:
       build:
         - cmake ${{ cmake_version }}
+        - ${{ stdlib("c") }}
       host:
         - cuda-version =${{ cuda_version }}
       run:
