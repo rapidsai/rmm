@@ -79,14 +79,21 @@ outputs:
         - ${{ stdlib("c") }}
       host:
         - cuda-version =${{ cuda_version }}
+        - if: cuda_major == "11"
+          then: cudatoolkit
+          else: cuda-cudart-dev
       run:
         - ${{ pin_compatible("cuda-version", upper_bound="x", lower_bound="x") }}
         - if: cuda_major == "11"
           then: cudatoolkit
+          else: cuda-cudart
         - rapids-logger =0.1
       run_exports:
         - ${{ pin_subpackage("librmm", upper_bound="x.x") }}
       ignore_run_exports:
+        from_package:
+          - if: cuda_major != "11"
+            then: cuda-cudart-dev
         by_name:
           - cuda-version
           - if: cuda_major == "11"
