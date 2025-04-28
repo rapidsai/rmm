@@ -111,9 +111,6 @@ set_target_properties(
              CXX_STANDARD 17
              CXX_STANDARD_REQUIRED ON
              CXX_VISIBILITY_PRESET hidden
-             CUDA_STANDARD 17
-             CUDA_STANDARD_REQUIRED ON
-             CUDA_VISIBILITY_PRESET hidden
              POSITION_INDEPENDENT_CODE ON
              INTERFACE_POSITION_INDEPENDENT_CODE ON)
 target_compile_definitions(rmm PUBLIC LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
