@@ -49,7 +49,7 @@ static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
  *
  * @return True if the input is a power of two with non-negative integer exponent, false otherwise.
  */
-[[nodiscard]] RMM_EXPORT bool is_pow2(std::size_t value) noexcept;
+[[nodiscard]] bool is_pow2(std::size_t value) noexcept;
 
 /**
  * @brief Returns whether or not `alignment` is a valid memory alignment.
@@ -58,7 +58,7 @@ static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
  *
  * @return True if the alignment is valid, false otherwise.
  */
-[[nodiscard]] RMM_EXPORT bool is_supported_alignment(std::size_t alignment) noexcept;
+[[nodiscard]] bool is_supported_alignment(std::size_t alignment) noexcept;
 
 /**
  * @brief Align up to nearest multiple of specified power of 2
@@ -68,7 +68,7 @@ static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
  *
  * @return the aligned value
  */
-[[nodiscard]] RMM_EXPORT std::size_t align_up(std::size_t value, std::size_t alignment) noexcept;
+[[nodiscard]] std::size_t align_up(std::size_t value, std::size_t alignment) noexcept;
 
 /**
  * @brief Align down to the nearest multiple of specified power of 2
@@ -78,7 +78,7 @@ static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
  *
  * @return the aligned value
  */
-[[nodiscard]] RMM_EXPORT std::size_t align_down(std::size_t value, std::size_t alignment) noexcept;
+[[nodiscard]] std::size_t align_down(std::size_t value, std::size_t alignment) noexcept;
 
 /**
  * @brief Checks whether a value is aligned to a multiple of a specified power of 2
@@ -88,7 +88,7 @@ static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
  *
  * @return true if aligned
  */
-[[nodiscard]] RMM_EXPORT bool is_aligned(std::size_t value, std::size_t alignment) noexcept;
+[[nodiscard]] bool is_aligned(std::size_t value, std::size_t alignment) noexcept;
 
 /**
  * @brief Checks whether the provided pointer is aligned to a specified @p alignment
@@ -98,8 +98,8 @@ static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
  *
  * @return true if the pointer is aligned
  */
-[[nodiscard]] RMM_EXPORT bool is_pointer_aligned(
-  void* ptr, std::size_t alignment = CUDA_ALLOCATION_ALIGNMENT) noexcept;
+[[nodiscard]] bool is_pointer_aligned(void* ptr,
+                                      std::size_t alignment = CUDA_ALLOCATION_ALIGNMENT) noexcept;
 
 /** @} */  // end of group
 

@@ -24,7 +24,7 @@
 namespace RMM_EXPORT rmm {
 
 struct cuda_device_id;
-RMM_EXPORT cuda_device_id get_current_cuda_device();
+cuda_device_id get_current_cuda_device();
 
 /**
  * @addtogroup cuda_device_management
@@ -93,21 +93,21 @@ struct cuda_device_id {
  *
  * @return `cuda_device_id` for the current device
  */
-RMM_EXPORT cuda_device_id get_current_cuda_device();
+cuda_device_id get_current_cuda_device();
 
 /**
  * @brief Returns the number of CUDA devices in the system
  *
  * @return Number of CUDA devices in the system
  */
-RMM_EXPORT int get_num_cuda_devices();
+int get_num_cuda_devices();
 
 /**
  * @brief Returns the available and total device memory in bytes for the current device
  *
  * @return The available and total device memory in bytes for the current device as a std::pair.
  */
-RMM_EXPORT std::pair<std::size_t, std::size_t> available_device_memory();
+std::pair<std::size_t, std::size_t> available_device_memory();
 
 /**
  * @brief Returns the approximate specified percent of available device memory on the current CUDA
@@ -117,7 +117,7 @@ RMM_EXPORT std::pair<std::size_t, std::size_t> available_device_memory();
  *
  * @return The recommended initial device memory pool size in bytes.
  */
-RMM_EXPORT std::size_t percent_of_free_device_memory(int percent);
+std::size_t percent_of_free_device_memory(int percent);
 
 /**
  * @brief RAII class that sets the current CUDA device to the specified device on construction
