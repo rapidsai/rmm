@@ -84,7 +84,7 @@ include(cmake/thirdparty/get_nvtx.cmake)
 # * library targets --------------------------------------------------------------------------------
 
 add_library(rmm src/aligned.cpp src/cuda_device.cpp src/cuda_stream_pool.cpp
-                       src/cuda_stream_view.cpp src/cuda_stream.cpp)
+                src/cuda_stream_view.cpp src/cuda_stream.cpp)
 add_library(rmm::rmm ALIAS rmm)
 
 target_include_directories(
@@ -107,7 +107,6 @@ set_target_properties(
   rmm
   PROPERTIES BUILD_RPATH "\$ORIGIN"
              INSTALL_RPATH "\$ORIGIN"
-             # set target compile options
              CXX_STANDARD 17
              CXX_STANDARD_REQUIRED ON
              CXX_VISIBILITY_PRESET hidden
