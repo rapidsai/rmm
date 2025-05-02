@@ -308,7 +308,7 @@ dependencies:
           - ipython
           - make
           - nbsphinx
-          - numba>=0.59.1,<0.61.0a0
+          - &numba numba>=0.59.1,<0.62.0a0
           - numpydoc
           # this pin can be reverted when https://github.com/spatialaudio/nbsphinx/issues/825 is resolved
           - sphinx<8.2.0
@@ -332,8 +332,12 @@ dependencies:
             packages:
               - python=3.12
           - matrix:
+              py: "3.13"
             packages:
-              - python>=3.10,<3.13
+              - python=3.13
+          - matrix:
+            packages:
+              - python>=3.10,<3.14
   run:
     common:
       - output_types: [conda, requirements, pyproject]
@@ -358,7 +362,7 @@ dependencies:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
-          - numba>=0.59.1,<0.61.0a0
+          - *numba
           - pytest
           - pytest-cov
     specific:
