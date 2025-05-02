@@ -19,12 +19,12 @@ sccache --zero-stats
 # Creates artifacts directory for telemetry
 source rapids-telemetry-setup
 
-rapids-telemetry-record build.log rapids-pip-retry wheel . -w dist -v --no-deps --disable-pip-version-check
+rapids-telemetry-record build.log rapids-pip-retry wheel . -w "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}" -v --no-deps --disable-pip-version-check
 
 rapids-telemetry-record sccache-stats.txt sccache --show-adv-stats
 
-python -m wheel tags --platform any dist/* --remove
+python -m wheel tags --platform any "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}"/* --remove
 
-../../ci/validate_wheel.sh dist
+../../ci/validate_wheel.sh "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}"
 
-RAPIDS_PY_WHEEL_NAME="rmm_${RAPIDS_PY_CUDA_SUFFIX}" rapids-upload-wheels-to-s3 cpp dist
+RAPIDS_PY_WHEEL_NAME="rmm_${RAPIDS_PY_CUDA_SUFFIX}" rapids-upload-wheels-to-s3 cpp "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}"

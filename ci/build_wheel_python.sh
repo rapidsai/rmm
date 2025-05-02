@@ -14,7 +14,7 @@ rapids-generate-version > ./VERSION
 pushd "${package_dir}"
 
 RAPIDS_PY_CUDA_SUFFIX=$(rapids-wheel-ctk-name-gen "${RAPIDS_CUDA_VERSION}")
-CPP_WHEELHOUSE=$(RAPIDS_PY_WHEEL_NAME="rmm_${RAPIDS_PY_CUDA_SUFFIX}" rapids-download-wheels-from-s3 cpp /tmp/librmm_dist)
+CPP_WHEELHOUSE=$(RAPIDS_PY_WHEEL_NAME="rmm_${RAPIDS_PY_CUDA_SUFFIX}" rapids-download-wheels-from-github cpp)
 
 # ensure 'rmm' wheel builds always use the 'librmm' just built in the same CI run
 #
@@ -32,16 +32,16 @@ PIP_CONSTRAINT="${PWD}/build-constraints.txt" \
 
 rapids-telemetry-record sccache-stats.txt sccache --show-adv-stats
 
-mkdir -p final_dist
 EXCLUDE_ARGS=(
   --exclude "librapids_logger.so"
 )
-python -m auditwheel repair "${EXCLUDE_ARGS[@]}" -w final_dist dist/*
+python -m auditwheel repair "${EXCLUDE_ARGS[@]}" -w "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}" dist/*
 
-../../ci/validate_wheel.sh final_dist
+../../ci/validate_wheel.sh "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}"
 
-RAPIDS_PY_WHEEL_NAME="${package_name}_${RAPIDS_PY_CUDA_SUFFIX}" rapids-upload-wheels-to-s3 python final_dist
+RAPIDS_PY_WHEEL_NAME="${package_name}_${RAPIDS_PY_CUDA_SUFFIX}" rapids-upload-wheels-to-s3 python "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}"
 
+absolute_wheel_dir=$(realpath "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}")
 # switch back to the root of the repo and check symbol visibility
 popd
-ci/check_symbols.sh "$(echo ${package_dir}/final_dist/rmm_*.whl)"
+ci/check_symbols.sh "$(echo ${absolute_wheel_dir}/rmm_*.whl)"

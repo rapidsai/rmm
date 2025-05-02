@@ -33,7 +33,7 @@ function sed_runner() {
 echo "${NEXT_FULL_TAG}" > VERSION
 
 # Examples update
-sed_runner "s/RMM_TAG branch-[0-9.]*/RMM_TAG branch-${NEXT_SHORT_TAG}/" examples/versions.cmake
+sed_runner "s/RMM_TAG branch-[0-9.]*/RMM_TAG branch-${NEXT_SHORT_TAG}/" cpp/examples/versions.cmake
 
 # CI files
 for FILE in .github/workflows/*.yaml; do
@@ -50,6 +50,7 @@ done
 DEPENDENCIES=(
   librmm
   librmm-tests
+  librmm-example
   rmm
 )
 for DEP in "${DEPENDENCIES[@]}"; do

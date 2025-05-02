@@ -14,7 +14,7 @@
 
 cmake_minimum_required(VERSION 3.30.4 FATAL_ERROR)
 
-include(../../rapids_config.cmake)
+include(../../cmake/rapids_config.cmake)
 
 project(
   librmm-python
@@ -35,4 +35,4 @@ set(BUILD_TESTS OFF)
 set(BUILD_BENCHMARKS OFF)
 set(CUDA_STATIC_RUNTIME ON)
 
-add_subdirectory(../.. rmm-cpp)
+add_subdirectory(../../cpp rmm-cpp)
