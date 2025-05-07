@@ -43,7 +43,7 @@ conda install -c rapidsai -c conda-forge -c nvidia rmm cuda-version=12.8
 We also provide [nightly conda packages](https://anaconda.org/rapidsai-nightly) built from the HEAD
 of our latest development branch.
 
-Note: RMM is supported only on Linux, and only tested with Python versions 3.10, 3.11, and 3.12.
+Note: RMM is supported only on Linux, and only tested with Python versions 3.10, 3.11, 3.12, and 3.13.
 
 Note: The RMM package from conda requires building with GCC 9 or later. Otherwise, your application may fail to build.
 
