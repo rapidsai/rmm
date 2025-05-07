@@ -3,6 +3,7 @@
 
 set -euo pipefail
 
+package_name="librmm"
 package_dir="python/librmm"
 
 source rapids-configure-sccache
@@ -27,4 +28,4 @@ python -m wheel tags --platform any "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}"/* --remove
 
 ../../ci/validate_wheel.sh "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}"
 
-RAPIDS_PY_WHEEL_NAME="rmm_${RAPIDS_PY_CUDA_SUFFIX}" rapids-upload-wheels-to-s3 cpp "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}"
+RAPIDS_PY_WHEEL_NAME="${package_name}_${RAPIDS_PY_CUDA_SUFFIX}" rapids-upload-wheels-to-s3 cpp "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}"
