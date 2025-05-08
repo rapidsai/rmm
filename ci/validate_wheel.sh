@@ -3,8 +3,6 @@
 
 set -euo pipefail
 
-source ./ci/use_gha_tools_from_branch.sh
-
 wheel_dir_relative_path=$1
 
 rapids-logger "validate packages with 'pydistcheck'"
