@@ -3,6 +3,8 @@
 
 set -euo pipefail
 
+source ./ci/use_gha_tools_from_branch.sh
+
 package_name="rmm"
 package_dir="python/rmm"
 

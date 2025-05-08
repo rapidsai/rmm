@@ -3,6 +3,8 @@
 
 set -eEuo pipefail
 
+source ./ci/use_gha_tools_from_branch.sh
+
 echo "checking for symbol visibility issues"
 
 WHEEL_FILE=${1}
