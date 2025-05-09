@@ -2,7 +2,7 @@
 # Copyright (c) 2025, NVIDIA CORPORATION.
 
 git clone \
-  --branch "gh-artifacts/local-repro" \
+  --branch "gh-artifacts/consolidate-scripts" \
   https://github.com/rapidsai/gha-tools.git \
   /tmp/gha-tools
 
