@@ -1,9 +1,11 @@
 #!/bin/bash
 # Copyright (c) 2025, NVIDIA CORPORATION.
 
-git clone \
-  --branch "gha-artifacts/consolidate-scripts" \
-  https://github.com/rapidsai/gha-tools.git \
-  /tmp/gha-tools
+if [[ ! -d "/tmp/gha-tools" ]]; then
+  git clone \
+    --branch "gha-artifacts/consolidate-scripts" \
+    https://github.com/rapidsai/gha-tools.git \
+    /tmp/gha-tools
 
-export PATH="/tmp/gha-tools/tools":$PATH
+  export PATH="/tmp/gha-tools/tools":$PATH
+fi
