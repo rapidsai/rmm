@@ -57,7 +57,7 @@ void spawn_n(std::size_t num_threads, Task task, Arguments&&... args)
 template <typename Task, typename... Arguments>
 void spawn(Task task, Arguments&&... args)
 {
-  spawn_n(4, task, std::forward<Arguments>(args)...);
+  spawn_n(16, task, std::forward<Arguments>(args)...);
 }
 
 TEST(DefaultTest, UseCurrentDeviceResource_mt) { spawn(test_get_current_device_resource); }

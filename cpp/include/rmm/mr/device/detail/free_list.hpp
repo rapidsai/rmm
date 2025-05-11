@@ -19,6 +19,7 @@
 #include <rmm/detail/export.hpp>
 
 #include <algorithm>
+#include <mutex>
 #ifdef RMM_DEBUG_PRINT
 #include <iostream>
 #endif
@@ -138,6 +139,12 @@ class free_list {
   }
 #endif
 
+  /**
+   * @brief Returns a reference to the mutex used for synchronizing the free list.
+   *
+   */
+  [[nodiscard]] std::mutex& get_mutex() { return mtx_; }
+
  protected:
   /**
    * @brief Insert a block in the free list before the specified position
@@ -182,6 +189,7 @@ class free_list {
 
  private:
   list_type blocks;  // The internal container of blocks
+  std::mutex mtx_;   // The mutex for each free list
 };
 
 }  // namespace mr::detail
