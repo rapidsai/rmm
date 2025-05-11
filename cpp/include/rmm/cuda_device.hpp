@@ -16,18 +16,15 @@
 #pragma once
 
 #include <rmm/aligned.hpp>
-#include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
-
-#include <cuda_runtime_api.h>
 
 #include <cstddef>
 #include <utility>
 
-namespace RMM_NAMESPACE {
+namespace RMM_EXPORT rmm {
 
 struct cuda_device_id;
-inline cuda_device_id get_current_cuda_device();
+cuda_device_id get_current_cuda_device();
 
 /**
  * @addtogroup cuda_device_management
@@ -96,37 +93,21 @@ struct cuda_device_id {
  *
  * @return `cuda_device_id` for the current device
  */
-inline cuda_device_id get_current_cuda_device()
-{
-  cuda_device_id::value_type dev_id{-1};
-  RMM_ASSERT_CUDA_SUCCESS(cudaGetDevice(&dev_id));
-  return cuda_device_id{dev_id};
-}
+cuda_device_id get_current_cuda_device();
 
 /**
  * @brief Returns the number of CUDA devices in the system
  *
  * @return Number of CUDA devices in the system
  */
-inline int get_num_cuda_devices()
-{
-  cuda_device_id::value_type num_dev{-1};
-  RMM_ASSERT_CUDA_SUCCESS(cudaGetDeviceCount(&num_dev));
-  return num_dev;
-}
+int get_num_cuda_devices();
 
 /**
  * @brief Returns the available and total device memory in bytes for the current device
  *
  * @return The available and total device memory in bytes for the current device as a std::pair.
  */
-inline std::pair<std::size_t, std::size_t> available_device_memory()
-{
-  std::size_t free{};
-  std::size_t total{};
-  RMM_CUDA_TRY(cudaMemGetInfo(&free, &total));
-  return {free, total};
-}
+std::pair<std::size_t, std::size_t> available_device_memory();
 
 /**
  * @brief Returns the approximate specified percent of available device memory on the current CUDA
@@ -136,13 +117,7 @@ inline std::pair<std::size_t, std::size_t> available_device_memory()
  *
  * @return The recommended initial device memory pool size in bytes.
  */
-inline std::size_t percent_of_free_device_memory(int percent)
-{
-  [[maybe_unused]] auto const [free, total] = rmm::available_device_memory();
-  auto fraction                             = static_cast<double>(percent) / 100.0;
-  return rmm::align_down(static_cast<std::size_t>(static_cast<double>(free) * fraction),
-                         rmm::CUDA_ALLOCATION_ALIGNMENT);
-}
+std::size_t percent_of_free_device_memory(int percent);
 
 /**
  * @brief RAII class that sets the current CUDA device to the specified device on construction
@@ -154,19 +129,11 @@ struct cuda_set_device_raii {
    *
    * @param dev_id The device to set as the current CUDA device
    */
-  explicit cuda_set_device_raii(cuda_device_id dev_id)
-    : old_device_{get_current_cuda_device()},
-      needs_reset_{dev_id.value() >= 0 && old_device_ != dev_id}
-  {
-    if (needs_reset_) { RMM_ASSERT_CUDA_SUCCESS(cudaSetDevice(dev_id.value())); }
-  }
+  explicit cuda_set_device_raii(cuda_device_id dev_id);
   /**
    * @brief Reactivates the previous CUDA device
    */
-  ~cuda_set_device_raii() noexcept
-  {
-    if (needs_reset_) { RMM_ASSERT_CUDA_SUCCESS(cudaSetDevice(old_device_.value())); }
-  }
+  ~cuda_set_device_raii() noexcept;
 
   cuda_set_device_raii(cuda_set_device_raii const&)            = delete;
   cuda_set_device_raii& operator=(cuda_set_device_raii const&) = delete;
@@ -179,4 +146,4 @@ struct cuda_set_device_raii {
 };
 
 /** @} */  // end of group
-}  // namespace RMM_NAMESPACE
+}  // namespace RMM_EXPORT rmm
