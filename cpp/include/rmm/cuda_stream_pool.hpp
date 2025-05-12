@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,13 @@
 
 #include <rmm/cuda_stream.hpp>
 #include <rmm/cuda_stream_view.hpp>
-#include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
 
 #include <atomic>
 #include <cstddef>
 #include <vector>
 
-namespace RMM_NAMESPACE {
+namespace RMM_EXPORT rmm {
 /**
  * @addtogroup cuda_streams
  * @{
@@ -50,10 +49,7 @@ class cuda_stream_pool {
    * @throws logic_error if `pool_size` is zero
    * @param pool_size The number of streams in the pool
    */
-  explicit cuda_stream_pool(std::size_t pool_size = default_size) : streams_(pool_size)
-  {
-    RMM_EXPECTS(pool_size > 0, "Stream pool size must be greater than zero");
-  }
+  explicit cuda_stream_pool(std::size_t pool_size = default_size);
   ~cuda_stream_pool() = default;
 
   cuda_stream_pool(cuda_stream_pool&&)                 = delete;
@@ -68,10 +64,7 @@ class cuda_stream_pool {
    *
    * @return rmm::cuda_stream_view
    */
-  rmm::cuda_stream_view get_stream() const noexcept
-  {
-    return streams_[(next_stream++) % streams_.size()].view();
-  }
+  rmm::cuda_stream_view get_stream() const noexcept;
 
   /**
    * @brief Get a `cuda_stream_view` of the stream associated with `stream_id`.
@@ -83,10 +76,7 @@ class cuda_stream_pool {
    *
    * @return rmm::cuda_stream_view
    */
-  rmm::cuda_stream_view get_stream(std::size_t stream_id) const
-  {
-    return streams_[stream_id % streams_.size()].view();
-  }
+  rmm::cuda_stream_view get_stream(std::size_t stream_id) const;
 
   /**
    * @brief Get the number of streams in the pool.
@@ -95,7 +85,7 @@ class cuda_stream_pool {
    *
    * @return the number of streams in the pool
    */
-  std::size_t get_pool_size() const noexcept { return streams_.size(); }
+  std::size_t get_pool_size() const noexcept;
 
  private:
   std::vector<rmm::cuda_stream> streams_;
@@ -103,4 +93,4 @@ class cuda_stream_pool {
 };
 
 /** @} */  // end of group
-}  // namespace RMM_NAMESPACE
+}  // namespace RMM_EXPORT rmm

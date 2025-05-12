@@ -37,7 +37,7 @@ RMM can be installed with conda. You can get a minimal conda installation with [
 Install RMM with:
 
 ```bash
-conda install -c rapidsai -c conda-forge -c nvidia rmm cuda-version=12.8
+conda install -c rapidsai -c conda-forge -c nvidia rmm cuda-version=12.9
 ```
 
 We also provide [nightly conda packages](https://anaconda.org/rapidsai-nightly) built from the HEAD
@@ -90,7 +90,7 @@ $ cd rmm
 - Create the conda development environment `rmm_dev`
 ```bash
 # create the conda environment (assuming in base `rmm` directory)
-$ conda env create --name rmm_dev --file conda/environments/all_cuda-128_arch-x86_64.yaml
+$ conda env create --name rmm_dev --file conda/environments/all_cuda-129_arch-x86_64.yaml
 # activate the environment
 $ conda activate rmm_dev
 ```
@@ -657,7 +657,7 @@ of more detailed logging. The default is `INFO`. Available levels are `TRACE`, `
 
 Note that to see logging below the `INFO` level, the application must also set the logging level at
 run time. C++ applications must must call `rmm::default_logger().set_level()`, for example to enable all
-levels of logging down to `TRACE`, call `rmm::default_logger().set_level(spdlog::level::trace)` (and compile
+levels of logging down to `TRACE`, call `rmm::default_logger().set_level(rapids_logger::level_enum::trace)` (and compile
 librmm with `-DRMM_LOGGING_LEVEL=TRACE`). Python applications must call `rmm.set_logging_level()`,
 for example to enable all levels of logging down to `TRACE`, call `rmm.set_logging_level("trace")`
 (and compile the RMM Python module with `-DRMM_LOGGING_LEVEL=TRACE`).

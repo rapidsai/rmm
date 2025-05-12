@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace RMM_NAMESPACE {
+namespace RMM_EXPORT rmm {
 
 /**
  * @addtogroup utilities
@@ -49,10 +49,7 @@ static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
  *
  * @return True if the input is a power of two with non-negative integer exponent, false otherwise.
  */
-[[nodiscard]] constexpr bool is_pow2(std::size_t value) noexcept
-{
-  return (value != 0U) && ((value & (value - 1)) == 0U);
-}
+[[nodiscard]] bool is_pow2(std::size_t value) noexcept;
 
 /**
  * @brief Returns whether or not `alignment` is a valid memory alignment.
@@ -61,10 +58,7 @@ static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
  *
  * @return True if the alignment is valid, false otherwise.
  */
-[[nodiscard]] constexpr bool is_supported_alignment(std::size_t alignment) noexcept
-{
-  return is_pow2(alignment);
-}
+[[nodiscard]] bool is_supported_alignment(std::size_t alignment) noexcept;
 
 /**
  * @brief Align up to nearest multiple of specified power of 2
@@ -74,11 +68,7 @@ static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
  *
  * @return the aligned value
  */
-[[nodiscard]] constexpr std::size_t align_up(std::size_t value, std::size_t alignment) noexcept
-{
-  assert(is_supported_alignment(alignment));
-  return (value + (alignment - 1)) & ~(alignment - 1);
-}
+[[nodiscard]] std::size_t align_up(std::size_t value, std::size_t alignment) noexcept;
 
 /**
  * @brief Align down to the nearest multiple of specified power of 2
@@ -88,11 +78,7 @@ static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
  *
  * @return the aligned value
  */
-[[nodiscard]] constexpr std::size_t align_down(std::size_t value, std::size_t alignment) noexcept
-{
-  assert(is_supported_alignment(alignment));
-  return value & ~(alignment - 1);
-}
+[[nodiscard]] std::size_t align_down(std::size_t value, std::size_t alignment) noexcept;
 
 /**
  * @brief Checks whether a value is aligned to a multiple of a specified power of 2
@@ -102,11 +88,7 @@ static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
  *
  * @return true if aligned
  */
-[[nodiscard]] constexpr bool is_aligned(std::size_t value, std::size_t alignment) noexcept
-{
-  assert(is_supported_alignment(alignment));
-  return value == align_down(value, alignment);
-}
+[[nodiscard]] bool is_aligned(std::size_t value, std::size_t alignment) noexcept;
 
 /**
  * @brief Checks whether the provided pointer is aligned to a specified @p alignment
@@ -116,13 +98,9 @@ static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
  *
  * @return true if the pointer is aligned
  */
-[[nodiscard]] inline bool is_pointer_aligned(
-  void* ptr, std::size_t alignment = CUDA_ALLOCATION_ALIGNMENT) noexcept
-{
-  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-  return is_aligned(reinterpret_cast<std::uintptr_t>(ptr), alignment);
-}
+[[nodiscard]] bool is_pointer_aligned(void* ptr,
+                                      std::size_t alignment = CUDA_ALLOCATION_ALIGNMENT) noexcept;
 
 /** @} */  // end of group
 
-}  // namespace RMM_NAMESPACE
+}  // namespace RMM_EXPORT rmm
