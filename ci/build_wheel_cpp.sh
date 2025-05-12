@@ -26,6 +26,7 @@ rapids-telemetry-record build.log rapids-pip-retry wheel . -w "${dist_dir}" -v -
 rapids-telemetry-record sccache-stats.txt sccache --show-adv-stats
 
 python -m auditwheel repair \
+    --exclude librapids_logger.so \
     -w "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}" \
     ${dist_dir}/*
 
