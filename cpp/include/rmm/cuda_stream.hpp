@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,16 +17,14 @@
 #pragma once
 
 #include <rmm/cuda_stream_view.hpp>
-#include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
-#include <rmm/detail/logging_assert.hpp>
 
 #include <cuda_runtime_api.h>
 
 #include <functional>
 #include <memory>
 
-namespace RMM_NAMESPACE {
+namespace RMM_EXPORT rmm {
 /**
  * @addtogroup cuda_streams
  * @{
@@ -65,18 +63,7 @@ class cuda_stream {
    *
    * @throw rmm::cuda_error if stream creation fails
    */
-  cuda_stream()
-    : stream_{[]() {
-                auto* stream = new cudaStream_t;  // NOLINT(cppcoreguidelines-owning-memory)
-                RMM_CUDA_TRY(cudaStreamCreate(stream));
-                return stream;
-              }(),
-              [](cudaStream_t* stream) {
-                RMM_ASSERT_CUDA_SUCCESS(cudaStreamDestroy(*stream));
-                delete stream;  // NOLINT(cppcoreguidelines-owning-memory)
-              }}
-  {
-  }
+  cuda_stream();
 
   /**
    * @brief Returns true if the owned stream is non-null
@@ -84,37 +71,33 @@ class cuda_stream {
    * @return true If the owned stream has not been explicitly moved and is therefore non-null.
    * @return false If the owned stream has been explicitly moved and is therefore null.
    */
-  [[nodiscard]] bool is_valid() const { return stream_ != nullptr; }
+  [[nodiscard]] bool is_valid() const;
 
   /**
    * @brief Get the value of the wrapped CUDA stream.
    *
    * @return cudaStream_t The wrapped CUDA stream.
    */
-  [[nodiscard]] cudaStream_t value() const
-  {
-    RMM_LOGGING_ASSERT(is_valid());
-    return *stream_;
-  }
+  [[nodiscard]] cudaStream_t value() const;
 
   /**
    * @brief Explicit conversion to cudaStream_t.
    */
-  explicit operator cudaStream_t() const noexcept { return value(); }
+  explicit operator cudaStream_t() const noexcept;
 
   /**
    * @brief Creates an immutable, non-owning view of the wrapped CUDA stream.
    *
    * @return rmm::cuda_stream_view The view of the CUDA stream
    */
-  [[nodiscard]] cuda_stream_view view() const { return cuda_stream_view{value()}; }
+  [[nodiscard]] cuda_stream_view view() const;
 
   /**
    * @brief Implicit conversion to cuda_stream_view
    *
    * @return A view of the owned stream
    */
-  operator cuda_stream_view() const { return view(); }
+  operator cuda_stream_view() const;
 
   /**
    * @brief Synchronize the owned CUDA stream.
@@ -123,21 +106,18 @@ class cuda_stream {
    *
    * @throw rmm::cuda_error if stream synchronization fails
    */
-  void synchronize() const { RMM_CUDA_TRY(cudaStreamSynchronize(value())); }
+  void synchronize() const;
 
   /**
    * @brief Synchronize the owned CUDA stream. Does not throw if there is an error.
    *
    * Calls `cudaStreamSynchronize()` and asserts if there is an error.
    */
-  void synchronize_no_throw() const noexcept
-  {
-    RMM_ASSERT_CUDA_SUCCESS(cudaStreamSynchronize(value()));
-  }
+  void synchronize_no_throw() const noexcept;
 
  private:
   std::unique_ptr<cudaStream_t, std::function<void(cudaStream_t*)>> stream_;
 };
 
 /** @} */  // end of group
-}  // namespace RMM_NAMESPACE
+}  // namespace RMM_EXPORT rmm
