@@ -36,8 +36,12 @@ rapids-telemetry-record sccache-stats.txt sccache --show-adv-stats
 
 EXCLUDE_ARGS=(
   --exclude "librapids_logger.so"
+  --exclude "librmm.so"
 )
-python -m auditwheel repair "${EXCLUDE_ARGS[@]}" -w "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}" dist/*
+python -m auditwheel repair \
+    "${EXCLUDE_ARGS[@]}" \
+    -w "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}" \
+    dist/*
 
 ../../ci/validate_wheel.sh "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}"
 
