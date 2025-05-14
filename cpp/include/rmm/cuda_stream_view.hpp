@@ -16,15 +16,15 @@
 
 #pragma once
 
-#include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
 
 #include <cuda/stream_ref>
 #include <cuda_runtime_api.h>
 
 #include <cstddef>
+#include <ostream>
 
-namespace RMM_NAMESPACE {
+namespace RMM_EXPORT rmm {
 /**
  * @addtogroup cuda_streams
  * @{
@@ -38,63 +38,63 @@ namespace RMM_NAMESPACE {
  */
 class cuda_stream_view {
  public:
-  constexpr cuda_stream_view()                        = default;
-  ~cuda_stream_view()                                 = default;
-  constexpr cuda_stream_view(cuda_stream_view const&) = default;  ///< @default_copy_constructor
-  constexpr cuda_stream_view(cuda_stream_view&&)      = default;  ///< @default_move_constructor
-  constexpr cuda_stream_view& operator=(cuda_stream_view const&) =
+  cuda_stream_view()                        = default;
+  ~cuda_stream_view()                       = default;
+  cuda_stream_view(cuda_stream_view const&) = default;  ///< @default_copy_constructor
+  cuda_stream_view(cuda_stream_view&&)      = default;  ///< @default_move_constructor
+  cuda_stream_view& operator=(cuda_stream_view const&) =
     default;  ///< @default_copy_assignment{cuda_stream_view}
-  constexpr cuda_stream_view& operator=(cuda_stream_view&&) =
+  cuda_stream_view& operator=(cuda_stream_view&&) =
     default;  ///< @default_move_assignment{cuda_stream_view}
 
   // Disable construction from literal 0
-  constexpr cuda_stream_view(int)            = delete;  //< Prevent cast from 0
-  constexpr cuda_stream_view(std::nullptr_t) = delete;  //< Prevent cast from nullptr
+  cuda_stream_view(int)            = delete;  //< Prevent cast from 0
+  cuda_stream_view(std::nullptr_t) = delete;  //< Prevent cast from nullptr
 
   /**
    * @brief Constructor from a cudaStream_t
    *
    * @param stream The underlying stream for this view
    */
-  constexpr cuda_stream_view(cudaStream_t stream) noexcept : stream_{stream} {}
+  cuda_stream_view(cudaStream_t stream) noexcept;
 
   /**
    * @brief Implicit conversion from stream_ref.
    *
    * @param stream The underlying stream for this view
    */
-  constexpr cuda_stream_view(cuda::stream_ref stream) noexcept : stream_{stream.get()} {}
+  cuda_stream_view(cuda::stream_ref stream) noexcept;
 
   /**
    * @brief Get the wrapped stream.
    *
    * @return cudaStream_t The underlying stream referenced by this cuda_stream_view
    */
-  [[nodiscard]] constexpr cudaStream_t value() const noexcept { return stream_; }
+  [[nodiscard]] cudaStream_t value() const noexcept;
 
   /**
    * @brief Implicit conversion to cudaStream_t.
    *
    * @return cudaStream_t The underlying stream referenced by this cuda_stream_view
    */
-  constexpr operator cudaStream_t() const noexcept { return value(); }
+  operator cudaStream_t() const noexcept;
 
   /**
    * @brief Implicit conversion to stream_ref.
    *
    * @return stream_ref The underlying stream referenced by this cuda_stream_view
    */
-  constexpr operator cuda::stream_ref() const noexcept { return value(); }
+  operator cuda::stream_ref() const noexcept;
 
   /**
    * @briefreturn{true if the wrapped stream is the CUDA per-thread default stream}
    */
-  [[nodiscard]] inline bool is_per_thread_default() const noexcept;
+  [[nodiscard]] bool is_per_thread_default() const noexcept;
 
   /**
    * @briefreturn{true if the wrapped stream is explicitly the CUDA legacy default stream}
    */
-  [[nodiscard]] inline bool is_default() const noexcept;
+  [[nodiscard]] bool is_default() const noexcept;
 
   /**
    * @brief Synchronize the viewed CUDA stream.
@@ -103,17 +103,14 @@ class cuda_stream_view {
    *
    * @throw rmm::cuda_error if stream synchronization fails
    */
-  void synchronize() const { RMM_CUDA_TRY(cudaStreamSynchronize(stream_)); }
+  void synchronize() const;
 
   /**
    * @brief Synchronize the viewed CUDA stream. Does not throw if there is an error.
    *
    * Calls `cudaStreamSynchronize()` and asserts if there is an error.
    */
-  void synchronize_no_throw() const noexcept
-  {
-    RMM_ASSERT_CUDA_SUCCESS(cudaStreamSynchronize(stream_));
-  }
+  void synchronize_no_throw() const noexcept;
 
  private:
   cudaStream_t stream_{};
@@ -127,7 +124,6 @@ static constexpr cuda_stream_view cuda_stream_default{};
 /**
  * @brief Static cuda_stream_view of cudaStreamLegacy, for convenience
  */
-
 static const cuda_stream_view cuda_stream_legacy{
   cudaStreamLegacy  // NOLINT(cppcoreguidelines-pro-type-cstyle-cast)
 };
@@ -139,32 +135,6 @@ static const cuda_stream_view cuda_stream_per_thread{
   cudaStreamPerThread  // NOLINT(cppcoreguidelines-pro-type-cstyle-cast)
 };
 
-// Need to avoid putting is_per_thread_default and is_default into the group twice.
-/** @} */  // end of group
-
-[[nodiscard]] inline bool cuda_stream_view::is_per_thread_default() const noexcept
-{
-#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-  return value() == cuda_stream_per_thread || value() == nullptr;
-#else
-  return value() == cuda_stream_per_thread;
-#endif
-}
-
-[[nodiscard]] inline bool cuda_stream_view::is_default() const noexcept
-{
-#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-  return value() == cuda_stream_legacy;
-#else
-  return value() == cuda_stream_legacy || value() == nullptr;
-#endif
-}
-
-/**
- * @addtogroup cuda_streams
- * @{
- */
-
 /**
  * @brief Equality comparison operator for streams
  *
@@ -172,10 +142,7 @@ static const cuda_stream_view cuda_stream_per_thread{
  * @param rhs The second stream view to compare
  * @return true if equal, false if unequal
  */
-inline bool operator==(cuda_stream_view lhs, cuda_stream_view rhs)
-{
-  return lhs.value() == rhs.value();
-}
+bool operator==(cuda_stream_view lhs, cuda_stream_view rhs);
 
 /**
  * @brief Inequality comparison operator for streams
@@ -184,7 +151,7 @@ inline bool operator==(cuda_stream_view lhs, cuda_stream_view rhs)
  * @param rhs The second stream view to compare
  * @return true if unequal, false if equal
  */
-inline bool operator!=(cuda_stream_view lhs, cuda_stream_view rhs) { return not(lhs == rhs); }
+bool operator!=(cuda_stream_view lhs, cuda_stream_view rhs);
 
 /**
  * @brief Output stream operator for printing / logging streams
@@ -193,11 +160,7 @@ inline bool operator!=(cuda_stream_view lhs, cuda_stream_view rhs) { return not(
  * @param stream The cuda_stream_view to output
  * @return std::ostream& The output ostream
  */
-inline std::ostream& operator<<(std::ostream& os, cuda_stream_view stream)
-{
-  os << stream.value();
-  return os;
-}
+std::ostream& operator<<(std::ostream& os, cuda_stream_view stream);
 
 /** @} */  // end of group
-}  // namespace RMM_NAMESPACE
+}  // namespace RMM_EXPORT rmm
