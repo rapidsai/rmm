@@ -16,9 +16,8 @@ import datetime
 import os
 import re
 
-from packaging.version import Version
-
 import rmm
+from packaging.version import Version
 
 # -- Project information -----------------------------------------------------
 
