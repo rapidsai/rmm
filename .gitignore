@@ -21,7 +21,6 @@ dist/
 rmm.egg-info/
 python/build
 python/*/build
-python/rmm/docs/_build
 python/rmm/rmm/librmm/*.cpp
 !python/rmm/rmm/librmm/_torch_allocator.cpp
 python/rmm/**/librmm/**/*.h
@@ -94,9 +93,10 @@ thirdparty/googletest/
 *.ipr
 *.iws
 
-## Doxygen
+## Documentation
 cpp/doxygen/html
 cpp/doxygen/xml
+docs/_build
 
 #Java
 target
@@ -115,9 +115,6 @@ instance/
 
 # Scrapy stuff:
 .scrapy
-
-# Sphinx documentation
-python/docs/_build/
 
 # PyBuilder
 target/
