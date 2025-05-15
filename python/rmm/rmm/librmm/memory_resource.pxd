@@ -66,6 +66,8 @@ cdef inline CppExcept translate_python_except_to_cpp(err: BaseException) noexcep
 # exception are translated back into a Python exception.
 cdef extern from *:
     """
+    #include <rmm/error.hpp>
+
     #include <stdexcept>
     #include <utility>
 
