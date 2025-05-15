@@ -267,9 +267,48 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
       rlock.unlock();
       // Cold path
       write_lock_guard wlock(stream_free_blocks_mtx_);
-      stream_free_blocks_[stream_event].insert(block);  // TODO(jigao): is it thread-safe?
+      // Recheck the map since another thread from the same stream
+      // might have acquired the write lock first and inserted a new free_list into map.
+      auto iter = stream_free_blocks_.find(stream_event);
+      free_list& blocks =
+        (iter != stream_free_blocks_.end()) ? iter->second : stream_free_blocks_[stream_event];
+      lock_guard free_list_lock(blocks.get_mutex());
+      blocks.insert(block);
     }
+
+    {
+      // Hot Path of do_deallocate:
+      // 1. Acquire shared read-lock on map for fast lookup
+      // 2. If entry exists, proceed to hot path
+      // 3. Acquire exclusive write-lock on free_list for block insertion
+      read_lock_guard rlock(stream_free_blocks_mtx_);
+      auto iter = stream_free_blocks_.find(stream_event);
+      if (iter != stream_free_blocks_.end()) {
+        lock_guard free_list_lock(iter->second.get_mutex());
+        iter->second.insert(block);
+        return;
+      }
+    }
+
+    {
+      // Cold Path of do_deallocate:
+      // 1. Acquire exclusive write-lock on map to:
+      //    - Recheck map state (another thread might have inserted a new free_list)
+      //    - Insert a new free_list into map if still empty
+      // 2. Acquire exclusive write-lock on the new free_list for block insertion
+      //    (Locking the newly created free_list is redundant as it protected by the map's
+      //    write-lock, but retained for consistency and readability.)
+      write_lock_guard wlock(stream_free_blocks_mtx_);
+      auto iter = stream_free_blocks_.find(stream_event);
+      free_list& blocks =
+        (iter != stream_free_blocks_.end()) ? iter->second : stream_free_blocks_[stream_event];
+      lock_guard free_list_lock(blocks.get_mutex());
+      blocks.insert(block);
+      return;
+    }
+
     // TODO(jigao): this logging is not protected by mutex!
+    // TODO(jigao): do it before return
     // log_summary_trace();
   }
 
@@ -288,7 +327,10 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
   {
     RMM_FUNC_RANGE();
     if (stream.is_per_thread_default()) {
-      // Hot path
+      // Hot Path (PTDS optimization):
+      // Leverage thread-local storage for each stream to eliminate contention
+      // and avoid locking entirely.
+
       // Create a thread-local event for each device. These events are
       // deliberately leaked since the destructor needs to call into
       // the CUDA runtime and thread_local destructors (can) run below
@@ -307,7 +349,10 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
       return stream_event_pair{stream.value(), event};
     }
     write_lock_guard wlock(stream_events_mtx_);
-    // Cold path
+    // Cold Path:
+    // Without PTDS, use pessimistic locking with a broader critical section
+    // to handle potential future writes to the stream_events_ map.
+
     // We use cudaStreamLegacy as the event map key for the default stream for consistency between
     // PTDS and non-PTDS mode. In PTDS mode, the cudaStreamLegacy map key will only exist if the
     // user explicitly passes it, so it is used as the default location for the free list
@@ -355,9 +400,10 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
   {
     RMM_FUNC_RANGE();
     {
-      // The hot path of get_block:
-      //  1. Read-lock the map for lookup
-      //  2. then exclusively lock the free_list to get a block locally.
+      // Hot Path of get_block:
+      // 1. Acquire shared read-lock on map for fast lookup
+      // 2. Acquire exclusive write-lock on free_list for local block allocation
+
       read_lock_guard rlock(stream_free_blocks_mtx_);
       // Try to find a satisfactory block in free list for the same stream (no sync required)
       auto iter = stream_free_blocks_.find(stream_event);
@@ -368,10 +414,9 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
       }
     }
 
-    // The cold path of get_block:
-    //  Write lock the map to safely perform another lookup and possibly modify entries.
-    //  This exclusive lock ensures no other threads can access the map and all free lists in the
-    //  map.
+    // Cold Path of get_block:
+    // Acquire write-lock on map to lookup again and modify map entries if needed
+    // This exclusive write-lock  prevents concurrent access to map and its free_lists
     write_lock_guard wlock(stream_free_blocks_mtx_);
     auto iter = stream_free_blocks_.find(stream_event);
     free_list& blocks =
