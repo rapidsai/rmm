@@ -55,7 +55,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
    * https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html and ensure the enum
    * values are kept in sync with the CUDA documentation.
    */
-  enum class allocation_handle_type {
+  enum class allocation_handle_type : int32_t {
     none                  = 0x0,  ///< Does not allow any export mechanism.
     posix_file_descriptor = 0x1,  ///< Allows a file descriptor to be used for exporting. Permitted
                                   ///< only on POSIX systems.
