@@ -211,7 +211,6 @@ autoclass_content = "init"
 nitpick_ignore = [
     ("py:class", "size_t"),
     ("py:class", "void"),
-    ("cpp:identifier", "int32_t"),
 ]
 
 
