@@ -17,7 +17,7 @@
 from builtins import BaseException
 
 from libc.stddef cimport size_t
-from libc.stdint cimport int8_t, int64_t
+from libc.stdint cimport int8_t, int32_t, int64_t
 from libcpp cimport bool
 from libcpp.optional cimport optional
 from libcpp.pair cimport pair
@@ -120,17 +120,16 @@ cdef extern from "rmm/mr/device/cuda_async_view_memory_resource.hpp" \
             cudaMemPool_t pool_handle) except +
         cudaMemPool_t pool_handle() const
 
-# TODO: when we adopt Cython 3.0 use enum class
 cdef extern from "rmm/mr/device/cuda_async_memory_resource.hpp" \
         namespace \
-        "rmm::mr::cuda_async_memory_resource::allocation_handle_type" \
+        "rmm::mr::cuda_async_memory_resource" \
         nogil:
-    enum allocation_handle_type \
-            "rmm::mr::cuda_async_memory_resource::allocation_handle_type":
+    cpdef enum class allocation_handle_type(int32_t):
         none
         posix_file_descriptor
         win32
         win32_kmt
+        fabric
 
 
 cdef extern from "rmm/mr/device/pool_memory_resource.hpp" \

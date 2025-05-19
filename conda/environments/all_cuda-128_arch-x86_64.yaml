@@ -12,7 +12,7 @@ dependencies:
 - cmake>=3.30.4
 - cuda-nvcc
 - cuda-python>=12.6.2,<13.0a0
-- cuda-version=12.9
+- cuda-version=12.8
 - cxx-compiler
 - cython>=3.0.0
 - doxygen=1.9.1
@@ -39,4 +39,4 @@ dependencies:
 - sphinx<8.2.0
 - sphinx_rtd_theme
 - sysroot_linux-64==2.28
-name: all_cuda-129_arch-x86_64
+name: all_cuda-128_arch-x86_64
