@@ -22,7 +22,7 @@ from collections import defaultdict
 cimport cython
 from cython.operator cimport dereference as deref
 from libc.stddef cimport size_t
-from libc.stdint cimport int8_t, uintptr_t
+from libc.stdint cimport int8_t, int32_t, uintptr_t
 from libcpp cimport bool
 from libcpp.memory cimport make_unique, unique_ptr
 from libcpp.optional cimport optional
@@ -67,7 +67,6 @@ from rmm.librmm.memory_resource cimport (
     managed_memory_resource,
     percent_of_free_device_memory as c_percent_of_free_device_memory,
     pool_memory_resource,
-    posix_file_descriptor,
     prefetch_resource_adaptor,
     sam_headroom_memory_resource,
     statistics_resource_adaptor,
@@ -167,12 +166,16 @@ cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
     enable_ipc: bool, optional
         If True, enables export of POSIX file descriptor handles for the memory
         allocated by this resource so that it can be used with CUDA IPC.
+    enable_fabric: bool, optional
+        If True, enables export of fabric handles for the memory allocated by
+        this resource.
     """
     def __cinit__(
         self,
         initial_pool_size=None,
         release_threshold=None,
-        enable_ipc=False
+        enable_ipc=False,
+        enable_fabric=False
     ):
         cdef optional[size_t] c_initial_pool_size = (
             optional[size_t]()
@@ -186,13 +189,23 @@ cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
             else optional[size_t](<size_t> release_threshold)
         )
 
-        # If IPC memory handles are not supported, the constructor below will
-        # raise an error from C++.
-        cdef optional[allocation_handle_type] c_export_handle_type = (
-            optional[allocation_handle_type](
-                posix_file_descriptor
+        # If IPC or fabric memory handles are enabled but not supported, the
+        # constructor below will raise an error from C++.
+        cdef allocation_handle_type descriptor = allocation_handle_type.none
+        if enable_ipc:
+            descriptor = <allocation_handle_type>(
+                <int32_t?>descriptor |
+                <int32_t?>allocation_handle_type.posix_file_descriptor
             )
-            if enable_ipc
+        if enable_fabric:
+            descriptor = <allocation_handle_type>(
+                <int32_t?>descriptor |
+                <int32_t?>allocation_handle_type.fabric
+            )
+
+        cdef optional[allocation_handle_type] c_export_handle_type = (
+            optional[allocation_handle_type](descriptor)
+            if (enable_ipc or enable_fabric)
             else optional[allocation_handle_type]()
         )
 
