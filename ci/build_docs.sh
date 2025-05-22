@@ -41,7 +41,7 @@ mv html/* "${RAPIDS_DOCS_DIR}/librmm/html"
 popd
 
 rapids-logger "Build Python docs"
-pushd python/rmm/docs
+pushd docs
 make dirhtml
 mkdir -p "${RAPIDS_DOCS_DIR}/rmm/html"
 mv _build/dirhtml/* "${RAPIDS_DOCS_DIR}/rmm/html"

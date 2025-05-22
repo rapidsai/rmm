@@ -10,6 +10,7 @@ package_dir="python/rmm"
 
 source rapids-configure-sccache
 source rapids-date-string
+source rapids-init-pip
 
 rapids-generate-version > ./VERSION
 
@@ -20,17 +21,21 @@ LIBRMM_WHEELHOUSE=$(RAPIDS_PY_WHEEL_NAME="librmm_${RAPIDS_PY_CUDA_SUFFIX}" rapid
 
 # ensure 'rmm' wheel builds always use the 'librmm' just built in the same CI run
 #
-# using env variable PIP_CONSTRAINT is necessary to ensure the constraints
-# are used when created the isolated build environment
-echo "librmm-${RAPIDS_PY_CUDA_SUFFIX} @ file://$(echo "${LIBRMM_WHEELHOUSE}"/librmm_"${RAPIDS_PY_CUDA_SUFFIX}"*.whl)" > ./build-constraints.txt
+# Using env variable PIP_CONSTRAINT (initialized by 'rapids-init-pip') is necessary to ensure the constraints
+# are used when creating the isolated build environment.
+echo "librmm-${RAPIDS_PY_CUDA_SUFFIX} @ file://$(echo "${LIBRMM_WHEELHOUSE}"/librmm_"${RAPIDS_PY_CUDA_SUFFIX}"*.whl)" >> "${PIP_CONSTRAINT}"
 
 sccache --zero-stats
 
 # Creates artifacts directory for telemetry
 source rapids-telemetry-setup
 
-PIP_CONSTRAINT="${PWD}/build-constraints.txt" \
-    rapids-telemetry-record build.log rapids-pip-retry wheel . -w dist -v --no-deps --disable-pip-version-check
+rapids-telemetry-record build.log rapids-pip-retry wheel \
+  -v \
+  -w dist \
+  --no-deps \
+  --disable-pip-version-check \
+  .
 
 rapids-telemetry-record sccache-stats.txt sccache --show-adv-stats
 
