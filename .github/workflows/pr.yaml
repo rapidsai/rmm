@@ -98,7 +98,8 @@ jobs:
     uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-tests.yaml@nightly-fix-for-custom-workflows
     if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_cpp
     with:
-      build_type: pull-request
+      build_type: nightly
+      build_workflow_name: sparkly-unicorn.yaml
       script: ci/test_cpp.sh
   conda-python-build:
     needs: conda-cpp-build
@@ -113,14 +114,16 @@ jobs:
     uses: rapidsai/shared-workflows/.github/workflows/conda-python-tests.yaml@nightly-fix-for-custom-workflows
     if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_python
     with:
-      build_type: pull-request
+      build_type: nightly
+      build_workflow_name: sparkly-unicorn.yaml
       script: ci/test_python.sh
   docs-build:
     needs: conda-python-build
     secrets: inherit
     uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@nightly-fix-for-custom-workflows
     with:
-      build_type: pull-request
+      build_type: nightly
+      build_workflow_name: sparkly-unicorn.yaml
       node_type: "gpu-l4-latest-1"
       arch: "amd64"
       container_image: "rapidsai/ci-conda:latest"
@@ -150,7 +153,8 @@ jobs:
     uses: rapidsai/shared-workflows/.github/workflows/wheels-test.yaml@nightly-fix-for-custom-workflows
     if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_python
     with:
-      build_type: pull-request
+      build_type: nightly
+      build_workflow_name: sparkly-unicorn.yaml
       script: ci/test_wheel.sh
   devcontainer:
     secrets: inherit
