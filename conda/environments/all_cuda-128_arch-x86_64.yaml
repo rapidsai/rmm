@@ -7,6 +7,7 @@ channels:
 dependencies:
 - breathe>=4.35.0
 - c-compiler
+- cccl==2.8.4
 - clang-tools==20.1.4
 - clang==20.1.4
 - cmake>=3.30.4
@@ -27,6 +28,7 @@ dependencies:
 - numba>=0.59.1,<0.62.0a0
 - numpy>=1.23,<3.0a0
 - numpydoc
+- nvtx==3.2.0
 - pre-commit
 - pytest
 - pytest-cov

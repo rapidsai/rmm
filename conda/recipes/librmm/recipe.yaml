@@ -90,6 +90,8 @@ outputs:
           then: cudatoolkit
           else: cuda-cudart
         - rapids-logger =0.1
+        - cccl =2.8.4
+        - nvtx-c =3.2.0
       run_exports:
         - ${{ pin_subpackage("librmm", upper_bound="x.x") }}
       ignore_run_exports:
