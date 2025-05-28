@@ -44,5 +44,3 @@ rapids-telemetry-record sccache-stats.txt sccache --show-adv-stats
 
 # See https://github.com/prefix-dev/rattler-build/issues/1424
 rm -rf "$RAPIDS_CONDA_BLD_OUTPUT_DIR"/build_cache
-
-rapids-upload-conda-to-s3 python
