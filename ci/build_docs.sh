@@ -3,8 +3,6 @@
 
 set -euo pipefail
 
-source ./ci/use_gha_tools_from_branch.sh
-
 rapids-logger "Downloading artifacts from previous jobs"
 CPP_CHANNEL=$(rapids-download-conda-from-github cpp)
 PYTHON_CHANNEL=$(rapids-download-conda-from-github python)
