@@ -86,11 +86,11 @@ outputs:
         - ${{ pin_subpackage("librmm", upper_bound="x.x") }}
       ignore_run_exports:
         from_package:
-            - cuda-cudart-dev
-            - ${{ compiler("c") }}
-            - ${{ compiler("cxx") }}
-            - ${{ compiler("cuda") }}
-            - ${{ stdlib("c") }}
+          - cuda-cudart-dev
+          - ${{ compiler("c") }}
+          - ${{ compiler("cxx") }}
+          - ${{ compiler("cuda") }}
+          - ${{ stdlib("c") }}
         by_name:
           - cuda-version
     tests:
@@ -128,10 +128,10 @@ outputs:
       ignore_run_exports:
         from_package:
           - cuda-cudart-dev
-            - ${{ compiler("c") }}
-            - ${{ compiler("cxx") }}
-            - ${{ compiler("cuda") }}
-            - ${{ stdlib("c") }}
+          - ${{ compiler("c") }}
+          - ${{ compiler("cxx") }}
+          - ${{ compiler("cuda") }}
+          - ${{ stdlib("c") }}
         by_name:
           - cuda-version
     about:
@@ -178,10 +178,10 @@ outputs:
       ignore_run_exports:
         from_package:
           - cuda-cudart-dev
-            - ${{ compiler("c") }}
-            - ${{ compiler("cxx") }}
-            - ${{ compiler("cuda") }}
-            - ${{ stdlib("c") }}
+          - ${{ compiler("c") }}
+          - ${{ compiler("cxx") }}
+          - ${{ compiler("cuda") }}
+          - ${{ stdlib("c") }}
         by_name:
           - cuda-version
           - librmm
