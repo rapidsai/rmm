@@ -64,10 +64,7 @@ requirements:
     - python
   ignore_run_exports:
     from_package:
-      - ${{ compiler("c") }}
-      - ${{ compiler("cxx") }}
       - ${{ compiler("cuda") }}
-      - ${{ stdlib("c") }}
       - cuda-python
       - cuda-cudart-dev
 
