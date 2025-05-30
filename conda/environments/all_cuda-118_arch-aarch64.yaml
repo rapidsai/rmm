@@ -7,7 +7,6 @@ channels:
 dependencies:
 - breathe>=4.35.0
 - c-compiler
-- cccl==2.8.4
 - clang-tools==20.1.4
 - clang==20.1.4
 - cmake>=3.30.4

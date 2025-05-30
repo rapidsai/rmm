@@ -129,7 +129,6 @@ dependencies:
         packages:
           - c-compiler
           - cxx-compiler
-          - cccl==2.8.4
           - nvtx==3.2.0
     specific:
       - output_types: conda

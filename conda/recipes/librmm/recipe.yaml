@@ -58,7 +58,6 @@ cache:
       - rapids-logger =0.1
       - if: cuda_major != "11"
         then: cuda-driver-dev
-      - cccl =2.8.4
       - nvtx-c =3.2.0
 
 outputs:
@@ -90,7 +89,6 @@ outputs:
           then: cudatoolkit
           else: cuda-cudart
         - rapids-logger =0.1
-        - cccl =2.8.4
         - nvtx-c =3.2.0
       run_exports:
         - ${{ pin_subpackage("librmm", upper_bound="x.x") }}
