@@ -87,7 +87,6 @@ outputs:
       ignore_run_exports:
         from_package:
           - cuda-cudart-dev
-          - ${{ compiler("cuda") }}
         by_name:
           - cuda-version
     tests:
@@ -125,7 +124,6 @@ outputs:
       ignore_run_exports:
         from_package:
           - cuda-cudart-dev
-          - ${{ compiler("cuda") }}
         by_name:
           - cuda-version
     about:
@@ -172,8 +170,6 @@ outputs:
       ignore_run_exports:
         from_package:
           - cuda-cudart-dev
-          - ${{ compiler("cuda") }}
-          - ${{ stdlib("c") }}
         by_name:
           - cuda-version
           - librmm

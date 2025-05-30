@@ -64,7 +64,6 @@ requirements:
     - python
   ignore_run_exports:
     from_package:
-      - ${{ compiler("cuda") }}
       - cuda-python
       - cuda-cudart-dev
 
