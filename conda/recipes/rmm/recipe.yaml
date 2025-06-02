@@ -66,6 +66,8 @@ requirements:
     from_package:
       - cuda-python
       - cuda-cudart-dev
+    by_name:
+      - cuda-version
 
 tests:
   - python:
