@@ -37,6 +37,7 @@
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
+#include <cstddef>
 #include <iterator>
 #include <memory>
 #include <numeric>
@@ -98,6 +99,50 @@ struct allocation {
 };
 
 /**
+ * @brief Partial polyfill for C++20 std::barrier
+ */
+struct barrier {
+ private:
+  std::ptrdiff_t arrived_{};     // How many threads have arrived?
+  std::ptrdiff_t generation_{};  // Generation count for reuse of barrier.
+  std::ptrdiff_t expected_;      // How many threads do we expect to arrive?
+  std::condition_variable cv;    // condition variable for notification
+  std::mutex mutex;              // mutex to protect accesses
+
+ public:
+  /**
+   * @brief Construct a reusable barrier.
+   * @param expected number of threads we expect to arrive at the barrier.
+   */
+  explicit barrier(std::ptrdiff_t expected) : expected_{expected} {}
+  // Non-copyable, non-movable
+  barrier(const barrier&)            = delete;
+  barrier& operator=(const barrier&) = delete;
+  barrier(barrier&&)                 = delete;
+  barrier& operator=(barrier&&)      = delete;
+
+  // Destructor
+  ~barrier() = default;
+
+  /**
+   * @brief Arrive at the barrier and wait.
+   *
+   * All threads must arrive at the same textual barrier.
+   */
+  void arrive_and_wait()
+  {
+    std::unique_lock lock{mutex};
+    std::ptrdiff_t gen = generation_;
+    if (++arrived_ == expected_) {
+      arrived_ = 0;
+      ++generation_;
+      cv.notify_all();
+    } else {
+      cv.wait(lock, [this, gen] { return gen != generation_; });
+    }
+  }
+};
+/**
  * @brief Function object for running a replay benchmark with the specified
  * `device_memory_resource`.
  *
@@ -116,6 +161,7 @@ struct replay_benchmark {
   std::condition_variable cv;  // to ensure in-order playback
   std::mutex event_mutex;      // to make event_index and allocation_map thread-safe
   std::size_t event_index{0};  // playback index
+  barrier barrier_;
 
   /**
    * @brief Construct a `replay_benchmark` from a list of events and
@@ -131,7 +177,8 @@ struct replay_benchmark {
     : factory_{std::move(factory)},
       simulated_size_{simulated_size},
       events_{events},
-      allocation_map{events.size()}
+      allocation_map{events.size()},
+      barrier_{static_cast<std::ptrdiff_t>(events_.size())}
   {
   }
 
@@ -145,7 +192,8 @@ struct replay_benchmark {
       simulated_size_{other.simulated_size_},
       mr_{std::move(other.mr_)},
       events_{other.events_},
-      allocation_map{std::move(other.allocation_map)}
+      allocation_map{std::move(other.allocation_map)},
+      barrier_{static_cast<std::ptrdiff_t>(events_.size())}
   {
   }
 
@@ -176,11 +224,15 @@ struct replay_benchmark {
       RMM_LOG_INFO("------ Start of Benchmark -----");
       mr_ = factory_(simulated_size_);
     }
+    // Can't release threads until MR is set up.
+    barrier_.arrive_and_wait();
   }
 
   /// Destroy the memory resource and count any unallocated memory
   void TearDown(const ::benchmark::State& state)
   {
+    // Can't tear down the MR until every thread is done.
+    barrier_.arrive_and_wait();
     if (state.thread_index() == 0) {
       RMM_LOG_INFO("------ End of Benchmark -----");
       // clean up any leaked allocations
@@ -207,8 +259,12 @@ struct replay_benchmark {
     SetUp(state);
 
     auto const& my_events = events_.at(state.thread_index());
-
     for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
+      // At start of each iteration event_index must be reset.
+      // Any thread could do this, but this is easy
+      if (state.thread_index() == 0) { event_index = 0; }
+      // And everyone waits for the reset.
+      barrier_.arrive_and_wait();
       std::for_each(my_events.begin(), my_events.end(), [this](auto event) {
         // ensure correct ordering between threads
         std::unique_lock<std::mutex> lock{event_mutex};
@@ -228,6 +284,9 @@ struct replay_benchmark {
         event_index++;
         cv.notify_all();
       });
+      // Everyone waits to be done (so that the reset of the next
+      // iteration doesn't proceed until we're finished)
+      barrier_.arrive_and_wait();
     }
 
     TearDown(state);
