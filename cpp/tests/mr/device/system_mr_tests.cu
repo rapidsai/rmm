@@ -96,6 +96,7 @@ TEST_F(SystemMRTest, FirstTouchOnCPU)
 
 TEST_F(SystemMRTest, FirstTouchOnGPU)
 {
+  // Test change
   auto const free = rmm::available_device_memory().first;
   system_mr mr;
   void* ptr = mr.allocate(size_mb);
