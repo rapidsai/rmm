@@ -219,9 +219,9 @@ struct replay_benchmark {
         // ensure correct ordering between threads
         std::unique_lock<std::mutex> lock{event_mutex};
 
-        // In multi-threaded case, wait for our turn
-        if (events_.size() > 1 && event_index != event.index) {
-          cv.wait(lock, [&]() { return event_index == event.index; });
+        // In multi-threaded case, wait for our turn if we're behind
+        if (events_.size() > 1 && event.index > event_index) {
+          cv.wait(lock, [&]() { return event_index >= event.index; });
         }
 
         // Process the event
@@ -235,7 +235,6 @@ struct replay_benchmark {
         }
 
         event_index++;
-
         // Only notify if there are other threads that might be waiting
         if (events_.size() > 1) { cv.notify_all(); }
       });
