@@ -291,3 +291,15 @@ TYPED_TEST(TypedUVectorTest, Iterators)
   auto const* const_end = std::as_const(vec).end();
   EXPECT_EQ(const_end, vec.cend());
 }
+
+TYPED_TEST(TypedUVectorTest, ReverseIterators)
+{
+  auto const size{12345};
+  rmm::device_uvector<TypeParam> vec(size, this->stream());
+
+  EXPECT_EQ(vec.rbegin().base(), vec.end());
+  EXPECT_EQ(vec.crbegin().base(), vec.cend());
+
+  EXPECT_EQ(std::distance(vec.rbegin(), vec.rend()), vec.size());
+  EXPECT_EQ(std::distance(vec.crbegin(), vec.crend()), vec.size());
+}
