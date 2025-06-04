@@ -218,13 +218,10 @@ struct replay_benchmark {
       std::for_each(my_events.begin(), my_events.end(), [this](auto event) {
         // ensure correct ordering between threads
         std::unique_lock<std::mutex> lock{event_mutex};
-
-        // In multi-threaded case, wait for our turn
-        if (events_.size() > 1 && event_index != event.index) {
+        if (event_index != event.index) {
           cv.wait(lock, [&]() { return event_index == event.index; });
         }
 
-        // Process the event
         // rmm::detail::action::ALLOCATE_FAILURE is ignored.
         if (rmm::detail::action::ALLOCATE == event.act) {
           auto ptr = mr_->allocate(event.size);
@@ -235,9 +232,7 @@ struct replay_benchmark {
         }
 
         event_index++;
-
-        // Only notify if there are other threads that might be waiting
-        if (events_.size() > 1) { cv.notify_all(); }
+        cv.notify_all();
       });
     }
 
