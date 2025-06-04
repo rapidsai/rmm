@@ -214,7 +214,8 @@ ConfigureTest(BINNING_MR_TEST mr/device/binning_mr_tests.cpp)
 ConfigureTest(CALLBACK_MR_TEST mr/device/callback_mr_tests.cpp)
 
 # system memory resource tests
-ConfigureTest(SYSTEM_MR_TEST mr/device/system_mr_tests.cu GPUS 1 PERCENT 100)
+ConfigureTest(SYSTEM_MR_TEST mr/device/system_mr_tests.cu)
+set_property(TEST SYSTEM_MR_TEST PROPERTY RUN_SERIAL TRUE)
 
 # container multidevice tests
 ConfigureTest(CONTAINER_MULTIDEVICE_TEST container_multidevice_tests.cu)
