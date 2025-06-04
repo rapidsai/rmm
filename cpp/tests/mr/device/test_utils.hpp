@@ -44,6 +44,10 @@ inline bool is_device_accessible_memory(void* ptr)
 
   std::cout << "is_device_accessible_memory pointer null?: " << std::boolalpha
             << (attributes.devicePointer != nullptr) << std::endl;
+
+  std::cout << "is_system_memory_supported?: " << std::boolalpha
+            << rmm::mr::detail::is_system_memory_supported(rmm::get_current_cuda_device())
+            << std::endl;
   return attributes.devicePointer != nullptr;
 }
 
