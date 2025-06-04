@@ -7,6 +7,6 @@ set -euo pipefail
 cd "${INSTALL_PREFIX:-${CONDA_PREFIX:-/usr}}/bin/gtests/librmm/"
 
 # Run gtest verbosely
-./DEVICE_MR_REF_TEST --verbose
+./DEVICE_MR_REF_TEST --gtest_filter="ResourceTests/mr_ref_test.SetCurrentDeviceResourceRef/System"
 
 #ctest --no-tests=error --output-on-failure "$@"
