@@ -3,8 +3,6 @@
 
 set -euo pipefail
 
-rapids-configure-conda-channels
-
 source rapids-configure-sccache
 source rapids-date-string
 
@@ -16,7 +14,7 @@ rapids-generate-version > ./VERSION
 
 rapids-logger "Begin py build"
 
-CPP_CHANNEL=$(rapids-download-conda-from-s3 cpp)
+CPP_CHANNEL=$(rapids-download-conda-from-github cpp)
 
 sccache --zero-stats
 
@@ -36,7 +34,6 @@ rapids-telemetry-record build.log rattler-build build \
     --recipe conda/recipes/rmm \
     --experimental \
     --no-build-id \
-    --channel-priority disabled \
     --output-dir "$RAPIDS_CONDA_BLD_OUTPUT_DIR" \
     -c "${CPP_CHANNEL}" \
     "${RATTLER_CHANNELS[@]}"

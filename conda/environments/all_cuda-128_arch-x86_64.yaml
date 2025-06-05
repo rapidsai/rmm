@@ -7,8 +7,8 @@ channels:
 dependencies:
 - breathe>=4.35.0
 - c-compiler
-- clang-tools==16.0.6
-- clang==16.0.6
+- clang-tools==20.1.4
+- clang==20.1.4
 - cmake>=3.30.4
 - cuda-nvcc
 - cuda-python>=12.6.2,<13.0a0
@@ -24,13 +24,13 @@ dependencies:
 - make
 - nbsphinx
 - ninja
-- numba>=0.59.1,<0.61.0a0
+- numba>=0.59.1,<0.62.0a0
 - numpy>=1.23,<3.0a0
 - numpydoc
 - pre-commit
 - pytest
 - pytest-cov
-- python>=3.10,<3.13
+- python>=3.10,<3.14
 - rapids-build-backend>=0.3.0,<0.4.0.dev0
 - rapids-logger==0.1.*
 - scikit-build-core >=0.10.0

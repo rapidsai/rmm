@@ -15,7 +15,7 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.6
+    rev: v0.11.4
     hooks:
       - id: ruff
         args: ["--fix"]
@@ -25,7 +25,7 @@ repos:
     hooks:
       - id: cython-lint
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: v16.0.6
+    rev: v20.1.4
     hooks:
       - id: clang-format
         types_or: [c, c++, cuda]
@@ -36,24 +36,24 @@ repos:
       - id: fix-smartquotes
         exclude: |
           (?x)^(
-            ^benchmarks/utilities/cxxopts.hpp
+            ^cpp/benchmarks/utilities/cxxopts.hpp
           )
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.3.0
+    rev: v2.4.1
     hooks:
       - id: codespell
         additional_dependencies: [tomli]
         args: ["--toml", "pyproject.toml"]
         exclude: |
           (?x)^(
-            pyproject.toml|
-            benchmarks/utilities/cxxopts.hpp
+            ^pyproject.toml|
+            ^cpp/benchmarks/utilities/cxxopts.hpp
           )
   - repo: local
     hooks:
       - id: cmake-format
         name: cmake-format
-        entry: ./scripts/run-cmake-format.sh cmake-format
+        entry: ./cpp/scripts/run-cmake-format.sh cmake-format
         language: python
         types: [cmake]
         # Note that pre-commit autoupdate does not update the versions
@@ -62,7 +62,7 @@ repos:
         - cmakelang==0.6.13
       - id: cmake-lint
         name: cmake-lint
-        entry: ./scripts/run-cmake-format.sh cmake-lint
+        entry: ./cpp/scripts/run-cmake-format.sh cmake-lint
         language: python
         types: [cmake]
         # Note that pre-commit autoupdate does not update the versions
@@ -71,19 +71,19 @@ repos:
         - cmakelang==0.6.13
       - id: doxygen-check
         name: doxygen-check
-        entry: ./scripts/doxygen.sh
+        entry: ./cpp/scripts/doxygen.sh
         types_or: [file]
         language: system
         pass_filenames: false
         verbose: true
   - repo: https://github.com/rapidsai/pre-commit-hooks
-    rev: v0.4.0
+    rev: v0.6.0
     hooks:
     - id: verify-copyright
     - id: verify-alpha-spec
       args: ["--fix", "--mode=release"]
   - repo: https://github.com/rapidsai/dependency-file-generator
-    rev: v1.17.0
+    rev: v1.18.1
     hooks:
       - id: rapids-dependency-file-generator
         args: ["--clean"]

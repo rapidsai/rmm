@@ -3,10 +3,12 @@
 
 set -euo pipefail
 
+package_name="librmm"
 package_dir="python/librmm"
 
 source rapids-configure-sccache
 source rapids-date-string
+source rapids-init-pip
 
 rapids-generate-version > ./VERSION
 
@@ -19,12 +21,16 @@ sccache --zero-stats
 # Creates artifacts directory for telemetry
 source rapids-telemetry-setup
 
-rapids-telemetry-record build.log rapids-pip-retry wheel . -w dist -v --no-deps --disable-pip-version-check
+dist_dir="$(mktemp -d)"
+rapids-telemetry-record build.log rapids-pip-retry wheel . -w "${dist_dir}" -v --no-deps --disable-pip-version-check
 
 rapids-telemetry-record sccache-stats.txt sccache --show-adv-stats
 
-python -m wheel tags --platform any dist/* --remove
+python -m auditwheel repair \
+    --exclude librapids_logger.so \
+    -w "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}" \
+    ${dist_dir}/*
 
-../../ci/validate_wheel.sh dist
+../../ci/validate_wheel.sh "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}"
 
-RAPIDS_PY_WHEEL_NAME="rmm_${RAPIDS_PY_CUDA_SUFFIX}" rapids-upload-wheels-to-s3 cpp dist
+RAPIDS_PY_WHEEL_NAME="${package_name}_${RAPIDS_PY_CUDA_SUFFIX}" rapids-upload-wheels-to-s3 cpp "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}"
