@@ -35,6 +35,7 @@
 #include <benchmarks/utilities/simulated_memory_resource.hpp>
 
 #include <atomic>
+#include <barrier>
 #include <chrono>
 #include <condition_variable>
 #include <cstddef>
@@ -99,50 +100,6 @@ struct allocation {
 };
 
 /**
- * @brief Partial polyfill for C++20 std::barrier
- */
-struct barrier {
- private:
-  std::ptrdiff_t arrived_{};     // How many threads have arrived?
-  std::ptrdiff_t generation_{};  // Generation count for reuse of barrier.
-  std::ptrdiff_t expected_;      // How many threads do we expect to arrive?
-  std::condition_variable cv;    // condition variable for notification
-  std::mutex mutex;              // mutex to protect accesses
-
- public:
-  /**
-   * @brief Construct a reusable barrier.
-   * @param expected number of threads we expect to arrive at the barrier.
-   */
-  explicit barrier(std::ptrdiff_t expected) : expected_{expected} {}
-  // Non-copyable, non-movable
-  barrier(const barrier&)            = delete;
-  barrier& operator=(const barrier&) = delete;
-  barrier(barrier&&)                 = delete;
-  barrier& operator=(barrier&&)      = delete;
-
-  // Destructor
-  ~barrier() = default;
-
-  /**
-   * @brief Arrive at the barrier and wait.
-   *
-   * All threads must arrive at the same textual barrier.
-   */
-  void arrive_and_wait()
-  {
-    std::unique_lock lock{mutex};
-    std::ptrdiff_t gen = generation_;
-    if (++arrived_ == expected_) {
-      arrived_ = 0;
-      ++generation_;
-      cv.notify_all();
-    } else {
-      cv.wait(lock, [this, gen] { return gen != generation_; });
-    }
-  }
-};
-/**
  * @brief Function object for running a replay benchmark with the specified
  * `device_memory_resource`.
  *
@@ -161,7 +118,7 @@ struct replay_benchmark {
   std::condition_variable cv;  // to ensure in-order playback
   std::mutex event_mutex;      // to make event_index and allocation_map thread-safe
   std::size_t event_index{0};  // playback index
-  barrier barrier_;
+  std::barrier barrier_;
 
   /**
    * @brief Construct a `replay_benchmark` from a list of events and
