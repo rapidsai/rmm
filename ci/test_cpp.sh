@@ -31,7 +31,7 @@ rapids-print-env
 
 rapids-logger "Check GPU usage"
 nvidia-smi
-nvidia-smi -q | grep Addressing
+nvidia-smi -q
 
 # Run librmm gtests from librmm-tests package
 rapids-logger "Run gtests"
