@@ -118,7 +118,7 @@ struct replay_benchmark {
   std::condition_variable cv;  // to ensure in-order playback
   std::mutex event_mutex;      // to make event_index and allocation_map thread-safe
   std::size_t event_index{0};  // playback index
-  std::barrier barrier_;
+  std::barrier<> barrier_;     // barrier to sequence resetting of event_index
 
   /**
    * @brief Construct a `replay_benchmark` from a list of events and
