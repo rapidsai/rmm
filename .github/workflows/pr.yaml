@@ -26,7 +26,7 @@ jobs:
       - devcontainer
       - telemetry-setup
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@branch-25.06
+    uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@branch-25.08
     if: always()
     with:
       needs: ${{ toJSON(needs) }}
@@ -42,10 +42,7 @@ jobs:
         if: ${{ vars.TELEMETRY_ENABLED == 'true' }}
         uses: rapidsai/shared-actions/telemetry-dispatch-stash-base-env-vars@main
   check-nightly-ci:
-    # Switch to ubuntu-latest once it defaults to a version of Ubuntu that
-    # provides at least Python 3.11 (see
-    # https://docs.python.org/3/library/datetime.html#datetime.date.fromisoformat)
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     env:
       RAPIDS_GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
@@ -57,7 +54,7 @@ jobs:
     needs:
       - telemetry-setup
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/changed-files.yaml@branch-25.06
+    uses: rapidsai/shared-workflows/.github/workflows/changed-files.yaml@branch-25.08
     with:
       files_yaml: |
         test_cpp:
@@ -81,21 +78,21 @@ jobs:
     secrets: inherit
     needs:
       - telemetry-setup
-    uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@branch-25.06
+    uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@branch-25.08
     with:
       enable_check_generated_files: false
       ignored_pr_jobs: "telemetry-summarize"
   conda-cpp-build:
     needs: checks
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-build.yaml@branch-25.06
+    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-build.yaml@branch-25.08
     with:
       build_type: pull-request
       script: ci/build_cpp.sh
   conda-cpp-tests:
     needs: [conda-cpp-build, changed-files]
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-tests.yaml@branch-25.06
+    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-tests.yaml@branch-25.08
     if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_cpp
     with:
       build_type: pull-request
@@ -103,14 +100,14 @@ jobs:
   conda-python-build:
     needs: conda-cpp-build
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/conda-python-build.yaml@branch-25.06
+    uses: rapidsai/shared-workflows/.github/workflows/conda-python-build.yaml@branch-25.08
     with:
       build_type: pull-request
       script: ci/build_python.sh
   conda-python-tests:
     needs: [conda-python-build, changed-files]
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/conda-python-tests.yaml@branch-25.06
+    uses: rapidsai/shared-workflows/.github/workflows/conda-python-tests.yaml@branch-25.08
     if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_python
     with:
       build_type: pull-request
@@ -118,7 +115,7 @@ jobs:
   docs-build:
     needs: conda-python-build
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@branch-25.06
+    uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@branch-25.08
     with:
       build_type: pull-request
       node_type: "gpu-l4-latest-1"
@@ -128,7 +125,7 @@ jobs:
   wheel-build-cpp:
     needs: checks
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@branch-25.06
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@branch-25.08
     with:
       matrix_filter: group_by([.ARCH, (.CUDA_VER|split(".")|map(tonumber)|.[0])]) | map(max_by(.PY_VER|split(".")|map(tonumber)))
       build_type: pull-request
@@ -138,7 +135,7 @@ jobs:
   wheel-build-python:
     needs: wheel-build-cpp
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@branch-25.06
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@branch-25.08
     with:
       build_type: pull-request
       script: ci/build_wheel_python.sh
@@ -147,7 +144,7 @@ jobs:
   wheel-tests:
     needs: [wheel-build-python, changed-files]
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-test.yaml@branch-25.06
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-test.yaml@branch-25.08
     if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_python
     with:
       build_type: pull-request
@@ -156,7 +153,7 @@ jobs:
     secrets: inherit
     needs:
       - telemetry-setup
-    uses: rapidsai/shared-workflows/.github/workflows/build-in-devcontainer.yaml@branch-25.06
+    uses: rapidsai/shared-workflows/.github/workflows/build-in-devcontainer.yaml@branch-25.08
     with:
       arch: '["amd64"]'
       cuda: '["12.8"]'
