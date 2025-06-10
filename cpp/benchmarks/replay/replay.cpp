@@ -21,6 +21,7 @@
 #include <rmm/mr/device/binning_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/mr/device/managed_memory_resource.hpp>
 #include <rmm/mr/device/owning_wrapper.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
 
@@ -49,6 +50,11 @@
 std::shared_ptr<rmm::mr::device_memory_resource> make_cuda(std::size_t = 0)
 {
   return std::make_shared<rmm::mr::cuda_memory_resource>();
+}
+
+std::shared_ptr<rmm::mr::device_memory_resource> make_managed(std::size_t = 0)
+{
+  return std::make_shared<rmm::mr::managed_memory_resource>();
 }
 
 std::shared_ptr<rmm::mr::device_memory_resource> make_simulated(std::size_t simulated_size)
@@ -335,6 +341,11 @@ void declare_benchmark(std::string const& name,
                                  replay_benchmark(&make_arena, simulated_size, per_thread_events))
       ->Unit(benchmark::kMillisecond)
       ->Threads(static_cast<int>(num_threads));
+  } else if (name == "managed") {
+    benchmark::RegisterBenchmark("Managed Resource",
+                                 replay_benchmark(&make_managed, simulated_size, per_thread_events))
+      ->Unit(benchmark::kMillisecond)
+      ->Threads(static_cast<int>(num_threads));
   } else {
     std::cout << "Error: invalid memory_resource name: " << name << "\n";
   }
@@ -425,7 +436,7 @@ int main(int argc, char** argv)
       std::string mr_name = args["resource"].as<std::string>();
       declare_benchmark(mr_name, simulated_size, per_thread_events, num_threads);
     } else {
-      std::array<std::string, 4> mrs{"pool", "arena", "binning", "cuda"};
+      std::array<std::string, 5> mrs{"pool", "arena", "binning", "cuda", "managed"};
       std::for_each(std::cbegin(mrs),
                     std::cend(mrs),
                     [&simulated_size, &per_thread_events, &num_threads](auto const& mr) {
