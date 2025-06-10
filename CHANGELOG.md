@@ -1,3 +1,51 @@
+# rmm 25.06.00 (5 Jun 2025)
+
+## 🚨 Breaking Changes
+
+- Convert part of RMM to a precompiled library ([#1896](https://github.com/rapidsai/rmm/pull/1896)) [@bdice](https://github.com/bdice)
+- Move RMM C++ code into cpp directory. ([#1883](https://github.com/rapidsai/rmm/pull/1883)) [@bdice](https://github.com/bdice)
+
+## 🐛 Bug Fixes
+
+- Run system MR tests in isolation. ([#1945](https://github.com/rapidsai/rmm/pull/1945)) [@bdice](https://github.com/bdice)
+- Use auditwheel to properly retag the wheel ([#1913](https://github.com/rapidsai/rmm/pull/1913)) [@vyasr](https://github.com/vyasr)
+- Fix logger macros ([#1884](https://github.com/rapidsai/rmm/pull/1884)) [@vyasr](https://github.com/vyasr)
+
+## 📖 Documentation
+
+- Move docs to top level. ([#1917](https://github.com/rapidsai/rmm/pull/1917)) [@bdice](https://github.com/bdice)
+- Update Readme for the logging `set_level` ([#1911](https://github.com/rapidsai/rmm/pull/1911)) [@JigaoLuo](https://github.com/JigaoLuo)
+- Fixed documentation example for `DeviceBuffer.to_device` ([#1881](https://github.com/rapidsai/rmm/pull/1881)) [@TomAugspurger](https://github.com/TomAugspurger)
+
+## 🚀 New Features
+
+- Convert part of RMM to a precompiled library ([#1896](https://github.com/rapidsai/rmm/pull/1896)) [@bdice](https://github.com/bdice)
+- Set mempool hw_decompress flag if driver supports it ([#1875](https://github.com/rapidsai/rmm/pull/1875)) [@bdice](https://github.com/bdice)
+- Expose option to enable fabric memory handle support to Python ([#1787](https://github.com/rapidsai/rmm/pull/1787)) [@pentschev](https://github.com/pentschev)
+
+## 🛠️ Improvements
+
+- fix(pytest): disable warning that gets raised to INTERNALERROR in pytest8.4.0 ([#1942](https://github.com/rapidsai/rmm/pull/1942)) [@gforsyth](https://github.com/gforsyth)
+- use &#39;rapids-init-pip&#39; in wheel CI, other CI changes ([#1926](https://github.com/rapidsai/rmm/pull/1926)) [@jameslamb](https://github.com/jameslamb)
+- Finish CUDA 12.9 migration and use branch-25.06 workflows ([#1921](https://github.com/rapidsai/rmm/pull/1921)) [@bdice](https://github.com/bdice)
+- Update to clang 20 ([#1918](https://github.com/rapidsai/rmm/pull/1918)) [@bdice](https://github.com/bdice)
+- Quote head_rev in conda recipes ([#1915](https://github.com/rapidsai/rmm/pull/1915)) [@bdice](https://github.com/bdice)
+- Build and test with CUDA 12.9.0 ([#1907](https://github.com/rapidsai/rmm/pull/1907)) [@bdice](https://github.com/bdice)
+- Fix cpp wheel name to librmm. ([#1903](https://github.com/rapidsai/rmm/pull/1903)) [@bdice](https://github.com/bdice)
+- Revert &quot;Publish wheels and conda packages from Github Artifacts&quot; ([#1898](https://github.com/rapidsai/rmm/pull/1898)) [@bdice](https://github.com/bdice)
+- Publish wheels and conda packages from Github Artifacts ([#1897](https://github.com/rapidsai/rmm/pull/1897)) [@VenkateshJaya](https://github.com/VenkateshJaya)
+- Download build artifacts from Github for CI ([#1895](https://github.com/rapidsai/rmm/pull/1895)) [@VenkateshJaya](https://github.com/VenkateshJaya)
+- remove mkdir and test corresponding shared workflow ([#1892](https://github.com/rapidsai/rmm/pull/1892)) [@msarahan](https://github.com/msarahan)
+- Revert &quot;Auto-sync draft PRs&quot; ([#1891](https://github.com/rapidsai/rmm/pull/1891)) [@bdice](https://github.com/bdice)
+- Auto-sync draft PRs ([#1890](https://github.com/rapidsai/rmm/pull/1890)) [@bdice](https://github.com/bdice)
+- Add ARM conda environments ([#1889](https://github.com/rapidsai/rmm/pull/1889)) [@bdice](https://github.com/bdice)
+- Vendor RAPIDS.cmake to avoid network call. ([#1886](https://github.com/rapidsai/rmm/pull/1886)) [@bdice](https://github.com/bdice)
+- [pre-commit.ci] pre-commit autoupdate ([#1885](https://github.com/rapidsai/rmm/pull/1885)) [@pre-commit-ci[bot]](https://github.com/pre-commit-ci[bot])
+- Move RMM C++ code into cpp directory. ([#1883](https://github.com/rapidsai/rmm/pull/1883)) [@bdice](https://github.com/bdice)
+- refactor(rattler): enable strict channel priority for builds ([#1867](https://github.com/rapidsai/rmm/pull/1867)) [@gforsyth](https://github.com/gforsyth)
+- Add support for Python 3.13 ([#1851](https://github.com/rapidsai/rmm/pull/1851)) [@bdice](https://github.com/bdice)
+- Streamlining wheel builds to use fixed location and uploading build artifacts to Github ([#1810](https://github.com/rapidsai/rmm/pull/1810)) [@VenkateshJaya](https://github.com/VenkateshJaya)
+
 # rmm 25.04.00 (9 Apr 2025)
 
 ## 🚨 Breaking Changes
