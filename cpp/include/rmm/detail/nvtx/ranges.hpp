@@ -16,6 +16,7 @@
 
 #pragma once
 
+#if defined(RMM_NVTX)
 #include <nvtx3/nvtx3.hpp>
 
 namespace rmm {
@@ -58,7 +59,6 @@ using scoped_range = ::nvtx3::scoped_range_in<librmm_domain>;
  * }
  * ```
  */
-#if defined(RMM_NVTX)
 #define RMM_FUNC_RANGE() NVTX3_FUNC_RANGE_IN(rmm::librmm_domain)
 #else
 #define RMM_FUNC_RANGE()
