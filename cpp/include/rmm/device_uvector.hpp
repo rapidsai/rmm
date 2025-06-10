@@ -546,7 +546,7 @@ class device_uvector {
    * The element referenced by `rend()` is a placeholder and dereferencing it results in undefined
    * behavior.
    *
-   * @return Iterator to one the element before the first element.
+   * @return Iterator to the element before the first element.
    */
   [[nodiscard]] reverse_iterator rend() noexcept { return reverse_iterator(begin()); }
 
