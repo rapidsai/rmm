@@ -28,6 +28,7 @@ dependencies:
 - numpy>=1.23,<3.0a0
 - numpydoc
 - nvcc_linux-64=11.8
+- nvtx==3.2.0
 - pre-commit
 - pytest
 - pytest-cov
