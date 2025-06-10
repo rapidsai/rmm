@@ -21,6 +21,7 @@
 #include <rmm/detail/export.hpp>
 #include <rmm/detail/format.hpp>
 #include <rmm/detail/logging_assert.hpp>
+#include <rmm/detail/nvtx/memory.hpp>
 #include <rmm/detail/thrust_namespace.h>
 #include <rmm/logger.hpp>
 #include <rmm/mr/device/detail/coalescing_free_list.hpp>
@@ -31,8 +32,6 @@
 
 #include <cuda/std/type_traits>
 #include <cuda_runtime_api.h>
-#include <nvtx3/nvToolsExt.h>
-#include <nvtx3/nvToolsExtMem.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 
@@ -365,6 +364,12 @@ class pool_memory_resource final
     if (size == 0) { return {}; }
 
     void* ptr = get_upstream_resource().allocate_async(size, stream);
+
+#ifdef RMM_NVTX
+    // Create a new nvtx heap for the allocated memory
+    nvtx_heaps_[ptr] = create_nvtx_heap(ptr, size);
+#endif
+
     return *upstream_blocks_.emplace(static_cast<char*>(ptr), size, true).first;
   }
 
@@ -384,9 +389,24 @@ class pool_memory_resource final
 #ifdef RMM_POOL_TRACK_ALLOCATIONS
     allocated_blocks_.insert(alloc);
 #endif
-    // find the heap alloc block belongs to
 
+#ifdef RMM_NVTX
+    void* heap_key;
+    if (alloc.is_head()) {
+      // if alloc is head, then it's beginning of the heap (and its already in the upstream_blocks_)
+      heap_key = block.pointer();
+    } else {
+      // if alloc is not head, then it's in the middle of the heap (and its not in the
+      // upstream_blocks_). Find the upstream block that alloc belongs to
+      auto const it = upstream_blocks_.lower_bound(block.pointer());
+      if (it == upstream_blocks_.begin()) {
+        RMM_FAIL("Could not find a heap for block", rmm::logic_error);
+      }
+      heap_key = std::prev(it)->pointer();
+    }
     // register alloc with the heap
+    register_mem_region(nvtx_heaps_.at(heap_key), alloc.pointer(), alloc.size());
+#endif
 
     auto rest = (block.size() > size)
                   // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -419,6 +439,11 @@ class pool_memory_resource final
     // unregister ptr from the domain.
 
     auto const iter = upstream_blocks_.find(static_cast<char*>(ptr));
+
+#ifdef RMM_NVTX
+    unregister_mem_region(ptr);
+#endif
+
     return block_type{static_cast<char*>(ptr), size, (iter != upstream_blocks_.end())};
 #endif
   }
@@ -437,6 +462,13 @@ class pool_memory_resource final
     upstream_blocks_.clear();
 #ifdef RMM_POOL_TRACK_ALLOCATIONS
     allocated_blocks_.clear();
+#endif
+
+#ifdef RMM_NVTX
+    for (auto const& [ptr, heap] : nvtx_heaps_) {
+      destroy_nvtx_heap(heap);
+    }
+    nvtx_heaps_.clear();
 #endif
 
     current_pool_size_ = 0;
@@ -495,26 +527,6 @@ class pool_memory_resource final
   }
 
  private:
-  // create nvtx pool
-  nvtxMemHeapHandle_t create_nvtx_pool(void* ptr, std::size_t size)
-  {
-    nvtxMemVirtualRangeDesc_t nvtxRangeDesc = {};
-    nvtxRangeDesc.size                      = size;
-    nvtxRangeDesc.ptr                       = ptr;
-
-    nvtxMemHeapDesc_t nvtxHeapDesc    = {};
-    nvtxHeapDesc.extCompatID          = NVTX_EXT_COMPATID_MEM;
-    nvtxHeapDesc.structSize           = sizeof(nvtxMemHeapDesc_t);
-    nvtxHeapDesc.usage                = NVTX_MEM_HEAP_USAGE_TYPE_SUB_ALLOCATOR;
-    nvtxHeapDesc.type                 = NVTX_MEM_TYPE_VIRTUAL_ADDRESS;
-    nvtxHeapDesc.typeSpecificDescSize = sizeof(nvtxMemVirtualRangeDesc_t);
-    nvtxHeapDesc.typeSpecificDesc     = &nvtxRangeDesc;
-
-    return nvtxMemHeapRegister(nvtx_domain_, &nvtxHeapDesc);
-  }
-
-  // The "heap" to allocate the pool from
-  device_async_resource_ref upstream_mr_;
   // The "heap" to allocate the pool from
   device_async_resource_ref upstream_mr_;
   std::size_t current_pool_size_{};
@@ -524,11 +536,12 @@ class pool_memory_resource final
   std::set<block_type, rmm::mr::detail::compare_blocks<block_type>> allocated_blocks_;
 #endif
 
+#ifdef RMM_NVTX
+  std::unordered_map<void*, nvtxMemHeapHandle_t> nvtx_heaps_;
+#endif
+
   // blocks allocated from upstream
   std::set<block_type, rmm::mr::detail::compare_blocks<block_type>> upstream_blocks_;
-
-  // TODO: add a macro to initialize the nvtx domain for each instance of the pool_memory_resource
-  nvtxDomainHandle_t nvtx_domain_ = nvtxDomainCreateA("RMM Pool");
 };
 
 /** @} */  // end of group
