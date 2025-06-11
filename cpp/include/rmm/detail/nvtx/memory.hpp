@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, NVIDIA CORPORATION.
+ * Copyright (c) 2024-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,21 +23,20 @@
 
 namespace rmm {
 
-
 struct librmm_memory_domain {
   static constexpr char const* name{"librmm_memory"};  ///< Name of the librmm domain
 };
 
 /**
  * @brief Get the nvtx domain object
- * 
- * @return nvtx3::domain const& 
+ *
+ * @return nvtx3::domain const&
  */
 inline nvtx3::domain const& nvtx_domain() { return nvtx3::domain::get<librmm_memory_domain>(); }
 
 /**
  * @brief Create a new nvtx heap for the allocated memory
- * 
+ *
  * @param ptr Pointer to the allocated memory
  * @param size Size of the allocated memory
  * @return nvtxMemHeapHandle_t Handle to the nvtx heap
@@ -61,14 +60,17 @@ inline nvtxMemHeapHandle_t create_nvtx_heap(void* ptr, std::size_t size)
 
 /**
  * @brief Destroy the nvtx heap
- * 
+ *
  * @param handle Handle to the nvtx heap
  */
-inline void destroy_nvtx_heap(nvtxMemHeapHandle_t handle) { nvtxMemHeapUnregister(nvtx_domain(), handle); }
+inline void destroy_nvtx_heap(nvtxMemHeapHandle_t handle)
+{
+  nvtxMemHeapUnregister(nvtx_domain(), handle);
+}
 
 /**
  * @brief Register the memory region with the nvtx heap
- * 
+ *
  * @param handle Handle to the nvtx heap
  * @param ptr Pointer to the memory region
  * @param size Size of the memory region
@@ -93,7 +95,7 @@ inline void register_mem_region(nvtxMemHeapHandle_t handle, void const* ptr, std
 
 /**
  * @brief Unregister the memory region from the nvtx heap
- * 
+ *
  * @param ptr Pointer to the memory region
  */
 inline void unregister_mem_region(void const* ptr)

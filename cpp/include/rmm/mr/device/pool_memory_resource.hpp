@@ -462,7 +462,7 @@ class pool_memory_resource final
 
     for (auto block : upstream_blocks_) {
 #ifdef RMM_NVTX
-      RMM_LOG_DEBUG("destroy nvtx heap [%zu %zu]", block.pointer(), block.size  ());
+      RMM_LOG_DEBUG("destroy nvtx heap [%zu %zu]", block.pointer(), block.size());
       destroy_nvtx_heap(nvtx_heaps_.at(block.pointer()));
 #endif
       get_upstream_resource().deallocate(block.pointer(), block.size());
