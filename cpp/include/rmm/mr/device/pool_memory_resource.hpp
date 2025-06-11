@@ -368,6 +368,7 @@ class pool_memory_resource final
 #ifdef RMM_NVTX
     // Create a new nvtx heap for the allocated memory
     nvtx_heaps_[ptr] = create_nvtx_heap(ptr, size);
+    RMM_LOG_DEBUG("nvtx heap [%zu %zu]", ptr, size);
 #endif
 
     return *upstream_blocks_.emplace(static_cast<char*>(ptr), size, true).first;
@@ -406,6 +407,8 @@ class pool_memory_resource final
     }
     // register alloc with the heap
     register_mem_region(nvtx_heaps_.at(heap_key), alloc.pointer(), alloc.size());
+    RMM_LOG_DEBUG(
+      "nvtx region [%zu %zu %zu]", heap_key, static_cast<void*>(alloc.pointer()), alloc.size());
 #endif
 
     auto rest = (block.size() > size)
@@ -441,6 +444,7 @@ class pool_memory_resource final
     auto const iter = upstream_blocks_.find(static_cast<char*>(ptr));
 
 #ifdef RMM_NVTX
+    RMM_LOG_DEBUG("free nvtx region [%zu %zu]", ptr, size);
     unregister_mem_region(ptr);
 #endif
 
@@ -457,6 +461,10 @@ class pool_memory_resource final
     lock_guard lock(this->get_mutex());
 
     for (auto block : upstream_blocks_) {
+#ifdef RMM_NVTX
+      RMM_LOG_DEBUG("destroy nvtx heap [%zu %zu]", block.pointer(), block.size  ());
+      destroy_nvtx_heap(nvtx_heaps_.at(block.pointer()));
+#endif
       get_upstream_resource().deallocate(block.pointer(), block.size());
     }
     upstream_blocks_.clear();
@@ -465,9 +473,6 @@ class pool_memory_resource final
 #endif
 
 #ifdef RMM_NVTX
-    for (auto const& [ptr, heap] : nvtx_heaps_) {
-      destroy_nvtx_heap(heap);
-    }
     nvtx_heaps_.clear();
 #endif
 

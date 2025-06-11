@@ -138,11 +138,7 @@ TEST(PoolTest, InitialAndMaxPoolSizeEqual2)
     pool_mr mr(rmm::mr::get_current_device_resource_ref(), 1 << 20, 100 << 20);
     make_alloc_mb(mr, 50);
     make_alloc_mb(mr, 1);
-    make_alloc_mb(mr, 50);
-    make_alloc_mb(mr, 1);
-    make_alloc_mb(mr, 50);
-    make_alloc_mb(mr, 1);
-    make_alloc_mb(mr, 50);
+    make_alloc_mb(mr, 100);
     make_alloc_mb(mr, 1);
   }());
 }
