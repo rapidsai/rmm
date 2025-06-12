@@ -24,6 +24,8 @@
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
+#include <thrust/iterator/reverse_iterator.h>
+
 #include <cstddef>
 #include <type_traits>
 #include <utility>
@@ -87,6 +89,10 @@ class device_uvector {
   using const_pointer  = value_type const*;   ///< The type of the pointer returned by data() const
   using iterator       = pointer;             ///< The type of the iterator returned by begin()
   using const_iterator = const_pointer;  ///< The type of the const iterator returned by cbegin()
+  using reverse_iterator =
+    thrust::reverse_iterator<iterator>;  ///< The type of the iterator returned by rbegin()
+  using const_reverse_iterator =
+    thrust::reverse_iterator<const_iterator>;  ///< The type of the iterator returned by crbegin()
 
   RMM_EXEC_CHECK_DISABLE
   ~device_uvector() = default;
@@ -503,6 +509,70 @@ class device_uvector {
    * @return Immutable iterator to one past the last element.
    */
   [[nodiscard]] const_iterator end() const noexcept { return cend(); }
+
+  /**
+   * @brief Returns a reverse_iterator to the last element.
+   *
+   * If the vector is empty, then `rbegin() == rend()`.
+   *
+   * @return Iterator to the last element.
+   */
+  [[nodiscard]] reverse_iterator rbegin() noexcept { return reverse_iterator(end()); }
+
+  /**
+   * @brief Returns a const_reverse_iterator to the last element.
+   *
+   * If the vector is empty, then `crbegin() == crend()`.
+   *
+   * @return Immutable iterator to the last element.
+   */
+  [[nodiscard]] const_reverse_iterator crbegin() const noexcept
+  {
+    return const_reverse_iterator(cend());
+  }
+
+  /**
+   * @brief Returns a const_reverse_iterator to the last element.
+   *
+   * If the vector is empty, then `rbegin() == rend()`.
+   *
+   * @return Immutable iterator to the first element.
+   */
+  [[nodiscard]] const_reverse_iterator rbegin() const noexcept { return crbegin(); }
+
+  /**
+   * @brief Returns reverse_iterator to the element preceding the first element of the vector.
+   *
+   * The element referenced by `rend()` is a placeholder and dereferencing it results in undefined
+   * behavior.
+   *
+   * @return Iterator to the element before the first element.
+   */
+  [[nodiscard]] reverse_iterator rend() noexcept { return reverse_iterator(begin()); }
+
+  /**
+   * @brief Returns a const_reverse_iterator to the element preceding the first element of the
+   * vector.
+   *
+   * The element referenced by `crend()` is a placeholder and dereferencing it results in undefined
+   * behavior.
+   *
+   * @return Immutable iterator to the element before the first element.
+   */
+  [[nodiscard]] const_reverse_iterator crend() const noexcept
+  {
+    return const_reverse_iterator(begin());
+  }
+
+  /**
+   * @brief Returns const_reverse_iterator to the element preceding the first element of the vector.
+   *
+   * The element referenced by `rend()` is a placeholder and dereferencing it results in undefined
+   * behavior.
+   *
+   * @return Immutable iterator to the element before the first element.
+   */
+  [[nodiscard]] const_reverse_iterator rend() const noexcept { return crend(); }
 
   /**
    * @briefreturn{The number of elements in the vector}
