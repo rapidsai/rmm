@@ -1,6 +1,7 @@
 /*
 
-Copyright (c) 2014, 2015, 2016, 2017 Jarryd Beck
+ * Copyright (c) 2014, 2015, 2016, 2017 Jarryd Beck
+ * Copyright (c) 2025, NVIDIA CORPORATION.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +26,7 @@ THE SOFTWARE.
 #ifndef CXXOPTS_HPP_INCLUDED
 #define CXXOPTS_HPP_INCLUDED
 
+#include <algorithm>
 #include <cctype>
 #include <cstring>
 #include <exception>
