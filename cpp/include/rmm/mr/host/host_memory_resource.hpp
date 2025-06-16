@@ -160,8 +160,7 @@ class host_memory_resource : public std::pmr::memory_resource {
    * @param alignment Alignment of the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  virtual void* do_allocate(std::size_t bytes,
-                            std::size_t alignment = alignof(std::max_align_t)) = 0;
+  virtual void* do_allocate(std::size_t bytes, std::size_t alignment) = 0;
 
   /**
    * @brief Deallocate memory pointed to by `ptr`.
@@ -176,9 +175,7 @@ class host_memory_resource : public std::pmr::memory_resource {
    * @param alignment Alignment of the allocation. This must be equal to the value of `alignment`
    *                  that was passed to the `allocate` call that returned `ptr`.
    */
-  virtual void do_deallocate(void* ptr,
-                             std::size_t bytes,
-                             std::size_t alignment = alignof(std::max_align_t)) = 0;
+  virtual void do_deallocate(void* ptr, std::size_t bytes, std::size_t alignment) = 0;
 
   /**
    * @brief Compare this resource to another.
@@ -192,7 +189,7 @@ class host_memory_resource : public std::pmr::memory_resource {
    * @param other The other resource to compare to
    * @return true If the two resources are equivalent
    */
-  [[nodiscard]] virtual bool do_is_equal(host_memory_resource const& other) const noexcept
+  [[nodiscard]] virtual bool do_is_equal(std::pmr::memory_resource const& other) const noexcept
   {
     return this == &other;
   }
