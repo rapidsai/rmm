@@ -20,6 +20,7 @@
 #include <rmm/detail/nvtx/ranges.hpp>
 
 #include <cstddef>
+#include <memory_resource>
 
 namespace RMM_NAMESPACE {
 namespace mr {
@@ -34,9 +35,6 @@ namespace mr {
  *
  * This is based on `std::pmr::memory_resource`:
  * https://en.cppreference.com/w/cpp/memory/memory_resource
- *
- * When C++17 is available for use in RMM, `rmm::host_memory_resource` should
- * inherit from `std::pmr::memory_resource`.
  *
  * This class serves as the interface that all host memory resource
  * implementations must satisfy.
@@ -53,7 +51,7 @@ namespace mr {
  * derived class implementation is used.
  *
  */
-class host_memory_resource {
+class host_memory_resource : public std::pmr::memory_resource {
  public:
   host_memory_resource()                                = default;
   virtual ~host_memory_resource()                       = default;
