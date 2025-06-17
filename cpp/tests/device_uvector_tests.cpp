@@ -305,4 +305,7 @@ TYPED_TEST(TypedUVectorTest, ReverseIterators)
 
   EXPECT_EQ(std::distance(vec.rend(), vec.rbegin()), -static_cast<std::ptrdiff_t>(vec.size()));
   EXPECT_EQ(std::distance(vec.crend(), vec.crbegin()), -static_cast<std::ptrdiff_t>(vec.size()));
+
+  EXPECT_EQ((vec.rbegin() + 1).base(), vec.end() - 1);
+  EXPECT_EQ((vec.rend() - 1).base(), vec.begin() + 1);
 }
