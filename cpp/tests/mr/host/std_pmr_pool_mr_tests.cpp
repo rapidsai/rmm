@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, NVIDIA CORPORATION.
+ * Copyright (c) 2024-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,6 +101,47 @@ TYPED_TEST(UnsynchronizedPoolTest, AlignmentTest)
       EXPECT_EQ(0, reinterpret_cast<std::uintptr_t>(ptr) % alignment);
       this->pool_mr.deallocate(ptr, size, alignment);
     }
+  }
+}
+
+TYPED_TEST(UnsynchronizedPoolTest, PMRVectorTest)
+{
+  // Create a vector using the pool memory resource
+  std::pmr::vector<int> vec(&this->pool_mr);
+
+  constexpr std::size_t num_elements{1000};
+
+  // Push back elements
+  for (std::size_t i = 0; i < num_elements; ++i) {
+    vec.push_back(static_cast<int>(i));
+  }
+
+  // Verify elements
+  for (std::size_t i = num_elements - 1; i > 0; --i) {
+    EXPECT_EQ(static_cast<int>(i), vec[i]);
+  }
+
+  // Test vector growth
+  vec.reserve(num_elements * 2);
+  EXPECT_GE(vec.capacity(), num_elements * 2);
+
+  // Test vector shrinking
+  vec.shrink_to_fit();
+  EXPECT_LE(vec.capacity(), num_elements + 1);  // +1 for potential padding
+
+  // Test vector clear
+  vec.clear();
+  EXPECT_TRUE(vec.empty());
+  EXPECT_EQ(0, vec.size());
+
+  // Test vector reuse
+  for (std::size_t i = 0; i < num_elements; ++i) {
+    vec.push_back(static_cast<int>(i * 2));
+  }
+
+  // Verify new elements
+  for (std::size_t i = num_elements - 1; i > 0; --i) {
+    EXPECT_EQ(static_cast<int>(i * 2), vec[i]);
   }
 }
 
