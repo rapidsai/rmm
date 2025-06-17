@@ -30,6 +30,10 @@ repos:
       - id: clang-format
         types_or: [c, c++, cuda]
         args: ["-fallback-style=none", "-style=file", "-i"]
+        exclude: |
+          (?x)^(
+            ^cpp/benchmarks/utilities/cxxopts.hpp
+          )
   - repo: https://github.com/sirosen/texthooks
     rev: 0.6.8
     hooks:
@@ -79,8 +83,13 @@ repos:
   - repo: https://github.com/rapidsai/pre-commit-hooks
     rev: v0.6.0
     hooks:
-    - id: verify-copyright
-    - id: verify-alpha-spec
+      - id: verify-copyright
+        args: [--fix, --main-branch=main]
+        exclude: |
+          (?x)^(
+            ^cpp/benchmarks/utilities/cxxopts.hpp
+          )
+      - id: verify-alpha-spec
   - repo: https://github.com/rapidsai/dependency-file-generator
     rev: v1.18.1
     hooks:
