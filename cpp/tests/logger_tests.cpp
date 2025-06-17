@@ -105,7 +105,7 @@ void expect_log_events(std::string const& filename,
 {
   auto actual_events = rmm::detail::parse_csv(filename);
 
-  std::equal(expected_events.begin(),
+  EXPECT_TRUE(std::equal(expected_events.begin(),
              expected_events.end(),
              actual_events.begin(),
              [](auto expected, auto actual) {
@@ -118,7 +118,7 @@ void expect_log_events(std::string const& filename,
                EXPECT_EQ(expected.size, actual.size);
                EXPECT_EQ(expected.pointer, actual.pointer);
                return true;
-             });
+             }));
 }
 
 TEST(Adaptor, FilenameConstructor)
