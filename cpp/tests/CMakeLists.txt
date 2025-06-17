@@ -186,6 +186,9 @@ ConfigureTest(HOST_MR_REF_TEST mr/host/mr_ref_tests.cpp)
 # pinned pool mr tests
 ConfigureTest(PINNED_POOL_MR_TEST mr/host/pinned_pool_mr_tests.cpp)
 
+# std::pmr pool mr tests
+ConfigureTest(STD_PMR_POOL_MR_TEST mr/host/std_pmr_pool_mr_tests.cpp)
+
 # cuda stream tests
 ConfigureTest(CUDA_STREAM_TEST cuda_stream_tests.cpp cuda_stream_pool_tests.cpp)
 
