@@ -16,7 +16,7 @@ dependencies:
 - cxx-compiler
 - cython>=3.0.0
 - doxygen=1.9.1
-- gcc_linux-64=13.*
+- gcc_linux-64=14.*
 - gcovr>=5.0
 - graphviz
 - identify>=2.5.20
