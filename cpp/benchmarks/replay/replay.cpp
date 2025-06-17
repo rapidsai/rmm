@@ -21,6 +21,7 @@
 #include <rmm/mr/device/binning_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/mr/device/managed_memory_resource.hpp>
 #include <rmm/mr/device/owning_wrapper.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
 
@@ -35,8 +36,10 @@
 #include <benchmarks/utilities/simulated_memory_resource.hpp>
 
 #include <atomic>
+#include <barrier>
 #include <chrono>
 #include <condition_variable>
+#include <cstddef>
 #include <iterator>
 #include <memory>
 #include <numeric>
@@ -47,6 +50,11 @@
 std::shared_ptr<rmm::mr::device_memory_resource> make_cuda(std::size_t = 0)
 {
   return std::make_shared<rmm::mr::cuda_memory_resource>();
+}
+
+std::shared_ptr<rmm::mr::device_memory_resource> make_managed(std::size_t = 0)
+{
+  return std::make_shared<rmm::mr::managed_memory_resource>();
 }
 
 std::shared_ptr<rmm::mr::device_memory_resource> make_simulated(std::size_t simulated_size)
@@ -116,6 +124,7 @@ struct replay_benchmark {
   std::condition_variable cv;  // to ensure in-order playback
   std::mutex event_mutex;      // to make event_index and allocation_map thread-safe
   std::size_t event_index{0};  // playback index
+  std::barrier<> barrier_;     // barrier to sequence resetting of event_index
 
   /**
    * @brief Construct a `replay_benchmark` from a list of events and
@@ -131,7 +140,8 @@ struct replay_benchmark {
     : factory_{std::move(factory)},
       simulated_size_{simulated_size},
       events_{events},
-      allocation_map{events.size()}
+      allocation_map{events.size()},
+      barrier_{static_cast<std::ptrdiff_t>(events_.size())}
   {
   }
 
@@ -145,7 +155,8 @@ struct replay_benchmark {
       simulated_size_{other.simulated_size_},
       mr_{std::move(other.mr_)},
       events_{other.events_},
-      allocation_map{std::move(other.allocation_map)}
+      allocation_map{std::move(other.allocation_map)},
+      barrier_{static_cast<std::ptrdiff_t>(events_.size())}
   {
   }
 
@@ -176,11 +187,15 @@ struct replay_benchmark {
       RMM_LOG_INFO("------ Start of Benchmark -----");
       mr_ = factory_(simulated_size_);
     }
+    // Can't release threads until MR is set up.
+    barrier_.arrive_and_wait();
   }
 
   /// Destroy the memory resource and count any unallocated memory
   void TearDown(const ::benchmark::State& state)
   {
+    // Can't tear down the MR until every thread is done.
+    barrier_.arrive_and_wait();
     if (state.thread_index() == 0) {
       RMM_LOG_INFO("------ End of Benchmark -----");
       // clean up any leaked allocations
@@ -207,8 +222,12 @@ struct replay_benchmark {
     SetUp(state);
 
     auto const& my_events = events_.at(state.thread_index());
-
     for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
+      // At start of each iteration event_index must be reset.
+      // Any thread could do this, but this is easy
+      if (state.thread_index() == 0) { event_index = 0; }
+      // And everyone waits for the reset.
+      barrier_.arrive_and_wait();
       std::for_each(my_events.begin(), my_events.end(), [this](auto event) {
         // ensure correct ordering between threads
         std::unique_lock<std::mutex> lock{event_mutex};
@@ -228,6 +247,9 @@ struct replay_benchmark {
         event_index++;
         cv.notify_all();
       });
+      // Everyone waits to be done (so that the reset of the next
+      // iteration doesn't proceed until we're finished)
+      barrier_.arrive_and_wait();
     }
 
     TearDown(state);
@@ -317,6 +339,11 @@ void declare_benchmark(std::string const& name,
   } else if (name == "arena") {
     benchmark::RegisterBenchmark("Arena Resource",
                                  replay_benchmark(&make_arena, simulated_size, per_thread_events))
+      ->Unit(benchmark::kMillisecond)
+      ->Threads(static_cast<int>(num_threads));
+  } else if (name == "managed") {
+    benchmark::RegisterBenchmark("Managed Resource",
+                                 replay_benchmark(&make_managed, simulated_size, per_thread_events))
       ->Unit(benchmark::kMillisecond)
       ->Threads(static_cast<int>(num_threads));
   } else {
@@ -409,7 +436,7 @@ int main(int argc, char** argv)
       std::string mr_name = args["resource"].as<std::string>();
       declare_benchmark(mr_name, simulated_size, per_thread_events, num_threads);
     } else {
-      std::array<std::string, 4> mrs{"pool", "arena", "binning", "cuda"};
+      std::array<std::string, 5> mrs{"pool", "arena", "binning", "cuda", "managed"};
       std::for_each(std::cbegin(mrs),
                     std::cend(mrs),
                     [&simulated_size, &per_thread_events, &num_threads](auto const& mr) {
