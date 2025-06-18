@@ -244,9 +244,9 @@ class tracking_resource_adaptor final : public device_memory_resource {
           bytes,
           this->allocations_.size());
       } else {
-        allocations_.erase(found);
-
         auto allocated_bytes = found->second.allocation_size;
+
+        allocations_.erase(found);
 
         if (allocated_bytes != bytes) {
           // Don't throw but log an error. Throwing in a destructor (or any noexcept) will call
