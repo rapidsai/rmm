@@ -244,7 +244,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
           bytes,
           this->allocations_.size());
       } else {
-        auto allocated_bytes = found->second.allocation_size;
+        auto const allocated_bytes = found->second.allocation_size;
 
         allocations_.erase(found);
 
