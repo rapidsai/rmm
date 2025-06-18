@@ -129,7 +129,7 @@ dependencies:
         packages:
           - c-compiler
           - cxx-compiler
-          - nvtx==3.2.0
+          - nvtx-c
     specific:
       - output_types: conda
         matrices:
