@@ -75,7 +75,7 @@ class pinned_memory_resource final : public host_memory_resource {
    */
   [[nodiscard]] void* allocate_async(std::size_t bytes, cuda_stream_view)
   {
-    return do_allocate(bytes);
+    return do_allocate(bytes, alignof(std::max_align_t));
   }
 
   /**
@@ -88,7 +88,7 @@ class pinned_memory_resource final : public host_memory_resource {
    */
   void deallocate_async(void* ptr, std::size_t bytes, std::size_t alignment, cuda_stream_view)
   {
-    do_deallocate(ptr, rmm::align_up(bytes, alignment));
+    do_deallocate(ptr, rmm::align_up(bytes, alignment), alignment);
   }
 
   /**
@@ -111,7 +111,7 @@ class pinned_memory_resource final : public host_memory_resource {
    * @param alignment Alignment of the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* do_allocate(std::size_t bytes, std::size_t alignment = alignof(std::max_align_t)) override
+  void* do_allocate(std::size_t bytes, std::size_t alignment) override
   {
     // don't allocate anything if the user requested zero bytes
     if (0 == bytes) { return nullptr; }
@@ -140,9 +140,7 @@ class pinned_memory_resource final : public host_memory_resource {
    * @param alignment Alignment of the allocation. This must be equal to the value of `alignment`
    *                  that was passed to the `allocate` call that returned `ptr`.
    */
-  void do_deallocate(void* ptr,
-                     std::size_t bytes,
-                     std::size_t alignment = alignof(std::max_align_t)) override
+  void do_deallocate(void* ptr, std::size_t bytes, std::size_t alignment) override
   {
     if (nullptr == ptr) { return; }
     rmm::detail::aligned_host_deallocate(
