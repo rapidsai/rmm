@@ -410,7 +410,10 @@ struct mr_factory : mr_factory_base {
   mr_factory(std::string_view name, MRFactoryFunc factory)
     : mr_factory_base{std::string{name}}, owned_mr{std::move(factory())}
   {
-    if (owned_mr == nullptr) { skip_test = true; }
+    if (owned_mr == nullptr) {
+      skip_test = true;
+      return;
+    }
 
     mr = *owned_mr;
   }
