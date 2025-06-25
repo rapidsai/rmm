@@ -44,7 +44,7 @@ jobs:
       RAPIDS_GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Check if nightly CI is passing
-        uses: rapidsai/shared-actions/check_nightly_success/dispatch@allow-main-branch-nightly-ci
+        uses: rapidsai/shared-actions/check_nightly_success/dispatch@main
         with:
           repo: rmm
   changed-files:
