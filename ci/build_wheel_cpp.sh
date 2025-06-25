@@ -26,6 +26,6 @@ rapids-telemetry-record sccache-stats.txt sccache --show-adv-stats
 python -m auditwheel repair \
     --exclude librapids_logger.so \
     -w "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}" \
-    ${dist_dir}/*
+    "${dist_dir}"/*
 
 ../../ci/validate_wheel.sh "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}"

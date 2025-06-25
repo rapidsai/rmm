@@ -37,7 +37,7 @@ if ! [ ${status} -eq 0 ]; then
         echo "This script must be run inside the rmm repository, or the RMM_ROOT environment variable must be set."
     else
         echo "Script failed with unknown error attempting to determine project root:"
-        echo ${RMM_BUILD_DIR}
+        echo "${RMM_BUILD_DIR}"
     fi
     exit 1
 fi
@@ -48,8 +48,8 @@ DEFAULT_FORMAT_FILE_LOCATIONS=(
 )
 
 if [ -z ${RAPIDS_CMAKE_FORMAT_FILE:+PLACEHOLDER} ]; then
-    for file_path in ${DEFAULT_FORMAT_FILE_LOCATIONS[@]}; do
-        if [ -f ${file_path} ]; then
+    for file_path in "${DEFAULT_FORMAT_FILE_LOCATIONS[@]}"; do
+        if [ -f "${file_path}" ]; then
             RAPIDS_CMAKE_FORMAT_FILE=${file_path}
             break
         fi
@@ -68,7 +68,7 @@ else
 fi
 
 if [[ $1 == "cmake-format" ]]; then
-  cmake-format -i --config-files cpp/cmake/config.json ${RAPIDS_CMAKE_FORMAT_FILE} -- ${@:2}
+  cmake-format -i --config-files cpp/cmake/config.json "${RAPIDS_CMAKE_FORMAT_FILE}" -- "${@:2}"
 elif [[ $1 == "cmake-lint" ]]; then
-  cmake-lint --config-files cpp/cmake/config.json ${RAPIDS_CMAKE_FORMAT_FILE} -- ${@:2}
+  cmake-lint --config-files cpp/cmake/config.json "${RAPIDS_CMAKE_FORMAT_FILE}" -- "${@:2}"
 fi
