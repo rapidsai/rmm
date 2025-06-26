@@ -400,6 +400,7 @@ class pool_memory_resource final
    */
   block_type free_block(void* ptr, std::size_t size) noexcept
   {
+    RMM_FUNC_RANGE();
 #ifdef RMM_POOL_TRACK_ALLOCATIONS
     if (ptr == nullptr) return block_type{};
     auto const iter = allocated_blocks_.find(static_cast<char*>(ptr));
