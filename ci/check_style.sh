@@ -3,6 +3,8 @@
 
 set -euo pipefail
 
+source ./ci/use_gha_tools_from_branch.sh
+
 rapids-logger "Create checks conda environment"
 
 . /opt/conda/etc/profile.d/conda.sh
