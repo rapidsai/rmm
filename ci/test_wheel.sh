@@ -3,8 +3,6 @@
 
 set -eou pipefail
 
-source ./ci/use_gha_tools_from_branch.sh
-
 source rapids-init-pip
 
 RAPIDS_PY_CUDA_SUFFIX="$(rapids-wheel-ctk-name-gen "${RAPIDS_CUDA_VERSION}")"
