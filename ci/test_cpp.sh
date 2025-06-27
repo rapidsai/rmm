@@ -3,6 +3,8 @@
 
 set -euo pipefail
 
+source ./ci/use_gha_tools_from_branch.sh
+
 # Support invoking test_cpp.sh outside the script directory
 cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")"/../
 
