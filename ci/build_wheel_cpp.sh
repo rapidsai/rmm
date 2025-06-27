@@ -3,8 +3,6 @@
 
 set -euo pipefail
 
-source ./ci/use_gha_tools_from_branch.sh
-
 package_dir="python/librmm"
 
 source rapids-configure-sccache

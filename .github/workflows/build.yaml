@@ -110,7 +110,7 @@ jobs:
   wheel-publish-cpp:
     needs: wheel-build-cpp
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-publish.yaml@test-gha-tools
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-publish.yaml@branch-25.08
     with:
       build_type: ${{ inputs.build_type || 'branch' }}
       branch: ${{ inputs.branch }}
@@ -121,7 +121,7 @@ jobs:
   wheel-publish-python:
     needs: wheel-build-python
     secrets: inherit
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-publish.yaml@test-gha-tools
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-publish.yaml@branch-25.08
     with:
       build_type: ${{ inputs.build_type || 'branch' }}
       branch: ${{ inputs.branch }}
