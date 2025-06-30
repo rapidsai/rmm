@@ -217,7 +217,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
                 std::string("Maximum allocation size exceeded (failed to allocate ") +
                   rmm::detail::format_bytes(size) + ")",
                 rmm::out_of_memory);
-    auto const block = this->underlying().get_block(size, stream_event);
+    auto const block = get_block(size, stream_event);
 
     RMM_LOG_TRACE("[A][stream %s][%zuB][%p]",
                   rmm::detail::format_stream(stream_event.stream),
