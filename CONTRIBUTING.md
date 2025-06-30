@@ -37,7 +37,7 @@ are required.
 To set up a development environment, follow the steps in the [README](https://github.com/rapidsai/rmm/blob/main/README.md) for cloning the repository and creating the conda environment.
 Once the environment is created, you can build and install RMM using
 ```bash
-$ python -m pip install ./python
+$ python -m pip install ./python/rmm
 ```
 This command will build the RMM Python library inside the clone and automatically make it importable when running Python anywhere on your machine.
 Remember, if you are unsure about anything, don't hesitate to comment on issues
