@@ -21,6 +21,7 @@
 #include <rmm/detail/exec_check_disable.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/device_buffer.hpp>
+#include <rmm/logger.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
@@ -324,6 +325,7 @@ class device_uvector {
    */
   [[nodiscard]] value_type element(std::size_t element_index, cuda_stream_view stream) const
   {
+    RMM_LOG_INFO("inside element(); element_index %zu; size() %zu", element_index, size());
     RMM_EXPECTS(
       element_index < size(), "Attempt to access out of bounds element.", rmm::out_of_range);
     value_type value;
