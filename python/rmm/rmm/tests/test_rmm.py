@@ -741,6 +741,72 @@ def test_cuda_async_memory_resource_threshold(nelem, alloc):
     array_tester("u1", 2 * nelem, alloc)  # should trigger release
 
 
+def test_cuda_host_memory_resource():
+    """Test the CudaHostMemoryResource functionality."""
+    import ctypes
+
+    import numpy as np
+
+    from rmm.mr import CudaHostMemoryResource
+
+    mr = CudaHostMemoryResource()
+
+    # Test basic allocation
+    ptr = mr.allocate(1024)
+    assert ptr != 0
+
+    # Test that we can write to the memory from CPU
+    # Create a ctypes array view of the allocated memory
+    arr_ptr = ctypes.cast(ptr, ctypes.POINTER(ctypes.c_uint8))
+    arr = np.ctypeslib.as_array(arr_ptr, shape=(1024,))
+    arr[:] = np.arange(1024, dtype=np.uint8)
+
+    # Test that we can read back the data
+    assert np.array_equal(arr[:10], np.arange(10, dtype=np.uint8))
+
+    # Test deallocation
+    mr.deallocate(ptr, 1024)
+
+    # Test zero size allocation
+    ptr = mr.allocate(0)
+    assert ptr == 0
+    mr.deallocate(ptr, 0)
+
+
+def test_cuda_host_memory_resource_with_stream():
+    """Test the CudaHostMemoryResource with CUDA streams."""
+    import ctypes
+
+    import numpy as np
+
+    from rmm.mr import CudaHostMemoryResource
+    from rmm.pylibrmm.stream import Stream
+
+    mr = CudaHostMemoryResource()
+    stream = Stream()
+
+    # Test async allocation
+    ptr = mr.allocate(1024, stream)
+    assert ptr != 0
+
+    # Test that we can write to the memory from CPU
+    # Create a ctypes array view of the allocated memory
+    arr_ptr = ctypes.cast(ptr, ctypes.POINTER(ctypes.c_uint8))
+    arr = np.ctypeslib.as_array(arr_ptr, shape=(1024,))
+    arr[:] = np.arange(1024, dtype=np.uint8)
+
+    # Test that we can read back the data
+    assert np.array_equal(arr[:10], np.arange(10, dtype=np.uint8))
+
+    # Test async deallocation
+    mr.deallocate(ptr, 1024, stream)
+
+    # Test zero size async allocation
+    ptr = mr.allocate(0, stream)
+    assert ptr == 0
+    mr.deallocate(ptr, 0, stream)
+
+
 @pytest.mark.parametrize(
     "mr",
     [
