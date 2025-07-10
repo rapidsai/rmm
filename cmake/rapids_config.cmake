@@ -30,4 +30,5 @@ set(rapids-cmake-version "${RAPIDS_VERSION_MAJOR_MINOR}")
 if(RAPIDS_USE_MAIN)
   set(rapids-cmake-branch main)
 endif()
+
 include("${CMAKE_CURRENT_LIST_DIR}/RAPIDS.cmake")
