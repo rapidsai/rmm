@@ -26,7 +26,6 @@
 
 #include <cassert>
 #include <cstddef>
-#include <utility>
 
 namespace RMM_NAMESPACE {
 /**
