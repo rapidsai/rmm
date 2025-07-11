@@ -56,17 +56,16 @@ See the [RAPIDS Installation Guide](https://docs.rapids.ai/install/) for system 
 Compiler requirements:
 
 * `gcc`     version 9.3+
-* `nvcc`    version 11.4+
+* `nvcc`    version 12.0+
 * `cmake`   version 3.30.4+
 
 CUDA/GPU requirements:
 
-* CUDA 11.4+. You can obtain CUDA from
+* CUDA 12.0+. You can obtain CUDA from
   [https://developer.nvidia.com/cuda-downloads](https://developer.nvidia.com/cuda-downloads)
 
 GPU Support:
-* RMM is tested and supported only on Volta architecture and newer (Compute Capability 7.0+). It
-  may work on earlier architectures.
+* RMM is tested and supported only on Volta architecture and newer (Compute Capability 7.0+).
 
 Python requirements:
 * `rapids-build-backend` (available from PyPI or the `rapidsai` conda channel)
@@ -90,7 +89,7 @@ $ cd rmm
 - Create the conda development environment `rmm_dev`
 ```bash
 # create the conda environment (assuming in base `rmm` directory)
-$ conda env create --name rmm_dev --file conda/environments/all_cuda-128_arch-x86_64.yaml
+$ conda env create --name rmm_dev --file conda/environments/all_cuda-129_arch-x86_64.yaml
 # activate the environment
 $ conda activate rmm_dev
 ```
@@ -677,7 +676,7 @@ be detected by CUDA tools such as
 
 Exceptions to this are `cuda_memory_resource`, which wraps `cudaMalloc`, and
 `cuda_async_memory_resource`, which uses `cudaMallocAsync` with CUDA's built-in memory pool
-functionality (CUDA 11.2 or later required). Illegal memory accesses to memory allocated by these
+functionality (introduced in CUDA 11.2). Illegal memory accesses to memory allocated by these
 resources are detectable with Compute Sanitizer Memcheck.
 
 It may be possible in the future to add support for memory bounds checking with other memory
