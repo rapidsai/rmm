@@ -84,8 +84,17 @@ include(cmake/thirdparty/get_nvtx.cmake)
 # * library targets --------------------------------------------------------------------------------
 
 add_library(
-  rmm src/aligned.cpp src/cuda_device.cpp src/cuda_stream_pool.cpp src/cuda_stream_view.cpp
-      src/cuda_stream.cpp src/device_buffer.cpp src/error.cpp src/exec_policy.cpp src/logger.cpp)
+  rmm
+  src/aligned.cpp
+  src/cuda_device.cpp
+  src/cuda_stream_pool.cpp
+  src/cuda_stream_view.cpp
+  src/cuda_stream.cpp
+  src/device_buffer.cpp
+  src/error.cpp
+  src/exec_policy.cpp
+  src/logger.cpp
+  src/prefetch.cpp)
 add_library(rmm::rmm ALIAS rmm)
 
 target_include_directories(
