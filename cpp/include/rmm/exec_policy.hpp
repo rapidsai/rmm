@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ namespace RMM_NAMESPACE {
  */
 
 /**
- * @brief Synchronous execution policy for allocations using thrust
+ * @brief Synchronous execution policy for allocations using Thrust
  */
 using thrust_exec_policy_t =
   thrust::detail::execute_with_allocator<mr::thrust_allocator<char>,
@@ -57,21 +57,16 @@ class exec_policy : public thrust_exec_policy_t {
    * @param mr The resource to use for allocating temporary memory
    */
   explicit exec_policy(cuda_stream_view stream      = cuda_stream_default,
-                       device_async_resource_ref mr = mr::get_current_device_resource_ref())
-    : thrust_exec_policy_t(
-        thrust::cuda::par(mr::thrust_allocator<char>(stream, mr)).on(stream.value()))
-  {
-  }
+                       device_async_resource_ref mr = mr::get_current_device_resource_ref());
 };
 
-#if THRUST_VERSION >= 101600
-
 /**
- * @brief Asynchronous execution policy for allocations using thrust
+ * @brief Asynchronous execution policy for allocations using Thrust
  */
 using thrust_exec_policy_nosync_t =
   thrust::detail::execute_with_allocator<mr::thrust_allocator<char>,
                                          thrust::cuda_cub::execute_on_stream_nosync_base>;
+
 /**
  * @brief Helper class usable as a Thrust CUDA execution policy
  * that uses RMM for temporary memory allocation on the specified stream
@@ -81,21 +76,8 @@ using thrust_exec_policy_nosync_t =
 class exec_policy_nosync : public thrust_exec_policy_nosync_t {
  public:
   explicit exec_policy_nosync(cuda_stream_view stream      = cuda_stream_default,
-                              device_async_resource_ref mr = mr::get_current_device_resource_ref())
-    : thrust_exec_policy_nosync_t(
-        thrust::cuda::par_nosync(mr::thrust_allocator<char>(stream, mr)).on(stream.value()))
-  {
-  }
+                              device_async_resource_ref mr = mr::get_current_device_resource_ref());
 };
-
-#else
-
-using thrust_exec_policy_nosync_t =
-  thrust_exec_policy_t;  ///< When used with Thrust < 1.16.0, thrust_exec_policy_nosync_t is an
-                         ///< alias for thrust_exec_policy_t
-using exec_policy_nosync =
-  exec_policy;  ///< When used with Thrust < 1.16.0, exec_policy_nosync is an alias for exec_policy
-#endif
 
 /** @} */  // end of group
 }  // namespace RMM_NAMESPACE
