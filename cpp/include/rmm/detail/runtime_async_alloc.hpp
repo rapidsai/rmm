@@ -34,8 +34,9 @@ namespace detail {
  * @brief Determine at runtime if the CUDA driver supports the stream-ordered
  * memory allocator functions.
  *
- * This allows RMM users to compile/link against CUDA 11.2+ and run with
- * older drivers.
+ * Stream-ordered memory pools were introduced in CUDA 11.2. This allows RMM
+ * users to compile/link against newer CUDA versions and run with older
+ * drivers.
  */
 
 struct runtime_async_alloc {
