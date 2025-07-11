@@ -72,8 +72,13 @@ class cuda_async_memory_resource final : public device_memory_resource {
   /**
    * @brief Flags for specifying memory pool usage.
    *
-   * @note These values are exact copies from the runtime API. The only value so far is
-   * `cudaMemPoolCreateUsageHwDecompress`
+   * @note These values are exact copies from the runtime API. See the
+   * `cudaMemPoolProps` docs at
+   * https://docs.nvidia.com/cuda/cuda-runtime-api/structcudaMemPoolProps.html
+   * and ensure the enum values are kept in sync with the CUDA documentation.
+   * `cudaMemPoolCreateUsageHwDecompress` is currently the only supported usage
+   * flag, introduced in CUDA 12.8 and documented in
+   * https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html
    */
   enum class mempool_usage : unsigned short {
     hw_decompress = 0x2,  ///< If set indicates that the memory can be used as a buffer for hardware
