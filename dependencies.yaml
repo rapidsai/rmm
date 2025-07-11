@@ -3,7 +3,7 @@ files:
   all:
     output: conda
     matrix:
-      cuda: ["12.8"]
+      cuda: ["12.9"]
       arch: [x86_64, aarch64]
     includes:
       - build
@@ -260,8 +260,7 @@ dependencies:
           - nbsphinx
           - &numba numba>=0.59.1,<0.62.0a0
           - numpydoc
-          # this pin can be reverted when https://github.com/spatialaudio/nbsphinx/issues/825 is resolved
-          - sphinx<8.2.0
+          - sphinx
           - sphinx_rtd_theme
           - sphinx-copybutton
           - sphinx-markdown-tables
