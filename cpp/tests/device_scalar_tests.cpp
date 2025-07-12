@@ -19,6 +19,7 @@
 #include <rmm/device_scalar.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
+#include <rmm/mr/host/pinned_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <cuda_runtime_api.h>
@@ -120,6 +121,30 @@ TYPED_TEST(DeviceScalarTest, MoveCtor)
   EXPECT_EQ(moved_to.value(this->stream), original_value);
   // NOLINTNEXTLINE(bugprone-use-after-move,clang-analyzer-cplusplus.Move)
   EXPECT_EQ(nullptr, scalar.data());
+}
+
+TYPED_TEST(DeviceScalarTest, InitialValueWithBounceBuffer)
+{
+  rmm::mr::pinned_memory_resource host_mr;
+  typename rmm::device_scalar<TypeParam>::memory_resource_args mr_args{
+    this->mr, std::make_optional<rmm::host_resource_ref>(&host_mr)};
+
+  rmm::device_scalar<TypeParam> scalar{this->value, this->stream, mr_args};
+  EXPECT_NE(nullptr, scalar.data());
+  EXPECT_EQ(this->value, scalar.value(this->stream));
+}
+
+TYPED_TEST(DeviceScalarTest, SetValueWithBounceBuffer)
+{
+  rmm::mr::pinned_memory_resource host_mr;
+  typename rmm::device_scalar<TypeParam>::memory_resource_args mr_args{
+    this->mr, std::make_optional<rmm::host_resource_ref>(&host_mr)};
+  rmm::device_scalar<TypeParam> scalar{this->value, this->stream, mr_args};
+
+  EXPECT_NE(nullptr, scalar.data());
+  auto expected = this->random_value();
+  scalar.set_value_async(expected, this->stream);
+  EXPECT_EQ(expected, scalar.value(this->stream));
 }
 
 TYPED_TEST(DeviceScalarTest, SetValue)

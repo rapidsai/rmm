@@ -22,6 +22,7 @@
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
+#include <optional>
 #include <type_traits>
 
 namespace RMM_NAMESPACE {
@@ -52,8 +53,22 @@ class device_scalar {
   using const_pointer = typename device_uvector<T>::const_pointer;  ///< The type of the iterator
                                                                     ///< returned by data() const
 
+  /**
+   * @brief A struct to configure memory resources for a `device_scalar`.
+   *
+   * This struct allows for specifying a device memory resource for the scalar's storage and
+   * an optional host memory resource for a bounce buffer to optimize host-device transfers.
+   */
+  struct memory_resource_args {
+    device_async_resource_ref device_mr{mr::get_current_device_resource_ref()};
+    std::optional<host_resource_ref> bounce_buffer_host_mr{std::nullopt};
+  };
+
   RMM_EXEC_CHECK_DISABLE
-  ~device_scalar() = default;
+  ~device_scalar()
+  {
+    if (_host_bounce_buffer) { _host_mr->deallocate(*_host_bounce_buffer, sizeof(T)); }
+  }
 
   RMM_EXEC_CHECK_DISABLE
   device_scalar(device_scalar&&) noexcept = default;  ///< Default move constructor
@@ -125,6 +140,31 @@ class device_scalar {
   }
 
   /**
+   * @brief Construct a new `device_scalar` with an initial value.
+   *
+   * Does not synchronize the stream.
+   *
+   * @note This device_scalar is only safe to access in kernels and copies on the specified CUDA
+   * stream, or on another stream only if a dependency is enforced (e.g. using
+   * `cudaStreamWaitEvent()`).
+   *
+   * @throws rmm::bad_alloc if allocating the device memory for `initial_value` fails.
+   * @throws rmm::cuda_error if copying `initial_value` to device memory fails.
+   *
+   * @param initial_value The initial value of the object in device memory.
+   * @param stream Optional, stream on which to perform allocation and copy.
+   * @param mr_args Arguments to configure memory resources for a `device_scalar`.
+   */
+  explicit device_scalar(value_type const& initial_value,
+                         cuda_stream_view stream,
+                         memory_resource_args const& mr_args)
+    : _storage{1, stream, mr_args.device_mr}, _host_mr{mr_args.bounce_buffer_host_mr}
+  {
+    if (_host_mr) { _host_bounce_buffer = static_cast<T*>(_host_mr->allocate(sizeof(T))); }
+    set_value_async(initial_value, stream);
+  }
+
+  /**
    * @brief Construct a new `device_scalar` by deep copying the contents of
    * another `device_scalar`, using the specified stream and memory
    * resource.
@@ -161,7 +201,16 @@ class device_scalar {
    */
   [[nodiscard]] value_type value(cuda_stream_view stream) const
   {
-    return _storage.front_element(stream);
+    if (_host_bounce_buffer) {
+      // Case: Copying with pinned host memory
+      RMM_CUDA_TRY(cudaMemcpyAsync(
+        *_host_bounce_buffer, data(), sizeof(T), cudaMemcpyDefault, stream.value()));
+      stream.synchronize();
+      return **_host_bounce_buffer;
+    } else {
+      // Case: Copying with pageable host memory — may trigger an implicit synchronization.
+      return _storage.front_element(stream);
+    }
   }
 
   /**
@@ -203,7 +252,15 @@ class device_scalar {
    */
   void set_value_async(value_type const& value, cuda_stream_view stream)
   {
-    _storage.set_element_async(0, value, stream);
+    if (_host_bounce_buffer) {
+      // Case: Copying with pinned host memory
+      **_host_bounce_buffer = value;
+      RMM_CUDA_TRY(cudaMemcpyAsync(
+        data(), *_host_bounce_buffer, sizeof(T), cudaMemcpyDefault, stream.value()));
+    } else {
+      // Case: Copying with pageable host memory — may trigger an implicit synchronization.
+      _storage.set_element_async(0, value, stream);
+    }
   }
 
   // Disallow passing literals to set_value to avoid race conditions where the memory holding the
@@ -275,6 +332,10 @@ class device_scalar {
 
  private:
   rmm::device_uvector<T> _storage;
+  std::optional<host_resource_ref> _host_mr{
+    std::nullopt};  /// Optional host memory resource for bounce buffers
+  std::optional<T*> _host_bounce_buffer{
+    std::nullopt};  /// Optional bounce buffer for host-device transfers
 };
 
 /** @} */  // end of group
