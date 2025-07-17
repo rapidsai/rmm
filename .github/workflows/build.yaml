@@ -3,9 +3,7 @@ name: build
 on:
   push:
     branches:
-      - "main"
-      - "release/*"
-      - "hotfix/*"
+      - "branch-*"
     tags:
       - v[0-9][0-9].[0-9][0-9].[0-9][0-9]
   workflow_dispatch:
