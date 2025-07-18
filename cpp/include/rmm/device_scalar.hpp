@@ -67,7 +67,7 @@ class device_scalar {
   RMM_EXEC_CHECK_DISABLE
   ~device_scalar()
   {
-    if (_host_bounce_buffer) { _host_mr->deallocate(*_host_bounce_buffer, sizeof(T)); }
+    if (_host_bounce_buffer.has_value()) { _host_mr->deallocate(*_host_bounce_buffer, sizeof(T)); }
   }
 
   RMM_EXEC_CHECK_DISABLE
@@ -160,7 +160,7 @@ class device_scalar {
                          memory_resource_args const& mr_args)
     : _storage{1, stream, mr_args.device_mr}, _host_mr{mr_args.bounce_buffer_host_mr}
   {
-    if (_host_mr) { _host_bounce_buffer = static_cast<T*>(_host_mr->allocate(sizeof(T))); }
+    if (_host_mr.has_value()) { _host_bounce_buffer = static_cast<T*>(_host_mr->allocate(sizeof(T))); }
     set_value_async(initial_value, stream);
   }
 
@@ -201,7 +201,7 @@ class device_scalar {
    */
   [[nodiscard]] value_type value(cuda_stream_view stream) const
   {
-    if (_host_bounce_buffer) {
+    if (_host_bounce_buffer.has_value()) {
       // Case: Copying with pinned host memory
       RMM_CUDA_TRY(cudaMemcpyAsync(
         *_host_bounce_buffer, data(), sizeof(T), cudaMemcpyDefault, stream.value()));
@@ -252,7 +252,7 @@ class device_scalar {
    */
   void set_value_async(value_type const& value, cuda_stream_view stream)
   {
-    if (_host_bounce_buffer) {
+    if (_host_bounce_buffer.has_value()) {
       // Case: Copying with pinned host memory
       **_host_bounce_buffer = value;
       RMM_CUDA_TRY(cudaMemcpyAsync(
