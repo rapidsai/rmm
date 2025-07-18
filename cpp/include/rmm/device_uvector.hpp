@@ -130,7 +130,7 @@ class device_uvector {
    * @param stream The stream on which to perform the allocation
    * @param mr The resource used to allocate the device storage
    */
-  explicit device_uvector(std::size_t size,
+  explicit device_uvector(size_type size,
                           cuda_stream_view stream,
                           device_async_resource_ref mr = mr::get_current_device_resource_ref())
     : _storage{elements_to_bytes(size), stream, mr}
@@ -161,7 +161,7 @@ class device_uvector {
    * @param element_index Index of the specified element.
    * @return T* Pointer to the desired element
    */
-  [[nodiscard]] pointer element_ptr(std::size_t element_index) noexcept
+  [[nodiscard]] pointer element_ptr(size_type element_index) noexcept
   {
     assert(element_index < size());
     return data() + element_index;
@@ -175,7 +175,7 @@ class device_uvector {
    * @param element_index Index of the specified element.
    * @return T* Pointer to the desired element
    */
-  [[nodiscard]] const_pointer element_ptr(std::size_t element_index) const noexcept
+  [[nodiscard]] const_pointer element_ptr(size_type element_index) const noexcept
   {
     assert(element_index < size());
     return data() + element_index;
@@ -217,7 +217,7 @@ class device_uvector {
    * @param value The value to copy to the specified element
    * @param stream The stream on which to perform the copy
    */
-  void set_element_async(std::size_t element_index,
+  void set_element_async(size_type element_index,
                          value_type const& value,
                          cuda_stream_view stream)
   {
@@ -243,7 +243,7 @@ class device_uvector {
 
   // We delete the r-value reference overload to prevent asynchronously copying from a literal or
   // implicit temporary value after it is deleted or goes out of scope.
-  void set_element_async(std::size_t, value_type const&&, cuda_stream_view) = delete;
+  void set_element_async(size_type, value_type const&&, cuda_stream_view) = delete;
 
   /**
    * @brief Asynchronously sets the specified element to zero in device memory.
@@ -267,7 +267,7 @@ class device_uvector {
    * @param element_index Index of the target element
    * @param stream The stream on which to perform the copy
    */
-  void set_element_to_zero_async(std::size_t element_index, cuda_stream_view stream)
+  void set_element_to_zero_async(size_type element_index, cuda_stream_view stream)
   {
     RMM_EXPECTS(
       element_index < size(), "Attempt to access out of bounds element.", rmm::out_of_range);
@@ -304,7 +304,7 @@ class device_uvector {
    * @param value The value to copy to the specified element
    * @param stream The stream on which to perform the copy
    */
-  void set_element(std::size_t element_index, T const& value, cuda_stream_view stream)
+  void set_element(size_type element_index, T const& value, cuda_stream_view stream)
   {
     set_element_async(element_index, value, stream);
     stream.synchronize_no_throw();
@@ -322,7 +322,7 @@ class device_uvector {
    * @param stream The stream on which to perform the copy
    * @return The value of the specified element
    */
-  [[nodiscard]] value_type element(std::size_t element_index, cuda_stream_view stream) const
+  [[nodiscard]] value_type element(size_type element_index, cuda_stream_view stream) const
   {
     RMM_EXPECTS(
       element_index < size(), "Attempt to access out of bounds element.", rmm::out_of_range);
@@ -377,7 +377,7 @@ class device_uvector {
    * @param new_capacity The desired capacity (number of elements)
    * @param stream The stream on which to perform the allocation/copy (if any)
    */
-  void reserve(std::size_t new_capacity, cuda_stream_view stream)
+  void reserve(size_type new_capacity, cuda_stream_view stream)
   {
     _storage.reserve(elements_to_bytes(new_capacity), stream);
   }
@@ -398,7 +398,7 @@ class device_uvector {
    * @param new_size The desired number of elements
    * @param stream The stream on which to perform the allocation/copy (if any)
    */
-  void resize(std::size_t new_size, cuda_stream_view stream)
+  void resize(size_type new_size, cuda_stream_view stream)
   {
     _storage.resize(elements_to_bytes(new_size), stream);
   }
@@ -422,10 +422,10 @@ class device_uvector {
   /**
    * @brief Returns the number of elements that can be held in currently allocated storage.
    *
-   * @return std::size_t The number of elements that can be stored without requiring a new
+   * @return size_type The number of elements that can be stored without requiring a new
    * allocation.
    */
-  [[nodiscard]] std::size_t capacity() const noexcept
+  [[nodiscard]] size_type capacity() const noexcept
   {
     return bytes_to_elements(_storage.capacity());
   }
@@ -577,14 +577,14 @@ class device_uvector {
   /**
    * @briefreturn{The number of elements in the vector}
    */
-  [[nodiscard]] std::size_t size() const noexcept { return bytes_to_elements(_storage.size()); }
+  [[nodiscard]] size_type size() const noexcept { return bytes_to_elements(_storage.size()); }
 
   /**
    * @briefreturn{The signed number of elements in the vector}
    */
   [[nodiscard]] std::int64_t ssize() const noexcept
   {
-    assert(size() < static_cast<std::size_t>(std::numeric_limits<int64_t>::max()) &&
+    assert(size() < static_cast<size_type>(std::numeric_limits<int64_t>::max()) &&
            "Size overflows signed integer");
     return static_cast<int64_t>(size());
   }
@@ -624,12 +624,12 @@ class device_uvector {
  private:
   device_buffer _storage{};  ///< Device memory storage for vector elements
 
-  [[nodiscard]] std::size_t constexpr elements_to_bytes(std::size_t num_elements) const noexcept
+  [[nodiscard]] size_type constexpr elements_to_bytes(size_type num_elements) const noexcept
   {
     return num_elements * sizeof(value_type);
   }
 
-  [[nodiscard]] std::size_t constexpr bytes_to_elements(std::size_t num_bytes) const noexcept
+  [[nodiscard]] size_type constexpr bytes_to_elements(size_type num_bytes) const noexcept
   {
     return num_bytes / sizeof(value_type);
   }
