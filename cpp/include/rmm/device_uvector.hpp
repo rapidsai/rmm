@@ -217,9 +217,7 @@ class device_uvector {
    * @param value The value to copy to the specified element
    * @param stream The stream on which to perform the copy
    */
-  void set_element_async(size_type element_index,
-                         value_type const& value,
-                         cuda_stream_view stream)
+  void set_element_async(size_type element_index, value_type const& value, cuda_stream_view stream)
   {
     RMM_EXPECTS(
       element_index < size(), "Attempt to access out of bounds element.", rmm::out_of_range);
