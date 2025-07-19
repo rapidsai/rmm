@@ -67,7 +67,7 @@ class device_scalar {
   RMM_EXEC_CHECK_DISABLE
   ~device_scalar()
   {
-    if (_host_bounce_buffer.has_value()) { _host_mr->deallocate(*_host_bounce_buffer, sizeof(T)); }
+    if (_host_bounce_buffer.has_value()) { _host_mr->deallocate(_host_bounce_buffer.value(), sizeof(T)); }
   }
 
   RMM_EXEC_CHECK_DISABLE
@@ -204,9 +204,9 @@ class device_scalar {
     if (_host_bounce_buffer.has_value()) {
       // Case: Copying with pinned host memory
       RMM_CUDA_TRY(cudaMemcpyAsync(
-        *_host_bounce_buffer, data(), sizeof(T), cudaMemcpyDefault, stream.value()));
+        _host_bounce_buffer.value(), data(), sizeof(T), cudaMemcpyDefault, stream.value()));
       stream.synchronize();
-      return **_host_bounce_buffer;
+      return *_host_bounce_buffer.value();
     } else {
       // Case: Copying with pageable host memory — may trigger an implicit synchronization.
       return _storage.front_element(stream);
@@ -254,9 +254,9 @@ class device_scalar {
   {
     if (_host_bounce_buffer.has_value()) {
       // Case: Copying with pinned host memory
-      **_host_bounce_buffer = value;
+      *_host_bounce_buffer.value() = value;
       RMM_CUDA_TRY(cudaMemcpyAsync(
-        data(), *_host_bounce_buffer, sizeof(T), cudaMemcpyDefault, stream.value()));
+        data(), _host_bounce_buffer.value(), sizeof(T), cudaMemcpyDefault, stream.value()));
     } else {
       // Case: Copying with pageable host memory — may trigger an implicit synchronization.
       _storage.set_element_async(0, value, stream);
