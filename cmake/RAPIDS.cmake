@@ -19,7 +19,7 @@ cmake_minimum_required(VERSION 3.30.4 FATAL_ERROR)
 
 # Allow users to control which version is used
 if(NOT rapids-cmake-version OR NOT rapids-cmake-version MATCHES [[^([0-9][0-9])\.([0-9][0-9])$]])
- Use STRINGS to trim whitespace/newlines
+# Use STRINGS to trim whitespace/newlines
 file(STRINGS "${CMAKE_CURRENT_LIST_DIR}/../RAPIDS_BRANCH" _rapids_branch)
   message(
     FATAL_ERROR "The CMake variable `rapids-cmake-branch` or `rapids-cmake-version` must be defined"
