@@ -21,6 +21,7 @@
 #include <rmm/detail/export.hpp>
 #include <rmm/detail/format.hpp>
 #include <rmm/detail/logging_assert.hpp>
+#include <rmm/detail/nvtx/memory.hpp>
 #include <rmm/detail/thrust_namespace.h>
 #include <rmm/logger.hpp>
 #include <rmm/mr/device/detail/coalescing_free_list.hpp>
@@ -363,6 +364,13 @@ class pool_memory_resource final
     if (size == 0) { return {}; }
 
     void* ptr = get_upstream_resource().allocate_async(size, stream);
+
+#ifdef RMM_NVTX
+    // Create a new nvtx heap for the allocated memory
+    nvtx_heaps_[ptr] = create_nvtx_heap(ptr, size);
+    RMM_LOG_DEBUG("nvtx heap [%zu %zu]", ptr, size);
+#endif
+
     return *upstream_blocks_.emplace(static_cast<char*>(ptr), size, true).first;
   }
 
@@ -381,6 +389,26 @@ class pool_memory_resource final
     block_type const alloc{block.pointer(), size, block.is_head()};
 #ifdef RMM_POOL_TRACK_ALLOCATIONS
     allocated_blocks_.insert(alloc);
+#endif
+
+#ifdef RMM_NVTX
+    void* heap_key;
+    if (alloc.is_head()) {
+      // if alloc is head, then it's beginning of the heap (and its already in the upstream_blocks_)
+      heap_key = block.pointer();
+    } else {
+      // if alloc is not head, then it's in the middle of the heap (and its not in the
+      // upstream_blocks_). Find the upstream block that alloc belongs to
+      auto const it = upstream_blocks_.lower_bound(block.pointer());
+      if (it == upstream_blocks_.begin()) {
+        RMM_FAIL("Could not find a heap for block", rmm::logic_error);
+      }
+      heap_key = std::prev(it)->pointer();
+    }
+    // register alloc with the heap
+    register_mem_region(nvtx_heaps_.at(heap_key), alloc.pointer(), alloc.size());
+    RMM_LOG_DEBUG(
+      "nvtx region [%zu %zu %zu]", heap_key, static_cast<void*>(alloc.pointer()), alloc.size());
 #endif
 
     auto rest = (block.size() > size)
@@ -411,7 +439,15 @@ class pool_memory_resource final
 
     return block;
 #else
+    // unregister ptr from the domain.
+
     auto const iter = upstream_blocks_.find(static_cast<char*>(ptr));
+
+#ifdef RMM_NVTX
+    RMM_LOG_DEBUG("free nvtx region [%zu %zu]", ptr, size);
+    unregister_mem_region(ptr);
+#endif
+
     return block_type{static_cast<char*>(ptr), size, (iter != upstream_blocks_.end())};
 #endif
   }
@@ -425,11 +461,19 @@ class pool_memory_resource final
     lock_guard lock(this->get_mutex());
 
     for (auto block : upstream_blocks_) {
+#ifdef RMM_NVTX
+      RMM_LOG_DEBUG("destroy nvtx heap [%zu %zu]", block.pointer(), block.size());
+      destroy_nvtx_heap(nvtx_heaps_.at(block.pointer()));
+#endif
       get_upstream_resource().deallocate(block.pointer(), block.size());
     }
     upstream_blocks_.clear();
 #ifdef RMM_POOL_TRACK_ALLOCATIONS
     allocated_blocks_.clear();
+#endif
+
+#ifdef RMM_NVTX
+    nvtx_heaps_.clear();
 #endif
 
     current_pool_size_ = 0;
@@ -497,9 +541,13 @@ class pool_memory_resource final
   std::set<block_type, rmm::mr::detail::compare_blocks<block_type>> allocated_blocks_;
 #endif
 
+#ifdef RMM_NVTX
+  std::unordered_map<void*, nvtxMemHeapHandle_t> nvtx_heaps_;
+#endif
+
   // blocks allocated from upstream
   std::set<block_type, rmm::mr::detail::compare_blocks<block_type>> upstream_blocks_;
-};  // namespace mr
+};
 
 /** @} */  // end of group
 }  // namespace mr
