@@ -24,6 +24,7 @@
 #include <rmm/mr/device/managed_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
+#include <rmm/mr/host/pinned_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <thrust/equal.h>
@@ -496,4 +497,158 @@ TYPED_TEST(DeviceBufferTest, SetGetStream)
   buff.set_stream(otherstream);
 
   EXPECT_EQ(buff.stream(), otherstream);
+}
+
+// Bounce buffer tests
+TYPED_TEST(DeviceBufferTest, ConstructorWithBounceBuffer)
+{
+  rmm::mr::pinned_memory_resource host_mr;
+  rmm::device_buffer::memory_resource_args mr_args{
+    rmm::device_async_resource_ref{this->mr}, 
+    std::make_optional<rmm::host_resource_ref>(&host_mr)};
+
+  rmm::device_buffer buff{this->size, this->stream, mr_args};
+  EXPECT_NE(nullptr, buff.data());
+  EXPECT_EQ(this->size, buff.size());
+  EXPECT_EQ(this->size, buff.capacity());
+  EXPECT_EQ(rmm::device_async_resource_ref{this->mr}, buff.memory_resource());
+  EXPECT_EQ(this->stream, buff.stream());
+}
+
+TYPED_TEST(DeviceBufferTest, CopyFromHostWithBounceBuffer)
+{
+  rmm::mr::pinned_memory_resource host_mr;
+  rmm::device_buffer::memory_resource_args mr_args{
+    rmm::device_async_resource_ref{this->mr}, 
+    std::make_optional<rmm::host_resource_ref>(&host_mr)};
+
+  std::vector<uint8_t> host_data(this->size);
+  std::iota(host_data.begin(), host_data.end(), 0);
+
+  rmm::device_buffer buff{
+    static_cast<void*>(host_data.data()), this->size, this->stream, mr_args};
+  
+  EXPECT_NE(nullptr, buff.data());
+  EXPECT_EQ(this->size, buff.size());
+  EXPECT_EQ(this->size, buff.capacity());
+  EXPECT_EQ(rmm::device_async_resource_ref{this->mr}, buff.memory_resource());
+  EXPECT_EQ(this->stream, buff.stream());
+
+  this->stream.synchronize();
+
+  // Verify data was copied correctly by copying back to host
+  std::vector<uint8_t> result_data(this->size);
+  RMM_CUDA_TRY(cudaMemcpy(result_data.data(), buff.data(), this->size, cudaMemcpyDeviceToHost));
+  
+  EXPECT_TRUE(std::equal(host_data.begin(), host_data.end(), result_data.begin()));
+}
+
+TYPED_TEST(DeviceBufferTest, ReserveWithBounceBuffer)
+{
+  rmm::mr::pinned_memory_resource host_mr;
+  rmm::device_buffer::memory_resource_args mr_args{
+    rmm::device_async_resource_ref{this->mr}, 
+    std::make_optional<rmm::host_resource_ref>(&host_mr)};
+
+  rmm::device_buffer buff{this->size, this->stream, mr_args};
+  
+  // Initialize buffer with test data
+  thrust::sequence(rmm::exec_policy(this->stream),
+                   static_cast<uint8_t*>(buff.data()),
+                   static_cast<uint8_t*>(buff.data()) + buff.size(),
+                   0);
+
+  auto* old_data = buff.data();
+  auto new_capacity = this->size * 2;
+  
+  buff.reserve(new_capacity, this->stream);
+  
+  EXPECT_EQ(this->size, buff.size());
+  EXPECT_EQ(new_capacity, buff.capacity());
+  EXPECT_NE(old_data, buff.data());  // Should have reallocated
+
+  this->stream.synchronize();
+
+  // Verify data was preserved during reserve operation
+  std::vector<uint8_t> expected_data(this->size);
+  std::iota(expected_data.begin(), expected_data.end(), 0);
+  
+  std::vector<uint8_t> result_data(this->size);
+  RMM_CUDA_TRY(cudaMemcpy(result_data.data(), buff.data(), this->size, cudaMemcpyDeviceToHost));
+  
+  EXPECT_TRUE(std::equal(expected_data.begin(), expected_data.end(), result_data.begin()));
+}
+
+TYPED_TEST(DeviceBufferTest, ResizeWithBounceBuffer)
+{
+  rmm::mr::pinned_memory_resource host_mr;
+  rmm::device_buffer::memory_resource_args mr_args{
+    rmm::device_async_resource_ref{this->mr}, 
+    std::make_optional<rmm::host_resource_ref>(&host_mr)};
+
+  rmm::device_buffer buff{this->size, this->stream, mr_args};
+  
+  // Initialize buffer with test data
+  thrust::sequence(rmm::exec_policy(this->stream),
+                   static_cast<uint8_t*>(buff.data()),
+                   static_cast<uint8_t*>(buff.data()) + buff.size(),
+                   0);
+
+  auto* old_data = buff.data();
+  auto new_size = this->size * 2;
+  
+  buff.resize(new_size, this->stream);
+  
+  EXPECT_EQ(new_size, buff.size());
+  EXPECT_EQ(new_size, buff.capacity());
+  EXPECT_NE(old_data, buff.data());  // Should have reallocated
+
+  this->stream.synchronize();
+
+  // Verify original data was preserved during resize operation
+  std::vector<uint8_t> expected_data(this->size);
+  std::iota(expected_data.begin(), expected_data.end(), 0);
+  
+  std::vector<uint8_t> result_data(this->size);
+  RMM_CUDA_TRY(cudaMemcpy(result_data.data(), buff.data(), this->size, cudaMemcpyDeviceToHost));
+  
+  EXPECT_TRUE(std::equal(expected_data.begin(), expected_data.end(), result_data.begin()));
+}
+
+TYPED_TEST(DeviceBufferTest, ShrinkToFitWithBounceBuffer)
+{
+  rmm::mr::pinned_memory_resource host_mr;
+  rmm::device_buffer::memory_resource_args mr_args{
+    rmm::device_async_resource_ref{this->mr}, 
+    std::make_optional<rmm::host_resource_ref>(&host_mr)};
+
+  rmm::device_buffer buff{this->size, this->stream, mr_args};
+  
+  // Reserve more capacity than needed
+  buff.reserve(this->size * 2, this->stream);
+  
+  // Initialize buffer with test data
+  thrust::sequence(rmm::exec_policy(this->stream),
+                   static_cast<uint8_t*>(buff.data()),
+                   static_cast<uint8_t*>(buff.data()) + buff.size(),
+                   0);
+
+  auto* old_data = buff.data();
+  
+  buff.shrink_to_fit(this->stream);
+  
+  EXPECT_EQ(this->size, buff.size());
+  EXPECT_EQ(this->size, buff.capacity());  // Capacity should match size
+  EXPECT_NE(old_data, buff.data());  // Should have reallocated
+
+  this->stream.synchronize();
+
+  // Verify data was preserved during shrink operation
+  std::vector<uint8_t> expected_data(this->size);
+  std::iota(expected_data.begin(), expected_data.end(), 0);
+  
+  std::vector<uint8_t> result_data(this->size);
+  RMM_CUDA_TRY(cudaMemcpy(result_data.data(), buff.data(), this->size, cudaMemcpyDeviceToHost));
+  
+  EXPECT_TRUE(std::equal(expected_data.begin(), expected_data.end(), result_data.begin()));
 }
