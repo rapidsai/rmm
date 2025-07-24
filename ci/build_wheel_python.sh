@@ -50,4 +50,4 @@ python -m auditwheel repair \
 absolute_wheel_dir=$(realpath "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}")
 # switch back to the root of the repo and check symbol visibility
 popd
-ci/check_symbols.sh "$(echo ${absolute_wheel_dir}/rmm_*.whl)"
+ci/check_symbols.sh "$(echo "${absolute_wheel_dir}"/rmm_*.whl)"

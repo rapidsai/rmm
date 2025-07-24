@@ -15,13 +15,13 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.11.4
+    rev: v0.12.2
     hooks:
       - id: ruff
         args: ["--fix"]
       - id: ruff-format
   - repo: https://github.com/MarcoGorelli/cython-lint
-    rev: v0.16.6
+    rev: v0.16.7
     hooks:
       - id: cython-lint
   - repo: https://github.com/pre-commit/mirrors-clang-format
@@ -30,6 +30,10 @@ repos:
       - id: clang-format
         types_or: [c, c++, cuda]
         args: ["-fallback-style=none", "-style=file", "-i"]
+        exclude: |
+          (?x)^(
+            ^cpp/benchmarks/utilities/cxxopts.hpp
+          )
   - repo: https://github.com/sirosen/texthooks
     rev: 0.6.8
     hooks:
@@ -77,12 +81,17 @@ repos:
         pass_filenames: false
         verbose: true
   - repo: https://github.com/rapidsai/pre-commit-hooks
-    rev: v0.6.0
+    rev: v0.7.0
     hooks:
-    - id: verify-copyright
-    - id: verify-alpha-spec
+      - id: verify-copyright
+        args: [--fix, --main-branch=main]
+        exclude: |
+          (?x)^(
+            ^cpp/benchmarks/utilities/cxxopts.hpp
+          )
+      - id: verify-alpha-spec
   - repo: https://github.com/rapidsai/dependency-file-generator
-    rev: v1.18.1
+    rev: v1.19.1
     hooks:
       - id: rapids-dependency-file-generator
         args: ["--clean"]
@@ -90,8 +99,6 @@ repos:
     rev: v0.10.0.1
     hooks:
       - id: shellcheck
-        args: ["--severity=warning"]
-        files: ^ci/
 
 default_language_version:
   python: python3

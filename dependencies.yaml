@@ -3,7 +3,7 @@ files:
   all:
     output: conda
     matrix:
-      cuda: ["12.8"]
+      cuda: ["12.9"]
       arch: [x86_64, aarch64]
     includes:
       - build
@@ -165,7 +165,7 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - &librmm_unsuffixed librmm==25.8.*,>=0.0.0a0
+          - &librmm_unsuffixed librmm==25.10.*,>=0.0.0a0
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -179,7 +179,7 @@ dependencies:
               cuda: "12.*"
               cuda_suffixed: "true"
             packages:
-              - librmm-cu12==25.8.*,>=0.0.0a0
+              - librmm-cu12==25.10.*,>=0.0.0a0
           - matrix:
             packages:
               - *librmm_unsuffixed
@@ -187,17 +187,17 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - rmm==25.8.*,>=0.0.0a0
+          - rmm==25.10.*,>=0.0.0a0
   depends_on_librmm_tests:
     common:
       - output_types: conda
         packages:
-          - librmm-tests==25.8.*,>=0.0.0a0
+          - librmm-tests==25.10.*,>=0.0.0a0
   depends_on_librmm_example:
     common:
       - output_types: conda
         packages:
-          - librmm-example==25.8.*,>=0.0.0a0
+          - librmm-example==25.10.*,>=0.0.0a0
   checks:
     common:
       - output_types: [conda, requirements]
@@ -259,8 +259,7 @@ dependencies:
           - nbsphinx
           - &numba numba>=0.59.1,<0.62.0a0
           - numpydoc
-          # this pin can be reverted when https://github.com/spatialaudio/nbsphinx/issues/825 is resolved
-          - sphinx<8.2.0
+          - sphinx
           - sphinx_rtd_theme
           - sphinx-copybutton
           - sphinx-markdown-tables
