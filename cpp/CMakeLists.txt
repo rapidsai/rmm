@@ -61,6 +61,9 @@ option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
 # ##################################################################################################
 # * compiler options -------------------------------------------------------------------------------
 
+# For now, disable CMake's automatic module scanning for C++ files.
+set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
+
 # find packages we depend on
 rapids_find_package(
   CUDAToolkit REQUIRED

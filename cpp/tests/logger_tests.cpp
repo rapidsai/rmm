@@ -105,20 +105,19 @@ void expect_log_events(std::string const& filename,
 {
   auto actual_events = rmm::detail::parse_csv(filename);
 
-  std::equal(expected_events.begin(),
-             expected_events.end(),
-             actual_events.begin(),
-             [](auto expected, auto actual) {
-               // We don't test the logged thread id since it may be different from what we record.
-               // The actual value doesn't matter so long as events from different threads have
-               // different ids
-               // EXPECT_EQ(expected.thread_id, actual.thread_id);
-               // EXPECT_EQ(expected.stream, actual.stream);
-               EXPECT_EQ(expected.act, actual.act);
-               EXPECT_EQ(expected.size, actual.size);
-               EXPECT_EQ(expected.pointer, actual.pointer);
-               return true;
-             });
+  EXPECT_TRUE(std::equal(expected_events.begin(),
+                         expected_events.end(),
+                         actual_events.begin(),
+                         [](auto expected, auto actual) {
+                           // We don't test the logged thread id since it may be different from what
+                           // we record. The actual value doesn't matter so long as events from
+                           // different threads have different ids EXPECT_EQ(expected.thread_id,
+                           // actual.thread_id); EXPECT_EQ(expected.stream, actual.stream);
+                           EXPECT_EQ(expected.act, actual.act);
+                           EXPECT_EQ(expected.size, actual.size);
+                           EXPECT_EQ(expected.pointer, actual.pointer);
+                           return true;
+                         }));
 }
 
 TEST(Adaptor, FilenameConstructor)
