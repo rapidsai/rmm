@@ -121,7 +121,6 @@ void expect_log_events(std::string const& filename,
     EXPECT_EQ(expected.act, actual.act);
     EXPECT_EQ(expected.size, actual.size);
     EXPECT_EQ(expected.pointer, actual.pointer);
-    return true;
   });
 }
 
