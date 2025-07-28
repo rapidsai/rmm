@@ -20,6 +20,7 @@
 #include <rmm/detail/nvtx/ranges.hpp>
 
 #include <cstddef>
+#include <memory_resource>
 
 namespace RMM_NAMESPACE {
 namespace mr {
@@ -34,9 +35,6 @@ namespace mr {
  *
  * This is based on `std::pmr::memory_resource`:
  * https://en.cppreference.com/w/cpp/memory/memory_resource
- *
- * When C++17 is available for use in RMM, `rmm::host_memory_resource` should
- * inherit from `std::pmr::memory_resource`.
  *
  * This class serves as the interface that all host memory resource
  * implementations must satisfy.
@@ -53,7 +51,7 @@ namespace mr {
  * derived class implementation is used.
  *
  */
-class host_memory_resource {
+class host_memory_resource : public std::pmr::memory_resource {
  public:
   host_memory_resource()                                = default;
   virtual ~host_memory_resource()                       = default;
@@ -162,8 +160,7 @@ class host_memory_resource {
    * @param alignment Alignment of the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  virtual void* do_allocate(std::size_t bytes,
-                            std::size_t alignment = alignof(std::max_align_t)) = 0;
+  virtual void* do_allocate(std::size_t bytes, std::size_t alignment) = 0;
 
   /**
    * @brief Deallocate memory pointed to by `ptr`.
@@ -178,9 +175,7 @@ class host_memory_resource {
    * @param alignment Alignment of the allocation. This must be equal to the value of `alignment`
    *                  that was passed to the `allocate` call that returned `ptr`.
    */
-  virtual void do_deallocate(void* ptr,
-                             std::size_t bytes,
-                             std::size_t alignment = alignof(std::max_align_t)) = 0;
+  virtual void do_deallocate(void* ptr, std::size_t bytes, std::size_t alignment) = 0;
 
   /**
    * @brief Compare this resource to another.
@@ -194,7 +189,7 @@ class host_memory_resource {
    * @param other The other resource to compare to
    * @return true If the two resources are equivalent
    */
-  [[nodiscard]] virtual bool do_is_equal(host_memory_resource const& other) const noexcept
+  [[nodiscard]] virtual bool do_is_equal(std::pmr::memory_resource const& other) const noexcept
   {
     return this == &other;
   }
