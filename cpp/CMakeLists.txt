@@ -61,6 +61,9 @@ option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
 # ##################################################################################################
 # * compiler options -------------------------------------------------------------------------------
 
+# For now, disable CMake's automatic module scanning for C++ files.
+set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
+
 # find packages we depend on
 rapids_find_package(
   CUDAToolkit REQUIRED
@@ -83,8 +86,18 @@ include(cmake/thirdparty/get_nvtx.cmake)
 # ##################################################################################################
 # * library targets --------------------------------------------------------------------------------
 
-add_library(rmm src/aligned.cpp src/cuda_device.cpp src/cuda_stream_pool.cpp
-                src/cuda_stream_view.cpp src/cuda_stream.cpp)
+add_library(
+  rmm
+  src/aligned.cpp
+  src/cuda_device.cpp
+  src/cuda_stream_pool.cpp
+  src/cuda_stream_view.cpp
+  src/cuda_stream.cpp
+  src/device_buffer.cpp
+  src/error.cpp
+  src/exec_policy.cpp
+  src/logger.cpp
+  src/prefetch.cpp)
 add_library(rmm::rmm ALIAS rmm)
 
 target_include_directories(

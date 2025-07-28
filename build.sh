@@ -16,7 +16,7 @@ ARGS=$*
 
 # NOTE: ensure all dir changes are relative to the location of this
 # script, and that this script resides in the repo dir!
-REPODIR=$(cd $(dirname $0); pwd)
+REPODIR=$(cd "$(dirname "$0")"; pwd)
 
 VALIDARGS="clean librmm rmm -v -g -n -s --ptds -h tests benchmarks"
 HELP="$0 [clean] [librmm] [rmm] [-v] [-g] [-n] [-s] [--ptds] [--cmake-args=\"<args>\"] [-h]
@@ -61,24 +61,25 @@ function hasArg {
 
 function cmakeArgs {
     # Check for multiple cmake args options
-    if [[ $(echo $ARGS | { grep -Eo "\-\-cmake\-args" || true; } | wc -l ) -gt 1 ]]; then
+    if [[ $(echo "$ARGS" | { grep -Eo "\-\-cmake\-args" || true; } | wc -l ) -gt 1 ]]; then
         echo "Multiple --cmake-args options were provided, please provide only one: ${ARGS}"
         exit 1
     fi
 
     # Check for cmake args option
-    if [[ -n $(echo $ARGS | { grep -E "\-\-cmake\-args" || true; } ) ]]; then
+    if [[ -n $(echo "$ARGS" | { grep -E "\-\-cmake\-args" || true; } ) ]]; then
         # There are possible weird edge cases that may cause this regex filter to output nothing and fail silently
         # the true pipe will catch any weird edge cases that may happen and will cause the program to fall back
         # on the invalid option error
-        EXTRA_CMAKE_ARGS=$(echo $ARGS | { grep -Eo "\-\-cmake\-args=\".+\"" || true; })
+        EXTRA_CMAKE_ARGS=$(echo "$ARGS" | { grep -Eo "\-\-cmake\-args=\".+\"" || true; })
         if [[ -n ${EXTRA_CMAKE_ARGS} ]]; then
             # Remove the full  EXTRA_CMAKE_ARGS argument from list of args so that it passes validArgs function
             ARGS=${ARGS//$EXTRA_CMAKE_ARGS/}
             # Filter the full argument down to just the extra string that will be added to cmake call
-            EXTRA_CMAKE_ARGS=$(echo $EXTRA_CMAKE_ARGS | grep -Eo "\".+\"" | sed -e 's/^"//' -e 's/"$//')
+            EXTRA_CMAKE_ARGS=$(echo "$EXTRA_CMAKE_ARGS" | grep -Eo "\".+\"" | sed -e 's/^"//' -e 's/"$//')
         fi
     fi
+    read -ra EXTRA_CMAKE_ARGS <<< "$EXTRA_CMAKE_ARGS"
 }
 
 
@@ -88,14 +89,14 @@ function ensureCMakeRan {
     mkdir -p "${LIBRMM_BUILD_DIR}"
     if (( RAN_CMAKE == 0 )); then
         echo "Executing cmake for librmm..."
-        cmake -S ${REPODIR}/cpp -B "${LIBRMM_BUILD_DIR}" \
+        cmake -S "${REPODIR}"/cpp -B "${LIBRMM_BUILD_DIR}" \
               -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" \
               -DCUDA_STATIC_RUNTIME="${CUDA_STATIC_RUNTIME}" \
               -DPER_THREAD_DEFAULT_STREAM="${PER_THREAD_DEFAULT_STREAM}" \
               -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
               -DBUILD_TESTS=${BUILD_TESTS} \
               -DBUILD_BENCHMARKS=${BUILD_BENCHMARKS} \
-              ${EXTRA_CMAKE_ARGS}
+              "${EXTRA_CMAKE_ARGS[@]}"
         RAN_CMAKE=1
     fi
 }
@@ -106,7 +107,7 @@ if hasArg -h || hasArg --help; then
 fi
 
 # Check for valid usage
-if (( ${NUMARGS} != 0 )); then
+if (( NUMARGS != 0 )); then
     # Check for cmake args
     cmakeArgs
     for a in ${ARGS}; do
@@ -160,7 +161,7 @@ fi
 if (( NUMARGS == 0 )) || hasArg librmm; then
     ensureCMakeRan
     echo "building librmm..."
-    cmake --build "${LIBRMM_BUILD_DIR}" -j${PARALLEL_LEVEL} ${VERBOSE_FLAG}
+    cmake --build "${LIBRMM_BUILD_DIR}" -j"${PARALLEL_LEVEL}" ${VERBOSE_FLAG}
     if [[ ${INSTALL_TARGET} != "" ]]; then
         echo "installing librmm..."
         cmake --build "${LIBRMM_BUILD_DIR}" --target install -v ${VERBOSE_FLAG}
@@ -170,9 +171,9 @@ fi
 # Build and install the rmm Python package
 if (( NUMARGS == 0 )) || hasArg rmm; then
     echo "building and installing rmm..."
-    SKBUILD_CMAKE_ARGS="-DCMAKE_PREFIX_PATH=${INSTALL_PREFIX};${EXTRA_CMAKE_ARGS}" python -m pip install \
+    SKBUILD_CMAKE_ARGS="-DCMAKE_PREFIX_PATH=${INSTALL_PREFIX};$(IFS=';'; echo "${EXTRA_CMAKE_ARGS[*]}")" python -m pip install \
         --no-build-isolation \
         --no-deps \
         --config-settings rapidsai.disable-cuda=true \
-        ${REPODIR}/python/rmm
+        "${REPODIR}"/python/rmm
 fi

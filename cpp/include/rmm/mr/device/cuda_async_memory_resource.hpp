@@ -48,28 +48,37 @@ class cuda_async_memory_resource final : public device_memory_resource {
   /**
    * @brief Flags for specifying memory allocation handle types.
    *
-   * @note These values are exact copies from `cudaMemAllocationHandleType`. We need to
-   * define our own enum here because the earliest CUDA runtime version that supports asynchronous
-   * memory pools (CUDA 11.2) did not support these flags, so we need a placeholder that can be
-   * used consistently in the constructor of `cuda_async_memory_resource` with all versions of
-   * CUDA >= 11.2. See the `cudaMemAllocationHandleType` docs at
+   * @note These values are exact copies from `cudaMemAllocationHandleType`. We need a placeholder
+   * that can be used consistently in the constructor of `cuda_async_memory_resource` with all
+   * supported versions of CUDA. See the `cudaMemAllocationHandleType` docs at
    * https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html and ensure the enum
    * values are kept in sync with the CUDA documentation.
+   *
+   * @note cudaMemHandleTypeFabric can be used instead of 0x8 once we require
+   * CUDA 12.4+.
    */
   enum class allocation_handle_type : std::int32_t {
-    none                  = 0x0,  ///< Does not allow any export mechanism.
-    posix_file_descriptor = 0x1,  ///< Allows a file descriptor to be used for exporting. Permitted
-                                  ///< only on POSIX systems.
-    win32     = 0x2,              ///< Allows a Win32 NT handle to be used for exporting. (HANDLE)
-    win32_kmt = 0x4,  ///< Allows a Win32 KMT handle to be used for exporting. (D3DKMT_HANDLE)
-    fabric    = 0x8   ///< Allows a fabric handle to be used for exporting. (cudaMemFabricHandle_t)
+    none = cudaMemHandleTypeNone,  ///< Does not allow any export mechanism.
+    posix_file_descriptor =
+      cudaMemHandleTypePosixFileDescriptor,  ///< Allows a file descriptor to be used for exporting.
+                                             ///< Permitted only on POSIX systems.
+    win32 =
+      cudaMemHandleTypeWin32,  ///< Allows a Win32 NT handle to be used for exporting. (HANDLE)
+    win32_kmt = cudaMemHandleTypeWin32Kmt,  ///< Allows a Win32 KMT handle to be used for exporting.
+                                            ///< (D3DKMT_HANDLE)
+    fabric = 0x8  ///< Allows a fabric handle to be used for exporting. (cudaMemFabricHandle_t)
   };
 
   /**
    * @brief Flags for specifying memory pool usage.
    *
-   * @note These values are exact copies from the runtime API. The only value so far is
-   * `cudaMemPoolCreateUsageHwDecompress`
+   * @note These values are exact copies from the runtime API. See the
+   * `cudaMemPoolProps` docs at
+   * https://docs.nvidia.com/cuda/cuda-runtime-api/structcudaMemPoolProps.html
+   * and ensure the enum values are kept in sync with the CUDA documentation.
+   * `cudaMemPoolCreateUsageHwDecompress` is currently the only supported usage
+   * flag, introduced in CUDA 12.8 and documented in
+   * https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html
    */
   enum class mempool_usage : unsigned short {
     hw_decompress = 0x2,  ///< If set indicates that the memory can be used as a buffer for hardware
@@ -123,18 +132,6 @@ class cuda_async_memory_resource final : public device_memory_resource {
     cudaMemPool_t cuda_pool_handle{};
     RMM_CUDA_TRY(cudaMemPoolCreate(&cuda_pool_handle, &pool_props));
     pool_ = cuda_async_view_memory_resource{cuda_pool_handle};
-
-    // CUDA drivers before 11.5 have known incompatibilities with the async allocator.
-    // We'll disable `cudaMemPoolReuseAllowOpportunistic` if cuda driver < 11.5.
-    // See https://github.com/NVIDIA/spark-rapids/issues/4710.
-    int driver_version{};
-    RMM_CUDA_TRY(cudaDriverGetVersion(&driver_version));
-    constexpr auto min_async_driver_version{11050};
-    if (driver_version < min_async_driver_version) {
-      int disabled{0};
-      RMM_CUDA_TRY(
-        cudaMemPoolSetAttribute(pool_handle(), cudaMemPoolReuseAllowOpportunistic, &disabled));
-    }
 
     auto const [free, total] = rmm::available_device_memory();
 

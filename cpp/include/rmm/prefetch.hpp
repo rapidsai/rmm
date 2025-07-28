@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, NVIDIA CORPORATION.
+ * Copyright (c) 2024-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream_view.hpp>
+#include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/error.hpp>
 
@@ -46,13 +47,7 @@ namespace RMM_NAMESPACE {
 void prefetch(void const* ptr,
               std::size_t size,
               rmm::cuda_device_id device,
-              rmm::cuda_stream_view stream)
-{
-  auto result = cudaMemPrefetchAsync(ptr, size, device.value(), stream.value());
-  // InvalidValue error is raised when non-managed memory is passed to cudaMemPrefetchAsync
-  // We should treat this as a no-op
-  if (result != cudaErrorInvalidValue && result != cudaSuccess) { RMM_CUDA_TRY(result); }
-}
+              rmm::cuda_stream_view stream);
 
 /**
  * @brief Prefetch a span of memory to the specified device on the specified stream.
