@@ -136,13 +136,13 @@ dependencies:
               arch: x86_64
               cuda: "12.*"
             packages:
-              - gcc_linux-64=13.*
+              - gcc_linux-64=14.*
               - sysroot_linux-64==2.28
           - matrix:
               arch: aarch64
               cuda: "12.*"
             packages:
-              - gcc_linux-aarch64=13.*
+              - gcc_linux-aarch64=14.*
               - sysroot_linux-aarch64==2.28
       - output_types: conda
         matrices:
@@ -165,7 +165,7 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - &librmm_unsuffixed librmm==25.8.*,>=0.0.0a0
+          - &librmm_unsuffixed librmm==25.10.*,>=0.0.0a0
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -179,7 +179,7 @@ dependencies:
               cuda: "12.*"
               cuda_suffixed: "true"
             packages:
-              - librmm-cu12==25.8.*,>=0.0.0a0
+              - librmm-cu12==25.10.*,>=0.0.0a0
           - matrix:
             packages:
               - *librmm_unsuffixed
@@ -187,17 +187,17 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - rmm==25.8.*,>=0.0.0a0
+          - rmm==25.10.*,>=0.0.0a0
   depends_on_librmm_tests:
     common:
       - output_types: conda
         packages:
-          - librmm-tests==25.8.*,>=0.0.0a0
+          - librmm-tests==25.10.*,>=0.0.0a0
   depends_on_librmm_example:
     common:
       - output_types: conda
         packages:
-          - librmm-example==25.8.*,>=0.0.0a0
+          - librmm-example==25.10.*,>=0.0.0a0
   checks:
     common:
       - output_types: [conda, requirements]
