@@ -41,7 +41,6 @@ static bool is_system_memory_supported(cuda_device_id device_id)
   int pageableMemoryAccess;
   RMM_CUDA_TRY(cudaDeviceGetAttribute(
     &pageableMemoryAccess, cudaDevAttrPageableMemoryAccess, device_id.value()));
-
   return pageableMemoryAccess == 1;
 }
 }  // namespace detail

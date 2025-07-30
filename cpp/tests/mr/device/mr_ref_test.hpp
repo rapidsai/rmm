@@ -48,8 +48,6 @@ using resource_ref = rmm::device_async_resource_ref;
 
 namespace rmm::test {
 
-// Helper functions for system memory resource testing
-
 /**
  * @brief Check if the current device supports HMM (Heterogeneous Memory Management).
  *
@@ -401,7 +399,7 @@ inline auto make_system()
   // Skip system memory resource tests if unsupported, or if HMM is detected
   // with drivers older than CUDA 12.8. For the latter case, there appears to
   // be a bug where device allocations return false for is_device_accessible_memory(ptr)
-  // despite working properly when accessed from device.
+  // despite working properly when accessed from device. See #1935 for more details.
   if (rmm::mr::detail::is_system_memory_supported(rmm::get_current_cuda_device()) &&
       !(is_hmm_supported() && get_cuda_driver_version() < 12080)) {
     return std::make_shared<rmm::mr::system_memory_resource>();
