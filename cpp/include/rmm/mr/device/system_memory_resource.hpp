@@ -42,22 +42,7 @@ static bool is_system_memory_supported(cuda_device_id device_id)
   RMM_CUDA_TRY(cudaDeviceGetAttribute(
     &pageableMemoryAccess, cudaDevAttrPageableMemoryAccess, device_id.value()));
 
-  if (pageableMemoryAccess != 1) { return false; }
-
-  // Check if pageable memory access uses host page tables (0 indicates HMM, 1 indicates ATS)
-  int pageableMemoryAccessUsesHostPageTables;
-  RMM_CUDA_TRY(cudaDeviceGetAttribute(&pageableMemoryAccessUsesHostPageTables,
-                                      cudaDevAttrPageableMemoryAccessUsesHostPageTables,
-                                      device_id.value()));
-
-  // Return true if pageable memory access uses host page tables (ATS)
-  if (pageableMemoryAccessUsesHostPageTables == 1) { return true; }
-
-  // Check driver version - HMM seems to have a bug in drivers older than 565.
-  // CUDA 12.8 corresponds to driver 570, which is new enough to fix the bug.
-  int driver_version;
-  RMM_CUDA_TRY(cudaDriverGetVersion(&driver_version));
-  return driver_version >= 12080;
+  return pageableMemoryAccess == 1;
 }
 }  // namespace detail
 
