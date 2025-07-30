@@ -38,6 +38,11 @@ jobs:
     env:
       OTEL_SERVICE_NAME: "build-rmm"
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
+        with:
+          egress-policy: audit
+
       - name: Telemetry setup
         # This gate is here and not at the job level because we need the job to not be skipped,
         # since other jobs depend on it.
@@ -140,5 +145,10 @@ jobs:
     if: ${{ vars.TELEMETRY_ENABLED == 'true' && !cancelled() }}
     continue-on-error: true
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
+        with:
+          egress-policy: audit
+
       - name: Telemetry summarize
         uses: rapidsai/shared-actions/telemetry-dispatch-summarize@main

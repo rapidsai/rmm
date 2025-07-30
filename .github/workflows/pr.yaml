@@ -33,6 +33,11 @@ jobs:
     env:
       OTEL_SERVICE_NAME: "pr-rmm"
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
+        with:
+          egress-policy: audit
+
       - name: Telemetry setup
         # This gate is here and not at the job level because we need the job to not be skipped,
         # since other jobs depend on it.
@@ -43,6 +48,11 @@ jobs:
     env:
       RAPIDS_GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
+        with:
+          egress-policy: audit
+
       - name: Check if nightly CI is passing
         uses: rapidsai/shared-actions/check_nightly_success/dispatch@main
         with:
@@ -165,6 +175,11 @@ jobs:
     if: ${{ vars.TELEMETRY_ENABLED == 'true' && !cancelled() && github.run_attempt == '1' }}
     continue-on-error: true
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
+        with:
+          egress-policy: audit
+
       - name: Telemetry summarize
         uses: rapidsai/shared-actions/telemetry-dispatch-summarize@main
     env:
