@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2025, NVIDIA CORPORATION.
+ * Copyright (c) 2024, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +21,6 @@
 
 #include <cuda_runtime_api.h>
 
-#include <ios>
-#include <iostream>
-
 namespace rmm::test {
 
 /**
@@ -33,21 +30,7 @@ namespace rmm::test {
 inline bool is_device_accessible_memory(void* ptr)
 {
   cudaPointerAttributes attributes{};
-  auto status = cudaPointerGetAttributes(&attributes, ptr);
-  if (cudaSuccess != status) {
-    std::cout << "cudaPointerGetAttributes failed for ptr=" << ptr << ", error code: " << status
-              << ", error string: " << cudaGetErrorString(status) << std::endl;
-    return false;
-  }
-  std::cout << "cudaPointerGetAttributes succeeded for ptr=" << ptr
-            << ", devicePointer: " << attributes.devicePointer << std::endl;
-
-  std::cout << "is_device_accessible_memory pointer null?: " << std::boolalpha
-            << (attributes.devicePointer != nullptr) << std::endl;
-
-  std::cout << "is_system_memory_supported?: " << std::boolalpha
-            << rmm::mr::detail::is_system_memory_supported(rmm::get_current_cuda_device())
-            << std::endl;
+  if (cudaSuccess != cudaPointerGetAttributes(&attributes, ptr)) { return false; }
   return attributes.devicePointer != nullptr;
 }
 
