@@ -212,5 +212,23 @@ TEST(AlignedTest, AlignRealPointer)
   mr.deallocate(alloc, threshold);
 }
 
+TEST(AlignedTest, SmallAlignmentsBumpedTo256Bytes)
+{
+  // Test various small alignments
+  for (auto requested_alignment : {32UL, 64UL, 128UL}) {
+    aligned_real mr{rmm::mr::get_current_device_resource_ref(), requested_alignment};
+
+    void* ptr = mr.allocate(requested_alignment);
+
+    // Even though we requested smaller alignment, pointer should be 256-byte
+    // aligned for CUDA requirements
+    EXPECT_TRUE(rmm::is_pointer_aligned(ptr, rmm::CUDA_ALLOCATION_ALIGNMENT));
+    // And also aligned to the originally requested alignment
+    EXPECT_TRUE(rmm::is_pointer_aligned(ptr, requested_alignment));
+
+    mr.deallocate(ptr, requested_alignment);
+  }
+}
+
 }  // namespace
 }  // namespace rmm::test
