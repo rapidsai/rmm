@@ -82,17 +82,32 @@ class sam_headroom_memory_resource final : public device_memory_resource {
     auto const gpu_portion =
       rmm::align_down(std::min(allocatable, bytes), rmm::CUDA_ALLOCATION_ALIGNMENT);
     auto const cpu_portion = bytes - gpu_portion;
+
     if (gpu_portion != 0) {
-      RMM_CUDA_TRY(cudaMemAdvise(pointer,
-                                 gpu_portion,
-                                 cudaMemAdviseSetPreferredLocation,
-                                 rmm::get_current_cuda_device().value()));
+      cudaMemLocation location{cudaMemLocationTypeDevice, rmm::get_current_cuda_device().value()};
+
+#if defined(CUDART_VERSION) && CUDART_VERSION >= 13000
+      RMM_CUDA_TRY(
+        cudaMemAdvise(pointer, gpu_portion, cudaMemAdviseSetPreferredLocation, location));
+#else
+      RMM_CUDA_TRY(
+        cudaMemAdvise_v2(pointer, gpu_portion, cudaMemAdviseSetPreferredLocation, location));
+#endif
     }
     if (cpu_portion != 0) {
+      cudaMemLocation location{cudaMemLocationTypeHost, 0};
+
+#if defined(CUDART_VERSION) && CUDART_VERSION >= 13000
       RMM_CUDA_TRY(cudaMemAdvise(static_cast<char*>(pointer) + gpu_portion,
                                  cpu_portion,
                                  cudaMemAdviseSetPreferredLocation,
-                                 cudaCpuDeviceId));
+                                 location));
+#else
+      RMM_CUDA_TRY(cudaMemAdvise_v2(static_cast<char*>(pointer) + gpu_portion,
+                                    cpu_portion,
+                                    cudaMemAdviseSetPreferredLocation,
+                                    location));
+#endif
     }
 
     return pointer;
