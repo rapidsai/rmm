@@ -96,7 +96,6 @@ class sam_headroom_memory_resource final : public device_memory_resource {
 #endif
     }
     if (cpu_portion != 0) {
-
 #if defined(CUDART_VERSION) && CUDART_VERSION >= 13000
       cudaMemLocation location{cudaMemLocationTypeHost, 0};
       RMM_CUDA_TRY(cudaMemAdvise(static_cast<char*>(pointer) + gpu_portion,

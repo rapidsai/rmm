@@ -27,11 +27,11 @@ void prefetch(void const* ptr,
 {
   cudaError_t result;
 #if defined(CUDART_VERSION) && CUDART_VERSION >= 13000
-    cudaMemLocation location{
+  cudaMemLocation location{
     (device.value() == cudaCpuDeviceId) ? cudaMemLocationTypeHost : cudaMemLocationTypeDevice,
     device.value()};
   constexpr int flags = 0;
-  result = cudaMemPrefetchAsync(ptr, size, location, flags, stream.value());
+  result              = cudaMemPrefetchAsync(ptr, size, location, flags, stream.value());
 #else
   result = cudaMemPrefetchAsync(ptr, size, device.value(), stream.value());
 #endif
