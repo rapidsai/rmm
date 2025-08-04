@@ -25,15 +25,15 @@ void prefetch(void const* ptr,
               rmm::cuda_device_id device,
               rmm::cuda_stream_view stream)
 {
-  cudaMemLocation location{
+  cudaError_t result;
+#if defined(CUDART_VERSION) && CUDART_VERSION >= 13000
+    cudaMemLocation location{
     (device.value() == cudaCpuDeviceId) ? cudaMemLocationTypeHost : cudaMemLocationTypeDevice,
     device.value()};
   constexpr int flags = 0;
-  auto result =
-#if defined(CUDART_VERSION) && CUDART_VERSION >= 13000
-    cudaMemPrefetchAsync(ptr, size, location, flags, stream.value());
+  result = cudaMemPrefetchAsync(ptr, size, location, flags, stream.value());
 #else
-    cudaMemPrefetchAsync_v2(ptr, size, location, flags, stream.value());
+  result = cudaMemPrefetchAsync(ptr, size, device.value(), stream.value());
 #endif
   // cudaErrorInvalidValue is returned when non-managed memory is passed to
   // cudaMemPrefetchAsync. We treat this as a no-op.
