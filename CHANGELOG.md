@@ -1,3 +1,42 @@
+# rmm 25.08.00 (6 Aug 2025)
+
+## 🚨 Breaking Changes
+
+- Update requirements to CUDA 12.0+ ([#1984](https://github.com/rapidsai/rmm/pull/1984)) [@bdice](https://github.com/bdice)
+- Remove CUDA 11 from dependencies.yaml ([#1934](https://github.com/rapidsai/rmm/pull/1934)) [@KyleFromNVIDIA](https://github.com/KyleFromNVIDIA)
+- stop uploading packages to downloads.rapids.ai ([#1929](https://github.com/rapidsai/rmm/pull/1929)) [@jameslamb](https://github.com/jameslamb)
+
+## 🐛 Bug Fixes
+
+- Temporarily disable failing test on HMM systems. ([#1950](https://github.com/rapidsai/rmm/pull/1950)) [@bdice](https://github.com/bdice)
+- Fix race conditions and deadlocks in REPLAY_BENCH ([#1940](https://github.com/rapidsai/rmm/pull/1940)) [@wence-](https://github.com/wence-)
+
+## 📖 Documentation
+
+- Update Python build instructions to include librmm wheel ([#1978](https://github.com/rapidsai/rmm/pull/1978)) [@gmarkall](https://github.com/gmarkall)
+- Fix Python path in CONTRIBUTING.md ([#1936](https://github.com/rapidsai/rmm/pull/1936)) [@bdice](https://github.com/bdice)
+
+## 🚀 New Features
+
+- Update requirements to CUDA 12.0+ ([#1984](https://github.com/rapidsai/rmm/pull/1984)) [@bdice](https://github.com/bdice)
+
+## 🛠️ Improvements
+
+- Use size_type in device_uvector ([#1992](https://github.com/rapidsai/rmm/pull/1992)) [@bdice](https://github.com/bdice)
+- chore: remove unused line from update-version.sh ([#1989](https://github.com/rapidsai/rmm/pull/1989)) [@gforsyth](https://github.com/gforsyth)
+- Revert &quot;Update branches that trigger nightlies ([#1954)&quot; (#1988](https://github.com/rapidsai/rmm/pull/1954)&quot; (#1988)) [@gforsyth](https://github.com/gforsyth)
+- fix(docker): use versioned `-latest` tag for all `rapidsai` images ([#1987](https://github.com/rapidsai/rmm/pull/1987)) [@gforsyth](https://github.com/gforsyth)
+- Move more implementations to precompiled shared library ([#1980](https://github.com/rapidsai/rmm/pull/1980)) [@bdice](https://github.com/bdice)
+- [pre-commit.ci] pre-commit autoupdate ([#1979](https://github.com/rapidsai/rmm/pull/1979)) [@pre-commit-ci[bot]](https://github.com/pre-commit-ci[bot])
+- Add managed memory resource to replay benchmark ([#1938](https://github.com/rapidsai/rmm/pull/1938)) [@pentschev](https://github.com/pentschev)
+- Remove CUDA 11 from dependencies.yaml ([#1934](https://github.com/rapidsai/rmm/pull/1934)) [@KyleFromNVIDIA](https://github.com/KyleFromNVIDIA)
+- Remove CUDA 11 devcontainers and update CI scripts ([#1933](https://github.com/rapidsai/rmm/pull/1933)) [@bdice](https://github.com/bdice)
+- refactor(rattler): remove cuda11 options and general cleanup ([#1932](https://github.com/rapidsai/rmm/pull/1932)) [@gforsyth](https://github.com/gforsyth)
+- stop uploading packages to downloads.rapids.ai ([#1929](https://github.com/rapidsai/rmm/pull/1929)) [@jameslamb](https://github.com/jameslamb)
+- Forward-merge branch-25.06 into branch-25.08 ([#1925](https://github.com/rapidsai/rmm/pull/1925)) [@gforsyth](https://github.com/gforsyth)
+- Branch 25.08 merge branch 25.06 ([#1914](https://github.com/rapidsai/rmm/pull/1914)) [@vyasr](https://github.com/vyasr)
+- Forward-merge branch-25.06 into branch-25.08 ([#1905](https://github.com/rapidsai/rmm/pull/1905)) [@gforsyth](https://github.com/gforsyth)
+
 # rmm 25.06.00 (5 Jun 2025)
 
 ## 🚨 Breaking Changes
