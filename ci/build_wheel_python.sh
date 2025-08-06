@@ -3,7 +3,6 @@
 
 set -euo pipefail
 
-package_name="rmm"
 package_dir="python/rmm"
 
 source rapids-configure-sccache
@@ -48,9 +47,7 @@ python -m auditwheel repair \
 
 ../../ci/validate_wheel.sh "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}"
 
-RAPIDS_PY_WHEEL_NAME="${package_name}_${RAPIDS_PY_CUDA_SUFFIX}" rapids-upload-wheels-to-s3 python "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}"
-
 absolute_wheel_dir=$(realpath "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}")
 # switch back to the root of the repo and check symbol visibility
 popd
-ci/check_symbols.sh "$(echo ${absolute_wheel_dir}/rmm_*.whl)"
+ci/check_symbols.sh "$(echo "${absolute_wheel_dir}"/rmm_*.whl)"

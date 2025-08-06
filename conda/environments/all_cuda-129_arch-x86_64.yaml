@@ -12,11 +12,11 @@ dependencies:
 - cmake>=3.30.4
 - cuda-nvcc
 - cuda-python>=12.6.2,<13.0a0
-- cuda-version=12.8
+- cuda-version=12.9
 - cxx-compiler
 - cython>=3.0.0
 - doxygen=1.9.1
-- gcc_linux-aarch64=13.*
+- gcc_linux-64=13.*
 - gcovr>=5.0
 - graphviz
 - identify>=2.5.20
@@ -34,9 +34,9 @@ dependencies:
 - rapids-build-backend>=0.3.0,<0.4.0.dev0
 - rapids-logger==0.1.*
 - scikit-build-core >=0.10.0
+- sphinx
 - sphinx-copybutton
 - sphinx-markdown-tables
-- sphinx<8.2.0
 - sphinx_rtd_theme
-- sysroot_linux-aarch64==2.28
-name: all_cuda-128_arch-aarch64
+- sysroot_linux-64==2.28
+name: all_cuda-129_arch-x86_64
