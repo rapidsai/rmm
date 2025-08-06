@@ -26,6 +26,7 @@
 
 #include <cassert>
 #include <cstddef>
+#include <optional>
 
 namespace RMM_NAMESPACE {
 /**
@@ -80,6 +81,17 @@ namespace RMM_NAMESPACE {
  */
 class device_buffer {
  public:
+  /**
+   * @brief A struct to configure memory resources for a `device_buffer`.
+   *
+   * This struct allows for specifying a device memory resource for the buffer's storage and
+   * an optional host memory resource for a bounce buffer to optimize host-device transfers.
+   */
+  struct memory_resource_args {
+    device_async_resource_ref device_mr{mr::get_current_device_resource_ref()};
+    std::optional<host_resource_ref> bounce_buffer_host_mr{std::nullopt};
+  };
+
   // The copy constructor and copy assignment operator without a stream are deleted because they
   // provide no way to specify an explicit stream
   device_buffer(device_buffer const& other)            = delete;
@@ -108,6 +120,21 @@ class device_buffer {
                          device_async_resource_ref mr = mr::get_current_device_resource_ref());
 
   /**
+   * @brief Constructs a new device buffer of `size` uninitialized bytes
+   *        with optional host bounce buffer
+   *
+   * @throws rmm::bad_alloc If allocation fails.
+   *
+   * @param size Size in bytes to allocate in device memory.
+   * @param stream CUDA stream on which memory may be allocated if the memory
+   * resource supports streams.
+   * @param mr_args Arguments to configure memory resources for a `device_buffer`.
+   */
+  explicit device_buffer(std::size_t size,
+                         cuda_stream_view stream,
+                         memory_resource_args const& mr_args);
+
+  /**
    * @brief Construct a new device buffer by copying from a raw pointer to an existing host or
    * device memory allocation.
    *
@@ -130,6 +157,30 @@ class device_buffer {
                 std::size_t size,
                 cuda_stream_view stream,
                 device_async_resource_ref mr = mr::get_current_device_resource_ref());
+
+  /**
+   * @brief Construct a new device buffer by copying from a raw pointer to an existing host or
+   * device memory allocation with optional host bounce buffer.
+   *
+   * @note This function does not synchronize `stream`. `source_data` is copied on `stream`, so the
+   * caller is responsible for correct synchronization to ensure that `source_data` is valid when
+   * the copy occurs. This includes destroying `source_data` in stream order after this function is
+   * called, or synchronizing or waiting on `stream` after this function returns as necessary.
+   *
+   * @throws rmm::bad_alloc If creating the new allocation fails.
+   * @throws rmm::logic_error If `source_data` is null, and `size != 0`.
+   * @throws rmm::cuda_error if copying from the device memory fails.
+   *
+   * @param source_data Pointer to the host or device memory to copy from.
+   * @param size Size in bytes to copy.
+   * @param stream CUDA stream on which memory may be allocated if the memory
+   * resource supports streams.
+   * @param mr_args Arguments to configure memory resources for a `device_buffer`.
+   */
+  device_buffer(void const* source_data,
+                std::size_t size,
+                cuda_stream_view stream,
+                memory_resource_args const& mr_args);
 
   /**
    * @brief Construct a new `device_buffer` by deep copying the contents of
@@ -155,6 +206,30 @@ class device_buffer {
   device_buffer(device_buffer const& other,
                 cuda_stream_view stream,
                 device_async_resource_ref mr = mr::get_current_device_resource_ref());
+
+  /**
+   * @brief Construct a new `device_buffer` by deep copying the contents of
+   * another `device_buffer` with optional host bounce buffer.
+   *
+   * @note Only copies `other.size()` bytes from `other`, i.e., if
+   *`other.size() != other.capacity()`, then the size and capacity of the newly
+   * constructed `device_buffer` will be equal to `other.size()`.
+   *
+   * @note This function does not synchronize `stream`. `other` is copied on `stream`, so the
+   * caller is responsible for correct synchronization to ensure that `other` is valid when
+   * the copy occurs. This includes destroying `other` in stream order after this function is
+   * called, or synchronizing or waiting on `stream` after this function returns as necessary.
+   *
+   * @throws rmm::bad_alloc If creating the new allocation fails.
+   * @throws rmm::cuda_error if copying from `other` fails.
+   *
+   * @param other The `device_buffer` whose contents will be copied
+   * @param stream The stream to use for the allocation and copy
+   * @param mr_args Arguments to configure memory resources for a `device_buffer`.
+   */
+  device_buffer(device_buffer const& other,
+                cuda_stream_view stream,
+                memory_resource_args const& mr_args);
 
   /**
    * @brief Constructs a new `device_buffer` by moving the contents of another
@@ -331,6 +406,11 @@ class device_buffer {
     rmm::mr::get_current_device_resource_ref()};  ///< The memory resource used to
                                                   ///< allocate/deallocate device memory
   cuda_device_id _device{get_current_cuda_device()};
+
+  std::optional<host_resource_ref> _host_mr{
+    std::nullopt};  ///< Optional host memory resource for bounce buffers
+  std::optional<void*> _host_bounce_buffer{
+    std::nullopt};  ///< Optional bounce buffer for host-device transfers
 
   /**
    * @brief Allocates the specified amount of memory and updates the size/capacity accordingly.
