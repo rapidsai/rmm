@@ -88,6 +88,11 @@ cdef extern from "rmm/mr/device/cuda_memory_resource.hpp" \
     cdef cppclass cuda_memory_resource(device_memory_resource):
         cuda_memory_resource() except +
 
+cdef extern from "rmm/mr/device/cuda_host_memory_resource.hpp" \
+        namespace "rmm::mr" nogil:
+    cdef cppclass cuda_host_memory_resource(device_memory_resource):
+        cuda_host_memory_resource() except +
+
 cdef extern from "rmm/mr/device/managed_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass managed_memory_resource(device_memory_resource):

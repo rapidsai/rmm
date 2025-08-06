@@ -56,6 +56,7 @@ from rmm.librmm.memory_resource cimport (
     callback_memory_resource,
     cuda_async_memory_resource,
     cuda_async_view_memory_resource,
+    cuda_host_memory_resource,
     cuda_memory_resource,
     deallocate_callback_t,
     device_memory_resource,
@@ -145,6 +146,20 @@ cdef class CudaMemoryResource(DeviceMemoryResource):
         """
         Memory resource that uses ``cudaMalloc``/``cudaFree`` for
         allocation/deallocation.
+        """
+        pass
+
+
+cdef class CudaHostMemoryResource(DeviceMemoryResource):
+    def __cinit__(self):
+        self.c_obj.reset(
+            new cuda_host_memory_resource()
+        )
+
+    def __init__(self):
+        """
+        Memory resource that uses ``cudaMallocHost``/``cudaFreeHost`` for
+        allocation/deallocation of pinned host memory.
         """
         pass
 

@@ -189,6 +189,9 @@ ConfigureTest(PINNED_POOL_MR_TEST mr/host/pinned_pool_mr_tests.cpp)
 # cuda stream tests
 ConfigureTest(CUDA_STREAM_TEST cuda_stream_tests.cpp cuda_stream_pool_tests.cpp)
 
+# cuda host memory resource tests
+ConfigureTest(CUDA_HOST_MR_TEST mr/device/cuda_host_memory_resource_tests.cu GPUS 1 PERCENT 100)
+
 # device buffer tests
 ConfigureTest(DEVICE_BUFFER_TEST device_buffer_tests.cu)
 
