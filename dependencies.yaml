@@ -335,23 +335,8 @@ dependencies:
               dependencies: "oldest"
             packages:
               - numba==0.59.1
-              - numpy==1.23.*
-          - matrix:
-            packages:
-      - output_types: conda
-        matrices:
-          - matrix:
-              dependencies: "oldest"
-            packages:
               - numba-cuda==0.14.0
-          - matrix:
-            packages:
-      - output_types: [requirements, pyproject]
-        matrices:
-          - matrix:
-              dependencies: "oldest"
-            packages:
-              - numba-cuda[cu12]==0.14.0
+              - numpy==1.23.*
           - matrix:
             packages:
   depends_on_rapids_logger:
