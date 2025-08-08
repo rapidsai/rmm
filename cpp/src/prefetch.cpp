@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
+#include <rmm/detail/runtime_capabilities.hpp>
 #include <rmm/prefetch.hpp>
 
 #include <cuda_runtime_api.h>
+
+#include <unordered_map>
 
 namespace rmm {
 
@@ -25,15 +28,16 @@ void prefetch(void const* ptr,
               rmm::cuda_device_id device,
               rmm::cuda_stream_view stream)
 {
-  cudaError_t result;
+  if (!rmm::detail::concurrent_managed_access::is_supported()) { return; }
+
 #if defined(CUDART_VERSION) && CUDART_VERSION >= 13000
   cudaMemLocation location{
     (device.value() == cudaCpuDeviceId) ? cudaMemLocationTypeHost : cudaMemLocationTypeDevice,
     device.value()};
   constexpr int flags = 0;
-  result              = cudaMemPrefetchAsync(ptr, size, location, flags, stream.value());
+  cudaError_t result  = cudaMemPrefetchAsync(ptr, size, location, flags, stream.value());
 #else
-  result = cudaMemPrefetchAsync(ptr, size, device.value(), stream.value());
+  cudaError_t result = cudaMemPrefetchAsync(ptr, size, device.value(), stream.value());
 #endif
   // cudaErrorInvalidValue is returned when non-managed memory is passed to
   // cudaMemPrefetchAsync. We treat this as a no-op.
