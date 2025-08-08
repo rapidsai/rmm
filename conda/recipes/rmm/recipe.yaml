@@ -49,7 +49,9 @@ requirements:
   host:
     - cuda-version =${{ cuda_version }}
     - cuda-cudart-dev
-    - cuda-python >=12.6.2,<13.0a0
+    - if: cuda_major == "13":
+      then: cuda-python >=13.0.0,<14.0a0
+      else: cuda-python >=12.9.1,<13.0a0
     - cython >=3.0.0
     - rapids-build-backend >=0.4.0,<0.5.0.dev0
     - librmm =${{ version }}
@@ -58,7 +60,9 @@ requirements:
     - scikit-build-core >=0.10.0
   run:
     - cuda-cudart
-    - cuda-python >=12.6.2,<13.0a0
+    - if: cuda_major == "12":
+      then: cuda-python >=12.9.1,<13.0a0
+      else: cuda-python >=13.0.0,<14.0a0
     - ${{ pin_compatible("cuda-version", upper_bound="x", lower_bound="x") }}
     - numpy >=1.23,<3.0a0
     - python
