@@ -307,15 +307,8 @@ dependencies:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
-          - *numba
           - pytest
           - pytest-cov
-      - output_types: conda
-        packages:
-          - *numba_cuda
-      - output_types: [requirements, pyproject]
-        packages:
-          - &numba_cuda_cu12 numba-cuda[cu12]>=0.14.0,<0.15.0a0
     specific:
       - output_types: conda
         matrices:
@@ -328,17 +321,35 @@ dependencies:
               - cuda-nvcc
           - matrix:
             packages:
-      # Define additional constraints for testing with oldest dependencies.
       - output_types: [conda, requirements, pyproject]
         matrices:
           - matrix:
               dependencies: "oldest"
             packages:
               - numba==0.59.1
-              - numba-cuda==0.14.0
               - numpy==1.23.*
           - matrix:
             packages:
+              - *numba
+      - output_types: [conda]
+        matrices:
+          - matrix:
+              dependencies: "oldest"
+            packages:
+              - numba-cuda==0.14.0
+          - matrix:
+            packages:
+              - *numba_cuda
+      - output_types: [requirements, pyproject]
+        matrices:
+          - matrix:
+              dependencies: "oldest"
+            packages:
+              - numba-cuda==0.14.0
+          - matrix:
+            packages:
+              - &numba_cuda_cu12 numba-cuda[cu12]>=0.14.0,<0.15.0a0
+
   depends_on_rapids_logger:
     common:
       - output_types: [conda, requirements, pyproject]
