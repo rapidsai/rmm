@@ -318,6 +318,17 @@ def test_rmm_device_buffer_pickle_roundtrip(hb):
     assert hb3 == hb
 
 
+def concurrent_managed_access_supported():
+    err, device_id = runtime.cudaGetDevice()
+    assert err == runtime.cudaError_t.cudaSuccess
+    err, supported = runtime.cudaDeviceGetAttribute(
+        runtime.cudaDeviceAttr.cudaDevAttrConcurrentManagedAccess,
+        device_id,
+    )
+    assert err == runtime.cudaError_t.cudaSuccess
+    return supported
+
+
 def assert_prefetched(buffer, device_id):
     err, dev = runtime.cudaMemRangeGetAttribute(
         4,
@@ -335,13 +346,13 @@ def assert_prefetched(buffer, device_id):
 def test_rmm_device_buffer_prefetch(pool, managed):
     rmm.reinitialize(pool_allocator=pool, managed_memory=managed)
     db = rmm.DeviceBuffer.to_device(np.zeros(256, dtype="u1"))
-    if managed:
+    if managed and concurrent_managed_access_supported():
         assert_prefetched(db, runtime.cudaInvalidDeviceId)
     db.prefetch()  # just test that it doesn't throw
-    if managed:
-        err, device = runtime.cudaGetDevice()
+    if managed and concurrent_managed_access_supported():
+        err, device_id = runtime.cudaGetDevice()
         assert err == runtime.cudaError_t.cudaSuccess
-        assert_prefetched(db, device)
+        assert_prefetched(db, device_id)
 
 
 @pytest.mark.parametrize("stream", [cuda.default_stream(), cuda.stream()])
@@ -837,16 +848,14 @@ def test_prefetch_resource_adaptor(managed):
     # This allocation should be prefetched
     db = rmm.DeviceBuffer.to_device(np.zeros(256, dtype="u1"))
 
-    err, device = runtime.cudaGetDevice()
+    err, device_id = runtime.cudaGetDevice()
     assert err == runtime.cudaError_t.cudaSuccess
 
-    if managed:
-        assert_prefetched(db, device)
+    if managed and concurrent_managed_access_supported():
+        assert_prefetched(db, device_id)
     db.prefetch()  # just test that it doesn't throw
-    if managed:
-        err, device = runtime.cudaGetDevice()
-        assert err == runtime.cudaError_t.cudaSuccess
-        assert_prefetched(db, device)
+    if managed and concurrent_managed_access_supported():
+        assert_prefetched(db, device_id)
 
 
 def test_dev_buf_circle_ref_dealloc():
