@@ -18,6 +18,7 @@
 
 #include <rmm/cuda_stream.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/runtime_capabilities.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 #include <rmm/mr/device/managed_memory_resource.hpp>
@@ -50,6 +51,11 @@ struct PrefetchAdaptorTest : public ::testing::Test {
   void expect_prefetched(void const* ptr, std::size_t size, rmm::cuda_device_id device)
   {
     if constexpr (std::is_same_v<MemoryResourceType, rmm::mr::managed_memory_resource>) {
+      // Skip the test if concurrent managed access is not supported
+      if (!rmm::detail::concurrent_managed_access::is_supported()) {
+        GTEST_SKIP() << "Skipping test: concurrent managed access not supported";
+      }
+
       int prefetch_location{0};
       // See the CUDA documentation for cudaMemRangeGetAttribute
       // https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY.html#group__CUDART__MEMORY_1g8048f6ea5ad77917444567656c140c5a

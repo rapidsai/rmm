@@ -19,7 +19,7 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
-#include <rmm/detail/runtime_async_alloc.hpp>
+#include <rmm/detail/runtime_capabilities.hpp>
 #include <rmm/detail/thrust_namespace.h>
 #include <rmm/mr/device/cuda_async_view_memory_resource.hpp>
 #include <rmm/mr/device/device_memory_resource.hpp>
@@ -119,14 +119,13 @@ class cuda_async_memory_resource final : public device_memory_resource {
 
 #if defined(CUDA_VERSION) && CUDA_VERSION >= RMM_MIN_HWDECOMPRESS_CUDA_DRIVER_VERSION
     // Enable hardware decompression if supported (requires CUDA 12.8 driver or higher)
-    if (rmm::detail::runtime_async_alloc::is_hwdecompress_supported()) {
+    if (rmm::detail::hwdecompress::is_supported()) {
       pool_props.usage = static_cast<unsigned short>(mempool_usage::hw_decompress);
     }
 #endif
 
-    RMM_EXPECTS(
-      rmm::detail::runtime_async_alloc::is_export_handle_type_supported(pool_props.handleTypes),
-      "Requested IPC memory handle type not supported");
+    RMM_EXPECTS(rmm::detail::export_handle_type::is_supported(pool_props.handleTypes),
+                "Requested IPC memory handle type not supported");
     pool_props.location.type = cudaMemLocationTypeDevice;
     pool_props.location.id   = rmm::get_current_cuda_device().value();
     cudaMemPool_t cuda_pool_handle{};

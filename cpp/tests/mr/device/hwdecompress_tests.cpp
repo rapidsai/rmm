@@ -15,7 +15,7 @@
  */
 
 #include <rmm/detail/error.hpp>
-#include <rmm/detail/runtime_async_alloc.hpp>
+#include <rmm/detail/runtime_capabilities.hpp>
 #include <rmm/mr/device/cuda_async_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
 
@@ -32,7 +32,7 @@ class HWDecompressTest : public ::testing::Test {
   static void check_decompress_capable(void* ptr)
   {
 #if defined(CUDA_VERSION) && CUDA_VERSION >= RMM_MIN_HWDECOMPRESS_CUDA_DRIVER_VERSION
-    if (rmm::detail::runtime_async_alloc::is_hwdecompress_supported()) {
+    if (rmm::detail::hwdecompress::is_supported()) {
       bool is_capable{};
       auto err =
         cuPointerGetAttribute(static_cast<void*>(&is_capable),

@@ -35,7 +35,8 @@ namespace RMM_NAMESPACE {
 /**
  * @brief Prefetch memory to the specified device on the specified stream.
  *
- * This function is a no-op if the pointer is not to CUDA managed memory.
+ * This function is a no-op if the pointer is not to CUDA managed memory or if
+ * concurrent managed access is not supported.
  *
  * @throw rmm::cuda_error if the prefetch fails.
  *

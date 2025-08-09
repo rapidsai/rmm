@@ -16,6 +16,7 @@
 #pragma once
 
 #include <rmm/cuda_device.hpp>
+#include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
 
 #include <cuda_runtime_api.h>
@@ -38,7 +39,6 @@ namespace detail {
  * users to compile/link against newer CUDA versions and run with older
  * drivers.
  */
-
 struct runtime_async_alloc {
   static bool is_supported()
   {
@@ -51,16 +51,18 @@ struct runtime_async_alloc {
     }()};
     return driver_supports_pool;
   }
+};
 
-  /**
-   * @brief Check whether the specified `cudaMemAllocationHandleType` is supported on the present
-   * CUDA driver/runtime version.
-   *
-   * @param handle_type An IPC export handle type to check for support.
-   * @return true if supported
-   * @return false if unsupported
-   */
-  static bool is_export_handle_type_supported(cudaMemAllocationHandleType handle_type)
+/**
+ * @brief Check whether the specified `cudaMemAllocationHandleType` is supported on the present
+ * CUDA driver/runtime version.
+ *
+ * @param handle_type An IPC export handle type to check for support.
+ * @return true if supported
+ * @return false if unsupported
+ */
+struct export_handle_type {
+  static bool is_supported(cudaMemAllocationHandleType handle_type)
   {
     int supported_handle_types_bitmask{};
     if (cudaMemHandleTypeNone != handle_type) {
@@ -76,18 +78,20 @@ struct runtime_async_alloc {
     }
     return (supported_handle_types_bitmask & handle_type) == handle_type;
   }
+};
 
-  /**
-   * @brief Check whether `cudaMemPoolCreateUsageHwDecompress` is a supported
-   * pool property on the present CUDA driver version.
-   *
-   * Requires RMM to be built with a supported CUDA version 12.8+, otherwise
-   * this always returns false.
-   *
-   * @return true if supported
-   * @return false if unsupported
-   */
-  static bool is_hwdecompress_supported()
+/**
+ * @brief Check whether `cudaMemPoolCreateUsageHwDecompress` is a supported
+ * pool property on the present CUDA driver version.
+ *
+ * Requires RMM to be built with a supported CUDA version 12.8+, otherwise
+ * this always returns false.
+ *
+ * @return true if supported
+ * @return false if unsupported
+ */
+struct hwdecompress {
+  static bool is_supported()
   {
 #if defined(CUDA_VERSION) && CUDA_VERSION >= RMM_MIN_HWDECOMPRESS_CUDA_DRIVER_VERSION
     // Check if hardware decompression is supported (requires CUDA 12.8 driver or higher)
@@ -100,6 +104,26 @@ struct runtime_async_alloc {
 #else
     return false;
 #endif
+  }
+};
+
+/**
+ * @brief Check if the current device supports concurrent managed access.
+ * Concurrent managed access is required for prefetching to work.
+ *
+ * @return true if the device supports concurrent managed access, false otherwise
+ */
+struct concurrent_managed_access {
+  static bool is_supported()
+  {
+    static auto driver_supports_concurrent_managed_access{[] {
+      int concurrentManagedAccess = 0;
+      auto result                 = cudaDeviceGetAttribute(&concurrentManagedAccess,
+                                           cudaDevAttrConcurrentManagedAccess,
+                                           rmm::get_current_cuda_device().value());
+      return result == cudaSuccess and concurrentManagedAccess == 1;
+    }()};
+    return driver_supports_concurrent_managed_access;
   }
 };
 
