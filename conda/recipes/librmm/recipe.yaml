@@ -56,6 +56,7 @@ cache:
     host:
       - rapids-logger =0.1
       - cuda-driver-dev
+      - nvtx-c =3.2.0
 
 outputs:
   - package:
@@ -82,6 +83,7 @@ outputs:
         - ${{ pin_compatible("cuda-version", upper_bound="x", lower_bound="x") }}
         - cuda-cudart
         - rapids-logger =0.1
+        - nvtx-c
       run_exports:
         - ${{ pin_subpackage("librmm", upper_bound="x.x") }}
       ignore_run_exports:
