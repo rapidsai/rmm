@@ -58,8 +58,7 @@ class new_delete_resource final : public host_memory_resource {
    * @param alignment Alignment of the allocation
    * @return Pointer to the newly allocated memory
    */
-  void* do_allocate(std::size_t bytes,
-                    std::size_t alignment = rmm::RMM_DEFAULT_HOST_ALIGNMENT) override
+  void* do_allocate(std::size_t bytes, std::size_t alignment) override
   {
     // If the requested alignment isn't supported, use default
     alignment =
@@ -82,9 +81,7 @@ class new_delete_resource final : public host_memory_resource {
    * @param alignment Alignment of the allocation. This must be equal to the value of `alignment`
    *                  that was passed to the `allocate` call that returned `ptr`.
    */
-  void do_deallocate(void* ptr,
-                     std::size_t bytes,
-                     std::size_t alignment = rmm::RMM_DEFAULT_HOST_ALIGNMENT) override
+  void do_deallocate(void* ptr, std::size_t bytes, std::size_t alignment) override
   {
     rmm::detail::aligned_host_deallocate(
       ptr, bytes, alignment, [](void* ptr) { ::operator delete(ptr); });
