@@ -25,8 +25,11 @@ namespace rmm::test {
 namespace {
 
 using cuda_async_mr = rmm::mr::cuda_async_memory_resource;
-static_assert(cuda::mr::resource_with<cuda_async_mr, cuda::mr::device_accessible>);
-static_assert(cuda::mr::async_resource_with<cuda_async_mr, cuda::mr::device_accessible>);
+
+// static property checks
+static_assert(rmm::detail::polyfill::resource_with<cuda_async_mr, cuda::mr::device_accessible>);
+static_assert(
+  rmm::detail::polyfill::async_resource_with<cuda_async_mr, cuda::mr::device_accessible>);
 
 class AsyncMRTest : public ::testing::Test {
  protected:

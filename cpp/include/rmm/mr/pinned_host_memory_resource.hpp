@@ -209,9 +209,9 @@ class pinned_host_memory_resource {
   }
 };
 
-static_assert(cuda::mr::async_resource_with<pinned_host_memory_resource,
-                                            cuda::mr::device_accessible,
-                                            cuda::mr::host_accessible>);
+static_assert(rmm::detail::polyfill::async_resource_with<pinned_host_memory_resource,
+                                                         cuda::mr::device_accessible,
+                                                         cuda::mr::host_accessible>);
 
 /** @} */  // end of group
 }  // namespace mr

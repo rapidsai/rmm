@@ -149,9 +149,12 @@ class pinned_memory_resource final : public host_memory_resource {
       ptr, bytes, alignment, [](void* ptr) { RMM_ASSERT_CUDA_SUCCESS(cudaFreeHost(ptr)); });
   }
 };
-static_assert(cuda::mr::async_resource_with<pinned_memory_resource,
-                                            cuda::mr::host_accessible,
-                                            cuda::mr::device_accessible>);
+
+// static property checks
+static_assert(rmm::detail::polyfill::async_resource_with<pinned_memory_resource,
+                                                         cuda::mr::host_accessible,
+                                                         cuda::mr::device_accessible>);
+
 /** @} */  // end of group
 }  // namespace mr
 }  // namespace RMM_NAMESPACE

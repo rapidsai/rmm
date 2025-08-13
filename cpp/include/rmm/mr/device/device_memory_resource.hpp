@@ -278,6 +278,73 @@ class device_memory_resource {
     do_deallocate(ptr, bytes, stream);
   }
 
+#if CCCL_MAJOR_VERSION > 3 || (CCCL_MAJOR_VERSION == 3 && CCCL_MINOR_VERSION >= 1)
+  // CCCL >= 3.1 needs a different set of methods to satisfy the memory resource concepts
+
+  /**
+   * @brief Allocates memory of size at least \p bytes.
+   *
+   * The returned pointer will have at minimum 256 byte alignment.
+   *
+   * @throws rmm::bad_alloc When the requested `bytes` cannot be allocated.
+   *
+   * @param bytes The size of the allocation
+   * @param alignment The expected alignment of the allocation (TODO: check behavior)
+   * @return void* Pointer to the newly allocated memory
+   */
+  void* allocate_sync(std::size_t bytes, std::size_t alignment)
+  {
+    return do_allocate(rmm::align_up(bytes, alignment), cuda_stream_view{});
+  }
+
+  /**
+   * @brief Deallocate memory pointed to by \p p.
+   *
+   * @param ptr Pointer to be deallocated
+   * @param bytes The size in bytes of the allocation. This must be equal to the
+   * value of `bytes` that was passed to the `allocate` call that returned `p`.
+   * @param alignment The alignment that was passed to the `allocate` call that returned `p`
+   */
+  void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment) noexcept
+  {
+    do_deallocate(ptr, rmm::align_up(bytes, alignment), cuda_stream_view{});
+  }
+
+  /**
+   * @brief Allocates memory of size at least \p bytes on the specified stream.
+   *
+   * The returned pointer will have at minimum 256 byte alignment.
+   *
+   * @throws rmm::bad_alloc When the requested `bytes` cannot be allocated.
+   *
+   * @param stream The stream on which to perform the allocation
+   * @param bytes The size of the allocation
+   * @param alignment The expected alignment of the allocation (TODO: check behavior)
+   * @return void* Pointer to the newly allocated memory
+   */
+  void* allocate(cuda_stream_view stream, std::size_t bytes, std::size_t alignment)
+  {
+    return do_allocate(rmm::align_up(bytes, alignment), stream);
+  }
+
+  /**
+   * @brief Deallocate memory pointed to by \p ptr on the specified stream.
+   *
+   * @param stream The stream on which to perform the deallocation
+   * @param ptr Pointer to be deallocated
+   * @param bytes The size in bytes of the allocation. This must be equal to the
+   * value of `bytes` that was passed to the `allocate` call that returned `p`.
+   * @param alignment The alignment that was passed to the `allocate` call that returned `p`
+   */
+  void deallocate(cuda_stream_view stream,
+                  void* ptr,
+                  std::size_t bytes,
+                  std::size_t alignment) noexcept
+  {
+    do_deallocate(ptr, rmm::align_up(bytes, alignment), stream);
+  }
+#endif  // CCCL >= 3.1
+
   /**
    * @brief Comparison operator with another device_memory_resource
    *
@@ -356,7 +423,15 @@ class device_memory_resource {
     return this == &other;
   }
 };
-static_assert(cuda::mr::async_resource_with<device_memory_resource, cuda::mr::device_accessible>);
+
+// static property checks
+static_assert(rmm::detail::polyfill::resource<device_memory_resource>);
+static_assert(rmm::detail::polyfill::async_resource<device_memory_resource>);
+static_assert(
+  rmm::detail::polyfill::resource_with<device_memory_resource, cuda::mr::device_accessible>);
+static_assert(
+  rmm::detail::polyfill::async_resource_with<device_memory_resource, cuda::mr::device_accessible>);
+
 /** @} */  // end of group
 }  // namespace mr
 }  // namespace RMM_NAMESPACE

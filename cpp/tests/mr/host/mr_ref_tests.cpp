@@ -79,8 +79,12 @@ struct MRRefTest : public ::testing::Test {
 };
 
 using resources = ::testing::Types<rmm::mr::new_delete_resource, rmm::mr::pinned_memory_resource>;
-static_assert(cuda::mr::resource_with<rmm::mr::new_delete_resource, cuda::mr::host_accessible>);
-static_assert(cuda::mr::resource_with<rmm::mr::pinned_memory_resource, cuda::mr::host_accessible>);
+
+// static property checks
+static_assert(
+  rmm::detail::polyfill::resource_with<rmm::mr::new_delete_resource, cuda::mr::host_accessible>);
+static_assert(
+  rmm::detail::polyfill::resource_with<rmm::mr::pinned_memory_resource, cuda::mr::host_accessible>);
 
 TYPED_TEST_SUITE(MRRefTest, resources);
 

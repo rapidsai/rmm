@@ -206,9 +206,10 @@ class fake_async_resource {
   static void do_deallocate(void* ptr, std::size_t, cuda_stream_view) {}
   [[nodiscard]] static bool do_is_equal(fake_async_resource const& other) noexcept { return true; }
 };
-static_assert(!cuda::has_property<fake_async_resource, cuda::mr::device_accessible>);
-static_assert(!cuda::has_property<rmm::mr::pool_memory_resource<fake_async_resource>,
-                                  cuda::mr::device_accessible>);
+
+// static property checks
+static_assert(!rmm::detail::polyfill::resource<fake_async_resource>);
+static_assert(!rmm::detail::polyfill::resource<rmm::mr::pool_memory_resource<fake_async_resource>>);
 
 // Ensure that we forward the property if it is there
 class fake_async_resource_device_accessible : public fake_async_resource {

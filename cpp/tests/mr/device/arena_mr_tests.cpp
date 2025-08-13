@@ -51,7 +51,9 @@ class mock_memory_resource {
   friend void get_property(mock_memory_resource const&, cuda::mr::device_accessible) noexcept {}
 };
 
-static_assert(cuda::mr::async_resource_with<mock_memory_resource, cuda::mr::device_accessible>);
+// static property checks
+static_assert(
+  rmm::detail::polyfill::async_resource_with<mock_memory_resource, cuda::mr::device_accessible>);
 
 using rmm::mr::detail::arena::block;
 using rmm::mr::detail::arena::byte_span;
