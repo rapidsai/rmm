@@ -25,8 +25,10 @@
 
 #include <gtest/gtest.h>
 
+#include <chrono>
 #include <cstddef>
 #include <memory>
+#include <thread>
 #include <vector>
 
 // explicit instantiation for test coverage purposes
@@ -121,6 +123,24 @@ TEST(PoolTest, InitialAndMaxPoolSizeEqual)
   EXPECT_NO_THROW([]() {
     pool_mr mr(rmm::mr::get_current_device_resource_ref(), 1000192, 1000192);
     mr.allocate(1000);
+  }());
+}
+
+TEST(PoolTest, InitialAndMaxPoolSizeEqual2)
+{
+  default_logger().set_level(rapids_logger::level_enum::debug);
+  auto make_alloc_mb = [](pool_mr& mr, std::size_t size_mb) {
+    auto ptr = mr.allocate(size_mb << 20);
+    mr.deallocate(ptr, size_mb << 20);
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  };
+
+  EXPECT_NO_THROW([&]() {
+    pool_mr mr(rmm::mr::get_current_device_resource_ref(), 1 << 20, 100 << 20);
+    make_alloc_mb(mr, 50);
+    make_alloc_mb(mr, 1);
+    make_alloc_mb(mr, 50);
+    make_alloc_mb(mr, 1);
   }());
 }
 
