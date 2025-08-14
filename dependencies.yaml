@@ -257,8 +257,8 @@ dependencies:
           - ipython
           - make
           - nbsphinx
-          - &numba numba>=0.59.1,<0.62.0a0
-          - &numba_cuda numba-cuda>=0.14.0,<0.15.0a0
+          - &numba numba>=0.60.0,<0.62.0a0
+          - &numba_cuda numba-cuda>=0.18.0,<0.19.0a0
           - numpydoc
           - sphinx
           - sphinx_rtd_theme
@@ -326,7 +326,7 @@ dependencies:
           - matrix:
               dependencies: "oldest"
             packages:
-              - numba==0.59.1
+              - numba==0.60.0
               - numpy==1.23.*
           - matrix:
             packages:
@@ -336,7 +336,7 @@ dependencies:
           - matrix:
               dependencies: "oldest"
             packages:
-              - numba-cuda==0.14.0
+              - numba-cuda==0.18.0
           - matrix:
             packages:
               - *numba_cuda
@@ -345,10 +345,10 @@ dependencies:
           - matrix:
               dependencies: "oldest"
             packages:
-              - numba-cuda==0.14.0
+              - numba-cuda==0.18.0
           - matrix:
             packages:
-              - &numba_cuda_cu12 numba-cuda[cu12]>=0.14.0,<0.15.0a0
+              - &numba_cuda_cu12 numba-cuda[cu12]>=0.18.0,<0.19.0a0
 
   depends_on_rapids_logger:
     common:
