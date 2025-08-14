@@ -25,10 +25,12 @@ namespace rmm::test {
 namespace {
 
 using cuda_async_view_mr = rmm::mr::cuda_async_view_memory_resource;
-#if CCCL_MAJOR_VERSION < 3 || (CCCL_MAJOR_VERSION == 3 && CCCL_MINOR_VERSION < 1)
-static_assert(cuda::mr::resource_with<cuda_async_view_mr, cuda::mr::device_accessible>);
-static_assert(cuda::mr::async_resource_with<cuda_async_view_mr, cuda::mr::device_accessible>);
-#endif
+
+// static property checks
+static_assert(
+  rmm::detail::polyfill::resource_with<cuda_async_view_mr, cuda::mr::device_accessible>);
+static_assert(
+  rmm::detail::polyfill::async_resource_with<cuda_async_view_mr, cuda::mr::device_accessible>);
 
 TEST(PoolTest, UsePool)
 {
