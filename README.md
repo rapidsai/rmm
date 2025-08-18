@@ -80,16 +80,18 @@ For more details, see [pyproject.toml](python/rmm/pyproject.toml)
 
 To install RMM from source, ensure the dependencies are met and follow the steps below:
 
-- Clone the repository
+- Clone the repository:
+
 ```bash
 $ git clone https://github.com/rapidsai/rmm.git
 $ cd rmm
 ```
 
-- Create the conda development environment `rmm_dev`
+- Create the conda development environment `rmm_dev`:
+
 ```bash
 # create the conda environment (assuming in base `rmm` directory)
-$ conda env create --name rmm_dev --file conda/environments/all_cuda-130_arch-x86_64.yaml
+$ conda env create --name rmm_dev --file conda/environments/all_cuda-130_arch-$(arch).yaml
 # activate the environment
 $ conda activate rmm_dev
 ```
@@ -98,7 +100,6 @@ $ conda activate rmm_dev
   your path or defined in `CUDACXX` environment variable.
 
 ```bash
-
 $ mkdir build                                       # make a build directory
 $ cd build                                          # enter the build directory
 $ cmake .. -DCMAKE_INSTALL_PREFIX=/install/path     # configure cmake ... use $CONDA_PREFIX if you're using Anaconda
@@ -111,7 +112,6 @@ $ make install                                      # install the library librmm
   `CUDACXX` environment variable.
 
 ```bash
-
 $ ./build.sh -h                                     # Display help and exit
 $ ./build.sh -n librmm                              # Build librmm without installing
 $ ./build.sh -n rmm                                 # Build rmm without installing
@@ -120,12 +120,14 @@ $ ./build.sh librmm rmm                             # Build and install librmm a
 ```
 
 - To run tests (Optional):
+
 ```bash
 $ cd build (if you are not already in build directory)
 $ make test
 ```
 
 - Build, install, and test the `rmm` python package, in the `python` folder:
+
 ```bash
 # In the root rmm directory
 $ python -m pip wheel ./python/librmm
