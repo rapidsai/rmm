@@ -31,7 +31,36 @@ namespace RMM_NAMESPACE {
  * @brief Alias for a `cuda::mr::resource_ref` with the property
  * `cuda::mr::device_accessible`.
  */
-using device_resource_ref = cuda::mr::resource_ref<cuda::mr::device_accessible>;
+class device_resource_ref : public cuda::mr::resource_ref<cuda::mr::device_accessible> {
+ public:
+  using base_type = cuda::mr::resource_ref<cuda::mr::device_accessible>;
+
+  /**
+   * @brief Allocates memory of size at least \p bytes asynchronously.
+   *
+   * @param bytes The size of the allocation.
+   * @param alignment The alignment of the allocation.
+   * @param stream The CUDA stream on which to perform the allocation.
+   * @return void* Pointer to the newly allocated memory.
+   */
+  void* allocate_async(std::size_t bytes, cuda_stream_view stream)
+  {
+    return this->base_type::allocate(stream, bytes);
+  }
+
+  /**
+   * @brief Deallocates memory pointed to by \p ptr asynchronously.
+   *
+   * @param ptr Pointer to be deallocated.
+   * @param bytes The size in bytes of the allocation.
+   * @param alignment The alignment that was passed to the allocate call.
+   * @param stream The CUDA stream on which to perform the deallocation.
+   */
+  void deallocate_async(void* ptr, std::size_t bytes, cuda_stream_view stream)
+  {
+    this->base_type::deallocate(stream, ptr, bytes);
+  }
+};
 
 /**
  * @brief Alias for a `cuda::mr::async_resource_ref` with the property
