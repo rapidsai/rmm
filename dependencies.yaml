@@ -346,6 +346,10 @@ dependencies:
             packages:
               - numba-cuda==0.19.0
           - matrix:
+              cuda: "13.*"
+            packages:
+              - &numba_cuda_cu13 numba-cuda[cu13]>=0.19.0,<0.20.0a0
+          - matrix: # All CUDA 12 versions
             packages:
               - &numba_cuda_cu12 numba-cuda[cu12]>=0.19.0,<0.20.0a0
 
