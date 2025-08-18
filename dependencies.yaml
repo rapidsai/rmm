@@ -326,9 +326,10 @@ dependencies:
           - matrix:
               dependencies: "oldest"
             packages:
-              # TODO: Revert to numba==0.60.0 once https://github.com/NVIDIA/numba-cuda/pull/403 is released.
+              # TODO: Revert to numba==0.60.0 and numpy==1.23.* once
+              # https://github.com/NVIDIA/numba-cuda/pull/403 is released.
               - numba==0.61.0
-              - numpy==1.23.*
+              - numpy==1.24.*
           - matrix:
             packages:
               - *numba
