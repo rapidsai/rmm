@@ -37,7 +37,7 @@ RMM can be installed with conda. You can get a minimal conda installation with [
 Install RMM with:
 
 ```bash
-conda install -c rapidsai -c conda-forge -c nvidia rmm cuda-version=12.9
+conda install -c rapidsai -c conda-forge -c nvidia rmm cuda-version=13.0
 ```
 
 We also provide [nightly conda packages](https://anaconda.org/rapidsai-nightly) built from the HEAD
@@ -91,7 +91,7 @@ $ cd rmm
 
 ```bash
 # create the conda environment (assuming in base `rmm` directory)
-$ conda env create --name rmm_dev --file conda/environments/all_cuda-129_arch-$(arch).yaml
+$ conda env create --name rmm_dev --file conda/environments/all_cuda-130_arch-$(arch).yaml
 # activate the environment
 $ conda activate rmm_dev
 ```
