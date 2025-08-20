@@ -151,12 +151,12 @@ dependencies:
       - output_types: [conda, requirements, pyproject]
         matrices:
           - matrix:
-              cuda: "13.*"
-            packages:
-              - &cuda_python13 cuda-python>=13.0.1,<14.0a0
-          - matrix: # All CUDA 12 versions
+              cuda: "12.*"
             packages:
               - &cuda_python12 cuda-python>=12.9.2,<13.0a0
+          - matrix: # All CUDA 13 versions
+            packages:
+              - &cuda_python13 cuda-python>=13.0.1,<14.0a0
   depends_on_librmm:
     common:
       - output_types: conda
@@ -342,12 +342,12 @@ dependencies:
             packages:
               - numba-cuda==0.19.0
           - matrix:
-              cuda: "13.*"
-            packages:
-              - &numba_cuda_cu13 numba-cuda[cu13]>=0.19.0,<0.20.0a0
-          - matrix: # All CUDA 12 versions
+              cuda: "12.*"
             packages:
               - &numba_cuda_cu12 numba-cuda[cu12]>=0.19.0,<0.20.0a0
+          - matrix: # All CUDA 13 versions
+            packages:
+              - &numba_cuda_cu13 numba-cuda[cu13]>=0.19.0,<0.20.0a0
 
   depends_on_rapids_logger:
     common:
