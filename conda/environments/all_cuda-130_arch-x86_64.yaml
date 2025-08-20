@@ -11,7 +11,7 @@ dependencies:
 - clang==20.1.4
 - cmake>=3.30.4
 - cuda-nvcc
-- cuda-python>=13.0.0,<14.0a0
+- cuda-python>=13.0.1,<14.0a0
 - cuda-version=13.0
 - cxx-compiler
 - cython>=3.0.0
