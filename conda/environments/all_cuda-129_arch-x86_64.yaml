@@ -11,7 +11,7 @@ dependencies:
 - clang==20.1.4
 - cmake>=3.30.4
 - cuda-nvcc
-- cuda-python>=12.6.2,<13.0a0
+- cuda-python>=12.9.2,<13.0a0
 - cuda-version=12.9
 - cxx-compiler
 - cython>=3.0.0
@@ -24,8 +24,8 @@ dependencies:
 - make
 - nbsphinx
 - ninja
-- numba-cuda>=0.14.0,<0.15.0a0
-- numba>=0.59.1,<0.62.0a0
+- numba-cuda>=0.19.0,<0.20.0a0
+- numba>=0.61.0,<0.62.0a0
 - numpy>=1.23,<3.0a0
 - numpydoc
 - pre-commit
