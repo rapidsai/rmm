@@ -316,9 +316,6 @@ dependencies:
       - output_types: conda
         packages:
           - *numba_cuda
-      - output_types: [requirements, pyproject]
-        packages:
-          - &numba_cuda_cu12 numba-cuda[cu12]>=0.14.0,<0.15.0a0
     specific:
       - output_types: [conda, requirements, pyproject]
         matrices:
