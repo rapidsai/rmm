@@ -313,9 +313,6 @@ dependencies:
         packages:
           - pytest
           - pytest-cov
-      - output_types: conda
-        packages:
-          - *numba_cuda
     specific:
       - output_types: [conda, requirements, pyproject]
         matrices:
