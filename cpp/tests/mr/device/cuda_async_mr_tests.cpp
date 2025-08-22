@@ -77,7 +77,7 @@ class AsyncMRFabricTest : public AsyncMRTest {
 
     auto handle_type = static_cast<cudaMemAllocationHandleType>(
       rmm::mr::cuda_async_memory_resource::allocation_handle_type::fabric);
-    if (!rmm::detail::runtime_async_alloc::is_export_handle_type_supported(handle_type)) {
+    if (!rmm::detail::export_handle_type::is_supported(handle_type)) {
       GTEST_SKIP() << "Fabric handles are not supported in this environment. Skipping test.";
     }
   }
