@@ -38,7 +38,7 @@ _SYSTEM_MEMORY_SUPPORTED = rmm._cuda.gpu.getDeviceAttribute(
     rmm._cuda.gpu.getDevice(),
 )
 
-_IS_INTEGRATED_MEMORY_SUPPORTED = rmm._cuda.gpu.getDeviceAttribute(
+_IS_INTEGRATED_MEMORY_SYSTEM = rmm._cuda.gpu.getDeviceAttribute(
     runtime.cudaDeviceAttr.cudaDevAttrIntegrated, rmm._cuda.gpu.getDevice()
 )
 
@@ -804,7 +804,7 @@ def test_tracking_resource_adaptor():
 
 
 @pytest.mark.skipif(
-    not _IS_INTEGRATED_MEMORY_SUPPORTED,
+    _IS_INTEGRATED_MEMORY_SYSTEM,
     reason="Integrated memory systems may kill the process when attempting allocations larger than available memory",
 )
 def test_failure_callback_resource_adaptor():
@@ -830,7 +830,7 @@ def test_failure_callback_resource_adaptor():
 
 
 @pytest.mark.skipif(
-    not _IS_INTEGRATED_MEMORY_SUPPORTED,
+    _IS_INTEGRATED_MEMORY_SYSTEM,
     reason="Integrated memory systems may kill the process when attempting allocations larger than available memory",
 )
 def test_failure_callback_resource_adaptor_error():
