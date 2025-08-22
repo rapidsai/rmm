@@ -148,6 +148,11 @@ class pinned_memory_resource final : public host_memory_resource {
     rmm::detail::aligned_host_deallocate(
       ptr, bytes, alignment, [](void* ptr) { RMM_ASSERT_CUDA_SUCCESS(cudaFreeHost(ptr)); });
   }
+
+  using host_memory_resource::allocate;
+  using host_memory_resource::deallocate;
+
+  RMM_CCCL_ASYNC_MR_METHODS
 };
 
 // static property checks

@@ -177,8 +177,7 @@ class pool_memory_resource final
    * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to. Defaults to all
    * of the available memory from the upstream resource.
    */
-  template <typename Upstream2                                               = Upstream,
-            cuda::std::enable_if_t<cuda::mr::async_resource<Upstream2>, int> = 0>
+  template <typename Upstream2 = Upstream>
   explicit pool_memory_resource(Upstream2& upstream_mr,
                                 std::size_t initial_pool_size,
                                 std::optional<std::size_t> maximum_pool_size = std::nullopt)

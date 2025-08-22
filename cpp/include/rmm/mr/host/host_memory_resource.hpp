@@ -18,6 +18,7 @@
 #include <rmm/detail/cuda_memory_resource.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/detail/nvtx/ranges.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <cstddef>
 
@@ -198,6 +199,8 @@ class host_memory_resource {
   {
     return this == &other;
   }
+
+  RMM_CCCL_MR_METHODS
 };
 
 // static property checks

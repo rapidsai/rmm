@@ -20,6 +20,8 @@
   "RMM requires LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE to be defined. Please add -DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE to the compiler flags (this is done automatically when using RMM via CMake)."
 #endif
 
+#include <rmm/detail/export.hpp>
+
 #include <cuda/memory_resource>
 
 namespace RMM_NAMESPACE {

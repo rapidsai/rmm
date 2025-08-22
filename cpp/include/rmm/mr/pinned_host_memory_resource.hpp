@@ -16,6 +16,7 @@
 #pragma once
 
 #include <rmm/aligned.hpp>
+#include <rmm/detail/adapters.hpp>
 #include <rmm/detail/aligned.hpp>
 #include <rmm/detail/cuda_memory_resource.hpp>
 #include <rmm/detail/error.hpp>
@@ -207,6 +208,8 @@ class pinned_host_memory_resource {
   friend void get_property(pinned_host_memory_resource const&, cuda::mr::host_accessible) noexcept
   {
   }
+
+  RMM_CCCL_ASYNC_MR_METHODS
 };
 
 static_assert(rmm::detail::polyfill::async_resource_with<pinned_host_memory_resource,
