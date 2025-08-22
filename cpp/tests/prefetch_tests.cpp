@@ -18,6 +18,7 @@
 #include "rmm/cuda_device.hpp"
 
 #include <rmm/cuda_stream.hpp>
+#include <rmm/detail/runtime_capabilities.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/device_scalar.hpp>
 #include <rmm/device_uvector.hpp>
@@ -49,6 +50,10 @@ struct PrefetchTest : public ::testing::Test {
   // Test that the memory range was last prefetched to the specified device
   void expect_prefetched(void const* ptr, std::size_t size, rmm::cuda_device_id device)
   {
+    if (!rmm::detail::concurrent_managed_access::is_supported()) {
+      GTEST_SKIP() << "Skipping test: concurrent managed access not supported";
+    }
+
     // See the CUDA documentation for cudaMemRangeGetAttribute
     // https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY.html#group__CUDART__MEMORY_1g8048f6ea5ad77917444567656c140c5a
     // specifically for when cudaMemRangeAttribute::cudaMemRangeAttributeLastPrefetchLocation is
