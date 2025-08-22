@@ -19,8 +19,6 @@
 
 #include <cuda_runtime_api.h>
 
-#include <unordered_map>
-
 namespace rmm {
 
 void prefetch(void const* ptr,
