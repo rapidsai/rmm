@@ -256,9 +256,8 @@ dependencies:
           - ipython
           - make
           - nbsphinx
-          # TODO: Revert to numba==0.60.0 once https://github.com/NVIDIA/numba-cuda/pull/403 is released.
-          - &numba numba>=0.61.0,<0.62.0a0
-          - &numba_cuda numba-cuda>=0.19.0,<0.20.0a0
+          - &numba numba>=0.60.0,<0.62.0a0
+          - &numba_cuda numba-cuda>=0.19.1,<0.20.0a0
           - numpydoc
           - sphinx
           - sphinx_rtd_theme
@@ -319,10 +318,8 @@ dependencies:
           - matrix:
               dependencies: "oldest"
             packages:
-              # TODO: Revert to numba==0.60.0 and numpy==1.23.* once
-              # https://github.com/NVIDIA/numba-cuda/pull/403 is released.
-              - numba==0.61.0
-              - numpy==1.24.*
+              - numba==0.60.0
+              - numpy==1.23.*
           - matrix:
             packages:
               - *numba
@@ -331,7 +328,7 @@ dependencies:
           - matrix:
               dependencies: "oldest"
             packages:
-              - numba-cuda==0.19.0
+              - numba-cuda==0.19.1
           - matrix:
             packages:
               - *numba_cuda
@@ -340,14 +337,14 @@ dependencies:
           - matrix:
               dependencies: "oldest"
             packages:
-              - numba-cuda==0.19.0
+              - numba-cuda==0.19.1
           - matrix:
               cuda: "12.*"
             packages:
-              - &numba_cuda_cu12 numba-cuda[cu12]>=0.19.0,<0.20.0a0
+              - &numba_cuda_cu12 numba-cuda[cu12]>=0.19.1,<0.20.0a0
           - matrix: # All CUDA 13 versions
             packages:
-              - &numba_cuda_cu13 numba-cuda[cu13]>=0.19.0,<0.20.0a0
+              - &numba_cuda_cu13 numba-cuda[cu13]>=0.19.1,<0.20.0a0
 
   depends_on_rapids_logger:
     common:
