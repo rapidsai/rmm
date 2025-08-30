@@ -123,7 +123,7 @@ class cccl_async_resource_ref : public ResourceType {
 #if CCCL_MAJOR_VERSION > 3 || (CCCL_MAJOR_VERSION == 3 && CCCL_MINOR_VERSION >= 1)
     return base::allocate(stream, bytes);
 #else
-    return base::allocate_sync(bytes, stream);
+    return base::allocate_async(bytes, stream);
 #endif
   }
 
@@ -132,7 +132,7 @@ class cccl_async_resource_ref : public ResourceType {
 #if CCCL_MAJOR_VERSION > 3 || (CCCL_MAJOR_VERSION == 3 && CCCL_MINOR_VERSION >= 1)
     return base::allocate(stream, bytes, alignment);
 #else
-    return base::allocate_sync(bytes, alignment, stream);
+    return base::allocate_async(bytes, alignment, stream);
 #endif
   }
 
@@ -141,7 +141,7 @@ class cccl_async_resource_ref : public ResourceType {
 #if CCCL_MAJOR_VERSION > 3 || (CCCL_MAJOR_VERSION == 3 && CCCL_MINOR_VERSION >= 1)
     return base::deallocate(stream, ptr, bytes);
 #else
-    return base::deallocate_sync(ptr, bytes, stream);
+    return base::deallocate_async(ptr, bytes, stream);
 #endif
   }
 
@@ -153,7 +153,7 @@ class cccl_async_resource_ref : public ResourceType {
 #if CCCL_MAJOR_VERSION > 3 || (CCCL_MAJOR_VERSION == 3 && CCCL_MINOR_VERSION >= 1)
     return base::deallocate(stream, ptr, bytes, alignment);
 #else
-    return base::deallocate_sync(ptr, bytes, alignment, stream);
+    return base::deallocate_async(ptr, bytes, alignment, stream);
 #endif
   }
 };
