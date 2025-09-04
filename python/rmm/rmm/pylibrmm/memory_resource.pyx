@@ -111,6 +111,13 @@ cdef class DeviceMemoryResource:
         with nogil:
             self.c_obj.get().deallocate(<void*>(ptr), nbytes, stream.view())
 
+    def __dealloc__(self):
+        # See the __dealloc__ method on DeviceBuffer for discussion of why we must
+        # explicitly call reset here instead of relying on the unique_ptr's
+        # destructor.
+        with nogil:
+            self.c_obj.reset()
+
 
 # See the note about `no_gc_clear` in `device_buffer.pyx`.
 @cython.no_gc_clear
@@ -128,10 +135,6 @@ cdef class UpstreamResourceAdaptor(DeviceMemoryResource):
             raise Exception("Argument `upstream_mr` must not be None")
 
         self.upstream_mr = upstream_mr
-
-    def __dealloc__(self):
-        # Must cleanup the base MR before any upstream MR
-        self.c_obj.reset()
 
     cpdef DeviceMemoryResource get_upstream(self):
         return self.upstream_mr
