@@ -93,7 +93,8 @@ cdef class DeviceMemoryResource:
         stream : Stream
             Optional stream for the allocation
         """
-        return <uintptr_t>self.c_obj.get().allocate(nbytes, stream.view())
+        with nogil:
+            return <uintptr_t>self.c_obj.get().allocate(nbytes, stream.view())
 
     def deallocate(self, uintptr_t ptr, size_t nbytes, Stream stream=DEFAULT_STREAM):
         """Deallocate memory pointed to by ``ptr`` of size ``nbytes``.
@@ -107,7 +108,8 @@ cdef class DeviceMemoryResource:
         stream : Stream
             Optional stream for the deallocation
         """
-        self.c_obj.get().deallocate(<void*>(ptr), nbytes, stream.view())
+        with nogil:
+            self.c_obj.get().deallocate(<void*>(ptr), nbytes, stream.view())
 
 
 # See the note about `no_gc_clear` in `device_buffer.pyx`.
