@@ -448,8 +448,10 @@ cdef void _copy_async(const void* src,
     kind : the kind of copy to perform
     stream : CUDA stream to use for copying, default the default stream
     """
-    cdef cudaError_t err = cudaMemcpyAsync(dst, src, count, kind,
-                                           <cudaStream_t>stream)
+    cdef cudaError_t err
+    with nogil:
+        err = cudaMemcpyAsync(dst, src, count, kind,
+                              <cudaStream_t>stream)
 
     if err != cudaError.cudaSuccess:
         raise RuntimeError(f"Memcpy failed with error: {err}")

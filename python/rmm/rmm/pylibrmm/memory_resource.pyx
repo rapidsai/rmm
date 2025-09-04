@@ -93,8 +93,10 @@ cdef class DeviceMemoryResource:
         stream : Stream
             Optional stream for the allocation
         """
+        cdef uintptr_t ptr
         with nogil:
-            return <uintptr_t>self.c_obj.get().allocate(nbytes, stream.view())
+            ptr = <uintptr_t>self.c_obj.get().allocate(nbytes, stream.view())
+        return ptr
 
     def deallocate(self, uintptr_t ptr, size_t nbytes, Stream stream=DEFAULT_STREAM):
         """Deallocate memory pointed to by ``ptr`` of size ``nbytes``.
