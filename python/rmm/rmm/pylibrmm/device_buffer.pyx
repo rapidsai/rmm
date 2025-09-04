@@ -106,6 +106,18 @@ cdef class DeviceBuffer:
                 if stream.c_is_default():
                     stream.c_synchronize()
 
+    def __dealloc__(self):
+        # Relying on the unique_ptr to call the destructor when Python reclaims
+        # the object is unsafe because deconstructing the underlying C++
+        # device_buffer may involve a cudaFree call, which involves grabbing a
+        # lock from the CUDA runtime. If that lock is being held by another
+        # thread which is simultaneously trying to acquire the GIL, then we
+        # could have the thread deallocating the device buffer holding the GIL
+        # while trying to claim the CUDA lock while the other thread is holding
+        # the CUDA lock and trying to acquire the GIL, resulting in a deadlock.
+        with nogil:
+            self.c_obj.reset()
+
     def __len__(self):
         return self.size
 
