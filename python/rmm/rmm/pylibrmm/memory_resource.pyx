@@ -480,11 +480,6 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
                 )
             )
 
-    def __dealloc__(self):
-
-        # Must cleanup the base MR before any upstream or referenced Bins
-        self.c_obj.reset()
-
     def __init__(
         self,
         DeviceMemoryResource upstream_mr,
@@ -767,9 +762,6 @@ cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
 
     cpdef get_file_name(self):
         return self._log_file_name
-
-    def __dealloc__(self):
-        self.c_obj.reset()
 
 cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
 
