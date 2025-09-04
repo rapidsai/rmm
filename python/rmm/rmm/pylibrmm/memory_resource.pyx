@@ -141,6 +141,13 @@ cdef class UpstreamResourceAdaptor(DeviceMemoryResource):
     cpdef DeviceMemoryResource get_upstream(self):
         return self.upstream_mr
 
+    def __dealloc__(self):
+        # Need to override the parent method with an identical implementation
+        # to ensure that self.upstream_mr is still alive when the C++ mr's
+        # destructor is invoked since it will reference self.upstream_mr.c_obj.
+        with nogil:
+            self.c_obj.reset()
+
 
 cdef class CudaMemoryResource(DeviceMemoryResource):
     def __cinit__(self):
