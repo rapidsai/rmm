@@ -200,7 +200,7 @@ class host_memory_resource {
     return this == &other;
   }
 
-#if  CCCL_MAJOR_VERSION > 3 || (CCCL_MAJOR_VERSION == 3 && CCCL_MINOR_VERSION >= 1)
+#if CCCL_MAJOR_VERSION > 3 || (CCCL_MAJOR_VERSION == 3 && CCCL_MINOR_VERSION >= 1)
 
  public:
   /**
@@ -217,7 +217,7 @@ class host_memory_resource {
    */
   void* allocate_sync(std::size_t bytes, std::size_t alignment)
   {
-    return  allocate(bytes, alignment);
+    return allocate(bytes, alignment);
   }
 
   /**
@@ -235,10 +235,10 @@ class host_memory_resource {
    */
   void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment)
   {
-    return  deallocate(ptr, bytes, alignment);
+    return deallocate(ptr, bytes, alignment);
   }
 
-  #endif
+#endif
 };
 
 // static property checks

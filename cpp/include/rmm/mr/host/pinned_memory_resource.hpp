@@ -149,11 +149,9 @@ class pinned_memory_resource final : public host_memory_resource {
       ptr, bytes, alignment, [](void* ptr) { RMM_ASSERT_CUDA_SUCCESS(cudaFreeHost(ptr)); });
   }
 
-#if  CCCL_MAJOR_VERSION > 3 || (CCCL_MAJOR_VERSION == 3 && CCCL_MINOR_VERSION >= 1)
+#if CCCL_MAJOR_VERSION > 3 || (CCCL_MAJOR_VERSION == 3 && CCCL_MINOR_VERSION >= 1)
 
  public:
-  
-
   /**
    * @brief Pretend to support the allocate_async interface, falling back to stream 0
    *
@@ -184,9 +182,8 @@ class pinned_memory_resource final : public host_memory_resource {
     return this->deallocate_async(ptr, bytes, alignment, stream);
   }
 
-  #endif
+#endif
 };
-
 
 // static property checks
 static_assert(rmm::detail::polyfill::async_resource_with<pinned_memory_resource,
