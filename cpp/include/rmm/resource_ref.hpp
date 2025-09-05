@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <rmm/detail/adapters.hpp>
+#include <rmm/detail/cccl_adapters.hpp>
 #include <rmm/detail/cuda_memory_resource.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
@@ -27,6 +27,52 @@ namespace RMM_NAMESPACE {
  * @{
  * @file
  */
+
+#if CCCL_MAJOR_VERSION > 3 || (CCCL_MAJOR_VERSION == 3 && CCCL_MINOR_VERSION >= 1)
+
+/**
+ * @brief Alias for a `cuda::mr::resource_ref` with the property
+ * `cuda::mr::device_accessible`.
+ */
+using device_resource_ref =
+  detail::cccl_resource_ref<cuda::mr::synchronous_resource_ref<cuda::mr::device_accessible>>;
+
+/**
+ * @brief Alias for a `cuda::mr::async_resource_ref` with the property
+ * `cuda::mr::device_accessible`.
+ */
+using device_async_resource_ref =
+  detail::cccl_async_resource_ref<cuda::mr::resource_ref<cuda::mr::device_accessible>>;
+
+/**
+ * @brief Alias for a `cuda::mr::resource_ref` with the property
+ * `cuda::mr::host_accessible`.
+ */
+using host_resource_ref =
+  detail::cccl_resource_ref<cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible>>;
+
+/**
+ * @brief Alias for a `cuda::mr::async_resource_ref` with the property
+ * `cuda::mr::host_accessible`.
+ */
+using host_async_resource_ref =
+  detail::cccl_async_resource_ref<cuda::mr::resource_ref<cuda::mr::host_accessible>>;
+
+/**
+ * @brief Alias for a `cuda::mr::resource_ref` with the properties
+ * `cuda::mr::host_accessible` and `cuda::mr::device_accessible`.
+ */
+using host_device_resource_ref = detail::cccl_resource_ref<
+  cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible, cuda::mr::device_accessible>>;
+
+/**
+ * @brief Alias for a `cuda::mr::async_resource_ref` with the properties
+ * `cuda::mr::host_accessible` and `cuda::mr::device_accessible`.
+ */
+using host_device_async_resource_ref = detail::cccl_async_resource_ref<
+  cuda::mr::resource_ref<cuda::mr::host_accessible, cuda::mr::device_accessible>>;
+
+#else
 
 /**
  * @brief Alias for a `cuda::mr::resource_ref` with the property
@@ -69,6 +115,8 @@ using host_device_resource_ref = detail::cccl_resource_ref<
  */
 using host_device_async_resource_ref = detail::cccl_async_resource_ref<
   cuda::mr::async_resource_ref<cuda::mr::host_accessible, cuda::mr::device_accessible>>;
+
+#endif
 
 /**
  * @brief Convert pointer to memory resource into `device_async_resource_ref`, checking for

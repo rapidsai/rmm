@@ -197,11 +197,13 @@ class fake_async_resource {
   static void deallocate(void* ptr, std::size_t, std::size_t) {}
   static void* allocate_async(std::size_t, std::size_t, cuda::stream_ref) { return nullptr; }
   static void deallocate_async(void* ptr, std::size_t, std::size_t, cuda::stream_ref) {}
+  void* allocate_sync(std::size_t, std::size_t) { return nullptr; }
+  void deallocate_sync(void* ptr, std::size_t, std::size_t) {}
+  void* allocate(cuda_stream_view, std::size_t, std::size_t) { return nullptr; }
+  void deallocate(cuda_stream_view, void*, std::size_t, std::size_t) { return; }
 
   bool operator==(const fake_async_resource& other) const { return true; }
   bool operator!=(const fake_async_resource& other) const { return false; }
-
-  RMM_CCCL_ASYNC_MR_METHODS
 
  private:
   static void* do_allocate(std::size_t bytes, cuda_stream_view) { return nullptr; }

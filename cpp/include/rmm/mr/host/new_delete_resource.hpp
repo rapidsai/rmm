@@ -89,8 +89,6 @@ class new_delete_resource final : public host_memory_resource {
     rmm::detail::aligned_host_deallocate(
       ptr, bytes, alignment, [](void* ptr) { ::operator delete(ptr); });
   }
-
-  RMM_CCCL_MR_METHODS
 };
 
 /** @} */  // end of group
