@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <rmm/detail/cccl_adapters.hpp>
+#include <rmm/detail/cccl_adaptors.hpp>
 #include <rmm/detail/cuda_memory_resource.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
