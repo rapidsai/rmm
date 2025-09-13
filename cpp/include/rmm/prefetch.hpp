@@ -35,7 +35,8 @@ namespace RMM_NAMESPACE {
 /**
  * @brief Prefetch memory to the specified device on the specified stream.
  *
- * This function is a no-op if the pointer is not to CUDA managed memory.
+ * This function is a no-op if the pointer is not to CUDA managed memory or if
+ * concurrent managed access is not supported.
  *
  * @throw rmm::cuda_error if the prefetch fails.
  *
@@ -47,13 +48,7 @@ namespace RMM_NAMESPACE {
 void prefetch(void const* ptr,
               std::size_t size,
               rmm::cuda_device_id device,
-              rmm::cuda_stream_view stream)
-{
-  auto result = cudaMemPrefetchAsync(ptr, size, device.value(), stream.value());
-  // InvalidValue error is raised when non-managed memory is passed to cudaMemPrefetchAsync
-  // We should treat this as a no-op
-  if (result != cudaErrorInvalidValue && result != cudaSuccess) { RMM_CUDA_TRY(result); }
-}
+              rmm::cuda_stream_view stream);
 
 /**
  * @brief Prefetch a span of memory to the specified device on the specified stream.

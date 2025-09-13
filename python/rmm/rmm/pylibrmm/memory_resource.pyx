@@ -86,6 +86,17 @@ cdef class DeviceMemoryResource:
     def allocate(self, size_t nbytes, Stream stream=DEFAULT_STREAM):
         """Allocate ``nbytes`` bytes of memory.
 
+        Note
+        ----
+        On integrated memory systems, attempting to allocate more memory than
+        available can cause the process to be killed by the operating system
+        instead of raising a catchable ``MemoryError``.
+
+        Raises
+        ------
+        MemoryError
+            If allocation fails.
+
         Parameters
         ----------
         nbytes : size_t
@@ -93,7 +104,10 @@ cdef class DeviceMemoryResource:
         stream : Stream
             Optional stream for the allocation
         """
-        return <uintptr_t>self.c_obj.get().allocate(nbytes, stream.view())
+        cdef uintptr_t ptr
+        with nogil:
+            ptr = <uintptr_t>self.c_obj.get().allocate(nbytes, stream.view())
+        return ptr
 
     def deallocate(self, uintptr_t ptr, size_t nbytes, Stream stream=DEFAULT_STREAM):
         """Deallocate memory pointed to by ``ptr`` of size ``nbytes``.
@@ -107,7 +121,15 @@ cdef class DeviceMemoryResource:
         stream : Stream
             Optional stream for the deallocation
         """
-        self.c_obj.get().deallocate(<void*>(ptr), nbytes, stream.view())
+        with nogil:
+            self.c_obj.get().deallocate(<void*>(ptr), nbytes, stream.view())
+
+    def __dealloc__(self):
+        # See the __dealloc__ method on DeviceBuffer for discussion of why we must
+        # explicitly call reset here instead of relying on the unique_ptr's
+        # destructor.
+        with nogil:
+            self.c_obj.reset()
 
 
 # See the note about `no_gc_clear` in `device_buffer.pyx`.
@@ -127,12 +149,15 @@ cdef class UpstreamResourceAdaptor(DeviceMemoryResource):
 
         self.upstream_mr = upstream_mr
 
-    def __dealloc__(self):
-        # Must cleanup the base MR before any upstream MR
-        self.c_obj.reset()
-
     cpdef DeviceMemoryResource get_upstream(self):
         return self.upstream_mr
+
+    def __dealloc__(self):
+        # Need to override the parent method with an identical implementation
+        # to ensure that self.upstream_mr is still alive when the C++ mr's
+        # destructor is invoked since it will reference self.upstream_mr.c_obj.
+        with nogil:
+            self.c_obj.reset()
 
 
 cdef class CudaMemoryResource(DeviceMemoryResource):
@@ -475,11 +500,6 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
                 )
             )
 
-    def __dealloc__(self):
-
-        # Must cleanup the base MR before any upstream or referenced Bins
-        self.c_obj.reset()
-
     def __init__(
         self,
         DeviceMemoryResource upstream_mr,
@@ -762,9 +782,6 @@ cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
 
     cpdef get_file_name(self):
         return self._log_file_name
-
-    def __dealloc__(self):
-        self.c_obj.reset()
 
 cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
 

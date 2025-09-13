@@ -23,6 +23,7 @@
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
+#include <algorithm>
 #include <cstddef>
 #include <mutex>
 #include <unordered_map>
@@ -47,6 +48,10 @@ namespace mr {
  * Storage (GDS), allocations need to be aligned to a larger size (4 KiB for GDS) in order to avoid
  * additional copies to bounce buffers.
  *
+ * If the requested alignment is smaller than CUDA_ALLOCATION_ALIGNMENT (256 bytes), the alignment
+ * is increased to CUDA_ALLOCATION_ALIGNMENT. This is to ensure that the allocation is always
+ * aligned to at least the alignment required for CUDA allocations.
+ *
  * Since a larger alignment size has some additional overhead, the user can specify a threshold
  * size. If an allocation's size falls below the threshold, it is aligned to the default size. Only
  * allocations with a size above the threshold are aligned to the custom alignment size.
@@ -62,14 +67,17 @@ class aligned_resource_adaptor final : public device_memory_resource {
    * @throws rmm::logic_error if `allocation_alignment` is not a power of 2
    *
    * @param upstream The resource used for allocating/deallocating device memory.
-   * @param alignment The size used for allocation alignment.
+   * @param alignment The size used for allocation alignment. Values smaller than
+   * CUDA_ALLOCATION_ALIGNMENT are increased to CUDA_ALLOCATION_ALIGNMENT.
    * @param alignment_threshold Only allocations with a size larger than or equal to this threshold
    * are aligned.
    */
   explicit aligned_resource_adaptor(device_async_resource_ref upstream,
                                     std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT,
                                     std::size_t alignment_threshold = default_alignment_threshold)
-    : upstream_{upstream}, alignment_{alignment}, alignment_threshold_{alignment_threshold}
+    : upstream_{upstream},
+      alignment_{std::max(alignment, rmm::CUDA_ALLOCATION_ALIGNMENT)},
+      alignment_threshold_{alignment_threshold}
   {
     RMM_EXPECTS(rmm::is_supported_alignment(alignment),
                 "Allocation alignment is not a power of 2.");
@@ -82,7 +90,8 @@ class aligned_resource_adaptor final : public device_memory_resource {
    * @throws rmm::logic_error if `alignment` is not a power of 2
    *
    * @param upstream The resource used for allocating/deallocating device memory.
-   * @param alignment The size used for allocation alignment.
+   * @param alignment The size used for allocation alignment. Values smaller than
+   * CUDA_ALLOCATION_ALIGNMENT are increased to CUDA_ALLOCATION_ALIGNMENT.
    * @param alignment_threshold Only allocations with a size larger than or equal to this threshold
    * are aligned.
    */
@@ -90,7 +99,7 @@ class aligned_resource_adaptor final : public device_memory_resource {
                                     std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT,
                                     std::size_t alignment_threshold = default_alignment_threshold)
     : upstream_{to_device_async_resource_ref_checked(upstream)},
-      alignment_{alignment},
+      alignment_{std::max(alignment, rmm::CUDA_ALLOCATION_ALIGNMENT)},
       alignment_threshold_{alignment_threshold}
   {
     RMM_EXPECTS(rmm::is_supported_alignment(alignment),
@@ -194,13 +203,27 @@ class aligned_resource_adaptor final : public device_memory_resource {
    * @brief Calculate the allocation size needed from upstream to account for alignments of both
    * the size and the base pointer.
    *
+   * The upstream allocator guarantees CUDA_ALLOCATION_ALIGNMENT (256-byte) alignment, but we
+   * may need stronger alignment (e.g., 4096 bytes for GPUDirect Storage). In the worst case,
+   * the upstream pointer could be misaligned by up to (alignment_ - CUDA_ALLOCATION_ALIGNMENT)
+   * bytes relative to our requirements.
+   *
+   * Example: Need 1000 bytes with 4096-byte alignment
+   * - aligned_size = align_up(1000, 4096) = 4096 bytes of usable space needed
+   * - Upstream might return pointer at address 256 (256-aligned but not 4096-aligned)
+   * - Must advance to address 4096 for proper alignment
+   * - Usable region: [4096, 8192), total needed: [256, 8192) = 7936 bytes
+   * - Formula: 4096 + (4096 - 256) = 7936 bytes
+   *
    * @param bytes The requested allocation size.
    * @return Allocation size needed from upstream to align both the size and the base pointer.
    */
   std::size_t upstream_allocation_size(std::size_t bytes) const
   {
     auto const aligned_size = rmm::align_up(bytes, alignment_);
-    return aligned_size + alignment_ - rmm::CUDA_ALLOCATION_ALIGNMENT;
+    // aligned_size: bytes of properly aligned space needed
+    // (alignment_ - rmm::CUDA_ALLOCATION_ALIGNMENT): maximum "waste" due to pointer misalignment
+    return aligned_size + (alignment_ - rmm::CUDA_ALLOCATION_ALIGNMENT);
   }
 
   /// The upstream resource used for satisfying allocation requests

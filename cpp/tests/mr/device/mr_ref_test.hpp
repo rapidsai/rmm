@@ -23,6 +23,7 @@
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream.hpp>
 #include <rmm/cuda_stream_view.hpp>
+#include <rmm/detail/error.hpp>
 #include <rmm/mr/device/arena_memory_resource.hpp>
 #include <rmm/mr/device/binning_memory_resource.hpp>
 #include <rmm/mr/device/cuda_async_memory_resource.hpp>
@@ -46,6 +47,46 @@
 using resource_ref = rmm::device_async_resource_ref;
 
 namespace rmm::test {
+
+/**
+ * @brief Check if the current device supports HMM (Heterogeneous Memory Management).
+ *
+ * @return true if HMM is supported (pageable memory access is available and host page tables are
+ * NOT used), false otherwise
+ */
+inline bool is_hmm_supported()
+{
+  // Get the current device ID
+  rmm::cuda_device_id device_id = rmm::get_current_cuda_device();
+
+  // Check if pageable memory access is supported
+  int pageableMemoryAccess;
+  RMM_CUDA_TRY(cudaDeviceGetAttribute(
+    &pageableMemoryAccess, cudaDevAttrPageableMemoryAccess, device_id.value()));
+
+  if (pageableMemoryAccess != 1) { return false; }
+
+  // Check if pageable memory access uses host page tables (0 indicates HMM, 1 indicates ATS)
+  int pageableMemoryAccessUsesHostPageTables;
+  RMM_CUDA_TRY(cudaDeviceGetAttribute(&pageableMemoryAccessUsesHostPageTables,
+                                      cudaDevAttrPageableMemoryAccessUsesHostPageTables,
+                                      device_id.value()));
+
+  // Return true if HMM is supported (host page tables are not used)
+  return pageableMemoryAccessUsesHostPageTables == 0;
+}
+
+/**
+ * @brief Get the CUDA driver version.
+ *
+ * @return The CUDA driver version
+ */
+inline int get_cuda_driver_version()
+{
+  int driver_version;
+  RMM_CUDA_TRY(cudaDriverGetVersion(&driver_version));
+  return driver_version;
+}
 
 enum size_in_bytes : size_t {};
 
@@ -76,8 +117,7 @@ inline void test_get_current_device_resource_ref()
   void* ptr = rmm::mr::get_current_device_resource_ref().allocate(1_MiB);
   EXPECT_NE(nullptr, ptr);
   EXPECT_TRUE(is_properly_aligned(ptr));
-  // Temporarily disabling this test, see #1935.
-  // EXPECT_TRUE(is_device_accessible_memory(ptr));
+  EXPECT_TRUE(is_device_accessible_memory(ptr));
   rmm::mr::get_current_device_resource_ref().deallocate(ptr, 1_MiB);
 }
 
@@ -356,7 +396,12 @@ inline auto make_managed() { return std::make_shared<rmm::mr::managed_memory_res
 
 inline auto make_system()
 {
-  if (rmm::mr::detail::is_system_memory_supported(rmm::get_current_cuda_device())) {
+  // Skip system memory resource tests if unsupported, or if HMM is detected
+  // with drivers older than CUDA 12.8. For the latter case, there appears to
+  // be a bug where device allocations return false for is_device_accessible_memory(ptr)
+  // despite working properly when accessed from device. See #1935 for more details.
+  if (rmm::mr::detail::is_system_memory_supported(rmm::get_current_cuda_device()) &&
+      !(is_hmm_supported() && get_cuda_driver_version() < 12080)) {
     return std::make_shared<rmm::mr::system_memory_resource>();
   } else {
     return std::shared_ptr<rmm::mr::system_memory_resource>{nullptr};
