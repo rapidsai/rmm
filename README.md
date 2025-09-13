@@ -56,17 +56,16 @@ See the [RAPIDS Installation Guide](https://docs.rapids.ai/install/) for system 
 Compiler requirements:
 
 * `gcc`     version 9.3+
-* `nvcc`    version 11.4+
+* `nvcc`    version 12.0+
 * `cmake`   version 3.30.4+
 
 CUDA/GPU requirements:
 
-* CUDA 11.4+. You can obtain CUDA from
+* CUDA 12.0+. You can obtain CUDA from
   [https://developer.nvidia.com/cuda-downloads](https://developer.nvidia.com/cuda-downloads)
 
 GPU Support:
-* RMM is tested and supported only on Volta architecture and newer (Compute Capability 7.0+). It
-  may work on earlier architectures.
+* RMM is tested and supported only on Volta architecture and newer (Compute Capability 7.0+).
 
 Python requirements:
 * `rapids-build-backend` (available from PyPI or the `rapidsai` conda channel)
@@ -129,7 +128,8 @@ $ make test
 - Build, install, and test the `rmm` python package, in the `python` folder:
 ```bash
 # In the root rmm directory
-$ python -m pip install -e ./python/rmm
+$ python -m pip wheel ./python/librmm
+$ python -m pip install --find-links=. -e ./python/rmm
 $ pytest -v
 ```
 
@@ -657,7 +657,7 @@ of more detailed logging. The default is `INFO`. Available levels are `TRACE`, `
 
 Note that to see logging below the `INFO` level, the application must also set the logging level at
 run time. C++ applications must must call `rmm::default_logger().set_level()`, for example to enable all
-levels of logging down to `TRACE`, call `rmm::default_logger().set_level(spdlog::level::trace)` (and compile
+levels of logging down to `TRACE`, call `rmm::default_logger().set_level(rapids_logger::level_enum::trace)` (and compile
 librmm with `-DRMM_LOGGING_LEVEL=TRACE`). Python applications must call `rmm.set_logging_level()`,
 for example to enable all levels of logging down to `TRACE`, call `rmm.set_logging_level("trace")`
 (and compile the RMM Python module with `-DRMM_LOGGING_LEVEL=TRACE`).
@@ -676,7 +676,7 @@ be detected by CUDA tools such as
 
 Exceptions to this are `cuda_memory_resource`, which wraps `cudaMalloc`, and
 `cuda_async_memory_resource`, which uses `cudaMallocAsync` with CUDA's built-in memory pool
-functionality (CUDA 11.2 or later required). Illegal memory accesses to memory allocated by these
+functionality (introduced in CUDA 11.2). Illegal memory accesses to memory allocated by these
 resources are detectable with Compute Sanitizer Memcheck.
 
 It may be possible in the future to add support for memory bounds checking with other memory

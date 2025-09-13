@@ -3,7 +3,7 @@ files:
   all:
     output: conda
     matrix:
-      cuda: ["11.8", "12.9"]
+      cuda: ["12.9"]
       arch: [x86_64, aarch64]
     includes:
       - build
@@ -134,40 +134,18 @@ dependencies:
         matrices:
           - matrix:
               arch: x86_64
-              cuda: "11.*"
-            packages:
-              - gcc_linux-64=11.*
-              - &sysroot_x86_64 sysroot_linux-64==2.28
-          - matrix:
-              arch: x86_64
               cuda: "12.*"
             packages:
               - gcc_linux-64=13.*
-              - *sysroot_x86_64
-          - matrix:
-              arch: aarch64
-              cuda: "11.*"
-            packages:
-              - gcc_linux-aarch64=11.*
-              - &sysroot_aarch64 sysroot_linux-aarch64==2.28
+              - sysroot_linux-64==2.28
           - matrix:
               arch: aarch64
               cuda: "12.*"
             packages:
               - gcc_linux-aarch64=13.*
-              - *sysroot_aarch64
+              - sysroot_linux-aarch64==2.28
       - output_types: conda
         matrices:
-          - matrix:
-              arch: x86_64
-              cuda: "11.8"
-            packages:
-              - nvcc_linux-64=11.8
-          - matrix:
-              arch: aarch64
-              cuda: "11.8"
-            packages:
-              - nvcc_linux-aarch64=11.8
           - matrix:
               cuda: "12.*"
             packages:
@@ -180,22 +158,18 @@ dependencies:
     specific:
       - output_types: [conda, requirements, pyproject]
         matrices:
-          - matrix:
-              cuda: "12.*"
+          - matrix: # All CUDA 12 versions
             packages:
               - &cuda_python12 cuda-python>=12.6.2,<13.0a0
-          - matrix: # All CUDA 11 versions
-            packages:
-              - &cuda_python11 cuda-python>=11.8.5,<12.0a0
   depends_on_librmm:
     common:
       - output_types: conda
         packages:
-          - &librmm_unsuffixed librmm==25.6.*,>=0.0.0a0
+          - &librmm_unsuffixed librmm==25.8.*,>=0.0.0a0
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
-          # This index is needed for librmm-cu{11,12}.
+          # This index is needed for librmm-cu12.
           - --extra-index-url=https://pypi.nvidia.com
           - --extra-index-url=https://pypi.anaconda.org/rapidsai-wheels-nightly/simple
     specific:
@@ -205,12 +179,7 @@ dependencies:
               cuda: "12.*"
               cuda_suffixed: "true"
             packages:
-              - librmm-cu12==25.6.*,>=0.0.0a0
-          - matrix:
-              cuda: "11.*"
-              cuda_suffixed: "true"
-            packages:
-              - librmm-cu11==25.6.*,>=0.0.0a0
+              - librmm-cu12==25.8.*,>=0.0.0a0
           - matrix:
             packages:
               - *librmm_unsuffixed
@@ -218,17 +187,17 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - rmm==25.6.*,>=0.0.0a0
+          - rmm==25.8.*,>=0.0.0a0
   depends_on_librmm_tests:
     common:
       - output_types: conda
         packages:
-          - librmm-tests==25.6.*,>=0.0.0a0
+          - librmm-tests==25.8.*,>=0.0.0a0
   depends_on_librmm_example:
     common:
       - output_types: conda
         packages:
-          - librmm-example==25.6.*,>=0.0.0a0
+          - librmm-example==25.8.*,>=0.0.0a0
   checks:
     common:
       - output_types: [conda, requirements]
@@ -244,26 +213,6 @@ dependencies:
     specific:
       - output_types: conda
         matrices:
-          - matrix:
-              cuda: "11.2"
-            packages:
-              - cuda-version=11.2
-          - matrix:
-              cuda: "11.4"
-            packages:
-              - cuda-version=11.4
-          - matrix:
-              cuda: "11.5"
-            packages:
-              - cuda-version=11.5
-          - matrix:
-              cuda: "11.6"
-            packages:
-              - cuda-version=11.6
-          - matrix:
-              cuda: "11.8"
-            packages:
-              - cuda-version=11.8
           - matrix:
               cuda: "12.0"
             packages:
@@ -289,18 +238,14 @@ dependencies:
       - output_types: conda
         matrices:
           - matrix:
-              cuda: "11.*"
-            packages:
-              - cudatoolkit
-          - matrix:
               cuda: "12.*"
             packages:
   develop:
     common:
       - output_types: conda
         packages:
-          - clang==16.0.6
-          - clang-tools==16.0.6
+          - clang==20.1.4
+          - clang-tools==20.1.4
           - gcovr>=5.0
   docs:
     common:
@@ -314,8 +259,7 @@ dependencies:
           - nbsphinx
           - &numba numba>=0.59.1,<0.62.0a0
           - numpydoc
-          # this pin can be reverted when https://github.com/spatialaudio/nbsphinx/issues/825 is resolved
-          - sphinx<8.2.0
+          - sphinx
           - sphinx_rtd_theme
           - sphinx-copybutton
           - sphinx-markdown-tables
@@ -350,13 +294,9 @@ dependencies:
     specific:
       - output_types: [conda, requirements, pyproject]
         matrices:
-          - matrix:
-              cuda: "12.*"
+          - matrix: # All CUDA 12 versions
             packages:
               - *cuda_python12
-          - matrix: # All CUDA 11 versions
-            packages:
-              - *cuda_python11
   test_cpp:
     common:
       - output_types: conda

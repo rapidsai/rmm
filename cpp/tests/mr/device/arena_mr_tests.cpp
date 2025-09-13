@@ -590,7 +590,7 @@ TEST_F(ArenaTest, DumpLogOnFailure)  // NOLINT
   // NOLINTNEXTLINE(cppcoreguidelines-avoid-goto)
   EXPECT_THROW(mr.allocate(8_MiB), rmm::out_of_memory);
 
-  struct stat file_status {};
+  struct stat file_status{};
   EXPECT_EQ(stat("rmm_arena_memory_dump.log", &file_status), 0);
   EXPECT_GE(file_status.st_size, 0);
 }
