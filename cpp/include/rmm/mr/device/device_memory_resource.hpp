@@ -111,6 +111,9 @@ class device_memory_resource {
    * If supported, this operation may optionally be executed on a stream.
    * Otherwise, the stream is ignored and the null stream is used.
    *
+   * @note On integrated memory systems, attempting to allocate more memory than
+   * available can cause the process to be killed by the operating system.
+   *
    * @throws rmm::bad_alloc When the requested `bytes` cannot be allocated on
    * the specified @p stream.
    *
@@ -169,6 +172,9 @@ class device_memory_resource {
    *
    * The returned pointer will have at minimum 256 byte alignment.
    *
+   * @note On integrated memory systems, attempting to allocate more memory than
+   * available can cause the process to be killed by the operating system.
+   *
    * @throws rmm::bad_alloc When the requested `bytes` cannot be allocated on
    * the specified `stream`.
    *
@@ -206,6 +212,9 @@ class device_memory_resource {
    *
    * The returned pointer will have at minimum 256 byte alignment.
    *
+   * @note On integrated memory systems, attempting to allocate more memory than
+   * available can cause the process to be killed by the operating system.
+   *
    * @throws rmm::bad_alloc When the requested `bytes` cannot be allocated on
    * the specified `stream`.
    *
@@ -224,6 +233,9 @@ class device_memory_resource {
    * @brief Allocates memory of size at least \p bytes.
    *
    * The returned pointer will have at minimum 256 byte alignment.
+   *
+   * @note On integrated memory systems, attempting to allocate more memory than
+   * available can cause the process to be killed by the operating system.
    *
    * @throws rmm::bad_alloc When the requested `bytes` cannot be allocated on
    * the specified `stream`.

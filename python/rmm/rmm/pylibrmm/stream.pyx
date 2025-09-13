@@ -68,7 +68,8 @@ cdef class Stream:
         Synchronize the CUDA stream.
         This function *must* be called in a `with nogil` block
         """
-        self.view().synchronize()
+        with nogil:
+            self.view().synchronize()
 
     def synchronize(self):
         """
