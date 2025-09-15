@@ -120,6 +120,14 @@ class cccl_async_resource_ref : public ResourceType {
     return this->deallocate(stream, ptr, bytes);
   }
 
+  void deallocate_async(void* ptr,
+                        std::size_t bytes,
+                        std::size_t alignment,
+                        cuda_stream_view stream)
+  {
+    return this->deallocate(stream, ptr, bytes, alignment);
+  }
+
   // END OF LEGACY MR METHODS
 
 #if CCCL_MAJOR_VERSION > 3 || (CCCL_MAJOR_VERSION == 3 && CCCL_MINOR_VERSION >= 1)
@@ -135,14 +143,6 @@ class cccl_async_resource_ref : public ResourceType {
   void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment)
   {
     return base::deallocate_sync(ptr, bytes, alignment);
-  }
-
-  void deallocate_async(void* ptr,
-                        std::size_t bytes,
-                        std::size_t alignment,
-                        cuda_stream_view stream)
-  {
-    return this->deallocate(stream, ptr, bytes, alignment);
   }
 
   void* allocate(cuda_stream_view stream, std::size_t bytes)
