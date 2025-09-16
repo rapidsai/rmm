@@ -148,10 +148,48 @@ class pinned_memory_resource final : public host_memory_resource {
     rmm::detail::aligned_host_deallocate(
       ptr, bytes, alignment, [](void* ptr) { RMM_ASSERT_CUDA_SUCCESS(cudaFreeHost(ptr)); });
   }
+
+#if CCCL_MAJOR_VERSION > 3 || (CCCL_MAJOR_VERSION == 3 && CCCL_MINOR_VERSION >= 1)
+
+ public:
+  /**
+   * @brief Pretend to support the allocate_async interface, falling back to stream 0
+   *
+   * @throws rmm::bad_alloc When the requested `bytes` cannot be allocated on
+   * the specified `stream`.
+   *
+   * @param stream CUDA stream on which to perform the deallocation (ignored).
+   * @param bytes The size of the allocation
+   * @param alignment The expected alignment of the allocation
+   * @return void* Pointer to the newly allocated memory
+   */
+  void* allocate(cuda_stream_view stream, std::size_t bytes, std::size_t alignment)
+  {
+    return this->allocate_async(bytes, alignment, stream);
+  }
+
+  /**
+   * @brief Pretend to support the deallocate_async interface, falling back to stream 0
+   *
+   * @param stream CUDA stream on which to perform the deallocation (ignored).
+   * @param ptr Pointer to be deallocated
+   * @param bytes The size in bytes of the allocation. This must be equal to the
+   * value of `bytes` that was passed to the `allocate` call that returned `p`.
+   * @param alignment The alignment that was passed to the `allocate` call that returned `p`
+   */
+  void deallocate(cuda_stream_view stream, void* ptr, std::size_t bytes, std::size_t alignment)
+  {
+    return this->deallocate_async(ptr, bytes, alignment, stream);
+  }
+
+#endif
 };
-static_assert(cuda::mr::async_resource_with<pinned_memory_resource,
-                                            cuda::mr::host_accessible,
-                                            cuda::mr::device_accessible>);
+
+// static property checks
+static_assert(rmm::detail::polyfill::async_resource_with<pinned_memory_resource,
+                                                         cuda::mr::host_accessible,
+                                                         cuda::mr::device_accessible>);
+
 /** @} */  // end of group
 }  // namespace mr
 }  // namespace RMM_NAMESPACE

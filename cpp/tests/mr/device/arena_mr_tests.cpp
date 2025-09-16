@@ -46,12 +46,35 @@ class mock_memory_resource {
   MOCK_METHOD(void, deallocate, (void*, std::size_t, std::size_t));
   MOCK_METHOD(void*, allocate_async, (std::size_t, std::size_t, cuda::stream_ref));
   MOCK_METHOD(void, deallocate_async, (void*, std::size_t, std::size_t, cuda::stream_ref));
+
+  void* allocate_sync(std::size_t bytes, std::size_t alignment)
+  {
+    return allocate(bytes, alignment);
+  }
+
+  void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment)
+  {
+    deallocate(ptr, bytes, alignment);
+  }
+
+  void* allocate(cuda_stream_view stream, std::size_t bytes, std::size_t alignment)
+  {
+    return allocate_async(bytes, alignment, stream);
+  }
+
+  void deallocate(cuda_stream_view stream, void* ptr, std::size_t bytes, std::size_t alignment)
+  {
+    return deallocate_async(ptr, bytes, alignment, stream);
+  }
+
   bool operator==(mock_memory_resource const&) const noexcept { return true; }
   bool operator!=(mock_memory_resource const&) const { return false; }
   friend void get_property(mock_memory_resource const&, cuda::mr::device_accessible) noexcept {}
 };
 
-static_assert(cuda::mr::async_resource_with<mock_memory_resource, cuda::mr::device_accessible>);
+// static property checks
+static_assert(
+  rmm::detail::polyfill::async_resource_with<mock_memory_resource, cuda::mr::device_accessible>);
 
 using rmm::mr::detail::arena::block;
 using rmm::mr::detail::arena::byte_span;

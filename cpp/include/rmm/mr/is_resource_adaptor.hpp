@@ -40,7 +40,7 @@ template <class Resource>
 inline constexpr bool is_resource_adaptor<
   Resource,
   cuda::std::void_t<decltype(cuda::std::declval<Resource>().get_upstream_resource())>> =
-  cuda::mr::resource<Resource>;
+  rmm::detail::polyfill::resource<Resource>;
 
 /** @} */  // end of group
 }  // namespace mr

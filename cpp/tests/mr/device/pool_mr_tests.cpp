@@ -197,6 +197,10 @@ class fake_async_resource {
   static void deallocate(void* ptr, std::size_t, std::size_t) {}
   static void* allocate_async(std::size_t, std::size_t, cuda::stream_ref) { return nullptr; }
   static void deallocate_async(void* ptr, std::size_t, std::size_t, cuda::stream_ref) {}
+  void* allocate_sync(std::size_t, std::size_t) { return nullptr; }
+  void deallocate_sync(void* ptr, std::size_t, std::size_t) {}
+  void* allocate(cuda_stream_view, std::size_t, std::size_t) { return nullptr; }
+  void deallocate(cuda_stream_view, void*, std::size_t, std::size_t) { return; }
 
   bool operator==(const fake_async_resource& other) const { return true; }
   bool operator!=(const fake_async_resource& other) const { return false; }
@@ -206,9 +210,10 @@ class fake_async_resource {
   static void do_deallocate(void* ptr, std::size_t, cuda_stream_view) {}
   [[nodiscard]] static bool do_is_equal(fake_async_resource const& other) noexcept { return true; }
 };
-static_assert(!cuda::has_property<fake_async_resource, cuda::mr::device_accessible>);
-static_assert(!cuda::has_property<rmm::mr::pool_memory_resource<fake_async_resource>,
-                                  cuda::mr::device_accessible>);
+
+// static property checks
+static_assert(rmm::detail::polyfill::resource<fake_async_resource>);
+static_assert(rmm::detail::polyfill::resource<rmm::mr::pool_memory_resource<fake_async_resource>>);
 
 // Ensure that we forward the property if it is there
 class fake_async_resource_device_accessible : public fake_async_resource {
