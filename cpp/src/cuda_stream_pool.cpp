@@ -19,6 +19,7 @@
 #include <rmm/detail/error.hpp>
 
 #include <algorithm>
+#include <atomic>
 #include <cstddef>
 
 namespace rmm {
@@ -33,7 +34,7 @@ cuda_stream_pool::cuda_stream_pool(std::size_t pool_size, cuda_stream::flags fla
 
 rmm::cuda_stream_view cuda_stream_pool::get_stream() const noexcept
 {
-  return streams_[(next_stream++) % streams_.size()].view();
+  return streams_[(next_stream.fetch_add(1, std::memory_order_relaxed)) % streams_.size()].view();
 }
 
 rmm::cuda_stream_view cuda_stream_pool::get_stream(std::size_t stream_id) const
