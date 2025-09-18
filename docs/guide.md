@@ -164,7 +164,7 @@ Similarly, to use a pool of managed memory:
 >
 > Note that a Python exception that's raised in a scope that allocates
 > buffers can keep references to the buffers that will keep them alive.
-> Use {ref}`traceback.clear_frames` to ensure those buffers are freed
+> Use ``traceback.clear_frames`` to ensure those buffers are freed
 > before destroying the memory resource.
 
 Other `MemoryResource`s include:
