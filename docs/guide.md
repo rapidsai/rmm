@@ -123,7 +123,7 @@ example, enabling the `ManagedMemoryResource` tells RMM to use
 >>> rmm.mr.set_current_device_resource(rmm.mr.ManagedMemoryResource())
 ```
 
-> :warning: The default resource must be set for any device **before**
+> :⚠️: The default resource must be set for any device **before**
 > allocating any device memory on that device.  Setting or changing the
 > resource after device allocations have been made can lead to unexpected
 > behaviour or crashes.
@@ -156,6 +156,16 @@ Similarly, to use a pool of managed memory:
 ... )
 >>> rmm.mr.set_current_device_resource(pool)
 ```
+
+> :⚠️: Take care when deleting a memory resource object,
+> either explicitly or when its reference count drops to zero.
+> All buffers that were allocated on that memory resource should
+> be freed *before* the memory resource itself is deleted.
+>
+> Note that a Python exception that's raised in a scope that allocates
+> buffers can keep references to the buffers that will keep them alive.
+> Use {ref}`traceback.clear_frames` to ensure those buffers are freed
+> before destroying the memory resource.
 
 Other `MemoryResource`s include:
 
