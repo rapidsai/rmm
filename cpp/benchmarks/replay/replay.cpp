@@ -242,6 +242,14 @@ struct replay_benchmark {
         } else if (rmm::detail::action::FREE == event.act) {
           auto alloc = remove_allocation(event.pointer);
           mr_->deallocate(alloc.ptr, event.size);
+        } else if (rmm::detail::action::MERGE_LISTS == event.act) {
+          if (auto pool =
+                dynamic_cast<rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>*>(
+                  mr_.get())) {
+            pool->merge_lists_for_all_streams();
+          } else {
+            std::cout << "Error: merge lists is not supported for this memory resource\n";
+          }
         }
 
         event_index++;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@
 
 namespace rmm::detail {
 
-enum class action { ALLOCATE, FREE, ALLOCATE_FAILURE };
+enum class action { ALLOCATE, FREE, ALLOCATE_FAILURE, MERGE_LISTS };
 
 /**
  * @brief Represents an allocation event
@@ -89,6 +89,7 @@ inline std::ostream& operator<<(std::ostream& os, event const& evt)
     switch (evt.act) {
       case action::ALLOCATE: return "allocate";
       case action::FREE: return "free";
+      case action::MERGE_LISTS: return "merge lists";
       default: return "allocate failure";
     }
   }()};
@@ -169,13 +170,16 @@ inline std::vector<event> parse_csv(std::string const& filename)
 
   for (std::size_t i = 0; i < actions.size(); ++i) {
     auto const& action = actions[i];
-    RMM_EXPECTS((action == "allocate") or (action == "allocate failure") or (action == "free"),
+    RMM_EXPECTS((action == "allocate") or (action == "allocate failure") or (action == "free") or
+                  (action == "merge lists"),
                 "Invalid action string.");
     auto act{action::ALLOCATE_FAILURE};
     if (action == "allocate") {
       act = action::ALLOCATE;
     } else if (action == "free") {
       act = action::FREE;
+    } else if (action == "merge lists") {
+      act = action::MERGE_LISTS;
     }
     events[i] = event{tids[i], act, sizes[i], pointers[i], streams[i], i};
   }

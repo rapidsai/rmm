@@ -258,6 +258,10 @@ class pool_memory_resource final
                     reason);
       auto const msg = std::string("Maximum pool size exceeded (failed to allocate ") +
                        rmm::detail::format_bytes(min_size) + std::string("): ") + reason;
+      // Call print method
+#ifdef RMM_DEBUG_PRINT
+      this->print();
+#endif
       RMM_FAIL(msg.c_str(), rmm::out_of_memory);
     };
 

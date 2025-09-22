@@ -39,6 +39,8 @@ rapids_cmake_build_type(Release)
 # * build options ----------------------------------------------------------------------------------
 
 option(RMM_NVTX "Build RMM with NVTX support" OFF)
+option(RMM_DEBUG_PRINT "Build RMM with debug print support" OFF)
+option(RMM_POOL_TRACK_ALLOCATIONS "Build RMM with pool allocation tracking" OFF)
 option(BUILD_TESTS "Configure CMake to build tests" ON)
 option(BUILD_BENCHMARKS "Configure CMake to build (google) benchmarks" OFF)
 # This is mostly so that dependent libraries are configured in shared mode for downstream dependents
@@ -51,6 +53,8 @@ set_property(CACHE RMM_LOGGING_LEVEL PROPERTY STRINGS "TRACE" "DEBUG" "INFO" "WA
                                               "CRITICAL" "OFF")
 
 message(VERBOSE "RMM: Build with NVTX support: ${RMM_NVTX}")
+message(VERBOSE "RMM: Build with debug print support: ${RMM_DEBUG_PRINT}")
+message(VERBOSE "RMM: Build with pool allocation tracking: ${RMM_POOL_TRACK_ALLOCATIONS}")
 # Set logging level. Must go before including gtests and benchmarks. Set the possible values of
 # build type for cmake-gui.
 message(STATUS "RMM: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'")
@@ -130,6 +134,16 @@ target_compile_definitions(rmm PUBLIC LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESO
 # Enable NVTX if necessary
 if(RMM_NVTX)
   target_compile_definitions(rmm PUBLIC RMM_NVTX)
+endif()
+
+# Enable debug print if necessary
+if(RMM_DEBUG_PRINT)
+  target_compile_definitions(rmm PUBLIC RMM_DEBUG_PRINT)
+endif()
+
+# Enable pool allocation tracking if necessary
+if(RMM_POOL_TRACK_ALLOCATIONS)
+  target_compile_definitions(rmm PUBLIC RMM_POOL_TRACK_ALLOCATIONS)
 endif()
 
 # ##################################################################################################

@@ -40,6 +40,16 @@ function(ConfigureBench BENCH_NAME)
   target_compile_definitions(
     ${BENCH_NAME} PUBLIC "RMM_LOG_ACTIVE_LEVEL=RAPIDS_LOGGER_LOG_LEVEL_${RMM_LOGGING_LEVEL}")
 
+  # Enable debug print if necessary
+  if(RMM_DEBUG_PRINT)
+    target_compile_definitions(${BENCH_NAME} PUBLIC RMM_DEBUG_PRINT)
+  endif()
+
+  # Enable pool allocation tracking if necessary
+  if(RMM_POOL_TRACK_ALLOCATIONS)
+    target_compile_definitions(${BENCH_NAME} PUBLIC RMM_POOL_TRACK_ALLOCATIONS)
+  endif()
+
   if(PER_THREAD_DEFAULT_STREAM)
     target_compile_definitions(${BENCH_NAME} PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
   endif()

@@ -29,6 +29,7 @@
 #include <cstddef>
 #include <map>
 #include <mutex>
+#include <set>
 #include <unordered_map>
 #ifdef RMM_DEBUG_PRINT
 #include <iostream>
@@ -85,6 +86,53 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
   stream_ordered_memory_resource(stream_ordered_memory_resource&&)                 = delete;
   stream_ordered_memory_resource& operator=(stream_ordered_memory_resource const&) = delete;
   stream_ordered_memory_resource& operator=(stream_ordered_memory_resource&&)      = delete;
+
+  /**
+   * @brief Merge the lists of free blocks for all streams that are different from the given stream
+   *
+   * @param stream The stream on which the memory is to be used.
+   */
+  void merge_lists_for_all_streams(cuda_stream_view stream = cuda_stream_default)
+  {
+    RMM_LOG_DEBUG("[A][Stream %s][Merge lists for all streams]",
+                  rmm::detail::format_stream(stream));
+
+    std::cout << "stream_free_blocks_.size(): " << stream_free_blocks_.size() << std::endl;
+
+    // Count the number of stream-event pairs for each stream
+    std::map<cudaStream_t, std::size_t> stream_counts;
+    for (auto& [stream_event, blocks] : stream_free_blocks_) {
+      stream_counts[stream_event.stream]++;
+    }
+    std::cout << "stream_counts.size(): " << stream_counts.size() << std::endl;
+    for (auto& [stream, count] : stream_counts) {
+      std::cout << "stream: " << stream << " count: " << count << std::endl;
+    }
+
+    // Get all streams from the stream-event pairs
+    auto streams = [&]() {
+      std::set<cudaStream_t> streams;
+      for (auto& [stream_event, blocks] : stream_free_blocks_) {
+        streams.insert(stream_event.stream);
+      }
+      return streams;
+    }();
+
+    // Synchronize all streams
+    for (auto& stream : streams) {
+      RMM_CUDA_TRY(cudaStreamSynchronize(stream));
+    }
+
+    // Create an empty free list for the given stream
+    free_list new_blocks;
+
+    // Merge the lists of free blocks for all streams
+    for (auto iter = stream_free_blocks_.begin(); iter != stream_free_blocks_.end(); iter++) {
+      new_blocks.insert(std::move(iter->second));
+    }
+    stream_free_blocks_.clear();
+    this->insert_blocks(std::move(new_blocks), stream);
+  }
 
  protected:
   using free_list  = FreeListType;
