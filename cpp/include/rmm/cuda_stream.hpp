@@ -73,7 +73,7 @@ class cuda_stream {
    *
    * @throw rmm::cuda_error if stream creation fails
    */
-  cuda_stream(flags flags = flags::sync_default);
+  cuda_stream(cuda_stream::flags flags = cuda_stream::flags::sync_default);
 
   /**
    * @brief Returns true if the owned stream is non-null
