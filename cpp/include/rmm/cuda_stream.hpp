@@ -42,9 +42,9 @@ class cuda_stream {
    * @brief stream creation flags.
    */
   enum class flags : unsigned int {
-    sync_default = cudaStreamDefault,  ///< Created stream synchronises with the default stream.
+    sync_default = cudaStreamDefault,  ///< Created stream synchronizes with the default stream.
     non_blocking =
-      cudaStreamNonBlocking,  ///< Created stream does not synchronise with the default stream.
+      cudaStreamNonBlocking,  ///< Created stream does not synchronize with the default stream.
   };
   /**
    * @brief Move constructor (default)
