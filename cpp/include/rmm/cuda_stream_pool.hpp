@@ -48,8 +48,10 @@ class cuda_stream_pool {
    *
    * @throws logic_error if `pool_size` is zero
    * @param pool_size The number of streams in the pool
+   * @param flags Stream creation flags to use.
    */
-  explicit cuda_stream_pool(std::size_t pool_size = default_size);
+  explicit cuda_stream_pool(std::size_t pool_size = default_size,
+                            unsigned int flags    = cudaStreamDefault);
   ~cuda_stream_pool() = default;
 
   cuda_stream_pool(cuda_stream_pool&&)                 = delete;

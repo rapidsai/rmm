@@ -63,7 +63,7 @@ class cuda_stream {
    *
    * @throw rmm::cuda_error if stream creation fails
    *
-   * @param flags Optional, stream creation flag.
+   * @param flags Stream creation flags to use.
    */
   cuda_stream(unsigned int flags = cudaStreamDefault);
 

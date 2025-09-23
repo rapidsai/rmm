@@ -24,16 +24,20 @@
 
 #include <cstdint>
 
-struct CudaStreamPoolTest : public ::testing::Test {
-  rmm::cuda_stream_pool pool{};
+struct CudaStreamPoolTest : public ::testing::TestWithParam<unsigned int> {
+  rmm::cuda_stream_pool pool{4, GetParam()};
 };
 
-TEST_F(CudaStreamPoolTest, ZeroSizePoolException)
+INSTANTIATE_TEST_SUITE_P(Flags,
+                         CudaStreamPoolTest,
+                         ::testing::Values(cudaStreamDefault, cudaStreamNonBlocking));
+
+TEST_P(CudaStreamPoolTest, ZeroSizePoolException)
 {
-  EXPECT_THROW(rmm::cuda_stream_pool pool{0}, rmm::logic_error);
+  EXPECT_THROW((rmm::cuda_stream_pool{0, GetParam()}), rmm::logic_error);
 }
 
-TEST_F(CudaStreamPoolTest, Unequal)
+TEST_P(CudaStreamPoolTest, Unequal)
 {
   auto const stream_a = this->pool.get_stream();
   auto const stream_b = this->pool.get_stream();
@@ -41,16 +45,16 @@ TEST_F(CudaStreamPoolTest, Unequal)
   EXPECT_NE(stream_a, stream_b);
 }
 
-TEST_F(CudaStreamPoolTest, Nondefault)
+TEST_P(CudaStreamPoolTest, Nondefault)
 {
-  auto const stream_a = this->pool.get_stream();
+  auto const stream_a = pool.get_stream();
 
   // pool streams are explicit, non-default streams
   EXPECT_FALSE(stream_a.is_default());
   EXPECT_FALSE(stream_a.is_per_thread_default());
 }
 
-TEST_F(CudaStreamPoolTest, ValidStreams)
+TEST_P(CudaStreamPoolTest, ValidStreams)
 {
   auto const stream_a = this->pool.get_stream();
   auto const stream_b = this->pool.get_stream();
@@ -66,16 +70,16 @@ TEST_F(CudaStreamPoolTest, ValidStreams)
   EXPECT_EQ(element, 0xcc);
 }
 
-TEST_F(CudaStreamPoolTest, PoolSize) { EXPECT_GE(this->pool.get_pool_size(), 1); }
+TEST_P(CudaStreamPoolTest, PoolSize) { EXPECT_GE(this->pool.get_pool_size(), 1); }
 
-TEST_F(CudaStreamPoolTest, OutOfBoundLinearAccess)
+TEST_P(CudaStreamPoolTest, OutOfBoundLinearAccess)
 {
   auto const stream_a = this->pool.get_stream(0);
   auto const stream_b = this->pool.get_stream(this->pool.get_pool_size());
   EXPECT_EQ(stream_a, stream_b);
 }
 
-TEST_F(CudaStreamPoolTest, ValidLinearAccess)
+TEST_P(CudaStreamPoolTest, ValidLinearAccess)
 {
   auto const stream_a = this->pool.get_stream(0);
   auto const stream_b = this->pool.get_stream(1);
