@@ -27,13 +27,21 @@
 #include <sstream>
 #include <utility>
 
-struct CudaStreamTest : public ::testing::Test {};
+class CudaStreamTest : public ::testing::TestWithParam<unsigned int> {};
 
-TEST_F(CudaStreamTest, Equality)
+INSTANTIATE_TEST_SUITE_P(Flags,
+                         CudaStreamTest,
+                         ::testing::Values(cudaStreamDefault, cudaStreamNonBlocking));
+
+TEST_P(CudaStreamTest, Equality)
 {
-  rmm::cuda_stream stream_a;
+  unsigned int const flags = GetParam();
+
+  // Create stream with the requested flags
+  rmm::cuda_stream stream_a{flags};
+
   auto const view_a       = stream_a.view();
-  auto const view_default = rmm::cuda_stream_view{};
+  auto const view_default = rmm::cuda_stream_view{};  // default stream view
 
   EXPECT_EQ(stream_a, view_a);
   EXPECT_NE(stream_a, view_default);
@@ -48,9 +56,11 @@ TEST_F(CudaStreamTest, Equality)
   EXPECT_NE(static_cast<cudaStream_t>(stream_a), rmm::cuda_stream_default.value());
 }
 
-TEST_F(CudaStreamTest, MoveConstructor)
+TEST_P(CudaStreamTest, MoveConstructor)
 {
-  rmm::cuda_stream stream_a;
+  unsigned int const flags = GetParam();
+
+  rmm::cuda_stream stream_a{flags};
   auto const view_a         = stream_a.view();
   rmm::cuda_stream stream_b = std::move(stream_a);
   // NOLINTNEXTLINE(bugprone-use-after-move, clang-analyzer-cplusplus.Move)
@@ -58,9 +68,11 @@ TEST_F(CudaStreamTest, MoveConstructor)
   EXPECT_EQ(stream_b, view_a);
 }
 
-TEST_F(CudaStreamTest, TestStreamViewOstream)
+TEST_P(CudaStreamTest, TestStreamViewOstream)
 {
-  rmm::cuda_stream stream_a;
+  unsigned int const flags = GetParam();
+
+  rmm::cuda_stream stream_a{flags};
   rmm::cuda_stream_view view(stream_a);
 
   std::ostringstream oss;
@@ -81,9 +93,11 @@ TEST_F(CudaStreamTest, TestStreamViewDestructor)
   view->synchronize();
 }
 
-TEST_F(CudaStreamTest, TestSyncNoThrow)
+TEST_P(CudaStreamTest, TestSyncNoThrow)
 {
-  rmm::cuda_stream stream_a;
+  unsigned int const flags = GetParam();
+
+  rmm::cuda_stream stream_a{flags};
   EXPECT_NO_THROW(stream_a.synchronize_no_throw());
 }
 
