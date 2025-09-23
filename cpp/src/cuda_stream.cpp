@@ -22,10 +22,10 @@
 
 namespace rmm {
 
-cuda_stream::cuda_stream()
-  : stream_{[]() {
+cuda_stream::cuda_stream(unsigned int flags)
+  : stream_{[flags]() {
               auto* stream = new cudaStream_t;  // NOLINT(cppcoreguidelines-owning-memory)
-              RMM_CUDA_TRY(cudaStreamCreate(stream));
+              RMM_CUDA_TRY(cudaStreamCreateWithFlags(stream, flags));
               return stream;
             }(),
             [](cudaStream_t* stream) {

@@ -62,8 +62,10 @@ class cuda_stream {
    * @brief Construct a new cuda stream object
    *
    * @throw rmm::cuda_error if stream creation fails
+   *
+   * @param flags Optional, stream creation flag.
    */
-  cuda_stream();
+  cuda_stream(unsigned int flags = cudaStreamDefault);
 
   /**
    * @brief Returns true if the owned stream is non-null
