@@ -41,7 +41,7 @@ TEST_P(CudaStreamTest, Equality)
   rmm::cuda_stream stream_a{flags};
 
   auto const view_a       = stream_a.view();
-  auto const view_default = rmm::cuda_stream_view{};  // default stream view
+  auto const view_default = rmm::cuda_stream_view{};
 
   EXPECT_EQ(stream_a, view_a);
   EXPECT_NE(stream_a, view_default);
