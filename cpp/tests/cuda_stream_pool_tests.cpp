@@ -81,3 +81,24 @@ TEST_F(CudaStreamPoolTest, ValidLinearAccess)
   auto const stream_b = this->pool.get_stream(1);
   EXPECT_NE(stream_a, stream_b);
 }
+
+TEST_F(CudaStreamPoolTest, CreateDefault)
+{
+  for (std::size_t i = 0; i < this->pool.get_pool_size(); i++) {
+    auto stream = this->pool.get_stream(i);
+    unsigned int flags;
+    RMM_CUDA_TRY(cudaStreamGetFlags(stream.value(), &flags));
+    EXPECT_EQ(flags, cudaStreamDefault);
+  }
+}
+
+TEST_F(CudaStreamPoolTest, CreateNonBlocking)
+{
+  rmm::cuda_stream_pool pool{2, rmm::cuda_stream::flags::non_blocking};
+  for (std::size_t i = 0; i < pool.get_pool_size(); i++) {
+    auto stream = pool.get_stream(i);
+    unsigned int flags;
+    RMM_CUDA_TRY(cudaStreamGetFlags(stream.value(), &flags));
+    EXPECT_EQ(flags, cudaStreamNonBlocking);
+  }
+}
