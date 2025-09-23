@@ -37,9 +37,7 @@ TEST_P(CudaStreamTest, Equality)
 {
   unsigned int const flags = GetParam();
 
-  // Create stream with the requested flags
   rmm::cuda_stream stream_a{flags};
-
   auto const view_a       = stream_a.view();
   auto const view_default = rmm::cuda_stream_view{};
 
