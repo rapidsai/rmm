@@ -77,9 +77,8 @@ void BM_AsyncPrimingImpact(benchmark::State& state, MRFactoryFunc factory)
       allocations.push_back(mr->allocate(allocation_size));
     }
 
-    auto first_round_end     = std::chrono::high_resolution_clock::now();
-    auto const [free, total] = rmm::available_device_memory();
-    std::cout << free << ", " << total << std::endl;
+    auto first_round_end = std::chrono::high_resolution_clock::now();
+
     // Deallocate all
     for (auto* ptr : allocations) {
       mr->deallocate(ptr, allocation_size);
