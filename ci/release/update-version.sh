@@ -31,6 +31,7 @@ function sed_runner() {
 
 # Centralized version file update
 echo "${NEXT_FULL_TAG}" > VERSION
+echo "branch-${NEXT_SHORT_TAG}" > RAPIDS_BRANCH
 
 # Examples update
 sed_runner "s/RMM_TAG branch-[0-9.]*/RMM_TAG branch-${NEXT_SHORT_TAG}/" cpp/examples/versions.cmake
