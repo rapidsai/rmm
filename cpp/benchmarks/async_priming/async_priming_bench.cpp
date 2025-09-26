@@ -115,8 +115,6 @@ void BM_AsyncPrimingImpact(benchmark::State& state, MRFactoryFunc factory)
     state.counters["latency_to_first_ns"]     = latency_to_first;
     state.counters["first_round_throughput"]  = first_round_throughput;
     state.counters["second_round_throughput"] = second_round_throughput;
-    state.counters["allocation_size"]         = allocation_size;
-    state.counters["num_allocations"]         = num_allocations;
 
     // Clean up for next iteration
     for (auto* ptr : allocations) {
