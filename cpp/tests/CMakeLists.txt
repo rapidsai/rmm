@@ -153,6 +153,10 @@ ConfigureTest(CUDA_ASYNC_MR_STATIC_CUDART_TEST mr/device/cuda_async_mr_tests.cpp
 ConfigureTest(CUDA_ASYNC_MR_SHARED_CUDART_TEST mr/device/cuda_async_mr_tests.cpp GPUS 1 PERCENT 60
               CUDART SHARED)
 
+# cuda_async managed mr tests (available with CUDA 13+ runtime/driver)
+ConfigureTest(CUDA_ASYNC_MANAGED_MR_TEST mr/device/cuda_async_managed_mr_tests.cpp GPUS 1 PERCENT
+              60)
+
 # thrust allocator tests
 ConfigureTest(THRUST_ALLOCATOR_TEST mr/device/thrust_allocator_tests.cu GPUS 1 PERCENT 60)
 

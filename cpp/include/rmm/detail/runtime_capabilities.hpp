@@ -32,6 +32,11 @@ namespace detail {
 #define RMM_MIN_HWDECOMPRESS_CUDA_DRIVER_VERSION 12080
 
 /**
+ * @brief Minimum CUDA driver version for stream-ordered managed memory allocator support
+ */
+#define RMM_MIN_ASYNC_MANAGED_ALLOC_CUDA_DRIVER_VERSION 13000
+
+/**
  * @brief Determine at runtime if the CUDA driver supports the stream-ordered
  * memory allocator functions.
  *
@@ -50,6 +55,25 @@ struct runtime_async_alloc {
       return result == cudaSuccess and cuda_pool_supported == 1;
     }()};
     return driver_supports_pool;
+  }
+};
+
+/**
+ * @brief Determine at runtime if the CUDA driver/runtime supports the stream-ordered
+ * managed memory allocator functions.
+ *
+ * Stream-ordered managed memory pools were introduced in CUDA 13.0.
+ */
+struct runtime_async_managed_alloc {
+  static bool is_supported()
+  {
+    static auto driver_supports_async_managed_pool{[] {
+      int cuda_driver_version{};
+      auto result = cudaDriverGetVersion(&cuda_driver_version);
+      return result == cudaSuccess and
+             cuda_driver_version >= RMM_MIN_ASYNC_MANAGED_ALLOC_CUDA_DRIVER_VERSION;
+    }()};
+    return driver_supports_async_managed_pool;
   }
 };
 
