@@ -96,7 +96,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
    *
    * @param initial_pool_size Optional initial size in bytes of the pool. If provided, the pool
    * will be primed by allocating and immediately deallocating this amount of memory on the
-   * default CUDA stream. This can make subsequent suballocations faster.
+   * default CUDA stream.
    * @param release_threshold Optional release threshold size in bytes of the pool. If no value is
    * provided, the release threshold is set to the total amount of memory on the current device.
    * @param export_handle_type Optional `cudaMemAllocationHandleType` that allocations from this
