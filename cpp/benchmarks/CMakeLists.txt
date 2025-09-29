@@ -76,3 +76,6 @@ ConfigureBench(CUDA_STREAM_POOL_BENCH cuda_stream_pool/cuda_stream_pool_bench.cp
 # multi stream allocations
 ConfigureBench(MULTI_STREAM_ALLOCATIONS_BENCH
                multi_stream_allocations/multi_stream_allocations_bench.cu)
+
+# async priming benchmark
+ConfigureBench(ASYNC_PRIMING_BENCH async_priming/async_priming_bench.cpp)
