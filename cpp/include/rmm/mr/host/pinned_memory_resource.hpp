@@ -152,6 +152,12 @@ class pinned_memory_resource final : public host_memory_resource {
 #if CCCL_MAJOR_VERSION > 3 || (CCCL_MAJOR_VERSION == 3 && CCCL_MINOR_VERSION >= 1)
 
  public:
+  // Explicitly inherit the allocate and deallocate functions from the host_memory_resource class.
+  // Due to inheritance and name hiding rules, we need to declare these with "using" when we
+  // override allocate and deallocate for CCCL 3.1.0+ compatibility.
+  using host_memory_resource::allocate;
+  using host_memory_resource::deallocate;
+
   /**
    * @brief Pretend to support the allocate_async interface, falling back to stream 0
    *
