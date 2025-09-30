@@ -923,7 +923,6 @@ class arena {
    * @brief Deallocate a block from the superblock it belongs to.
    *
    * @param blk The block to deallocate.
-   * @param stream The stream to use for deallocation.
    * @return true if the block is found.
    */
   bool deallocate_from_superblock(block const& blk)
