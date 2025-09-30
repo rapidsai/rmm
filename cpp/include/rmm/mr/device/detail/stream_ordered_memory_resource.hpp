@@ -230,9 +230,9 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
   }
 
   /**
-   * @brief Deallocate memory pointed to by `p`.
+   * @brief Deallocate memory pointed to by `ptr`.
    *
-   * @param p Pointer to be deallocated
+   * @param ptr Pointer to be deallocated
    * @param size The size in bytes of the allocation to deallocate
    * @param stream The stream in which to order this deallocation
    */
