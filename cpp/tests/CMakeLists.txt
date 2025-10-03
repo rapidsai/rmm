@@ -189,6 +189,9 @@ ConfigureTest(PINNED_MR_TEST mr/host/pinned_mr_tests.cpp)
 # pinned pool mr tests
 ConfigureTest(PINNED_POOL_MR_TEST mr/host/pinned_pool_mr_tests.cpp)
 
+# throw during allocate tests
+ConfigureTest(THROW_DURING_ALLOCATE_TEST mr/host/throw_during_allocate_tests.cpp)
+
 # cuda stream tests
 ConfigureTest(CUDA_STREAM_TEST cuda_stream_tests.cpp cuda_stream_pool_tests.cpp)
 
