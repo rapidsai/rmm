@@ -426,7 +426,7 @@ class device_memory_resource {
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param stream Stream on which to perform deallocation
    */
-  virtual void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) = 0;
+  virtual void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept = 0;
 
   /**
    * @brief Compare this resource to another.

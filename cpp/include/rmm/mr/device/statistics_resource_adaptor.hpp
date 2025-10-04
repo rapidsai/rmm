@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2020-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -251,7 +251,7 @@ class statistics_resource_adaptor final : public device_memory_resource {
    * @param bytes Size of the allocation
    * @param stream Stream on which to perform the deallocation
    */
-  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
+  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override
   {
     get_upstream_resource().deallocate_async(ptr, bytes, stream);
 

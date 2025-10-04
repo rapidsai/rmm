@@ -207,7 +207,7 @@ class binning_memory_resource final : public device_memory_resource {
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param stream Stream on which to perform deallocation
    */
-  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
+  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override
   {
     get_resource_ref(bytes).deallocate_async(ptr, bytes, stream);
   }

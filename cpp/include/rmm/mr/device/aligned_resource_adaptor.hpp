@@ -166,7 +166,7 @@ class aligned_resource_adaptor final : public device_memory_resource {
    * @param bytes Size of the allocation
    * @param stream Stream on which to perform the deallocation
    */
-  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
+  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override
   {
     if (alignment_ == rmm::CUDA_ALLOCATION_ALIGNMENT || bytes < alignment_threshold_) {
       get_upstream_resource().deallocate_async(ptr, bytes, 1, stream);

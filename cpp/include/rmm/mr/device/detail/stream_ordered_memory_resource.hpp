@@ -236,7 +236,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    * @param size The size in bytes of the allocation to deallocate
    * @param stream The stream in which to order this deallocation
    */
-  void do_deallocate(void* ptr, std::size_t size, cuda_stream_view stream) override
+  void do_deallocate(void* ptr, std::size_t size, cuda_stream_view stream) noexcept override
   {
     RMM_LOG_TRACE("[D][stream %s][%zuB][%p]", rmm::detail::format_stream(stream), size, ptr);
 

@@ -142,7 +142,7 @@ class pinned_memory_resource final : public host_memory_resource {
    */
   void do_deallocate(void* ptr,
                      std::size_t bytes,
-                     std::size_t alignment = alignof(std::max_align_t)) override
+                     std::size_t alignment = alignof(std::max_align_t)) noexcept override
   {
     if (nullptr == ptr) { return; }
     rmm::detail::aligned_host_deallocate(

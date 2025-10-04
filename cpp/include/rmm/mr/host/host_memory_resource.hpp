@@ -181,7 +181,7 @@ class host_memory_resource {
    */
   virtual void do_deallocate(void* ptr,
                              std::size_t bytes,
-                             std::size_t alignment = alignof(std::max_align_t)) = 0;
+                             std::size_t alignment = alignof(std::max_align_t)) noexcept = 0;
 
   /**
    * @brief Compare this resource to another.

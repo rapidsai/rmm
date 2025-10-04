@@ -182,7 +182,7 @@ class owning_wrapper : public device_memory_resource {
    * @param bytes Size of the allocation
    * @param stream Stream on which to deallocate the memory
    */
-  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
+  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override
   {
     wrapped().deallocate(ptr, bytes, stream);
   }

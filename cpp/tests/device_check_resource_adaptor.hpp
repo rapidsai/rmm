@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ class device_check_resource_adaptor final : public rmm::mr::device_memory_resour
     return nullptr;
   }
 
-  void do_deallocate(void* ptr, std::size_t bytes, rmm::cuda_stream_view stream) override
+  void do_deallocate(void* ptr, std::size_t bytes, rmm::cuda_stream_view stream) noexcept override
   {
     bool const is_correct_device = check_device_id();
     EXPECT_TRUE(is_correct_device);

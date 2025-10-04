@@ -84,7 +84,7 @@ class new_delete_resource final : public host_memory_resource {
    */
   void do_deallocate(void* ptr,
                      std::size_t bytes,
-                     std::size_t alignment = rmm::RMM_DEFAULT_HOST_ALIGNMENT) override
+                     std::size_t alignment = rmm::RMM_DEFAULT_HOST_ALIGNMENT) noexcept override
   {
     rmm::detail::aligned_host_deallocate(
       ptr, bytes, alignment, [](void* ptr) { ::operator delete(ptr); });
