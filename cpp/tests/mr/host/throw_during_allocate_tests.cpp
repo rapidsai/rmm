@@ -69,7 +69,7 @@ class mr_adapter : public rmm::mr::device_memory_resource {
     return result;
   }
 
-  void do_deallocate(void* p, std::size_t size, rmm::cuda_stream_view stream) override
+  void do_deallocate(void* p, std::size_t size, rmm::cuda_stream_view stream) noexcept override
   {
     resource->deallocate(p, size, stream);
 
