@@ -34,12 +34,12 @@ cdef extern from "rmm/mr/device/device_memory_resource.hpp" \
     cdef cppclass device_memory_resource:
         void* allocate(size_t bytes) except +
         void* allocate(size_t bytes, cuda_stream_view stream) except +
-        void deallocate(void* ptr, size_t bytes) except +
+        void deallocate(void* ptr, size_t bytes) noexcept
         void deallocate(
             void* ptr,
             size_t bytes,
             cuda_stream_view stream
-        ) except +
+        ) noexcept
 
 cdef extern from "rmm/cuda_device.hpp" namespace "rmm" nogil:
     size_t percent_of_free_device_memory(int percent) except +

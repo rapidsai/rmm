@@ -52,7 +52,7 @@ class mock_memory_resource {
     return allocate(bytes, alignment);
   }
 
-  void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment)
+  void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment) noexcept
   {
     deallocate(ptr, bytes, alignment);
   }
@@ -62,7 +62,10 @@ class mock_memory_resource {
     return allocate_async(bytes, alignment, stream);
   }
 
-  void deallocate(cuda_stream_view stream, void* ptr, std::size_t bytes, std::size_t alignment)
+  void deallocate(cuda_stream_view stream,
+                  void* ptr,
+                  std::size_t bytes,
+                  std::size_t alignment) noexcept
   {
     return deallocate_async(ptr, bytes, alignment, stream);
   }

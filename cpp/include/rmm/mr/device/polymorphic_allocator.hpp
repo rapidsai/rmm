@@ -100,7 +100,7 @@ class polymorphic_allocator {
    * @param num Number of objects originally allocated
    * @param stream Stream on which to perform the deallocation
    */
-  void deallocate(value_type* ptr, std::size_t num, cuda_stream_view stream)
+  void deallocate(value_type* ptr, std::size_t num, cuda_stream_view stream) noexcept
   {
     get_upstream_resource().deallocate_async(ptr, num * sizeof(T), stream);
   }
@@ -241,7 +241,10 @@ class stream_allocator_adaptor {
    * @param ptr Pointer to memory to deallocate
    * @param num Number of objects originally allocated
    */
-  void deallocate(value_type* ptr, std::size_t num) { alloc_.deallocate(ptr, num, stream()); }
+  void deallocate(value_type* ptr, std::size_t num) noexcept
+  {
+    alloc_.deallocate(ptr, num, stream());
+  }
 
   /**
    * @briefreturn{The stream on which calls to the underlying allocator are made}

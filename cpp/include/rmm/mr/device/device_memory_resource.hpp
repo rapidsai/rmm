@@ -143,7 +143,9 @@ class device_memory_resource {
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param stream Stream on which to perform deallocation
    */
-  void deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream = cuda_stream_view{})
+  void deallocate(void* ptr,
+                  std::size_t bytes,
+                  cuda_stream_view stream = cuda_stream_view{}) noexcept
   {
     RMM_FUNC_RANGE();
     do_deallocate(ptr, bytes, stream);
@@ -201,7 +203,7 @@ class device_memory_resource {
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param alignment The alignment that was passed to the `allocate` call that returned `p`
    */
-  void deallocate(void* ptr, std::size_t bytes, std::size_t alignment)
+  void deallocate(void* ptr, std::size_t bytes, std::size_t alignment) noexcept
   {
     RMM_FUNC_RANGE();
     do_deallocate(ptr, rmm::align_up(bytes, alignment), cuda_stream_view{});
@@ -267,7 +269,7 @@ class device_memory_resource {
   void deallocate_async(void* ptr,
                         std::size_t bytes,
                         std::size_t alignment,
-                        cuda_stream_view stream)
+                        cuda_stream_view stream) noexcept
   {
     RMM_FUNC_RANGE();
     do_deallocate(ptr, rmm::align_up(bytes, alignment), stream);
@@ -286,7 +288,7 @@ class device_memory_resource {
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param stream Stream on which to perform allocation
    */
-  void deallocate_async(void* ptr, std::size_t bytes, cuda_stream_view stream)
+  void deallocate_async(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept
   {
     RMM_FUNC_RANGE();
     do_deallocate(ptr, bytes, stream);

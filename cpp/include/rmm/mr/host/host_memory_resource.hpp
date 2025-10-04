@@ -96,7 +96,9 @@ class host_memory_resource {
    * @param alignment Alignment of the allocation. This must be equal to the value of `alignment`
    *                  that was passed to the `allocate` call that returned `ptr`.
    */
-  void deallocate(void* ptr, std::size_t bytes, std::size_t alignment = alignof(std::max_align_t))
+  void deallocate(void* ptr,
+                  std::size_t bytes,
+                  std::size_t alignment = alignof(std::max_align_t)) noexcept
   {
     RMM_FUNC_RANGE();
     do_deallocate(ptr, bytes, alignment);

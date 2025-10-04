@@ -219,7 +219,7 @@ It has two key functions:
 1. `void* device_memory_resource::allocate(std::size_t bytes, cuda_stream_view s)`
    - Returns a pointer to an allocation of at least `bytes` bytes.
 
-2. `void device_memory_resource::deallocate(void* p, std::size_t bytes, cuda_stream_view s)`
+2. `void device_memory_resource::deallocate(void* p, std::size_t bytes, cuda_stream_view s) noexcept`
    - Reclaims a previous allocation of size `bytes` pointed to by `p`.
    - `p` *must* have been returned by a previous call to `allocate(bytes)`, otherwise behavior is
      undefined

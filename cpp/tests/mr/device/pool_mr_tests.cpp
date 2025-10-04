@@ -207,7 +207,7 @@ class fake_async_resource {
 
  private:
   static void* do_allocate(std::size_t bytes, cuda_stream_view) { return nullptr; }
-  static void do_deallocate(void* ptr, std::size_t, cuda_stream_view) {}
+  static void do_deallocate(void* ptr, std::size_t, cuda_stream_view) noexcept {}
   [[nodiscard]] static bool do_is_equal(fake_async_resource const& other) noexcept { return true; }
 };
 

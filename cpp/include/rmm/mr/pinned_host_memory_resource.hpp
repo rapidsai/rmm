@@ -276,7 +276,7 @@ class pinned_host_memory_resource {
   static void deallocate(cuda_stream_view stream,
                          void* ptr,
                          std::size_t bytes,
-                         std::size_t alignment)
+                         std::size_t alignment) noexcept
   {
     return deallocate_async(ptr, bytes, alignment, stream);
   }

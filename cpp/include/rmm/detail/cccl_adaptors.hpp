@@ -41,9 +41,12 @@ class cccl_resource_ref : public ResourceType {
     return this->allocate_sync(bytes, alignment);
   }
 
-  void deallocate(void* ptr, std::size_t bytes) { return this->deallocate_sync(ptr, bytes); }
+  void deallocate(void* ptr, std::size_t bytes) noexcept
+  {
+    return this->deallocate_sync(ptr, bytes);
+  }
 
-  void deallocate(void* ptr, std::size_t bytes, std::size_t alignment)
+  void deallocate(void* ptr, std::size_t bytes, std::size_t alignment) noexcept
   {
     return this->deallocate_sync(ptr, bytes, alignment);
   }
@@ -56,9 +59,12 @@ class cccl_resource_ref : public ResourceType {
     return base::allocate_sync(bytes, alignment);
   }
 
-  void deallocate_sync(void* ptr, std::size_t bytes) { return base::deallocate_sync(ptr, bytes); }
+  void deallocate_sync(void* ptr, std::size_t bytes) noexcept
+  {
+    return base::deallocate_sync(ptr, bytes);
+  }
 
-  void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment)
+  void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment) noexcept
   {
     return base::deallocate_sync(ptr, bytes, alignment);
   }
@@ -70,9 +76,12 @@ class cccl_resource_ref : public ResourceType {
     return base::allocate(bytes, alignment);
   }
 
-  void deallocate_sync(void* ptr, std::size_t bytes) { return base::deallocate(ptr, bytes); }
+  void deallocate_sync(void* ptr, std::size_t bytes) noexcept
+  {
+    return base::deallocate(ptr, bytes);
+  }
 
-  void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment)
+  void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment) noexcept
   {
     return base::deallocate(ptr, bytes, alignment);
   }
@@ -98,9 +107,12 @@ class cccl_async_resource_ref : public ResourceType {
     return this->allocate_sync(bytes, alignment);
   }
 
-  void deallocate(void* ptr, std::size_t bytes) { return this->deallocate_sync(ptr, bytes); }
+  void deallocate(void* ptr, std::size_t bytes) noexcept
+  {
+    return this->deallocate_sync(ptr, bytes);
+  }
 
-  void deallocate(void* ptr, std::size_t bytes, std::size_t alignment)
+  void deallocate(void* ptr, std::size_t bytes, std::size_t alignment) noexcept
   {
     return this->deallocate_sync(ptr, bytes, alignment);
   }
@@ -115,7 +127,7 @@ class cccl_async_resource_ref : public ResourceType {
     return this->allocate(stream, bytes, alignment);
   }
 
-  void deallocate_async(void* ptr, std::size_t bytes, cuda_stream_view stream)
+  void deallocate_async(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept
   {
     return this->deallocate(stream, ptr, bytes);
   }
@@ -123,7 +135,7 @@ class cccl_async_resource_ref : public ResourceType {
   void deallocate_async(void* ptr,
                         std::size_t bytes,
                         std::size_t alignment,
-                        cuda_stream_view stream)
+                        cuda_stream_view stream) noexcept
   {
     return this->deallocate(stream, ptr, bytes, alignment);
   }
@@ -138,9 +150,12 @@ class cccl_async_resource_ref : public ResourceType {
     return base::allocate_sync(bytes, alignment);
   }
 
-  void deallocate_sync(void* ptr, std::size_t bytes) { return base::deallocate_sync(ptr, bytes); }
+  void deallocate_sync(void* ptr, std::size_t bytes) noexcept
+  {
+    return base::deallocate_sync(ptr, bytes);
+  }
 
-  void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment)
+  void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment) noexcept
   {
     return base::deallocate_sync(ptr, bytes, alignment);
   }
@@ -155,12 +170,15 @@ class cccl_async_resource_ref : public ResourceType {
     return base::allocate(stream, bytes, alignment);
   }
 
-  void deallocate(cuda_stream_view stream, void* ptr, std::size_t bytes)
+  void deallocate(cuda_stream_view stream, void* ptr, std::size_t bytes) noexcept
   {
     return base::deallocate(stream, ptr, bytes);
   }
 
-  void deallocate(cuda_stream_view stream, void* ptr, std::size_t bytes, std::size_t alignment)
+  void deallocate(cuda_stream_view stream,
+                  void* ptr,
+                  std::size_t bytes,
+                  std::size_t alignment) noexcept
   {
     return base::deallocate(stream, ptr, bytes, alignment);
   }
@@ -172,9 +190,12 @@ class cccl_async_resource_ref : public ResourceType {
     return base::allocate(bytes, alignment);
   }
 
-  void deallocate_sync(void* ptr, std::size_t bytes) { return base::deallocate(ptr, bytes); }
+  void deallocate_sync(void* ptr, std::size_t bytes) noexcept
+  {
+    return base::deallocate(ptr, bytes);
+  }
 
-  void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment)
+  void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment) noexcept
   {
     return base::deallocate(ptr, bytes, alignment);
   }
@@ -189,12 +210,15 @@ class cccl_async_resource_ref : public ResourceType {
     return base::allocate_async(bytes, alignment, stream);
   }
 
-  void deallocate(cuda_stream_view stream, void* ptr, std::size_t bytes)
+  void deallocate(cuda_stream_view stream, void* ptr, std::size_t bytes) noexcept
   {
     return base::deallocate_async(ptr, bytes, stream);
   }
 
-  void deallocate(cuda_stream_view stream, void* ptr, std::size_t bytes, std::size_t alignment)
+  void deallocate(cuda_stream_view stream,
+                  void* ptr,
+                  std::size_t bytes,
+                  std::size_t alignment) noexcept
   {
     return base::deallocate_async(ptr, bytes, alignment, stream);
   }
