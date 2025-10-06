@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2024, NVIDIA CORPORATION.
+# Copyright (c) 2023-2025, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -94,7 +94,7 @@ class RMMNumbaManager(HostOnlyCUDAMemoryManager):
         Get an IPC handle for the MemoryPointer memory with offset modified by
         the RMM memory pool.
         """
-        start, end = cuda.cudadrv.driver.device_extents(memory)
+        start, _ = cuda.cudadrv.driver.device_extents(memory)
 
         if config.CUDA_USE_NVIDIA_BINDING:
             _, ipc_handle = cuIpcGetMemHandle(start)
