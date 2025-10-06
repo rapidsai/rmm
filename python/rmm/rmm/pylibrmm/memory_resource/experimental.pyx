@@ -36,13 +36,6 @@ cdef class CudaAsyncManagedMemoryResource(DeviceMemoryResource):
             new cuda_async_managed_memory_resource()
         )
 
-    def __init__(self):
-        """
-        Memory resource that uses ``cudaMallocFromPoolAsync``/``cudaFreeAsync``
-        with a managed memory pool for allocation/deallocation.
-        """
-        pass
-
     def pool_handle(self):
         """
         Returns the underlying CUDA memory pool handle.
