@@ -740,7 +740,7 @@ def test_cuda_async_memory_resource_threshold(nelem, alloc):
 @pytest.mark.parametrize("nelem", _nelems)
 @pytest.mark.parametrize("alloc", _allocs)
 def test_cuda_async_managed_memory_resource(dtype, nelem, alloc):
-    mr = rmm.mr.CudaAsyncManagedMemoryResource()
+    mr = rmm.mr.experimental.CudaAsyncManagedMemoryResource()
     rmm.mr.set_current_device_resource(mr)
     assert rmm.mr.get_current_device_resource_type() is type(mr)
     array_tester(dtype, nelem, alloc)
@@ -748,7 +748,7 @@ def test_cuda_async_managed_memory_resource(dtype, nelem, alloc):
 
 @pytest.mark.parametrize("nelems", _nelems)
 def test_cuda_async_managed_memory_resource_stream(nelems):
-    mr = rmm.mr.CudaAsyncManagedMemoryResource()
+    mr = rmm.mr.experimental.CudaAsyncManagedMemoryResource()
     rmm.mr.set_current_device_resource(mr)
     stream = Stream()
     expected = np.full(nelems, 5, dtype="u1")
@@ -758,7 +758,7 @@ def test_cuda_async_managed_memory_resource_stream(nelems):
 
 
 def test_cuda_async_managed_memory_resource_pool_handle():
-    mr = rmm.mr.CudaAsyncManagedMemoryResource()
+    mr = rmm.mr.experimental.CudaAsyncManagedMemoryResource()
     pool_handle = mr.pool_handle()
     assert isinstance(pool_handle, int)
     assert pool_handle != 0
