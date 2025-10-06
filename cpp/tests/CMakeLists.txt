@@ -187,6 +187,9 @@ ConfigureTest(LIMITING_TEST mr/device/limiting_mr_tests.cpp)
 # host mr_ref tests
 ConfigureTest(HOST_MR_REF_TEST mr/host/mr_ref_tests.cpp)
 
+# pinned mr tests
+ConfigureTest(PINNED_MR_TEST mr/host/pinned_mr_tests.cpp)
+
 # pinned pool mr tests
 ConfigureTest(PINNED_POOL_MR_TEST mr/host/pinned_pool_mr_tests.cpp)
 

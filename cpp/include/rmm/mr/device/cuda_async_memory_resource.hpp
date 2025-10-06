@@ -94,8 +94,9 @@ class cuda_async_memory_resource final : public device_memory_resource {
    *
    * @throws rmm::logic_error if the CUDA version does not support `cudaMallocAsync`
    *
-   * @param initial_pool_size Optional initial size in bytes of the pool. If no value is provided,
-   * initial pool size is half of the available GPU memory.
+   * @param initial_pool_size Optional initial size in bytes of the pool. If provided, the pool
+   * will be primed by allocating and immediately deallocating this amount of memory on the
+   * default CUDA stream.
    * @param release_threshold Optional release threshold size in bytes of the pool. If no value is
    * provided, the release threshold is set to the total amount of memory on the current device.
    * @param export_handle_type Optional `cudaMemAllocationHandleType` that allocations from this
@@ -140,10 +141,12 @@ class cuda_async_memory_resource final : public device_memory_resource {
       cudaMemPoolSetAttribute(pool_handle(), cudaMemPoolAttrReleaseThreshold, &threshold));
 
     // Allocate and immediately deallocate the initial_pool_size to prime the pool with the
-    // specified size
-    auto const pool_size = initial_pool_size.value_or(free / 2);
-    auto* ptr            = do_allocate(pool_size, cuda_stream_default);
-    do_deallocate(ptr, pool_size, cuda_stream_default);
+    // specified size (only if initial_pool_size is provided)
+    if (initial_pool_size.has_value()) {
+      auto const pool_size = initial_pool_size.value();
+      auto* ptr            = do_allocate(pool_size, cuda_stream_default);
+      do_deallocate(ptr, pool_size, cuda_stream_default);
+    }
   }
 
   /**
