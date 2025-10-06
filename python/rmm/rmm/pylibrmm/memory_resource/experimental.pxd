@@ -12,12 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Experimental memory resource features that may change or be removed in future releases."""
+from rmm.pylibrmm.memory_resource cimport DeviceMemoryResource
 
-from rmm.pylibrmm.memory_resource.experimental import (
-    CudaAsyncManagedMemoryResource,
-)
 
-__all__ = [
-    "CudaAsyncManagedMemoryResource",
-]
+cdef class CudaAsyncManagedMemoryResource(DeviceMemoryResource):
+    pass

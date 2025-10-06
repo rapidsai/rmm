@@ -54,7 +54,6 @@ from rmm.librmm.memory_resource cimport (
     available_device_memory as c_available_device_memory,
     binning_memory_resource,
     callback_memory_resource,
-    cuda_async_managed_memory_resource,
     cuda_async_memory_resource,
     cuda_async_view_memory_resource,
     cuda_memory_resource,
@@ -281,42 +280,6 @@ cdef class CudaAsyncViewMemoryResource(DeviceMemoryResource):
     def pool_handle(self):
         cdef cuda_async_view_memory_resource* c_mr = \
             <cuda_async_view_memory_resource*>self.c_obj.get()
-        return <uintptr_t>c_mr.pool_handle()
-
-
-cdef class CudaAsyncManagedMemoryResource(DeviceMemoryResource):
-    """
-    Memory resource that uses ``cudaMallocFromPoolAsync``/``cudaFreeAsync`` for
-    allocation/deallocation with a managed memory pool.
-
-    This resource uses the default managed memory pool for the current device.
-    Managed memory can be accessed from both the host and device.
-
-    Requires CUDA 13.0 or higher.
-    """
-    def __cinit__(self):
-        self.c_obj.reset(
-            new cuda_async_managed_memory_resource()
-        )
-
-    def __init__(self):
-        """
-        Memory resource that uses ``cudaMallocFromPoolAsync``/``cudaFreeAsync``
-        with a managed memory pool for allocation/deallocation.
-        """
-        pass
-
-    def pool_handle(self):
-        """
-        Returns the underlying CUDA memory pool handle.
-
-        Returns
-        -------
-        int
-            Handle to the underlying CUDA memory pool
-        """
-        cdef cuda_async_managed_memory_resource* c_mr = \
-            <cuda_async_managed_memory_resource*>self.c_obj.get()
         return <uintptr_t>c_mr.pool_handle()
 
 
