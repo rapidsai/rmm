@@ -736,6 +736,34 @@ def test_cuda_async_memory_resource_threshold(nelem, alloc):
     array_tester("u1", 2 * nelem, alloc)  # should trigger release
 
 
+@pytest.mark.parametrize("dtype", _dtypes)
+@pytest.mark.parametrize("nelem", _nelems)
+@pytest.mark.parametrize("alloc", _allocs)
+def test_cuda_async_managed_memory_resource(dtype, nelem, alloc):
+    mr = rmm.mr.CudaAsyncManagedMemoryResource()
+    rmm.mr.set_current_device_resource(mr)
+    assert rmm.mr.get_current_device_resource_type() is type(mr)
+    array_tester(dtype, nelem, alloc)
+
+
+@pytest.mark.parametrize("nelems", _nelems)
+def test_cuda_async_managed_memory_resource_stream(nelems):
+    mr = rmm.mr.CudaAsyncManagedMemoryResource()
+    rmm.mr.set_current_device_resource(mr)
+    stream = Stream()
+    expected = np.full(nelems, 5, dtype="u1")
+    dbuf = rmm.DeviceBuffer.to_device(expected, stream=stream)
+    result = np.asarray(dbuf.copy_to_host())
+    np.testing.assert_equal(expected, result)
+
+
+def test_cuda_async_managed_memory_resource_pool_handle():
+    mr = rmm.mr.CudaAsyncManagedMemoryResource()
+    pool_handle = mr.pool_handle()
+    assert isinstance(pool_handle, int)
+    assert pool_handle != 0
+
+
 @pytest.mark.parametrize(
     "mr",
     [
