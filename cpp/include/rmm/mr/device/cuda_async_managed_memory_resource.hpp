@@ -62,7 +62,7 @@ class cuda_async_managed_memory_resource final : public device_memory_resource {
     RMM_EXPECTS(rmm::detail::runtime_async_managed_alloc::is_supported(),
                 "cudaMallocFromPoolAsync with managed memory pool requires CUDA 13.0 or higher");
 
-#if defined(CUDA_VERSION) && CUDA_VERSION >= RMM_MIN_ASYNC_MANAGED_ALLOC_CUDA_DRIVER_VERSION
+#if defined(CUDA_VERSION) && CUDA_VERSION >= RMM_MIN_ASYNC_MANAGED_ALLOC_CUDA_VERSION
     cudaMemPool_t managed_pool_handle{};
     cudaMemLocation location{};
     location.type              = cudaMemLocationTypeDevice;
@@ -70,9 +70,6 @@ class cuda_async_managed_memory_resource final : public device_memory_resource {
     cudaMemAllocationType type = cudaMemAllocationTypeManaged;
     RMM_CUDA_TRY(cudaMemGetDefaultMemPool(&managed_pool_handle, &location, type));
     pool_ = cuda_async_view_memory_resource{managed_pool_handle};
-#else
-    RMM_EXPECTS(false,
-                "cudaMallocFromPoolAsync with managed memory pool requires CUDA 13.0 or higher");
 #endif
   }
 

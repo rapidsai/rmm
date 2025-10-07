@@ -34,7 +34,7 @@ namespace detail {
 /**
  * @brief Minimum CUDA driver version for stream-ordered managed memory allocator support
  */
-#define RMM_MIN_ASYNC_MANAGED_ALLOC_CUDA_DRIVER_VERSION 13000
+#define RMM_MIN_ASYNC_MANAGED_ALLOC_CUDA_VERSION 13000
 
 /**
  * @brief Determine at runtime if the CUDA driver supports the stream-ordered
@@ -71,7 +71,7 @@ struct runtime_async_managed_alloc {
       int cuda_runtime_version{};
       auto result = cudaRuntimeGetVersion(&cuda_runtime_version);
       return result == cudaSuccess and
-             cuda_runtime_version >= RMM_MIN_ASYNC_MANAGED_ALLOC_CUDA_DRIVER_VERSION;
+             cuda_runtime_version >= RMM_MIN_ASYNC_MANAGED_ALLOC_CUDA_VERSION;
     }()};
     return runtime_supports_async_managed_pool;
   }
