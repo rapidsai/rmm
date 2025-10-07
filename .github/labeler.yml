@@ -3,19 +3,25 @@
 # Labels culled from https://github.com/rapidsai/rmm/labels
 
 Python:
-  - 'python/**'
-
+  - changed-files:
+      any-glob-to-any-file:
+        - 'python/**'
 CMake:
-  - '**/CMakeLists.txt'
-  - '**/cmake/**'
-
+  - changed-files:
+      any-glob-to-any-file:
+        - '**/CMakeLists.txt'
+        - '**/cmake/**'
 conda:
-  - 'conda/**'
-
+  - changed-files:
+      any-glob-to-any-file:
+        - 'conda/**'
 cpp:
-  - 'include/**'
-  - 'tests/**'
-  - 'doxygen/**'
-
+  - changed-files:
+      any-glob-to-any-file:
+        - 'include/**'
+        - 'tests/**'
+        - 'doxygen/**'
 ci:
-  - 'ci/**'
+  - changed-files:
+      any-glob-to-any-file:
+        - 'ci/**'

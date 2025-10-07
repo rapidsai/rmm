@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2024, NVIDIA CORPORATION.
+# Copyright (c) 2020-2025, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,7 +27,12 @@ cdef class CudaStream:
     CUDA stream is destroyed.
     """
     def __cinit__(self):
-        self.c_obj.reset(new cuda_stream())
+        with nogil:
+            self.c_obj.reset(new cuda_stream())
+
+    def __dealloc__(self):
+        with nogil:
+            self.c_obj.reset()
 
     cdef cudaStream_t value(self) except * nogil:
         return self.c_obj.get()[0].value()

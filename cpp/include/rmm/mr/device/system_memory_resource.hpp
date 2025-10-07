@@ -37,6 +37,7 @@ namespace detail {
  */
 static bool is_system_memory_supported(cuda_device_id device_id)
 {
+  // Check if pageable memory access is supported
   int pageableMemoryAccess;
   RMM_CUDA_TRY(cudaDeviceGetAttribute(
     &pageableMemoryAccess, cudaDevAttrPageableMemoryAccess, device_id.value()));
@@ -164,8 +165,10 @@ class system_memory_resource final : public device_memory_resource {
 };
 
 // static property checks
-static_assert(cuda::mr::async_resource_with<system_memory_resource, cuda::mr::device_accessible>);
-static_assert(cuda::mr::async_resource_with<system_memory_resource, cuda::mr::host_accessible>);
+static_assert(
+  rmm::detail::polyfill::async_resource_with<system_memory_resource, cuda::mr::device_accessible>);
+static_assert(
+  rmm::detail::polyfill::async_resource_with<system_memory_resource, cuda::mr::host_accessible>);
 /** @} */  // end of group
 }  // namespace mr
 }  // namespace RMM_NAMESPACE

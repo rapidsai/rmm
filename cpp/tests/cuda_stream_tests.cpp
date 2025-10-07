@@ -87,6 +87,22 @@ TEST_F(CudaStreamTest, TestSyncNoThrow)
   EXPECT_NO_THROW(stream_a.synchronize_no_throw());
 }
 
+TEST_F(CudaStreamTest, TestCreateDefault)
+{
+  rmm::cuda_stream stream(rmm::cuda_stream::flags::sync_default);
+  unsigned int flags;
+  RMM_CUDA_TRY(cudaStreamGetFlags(stream.value(), &flags));
+  EXPECT_EQ(flags, cudaStreamDefault);
+}
+
+TEST_F(CudaStreamTest, TestCreateNonBlocking)
+{
+  rmm::cuda_stream stream(rmm::cuda_stream::flags::non_blocking);
+  unsigned int flags;
+  RMM_CUDA_TRY(cudaStreamGetFlags(stream.value(), &flags));
+  EXPECT_EQ(flags, cudaStreamNonBlocking);
+}
+
 #ifndef NDEBUG
 using CudaStreamDeathTest = CudaStreamTest;
 

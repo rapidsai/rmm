@@ -39,6 +39,14 @@ namespace RMM_EXPORT rmm {
 class cuda_stream {
  public:
   /**
+   * @brief stream creation flags.
+   */
+  enum class flags : unsigned int {
+    sync_default = cudaStreamDefault,  ///< Created stream synchronizes with the default stream.
+    non_blocking =
+      cudaStreamNonBlocking,  ///< Created stream does not synchronize with the default stream.
+  };
+  /**
    * @brief Move constructor (default)
    *
    * A moved-from cuda_stream is invalid and it is Undefined Behavior to call methods that access
@@ -61,9 +69,11 @@ class cuda_stream {
   /**
    * @brief Construct a new cuda stream object
    *
+   * @param flags Stream creation flags.
+   *
    * @throw rmm::cuda_error if stream creation fails
    */
-  cuda_stream();
+  cuda_stream(cuda_stream::flags flags = cuda_stream::flags::sync_default);
 
   /**
    * @brief Returns true if the owned stream is non-null

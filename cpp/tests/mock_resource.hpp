@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2022-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,8 @@ class mock_resource : public rmm::mr::device_memory_resource {
   using size_pair = std::pair<std::size_t, std::size_t>;
 };
 
-static_assert(cuda::mr::async_resource_with<mock_resource, cuda::mr::device_accessible>);
+// static property checks
+static_assert(
+  rmm::detail::polyfill::async_resource_with<mock_resource, cuda::mr::device_accessible>);
 
 }  // namespace rmm::test

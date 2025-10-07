@@ -67,22 +67,24 @@ using adaptors = ::testing::Types<aligned_resource_adaptor<cuda_mr>,
                                   thread_safe_resource_adaptor<cuda_mr>,
                                   tracking_resource_adaptor<cuda_mr>>;
 
+// static property checks
+static_assert(rmm::detail::polyfill::resource_with<rmm::mr::aligned_resource_adaptor<cuda_mr>,
+                                                   cuda::mr::device_accessible>);
 static_assert(
-  cuda::mr::resource_with<rmm::mr::aligned_resource_adaptor<cuda_mr>, cuda::mr::device_accessible>);
-static_assert(cuda::mr::resource_with<rmm::mr::failure_callback_resource_adaptor<cuda_mr>,
-                                      cuda::mr::device_accessible>);
-static_assert(cuda::mr::resource_with<rmm::mr::limiting_resource_adaptor<cuda_mr>,
-                                      cuda::mr::device_accessible>);
-static_assert(
-  cuda::mr::resource_with<rmm::mr::logging_resource_adaptor<cuda_mr>, cuda::mr::device_accessible>);
-static_assert(
-  cuda::mr::resource_with<rmm::mr::owning_wrapper<cuda_mr>, cuda::mr::device_accessible>);
-static_assert(cuda::mr::resource_with<rmm::mr::statistics_resource_adaptor<cuda_mr>,
-                                      cuda::mr::device_accessible>);
-static_assert(cuda::mr::resource_with<rmm::mr::thread_safe_resource_adaptor<cuda_mr>,
-                                      cuda::mr::device_accessible>);
-static_assert(cuda::mr::resource_with<rmm::mr::tracking_resource_adaptor<cuda_mr>,
-                                      cuda::mr::device_accessible>);
+  rmm::detail::polyfill::resource_with<rmm::mr::failure_callback_resource_adaptor<cuda_mr>,
+                                       cuda::mr::device_accessible>);
+static_assert(rmm::detail::polyfill::resource_with<rmm::mr::limiting_resource_adaptor<cuda_mr>,
+                                                   cuda::mr::device_accessible>);
+static_assert(rmm::detail::polyfill::resource_with<rmm::mr::logging_resource_adaptor<cuda_mr>,
+                                                   cuda::mr::device_accessible>);
+static_assert(rmm::detail::polyfill::resource_with<rmm::mr::owning_wrapper<cuda_mr>,
+                                                   cuda::mr::device_accessible>);
+static_assert(rmm::detail::polyfill::resource_with<rmm::mr::statistics_resource_adaptor<cuda_mr>,
+                                                   cuda::mr::device_accessible>);
+static_assert(rmm::detail::polyfill::resource_with<rmm::mr::thread_safe_resource_adaptor<cuda_mr>,
+                                                   cuda::mr::device_accessible>);
+static_assert(rmm::detail::polyfill::resource_with<rmm::mr::tracking_resource_adaptor<cuda_mr>,
+                                                   cuda::mr::device_accessible>);
 
 template <typename MemoryResourceType>
 struct AdaptorTest : public ::testing::Test {

@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2024, NVIDIA CORPORATION.
+# Copyright (c) 2020-2025, NVIDIA CORPORATION.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ cdef class Stream:
         obj._owner = owner
         return obj
 
-    cdef cuda_stream_view view(self) except * nogil:
+    cdef cuda_stream_view view(self) noexcept nogil:
         """
         Generate a rmm::cuda_stream_view from this Stream instance
         """
@@ -68,7 +68,8 @@ cdef class Stream:
         Synchronize the CUDA stream.
         This function *must* be called in a `with nogil` block
         """
-        self.view().synchronize()
+        with nogil:
+            self.view().synchronize()
 
     def synchronize(self):
         """
@@ -77,7 +78,7 @@ cdef class Stream:
         with nogil:
             self.c_synchronize()
 
-    cdef bool c_is_default(self) except * nogil:
+    cdef bool c_is_default(self) noexcept nogil:
         """
         Check if we are the default CUDA stream
         """
