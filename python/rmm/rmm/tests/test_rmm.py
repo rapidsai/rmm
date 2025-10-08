@@ -29,6 +29,7 @@ import rmm
 from rmm.allocators.cupy import rmm_cupy_allocator
 from rmm.allocators.numba import RMMNumbaManager
 from rmm.pylibrmm.logger import level_enum
+from rmm.pylibrmm.memory_resource._memory_resource import _flush_logs
 from rmm.pylibrmm.stream import Stream
 
 cuda.set_memory_manager(RMMNumbaManager)
@@ -139,7 +140,7 @@ def test_rmm_csv_log(dtype, nelem, alloc, tmpdir):
     base_name = str(tmpdir.join("rmm_log.csv"))
     rmm.reinitialize(logging=True, log_file_name=base_name)
     array_tester(dtype, nelem, alloc)
-    rmm.mr._flush_logs()
+    _flush_logs()
 
     # Need to open separately because the device ID is appended to filename
     fname = base_name[: -len(suffix)] + ".dev0" + suffix
@@ -593,7 +594,7 @@ def test_rmm_enable_disable_logging(dtype, nelem, alloc, tmpdir):
     rmm.enable_logging(log_file_name=base_name)
     print(rmm.mr.get_per_device_resource(0))
     array_tester(dtype, nelem, alloc)
-    rmm.mr._flush_logs()
+    _flush_logs()
 
     # Need to open separately because the device ID is appended to filename
     fname = base_name[: -len(suffix)] + ".dev0" + suffix
