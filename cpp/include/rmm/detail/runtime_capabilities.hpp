@@ -67,13 +67,16 @@ struct runtime_async_alloc {
 struct runtime_async_managed_alloc {
   static bool is_supported()
   {
-    static auto runtime_supports_async_managed_pool{[] {
+    static auto supports_async_managed_pool{[] {
+      int cuda_driver_version{};
+      auto driver_result = cudaDriverGetVersion(&cuda_driver_version);
       int cuda_runtime_version{};
-      auto result = cudaRuntimeGetVersion(&cuda_runtime_version);
-      return result == cudaSuccess and
+      auto runtime_result = cudaRuntimeGetVersion(&cuda_runtime_version);
+      return driver_result == cudaSuccess and runtime_result == cudaSuccess and
+             cuda_driver_version >= RMM_MIN_ASYNC_MANAGED_ALLOC_CUDA_VERSION and
              cuda_runtime_version >= RMM_MIN_ASYNC_MANAGED_ALLOC_CUDA_VERSION;
     }()};
-    return runtime_supports_async_managed_pool;
+    return supports_async_managed_pool;
   }
 };
 
