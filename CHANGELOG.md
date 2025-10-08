@@ -1,3 +1,52 @@
+# rmm 25.10.00 (8 Oct 2025)
+
+## 🚨 Breaking Changes
+
+- Add option to create non-blocking streams ([#2036](https://github.com/rapidsai/rmm/pull/2036)) [@wence-](https://github.com/wence-)
+
+## 🐛 Bug Fixes
+
+- Fix bug in pinned_memory_resource with CCCL 3.1.x. ([#2058](https://github.com/rapidsai/rmm/pull/2058)) [@bdice](https://github.com/bdice)
+- Always release the GIL before any operation that could acquire locks from the CUDA runtime ([#2028](https://github.com/rapidsai/rmm/pull/2028)) [@vyasr](https://github.com/vyasr)
+- Skip callback memory tests on integrated memory systems, add docs ([#2025](https://github.com/rapidsai/rmm/pull/2025)) [@bdice](https://github.com/bdice)
+- Add numba-cuda to fix errors on driver 580+. ([#2013](https://github.com/rapidsai/rmm/pull/2013)) [@bdice](https://github.com/bdice)
+- Fix aligned resource adaptor bug when alignment is less than 256. ([#2003](https://github.com/rapidsai/rmm/pull/2003)) [@bdice](https://github.com/bdice)
+- Skip test on HMM systems with older CUDA drivers ([#1944](https://github.com/rapidsai/rmm/pull/1944)) [@bdice](https://github.com/bdice)
+
+## 📖 Documentation
+
+- Minor improvements to README ([#2018](https://github.com/rapidsai/rmm/pull/2018)) [@bdice](https://github.com/bdice)
+
+## 🚀 New Features
+
+- Support building with CCCL 3.1.0 ([#2017](https://github.com/rapidsai/rmm/pull/2017)) [@bdice](https://github.com/bdice)
+- Update to use CUDA runtime APIs that work in CUDA 12 and 13 ([#2004](https://github.com/rapidsai/rmm/pull/2004)) [@robertmaynard](https://github.com/robertmaynard)
+
+## 🛠️ Improvements
+
+- Configure repo for automatic release notes generation ([#2037](https://github.com/rapidsai/rmm/pull/2037)) [@AyodeAwe](https://github.com/AyodeAwe)
+- Add option to create non-blocking streams ([#2036](https://github.com/rapidsai/rmm/pull/2036)) [@wence-](https://github.com/wence-)
+- update dependencies: cuda-python (&gt;=12.9.2 / &gt;=13.0.1) ([#2031](https://github.com/rapidsai/rmm/pull/2031)) [@jameslamb](https://github.com/jameslamb)
+- Use branch-25.10 again ([#2030](https://github.com/rapidsai/rmm/pull/2030)) [@jameslamb](https://github.com/jameslamb)
+- Update rapids-dependency-file-generator ([#2027](https://github.com/rapidsai/rmm/pull/2027)) [@KyleFromNVIDIA](https://github.com/KyleFromNVIDIA)
+- Require numba-cuda&gt;=0.19.1 to get fixes for numba==0.60 support ([#2024](https://github.com/rapidsai/rmm/pull/2024)) [@bdice](https://github.com/bdice)
+- Update dependencies to align with other repos adopting CUDA 13 ([#2022](https://github.com/rapidsai/rmm/pull/2022)) [@bdice](https://github.com/bdice)
+- Build and test with CUDA 13.0.0 ([#2021](https://github.com/rapidsai/rmm/pull/2021)) [@jameslamb](https://github.com/jameslamb)
+- Change pylibrmm Stream.view() method to noexcept ([#2020](https://github.com/rapidsai/rmm/pull/2020)) [@davidwendt](https://github.com/davidwendt)
+- Update to numba-cuda &gt;=0.18.0,&lt;0.19.0a0 ([#2019](https://github.com/rapidsai/rmm/pull/2019)) [@bdice](https://github.com/bdice)
+- Use build cluster in devcontainers ([#2016](https://github.com/rapidsai/rmm/pull/2016)) [@trxcllnt](https://github.com/trxcllnt)
+- Refactor device capability checks, fix prefetching bug on WSL ([#2014](https://github.com/rapidsai/rmm/pull/2014)) [@bdice](https://github.com/bdice)
+- Add CUDA 13.0.0 devcontainers ([#2012](https://github.com/rapidsai/rmm/pull/2012)) [@bdice](https://github.com/bdice)
+- Update rapids_config to handle user defined branch name ([#2010](https://github.com/rapidsai/rmm/pull/2010)) [@robertmaynard](https://github.com/robertmaynard)
+- Update rapids-build-backend to 0.4.1 ([#2007](https://github.com/rapidsai/rmm/pull/2007)) [@KyleFromNVIDIA](https://github.com/KyleFromNVIDIA)
+- ci(labeler): update labeler action to [@v5 ([#2006](https://github.com/rapidsai/rmm/pull/2006)) @gforsyth](https://github.com/v5 ([#2006](https://github.com/rapidsai/rmm/pull/2006)) @gforsyth)
+- [StepSecurity] Apply security best practices ([#2000](https://github.com/rapidsai/rmm/pull/2000)) [@stepsecurity-app[bot]](https://github.com/stepsecurity-app[bot])
+- Use std::for_each instead of std::equal in test ([#1999](https://github.com/rapidsai/rmm/pull/1999)) [@vyasr](https://github.com/vyasr)
+- Allow latest OS in devcontainers ([#1997](https://github.com/rapidsai/rmm/pull/1997)) [@bdice](https://github.com/bdice)
+- Update build infra to support new branching strategy ([#1994](https://github.com/rapidsai/rmm/pull/1994)) [@robertmaynard](https://github.com/robertmaynard)
+- Move more implementations to precompiled shared library (part 2) ([#1983](https://github.com/rapidsai/rmm/pull/1983)) [@bdice](https://github.com/bdice)
+- Use GCC 14 in conda builds. ([#1963](https://github.com/rapidsai/rmm/pull/1963)) [@vyasr](https://github.com/vyasr)
+
 # rmm 25.08.00 (6 Aug 2025)
 
 ## 🚨 Breaking Changes
