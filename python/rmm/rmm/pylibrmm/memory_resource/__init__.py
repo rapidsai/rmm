@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Import all public classes and functions from _memory_resource
+from rmm.pylibrmm.memory_resource import experimental
 from rmm.pylibrmm.memory_resource._memory_resource import (
     ArenaMemoryResource,
     BinningMemoryResource,
@@ -33,8 +33,6 @@ from rmm.pylibrmm.memory_resource._memory_resource import (
     SystemMemoryResource,
     TrackingResourceAdaptor,
     UpstreamResourceAdaptor,
-    _flush_logs,
-    _initialize,
     available_device_memory,
     disable_logging,
     enable_logging,
@@ -47,9 +45,6 @@ from rmm.pylibrmm.memory_resource._memory_resource import (
     set_current_device_resource,
     set_per_device_resource,
 )
-
-# Import experimental submodule
-from rmm.pylibrmm.memory_resource import experimental
 
 __all__ = [
     "ArenaMemoryResource",
@@ -71,8 +66,6 @@ __all__ = [
     "SystemMemoryResource",
     "TrackingResourceAdaptor",
     "UpstreamResourceAdaptor",
-    "_flush_logs",
-    "_initialize",
     "available_device_memory",
     "disable_logging",
     "enable_logging",
