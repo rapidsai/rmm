@@ -64,9 +64,7 @@ class cuda_async_managed_memory_resource final : public device_memory_resource {
 
 #if defined(CUDA_VERSION) && CUDA_VERSION >= RMM_MIN_ASYNC_MANAGED_ALLOC_CUDA_VERSION
     cudaMemPool_t managed_pool_handle{};
-    cudaMemLocation location{};
-    location.type              = cudaMemLocationTypeDevice;
-    location.id                = rmm::get_current_cuda_device().value();
+    cudaMemLocation location{.type = cudaMemLocationTypeDevice, .id = rmm::get_current_cuda_device().value()};
     RMM_CUDA_TRY(cudaMemGetDefaultMemPool(&managed_pool_handle, &location, cudaMemAllocationTypeManaged));
     pool_ = cuda_async_view_memory_resource{managed_pool_handle};
 #endif
