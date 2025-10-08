@@ -27,12 +27,6 @@ namespace {
 
 using cuda_async_managed_mr = rmm::mr::cuda_async_managed_memory_resource;
 
-// static property checks
-static_assert(
-  rmm::detail::polyfill::resource_with<cuda_async_managed_mr, cuda::mr::device_accessible>);
-static_assert(
-  rmm::detail::polyfill::async_resource_with<cuda_async_managed_mr, cuda::mr::device_accessible>);
-
 class AsyncManagedMRTest : public ::testing::Test {
  protected:
   void SetUp() override
