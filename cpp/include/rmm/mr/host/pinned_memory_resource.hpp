@@ -86,7 +86,10 @@ class pinned_memory_resource final : public host_memory_resource {
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param alignment The alignment that was passed to the `allocate` call that returned `p`
    */
-  void deallocate_async(void* ptr, std::size_t bytes, std::size_t alignment, cuda_stream_view)
+  void deallocate_async(void* ptr,
+                        std::size_t bytes,
+                        std::size_t alignment,
+                        cuda_stream_view) noexcept
   {
     do_deallocate(ptr, rmm::align_up(bytes, alignment));
   }
@@ -142,7 +145,7 @@ class pinned_memory_resource final : public host_memory_resource {
    */
   void do_deallocate(void* ptr,
                      std::size_t bytes,
-                     std::size_t alignment = alignof(std::max_align_t)) override
+                     std::size_t alignment = alignof(std::max_align_t)) noexcept override
   {
     if (nullptr == ptr) { return; }
     rmm::detail::aligned_host_deallocate(
@@ -183,7 +186,10 @@ class pinned_memory_resource final : public host_memory_resource {
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param alignment The alignment that was passed to the `allocate` call that returned `p`
    */
-  void deallocate(cuda_stream_view stream, void* ptr, std::size_t bytes, std::size_t alignment)
+  void deallocate(cuda_stream_view stream,
+                  void* ptr,
+                  std::size_t bytes,
+                  std::size_t alignment) noexcept
   {
     return this->deallocate_async(ptr, bytes, alignment, stream);
   }

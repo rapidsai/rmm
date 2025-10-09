@@ -111,7 +111,7 @@ class cuda_async_view_memory_resource final : public device_memory_resource {
    */
   void do_deallocate(void* ptr,
                      [[maybe_unused]] std::size_t bytes,
-                     rmm::cuda_stream_view stream) override
+                     rmm::cuda_stream_view stream) noexcept override
   {
     if (ptr != nullptr) { RMM_ASSERT_CUDA_SUCCESS(cudaFreeAsync(ptr, stream.value())); }
   }

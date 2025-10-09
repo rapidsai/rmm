@@ -123,7 +123,7 @@ class system_memory_resource final : public device_memory_resource {
    */
   void do_deallocate(void* ptr,
                      [[maybe_unused]] std::size_t bytes,
-                     cuda_stream_view stream) override
+                     cuda_stream_view stream) noexcept override
   {
     // With `cudaFree`, the CUDA runtime keeps track of dependent operations and does implicit
     // synchronization. However, with SAM, since `free` is immediate, we need to wait for in-flight

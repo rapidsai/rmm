@@ -79,7 +79,7 @@ class managed_memory_resource final : public device_memory_resource {
    */
   void do_deallocate(void* ptr,
                      [[maybe_unused]] std::size_t bytes,
-                     [[maybe_unused]] cuda_stream_view stream) override
+                     [[maybe_unused]] cuda_stream_view stream) noexcept override
   {
     RMM_ASSERT_CUDA_SUCCESS(cudaFree(ptr));
   }
