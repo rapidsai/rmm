@@ -196,7 +196,7 @@ class arena_memory_resource final : public device_memory_resource {
    * value of `bytes` that was passed to the `allocate` call that returned `ptr`.
    * @param stream Stream on which to perform deallocation.
    */
-  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) override
+  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override
   {
     if (ptr == nullptr || bytes <= 0) { return; }
 #ifdef RMM_ARENA_USE_SIZE_CLASSES

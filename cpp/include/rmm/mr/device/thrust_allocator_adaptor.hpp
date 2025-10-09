@@ -122,7 +122,7 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    * @param num number of elements, *must* be equal to the argument passed to the
    * prior `allocate` call that produced `p`
    */
-  void deallocate(pointer ptr, size_type num)
+  void deallocate(pointer ptr, size_type num) noexcept
   {
     cuda_set_device_raii dev{_device};
     return _mr.deallocate_async(thrust::raw_pointer_cast(ptr), num * sizeof(T), _stream);
