@@ -43,9 +43,12 @@ namespace {
 class mock_memory_resource {
  public:
   MOCK_METHOD(void*, allocate, (std::size_t, std::size_t));
-  MOCK_METHOD(void, deallocate, (void*, std::size_t, std::size_t));
+  MOCK_METHOD(void, deallocate, (void*, std::size_t, std::size_t), (noexcept));
   MOCK_METHOD(void*, allocate_async, (std::size_t, std::size_t, cuda::stream_ref));
-  MOCK_METHOD(void, deallocate_async, (void*, std::size_t, std::size_t, cuda::stream_ref));
+  MOCK_METHOD(void,
+              deallocate_async,
+              (void*, std::size_t, std::size_t, cuda::stream_ref),
+              (noexcept));
 
   void* allocate_sync(std::size_t bytes, std::size_t alignment)
   {
