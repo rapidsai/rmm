@@ -312,6 +312,7 @@ dependencies:
         packages:
           - pytest
           - pytest-cov
+          - pytest-xdist
     specific:
       - output_types: [conda, requirements, pyproject]
         matrices:

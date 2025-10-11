@@ -42,6 +42,8 @@ rapids-logger "pytest rmm"
 
 ./ci/run_pytests.sh \
     --junitxml="${RAPIDS_TESTS_DIR}/junit-rmm.xml" \
+    --numprocesses=8 \
+    --dist=worksteal \
     --cov-config=.coveragerc \
     --cov=rmm \
     --cov-report=xml:"${RAPIDS_COVERAGE_DIR}/rmm-coverage.xml" \
