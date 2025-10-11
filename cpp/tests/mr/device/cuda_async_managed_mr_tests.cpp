@@ -32,8 +32,9 @@ class AsyncManagedMRTest : public ::testing::Test {
   void SetUp() override
   {
     if (!rmm::detail::runtime_async_managed_alloc::is_supported()) {
-      GTEST_SKIP() << "Skipping tests since cuda_async_managed_memory_resource "
-                   << "requires CUDA 13.0 or higher";
+      GTEST_SKIP() << "Skipping tests because cuda_async_managed_memory_resource "
+                   << "requires CUDA 13.0 or higher and concurrent managed "
+                   << "access support.";
     }
   }
 };
