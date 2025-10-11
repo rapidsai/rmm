@@ -43,7 +43,15 @@ _IS_INTEGRATED_MEMORY_SYSTEM = rmm._cuda.gpu.getDeviceAttribute(
     runtime.cudaDeviceAttr.cudaDevAttrIntegrated, rmm._cuda.gpu.getDevice()
 )
 
-_ASYNC_MANAGED_MEMORY_SUPPORTED = rmm._cuda.gpu.runtimeGetVersion() >= 13000
+_CONCURRENT_MANAGED_ACCESS_SUPPORTED = rmm._cuda.gpu.getDeviceAttribute(
+    runtime.cudaDeviceAttr.cudaDevAttrConcurrentManagedAccess,
+    rmm._cuda.gpu.getDevice(),
+)
+
+_ASYNC_MANAGED_MEMORY_SUPPORTED = (
+    _CONCURRENT_MANAGED_ACCESS_SUPPORTED
+    and rmm._cuda.gpu.runtimeGetVersion() >= 13000
+)
 
 
 def array_tester(dtype, nelem, alloc):
@@ -325,17 +333,6 @@ def test_rmm_device_buffer_pickle_roundtrip(hb):
     assert hb3 == hb
 
 
-def concurrent_managed_access_supported():
-    err, device_id = runtime.cudaGetDevice()
-    assert err == runtime.cudaError_t.cudaSuccess
-    err, supported = runtime.cudaDeviceGetAttribute(
-        runtime.cudaDeviceAttr.cudaDevAttrConcurrentManagedAccess,
-        device_id,
-    )
-    assert err == runtime.cudaError_t.cudaSuccess
-    return supported
-
-
 def assert_prefetched(buffer, device_id):
     err, dev = runtime.cudaMemRangeGetAttribute(
         4,
@@ -353,10 +350,10 @@ def assert_prefetched(buffer, device_id):
 def test_rmm_device_buffer_prefetch(pool, managed):
     rmm.reinitialize(pool_allocator=pool, managed_memory=managed)
     db = rmm.DeviceBuffer.to_device(np.zeros(256, dtype="u1"))
-    if managed and concurrent_managed_access_supported():
+    if managed and _CONCURRENT_MANAGED_ACCESS_SUPPORTED:
         assert_prefetched(db, runtime.cudaInvalidDeviceId)
     db.prefetch()  # just test that it doesn't throw
-    if managed and concurrent_managed_access_supported():
+    if managed and _CONCURRENT_MANAGED_ACCESS_SUPPORTED:
         err, device_id = runtime.cudaGetDevice()
         assert err == runtime.cudaError_t.cudaSuccess
         assert_prefetched(db, device_id)
@@ -906,10 +903,10 @@ def test_prefetch_resource_adaptor(managed):
     err, device_id = runtime.cudaGetDevice()
     assert err == runtime.cudaError_t.cudaSuccess
 
-    if managed and concurrent_managed_access_supported():
+    if managed and _CONCURRENT_MANAGED_ACCESS_SUPPORTED:
         assert_prefetched(db, device_id)
     db.prefetch()  # just test that it doesn't throw
-    if managed and concurrent_managed_access_supported():
+    if managed and _CONCURRENT_MANAGED_ACCESS_SUPPORTED:
         assert_prefetched(db, device_id)
 
 
