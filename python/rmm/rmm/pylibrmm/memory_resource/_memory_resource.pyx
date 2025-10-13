@@ -86,8 +86,8 @@ cdef class DeviceMemoryResource:
     def allocate(self, size_t nbytes, Stream stream=DEFAULT_STREAM):
         """Allocate ``nbytes`` bytes of memory.
 
-        Note
-        ----
+        Notes
+        -----
         On integrated memory systems, attempting to allocate more memory than
         available can cause the process to be killed by the operating system
         instead of raising a catchable ``MemoryError``.

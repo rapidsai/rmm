@@ -1,17 +1,25 @@
-.. rmm documentation master file, created by
-   sphinx-quickstart on Thu Nov 19 13:16:00 2020.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+RMM: RAPIDS Memory Manager
+==========================
 
-Welcome to rmm's documentation!
-===============================
+RMM (RAPIDS Memory Manager) is a library for allocating and managing GPU memory in C++ and Python.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: User Guide
 
-   Python <python.rst>
-   C++ <cpp.rst>
+   user_guide/index
+
+.. toctree::
+   :maxdepth: 2
+   :caption: C++ API
+
+   cpp.rst
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Python API
+
+   python.rst
 
 
 Indices and tables
