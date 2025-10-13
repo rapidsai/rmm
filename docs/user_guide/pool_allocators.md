@@ -453,4 +453,3 @@ Look for:
 
 - [Choosing a Memory Resource](choosing_memory_resources.md) - High-level guidance on selecting resources
 - [Stream-Ordered Allocation](stream_ordered_allocation.md) - Understanding async allocation
-- [RMM Statistics Documentation](https://docs.rapids.ai/api/rmm/stable/guide/#memory-statistics-and-profiling)

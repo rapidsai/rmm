@@ -79,7 +79,7 @@ Thread,Time,Action,Pointer,Size,Stream
 ```
 
 Example:
-```csv
+```
 Thread,Time,Action,Pointer,Size,Stream
 140573312345856,1634567890.123456,allocate,0x7f8a40000000,1024,0x7f8a38001020
 140573312345856,1634567890.234567,allocate,0x7f8a40000400,2048,0x7f8a38001020
@@ -576,7 +576,6 @@ benchmark_allocations("PoolMemoryResource", pool)
 
 ## See Also
 
-- [Memory Statistics Example (existing guide.md)](guide.md#memory-statistics-and-profiling)
 - [Python API Reference](python.rst)
 - [C++ API Reference](cpp.rst)
 - [NVIDIA Nsight Systems](https://developer.nvidia.com/nsight-systems)
