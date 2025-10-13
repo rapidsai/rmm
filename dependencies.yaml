@@ -255,6 +255,7 @@ dependencies:
           - graphviz
           - ipython
           - make
+          - myst-parser
           - nbsphinx
           - &numba numba>=0.60.0,<0.62.0a0
           - &numba_cuda numba-cuda>=0.19.1,<0.20.0a0

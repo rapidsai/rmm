@@ -22,6 +22,7 @@ dependencies:
 - identify>=2.5.20
 - ipython
 - make
+- myst-parser
 - nbsphinx
 - ninja
 - numba-cuda>=0.19.1,<0.20.0a0
