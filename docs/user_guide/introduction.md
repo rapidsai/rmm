@@ -87,7 +87,7 @@ Implementations include:
 - `arena_memory_resource`: Size-binned allocation
 - Many more...
 
-See [Choosing a Memory Resource](user_guide/choosing_memory_resources.md) for guidance.
+See [Choosing a Memory Resource](choosing_memory_resources.md) for guidance.
 
 ### 2. Resource Adaptors
 
@@ -126,7 +126,7 @@ auto buffer = rmm::device_buffer(1024, stream.view());
 kernel<<<grid, block, 0, stream.value()>>>(buffer.data());
 ```
 
-See [Stream-Ordered Allocation](user_guide/stream_ordered_allocation.md) for details.
+See [Stream-Ordered Allocation](stream_ordered_allocation.md) for details.
 
 ## Integration with Other Libraries
 
@@ -214,14 +214,14 @@ rmm.reinitialize(pool_allocator=False)  # Uses async MR
 - **`arena_memory_resource`**: Applications with diverse allocation sizes
 - **`cuda_memory_resource`**: Debugging or baseline comparison
 
-See [Choosing a Memory Resource](user_guide/choosing_memory_resources.md) for detailed guidance.
+See [Choosing a Memory Resource](choosing_memory_resources.md) for detailed guidance.
 
 ## Resources and Support
 
 ### Documentation
-- [User Guide](user_guide/choosing_memory_resources.md): Detailed guides and best practices
-- [Python API Reference](python.rst): Python API documentation
-- [C++ API Reference](cpp.rst): C++ API documentation
+- [User Guide](choosing_memory_resources.md): Detailed guides and best practices
+- [Python API Reference](../python.rst): Python API documentation
+- [C++ API Reference](../cpp.rst): C++ API documentation
 
 ### External Resources
 - [RAPIDS Documentation](https://docs.rapids.ai): Full RAPIDS ecosystem docs
@@ -239,5 +239,5 @@ See [Choosing a Memory Resource](user_guide/choosing_memory_resources.md) for de
 - **New to RMM?** Start with the [Quick Start Guide](quickstart.md)
 - **Installing RMM?** See the [Installation Guide](installation.md)
 - **Using RMM in C++?** Read the [C++ Guide](cpp_guide.md)
-- **Choosing a memory resource?** See [Choosing a Memory Resource](user_guide/choosing_memory_resources.md)
+- **Choosing a memory resource?** See [Choosing a Memory Resource](choosing_memory_resources.md)
 - **Need to profile memory?** Check out [Logging and Profiling](logging.md)

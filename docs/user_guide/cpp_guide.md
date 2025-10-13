@@ -105,7 +105,7 @@ mr->deallocate(ptr, 1024, stream_b.view());
 3. Deallocate on the stream where the memory was last used
 4. Never destroy a stream passed to `deallocate` until deallocation completes
 
-See [Stream-Ordered Allocation](user_guide/stream_ordered_allocation.md) for more details.
+See [Stream-Ordered Allocation](stream_ordered_allocation.md) for more details.
 
 ## Data Structures
 
@@ -657,7 +657,7 @@ class my_memory_resource final : public rmm::mr::device_memory_resource {
 
 ## See Also
 
-- [Choosing a Memory Resource](user_guide/choosing_memory_resources.md)
-- [Stream-Ordered Allocation](user_guide/stream_ordered_allocation.md)
-- [Pool Allocators](user_guide/pool_allocators.md)
-- [C++ API Reference](cpp.rst)
+- [Choosing a Memory Resource](choosing_memory_resources.md)
+- [Stream-Ordered Allocation](stream_ordered_allocation.md)
+- [Pool Allocators](pool_allocators.md)
+- [C++ API Reference](../cpp.rst)

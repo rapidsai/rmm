@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-This guide provides a quick introduction to using RMM in Python and C++. For more detailed information, see the [User Guide](user_guide/choosing_memory_resources.md).
+This guide provides a quick introduction to using RMM in Python and C++. For more detailed information, see the [User Guide](choosing_memory_resources.md).
 
 ## Python Quick Start
 
@@ -492,9 +492,9 @@ for (auto& stream : streams) {
 
 ## Next Steps
 
-- **Choosing a memory resource**: See [Choosing a Memory Resource](user_guide/choosing_memory_resources.md)
-- **Understanding stream-ordered allocation**: Read [Stream-Ordered Allocation](user_guide/stream_ordered_allocation.md)
-- **Using managed memory**: Check out [Managed Memory Guide](user_guide/managed_memory.md)
-- **Optimizing with pools**: See [Pool Allocators Guide](user_guide/pool_allocators.md)
+- **Choosing a memory resource**: See [Choosing a Memory Resource](choosing_memory_resources.md)
+- **Understanding stream-ordered allocation**: Read [Stream-Ordered Allocation](stream_ordered_allocation.md)
+- **Using managed memory**: Check out [Managed Memory Guide](managed_memory.md)
+- **Optimizing with pools**: See [Pool Allocators Guide](pool_allocators.md)
 - **C++ details**: Read the [C++ Guide](cpp_guide.md)
 - **Profiling memory**: Learn about [Logging and Profiling](logging.md)

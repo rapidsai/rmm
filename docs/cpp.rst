@@ -1,8 +1,8 @@
-Welcome to the rmm C++ documentation!
-========================================
+C++ API
+=======
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   cpp_api.rst
+   librmm_docs/index

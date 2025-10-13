@@ -374,5 +374,5 @@ If you encounter link errors when building applications with RMM:
 ## Next Steps
 
 - **New to RMM?** Read the [Quick Start Guide](quickstart.md)
-- **Integrating RMM?** See the [C++ Guide](cpp_guide.md) or [User Guide](user_guide/choosing_memory_resources.md)
+- **Integrating RMM?** See the [C++ Guide](cpp_guide.md) or [User Guide](choosing_memory_resources.md)
 - **Need help?** Visit the [RAPIDS Community](https://rapids.ai/learn-more/#get-involved)
