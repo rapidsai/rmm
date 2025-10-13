@@ -12,7 +12,7 @@
 # the License.
 # =============================================================================
 
-set(cython_sources _memory_resource.pyx)
+set(cython_sources _memory_resource.pyx experimental.pyx)
 set(linked_libraries rmm::rmm)
 
 rapids_cython_create_modules(

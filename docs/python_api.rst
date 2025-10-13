@@ -19,6 +19,15 @@ Memory Resources
    :undoc-members:
    :show-inheritance:
 
+Experimental Memory Resources
+------------------------------
+
+.. automodule:: rmm.mr.experimental
+   :members:
+   :inherited-members:
+   :undoc-members:
+   :show-inheritance:
+
 Memory Allocators
 -----------------
 
