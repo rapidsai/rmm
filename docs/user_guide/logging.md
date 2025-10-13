@@ -576,6 +576,4 @@ benchmark_allocations("PoolMemoryResource", pool)
 
 ## See Also
 
-- [Python API Reference](python.rst)
-- [C++ API Reference](cpp.rst)
 - [NVIDIA Nsight Systems](https://developer.nvidia.com/nsight-systems)

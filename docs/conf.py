@@ -100,7 +100,7 @@ suppress_warnings = []
 if not os.path.exists(
     os.path.join(breathe_projects["librmm"], "deprecated.xml")
 ):
-    exclude_patterns.append("librmm_docs/deprecated.rst")
+    exclude_patterns.append("librmm/deprecated.rst")
     suppress_warnings.append("toc.excluded")
 
 # The name of the Pygments (syntax highlighting) style to use.

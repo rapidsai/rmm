@@ -220,8 +220,8 @@ See [Choosing a Memory Resource](choosing_memory_resources.md) for detailed guid
 
 ### Documentation
 - [User Guide](choosing_memory_resources.md): Detailed guides and best practices
-- [Python API Reference](../python.rst): Python API documentation
-- [C++ API Reference](../cpp.rst): C++ API documentation
+- [C++ API Reference](../cpp/index.md)
+- [Python API Reference](../python/index.md)
 
 ### External Resources
 - [RAPIDS Documentation](https://docs.rapids.ai): Full RAPIDS ecosystem docs

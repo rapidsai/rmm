@@ -660,4 +660,4 @@ class my_memory_resource final : public rmm::mr::device_memory_resource {
 - [Choosing a Memory Resource](choosing_memory_resources.md)
 - [Stream-Ordered Allocation](stream_ordered_allocation.md)
 - [Pool Allocators](pool_allocators.md)
-- [C++ API Reference](../cpp.rst)
+- [C++ API Reference](../cpp/index.md)
