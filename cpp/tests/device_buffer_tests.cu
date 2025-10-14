@@ -117,6 +117,10 @@ TYPED_TEST(DeviceBufferTest, CopyFromRawDevicePointer)
 {
   void* device_memory{nullptr};
   EXPECT_EQ(cudaSuccess, cudaMalloc(&device_memory, this->size));
+  thrust::sequence(rmm::exec_policy(rmm::cuda_stream_default),
+                   static_cast<char*>(device_memory),
+                   static_cast<char*>(device_memory) + this->size,
+                   0);
   rmm::device_buffer buff(device_memory, this->size, rmm::cuda_stream_view{});
   EXPECT_NE(nullptr, buff.data());
   EXPECT_EQ(this->size, buff.size());
@@ -125,7 +129,10 @@ TYPED_TEST(DeviceBufferTest, CopyFromRawDevicePointer)
             buff.memory_resource());
   EXPECT_EQ(rmm::cuda_stream_view{}, buff.stream());
 
-  // TODO check for equality between the contents of the two allocations
+  EXPECT_TRUE(thrust::equal(rmm::exec_policy(rmm::cuda_stream_default),
+                            static_cast<char*>(device_memory),
+                            static_cast<char*>(device_memory) + buff.size(),
+                            static_cast<char*>(buff.data())));
   buff.stream().synchronize();
   EXPECT_EQ(cudaSuccess, cudaFree(device_memory));
 }
@@ -133,6 +140,7 @@ TYPED_TEST(DeviceBufferTest, CopyFromRawDevicePointer)
 TYPED_TEST(DeviceBufferTest, CopyFromRawHostPointer)
 {
   std::vector<uint8_t> host_data(this->size);
+  std::iota(host_data.begin(), host_data.end(), static_cast<uint8_t>(0));
   rmm::device_buffer buff(
     static_cast<void*>(host_data.data()), this->size, rmm::cuda_stream_view{});
   EXPECT_NE(nullptr, buff.data());
@@ -142,7 +150,10 @@ TYPED_TEST(DeviceBufferTest, CopyFromRawHostPointer)
             buff.memory_resource());
   EXPECT_EQ(rmm::cuda_stream_view{}, buff.stream());
   buff.stream().synchronize();
-  // TODO check for equality between the contents of the two allocations
+  std::vector<uint8_t> host_copy(this->size);
+  EXPECT_EQ(cudaSuccess,
+            cudaMemcpy(host_copy.data(), buff.data(), this->size, cudaMemcpyDeviceToHost));
+  EXPECT_EQ(host_data, host_copy);
 }
 
 TYPED_TEST(DeviceBufferTest, CopyFromNullptr)
