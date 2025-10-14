@@ -46,6 +46,7 @@ namespace mr {
  */
 class pinned_host_memory_resource {
  public:
+#ifdef RMM_ENABLE_LEGACY_MR_INTERFACE
   // Disable clang-tidy complaining about the easily swappable size and alignment parameters
   // of allocate and deallocate
   // NOLINTBEGIN(bugprone-easily-swappable-parameters)
@@ -66,16 +67,7 @@ class pinned_host_memory_resource {
   static void* allocate(std::size_t bytes,
                         [[maybe_unused]] std::size_t alignment = rmm::RMM_DEFAULT_HOST_ALIGNMENT)
   {
-    RMM_FUNC_RANGE();
-
-    // don't allocate anything if the user requested zero bytes
-    if (0 == bytes) { return nullptr; }
-
-    return rmm::detail::aligned_host_allocate(bytes, alignment, [](std::size_t size) {
-      void* ptr{nullptr};
-      RMM_CUDA_TRY_ALLOC(cudaHostAlloc(&ptr, size, cudaHostAllocDefault), size);
-      return ptr;
-    });
+    return allocate_sync(bytes, alignment);
   }
 
   /**
@@ -89,10 +81,7 @@ class pinned_host_memory_resource {
                          std::size_t bytes,
                          std::size_t alignment = rmm::RMM_DEFAULT_HOST_ALIGNMENT) noexcept
   {
-    RMM_FUNC_RANGE();
-
-    rmm::detail::aligned_host_deallocate(
-      ptr, bytes, alignment, [](void* ptr) { RMM_ASSERT_CUDA_SUCCESS(cudaFreeHost(ptr)); });
+    return deallocate_sync(ptr, bytes, alignment);
   }
 
   /**
@@ -111,9 +100,7 @@ class pinned_host_memory_resource {
    */
   static void* allocate_async(std::size_t bytes, [[maybe_unused]] cuda::stream_ref stream)
   {
-    RMM_FUNC_RANGE();
-
-    return allocate(bytes);
+    return allocate(stream, bytes);
   }
 
   /**
@@ -135,9 +122,7 @@ class pinned_host_memory_resource {
                               std::size_t alignment,
                               [[maybe_unused]] cuda::stream_ref stream)
   {
-    RMM_FUNC_RANGE();
-
-    return allocate(bytes, alignment);
+    return allocate(stream, bytes, alignment);
   }
 
   /**
@@ -153,9 +138,7 @@ class pinned_host_memory_resource {
                                std::size_t bytes,
                                [[maybe_unused]] cuda::stream_ref stream) noexcept
   {
-    RMM_FUNC_RANGE();
-
-    return deallocate(ptr, bytes);
+    return deallocate(stream, ptr, bytes);
   }
 
   /**
@@ -174,11 +157,97 @@ class pinned_host_memory_resource {
                                std::size_t alignment,
                                [[maybe_unused]] cuda::stream_ref stream) noexcept
   {
-    RMM_FUNC_RANGE();
-
-    return deallocate(ptr, bytes, alignment);
+    return deallocate(stream, ptr, bytes, alignment);
   }
   // NOLINTEND(bugprone-easily-swappable-parameters)
+#endif
+
+  /**
+   * @brief Allocates pinned host memory of size at least \p bytes bytes.
+   *
+   * @throws rmm::out_of_memory if the requested allocation could not be fulfilled due to to a
+   * CUDA out of memory error.
+   * @throws rmm::bad_alloc if the requested allocation could not be fulfilled due to any other
+   * reason.
+   *
+   * @param bytes The size, in bytes, of the allocation.
+   * @param alignment Alignment in bytes. Default alignment is used if unspecified.
+   *
+   * @return Pointer to the newly allocated memory.
+   */
+  static void* allocate_sync(std::size_t bytes,
+                             std::size_t alignment = rmm::RMM_DEFAULT_HOST_ALIGNMENT)
+  {
+    RMM_FUNC_RANGE();
+
+    // don't allocate anything if the user requested zero bytes
+    if (0 == bytes) { return nullptr; }
+
+    return rmm::detail::aligned_host_allocate(bytes, alignment, [](std::size_t size) {
+      void* ptr{nullptr};
+      RMM_CUDA_TRY_ALLOC(cudaHostAlloc(&ptr, size, cudaHostAllocDefault), size);
+      return ptr;
+    });
+  }
+
+  /**
+   * @brief Deallocate memory pointed to by \p ptr of size \p bytes bytes.
+   *
+   * @param ptr Pointer to be deallocated.
+   * @param bytes Size of the allocation.
+   * @param alignment Alignment in bytes. Default alignment is used if unspecified.
+   */
+  static void deallocate_sync(void* ptr,
+                              std::size_t bytes,
+                              std::size_t alignment = rmm::RMM_DEFAULT_HOST_ALIGNMENT)
+  {
+    RMM_FUNC_RANGE();
+    rmm::detail::aligned_host_deallocate(
+      ptr, bytes, alignment, [](void* ptr) { RMM_ASSERT_CUDA_SUCCESS(cudaFreeHost(ptr)); });
+  }
+
+  /**
+   * @brief Allocates pinned host memory of size at least \p bytes bytes and alignment \p alignment.
+   *
+   * @note Stream argument is ignored and behavior is identical to allocate_sync.
+   *
+   * @throws rmm::out_of_memory if the requested allocation could not be fulfilled due to to a
+   * CUDA out of memory error.
+   * @throws rmm::bad_alloc if the requested allocation could not be fulfilled due to any other
+   * error.
+   *
+   * @param stream CUDA stream on which to perform the allocation (ignored).
+   * @param bytes The size, in bytes, of the allocation.
+   * @param alignment Alignment in bytes.
+   * @return Pointer to the newly allocated memory.
+   */
+  static void* allocate(cuda_stream_view stream,
+                        std::size_t bytes,
+                        std::size_t alignment = rmm::RMM_DEFAULT_HOST_ALIGNMENT)
+  {
+    RMM_FUNC_RANGE();
+    return allocate_sync(bytes, alignment);
+  }
+
+  /**
+   * @brief Deallocate memory pointed to by \p ptr of size \p bytes bytes and alignment \p
+   * alignment bytes.
+   *
+   * @note Stream argument is ignored and behavior is identical to deallocate.
+   *
+   * @param stream CUDA stream on which to perform the deallocation (ignored).
+   * @param ptr Pointer to be deallocated.
+   * @param bytes Size of the allocation.
+   * @param alignment Alignment in bytes.
+   */
+  static void deallocate(cuda_stream_view stream,
+                         void* ptr,
+                         std::size_t bytes,
+                         std::size_t alignment = rmm::RMM_DEFAULT_HOST_ALIGNMENT) noexcept
+  {
+    RMM_FUNC_RANGE();
+    return deallocate_sync(ptr, bytes, alignment);
+  }
 
   /**
    * @briefreturn{true if the specified resource is the same type as this resource.}
@@ -207,76 +276,6 @@ class pinned_host_memory_resource {
    */
   friend void get_property(pinned_host_memory_resource const&, cuda::mr::host_accessible) noexcept
   {
-  }
-
- public:
-  /**
-   * @brief Allocates pinned host memory of size at least \p bytes bytes.
-   *
-   * @throws rmm::out_of_memory if the requested allocation could not be fulfilled due to to a
-   * CUDA out of memory error.
-   * @throws rmm::bad_alloc if the requested allocation could not be fulfilled due to any other
-   * reason.
-   *
-   * @param bytes The size, in bytes, of the allocation.
-   * @param alignment Alignment in bytes. Default alignment is used if unspecified.
-   *
-   * @return Pointer to the newly allocated memory.
-   */
-  static void* allocate_sync(std::size_t bytes, std::size_t alignment)
-  {
-    return allocate(bytes, alignment);
-  }
-
-  /**
-   * @brief Deallocate memory pointed to by \p ptr of size \p bytes bytes.
-   *
-   * @param ptr Pointer to be deallocated.
-   * @param bytes Size of the allocation.
-   * @param alignment Alignment in bytes. Default alignment is used if unspecified.
-   */
-  static void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment)
-  {
-    return deallocate(ptr, bytes, alignment);
-  }
-
-  /**
-   * @brief Allocates pinned host memory of size at least \p bytes bytes and alignment \p alignment.
-   *
-   * @note Stream argument is ignored and behavior is identical to allocate.
-   *
-   * @throws rmm::out_of_memory if the requested allocation could not be fulfilled due to to a
-   * CUDA out of memory error.
-   * @throws rmm::bad_alloc if the requested allocation could not be fulfilled due to any other
-   * error.
-   *
-   * @param stream CUDA stream on which to perform the allocation (ignored).
-   * @param bytes The size, in bytes, of the allocation.
-   * @param alignment Alignment in bytes.
-   * @return Pointer to the newly allocated memory.
-   */
-  static void* allocate(cuda_stream_view stream, std::size_t bytes, std::size_t alignment)
-  {
-    return allocate_async(bytes, alignment, stream);
-  }
-
-  /**
-   * @brief Deallocate memory pointed to by \p ptr of size \p bytes bytes and alignment \p
-   * alignment bytes.
-   *
-   * @note Stream argument is ignored and behavior is identical to deallocate.
-   *
-   * @param stream CUDA stream on which to perform the deallocation (ignored).
-   * @param ptr Pointer to be deallocated.
-   * @param bytes Size of the allocation.
-   * @param alignment Alignment in bytes.
-   */
-  static void deallocate(cuda_stream_view stream,
-                         void* ptr,
-                         std::size_t bytes,
-                         std::size_t alignment) noexcept
-  {
-    return deallocate_async(ptr, bytes, alignment, stream);
   }
 };
 
