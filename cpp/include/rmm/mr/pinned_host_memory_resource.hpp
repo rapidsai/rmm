@@ -209,8 +209,6 @@ class pinned_host_memory_resource {
   {
   }
 
-#if CCCL_MAJOR_VERSION > 3 || (CCCL_MAJOR_VERSION == 3 && CCCL_MINOR_VERSION >= 1)
-
  public:
   /**
    * @brief Allocates pinned host memory of size at least \p bytes bytes.
@@ -280,8 +278,6 @@ class pinned_host_memory_resource {
   {
     return deallocate_async(ptr, bytes, alignment, stream);
   }
-
-#endif
 };
 
 static_assert(rmm::detail::polyfill::async_resource_with<pinned_host_memory_resource,

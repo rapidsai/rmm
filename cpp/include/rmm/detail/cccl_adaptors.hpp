@@ -34,6 +34,7 @@ class cccl_resource_ref : public ResourceType {
 
   cccl_resource_ref(base&& other) : base(std::move(other)) {}
 
+#if RMM_ENABLE_LEGACY_MR_INTERFACE
   void* allocate(std::size_t bytes) { return this->allocate_sync(bytes); }
 
   void* allocate(std::size_t bytes, std::size_t alignment)
@@ -50,8 +51,8 @@ class cccl_resource_ref : public ResourceType {
   {
     return this->deallocate_sync(ptr, bytes, alignment);
   }
+#endif  // RMM_ENABLE_LEGACY_MR_INTERFACE
 
-#if CCCL_MAJOR_VERSION > 3 || (CCCL_MAJOR_VERSION == 3 && CCCL_MINOR_VERSION >= 1)
   void* allocate_sync(std::size_t bytes) { return base::allocate_sync(bytes); }
 
   void* allocate_sync(std::size_t bytes, std::size_t alignment)
@@ -68,24 +69,6 @@ class cccl_resource_ref : public ResourceType {
   {
     return base::deallocate_sync(ptr, bytes, alignment);
   }
-#else
-  void* allocate_sync(std::size_t bytes) { return base::allocate(bytes); }
-
-  void* allocate_sync(std::size_t bytes, std::size_t alignment)
-  {
-    return base::allocate(bytes, alignment);
-  }
-
-  void deallocate_sync(void* ptr, std::size_t bytes) noexcept
-  {
-    return base::deallocate(ptr, bytes);
-  }
-
-  void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment) noexcept
-  {
-    return base::deallocate(ptr, bytes, alignment);
-  }
-#endif
 };
 
 template <typename ResourceType>
@@ -98,8 +81,7 @@ class cccl_async_resource_ref : public ResourceType {
   cccl_async_resource_ref(base const& other) : base(other) {}
   cccl_async_resource_ref(base&& other) : base(std::move(other)) {}
 
-  // BEGINNING OF LEGACY MR METHODS
-
+#if RMM_ENABLE_LEGACY_MR_INTERFACE
   void* allocate(std::size_t bytes) { return this->allocate_sync(bytes); }
 
   void* allocate(std::size_t bytes, std::size_t alignment)
@@ -140,9 +122,8 @@ class cccl_async_resource_ref : public ResourceType {
     return this->deallocate(stream, ptr, bytes, alignment);
   }
 
-  // END OF LEGACY MR METHODS
+#endif  // RMM_ENABLE_LEGACY_MR_INTERFACE
 
-#if CCCL_MAJOR_VERSION > 3 || (CCCL_MAJOR_VERSION == 3 && CCCL_MINOR_VERSION >= 1)
   void* allocate_sync(std::size_t bytes) { return base::allocate_sync(bytes); }
 
   void* allocate_sync(std::size_t bytes, std::size_t alignment)
@@ -182,47 +163,6 @@ class cccl_async_resource_ref : public ResourceType {
   {
     return base::deallocate(stream, ptr, bytes, alignment);
   }
-#else
-  void* allocate_sync(std::size_t bytes) { return base::allocate(bytes); }
-
-  void* allocate_sync(std::size_t bytes, std::size_t alignment)
-  {
-    return base::allocate(bytes, alignment);
-  }
-
-  void deallocate_sync(void* ptr, std::size_t bytes) noexcept
-  {
-    return base::deallocate(ptr, bytes);
-  }
-
-  void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment) noexcept
-  {
-    return base::deallocate(ptr, bytes, alignment);
-  }
-
-  void* allocate(cuda_stream_view stream, std::size_t bytes)
-  {
-    return base::allocate_async(bytes, stream);
-  }
-
-  void* allocate(cuda_stream_view stream, std::size_t bytes, std::size_t alignment)
-  {
-    return base::allocate_async(bytes, alignment, stream);
-  }
-
-  void deallocate(cuda_stream_view stream, void* ptr, std::size_t bytes) noexcept
-  {
-    return base::deallocate_async(ptr, bytes, stream);
-  }
-
-  void deallocate(cuda_stream_view stream,
-                  void* ptr,
-                  std::size_t bytes,
-                  std::size_t alignment) noexcept
-  {
-    return base::deallocate_async(ptr, bytes, alignment, stream);
-  }
-#endif
 };
 
 }  // namespace detail
