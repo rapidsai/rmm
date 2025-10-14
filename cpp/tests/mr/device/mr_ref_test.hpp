@@ -105,30 +105,30 @@ struct allocation {
 inline void test_get_current_device_resource()
 {
   EXPECT_NE(nullptr, rmm::mr::get_current_device_resource());
-  void* ptr = rmm::mr::get_current_device_resource()->allocate(1_MiB);
+  void* ptr = rmm::mr::get_current_device_resource()->allocate_sync(1_MiB);
   EXPECT_NE(nullptr, ptr);
   EXPECT_TRUE(is_properly_aligned(ptr));
   EXPECT_TRUE(is_device_accessible_memory(ptr));
-  rmm::mr::get_current_device_resource()->deallocate(ptr, 1_MiB);
+  rmm::mr::get_current_device_resource()->deallocate_sync(ptr, 1_MiB);
 }
 
 inline void test_get_current_device_resource_ref()
 {
-  void* ptr = rmm::mr::get_current_device_resource_ref().allocate(1_MiB);
+  void* ptr = rmm::mr::get_current_device_resource_ref().allocate_sync(1_MiB);
   EXPECT_NE(nullptr, ptr);
   EXPECT_TRUE(is_properly_aligned(ptr));
   EXPECT_TRUE(is_device_accessible_memory(ptr));
-  rmm::mr::get_current_device_resource_ref().deallocate(ptr, 1_MiB);
+  rmm::mr::get_current_device_resource_ref().deallocate_sync(ptr, 1_MiB);
 }
 
 inline void test_allocate(resource_ref ref, std::size_t bytes)
 {
   try {
-    void* ptr = ref.allocate(bytes);
+    void* ptr = ref.allocate_sync(bytes);
     EXPECT_NE(nullptr, ptr);
     EXPECT_TRUE(is_properly_aligned(ptr));
     EXPECT_TRUE(is_device_accessible_memory(ptr));
-    ref.deallocate(ptr, bytes);
+    ref.deallocate_sync(ptr, bytes);
   } catch (rmm::out_of_memory const& e) {
     EXPECT_NE(std::string{e.what()}.find("out_of_memory"), std::string::npos);
   }
@@ -139,12 +139,12 @@ inline void test_allocate_async(rmm::device_async_resource_ref ref,
                                 cuda_stream_view stream = {})
 {
   try {
-    void* ptr = ref.allocate_async(bytes, stream);
+    void* ptr = ref.allocate(stream, bytes);
     if (not stream.is_default()) { stream.synchronize(); }
     EXPECT_NE(nullptr, ptr);
     EXPECT_TRUE(is_properly_aligned(ptr));
     EXPECT_TRUE(is_device_accessible_memory(ptr));
-    ref.deallocate_async(ptr, bytes, stream);
+    ref.deallocate(stream, ptr, bytes);
     if (not stream.is_default()) { stream.synchronize(); }
   } catch (rmm::out_of_memory const& e) {
     EXPECT_NE(std::string{e.what()}.find("out_of_memory"), std::string::npos);
@@ -155,34 +155,34 @@ inline void test_allocate_async(rmm::device_async_resource_ref ref,
 inline void concurrent_allocations_are_different(resource_ref ref)
 {
   const auto size{8_B};
-  void* ptr1 = ref.allocate(size);
-  void* ptr2 = ref.allocate(size);
+  void* ptr1 = ref.allocate_sync(size);
+  void* ptr2 = ref.allocate_sync(size);
 
   EXPECT_NE(ptr1, ptr2);
 
-  ref.deallocate(ptr1, size);
-  ref.deallocate(ptr2, size);
+  ref.deallocate_sync(ptr1, size);
+  ref.deallocate_sync(ptr2, size);
 }
 
 inline void concurrent_async_allocations_are_different(rmm::device_async_resource_ref ref,
                                                        cuda_stream_view stream)
 {
   const auto size{8_B};
-  void* ptr1 = ref.allocate_async(size, stream);
-  void* ptr2 = ref.allocate_async(size, stream);
+  void* ptr1 = ref.allocate(stream, size);
+  void* ptr2 = ref.allocate(stream, size);
 
   EXPECT_NE(ptr1, ptr2);
 
-  ref.deallocate_async(ptr1, size, stream);
-  ref.deallocate_async(ptr2, size, stream);
+  ref.deallocate(stream, ptr1, size);
+  ref.deallocate(stream, ptr2, size);
 }
 
 inline void test_various_allocations(resource_ref ref)
 {
   // test allocating zero bytes on non-default stream
   {
-    void* ptr = ref.allocate(0);
-    EXPECT_NO_THROW(ref.deallocate(ptr, 0));
+    void* ptr = ref.allocate_sync(0);
+    EXPECT_NO_THROW(ref.deallocate_sync(ptr, 0));
   }
 
   test_allocate(ref, 4_B);
@@ -193,12 +193,12 @@ inline void test_various_allocations(resource_ref ref)
   // should fail to allocate too much
   {
     void* ptr{nullptr};
-    EXPECT_THROW(ptr = ref.allocate(1_PiB), rmm::out_of_memory);
+    EXPECT_THROW(ptr = ref.allocate_sync(1_PiB), rmm::out_of_memory);
     EXPECT_EQ(nullptr, ptr);
 
     // test e.what();
     try {
-      ptr = ref.allocate(1_PiB);
+      ptr = ref.allocate_sync(1_PiB);
     } catch (rmm::out_of_memory const& e) {
       EXPECT_NE(std::string{e.what()}.find("out_of_memory"), std::string::npos);
     }
@@ -210,9 +210,9 @@ inline void test_various_async_allocations(rmm::device_async_resource_ref ref,
 {
   // test allocating zero bytes on non-default stream
   {
-    void* ptr = ref.allocate_async(0, stream);
+    void* ptr = ref.allocate(stream, 0);
     stream.synchronize();
-    EXPECT_NO_THROW(ref.deallocate_async(ptr, 0, stream));
+    EXPECT_NO_THROW(ref.deallocate(stream, ptr, 0));
     stream.synchronize();
   }
 
@@ -224,12 +224,12 @@ inline void test_various_async_allocations(rmm::device_async_resource_ref ref,
   // should fail to allocate too much
   {
     void* ptr{nullptr};
-    EXPECT_THROW(ptr = ref.allocate_async(1_PiB, stream), rmm::out_of_memory);
+    EXPECT_THROW(ptr = ref.allocate(stream, 1_PiB), rmm::out_of_memory);
     EXPECT_EQ(nullptr, ptr);
 
     // test e.what();
     try {
-      ptr = ref.allocate_async(1_PiB, stream);
+      ptr = ref.allocate(stream, 1_PiB);
     } catch (rmm::out_of_memory const& e) {
       EXPECT_NE(std::string{e.what()}.find("out_of_memory"), std::string::npos);
     }
@@ -315,7 +315,7 @@ inline void test_mixed_random_allocation_free(resource_ref ref,
       std::size_t size = size_distribution(generator);
       active_allocations++;
       allocation_count++;
-      EXPECT_NO_THROW(allocations.emplace_back(ref.allocate(size), size));
+      EXPECT_NO_THROW(allocations.emplace_back(ref.allocate_sync(size), size));
       auto new_allocation = allocations.back();
       EXPECT_NE(nullptr, new_allocation.ptr);
       EXPECT_TRUE(is_properly_aligned(new_allocation.ptr));
@@ -324,7 +324,7 @@ inline void test_mixed_random_allocation_free(resource_ref ref,
       active_allocations--;
       allocation to_free = allocations[index];
       allocations.erase(std::next(allocations.begin(), index));
-      EXPECT_NO_THROW(ref.deallocate(to_free.ptr, to_free.size));
+      EXPECT_NO_THROW(ref.deallocate_sync(to_free.ptr, to_free.size));
     }
   }
 
@@ -362,7 +362,7 @@ inline void test_mixed_random_async_allocation_free(rmm::device_async_resource_r
       std::size_t size = size_distribution(generator);
       active_allocations++;
       allocation_count++;
-      EXPECT_NO_THROW(allocations.emplace_back(ref.allocate_async(size, stream), size));
+      EXPECT_NO_THROW(allocations.emplace_back(ref.allocate(stream, size), size));
       auto new_allocation = allocations.back();
       EXPECT_NE(nullptr, new_allocation.ptr);
       EXPECT_TRUE(is_properly_aligned(new_allocation.ptr));
@@ -371,7 +371,7 @@ inline void test_mixed_random_async_allocation_free(rmm::device_async_resource_r
       active_allocations--;
       allocation to_free = allocations[index];
       allocations.erase(std::next(allocations.begin(), index));
-      EXPECT_NO_THROW(ref.deallocate_async(to_free.ptr, to_free.size, stream));
+      EXPECT_NO_THROW(ref.deallocate(stream, to_free.ptr, to_free.size));
     }
   }
 
