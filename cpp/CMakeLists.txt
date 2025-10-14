@@ -136,9 +136,7 @@ endif()
 
 # Control legacy MR interface visibility
 if(RMM_ENABLE_LEGACY_MR_INTERFACE)
-  target_compile_definitions(rmm PUBLIC RMM_ENABLE_LEGACY_MR_INTERFACE=1)
-else()
-  target_compile_definitions(rmm PUBLIC RMM_ENABLE_LEGACY_MR_INTERFACE=0)
+  target_compile_definitions(rmm PUBLIC RMM_ENABLE_LEGACY_MR_INTERFACE)
 endif()
 
 # ##################################################################################################

@@ -34,7 +34,7 @@ class cccl_resource_ref : public ResourceType {
 
   cccl_resource_ref(base&& other) : base(std::move(other)) {}
 
-#if RMM_ENABLE_LEGACY_MR_INTERFACE
+#ifdef RMM_ENABLE_LEGACY_MR_INTERFACE
   void* allocate(std::size_t bytes) { return this->allocate_sync(bytes); }
 
   void* allocate(std::size_t bytes, std::size_t alignment)
@@ -81,7 +81,7 @@ class cccl_async_resource_ref : public ResourceType {
   cccl_async_resource_ref(base const& other) : base(other) {}
   cccl_async_resource_ref(base&& other) : base(std::move(other)) {}
 
-#if RMM_ENABLE_LEGACY_MR_INTERFACE
+#ifdef RMM_ENABLE_LEGACY_MR_INTERFACE
   void* allocate(std::size_t bytes) { return this->allocate_sync(bytes); }
 
   void* allocate(std::size_t bytes, std::size_t alignment)

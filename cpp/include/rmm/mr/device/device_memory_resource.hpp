@@ -103,7 +103,7 @@ class device_memory_resource {
   device_memory_resource& operator=(device_memory_resource&&) noexcept =
     default;  ///< @default_move_assignment{device_memory_resource}
 
-#if RMM_ENABLE_LEGACY_MR_INTERFACE
+#ifdef RMM_ENABLE_LEGACY_MR_INTERFACE
   /**
    * @brief Allocates memory of size at least \p bytes.
    *
