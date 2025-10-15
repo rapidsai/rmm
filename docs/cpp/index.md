@@ -4,7 +4,6 @@ This page documents the C++ API for RMM, also called `librmm`.
 
 ```{toctree}
 :maxdepth: 2
-:caption: Contents:
 
 memory_resources
 data_containers

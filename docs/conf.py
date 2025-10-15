@@ -94,14 +94,14 @@ exclude_patterns = []
 # List of warnings to suppress
 suppress_warnings = []
 
-# if the file deprecated.xml does not exist in the doxygen xml output,
-# breathe will fail to build the docs, so we conditionally add
-# "deprecated.rst" to the exclude_patterns list
+# If the file deprecated.xml does not exist in the Doxygen XML output,
+# Breathe's deprecated page will fail. Conditionally exclude that page
+# and suppress the resulting toctree warning.
 if not os.path.exists(
     os.path.join(breathe_projects["librmm"], "deprecated.xml")
 ):
-    exclude_patterns.append("librmm/deprecated.rst")
-    suppress_warnings.append("toc.excluded")
+    exclude_patterns.append("cpp/deprecated.md")
+    suppress_warnings.append("toc.not_readable")
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = "sphinx"
