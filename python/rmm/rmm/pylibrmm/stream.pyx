@@ -57,6 +57,11 @@ cdef class Stream:
         obj._owner = owner
         return obj
 
+    def __cuda_stream__(self):
+        # Implementation of the CUDA stream protocol
+        # https://nvidia.github.io/cuda-python/cuda-core/latest/interoperability.html#cuda-stream-protocol
+        return (0, int(<uintptr_t>self._cuda_stream))
+
     cdef cuda_stream_view view(self) noexcept nogil:
         """
         Generate a rmm::cuda_stream_view from this Stream instance
