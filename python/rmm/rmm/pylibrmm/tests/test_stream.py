@@ -45,6 +45,16 @@ def test_cuda_core_stream_to_rmm():
     assert cuda_stream_2.__cuda_stream__() == cuda_stream_2.__cuda_stream__()
 
 
+def test_cuda_stream_from_cuda_core_default_stream():
+    device = Device()
+    device.set_current()
+
+    rmm_stream = rmm.pylibrmm.stream.Stream(device.default_stream)
+    assert (
+        rmm_stream.__cuda_stream__() == device.default_stream.__cuda_stream__()
+    )
+
+
 def test_cuda_stream_protocol_not_supported():
     class V1Stream:
         def __cuda_stream__(self):
