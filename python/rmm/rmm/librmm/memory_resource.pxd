@@ -32,6 +32,7 @@ from rmm.librmm.memory_resource cimport device_memory_resource
 cdef extern from "rmm/mr/device/device_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass device_memory_resource:
+        # Legacy functions
         void* allocate(size_t bytes) except +
         void* allocate(size_t bytes, cuda_stream_view stream) except +
         void deallocate(void* ptr, size_t bytes) noexcept
@@ -39,6 +40,21 @@ cdef extern from "rmm/mr/device/device_memory_resource.hpp" \
             void* ptr,
             size_t bytes,
             cuda_stream_view stream
+        ) noexcept
+        # End legacy functions
+
+        void* allocate_sync(size_t bytes, size_t alignment) except +
+        void deallocate_sync(void* ptr, size_t bytes, size_t alignment) noexcept
+        void* allocate(
+            cuda_stream_view stream,
+            size_t bytes,
+            size_t alignment=CUDA_ALLOCATION_ALIGNMENT
+        ) except +
+        void deallocate(
+            cuda_stream_view stream,
+            void* ptr,
+            size_t bytes,
+            size_t alignment=CUDA_ALLOCATION_ALIGNMENT
         ) noexcept
 
 cdef extern from "rmm/cuda_device.hpp" namespace "rmm" nogil:
