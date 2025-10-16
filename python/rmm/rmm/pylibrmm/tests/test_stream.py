@@ -75,12 +75,14 @@ def test_cuda_stream_protocol_not_supported():
         rmm.pylibrmm.stream.Stream(obj)
 
 
-def test_cuda_stream_cupy():
+def test_cuda_stream_cupy(current_device):
     cp = pytest.importorskip("cupy")
     cupy_stream = cp.cuda.Stream()
     rmm_stream = rmm.pylibrmm.stream.Stream(cupy_stream)
 
     assert rmm_stream.__cuda_stream__() == (0, cupy_stream.ptr)
+    cuda_stream = current_device.create_stream(rmm_stream)
+    assert cuda_stream.__cuda_stream__() == (0, cupy_stream.ptr)
 
 
 def test_cuda_core_vector_add(current_device):
