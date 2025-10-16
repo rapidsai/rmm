@@ -13,7 +13,6 @@
 # limitations under the License.
 
 
-import cupy as cp
 import pytest
 from cuda.core.experimental import Device
 
@@ -77,6 +76,7 @@ def test_cuda_stream_protocol_not_supported():
 
 
 def test_cuda_stream_cupy():
+    cp = pytest.importorskip("cupy")
     cupy_stream = cp.cuda.Stream()
     rmm_stream = rmm.pylibrmm.stream.Stream(cupy_stream)
 
@@ -86,6 +86,7 @@ def test_cuda_stream_cupy():
 def test_cuda_core_vector_add(current_device):
     # https://github.com/NVIDIA/cuda-python/blob/main/cuda_core/examples/vector_add.py
     # but with a stream wrapping an RMM stream
+    cp = pytest.importorskip("cupy")
 
     from cuda.core.experimental import (
         LaunchConfig,
@@ -109,9 +110,6 @@ def test_cuda_core_vector_add(current_device):
         }
     }
     """
-
-    current_device
-
     # prepare program
     program_options = ProgramOptions(
         std="c++17", arch=f"sm_{current_device.arch}"
