@@ -94,13 +94,13 @@ class pinned_memory_resource final : public host_memory_resource {
   {
     do_deallocate(ptr, rmm::align_up(bytes, alignment));
   }
-#endif  // RMM_ENABLE_LEGACY_MR_INTERFACE
 
   // Explicitly inherit the allocate and deallocate functions from the host_memory_resource class.
   // Due to inheritance and name hiding rules, we need to declare these with "using" when we
   // override allocate and deallocate for CCCL 3.1.0+ compatibility.
   using host_memory_resource::allocate;
   using host_memory_resource::deallocate;
+#endif  // RMM_ENABLE_LEGACY_MR_INTERFACE
 
   /**
    * @brief Pretend to support the allocate_async interface, falling back to stream 0
@@ -117,7 +117,7 @@ class pinned_memory_resource final : public host_memory_resource {
                  std::size_t bytes,
                  std::size_t alignment = rmm::RMM_DEFAULT_HOST_ALIGNMENT)
   {
-    return this->allocate_async(bytes, alignment, stream);
+    return do_allocate(bytes, alignment);
   }
 
   /**
@@ -134,7 +134,7 @@ class pinned_memory_resource final : public host_memory_resource {
                   std::size_t bytes,
                   std::size_t alignment = rmm::RMM_DEFAULT_HOST_ALIGNMENT) noexcept
   {
-    return this->deallocate_async(ptr, bytes, alignment, stream);
+    return do_deallocate(ptr, bytes, alignment);
   }
 
   /**
