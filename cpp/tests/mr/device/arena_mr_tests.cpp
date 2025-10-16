@@ -16,6 +16,7 @@
 
 #include "../../byte_literals.hpp"
 
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream.hpp>
 #include <rmm/error.hpp>
@@ -40,7 +41,21 @@
 namespace rmm::test {
 namespace {
 
-class mock_memory_resource {
+class mock_memory_resource_interface {
+ public:
+  // We must define an interface class so that we can mock methods with default arguments.
+  virtual void* allocate_sync(std::size_t, std::size_t)                     = 0;
+  virtual void deallocate_sync(void*, std::size_t, std::size_t) noexcept    = 0;
+  virtual void* allocate(cuda_stream_view,
+                         std::size_t,
+                         std::size_t = CUDA_ALLOCATION_ALIGNMENT)           = 0;
+  virtual void deallocate(cuda_stream_view,
+                          void*,
+                          std::size_t,
+                          std::size_t = CUDA_ALLOCATION_ALIGNMENT) noexcept = 0;
+};
+
+class mock_memory_resource : public mock_memory_resource_interface {
  public:
 #ifdef RMM_ENABLE_LEGACY_MR_INTERFACE
   MOCK_METHOD(void*, allocate, (std::size_t, std::size_t));
@@ -52,10 +67,10 @@ class mock_memory_resource {
               (noexcept));
 #endif  // RMM_ENABLE_LEGACY_MR_INTERFACE
 
-  MOCK_METHOD(void*, allocate, (cuda_stream_view, std::size_t, std::size_t));
-  MOCK_METHOD(void, deallocate, (cuda_stream_view, void*, std::size_t, std::size_t), (noexcept));
   MOCK_METHOD(void*, allocate_sync, (std::size_t, std::size_t));
   MOCK_METHOD(void, deallocate_sync, (void*, std::size_t, std::size_t), (noexcept));
+  MOCK_METHOD(void*, allocate, (cuda_stream_view, std::size_t, std::size_t));
+  MOCK_METHOD(void, deallocate, (cuda_stream_view, void*, std::size_t, std::size_t), (noexcept));
 
   bool operator==(mock_memory_resource const&) const noexcept { return true; }
   bool operator!=(mock_memory_resource const&) const { return false; }
@@ -84,8 +99,8 @@ auto const fake_address4 = reinterpret_cast<void*>(superblock::minimum_size * 2)
 struct ArenaTest : public ::testing::Test {
   void SetUp() override
   {
-    EXPECT_CALL(mock_mr, allocate(arena_size, ::testing::_)).WillOnce(Return(fake_address3));
-    EXPECT_CALL(mock_mr, deallocate(fake_address3, arena_size, ::testing::_));
+    EXPECT_CALL(mock_mr, allocate_sync(arena_size, ::testing::_)).WillOnce(Return(fake_address3));
+    EXPECT_CALL(mock_mr, deallocate_sync(fake_address3, arena_size, ::testing::_));
 
     global     = std::make_unique<global_arena>(mock_mr, arena_size);
     per_thread = std::make_unique<arena>(*global);
