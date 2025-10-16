@@ -70,3 +70,75 @@ def test_cuda_stream_cupy():
     rmm_stream = rmm.pylibrmm.stream.Stream(cupy_stream)
 
     assert rmm_stream.__cuda_stream__() == (0, cupy_stream.ptr)
+
+
+def test_cuda_core_vector_add():
+    # https://github.com/NVIDIA/cuda-python/blob/main/cuda_core/examples/vector_add.py
+    # but with a stream wrapping an RMM stream
+
+    from cuda.core.experimental import (
+        Device,
+        LaunchConfig,
+        Program,
+        ProgramOptions,
+        launch,
+    )
+
+    rmm_stream = rmm.pylibrmm.stream.Stream()
+
+    # compute c = a + b
+    code = """
+    template<typename T>
+    __global__ void vector_add(const T* A,
+                            const T* B,
+                            T* C,
+                            size_t N) {
+        const unsigned int tid = threadIdx.x + blockIdx.x * blockDim.x;
+        for (size_t i=tid; i<N; i+=gridDim.x*blockDim.x) {
+            C[i] = A[i] + B[i];
+        }
+    }
+    """
+
+    dev = Device()
+    dev.set_current()
+
+    # prepare program
+    program_options = ProgramOptions(std="c++17", arch=f"sm_{dev.arch}")
+    prog = Program(code, code_type="c++", options=program_options)
+    mod = prog.compile("cubin", name_expressions=("vector_add<float>",))
+
+    # run in single precision
+    ker = mod.get_kernel("vector_add<float>")
+    dtype = cp.float32
+
+    # prepare input/output
+    size = 5000
+    rng = cp.random.default_rng()
+    a = rng.random(size, dtype=dtype)
+    b = rng.random(size, dtype=dtype)
+    c = cp.empty_like(a)
+
+    # cupy runs on a different stream from s, so sync before accessing
+    dev.sync()
+
+    # prepare launch
+    block = 256
+    grid = (size + block - 1) // block
+    config = LaunchConfig(grid=grid, block=block)
+
+    # launch kernel on stream s
+    launch(
+        rmm_stream,
+        config,
+        ker,
+        a.data.ptr,
+        b.data.ptr,
+        c.data.ptr,
+        cp.uint64(size),
+    )
+    cuda_stream = dev.create_stream(rmm_stream)
+    cuda_stream.sync()
+
+    # check result
+    assert cp.allclose(c, a + b)
