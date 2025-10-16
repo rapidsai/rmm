@@ -75,7 +75,7 @@ class sam_headroom_memory_resource final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, [[maybe_unused]] cuda_stream_view stream) override
   {
-    void* pointer = system_mr_.allocate_async(bytes, rmm::CUDA_ALLOCATION_ALIGNMENT, stream);
+    void* pointer = system_mr_.allocate(stream, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
 
     auto const free        = rmm::available_device_memory().first;
     auto const allocatable = free > headroom_ ? free - headroom_ : 0UL;
@@ -126,7 +126,7 @@ class sam_headroom_memory_resource final : public device_memory_resource {
                      [[maybe_unused]] std::size_t bytes,
                      [[maybe_unused]] cuda_stream_view stream) noexcept override
   {
-    system_mr_.deallocate_async(ptr, rmm::CUDA_ALLOCATION_ALIGNMENT, stream);
+    system_mr_.deallocate(stream, ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
   }
 
   /**

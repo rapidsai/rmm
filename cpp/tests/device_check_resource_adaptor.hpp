@@ -44,7 +44,7 @@ class device_check_resource_adaptor final : public rmm::mr::device_memory_resour
   {
     bool const is_correct_device = check_device_id();
     EXPECT_TRUE(is_correct_device);
-    if (is_correct_device) { return get_upstream_resource().allocate_async(bytes, stream); }
+    if (is_correct_device) { return get_upstream_resource().allocate(stream, bytes); }
     return nullptr;
   }
 
@@ -52,7 +52,7 @@ class device_check_resource_adaptor final : public rmm::mr::device_memory_resour
   {
     bool const is_correct_device = check_device_id();
     EXPECT_TRUE(is_correct_device);
-    if (is_correct_device) { get_upstream_resource().deallocate_async(ptr, bytes, stream); }
+    if (is_correct_device) { get_upstream_resource().deallocate(stream, ptr, bytes); }
   }
 
   [[nodiscard]] bool do_is_equal(

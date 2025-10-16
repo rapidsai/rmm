@@ -143,10 +143,10 @@ class aligned_resource_adaptor final : public device_memory_resource {
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
     if (alignment_ == rmm::CUDA_ALLOCATION_ALIGNMENT || bytes < alignment_threshold_) {
-      return get_upstream_resource().allocate_async(bytes, 1, stream);
+      return get_upstream_resource().allocate(stream, bytes, 1);
     }
     auto const size = upstream_allocation_size(bytes);
-    void* pointer   = get_upstream_resource().allocate_async(size, 1, stream);
+    void* pointer   = get_upstream_resource().allocate(stream, size, 1);
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     auto const address         = reinterpret_cast<std::size_t>(pointer);
     auto const aligned_address = rmm::align_up(address, alignment_);
@@ -169,7 +169,7 @@ class aligned_resource_adaptor final : public device_memory_resource {
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override
   {
     if (alignment_ == rmm::CUDA_ALLOCATION_ALIGNMENT || bytes < alignment_threshold_) {
-      get_upstream_resource().deallocate_async(ptr, bytes, 1, stream);
+      get_upstream_resource().deallocate(stream, ptr, bytes, 1);
     } else {
       {
         lock_guard lock(mtx_);
@@ -179,7 +179,7 @@ class aligned_resource_adaptor final : public device_memory_resource {
           pointers_.erase(iter);
         }
       }
-      get_upstream_resource().deallocate_async(ptr, upstream_allocation_size(bytes), 1, stream);
+      get_upstream_resource().deallocate(stream, ptr, upstream_allocation_size(bytes), 1);
     }
   }
 

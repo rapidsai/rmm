@@ -134,7 +134,7 @@ inline void test_allocate(resource_ref ref, std::size_t bytes)
   }
 }
 
-inline void test_allocate_async(rmm::device_async_resource_ref ref,
+inline void test_async_allocate(rmm::device_async_resource_ref ref,
                                 std::size_t bytes,
                                 cuda_stream_view stream = {})
 {
@@ -216,10 +216,10 @@ inline void test_various_async_allocations(rmm::device_async_resource_ref ref,
     stream.synchronize();
   }
 
-  test_allocate_async(ref, 4_B, stream);
-  test_allocate_async(ref, 1_KiB, stream);
-  test_allocate_async(ref, 1_MiB, stream);
-  test_allocate_async(ref, 1_GiB, stream);
+  test_async_allocate(ref, 4_B, stream);
+  test_async_allocate(ref, 1_KiB, stream);
+  test_async_allocate(ref, 1_MiB, stream);
+  test_async_allocate(ref, 1_GiB, stream);
 
   // should fail to allocate too much
   {
@@ -249,13 +249,13 @@ inline void test_random_allocations(resource_ref ref,
   std::for_each(
     allocations.begin(), allocations.end(), [&generator, &distribution, &ref](allocation& alloc) {
       alloc.size = distribution(generator);
-      EXPECT_NO_THROW(alloc.ptr = ref.allocate(alloc.size));
+      EXPECT_NO_THROW(alloc.ptr = ref.allocate_sync(alloc.size));
       EXPECT_NE(nullptr, alloc.ptr);
       EXPECT_TRUE(is_properly_aligned(alloc.ptr));
     });
 
   std::for_each(allocations.begin(), allocations.end(), [&ref](allocation& alloc) {
-    EXPECT_NO_THROW(ref.deallocate(alloc.ptr, alloc.size));
+    EXPECT_NO_THROW(ref.deallocate_sync(alloc.ptr, alloc.size));
   });
 }
 

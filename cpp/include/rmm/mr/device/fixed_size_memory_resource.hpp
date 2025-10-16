@@ -176,7 +176,7 @@ class fixed_size_memory_resource
    */
   free_list blocks_from_upstream(cuda_stream_view stream)
   {
-    void* ptr = get_upstream_resource().allocate_async(upstream_chunk_size_, stream);
+    void* ptr = get_upstream_resource().allocate(stream, upstream_chunk_size_);
     block_type block{ptr};
     upstream_blocks_.push_back(block);
 

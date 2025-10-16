@@ -214,7 +214,7 @@ TEST_P(mr_ref_test_mt, MixedRandomAllocationFreeStream)
   spawn(test_mixed_random_async_allocation_free, this->ref, default_max_size, this->stream.view());
 }
 
-void allocate_async_loop(rmm::device_async_resource_ref ref,
+void async_allocate_loop(rmm::device_async_resource_ref ref,
                          std::size_t num_allocations,
                          std::list<allocation>& allocations,
                          std::mutex& mtx,
@@ -229,7 +229,7 @@ void allocate_async_loop(rmm::device_async_resource_ref ref,
 
   for (std::size_t i = 0; i < num_allocations; ++i) {
     std::size_t size = size_distribution(generator);
-    void* ptr        = ref.allocate_async(size, stream);
+    void* ptr        = ref.allocate(stream, size);
     {
       std::lock_guard<std::mutex> lock(mtx);
       RMM_CUDA_TRY(cudaEventRecord(event, stream.value()));
@@ -242,7 +242,7 @@ void allocate_async_loop(rmm::device_async_resource_ref ref,
   cudaEventSynchronize(event);
 }
 
-void deallocate_async_loop(rmm::device_async_resource_ref ref,
+void async_deallocate_loop(rmm::device_async_resource_ref ref,
                            std::size_t num_allocations,
                            std::list<allocation>& allocations,
                            std::mutex& mtx,
@@ -256,14 +256,14 @@ void deallocate_async_loop(rmm::device_async_resource_ref ref,
     RMM_CUDA_TRY(cudaStreamWaitEvent(stream.value(), event));
     allocation alloc = allocations.front();
     allocations.pop_front();
-    ref.deallocate_async(alloc.ptr, alloc.size, stream);
+    ref.deallocate(stream, alloc.ptr, alloc.size);
   }
 
   // Work around for threads going away before cudaEvent has finished async processing
   cudaEventSynchronize(event);
 }
 
-void test_allocate_async_free_different_threads(rmm::device_async_resource_ref ref,
+void test_async_allocate_free_different_threads(rmm::device_async_resource_ref ref,
                                                 rmm::cuda_stream_view streamA,
                                                 rmm::cuda_stream_view streamB)
 {
@@ -276,7 +276,7 @@ void test_allocate_async_free_different_threads(rmm::device_async_resource_ref r
 
   RMM_CUDA_TRY(cudaEventCreate(&event));
 
-  std::thread producer(allocate_async_loop,
+  std::thread producer(async_allocate_loop,
                        ref,
                        num_allocations,
                        std::ref(allocations),
@@ -285,7 +285,7 @@ void test_allocate_async_free_different_threads(rmm::device_async_resource_ref r
                        std::ref(event),
                        streamA);
 
-  std::thread consumer(deallocate_async_loop,
+  std::thread consumer(async_deallocate_loop,
                        ref,
                        num_allocations,
                        std::ref(allocations),
@@ -302,25 +302,25 @@ void test_allocate_async_free_different_threads(rmm::device_async_resource_ref r
 
 TEST_P(mr_ref_test_mt, AllocFreeDifferentThreadsDefaultStream)
 {
-  test_allocate_async_free_different_threads(
+  test_async_allocate_free_different_threads(
     this->ref, rmm::cuda_stream_default, rmm::cuda_stream_default);
 }
 
 TEST_P(mr_ref_test_mt, AllocFreeDifferentThreadsPerThreadDefaultStream)
 {
-  test_allocate_async_free_different_threads(
+  test_async_allocate_free_different_threads(
     this->ref, rmm::cuda_stream_per_thread, rmm::cuda_stream_per_thread);
 }
 
 TEST_P(mr_ref_test_mt, AllocFreeDifferentThreadsSameStream)
 {
-  test_allocate_async_free_different_threads(this->ref, this->stream, this->stream);
+  test_async_allocate_free_different_threads(this->ref, this->stream, this->stream);
 }
 
 TEST_P(mr_ref_test_mt, AllocFreeDifferentThreadsDifferentStream)
 {
   rmm::cuda_stream streamB;
-  test_allocate_async_free_different_threads(this->ref, this->stream, streamB);
+  test_async_allocate_free_different_threads(this->ref, this->stream, streamB);
   streamB.synchronize();
 }
 

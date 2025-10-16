@@ -83,7 +83,7 @@ void BM_AsyncPrimingImpact(benchmark::State& state, MRFactoryFunc factory)
 
     // Deallocate all
     for (auto* ptr : allocations) {
-      mr->deallocate(ptr, allocation_size);
+      mr->deallocate_sync(ptr, allocation_size);
     }
     allocations.clear();
 
@@ -118,7 +118,7 @@ void BM_AsyncPrimingImpact(benchmark::State& state, MRFactoryFunc factory)
 
     // Clean up for next iteration
     for (auto* ptr : allocations) {
-      mr->deallocate(ptr, allocation_size);
+      mr->deallocate_sync(ptr, allocation_size);
     }
     allocations.clear();
   }

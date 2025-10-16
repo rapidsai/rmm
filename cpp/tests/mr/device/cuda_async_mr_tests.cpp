@@ -46,8 +46,8 @@ TEST_F(AsyncMRTest, ExplicitInitialPoolSize)
 {
   const auto pool_init_size{100};
   cuda_async_mr mr{pool_init_size};
-  void* ptr = mr.allocate(pool_init_size);
-  mr.deallocate(ptr, pool_init_size);
+  void* ptr = mr.allocate_sync(pool_init_size);
+  mr.deallocate_sync(ptr, pool_init_size);
   RMM_CUDA_TRY(cudaDeviceSynchronize());
 }
 
@@ -56,8 +56,8 @@ TEST_F(AsyncMRTest, ExplicitReleaseThreshold)
   const auto pool_init_size{100};
   const auto pool_release_threshold{1000};
   cuda_async_mr mr{pool_init_size, pool_release_threshold};
-  void* ptr = mr.allocate(pool_init_size);
-  mr.deallocate(ptr, pool_init_size);
+  void* ptr = mr.allocate_sync(pool_init_size);
+  mr.deallocate_sync(ptr, pool_init_size);
   RMM_CUDA_TRY(cudaDeviceSynchronize());
 }
 
@@ -90,8 +90,8 @@ TEST_F(AsyncMRFabricTest, FabricHandlesSupport)
   cuda_async_mr mr{pool_init_size,
                    pool_release_threshold,
                    rmm::mr::cuda_async_memory_resource::allocation_handle_type::fabric};
-  void* ptr = mr.allocate(pool_init_size);
-  mr.deallocate(ptr, pool_init_size);
+  void* ptr = mr.allocate_sync(pool_init_size);
+  mr.deallocate_sync(ptr, pool_init_size);
   RMM_CUDA_TRY(cudaDeviceSynchronize());
 }
 
