@@ -65,6 +65,7 @@ class host_memory_resource {
   host_memory_resource& operator=(host_memory_resource&&) noexcept =
     default;  ///< @default_move_assignment{host_memory_resource}
 
+#ifdef RMM_ENABLE_LEGACY_MR_INTERFACE
   /**
    * @brief Allocates memory on the host of size at least `bytes` bytes.
    *
@@ -103,6 +104,7 @@ class host_memory_resource {
     RMM_FUNC_RANGE();
     do_deallocate(ptr, bytes, alignment);
   }
+#endif  // RMM_ENABLE_LEGACY_MR_INTERFACE
 
   /**
    * @brief Allocates memory on the host of size at least `bytes` bytes.

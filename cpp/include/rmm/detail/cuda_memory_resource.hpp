@@ -18,7 +18,7 @@
 #ifndef LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 #error \
   "RMM requires LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE to be defined. Please add -DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE to the compiler flags (this is done automatically when using RMM via CMake)."
-#endif
+#endif  // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #include <rmm/detail/export.hpp>
 

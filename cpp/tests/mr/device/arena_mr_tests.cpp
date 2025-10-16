@@ -50,7 +50,7 @@ class mock_memory_resource {
               deallocate_async,
               (void*, std::size_t, std::size_t, cuda::stream_ref),
               (noexcept));
-#endif
+#endif  // RMM_ENABLE_LEGACY_MR_INTERFACE
 
   MOCK_METHOD(void*, allocate, (cuda_stream_view, std::size_t, std::size_t));
   MOCK_METHOD(void, deallocate, (cuda_stream_view, void*, std::size_t, std::size_t), (noexcept));
@@ -340,7 +340,7 @@ TEST_F(ArenaTest, GlobalArenaReleaseMergeNext)  // NOLINT
 {
   auto sblk = global->acquire(256);
   global->release(std::move(sblk));
-  auto* ptr = global->allocate(arena_size);
+  auto* ptr = global->allocate_sync(arena_size);
   EXPECT_EQ(ptr, fake_address3);
 }
 
@@ -351,7 +351,7 @@ TEST_F(ArenaTest, GlobalArenaReleaseMergePrevious)  // NOLINT
   global->acquire(512);
   global->release(std::move(sblk));
   global->release(std::move(sb2));
-  auto* ptr = global->allocate(superblock::minimum_size * 2);
+  auto* ptr = global->allocate_sync(superblock::minimum_size * 2);
   EXPECT_EQ(ptr, fake_address3);
 }
 
@@ -363,7 +363,7 @@ TEST_F(ArenaTest, GlobalArenaReleaseMergePreviousAndNext)  // NOLINT
   global->release(std::move(sblk));
   global->release(std::move(sb3));
   global->release(std::move(sb2));
-  auto* ptr = global->allocate(arena_size);
+  auto* ptr = global->allocate_sync(arena_size);
   EXPECT_EQ(ptr, fake_address3);
 }
 
@@ -377,13 +377,13 @@ TEST_F(ArenaTest, GlobalArenaReleaseMultiple)  // NOLINT
   auto sb3 = global->acquire(512);
   superblocks.insert(std::move(sb3));
   global->release(superblocks);
-  auto* ptr = global->allocate(arena_size);
+  auto* ptr = global->allocate_sync(arena_size);
   EXPECT_EQ(ptr, fake_address3);
 }
 
 TEST_F(ArenaTest, GlobalArenaAllocate)  // NOLINT
 {
-  auto* ptr = global->allocate(superblock::minimum_size * 2);
+  auto* ptr = global->allocate_sync(superblock::minimum_size * 2);
   EXPECT_EQ(ptr, fake_address3);
 }
 

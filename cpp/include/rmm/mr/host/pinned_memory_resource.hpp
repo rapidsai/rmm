@@ -94,7 +94,7 @@ class pinned_memory_resource final : public host_memory_resource {
   {
     do_deallocate(ptr, rmm::align_up(bytes, alignment));
   }
-#endif
+#endif  // RMM_ENABLE_LEGACY_MR_INTERFACE
 
   // Explicitly inherit the allocate and deallocate functions from the host_memory_resource class.
   // Due to inheritance and name hiding rules, we need to declare these with "using" when we

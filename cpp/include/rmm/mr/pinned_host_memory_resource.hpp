@@ -160,7 +160,7 @@ class pinned_host_memory_resource {
     return deallocate(stream, ptr, bytes, alignment);
   }
   // NOLINTEND(bugprone-easily-swappable-parameters)
-#endif
+#endif  // RMM_ENABLE_LEGACY_MR_INTERFACE
 
   /**
    * @brief Allocates pinned host memory of size at least \p bytes bytes.
