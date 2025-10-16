@@ -20,13 +20,18 @@ from cuda.core.experimental import Device
 import rmm.pylibrmm.stream
 
 
-def test_cuda_stream_protocol():
+@pytest.fixture
+def current_device():
     device = Device()
     device.set_current()
+    return device
+
+
+def test_cuda_stream_protocol(current_device):
     rmm_stream = rmm.pylibrmm.stream.Stream()
 
     # RMM -> cuda.core
-    cuda_stream = device.create_stream(rmm_stream)
+    cuda_stream = current_device.create_stream(rmm_stream)
     assert cuda_stream is not None
 
     # cuda.core -> RMM
@@ -34,24 +39,30 @@ def test_cuda_stream_protocol():
     assert rmm_stream_2.__cuda_stream__() == cuda_stream.__cuda_stream__()
 
 
-def test_cuda_core_stream_to_rmm():
-    device = Device()
-    device.set_current()
-    cuda_stream = device.create_stream()
+def test_cuda_core_stream_to_rmm(current_device):
+    cuda_stream = current_device.create_stream()
 
     rmm_stream = rmm.pylibrmm.stream.Stream(cuda_stream)
-    cuda_stream_2 = device.create_stream(rmm_stream)
+    cuda_stream_2 = current_device.create_stream(rmm_stream)
 
     assert cuda_stream_2.__cuda_stream__() == cuda_stream_2.__cuda_stream__()
 
 
-def test_cuda_stream_from_cuda_core_default_stream():
-    device = Device()
-    device.set_current()
-
-    rmm_stream = rmm.pylibrmm.stream.Stream(device.default_stream)
+def test_rmm_stream_from_cuda_core_default_stream(current_device):
+    rmm_stream = rmm.pylibrmm.stream.Stream(current_device.default_stream)
     assert (
-        rmm_stream.__cuda_stream__() == device.default_stream.__cuda_stream__()
+        rmm_stream.__cuda_stream__()
+        == current_device.default_stream.__cuda_stream__()
+    )
+
+
+def test_cuda_core_stream_from_rmm_default_stream(current_device):
+    cuda_stream = current_device.create_stream(
+        rmm.pylibrmm.stream.DEFAULT_STREAM
+    )
+    assert (
+        cuda_stream.__cuda_stream__()
+        == rmm.pylibrmm.stream.DEFAULT_STREAM.__cuda_stream__()
     )
 
 
@@ -72,12 +83,11 @@ def test_cuda_stream_cupy():
     assert rmm_stream.__cuda_stream__() == (0, cupy_stream.ptr)
 
 
-def test_cuda_core_vector_add():
+def test_cuda_core_vector_add(current_device):
     # https://github.com/NVIDIA/cuda-python/blob/main/cuda_core/examples/vector_add.py
     # but with a stream wrapping an RMM stream
 
     from cuda.core.experimental import (
-        Device,
         LaunchConfig,
         Program,
         ProgramOptions,
@@ -100,11 +110,12 @@ def test_cuda_core_vector_add():
     }
     """
 
-    dev = Device()
-    dev.set_current()
+    current_device
 
     # prepare program
-    program_options = ProgramOptions(std="c++17", arch=f"sm_{dev.arch}")
+    program_options = ProgramOptions(
+        std="c++17", arch=f"sm_{current_device.arch}"
+    )
     prog = Program(code, code_type="c++", options=program_options)
     mod = prog.compile("cubin", name_expressions=("vector_add<float>",))
 
@@ -120,7 +131,7 @@ def test_cuda_core_vector_add():
     c = cp.empty_like(a)
 
     # cupy runs on a different stream from s, so sync before accessing
-    dev.sync()
+    current_device.sync()
 
     # prepare launch
     block = 256
@@ -137,7 +148,7 @@ def test_cuda_core_vector_add():
         c.data.ptr,
         cp.uint64(size),
     )
-    cuda_stream = dev.create_stream(rmm_stream)
+    cuda_stream = current_device.create_stream(rmm_stream)
     cuda_stream.sync()
 
     # check result
