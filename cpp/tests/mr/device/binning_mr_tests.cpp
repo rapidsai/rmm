@@ -41,7 +41,7 @@ TEST(BinningTest, ExplicitBinMR)
   mr.add_bin(1024, &cuda);
   auto* ptr = mr.allocate(512);
   EXPECT_NE(ptr, nullptr);
-  mr.deallocate(ptr, 512);
+  mr.deallocate_sync(ptr, 512);
 }
 
 }  // namespace rmm::test

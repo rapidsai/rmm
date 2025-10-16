@@ -52,8 +52,8 @@ TEST(CallbackTest, TestCallbacksAreInvoked)
   auto mr =
     rmm::mr::callback_memory_resource(allocate_callback, deallocate_callback, &base_ref, &base_ref);
   auto const size = std::size_t{10_MiB};
-  auto* ptr       = mr.allocate(size);
-  mr.deallocate(ptr, size);
+  auto* ptr       = mr.allocate_sync(size);
+  mr.deallocate_sync(ptr, size);
 }
 
 TEST(CallbackTest, LoggingTest)
@@ -75,8 +75,8 @@ TEST(CallbackTest, LoggingTest)
   auto mr =
     rmm::mr::callback_memory_resource(allocate_callback, deallocate_callback, &base_mr, &base_mr);
   auto const size = std::size_t{10_MiB};
-  auto* ptr       = mr.allocate(size);
-  mr.deallocate(ptr, size);
+  auto* ptr       = mr.allocate_sync(size);
+  mr.deallocate_sync(ptr, size);
 
   auto output = testing::internal::GetCapturedStdout();
   auto expect = std::string("Allocating ") + std::to_string(size) + " bytes\nDeallocating " +

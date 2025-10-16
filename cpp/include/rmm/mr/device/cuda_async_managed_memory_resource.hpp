@@ -99,7 +99,7 @@ class cuda_async_managed_memory_resource final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, rmm::cuda_stream_view stream) override
   {
-    return pool_.allocate(bytes, stream);
+    return pool_.allocate(stream, bytes);
   }
 
   /**

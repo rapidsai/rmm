@@ -43,9 +43,9 @@ TEST_F(AsyncManagedMRTest, BasicAllocateDeallocate)
 {
   const auto alloc_size{100};
   cuda_async_managed_mr mr{};
-  void* ptr = mr.allocate(alloc_size);
+  void* ptr = mr.allocate_sync(alloc_size);
   ASSERT_NE(nullptr, ptr);
-  mr.deallocate(ptr, alloc_size);
+  mr.deallocate_sync(ptr, alloc_size);
   RMM_CUDA_TRY(cudaDeviceSynchronize());
 }
 
@@ -62,7 +62,7 @@ TEST_F(AsyncManagedMRTest, AllocatedPointerIsManaged)
 {
   const auto alloc_size{1024};
   cuda_async_managed_mr mr{};
-  void* ptr = mr.allocate(alloc_size);
+  void* ptr = mr.allocate_sync(alloc_size);
   ASSERT_NE(nullptr, ptr);
 
   // Verify the pointer is managed memory using cudaPointerGetAttributes
@@ -70,7 +70,7 @@ TEST_F(AsyncManagedMRTest, AllocatedPointerIsManaged)
   RMM_CUDA_TRY(cudaPointerGetAttributes(&attrs, ptr));
   EXPECT_EQ(attrs.type, cudaMemoryTypeManaged);
 
-  mr.deallocate(ptr, alloc_size);
+  mr.deallocate_sync(ptr, alloc_size);
   RMM_CUDA_TRY(cudaDeviceSynchronize());
 }
 
@@ -78,7 +78,7 @@ TEST_F(AsyncManagedMRTest, AllocatedPointerIsAccessibleFromHost)
 {
   const auto alloc_size{sizeof(int) * 100};
   cuda_async_managed_mr mr{};
-  auto* ptr = static_cast<int*>(mr.allocate(alloc_size));
+  auto* ptr = static_cast<int*>(mr.allocate_sync(alloc_size));
   ASSERT_NE(nullptr, ptr);
 
   // Synchronize to ensure allocation is complete
@@ -97,7 +97,7 @@ TEST_F(AsyncManagedMRTest, AllocatedPointerIsAccessibleFromHost)
   EXPECT_EQ(ptr[50], 50);
   EXPECT_EQ(ptr[99], 99);
 
-  mr.deallocate(ptr, alloc_size);
+  mr.deallocate_sync(ptr, alloc_size);
   RMM_CUDA_TRY(cudaDeviceSynchronize());
 }
 
@@ -106,9 +106,9 @@ TEST_F(AsyncManagedMRTest, MultipleAllocationsAreManaged)
   const auto alloc_size{512};
   cuda_async_managed_mr mr{};
 
-  void* ptr1 = mr.allocate(alloc_size);
-  void* ptr2 = mr.allocate(alloc_size * 2);
-  void* ptr3 = mr.allocate(alloc_size / 2);
+  void* ptr1 = mr.allocate_sync(alloc_size);
+  void* ptr2 = mr.allocate_sync(alloc_size * 2);
+  void* ptr3 = mr.allocate_sync(alloc_size / 2);
 
   ASSERT_NE(nullptr, ptr1);
   ASSERT_NE(nullptr, ptr2);
@@ -127,9 +127,9 @@ TEST_F(AsyncManagedMRTest, MultipleAllocationsAreManaged)
   EXPECT_EQ(attrs2.type, cudaMemoryTypeManaged);
   EXPECT_EQ(attrs3.type, cudaMemoryTypeManaged);
 
-  mr.deallocate(ptr1, alloc_size);
-  mr.deallocate(ptr2, alloc_size * 2);
-  mr.deallocate(ptr3, alloc_size / 2);
+  mr.deallocate_sync(ptr1, alloc_size);
+  mr.deallocate_sync(ptr2, alloc_size * 2);
+  mr.deallocate_sync(ptr3, alloc_size / 2);
   RMM_CUDA_TRY(cudaDeviceSynchronize());
 }
 

@@ -389,8 +389,8 @@ TEST_F(ArenaTest, GlobalArenaAllocate)  // NOLINT
 
 TEST_F(ArenaTest, GlobalArenaAllocateExtraLarge)  // NOLINT
 {
-  EXPECT_EQ(global->allocate(1_PiB), nullptr);
-  EXPECT_EQ(global->allocate(1_PiB), nullptr);
+  EXPECT_EQ(global->allocate_sync(1_PiB), nullptr);
+  EXPECT_EQ(global->allocate_sync(1_PiB), nullptr);
 }
 
 TEST_F(ArenaTest, GlobalArenaDeallocate)  // NOLINT

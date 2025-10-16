@@ -229,7 +229,7 @@ class stream_allocator_adaptor {
    * @param num The number of objects to allocate storage for
    * @return Pointer to the allocated storage
    */
-  value_type* allocate(std::size_t num) { return alloc_.allocate(num, stream()); }
+  value_type* allocate(std::size_t num) { return alloc_.allocate(stream(), num); }
 
   /**
    * @brief Deallocates storage pointed to by `ptr` using the underlying allocator on `stream()`.
@@ -242,7 +242,7 @@ class stream_allocator_adaptor {
    */
   void deallocate(value_type* ptr, std::size_t num) noexcept
   {
-    alloc_.deallocate(ptr, num, stream());
+    alloc_.deallocate(stream(), ptr, num);
   }
 
   /**
