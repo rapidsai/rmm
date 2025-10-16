@@ -609,7 +609,7 @@ class global_arena final {
   {
     RMM_LOGGING_ASSERT(handles(size));
     stream.synchronize_no_throw();
-    return deallocate(ptr, size);
+    return deallocate_sync(ptr, size);
   }
 
   /**

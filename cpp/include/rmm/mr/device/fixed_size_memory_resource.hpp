@@ -231,7 +231,7 @@ class fixed_size_memory_resource
     lock_guard lock(this->get_mutex());
 
     for (auto block : upstream_blocks_) {
-      get_upstream_resource().deallocate(block.pointer(), upstream_chunk_size_);
+      get_upstream_resource().deallocate_sync(block.pointer(), upstream_chunk_size_);
     }
     upstream_blocks_.clear();
   }

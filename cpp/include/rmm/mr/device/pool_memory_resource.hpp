@@ -424,7 +424,7 @@ class pool_memory_resource final
     lock_guard lock(this->get_mutex());
 
     for (auto block : upstream_blocks_) {
-      get_upstream_resource().deallocate(block.pointer(), block.size());
+      get_upstream_resource().deallocate_sync(block.pointer(), block.size());
     }
     upstream_blocks_.clear();
 #ifdef RMM_POOL_TRACK_ALLOCATIONS

@@ -156,14 +156,14 @@ class arena_memory_resource final : public device_memory_resource {
 
     {
       std::shared_lock lock(mtx_);
-      void* pointer = arena.allocate(bytes);
+      void* pointer = arena.allocate_sync(bytes);
       if (pointer != nullptr) { return pointer; }
     }
 
     {
       std::unique_lock lock(mtx_);
       defragment();
-      void* pointer = arena.allocate(bytes);
+      void* pointer = arena.allocate_sync(bytes);
       if (pointer == nullptr) {
         if (dump_log_on_failure_) { dump_memory_log(bytes); }
         auto const msg = std::string("Maximum pool size exceeded (failed to allocate ") +
@@ -209,7 +209,7 @@ class arena_memory_resource final : public device_memory_resource {
     {
       std::shared_lock lock(mtx_);
       // If the memory being freed does not belong to the arena, the following will return false.
-      if (arena.deallocate(ptr, bytes, stream)) { return; }
+      if (arena.deallocate(stream, ptr, bytes)) { return; }
     }
 
     {
@@ -218,31 +218,31 @@ class arena_memory_resource final : public device_memory_resource {
       stream.synchronize_no_throw();
 
       std::unique_lock lock(mtx_);
-      deallocate_from_other_arena(ptr, bytes, stream);
+      deallocate_from_other_arena(stream, ptr, bytes);
     }
   }
 
   /**
    * @brief Deallocate memory pointed to by `ptr` that was allocated in a different arena.
    *
+   * @param stream Stream on which to perform deallocation.
    * @param ptr Pointer to be deallocated.
    * @param bytes The size in bytes of the allocation. This must be equal to the
    * value of `bytes` that was passed to the `allocate` call that returned `ptr`.
-   * @param stream Stream on which to perform deallocation.
    */
-  void deallocate_from_other_arena(void* ptr, std::size_t bytes, cuda_stream_view stream)
+  void deallocate_from_other_arena(cuda_stream_view stream, void* ptr, std::size_t bytes)
   {
     if (use_per_thread_arena(stream)) {
       for (auto const& thread_arena : thread_arenas_) {
-        if (thread_arena.second->deallocate(ptr, bytes)) { return; }
+        if (thread_arena.second->deallocate_sync(ptr, bytes)) { return; }
       }
     } else {
       for (auto& stream_arena : stream_arenas_) {
-        if (stream_arena.second.deallocate(ptr, bytes)) { return; }
+        if (stream_arena.second.deallocate_sync(ptr, bytes)) { return; }
       }
     }
 
-    if (!global_arena_.deallocate(ptr, bytes)) {
+    if (!global_arena_.deallocate_sync(ptr, bytes)) {
       // It's possible to use per thread default streams along with another pool of streams.
       // This means that it's possible for an allocation to move from a thread or stream arena
       // back into the global arena during a defragmentation and then move down into another arena
@@ -253,11 +253,11 @@ class arena_memory_resource final : public device_memory_resource {
       // arenas all the time.
       if (use_per_thread_arena(stream)) {
         for (auto& stream_arena : stream_arenas_) {
-          if (stream_arena.second.deallocate(ptr, bytes)) { return; }
+          if (stream_arena.second.deallocate_sync(ptr, bytes)) { return; }
         }
       } else {
         for (auto const& thread_arena : thread_arenas_) {
-          if (thread_arena.second->deallocate(ptr, bytes)) { return; }
+          if (thread_arena.second->deallocate_sync(ptr, bytes)) { return; }
         }
       }
       RMM_FAIL("allocation not found");
