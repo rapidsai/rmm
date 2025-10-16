@@ -148,8 +148,7 @@ def test_cuda_core_vector_add(current_device):
         c.data.ptr,
         cp.uint64(size),
     )
-    cuda_stream = current_device.create_stream(rmm_stream)
-    cuda_stream.sync()
+    rmm_stream.synchronize()
 
     # check result
     assert cp.allclose(c, a + b)
