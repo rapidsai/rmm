@@ -25,17 +25,24 @@ def test_cuda_stream_protocol():
     device.set_current()
     rmm_stream = rmm.pylibrmm.stream.Stream()
 
+    # RMM -> cuda.core
     cuda_stream = device.create_stream(rmm_stream)
     assert cuda_stream is not None
 
+    # cuda.core -> RMM
+    rmm_stream_2 = rmm.pylibrmm.stream.Stream(cuda_stream)
+    assert rmm_stream_2.__cuda_stream__() == cuda_stream.__cuda_stream__()
 
-def test_from_cuda_core_stream():
+
+def test_cuda_core_stream_to_rmm():
     device = Device()
     device.set_current()
     cuda_stream = device.create_stream()
 
     rmm_stream = rmm.pylibrmm.stream.Stream(cuda_stream)
-    assert rmm_stream.__cuda_stream__() == (0, int(cuda_stream.handle))
+    cuda_stream_2 = device.create_stream(rmm_stream)
+
+    assert cuda_stream_2.__cuda_stream__() == cuda_stream_2.__cuda_stream__()
 
 
 def test_cuda_stream_protocol_not_supported():
