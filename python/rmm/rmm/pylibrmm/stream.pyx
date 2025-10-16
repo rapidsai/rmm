@@ -42,10 +42,13 @@ cdef class Stream:
         elif isinstance(obj, Stream):
             self._init_from_stream(obj)
         else:
-            try:
-                self._init_from_numba_stream(obj)
-            except TypeError:
-                self._init_from_cupy_stream(obj)
+            if hasattr(obj, "__cuda_stream__"):
+                self._init_from_cuda_stream_protocol(obj)
+            else:
+                try:
+                    self._init_from_numba_stream(obj)
+                except TypeError:
+                    self._init_from_cupy_stream(obj)
 
     @staticmethod
     cdef Stream _from_cudaStream_t(cudaStream_t s, object owner=None) except *:
@@ -94,6 +97,20 @@ cdef class Stream:
         Check if we are the default CUDA stream
         """
         return self.c_is_default()
+
+    def _init_from_cuda_stream_protocol(self, obj):
+        """
+        Initialize `self` from an object implementing the CUDA Stream Protocol.
+        """
+        version, ptr = obj.__cuda_stream__()
+        if version == 0:
+            self._cuda_stream = <cudaStream_t><uintptr_t>(ptr)
+            self._owner = obj
+        else:
+            raise NotImplementedError(
+                f"RMM does not currently support the CUDA Stream Protocol "
+                f"version: '{version}'."
+            )
 
     def _init_from_numba_stream(self, obj):
         try:

@@ -13,6 +13,8 @@
 # limitations under the License.
 
 
+import cupy as cp
+import pytest
 from cuda.core.experimental import Device
 
 import rmm.pylibrmm.stream
@@ -25,3 +27,29 @@ def test_cuda_stream_protocol():
 
     cuda_stream = device.create_stream(rmm_stream)
     assert cuda_stream is not None
+
+
+def test_from_cuda_core_stream():
+    device = Device()
+    device.set_current()
+    cuda_stream = device.create_stream()
+
+    rmm_stream = rmm.pylibrmm.stream.Stream(cuda_stream)
+    assert rmm_stream.__cuda_stream__() == (0, int(cuda_stream.handle))
+
+
+def test_cuda_stream_protocol_not_supported():
+    class V1Stream:
+        def __cuda_stream__(self):
+            return (1, 2)
+
+    obj = V1Stream()
+    with pytest.raises(NotImplementedError, match="version: '1'"):
+        rmm.pylibrmm.stream.Stream(obj)
+
+
+def test_cuda_stream_cupy():
+    cupy_stream = cp.cuda.Stream()
+    rmm_stream = rmm.pylibrmm.stream.Stream(cupy_stream)
+
+    assert rmm_stream.__cuda_stream__() == (0, cupy_stream.ptr)
