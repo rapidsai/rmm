@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rmm.pylibrmm.memory_resource import experimental
 from rmm.pylibrmm.memory_resource._memory_resource import (
     ArenaMemoryResource,
     BinningMemoryResource,
@@ -45,6 +44,7 @@ from rmm.pylibrmm.memory_resource._memory_resource import (
     set_current_device_resource,
     set_per_device_resource,
 )
+from rmm.pylibrmm.memory_resource import experimental
 
 __all__ = [
     "ArenaMemoryResource",
