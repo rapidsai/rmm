@@ -93,54 +93,54 @@ TYPED_TEST(MRRefTest, SelfEquality) { EXPECT_TRUE(this->ref == this->ref); }
 TYPED_TEST(MRRefTest, AllocateZeroBytes)
 {
   void* ptr{nullptr};
-  EXPECT_NO_THROW(ptr = this->ref.allocate(0));
-  EXPECT_NO_THROW(this->ref.deallocate(ptr, 0));
+  EXPECT_NO_THROW(ptr = this->ref.allocate_sync(0));
+  EXPECT_NO_THROW(this->ref.deallocate_sync(ptr, 0));
 }
 
 TYPED_TEST(MRRefTest, AllocateWord)
 {
   void* ptr{nullptr};
-  EXPECT_NO_THROW(ptr = this->ref.allocate(size_word));
+  EXPECT_NO_THROW(ptr = this->ref.allocate_sync(size_word));
   EXPECT_NE(nullptr, ptr);
   EXPECT_TRUE(is_aligned(ptr));
   EXPECT_FALSE(is_device_memory(ptr));
-  EXPECT_NO_THROW(this->ref.deallocate(ptr, size_word));
+  EXPECT_NO_THROW(this->ref.deallocate_sync(ptr, size_word));
 }
 
 TYPED_TEST(MRRefTest, AllocateKB)
 {
   void* ptr{nullptr};
-  EXPECT_NO_THROW(ptr = this->ref.allocate(size_kb));
+  EXPECT_NO_THROW(ptr = this->ref.allocate_sync(size_kb));
   EXPECT_NE(nullptr, ptr);
   EXPECT_TRUE(is_aligned(ptr));
   EXPECT_FALSE(is_device_memory(ptr));
-  EXPECT_NO_THROW(this->ref.deallocate(ptr, size_kb));
+  EXPECT_NO_THROW(this->ref.deallocate_sync(ptr, size_kb));
 }
 
 TYPED_TEST(MRRefTest, AllocateMB)
 {
   void* ptr{nullptr};
-  EXPECT_NO_THROW(ptr = this->ref.allocate(size_mb));
+  EXPECT_NO_THROW(ptr = this->ref.allocate_sync(size_mb));
   EXPECT_NE(nullptr, ptr);
   EXPECT_TRUE(is_aligned(ptr));
   EXPECT_FALSE(is_device_memory(ptr));
-  EXPECT_NO_THROW(this->ref.deallocate(ptr, size_mb));
+  EXPECT_NO_THROW(this->ref.deallocate_sync(ptr, size_mb));
 }
 
 TYPED_TEST(MRRefTest, AllocateGB)
 {
   void* ptr{nullptr};
-  EXPECT_NO_THROW(ptr = this->ref.allocate(size_gb));
+  EXPECT_NO_THROW(ptr = this->ref.allocate_sync(size_gb));
   EXPECT_NE(nullptr, ptr);
   EXPECT_TRUE(is_aligned(ptr));
   EXPECT_FALSE(is_device_memory(ptr));
-  EXPECT_NO_THROW(this->ref.deallocate(ptr, size_gb));
+  EXPECT_NO_THROW(this->ref.deallocate_sync(ptr, size_gb));
 }
 
 TYPED_TEST(MRRefTest, AllocateTooMuch)
 {
   void* ptr{nullptr};
-  EXPECT_THROW(ptr = this->ref.allocate(size_pb), std::bad_alloc);
+  EXPECT_THROW(ptr = this->ref.allocate_sync(size_pb), std::bad_alloc);
   EXPECT_EQ(nullptr, ptr);
 }
 
@@ -158,13 +158,13 @@ TYPED_TEST(MRRefTest, RandomAllocations)
   std::for_each(
     allocations.begin(), allocations.end(), [&generator, &distribution, this](allocation& alloc) {
       alloc.size = distribution(generator);
-      EXPECT_NO_THROW(alloc.ptr = this->ref.allocate(alloc.size));
+      EXPECT_NO_THROW(alloc.ptr = this->ref.allocate_sync(alloc.size));
       EXPECT_NE(nullptr, alloc.ptr);
       EXPECT_TRUE(is_aligned(alloc.ptr));
     });
 
   std::for_each(allocations.begin(), allocations.end(), [this](allocation& alloc) {
-    EXPECT_NO_THROW(this->ref.deallocate(alloc.ptr, alloc.size));
+    EXPECT_NO_THROW(this->ref.deallocate_sync(alloc.ptr, alloc.size));
   });
 }
 
@@ -186,7 +186,8 @@ TYPED_TEST(MRRefTest, MixedRandomAllocationFree)
   constexpr std::size_t num_allocations{100};
   for (std::size_t i = 0; i < num_allocations; ++i) {
     std::size_t allocation_size = size_distribution(generator);
-    EXPECT_NO_THROW(allocations.emplace_back(this->ref.allocate(allocation_size), allocation_size));
+    EXPECT_NO_THROW(
+      allocations.emplace_back(this->ref.allocate_sync(allocation_size), allocation_size));
     auto new_allocation = allocations.back();
     EXPECT_NE(nullptr, new_allocation.ptr);
     EXPECT_TRUE(is_aligned(new_allocation.ptr));
@@ -195,13 +196,13 @@ TYPED_TEST(MRRefTest, MixedRandomAllocationFree)
 
     if (free_front) {
       auto front = allocations.front();
-      EXPECT_NO_THROW(this->ref.deallocate(front.ptr, front.size));
+      EXPECT_NO_THROW(this->ref.deallocate_sync(front.ptr, front.size));
       allocations.pop_front();
     }
   }
   // free any remaining allocations
   for (auto alloc : allocations) {
-    EXPECT_NO_THROW(this->ref.deallocate(alloc.ptr, alloc.size));
+    EXPECT_NO_THROW(this->ref.deallocate_sync(alloc.ptr, alloc.size));
     allocations.pop_front();
   }
 }
@@ -222,9 +223,9 @@ TYPED_TEST(MRRefTest, AlignmentTest)
          alignment *= TestedAlignmentMultiplier) {
       auto allocation_size = size_distribution(generator);
       void* ptr{nullptr};
-      EXPECT_NO_THROW(ptr = this->ref.allocate(allocation_size, alignment));
+      EXPECT_NO_THROW(ptr = this->ref.allocate_sync(allocation_size, alignment));
       EXPECT_TRUE(is_aligned(ptr, alignment));
-      EXPECT_NO_THROW(this->ref.deallocate(ptr, allocation_size, alignment));
+      EXPECT_NO_THROW(this->ref.deallocate_sync(ptr, allocation_size, alignment));
     }
   }
 }
@@ -245,9 +246,9 @@ TYPED_TEST(MRRefTest, UnsupportedAlignmentTest)
       // alignment of `alignof(std::max_align_t)`
       auto const bad_alignment = alignment + 1;
 
-      EXPECT_NO_THROW(ptr = this->ref.allocate(allocation_size, bad_alignment));
+      EXPECT_NO_THROW(ptr = this->ref.allocate_sync(allocation_size, bad_alignment));
       EXPECT_TRUE(is_aligned(ptr, alignof(std::max_align_t)));
-      EXPECT_NO_THROW(this->ref.deallocate(ptr, allocation_size, bad_alignment));
+      EXPECT_NO_THROW(this->ref.deallocate_sync(ptr, allocation_size, bad_alignment));
 #endif
     }
   }
@@ -258,8 +259,8 @@ TEST(PinnedResource, isPinned)
   rmm::mr::pinned_memory_resource mr;
   rmm::host_resource_ref ref{mr};
   void* ptr{nullptr};
-  EXPECT_NO_THROW(ptr = ref.allocate(100));
+  EXPECT_NO_THROW(ptr = ref.allocate_sync(100));
   EXPECT_TRUE(is_pinned_memory(ptr));
-  EXPECT_NO_THROW(ref.deallocate(ptr, 100));
+  EXPECT_NO_THROW(ref.deallocate_sync(ptr, 100));
 }
 }  // namespace rmm::test

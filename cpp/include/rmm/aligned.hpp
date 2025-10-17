@@ -20,7 +20,6 @@
 
 #include <cassert>
 #include <cstddef>
-#include <cstdint>
 
 namespace RMM_EXPORT rmm {
 

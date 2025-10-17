@@ -37,10 +37,10 @@ TEST(PinnedMemoryResource, AllocateBytesOverload)
   rmm::mr::pinned_memory_resource mr;
 
   void* ptr{nullptr};
-  EXPECT_NO_THROW(ptr = mr.allocate(128));
+  EXPECT_NO_THROW(ptr = mr.allocate_sync(128));
   EXPECT_NE(nullptr, ptr);
   EXPECT_TRUE(is_pinned_memory(ptr));
-  EXPECT_NO_THROW(mr.deallocate(ptr, 128));
+  EXPECT_NO_THROW(mr.deallocate_sync(ptr, 128));
 }
 
 }  // namespace rmm::test

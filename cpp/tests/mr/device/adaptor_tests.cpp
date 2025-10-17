@@ -150,9 +150,9 @@ TYPED_TEST(AdaptorTest, GetUpstreamResource)
 TYPED_TEST(AdaptorTest, AllocFree)
 {
   void* ptr{nullptr};
-  EXPECT_NO_THROW(ptr = this->mr->allocate(1024));
+  EXPECT_NO_THROW(ptr = this->mr->allocate_sync(1024));
   EXPECT_NE(ptr, nullptr);
-  EXPECT_NO_THROW(this->mr->deallocate(ptr, 1024));
+  EXPECT_NO_THROW(this->mr->deallocate_sync(ptr, 1024));
 }
 
 }  // namespace rmm::test

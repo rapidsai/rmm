@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2019-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,7 +94,7 @@ void random_allocation_free(rmm::mr::device_memory_resource& mr,
     void* ptr = nullptr;
     if (do_alloc) {  // try to allocate
       try {
-        ptr = mr.allocate(size, stream);
+        ptr = mr.allocate(stream, size);
       } catch (rmm::bad_alloc const&) {
         do_alloc = false;
 #if VERBOSE
@@ -118,7 +118,7 @@ void random_allocation_free(rmm::mr::device_memory_resource& mr,
         std::size_t index = index_distribution(generator) % active_allocations;
         active_allocations--;
         allocation to_free = remove_at(allocations, index);
-        mr.deallocate(to_free.ptr, to_free.size, stream);
+        mr.deallocate(stream, to_free.ptr, to_free.size);
         allocation_size -= to_free.size;
 
 #if VERBOSE

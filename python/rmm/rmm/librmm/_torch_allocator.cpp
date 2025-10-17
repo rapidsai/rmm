@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024, NVIDIA CORPORATION.
+ * Copyright (c) 2023-2025, NVIDIA CORPORATION.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,8 +40,8 @@ extern "C" void* allocate(std::size_t size, int device, void* stream)
   rmm::cuda_device_id const device_id{device};
   rmm::cuda_set_device_raii with_device{device_id};
   auto mr = rmm::mr::get_per_device_resource_ref(device_id);
-  return mr.allocate_async(
-    size, rmm::CUDA_ALLOCATION_ALIGNMENT, rmm::cuda_stream_view{static_cast<cudaStream_t>(stream)});
+  return mr.allocate(
+    rmm::cuda_stream_view{static_cast<cudaStream_t>(stream)}, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
 }
 
 /**
@@ -57,8 +57,8 @@ extern "C" void deallocate(void* ptr, std::size_t size, int device, void* stream
   rmm::cuda_device_id const device_id{device};
   rmm::cuda_set_device_raii with_device{device_id};
   auto mr = rmm::mr::get_per_device_resource_ref(device_id);
-  mr.deallocate_async(ptr,
-                      size,
-                      rmm::CUDA_ALLOCATION_ALIGNMENT,
-                      rmm::cuda_stream_view{static_cast<cudaStream_t>(stream)});
+  mr.deallocate(rmm::cuda_stream_view{static_cast<cudaStream_t>(stream)},
+                ptr,
+                size,
+                rmm::CUDA_ALLOCATION_ALIGNMENT);
 }

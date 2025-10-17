@@ -170,7 +170,7 @@ class owning_wrapper : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
-    return wrapped().allocate(bytes, stream);
+    return wrapped().allocate(stream, bytes);
   }
 
   /**
@@ -184,7 +184,7 @@ class owning_wrapper : public device_memory_resource {
    */
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override
   {
-    wrapped().deallocate(ptr, bytes, stream);
+    wrapped().deallocate(stream, ptr, bytes);
   }
 
   /**
