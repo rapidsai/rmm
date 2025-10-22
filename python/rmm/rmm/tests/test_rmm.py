@@ -43,6 +43,16 @@ _IS_INTEGRATED_MEMORY_SYSTEM = rmm._cuda.gpu.getDeviceAttribute(
     runtime.cudaDeviceAttr.cudaDevAttrIntegrated, rmm._cuda.gpu.getDevice()
 )
 
+_CONCURRENT_MANAGED_ACCESS_SUPPORTED = rmm._cuda.gpu.getDeviceAttribute(
+    runtime.cudaDeviceAttr.cudaDevAttrConcurrentManagedAccess,
+    rmm._cuda.gpu.getDevice(),
+)
+
+_ASYNC_MANAGED_MEMORY_SUPPORTED = (
+    _CONCURRENT_MANAGED_ACCESS_SUPPORTED
+    and rmm._cuda.gpu.runtimeGetVersion() >= 13000
+)
+
 
 def array_tester(dtype, nelem, alloc):
     # data
@@ -323,17 +333,6 @@ def test_rmm_device_buffer_pickle_roundtrip(hb):
     assert hb3 == hb
 
 
-def concurrent_managed_access_supported():
-    err, device_id = runtime.cudaGetDevice()
-    assert err == runtime.cudaError_t.cudaSuccess
-    err, supported = runtime.cudaDeviceGetAttribute(
-        runtime.cudaDeviceAttr.cudaDevAttrConcurrentManagedAccess,
-        device_id,
-    )
-    assert err == runtime.cudaError_t.cudaSuccess
-    return supported
-
-
 def assert_prefetched(buffer, device_id):
     err, dev = runtime.cudaMemRangeGetAttribute(
         4,
@@ -351,10 +350,10 @@ def assert_prefetched(buffer, device_id):
 def test_rmm_device_buffer_prefetch(pool, managed):
     rmm.reinitialize(pool_allocator=pool, managed_memory=managed)
     db = rmm.DeviceBuffer.to_device(np.zeros(256, dtype="u1"))
-    if managed and concurrent_managed_access_supported():
+    if managed and _CONCURRENT_MANAGED_ACCESS_SUPPORTED:
         assert_prefetched(db, runtime.cudaInvalidDeviceId)
     db.prefetch()  # just test that it doesn't throw
-    if managed and concurrent_managed_access_supported():
+    if managed and _CONCURRENT_MANAGED_ACCESS_SUPPORTED:
         err, device_id = runtime.cudaGetDevice()
         assert err == runtime.cudaError_t.cudaSuccess
         assert_prefetched(db, device_id)
@@ -737,6 +736,46 @@ def test_cuda_async_memory_resource_threshold(nelem, alloc):
     array_tester("u1", 2 * nelem, alloc)  # should trigger release
 
 
+@pytest.mark.skipif(
+    not _ASYNC_MANAGED_MEMORY_SUPPORTED,
+    reason="CudaAsyncManagedMemoryResource requires CUDA 13.0+",
+)
+@pytest.mark.parametrize("dtype", _dtypes)
+@pytest.mark.parametrize("nelem", _nelems)
+@pytest.mark.parametrize("alloc", _allocs)
+def test_cuda_async_managed_memory_resource(dtype, nelem, alloc):
+    mr = rmm.mr.experimental.CudaAsyncManagedMemoryResource()
+    rmm.mr.set_current_device_resource(mr)
+    assert rmm.mr.get_current_device_resource_type() is type(mr)
+    array_tester(dtype, nelem, alloc)
+
+
+@pytest.mark.skipif(
+    not _ASYNC_MANAGED_MEMORY_SUPPORTED,
+    reason="CudaAsyncManagedMemoryResource requires CUDA 13.0+",
+)
+@pytest.mark.parametrize("nelems", _nelems)
+def test_cuda_async_managed_memory_resource_stream(nelems):
+    mr = rmm.mr.experimental.CudaAsyncManagedMemoryResource()
+    rmm.mr.set_current_device_resource(mr)
+    stream = Stream()
+    expected = np.full(nelems, 5, dtype="u1")
+    dbuf = rmm.DeviceBuffer.to_device(expected, stream=stream)
+    result = np.asarray(dbuf.copy_to_host())
+    np.testing.assert_equal(expected, result)
+
+
+@pytest.mark.skipif(
+    not _ASYNC_MANAGED_MEMORY_SUPPORTED,
+    reason="CudaAsyncManagedMemoryResource requires CUDA 13.0+",
+)
+def test_cuda_async_managed_memory_resource_pool_handle():
+    mr = rmm.mr.experimental.CudaAsyncManagedMemoryResource()
+    pool_handle = mr.pool_handle()
+    assert isinstance(pool_handle, int)
+    assert pool_handle != 0
+
+
 @pytest.mark.parametrize(
     "mr",
     [
@@ -864,10 +903,10 @@ def test_prefetch_resource_adaptor(managed):
     err, device_id = runtime.cudaGetDevice()
     assert err == runtime.cudaError_t.cudaSuccess
 
-    if managed and concurrent_managed_access_supported():
+    if managed and _CONCURRENT_MANAGED_ACCESS_SUPPORTED:
         assert_prefetched(db, device_id)
     db.prefetch()  # just test that it doesn't throw
-    if managed and concurrent_managed_access_supported():
+    if managed and _CONCURRENT_MANAGED_ACCESS_SUPPORTED:
         assert_prefetched(db, device_id)
 
 

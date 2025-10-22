@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from rmm.pylibrmm.memory_resource import experimental
 from rmm.pylibrmm.memory_resource._memory_resource import (
     ArenaMemoryResource,
     BinningMemoryResource,
@@ -68,6 +69,7 @@ __all__ = [
     "available_device_memory",
     "disable_logging",
     "enable_logging",
+    "experimental",
     "get_current_device_resource",
     "get_current_device_resource_type",
     "get_log_filenames",
