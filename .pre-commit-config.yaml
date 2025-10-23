@@ -100,7 +100,8 @@ repos:
             dependencies[.]yaml$
         exclude: |
           (?x)^(
-            ^cpp/benchmarks/utilities/cxxopts.hpp
+            cpp/benchmarks/utilities/cxxopts[.]hpp$|
+            cpp/benchmarks/utilities/rapidcsv[.]h$
           )
       - id: verify-alpha-spec
   - repo: https://github.com/rapidsai/dependency-file-generator
