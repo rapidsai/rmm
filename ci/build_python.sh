@@ -6,6 +6,7 @@ set -euo pipefail
 
 source rapids-configure-sccache
 source rapids-date-string
+source ./ci/sccache_dist.sh
 
 export CMAKE_GENERATOR=Ninja
 
