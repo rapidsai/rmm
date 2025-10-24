@@ -14,6 +14,7 @@ from rmm.pylibrmm.memory_resource._memory_resource cimport (
     LimitingResourceAdaptor,
     LoggingResourceAdaptor,
     ManagedMemoryResource,
+    PinnedHostMemoryResource,
     PoolMemoryResource,
     PrefetchResourceAdaptor,
     SamHeadroomMemoryResource,
