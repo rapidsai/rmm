@@ -42,8 +42,10 @@ namespace mr {
  * base class' `allocate` function may log every allocation, no matter what
  * derived class implementation is used.
  *
+ * @deprecated This class is deprecated in 25.12 and will be removed in 26.02.
  */
-class host_memory_resource {
+class [[deprecated("host_memory_resource is deprecated in 25.12 and will be removed in 26.02.")]]
+host_memory_resource {
  public:
   host_memory_resource()                                = default;
   virtual ~host_memory_resource()                       = default;
