@@ -514,7 +514,7 @@ class global_arena final {
   ~global_arena()
   {
     std::lock_guard lock(mtx_);
-    upstream_mr_.deallocate(upstream_block_.pointer(), upstream_block_.size());
+    upstream_mr_.deallocate_sync(upstream_block_.pointer(), upstream_block_.size());
   }
 
   /**
@@ -572,7 +572,7 @@ class global_arena final {
    * @param size The size in bytes of the allocation.
    * @return void* Pointer to the newly allocated memory.
    */
-  void* allocate(std::size_t size)
+  void* allocate_sync(std::size_t size)
   {
     RMM_LOGGING_ASSERT(handles(size));
     std::lock_guard lock(mtx_);
@@ -588,17 +588,17 @@ class global_arena final {
   /**
    * @brief Deallocate memory pointed to by `ptr`.
    *
+   * @param stream Stream on which to perform deallocation.
    * @param ptr Pointer to be deallocated.
    * @param size The size in bytes of the allocation. This must be equal to the value of `size`
    * that was passed to the `allocate` call that returned `p`.
-   * @param stream Stream on which to perform deallocation.
    * @return bool true if the allocation is found, false otherwise.
    */
-  bool deallocate_async(void* ptr, std::size_t size, cuda_stream_view stream)
+  bool deallocate(cuda_stream_view stream, void* ptr, std::size_t size)
   {
     RMM_LOGGING_ASSERT(handles(size));
     stream.synchronize_no_throw();
-    return deallocate(ptr, size);
+    return deallocate_sync(ptr, size);
   }
 
   /**
@@ -609,7 +609,7 @@ class global_arena final {
    * value of `bytes` that was passed to the `allocate` call that returned `ptr`.
    * @return bool true if the allocation is found, false otherwise.
    */
-  bool deallocate(void* ptr, std::size_t bytes)
+  bool deallocate_sync(void* ptr, std::size_t bytes)
   {
     std::lock_guard lock(mtx_);
 
@@ -690,7 +690,7 @@ class global_arena final {
    */
   void initialize(std::size_t size)
   {
-    upstream_block_ = {upstream_mr_.allocate(size), size};
+    upstream_block_ = {upstream_mr_.allocate_sync(size), size};
     superblocks_.emplace(upstream_block_.pointer(), size);
   }
 
@@ -803,9 +803,9 @@ class arena {
    * @param size The size in bytes of the allocation.
    * @return void* Pointer to the newly allocated memory.
    */
-  void* allocate(std::size_t size)
+  void* allocate_sync(std::size_t size)
   {
-    if (global_arena_.handles(size)) { return global_arena_.allocate(size); }
+    if (global_arena_.handles(size)) { return global_arena_.allocate_sync(size); }
     std::lock_guard lock(mtx_);
     return get_block(size).pointer();
   }
@@ -813,18 +813,16 @@ class arena {
   /**
    * @brief Deallocate memory pointed to by `ptr`, and possibly return superblocks to upstream.
    *
+   * @param stream Stream on which to perform deallocation.
    * @param ptr Pointer to be deallocated.
    * @param size The size in bytes of the allocation. This must be equal to the value of `size`
    * that was passed to the `allocate` call that returned `p`.
-   * @param stream Stream on which to perform deallocation.
    * @return bool true if the allocation is found, false otherwise.
    */
-  bool deallocate(void* ptr, std::size_t size, cuda_stream_view stream)
+  bool deallocate(cuda_stream_view stream, void* ptr, std::size_t size)
   {
-    if (global_arena::handles(size) && global_arena_.deallocate_async(ptr, size, stream)) {
-      return true;
-    }
-    return deallocate(ptr, size);
+    if (global_arena::handles(size) && global_arena_.deallocate(stream, ptr, size)) { return true; }
+    return deallocate_sync(ptr, size);
   }
 
   /**
@@ -835,10 +833,10 @@ class arena {
    * that was passed to the `allocate` call that returned `p`.
    * @return bool true if the allocation is found, false otherwise.
    */
-  bool deallocate(void* ptr, std::size_t size)
+  bool deallocate_sync(void* ptr, std::size_t size)
   {
     std::lock_guard lock(mtx_);
-    return deallocate_from_superblock({ptr, size});
+    return deallocate_from_superblock_sync({ptr, size});
   }
 
   /**
@@ -914,7 +912,7 @@ class arena {
    * @param blk The block to deallocate.
    * @return true if the block is found.
    */
-  bool deallocate_from_superblock(block const& blk)
+  bool deallocate_from_superblock_sync(block const& blk)
   {
     auto const iter = std::find_if(superblocks_.cbegin(),
                                    superblocks_.cend(),

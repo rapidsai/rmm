@@ -54,7 +54,7 @@ TEST(PinnedPoolTest, InitialAndMaxPoolSizeEqual)
   EXPECT_NO_THROW([]() {
     rmm::mr::pinned_memory_resource pinned_mr{};
     pool_mr mr(pinned_mr, 1000192, 1000192);
-    mr.allocate(1000);
+    mr.allocate_sync(1000);
   }());
 }
 
@@ -64,7 +64,7 @@ TEST(PinnedPoolTest, NonAlignedPoolSize)
     []() {
       rmm::mr::pinned_memory_resource pinned_mr{};
       pool_mr mr(pinned_mr, 1000031, 1000192);
-      mr.allocate(1000);
+      mr.allocate_sync(1000);
     }(),
     rmm::logic_error);
 
@@ -72,7 +72,7 @@ TEST(PinnedPoolTest, NonAlignedPoolSize)
     []() {
       rmm::mr::pinned_memory_resource pinned_mr{};
       pool_mr mr(pinned_mr, 1000192, 1000200);
-      mr.allocate(1000);
+      mr.allocate_sync(1000);
     }(),
     rmm::logic_error);
 }
@@ -83,9 +83,9 @@ TEST(PinnedPoolTest, ThrowOutOfMemory)
   const auto initial{0};
   const auto maximum{1024};
   pool_mr mr{pinned_mr, initial, maximum};
-  mr.allocate(1024);
+  mr.allocate_sync(1024);
 
-  EXPECT_THROW(mr.allocate(1024), rmm::out_of_memory);
+  EXPECT_THROW(mr.allocate_sync(1024), rmm::out_of_memory);
 }
 
 }  // namespace

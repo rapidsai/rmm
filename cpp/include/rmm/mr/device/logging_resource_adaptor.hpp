@@ -276,7 +276,7 @@ class logging_resource_adaptor final : public device_memory_resource {
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
     try {
-      auto const ptr = get_upstream_resource().allocate_async(bytes, stream);
+      auto const ptr = get_upstream_resource().allocate(stream, bytes);
       logger_->info("allocate,%p,%zu,%s", ptr, bytes, rmm::detail::format_stream(stream));
       return ptr;
     } catch (...) {
@@ -303,7 +303,7 @@ class logging_resource_adaptor final : public device_memory_resource {
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override
   {
     logger_->info("free,%p,%zu,%s", ptr, bytes, rmm::detail::format_stream(stream));
-    get_upstream_resource().deallocate_async(ptr, bytes, stream);
+    get_upstream_resource().deallocate(stream, ptr, bytes);
   }
 
   /**

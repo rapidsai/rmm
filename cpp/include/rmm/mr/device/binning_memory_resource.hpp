@@ -185,7 +185,7 @@ class binning_memory_resource final : public device_memory_resource {
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
     if (bytes <= 0) { return nullptr; }
-    return get_resource_ref(bytes).allocate_async(bytes, stream);
+    return get_resource_ref(bytes).allocate(stream, bytes);
   }
 
   /**
@@ -198,7 +198,7 @@ class binning_memory_resource final : public device_memory_resource {
    */
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override
   {
-    get_resource_ref(bytes).deallocate_async(ptr, bytes, stream);
+    get_resource_ref(bytes).deallocate(stream, ptr, bytes);
   }
 
   device_async_resource_ref

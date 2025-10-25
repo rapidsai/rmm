@@ -219,7 +219,7 @@ class statistics_resource_adaptor final : public device_memory_resource {
    */
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
-    void* ptr = get_upstream_resource().allocate_async(bytes, stream);
+    void* ptr = get_upstream_resource().allocate(stream, bytes);
 
     // increment the stats
     {
@@ -242,7 +242,7 @@ class statistics_resource_adaptor final : public device_memory_resource {
    */
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override
   {
-    get_upstream_resource().deallocate_async(ptr, bytes, stream);
+    get_upstream_resource().deallocate(stream, ptr, bytes);
 
     {
       write_lock_t lock(mtx_);

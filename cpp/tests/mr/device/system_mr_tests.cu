@@ -81,22 +81,22 @@ TEST_F(SystemMRTest, FirstTouchOnCPU)
 {
   auto const free = rmm::available_device_memory().first;
   system_mr mr;
-  void* ptr = mr.allocate(size_mb);
+  void* ptr = mr.allocate_sync(size_mb);
   touch_on_cpu(ptr, size_mb);
   auto const free2 = rmm::available_device_memory().first;
   EXPECT_EQ(free, free2);
-  mr.deallocate(ptr, size_mb);
+  mr.deallocate_sync(ptr, size_mb);
 }
 
 TEST_F(SystemMRTest, FirstTouchOnGPU)
 {
   auto const free = rmm::available_device_memory().first;
   system_mr mr;
-  void* ptr = mr.allocate(size_mb);
+  void* ptr = mr.allocate_sync(size_mb);
   touch_on_gpu(ptr, size_mb);
   auto const free2 = rmm::available_device_memory().first;
   EXPECT_LT(free2, free);
-  mr.deallocate(ptr, size_mb);
+  mr.deallocate_sync(ptr, size_mb);
 }
 
 TEST_F(SystemMRTest, HeadroomMRReserveAllFreeMemory)
@@ -104,9 +104,9 @@ TEST_F(SystemMRTest, HeadroomMRReserveAllFreeMemory)
   auto const free = rmm::available_device_memory().first;
   // All the free GPU memory is set as headroom, so allocation is only on the CPU.
   headroom_mr mr{free + size_gb};
-  void* ptr = mr.allocate(size_mb);
+  void* ptr = mr.allocate_sync(size_mb);
   touch_on_cpu(ptr, size_mb);
-  mr.deallocate(ptr, size_mb);
+  mr.deallocate_sync(ptr, size_mb);
 }
 
 TEST_F(SystemMRTest, HeadroomMRDifferentParametersUnequal)
