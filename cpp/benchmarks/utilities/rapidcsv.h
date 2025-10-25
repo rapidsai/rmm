@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: Copyright (C) 2017-2020 Kristofer Berggren. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+/*
  * rapidcsv.h
  *
  * URL:      https://github.com/d99kris/rapidcsv
