@@ -28,6 +28,7 @@ dependencies:
 - numba>=0.60.0,<0.62.0a0
 - numpy>=1.23,<3.0a0
 - numpydoc
+- packaging
 - pre-commit
 - pytest
 - pytest-cov

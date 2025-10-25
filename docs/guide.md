@@ -102,6 +102,19 @@ destination device ID and stream are optional parameters.
 `DeviceBuffer.prefetch()` is a no-op if the `DeviceBuffer` is not backed
 by migratable memory.
 
+`rmm.pylibrmm.stream.Stream` implements the [CUDA Stream Protocol](https://nvidia.github.io/cuda-python/cuda-core/latest/interoperability.html#cuda-stream-protocol), so it can be used with
+`cuda.core.`.
+
+```python
+>>> from cuda.core.experimental import Device
+>>> import rmm.pylibrmm.stream
+>>> device = Device()
+>>> device.set_current()
+>>> rmm_stream = rmm.pylibrmm.stream.Stream()
+
+>>> cuda_stream = device.create_stream(rmm_stream)
+```
+
 ### `MemoryResource` objects
 
 `MemoryResource` objects are used to configure how device memory allocations are made by
