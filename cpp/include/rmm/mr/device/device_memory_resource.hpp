@@ -153,13 +153,13 @@ class device_memory_resource {
    * the specified `stream`.
    *
    * @param bytes The size of the allocation
-   * @param alignment The expected alignment of the allocation
+   * @param alignment The alignment of the allocation
    * @return void* Pointer to the newly allocated memory
    */
   void* allocate(std::size_t bytes, std::size_t alignment)
   {
     RMM_FUNC_RANGE();
-    return do_allocate(rmm::align_up(bytes, alignment), cuda_stream_view{});
+    return do_allocate(bytes, cuda_stream_view{});
   }
 
   /**
@@ -178,7 +178,7 @@ class device_memory_resource {
   void deallocate(void* ptr, std::size_t bytes, std::size_t alignment) noexcept
   {
     RMM_FUNC_RANGE();
-    do_deallocate(ptr, rmm::align_up(bytes, alignment), cuda_stream_view{});
+    do_deallocate(ptr, bytes, cuda_stream_view{});
   }
 
   /**
@@ -200,7 +200,7 @@ class device_memory_resource {
   void* allocate_async(std::size_t bytes, std::size_t alignment, cuda_stream_view stream)
   {
     RMM_FUNC_RANGE();
-    return do_allocate(rmm::align_up(bytes, alignment), stream);
+    return do_allocate(bytes, stream);
   }
 
   /**
@@ -244,7 +244,7 @@ class device_memory_resource {
                         cuda_stream_view stream) noexcept
   {
     RMM_FUNC_RANGE();
-    do_deallocate(ptr, rmm::align_up(bytes, alignment), stream);
+    do_deallocate(ptr, bytes, stream);
   }
 
   /**
@@ -270,20 +270,21 @@ class device_memory_resource {
   /**
    * @brief Allocates memory of size at least \p bytes.
    *
-   * The returned pointer will have at minimum 256 byte alignment.
+   * The returned pointer will have 256 byte alignment regardless of the value
+   * of alignment. Higher alignments must use the aligned_resource_adaptor.
    *
    * @throws rmm::bad_alloc When the requested `bytes` cannot be allocated.
    *
    * @param bytes The size of the allocation
-   * @param alignment The expected alignment of the allocation (must be a power of two and less than
-   * or equal to 256)
+   * @param alignment The alignment of the allocation (see notes above)
    * @return void* Pointer to the newly allocated memory
    */
   void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
-    RMM_EXPECTS(alignment <= 256 && rmm::is_supported_alignment(alignment),
-                "Alignment must be less than or equal to 256 and a power of two");
-    return do_allocate(rmm::align_up(bytes, alignment), cuda_stream_view{});
+    RMM_EXPECTS(
+      alignment <= rmm::CUDA_ALLOCATION_ALIGNMENT && rmm::is_supported_alignment(alignment),
+      "Alignment must be less than or equal to 256 and a power of two");
+    return do_allocate(bytes, cuda_stream_view{});
   }
 
   /**
@@ -298,29 +299,30 @@ class device_memory_resource {
                        std::size_t bytes,
                        std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
   {
-    do_deallocate(ptr, rmm::align_up(bytes, alignment), cuda_stream_view{});
+    do_deallocate(ptr, bytes, cuda_stream_view{});
   }
 
   /**
    * @brief Allocates memory of size at least \p bytes on the specified stream.
    *
-   * The returned pointer will have at minimum 256 byte alignment.
+   * The returned pointer will have 256 byte alignment regardless of the value
+   * of alignment. Higher alignments must use the aligned_resource_adaptor.
    *
    * @throws rmm::bad_alloc When the requested `bytes` cannot be allocated.
    *
    * @param stream The stream on which to perform the allocation
    * @param bytes The size of the allocation
-   * @param alignment The expected alignment of the allocation (must be a power of two and less than
-   * or equal to 256)
+   * @param alignment The alignment of the allocation (see notes above)
    * @return void* Pointer to the newly allocated memory
    */
   void* allocate(cuda_stream_view stream,
                  std::size_t bytes,
                  std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
-    RMM_EXPECTS(alignment <= 256 && rmm::is_supported_alignment(alignment),
-                "Alignment must be less than or equal to 256 and a power of two");
-    return do_allocate(rmm::align_up(bytes, alignment), stream);
+    RMM_EXPECTS(
+      alignment <= rmm::CUDA_ALLOCATION_ALIGNMENT && rmm::is_supported_alignment(alignment),
+      "Alignment must be less than or equal to 256 and a power of two");
+    return do_allocate(bytes, stream);
   }
 
   /**
@@ -337,7 +339,7 @@ class device_memory_resource {
                   std::size_t bytes,
                   std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
   {
-    do_deallocate(ptr, rmm::align_up(bytes, alignment), stream);
+    do_deallocate(ptr, bytes, stream);
   }
 
   /**
