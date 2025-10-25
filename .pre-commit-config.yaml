@@ -1,4 +1,5 @@
-# Copyright (c) 2022-2024, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2022-2025, NVIDIA CORPORATION.
+# SPDX-License-Identifier: Apache-2.0
 ci:
   autofix_commit_msg: "[pre-commit.ci] auto code formatting"
   autofix_prs: false
@@ -81,13 +82,26 @@ repos:
         pass_filenames: false
         verbose: true
   - repo: https://github.com/rapidsai/pre-commit-hooks
-    rev: v0.7.0
+    rev: v1.1.0
     hooks:
       - id: verify-copyright
-        args: [--fix, --main-branch=main]
+        args: [--fix, --spdx]
+        files: |
+          (?x)
+            [.](cmake|cpp|cu|cuh|h|hpp|sh|pxd|py|pyx|rs|java)$|
+            CMakeLists[.]txt$|
+            CMakeLists_standalone[.]txt$|
+            meta[.]yaml$|
+            pyproject[.]toml$|
+            setup[.]cfg$|
+            ^[.]pre-commit-config[.]yaml$|
+            Makefile$|
+            recipe[.]yaml$|
+            dependencies[.]yaml$
         exclude: |
           (?x)^(
-            ^cpp/benchmarks/utilities/cxxopts.hpp
+            cpp/benchmarks/utilities/cxxopts[.]hpp$|
+            cpp/benchmarks/utilities/rapidcsv[.]h$
           )
       - id: verify-alpha-spec
   - repo: https://github.com/rapidsai/dependency-file-generator
