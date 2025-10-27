@@ -9,6 +9,11 @@
 function(find_and_configure_cccl)
 
   include(${rapids-cmake-dir}/cpm/cccl.cmake)
+  include(${rapids-cmake-dir}/cpm/package_override.cmake)
+
+  set(rmm_patch_dir "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/patches")
+  rapids_cpm_package_override("${rmm_patch_dir}/cccl_override.json")
+
   rapids_cpm_cccl(BUILD_EXPORT_SET rmm-exports INSTALL_EXPORT_SET rmm-exports)
 
 endfunction()
