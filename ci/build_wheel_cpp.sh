@@ -9,7 +9,6 @@ package_dir="python/librmm"
 source rapids-configure-sccache
 source rapids-date-string
 source rapids-init-pip
-source ./ci/sccache_dist.sh
 
 rapids-generate-version > ./VERSION
 
