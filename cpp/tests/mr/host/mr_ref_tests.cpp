@@ -7,6 +7,13 @@
 
 #include <rmm/aligned.hpp>
 #include <rmm/detail/cuda_memory_resource.hpp>
+
+// Suppress deprecation warnings for testing deprecated functionality
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
 #include <rmm/mr/host/new_delete_resource.hpp>
 #include <rmm/mr/host/pinned_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
@@ -252,3 +259,7 @@ TEST(PinnedResource, isPinned)
   EXPECT_NO_THROW(ref.deallocate(ptr, 100));
 }
 }  // namespace rmm::test
+
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
