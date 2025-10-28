@@ -92,14 +92,16 @@ void aligned_host_deallocate(void* ptr,
 {
   assert(rmm::is_supported_alignment(alignment));
 
-  // Get offset from the location immediately prior to the aligned pointer
-  // NOLINTNEXTLINE
-  std::ptrdiff_t const offset = *(reinterpret_cast<std::ptrdiff_t*>(ptr) - 1);
+  if (ptr != nullptr) {
+    // Get offset from the location immediately prior to the aligned pointer
+    // NOLINTNEXTLINE
+    std::ptrdiff_t const offset = *(reinterpret_cast<std::ptrdiff_t*>(ptr) - 1);
 
-  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-  void* const original = static_cast<char*>(ptr) - offset;
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    void* const original = static_cast<char*>(ptr) - offset;
 
-  dealloc(original);
+    dealloc(original);
+  }
 }
 }  // namespace detail
 }  // namespace RMM_NAMESPACE
