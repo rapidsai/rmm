@@ -254,20 +254,12 @@ TYPED_TEST(MRRefTest, UnsupportedAlignmentTest)
   for (std::size_t num_trials = 0; num_trials < NUM_TRIALS; ++num_trials) {
     for (std::size_t alignment = MinTestedAlignment; alignment <= max_alignment;
          alignment *= TestedAlignmentMultiplier) {
-#ifdef NDEBUG
-      // TODO (bdice): We shouldn't support or test these odd alignments.
-      if constexpr (!std::is_same_v<MemoryResourceType, rmm::mr::pinned_host_memory_resource>) {
-        auto allocation_size = size_distribution(generator);
-        void* ptr{nullptr};
-        // An unsupported alignment (like an odd number) should result in an
-        // alignment of `alignof(std::max_align_t)`
-        auto const bad_alignment = alignment + 1;
+      auto allocation_size = size_distribution(generator);
+      // An unsupported alignment (like an odd number) should result in an
+      // alignment of `alignof(std::max_align_t)`
+      auto const bad_alignment = alignment + 1;
 
-        EXPECT_NO_THROW(ptr = this->ref.allocate(allocation_size, bad_alignment));
-        EXPECT_TRUE(is_aligned(ptr, alignof(std::max_align_t)));
-        EXPECT_NO_THROW(this->ref.deallocate(ptr, allocation_size, bad_alignment));
-      }
-#endif
+      EXPECT_THROW(this->ref.allocate(allocation_size, bad_alignment), rmm::logic_error);
     }
   }
 }

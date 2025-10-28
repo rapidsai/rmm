@@ -114,9 +114,8 @@ class [[deprecated(
     // don't allocate anything if the user requested zero bytes
     if (0 == bytes) { return nullptr; }
 
-    // If the requested alignment isn't supported, use default
-    alignment =
-      (rmm::is_supported_alignment(alignment)) ? alignment : rmm::RMM_DEFAULT_HOST_ALIGNMENT;
+    RMM_EXPECTS(rmm::is_supported_alignment(alignment),
+                "Allocation alignment is not a power of 2.");
 
     return rmm::detail::aligned_host_allocate(bytes, alignment, [](std::size_t size) {
       void* ptr{nullptr};
