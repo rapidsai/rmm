@@ -3,8 +3,8 @@
     "CCCL": {
       "version": "3.2.0",
       "git_shallow": false,
-      "git_url": "https://github.com/NVIDIA/cccl.git",
-      "git_tag": "e987c623399665616761eafc6162a06d7774a161"
+      "git_url": "https://github.com/miscco/cccl.git",
+      "git_tag": "fix_deduction_guide_declspec"
     }
   }
 }
