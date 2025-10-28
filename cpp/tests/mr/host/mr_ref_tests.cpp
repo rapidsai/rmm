@@ -259,7 +259,7 @@ TYPED_TEST(MRRefTest, UnsupportedAlignmentTest)
       // alignment of `alignof(std::max_align_t)`
       auto const bad_alignment = alignment + 1;
 
-      EXPECT_THROW(this->ref.allocate(allocation_size, bad_alignment), rmm::logic_error);
+      EXPECT_THROW(this->ref.allocate(allocation_size, bad_alignment), std::bad_alloc);
     }
   }
 }

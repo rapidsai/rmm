@@ -7,6 +7,7 @@
 #include <rmm/aligned.hpp>
 #include <rmm/detail/aligned.hpp>
 #include <rmm/detail/export.hpp>
+#include <rmm/error.hpp>
 #include <rmm/mr/host/host_memory_resource.hpp>
 
 #include <cstddef>
@@ -54,7 +55,8 @@ new_delete_resource final : public host_memory_resource {
                     std::size_t alignment = rmm::RMM_DEFAULT_HOST_ALIGNMENT) override
   {
     RMM_EXPECTS(rmm::is_supported_alignment(alignment),
-                "Allocation alignment is not a power of 2.");
+                "Allocation alignment is not a power of 2.",
+                rmm::bad_alloc);
 
     return rmm::detail::aligned_host_allocate(
       bytes, alignment, [](std::size_t size) { return ::operator new(size); });

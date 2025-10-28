@@ -9,6 +9,7 @@
 #include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
+#include <rmm/error.hpp>
 #include <rmm/mr/host/host_memory_resource.hpp>
 
 #include <cstddef>
@@ -115,7 +116,8 @@ class [[deprecated(
     if (0 == bytes) { return nullptr; }
 
     RMM_EXPECTS(rmm::is_supported_alignment(alignment),
-                "Allocation alignment is not a power of 2.");
+                "Allocation alignment is not a power of 2.",
+                rmm::bad_alloc);
 
     return rmm::detail::aligned_host_allocate(bytes, alignment, [](std::size_t size) {
       void* ptr{nullptr};
