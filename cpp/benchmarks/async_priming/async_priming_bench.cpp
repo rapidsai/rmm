@@ -58,13 +58,13 @@ void BM_AsyncPrimingImpact(benchmark::State& state, MRFactoryFunc factory)
     auto start_time = std::chrono::high_resolution_clock::now();
 
     // First allocation - measure latency to this specific call
-    allocations.push_back(mr->allocate(allocation_size));
+    allocations.push_back(mr->allocate_sync(allocation_size));
     cudaDeviceSynchronize();
     auto first_allocation_time = std::chrono::high_resolution_clock::now();
 
     // Continue with remaining allocations in first round
     for (int i = 1; i < num_allocations; ++i) {
-      allocations.push_back(mr->allocate(allocation_size));
+      allocations.push_back(mr->allocate_sync(allocation_size));
     }
 
     cudaDeviceSynchronize();
@@ -78,7 +78,7 @@ void BM_AsyncPrimingImpact(benchmark::State& state, MRFactoryFunc factory)
 
     // Second round of allocations
     for (int i = 0; i < num_allocations; ++i) {
-      allocations.push_back(mr->allocate(allocation_size));
+      allocations.push_back(mr->allocate_sync(allocation_size));
     }
 
     cudaDeviceSynchronize();
