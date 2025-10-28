@@ -73,6 +73,18 @@ struct MRRefTest : public ::testing::Test {
   rmm::host_resource_ref ref;
 
   MRRefTest() : mr{}, ref{mr} {}
+
+  // Helper to get max alignment for the resource type
+  static constexpr std::size_t get_max_alignment()
+  {
+    // pinned_host_memory_resource inherits from device_memory_resource which limits alignment to
+    // 256
+    if constexpr (std::is_same_v<MemoryResourceType, rmm::mr::pinned_host_memory_resource>) {
+      return 256;
+    } else {
+      return 4096;
+    }
+  }
 };
 
 using resources = ::testing::Types<rmm::mr::new_delete_resource,
@@ -208,7 +220,6 @@ TYPED_TEST(MRRefTest, MixedRandomAllocationFree)
 }
 
 static constexpr std::size_t MinTestedAlignment{16};
-static constexpr std::size_t MaxTestedAlignment{4096};
 static constexpr std::size_t TestedAlignmentMultiplier{2};
 static constexpr std::size_t NUM_TRIALS{100};
 
@@ -218,8 +229,10 @@ TYPED_TEST(MRRefTest, AlignmentTest)
   constexpr std::size_t MAX_ALLOCATION_SIZE{10 * size_mb};
   std::uniform_int_distribution<std::size_t> size_distribution(1, MAX_ALLOCATION_SIZE);
 
+  const std::size_t max_alignment = TestFixture::get_max_alignment();
+
   for (std::size_t num_trials = 0; num_trials < NUM_TRIALS; ++num_trials) {
-    for (std::size_t alignment = MinTestedAlignment; alignment <= MaxTestedAlignment;
+    for (std::size_t alignment = MinTestedAlignment; alignment <= max_alignment;
          alignment *= TestedAlignmentMultiplier) {
       auto allocation_size = size_distribution(generator);
       void* ptr{nullptr};
@@ -236,8 +249,10 @@ TYPED_TEST(MRRefTest, UnsupportedAlignmentTest)
   constexpr std::size_t MAX_ALLOCATION_SIZE{10 * size_mb};
   std::uniform_int_distribution<std::size_t> size_distribution(1, MAX_ALLOCATION_SIZE);
 
+  const std::size_t max_alignment = TestFixture::get_max_alignment();
+
   for (std::size_t num_trials = 0; num_trials < NUM_TRIALS; ++num_trials) {
-    for (std::size_t alignment = MinTestedAlignment; alignment <= MaxTestedAlignment;
+    for (std::size_t alignment = MinTestedAlignment; alignment <= max_alignment;
          alignment *= TestedAlignmentMultiplier) {
 #ifdef NDEBUG
       auto allocation_size = size_distribution(generator);
