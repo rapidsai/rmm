@@ -26,8 +26,14 @@ namespace mr {
  * pinned/page-locked host memory.
  *
  * See https://devblogs.nvidia.com/how-optimize-data-transfers-cuda-cc/
+ *
+ * @deprecated This class is deprecated in 25.12 and will be removed in 26.02.
+ * Use `pinned_host_memory_resource` instead.
  */
-class pinned_memory_resource final : public host_memory_resource {
+class [[deprecated(
+  "pinned_memory_resource is deprecated in 25.12 and will be removed in 26.02. "
+  "Use pinned_host_memory_resource instead.")]] pinned_memory_resource final
+  : public host_memory_resource {
  public:
   pinned_memory_resource()                              = default;
   ~pinned_memory_resource() override                    = default;

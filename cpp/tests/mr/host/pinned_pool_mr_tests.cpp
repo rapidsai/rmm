@@ -5,6 +5,13 @@
 
 #include <rmm/error.hpp>
 #include <rmm/mr/device/pool_memory_resource.hpp>
+
+// Suppress deprecation warnings for testing deprecated functionality
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
 #include <rmm/mr/host/pinned_memory_resource.hpp>
 
 #include <gtest/gtest.h>
@@ -90,3 +97,7 @@ TEST(PinnedPoolTest, ThrowOutOfMemory)
 
 }  // namespace
 }  // namespace rmm::test
+
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif

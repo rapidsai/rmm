@@ -22,8 +22,11 @@ namespace mr {
 /**
  * @brief A `host_memory_resource` that uses the global `operator new` and `operator delete` to
  * allocate host memory.
+ *
+ * @deprecated This class is deprecated in 25.12 and will be removed in 26.02.
  */
-class new_delete_resource final : public host_memory_resource {
+class [[deprecated("new_delete_resource is deprecated in 25.12 and will be removed in 26.02.")]]
+new_delete_resource final : public host_memory_resource {
  public:
   new_delete_resource()                           = default;
   ~new_delete_resource() override                 = default;
