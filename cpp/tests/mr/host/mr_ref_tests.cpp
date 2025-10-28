@@ -16,6 +16,7 @@
 
 #include <rmm/mr/host/new_delete_resource.hpp>
 #include <rmm/mr/host/pinned_memory_resource.hpp>
+#include <rmm/mr/pinned_host_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <cuda_runtime_api.h>
@@ -74,13 +75,17 @@ struct MRRefTest : public ::testing::Test {
   MRRefTest() : mr{}, ref{mr} {}
 };
 
-using resources = ::testing::Types<rmm::mr::new_delete_resource, rmm::mr::pinned_memory_resource>;
+using resources = ::testing::Types<rmm::mr::new_delete_resource,
+                                   rmm::mr::pinned_memory_resource,
+                                   rmm::mr::pinned_host_memory_resource>;
 
 // static property checks
 static_assert(
   rmm::detail::polyfill::resource_with<rmm::mr::new_delete_resource, cuda::mr::host_accessible>);
 static_assert(
   rmm::detail::polyfill::resource_with<rmm::mr::pinned_memory_resource, cuda::mr::host_accessible>);
+static_assert(rmm::detail::polyfill::resource_with<rmm::mr::pinned_host_memory_resource,
+                                                   cuda::mr::host_accessible>);
 
 TYPED_TEST_SUITE(MRRefTest, resources);
 
@@ -257,6 +262,16 @@ TEST(PinnedResource, isPinned)
   EXPECT_NO_THROW(ptr = ref.allocate(100));
   EXPECT_TRUE(is_pinned_memory(ptr));
   EXPECT_NO_THROW(ref.deallocate(ptr, 100));
+}
+
+TEST(PinnedHostResource, isPinned)
+{
+  rmm::mr::pinned_host_memory_resource mr;
+  rmm::host_resource_ref ref{mr};
+  void* ptr{nullptr};
+  EXPECT_NO_THROW(ptr = ref.allocate_sync(100));
+  EXPECT_TRUE(is_pinned_memory(ptr));
+  EXPECT_NO_THROW(ref.deallocate_sync(ptr, 100));
 }
 }  // namespace rmm::test
 
