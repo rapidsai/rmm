@@ -21,24 +21,20 @@ INSTANTIATE_TEST_SUITE_P(ResourceTests,
                                            "Managed",
                                            "System",
                                            "Pool",
-                                           "HostPinnedPool",
+                                           "Pinned",
+                                           "PinnedPool",
                                            "Arena",
                                            "Binning",
                                            "Fixed_Size"),
                          [](auto const& info) { return info.param; });
 
 // Leave out fixed-size MR here because it can't handle the dynamic allocation sizes
-INSTANTIATE_TEST_SUITE_P(ResourceAllocationTests,
-                         mr_ref_allocation_test,
-                         ::testing::Values("CUDA",
-                                           "CUDA_Async",
-                                           "Managed",
-                                           "System"
-                                           "Pool",
-                                           "HostPinnedPool",
-                                           "Arena",
-                                           "Binning"),
-                         [](auto const& info) { return info.param; });
+INSTANTIATE_TEST_SUITE_P(
+  ResourceAllocationTests,
+  mr_ref_allocation_test,
+  ::testing::Values(
+    "CUDA", "CUDA_Async", "Managed", "System", "Pool", "Pinned", "PinnedPool", "Arena", "Binning"),
+  [](auto const& info) { return info.param; });
 
 TEST(DefaultTest, CurrentDeviceResourceIsCUDA)
 {
