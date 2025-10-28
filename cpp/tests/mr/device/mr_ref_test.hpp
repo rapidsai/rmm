@@ -371,7 +371,7 @@ inline void test_mixed_random_async_allocation_free(rmm::device_async_resource_r
 /// MR factory functions
 inline auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>(); }
 
-inline auto make_host_pinned() { return std::make_shared<rmm::mr::pinned_host_memory_resource>(); }
+inline auto make_pinned() { return std::make_shared<rmm::mr::pinned_host_memory_resource>(); }
 
 inline auto make_cuda_async()
 {
@@ -403,10 +403,9 @@ inline auto make_pool()
     make_cuda(), rmm::percent_of_free_device_memory(50));
 }
 
-inline auto make_host_pinned_pool()
+inline auto make_pinned_pool()
 {
-  return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(
-    make_host_pinned(), 2_GiB, 8_GiB);
+  return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_pinned(), 2_GiB, 8_GiB);
 }
 
 inline auto make_arena()
@@ -471,9 +470,8 @@ inline std::shared_ptr<mr_factory_base> mr_factory_dispatch(std::string name)
 {
   if (name == "CUDA") {
     return std::make_shared<mr_factory<cuda_mr, decltype(make_cuda)>>("CUDA", make_cuda);
-  } else if (name == "Host_Pinned") {
-    return std::make_shared<mr_factory<pinned_mr, decltype(make_host_pinned)>>("Host_Pinned",
-                                                                               make_host_pinned);
+  } else if (name == "Pinned") {
+    return std::make_shared<mr_factory<pinned_mr, decltype(make_pinned)>>("Pinned", make_pinned);
   } else if (name == "CUDA_Async") {
     return std::make_shared<mr_factory<cuda_async_mr, decltype(make_cuda_async)>>("CUDA_Async",
                                                                                   make_cuda_async);
@@ -484,9 +482,9 @@ inline std::shared_ptr<mr_factory_base> mr_factory_dispatch(std::string name)
     return std::make_shared<mr_factory<system_mr, decltype(make_system)>>("System", make_system);
   } else if (name == "Pool") {
     return std::make_shared<mr_factory<pool_mr, decltype(make_pool)>>("Pool", make_pool);
-  } else if (name == "Host_Pinned_Pool") {
-    return std::make_shared<mr_factory<pinned_pool_mr, decltype(make_host_pinned_pool)>>(
-      "Host_Pinned_Pool", make_host_pinned_pool);
+  } else if (name == "Pinned_Pool") {
+    return std::make_shared<mr_factory<pinned_pool_mr, decltype(make_pinned_pool)>>(
+      "Pinned_Pool", make_pinned_pool);
   } else if (name == "Arena") {
     return std::make_shared<mr_factory<arena_mr, decltype(make_arena)>>("Arena", make_arena);
   } else if (name == "Binning") {

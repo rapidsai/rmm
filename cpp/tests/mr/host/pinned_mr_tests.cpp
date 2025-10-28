@@ -3,6 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// Suppress deprecation warnings for testing deprecated functionality
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
 #include <rmm/mr/host/pinned_memory_resource.hpp>
 
 #include <cuda_runtime_api.h>
@@ -35,3 +41,7 @@ TEST(PinnedMemoryResource, AllocateBytesOverload)
 }
 
 }  // namespace rmm::test
+
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
