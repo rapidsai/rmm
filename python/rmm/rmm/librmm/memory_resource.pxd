@@ -103,6 +103,11 @@ cdef extern from "rmm/mr/device/system_memory_resource.hpp" \
     cdef cppclass system_memory_resource(device_memory_resource):
         system_memory_resource() except +
 
+cdef extern from "rmm/mr/pinned_host_memory_resource.hpp" \
+        namespace "rmm::mr" nogil:
+    cdef cppclass pinned_host_memory_resource(device_memory_resource):
+        pinned_host_memory_resource() except +
+
 cdef extern from "rmm/mr/device/sam_headroom_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass sam_headroom_memory_resource(device_memory_resource):

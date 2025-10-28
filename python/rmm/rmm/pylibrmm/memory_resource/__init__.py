@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
-from rmm.pylibrmm.memory_resource import experimental
 from rmm.pylibrmm.memory_resource._memory_resource import (
     ArenaMemoryResource,
     BinningMemoryResource,
@@ -15,6 +14,7 @@ from rmm.pylibrmm.memory_resource._memory_resource import (
     LimitingResourceAdaptor,
     LoggingResourceAdaptor,
     ManagedMemoryResource,
+    PinnedHostMemoryResource,
     PoolMemoryResource,
     PrefetchResourceAdaptor,
     SamHeadroomMemoryResource,
@@ -34,6 +34,7 @@ from rmm.pylibrmm.memory_resource._memory_resource import (
     set_current_device_resource,
     set_per_device_resource,
 )
+from rmm.pylibrmm.memory_resource import experimental
 
 __all__ = [
     "ArenaMemoryResource",
@@ -48,6 +49,7 @@ __all__ = [
     "LimitingResourceAdaptor",
     "LoggingResourceAdaptor",
     "ManagedMemoryResource",
+    "PinnedHostMemoryResource",
     "PoolMemoryResource",
     "PrefetchResourceAdaptor",
     "SamHeadroomMemoryResource",

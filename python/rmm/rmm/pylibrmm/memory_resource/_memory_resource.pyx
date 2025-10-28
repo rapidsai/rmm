@@ -55,6 +55,7 @@ from rmm.librmm.memory_resource cimport (
     logging_resource_adaptor,
     managed_memory_resource,
     percent_of_free_device_memory as c_percent_of_free_device_memory,
+    pinned_host_memory_resource,
     pool_memory_resource,
     prefetch_resource_adaptor,
     sam_headroom_memory_resource,
@@ -296,6 +297,23 @@ cdef class SystemMemoryResource(DeviceMemoryResource):
         """
         Memory resource that uses ``malloc``/``free`` for
         allocation/deallocation.
+        """
+        pass
+
+
+cdef class PinnedHostMemoryResource(DeviceMemoryResource):
+    def __cinit__(self):
+        self.c_obj.reset(
+            new pinned_host_memory_resource()
+        )
+
+    def __init__(self):
+        """
+        Memory resource that uses ``cudaHostAlloc``/``cudaFreeHost`` for
+        allocation/deallocation of pinned host memory.
+
+        Pinned (page-locked) host memory is accessible from both the host and
+        device, enabling faster data transfers between host and device.
         """
         pass
 

@@ -27,6 +27,9 @@ cdef class ManagedMemoryResource(DeviceMemoryResource):
 cdef class SystemMemoryResource(DeviceMemoryResource):
     pass
 
+cdef class PinnedHostMemoryResource(DeviceMemoryResource):
+    pass
+
 cdef class SamHeadroomMemoryResource(DeviceMemoryResource):
     pass
 
