@@ -482,9 +482,9 @@ inline std::shared_ptr<mr_factory_base> mr_factory_dispatch(std::string name)
     return std::make_shared<mr_factory<system_mr, decltype(make_system)>>("System", make_system);
   } else if (name == "Pool") {
     return std::make_shared<mr_factory<pool_mr, decltype(make_pool)>>("Pool", make_pool);
-  } else if (name == "Pinned_Pool") {
+  } else if (name == "PinnedPool") {
     return std::make_shared<mr_factory<pinned_pool_mr, decltype(make_pinned_pool)>>(
-      "Pinned_Pool", make_pinned_pool);
+      "PinnedPool", make_pinned_pool);
   } else if (name == "Arena") {
     return std::make_shared<mr_factory<arena_mr, decltype(make_arena)>>("Arena", make_arena);
   } else if (name == "Binning") {
