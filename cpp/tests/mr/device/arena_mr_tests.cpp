@@ -31,6 +31,7 @@ namespace {
 
 class mock_memory_resource {
  public:
+#ifdef RMM_ENABLE_LEGACY_MR_INTERFACE
   MOCK_METHOD(void*, allocate, (std::size_t, std::size_t));
   MOCK_METHOD(void, deallocate, (void*, std::size_t, std::size_t), (noexcept));
   MOCK_METHOD(void*, allocate_async, (std::size_t, std::size_t, cuda::stream_ref));
@@ -38,6 +39,7 @@ class mock_memory_resource {
               deallocate_async,
               (void*, std::size_t, std::size_t, cuda::stream_ref),
               (noexcept));
+#endif  // RMM_ENABLE_LEGACY_MR_INTERFACE
 
   void* allocate_sync(std::size_t bytes, std::size_t alignment)
   {

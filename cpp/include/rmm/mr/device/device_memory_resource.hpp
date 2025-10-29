@@ -92,6 +92,7 @@ class device_memory_resource {
   device_memory_resource& operator=(device_memory_resource&&) noexcept =
     default;  ///< @default_move_assignment{device_memory_resource}
 
+#ifdef RMM_ENABLE_LEGACY_MR_INTERFACE
   /**
    * @brief Allocates memory of size at least \p bytes.
    *
@@ -138,24 +139,6 @@ class device_memory_resource {
   {
     RMM_FUNC_RANGE();
     do_deallocate(ptr, bytes, stream);
-  }
-
-  /**
-   * @brief Compare this resource to another.
-   *
-   * Two device_memory_resources compare equal if and only if memory allocated
-   * from one device_memory_resource can be deallocated from the other and vice
-   * versa.
-   *
-   * By default, simply checks if \p *this and \p other refer to the same
-   * object, i.e., does not check if they are two objects of the same class.
-   *
-   * @param other The other resource to compare to
-   * @returns If the two resources are equivalent
-   */
-  [[nodiscard]] bool is_equal(device_memory_resource const& other) const noexcept
-  {
-    return do_is_equal(other);
   }
 
   /**
@@ -282,9 +265,7 @@ class device_memory_resource {
     RMM_FUNC_RANGE();
     do_deallocate(ptr, bytes, stream);
   }
-
-#if CCCL_MAJOR_VERSION > 3 || (CCCL_MAJOR_VERSION == 3 && CCCL_MINOR_VERSION >= 1)
-  // CCCL >= 3.1 needs a different set of methods to satisfy the memory resource concepts
+#endif  // RMM_ENABLE_LEGACY_MR_INTERFACE
 
   /**
    * @brief Allocates memory of size at least \p bytes.
@@ -360,7 +341,24 @@ class device_memory_resource {
   {
     do_deallocate(ptr, rmm::align_up(bytes, alignment), stream);
   }
-#endif  // CCCL >= 3.1
+
+  /**
+   * @brief Compare this resource to another.
+   *
+   * Two device_memory_resources compare equal if and only if memory allocated
+   * from one device_memory_resource can be deallocated from the other and vice
+   * versa.
+   *
+   * By default, simply checks if \p *this and \p other refer to the same
+   * object, i.e., does not check if they are two objects of the same class.
+   *
+   * @param other The other resource to compare to
+   * @returns If the two resources are equivalent
+   */
+  [[nodiscard]] bool is_equal(device_memory_resource const& other) const noexcept
+  {
+    return do_is_equal(other);
+  }
 
   /**
    * @brief Comparison operator with another device_memory_resource
