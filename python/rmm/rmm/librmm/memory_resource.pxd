@@ -33,28 +33,15 @@ cdef extern from "rmm/mr/device/device_memory_resource.hpp" \
         # End legacy functions
 
         void* allocate_sync(size_t bytes) except +
-        void* allocate_sync(size_t bytes, size_t alignment=256) except +
         void deallocate_sync(void* ptr, size_t bytes) noexcept
-        void deallocate_sync(void* ptr, size_t bytes, size_t alignment=256) noexcept
         void* allocate(
             cuda_stream_view stream,
             size_t bytes
-        ) except +
-        void* allocate(
-            cuda_stream_view stream,
-            size_t bytes,
-            size_t alignment=256
         ) except +
         void deallocate(
             cuda_stream_view stream,
             void* ptr,
             size_t bytes
-        ) noexcept
-        void deallocate(
-            cuda_stream_view stream,
-            void* ptr,
-            size_t bytes,
-            size_t alignment=256
         ) noexcept
 
 cdef extern from "rmm/cuda_device.hpp" namespace "rmm" nogil:
