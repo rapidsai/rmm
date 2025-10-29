@@ -87,7 +87,7 @@ class [[deprecated(
                         std::size_t alignment,
                         cuda_stream_view) noexcept
   {
-    do_deallocate(ptr, rmm::align_up(bytes, alignment));
+    do_deallocate(ptr, bytes);
   }
 
   /**
@@ -102,7 +102,7 @@ class [[deprecated(
    * @brief Allocates pinned memory on the host of size at least `bytes` bytes.
    *
    * The returned storage is aligned to the specified `alignment` if supported, and to
-   * `alignof(std::max_align_t)` otherwise.
+   * `rmm::RMM_DEFAULT_HOST_ALIGNMENT` otherwise.
    *
    * @throws std::bad_alloc When the requested `bytes` and `alignment` cannot be allocated.
    *
@@ -110,7 +110,8 @@ class [[deprecated(
    * @param alignment Alignment of the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* do_allocate(std::size_t bytes, std::size_t alignment = alignof(std::max_align_t)) override
+  void* do_allocate(std::size_t bytes,
+                    std::size_t alignment = rmm::RMM_DEFAULT_HOST_ALIGNMENT) override
   {
     // don't allocate anything if the user requested zero bytes
     if (0 == bytes) { return nullptr; }
@@ -141,7 +142,7 @@ class [[deprecated(
    */
   void do_deallocate(void* ptr,
                      std::size_t bytes,
-                     std::size_t alignment = alignof(std::max_align_t)) noexcept override
+                     std::size_t alignment = rmm::RMM_DEFAULT_HOST_ALIGNMENT) noexcept override
   {
     if (nullptr == ptr) { return; }
     rmm::detail::aligned_host_deallocate(

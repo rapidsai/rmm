@@ -806,7 +806,7 @@ def test_tracking_resource_adaptor():
     for i in range(9, 0, -2):
         del buffers[i]
 
-    assert mr.get_allocated_bytes() == 5040
+    assert mr.get_allocated_bytes() == 5000
 
     # Push a new Tracking adaptor
     mr2 = rmm.mr.TrackingResourceAdaptor(mr, capture_stacks=True)
@@ -815,8 +815,8 @@ def test_tracking_resource_adaptor():
     for _ in range(2):
         buffers.append(rmm.DeviceBuffer(size=1000))
 
-    assert mr2.get_allocated_bytes() == 2016
-    assert mr.get_allocated_bytes() == 7056
+    assert mr2.get_allocated_bytes() == 2000
+    assert mr.get_allocated_bytes() == 7000
 
     # Ensure we get back a non-empty string for the allocations
     assert len(mr.get_outstanding_allocations_str()) > 0
