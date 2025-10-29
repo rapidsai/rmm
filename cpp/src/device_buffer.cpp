@@ -87,12 +87,12 @@ void device_buffer::allocate_async(std::size_t bytes)
 {
   _size     = bytes;
   _capacity = bytes;
-  _data     = (bytes > 0) ? _mr.allocate_async(bytes, stream()) : nullptr;
+  _data     = (bytes > 0) ? _mr.allocate(stream(), bytes) : nullptr;
 }
 
 void device_buffer::deallocate_async() noexcept
 {
-  if (capacity() > 0) { _mr.deallocate_async(data(), capacity(), stream()); }
+  if (capacity() > 0) { _mr.deallocate(stream(), data(), capacity()); }
   _size     = 0;
   _capacity = 0;
   _data     = nullptr;

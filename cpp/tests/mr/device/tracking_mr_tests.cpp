@@ -46,10 +46,10 @@ TEST(TrackingTest, AllFreed)
   std::vector<void*> allocations;
   allocations.reserve(num_allocations);
   for (int i = 0; i < num_allocations; ++i) {
-    allocations.push_back(mr.allocate(ten_MiB));
+    allocations.push_back(mr.allocate_sync(ten_MiB));
   }
   for (auto* alloc : allocations) {
-    mr.deallocate(alloc, ten_MiB);
+    mr.deallocate_sync(alloc, ten_MiB);
   }
   EXPECT_EQ(mr.get_outstanding_allocations().size(), 0);
   EXPECT_EQ(mr.get_allocated_bytes(), 0);
@@ -61,10 +61,10 @@ TEST(TrackingTest, AllocationsLeftWithStacks)
   std::vector<void*> allocations;
   allocations.reserve(num_allocations);
   for (int i = 0; i < num_allocations; ++i) {
-    allocations.push_back(mr.allocate(ten_MiB));
+    allocations.push_back(mr.allocate_sync(ten_MiB));
   }
   for (int i = 0; i < num_allocations; i += 2) {
-    mr.deallocate(allocations[i], ten_MiB);
+    mr.deallocate_sync(allocations[i], ten_MiB);
   }
   EXPECT_EQ(mr.get_outstanding_allocations().size(), num_allocations / 2);
   EXPECT_EQ(mr.get_allocated_bytes(), ten_MiB * (num_allocations / 2));
@@ -79,11 +79,11 @@ TEST(TrackingTest, AllocationsLeftWithoutStacks)
   std::vector<void*> allocations;
   allocations.reserve(num_allocations);
   for (int i = 0; i < num_allocations; ++i) {
-    allocations.push_back(mr.allocate(ten_MiB));
+    allocations.push_back(mr.allocate_sync(ten_MiB));
   }
 
   for (int i = 0; i < num_allocations; i += 2) {
-    mr.deallocate(allocations[i], ten_MiB);
+    mr.deallocate_sync(allocations[i], ten_MiB);
   }
   EXPECT_EQ(mr.get_outstanding_allocations().size(), num_allocations / 2);
   EXPECT_EQ(mr.get_allocated_bytes(), ten_MiB * (num_allocations / 2));
@@ -145,7 +145,7 @@ TEST(TrackingTest, NegativeInnerTracking)
   tracking_adaptor mr{rmm::mr::get_current_device_resource_ref()};
   std::vector<void*> allocations;
   for (std::size_t i = 0; i < num_allocations; ++i) {
-    allocations.push_back(mr.allocate(ten_MiB));
+    allocations.push_back(mr.allocate_sync(ten_MiB));
   }
 
   EXPECT_EQ(mr.get_outstanding_allocations().size(), num_allocations);
@@ -154,7 +154,7 @@ TEST(TrackingTest, NegativeInnerTracking)
 
   // Add more allocations
   for (std::size_t i = 0; i < num_more_allocations; ++i) {
-    allocations.push_back(inner_mr.allocate(ten_MiB));
+    allocations.push_back(inner_mr.allocate_sync(ten_MiB));
   }
 
   // Check the outstanding allocations
@@ -163,7 +163,7 @@ TEST(TrackingTest, NegativeInnerTracking)
 
   // Deallocate all allocations using the inner_mr
   for (auto& allocation : allocations) {
-    inner_mr.deallocate(allocation, ten_MiB);
+    inner_mr.deallocate_sync(allocation, ten_MiB);
   }
   allocations.clear();
 
@@ -177,12 +177,12 @@ TEST(TrackingTest, DeallocWrongBytes)
   tracking_adaptor mr{rmm::mr::get_current_device_resource_ref()};
   std::vector<void*> allocations;
   for (std::size_t i = 0; i < num_allocations; ++i) {
-    allocations.push_back(mr.allocate(ten_MiB));
+    allocations.push_back(mr.allocate_sync(ten_MiB));
   }
 
   // When deallocating, pass the wrong bytes to deallocate
   for (auto& allocation : allocations) {
-    mr.deallocate(allocation, ten_MiB / 2);
+    mr.deallocate_sync(allocation, ten_MiB / 2);
   }
   allocations.clear();
 
@@ -203,7 +203,7 @@ TEST(TrackingTest, LogOutstandingAllocations)
   tracking_adaptor mr{rmm::mr::get_current_device_resource_ref()};
   std::vector<void*> allocations;
   for (std::size_t i = 0; i < num_allocations; ++i) {
-    allocations.push_back(mr.allocate(ten_MiB));
+    allocations.push_back(mr.allocate_sync(ten_MiB));
   }
 
   rmm::default_logger().set_level(rapids_logger::level_enum::debug);
@@ -214,7 +214,7 @@ TEST(TrackingTest, LogOutstandingAllocations)
 #endif
 
   for (auto& allocation : allocations) {
-    mr.deallocate(allocation, ten_MiB);
+    mr.deallocate_sync(allocation, ten_MiB);
   }
 
   rmm::default_logger().set_level(old_level);
