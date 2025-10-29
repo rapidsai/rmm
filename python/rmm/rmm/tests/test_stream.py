@@ -8,6 +8,7 @@ import packaging.version
 import pytest
 from cuda.core.experimental import Device
 
+import rmm.pylibrmm.cuda_stream_pool
 import rmm.pylibrmm.stream
 
 CUDA_CORE_VERSION = importlib.metadata.version("cuda-core")
@@ -93,3 +94,28 @@ def test_cuda_core_buffer(current_device):
     buf = cuda_core_mr.allocate(1024, stream=rmm_stream)
     buf.close(stream=rmm_stream)
     rmm_stream.synchronize()
+
+
+@pytest.mark.parametrize(
+    "flags",
+    [
+        rmm.pylibrmm.cuda_stream_pool.CudaStreamFlags.SYNC_DEFAULT,
+        rmm.pylibrmm.cuda_stream_pool.CudaStreamFlags.NON_BLOCKING,
+    ],
+)
+def test_cuda_stream_pool(current_device, flags):
+    cuda_stream = current_device.create_stream()
+    rmm_stream = rmm.pylibrmm.stream.Stream(cuda_stream)
+
+    stream_pool = rmm.pylibrmm.cuda_stream_pool.CudaStreamPool(
+        pool_size=10, flags=flags
+    )
+    assert stream_pool.get_pool_size() == 10
+
+    streams = [stream_pool.get_stream() for _ in range(10)]
+
+    for i in range(10):
+        for j in range(i + 1, 10):
+            assert streams[i] != streams[j]
+        assert streams[i] != rmm_stream
+        assert streams[i] == stream_pool.get_stream_by_id(i)
