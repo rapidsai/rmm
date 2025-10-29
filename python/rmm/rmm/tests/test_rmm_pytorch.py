@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2023-2024, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2023-2025, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 import gc
@@ -12,6 +12,8 @@ torch = pytest.importorskip("torch")
 
 @pytest.fixture(scope="session")
 def torch_allocator():
+    if not torch.cuda.is_available():
+        pytest.skip("pytorch built without CUDA support")
     try:
         from torch.cuda.memory import change_current_allocator
     except ImportError:
