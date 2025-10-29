@@ -88,7 +88,7 @@ class [[deprecated(
                         std::size_t alignment,
                         cuda_stream_view) noexcept
   {
-    do_deallocate(ptr, rmm::align_up(bytes, alignment));
+    do_deallocate(ptr, bytes);
   }
 
   // Explicitly inherit the allocate and deallocate functions from the host_memory_resource class.

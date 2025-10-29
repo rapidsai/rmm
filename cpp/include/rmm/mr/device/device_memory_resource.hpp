@@ -285,7 +285,7 @@ class device_memory_resource {
       alignment <= rmm::CUDA_ALLOCATION_ALIGNMENT && rmm::is_supported_alignment(alignment),
       "Alignment must be less than or equal to 256 and a power of two",
       rmm::bad_alloc);
-    return do_allocate(rmm::align_up(bytes, alignment), cuda_stream_view{});
+    return do_allocate(bytes, cuda_stream_view{});
   }
 
   /**
@@ -324,7 +324,7 @@ class device_memory_resource {
       alignment <= rmm::CUDA_ALLOCATION_ALIGNMENT && rmm::is_supported_alignment(alignment),
       "Alignment must be less than or equal to 256 and a power of two",
       rmm::bad_alloc);
-    return do_allocate(rmm::align_up(bytes, alignment), stream);
+    return do_allocate(bytes, stream);
   }
 
   /**
