@@ -45,6 +45,7 @@ class [[deprecated(
   pinned_memory_resource& operator=(pinned_memory_resource&&) =
     default;  ///< @default_move_assignment{pinned_memory_resource}
 
+#ifdef RMM_ENABLE_LEGACY_MR_INTERFACE
   /**
    * @brief Pretend to support the allocate_async interface, falling back to stream 0
    *
@@ -87,7 +88,49 @@ class [[deprecated(
                         std::size_t alignment,
                         cuda_stream_view) noexcept
   {
-    do_deallocate(ptr, rmm::align_up(bytes, alignment));
+    do_deallocate(ptr, bytes);
+  }
+
+  // Explicitly inherit the allocate and deallocate functions from the host_memory_resource class.
+  // Due to inheritance and name hiding rules, we need to declare these with "using" when we
+  // override allocate and deallocate for CCCL 3.1.0+ compatibility.
+  using host_memory_resource::allocate;
+  using host_memory_resource::deallocate;
+#endif  // RMM_ENABLE_LEGACY_MR_INTERFACE
+
+  /**
+   * @brief Pretend to support the allocate_async interface, falling back to stream 0
+   *
+   * @throws rmm::bad_alloc When the requested `bytes` cannot be allocated on
+   * the specified `stream`.
+   *
+   * @param stream CUDA stream on which to perform the deallocation (ignored).
+   * @param bytes The size of the allocation
+   * @param alignment The expected alignment of the allocation
+   * @return void* Pointer to the newly allocated memory
+   */
+  void* allocate(cuda_stream_view stream,
+                 std::size_t bytes,
+                 std::size_t alignment = rmm::RMM_DEFAULT_HOST_ALIGNMENT)
+  {
+    return do_allocate(bytes, alignment);
+  }
+
+  /**
+   * @brief Pretend to support the deallocate_async interface, falling back to stream 0
+   *
+   * @param stream CUDA stream on which to perform the deallocation (ignored).
+   * @param ptr Pointer to be deallocated
+   * @param bytes The size in bytes of the allocation. This must be equal to the
+   * value of `bytes` that was passed to the `allocate` call that returned `p`.
+   * @param alignment The alignment that was passed to the `allocate` call that returned `p`
+   */
+  void deallocate(cuda_stream_view stream,
+                  void* ptr,
+                  std::size_t bytes,
+                  std::size_t alignment = rmm::RMM_DEFAULT_HOST_ALIGNMENT) noexcept
+  {
+    return do_deallocate(ptr, bytes, alignment);
   }
 
   /**
@@ -102,7 +145,7 @@ class [[deprecated(
    * @brief Allocates pinned memory on the host of size at least `bytes` bytes.
    *
    * The returned storage is aligned to the specified `alignment` if supported, and to
-   * `alignof(std::max_align_t)` otherwise.
+   * `rmm::RMM_DEFAULT_HOST_ALIGNMENT` otherwise.
    *
    * @throws std::bad_alloc When the requested `bytes` and `alignment` cannot be allocated.
    *
@@ -110,7 +153,8 @@ class [[deprecated(
    * @param alignment Alignment of the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* do_allocate(std::size_t bytes, std::size_t alignment = alignof(std::max_align_t)) override
+  void* do_allocate(std::size_t bytes,
+                    std::size_t alignment = rmm::RMM_DEFAULT_HOST_ALIGNMENT) override
   {
     // don't allocate anything if the user requested zero bytes
     if (0 == bytes) { return nullptr; }
@@ -141,56 +185,12 @@ class [[deprecated(
    */
   void do_deallocate(void* ptr,
                      std::size_t bytes,
-                     std::size_t alignment = alignof(std::max_align_t)) noexcept override
+                     std::size_t alignment = rmm::RMM_DEFAULT_HOST_ALIGNMENT) noexcept override
   {
     if (nullptr == ptr) { return; }
     rmm::detail::aligned_host_deallocate(
       ptr, bytes, alignment, [](void* ptr) { RMM_ASSERT_CUDA_SUCCESS(cudaFreeHost(ptr)); });
   }
-
-#if CCCL_MAJOR_VERSION > 3 || (CCCL_MAJOR_VERSION == 3 && CCCL_MINOR_VERSION >= 1)
-
- public:
-  // Explicitly inherit the allocate and deallocate functions from the host_memory_resource class.
-  // Due to inheritance and name hiding rules, we need to declare these with "using" when we
-  // override allocate and deallocate for CCCL 3.1.0+ compatibility.
-  using host_memory_resource::allocate;
-  using host_memory_resource::deallocate;
-
-  /**
-   * @brief Pretend to support the allocate_async interface, falling back to stream 0
-   *
-   * @throws rmm::bad_alloc When the requested `bytes` cannot be allocated on
-   * the specified `stream`.
-   *
-   * @param stream CUDA stream on which to perform the deallocation (ignored).
-   * @param bytes The size of the allocation
-   * @param alignment The expected alignment of the allocation
-   * @return void* Pointer to the newly allocated memory
-   */
-  void* allocate(cuda_stream_view stream, std::size_t bytes, std::size_t alignment)
-  {
-    return this->allocate_async(bytes, alignment, stream);
-  }
-
-  /**
-   * @brief Pretend to support the deallocate_async interface, falling back to stream 0
-   *
-   * @param stream CUDA stream on which to perform the deallocation (ignored).
-   * @param ptr Pointer to be deallocated
-   * @param bytes The size in bytes of the allocation. This must be equal to the
-   * value of `bytes` that was passed to the `allocate` call that returned `p`.
-   * @param alignment The alignment that was passed to the `allocate` call that returned `p`
-   */
-  void deallocate(cuda_stream_view stream,
-                  void* ptr,
-                  std::size_t bytes,
-                  std::size_t alignment) noexcept
-  {
-    return this->deallocate_async(ptr, bytes, alignment, stream);
-  }
-
-#endif
 };
 
 // static property checks

@@ -328,9 +328,8 @@ class pool_memory_resource final
   {
     if (maximum_pool_size_.has_value()) {
       auto const unaligned_remaining = maximum_pool_size_.value() - pool_size();
-      using rmm::align_up;
-      auto const remaining    = align_up(unaligned_remaining, rmm::CUDA_ALLOCATION_ALIGNMENT);
-      auto const aligned_size = align_up(size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+      auto const remaining    = rmm::align_up(unaligned_remaining, rmm::CUDA_ALLOCATION_ALIGNMENT);
+      auto const aligned_size = rmm::align_up(size, rmm::CUDA_ALLOCATION_ALIGNMENT);
       return (aligned_size <= remaining) ? std::max(aligned_size, remaining / 2) : 0;
     }
     return std::max(size, pool_size());
