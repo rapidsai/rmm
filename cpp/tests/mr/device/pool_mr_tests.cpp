@@ -182,7 +182,6 @@ namespace test_properties {
 class fake_async_resource {
  public:
   // To model `async_resource`
-
 #ifdef RMM_ENABLE_LEGACY_MR_INTERFACE
   static void* allocate(std::size_t, std::size_t) { return nullptr; }
   static void deallocate(void* ptr, std::size_t, std::size_t) noexcept {}
