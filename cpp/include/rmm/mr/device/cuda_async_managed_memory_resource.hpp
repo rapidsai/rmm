@@ -47,7 +47,7 @@ class cuda_async_managed_memory_resource final : public device_memory_resource {
    */
   cuda_async_managed_memory_resource()
   {
-    // Check if cudaMallocFromPoolAsync supported
+    // Check if managed memory pools are supported
     RMM_EXPECTS(rmm::detail::runtime_async_managed_alloc::is_supported(),
                 "cuda_async_managed_memory_resource requires CUDA 13.0 or higher");
 
