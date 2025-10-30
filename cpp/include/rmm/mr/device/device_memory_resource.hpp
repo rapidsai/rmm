@@ -339,7 +339,7 @@ class device_memory_resource {
   void deallocate(cuda_stream_view stream,
                   void* ptr,
                   std::size_t bytes,
-                  std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
+                  [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
   {
     do_deallocate(ptr, bytes, stream);
   }
