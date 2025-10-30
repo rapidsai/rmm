@@ -59,7 +59,7 @@ host_memory_resource {
   /**
    * @brief Allocates memory on the host of size at least `bytes` bytes.
    *
-   * The returned storage is aligned to the specified `alignment` if supported, and to
+   * The returned storage is aligned to the specified `alignment` if provided, and to
    * `alignof(std::max_align_t)` otherwise.
    *
    * @throws std::bad_alloc When the requested `bytes` and `alignment` cannot be allocated.
@@ -77,7 +77,7 @@ host_memory_resource {
   /**
    * @brief Deallocate memory pointed to by `ptr`.
    *
-   * `ptr` must have been returned by a prior call to `allocate(bytes,alignment)` on a
+   * `ptr` must have been returned by a prior call to `allocate(bytes, alignment)` on a
    * `host_memory_resource` that compares equal to `*this`, and the storage it points to must not
    * yet have been deallocated, otherwise behavior is undefined.
    *
