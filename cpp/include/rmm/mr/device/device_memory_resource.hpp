@@ -156,7 +156,7 @@ class device_memory_resource {
    * @param alignment The alignment of the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* allocate(std::size_t bytes, std::size_t alignment)
+  void* allocate(std::size_t bytes, [[maybe_unused]] std::size_t alignment)
   {
     RMM_FUNC_RANGE();
     return do_allocate(bytes, cuda_stream_view{});
@@ -175,7 +175,7 @@ class device_memory_resource {
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param alignment The alignment that was passed to the `allocate` call that returned `p`
    */
-  void deallocate(void* ptr, std::size_t bytes, std::size_t alignment) noexcept
+  void deallocate(void* ptr, std::size_t bytes, [[maybe_unused]] std::size_t alignment) noexcept
   {
     RMM_FUNC_RANGE();
     do_deallocate(ptr, bytes, cuda_stream_view{});
@@ -197,7 +197,9 @@ class device_memory_resource {
    * @param stream Stream on which to perform allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* allocate_async(std::size_t bytes, std::size_t alignment, cuda_stream_view stream)
+  void* allocate_async(std::size_t bytes,
+                       [[maybe_unused]] std::size_t alignment,
+                       cuda_stream_view stream)
   {
     RMM_FUNC_RANGE();
     return do_allocate(bytes, stream);
@@ -240,7 +242,7 @@ class device_memory_resource {
    */
   void deallocate_async(void* ptr,
                         std::size_t bytes,
-                        std::size_t alignment,
+                        [[maybe_unused]] std::size_t alignment,
                         cuda_stream_view stream) noexcept
   {
     RMM_FUNC_RANGE();
@@ -296,9 +298,10 @@ class device_memory_resource {
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param alignment The alignment that was passed to the `allocate` call that returned `p`
    */
-  void deallocate_sync(void* ptr,
-                       std::size_t bytes,
-                       std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
+  void deallocate_sync(
+    void* ptr,
+    std::size_t bytes,
+    [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
   {
     do_deallocate(ptr, bytes, cuda_stream_view{});
   }
