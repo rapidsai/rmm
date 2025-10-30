@@ -123,10 +123,10 @@ TEST(Adaptor, FilenameConstructor)
   auto const size0{100};
   auto const size1{42};
 
-  auto* ptr0 = log_mr.allocate(size0);
-  auto* ptr1 = log_mr.allocate(size1);
-  log_mr.deallocate(ptr0, size0);
-  log_mr.deallocate(ptr1, size1);
+  auto* ptr0 = log_mr.allocate_sync(size0);
+  auto* ptr1 = log_mr.allocate_sync(size1);
+  log_mr.deallocate_sync(ptr0, size0);
+  log_mr.deallocate_sync(ptr1, size1);
   log_mr.flush();
 
   using rmm::detail::action;
@@ -156,10 +156,10 @@ TEST(Adaptor, MultiSinkConstructor)
   auto const size0{100};
   auto const size1{42};
 
-  auto* ptr0 = log_mr.allocate(size0);
-  auto* ptr1 = log_mr.allocate(size1);
-  log_mr.deallocate(ptr0, size0);
-  log_mr.deallocate(ptr1, size1);
+  auto* ptr0 = log_mr.allocate_sync(size0);
+  auto* ptr1 = log_mr.allocate_sync(size1);
+  log_mr.deallocate_sync(ptr0, size0);
+  log_mr.deallocate_sync(ptr1, size1);
   log_mr.flush();
 
   using rmm::detail::action;
@@ -185,10 +185,10 @@ TEST(Adaptor, Factory)
   auto const size0{99};
   auto const size1{42};
 
-  auto* ptr0 = log_mr.allocate(size0);
-  log_mr.deallocate(ptr0, size0);
-  auto* ptr1 = log_mr.allocate(size1);
-  log_mr.deallocate(ptr1, size1);
+  auto* ptr0 = log_mr.allocate_sync(size0);
+  log_mr.deallocate_sync(ptr0, size0);
+  auto* ptr1 = log_mr.allocate_sync(size1);
+  log_mr.deallocate_sync(ptr1, size1);
   log_mr.flush();
 
   using rmm::detail::action;
@@ -224,8 +224,8 @@ TEST(Adaptor, EnvironmentPath)
 
   auto const size{100};
 
-  auto* ptr = log_mr.allocate(size);
-  log_mr.deallocate(ptr, size);
+  auto* ptr = log_mr.allocate_sync(size);
+  log_mr.deallocate_sync(ptr, size);
 
   log_mr.flush();
 
@@ -251,10 +251,10 @@ TEST(Adaptor, AllocateFailure)
   auto const size0{99};
   auto const size1{1_TiB};
 
-  auto* ptr0 = log_mr.allocate(size0);
-  log_mr.deallocate(ptr0, size0);
+  auto* ptr0 = log_mr.allocate_sync(size0);
+  log_mr.deallocate_sync(ptr0, size0);
   try {
-    log_mr.allocate(size1);
+    log_mr.allocate_sync(size1);
   } catch (...) {
   }
   log_mr.flush();
@@ -279,8 +279,8 @@ TEST(Adaptor, STDOUT)
 
   auto const size{100};
 
-  auto* ptr = log_mr.allocate(size);
-  log_mr.deallocate(ptr, size);
+  auto* ptr = log_mr.allocate_sync(size);
+  log_mr.deallocate_sync(ptr, size);
 
   std::string output = testing::internal::GetCapturedStdout();
   std::string header = output.substr(0, output.find('\n'));
@@ -297,8 +297,8 @@ TEST(Adaptor, STDERR)
 
   auto const size{100};
 
-  auto* ptr = log_mr.allocate(size);
-  log_mr.deallocate(ptr, size);
+  auto* ptr = log_mr.allocate_sync(size);
+  log_mr.deallocate_sync(ptr, size);
 
   std::string output = testing::internal::GetCapturedStderr();
   std::string header = output.substr(0, output.find('\n'));

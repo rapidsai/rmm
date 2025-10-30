@@ -194,7 +194,7 @@ struct replay_benchmark {
         auto alloc = ptr_alloc.second;
         num_leaked++;
         total_leaked += alloc.size;
-        mr_->deallocate(alloc.ptr, alloc.size);
+        mr_->deallocate_sync(alloc.ptr, alloc.size);
       }
       if (num_leaked > 0) {
         std::cout << "LOG shows leak of " << num_leaked << " allocations of " << total_leaked
@@ -226,11 +226,11 @@ struct replay_benchmark {
 
         // rmm::detail::action::ALLOCATE_FAILURE is ignored.
         if (rmm::detail::action::ALLOCATE == event.act) {
-          auto ptr = mr_->allocate(event.size);
+          auto ptr = mr_->allocate_sync(event.size);
           set_allocation(event.pointer, allocation{ptr, event.size});
         } else if (rmm::detail::action::FREE == event.act) {
           auto alloc = remove_allocation(event.pointer);
-          mr_->deallocate(alloc.ptr, event.size);
+          mr_->deallocate_sync(alloc.ptr, event.size);
         }
 
         event_index++;

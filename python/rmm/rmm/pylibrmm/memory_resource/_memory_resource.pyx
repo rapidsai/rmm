@@ -96,7 +96,7 @@ cdef class DeviceMemoryResource:
         """
         cdef uintptr_t ptr
         with nogil:
-            ptr = <uintptr_t>self.c_obj.get().allocate(nbytes, stream.view())
+            ptr = <uintptr_t>self.c_obj.get().allocate(stream.view(), nbytes)
         return ptr
 
     def deallocate(self, uintptr_t ptr, size_t nbytes, Stream stream=DEFAULT_STREAM):
@@ -112,7 +112,7 @@ cdef class DeviceMemoryResource:
             Optional stream for the deallocation
         """
         with nogil:
-            self.c_obj.get().deallocate(<void*>(ptr), nbytes, stream.view())
+            self.c_obj.get().deallocate(stream.view(), <void*>(ptr), nbytes)
 
     def __dealloc__(self):
         # See the __dealloc__ method on DeviceBuffer for discussion of why we must

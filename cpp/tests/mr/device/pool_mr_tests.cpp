@@ -61,10 +61,10 @@ TEST(PoolTest, TwoLargeBuffers)
   auto two_large = []() {
     [[maybe_unused]] auto const [free, total] = rmm::available_device_memory();
     pool_mr mr{rmm::mr::get_current_device_resource_ref(), rmm::percent_of_free_device_memory(50)};
-    auto* ptr1 = mr.allocate(free / 4);
-    auto* ptr2 = mr.allocate(free / 4);
-    mr.deallocate(ptr1, free / 4);
-    mr.deallocate(ptr2, free / 4);
+    auto* ptr1 = mr.allocate_sync(free / 4);
+    auto* ptr2 = mr.allocate_sync(free / 4);
+    mr.deallocate_sync(ptr1, free / 4);
+    mr.deallocate_sync(ptr2, free / 4);
   };
   EXPECT_NO_THROW(two_large());
 }
@@ -76,20 +76,20 @@ TEST(PoolTest, ForceGrowth)
     auto const max_size{6000};
     limiting_mr limiter{&cuda, max_size};
     pool_mr mr{&limiter, 0};
-    EXPECT_NO_THROW(mr.allocate(1000));
-    EXPECT_NO_THROW(mr.allocate(4000));
-    EXPECT_NO_THROW(mr.allocate(500));
-    EXPECT_THROW(mr.allocate(2000), rmm::out_of_memory);  // too much
+    EXPECT_NO_THROW(mr.allocate_sync(1000));
+    EXPECT_NO_THROW(mr.allocate_sync(4000));
+    EXPECT_NO_THROW(mr.allocate_sync(500));
+    EXPECT_THROW(mr.allocate_sync(2000), rmm::out_of_memory);  // too much
   }
   {
     // with max pool size
     auto const max_size{6000};
     limiting_mr limiter{&cuda, max_size};
     pool_mr mr{&limiter, 0, 8192};
-    EXPECT_NO_THROW(mr.allocate(1000));
-    EXPECT_THROW(mr.allocate(4000), rmm::out_of_memory);  // too much
-    EXPECT_NO_THROW(mr.allocate(500));
-    EXPECT_NO_THROW(mr.allocate(2000));  // fits
+    EXPECT_NO_THROW(mr.allocate_sync(1000));
+    EXPECT_THROW(mr.allocate_sync(4000), rmm::out_of_memory);  // too much
+    EXPECT_NO_THROW(mr.allocate_sync(500));
+    EXPECT_NO_THROW(mr.allocate_sync(2000));  // fits
   }
 }
 
@@ -101,7 +101,7 @@ TEST(PoolTest, DeletedStream)
   EXPECT_EQ(cudaSuccess, cudaStreamCreate(&stream));
   EXPECT_NO_THROW(rmm::device_buffer buff(size, cuda_stream_view{stream}, &mr));
   EXPECT_EQ(cudaSuccess, cudaStreamDestroy(stream));
-  EXPECT_NO_THROW(mr.allocate(size));
+  EXPECT_NO_THROW(mr.allocate_sync(size));
 }
 
 // Issue #527
@@ -109,7 +109,7 @@ TEST(PoolTest, InitialAndMaxPoolSizeEqual)
 {
   EXPECT_NO_THROW([]() {
     pool_mr mr(rmm::mr::get_current_device_resource_ref(), 1000192, 1000192);
-    mr.allocate(1000);
+    mr.allocate_sync(1000);
   }());
 }
 
@@ -118,14 +118,14 @@ TEST(PoolTest, NonAlignedPoolSize)
   EXPECT_THROW(
     []() {
       pool_mr mr(rmm::mr::get_current_device_resource_ref(), 1000031, 1000192);
-      mr.allocate(1000);
+      mr.allocate_sync(1000);
     }(),
     rmm::logic_error);
 
   EXPECT_THROW(
     []() {
       pool_mr mr(rmm::mr::get_current_device_resource_ref(), 1000192, 1000200);
-      mr.allocate(1000);
+      mr.allocate_sync(1000);
     }(),
     rmm::logic_error);
 }
@@ -135,8 +135,8 @@ TEST(PoolTest, UpstreamDoesntSupportMemInfo)
   cuda_mr cuda;
   pool_mr mr1(&cuda, 0);
   pool_mr mr2(&mr1, 0);
-  auto* ptr = mr2.allocate(1024);
-  mr2.deallocate(ptr, 1024);
+  auto* ptr = mr2.allocate_sync(1024);
+  mr2.deallocate_sync(ptr, 1024);
 }
 
 TEST(PoolTest, MultidevicePool)
@@ -182,14 +182,17 @@ namespace test_properties {
 class fake_async_resource {
  public:
   // To model `async_resource`
+#ifdef RMM_ENABLE_LEGACY_MR_INTERFACE
   static void* allocate(std::size_t, std::size_t) { return nullptr; }
-  static void deallocate(void* ptr, std::size_t, std::size_t) {}
+  static void deallocate(void* ptr, std::size_t, std::size_t) noexcept {}
   static void* allocate_async(std::size_t, std::size_t, cuda::stream_ref) { return nullptr; }
-  static void deallocate_async(void* ptr, std::size_t, std::size_t, cuda::stream_ref) {}
+  static void deallocate_async(void* ptr, std::size_t, std::size_t, cuda::stream_ref) noexcept {}
+#endif  // RMM_ENABLE_LEGACY_MR_INTERFACE
+
   void* allocate_sync(std::size_t, std::size_t) { return nullptr; }
-  void deallocate_sync(void* ptr, std::size_t, std::size_t) {}
+  void deallocate_sync(void* ptr, std::size_t, std::size_t) noexcept {}
   void* allocate(cuda_stream_view, std::size_t, std::size_t) { return nullptr; }
-  void deallocate(cuda_stream_view, void*, std::size_t, std::size_t) { return; }
+  void deallocate(cuda_stream_view, void*, std::size_t, std::size_t) noexcept { return; }
 
   bool operator==(const fake_async_resource& other) const { return true; }
   bool operator!=(const fake_async_resource& other) const { return false; }
