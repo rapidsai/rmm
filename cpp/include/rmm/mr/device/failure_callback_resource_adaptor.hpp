@@ -154,7 +154,7 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
 
     while (true) {
       try {
-        ret = get_upstream_resource().allocate_async(bytes, stream);
+        ret = get_upstream_resource().allocate(stream, bytes);
         break;
       } catch (exception_type const& e) {
         if (!callback_(bytes, callback_arg_)) { throw; }
@@ -172,7 +172,7 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
    */
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override
   {
-    get_upstream_resource().deallocate_async(ptr, bytes, stream);
+    get_upstream_resource().deallocate(stream, ptr, bytes);
   }
 
   /**

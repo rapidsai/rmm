@@ -45,9 +45,9 @@ TEST_F(HWDecompressTest, CudaMalloc)
 {
   const auto allocation_size{100};
   rmm::mr::cuda_memory_resource mr{};
-  void* ptr = mr.allocate(allocation_size);
+  void* ptr = mr.allocate_sync(allocation_size);
   HWDecompressTest::check_decompress_capable(ptr);
-  mr.deallocate(ptr, allocation_size);
+  mr.deallocate_sync(ptr, allocation_size);
   RMM_CUDA_TRY(cudaDeviceSynchronize());
 }
 
@@ -59,9 +59,9 @@ TEST_F(HWDecompressTest, CudaMallocAsync)
   }
   const auto pool_init_size{100};
   rmm::mr::cuda_async_memory_resource mr{pool_init_size};
-  void* ptr = mr.allocate(pool_init_size);
+  void* ptr = mr.allocate_sync(pool_init_size);
   HWDecompressTest::check_decompress_capable(ptr);
-  mr.deallocate(ptr, pool_init_size);
+  mr.deallocate_sync(ptr, pool_init_size);
   RMM_CUDA_TRY(cudaDeviceSynchronize());
 }
 

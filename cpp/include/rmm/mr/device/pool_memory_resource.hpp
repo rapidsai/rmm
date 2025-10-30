@@ -340,7 +340,7 @@ class pool_memory_resource final
    *
    * @param size The size in bytes to allocate from the upstream resource
    * @param stream The stream on which the memory is to be used.
-   * @throws if call to allocate_async() throws
+   * @throws if call to allocate() throws
    * @return block_type The allocated block
    */
   block_type block_from_upstream(std::size_t size, cuda_stream_view stream)
@@ -349,7 +349,7 @@ class pool_memory_resource final
 
     if (size == 0) { return {}; }
 
-    void* ptr = get_upstream_resource().allocate_async(size, stream);
+    void* ptr = get_upstream_resource().allocate(stream, size);
     return *upstream_blocks_.emplace(static_cast<char*>(ptr), size, true).first;
   }
 
@@ -412,7 +412,7 @@ class pool_memory_resource final
     lock_guard lock(this->get_mutex());
 
     for (auto block : upstream_blocks_) {
-      get_upstream_resource().deallocate(block.pointer(), block.size());
+      get_upstream_resource().deallocate_sync(block.pointer(), block.size());
     }
     upstream_blocks_.clear();
 #ifdef RMM_POOL_TRACK_ALLOCATIONS

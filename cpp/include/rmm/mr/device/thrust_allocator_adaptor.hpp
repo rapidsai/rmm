@@ -100,8 +100,7 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
   pointer allocate(size_type num)
   {
     cuda_set_device_raii dev{_device};
-    return thrust::device_pointer_cast(
-      static_cast<T*>(_mr.allocate_async(num * sizeof(T), _stream)));
+    return thrust::device_pointer_cast(static_cast<T*>(_mr.allocate(_stream, num * sizeof(T))));
   }
 
   /**
@@ -114,7 +113,7 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
   void deallocate(pointer ptr, size_type num) noexcept
   {
     cuda_set_device_raii dev{_device};
-    return _mr.deallocate_async(thrust::raw_pointer_cast(ptr), num * sizeof(T), _stream);
+    return _mr.deallocate(_stream, thrust::raw_pointer_cast(ptr), num * sizeof(T));
   }
 
   /**
