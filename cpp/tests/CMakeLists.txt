@@ -35,7 +35,12 @@ function(ConfigureTestInternal TEST_NAME)
                CUDA_STANDARD_REQUIRED ON)
   target_compile_definitions(
     ${TEST_NAME} PUBLIC "RMM_LOG_ACTIVE_LEVEL=RAPIDS_LOGGER_LOG_LEVEL_${RMM_LOGGING_LEVEL}")
-  target_compile_options(${TEST_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Wall -Werror>)
+  target_compile_options(
+    ${TEST_NAME}
+    PRIVATE
+      "$<$<COMPILE_LANGUAGE:CXX>:-Wall;-Werror;-Wno-unknown-pragmas;-Wno-error=deprecated-declarations>"
+      "$<$<COMPILE_LANGUAGE:CUDA>:-Werror=all-warnings;-Xcompiler=-Wall,-Werror,-Wno-error=deprecated-declarations>"
+  )
 
   if(DISABLE_DEPRECATION_WARNING)
     target_compile_options(

@@ -405,7 +405,10 @@ TYPED_TEST(DeviceBufferTest, SelfMoveAssignment)
   auto mr       = buff.memory_resource();
   auto stream   = buff.stream();
 
-  buff = std::move(buff);           // self-move-assignment shouldn't modify the buffer
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wself-move"
+  buff = std::move(buff);  // self-move-assignment shouldn't modify the buffer
+#pragma GCC diagnostic pop
   EXPECT_NE(nullptr, buff.data());  // NOLINT(bugprone-use-after-move,clang-analyzer-cplusplus.Move)
   EXPECT_EQ(ptr, buff.data());
   EXPECT_EQ(size, buff.size());
