@@ -5,7 +5,7 @@
 # cmake-format: on
 # =============================================================================
 
-set(cython_sources device_buffer.pyx logger.pyx cuda_stream.pyx helper.pyx stream.pyx)
+set(cython_sources device_buffer.pyx logger.pyx cuda_stream.pyx helper.pyx stream.pyx utils.pyx)
 set(linked_libraries rmm::rmm)
 
 # Build all of the Cython targets
