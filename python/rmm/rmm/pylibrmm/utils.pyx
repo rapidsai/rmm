@@ -10,10 +10,11 @@ cdef Stream as_stream(Stream stream) except *:
     """
     Convert a stream argument to a Stream instance.
 
-    This function checks if the provided stream is None and raises a TypeError
-    if it is. This helps catch programming errors where None is accidentally
-    passed as a stream argument in Cython code, which would otherwise be
-    allowed by Cython's type system.
+    This function converts the provided stream argument to a valid Stream
+    instance. For now, all it does is check for None and raise a TypeError if
+    the argument is None. In the future it will be extended to accept other
+    types of stream representations i.e. anything supporting the
+    __cuda_stream__ protocol.
 
     Parameters
     ----------
@@ -23,17 +24,12 @@ cdef Stream as_stream(Stream stream) except *:
     Returns
     -------
     Stream
-        The input stream if it is not None
+        The converted Stream instance
 
     Raises
     ------
     TypeError
         If stream is None
-
-    Notes
-    -----
-    This function is designed to allow for future enhancements to support
-    other stream input types beyond the Stream class.
     """
     if stream is None:
         raise TypeError(
