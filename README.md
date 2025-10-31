@@ -190,7 +190,8 @@ instead:
 ```cmake
 CPMAddPackage(NAME rmm [VERSION]
               GITHUB_REPOSITORY rapidsai/rmm
-              SYSTEM Off)
+              SYSTEM Off
+              SOURCE_SUBDIR cpp)
 # ...
 target_link_libraries(<your-target> (PRIVATE|PUBLIC|INTERFACE) rmm::rmm)
 ```

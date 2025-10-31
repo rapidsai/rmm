@@ -20,4 +20,7 @@ CPMFindPackage(
   FIND_PACKAGE_ARGUMENTS "PATHS ${rmm_ROOT} ${rmm_ROOT}/latest" GIT_REPOSITORY
                          https://github.com/rapidsai/rmm
   GIT_TAG ${RMM_TAG}
-  GIT_SHALLOW TRUE)
+  GIT_SHALLOW
+    TRUE
+    SOURCE_SUBDIR
+    cpp)
