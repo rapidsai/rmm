@@ -204,6 +204,6 @@ jobs:
           egress-policy: audit
 
       - name: Telemetry summarize
-        uses: rapidsai/shared-actions/telemetry-dispatch-summarize@main
+        uses: rapidsai/shared-actions/telemetry-dispatch-summarize@fea/setup-sccache-dist
     env:
       GH_TOKEN: ${{ github.token }}
