@@ -6,7 +6,8 @@ from enum import IntEnum
 from libc.stddef cimport size_t
 from cython.operator cimport dereference as deref
 
-from rmm.librmm.cuda_stream_pool cimport cuda_stream_pool, cuda_stream_flags
+from rmm.librmm.cuda_stream cimport cuda_stream_flags
+from rmm.librmm.cuda_stream_pool cimport cuda_stream_pool
 
 from rmm.pylibrmm.stream cimport Stream
 
@@ -38,9 +39,6 @@ cdef class CudaStreamPool:
     def __cinit__(self, size_t pool_size = 16,
                   cuda_stream_flags flags = cuda_stream_flags.sync_default):
         with nogil:
-            if pool_size == 0:
-                raise ValueError("Pool size must be greater than zero")
-
             self.c_obj.reset(new cuda_stream_pool(pool_size, flags))
 
     def __dealloc__(self):

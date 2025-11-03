@@ -2,12 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from rmm.librmm.cuda_stream_view cimport cuda_stream_view
-from libc.stdint cimport uint32_t
-
-cdef extern from "rmm/cuda_stream.hpp" namespace "rmm" nogil:
-    cpdef enum class cuda_stream_flags "rmm::cuda_stream::flags" (uint32_t):
-        sync_default "rmm::cuda_stream::flags::sync_default"
-        non_blocking "rmm::cuda_stream::flags::non_blocking"
+from rmm.librmm.cuda_stream cimport cuda_stream_flags
 
 cdef extern from "rmm/cuda_stream_pool.hpp" namespace "rmm" nogil:
     cdef cppclass cuda_stream_pool:
