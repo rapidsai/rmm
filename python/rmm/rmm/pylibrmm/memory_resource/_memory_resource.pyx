@@ -23,6 +23,7 @@ from cuda.bindings import driver, runtime
 from rmm._cuda.gpu import CUDARuntimeError, getDevice, setDevice
 
 from rmm.pylibrmm.stream cimport Stream
+from rmm.pylibrmm.utils cimport as_stream
 
 from rmm.pylibrmm.stream import DEFAULT_STREAM
 
@@ -94,6 +95,7 @@ cdef class DeviceMemoryResource:
         stream : Stream
             Optional stream for the allocation
         """
+        stream = as_stream(stream)
         cdef uintptr_t ptr
         with nogil:
             ptr = <uintptr_t>self.c_obj.get().allocate(stream.view(), nbytes)
@@ -111,6 +113,7 @@ cdef class DeviceMemoryResource:
         stream : Stream
             Optional stream for the deallocation
         """
+        stream = as_stream(stream)
         with nogil:
             self.c_obj.get().deallocate(stream.view(), <void*>(ptr), nbytes)
 

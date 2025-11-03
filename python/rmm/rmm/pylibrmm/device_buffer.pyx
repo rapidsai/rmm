@@ -9,6 +9,7 @@ from libcpp.memory cimport unique_ptr
 from libcpp.utility cimport move
 
 from rmm.pylibrmm.stream cimport Stream
+from rmm.pylibrmm.utils cimport as_stream
 
 from rmm.pylibrmm.stream import DEFAULT_STREAM
 
@@ -79,6 +80,7 @@ cdef class DeviceBuffer:
         """
         cdef const void* c_ptr
         cdef device_memory_resource * mr_ptr
+        stream = as_stream(stream)
         # Save a reference to the MR and stream used for allocation
         self.mr = get_current_device_resource() if mr is None else mr
         self.stream = stream
@@ -202,6 +204,7 @@ cdef class DeviceBuffer:
         Stream stream=DEFAULT_STREAM,
         DeviceMemoryResource mr=None,
     ):
+        stream = as_stream(stream)
         cdef DeviceBuffer buf = DeviceBuffer.__new__(DeviceBuffer)
         if stream.c_is_default():
             stream.c_synchronize()
@@ -214,12 +217,14 @@ cdef class DeviceBuffer:
     cdef DeviceBuffer c_to_device(const unsigned char[::1] b,
                                   Stream stream=DEFAULT_STREAM) except *:
         """Calls ``to_device`` function on arguments provided"""
+        stream = as_stream(stream)
         return to_device(b, stream)
 
     @staticmethod
     def to_device(const unsigned char[::1] b,
                   Stream stream=DEFAULT_STREAM):
         """Calls ``to_device`` function on arguments provided."""
+        stream = as_stream(stream)
         return to_device(b, stream)
 
     cpdef copy_to_host(self, ary=None, Stream stream=DEFAULT_STREAM):
@@ -242,6 +247,7 @@ cdef class DeviceBuffer:
         >>> print(hb)
         bytearray(b'abc')
         """
+        stream = as_stream(stream)
         cdef const device_buffer* dbp = self.c_obj.get()
         cdef size_t s = dbp.size()
 
@@ -277,6 +283,7 @@ cdef class DeviceBuffer:
         >>> print(hb)
         array([97, 98, 99,  0,  0,  0,  0,  0,  0,  0], dtype=uint8)
         """
+        stream = as_stream(stream)
         cdef device_buffer* dbp = self.c_obj.get()
 
         cdef const unsigned char[::1] hb = ary
@@ -307,6 +314,7 @@ cdef class DeviceBuffer:
         >>> print(hb)
         array([97, 98, 99,  0,  0], dtype=uint8)
         """
+        stream = as_stream(stream)
         if not hasattr(cuda_ary, "__cuda_array_interface__"):
             raise ValueError(
                 "Expected object to support `__cuda_array_interface__` "
@@ -348,6 +356,7 @@ cdef class DeviceBuffer:
         )
 
     cpdef bytes tobytes(self, Stream stream=DEFAULT_STREAM):
+        stream = as_stream(stream)
         cdef const device_buffer* dbp = self.c_obj.get()
         cdef size_t s = dbp.size()
 
@@ -364,11 +373,13 @@ cdef class DeviceBuffer:
     cpdef void reserve(self,
                        size_t new_capacity,
                        Stream stream=DEFAULT_STREAM) except *:
+        stream = as_stream(stream)
         self.c_obj.get()[0].reserve(new_capacity, stream.view())
 
     cpdef void resize(self,
                       size_t new_size,
                       Stream stream=DEFAULT_STREAM) except *:
+        stream = as_stream(stream)
         self.c_obj.get()[0].resize(new_size, stream.view())
 
     cpdef size_t capacity(self) except *:
@@ -405,6 +416,7 @@ cpdef DeviceBuffer to_device(const unsigned char[::1] b,
     >>> print(bytes(db))
     b'abc'
     """
+    stream = as_stream(stream)
 
     if b is None:
         raise TypeError(
@@ -473,6 +485,7 @@ cpdef void copy_ptr_to_host(uintptr_t db,
     >>> print(hb)
     bytearray(b'abc')
     """
+    stream = as_stream(stream)
 
     if hb is None:
         raise TypeError(
@@ -516,6 +529,7 @@ cpdef void copy_host_to_ptr(const unsigned char[::1] hb,
     >>> print(hb)
     array([97, 98, 99,  0,  0,  0,  0,  0,  0,  0], dtype=uint8)
     """
+    stream = as_stream(stream)
 
     if hb is None:
         raise TypeError(
@@ -555,6 +569,7 @@ cpdef void copy_device_to_ptr(uintptr_t d_src,
     >>> hb
     array([97, 98, 99,  0,  0], dtype=uint8)
     """
+    stream = as_stream(stream)
 
     with nogil:
         _copy_async(<const void*>d_src, <void*>d_dst, count,

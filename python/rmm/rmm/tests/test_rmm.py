@@ -1288,3 +1288,113 @@ def test_pinned_host_memory_resource_with_adaptors(adaptor_factory):
     buf = rmm.DeviceBuffer(size=1024)
     assert buf.size == 1024
     assert buf.ptr != 0
+
+
+# Tests for stream=None validation (PR #2120)
+def test_device_buffer_init_stream_none():
+    """Test that DeviceBuffer.__init__ raises TypeError for stream=None"""
+    with pytest.raises(TypeError, match="stream argument cannot be None"):
+        rmm.DeviceBuffer(size=10, stream=None)
+
+
+def test_device_buffer_to_device_stream_none():
+    """Test that DeviceBuffer.to_device raises TypeError for stream=None"""
+    with pytest.raises(TypeError, match="stream argument cannot be None"):
+        rmm.DeviceBuffer.to_device(b"abc", stream=None)
+
+
+def test_device_buffer_copy_to_host_stream_none():
+    """Test that DeviceBuffer.copy_to_host raises TypeError for stream=None"""
+    db = rmm.DeviceBuffer.to_device(b"abc")
+    with pytest.raises(TypeError, match="stream argument cannot be None"):
+        db.copy_to_host(stream=None)
+
+
+def test_device_buffer_copy_from_host_stream_none():
+    """Test that DeviceBuffer.copy_from_host raises TypeError for stream=None"""
+    db = rmm.DeviceBuffer.to_device(np.zeros(10, dtype="u1"))
+    with pytest.raises(TypeError, match="stream argument cannot be None"):
+        db.copy_from_host(b"abc", stream=None)
+
+
+def test_device_buffer_copy_from_device_stream_none():
+    """Test that DeviceBuffer.copy_from_device raises TypeError for stream=None"""
+    db = rmm.DeviceBuffer.to_device(np.zeros(10, dtype="u1"))
+    cuda_ary = rmm.DeviceBuffer.to_device(b"abc")
+    with pytest.raises(TypeError, match="stream argument cannot be None"):
+        db.copy_from_device(cuda_ary, stream=None)
+
+
+def test_device_buffer_tobytes_stream_none():
+    """Test that DeviceBuffer.tobytes raises TypeError for stream=None"""
+    db = rmm.DeviceBuffer.to_device(b"abc")
+    with pytest.raises(TypeError, match="stream argument cannot be None"):
+        db.tobytes(stream=None)
+
+
+def test_device_buffer_reserve_stream_none():
+    """Test that DeviceBuffer.reserve raises TypeError for stream=None"""
+    db = rmm.DeviceBuffer.to_device(b"abc")
+    with pytest.raises(TypeError, match="stream argument cannot be None"):
+        db.reserve(100, stream=None)
+
+
+def test_device_buffer_resize_stream_none():
+    """Test that DeviceBuffer.resize raises TypeError for stream=None"""
+    db = rmm.DeviceBuffer.to_device(b"abc")
+    with pytest.raises(TypeError, match="stream argument cannot be None"):
+        db.resize(10, stream=None)
+
+
+def test_to_device_stream_none():
+    """Test that to_device function raises TypeError for stream=None"""
+    # Import the module-level function
+    from rmm import DeviceBuffer
+
+    with pytest.raises(TypeError, match="stream argument cannot be None"):
+        DeviceBuffer.to_device(b"abc", stream=None)
+
+
+def test_copy_ptr_to_host_stream_none():
+    """Test that copy_ptr_to_host raises TypeError for stream=None"""
+    from rmm.pylibrmm.device_buffer import copy_ptr_to_host
+
+    db = rmm.DeviceBuffer.to_device(b"abc")
+    hb = bytearray(3)
+    with pytest.raises(TypeError, match="stream argument cannot be None"):
+        copy_ptr_to_host(db.ptr, hb, stream=None)
+
+
+def test_copy_host_to_ptr_stream_none():
+    """Test that copy_host_to_ptr raises TypeError for stream=None"""
+    from rmm.pylibrmm.device_buffer import copy_host_to_ptr
+
+    db = rmm.DeviceBuffer.to_device(np.zeros(10, dtype="u1"))
+    hb = np.array([97, 98, 99], dtype="u1")
+    with pytest.raises(TypeError, match="stream argument cannot be None"):
+        copy_host_to_ptr(hb, db.ptr, stream=None)
+
+
+def test_copy_device_to_ptr_stream_none():
+    """Test that copy_device_to_ptr raises TypeError for stream=None"""
+    from rmm.pylibrmm.device_buffer import copy_device_to_ptr
+
+    db_src = rmm.DeviceBuffer.to_device(b"abc")
+    db_dst = rmm.DeviceBuffer.to_device(np.zeros(10, dtype="u1"))
+    with pytest.raises(TypeError, match="stream argument cannot be None"):
+        copy_device_to_ptr(db_src.ptr, db_dst.ptr, 3, stream=None)
+
+
+def test_memory_resource_allocate_stream_none():
+    """Test that DeviceMemoryResource.allocate raises TypeError for stream=None"""
+    mr = rmm.mr.get_current_device_resource()
+    with pytest.raises(TypeError, match="stream argument cannot be None"):
+        mr.allocate(1024, stream=None)
+
+
+def test_memory_resource_deallocate_stream_none():
+    """Test that DeviceMemoryResource.deallocate raises TypeError for stream=None"""
+    mr = rmm.mr.get_current_device_resource()
+    ptr = mr.allocate(1024)
+    with pytest.raises(TypeError, match="stream argument cannot be None"):
+        mr.deallocate(ptr, 1024, stream=None)
