@@ -121,4 +121,4 @@ def test_cuda_stream_pool(current_device, flags):
             assert streams[i] != streams[j]
         # should not be the default stream
         assert streams[i] != default_rmm_stream
-        assert streams[i] == stream_pool.get_stream_by_id(i)
+        assert streams[i] == stream_pool.get_stream(i)

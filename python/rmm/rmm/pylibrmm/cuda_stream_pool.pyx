@@ -10,6 +10,8 @@ from rmm.librmm.cuda_stream_pool cimport cuda_stream_pool
 
 from rmm.pylibrmm.stream cimport Stream
 
+from typing import Optional
+
 
 @cython.final
 cdef class CudaStreamPool:
@@ -29,13 +31,15 @@ cdef class CudaStreamPool:
         with nogil:
             self.c_obj.reset()
 
-    def get_stream(self) -> Stream:
-        return Stream._from_cudaStream_t(
-            deref(self.c_obj).get_stream().value(), owner=self)
-
-    def get_stream_by_id(self, size_t stream_id) -> Stream:
-        return Stream._from_cudaStream_t(
-            deref(self.c_obj).get_stream(stream_id).value(), owner=self)
+    def get_stream(self, stream_id: Optional[int] = None) -> Stream:
+        cdef size_t c_stream_id
+        if stream_id is None:
+            return Stream._from_cudaStream_t(
+                deref(self.c_obj).get_stream().value(), owner=self)
+        else:
+            c_stream_id = <size_t>stream_id
+            return Stream._from_cudaStream_t(
+                deref(self.c_obj).get_stream(c_stream_id).value(), owner=self)
 
     def get_pool_size(self) -> int:
         return deref(self.c_obj).get_pool_size()
