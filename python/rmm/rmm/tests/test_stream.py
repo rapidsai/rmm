@@ -104,8 +104,9 @@ def test_cuda_core_buffer(current_device):
     ],
 )
 def test_cuda_stream_pool(current_device, flags):
-    cuda_stream = current_device.create_stream()
-    rmm_stream = rmm.pylibrmm.stream.Stream(cuda_stream)
+    default_rmm_stream = rmm.pylibrmm.stream.Stream(
+        current_device.default_stream
+    )
 
     stream_pool = rmm.pylibrmm.cuda_stream_pool.CudaStreamPool(
         pool_size=10, flags=flags
@@ -117,5 +118,6 @@ def test_cuda_stream_pool(current_device, flags):
     for i in range(10):
         for j in range(i + 1, 10):
             assert streams[i] != streams[j]
-        assert streams[i] != rmm_stream
+        # should not be the default stream
+        assert streams[i] != default_rmm_stream
         assert streams[i] == stream_pool.get_stream_by_id(i)
