@@ -52,8 +52,6 @@ cdef class CudaStreamPool:
             deref(self.c_obj).get_stream().value(), owner=self)
 
     def get_stream_by_id(self, size_t stream_id) -> Stream:
-        if stream_id >= self.get_pool_size() or stream_id < 0:
-            raise ValueError(f"Stream id {stream_id} is out of range")
         return Stream._from_cudaStream_t(
             deref(self.c_obj).get_stream(stream_id).value(), owner=self)
 
