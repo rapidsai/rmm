@@ -32,6 +32,20 @@ cdef class CudaStreamPool:
             self.c_obj.reset()
 
     def get_stream(self, stream_id: Optional[int] = None) -> Stream:
+        """
+        Get a Stream from the pool (optionally by ID).
+
+        Parameters
+        ----------
+        stream_id: Optional[int], optional
+            The ID of the stream to get. If None, the next stream from the pool is
+            returned.
+
+        Returns
+        -------
+        Stream
+            A non-owning Stream object from the pool.
+        """
         cdef size_t c_stream_id
         if stream_id is None:
             return Stream._from_cudaStream_t(
