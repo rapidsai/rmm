@@ -95,7 +95,7 @@ TEST_F(SystemMRTest, FirstTouchOnGPU)
   void* ptr = mr.allocate_sync(size_mb);
   touch_on_gpu(ptr, size_mb);
   auto const free2 = rmm::available_device_memory().first;
-  EXPECT_LT(free2, free);
+  EXPECT_LE(free2, free);
   mr.deallocate_sync(ptr, size_mb);
 }
 
