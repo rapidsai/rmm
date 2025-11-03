@@ -3,7 +3,8 @@
 
 from rmm.pylibrmm import memory_resource
 
-from .cuda_stream_pool import CudaStreamPool, CudaStreamFlags
+from .cuda_stream_pool import CudaStreamPool
+from .cuda_stream import CudaStreamFlags
 from .device_buffer import DeviceBuffer
 
 __all__ = [

@@ -8,6 +8,7 @@ import packaging.version
 import pytest
 from cuda.core.experimental import Device
 
+import rmm.pylibrmm.cuda_stream
 import rmm.pylibrmm.cuda_stream_pool
 import rmm.pylibrmm.stream
 
@@ -99,8 +100,8 @@ def test_cuda_core_buffer(current_device):
 @pytest.mark.parametrize(
     "flags",
     [
-        rmm.pylibrmm.cuda_stream_pool.CudaStreamFlags.SYNC_DEFAULT,
-        rmm.pylibrmm.cuda_stream_pool.CudaStreamFlags.NON_BLOCKING,
+        rmm.pylibrmm.cuda_stream.CudaStreamFlags.SYNC_DEFAULT,
+        rmm.pylibrmm.cuda_stream.CudaStreamFlags.NON_BLOCKING,
     ],
 )
 def test_cuda_stream_pool(current_device, flags):
