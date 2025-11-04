@@ -92,13 +92,13 @@ echo "${NEXT_FULL_TAG}" > VERSION
 echo "${RAPIDS_BRANCH_NAME}" > RAPIDS_BRANCH
 
 # Examples update
-sed_runner "s/RMM_TAG release\/[0-9.]*/RMM_TAG ${RAPIDS_BRANCH_NAME}/" cpp/examples/versions.cmake
-sed_runner "s/RMM_TAG main/RMM_TAG ${RAPIDS_BRANCH_NAME}/" cpp/examples/versions.cmake
+sed_runner "s|RMM_TAG release/[0-9][0-9]*\.[0-9][0-9]*|RMM_TAG ${RAPIDS_BRANCH_NAME}|g" cpp/examples/versions.cmake
+sed_runner "s|RMM_TAG main|RMM_TAG ${RAPIDS_BRANCH_NAME}|g" cpp/examples/versions.cmake
 
 # CI files
 for FILE in .github/workflows/*.yaml; do
-  sed_runner "/shared-workflows/ s/@.*/@${WORKFLOW_BRANCH_REF}/g" "${FILE}"
-  sed_runner "s/:[0-9]*\\.[0-9]*-/:${NEXT_SHORT_TAG}-/g" "${FILE}"
+  sed_runner "/shared-workflows/ s|@.*|@${WORKFLOW_BRANCH_REF}|g" "${FILE}"
+  sed_runner "s|:[0-9]*\\.[0-9]*-|:${NEXT_SHORT_TAG}-|g" "${FILE}"
 done
 
 # .devcontainer files
