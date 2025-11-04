@@ -1,4 +1,4 @@
-# arena_memory_resource
+# `arena_memory_resource`
 
 ```{eval-rst}
 .. doxygenclass:: rmm::mr::arena_memory_resource

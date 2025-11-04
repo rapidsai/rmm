@@ -1,4 +1,4 @@
-# tracking_resource_adaptor
+# `tracking_resource_adaptor`
 
 ```{eval-rst}
 .. doxygenclass:: rmm::mr::tracking_resource_adaptor

@@ -1,4 +1,4 @@
-# pool_memory_resource
+# `pool_memory_resource`
 
 ```{eval-rst}
 .. doxygenclass:: rmm::mr::pool_memory_resource

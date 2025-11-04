@@ -1,4 +1,4 @@
-# cuda_memory_resource
+# `cuda_memory_resource`
 
 ```{eval-rst}
 .. doxygenclass:: rmm::mr::cuda_memory_resource

@@ -1,4 +1,4 @@
-# cuda_async_memory_resource
+# `cuda_async_memory_resource`
 
 ```{eval-rst}
 .. doxygenclass:: rmm::mr::cuda_async_memory_resource

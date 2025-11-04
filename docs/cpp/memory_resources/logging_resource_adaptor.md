@@ -1,4 +1,4 @@
-# logging_resource_adaptor
+# `logging_resource_adaptor`
 
 ```{eval-rst}
 .. doxygenclass:: rmm::mr::logging_resource_adaptor

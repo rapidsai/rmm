@@ -1,4 +1,4 @@
-# callback_memory_resource
+# `callback_memory_resource`
 
 ```{eval-rst}
 .. doxygenclass:: rmm::mr::callback_memory_resource

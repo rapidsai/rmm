@@ -1,4 +1,4 @@
-# system_memory_resource
+# `system_memory_resource`
 
 ```{eval-rst}
 .. doxygenclass:: rmm::mr::system_memory_resource

@@ -244,8 +244,6 @@ find_package(rmm REQUIRED)
 target_link_libraries(your_target PRIVATE rmm::rmm)
 ```
 
-See [Thrust's CMake documentation](https://github.com/NVIDIA/cccl/blob/main/thrust/thrust/cmake/README.md) for available options.
-
 ### Using CPM to Fetch RMM
 
 You can use CPM to fetch RMM as a dependency:
@@ -255,9 +253,9 @@ include(CPM)
 
 CPMAddPackage(
   NAME rmm
-  VERSION 24.10
+  VERSION 25.12
   GITHUB_REPOSITORY rapidsai/rmm
-  GIT_TAG branch-24.10
+  GIT_TAG main
   SYSTEM Off  # Important: prevents CCCL headers from being marked as SYSTEM
 )
 
@@ -362,17 +360,3 @@ python -m pip install -e ./python/rmm
 # Check installation
 python -c "import rmm; print(rmm.__file__)"
 ```
-
-### Link Errors
-
-If you encounter link errors when building applications with RMM:
-
-1. Ensure you're using GCC 9.3 or later (same version used to build RMM)
-2. Check that CUDA libraries are in your `LD_LIBRARY_PATH`
-3. Verify RMM was built with the same CUDA version you're using
-
-## Next Steps
-
-- **New to RMM?** Read the [Quick Start Guide](quickstart.md)
-- **Integrating RMM?** See the [C++ Guide](cpp_guide.md) or [User Guide](choosing_memory_resources.md)
-- **Need help?** Visit the [RAPIDS Community](https://rapids.ai/learn-more/#get-involved)

@@ -1,4 +1,4 @@
-# statistics_resource_adaptor
+# `statistics_resource_adaptor`
 
 ```{eval-rst}
 .. doxygenclass:: rmm::mr::statistics_resource_adaptor
