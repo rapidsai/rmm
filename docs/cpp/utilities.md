@@ -2,4 +2,5 @@
 
 ```{doxygengroup} utilities
 :members:
+:content-only:
 ```

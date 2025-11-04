@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2024, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2025, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -28,7 +28,6 @@
  * @defgroup cuda_streams CUDA Streams
  * @defgroup data_containers Data Containers
  * @defgroup errors Errors
- * @defgroup logging Logging
  * @defgroup thrust_integrations Thrust Integrations
  * @defgroup utilities Utilities
  */

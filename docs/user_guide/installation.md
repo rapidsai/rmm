@@ -199,7 +199,7 @@ cmake .. \
 
 ### Caching Third-Party Dependencies
 
-RMM uses [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake) to manage third-party dependencies (spdlog, Thrust, GoogleTest, etc.). By default, CPM downloads dependencies as needed.
+RMM uses [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake) to manage third-party dependencies (CCCL, nvbench, etc.). By default, CPM downloads dependencies as needed.
 
 To avoid repeated downloads when building frequently, set the `CPM_SOURCE_CACHE` environment variable:
 

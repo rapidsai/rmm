@@ -2,4 +2,5 @@
 
 ```{doxygengroup} data_containers
 :members:
+:content-only:
 ```

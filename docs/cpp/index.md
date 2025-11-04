@@ -11,7 +11,6 @@ thrust_integrations
 cuda_device_management
 cuda_streams
 errors
-logging
 utilities
 deprecated
 ```

@@ -2,4 +2,5 @@
 
 ```{doxygengroup} errors
 :members:
+:content-only:
 ```

@@ -1,5 +1,0 @@
-# Logging
-
-```{doxygengroup} logging
-:members:
-```
