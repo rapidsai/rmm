@@ -6,9 +6,10 @@
 ########################
 
 ## Usage
-# Primary interface:   bash update-version.sh <new_version> --run-context=update_dev_branch|update_release_branch
-# Fallback interface:  RUN_CONTEXT=update_dev_branch|update_release_branch bash update-version.sh <new_version>
+# Primary interface:   bash update-version.sh <new_version> [--run-context=update_dev_branch|update_release_branch]
+# Fallback interface:  [RUN_CONTEXT=update_dev_branch|update_release_branch] bash update-version.sh <new_version>
 # CLI arguments take precedence over environment variables
+# Defaults to update_dev_branch (main branch) when no run-context is specified
 
 
 # Parse command line arguments
@@ -32,18 +33,15 @@ done
 # Format is YY.MM.PP - no leading 'v' or trailing 'a'
 NEXT_FULL_TAG="$VERSION_ARG"
 
-# Determine RUN_CONTEXT with CLI precedence over environment variable
+# Determine RUN_CONTEXT with CLI precedence over environment variable, defaulting to dev branch
 if [[ -n "$CLI_RUN_CONTEXT" ]]; then
     RUN_CONTEXT="$CLI_RUN_CONTEXT"
     echo "Using RUN_CONTEXT from CLI: $RUN_CONTEXT"
 elif [[ -n "${RUN_CONTEXT}" ]]; then
     echo "Using RUN_CONTEXT from environment: $RUN_CONTEXT"
 else
-    echo "Error: RUN_CONTEXT must be provided either via --run-context CLI argument or RUN_CONTEXT environment variable"
-    echo "Valid values: update_dev_branch, update_release_branch"
-    echo "Usage: $0 <new_version> --run-context=<context>"
-    echo "   or: RUN_CONTEXT=<context> $0 <new_version>"
-    exit 1
+    RUN_CONTEXT="update_dev_branch"
+    echo "No RUN_CONTEXT provided, defaulting to: $RUN_CONTEXT (main branch)"
 fi
 
 # Validate RUN_CONTEXT value
@@ -56,8 +54,9 @@ fi
 # Validate version argument
 if [[ -z "$NEXT_FULL_TAG" ]]; then
     echo "Error: Version argument is required"
-    echo "Usage: $0 <new_version> --run-context=<context>"
-    echo "   or: RUN_CONTEXT=<context> $0 <new_version>"
+    echo "Usage: $0 <new_version> [--run-context=<context>]"
+    echo "   or: [RUN_CONTEXT=<context>] $0 <new_version>"
+    echo "Note: Defaults to update_dev_branch (main branch) when run-context is not specified"
     exit 1
 fi
 
